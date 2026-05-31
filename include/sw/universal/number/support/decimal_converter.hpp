@@ -50,7 +50,7 @@ namespace internal {
 /// <summary>
 /// extract_mantissa_from_value: convert value<fbits> fraction to decimal
 /// value<> stores: (sign, scale, fraction_without_hidden_bit)
-/// The value is: (-1)^sign × 1.fraction × 2^scale
+/// The value is: (-1)^sign * 1.fraction * 2^scale
 /// We need to create a decimal representing the significand: 1.fraction = 1 + fraction
 /// as an integer: (2^fbits + fraction_bits)
 /// </summary>
@@ -121,7 +121,7 @@ inline std::string to_decimal_string(const internal::value<fbits>& v,
 	// Extract mantissa (represents the significand as an integer: 2^fbits + fraction_bits)
 	support::decimal mantissa = extract_mantissa_from_value(v);
 
-	// The value is: mantissa × 2^(scale - fbits)
+	// The value is: mantissa * 2^(scale - fbits)
 	// Since mantissa represents (2^fbits + fraction), we need to account for that
 	int adjusted_scale = v.scale() - static_cast<int>(fbits);
 

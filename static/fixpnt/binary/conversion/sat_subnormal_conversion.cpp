@@ -1,4 +1,4 @@
-﻿// sat_subnormal_conversion.cpp: test suite runner for subnormal IEEE-754 floating-point to fixed-point 
+// sat_subnormal_conversion.cpp: test suite runner for subnormal IEEE-754 floating-point to fixed-point 
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -22,13 +22,13 @@ IEEE-754 has subnormal numbers that a fixed-point needs to be able to pick up.
 
 The stored exponents 0x00 and 0xFF are interpreted specially.
 
-Exponent     |     fraction = 0     |      fraction ≠ 0      |      Equation
+Exponent     |     fraction = 0     |      fraction != 0      |      Equation
 0x00         |       zero           |    subnormal number    |    (-1)sign * 0.fraction * 2^-126
 0x01...0xFE  |                normal value                   |    (-1)sign * 1.fraction * 2^(exponent - 127)
-0xFF         |    ±infinity         |    NaN(quiet, signalling)
+0xFF         |    +/-infinity         |    NaN(quiet, signalling)
 
-The minimum positive normal value is 2−126 ≈ 1.18 × 10−38.
-The minimum positive(subnormal) value is 2−149 ≈ 1.4 × 10−45.
+The minimum positive normal value is 2^-126 ~= 1.18 * 10^-38.
+The minimum positive(subnormal) value is 2^-149 ~= 1.4 * 10^-45.
 */
 
 void TestDenormalizedNumberConversions() {
@@ -58,13 +58,13 @@ IEEE-754 has subnormal numbers that a fixed-point needs to be able to pick up.
 
 The stored exponents 0x000 and 0x7FF are interpreted specially.
 
-Exponent      |     fraction = 0     |      fraction ≠ 0      |      Equation
+Exponent      |     fraction = 0     |      fraction != 0      |      Equation
 0x000         |       zero           |    subnormal number    |    (-1)^sign * 0.fraction * 2^-1022
 0x001...0x7FE |                normal value                   |    (-1)^sign * 1.fraction * 2^(exponent - 1023)
-0x7FF         |    ±infinity         |    NaN(quiet, signalling)
+0x7FF         |    +/-infinity         |    NaN(quiet, signalling)
 
-The minimum positive normal value is 2−1022 ≈ 2.22e-308.
-The minimum positive(subnormal) value is 2−1074 ≈ 1.4 × 10−45.
+The minimum positive normal value is 2^-1022 ~= 2.22e-308.
+The minimum positive(subnormal) value is 2^-1074 ~= 4.94e-324.
 */
 
 template<size_t nbits, size_t rbits>

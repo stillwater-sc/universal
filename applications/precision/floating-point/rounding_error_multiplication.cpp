@@ -1,4 +1,4 @@
-﻿// rounding_error_multiplication.cpp: evaluation of rounding errors of multiplication in the posit number systems 
+// rounding_error_multiplication.cpp: evaluation of rounding errors of multiplication in the posit number systems 
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

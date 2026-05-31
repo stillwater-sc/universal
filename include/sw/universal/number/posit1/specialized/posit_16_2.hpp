@@ -717,8 +717,8 @@ private:
 	// remaining = 0<remaining_bits>0..0
 	//
 	// The regime numerical meaning is as follows: If m is the number of
-	// identical bits in the regime, if the bits are 0s, then k = −m;
-	// if they are 1s, then k = m − 1.
+	// identical bits in the regime, if the bits are 0s, then k = -m;
+	// if they are 1s, then k = m - 1.
 	void decode_regime(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
 		remaining = (bits << 2) & 0xFFFFu;  // sign and first regime bit
 		if (bits & 0x4000u) {  // positive regimes

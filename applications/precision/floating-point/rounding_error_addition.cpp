@@ -1,4 +1,4 @@
-﻿// rounding_error_addition.cpp: rounding error comparision for addition
+// rounding_error_addition.cpp: rounding error comparision for addition
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

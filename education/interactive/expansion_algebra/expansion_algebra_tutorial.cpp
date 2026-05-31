@@ -603,7 +603,7 @@ void lesson7_scaling() {
 
     std::cout << "\nLet's compute pi using different precisions:\n";
 
-    // Use Machin's formula: π/4 = 4*arctan(1/5) - arctan(1/239)
+    // Use Machin's formula: pi/4 = 4*arctan(1/5) - arctan(1/239)
     // (We'd need actual implementations of arctan, so we'll show the concept)
 
     std::cout << std::setprecision(17);
@@ -701,7 +701,7 @@ void lesson8_applications() {
     std::cout << "\nIterative refinement improves solution accuracy:\n";
     std::cout << "  1. Solve Ax = b in standard precision\n";
     std::cout << "  2. Compute residual r = b - Ax in extended precision\n";
-    std::cout << "  3. Solve correction equation: A·delta = r\n";
+    std::cout << "  3. Solve correction equation: A*delta = r\n";
     std::cout << "  4. Update: x := x + delta\n";
     std::cout << "  5. Repeat until convergence\n";
 

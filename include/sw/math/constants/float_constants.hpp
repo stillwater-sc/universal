@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 // float_constants.hpp: definition of math constants in float precision
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

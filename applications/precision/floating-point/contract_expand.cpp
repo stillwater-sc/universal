@@ -1,4 +1,4 @@
-﻿// contract_expand.cpp: evaluation of contractions and expansions of posit number systems
+// contract_expand.cpp: evaluation of contractions and expansions of posit number systems
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

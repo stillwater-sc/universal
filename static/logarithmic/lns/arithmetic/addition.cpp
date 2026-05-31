@@ -43,7 +43,7 @@ namespace sw::universal {
   Why ArnoldBailey fails the standard addition.cpp regression
 
   addition.cpp does a bit-exact comparison: c = a + b (through whatever lns algorithm is selected) vs cref = encode(double(a) + double(b)). 
-  That comparison only passes when lns_encode(algorithm_result) == lns_encode(true_result) — which requires the algorithm error to 
+  That comparison only passes when lns_encode(algorithm_result) == lns_encode(true_result) -- which requires the algorithm error to 
   stay strictly below the ULP-flipping boundary.
 
   For lns<8, 2>:
@@ -56,16 +56,16 @@ namespace sw::universal {
   Bit-exact regression flags those as failures.
 
   The math:
-  - ArnoldBailey <= 2.5% relative error → ~0.02 absolute in log domain
+  - ArnoldBailey <= 2.5% relative error -> ~0.02 absolute in log domain
   - lns<8,2> ULP = 25% relative -> ~0.25 in log domain
   - Algorithm error / ULP ~ 8% -> small enough to round-correctly most of the time, not small enough to round-correctly all of the time
 
   What the framework prescribes
 
-  The sister test suite in log_add_algorithms.cpp was designed as the algorithm-correctness test bench for this exact reason — 
+  The sister test suite in log_add_algorithms.cpp was designed as the algorithm-correctness test bench for this exact reason -- 
   it uses value-domain relative tolerance (5% in the algorithm-agreement sweeps, scaled per-algorithm in corner cases) instead of bit-exact comparison.
 
-  The decision tree in docs/design/lns-add-sub.md flags this implicitly: ArnoldBailey is positioned as "lowest energy, ~2.5% rel error" — meaning users
+  The decision tree in docs/design/lns-add-sub.md flags this implicitly: ArnoldBailey is positioned as "lowest energy, ~2.5% rel error" -- meaning users
   opting into it accept that bit-exact-against-double is not part of the contract.
 
   Recommendation for this regression suite

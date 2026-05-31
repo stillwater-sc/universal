@@ -1,4 +1,4 @@
-﻿// exponentiation.cpp: evaluation of exponentiation of posit number systems
+// exponentiation.cpp: evaluation of exponentiation of posit number systems
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

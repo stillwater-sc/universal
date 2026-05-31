@@ -32,9 +32,9 @@ try {
 
 		// access block 0 element
 		float v0 = arr(0);
-		// access block 2 element — triggers eviction of block 0
+		// access block 2 element -- triggers eviction of block 0
 		float v8 = arr(8);
-		// access block 0 again — triggers reload
+		// access block 0 again -- triggers reload
 		float v1 = arr(1);
 
 		float err0 = std::abs(v0 - 1.0f);
@@ -65,11 +65,11 @@ try {
 		// modify element in block 0
 		arr.set(0, 99.0f);
 
-		// access block 1 — evicts block 0, triggering write-back
+		// access block 1 -- evicts block 0, triggering write-back
 		float v4 = arr(4);
 		(void)v4;
 
-		// access block 0 again — should reload with the modified value
+		// access block 0 again -- should reload with the modified value
 		float v0 = arr(0);
 		float err = std::abs(v0 - 99.0f);
 
@@ -94,7 +94,7 @@ try {
 		arr.set(0, 42.0f);
 		arr.flush();
 
-		// same block should still be cached — reading should return the cached value
+		// same block should still be cached -- reading should return the cached value
 		float v0 = arr(0);
 		float err = std::abs(v0 - 42.0f);
 

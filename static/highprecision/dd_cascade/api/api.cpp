@@ -76,7 +76,7 @@ int main() {
     std::cout << "0 + a = " << test_sum << '\n';
     std::cout << "Components preserved: "
               << (test_sum.high() == test_a.high() && test_sum.low() == test_a.low()
-                  ? "YES ✓" : "NO ✗") << '\n';
+                  ? "YES OK" : "NO X") << '\n';
 
     std::cout << "\n" << std::string(70, '=') << '\n';
     std::cout << "Example completed successfully!\n";

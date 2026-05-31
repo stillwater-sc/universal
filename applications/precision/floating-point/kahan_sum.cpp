@@ -1,4 +1,4 @@
-﻿// kahan_sum.cpp: Kahan summation evaluation of posit number systems
+// kahan_sum.cpp: Kahan summation evaluation of posit number systems
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

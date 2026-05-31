@@ -127,10 +127,10 @@ try {
 		using Real = posit<16,1>;
 #if defined(__GNUG__)
 /* TODO: this doesn't compile under g++
- error: conversion from ‘__complex__ double’ to non-scalar type ‘std::complex<sw::universal::posit<16, 1> >’ requested
+ error: conversion from '__complex__ double' to non-scalar type 'std::complex<sw::universal::posit<16, 1> >' requested
    std::complex<Real> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
                            ~~~^~~~
- error: conversion from ‘__complex__ double’ to non-scalar type ‘std::complex<sw::universal::posit<16, 1> >’ requested
+ error: conversion from '__complex__ double' to non-scalar type 'std::complex<sw::universal::posit<16, 1> >' requested
    std::complex<Real> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
                                          ~~~^~~~
 */

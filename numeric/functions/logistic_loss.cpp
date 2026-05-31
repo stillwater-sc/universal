@@ -1,4 +1,4 @@
-﻿// logistic_loss.cpp: logistic loss function and its tempered and bi-tempered variants
+// logistic_loss.cpp: logistic loss function and its tempered and bi-tempered variants
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -35,7 +35,7 @@ try {
 		double tmps[] = { 0.0, 0.2, 0.4, 0.6, 0.8, double(one_minus_1ulp) };   // temperature can't be 1
 
 
-		// logt(x) := (1 / (1 – t)) * (x ^ (1–t) – 1)
+		// logt(x) := (1 / (1 - t)) * (x ^ (1-t) - 1)
 		// plot tempered logarithm
 		for (Posit t : tmps) {
 			Posit upperbound = Posit(4.0);
@@ -49,7 +49,7 @@ try {
 		}
 	}
 
-	// expt(x) : = [1 + (1 – t) x]+ ^ (1 / (1–t))
+	// expt(x) : = [1 + (1 - t) x]+ ^ (1 / (1-t))
 	// plot tempered exponent
 	{
 
@@ -57,7 +57,7 @@ try {
 		double tmps[] = { double(one_plus_1ulp), 1.5, 2.0, 2.5, 3.0, 3.5 };   // temperature can't be 1
 
 
-		// expt(x) : = [1 + (1 – t) x]+ ^ (1 / (1–t))
+		// expt(x) : = [1 + (1 - t) x]+ ^ (1 / (1-t))
 		// plot tempered exponent
 		for (Posit t : tmps) {
 			Posit lowerbound = Posit(-4.0);

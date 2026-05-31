@@ -38,7 +38,7 @@ public:
 	static constexpr size_t MAX_BYTES  = zfp_max_bytes<Real, Dim>::value;
 	using traits_type = zfp_type_traits<Real>;
 
-	// default constructor — leaves buffer uninitialized for triviality
+	// default constructor -- leaves buffer uninitialized for triviality
 	zfpblock() = default;
 
 	// Compress a block of 4^Dim values

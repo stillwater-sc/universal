@@ -40,11 +40,11 @@ try {
 	using Real = interval<double>;
 
 	// =========================================================================
-	// PART 1: Tight & Useful — Engineering Tolerance Analysis
+	// PART 1: Tight & Useful -- Engineering Tolerance Analysis
 	// =========================================================================
 	{
 		std::cout << "+=========================================================================+\n";
-		std::cout << "| PART 1: Tight & Useful — Engineering Tolerance Analysis                 |\n";
+		std::cout << "| PART 1: Tight & Useful -- Engineering Tolerance Analysis                 |\n";
 		std::cout << "+=========================================================================+\n\n";
 
 		std::cout << "Scenario: An electronic circuit with uncertain components.\n";
@@ -112,11 +112,11 @@ try {
 	}
 
 	// =========================================================================
-	// PART 2: Wide & Useless — The Dependency Problem
+	// PART 2: Wide & Useless -- The Dependency Problem
 	// =========================================================================
 	{
 		std::cout << "+=========================================================================+\n";
-		std::cout << "| PART 2: Wide & Useless — The Dependency Problem                         |\n";
+		std::cout << "| PART 2: Wide & Useless -- The Dependency Problem                         |\n";
 		std::cout << "+=========================================================================+\n\n";
 
 		// --- Scenario A: x - x ---
@@ -136,7 +136,7 @@ try {
 
 			std::cout << "The interval [2,5] - [2,5] computes [2-5, 5-2] = [-3, 3].\n";
 			std::cout << "Each 'x' is treated as an independent variable that could take\n";
-			std::cout << "any value in [2,5] — the subtraction doesn't know both are the same x.\n\n";
+			std::cout << "any value in [2,5] -- the subtraction doesn't know both are the same x.\n\n";
 		}
 
 		// --- Scenario B: Polynomial evaluation ---

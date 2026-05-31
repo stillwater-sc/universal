@@ -20,7 +20,7 @@ int VerifyExactBitCount1D(const std::string& tag) {
 	float input[4] = { 1.0f, -2.0f, 3.0f, -4.0f };
 
 	// test various rates: bits per value
-	// Minimum useful rate for float: header is 1+8=9 bits, so need rate*4 >= 9 → rate >= 2.25
+	// Minimum useful rate for float: header is 1+8=9 bits, so need rate*4 >= 9 -> rate >= 2.25
 	double rates[] = { 4.0, 8.0, 12.0, 16.0, 24.0, 32.0 };
 	for (double rate : rates) {
 		zfp1f blk;
@@ -126,8 +126,8 @@ int VerifyCompressionRatio(const std::string& tag) {
 
 	float input[4] = { 1.0f, 2.0f, 3.0f, 4.0f };
 
-	// rate=8 means 8 bits/value → 32 bits total for 4 values
-	// uncompressed = 4 * 32 = 128 bits → ratio = 128/32 = 4.0
+	// rate=8 means 8 bits/value -> 32 bits total for 4 values
+	// uncompressed = 4 * 32 = 128 bits -> ratio = 128/32 = 4.0
 	zfp1f blk;
 	blk.compress_fixed_rate(input, 8.0);
 	double ratio = blk.compression_ratio();

@@ -182,7 +182,7 @@ int TestBasicFdp() {
 		}
 	}
 
-	// General dot product: [3,5].[2,7] ≈ 6 + 35 = 41
+	// General dot product: [3,5].[2,7] ~= 6 + 35 = 41
 	{
 		std::vector<Scalar> x = { Scalar(3.0), Scalar(5.0) };
 		std::vector<Scalar> y = { Scalar(2.0), Scalar(7.0) };
@@ -196,7 +196,7 @@ int TestBasicFdp() {
 		}
 	}
 
-	// Cancellation: [100, -100].[1, 1] ≈ 0
+	// Cancellation: [100, -100].[1, 1] ~= 0
 	{
 		std::vector<Scalar> x = { Scalar(100.0), Scalar(-100.0) };
 		std::vector<Scalar> y = { Scalar(1.0),   Scalar(1.0) };
@@ -246,7 +246,7 @@ int TestFdp1024() {
 		}
 	}
 
-	// Case 2: cancellation — 512 pairs of (+1*1) and (-1*1) = 0
+	// Case 2: cancellation -- 512 pairs of (+1*1) and (-1*1) = 0
 	{
 		std::vector<Scalar> x(1024), y(1024, Scalar(1.0));
 		for (int i = 0; i < 1024; i += 2) {
@@ -313,7 +313,7 @@ int TestFdp1024() {
 		}
 	}
 
-	// Case 6: large dynamic range — mix of very small and very large products
+	// Case 6: large dynamic range -- mix of very small and very large products
 	{
 		std::vector<Scalar> x(1024), y(1024);
 		double expected = 0.0;
@@ -352,7 +352,7 @@ int TestLimbBoundaryCarryBorrow() {
 
 	// Case 1: Carry across limb boundary at bit 128 (radix point)
 	// Accumulate 1.0 * 1.0 products: each at quire bit 128.
-	// 33 such products → sum = 33, MSB at bit 133 (crosses into next region)
+	// 33 such products -> sum = 33, MSB at bit 133 (crosses into next region)
 	{
 		quire<Scalar> q;
 		Scalar one(1.0);
@@ -403,7 +403,7 @@ int TestLimbBoundaryCarryBorrow() {
 		Scalar big(1024.0), one(1.0), tiny(0.25);
 		for (int i = 0; i < 50; ++i) q += quire_mul(big, one);   // +51200
 		Scalar neg(-1024.0);
-		for (int i = 0; i < 50; ++i) q += quire_mul(neg, one);   // -51200 → 0
+		for (int i = 0; i < 50; ++i) q += quire_mul(neg, one);   // -51200 -> 0
 		q += quire_mul(tiny, one);  // +0.25
 		double result = q.convert_to<double>();
 		if (std::abs(result - double(tiny)) > 0.1) {
@@ -415,7 +415,7 @@ int TestLimbBoundaryCarryBorrow() {
 
 	// Case 5: Products spanning deep fractional region
 	// 0.0625 * 0.0625 = 0.00390625 = 2^-8, scale = -8, quire bit 120
-	// 256 such products → 256 * 2^-8 = 1.0
+	// 256 such products -> 256 * 2^-8 = 1.0
 	{
 		quire<Scalar> q;
 		Scalar small(0.0625);  // 2^-4
@@ -462,7 +462,7 @@ int TestCatastrophicCancellation() {
 
 	// Case 2: Near-equal subtraction
 	// x = [A, A, A, ...], y = [1, -1+eps, 1, -1+eps, ...]
-	// Each pair contributes A*eps ≈ small value
+	// Each pair contributes A*eps ~= small value
 	{
 		Scalar a(32.0);
 		Scalar one(1.0);
@@ -588,7 +588,7 @@ int TestFdpQc() {
 int TestDifferentConfigs() {
 	int nrOfFailedTestCases = 0;
 
-	// lns<8, 4> — tiny lns (3 integer exponent bits, 4 fractional)
+	// lns<8, 4> -- tiny lns (3 integer exponent bits, 4 fractional)
 	{
 		using Scalar = lns<8, 4, uint8_t>;
 		std::vector<Scalar> x = { Scalar(1.0), Scalar(2.0) };
@@ -602,7 +602,7 @@ int TestDifferentConfigs() {
 		}
 	}
 
-	// lns<12, 6> — medium lns
+	// lns<12, 6> -- medium lns
 	{
 		using Scalar = lns<12, 6, uint8_t>;
 		std::vector<Scalar> x = { Scalar(4.0), Scalar(8.0), Scalar(2.0) };
@@ -616,7 +616,7 @@ int TestDifferentConfigs() {
 		}
 	}
 
-	// lns<32, 16> — wider lns
+	// lns<32, 16> -- wider lns
 	{
 		using Scalar = lns<32, 16, uint32_t>;
 		std::vector<Scalar> x = { Scalar(100.0), Scalar(200.0) };

@@ -1,4 +1,4 @@
-﻿// oneMinusCosDivSin.cpp: experiments with accuracy and precision 
+// oneMinusCosDivSin.cpp: experiments with accuracy and precision 
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -18,7 +18,7 @@ simply their availability.
 
 Absolute error is
 
-				 |computed value – correct value|.
+				 |computed value - correct value|.
 
 It is most appropriate when describing results with a number format that
 represents uniformly-spaced values (integer and fixed-point format).
@@ -40,10 +40,10 @@ magnitude. It has another shortcoming: If we know x to some relative error,
 then we know 1/x to a different relative error. For example, say the strength
 of a lens is supposed to be 5 diopters but we instead have one with strength
 4 diopters. A diopter is the inverse of the focal length in meters. The traditional
-relative error is then |5 – 4| / 5 = 0.2, that is, off by 20%. But if we measure
+relative error is then |5 - 4| / 5 = 0.2, that is, off by 20%. But if we measure
 the lens strength by focal length, then the correct strength is 1/5 diopters = 0.2 meter
 but instead we have a lens with strength 1/4 diopters = 0.25 meter. The traditional
-relative error is |0.2 – 0.25| / 0.2 = 0.25, that is, off by 25%.
+relative error is |0.2 - 0.25| / 0.2 = 0.25, that is, off by 25%.
 
 A better definition for number systems that cover a wide range of magnitudes is
 to take the absolute value of the logarithm of the ratio of the correct and
@@ -56,10 +56,10 @@ Relative error =
  where we require that the correct value is finite and nonzero, and the computed
  value has the same sign as the correct value. Relative error is otherwise treated
  as undefined. Peter Lindstrom notes that the natural logarithm is the right one to use,
- because the relative error of 1 + 𝜀 is close to 𝜀 when the correct value is 1,
+ because the relative error of 1 + eps is close to eps when the correct value is 1,
  which agrees with our intuition and also closely matches the traditional definition
  of relative error. Now, however, if we use our lens example, the relative error
- is |ln(5/4)| = |ln(4/5)| ≈ 0.223 and it doesn’t matter which way we measure the
+ is |ln(5/4)| = |ln(4/5)| ~= 0.223 and it doesn't matter which way we measure the
  strength of the lens.
 
 Now that we have a sound measure of error, we can use that to define accuracy:

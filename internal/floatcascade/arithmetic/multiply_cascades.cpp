@@ -12,7 +12,7 @@
  * diagonal partitioning to multiply two N-component floating-point cascades.
  *
  * BACKGROUND:
- * When multiplying two N-component cascades a and b, we generate N² partial products.
+ * When multiplying two N-component cascades a and b, we generate N^2 partial products.
  * These products have different significance levels based on the significance of their
  * input components. The key insight is that products can be organized by "diagonals"
  * where each diagonal represents a specific significance level.
@@ -22,11 +22,11 @@
  * method as the correct way to handle multi-component multiplication:
  *
  * 1. DIAGONAL PARTITIONING:
- *    For indices i,j ∈ [0,N-1], place product a[i]×b[j] and its error term into
+ *    For indices i,j in [0,N-1], place product a[i]*b[j] and its error term into
  *    diagonal k = i+j. This creates 2N-1 diagonals (k = 0 to 2N-2).
- *    - Diagonal 0: Most significant (a[0]×b[0])
+ *    - Diagonal 0: Most significant (a[0]*b[0])
  *    - Diagonal N-1: Middle significance
- *    - Diagonal 2N-2: Least significant (a[N-1]×b[N-1])
+ *    - Diagonal 2N-2: Least significant (a[N-1]*b[N-1])
  *
  * 2. PER-DIAGONAL ACCUMULATION:
  *    Within each diagonal, accumulate all products and error terms from the previous
@@ -41,7 +41,7 @@
  *
  * An incorrect implementation might only handled diagonals 0-2 explicitly, then dumped all
  * remaining terms into result[2]. This will cause several issues:
- * - Uninitialized components for N≥3 (result[3]...result[N-1] will never be assigned)
+ * - Uninitialized components for N>=3 (result[3]...result[N-1] will never be assigned)
  * - Loss of precision from improper accumulation
  * - Violation of the non-overlapping property
  * - Failure to adhere to the diagonal partitioning principle
@@ -125,7 +125,7 @@ void visualize_product_matrix(const floatcascade<N>& a, const floatcascade<N>& b
             }
         }
 
-        std::cout << " → sum ≈ " << std::scientific << std::setprecision(4) << diag_sum << "\n";
+        std::cout << " -> sum ~= " << std::scientific << std::setprecision(4) << diag_sum << "\n";
     }
 }
 
@@ -287,9 +287,9 @@ int main()
 try {
     using namespace sw::universal;
 
-    std::cout << "╔═══════════════════════════════════════════════════════════════════╗\n";
-    std::cout << "║  DEMONSTRATION: Diagonal Partitioning for Cascade Multiplication  ║\n";
-    std::cout << "╚═══════════════════════════════════════════════════════════════════╝\n";
+    std::cout << "+===================================================================+\n";
+    std::cout << "|  DEMONSTRATION: Diagonal Partitioning for Cascade Multiplication  |\n";
+    std::cout << "+===================================================================+\n";
 
     int nrOfFailedTestCases = 0;
 
@@ -298,9 +298,9 @@ try {
     // ========================================================================
     {
         std::cout << "\n\n";
-        std::cout << "┌─────────────────────────────────────────────────────────────────┐\n";
-        std::cout << "│ Demo 1: Simple Well-Separated Triple-Double (N=3)               │\n";
-        std::cout << "└─────────────────────────────────────────────────────────────────┘\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
+        std::cout << "| Demo 1: Simple Well-Separated Triple-Double (N=3)               |\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
 
         floatcascade<3> a, b;
         a[0] = 1.0;
@@ -321,9 +321,9 @@ try {
     // ========================================================================
     {
         std::cout << "\n\n";
-        std::cout << "┌─────────────────────────────────────────────────────────────────┐\n";
-        std::cout << "│ Demo 2: Quad-Double (N=4) - The Bug Revealer                    │\n";
-        std::cout << "└─────────────────────────────────────────────────────────────────┘\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
+        std::cout << "| Demo 2: Quad-Double (N=4) - The Bug Revealer                    |\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
         std::cout << "\nThis case exposed the original bug where result[3] was left\n";
         std::cout << "uninitialized and diagonals 3-6 were improperly accumulated.\n";
 
@@ -347,9 +347,9 @@ try {
     // ========================================================================
     {
         std::cout << "\n\n";
-        std::cout << "┌─────────────────────────────────────────────────────────────────┐\n";
-        std::cout << "│ Corner Case 1: Denormalized Inputs (Overlapping Components)     │\n";
-        std::cout << "└─────────────────────────────────────────────────────────────────┘\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
+        std::cout << "| Corner Case 1: Denormalized Inputs (Overlapping Components)     |\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
         std::cout << "\nInputs have overlapping magnitude components, violating the\n";
         std::cout << "non-overlapping property. The algorithm must handle this robustly.\n";
 
@@ -394,9 +394,9 @@ try {
     // ========================================================================
     {
         std::cout << "\n\n";
-        std::cout << "┌─────────────────────────────────────────────────────────────────┐\n";
-        std::cout << "│ Corner Case 2: Mixed Signs in Components                        │\n";
-        std::cout << "└─────────────────────────────────────────────────────────────────┘\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
+        std::cout << "| Corner Case 2: Mixed Signs in Components                        |\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
         std::cout << "\nComponents have different signs, which can cause cancellation\n";
         std::cout << "in diagonal accumulation. Error tracking is critical.\n";
 
@@ -417,9 +417,9 @@ try {
     // ========================================================================
     {
         std::cout << "\n\n";
-        std::cout << "┌─────────────────────────────────────────────────────────────────┐\n";
-        std::cout << "│ Corner Case 3: Identity Multiplication (1.0 x value)            │\n";
-        std::cout << "└─────────────────────────────────────────────────────────────────┘\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
+        std::cout << "| Corner Case 3: Identity Multiplication (1.0 x value)            |\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
         std::cout << "\nMultiplying by 1.0 should preserve the input structure.\n";
         std::cout << "This tests if the algorithm handles sparse diagonals correctly.\n";
 
@@ -438,7 +438,7 @@ try {
 
         floatcascade<4> result = multiply_cascades(one, value);
 
-        // Verify result ≈ value
+        // Verify result ~= value
         double max_rel_error = 0.0;
         for (size_t i = 0; i < 4; ++i) {
             if (std::abs(value[i]) > 1e-100) {
@@ -461,9 +461,9 @@ try {
     // ========================================================================
     {
         std::cout << "\n\n";
-        std::cout << "┌─────────────────────────────────────────────────────────────────┐\n";
-        std::cout << "│ Corner Case 4: Zero Absorption (0 x value = 0)                  │\n";
-        std::cout << "└─────────────────────────────────────────────────────────────────┘\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
+        std::cout << "| Corner Case 4: Zero Absorption (0 x value = 0)                  |\n";
+        std::cout << "+-----------------------------------------------------------------+\n";
 
         floatcascade<3> zero, value;
         zero[0] = 0.0;
@@ -503,9 +503,9 @@ try {
     // Summary
     // ========================================================================
     std::cout << "\n\n";
-    std::cout << "╔═══════════════════════════════════════════════════════════════════╗\n";
-    std::cout << "║                         DEMONSTRATION SUMMARY                     ║\n";
-    std::cout << "╚═══════════════════════════════════════════════════════════════════╝\n";
+    std::cout << "+===================================================================+\n";
+    std::cout << "|                         DEMONSTRATION SUMMARY                     |\n";
+    std::cout << "+===================================================================+\n";
     std::cout << "\nKey Insights from the Diagonal Partitioning Algorithm:\n\n";
     std::cout << "1. DIAGONAL STRUCTURE: Products are naturally organized by significance\n";
     std::cout << "   level k = i+j, creating 2N-1 diagonals from most to least significant.\n\n";
@@ -526,13 +526,13 @@ try {
     std::cout << "  - Precision preserved through error tracking\n\n";
 
     if (nrOfFailedTestCases == 0) {
-        std::cout << "╔═══════════════════════════════════════════════════════════════════╗\n";
-        std::cout << "║                    ALL DEMONSTRATIONS PASSED                      ║\n";
-        std::cout << "╚═══════════════════════════════════════════════════════════════════╝\n";
+        std::cout << "+===================================================================+\n";
+        std::cout << "|                    ALL DEMONSTRATIONS PASSED                      |\n";
+        std::cout << "+===================================================================+\n";
     } else {
-        std::cout << "╔═══════════════════════════════════════════════════════════════════╗\n";
-        std::cout << "║               " << nrOfFailedTestCases << " DEMONSTRATIONS FAILED                       ║\n";
-        std::cout << "╚═══════════════════════════════════════════════════════════════════╝\n";
+        std::cout << "+===================================================================+\n";
+        std::cout << "|               " << nrOfFailedTestCases << " DEMONSTRATIONS FAILED                       |\n";
+        std::cout << "+===================================================================+\n";
     }
 
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

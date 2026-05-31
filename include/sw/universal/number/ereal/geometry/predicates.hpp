@@ -108,10 +108,10 @@ namespace sw { namespace universal {
 	// Assumes a, b, c are in counterclockwise order
 	//
 	// Computes determinant:
-	// | ax  ay  ax²+ay²  1 |
-	// | bx  by  bx²+by²  1 |
-	// | cx  cy  cx²+cy²  1 |
-	// | dx  dy  dx²+dy²  1 |
+	// | ax  ay  ax^2+ay^2  1 |
+	// | bx  by  bx^2+by^2  1 |
+	// | cx  cy  cx^2+cy^2  1 |
+	// | dx  dy  dx^2+dy^2  1 |
 	//
 	// Note: More complex predicate requiring higher precision.
 	// ereal adapts precision automatically to maintain accuracy.
@@ -156,14 +156,14 @@ namespace sw { namespace universal {
 	// Assumes a, b, c, d have positive orientation
 	//
 	// Computes determinant:
-	// | ax  ay  az  ax²+ay²+az²  1 |
-	// | bx  by  bz  bx²+by²+bz²  1 |
-	// | cx  cy  cz  cx²+cy²+cz²  1 |
-	// | dx  dy  dz  dx²+dy²+dz²  1 |
-	// | ex  ey  ez  ex²+ey²+ez²  1 |
+	// | ax  ay  az  ax^2+ay^2+az^2  1 |
+	// | bx  by  bz  bx^2+by^2+bz^2  1 |
+	// | cx  cy  cz  cx^2+cy^2+cz^2  1 |
+	// | dx  dy  dz  dx^2+dy^2+dz^2  1 |
+	// | ex  ey  ez  ex^2+ey^2+ez^2  1 |
 	//
 	// Note: Most demanding geometric predicate - requires highest precision.
-	// ereal adapts precision automatically. Use maxlimbs ≥ 16 for reliability.
+	// ereal adapts precision automatically. Use maxlimbs >= 16 for reliability.
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> insphere(
 		const Point3D<ereal<maxlimbs>>& a,

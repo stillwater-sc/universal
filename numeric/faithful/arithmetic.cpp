@@ -1,4 +1,4 @@
-﻿// arithmetic.cpp: faithfully rounded floating-point arithmetic
+// arithmetic.cpp: faithfully rounded floating-point arithmetic
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //

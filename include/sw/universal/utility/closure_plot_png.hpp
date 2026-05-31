@@ -117,7 +117,7 @@ private:
             valueEncodingPairs.emplace_back(value, encoding);
         }
 
-        // Sort by actual numerical value: maxneg → ... → zero → ... → maxpos
+        // Sort by actual numerical value: maxneg -> ... -> zero -> ... -> maxpos
         std::sort(valueEncodingPairs.begin(), valueEncodingPairs.end(),
                  [](const auto& a, const auto& b) {
                      // Handle NaN/NaR values - put them at the end

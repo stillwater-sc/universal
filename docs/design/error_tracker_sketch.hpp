@@ -452,7 +452,7 @@ public:
         double exact = shadow_ + rhs.shadow_;
 
         // Error in LNS addition depends on the ratio of operands
-        // When a ≈ -b, we have catastrophic cancellation
+        // When a ~= -b, we have catastrophic cancellation
         double ratio = shadow_ / rhs.shadow_;
         double cancellation_factor = 1.0;
         if (ratio < 0 && std::abs(1.0 + ratio) < 0.1) {

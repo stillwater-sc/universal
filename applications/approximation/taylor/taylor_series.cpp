@@ -1,4 +1,4 @@
-﻿//  taylor_series.cpp: experiments with number systems approximating the Reals approximating functions
+//  taylor_series.cpp: experiments with number systems approximating the Reals approximating functions
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //

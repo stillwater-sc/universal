@@ -23,12 +23,12 @@ const SITE = join(DOCS, 'site');       // Starlight-native pages
 const OUT = join(import.meta.dirname, 'src', 'content', 'docs');
 const BASE = '/universal';  // Astro base path
 
-// ── Source maps ────────────────────────────────────────────────────
+// -- Source maps ----------------------------------------------------
 
 /** Map from source path (relative to docs/) -> destination path (relative to content/docs/).
  *  These files get frontmatter prepended and links rewritten. */
 const FILE_MAP = {
-  // ── Number Systems ──────────────────────────────────────────────
+  // -- Number Systems ----------------------------------------------
   'number-systems/README.md': 'number-systems/index.md',
   'number-systems/integer.md': 'number-systems/integer.md',
   'number-systems/fixpnt.md': 'number-systems/fixpnt.md',
@@ -65,13 +65,13 @@ const FILE_MAP = {
   'number-systems/qd_cascade.md': 'number-systems/qd-cascade.md',
   'number-systems/complex.md': 'number-systems/complex.md',
 
-  // ── ucalc ──────────────────────────────────────────────────────
+  // -- ucalc ------------------------------------------------------
   'ucalc/README.md': 'ucalc/index.md',
   'ucalc/examples.md': 'ucalc/examples.md',
   'ucalc/step-by-step.md': 'ucalc/step-by-step.md',
   'ucalc/mcp-server.md': 'ucalc/mcp-server.md',
 
-  // ── Tutorials ───────────────────────────────────────────────────
+  // -- Tutorials ---------------------------------------------------
   'command-line-tools.md': 'getting-started/command-line-tools.md',
   'tutorials/type-parameterization.md': 'tutorials/type-parameterization.md',
   'tutorials/posit-refinement.md': 'tutorials/posit-refinement.md',
@@ -80,20 +80,20 @@ const FILE_MAP = {
   'tutorials/multi-component.md': 'tutorials/multi-component.md',
   'tutorials/ucalc-repl.md': 'tutorials/ucalc-repl.md',
 
-  // ── Mixed Precision ────────────────────────────────────────────
+  // -- Mixed Precision --------------------------------------------
   'mixed-precision-methodology.md': 'mixed-precision/methodology.md',
   'mixed-precision-sdk.md': 'mixed-precision/sdk.md',
   'mixed-precision-utilities.md': 'mixed-precision/utilities.md',
   'block-formats.md': 'mixed-precision/block-formats.md',
 
-  // ── Algorithmic Details ────────────────────────────────────────
+  // -- Algorithmic Details ----------------------------------------
   // (the section landing page comes from docs/site/algorithmic-details/index.md
   // via SITE_FILES below; the README.md in docs/algorithmic-details/ is for
   // GitHub directory view only.)
   'algorithmic-details/lns-log-add-sub.md': 'algorithmic-details/lns-log-add-sub.md',
   'algorithmic-details/multi-component-arithmetic.md': 'algorithmic-details/multi-component-arithmetic.md',
 
-  // ── Design ─────────────────────────────────────────────────────
+  // -- Design -----------------------------------------------------
   'multi-limb-arithmetic.md': 'design/multi-limb.md',
   'floatcascade-design.md': 'design/floatcascade.md',
   'design/error-propagation-design.md': 'design/error-propagation.md',
@@ -102,16 +102,16 @@ const FILE_MAP = {
   'decimal_conversion.md': 'design/decimal-conversion.md',
   'ereal_limb_limit_derivation.md': 'design/ereal_limb_limit.md',
 
-  // ── Build & Install ────────────────────────────────────────────
+  // -- Build & Install --------------------------------------------
   'cross-compilation.md': 'build/cross-compilation.md',
   'code-formatting.md': 'build/code-formatting.md',
   'troubleshooting.md': 'build/troubleshooting.md',
   'linux-packages.md': 'build/linux-packages.md',
 
-  // ── Exact Arithmetic ──────────────────────────────────────────
+  // -- Exact Arithmetic ------------------------------------------
   'the-kulisch-super-accumulator.md': 'exact-arithmetic/kulisch-super-accumulator.md',
 
-  // ── Contributing ───────────────────────────────────────────────
+  // -- Contributing -----------------------------------------------
   'RELEASE_PROCESS.md': 'contributing/release-process.md',
 };
 
@@ -142,7 +142,7 @@ const SITE_FILES = {
   'resources/presentations.md':     'resources/presentations.md',
 };
 
-// ── Link rewriting ─────────────────────────────────────────────────
+// -- Link rewriting -------------------------------------------------
 
 /**
  * Build a lookup from source .md path (relative to docs/) -> Starlight clean URL slug.
@@ -239,7 +239,7 @@ function copySiteFile(srcPath, destRelative) {
   cpSync(srcPath, destPath);
 }
 
-// ── Main ──────────────────────────────────────────────────────────
+// -- Main ----------------------------------------------------------
 
 // Clear stale Astro data store cache
 const astroCache = join(import.meta.dirname, 'node_modules', '.astro');

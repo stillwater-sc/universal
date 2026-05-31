@@ -389,15 +389,15 @@ int VerifyIntegerDoubleConsistency(bool reportTestCases) {
 
 /*
 
-  - VerifySmallIntegerConversion — powers of 2, small odd integers, and signed integers within the type's representable range; 
+  - VerifySmallIntegerConversion -- powers of 2, small odd integers, and signed integers within the type's representable range; 
                                    tests both the double-delegation path (fbits < 53) and the native path (fbits >= 53)
 
-  - VerifyLargeUnsignedIntegerConversion — values beyond 2^53 (2^53+1, 2^54+1, 2^53+3, large powers of 2, UINT64_MAX) 
+  - VerifyLargeUnsignedIntegerConversion -- values beyond 2^53 (2^53+1, 2^54+1, 2^53+3, large powers of 2, UINT64_MAX) 
                                            with verification that the ubit is correctly set when bits are truncated and clear when representation is exact
 
-  - VerifyLargeSignedIntegerConversion — -(2^53+1), INT64_MIN, INT64_MIN+1, INT64_MAX with sign bit and ubit verification
+  - VerifyLargeSignedIntegerConversion -- -(2^53+1), INT64_MIN, INT64_MIN+1, INT64_MAX with sign bit and ubit verification
 
-  - VerifyIntegerDoubleConsistency — verifies bit-for-bit agreement between the integer assignment path and the 
+  - VerifyIntegerDoubleConsistency -- verifies bit-for-bit agreement between the integer assignment path and the 
                                      double assignment path for integers up to 2^53 (where both should produce identical results)
 
  */

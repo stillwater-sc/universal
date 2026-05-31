@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 // double_constants.hpp: definition of math constants in double precision
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

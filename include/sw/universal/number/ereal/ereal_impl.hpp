@@ -327,11 +327,11 @@ public:
 		clear();
 		// Maximum positive value: DBL_MAX plus additional components following 2^-53 scaling
 		_limb[0] = 1.7976931348623157e+308;  // DBL_MAX = 2^1024 - 2^971
-		if (maxlimbs >= 2) _limb.push_back(9.9792015476735972e+291);  // ≈ 2^971
-		if (maxlimbs >= 3) _limb.push_back(5.5395696628011126e+275);  // ≈ 2^918
-		if (maxlimbs >= 4) _limb.push_back(3.0750789988826854e+259);  // ≈ 2^865
+		if (maxlimbs >= 2) _limb.push_back(9.9792015476735972e+291);  // ~= 2^971
+		if (maxlimbs >= 3) _limb.push_back(5.5395696628011126e+275);  // ~= 2^918
+		if (maxlimbs >= 4) _limb.push_back(3.0750789988826854e+259);  // ~= 2^865
 		// For maxlimbs > 4, additional components would need to be computed
-		// Each component follows: limb[i] ≈ limb[i-1] × 2^-53
+		// Each component follows: limb[i] ~= limb[i-1] * 2^-53
 		return *this;
 	}
 

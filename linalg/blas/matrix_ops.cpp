@@ -313,7 +313,7 @@ namespace sw { namespace blas {
 		{
 			vector<Scalar> v = { Scalar(-3), Scalar(4) };
 			Scalar n = norm(v, 1);
-			// |−3| + |4| = 7
+			// |-3| + |4| = 7
 			if (std::abs(double(n) - 7.0) > 0.001) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: 1-norm of [-3,4] = " << n << " (expected 7)\n";
@@ -324,7 +324,7 @@ namespace sw { namespace blas {
 		{
 			vector<Scalar> v = { Scalar(-5), Scalar(3), Scalar(4) };
 			Scalar n = norm(v, std::numeric_limits<int>::max());  // inf-norm
-			// max(|−5|, |3|, |4|) = 5
+			// max(|-5|, |3|, |4|) = 5
 			if (std::abs(double(n) - 5.0) > 0.001) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: inf-norm of [-5,3,4] = " << n << " (expected 5)\n";

@@ -43,7 +43,7 @@ namespace sw { namespace blas {
 		{
 			vector<Scalar> x = { Scalar(-1), Scalar(-2), Scalar(3), Scalar(-4) };
 			Scalar result = asum(4, x, 1);
-			// |−1| + |−2| + |3| + |−4| = 10
+			// |-1| + |-2| + |3| + |-4| = 10
 			if (std::abs(double(result) - 10.0) > 0.001) {
 				++nrOfFailedTests;
 				if (reportTestCases) std::cerr << "FAIL: asum([-1,-2,3,-4]) = " << result << " (expected 10)\n";
@@ -312,8 +312,8 @@ namespace sw { namespace blas {
 		{
 			vector<Scalar> x = { Scalar(1), Scalar(0) };
 			vector<Scalar> y = { Scalar(0), Scalar(1) };
-			Scalar c = Scalar(0);  // cos(90°)
-			Scalar s = Scalar(1);  // sin(90°)
+			Scalar c = Scalar(0);  // cos(90 deg)
+			Scalar s = Scalar(1);  // sin(90 deg)
 			rot(2, x, 1, y, 1, c, s);
 			// After rotation: x_new = c*x + s*y = 0*1 + 1*0 = 0 (first element)
 			//                 y_new = c*y - s*x = 0*0 - 1*1 = -1 (first element)

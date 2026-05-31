@@ -1,4 +1,4 @@
-﻿// api.cpp: application programming interface tests for decimal floating-point number system
+// api.cpp: application programming interface tests for decimal floating-point number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -19,17 +19,17 @@
 /*
 Table 3.6 of the IEEE 754-2008 spec defines a set of standard decimal floats from the total bit width k using four formulas:
 
-  ┌─────────────────────────────────────────────┬─────────────────────┬─────────────────────┬───────────────────────┐
-  │                   Formula                   │        k=32         │        k=64         │         k=128         │
-  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
-  │ p = 9k/32 - 2 (precision in digits)         │ 9(32)/32 - 2 = 7    │ 9(64)/32 - 2 = 16   │ 9(128)/32 - 2 = 34    │
-  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
-  │ w = k/16 + 4 (exponent continuation bits)   │ 32/16 + 4 = 6       │ 64/16 + 4 = 8       │ 128/16 + 4 = 12       │
-  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
-  │ t = 15k/16 - 10 (trailing significand bits) │ 15(32)/16 - 10 = 20 │ 15(64)/16 - 10 = 50 │ 15(128)/16 - 10 = 110 │
-  ├─────────────────────────────────────────────┼─────────────────────┼─────────────────────┼───────────────────────┤
-  │ emax = 3 × 2^(k/16+3)                       │ 3 × 2^5 = 96        │ 3 × 2^7 = 384       │ 3 × 2^11 = 6144       │
-  └─────────────────────────────────────────────┴─────────────────────┴─────────────────────┴───────────────────────┘
+  +---------------------------------------------+---------------------+---------------------+-----------------------+
+  |                   Formula                   |        k=32         |        k=64         |         k=128         |
+  +---------------------------------------------+---------------------+---------------------+-----------------------+
+  | p = 9k/32 - 2 (precision in digits)         | 9(32)/32 - 2 = 7    | 9(64)/32 - 2 = 16   | 9(128)/32 - 2 = 34    |
+  +---------------------------------------------+---------------------+---------------------+-----------------------+
+  | w = k/16 + 4 (exponent continuation bits)   | 32/16 + 4 = 6       | 64/16 + 4 = 8       | 128/16 + 4 = 12       |
+  +---------------------------------------------+---------------------+---------------------+-----------------------+
+  | t = 15k/16 - 10 (trailing significand bits) | 15(32)/16 - 10 = 20 | 15(64)/16 - 10 = 50 | 15(128)/16 - 10 = 110 |
+  +---------------------------------------------+---------------------+---------------------+-----------------------+
+  | emax = 3 * 2^(k/16+3)                       | 3 * 2^5 = 96        | 3 * 2^7 = 384       | 3 * 2^11 = 6144       |
+  +---------------------------------------------+---------------------+---------------------+-----------------------+
 
   The bit budget for each format:
 
@@ -49,7 +49,7 @@ Table 3.6 of the IEEE 754-2008 spec defines a set of standard decimal floats fro
   - BID has enough bits to hold 10^(p-1) - 1 as a binary integer
   - The exponent range grows proportionally with precision
 
-  dfloat<7, 6> literally means "7 significant decimal digits, 6 exponent continuation bits" — the two independent
+  dfloat<7, 6> literally means "7 significant decimal digits, 6 exponent continuation bits" -- the two independent
   parameters that, together with the fixed 1+5 bit sign+combination field, determine everything else.
  */
 

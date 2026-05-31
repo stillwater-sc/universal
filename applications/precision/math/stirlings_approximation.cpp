@@ -221,38 +221,38 @@ scale of 60! is 272
 
   The actual problem: order *= 10 develops a systematic bias
 
-  The order variable is multiplied by 10.0 at every step. Here's the key fact: 10^k is exactly representable in double only for k ≤ 22 (because 10^k = 5^k ×
-   2^k and 5^23 exceeds 53 bits). Starting at k=23, each order *= 10 rounds, and the rounding always goes the same direction — down:
+  The order variable is multiplied by 10.0 at every step. Here's the key fact: 10^k is exactly representable in double only for k <= 22 (because 10^k = 5^k *
+   2^k and 5^23 exceeds 53 bits). Starting at k=23, each order *= 10 rounds, and the rounding always goes the same direction -- down:
 
   order < true 10^k:  15 times  (systematic negative bias)
   order > true 10^k:   0 times
   order = true 10^k:  33 times
 
   This is the critical difference from random rounding errors that would tend to cancel out. The order multiplier develops a monotonically accumulating
-  negative bias because 10.0 in binary is 1.01 × 2³ — when you multiply a slightly-too-small value by this, the rounding tends to stay on the low side.
+  negative bias because 10.0 in binary is 1.01 * 2^3 -- when you multiply a slightly-too-small value by this, the rounding tends to stay on the low side.
 
   The consequence: every term from digit 23 onward is biased low
 
-  Every digits[k] * order for k ≥ 23 is systematically smaller than the true digits[k] × 10^k. The trace shows it concretely for 40!:
+  Every digits[k] * order for k >= 23 is systematically smaller than the true digits[k] * 10^k. The trace shows it concretely for 40!:
 
-  step 38: digit=2 × 10^38  got 1.999...96e+38  should be 2e+38
-  step 40: digit=8 × 10^40  got 7.999...83e+40  should be 8.000...02e+40
-  step 43: digit=1 × 10^43  got 9.999...89e+42  should be 1e+43
-  step 44: digit=9 × 10^44  got 8.999...84e+44  should be 9e+44
+  step 38: digit=2 * 10^38  got 1.999...96e+38  should be 2e+38
+  step 40: digit=8 * 10^40  got 7.999...83e+40  should be 8.000...02e+40
+  step 43: digit=1 * 10^43  got 9.999...89e+42  should be 1e+43
+  step 44: digit=9 * 10^44  got 8.999...84e+44  should be 9e+44
 
   Paradoxically, this cumulative negative bias in the terms produces a result that ends up +1 ULP high (0x...98ff vs correct 0x...98fe) because of how the
-  biased-low terms interact with the addition rounding. The error direction flips — the biased low terms cause the accumulator's rounding to overshoot.
+  biased-low terms interact with the addition rounding. The error direction flips -- the biased low terms cause the accumulator's rounding to overshoot.
 
   Why Horner doesn't have this problem
 
-  Horner's method (d = d * 10 + digit) doesn't maintain a separate power-of-ten variable. Each step transforms the accumulated best answer — it multiplies
+  Horner's method (d = d * 10 + digit) doesn't maintain a separate power-of-ten variable. Each step transforms the accumulated best answer -- it multiplies
   the current approximation by 10, then adds the next digit. The errors from each multiplication are relative to the value itself and tend to be more
   balanced (no systematic bias from maintaining a separate geometric sequence).
 
   Why long double is the real fix
 
   Even Horner in double can be off by 1 ULP for very large numbers (50! for example). The definitive fix is using long double (80-bit, 64-bit significand)
-  as the intermediate, where 10^k is exact for k ≤ 27, and the extra 11 bits of precision prevent the Horner rounding errors from accumulating enough to
+  as the intermediate, where 10^k is exact for k <= 27, and the extra 11 bits of precision prevent the Horner rounding errors from accumulating enough to
   cross a ULP boundary when cast back to double. In testing, this produces correctly-rounded doubles for all factorials up to 170!.
 
  */

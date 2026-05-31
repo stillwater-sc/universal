@@ -1,4 +1,4 @@
-﻿// sum_of_integers.cpp: evaluation of a sequence of additions in the posit number systems
+// sum_of_integers.cpp: evaluation of a sequence of additions in the posit number systems
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

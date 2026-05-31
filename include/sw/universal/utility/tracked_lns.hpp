@@ -13,15 +13,15 @@
 //   x is stored as log(x)
 //
 // This means:
-//   - Multiplication: log(a*b) = log(a) + log(b)  → EXACT (addition in log domain)
-//   - Division:       log(a/b) = log(a) - log(b)  → EXACT (subtraction in log domain)
-//   - Addition:       log(a+b) requires exp/log   → INTRODUCES ERROR
-//   - Subtraction:    log(a-b) requires exp/log   → INTRODUCES ERROR
+//   - Multiplication: log(a*b) = log(a) + log(b)  -> EXACT (addition in log domain)
+//   - Division:       log(a/b) = log(a) - log(b)  -> EXACT (subtraction in log domain)
+//   - Addition:       log(a+b) requires exp/log   -> INTRODUCES ERROR
+//   - Subtraction:    log(a-b) requires exp/log   -> INTRODUCES ERROR
 //
 // TrackedLNS exploits this by:
 //   1. NOT accumulating error on multiplication/division (they're exact)
 //   2. Only tracking error on addition/subtraction
-//   3. Detecting catastrophic cancellation when a ≈ -b
+//   3. Detecting catastrophic cancellation when a ~= -b
 //   4. Separately counting mults vs adds for algorithm analysis
 //
 // Usage:
@@ -155,7 +155,7 @@ public:
 	/// Number of divisions (exact in LNS!)
 	constexpr uint64_t divisions() const noexcept { return divs_; }
 
-	/// Number of near-cancellation events (a ≈ -b)
+	/// Number of near-cancellation events (a ~= -b)
 	constexpr uint64_t cancellations() const noexcept { return cancellations_; }
 
 	/// Number of absorption events (small operand swallowed)
@@ -215,7 +215,7 @@ public:
 	// ========================================================================
 
 	/// Addition: THE ONLY SOURCE OF ERROR in LNS
-	/// Also detects near-cancellation when a ≈ -b and absorption when |a| >> |b|
+	/// Also detects near-cancellation when a ~= -b and absorption when |a| >> |b|
 	TrackedLNS operator+(const TrackedLNS& rhs) const {
 		LNSType result = value_ + rhs.value_;
 		ShadowType exact = shadow_ + rhs.shadow_;
@@ -250,7 +250,7 @@ public:
 	}
 
 	/// Subtraction: Also introduces error (like addition)
-	/// Detects cancellation when a ≈ b and absorption when |a| >> |b|
+	/// Detects cancellation when a ~= b and absorption when |a| >> |b|
 	TrackedLNS operator-(const TrackedLNS& rhs) const {
 		LNSType result = value_ - rhs.value_;
 		ShadowType exact = shadow_ - rhs.shadow_;

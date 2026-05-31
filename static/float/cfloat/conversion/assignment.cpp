@@ -156,7 +156,7 @@ int VerifySpecialCases(const std::string& tag, bool reportTestCases = false) {
 	// and POWER will quiet the sNaN (clear the signaling bit) and may
 	// also canonicalise the NaN payload.  The resulting native qNaN
 	// may then convert back to a cfloat encoding that no longer matches
-	// the original sNaN — or may even lose the NaN classification
+	// the original sNaN -- or may even lose the NaN classification
 	// entirely for small cfloat formats.  We therefore only test the
 	// sNaN round-trip on platforms where it is known to survive.
 #if UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP

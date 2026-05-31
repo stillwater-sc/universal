@@ -93,8 +93,8 @@ try {
 	// Test 4: Wobbling precision demonstration
 	std::cout << "+---------    Wobbling precision\n";
 	{
-		// Value 1.0: binary = 0.0001 in hex → leading hex digit has 3 leading zero bits → less precision
-		// Value 8.0: binary = 0.1000 in hex → leading hex digit fully utilized → more precision
+		// Value 1.0: binary = 0.0001 in hex -> leading hex digit has 3 leading zero bits -> less precision
+		// Value 8.0: binary = 0.1000 in hex -> leading hex digit fully utilized -> more precision
 		Short one(1.0), eight(8.0);
 		std::cout << "  1.0: " << to_binary(one) << '\n';
 		std::cout << "  8.0: " << to_binary(eight) << '\n';

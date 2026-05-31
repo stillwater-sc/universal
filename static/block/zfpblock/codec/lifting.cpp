@@ -14,7 +14,7 @@
 
 // Test that forward then inverse lifting is near-exact for integers
 // The lifting transform uses truncating right-shifts, so round-trip
-// may differ by ±1 in the LSB — this is expected ZFP behavior.
+// may differ by +/-1 in the LSB -- this is expected ZFP behavior.
 template<typename Int>
 int VerifyLiftingRoundTrip1D(const std::string& tag) {
 	int nrOfFailedTests = 0;
@@ -41,7 +41,7 @@ int VerifyLiftingRoundTrip1D(const std::string& tag) {
 				std::cerr << tag << " FAIL: index " << i
 				          << " expected=" << original[i]
 				          << " got=" << p[i]
-				          << " (diff=" << diff << ", max allowed ±1)\n";
+				          << " (diff=" << diff << ", max allowed +/-1)\n";
 				++nrOfFailedTests;
 			}
 		}
@@ -89,7 +89,7 @@ int VerifyStridedLifting(const std::string& tag) {
 			std::cerr << tag << " strided FAIL: index " << i
 			          << " expected=" << original[i]
 			          << " got=" << block[i]
-			          << " (diff=" << diff << ", max allowed ±1)\n";
+			          << " (diff=" << diff << ", max allowed +/-1)\n";
 			++nrOfFailedTests;
 		}
 	}
@@ -97,12 +97,12 @@ int VerifyStridedLifting(const std::string& tag) {
 }
 
 // Test full multi-dimensional transform round-trip
-// The lifting truncation accumulates across dimensions, allowing ±2 per dim.
+// The lifting truncation accumulates across dimensions, allowing +/-2 per dim.
 template<typename Int, unsigned Dim>
 int VerifyXformRoundTrip(const std::string& tag) {
 	int nrOfFailedTests = 0;
 	constexpr size_t N = sw::universal::zfp_block_size<Dim>::value;
-	constexpr Int max_diff = static_cast<Int>(Dim * 2);  // allow ±2 per dimension
+	constexpr Int max_diff = static_cast<Int>(Dim * 2);  // allow +/-2 per dimension
 
 	Int block[N], original[N];
 	for (size_t i = 0; i < N; ++i) {
@@ -119,7 +119,7 @@ int VerifyXformRoundTrip(const std::string& tag) {
 			std::cerr << tag << " xform FAIL: index " << i
 			          << " expected=" << original[i]
 			          << " got=" << block[i]
-			          << " (diff=" << diff << ", max allowed ±" << max_diff << ")\n";
+			          << " (diff=" << diff << ", max allowed +/-" << max_diff << ")\n";
 			++nrOfFailedTests;
 		}
 	}

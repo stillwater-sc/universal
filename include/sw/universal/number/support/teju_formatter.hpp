@@ -38,7 +38,7 @@ namespace sw { namespace universal {
 
 namespace teju_detail {
 
-// Format a decimal exponent as ±NN or ±NNN
+// Format a decimal exponent as +/-NN or +/-NNN
 inline void append_exponent(std::string& str, int e, bool uppercase) {
 	str += uppercase ? 'E' : 'e';
 	str += (e < 0) ? '-' : '+';
@@ -76,7 +76,7 @@ inline std::string format_scientific(const std::vector<int>& digits, int sci_exp
 	std::string s;
 
 	// digits[0] is the MSD; sci_exponent is its power of 10
-	// scientific format: d.ddddddde±EE
+	// scientific format: d.ddddddde+/-EE
 	auto needed = static_cast<size_t>(1 + precision); // 1 integer digit + precision fraction digits
 
 	// Make a mutable copy and extend/round as needed

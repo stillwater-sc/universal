@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 // longdouble_constants.hpp: definition of math constants in long double precision
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

@@ -1,4 +1,4 @@
-﻿// numeric_constants.cpp: experiments with mixed-precision representations of important numerical constants
+// numeric_constants.cpp: experiments with mixed-precision representations of important numerical constants
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

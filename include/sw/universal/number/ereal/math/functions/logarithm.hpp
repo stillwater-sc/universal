@@ -19,19 +19,19 @@ namespace sw { namespace universal {
 	// ALGORITHM OVERVIEW:
 	// ------------------
 	// The logarithm uses range reduction to avoid slow convergence:
-	//   log(x) = log(m · 2^e) = log(m) + e·ln(2)
+	//   log(x) = log(m * 2^e) = log(m) + e*ln(2)
 	//
-	// Where frexp() gives: x = m · 2^e with 0.5 ≤ m < 1
+	// Where frexp() gives: x = m * 2^e with 0.5 <= m < 1
 	//
 	// SERIES SELECTION:
 	// -----------------
-	// For the mantissa m ∈ [0.5, 1), we use the artanh-based series:
-	//   u = (m-1)/(m+1)  →  m = (1+u)/(1-u)
-	//   log(m) = log((1+u)/(1-u)) = 2·artanh(u) = 2(u + u³/3 + u⁵/5 + u⁷/7 + ...)
+	// For the mantissa m in [0.5, 1), we use the artanh-based series:
+	//   u = (m-1)/(m+1)  ->  m = (1+u)/(1-u)
+	//   log(m) = log((1+u)/(1-u)) = 2*artanh(u) = 2(u + u^3/3 + u^5/5 + u^7/7 + ...)
 	//
 	// This converges much faster than the naive log(1+z) series because:
-	//   - For m ∈ [0.5, 1), we have u ∈ [-1/3, 0)
-	//   - Series error ≈ u^(2n+1) drops rapidly since |u| ≤ 1/3
+	//   - For m in [0.5, 1), we have u in [-1/3, 0)
+	//   - Series error ~= u^(2n+1) drops rapidly since |u| <= 1/3
 	//   - Achieves ~53 bits in ~10 terms (vs. ~50 terms for log(1+z))
 	//
 	// REFERENCES:
@@ -55,7 +55,7 @@ namespace sw { namespace universal {
 		// STEP 1: Handle special cases
 		// ============================================================================
 		if (x.iszero()) {
-			// log(0) = -∞ (return large negative value)
+			// log(0) = -inf (return large negative value)
 			return Real(-1.0e308);
 		}
 		if (x.isneg()) {
@@ -67,8 +67,8 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 2: Range reduction using frexp
 		// ============================================================================
-		// Extract: x = mantissa · 2^exponent where 0.5 ≤ mantissa < 1
-		// Then: log(x) = log(mantissa) + exponent·ln(2)
+		// Extract: x = mantissa * 2^exponent where 0.5 <= mantissa < 1
+		// Then: log(x) = log(mantissa) + exponent*ln(2)
 		//
 		int exponent;
 		Real mantissa = frexp(x, &exponent);
@@ -80,17 +80,17 @@ namespace sw { namespace universal {
 		// STEP 3: Compute log(mantissa) using artanh-based series
 		// ============================================================================
 		// Transform: m = (1+u)/(1-u), solve for u: u = (m-1)/(m+1)
-		// Then: log(m) = log((1+u)/(1-u)) = 2·artanh(u)
-		//              = 2(u + u³/3 + u⁵/5 + u⁷/7 + ...)
+		// Then: log(m) = log((1+u)/(1-u)) = 2*artanh(u)
+		//              = 2(u + u^3/3 + u^5/5 + u^7/7 + ...)
 		//
-		// For m ∈ [0.5, 1): u ∈ [-1/3, 0), so |u| ≤ 1/3
-		// Convergence: error after n terms ≈ (1/3)^(2n+1)/(2n+1)
-		// Example: n=10 gives error ≈ 10^(-6), n=20 gives error ≈ 10^(-11)
+		// For m in [0.5, 1): u in [-1/3, 0), so |u| <= 1/3
+		// Convergence: error after n terms ~= (1/3)^(2n+1)/(2n+1)
+		// Example: n=10 gives error ~= 10^(-6), n=20 gives error ~= 10^(-11)
 		//
 		Real one(1.0);
 		Real u = (mantissa - one) / (mantissa + one);
 
-		// Series: log(m) = 2·Σ(n=0 to ∞) u^(2n+1)/(2n+1)
+		// Series: log(m) = 2*Sum(n=0 to inf) u^(2n+1)/(2n+1)
 		Real u_squared = u * u;
 		Real term = u;
 		Real result = term;
@@ -125,7 +125,7 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 4: Add exponent contribution
 		// ============================================================================
-		// log(x) = log(m) + e·ln(2)
+		// log(x) = log(m) + e*ln(2)
 		if (exponent != 0) {
 			Real exp_term = Real(static_cast<double>(exponent)) * ln2;
 			result = result + exp_term;
@@ -152,7 +152,7 @@ namespace sw { namespace universal {
 
 	// log1p: compute log(1 + x) accurately for small x
 	// Phase 4a: implement using Taylor series (avoids cancellation for small x)
-	// For small x: log(1+x) = x - x²/2 + x³/3 - x⁴/4 + ...
+	// For small x: log(1+x) = x - x^2/2 + x^3/3 - x^4/4 + ...
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> log1p(const ereal<maxlimbs>& x) {
 		using Real = ereal<maxlimbs>;
@@ -163,7 +163,7 @@ namespace sw { namespace universal {
 		Real neg_threshold(-0.1);
 
 		if (x < threshold && x > neg_threshold) {
-			// Taylor series: log(1+x) = x - x²/2 + x³/3 - x⁴/4 + ...
+			// Taylor series: log(1+x) = x - x^2/2 + x^3/3 - x^4/4 + ...
 			Real result = x;
 			Real term = x;
 			Real neg_x = -x;

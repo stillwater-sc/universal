@@ -77,7 +77,7 @@ int main() {
     std::cout << "Components preserved: "
               << (test_sum[0] == test_a[0] && test_sum[1] == test_a[1] &&
                   test_sum[2] == test_a[2] && test_sum[3] == test_a[3]
-                  ? "YES ✓" : "NO ✗") << '\n';
+                  ? "YES OK" : "NO X") << '\n';
 
     // Demonstrate quad-double precision advantage
     std::cout << "\nQuad-double precision advantage:\n";

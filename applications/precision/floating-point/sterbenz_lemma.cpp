@@ -1,4 +1,4 @@
-﻿// sterbenz_lemma.cpp: Demonstration of Sterbenz Lemma
+// sterbenz_lemma.cpp: Demonstration of Sterbenz Lemma
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

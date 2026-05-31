@@ -1,4 +1,4 @@
-﻿// polynomial.cpp: evaluation of polynomial of degree N and Nd derivatives evaluate at point x
+// polynomial.cpp: evaluation of polynomial of degree N and Nd derivatives evaluate at point x
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

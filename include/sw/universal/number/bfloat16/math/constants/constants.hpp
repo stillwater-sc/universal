@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 // constants.hpp: definition of math constants in bfloat16 precision
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

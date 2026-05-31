@@ -168,7 +168,7 @@ try {
 
 Legend
 ------
-  ULP           Unit in the Last Place — the step size at the constant's value
+  ULP           Unit in the Last Place -- the step size at the constant's value
   Value         The constant as represented by the number system (shown in double)
   Relative Error  |oracle - represented| / |oracle|, computed in qd_cascade precision
 

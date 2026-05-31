@@ -7,13 +7,13 @@ def enumerate_vertices(A, b):
     
     Parameters:
     A : numpy.ndarray
-        Matrix of hyperplane coefficients (m constraints × n dimensions)
+        Matrix of hyperplane coefficients (m constraints * n dimensions)
     b : numpy.ndarray
         Vector of hyperplane constants (m constraints)
         
     Returns:
     numpy.ndarray
-        Array of vertices (k vertices × n dimensions)
+        Array of vertices (k vertices * n dimensions)
     """
     m, n = A.shape  # m constraints, n dimensions
     vertices = []
@@ -49,7 +49,7 @@ def get_bounding_box(vertices):
     
     Parameters:
     vertices : numpy.ndarray
-        Array of vertices (k vertices × n dimensions)
+        Array of vertices (k vertices * n dimensions)
         
     Returns:
     tuple

@@ -595,7 +595,7 @@ namespace expansion_ops {
     // Phase 1: Compression - bottom-up accumulation using quick_two_sum
     // Phase 2: Conditional refinement - carry propagation with zero detection
     //
-    // This ensures the non-overlapping property: |component[i+1]| ≤ ulp(component[i])/2
+    // This ensures the non-overlapping property: |component[i+1]| <= ulp(component[i])/2
     // Fixes precision loss in iterative algorithms (e.g., pow() improved from 77-92 bits to 200+ bits)
 
     // Generic version for arbitrary N
@@ -718,19 +718,19 @@ namespace expansion_ops {
      * ----------------
      * The bug manifests most severely in the identity test: (a+b)-a = b
      *
-     * For qd_cascade (8→4 compression):
+     * For qd_cascade (8->4 compression):
      *   - Naive sum: result[3] + result[4] + result[5] + result[6] + result[7]
      *   - Loses cumulative rounding errors across 4 additions
      *   - Test FAILED: recovered b had wrong sign and magnitude in component[3]
      *   - Error: -1.5e-51 instead of 5e-52 (212-bit precision destroyed)
      *
-     * For td_cascade (6→3 compression):
+     * For td_cascade (6->3 compression):
      *   - Naive sum: result[2] + result[3] + result[4] + result[5]
      *   - Loses cumulative rounding errors across 3 additions
      *   - Test PASSES but only because renormalize() afterward salvages precision
      *   - Still incorrect in principle - relies on post-processing to fix errors
      *
-     * For dd_cascade (4→2 compression):
+     * For dd_cascade (4->2 compression):
      *   - Naive sum: result[1] + result[2] + result[3]
      *   - Loses cumulative rounding errors across 2 additions
      *   - Test PASSES but same caveat as td_cascade
@@ -753,7 +753,7 @@ namespace expansion_ops {
      */
 
     // Compress 4-component cascade to 2 components following proven QD algorithm
-    // Used by dd_cascade for (2+2)→2 compression after addition/subtraction
+    // Used by dd_cascade for (2+2)->2 compression after addition/subtraction
     constexpr inline floatcascade<2> compress_4to2(const floatcascade<4>& e) {
         double r0 = e[0];
         double r1 = e[1];
@@ -790,7 +790,7 @@ namespace expansion_ops {
     }
 
     // Compress 6-component cascade to 3 components following proven QD algorithm
-    // Used by td_cascade for (3+3)→3 compression after addition/subtraction
+    // Used by td_cascade for (3+3)->3 compression after addition/subtraction
     constexpr inline floatcascade<3> compress_6to3(const floatcascade<6>& e) {
         double r0 = e[0];
         double r1 = e[1];
@@ -850,7 +850,7 @@ namespace expansion_ops {
     }
 
     // Compress 8-component cascade to 4 components following proven QD algorithm
-    // Used by qd_cascade for (4+4)→4 compression after addition/subtraction
+    // Used by qd_cascade for (4+4)->4 compression after addition/subtraction
     // This implements the same algorithm as sw::universal::renorm(a0,a1,a2,a3,a4,...,a7)
     // Based on: Hida, Li, Bailey "Library for Double-Double and Quad-Double Arithmetic"
     constexpr inline floatcascade<4> compress_8to4(const floatcascade<8>& e) {
@@ -977,7 +977,7 @@ namespace expansion_ops {
     // accurate_multiplication() algorithm (qd_impl.hpp lines 619-675).
     template<size_t N>
     floatcascade<N> multiply_cascades(const floatcascade<N>& a, const floatcascade<N>& b) {
-        // Generate N×N products (partial products matrix)
+        // Generate N*N products (partial products matrix)
         std::array<double, N * N> products;
         std::array<double, N * N> errors;
 

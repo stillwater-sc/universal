@@ -10,13 +10,13 @@
 // ============================================================================
 //
 // fixpnt<16, 8>: 16-bit signed fixed-point, 8 integer bits + 8 fraction bits
-//   Value range: [-128.0, +127.99609375]    (max positive ≈ 127.996)
+//   Value range: [-128.0, +127.99609375]    (max positive ~= 127.996)
 //   Resolution: 2^-8 = 0.00390625
 //
 // Product of two fixpnt<16,8> values:
 //   Full product width: 2*nbits = 32 bits (2's complement)
 //   Product fraction bits: 2*rbits = 16 bits
-//   Max product: ~127.996^2 ≈ 16383.02, fits in 14 integer bits
+//   Max product: ~127.996^2 ~= 16383.02, fits in 14 integer bits
 //
 // quire_traits<fixpnt<16,8>>:
 //   range      = 2*nbits = 32
@@ -35,10 +35,10 @@
 //
 // A product of value V has quire MSB at bit (radix_point + scale)
 //   = (16 + floor(log2(|V|)))
-//   - Product V≈1    → MSB at bit 16 (limb 0)
-//   - Product V≈128  → MSB at bit 23 (limb 0)
-//   - Product V≈16384 → MSB at bit 30 (limb 0, near boundary)
-//   - Accumulation sum≈65536 → MSB at bit 32 (limb boundary!)
+//   - Product V~=1    -> MSB at bit 16 (limb 0)
+//   - Product V~=128  -> MSB at bit 23 (limb 0)
+//   - Product V~=16384 -> MSB at bit 30 (limb 0, near boundary)
+//   - Accumulation sum~=65536 -> MSB at bit 32 (limb boundary!)
 // ============================================================================
 //
 #include <universal/utility/directives.hpp>
@@ -249,7 +249,7 @@ int TestFdp1024() {
 	using Scalar = fixpnt<16, 8, Modulo, uint8_t>;
 
 	// Case 1: 1024 ones dot product: sum = 1024
-	// fixpnt<16,8> can't represent 1024 (max ≈ 127.996), so use smaller values
+	// fixpnt<16,8> can't represent 1024 (max ~= 127.996), so use smaller values
 	// 1024 * (0.125 * 0.125) = 1024 * 0.015625 = 16
 	{
 		std::vector<Scalar> x(1024, Scalar(0.125));
@@ -438,7 +438,7 @@ int TestLimbBoundaryCarryBorrow() {
 	// Case 1: Carry across limb boundary via repeated accumulation
 	// 127 * 127 = 16129. Scale = 13, MSB at quire bit 29 (limb 0).
 	// Accumulate 5 such products: 5 * 16129 = 80645.
-	// log2(80645) ≈ 16.3, MSB at quire bit 32 → crosses into limb 1.
+	// log2(80645) ~= 16.3, MSB at quire bit 32 -> crosses into limb 1.
 	{
 		quire<Scalar> q;
 		Scalar a(127), b(127);
@@ -459,12 +459,12 @@ int TestLimbBoundaryCarryBorrow() {
 	{
 		quire<Scalar> q;
 		Scalar big(100), one(1);
-		// Accumulate 400 products of 100*1 = 100 each → total 40000
+		// Accumulate 400 products of 100*1 = 100 each -> total 40000
 		// MSB at quire bit 31 (still limb 0)
 		for (int i = 0; i < 400; ++i) {
 			q += quire_mul(big, one);
 		}
-		// Now subtract 500 products of 100*1 → total -10000
+		// Now subtract 500 products of 100*1 -> total -10000
 		Scalar neg(-100);
 		for (int i = 0; i < 500; ++i) {
 			q += quire_mul(neg, one);
@@ -482,9 +482,9 @@ int TestLimbBoundaryCarryBorrow() {
 	{
 		quire<Scalar> q;
 		Scalar a(100), b(100);
-		// +100*100 = 10000, four times → 40000 (MSB near bit 31)
+		// +100*100 = 10000, four times -> 40000 (MSB near bit 31)
 		for (int i = 0; i < 4; ++i) q += quire_mul(a, b);
-		// Add more to push past limb boundary: 4 more → 80000
+		// Add more to push past limb boundary: 4 more -> 80000
 		for (int i = 0; i < 4; ++i) q += quire_mul(a, b);
 		// Subtract 80 products of 100*10: 80*1000 = 80000
 		Scalar ten(10);
@@ -500,9 +500,9 @@ int TestLimbBoundaryCarryBorrow() {
 	{
 		quire<Scalar> q;
 		Scalar a(127), b(127);
-		// Accumulate 8 * 127*127 = 8 * 16129 ≈ 129032 (MSB at bit 33, limb 1)
+		// Accumulate 8 * 127*127 = 8 * 16129 ~= 129032 (MSB at bit 33, limb 1)
 		for (int i = 0; i < 8; ++i) q += quire_mul(a, b);
-		// Subtract 8 * 127*127 → 0, then add tiny positive
+		// Subtract 8 * 127*127 -> 0, then add tiny positive
 		for (int i = 0; i < 8; ++i) q -= quire_mul(a, b);
 		Scalar quarter(0.25);
 		q += quire_mul(quarter, Scalar(1));
@@ -562,7 +562,7 @@ int TestCatastrophicCancellation() {
 	// The quire must preserve the LSBs during the large accumulation
 	{
 		std::vector<Scalar> x(1024), y(1024);
-		// 1023 products of 100*1 = 100, one product of -99999/1000*1 ≈ -100.0
+		// 1023 products of 100*1 = 100, one product of -99999/1000*1 ~= -100.0
 		// Adjusted for fixpnt range: 511 pairs of (+10 * 1) and 511 pairs of (-10 * 1)
 		// Plus 2 extra elements to create small residual
 		for (int i = 0; i < 511; ++i) {
@@ -615,7 +615,7 @@ int TestCatastrophicCancellation() {
 			y[i] = (i % 2 == 0) ? b : b_minus;
 		}
 		// Each pair contributes 10*10 + 10*(-10 + eps) = 10*eps = 0.0390625
-		// 512 pairs → 512 * 0.0390625 = 20.0
+		// 512 pairs -> 512 * 0.0390625 = 20.0
 		Scalar result = fdp(x, y);
 		double expected = 0.0;
 		for (int i = 0; i < 1024; ++i) {
@@ -661,7 +661,7 @@ int TestCatastrophicCancellation() {
 int TestDifferentConfigs() {
 	int nrOfFailedTestCases = 0;
 
-	// fixpnt<8, 4> — tiny fixed-point (4 integer bits, 4 fraction bits)
+	// fixpnt<8, 4> -- tiny fixed-point (4 integer bits, 4 fraction bits)
 	{
 		using Scalar = fixpnt<8, 4, Modulo, uint8_t>;
 		std::vector<Scalar> x = { Scalar(1), Scalar(2) };
@@ -678,7 +678,7 @@ int TestDifferentConfigs() {
 		}
 	}
 
-	// fixpnt<32, 16> — wider fixed-point
+	// fixpnt<32, 16> -- wider fixed-point
 	{
 		using Scalar = fixpnt<32, 16, Modulo, uint32_t>;
 		std::vector<Scalar> x = { Scalar(100), Scalar(200) };
@@ -691,7 +691,7 @@ int TestDifferentConfigs() {
 		}
 	}
 
-	// fixpnt<16, 0> — pure integer fixed-point
+	// fixpnt<16, 0> -- pure integer fixed-point
 	{
 		using Scalar = fixpnt<16, 0, Modulo, uint16_t>;
 		std::vector<Scalar> x = { Scalar(10), Scalar(20), Scalar(30) };

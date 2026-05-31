@@ -489,19 +489,19 @@ struct PolynomialAddSub {
 // tables and transcendentals.
 //
 //   M. G. Arnold, T. A. Bailey, J. R. Cowles and M. D. Winkel, ``Arithmetic
-//   Co-transformations in the Real and Complex Logarithmic Number Systems,”
+//   Co-transformations in the Real and Complex Logarithmic Number Systems,"
 //   IEEE Transactions on Computers, vol. 47, no. 7, pp. 777-786, July 1998.
 //
 //   M. Arnold, T. Bailey, J. Cowles and J. Cupal, ``Initializing RAM-based
-//   Logarithmic Processors,” Journal of VLSI Signal Processing, vol. 4,
+//   Logarithmic Processors," Journal of VLSI Signal Processing, vol. 4,
 //   no. 2-3, pp. 243-252, May 1992.
 //
 //   M. Arnold, T. Bailey, J. Cowles and J. Cupal, ``Error Analysis of the
-//   Kmetz/Maenner Algorithm,” Journal of VLSI Signal Processing, vol. 33,
+//   Kmetz/Maenner Algorithm," Journal of VLSI Signal Processing, vol. 33,
 //   pp. 37-53, Oct. 2002.
 //
 //   P. D. Vouzis, C. Collange and M. G. Arnold, ``A Novel Cotransformation
-//   for LNS Subtraction,” Journal of VLSI Signal Processing, vol. 59, no. 1,
+//   for LNS Subtraction," Journal of VLSI Signal Processing, vol. 59, no. 1,
 //   pp. 29-40, Jan. 2010.
 //
 //   Arnold, M. G. and Walter, C. D. (2001). "Unrestricted faithful rounding is

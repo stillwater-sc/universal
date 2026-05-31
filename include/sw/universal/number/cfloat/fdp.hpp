@@ -102,7 +102,7 @@ quire_resolve(const quire<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, 
 	bt_val.setsign(q.sign());
 	bt_val.setscale(s);
 
-	// Copy bits: blocktriple bit (bt_radix - k) ← accumulator bit (msb_pos - k)
+	// Copy bits: blocktriple bit (bt_radix - k) <- accumulator bit (msb_pos - k)
 	// k=0 is the MSB (hidden bit), k increases downward
 	for (unsigned k = 0; k < bfbits; ++k) {
 		int bt_bit = bt_radix - static_cast<int>(k);

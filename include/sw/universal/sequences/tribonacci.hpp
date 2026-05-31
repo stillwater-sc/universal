@@ -13,7 +13,7 @@
  *
  * https://oeis.org/A000073
  *
- * 0, 0, 1, 1, 2, 4, 7, 13, 24, 44, 81, 149, 274, 504, 927, 1705, 3136, 5768, 10609, 19513, 35890, 66012, … (sequence A000073 in the OEIS) 
+ * 0, 0, 1, 1, 2, 4, 7, 13, 24, 44, 81, 149, 274, 504, 927, 1705, 3136, 5768, 10609, 19513, 35890, 66012, ... (sequence A000073 in the OEIS) 
  *
  * The series was first described formally by Agronomof in 1914, but its first unintentional 
  * use is in the Origin of species by Charles R. Darwin. In the example of illustrating the 

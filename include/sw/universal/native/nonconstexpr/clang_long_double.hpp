@@ -110,9 +110,9 @@ namespace sw { namespace universal {
 
 		// exponent 
 		// the exponent value used in the arithmetic is the exponent shifted by a bias 
-		// for the IEEE 754 binary32 case, an exponent value of 127 represents the actual zero 
-		// (i.e. for 2^(e ¿ 127) to be one, e must be 127). 
-		// Exponents range from ¿126 to +127 because exponents of ¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
+		// for the extended-precision long double case, an exponent value of 16383 represents the actual zero 
+		// (i.e. for 2^(e - 16383) to be one, e must be 16383). 
+		// Exponents range from -16382 to +16383 because exponents of -16383 (all 0s) and +16384 (all 1s) are reserved for special numbers.
 		if (decoder.parts.exponent == 0) {
 			s << "exp=0,";
 		}

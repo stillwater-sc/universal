@@ -239,7 +239,7 @@ bool _anyAfter(const sw::universal::bitblock<nbits>& bits, unsigned msb) {
 p[x_] := Module[{s, y, r, e, f, run, reg, esval, nf, len, fv, sb, pt, blast, bafter, bsticky, rb, ptt, p},
 s     = Boole[x < 0];
 y     = Max[minpos, Min[maxpos, Abs[x]]];
-r     = Boole[y ≥ 1];
+r     = Boole[y >= 1];
 e     = Floor[Log[2, y]];
 f     = y / 2^e - 1;
 run   = Abs[Floor[e / 2^es]] + r;

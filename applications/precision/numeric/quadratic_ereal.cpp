@@ -14,26 +14,26 @@
 /*
  * THE QUADRATIC FORMULA CATASTROPHIC CANCELLATION PROBLEM
  *
- * For ax² + bx + c = 0, the standard formula is:
- *     x = (-b ± √(b² - 4ac)) / 2a
+ * For ax^2 + bx + c = 0, the standard formula is:
+ *     x = (-b +/- sqrt(b^2 - 4ac)) / 2a
  *
- * Problem: When b² >> 4ac, we compute √(b² - 4ac) ≈ |b|, leading to:
- *     x₊ = (-b + √(b² - 4ac)) / 2a  ← catastrophic cancellation!
+ * Problem: When b^2 >> 4ac, we compute sqrt(b^2 - 4ac) ~= |b|, leading to:
+ *     x+ = (-b + sqrt(b^2 - 4ac)) / 2a  <- catastrophic cancellation!
  *
- * Example: x² - 10⁸x + 1 = 0
- *   True roots: x₁ ≈ 10⁸, x₂ ≈ 10⁻⁸
+ * Example: x^2 - 10^8x + 1 = 0
+ *   True roots: x1 ~= 10^8, x2 ~= 10^-8
  *   With double precision:
- *     b² = 10¹⁶ (exact)
+ *     b^2 = 10^16 (exact)
  *     4ac = 4 (exact)
- *     b² - 4ac = 10¹⁶ - 4 = 10¹⁶ (precision lost!)
- *     √(b² - 4ac) ≈ 10⁸ (appears exact, but small component lost)
- *     x₊ = (-10⁸ + 10⁸) / 2 = 0 / 2 = 0  ← WRONG! Should be 10⁻⁸
+ *     b^2 - 4ac = 10^16 - 4 = 10^16 (precision lost!)
+ *     sqrt(b^2 - 4ac) ~= 10^8 (appears exact, but small component lost)
+ *     x+ = (-10^8 + 10^8) / 2 = 0 / 2 = 0  <- WRONG! Should be 10^-8
  *
  * SOLUTIONS:
  *
  * 1. Stable Reformulation (Citardauq Formula):
  *    Compute one root with good formula, use Vieta's relation for other:
- *      x₁·x₂ = c/a  →  x₂ = c/(a·x₁)
+ *      x1*x2 = c/a  ->  x2 = c/(a*x1)
  *
  * 2. Adaptive Precision (ereal):
  *    Use the simple formula with adaptive precision arithmetic!
@@ -120,7 +120,7 @@ namespace sw { namespace universal {
 			x1 = (-b + sqrt_disc) / (two * a);
 		}
 
-		// Use Vieta's formula: x₁·x₂ = c/a  →  x₂ = c/(a·x₁)
+		// Use Vieta's formula: x1*x2 = c/a  ->  x2 = c/(a*x1)
 		Real x2 = c / (a * x1);
 
 		return { x1, x2 };
@@ -145,8 +145,8 @@ namespace sw { namespace universal {
 	                  const Real& a, const Real& b, const Real& c,
 	                  const Real& x1, const Real& x2) {
 		// Vieta's formulas:
-		// x₁ + x₂ = -b/a
-		// x₁·x₂ = c/a
+		// x1 + x2 = -b/a
+		// x1*x2 = c/a
 
 		Real sum = x1 + x2;
 		Real product = x1 * x2;
@@ -157,10 +157,10 @@ namespace sw { namespace universal {
 		double product_error = std::abs(double(product) - double(expected_product)) / std::abs(double(expected_product));
 
 		std::cout << "  " << std::setw(20) << std::left << method << " Vieta's check:\n";
-		std::cout << "    x₁ + x₂ = " << std::setw(20) << double(sum)
+		std::cout << "    x1 + x2 = " << std::setw(20) << double(sum)
 		          << " (expected: " << double(expected_sum) << ", rel error: "
 		          << std::setprecision(2) << std::scientific << sum_error << ")\n";
-		std::cout << "    x₁·x₂   = " << std::setw(20) << double(product)
+		std::cout << "    x1*x2   = " << std::setw(20) << double(product)
 		          << " (expected: " << double(expected_product) << ", rel error: "
 		          << product_error << ")\n";
 		std::cout << std::defaultfloat;
@@ -173,9 +173,9 @@ namespace sw { namespace universal {
 	void run_test_case(const QuadraticTest& test) {
 		std::cout << "========================================================\n";
 		std::cout << "Test: " << test.description << "\n";
-		std::cout << "Equation: " << test.a << "x² + " << test.b << "x + " << test.c << " = 0\n";
-		std::cout << "True roots: x₁ = " << std::setprecision(17) << test.true_x1
-		          << ", x₂ = " << test.true_x2 << "\n";
+		std::cout << "Equation: " << test.a << "x^2 + " << test.b << "x + " << test.c << " = 0\n";
+		std::cout << "True roots: x1 = " << std::setprecision(17) << test.true_x1
+		          << ", x2 = " << test.true_x2 << "\n";
 		std::cout << "========================================================\n\n";
 
 		// Test 1: Double precision (naive)
@@ -186,9 +186,9 @@ namespace sw { namespace universal {
 			double error_x1 = std::abs(x1 - test.true_x1) / std::abs(test.true_x1);
 			double error_x2 = std::abs(x2 - test.true_x2) / std::abs(test.true_x2);
 
-			std::cout << "  x₁ = " << std::setw(20) << x1 << " (rel error: "
+			std::cout << "  x1 = " << std::setw(20) << x1 << " (rel error: "
 			          << std::setprecision(2) << std::scientific << error_x1 << ")\n";
-			std::cout << "  x₂ = " << std::setw(20) << x2 << " (rel error: "
+			std::cout << "  x2 = " << std::setw(20) << x2 << " (rel error: "
 			          << error_x2 << ")\n";
 			std::cout << std::defaultfloat;
 
@@ -204,9 +204,9 @@ namespace sw { namespace universal {
 			double error_x1 = std::abs(x1 - test.true_x1) / std::abs(test.true_x1);
 			double error_x2 = std::abs(x2 - test.true_x2) / std::abs(test.true_x2);
 
-			std::cout << "  x₁ = " << std::setw(20) << std::setprecision(17) << x1
+			std::cout << "  x1 = " << std::setw(20) << std::setprecision(17) << x1
 			          << " (rel error: " << std::setprecision(2) << std::scientific << error_x1 << ")\n";
-			std::cout << "  x₂ = " << std::setw(20) << std::setprecision(17) << x2
+			std::cout << "  x2 = " << std::setw(20) << std::setprecision(17) << x2
 			          << " (rel error: " << error_x2 << ")\n";
 			std::cout << std::defaultfloat;
 
@@ -227,11 +227,11 @@ namespace sw { namespace universal {
 			double error_x1 = std::abs(x1_val - test.true_x1) / std::abs(test.true_x1);
 			double error_x2 = std::abs(x2_val - test.true_x2) / std::abs(test.true_x2);
 
-			std::cout << "  x₁ = " << std::setw(20) << std::setprecision(17) << x1_val
+			std::cout << "  x1 = " << std::setw(20) << std::setprecision(17) << x1_val
 			          << " (rel error: " << std::setprecision(2) << std::scientific << error_x1 << ")\n";
-			std::cout << "  x₂ = " << std::setw(20) << std::setprecision(17) << x2_val
+			std::cout << "  x2 = " << std::setw(20) << std::setprecision(17) << x2_val
 			          << " (rel error: " << error_x2 << ")\n";
-			std::cout << "  x₁ components: " << x1.limbs().size() << ", x₂ components: " << x2.limbs().size() << "\n";
+			std::cout << "  x1 components: " << x1.limbs().size() << ", x2 components: " << x2.limbs().size() << "\n";
 			std::cout << std::defaultfloat;
 
 			verify_vieta("ereal (naive)", a, b, c, x1, x2);
@@ -266,33 +266,33 @@ try {
 		// Test 1: Mild cancellation
 		{
 			1.0, 1000.0, 1.0,
-			"Mild cancellation (b² moderately larger than 4ac)",
-			-999.999001,  // x₁ (larger root in magnitude)
-			-0.001000001  // x₂ (smaller root)
+			"Mild cancellation (b^2 moderately larger than 4ac)",
+			-999.999001,  // x1 (larger root in magnitude)
+			-0.001000001  // x2 (smaller root)
 		},
 
 		// Test 2: Severe cancellation
 		{
 			1.0, 1.0e8, 1.0,
-			"Severe cancellation (b² >> 4ac)",
-			-100000000.0,     // x₁
-			-1.0e-8           // x₂ (very small - lost in double precision)
+			"Severe cancellation (b^2 >> 4ac)",
+			-100000000.0,     // x1
+			-1.0e-8           // x2 (very small - lost in double precision)
 		},
 
 		// Test 3: Extreme cancellation
 		{
 			1.0, 1.0e15, 1.0,
 			"Extreme cancellation (at double precision limit)",
-			-1.0e15,          // x₁
-			-1.0e-15          // x₂ (catastrophically lost in double)
+			-1.0e15,          // x1
+			-1.0e-15          // x2 (catastrophically lost in double)
 		},
 
 		// Test 4: Near-equal roots (challenging for any method)
 		{
 			1.0, 10000.0, 9999.0,
-			"Near-equal roots (b² - 4ac is small)",
-			-9999.00010000,  // x₁ (larger root in magnitude)
-			-0.99990000      // x₂ (smaller root)
+			"Near-equal roots (b^2 - 4ac is small)",
+			-9999.00010000,  // x1 (larger root in magnitude)
+			-0.99990000      // x2 (smaller root)
 		}
 	};
 

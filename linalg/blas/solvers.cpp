@@ -45,7 +45,7 @@ namespace sw { namespace blas { namespace solvers {
 
 	////////////////////////////////////////////////////////////////////////
 	// Test LU solve with known solution
-	// Method: Generate A and x, compute b = A*x, solve A*y = b, verify x ≈ y
+	// Method: Generate A and x, compute b = A*x, solve A*y = b, verify x ~= y
 	template<typename Scalar>
 	int VerifyLUSolve(bool reportTestCases) {
 		int nrOfFailedTests = 0;
@@ -315,7 +315,7 @@ namespace sw { namespace blas { namespace solvers {
 				}
 			}
 
-			// Verify L*U ≈ A (with permutation, but for simple cases should be close)
+			// Verify L*U ~= A (with permutation, but for simple cases should be close)
 			matrix<Scalar> LU_product = L * U;
 
 			// Check Frobenius norm of difference
@@ -378,7 +378,7 @@ namespace sw { namespace blas { namespace solvers {
 
 			auto [Q, R] = qr(A, 1);  // Householder method
 
-			// Verify Q*R ≈ A
+			// Verify Q*R ~= A
 			matrix<Scalar> QR = Q * R;
 			Scalar diff_norm = Scalar(0);
 			for (size_t i = 0; i < 3; ++i) {
@@ -394,7 +394,7 @@ namespace sw { namespace blas { namespace solvers {
 				if (reportTestCases) std::cerr << "FAIL: QR decomposition ||A - Q*R|| = " << diff_norm << "\n";
 			}
 
-			// Verify Q is orthogonal: Q'*Q ≈ I
+			// Verify Q is orthogonal: Q'*Q ~= I
 			matrix<Scalar> Qt = Q;
 			Qt.transpose();
 			matrix<Scalar> QtQ = Qt * Q;
@@ -442,7 +442,7 @@ namespace sw { namespace blas { namespace solvers {
 
 			auto [Q, R] = qr(A, 2);  // Modified Gram-Schmidt
 
-			// Verify Q*R ≈ A
+			// Verify Q*R ~= A
 			matrix<Scalar> QR = Q * R;
 			Scalar diff_norm = Scalar(0);
 			for (size_t i = 0; i < 3; ++i) {
@@ -477,7 +477,7 @@ namespace sw { namespace blas { namespace solvers {
 
 			auto [Q, R] = qr(A, 3);  // Givens rotations
 
-			// Verify Q*R ≈ A
+			// Verify Q*R ~= A
 			matrix<Scalar> QR = Q * R;
 			Scalar diff_norm = Scalar(0);
 			for (size_t i = 0; i < 3; ++i) {

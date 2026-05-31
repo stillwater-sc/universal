@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 // qd_constants.hpp: definition of math constants in quad-double precision
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

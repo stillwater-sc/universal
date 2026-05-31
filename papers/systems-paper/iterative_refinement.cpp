@@ -142,9 +142,9 @@ sw::numeric::containers::vector<Dst> convert_vector(const sw::numeric::container
 // -------------------------------------------------------------------------
 // Three-precision iterative refinement
 //
-//   HIGH  — residual computation:  r = b - A*x
-//   WORK  — triangular solves:     c = (LU)^{-1} r
-//   LOW   — LU factorization:     PA = LU
+//   HIGH  -- residual computation:  r = b - A*x
+//   WORK  -- triangular solves:     c = (LU)^{-1} r
+//   LOW   -- LU factorization:     PA = LU
 //
 // Returns (iterations, final_nbe, final_forward_error)
 // -------------------------------------------------------------------------
@@ -407,19 +407,19 @@ try {
 	print_header();
 	results.clear();
 
-	// Half → posit<32,2> working → double high
+	// Half -> posit<32,2> working -> double high
 	results.push_back(run_ir<double, posit<32,2>, sw::universal::half>(
 		"X-1", "half (fp16)", "posit<32,2>", "double (fp64)", N));
 
-	// posit<16,1> low → float working → dd high (double-double)
+	// posit<16,1> low -> float working -> dd high (double-double)
 	results.push_back(run_ir<dd, float, posit<16,1>>(
 		"X-2", "posit<16,1>", "float (fp32)", "dd (2x64)", N));
 
-	// bfloat16 low → posit<32,2> working → dd high
+	// bfloat16 low -> posit<32,2> working -> dd high
 	results.push_back(run_ir<dd, posit<32,2>, sw::universal::bfloat_t>(
 		"X-3", "bfloat16", "posit<32,2>", "dd (2x64)", N));
 
-	// cfloat<16,5> low → cfloat<32,8> working → dd high
+	// cfloat<16,5> low -> cfloat<32,8> working -> dd high
 	results.push_back(run_ir<dd, cf32, cf16>(
 		"X-4", "cfloat<16,5>", "cfloat<32,8>", "dd (2x64)", N));
 
@@ -475,7 +475,7 @@ Key observations:
 
   3. Cross-family X-2 and X-3 use double-double (dd) for the high-precision
      residual.  The 106-bit significand provides a much sharper residual than
-     double, accelerating convergence — especially for larger N where
+     double, accelerating convergence -- especially for larger N where
      kappa(A) grows as O(N^2).
 
   4. As N increases, more IR iterations are needed because the condition
@@ -485,7 +485,7 @@ Key observations:
 
   5. Non-standard cfloat widths (CF-2: 12/24/48) demonstrate the library's
      ability to explore precision points that don't correspond to any
-     hardware format — useful for co-design studies.
+     hardware format -- useful for co-design studies.
 
 Reference:
   Carson, E. and Higham, N. J. (2018). "Accelerating the solution of linear

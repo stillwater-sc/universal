@@ -71,7 +71,7 @@ void test_interval_growth() {
 	for (int i = 0; i < 100; ++i) {
 		sum += TrackedBounded<double>(0.1);
 	}
-	std::cout << "\nSum of 100 × 0.1:\n";
+	std::cout << "\nSum of 100 * 0.1:\n";
 	std::cout << "  Interval: " << sum << "\n";
 	std::cout << "  Midpoint: " << sum.value() << "\n";
 	std::cout << "  Width: " << std::scientific << sum.width() << "\n";
@@ -124,7 +124,7 @@ void test_sqrt() {
 	TrackedBounded<double> a = da;
 	TrackedBounded<double> b = db;
 	auto c = sqrt(a * a + b * b);
-	std::cout << "\nsqrt(3² + 4²) = " << c << "\n";
+	std::cout << "\nsqrt(3^2 + 4^2) = " << c << "\n";
 	std::cout << to_binary(c.value()) << " : midpoint = " << c.value() << "\n";
 	std::cout << "  True (5) in interval: "
 	          << (c.lo() <= 5.0 && 5.0 <= c.hi() ? "yes" : "no") << "\n";
@@ -135,10 +135,10 @@ void test_uncertain_inputs() {
 
 	// Create a measurement with 1% uncertainty
 	auto x = make_uncertain(100.0, 0.01);
-	std::cout << "x = 100 ± 1% = " << x << "\n";
+	std::cout << "x = 100 +/- 1% = " << x << "\n";
 
 	auto y = make_uncertain(50.0, 0.02);
-	std::cout << "y = 50 ± 2% = " << y << "\n";
+	std::cout << "y = 50 +/- 2% = " << y << "\n";
 
 	auto sum = x + y;
 	std::cout << "\nx + y = " << sum << "\n";

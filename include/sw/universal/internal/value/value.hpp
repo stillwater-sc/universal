@@ -394,7 +394,7 @@ public:
 
 	// Get the mantissa with hidden bit for Grisu-style decimal conversion
 	// Returns: bitblock with hidden bit at position fbits, fraction bits below
-	// The actual value is: mantissa × 2^(scale - fbits)
+	// The actual value is: mantissa * 2^(scale - fbits)
 	bitblock<fhbits> mantissa() const {
 		bitblock<fhbits> m;
 		if (_zero || _inf || _nan) return m;
@@ -410,7 +410,7 @@ public:
 	}
 
 	// Get the effective binary exponent for the mantissa representation
-	// The value = mantissa × 2^mantissa_exponent()
+	// The value = mantissa * 2^mantissa_exponent()
 	int mantissa_exponent() const {
 		return _scale - static_cast<int>(fbits);
 	}

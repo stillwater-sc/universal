@@ -1,11 +1,11 @@
 #!/bin/bash
-# notify.sh — Notification hook for Claude Code
+# notify.sh -- Notification hook for Claude Code
 # Sends a notification when Claude needs attention.
 # Works across SSH sessions, local terminals, and desktop environments.
 #
 # Sends:
 #   1. OSC 9 escape (iTerm2, Windows Terminal, many modern terminals)
-#   2. Terminal bell (\a) — triggers SSH client bell
+#   2. Terminal bell (\a) -- triggers SSH client bell
 #   3. notify-send (if desktop session available)
 
 # Drain hook input from stdin; this hook does not currently use the payload.

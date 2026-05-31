@@ -1,4 +1,4 @@
-﻿// linear_cover.cpp: covering a linear range with a posit
+// linear_cover.cpp: covering a linear range with a posit
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

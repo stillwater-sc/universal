@@ -51,8 +51,8 @@ void benchmark_arithmetic(const std::string& description, size_t iterations = 10
     auto add_duration = std::chrono::duration_cast<std::chrono::microseconds>(mid - start);
     auto mul_duration = std::chrono::duration_cast<std::chrono::microseconds>(end - mid);
 
-    std::cout << "  Addition (" << iterations << " ops): " << add_duration.count() << " μs\n";
-    std::cout << "  Multiplication (" << iterations/10 << " ops): " << mul_duration.count() << " μs\n";
+    std::cout << "  Addition (" << iterations << " ops): " << add_duration.count() << " us\n";
+    std::cout << "  Multiplication (" << iterations/10 << " ops): " << mul_duration.count() << " us\n";
     std::cout << "  Add throughput: " << (iterations * 1000000.0 / add_duration.count()) << " ops/sec\n";
     std::cout << "  Mul throughput: " << ((iterations/10) * 1000000.0 / mul_duration.count()) << " ops/sec\n";
     std::cout << std::endl;
@@ -155,8 +155,8 @@ int main() {
         auto time64 = std::chrono::duration_cast<std::chrono::microseconds>(end - mid);
 
         std::cout << "Array processing (1000 iterations on " << array_size << " elements):\n";
-        std::cout << "32-bit blocks: " << time32.count() << " μs\n";
-        std::cout << "64-bit blocks: " << time64.count() << " μs\n";
+        std::cout << "32-bit blocks: " << time32.count() << " us\n";
+        std::cout << "64-bit blocks: " << time64.count() << " us\n";
         std::cout << "Ratio (32/64): " << (double)time32.count() / time64.count() << "\n";
 
         // Prevent optimization
@@ -199,10 +199,10 @@ int main() {
     //    auto twos_time = std::chrono::duration_cast<std::chrono::microseconds>(end - mid);
 
     //    std::cout << "Shift operations (" << sig_iterations << " iterations):\n";
-    //    std::cout << "Ones encoding: " << ones_time.count() << " μs\n";
-    //    std::cout << "Twos encoding: " << twos_time.count() << " μs\n";
+    //    std::cout << "Ones encoding: " << ones_time.count() << " us\n";
+    //    std::cout << "Twos encoding: " << twos_time.count() << " us\n";
     //    std::cout << "Performance difference: " << std::abs((double)ones_time.count() - twos_time.count())
-    //              << " μs (" << (100.0 * std::abs((double)ones_time.count() - twos_time.count()) /
+    //              << " us (" << (100.0 * std::abs((double)ones_time.count() - twos_time.count()) /
     //                          std::min(ones_time.count(), twos_time.count())) << "%)\n";
     //    std::cout << std::endl;
     //}

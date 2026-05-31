@@ -21,7 +21,7 @@ so that the equation is of the first order and no higher-order
 derivatives exist. The differential equation in first-order can 
 also be written as;
 
-               y’ = f(x,y)   or
+               y' = f(x,y)   or
         (d/dx) y  = f(x,y)
 
 The differential equation is generally used to express a relation 
@@ -32,7 +32,7 @@ domain if we know the functions and some of the derivatives.
 First Order Linear Differential Equation
 
 If the function f is a linear expression in y, then the first-order 
-differential equation y’ = f(x, y) is a linear equation. That is, 
+differential equation y' = f(x, y) is a linear equation. That is, 
 the equation is linear and the function f takes the form
 
           f(x,y) = p(x)y + q(x)
@@ -44,9 +44,9 @@ Differential equations that are not linear are called
 nonlinear equations.
 
 Consider the first-order differential equation 
-               y’ = f(x,y),  
+               y' = f(x,y),  
 is a linear equation and it can be written in the form
-               y’ + a(x)y = f(x)
+               y' + a(x)y = f(x)
 where a(x) and f(x) are continuous functions of x
 
 The alternate method to represent the first-order linear equation 

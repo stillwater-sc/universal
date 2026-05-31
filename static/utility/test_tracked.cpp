@@ -1,4 +1,4 @@
-﻿// test_tracked.cpp: comprehensive test of unified Tracked<T> interface
+// test_tracked.cpp: comprehensive test of unified Tracked<T> interface
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -326,8 +326,8 @@ There are Two different Meanings of "Precision"
 
 What we're measuring (Result Accuracy): 
 True mathematical result : 1.0 + 1e-7 = 1.0000001 
-Computed result : 1.0 + ulp(1.0) ≈ 1.00000012 
-Absolute error : ~1.9e-8 Relative error : 1.9e-8 / 1.0 ≈ 1.9e-8
+Computed result : 1.0 + ulp(1.0) ~= 1.00000012 
+Absolute error : ~1.9e-8 Relative error : 1.9e-8 / 1.0 ~= 1.9e-8
 
 By this measure, the result IS accurate to ~25 bits because 1.00000012 is 
 very close to 1.0000001. The relative error is tiny.
@@ -338,13 +338,13 @@ After addition: almost ALL of b's bits were discarded The ULP bit in the
 result is an approximation of b, not b itself
 
  Precision and Information Preservation are two different metrics:
-  ┌───────────────────────┬──────────────┬───────────────────────────────────────┐
-  │ Metric                │    Value     │            Interpretation             │
-  ├───────────────────────┼──────────────┼───────────────────────────────────────┤
-  │ Result accuracy       │ 24+ bits     │ "How close is result to true answer?" │
-  ├───────────────────────┼──────────────┼───────────────────────────────────────┤
-  │ Information preserved │ ~0 bits of b │ "How much of b survived?"             │
-  └───────────────────────┴──────────────┴───────────────────────────────────────┘ 
+  +-----------------------+--------------+---------------------------------------+
+  | Metric                |    Value     |            Interpretation             |
+  +-----------------------+--------------+---------------------------------------+
+  | Result accuracy       | 24+ bits     | "How close is result to true answer?" |
+  +-----------------------+--------------+---------------------------------------+
+  | Information preserved | ~0 bits of b | "How much of b survived?"             |
+  +-----------------------+--------------+---------------------------------------+ 
   
 # The Absorption Problem
 
@@ -352,9 +352,9 @@ This is the dual of cancellation. In subtraction of nearly-equal values,
 error gets magnified.In addition of vastly-different magnitudes,
 information gets absorbed :
 
-    1.0f     = 1.00000000000000000000000 × 2 ^ 0
-    1e-7f    = 0.00000000000000000000000 11010110111... × 2 ^ 0(shifted)
-                                         ↑ These bits fall off the end
+    1.0f     = 1.00000000000000000000000 * 2 ^ 0
+    1e-7f    = 0.00000000000000000000000 11010110111... * 2 ^ 0(shifted)
+                                         ^ These bits fall off the end
 
 The bits of 1e-7 that would appear after position 24 are simply lost.
 The result's ULP is a 1-bit approximation of a value that had 24 bits of information.

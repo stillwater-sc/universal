@@ -176,7 +176,7 @@ try {
 	{
 		zfparray1f arr(N, rate, src);
 
-		// suppress self-assignment warnings — this is intentional
+		// suppress self-assignment warnings -- this is intentional
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"

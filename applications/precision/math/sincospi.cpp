@@ -19,8 +19,8 @@ the handling of floating-point flags (see fenv.h) is not required, nor do we nee
 most of the time, so I will omit these.
 
 The basic algorithmic structure is straightforward. As very large arguments are always even integers, 
-and therefore thus multiples of 2π, their sine and cosine values are well-known. Other arguments are 
-folded into range [-¼,+¼] while recording quadrant information. Polynomial minimax approximations 
+and therefore thus multiples of 2pi, their sine and cosine values are well-known. Other arguments are 
+folded into range [-1/4,+1/4] while recording quadrant information. Polynomial minimax approximations 
 are used to compute sine and cosine on the primary approximation interval. Finally, quadrant data 
 is used to map the preliminary results to the final result by cyclical exchange of results and sign change.
 
@@ -49,8 +49,8 @@ not the case, the code may experience significant slow-down due to generally slo
 #include <math.h>
 #include <stdint.h>
 
-/* Writes result sine result sin(πa) to the location pointed to by sp
-   Writes result cosine result cos(πa) to the location pointed to by cp
+/* Writes result sine result sin(pia) to the location pointed to by sp
+   Writes result cosine result cos(pia) to the location pointed to by cp
 
    In extensive testing, no errors > 0.97 ulp were found in either the sine
    or cosine results, suggesting the results returned are faithfully rounded.
@@ -104,8 +104,8 @@ void my_sincospi (double a, double *sp, double *cp)
     *cp = c;
 }
 
-/* Writes result sine result sin(πa) to the location pointed to by sp
-   Writes result cosine result cos(πa) to the location pointed to by cp
+/* Writes result sine result sin(pia) to the location pointed to by sp
+   Writes result cosine result cos(pia) to the location pointed to by cp
 
    In exhaustive testing, the maximum error in sine results was 0.96677 ulp,
    the maximum error in cosine results was 0.96563 ulp, meaning results are
@@ -155,7 +155,7 @@ void my_sincospif (float a, float *sp, float *cp)
 To the extent that you expressly depend on IEEE 754 semantics, 
 how do you get around the fact that the C standard does not require 
 implementations' floating-point representations or arithmetic to 
-comply with IEEE 754 (at all)? – John Bollinger Mar 14 '17 at 18:42 
+comply with IEEE 754 (at all)? - John Bollinger Mar 14 '17 at 18:42 
 
 @JohnBollinger I don't. If a tool chain offers sufficient control 
 of floating-point formats and transformations in accordance with 
@@ -163,19 +163,19 @@ IEEE-754 rules, then this code works correctly with respect to
 IEEE-754 (best I could test it). Conversely, if a tool chain 
 generally does not conform to IEEE-754, there should be no 
 expectation (nor do I see a necessity) for this code to comply 
-with all requirements of IEEE-754 either. – njuffa Mar 14 '17 at 18:55
+with all requirements of IEEE-754 either. - njuffa Mar 14 '17 at 18:55
 
-Out of curiosity, why do you use hex floats and decimal doubles? – rici Mar 14 '17 at 19:39
+Out of curiosity, why do you use hex floats and decimal doubles? - rici Mar 14 '17 at 19:39
 
 In the last step of the calculation of the sine, instead of computing 
-s = s * t; r = r * s; s = fma (t, π, r); which amounts to computing s = π*t + t^3, 
+s = s * t; r = r * s; s = fma (t, pi, r); which amounts to computing s = pi*t + t^3, 
 a multiplication by t can be factored out so that a fma and a 
-further multiplication suffice: s = fma (r, s,  3.1415926535897931e+0); s = s * t. – Matías Giovannini May 25 '18 at 15:19
+further multiplication suffice: s = fma (r, s,  3.1415926535897931e+0); s = s * t. - Matias Giovannini May 25 '18 at 15:19
 
-@MatíasGiovannini This re-ordering causes maximum ulp error to increase 
+@MatiasGiovannini This re-ordering causes maximum ulp error to increase 
 (anecdotally to ~ 1.5 ulp), so the implementation is no longer faithfully 
 rounded (which was a design goal of mine). This may be acceptable in 
-some contexts. – njuffa May 25 '18 at 15:57
+some contexts. - njuffa May 25 '18 at 15:57
 */
 
 // conditional compilation

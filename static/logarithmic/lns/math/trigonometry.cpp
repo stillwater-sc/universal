@@ -1,4 +1,4 @@
-﻿// trigonometry.cpp: test suite runner for trigonometric functions (sin/cos/tan/atan/acos/asin)
+// trigonometry.cpp: test suite runner for trigonometric functions (sin/cos/tan/atan/acos/asin)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -10,8 +10,8 @@
 #include <universal/verification/lns_test_suite_mathlib.hpp>
 
 /* 
-Writes result sine result sin(πa) to the location pointed to by sp
-Writes result cosine result cos(πa) to the location pointed to by cp
+Writes result sine result sin(pia) to the location pointed to by sp
+Writes result cosine result cos(pia) to the location pointed to by cp
 
 In extensive testing, no errors > 0.97 ulp were found in either the sine
 or cosine results, suggesting the results returned are faithfully rounded.
@@ -82,8 +82,8 @@ double cospi(double arg) {
 
 #ifdef CPP17_HEXFLOAT_LITERALS
 /* 
-Writes result sine result sin(πa) to the location pointed to by sp
-Writes result cosine result cos(πa) to the location pointed to by cp
+Writes result sine result sin(pia) to the location pointed to by sp
+Writes result cosine result cos(pia) to the location pointed to by cp
 
 In exhaustive testing, the maximum error in sine results was 0.96677 ulp,
 the maximum error in cosine results was 0.96563 ulp, meaning results are

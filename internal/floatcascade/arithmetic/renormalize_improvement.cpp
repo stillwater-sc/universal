@@ -283,7 +283,7 @@ int TestMultiplicationRenormalization() {
 int TestMultipleSizes() {
     int nrOfFailedTests = 0;
 
-    std::cout << "Test 2: Verify Renormalization for N ∈ {2, 3, 4, 8}\n";
+    std::cout << "Test 2: Verify Renormalization for N in {2, 3, 4, 8}\n";
     std::cout << "====================================================\n\n";
 
     // Test N=2
