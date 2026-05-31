@@ -44,8 +44,8 @@ inline bool parse(const std::string&, dd_cascade&);
 // - Compatible API with classic dd (high(), low() accessors)
 //
 // Features ported from classic dd via floatcascade base class:
-// - ✓ Full to_string() with formatting support (via floatcascade)
-// - ✓ Robust parse() for decimal strings (via floatcascade)
+// - OK Full to_string() with formatting support (via floatcascade)
+// - OK Robust parse() for decimal strings (via floatcascade)
 //
 // TODO: Port remaining features from classic dd:
 // - Advanced mathematical functions (sqrt, exp, log, trig)

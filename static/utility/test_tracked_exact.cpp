@@ -224,7 +224,7 @@ TrackedShadow (tracked_shadow.hpp):
 TrackedLNS (tracked_lns.hpp):
   - Added absorption tracking to complement existing cancellation detection
   - LNS can now track both:
-    - Cancellations: when a ≈ -b causes precision loss (subtraction-like)
+    - Cancellations: when a ~= -b causes precision loss (subtraction-like)
     - Absorptions: when |a| >> |b| causes the smaller operand to be swallowed
 
 Detection logic:
@@ -234,6 +234,6 @@ Detection logic:
 Test results:
   1.0 + 1e-20:    Absorptions: 1  (correctly detected)
   1.0 + 0.5:      Absorptions: 0  (correctly not flagged)
-  1.0 + 10×1e-20: Absorptions: 10 (each addition detected)
+  1.0 + 10*1e-20: Absorptions: 10 (each addition detected)
 */
 

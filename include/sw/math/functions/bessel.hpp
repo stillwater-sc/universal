@@ -86,7 +86,7 @@ T bessel_j1(T x, unsigned int max_terms = 50, T tolerance = T(1e-12)) {
 }
 
 
-// Modified Bessel function I_0(x) — series expansion
+// Modified Bessel function I_0(x) -- series expansion
 template<typename T>
 T bessel_i0(T x, unsigned int max_terms = 50, T tolerance = T(1e-12)) {
 	using std::abs;
@@ -103,7 +103,7 @@ T bessel_i0(T x, unsigned int max_terms = 50, T tolerance = T(1e-12)) {
     return sum;
 }
 
-// Modified Bessel function I_1(x) — series expansion
+// Modified Bessel function I_1(x) -- series expansion
 template<typename T>
 T bessel_i1(T x, unsigned int max_terms = 50, T tolerance = T(1e-12)) {
     using std::abs;
@@ -120,7 +120,7 @@ T bessel_i1(T x, unsigned int max_terms = 50, T tolerance = T(1e-12)) {
     return sum;
 }
 
-// Modified Bessel function K_0(x) — asymptotic approximation
+// Modified Bessel function K_0(x) -- asymptotic approximation
 template<typename T>
 T bessel_k0(T x) {
     using std::log, std::sqrt, std::exp;
@@ -136,7 +136,7 @@ T bessel_k0(T x) {
         // Series expansion for small x
         T y = x / T(2);
         //T y2 = y * y;
-        series = -log(y) * bessel_i0(x) + T(0.5772156649);  // Euler-Mascheroni γ
+        series = -log(y) * bessel_i0(x) + T(0.5772156649);  // Euler-Mascheroni gamma
     } else {
         // Asymptotic decay
         series = sqrt(T(3.14159265358979323846) / (T(2) * x)) * exp(-x);
@@ -145,7 +145,7 @@ T bessel_k0(T x) {
     return series;
 }
 
-// Modified Bessel function K_1(x) — asymptotic approximation
+// Modified Bessel function K_1(x) -- asymptotic approximation
 template<typename T>
 T bessel_k1(T x) {
     using std::log, std::sqrt, std::exp;
@@ -165,7 +165,7 @@ T bessel_k1(T x) {
     return series;
 }
 
-// Bessel function Y_0(x) — series expansion
+// Bessel function Y_0(x) -- series expansion
 template<typename T>
 T bessel_y0(T x, unsigned int max_terms = 50, T tolerance = T(1e-12)) {
 	using std::abs, std::pow, std::log;
@@ -184,7 +184,7 @@ T bessel_y0(T x, unsigned int max_terms = 50, T tolerance = T(1e-12)) {
     return (T(2) / T(3.14159265358979323846)) * (log(x / T(2)) + gamma) * bessel_j0<T>(x) - sum;
 }
 
-// Bessel function Y_1(x) — series expansion
+// Bessel function Y_1(x) -- series expansion
 template<typename T>
 T bessel_y1(T x, unsigned int max_terms = 50, T tolerance = T(1e-12)) {
 	using std::abs, std::pow, std::log;

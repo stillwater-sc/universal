@@ -182,7 +182,7 @@ void demonstrateMatvec() {
         double energy_pj = calculateEnergy(stats, model, BitWidth::bits_32);
 
         std::cout << "  Operations: " << stats.add << " adds, " << stats.mul << " muls\n";
-        std::cout << "  Expected: " << (N * N) << " adds, " << (N * N) << " muls (O(n²))\n";
+        std::cout << "  Expected: " << (N * N) << " adds, " << (N * N) << " muls (O(n^2))\n";
         std::cout << "  Energy: " << std::fixed << std::setprecision(2)
                   << (energy_pj / 1000.0) << " nJ\n\n";
     }
@@ -265,11 +265,11 @@ void demonstratePolynomialEval() {
     std::cout << "Polynomial Evaluation (Horner's Method)\n";
     std::cout << "========================================\n\n";
 
-    // Evaluate p(x) = 1 + 2x + 3x² + 4x³ + 5x⁴ + 6x⁵
+    // Evaluate p(x) = 1 + 2x + 3x^2 + 4x^3 + 5x^4 + 6x^5
     std::vector<float> coeffs_f = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
     float x_val = 0.5f;
 
-    std::cout << "Polynomial: 1 + 2x + 3x² + 4x³ + 5x⁴ + 6x⁵\n";
+    std::cout << "Polynomial: 1 + 2x + 3x^2 + 4x^3 + 5x^4 + 6x^5\n";
     std::cout << "Evaluating at x = " << x_val << "\n\n";
 
     // --- Float ---

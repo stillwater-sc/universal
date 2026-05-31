@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // TEST TOLERANCE:
-// Round-trip conversions (string → parse → to_string → parse) introduce tiny errors
+// Round-trip conversions (string -> parse -> to_string -> parse) introduce tiny errors
 // due to accumulated floating-point operations (multiplication by 10, division, etc.).
 // These errors are on the order of 1e-22 to 1e-30, which is:
 //   - ~1000x smaller than the double-double precision (~1e-31)

@@ -11,22 +11,22 @@ namespace sw { namespace universal {
 	// sin: sine function - REFERENCE IMPLEMENTATION
 	//
 	// This implementation demonstrates best practices for adaptive-precision sine:
-	// 1. High-precision π constant (100+ digits, OEIS A000796)
+	// 1. High-precision pi constant (100+ digits, OEIS A000796)
 	// 2. Pure ereal angle reduction (no double contamination)
 	// 3. Adaptive convergence based on working precision
-	// 4. Efficient Taylor series: sin(x) = x - x³/3! + x⁵/5! - x⁷/7! + ...
+	// 4. Efficient Taylor series: sin(x) = x - x^3/3! + x^5/5! - x^7/7! + ...
 	//
 	// ALGORITHM OVERVIEW:
 	// ------------------
 	// The Taylor series for sin converges as:
-	//   sin(x) = x - x³/3! + x⁵/5! - x⁷/7! + ... = Σ (-1)^n x^(2n+1)/(2n+1)!
+	//   sin(x) = x - x^3/3! + x^5/5! - x^7/7! + ... = Sum (-1)^n x^(2n+1)/(2n+1)!
 	//
-	// Convergence rate is O(x^(2n+1)/(2n+1)!), which is excellent for |x| < π.
+	// Convergence rate is O(x^(2n+1)/(2n+1)!), which is excellent for |x| < pi.
 	//
 	// ANGLE REDUCTION:
 	// ----------------
-	// Reduce x to [-π, π] using modulo 2π:
-	//   sin(x) = sin(x mod 2π)
+	// Reduce x to [-pi, pi] using modulo 2pi:
+	//   sin(x) = sin(x mod 2pi)
 	//
 	// REFERENCES:
 	// -----------
@@ -48,9 +48,9 @@ namespace sw { namespace universal {
 		if (x.iszero()) return Real(0.0);
 
 		// ============================================================================
-		// STEP 2: High-precision π constant
+		// STEP 2: High-precision pi constant
 		// ============================================================================
-		// π to 200 digits (OEIS A000796)
+		// pi to 200 digits (OEIS A000796)
 		Real pi;
 		pi = ereal_pi<maxlimbs>();  // full ereal precision (#1002)
 
@@ -58,13 +58,13 @@ namespace sw { namespace universal {
 		Real two_pi = pi * two;
 
 		// ============================================================================
-		// STEP 3: Angle reduction - reduce to [-π, π]
+		// STEP 3: Angle reduction - reduce to [-pi, pi]
 		// ============================================================================
 		Real reduced_x = x;
 		Real x_abs = abs(x);
 
 		if (x_abs > two_pi) {
-			// Compute number of periods: n = floor(x / 2π)
+			// Compute number of periods: n = floor(x / 2pi)
 			// Must avoid double contamination in division
 			Real periods_real = x_abs / two_pi;
 
@@ -81,11 +81,11 @@ namespace sw { namespace universal {
 				periods = floor(periods_real);
 			}
 
-			// Reduce: x - 2π·n
+			// Reduce: x - 2pi*n
 			reduced_x = x - two_pi * periods;
 		}
 
-		// Further reduce to [-π, π]
+		// Further reduce to [-pi, pi]
 		if (reduced_x > pi) reduced_x = reduced_x - two_pi;
 		Real neg_pi = -pi;
 		if (reduced_x < neg_pi) reduced_x = reduced_x + two_pi;
@@ -93,8 +93,8 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 4: Taylor series with adaptive convergence
 		// ============================================================================
-		// sin(x) = x - x³/3! + x⁵/5! - x⁷/7! + ...
-		// Compute incrementally: term_n = -term_{n-1} · x² / ((2n)(2n+1))
+		// sin(x) = x - x^3/3! + x^5/5! - x^7/7! + ...
+		// Compute incrementally: term_n = -term_{n-1} * x^2 / ((2n)(2n+1))
 		//
 		Real x_squared = reduced_x * reduced_x;
 		Real term = reduced_x;
@@ -110,7 +110,7 @@ namespace sw { namespace universal {
 		}
 
 		for (int n = 1; n < max_iterations; ++n) {
-			// Next term: term_n = -term_{n-1} · x² / ((2n)(2n+1))
+			// Next term: term_n = -term_{n-1} * x^2 / ((2n)(2n+1))
 			// Critical: Must avoid double contamination
 			Real denominator_part1 = Real(static_cast<double>(2 * n));
 			Real denominator_part2 = Real(static_cast<double>(2 * n + 1));
@@ -130,22 +130,22 @@ namespace sw { namespace universal {
 	// cos: cosine function - REFERENCE IMPLEMENTATION
 	//
 	// This implementation demonstrates best practices for adaptive-precision cosine:
-	// 1. High-precision π constant (100+ digits, OEIS A000796)
+	// 1. High-precision pi constant (100+ digits, OEIS A000796)
 	// 2. Pure ereal angle reduction (no double contamination)
 	// 3. Adaptive convergence based on working precision
-	// 4. Efficient Taylor series: cos(x) = 1 - x²/2! + x⁴/4! - x⁶/6! + ...
+	// 4. Efficient Taylor series: cos(x) = 1 - x^2/2! + x^4/4! - x^6/6! + ...
 	//
 	// ALGORITHM OVERVIEW:
 	// ------------------
 	// The Taylor series for cos converges as:
-	//   cos(x) = 1 - x²/2! + x⁴/4! - x⁶/6! + ... = Σ (-1)^n x^(2n)/(2n)!
+	//   cos(x) = 1 - x^2/2! + x^4/4! - x^6/6! + ... = Sum (-1)^n x^(2n)/(2n)!
 	//
-	// Convergence rate is O(x^(2n)/(2n)!), which is excellent for |x| < π.
+	// Convergence rate is O(x^(2n)/(2n)!), which is excellent for |x| < pi.
 	//
 	// ANGLE REDUCTION:
 	// ----------------
-	// Reduce x to [-π, π] using modulo 2π:
-	//   cos(x) = cos(x mod 2π)
+	// Reduce x to [-pi, pi] using modulo 2pi:
+	//   cos(x) = cos(x mod 2pi)
 	//
 	// REFERENCES:
 	// -----------
@@ -167,9 +167,9 @@ namespace sw { namespace universal {
 		if (x.iszero()) return Real(1.0);
 
 		// ============================================================================
-		// STEP 2: High-precision π constant
+		// STEP 2: High-precision pi constant
 		// ============================================================================
-		// π to 200 digits (OEIS A000796)
+		// pi to 200 digits (OEIS A000796)
 		Real pi;
 		pi = ereal_pi<maxlimbs>();  // full ereal precision (#1002)
 
@@ -177,13 +177,13 @@ namespace sw { namespace universal {
 		Real two_pi = pi * two;
 
 		// ============================================================================
-		// STEP 3: Angle reduction - reduce to [-π, π]
+		// STEP 3: Angle reduction - reduce to [-pi, pi]
 		// ============================================================================
 		Real reduced_x = x;
 		Real x_abs = abs(x);
 
 		if (x_abs > two_pi) {
-			// Compute number of periods: n = floor(x / 2π)
+			// Compute number of periods: n = floor(x / 2pi)
 			// Must avoid double contamination in division
 			Real periods_real = x_abs / two_pi;
 
@@ -200,11 +200,11 @@ namespace sw { namespace universal {
 				periods = floor(periods_real);
 			}
 
-			// Reduce: x - 2π·n
+			// Reduce: x - 2pi*n
 			reduced_x = x - two_pi * periods;
 		}
 
-		// Further reduce to [-π, π]
+		// Further reduce to [-pi, pi]
 		if (reduced_x > pi) reduced_x = reduced_x - two_pi;
 		Real neg_pi = -pi;
 		if (reduced_x < neg_pi) reduced_x = reduced_x + two_pi;
@@ -212,8 +212,8 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 4: Taylor series with adaptive convergence
 		// ============================================================================
-		// cos(x) = 1 - x²/2! + x⁴/4! - x⁶/6! + ...
-		// Compute incrementally: term_n = -term_{n-1} · x² / ((2n-1)(2n))
+		// cos(x) = 1 - x^2/2! + x^4/4! - x^6/6! + ...
+		// Compute incrementally: term_n = -term_{n-1} * x^2 / ((2n-1)(2n))
 		//
 		Real x_squared = reduced_x * reduced_x;
 		Real term(1.0);
@@ -229,7 +229,7 @@ namespace sw { namespace universal {
 		}
 
 		for (int n = 1; n < max_iterations; ++n) {
-			// Next term: term_n = -term_{n-1} · x² / ((2n-1)(2n))
+			// Next term: term_n = -term_{n-1} * x^2 / ((2n-1)(2n))
 			// Critical: Must avoid double contamination
 			Real denominator_part1 = Real(static_cast<double>(2 * n - 1));
 			Real denominator_part2 = Real(static_cast<double>(2 * n));
@@ -260,7 +260,7 @@ namespace sw { namespace universal {
 		Real sin_x = sin(x);
 		Real cos_x = cos(x);
 
-		// Check for division by zero (cos(x) = 0 at π/2, 3π/2, etc.)
+		// Check for division by zero (cos(x) = 0 at pi/2, 3pi/2, etc.)
 		if (cos_x.iszero()) {
 			return Real(std::numeric_limits<double>::quiet_NaN());
 		}
@@ -271,15 +271,15 @@ namespace sw { namespace universal {
 	// asin: arcsine function - REFERENCE IMPLEMENTATION
 	//
 	// This implementation demonstrates best practices for adaptive-precision arcsine:
-	// 1. High-precision π/2 constant (100+ digits)
+	// 1. High-precision pi/2 constant (100+ digits)
 	// 2. Pure ereal arithmetic (no double contamination)
 	// 3. Adaptive convergence based on working precision
 	// 4. Argument reduction for |x| near 1
 	//
 	// ALGORITHM OVERVIEW:
 	// ------------------
-	// For |x| ≤ 0.8: Taylor series asin(x) = x + (1/2)x³/3 + (1·3/2·4)x⁵/5 + ...
-	// For |x| > 0.8: Use asin(x) = sign(x) * (π/2 - asin(sqrt(1-x²)))
+	// For |x| <= 0.8: Taylor series asin(x) = x + (1/2)x^3/3 + (1*3/2*4)x^5/5 + ...
+	// For |x| > 0.8: Use asin(x) = sign(x) * (pi/2 - asin(sqrt(1-x^2)))
 	//
 	// REFERENCES:
 	// -----------
@@ -305,7 +305,7 @@ namespace sw { namespace universal {
 
 		if (x.iszero()) return Real(0.0);
 
-		// High-precision π/2 constant (100+ digits)
+		// High-precision pi/2 constant (100+ digits)
 		Real pi_2;
 		pi_2 = ereal_pi_2<maxlimbs>();  // full ereal precision (#1002)
 
@@ -315,7 +315,7 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 2: Argument reduction for |x| > 0.8
 		// ============================================================================
-		// For |x| > 0.8, use asin(x) = sign(x) * (π/2 - asin(sqrt(1-x²)))
+		// For |x| > 0.8, use asin(x) = sign(x) * (pi/2 - asin(sqrt(1-x^2)))
 		Real threshold(0.8);
 		if (abs_x > threshold) {
 			Real sqrt_arg = sqrt(one - abs_x * abs_x);
@@ -326,10 +326,10 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 3: Taylor series with adaptive convergence
 		// ============================================================================
-		// asin(x) = x + (1/2)x³/3 + (1·3/2·4)x⁵/5 + (1·3·5/2·4·6)x⁷/7 + ...
+		// asin(x) = x + (1/2)x^3/3 + (1*3/2*4)x^5/5 + (1*3*5/2*4*6)x^7/7 + ...
 		//
 		// General term: [(2n-1)!!/(2n)!!] * x^(2n+1)/(2n+1)
-		// Term recursion: term_n = term_{n-1} * x² * (2n-1)² / [2n(2n+1)]
+		// Term recursion: term_n = term_{n-1} * x^2 * (2n-1)^2 / [2n(2n+1)]
 		//
 		Real x_squared = x * x;
 		Real term = x;
@@ -345,14 +345,14 @@ namespace sw { namespace universal {
 		}
 
 		for (int n = 1; n < max_iterations; ++n) {
-			// Correct recursion: term_n = term_{n-1} * x² * (2n-1)² / [2n(2n+1)]
+			// Correct recursion: term_n = term_{n-1} * x^2 * (2n-1)^2 / [2n(2n+1)]
 			// BUG FIX: Previous version was missing the squared numerator!
 			// Critical: Must avoid double contamination
 			Real factor_2n_minus_1 = Real(static_cast<double>(2 * n - 1));
 			Real factor_2n = Real(static_cast<double>(2 * n));
 			Real factor_2n_plus_1 = Real(static_cast<double>(2 * n + 1));
 
-			// Note the squared numerator: (2n-1)²
+			// Note the squared numerator: (2n-1)^2
 			term = term * x_squared * factor_2n_minus_1 * factor_2n_minus_1 / (factor_2n * factor_2n_plus_1);
 			result = result + term;
 
@@ -367,8 +367,8 @@ namespace sw { namespace universal {
 	// acos: arccosine function - REFERENCE IMPLEMENTATION
 	//
 	// This implementation demonstrates best practices for adaptive-precision arccosine:
-	// 1. High-precision π/2 constant (100+ digits)
-	// 2. Uses acos(x) = π/2 - asin(x) identity
+	// 1. High-precision pi/2 constant (100+ digits)
+	// 2. Uses acos(x) = pi/2 - asin(x) identity
 	//
 	// REFERENCES:
 	// -----------
@@ -377,24 +377,24 @@ namespace sw { namespace universal {
 	//
 	// HISTORY:
 	// --------
-	// 2025-01: Refactored to use high-precision π/2 constant
+	// 2025-01: Refactored to use high-precision pi/2 constant
 	//
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> acos(const ereal<maxlimbs>& x) {
 		using Real = ereal<maxlimbs>;
 
-		// Domain check: |x| must be ≤ 1
+		// Domain check: |x| must be <= 1
 		Real abs_x = abs(x);
 		Real one(1.0);
 		if (abs_x > one) {
 			return Real(std::numeric_limits<double>::quiet_NaN());
 		}
 
-		// High-precision π/2 constant (100+ digits)
+		// High-precision pi/2 constant (100+ digits)
 		Real pi_2;
 		pi_2 = ereal_pi_2<maxlimbs>();  // full ereal precision (#1002)
 
-		// acos(x) = π/2 - asin(x)
+		// acos(x) = pi/2 - asin(x)
 		return pi_2 - asin(x);
 	}
 
@@ -410,21 +410,21 @@ namespace sw { namespace universal {
 	// ALGORITHM OVERVIEW:
 	// ------------------
 	// The Taylor series for atan converges as:
-	//   atan(x) = x - x³/3 + x⁵/5 - x⁷/7 + ...  for |x| ≤ 1
+	//   atan(x) = x - x^3/3 + x^5/5 - x^7/7 + ...  for |x| <= 1
 	//
-	// Convergence rate is O(x²ⁿ), so we need |x| << 1 for efficiency.
+	// Convergence rate is O(x^2n), so we need |x| << 1 for efficiency.
 	//
 	// ARGUMENT REDUCTION STRATEGY:
 	// ----------------------------
-	// 1. For |x| > 1: Use atan(x) = sign(x)·π/2 - atan(1/x)
+	// 1. For |x| > 1: Use atan(x) = sign(x)*pi/2 - atan(1/x)
 	// 2. For |x| near 1: Use atan(x) = atan(c) + atan((x-c)/(1+cx)) where c is precomputed
-	// 3. For 0.5 < |x| ≤ tan(π/12): Reduce using addition formula
-	// 4. For |x| ≤ 0.5: Use Taylor series directly (converges in ~10-20 terms)
+	// 3. For 0.5 < |x| <= tan(pi/12): Reduce using addition formula
+	// 4. For |x| <= 0.5: Use Taylor series directly (converges in ~10-20 terms)
 	//
 	// SPECIAL VALUES:
 	// ---------------
 	// For x = 1, we use Machin's formula (1706):
-	//   π/4 = 4·atan(1/5) - atan(1/239)
+	//   pi/4 = 4*atan(1/5) - atan(1/239)
 	// This converges in ~100 terms to 100 digits, vs. 10^7 terms for Leibniz series!
 	//
 	// REFERENCES:
@@ -455,16 +455,16 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 2: Special value - atan(1) using Machin's formula
 		// ============================================================================
-		// Machin (1706): π/4 = 4·atan(1/5) - atan(1/239)
-		// This is ~1000x faster than the Leibniz series for π/4 = 1 - 1/3 + 1/5 - ...
+		// Machin (1706): pi/4 = 4*atan(1/5) - atan(1/239)
+		// This is ~1000x faster than the Leibniz series for pi/4 = 1 - 1/3 + 1/5 - ...
 		if (abs_x == one) {
 			Real five(5.0);
 			Real two_three_nine(239.0);
 			Real four(4.0);
 
-			Real term1 = four * atan(one / five);      // 4·atan(1/5)
+			Real term1 = four * atan(one / five);      // 4*atan(1/5)
 			Real term2 = atan(one / two_three_nine);    // atan(1/239)
-			Real result = term1 - term2;                // π/4
+			Real result = term1 - term2;                // pi/4
 
 			return negative ? -result : result;
 		}
@@ -472,10 +472,10 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 3: Argument reduction for |x| > 1
 		// ============================================================================
-		// Use identity: atan(x) = π/2 - atan(1/x) for x > 0
+		// Use identity: atan(x) = pi/2 - atan(1/x) for x > 0
 		// This reduces |argument| from >1 to <1
 		if (abs_x > one) {
-			// High-precision π/2 constant (100+ digits)
+			// High-precision pi/2 constant (100+ digits)
 			Real pi_2;
 			pi_2 = ereal_pi_2<maxlimbs>();  // full ereal precision (#1002)
 
@@ -486,7 +486,7 @@ namespace sw { namespace universal {
 		}
 
 		// ============================================================================
-		// STEP 4: Argument reduction for 0.5 < |x| ≤ 1
+		// STEP 4: Argument reduction for 0.5 < |x| <= 1
 		// ============================================================================
 		// Use addition formula: atan(x) = atan(1/2) + atan((x - 1/2)/(1 + x/2))
 		// This reduces argument from [0.5, 1] to [-0.2, 0.4], improving convergence ~3x
@@ -515,11 +515,11 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 5: Taylor series for small argument
 		// ============================================================================
-		// Taylor series: atan(x) = Σ((-1)ⁿ x^(2n+1))/(2n+1) for |x| ≤ 1
-		//              = x - x³/3 + x⁵/5 - x⁷/7 + x⁹/9 - ...
+		// Taylor series: atan(x) = Sum((-1)^n x^(2n+1))/(2n+1) for |x| <= 1
+		//              = x - x^3/3 + x^5/5 - x^7/7 + x^9/9 - ...
 		//
-		// For |x| < 0.5: Converges with relative error ε after n ≈ -log(ε)/(2·log(|x|)) terms
-		// Example: |x| = 0.4, ε = 10⁻¹⁰⁰ requires n ≈ 55 terms
+		// For |x| < 0.5: Converges with relative error eps after n ~= -log(eps)/(2*log(|x|)) terms
+		// Example: |x| = 0.4, eps = 10^-100 requires n ~= 55 terms
 		//
 		Real x_squared = reduced_x * reduced_x;
 		Real term = reduced_x;           // First term: x
@@ -527,10 +527,10 @@ namespace sw { namespace universal {
 
 		// Adaptive convergence: Stop when |term| < ulp(result)
 		// This ensures we've reached the precision limit of the representation
-		// For ereal<>: ~127 decimal digits, so we need ~53·maxlimbs binary digits precision
+		// For ereal<>: ~127 decimal digits, so we need ~53*maxlimbs binary digits precision
 		//
 		// Estimate working precision in bits: 53 * maxlimbs
-		// Convert to decimal: bits / log₂(10) ≈ bits / 3.322
+		// Convert to decimal: bits / log2(10) ~= bits / 3.322
 		//
 		// IMPORTANT: For double-precision comparison, we use a threshold that works
 		// with the double() conversion. A more sophisticated approach would compute
@@ -548,7 +548,7 @@ namespace sw { namespace universal {
 		}
 
 		for (int n = 1; n < max_iterations; ++n) {
-			// Compute next term: term = term·(-x²)
+			// Compute next term: term = term*(-x^2)
 			term = term * (-x_squared);
 
 			// Denominator: For small n (< 10^15), double has exact integer representation
@@ -603,12 +603,12 @@ namespace sw { namespace universal {
 		}
 
 		if (x.iszero()) {
-			// x = 0, result is ±π/2
+			// x = 0, result is +/-pi/2
 			return y.isneg() ? -pi_2 : pi_2;
 		}
 
 		if (y.iszero()) {
-			// y = 0, result is 0 or ±π
+			// y = 0, result is 0 or +/-pi
 			if (x.isneg()) return pi;
 			return Real(0.0);
 		}

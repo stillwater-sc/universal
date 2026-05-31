@@ -302,7 +302,7 @@ public:
 		double total_error = cumulative_error_ + rhs.cumulative_error_ + std::abs(static_cast<double>(err));
 
 		// Detect absorption: when a small operand is swallowed by a large one
-		// For subtraction a - b, absorption happens when |b| << |a| and result ≈ a
+		// For subtraction a - b, absorption happens when |b| << |a| and result ~= a
 		uint64_t total_absorptions = absorptions_ + rhs.absorptions_;
 		double bits_lost = detect_absorption(value_, rhs.value_, diff);
 		if (bits_lost > 0.0) {
@@ -509,7 +509,7 @@ TrackedExact<T> abs(const TrackedExact<T>& v) {
 }
 
 /// Square root with error propagation (preserves absorptions)
-/// sqrt(a + ea) ≈ sqrt(a) + ea/(2*sqrt(a))
+/// sqrt(a + ea) ~= sqrt(a) + ea/(2*sqrt(a))
 template<typename T>
 TrackedExact<T> sqrt(const TrackedExact<T>& v) {
 	T result = std::sqrt(v.value());

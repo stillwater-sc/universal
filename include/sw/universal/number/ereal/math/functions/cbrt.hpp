@@ -11,7 +11,7 @@ namespace sw { namespace universal {
 	// cbrt: cube root function
 	// Phase 3: Full adaptive-precision implementation with range reduction
 	//   Strategy: Use frexp/ldexp for range reduction, then Newton-Raphson
-	//   Algorithm: (1) Extract sign, (2) Use frexp to get r × 2^e,
+	//   Algorithm: (1) Extract sign, (2) Use frexp to get r * 2^e,
 	//             (3) Adjust exponent divisible by 3, (4) Newton iteration on r,
 	//             (5) Scale result by 2^(e/3), (6) Restore sign
 	template<unsigned maxlimbs>
@@ -24,7 +24,7 @@ namespace sw { namespace universal {
 		bool negative = a.isneg();
 		ereal<maxlimbs> abs_a = negative ? -a : a;
 
-		// Use frexp to get: abs_a = r × 2^e where 0.5 ≤ r < 1
+		// Use frexp to get: abs_a = r * 2^e where 0.5 <= r < 1
 		int e;
 		ereal<maxlimbs> r = frexp(abs_a, &e);
 
@@ -35,7 +35,7 @@ namespace sw { namespace universal {
 			r = ldexp(r, -1);  // r = r / 2
 		}
 
-		// At this point: 0.125 ≤ r < 1.0 and e is divisible by 3
+		// At this point: 0.125 <= r < 1.0 and e is divisible by 3
 		// Initial approximation for cbrt(r) from high component
 		const auto& r_limbs = r.limbs();
 		ereal<maxlimbs> x = std::cbrt(r_limbs[0]);
@@ -43,7 +43,7 @@ namespace sw { namespace universal {
 		// Determine iterations for adaptive precision
 		int iterations = 3 + static_cast<int>(std::log2(maxlimbs + 1));
 
-		// Newton-Raphson for cbrt: x' = (2x + r/x²) / 3
+		// Newton-Raphson for cbrt: x' = (2x + r/x^2) / 3
 		// This converges to cbrt(r)
 		for (int i = 0; i < iterations; ++i) {
 			ereal<maxlimbs> x_squared = x * x;

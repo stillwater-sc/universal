@@ -19,18 +19,18 @@ namespace sw { namespace universal {
 	// ALGORITHM OVERVIEW:
 	// ------------------
 	// The Taylor series for exp converges as:
-	//   exp(x) = 1 + x + x²/2! + x³/3! + x⁴/4! + ... = Σ xⁿ/n!
+	//   exp(x) = 1 + x + x^2/2! + x^3/3! + x^4/4! + ... = Sum x^n/n!
 	//
-	// Convergence rate is O(xⁿ/n!), so we need |x| << 1 for efficiency.
+	// Convergence rate is O(x^n/n!), so we need |x| << 1 for efficiency.
 	//
 	// RANGE REDUCTION STRATEGY:
 	// -------------------------
-	// 1. Reduce x → x/2^k until |x/2^k| ≤ 0.5
+	// 1. Reduce x -> x/2^k until |x/2^k| <= 0.5
 	// 2. Compute exp(x/2^k) using Taylor series (converges in ~20 terms)
 	// 3. Reconstruct: exp(x) = [exp(x/2^k)]^(2^k) using repeated squaring
 	//
-	// For |x| ≤ 0.5: Taylor series gives ~53 bits per 20 terms
-	// Total cost: ~20 terms + k squarings, where k ≈ log₂(|x|+1)
+	// For |x| <= 0.5: Taylor series gives ~53 bits per 20 terms
+	// Total cost: ~20 terms + k squarings, where k ~= log2(|x|+1)
 	//
 	// REFERENCES:
 	// -----------
@@ -74,19 +74,19 @@ namespace sw { namespace universal {
 			reduced_x = reduced_x * half;
 			++reduction_count;
 		}
-		// Now |reduced_x| ≤ 0.5, Taylor series converges rapidly
+		// Now |reduced_x| <= 0.5, Taylor series converges rapidly
 
 		// ============================================================================
 		// STEP 3: Taylor series for exp(reduced_x)
 		// ============================================================================
-		// Taylor series: exp(x) = 1 + x + x²/2! + x³/3! + x⁴/4! + ...
-		//              = Σ(n=0 to ∞) xⁿ/n!
+		// Taylor series: exp(x) = 1 + x + x^2/2! + x^3/3! + x^4/4! + ...
+		//              = Sum(n=0 to inf) x^n/n!
 		//
-		// For |x| ≤ 0.5: After n terms, error ≈ |x|^(n+1)/(n+1)!
-		// Example: |x| = 0.5, n = 20 gives error ≈ 2^(-69), sufficient for 20+ decimal digits
+		// For |x| <= 0.5: After n terms, error ~= |x|^(n+1)/(n+1)!
+		// Example: |x| = 0.5, n = 20 gives error ~= 2^(-69), sufficient for 20+ decimal digits
 		//
 		Real result(1.0);
-		Real term = reduced_x;  // First term: x¹/1!
+		Real term = reduced_x;  // First term: x^1/1!
 
 		// Adaptive convergence threshold
 		int precision_digits = static_cast<int>(53.0 * maxlimbs / 3.322);
@@ -144,7 +144,7 @@ namespace sw { namespace universal {
 
 	// expm1: compute e^x - 1 accurately for small x
 	// Phase 4a: implement using Taylor series (avoids cancellation for small x)
-	// For small x: expm1(x) = x + x²/2! + x³/3! + x⁴/4! + ...
+	// For small x: expm1(x) = x + x^2/2! + x^3/3! + x^4/4! + ...
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> expm1(const ereal<maxlimbs>& x) {
 		using Real = ereal<maxlimbs>;
@@ -155,7 +155,7 @@ namespace sw { namespace universal {
 		Real neg_threshold(-0.1);
 
 		if (x < threshold && x > neg_threshold) {
-			// Taylor series: expm1(x) = x + x²/2! + x³/3! + ...
+			// Taylor series: expm1(x) = x + x^2/2! + x^3/3! + ...
 			Real result = x;
 			Real term = x;
 

@@ -286,10 +286,10 @@ namespace sw { namespace universal {
     /// Verify ubit propagation for addition: result.ubit = a.ubit || b.ubit || precision_lost
     ///
     /// Tests four cases:
-    /// 1. exact + exact (ubit=0 + ubit=0) → result.ubit depends on precision loss
-    /// 2. exact + interval (ubit=0 + ubit=1) → result.ubit must be 1
-    /// 3. interval + exact (ubit=1 + ubit=0) → result.ubit must be 1
-    /// 4. interval + interval (ubit=1 + ubit=1) → result.ubit must be 1
+    /// 1. exact + exact (ubit=0 + ubit=0) -> result.ubit depends on precision loss
+    /// 2. exact + interval (ubit=0 + ubit=1) -> result.ubit must be 1
+    /// 3. interval + exact (ubit=1 + ubit=0) -> result.ubit must be 1
+    /// 4. interval + interval (ubit=1 + ubit=1) -> result.ubit must be 1
     /// </summary>
     template<typename TestType>
     int VerifyUbitPropagationAdd(bool reportTestCases) {
@@ -333,7 +333,7 @@ namespace sw { namespace universal {
 		    }
 	    }
 
-	    // Test Case 2 & 3: exact + interval and interval + exact → ubit must be 1
+	    // Test Case 2 & 3: exact + interval and interval + exact -> ubit must be 1
 	    for (size_t i = 0; i < NR_VALUES; i += 2) {
 		    a.setbits(i);
 		    if (a.isnan() || a.isinf()) continue;
@@ -363,7 +363,7 @@ namespace sw { namespace universal {
 		    }
 	    }
 
-	    // Test Case 4: interval + interval → ubit must be 1
+	    // Test Case 4: interval + interval -> ubit must be 1
 	    for (size_t i = 1; i < NR_VALUES; i += 2) {
 		    a.setbits(i);
 		    if (a.isnan() || a.isinf()) continue;

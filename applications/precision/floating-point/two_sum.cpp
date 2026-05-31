@@ -1,4 +1,4 @@
-﻿// two_sum.cpp: TwoSum evaluation of posit number systems
+// two_sum.cpp: TwoSum evaluation of posit number systems
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

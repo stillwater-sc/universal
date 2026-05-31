@@ -29,7 +29,7 @@ namespace sw { namespace universal {
 // For fixpnt<nbits, rbits, arithmetic, bt>:
 //   - Full product is blockbinary<2*nbits, bt, Signed> (2's complement)
 //   - Product has 2*rbits fractional bits
-//   - We extract: sign, magnitude, MSB position → blocktriple
+//   - We extract: sign, magnitude, MSB position -> blocktriple
 //
 // Returns a blocktriple<2*nbits-2, REP, bt> representing the unrounded product.
 // The REP tag with fbits=2*nbits-2 gives bfbits=2*nbits, radix=2*nbits-2,
@@ -128,7 +128,7 @@ quire_resolve(const quire<fixpnt<nbits, rbits, arithmetic, bt>, capacity, LimbTy
 		// The fixpnt radix point is at bit position rbits.
 		// Quire accumulator bit i represents 2^(i - rp) = 2^(i - 2*rbits).
 		// fixpnt bit j represents 2^(j - rbits).
-		// So quire bit i maps to fixpnt bit j where: i - 2*rbits = j - rbits → j = i - rbits.
+		// So quire bit i maps to fixpnt bit j where: i - 2*rbits = j - rbits -> j = i - rbits.
 
 		// Extract nbits from the quire starting at the MSB
 		// The MSB of the fixpnt result is at bit (nbits-2) for positive values

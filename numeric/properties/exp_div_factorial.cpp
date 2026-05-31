@@ -1,4 +1,4 @@
-﻿// exp_div_factorial.cpp: 
+// exp_div_factorial.cpp: 
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

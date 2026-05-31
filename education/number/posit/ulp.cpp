@@ -87,23 +87,23 @@ try {
 
 	/*
 		Example 2
-		The following example in Java approximates π as a floating point value by finding the two double values bracketing π:
+		The following example in Java approximates pi as a floating point value by finding the two double values bracketing pi:
 
-		p0 < π < p1
-		// π with 20 decimal digits
-		BigDecimal π = new BigDecimal("3.14159265358979323846");
+		p0 < pi < p1
+		// pi with 20 decimal digits
+		BigDecimal pi = new BigDecimal("3.14159265358979323846");
 
 		// truncate to a double floating point
-		double p0 = π.doubleValue();
+		double p0 = pi.doubleValue();
 		// -> 3.141592653589793  (hex: 0x1.921fb54442d18p1)
 
-		// p0 is smaller than π, so find next number representable as double
+		// p0 is smaller than pi, so find next number representable as double
 		double p1 = Math.nextUp(p0);
 		// -> 3.1415926535897936 (hex: 0x1.921fb54442d19p1)
-		Then ULP(π) is determined as
+		Then ULP(pi) is determined as
 
-		ULP(π) = p1 - p0
-		// ulp(π) is the difference between p1 and p0
+		ULP(pi) = p1 - p0
+		// ulp(pi) is the difference between p1 and p0
 		BigDecimal ulp = new BigDecimal(p1).subtract(new BigDecimal(p0));
 		// -> 4.44089209850062616169452667236328125E-16
 		// (this is precisely 2**(-51))

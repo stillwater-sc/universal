@@ -94,7 +94,7 @@ int VerifyFixedRate2DFloat(const std::string& tag) {
 		if (max_err > prev_max_err * 1.01) {  // small tolerance for rounding
 			std::cerr << tag << " WARNING: error increased with higher rate"
 			          << " (" << max_err << " > " << prev_max_err << ")\n";
-			// Not a hard failure — ZFP doesn't strictly guarantee monotonic error reduction
+			// Not a hard failure -- ZFP doesn't strictly guarantee monotonic error reduction
 		}
 		prev_max_err = max_err;
 	}

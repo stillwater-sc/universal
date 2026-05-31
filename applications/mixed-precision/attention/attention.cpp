@@ -103,7 +103,7 @@ public:
 		}
 		stats.input_loads += d_k;
 
-		// Step 1: QK^T — dot(q, k_cache[t]) for each cached token
+		// Step 1: QK^T -- dot(q, k_cache[t]) for each cached token
 		std::vector<AccumType> scores(T);
 		AccumType scale = static_cast<AccumType>(1.0 / std::sqrt(static_cast<double>(d_k)));
 		for (size_t t = 0; t < T; ++t) {

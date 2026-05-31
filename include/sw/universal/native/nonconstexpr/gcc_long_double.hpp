@@ -117,7 +117,7 @@ inline std::string to_binary(long double number, bool bNibbleMarker = false) {
 	s << '.';
 
 #if defined(UNIVERSAL_ARCH_POWER) || (defined(UNIVERSAL_ARCH_ARM) && __LDBL_MANT_DIG__ == 113)
-	// POWER: IEEE 754 binary128 — 112 fraction bits (48 upper + 64 lower)
+	// POWER: IEEE 754 binary128 -- 112 fraction bits (48 upper + 64 lower)
 	// No explicit integer bit (implicit leading 1 for normals)
 	{
 		uint64_t mask = (uint64_t(1) << 47);
@@ -136,7 +136,7 @@ inline std::string to_binary(long double number, bool bNibbleMarker = false) {
 		}
 	}
 #else
-	// x86: 80-bit extended — bit63 is the explicit integer bit, then 63 fraction bits
+	// x86: 80-bit extended -- bit63 is the explicit integer bit, then 63 fraction bits
 	uint64_t mask = (uint64_t(1) << 62);
 	s << (decoder.parts.bit63 ? '1' : '0');
 	for (int i = 62; i >= 0; --i) {
@@ -161,8 +161,8 @@ inline std::string to_triple(long double number) {
 	// exponent 
 	// the exponent value used in the arithmetic is the exponent shifted by a bias 
 	// for the IEEE 754 binary32 case, an exponent value of 127 represents the actual zero 
-	// (i.e. for 2^(e ¿ 127) to be one, e must be 127). 
-	// Exponents range from ¿126 to +127 because exponents of ¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
+	// (i.e. for 2^(e - 127) to be one, e must be 127). 
+	// Exponents range from -126 to +127 because exponents of -127 (all 0s) and +128 (all 1s) are reserved for special numbers.
 	if (decoder.parts.exponent == 0) {
 		s << "exp=0,";
 	}

@@ -1143,7 +1143,7 @@ public:
 					}
 				}
 				else {
-					// scientific: d.dddddde±EEE
+					// scientific: d.dddddde+/-EEE
 					if (totalDigits > 0)
 						s += static_cast<char>('0' + digits[0]);
 					else
@@ -1199,7 +1199,7 @@ private:
 		return result;
 	}
 
-	// Format exponent as ±NNN (handles arbitrarily large exponents)
+	// Format exponent as +/-NNN (handles arbitrarily large exponents)
 	static void append_exponent(std::string& str, long long e) {
 		str += (e < 0 ? '-' : '+');
 		e = (e < 0) ? -e : e;

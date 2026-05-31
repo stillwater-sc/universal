@@ -13,7 +13,7 @@
 #include <cmath>
 
 // Verify reversible round-trip for 1D float
-// Note: The ZFP lifting transform has inherent ±1 LSB rounding in the integer domain.
+// Note: The ZFP lifting transform has inherent +/-1 LSB rounding in the integer domain.
 // For values with similar magnitude, this gives near-exact results.
 // For values with very different magnitudes, the quantization to shared exponent
 // causes small values to be quantized to zero.

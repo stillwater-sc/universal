@@ -1,5 +1,5 @@
 #!/bin/bash
-# build-safety.sh — PreToolUse hook for Bash commands
+# build-safety.sh -- PreToolUse hook for Bash commands
 # Prevents concurrent builds and excessive parallelism.
 #
 # Reads tool input from stdin (JSON with .tool_input.command field).

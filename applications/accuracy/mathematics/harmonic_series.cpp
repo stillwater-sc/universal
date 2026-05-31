@@ -1,4 +1,4 @@
-﻿// harmonic_series.cpp: experiments with mixed-precision representations of the Harmonic Series
+// harmonic_series.cpp: experiments with mixed-precision representations of the Harmonic Series
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

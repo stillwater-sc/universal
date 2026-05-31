@@ -1,4 +1,4 @@
-﻿// type_traits.cpp: experiments with type traits of native floats, integers, fixpnts, and posit number types
+// type_traits.cpp: experiments with type traits of native floats, integers, fixpnts, and posit number types
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //

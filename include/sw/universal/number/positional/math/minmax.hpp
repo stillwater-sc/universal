@@ -8,14 +8,14 @@
 
 namespace sw { namespace universal {
 
-// minimum of two values — direct comparison, no double conversion
+// minimum of two values -- direct comparison, no double conversion
 template<unsigned ndigits, unsigned radix>
 positional<ndigits, radix>
 min(positional<ndigits, radix> x, positional<ndigits, radix> y) {
 	return (x < y) ? x : y;
 }
 
-// maximum of two values — direct comparison, no double conversion
+// maximum of two values -- direct comparison, no double conversion
 template<unsigned ndigits, unsigned radix>
 positional<ndigits, radix>
 max(positional<ndigits, radix> x, positional<ndigits, radix> y) {

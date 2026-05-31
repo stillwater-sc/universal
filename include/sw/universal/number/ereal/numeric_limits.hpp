@@ -49,7 +49,7 @@ public:
 	// For conservative estimate, use maxLimbs * double::digits
 	static constexpr int  digits                   = maxLimbs * std::numeric_limits<double>::digits;
 	// digits10: number of decimal digits that can be represented without change
-	// log10(2^digits) = digits * log10(2) ≈ digits * 0.30103
+	// log10(2^digits) = digits * log10(2) ~= digits * 0.30103
 	static constexpr int  digits10                 = static_cast<int>(digits * 0.30103);
 	// max_digits10: decimal digits needed to differentiate all values
 	static constexpr int  max_digits10             = digits10 + 2;

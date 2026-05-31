@@ -1,4 +1,4 @@
-﻿// integer_cover.cpp: measuring the covering of the integers with a posit
+// integer_cover.cpp: measuring the covering of the integers with a posit
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

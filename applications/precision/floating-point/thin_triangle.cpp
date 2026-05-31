@@ -1,4 +1,4 @@
-﻿// goldberg_thin_triangle.cpp: example program showing the Goldberg thin triangle example
+// goldberg_thin_triangle.cpp: example program showing the Goldberg thin triangle example
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -19,11 +19,11 @@
 
 Introduction:
 
-Goldberg’s long thin triangle
+Goldberg's long thin triangle
 Kahan presented this problem in or prior to 1986 and the Goldberg paper (from 1991) was inspired from attended a conference by Kahan.
 
 
-Compute the area A of a thin triangle using the classic form of Heron’s equation.
+Compute the area A of a thin triangle using the classic form of Heron's equation.
 
                  ^
 	   b = c   /   \  c = 7/2 + 3*ulp(a)
@@ -32,23 +32,23 @@ Compute the area A of a thin triangle using the classic form of Heron’s equati
 			     a
 
 s = (a+b+c) / 2
-A = SQRT(s(s−a)(s−b)(s−c))
+A = SQRT(s(s-a)(s-b)(s-c))
 
 The lengths are set to:
 a=7
 b=c= 0.5(a+3*ulp(a))   ulp is "unit in last position"
 
-exact  = 1000000001001111111001110×2−31
-posit  = 1000000001001111111001111×2−31
-IEEE   = 1001010000101001011111110×2−31
+exact  = 1000000001001111111001110*2-31
+posit  = 1000000001001111111001111*2-31
+IEEE   = 1001010000101001011111110*2-31
 
 
 This is an example of loss of significance due to catastrophic cancellation
 
 For both posits & IEEE we have the upper 3 bits set for all three inputs with exponent of b and c smaller by 1. 
-For IEEE’s b and c values the bottom two bits are set. 
+For IEEE's b and c values the bottom two bits are set. 
 However posits values in this range have two more bits available, so the same numeric value has the bottom two clear. 
-Let’s look what happens when we start to compute s. First we perform a+b:
+Let's look what happens when we start to compute s. First we perform a+b:
 
            IEEE                                 POSITS
 
@@ -62,7 +62,7 @@ round:    1010.10000000000000000001            1010.10000000000000000000110
 The upper bits cause a carry (both increase exp by one) and that trailing bit of b means we need one more bit (now 25) to represent exactly. 
 IEEE has to round to 24 bits and the posits version still has one zero bit at the bottom. 
 
-Let’s complete the computation of s.
+Let's complete the computation of s.
 
 
 t1=t0+c:  1010.10000000000000000001            1010.10000000000000000000110
@@ -79,9 +79,9 @@ s:        7.000000954                          7.000000715
 This time we still need 25 bits to be exact since t0 had to adjust the exp and IEEE must round again. 
 Posits are still good with the padding bits we gave them. 
 The multiply by half introduces no error for either. 
-Also shown is the decimal values of each to 10 digits and the binary32 relative error is a tiny  3.40598×10−8.
+Also shown is the decimal values of each to 10 digits and the binary32 relative error is a tiny  3.40598*10-8.
 
-Now for the (s−a) and (s−b) terms:
+Now for the (s-a) and (s-b) terms:
 
 s-a:      111.000000000000000000010            111.000000000000000000001100
          -111.000000000000000000000           -111.000000000000000000000000
@@ -94,12 +94,12 @@ s-b:      111.000000000000000000010            111.000000000000000000001100
            11.100000000000000000001             11.100000000000000000000000
 
 
-Again posits don’t have any rounding error. The binary32 (s−b) has a tiny relative error of 6.81196×10−8 
-and the performed (s−a) subtraction was exact, but the total relative error is a massive 0.3333¯¯¯. 
+Again posits don't have any rounding error. The binary32 (s-b) has a tiny relative error of 6.81196*10-8 
+and the performed (s-a) subtraction was exact, but the total relative error is a massive 0.3333---. 
 The tiny error in s was magnified by a subtraction of a nearby number. 
 This is an example of catastrophic cancellation or loss of significance. 
 
-John D. Cook’s version of a common rule of thumb:
+John D. Cook's version of a common rule of thumb:
     Cardinal rule of floating point arithmetic:
        If x and y agree to n bits, then you can lose up to n bits of precision computing x-y.
 
@@ -145,20 +145,20 @@ Scalar HeronFormulaNaive(const Scalar& a, const Scalar& b, const Scalar& c, bool
 }
 
 /*
-“Miscalculating Area and Angles of a Needle-like Triangle”, W. Kahan, 2014
-The Boldo paper4 details Kahan’s solution (for double input) which is an example of using option two. 
-This is going to be left as a black box for now and it cost about one more issue vs. Heron’s (godbolt):
+"Miscalculating Area and Angles of a Needle-like Triangle", W. Kahan, 2014
+The Boldo paper4 details Kahan's solution (for double input) which is an example of using option two. 
+This is going to be left as a black box for now and it cost about one more issue vs. Heron's (godbolt):
 
 This list of requirements simply are: sorted largest first, valid triangle (including degenerates to line). 
-Taking the original set of inputs and using Kahan’s method with 32-bit operations gives:
+Taking the original set of inputs and using Kahan's method with 32-bit operations gives:
 
-exact   = 1.000000001001111111001110111110×2−7   ≈0.007831550660
-posit   = 1.000000001001111111001110110000×2−7   ≈0.007831550553
-IEEE    = 1.000000001001111111010000000000×2−7   ≈0.007831551135
+exact   = 1.000000001001111111001110111110*2-7   ~=0.007831550660
+posit   = 1.000000001001111111001110110000*2-7   ~=0.007831550553
+IEEE    = 1.000000001001111111010000000000*2-7   ~=0.007831551135
 
-An interesting question is then: Does the error bound of Kahan’s method hold for posits? Well we’ll have to de-black-box it at some point I guess. 
-An aside here: the complexity of Kahan’s method as shown is about the same as Heron’s (godbolt). 
-The real cost is the ordering requirement in the cases where it’s not known nor otherwise required.
+An interesting question is then: Does the error bound of Kahan's method hold for posits? Well we'll have to de-black-box it at some point I guess. 
+An aside here: the complexity of Kahan's method as shown is about the same as Heron's (godbolt). 
+The real cost is the ordering requirement in the cases where it's not known nor otherwise required.
 */
 template<typename Scalar>
 Scalar HeronFormulaKahanRewrite(const Scalar& a, const Scalar& b, const Scalar& c, bool verbose = false) {
@@ -211,7 +211,7 @@ then rounded to the nearest posit. The compiler sets up the sparse lower-triangu
 
 | 1         | | t1 |   | a |
 |           | |    |   |   |
-| b  -1     |•| t2 | = | 0 |
+| b  -1     |*| t2 | = | 0 |
 |           | |    |   |   |
 |     c  -1 | | t3 |   | 0 |
 */

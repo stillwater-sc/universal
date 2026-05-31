@@ -1,4 +1,4 @@
-# Universal Numbers Library — development image for Docker Hub.
+# Universal Numbers Library -- development image for Docker Hub.
 #
 # Provides a ready-to-use C++ development environment with the Universal
 # library installed, compilers, cmake, and command-line inspection tools.
@@ -18,7 +18,7 @@
 #   EOF
 #   g++ -std=c++20 -o hello hello.cpp && ./hello
 
-# ── Stage 1: build command-line tools ───────────────────────────────
+# -- Stage 1: build command-line tools -------------------------------
 FROM ubuntu:24.04 AS builder
 
 RUN apt-get update \
@@ -38,7 +38,7 @@ RUN cmake -S /tmp/universal-src -B /tmp/universal-build -G Ninja \
  && cmake --install /tmp/universal-build --prefix /usr/local \
  && rm -rf /tmp/universal-src /tmp/universal-build
 
-# ── Stage 2: minimal runtime image ─────────────────────────────────
+# -- Stage 2: minimal runtime image ---------------------------------
 FROM ubuntu:24.04
 
 # Install only what's needed: compiler for user code, cmake for builds.

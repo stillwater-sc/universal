@@ -110,7 +110,7 @@ void test_cancellation() {
 	TrackedLNS<LNS> a = la;
 	TrackedLNS<LNS> b = lb;
 
-	// Near-cancellation: a - b when a ≈ b
+	// Near-cancellation: a - b when a ~= b
 	LNS lc = la - lb;
 	auto c = a - b;
 	std::cout << "1.0 - 0.95 (near-cancellation):\n";

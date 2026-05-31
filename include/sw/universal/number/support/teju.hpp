@@ -41,7 +41,7 @@ inline constexpr int log10_pow2(int e) {
 
 // Residual for sub-interval positioning within the exponent range.
 // Computes the fractional part of e * log10(2) mapped to a shift value (0..3).
-// Reference: Teju Jagua common.h — uses low-32-bits-of-product / constant.
+// Reference: Teju Jagua common.h -- uses low-32-bits-of-product / constant.
 inline constexpr unsigned log10_pow2_residual(int e) {
 	return static_cast<uint32_t>(static_cast<int64_t>(1292913987) * e) / 1292913987u;
 }

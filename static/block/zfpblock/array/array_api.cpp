@@ -116,7 +116,7 @@ try {
 	// compression ratio
 	std::cout << "+---------    compression ratio   --------+\n";
 	{
-		zfparray1f arr(100, 8.0);  // 8 bpv for float (32 bits native) → ~4x
+		zfparray1f arr(100, 8.0);  // 8 bpv for float (32 bits native) -> ~4x
 		double ratio = arr.compression_ratio();
 		std::cout << "100 floats at 8 bpv: ratio = " << ratio << "x\n";
 		if (ratio < 3.0 || ratio > 5.0) {

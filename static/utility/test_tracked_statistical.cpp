@@ -31,7 +31,7 @@ void test_ulp_function() {
 	std::cout << to_binary(d1em10) << " : 1e-10, ulp = " << ulp(d1em10) << "\n";
 	std::cout << to_binary(d0) << " : 0.0,   ulp = " << ulp(d0) << " (denorm_min)\n";
 
-	std::cout << "\nExpected ulp(1.0) ≈ 2.22e-16 (machine epsilon)\n";
+	std::cout << "\nExpected ulp(1.0) ~= 2.22e-16 (machine epsilon)\n";
 	std::cout << "Actual epsilon    = " << std::numeric_limits<double>::epsilon() << "\n";
 }
 
@@ -236,7 +236,7 @@ void test_validation() {
 	auto validation = StatisticalValidation<double, ErrorModel::RandomWalk>::compute(
 		stat_sum, static_cast<double>(shadow_sum));
 
-	std::cout << "Sum of 50 × 0.1:\n";
+	std::cout << "Sum of 50 * 0.1:\n";
 	validation.report(std::cout);
 }
 

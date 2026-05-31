@@ -1,6 +1,6 @@
 // grisu3_port.cpp: Direct port of MathGeoLib's grisu3.c to C++
 //
-// Original implementation by Jukka Jylänki (MathGeoLib)
+// Original implementation by Jukka Jylanki (MathGeoLib)
 // Based on "Printing Floating-Point Numbers Quickly and Accurately with Integers"
 // by Florian Loitsch, available at
 // http://www.cs.tufts.edu/~nr/cs257/archive/florian-loitsch/printf.pdf
@@ -47,7 +47,7 @@ struct power {
 	int16_t d_exp;  // decimal exponent
 };
 
-// Cached powers of 10: 10^d_exp ≈ fract × 2^b_exp
+// Cached powers of 10: 10^d_exp ~= fract * 2^b_exp
 static const power pow_cache[] = {
 	{ 0xfa8fd5a0081c0288ULL, -1220, -348 },
 	{ 0xbaaee17fa23ebf76ULL, -1193, -340 },

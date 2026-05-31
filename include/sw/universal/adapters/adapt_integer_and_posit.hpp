@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 // adapt_integer_and_posit.hpp: adapter functions to convert integer<size> type and posit<nbits,es> types
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.

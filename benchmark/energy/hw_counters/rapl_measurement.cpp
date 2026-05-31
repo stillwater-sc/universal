@@ -254,7 +254,7 @@ try {
     std::cout << "2. Cost models estimate MARGINAL per-operation energy (picojoules)\n";
     std::cout << "3. Use cost models for: comparing precisions, algorithm design decisions\n";
     std::cout << "4. Use RAPL for: measuring actual system energy, validating optimizations\n";
-    std::cout << "5. Memory access dominates: 1 DRAM read ≈ 400 FP32 FMAs in energy\n";
+    std::cout << "5. Memory access dominates: 1 DRAM read ~= 400 FP32 FMAs in energy\n";
 
     return EXIT_SUCCESS;
 }

@@ -392,7 +392,7 @@ namespace sw { namespace universal {
 
 		// Test small integers that should round-trip exactly
 		// For small posits like posit<8,0>, only powers of 2 and nearby values are exact
-		// Use conservative set: 0, ±1, ±2, ±4, ±8 (powers of 2 that all posits can represent)
+		// Use conservative set: 0, +/-1, +/-2, +/-4, +/-8 (powers of 2 that all posits can represent)
 		int testValues[] = { 0, 1, -1, 2, -2, 4, -4, 8, -8 };
 
 		for (int val : testValues) {

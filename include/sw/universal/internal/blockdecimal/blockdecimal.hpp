@@ -527,7 +527,7 @@ public:
 	StorageType& bits() { return _block; }
 
 private:
-	bool _negative;        // sign-magnitude sign bit (NOT initialized by default — triviality)
+	bool _negative;        // sign-magnitude sign bit (NOT initialized by default -- triviality)
 	StorageType _block;    // unsigned magnitude
 
 	/////////////////////////////////////////////////////////////////////////

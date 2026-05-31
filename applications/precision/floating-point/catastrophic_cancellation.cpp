@@ -1,4 +1,4 @@
-﻿// catastrophic_cancellation.cpp: examples of catastrophic cancellation
+// catastrophic_cancellation.cpp: examples of catastrophic cancellation
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

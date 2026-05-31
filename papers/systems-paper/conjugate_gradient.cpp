@@ -3,7 +3,7 @@
 // Demonstrates how the choice of number system affects convergence
 // of the preconditioned Conjugate Gradient method on SPD systems.
 // CG is the canonical Krylov solver for symmetric positive-definite
-// problems and is sensitive to rounding — small representational
+// problems and is sensitive to rounding -- small representational
 // errors can break A-orthogonality of the search directions,
 // causing stagnation or slow convergence.
 //
@@ -67,7 +67,7 @@ sw::numeric::containers::vector<Dst> convert_vector(const sw::numeric::container
 // Template parameters allow the preconditioner and solver to use
 // different scalar types, enabling mixed-precision exploration.
 //
-//   Scalar — working precision for the CG iteration
+//   Scalar -- working precision for the CG iteration
 //
 // Returns (iterations, final_residual_norm, forward_error)
 // -------------------------------------------------------------------------
@@ -481,7 +481,7 @@ Key observations:
      errors destroy A-orthogonality of the CG search directions.
 
   3. Posit<32,2> typically converges in the same iteration count as
-     IEEE float — both have ~24 bits of significand near 1.0.
+     IEEE float -- both have ~24 bits of significand near 1.0.
 
   4. The two-precision configurations show that a low-precision
      preconditioner (half or bfloat16) paired with a higher-precision

@@ -37,12 +37,12 @@ namespace sw { namespace universal {
 //
 // To target limb boundary N*32, we need: 235 + scale + bit_in_sig = N*32
 // For the hidden-bit (bit 47 in 48-bit MUL significand):
-//   235 + scale + 47 = N*32  →  scale = N*32 - 282
-// Limb  8: 256 → scale = -26   (radix limb lower boundary)
-// Limb  9: 288 → scale =   6   (radix limb upper boundary)
-// Limb 10: 320 → scale =  38
-// Limb  7: 224 → scale = -58
-// Limb  0:   0 → scale = -282  (below quire range, would be clipped)
+//   235 + scale + 47 = N*32  ->  scale = N*32 - 282
+// Limb  8: 256 -> scale = -26   (radix limb lower boundary)
+// Limb  9: 288 -> scale =   6   (radix limb upper boundary)
+// Limb 10: 320 -> scale =  38
+// Limb  7: 224 -> scale = -58
+// Limb  0:   0 -> scale = -282  (below quire range, would be clipped)
 
 // Helper: compute the exact double-precision dot product of two cfloat vectors
 template<typename Scalar>
@@ -145,7 +145,7 @@ int TestQuireMul() {
 	}
 
 	// --- Products placed at limb boundaries ---
-	// scale=-26 → MSB at accumulator bit 256 (limb 8/9 boundary)
+	// scale=-26 -> MSB at accumulator bit 256 (limb 8/9 boundary)
 	{
 		// 2^(-26) has scale -26 in fp32
 		float val_a = std::ldexp(1.0f, -13);  // 2^-13
@@ -162,7 +162,7 @@ int TestQuireMul() {
 		}
 	}
 
-	// scale=6 → MSB at accumulator bit 288 (limb 9/10 boundary)
+	// scale=6 -> MSB at accumulator bit 288 (limb 9/10 boundary)
 	{
 		float val_a = std::ldexp(1.0f, 3);  // 2^3
 		float val_b = std::ldexp(1.0f, 3);  // product scale = 6
@@ -177,7 +177,7 @@ int TestQuireMul() {
 		}
 	}
 
-	// scale=38 → MSB at accumulator bit 320 (limb 10/11 boundary)
+	// scale=38 -> MSB at accumulator bit 320 (limb 10/11 boundary)
 	{
 		float val_a = std::ldexp(1.0f, 19);  // 2^19
 		float val_b = std::ldexp(1.0f, 19);  // product scale = 38
@@ -368,7 +368,7 @@ int TestLimbBoundaryCarryBorrow() {
 	// base_offset = 235 + scale (for MUL bt with radix=46)
 	// A product at scale S occupies accumulator bits [235+S .. 235+S+47]
 
-	// Case 1: carry propagation across limb 8→9 boundary (bit 256)
+	// Case 1: carry propagation across limb 8->9 boundary (bit 256)
 	// Two products at scale=-26 that sum to carry across bit 256
 	{
 		// products at scale -26: base = 235 + (-26) = 209, spans bits [209..256]
@@ -387,7 +387,7 @@ int TestLimbBoundaryCarryBorrow() {
 		}
 	}
 
-	// Case 2: carry propagation across limb 9→10 boundary (bit 288)
+	// Case 2: carry propagation across limb 9->10 boundary (bit 288)
 	{
 		// products at scale 6: base = 241, spans [241..288]
 		// MSB at exactly bit 288 (limb boundary)
@@ -404,7 +404,7 @@ int TestLimbBoundaryCarryBorrow() {
 		}
 	}
 
-	// Case 3: carry chain through 3 limbs (10→11→12)
+	// Case 3: carry chain through 3 limbs (10->11->12)
 	{
 		// products at scale 38: base = 273, spans [273..320]
 		// MSB at bit 320 (limb 10/11 boundary)
@@ -425,7 +425,7 @@ int TestLimbBoundaryCarryBorrow() {
 		}
 	}
 
-	// Case 4: borrow across limb 9→8 boundary
+	// Case 4: borrow across limb 9->8 boundary
 	{
 		quire<Scalar> q;
 		// Add large value at scale 6 (spans limb 9)
@@ -451,7 +451,7 @@ int TestLimbBoundaryCarryBorrow() {
 		}
 	}
 
-	// Case 6: carry at limb 7→8 boundary (below radix, bit 224)
+	// Case 6: carry at limb 7->8 boundary (below radix, bit 224)
 	{
 		// products at scale -58: base = 177, spans [177..224]
 		float v = std::ldexp(1.0f, -29);  // 2^-29 * 2^-29 = 2^-58
@@ -467,7 +467,7 @@ int TestLimbBoundaryCarryBorrow() {
 		}
 	}
 
-	// Case 7: carry at high limb (13→14 boundary, bit 416)
+	// Case 7: carry at high limb (13->14 boundary, bit 416)
 	{
 		// scale = 416 - 282 = 134. Need product scale 134: use 2^67 * 2^67
 		// But 2^67 overflows fp32. Use 2^63 * 2^63 = 2^126, scale 126
@@ -611,7 +611,7 @@ int TestFdp1024() {
 	// The 1023 small values each contribute 1/1024, totaling just under 1.0.
 	// This 1.0 is the LSB of the large 1024th product (1024.0 * 1.0 = 1024).
 	// Naive fp32: 1024 + (small sum) = 1024 (LSB lost due to rounding)
-	// FDP: quire accumulates all, result = 1024 + 1023/1024 ≈ 1024.999...
+	// FDP: quire accumulates all, result = 1024 + 1023/1024 ~= 1024.999...
 	// ------------------------------------------------------------------
 	{
 		std::vector<Scalar> x(1024), y(1024);
@@ -742,8 +742,8 @@ int TestFdp1024() {
 	}
 
 	// ------------------------------------------------------------------
-	// Case 7: Mixed positive/negative products with carry across limb 8→9
-	// Products placed at scale ≈ -26 (limb 8/9 boundary)
+	// Case 7: Mixed positive/negative products with carry across limb 8->9
+	// Products placed at scale ~= -26 (limb 8/9 boundary)
 	// ------------------------------------------------------------------
 	{
 		std::vector<Scalar> x(1024), y(1024);
@@ -803,7 +803,7 @@ int TestFdp1024() {
 				// product = 2^-20
 			}
 		}
-		// 512 * 1.0 + 512 * 2^-20 = 512 + 512/1048576 ≈ 512.000488
+		// 512 * 1.0 + 512 * 2^-20 = 512 + 512/1048576 ~= 512.000488
 		double expected = 512.0 + 512.0 * std::ldexp(1.0, -20);
 		Scalar result = fdp(x, y);
 		Scalar exp_cfloat(static_cast<float>(expected));
@@ -880,7 +880,7 @@ int TestFdpQcStress() {
 		std::vector<Scalar> x1(255, Scalar(1.0f));
 		std::vector<Scalar> y1(255, Scalar(1.0f));
 		fdp_qc(q, size_t(255), x1, size_t(1), y1, size_t(1));
-		// q = 255, continuation adds 1 → 256 = 2^8 (potential carry)
+		// q = 255, continuation adds 1 -> 256 = 2^8 (potential carry)
 		std::vector<Scalar> x2 = { Scalar(1.0f) };
 		std::vector<Scalar> y2 = { Scalar(1.0f) };
 		fdp_qc(q, size_t(1), x2, size_t(1), y2, size_t(1));
@@ -1054,7 +1054,7 @@ int TestFdpQcStress() {
 			}
 			fdp_qc(q, size_t(256), x1, size_t(1), y1, size_t(1));
 		}
-		// Each product ≈ 1.0 (with rounding from cfloat), sum ≈ 1024
+		// Each product ~= 1.0 (with rounding from cfloat), sum ~= 1024
 		double result = q.convert_to<double>();
 		// The quire result should match the exact double reference rounded to cfloat
 		if (std::abs(result - expected) > 1.0) {
@@ -1130,7 +1130,7 @@ int TestCatastrophicCancellation() {
 		}
 	}
 
-	// Case 6: 1024 alternating ±1e8 products, expected 0
+	// Case 6: 1024 alternating +/-1e8 products, expected 0
 	{
 		std::vector<Scalar> x(1024), y(1024);
 		for (int i = 0; i < 1024; ++i) {
@@ -1193,7 +1193,7 @@ int TestCatastrophicCancellation() {
 		double expected = double(float(Scalar(1e-30f)));
 		double result = double(fdp(x, y));
 		if (result != expected) {
-			std::cerr << "FAIL: catastrophic 10 (maxpos→minpos), expected " << expected
+			std::cerr << "FAIL: catastrophic 10 (maxpos->minpos), expected " << expected
 			          << ", got " << result << '\n';
 			++nrOfFailedTestCases;
 		}

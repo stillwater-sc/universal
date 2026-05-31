@@ -1,4 +1,4 @@
-﻿// accurate_sum_and_dot.cpp: twosum/twoproduct/cascadingdot
+// accurate_sum_and_dot.cpp: twosum/twoproduct/cascadingdot
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

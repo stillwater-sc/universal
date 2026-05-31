@@ -74,7 +74,7 @@ try {
 			if (reportTestCases) std::cerr << "0/0 did not produce NaN\n";
 		}
 
-		// a / 0 should be ±Inf
+		// a / 0 should be +/-Inf
 		dd_cascade result_a0 = a / zero;
 		if (!result_a0.isinf()) {
 			nrOfFailedTestCases++;
@@ -187,7 +187,7 @@ try {
 		}
 	}
 
-	// Corner Case 7: Non-commutativity (a / b ≠ b / a)
+	// Corner Case 7: Non-commutativity (a / b != b / a)
 	{
 		dd_cascade a = dd_cascade_corner_cases::create_well_separated(2.0);
 		dd_cascade b = dd_cascade_corner_cases::create_well_separated(3.0);
@@ -197,7 +197,7 @@ try {
 		if (!result.passed && reportTestCases) std::cerr << result.message;
 	}
 
-	// Corner Case 8: Self-consistency (a / b) × b ≈ a
+	// Corner Case 8: Self-consistency (a / b) * b ~= a
 	{
 		dd_cascade a = dd_cascade_corner_cases::create_well_separated(1.5);
 		dd_cascade b = dd_cascade_corner_cases::create_well_separated(2.5);

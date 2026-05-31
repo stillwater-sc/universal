@@ -1,4 +1,4 @@
-﻿// lerp.cpp: evaluation of linear interpolation function
+// lerp.cpp: evaluation of linear interpolation function
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

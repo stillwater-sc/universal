@@ -149,7 +149,7 @@ namespace sw { namespace universal {
 
 	/// <summary>
 	/// Verify a mathematical identity holds within adaptive precision bounds.
-	/// For example: exp(log(x)) == x, or sin²(x) + cos²(x) == 1
+	/// For example: exp(log(x)) == x, or sin^2(x) + cos^2(x) == 1
 	/// </summary>
 	/// <typeparam name="Real">Arithmetic type to test</typeparam>
 	/// <param name="identity_name">Description of the identity (e.g., "exp(log(x)) == x")</param>
@@ -223,7 +223,7 @@ namespace sw { namespace universal {
 
 	/// <summary>
 	/// Error checking strategy for mathematical identities.
-	/// Examples: log(exp(x))=x, sin²(x)+cos²(x)=1, cosh²(x)-sinh²(x)=1
+	/// Examples: log(exp(x))=x, sin^2(x)+cos^2(x)=1, cosh^2(x)-sinh^2(x)=1
 	/// Uses relative error with adaptive precision.
 	/// </summary>
 	template<typename Real>

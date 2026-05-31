@@ -258,7 +258,7 @@ public:
             if (i > 0) os << ", ";
             os << data[i];
         }
-        os << ") ≈ " << p.cascade.to_double();
+        os << ") ~= " << p.cascade.to_double();
         return os;
     }
     

@@ -1,4 +1,4 @@
-﻿// something.cpp: experiments with numbers
+// something.cpp: experiments with numbers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

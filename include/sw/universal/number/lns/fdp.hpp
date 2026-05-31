@@ -104,7 +104,7 @@ quire_mul(const lns<nbits, rbits, bt, xtra...>& lhs,
 		if (frac < 0.0) { frac += 1.0; int_part -= 1.0; }
 		scale = static_cast<int>(int_part);
 
-		// significand = 2^frac, always in [1.0, 2.0) — never overflows
+		// significand = 2^frac, always in [1.0, 2.0) -- never overflows
 		significand = std::pow(2.0, frac);
 	}
 

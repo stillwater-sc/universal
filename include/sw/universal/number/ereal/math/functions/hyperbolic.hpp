@@ -124,14 +124,14 @@ namespace sw { namespace universal {
 	// asinh: inverse hyperbolic sine - REFERENCE IMPLEMENTATION
 	//
 	// This implementation demonstrates best practices for adaptive-precision asinh:
-	// 1. Uses standard mathematical identity: asinh(x) = log(x + sqrt(x² + 1))
+	// 1. Uses standard mathematical identity: asinh(x) = log(x + sqrt(x^2 + 1))
 	// 2. Relies on reference log() and sqrt() implementations for full precision
 	// 3. Pure ereal arithmetic throughout
 	//
 	// ALGORITHM:
 	// ----------
 	// Direct computation using the logarithm:
-	//   asinh(x) = log(x + sqrt(x² + 1))
+	//   asinh(x) = log(x + sqrt(x^2 + 1))
 	//
 	// REFERENCES:
 	// -----------
@@ -149,7 +149,7 @@ namespace sw { namespace universal {
 		// Special case
 		if (x.iszero()) return Real(0.0);
 
-		// asinh(x) = log(x + sqrt(x² + 1))
+		// asinh(x) = log(x + sqrt(x^2 + 1))
 		Real x_squared = x * x;
 		Real one(1.0);
 		Real sqrt_term = sqrt(x_squared + one);
@@ -160,14 +160,14 @@ namespace sw { namespace universal {
 	// acosh: inverse hyperbolic cosine - REFERENCE IMPLEMENTATION
 	//
 	// This implementation demonstrates best practices for adaptive-precision acosh:
-	// 1. Uses standard mathematical identity: acosh(x) = log(x + sqrt(x² - 1))
+	// 1. Uses standard mathematical identity: acosh(x) = log(x + sqrt(x^2 - 1))
 	// 2. Proper domain checking (x >= 1)
 	// 3. Relies on reference log() and sqrt() implementations for full precision
 	//
 	// ALGORITHM:
 	// ----------
 	// Direct computation using the logarithm:
-	//   acosh(x) = log(x + sqrt(x² - 1)) for x >= 1
+	//   acosh(x) = log(x + sqrt(x^2 - 1)) for x >= 1
 	//
 	// REFERENCES:
 	// -----------
@@ -191,7 +191,7 @@ namespace sw { namespace universal {
 		// Special case: acosh(1) = 0
 		if (x == one) return Real(0.0);
 
-		// acosh(x) = log(x + sqrt(x² - 1))
+		// acosh(x) = log(x + sqrt(x^2 - 1))
 		Real x_squared = x * x;
 		Real sqrt_term = sqrt(x_squared - one);
 

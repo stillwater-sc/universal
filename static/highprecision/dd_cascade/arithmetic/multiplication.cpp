@@ -62,25 +62,25 @@ try {
 
 #if REGRESSION_LEVEL_1
 
-	// Corner Case 1: Zero absorption (0 × a = 0, a × 0 = 0)
+	// Corner Case 1: Zero absorption (0 * a = 0, a * 0 = 0)
 	{
 		dd_cascade zero(0.0, 0.0);
 		dd_cascade a = dd_cascade_corner_cases::create_well_separated(1.0);
 
-		auto result = dd_cascade_corner_cases::verify_zero(zero * a, "0 × a = 0");
+		auto result = dd_cascade_corner_cases::verify_zero(zero * a, "0 * a = 0");
 		nrOfFailedTestCases += (result.passed ? 0 : 1);
 		if (!result.passed && reportTestCases) std::cerr << result.message;
 
-		result = dd_cascade_corner_cases::verify_zero(a * zero, "a × 0 = 0");
+		result = dd_cascade_corner_cases::verify_zero(a * zero, "a * 0 = 0");
 		nrOfFailedTestCases += (result.passed ? 0 : 1);
 		if (!result.passed && reportTestCases) std::cerr << result.message;
 
-		result = dd_cascade_corner_cases::verify_zero(zero * zero, "0 × 0 = 0");
+		result = dd_cascade_corner_cases::verify_zero(zero * zero, "0 * 0 = 0");
 		nrOfFailedTestCases += (result.passed ? 0 : 1);
 		if (!result.passed && reportTestCases) std::cerr << result.message;
 	}
 
-	// Corner Case 2: Identity (1 × a ≈ a, a × 1 ≈ a)
+	// Corner Case 2: Identity (1 * a ~= a, a * 1 ~= a)
 	{
 		dd_cascade one(1.0, 0.0);
 		dd_cascade a = dd_cascade_corner_cases::create_well_separated(2.5);
@@ -93,25 +93,25 @@ try {
 		// Verify the high component is preserved
 		if (std::abs(result_1a[0] - a[0]) > a[0] * dd_cascade_corner_cases::DD_EPS * 10.0) {
 			nrOfFailedTestCases++;
-			if (reportTestCases) std::cerr << "1 × a: high component not preserved\n";
+			if (reportTestCases) std::cerr << "1 * a: high component not preserved\n";
 		}
 
 		if (std::abs(result_a1[0] - a[0]) > a[0] * dd_cascade_corner_cases::DD_EPS * 10.0) {
 			nrOfFailedTestCases++;
-			if (reportTestCases) std::cerr << "a × 1: high component not preserved\n";
+			if (reportTestCases) std::cerr << "a * 1: high component not preserved\n";
 		}
 
 		// Verify normalization
-		auto result = dd_cascade_corner_cases::verify_normalized(result_1a, "1 × a normalization");
+		auto result = dd_cascade_corner_cases::verify_normalized(result_1a, "1 * a normalization");
 		nrOfFailedTestCases += (result.passed ? 0 : 1);
 		if (!result.passed && reportTestCases) std::cerr << result.message;
 
-		result = dd_cascade_corner_cases::verify_normalized(result_a1, "a × 1 normalization");
+		result = dd_cascade_corner_cases::verify_normalized(result_a1, "a * 1 normalization");
 		nrOfFailedTestCases += (result.passed ? 0 : 1);
 		if (!result.passed && reportTestCases) std::cerr << result.message;
 	}
 
-	// Corner Case 3: Commutativity (a × b = b × a)
+	// Corner Case 3: Commutativity (a * b = b * a)
 	{
 		dd_cascade a = dd_cascade_corner_cases::create_well_separated(1.5);
 		dd_cascade b = dd_cascade_corner_cases::create_well_separated(2.5);
@@ -166,32 +166,32 @@ try {
 		dd_cascade pos(1.5, 1e-17);
 		dd_cascade neg(-1.5, -1e-17);
 
-		// (+) × (+) = (+)
+		// (+) * (+) = (+)
 		dd_cascade result_pp = pos * pos;
 		if (result_pp[0] < 0) {
 			nrOfFailedTestCases++;
-			if (reportTestCases) std::cerr << "(+) × (+) produced negative result\n";
+			if (reportTestCases) std::cerr << "(+) * (+) produced negative result\n";
 		}
 
-		// (+) × (-) = (-)
+		// (+) * (-) = (-)
 		dd_cascade result_pn = pos * neg;
 		if (result_pn[0] >= 0) {
 			nrOfFailedTestCases++;
-			if (reportTestCases) std::cerr << "(+) × (-) produced non-negative result\n";
+			if (reportTestCases) std::cerr << "(+) * (-) produced non-negative result\n";
 		}
 
-		// (-) × (+) = (-)
+		// (-) * (+) = (-)
 		dd_cascade result_np = neg * pos;
 		if (result_np[0] >= 0) {
 			nrOfFailedTestCases++;
-			if (reportTestCases) std::cerr << "(-) × (+) produced non-negative result\n";
+			if (reportTestCases) std::cerr << "(-) * (+) produced non-negative result\n";
 		}
 
-		// (-) × (-) = (+)
+		// (-) * (-) = (+)
 		dd_cascade result_nn = neg * neg;
 		if (result_nn[0] < 0) {
 			nrOfFailedTestCases++;
-			if (reportTestCases) std::cerr << "(-) × (-) produced negative result\n";
+			if (reportTestCases) std::cerr << "(-) * (-) produced negative result\n";
 		}
 	}
 
@@ -308,7 +308,7 @@ try {
 		if (!result.passed && reportTestCases) std::cerr << result.message;
 	}
 
-	// Corner Case 14: Squaring (a × a)
+	// Corner Case 14: Squaring (a * a)
 	{
 		dd_cascade a = dd_cascade_corner_cases::create_square_test_value();
 		dd_cascade square = a * a;

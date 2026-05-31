@@ -1,4 +1,4 @@
-﻿// underflow.cpp: experiments with underfow in posit number systems
+// underflow.cpp: experiments with underfow in posit number systems
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

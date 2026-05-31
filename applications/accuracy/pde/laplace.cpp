@@ -63,10 +63,10 @@ If I were starting the experiment, I'd try solving
 Laplace's equation on a square. Boundary condition 
 f(x,y) = 1 on some part of the square like the left half 
            of the bottom border (to be asymmetrical), 
-f(x,y) = 0 elsewhere on the border or maybe put a –1 value 
+f(x,y) = 0 elsewhere on the border or maybe put a -1 value 
            somewhere (it wastes the sign bit of a posit 
 		   if all the values are nonnegative), 
-∇²f = 0 on the interior. Try the oldest and simplest 
+grad^2f = 0 on the interior. Try the oldest and simplest 
 method of relaxation, even though better iterative methods 
 are known, with a very coarse grid and very low precision posits. 
 Like, a 4-by-4 grid of points and 4-bit posits with es = 2. 

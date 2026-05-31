@@ -1,4 +1,4 @@
-﻿// printing.cpp: experiments with printing floating-point numbers
+// printing.cpp: experiments with printing floating-point numbers
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

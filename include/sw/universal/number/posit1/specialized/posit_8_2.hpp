@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 // posit_8_2.hpp: specialized 8-bit posit using fast implementation specialized for posit<8,2>
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -790,8 +790,8 @@ private:
 	// remaining = 0<remaining_bits>0..0
 	//
 	// The regime numerical meaning is as follows: If m is the number of
-	// identical bits in the regime, if the bits are 0s, then k = −m;
-	// if they are 1s, then k = m − 1.
+	// identical bits in the regime, if the bits are 0s, then k = -m;
+	// if they are 1s, then k = m - 1.
 	void decode_regime(uint8_t bits, int8_t& m, uint8_t& remaining) const noexcept {
 		remaining = (bits << 2) & 0xFFu; // remove sign and first regime bit
 		if (bits & 0x40u) {  // positive regimes

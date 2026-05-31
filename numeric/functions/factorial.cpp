@@ -1,4 +1,4 @@
-﻿// factorial.cpp: evaluation of factorials in the posit number systems
+// factorial.cpp: evaluation of factorials in the posit number systems
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT

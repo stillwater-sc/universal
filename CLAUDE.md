@@ -229,13 +229,28 @@ target_link_libraries(${PROJECT_NAME} universal::universal)
 
 ### No Unicode Characters
 
-All code, comments, and string literals must use **ASCII-only** characters. Unicode special characters (arrows, math symbols, superscripts, em-dashes, etc.) do not render correctly on Windows consoles.
+All source and build files must contain **ASCII-only** (7-bit) bytes. This is a
+hard rule, not just a style preference: Unicode special characters (box-drawing,
+arrows, math symbols, superscripts, smart quotes, em-dashes, etc.) do not render
+correctly on Windows consoles and can break tooling.
+
+Scope of the rule (enforced in CI):
+- C/C++ source: `*.hpp *.cpp *.h *.c *.cc *.cxx *.hxx *.inc *.cpp_`
+- Build/CMake: `CMakeLists.txt *.cmake Dockerfile*`
+- Scripts: `*.sh *.bash *.py *.mjs *.js`
+- Exempt: documentation (`*.md`) and binary assets (images, PDFs, spreadsheets)
 
 Use ASCII equivalents:
 - `~=` not `≈`, `!=` not `≠`, `<=` not `≤`, `>=` not `≥`
-- `->` not `→`, `--` not `—`, `*` not `·`
-- `^2` not `²`, `pi` not `π`, `+/-` not `±`
-- Regular hyphen-minus `-` not Unicode minus `−`
+- `->` not `→`, `<-` not `←`, `--` not `—`, `*` not `·`/`×`
+- `^2` not `²`, `pi` not `π`, `+/-` not `±`, `sqrt` not `√`, `inf` not `∞`
+- `-` not `+`/`|` box-drawing; use `-` `|` `+` `=` for ASCII tables/diagrams
+- Regular hyphen-minus `-` not Unicode minus `−` (and watch for raw Latin-1
+  bytes like `0xBF` from a mangled paste)
+
+Enforcement: `tools/scripts/check-ascii.sh` scans the tracked tree (run it
+locally before committing) and the `ASCII Guard` GitHub Actions workflow fails
+any PR that introduces non-ASCII bytes in an in-scope file.
 
 ### C++ Standard
 

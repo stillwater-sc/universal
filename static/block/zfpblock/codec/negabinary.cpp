@@ -33,7 +33,7 @@ int VerifyNegabinaryRoundTrip32(const std::string& tag) {
 		}
 	}
 
-	// verify known encoding: 0 → 0xAAAAAAAA ^ 0xAAAAAAAA = 0
+	// verify known encoding: 0 -> 0xAAAAAAAA ^ 0xAAAAAAAA = 0
 	{
 		uint32_t u = int2uint<int32_t, uint32_t>(0);
 		if (u != 0) {

@@ -912,7 +912,7 @@ public:
 				setnan(); // 0/0 = NaN
 			}
 			else {
-				setinf(resultSign); // x/0 = ±inf
+				setinf(resultSign); // x/0 = +/-inf
 			}
 			return *this;
 		}

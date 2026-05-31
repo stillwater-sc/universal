@@ -17,7 +17,7 @@
 namespace grisu2 {
 
 // DiyFp: Do-It-Yourself Floating Point
-// Represents value = f × 2^e where f is a 64-bit unsigned integer
+// Represents value = f * 2^e where f is a 64-bit unsigned integer
 struct DiyFp {
 	uint64_t f;
 	int e;
@@ -64,7 +64,7 @@ struct DiyFp {
 struct CachedPower {
 	uint64_t f;
 	int e;       // binary exponent
-	int dec_exp; // decimal exponent: 10^dec_exp ≈ f × 2^e
+	int dec_exp; // decimal exponent: 10^dec_exp ~= f * 2^e
 };
 
 // Full cached powers table - optimized for typical IEEE-754 double range
@@ -167,7 +167,7 @@ const CachedPower& GetCachedPowerForBinaryExponent(int e, int& dec_exponent) {
 	// We want to scale the number so that after multiplication by 10^-k,
 	// the result is in a range where we can extract decimal digits efficiently.
 	// Estimate k such that v * 10^-k is in range [1, 10)
-	// Since v ≈ 2^e, we want 10^-k ≈ 2^-e, so k ≈ e * log10(2)
+	// Since v ~= 2^e, we want 10^-k ~= 2^-e, so k ~= e * log10(2)
 	int k_est = static_cast<int>(std::ceil((e + 64 - 1) * k));
 
 	// Find closest entry in table
@@ -188,7 +188,7 @@ const CachedPower& GetCachedPowerForBinaryExponent(int e, int& dec_exponent) {
 }
 
 // Generate digits from scaled DiyFp
-// After scaling, the number is in form: significand × 2^exponent
+// After scaling, the number is in form: significand * 2^exponent
 // We want to extract decimal digits from this representation
 bool DigitGen(DiyFp low, DiyFp w, DiyFp high, char* buffer, int* length, int* dec_exponent) {
 	assert(low.e == w.e && w.e == high.e);
@@ -360,7 +360,7 @@ std::string FormatGrisu2(bool negative, const char* digits, int len, int dec_exp
 	std::string result;
 	if (negative) result = "-";
 
-	// Scientific notation: d.ddd...e±xx
+	// Scientific notation: d.ddd...e+/-xx
 	result += digits[0];
 	if (len > 1) {
 		result += '.';

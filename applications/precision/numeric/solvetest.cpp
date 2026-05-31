@@ -258,17 +258,17 @@ try {
     
     // std::cout << v*(v.transpose()) << std::endl;  // <------ BUG HERE
     
-    std::fixed – Fixed Floating-point notation : 
+    std::fixed - Fixed Floating-point notation : 
     It writes floating-point values in fixed-point notation. 
     The value is represented with exactly as many digits in the decimal part as 
     specified by the precision field (precision) and with no exponent part.
 
-    std::scientific – Scientific floating-point notation : 
+    std::scientific - Scientific floating-point notation : 
     It writes floating-point values in Scientific-point notation. 
     The value is represented always with only one digit before the decimal point, 
     followed by the decimal point and as many decimal digits as the precision field (precision). 
     Finally, this notation always includes an exponential part consisting on the 
-    letter “e” followed by an optional sign and three exponential digits.
+    letter "e" followed by an optional sign and three exponential digits.
 
     */ 
 

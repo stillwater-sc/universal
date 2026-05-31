@@ -76,9 +76,9 @@ int main() {
                              tdc_pi[2] == qdc_pi[2]);
 
     std::cout << "ddc_pi[0:1] matches tdc_pi[0:1]: "
-              << (dd_td_consistent ? "✓ PASS" : "✗ FAIL") << '\n';
+              << (dd_td_consistent ? "OK PASS" : "X FAIL") << '\n';
     std::cout << "tdc_pi[0:2] matches qdc_pi[0:2]: "
-              << (td_qd_consistent ? "✓ PASS" : "✗ FAIL") << '\n';
+              << (td_qd_consistent ? "OK PASS" : "X FAIL") << '\n';
 
     // Test arithmetic with constants
     std::cout << "\nArithmetic with Constants:\n";

@@ -20,16 +20,16 @@
  * 4. Precision Quantification: Measure bits of accuracy
  *
  * RESULTS (see multiplication_precision_rca.md for detailed analysis):
- * ✅ Test 1: PASS - Multiplication achieves 212-220 bits precision
- * ✅ Test 2: PASS - All 4 components contribute to precision
- * ⚠️ Test 3: FAIL - Non-overlapping property violated by 3.24x
- * ✅ Test 4: PASS - Consistent precision across 500 random tests
+ * OK Test 1: PASS - Multiplication achieves 212-220 bits precision
+ * OK Test 2: PASS - All 4 components contribute to precision
+ * WARN Test 3: FAIL - Non-overlapping property violated by 3.24x
+ * OK Test 4: PASS - Consistent precision across 500 random tests
  *
  * ROOT CAUSE: renormalize() function does not strictly enforce Priest's
- *             invariant: |component[i+1]| ≤ ulp(component[i])/2
+ *             invariant: |component[i+1]| <= ulp(component[i])/2
  *
  * IMPACT: 3.24x violation accumulates over ~35 multiplications in pow() chain,
- *         causing 60-70% precision loss (212 bits → 77-92 bits)
+ *         causing 60-70% precision loss (212 bits -> 77-92 bits)
  */
 
 #include <universal/utility/directives.hpp>
@@ -182,7 +182,7 @@ int testComponentVerification(bool reportTestCases) {
 
     int nrOfFailures = 0;
 
-    // Test with well-formed quad-double values (π and e)
+    // Test with well-formed quad-double values (pi and e)
     fc4 a(std::array<double, 4>{3.141592653589793, 1.2246467991473532e-16, -2.9947698097183397e-33, 1.1124542208633652e-49});
     fc4 b(std::array<double, 4>{2.718281828459045, 1.4456468917292502e-16, -2.1277171080381644e-33, 5.7083836057466416e-50});
 
@@ -190,7 +190,7 @@ int testComponentVerification(bool reportTestCases) {
     result *= b;
 
     if (reportTestCases) {
-        std::cout << "Test: π × e\n";
+        std::cout << "Test: pi * e\n";
         std::cout << "a = " << a << "\n";
         std::cout << "b = " << b << "\n";
         std::cout << "result = " << result << "\n";

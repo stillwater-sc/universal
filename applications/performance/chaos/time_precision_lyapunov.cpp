@@ -23,7 +23,7 @@ Corresponding author: wpf@mail.iap.ac.cn
 
 Abstract
  The relation among reliable computation time, Tc, float-point precision, K, and the
-Lyapunov exponent, λ, is obtained as Tc= (lnB/λ)K+C, where B is the base of the float-point
+Lyapunov exponent, lambda, is obtained as Tc= (lnB/lambda)K+C, where B is the base of the float-point
 system and C is a constant dependent only on the chaotic equation. The equation shows good
 agreement with numerical experimental results, especially the scale factors.
 

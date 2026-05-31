@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 // constants.hpp: definition of base math constants in long double precision for cfloats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

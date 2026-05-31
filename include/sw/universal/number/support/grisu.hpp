@@ -13,9 +13,9 @@
 // rounds back to the original value. It falls back to Dragon4 in rare cases (~0.5% of inputs).
 //
 // Algorithm overview:
-// 1. Normalize input to (f, e) where value = f × 2^e, f is odd
-// 2. Find cached power c_k ≈ 10^(-k) stored as (c, q) where c × 2^q ≈ 10^(-k)
-// 3. Multiply (f, e) × (c, q) to get scaled value
+// 1. Normalize input to (f, e) where value = f * 2^e, f is odd
+// 2. Find cached power c_k ~= 10^(-k) stored as (c, q) where c * 2^q ~= 10^(-k)
+// 3. Multiply (f, e) * (c, q) to get scaled value
 // 4. Generate digits from scaled value
 // 5. Check boundaries to ensure shortest representation
 
@@ -39,7 +39,7 @@ namespace internal {
 namespace grisu {
 
 // DiyFp represents a floating-point number as (significand, exponent)
-// Value = significand × 2^exponent
+// Value = significand * 2^exponent
 // Significand is a 64-bit unsigned integer
 struct DiyFp {
 	uint64_t f;  // significand
@@ -54,9 +54,9 @@ struct DiyFp {
 	}
 
 	// Multiply two DiyFp values
-	// Result: (this->f × rhs.f) × 2^(this->e + rhs.e)
+	// Result: (this->f * rhs.f) * 2^(this->e + rhs.e)
 	DiyFp operator*(const DiyFp& rhs) const {
-		// Compute 64-bit × 64-bit = 128-bit product
+		// Compute 64-bit * 64-bit = 128-bit product
 		// We need the upper 64 bits plus rounding information
 
 		uint64_t a = f >> 32;
@@ -91,7 +91,7 @@ struct DiyFp {
 	}
 };
 
-// Cached powers of 10: 10^k ≈ c × 2^q
+// Cached powers of 10: 10^k ~= c * 2^q
 // These are precomputed normalized DiyFp values
 struct CachedPower {
 	uint64_t significand;
@@ -100,7 +100,7 @@ struct CachedPower {
 };
 
 // Cached powers table (subset for testing - full table has ~80 entries)
-// Each entry represents 10^k ≈ significand × 2^binary_exponent
+// Each entry represents 10^k ~= significand * 2^binary_exponent
 static const CachedPower kCachedPowers[] = {
 	{ 0xfa8fd5a0081c0288ULL, -1220, -348 },
 	{ 0xbaaee17fa23ebf76ULL, -1193, -340 },
@@ -195,7 +195,7 @@ static const int kCachedPowersSize = sizeof(kCachedPowers) / sizeof(kCachedPower
 
 // Get cached power for a given exponent
 inline CachedPower GetCachedPower(int e, int* K) {
-	// Find k such that 10^k ≈ 2^e
+	// Find k such that 10^k ~= 2^e
 	double dk = (-61 - e) * 0.30102999566398114 + 347;  // dk = ceil((-61 - e) * log10(2)) + 347
 	int k = static_cast<int>(dk);
 	if (dk - k > 0.0) k++;
@@ -441,7 +441,7 @@ inline std::string FormatGrisu3(bool sign, const char* digits, int len, int K, c
 }
 
 // ==================== MathGeoLib Grisu3 Implementation ====================
-// Complete, working implementation from MathGeoLib by Jukka Jylänki
+// Complete, working implementation from MathGeoLib by Jukka Jylanki
 // Based on "Printing Floating-Point Numbers Quickly and Accurately with Integers"
 // by Florian Loitsch (2010)
 

@@ -172,7 +172,7 @@ int TestFdp1024() {
 		}
 	}
 
-	// Case 2: cancellation — 512 pairs of (+1, -1) = 0
+	// Case 2: cancellation -- 512 pairs of (+1, -1) = 0
 	{
 		std::vector<Scalar> x(1024), y(1024, Scalar(1.0));
 		for (int i = 0; i < 1024; i += 2) {
@@ -299,7 +299,7 @@ int TestFdpQc() {
 int TestDifferentConfigs() {
 	int nrOfFailedTestCases = 0;
 
-	// dbns<9, 5> — wider first-base field
+	// dbns<9, 5> -- wider first-base field
 	{
 		using Scalar = dbns<9, 5, uint16_t>;
 		std::vector<Scalar> x = { Scalar(1.0), Scalar(2.0) };
@@ -313,7 +313,7 @@ int TestDifferentConfigs() {
 		}
 	}
 
-	// dbns<10, 5> — balanced
+	// dbns<10, 5> -- balanced
 	{
 		using Scalar = dbns<10, 5, uint16_t>;
 		std::vector<Scalar> x = { Scalar(4.0), Scalar(2.0), Scalar(1.0) };

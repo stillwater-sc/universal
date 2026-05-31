@@ -93,7 +93,7 @@ public:
             if (i > 0) os << ", ";
             os << fc.e[i];
         }
-        os << "] ≈ " << fc.to_double();
+        os << "] ~= " << fc.to_double();
         return os;
     }
 };

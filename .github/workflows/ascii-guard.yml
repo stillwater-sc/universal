@@ -1,0 +1,25 @@
+name: ASCII Guard
+
+# Enforce the ASCII-only rule for source and build files.
+# Unicode characters (box-drawing, smart quotes, math symbols, em-dashes,
+# superscripts, etc.) do not render correctly on Windows consoles and can
+# break tooling. All C/C++ source, CMake, and build/automation scripts must
+# contain only 7-bit ASCII bytes. Documentation (*.md) and binary assets are
+# exempt. See CLAUDE.md 'No Unicode Characters' and tools/scripts/check-ascii.sh.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check-ascii:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan source and build files for non-ASCII bytes
+        run: ./tools/scripts/check-ascii.sh

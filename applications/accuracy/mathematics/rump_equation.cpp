@@ -163,7 +163,7 @@ try {
  * one off constant computation from "Handbook of Floating-Point Arithmetic":
      f(a,b) = 333.75*b^6 + a^2*(11*a^2*b^2 - b^6 - 121*b^4 - 2) + 5.5*b^8 + a/(2*b)
      for a=77617.0, b=33096.0
-The exact result is -54767 / 66192 which starts with −0.8273960599...
+The exact result is -54767 / 66192 which starts with -0.8273960599...
 Using pow vs repeated mutiplication for the power expressions usually yields the same answer, but not always
 Running on x86 fp types we get (picking some interesting MPFR results)
 Type        | Rep Mult    | Pow Func

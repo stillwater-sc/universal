@@ -629,7 +629,7 @@ pattern is 0.10.111111111....1111
 0101
 p.setbits(0x5fff)
 pattern is 0.01.00000..0000
-theodore omtzigt5:49 PM
+theodore omtzigt5:49 PM
 top nibble is 0010 = 2
 p.setbits(0x2000)
 

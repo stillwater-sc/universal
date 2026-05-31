@@ -8,11 +8,11 @@
 //
 // Two API styles:
 //
-//   1. Scalar-type quantization — matches the qsnr<NumberType>() pattern in qsnr.hpp.
+//   1. Scalar-type quantization -- matches the qsnr<NumberType>() pattern in qsnr.hpp.
 //      Takes a reference vector and a template NumberType that performs the quantization:
 //        rmse<NumberType>(data), snr<NumberType>(data), qsnr<NumberType>(data)
 //
-//   2. Pre-quantized pair — for block formats (mxblock, nvblock, zfparray) or any
+//   2. Pre-quantized pair -- for block formats (mxblock, nvblock, zfparray) or any
 //      external quantization pipeline where src and dst are already available:
 //        rmse(src, dst), snr(src, dst), qsnr(src, dst)
 
@@ -163,7 +163,7 @@ Notice the key differences between QSNR vs SNR:
 
   - Sinusoidal data: QSNR = SNR because the sinusoid has zero mean, so variance == E[x^2]
   - Linear ramp data: QSNR < SNR by ~6 dB because the ramp has a non-zero mean, so variance < E[x^2]
-  — the QSNR correctly measures noise relative to signal variation, not signal power
+  -- the QSNR correctly measures noise relative to signal variation, not signal power
   - zfp rate=16 ramp: QSNR shows a finite 145.74 dB instead of inf because the epsilon guard fires
 
 */
