@@ -39,13 +39,16 @@
 // Convergence guard
 // -----------------
 // The dissertation defines summation only for Cauchy series and trusts the
-// caller for non-trivial (e.g. transcendental) ones. We add a guard rail: if
-// the budget is reached *before* the series terminates on its own AND the term
-// magnitudes are not trending toward zero (the leading exponent of the most
-// recent term is not below that of the first), the series is not Cauchy-stable
-// within budget and we throw elreal_sum_budget_exceeded. A convergent-but-slow
-// series (term magnitudes decreasing) is simply truncated at the budget and its
-// partial sum returned -- trusting the caller, per the dissertation.
+// caller for non-trivial (e.g. transcendental) ones. We add a heuristic guard
+// rail (full Cauchy-stability is undecidable in general): if the budget is
+// reached *before* the series terminates AND the term magnitudes are not
+// decaying, we throw elreal_sum_budget_exceeded. "Decaying" is judged over
+// windows rather than endpoints, so it rejects constant, growing, AND
+// oscillating non-decaying series (e.g. leading exponents 0,-1,0,-1,...): the
+// largest leading exponent over the most recent window of terms must be strictly
+// below the largest over the first window. A convergent-but-slow series (term
+// magnitudes decreasing) is truncated at the budget and its partial sum returned
+// -- trusting the caller, per the dissertation.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -53,7 +56,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <vector>
 
 #include <universal/number/elreal/block.hpp>
@@ -100,25 +105,23 @@ inline ZBCL<FpType> sum(series<FpType> s, std::size_t max_depth = 1024) {
 
     std::vector<B> components;
 
-    // Track the leading-block exponent of the first and most-recent NON-zero
-    // terms to assess convergence. An empty ZBCL term represents 0.
-    bool haveFirstLead = false;
-    int  firstLead = 0;
-    int  lastLead  = 0;
+    // Per-term leading-block exponent, used to assess convergence. An empty ZBCL
+    // term represents 0 and gets a -infinity sentinel so it never inflates a
+    // window maximum.
+    std::vector<int> leads;
+    constexpr int neg_inf = std::numeric_limits<int>::min();
     bool sawNonzero = false;
 
     series<FpType> cur = s;
     bool naturalEnd = false;
-    std::size_t nterms = 0;
     while (true) {
         if (cur.is_empty()) { naturalEnd = true; break; }
-        if (nterms == max_depth) break;            // budget reached
+        if (leads.size() == max_depth) break;      // budget reached
         ZBCL<FpType> t = cur.head();
-        ++nterms;
-        if (!t.is_empty()) {
-            int lead = t.head().exponent();
-            if (!haveFirstLead) { firstLead = lead; haveFirstLead = true; }
-            lastLead = lead;
+        if (t.is_empty()) {
+            leads.push_back(neg_inf);
+        } else {
+            leads.push_back(t.head().exponent());
             sawNonzero = true;
             // flatten the term's blocks into the renormalisation pool
             ZBCL<FpType> bcur = t;
@@ -128,15 +131,34 @@ inline ZBCL<FpType> sum(series<FpType> s, std::size_t max_depth = 1024) {
                 bcur = bcur.tail();
                 ++taken;
             }
+            // Refuse to silently truncate a term that exceeds the block cap --
+            // dropping its suffix would return an incorrect sum.
+            if (!bcur.is_empty()) {
+                throw elreal_sum_budget_exceeded(
+                    "sum: a term has more than per_term_cap blocks; refusing to "
+                    "silently truncate it (would corrupt the sum). Pre-renormalise "
+                    "the term or raise per_term_cap.");
+            }
         }
         cur = cur.tail();
     }
 
-    // Convergence guard (only when we stopped at the budget, not on natural end).
-    if (!naturalEnd && sawNonzero && lastLead >= firstLead) {
-        throw elreal_sum_budget_exceeded(
-            "sum: series did not converge within max_depth terms "
-            "(term magnitudes not decreasing); not Cauchy-stable.");
+    // Convergence guard rail (only when we stopped at the budget, not on natural
+    // end). Compare the largest leading exponent over the most recent window of
+    // terms to the largest over the first window; if the tail is not strictly
+    // smaller, the magnitudes are not decaying -> reject. Window-based so it
+    // catches oscillating non-decaying series, not just monotone ones.
+    if (!naturalEnd && sawNonzero) {
+        const std::size_t n = leads.size();
+        const std::size_t w = (n / 4 == 0) ? 1 : n / 4;
+        int headMax = neg_inf, tailMax = neg_inf;
+        for (std::size_t i = 0; i < w; ++i)     headMax = std::max(headMax, leads[i]);
+        for (std::size_t i = n - w; i < n; ++i) tailMax = std::max(tailMax, leads[i]);
+        if (tailMax >= headMax) {
+            throw elreal_sum_budget_exceeded(
+                "sum: series did not converge within max_depth terms "
+                "(term magnitudes not decaying); not Cauchy-stable.");
+        }
     }
 
     // Renormalise the exact total of all collected blocks into the unique

@@ -85,6 +85,15 @@ try {
     };
     nrOfFailedTestCases += expect_abort<double>(growing, 8, "sum (n+1) (divergent)");
 
+    // Divergent: oscillating non-decaying series 1 - 1/2 + 1 - 1/2 + ... (leading
+    // exponents 0,-1,0,-1,...). The endpoint heuristic would miss this; the
+    // window-based guard must still reject it.
+    auto oscillating = []() {
+        return series_from_generator<double>(
+            [](std::size_t n) { return from_native<double>(n % 2 == 0 ? 1.0 : -0.5); });
+    };
+    nrOfFailedTestCases += expect_abort<double>(oscillating, 16, "sum (osc 1,-1/2) (divergent)");
+
     // Budget of 0 is always an error.
     auto any_series = []() {
         return series_from_generator<double>([](std::size_t) { return from_native<double>(1.0); });
