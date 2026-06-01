@@ -203,7 +203,10 @@ inline void extract_fp_components_(long double fp, bool& _sign, int& _exponent, 
 	if (std::numeric_limits<long double>::digits <= 64) {
 		if (sizeof(long double) == 8) { // it is just a double
 			_sign = fp < 0.0 ? true : false;
-			_fr = frexp(double(fp), &_exponent);
+			// Qualify as std::frexp: unqualified frexp becomes ambiguous once a
+			// bfloat16 frexp overload is visible (double -> bfloat16 is itself an
+			// ambiguous conversion). std::frexp(double, int*) is the exact match.
+			_fr = std::frexp(double(fp), &_exponent);
 			_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
 		}
 		else if (sizeof(long double) == 16) {
