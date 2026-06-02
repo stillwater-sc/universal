@@ -2,8 +2,9 @@
 //
 // elreal is an experimental, header-only research type. Its streaming
 // operations already surface non-convergence bugs by throwing std::runtime_error
-// (see threeAdd.hpp). Phase 5 (#929) adds one caller-facing exception: a series
-// handed to sum() that does not Cauchy-stabilise within the depth budget.
+// (see threeAdd.hpp). Phase 5 (#929) adds elreal_sum_budget_exceeded (a series
+// handed to sum() that does not Cauchy-stabilise within the depth budget).
+// Phase 6 (#930) adds elreal_divide_by_zero for div() with a zero divisor.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -13,6 +14,14 @@
 
 #include <stdexcept>
 #include <string>
+
+// Arithmetic-exception guard, consistent with the other Universal number
+// systems. When 0 (default), div() by zero returns the empty co-list (the
+// undefined/zero result) instead of throwing; define it to 1 to opt in to
+// throwing elreal_divide_by_zero.
+#if !defined(ELREAL_THROW_ARITHMETIC_EXCEPTION)
+#define ELREAL_THROW_ARITHMETIC_EXCEPTION 0
+#endif
 
 namespace sw { namespace universal {
 
@@ -28,6 +37,13 @@ struct elreal_exception : public std::runtime_error {
 // trigger this: it is truncated at the budget and the partial sum is returned.
 struct elreal_sum_budget_exceeded : public elreal_exception {
     explicit elreal_sum_budget_exceeded(const std::string& what) : elreal_exception(what) {}
+};
+
+// Thrown by div() when the divisor is the empty co-list (zero), and only when
+// ELREAL_THROW_ARITHMETIC_EXCEPTION is enabled.
+struct elreal_divide_by_zero : public elreal_exception {
+    explicit elreal_divide_by_zero(const std::string& what = "elreal: division by zero")
+        : elreal_exception(what) {}
 };
 
 }} // namespace sw::universal

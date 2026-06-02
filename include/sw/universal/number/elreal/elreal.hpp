@@ -9,9 +9,10 @@
 //   Phase 4 (#928): threeAdd + add() lazy ZBCL combinator.
 //   Phase 5 (#929): infinite summation -- series<FpType> co-list of ZBCL terms
 //                   and sum() (dissertation 4.2.3).
+//   Phase 6 (#930): negate / mul / div (dissertation 4.2.4 / 4.2.5 / 4.2.6).
 //
 // Higher-level pieces (math suite, real-FP conversion) arrive in later phases
-// (#930-#933 under epic #923).
+// (#931-#933 under epic #923).
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -29,3 +30,6 @@
 #include <universal/number/elreal/exceptions.hpp>
 #include <universal/number/elreal/series.hpp>
 #include <universal/number/elreal/sum.hpp>
+#include <universal/number/elreal/negate.hpp>
+#include <universal/number/elreal/multiply.hpp>
+#include <universal/number/elreal/divide.hpp>
