@@ -38,3 +38,4 @@
 #include <universal/number/elreal/math/hypot.hpp>
 #include <universal/number/elreal/math/constants.hpp>
 #include <universal/number/elreal/math/exponent.hpp>
+#include <universal/number/elreal/math/hyperbolic.hpp>
