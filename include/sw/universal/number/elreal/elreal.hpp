@@ -39,3 +39,4 @@
 #include <universal/number/elreal/math/constants.hpp>
 #include <universal/number/elreal/math/exponent.hpp>
 #include <universal/number/elreal/math/hyperbolic.hpp>
+#include <universal/number/elreal/math/trigonometry.hpp>
