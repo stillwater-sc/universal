@@ -36,3 +36,4 @@
 // Phase 7 (#931): math suite
 #include <universal/number/elreal/math/sqrt.hpp>
 #include <universal/number/elreal/math/hypot.hpp>
+#include <universal/number/elreal/math/constants.hpp>
