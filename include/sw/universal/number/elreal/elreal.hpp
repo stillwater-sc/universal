@@ -33,3 +33,6 @@
 #include <universal/number/elreal/negate.hpp>
 #include <universal/number/elreal/multiply.hpp>
 #include <universal/number/elreal/divide.hpp>
+// Phase 7 (#931): math suite
+#include <universal/number/elreal/math/sqrt.hpp>
+#include <universal/number/elreal/math/hypot.hpp>
