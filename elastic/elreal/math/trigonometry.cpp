@@ -48,54 +48,64 @@ int near(const sw::universal::ZBCL<FpType>& z, double ref, double tol, const std
     return n;
 }
 
+// Test depths. The math functions default to depth 4 (~212 bits) for high-precision
+// use, but these tests assert only loose host tolerances (1e-10/1e-5) plus
+// structural identities and the 0-overlap invariant -- all satisfied with margin at
+// far smaller depth (depth d ~ d*53 bits on a double host, already past the host).
+// Cost is ~O(depth^4) per call, so this is the dominant lever on the -O0/instrumented
+// CI tiers. Single-series functions (atan/sin/cos/tan) use depth 2 (~106 bits); the
+// deepest compositions (asin/acos = sqrt.atan.div.pi) keep depth 3 for guard bits.
+static constexpr std::size_t kTrigDepth = 2;
+static constexpr std::size_t kAsinDepth = 3;
+
 // atan -- {double, float}.
 template <typename FpType>
-int verify_atan(double tol, const std::string& host) {
+int verify_atan(double tol, const std::string& host, std::size_t depth) {
     using namespace sw::universal;
     int n = 0;
     for (double x : { 0.0, 0.5, 1.0, -1.0, 2.0, -3.0, 0.25, 7.0 })
-        n += near(atan(from_native<FpType>(x)), std::atan(x), tol, host + " atan(" + std::to_string(x) + ")");
+        n += near(atan(from_native<FpType>(x), depth), std::atan(x), tol, host + " atan(" + std::to_string(x) + ")");
     const double pi = std::acos(-1.0);
     // atan(x) + atan(1/x) == pi/2, x > 0
     for (double x : { 0.5, 2.0, 5.0 }) {
-        double s = est::approx(add(atan(from_native<FpType>(x)), atan(from_native<FpType>(1.0 / x))));
+        double s = est::approx(add(atan(from_native<FpType>(x), depth), atan(from_native<FpType>(1.0 / x), depth)));
         if (std::abs(s - pi / 2.0) > tol) { std::cout << host << " atan(x)+atan(1/x)!=pi/2 at " << x << '\n'; ++n; }
     }
     // 4*atan(1) == pi ; parity atan(-x)==-atan(x)
     {
-        double q = est::approx(atan(from_native<FpType>(1.0)));
+        double q = est::approx(atan(from_native<FpType>(1.0), depth));
         if (std::abs(4.0 * q - pi) > tol) { std::cout << host << " 4*atan(1)!=pi (" << 4.0 * q << ")\n"; ++n; }
         ZBCL<FpType> a = from_native<FpType>(0.7);
-        if (std::abs(est::approx(atan(negate(a))) + est::approx(atan(a))) > tol) { std::cout << host << " atan parity\n"; ++n; }
+        if (std::abs(est::approx(atan(negate(a), depth)) + est::approx(atan(a, depth))) > tol) { std::cout << host << " atan parity\n"; ++n; }
     }
     return n;
 }
 
 // asin / acos -- {double} only (see header note).
 template <typename FpType>
-int verify_asin_acos(double tol, const std::string& host) {
+int verify_asin_acos(double tol, const std::string& host, std::size_t depth) {
     using namespace sw::universal;
     int n = 0;
 
     for (double x : { 0.0, 0.5, -0.5, 0.8, 0.9, 1.0, -1.0 })
-        n += near(asin(from_native<FpType>(x)), std::asin(x), tol, host + " asin(" + std::to_string(x) + ")");
+        n += near(asin(from_native<FpType>(x), depth), std::asin(x), tol, host + " asin(" + std::to_string(x) + ")");
     for (double x : { 0.0, 0.5, -0.5, 0.9, 1.0, -0.9 })
-        n += near(acos(from_native<FpType>(x)), std::acos(x), tol, host + " acos(" + std::to_string(x) + ")");
+        n += near(acos(from_native<FpType>(x), depth), std::acos(x), tol, host + " acos(" + std::to_string(x) + ")");
 
     const double pi = std::acos(-1.0);
     // asin(x) + acos(x) == pi/2
     for (double x : { 0.3, -0.6, 0.9 }) {
-        double s = est::approx(add(asin(from_native<FpType>(x)), acos(from_native<FpType>(x))));
+        double s = est::approx(add(asin(from_native<FpType>(x), depth), acos(from_native<FpType>(x), depth)));
         if (std::abs(s - pi / 2.0) > tol) { std::cout << host << " asin+acos!=pi/2 at " << x << " (" << s << ")\n"; ++n; }
     }
     // parity asin(-x) == -asin(x)
     {
         ZBCL<FpType> a = from_native<FpType>(0.7);
-        if (std::abs(est::approx(asin(negate(a))) + est::approx(asin(a))) > tol) { std::cout << host << " asin parity\n"; ++n; }
+        if (std::abs(est::approx(asin(negate(a), depth)) + est::approx(asin(a, depth))) > tol) { std::cout << host << " asin parity\n"; ++n; }
     }
     // domain: asin/acos of |x|>1 -> empty
-    if (!asin(from_native<FpType>(1.5)).is_empty()) { std::cout << host << " asin(1.5) not empty\n"; ++n; }
-    if (!acos(from_native<FpType>(2.0)).is_empty()) { std::cout << host << " acos(2.0) not empty\n"; ++n; }
+    if (!asin(from_native<FpType>(1.5), depth).is_empty()) { std::cout << host << " asin(1.5) not empty\n"; ++n; }
+    if (!acos(from_native<FpType>(2.0), depth).is_empty()) { std::cout << host << " acos(2.0) not empty\n"; ++n; }
     return n;
 }
 
@@ -108,7 +118,7 @@ int verify_asin_acos(double tol, const std::string& host) {
 // enabled for double only; on float the identity is still checked at the
 // well-conditioned points where both components are O(1).
 template <typename FpType>
-int verify_forward_trig(double tol, const std::string& host, bool nearZeroSquares) {
+int verify_forward_trig(double tol, const std::string& host, bool nearZeroSquares, std::size_t depth) {
     using namespace sw::universal;
     int n = 0;
     const double pi = std::acos(-1.0);
@@ -118,21 +128,21 @@ int verify_forward_trig(double tol, const std::string& host, bool nearZeroSquare
     // The direct values are representable on both hosts; only squaring them is not.
     for (double x : { 0.0, 0.3, pi / 6, pi / 4, 1.0, pi / 2, 2.0, pi, 3.0,
                       3 * pi / 2, 2.3, -0.7, -1.1, -pi / 2 }) {
-        n += near(sin(from_native<FpType>(x)), std::sin(x), tol, host + " sin(" + std::to_string(x) + ")");
-        n += near(cos(from_native<FpType>(x)), std::cos(x), tol, host + " cos(" + std::to_string(x) + ")");
+        n += near(sin(from_native<FpType>(x), depth), std::sin(x), tol, host + " sin(" + std::to_string(x) + ")");
+        n += near(cos(from_native<FpType>(x), depth), std::cos(x), tol, host + " cos(" + std::to_string(x) + ")");
     }
 
     // sin^2 + cos^2 == 1 (also forces the reduced-argument 0-overlap path).
     // Well-conditioned points (both components O(1)) -- all hosts.
     for (double x : { 0.4, 1.2, 2.7, -1.1 }) {
-        ZBCL<FpType> s = sin(from_native<FpType>(x)), c = cos(from_native<FpType>(x));
+        ZBCL<FpType> s = sin(from_native<FpType>(x), depth), c = cos(from_native<FpType>(x), depth);
         double id = est::approx(add(mul(s, s), mul(c, c)));
         if (std::abs(id - 1.0) > tol) { std::cout << host << " sin^2+cos^2!=1 at " << x << " (" << id << ")\n"; ++n; }
     }
     // Near-zero points (one component ~1e-8) -- double host only.
     if (nearZeroSquares) {
         for (double x : { pi / 2, pi, 3 * pi / 2 }) {
-            ZBCL<FpType> s = sin(from_native<FpType>(x)), c = cos(from_native<FpType>(x));
+            ZBCL<FpType> s = sin(from_native<FpType>(x), depth), c = cos(from_native<FpType>(x), depth);
             double id = est::approx(add(mul(s, s), mul(c, c)));
             if (std::abs(id - 1.0) > tol) { std::cout << host << " sin^2+cos^2!=1 at " << x << " (" << id << ")\n"; ++n; }
         }
@@ -140,7 +150,7 @@ int verify_forward_trig(double tol, const std::string& host, bool nearZeroSquare
 
     // tan == sin/cos vs std::tan, away from the cos==0 poles (relative test).
     for (double x : { 0.0, 0.3, pi / 6, pi / 4, 1.0, -0.7, -1.1, 2.3 }) {
-        double got = est::approx(tan(from_native<FpType>(x)));
+        double got = est::approx(tan(from_native<FpType>(x), depth));
         double ref = std::tan(x);
         if (std::abs(got - ref) > tol * std::max(1.0, std::abs(ref))) {
             std::cout << host << " tan(" << x << ") = " << got << " != " << ref << '\n'; ++n;
@@ -150,8 +160,8 @@ int verify_forward_trig(double tol, const std::string& host, bool nearZeroSquare
     // parity: sin(-x) == -sin(x), cos(-x) == cos(x).
     {
         ZBCL<FpType> a = from_native<FpType>(0.9);
-        if (std::abs(est::approx(sin(negate(a))) + est::approx(sin(a))) > tol) { std::cout << host << " sin parity\n"; ++n; }
-        if (std::abs(est::approx(cos(negate(a))) - est::approx(cos(a))) > tol) { std::cout << host << " cos parity\n"; ++n; }
+        if (std::abs(est::approx(sin(negate(a), depth)) + est::approx(sin(a, depth))) > tol) { std::cout << host << " sin parity\n"; ++n; }
+        if (std::abs(est::approx(cos(negate(a), depth)) - est::approx(cos(a, depth))) > tol) { std::cout << host << " cos parity\n"; ++n; }
     }
     return n;
 }
@@ -166,11 +176,11 @@ try {
     bool reportTestCases = false;
     ReportTestSuiteHeader(test_suite, reportTestCases);
 
-    nrOfFailedTestCases += verify_atan<double>(1e-10, "atan<double>");
-    nrOfFailedTestCases += verify_atan<float>(1e-5, "atan<float>");
-    nrOfFailedTestCases += verify_asin_acos<double>(1e-10, "iasin<double>");
-    nrOfFailedTestCases += verify_forward_trig<double>(1e-10, "trig<double>", true);
-    nrOfFailedTestCases += verify_forward_trig<float>(1e-5, "trig<float>", false);
+    nrOfFailedTestCases += verify_atan<double>(1e-10, "atan<double>", kTrigDepth);
+    nrOfFailedTestCases += verify_atan<float>(1e-5, "atan<float>", kTrigDepth);
+    nrOfFailedTestCases += verify_asin_acos<double>(1e-10, "iasin<double>", kAsinDepth);
+    nrOfFailedTestCases += verify_forward_trig<double>(1e-10, "trig<double>", true, kTrigDepth);
+    nrOfFailedTestCases += verify_forward_trig<float>(1e-5, "trig<float>", false, kTrigDepth);
 
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

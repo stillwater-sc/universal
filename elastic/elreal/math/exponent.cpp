@@ -43,51 +43,58 @@ int near(const sw::universal::ZBCL<FpType>& z, double ref, double tol, const std
     return n;
 }
 
+// Test depths. exp/log are single-series and fine at depth 2, but verify_explog
+// also exercises general pow = exp(y*log(x)) (two stacked series), so it runs at
+// depth 3 (~159 bits) for guard bits; still ~(3/4)^4 cheaper than the default 4.
+// The integer pow path is a pure multiply and needs no series headroom (depth 2).
+static constexpr std::size_t kExpDepth    = 3;
+static constexpr std::size_t kPowIntDepth = 2;
+
 // exp/log/general-pow -- {double, float}.
 template <typename FpType>
-int verify_explog(double tol, const std::string& host) {
+int verify_explog(double tol, const std::string& host, std::size_t depth) {
     using namespace sw::universal;
     int n = 0;
 
     for (double v : { 0.0, 1.0, 2.0, -1.0, 0.5, 3.5 })
-        n += near(exp(from_native<FpType>(v)), std::exp(v), tol, host + " exp(" + std::to_string(v) + ")");
+        n += near(exp(from_native<FpType>(v), depth), std::exp(v), tol, host + " exp(" + std::to_string(v) + ")");
     for (double v : { 1.0, 2.0, 5.0, 10.0, 0.5, 100.0 })
-        n += near(log(from_native<FpType>(v)), std::log(v), tol, host + " log(" + std::to_string(v) + ")");
+        n += near(log(from_native<FpType>(v), depth), std::log(v), tol, host + " log(" + std::to_string(v) + ")");
 
     // round trips
     for (double v : { 0.5, 2.0, 3.0 }) {
-        n += near(log(exp(from_native<FpType>(v))), v, tol, host + " log(exp)");
+        n += near(log(exp(from_native<FpType>(v), depth), depth), v, tol, host + " log(exp)");
         ZBCL<FpType> pos = from_native<FpType>(std::exp(v));   // x = e^v > 0
-        n += near(exp(log(pos)), std::exp(v), tol * std::exp(v), host + " exp(log)");
+        n += near(exp(log(pos, depth), depth), std::exp(v), tol * std::exp(v), host + " exp(log)");
     }
     // exp(a+b) == exp(a)*exp(b)
     {
         ZBCL<FpType> a = from_native<FpType>(1.0), b = from_native<FpType>(0.5);
-        double lhs = est::approx(exp(add(a, b)));
-        double rhs = est::approx(mul(exp(a), exp(b)));
+        double lhs = est::approx(exp(add(a, b), depth));
+        double rhs = est::approx(mul(exp(a, depth), exp(b, depth)));
         if (std::abs(lhs - rhs) > tol * std::exp(1.5)) { std::cout << host << " exp(a+b)!=exp(a)exp(b)\n"; ++n; }
     }
     // log(x*y) == log(x)+log(y)
     {
         ZBCL<FpType> x = from_native<FpType>(3.0), y = from_native<FpType>(7.0);
-        double lhs = est::approx(log(mul(x, y)));
-        double rhs = est::approx(add(log(x), log(y)));
+        double lhs = est::approx(log(mul(x, y), depth));
+        double rhs = est::approx(add(log(x, depth), log(y, depth)));
         if (std::abs(lhs - rhs) > tol) { std::cout << host << " log(xy)!=log(x)+log(y)\n"; ++n; }
     }
     // general pow via exp(y*log(x))
-    n += near(pow(from_native<FpType>(2.0), from_native<FpType>(0.5)), std::sqrt(2.0), tol, host + " pow(2,0.5)");
-    n += near(pow(from_native<FpType>(9.0), from_native<FpType>(0.5)), 3.0, tol, host + " pow(9,0.5)");
+    n += near(pow(from_native<FpType>(2.0), from_native<FpType>(0.5), depth), std::sqrt(2.0), tol, host + " pow(2,0.5)");
+    n += near(pow(from_native<FpType>(9.0), from_native<FpType>(0.5), depth), 3.0, tol, host + " pow(9,0.5)");
     return n;
 }
 
 // pow integer fast path (pure multiply) -- all hosts.
 template <typename FpType>
-int verify_pow_int(double tol, const std::string& host) {
+int verify_pow_int(double tol, const std::string& host, std::size_t depth) {
     using namespace sw::universal;
     int n = 0;
     struct { double b, e, r; } cases[] = { {2,10,1024}, {3,4,81}, {5,3,125}, {2,0,1}, {7,2,49} };
     for (auto& c : cases) {
-        ZBCL<FpType> p = pow(from_native<FpType>(c.b), from_native<FpType>(c.e));
+        ZBCL<FpType> p = pow(from_native<FpType>(c.b), from_native<FpType>(c.e), depth);
         if (std::abs(est::approx(p) - c.r) > tol * std::max(1.0, c.r)) {
             std::cout << host << " pow(" << c.b << "," << c.e << ") = " << est::approx(p)
                       << " != " << c.r << '\n'; ++n;
@@ -107,12 +114,12 @@ try {
     bool reportTestCases = false;
     ReportTestSuiteHeader(test_suite, reportTestCases);
 
-    nrOfFailedTestCases += verify_explog<double>(1e-10, "explog<double>");
-    nrOfFailedTestCases += verify_explog<float>(1e-5, "explog<float>");
+    nrOfFailedTestCases += verify_explog<double>(1e-10, "explog<double>", kExpDepth);
+    nrOfFailedTestCases += verify_explog<float>(1e-5, "explog<float>", kExpDepth);
 
-    nrOfFailedTestCases += verify_pow_int<double>(1e-12, "pow<double>");
-    nrOfFailedTestCases += verify_pow_int<float>(1e-5, "pow<float>");
-    nrOfFailedTestCases += verify_pow_int<bfloat16>(1e-1, "pow<bfloat16>");
+    nrOfFailedTestCases += verify_pow_int<double>(1e-12, "pow<double>", kPowIntDepth);
+    nrOfFailedTestCases += verify_pow_int<float>(1e-5, "pow<float>", kPowIntDepth);
+    nrOfFailedTestCases += verify_pow_int<bfloat16>(1e-1, "pow<bfloat16>", kPowIntDepth);
 
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

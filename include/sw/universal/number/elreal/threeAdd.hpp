@@ -415,8 +415,11 @@ priestRenorm(std::vector<block<FpType>> as) {
         // without converging we fall back to the single pass rather than return a
         // grown, still-overlapping list.
         if (!zero_overlap_list(single)) {
+            // A cancellation residual converges in two extra passes in practice
+            // (fold the cancelling pair, then push the tail to a >= k gap); bound
+            // at 3 for headroom rather than spinning on a pathological input.
             std::vector<block<FpType>> r = single;
-            for (int pass = 0; pass < 6; ++pass) {
+            for (int pass = 0; pass < 3; ++pass) {
                 r = priestRenorm_pass(std::move(r));
                 if (zero_overlap_list(r)) return r;     // converged to 0-overlap (#1044)
             }

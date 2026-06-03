@@ -37,35 +37,41 @@ int near(const sw::universal::ZBCL<FpType>& z, double ref, double tol, const std
     return n;
 }
 
+// Test depth. sinh/cosh/tanh are single-series (exp-based) functions; depth 2
+// (~106 bits on a double host) clears the 1e-10/1e-5 tolerances and the
+// cosh^2-sinh^2 identity with wide margin, at ~O(depth^4) lower cost than the
+// default depth 4 -- the dominant lever on the instrumented CI tiers.
+static constexpr std::size_t kHypDepth = 2;
+
 template <typename FpType>
-int verify_all(double tol, const std::string& host) {
+int verify_all(double tol, const std::string& host, std::size_t depth) {
     using namespace sw::universal;
     int n = 0;
 
     for (double x : { 0.0, 0.5, 1.0, -1.5, 2.0, -0.25 }) {
         const std::string sx = std::to_string(x);
-        n += near(sinh(from_native<FpType>(x)), std::sinh(x), tol, host + " sinh(" + sx + ")");
-        n += near(cosh(from_native<FpType>(x)), std::cosh(x), tol, host + " cosh(" + sx + ")");
-        n += near(tanh(from_native<FpType>(x)), std::tanh(x), tol, host + " tanh(" + sx + ")");
+        n += near(sinh(from_native<FpType>(x), depth), std::sinh(x), tol, host + " sinh(" + sx + ")");
+        n += near(cosh(from_native<FpType>(x), depth), std::cosh(x), tol, host + " cosh(" + sx + ")");
+        n += near(tanh(from_native<FpType>(x), depth), std::tanh(x), tol, host + " tanh(" + sx + ")");
     }
 
     // cosh^2 - sinh^2 == 1
     for (double x : { 0.5, 1.3, 2.0 }) {
-        ZBCL<FpType> c = cosh(from_native<FpType>(x)), s = sinh(from_native<FpType>(x));
+        ZBCL<FpType> c = cosh(from_native<FpType>(x), depth), s = sinh(from_native<FpType>(x), depth);
         double id = est::approx(add(mul(c, c), negate(mul(s, s))));
         if (std::abs(id - 1.0) > tol) { std::cout << host << " cosh^2-sinh^2 != 1 at " << x << " (" << id << ")\n"; ++n; }
     }
     // tanh == sinh/cosh
     for (double x : { 0.7, 1.5 }) {
-        ZBCL<FpType> th = tanh(from_native<FpType>(x));
-        ZBCL<FpType> sc = div(sinh(from_native<FpType>(x)), cosh(from_native<FpType>(x)));
+        ZBCL<FpType> th = tanh(from_native<FpType>(x), depth);
+        ZBCL<FpType> sc = div(sinh(from_native<FpType>(x), depth), cosh(from_native<FpType>(x), depth));
         if (std::abs(est::approx(th) - est::approx(sc)) > tol) { std::cout << host << " tanh!=sinh/cosh at " << x << '\n'; ++n; }
     }
     // parity
     {
         ZBCL<FpType> a = from_native<FpType>(1.1);
-        if (std::abs(est::approx(sinh(negate(a))) + est::approx(sinh(a))) > tol) { std::cout << host << " sinh parity\n"; ++n; }
-        if (std::abs(est::approx(cosh(negate(a))) - est::approx(cosh(a))) > tol) { std::cout << host << " cosh parity\n"; ++n; }
+        if (std::abs(est::approx(sinh(negate(a), depth)) + est::approx(sinh(a, depth))) > tol) { std::cout << host << " sinh parity\n"; ++n; }
+        if (std::abs(est::approx(cosh(negate(a), depth)) - est::approx(cosh(a, depth))) > tol) { std::cout << host << " cosh parity\n"; ++n; }
     }
     return n;
 }
@@ -80,8 +86,8 @@ try {
     bool reportTestCases = false;
     ReportTestSuiteHeader(test_suite, reportTestCases);
 
-    nrOfFailedTestCases += verify_all<double>(1e-10, "hyp<double>");
-    nrOfFailedTestCases += verify_all<float>(1e-5, "hyp<float>");
+    nrOfFailedTestCases += verify_all<double>(1e-10, "hyp<double>", kHypDepth);
+    nrOfFailedTestCases += verify_all<float>(1e-5, "hyp<float>", kHypDepth);
 
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
