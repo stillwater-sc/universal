@@ -170,6 +170,8 @@ removeZeros(const std::vector<block<FpType>>& xs) {
 // priestAdd works on FINITE lists. Outputs a DBL_k list whose total value
 // equals the sum of the input lists' values.
 template <typename FpType> std::vector<block<FpType>>
+priestRenorm_pass(std::vector<block<FpType>> xs);
+template <typename FpType> std::vector<block<FpType>>
 priestRenorm(std::vector<block<FpType>> xs);
 
 template <typename FpType>
@@ -335,16 +337,23 @@ sweepDownRec(std::vector<block<FpType>> as, block<FpType> b) {
     return result;
 }
 
+// priestRenorm_pass: ONE Priest renormalisation pass (sweepUp / recurse /
+// sweepDown). A single pass produces a 0-overlap (DBL_k) list for ordinary
+// inputs, but for a pool with catastrophic cancellation between nearly-equal
+// high-precision values the leading term can collapse below a following limb,
+// leaving an adjacent pair closer than k (#1044). priestRenorm() below iterates
+// this pass to a 0-overlap fixpoint (the pass is value-preserving and idempotent
+// on an already-0-overlap list, and converges in a second pass in practice).
 template <typename FpType>
 inline std::vector<block<FpType>>
-priestRenorm(std::vector<block<FpType>> as) {
+priestRenorm_pass(std::vector<block<FpType>> as) {
     using B = block<FpType>;
     if (as.empty()) return {};
     auto up = sweepUp(as);
     if (up.empty()) return {};
     B f = up.front();
     std::vector<B> fs(up.begin() + 1, up.end());
-    auto recursed = priestRenorm(fs);
+    auto recursed = priestRenorm_pass(fs);
     auto cleaned = removeZeros(recursed);
     auto down = sweepDown(cleaned);
     std::vector<B> result;
@@ -352,6 +361,52 @@ priestRenorm(std::vector<block<FpType>> as) {
     result.push_back(f);
     result.insert(result.end(), down.begin(), down.end());
     return result;
+}
+
+// priestRenorm: renormalise to a 0-overlap (DBL_k) list.
+//
+// A single Priest pass is 0-overlap for ordinary inputs, but a pool with
+// catastrophic cancellation between nearly-equal high-precision values can
+// collapse the leading term below a following limb, leaving an adjacent pair
+// closer than k (#1044). For such pools a second pass converges to 0-overlap.
+//
+// The catch is that this rescue is only correct for a *wide* host. On a narrow
+// host (bfloat16, k=8; fp16, k=11) a deep expansion bottoms out at the denormal
+// floor, where the two smallest limbs sit closer than k and twoSumRN cannot push
+// the error any lower: a second pass cannot reach 0-overlap, it only reshuffles
+// and lengthens the list. Worse, *any* change to a narrow-host renorm result
+// perturbs the lazy ZBCL structure so that a tail overlap main never forces lands
+// where it IS forced, tripping the 0-overlap assertion downstream. The series /
+// trig functions that need the #1044 rescue are wide-host only anyway (a narrow
+// mantissa cannot hold the expansions), so we gate the rescue on k >= 24 (float
+// and wider). For narrow hosts priestRenorm is exactly the single Priest pass --
+// byte-identical to the behaviour every merged test was validated against.
+template <typename FpType>
+inline bool zero_overlap_list(const std::vector<block<FpType>>& r) {
+    for (std::size_t i = 0; i + 1 < r.size(); ++i)
+        if (!zero_overlap(r[i], r[i + 1])) return false;
+    return true;
+}
+
+template <typename FpType>
+inline std::vector<block<FpType>>
+priestRenorm(std::vector<block<FpType>> as) {
+    std::vector<block<FpType>> single = priestRenorm_pass(std::move(as));
+    if constexpr (block<FpType>::k >= 24) {
+        // #1044's signature is a *leading-pair* overlap: catastrophic cancellation
+        // collapses the high-order term so it sits closer than k to the next limb.
+        // Rescue only that signature with one extra pass. A deep-tail overlap, by
+        // contrast, is benign -- a single pass already leaves it where the lazy
+        // ZBCL never forces it, exactly as main does -- so we leave those results
+        // untouched (no divergence, no extra work) to keep well-conditioned
+        // computations identical and fast.
+        if (single.size() >= 2 && !zero_overlap(single[0], single[1])) {
+            std::vector<block<FpType>> twice = priestRenorm_pass(single);
+            if (zero_overlap_list(twice)) return twice; // one extra pass rescued it (#1044)
+            // fall through: could not reach 0-overlap; return the single pass (== main)
+        }
+    }
+    return single;                                      // narrow host, benign, or unrescuable
 }
 
 template <typename FpType>
