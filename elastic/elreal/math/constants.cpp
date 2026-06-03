@@ -53,46 +53,54 @@ int check_value(const sw::universal::ZBCL<FpType>& z, double ref, double tol, co
     return n;
 }
 
+// Test generation depth. The constant generators default to deep precision (e=32,
+// pi=16 blocks) for high-precision *use*, but these tests only compare against the
+// host-double std::numbers reference (a ~1e-12 tolerance). Six blocks is ~300+ bits
+// on a double host -- far past the reference -- while cutting generation cost by
+// ~(6/16)^4 (and much more for e) vs the defaults, which is the dominant saving on
+// this, the most expensive elreal math test, under the -O0/instrumented CI tiers.
+static constexpr std::size_t kConstDepth = 6;
+
 // Series constants -- tested on double / float only.
 template <typename FpType>
-int verify_series(double tol, const std::string& host) {
+int verify_series(double tol, const std::string& host, std::size_t depth) {
     using namespace sw::universal;
     int n = 0;
-    n += check_value(e_zbcl<FpType>(),        std::numbers::e_v<double>,    tol, host + " e");
-    n += check_value(ln2_zbcl<FpType>(),      std::numbers::ln2_v<double>,  tol, host + " ln2");
-    n += check_value(ln10_zbcl<FpType>(),     std::numbers::ln10_v<double>, tol, host + " ln10");
-    n += check_value(log2_10_zbcl<FpType>(),  std::log2(10.0),              tol, host + " log2(10)");
-    n += check_value(pi_zbcl<FpType>(),       std::numbers::pi_v<double>,   tol, host + " pi");
+    n += check_value(e_zbcl<FpType>(depth),        std::numbers::e_v<double>,    tol, host + " e");
+    n += check_value(ln2_zbcl<FpType>(depth),      std::numbers::ln2_v<double>,  tol, host + " ln2");
+    n += check_value(ln10_zbcl<FpType>(depth),     std::numbers::ln10_v<double>, tol, host + " ln10");
+    n += check_value(log2_10_zbcl<FpType>(depth),  std::log2(10.0),              tol, host + " log2(10)");
+    n += check_value(pi_zbcl<FpType>(depth),       std::numbers::pi_v<double>,   tol, host + " pi");
     return n;
 }
 
 // Radical constants + euler_gamma -- tested on all hosts (stay in range).
 template <typename FpType>
-int verify_radicals(double tol, const std::string& host) {
+int verify_radicals(double tol, const std::string& host, std::size_t depth) {
     using namespace sw::universal;
     int n = 0;
     struct { ZBCL<FpType> z; double ref; const char* name; } rad[] = {
-        { sqrt2_zbcl<FpType>(), std::numbers::sqrt2_v<double>, "sqrt2" },
-        { sqrt3_zbcl<FpType>(), std::numbers::sqrt3_v<double>, "sqrt3" },
-        { sqrt5_zbcl<FpType>(), std::sqrt(5.0),                "sqrt5" },
-        { phi_zbcl<FpType>(),   std::numbers::phi_v<double>,   "phi"   },
+        { sqrt2_zbcl<FpType>(depth), std::numbers::sqrt2_v<double>, "sqrt2" },
+        { sqrt3_zbcl<FpType>(depth), std::numbers::sqrt3_v<double>, "sqrt3" },
+        { sqrt5_zbcl<FpType>(depth), std::sqrt(5.0),                "sqrt5" },
+        { phi_zbcl<FpType>(depth),   std::numbers::phi_v<double>,   "phi"   },
     };
     for (auto& r : rad) n += check_value(r.z, r.ref, tol, host + " " + r.name);
 
     // Algebraic identities (tolerance-based; sqrt/phi are approximate streams).
     for (double v : { 2.0, 3.0, 5.0 }) {
-        ZBCL<FpType> s = sqrt(from_native<FpType>(v));
+        ZBCL<FpType> s = sqrt(from_native<FpType>(v), depth);
         if (std::abs(est::approx(mul(s, s)) - v) > tol) {
             std::cout << host << " sqrt(" << v << ")^2 != " << v << '\n'; ++n;
         }
     }
     {   // phi^2 == phi + 1
-        ZBCL<FpType> phi = phi_zbcl<FpType>();
+        ZBCL<FpType> phi = phi_zbcl<FpType>(depth);
         double lhs = est::approx(mul(phi, phi));
         double rhs = est::approx(add(phi, from_native<FpType>(1.0)));
         if (std::abs(lhs - rhs) > tol) { std::cout << host << " phi^2 != phi+1\n"; ++n; }
     }
-    n += check_value(euler_gamma_zbcl<FpType>(), std::numbers::egamma_v<double>, tol, host + " egamma");
+    n += check_value(euler_gamma_zbcl<FpType>(depth), std::numbers::egamma_v<double>, tol, host + " egamma");
     return n;
 }
 
@@ -108,7 +116,9 @@ int verify_highprec_double() {
         block<double>{ -2.9947698097183397e-33,  0 },
     };
     ZBCL<double> ref = zbcl_from_blocks<double>(priestRenorm(pilimbs));
-    ZBCL<double> diff = add(pi_zbcl<double>(16), negate(ref));
+    // depth 8 (~424 bits) is the suite's one deliberately-deep generation, well
+    // past the 3-limb (~159-bit) reference it is compared against.
+    ZBCL<double> diff = add(pi_zbcl<double>(8), negate(ref));
     // Agreement to > 100 bits (~30 digits) demonstrates precision well beyond the
     // host double (the 3-limb reference itself caps the check at ~159 bits). The
     // leading limb cancels exactly, so the residual magnitude is the real signal
@@ -130,12 +140,12 @@ try {
     bool reportTestCases = false;
     ReportTestSuiteHeader(test_suite, reportTestCases);
 
-    nrOfFailedTestCases += verify_series<double>(1e-12, "const<double>");
-    nrOfFailedTestCases += verify_series<float>(1e-6, "const<float>");
+    nrOfFailedTestCases += verify_series<double>(1e-12, "const<double>", kConstDepth);
+    nrOfFailedTestCases += verify_series<float>(1e-6, "const<float>", kConstDepth);
 
-    nrOfFailedTestCases += verify_radicals<double>(1e-12, "const<double>");
-    nrOfFailedTestCases += verify_radicals<float>(1e-6, "const<float>");
-    nrOfFailedTestCases += verify_radicals<bfloat16>(1e-2, "const<bfloat16>");
+    nrOfFailedTestCases += verify_radicals<double>(1e-12, "const<double>", kConstDepth);
+    nrOfFailedTestCases += verify_radicals<float>(1e-6, "const<float>", kConstDepth);
+    nrOfFailedTestCases += verify_radicals<bfloat16>(1e-2, "const<bfloat16>", kConstDepth);
 
     nrOfFailedTestCases += verify_highprec_double();
 

@@ -478,15 +478,22 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -ffp-contract=off")
 	endif()
 
-	# Sanitizer support (GCC/Clang only)
+	# Sanitizer support (GCC/Clang only).
+	# ASan compiles at -O1: AddressSanitizer's recommended setting -- 2-4x faster
+	# than -O0 (a large win for this template-heavy header-only library) with
+	# equal-or-better detection, Debug -g retained for symbolized stacks.
+	# UBSan stays at -O0 (Debug default): at -O1 the optimizer can eliminate some UB
+	# sites before instrumentation sees them, so -O0 preserves maximum UB-detection
+	# fidelity. UBSan still gets the bulk of the CI speedup from the test-side depth
+	# reductions and ctest -j, just not the -O level multiplier.
 	if(UNIVERSAL_ENABLE_ASAN)
-		message(STATUS "AddressSanitizer enabled")
-		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+		message(STATUS "AddressSanitizer enabled (-O1)")
+		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer -O1")
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 	endif()
 
 	if(UNIVERSAL_ENABLE_UBSAN)
-		message(STATUS "UndefinedBehaviorSanitizer enabled")
+		message(STATUS "UndefinedBehaviorSanitizer enabled (-O0 for max fidelity)")
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -fsanitize=undefined -fno-omit-frame-pointer")
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
 	endif()
