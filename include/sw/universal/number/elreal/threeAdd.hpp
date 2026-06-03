@@ -393,17 +393,34 @@ inline std::vector<block<FpType>>
 priestRenorm(std::vector<block<FpType>> as) {
     std::vector<block<FpType>> single = priestRenorm_pass(std::move(as));
     if constexpr (block<FpType>::k >= 24) {
-        // #1044's signature is a *leading-pair* overlap: catastrophic cancellation
-        // collapses the high-order term so it sits closer than k to the next limb.
-        // Rescue only that signature with one extra pass. A deep-tail overlap, by
-        // contrast, is benign -- a single pass already leaves it where the lazy
-        // ZBCL never forces it, exactly as main does -- so we leave those results
-        // untouched (no divergence, no extra work) to keep well-conditioned
-        // computations identical and fast.
-        if (single.size() >= 2 && !zero_overlap(single[0], single[1])) {
-            std::vector<block<FpType>> twice = priestRenorm_pass(single);
-            if (zero_overlap_list(twice)) return twice; // one extra pass rescued it (#1044)
-            // fall through: could not reach 0-overlap; return the single pass (== main)
+        // #1044: catastrophic cancellation (the signature of trig argument
+        // reduction t = x - n*(pi/2) near a zero) cancels the high-order terms; the
+        // collapsed leading term shrinks and its gap to a following limb drops below
+        // k. A single Priest pass does not restore 0-overlap, and one extra pass is
+        // not enough either: the first extra pass folds the cancelling pair
+        // (shrinking the leading exponent), a second pushes the tail down to a >= k
+        // gap, e.g. [-191 -192 -246] -> [-195 -246] -> [-195 -249]. So when the
+        // single pass is not 0-overlap, iterate to a 0-overlap fixpoint (bounded).
+        //
+        // This is correct only on a *wide* host (k >= 24): there is no denormal
+        // floor in range, so the iteration converges in a couple of passes. On a
+        // narrow host (bfloat16 k=8, fp16 k=11) a deep expansion bottoms out at the
+        // denormal floor where the two smallest limbs are closer than k and cannot
+        // be separated; iteration never converges and only corrupts the lazy ZBCL
+        // structure (tripping the 0-overlap assertion downstream). Narrow hosts are
+        // therefore excluded (gate above) and get exactly the single Priest pass --
+        // byte-identical to what every merged narrow-host test was validated against
+        // (the series/trig functions that need this rescue are wide-host only, since
+        // a narrow mantissa cannot hold the expansions anyway). If the bound is hit
+        // without converging we fall back to the single pass rather than return a
+        // grown, still-overlapping list.
+        if (!zero_overlap_list(single)) {
+            std::vector<block<FpType>> r = single;
+            for (int pass = 0; pass < 6; ++pass) {
+                r = priestRenorm_pass(std::move(r));
+                if (zero_overlap_list(r)) return r;     // converged to 0-overlap (#1044)
+            }
+            // did not converge within the bound: fall back to the single pass
         }
     }
     return single;                                      // narrow host, benign, or unrescuable

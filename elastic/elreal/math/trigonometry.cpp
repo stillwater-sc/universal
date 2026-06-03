@@ -1,14 +1,21 @@
-// trigonometry.cpp: Phase 7.5 (#931) tests for atan / asin / acos on ZBCL.
+// trigonometry.cpp: Phase 7.5/7.6 (#931) tests for atan/asin/acos and sin/cos/tan
+// on ZBCL.
 //
-// atan is robust and tested on {double, float}. asin/acos are tested on {double}
-// only: they are the deepest compositions in the suite (sqrt . atan . div . pi),
-// and a float host's narrow exponent range (min_exponent ~ -125) underflows the
-// intermediate expansions for arguments toward the domain boundary, where
-// 1 - x^2 also loses bits to cancellation. A double host (min_exponent ~ -1022)
-// has ample headroom. See the host-scope note in trigonometry.hpp.
+// atan and sin/cos/tan are robust and tested on {double, float}. asin/acos are
+// tested on {double} only: they are the deepest compositions in the suite
+// (sqrt . atan . div . pi), and a float host's narrow exponent range
+// (min_exponent ~ -125) underflows the intermediate expansions for arguments
+// toward the domain boundary, where 1 - x^2 also loses bits to cancellation. A
+// double host (min_exponent ~ -1022) has ample headroom. See the host-scope note
+// in trigonometry.hpp.
 //
-// Checks: value vs std::<fn>, asin(x)+acos(x)==pi/2, atan(x)+atan(1/x)==pi/2
-// (x>0), 4*atan(1)==pi, parity, domain (|x|>1 -> empty for asin/acos); 0-overlap.
+// Forward trig exercises the octant reduction t = x - n*(pi/2): for x near a
+// multiple of pi/2 this cancels, and the reduced argument must renormalise to a
+// 0-overlap stream (see #1044) or sin/cos of a tiny t would trip the invariant.
+//
+// Checks: value vs std::<fn>, sin^2+cos^2==1, tan==sin/cos, parity,
+// asin(x)+acos(x)==pi/2, atan(x)+atan(1/x)==pi/2 (x>0), 4*atan(1)==pi, domain
+// (|x|>1 -> empty for asin/acos); 0-overlap.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -92,12 +99,69 @@ int verify_asin_acos(double tol, const std::string& host) {
     return n;
 }
 
+// sin / cos / tan -- {double, float}.
+//
+// nearZeroSquares: test the sin^2+cos^2 identity at points where one component is
+// a near-zero (cos(pi/2), sin(pi), cos(3pi/2)). Squaring a ~1e-8 component needs
+// ~2k bits below the unit leading term, which underflows a float host's exponent
+// floor (~ -126) -- an inherent host-range limit, like asin/acos. So this is
+// enabled for double only; on float the identity is still checked at the
+// well-conditioned points where both components are O(1).
+template <typename FpType>
+int verify_forward_trig(double tol, const std::string& host, bool nearZeroSquares) {
+    using namespace sw::universal;
+    int n = 0;
+    const double pi = std::acos(-1.0);
+
+    // value vs std over a spread that includes the octant boundaries and the
+    // near-zero values cos(pi/2), sin(pi), cos(3pi/2) (the cancellation cases).
+    // The direct values are representable on both hosts; only squaring them is not.
+    for (double x : { 0.0, 0.3, pi / 6, pi / 4, 1.0, pi / 2, 2.0, pi, 3.0,
+                      3 * pi / 2, 2.3, -0.7, -1.1, -pi / 2 }) {
+        n += near(sin(from_native<FpType>(x)), std::sin(x), tol, host + " sin(" + std::to_string(x) + ")");
+        n += near(cos(from_native<FpType>(x)), std::cos(x), tol, host + " cos(" + std::to_string(x) + ")");
+    }
+
+    // sin^2 + cos^2 == 1 (also forces the reduced-argument 0-overlap path).
+    // Well-conditioned points (both components O(1)) -- all hosts.
+    for (double x : { 0.4, 1.2, 2.7, -1.1 }) {
+        ZBCL<FpType> s = sin(from_native<FpType>(x)), c = cos(from_native<FpType>(x));
+        double id = est::approx(add(mul(s, s), mul(c, c)));
+        if (std::abs(id - 1.0) > tol) { std::cout << host << " sin^2+cos^2!=1 at " << x << " (" << id << ")\n"; ++n; }
+    }
+    // Near-zero points (one component ~1e-8) -- double host only.
+    if (nearZeroSquares) {
+        for (double x : { pi / 2, pi, 3 * pi / 2 }) {
+            ZBCL<FpType> s = sin(from_native<FpType>(x)), c = cos(from_native<FpType>(x));
+            double id = est::approx(add(mul(s, s), mul(c, c)));
+            if (std::abs(id - 1.0) > tol) { std::cout << host << " sin^2+cos^2!=1 at " << x << " (" << id << ")\n"; ++n; }
+        }
+    }
+
+    // tan == sin/cos vs std::tan, away from the cos==0 poles (relative test).
+    for (double x : { 0.0, 0.3, pi / 6, pi / 4, 1.0, -0.7, -1.1, 2.3 }) {
+        double got = est::approx(tan(from_native<FpType>(x)));
+        double ref = std::tan(x);
+        if (std::abs(got - ref) > tol * std::max(1.0, std::abs(ref))) {
+            std::cout << host << " tan(" << x << ") = " << got << " != " << ref << '\n'; ++n;
+        }
+    }
+
+    // parity: sin(-x) == -sin(x), cos(-x) == cos(x).
+    {
+        ZBCL<FpType> a = from_native<FpType>(0.9);
+        if (std::abs(est::approx(sin(negate(a))) + est::approx(sin(a))) > tol) { std::cout << host << " sin parity\n"; ++n; }
+        if (std::abs(est::approx(cos(negate(a))) - est::approx(cos(a))) > tol) { std::cout << host << " cos parity\n"; ++n; }
+    }
+    return n;
+}
+
 } // anonymous
 
 int main()
 try {
     using namespace sw::universal;
-    std::string test_suite = "elreal Phase 7.5 (#931) atan / asin / acos";
+    std::string test_suite = "elreal Phase 7.5/7.6 (#931) atan/asin/acos and sin/cos/tan";
     int nrOfFailedTestCases = 0;
     bool reportTestCases = false;
     ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -105,6 +169,8 @@ try {
     nrOfFailedTestCases += verify_atan<double>(1e-10, "atan<double>");
     nrOfFailedTestCases += verify_atan<float>(1e-5, "atan<float>");
     nrOfFailedTestCases += verify_asin_acos<double>(1e-10, "iasin<double>");
+    nrOfFailedTestCases += verify_forward_trig<double>(1e-10, "trig<double>", true);
+    nrOfFailedTestCases += verify_forward_trig<float>(1e-5, "trig<float>", false);
 
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
