@@ -31,11 +31,11 @@
 #include <universal/verification/dyadic_exact.hpp>
 #include <universal/verification/test_suite.hpp>
 
-#include "../arithmetic/arithmetic_oracle.hpp"
+#include <universal/verification/elreal_oracle.hpp>
 
 namespace {
 
-namespace est = sw::universal::elreal_arith_test;
+namespace est = sw::universal::elreal_oracle;
 
 template <typename FpType>
 int near(const sw::universal::ZBCL<FpType>& z, double ref, double tol, const std::string& tag) {

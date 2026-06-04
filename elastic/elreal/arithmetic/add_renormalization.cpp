@@ -20,13 +20,15 @@
 #include <vector>
 
 #include <universal/number/elreal/elreal.hpp>
-#include <universal/verification/dyadic_exact.hpp>
+#include <universal/verification/elreal_oracle.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace {
 
 using sw::universal::block;
 using sw::universal::ZBCL;
+// exact_block / exact_value: the shared exact-dyadic oracle (#1035).
+using namespace sw::universal::elreal_oracle;
 
 // 0-overlap check + descending-exponent sanity over the first n blocks.
 template <typename FpType>
@@ -42,25 +44,6 @@ int check_canonical(const ZBCL<FpType>& z, std::size_t n, const std::string& tag
         }
     }
     return fails;
-}
-
-// Compare the exact value of an add() result to a dyadic reference.
-template <typename FpType>
-sw::universal::dyadic exact_block(const block<FpType>& b) {
-    using namespace sw::universal;
-    if (b.is_zero_block()) return dyadic();
-    // FpType here is double in this test; <=53 bits -> exact via from_double.
-    dyadic d = dyadic::from_double(static_cast<double>(b.v));
-    d.scale += b.exp;
-    return d;
-}
-
-template <typename FpType>
-sw::universal::dyadic exact_value(const ZBCL<FpType>& z) {
-    using namespace sw::universal;
-    dyadic acc;
-    for (const auto& blk : z.take(32)) acc = acc + exact_block(blk);
-    return acc;
 }
 
 // pow2 singleton ZBCL.

@@ -18,11 +18,11 @@
 #include <universal/verification/dyadic_exact.hpp>
 #include <universal/verification/test_suite.hpp>
 
-#include "arithmetic_oracle.hpp"
+#include <universal/verification/elreal_oracle.hpp>
 
 namespace {
 
-namespace est = sw::universal::elreal_arith_test;
+namespace est = sw::universal::elreal_oracle;
 
 // exact_value(mul(x,y)) == exact(x) * exact(y), plus 0-overlap.
 template <typename FpType>

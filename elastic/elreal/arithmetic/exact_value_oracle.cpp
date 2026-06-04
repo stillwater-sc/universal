@@ -67,85 +67,21 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/number/elreal/elreal.hpp>
-#include <universal/verification/dyadic_exact.hpp>
+#include <universal/verification/elreal_oracle.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace {
 
 using namespace sw::universal;
+// exact_real / exact_block / exact_blocks / exact_value + ZBCL_EXACT_WINDOW: the
+// shared exact-dyadic oracle this file pioneered (#1022), now consolidated (#1035).
+using namespace sw::universal::elreal_oracle;
 
-// Exact value of a binary floating-point value v as a dyadic rational, with NO
-// precision loss at any significand width.
-//
-// Two regimes, chosen at compile time:
-//
-//   * p = digits <= 53: double represents v exactly, so from_double is exact and
-//     cheap. Covers float(24), double(53), half(11), bfloat16(8), cfloat<24,5>(19),
-//     cfloat<32,8>(24) -- every <= 53-bit host.
-//
-//   * p > 53 with the Universal FP API (cfloat quad and up): read the encoding
-//     DIRECTLY -- sign, scale, and the fbits stored fraction bits -- and assemble
-//         value = (-1)^sign * (2^fbits + F) * 2^(scale - fbits),  fbits = p - 1.
-//     Reading the encoding directly keeps this oracle self-contained: it depends
-//     on no cfloat math function, only on the bit layout. (Historically it also
-//     side-stepped two wide-precision cfloat bugs that an earlier frexp/floor
-//     extraction tripped over -- cfloat floor mis-handling large integers, #1026,
-//     and cfloat frexp's non-std [1,2) fraction, #1027; both now fixed. That
-//     earlier extraction had passed #1023's quad sweeps only because they fed
-//     double-derived <= 53-bit q128 values, silently mis-extracting genuine
-//     113-bit ones.) The bit-based path is verified consistent across widths and
-//     against an independent 2x-wider cfloat product.
-template <typename T>
-dyadic exact_real(T v) {
-    if (v == T(0)) return dyadic();
-    if constexpr (std::numeric_limits<T>::digits <= 53) {
-        return dyadic::from_double(static_cast<double>(v));
-    } else if constexpr (has_universal_fp_api_v<T>) {
-        constexpr int fbits = std::numeric_limits<T>::digits - 1;
-        assert(v.isnormal() && "exact_real bit path expects a normal value");
-        dyadic::bigint F(0);
-        for (int i = 0; i < fbits; ++i) {
-            if (v.test(static_cast<unsigned>(i))) {
-                dyadic::bigint bit(1); bit <<= i; F = F + bit;
-            }
-        }
-        dyadic::bigint M(1); M <<= fbits; M = M + F;     // hidden bit + fraction
-        return dyadic(v.sign() ? -M : M, v.scale() - fbits);
-    } else {
-        static_assert(has_universal_fp_api_v<T>,
-            "exact_real: wide (>53-bit) native hosts are not supported yet; add a "
-            "std::frexp-based extraction (std frexp is correct for native types) "
-            "when such a host is introduced.");
-        return dyadic();
-    }
-}
-
-// exact value of a single block as a dyadic rational (value(b) = v * 2^exp).
-// Shares no code with the block/EFT/threeAdd/add algorithms under test.
-template <typename FpType>
-dyadic exact_block(const block<FpType>& b) {
-    if (b.is_zero_block()) return dyadic();
-    dyadic d = exact_real(b.v);
-    d.scale += b.exp;          // multiply by 2^exp exactly (value = v * 2^exp)
-    return d;
-}
-
-template <typename FpType>
-dyadic exact_blocks(const std::vector<block<FpType>>& bs) {
-    dyadic acc;                // 0
-    for (const auto& b : bs) acc = acc + exact_block(b);
-    return acc;
-}
-
-// Number of ZBCL blocks forced when computing an exact value. Finite sums of the
-// test inputs settle well within this; kept identical to addition.cpp's window
-// so the two files agree on the "exact value" of the same stream.
-constexpr std::size_t ZBCL_EXACT_WINDOW = 32;
-
-template <typename FpType>
-dyadic exact_zbcl(const ZBCL<FpType>& z) {
-    return exact_blocks(z.take(ZBCL_EXACT_WINDOW));
-}
+// The exact-dyadic helpers (exact_real / exact_block / exact_blocks / exact_value)
+// and ZBCL_EXACT_WINDOW that this oracle pioneered (#1022) now live in the shared
+// header <universal/verification/elreal_oracle.hpp> (#1035) and are brought into
+// scope by the using-directive above. The EFT/threeAdd/add reference checks below
+// build on them but share no code with the algorithms under test.
 
 // value of a block in double, and its ulp -- used only for the bfloat16
 // truncation bound (double has ~45 bits of headroom over bfloat16's 8).
@@ -225,7 +161,7 @@ int check_add_exact(double a, double b, const std::string& tag) {
     auto za = from_native<FpType>(a);
     auto zb = from_native<FpType>(b);
     auto z  = add(za, zb);
-    if ((exact_zbcl(za) + exact_zbcl(zb)) != exact_zbcl(z)) {
+    if ((exact_value(za) + exact_value(zb)) != exact_value(z)) {
         std::cout << tag << " add value WRONG: a=" << a << " b=" << b << "\n";
         return 1;
     }
