@@ -50,15 +50,26 @@ inline ZBCL<FpType> div(ZBCL<FpType> x, ZBCL<FpType> y, std::size_t depth = 64) 
     const B y0 = y.head();                       // leading divisor block (non-zero)
     const std::vector<B> yb = y.take(depth);     // materialise the divisor blocks
 
-    // Stop refining a couple of block-widths above the denormal floor: the
-    // remainder reductions (block_two_mult residuals / twoSumRN inside
-    // priestRenorm) stay normalised only while the operands sit clear of it.
-    // Denormal blocks (no implicit leading bit) would break the 0-overlap
-    // accounting. The floor is hit quickly for narrow types (bfloat16,
-    // min_exponent ~ -125, k = 7) and is far below FpType's reliable precision
-    // anyway, so nothing of value is lost.
+    // Refinement floor on the leading remainder's combined exponent.
+    //
+    // The block EFTs (block_two_mult / block_two_div) are scale-invariant: they
+    // operate on the normalised significand v (in [1,2), always a normal host
+    // value) and track the scale symbolically in the int32 exp, so a block at an
+    // arbitrarily negative combined exponent is still a normal host double -- the
+    // remainder reductions never denormalise. A WIDE host (double/float, k>=24)
+    // therefore has the headroom to refine all the way to its natural ~19-component
+    // ceiling (~308 decimal digits for double), so the floor is lifted (#1052);
+    // the loop still terminates on an exact remainder, no-progress, or a genuinely
+    // non-normalised leading block.
+    //
+    // A NARROW host (bfloat16 k=8, fp16 k=11) has min_exponent ~ -125 and genuinely
+    // denormalises a couple of block-widths above it -- there the remainder
+    // reductions stop staying normalised and 0-overlap accounting breaks -- so it
+    // keeps the floor (this is the same denormal floor #1044 respects).
     constexpr int k = block<FpType>::k;
-    constexpr int exp_floor = std::numeric_limits<FpType>::min_exponent + 2 * k;
+    constexpr int exp_floor = (k >= 24)
+        ? (std::numeric_limits<int>::min() / 2)                       // wide host: no floor
+        : (std::numeric_limits<FpType>::min_exponent + 2 * k);        // narrow host: denormal floor
 
     // Keep only normalised blocks (drop zeros and sub-floor denormals). On a
     // priestRenorm'd (descending, 0-overlap) list this only widens gaps, so the

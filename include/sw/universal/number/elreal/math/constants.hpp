@@ -35,6 +35,25 @@ namespace sw { namespace universal {
 
 namespace detail {
 
+// Guard blocks the series helpers carry internally. A truncated Taylor/artanh
+// series run at the output depth tops out ~2 components below what div() alone
+// delivers, because mul/div/sum accumulation error consumes the deepest output
+// blocks. Running the internal mul/div/sum a few blocks deeper (output + guard)
+// absorbs that loss, so the series reaches the same ceiling as div (#1052).
+constexpr std::size_t kSeriesGuard = 4;
+
+// Wide-host series stop_exp: on a wide host (k>=24) the EFTs are scale-invariant
+// and div has no denormal floor, so refine to the working-depth precision; on a
+// narrow host keep the denormal floor.
+template <typename FpType>
+constexpr int series_stop_exp(std::size_t wdepth) {
+    constexpr int k = block<FpType>::k;
+    const int target = -static_cast<int>(wdepth) * k - 8;
+    const int floor  = (k >= 24) ? (std::numeric_limits<int>::min() / 2)
+                                 : (std::numeric_limits<FpType>::min_exponent + 2 * k);
+    return target > floor ? target : floor;
+}
+
 // odd_power_series(x, alternating, depth):
 //   alternating=false -> artanh(x) = sum_n x^(2n+1)/(2n+1)
 //   alternating=true  -> atan(x)   = sum_n (-1)^n x^(2n+1)/(2n+1)
@@ -42,16 +61,12 @@ namespace detail {
 // below the target precision (depth*k bits) and summed via priestRenorm.
 template <typename FpType>
 inline ZBCL<FpType> odd_power_series(ZBCL<FpType> x, bool alternating, std::size_t depth) {
-    constexpr int k = block<FpType>::k;
-    // Stop at the target precision (depth*k bits), but never refine into the
-    // denormal range -- terms below min_exponent + 2k would create denormal
-    // blocks that break 0-overlap (the same floor div()/mul() respect). For
-    // narrow hosts (bfloat16) the floor bounds the work; for double/float the
-    // precision target stops first.
-    const int stop_exp = std::max(-static_cast<int>(depth) * k - 8,
-                                  std::numeric_limits<FpType>::min_exponent + 2 * k);
+    // Carry kSeriesGuard extra working blocks internally (see above) and stop at
+    // the working-depth precision (wide host) / denormal floor (narrow host).
+    const std::size_t wdepth = depth + kSeriesGuard;
+    const int stop_exp = series_stop_exp<FpType>(wdepth);
 
-    ZBCL<FpType> step = mul(x, x, depth);            // x^2
+    ZBCL<FpType> step = mul(x, x, wdepth);           // x^2
     if (alternating) step = negate(step);            // -x^2 for atan
 
     std::vector<ZBCL<FpType>> terms;
@@ -59,8 +74,8 @@ inline ZBCL<FpType> odd_power_series(ZBCL<FpType> x, bool alternating, std::size
     for (std::size_t n = 0; ; ++n) {
         if (power.is_empty() || power.head().exponent() < stop_exp) break;   // converged
         const double denom = 2.0 * static_cast<double>(n) + 1.0;
-        terms.push_back(div(power, from_native<FpType>(denom), depth));
-        power = mul(power, step, depth);             // *x^2 (or *-x^2)
+        terms.push_back(div(power, from_native<FpType>(denom), wdepth));
+        power = mul(power, step, wdepth);            // *x^2 (or *-x^2)
     }
     return sum(series_from_vector(terms), terms.size() + 1);
 }
@@ -75,17 +90,17 @@ inline ZBCL<FpType> e_zbcl(std::size_t depth = 32) {
     // only good to ~k bits (~16 digits for double) no matter how many terms -- the
     // exact-dyadic oracle caught this. Instead accumulate the reciprocal factorial
     // as a ZBCL: term_n = term_{n-1} / n (exact div), so 1/n! keeps depth-block
-    // precision. Stop at the target precision (depth*k bits), clamped above the
-    // denormal floor like odd_power_series so we never build a denormal block.
-    constexpr int k = block<FpType>::k;
-    const int stop_exp = std::max(-static_cast<int>(depth) * k - 8,
-                                  std::numeric_limits<FpType>::min_exponent + 2 * k);
+    // precision. Carry kSeriesGuard extra working blocks (like odd_power_series) so
+    // accumulation error does not eat the deepest output components, and stop at the
+    // working-depth precision / denormal floor.
+    const std::size_t wdepth = depth + detail::kSeriesGuard;
+    const int stop_exp = detail::series_stop_exp<FpType>(wdepth);
     std::vector<ZBCL<FpType>> terms;
     ZBCL<FpType> term = from_native<FpType>(1.0);    // 1/0! = 1
     terms.push_back(term);
     const std::size_t maxTerms = 64 * depth + 64;    // generous; convergence breaks first
     for (std::size_t n = 1; n < maxTerms; ++n) {
-        term = div(term, from_native<FpType>(static_cast<double>(n)), depth);   // 1/n!
+        term = div(term, from_native<FpType>(static_cast<double>(n)), wdepth);   // 1/n!
         if (term.is_empty() || term.head().exponent() < stop_exp) break;
         terms.push_back(term);
     }

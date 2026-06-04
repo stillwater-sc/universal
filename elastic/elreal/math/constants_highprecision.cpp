@@ -14,14 +14,15 @@
 //   - euler_gamma_zbcl returns a bare double literal (~17 digits) -- a stub with no
 //     high-precision algorithm yet (#1053), excluded below.
 //
-// Current ceiling
-// ---------------
-// A double-hosted ZBCL near 1.0 currently tops out at ~19 components (~280 decimal
-// digits) because the generator / mul / div / renorm pipeline floors at the double
-// normal range (~2^-1022) instead of using the block's symbolic int32 exponent.
-// Lifting that floor to reach 300+ digits is tracked as its own core-arithmetic
-// issue (#1052). This test therefore asserts the honest current ceiling
-// (>= 270 digits); the threshold is raised once the floor is lifted.
+// Ceiling
+// -------
+// A double-hosted ZBCL near 1.0 tops out at ~19 components (~308 decimal digits):
+// the smallest non-overlapping component sits near 2^-1022, the host's normal-range
+// floor. #1052 lifted the artificial pipeline floors (divide.hpp exp_floor; the
+// series-accumulation guard in odd_power_series / e_zbcl) so the generators now
+// reach that architectural ceiling rather than stopping ~30 digits short. This test
+// asserts >= 300 digits; going beyond ~308-312 would require a host with a wider
+// exponent range and is out of scope here.
 //
 // Cost / placement
 // ----------------
@@ -66,7 +67,7 @@ namespace {
 // Generation depth. The double-host ceiling is reached by ~depth 18-20 (each
 // 53-bit block ~ 16 digits); 20 clears the >= 270-digit threshold with margin.
 constexpr std::size_t kDepth = 20;
-constexpr int kMinDigits = 270;
+constexpr int kMinDigits = 300;
 
 int check(const char* name, const sw::universal::ZBCL<double>& z,
           std::string_view ref, bool reportTestCases) {
