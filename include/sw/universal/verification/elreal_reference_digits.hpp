@@ -20,6 +20,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <limits>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -33,6 +35,14 @@ namespace sw { namespace universal {
 // exact for any host FpType. `maxBlocks` bounds the (otherwise lazy) materialisation.
 template <typename FpType>
 inline dyadic zbcl_to_dyadic(const ZBCL<FpType>& z, std::size_t maxBlocks = 512) {
+	// The exact dyadic value relies on widening each block value v_i to double
+	// LOSSLESSLY. That holds for every host the library uses (bfloat16 k=8,
+	// fp16 k=11, float k=24, double k=53) but not for a host wider than double
+	// (e.g. long double k=64), which would silently make the "exact" oracle
+	// inexact. Reject that at compile time.
+	static_assert(std::numeric_limits<FpType>::digits <= std::numeric_limits<double>::digits,
+	              "zbcl_to_dyadic widens each block value to double exactly; an FpType "
+	              "wider than double (e.g. long double) would lose precision");
 	dyadic acc;  // 0
 	for (const auto& b : z.take(maxBlocks)) {
 		dyadic d = dyadic::from_double(static_cast<double>(b.v));
@@ -54,12 +64,25 @@ inline int agreed_decimal_digits(const dyadic& V, std::string_view ref, int cap 
 	using bigint = dyadic::bigint;
 
 	// Parse the positive reference into numerator N and fractional-digit count.
+	// Reject malformed input rather than silently skipping it: for a verification
+	// oracle an unsupported reference (a typo like "3e10", a sign, whitespace)
+	// must fail fast, not be reinterpreted as a different number.
 	std::string digits;
 	int frac = -1;                        // -1 until the '.' is seen
 	for (char c : ref) {
-		if (c == '.') { frac = 0; continue; }
-		if (c >= '0' && c <= '9') { digits.push_back(c); if (frac >= 0) ++frac; }
+		if (c == '.') {
+			if (frac >= 0) throw std::invalid_argument("decimal reference: multiple '.'");
+			frac = 0;
+			continue;
+		}
+		if (c >= '0' && c <= '9') {
+			digits.push_back(c);
+			if (frac >= 0) ++frac;
+			continue;
+		}
+		throw std::invalid_argument("decimal reference: unsupported character");
 	}
+	if (digits.empty()) throw std::invalid_argument("decimal reference: no digits");
 	if (frac < 0) frac = 0;               // integer-only reference
 	bigint N; N.assign(digits);           // ref == N / 10^frac
 
