@@ -65,7 +65,7 @@ namespace {
 
 #if REGRESSION_LEVEL_4
 // Generation depth. The double-host ceiling is reached by ~depth 18-20 (each
-// 53-bit block ~ 16 digits); 20 clears the >= 270-digit threshold with margin.
+// 53-bit block ~ 16 digits); 20 clears the >= 300-digit threshold with margin.
 constexpr std::size_t kDepth = 20;
 constexpr int kMinDigits = 300;
 
