@@ -70,18 +70,24 @@ inline ZBCL<FpType> odd_power_series(ZBCL<FpType> x, bool alternating, std::size
 // e = exp(1) = sum_{n>=0} 1/n!
 template <typename FpType>
 inline ZBCL<FpType> e_zbcl(std::size_t depth = 32) {
-    // Stop once 1/n! drops below FpType's smallest NORMAL value: from_native
-    // requires a normalised block, so feeding it a subnormal term is invalid
-    // (and the term is below FpType precision anyway). min_normal bounds the loop
-    // for narrow hosts (float/bfloat16) well before the depth budget.
-    const double min_normal = static_cast<double>(std::numeric_limits<FpType>::min());
+    // Each term must carry FULL ZBCL precision. A previous version built the term
+    // as a host double 1.0/n!, so every term was rounded to ~k bits and the sum was
+    // only good to ~k bits (~16 digits for double) no matter how many terms -- the
+    // exact-dyadic oracle caught this. Instead accumulate the reciprocal factorial
+    // as a ZBCL: term_n = term_{n-1} / n (exact div), so 1/n! keeps depth-block
+    // precision. Stop at the target precision (depth*k bits), clamped above the
+    // denormal floor like odd_power_series so we never build a denormal block.
+    constexpr int k = block<FpType>::k;
+    const int stop_exp = std::max(-static_cast<int>(depth) * k - 8,
+                                  std::numeric_limits<FpType>::min_exponent + 2 * k);
     std::vector<ZBCL<FpType>> terms;
-    double fact = 1.0;
-    for (std::size_t n = 0; n < 4 * depth; ++n) {
-        if (n > 0) fact *= static_cast<double>(n);
-        const double term = 1.0 / fact;
-        if (term < min_normal) break;                // would be subnormal / underflow
-        terms.push_back(from_native<FpType>(term));
+    ZBCL<FpType> term = from_native<FpType>(1.0);    // 1/0! = 1
+    terms.push_back(term);
+    const std::size_t maxTerms = 64 * depth + 64;    // generous; convergence breaks first
+    for (std::size_t n = 1; n < maxTerms; ++n) {
+        term = div(term, from_native<FpType>(static_cast<double>(n)), depth);   // 1/n!
+        if (term.is_empty() || term.head().exponent() < stop_exp) break;
+        terms.push_back(term);
     }
     return sum(series_from_vector<FpType>(terms), terms.size() + 1);
 }
