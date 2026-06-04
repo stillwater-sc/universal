@@ -18,62 +18,13 @@
 #include <iostream>
 
 #include <universal/number/elreal/elreal.hpp>
-#include <universal/verification/dyadic_exact.hpp>
+#include <universal/verification/elreal_oracle.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace {
 
-// Exact value of a binary float v as a dyadic, with no precision loss at any
-// significand width (shared with the #1022 oracle; see its exact_real for the
-// full rationale). p <= 53: double is exact. p > 53 with the Universal FP API
-// (cfloat quad and up): read the encoding directly -- sign, scale, and the fbits
-// stored fraction bits -- giving (-1)^sign * (2^fbits + F) * 2^(scale - fbits).
-// This avoids cfloat's wide-precision frexp/floor (filed separately).
-template <typename T>
-sw::universal::dyadic exact_real(T v) {
-    using namespace sw::universal;
-    if (v == T(0)) return dyadic();
-    if constexpr (std::numeric_limits<T>::digits <= 53) {
-        return dyadic::from_double(static_cast<double>(v));
-    } else if constexpr (has_universal_fp_api_v<T>) {
-        constexpr int fbits = std::numeric_limits<T>::digits - 1;
-        assert(v.isnormal() && "exact_real bit path expects a normal value");
-        dyadic::bigint F(0);
-        for (int i = 0; i < fbits; ++i) {
-            if (v.test(static_cast<unsigned>(i))) {
-                dyadic::bigint bit(1); bit <<= i; F = F + bit;
-            }
-        }
-        dyadic::bigint M(1); M <<= fbits; M = M + F;     // hidden bit + fraction
-        return dyadic(v.sign() ? -M : M, v.scale() - fbits);
-    } else {
-        static_assert(has_universal_fp_api_v<T>,
-            "exact_real: wide native hosts not supported yet (add std::frexp path).");
-        return dyadic();
-    }
-}
-
-// Exact value of a block as a dyadic rational (value(b) = v * 2^exp), shared
-// with the #1022 oracle.
-template <typename FpType>
-sw::universal::dyadic exact_block(const sw::universal::block<FpType>& b) {
-    using namespace sw::universal;
-    if (b.is_zero_block()) return dyadic();
-    dyadic d = exact_real(b.v);
-    d.scale += b.exp;
-    return d;
-}
-
-template <typename FpType>
-sw::universal::dyadic exact_value(const sw::universal::ZBCL<FpType>& z) {
-    using namespace sw::universal;
-    dyadic acc;
-    // 32-block window, matching the #1022 oracle's ZBCL_EXACT_WINDOW so both
-    // files agree on the exact value of the same stream; finite test sums settle
-    // well within it.
-    for (const auto& blk : z.take(32)) acc = acc + exact_block(blk);
-    return acc;
-}
+// exact_real / exact_block / exact_value: the shared exact-dyadic oracle (#1035).
+using namespace sw::universal::elreal_oracle;
 
 // Value preservation, validated against an INDEPENDENT exact dyadic oracle
 // (not long double -- see #1022). double and float are round-to-nearest, so

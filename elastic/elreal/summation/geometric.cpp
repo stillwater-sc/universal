@@ -23,11 +23,11 @@
 #include <universal/verification/dyadic_exact.hpp>
 #include <universal/verification/test_suite.hpp>
 
-#include "summation_oracle.hpp"
+#include <universal/verification/elreal_oracle.hpp>
 
 namespace {
 
-namespace est = sw::universal::elreal_sum_test;
+namespace est = sw::universal::elreal_oracle;
 
 // Build the finite geometric series [r^0, r^1, ..., r^{N-1}] as singleton ZBCLs.
 template <typename FpType>

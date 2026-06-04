@@ -25,11 +25,11 @@
 #include <universal/verification/dyadic_exact.hpp>
 #include <universal/verification/test_suite.hpp>
 
-#include "summation_oracle.hpp"
+#include <universal/verification/elreal_oracle.hpp>
 
 namespace {
 
-namespace est = sw::universal::elreal_sum_test;
+namespace est = sw::universal::elreal_oracle;
 
 // Leibniz term n: (-1)^n / (2n+1).
 template <typename FpType>

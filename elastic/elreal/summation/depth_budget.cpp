@@ -24,7 +24,7 @@
 #include <universal/verification/dyadic_exact.hpp>
 #include <universal/verification/test_suite.hpp>
 
-#include "summation_oracle.hpp"
+#include <universal/verification/elreal_oracle.hpp>
 
 namespace {
 
