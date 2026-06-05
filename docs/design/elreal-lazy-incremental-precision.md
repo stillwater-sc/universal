@@ -13,7 +13,7 @@ cannot: **deliver precision incrementally, on demand, reusing prior work.**
 
 The intended interaction is:
 
-```
+```cpp
   q = a / b            // suspend a division; compute nothing yet
   q.take(2)            // force two limbs (~32 digits); inspect
   q.take(3)            // force ONE more limb -- the third -- reusing limbs 1-2
@@ -105,7 +105,7 @@ The "arrest the carry/borrow" problem is genuinely hard for multiplication and
 division done online. To commit limb `i` of a product or quotient you must look
 far enough down both operands to be sure no carry/borrow will still alter it; the
 0-overlap (k-bit-gap) invariant bounds that lookahead, but the producer state
-machine for x and / is substantially more involved than for +.
+machine for mul and div is substantially more involved than for add/sub.
 
 The implementation took the tractable route: materialize the operands to a finite
 `depth`, compute the entire result, and let a single global `priestRenorm` pass
@@ -163,7 +163,7 @@ The consumer-facing precision control should be `take(n)` / a limb iterator on a
 overloads remain as convenience wrappers (`take(n)` under the hood) for callers
 that genuinely want N components in one shot, but they stop being the primitive.
 
-```
+```cpp
   ZBCL<double> q = div(a, b);      // suspended; no work yet (like add today)
   q.take(2);                       // force 2 limbs
   q.take(3);                       // force limb 3 only, limbs 1-2 memoized
