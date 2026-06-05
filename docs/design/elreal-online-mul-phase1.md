@@ -1,204 +1,173 @@
-# elreal #1061 Phase 1: Online (pull-driven) Multiplication -- Scoping Note
+# elreal #1061 Phase 1: Online (pull-driven) Multiplication -- Scoping Note (v2, dissertation-grounded)
 
-Status: scoping / design (no code change). Phase 1 of #1061 (online mul/div with
-carry-arrest). Companion to `elreal-lazy-incremental-precision.md` (the architectural
-design note, #1060). This note specifies what online `mul` must do, the algorithm
-shape, the genuinely hard part (the multiplicative carry-arrest), the test plan, and
-the external dependency that gates implementation.
+Status: scoping / design (no code change). Phase 1 of #1061. Companion to
+`elreal-lazy-incremental-precision.md` (#1060).
 
-## 0. Context and the deliberate placeholder
+> **Correction (v2).** The first version of this note (merged in #1062) proposed
+> implementing online `mul` as a 2D "anti-diagonal frontier" with a novel
+> multiplicative carry-arrest margin `M(k)`. **That was wrong** -- it was reasoned
+> from first principles without the source. The McCleeary 2019 dissertation (the
+> primary reference the code already translates from) does no such thing:
+> multiplication and division reduce to a **streaming infinite summation `infSum`**
+> over lazily-generated 2-block products, and `infSum` **reuses add's `isSafe`** --
+> there is no separate mul carry-arrest to derive. This v2 replaces sections 3-4 of
+> the original with the dissertation's actual algorithm (verified against FCL.hs
+> Appendix A.4 and the proofs in section 4.2.3/4.2.5).
 
-The current `mul` (`multiply.hpp:55-75`) is, by its own header, a **"Phase 6 FINITE-
-PREFIX"** stand-in: it materialises `x.take(depth)` and `y.take(depth)`, forms every
-pair product, and `priestRenorm`s the lot. The header explicitly states *"a fully
-streaming anti-diagonal product is deferred to the Phase 7 math suite"* and cites
-**dissertation 4.2.5** for the real algorithm. So online mul is a known, intended
-completion, not a redesign.
+## 0. Context
 
-`add()` already demonstrates the online model end to end (`threeAdd.hpp:666-683`,
-`addRec_state`/`addRec_step`/`isSafe`). Phase 1 is to do for `mul` what `add()` does:
-produce one output limb per `tail()` pull, pulling operand limbs on demand, emitting a
-limb only when carry-arrest guarantees no future term can perturb it.
+The current `mul` (`multiply.hpp:55-75`) is a self-declared "Phase 6 FINITE-PREFIX"
+placeholder that `take(depth)`s both operands and `priestRenorm`s the pool; its header
+defers "a fully streaming anti-diagonal product" citing dissertation 4.2.5. The current
+`sum()` (`sum.hpp`) is likewise a deliberate **eager** stand-in for the dissertation's
+streaming `infSum` -- its header says a "fully-lazy summation would need a Phase 4 add()
+that composes lazily without breaking 0-overlap." This note shows the dissertation
+already specifies that streaming summation; phase 1 is to translate it (as `addRec` was
+translated from FCL.hs), then mul/div fall out as thin wrappers.
 
-This is the prerequisite that makes high-precision composite computations tractable;
-euler_gamma (#1053) is the motivating benchmark (123s of its 200s at depth 16 is eager
-`mul` recomputing full precision per term and discarding most of it).
+## 1. The reduction: mul and div are `infSum` wrappers (FCL.hs A.4, dissertation 4.2.5/4.2.6)
 
-## 1. Value specification (unchanged)
+```haskell
+-- multiply: shift operands into [-1,1], mult, shift result back
+multiply (a:as) (b:bs) =
+  let ((na:nas), aShift) = shiftDown (a:as) in
+  let ((nb:nbs), bShift) = shiftDown (b:bs) in
+  shiftUp (aShift + bShift) (mult (na:nas) (nb:nbs))
 
-```
-x * y = sum_{i,j} (x_i * y_j)
-```
-where each `x_i * y_j` is the exact 2-block decomposition `block_two_mult(x_i, y_j)`
-(`block_eft.hpp`). The online result must be the unique 0-overlap ZBCL equal to that
-double sum, produced limb-by-limb on demand. Both the eager `mul` and the online `mul`
-must agree exactly; the eager version is the equivalence oracle (section 5).
+mult as bs = infiniteSum (infSumMultHelper as bs)              -- operands in [-1,1]
+infSumMultHelper (f:fs) (g:gs) = singleMult f (g:gs) : infSumMultHelper fs (g:gs)
+singleMult f gs = infiniteSum (singleMultHelper f gs)
+singleMultHelper f (g:gs) = let (s,e) = twoMult f g in [s,e] : singleMultHelper f gs
 
-## 2. Why mul is harder than add: 1D merge vs 2D convolution
-
-`add`'s carry-arrest (`isSafe`, `threeAdd.hpp:481-484`) emits `out` once the next
-operand blocks `f, g` are `2k+3` below it:
-```
-expGreaterBy(2k+3, out, f) && expGreaterBy(2k+3, out, g) && !expGreater(prev, out) && expGreaterBy(k, out, e)
-```
-This fixed 1-block-per-operand lookahead is sufficient because each operand is itself
-0-overlap: the entire remaining tail of `fs` is geometrically bounded by its leading
-block (`|tail beyond f| < 2^{E(f)+1-k}/(1-2^-k) ~ 2^{E(f)+2-k}`). So if `f` is `2k+3`
-below `out`, no future addition can carry into `out`.
-
-For `mul` the contributors to a given output exponent form a **2D region** of the
-`(i,j)` grid, not a 1D stream:
-- Pair product `x_i * y_j` sits at exponent `~ E(x_i) + E(y_j)` (two blocks, spanning
-  `[E(x_i)+E(y_j)-k+1 , E(x_i)+E(y_j)]` roughly).
-- Output limb at exponent `E` receives contributions from every `(i,j)` with
-  `E(x_i)+E(y_j) >= E - O(k)`.
-- The count of such pairs grows with depth (an anti-diagonal band), so there is no
-  fixed-size lookahead; the arrest must bound a 2D tail.
-
-Two sub-problems follow: (A) generate pair products in ~descending exponent order, and
-(B) decide when an accumulated output limb is safe against the unconsumed 2D tail.
-
-## 3. Sub-problem A: anti-diagonal term generation
-
-Because `x_i` and `y_j` are each strictly descending (`E(x_{i+1}) <= E(x_i) - k`), the
-pair exponents `E(x_i)+E(y_j)` are monotone non-increasing along rows and columns. The
-maximal unconsumed pair exponent lives on a **frontier** of the grid (the staircase
-between consumed and unconsumed cells). Standard approach:
-
-- Maintain a frontier as a priority queue keyed by `E(x_i)+E(y_j)` (max-heap).
-- Seed with `(0,0)`. On popping `(i,j)`, push its grid successors `(i+1,j)` and
-  `(i,j+1)` (with the usual dedup so each cell enters once -- e.g. only push `(i+1,j)`
-  when `j==0`, and always `(i,j+1)`).
-- Pulling `x_i`/`y_j` for a newly reachable cell forces that operand's `tail()` lazily
-  -- this is where operand limbs are pulled on demand.
-- Emit `block_two_mult(x_i, y_j)` (2 blocks) into the accumulation workspace.
-
-The frontier's current maximum pair exponent is the analog of `add`'s "next operand
-block exponent": it bounds the most significant unconsumed contribution. The arrest
-(sub-problem B) is stated against that frontier maximum.
-
-Note the band, not just the diagonal: cells with comparable `E(x_i)+E(y_j)` can lie off
-a single anti-diagonal when the operand block gaps exceed `k`. The priority queue
-handles this directly (it orders by exponent, not by `i+j`).
-
-## 4. Sub-problem B: the multiplicative carry-arrest (the hard, novel part)
-
-Let `Phi = max over frontier of (E(x_i)+E(y_j))` be the largest unconsumed pair
-exponent after some prefix of the frontier has been consumed. The total value of all
-unconsumed pair products is bounded by summing the geometric tails in both dimensions;
-to first order it is `O(2^{Phi + c})` for a small constant `c` that depends on `k` and
-the frontier shape. A candidate output limb `out` is safe to emit when the unconsumed
-tail cannot reach `out`'s ulp, i.e. (schematically)
-```
-expGreaterBy(M(k), out, frontier_max_block)  && !expGreater(prev, out) && expGreaterBy(k, out, e)
-```
-for a margin `M(k)` that is the multiplicative analog of add's `2k+3`. Deriving `M(k)`
-correctly is the crux of phase 1: too small emits a limb a later term perturbs (wrong
-digits); too large stalls or never emits (non-termination). The bound must account for:
-- both block sub-products of each `block_two_mult` (the low block sits `~k` below),
-- the geometric pile-up of many same-magnitude pair products on a band (a factor that
-  grows with band width, unlike add's two fixed operands),
-- the workspace `priestAdd` already in flight.
-
-**Do not derive `M(k)` from scratch and hope.** Dissertation 4.2.5 specifies the
-streaming product; `add`'s `isSafe`/`addRec` were *translated verbatim* from FCL.hs
-(`threeAdd.hpp:3,517`), not reinvented. Phase 1 step 0 is to obtain the dissertation's
-streaming-mul (and FCL.hs `mulRec` if it exists) and translate its safety predicate,
-exactly as add was. **FCL.hs is not in this repo** (only referenced in comments); it
-must be sourced from the McCleeary 2019 dissertation materials.
-
-## 5. State machine design (mirrors addRec)
-
-```
-struct mulRec_state<FpType> {
-    ZBCL<FpType> xs, ys;                 // operands; pulled lazily via head()/tail()
-    std::vector<block> x_seen, y_seen;   // materialised prefixes the frontier indexes
-    PriorityFrontier frontier;           // (i,j) cells ordered by E(x_i)+E(y_j)
-    std::vector<block> workspace;        // priest-renormalised pending output (front-first)
-    std::int32_t bound;                  // exponent frontier, as in addRec
-    bool initialised;
-};
-
-std::optional<block> mulRec_step(mulRec_state&);   // emit next limb or nullopt
-ZBCL<FpType> mul(ZBCL<FpType> x, ZBCL<FpType> y);  // cons(first, thunk{loop}), NO depth param
+-- divide is the SAME shape (phase 2)
+div fs gs = infiniteSum (divideHelper fs gs)
+divideHelper fs (g:gs) =
+  if isZero g then [g] : divideHelper fs gs
+  else (singleDiv fs g) : divideHelper (negation (multiply fs gs)) (singleMult g (g:gs))
+singleDiv fs g = infiniteSum (singleDivHelper fs g)
+singleDivHelper (f:fs) g = (twoDivFCL f g) : singleDivHelper fs g
+twoDivFCL x y = if isZero x then [createZero (getSize x) (getExp x - getExp y)]
+                else let (a,b) = twoDiv x y in a : twoDivFCL b y
 ```
 
-`mulRec_step` loop, per the add template:
-1. Pop frontier cells whose pair exponent is at/above the current `bound`; for each,
-   pull the needed `x_i`/`y_j` (extending `x_seen`/`y_seen` via `tail()`), compute
-   `block_two_mult`, and `priestAdd` its two blocks into `workspace`. Push grid
-   successors.
-2. Take the workspace leading block as candidate `out`. Test the mul `isSafe` (section
-   4) against `frontier_max`, `prev`, and the workspace tail.
-3. If safe: emit `out`, set `bound = E(out) - k`, drop `out` from workspace. If not:
-   keep consuming frontier cells (step 1) until safe or operands exhausted.
-4. Termination: when both operands and the frontier are exhausted, drain the workspace
-   (finite product = exact). Carry add's `safety_counter` backstop.
+So the entire content of "online mul" is: distribute into a lazy list of 2-block
+products and feed it to `infSum`. No frontier, no `M(k)`. The proofs (Lemmas
+4.2.16-4.2.21) need only that the generated ZBCLs have **strictly decreasing leading
+exponents**, which `singleMultHelper`/`infSumMultHelper` give for free (each `twoMult`
+drops the leading exponent by >= k via the `gs` 0-overlap; each `f` in `fs` drops by k).
 
-`mul()` itself is the same `cons(first, [loop]{...})` wrapper as `add()`
-(`threeAdd.hpp:673-682`); the `take(n)` / integer-`depth` form becomes a thin wrapper
-that pulls `n` limbs.
+## 2. The one real algorithm: streaming `infSum` (dissertation 4.2.3, FCL.hs A.4)
 
-Reused verbatim: `block_two_mult`, `twoSumRN`/`threeAdd`/`priestAdd`/`priestRenorm`,
-`expGreater`/`expGreaterBy`, the cons+thunk wrapper, the `safety_counter` guard.
+```haskell
+infiniteSum as = let sum = infSum as in            -- drop a leading zero block if present
+  if null sum then sum else let (high:rest) = sum in if isZero high then rest else sum
 
-## 6. Test strategy
+infSum (as:bs:rest) =
+  let nprevs = addition as bs
+  in infSumRec rest nprevs (getExp (head as) + getSize (head as) + 1)
+infSum (as:[]) = as ;  infSum [] = []
 
-1. **Equivalence vs eager mul** -- for finite operands, `online_mul(x,y).take(N)` must
-   equal `mul_eager(x,y,N)` (current `mul`) for N up to each operand's length, across
-   the existing arithmetic-suite inputs plus randomised multi-block ZBCLs. Eager mul is
-   the exact oracle for finite operands.
-2. **Exact value** -- against the dyadic oracle (`elreal_oracle.hpp`,
-   `agreed_decimal_digits`) for products of constants/known values.
-3. **0-overlap invariant** -- `check_zero_overlap` on the streamed output at several N.
-4. **Laziness / memoization (the whole point)** -- instrument operand pull counts;
-   assert: (a) `take(k)` forces only the operand limbs the frontier needed for k output
-   limbs (not all of them); (b) `take(k)` then `take(k+1)` forces strictly fewer
-   additional operand pulls than recomputing `take(k+1)` from scratch, and reuses the
-   memoised prefix (the ZBCL tail memoisation gives this for free if the state threads
-   through the thunk correctly). This is the property that makes #1053 tractable.
-5. **Cost** -- `online.take(N)` competitive with `mul_eager(.,.,N)` on a single shot;
-   incremental refinement `take(k)`->`take(k+1)` strictly cheaper than recompute. Use
-   the #1040 characterization tooling once available.
-6. **Adversarial** -- operands with block gaps `> k` (off-diagonal bands), near-equal
-   magnitudes (frontier ties), and a deep operand x a short one.
+infSumRec [] prevs _              = prevs
+infSumRec (as:[]) prevs _         = addition as prevs
+infSumRec (as:rest) [] bound      = infSumRec rest as bound
+infSumRec (as:bs:rest) (prev:prevs) bound =
+  if bound > getExp prev + getSize prev + 2 then           -- cancellation region
+    let zero = createZero (getSize prev) bound
+    in if isSafe zero as bs bs prev
+       then zero : infSumRec (as:bs:rest) (prev:prevs) (getExp zero - getSize zero)
+       else infSumRec (bs:rest) (addition as (prev:prevs)) bound
+  else                                                      -- normal region
+    let sum = addition (prev:prevs) as
+    in if null sum then infSumRec rest as bound
+       else let (high:highs) = sum
+            in if isZero high then infSumRec (bs:rest) highs bound
+               else if isSafe high bs bs prev
+                    then high : infSumRec (bs:rest) highs (getExp high - getSize high)
+                    else infSumRec (bs:rest) (high:highs) bound
 
-## 7. Risks and open questions
+addition fs gs = let sum = add fs gs in                    -- add, then drop a leading zero
+  if null sum then sum else let (high:rest) = sum in if isZero high then rest else high:rest
+```
 
-- **The margin `M(k)` derivation is the make-or-break.** Must come from dissertation
-  4.2.5 / FCL.hs, not be guessed. Sourcing those materials is step 0 and blocks the
-  rest.
-- **Frontier management cost.** The priority queue adds per-pair overhead; it must not
-  dominate. An array-of-active-rows staircase may beat a generic heap.
-- **#1057 interaction.** The workspace uses `priestAdd`/`threeAdd`, which carry the
-  exact-cancellation 0-overlap gap (#1057). Products rarely cancel exactly, but the
-  arrest machinery is shared; resolve #1057 in tandem.
-- **Termination on infinite operands.** Online mul of two genuinely infinite reals must
-  still make monotone progress (each emit lowers `bound` by `k`); the `safety_counter`
-  guards bugs, not legitimate non-termination -- verify the frontier always advances.
-- **Division (phase 2) depends on this.** `div`'s long-division step reduces the
-  remainder by `q_i * y` -- a `mul_scalar`; online div reuses online mul's arrest. Keep
-  the mul interfaces division-friendly.
+`infSumRec` keeps a single accumulator ZBCL `prevs`, folds each next input term into it
+with `addition` (= `add` + leading-zero drop), and emits the accumulator's leading block
+once add's **`isSafe`** clears it (or emits an explicit `zero` in the cancellation
+region). It is proven productive (4.2.6), type-correct (4.2.7), and value-preserving
+(4.2.9). This is NOT the "naive lazy foldr over add" the `sum.hpp` header warned about --
+it is a careful single-accumulator state machine, the streaming summation the codebase
+deferred.
 
-## 8. Phase 1 work breakdown
+## 3. Mapping to the codebase: what exists vs what to add
 
-0. **Source** dissertation 4.2.5 streaming mul + FCL.hs `mulRec`/`isSafe_mul`; confirm
-   the margin and the frontier order. (Blocks everything; FCL.hs not in repo.)
-1. Implement `mulRec_state` + `mulRec_step` + anti-diagonal frontier; `mul()` becomes
-   the cons+thunk wrapper, integer-`depth` form a `take(n)` shim.
-2. Equivalence + 0-overlap + value tests (section 6.1-6.3) green against eager mul.
-3. Laziness/memoization tests (section 6.4) -- the new capability.
-4. Swap call sites: nothing changes for callers passing `depth` (the shim), but verify
-   the full arithmetic + math + summation suites pass unchanged.
-5. Re-benchmark euler_gamma (#1053) on online mul as the headline win.
+Everything `infSum`/mul needs as primitives already exists:
 
-## 9. References
+| dissertation | codebase | file |
+|---|---|---|
+| `add` (lazy addRec) | `add` / `addRec_step` | `threeAdd.hpp:666,520` |
+| `isSafe` | `isSafe` (verbatim) | `threeAdd.hpp:441` |
+| `createZero` | `createZero` | `threeAdd.hpp:99` |
+| `twoSumRN`, `priestAdd`, `threeAdd` | same | `threeAdd.hpp` |
+| `twoMult` | `block_two_mult` | `block_eft.hpp:208` |
+| `twoDiv` | `block_two_div_rn` | `block_eft.hpp:243` |
+| `getSize` | `block<FpType>::k` | `block.hpp:79` |
+| `getExp` | `block::exponent()` | `block.hpp` |
 
-- Code: `multiply.hpp` (eager mul + the deferred-streaming note, dissertation 4.2.5),
-  `threeAdd.hpp:441-683` (`isSafe`, `addRec_state`, `addRec_step`, `add` -- the online
-  template), `block_eft.hpp` (`block_two_mult`), `zbcl.hpp` (lazy co-list).
+To ADD (translate from FCL.hs A.4):
+- `addition` (trivial wrapper: `add` then drop a leading zero block).
+- **`infSum` / `infSumRec` / `infiniteSum`** -- the streaming summation state machine
+  (the keystone; mirrors `addRec_step`'s structure: a `std::optional<block>` step over
+  `infSumRec_state{ inputs : series<ZBCL>, prevs : ZBCL, bound : int32 }`, wrapped as
+  `cons(first, thunk)` like `add()`).
+- `singleMult` / `singleMultHelper`, `mult` / `infSumMultHelper`, `multiply` /
+  `shiftUp` / `shiftDown` / `shiftUpToTwo` -- thin lazy generators feeding `infSum`.
+
+Division (`div`/`divideHelper`/`singleDiv`/`singleDivHelper`/`twoDivFCL`/`divide`) is the
+same shape and is **phase 2**, but the list above shows it reuses exactly the same
+primitives plus online `multiply` and `negation` (already present).
+
+## 4. Corrected phase-1 plan
+
+1. **`addition`** wrapper (minutes).
+2. **Streaming `infSum`/`infSumRec`** as an `addRec`-style state machine reusing
+   `add`/`isSafe`/`createZero`. Validate against the eager `sum()` (equivalence on
+   finite series), the dyadic oracle (`elreal_oracle.hpp`), and 0-overlap.
+3. **`singleMult` + `mult` + `multiply`** (+ `shiftUp`/`shiftDown`) as `infSum` wrappers;
+   replace the eager finite-prefix `mul`. Validate `online_mul.take(N)` == eager
+   `mul(.,.,N)` across the arithmetic suite + random ZBCLs; dyadic-oracle value;
+   0-overlap.
+4. **Laziness/memoization test** (the new capability): `take(k)` then `take(k+1)` forces
+   strictly fewer additional operand pulls than recompute, reusing the memoised prefix.
+5. **Re-benchmark euler_gamma (#1053)** -- the headline win; the eager `sum()` is exactly
+   why its ~700-term accumulation was slow.
+6. Keep integer-`depth` overloads as `take(n)` shims for source compatibility.
+
+This is a **translation job, not a derivation** -- the same discipline that produced
+`addRec` from FCL.hs.
+
+## 5. The real risk (replaces the bogus `M(k)` risk): #1057 and add-composition
+
+`infSumRec` leans heavily on **repeated lazy `add` composition** into the `prevs`
+accumulator. The dissertation proves this preserves 0-overlap given a correct `add`.
+The live risk is therefore not a new carry-arrest -- it is that the existing `add` still
+has the **exact-cancellation 0-overlap gap (#1057)** (and the class of #1034, already
+fixed). Streaming `infSum` is the heaviest exerciser of `add` composition we have, so:
+- #1057 should be treated as a **dependency** of phase 1, fixed in tandem.
+- The equivalence + 0-overlap tests must include adversarial cancellation series (e.g.
+  the asin+acos residual, and alternating-sign products) to surface any add-composition
+  invariant break early.
+
+Other risks: termination on genuinely infinite operands (each emit must lower `bound` by
+k -- carry add's `safety_counter` backstop); and the `shiftUp/shiftDown` range reduction
+must not perturb value (it is exact, exponent-only).
+
+## 6. References
+
+- Dissertation (McCleeary 2019, *Lazy exact real arithmetic using floating point
+  operations*): 4.2.3 Infinite Summation (`infSum`/`infSumRec`), 4.2.5 Multiplication,
+  4.2.6 Divide; FCL.hs Appendix A.4 (canonical Haskell, verified for this note).
+- Code: `threeAdd.hpp` (`add`/`addRec_step`/`isSafe`/`createZero` -- the template and the
+  reused primitives), `sum.hpp` (the eager `sum()` stand-in to be replaced), `multiply.hpp`
+  (eager finite-prefix `mul`), `block_eft.hpp` (`block_two_mult`/`block_two_div_rn`).
 - Design note: `elreal-lazy-incremental-precision.md` (#1060).
-- Issues: #1061 (this work), #1058 (closed; coefficient symptom), #1053 (euler_gamma
-  benchmark, sequenced behind this), #1057 (shared arrest machinery), #1040 (cost
-  tooling).
-- External (NOT in repo): McCleeary 2019 dissertation 4.2.5; FCL.hs reference.
+- Issues: #1061 (this work), #1057 (add exact-cancel -- now a phase-1 dependency, not a
+  side note), #1053 (euler_gamma benchmark), #1040 (cost tooling).
