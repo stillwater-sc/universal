@@ -586,6 +586,20 @@ addRec_step(addRec_state<FpType>& st) {
             // workspace without merging fs against es, emitting fs's blocks after
             // es's even when an fs block belonged between two es blocks -> a
             // non-0-overlap result (#1034).
+            //
+            // FCL.hs emits `e` unconditionally, but that is only valid when the
+            // remaining fs head is >= k below e. A prior twoSum merge can LOWER e's
+            // exponent toward an un-merged fs block (e.g. a1@146 + residual -> @142
+            // while the canonical a2@91 is now only 51 < k below it), so emitting e
+            // would put a2 within k of e -> non-0-overlap (#1057). Fold any fs block
+            // that overlaps the workspace head into the workspace first (priestAdd
+            // renormalises), so the head we emit is >= k above the operand following it.
+            while (!st.fs.is_empty() && !st.workspace.empty()
+                   && st.fs.head().exponent() >= st.workspace.front().exponent() - k) {
+                st.workspace = priestAdd(st.workspace, std::vector<B>{ st.fs.head() });
+                st.fs = st.fs.tail();
+            }
+            if (st.workspace.empty()) continue;   // folded to nothing; re-evaluate
             B e = st.workspace.front();
             st.gs = zbcl_of_vec(removeZeros(tail_vec(st.workspace)));
             st.workspace.clear();
@@ -594,7 +608,14 @@ addRec_step(addRec_state<FpType>& st) {
         }
         if (st.fs.is_empty()) {
             // Symmetric: gs non-empty, fs empty. Re-inject the workspace tail as
-            // the (empty) fs operand so it merges with gs (#1034).
+            // the (empty) fs operand so it merges with gs (#1034). Same #1057 guard:
+            // fold any gs block overlapping the workspace head before emitting.
+            while (!st.gs.is_empty() && !st.workspace.empty()
+                   && st.gs.head().exponent() >= st.workspace.front().exponent() - k) {
+                st.workspace = priestAdd(st.workspace, std::vector<B>{ st.gs.head() });
+                st.gs = st.gs.tail();
+            }
+            if (st.workspace.empty()) continue;
             B e = st.workspace.front();
             st.fs = zbcl_of_vec(removeZeros(tail_vec(st.workspace)));
             st.workspace.clear();
