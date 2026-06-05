@@ -112,4 +112,44 @@ inline int agreed_decimal_digits(const ZBCL<FpType>& z, std::string_view ref, in
 	return agreed_decimal_digits(zbcl_to_dyadic(z), ref, cap);
 }
 
+// Number of leading significant decimal digits to which exact value A agrees with
+// exact value B (relative to B). For identity residual checks where neither side
+// has a closed-form decimal reference -- e.g. exp(a+b) == exp(a)*exp(b) or the
+// sin(a+b) expansion (#1049): build both sides as exact dyadics and compare them
+// directly, with no shared code path through elreal arithmetic.
+//
+//   relative error = |A - B| / |B|
+//   with  A == An/Ad,  B == Bn/Bd  (denominators powers of two or 1), the cross-
+//   multiplied error numerator is  |An*Bd - Bn*Ad|  over denominator  |Ad*Bn|, so
+//   A agrees with B to >= d digits iff  |An*Bd - Bn*Ad| * 10^d  <=  |Ad*Bn|.
+inline int agreed_decimal_digits(const dyadic& A, const dyadic& B, int cap = 320) {
+	using bigint = dyadic::bigint;
+
+	bigint An = A.numerator, Ad(1);
+	if (A.scale >= 0) An <<= A.scale; else Ad <<= (-A.scale);
+	bigint Bn = B.numerator, Bd(1);
+	if (B.scale >= 0) Bn <<= B.scale; else Bd <<= (-B.scale);
+
+	bigint diff = An * Bd - Bn * Ad;      // error numerator (signed)
+	if (diff.sign()) diff.setsign(false); // |error numerator|
+	bigint denom = Ad * Bn;               // |B| numerator (Ad > 0)
+	if (denom.sign()) denom.setsign(false);
+	if (denom.iszero()) throw std::invalid_argument("agreed_decimal_digits: zero reference value");
+
+	if (diff.iszero()) return cap;        // exact to the cap
+
+	bigint cur = diff, ten; ten.assign("10");
+	for (int d = 1; d <= cap; ++d) {
+		cur = cur * ten;
+		if (denom < cur) return d - 1;    // diff*10^d > denom: agreement lost at digit d
+	}
+	return cap;
+}
+
+// Convenience overload: relative agreement of two ZBCL values directly.
+template <typename FpType>
+inline int agreed_decimal_digits(const ZBCL<FpType>& a, const ZBCL<FpType>& b, int cap = 320) {
+	return agreed_decimal_digits(zbcl_to_dyadic(a), zbcl_to_dyadic(b), cap);
+}
+
 }}  // namespace sw::universal
