@@ -16,6 +16,7 @@
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <iostream>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -106,17 +107,66 @@ int verify() {
     return n;
 }
 
+// verify_1057: add() must emit the unique 0-overlap CANONICAL form, matching
+// priestRenorm. Regression for #1057: addRec_step's gs/fs-empty re-injection used to
+// emit the workspace head unconditionally, but a prior twoSum merge can lower that
+// head's exponent toward an un-merged operand block (with a carry, the operand can even
+// land one bit above), leaving an adjacent pair closer than k -- a value-correct but
+// non-canonical (0-overlap-violating) result. The fix folds any overlapping operand
+// block into the workspace (accounting for a carry, hence ">=") before emitting.
+int verify_1057() {
+    using namespace sw::universal;
+    int n = 0;
+
+    // Minimal repro: a 5-block canonical operand + one block inserted near the top.
+    {
+        ZBCL<double> a = zbcl_from_blocks<double>(priestRenorm(std::vector<block<double>>{
+            block<double>{-1.6585293272722507751,        200},
+            block<double>{ 9.8712660049348273631e-17,    200},
+            block<double>{-2.4280874679101948698e-33,    200},
+            block<double>{ 1.1460774358321607147e-53,    200},
+            block<double>{ 5.2596609909677645217e-70,    200} }));
+        ZBCL<double> b = ZBCL<double>::singleton(block<double>{3.2964886804071818101e58, 0});
+        ZBCL<double> s = add(a, b);
+        n += check_canonical(s, 16, "#1057 minimal-repro add()");
+        if (exact_value(s) != exact_value(a) + exact_value(b)) {
+            std::cout << "#1057 minimal-repro value mismatch\n"; ++n;
+        }
+    }
+
+    // Deterministic fuzz: canonical multi-block operand + a single block; add() must be
+    // 0-overlap and value-exact against the dyadic oracle. (50k at sanity level.)
+    {
+        std::mt19937_64 rng(20260605);
+        std::uniform_int_distribution<int> nb(1, 5), stepd(53, 70), sd(0, 1);
+        std::uniform_real_distribution<double> md(1.0, 2.0);
+        const int trials = REGRESSION_LEVEL_1 ? 50000 : 5000;
+        for (int t = 0; t < trials; ++t) {
+            std::vector<block<double>> ab; int e = 200, na = nb(rng);
+            for (int i = 0; i < na; ++i) { ab.push_back(block<double>{ md(rng) * (sd(rng) ? 1.0 : -1.0), e }); e -= stepd(rng); }
+            ZBCL<double> a = zbcl_from_blocks<double>(priestRenorm(ab));
+            int be = 200 - static_cast<int>(rng() % static_cast<unsigned>(na * 70 + 80));
+            ZBCL<double> b = from_native<double>(std::ldexp(md(rng) * (sd(rng) ? 1.0 : -1.0), be));
+            ZBCL<double> s = add(a, b);
+            if (check_canonical(s, 32, "#1057 fuzz") > 0) { ++n; break; }
+            if (exact_value(s) != exact_value(a) + exact_value(b)) { std::cout << "#1057 fuzz value mismatch at t=" << t << "\n"; ++n; break; }
+        }
+    }
+    return n;
+}
+
 } // anonymous
 
 int main()
 try {
     using namespace sw::universal;
-    std::string test_suite = "elreal add() renormalization (regression #1034)";
+    std::string test_suite = "elreal add() renormalization (regression #1034, #1057)";
     int nrOfFailedTestCases = 0;
     bool reportTestCases = false;
     ReportTestSuiteHeader(test_suite, reportTestCases);
 
     nrOfFailedTestCases += verify();
+    nrOfFailedTestCases += verify_1057();
 
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
