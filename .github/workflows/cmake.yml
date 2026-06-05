@@ -177,12 +177,15 @@ jobs:
             cross: ppc64le
             toolchain: cmake/toolchains/ppc64le-linux-gnu.cmake
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
-          # ARM64 cross-compilation with QEMU emulation
-          - os: ubuntu-latest
-            name: Linux ARM64 (GCC cross)
+          # ARM64 on a NATIVE GitHub-hosted ARM64 runner (no QEMU). Compiling and
+          # running the tests natively is both faster and higher fidelity than the
+          # old QEMU-emulated cross job: cross-compilation ran natively but ctest
+          # executed every test binary under qemu-user-static (~10-50x slower), which
+          # dominated the job and which ccache cannot help. A native runner removes
+          # the emulation entirely and lets ccache actually accelerate the build.
+          - os: ubuntu-24.04-arm
+            name: Linux ARM64 (GCC native)
             artifact: linux-aarch64-gcc
-            cross: aarch64
-            toolchain: cmake/toolchains/aarch64-linux-gnu.cmake
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
           # Windows cross-compilation with MinGW-w64
           - os: ubuntu-latest
