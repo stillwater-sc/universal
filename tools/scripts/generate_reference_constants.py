@@ -121,6 +121,20 @@ def main() -> None:
     constants.append(("two_over_sqrt_pi", 2 / mp.sqrt(mp.pi),
                       "2/sqrt(pi) (the erf scaling factor)"))
 
+    # Transcendental spot-check values at the exactly-representable argument 1/2
+    # (and pi/6 = asin(1/2)), for the high-precision transcendental hardening
+    # suite (#1049). 1/2 is an exact double, so mpf('0.5') is the same value the
+    # elreal evaluation sees -- no decimal-vs-binary ambiguity. exp(1)=e, log(2)=ln2,
+    # atan(1)=pi/4, acos(1/2)=pi/3 are covered by existing strings above.
+    half = mp.mpf('0.5')
+    constants.append(("pi_6",      pi / 6,         "pi/6 = asin(1/2)"))
+    constants.append(("sin_half",  mp.sin(half),   "sin(1/2)"))
+    constants.append(("cos_half",  mp.cos(half),   "cos(1/2)"))
+    constants.append(("tan_half",  mp.tan(half),   "tan(1/2)"))
+    constants.append(("sinh_half", mp.sinh(half),  "sinh(1/2)"))
+    constants.append(("cosh_half", mp.cosh(half),  "cosh(1/2)"))
+    constants.append(("tanh_half", mp.tanh(half),  "tanh(1/2)"))
+
     # Euler-Mascheroni gamma
     constants.append(("euler_gamma", mp.euler, "Euler-Mascheroni gamma"))
 
