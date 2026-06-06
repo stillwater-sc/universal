@@ -14,8 +14,10 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <random>
 
 #include <universal/number/elreal/elreal.hpp>
@@ -43,8 +45,14 @@ int verify_one(const sw::universal::block<FpType>& ia,
     // sums is indistinguishable from a genuine algorithm bug. Skip the
     // property there rather than relax the tolerance and mask real issues.
 #if LONG_DOUBLE_SUPPORT
+    using EXP = typename block<FpType>::exp_t;
     auto block_value = [](const block<FpType>& b) -> long double {
         if (b.is_zero_block()) return 0.0L;
+        // host-range blocks by construction; fail loud if the wide exponent
+        // ever exceeds int range before narrowing it for ldexp.
+        assert(b.exp <= EXP(std::numeric_limits<int>::max())
+            && b.exp >= EXP(std::numeric_limits<int>::min())
+            && "threeAdd test: block exponent outside host int range");
         return static_cast<long double>(b.v) * std::ldexp(1.0L, static_cast<int>(b.exp));
     };
     long double ref = block_value(ia) + block_value(ib) + block_value(ic);
@@ -76,8 +84,8 @@ int verify_one(const sw::universal::block<FpType>& ia,
     const auto& a_sorted = arr[0];
     if (!a_sorted.is_zero_block() && !r.out1.is_zero_block()) {
         constexpr int k = block<FpType>::k;
-        std::int32_t a_exp = static_cast<std::int32_t>(a_sorted.exponent());
-        std::int32_t o1_exp = static_cast<std::int32_t>(r.out1.exponent());
+        auto a_exp = a_sorted.exponent();    // keep the wide exp_t; no narrowing
+        auto o1_exp = r.out1.exponent();
         if (o1_exp > a_exp + 2 || o1_exp < a_exp - k) {
             std::cout << tag << " exp-bound FAILED: o1_exp=" << o1_exp
                       << " a_exp=" << a_exp << " k=" << k << '\n';
