@@ -63,7 +63,7 @@ int verify_two_div_one(const sw::universal::block<FpType>& a,
         ++nrFailures;
     }
 
-    std::int32_t expected_off = a.exp - b.exp;
+    std::int32_t expected_off = static_cast<std::int32_t>(a.exp - b.exp);
     if (q.exp != expected_off || r.exp != expected_off) {
         std::cout << tag << " exp mismatch: expected " << expected_off
                   << " got q=" << q.exp << " r=" << r.exp

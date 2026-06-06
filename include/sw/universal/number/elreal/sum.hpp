@@ -121,7 +121,9 @@ inline ZBCL<FpType> sum(series<FpType> s, std::size_t max_depth = 1024) {
         if (t.is_empty()) {
             leads.push_back(neg_inf);
         } else {
-            leads.push_back(t.head().exponent());
+            // eager sum operates on host-range blocks, so the combined exponent
+            // fits an int (the convergence window only needs relative magnitude).
+            leads.push_back(static_cast<int>(t.head().exponent()));
             sawNonzero = true;
             // flatten the term's blocks into the renormalisation pool
             ZBCL<FpType> bcur = t;

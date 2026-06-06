@@ -7,7 +7,7 @@
 //                  all zeros (the zero block)
 //
 // We pack (s, bv) into a host FpType `v` and carry `e` as an explicit
-// int32_t. The relationship is:
+// wide integer `exp` (block<FpType>::exp_t). The relationship is:
 //
 //     E(b) = scale_of(v) + b.exp        (non-zero v)
 //     E(b) = b.exp                      (zero v)
@@ -16,6 +16,19 @@
 // that |v| in [2^e, 2^(e+1)) for non-zero v). The dissertation's getExp(b)
 // returns E(b) above. The dissertation's 0-overlap predicate compares E(.)
 // of consecutive blocks: `E(b_n) >= E(b_{n+1}) + k`.
+//
+// Why a WIDE exponent (integer<256>, not int32):
+//   McCleeary's exponents live in Z (Haskell `Integer`, unbounded). The
+//   streaming division (online_divide.hpp, dissertation 4.2.6) recurses with
+//   newdiv = g0*divisor each level, so the divisor's magnitude -- hence its
+//   exponent -- roughly DOUBLES per level. A 32- or 64-bit exponent overflows
+//   after only ~11 / ~59 levels, capping multi-block division precision. We
+//   follow the dissertation and carry the exponent in the library's fixed-size
+//   integer<256, uint32_t> -- a trivially-copyable POD (so block stays
+//   hardware-shareable per #925) that never overflows for any realizable host
+//   (its ~2^255 range outlasts even a quad host's denormal floor by orders of
+//   magnitude). This is the spirit of Ryan's unbounded exponent realized
+//   without giving up the trivial block layout. See online_divide.hpp.
 //
 // Note on the historical exp_offset:
 //   Earlier drafts of this file used `exp_offset` as a coarse multiplier
@@ -41,6 +54,7 @@
 
 #include <universal/number/cfloat/cfloat_fwd.hpp>
 #include <universal/number/bfloat16/bfloat16_fwd.hpp>
+#include <universal/number/integer/integer.hpp>   // exp_t: wide, trivially-copyable exponent
 
 namespace sw { namespace universal {
 
@@ -63,14 +77,22 @@ template <typename T>
 inline constexpr bool has_universal_fp_api_v = has_universal_fp_api<T>::value;
 
 // block<FpType>: McCleeary's (sign, exp, bv) packed into FpType's value field
-// plus an explicit int32_t exponent.
+// plus an explicit wide exponent (exp_t).
 //
 // Trivial layout: no in-class member initialisers. Use {v, exp} literal
 // construction to initialise. Default construction leaves members
 // indeterminate (consistent with Universal's other trivial number types).
+// exp_t (integer<256>) is itself a trivially-copyable POD, so block remains
+// trivially copyable / destructible -- the #925 hardware-shareable invariant.
 template <typename FpType>
 struct block {
     using fp_type = FpType;
+
+    // exp_t: the per-block exponent type. A fixed-size, trivially-copyable
+    // integer wide enough that the division recursion (which doubles the
+    // exponent per level) never overflows for any realizable host. See the
+    // file header for the rationale.
+    using exp_t = integer<256, std::uint32_t>;
 
     // k = total significand-vector width per the dissertation. For IEEE-style
     // formats this includes the hidden bit. Tracks numeric_limits::digits
@@ -79,7 +101,7 @@ struct block {
     static constexpr int k = std::numeric_limits<FpType>::digits;
 
     FpType        v;
-    std::int32_t  exp;
+    exp_t         exp;
 
     // sign: -1 for negative, +1 for non-negative. Sign of +0.0 and -0.0 follow
     // signbit / Universal's .sign() respectively.
@@ -103,9 +125,9 @@ struct block {
     }
 
     // Combined exponent E(b) per the dissertation's getExp.
-    constexpr std::int32_t exponent() const noexcept {
+    constexpr exp_t exponent() const noexcept {
         if (is_zero_block()) return exp;
-        return static_cast<std::int32_t>(scale_of_v()) + exp;
+        return exp_t(scale_of_v()) + exp;
     }
 
     constexpr bool is_zero_block() const noexcept {
@@ -139,14 +161,14 @@ struct block {
                       "value_as<T>() requires a native floating-point T");
         T base = static_cast<T>(v);
         if (exp == 0) return base;
-        return std::ldexp(base, exp);
+        return std::ldexp(base, static_cast<int>(exp));
     }
 };
 
 // createZero<FpType>(exp): the dissertation's createZero(k, e). Block size k
 // is fixed by FpType; the returned block has v=0 and the requested exponent.
 template <typename FpType>
-constexpr block<FpType> createZero(std::int32_t e) noexcept {
+constexpr block<FpType> createZero(typename block<FpType>::exp_t e) noexcept {
     return block<FpType>{ FpType{0}, e };
 }
 
@@ -178,8 +200,8 @@ constexpr bool dominate(const block<FpType>& b1, const block<FpType>& b2) noexce
     if (b2.is_zero_block()) return true; // anything dominates the zero block
     if (b1.is_zero_block()) return false; // zero block dominates nothing
     constexpr int k = block<FpType>::k;
-    std::int32_t e1 = b1.exponent();
-    std::int32_t e2 = b2.exponent();
+    typename block<FpType>::exp_t e1 = b1.exponent();
+    typename block<FpType>::exp_t e2 = b2.exponent();
     if (e1 > e2 + k) return true;
     if (e1 == e2 + k && singleBit(b2)) return true;
     return false;

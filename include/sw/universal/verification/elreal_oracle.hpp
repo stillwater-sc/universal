@@ -79,7 +79,9 @@ template <typename FpType>
 inline dyadic exact_block(const block<FpType>& b) {
     if (b.is_zero_block()) return dyadic();
     dyadic d = exact_real(b.v);
-    d.scale += b.exp;          // multiply by 2^exp exactly (value = v * 2^exp)
+    // block exp is a wide integer<256>; the oracle verifies host-range test
+    // values whose combined exponent fits an int, so narrow it here.
+    d.scale += static_cast<int>(b.exp);   // multiply by 2^exp exactly (value = v * 2^exp)
     return d;
 }
 

@@ -88,12 +88,12 @@ using namespace sw::universal::elreal_oracle;
 template <typename FpType>
 double dval(const block<FpType>& b) {
     if (b.is_zero_block()) return 0.0;
-    return std::ldexp(static_cast<double>(b.v), b.exp);
+    return std::ldexp(static_cast<double>(b.v), static_cast<int>(b.exp));
 }
 
 template <typename FpType>
 double block_ulp(const block<FpType>& b) {
-    const int E = b.is_zero_block() ? b.exp : b.exponent();
+    const int E = static_cast<int>(b.is_zero_block() ? b.exp : b.exponent());
     return std::ldexp(1.0, E - (block<FpType>::k - 1));
 }
 

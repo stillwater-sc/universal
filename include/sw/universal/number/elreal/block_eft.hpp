@@ -215,7 +215,7 @@ inline std::pair<block<FpType>, block<FpType>>
 block_two_mult(const block<FpType>& a, const block<FpType>& b) {
     FpType p, r;
     detail::two_prod_host(a.v, b.v, p, r);
-    std::int32_t out_exp = a.exp + b.exp;
+    auto out_exp = a.exp + b.exp;
     return { block<FpType>{p, out_exp}, block<FpType>{r, out_exp} };
 }
 
@@ -223,7 +223,7 @@ block_two_mult(const block<FpType>& a, const block<FpType>& b) {
 template <typename FpType>
 inline block<FpType>
 block_two_mult_rn(const block<FpType>& a, const block<FpType>& b) {
-    std::int32_t out_exp = a.exp + b.exp;
+    auto out_exp = a.exp + b.exp;
     return block<FpType>{ a.v * b.v, out_exp };
 }
 
@@ -236,7 +236,7 @@ block_two_div(const block<FpType>& a, const block<FpType>& b) {
     assert(!b.is_zero_block() && "block_two_div: divisor is zero");
     FpType q, r;
     detail::two_div_host(a.v, b.v, q, r);
-    std::int32_t out_exp = a.exp - b.exp;
+    auto out_exp = a.exp - b.exp;
     return { block<FpType>{q, out_exp}, block<FpType>{r, out_exp} };
 }
 
@@ -245,7 +245,7 @@ template <typename FpType>
 inline block<FpType>
 block_two_div_rn(const block<FpType>& a, const block<FpType>& b) {
     assert(!b.is_zero_block() && "block_two_div_rn: divisor is zero");
-    std::int32_t out_exp = a.exp - b.exp;
+    auto out_exp = a.exp - b.exp;
     return block<FpType>{ a.v / b.v, out_exp };
 }
 

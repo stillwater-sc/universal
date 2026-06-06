@@ -81,7 +81,7 @@ inline ZBCL<FpType> log(ZBCL<FpType> x, std::size_t depth = 4) {
 
     // Range reduction: x = m * 2^e with m in [1,2). e is the binary scale of the
     // leading block; m = x * 2^-e.
-    const int e = x.head().exponent();
+    const int e = static_cast<int>(x.head().exponent());
     ZBCL<FpType> m = mul_scalar(B{ static_cast<FpType>(1.0), -e }, x, depth);   // m = x / 2^e
 
     // ln(m) = 2 * artanh(u), u = (m-1)/(m+1), |u| <= 1/3.

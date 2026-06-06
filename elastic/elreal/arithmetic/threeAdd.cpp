@@ -45,7 +45,7 @@ int verify_one(const sw::universal::block<FpType>& ia,
 #if LONG_DOUBLE_SUPPORT
     auto block_value = [](const block<FpType>& b) -> long double {
         if (b.is_zero_block()) return 0.0L;
-        return static_cast<long double>(b.v) * std::ldexp(1.0L, b.exp);
+        return static_cast<long double>(b.v) * std::ldexp(1.0L, static_cast<int>(b.exp));
     };
     long double ref = block_value(ia) + block_value(ib) + block_value(ic);
     long double got = block_value(r.out1) + block_value(r.out2) + block_value(r.out3);
@@ -76,8 +76,8 @@ int verify_one(const sw::universal::block<FpType>& ia,
     const auto& a_sorted = arr[0];
     if (!a_sorted.is_zero_block() && !r.out1.is_zero_block()) {
         constexpr int k = block<FpType>::k;
-        std::int32_t a_exp = a_sorted.exponent();
-        std::int32_t o1_exp = r.out1.exponent();
+        std::int32_t a_exp = static_cast<std::int32_t>(a_sorted.exponent());
+        std::int32_t o1_exp = static_cast<std::int32_t>(r.out1.exponent());
         if (o1_exp > a_exp + 2 || o1_exp < a_exp - k) {
             std::cout << tag << " exp-bound FAILED: o1_exp=" << o1_exp
                       << " a_exp=" << a_exp << " k=" << k << '\n';
