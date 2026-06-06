@@ -30,16 +30,21 @@
 #include <universal/number/elreal/exceptions.hpp>
 #include <universal/number/elreal/series.hpp>
 #include <universal/number/elreal/sum.hpp>
-#include <universal/number/elreal/negate.hpp>
-#include <universal/number/elreal/multiply.hpp>
-#include <universal/number/elreal/divide.hpp>
-// Phase 1 (#1061): streaming (online, pull-driven) infSum / multiply / divide.
-// infsum and mul_online are validated drop-ins; div_online is validated for
-// single-block and sparse (power-of-two) multi-block divisors. General dense
-// multi-block division is not yet supported (see online_divide.hpp banner).
+// CANONICAL LFPERA arithmetic: streaming (online, pull-driven) infSum / multiply
+// / divide (#1061). LFPERA is online by design; these are the faithful
+// realization. infsum and mul_online are complete; div_online is complete for
+// single-block and sparse multi-block divisors (general dense multi-block div is
+// the remaining open item). The eager multiply.hpp/divide.hpp/sum.hpp above are
+// DEPRECATED Phase-5/6 scaffolding kept only until the math suite migrates onto
+// these; see docs/design/elreal-online-convergence.md.
 #include <universal/number/elreal/infsum.hpp>
 #include <universal/number/elreal/online_multiply.hpp>
 #include <universal/number/elreal/online_divide.hpp>
+// DEPRECATED eager scaffolding (depth-budgeted batch). Superseded by the
+// streaming ops above; retained only while the math suite still calls them.
+#include <universal/number/elreal/negate.hpp>
+#include <universal/number/elreal/multiply.hpp>
+#include <universal/number/elreal/divide.hpp>
 // Phase 7 (#931): math suite
 #include <universal/number/elreal/math/sqrt.hpp>
 #include <universal/number/elreal/math/hypot.hpp>

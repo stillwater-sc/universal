@@ -1,8 +1,13 @@
-// online_muldiv.cpp: validation of the streaming (online, pull-driven) infSum,
-// multiply, and divide against the eager reference and the exact dyadic oracle
-// (#1061 phase 1).
+// online_muldiv.cpp: validation of the CANONICAL streaming (online, pull-driven)
+// infSum, multiply, and divide against the (deprecated) eager reference and the
+// exact dyadic oracle (#1061 phase 1).
 //
-// Scope of what is validated here (the landed, working subset):
+// LFPERA is online by design; these streaming ops are the faithful realization
+// and the eager mul/div/sum they are checked against are deprecated scaffolding
+// on the way out (see docs/design/elreal-online-convergence.md). The eager
+// versions serve here purely as an independent cross-check oracle.
+//
+// Scope of what is validated here (the streaming ops, by current completeness):
 //   * infsum(series)        == eager sum() exactly (finite series).
 //   * mul_online(a, b)      == exact product a*b (finite operands).
 //   * div_online, single-block divisor: matches eager div() to host precision,

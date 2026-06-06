@@ -1,5 +1,15 @@
 // divide.hpp: McCleeary LFPERA division on ZBCL<FpType> (dissertation 4.2.6).
 //
+// DEPRECATED SCAFFOLDING -- slated for removal. LFPERA is ONLINE (lazy) by
+// definition; the dissertation has no eager/depth/budget mode. This eager,
+// depth-budgeted div(...,depth) is a Phase-6 placeholder. It is SUPERSEDED by
+// the streaming div_online() (online_divide.hpp), which is the canonical
+// realization -- already complete for single-block and sparse (power-of-two)
+// multi-block divisors. Removal is blocked on (a) finishing streaming division
+// for GENERAL dense multi-block divisors (the open algorithm item) and (b)
+// migrating the math suite off div(...,depth). See online_divide.hpp,
+// docs/design/elreal-online-convergence.md, and #1061. Do NOT add new callers.
+//
 // Long-division-style refinement against the leading divisor block. At each step
 // the next quotient block is q_i = block_two_div_rn(rem_0, y_0), where rem_0 is
 // the leading remainder block and y_0 the leading divisor block. We then reduce
