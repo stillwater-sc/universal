@@ -1,5 +1,15 @@
 // multiply.hpp: McCleeary LFPERA multiplication on ZBCL<FpType> (dissertation 4.2.5).
 //
+// DEPRECATED SCAFFOLDING -- slated for removal. LFPERA is ONLINE (lazy) by
+// definition; the dissertation has no eager/depth/budget mode. This eager,
+// finite-prefix mul(...,depth) is a Phase-6 placeholder ("a fully streaming
+// product is deferred", per the note below). It is SUPERSEDED by the streaming
+// mul_online() (online_multiply.hpp), which is the canonical realization.
+// Removal is blocked only on migrating the math suite off mul(...,depth); see
+// docs/design/elreal-online-convergence.md and #1061. Do NOT add new callers.
+// (mul_scalar -- a single block times a stream -- is retained; it is the lazy
+// scalar-multiply the streaming code also uses.)
+//
 // x * y = sum_{i,j} (x_i * y_j), where each block-pair product x_i * y_j is the
 // exact 2-block decomposition from block_two_mult. We gather all partial-product
 // blocks and renormalise them into the unique 0-overlap stream with priestRenorm

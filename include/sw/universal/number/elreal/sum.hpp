@@ -1,5 +1,13 @@
 // sum.hpp: McCleeary LFPERA infinite summation (dissertation 4.2.3).
 //
+// DEPRECATED SCAFFOLDING -- slated for removal. LFPERA is ONLINE (lazy) by
+// definition; the dissertation has no eager/depth/budget mode. This eager,
+// depth-budgeted sum() is a Phase-5 placeholder that was a workaround for the
+// add() lazy-composition 0-overlap bug (now fixed, #1057). It is SUPERSEDED by
+// the streaming infsum() (infsum.hpp), which is the canonical realization.
+// Removal is blocked only on migrating the math suite off sum(...,depth); see
+// docs/design/elreal-online-convergence.md and #1061. Do NOT add new callers.
+//
 // Phase 5 (#929). Given a series<FpType> (a co-list of ZBCL<FpType> terms whose
 // partial sums form a Cauchy sequence), produce a single ZBCL<FpType> equal to
 // their sum. This is the workhorse for Taylor series and transcendentals in

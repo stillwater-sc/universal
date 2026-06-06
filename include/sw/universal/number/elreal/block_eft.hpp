@@ -175,6 +175,21 @@ inline void two_div_host(T a, T b, T& q, T& r) {
     r = ((a - p) - p_err) / b;
 }
 
+// two_div_rem: compute q = round(a/b) and the REMAINDER rem = a - q*b (exact,
+// single value -- the residual of a correctly-rounded division is representable
+// in one host float). This is McCleeary's twoDiv (Def 4.1.12): a/b = q + rem/b.
+// Same body as two_div_host but WITHOUT the final divide-by-b that turns the
+// remainder into the correction. Used by twoDivZBCL for single-block-by-single-
+// block long division (no multi-block fan-out).
+template <typename T>
+UNIVERSAL_ELREAL_EFT_NOINLINE
+inline void two_div_rem_host(T a, T b, T& q, T& rem) {
+    q = a / b;
+    T p, p_err;
+    two_prod_host(q, b, p, p_err);
+    rem = (a - p) - p_err;   // = a - q*b exactly (single value)
+}
+
 } // namespace detail
 
 // =============================================================================
@@ -247,6 +262,22 @@ block_two_div_rn(const block<FpType>& a, const block<FpType>& b) {
     assert(!b.is_zero_block() && "block_two_div_rn: divisor is zero");
     auto out_exp = a.exp - b.exp;
     return block<FpType>{ a.v / b.v, out_exp };
+}
+
+// block_two_div_rem(a, b): McCleeary's twoDiv (Def 4.1.12). Returns (q, rem)
+// where q = round(a/b) and rem = a - q*b is a SINGLE block such that
+//   value(a)/value(b) = value(q) + value(rem)/value(b)   (exact).
+// q has exp a.exp - b.exp; rem has exp a.exp (it is a - q*b, and q*b shares a's
+// exp). This is the primitive for single-block long division (twoDivZBCL): the
+// next quotient digit is round(rem/b), so the remainder is divided by b again --
+// no multi-block remainder, no fan-out. Caller must guarantee b is non-zero.
+template <typename FpType>
+inline std::pair<block<FpType>, block<FpType>>
+block_two_div_rem(const block<FpType>& a, const block<FpType>& b) {
+    assert(!b.is_zero_block() && "block_two_div_rem: divisor is zero");
+    FpType q, rem;
+    detail::two_div_rem_host(a.v, b.v, q, rem);
+    return { block<FpType>{q, a.exp - b.exp}, block<FpType>{rem, a.exp} };
 }
 
 }} // namespace sw::universal
