@@ -101,11 +101,11 @@ twoSumRN(const block<FpType>& a, const block<FpType>& b) {
     if (b.is_zero_block()) {
         return { a, createZero<FpType>(a.exp - k) };
     }
-    std::int32_t e_max = std::max(a.exp, b.exp);
+    auto e_max = std::max(a.exp, b.exp);
     FpType va = (a.exp == e_max) ? a.v
-                                 : detail_mccleeary::ldexp_block(a.v, a.exp - e_max);
+                                 : detail_mccleeary::ldexp_block(a.v, static_cast<int>(a.exp - e_max));
     FpType vb = (b.exp == e_max) ? b.v
-                                 : detail_mccleeary::ldexp_block(b.v, b.exp - e_max);
+                                 : detail_mccleeary::ldexp_block(b.v, static_cast<int>(b.exp - e_max));
     FpType s, r;
     detail_mccleeary::host_two_sum(va, vb, s, r);
     return { block<FpType>{s, e_max}, block<FpType>{r, e_max} };
@@ -491,7 +491,7 @@ struct addRec_state {
     ZBCL<FpType> fs;
     ZBCL<FpType> gs;
     std::vector<block<FpType>> workspace; // [prev, e1, e2, ...] (front-first)
-    std::int32_t bound;
+    typename block<FpType>::exp_t bound;
     bool initialised; // whether `bound` and workspace have been seeded
 };
 

@@ -121,7 +121,19 @@ inline ZBCL<FpType> sum(series<FpType> s, std::size_t max_depth = 1024) {
         if (t.is_empty()) {
             leads.push_back(neg_inf);
         } else {
-            leads.push_back(t.head().exponent());
+            // eager sum operates on host-range blocks, so the combined exponent
+            // fits an int (the convergence window only needs relative magnitude).
+            // Fail loud rather than wrap if a non-host-range exponent ever reaches
+            // here -- a wrapped lead would distort the convergence guard decision.
+            const auto lead = t.head().exponent();
+            using EXP = typename block<FpType>::exp_t;
+            if (lead > EXP(std::numeric_limits<int>::max()) ||
+                lead < EXP(std::numeric_limits<int>::min())) {
+                throw elreal_sum_budget_exceeded(
+                    "sum: a term's leading exponent exceeds int range for the "
+                    "convergence guard (non-host-range term in the eager sum).");
+            }
+            leads.push_back(static_cast<int>(lead));
             sawNonzero = true;
             // flatten the term's blocks into the renormalisation pool
             ZBCL<FpType> bcur = t;

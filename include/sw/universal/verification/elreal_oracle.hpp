@@ -79,7 +79,14 @@ template <typename FpType>
 inline dyadic exact_block(const block<FpType>& b) {
     if (b.is_zero_block()) return dyadic();
     dyadic d = exact_real(b.v);
-    d.scale += b.exp;          // multiply by 2^exp exactly (value = v * 2^exp)
+    // block exp is a wide integer<256>; the oracle verifies host-range test
+    // values whose combined exponent fits an int. Fail loud rather than silently
+    // truncate if that invariant is ever violated (it would corrupt the reference).
+    using EXP = typename block<FpType>::exp_t;
+    assert(b.exp <= EXP(std::numeric_limits<int>::max())
+        && b.exp >= EXP(std::numeric_limits<int>::min())
+        && "elreal oracle: block exponent outside host int range");
+    d.scale += static_cast<int>(b.exp);   // multiply by 2^exp exactly (value = v * 2^exp)
     return d;
 }
 

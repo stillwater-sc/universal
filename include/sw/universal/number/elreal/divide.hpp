@@ -93,7 +93,7 @@ inline ZBCL<FpType> div(ZBCL<FpType> x, ZBCL<FpType> y, std::size_t depth = 64) 
         if (rem.empty()) break;                  // exact division: remainder is 0
         const B r0 = rem.front();                // leading block (descending order)
         if (!r0.is_normalised() || r0.exponent() < exp_floor) break;
-        const int lead = r0.exponent();
+        const int lead = static_cast<int>(r0.exponent());
         if (havePrev && lead >= prevLead) break; // no progress -> stop refining
         prevLead = lead;
         havePrev = true;
