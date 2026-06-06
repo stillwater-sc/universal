@@ -33,6 +33,13 @@
 #include <universal/number/elreal/negate.hpp>
 #include <universal/number/elreal/multiply.hpp>
 #include <universal/number/elreal/divide.hpp>
+// Phase 1 (#1061): streaming (online, pull-driven) infSum / multiply / divide.
+// infsum and mul_online are validated drop-ins; div_online is validated for
+// single-block and sparse (power-of-two) multi-block divisors. General dense
+// multi-block division is not yet supported (see online_divide.hpp banner).
+#include <universal/number/elreal/infsum.hpp>
+#include <universal/number/elreal/online_multiply.hpp>
+#include <universal/number/elreal/online_divide.hpp>
 // Phase 7 (#931): math suite
 #include <universal/number/elreal/math/sqrt.hpp>
 #include <universal/number/elreal/math/hypot.hpp>
