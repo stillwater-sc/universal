@@ -38,7 +38,7 @@ inline series<FpType> singleMultHelper(const block<FpType>& f, ZBCL<FpType> gs) 
 template <typename FpType>
 inline ZBCL<FpType> singleMult(const block<FpType>& f, ZBCL<FpType> gs) {
     if (f.is_zero_block() || gs.is_empty()) return ZBCL<FpType>{};
-    return infinitesum(singleMultHelper(f, std::move(gs)));
+    return infsum(singleMultHelper(f, std::move(gs)));
 }
 
 // infSumMultHelper fs gs: lazy series of [singleMult f_0 gs, singleMult f_1 gs, ...].
@@ -59,7 +59,7 @@ inline series<FpType> infSumMultHelper(ZBCL<FpType> fs, ZBCL<FpType> gs) {
 template <typename FpType>
 inline ZBCL<FpType> mul_online(ZBCL<FpType> x, ZBCL<FpType> y) {
     if (x.is_empty() || y.is_empty()) return ZBCL<FpType>{};   // 0 * y = x * 0 = 0
-    return infinitesum(infSumMultHelper(std::move(x), std::move(y)));
+    return infsum(infSumMultHelper(std::move(x), std::move(y)));
 }
 
 }} // namespace sw::universal

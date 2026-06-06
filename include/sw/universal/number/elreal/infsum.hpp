@@ -83,9 +83,9 @@ infsumRec_step(infsumRec_state<FpType>& st) {
         ZBCL<FpType> as = st.inputs.head();
         series<FpType> rest1 = st.inputs.tail();
 
-        // infSumRec (as:[]) prevs _ = addition as prevs : fold the last term, then stream.
+        // infSumRec (as:[]) prevs _ = add as prevs : fold the last term, then stream.
         if (rest1.is_empty()) {
-            st.prevs  = addition(as, st.prevs);
+            st.prevs  = add(as, st.prevs);
             st.inputs = series<FpType>{};
             continue;
         }
@@ -112,26 +112,26 @@ infsumRec_step(infsumRec_state<FpType>& st) {
                 st.bound = zero.exponent() - k;
                 return zero;                              // emit zero; inputs/prevs unchanged
             }
-            st.prevs  = addition(as, st.prevs);           // nPrevs = addition as (prev:prevs)
+            st.prevs  = add(as, st.prevs);                // nPrevs = add as (prev:prevs)
             st.inputs = rest1;                            // (bs:rest)
             continue;
         }
 
         // Normal region: fold the next term into the accumulator and try to emit its head.
-        ZBCL<FpType> s = addition(st.prevs, as);          // addition (prev:prevs) as
+        // FCL.hs: let (high:highs) = add (prev:prevs) as -- PLAIN add, no zero-dropping;
+        // McCleeary keeps leading zeros (they are valid ZBCL blocks handled by isSafe /
+        // createZero). Earlier this used a drop-leading-zero wrapper ("addition") plus an
+        // extra high.is_zero_block() skip -- both our own additions, removed to match the
+        // dissertation (they broke 0-overlap for the correlated terms division generates).
+        ZBCL<FpType> s = add(st.prevs, as);               // add (prev:prevs) as
         if (s.is_empty()) {
-            // null sum: full cancellation. Defensive -- cannot occur for inputs with
-            // strictly decreasing leading exponents (the accumulator dominates `as`).
+            // null sum: full cancellation. Defensive -- McCleeary's pattern match
+            // (high:highs) = add ... assumes this cannot occur (prev dominates as).
             st.prevs  = as;
             st.inputs = rest1.tail();                     // rest (drop as and bs)
             continue;
         }
         const B high = s.head();
-        if (high.is_zero_block()) {
-            st.prevs  = s.tail();
-            st.inputs = rest1;                            // (bs:rest)
-            continue;
-        }
         if (isSafe(high, bs, bs, es, prev)) {
             st.prevs  = s.tail();
             st.inputs = rest1;                            // (bs:rest)
@@ -159,8 +159,8 @@ inline ZBCL<FpType> infsum(series<FpType> s) {
     Z bs = rest1.head();
     series<FpType> rest = rest1.tail();
 
-    // nprevs = addition as bs ; bound = getExp(head as) + getSize(head as) + 1.
-    Z nprevs = addition(as, bs);
+    // nprevs = add as bs ; bound = getExp(head as) + getSize(head as) + 1.
+    Z nprevs = add(as, bs);
     const typename block<FpType>::exp_t lead = as.is_empty()
         ? (bs.is_empty() ? typename block<FpType>::exp_t(0) : bs.head().exponent())
         : as.head().exponent();

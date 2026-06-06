@@ -160,6 +160,34 @@ int verify_div_sparse_multiblock() {
     return n;
 }
 
+// (5) DENSE multi-block divisor (blocks NOT powers of two), shallow. Regression
+// for the twoDivZBCL single-block fix (#1061): before it, a dense divisor's
+// long division fanned out and did not terminate even at take(2). Now the first
+// blocks are produced in milliseconds, 0-overlap, matching eager div(). Kept
+// shallow (4 blocks, well above the host-floor margin) because deeper dense
+// division still has an open host-floor 0-overlap issue in the streaming
+// multiply path (see online_divide.hpp banner) -- not exercised here.
+int verify_div_dense_shallow() {
+    int n = 0;
+    // 2-block operands with non-power-of-two low blocks.
+    ZBCL<double> a = add(nat(1.357630), nat(std::ldexp(1.400440, -58)));
+    ZBCL<double> b = add(nat(1.689380), nat(std::ldexp(1.559740, -57)));
+    ZBCL<double> q = div_online(a, b);
+    const std::size_t W = 4;
+    auto blocks = q.take(W);
+    if (blocks.size() < W) {
+        std::cout << "dense div: only " << blocks.size() << " blocks (<4)\n"; ++n;
+    }
+    n += check_canonical(q, W, "div_online dense-shallow");
+    ZBCL<double> qe = div(a, b, 8);
+    long double rel = std::fabs(zval(q, W) - zval(qe, W));
+    long double mag = std::fabs(zval(qe, W)) + 1e-300L;
+    if (rel > mag * 1e-13L) {
+        std::cout << "dense div != eager (rel=" << static_cast<double>(rel) << ")\n"; ++n;
+    }
+    return n;
+}
+
 } // anonymous
 
 int main()
@@ -174,6 +202,7 @@ try {
     nrOfFailedTestCases += verify_mul();
     nrOfFailedTestCases += verify_div_single();
     nrOfFailedTestCases += verify_div_sparse_multiblock();
+    nrOfFailedTestCases += verify_div_dense_shallow();
 
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

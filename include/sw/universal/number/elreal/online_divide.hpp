@@ -1,37 +1,37 @@
 // !!! WORK IN PROGRESS -- PARTIAL. NOT INCLUDED BY ANY PRODUCTION CODE. !!!
 // Status:
-//  * SINGLE-BLOCK DIVISOR: WORKS to full precision. 1/7, 1/3, 22/7, ... match eager
-//    div() to the double-host ceiling (~300 digits); exact ratios (6/3) terminate.
-//    Resolved en route: (a) the block_two_div CORRECTION-vs-REMAINDER semantic gap
-//    (twoDivFCL computes the true remainder x - q*y via block_two_mult + priestRenorm
-//    and divides it by y), (b) a leading-zero remainder mis-seeding the infSum bound
-//    (removeZeros), (c) non-termination past the host floor (stop on a non-normalised
-//    quotient block).
-//  * SPARSE MULTI-BLOCK DIVISOR: WORKS to full precision now that the block exponent is
-//    wide (integer<256>, #1066). divideHelper recurses with newdiv = g0*divisor each level,
-//    so the divisor's exponent grows unboundedly (trace: 17,35,70,...); int32 overflowed
-//    after ~11 levels. With the wide exponent, 1/(1+2^-55) reaches the full 19 blocks (host
-//    floor) with correct 0-overlap and exact reconstruction q*b == 1 -- the int32 cap is gone.
-//  * GENERAL (DENSE) MULTI-BLOCK DIVISOR: STILL OPEN. The wide exponent was necessary but not
-//    sufficient. For a divisor whose blocks are NOT powers of two, two problems remain that
-//    the int32 overflow used to mask:
-//      (a) 0-OVERLAP CORRECTNESS: the quotient stream can emit a non-canonical (0-overlap-
-//          violating) adjacent pair (same class as the #1057 add bug) -- value-correct but
-//          not the unique DBL_k form.
-//      (b) COST EXPLOSION: singleMult(g0, divisor) fills in low-order blocks, so the running
-//          divisor's BLOCK COUNT grows ~1/level; for a dense divisor even take(2) does not
-//          terminate in reasonable time. The int32 overflow was an accidental cost bound.
-//    Needs an algorithm fix (keep the running divisor sparse / bound its block count, and a
-//    0-overlap carry-arrest in the fold) -- the hard remaining phase-1 item, NOT a rebase.
+//  * SINGLE-BLOCK DIVISOR: WORKS. 1/7, 1/3, 22/7, ... match eager div(); 6/3 terminates.
+//  * SPARSE (power-of-two) MULTI-BLOCK DIVISOR: WORKS to the host floor with the wide
+//    block exponent (integer<256>, #1066): 1/(1+2^-55) -> full depth, 0-overlap, exact
+//    reconstruction q*b == 1. (divideHelper recurses with newdiv = g0*divisor, doubling
+//    the divisor exponent each level; int32 overflowed after ~11 levels, integer<256>
+//    does not.)
+//  * GENERAL (DENSE) MULTI-BLOCK DIVISOR: cost explosion FIXED; one host-floor issue left.
+//    - FIXED (cost explosion): twoDivZBCL was fanning a single-block division out into a
+//      MULTI-block remainder (x - q*y via priestRenorm) + singleDiv, which is NOT what the
+//      dissertation does. Def 4.2.8 keeps it single-block: twoDiv returns the SINGLE
+//      remainder block e (x/y = s + e/y, block_two_div_rem), and twoDivZBCL recurses
+//      single-block-by-single-block. With that, a dense divisor produces correct canonical
+//      blocks in milliseconds (was: did not terminate). Also matched the dissertation on the
+//      zero case ([x]) and on using plain infSum (not a drop-leading-zero "addition") in
+//      infsumRec.
+//    - REMAINING (host floor): within ~2k of the host's smallest normal exponent, the EFTs
+//      cannot keep blocks k apart (the slot k below is subnormal), so 0-overlap breaks. The
+//      eager div() survives by re-running priestRenorm + keep_normalised each step; a
+//      streaming producer cannot. twoDivZBCL now has a min_exp+2k floor guard, but the
+//      INTERNAL streaming products newfs = fs*divisorTail and newdiv = g0*divisor (mul_online
+//      / singleMult) still reach the floor and emit subnormal residuals that break k-spacing
+//      when infSum consumes them. Fix: uniform host-floor handling across the streaming
+//      multiply path (the "div floor rework"). Until then a dense divisor is correct only
+//      down to ~the floor margin.
 //
 // online_divide.hpp: McCleeary LFPERA streaming division (dissertation 4.2.6).
 //
-// Direct translation of FCL.hs Appendix A.4: twoDivFCL / singleDiv / divideHelper /
+// Direct translation of FCL.hs Appendix A.4: twoDivZBCL / singleDiv / divideHelper /
 // div / divide. The quotient is produced on demand as a streaming infSum of partial
-// quotients; each block-pair quotient is the exact-ish 2-block block_two_div. Builds on
-// the streaming infSum (infsum.hpp) and the streaming product (online_multiply.hpp), now
-// that add() holds the 0-overlap canonical form under composition (#1057). Phase 1 of
-// #1061.
+// quotients; twoDivZBCL is single-block long division using block_two_div_rem (twoDiv,
+// Def 4.1.12). Builds on the streaming infSum (infsum.hpp) and the streaming product
+// (online_multiply.hpp). Phase 1 of #1061.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -40,6 +40,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 #include <universal/number/elreal/block.hpp>
@@ -66,44 +67,55 @@ inline ZBCL<FpType> zbcl_shift(ZBCL<FpType> z, typename block<FpType>::exp_t n) 
     return ZBCL<FpType>::cons(h, [rest, n]() { return zbcl_shift(rest, n); });
 }
 
-// twoDivFCL(x, y): block x / block y as a lazy ZBCL (infinite for an irrational ratio).
-// Long division: q = round(x/y); remainder rem = x - q*y (exact, multi-block via
-// block_two_mult + priestRenorm); the next quotient blocks are rem/y. So
-//   x/y = q : (rem / y) = q : singleDiv(rem, y).
-// NOTE: the codebase's block_two_div returns the quotient CORRECTION (x/y - q), not the
-// FCL `twoDiv` remainder; recursing on that divides by y twice and is wrong (caps at one
-// limb). We compute the true remainder x - q*y instead and divide it by y.
+// twoDivZBCL(x, y): block x / block y as a lazy ZBCL (infinite for an irrational
+// ratio). Faithful FCL.hs (dissertation Def 4.2.8):
+//   twoDivZBCL x y = if isZero x then [x]
+//                    else let (s,e) = twoDiv x y in s : twoDivZBCL e y
+// twoDiv (block_two_div_rem) returns the quotient digit s = round(x/y) AND the
+// SINGLE remainder block e = x - s*y, with x/y = s + e/y. We then divide that
+// single remainder block by y again -- single-block by single-block, the
+// remainder exponent dropping by >= k each step (lemma 4.2.23). NO multi-block
+// remainder and NO singleDiv fan-out (the earlier divergence that made the dense
+// multi-block long division explode and break 0-overlap).
 template <typename FpType>
-inline ZBCL<FpType> twoDivFCL(block<FpType> x, block<FpType> y) {
+inline ZBCL<FpType> twoDivZBCL(block<FpType> x, block<FpType> y) {
     if (x.is_zero_block()) {
-        return ZBCL<FpType>::singleton(createZero<FpType>(x.exponent() - y.exponent()));
+        // FCL.hs: `if isZero x then [x]` -- emit the zero block AT ITS OWN
+        // exponent (E(x)), not the quotient scale. Lowering it would break the
+        // strictly-decreasing-leading-exponent precondition of the enclosing
+        // infSum (singleDivHelper feeds it blocks of strictly decreasing E).
+        return ZBCL<FpType>::singleton(x);
     }
-    const block<FpType> q = block_two_div_rn(x, y);   // round(x/y)
-    if (!q.is_normalised()) return ZBCL<FpType>{};    // quotient underflowed the host floor; stop
-    auto qy = block_two_mult(q, y);                   // q*y = (hi, lo), exact
-    // x - q*y: the high parts cancel, so priestRenorm leaves a LEADING ZERO block at x's
-    // exponent. removeZeros it -- a leading zero (at a high exponent) would mis-seed the
-    // infSum bound in singleDiv and spin the cancellation path.
-    std::vector<block<FpType>> rem = removeZeros(priestRenorm(std::vector<block<FpType>>{
-        x, block<FpType>{ -qy.first.v, qy.first.exp }, block<FpType>{ -qy.second.v, qy.second.exp } }));
-    ZBCL<FpType> remz = zbcl_from_blocks<FpType>(rem);   // x - q*y
-    if (remz.is_empty()) return ZBCL<FpType>::singleton(q);   // exact division
+    auto se = block_two_div_rem(x, y);                // (s, e): x/y = s + e/y
+    // Host-floor guard. McCleeary's twoDiv works in exact (unbounded-exponent)
+    // arithmetic; on a finite host, within ~2k of the smallest normal exponent
+    // the EFT can no longer place the remainder a full k below the quotient (that
+    // slot is subnormal), so twoDiv's "e is >= k below s" guarantee fails and the
+    // emitted stream stops being 0-overlap. The eager div() survives this by
+    // re-running priestRenorm + keep_normalised every step; a streaming producer
+    // cannot post-renormalise, so we must STOP a margin (2k) above the floor while
+    // every block can still hold its k bits. (Matches divide.hpp's exp_floor.)
+    constexpr int host_exp_floor =
+        std::numeric_limits<FpType>::min_exponent + 2 * block<FpType>::k;
+    const block<FpType> s = se.first;
+    if (!s.is_normalised() || s.exponent() < host_exp_floor) return ZBCL<FpType>{};
+    const block<FpType> e = se.second;                // single remainder block x - s*y
     block<FpType> ycopy = y;
-    return ZBCL<FpType>::cons(q, [remz, ycopy]() { return singleDiv(remz, ycopy); });
+    return ZBCL<FpType>::cons(s, [e, ycopy]() { return twoDivZBCL(e, ycopy); });
 }
 
 // singleDivHelper / singleDiv: a ZBCL divided by a single block g.
 template <typename FpType>
 inline series<FpType> singleDivHelper(ZBCL<FpType> fs, block<FpType> g) {
     if (fs.is_empty()) return series<FpType>{};
-    ZBCL<FpType> term = twoDivFCL(fs.head(), g);      // f_i / g
+    ZBCL<FpType> term = twoDivZBCL(fs.head(), g);     // f_i / g
     ZBCL<FpType> rest = fs.tail();
     block<FpType> gcopy = g;
     return series<FpType>::cons(term, [rest, gcopy]() { return singleDivHelper(rest, gcopy); });
 }
 template <typename FpType>
 inline ZBCL<FpType> singleDiv(ZBCL<FpType> fs, block<FpType> g) {
-    return infinitesum(singleDivHelper(std::move(fs), g));
+    return infsum(singleDivHelper(std::move(fs), g));
 }
 
 // divideHelper: the long division. q ~= fs/g0 (leading divisor block); the residual is
@@ -120,12 +132,8 @@ inline series<FpType> divideHelper(ZBCL<FpType> fs, ZBCL<FpType> divisor) {
         ZBCL<FpType> drest = divisor.tail();
         return series<FpType>::cons(zterm, [fs, drest]() { return divideHelper(fs, drest); });
     }
-    // Faithful FCL.hs translation. The divisor magnitude (g0*divisor) grows every level, so
-    // its exponent grows unboundedly -- the dissertation uses arbitrary-precision (Integer)
-    // exponents, which this is correct against. On the codebase's int32 block exponent it
-    // overflows after ~11 levels (capping multi-block precision). The fix is to follow the
-    // dissertation and widen block<FpType>::exp (int64 / arbitrary precision), NOT to
-    // reformulate the algorithm -- see the WIP banner.
+    // Faithful FCL.hs translation. newdiv = g0*divisor doubles the divisor exponent each
+    // level; the wide block exponent (integer<256>, #1066) carries that without overflow.
     ZBCL<FpType> qterm  = singleDiv(fs, g);                       // fs / g0
     ZBCL<FpType> newfs  = negate(mul_online(fs, divisor.tail())); // -(fs * divisorTail)
     ZBCL<FpType> newdiv = singleMult(g, divisor);                // g0 * divisor
@@ -136,7 +144,7 @@ inline series<FpType> divideHelper(ZBCL<FpType> fs, ZBCL<FpType> divisor) {
 template <typename FpType>
 inline ZBCL<FpType> div_raw(ZBCL<FpType> fs, ZBCL<FpType> gs) {
     if (fs.is_empty()) return ZBCL<FpType>{};
-    return infinitesum(divideHelper(std::move(fs), std::move(gs)));
+    return infsum(divideHelper(std::move(fs), std::move(gs)));
 }
 
 // div_online(fs, gs): fs / gs. shiftUpToTwo normalises the divisor's leading exponent
