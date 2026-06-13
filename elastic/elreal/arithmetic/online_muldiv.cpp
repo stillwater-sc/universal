@@ -188,6 +188,51 @@ int verify_div_dense_shallow() {
     return n;
 }
 
+// (6) DEEP reach of the lazy, pull-driven operator (#1061 div host-floor lift).
+// The whole point of online div is on-demand precision: pulling deeper must keep
+// refining, not stop at an artificial floor. Before the host-floor was gated to
+// narrow hosts only, twoDivZBCL's min_exp+2k guard capped a single-block quotient
+// at ~17 blocks / ~260 digits on a double host -- ~33 digits short of the eager
+// div()'s reach. This asserts the lazy quotient now reaches the host's natural
+// ~19-component ceiling, exactly matches eager div() block-for-block over the
+// shared prefix, and stays 0-overlap the whole way down.
+int verify_div_deep_reach() {
+    int n = 0;
+    const double cases[][2] = { {1, 3}, {1, 7}, {22, 7}, {355, 113} };
+    for (const auto& c : cases) {
+        ZBCL<double> q_on = div_online(nat(c[0]), nat(c[1]));
+        ZBCL<double> q_eg = div(nat(c[0]), nat(c[1]), 40);   // eager, floor already lifted
+        auto on = q_on.take(40);
+        auto eg = q_eg.take(40);
+
+        // Reach: a wide host (double, k=53) must refine to its ~19-component
+        // ceiling, not stop at the old min_exp+2k (~-915, ~17 blocks) floor.
+        if (on.size() < 19) {
+            std::cout << "deep div_online(" << c[0] << "/" << c[1] << "): only "
+                      << on.size() << " blocks (<19: host-floor not lifted?)\n"; ++n;
+        }
+        const long lastE = on.empty() ? 0 : static_cast<long>(static_cast<int>(on.back().exponent()));
+        if (lastE > -950) {
+            std::cout << "deep div_online(" << c[0] << "/" << c[1] << "): lastE=" << lastE
+                      << " (> -950: quotient truncated above the host ceiling)\n"; ++n;
+        }
+
+        // 0-overlap all the way down (the floor's stated reason for existing).
+        n += check_canonical(q_on, 19, "div_online deep");
+
+        // Lazy must equal eager block-for-block over the shared prefix: same
+        // exponents AND same significands (exact, via the dyadic oracle).
+        const std::size_t W = std::min(on.size(), eg.size());
+        ZBCL<double> on_p{}, eg_p{};
+        for (std::size_t i = W; i-- > 0;) { on_p = ZBCL<double>::cons(on[i], on_p); eg_p = ZBCL<double>::cons(eg[i], eg_p); }
+        if (exact_value(on_p) != exact_value(eg_p)) {
+            std::cout << "deep div_online(" << c[0] << "/" << c[1]
+                      << "): lazy != eager over " << W << "-block prefix\n"; ++n;
+        }
+    }
+    return n;
+}
+
 } // anonymous
 
 int main()
@@ -203,6 +248,7 @@ try {
     nrOfFailedTestCases += verify_div_single();
     nrOfFailedTestCases += verify_div_sparse_multiblock();
     nrOfFailedTestCases += verify_div_dense_shallow();
+    nrOfFailedTestCases += verify_div_deep_reach();
 
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

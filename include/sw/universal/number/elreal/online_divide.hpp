@@ -1,6 +1,10 @@
 // !!! WORK IN PROGRESS -- PARTIAL. NOT INCLUDED BY ANY PRODUCTION CODE. !!!
 // Status:
-//  * SINGLE-BLOCK DIVISOR: WORKS. 1/7, 1/3, 22/7, ... match eager div(); 6/3 terminates.
+//  * SINGLE-BLOCK DIVISOR: WORKS. 1/7, 1/3, 22/7, ... match eager div() block-for-block;
+//    6/3 terminates. The lazy quotient refines to the host's natural ~19-component ceiling
+//    on demand: the min_exp+2k floor is now gated to narrow hosts only (#1061), so on a
+//    wide host div_online(1,3) reaches ~293 digits / 19 blocks -- the same depth as eager
+//    div() -- instead of stopping ~33 digits short. Guarded by verify_div_deep_reach.
 //  * SPARSE (power-of-two) MULTI-BLOCK DIVISOR: WORKS to the host floor with the wide
 //    block exponent (integer<256>, #1066): 1/(1+2^-55) -> full depth, 0-overlap, exact
 //    reconstruction q*b == 1. (divideHelper recurses with newdiv = g0*divisor, doubling
@@ -15,15 +19,16 @@
 //      blocks in milliseconds (was: did not terminate). Also matched the dissertation on the
 //      zero case ([x]) and on using plain infSum (not a drop-leading-zero "addition") in
 //      infsumRec.
-//    - REMAINING (host floor): within ~2k of the host's smallest normal exponent, the EFTs
-//      cannot keep blocks k apart (the slot k below is subnormal), so 0-overlap breaks. The
-//      eager div() survives by re-running priestRenorm + keep_normalised each step; a
-//      streaming producer cannot. twoDivZBCL now has a min_exp+2k floor guard, but the
-//      INTERNAL streaming products newfs = fs*divisorTail and newdiv = g0*divisor (mul_online
-//      / singleMult) still reach the floor and emit subnormal residuals that break k-spacing
-//      when infSum consumes them. Fix: uniform host-floor handling across the streaming
-//      multiply path (the "div floor rework"). Until then a dense divisor is correct only
-//      down to ~the floor margin.
+//    - REMAINING (host floor, DENSE only): twoDivZBCL's own floor is gated to narrow hosts
+//      (#1061), so the single-block and sparse paths refine to the host ceiling. But a DENSE
+//      divisor's INTERNAL streaming products newfs = fs*divisorTail and newdiv = g0*divisor
+//      (mul_online / singleMult) are NOT yet gated: near ~2k above the host's smallest normal
+//      exponent the EFTs there can no longer keep blocks k apart (the slot k below is
+//      subnormal), so they emit subnormal residuals that break k-spacing when infSum consumes
+//      them, and 0-overlap breaks. The eager div() survives by re-running priestRenorm +
+//      keep_normalised each step; a streaming producer cannot. Fix: uniform host-floor
+//      handling across the streaming multiply path (the "div floor rework"). Until then a
+//      DENSE divisor is correct only down to ~the floor margin (tests keep it shallow).
 //
 // online_divide.hpp: McCleeary LFPERA streaming division (dissertation 4.2.6).
 //
@@ -87,16 +92,30 @@ inline ZBCL<FpType> twoDivZBCL(block<FpType> x, block<FpType> y) {
         return ZBCL<FpType>::singleton(x);
     }
     auto se = block_two_div_rem(x, y);                // (s, e): x/y = s + e/y
-    // Host-floor guard. McCleeary's twoDiv works in exact (unbounded-exponent)
-    // arithmetic; on a finite host, within ~2k of the smallest normal exponent
-    // the EFT can no longer place the remainder a full k below the quotient (that
-    // slot is subnormal), so twoDiv's "e is >= k below s" guarantee fails and the
-    // emitted stream stops being 0-overlap. The eager div() survives this by
-    // re-running priestRenorm + keep_normalised every step; a streaming producer
-    // cannot post-renormalise, so we must STOP a margin (2k) above the floor while
-    // every block can still hold its k bits. (Matches divide.hpp's exp_floor.)
-    constexpr int host_exp_floor =
-        std::numeric_limits<FpType>::min_exponent + 2 * block<FpType>::k;
+    // Host-floor guard, gated to narrow hosts -- mirrors divide.hpp's exp_floor.
+    //
+    // block_two_div_rem is scale-invariant: the quotient/remainder significands
+    // it produces stay in [1,2) (always a normal host value) and the scale is
+    // carried symbolically in the wide block exponent (integer<256>, #1066), so a
+    // block at an arbitrarily negative combined exponent is still well-formed and
+    // 0-overlap accounting holds. On a WIDE host (double/float, k>=24) the floor
+    // is therefore defensive, not load-bearing: lifting it lets the lazy quotient
+    // refine to the host's natural ~19-component ceiling and beyond on demand
+    // (e.g. div_online(1,3) reaches the eager div()'s depth instead of stopping
+    // ~33 digits short). This is McCleeary's unbounded-exponent stream, the reason
+    // the block exponent was widened in the first place.
+    //
+    // A NARROW host (bfloat16 k=8, fp16 k=11) genuinely denormalises a couple of
+    // block-widths above min_exponent -- there block_two_div_rem can no longer
+    // place the remainder a full k below the quotient, so twoDiv's "e is >= k
+    // below s" guarantee fails and the stream stops being 0-overlap. A streaming
+    // producer cannot post-renormalise (the eager div() re-runs priestRenorm +
+    // keep_normalised every step), so a narrow host keeps the min_exp+2k floor
+    // (the same denormal floor #1044 respects).
+    constexpr int k = block<FpType>::k;
+    constexpr int host_exp_floor = (k >= 24)
+        ? (std::numeric_limits<int>::min() / 2)                       // wide host: no floor
+        : (std::numeric_limits<FpType>::min_exponent + 2 * k);        // narrow host: denormal floor
     const block<FpType> s = se.first;
     if (!s.is_normalised() || s.exponent() < host_exp_floor) return ZBCL<FpType>{};
     const block<FpType> e = se.second;                // single remainder block x - s*y
