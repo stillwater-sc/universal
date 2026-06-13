@@ -50,7 +50,7 @@ namespace sw { namespace universal {
             if (exp == 0) break;
             base *= base;
         }
-        return takum<nbits, BlockType>(result);
+        return takum<nbits, es, BlockType>(result);
     }
 
     // clang <complex> implementation is calling these functions so we need implementations for takum

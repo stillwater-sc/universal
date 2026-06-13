@@ -9,17 +9,6 @@
 
 namespace sw { namespace universal {
 
-// Square root. Negative input or NaR produces NaR (Not-a-Real).
-template<unsigned nbits, unsigned rbits, typename bt>
-inline takum<nbits, rbits, bt> sqrt(const takum<nbits, rbits, bt>& a) {
-	if (a.isneg() || a.isnar()) {
-		takum<nbits, rbits, bt> p;
-		p.setnar();
-		return p;
-	}
-	return takum<nbits, rbits, bt>(std::sqrt(double(a)));
-}
-
 // Reciprocal square root.
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum<nbits, rbits, bt> rsqrt(const takum<nbits, rbits, bt>& a) {

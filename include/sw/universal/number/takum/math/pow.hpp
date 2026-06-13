@@ -25,6 +25,8 @@ takum<nbits, rbits, bt> pow(const takum<nbits, rbits, bt>& x, double y) {
 }
 
 // Exact integer power via repeated squaring; no double round-trip.
+#ifndef UNIVERSAL_MATH_INTEGER_POWER_DEFINED
+#define UNIVERSAL_MATH_INTEGER_POWER_DEFINED
 template<typename Scalar>
 Scalar integer_power(Scalar base, int exponent) {
 	if (exponent < 0) {
@@ -46,5 +48,6 @@ Scalar integer_power(Scalar base, int exponent) {
 	}
 	return base * power;
 }
+#endif // UNIVERSAL_MATH_INTEGER_POWER_DEFINED
 
 }} // namespace sw::universal
