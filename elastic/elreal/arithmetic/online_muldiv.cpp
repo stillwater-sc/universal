@@ -160,13 +160,10 @@ int verify_div_sparse_multiblock() {
     return n;
 }
 
-// (5) DENSE multi-block divisor (blocks NOT powers of two), shallow. Regression
-// for the twoDivZBCL single-block fix (#1061): before it, a dense divisor's
-// long division fanned out and did not terminate even at take(2). Now the first
-// blocks are produced in milliseconds, 0-overlap, matching eager div(). Kept
-// shallow (4 blocks, well above the host-floor margin) because deeper dense
-// division still has an open host-floor 0-overlap issue in the streaming
-// multiply path (see online_divide.hpp banner) -- not exercised here.
+// (5) DENSE multi-block divisor (blocks NOT powers of two), shallow. Dense divisors
+// route to the Newton-Raphson reciprocal path (a/b = a*(1/b), #1068): the faithful
+// long division cost-explodes for them. This checks the shallow prefix matches eager
+// div(); verify_div_dense_deep below exercises the full (capped) depth.
 int verify_div_dense_shallow() {
     int n = 0;
     // 2-block operands with non-power-of-two low blocks.
@@ -184,6 +181,45 @@ int verify_div_dense_shallow() {
     long double mag = std::fabs(zval(qe, W)) + 1e-300L;
     if (rel > mag * 1e-13L) {
         std::cout << "dense div != eager (rel=" << static_cast<double>(rel) << ")\n"; ++n;
+    }
+    return n;
+}
+
+// (5b) DENSE divisor, DEEP (Newton-Raphson reciprocal path, #1068). Before the
+// Newton routing a dense divisor's long division did not terminate past ~7 blocks;
+// now div_online(a, b) for a dense b produces a multi-block quotient (capped at the
+// mul_online canonicalisation limit, ~8 blocks / ~118 digits -- see #1068), 0-overlap
+// canonical, that reconstructs q*b == a. Regression against re-introducing the
+// fan-out (would hang) or breaking the reciprocal (recon would drift).
+int verify_div_dense_deep() {
+    int n = 0;
+    const struct { double a, b; } cases[] = {
+        {1.357630, 1.689380}, {2.718281, 3.141592}, {9.876540, 0.333111}
+    };
+    for (const auto& c : cases) {
+        ZBCL<double> a = add(nat(c.a), nat(std::ldexp(1.23, -58)));
+        ZBCL<double> b = add(nat(c.b), nat(std::ldexp(1.71, -57)));   // dense (non-power-of-two)
+        ZBCL<double> q = div_online(a, b);                            // Newton path
+        auto blocks = q.take(12);
+
+        // Terminates with a genuine multi-block quotient (not the old depth-7 stall).
+        if (blocks.size() < 6) {
+            std::cout << "dense-deep div(" << c.a << "/" << c.b << "): only "
+                      << blocks.size() << " blocks (<6: Newton path regressed?)\n"; ++n;
+        }
+        // 0-overlap canonical the whole way (the property the fan-out broke).
+        n += check_canonical(q, blocks.size(), "div_online dense-deep");
+
+        // Reconstruction q*b == a. Kept shallow (take 5) so the mul_online operand
+        // stays under its canonicalisation limit (#1068); host-precision spot check.
+        ZBCL<double> recon = mul_online(q, b);
+        long double resid = std::fabs(zval(a, 5) - zval(recon, 5));
+        long double mag   = std::fabs(zval(a, 5)) + 1e-300L;
+        if (resid > mag * 1e-13L) {
+            std::cout << "dense-deep div(" << c.a << "/" << c.b
+                      << "): |a - q*b|/|a| = " << static_cast<double>(resid / mag)
+                      << " (reconstruction drifted)\n"; ++n;
+        }
     }
     return n;
 }
@@ -248,6 +284,7 @@ try {
     nrOfFailedTestCases += verify_div_single();
     nrOfFailedTestCases += verify_div_sparse_multiblock();
     nrOfFailedTestCases += verify_div_dense_shallow();
+    nrOfFailedTestCases += verify_div_dense_deep();
     nrOfFailedTestCases += verify_div_deep_reach();
 
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
