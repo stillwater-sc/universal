@@ -27,6 +27,8 @@ posit<nbits,es> pow(posit<nbits,es> x, double y) {
 }
 
 // calculate an integer power function base^int
+#ifndef UNIVERSAL_MATH_INTEGER_POWER_DEFINED
+#define UNIVERSAL_MATH_INTEGER_POWER_DEFINED
 template<typename Scalar>
 Scalar integer_power(Scalar base, int exponent) {
 	if (exponent < 0) {
@@ -48,5 +50,6 @@ Scalar integer_power(Scalar base, int exponent) {
 	}
 	return base * power;
 }
+#endif // UNIVERSAL_MATH_INTEGER_POWER_DEFINED
 
 }} // namespace sw::universal

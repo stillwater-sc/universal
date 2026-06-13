@@ -1,32 +1,30 @@
-#pragma once
-// pow.hpp: pow functions for posits
+// pow.hpp: power functions for takums
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#pragma once
+#include <cmath>
 
 namespace sw { namespace universal {
 
-// the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
-// correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
-
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> pow(posit<nbits,es,bt> x, posit<nbits, es, bt> y) {
-	return posit<nbits,es,bt>(std::pow(double(x), double(y)));
-}
-		
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> pow(posit<nbits,es,bt> x, int y) {
-	return posit<nbits,es,bt>(std::pow(double(x), double(y)));
-}
-		
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> pow(posit<nbits,es,bt> x, double y) {
-	return posit<nbits,es,bt>(std::pow(double(x), y));
+template<unsigned nbits, unsigned rbits, typename bt>
+takum<nbits, rbits, bt> pow(const takum<nbits, rbits, bt>& x, const takum<nbits, rbits, bt>& y) {
+	return takum<nbits, rbits, bt>(std::pow(double(x), double(y)));
 }
 
-// calculate an integer power function base^int
+template<unsigned nbits, unsigned rbits, typename bt>
+takum<nbits, rbits, bt> pow(const takum<nbits, rbits, bt>& x, int y) {
+	return takum<nbits, rbits, bt>(std::pow(double(x), double(y)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+takum<nbits, rbits, bt> pow(const takum<nbits, rbits, bt>& x, double y) {
+	return takum<nbits, rbits, bt>(std::pow(double(x), y));
+}
+
+// Exact integer power via repeated squaring; no double round-trip.
 #ifndef UNIVERSAL_MATH_INTEGER_POWER_DEFINED
 #define UNIVERSAL_MATH_INTEGER_POWER_DEFINED
 template<typename Scalar>
