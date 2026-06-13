@@ -22,7 +22,7 @@ takum<nbits, rbits, bt> remainder(const takum<nbits, rbits, bt>& x, const takum<
 // Fractional part: x - trunc(x)
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> frac(const takum<nbits, rbits, bt>& x) {
-	return takum<nbits, rbits, bt>(double(x) - long(double(x)));
+	return takum<nbits, rbits, bt>(double(x) - std::trunc(double(x)));
 }
 
 }} // namespace sw::universal
