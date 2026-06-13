@@ -55,4 +55,4 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-//#include <universal/number/takum/mathlib.hpp>
+#include <universal/number/takum/mathlib.hpp>
