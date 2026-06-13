@@ -160,13 +160,10 @@ int verify_div_sparse_multiblock() {
     return n;
 }
 
-// (5) DENSE multi-block divisor (blocks NOT powers of two), shallow. Regression
-// for the twoDivZBCL single-block fix (#1061): before it, a dense divisor's
-// long division fanned out and did not terminate even at take(2). Now the first
-// blocks are produced in milliseconds, 0-overlap, matching eager div(). Kept
-// shallow (4 blocks, well above the host-floor margin) because deeper dense
-// division still has an open host-floor 0-overlap issue in the streaming
-// multiply path (see online_divide.hpp banner) -- not exercised here.
+// (5) DENSE multi-block divisor (blocks NOT powers of two), shallow. Dense divisors
+// route to the Newton-Raphson reciprocal path (a/b = a*(1/b), #1068): the faithful
+// long division cost-explodes for them. This checks the shallow prefix matches eager
+// div(); verify_div_dense_deep below exercises the full (capped) depth.
 int verify_div_dense_shallow() {
     int n = 0;
     // 2-block operands with non-power-of-two low blocks.
@@ -188,6 +185,90 @@ int verify_div_dense_shallow() {
     return n;
 }
 
+// (5b) DENSE divisor, DEEP (Newton-Raphson reciprocal path, #1068). Before the
+// Newton routing a dense divisor's long division did not terminate past ~7 blocks;
+// now div_online(a, b) for a dense b produces a multi-block quotient (capped at the
+// mul_online canonicalisation limit, ~8 blocks / ~118 digits -- see #1068), 0-overlap
+// canonical, that reconstructs q*b == a. Regression against re-introducing the
+// fan-out (would hang) or breaking the reciprocal (recon would drift).
+int verify_div_dense_deep() {
+    int n = 0;
+    const struct { double a, b; } cases[] = {
+        {1.357630, 1.689380}, {2.718281, 3.141592}, {9.876540, 0.333111}
+    };
+    for (const auto& c : cases) {
+        ZBCL<double> a = add(nat(c.a), nat(std::ldexp(1.23, -58)));
+        ZBCL<double> b = add(nat(c.b), nat(std::ldexp(1.71, -57)));   // dense (non-power-of-two)
+        ZBCL<double> q = div_online(a, b);                            // Newton path
+        auto blocks = q.take(12);
+
+        // Terminates with a genuine multi-block quotient (not the old depth-7 stall).
+        if (blocks.size() < 6) {
+            std::cout << "dense-deep div(" << c.a << "/" << c.b << "): only "
+                      << blocks.size() << " blocks (<6: Newton path regressed?)\n"; ++n;
+        }
+        // 0-overlap canonical the whole way (the property the fan-out broke).
+        n += check_canonical(q, blocks.size(), "div_online dense-deep");
+
+        // Reconstruction q*b == a. Kept shallow (take 5) so the mul_online operand
+        // stays under its canonicalisation limit (#1068); host-precision spot check.
+        ZBCL<double> recon = mul_online(q, b);
+        long double resid = std::fabs(zval(a, 5) - zval(recon, 5));
+        long double mag   = std::fabs(zval(a, 5)) + 1e-300L;
+        if (resid > mag * 1e-13L) {
+            std::cout << "dense-deep div(" << c.a << "/" << c.b
+                      << "): |a - q*b|/|a| = " << static_cast<double>(resid / mag)
+                      << " (reconstruction drifted)\n"; ++n;
+        }
+    }
+    return n;
+}
+
+// (6) DEEP reach of the lazy, pull-driven operator (#1061 div host-floor lift).
+// The whole point of online div is on-demand precision: pulling deeper must keep
+// refining, not stop at an artificial floor. Before the host-floor was gated to
+// narrow hosts only, twoDivZBCL's min_exp+2k guard capped a single-block quotient
+// at ~17 blocks / ~260 digits on a double host -- ~33 digits short of the eager
+// div()'s reach. This asserts the lazy quotient now reaches the host's natural
+// ~19-component ceiling, exactly matches eager div() block-for-block over the
+// shared prefix, and stays 0-overlap the whole way down.
+int verify_div_deep_reach() {
+    int n = 0;
+    const double cases[][2] = { {1, 3}, {1, 7}, {22, 7}, {355, 113} };
+    for (const auto& c : cases) {
+        ZBCL<double> q_on = div_online(nat(c[0]), nat(c[1]));
+        ZBCL<double> q_eg = div(nat(c[0]), nat(c[1]), 40);   // eager, floor already lifted
+        auto on = q_on.take(40);
+        auto eg = q_eg.take(40);
+
+        // Reach: a wide host (double, k=53) must refine to its ~19-component
+        // ceiling, not stop at the old min_exp+2k (~-915, ~17 blocks) floor.
+        if (on.size() < 19) {
+            std::cout << "deep div_online(" << c[0] << "/" << c[1] << "): only "
+                      << on.size() << " blocks (<19: host-floor not lifted?)\n"; ++n;
+        }
+        const long lastE = on.empty() ? 0 : static_cast<long>(static_cast<int>(on.back().exponent()));
+        if (lastE > -950) {
+            std::cout << "deep div_online(" << c[0] << "/" << c[1] << "): lastE=" << lastE
+                      << " (> -950: quotient truncated above the host ceiling)\n"; ++n;
+        }
+
+        // 0-overlap all the way down (the floor's stated reason for existing).
+        n += check_canonical(q_on, 19, "div_online deep");
+
+        // Lazy must equal eager block-for-block over the shared prefix: same
+        // exponents AND same significands (exact, via the dyadic oracle).
+        const std::size_t W = std::min(on.size(), eg.size());
+        ZBCL<double> on_p{}, eg_p{};
+        for (std::size_t i = W; i-- > 0;) { on_p = ZBCL<double>::cons(on[i], on_p); eg_p = ZBCL<double>::cons(eg[i], eg_p); }
+        if (exact_value(on_p) != exact_value(eg_p)) {
+            std::cout << "deep div_online(" << c[0] << "/" << c[1]
+                      << "): lazy != eager over " << W << "-block prefix\n"; ++n;
+        }
+    }
+    return n;
+}
+
 } // anonymous
 
 int main()
@@ -203,6 +284,8 @@ try {
     nrOfFailedTestCases += verify_div_single();
     nrOfFailedTestCases += verify_div_sparse_multiblock();
     nrOfFailedTestCases += verify_div_dense_shallow();
+    nrOfFailedTestCases += verify_div_dense_deep();
+    nrOfFailedTestCases += verify_div_deep_reach();
 
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
