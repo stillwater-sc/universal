@@ -24,11 +24,35 @@ namespace sw { namespace universal {
 
 // singleMultHelper f gs: lazy series of the 2-block products [f*g_0, f*g_1, ...].
 // FCL.hs: singleMultHelper f (g:gs) = let (s,e) = twoMult f g in [s,e] : singleMultHelper f gs
+//
+// Host-floor arrest (#1068). block_two_mult places the residual `low` a full k below
+// `high`. Once a product reaches the host's smallest normal exponent these blocks
+// DENORMALISE, and a subnormal block cannot hold its k significand bits -- so the
+// streaming product can no longer keep consecutive blocks k apart and the 0-overlap
+// invariant breaks when infSum consumes them (observed: two subnormal blocks ~22 apart
+// near 2^-1074). The eager mul()/div() survive this by re-running priestRenorm +
+// keep_normalised every step; a streaming producer cannot, so we drop subnormal blocks
+// at the source, exactly as the single-block twoDivZBCL stops on a non-normalised block:
+//   - high genuinely subnormal -> the whole term is below the floor; since gs is
+//                        descending every later f*g_i is smaller too, so stop the series.
+//   - low genuinely subnormal  -> emit just `high` (the dropped residual is < 2^-1022,
+//                        below host precision); the next f*g_i's high then subnormals out.
+// "Genuinely subnormal" means non-zero AND not is_normalised(): a ZERO product block
+// (e.g. f * a zero g block, or an exact f*g with no residual) is NOT a floor condition --
+// it is value-neutral and must pass through (drop_zeros handles it downstream), not stop
+// the series. This drops ONLY genuinely subnormal blocks (unlike a fixed min_exp+2k cut,
+// which over-trims by ~2k), so the product still refines to the host's natural boundary.
 template <typename FpType>
 inline series<FpType> singleMultHelper(const block<FpType>& f, ZBCL<FpType> gs) {
     if (gs.is_empty()) return series<FpType>{};
     auto pr = block_two_mult(f, gs.head());               // (high, low), exact f*g
-    ZBCL<FpType> term = ZBCL<FpType>::cons(pr.first, ZBCL<FpType>::singleton(pr.second));
+    const auto subnormal = [](const block<FpType>& b) {
+        return !b.is_zero_block() && !b.is_normalised();
+    };
+    if (subnormal(pr.first)) return series<FpType>{};     // high below the floor: stop
+    ZBCL<FpType> term = subnormal(pr.second)
+        ? ZBCL<FpType>::singleton(pr.first)               // drop subnormal residual
+        : ZBCL<FpType>::cons(pr.first, ZBCL<FpType>::singleton(pr.second));
     ZBCL<FpType> rest = gs.tail();
     block<FpType> fcopy = f;
     return series<FpType>::cons(term, [fcopy, rest]() { return singleMultHelper(fcopy, rest); });

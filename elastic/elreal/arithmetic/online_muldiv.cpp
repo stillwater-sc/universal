@@ -186,11 +186,14 @@ int verify_div_dense_shallow() {
 }
 
 // (5b) DENSE divisor, DEEP (Newton-Raphson reciprocal path, #1068). Before the
-// Newton routing a dense divisor's long division did not terminate past ~7 blocks;
-// now div_online(a, b) for a dense b produces a multi-block quotient (capped at the
-// mul_online canonicalisation limit, ~8 blocks / ~118 digits -- see #1068), 0-overlap
-// canonical, that reconstructs q*b == a. Regression against re-introducing the
-// fan-out (would hang) or breaking the reciprocal (recon would drift).
+// Newton routing a dense divisor's long division did not terminate past ~7 blocks.
+// With the streaming-multiply host-floor arrest (#1068) the dense quotient now refines
+// to the host floor -- ~17 components / ~265 digits for a double host, the same region
+// as the single-block path -- 0-overlap canonical, reconstructing q*b == a. (Earlier it
+// was capped at ~8 blocks because mul_online emitted subnormal blocks that broke
+// 0-overlap; singleMultHelper now drops those at the source.) Regression against
+// re-introducing the fan-out (would hang), the subnormal 0-overlap break, or breaking
+// the reciprocal (recon would drift).
 int verify_div_dense_deep() {
     int n = 0;
     const struct { double a, b; } cases[] = {
@@ -200,21 +203,33 @@ int verify_div_dense_deep() {
         ZBCL<double> a = add(nat(c.a), nat(std::ldexp(1.23, -58)));
         ZBCL<double> b = add(nat(c.b), nat(std::ldexp(1.71, -57)));   // dense (non-power-of-two)
         ZBCL<double> q = div_online(a, b);                            // Newton path
-        auto blocks = q.take(12);
+        auto blocks = q.take(24);
 
-        // Terminates with a genuine multi-block quotient (not the old depth-7 stall).
-        if (blocks.size() < 6) {
+        // Refines deep into the host's representable range (not the old ~8-block cap).
+        if (blocks.size() < 14) {
             std::cout << "dense-deep div(" << c.a << "/" << c.b << "): only "
-                      << blocks.size() << " blocks (<6: Newton path regressed?)\n"; ++n;
+                      << blocks.size() << " blocks (<14: host-floor arrest regressed?)\n"; ++n;
         }
-        // 0-overlap canonical the whole way (the property the fan-out broke).
+        const long lastE = blocks.empty() ? 0 : static_cast<long>(static_cast<int>(blocks.back().exponent()));
+        if (lastE > -750) {
+            std::cout << "dense-deep div(" << c.a << "/" << c.b << "): lastE=" << lastE
+                      << " (> -750: quotient truncated above the host floor)\n"; ++n;
+        }
+        // Every block normal (the subnormal blocks that broke 0-overlap are gone) and
+        // 0-overlap canonical the whole way down.
+        for (const auto& bl : blocks) {
+            if (!bl.is_normalised() && !bl.is_zero_block()) {
+                std::cout << "dense-deep div(" << c.a << "/" << c.b
+                          << "): subnormal block at E=" << static_cast<long>(static_cast<int>(bl.exponent())) << "\n"; ++n;
+            }
+        }
         n += check_canonical(q, blocks.size(), "div_online dense-deep");
 
-        // Reconstruction q*b == a. Kept shallow (take 5) so the mul_online operand
-        // stays under its canonicalisation limit (#1068); host-precision spot check.
+        // Reconstruction q*b == a, now exercised deep (mul_online is 0-overlap to the
+        // host floor): exact match over the shared prefix via the dyadic oracle.
         ZBCL<double> recon = mul_online(q, b);
-        long double resid = std::fabs(zval(a, 5) - zval(recon, 5));
-        long double mag   = std::fabs(zval(a, 5)) + 1e-300L;
+        long double resid = std::fabs(zval(a, 16) - zval(recon, 16));
+        long double mag   = std::fabs(zval(a, 16)) + 1e-300L;
         if (resid > mag * 1e-13L) {
             std::cout << "dense-deep div(" << c.a << "/" << c.b
                       << "): |a - q*b|/|a| = " << static_cast<double>(resid / mag)
