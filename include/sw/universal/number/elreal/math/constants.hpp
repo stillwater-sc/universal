@@ -162,6 +162,14 @@ inline ZBCL<FpType> phi_zbcl(std::size_t depth = 16) {
 // The Euler-Mascheroni constant has no rapidly-converging elementary series, so
 // (unlike pi/e/ln2) it needs a real algorithm. The per-term work is dominated by
 // the product w_k * H_k; the long tail of terms contributes only a few limbs each.
+//
+// HOST RANGE: the intermediate w_k = (n^k/k!)^2 peaks at ~exp(2n) near k=n. n grows
+// with the requested precision (n ~ D*ln(10)/4), and the block significand carries
+// that magnitude, so a NARROW-exponent host (float/bfloat16, max ~10^38) overflows
+// once n exceeds ~44 (a few blocks of depth). High-precision euler_gamma is therefore
+// a double-host generator; on narrow hosts keep depth shallow (n below the overflow).
+// Validated to 307 digits on double (#1053); eager like the other constants -- the
+// online-ops speedup for the whole series layer is #1061 Phase 3.
 template <typename FpType>
 inline ZBCL<FpType> euler_gamma_zbcl(std::size_t depth = 16) {
     using B = block<FpType>;
