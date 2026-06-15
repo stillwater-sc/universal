@@ -46,7 +46,10 @@ inline dyadic zbcl_to_dyadic(const ZBCL<FpType>& z, std::size_t maxBlocks = 512)
 	dyadic acc;  // 0
 	for (const auto& b : z.take(maxBlocks)) {
 		dyadic d = dyadic::from_double(static_cast<double>(b.v));
-		d.scale += b.exp;       // block value == v * 2^exp
+		d.scale += static_cast<int>(b.exp);   // block value == v * 2^exp; b.exp is
+		                                      // a wide integer<256> (#1066) -- the
+		                                      // offset fits int for any real host
+		                                      // (combined exponent ~ +/- 1074).
 		acc = acc + d;
 	}
 	return acc;

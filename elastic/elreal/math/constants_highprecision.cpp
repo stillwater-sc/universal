@@ -11,8 +11,8 @@
 // constant to the mpmath 320-digit reference to hundreds of digits. It already
 // caught two bugs the double-tolerance test missed:
 //   - e_zbcl summed host-double 1/n! terms -> only ~17 correct digits (now fixed);
-//   - euler_gamma_zbcl returns a bare double literal (~17 digits) -- a stub with no
-//     high-precision algorithm yet (#1053), excluded below.
+//   - euler_gamma_zbcl returned a bare double literal (~17 digits) -- now a real
+//     Brent-McMillan B1 generator reaching the same digit ceiling (#1053).
 //
 // Ceiling
 // -------
@@ -94,18 +94,20 @@ try {
     ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if REGRESSION_LEVEL_4
-    // The nine constants with both a high-precision generator and a reference
-    // string. euler_gamma is excluded: euler_gamma_zbcl is a double-precision stub
-    // (no high-precision algorithm yet) -- tracked in #1053.
-    nrOfFailedTestCases += check("pi",      pi_zbcl<double>(kDepth),      s_pi,      reportTestCases);
-    nrOfFailedTestCases += check("e",       e_zbcl<double>(kDepth),       s_e,       reportTestCases);
-    nrOfFailedTestCases += check("ln2",     ln2_zbcl<double>(kDepth),     s_ln2,     reportTestCases);
-    nrOfFailedTestCases += check("ln10",    ln10_zbcl<double>(kDepth),    s_ln10,    reportTestCases);
-    nrOfFailedTestCases += check("log2_10", log2_10_zbcl<double>(kDepth), s_log2_10, reportTestCases);
-    nrOfFailedTestCases += check("phi",     phi_zbcl<double>(kDepth),     s_phi,     reportTestCases);
-    nrOfFailedTestCases += check("sqrt2",   sqrt2_zbcl<double>(kDepth),   s_sqrt2,   reportTestCases);
-    nrOfFailedTestCases += check("sqrt3",   sqrt3_zbcl<double>(kDepth),   s_sqrt3,   reportTestCases);
-    nrOfFailedTestCases += check("sqrt5",   sqrt5_zbcl<double>(kDepth),   s_sqrt5,   reportTestCases);
+    // The ten constants with both a high-precision generator and a reference string.
+    nrOfFailedTestCases += check("pi",          pi_zbcl<double>(kDepth),          s_pi,          reportTestCases);
+    nrOfFailedTestCases += check("e",           e_zbcl<double>(kDepth),           s_e,           reportTestCases);
+    nrOfFailedTestCases += check("ln2",         ln2_zbcl<double>(kDepth),         s_ln2,         reportTestCases);
+    nrOfFailedTestCases += check("ln10",        ln10_zbcl<double>(kDepth),        s_ln10,        reportTestCases);
+    nrOfFailedTestCases += check("log2_10",     log2_10_zbcl<double>(kDepth),     s_log2_10,     reportTestCases);
+    nrOfFailedTestCases += check("phi",         phi_zbcl<double>(kDepth),         s_phi,         reportTestCases);
+    nrOfFailedTestCases += check("sqrt2",       sqrt2_zbcl<double>(kDepth),       s_sqrt2,       reportTestCases);
+    nrOfFailedTestCases += check("sqrt3",       sqrt3_zbcl<double>(kDepth),       s_sqrt3,       reportTestCases);
+    nrOfFailedTestCases += check("sqrt5",       sqrt5_zbcl<double>(kDepth),       s_sqrt5,       reportTestCases);
+    // euler_gamma via Brent-McMillan B1 (#1053). Like the other constants it is an
+    // eager-batch generator; it is the slowest here (no elementary series + a slow
+    // shared ln2) -- the online-ops speedup for the whole series layer is #1061 Ph3.
+    nrOfFailedTestCases += check("euler_gamma", euler_gamma_zbcl<double>(kDepth), s_euler_gamma, reportTestCases);
 #else
     std::cout << "  high-precision constant validation runs at REGRESSION_LEVEL_4 (stress) only\n";
 #endif

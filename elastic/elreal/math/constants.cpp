@@ -100,7 +100,18 @@ int verify_radicals(double tol, const std::string& host, std::size_t depth) {
         double rhs = est::approx(add(phi, from_native<FpType>(1.0)));
         if (std::abs(lhs - rhs) > tol) { std::cout << host << " phi^2 != phi+1\n"; ++n; }
     }
-    n += check_value(euler_gamma_zbcl<FpType>(depth), std::numbers::egamma_v<double>, tol, host + " egamma");
+    // euler_gamma: a host-tolerance smoke check, only on hosts with float precision
+    // or better. Its Brent-McMillan generator (a) is O(n) eager terms -- slow at depth
+    // -- and (b) carries intermediate w_k = (n^k/k!)^2 that peaks at ~exp(2n), which
+    // overflows a narrow exponent range once n exceeds ~44 (float at depth >= 3). A
+    // shallow depth 2 keeps it fast and in range while clearing 1e-6/1e-12 (depth 2
+    // gives ~14 digits on float). bfloat16 (7-bit significand) is skipped: it cannot
+    // carry the H_k / A/B / ln(n) computation accurately -- the value oscillates ~5%
+    // around 0.5772 with depth, so any "pass" there is coincidental. Deep euler_gamma
+    // validation is double-only (#1053, LEVEL_4 high-precision test).
+    if constexpr (std::numeric_limits<FpType>::digits >= 24) {
+        n += check_value(euler_gamma_zbcl<FpType>(2), std::numbers::egamma_v<double>, tol, host + " egamma");
+    }
     return n;
 }
 
