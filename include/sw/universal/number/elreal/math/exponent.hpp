@@ -56,12 +56,11 @@ inline ZBCL<FpType> exp(ZBCL<FpType> x, std::size_t depth = 4) {
     ZBCL<FpType> term = from_native<FpType>(1.0);          // term_0
     terms.push_back(term);
     for (std::size_t n = 1; n < 8 * depth; ++n) {
-        // term_n = term_{n-1} * xr / n. Divide by the small integer n with a
-        // mul_scalar by its (host-double) reciprocal -- O(depth) rather than the
-        // O(depth^2)+ of a full div() -- keeping x^n high-precision while the 1/n
-        // coefficient carries host-double accuracy (ample for exp's range).
-        term = mul_scalar(B{ static_cast<FpType>(1.0 / static_cast<double>(n)), 0 },
-                          mul(term, xr, depth), depth);
+        // term_n = term_{n-1} * xr / n. Divide by the integer n EXACTLY (div by a
+        // single-block divisor) -- NOT by a host-double reciprocal 1.0/n, which would
+        // cap every term (hence the whole series) at host-double precision (~17
+        // digits, #1058). from_native(n) is exact for n < 2^53. (#1061 Phase 3a)
+        term = div(mul(term, xr, depth), from_native<FpType>(static_cast<double>(n)), depth);
         if (term.is_empty()) break;
         terms.push_back(term);
         if (term.head().exponent() < stop_exp) break;      // converged

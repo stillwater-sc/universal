@@ -115,15 +115,17 @@ namespace detail {
 // cancellation -- cos(pi/4)=sin(pi/4)=0.707, both O(1)).
 template <typename FpType>
 inline ZBCL<FpType> sin_series(ZBCL<FpType> t, std::size_t depth) {
-    using B = block<FpType>;
     if (t.is_empty()) return ZBCL<FpType>{};
     const int stop_exp = -static_cast<int>(depth) * block<FpType>::k - 8;
     ZBCL<FpType> neg_t2 = negate(mul(t, t, depth));
     std::vector<ZBCL<FpType>> terms{ t };                    // t^1 / 1!
     ZBCL<FpType> term = t;
     for (std::size_t nn = 1; nn < 8 * depth; ++nn) {
+        // Divide by the integer denom (2n)(2n+1) EXACTLY -- not by a host-double
+        // reciprocal 1.0/denom, which capped the series at ~17 digits (#1058).
+        // denom < 2^53 for any realistic n, so from_native is exact. (#1061 Phase 3a)
         const double denom = static_cast<double>(2 * nn) * static_cast<double>(2 * nn + 1);
-        term = mul_scalar(B{ static_cast<FpType>(1.0 / denom), 0 }, mul(term, neg_t2, depth), depth);
+        term = div(mul(term, neg_t2, depth), from_native<FpType>(denom), depth);
         if (term.is_empty()) break;
         terms.push_back(term);
         if (term.head().exponent() < stop_exp) break;
@@ -132,14 +134,14 @@ inline ZBCL<FpType> sin_series(ZBCL<FpType> t, std::size_t depth) {
 }
 template <typename FpType>
 inline ZBCL<FpType> cos_series(ZBCL<FpType> t, std::size_t depth) {
-    using B = block<FpType>;
     const int stop_exp = -static_cast<int>(depth) * block<FpType>::k - 8;
     ZBCL<FpType> neg_t2 = t.is_empty() ? ZBCL<FpType>{} : negate(mul(t, t, depth));
     std::vector<ZBCL<FpType>> terms{ from_native<FpType>(1.0) };   // 1
     ZBCL<FpType> term = from_native<FpType>(1.0);
     for (std::size_t nn = 1; nn < 8 * depth; ++nn) {
+        // Exact integer division (see sin_series) -- removes the host-double cap (#1058).
         const double denom = static_cast<double>(2 * nn - 1) * static_cast<double>(2 * nn);
-        term = mul_scalar(B{ static_cast<FpType>(1.0 / denom), 0 }, mul(term, neg_t2, depth), depth);
+        term = div(mul(term, neg_t2, depth), from_native<FpType>(denom), depth);
         if (term.is_empty()) break;
         terms.push_back(term);
         if (term.head().exponent() < stop_exp) break;
