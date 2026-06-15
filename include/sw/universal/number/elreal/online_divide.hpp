@@ -20,12 +20,15 @@
 //      = r_n(2 - b r_n), error squaring per step, seeded from 1/leading-block. Reuses the
 //      working mul_online + add; terminates; 0-overlap; reconstructs q*b == a exactly.
 //      This is a DELIBERATE DEVIATION from McCleeary 4.2.6 for the dense case (#1068).
-//    - REMAINING LIMIT (caps dense depth at ~8 blocks / ~118 digits): mul_online emits a
-//      0-overlap-violating pair once an operand exceeds ~9-10 blocks. This is a real
-//      canonicalisation limit in the STREAMING MULTIPLY, not a host underflow (it bites at
-//      ~ -550, far above min_exponent). Earlier drafts of this banner mis-attributed it to
-//      the host floor. Fixing mul_online's canonicalisation (the real "div floor rework")
-//      lifts the dense cap toward the host ceiling -- tracked in #1068.
+//    - DEPTH: the dense quotient refines to the host floor (~17 components / ~265 digits
+//      on a double host), the same region as the single-block path. This required the
+//      streaming-multiply host-floor arrest (#1068): mul_online USED to emit subnormal
+//      blocks once a product reached ~2^-1022, and a subnormal block cannot hold its k
+//      bits, so two of them landed ~22 apart and broke 0-overlap (an earlier draft of
+//      this banner wrongly blamed a "~ -550 canonicalisation limit"; the violation is at
+//      ~ -1052, i.e. the host floor). singleMultHelper now drops genuinely subnormal
+//      blocks at the source, so no 0-overlap-violating block is ever produced and the
+//      dense quotient is no longer capped at ~8 blocks.
 //
 // online_divide.hpp: McCleeary LFPERA streaming division (dissertation 4.2.6).
 //
@@ -235,23 +238,15 @@ inline ZBCL<FpType> div_online(ZBCL<FpType> fs, ZBCL<FpType> gs) {
     if (fs.is_empty()) return ZBCL<FpType>{};   // 0 / gs = 0
 
     if (is_dense_divisor(gs)) {
-        // Two ceilings bound the dense quotient depth; take the smaller:
-        //  (1) host floor: stay a 2k margin above min_exponent so Newton's
-        //      block_two_mult residuals (a further k below each block) do not
-        //      denormalise -- the same floor the single-block path respects.
-        //  (2) mul_online's canonicalisation limit: the streaming product emits a
-        //      0-overlap-violating pair once an operand exceeds ~9-10 blocks
-        //      (a real limit in the streaming multiply, NOT a host underflow; it
-        //      bites at ~ -550, far above the floor). Until that is reworked we
-        //      keep both Newton operands under it. Empirically 8 blocks is clean
-        //      across diverse divisors; 9+ trips the ZBCL 0-overlap assert.
-        // Both are the streaming-multiply "div floor rework" -- tracked in #1068.
-        constexpr std::size_t host_floor_depth = static_cast<std::size_t>(
+        // Target the host-floor depth: a 2k margin above min_exponent, so the Newton
+        // products stay normal. mul_online now ARRESTS at that same floor (#1068), so
+        // the reciprocal self-limits there and never emits a subnormal (0-overlap
+        // violating) block -- the earlier mul_canonical_cap=8 stopgap is gone, and the
+        // dense quotient reaches the host floor (~17 components for double, ~270
+        // digits) like the single-block path, instead of stopping at ~118 digits.
+        constexpr std::size_t target = static_cast<std::size_t>(
             (-(std::numeric_limits<FpType>::min_exponent) - 2 * block<FpType>::k)
             / block<FpType>::k);
-        constexpr std::size_t mul_canonical_cap = 8;
-        constexpr std::size_t target =
-            host_floor_depth < mul_canonical_cap ? host_floor_depth : mul_canonical_cap;
         ZBCL<FpType> r = recip_newton(gs, target);
         return zbcl_truncate(mul_online(std::move(fs), std::move(r)), target);
     }
