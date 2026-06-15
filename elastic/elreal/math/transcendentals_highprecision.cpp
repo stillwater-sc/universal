@@ -48,14 +48,14 @@
 // (acos = pi/2 - asin), which add() does not renormalize to 0-overlap -- it aborts
 // the ZBCL invariant in assert-enabled builds (#1057). The value is still correct;
 // only the canonical form is violated. Gated off until #1057 lands; flip to 1 then.
-#define ELREAL_ADD_EXACT_CANCEL_FIXED 0
+#define ELREAL_ADD_EXACT_CANCEL_FIXED 1
 
 // exp / sin / cos (and tan / sinh / cosh / tanh built on them) cap at host-double
 // precision because their Taylor/Maclaurin series scale each term by a host-double
 // reciprocal coefficient (#1058, same bug class as e_zbcl #1054). Their 300-digit
 // checks are gated off until #1058 lands; flip to 1 then. log/atan/asin/acos use the
 // full-precision odd_power_series and already reach 300+, so they stay active.
-#define ELREAL_EXP_SERIES_HIGH_PRECISION 0
+#define ELREAL_EXP_SERIES_HIGH_PRECISION 1
 
 #include <cmath>
 #include <iostream>
