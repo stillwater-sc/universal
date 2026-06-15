@@ -156,10 +156,56 @@ inline ZBCL<FpType> phi_zbcl(std::size_t depth = 16) {
     return mul_scalar(block<FpType>{ static_cast<FpType>(0.5), 0 }, s, depth);
 }
 
-// euler_gamma: no efficient elementary series -- host-precision seed only.
+// euler_gamma via Brent-McMillan B1 (#1053): gamma = A(n)/B(n) - ln(n), with
+//   B(n) = sum_{k>=0} (n^k/k!)^2,  A(n) = sum_{k>=0} (n^k/k!)^2 * H_k,  H_0 = 0,
+//   |error| ~ pi*exp(-4n)  ->  n >= D*ln(10)/4 for D digits.
+// The Euler-Mascheroni constant has no rapidly-converging elementary series, so
+// (unlike pi/e/ln2) it needs a real algorithm. The per-term work is dominated by
+// the product w_k * H_k; the long tail of terms contributes only a few limbs each.
 template <typename FpType>
-inline ZBCL<FpType> euler_gamma_zbcl(std::size_t /*depth*/ = 16) {
-    return from_native<FpType>(0.57721566490153286060651209008240243104215933593992);
+inline ZBCL<FpType> euler_gamma_zbcl(std::size_t depth = 16) {
+    using B = block<FpType>;
+    const std::size_t wdepth = depth + detail::kSeriesGuard;
+    const int wbits = static_cast<int>(wdepth) * block<FpType>::k;
+    const double targetDigits = static_cast<double>(wbits) * 0.30102999566398 + 16.0;
+    const int n = static_cast<int>(std::ceil(targetDigits * 0.57564627324851)) + 5; // ln(10)/4
+    const double n2 = static_cast<double>(n) * static_cast<double>(n);
+    const ZBCL<FpType> one = from_native<FpType>(1.0);
+    // running, priestRenorm'd sums capped to working depth (terms > wdepth limbs
+    // below the running peak are negligible for the O(1) ratio A/B).
+    const std::size_t cap = wdepth + 2;
+    auto fold = [cap](std::vector<B>& acc, const ZBCL<FpType>& term, std::size_t take) {
+        std::vector<B> pool = acc;
+        for (const auto& b : term.take(take)) pool.push_back(b);
+        acc = priestRenorm(pool);
+        if (acc.size() > cap) acc.resize(cap);
+    };
+    ZBCL<FpType> w = one;
+    int peakExp = static_cast<int>(w.head().exponent());
+    std::vector<B> Hblocks, Bblocks = w.take(cap), Ablocks;
+    for (std::size_t k = 1; ; ++k) {
+        w = div(mul_scalar(B{ static_cast<FpType>(n2), 0 }, w, wdepth),
+                from_native<FpType>(static_cast<double>(k) * static_cast<double>(k)), wdepth); // *n^2/k^2
+        if (w.is_empty()) break;
+        peakExp = std::max(peakExp, static_cast<int>(w.head().exponent()));
+        fold(Hblocks, div(one, from_native<FpType>(static_cast<double>(k)), wdepth), wdepth);   // H_k += 1/k
+        ZBCL<FpType> Hk = zbcl_from_blocks<FpType>(Hblocks);
+        fold(Bblocks, w, cap);
+        fold(Ablocks, mul(w, Hk, wdepth), cap);
+        if (k > static_cast<std::size_t>(n) &&
+            static_cast<int>(w.head().exponent()) < peakExp - wbits - 8) break;
+    }
+    ZBCL<FpType> ratio = div(zbcl_from_blocks<FpType>(Ablocks), zbcl_from_blocks<FpType>(Bblocks), wdepth);
+    // ln(n) = e*ln2 + 2*artanh((m-1)/(m+1)), m = n / 2^e in [1,2). Pass `depth` (NOT
+    // wdepth): the helpers add their own kSeriesGuard, and ln2_zbcl=artanh(1/3) is
+    // costly over-deep.
+    const ZBCL<FpType> N = from_native<FpType>(static_cast<double>(n));
+    const int e = static_cast<int>(N.head().exponent());
+    ZBCL<FpType> m = mul_scalar(B{ static_cast<FpType>(1.0), -e }, N, depth);
+    ZBCL<FpType> u = div(add(m, negate(one)), add(m, one), depth);
+    ZBCL<FpType> lnN = mul_scalar(B{ static_cast<FpType>(2.0), 0 }, detail::odd_power_series(u, false, depth), depth);
+    if (e != 0) lnN = add(lnN, mul_scalar(B{ static_cast<FpType>(static_cast<double>(e)), 0 }, ln2_zbcl<FpType>(depth), depth));
+    return add(ratio, negate(lnN)); // gamma = A/B - ln(n)
 }
 
 }} // namespace sw::universal
