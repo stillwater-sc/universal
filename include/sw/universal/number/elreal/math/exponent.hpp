@@ -29,11 +29,31 @@
 
 namespace sw { namespace universal {
 
-// exp(x, depth): e^x refined to ~depth blocks. depth is kept SMALL by default:
-// the per-term high-precision products make the series cost grow steeply with
-// depth (~O(depth^4)), so depth=4 (~200 bits / ~60 digits, already well beyond a
-// host double) is the practical default. Pass a larger depth for more precision
-// at a quadratic-or-worse time cost.
+namespace detail {
+
+// exp_term_stream: the lazy Taylor term co-list of exp -- [1, xr, xr^2/2!, ...],
+// term_{n} = term_{n-1} * xr / n. Online realisation (#1061 Phase 3b): each next
+// term is materialised only to its significance window (take_while_above, from
+// constants.hpp), so the deep tail is nearly free and the lazy mul/div nesting is
+// broken. Folded by the streaming infSum in exp() below.
+template <typename FpType>
+inline series<FpType> exp_term_stream(ZBCL<FpType> term, ZBCL<FpType> xr,
+                                      double n, int floor_exp) {
+    if (term.is_empty() || static_cast<int>(term.head().exponent()) < floor_exp)
+        return series<FpType>{};
+    ZBCL<FpType> next = take_while_above(
+        div_online(mul_online(term, xr), from_native<FpType>(n)), floor_exp);
+    return series<FpType>::cons(term, [next, xr, n, floor_exp]() {
+        return exp_term_stream(next, xr, n + 1.0, floor_exp);
+    });
+}
+
+} // namespace detail
+
+// exp(x, depth): e^x refined to ~depth blocks. The Taylor series is summed online
+// (streaming infSum over a lazy, significance-windowed term co-list, #1061 Phase 3b),
+// so high depth is no longer the steep cost it was. depth=4 (~200 bits / ~60 digits)
+// remains the default; pass a larger depth for more precision.
 template <typename FpType>
 inline ZBCL<FpType> exp(ZBCL<FpType> x, std::size_t depth = 4) {
     using B = block<FpType>;
@@ -50,22 +70,12 @@ inline ZBCL<FpType> exp(ZBCL<FpType> x, std::size_t depth = 4) {
         ++r;
     }
 
-    // Taylor: sum_{n>=0} xr^n / n!, term_n = term_{n-1} * xr / n.
-    const int stop_exp = -static_cast<int>(depth) * block<FpType>::k - 8;
-    std::vector<ZBCL<FpType>> terms;
-    ZBCL<FpType> term = from_native<FpType>(1.0);          // term_0
-    terms.push_back(term);
-    for (std::size_t n = 1; n < 8 * depth; ++n) {
-        // term_n = term_{n-1} * xr / n. Divide by the integer n EXACTLY (div by a
-        // single-block divisor) -- NOT by a host-double reciprocal 1.0/n, which would
-        // cap every term (hence the whole series) at host-double precision (~17
-        // digits, #1058). from_native(n) is exact for n < 2^53. (#1061 Phase 3a)
-        term = div(mul(term, xr, depth), from_native<FpType>(static_cast<double>(n)), depth);
-        if (term.is_empty()) break;
-        terms.push_back(term);
-        if (term.head().exponent() < stop_exp) break;      // converged
-    }
-    ZBCL<FpType> result = sum(series_from_vector<FpType>(terms), terms.size() + 1);
+    // Taylor: sum_{n>=0} xr^n / n!, term_n = term_{n-1} * xr / n. Each term divides by
+    // the integer n EXACTLY (not by a host-double 1.0/n, which capped the series at ~17
+    // digits, #1058/#1061 Phase 3a) and the whole series is summed online (#1061 Phase 3b).
+    const int floor_exp = -static_cast<int>(depth) * block<FpType>::k - 8;
+    ZBCL<FpType> result =
+        infsum(detail::exp_term_stream(from_native<FpType>(1.0), xr, 1.0, floor_exp));
 
     // Reconstruction: square r times.
     for (int i = 0; i < r; ++i) result = mul(result, result, depth);
