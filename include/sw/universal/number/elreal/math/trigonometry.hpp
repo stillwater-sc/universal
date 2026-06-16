@@ -110,43 +110,47 @@ inline ZBCL<FpType> acos(ZBCL<FpType> x, std::size_t depth = 4) {
 
 namespace detail {
 
+namespace detail {
+
+// sincos_term_stream: the shared lazy term co-list for the sin/cos Maclaurin series.
+// term_{n+1} = term_n * (-t^2) / (a*(a+1)); `a` starts at 2 for sin (denominators
+// 2*3, 4*5, ...) and at 1 for cos (1*2, 3*4, ...). Online realisation (#1061 Phase 3b):
+// each next term is materialised only to its significance window (take_while_above,
+// from constants.hpp) and the alternating-sign terms fold through the streaming infSum's
+// carry-arrest. Each term divides by the integer denom EXACTLY (not a host-double
+// reciprocal, which capped the series at ~17 digits, #1058 / Phase 3a).
+template <typename FpType>
+inline series<FpType> sincos_term_stream(ZBCL<FpType> term, ZBCL<FpType> neg_t2,
+                                         double a, int floor_exp) {
+    if (term.is_empty() || static_cast<int>(term.head().exponent()) < floor_exp)
+        return series<FpType>{};
+    ZBCL<FpType> next = take_while_above(
+        div_online(mul_online(term, neg_t2), from_native<FpType>(a * (a + 1.0))), floor_exp);
+    return series<FpType>::cons(term, [next, neg_t2, a, floor_exp]() {
+        return sincos_term_stream(next, neg_t2, a + 2.0, floor_exp);
+    });
+}
+
+} // namespace detail
+
 // Raw Maclaurin series for sin(t)/cos(t), well-conditioned only for small |t|
 // (the octant reduction below keeps |t| <= pi/4, where there is no catastrophic
-// cancellation -- cos(pi/4)=sin(pi/4)=0.707, both O(1)).
+// cancellation -- cos(pi/4)=sin(pi/4)=0.707, both O(1)). Summed online (#1061 Phase 3b).
 template <typename FpType>
 inline ZBCL<FpType> sin_series(ZBCL<FpType> t, std::size_t depth) {
-    if (t.is_empty()) return ZBCL<FpType>{};
-    const int stop_exp = -static_cast<int>(depth) * block<FpType>::k - 8;
-    ZBCL<FpType> neg_t2 = negate(mul(t, t, depth));
-    std::vector<ZBCL<FpType>> terms{ t };                    // t^1 / 1!
-    ZBCL<FpType> term = t;
-    for (std::size_t nn = 1; nn < 8 * depth; ++nn) {
-        // Divide by the integer denom (2n)(2n+1) EXACTLY -- not by a host-double
-        // reciprocal 1.0/denom, which capped the series at ~17 digits (#1058).
-        // denom < 2^53 for any realistic n, so from_native is exact. (#1061 Phase 3a)
-        const double denom = static_cast<double>(2 * nn) * static_cast<double>(2 * nn + 1);
-        term = div(mul(term, neg_t2, depth), from_native<FpType>(denom), depth);
-        if (term.is_empty()) break;
-        terms.push_back(term);
-        if (term.head().exponent() < stop_exp) break;
-    }
-    return sum(series_from_vector<FpType>(terms), terms.size() + 1);
+    if (t.is_empty()) return ZBCL<FpType>{};                 // sin(0) = 0
+    const int floor_exp = -static_cast<int>(depth) * block<FpType>::k - 8;
+    ZBCL<FpType> neg_t2 = take_while_above(negate(mul_online(t, t)), floor_exp);
+    // sin = t - t^3/3! + t^5/5! - ... : first term t, denominators 2*3, 4*5, ...
+    return infsum(detail::sincos_term_stream(t, neg_t2, 2.0, floor_exp));
 }
 template <typename FpType>
 inline ZBCL<FpType> cos_series(ZBCL<FpType> t, std::size_t depth) {
-    const int stop_exp = -static_cast<int>(depth) * block<FpType>::k - 8;
-    ZBCL<FpType> neg_t2 = t.is_empty() ? ZBCL<FpType>{} : negate(mul(t, t, depth));
-    std::vector<ZBCL<FpType>> terms{ from_native<FpType>(1.0) };   // 1
-    ZBCL<FpType> term = from_native<FpType>(1.0);
-    for (std::size_t nn = 1; nn < 8 * depth; ++nn) {
-        // Exact integer division (see sin_series) -- removes the host-double cap (#1058).
-        const double denom = static_cast<double>(2 * nn - 1) * static_cast<double>(2 * nn);
-        term = div(mul(term, neg_t2, depth), from_native<FpType>(denom), depth);
-        if (term.is_empty()) break;
-        terms.push_back(term);
-        if (term.head().exponent() < stop_exp) break;
-    }
-    return sum(series_from_vector<FpType>(terms), terms.size() + 1);
+    const int floor_exp = -static_cast<int>(depth) * block<FpType>::k - 8;
+    ZBCL<FpType> neg_t2 = t.is_empty() ? ZBCL<FpType>{}
+                                       : take_while_above(negate(mul_online(t, t)), floor_exp);
+    // cos = 1 - t^2/2! + t^4/4! - ... : first term 1, denominators 1*2, 3*4, ...
+    return infsum(detail::sincos_term_stream(from_native<FpType>(1.0), neg_t2, 1.0, floor_exp));
 }
 
 // Octant reduction: x = n*(pi/2) + t with |t| <= pi/4. Returns {sin(x), cos(x)}
