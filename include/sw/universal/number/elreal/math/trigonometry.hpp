@@ -110,8 +110,6 @@ inline ZBCL<FpType> acos(ZBCL<FpType> x, std::size_t depth = 4) {
 
 namespace detail {
 
-namespace detail {
-
 // sincos_term_stream: the shared lazy term co-list for the sin/cos Maclaurin series.
 // term_{n+1} = term_n * (-t^2) / (a*(a+1)); `a` starts at 2 for sin (denominators
 // 2*3, 4*5, ...) and at 1 for cos (1*2, 3*4, ...). Online realisation (#1061 Phase 3b):
@@ -130,8 +128,6 @@ inline series<FpType> sincos_term_stream(ZBCL<FpType> term, ZBCL<FpType> neg_t2,
         return sincos_term_stream(next, neg_t2, a + 2.0, floor_exp);
     });
 }
-
-} // namespace detail
 
 // Raw Maclaurin series for sin(t)/cos(t), well-conditioned only for small |t|
 // (the octant reduction below keeps |t| <= pi/4, where there is no catastrophic
