@@ -29,6 +29,9 @@
 #include <universal/number/elreal/divide.hpp>       // div
 #include <universal/number/elreal/series.hpp>
 #include <universal/number/elreal/sum.hpp>
+#include <universal/number/elreal/infsum.hpp>          // infsum (streaming fold)
+#include <universal/number/elreal/online_multiply.hpp> // mul_online
+#include <universal/number/elreal/online_divide.hpp>   // div_online
 #include <universal/number/elreal/math/sqrt.hpp>
 
 namespace sw { namespace universal {
@@ -54,30 +57,59 @@ constexpr int series_stop_exp(std::size_t wdepth) {
     return target > floor ? target : floor;
 }
 
+// take_while_above(z, floor_exp): the prefix of z whose block exponents are >=
+// floor_exp, rebuilt as a finite 0-overlap ZBCL. This is the significance window of
+// one series term: a term whose leading exponent is already below floor_exp
+// contributes nothing to the output, so the streaming series computes ZERO extra
+// blocks for the deep tail -- the key to its speedup over the eager (every-term-to-
+// full-working-depth) form. It also materialises each term/power, breaking the deep
+// lazy mul_online/div_online nesting that would otherwise recurse per pull. (#1061 Ph3b)
+template <typename FpType>
+inline ZBCL<FpType> take_while_above(ZBCL<FpType> z, int floor_exp) {
+    std::vector<block<FpType>> keep;
+    while (!z.is_empty()) {
+        const block<FpType> h = z.head();
+        if (static_cast<int>(h.exponent()) < floor_exp) break;
+        keep.push_back(h);
+        z = z.tail();
+    }
+    return zbcl_from_blocks<FpType>(std::move(keep));
+}
+
+// ops_term_stream: the lazy term co-list of odd_power_series -- [x/1, x^3*s/3, ...],
+// power_{n+1} = power_n * step (step = +/- x^2), term_n = power_n / (2n+1). Each term
+// and the running power is windowed to floor_exp (take_while_above).
+template <typename FpType>
+inline series<FpType> ops_term_stream(ZBCL<FpType> power, ZBCL<FpType> step,
+                                      double denom, int floor_exp) {
+    if (power.is_empty() || static_cast<int>(power.head().exponent()) < floor_exp)
+        return series<FpType>{};
+    ZBCL<FpType> term  = take_while_above(div_online(power, from_native<FpType>(denom)), floor_exp);
+    ZBCL<FpType> nextp = take_while_above(mul_online(power, step), floor_exp);
+    return series<FpType>::cons(term, [nextp, step, denom, floor_exp]() {
+        return ops_term_stream(nextp, step, denom + 2.0, floor_exp);
+    });
+}
+
 // odd_power_series(x, alternating, depth):
 //   alternating=false -> artanh(x) = sum_n x^(2n+1)/(2n+1)
 //   alternating=true  -> atan(x)   = sum_n (-1)^n x^(2n+1)/(2n+1)
-// Converges for |x| < 1; terms are accumulated until the running power falls
-// below the target precision (depth*k bits) and summed via priestRenorm.
+// Converges for |x| < 1.
+//
+// ONLINE (streaming) realisation (#1061 Phase 3b): the terms are generated lazily and
+// folded with the streaming infSum, each term/power materialised only to its
+// significance window. This is ~100x faster than the previous eager form (every term
+// to full working depth, then a batch priestRenorm sum) at depth 20 -- value-identical,
+// 0-overlap canonical -- and it is what makes the high-precision pi/ln2/ln10/atan/asin/
+// acos paths (and the constants/transcendental hardening suites built on them) tractable.
+// Same wide-host / narrow-host-denormal-floor stop as before (series_stop_exp).
 template <typename FpType>
 inline ZBCL<FpType> odd_power_series(ZBCL<FpType> x, bool alternating, std::size_t depth) {
-    // Carry kSeriesGuard extra working blocks internally (see above) and stop at
-    // the working-depth precision (wide host) / denormal floor (narrow host).
     const std::size_t wdepth = depth + kSeriesGuard;
-    const int stop_exp = series_stop_exp<FpType>(wdepth);
-
-    ZBCL<FpType> step = mul(x, x, wdepth);           // x^2
-    if (alternating) step = negate(step);            // -x^2 for atan
-
-    std::vector<ZBCL<FpType>> terms;
-    ZBCL<FpType> power = x;                           // x^(2n+1), starts at x^1
-    for (std::size_t n = 0; ; ++n) {
-        if (power.is_empty() || power.head().exponent() < stop_exp) break;   // converged
-        const double denom = 2.0 * static_cast<double>(n) + 1.0;
-        terms.push_back(div(power, from_native<FpType>(denom), wdepth));
-        power = mul(power, step, wdepth);            // *x^2 (or *-x^2)
-    }
-    return sum(series_from_vector(terms), terms.size() + 1);
+    const int floor_exp = series_stop_exp<FpType>(wdepth);
+    ZBCL<FpType> step = take_while_above(mul_online(x, x), floor_exp);   // x^2
+    if (alternating) step = negate(step);                               // -x^2 for atan
+    return infsum(ops_term_stream(x, step, 1.0, floor_exp));
 }
 
 } // namespace detail
