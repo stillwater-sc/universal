@@ -220,18 +220,39 @@ inline ZBCL<FpType> euler_gamma_zbcl(std::size_t depth = 16) {
         acc = priestRenorm(pool);
         if (acc.size() > cap) acc.resize(cap);
     };
+    // Pass 1: locate the GLOBAL peak exponent of w_k = (n^k/k!)^2 -- it grows to ~k=n
+    // then decays. The scalar w-recurrence is cheap; knowing the peak up front lets the
+    // A-accumulation window each product to A's significance band, so BOTH the tiny
+    // early terms and the decaying tail are skipped -- only the ~sqrt(n) terms near the
+    // peak are multiplied in full. (#1061 Phase 3b)
+    int peakExp = static_cast<int>(one.head().exponent());
+    {
+        ZBCL<FpType> w = one;
+        for (std::size_t k = 1; ; ++k) {
+            w = div(mul_scalar(B{ static_cast<FpType>(n2), 0 }, w, wdepth),
+                    from_native<FpType>(static_cast<double>(k) * static_cast<double>(k)), wdepth);
+            if (w.is_empty()) break;
+            peakExp = std::max(peakExp, static_cast<int>(w.head().exponent()));
+            if (k > static_cast<std::size_t>(n) &&
+                static_cast<int>(w.head().exponent()) < peakExp - wbits - 8) break;
+        }
+    }
+    // A keeps ~cap blocks below its peak (~peakExp); a product whose blocks all sit below
+    // that floor contributes nothing, so pull each w_k*H_k only down to it. aFloor sits a
+    // touch below A's true floor (A.peak = peakExp + scale(H_k)), so nothing is lost.
+    const int aFloor = peakExp - static_cast<int>(cap) * block<FpType>::k;
+
+    // Pass 2: accumulate A(n) = sum w_k H_k, B(n) = sum w_k, H_k = H_{k-1} + 1/k.
     ZBCL<FpType> w = one;
-    int peakExp = static_cast<int>(w.head().exponent());
     std::vector<B> Hblocks, Bblocks = w.take(cap), Ablocks;
     for (std::size_t k = 1; ; ++k) {
         w = div(mul_scalar(B{ static_cast<FpType>(n2), 0 }, w, wdepth),
                 from_native<FpType>(static_cast<double>(k) * static_cast<double>(k)), wdepth); // *n^2/k^2
         if (w.is_empty()) break;
-        peakExp = std::max(peakExp, static_cast<int>(w.head().exponent()));
         fold(Hblocks, div(one, from_native<FpType>(static_cast<double>(k)), wdepth), wdepth);   // H_k += 1/k
         ZBCL<FpType> Hk = zbcl_from_blocks<FpType>(Hblocks);
         fold(Bblocks, w, cap);
-        fold(Ablocks, mul(w, Hk, wdepth), cap);
+        fold(Ablocks, detail::take_while_above(mul_online(w, Hk), aFloor), cap);                // w_k * H_k, windowed
         if (k > static_cast<std::size_t>(n) &&
             static_cast<int>(w.head().exponent()) < peakExp - wbits - 8) break;
     }
