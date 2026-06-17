@@ -1,0 +1,100 @@
+I took on #1076 and did a deep dive, but the honest outcome is: it's not a quick fix — I diagnosed it thoroughly rather than force a hacky change.
+
+What #1076 actually is
+
+Through ~10 targeted experiments I narrowed it to a two-part conditioning bug:
+
+1. asin under-resolves its deepest block. asin(0.5) and a clean pi/6 agree to 305 digits with identical block exponents — but per-block, blocks 0–17 are
+perfect (320 digits each) while block 18 has only ~8 good significand digits. asin's value is still 305-accurate (the garbage sits at ~10⁻³⁰⁶), so it
+passes the absolute check. Computing asin deeper doesn't help — it always returns 19 blocks with the last one garbage. The likely origin: asin =
+atan(x/√(1−x²)), and the inner dense multi-block division under-resolves its last quotient block (connects to the dense-div work, #1068/#1072).
+2. sin is well-conditioned for a clean perturbation but not for a wrong-significand deep block. sin(pi/6 + clean 2⁻ᴱ) tracks the perturbation perfectly
+(self-consistent to 320), but sin(asin) saturates at ~234.
+
+What I ruled out (so the next person doesn't repeat it)
+
+Guard/working-precision blocks (no effect), re-priestRenorm (no effect), computing asin deeper (no effect), trimming the garbage block (no effect). It's
+not a precision issue. I posted the full analysis to #1076 (https://github.com/stillwater-sc/universal/issues/1076#issuecomment-4733831721).
+
+Keep it gated (as it is). A real fix needs dedicated work on the asin/atan/dense-div deep-block accuracy — reformulating the inverse-function chain to
+produce a faithfully-decomposed tail — which is a meaningful investigation, not a one-liner. It's also pre-existing (eager gave ~239; my online conversion
+added only ~5 digits), and only affects >234-digit inverse round-trips — a niche.
+
+I deliberately stopped rather than ship a speculative fix to a bug I've shown resists the obvious remedies.
+
+Given that, the options 
+  (a) leave #1076 gated/tracked and consider Phase 3b effectively complete; 
+  (b) have me take on the dense-division deep-block accuracy angle as its own investigation (the suspected root, 
+      and it'd also benefit #1068's follow-ups); or 
+  (c) something else. 
+
+
+
+We took on the dense-division angle as you directed, and the result is a clean negative: it's not the cause.
+
+Outcome of the dense-div investigation
+
+Tracing asin = atan(div(0.5, sqrt(1−x²))) per-block at depth d vs d+8:
+- sqrt, div, and atan are each self-consistent to 320 digits on every block — no under-resolved last block anywhere.
+- asin(0.5) and pi6 are both 306 digits accurate vs the exact π/6 reference, both self-consistent to 320.
+
+So the division is accurate. My earlier "asin's deepest block is garbage (8 figs)" reading was wrong — asin's block 18 is stable and accurate; it just
+differs from pi6's block 18 because they're two equally-valid representations of π/6 diverging at the 10⁻³⁰⁶ precision limit. I've corrected the #1076
+issue with this (retracting the dense-div hypothesis).
+
+The real root cause (now pinned)
+
+sin's Maclaurin-series machinery is decomposition/deepest-block sensitive: two inputs agreeing to 305 digits (each 306-accurate) yield sin = 234 vs 306 —
+it amplifies a 10⁻³⁰⁶ deepest-block difference to 10⁻²³⁴ (effective condition number ~10⁷²). The amplification accrues through the term recurrence
+(per-term agreement decays 305→15 over ~60 terms). Yet sin of a clean separate-block perturbation is well-conditioned, and t² is value-faithful — so it's a
+specific conditioning quirk of the recurrence + infSum fold, not a precision or division issue.
+
+Where that leaves it
+
+This is a genuinely subtle numerical-conditioning bug, and the two angles I've now exhausted (precision/guard, and division accuracy) both came up empty. A
+fix needs a focused look at the sin/cos series recurrence conditioning itself — a different and harder angle than either hypothesis. It remains gated and
+fully documented in #1076 (which is the right state: a niche, pre-existing, >234-digit-only issue with a thorough paper trail).
+
+I'd rather check in than launch a third deep investigation unprompted. Options:
+- (a) Take on the series-recurrence-conditioning angle directly (e.g., does summing the series in a different order, or a Horner/compensated scheme,
+restore robustness?) — the actual root, but open-ended.
+- (b) Leave #1076 gated/tracked as a documented known-limitation and consider the elreal performance arc (Phases 1–3b, all merged) complete.
+
+
+Done. Memory updated with the accurate #1076 conclusion (and a pointer noting your saved asin-inaccuracy-analysis.txt holds the superseded first take).
+#1076 stays gated as a documented known-limitation, and the elreal performance arc is complete.
+
+elreal arc — closed
+
+8 PRs merged this session, all on main:
+
+┌───────┬───────┬─────────────────────────────────────────────────────────────────────────┐
+│  PR   │ Phase │                                 result                                  │
+├───────┼───────┼─────────────────────────────────────────────────────────────────────────┤
+│ #1069 │ 1–2   │ online div host-floor lift — 1/3 → 293 digits + dense Newton reciprocal │
+├───────┼───────┼─────────────────────────────────────────────────────────────────────────┤
+│ #1072 │ 1–2   │ streaming-multiply host-floor arrest (#1068)                            │
+├───────┼───────┼─────────────────────────────────────────────────────────────────────────┤
+│ #1073 │ —     │ euler_gamma Brent-McMillan (#1053) — 307 digits                         │
+├───────┼───────┼─────────────────────────────────────────────────────────────────────────┤
+│ #1074 │ 3a    │ full-precision exp/sin/cos (closes #1058) — 309–311 digits              │
+├───────┼───────┼─────────────────────────────────────────────────────────────────────────┤
+│ #1075 │ 3b    │ online odd_power_series — ln2 107s → 1s                                 │
+├───────┼───────┼─────────────────────────────────────────────────────────────────────────┤
+│ #1077 │ 3b    │ online exp/sin/cos — LEVEL_4 transcendental suite >10min → 44s          │
+├───────┼───────┼─────────────────────────────────────────────────────────────────────────┤
+│ #1078 │ 3b    │ euler_gamma loop windowed — depth 20 ~300s → 12s                        │
+└───────┴───────┴─────────────────────────────────────────────────────────────────────────┘
+
+Net effect: the elreal high-precision series/constant layer went from eager batch, minutes-to-timeout to seconds — exactly #1061's goal. Phases 1–2 built
+the online infSum/mul/div foundation, 3a removed the precision cap, 3b turned the foundation into the speedups.
+
+Issues filed this session: #1068 (streaming-mul floor rework — addressed in #1072), #1076 (sin/cos series conditioning — diagnosed thoroughly, gated, two
+hypotheses refuted).
+
+Still open under #1061: only #1076 (gated, niche, >234-digit inverse round-trips) and minor non-hot-loop polish (the scalar w-recurrence/B-fold in
+euler_gamma stay eager — cheap by design).
+
+Repo is clean: main at 321409d6, no loose branches, sanitizers green on the merged work. The two untracked files (elreal-bugs.txt,
+asin-inaccuracy-analysis.txt) are yours. Nice arc to land — happy to pick up #1076's conditioning angle or anything else whenever you want.
+
