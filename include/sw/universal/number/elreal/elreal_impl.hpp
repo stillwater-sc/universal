@@ -118,9 +118,9 @@ public:
     }
 
     // --- conversions (boundary: forces evaluation to _depth) -----------------
-    explicit operator double()      const noexcept { return to_double_approx(_value, _depth); }
-    explicit operator float()       const noexcept { return static_cast<float>(static_cast<double>(*this)); }
-    explicit operator long double() const noexcept { return static_cast<long double>(static_cast<double>(*this)); }
+    explicit operator double()      const noexcept { return approx<double>(_depth); }
+    explicit operator float()       const noexcept { return static_cast<float>(approx<double>(_depth)); }
+    explicit operator long double() const noexcept { return approx<long double>(_depth); }
 
     // --- arithmetic (LAZY: store unforced streams) ---------------------------
     elreal operator-() const { return elreal(negate(_value), _depth); }
@@ -150,9 +150,16 @@ public:
     // limbs(n): pull the first n blocks (reuses memoised work on repeat/deeper calls).
     std::vector<block_type> limbs(std::size_t n) const { return _value.take(n); }
 
-    // approx<T>(depth): materialise the value to `depth` blocks as a native T.
+    // approx<T>(depth): materialise the value to `depth` blocks as a native floating
+    // T, summed IN T -- so approx<long double> keeps the extra range/precision a wider
+    // host offers (rather than rounding through double). T must be a floating type.
     template <typename T = double>
-    T approx(std::size_t depth) const { return to_double_approx(_value, depth); }
+    T approx(std::size_t depth) const {
+        static_assert(std::is_floating_point_v<T>, "elreal::approx<T> requires a native floating-point T");
+        T acc = T{0};
+        for (const auto& b : _value.take(depth)) acc += b.template value_as<T>();
+        return acc;
+    }
 
     // refine(depth): raise the default pull depth; the next boundary op pulls deeper,
     // reusing everything already memoised. The incremental-precision primitive.
