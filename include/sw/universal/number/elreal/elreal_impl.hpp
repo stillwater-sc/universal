@@ -49,12 +49,18 @@ inline std::size_t& elreal_default_precision() {
     return depth;
 }
 
-// RAII scoped override of the default precision.
+// RAII scoped override of the default precision. Non-copyable/non-movable: it
+// restores shared thread-local state on destruction, so a copy/move would let a
+// stale instance clobber the active scope.
 struct elreal_precision_guard {
     std::size_t saved;
     explicit elreal_precision_guard(std::size_t d) : saved(elreal_default_precision()) {
         elreal_default_precision() = d;
     }
+    elreal_precision_guard(const elreal_precision_guard&) = delete;
+    elreal_precision_guard& operator=(const elreal_precision_guard&) = delete;
+    elreal_precision_guard(elreal_precision_guard&&) = delete;
+    elreal_precision_guard& operator=(elreal_precision_guard&&) = delete;
     ~elreal_precision_guard() { elreal_default_precision() = saved; }
 };
 
