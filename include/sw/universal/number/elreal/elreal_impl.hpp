@@ -44,8 +44,13 @@ namespace sw { namespace universal {
 // (conversion / comparison / I/O) unless overridden per-object via precision(). It
 // is a thread-local default so an enclosing scope can change it (see
 // elreal_precision_guard) without recompiling the type.
+// The compile-time nominal default precision (in blocks). numeric_limits reports
+// its precision-dependent fields against this; the runtime default below is seeded
+// from it and may be changed per-scope (elreal_precision_guard).
+inline constexpr std::size_t kElrealDefaultPrecision = 8;   // ~128 decimal digits on a double host
+
 inline std::size_t& elreal_default_precision() {
-    static thread_local std::size_t depth = 8;   // ~128 decimal digits on a double host
+    static thread_local std::size_t depth = kElrealDefaultPrecision;
     return depth;
 }
 
@@ -169,6 +174,19 @@ public:
     const stream_type& stream() const noexcept { return _value; }
 
     bool iszero() const noexcept { return _value.is_empty(); }
+    bool isneg()  const noexcept { return sign() < 0; }
+
+    // sign(): -1 if negative, +1 otherwise (the most significant block's sign;
+    // +1 for zero). scale(): the value's binary exponent (the leading block's
+    // combined exponent E = scale_of_v + exp; 0 for zero).
+    int sign() const noexcept {
+        auto bl = _value.take(1);
+        return (!bl.empty() && bl.front().sign() < 0) ? -1 : 1;
+    }
+    int scale() const noexcept {
+        auto bl = _value.take(1);
+        return bl.empty() ? 0 : static_cast<int>(bl.front().exponent());
+    }
 
 private:
     stream_type _value;    // lazy, memoised block co-list
