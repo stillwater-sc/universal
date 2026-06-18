@@ -17,4 +17,15 @@ struct block;
 template <typename FpType>
 class ZBCL;
 
+// The elreal class facade (plug-in arithmetic number system over ZBCL).
+template <typename FpType>
+class elreal;
+
+template <typename FpType> elreal<FpType> abs(const elreal<FpType>&);
+template <typename FpType> elreal<FpType> fabs(const elreal<FpType>&);
+
+// Standard host aliases.
+using elreal64 = elreal<double>;
+using elreal32 = elreal<float>;
+
 }} // namespace sw::universal

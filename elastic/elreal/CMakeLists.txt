@@ -9,6 +9,7 @@
 # Phase 7 (#931): math suite (7.2 sqrt/hypot, ...).
 # Phase 8+ (#932-#933): real-FP conversion, evaluation.
 
+file (GLOB API_SRCS         "./api/*.cpp")
 file (GLOB BLOCK_SRCS       "./block/*.cpp")
 file (GLOB ZBCL_SRCS        "./zbcl/*.cpp")
 file (GLOB BLOCK_EFT_SRCS   "./block_eft/*.cpp")
@@ -16,6 +17,7 @@ file (GLOB ARITHMETIC_SRCS  "./arithmetic/*.cpp")
 file (GLOB SUMMATION_SRCS   "./summation/*.cpp")
 file (GLOB MATH_SRCS        "./math/*.cpp")
 
+compile_all("true" "el_api"        "Number Systems/elastic/floating-point/binary/elreal/api"        "${API_SRCS}")
 compile_all("true" "el_block"      "Number Systems/elastic/floating-point/binary/elreal/block"      "${BLOCK_SRCS}")
 compile_all("true" "el_zbcl"       "Number Systems/elastic/floating-point/binary/elreal/zbcl"       "${ZBCL_SRCS}")
 compile_all("true" "el_block_eft"  "Number Systems/elastic/floating-point/binary/elreal/block_eft"  "${BLOCK_EFT_SRCS}")

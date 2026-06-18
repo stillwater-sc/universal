@@ -52,3 +52,7 @@
 #include <universal/number/elreal/math/exponent.hpp>
 #include <universal/number/elreal/math/hyperbolic.hpp>
 #include <universal/number/elreal/math/trigonometry.hpp>
+// The elreal class facade: a plug-in arithmetic number system over the ZBCL
+// machinery above (lazy operators, runtime precision, depth-bounded compare).
+#include <universal/number/elreal/elreal_impl.hpp>
+#include <universal/number/elreal/manipulators.hpp>
