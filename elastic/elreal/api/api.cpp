@@ -58,14 +58,24 @@ int verify_arithmetic() {
     return n;
 }
 
-// (3) depth-bounded comparison (exact on terminating ratios)
+// (3) depth-bounded comparison. The operands are COMPUTED (irrational quotients /
+// exact ratios) rather than literal-initialised, so each comparison is a genuine
+// runtime exercise of the operator -- ordering on the nonzero leading limb, and
+// exact equality on a terminating ratio.
 int verify_logic() {
     int n = 0;
-    elreal<double> a = 3.0, b = 7.0, one = 1.0;
-    n += ((a / b) < one ? 0 : 1);     // 3/7 < 1
-    n += ((b / b) == one ? 0 : 1);    // 7/7 == 1 exactly
-    n += (a != b ? 0 : 1);
-    n += (b > a ? 0 : 1);
+    elreal<double> third = elreal<double>(1.0) / elreal<double>(3.0);   // 0.3333...
+    elreal<double> half  = elreal<double>(1.0) / elreal<double>(2.0);   // 0.5
+    elreal<double> one   = 1.0;
+    n += (third <  half  ? 0 : 1);    // 1/3 < 1/2
+    n += (half  >  third ? 0 : 1);    // 1/2 > 1/3
+    n += (third != half  ? 0 : 1);
+    n += (third <= half  ? 0 : 1);
+    n += (half  >= third ? 0 : 1);
+    n += (third <  one   ? 0 : 1);    // 1/3 < 1
+    // exact equality on a terminating ratio: 7/7 == 1 to any precision.
+    elreal<double> seven = elreal<double>(7.0);
+    n += ((seven / seven) == one ? 0 : 1);
     return n;
 }
 
