@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -53,12 +55,16 @@ inline std::string to_binary(const elreal<FpType>& v, bool nibbleMarker = false)
     return s.str();
 }
 
-// to_triple: (sign, scale, significand) of the value.
+// to_triple: (sign, scale, significand) of the value, so that
+// value ~ (sign) significand * 2^scale with significand in [1,2) (0 for zero).
 template <typename FpType>
 inline std::string to_triple(const elreal<FpType>& v) {
     std::stringstream s;
-    s << (v.isneg() ? "(-, " : "(+, ") << v.scale() << ", "
-      << std::setprecision(17) << static_cast<double>(v) << ')';
+    const int64_t e = v.scale();
+    const double  m = v.iszero() ? 0.0
+                    : std::ldexp(v.template approx<double>(2), -static_cast<int>(e));
+    s << (v.isneg() ? "(-, " : "(+, ") << e << ", "
+      << std::setprecision(17) << m << ')';
     return s.str();
 }
 

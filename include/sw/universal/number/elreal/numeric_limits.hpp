@@ -35,7 +35,9 @@ public:
     // smallest increment from 1.0 at the nominal default precision (~2^-digits).
     static ElrealType epsilon()     { return ElrealType(std::ldexp(1.0, -digits)); }
     static ElrealType round_error() { return ElrealType(0.5); }
-    static ElrealType denorm_min()  { return ElrealType(std::numeric_limits<FpType>::denorm_min()); }
+    // has_denorm = denorm_absent, so the C++20 contract requires denorm_min() to
+    // return the minimum positive NORMALISED value, i.e. min().
+    static ElrealType denorm_min()  { return min(); }
     // finite-only: no infinity / NaN -> the factories return 0.
     static ElrealType infinity()      { return ElrealType(); }
     static ElrealType quiet_NaN()     { return ElrealType(); }

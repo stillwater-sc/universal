@@ -19,27 +19,34 @@ using namespace sw::universal;
 using Real = elreal<double>;
 
 // (1) numeric_limits specialisation
+//
+// The compile-time-constant fields are checked with static_assert (the idiomatic
+// test for constexpr members; it also avoids cppcheck knownConditionTrueFalse on
+// the folded comparisons). Only the runtime value factories are checked at runtime.
 int verify_numeric_limits() {
-    int n = 0;
     using lim = std::numeric_limits<Real>;
-    if (!lim::is_specialized) ++n;
-    if (!lim::is_signed) ++n;
-    if (lim::is_integer) ++n;
-    if (lim::is_exact) ++n;
-    if (lim::radix != 2) ++n;
-    // finite-only: no NaN / Inf
-    if (lim::has_infinity) ++n;
-    if (lim::has_quiet_NaN) ++n;
-    if (lim::is_bounded) ++n;                       // unbounded exponent
-    // precision reported against the nominal default (8 blocks * 53 bits)
-    if (lim::digits != static_cast<int>(kElrealDefaultPrecision) * std::numeric_limits<double>::digits) ++n;
-    if (lim::digits10 <= 0) ++n;
+    static_assert(lim::is_specialized,  "elreal numeric_limits must be specialized");
+    static_assert(lim::is_signed,       "elreal is signed");
+    static_assert(!lim::is_integer,     "elreal is not an integer type");
+    static_assert(!lim::is_exact,       "elreal materialises to host blocks (not exact)");
+    static_assert(lim::radix == 2,      "elreal radix is 2");
+    static_assert(!lim::has_infinity,   "elreal is finite-only");
+    static_assert(!lim::has_quiet_NaN,  "elreal is finite-only");
+    static_assert(!lim::is_bounded,     "elreal has an unbounded exponent");
+    // precision reported against the nominal default (kElrealDefaultPrecision blocks).
+    static_assert(lim::digits == static_cast<int>(kElrealDefaultPrecision) * std::numeric_limits<double>::digits,
+                  "elreal digits = default precision * host digits");
+    static_assert(lim::digits10 > 0, "elreal digits10 is positive");
+
+    int n = 0;
     // value factories produce sane magnitudes
     if (!(double(lim::max()) > 0.0)) ++n;
     if (!(double(lim::min()) > 0.0)) ++n;
     if (!(double(lim::lowest()) < 0.0)) ++n;
     if (!(double(lim::epsilon()) > 0.0 && double(lim::epsilon()) < 1.0)) ++n;
     if (double(lim::infinity()) != 0.0) ++n;        // finite-only -> 0
+    // denorm_absent contract: denorm_min() == min()
+    if (double(lim::denorm_min()) != double(lim::min())) ++n;
     return n;
 }
 
@@ -71,8 +78,9 @@ int verify_manipulators() {
     if (comps.find("0.125") == std::string::npos) ++n;
     std::string bin = to_binary(q);
     if (bin.empty() || bin == "0") ++n;
+    // 0.125 = 1 * 2^-3  ->  triple (sign, scale, significand) = (+, -3, 1)
     std::string tri = to_triple(q);
-    if (tri.front() != '(') ++n;
+    if (tri != "(+, -3, 1)") ++n;
 
     // operator<< then operator>> round-trips a double-representable value
     std::stringstream ss;

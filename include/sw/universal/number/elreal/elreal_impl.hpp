@@ -21,6 +21,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <type_traits>
@@ -183,9 +184,13 @@ public:
         auto bl = _value.take(1);
         return (!bl.empty() && bl.front().sign() < 0) ? -1 : 1;
     }
-    int scale() const noexcept {
+    // int64_t (not int): elreal carries an unbounded integer<256> exponent, so a
+    // narrow int cast could overflow. The host-FP attribute surface this feeds
+    // (ldexp / significand) is bounded by FpType's exponent range, for which int64_t
+    // has vast headroom; the full-width exponent stays reachable via block::exponent().
+    int64_t scale() const noexcept {
         auto bl = _value.take(1);
-        return bl.empty() ? 0 : static_cast<int>(bl.front().exponent());
+        return bl.empty() ? 0 : static_cast<int64_t>(bl.front().exponent());
     }
 
 private:
