@@ -45,16 +45,13 @@
 #include <universal/number/elreal/negate.hpp>
 #include <universal/number/elreal/multiply.hpp>
 #include <universal/number/elreal/divide.hpp>
-// Phase 7 (#931): math suite
-#include <universal/number/elreal/math/sqrt.hpp>
-#include <universal/number/elreal/math/hypot.hpp>
-#include <universal/number/elreal/math/constants.hpp>
-#include <universal/number/elreal/math/exponent.hpp>
-#include <universal/number/elreal/math/hyperbolic.hpp>
-#include <universal/number/elreal/math/trigonometry.hpp>
 // The elreal class facade: a plug-in arithmetic number system over the ZBCL
 // machinery above (lazy operators, runtime precision, depth-bounded compare).
 #include <universal/number/elreal/elreal_impl.hpp>
 #include <universal/number/elreal/numeric_limits.hpp>
 #include <universal/number/elreal/attributes.hpp>
 #include <universal/number/elreal/manipulators.hpp>
+// Phase 7 (#931) math suite, lifted to class elreal by the facade. mathlib.hpp
+// pulls in the ZBCL-level math/*.hpp (sqrt/hypot/exp/log/trig/hyperbolic/
+// constants) and wraps each at the elreal class level (#1079 Phase 4).
+#include <universal/number/elreal/mathlib.hpp>
