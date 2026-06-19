@@ -6,6 +6,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <cstdlib>      // EXIT_SUCCESS / EXIT_FAILURE
+#include <exception>    // std::exception
+#include <iostream>     // std::cerr / std::endl
 #include <string>
 
 #include <universal/number/elreal/elreal.hpp>
