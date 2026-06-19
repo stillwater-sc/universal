@@ -20,8 +20,10 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <numeric>
 #include <string>
 #include <vector>
 #include <type_traits>
@@ -162,9 +164,9 @@ public:
     template <typename T = double>
     T approx(std::size_t depth) const {
         static_assert(std::is_floating_point_v<T>, "elreal::approx<T> requires a native floating-point T");
-        T acc = T{0};
-        for (const auto& b : _value.take(depth)) acc += b.template value_as<T>();
-        return acc;
+        const auto blocks = _value.take(depth);
+        return std::accumulate(blocks.begin(), blocks.end(), T{0},
+            [](T acc, const auto& b) { return acc + b.template value_as<T>(); });
     }
 
     // refine(depth): raise the default pull depth; the next boundary op pulls deeper,
@@ -230,10 +232,11 @@ template <typename FpType>
 inline int elreal_cmp(const elreal<FpType>& a, const elreal<FpType>& b) {
     const std::size_t d = a.precision() > b.precision() ? a.precision() : b.precision();
     ZBCL<FpType> diff = add(a.stream(), negate(b.stream()));
-    for (const auto& blk : diff.take(d + 1)) {
-        if (!blk.is_zero_block()) return blk.sign();   // first nonzero limb decides
-    }
-    return 0;   // no nonzero limb within d -> equal to precision
+    const auto blocks = diff.take(d + 1);
+    // first nonzero limb decides the ordering; none within d -> equal to precision
+    const auto it = std::find_if(blocks.begin(), blocks.end(),
+        [](const auto& blk) { return !blk.is_zero_block(); });
+    return it != blocks.end() ? it->sign() : 0;
 }
 template <typename FpType> inline bool operator==(const elreal<FpType>& a, const elreal<FpType>& b) { return elreal_cmp(a, b) == 0; }
 template <typename FpType> inline bool operator!=(const elreal<FpType>& a, const elreal<FpType>& b) { return !(a == b); }
