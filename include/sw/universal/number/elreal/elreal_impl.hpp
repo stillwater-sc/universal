@@ -20,7 +20,10 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
+#include <numeric>
 #include <string>
 #include <vector>
 #include <type_traits>
@@ -44,8 +47,13 @@ namespace sw { namespace universal {
 // (conversion / comparison / I/O) unless overridden per-object via precision(). It
 // is a thread-local default so an enclosing scope can change it (see
 // elreal_precision_guard) without recompiling the type.
+// The compile-time nominal default precision (in blocks). numeric_limits reports
+// its precision-dependent fields against this; the runtime default below is seeded
+// from it and may be changed per-scope (elreal_precision_guard).
+inline constexpr std::size_t kElrealDefaultPrecision = 8;   // ~128 decimal digits on a double host
+
 inline std::size_t& elreal_default_precision() {
-    static thread_local std::size_t depth = 8;   // ~128 decimal digits on a double host
+    static thread_local std::size_t depth = kElrealDefaultPrecision;
     return depth;
 }
 
@@ -156,9 +164,9 @@ public:
     template <typename T = double>
     T approx(std::size_t depth) const {
         static_assert(std::is_floating_point_v<T>, "elreal::approx<T> requires a native floating-point T");
-        T acc = T{0};
-        for (const auto& b : _value.take(depth)) acc += b.template value_as<T>();
-        return acc;
+        const auto blocks = _value.take(depth);
+        return std::accumulate(blocks.begin(), blocks.end(), T{0},
+            [](T acc, const auto& b) { return acc + b.template value_as<T>(); });
     }
 
     // refine(depth): raise the default pull depth; the next boundary op pulls deeper,
@@ -169,6 +177,23 @@ public:
     const stream_type& stream() const noexcept { return _value; }
 
     bool iszero() const noexcept { return _value.is_empty(); }
+    bool isneg()  const noexcept { return sign() < 0; }
+
+    // sign(): -1 if negative, +1 otherwise (the most significant block's sign;
+    // +1 for zero). scale(): the value's binary exponent (the leading block's
+    // combined exponent E = scale_of_v + exp; 0 for zero).
+    int sign() const noexcept {
+        auto bl = _value.take(1);
+        return (!bl.empty() && bl.front().sign() < 0) ? -1 : 1;
+    }
+    // int64_t (not int): elreal carries an unbounded integer<256> exponent, so a
+    // narrow int cast could overflow. The host-FP attribute surface this feeds
+    // (ldexp / significand) is bounded by FpType's exponent range, for which int64_t
+    // has vast headroom; the full-width exponent stays reachable via block::exponent().
+    int64_t scale() const noexcept {
+        auto bl = _value.take(1);
+        return bl.empty() ? 0 : static_cast<int64_t>(bl.front().exponent());
+    }
 
 private:
     stream_type _value;    // lazy, memoised block co-list
@@ -207,10 +232,11 @@ template <typename FpType>
 inline int elreal_cmp(const elreal<FpType>& a, const elreal<FpType>& b) {
     const std::size_t d = a.precision() > b.precision() ? a.precision() : b.precision();
     ZBCL<FpType> diff = add(a.stream(), negate(b.stream()));
-    for (const auto& blk : diff.take(d + 1)) {
-        if (!blk.is_zero_block()) return blk.sign();   // first nonzero limb decides
-    }
-    return 0;   // no nonzero limb within d -> equal to precision
+    const auto blocks = diff.take(d + 1);
+    // first nonzero limb decides the ordering; none within d -> equal to precision
+    const auto it = std::find_if(blocks.begin(), blocks.end(),
+        [](const auto& blk) { return !blk.is_zero_block(); });
+    return it != blocks.end() ? it->sign() : 0;
 }
 template <typename FpType> inline bool operator==(const elreal<FpType>& a, const elreal<FpType>& b) { return elreal_cmp(a, b) == 0; }
 template <typename FpType> inline bool operator!=(const elreal<FpType>& a, const elreal<FpType>& b) { return !(a == b); }
