@@ -21,8 +21,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -57,6 +59,29 @@ inline std::size_t& elreal_default_precision() {
     return depth;
 }
 
+// elreal is exact over the FINITE reals, but it also carries an IEEE-style
+// non-finite classification so it behaves predictably in plug-in kernels that
+// can produce NaN / +-Inf (e.g. x/0, log of a negative, overflow on conversion).
+// A non-finite elreal holds an empty stream and a non-finite _cls tag; the tag
+// propagates through the arithmetic, comparison, and conversion boundaries by the
+// usual IEEE-754 rules (#1079 Phase 5).
+enum class elreal_class : std::uint8_t { finite = 0, pinf = 1, ninf = 2, qnan = 3 };
+
+namespace detail {
+    inline constexpr bool is_inf_class(elreal_class c) noexcept {
+        return c == elreal_class::pinf || c == elreal_class::ninf;
+    }
+    inline constexpr elreal_class negate_class(elreal_class c) noexcept {
+        return c == elreal_class::pinf ? elreal_class::ninf
+             : c == elreal_class::ninf ? elreal_class::pinf
+             : c;  // finite / qnan unchanged
+    }
+    // the inf class with the given sign (+1 -> pinf, -1 -> ninf)
+    inline constexpr elreal_class inf_with_sign(int s) noexcept {
+        return s < 0 ? elreal_class::ninf : elreal_class::pinf;
+    }
+}
+
 // RAII scoped override of the default precision. Non-copyable/non-movable: it
 // restores shared thread-local state on destruction, so a copy/move would let a
 // stale instance clobber the active scope.
@@ -80,15 +105,15 @@ public:
     using stream_type = ZBCL<FpType>;
 
     // --- construction --------------------------------------------------------
-    elreal() : _value{}, _depth(elreal_default_precision()) {}   // 0 (empty stream)
+    elreal() : _value{}, _depth(elreal_default_precision()), _cls(elreal_class::finite) {}   // 0
     elreal(const elreal&) = default;
     elreal(elreal&&) noexcept = default;
     elreal& operator=(const elreal&) = default;
     elreal& operator=(elreal&&) noexcept = default;
 
-    // wrap an existing lazy stream (advanced / internal)
+    // wrap an existing lazy stream (advanced / internal) -- always finite
     explicit elreal(stream_type v, std::size_t depth = elreal_default_precision())
-        : _value(std::move(v)), _depth(depth) {}
+        : _value(std::move(v)), _depth(depth), _cls(elreal_class::finite) {}
 
     // native conversions (exact for integers < 2^53; from_native for floats)
     elreal(signed char iv)        { *this = static_cast<double>(iv); }
@@ -105,49 +130,72 @@ public:
     elreal(double iv)            { *this = iv; }
 
     elreal& operator=(double rhs) {
-        _value = from_native<FpType>(rhs);
         _depth = elreal_default_precision();
+        if (std::isnan(rhs)) { _value = stream_type{}; _cls = elreal_class::qnan; return *this; }
+        if (std::isinf(rhs)) { _value = stream_type{}; _cls = detail::inf_with_sign(rhs < 0 ? -1 : 1); return *this; }
+        _value = from_native<FpType>(rhs);
+        _cls   = elreal_class::finite;
         return *this;
     }
     elreal& operator=(float rhs)       { return *this = static_cast<double>(rhs); }
     elreal& operator=(int rhs)         { return *this = static_cast<double>(rhs); }
     elreal& operator=(long long rhs)   { return *this = static_cast<double>(rhs); }
 
-    // SpecificValue: elreal is an exact FINITE real; non-finite codes map to 0 for
-    // plug-in compatibility (a dedicated non-finite state is a later design item).
-    elreal(const SpecificValue code) : _value{}, _depth(elreal_default_precision()) {
+    // SpecificValue: materialise a named encoding. elreal now carries a non-finite
+    // classification, so infpos/infneg/qnan/snan map to the corresponding states.
+    elreal(const SpecificValue code) : _value{}, _depth(elreal_default_precision()), _cls(elreal_class::finite) {
         switch (code) {
-            case SpecificValue::maxpos:  *this =  1.0e308; break;
-            case SpecificValue::maxneg:  *this = -1.0e308; break;
+            case SpecificValue::maxpos:  *this =  1.0e308;  break;
+            case SpecificValue::maxneg:  *this = -1.0e308;  break;
             case SpecificValue::minpos:  *this =  1.0e-307; break;
             case SpecificValue::minneg:  *this = -1.0e-307; break;
-            default:                     _value = stream_type{}; break;  // zero / nan / inf
+            case SpecificValue::infpos:  _cls = elreal_class::pinf; break;
+            case SpecificValue::infneg:  _cls = elreal_class::ninf; break;
+            case SpecificValue::qnan:
+            case SpecificValue::snan:    _cls = elreal_class::qnan; break;
+            default:                     _value = stream_type{};  break;  // zero
         }
     }
 
     // --- conversions (boundary: forces evaluation to _depth) -----------------
-    explicit operator double()      const noexcept { return approx<double>(_depth); }
-    explicit operator float()       const noexcept { return static_cast<float>(approx<double>(_depth)); }
-    explicit operator long double() const noexcept { return approx<long double>(_depth); }
+    explicit operator double()      const noexcept { return host_value<double>(); }
+    explicit operator float()       const noexcept { return static_cast<float>(host_value<double>()); }
+    explicit operator long double() const noexcept { return host_value<long double>(); }
 
-    // --- arithmetic (LAZY: store unforced streams) ---------------------------
-    elreal operator-() const { return elreal(negate(_value), _depth); }
+    // --- arithmetic (LAZY for finite operands; IEEE rules for non-finite) ----
+    elreal operator-() const {
+        if (_cls != elreal_class::finite) return elreal(detail::negate_class(_cls), _depth);
+        return elreal(negate(_value), _depth);
+    }
 
     elreal& operator+=(const elreal& rhs) {
-        _value = add(_value, rhs._value);
-        _depth = _depth > rhs._depth ? _depth : rhs._depth;
-        return *this;
+        const std::size_t nd = deeper(rhs);
+        if (isnan() || rhs.isnan()) return become(elreal_class::qnan, nd);
+        const bool ai = isinf(), bi = rhs.isinf();
+        if (ai && bi) return (_cls == rhs._cls) ? keep(nd) : become(elreal_class::qnan, nd); // inf-inf -> nan
+        if (ai) return keep(nd);                                    // inf + finite -> inf
+        if (bi) return become(rhs._cls, nd);                        // finite + inf -> inf
+        _value = add(_value, rhs._value); _depth = nd; return *this;
     }
     elreal& operator-=(const elreal& rhs) { return *this += (-rhs); }
     elreal& operator*=(const elreal& rhs) {
-        _value = mul_online(_value, rhs._value);
-        _depth = _depth > rhs._depth ? _depth : rhs._depth;
-        return *this;
+        const std::size_t nd = deeper(rhs);
+        if (isnan() || rhs.isnan()) return become(elreal_class::qnan, nd);
+        if (isinf() || rhs.isinf()) {
+            if (iszero() || rhs.iszero()) return become(elreal_class::qnan, nd);  // inf * 0
+            return become(detail::inf_with_sign(sign() * rhs.sign()), nd);
+        }
+        _value = mul_online(_value, rhs._value); _depth = nd; return *this;
     }
     elreal& operator/=(const elreal& rhs) {
-        _value = div_online(_value, rhs._value);
-        _depth = _depth > rhs._depth ? _depth : rhs._depth;
-        return *this;
+        const std::size_t nd = deeper(rhs);
+        if (isnan() || rhs.isnan()) return become(elreal_class::qnan, nd);
+        if (rhs.isinf()) return isinf() ? become(elreal_class::qnan, nd)         // inf / inf
+                                        : become(elreal_class::finite, nd);      // finite / inf -> 0
+        if (rhs.iszero()) return iszero() ? become(elreal_class::qnan, nd)       // 0 / 0
+                                          : become(detail::inf_with_sign(sign() * rhs.sign()), nd); // x / 0
+        if (isinf()) return become(detail::inf_with_sign(sign() * rhs.sign()), nd);  // inf / finite
+        _value = div_online(_value, rhs._value); _depth = nd; return *this;
     }
 
     // --- lazy API / state-machine extension ----------------------------------
@@ -176,28 +224,60 @@ public:
     // stream(): the raw lazy state machine (advanced).
     const stream_type& stream() const noexcept { return _value; }
 
-    bool iszero() const noexcept { return _value.is_empty(); }
-    bool isneg()  const noexcept { return sign() < 0; }
+    // --- classification ------------------------------------------------------
+    bool iszero()   const noexcept { return _cls == elreal_class::finite && _value.is_empty(); }
+    bool isnan()    const noexcept { return _cls == elreal_class::qnan; }
+    bool isinf()    const noexcept { return detail::is_inf_class(_cls); }
+    bool isfinite() const noexcept { return _cls == elreal_class::finite; }
+    bool isneg()    const noexcept { return sign() < 0; }
 
-    // sign(): -1 if negative, +1 otherwise (the most significant block's sign;
-    // +1 for zero). scale(): the value's binary exponent (the leading block's
-    // combined exponent E = scale_of_v + exp; 0 for zero).
+    // sign(): -1 if negative, +1 otherwise. For +-inf the inf sign; for nan +1
+    // (sign of NaN is unspecified); for finite the most significant block's sign
+    // (+1 for zero).
     int sign() const noexcept {
+        if (_cls == elreal_class::pinf || _cls == elreal_class::qnan) return 1;
+        if (_cls == elreal_class::ninf) return -1;
         auto bl = _value.take(1);
         return (!bl.empty() && bl.front().sign() < 0) ? -1 : 1;
     }
-    // int64_t (not int): elreal carries an unbounded integer<256> exponent, so a
-    // narrow int cast could overflow. The host-FP attribute surface this feeds
-    // (ldexp / significand) is bounded by FpType's exponent range, for which int64_t
-    // has vast headroom; the full-width exponent stays reachable via block::exponent().
+    // scale(): the value's binary exponent (leading block's combined exponent);
+    // 0 for zero and for non-finite. int64_t (not int): elreal carries an unbounded
+    // integer<256> exponent, so a narrow int cast could overflow; the host-FP
+    // attribute surface this feeds (ldexp / significand) is bounded by FpType's
+    // exponent range, for which int64_t has vast headroom; the full-width exponent
+    // stays reachable via block::exponent().
     int64_t scale() const noexcept {
+        if (_cls != elreal_class::finite) return 0;
         auto bl = _value.take(1);
         return bl.empty() ? 0 : static_cast<int64_t>(bl.front().exponent());
     }
 
 private:
-    stream_type _value;    // lazy, memoised block co-list
-    std::size_t _depth;    // default pull depth for boundary operations
+    stream_type  _value;   // lazy, memoised block co-list (empty when non-finite)
+    std::size_t  _depth;   // default pull depth for boundary operations
+    elreal_class _cls;     // IEEE-style finite / +-inf / nan classification
+
+    // internal: construct a non-finite elreal (empty stream, given class)
+    elreal(elreal_class cls, std::size_t depth) : _value{}, _depth(depth), _cls(cls) {}
+    template <typename> friend class elreal;
+
+    // host_value<T>(): the value as native T, honouring the non-finite class.
+    template <typename T>
+    T host_value() const noexcept {
+        switch (_cls) {
+            case elreal_class::qnan: return std::numeric_limits<T>::quiet_NaN();
+            case elreal_class::pinf: return std::numeric_limits<T>::infinity();
+            case elreal_class::ninf: return -std::numeric_limits<T>::infinity();
+            default:                 return approx<T>(_depth);
+        }
+    }
+
+    // arithmetic-result helpers
+    std::size_t deeper(const elreal& rhs) const noexcept { return _depth > rhs._depth ? _depth : rhs._depth; }
+    elreal& keep(std::size_t d) noexcept { _depth = d; return *this; }   // retain class/value, set depth
+    elreal& become(elreal_class c, std::size_t d) {                       // finite c -> zero; else that state
+        _value = stream_type{}; _cls = c; _depth = d; return *this;
+    }
 };
 
 // =============================================================================
@@ -238,12 +318,28 @@ inline int elreal_cmp(const elreal<FpType>& a, const elreal<FpType>& b) {
         [](const auto& blk) { return !blk.is_zero_block(); });
     return it != blocks.end() ? it->sign() : 0;
 }
-template <typename FpType> inline bool operator==(const elreal<FpType>& a, const elreal<FpType>& b) { return elreal_cmp(a, b) == 0; }
-template <typename FpType> inline bool operator!=(const elreal<FpType>& a, const elreal<FpType>& b) { return !(a == b); }
-template <typename FpType> inline bool operator< (const elreal<FpType>& a, const elreal<FpType>& b) { return elreal_cmp(a, b) <  0; }
-template <typename FpType> inline bool operator> (const elreal<FpType>& a, const elreal<FpType>& b) { return elreal_cmp(a, b) >  0; }
-template <typename FpType> inline bool operator<=(const elreal<FpType>& a, const elreal<FpType>& b) { return elreal_cmp(a, b) <= 0; }
-template <typename FpType> inline bool operator>=(const elreal<FpType>& a, const elreal<FpType>& b) { return elreal_cmp(a, b) >= 0; }
+// total ordering with IEEE non-finite semantics layered on top of the finite
+// (depth-bounded) primitive: NaN is unordered (every relation but != is false);
+// -inf < finite < +inf; like-signed infinities compare equal.
+enum class elreal_order : std::uint8_t { less, equal, greater, unordered };
+template <typename FpType>
+inline elreal_order elreal_order_of(const elreal<FpType>& a, const elreal<FpType>& b) {
+    if (a.isnan() || b.isnan()) return elreal_order::unordered;
+    if (a.isinf() || b.isinf()) {
+        const int ra = a.isinf() ? a.sign() * 2 : 0;   // +inf->+2, -inf->-2, finite->0
+        const int rb = b.isinf() ? b.sign() * 2 : 0;
+        if (ra == rb) return elreal_order::equal;
+        return ra < rb ? elreal_order::less : elreal_order::greater;
+    }
+    const int c = elreal_cmp(a, b);
+    return c < 0 ? elreal_order::less : (c > 0 ? elreal_order::greater : elreal_order::equal);
+}
+template <typename FpType> inline bool operator==(const elreal<FpType>& a, const elreal<FpType>& b) { return elreal_order_of(a, b) == elreal_order::equal; }
+template <typename FpType> inline bool operator!=(const elreal<FpType>& a, const elreal<FpType>& b) { return elreal_order_of(a, b) != elreal_order::equal; }
+template <typename FpType> inline bool operator< (const elreal<FpType>& a, const elreal<FpType>& b) { return elreal_order_of(a, b) == elreal_order::less; }
+template <typename FpType> inline bool operator> (const elreal<FpType>& a, const elreal<FpType>& b) { return elreal_order_of(a, b) == elreal_order::greater; }
+template <typename FpType> inline bool operator<=(const elreal<FpType>& a, const elreal<FpType>& b) { const auto o = elreal_order_of(a, b); return o == elreal_order::less    || o == elreal_order::equal; }
+template <typename FpType> inline bool operator>=(const elreal<FpType>& a, const elreal<FpType>& b) { const auto o = elreal_order_of(a, b); return o == elreal_order::greater || o == elreal_order::equal; }
 template <typename FpType> inline bool operator==(const elreal<FpType>& a, double b) { return a == elreal<FpType>(b); }
 template <typename FpType> inline bool operator!=(const elreal<FpType>& a, double b) { return !(a == elreal<FpType>(b)); }
 template <typename FpType> inline bool operator< (const elreal<FpType>& a, double b) { return a <  elreal<FpType>(b); }
@@ -252,6 +348,8 @@ template <typename FpType> inline bool operator> (const elreal<FpType>& a, doubl
 // abs / fabs
 template <typename FpType>
 inline elreal<FpType> abs(const elreal<FpType>& a) {
+    if (a.isnan()) return a;                       // |nan| = nan
+    if (a.isinf()) return a.sign() < 0 ? -a : a;   // |-inf| = +inf
     // sign from the leading (most significant) block
     auto bl = a.stream().take(1);
     bool neg = !bl.empty() && bl.front().sign() < 0;
