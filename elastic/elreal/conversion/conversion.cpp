@@ -58,6 +58,11 @@ int verify_nonfinite_convert() {
     // free-function classifiers
     if (!isnan(nan) || !isinf(pinf) || !isfinite(Real(1.0))) ++n;
     if (!signbit(ninf) || signbit(pinf)) ++n;
+    // rendering: to_triple carries the sign separately, so the tag is unsigned
+    if (to_triple(pinf) != "(+, inf)") ++n;
+    if (to_triple(ninf) != "(-, inf)") ++n;
+    if (to_triple(nan)  != "(+, nan)") ++n;
+    if (to_components(ninf) != "( -inf )") ++n;        // components keeps the sign
     return n;
 }
 

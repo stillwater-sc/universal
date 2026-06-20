@@ -30,9 +30,12 @@ inline std::string type_tag(const elreal<FpType>& = {}) {
 
 // to_components: the block expansion v ~ sum_i (block_i), each block's value, at the
 // value's current precision. A non-empty stream renders down to precision() blocks.
+// nonfinite_tag: "nan" / "inf" / "-inf". With include_sign=false the inf is
+// unsigned ("inf") -- for renderings like to_triple that carry the sign separately.
 template <typename FpType>
-inline std::string nonfinite_tag(const elreal<FpType>& v) {
+inline std::string nonfinite_tag(const elreal<FpType>& v, bool include_sign = true) {
     if (v.isnan()) return "nan";
+    if (!include_sign) return "inf";
     return v.sign() < 0 ? "-inf" : "inf";
 }
 
@@ -67,7 +70,7 @@ inline std::string to_binary(const elreal<FpType>& v, bool nibbleMarker = false)
 // value ~ (sign) significand * 2^scale with significand in [1,2) (0 for zero).
 template <typename FpType>
 inline std::string to_triple(const elreal<FpType>& v) {
-    if (!v.isfinite()) return std::string("(") + (v.isneg() ? "-, " : "+, ") + nonfinite_tag(v) + ')';
+    if (!v.isfinite()) return std::string("(") + (v.isneg() ? "-, " : "+, ") + nonfinite_tag(v, false) + ')';
     std::stringstream s;
     const int64_t e = v.scale();
     const double  m = v.iszero() ? 0.0
