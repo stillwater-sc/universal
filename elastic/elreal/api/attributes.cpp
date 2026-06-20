@@ -30,8 +30,9 @@ int verify_numeric_limits() {
     static_assert(!lim::is_integer,     "elreal is not an integer type");
     static_assert(!lim::is_exact,       "elreal materialises to host blocks (not exact)");
     static_assert(lim::radix == 2,      "elreal radix is 2");
-    static_assert(!lim::has_infinity,   "elreal is finite-only");
-    static_assert(!lim::has_quiet_NaN,  "elreal is finite-only");
+    static_assert(lim::has_infinity,    "elreal has an inf state (#1079 Phase 5)");
+    static_assert(lim::has_quiet_NaN,   "elreal has a qnan state (#1079 Phase 5)");
+    static_assert(!lim::has_signaling_NaN, "elreal folds snan to qnan");
     static_assert(!lim::is_bounded,     "elreal has an unbounded exponent");
     // precision reported against the nominal default (kElrealDefaultPrecision blocks).
     static_assert(lim::digits == static_cast<int>(kElrealDefaultPrecision) * std::numeric_limits<double>::digits,
@@ -44,7 +45,10 @@ int verify_numeric_limits() {
     if (!(double(lim::min()) > 0.0)) ++n;
     if (!(double(lim::lowest()) < 0.0)) ++n;
     if (!(double(lim::epsilon()) > 0.0 && double(lim::epsilon()) < 1.0)) ++n;
-    if (double(lim::infinity()) != 0.0) ++n;        // finite-only -> 0
+    // non-finite factories now return real states (#1079 Phase 5)
+    if (!std::isinf(double(lim::infinity()))) ++n;
+    if (!(double(lim::infinity()) > 0.0)) ++n;       // +inf
+    if (!std::isnan(double(lim::quiet_NaN()))) ++n;
     // denorm_absent contract: denorm_min() == min()
     if (double(lim::denorm_min()) != double(lim::min())) ++n;
     return n;

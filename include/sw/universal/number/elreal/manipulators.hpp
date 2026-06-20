@@ -31,7 +31,14 @@ inline std::string type_tag(const elreal<FpType>& = {}) {
 // to_components: the block expansion v ~ sum_i (block_i), each block's value, at the
 // value's current precision. A non-empty stream renders down to precision() blocks.
 template <typename FpType>
+inline std::string nonfinite_tag(const elreal<FpType>& v) {
+    if (v.isnan()) return "nan";
+    return v.sign() < 0 ? "-inf" : "inf";
+}
+
+template <typename FpType>
 inline std::string to_components(const elreal<FpType>& v) {
+    if (!v.isfinite()) return std::string("( ") + nonfinite_tag(v) + " )";
     std::stringstream s;
     auto blocks = v.limbs(v.precision());
     s << "( ";
@@ -47,6 +54,7 @@ inline std::string to_components(const elreal<FpType>& v) {
 // to_binary: the leading (and, if multi-block, trailing) block in binary.
 template <typename FpType>
 inline std::string to_binary(const elreal<FpType>& v, bool nibbleMarker = false) {
+    if (!v.isfinite()) return nonfinite_tag(v);
     std::stringstream s;
     auto blocks = v.limbs(v.precision());
     if (blocks.empty()) { s << "0"; return s.str(); }
@@ -59,6 +67,7 @@ inline std::string to_binary(const elreal<FpType>& v, bool nibbleMarker = false)
 // value ~ (sign) significand * 2^scale with significand in [1,2) (0 for zero).
 template <typename FpType>
 inline std::string to_triple(const elreal<FpType>& v) {
+    if (!v.isfinite()) return std::string("(") + (v.isneg() ? "-, " : "+, ") + nonfinite_tag(v) + ')';
     std::stringstream s;
     const int64_t e = v.scale();
     const double  m = v.iszero() ? 0.0

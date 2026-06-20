@@ -14,6 +14,12 @@
 
 namespace sw { namespace universal {
 
+// IEEE-style classification (free functions for ADL / plug-in kernels).
+template <typename FpType> inline bool isnan   (const elreal<FpType>& v) { return v.isnan(); }
+template <typename FpType> inline bool isinf   (const elreal<FpType>& v) { return v.isinf(); }
+template <typename FpType> inline bool isfinite(const elreal<FpType>& v) { return v.isfinite(); }
+template <typename FpType> inline bool signbit (const elreal<FpType>& v) { return v.sign() < 0; }
+
 // sign(v): -1 if v < 0, +1 otherwise (+1 for zero).
 template <typename FpType>
 inline int sign(const elreal<FpType>& v) { return v.sign(); }
