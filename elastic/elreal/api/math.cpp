@@ -26,15 +26,14 @@ bool near(const Real& v, double ref, double tol = 1.0e-12) {
 }
 
 // (1) named constants resolve to their reference values.
-// elreal_e() and elreal_euler_gamma() are exercised by the math/constants suite,
-// not here: they still route through the eager e_zbcl / euler_gamma_zbcl factories
-// (the online conversion is #1061 Phase 3b), and at ~10-16 s each they would
-// dominate this fast-tier wiring test. The wrappers are one-liners identical to
-// the ones below, so these checks already cover the constant-wrapping pattern;
-// the e value itself is verified through exp(1) in verify_unary().
+// elreal_e() is now online (#1061 Phase 3b: ~16 s -> ~0.1 s) so it is checked here
+// directly. elreal_euler_gamma() stays out of this fast-tier wiring test: it is the
+// Brent-McMillan algorithm (no clean Taylor form), still seconds at this depth, and
+// is validated to 320 digits by the math/constants suite.
 int verify_constants() {
     int n = 0;
     if (!near(elreal_pi(),      3.14159265358979324))  ++n;
+    if (!near(elreal_e(),       2.71828182845904524))  ++n;
     if (!near(elreal_ln2(),     0.69314718055994531))  ++n;
     if (!near(elreal_ln10(),    2.30258509299404568))  ++n;
     if (!near(elreal_sqrt2(),   1.41421356237309505))  ++n;
