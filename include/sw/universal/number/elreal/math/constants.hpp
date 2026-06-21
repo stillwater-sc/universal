@@ -193,16 +193,17 @@ inline ZBCL<FpType> phi_zbcl(std::size_t depth = 16) {
 //   B(n) = sum_{k>=0} (n^k/k!)^2,  A(n) = sum_{k>=0} (n^k/k!)^2 * H_k,  H_0 = 0,
 //   |error| ~ pi*exp(-4n)  ->  n >= D*ln(10)/4 for D digits.
 // The Euler-Mascheroni constant has no rapidly-converging elementary series, so
-// (unlike pi/e/ln2) it needs a real algorithm. The per-term work is dominated by
-// the product w_k * H_k; the long tail of terms contributes only a few limbs each.
+// (unlike pi/e/ln2) it needs a real algorithm. The A(n) = sum_k w_k H_k sum is
+// computed by Abel summation (sum tail_k/(k+1)) -- no harmonic numbers, no per-term
+// full multiply. Full derivation, the cancellation analysis, and the deferred
+// binary-splitting alternative are in docs/design/elreal-euler-gamma.md (#1061 Ph3b).
 //
 // HOST RANGE: the intermediate w_k = (n^k/k!)^2 peaks at ~exp(2n) near k=n. n grows
 // with the requested precision (n ~ D*ln(10)/4), and the block significand carries
 // that magnitude, so a NARROW-exponent host (float/bfloat16, max ~10^38) overflows
 // once n exceeds ~44 (a few blocks of depth). High-precision euler_gamma is therefore
 // a double-host generator; on narrow hosts keep depth shallow (n below the overflow).
-// Validated to 307 digits on double (#1053); eager like the other constants -- the
-// online-ops speedup for the whole series layer is #1061 Phase 3.
+// Validated to 305 digits on double vs the 320-digit reference (#1053, REGRESSION_LEVEL_4).
 template <typename FpType>
 inline ZBCL<FpType> euler_gamma_zbcl(std::size_t depth = 16) {
     using B = block<FpType>;
