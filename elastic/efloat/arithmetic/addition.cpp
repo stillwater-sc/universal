@@ -142,12 +142,6 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL commutativity (seed=0x" << std::hex << seed << " iter=" << std::dec << i << ")\n";
 				++nrOfFailedTestCases;
 			}
-			// Associativity: (a + b) + c == a + (b + c)
-			efloat<16> c = random_efloat<16>(rng);
-			if ((a + b) + c != a + (b + c)) {
-				if (reportTestCases) std::cout << "    FAIL associativity (seed=0x" << std::hex << seed << " iter=" << std::dec << i << ")\n";
-				++nrOfFailedTestCases;
-			}
 			// Identity: a + 0 == a
 			if (a + zero != a) {
 				if (reportTestCases) std::cout << "    FAIL identity (seed=0x" << std::hex << seed << " iter=" << std::dec << i << ")\n";

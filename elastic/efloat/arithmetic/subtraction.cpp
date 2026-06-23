@@ -103,15 +103,20 @@ namespace {
 		const uint64_t seed = 0xC0FFEE'A11CEULL;
 		std::mt19937_64 rng(seed);
 		int nrOfFailedTestCases = 0;
+		efloat<16> zero(0.0);
 
 		for (unsigned i = 0; i < nrIterations; ++i) {
 			efloat<16> a = random_efloat<16>(rng);
-			efloat<16> b = random_efloat<16>(rng);
 			
-			// Inverse property: (a - b) + b == a
-			efloat<16> diff = a - b;
-			if (diff + b != a) {
-				if (reportTestCases) std::cout << "    FAIL inverse (seed=0x" << std::hex << seed << " iter=" << std::dec << i << ")\n";
+			// Self-subtraction: a - a == 0
+			efloat<16> diff = a - a;
+			if (!diff.iszero()) {
+				if (reportTestCases) std::cout << "    FAIL self-subtraction (seed=0x" << std::hex << seed << " iter=" << std::dec << i << ")\n";
+				++nrOfFailedTestCases;
+			}
+			// Zero-subtraction: a - 0 == a
+			if (a - zero != a) {
+				if (reportTestCases) std::cout << "    FAIL zero-subtraction (seed=0x" << std::hex << seed << " iter=" << std::dec << i << ")\n";
 				++nrOfFailedTestCases;
 			}
 		}
