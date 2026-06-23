@@ -32,6 +32,17 @@ The exception types are defined, but you have the option to throw them
 
 namespace sw { namespace universal {
 
+static inline constexpr int clz(uint32_t x) noexcept {
+	if (x == 0) return 32;
+	int n = 0;
+	if (x <= 0x0000FFFF) { n += 16; x <<= 16; }
+	if (x <= 0x00FFFFFF) { n += 8;  x <<= 8;  }
+	if (x <= 0x0FFFFFFF) { n += 4;  x <<= 4;  }
+	if (x <= 0x3FFFFFFF) { n += 2;  x <<= 2;  }
+	if (x <= 0x7FFFFFFF) { n += 1;            }
+	return n;
+}
+
 enum class FloatingPointState {
 	Zero,
 	Normal,
@@ -77,6 +88,17 @@ public:
 	constexpr efloat& operator=(const efloat&) = default;
 	constexpr efloat& operator=(efloat&&) = default;
 
+	// specialized constructor for testing and verification
+	constexpr efloat(bool sign, int64_t exponent, const std::vector<uint32_t>& limbs, bool nan = false, bool inf = false, bool zero = false) {
+		_sign = sign;
+		_exponent = exponent;
+		_limb = limbs;
+		if (nan) _state = FloatingPointState::QuietNaN;
+		else if (inf) _state = FloatingPointState::Infinite;
+		else if (zero) _state = FloatingPointState::Zero;
+		else _state = FloatingPointState::Normal;
+	}
+
 	// initializers for native types
 	efloat(signed char iv)                      noexcept { *this = iv; }
 	efloat(short iv)                            noexcept { *this = iv; }
@@ -117,24 +139,93 @@ public:
 
 	// prefix operators
 	constexpr efloat operator-() const noexcept {
+		if (iszero()) return *this;
 		efloat negated(*this);
+		negated.setsign(!_sign);
 		return negated;
 	}
 
-	// arithmetic operators (currently stubs; constexpr-marked so the
-	// surface lights up at constant evaluation today and real semantics
-	// will inherit constexpr-ness automatically when implemented)
-	constexpr efloat& operator+=(const efloat& /* rhs */) noexcept {
+	// arithmetic operators
+	constexpr efloat& operator+=(const efloat& rhs) noexcept {
+		// handle special cases
+		if (isnan() || rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+		if (isinf()) {
+			if (rhs.isinf() && _sign != rhs._sign) setnan();
+			return *this;
+		}
+		if (rhs.isinf()) {
+			*this = rhs;
+			return *this;
+		}
+		if (iszero()) {
+			*this = rhs;
+			return *this;
+		}
+		if (rhs.iszero()) {
+			return *this;
+		}
+
+		// Make copies for manipulation
+		std::vector<uint32_t> a_limbs = _limb;
+		std::vector<uint32_t> b_limbs = rhs._limb;
+		int64_t a_exp = _exponent;
+		int64_t b_exp = rhs._exponent;
+		
+		// Align exponents
+		if (a_exp < b_exp) {
+			grow_for_shift(a_limbs, b_exp - a_exp, nlimbs);
+			shift_right(a_limbs, b_exp - a_exp);
+			a_exp = b_exp;
+		} else if (b_exp < a_exp) {
+			grow_for_shift(b_limbs, a_exp - b_exp, nlimbs);
+			shift_right(b_limbs, a_exp - b_exp);
+		}
+
+		// Align sizes before any operation
+		align_sizes(a_limbs, b_limbs);
+
+		if (_sign == rhs._sign) {
+			size_t old_size = a_limbs.size();
+			add_limbs(a_limbs, b_limbs);
+			if (a_limbs.size() > old_size) {
+				a_exp += 32 * (a_limbs.size() - old_size);
+			}
+			_limb = a_limbs;
+		} else {
+			// Signs differ, perform subtraction
+			int cmp = compare_limbs(a_limbs, b_limbs);
+			if (cmp == 0) {
+				setzero();
+				return *this;
+			}
+			if (cmp > 0) {
+				subtract_limbs(a_limbs, b_limbs);
+				_limb = a_limbs;
+				// sign is already correct
+			} else { // cmp < 0
+				subtract_limbs(b_limbs, a_limbs);
+				_limb = b_limbs;
+				_sign = rhs._sign;
+			}
+		}
+
+		_exponent = a_exp;
+		normalize();
+
 		return *this;
 	}
-	constexpr efloat& operator+=(double /* rhs */) noexcept {
+	constexpr efloat& operator+=(double rhs) noexcept {
+		return *this += efloat(rhs);
+	}
+	constexpr efloat& operator-=(const efloat& rhs) noexcept {
+		*this += -rhs;
 		return *this;
 	}
-	constexpr efloat& operator-=(const efloat& /* rhs */) noexcept {
-		return *this;
-	}
-	constexpr efloat& operator-=(double /* rhs */) noexcept {
-		return *this;
+	constexpr efloat& operator-=(double rhs) noexcept {
+		return *this -= efloat(rhs);
 	}
 	constexpr efloat& operator*=(const efloat& /* rhs */) noexcept {
 		return *this;
@@ -181,7 +272,8 @@ public:
 		_limb[i] = value;
 	}
 
-	efloat& assign(const std::string& /* txt */) {
+	efloat& assign(const std::string& txt) {
+		parse(txt, *this);
 		return *this;
 	}
 
@@ -242,6 +334,121 @@ protected:
 	std::vector<uint32_t> _limb;     // limbs of the representation
 
 	// HELPER methods
+
+	static constexpr void shift_right(std::vector<uint32_t>& limbs, unsigned k) noexcept {
+		if (k == 0) return;
+		if (k >= limbs.size() * 32) {
+			limbs.assign(1, 0u);
+			return;
+		}
+		const unsigned limb_shift = k / 32;
+		const unsigned bit_shift = k % 32;
+		
+		if (limb_shift > 0) {
+			// erase the LSBs that are shifted out
+			limbs.erase(limbs.begin(), limbs.begin() + limb_shift);
+			// insert zeros at the MSB side
+			limbs.insert(limbs.end(), limb_shift, 0u);
+		}
+
+		if (bit_shift > 0) {
+			uint32_t carry_mask = (1u << bit_shift) - 1;
+			uint32_t carry = 0;
+			for (int i = static_cast<int>(limbs.size()) - 1; i >= 0; --i) {
+				uint32_t next_carry = limbs[i] & carry_mask;
+				limbs[i] = (limbs[i] >> bit_shift) | (carry << (32 - bit_shift));
+				carry = next_carry;
+			}
+		}
+	}
+
+	static constexpr void grow_for_shift(std::vector<uint32_t>& limbs, unsigned k, unsigned max_limbs) noexcept {
+		const unsigned required_limbs = (k + 31) / 32;
+		if (limbs.size() < max_limbs && required_limbs > 0) {
+			unsigned growth = std::min(required_limbs, max_limbs - static_cast<unsigned>(limbs.size()));
+			if (growth > 0) {
+				limbs.insert(limbs.begin(), growth, 0u);
+			}
+		}
+	}
+
+	static constexpr void align_sizes(std::vector<uint32_t>& a, std::vector<uint32_t>& b) noexcept {
+		size_t max_limbs = std::max(a.size(), b.size());
+		if (a.size() < max_limbs) {
+			size_t diff = max_limbs - a.size();
+			a.insert(a.begin(), diff, 0u);
+		}
+		if (b.size() < max_limbs) {
+			size_t diff = max_limbs - b.size();
+			b.insert(b.begin(), diff, 0u);
+		}
+	}
+
+	static constexpr void add_limbs(std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
+		uint64_t carry = 0;
+		for (size_t i = 0; i < a.size(); ++i) {
+			uint64_t sum = uint64_t(a[i]) + uint64_t(b[i]) + carry;
+			a[i] = static_cast<uint32_t>(sum);
+			carry = sum >> 32;
+		}
+		if (carry) {
+			a.push_back(1);
+		}
+	}
+
+	static constexpr void subtract_limbs(std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
+		uint64_t borrow = 0;
+		for (size_t i = 0; i < a.size(); ++i) {
+			uint64_t diff = (uint64_t(1) << 32) + uint64_t(a[i]) - uint64_t(b[i]) - borrow;
+			a[i] = static_cast<uint32_t>(diff);
+			borrow = (diff >> 32) ? 0 : 1;
+		}
+	}
+
+	constexpr void normalize() {
+		int msb_pos = -1;
+		for (int i = _limb.size() - 1; i >= 0; --i) {
+			if (_limb[i] != 0) {
+				msb_pos = i * 32 + (31 - clz(_limb[i]));
+				break;
+			}
+		}
+
+		if (msb_pos == -1) {
+			setzero();
+			return;
+		}
+
+		int64_t shift = (int64_t)(_limb.size() * 32 - 1) - msb_pos;
+		_exponent -= shift;
+
+		if (shift > 0) {
+			for(int64_t i = 0; i < shift; ++i) {
+				uint64_t carry = 0;
+				for(size_t j = 0; j < _limb.size(); ++j) {
+					uint64_t v = (uint64_t(_limb[j]) << 1) | carry;
+					_limb[j] = static_cast<uint32_t>(v);
+					carry = v >> 32;
+				}
+			}
+		} else if (shift < 0) {
+			shift_right(_limb, static_cast<unsigned>(-shift));
+		}
+
+		// Truncate trailing zero limbs at the LSB side (index 0) to maintain minimal representation
+		while (_limb.size() > 1 && _limb[0] == 0) {
+			_limb.erase(_limb.begin());
+		}
+	}
+
+	static constexpr int compare_limbs(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) noexcept {
+		for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i) {
+			if (a[i] > b[i]) return 1;
+			if (b[i] > a[i]) return -1;
+		}
+		return 0;
+	}
+
 
 	// convert arithmetic types into an elastic floating-point
 	template<typename SignedInt,
@@ -390,10 +597,32 @@ private:
 	// find the most significant bit set
 	template<unsigned nnlimbs>
 	friend signed findMsb(const efloat<nnlimbs>& v);
-};
+	};
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////    efloat functions   /////////////////////////////////
+	// to_binary formatter for efloat to support test reporters
+	template<unsigned nlimbs>
+	inline std::string to_binary(const efloat<nlimbs>& number, bool nibbleMarker = false) {
+		std::stringstream ss;
+		if (number.isnan()) {
+			ss << "nan";
+		} else if (number.isinf()) {
+			ss << (number.sign() == -1 ? "-inf" : "+inf");
+		} else if (number.iszero()) {
+			ss << "0b0.0.0";
+		} else {
+			ss << "0b" << (number.sign() == -1 ? "1" : "0") << "."
+			   << number.scale() << ".";
+			auto limbs = number.bits();
+			for (int i = limbs.size() - 1; i >= 0; --i) {
+				ss << std::setw(8) << std::setfill('0') << std::hex << limbs[i];
+				if (i > 0) ss << "'";
+			}
+		}
+		return ss.str();
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////    efloat functions   /////////////////////////////////
 
 template<unsigned nlimbs>
 inline efloat<nlimbs> abs(const efloat<nlimbs>& a) {
@@ -559,10 +788,31 @@ inline std::istream& operator>>(std::istream& istr, efloat<nlimbs>& p) {
 // efloat - efloat binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-// (currently stubs; constexpr-marked so the surface is usable in static_assert)
 template<unsigned nlimbs>
-constexpr bool operator==(const efloat<nlimbs>& /* lhs */, const efloat<nlimbs>& /* rhs */) noexcept {
-	return true;
+constexpr bool operator==(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
+	// handle special cases
+	if (lhs.isnan() || rhs.isnan()) {
+		return false; // NaN != NaN per IEEE 754
+	}
+	if (lhs.isinf()) {
+		return rhs.isinf() && (lhs.sign() == rhs.sign());
+	}
+	if (rhs.isinf()) {
+		return false;
+	}
+	if (lhs.iszero()) {
+		return rhs.iszero(); // positive zero == negative zero
+	}
+	if (rhs.iszero()) {
+		return false;
+	}
+
+	// normal numbers
+	if (lhs.sign() != rhs.sign()) return false;
+	if (lhs.scale() != rhs.scale()) return false;
+	if (lhs.bits().size() != rhs.bits().size()) return false;
+
+	return efloat<nlimbs>::compare_limbs(lhs.bits(), rhs.bits()) == 0;
 }
 template<unsigned nlimbs>
 constexpr bool operator!=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
