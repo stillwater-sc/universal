@@ -11,7 +11,7 @@ Showcase `efloat` as a tool for formal verification by writing a program that nu
 1.  **The Identity**: A good candidate is one that involves a long summation or sequence. For example, verifying that the sum of a specific telescoping series converges to its known value, or that a high-order numerical integration matches the exact analytical result.
 
     A simple but effective example is **Sala's identity for $\pi$**:
-    $\pi = \sum_{n=0}^{\infty} \frac{1}{16^n} \left( \frac{4}{8n+1} - \frac{2}{8n+4} - \frac{1}{8n+5} - \frac{1}{8n+6} ight)$
+    $\pi = \sum_{n=0}^{\infty} \frac{1}{16^n} \left( \frac{4}{8n+1} - \frac{2}{8n+4} - \frac{1}{8n+5} - \frac{1}{8n+6} \right)$
     This is the basis for the BBP formula, which allows for computing the n-th hexadecimal digit of $\pi$ without computing the preceding digits.
 
 2.  **The Problem**: While this series converges quickly, summing many terms using `double` will accumulate rounding errors. The goal is to compute the sum to a precision that exceeds what `double` can offer.

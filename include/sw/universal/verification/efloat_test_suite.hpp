@@ -13,9 +13,10 @@
 namespace sw { namespace universal {
 
 // Verify addition of two efloats
-int VerifyEfloatAddition(bool reportTestCases, const efloat<>& a, const efloat<>& b, const efloat<>& expected) {
+template<unsigned nlimbs>
+int VerifyEfloatAddition(bool reportTestCases, const efloat<nlimbs>& a, const efloat<nlimbs>& b, const efloat<nlimbs>& expected) {
     int nrOfFailedTestCases = 0;
-    efloat<> result = a + b;
+    efloat<nlimbs> result = a + b;
     if (result != expected) {
         nrOfFailedTestCases++;
         if (reportTestCases) {

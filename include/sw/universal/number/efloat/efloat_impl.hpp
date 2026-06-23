@@ -32,6 +32,17 @@ The exception types are defined, but you have the option to throw them
 
 namespace sw { namespace universal {
 
+static inline constexpr int clz(uint32_t x) noexcept {
+	if (x == 0) return 32;
+	int n = 0;
+	if (x <= 0x0000FFFF) { n += 16; x <<= 16; }
+	if (x <= 0x00FFFFFF) { n += 8;  x <<= 8;  }
+	if (x <= 0x0FFFFFFF) { n += 4;  x <<= 4;  }
+	if (x <= 0x3FFFFFFF) { n += 2;  x <<= 2;  }
+	if (x <= 0x7FFFFFFF) { n += 1;            }
+	return n;
+}
+
 enum class FloatingPointState {
 	Zero,
 	Normal,
@@ -78,7 +89,7 @@ public:
 	constexpr efloat& operator=(efloat&&) = default;
 
 	// specialized constructor for testing and verification
-	efloat(bool sign, int64_t exponent, const std::vector<uint32_t>& limbs, bool nan = false, bool inf = false, bool zero = false) {
+	constexpr efloat(bool sign, int64_t exponent, const std::vector<uint32_t>& limbs, bool nan = false, bool inf = false, bool zero = false) {
 		_sign = sign;
 		_exponent = exponent;
 		_limb = limbs;
@@ -127,7 +138,7 @@ public:
 #endif 
 
 	// prefix operators
-	efloat operator-() const noexcept {
+	constexpr efloat operator-() const noexcept {
 		if (iszero()) return *this;
 		efloat negated(*this);
 		negated.setsign(!_sign);
@@ -135,7 +146,7 @@ public:
 	}
 
 	// arithmetic operators
-	efloat& operator+=(const efloat& rhs) noexcept {
+	constexpr efloat& operator+=(const efloat& rhs) noexcept {
 		// handle special cases
 		if (isnan() || rhs.isnan()) {
 			setnan();
@@ -206,15 +217,15 @@ public:
 
 		return *this;
 	}
-	constexpr efloat& operator+=(double /* rhs */) noexcept {
-		return *this;
+	constexpr efloat& operator+=(double rhs) noexcept {
+		return *this += efloat(rhs);
 	}
-	efloat& operator-=(const efloat& rhs) noexcept {
+	constexpr efloat& operator-=(const efloat& rhs) noexcept {
 		*this += -rhs;
 		return *this;
 	}
-	constexpr efloat& operator-=(double /* rhs */) noexcept {
-		return *this;
+	constexpr efloat& operator-=(double rhs) noexcept {
+		return *this -= efloat(rhs);
 	}
 	constexpr efloat& operator*=(const efloat& /* rhs */) noexcept {
 		return *this;
@@ -324,7 +335,7 @@ protected:
 
 	// HELPER methods
 
-	static void shift_right(std::vector<uint32_t>& limbs, unsigned k) noexcept {
+	static constexpr void shift_right(std::vector<uint32_t>& limbs, unsigned k) noexcept {
 		if (k == 0) return;
 		if (k >= limbs.size() * 32) {
 			limbs.assign(1, 0u);
@@ -351,7 +362,7 @@ protected:
 		}
 	}
 
-	static void grow_for_shift(std::vector<uint32_t>& limbs, unsigned k, unsigned max_limbs) noexcept {
+	static constexpr void grow_for_shift(std::vector<uint32_t>& limbs, unsigned k, unsigned max_limbs) noexcept {
 		const unsigned required_limbs = (k + 31) / 32;
 		if (limbs.size() < max_limbs && required_limbs > 0) {
 			unsigned growth = std::min(required_limbs, max_limbs - static_cast<unsigned>(limbs.size()));
@@ -361,7 +372,7 @@ protected:
 		}
 	}
 
-	static void align_sizes(std::vector<uint32_t>& a, std::vector<uint32_t>& b) noexcept {
+	static constexpr void align_sizes(std::vector<uint32_t>& a, std::vector<uint32_t>& b) noexcept {
 		size_t max_limbs = std::max(a.size(), b.size());
 		if (a.size() < max_limbs) {
 			size_t diff = max_limbs - a.size();
@@ -373,7 +384,7 @@ protected:
 		}
 	}
 
-	static void add_limbs(std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
+	static constexpr void add_limbs(std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
 		uint64_t carry = 0;
 		for (size_t i = 0; i < a.size(); ++i) {
 			uint64_t sum = uint64_t(a[i]) + uint64_t(b[i]) + carry;
@@ -385,7 +396,7 @@ protected:
 		}
 	}
 
-	static void subtract_limbs(std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
+	static constexpr void subtract_limbs(std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
 		uint64_t borrow = 0;
 		for (size_t i = 0; i < a.size(); ++i) {
 			uint64_t diff = (uint64_t(1) << 32) + uint64_t(a[i]) - uint64_t(b[i]) - borrow;
@@ -394,11 +405,11 @@ protected:
 		}
 	}
 
-	void normalize() {
+	constexpr void normalize() {
 		int msb_pos = -1;
 		for (int i = _limb.size() - 1; i >= 0; --i) {
 			if (_limb[i] != 0) {
-				msb_pos = i * 32 + (31 - __builtin_clz(_limb[i]));
+				msb_pos = i * 32 + (31 - clz(_limb[i]));
 				break;
 			}
 		}
@@ -430,7 +441,7 @@ protected:
 		}
 	}
 
-	static int compare_limbs(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) noexcept {
+	static constexpr int compare_limbs(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) noexcept {
 		for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i) {
 			if (a[i] > b[i]) return 1;
 			if (b[i] > a[i]) return -1;
@@ -799,6 +810,7 @@ constexpr bool operator==(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) 
 	// normal numbers
 	if (lhs.sign() != rhs.sign()) return false;
 	if (lhs.scale() != rhs.scale()) return false;
+	if (lhs.bits().size() != rhs.bits().size()) return false;
 
 	return efloat<nlimbs>::compare_limbs(lhs.bits(), rhs.bits()) == 0;
 }

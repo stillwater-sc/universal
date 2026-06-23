@@ -62,7 +62,7 @@ To satisfy the goals of the library, a universal conversion layer must adhere to
 
 This tracking issue suggests a 5-phase redesign to incrementally replace the `double` bottleneck with a correct, robust, and extensible conversion system.
 
-```
+```text
 Phase 1: Specialized Overloads (Direct Paths)
     |
     v
