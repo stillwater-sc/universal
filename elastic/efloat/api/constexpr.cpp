@@ -178,7 +178,7 @@ try {
 			x /= y;
 			return x;
 		}();
-		static_assert(div_eq.iszero(), "constexpr /= stub leaves zero unchanged");
+		static_assert(div_eq.isnan(), "constexpr /= on 0/0 produces NaN");
 	}
 
 	// ----------------------------------------------------------------------------
