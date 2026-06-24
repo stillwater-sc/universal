@@ -227,17 +227,116 @@ public:
 	constexpr efloat& operator-=(double rhs) noexcept {
 		return *this -= efloat(rhs);
 	}
-	constexpr efloat& operator*=(const efloat& /* rhs */) noexcept {
+	constexpr efloat& operator*=(const efloat& rhs) noexcept {
+		if (isnan() || rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+		if (isinf()) {
+			if (rhs.iszero()) {
+				setnan(); // inf * 0 = NaN
+			} else {
+				_sign = (_sign != rhs._sign);
+			}
+			return *this;
+		}
+		if (rhs.isinf()) {
+			if (iszero()) {
+				setnan(); // 0 * inf = NaN
+			} else {
+				*this = rhs;
+				_sign = (_sign != rhs._sign);
+			}
+			return *this;
+		}
+		if (iszero() || rhs.iszero()) {
+			setzero();
+			_sign = (_sign != rhs._sign);
+			return *this;
+		}
+
+		// Optimization: if either operand is a power of 2, bypass long multiplication
+		if (rhs._limb.size() == 1 && rhs._limb[0] == 0x80000000) {
+			_exponent += rhs._exponent;
+			_sign = (_sign != rhs._sign);
+			return *this;
+		}
+		if (_limb.size() == 1 && _limb[0] == 0x80000000) {
+			int64_t old_exp = _exponent;
+			*this = rhs;
+			_exponent += old_exp;
+			_sign = (_sign != rhs._sign);
+			return *this;
+		}
+
+		std::vector<uint32_t> product;
+		multiply_limbs(product, _limb, rhs._limb);
+
+		_limb = product;
+		_exponent = _exponent + rhs._exponent + 1;
+		_sign = (_sign != rhs._sign);
+
+		// enforce precision limit (nlimbs) by truncating product if needed
+		if (_limb.size() > nlimbs) {
+			_limb.resize(nlimbs);
+		}
+
+		normalize();
+
 		return *this;
 	}
-	constexpr efloat& operator*=(double /* rhs */) noexcept {
+	constexpr efloat& operator*=(double rhs) noexcept {
+		return *this *= efloat(rhs);
+	}
+	constexpr efloat& operator/=(const efloat& rhs) noexcept {
+		if (isnan() || rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+		if (rhs.iszero()) {
+			if (iszero()) {
+				setnan(); // 0 / 0 = NaN
+			} else {
+				setinf(_sign != rhs._sign); // finite / 0 = +/- Inf
+			}
+			return *this;
+		}
+		if (iszero()) {
+			return *this; // 0 / finite = 0
+		}
+		if (isinf()) {
+			if (rhs.isinf()) {
+				setnan(); // inf / inf = NaN
+			} else {
+				_sign = (_sign != rhs._sign);
+			}
+			return *this;
+		}
+		if (rhs.isinf()) {
+			setzero(); // finite / inf = 0
+			_sign = (_sign != rhs._sign);
+			return *this;
+		}
+
+		// Optimization: if rhs is a power of 2, bypass division
+		if (rhs._limb.size() == 1 && rhs._limb[0] == 0x80000000) {
+			_exponent -= rhs._exponent;
+			_sign = (_sign != rhs._sign);
+			return *this;
+		}
+
+		std::vector<uint32_t> quotient;
+		divide_limbs(quotient, _limb, rhs._limb, nlimbs);
+
+		_limb = quotient;
+		_exponent = _exponent - rhs._exponent;
+		_sign = (_sign != rhs._sign);
+
+		normalize();
 		return *this;
 	}
-	constexpr efloat& operator/=(const efloat& /* rhs */) noexcept {
-		return *this;
-	}
-	constexpr efloat& operator/=(double /* rhs */) noexcept {
-		return *this;
+	constexpr efloat& operator/=(double rhs) noexcept {
+		return *this /= efloat(rhs);
 	}
 
 	// modifiers
@@ -345,16 +444,16 @@ protected:
 		const unsigned bit_shift = k % 32;
 		
 		if (limb_shift > 0) {
-			// erase the LSBs that are shifted out
-			limbs.erase(limbs.begin(), limbs.begin() + limb_shift);
-			// insert zeros at the MSB side
-			limbs.insert(limbs.end(), limb_shift, 0u);
+			// insert zeros at the MSB side (index 0)
+			limbs.insert(limbs.begin(), limb_shift, 0u);
+			// erase the LSBs that are shifted out (at the end)
+			limbs.resize(limbs.size() - limb_shift);
 		}
 
 		if (bit_shift > 0) {
 			uint32_t carry_mask = (1u << bit_shift) - 1;
 			uint32_t carry = 0;
-			for (int i = static_cast<int>(limbs.size()) - 1; i >= 0; --i) {
+			for (size_t i = 0; i < limbs.size(); ++i) {
 				uint32_t next_carry = limbs[i] & carry_mask;
 				limbs[i] = (limbs[i] >> bit_shift) | (carry << (32 - bit_shift));
 				carry = next_carry;
@@ -367,38 +466,32 @@ protected:
 		if (limbs.size() < max_limbs && required_limbs > 0) {
 			unsigned growth = std::min(required_limbs, max_limbs - static_cast<unsigned>(limbs.size()));
 			if (growth > 0) {
-				limbs.insert(limbs.begin(), growth, 0u);
+				limbs.resize(limbs.size() + growth, 0u); // appends zeros at the LSB side
 			}
 		}
 	}
 
 	static constexpr void align_sizes(std::vector<uint32_t>& a, std::vector<uint32_t>& b) noexcept {
 		size_t max_limbs = std::max(a.size(), b.size());
-		if (a.size() < max_limbs) {
-			size_t diff = max_limbs - a.size();
-			a.insert(a.begin(), diff, 0u);
-		}
-		if (b.size() < max_limbs) {
-			size_t diff = max_limbs - b.size();
-			b.insert(b.begin(), diff, 0u);
-		}
+		a.resize(max_limbs, 0u); // appends zeros at the LSB side
+		b.resize(max_limbs, 0u);
 	}
 
 	static constexpr void add_limbs(std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
 		uint64_t carry = 0;
-		for (size_t i = 0; i < a.size(); ++i) {
+		for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i) {
 			uint64_t sum = uint64_t(a[i]) + uint64_t(b[i]) + carry;
 			a[i] = static_cast<uint32_t>(sum);
 			carry = sum >> 32;
 		}
 		if (carry) {
-			a.push_back(1);
+			a.insert(a.begin(), 1u); // insert carry-out at index 0 (MSB side)
 		}
 	}
 
 	static constexpr void subtract_limbs(std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
 		uint64_t borrow = 0;
-		for (size_t i = 0; i < a.size(); ++i) {
+		for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i) {
 			uint64_t diff = (uint64_t(1) << 32) + uint64_t(a[i]) - uint64_t(b[i]) - borrow;
 			a[i] = static_cast<uint32_t>(diff);
 			borrow = (diff >> 32) ? 0 : 1;
@@ -407,9 +500,9 @@ protected:
 
 	constexpr void normalize() {
 		int msb_pos = -1;
-		for (int i = _limb.size() - 1; i >= 0; --i) {
+		for (size_t i = 0; i < _limb.size(); ++i) {
 			if (_limb[i] != 0) {
-				msb_pos = i * 32 + (31 - clz(_limb[i]));
+				msb_pos = (_limb.size() - 1 - i) * 32 + (31 - clz(_limb[i]));
 				break;
 			}
 		}
@@ -425,7 +518,7 @@ protected:
 		if (shift > 0) {
 			for(int64_t i = 0; i < shift; ++i) {
 				uint64_t carry = 0;
-				for(size_t j = 0; j < _limb.size(); ++j) {
+				for(int j = static_cast<int>(_limb.size()) - 1; j >= 0; --j) {
 					uint64_t v = (uint64_t(_limb[j]) << 1) | carry;
 					_limb[j] = static_cast<uint32_t>(v);
 					carry = v >> 32;
@@ -435,14 +528,62 @@ protected:
 			shift_right(_limb, static_cast<unsigned>(-shift));
 		}
 
-		// Truncate trailing zero limbs at the LSB side (index 0) to maintain minimal representation
-		while (_limb.size() > 1 && _limb[0] == 0) {
-			_limb.erase(_limb.begin());
+		// Truncate trailing zero limbs at the LSB side (end of vector) to maintain minimal representation
+		while (_limb.size() > 1 && _limb.back() == 0) {
+			_limb.pop_back();
+		}
+	}
+
+	static constexpr void multiply_limbs(std::vector<uint32_t>& product, const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
+		std::vector<uint32_t> rev_a = a;
+		std::vector<uint32_t> rev_b = b;
+		std::reverse(rev_a.begin(), rev_a.end()); // converts to LSB-first
+		std::reverse(rev_b.begin(), rev_b.end());
+
+		size_t m = a.size();
+		size_t n = b.size();
+		std::vector<uint32_t> rev_product(m + n, 0u);
+
+		for (size_t i = 0; i < m; ++i) {
+			uint64_t carry = 0;
+			for (size_t j = 0; j < n; ++j) {
+				uint64_t sum = uint64_t(rev_product[i + j]) + uint64_t(rev_a[i]) * uint64_t(rev_b[j]) + carry;
+				rev_product[i + j] = static_cast<uint32_t>(sum);
+				carry = sum >> 32;
+			}
+			rev_product[i + n] = static_cast<uint32_t>(carry);
+		}
+
+		std::reverse(rev_product.begin(), rev_product.end()); // converts back to MSB-first
+		product = rev_product;
+	}
+
+	static constexpr void divide_limbs(std::vector<uint32_t>& quotient, const std::vector<uint32_t>& a, const std::vector<uint32_t>& b, unsigned max_limbs) {
+		quotient.assign(max_limbs, 0u);
+		std::vector<uint32_t> div = b;
+		std::vector<uint32_t> dvd = a;
+		align_sizes(dvd, div);
+
+		for (unsigned bit = 0; bit < max_limbs * 32; ++bit) {
+			if (compare_limbs(dvd, div) >= 0) {
+				// Set bit in quotient
+				unsigned limb_idx = bit / 32;
+				unsigned bit_idx = 31 - (bit % 32);
+				quotient[limb_idx] |= (1u << bit_idx);
+				subtract_limbs(dvd, div);
+			}
+			// Shift dividend left by 1 bit
+			uint64_t carry = 0;
+			for (int j = static_cast<int>(dvd.size()) - 1; j >= 0; --j) {
+				uint64_t v = (uint64_t(dvd[j]) << 1) | carry;
+				dvd[j] = static_cast<uint32_t>(v);
+				carry = v >> 32;
+			}
 		}
 	}
 
 	static constexpr int compare_limbs(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) noexcept {
-		for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i) {
+		for (size_t i = 0; i < a.size(); ++i) {
 			if (a[i] > b[i]) return 1;
 			if (b[i] > a[i]) return -1;
 		}
@@ -553,6 +694,7 @@ protected:
 		else {
 			static_assert(true);
 		}
+		normalize(); // Ensure canonical, minimal representation (truncating trailing zeros)
 		return *this;
 	}
 
