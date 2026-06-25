@@ -19,8 +19,8 @@ The current `efloat` implementation has no mechanism for specifying or applying 
 2.  **Integrate Rounding into Arithmetic**: The arithmetic algorithms (especially multiplication and division) must be designed to produce a result with extra precision (guard bits, sticky bit) to enable correct rounding. The final step of each arithmetic operation will be to apply the rounding logic based on these extra bits and the active rounding mode.
 
 3.  **Provide Rounding Control**:
-    *   Allow a rounding mode to be specified per operation.
-    *   Alternatively, support a thread-local or global default rounding mode that can be set by the user.
+    *   Configure the rounding mode through a template parameter
+    *   Don't allow a rounding mode to be specified per operation.
 
 ## Acceptance Criteria
 
