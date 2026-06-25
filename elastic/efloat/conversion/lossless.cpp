@@ -17,6 +17,7 @@
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <limits>
+#include <bit>
 #include <universal/number/efloat/efloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -73,7 +74,6 @@ namespace {
 			efloat<4> nan(std::numeric_limits<double>::quiet_NaN());
 
 			if (double(zero) != 0.0 || std::signbit(double(zero))) {
-				// wait, zero has positive sign
 				if (double(zero) != 0.0) {
 					if (reportTestCases) std::cout << "    FAIL: zero state mismatch\n";
 					++nrOfFailedTestCases;
@@ -148,34 +148,27 @@ namespace {
 		{
 			// Build an inexact efloat value that has bits set at the guard/sticky positions of a float.
 			// float significand has 24 bits (K=24, shift_amt = 40).
-			// We set limbs: { 0x80000000, 0x00000000 } -> wait!
-			// If limbs is { 0x80000000, 0x80000000 } (where the MSB of second limb is the guard bit of float!)
-			// MSB of second limb is bit 31, which is bit 31 of raw_sig (which is guard bit at position 39! Since shift_amt = 40, guard is bit 39. So 0x80u is indeed bit 31 of raw_sig?
-			// Let's verify: bit 31 of raw_sig is bit 31 of the second limb. Yes!
-			// So setting limbs to { 0x80000000, 0x00000000 } has guard bit as 0.
-			// Setting limbs to { 0x80000000, 0x00000080 } has bit 7 of second limb set, which is sticky bit.
-			// Let's set a halfway case:
-			// `a` = { 0x80000000, 0x00000080 } -> in raw_sig, bit 39 is set.
-			// Shift amount for float is 40.
-			// So bit 39 is the guard bit. It is exactly a halfway tie!
-			// Since LSB of the kept portion (bit 40) is 0 (even), under ties-to-even it should truncate!
+			// We set limbs: { 0x80000080, 0x00000000 }
+			// Since 0x80000080 has bit 7 set, when shifted left by 32 it becomes bit 39 of raw_sig.
+			// Bit 39 of raw_sig is the float guard bit (shift_amt - 1 = 39).
+			// Since all lower bits are 0, this represents an exact halfway tie (guard=1, sticky=0).
+			// Under RoundToNearest (ties-to-even), since the LSB of the kept portion (bit 40) is 0 (even),
+			// it should truncate (round to even).
 			efloat_rounding_mode = RoundingMode::RoundToNearest;
 			{
-				efloat<4> a(false, 0, { 0x80000000, 0x00000080 }); // halfway tie
+				efloat<4> a(false, 0, { 0x80000080, 0x00000000 }); // exact halfway tie
 				float back = float(a);
-				// Truncated expected bits: significand field is 0.
-				if (std::bit_cast<uint32_t>(back) != 0x3F800000u) { // 1.0f
-					if (reportTestCases) std::cout << "    FAIL: halfway tie did not round to even (1.0f). Result: " << back << "\n";
+				if (std::bit_cast<uint32_t>(back) != 0x3F800000u) { // 1.0f (truncated to even)
+					if (reportTestCases) std::cout << "    FAIL: exact halfway tie did not round to even (1.0f). Result: " << back << "\n";
 					++nrOfFailedTestCases;
 				}
 			}
 			// Round toward Positive: positive inexact halfway rounds up!
 			efloat_rounding_mode = RoundingMode::RoundTowardPositive;
 			{
-				efloat<4> a(false, 0, { 0x80000000, 0x00000080 });
+				efloat<4> a(false, 0, { 0x80000080, 0x00000000 });
 				float back = float(a);
-				// Rounded up expected bits: significand field is 1. (1.0f + 1 ULP = 0x3F800001u)
-				if (std::bit_cast<uint32_t>(back) != 0x3F800001u) {
+				if (std::bit_cast<uint32_t>(back) != 0x3F800001u) { // 1.0f + 1 ULP (rounded up)
 					if (reportTestCases) std::cout << "    FAIL: positive inexact did not round toward positive infinity. Result: " << back << "\n";
 					++nrOfFailedTestCases;
 				}

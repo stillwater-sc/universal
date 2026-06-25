@@ -868,7 +868,7 @@ protected:
 
 			if (is_subnormal) {
 				int64_t sub_shift = E_min - exp;
-				if (sub_shift > static_cast<int64_t>(K)) {
+				if (sub_shift >= static_cast<int64_t>(K)) {
 					sig = 0;
 					eff_shift = 64;
 					sticky = sticky_limbs || (raw_sig != 0);
@@ -901,17 +901,24 @@ protected:
 				break;
 			}
 
-			if (round_up && eff_shift < 64) {
-				uint64_t prev_sig = sig;
-				sig += (1ULL << eff_shift);
-				if (sig < prev_sig) {
-					if (is_subnormal) {
-						sig = (1ULL << 63);
-						exp = E_min;
-						is_subnormal = false;
-					} else {
-						sig = (1ULL << 63);
-						exp++;
+			if (round_up) {
+				if (eff_shift >= 64) {
+					// Round up from full underflow to smallest subnormal
+					sig = (1ULL << 63);
+					exp = E_min;
+					is_subnormal = true;
+				} else {
+					uint64_t prev_sig = sig;
+					sig += (1ULL << eff_shift);
+					if (sig < prev_sig) {
+						if (is_subnormal) {
+							sig = (1ULL << 63);
+							exp = E_min;
+							is_subnormal = false;
+						} else {
+							sig = (1ULL << 63);
+							exp++;
+						}
 					}
 				}
 			}
@@ -992,7 +999,7 @@ protected:
 
 			if (is_subnormal) {
 				int64_t sub_shift = E_min - exp;
-				if (sub_shift > static_cast<int64_t>(K)) {
+				if (sub_shift >= static_cast<int64_t>(K)) {
 					sig = 0;
 					eff_shift = 64;
 					sticky = sticky_limbs || (raw_sig != 0);
@@ -1025,17 +1032,24 @@ protected:
 				break;
 			}
 
-			if (round_up && eff_shift < 64) {
-				uint64_t prev_sig = sig;
-				sig += (1ULL << eff_shift);
-				if (sig < prev_sig) {
-					if (is_subnormal) {
-						sig = (1ULL << 63);
-						exp = E_min;
-						is_subnormal = false;
-					} else {
-						sig = (1ULL << 63);
-						exp++;
+			if (round_up) {
+				if (eff_shift >= 64) {
+					// Round up from full underflow to smallest subnormal
+					sig = (1ULL << 63);
+					exp = E_min;
+					is_subnormal = true;
+				} else {
+					uint64_t prev_sig = sig;
+					sig += (1ULL << eff_shift);
+					if (sig < prev_sig) {
+						if (is_subnormal) {
+							sig = (1ULL << 63);
+							exp = E_min;
+							is_subnormal = false;
+						} else {
+							sig = (1ULL << 63);
+							exp++;
+						}
 					}
 				}
 			}
