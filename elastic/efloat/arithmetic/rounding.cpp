@@ -144,6 +144,36 @@ namespace {
 			}
 		}
 
+		// ---------------------------------------------------------------------
+		// 5. Operator/= and Sticky Remainder Rounding (Issue #1091)
+		// ---------------------------------------------------------------------
+		if (reportTestCases) std::cout << "  Operator/= and Sticky Remainder Rounding (1.0 / 3.0)...\n";
+		{
+			efloat<1> one(1.0);
+			efloat<1> three(3.0);
+
+			// Test 5a: Round to Zero (Truncation)
+			efloat_rounding_mode = RoundingMode::RoundToZero;
+			efloat<1> q_zero = one / three;
+
+			// Test 5b: Round Toward Positive (+Infinity) -> inexact positive rounds up
+			efloat_rounding_mode = RoundingMode::RoundTowardPositive;
+			efloat<1> q_pos = one / three;
+
+			// Test 5c: Round Toward Negative (-Infinity) -> inexact positive truncates (rounds down)
+			efloat_rounding_mode = RoundingMode::RoundTowardNegative;
+			efloat<1> q_neg = one / three;
+
+			if (q_zero != q_neg) {
+				if (reportTestCases) std::cout << "    FAIL: inexact positive under RoundTowardNegative did not match RoundToZero. Result: " << q_neg << "\n";
+				++nrOfFailedTestCases;
+			}
+			if (q_pos == q_zero) {
+				if (reportTestCases) std::cout << "    FAIL: inexact positive under RoundTowardPositive did not round up. Result: " << q_pos << "\n";
+				++nrOfFailedTestCases;
+			}
+		}
+
 		// Restore default rounding mode
 		efloat_rounding_mode = RoundingMode::RoundToNearest;
 		return nrOfFailedTestCases;

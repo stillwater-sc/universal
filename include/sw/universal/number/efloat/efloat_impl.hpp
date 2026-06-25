@@ -359,16 +359,17 @@ public:
 
 		std::vector<uint32_t> quotient;
 		bool remainder_non_zero = false;
+		const bool result_sign = (_sign != rhs._sign);
 		divide_limbs(quotient, _limb, rhs._limb, nlimbs + 1, remainder_non_zero); // generate nlimbs + 1 limbs
 
-		if (round_limbs(quotient, nlimbs, efloat_rounding_mode, _sign, remainder_non_zero)) {
+		if (round_limbs(quotient, nlimbs, efloat_rounding_mode, result_sign, remainder_non_zero)) {
 			quotient.insert(quotient.begin(), 1u);
 			_exponent += 32;
 		}
 
 		_limb = quotient;
 		_exponent = _exponent - rhs._exponent;
-		_sign = (_sign != rhs._sign);
+		_sign = result_sign;
 
 		normalize();
 		return *this;
@@ -465,6 +466,10 @@ public:
 	std::vector<uint32_t> bits() const { return _limb; }
 
 	constexpr void normalize() {
+		if (_state != FloatingPointState::Normal) {
+			return;
+		}
+
 		int msb_pos = -1;
 		for (size_t i = 0; i < _limb.size(); ++i) {
 			if (_limb[i] != 0) {
@@ -663,6 +668,7 @@ protected:
 		std::vector<uint32_t> div = b;
 		std::vector<uint32_t> dvd = a;
 		align_sizes(dvd, div);
+		remainder_non_zero = false;
 
 		for (unsigned bit = 0; bit < max_limbs * 32; ++bit) {
 			if (compare_limbs(dvd, div) >= 0) {
@@ -679,13 +685,15 @@ protected:
 				dvd[j] = static_cast<uint32_t>(v);
 				carry = v >> 32;
 			}
+			remainder_non_zero = remainder_non_zero || (carry != 0);
 		}
 		// check if there are any non-zero bits left in dvd (remainder)
-		remainder_non_zero = false;
-		for (size_t i = 0; i < dvd.size(); ++i) {
-			if (dvd[i] != 0) {
-				remainder_non_zero = true;
-				break;
+		if (!remainder_non_zero) {
+			for (size_t i = 0; i < dvd.size(); ++i) {
+				if (dvd[i] != 0) {
+					remainder_non_zero = true;
+					break;
+				}
 			}
 		}
 	}
