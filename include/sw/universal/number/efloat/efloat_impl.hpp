@@ -29,8 +29,46 @@ Compile-time configuration flags are used to select the exception mode.
 The exception types are defined, but you have the option to throw them
 */
 #include <universal/number/efloat/exceptions.hpp>
+#include <universal/behavior/rounding.hpp>
 
 namespace sw { namespace universal {
+
+// =============================================================================
+// Architectural Design Note on Rounding Modes (Issue #1091)
+// =============================================================================
+// The Universal Number Library implements efloat's rounding mode as a dynamic
+// thread_local variable rather than a compile-time template parameter.
+// This choice was made based on several key architectural and standard tenets:
+//
+// 1. IEEE-754 & MPFR Conformance:
+//    The IEEE-754 standard and mature arbitrary-precision libraries like MPFR
+//    model the rounding mode as a dynamic thread-local or global environment state
+//    (analogous to the FPU control word managed via `fesetround()`). This allows
+//    a single library body or compiled algorithm to execute under different
+//    rounding modes without requiring code modification or separate compiles.
+//
+// 2. Runtime Flexibility & Numerical Analysis:
+//    A thread_local runtime state allows developers to dynamically manipulate
+//    the rounding behavior during execution, which is a prerequisite for:
+//    - Interval Arithmetic: Dynamically toggling between RoundTowardPositive 
+//      and RoundTowardNegative to compute strict upper and lower bounds.
+//    - Sensitivity Analysis: Evaluating the same numeric algorithm under different
+//      rounding modes to measure cumulative error and stability without recompilation.
+//
+// 3. Avoiding Type-System Proliferation:
+//    If the rounding mode were a compile-time template parameter (e.g.,
+//    efloat<nlimbs, Mode>), then efloat<16, RoundToNearest> and efloat<16, RoundToZero>
+//    would be completely distinct C++ types. This would cause type-system
+//    proliferation, complicate type-promotion rules, and require extensive
+//    mixed-type operator overloading for every rounding mode permutation
+//    (e.g., resolving the result type of adding a RoundToNearest to a RoundToZero).
+//
+// While a template parameter approach offers compile-time branch pruning (via
+// `if constexpr`), the thread_local approach maximizes runtime utility, type
+// safety, and compliance with established numeric standards.
+// =============================================================================
+
+inline thread_local RoundingMode efloat_rounding_mode = RoundingMode::RoundToNearest;
 
 static inline constexpr int clz(uint32_t x) noexcept {
 	if (x == 0) return 32;
@@ -276,19 +314,13 @@ public:
 		_exponent = _exponent + rhs._exponent + 1;
 		_sign = (_sign != rhs._sign);
 
-		// enforce precision limit (nlimbs) by truncating product if needed
-		if (_limb.size() > nlimbs) {
-			_limb.resize(nlimbs);
-		}
-
 		normalize();
-
 		return *this;
-	}
-	constexpr efloat& operator*=(double rhs) noexcept {
+		}
+		constexpr efloat& operator*=(double rhs) noexcept {
 		return *this *= efloat(rhs);
-	}
-	constexpr efloat& operator/=(const efloat& rhs) noexcept {
+		}
+		constexpr efloat& operator/=(const efloat& rhs) noexcept {
 		if (isnan() || rhs.isnan()) {
 			setnan();
 			return *this;
@@ -326,15 +358,22 @@ public:
 		}
 
 		std::vector<uint32_t> quotient;
-		divide_limbs(quotient, _limb, rhs._limb, nlimbs);
+		bool remainder_non_zero = false;
+		const bool result_sign = (_sign != rhs._sign);
+		divide_limbs(quotient, _limb, rhs._limb, nlimbs + 1, remainder_non_zero); // generate nlimbs + 1 limbs
+
+		if (round_limbs(quotient, nlimbs, efloat_rounding_mode, result_sign, remainder_non_zero)) {
+			quotient.insert(quotient.begin(), 1u);
+			_exponent += 32;
+		}
 
 		_limb = quotient;
 		_exponent = _exponent - rhs._exponent;
-		_sign = (_sign != rhs._sign);
+		_sign = result_sign;
 
 		normalize();
 		return *this;
-	}
+		}
 	constexpr efloat& operator/=(double rhs) noexcept {
 		return *this /= efloat(rhs);
 	}
@@ -426,6 +465,55 @@ public:
 	}
 	std::vector<uint32_t> bits() const { return _limb; }
 
+	constexpr void normalize() {
+		if (_state != FloatingPointState::Normal) {
+			return;
+		}
+
+		int msb_pos = -1;
+		for (size_t i = 0; i < _limb.size(); ++i) {
+			if (_limb[i] != 0) {
+				msb_pos = (_limb.size() - 1 - i) * 32 + (31 - clz(_limb[i]));
+				break;
+			}
+		}
+
+		if (msb_pos == -1) {
+			setzero();
+			return;
+		}
+
+		int64_t shift = (int64_t)(_limb.size() * 32 - 1) - msb_pos;
+		_exponent -= shift;
+
+		if (shift > 0) {
+			for(int64_t i = 0; i < shift; ++i) {
+				uint64_t carry = 0;
+				for(int j = static_cast<int>(_limb.size()) - 1; j >= 0; --j) {
+					uint64_t v = (uint64_t(_limb[j]) << 1) | carry;
+					_limb[j] = static_cast<uint32_t>(v);
+					carry = v >> 32;
+				}
+			}
+		} else if (shift < 0) {
+			shift_right(_limb, static_cast<unsigned>(-shift));
+		}
+
+		// Truncate trailing zero limbs at the LSB side (end of vector) to maintain minimal representation
+		while (_limb.size() > 1 && _limb.back() == 0) {
+			_limb.pop_back();
+		}
+
+		// Enforce precision limit and round
+		if (_limb.size() > nlimbs) {
+			if (round_limbs(_limb, nlimbs, efloat_rounding_mode, _sign)) {
+				_limb.insert(_limb.begin(), 1u);
+				_exponent += 32;
+			}
+			normalize(); // Recursive call to normalize the rounded/carried result
+		}
+	}
+
 protected:
 	FloatingPointState    _state;    // exceptional state
 	bool                  _sign;     // sign of the number: -1 if true, +1 if false, zero is positive
@@ -498,42 +586,6 @@ protected:
 		}
 	}
 
-	constexpr void normalize() {
-		int msb_pos = -1;
-		for (size_t i = 0; i < _limb.size(); ++i) {
-			if (_limb[i] != 0) {
-				msb_pos = (_limb.size() - 1 - i) * 32 + (31 - clz(_limb[i]));
-				break;
-			}
-		}
-
-		if (msb_pos == -1) {
-			setzero();
-			return;
-		}
-
-		int64_t shift = (int64_t)(_limb.size() * 32 - 1) - msb_pos;
-		_exponent -= shift;
-
-		if (shift > 0) {
-			for(int64_t i = 0; i < shift; ++i) {
-				uint64_t carry = 0;
-				for(int j = static_cast<int>(_limb.size()) - 1; j >= 0; --j) {
-					uint64_t v = (uint64_t(_limb[j]) << 1) | carry;
-					_limb[j] = static_cast<uint32_t>(v);
-					carry = v >> 32;
-				}
-			}
-		} else if (shift < 0) {
-			shift_right(_limb, static_cast<unsigned>(-shift));
-		}
-
-		// Truncate trailing zero limbs at the LSB side (end of vector) to maintain minimal representation
-		while (_limb.size() > 1 && _limb.back() == 0) {
-			_limb.pop_back();
-		}
-	}
-
 	static constexpr void multiply_limbs(std::vector<uint32_t>& product, const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
 		std::vector<uint32_t> rev_a = a;
 		std::vector<uint32_t> rev_b = b;
@@ -558,11 +610,65 @@ protected:
 		product = rev_product;
 	}
 
-	static constexpr void divide_limbs(std::vector<uint32_t>& quotient, const std::vector<uint32_t>& a, const std::vector<uint32_t>& b, unsigned max_limbs) {
+	static constexpr bool round_limbs(std::vector<uint32_t>& limbs, size_t target_size, RoundingMode mode, bool sign, bool sticky_remainder = false) noexcept {
+		if (limbs.size() <= target_size) return false;
+
+		bool guard = (limbs[target_size] & 0x80000000) != 0;
+		bool lsb = (limbs[target_size - 1] & 1) != 0;
+		bool sticky = sticky_remainder || ((limbs[target_size] & 0x7FFFFFFF) != 0);
+		for (size_t i = target_size + 1; i < limbs.size(); ++i) {
+			if (limbs[i] != 0) {
+				sticky = true;
+				break;
+			}
+		}
+
+		bool round_up = false;
+		switch (mode) {
+		case RoundingMode::RoundToNearest:
+			if (guard) {
+				if (sticky || lsb) {
+					round_up = true;
+				}
+			}
+			break;
+		case RoundingMode::RoundToZero:
+			break;
+		case RoundingMode::RoundTowardPositive:
+			if (!sign && (guard || sticky)) {
+				round_up = true;
+			}
+			break;
+		case RoundingMode::RoundTowardNegative:
+			if (sign && (guard || sticky)) {
+				round_up = true;
+			}
+			break;
+		}
+
+		limbs.resize(target_size);
+
+		if (round_up) {
+			uint64_t carry = 1;
+			for (int i = static_cast<int>(target_size) - 1; i >= 0; --i) {
+				uint64_t sum = uint64_t(limbs[i]) + carry;
+				limbs[i] = static_cast<uint32_t>(sum);
+				carry = sum >> 32;
+				if (!carry) break;
+			}
+			if (carry) {
+				return true; // carry-out occurred during rounding!
+			}
+		}
+		return false;
+	}
+
+	static constexpr void divide_limbs(std::vector<uint32_t>& quotient, const std::vector<uint32_t>& a, const std::vector<uint32_t>& b, unsigned max_limbs, bool& remainder_non_zero) {
 		quotient.assign(max_limbs, 0u);
 		std::vector<uint32_t> div = b;
 		std::vector<uint32_t> dvd = a;
 		align_sizes(dvd, div);
+		remainder_non_zero = false;
 
 		for (unsigned bit = 0; bit < max_limbs * 32; ++bit) {
 			if (compare_limbs(dvd, div) >= 0) {
@@ -578,6 +684,16 @@ protected:
 				uint64_t v = (uint64_t(dvd[j]) << 1) | carry;
 				dvd[j] = static_cast<uint32_t>(v);
 				carry = v >> 32;
+			}
+			remainder_non_zero = remainder_non_zero || (carry != 0);
+		}
+		// check if there are any non-zero bits left in dvd (remainder)
+		if (!remainder_non_zero) {
+			for (size_t i = 0; i < dvd.size(); ++i) {
+				if (dvd[i] != 0) {
+					remainder_non_zero = true;
+					break;
+				}
 			}
 		}
 	}
