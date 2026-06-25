@@ -29,6 +29,7 @@ Compile-time configuration flags are used to select the exception mode.
 The exception types are defined, but you have the option to throw them
 */
 #include <universal/number/efloat/exceptions.hpp>
+#include <universal/behavior/rounding.hpp>
 
 namespace sw { namespace universal {
 
@@ -66,13 +67,6 @@ namespace sw { namespace universal {
 // `if constexpr`), the thread_local approach maximizes runtime utility, type
 // safety, and compliance with established numeric standards.
 // =============================================================================
-
-enum class RoundingMode {
-	RoundToNearest,         // round to nearest, ties to even (default)
-	RoundToZero,            // truncation
-	RoundTowardPositive,    // round toward +infinity
-	RoundTowardNegative     // round toward -infinity
-};
 
 inline thread_local RoundingMode efloat_rounding_mode = RoundingMode::RoundToNearest;
 
