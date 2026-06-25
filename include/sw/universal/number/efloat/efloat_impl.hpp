@@ -30,6 +30,7 @@ The exception types are defined, but you have the option to throw them
 */
 #include <universal/number/efloat/exceptions.hpp>
 #include <universal/behavior/rounding.hpp>
+#include <universal/behavior/status_flags.hpp>
 
 namespace sw { namespace universal {
 
@@ -191,7 +192,12 @@ public:
 			return *this;
 		}
 		if (isinf()) {
-			if (rhs.isinf() && _sign != rhs._sign) setnan();
+			if (rhs.isinf() && _sign != rhs._sign) {
+				setnan();
+				if (!std::is_constant_evaluated()) {
+					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
+				}
+			}
 			return *this;
 		}
 		if (rhs.isinf()) {
@@ -272,7 +278,10 @@ public:
 		}
 		if (isinf()) {
 			if (rhs.iszero()) {
-				setnan(); // inf * 0 = NaN
+				setnan();
+				if (!std::is_constant_evaluated()) {
+					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
+				}
 			} else {
 				_sign = (_sign != rhs._sign);
 			}
@@ -280,7 +289,10 @@ public:
 		}
 		if (rhs.isinf()) {
 			if (iszero()) {
-				setnan(); // 0 * inf = NaN
+				setnan();
+				if (!std::is_constant_evaluated()) {
+					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
+				}
 			} else {
 				*this = rhs;
 				_sign = (_sign != rhs._sign);
@@ -327,9 +339,15 @@ public:
 		}
 		if (rhs.iszero()) {
 			if (iszero()) {
-				setnan(); // 0 / 0 = NaN
+				setnan();
+				if (!std::is_constant_evaluated()) {
+					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
+				}
 			} else {
-				setinf(_sign != rhs._sign); // finite / 0 = +/- Inf
+				setinf(_sign != rhs._sign);
+				if (!std::is_constant_evaluated()) {
+					efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
+				}
 			}
 			return *this;
 		}
@@ -338,7 +356,10 @@ public:
 		}
 		if (isinf()) {
 			if (rhs.isinf()) {
-				setnan(); // inf / inf = NaN
+				setnan();
+				if (!std::is_constant_evaluated()) {
+					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
+				}
 			} else {
 				_sign = (_sign != rhs._sign);
 			}
@@ -623,6 +644,12 @@ protected:
 			}
 		}
 
+		if (guard || sticky) {
+			if (!std::is_constant_evaluated()) {
+				efloat_exception_flags.set(ExceptionFlag::Inexact);
+			}
+		}
+
 		bool round_up = false;
 		switch (mode) {
 		case RoundingMode::RoundToNearest:
@@ -886,6 +913,13 @@ protected:
 				sticky = sticky_limbs || ((sig & ((1ULL << (shift_amt - 1)) - 1)) != 0);
 			}
 
+			if (guard || sticky) {
+				efloat_exception_flags.set(ExceptionFlag::Inexact);
+				if (is_subnormal) {
+					efloat_exception_flags.set(ExceptionFlag::Underflow);
+				}
+			}
+
 			bool round_up = false;
 			switch (efloat_rounding_mode) {
 			case RoundingMode::RoundToNearest:
@@ -924,6 +958,7 @@ protected:
 			}
 
 			if (exp > E_max) {
+				efloat_exception_flags.set(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
 				bool to_inf = true;
 				switch (efloat_rounding_mode) {
 				case RoundingMode::RoundToZero:
@@ -1017,6 +1052,13 @@ protected:
 				sticky = sticky_limbs || ((sig & ((1ULL << (shift_amt - 1)) - 1)) != 0);
 			}
 
+			if (guard || sticky) {
+				efloat_exception_flags.set(ExceptionFlag::Inexact);
+				if (is_subnormal) {
+					efloat_exception_flags.set(ExceptionFlag::Underflow);
+				}
+			}
+
 			bool round_up = false;
 			switch (efloat_rounding_mode) {
 			case RoundingMode::RoundToNearest:
@@ -1055,6 +1097,7 @@ protected:
 			}
 
 			if (exp > E_max) {
+				efloat_exception_flags.set(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
 				bool to_inf = true;
 				switch (efloat_rounding_mode) {
 				case RoundingMode::RoundToZero:
