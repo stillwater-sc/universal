@@ -741,12 +741,12 @@ protected:
 		switch (std::fpclassify(rhs)) {
 		case FP_ZERO:
 			_state = FloatingPointState::Zero;
-			_sign = false;
+			_sign = std::signbit(rhs);
 			_exponent = 0;
 			// stay limbless
 			return *this;
 		case FP_NAN:
-			_sign = sw::universal::sign(rhs);
+			_sign = std::signbit(rhs);
 			// x86 specific: the top bit of the significand = 1 for quiet, 0 for signaling
 			checkNaN(rhs, nan_type);
 			if (nan_type == NAN_TYPE_QUIET) {
@@ -760,7 +760,7 @@ protected:
 			return *this;
 		case FP_INFINITE:
 			_state = FloatingPointState::Infinite;
-			_sign = sw::universal::sign(rhs);
+			_sign = std::signbit(rhs);
 			_exponent = 0;
 			// stay limbless
 			return *this;
@@ -772,7 +772,7 @@ protected:
 			break;
 		}
 
-		_sign = sw::universal::sign(rhs);
+		_sign = std::signbit(rhs);
 		_exponent = sw::universal::scale(rhs); // scale already deals with subnormal numbers
 		if constexpr (sizeof(Real) == 4) {
 			std::uint32_t bits{ 0 };
@@ -819,23 +819,270 @@ protected:
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	Real convert_to_ieee754() const noexcept {
-		Real v{ 0.0 };
 		switch (_state) {
 		case FloatingPointState::Zero:
-			break;
+			return (_sign ? -Real(0.0) : +Real(0.0));
 		case FloatingPointState::QuietNaN:
-			v = std::numeric_limits<Real>::quiet_NaN();
-			break;
+			return std::numeric_limits<Real>::quiet_NaN();
 		case FloatingPointState::SignalingNaN:
-			v = std::numeric_limits<Real>::signaling_NaN();
-			break;
+			return std::numeric_limits<Real>::signaling_NaN();
 		case FloatingPointState::Infinite:
-			v = (_sign ? -std::numeric_limits<Real>::infinity() : +std::numeric_limits<Real>::infinity());
-			break;
+			return (_sign ? -std::numeric_limits<Real>::infinity() : +std::numeric_limits<Real>::infinity());
 		case FloatingPointState::Normal:
-			v = Real(sign()) * std::pow(Real(2.0), Real(scale())) * Real(significant());
+			break;
 		}
-		return v;
+
+		if constexpr (std::is_same_v<Real, float>) {
+			constexpr unsigned S_bits = 1;
+			constexpr unsigned F_bits = 23;
+			constexpr unsigned E_bits = 8;
+			constexpr int E_max = 127;
+			constexpr int E_min = -126;
+			constexpr int E_bias = 127;
+			constexpr unsigned K = F_bits + 1; // 24
+			constexpr unsigned shift_amt = 64 - K; // 40
+
+			uint64_t raw_sig = 0;
+			if (_limb.size() >= 1) {
+				raw_sig |= (uint64_t(_limb[0]) << 32);
+			}
+			if (_limb.size() >= 2) {
+				raw_sig |= _limb[1];
+			}
+			bool sticky_limbs = false;
+			for (size_t i = 2; i < _limb.size(); ++i) {
+				if (_limb[i] != 0) {
+					sticky_limbs = true;
+					break;
+				}
+			}
+
+			int64_t exp = _exponent;
+			uint64_t sig = raw_sig;
+			unsigned eff_shift = shift_amt;
+			bool is_subnormal = (exp < E_min);
+
+			bool lsb = false;
+			bool guard = false;
+			bool sticky = false;
+
+			if (is_subnormal) {
+				int64_t sub_shift = E_min - exp;
+				if (sub_shift > static_cast<int64_t>(K)) {
+					sig = 0;
+					eff_shift = 64;
+					sticky = sticky_limbs || (raw_sig != 0);
+					guard = false;
+					lsb = false;
+				} else {
+					eff_shift = shift_amt + static_cast<unsigned>(sub_shift);
+					lsb = (sig & (1ULL << eff_shift)) != 0;
+					guard = (sig & (1ULL << (eff_shift - 1))) != 0;
+					sticky = sticky_limbs || ((sig & ((1ULL << (eff_shift - 1)) - 1)) != 0);
+				}
+			} else {
+				lsb = (sig & (1ULL << shift_amt)) != 0;
+				guard = (sig & (1ULL << (shift_amt - 1))) != 0;
+				sticky = sticky_limbs || ((sig & ((1ULL << (shift_amt - 1)) - 1)) != 0);
+			}
+
+			bool round_up = false;
+			switch (efloat_rounding_mode) {
+			case RoundingMode::RoundToNearest:
+				if (guard && (sticky || lsb)) round_up = true;
+				break;
+			case RoundingMode::RoundToZero:
+				break;
+			case RoundingMode::RoundTowardPositive:
+				if (!_sign && (guard || sticky)) round_up = true;
+				break;
+			case RoundingMode::RoundTowardNegative:
+				if (_sign && (guard || sticky)) round_up = true;
+				break;
+			}
+
+			if (round_up && eff_shift < 64) {
+				uint64_t prev_sig = sig;
+				sig += (1ULL << eff_shift);
+				if (sig < prev_sig) {
+					if (is_subnormal) {
+						sig = (1ULL << 63);
+						exp = E_min;
+						is_subnormal = false;
+					} else {
+						sig = (1ULL << 63);
+						exp++;
+					}
+				}
+			}
+
+			if (exp > E_max) {
+				bool to_inf = true;
+				switch (efloat_rounding_mode) {
+				case RoundingMode::RoundToZero:
+					to_inf = false;
+					break;
+				case RoundingMode::RoundTowardPositive:
+					if (_sign) to_inf = false;
+					break;
+				case RoundingMode::RoundTowardNegative:
+					if (!_sign) to_inf = false;
+					break;
+				default:
+					break;
+				}
+				if (to_inf) {
+					return (_sign ? -std::numeric_limits<float>::infinity() : +std::numeric_limits<float>::infinity());
+				} else {
+					return (_sign ? -std::numeric_limits<float>::max() : +std::numeric_limits<float>::max());
+				}
+			}
+
+			uint32_t sign_bit = (_sign ? 1u : 0u);
+			uint32_t exp_field = 0;
+			uint32_t frac_field = 0;
+
+			if (sig == 0) {
+				exp_field = 0;
+				frac_field = 0;
+			} else if (is_subnormal) {
+				exp_field = 0;
+				frac_field = static_cast<uint32_t>((sig >> eff_shift) & ((1ULL << F_bits) - 1));
+			} else {
+				exp_field = static_cast<uint32_t>(exp + E_bias);
+				frac_field = static_cast<uint32_t>((sig >> shift_amt) & ((1ULL << F_bits) - 1));
+			}
+
+			uint32_t bits = (sign_bit << (E_bits + F_bits)) | (exp_field << F_bits) | frac_field;
+			return sw::bit_cast<float>(bits);
+
+		} else if constexpr (std::is_same_v<Real, double>) {
+			constexpr unsigned S_bits = 1;
+			constexpr unsigned F_bits = 52;
+			constexpr unsigned E_bits = 11;
+			constexpr int E_max = 1023;
+			constexpr int E_min = -1022;
+			constexpr int E_bias = 1023;
+			constexpr unsigned K = F_bits + 1; // 53
+			constexpr unsigned shift_amt = 64 - K; // 11
+
+			uint64_t raw_sig = 0;
+			if (_limb.size() >= 1) {
+				raw_sig |= (uint64_t(_limb[0]) << 32);
+			}
+			if (_limb.size() >= 2) {
+				raw_sig |= _limb[1];
+			}
+			bool sticky_limbs = false;
+			for (size_t i = 2; i < _limb.size(); ++i) {
+				if (_limb[i] != 0) {
+					sticky_limbs = true;
+					break;
+				}
+			}
+
+			int64_t exp = _exponent;
+			uint64_t sig = raw_sig;
+			unsigned eff_shift = shift_amt;
+			bool is_subnormal = (exp < E_min);
+
+			bool lsb = false;
+			bool guard = false;
+			bool sticky = false;
+
+			if (is_subnormal) {
+				int64_t sub_shift = E_min - exp;
+				if (sub_shift > static_cast<int64_t>(K)) {
+					sig = 0;
+					eff_shift = 64;
+					sticky = sticky_limbs || (raw_sig != 0);
+					guard = false;
+					lsb = false;
+				} else {
+					eff_shift = shift_amt + static_cast<unsigned>(sub_shift);
+					lsb = (sig & (1ULL << eff_shift)) != 0;
+					guard = (sig & (1ULL << (eff_shift - 1))) != 0;
+					sticky = sticky_limbs || ((sig & ((1ULL << (eff_shift - 1)) - 1)) != 0);
+				}
+			} else {
+				lsb = (sig & (1ULL << shift_amt)) != 0;
+				guard = (sig & (1ULL << (shift_amt - 1))) != 0;
+				sticky = sticky_limbs || ((sig & ((1ULL << (shift_amt - 1)) - 1)) != 0);
+			}
+
+			bool round_up = false;
+			switch (efloat_rounding_mode) {
+			case RoundingMode::RoundToNearest:
+				if (guard && (sticky || lsb)) round_up = true;
+				break;
+			case RoundingMode::RoundToZero:
+				break;
+			case RoundingMode::RoundTowardPositive:
+				if (!_sign && (guard || sticky)) round_up = true;
+				break;
+			case RoundingMode::RoundTowardNegative:
+				if (_sign && (guard || sticky)) round_up = true;
+				break;
+			}
+
+			if (round_up && eff_shift < 64) {
+				uint64_t prev_sig = sig;
+				sig += (1ULL << eff_shift);
+				if (sig < prev_sig) {
+					if (is_subnormal) {
+						sig = (1ULL << 63);
+						exp = E_min;
+						is_subnormal = false;
+					} else {
+						sig = (1ULL << 63);
+						exp++;
+					}
+				}
+			}
+
+			if (exp > E_max) {
+				bool to_inf = true;
+				switch (efloat_rounding_mode) {
+				case RoundingMode::RoundToZero:
+					to_inf = false;
+					break;
+				case RoundingMode::RoundTowardPositive:
+					if (_sign) to_inf = false;
+					break;
+				case RoundingMode::RoundTowardNegative:
+					if (!_sign) to_inf = false;
+					break;
+				default:
+					break;
+				}
+				if (to_inf) {
+					return (_sign ? -std::numeric_limits<double>::infinity() : +std::numeric_limits<double>::infinity());
+				} else {
+					return (_sign ? -std::numeric_limits<double>::max() : +std::numeric_limits<double>::max());
+				}
+			}
+
+			uint64_t sign_bit = (_sign ? 1ULL : 0ULL);
+			uint64_t exp_field = 0;
+			uint64_t frac_field = 0;
+
+			if (sig == 0) {
+				exp_field = 0;
+				frac_field = 0;
+			} else if (is_subnormal) {
+				exp_field = 0;
+				frac_field = (sig >> eff_shift) & ((1ULL << F_bits) - 1);
+			} else {
+				exp_field = static_cast<uint64_t>(exp + E_bias);
+				frac_field = (sig >> shift_amt) & ((1ULL << F_bits) - 1);
+			}
+
+			uint64_t bits = (sign_bit << (E_bits + F_bits)) | (exp_field << F_bits) | frac_field;
+			return sw::bit_cast<double>(bits);
+
+		} else {
+			return static_cast<Real>(convert_to_ieee754<double>());
+		}
 	}
 
 private:
