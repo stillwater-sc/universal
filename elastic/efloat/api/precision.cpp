@@ -68,6 +68,24 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: setting instance precision failed\n";
 				++nrOfFailedTestCases;
 			}
+
+			// Verify clear() retains instance-level narrowed precision
+			a.clear();
+			if (a.get_precision() != 32) {
+				if (reportTestCases) std::cout << "    FAIL: clear() clobbered instance precision. Result: " << a.get_precision() << "\n";
+				++nrOfFailedTestCases;
+			}
+
+			// Verify parse() respects instance-level narrowed precision (32 bits = 1 limb)
+			parse("0.33333333333333333", a);
+			if (a.get_precision() != 32) {
+				if (reportTestCases) std::cout << "    FAIL: parse() clobbered instance precision. Result: " << a.get_precision() << "\n";
+				++nrOfFailedTestCases;
+			}
+			if (a.bits().size() != 1) {
+				if (reportTestCases) std::cout << "    FAIL: parse() exceeded narrowed precision limb size. Size: " << a.bits().size() << "\n";
+				++nrOfFailedTestCases;
+			}
 		}
 
 		// ---------------------------------------------------------------------

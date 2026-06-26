@@ -123,7 +123,7 @@ public:
 		: _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{} {
 		if (!std::is_constant_evaluated()) {
 			_limb.push_back(0);
-			_precision_limbs = (efloat_default_precision_bits > 0) ? (efloat_default_precision_bits + 31) / 32 : nlimbs;
+			_precision_limbs = (efloat_default_precision_bits > 0) ? std::max(1u, (efloat_default_precision_bits + 31) / 32) : nlimbs;
 		}
 	}
 
@@ -143,7 +143,7 @@ public:
 		else if (zero) _state = FloatingPointState::Zero;
 		else _state = FloatingPointState::Normal;
 		if (!std::is_constant_evaluated()) {
-			_precision_limbs = (efloat_default_precision_bits > 0) ? (efloat_default_precision_bits + 31) / 32 : nlimbs;
+			_precision_limbs = (efloat_default_precision_bits > 0) ? std::max(1u, (efloat_default_precision_bits + 31) / 32) : nlimbs;
 		}
 	}
 
@@ -187,7 +187,7 @@ public:
 
 	// instance precision management
 	unsigned get_precision() const noexcept { return _precision_limbs * 32; }
-	void set_precision(unsigned bits) noexcept { _precision_limbs = (bits + 31) / 32; normalize(); }
+	void set_precision(unsigned bits) noexcept { _precision_limbs = std::max(1u, (bits + 31) / 32); normalize(); }
 
 	// prefix operators
 	constexpr efloat operator-() const noexcept {
@@ -329,8 +329,10 @@ public:
 			return *this;
 		}
 		if (_limb.size() == 1 && _limb[0] == 0x80000000) {
+			unsigned target_prec = _precision_limbs;
 			int64_t old_exp = _exponent;
 			*this = rhs;
+			_precision_limbs = target_prec;
 			_exponent += old_exp;
 			_sign = (_sign != rhs._sign);
 			return *this;
@@ -423,9 +425,6 @@ public:
 		_sign = false;
 		_exponent = 0;
 		_limb.clear();
-		if (!std::is_constant_evaluated()) {
-			_precision_limbs = (efloat_default_precision_bits > 0) ? (efloat_default_precision_bits + 31) / 32 : nlimbs;
-		}
 	}
 	constexpr void setzero() noexcept {
 		clear();
