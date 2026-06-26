@@ -71,6 +71,11 @@ namespace sw { namespace universal {
 
 inline thread_local RoundingMode efloat_rounding_mode = RoundingMode::RoundToNearest;
 
+inline thread_local unsigned efloat_default_precision_bits = 0;
+
+inline unsigned get_default_precision() noexcept { return efloat_default_precision_bits; }
+inline void set_default_precision(unsigned bits) noexcept { efloat_default_precision_bits = bits; }
+
 static inline constexpr int clz(uint32_t x) noexcept {
 	if (x == 0) return 32;
 	int n = 0;
@@ -118,6 +123,7 @@ public:
 		: _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{} {
 		if (!std::is_constant_evaluated()) {
 			_limb.push_back(0);
+			_precision_limbs = (efloat_default_precision_bits > 0) ? std::max(1u, (efloat_default_precision_bits + 31) / 32) : nlimbs;
 		}
 	}
 
@@ -136,6 +142,9 @@ public:
 		else if (inf) _state = FloatingPointState::Infinite;
 		else if (zero) _state = FloatingPointState::Zero;
 		else _state = FloatingPointState::Normal;
+		if (!std::is_constant_evaluated()) {
+			_precision_limbs = (efloat_default_precision_bits > 0) ? std::max(1u, (efloat_default_precision_bits + 31) / 32) : nlimbs;
+		}
 	}
 
 	// initializers for native types
@@ -176,6 +185,10 @@ public:
 	explicit operator long double()       const noexcept { return convert_to_ieee754<long double>(); }
 #endif 
 
+	// instance precision management
+	unsigned get_precision() const noexcept { return _precision_limbs * 32; }
+	void set_precision(unsigned bits) noexcept { _precision_limbs = std::max(1u, (bits + 31) / 32); normalize(); }
+
 	// prefix operators
 	constexpr efloat operator-() const noexcept {
 		if (iszero()) return *this;
@@ -213,6 +226,9 @@ public:
 		}
 
 		// Make copies for manipulation
+		_precision_limbs = std::max(_precision_limbs, rhs._precision_limbs);
+		unsigned target_prec = _precision_limbs;
+
 		std::vector<uint32_t> a_limbs = _limb;
 		std::vector<uint32_t> b_limbs = rhs._limb;
 		int64_t a_exp = _exponent;
@@ -220,11 +236,11 @@ public:
 		
 		// Align exponents
 		if (a_exp < b_exp) {
-			grow_for_shift(a_limbs, b_exp - a_exp, nlimbs);
+			grow_for_shift(a_limbs, b_exp - a_exp, target_prec);
 			shift_right(a_limbs, b_exp - a_exp);
 			a_exp = b_exp;
 		} else if (b_exp < a_exp) {
-			grow_for_shift(b_limbs, a_exp - b_exp, nlimbs);
+			grow_for_shift(b_limbs, a_exp - b_exp, target_prec);
 			shift_right(b_limbs, a_exp - b_exp);
 		}
 
@@ -272,6 +288,7 @@ public:
 		return *this -= efloat(rhs);
 	}
 	constexpr efloat& operator*=(const efloat& rhs) noexcept {
+		_precision_limbs = std::max(_precision_limbs, rhs._precision_limbs);
 		if (isnan() || rhs.isnan()) {
 			setnan();
 			return *this;
@@ -312,8 +329,10 @@ public:
 			return *this;
 		}
 		if (_limb.size() == 1 && _limb[0] == 0x80000000) {
+			unsigned target_prec = _precision_limbs;
 			int64_t old_exp = _exponent;
 			*this = rhs;
+			_precision_limbs = target_prec;
 			_exponent += old_exp;
 			_sign = (_sign != rhs._sign);
 			return *this;
@@ -333,6 +352,7 @@ public:
 		return *this *= efloat(rhs);
 		}
 		constexpr efloat& operator/=(const efloat& rhs) noexcept {
+		_precision_limbs = std::max(_precision_limbs, rhs._precision_limbs);
 		if (isnan() || rhs.isnan()) {
 			setnan();
 			return *this;
@@ -381,9 +401,9 @@ public:
 		std::vector<uint32_t> quotient;
 		bool remainder_non_zero = false;
 		const bool result_sign = (_sign != rhs._sign);
-		divide_limbs(quotient, _limb, rhs._limb, nlimbs + 1, remainder_non_zero); // generate nlimbs + 1 limbs
+		divide_limbs(quotient, _limb, rhs._limb, _precision_limbs + 1, remainder_non_zero); // generate _precision_limbs + 1 limbs
 
-		if (round_limbs(quotient, nlimbs, efloat_rounding_mode, result_sign, remainder_non_zero)) {
+		if (round_limbs(quotient, _precision_limbs, efloat_rounding_mode, result_sign, remainder_non_zero)) {
 			quotient.insert(quotient.begin(), 1u);
 			_exponent += 32;
 		}
@@ -400,7 +420,12 @@ public:
 	}
 
 	// modifiers
-	constexpr void clear() noexcept { _state = FloatingPointState::Normal;  _sign = false; _exponent = 0; _limb.clear(); }
+	constexpr void clear() noexcept {
+		_state = FloatingPointState::Normal;
+		_sign = false;
+		_exponent = 0;
+		_limb.clear();
+	}
 	constexpr void setzero() noexcept {
 		clear();
 		_state = FloatingPointState::Zero;
@@ -526,8 +551,8 @@ public:
 		}
 
 		// Enforce precision limit and round
-		if (_limb.size() > nlimbs) {
-			if (round_limbs(_limb, nlimbs, efloat_rounding_mode, _sign)) {
+		if (_limb.size() > _precision_limbs) {
+			if (round_limbs(_limb, _precision_limbs, efloat_rounding_mode, _sign)) {
 				_limb.insert(_limb.begin(), 1u);
 				_exponent += 32;
 			}
@@ -540,6 +565,7 @@ protected:
 	bool                  _sign;     // sign of the number: -1 if true, +1 if false, zero is positive
 	int64_t               _exponent; // exponent of the number
 	std::vector<uint32_t> _limb;     // limbs of the representation
+	unsigned              _precision_limbs = nlimbs;
 
 	// HELPER methods
 
@@ -1241,8 +1267,8 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 
 	// Decimal / scientific literal.
 	constexpr unsigned cap_bits  = sw::universal::decimal_to_binary::default_big_bits - 8u;
-	constexpr unsigned want_bits = static_cast<unsigned>(nlimbs) * 32u;
-	constexpr unsigned target_bits = (want_bits == 0u) ? 1u
+	unsigned want_bits = value.get_precision();
+	unsigned target_bits = (want_bits == 0u) ? 1u
 	                              : ((want_bits < cap_bits) ? want_bits : cap_bits);
 
 	auto r = sw::universal::decimal_to_binary::convert(s, target_bits);
