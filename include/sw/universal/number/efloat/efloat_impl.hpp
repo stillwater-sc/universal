@@ -721,6 +721,10 @@ protected:
 		std::vector<uint32_t> div = b;
 		std::vector<uint32_t> dvd = a;
 		align_sizes(dvd, div);
+
+		// Insert leading zero limb to prevent shift overflow bit-loss!
+		dvd.insert(dvd.begin(), 0u);
+		div.insert(div.begin(), 0u);
 		remainder_non_zero = false;
 
 		for (unsigned bit = 0; bit < max_limbs * 32; ++bit) {
@@ -764,25 +768,15 @@ protected:
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	efloat& convert_signed(SignedInt v) noexcept {
-		if (0 == v) {
-			setzero();
-		}
-		else {
-
-		}
-		return *this;
+		clear();
+		return convert_ieee754(static_cast<double>(v));
 	}
 
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
 	efloat& convert_unsigned(UnsignedInt v) noexcept {
-		if (0 == v) {
-			setzero();
-		}
-		else {
-
-		}
-		return *this;
+		clear();
+		return convert_ieee754(static_cast<double>(v));
 	}
 
 	template<typename Real,
