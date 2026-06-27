@@ -23,7 +23,8 @@ constexpr efloat<nlimbs> log(const efloat<nlimbs>& x) {
 		}
 		return neg_inf;
 	}
-	if (x.isneg()) {
+	// Signbit check captures both negative normal values and negative infinity
+	if (x.sign() == -1) {
 		efloat<nlimbs> nan;
 		nan.setnan();
 		if (!std::is_constant_evaluated()) {
@@ -61,7 +62,7 @@ constexpr efloat<nlimbs> log2(const efloat<nlimbs>& x) {
 		}
 		return neg_inf;
 	}
-	if (x.isneg()) {
+	if (x.sign() == -1) {
 		efloat<nlimbs> nan;
 		nan.setnan();
 		if (!std::is_constant_evaluated()) {
@@ -89,7 +90,7 @@ constexpr efloat<nlimbs> log10(const efloat<nlimbs>& x) {
 		}
 		return neg_inf;
 	}
-	if (x.isneg()) {
+	if (x.sign() == -1) {
 		efloat<nlimbs> nan;
 		nan.setnan();
 		if (!std::is_constant_evaluated()) {
@@ -127,7 +128,7 @@ constexpr efloat<nlimbs> log1p(const efloat<nlimbs>& x) {
 		return neg_inf;
 	}
 	if (x.isinf()) {
-		if (x.isneg()) {
+		if (x.sign() == -1) {
 			efloat<nlimbs> nan;
 			nan.setnan();
 			if (!std::is_constant_evaluated()) {
@@ -138,18 +139,22 @@ constexpr efloat<nlimbs> log1p(const efloat<nlimbs>& x) {
 		return x;
 	}
 
-	double x_dbl = double(x);
-	if (std::abs(x_dbl) < 0.375) {
+	// Precision-safe range check completely in efloat space (avoids double underflows)
+	if (abs(x) < efloat<nlimbs>(0.375)) {
 		// Taylor series for log(1 + x) prevents cancellation as x -> 0
 		efloat<nlimbs> sum(0.0);
 		efloat<nlimbs> term(x);
 		efloat<nlimbs> x_pow(x);
 
 		sum += term;
-		for (unsigned n = 2; n < 100; ++n) {
+		for (unsigned n = 2; n < 200; ++n) {
 			x_pow = x_pow * x;
 			term = x_pow / efloat<nlimbs>(n);
-			if (term.iszero()) break;
+			
+			// Dynamic precision-safe termination: stops when next term cannot affect the sum
+			if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(sum.get_precision())) {
+				break;
+			}
 			if (n % 2 == 0) {
 				sum -= term;
 			} else {

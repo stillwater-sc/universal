@@ -561,6 +561,14 @@ public:
 		}
 	}
 
+	static constexpr int compare_limbs(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) noexcept {
+		for (size_t i = 0; i < a.size(); ++i) {
+			if (a[i] > b[i]) return 1;
+			if (b[i] > a[i]) return -1;
+		}
+		return 0;
+	}
+
 protected:
 	FloatingPointState    _state;    // exceptional state
 	bool                  _sign;     // sign of the number: -1 if true, +1 if false, zero is positive
@@ -754,14 +762,6 @@ protected:
 				}
 			}
 		}
-	}
-
-	static constexpr int compare_limbs(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) noexcept {
-		for (size_t i = 0; i < a.size(); ++i) {
-			if (a[i] > b[i]) return 1;
-			if (b[i] > a[i]) return -1;
-		}
-		return 0;
 	}
 
 
@@ -1442,8 +1442,39 @@ constexpr bool operator!=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) 
 	return !operator==(lhs, rhs);
 }
 template<unsigned nlimbs>
-constexpr bool operator< (const efloat<nlimbs>& /* lhs */, const efloat<nlimbs>& /* rhs */) noexcept {
-	return false; // lhs and rhs are the same
+constexpr bool operator< (const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
+	if (lhs.isnan() || rhs.isnan()) return false;
+	if (lhs.iszero() && rhs.iszero()) return false;
+
+	int lhs_sign = lhs.sign();
+	int rhs_sign = rhs.sign();
+	if (lhs_sign != rhs_sign) {
+		return lhs_sign == -1;
+	}
+
+	// Signs are equal. Compare absolute magnitudes.
+	int abs_cmp = 0;
+	if (lhs.isinf()) {
+		if (rhs.isinf()) abs_cmp = 0;
+		else abs_cmp = 1;
+	} else if (rhs.isinf()) {
+		abs_cmp = -1;
+	} else {
+		if (lhs.scale() < rhs.scale()) {
+			abs_cmp = -1;
+		} else if (lhs.scale() > rhs.scale()) {
+			abs_cmp = 1;
+		} else {
+			// exponents are equal, compare limbs
+			abs_cmp = efloat<nlimbs>::compare_limbs(lhs.bits(), rhs.bits());
+		}
+	}
+
+	if (lhs_sign == -1) {
+		return abs_cmp > 0; // for negative, larger absolute magnitude is smaller
+	} else {
+		return abs_cmp < 0; // for positive, smaller absolute magnitude is smaller
+	}
 }
 template<unsigned nlimbs>
 constexpr bool operator> (const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {

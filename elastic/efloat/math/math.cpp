@@ -173,6 +173,19 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: log(-1.0) did not set InvalidOperation\n";
 				++failures;
 			}
+
+			// 3e. Exceptional value: log(-inf) -> NaN + InvalidOperation (signbit check)
+			clear_efloat_exceptions();
+			efloat<4> neg_inf;
+			neg_inf.setinf(true);
+			if (!log(neg_inf).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL: log(-inf) did not return NaN\n";
+				++failures;
+			}
+			if (!has_efloat_exception(ExceptionFlag::InvalidOperation)) {
+				if (reportTestCases) std::cout << "    FAIL: log(-inf) did not set InvalidOperation\n";
+				++failures;
+			}
 		}
 
 		// ---------------------------------------------------------------------
@@ -225,6 +238,19 @@ namespace {
 			}
 			if (!has_efloat_exception(ExceptionFlag::DivisionByZero)) {
 				if (reportTestCases) std::cout << "    FAIL: log1p(-1.0) did not set DivisionByZero\n";
+				++failures;
+			}
+
+			// 4f. log1p(-inf) -> NaN + InvalidOperation (extended signbit domain check)
+			clear_efloat_exceptions();
+			efloat<4> neg_inf;
+			neg_inf.setinf(true);
+			if (!log1p(neg_inf).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL: log1p(-inf) did not return NaN\n";
+				++failures;
+			}
+			if (!has_efloat_exception(ExceptionFlag::InvalidOperation)) {
+				if (reportTestCases) std::cout << "    FAIL: log1p(-inf) did not set InvalidOperation\n";
 				++failures;
 			}
 		}
