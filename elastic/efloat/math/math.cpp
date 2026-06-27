@@ -4,6 +4,7 @@
 //   - Tier 1: Bootstrap Square Root (sqrt)
 //   - Tier 1: Natural Logarithm (log)
 //   - Tier 1: Exponential (exp)
+//   - Logarithmic Suite: log2, log10, log1p (Issue #1108)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -172,6 +173,86 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: log(-1.0) did not set InvalidOperation\n";
 				++failures;
 			}
+
+			// 3e. Exceptional value: log(-inf) -> NaN + InvalidOperation (signbit check)
+			clear_efloat_exceptions();
+			efloat<4> neg_inf;
+			neg_inf.setinf(true);
+			if (!log(neg_inf).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL: log(-inf) did not return NaN\n";
+				++failures;
+			}
+			if (!has_efloat_exception(ExceptionFlag::InvalidOperation)) {
+				if (reportTestCases) std::cout << "    FAIL: log(-inf) did not set InvalidOperation\n";
+				++failures;
+			}
+		}
+
+		// ---------------------------------------------------------------------
+		// 4. Logarithmic Suite Validation (log2, log10, log1p)
+		// ---------------------------------------------------------------------
+		if (reportTestCases) std::cout << "  Verifying Logarithmic Suite (log2, log10, log1p)...\n";
+		{
+			clear_efloat_exceptions();
+
+			// 4a. log2(4.0) == 2.0
+			efloat<8> four(4.0);
+			if (!IsClose(log2(four), 2.0)) {
+				if (reportTestCases) std::cout << "    FAIL: log2(4.0) is not 2.0\n";
+				++failures;
+			}
+
+			// 4b. log10(100.0) == 2.0
+			efloat<8> hundred(100.0);
+			if (!IsClose(log10(hundred), 2.0)) {
+				if (reportTestCases) std::cout << "    FAIL: log10(100.0) is not 2.0\n";
+				++failures;
+			}
+
+			// 4c. log1p(1e-12) avoids catastrophic cancellation as x -> 0
+			efloat<8> small;
+			parse("0.000000000001", small); // 10^-12
+			double expected_log1p = std::log1p(1e-12);
+			if (!IsClose(log1p(small), expected_log1p, 1e-25)) {
+				if (reportTestCases) std::cout << "    FAIL: log1p(10^-12) is inaccurate. Result: " << double(log1p(small)) << "\n";
+				++failures;
+			}
+
+			// 4d. log1p(-2.0) -> NaN + InvalidOperation
+			efloat<4> neg_two(-2.0);
+			if (!log1p(neg_two).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL: log1p(-2.0) did not return NaN\n";
+				++failures;
+			}
+			if (!has_efloat_exception(ExceptionFlag::InvalidOperation)) {
+				if (reportTestCases) std::cout << "    FAIL: log1p(-2.0) did not set InvalidOperation\n";
+				++failures;
+			}
+
+			// 4e. log1p(-1.0) -> -Inf + DivisionByZero
+			efloat<4> neg_one(-1.0);
+			efloat<4> res_log1p = log1p(neg_one);
+			if (!res_log1p.isinf() || res_log1p.sign() != -1) {
+				if (reportTestCases) std::cout << "    FAIL: log1p(-1.0) did not return -Inf\n";
+				++failures;
+			}
+			if (!has_efloat_exception(ExceptionFlag::DivisionByZero)) {
+				if (reportTestCases) std::cout << "    FAIL: log1p(-1.0) did not set DivisionByZero\n";
+				++failures;
+			}
+
+			// 4f. log1p(-inf) -> NaN + InvalidOperation (extended signbit domain check)
+			clear_efloat_exceptions();
+			efloat<4> neg_inf;
+			neg_inf.setinf(true);
+			if (!log1p(neg_inf).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL: log1p(-inf) did not return NaN\n";
+				++failures;
+			}
+			if (!has_efloat_exception(ExceptionFlag::InvalidOperation)) {
+				if (reportTestCases) std::cout << "    FAIL: log1p(-inf) did not set InvalidOperation\n";
+				++failures;
+			}
 		}
 
 		clear_efloat_exceptions();
@@ -195,7 +276,7 @@ namespace {
 int main() try {
 	using namespace sw::universal;
 
-	std::string test_suite          = "efloat Tier-1 mathematical functions";
+	std::string test_suite          = "efloat mathematical functions library";
 	std::string test_tag            = "math";
 	bool        reportTestCases     = true;
 	int         nrOfFailedTestCases = 0;
