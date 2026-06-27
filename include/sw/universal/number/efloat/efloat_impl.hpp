@@ -774,12 +774,9 @@ protected:
 			return *this;
 		}
 		bool neg = (v < 0);
-		uint64_t magnitude = 0;
-		if (neg) {
-			magnitude = static_cast<uint64_t>(-static_cast<int64_t>(v));
-		} else {
-			magnitude = static_cast<uint64_t>(v);
-		}
+		uint64_t magnitude = neg
+			? (0ull - static_cast<uint64_t>(static_cast<int64_t>(v)))
+			: static_cast<uint64_t>(v);
 
 		uint32_t high = static_cast<uint32_t>(magnitude >> 32);
 		uint32_t low = static_cast<uint32_t>(magnitude & 0xFFFFFFFFu);
