@@ -331,10 +331,11 @@ public:
 		if (_limb.size() == 1 && _limb[0] == 0x80000000) {
 			unsigned target_prec = _precision_limbs;
 			int64_t old_exp = _exponent;
+			bool original_sign = _sign;
 			*this = rhs;
 			_precision_limbs = target_prec;
 			_exponent += old_exp;
-			_sign = (_sign != rhs._sign);
+			_sign = (original_sign != rhs._sign);
 			return *this;
 		}
 
