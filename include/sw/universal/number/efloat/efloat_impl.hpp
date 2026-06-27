@@ -769,14 +769,57 @@ protected:
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	efloat& convert_signed(SignedInt v) noexcept {
 		clear();
-		return convert_ieee754(static_cast<double>(v));
+		if (0 == v) {
+			setzero();
+			return *this;
+		}
+		bool neg = (v < 0);
+		uint64_t magnitude = 0;
+		if (neg) {
+			magnitude = static_cast<uint64_t>(-static_cast<int64_t>(v));
+		} else {
+			magnitude = static_cast<uint64_t>(v);
+		}
+
+		uint32_t high = static_cast<uint32_t>(magnitude >> 32);
+		uint32_t low = static_cast<uint32_t>(magnitude & 0xFFFFFFFFu);
+
+		_state = FloatingPointState::Normal;
+		_sign = neg;
+		if (high != 0) {
+			_limb = { high, low };
+			_exponent = 63;
+		} else {
+			_limb = { low };
+			_exponent = 31;
+		}
+		normalize();
+		return *this;
 	}
 
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
 	efloat& convert_unsigned(UnsignedInt v) noexcept {
 		clear();
-		return convert_ieee754(static_cast<double>(v));
+		if (0 == v) {
+			setzero();
+			return *this;
+		}
+		uint64_t magnitude = static_cast<uint64_t>(v);
+		uint32_t high = static_cast<uint32_t>(magnitude >> 32);
+		uint32_t low = static_cast<uint32_t>(magnitude & 0xFFFFFFFFu);
+
+		_state = FloatingPointState::Normal;
+		_sign = false;
+		if (high != 0) {
+			_limb = { high, low };
+			_exponent = 63;
+		} else {
+			_limb = { low };
+			_exponent = 31;
+		}
+		normalize();
+		return *this;
 	}
 
 	template<typename Real,

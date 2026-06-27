@@ -23,12 +23,16 @@ constexpr efloat<nlimbs> sqrt(const efloat<nlimbs>& a) {
 	}
 	if (a.isinf() || a.isnan()) return a;
 
-	// Initial guess using double precision sqrt
-	efloat<nlimbs> x(std::sqrt(double(a)));
+	// Initial guess: x0 = 1.0 * 2^(scale / 2) to support infinite exponent ranges
+	efloat<nlimbs> x;
+	x.clear();
+	x.setexponent(a.scale() / 2);
+	x.setlimb(0, 0x80000000); // set implicit leading bit
+
 	efloat<nlimbs> half(0.5);
 
-	// Newton iterations (5 iterations double precision 5 times, reaching >1000 bits)
-	for (int i = 0; i < 5; ++i) {
+	// Newton iterations (7 iterations converge up to 2048 bits!)
+	for (int i = 0; i < 7; ++i) {
 		x = half * (x + a / x);
 	}
 	return x;

@@ -102,6 +102,29 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: exp(ln2) is not 2.0. Result: " << double(exp(ln2)) << "\n";
 				++failures;
 			}
+
+			// 2d. Exceptional / special values (CodeRabbit feedback)
+			efloat<4> pos_inf;
+			pos_inf.setinf(false);
+			efloat<4> pos_inf_res = exp(pos_inf);
+			if (!pos_inf_res.isinf() || pos_inf_res.sign() != 1) {
+				if (reportTestCases) std::cout << "    FAIL: exp(+inf) did not return +Inf\n";
+				++failures;
+			}
+
+			efloat<4> neg_inf;
+			neg_inf.setinf(true);
+			if (exp(neg_inf) != 0.0) {
+				if (reportTestCases) std::cout << "    FAIL: exp(-inf) is not 0.0\n";
+				++failures;
+			}
+
+			efloat<4> nan;
+			nan.setnan();
+			if (!exp(nan).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL: exp(nan) did not return NaN\n";
+				++failures;
+			}
 		}
 
 		// ---------------------------------------------------------------------

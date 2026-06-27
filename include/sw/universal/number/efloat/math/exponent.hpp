@@ -15,7 +15,24 @@ constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
 	if (x.iszero()) return efloat<nlimbs>(1.0);
 	if (x.isnan()) return x;
 	if (x.isinf()) {
-		return (x.isneg() ? efloat<nlimbs>(0.0) : x);
+		return (x.sign() == -1 ? efloat<nlimbs>(0.0) : x);
+	}
+
+	// Protect against extremely large inputs that would overflow double/int64_t during range reduction
+	if (x.scale() >= 17) {
+		if (x.isneg()) {
+			if (!std::is_constant_evaluated()) {
+				efloat_exception_flags.set(ExceptionFlag::Underflow | ExceptionFlag::Inexact);
+			}
+			return efloat<nlimbs>(0.0);
+		} else {
+			efloat<nlimbs> inf;
+			inf.setinf(false);
+			if (!std::is_constant_evaluated()) {
+				efloat_exception_flags.set(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
+			}
+			return inf;
+		}
 	}
 
 	// Range reduction: x = k * ln2 + r, where |r| <= 0.5 * ln2
