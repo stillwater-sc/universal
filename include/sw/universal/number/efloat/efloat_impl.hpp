@@ -721,6 +721,10 @@ protected:
 		std::vector<uint32_t> div = b;
 		std::vector<uint32_t> dvd = a;
 		align_sizes(dvd, div);
+
+		// Insert leading zero limb to prevent shift overflow bit-loss!
+		dvd.insert(dvd.begin(), 0u);
+		div.insert(div.begin(), 0u);
 		remainder_non_zero = false;
 
 		for (unsigned bit = 0; bit < max_limbs * 32; ++bit) {
@@ -764,24 +768,54 @@ protected:
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	efloat& convert_signed(SignedInt v) noexcept {
+		clear();
 		if (0 == v) {
 			setzero();
+			return *this;
 		}
-		else {
+		bool neg = (v < 0);
+		uint64_t magnitude = neg
+			? (0ull - static_cast<uint64_t>(static_cast<int64_t>(v)))
+			: static_cast<uint64_t>(v);
 
+		uint32_t high = static_cast<uint32_t>(magnitude >> 32);
+		uint32_t low = static_cast<uint32_t>(magnitude & 0xFFFFFFFFu);
+
+		_state = FloatingPointState::Normal;
+		_sign = neg;
+		if (high != 0) {
+			_limb = { high, low };
+			_exponent = 63;
+		} else {
+			_limb = { low };
+			_exponent = 31;
 		}
+		normalize();
 		return *this;
 	}
 
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
 	efloat& convert_unsigned(UnsignedInt v) noexcept {
+		clear();
 		if (0 == v) {
 			setzero();
+			return *this;
 		}
-		else {
+		uint64_t magnitude = static_cast<uint64_t>(v);
+		uint32_t high = static_cast<uint32_t>(magnitude >> 32);
+		uint32_t low = static_cast<uint32_t>(magnitude & 0xFFFFFFFFu);
 
+		_state = FloatingPointState::Normal;
+		_sign = false;
+		if (high != 0) {
+			_limb = { high, low };
+			_exponent = 63;
+		} else {
+			_limb = { low };
+			_exponent = 31;
 		}
+		normalize();
 		return *this;
 	}
 

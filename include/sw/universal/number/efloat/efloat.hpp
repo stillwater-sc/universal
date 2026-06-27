@@ -58,4 +58,4 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-//#include <universal/number/efloat/mathlib.hpp>
+#include <universal/number/efloat/mathlib.hpp>
