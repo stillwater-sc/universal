@@ -9,3 +9,4 @@
 #include <universal/number/efloat/math/sqrt.hpp>
 #include <universal/number/efloat/math/exponent.hpp>
 #include <universal/number/efloat/math/logarithm.hpp>
+#include <universal/number/efloat/math/classify.hpp>
