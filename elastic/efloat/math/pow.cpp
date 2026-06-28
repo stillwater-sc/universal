@@ -37,6 +37,14 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: pow(2.0, 0) is not 1.0\n";
 				++failures;
 			}
+			// Verify INT_MIN safe negation (CodeRabbit feedback)
+			efloat<4> neg_one(-1.0);
+			int min_int = std::numeric_limits<int>::min();
+			efloat<4> res_min_int = pow(neg_one, min_int);
+			if (res_min_int != 1.0) {
+				if (reportTestCases) std::cout << "    FAIL: pow(-1.0, INT_MIN) is not 1.0. Result: " << double(res_min_int) << "\n";
+				++failures;
+			}
 		}
 
 		// ---------------------------------------------------------------------
@@ -83,6 +91,18 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: pow(0.0, -2.0) did not raise DivisionByZero exception\n";
 				++failures;
 			}
+
+			// IEEE-754 Boundary cases (CodeRabbit feedback)
+			efloat<4> nan; nan.setnan();
+			efloat<4> one(1.0);
+			if (pow(nan, zero) != 1.0) {
+				if (reportTestCases) std::cout << "    FAIL: pow(NaN, 0.0) is not 1.0\n";
+				++failures;
+			}
+			if (pow(one, nan) != 1.0) {
+				if (reportTestCases) std::cout << "    FAIL: pow(1.0, NaN) is not 1.0\n";
+				++failures;
+			}
 		}
 
 		// ---------------------------------------------------------------------
@@ -96,6 +116,12 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: exp2(2.0) is not 4.0. Result: " << d_exp2 << "\n";
 				++failures;
 			}
+			// Zero input check
+			efloat<4> zero(0.0);
+			if (exp2(zero) != 1.0) {
+				if (reportTestCases) std::cout << "    FAIL: exp2(0.0) is not 1.0. Result: " << double(exp2(zero)) << "\n";
+				++failures;
+			}
 		}
 
 		// ---------------------------------------------------------------------
@@ -107,6 +133,12 @@ namespace {
 			double d_exp10 = double(exp10(exponent));
 			if (std::abs(d_exp10 - 100.0) > 1e-12) {
 				if (reportTestCases) std::cout << "    FAIL: exp10(2.0) is not 100.0. Result: " << d_exp10 << "\n";
+				++failures;
+			}
+			// Zero input check
+			efloat<4> zero(0.0);
+			if (exp10(zero) != 1.0) {
+				if (reportTestCases) std::cout << "    FAIL: exp10(0.0) is not 1.0. Result: " << double(exp10(zero)) << "\n";
 				++failures;
 			}
 		}
@@ -123,7 +155,7 @@ namespace {
 			}
 
 			// Small input Taylor series check (cancellation prevention)
-			// expm1(1e-12) ≈ 1.0000000000005e-12
+			// expm1(1e-12) ~= 1.0000000000005e-12
 			efloat<4> small(1e-12);
 			efloat<4> res_expm1 = expm1(small);
 			double d_res = double(res_expm1);
