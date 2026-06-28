@@ -10,3 +10,4 @@
 #include <universal/number/efloat/math/exponent.hpp>
 #include <universal/number/efloat/math/logarithm.hpp>
 #include <universal/number/efloat/math/classify.hpp>
+#include <universal/number/efloat/math/truncate.hpp>
