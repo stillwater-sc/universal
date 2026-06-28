@@ -283,6 +283,10 @@ constexpr efloat<nlimbs> rint(const efloat<nlimbs>& x) {
 		}
 	}
 
+	efloat<nlimbs> res(x);
+	bool original_sign = res._sign;
+	bool inexact = clear_fractional_limbs(res._limb, exp);
+
 	bool round_up = false;
 	switch (efloat_rounding_mode) {
 	case RoundingMode::RoundToNearest:
@@ -291,16 +295,13 @@ constexpr efloat<nlimbs> rint(const efloat<nlimbs>& x) {
 	case RoundingMode::RoundToZero:
 		break;
 	case RoundingMode::RoundTowardPositive:
-		round_up = (!x._sign) && (guard || sticky);
+		round_up = (!x._sign) && inexact;
 		break;
 	case RoundingMode::RoundTowardNegative:
-		round_up = (x._sign) && (guard || sticky);
+		round_up = (x._sign) && inexact;
 		break;
 	}
 
-	efloat<nlimbs> res(x);
-	bool original_sign = res._sign;
-	bool inexact = clear_fractional_limbs(res._limb, exp);
 	if (inexact) {
 		if (!std::is_constant_evaluated()) {
 			efloat_exception_flags.set(ExceptionFlag::Inexact);

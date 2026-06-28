@@ -136,6 +136,11 @@ namespace {
 					if (reportTestCases) std::cout << "    FAIL: rint(1.5) under RoundTowardPositive did not round up to 2.0\n";
 					++failures;
 				}
+				efloat<4> small(0.25);
+				if (rint(small) != 1.0) {
+					if (reportTestCases) std::cout << "    FAIL: rint(0.25) under RoundTowardPositive did not round up to 1.0\n";
+					++failures;
+				}
 			}
 			// Toward Negative: positive inexact halfway truncates!
 			efloat_rounding_mode = RoundingMode::RoundTowardNegative;
@@ -143,6 +148,11 @@ namespace {
 				efloat<4> half(1.5);
 				if (rint(half) != 1.0) {
 					if (reportTestCases) std::cout << "    FAIL: rint(1.5) under RoundTowardNegative did not truncate to 1.0. Result: " << double(rint(half)) << "\n";
+					++failures;
+				}
+				efloat<4> small(-0.25);
+				if (rint(small) != -1.0) {
+					if (reportTestCases) std::cout << "    FAIL: rint(-0.25) under RoundTowardNegative did not round down to -1.0\n";
 					++failures;
 				}
 			}
