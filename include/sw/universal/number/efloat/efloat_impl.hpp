@@ -1220,6 +1220,18 @@ private:
 	// find the most significant bit set
 	template<unsigned nnlimbs>
 	friend signed findMsb(const efloat<nnlimbs>& v);
+
+	// mathematical truncation friend functions
+	template<unsigned nnlimbs>
+	friend constexpr efloat<nnlimbs> trunc(const efloat<nnlimbs>& x);
+	template<unsigned nnlimbs>
+	friend constexpr efloat<nnlimbs> floor(const efloat<nnlimbs>& x);
+	template<unsigned nnlimbs>
+	friend constexpr efloat<nnlimbs> ceil(const efloat<nnlimbs>& x);
+	template<unsigned nnlimbs>
+	friend constexpr efloat<nnlimbs> round(const efloat<nnlimbs>& x);
+	template<unsigned nnlimbs>
+	friend constexpr efloat<nnlimbs> rint(const efloat<nnlimbs>& x);
 	};
 
 	// to_binary formatter for efloat to support test reporters
