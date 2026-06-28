@@ -49,6 +49,23 @@ namespace {
 		}
 
 		// ---------------------------------------------------------------------
+		// 1b. iszero Validation
+		// ---------------------------------------------------------------------
+		if (reportTestCases) std::cout << "  Verifying iszero...\n";
+		{
+			efloat<4> zero(0.0);
+			efloat<4> one(1.0);
+			if (!iszero(zero)) {
+				if (reportTestCases) std::cout << "    FAIL: iszero(0.0) is not true\n";
+				++failures;
+			}
+			if (iszero(one)) {
+				if (reportTestCases) std::cout << "    FAIL: iszero(1.0) is true\n";
+				++failures;
+			}
+		}
+
+		// ---------------------------------------------------------------------
 		// 2. isfinite Validation
 		// ---------------------------------------------------------------------
 		if (reportTestCases) std::cout << "  Verifying isfinite...\n";

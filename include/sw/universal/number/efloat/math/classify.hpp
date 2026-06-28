@@ -18,6 +18,12 @@ constexpr int fpclassify(const efloat<nlimbs>& x) noexcept {
 	return FP_NORMAL;
 }
 
+// STD LIB function: Determines if the efloat is zero
+template<unsigned nlimbs>
+constexpr bool iszero(const efloat<nlimbs>& x) noexcept {
+	return x.iszero();
+}
+
 // STD LIB function: Determines if the efloat has a finite value (normal or zero)
 template<unsigned nlimbs>
 constexpr bool isfinite(const efloat<nlimbs>& x) noexcept {
