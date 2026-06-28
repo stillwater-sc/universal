@@ -43,6 +43,13 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: trunc(1.75) did not raise Inexact\n";
 				++failures;
 			}
+			// Negative Zero: trunc(-0.25) == -0.0 (preserves negative sign)
+			efloat<4> small_neg(-0.25);
+			efloat<4> res_trunc = trunc(small_neg);
+			if (res_trunc != 0.0 || res_trunc.sign() != -1) {
+				if (reportTestCases) std::cout << "    FAIL: trunc(-0.25) did not return negative zero. Result: " << double(res_trunc) << "\n";
+				++failures;
+			}
 		}
 
 		// ---------------------------------------------------------------------
@@ -119,6 +126,28 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: rint(2.5) is not 2.0. Result: " << double(rint(half2)) << "\n";
 				++failures;
 			}
+
+			// Verify dynamic rounding mode integration on rint
+			// Toward Positive: positive inexact halfway rounds up!
+			efloat_rounding_mode = RoundingMode::RoundTowardPositive;
+			{
+				efloat<4> half(1.5);
+				if (rint(half) != 2.0) {
+					if (reportTestCases) std::cout << "    FAIL: rint(1.5) under RoundTowardPositive did not round up to 2.0\n";
+					++failures;
+				}
+			}
+			// Toward Negative: positive inexact halfway truncates!
+			efloat_rounding_mode = RoundingMode::RoundTowardNegative;
+			{
+				efloat<4> half(1.5);
+				if (rint(half) != 1.0) {
+					if (reportTestCases) std::cout << "    FAIL: rint(1.5) under RoundTowardNegative did not truncate to 1.0. Result: " << double(rint(half)) << "\n";
+					++failures;
+				}
+			}
+			// Restore default rounding
+			efloat_rounding_mode = RoundingMode::RoundToNearest;
 		}
 
 		// ---------------------------------------------------------------------
@@ -127,8 +156,12 @@ namespace {
 		if (reportTestCases) std::cout << "  Verifying nearbyint...\n";
 		{
 			clear_efloat_exceptions();
-			efloat<4> half(1.5);
-			nearbyint(half);
+			efloat<4> half(2.5); // test halfway-to-even: should yield exactly 2.0
+			efloat<4> res_near = nearbyint(half);
+			if (res_near != 2.0) {
+				if (reportTestCases) std::cout << "    FAIL: nearbyint(2.5) did not return nearest-even 2.0. Result: " << double(res_near) << "\n";
+				++failures;
+			}
 			if (has_efloat_exception(ExceptionFlag::Inexact)) {
 				if (reportTestCases) std::cout << "    FAIL: nearbyint erroneously raised Inexact\n";
 				++failures;
@@ -147,6 +180,13 @@ namespace {
 			}
 			if (llrint(val) != 2LL) {
 				if (reportTestCases) std::cout << "    FAIL: llrint(1.5) is not 2LL\n";
+				++failures;
+			}
+
+			// Verify high-precision exact integers above 2^53 do not get lost in lrint (CodeRabbit feedback)
+			efloat<4> large(9007199254740993ULL); // 2^53 + 1
+			if (llrint(large) != 9007199254740993LL) {
+				if (reportTestCases) std::cout << "    FAIL: llrint(2^53 + 1) suffered from double-cast truncation. Result: " << llrint(large) << "\n";
 				++failures;
 			}
 		}
