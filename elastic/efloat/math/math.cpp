@@ -72,6 +72,60 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: sqrt(-1.0) did not set InvalidOperation\n";
 				++failures;
 			}
+
+			// 1d. Exceptional value: sqrt(-inf) -> NaN + InvalidOperation
+			efloat<4> neg_inf; neg_inf.setinf(true);
+			clear_efloat_exceptions();
+			efloat<4> res_neg_inf = sqrt(neg_inf);
+			if (!res_neg_inf.isnan()) {
+				if (reportTestCases) std::cout << "    FAIL: sqrt(-inf) did not return NaN\n";
+				++failures;
+			}
+			if (!has_efloat_exception(ExceptionFlag::InvalidOperation)) {
+				if (reportTestCases) std::cout << "    FAIL: sqrt(-inf) did not set InvalidOperation\n";
+				++failures;
+			}
+		}
+
+		// ---------------------------------------------------------------------
+		// 1e. Cube Root (cbrt) Validation
+		// ---------------------------------------------------------------------
+		if (reportTestCases) std::cout << "  Verifying Cube Root (cbrt)...\n";
+		{
+			efloat<4> eight(8.0);
+			if (!IsClose(cbrt(eight), 2.0)) {
+				if (reportTestCases) std::cout << "    FAIL: cbrt(8.0) is not 2.0. Result: " << double(cbrt(eight)) << "\n";
+				++failures;
+			}
+			efloat<4> neg_eight(-8.0);
+			if (!IsClose(cbrt(neg_eight), -2.0)) {
+				if (reportTestCases) std::cout << "    FAIL: cbrt(-8.0) is not -2.0. Result: " << double(cbrt(neg_eight)) << "\n";
+				++failures;
+			}
+			efloat<4> zero_val(0.0);
+			if (cbrt(zero_val) != 0.0) {
+				if (reportTestCases) std::cout << "    FAIL: cbrt(0.0) is not 0.0\n";
+				++failures;
+			}
+			efloat<8> cbrt_two(2.0);
+			double expected_cbrt2 = std::cbrt(2.0);
+			if (!IsClose(cbrt(cbrt_two), expected_cbrt2)) {
+				if (reportTestCases) std::cout << "    FAIL: cbrt(2.0) is inaccurate. Result: " << double(cbrt(cbrt_two)) << "\n";
+				++failures;
+			}
+		}
+
+		// ---------------------------------------------------------------------
+		// 1f. Hypotenuse (hypot) Validation
+		// ---------------------------------------------------------------------
+		if (reportTestCases) std::cout << "  Verifying Hypotenuse (hypot)...\n";
+		{
+			efloat<4> three(3.0);
+			efloat<4> four_val(4.0);
+			if (hypot(three, four_val) != 5.0) {
+				if (reportTestCases) std::cout << "    FAIL: hypot(3.0, 4.0) is not 5.0. Result: " << double(hypot(three, four_val)) << "\n";
+				++failures;
+			}
 		}
 
 		// ---------------------------------------------------------------------
