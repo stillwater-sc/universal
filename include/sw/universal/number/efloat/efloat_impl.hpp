@@ -562,9 +562,12 @@ public:
 	}
 
 	static constexpr int compare_limbs(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) noexcept {
-		for (size_t i = 0; i < a.size(); ++i) {
-			if (a[i] > b[i]) return 1;
-			if (b[i] > a[i]) return -1;
+		size_t max_size = (a.size() > b.size() ? a.size() : b.size());
+		for (size_t i = 0; i < max_size; ++i) {
+			uint32_t val_a = (i < a.size() ? a[i] : 0u);
+			uint32_t val_b = (i < b.size() ? b[i] : 0u);
+			if (val_a > val_b) return 1;
+			if (val_b > val_a) return -1;
 		}
 		return 0;
 	}
@@ -1457,6 +1460,12 @@ template<unsigned nlimbs>
 constexpr bool operator< (const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	if (lhs.isnan() || rhs.isnan()) return false;
 	if (lhs.iszero() && rhs.iszero()) return false;
+	if (lhs.iszero()) {
+		return rhs.sign() != -1;
+	}
+	if (rhs.iszero()) {
+		return lhs.sign() == -1;
+	}
 
 	int lhs_sign = lhs.sign();
 	int rhs_sign = rhs.sign();
