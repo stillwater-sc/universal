@@ -13,3 +13,4 @@
 #include <universal/number/efloat/math/truncate.hpp>
 #include <universal/number/efloat/math/pow.hpp>
 #include <universal/number/efloat/math/fractional.hpp>
+#include <universal/number/efloat/math/minmax.hpp>
