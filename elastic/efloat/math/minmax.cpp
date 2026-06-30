@@ -11,6 +11,7 @@
 #include <cmath>
 #include <limits>
 #include <universal/number/efloat/efloat.hpp>
+#include <universal/number/efloat/math/minmax.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace {
@@ -70,6 +71,12 @@ namespace {
 				++failures;
 			}
 
+			// fmax(NaN, NaN) is NaN
+			if (!fmax(nan, nan).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL: fmax(NaN, NaN) did not return NaN\n";
+				++failures;
+			}
+
 			// IEEE-754 signed-zero tie-breaking (CodeRabbit feedback)
 			efloat<4> pos_zero(0.0);
 			efloat<4> neg_zero(-0.0);
@@ -121,8 +128,12 @@ namespace {
 			}
 
 			// fdim NaN propagation (CodeRabbit feedback)
-			if (!fdim(x, nan).isnan() || !fdim(nan, y).isnan()) {
-				if (reportTestCases) std::cout << "    FAIL: fdim did not propagate NaN\n";
+			if (!fdim(x, nan).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL: fdim(5.5, NaN) did not return NaN\n";
+				++failures;
+			}
+			if (!fdim(nan, y).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL: fdim(NaN, 2.0) did not return NaN\n";
 				++failures;
 			}
 		}
