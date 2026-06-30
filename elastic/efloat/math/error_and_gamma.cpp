@@ -76,7 +76,7 @@ namespace {
 			}
 
 			efloat<4> half(0.5);
-			double expected_gamma_half = std::tgamma(0.5); // should be sqrt(pi) ≈ 1.77245...
+			double expected_gamma_half = std::tgamma(0.5); // should be sqrt(pi) approx. 1.77245...
 			if (!IsClose(tgamma(half), expected_gamma_half)) {
 				if (reportTestCases) std::cout << "    FAIL: tgamma(0.5) is inaccurate\n";
 				++failures;
@@ -89,7 +89,7 @@ namespace {
 		if (reportTestCases) std::cout << "  Verifying Log-gamma Function (lgamma)...\n";
 		{
 			efloat<4> four(4.0);
-			double expected_lgamma4 = std::lgamma(4.0); // should be ln(6) ≈ 1.79175...
+			double expected_lgamma4 = std::lgamma(4.0); // should be ln(6) approx. 1.79175...
 			if (!IsClose(lgamma(four), expected_lgamma4)) {
 				if (reportTestCases) std::cout << "    FAIL: lgamma(4.0) is inaccurate. Result: " << double(lgamma(four)) << "\n";
 				++failures;
