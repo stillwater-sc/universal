@@ -108,9 +108,10 @@ namespace {
 				++failures;
 			}
 			efloat<8> cbrt_two(2.0);
-			double expected_cbrt2 = std::cbrt(2.0);
-			if (!IsClose(cbrt(cbrt_two), expected_cbrt2)) {
-				if (reportTestCases) std::cout << "    FAIL: cbrt(2.0) is inaccurate. Result: " << double(cbrt(cbrt_two)) << "\n";
+			efloat<8> y_cbrt = cbrt(cbrt_two);
+			// Validate higher-precision cbrt(2.0) via an efloat-space round-trip check (CodeRabbit feedback)
+			if (!IsClose(y_cbrt * y_cbrt * y_cbrt, 2.0)) {
+				if (reportTestCases) std::cout << "    FAIL: cbrt(2.0) roundtrip failed. Result cubed: " << double(y_cbrt * y_cbrt * y_cbrt) << "\n";
 				++failures;
 			}
 		}
@@ -124,6 +125,18 @@ namespace {
 			efloat<4> four_val(4.0);
 			if (hypot(three, four_val) != 5.0) {
 				if (reportTestCases) std::cout << "    FAIL: hypot(3.0, 4.0) is not 5.0. Result: " << double(hypot(three, four_val)) << "\n";
+				++failures;
+			}
+
+			// Validate IEEE-754: Infinity suppresses NaN inside hypot (CodeRabbit feedback)
+			efloat<4> nan; nan.setnan();
+			efloat<4> inf; inf.setinf(false);
+			if (!hypot(nan, inf).isinf()) {
+				if (reportTestCases) std::cout << "    FAIL: hypot(NaN, +inf) did not return +Inf\n";
+				++failures;
+			}
+			if (!hypot(inf, nan).isinf()) {
+				if (reportTestCases) std::cout << "    FAIL: hypot(+inf, NaN) did not return +Inf\n";
 				++failures;
 			}
 		}

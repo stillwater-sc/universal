@@ -71,13 +71,14 @@ constexpr efloat<nlimbs> cbrt(const efloat<nlimbs>& a) {
 // hypot: hypotenuse function sqrt(x^2 + y^2) with scale-based overflow prevention
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> hypot(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
-	if (x.isnan() || y.isnan()) {
-		efloat<nlimbs> nan; nan.setnan();
-		return nan;
-	}
+	// IEEE-754: Infinity suppresses NaN inside hypot! Infinity check must run first.
 	if (x.isinf() || y.isinf()) {
 		efloat<nlimbs> inf; inf.setinf(false);
 		return inf;
+	}
+	if (x.isnan() || y.isnan()) {
+		efloat<nlimbs> nan; nan.setnan();
+		return nan;
 	}
 
 	efloat<nlimbs> abs_x(x); abs_x.setsign(false);
