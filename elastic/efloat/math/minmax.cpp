@@ -37,9 +37,9 @@ namespace {
 		}
 
 		// ---------------------------------------------------------------------
-		// 2. fmin & fmax NaN Suppression Validation
+		// 2. fmin & fmax NaN Suppression & Signed Zero Validation
 		// ---------------------------------------------------------------------
-		if (reportTestCases) std::cout << "  Verifying fmin and fmax (NaN-suppressing)...\n";
+		if (reportTestCases) std::cout << "  Verifying fmin and fmax...\n";
 		{
 			efloat<4> x(5.5);
 			efloat<4> nan; nan.setnan();
@@ -69,6 +69,34 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: fmin(NaN, NaN) did not return NaN\n";
 				++failures;
 			}
+
+			// IEEE-754 signed-zero tie-breaking (CodeRabbit feedback)
+			efloat<4> pos_zero(0.0);
+			efloat<4> neg_zero(-0.0);
+
+			// fmin(-0.0, +0.0) -> -0.0
+			efloat<4> res_fmin1 = fmin(neg_zero, pos_zero);
+			if (res_fmin1 != 0.0 || res_fmin1.sign() != -1) {
+				if (reportTestCases) std::cout << "    FAIL: fmin(-0.0, +0.0) is not -0.0\n";
+				++failures;
+			}
+			efloat<4> res_fmin2 = fmin(pos_zero, neg_zero);
+			if (res_fmin2 != 0.0 || res_fmin2.sign() != -1) {
+				if (reportTestCases) std::cout << "    FAIL: fmin(+0.0, -0.0) is not -0.0\n";
+				++failures;
+			}
+
+			// fmax(-0.0, +0.0) -> +0.0
+			efloat<4> res_fmax1 = fmax(neg_zero, pos_zero);
+			if (res_fmax1 != 0.0 || res_fmax1.sign() != 1) {
+				if (reportTestCases) std::cout << "    FAIL: fmax(-0.0, +0.0) is not +0.0\n";
+				++failures;
+			}
+			efloat<4> res_fmax2 = fmax(pos_zero, neg_zero);
+			if (res_fmax2 != 0.0 || res_fmax2.sign() != 1) {
+				if (reportTestCases) std::cout << "    FAIL: fmax(+0.0, -0.0) is not +0.0\n";
+				++failures;
+			}
 		}
 
 		// ---------------------------------------------------------------------
@@ -78,6 +106,7 @@ namespace {
 		{
 			efloat<4> x(5.5);
 			efloat<4> y(2.0);
+			efloat<4> nan; nan.setnan();
 
 			// fdim(5.5, 2.0) == 3.5
 			if (fdim(x, y) != 3.5) {
@@ -88,6 +117,12 @@ namespace {
 			// fdim(2.0, 5.5) == 0.0
 			if (fdim(y, x) != 0.0) {
 				if (reportTestCases) std::cout << "    FAIL: fdim(2.0, 5.5) is not 0.0. Result: " << double(fdim(y, x)) << "\n";
+				++failures;
+			}
+
+			// fdim NaN propagation (CodeRabbit feedback)
+			if (!fdim(x, nan).isnan() || !fdim(nan, y).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL: fdim did not propagate NaN\n";
 				++failures;
 			}
 		}

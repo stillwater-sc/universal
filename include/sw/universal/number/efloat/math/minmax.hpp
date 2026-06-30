@@ -27,6 +27,10 @@ template<unsigned nlimbs>
 constexpr efloat<nlimbs> fmin(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 	if (x.isnan()) return y;
 	if (y.isnan()) return x;
+	if (x.iszero() && y.iszero()) {
+		// IEEE-754: fmin(-0.0, +0.0) must return -0.0
+		return (x.sign() == -1) ? x : y;
+	}
 	return (x < y) ? x : y;
 }
 
@@ -35,6 +39,10 @@ template<unsigned nlimbs>
 constexpr efloat<nlimbs> fmax(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 	if (x.isnan()) return y;
 	if (y.isnan()) return x;
+	if (x.iszero() && y.iszero()) {
+		// IEEE-754: fmax(-0.0, +0.0) must return +0.0
+		return (x.sign() == 1) ? x : y;
+	}
 	return (x < y) ? y : x;
 }
 
