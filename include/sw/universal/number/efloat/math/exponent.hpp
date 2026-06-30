@@ -117,6 +117,7 @@ constexpr efloat<nlimbs> expm1(const efloat<nlimbs>& x) {
 	while (true) {
 		k = k + one;
 		term = (term * x) / k;
+		if (term.iszero()) break;
 		sum = sum + term;
 
 		if (term.scale() < sum.scale() - sum.get_precision()) {
