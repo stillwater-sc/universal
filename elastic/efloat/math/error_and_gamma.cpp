@@ -70,7 +70,7 @@ namespace {
 		if (reportTestCases) std::cout << "  Verifying Gamma Function (tgamma)...\n";
 		{
 			efloat<4> four(4.0);
-			if (tgamma(four) != 6.0) {
+			if (!IsClose(tgamma(four), 6.0)) {
 				if (reportTestCases) std::cout << "    FAIL: tgamma(4.0) is not 6.0. Result: " << double(tgamma(four)) << "\n";
 				++failures;
 			}

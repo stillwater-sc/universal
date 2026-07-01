@@ -11,28 +11,28 @@ namespace sw { namespace universal {
 
 // erf: Error function
 template<unsigned nlimbs>
-constexpr efloat<nlimbs> erf(const efloat<nlimbs>& x) {
+inline efloat<nlimbs> erf(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
 	return efloat<nlimbs>(std::erf(double(x)));
 }
 
 // erfc: Complementary error function
 template<unsigned nlimbs>
-constexpr efloat<nlimbs> erfc(const efloat<nlimbs>& x) {
+inline efloat<nlimbs> erfc(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
 	return efloat<nlimbs>(std::erfc(double(x)));
 }
 
 // tgamma: Gamma function
 template<unsigned nlimbs>
-constexpr efloat<nlimbs> tgamma(const efloat<nlimbs>& x) {
+inline efloat<nlimbs> tgamma(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
 	return efloat<nlimbs>(std::tgamma(double(x)));
 }
 
 // lgamma: Log-gamma function
 template<unsigned nlimbs>
-constexpr efloat<nlimbs> lgamma(const efloat<nlimbs>& x) {
+inline efloat<nlimbs> lgamma(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
 	return efloat<nlimbs>(std::lgamma(double(x)));
 }
