@@ -61,9 +61,26 @@ class bfloat16 {
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	BIT_CAST_CONSTEXPR bfloat16& convert_ieee754(Real rhs) noexcept {
 		// Down-cast wider floats to single precision first; bfloat16 is
-		// defined relative to the 32-bit IEEE-754 layout.
+		// defined relative to the 32-bit IEEE-754 layout. bfloat16 keeps the
+		// top 16 bits (sign + 8 exponent + 7 fraction) and must round the
+		// discarded low 16 bits to nearest, ties-to-even (RNE), matching the
+		// hardware behavior of Google TPUs and Intel. See issue #1133.
 		float f = static_cast<float>(rhs);
 		uint32_t bits = sw::bit_cast<uint32_t>(f);
+		// A float NaN whose payload lives only in the low 16 bits would, after
+		// truncation or rounding, collapse to +/-inf. Preserve NaN by forcing a
+		// quiet-NaN fraction bit while keeping the sign and exponent.
+		if ((bits & 0x7FFFFFFFu) > 0x7F800000u) {
+			_bits = static_cast<uint16_t>((bits >> 16) | 0x0040u);
+			return *this;
+		}
+		// RNE via magic rounding bias: adding (0x7FFF + lsb) rounds the retained
+		// field up on more-than-half, leaves it on less-than-half, and on an
+		// exact-half tie rounds toward the even significand (lsb == 0). A carry
+		// out of the fraction propagates correctly into the exponent, and a
+		// value within half a ulp of the range limit rounds to inf as expected.
+		uint32_t lsb = (bits >> 16) & 1u;
+		bits += 0x7FFFu + lsb;
 		_bits = static_cast<uint16_t>(bits >> 16);
 		return *this;
 	}
