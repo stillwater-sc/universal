@@ -24,7 +24,7 @@ export default defineConfig({
       sidebar: [
         {
           label: 'Getting Started',
-          autogenerate: { directory: 'getting-started' },
+          items: [{ autogenerate: { directory: 'getting-started' } }],
         },
         {
           label: 'Number Systems',
@@ -119,7 +119,7 @@ export default defineConfig({
         },
         {
           label: 'Exact Arithmetic',
-          autogenerate: { directory: 'exact-arithmetic' },
+          items: [{ autogenerate: { directory: 'exact-arithmetic' } }],
         },
         {
           label: 'ucalc',
@@ -132,31 +132,31 @@ export default defineConfig({
         },
         {
           label: 'Tutorials',
-          autogenerate: { directory: 'tutorials' },
+          items: [{ autogenerate: { directory: 'tutorials' } }],
         },
         {
           label: 'Mixed Precision',
-          autogenerate: { directory: 'mixed-precision' },
+          items: [{ autogenerate: { directory: 'mixed-precision' } }],
         },
         {
           label: 'Algorithmic Details',
-          autogenerate: { directory: 'algorithmic-details' },
+          items: [{ autogenerate: { directory: 'algorithmic-details' } }],
         },
         {
           label: 'Design',
-          autogenerate: { directory: 'design' },
+          items: [{ autogenerate: { directory: 'design' } }],
         },
         {
           label: 'Build & Install',
-          autogenerate: { directory: 'build' },
+          items: [{ autogenerate: { directory: 'build' } }],
         },
         {
           label: 'Contributing',
-          autogenerate: { directory: 'contributing' },
+          items: [{ autogenerate: { directory: 'contributing' } }],
         },
         {
           label: 'Resources',
-          autogenerate: { directory: 'resources' },
+          items: [{ autogenerate: { directory: 'resources' } }],
         },
         {
           // Doxygen C++ API reference, generated into public/api/ by
