@@ -78,10 +78,23 @@
 namespace sw { namespace universal {
 
 // Build a ZBCL from a finite, already-0-overlap block list, dropping trailing
-// zero blocks (which do not change the value).
+// zero blocks (which do not change the value) and trailing subnormal limbs.
+//
+// A subnormal block cannot satisfy the k-gap 0-overlap invariant
+// (block::is_normalised: "0-overlap accounting assumes the leading bit is
+// set"). On a narrow host (bfloat16 k=7, fp16 k=11) a deep expansion can bottom
+// out at the denormal floor and leave a trailing subnormal limb whose gap to
+// its head is below k; carrying it into the ZBCL trips the 0-overlap assert in
+// ZBCL::tail() downstream. mul_scalar / online_divide / online_multiply already
+// drop non-normalised blocks at their producers; this centralises the same
+// guard for every block-list producer (add / multiply / divide / sum). Trailing
+// removal is sufficient and value-preserving: the list is priestRenorm'd
+// (descending exponent), so subnormal limbs sit strictly below every normalised
+// limb and dropping them never removes a value above the floor. is_normalised()
+// is false for zero blocks too, so this subsumes the previous zero-drop.
 template <typename FpType>
 inline ZBCL<FpType> zbcl_from_blocks(std::vector<block<FpType>> blocks) {
-    while (!blocks.empty() && blocks.back().is_zero_block()) blocks.pop_back();
+    while (!blocks.empty() && !blocks.back().is_normalised()) blocks.pop_back();
     ZBCL<FpType> out{};
     for (std::size_t i = blocks.size(); i-- > 0;) {
         out = ZBCL<FpType>::cons(blocks[i], out);
