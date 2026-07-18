@@ -14,7 +14,10 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <exception>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -43,7 +46,7 @@ int escape_time(const Real& cr, const Real& ci, int maxit) {
 	for (int i = 0; i < maxit; ++i) {
 		Real zr2 = zr * zr;
 		Real zi2 = zi * zi;
-		if (double(zr2 + zi2) > 4.0) return i;   // escaped
+		if (zr2 + zi2 > Real(4.0)) return i;     // escaped -- compare in Real, no double rounding
 		Real t = zr2 - zi2 + cr;
 		zi = Real(2.0) * zr * zi + ci;
 		zr = t;
@@ -70,7 +73,9 @@ std::vector<int> render() {
 // Write a binary PPM (P6). In-set pixels are black; escaped pixels use the
 // classic smooth Mandelbrot palette keyed on the escape count.
 void write_ppm(const std::string& path, const std::vector<int>& grid) {
-	std::ofstream f(path, std::ios::binary);
+	std::ofstream f;
+	f.exceptions(std::ios::failbit | std::ios::badbit);   // I/O errors propagate to main's catch
+	f.open(path, std::ios::binary);
 	f << "P6\n" << IMG_W << ' ' << IMG_H << "\n255\n";
 	for (int v : grid) {
 		unsigned char rgb[3] = { 0, 0, 0 };
@@ -89,8 +94,11 @@ try {
 	using namespace sw::universal;
 	using efloat256 = efloat<8>;   // 8 limbs * 32 = 256 bits
 
-	const double dx  = VIEW_W / IMG_W;
-	const double ulp = std::ldexp(1.0, -53);     // ulp near |c| ~ 0.75 (exponent -1)
+	const double dx    = VIEW_W / IMG_W;
+	// ulp of the x-coordinate (near CENTER_X ~ -0.73, binade [0.5,1) -> exponent -1).
+	// CENTER_Y ~ 0.19 sits in a smaller binade, so its ulp is smaller and the y
+	// coordinates stay distinct: only the x coordinates collapse (vertical bands).
+	const double ulp_x = std::ldexp(1.0, std::ilogb(std::fabs(CENTER_X)) - 52);
 
 	std::cout << "Deep-zoom Mandelbrot: double vs efloat (256-bit) coordinates\n";
 	std::cout << std::setprecision(15);
@@ -98,9 +106,9 @@ try {
 	std::cout << std::scientific << std::setprecision(3);
 	std::cout << "  view width = " << VIEW_W << "   image = " << IMG_W << " x " << IMG_H
 	          << "   maxiter = " << MAXITER << "\n";
-	std::cout << "  pixel spacing dx = " << dx << "   double ulp here = " << ulp
-	          << "   dx/ulp = " << std::fixed << std::setprecision(2) << (dx / ulp) << "\n";
-	std::cout << "  (dx/ulp near 1 means adjacent pixels are ~1 ulp apart: double cannot resolve them)\n\n";
+	std::cout << "  pixel spacing dx = " << dx << "   double ulp at CENTER_X = " << ulp_x
+	          << "   dx/ulp = " << std::fixed << std::setprecision(2) << (dx / ulp_x) << "\n";
+	std::cout << "  (dx < ulp means adjacent x coordinates collapse: double renders vertical bands)\n\n";
 
 	std::vector<int> gd = render<double>();
 	std::vector<int> ge = render<efloat256>();
