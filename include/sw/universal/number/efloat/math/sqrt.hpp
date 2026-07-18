@@ -31,9 +31,24 @@ constexpr efloat<nlimbs> sqrt(const efloat<nlimbs>& a) {
 
 	efloat<nlimbs> half(0.5);
 
-	// Newton iterations (7 iterations converge up to 2048 bits!)
-	for (int i = 0; i < 7; ++i) {
+	// Newton's iteration x <- (x + a/x)/2 doubles the number of correct bits
+	// each step. The exponent-only seed above is accurate to ~1 bit (it keeps
+	// efloat's unbounded exponent range but carries no mantissa information), so
+	// the iteration count must scale with the working precision: ~ceil(log2(P))
+	// doublings plus a few guard steps. A fixed 7 iterations previously capped
+	// accuracy at ~97 digits regardless of get_precision() (issue #1140). The
+	// convergence break stops as soon as the update falls below the working
+	// precision, so high-precision operands do not pay for the guard steps.
+	// The working precision is the max feeding the arithmetic: the operand's
+	// precision or the seed/default precision (~nlimbs*32), whichever is larger.
+	const unsigned prec = (a.get_precision() > nlimbs * 32u) ? a.get_precision() : nlimbs * 32u;
+	int max_iters = 6;
+	for (unsigned p = prec; p > 1u; p >>= 1) ++max_iters;   // ceil(log2(prec)) + 6
+	for (int i = 0; i < max_iters; ++i) {
+		efloat<nlimbs> prev(x);
 		x = half * (x + a / x);
+		efloat<nlimbs> d(x - prev); d.setsign(false);
+		if (d.iszero() || (!x.iszero() && d.scale() < x.scale() - static_cast<int64_t>(prec))) break;
 	}
 	return x;
 }
@@ -57,9 +72,18 @@ constexpr efloat<nlimbs> cbrt(const efloat<nlimbs>& a) {
 	efloat<nlimbs> one_third = efloat<nlimbs>(1.0) / efloat<nlimbs>(3.0);
 	efloat<nlimbs> two(2.0);
 
-	// Newton iterations for y^3 - abs_a = 0: y_next = 1/3 * (2 * y + abs_a / y^2)
-	for (int i = 0; i < 7; ++i) {
+	// Newton iterations for y^3 - abs_a = 0: y_next = 1/3 * (2 * y + abs_a / y^2).
+	// Precision-adaptive iteration count with a convergence break, for the same
+	// reason as sqrt above (issue #1140): the ~1-bit exponent-only seed needs
+	// ~ceil(log2(precision)) doublings to reach full precision.
+	const unsigned prec = (abs_a.get_precision() > nlimbs * 32u) ? abs_a.get_precision() : nlimbs * 32u;
+	int max_iters = 6;
+	for (unsigned p = prec; p > 1u; p >>= 1) ++max_iters;
+	for (int i = 0; i < max_iters; ++i) {
+		efloat<nlimbs> prev(y);
 		y = one_third * (two * y + abs_a / (y * y));
+		efloat<nlimbs> d(y - prev); d.setsign(false);
+		if (d.iszero() || (!y.iszero() && d.scale() < y.scale() - static_cast<int64_t>(prec))) break;
 	}
 
 	if (is_neg) {
