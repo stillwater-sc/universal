@@ -1332,26 +1332,45 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 
 	// Decimal / scientific literal.
 	//
-	// d2b's convert<BigBits> internally left-shifts the digit-integer by roughly
-	// (target_bits + 3*neg_E) bits, where neg_E is the number of "sub-unit"
-	// decimal places (fractional digits plus any negative scientific exponent).
-	// That intermediate must fit in BigBits, so target_bits cannot simply be the
-	// requested precision -- for a target anywhere near BigBits the shift
-	// overflows and convert returns garbage (issue #1141). Size target_bits to
-	// leave headroom: a request beyond the safe ceiling yields a correctly-
-	// rounded value at reduced precision instead of garbage. Callers needing
-	// more precision pass a larger BigBits, e.g. parse<16384>(...).
+	// convert<BigBits>'s intermediate must fit in BigBits, and it grows two ways
+	// depending on the effective base-10 exponent E (= exp10 - #fractional-digits):
+	//   - E < 0 (sub-unit places): left-shifts the digit-integer by roughly
+	//     (target_bits + 3*neg_E) bits, so target cannot approach BigBits.
+	//   - E > 0 (large magnitude): multiplies by 5^E, growing the digit-integer
+	//     by ~E*log2(5) < 3*E bits, independent of target.
+	// Both are bounded by ~3 bits per "decimal place away from the unit". If even
+	// the digit-integer plus that growth cannot fit in BigBits, the literal is too
+	// large/small for this budget and we report failure (rather than returning the
+	// garbage a silent overflow would produce -- issue #1141). Otherwise target is
+	// sized to leave headroom; a request beyond the safe ceiling is correctly
+	// rounded to that ceiling. Callers needing more precision or a wider magnitude
+	// pass a larger BigBits, e.g. parse<16384>(...).
 	auto scan = sw::universal::string_parse::scan_decimal_float(s);
 	if (!scan.valid) return false;
 
-	const std::int64_t E    = static_cast<std::int64_t>(scan.exp10)
-	                        - static_cast<std::int64_t>(scan.frac_part.size());
-	const std::uint64_t neg_E   = (E < 0) ? static_cast<std::uint64_t>(-E) : 0ull;
-	const std::uint64_t sig     = scan.int_part.size() + scan.frac_part.size();
+	const std::int64_t  E        = static_cast<std::int64_t>(scan.exp10)
+	                             - static_cast<std::int64_t>(scan.frac_part.size());
+	const std::uint64_t neg_E    = (E < 0) ? static_cast<std::uint64_t>(-E) : 0ull;
+	const std::uint64_t pos_E    = (E > 0) ? static_cast<std::uint64_t>( E) : 0ull;
+	const std::uint64_t mag      = (neg_E > pos_E) ? neg_E : pos_E;        // one is 0
+	const std::uint64_t sig      = scan.int_part.size() + scan.frac_part.size();
 	const std::uint64_t sig_bits = sig * 34ull / 10ull + 8ull;            // ~3.33 bits/digit + guard
-	const std::uint64_t overhead = 3ull * neg_E + sig_bits + 64ull;       // convert's shift headroom
-	const unsigned safe_ceiling  = (BigBits > overhead + 1ull)
-	                             ? static_cast<unsigned>(BigBits - overhead) : 1u;
+
+	// If the digit-integer plus its 5^|E| growth cannot fit, this budget is too
+	// small for the literal's magnitude -- fail rather than overflow to garbage.
+	if (sig_bits + 3ull * mag + 64ull > BigBits) return false;
+
+	// Overflow-safe target. For E<0 the shift is target-relative, so cap target
+	// below BigBits - (3*neg_E + sig_bits). For E>=0 the growth is target-
+	// independent (already checked to fit), so target may go up to BigBits - 64.
+	unsigned safe_ceiling;
+	if (E < 0) {
+		const std::uint64_t overhead = 3ull * neg_E + sig_bits + 64ull;
+		safe_ceiling = (BigBits > overhead) ? static_cast<unsigned>(BigBits - overhead) : 1u;
+	}
+	else {
+		safe_ceiling = (BigBits > 64u) ? (BigBits - 64u) : 1u;
+	}
 
 	unsigned want_bits   = value.get_precision();
 	unsigned target_bits = (want_bits == 0u) ? 1u

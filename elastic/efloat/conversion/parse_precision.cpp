@@ -59,15 +59,36 @@ namespace {
 		}
 
 		// ---------------------------------------------------------------------
-		// 3. More digits -> more precision: parse<16384> of the 130-digit pi
-		//    agrees with the host double, and carries high precision.
+		// 3. More digits -> more accuracy: parse<16384> of the 130-digit pi must
+		//    agree with an independent high-precision reference (efloat_pi) to far
+		//    more than double precision -- assert actual accuracy, not the
+		//    configured limb capacity. The 130-digit literal caps agreement at
+		//    ~430 bits, so require >= 400-bit agreement.
 		// ---------------------------------------------------------------------
-		if (reportTestCases) std::cout << "  Verifying parse<16384> of a long literal...\n";
+		if (reportTestCases) std::cout << "  Verifying parse<16384> accuracy of a long literal...\n";
 		{
 			efloat<128> hp; hp.set_precision(3300);
 			bool ok = parse<16384>(pi_long, hp);
+			efloat<128> d = hp - efloat_pi<128>(); d.setsign(false);
+			int64_t sc = d.iszero() ? -1000000 : d.scale();
 			if (!ok || std::abs(double(hp) - PI) > 1e-13) { if (reportTestCases) std::cout << "    FAIL: parse<16384>(pi_long) = " << double(hp) << "\n"; ++failures; }
-			if (hp.get_precision() < 2048u) { if (reportTestCases) std::cout << "    FAIL: parse<16384> precision too low: " << hp.get_precision() << "\n"; ++failures; }
+			if (sc > -400) { if (reportTestCases) std::cout << "    FAIL: parse<16384>(pi_long) accuracy scale=" << sc << " (want <= -400)\n"; ++failures; }
+		}
+
+		// ---------------------------------------------------------------------
+		// 4. Large POSITIVE exponents (5^E growth). The default budget cannot
+		//    hold 5^1000, so parse must FAIL (not return garbage); a large budget
+		//    succeeds and yields the correct magnitude (~10^1000 = 2^3321.9).
+		// ---------------------------------------------------------------------
+		if (reportTestCases) std::cout << "  Verifying large positive-exponent handling...\n";
+		{
+			efloat<128> big;
+			if (parse("1e1000", big)) { if (reportTestCases) std::cout << "    FAIL: parse(1e1000) default budget did not fail\n"; ++failures; }
+			efloat<128> big2; big2.set_precision(3400);
+			bool ok = parse<16384>("1e1000", big2);
+			if (!ok || big2.iszero() || big2.isinf() || big2.isnan()) { if (reportTestCases) std::cout << "    FAIL: parse<16384>(1e1000) not a finite value\n"; ++failures; }
+			// 10^1000 = 2^(1000*log2(10)) ~ 2^3321.9, so scale() (MSB exponent) ~ 3321
+			if (ok && (big2.scale() < 3315 || big2.scale() > 3325)) { if (reportTestCases) std::cout << "    FAIL: parse<16384>(1e1000) scale=" << big2.scale() << " (want ~3321)\n"; ++failures; }
 		}
 
 		// ---------------------------------------------------------------------
