@@ -10,6 +10,7 @@ is the working precision.
 | `catastrophic_cancellation` | `(1-cos x)/x^2` for small `x`: `double` cancels to 0, `efloat` returns 1/2 (#1096) |
 | `ill_conditioned_systems`   | Hilbert-matrix solve: `double` error ~100% at n=12, `efloat` is exact (#1097) |
 | `high_precision_fractals`   | Mandelbrot deep zoom: `double` pixelates, `efloat` resolves the detail (#1098) |
+| `mathematical_identities`   | BBP series for pi: `double` stalls at ~15 digits, `efloat` verifies ~150 (#1099) |
 
 ## High-precision fractal visualization
 
