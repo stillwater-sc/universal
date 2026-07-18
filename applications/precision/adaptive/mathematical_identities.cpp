@@ -26,12 +26,11 @@
 template<typename Real>
 Real bbp_pi(int terms) {
 	Real sum(0.0);
-	Real inv16(1.0);                     // 16^-n, updated each term
+	Real inv16(1.0);  // 16^-n, updated each term
 	for (int n = 0; n < terms; ++n) {
-		Real term = Real(4.0) / Real(static_cast<double>(8 * n + 1))
-		          - Real(2.0) / Real(static_cast<double>(8 * n + 4))
-		          - Real(1.0) / Real(static_cast<double>(8 * n + 5))
-		          - Real(1.0) / Real(static_cast<double>(8 * n + 6));
+		Real term = Real(4.0) / Real(static_cast<double>(8 * n + 1)) -
+		            Real(2.0) / Real(static_cast<double>(8 * n + 4)) -
+		            Real(1.0) / Real(static_cast<double>(8 * n + 5)) - Real(1.0) / Real(static_cast<double>(8 * n + 6));
 		sum   = sum + term * inv16;
 		inv16 = inv16 / Real(16.0);
 	}
@@ -39,23 +38,23 @@ Real bbp_pi(int terms) {
 }
 
 namespace {
-	using efloat512 = sw::universal::efloat<16>;   // 16 limbs * 32 = 512 bits (~154 digits)
+using efloat512 = sw::universal::efloat<16>;  // 16 limbs * 32 = 512 bits (~154 digits)
 
-	// Decimal digits to which `value` matches the oracle pi (the higher, the better).
-	int agreement_digits(const efloat512& value, const efloat512& oracle) {
-		efloat512 d = value - oracle;
-		d.setsign(false);
-		if (d.iszero()) return 154;                 // limited by the 512-bit oracle
-		int digits = static_cast<int>(-static_cast<double>(d.scale()) * 0.301029995663981);
-		return digits < 0 ? 0 : digits;
-	}
+// Decimal digits to which `value` matches the oracle pi (the higher, the better).
+int agreement_digits(const efloat512& value, const efloat512& oracle) {
+	efloat512 d = value - oracle;
+	d.setsign(false);
+	if (d.iszero())
+		return 154;  // limited by the 512-bit oracle
+	int digits = static_cast<int>(-static_cast<double>(d.scale()) * 0.301029995663981);
+	return digits < 0 ? 0 : digits;
+}
 }
 
-int main()
-try {
+int main() try {
 	using namespace sw::universal;
 
-	const efloat512 oracle = efloat_pi<16>();       // independent reference (~154 digits at 512 bits)
+	const efloat512 oracle = efloat_pi<16>();  // independent reference (~154 digits at 512 bits)
 
 	std::cout << "Verifying the BBP series for pi:\n";
 	std::cout << "  pi = sum 1/16^n ( 4/(8n+1) - 2/(8n+4) - 1/(8n+5) - 1/(8n+6) )\n";
@@ -66,7 +65,7 @@ try {
 	// -------------------------------------------------------------------------
 	{
 		const int terms = 150;
-		efloat512 dsum(double(bbp_pi<double>(terms)));      // double result, lifted for comparison
+		efloat512 dsum(double(bbp_pi<double>(terms)));  // double result, lifted for comparison
 		efloat512 esum = bbp_pi<efloat512>(terms);
 		std::cout << "After " << terms << " terms:\n";
 		std::cout << "  double : matches pi to ~" << agreement_digits(dsum, oracle)
@@ -78,16 +77,13 @@ try {
 	// -------------------------------------------------------------------------
 	// Convergence table: efloat gains ~1.2 digits/term; double is pinned at ~15.
 	// -------------------------------------------------------------------------
-	std::cout << "  " << std::left
-	          << std::setw(8)  << "terms"
-	          << std::setw(22) << "double agree (digits)"
+	std::cout << "  " << std::left << std::setw(8) << "terms" << std::setw(22) << "double agree (digits)"
 	          << "efloat agree (digits)\n";
 	std::cout << "  " << std::string(52, '-') << "\n";
 	for (int terms = 20; terms <= 150; terms += 20) {
 		efloat512 dsum(double(bbp_pi<double>(terms)));
 		efloat512 esum = bbp_pi<efloat512>(terms);
-		std::cout << "  " << std::left << std::setw(8) << terms
-		          << std::setw(22) << agreement_digits(dsum, oracle)
+		std::cout << "  " << std::left << std::setw(8) << terms << std::setw(22) << agreement_digits(dsum, oracle)
 		          << agreement_digits(esum, oracle) << "\n";
 	}
 
@@ -95,16 +91,13 @@ try {
 	std::cout << "to well over 100 digits -- useful as an oracle for checking numerical algorithms.\n";
 
 	return EXIT_SUCCESS;
-}
-catch (const char* msg) {
+} catch (const char* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
-}
-catch (const std::exception& e) {
+} catch (const std::exception& e) {
 	std::cerr << "Caught exception: " << e.what() << std::endl;
 	return EXIT_FAILURE;
-}
-catch (...) {
+} catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
