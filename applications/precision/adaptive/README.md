@@ -11,6 +11,7 @@ is the working precision.
 | `ill_conditioned_systems`   | Hilbert-matrix solve: `double` error ~100% at n=12, `efloat` is exact (#1097) |
 | `high_precision_fractals`   | Mandelbrot deep zoom: `double` pixelates, `efloat` resolves the detail (#1098) |
 | `mathematical_identities`   | BBP series for pi: `double` stalls at ~15 digits, `efloat` verifies ~150 (#1099) |
+| `polynomial_roots`          | Wilkinson's polynomial: `double` roots drift off the integers, `efloat` recovers them (#1100) |
 
 ## High-precision fractal visualization
 
@@ -70,3 +71,36 @@ The view is controlled by the constants at the top of the source
 keep the render fast (~2 s for the `efloat` pass); raise `IMG_W` / `IMG_H` /
 `MAXITER` for a higher-resolution picture (the `efloat` render time grows
 roughly linearly with the pixel count and iteration budget).
+
+## Polynomial root finding (Wilkinson's polynomial)
+
+`polynomial_roots.cpp` finds the roots of **Wilkinson's polynomial**
+`W(x) = (x-1)(x-2)...(x-20)`, whose roots are obviously the integers 1..20.
+
+The catch is in the *coefficients*. Expanded into power form, `W` has enormous
+coefficients (up to ~1.4e19); several exceed `2^53`, so they cannot be stored
+exactly in `double`. Wilkinson's polynomial is the textbook example of a problem
+whose roots are **hypersensitive to coefficient perturbation** -- a tiny change
+in a coefficient moves the roots substantially (the middle roots most of all).
+
+The program expands `W` exactly in `efloat`, rounds the coefficients to `double`,
+and then runs the *same* Newton kernel from each true root location `i`, asking:
+is `i` still a root of the stored polynomial?
+
+- With **exact `efloat` coefficients**, yes -- Newton stays at `i`; every root is
+  recovered to full precision.
+- With **rounded `double` coefficients**, no -- the roots have moved, and Newton
+  drifts away from the integers by up to ~`1e-2` (worst for the middle roots
+  13..17), so `double` cannot recover the integer roots.
+
+### Build and run
+
+```bash
+cmake -DUNIVERSAL_BUILD_APPLICATIONS=ON ..
+make adaptive_polynomial_roots
+./applications/precision/adaptive/adaptive_polynomial_roots
+```
+
+The output prints the largest coefficient rounding error, then a table of all 20
+roots with the `double` and `efloat` results side by side and their distance from
+the true integer. `double`'s worst error is ~`1e-2`; `efloat`'s is `0`.
