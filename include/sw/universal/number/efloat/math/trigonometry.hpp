@@ -7,29 +7,23 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <cmath>
+#include <universal/number/efloat/math/constants/efloat_constants.hpp>
 
 namespace sw { namespace universal {
 
 // ----------------------------------------------------------------------------
-// High-precision constants
+// Derived constants
 //
-// Constants are seeded from a ~62-digit decimal literal via efloat's arbitrary-
-// precision decimal-to-binary parse() (the same idiom exp()/log() use for ln2).
-// pi/2 and pi/4 are derived by exact multiplication by 0.5 / 0.25 (both exactly
-// representable), so only pi and atan(1/2) need a literal.
+// efloat_pi<nlimbs>() comes from efloat_constants.hpp (a ~1000-digit literal,
+// converted exactly to the type's precision). pi/2 and pi/4 are derived by
+// exact multiplication by 0.5 / 0.25 (both exactly representable).
 // ----------------------------------------------------------------------------
 template<unsigned nlimbs>
-constexpr efloat<nlimbs> efloat_pi() {
-	efloat<nlimbs> pi;
-	parse("3.14159265358979323846264338327950288419716939937510582097494459", pi);
-	return pi;
-}
-template<unsigned nlimbs>
-constexpr efloat<nlimbs> efloat_pi_2() {
+inline efloat<nlimbs> efloat_pi_2() {
 	return efloat_pi<nlimbs>() * efloat<nlimbs>(0.5);
 }
 template<unsigned nlimbs>
-constexpr efloat<nlimbs> efloat_pi_4() {
+inline efloat<nlimbs> efloat_pi_4() {
 	return efloat_pi<nlimbs>() * efloat<nlimbs>(0.25);
 }
 
