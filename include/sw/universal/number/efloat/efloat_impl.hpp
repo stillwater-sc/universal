@@ -1262,9 +1262,20 @@ private:
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////    efloat functions   /////////////////////////////////
 
+// abs(a): absolute value. Clears the sign on a copy, which is correct for
+// every state: a negative normal becomes positive, -inf becomes +inf, -0
+// becomes +0, and a NaN stays a NaN (its sign is irrelevant to isnan()).
 template<unsigned nlimbs>
 inline efloat<nlimbs> abs(const efloat<nlimbs>& a) {
-	return a; // (a < 0 ? -a : a);
+	efloat<nlimbs> result(a);
+	result.setsign(false);
+	return result;
+}
+
+// fabs(a): floating-point absolute value (C <cmath> spelling); same as abs.
+template<unsigned nlimbs>
+inline efloat<nlimbs> fabs(const efloat<nlimbs>& a) {
+	return abs(a);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
