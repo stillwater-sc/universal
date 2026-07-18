@@ -1406,6 +1406,7 @@ add_subdirectory("applications/performance/stream")
 add_subdirectory("applications/performance/weather")
 add_subdirectory("applications/performance/ir")
 
+add_subdirectory("applications/precision/adaptive")
 add_subdirectory("applications/precision/constants")
 add_subdirectory("applications/precision/floating-point")
 add_subdirectory("applications/precision/math")
