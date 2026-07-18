@@ -136,7 +136,7 @@ constexpr efloat<nlimbs> atan(const efloat<nlimbs>& x) {
 	if (x.iszero()) return x;
 	if (x.isinf()) {                         // atan(+/-inf) = +/- pi/2
 		efloat<nlimbs> h = efloat_pi_2<nlimbs>();
-		h.setsign(x.isneg());
+		h.setsign(x.sign() == -1);           // isneg() is false for inf (state != Normal)
 		return h;
 	}
 
@@ -262,21 +262,37 @@ constexpr efloat<nlimbs> atan2(const efloat<nlimbs>& y, const efloat<nlimbs>& x)
 	efloat<nlimbs> pi   = efloat_pi<nlimbs>();
 	efloat<nlimbs> pi_2 = efloat_pi_2<nlimbs>();
 
+	// Sign checks below use sign() == -1, not isneg(): isneg() is false for an
+	// infinity (its state is Infinite, not Normal), and atan2 arguments may be
+	// infinite in every branch. sign() reads the stored sign bit directly, so
+	// it is correct for both normal and infinite operands (and equivalent to
+	// isneg() for finite normals).
+	const bool y_neg = (y.sign() == -1);
+	const bool x_neg = (x.sign() == -1);
+
+	// both infinite: y/x is indeterminate, but atan2 is defined on the
+	// diagonal directions -> +/- pi/4 (x > 0) or +/- 3pi/4 (x < 0).
+	if (y.isinf() && x.isinf()) {
+		efloat<nlimbs> angle = x_neg ? (pi - efloat_pi_4<nlimbs>()) : efloat_pi_4<nlimbs>();
+		angle.setsign(y_neg);
+		return angle;
+	}
+
 	if (x.iszero()) {
 		if (y.iszero()) return efloat<nlimbs>(0.0);    // atan2(0,0): convention 0
-		efloat<nlimbs> h(pi_2); h.setsign(y.isneg());  // +/- pi/2
+		efloat<nlimbs> h(pi_2); h.setsign(y_neg);      // +/- pi/2
 		return h;
 	}
 	if (y.iszero()) {
-		if (x.isneg()) return pi;                      // atan2(+0, -x) = pi
+		if (x_neg) return pi;                          // atan2(+0, -x) = pi
 		return efloat<nlimbs>(0.0);                     // atan2(+0, +x) = 0
 	}
 
 	efloat<nlimbs> angle = atan(y / x);
-	if (x.isneg()) {
+	if (x_neg) {
 		// quadrant II / III correction
-		if (y.isneg()) angle = angle - pi;              // QIII: result in (-pi, -pi/2)
-		else           angle = angle + pi;              // QII:  result in ( pi/2, pi)
+		if (y_neg) angle = angle - pi;                  // QIII: result in (-pi, -pi/2)
+		else       angle = angle + pi;                  // QII:  result in ( pi/2, pi)
 	}
 	return angle;
 }

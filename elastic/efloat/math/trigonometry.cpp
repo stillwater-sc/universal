@@ -113,9 +113,11 @@ namespace {
 			if (!IsClose(atan(efloat<8>(-1.0)), -PI / 4.0))          { if (reportTestCases) std::cout << "    FAIL: atan(-1) != -pi/4\n"; ++failures; }
 			if (!IsClose(atan(efloat<8>(3.0)), std::atan(3.0)))      { if (reportTestCases) std::cout << "    FAIL: atan(3) inaccurate (|x|>1)\n"; ++failures; }
 			if (!IsClose(atan(efloat<8>(0.75)), std::atan(0.75)))    { if (reportTestCases) std::cout << "    FAIL: atan(0.75) inaccurate (addition formula)\n"; ++failures; }
-			// atan(+inf) == pi/2
+			// atan(+/-inf) == +/- pi/2
 			efloat<8> pinf; pinf.setinf(false);
-			if (!IsClose(atan(pinf), PI / 2.0))                     { if (reportTestCases) std::cout << "    FAIL: atan(+inf) != pi/2\n"; ++failures; }
+			efloat<8> ninf; ninf.setinf(true);
+			if (!IsClose(atan(pinf),  PI / 2.0))                    { if (reportTestCases) std::cout << "    FAIL: atan(+inf) != pi/2\n"; ++failures; }
+			if (!IsClose(atan(ninf), -PI / 2.0))                    { if (reportTestCases) std::cout << "    FAIL: atan(-inf) != -pi/2\n"; ++failures; }
 		}
 
 		// ---------------------------------------------------------------------
@@ -129,6 +131,18 @@ namespace {
 			if (!IsClose(atan2(efloat<8>(-1.0), efloat<8>(1.0)),  -PI / 4.0))        { if (reportTestCases) std::cout << "    FAIL: atan2(-1,1)\n"; ++failures; }  // QIV
 			if (!IsClose(atan2(efloat<8>(1.0),  efloat<8>(0.0)),  PI / 2.0))         { if (reportTestCases) std::cout << "    FAIL: atan2(1,0)\n"; ++failures; }
 			if (!IsClose(atan2(efloat<8>(0.0),  efloat<8>(-1.0)), PI))               { if (reportTestCases) std::cout << "    FAIL: atan2(0,-1)\n"; ++failures; }
+			// both arguments infinite -> diagonal directions (+/- pi/4, +/- 3pi/4)
+			{
+				efloat<8> pinf; pinf.setinf(false);
+				efloat<8> ninf; ninf.setinf(true);
+				if (!IsClose(atan2(pinf, pinf),        PI / 4.0))       { if (reportTestCases) std::cout << "    FAIL: atan2(+inf,+inf) != pi/4\n"; ++failures; }
+				if (!IsClose(atan2(pinf, ninf),  3.0 * PI / 4.0))       { if (reportTestCases) std::cout << "    FAIL: atan2(+inf,-inf) != 3pi/4\n"; ++failures; }
+				if (!IsClose(atan2(ninf, pinf),       -PI / 4.0))       { if (reportTestCases) std::cout << "    FAIL: atan2(-inf,+inf) != -pi/4\n"; ++failures; }
+				if (!IsClose(atan2(ninf, ninf), -3.0 * PI / 4.0))       { if (reportTestCases) std::cout << "    FAIL: atan2(-inf,-inf) != -3pi/4\n"; ++failures; }
+				// single infinite argument (negative operands exercise the sign()-vs-isneg() fix)
+				if (!IsClose(atan2(efloat<8>(1.0), ninf),  PI))          { if (reportTestCases) std::cout << "    FAIL: atan2(1,-inf) != pi\n"; ++failures; }
+				if (!IsClose(atan2(ninf, efloat<8>(1.0)), -PI / 2.0))    { if (reportTestCases) std::cout << "    FAIL: atan2(-inf,1) != -pi/2\n"; ++failures; }
+			}
 		}
 
 		// ---------------------------------------------------------------------
