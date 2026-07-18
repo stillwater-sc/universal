@@ -1286,12 +1286,16 @@ inline efloat<nlimbs> fabs(const efloat<nlimbs>& a) {
 //   - "nan", "inf", "infinity" (case-insensitive, optional sign)
 //   - decimal / scientific literals routed through decimal_to_binary::convert
 //     ("1.5", "-3.14e2", "1e-100", "0x" is not accepted)
-// The d2b target_mantissa_bits is sized to fill efloat's available limb
-// storage, capped at 2040 bits (just under the d2b BigBits budget of 2048).
-// For larger nlimbs the parsed value uses 2040 explicit bits of precision
-// and lower limbs stay zero -- that is exact for any practical literal a
-// user types (a decimal exponent within ~+/-600).
-template<unsigned nlimbs>
+//
+// The d2b target precision is bounded by the working budget BigBits (default
+// decimal_to_binary::default_big_bits): convert<BigBits>'s reduction shifts the
+// digit-integer left by ~(target + 3*neg_E) bits, which must fit in BigBits, so
+// target is sized overflow-safely below that (a request beyond the ceiling is
+// correctly rounded to the ceiling rather than returning garbage -- issue
+// #1141). To parse to very high precision (e.g. a 1000-digit constant), pass a
+// larger budget: parse<16384>(text, value). The default (2048) comfortably
+// covers any literal a user types at ordinary precision.
+template<unsigned BigBits, unsigned nlimbs>
 bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	value.clear();
 
@@ -1327,12 +1331,34 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	}
 
 	// Decimal / scientific literal.
-	constexpr unsigned cap_bits  = sw::universal::decimal_to_binary::default_big_bits - 8u;
-	unsigned want_bits = value.get_precision();
-	unsigned target_bits = (want_bits == 0u) ? 1u
-	                              : ((want_bits < cap_bits) ? want_bits : cap_bits);
+	//
+	// d2b's convert<BigBits> internally left-shifts the digit-integer by roughly
+	// (target_bits + 3*neg_E) bits, where neg_E is the number of "sub-unit"
+	// decimal places (fractional digits plus any negative scientific exponent).
+	// That intermediate must fit in BigBits, so target_bits cannot simply be the
+	// requested precision -- for a target anywhere near BigBits the shift
+	// overflows and convert returns garbage (issue #1141). Size target_bits to
+	// leave headroom: a request beyond the safe ceiling yields a correctly-
+	// rounded value at reduced precision instead of garbage. Callers needing
+	// more precision pass a larger BigBits, e.g. parse<16384>(...).
+	auto scan = sw::universal::string_parse::scan_decimal_float(s);
+	if (!scan.valid) return false;
 
-	auto r = sw::universal::decimal_to_binary::convert(s, target_bits);
+	const std::int64_t E    = static_cast<std::int64_t>(scan.exp10)
+	                        - static_cast<std::int64_t>(scan.frac_part.size());
+	const std::uint64_t neg_E   = (E < 0) ? static_cast<std::uint64_t>(-E) : 0ull;
+	const std::uint64_t sig     = scan.int_part.size() + scan.frac_part.size();
+	const std::uint64_t sig_bits = sig * 34ull / 10ull + 8ull;            // ~3.33 bits/digit + guard
+	const std::uint64_t overhead = 3ull * neg_E + sig_bits + 64ull;       // convert's shift headroom
+	const unsigned safe_ceiling  = (BigBits > overhead + 1ull)
+	                             ? static_cast<unsigned>(BigBits - overhead) : 1u;
+
+	unsigned want_bits   = value.get_precision();
+	unsigned target_bits = (want_bits == 0u) ? 1u
+	                     : (want_bits < safe_ceiling ? want_bits : safe_ceiling);
+	if (target_bits == 0u) target_bits = 1u;
+
+	auto r = sw::universal::decimal_to_binary::convert<BigBits>(scan, target_bits);
 	if (!r.valid) return false;
 
 	if (r.is_zero) {
@@ -1348,7 +1374,7 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	std::int64_t binary_scale = r.binary_scale;
 	bool round_up = r.guard_bit && (r.sticky_bit || mantissa.at(0));
 	if (round_up) {
-		using Big = sw::universal::decimal_to_binary::big_integer<>;
+		using Big = sw::universal::decimal_to_binary::big_integer<BigBits>;
 		mantissa += Big(1);
 		if (mantissa.at(target_bits)) {
 			mantissa >>= 1;
