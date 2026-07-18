@@ -85,6 +85,18 @@ namespace {
 			int64_t sc = diff_scale<nlimbs>(pi, machin_pi<nlimbs>(bits));
 			if (sc > thr) { if (reportTestCases) std::cout << "    FAIL: pi vs Machin scale=" << sc << " (want <=" << thr << ")\n"; ++failures; }
 		}
+
+		// make_constant error/zero handling: invalid input -> NaN, "0" -> zero
+		{
+			if (!efloat_detail::make_constant<nlimbs>("not-a-number").isnan())
+				{ if (reportTestCases) std::cout << "    FAIL: make_constant(invalid) not NaN\n"; ++failures; }
+			E z = efloat_detail::make_constant<nlimbs>("0.0");
+			if (!z.iszero())
+				{ if (reportTestCases) std::cout << "    FAIL: make_constant(\"0.0\") not zero\n"; ++failures; }
+			E nz = efloat_detail::make_constant<nlimbs>("-0.0");
+			if (!nz.iszero())
+				{ if (reportTestCases) std::cout << "    FAIL: make_constant(\"-0.0\") not zero\n"; ++failures; }
+		}
 		return failures;
 	}
 
