@@ -40,7 +40,8 @@ Real hilbert_solve_relerr(int n) {
 	Vector b(n, Real(0.0));
 	for (int i = 0; i < n; ++i) {
 		Real s(0.0);
-		for (int j = 0; j < n; ++j) s = s + H[i][j] * x[j];
+		for (int j = 0; j < n; ++j)
+			s = s + H[i][j] * x[j];
 		b[i] = s;
 	}
 
@@ -48,17 +49,21 @@ Real hilbert_solve_relerr(int n) {
 	Matrix A = H;
 	Vector c = b;
 	for (int k = 0; k < n; ++k) {
-		int    piv  = k;
-		Real   best = abs(A[k][k]);
+		int  piv  = k;
+		Real best = abs(A[k][k]);
 		for (int i = k + 1; i < n; ++i) {
 			Real v = abs(A[i][k]);
-			if (v > best) { best = v; piv = i; }
+			if (v > best) {
+				best = v;
+				piv  = i;
+			}
 		}
 		std::swap(A[k], A[piv]);
 		std::swap(c[k], c[piv]);
 		for (int i = k + 1; i < n; ++i) {
 			Real factor = A[i][k] / A[k][k];
-			for (int j = k; j < n; ++j) A[i][j] = A[i][j] - factor * A[k][j];
+			for (int j = k; j < n; ++j)
+				A[i][j] = A[i][j] - factor * A[k][j];
 			c[i] = c[i] - factor * c[k];
 		}
 	}
@@ -67,7 +72,8 @@ Real hilbert_solve_relerr(int n) {
 	Vector xhat(n, Real(0.0));
 	for (int i = n - 1; i >= 0; --i) {
 		Real s = c[i];
-		for (int j = i + 1; j < n; ++j) s = s - A[i][j] * xhat[j];
+		for (int j = i + 1; j < n; ++j)
+			s = s - A[i][j] * xhat[j];
 		xhat[i] = s / A[i][i];
 	}
 
@@ -75,16 +81,15 @@ Real hilbert_solve_relerr(int n) {
 	Real num(0.0), den(0.0);
 	for (int i = 0; i < n; ++i) {
 		Real e = xhat[i] - x[i];
-		num = num + e * e;
-		den = den + x[i] * x[i];
+		num    = num + e * e;
+		den    = den + x[i] * x[i];
 	}
 	return sqrt(num) / sqrt(den);
 }
 
-int main()
-try {
+int main() try {
 	using namespace sw::universal;
-	using efloat512 = efloat<16>;   // 16 limbs * 32 = 512 bits (~154 digits)
+	using efloat512 = efloat<16>;  // 16 limbs * 32 = 512 bits (~154 digits)
 
 	std::cout << "Ill-conditioned linear system: Hilbert matrix H(i,j) = 1/(i+j-1)\n";
 	std::cout << "Exact solution x = [1, 1, ..., 1];  b = Hx;  solve Hx_hat = b (Gaussian elim).\n";
@@ -94,12 +99,12 @@ try {
 	// Primary result at n = 12 (condition number ~1e16, at double's limit).
 	// -------------------------------------------------------------------------
 	{
-		const int n = 12;
+		const int n  = 12;
 		double    de = double(hilbert_solve_relerr<double>(n));
 		efloat512 ee = hilbert_solve_relerr<efloat512>(n);
 		std::cout << std::scientific << std::setprecision(3);
 		std::cout << "At n = " << n << ":\n";
-		std::cout << "  double  relative error = " << de       << "   <- solution is essentially garbage\n";
+		std::cout << "  double  relative error = " << de << "   <- solution is essentially garbage\n";
 		std::cout << "  efloat  relative error = " << double(ee) << "   <- oracle: x recovered almost exactly\n\n";
 	}
 
@@ -107,9 +112,7 @@ try {
 	// Breakdown across n: double degrades toward O(1) error as conditioning
 	// outruns 53-bit precision; efloat stays near machine-zero for 512 bits.
 	// -------------------------------------------------------------------------
-	std::cout << "  " << std::left
-	          << std::setw(6)  << "n"
-	          << std::setw(22) << "double rel.error"
+	std::cout << "  " << std::left << std::setw(6) << "n" << std::setw(22) << "double rel.error"
 	          << "efloat<512b> rel.error\n";
 	std::cout << "  " << std::string(50, '-') << "\n";
 	std::cout << std::right << std::scientific << std::setprecision(3);
@@ -117,8 +120,7 @@ try {
 	for (int n = 4; n <= 14; n += 2) {
 		double    de = double(hilbert_solve_relerr<double>(n));
 		efloat512 ee = hilbert_solve_relerr<efloat512>(n);
-		std::cout << "  " << std::left << std::setw(6) << n << std::right
-		          << std::setw(18) << de << "    "
+		std::cout << "  " << std::left << std::setw(6) << n << std::right << std::setw(18) << de << "    "
 		          << std::setw(18) << double(ee) << "\n";
 	}
 
@@ -127,16 +129,13 @@ try {
 	std::cout << "a high-precision oracle for verifying the double solver's accuracy.\n";
 
 	return EXIT_SUCCESS;
-}
-catch (const char* msg) {
+} catch (const char* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
-}
-catch (const std::exception& e) {
+} catch (const std::exception& e) {
 	std::cerr << "Caught exception: " << e.what() << std::endl;
 	return EXIT_FAILURE;
-}
-catch (...) {
+} catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

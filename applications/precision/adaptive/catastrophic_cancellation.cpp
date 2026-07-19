@@ -39,10 +39,9 @@ Real g_stable(const Real& x) {
 	return (Real(2.0) * s * s) / (x * x);
 }
 
-int main()
-try {
+int main() try {
 	using namespace sw::universal;
-	using efloat256 = efloat<8>;   // 8 limbs * 32 = 256 bits of working precision
+	using efloat256 = efloat<8>;  // 8 limbs * 32 = 256 bits of working precision
 
 	std::cout << "Catastrophic cancellation: f(x) = (1 - cos x) / x^2   (unstable)\n";
 	std::cout << "                     vs    g(x) = 2 sin^2(x/2) / x^2   (stable)\n";
@@ -54,14 +53,15 @@ try {
 	// arithmetic precision.
 	// -------------------------------------------------------------------------
 	const double x0 = 1e-10;
-	efloat256 xe(x0);
+	efloat256    xe(x0);
 
 	std::cout << std::setprecision(17);
 	std::cout << "At x = " << x0 << ":\n";
 	std::cout << "  double  f(x) = " << std::setw(22) << f_unstable(x0) << "   <- catastrophic cancellation\n";
-	std::cout << "  double  g(x) = " << std::setw(22) << g_stable(x0)   << "   <- double's correct reference\n";
-	std::cout << "  efloat  f(x) = " << std::setw(22) << double(f_unstable(xe)) << "   <- correct, from the UNSTABLE formula\n";
-	std::cout << "  efloat  g(x) = " << std::setw(22) << double(g_stable(xe))   << "\n";
+	std::cout << "  double  g(x) = " << std::setw(22) << g_stable(x0) << "   <- double's correct reference\n";
+	std::cout << "  efloat  f(x) = " << std::setw(22) << double(f_unstable(xe))
+	          << "   <- correct, from the UNSTABLE formula\n";
+	std::cout << "  efloat  g(x) = " << std::setw(22) << double(g_stable(xe)) << "\n";
 	{
 		efloat256 diff = f_unstable(xe) - g_stable(xe);
 		diff.setsign(false);
@@ -74,41 +74,33 @@ try {
 	// finally collapses to 0, while efloat f(x) stays accurate. The reference is
 	// the stable efloat g(x).
 	// -------------------------------------------------------------------------
-	std::cout << "  " << std::left
-	          << std::setw(10) << "x"
-	          << std::setw(24) << "double f(x)"
-	          << std::setw(24) << "efloat f(x)  (accurate)"
-	          << "double f rel.error\n";
+	std::cout << "  " << std::left << std::setw(10) << "x" << std::setw(24) << "double f(x)" << std::setw(24)
+	          << "efloat f(x)  (accurate)" << "double f rel.error\n";
 	std::cout << "  " << std::string(72, '-') << "\n";
-	const double xs[] = { 1e-2, 1e-4, 1e-6, 1e-8, 1e-10, 1e-12, 1e-14 };
+	const double xs[] = {1e-2, 1e-4, 1e-6, 1e-8, 1e-10, 1e-12, 1e-14};
 	for (double x : xs) {
 		efloat256 xe2(x);
-		double df = f_unstable(x);
-		efloat256 ef = f_unstable(xe2);
-		efloat256 ref = g_stable(xe2);         // stable, high-precision reference
-		double eref = double(ref);
-		double relerr = (eref != 0.0) ? std::abs(df - eref) / std::abs(eref) : std::abs(df);
-		std::cout << "  " << std::left  << std::setw(10) << std::scientific << std::setprecision(0) << x
-		          << std::right << std::fixed << std::setprecision(15)
-		          << std::setw(22) << df << "  "
-		          << std::setw(22) << double(ef) << "  "
-		          << std::scientific << std::setprecision(2) << std::setw(10) << relerr << "\n";
+		double    df     = f_unstable(x);
+		efloat256 ef     = f_unstable(xe2);
+		efloat256 ref    = g_stable(xe2);  // stable, high-precision reference
+		double    eref   = double(ref);
+		double    relerr = (eref != 0.0) ? std::abs(df - eref) / std::abs(eref) : std::abs(df);
+		std::cout << "  " << std::left << std::setw(10) << std::scientific << std::setprecision(0) << x << std::right
+		          << std::fixed << std::setprecision(15) << std::setw(22) << df << "  " << std::setw(22) << double(ef)
+		          << "  " << std::scientific << std::setprecision(2) << std::setw(10) << relerr << "\n";
 	}
 
 	std::cout << "\nThe unstable formula is fine in efloat because 256-bit arithmetic keeps the\n";
 	std::cout << "tiny (1 - cos x) term that double rounds away. Same code, two number types.\n";
 
 	return EXIT_SUCCESS;
-}
-catch (const char* msg) {
+} catch (const char* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
-}
-catch (const std::exception& e) {
+} catch (const std::exception& e) {
 	std::cerr << "Caught exception: " << e.what() << std::endl;
 	return EXIT_FAILURE;
-}
-catch (...) {
+} catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

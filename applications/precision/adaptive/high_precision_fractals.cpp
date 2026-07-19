@@ -29,14 +29,14 @@
 // under-resolves. Keep the image modest so it renders quickly; scale IMG_W /
 // IMG_H / MAXITER up for a higher-resolution picture (see the README).
 namespace {
-	constexpr int    IMG_W    = 80;
-	constexpr int    IMG_H    = 80;
-	constexpr int    MAXITER  = 1000;
-	constexpr double CENTER_X = -0.7269;
-	constexpr double CENTER_Y =  0.1889;
-	constexpr double VIEW_W   =  3e-15;   // width of the view window in the complex plane
-	                                      // (dx ~ 0.34 ulp: double collapses ~2/3 of the
-	                                      //  columns into blocks; efloat resolves them all)
+constexpr int    IMG_W    = 80;
+constexpr int    IMG_H    = 80;
+constexpr int    MAXITER  = 1000;
+constexpr double CENTER_X = -0.7269;
+constexpr double CENTER_Y = 0.1889;
+constexpr double VIEW_W   = 3e-15;  // width of the view window in the complex plane
+                                    // (dx ~ 0.34 ulp: double collapses ~2/3 of the
+                                    //  columns into blocks; efloat resolves them all)
 }
 
 // Escape time of z_{n+1} = z_n^2 + c (z_0 = 0). Same code for double and efloat.
@@ -46,24 +46,25 @@ int escape_time(const Real& cr, const Real& ci, int maxit) {
 	for (int i = 0; i < maxit; ++i) {
 		Real zr2 = zr * zr;
 		Real zi2 = zi * zi;
-		if (zr2 + zi2 > Real(4.0)) return i;     // escaped -- compare in Real, no double rounding
+		if (zr2 + zi2 > Real(4.0))
+			return i;  // escaped -- compare in Real, no double rounding
 		Real t = zr2 - zi2 + cr;
-		zi = Real(2.0) * zr * zi + ci;
-		zr = t;
+		zi     = Real(2.0) * zr * zi + ci;
+		zr     = t;
 	}
-	return maxit;                                // assumed in-set
+	return maxit;  // assumed in-set
 }
 
 // Render the escape-time grid at the fixed view, computing pixel coordinates in
 // the working type Real (double: quantized; efloat: exact).
 template<typename Real>
 std::vector<int> render() {
-	const Real cx(CENTER_X), cy(CENTER_Y), dx(VIEW_W / IMG_W);
+	const Real       cx(CENTER_X), cy(CENTER_Y), dx(VIEW_W / IMG_W);
 	std::vector<int> grid(static_cast<std::size_t>(IMG_W) * IMG_H);
 	for (int py = 0; py < IMG_H; ++py) {
 		for (int px = 0; px < IMG_W; ++px) {
-			Real cr = cx + Real(static_cast<double>(px - IMG_W / 2)) * dx;
-			Real ci = cy + Real(static_cast<double>(py - IMG_H / 2)) * dx;
+			Real cr                                         = cx + Real(static_cast<double>(px - IMG_W / 2)) * dx;
+			Real ci                                         = cy + Real(static_cast<double>(py - IMG_H / 2)) * dx;
 			grid[static_cast<std::size_t>(py) * IMG_W + px] = escape_time<Real>(cr, ci, MAXITER);
 		}
 	}
@@ -74,27 +75,26 @@ std::vector<int> render() {
 // classic smooth Mandelbrot palette keyed on the escape count.
 void write_ppm(const std::string& path, const std::vector<int>& grid) {
 	std::ofstream f;
-	f.exceptions(std::ios::failbit | std::ios::badbit);   // I/O errors propagate to main's catch
+	f.exceptions(std::ios::failbit | std::ios::badbit);  // I/O errors propagate to main's catch
 	f.open(path, std::ios::binary);
 	f << "P6\n" << IMG_W << ' ' << IMG_H << "\n255\n";
 	for (int v : grid) {
-		unsigned char rgb[3] = { 0, 0, 0 };
+		unsigned char rgb[3] = {0, 0, 0};
 		if (v < MAXITER) {
 			double t = static_cast<double>(v) / MAXITER;
-			rgb[0] = static_cast<unsigned char>(9.0  * (1 - t) * t * t * t * 255.0);
-			rgb[1] = static_cast<unsigned char>(15.0 * (1 - t) * (1 - t) * t * t * 255.0);
-			rgb[2] = static_cast<unsigned char>(8.5  * (1 - t) * (1 - t) * (1 - t) * t * 255.0);
+			rgb[0]   = static_cast<unsigned char>(9.0 * (1 - t) * t * t * t * 255.0);
+			rgb[1]   = static_cast<unsigned char>(15.0 * (1 - t) * (1 - t) * t * t * 255.0);
+			rgb[2]   = static_cast<unsigned char>(8.5 * (1 - t) * (1 - t) * (1 - t) * t * 255.0);
 		}
 		f.write(reinterpret_cast<const char*>(rgb), 3);
 	}
 }
 
-int main()
-try {
+int main() try {
 	using namespace sw::universal;
-	using efloat256 = efloat<8>;   // 8 limbs * 32 = 256 bits
+	using efloat256 = efloat<8>;  // 8 limbs * 32 = 256 bits
 
-	const double dx    = VIEW_W / IMG_W;
+	const double dx = VIEW_W / IMG_W;
 	// ulp of the x-coordinate (near CENTER_X ~ -0.73, binade [0.5,1) -> exponent -1).
 	// CENTER_Y ~ 0.19 sits in a smaller binade, so its ulp is smaller and the y
 	// coordinates stay distinct: only the x coordinates collapse (vertical bands).
@@ -104,8 +104,8 @@ try {
 	std::cout << std::setprecision(15);
 	std::cout << "  center = (" << CENTER_X << ", " << CENTER_Y << ")\n";
 	std::cout << std::scientific << std::setprecision(3);
-	std::cout << "  view width = " << VIEW_W << "   image = " << IMG_W << " x " << IMG_H
-	          << "   maxiter = " << MAXITER << "\n";
+	std::cout << "  view width = " << VIEW_W << "   image = " << IMG_W << " x " << IMG_H << "   maxiter = " << MAXITER
+	          << "\n";
 	std::cout << "  pixel spacing dx = " << dx << "   double ulp at CENTER_X = " << ulp_x
 	          << "   dx/ulp = " << std::fixed << std::setprecision(2) << (dx / ulp_x) << "\n";
 	std::cout << "  (dx < ulp means adjacent x coordinates collapse: double renders vertical bands)\n\n";
@@ -116,7 +116,8 @@ try {
 	// How badly does the double render disagree with the efloat oracle?
 	int diff = 0, emin = MAXITER, emax = 0;
 	for (std::size_t i = 0; i < gd.size(); ++i) {
-		if (gd[i] != ge[i]) ++diff;
+		if (gd[i] != ge[i])
+			++diff;
 		emin = std::min(emin, ge[i]);
 		emax = std::max(emax, ge[i]);
 	}
@@ -126,24 +127,20 @@ try {
 
 	std::cout << "  efloat (oracle) escape range: [" << emin << ", " << emax << "]"
 	          << (emin != emax ? "  <- real fractal structure\n" : "  (uniform)\n");
-	std::cout << "  pixels where double disagrees with efloat: " << diff << " / " << gd.size()
-	          << std::fixed << std::setprecision(1)
-	          << "  (" << (100.0 * diff / gd.size()) << "%)\n\n";
+	std::cout << "  pixels where double disagrees with efloat: " << diff << " / " << gd.size() << std::fixed
+	          << std::setprecision(1) << "  (" << (100.0 * diff / gd.size()) << "%)\n\n";
 	std::cout << "  wrote mandelbrot_double.ppm and mandelbrot_efloat.ppm\n";
 	std::cout << "  The double image is corrupted by coordinate quantization at this zoom;\n";
 	std::cout << "  the efloat image is correct. Same escape-time kernel, two number types.\n";
 
 	return EXIT_SUCCESS;
-}
-catch (const char* msg) {
+} catch (const char* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
-}
-catch (const std::exception& e) {
+} catch (const std::exception& e) {
 	std::cerr << "Caught exception: " << e.what() << std::endl;
 	return EXIT_FAILURE;
-}
-catch (...) {
+} catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
