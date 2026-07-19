@@ -17,6 +17,7 @@
 #include <universal/number/efloat/math/hyperbolic.hpp>
 #include <universal/number/efloat/math/pow.hpp>
 #include <universal/number/efloat/math/fractional.hpp>
+#include <universal/number/efloat/math/next.hpp>
 #include <universal/number/efloat/math/minmax.hpp>
 #include <universal/number/efloat/math/error_and_gamma.hpp>
 #include <universal/number/efloat/math/complex.hpp>
