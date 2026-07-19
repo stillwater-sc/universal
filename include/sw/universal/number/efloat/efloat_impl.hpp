@@ -1804,11 +1804,9 @@ std::string to_string(const efloat<nlimbs>& value, std::streamsize precision, st
 	if (precision < 0) precision = 6;         // default stream precision
 
 	bool negative = (value.sign() == -1);   // sign(), not isneg(): isneg() is false for -inf
-	int  e = 0;
 
 	if (value.isnan()) {
 		s = uppercase ? "NAN" : "nan";
-		negative = false;
 	}
 	else {
 		if (negative) s += '-'; else if (showpos) s += '+';
@@ -1822,6 +1820,7 @@ std::string to_string(const efloat<nlimbs>& value, std::streamsize precision, st
 			if (!fixed) s += (uppercase ? "E+00" : "e+00");
 		}
 		else {
+			int e               = 0;   // decimal exponent, filled in by to_digits below
 			int powerOfTenScale = static_cast<int>(std::floor(static_cast<double>(value.scale()) * 0.301029995663981));
 			int integerDigits   = (fixed ? (powerOfTenScale + 1) : 1);
 			int nrDigits        = integerDigits + static_cast<int>(precision);
