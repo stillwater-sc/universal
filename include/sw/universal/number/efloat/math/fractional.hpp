@@ -1,4 +1,4 @@
-// fractional.hpp: fractional, remainder, and adjacent step functions for efloat
+// fractional.hpp: fractional, remainder, and sign-copy functions for efloat
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -97,41 +97,6 @@ constexpr efloat<nlimbs> copysign(const efloat<nlimbs>& x, const efloat<nlimbs>&
 	efloat<nlimbs> res(x);
 	res.setsign(y.sign() == -1);
 	return res;
-}
-
-// nextafter: returns the next representable value of x in the direction of y at current precision
-template<unsigned nlimbs>
-constexpr efloat<nlimbs> nextafter(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
-	if (x.isnan() || y.isnan()) {
-		efloat<nlimbs> nan; nan.setnan();
-		return nan;
-	}
-	if (x == y) return y;
-
-	if (x.iszero()) {
-		// Step away from zero: use smallest subnormal exponent scale of double as minimum floor
-		efloat<nlimbs> ulp(1.0);
-		ulp.setexponent(-1074); // LSB position of double subnormals
-		return (y.sign() == -1) ? -ulp : ulp;
-	}
-
-	// Compute ULP at current precision layout
-	efloat<nlimbs> ulp(1.0);
-	ulp.setexponent(x.scale() - static_cast<int64_t>(x.bits().size() * 32) + 1);
-
-	efloat<nlimbs> res;
-	if (y > x) {
-		res = x + ulp;
-	} else {
-		res = x - ulp;
-	}
-	return res;
-}
-
-// nexttoward: same as nextafter, but y is long double (safely cast to double to prevent empty-limb parsing)
-template<unsigned nlimbs>
-constexpr efloat<nlimbs> nexttoward(const efloat<nlimbs>& x, long double y) {
-	return nextafter(x, efloat<nlimbs>(static_cast<double>(y)));
 }
 
 }} // namespace sw::universal
