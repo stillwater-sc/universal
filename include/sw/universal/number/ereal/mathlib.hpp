@@ -11,9 +11,14 @@
 // NOT double-precision shims. Accuracy tracks the operand's precision up to ereal's
 // architectural ceiling: Shewchuk expansion arithmetic caps maxlimbs at 19 (the last
 // limb must stay above DBL_MIN to preserve the non-overlapping property), so ~19*53
-// bits ~= 300 decimal digits. Verified against the efloat oracle -- exp, sqrt, log,
-// sin, erf, gamma, ... agree to ~293 digits at ereal<19>. For unbounded precision,
-// use efloat (the multi-digit oracle). See #582.
+// bits ~= 300 decimal digits.
+//
+// Cross-checked at ereal<19>: exp(1) and pi (via atan) reproduce independently
+// generated ~1000-digit constant literals (mpmath: e, pi) to ~290 digits, and
+// sqrt/log/sin/erf/gamma/... agree with the efloat multi-digit sibling to the same
+// level. This is corroboration between two implementations plus known constants,
+// not a proof against a third-party oracle. For unbounded precision use efloat.
+// See #582.
 //
 // (A few loops cast a series term to double only to test its magnitude for loop
 // termination; the term itself is computed in full ereal precision.)
