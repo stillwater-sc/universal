@@ -2,9 +2,9 @@
 //
 // nextafter(x, y) returns the value one ULP from x toward y, at x's WORKING
 // precision. Covers direction, precision-consistent ULP magnitude (the property
-// a stored-limb-count ULP got wrong), within-binade reversibility, zero/sign,
-// and special values. nexttoward mirrors nextafter with a long double target.
-// (Issue #1120)
+// a stored-limb-count ULP got wrong), reversibility in both directions across
+// the power-of-two boundary, zero/sign, and special values. nexttoward mirrors
+// nextafter with a long double target. (Issue #1120)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -101,19 +101,56 @@ int VerifyEfloatNext(bool reportTestCases) {
 	}
 
 	// ---------------------------------------------------------------------
-	// 4. within-binade reversibility: step up then down returns x exactly.
-	//    (Down across the binade boundary halves the ULP, so we only test the
-	//    up-then-down direction, which stays inside [1,2).)
+	// 4. reversibility in both directions, including across the power-of-two
+	//    boundary. Stepping toward zero from an exact power of two crosses
+	//    into the lower (half-ULP) binade; the step must still be reversible.
 	// ---------------------------------------------------------------------
 	if (reportTestCases)
-		std::cout << "  Verifying up-then-down reversibility...\n";
+		std::cout << "  Verifying reversibility (both directions)...\n";
+	{
+		for (double v : {1.0, 2.0, 4.0, 0.5, 1.5, 3.7, -1.0, -2.0}) {
+			EH x(v);
+			EH up = nextafter(x, EH(v + 1e9));  // step away from zero
+			EH dn = nextafter(x, EH(v - 1e9));  // step toward zero
+			if (nextafter(up, x) != x) {
+				if (reportTestCases)
+					std::cout << "    FAIL: up round-trip at " << v << "\n";
+				++failures;
+			}
+			if (nextafter(dn, x) != x) {
+				if (reportTestCases)
+					std::cout << "    FAIL: down round-trip at " << v << "\n";
+				++failures;
+			}
+		}
+	}
+
+	// ---------------------------------------------------------------------
+	// 4b. down-step from an exact power of two uses the lower binade's half
+	//     ULP, so it lands one representable value closer to x than the naive
+	//     same-binade ULP would, and is strictly below x and reversible.
+	// ---------------------------------------------------------------------
+	if (reportTestCases)
+		std::cout << "  Verifying power-of-two down-step...\n";
 	{
 		EH x(1.0);
-		EH up   = nextafter(x, EH(2.0));
-		EH back = nextafter(up, EH(0.0));
-		if (back != x) {
+		EH dn = nextafter(x, EH(0.0));
+		EH fullUlp(1.0);
+		fullUlp.setexponent(x.scale() - static_cast<int64_t>(x.get_precision()) + 1);
+		EH naive = x - fullUlp;  // what a same-binade ULP step would give
+		if (!(dn < x)) {
 			if (reportTestCases)
-				std::cout << "    FAIL: nextafter(nextafter(1,up),down) != 1\n";
+				std::cout << "    FAIL: pow2 down-step not < x\n";
+			++failures;
+		}
+		if (!(dn > naive)) {
+			if (reportTestCases)
+				std::cout << "    FAIL: pow2 down-step not closer than full ULP\n";
+			++failures;
+		}
+		if (nextafter(dn, x) != x) {
+			if (reportTestCases)
+				std::cout << "    FAIL: pow2 down-step not reversible\n";
 			++failures;
 		}
 	}

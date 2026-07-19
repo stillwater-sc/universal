@@ -9,12 +9,17 @@
 namespace sw {
 namespace universal {
 
-// nextafter: the next value representable at x's WORKING precision, in the
-// direction of y. The step is one unit-in-the-last-place, i.e. 2^(scale(x) -
-// precision + 1) where precision = get_precision() (the type's working precision
-// in bits), NOT the number of limbs currently occupied by x's mantissa -- a
-// value like 1.0 stores in a single limb, so keying the ULP off the stored limb
-// count would make the step 2^-31 regardless of the type's real precision.
+// nextafter: the value adjacent to x, one unit-in-the-last-place toward y, at
+// x's WORKING precision (get_precision(), the type's bit width -- NOT the number
+// of limbs currently occupied by x's mantissa, which for a value like 1.0 is a
+// single limb and would make the step a fixed 2^-31 regardless of precision).
+//
+// The ULP of the binade [2^k, 2^(k+1)) is 2^(k-P+1) for precision P. Stepping
+// TOWARD ZERO from an exact power of two 2^k crosses into the lower binade
+// [2^(k-1), 2^k), whose spacing is half as large (2^(k-P)); that neighbor is
+// computed at one extra limb of precision so its trailing bit is not rounded off
+// when aligned against 2^k. Every step round-trips: nextafter(nextafter(x,a),x)
+// == x in both directions, across power-of-two boundaries included.
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> nextafter(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 	if (x.isnan() || y.isnan()) {
@@ -34,15 +39,54 @@ constexpr efloat<nlimbs> nextafter(const efloat<nlimbs>& x, const efloat<nlimbs>
 		return (y.sign() == -1) ? -ulp : ulp;
 	}
 
-	// ULP at x's working precision: 2^(scale - precision + 1)
-	efloat<nlimbs> ulp(1.0);
-	ulp.setexponent(x.scale() - static_cast<int64_t>(x.get_precision()) + 1);
+	const int64_t P = static_cast<int64_t>(x.get_precision());
+	const int64_t k = x.scale();
 
-	return (y > x) ? (x + ulp) : (x - ulp);
+	// Work in magnitude, then re-attach x's sign. "magnitudeUp" is true when the
+	// step moves |x| away from zero (x>0 stepping up, or x<0 stepping down).
+	const bool xNeg        = (x.sign() == -1);
+	const bool magnitudeUp = ((y > x) != xNeg);
+
+	efloat<nlimbs> absx(x);
+	absx.setsign(false);
+
+	efloat<nlimbs> newmag;
+	if (magnitudeUp) {
+		// away from zero: ULP of |x|'s own binade
+		efloat<nlimbs> ulp(1.0);
+		ulp.setexponent(k - P + 1);
+		newmag = absx + ulp;
+	} else {
+		// toward zero: if |x| is an exact power of two, the neighbor lies in the
+		// lower binade a half-ULP away; otherwise it is one ULP of this binade.
+		efloat<nlimbs> pow2(1.0);
+		pow2.setexponent(k);
+		if (absx == pow2) {
+			efloat<nlimbs> half(1.0);
+			half.setexponent(k - P);
+			newmag = absx;
+			newmag.set_precision(static_cast<unsigned>(P) + 32);  // keep the trailing bit
+			newmag = newmag - half;
+			newmag.set_precision(static_cast<unsigned>(P));
+		} else {
+			efloat<nlimbs> ulp(1.0);
+			ulp.setexponent(k - P + 1);
+			newmag = absx - ulp;
+		}
+	}
+
+	newmag.setsign(xNeg);
+	return newmag;
 }
 
 // nexttoward: same as nextafter, but the direction argument is long double.
-// It is cast to double first to avoid empty-limb parsing of a wider type.
+//
+// The target only supplies a DIRECTION (via the x == y / y > x comparisons), so
+// it is converted to double. efloat's long double constructor is currently
+// non-functional (efloat(2.0L) yields 0), so constructing the target from long
+// double directly would misdirect the step; the double conversion is deliberate.
+// The only consequence is that two long double targets closer than one double
+// ULP collapse -- a sub-double-ULP direction distinction not worth the risk.
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> nexttoward(const efloat<nlimbs>& x, long double y) {
 	return nextafter(x, efloat<nlimbs>(static_cast<double>(y)));
