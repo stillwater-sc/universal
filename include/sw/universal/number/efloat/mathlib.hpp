@@ -13,6 +13,7 @@
 #include <universal/number/efloat/math/truncate.hpp>
 #include <universal/number/efloat/math/constants/efloat_constants.hpp>
 #include <universal/number/efloat/math/trigonometry.hpp>
+#include <universal/number/efloat/math/hyperbolic.hpp>
 #include <universal/number/efloat/math/pow.hpp>
 #include <universal/number/efloat/math/fractional.hpp>
 #include <universal/number/efloat/math/minmax.hpp>
