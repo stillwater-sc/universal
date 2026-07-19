@@ -1433,31 +1433,26 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 }
 
 // generate an efloat format ASCII format
+// forward reference: full decimal formatter, defined after the arithmetic
+// operators it relies on (see below).
+template<unsigned nlimbs>
+std::string to_string(const efloat<nlimbs>& value, std::streamsize precision, std::streamsize width,
+                      bool fixed, bool scientific, bool internal, bool left, bool showpos,
+                      bool uppercase, char fill);
+
 template<unsigned nlimbs>
 inline std::ostream& operator<<(std::ostream& ostr, const efloat<nlimbs>& rhs) {
-	// to make certain that setw and left/right operators work properly
-	// we need to transform the efloat into a string
-	std::stringstream ss;
-
-	if (rhs.isinf()) {
-		ss << (rhs.sign() == -1 ? "-inf" : "+inf");
-	}
-	else if (rhs.isqnan()) {
-		ss << "nan(qnan)";
-	}
-	else if (rhs.issnan()) {
-		ss << "nan(snan)";
-	}
-	else {
-		std::streamsize prec = ostr.precision();
-		std::streamsize width = ostr.width();
-		std::ios_base::fmtflags ff;
-		ff = ostr.flags();
-		ss.flags(ff);
-		ss << std::setw(width) << std::setprecision(prec) << "TBD";
-	}
-
-	return ostr << ss.str();
+	std::ios_base::fmtflags fmt = ostr.flags();
+	std::streamsize precision   = ostr.precision();
+	std::streamsize width       = ostr.width();
+	char fillChar               = ostr.fill();
+	bool showpos    = (fmt & std::ios_base::showpos)    != 0;
+	bool uppercase  = (fmt & std::ios_base::uppercase)  != 0;
+	bool fixed      = (fmt & std::ios_base::fixed)      != 0;
+	bool scientific = (fmt & std::ios_base::scientific) != 0;
+	bool internal   = (fmt & std::ios_base::internal)   != 0;
+	bool left       = (fmt & std::ios_base::left)       != 0;
+	return ostr << to_string(rhs, precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
 }
 
 // read an ASCII efloat format
@@ -1701,6 +1696,193 @@ inline efloat<nlimbs> operator*(double lhs, const efloat<nlimbs>& rhs) {
 template<unsigned nlimbs>
 inline efloat<nlimbs> operator/(double lhs, const efloat<nlimbs>& rhs) {
 	return operator/(efloat<nlimbs>(lhs), rhs);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// decimal formatting (binary -> decimal string at arbitrary precision)
+///
+/// Ported from ereal's to_string/to_digits: digits are extracted one at a time
+/// using efloat's OWN arithmetic (scale to [1,10) via *10 / /10, then repeatedly
+/// take floor and multiply by 10). Accuracy is limited by the operand's working
+/// precision. (issue #1150)
+
+namespace efloat_detail {
+
+	// append a signed decimal exponent, minimum 2 digits (efloat's exponent range
+	// far exceeds double's, so 4+ digit exponents are reachable -- e.g. 1e1000).
+	inline void append_exponent(std::string& str, int e) {
+		str += (e < 0 ? '-' : '+');
+		std::string digits = std::to_string((e < 0) ? -e : e);
+		if (digits.size() < 2) digits.insert(0, 2u - digits.size(), '0');
+		str += digits;
+	}
+
+	// round the digit string in place, propagating a carry; bump *decimalPoint on overflow
+	inline void round_string(std::vector<char>& s, int precision, int* decimalPoint) {
+		int lastDigit = precision - 1;
+		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
+			int i = precision - 2;
+			s[static_cast<unsigned>(i)]++;
+			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+				s[static_cast<unsigned>(i)] -= 10;
+				s[static_cast<unsigned>(--i)]++;
+			}
+		}
+		if (s[0] > '9') {
+			for (int i = precision - 1; i >= 2; --i) s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
+			s[0u] = '1';
+			s[1u] = '0';
+			(*decimalPoint)++;
+		}
+	}
+
+	// generate `precision`+1 decimal digits of |value| into s, with the decimal
+	// exponent returned in `exponent` (value ~= 0.s[0]s[1]... * 10^(exponent+1),
+	// i.e. s[0] is the leading significant digit at 10^exponent).
+	template<unsigned nlimbs>
+	void to_digits(const efloat<nlimbs>& value, std::vector<char>& s, int& exponent, int precision) {
+		constexpr double log10_2 = 0.301029995663981;
+		if (value.iszero()) {
+			exponent = 0;
+			for (int i = 0; i < precision; ++i) s[static_cast<unsigned>(i)] = '0';
+			return;
+		}
+
+		// estimate the power-of-ten exponent from the binary scale, then correct
+		int e = static_cast<int>(log10_2 * static_cast<double>(value.scale()));
+
+		efloat<nlimbs> r(value); r.setsign(false);   // |value|
+		const efloat<nlimbs> ten(10.0), one(1.0);
+		if (e < 0)      { for (int k = 0; k < -e; ++k) r = r * ten; }
+		else if (e > 0) { for (int k = 0; k <  e; ++k) r = r / ten; }
+		if (r >= ten)     { r = r / ten; ++e; }
+		else if (r < one) { r = r * ten; --e; }
+
+		const int nrDigits = precision + 1;
+		for (int i = 0; i < nrDigits; ++i) {
+			if (r.iszero()) { for (int j = i; j < nrDigits; ++j) s[static_cast<unsigned>(j)] = '0'; break; }
+			int digit = static_cast<int>(double(r));           // r in [0,10): leading digit
+			r = r - efloat<nlimbs>(static_cast<double>(digit));
+			r = r * ten;
+			s[static_cast<unsigned>(i)] = static_cast<char>(digit + '0');
+		}
+
+		// repair any digit that fell just outside [0,9] from rounding
+		for (int i = nrDigits - 1; i > 0; --i) {
+			if (s[static_cast<unsigned>(i)] < '0')      { s[static_cast<unsigned>(i - 1)]--; s[static_cast<unsigned>(i)] += 10; }
+			else if (s[static_cast<unsigned>(i)] > '9') { s[static_cast<unsigned>(i - 1)]++; s[static_cast<unsigned>(i)] -= 10; }
+		}
+
+		// round to `precision` digits, propagate carry
+		int lastDigit = nrDigits - 1;
+		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
+			int i = nrDigits - 2;
+			s[static_cast<unsigned>(i)]++;
+			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
+				s[static_cast<unsigned>(i)] -= 10;
+				s[static_cast<unsigned>(--i)]++;
+			}
+		}
+		if (s[0] > '9') {   // carry made the leading digit 10 -> shift
+			++e;
+			for (int i = precision; i >= 2; --i) s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
+			s[0u] = '1';
+			s[1u] = '0';
+		}
+		s[static_cast<unsigned>(precision)] = 0;
+		exponent = e;
+	}
+
+}  // namespace efloat_detail
+
+template<unsigned nlimbs>
+std::string to_string(const efloat<nlimbs>& value, std::streamsize precision, std::streamsize width,
+                      bool fixed, bool scientific, bool internal, bool left, bool showpos,
+                      bool uppercase, char fill) {
+	std::string s;
+	if (fixed && scientific) fixed = false;   // scientific takes precedence
+	if (precision < 0) precision = 6;         // default stream precision
+
+	bool negative = (value.sign() == -1);   // sign(), not isneg(): isneg() is false for -inf
+
+	if (value.isnan()) {
+		s = uppercase ? "NAN" : "nan";
+	}
+	else {
+		if (negative) s += '-'; else if (showpos) s += '+';
+
+		if (value.isinf()) {
+			s += uppercase ? "INF" : "inf";
+		}
+		else if (value.iszero()) {
+			s += '0';
+			if (precision > 0) { s += '.'; s.append(static_cast<unsigned>(precision), '0'); }
+			if (!fixed) s += (uppercase ? "E+00" : "e+00");
+		}
+		else {
+			int e               = 0;   // decimal exponent, filled in by to_digits below
+			int powerOfTenScale = static_cast<int>(std::floor(static_cast<double>(value.scale()) * 0.301029995663981));
+			int integerDigits   = (fixed ? (powerOfTenScale + 1) : 1);
+			int nrDigits        = integerDigits + static_cast<int>(precision);
+
+			int minBuffer = static_cast<int>(nlimbs) * 16;
+			int nrDigitsForFixedFormat = fixed ? std::max(minBuffer, nrDigits) : nrDigits;
+
+			double fullMagnitude = std::fabs(static_cast<double>(value));
+			if (fixed && (precision == 0) && (fullMagnitude < 1.0)) {
+				s += (fullMagnitude >= 0.5) ? '1' : '0';
+			}
+			else if (fixed && nrDigits <= 0) {
+				s += '0';
+				if (precision > 0) { s += '.'; s.append(static_cast<unsigned>(precision), '0'); }
+			}
+			else {
+				std::vector<char> t;
+				if (fixed) {
+					// compute extra guard digits (nrDigitsForFixedFormat) for accuracy,
+					// but round and print exactly nrDigits (= integerDigits + precision).
+					t.resize(static_cast<size_t>(nrDigitsForFixedFormat + 1));
+					efloat_detail::to_digits(value, t, e, nrDigitsForFixedFormat);
+					efloat_detail::round_string(t, nrDigits + 1, &integerDigits);
+					if (integerDigits > 0) {
+						int i;
+						for (i = 0; i < integerDigits; ++i) s += t[static_cast<unsigned>(i)];
+						if (precision > 0) {
+							s += '.';
+							for (int j = 0; j < static_cast<int>(precision); ++j, ++i) s += t[static_cast<unsigned>(i)];
+						}
+					}
+					else {
+						s += "0.";
+						if (integerDigits < 0) s.append(static_cast<size_t>(-integerDigits), '0');
+						for (int i = 0; i < nrDigits; ++i) s += t[static_cast<unsigned>(i)];
+					}
+				}
+				else {
+					t.resize(static_cast<size_t>(nrDigits + 1));
+					efloat_detail::to_digits(value, t, e, nrDigits);
+					s += t[0ull];
+					if (precision > 0) s += '.';
+					for (int i = 1; i <= static_cast<int>(precision); ++i) s += t[static_cast<unsigned>(i)];
+				}
+			}
+
+			if (!fixed) { s += (uppercase ? 'E' : 'e'); efloat_detail::append_exponent(s, e); }
+		}
+	}
+
+	// width / fill padding
+	size_t strLength = s.length();
+	if (width > 0 && strLength < static_cast<size_t>(width)) {
+		size_t pad = static_cast<size_t>(width) - strLength;
+		if (internal) {
+			const bool hasSign = !s.empty() && (s[0] == '-' || s[0] == '+');
+			s.insert(hasSign ? std::string::size_type(1) : std::string::size_type(0), pad, fill);
+		}
+		else if (left) s.append(pad, fill);
+		else s.insert(std::string::size_type(0), pad, fill);
+	}
+	return s;
 }
 
 }} // namespace sw::universal
