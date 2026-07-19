@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>      // std::fpclassify, std::frexp, std::ldexp (long double conversions)
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -181,9 +182,76 @@ public:
 
 #if LONG_DOUBLE_SUPPORT
 	efloat(long double iv)                      noexcept { *this = iv; }
-	efloat& operator=(long double rhs)          noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()       const noexcept { return convert_to_ieee754<long double>(); }
-#endif 
+
+	// convert_ieee754 only builds limbs for sizeof(Real) of 4 or 8, so a wide
+	// long double (sizeof 16 on x86-64) produced 0. Decompose instead: frexp the
+	// value into m * 2^e with m in [0.5,1) (safely inside double's range), split m
+	// into an exact sum of doubles via the working double path, then apply e with
+	// setexponent(). This preserves the full long double significand AND its
+	// extended exponent range. Platforms where long double == double take the
+	// direct path.
+	efloat& operator=(long double rhs) noexcept {
+		if constexpr (sizeof(long double) <= sizeof(double)) {
+			return convert_ieee754(static_cast<double>(rhs));
+		}
+		else {
+			switch (std::fpclassify(rhs)) {
+			case FP_ZERO:
+			case FP_NAN:
+			case FP_INFINITE:
+				return convert_ieee754(static_cast<double>(rhs));
+			default:
+				break;
+			}
+			int e = 0;
+			long double m = std::frexp(rhs, &e);
+			clear();
+			long double r = m;
+			for (int i = 0; i < 8 && r != 0.0L; ++i) {
+				double hi = static_cast<double>(r);
+				if (hi == 0.0) break;   // remainder fell below double's range
+				*this += efloat(hi);
+				r -= static_cast<long double>(hi);
+			}
+			if (!iszero()) setexponent(scale() + e);
+			return *this;
+		}
+	}
+
+	explicit operator long double() const noexcept {
+		if constexpr (sizeof(long double) <= sizeof(double)) {
+			return static_cast<long double>(convert_to_ieee754<double>());
+		}
+		else {
+			switch (_state) {
+			case FloatingPointState::Zero:         return _sign ? -0.0L : 0.0L;
+			case FloatingPointState::QuietNaN:
+			case FloatingPointState::SignalingNaN: return std::numeric_limits<long double>::quiet_NaN();
+			case FloatingPointState::Infinite:     return _sign ? -std::numeric_limits<long double>::infinity()
+			                                                     :  std::numeric_limits<long double>::infinity();
+			case FloatingPointState::Normal:
+			default:
+				break;
+			}
+			// bring |x| into [1,2), extract as an exact sum of doubles, then scale
+			// by the true (wide) exponent -- the dual of the assignment above.
+			const std::int64_t k = scale();
+			efloat n(*this);
+			n.setsign(false);
+			n.setexponent(0);
+			long double s = 0.0L;
+			efloat r(n);
+			for (int i = 0; i < 4 && !r.iszero(); ++i) {
+				double hi = static_cast<double>(r);
+				if (hi == 0.0) break;
+				s += static_cast<long double>(hi);
+				r -= efloat(hi);
+			}
+			if (_sign) s = -s;
+			return std::ldexp(s, static_cast<int>(k));
+		}
+	}
+#endif
 
 	// instance precision management
 	unsigned get_precision() const noexcept { return _precision_limbs * 32; }
