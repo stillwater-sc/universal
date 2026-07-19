@@ -327,39 +327,50 @@ int VerifyEfloatHyperbolic(bool reportTestCases) {
 			++failures;
 		}
 
-		// domain errors -> NaN
+		// domain errors -> NaN, and must raise InvalidOperation (an explicit objective)
 		clear_efloat_exceptions();
-		if (!acosh(efloat<8>(0.5)).isnan()) {
+		if (!acosh(efloat<8>(0.5)).isnan() || !has_efloat_exception(ExceptionFlag::InvalidOperation)) {
 			if (reportTestCases)
-				std::cout << "    FAIL: acosh(0.5) not NaN\n";
+				std::cout << "    FAIL: acosh(0.5) not NaN / no InvalidOperation\n";
 			++failures;
 		}
-		if (!acosh(ninf).isnan()) {
+		clear_efloat_exceptions();
+		if (!acosh(ninf).isnan() || !has_efloat_exception(ExceptionFlag::InvalidOperation)) {
 			if (reportTestCases)
-				std::cout << "    FAIL: acosh(-inf) not NaN\n";
+				std::cout << "    FAIL: acosh(-inf) not NaN / no InvalidOperation\n";
 			++failures;
 		}
-		if (!atanh(efloat<8>(2.0)).isnan()) {
+		clear_efloat_exceptions();
+		if (!atanh(efloat<8>(2.0)).isnan() || !has_efloat_exception(ExceptionFlag::InvalidOperation)) {
 			if (reportTestCases)
-				std::cout << "    FAIL: atanh(2) not NaN\n";
+				std::cout << "    FAIL: atanh(2) not NaN / no InvalidOperation\n";
 			++failures;
 		}
-		if (!atanh(pinf).isnan()) {
+		clear_efloat_exceptions();
+		if (!atanh(pinf).isnan() || !has_efloat_exception(ExceptionFlag::InvalidOperation)) {
 			if (reportTestCases)
-				std::cout << "    FAIL: atanh(+inf) not NaN\n";
+				std::cout << "    FAIL: atanh(+inf) not NaN / no InvalidOperation\n";
 			++failures;
 		}
 
-		// poles -> +/-inf
-		if (!atanh(efloat<8>(1.0)).isinf() || atanh(efloat<8>(1.0)).sign() != 1) {
-			if (reportTestCases)
-				std::cout << "    FAIL: atanh(1) != +inf\n";
-			++failures;
+		// poles -> +/-inf, and must raise DivisionByZero (an explicit objective)
+		clear_efloat_exceptions();
+		{
+			efloat<8> ap = atanh(efloat<8>(1.0));
+			if (!ap.isinf() || ap.sign() != 1 || !has_efloat_exception(ExceptionFlag::DivisionByZero)) {
+				if (reportTestCases)
+					std::cout << "    FAIL: atanh(1) != +inf / no DivisionByZero\n";
+				++failures;
+			}
 		}
-		if (!atanh(efloat<8>(-1.0)).isinf() || atanh(efloat<8>(-1.0)).sign() != -1) {
-			if (reportTestCases)
-				std::cout << "    FAIL: atanh(-1) != -inf\n";
-			++failures;
+		clear_efloat_exceptions();
+		{
+			efloat<8> an = atanh(efloat<8>(-1.0));
+			if (!an.isinf() || an.sign() != -1 || !has_efloat_exception(ExceptionFlag::DivisionByZero)) {
+				if (reportTestCases)
+					std::cout << "    FAIL: atanh(-1) != -inf / no DivisionByZero\n";
+				++failures;
+			}
 		}
 	}
 

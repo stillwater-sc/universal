@@ -7,6 +7,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <cmath>
+#include <type_traits>                                 // std::is_constant_evaluated
+#include <universal/behavior/status_flags.hpp>         // ExceptionFlag, efloat_exception_flags
 #include <universal/number/efloat/math/exponent.hpp>   // exp, expm1
 #include <universal/number/efloat/math/logarithm.hpp>  // log1p
 #include <universal/number/efloat/math/sqrt.hpp>       // sqrt
