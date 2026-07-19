@@ -117,6 +117,33 @@ int VerifyEfloatToString(bool reportTestCases) {
 				std::cout << "    FAIL: fixed -3.25 -> " << os2.str() << "\n";
 			++failures;
 		}
+		// fixed format must ROUND (not truncate) and a sub-1 value must emit exactly `precision` decimals
+		std::ostringstream os3;
+		os3 << std::fixed << std::setprecision(4) << E(2.0 / 3.0);  // 0.66666... -> 0.6667
+		if (os3.str() != "0.6667") {
+			if (reportTestCases)
+				std::cout << "    FAIL: fixed 2/3 @4 -> " << os3.str() << " (want 0.6667)\n";
+			++failures;
+		}
+	}
+
+	// ---------------------------------------------------------------------
+	// 6. large exponent (efloat's range far exceeds double's, so 4-digit
+	//    exponents are reachable -- e.g. 1e1000)
+	// ---------------------------------------------------------------------
+	if (reportTestCases)
+		std::cout << "  Verifying large exponents...\n";
+	{
+		E big;
+		big.set_precision(400);
+		parse<16384>("1e1000", big);
+		std::ostringstream os;
+		os << std::scientific << std::setprecision(3) << big;
+		if (os.str().find("e+1000") == std::string::npos) {
+			if (reportTestCases)
+				std::cout << "    FAIL: 1e1000 -> " << os.str() << " (want ...e+1000)\n";
+			++failures;
+		}
 	}
 
 	// ---------------------------------------------------------------------

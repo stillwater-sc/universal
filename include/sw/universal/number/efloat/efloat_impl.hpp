@@ -1708,14 +1708,13 @@ inline efloat<nlimbs> operator/(double lhs, const efloat<nlimbs>& rhs) {
 
 namespace efloat_detail {
 
-	// append a 2-or-3 digit signed decimal exponent
+	// append a signed decimal exponent, minimum 2 digits (efloat's exponent range
+	// far exceeds double's, so 4+ digit exponents are reachable -- e.g. 1e1000).
 	inline void append_exponent(std::string& str, int e) {
 		str += (e < 0 ? '-' : '+');
-		e = (e < 0) ? -e : e;
-		int k;
-		if (e >= 100) { k = e / 100; str += static_cast<char>('0' + k); e -= 100 * k; }
-		k = e / 10; str += static_cast<char>('0' + k); e -= 10 * k;
-		str += static_cast<char>('0' + e);
+		std::string digits = std::to_string((e < 0) ? -e : e);
+		if (digits.size() < 2) digits.insert(0, 2u - digits.size(), '0');
+		str += digits;
 	}
 
 	// round the digit string in place, propagating a carry; bump *decimalPoint on overflow
@@ -1841,9 +1840,11 @@ std::string to_string(const efloat<nlimbs>& value, std::streamsize precision, st
 			else {
 				std::vector<char> t;
 				if (fixed) {
+					// compute extra guard digits (nrDigitsForFixedFormat) for accuracy,
+					// but round and print exactly nrDigits (= integerDigits + precision).
 					t.resize(static_cast<size_t>(nrDigitsForFixedFormat + 1));
 					efloat_detail::to_digits(value, t, e, nrDigitsForFixedFormat);
-					efloat_detail::round_string(t, nrDigitsForFixedFormat + 1, &integerDigits);
+					efloat_detail::round_string(t, nrDigits + 1, &integerDigits);
 					if (integerDigits > 0) {
 						int i;
 						for (i = 0; i < integerDigits; ++i) s += t[static_cast<unsigned>(i)];
@@ -1855,7 +1856,7 @@ std::string to_string(const efloat<nlimbs>& value, std::streamsize precision, st
 					else {
 						s += "0.";
 						if (integerDigits < 0) s.append(static_cast<size_t>(-integerDigits), '0');
-						for (int i = 0; i < nrDigitsForFixedFormat; ++i) s += t[static_cast<unsigned>(i)];
+						for (int i = 0; i < nrDigits; ++i) s += t[static_cast<unsigned>(i)];
 					}
 				}
 				else {
