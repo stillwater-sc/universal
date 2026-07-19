@@ -218,6 +218,17 @@ int VerifyEfloatNext(bool reportTestCases) {
 				std::cout << "    FAIL: nexttoward(1,2) !> 1\n";
 			++failures;
 		}
+		// The target's full long double precision is preserved (#1160): a target
+		// within one double-ULP of x, but distinguishable in long double, still
+		// supplies a direction. The old double-cast collapsed it to == x (no step).
+		if constexpr (sizeof(long double) > sizeof(double)) {
+			long double justAbove = 1.0L + std::ldexp(1.0L, -60);   // rounds to 1.0 as a double
+			if (!(nexttoward(x, justAbove) > x)) {
+				if (reportTestCases)
+					std::cout << "    FAIL: nexttoward toward sub-double-ULP target did not step up\n";
+				++failures;
+			}
+		}
 	}
 
 	return failures;

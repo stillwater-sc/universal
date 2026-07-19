@@ -81,15 +81,14 @@ constexpr efloat<nlimbs> nextafter(const efloat<nlimbs>& x, const efloat<nlimbs>
 
 // nexttoward: same as nextafter, but the direction argument is long double.
 //
-// The target only supplies a DIRECTION (via the x == y / y > x comparisons), so
-// it is converted to double. efloat's long double constructor is currently
-// non-functional (efloat(2.0L) yields 0), so constructing the target from long
-// double directly would misdirect the step; the double conversion is deliberate.
-// The only consequence is that two long double targets closer than one double
-// ULP collapse -- a sub-double-ULP direction distinction not worth the risk.
+// The target is built directly from long double so no direction information is
+// lost. On platforms where LONG_DOUBLE_SUPPORT is off, long double aliases double
+// and the efloat(double) constructor is selected instead -- also exact.
+// (efloat's long double conversion was fixed in #1160; this previously routed
+// through double as a workaround for the constructor returning 0.)
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> nexttoward(const efloat<nlimbs>& x, long double y) {
-	return nextafter(x, efloat<nlimbs>(static_cast<double>(y)));
+	return nextafter(x, efloat<nlimbs>(y));
 }
 
 }  // namespace universal
