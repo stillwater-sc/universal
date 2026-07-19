@@ -12,16 +12,15 @@
 // to ~1000 decimal digits, well beyond the ~315-digit ceiling of the
 // multi-component ereal/elreal constants (issue #1139).
 //
-// Construction bypasses efloat::parse() (which caps at the 2040-bit d2b default,
-// issue #1141) and calls decimal_to_binary::convert<BigBits> directly with a
-// large budget: the internal reduction shifts the digit-integer left by
-// ~(target + 3*ndigits) bits, so BigBits must be well above that -- 16384 bits
-// covers a 1000-digit literal at ~3300-bit target. This does NOT change the
-// shared d2b default budget that other number systems rely on.
+// Construction uses efloat's BigBits-templated parse() (#1141) with a large
+// budget: the d2b reduction shifts the digit-integer left by ~(target +
+// 3*ndigits) bits, so the budget must be well above that -- 16384 bits covers a
+// 1000-digit literal at ~3300-bit target. Passing the budget explicitly does NOT
+// change the shared d2b default that other number systems rely on.
 #pragma once
+#include <string>
 #include <string_view>
 #include <algorithm>
-#include <universal/utility/decimal_to_binary.hpp>
 
 namespace sw { namespace universal {
 
@@ -44,49 +43,17 @@ namespace efloat_detail {
 	inline constexpr unsigned constant_big_bits = 16384u;
 
 	// make_constant<nlimbs>(decimal): parse a decimal literal into an efloat at
-	// min(nlimbs*32, constant_literal_bits) bits, exactly, via a wide d2b
-	// convert. Mirrors efloat::parse()'s round + MSB-first limb packing, but at
-	// constant_big_bits so it is correct past the 2040-bit parse() ceiling.
+	// min(nlimbs*32, constant_literal_bits) bits, exactly. Delegates to efloat's
+	// BigBits-templated parse() (#1141): sizing the working precision first, then
+	// calling parse<constant_big_bits> gives an exact conversion well past the
+	// 2040-bit default d2b ceiling -- the wide budget covers the digit-integer's
+	// 5^|E| growth for a ~1000-digit literal. Invalid input -> NaN.
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> make_constant(std::string_view decimal) {
-		namespace d2b = sw::universal::decimal_to_binary;
 		efloat<nlimbs> value;
-		value.clear();
-
 		const unsigned target_bits = std::min(nlimbs * 32u, constant_literal_bits);
-
-		auto r = d2b::convert<constant_big_bits>(decimal, target_bits);
-		if (!r.valid) { value.setnan(); return value; }
-		if (r.is_zero) { value.setzero(); if (r.negative) value.setsign(true); return value; }
-
-		auto          mantissa     = r.mantissa;
-		std::int64_t  binary_scale = r.binary_scale;
-		// round-to-nearest-even using d2b's guard/sticky
-		const bool round_up = r.guard_bit && (r.sticky_bit || mantissa.at(0));
-		if (round_up) {
-			mantissa += d2b::big_integer<constant_big_bits>(1);
-			if (mantissa.at(target_bits)) { mantissa >>= 1; ++binary_scale; }
-		}
-
-		value.setsign(r.negative);
-		value.setexponent(binary_scale);
-
-		// pack MSB-first into uint32 limbs (same convention as efloat::parse)
-		const unsigned full_limbs = target_bits / 32u;
-		const unsigned leftover   = target_bits % 32u;
-		for (unsigned i = 0; i < full_limbs; ++i) {
-			std::uint32_t v = 0;
-			const unsigned base = target_bits - 32u * (i + 1u);
-			for (unsigned b = 0; b < 32u; ++b) if (mantissa.at(base + b)) v |= (1u << b);
-			value.setlimb(i, v);
-		}
-		if (leftover > 0u) {
-			std::uint32_t v = 0;
-			for (unsigned b = 0; b < leftover; ++b)
-				if (mantissa.at(b)) v |= (1u << (32u - leftover + b));
-			value.setlimb(full_limbs, v);
-		}
 		value.set_precision(target_bits);
+		if (!parse<constant_big_bits>(std::string(decimal), value)) value.setnan();
 		return value;
 	}
 
