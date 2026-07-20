@@ -103,7 +103,7 @@ namespace sw { namespace universal {
 	// Note: min(), max(), fdim() are defined in math/functions/minmax.hpp
 	// Note: hypot() is defined in math/functions/hypot.hpp
 	// Note: erf(), erfc(), tgamma(), lgamma() are defined in math/functions/error_and_gamma.hpp
-	// Note: copysign(), frexp(), ldexp() are defined in math/functions/numerics.hpp
+	// Note: copysign(), frexp(), ldexp(), scalbn(), logb(), ilogb(), fma() are defined in math/functions/numerics.hpp
 	// Note: fpclassify(), isnan(), isinf(), isfinite(), isnormal(), signbit() are defined in math/functions/classify.hpp
 	// Note: nextafter(), nexttoward() are defined in math/functions/next.hpp
 

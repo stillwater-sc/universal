@@ -9,6 +9,7 @@
 #include <universal/verification/test_suite.hpp>
 
 #include <cmath>
+#include <climits>
 #include <limits>
 #include <random>
 
@@ -138,6 +139,46 @@ namespace {
 			return nrOfFailedTestCases;
 		}
 
+		// Verify scalbn, logb, ilogb, fma against std:: (double-range values)
+		template<typename Real>
+		int VerifyScalbnLogbFma(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			for (double v : {1.0, 2.0, 3.0, 0.75, 0.5, 100.0, -8.0, 1023.5, 0.1}) {
+				for (int n : {-5, 0, 3, 20}) {
+					if (double(scalbn(Real(v), n)) != std::scalbn(v, n)) {
+						if (reportTestCases) std::cout << "    FAIL scalbn(" << v << "," << n << ")\n";
+						++nrOfFailedTestCases;
+					}
+				}
+				if (double(logb(Real(v))) != std::logb(v) || ilogb(Real(v)) != std::ilogb(v)) {
+					if (reportTestCases) std::cout << "    FAIL logb/ilogb(" << v << ") got "
+					                               << double(logb(Real(v))) << "/" << ilogb(Real(v)) << "\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// fma(x,y,z) == x*y + z
+			for (const double* t : {(const double[]){2.0, 3.0, 4.0}, (const double[]){-1.5, 2.0, 0.5}}) {
+				if (fma(Real(t[0]), Real(t[1]), Real(t[2])) != Real(t[0]) * Real(t[1]) + Real(t[2])) {
+					if (reportTestCases) std::cout << "    FAIL fma(" << t[0] << "," << t[1] << "," << t[2] << ")\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// ilogb / logb special values
+			Real zero(0.0), inf(std::numeric_limits<double>::infinity()), nan(std::numeric_limits<double>::quiet_NaN());
+			if (ilogb(zero) != FP_ILOGB0 || ilogb(inf) != INT_MAX || ilogb(nan) != FP_ILOGBNAN) {
+				if (reportTestCases) std::cout << "    FAIL ilogb special values\n";
+				++nrOfFailedTestCases;
+			}
+			if (!logb(zero).isinf() || !logb(nan).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL logb special values\n";
+				++nrOfFailedTestCases;
+			}
+			return nrOfFailedTestCases;
+		}
+
 		// Property fuzzer: copysign sign/magnitude and frexp/ldexp round trips
 		// over random finite values.
 		template<typename Real>
@@ -230,6 +271,9 @@ try {
 
 	test_tag = "frexp/ldexp roundtrip";
 	nrOfFailedTestCases += ReportTestResult(VerifyFrexpLdexpRoundtrip<ereal<>>(reportTestCases), "frexp/ldexp roundtrip", test_tag);
+
+	test_tag = "scalbn/logb/ilogb/fma";
+	nrOfFailedTestCases += ReportTestResult(VerifyScalbnLogbFma<ereal<>>(reportTestCases), "scalbn/logb/ilogb/fma(ereal)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

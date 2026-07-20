@@ -1,8 +1,9 @@
-// numerics.cpp: regression tests for efloat numeric support functions (frexp, ldexp).
+// numerics.cpp: regression tests for efloat numeric support functions
+//               (frexp, ldexp, scalbn, logb, ilogb, fma).
 //
-// ldexp(x, n) = x * 2^n and frexp(x, &e) split x into m * 2^e with m in [0.5,1).
-// Both only move efloat's binary exponent, so they are exact at any precision.
-// (Issue #1164)
+// ldexp/scalbn only move efloat's binary exponent (exact); frexp splits into
+// m * 2^e with m in [0.5,1); logb/ilogb return the radix-2 exponent; fma computes
+// x*y+z with no intermediate rounding. (Issues #1164, #1166)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -10,6 +11,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <climits>
 #include <limits>
 #include <universal/number/efloat/efloat.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -152,6 +154,58 @@ int VerifyEfloatNumerics(bool reportTestCases) {
 		if (ldexp(E(3.5), 0) != E(3.5)) {
 			if (reportTestCases)
 				std::cout << "    FAIL: ldexp(x,0) != x\n";
+			++failures;
+		}
+	}
+
+	// ---------------------------------------------------------------------
+	// 5. scalbn, logb, ilogb, fma
+	// ---------------------------------------------------------------------
+	if (reportTestCases)
+		std::cout << "  Verifying scalbn/logb/ilogb/fma...\n";
+	{
+		for (double v : {1.0, 3.0, -2.5, 0.75, 100.0}) {
+			for (int n : {-5, 0, 3, 20}) {
+				if (double(scalbn(E(v), n)) != std::scalbn(v, n)) {
+					if (reportTestCases)
+						std::cout << "    FAIL: scalbn(" << v << "," << n << ")\n";
+					++failures;
+				}
+			}
+			if (double(logb(E(v))) != std::logb(v) || ilogb(E(v)) != std::ilogb(v)) {
+				if (reportTestCases)
+					std::cout << "    FAIL: logb/ilogb(" << v << ") got " << double(logb(E(v))) << "/" << ilogb(E(v))
+					          << "\n";
+				++failures;
+			}
+		}
+		// fma exactness: with 512-bit precision x*y+z carries no rounding
+		EH a(123456789.0), b(987654321.0), c(0.5);
+		EH got  = fma(a, b, c);
+		EH want = a * b + c;
+		if (got != want) {
+			if (reportTestCases)
+				std::cout << "    FAIL: fma != x*y+z\n";
+			++failures;
+		}
+		// ilogb special values
+		E z(0.0), pinf;
+		pinf.setinf(false);
+		E nan;
+		nan.setnan();
+		if (ilogb(z) != FP_ILOGB0 || ilogb(pinf) != INT_MAX || ilogb(nan) != FP_ILOGBNAN) {
+			if (reportTestCases)
+				std::cout << "    FAIL: ilogb special values\n";
+			++failures;
+		}
+		if (!logb(z).isinf() || logb(z).sign() != -1) {
+			if (reportTestCases)
+				std::cout << "    FAIL: logb(0) != -inf\n";
+			++failures;
+		}
+		if (!logb(nan).isnan()) {
+			if (reportTestCases)
+				std::cout << "    FAIL: logb(nan)\n";
 			++failures;
 		}
 	}

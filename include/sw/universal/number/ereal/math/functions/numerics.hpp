@@ -5,6 +5,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>    // std::logb, std::ilogb, FP_ILOGB0, FP_ILOGBNAN
+#include <climits>  // INT_MAX
+#include <limits>   // std::numeric_limits
 
 namespace sw { namespace universal {
 
@@ -57,6 +60,50 @@ namespace sw { namespace universal {
 		} else {
 			return -x;
 		}
+	}
+
+	// scalbn(x, n) = x * 2^n -- identical to ldexp for a radix-2 type.
+	template<unsigned maxlimbs>
+	inline ereal<maxlimbs> scalbn(const ereal<maxlimbs>& x, int n) {
+		return ldexp(x, n);
+	}
+
+	// ilogb(x): unbiased radix-2 exponent floor(log2(|x|)) as an int, with the
+	// <cmath> special values. The leading component fixes the exponent to within
+	// one, so start from its ilogb and correct against the full magnitude (the
+	// lower components can pull |x| across a power-of-two boundary).
+	template<unsigned maxlimbs>
+	inline int ilogb(const ereal<maxlimbs>& x) {
+		if (x.isnan()) return FP_ILOGBNAN;
+		if (x.isinf()) return INT_MAX;
+		if (x.iszero()) return FP_ILOGB0;
+
+		int e = std::ilogb(x.limbs()[0]);
+		ereal<maxlimbs> ax = x.isneg() ? -x : x;              // |x|
+		if (ax < ldexp(ereal<maxlimbs>(1.0), e)) {
+			--e;
+		}
+		else if (ax >= ldexp(ereal<maxlimbs>(1.0), e + 1)) {
+			++e;
+		}
+		return e;
+	}
+
+	// logb(x): ilogb as a floating value. logb(0) = -inf, logb(+/-inf) = +inf,
+	// logb(nan) = nan.
+	template<unsigned maxlimbs>
+	inline ereal<maxlimbs> logb(const ereal<maxlimbs>& x) {
+		if (x.isnan()) return x;
+		if (x.isinf()) return ereal<maxlimbs>(std::numeric_limits<double>::infinity());
+		if (x.iszero()) return ereal<maxlimbs>(-std::numeric_limits<double>::infinity());
+		return ereal<maxlimbs>(static_cast<double>(ilogb(x)));
+	}
+
+	// fma(x, y, z) = x*y + z. ereal multiplies in exact expansion arithmetic, so
+	// no intermediate rounding is introduced. 0*inf yields NaN, matching IEEE.
+	template<unsigned maxlimbs>
+	inline ereal<maxlimbs> fma(const ereal<maxlimbs>& x, const ereal<maxlimbs>& y, const ereal<maxlimbs>& z) {
+		return x * y + z;
 	}
 
 }} // namespace sw::universal
