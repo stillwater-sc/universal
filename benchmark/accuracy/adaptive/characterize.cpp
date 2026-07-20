@@ -11,7 +11,7 @@
 // Output is a CSV to stdout followed by a per-function saturation/knee summary and
 // an elreal-vs-ereal comparison (which type is cheaper for a target accuracy).
 //
-// Usage: characterize [maxDepth=4] [reps=5]
+// Usage: characterize [maxDepth=3] [reps=3]
 //   maxDepth  highest elreal depth to sweep (2..maxDepth); ereal sweeps a fixed
 //             limb list {2,4,8,12,16}. Raise for a full characterization run.
 //   reps      timing repeats (median).
@@ -162,11 +162,21 @@ namespace {
 		}
 	}
 
+	// ereal arithmetic operators are inline and visible in this TU, so a plain
+	// fixed-input result can be folded/hoisted out of the timing loop -- read a
+	// limb through a volatile sink each rep to keep the work observable.
+	template<unsigned N>
+	double sink_limb(const ereal<N>& r) {
+		return r.limbs().empty() ? 0.0 : r.limbs()[0];
+	}
+
 	template<unsigned N>
 	void run_ereal_N(int reps) {
 		for (const auto& c : cases()) {
 			ereal<N> x(c.arg), r;
-			double t = time_ns([&] { r = apply(c.op, x); }, reps);
+			volatile double sink = 0.0;
+			double t = time_ns([&] { r = apply(c.op, x); sink = sink_limb(r); }, reps);
+			(void)sink;
 			int digits = agreed_decimal_digits(ereal_to_dyadic(r), c.ref);
 			emit({ "ereal", c.name, static_cast<long>(N), t, digits });
 		}
@@ -200,9 +210,12 @@ namespace {
 	void run_arithmetic_ereal_N(int reps) {
 		const double A = 1.4142135623730951, B = 2.7182818284590452;
 		ereal<N> a(A), b(B), r;
-		emit({ "ereal", "add", static_cast<long>(N), time_ns([&] { r = a + b; }, reps), -1 });
-		emit({ "ereal", "mul", static_cast<long>(N), time_ns([&] { r = a * b; }, reps), -1 });
-		emit({ "ereal", "div", static_cast<long>(N), time_ns([&] { r = a / b; }, reps), -1 });
+		volatile double sink = 0.0;
+		auto timeOp = [&](auto fn) { return time_ns([&] { r = fn(); sink = sink_limb(r); }, reps); };
+		emit({ "ereal", "add", static_cast<long>(N), timeOp([&] { return a + b; }), -1 });
+		emit({ "ereal", "mul", static_cast<long>(N), timeOp([&] { return a * b; }), -1 });
+		emit({ "ereal", "div", static_cast<long>(N), timeOp([&] { return a / b; }), -1 });
+		(void)sink;
 	}
 
 	template<unsigned... Ns>
