@@ -112,11 +112,12 @@ public:
 	// "_limb has one element of value 0" representation for callers that
 	// inspect bits()/significant().  Sign-only and state-only selectors
 	// and modifiers operate purely on the trivial members and are
-	// constexpr-clean.  Compound arithmetic and free comparison operators
-	// are currently stubs (returning *this or a constant) and are
-	// therefore promoted to constexpr too -- the surface lights up at
-	// constant evaluation today, and real arithmetic semantics will
-	// inherit constexpr automatically when implemented.
+	// constexpr-clean.  Compound arithmetic and the free comparison
+	// operators are fully implemented and used at runtime; they still
+	// carry the constexpr specifier for a uniform interface, but because
+	// they operate on the heap-allocated _limb expansion they escape
+	// constant evaluation (the same #747 transient-allocation limit) and
+	// so cannot be exercised in a constant expression.
 	// Out of scope (heap-escape boundary): native-type ctors / operator=
 	// (convert_ieee754 calls std::fpclassify which is not constexpr in
 	// C++20), conversion-out (std::pow), parse() (std::regex).
