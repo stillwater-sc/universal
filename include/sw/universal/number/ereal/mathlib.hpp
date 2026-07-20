@@ -50,6 +50,9 @@
 #include <universal/number/ereal/math/functions/sqrt.hpp>
 #include <universal/number/ereal/math/functions/trigonometry.hpp>
 
+// Complex number support (sw::universal::complex<ereal>)
+#include <universal/number/ereal/math/functions/complex.hpp>
+
 namespace sw { namespace universal {
 
 	// pown returns x raised to the integer power n
@@ -112,10 +115,11 @@ namespace sw { namespace universal {
 	// hyperbolic (via exp), and sin/cos/tan/asin/acos/atan/atan2 (Taylor with
 	// argument reduction) all compute in ereal expansion arithmetic.
 	//
-	// Remaining mathlib work is tracked under #582:
-	//   - complex<ereal> binding: is_universal_number + real/imag/conj (#1167)
-	//   - a per-call precision-request API (e.g. sqrt(x, 200)) remains a possible
-	//     future enhancement
-	// (<cmath> parity complete: fdim/modf/rint/nearbyint #1165, fma/scalbn/logb/ilogb #1166.)
+	// Note: complex<ereal> support (is_universal_number + real/imag/conj) is in math/functions/complex.hpp
+	//
+	// Remaining mathlib work tracked under #582: a per-call precision-request API
+	// (e.g. sqrt(x, 200)) remains a possible future enhancement. <cmath> parity is
+	// complete (fdim/modf/rint/nearbyint #1165, fma/scalbn/logb/ilogb #1166) and the
+	// complex<ereal> binding landed with #1167.
 
 }} // namespace sw::universal
