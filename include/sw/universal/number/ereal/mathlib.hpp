@@ -113,10 +113,9 @@ namespace sw { namespace universal {
 	// argument reduction) all compute in ereal expansion arithmetic.
 	//
 	// Remaining mathlib work is tracked under #582:
-	//   - <cmath> parity: fdim, modf, rint, nearbyint (#1165); fma, scalbn, logb,
-	//     ilogb (#1166)
 	//   - complex<ereal> binding: is_universal_number + real/imag/conj (#1167)
 	//   - a per-call precision-request API (e.g. sqrt(x, 200)) remains a possible
 	//     future enhancement
+	// (<cmath> parity complete: fdim/modf/rint/nearbyint #1165, fma/scalbn/logb/ilogb #1166.)
 
 }} // namespace sw::universal

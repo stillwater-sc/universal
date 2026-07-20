@@ -158,12 +158,18 @@ namespace {
 				}
 			}
 
-			// fma(x,y,z) == x*y + z
-			for (const double* t : {(const double[]){2.0, 3.0, 4.0}, (const double[]){-1.5, 2.0, 0.5}}) {
-				if (fma(Real(t[0]), Real(t[1]), Real(t[2])) != Real(t[0]) * Real(t[1]) + Real(t[2])) {
-					if (reportTestCases) std::cout << "    FAIL fma(" << t[0] << "," << t[1] << "," << t[2] << ")\n";
-					++nrOfFailedTestCases;
-				}
+			// fma is EXACT: (2^30+1)*(2^30-1) = 2^60 - 1, representable in ereal but
+			// not in double. Build the expected value independently of the product
+			// (scalbn/subtract), so this is not a tautology against x*y+z.
+			Real x30(1073741825.0), y30(1073741823.0);      // 2^30 + 1, 2^30 - 1
+			Real pm1 = scalbn(Real(1.0), 60) - Real(1.0);   // 2^60 - 1
+			if (fma(x30, y30, Real(0.0)) != pm1) {
+				if (reportTestCases) std::cout << "    FAIL fma not exact (2^60-1)\n";
+				++nrOfFailedTestCases;
+			}
+			if (fma(x30, y30, Real(2.0)) != pm1 + Real(2.0)) {   // z folded in exactly
+				if (reportTestCases) std::cout << "    FAIL fma z addend\n";
+				++nrOfFailedTestCases;
 			}
 
 			// ilogb / logb special values

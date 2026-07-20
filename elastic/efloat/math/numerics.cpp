@@ -179,13 +179,20 @@ int VerifyEfloatNumerics(bool reportTestCases) {
 				++failures;
 			}
 		}
-		// fma exactness: with 512-bit precision x*y+z carries no rounding
-		EH a(123456789.0), b(987654321.0), c(0.5);
-		EH got  = fma(a, b, c);
-		EH want = a * b + c;
-		if (got != want) {
+		// fma is EXACT (no intermediate rounding): (2^30+1)*(2^30-1) = 2^60 - 1,
+		// representable in high-precision efloat but NOT in double (rounds to 2^60).
+		// Build the expected value independently of the product (scalbn/subtract),
+		// so the check is not a tautology against x*y+z.
+		EH x30(1073741825.0), y30(1073741823.0);  // 2^30 + 1, 2^30 - 1
+		EH pm1 = scalbn(EH(1.0), 60) - EH(1.0);   // 2^60 - 1
+		if (fma(x30, y30, EH(0.0)) != pm1) {
 			if (reportTestCases)
-				std::cout << "    FAIL: fma != x*y+z\n";
+				std::cout << "    FAIL: fma not exact (2^60-1)\n";
+			++failures;
+		}
+		if (fma(x30, y30, EH(2.0)) != pm1 + EH(2.0)) {  // z folded in exactly
+			if (reportTestCases)
+				std::cout << "    FAIL: fma z addend\n";
 			++failures;
 		}
 		// ilogb special values
