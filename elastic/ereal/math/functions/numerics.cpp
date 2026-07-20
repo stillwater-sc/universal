@@ -9,6 +9,7 @@
 #include <universal/verification/test_suite.hpp>
 
 #include <cmath>
+#include <climits>
 #include <limits>
 #include <random>
 
@@ -138,6 +139,52 @@ namespace {
 			return nrOfFailedTestCases;
 		}
 
+		// Verify scalbn, logb, ilogb, fma against std:: (double-range values)
+		template<typename Real>
+		int VerifyScalbnLogbFma(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			for (double v : {1.0, 2.0, 3.0, 0.75, 0.5, 100.0, -8.0, 1023.5, 0.1}) {
+				for (int n : {-5, 0, 3, 20}) {
+					if (double(scalbn(Real(v), n)) != std::scalbn(v, n)) {
+						if (reportTestCases) std::cout << "    FAIL scalbn(" << v << "," << n << ")\n";
+						++nrOfFailedTestCases;
+					}
+				}
+				if (double(logb(Real(v))) != std::logb(v) || ilogb(Real(v)) != std::ilogb(v)) {
+					if (reportTestCases) std::cout << "    FAIL logb/ilogb(" << v << ") got "
+					                               << double(logb(Real(v))) << "/" << ilogb(Real(v)) << "\n";
+					++nrOfFailedTestCases;
+				}
+			}
+
+			// fma is EXACT: (2^30+1)*(2^30-1) = 2^60 - 1, representable in ereal but
+			// not in double. Build the expected value independently of the product
+			// (scalbn/subtract), so this is not a tautology against x*y+z.
+			Real x30(1073741825.0), y30(1073741823.0);      // 2^30 + 1, 2^30 - 1
+			Real pm1 = scalbn(Real(1.0), 60) - Real(1.0);   // 2^60 - 1
+			if (fma(x30, y30, Real(0.0)) != pm1) {
+				if (reportTestCases) std::cout << "    FAIL fma not exact (2^60-1)\n";
+				++nrOfFailedTestCases;
+			}
+			if (fma(x30, y30, Real(2.0)) != pm1 + Real(2.0)) {   // z folded in exactly
+				if (reportTestCases) std::cout << "    FAIL fma z addend\n";
+				++nrOfFailedTestCases;
+			}
+
+			// ilogb / logb special values
+			Real zero(0.0), inf(std::numeric_limits<double>::infinity()), nan(std::numeric_limits<double>::quiet_NaN());
+			if (ilogb(zero) != FP_ILOGB0 || ilogb(inf) != INT_MAX || ilogb(nan) != FP_ILOGBNAN) {
+				if (reportTestCases) std::cout << "    FAIL ilogb special values\n";
+				++nrOfFailedTestCases;
+			}
+			if (!logb(zero).isinf() || !logb(nan).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL logb special values\n";
+				++nrOfFailedTestCases;
+			}
+			return nrOfFailedTestCases;
+		}
+
 		// Property fuzzer: copysign sign/magnitude and frexp/ldexp round trips
 		// over random finite values.
 		template<typename Real>
@@ -230,6 +277,9 @@ try {
 
 	test_tag = "frexp/ldexp roundtrip";
 	nrOfFailedTestCases += ReportTestResult(VerifyFrexpLdexpRoundtrip<ereal<>>(reportTestCases), "frexp/ldexp roundtrip", test_tag);
+
+	test_tag = "scalbn/logb/ilogb/fma";
+	nrOfFailedTestCases += ReportTestResult(VerifyScalbnLogbFma<ereal<>>(reportTestCases), "scalbn/logb/ilogb/fma(ereal)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -103,7 +103,7 @@ namespace sw { namespace universal {
 	// Note: min(), max(), fdim() are defined in math/functions/minmax.hpp
 	// Note: hypot() is defined in math/functions/hypot.hpp
 	// Note: erf(), erfc(), tgamma(), lgamma() are defined in math/functions/error_and_gamma.hpp
-	// Note: copysign(), frexp(), ldexp() are defined in math/functions/numerics.hpp
+	// Note: copysign(), frexp(), ldexp(), scalbn(), logb(), ilogb(), fma() are defined in math/functions/numerics.hpp
 	// Note: fpclassify(), isnan(), isinf(), isfinite(), isnormal(), signbit() are defined in math/functions/classify.hpp
 	// Note: nextafter(), nexttoward() are defined in math/functions/next.hpp
 
@@ -113,10 +113,9 @@ namespace sw { namespace universal {
 	// argument reduction) all compute in ereal expansion arithmetic.
 	//
 	// Remaining mathlib work is tracked under #582:
-	//   - <cmath> parity: fdim, modf, rint, nearbyint (#1165); fma, scalbn, logb,
-	//     ilogb (#1166)
 	//   - complex<ereal> binding: is_universal_number + real/imag/conj (#1167)
 	//   - a per-call precision-request API (e.g. sqrt(x, 200)) remains a possible
 	//     future enhancement
+	// (<cmath> parity complete: fdim/modf/rint/nearbyint #1165, fma/scalbn/logb/ilogb #1166.)
 
 }} // namespace sw::universal
