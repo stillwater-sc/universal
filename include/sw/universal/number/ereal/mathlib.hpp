@@ -98,9 +98,9 @@ namespace sw { namespace universal {
 	// Note: log(), log2(), log10(), log1p() are defined in math/functions/logarithm.hpp
 	// Note: sqrt(), cbrt() are defined in math/functions/sqrt.hpp and cbrt.hpp
 	// Note: sin(), cos(), tan(), asin(), acos(), atan(), atan2() are defined in math/functions/trigonometry.hpp
-	// Note: floor(), ceil(), trunc(), round() are defined in math/functions/truncate.hpp
-	// Note: fmod(), remainder() are defined in math/functions/fractional.hpp
-	// Note: min(), max() are defined in math/functions/minmax.hpp
+	// Note: floor(), ceil(), trunc(), round(), rint(), nearbyint() are defined in math/functions/truncate.hpp
+	// Note: fmod(), remainder(), modf() are defined in math/functions/fractional.hpp
+	// Note: min(), max(), fdim() are defined in math/functions/minmax.hpp
 	// Note: hypot() is defined in math/functions/hypot.hpp
 	// Note: erf(), erfc(), tgamma(), lgamma() are defined in math/functions/error_and_gamma.hpp
 	// Note: copysign(), frexp(), ldexp() are defined in math/functions/numerics.hpp

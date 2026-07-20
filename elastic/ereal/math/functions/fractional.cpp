@@ -46,6 +46,32 @@ namespace {
 			return nrOfFailedTestCases;
 		}
 
+		// Verify modf: split into fractional part (returned) and integer part (*iptr)
+		template<typename Real>
+		int VerifyModf(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			// {input, expected integer part, expected fractional part}
+			const double cases[][3] = {
+				{ 3.75, 3.0, 0.75}, {-3.75, -3.0, -0.75}, {0.25, 0.0, 0.25},
+				{-0.25, 0.0, -0.25}, {5.0, 5.0, 0.0}, {-2.0, -2.0, 0.0},
+			};
+			for (const auto& c : cases) {
+				Real ip;
+				Real fr = modf(Real(c[0]), &ip);
+				if (ip != Real(c[1]) || fr != Real(c[2])) {
+					if (reportTestCases) std::cout << "    FAIL modf(" << c[0] << ") int=" << double(ip)
+					                               << " frac=" << double(fr) << " expected int=" << c[1] << " frac=" << c[2] << "\n";
+					++nrOfFailedTestCases;
+				}
+				// identity: int + frac == x
+				if (ip + fr != Real(c[0])) {
+					if (reportTestCases) std::cout << "    FAIL modf(" << c[0] << ") int+frac != x\n";
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
 		// Verify remainder function with IEEE round-to-nearest-even
 		template<typename Real>
 		int VerifyRemainder(bool reportTestCases) {
@@ -341,6 +367,9 @@ try {
 
 	test_tag = "remainder";
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<ereal<>>(reportTestCases), "remainder(ereal)", test_tag);
+
+	test_tag = "modf";
+	nrOfFailedTestCases += ReportTestResult(VerifyModf<ereal<>>(reportTestCases), "modf(ereal)", test_tag);
 
 	test_tag = "fmod vs remainder";
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodVsRemainder<ereal<>>(reportTestCases), "fmod vs remainder", test_tag);
