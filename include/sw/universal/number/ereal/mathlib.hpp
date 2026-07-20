@@ -6,9 +6,22 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-// Phase 0: Stub implementations - all functions delegate to std:: via double conversion
-// This provides immediate functionality at double precision while we build out
-// the high-precision implementations in future phases.
+// These functions are arbitrary-precision approximations computed in ereal's own
+// expansion arithmetic (Taylor series / Newton iteration with argument reduction),
+// NOT double-precision shims. Accuracy tracks the operand's precision up to ereal's
+// architectural ceiling: Shewchuk expansion arithmetic caps maxlimbs at 19 (the last
+// limb must stay above DBL_MIN to preserve the non-overlapping property), so ~19*53
+// bits ~= 300 decimal digits.
+//
+// Cross-checked at ereal<19>: exp(1) and pi (via atan) reproduce independently
+// generated ~1000-digit constant literals (mpmath: e, pi) to ~290 digits, and
+// sqrt/log/sin/erf/gamma/... agree with the efloat multi-digit sibling to the same
+// level. This is corroboration between two implementations plus known constants,
+// not a proof against a third-party oracle. For unbounded precision use efloat.
+// See #582.
+//
+// (A few loops cast a series term to double only to test its magnitude for loop
+// termination; the term itself is computed in full ereal precision.)
 
 // High-precision math constants (parsed/derived, not double-truncated -- #1002).
 // Included before the function headers so they can reference the shared constants.
@@ -18,7 +31,7 @@
 #include <universal/number/ereal/math/functions/numerics.hpp>
 #include <universal/number/ereal/math/functions/classify.hpp>
 
-// Phase 0: Low-complexity stub functions
+// Low-complexity functions
 #include <universal/number/ereal/math/functions/error_and_gamma.hpp>
 #include <universal/number/ereal/math/functions/fractional.hpp>
 #include <universal/number/ereal/math/functions/hypot.hpp>
@@ -26,21 +39,21 @@
 #include <universal/number/ereal/math/functions/truncate.hpp>
 #include <universal/number/ereal/math/functions/next.hpp>
 
-// Phase 0: Medium-complexity stub functions
+// Medium-complexity functions
 #include <universal/number/ereal/math/functions/cbrt.hpp>
 #include <universal/number/ereal/math/functions/hyperbolic.hpp>
 #include <universal/number/ereal/math/functions/exponent.hpp>
 #include <universal/number/ereal/math/functions/logarithm.hpp>
 #include <universal/number/ereal/math/functions/pow.hpp>
 
-// Phase 0: High-complexity stub functions
+// High-complexity functions
 #include <universal/number/ereal/math/functions/sqrt.hpp>
 #include <universal/number/ereal/math/functions/trigonometry.hpp>
 
 namespace sw { namespace universal {
 
 	// pown returns x raised to the integer power n
-	// Phase 1: Adaptive-precision repeated squaring (no double conversion!)
+	// Adaptive-precision repeated squaring (no double conversion)
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> pown(const ereal<maxlimbs>& x, int n) {
 		using Real = ereal<maxlimbs>;
@@ -94,21 +107,16 @@ namespace sw { namespace universal {
 	// Note: fpclassify(), isnan(), isinf(), isfinite(), isnormal(), signbit() are defined in math/functions/classify.hpp
 	// Note: nextafter(), nexttoward() are defined in math/functions/next.hpp
 
-	// Future TODO items for high-precision implementation:
-	// Phase 1: Refine simple functions using expansion arithmetic
-	//   - truncate, minmax, fractional, hypot, error_and_gamma
-	//   - numerics (frexp, ldexp especially important for scaling)
-	//   - classification functions
-	// Phase 2: Refine transcendental functions using Taylor series/Newton iteration
-	//   - sqrt, cbrt (Newton-Raphson)
-	//   - exp, log (Taylor series with argument reduction)
-	//   - pow (using exp/log)
-	//   - hyperbolic functions (using exp or Taylor series)
-	// Phase 3: Refine trigonometric functions
-	//   - sin, cos, tan (Taylor series with argument reduction)
-	//   - asin, acos, atan (Newton iteration or Taylor series)
-	// Phase 4: Add precision control API
-	//   - Allow requesting specific precision for operations
-	//   - Example: sqrt(x, 200) for 200 bits of precision
+	// The high-precision implementations above are complete: sqrt/cbrt (Newton),
+	// exp/log/expm1/log1p (Taylor with argument reduction), pow (via exp/log),
+	// hyperbolic (via exp), and sin/cos/tan/asin/acos/atan/atan2 (Taylor with
+	// argument reduction) all compute in ereal expansion arithmetic.
+	//
+	// Remaining mathlib work is tracked under #582:
+	//   - <cmath> parity: fdim, modf, rint, nearbyint (#1165); fma, scalbn, logb,
+	//     ilogb (#1166)
+	//   - complex<ereal> binding: is_universal_number + real/imag/conj (#1167)
+	//   - a per-call precision-request API (e.g. sqrt(x, 200)) remains a possible
+	//     future enhancement
 
 }} // namespace sw::universal
