@@ -111,6 +111,29 @@ namespace {
 			return nrOfFailedTestCases;
 		}
 
+		// Verify fdim: positive difference (x - y if x > y, else +0)
+		template<typename Real>
+		int VerifyFdim(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			const double cases[][3] = {
+				{5.0, 3.0, 2.0}, {3.0, 5.0, 0.0}, {-2.0, -7.0, 5.0}, {4.0, 4.0, 0.0}, {-3.0, 2.0, 0.0},
+			};
+			for (const auto& c : cases) {
+				Real r = fdim(Real(c[0]), Real(c[1]));
+				if (r != Real(c[2])) {
+					if (reportTestCases) std::cout << "    FAIL fdim(" << c[0] << "," << c[1] << ") != " << c[2] << " got " << double(r) << "\n";
+					++nrOfFailedTestCases;
+				}
+			}
+			// NaN propagation
+			Real nan(std::numeric_limits<double>::quiet_NaN());
+			if (!fdim(nan, Real(1.0)).isnan() || !fdim(Real(1.0), nan).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL fdim NaN propagation\n";
+				++nrOfFailedTestCases;
+			}
+			return nrOfFailedTestCases;
+		}
+
 		// Property fuzzer: ordering, the min+max == a+b conservation, commutativity,
 		// and the min(a,b) == -max(-a,-b) reflection, over random pairs.
 		template<typename Real>
@@ -193,6 +216,9 @@ try {
 
 	test_tag = "max";
 	nrOfFailedTestCases += ReportTestResult(VerifyMax<ereal<>>(reportTestCases), "max(ereal)", test_tag);
+
+	test_tag = "fdim";
+	nrOfFailedTestCases += ReportTestResult(VerifyFdim<ereal<>>(reportTestCases), "fdim(ereal)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

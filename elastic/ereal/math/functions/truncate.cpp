@@ -158,6 +158,33 @@ namespace {
 			return nrOfFailedTestCases;
 		}
 
+		// Verify rint / nearbyint: round to nearest, halfway to EVEN (unlike round,
+		// which is halfway away from zero). nearbyint == rint for ereal.
+		template<typename Real>
+		int VerifyRint(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+
+			// {input, expected} -- ties resolve to the even neighbor
+			const double cases[][2] = {
+				{ 2.5, 2.0}, { 3.5, 4.0}, {-2.5, -2.0}, {-3.5, -4.0},   // ties -> even
+				{ 2.4, 2.0}, { 2.6, 3.0}, {-2.4, -2.0}, {-2.6, -3.0},   // non-ties
+				{ 0.5, 0.0}, { 1.5, 2.0}, {-0.5,  0.0}, { 5.0,  5.0},
+			};
+			for (const auto& c : cases) {
+				Real rr = rint(Real(c[0]));
+				Real nn = nearbyint(Real(c[0]));
+				if (rr != Real(c[1])) {
+					if (reportTestCases) std::cout << "    FAIL rint(" << c[0] << ") != " << c[1] << " got " << double(rr) << "\n";
+					++nrOfFailedTestCases;
+				}
+				if (nn != rr) {
+					if (reportTestCases) std::cout << "    FAIL nearbyint(" << c[0] << ") != rint\n";
+					++nrOfFailedTestCases;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+
 		// Property fuzzer: bracketing, reflection, toward-zero, and agreement
 		// with the std:: rounding of the projected double, over random values.
 		template<typename Real>
@@ -250,6 +277,9 @@ try {
 
 	test_tag = "round";
 	nrOfFailedTestCases += ReportTestResult(VerifyRound<ereal<>>(reportTestCases), "round(ereal)", test_tag);
+
+	test_tag = "rint";
+	nrOfFailedTestCases += ReportTestResult(VerifyRint<ereal<>>(reportTestCases), "rint/nearbyint(ereal)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

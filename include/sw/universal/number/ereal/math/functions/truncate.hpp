@@ -103,4 +103,29 @@ namespace sw { namespace universal {
 		return result;
 	}
 
+	// rint: round to the nearest integer, halfway cases to even (IEEE default).
+	// ereal has no dynamic rounding mode, so rint always uses round-to-nearest-even.
+	template<unsigned maxlimbs>
+	inline ereal<maxlimbs> rint(const ereal<maxlimbs>& x) {
+		if (x.isnan() || x.isinf() || x.iszero()) return x;
+
+		ereal<maxlimbs> f    = floor(x);   // largest integer <= x
+		ereal<maxlimbs> diff = x - f;      // fractional part in [0, 1)
+		ereal<maxlimbs> half(0.5);
+		if (diff < half) return f;
+		if (diff > half) return f + ereal<maxlimbs>(1.0);
+
+		// exactly halfway: pick the even neighbor. f is even iff f/2 is an integer.
+		ereal<maxlimbs> hf = f * half;
+		if (floor(hf) == hf) return f;
+		return f + ereal<maxlimbs>(1.0);
+	}
+
+	// nearbyint: identical to rint for ereal. (std distinguishes them only by the
+	// FE_INEXACT flag, which ereal does not model.)
+	template<unsigned maxlimbs>
+	inline ereal<maxlimbs> nearbyint(const ereal<maxlimbs>& x) {
+		return rint(x);
+	}
+
 }} // namespace sw::universal

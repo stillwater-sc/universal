@@ -22,4 +22,11 @@ namespace sw { namespace universal {
 		return (x > y) ? x : y;
 	}
 
+	// fdim: positive difference -- x - y if x > y, otherwise +0 (NaN if either is NaN)
+	template<unsigned maxlimbs>
+	inline ereal<maxlimbs> fdim(const ereal<maxlimbs>& x, const ereal<maxlimbs>& y) {
+		if (x.isnan() || y.isnan()) return ereal<maxlimbs>(std::numeric_limits<double>::quiet_NaN());
+		return (x > y) ? (x - y) : ereal<maxlimbs>(0.0);
+	}
+
 }} // namespace sw::universal

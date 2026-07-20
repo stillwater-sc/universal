@@ -87,4 +87,21 @@ namespace sw { namespace universal {
 		return x - (n * y);
 	}
 
+	// modf: split x into integer and fractional parts. Returns the fractional
+	// part (same sign as x) and stores the integer part (toward zero) in *iptr.
+	template<unsigned maxlimbs>
+	inline ereal<maxlimbs> modf(const ereal<maxlimbs>& x, ereal<maxlimbs>* iptr) {
+		if (x.isnan()) {
+			if (iptr != nullptr) *iptr = x;
+			return x;
+		}
+		if (x.isinf()) {
+			if (iptr != nullptr) *iptr = x;
+			return x.isneg() ? -ereal<maxlimbs>(0.0) : ereal<maxlimbs>(0.0);
+		}
+		ereal<maxlimbs> ipart = trunc(x);
+		if (iptr != nullptr) *iptr = ipart;
+		return x - ipart;   // fractional part; subtraction carries x's sign
+	}
+
 }} // namespace sw::universal
