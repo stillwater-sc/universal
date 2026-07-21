@@ -32,25 +32,39 @@
 //    A deeper internal recurrence floor (out_floor - extra*k, extra up to 12) has
 //    NO effect, confirming the deep blocks cancel in value rather than being cut.
 //
-// 3. UPSTREAM ROOT: sqrt(0.75) (elreal/math/sqrt.hpp, Newton-Raphson) plateaus at
-//    19 blocks and stops resolving deeper regardless of depth (D=20..40) or
-//    working width. That cap propagates div -> atan -> asin, so asin's argument
-//    to sin is a shallow 19-block decomposition of pi/6. pi_zbcl (odd_power_series,
-//    no sqrt in its chain) reaches 20+ blocks -- which is why sin(pi/6) runs deep.
+// 3. sqrt IS NOT THE BOTTLENECK (sqrt-Newton hypothesis DISPROVEN 2026-07-21).
+//    sqrt(0.75) plateaus at 19 blocks, but it is 308-digit ACCURATE there: the
+//    Newton iteration converges 33 -> 65 -> 129 -> 260 -> 309 digits, and stays
+//    308 for depth 20..40. The 19-block/308-digit plateau is the ~2^-1022
+//    double-host precision FLOOR, not an under-resolution -- sqrt physically
+//    cannot go deeper on a double host. (div_online inside the Newton step is
+//    strictly WORSE: 224 digits. asin/atan inherit sqrt's 308-digit result.)
+//    pi_zbcl (odd_power_series, no sqrt) happens to pack pi/6 into 20 blocks at
+//    the same floor -- a decomposition difference, not a resolution difference.
 //
-// 4. It is the DECOMPOSITION, not accuracy or block count. A clean pi/6 TRUNCATED
-//    to 19 blocks still gives sin = 306, but asin's own 19-block decomposition
-//    gives 234. So the sin recurrence is ill-conditioned specifically against a
-//    NON-PREFIX / "ragged" deepest block -- the kind the sqrt Newton fixed-point
-//    produces (its last block is an iteration residual, not the next true digit).
+// 4. It is the DECOMPOSITION, not accuracy or block count -- and the sin SERIES
+//    is where the loss happens. A clean pi/6 TRUNCATED to 19 blocks still gives
+//    sin = 306, but asin's own 19-block decomposition gives 234. Truncating the
+//    argument to k blocks and taking sin:
+//        k    14  15  16  17  18  19
+//        pi6 231 247 264 280 297 306      (each block adds ~16 digits -- usable)
+//        asin 231 234 234 234 234 234      (blocks 15..19 add NOTHING -- unusable)
+//    asin's value agrees with pi/6 to 306 and sin is well-conditioned at pi/6, so
+//    sin(asin) OUGHT to reach ~306; it reaches 234 because the sin Maclaurin
+//    recurrence cannot extract precision from asin's deep-block decomposition
+//    (blocks 15..19 are "dead weight"). The bug is in the series machinery's
+//    conditioning against a non-prefix deepest block, NOT in sqrt/asin accuracy.
 //
-// Fix directions RULED OUT here: deeper series floor; div_online inside the sqrt
-// Newton step; wider sqrt working depth (none lift the 19-block cap or the 234
-// round-trip). Candidate fixes for a follow-up (NOT attempted): (a) make sqrt
-// resolve past the plateau; (b) re-express the argument as a canonical greedy-
-// prefix Priest expansion before the series (priestRenorm does NOT -- it keeps
-// the ragged tail). When either lands, flip ELREAL_SINCOS_ROUNDTRIP_HIGH_PRECISION
-// to 1 and update the CHARACTERIZATION checks in this file.
+// Fix directions RULED OUT: deeper series floor; div_online inside sqrt (worse);
+// wider sqrt working depth; and -- now added -- making sqrt "resolve deeper"
+// (sqrt is already at the double-host floor and 308-digit accurate). Candidate
+// fixes for a follow-up: (a) make the sin/cos series recurrence robust to a
+// non-prefix deep tail (the hard, real fix -- e.g. a different summation/EFT that
+// does not compound the deep-block error term-to-term); (b) a wider intermediate
+// host for the inverse-trig -> sin round-trip so the deep tail sits above the
+// float floor with margin. When one lands, flip
+// ELREAL_SINCOS_ROUNDTRIP_HIGH_PRECISION to 1 and update the CHARACTERIZATION
+// checks in this file.
 // ============================================================================
 //
 // Cost: the depth-20 diagnostic runs a full asin + sin per experiment (~seconds
@@ -85,6 +99,10 @@ namespace su = sw::universal;
 
 // number of blocks a ZBCL materialises to (bounded pull)
 std::size_t block_count(const ZBCL<double>& z, std::size_t cap = 96) { return z.take(cap).size(); }
+
+// mpmath 320-digit reference for sqrt(0.75) = sqrt(3)/2 (exact-double argument).
+constexpr const char* s_sqrt_075 =
+    "0.86602540378443864676372317075293618347140262690519031402790348972596650845440001854057309337862428783781307070770335151498497254749947623940582775604718682426404661595115279103398741005054233746163250765617163345166144332533612733446091898561352356583018393079400952499326868992969473382517375328802537830917406480305047";
 
 // a clean pi/6 = pi_zbcl / 6 (odd_power_series, no sqrt in the chain)
 ZBCL<double> clean_pi6(int depth) {
@@ -131,6 +149,41 @@ ZBCL<double> clean_pi6(int depth) {
 	            block_count(su::pi_zbcl<double>(depth)), block_count(clean_pi6(depth)));
 }
 
+// [3] sqrt Newton convergence per iteration: sqrt is 308-digit ACCURATE (converges
+//     quadratically), NOT under-resolving -- disproves the sqrt-Newton fix. (MANUAL.)
+[[maybe_unused]] void trace_sqrt_newton(int depth) {
+	ZBCL<double> a = su::from_native<double>(0.75);
+	const block<double> half{ static_cast<double>(0.5), 0 };
+	const int iters = 3 + static_cast<int>(std::ceil(std::log2(static_cast<double>(depth) + 1.0)));
+	ZBCL<double> x = su::from_native<double>(std::sqrt(su::to_double_approx(a, 2)));
+	std::size_t d = 1;
+	for (int i = 0; i < iters; ++i) {
+		d = (d * 2 < static_cast<std::size_t>(depth)) ? d * 2 : static_cast<std::size_t>(depth);
+		x = su::mul_scalar(half, su::add(x, su::div(a, x, d)), d);
+		std::printf("    iter %d (d=%2zu): blocks=%2zu accuracy=%3d digits\n",
+		            i, d, block_count(x), agreed_decimal_digits(x, s_sqrt_075, 320));
+	}
+}
+
+// [4] Truncate the argument to k blocks and take sin: pi/6's deep blocks each add
+//     ~16 digits (usable), asin's blocks 15..19 add NOTHING (unusable) -- the loss
+//     is the series' inability to use asin's deep-block decomposition. (MANUAL.)
+[[maybe_unused]] void trace_truncation_sweep(int depth) {
+	ZBCL<double> half = su::from_native<double>(0.5);
+	ZBCL<double> as = su::asin(half, depth);
+	ZBCL<double> p6 = clean_pi6(depth);
+	const int hea = static_cast<int>(as.head().exponent());
+	const int hep = static_cast<int>(p6.head().exponent());
+	std::printf("     k | sin(asin) | sin(pi6)\n");
+	for (int k = 14; k <= 20; ++k) {
+		ZBCL<double> at = su::detail::take_while_above(as, hea - k * block<double>::k + 1);
+		ZBCL<double> pt = su::detail::take_while_above(p6, hep - k * block<double>::k + 1);
+		std::printf("    %2d |   %3d     |  %3d\n", k,
+		            agreed_decimal_digits(su::sin(at, depth), half, 330),
+		            agreed_decimal_digits(su::sin(pt, depth), half, 330));
+	}
+}
+
 } // anonymous
 
 #define MANUAL_TESTING 0
@@ -169,11 +222,18 @@ try {
 	for (int d : {16, 20, 24, 32, 40}) trace_chain_blocks(d);
 	std::printf("\n");
 
-	std::printf("[3] decomposition, not count:\n");
+	std::printf("[3] sqrt Newton convergence (sqrt is 308-digit ACCURATE, not under-resolving):\n");
+	trace_sqrt_newton(D);
+	std::printf("\n");
+
+	std::printf("[4] decomposition, not count:\n");
 	ZBCL<double> half = from_native<double>(0.5);
 	ZBCL<double> pi6_trunc = detail::take_while_above(t_pi6, static_cast<int>(t_pi6.head().exponent()) - block_count(t_asin) * block<double>::k + 1);
 	std::printf("    sin(asin,19blk)      vs 0.5 = %d\n", agreed_decimal_digits(sin(t_asin, D), half, 340));
-	std::printf("    sin(pi6-trunc,%zublk) vs 0.5 = %d  (clean prefix works)\n", block_count(pi6_trunc), agreed_decimal_digits(sin(pi6_trunc, D), half, 340));
+	std::printf("    sin(pi6-trunc,%zublk) vs 0.5 = %d  (clean prefix works)\n\n", block_count(pi6_trunc), agreed_decimal_digits(sin(pi6_trunc, D), half, 340));
+
+	std::printf("[5] argument-truncation sweep (asin's deep blocks 15..19 are unusable by sin):\n");
+	trace_truncation_sweep(D);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;  // diagnostic: ignore failures
@@ -183,20 +243,29 @@ try {
 	const int D = 20;
 	ZBCL<double> half = from_native<double>(0.5);
 
-	// (a) sqrt(0.75) plateaus: its block count is the same at depth 20 and 40
-	//     (the depth-independent cap that starves the asin argument).
+	// (a) sqrt is NOT the bottleneck: sqrt(0.75) is >= 300-digit ACCURATE at its
+	//     19-block floor, and does not resolve deeper with depth (the plateau is
+	//     the ~2^-1022 double-host floor, not an under-resolution). This locks the
+	//     disproven sqrt-Newton hypothesis: a fix must be in the sin/cos series,
+	//     not in sqrt.
 	{
 		auto sqrt075 = [](int d) {
 			ZBCL<double> x = from_native<double>(0.5);
-			return sqrt(add(from_native<double>(1.0), negate(mul_online(x, x))), d);
+			return sqrt(add(from_native<double>(1.0), negate(mul_online(x, x))), d);   // sqrt(0.75)
 		};
-		std::size_t b20 = block_count(sqrt075(20)), b40 = block_count(sqrt075(40));
-		if (b20 != b40) {
-			std::cout << "  NOTE sqrt(0.75) block count changed with depth: " << b20 << " (D20) vs " << b40
-			          << " (D40) -- the #1076 sqrt plateau may have moved; re-examine this test\n";
+		int acc20 = agreed_decimal_digits(sqrt075(20), s_sqrt_075, 320);
+		int acc40 = agreed_decimal_digits(sqrt075(40), s_sqrt_075, 320);
+		if (acc20 < 300) {
+			std::cout << "  FAIL sqrt(0.75) only " << acc20 << " digits accurate (expected >= 300; sqrt regressed)\n";
 			++nrOfFailedTestCases;
 		}
-		else if (reportTestCases) std::cout << "  ok   sqrt(0.75) plateaus at " << b20 << " blocks (D20==D40) [#1076 root]\n";
+		else if (acc40 > acc20 + 8) {
+			std::cout << "  NOTE sqrt(0.75) now resolves deeper with depth (" << acc20 << " @D20 -> " << acc40
+			          << " @D40) -- the #1076 host-floor plateau may have moved; re-examine the assessment\n";
+			++nrOfFailedTestCases;
+		}
+		else if (reportTestCases)
+			std::cout << "  ok   sqrt(0.75) is " << acc20 << "-digit accurate, floored (D20==D40) -- not the bottleneck\n";
 	}
 
 	// (b) a CLEAN pi/6 truncated to asin's block count still reaches >= 300 --
