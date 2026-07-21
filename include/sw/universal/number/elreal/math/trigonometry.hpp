@@ -12,6 +12,13 @@
 //   A value near a zero (e.g. cos(pi/2)) becomes the series of a tiny reduced
 //   argument t, so it relies on priestRenorm separating the cancellation in
 //   x - n*(pi/2) to a 0-overlap list (see #1044).
+//   For |x| < 2^50 the octant n comes from a host-double estimate of x/(pi/2);
+//   for larger |x| that estimate loses its low bits, so a Payne-Hanek reduction
+//   (#1050) computes the quotient in full ZBCL precision instead -- sin/cos/tan
+//   stay accurate for arbitrarily large |x|. Large-|x| reduction is validated on
+//   the double host (to 1e20); a narrow host (float) cannot even represent
+//   integers past 2^24, so its large-|x| arguments carry no meaningful low bits
+//   and are out of scope, like asin/acos below.
 //
 // Same modest default depth (4) and ~O(depth^4) time/precision profile as the
 // rest of the math suite (see exponent.hpp and #1040).
@@ -39,7 +46,9 @@
 #include <universal/number/elreal/threeAdd.hpp>     // add
 #include <universal/number/elreal/negate.hpp>
 #include <universal/number/elreal/multiply.hpp>     // mul, mul_scalar
+#include <universal/number/elreal/online_multiply.hpp>  // mul_online (Payne-Hanek t = f*(pi/2))
 #include <universal/number/elreal/divide.hpp>       // div
+#include <universal/number/elreal/online_divide.hpp>    // div_online (Payne-Hanek q = |x|/(pi/2))
 #include <universal/number/elreal/series.hpp>       // series_from_vector
 #include <universal/number/elreal/sum.hpp>          // sum
 #include <universal/number/elreal/math/sqrt.hpp>
@@ -149,35 +158,137 @@ inline ZBCL<FpType> cos_series(ZBCL<FpType> t, std::size_t depth) {
     return infsum(detail::sincos_term_stream(from_native<FpType>(1.0), neg_t2, 1.0, floor_exp));
 }
 
+// zbcl_round_to_int(q): the integer nearest a non-negative ZBCL value q, as a
+// wide integer<256>. Accumulates q's exact value scaled by 2^F into the wide
+// integer, then rounds. Each block's value is M * 2^(exponent - (k-1)) with M
+// the k-bit significand; blocks whose bits fall wholly below the 2^-F guard
+// window are dropped (they cannot change the rounding). q must be >= 0 (callers
+// reduce |x|). F guard bits only need to pick the round direction: an off-by-one
+// in N is harmless because t = (q - N)*(pi/2) is formed exactly and the octant
+// tracks whichever N is chosen.
+template <typename FpType>
+inline integer<256, std::uint32_t> zbcl_round_to_int(const ZBCL<FpType>& q, std::size_t depth) {
+    using Int = integer<256, std::uint32_t>;
+    constexpr int k = block<FpType>::k;
+    constexpr int F = 64;   // fractional guard bits below the units place
+    Int acc(0);
+    for (const auto& b : q.take(depth)) {
+        if (b.is_zero_block()) continue;
+        // block value = v * 2^exp. Split v (a full-range double, NOT pre-scaled to
+        // [1,2)) into its signed k-bit significand m and power p: value = m * 2^p.
+        int e2 = 0;
+        const double f = std::frexp(static_cast<double>(b.v), &e2);  // v = f * 2^e2, |f| in [0.5,1)
+        const long long m = std::llround(std::ldexp(f, k));         // exact signed k-bit significand
+        const int shift = (e2 - k) + static_cast<int>(b.exp) + F;   // value * 2^F = m * 2^shift
+        if (shift + k <= 0) continue;                               // wholly below the guard window
+        Int term(m);
+        if (shift >= 0) term <<= shift; else term >>= (-shift);
+        acc += term;
+    }
+    // round to nearest: add half a unit (2^(F-1)) then floor by >> F. q >= 0 so
+    // acc >= 0; ties round up, which is harmless for range reduction.
+    acc += (Int(1) << (F - 1));
+    acc >>= F;
+    return acc;
+}
+
+// int_to_zbcl(N): build the exact value of a non-negative integer<256> N as a
+// ZBCL, by summing its (k-1)-bit chunks (each an exactly-representable double,
+// normalised by from_native). Used to form -N for the reduced argument.
+template <typename FpType>
+inline ZBCL<FpType> int_to_zbcl(integer<256, std::uint32_t> N) {
+    using Int = integer<256, std::uint32_t>;
+    constexpr int k = block<FpType>::k;
+    const Int mask = (Int(1) << (k - 1)) - Int(1);
+    ZBCL<FpType> acc{};   // 0
+    int shift = 0;
+    while (!N.iszero()) {
+        const long long chunk = static_cast<long long>(N & mask);   // low (k-1) bits
+        if (chunk != 0) {
+            acc = add(acc, from_native<FpType>(std::ldexp(static_cast<double>(chunk), shift)));
+        }
+        N >>= (k - 1);
+        shift += (k - 1);
+    }
+    return acc;
+}
+
 // Octant reduction: x = n*(pi/2) + t with |t| <= pi/4. Returns {sin(x), cos(x)}
 // built from sin(t)/cos(t) per n mod 4, so a value near a zero (e.g. cos(pi/2))
 // is computed as the series of a tiny argument -- no large-term cancellation.
-// n is taken from the host-double estimate; very large |x| (Payne-Hanek) is
-// deferred, so callers should keep |x| modest.
+//
+// For |x| < 2^50 the octant index n comes from a host-double estimate of
+// x/(pi/2) -- exact there, since the integer part fits in double's 53-bit range.
+// For larger |x| that estimate loses all its low bits, so we switch to a
+// Payne-Hanek reduction that computes the quotient q = |x|/(pi/2) in full ZBCL
+// precision (enough blocks of pi to cover |x|'s binade), rounds it to the exact
+// integer N, and forms t = (q - N)*(pi/2) -- a well-conditioned multiply of the
+// small fraction (q - N), never a subtraction of near-equal large quantities.
 template <typename FpType>
 inline std::pair<ZBCL<FpType>, ZBCL<FpType>> sincos(ZBCL<FpType> x, std::size_t depth) {
     using B = block<FpType>;
-    ZBCL<FpType> halfpi = mul_scalar(B{ static_cast<FpType>(0.5), 0 }, pi_zbcl<FpType>(depth), depth);
-    const double xa = x.is_empty() ? 0.0 : to_double_approx(x, 2);
-    const double nd = std::round(xa / 1.5707963267948966);   // round(x / (pi/2))
-    ZBCL<FpType> t = x;
-    if (nd != 0.0) {
-        // t = x - nd*(pi/2). This subtraction *cancels* (x is near a multiple of
-        // pi/2), so a lazy add() would leave the collapsed leading term closer than
-        // k to the following limb -- a non-0-overlap ZBCL that trips the invariant
-        // when the series forces it (#1044). Combine the operand blocks and
-        // renormalise eagerly instead: priestRenorm separates the cancellation
-        // residual to a 0-overlap stream.
-        ZBCL<FpType> nhalf = negate(mul_scalar(B{ static_cast<FpType>(nd), 0 }, halfpi, depth));
-        std::vector<B> pool;
-        for (const auto& b : x.take(depth)) pool.push_back(b);
-        for (const auto& b : nhalf.take(depth)) pool.push_back(b);
-        t = zbcl_from_blocks<FpType>(priestRenorm(pool));
+    if (x.is_empty()) return { ZBCL<FpType>{}, from_native<FpType>(1.0) };   // sin(0)=0, cos(0)=1
+
+    // |x|'s binary exponent selects the reduction path. The double-estimate path
+    // is exact while the integer part of x/(pi/2) fits in double (|x| < ~2^50);
+    // beyond that it loses low bits and we switch to Payne-Hanek.
+    const int  ex  = static_cast<int>(x.head().exponent());
+    const bool big = ex >= 50;
+
+    ZBCL<FpType> t;
+    int nmod4;
+    if (!big) {
+        // ---- fast path: host-double octant estimate (|x| < ~2^50) ----
+        ZBCL<FpType> halfpi = mul_scalar(B{ static_cast<FpType>(0.5), 0 }, pi_zbcl<FpType>(depth), depth);
+        const double xa = to_double_approx(x, 2);
+        const double nd = std::round(xa / 1.5707963267948966);   // round(x / (pi/2))
+        t = x;
+        if (nd != 0.0) {
+            // t = x - nd*(pi/2). This subtraction *cancels* (x is near a multiple of
+            // pi/2), so a lazy add() would leave the collapsed leading term closer than
+            // k to the following limb -- a non-0-overlap ZBCL that trips the invariant
+            // when the series forces it (#1044). Combine the operand blocks and
+            // renormalise eagerly instead: priestRenorm separates the cancellation
+            // residual to a 0-overlap stream.
+            ZBCL<FpType> nhalf = negate(mul_scalar(B{ static_cast<FpType>(nd), 0 }, halfpi, depth));
+            std::vector<B> pool;
+            for (const auto& b : x.take(depth)) pool.push_back(b);
+            for (const auto& b : nhalf.take(depth)) pool.push_back(b);
+            t = zbcl_from_blocks<FpType>(priestRenorm(pool));
+        }
+        nmod4 = static_cast<int>(((static_cast<long long>(nd) % 4) + 4) % 4);
     }
+    else {
+        // ---- Payne-Hanek path: accurate octant + reduced arg for large |x| ----
+        // Work on |x| (sin odd, cos even); reapply the sign to sin at the end.
+        const bool neg = x.head().sign() < 0;
+        ZBCL<FpType> ax = neg ? negate(x) : x;
+
+        // Enough blocks of pi/(2) to cover |x|'s binade plus the output precision:
+        // reddepth*k >= ex + depth*k + guard.
+        const std::size_t reddepth = depth + 6 + static_cast<std::size_t>(ex / B::k + 2);
+        ZBCL<FpType> halfpi = mul_scalar(B{ static_cast<FpType>(0.5), 0 }, pi_zbcl<FpType>(reddepth), reddepth);
+
+        ZBCL<FpType> q = div_online(ax, halfpi);                 // |x| / (pi/2), full precision
+        integer<256, std::uint32_t> N = zbcl_round_to_int(q, reddepth);
+        nmod4 = static_cast<int>(N % 4);                         // N >= 0
+
+        // f = q - N, renormalised so the cancellation stays 0-overlap (#1044).
+        ZBCL<FpType> negN = negate(int_to_zbcl<FpType>(N));
+        std::vector<B> pool;
+        for (const auto& b : q.take(reddepth))    pool.push_back(b);
+        for (const auto& b : negN.take(reddepth)) pool.push_back(b);
+        ZBCL<FpType> f = zbcl_from_blocks<FpType>(priestRenorm(pool));
+
+        t = mul_online(f, halfpi);                               // (q - N)*(pi/2) = |x| - N*(pi/2)
+        // sin(-|x|) = -sin(|x|): fold the sign back into the octant. Negating the
+        // reduced argument negates sin(t) and preserves cos(t), i.e. octant n -> -n.
+        if (neg) { t = negate(t); nmod4 = (4 - nmod4) % 4; }
+    }
+
     ZBCL<FpType> st = sin_series(t, depth);
     ZBCL<FpType> ct = cos_series(t, depth);
-    const int n = ((static_cast<long long>(nd) % 4) + 4) % 4;
-    switch (n) {
+    switch (nmod4) {
         case 0:  return { st, ct };
         case 1:  return { ct, negate(st) };
         case 2:  return { negate(st), negate(ct) };

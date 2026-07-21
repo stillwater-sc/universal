@@ -135,6 +135,16 @@ def main() -> None:
     constants.append(("cosh_half", mp.cosh(half),  "cosh(1/2)"))
     constants.append(("tanh_half", mp.tanh(half),  "tanh(1/2)"))
 
+    # Large-argument sin/cos spot-checks for the Payne-Hanek range-reduction
+    # suite (#1050). 1e3/1e6/1e12/1e20 are all exact doubles (5^k < 2^53), so
+    # mpf(v) is the same value the elreal evaluation sees. These stress the
+    # accurate-quotient reduction where a host-double estimate of x/(pi/2) has
+    # lost all its low bits.
+    for e in (3, 6, 12, 20):
+        v = mp.mpf('1e%d' % e)
+        constants.append(("sin_1e%d" % e, mp.sin(v), "sin(1e%d)" % e))
+        constants.append(("cos_1e%d" % e, mp.cos(v), "cos(1e%d)" % e))
+
     # Euler-Mascheroni gamma
     constants.append(("euler_gamma", mp.euler, "Euler-Mascheroni gamma"))
 
