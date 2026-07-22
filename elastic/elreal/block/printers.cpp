@@ -54,6 +54,19 @@ int verify_printers(const std::string& tag) {
 
 } // anonymous
 
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
+
 int main()
 try {
     using namespace sw::universal;
@@ -62,6 +75,17 @@ try {
     bool reportTestCases = false;
     ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if MANUAL_TESTING
+
+    // TODO: place hand-run diagnostics here (this branch ignores failures)
+
+    ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+    return EXIT_SUCCESS;
+
+#else
+
+#if REGRESSION_LEVEL_1
+
     nrOfFailedTestCases += verify_printers<float>("block<float>");
     nrOfFailedTestCases += verify_printers<double>("block<double>");
     nrOfFailedTestCases += verify_printers<half>("block<half>");
@@ -69,8 +93,12 @@ try {
     nrOfFailedTestCases += verify_printers<cfloat<24, 5, std::uint16_t, true, false, false>>("block<cfloat<24,5>>");
     nrOfFailedTestCases += verify_printers<cfloat<32, 8, std::uint32_t, true, false, false>>("block<cfloat<32,8>>");
 
+#endif
+
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (const std::exception& err) {
     std::cerr << "Caught unexpected exception: " << err.what() << std::endl;
