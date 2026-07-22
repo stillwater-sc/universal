@@ -18,6 +18,7 @@ file (GLOB LOGIC_SRCS       "./logic/*.cpp")
 file (GLOB ARITHMETIC_SRCS  "./arithmetic/*.cpp")
 file (GLOB SUMMATION_SRCS   "./summation/*.cpp")
 file (GLOB MATH_SRCS        "./math/*.cpp")
+file (GLOB ROUNDING_SRCS    "./rounding/*.cpp")
 
 compile_all("true" "el_api"        "Number Systems/elastic/floating-point/binary/elreal/api"        "${API_SRCS}")
 compile_all("true" "el_block"      "Number Systems/elastic/floating-point/binary/elreal/block"      "${BLOCK_SRCS}")
@@ -28,3 +29,4 @@ compile_all("true" "el_logic"      "Number Systems/elastic/floating-point/binary
 compile_all("true" "el_arith"      "Number Systems/elastic/floating-point/binary/elreal/arithmetic" "${ARITHMETIC_SRCS}")
 compile_all("true" "el_sum"        "Number Systems/elastic/floating-point/binary/elreal/summation"  "${SUMMATION_SRCS}")
 compile_all("true" "el_math"       "Number Systems/elastic/floating-point/binary/elreal/math"       "${MATH_SRCS}")
+compile_all("true" "el_round"      "Number Systems/elastic/floating-point/binary/elreal/rounding"   "${ROUNDING_SRCS}")
