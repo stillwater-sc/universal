@@ -100,6 +100,19 @@ int verify_lazy_api() {
 
 } // anonymous
 
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
+
 int main()
 try {
     using namespace sw::universal;
@@ -108,13 +121,28 @@ try {
     bool reportTestCases = false;
     ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if MANUAL_TESTING
+
+    // TODO: place hand-run diagnostics here (this branch ignores failures)
+
+    ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+    return EXIT_SUCCESS;
+
+#else
+
+#if REGRESSION_LEVEL_1
+
     nrOfFailedTestCases += verify_construction();
     nrOfFailedTestCases += verify_arithmetic();
     nrOfFailedTestCases += verify_logic();
     nrOfFailedTestCases += verify_lazy_api();
 
+#endif
+
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (const std::exception& err) {
     std::cerr << "Caught unexpected exception: " << err.what() << std::endl;
