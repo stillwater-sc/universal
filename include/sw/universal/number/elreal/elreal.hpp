@@ -55,3 +55,6 @@
 // pulls in the ZBCL-level math/*.hpp (sqrt/hypot/exp/log/trig/hyperbolic/
 // constants) and wraps each at the elreal class level (#1079 Phase 4).
 #include <universal/number/elreal/mathlib.hpp>
+
+// Phase 8 (#932): real floating-point conversion -- round_to<double|float|dd|qd>.
+#include <universal/number/elreal/round.hpp>
