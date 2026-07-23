@@ -1609,6 +1609,72 @@ inline qd sqr(const qd& a) {
 	return qd(p0, p1, p2, p3);
 }
 
+// fma(a, b, c) = a*b + c with a single rounding (fused multiply-add), matching
+// std::fma's contract. The product a*b is formed EXACTLY as the expansion of all
+// sixteen a[i]*b[j] partials (each split by two_prod), c's four limbs are
+// appended, and the resulting exact bag of doubles is renormalized to a
+// quad-double in one pass. Because the product is never rounded before c is
+// added, the low-order product bits that a plain `a*b + c` would discard survive
+// into the result -- which is exactly what matters under cancellation (c ~ -a*b).
+inline qd fma(const qd& a, const qd& b, const qd& c) {
+	// IEEE-754 fma special-value handling. (qd's own operator+ does not always
+	// propagate infinities, so we cannot simply defer to a*b + c here.)
+	if (a.isnan() || b.isnan() || c.isnan()) return qd(SpecificValue::qnan);
+	const bool ainf = a.isinf(), binf = b.isinf();
+	if (ainf || binf) {
+		if ((ainf && b.iszero()) || (binf && a.iszero())) return qd(SpecificValue::qnan);   // inf * 0
+		const bool psign = a.sign() ^ b.sign();                                              // sign of the infinite product
+		if (c.isinf() && (c.sign() != psign)) return qd(SpecificValue::qnan);                // inf + (-inf)
+		return psign ? qd(SpecificValue::infneg) : qd(SpecificValue::infpos);
+	}
+	if (c.isinf()) return c;                                                                 // finite*finite + inf
+
+	// exact product expansion (16 partials -> 32 doubles) followed by c (4 doubles)
+	double bag[36];
+	int n = 0;
+	for (int i = 0; i < 4; ++i)
+		for (int j = 0; j < 4; ++j) {
+			double lo, hi = two_prod(a[i], b[j], lo);
+			bag[n++] = hi;
+			bag[n++] = lo;
+		}
+	for (int k = 0; k < 4; ++k) bag[n++] = c[k];
+
+	auto mag = [](double v) noexcept { return v < 0.0 ? -v : v; };
+
+	// Shewchuk grow: two_sum-accumulate the bag, retaining every nonzero round-off
+	double h[40];
+	int hn = 0;
+	for (int i = 0; i < n; ++i) {
+		double carry = bag[i];
+		int k = 0;
+		for (int j = 0; j < hn; ++j) {
+			double err, s = two_sum(h[j], carry, err);
+			if (err != 0.0) h[k++] = err;
+			carry = s;
+		}
+		if (carry != 0.0) h[k++] = carry;
+		hn = k;
+	}
+	// sort by descending magnitude, then compress into a non-overlapping expansion
+	for (int i = 1; i < hn; ++i) { double key = h[i]; int j = i - 1; while (j >= 0 && mag(h[j]) < mag(key)) { h[j + 1] = h[j]; --j; } h[j + 1] = key; }
+	double g[40];
+	int gn = 0;
+	double q = 0.0;
+	for (int i = 0; i < hn; ++i) { double err, s = two_sum(q, h[i], err); q = s; if (err != 0.0) g[gn++] = err; }
+
+	double e[40];
+	int en = 0;
+	if (q != 0.0) e[en++] = q;
+	for (int i = 0; i < gn; ++i) e[en++] = g[i];
+	for (int i = 1; i < en; ++i) { double key = e[i]; int j = i - 1; while (j >= 0 && mag(e[j]) < mag(key)) { e[j + 1] = e[j]; --j; } e[j + 1] = key; }
+
+	// take the leading five components and let the qd renormalization round to four
+	double r0 = en > 0 ? e[0] : 0.0, r1 = en > 1 ? e[1] : 0.0, r2 = en > 2 ? e[2] : 0.0, r3 = en > 3 ? e[3] : 0.0, r4 = en > 4 ? e[4] : 0.0;
+	renorm(r0, r1, r2, r3, r4);
+	return qd(r0, r1, r2, r3);
+}
+
 // Computes pow(qd, n), where n is an integer
 inline qd pown(const qd& a, int n) {
 	if (n == 0)
