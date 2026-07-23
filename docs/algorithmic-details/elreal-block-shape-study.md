@@ -48,8 +48,8 @@ make el_oracle_sweep && ./elastic/elreal/el_oracle_sweep
   with the reference, and the number of blocks that carried them.
 
 The numbers below are indicative (single dev host, `-O2 -DNDEBUG`); absolute
-times are machine-specific, but the ratios and the digits/blocks columns are
-reproducible.
+times and timing ratios are machine-specific (CPU, compiler, optimization, load),
+while the digits/blocks columns are reproducible for this configuration.
 
 ## A. Memory footprint per block shape
 
@@ -152,8 +152,8 @@ per-block latency -- is the whole point of the type.
 
 - **Want unbounded / very-high precision (100+ digits):** the only viable block
   shape today is **`double`**. It is also the fastest for multi-block work.
-- **Want a bounded ~60-digit exact type with a simpler API:** use **`qd`**
-  directly; `elreal<double>` only wins past `qd`'s ceiling.
+- **Want a bounded ~60-digit fixed-precision floating-point type with a simpler
+  API:** use **`qd`** directly; `elreal<double>` only wins past `qd`'s ceiling.
 - **Narrow block shapes (`float`/`bfloat16`/`half`) are not yet a good precision
   trade:** they save no block memory (wide exponent dominates), cap out at low
   precision because the series arithmetic degrades, and `half` does not converge
