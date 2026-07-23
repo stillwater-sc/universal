@@ -22,7 +22,7 @@ candidate shapes and gives a first recommendation.
 
 ## How to reproduce
 
-```
+```sh
 cmake -DUNIVERSAL_BUILD_NUMBER_ELREALS=ON -DUNIVERSAL_BUILD_BENCHMARKS=ON -DUNIVERSAL_BUILD_BENCHMARK_PERFORMANCE=ON ..
 make benchmark_elreal_performance
 ./benchmark/performance/arithmetic/benchmark_elreal_performance
@@ -32,7 +32,7 @@ The sweep oracle (random `elreal` arithmetic vs the exact dyadic-rational
 oracle, since Universal is dependency-free and does not link mpfr) lives at
 `elastic/elreal/oracle/sweep.cpp` and runs under the standard regression tiers:
 
-```
+```sh
 make el_oracle_sweep && ./elastic/elreal/el_oracle_sweep
 ```
 
@@ -116,8 +116,9 @@ Wall time to produce the first block of each transcendental generator at depth
 | double | ~1000 ms  | ~71 ms   | ~5.8 ms |
 
 The `double` host's first-block latency is dominated by the cost of the
-division-heavy generators at width 53 (`pi` via Machin is ~1000x more expensive
-than `sqrt2` via Newton). If time-to-first-digit matters more than ultimate
+division-heavy generators at width 53 (`pi` via Machin is ~170x more expensive
+than `sqrt2` via Newton: ~1000 ms vs ~5.8 ms). If time-to-first-digit matters
+more than ultimate
 precision, a narrower host reaches its (lower) ceiling far faster.
 
 ## D. Stream-wise ZBCL dot-product throughput

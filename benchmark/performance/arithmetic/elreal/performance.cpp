@@ -80,19 +80,19 @@ namespace {
 		int    blocksAt[4] = { -1, -1, -1, -1 };   // blocks to reach kDigitTargets[i]
 		int    maxDigits = 0;
 		int    maxBlocks = 0;
-		int    stall = 0;                          // ladder steps with no digit gain
 		bool   failed = false;
 		try {
+			// Sweep the full ladder: a plateau at one depth does not imply saturation
+			// (a later depth may cross the next threshold), so we do not early-exit on
+			// an unchanged digit count -- only when the reference precision is reached.
 			for (std::size_t depth : kDepthLadder) {
 				ZBCL<FpType> z = gen(depth);
 				int digits = agreed_decimal_digits(z, ref);
 				int blocks = static_cast<int>(z.take(1024).size());
-				if (digits > maxDigits) { maxDigits = digits; maxBlocks = blocks; stall = 0; }
-				else ++stall;
+				if (digits > maxDigits) { maxDigits = digits; maxBlocks = blocks; }
 				for (int i = 0; i < 4; ++i)
 					if (blocksAt[i] < 0 && digits >= kDigitTargets[i]) blocksAt[i] = blocks;
 				if (digits >= 320) break;
-				if (stall >= 2) break;             // saturated: more depth adds no precision
 			}
 		}
 		catch (const std::exception& e) { failed = true; (void)e; }
