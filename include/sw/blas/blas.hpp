@@ -10,6 +10,18 @@
 #ifndef _STILLWATER_BLAS_LIBRARY
 #define _STILLWATER_BLAS_LIBRARY
 
+// -------------------------------------------------------------------------
+// DEPRECATED (universal#1204): Universal's <blas/...> linear-algebra library is
+// being extracted. Use MTL5 for linear algebra
+// (https://github.com/stillwater-sc/mtl5) and the mp-* composition repos for the
+// mixed-precision experiments (mp-blas, mp-iterative, mp-ir, mp-numerics).
+// These headers will be removed from Universal after this deprecation release.
+// Define UNIVERSAL_SUPPRESS_DEPRECATION to silence this notice.
+// -------------------------------------------------------------------------
+#ifndef UNIVERSAL_SUPPRESS_DEPRECATION
+#pragma message("DEPRECATED: Universal <blas/...> is being extracted to MTL5 + mp-* (see universal#1204); define UNIVERSAL_SUPPRESS_DEPRECATION to silence")
+#endif
+
 #include <cstdint>
 
 // Numeric containers
