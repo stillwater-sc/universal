@@ -19,7 +19,7 @@
 // Define UNIVERSAL_SUPPRESS_DEPRECATION to silence this notice.
 // -------------------------------------------------------------------------
 #ifndef UNIVERSAL_SUPPRESS_DEPRECATION
-#pragma message("DEPRECATED: Universal <blas/...> is being extracted to MTL5 + mp-* (see universal#1204); define UNIVERSAL_SUPPRESS_DEPRECATION to silence")
+#pragma message("DEPRECATED: <blas/...> extracted to MTL5 + mp-* (see universal#1204)")
 #endif
 
 #include <cstdint>

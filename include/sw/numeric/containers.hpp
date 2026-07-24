@@ -14,7 +14,7 @@
 // Define UNIVERSAL_SUPPRESS_DEPRECATION to silence this notice.
 // -------------------------------------------------------------------------
 #ifndef UNIVERSAL_SUPPRESS_DEPRECATION
-#pragma message("DEPRECATED: Universal <numeric/containers/...> is being extracted to MTL5 (see universal#1204); define UNIVERSAL_SUPPRESS_DEPRECATION to silence")
+#pragma message("DEPRECATED: <numeric/containers/...> extracted to MTL5 (see universal#1204)")
 #endif
 
 // aggregation types for serialization
