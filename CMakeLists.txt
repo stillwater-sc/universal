@@ -153,9 +153,7 @@ option(UNIVERSAL_BUILD_NUMERIC_UTILS               "Set to ON to build numerical
 option(UNIVERSAL_BUILD_NUMERIC_FPBENCH             "Set to ON to build fpbench benchmarks"               OFF)
 
 # Basic Linear Algebra tests
-option(UNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS         "Set to ON to build the BLAS tests"                   OFF)
-option(UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the vector math lib"              OFF)
-option(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA         "Set to ON to build the data prep math lib"           OFF)
+# UNIVERSAL_BUILD_LINEAR_ALGEBRA_{BLAS,VMATH,DATA} removed: linalg extracted to MTL5 (universal#1204, #1209)
 
 # benchmarking
 option(UNIVERSAL_BUILD_BENCHMARK_ERROR             "Set to ON to build error benchmarks"                 OFF)
@@ -834,10 +832,7 @@ if(UNIVERSAL_BUILD_ALL)
 	set(UNIVERSAL_BUILD_CONCURRENCY ON)
 	set(UNIVERSAL_BUILD_UTILITY ON)
 
-	# build the BLAS test/verification suites
-	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS ON)
-	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH ON)
-	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA ON)
+	# linalg extracted to MTL5 (universal#1204, #1209)
 
 	# build the C API library
 	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
@@ -907,8 +902,7 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	# conversions
 	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)
 
-	# linear algebra data serialization
-	set(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA ON)
+	# linalg data serialization extracted to MTL5 (universal#1204, #1209)
 
 	# build the C API library
 	set(UNIVERSAL_BUILD_C_API_PURE_LIB ON)
@@ -1294,16 +1288,13 @@ endif(UNIVERSAL_BUILD_MIXEDPRECISION_POP)
 
 # error benchmarks
 if(UNIVERSAL_BUILD_BENCHMARK_ERROR)
-add_subdirectory("benchmark/error/sampling")
-add_subdirectory("benchmark/error/scaling")
-add_subdirectory("benchmark/error/qsnr")
-add_subdirectory("benchmark/error/blas")
+# BLAS/containers-dependent error benchmarks (sampling, scaling, qsnr, blas)
+# were extracted to MTL5 + mp-* (universal#1204, #1209).
 endif(UNIVERSAL_BUILD_BENCHMARK_ERROR)
 
 # accuracy benchmarks
 if(UNIVERSAL_BUILD_BENCHMARK_ACCURACY)
-add_subdirectory("benchmark/accuracy/blas")
-add_subdirectory("benchmark/accuracy/quantization")
+# benchmark/accuracy/{blas,quantization} extracted to MTL5 + mp-* (universal#1204, #1209)
 add_subdirectory("benchmark/accuracy/range")
 add_subdirectory("benchmark/accuracy/blockformat")
 add_subdirectory("benchmark/accuracy/lns")
@@ -1312,24 +1303,24 @@ endif(UNIVERSAL_BUILD_BENCHMARK_ACCURACY)
 
 # range benchmarks
 if(UNIVERSAL_BUILD_BENCHMARK_RANGE)
-add_subdirectory("benchmark/range/blas")
+# benchmark/range/blas extracted to MTL5 + mp-* (universal#1204, #1209)
 add_subdirectory("benchmark/range/arithmetic")
 endif(UNIVERSAL_BUILD_BENCHMARK_RANGE)
 
 # reproducibility benchmarks
 if(UNIVERSAL_BUILD_BENCHMARK_REPRODUCIBILITY)
-add_subdirectory("benchmark/reproducibility/blas")
+# benchmark/reproducibility/blas extracted to MTL5 + mp-* (universal#1204, #1209)
 endif(UNIVERSAL_BUILD_BENCHMARK_REPRODUCIBILITY)
 
 # performance benchmarks
 if(UNIVERSAL_BUILD_BENCHMARK_PERFORMANCE)
-add_subdirectory("benchmark/performance/blas")
+# benchmark/performance/blas extracted to MTL5 + mp-* (universal#1204, #1209)
 add_subdirectory("benchmark/performance/arithmetic")
 endif(UNIVERSAL_BUILD_BENCHMARK_PERFORMANCE)
 
 # energy benchmarks
 if(UNIVERSAL_BUILD_BENCHMARK_ENERGY)
-add_subdirectory("benchmark/energy/blas")
+# benchmark/energy/blas extracted to MTL5 + mp-* (universal#1204, #1209)
 add_subdirectory("benchmark/energy/models")
 add_subdirectory("benchmark/energy/hw_counters")
 add_subdirectory("benchmark/energy/instrumented")
@@ -1387,25 +1378,23 @@ add_subdirectory("applications/accuracy/mathematics")
 add_subdirectory("applications/accuracy/science")
 add_subdirectory("applications/accuracy/engineering")
 add_subdirectory("applications/accuracy/ode")
-add_subdirectory("applications/accuracy/pde")
 add_subdirectory("applications/accuracy/roots")
-add_subdirectory("applications/accuracy/optimization")
-add_subdirectory("applications/accuracy/geometry")
+# applications/accuracy/{pde,optimization,geometry} extracted to MTL5 + mp-* (universal#1204, #1209)
 
 add_subdirectory("applications/approximation/taylor")
 add_subdirectory("applications/approximation/chebyshev")
 
-add_subdirectory("applications/mixed-precision/dnn")
+# applications/mixed-precision/dnn extracted (DNN subsystem removed, universal#1209)
 add_subdirectory("applications/mixed-precision/dsp")
 add_subdirectory("applications/mixed-precision/imaging")
-add_subdirectory("applications/mixed-precision/robotics")
 add_subdirectory("applications/mixed-precision/attention")
+# applications/mixed-precision/robotics extracted to MTL5 + mp-* (universal#1204, #1209)
 
 add_subdirectory("applications/performance/chaos")
 add_subdirectory("applications/performance/complex")
 add_subdirectory("applications/performance/stream")
 add_subdirectory("applications/performance/weather")
-add_subdirectory("applications/performance/ir")
+# applications/performance/ir extracted to mp-ir (universal#1204, #1209)
 
 add_subdirectory("applications/precision/adaptive")
 add_subdirectory("applications/precision/constants")
@@ -1415,7 +1404,7 @@ add_subdirectory("applications/precision/numeric")
 add_subdirectory("applications/precision/tapered")
 add_subdirectory("applications/precision/ubit")
 
-add_subdirectory("applications/reproducibility/blas")
+# applications/reproducibility/blas extracted to mp-blas (universal#1204, #1209)
 add_subdirectory("applications/reproducibility/cryptography")
 add_subdirectory("applications/reproducibility/sequences")
 
@@ -1495,16 +1484,7 @@ endif(UNIVERSAL_BUILD_C_API_SHIM_LIB)
 ##################################################################
 ###          dense BLAS environment for experimentation
 
-# Basic Linear Algebra library
-if(UNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS)
-add_subdirectory("linalg/blas")
-endif(UNIVERSAL_BUILD_LINEAR_ALGEBRA_BLAS)
-if(UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH)
-add_subdirectory("linalg/vmath")
-endif(UNIVERSAL_BUILD_LINEAR_ALGEBRA_VMATH)
-if(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA)
-add_subdirectory("linalg/data")
-endif(UNIVERSAL_BUILD_LINEAR_ALGEBRA_DATA)
+# Basic Linear Algebra library (linalg/{blas,vmath,data}) extracted to MTL5 (universal#1204, #1209)
 
 ####
 # Install/uninstall smoke tests (opt-in via UNIVERSAL_TEST_INSTALL)
