@@ -25,10 +25,16 @@ generic over the scalar type. All MTL5 + Universal coupling (the quire
 super-accumulator plugged into MTL5's `accumulator_traits`) lives in the `mp-*`
 repos, via `include/mtl/math/quire_accumulator.hpp`.
 
-## Deprecation
+## Removal
 
-`<blas/...>` and `<numeric/containers/...>` are **deprecated** and emit a
-`#pragma message` on include (silence with `-DUNIVERSAL_SUPPRESS_DEPRECATION`).
-They will be removed from Universal after this deprecation release, leaving
-Universal a pure number-systems library. New linear-algebra work should target
-MTL5 + the mp-* repos.
+`<blas/...>`, `<numeric/containers/...>`, the DNN subsystem
+(`<universal/dnn/...>`), and `<universal/quantization/qsnr.hpp>` were
+**deprecated** in the v4.7.5 release (they emitted a `#pragma message` on
+include) and have now been **removed** -- Universal is a pure number-systems
+library. New linear-algebra work targets MTL5 + the mp-* repos.
+
+A handful of BLAS-dependent demos are kept as source-only references (dropped
+from the build, so they carry dangling `<blas/...>` includes): the
+`mixedprecision/tensor/cg` study (rebuilt in mp-iterative, see mp-iterative#32),
+`papers/systems-paper/{iterative_refinement,conjugate_gradient,idrs}.cpp`, and
+`playground/conversion.cpp`. Rebuild them against MTL5 in the mp-* repos.

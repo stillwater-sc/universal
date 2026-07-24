@@ -49,7 +49,7 @@ if(CLANG_FORMAT_EXECUTABLE)
 
     # Remove files in build directories and matrix data files
     list(FILTER ALL_FORMAT_FILES EXCLUDE REGEX "${CMAKE_BINARY_DIR}/.*")
-    list(FILTER ALL_FORMAT_FILES EXCLUDE REGEX ".*/blas/matrices/.*")
+    list(FILTER ALL_FORMAT_FILES EXCLUDE REGEX ".*/data/matrices/.*")
 
     # Count files
     list(LENGTH ALL_FORMAT_FILES NUM_FORMAT_FILES)
