@@ -11,7 +11,7 @@ set(EXAMPLE_SRCS efunc_posits.cpp
 	 skeleton.cpp 
 	 type_test.cpp
 	 float_to_decimal_string.cpp
-	 conversion.cpp
+	 # conversion.cpp dropped from build: depends on extracted <blas/...> (universal#1209); source left in place
 	 closure_of_8bit_systems.cpp
 	 generate_a_closure_map.cpp 
 	 evaluate_small_number_systems.cpp

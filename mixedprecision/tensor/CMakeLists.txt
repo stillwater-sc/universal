@@ -8,5 +8,8 @@
 # file (GLOB KRYLOV_SRCS "./cg/*.cpp")
 # compile_all("true" "mp" "Mixed-Precision/Tensor Algebra/Krylov/Conjugate Gradient" "${KRYLOV_SRCS}")
 
-file (GLOB DNN_SRCS "./dnn/*.cpp")
-compile_all("true" "mp" "Mixed-Precision/Tensor Algebra/DNN" "${DNN_SRCS}")
+# DNN study (./dnn/*.cpp): REMOVED with the DNN subsystem (universal#1209). The
+# DNN layer depended on the extracted <blas/...> + <numeric/containers/...> stack.
+#
+# file (GLOB DNN_SRCS "./dnn/*.cpp")
+# compile_all("true" "mp" "Mixed-Precision/Tensor Algebra/DNN" "${DNN_SRCS}")
