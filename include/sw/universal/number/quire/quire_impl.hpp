@@ -476,7 +476,16 @@ public:
 		static_assert(sizeof(TargetType) <= 8,
 			"convert_to<T>() uses double as intermediate and is limited to 53 bits "
 			"of significand precision. Use to_blocktriple() for wider target types.");
-		if (_nan) return TargetType(std::numeric_limits<double>::quiet_NaN());
+		if (_nan) {
+			// Only floating-point targets have a NaN encoding; converting a NaN
+			// double to an integral type is undefined behavior, so return 0 there.
+			if constexpr (std::is_floating_point_v<TargetType>) {
+				return TargetType(std::numeric_limits<double>::quiet_NaN());
+			}
+			else {
+				return TargetType(0);
+			}
+		}
 		if (iszero()) return TargetType(0);
 		// find the scale
 		int s = scale();
