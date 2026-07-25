@@ -230,36 +230,40 @@ int TestQuireQuireAddition() {
 	return nrOfFailedTestCases;
 }
 
-// Test exception handling
-int TestExceptions() {
+// Test non-finite (NaR/NaN/Inf) handling.
+// In the default (opt-out) exception configuration the quire does NOT throw on a
+// non-finite operand: it records a sticky NaR state that propagates and resolves
+// back to the number system's NaR, matching scalar arithmetic (#1226).
+int TestNonFiniteHandling() {
 	int nrOfFailedTestCases = 0;
 
 	using Scalar = cfloat<32, 8, uint32_t, true, false, false>;
-	quire<Scalar> q;
 
-	// Test NaR/NaN assignment
+	// Assigning a NaN blocktriple sets the quire NaR state instead of throwing.
 	blocktriple<23, BlockTripleOperator::REP, uint32_t> nan_val;
 	nan_val.setnan();
-	try {
-		q = nan_val;
-		std::cerr << "FAIL: assigning NaN should throw operand_is_nar\n";
+	quire<Scalar> q;
+	q = nan_val;
+	if (!q.isnan()) {
+		std::cerr << "FAIL: assigning NaN should set the quire NaR state (no throw)\n";
 		++nrOfFailedTestCases;
-	}
-	catch (const operand_is_nar&) {
-		// expected
 	}
 
-	// Test inf assignment
+	// Adding an inf blocktriple to a fresh quire also sets the NaR state.
 	blocktriple<23, BlockTripleOperator::REP, uint32_t> inf_val;
 	inf_val.setinf();
-	try {
-		q += inf_val;
-		std::cerr << "FAIL: adding inf should throw operand_is_nar\n";
+	quire<Scalar> qi;
+	qi += inf_val;
+	if (!qi.isnan()) {
+		std::cerr << "FAIL: adding inf should set the quire NaR state (no throw)\n";
 		++nrOfFailedTestCases;
 	}
-	catch (const operand_is_nar&) {
-		// expected
-	}
+
+	// NaR is sticky and a fresh finite assignment clears it.
+	q += inf_val;
+	if (!q.isnan()) { std::cerr << "FAIL: NaR state should be sticky\n"; ++nrOfFailedTestCases; }
+	q = 1;
+	if (q.isnan()) { std::cerr << "FAIL: finite assignment should clear the NaR state\n"; ++nrOfFailedTestCases; }
 
 	return nrOfFailedTestCases;
 }
@@ -297,7 +301,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(TestPositQuire(), "quire<posit<32,2>>", "posit quire");
 	nrOfFailedTestCases += ReportTestResult(TestFixpntQuire(), "quire<fixpnt<16,8>>", "fixpnt quire");
 	nrOfFailedTestCases += ReportTestResult(TestQuireQuireAddition(), "quire<cfloat<32,8>>", "quire-quire addition");
-	nrOfFailedTestCases += ReportTestResult(TestExceptions(), "quire<cfloat<32,8>>", "exception handling");
+	nrOfFailedTestCases += ReportTestResult(TestNonFiniteHandling(), "quire<cfloat<32,8>>", "non-finite (NaR) handling");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
