@@ -11,9 +11,14 @@ permissions:
   pages: write
   id-token: write
 
+# Scope concurrency per ref, not globally. A single global "pages" group made
+# EVERY Documentation run (any branch/PR) cancel every other in-progress one --
+# so a burst of PRs turned into cross-PR "failure" red X's (observed 2026-07-25).
+# Per-ref: a new commit on a PR cancels that PR's stale build (cancel-in-progress
+# on pull_request), while main deploys queue and are never interrupted mid-deploy.
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   # Force Node.js 24 for all JavaScript actions (eliminates Node.js 20 deprecation warnings
