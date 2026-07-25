@@ -97,6 +97,11 @@ dbns<nbits, fbbits, bt, xtra...>
 quire_resolve(const quire<dbns<nbits, fbbits, bt, xtra...>, capacity, LimbType>& q) {
 	using Scalar = dbns<nbits, fbbits, bt, xtra...>;
 
+	if (q.isnan()) {  // NaR propagated through the accumulator (#1226)
+		Scalar result;
+		result.setnan();
+		return result;
+	}
 	if (q.iszero()) {
 		Scalar result;
 		result.setzero();

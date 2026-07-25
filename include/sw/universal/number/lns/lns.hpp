@@ -36,6 +36,11 @@
 #if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION LNS_THROW_ARITHMETIC_EXCEPTION
 #endif
+// the fused dot product accumulator (quire, via fdp.hpp) must honor the same
+// exception policy as the lns it accumulates for (#1226)
+#if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
+#define QUIRE_THROW_ARITHMETIC_EXCEPTION LNS_THROW_ARITHMETIC_EXCEPTION
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

@@ -137,6 +137,11 @@ lns<nbits, rbits, bt, xtra...>
 quire_resolve(const quire<lns<nbits, rbits, bt, xtra...>, capacity, LimbType>& q) {
 	using Scalar = lns<nbits, rbits, bt, xtra...>;
 
+	if (q.isnan()) {  // NaR propagated through the accumulator (#1226)
+		Scalar result;
+		result.setnan();
+		return result;
+	}
 	if (q.iszero()) {
 		Scalar result;
 		result.setzero();

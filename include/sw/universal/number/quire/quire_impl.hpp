@@ -70,7 +70,7 @@ public:
 	using accumulator_type = blockbinary<qbits, LimbType, BinaryNumberType::Unsigned>;
 
 	// Constructors
-	quire() : _sign(false), _accu{} {}
+	quire() : _sign(false), _nan(false), _accu{} {}
 	quire(int8_t   iv) { *this = static_cast<int64_t>(iv); }
 	quire(int16_t  iv) { *this = static_cast<int64_t>(iv); }
 	quire(int32_t  iv) { *this = static_cast<int64_t>(iv); }
@@ -87,7 +87,7 @@ public:
 	quire(const blocktriple<fbits, op, bt>& rhs) { *this = rhs; }
 
 	// specific value constructor
-	constexpr quire(const SpecificValue code) noexcept : _sign{false}, _accu{}
+	constexpr quire(const SpecificValue code) noexcept : _sign{false}, _nan{false}, _accu{}
 	{
 		switch (code) {
 		case SpecificValue::maxpos:
@@ -111,7 +111,11 @@ public:
 		case SpecificValue::nar:
 		case SpecificValue::qnan:
 		case SpecificValue::snan:
-			throw operand_is_nar{};  // quire has no representation for infinities or NaNs
+			// The quire has no numeric encoding for infinities or NaNs; record the
+			// non-finite state instead. (This constructor is noexcept, so the old
+			// unconditional throw here actually called std::terminate.)
+			_nan = true;
+			break;
 		}
 	}
 
@@ -120,15 +124,24 @@ public:
 
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
 	quire& operator=(const blocktriple<fbits, op, bt>& rhs) {
-		reset();
+		reset();  // clears the NaR state as well: a fresh assignment starts finite
 		if (rhs.iszero()) return *this;
-		if (rhs.isinf() || rhs.isnan()) throw operand_is_nar{};
+		// NaR/NaN/Inf operand: record the non-finite state (propagates on resolve).
+		if (rhs.isinf() || rhs.isnan()) { _nan = true; return *this; }
 		_sign = rhs.sign();
 
 		int scale = rhs.scale();
+#if QUIRE_THROW_ARITHMETIC_EXCEPTION
 		if (scale >  static_cast<int>(half_range)) throw operand_too_large_for_quire{};
 		if (scale < -static_cast<int>(half_range)) throw operand_too_small_for_quire{};
-
+#else
+		// Opt-out build: an operand outside the quire's dynamic range cannot be
+		// represented; leave the quire zero rather than throwing.
+		if (scale >  static_cast<int>(half_range) || scale < -static_cast<int>(half_range)) {
+			reset();
+			return *this;
+		}
+#endif
 		place_blocktriple(rhs);
 		return *this;
 	}
@@ -157,7 +170,11 @@ public:
 			: static_cast<uint64_t>(rhs);
 		if (magnitude == 0) return *this;
 		unsigned msb = find_msb(magnitude);
+#if QUIRE_THROW_ARITHMETIC_EXCEPTION
 		if (msb > half_range + capacity) throw operand_too_large_for_quire{};
+#else
+		if (msb > half_range + capacity) { reset(); return *this; }
+#endif
 		// place integer value at the radix point (integers have scale >= 0)
 		for (unsigned i = 0; i < 64 && i < msb; ++i) {
 			if (magnitude & (uint64_t(1) << i)) {
@@ -174,7 +191,11 @@ public:
 		_sign = false;
 		if (rhs == 0) return *this;
 		unsigned msb = find_msb(rhs);
+#if QUIRE_THROW_ARITHMETIC_EXCEPTION
 		if (msb > half_range + capacity) throw operand_too_large_for_quire{};
+#else
+		if (msb > half_range + capacity) { reset(); return *this; }
+#endif
 		for (unsigned i = 0; i < 64 && i < msb; ++i) {
 			if (rhs & (uint64_t(1) << i)) {
 				_accu.setbit(radix_point + i);
@@ -207,13 +228,22 @@ public:
 	/// Add a blocktriple value to the quire
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
 	quire& operator+=(const blocktriple<fbits, op, bt>& rhs) {
+		if (_nan) return *this;             // NaR is sticky: once set, accumulation is a no-op
 		if (rhs.iszero()) return *this;
-		if (rhs.isinf() || rhs.isnan()) throw operand_is_nar{};
+		// NaR/NaN/Inf operand: the sum becomes NaR and stays NaR.
+		if (rhs.isinf() || rhs.isnan()) { _nan = true; return *this; }
 
 		int scale = rhs.scale();
+#if QUIRE_THROW_ARITHMETIC_EXCEPTION
 		if (scale >  static_cast<int>(half_range)) throw operand_too_large_for_quire{};
 		if (scale < -static_cast<int>(half_range)) throw operand_too_small_for_quire{};
-
+#else
+		// Opt-out build: an operand outside the quire's dynamic range cannot be
+		// represented; skip it rather than throwing (leaves the running sum intact).
+		if (scale >  static_cast<int>(half_range) || scale < -static_cast<int>(half_range)) {
+			return *this;
+		}
+#endif
 		if (_sign == rhs.sign()) {
 			add_blocktriple(rhs);
 		}
@@ -269,6 +299,8 @@ public:
 
 	/// Add two quires
 	quire& operator+=(const quire& rhs) {
+		if (_nan) return *this;                 // NaR is sticky
+		if (rhs._nan) { _nan = true; return *this; }
 		if (rhs.iszero()) return *this;
 		if (_sign == rhs._sign) {
 			_accu += rhs._accu;
@@ -315,7 +347,10 @@ public:
 	// ////////////////////////////////////////////////////////////////=
 	// Selectors
 	// ////////////////////////////////////////////////////////////////=
-	bool iszero() const noexcept { return _accu.none(); }
+	bool iszero() const noexcept { return !_nan && _accu.none(); }
+	bool isnan()  const noexcept { return _nan; }  // non-finite (NaR/NaN/Inf) state
+	bool isnar()  const noexcept { return _nan; }  // posit-flavored alias for isnan()
+	bool isinf()  const noexcept { return _nan; }  // the quire collapses Inf into the NaR state
 	bool sign() const noexcept { return _sign; }
 	bool isneg() const noexcept { return _sign; }
 	bool ispos() const noexcept { return !_sign; }
@@ -358,35 +393,42 @@ public:
 	// ////////////////////////////////////////////////////////////////=
 	void reset() noexcept {
 		_sign = false;
+		_nan  = false;
 		_accu.clear();
 	}
 	void clear() noexcept { reset(); }
 	void set_sign(bool v) noexcept { _sign = v; }
+	void setnan() noexcept { reset(); _nan = true; }  // force the non-finite (NaR) state
 	void setbit(unsigned index) {
 		if (index >= qbits) throw std::out_of_range("quire bit index out of range");
 		_accu.setbit(index);
 	}
 	void zero() noexcept {
 		_sign = false;
+		_nan  = false;
 		_accu.clear();
 	}
 	void maxpos() noexcept {
 		_sign = false;
+		_nan  = false;
 		_accu.clear();
 		_accu.flip();  // largest value all bits set
 	}
 	void minpos() noexcept {
 		_sign = false;
+		_nan  = false;
 		_accu.clear();
 		_accu.setbit(0);  // smallest value has MSB at 0
 	}
 	void minneg() noexcept {
 		_sign = true;
+		_nan  = false;
 		_accu.clear();
 		_accu.setbit(0);  // smallest negative value has MSB at 0
 	}
 	void maxneg() noexcept {
 		_sign = true;
+		_nan  = false;
 		_accu.clear();
 		_accu.flip();  // largest negative value has all bits set
 	}
@@ -398,6 +440,7 @@ public:
 	/// Convert quire value to a blocktriple<qbits, REP>
 	blocktriple<qbits, BlockTripleOperator::REP, LimbType> to_blocktriple() const {
 		blocktriple<qbits, BlockTripleOperator::REP, LimbType> result;
+		if (_nan) { result.setnan(); return result; }
 		if (iszero()) { result.setzero(_sign); return result; }
 
 		// find MSB to determine scale
@@ -433,6 +476,7 @@ public:
 		static_assert(sizeof(TargetType) <= 8,
 			"convert_to<T>() uses double as intermediate and is limited to 53 bits "
 			"of significand precision. Use to_blocktriple() for wider target types.");
+		if (_nan) return TargetType(std::numeric_limits<double>::quiet_NaN());
 		if (iszero()) return TargetType(0);
 		// find the scale
 		int s = scale();
@@ -515,6 +559,11 @@ public:
 
 private:
 	bool             _sign;
+	// Non-finite (NaR/NaN/Inf) state. The quire accumulator has no numeric
+	// encoding for infinities or NaNs, so a NaR operand sets this sticky flag;
+	// it propagates through accumulation and surfaces as the number system's
+	// NaR/NaN on resolve. See #1226.
+	bool             _nan;
 	accumulator_type _accu;
 
 	// ////////////////////////////////////////////////////////////////=
@@ -659,6 +708,7 @@ std::string to_binary(const quire<NumberType, capacity, LimbType>& q) {
 	constexpr unsigned qb = quire<NumberType, capacity, LimbType>::qbits;
 	constexpr unsigned cb = qb - capacity;
 	std::stringstream  ostr;
+	if (q.isnan()) { ostr << "nar"; return ostr.str(); }
 	ostr << (q.sign() ? "-:" : "+:");
 	// print capacity + '_' + upper bits (above radix), then '.', then lower bits
 	for (int i = static_cast<int>(qb) - 1; i >= static_cast<int>(cb); --i) {
@@ -682,6 +732,7 @@ std::string to_binary(const quire<NumberType, capacity, LimbType>& q) {
 template<typename NumberType, unsigned capacity, typename LimbType>
 bool operator==(const quire<NumberType, capacity, LimbType>& lhs,
                 const quire<NumberType, capacity, LimbType>& rhs) {
+	if (lhs._nan || rhs._nan) return false;         // NaR compares unordered (IEEE-style)
 	if (lhs.iszero() && rhs.iszero()) return true;  // +0 == -0
 	return lhs._sign == rhs._sign && lhs._accu == rhs._accu;
 }
@@ -695,6 +746,7 @@ bool operator!=(const quire<NumberType, capacity, LimbType>& lhs,
 template<typename NumberType, unsigned capacity, typename LimbType>
 bool operator<(const quire<NumberType, capacity, LimbType>& lhs,
                const quire<NumberType, capacity, LimbType>& rhs) {
+	if (lhs._nan || rhs._nan) return false;          // NaR is unordered
 	if (lhs.iszero() && rhs.iszero()) return false;  // +0 == -0
 	if (lhs._sign != rhs._sign) return lhs._sign;  // negative < positive
 	// Both same sign: compare magnitudes using MSB-first unsigned comparison.
@@ -726,12 +778,14 @@ bool operator>(const quire<NumberType, capacity, LimbType>& lhs,
 template<typename NumberType, unsigned capacity, typename LimbType>
 bool operator<=(const quire<NumberType, capacity, LimbType>& lhs,
                 const quire<NumberType, capacity, LimbType>& rhs) {
+	if (lhs._nan || rhs._nan) return false;  // NaR is unordered (can't reuse !(rhs<lhs))
 	return !(rhs < lhs);
 }
 
 template<typename NumberType, unsigned capacity, typename LimbType>
 bool operator>=(const quire<NumberType, capacity, LimbType>& lhs,
                 const quire<NumberType, capacity, LimbType>& rhs) {
+	if (lhs._nan || rhs._nan) return false;  // NaR is unordered (can't reuse !(lhs<rhs))
 	return !(lhs < rhs);
 }
 
