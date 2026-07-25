@@ -44,25 +44,11 @@ updates:
           - "minor"
           - "patch"
 
-  # ---- GitHub Actions used by the CI workflows ----
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "github-actions"
-    reviewers:
-      - "Ravenwater"
-    # "build(deps): ..." -- same type/scope as the npm updates, which the
-    # conventional-commit PR-title lint already accepts.
-    commit-message:
-      prefix: "build"
-      include: "scope"
-    groups:
-      github-actions:
-        applies-to: version-updates
-        update-types:
-          - "minor"
-          - "patch"
+  # NOTE: a "github-actions" ecosystem is deliberately NOT configured here.
+  # Any action-version bump edits .github/workflows/*, and the heavy CI
+  # (cmake.yml matrix, coverage.yml, sanitizers.yml, clang-tidy.yml) is NOT
+  # path-filtered for workflow-only changes -- so each such PR would trigger the
+  # full 11-platform + sanitizer + coverage suite, a CI storm (observed
+  # 2026-07-25 when it was briefly enabled). Re-introduce github-actions tracking
+  # only after the heavy workflows are taught to skip workflow-only diffs (e.g. a
+  # dorny/paths-filter gate) or the updates are grouped into a single monthly PR.
