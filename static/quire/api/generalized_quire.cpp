@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cmath>  // std::isnan
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/fdp.hpp>
 #include <universal/number/posit/posit.hpp>
@@ -239,7 +240,8 @@ int TestNonFiniteHandling() {
 
 	using Scalar = cfloat<32, 8, uint32_t, true, false, false>;
 
-	// Assigning a NaN blocktriple sets the quire NaR state instead of throwing.
+	// Assigning a NaN blocktriple sets the quire NaR state instead of throwing,
+	// and the NaR resolves back to a non-finite scalar (convert_to<double> = NaN).
 	blocktriple<23, BlockTripleOperator::REP, uint32_t> nan_val;
 	nan_val.setnan();
 	quire<Scalar> q;
@@ -248,22 +250,36 @@ int TestNonFiniteHandling() {
 		std::cerr << "FAIL: assigning NaN should set the quire NaR state (no throw)\n";
 		++nrOfFailedTestCases;
 	}
+	if (!std::isnan(q.convert_to<double>())) {
+		std::cerr << "FAIL: a NaR quire should resolve to NaN\n";
+		++nrOfFailedTestCases;
+	}
 
-	// Adding an inf blocktriple to a fresh quire also sets the NaR state.
+	// NaR is sticky: a subsequent FINITE accumulation is a no-op, so the quire
+	// stays NaR and still resolves to NaN (this exercises the sticky short-circuit
+	// on a finite operand, not on another non-finite one).
+	q += quire_mul(Scalar(1.0f), Scalar(1.0f));
+	if (!q.isnan() || !std::isnan(q.convert_to<double>())) {
+		std::cerr << "FAIL: NaR should be sticky under finite accumulation\n";
+		++nrOfFailedTestCases;
+	}
+
+	// A fresh finite assignment clears the NaR state and resolves to that value.
+	q = int64_t(1);
+	if (q.isnan() || q.convert_to<double>() != 1.0) {
+		std::cerr << "FAIL: finite assignment should clear the NaR state\n";
+		++nrOfFailedTestCases;
+	}
+
+	// An inf blocktriple on a fresh quire also sets the NaR state.
 	blocktriple<23, BlockTripleOperator::REP, uint32_t> inf_val;
 	inf_val.setinf();
 	quire<Scalar> qi;
 	qi += inf_val;
-	if (!qi.isnan()) {
+	if (!qi.isnan() || !std::isnan(qi.convert_to<double>())) {
 		std::cerr << "FAIL: adding inf should set the quire NaR state (no throw)\n";
 		++nrOfFailedTestCases;
 	}
-
-	// NaR is sticky and a fresh finite assignment clears it.
-	q += inf_val;
-	if (!q.isnan()) { std::cerr << "FAIL: NaR state should be sticky\n"; ++nrOfFailedTestCases; }
-	q = 1;
-	if (q.isnan()) { std::cerr << "FAIL: finite assignment should clear the NaR state\n"; ++nrOfFailedTestCases; }
 
 	return nrOfFailedTestCases;
 }
