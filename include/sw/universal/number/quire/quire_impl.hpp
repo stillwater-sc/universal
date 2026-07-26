@@ -561,6 +561,7 @@ public:
 				parsed_accu.setbit(accu_bit);
 			}
 		}
+		_nar  = false;  // successfully loaded finite bits: leave the NaR state behind
 		_sign = parsed_sign;
 		_accu = parsed_accu;
 		return true;
