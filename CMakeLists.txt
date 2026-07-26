@@ -92,17 +92,10 @@ else(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 ####
-# Set the path to the data directory
-set(TEST_MATRIX_DATA_DIR "${PROJECT_SOURCE_DIR}/data/matrices")
-# Configure a header file that will contain the data directory path
-
-configure_file(
-    "${PROJECT_SOURCE_DIR}/config/TestMatrixDataDirConfig.hpp.in"
-    "${CMAKE_BINARY_DIR}/generated/TestMatrixDataDirConfig.hpp"
-)
-
-# Include the binary directory to find the generated header file
-include_directories("${CMAKE_BINARY_DIR}/generated")
+# The embedded test-matrix DB (data/matrices + TestMatrixDataDirConfig) was
+# consumed only by the BLAS layer, which was extracted to MTL5 (universal#1204,
+# #1209). The matrices now live in MTL5's mtl::testsuite catalog (universal#1210),
+# so the orphaned data + its generated path header have been removed.
 
 ####
 # Set build options
