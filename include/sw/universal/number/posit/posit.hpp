@@ -39,6 +39,11 @@
 // for the blocktriple<> class assume the same behavior as requested for posits
 #define BLOCKTRIPLE_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
 #endif
+// the fused dot product accumulator (quire, via fdp.hpp) must honor the same
+// exception policy as the posit it accumulates for (#1226)
+#if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
+#define QUIRE_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///                         END OF BEHAVIOR SWITCHES                                 ///

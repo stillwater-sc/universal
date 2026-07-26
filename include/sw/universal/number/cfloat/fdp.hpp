@@ -72,6 +72,7 @@ quire_resolve(const quire<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, 
 	constexpr int bt_radix = BT::radix;  // = 2*fbits
 
 	Scalar result;
+	if (q.isnan()) { result.setnan(); return result; }  // NaR propagated through the accumulator (#1226)
 	if (q.iszero()) {
 		result.setzero();
 		return result;

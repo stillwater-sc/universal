@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cmath>  // std::isnan
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/fdp.hpp>
 #include <universal/number/posit/posit.hpp>
@@ -230,35 +231,54 @@ int TestQuireQuireAddition() {
 	return nrOfFailedTestCases;
 }
 
-// Test exception handling
-int TestExceptions() {
+// Test non-finite (NaR/NaN/Inf) handling.
+// In the default (opt-out) exception configuration the quire does NOT throw on a
+// non-finite operand: it records a sticky NaR state that propagates and resolves
+// back to the number system's NaR, matching scalar arithmetic (#1226).
+int TestNonFiniteHandling() {
 	int nrOfFailedTestCases = 0;
 
 	using Scalar = cfloat<32, 8, uint32_t, true, false, false>;
-	quire<Scalar> q;
 
-	// Test NaR/NaN assignment
+	// Assigning a NaN blocktriple sets the quire NaR state instead of throwing,
+	// and the NaR resolves back to a non-finite scalar (convert_to<double> = NaN).
 	blocktriple<23, BlockTripleOperator::REP, uint32_t> nan_val;
 	nan_val.setnan();
-	try {
-		q = nan_val;
-		std::cerr << "FAIL: assigning NaN should throw operand_is_nar\n";
+	quire<Scalar> q;
+	q = nan_val;
+	if (!q.isnan()) {
+		std::cerr << "FAIL: assigning NaN should set the quire NaR state (no throw)\n";
 		++nrOfFailedTestCases;
 	}
-	catch (const operand_is_nar&) {
-		// expected
+	if (!std::isnan(q.convert_to<double>())) {
+		std::cerr << "FAIL: a NaR quire should resolve to NaN\n";
+		++nrOfFailedTestCases;
 	}
 
-	// Test inf assignment
-	blocktriple<23, BlockTripleOperator::REP, uint32_t> inf_val;
-	inf_val.setinf();
-	try {
-		q += inf_val;
-		std::cerr << "FAIL: adding inf should throw operand_is_nar\n";
+	// NaR is sticky: a subsequent FINITE accumulation is a no-op, so the quire
+	// stays NaR and still resolves to NaN (this exercises the sticky short-circuit
+	// on a finite operand, not on another non-finite one).
+	q += quire_mul(Scalar(1.0f), Scalar(1.0f));
+	if (!q.isnan() || !std::isnan(q.convert_to<double>())) {
+		std::cerr << "FAIL: NaR should be sticky under finite accumulation\n";
 		++nrOfFailedTestCases;
 	}
-	catch (const operand_is_nar&) {
-		// expected
+
+	// A fresh finite assignment clears the NaR state and resolves to that value.
+	q = int64_t(1);
+	if (q.isnan() || q.convert_to<double>() != 1.0) {
+		std::cerr << "FAIL: finite assignment should clear the NaR state\n";
+		++nrOfFailedTestCases;
+	}
+
+	// An inf blocktriple on a fresh quire also sets the NaR state.
+	blocktriple<23, BlockTripleOperator::REP, uint32_t> inf_val;
+	inf_val.setinf();
+	quire<Scalar> qi;
+	qi += inf_val;
+	if (!qi.isnan() || !std::isnan(qi.convert_to<double>())) {
+		std::cerr << "FAIL: adding inf should set the quire NaR state (no throw)\n";
+		++nrOfFailedTestCases;
 	}
 
 	return nrOfFailedTestCases;
@@ -297,7 +317,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(TestPositQuire(), "quire<posit<32,2>>", "posit quire");
 	nrOfFailedTestCases += ReportTestResult(TestFixpntQuire(), "quire<fixpnt<16,8>>", "fixpnt quire");
 	nrOfFailedTestCases += ReportTestResult(TestQuireQuireAddition(), "quire<cfloat<32,8>>", "quire-quire addition");
-	nrOfFailedTestCases += ReportTestResult(TestExceptions(), "quire<cfloat<32,8>>", "exception handling");
+	nrOfFailedTestCases += ReportTestResult(TestNonFiniteHandling(), "quire<cfloat<32,8>>", "non-finite (NaR) handling");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

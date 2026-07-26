@@ -42,6 +42,11 @@
 // default is to use std::cerr for signalling an error
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+// the fused dot product accumulator (quire, via fdp.hpp) must honor the same
+// exception policy as the fixpnt it accumulates for (#1226)
+#if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
+#define QUIRE_THROW_ARITHMETIC_EXCEPTION FIXPNT_THROW_ARITHMETIC_EXCEPTION
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

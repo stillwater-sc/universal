@@ -37,10 +37,15 @@
 #define CFLOAT_EXCEPT noexcept
 #else
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
-#define CFLOAT_EXCEPT 
+#define CFLOAT_EXCEPT
 #else
 #define CFLOAT_EXCEPT noexcept
 #endif
+#endif
+// the fused dot product accumulator (quire, via fdp.hpp) must honor the same
+// exception policy as the cfloat it accumulates for (#1226)
+#if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
+#define QUIRE_THROW_ARITHMETIC_EXCEPTION CFLOAT_THROW_ARITHMETIC_EXCEPTION
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
