@@ -11,6 +11,8 @@ namespace sw { namespace universal {
 	// forward references
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> class fixpnt;
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> constexpr fixpnt<nbits, rbits, arithmetic, bt> abs(const fixpnt<nbits, rbits, arithmetic, bt>&);
+	// fused multiply-add: a*b + c with a single rounding (see math/fma.hpp)
+	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> fixpnt<nbits, rbits, arithmetic, bt> fma(const fixpnt<nbits, rbits, arithmetic, bt>&, const fixpnt<nbits, rbits, arithmetic, bt>&, const fixpnt<nbits, rbits, arithmetic, bt>&);
 
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> struct fixpntdiv_t;
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> fixpntdiv_t<nbits, rbits, arithmetic, bt> fixpntdiv(const fixpnt<nbits, rbits, arithmetic, bt>&, const fixpnt<nbits, rbits, arithmetic, bt>&);
