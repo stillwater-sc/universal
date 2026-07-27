@@ -7,7 +7,7 @@
 // real value of a*b + c is (A*B + C*2^rbits) / 2^(2*rbits). The oracle rounds
 // that exact rational round-to-nearest-even at rbits (matching blockbinary's
 // roundingMode) and then applies the type's range policy (Modulo wrap / Saturate
-// clamp) -- all in __int128, entirely independent of the implementation. We check:
+// clamp) -- all in exact int64 integer math, independent of the implementation. We check:
 //   - correctly-rounded: fma(a,b,c) equals the oracle for random operands, in
 //     both Modulo and Saturate arithmetic;
 //   - fused vs naive: fma matches the oracle in cases where the two-rounding
@@ -42,34 +42,40 @@ namespace {
 	}
 
 	// floor division (C++ '/' truncates toward zero; we need floor for negative numerators)
-	__int128 floordiv(__int128 num, __int128 den) {
-		__int128 q = num / den, r = num - q * den;
+	int64_t floordiv(int64_t num, int64_t den) {
+		int64_t q = num / den, r = num - q * den;
 		if (r != 0 && ((r < 0) != (den < 0))) --q;
 		return q;
 	}
 
 	// exact a*b + c rounded round-to-nearest-even at rbits, then range-limited.
 	// Returns the signed integer bit-pattern the fma result must carry.
+	//
+	// int64_t is exact here (no __int128; MSVC has none): A,B are nbits-bit signed
+	// integers so |A*B| <= 2^(2*(nbits-1)) <= 2^62 for nbits <= 32; C is folded in as
+	// the integer part (value = (q + C) + r/2^rbits), so the C*2^rbits term is never
+	// materialized and the tie-to-even decision is taken on the final integer (q + C).
 	template<unsigned nbits, unsigned rbits, bool arithmetic>
 	int64_t fma_oracle(int64_t A, int64_t B, int64_t C) {
-		const __int128 den = (__int128)1 << rbits;                 // 2^rbits
-		const __int128 num = (__int128)A * B + (__int128)C * den;  // (A*B + C*2^rbits), in units of 2^-2rbits scaled...
-		// value = num / 2^(2rbits); its bit-pattern (value * 2^rbits) = num / 2^rbits, rounded.
-		__int128 q = floordiv(num, den);
-		__int128 r = num - q * den;                                // 0 <= r < den
-		__int128 twice = r << 1;
-		if (twice > den)      ++q;
-		else if (twice == den && (q & 1)) ++q;                     // exact tie -> round to even
-		// q is the ideal (unbounded) result bit-pattern
+		static_assert(nbits <= 32, "int64 oracle: A*B must fit in int64 (nbits <= 32)");
+		const int64_t x   = A * B;                    // exact product bit-pattern (2*rbits fractional bits)
+		const int64_t den = (int64_t)1 << rbits;      // 2^rbits
+		const int64_t q0  = floordiv(x, den);         // integer part of A*B / 2^rbits
+		const int64_t r   = x - q0 * den;             // 0 <= r < den  (fractional remainder)
+		int64_t M = q0 + C;                           // integer part of a*b + c (C is exact)
+		const int64_t twice = r << 1;
+		if (twice > den)                 ++M;
+		else if (twice == den && (M & 1)) ++M;        // exact tie -> round to even (on the result)
+		// M is the ideal (unbounded) result bit-pattern
 		const int64_t maxpos =  ((int64_t)1 << (nbits - 1)) - 1;
 		const int64_t maxneg = -((int64_t)1 << (nbits - 1));
 		if constexpr (arithmetic == Saturate) {
-			if (q > maxpos) return maxpos;
-			if (q < maxneg) return maxneg;
-			return (int64_t)q;
+			if (M > maxpos) return maxpos;
+			if (M < maxneg) return maxneg;
+			return M;
 		}
 		else { // Modulo: reduce into signed nbits two's complement
-			return signextend((uint64_t)(q & (((__int128)1 << nbits) - 1)), nbits);
+			return signextend((uint64_t)(M & ((nbits >= 64) ? ~0ll : (((int64_t)1 << nbits) - 1))), nbits);
 		}
 	}
 
