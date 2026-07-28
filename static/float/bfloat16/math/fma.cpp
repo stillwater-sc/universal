@@ -139,6 +139,13 @@ namespace {
 		chk(fma(two, three, zero), bfloat16(6.0f), "2*3+0 == 6");
 		chk(fma(zero, three, two), two,            "0*3+2 == 2");
 		chk(fma(one, three, two),  bfloat16(5.0f), "1*3+2 == 5");
+		// deterministic round-to-nearest-even ties (ulp at 1.0 is 2^-7):
+		//   1 + 2^-8   is the midpoint of 1.0 and 1+2^-7   -> even significand 1.0
+		//   1 + 3*2^-8 is the midpoint of 1+2^-7 and 1+2^-6 -> even significand 1+2^-6
+		const bfloat16 halfUlp(std::ldexp(1.0f, -8));         // 2^-8
+		const bfloat16 threeHalfUlp(std::ldexp(3.0f, -8));    // 3*2^-8
+		chk(fma(one, one, halfUlp),      one,                              "1*1+2^-8 tie -> 1.0 (even down)");
+		chk(fma(one, one, threeHalfUlp), bfloat16(1.0f + std::ldexp(1.0f, -6)), "1*1+3*2^-8 tie -> 1+2^-6 (even up)");
 		return fails;
 	}
 
