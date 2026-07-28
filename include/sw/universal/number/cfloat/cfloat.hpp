@@ -80,6 +80,10 @@
 #include <universal/number/cfloat/mathext.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
+/// fused dot product / quire accumulation support (quire_mul), matching posit.hpp
+#include <universal/number/cfloat/fdp.hpp>
+
+///////////////////////////////////////////////////////////////////////////////////////
 /// aliases for industry standard floating point configurations
 namespace sw { namespace universal {
 

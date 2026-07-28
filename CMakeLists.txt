@@ -209,8 +209,6 @@ option(UNIVERSAL_BUILD_NUMBER_INTERVALS            "Set to ON to build static in
 option(UNIVERSAL_BUILD_NUMBER_UNUM1S               "Set to ON to build static unum type 1 tests"         OFF)
 option(UNIVERSAL_BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 tests"         OFF)
 option(UNIVERSAL_BUILD_NUMBER_POSITS               "Set to ON to build static unum type 3 posit tests"   OFF)
-option(UNIVERSAL_BUILD_NUMBER_POSITOS              "Set to ON to build static unum type 3 posito tests"  OFF)
-option(UNIVERSAL_BUILD_NUMBER_VALIDS               "Set to ON to build static unum type 3 valid tests"   OFF)
 option(UNIVERSAL_BUILD_NUMBER_TAKUMS               "Set to ON to build static takum tests"               OFF)
 option(UNIVERSAL_BUILD_NUMBER_LNS                  "Set to ON to build static lns tests"                 OFF)
 option(UNIVERSAL_BUILD_NUMBER_DBNS                 "Set to ON to build static dbns tests"                OFF)
@@ -965,8 +963,6 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_UNUM1S ON)
 	set(UNIVERSAL_BUILD_NUMBER_UNUM2S ON)
 	set(UNIVERSAL_BUILD_NUMBER_POSITS ON)
-	set(UNIVERSAL_BUILD_NUMBER_POSITOS ON)
-	set(UNIVERSAL_BUILD_NUMBER_VALIDS ON)
 	set(UNIVERSAL_BUILD_NUMBER_TAKUMS ON)
 	set(UNIVERSAL_BUILD_NUMBER_LNS ON)
 	set(UNIVERSAL_BUILD_NUMBER_DBNS ON)
@@ -1126,21 +1122,14 @@ endif(UNIVERSAL_BUILD_NUMBER_UNUM2S)
 
 if(UNIVERSAL_BUILD_NUMBER_POSITS)
 add_subdirectory("static/tapered/posit")
-add_subdirectory("static/tapered/posit1")
-add_subdirectory("static/tapered/posit1/specialized")
 endif(UNIVERSAL_BUILD_NUMBER_POSITS)
 
 if(UNIVERSAL_BUILD_NUMBER_QUIRES)
 add_subdirectory("static/quire")
 endif(UNIVERSAL_BUILD_NUMBER_QUIRES)
 
-if(UNIVERSAL_BUILD_NUMBER_POSITOS)
-add_subdirectory("static/tapered/posito")
-endif(UNIVERSAL_BUILD_NUMBER_POSITOS)
-
-if(UNIVERSAL_BUILD_NUMBER_VALIDS)
-add_subdirectory("static/range/valid")
-endif(UNIVERSAL_BUILD_NUMBER_VALIDS)
+# posit1, posito, and valid are archived legacy designs (original posit + unum type III);
+# see ./archive and epic #1243. Their build wiring and options have been removed.
 
 if(UNIVERSAL_BUILD_NUMBER_TAKUMS)
 add_subdirectory("static/tapered/takum")
@@ -1464,13 +1453,9 @@ endif(UNIVERSAL_BUILD_VALIDATION_HW)
 
 # C API library and their tests
 if(UNIVERSAL_BUILD_C_API_PURE_LIB)
-add_subdirectory("c_api/pure_c/posit")
-add_subdirectory("c_api/pure_c/test/posit")
 endif(UNIVERSAL_BUILD_C_API_PURE_LIB)
 
 if(UNIVERSAL_BUILD_C_API_SHIM_LIB)
-add_subdirectory("c_api/shim/posit")
-add_subdirectory("c_api/shim/test/posit")
 endif(UNIVERSAL_BUILD_C_API_SHIM_LIB)
 
 ##################################################################
