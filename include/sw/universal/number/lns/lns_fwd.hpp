@@ -13,6 +13,9 @@ namespace sw { namespace universal {
 // core lns types and functions
 template<unsigned nbits, unsigned rbits, typename bt, auto...x> class lns;
 template<unsigned nbits, unsigned rbits, typename bt, auto...x> constexpr lns<nbits, rbits, bt, x...> abs(const lns<nbits, rbits, bt, x...>&);
+// fused multiply-add: a*b + c with a single add-domain rounding (see math/fma.hpp)
+template<unsigned nbits, unsigned rbits, typename bt, auto...x>
+lns<nbits, rbits, bt, x...> fma(const lns<nbits, rbits, bt, x...>&, const lns<nbits, rbits, bt, x...>&, const lns<nbits, rbits, bt, x...>&);
 template<unsigned nbits, unsigned rbits, typename bt, auto...x> lns<nbits, rbits, bt, x...> sqrt(const lns<nbits, rbits, bt, x...>&);
 
 }} // namespace sw::universal
