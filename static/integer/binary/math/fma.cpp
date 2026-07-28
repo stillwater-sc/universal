@@ -161,12 +161,18 @@ try {
 	base = 20000;
 #endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyFmaExhaustiveAB<8>(reportTestCases),          "fma exhaustive(a,b) integer<8>",   "fma");
-	nrOfFailedTestCases += ReportTestResult(VerifyFmaVsOracle<16>(reportTestCases, base, 0xA1), "fma vs oracle integer<16>",        "fma");
-	nrOfFailedTestCases += ReportTestResult(VerifyFmaVsOracle<24>(reportTestCases, base, 0xB2), "fma vs oracle integer<24>",        "fma");
-	nrOfFailedTestCases += ReportTestResult(VerifyFmaVsOracle<32>(reportTestCases, base, 0xC3), "fma vs oracle integer<32>",        "fma");
-	nrOfFailedTestCases += ReportTestResult(VerifyFmaIdentities<16>(reportTestCases, base / 4 + 1, 0xD4), "fma identities integer<16>", "fma");
-	nrOfFailedTestCases += ReportTestResult(VerifyOverflowCorner(reportTestCases),              "fma modular-overflow corner",      "fma");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFmaExhaustiveAB<8>(reportTestCases), "fma exhaustive(a,b) integer<8>", "fma");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFmaVsOracle<16>(reportTestCases, base, 0xA1), "fma vs oracle integer<16>", "fma");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFmaVsOracle<24>(reportTestCases, base, 0xB2), "fma vs oracle integer<24>", "fma");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFmaVsOracle<32>(reportTestCases, base, 0xC3), "fma vs oracle integer<32>", "fma");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFmaIdentities<16>(reportTestCases, base / 4 + 1, 0xD4), "fma identities integer<16>", "fma");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyOverflowCorner(reportTestCases), "fma modular-overflow corner", "fma");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
