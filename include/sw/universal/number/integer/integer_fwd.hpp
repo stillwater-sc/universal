@@ -14,5 +14,7 @@ template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> integ
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> integer<nbits, BlockType, NumberType> min_int();
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> struct idiv_t;
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, NumberType>&, const integer<nbits, BlockType, NumberType>&b);
+// fused multiply-add: a*b + c (exact modulo the integer width; see math/fma.hpp)
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> integer<nbits, BlockType, NumberType> fma(const integer<nbits, BlockType, NumberType>&, const integer<nbits, BlockType, NumberType>&, const integer<nbits, BlockType, NumberType>&);
 
 }} // namespace sw::universal
