@@ -33,6 +33,9 @@ namespace sw { namespace universal {
 // Forward definitions
 template<unsigned nbits, unsigned es, typename bt> class areal;
 template<unsigned nbits, unsigned es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>&);
+// fused multiply-add: a*b + c, faithfully rounded with the uncertainty bit (see math_functions.hpp)
+template<unsigned nbits, unsigned es, typename bt>
+areal<nbits,es,bt> fma(const areal<nbits,es,bt>&, const areal<nbits,es,bt>&, const areal<nbits,es,bt>&);
 
 /// <summary>
 /// decode an areal value into its constituent parts
