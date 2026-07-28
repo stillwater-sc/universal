@@ -13,6 +13,9 @@ namespace sw { namespace universal {
 // core takum types and functions
 template<unsigned nbits, unsigned rbits, typename bt> class takum;
 template<unsigned nbits, unsigned rbits, typename bt> constexpr takum<nbits, rbits, bt> abs(const takum<nbits, rbits, bt>&) noexcept;
+// fused multiply-add: a*b + c with a single rounding into takum (see math/fma.hpp)
+template<unsigned nbits, unsigned rbits, typename bt>
+takum<nbits, rbits, bt> fma(const takum<nbits, rbits, bt>&, const takum<nbits, rbits, bt>&, const takum<nbits, rbits, bt>&);
 template<unsigned nbits, unsigned rbits, typename bt> takum<nbits, rbits, bt> sqrt(const takum<nbits, rbits, bt>&);
 
 }} // namespace sw::universal

@@ -19,6 +19,7 @@ An algebraic treatment of elementary functions was started by Joseph Fels Ritt i
 #include <universal/number/takum/math/complex.hpp>
 #include <universal/number/takum/math/error_and_gamma.hpp>
 #include <universal/number/takum/math/exponent.hpp>
+#include <universal/number/takum/math/fma.hpp>
 #include <universal/number/takum/math/fractional.hpp>
 #include <universal/number/takum/math/hyperbolic.hpp>
 #include <universal/number/takum/math/hypot.hpp>
