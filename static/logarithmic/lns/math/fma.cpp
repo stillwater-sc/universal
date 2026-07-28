@@ -37,7 +37,6 @@ namespace {
 		for (int t = 0; t < nrTests; ++t) {
 			Lns a(U(rng)), b(U(rng)), c(U(rng));
 			Lns r = fma(a, b, c);
-			if (r.isnan()) continue;
 			// independent fused reference in long double: exact product then a single rounding
 			// (a plain da*db + dc would double-round and amplify cancellation -- which is exactly
 			// what fma avoids, so it must not be the oracle).

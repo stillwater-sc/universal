@@ -16,6 +16,13 @@
 // rounding that determines the result. NaN propagates via the value constructor
 // (lns has no infinity: isinf() is always false).
 //
+// LIMITATION: the double bridge assumes the operands and the exact a*b + c lie within
+// binary64's range and precision. A logarithmic encoding can have a wider dynamic
+// range than binary64, so operands (or a product-sum) whose magnitude exceeds ~1.8e308
+// overflow to infinity in the intermediate before the fma completes. A range-safe
+// log-domain fused path (working in the log/quire domain, cf. lns/fdp.hpp) is a
+// possible future enhancement; this overload targets binary64-representable operands.
+//
 // Sub-issue of #1189 (universal fma). Relates to #1196.
 
 #include <cmath>
