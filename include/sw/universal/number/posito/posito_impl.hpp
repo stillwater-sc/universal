@@ -2353,9 +2353,11 @@ posito<nbits, es> fabs(const posito<nbits, es>& v) {
 
 // Atomic fused operators
 
-// FMA: fused multiply-add:  a*b + c
+// fma_value: fused multiply-add building block a*b + c, returning the UNROUNDED
+// full-precision product-sum as an internal::value. The public rounded scalar fma
+// (below) rounds this once into a posito. (Renamed from fma; #1197.)
 template<unsigned nbits, unsigned es>
-internal::value<1 + 2 * (nbits - es)> fma(const posito<nbits, es>& a, const posito<nbits, es>& b, const posito<nbits, es>& c) {
+internal::value<1 + 2 * (nbits - es)> fma_value(const posito<nbits, es>& a, const posito<nbits, es>& b, const posito<nbits, es>& c) {
 	constexpr unsigned fbits = nbits - 3 - es;
 	constexpr unsigned fhbits = fbits + 1;      // size of fraction + hidden bit
 	constexpr unsigned mbits = 2 * fhbits;      // size of the multiplier output
@@ -2376,14 +2378,14 @@ internal::value<1 + 2 * (nbits - es)> fma(const posito<nbits, es>& a, const posi
 			sum.setzero();
 		}
 		else {
-			ctmp.set(sign(c), scale(c), extract_fraction<nbits, es, fbits>(c), c.iszero(), c.isnar());
+			c.normalize(ctmp);  // decode c into (sign,scale,fraction) -- posito uses normalize(), not extract_fraction (#1197)
 			sum.template right_extend<fbits, abits + 1>(ctmp); // right-extend the c input argument and assign to sum
 		}
 	}
 	else { // else clause guarantees that the product is non-zero	
 		// first, the multiply: transform the inputs into (sign,scale,fraction) triples
-		va.set(sign(a), scale(a), extract_fraction<nbits, es, fbits>(a), a.iszero(), a.isnar());;
-		vb.set(sign(b), scale(b), extract_fraction<nbits, es, fbits>(b), b.iszero(), b.isnar());;
+		a.normalize(va);  // posito decodes via normalize(), not extract_fraction (#1197)
+		b.normalize(vb);
 
 		module_multiply(va, vb, product);    // multiply the two inputs
 
@@ -2392,7 +2394,7 @@ internal::value<1 + 2 * (nbits - es)> fma(const posito<nbits, es>& a, const posi
 			sum.template right_extend<mbits, abits + 1>(product);   // right-extend the product and assign to sum
 		}
 		else {
-			ctmp.set(sign(c), scale(c), extract_fraction<nbits, es, fbits>(c), c.iszero(), c.isnar());
+			c.normalize(ctmp);  // decode c into (sign,scale,fraction) -- posito uses normalize(), not extract_fraction (#1197)
 			internal::value<mbits> vc;
 			vc.template right_extend<fbits, mbits>(ctmp); // right-extend the c argument and assign to adder input
 			module_add<mbits, abits>(product, vc, sum);
@@ -2400,6 +2402,17 @@ internal::value<1 + 2 * (nbits - es)> fma(const posito<nbits, es>& a, const posi
 	}
 
 	return sum;
+}
+
+// FMA: fused multiply-add a*b + c with a SINGLE rounding into posito.
+// Forms the exact product-sum via fma_value (full-precision internal::value) and
+// rounds it once with convert() -- more accurate than the two-rounding a*b + c, and
+// a drop-in scalar (returns the posito type) matching the modern posit fma. (#1197)
+template<unsigned nbits, unsigned es>
+posito<nbits, es> fma(const posito<nbits, es>& a, const posito<nbits, es>& b, const posito<nbits, es>& c) {
+	posito<nbits, es> result;
+	convert(fma_value(a, b, c), result);   // single rounding; convert handles zero/NaR
+	return result;
 }
 
 // FAM: fused add-multiply: (a + b) * c

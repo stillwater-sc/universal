@@ -2700,9 +2700,11 @@ posit<nbits, es> fabs(const posit<nbits, es>& v) {
 
 // Atomic fused operators
 
-// FMA: fused multiply-add:  a*b + c
+// fma_value: fused multiply-add building block a*b + c, returning the UNROUNDED
+// full-precision product-sum as an internal::value. The public rounded scalar fma
+// (below) rounds this once into a posit. (Renamed from fma; #1197.)
 template<unsigned nbits, unsigned es>
-internal::value<1 + 2 * (nbits - es)> fma(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c) {
+internal::value<1 + 2 * (nbits - es)> fma_value(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c) {
 	constexpr unsigned fbits = nbits - 3 - es;
 	constexpr unsigned fhbits = fbits + 1;      // size of positFraction + hidden bit
 	constexpr unsigned mbits = 2 * fhbits;      // size of the multiplier output
@@ -2747,6 +2749,17 @@ internal::value<1 + 2 * (nbits - es)> fma(const posit<nbits, es>& a, const posit
 	}
 
 	return sum;
+}
+
+// FMA: fused multiply-add a*b + c with a SINGLE rounding into posit.
+// Forms the exact product-sum via fma_value (full-precision internal::value) and
+// rounds it once with convert() -- more accurate than the two-rounding a*b + c, and
+// a drop-in scalar (returns the posit type) matching the modern posit fma. (#1197)
+template<unsigned nbits, unsigned es>
+posit<nbits, es> fma(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c) {
+	posit<nbits, es> result;
+	convert(fma_value(a, b, c), result);   // single rounding; convert handles zero/NaR
+	return result;
 }
 
 // FAM: fused add-multiply: (a + b) * c
