@@ -23,6 +23,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace {
@@ -76,6 +77,7 @@ try {
 	fails += VerifyAggregatorFdp<posit<32, 2>>("posit<32,2>", reportTestCases);
 	fails += VerifyAggregatorFdp<cfloat<32, 8, std::uint32_t, true, false, false>>("cfloat<32,8>", reportTestCases);
 	fails += VerifyAggregatorFdp<lns<16, 8>>("lns<16,8>", reportTestCases);
+	fails += VerifyAggregatorFdp<fixpnt<16, 8>>("fixpnt<16,8>", reportTestCases);
 
 	nrOfFailedTestCases += ReportTestResult(fails, "quire_mul / fdp reachable from aggregator header", "fdp");
 
