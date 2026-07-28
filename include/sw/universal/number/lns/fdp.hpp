@@ -6,20 +6,34 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// LNS stores values as (-1)^sign * 2^exponent where the exponent is a
-// fixed-point number. Multiplication in LNS is addition of exponents (exact),
-// but quire accumulation requires linear-domain values.
+// LNS stores values as (-1)^sign * 2^exponent where the exponent is a fixed-point
+// number with rbits fractional bits. Multiplication in LNS is addition of exponents
+// (exact in the log domain), but a quire is a LINEAR fixed-point register, so the
+// product must be deposited as a linear value.
 //
-// quire_mul converts two lns operands to double, multiplies exactly in double
-// (since lns values are always exactly representable as powers of 2 to the
-// precision of the exponent), then packs the product into a blocktriple
-// for quire accumulation.
+// IMPORTANT -- quire<lns> is NOT an exact accumulator (unlike quire<posit> and
+// quire<cfloat>). An lns product is 2^(e_a + e_b) = 2^(k + m/2^rbits). For m != 0
+// that value is IRRATIONAL (if 2^(p/q) were rational, unique factorization forces
+// q | p), so it is not a dyadic rational -- and no linear fixed-point super-
+// accumulator, at ANY width, can represent a general lns product exactly. This is a
+// structural property lns lacks: posit and cfloat values are dyadic, so their products
+// land exactly on a wide-enough fixed-point grid; lns values do not. Earlier revisions
+// of this header claimed lns values are "always exactly representable as powers of 2";
+// that holds only when the exponent is an integer, and is the source of the confusion.
 //
-// This double-precision path is exact for lns types up to ~52 exponent
-// fractional bits. For wider types, a native log-to-linear conversion
-// using extended-precision arithmetic would be needed.
+// quire_mul therefore ROUNDS each product once before depositing it. The current
+// implementation forms the product on the double/frexp path and packs 2*rbits
+// significand bits -- i.e. it rounds at ~the lns representation precision, well below
+// the quire's own precision. So the quire-dot error is bounded by the PRODUCT-
+// representation error, not by the accumulation; for narrow lns (e.g. lns<16,8>) this
+// can be WORSE than accumulating the same terms in a promoted double. For an accurate
+// lns dot product, promote to a double accumulator.
 //
-// Relates to #345, #549
+// A future enhancement could round each product at the quire's full precision instead
+// of double's, recovering a single-rounding-per-term guarantee (still not exact). See
+// #1203 and stillwater-sc/mp-blas#11.
+//
+// Relates to #345, #549, #1203
 
 #include <vector>
 #include <cmath>
@@ -30,15 +44,17 @@
 namespace sw { namespace universal {
 
 // ============================================================================
-// quire_mul: unrounded full-precision product for quire accumulation
+// quire_mul: ROUNDED lns product for quire accumulation (NOT exact -- see the file
+// header: a general lns product is irrational and cannot be exact in a linear quire).
 //
-// Converts both lns operands to double, multiplies, then decomposes the
-// product into a blocktriple<product_fbits, REP, bt> for quire accumulation.
+// Converts both lns operands to double, multiplies, then decomposes the product into a
+// blocktriple<product_fbits, REP, bt> with product_fbits = 2*rbits.
 //
-// The REP blocktriple with fbits=product_fbits gives:
+// The REP blocktriple gives:
 //   bfbits = product_fbits + 2
 //   radix  = product_fbits
-// which is sufficient to hold the double-precision product significand.
+// so it carries 2*rbits significand bits -- the product is rounded to ~the lns
+// representation precision before it enters the quire, NOT to the quire's precision.
 // ============================================================================
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 blocktriple<2*rbits, BlockTripleOperator::REP, bt>
