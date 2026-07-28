@@ -13,6 +13,9 @@ namespace sw { namespace universal {
 // core dbns types and functions
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra> class dbns;
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra> constexpr dbns<nbits, fbbits, bt, xtra...> abs(const dbns<nbits, fbbits, bt, xtra...>&);
+// fused multiply-add: a*b + c with a single add-domain rounding (see math_functions.hpp)
+template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
+dbns<nbits, fbbits, bt, xtra...> fma(const dbns<nbits, fbbits, bt, xtra...>&, const dbns<nbits, fbbits, bt, xtra...>&, const dbns<nbits, fbbits, bt, xtra...>&);
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra> dbns<nbits, fbbits, bt, xtra...> sqrt(const dbns<nbits, fbbits, bt, xtra...>&);
 
 }} // namespace sw::universal

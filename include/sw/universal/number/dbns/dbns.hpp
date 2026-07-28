@@ -60,4 +60,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
+// NOTE: the full mathlib references a math/ subdirectory that does not exist yet, so it
+// stays disabled; math_functions.hpp holds the functions that are wired in (e.g. fma).
 //#include <universal/number/dbns/mathlib.hpp>
+#include <universal/number/dbns/math_functions.hpp>

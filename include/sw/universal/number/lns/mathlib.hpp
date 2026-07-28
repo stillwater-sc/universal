@@ -10,6 +10,7 @@
 #include <universal/number/lns/math/complex.hpp>
 #include <universal/number/lns/math/error_and_gamma.hpp>
 #include <universal/number/lns/math/exponent.hpp>
+#include <universal/number/lns/math/fma.hpp>
 #include <universal/number/lns/math/fractional.hpp>
 #include <universal/number/lns/math/hyperbolic.hpp>
 #include <universal/number/lns/math/hypot.hpp>
