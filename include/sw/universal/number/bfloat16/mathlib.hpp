@@ -10,6 +10,7 @@
 //#include <universal/number/bfloat16/math/functions/complex.hpp>
 #include <universal/number/bfloat16/math/functions/error_and_gamma.hpp>
 #include <universal/number/bfloat16/math/functions/exponent.hpp>
+#include <universal/number/bfloat16/math/functions/fma.hpp>
 #include <universal/number/bfloat16/math/functions/fractional.hpp>
 #include <universal/number/bfloat16/math/functions/hyperbolic.hpp>
 #include <universal/number/bfloat16/math/functions/hypot.hpp>
