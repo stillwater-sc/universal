@@ -8,6 +8,7 @@
 
 #include <universal/number/integer/math/classify.hpp>
 //#include <universal/number/integer/math/complex.hpp>
+#include <universal/number/integer/math/fma.hpp>
 // no error_and_gamma functions
 // no exponent functions
 // no fractional functions
