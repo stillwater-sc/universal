@@ -181,6 +181,14 @@ struct quire_traits<fixpnt<nbits, rbits, arithmetic, bt>> {
 //
 // NOTE: This is a provisional sizing. LNS quire support (issue #549) may
 // reveal that a different formula or approach is needed.
+//
+// ACCURACY: unlike quire<posit> / quire<cfloat>, quire<lns> is NOT an exact
+// accumulator. An lns product is 2^(k + m/2^rbits), irrational for m != 0, so it is
+// not a dyadic rational and cannot be represented exactly in any linear fixed-point
+// quire at any width. quire_mul(lns,lns) rounds each product (see number/lns/fdp.hpp),
+// so the quire-dot error is bounded by the product-representation error, not by the
+// accumulation -- for narrow lns it can be worse than a promoted-double accumulator.
+// For accurate lns dot products, promote to double. (#1203)
 // ============================================================================
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 struct quire_traits<lns<nbits, rbits, bt, xtra...>> {
