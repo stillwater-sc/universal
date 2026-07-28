@@ -4,11 +4,8 @@ set(COMPLEX_SRCS complex.cpp)
 
 set(CONCURRENCY_SRCS concurrency.cpp)
 
-set(EXAMPLE_SRCS efunc_posits.cpp 
-	 efunc_valids.cpp 
-	 gismo_test.cpp 
-	 serialization.cpp 
-	 skeleton.cpp 
+set(EXAMPLE_SRCS gismo_test.cpp
+	 skeleton.cpp
 	 type_test.cpp
 	 float_to_decimal_string.cpp
 	 # conversion.cpp dropped from build: depends on extracted <blas/...> (universal#1209); source left in place

@@ -11,7 +11,6 @@ file (GLOB LNS_SRC      "./lns/*.cpp")
 file (GLOB NATIVE_SRC   "./native/*.cpp")
 file (GLOB POSIT_SRC    "./posit/*.cpp")
 file (GLOB UNUM_SRC     "./unum/*.cpp")
-file (GLOB VALID_SRC    "./valid/*.cpp")
 
 compile_all("true" "benchmark_areal"   "Benchmarks/Performance/Arithmetic/areal"    "${AREAL_SRC}")
 compile_all("true" "benchmark_bfloat"  "Benchmarks/Performance/Arithmetic/bfloat16" "${BFLOAT16_SRC}")
@@ -26,4 +25,3 @@ compile_all("true" "benchmark_lns"     "Benchmarks/Performance/Arithmetic/lns"  
 compile_all("true" "benchmark_native"  "Benchmarks/Performance/Arithmetic/native"   "${NATIVE_SRC}")
 compile_all("true" "benchmark_posit"   "Benchmarks/Performance/Arithmetic/posit"    "${POSIT_SRC}")
 compile_all("true" "benchmark_unum"    "Benchmarks/Performance/Arithmetic/unum"     "${UNUM_SRC}")
-compile_all("true" "benchmark_valid"   "Benchmarks/Performance/Arithmetic/valid"    "${VALID_SRC}")
