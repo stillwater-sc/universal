@@ -112,6 +112,12 @@ namespace sw { namespace universal {
 		{ I p = I(std::ldexp(1.0, -700)) * I(0.0);
 		  if (!(p.lo() == 0.0 && p.hi() == 0.0)) { ++fails; if (reportTestCases)
 			std::cout << "    FAIL exact-zero product widened: [" << p.lo() << ", " << p.hi() << "]\n"; } }
+		// the empty-intersection NaN sentinel must survive interval construction: round_down/up
+		// must PROPAGATE a genuine NaN input (not clamp it to +-inf like the boundary artifact),
+		// else intersect() of disjoint intervals would become [-inf,+inf] instead of NaN (#1256).
+		{ I empty = intersect(I(1.0, 2.0), I(3.0, 4.0));
+		  if (!empty.isnan()) { ++fails; if (reportTestCases)
+			std::cout << "    FAIL empty intersection not NaN: [" << empty.lo() << ", " << empty.hi() << "]\n"; } }
 		return fails;
 	}
 

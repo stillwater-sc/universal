@@ -36,7 +36,8 @@ namespace sw { namespace universal {
 namespace interval_detail {
 	template<typename Scalar>
 	inline Scalar round_down(Scalar x) noexcept {   // toward -inf
-		using std::nextafter;
+		using std::nextafter; using std::isnan;
+		if (isnan(x)) return x;   // propagate a genuine NaN input (e.g. the empty-intersection sentinel)
 		Scalar ninf = -std::numeric_limits<Scalar>::infinity();
 		Scalar r = nextafter(x, ninf);
 		// some Universal types return NaN at the min boundary (nextafter(maxneg, -inf));
@@ -45,7 +46,8 @@ namespace interval_detail {
 	}
 	template<typename Scalar>
 	inline Scalar round_up(Scalar x) noexcept {      // toward +inf
-		using std::nextafter;
+		using std::nextafter; using std::isnan;
+		if (isnan(x)) return x;   // propagate a genuine NaN input
 		Scalar pinf = std::numeric_limits<Scalar>::infinity();
 		Scalar r = nextafter(x, pinf);
 		return (r == r) ? r : pinf;   // clamp NaN at the max boundary to +inf
