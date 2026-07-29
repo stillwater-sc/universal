@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/interval/interval.hpp>
+#include <universal/verification/interval_test_suite.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -66,7 +67,7 @@ int VerifyIntervalDivision(bool reportTestCases) {
 		Interval b(Scalar(2));
 		Interval c = a / b;
 		Interval expected(Scalar(3));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // 6/2 exact for EFT types; containment otherwise (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " / " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -79,7 +80,7 @@ int VerifyIntervalDivision(bool reportTestCases) {
 		a /= b;
 		// [8, 12] * [1/4, 1/2] = [2, 6]
 		Interval expected(Scalar(2), Scalar(6));
-		if (!expected.subset_of(a)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, a)) {  // [8,12]/[2,4]=[2,6] exact for EFT types; containment otherwise (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: /= operator, result = " << a << " (expected " << expected << ")\n";
 		}
@@ -90,7 +91,7 @@ int VerifyIntervalDivision(bool reportTestCases) {
 		Interval a(Scalar(4), Scalar(6));
 		Interval c = a / Scalar(2);
 		Interval expected(Scalar(2), Scalar(3));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // [4,6]/2=[2,3] exact for EFT types; containment otherwise (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " / 2 = " << c << " (expected " << expected << ")\n";
 		}

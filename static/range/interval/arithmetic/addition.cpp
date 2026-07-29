@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/interval/interval.hpp>
+#include <universal/verification/interval_test_suite.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -37,7 +38,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(3), Scalar(4));
 		Interval c = a + b;
 		Interval expected(Scalar(4), Scalar(6));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -49,7 +50,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(-5), Scalar(-2));
 		Interval c = a + b;
 		Interval expected(Scalar(-8), Scalar(-3));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -61,7 +62,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(1), Scalar(3));
 		Interval c = a + b;
 		Interval expected(Scalar(0), Scalar(5));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -73,7 +74,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(3));
 		Interval c = a + b;
 		Interval expected(Scalar(5));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -85,7 +86,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(3), Scalar(4));
 		a += b;
 		Interval expected(Scalar(4), Scalar(6));
-		if (!expected.subset_of(a)) {  // containment (#1234)
+		if (!enclosureOK(expected, a)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: += operator, result = " << a << " (expected " << expected << ")\n";
 		}
@@ -96,7 +97,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval a(Scalar(1), Scalar(2));
 		Interval c = a + Scalar(3);
 		Interval expected(Scalar(4), Scalar(5));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + 3 = " << c << " (expected " << expected << ")\n";
 		}
