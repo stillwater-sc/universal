@@ -24,6 +24,15 @@
 
 namespace sw { namespace universal {
 
+// EFT (native float) types must produce the EXACT enclosure for exactly-representable
+// operands (Stage 2, #1247); Universal fixed-size types keep Stage-1 outward rounding and
+// are only required to CONTAIN the true result (#1234). enclosureOK expresses both.
+template<typename Scalar>
+inline bool enclosureOK(const interval<Scalar>& expected, const interval<Scalar>& computed) {
+	if constexpr (interval_detail::interval_eft_exact<Scalar>::value) return expected == computed;
+	else return expected.subset_of(computed);
+}
+
 template<typename Scalar>
 int VerifyIntervalAddition(bool reportTestCases) {
 	using Interval = interval<Scalar>;
@@ -37,7 +46,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(3), Scalar(4));
 		Interval c = a + b;
 		Interval expected(Scalar(4), Scalar(6));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -49,7 +58,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(-5), Scalar(-2));
 		Interval c = a + b;
 		Interval expected(Scalar(-8), Scalar(-3));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -61,7 +70,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(1), Scalar(3));
 		Interval c = a + b;
 		Interval expected(Scalar(0), Scalar(5));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -73,7 +82,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(3));
 		Interval c = a + b;
 		Interval expected(Scalar(5));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -85,7 +94,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(3), Scalar(4));
 		a += b;
 		Interval expected(Scalar(4), Scalar(6));
-		if (!expected.subset_of(a)) {  // containment (#1234)
+		if (!enclosureOK(expected, a)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: += operator, result = " << a << " (expected " << expected << ")\n";
 		}
@@ -96,7 +105,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval a(Scalar(1), Scalar(2));
 		Interval c = a + Scalar(3);
 		Interval expected(Scalar(4), Scalar(5));
-		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
+		if (!enclosureOK(expected, c)) {  // EFT types: exact; Universal types: containment (#1247)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + 3 = " << c << " (expected " << expected << ")\n";
 		}

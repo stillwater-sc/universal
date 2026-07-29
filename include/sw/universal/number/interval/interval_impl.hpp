@@ -55,6 +55,58 @@ namespace interval_detail {
 		Scalar s = static_cast<Scalar>(v);
 		return (static_cast<T>(s) == v) ? s : round_up(s);
 	}
+
+	// --- Stage 2 (#1247): error-free transformations for tight enclosures ---------
+	// EFT (Knuth TwoSum / Dekker-FMA TwoProduct) recovers the exact roundoff of an
+	// operation, so an endpoint can be widened only when the operation was actually
+	// inexact -- yielding 1-ulp-optimal enclosures instead of Stage-1's unconditional
+	// outward rounding. But the roundoff term is guaranteed REPRESENTABLE (hence the
+	// transform exact, hence containment preserved) ONLY for an IEEE-754-style format
+	// with round-to-nearest-even AND gradual underflow (subnormals). We therefore
+	// enable the tight path for the native floating-point types ONLY.
+	//
+	// It is deliberately NOT enabled for the Universal fixed-size types, even the
+	// round-to-nearest ones, because the representability precondition fails in ways
+	// that SILENTLY BREAK CONTAINMENT (the Fundamental Theorem, #1234):
+	//   - cfloat without subnormals (the default): the TwoSum error term underflows to
+	//     zero, so an inexact sum is mis-reported as exact and the endpoint is not
+	//     widened -- measured at 132 containment breaks / 200k random pairs for
+	//     cfloat<16,5>. cfloat WITH subnormals is sound in-range but is not the default.
+	//   - posit: tapered precision means the roundoff of a sum/product near the extremes
+	//     of the dynamic range need not be representable, so TwoSum/TwoProduct are not
+	//     unconditionally exact.
+	// Extending Stage 2 to those types (guarded on hasSubnormals / verified per config)
+	// is tracked as a follow-up. interval_eft_exact is SAFE BY DEFAULT: every type it
+	// does not recognize resolves false and falls back to Stage-1 unconditional outward
+	// rounding (correct containment, at most 1 ulp wider) -- so it can never silently
+	// lose containment.
+	template<typename Scalar>
+	struct interval_eft_exact : std::bool_constant<std::is_floating_point_v<Scalar>> {};
+
+	// Knuth TwoSum: s = fl(a+b), e = exact roundoff so that a+b = s+e exactly (RNE).
+	template<typename Scalar>
+	inline void two_sum(Scalar a, Scalar b, Scalar& s, Scalar& e) noexcept {
+		s = a + b;
+		Scalar bb = s - a;
+		e = (a - (s - bb)) + (b - bb);
+	}
+	// TwoProduct via FMA: p = fl(a*b), e = fma(a,b,-p) is the exact roundoff (RNE).
+	template<typename Scalar>
+	inline void two_prod(Scalar a, Scalar b, Scalar& p, Scalar& e) noexcept {
+		using std::fma;
+		p = a * b;
+		e = fma(a, b, -p);
+	}
+	// enclose the exact value (s + roundoff) whose roundoff has sign 'roundoff':
+	// widen down only if the true value is below s, up only if above -- 1-ulp optimal.
+	template<typename Scalar>
+	inline Scalar tight_lo(Scalar s, Scalar roundoff) noexcept {
+		return (roundoff < Scalar(0)) ? round_down(s) : s;   // true value at or below s
+	}
+	template<typename Scalar>
+	inline Scalar tight_hi(Scalar s, Scalar roundoff) noexcept {
+		return (roundoff > Scalar(0)) ? round_up(s) : s;     // true value at or above s
+	}
 }
 
 /// <summary>
@@ -121,30 +173,63 @@ public:
 
 	// arithmetic operators
 	interval& operator+=(const interval& rhs) noexcept {
-		// [a,b] + [c,d] = [a+c, b+d], rounded outward (lo down, hi up)
-		_lo = interval_detail::round_down(Scalar(_lo + rhs._lo));
-		_hi = interval_detail::round_up(Scalar(_hi + rhs._hi));
+		// [a,b] + [c,d] = [a+c, b+d]. EFT tightens: widen an endpoint only when the
+		// sum was actually inexact (Stage 2, #1247); otherwise round outward (Stage 1).
+		if constexpr (interval_detail::interval_eft_exact<Scalar>::value) {
+			Scalar slo, elo, shi, ehi;
+			interval_detail::two_sum(_lo, rhs._lo, slo, elo);
+			interval_detail::two_sum(_hi, rhs._hi, shi, ehi);
+			_lo = interval_detail::tight_lo(slo, elo);
+			_hi = interval_detail::tight_hi(shi, ehi);
+		}
+		else {
+			_lo = interval_detail::round_down(Scalar(_lo + rhs._lo));
+			_hi = interval_detail::round_up(Scalar(_hi + rhs._hi));
+		}
 		return *this;
 	}
 
 	interval& operator-=(const interval& rhs) noexcept {
-		// [a,b] - [c,d] = [a-d, b-c], rounded outward
-		Scalar newLo = interval_detail::round_down(Scalar(_lo - rhs._hi));
-		Scalar newHi = interval_detail::round_up(Scalar(_hi - rhs._lo));
-		_lo = newLo;
-		_hi = newHi;
+		// [a,b] - [c,d] = [a-d, b-c]
+		if constexpr (interval_detail::interval_eft_exact<Scalar>::value) {
+			Scalar slo, elo, shi, ehi;
+			interval_detail::two_sum(_lo, Scalar(-rhs._hi), slo, elo);   // a - d
+			interval_detail::two_sum(_hi, Scalar(-rhs._lo), shi, ehi);   // b - c
+			_lo = interval_detail::tight_lo(slo, elo);
+			_hi = interval_detail::tight_hi(shi, ehi);
+		}
+		else {
+			Scalar newLo = interval_detail::round_down(Scalar(_lo - rhs._hi));
+			Scalar newHi = interval_detail::round_up(Scalar(_hi - rhs._lo));
+			_lo = newLo;
+			_hi = newHi;
+		}
 		return *this;
 	}
 
 	interval& operator*=(const interval& rhs) noexcept {
-		// [a,b] * [c,d] = [min(ac,ad,bc,bd), max(ac,ad,bc,bd)], rounded outward
-		Scalar ac = _lo * rhs._lo;
-		Scalar ad = _lo * rhs._hi;
-		Scalar bc = _hi * rhs._lo;
-		Scalar bd = _hi * rhs._hi;
-
-		_lo = interval_detail::round_down(std::min({ac, ad, bc, bd}));
-		_hi = interval_detail::round_up(std::max({ac, ad, bc, bd}));
+		// [a,b] * [c,d] = [min(ac,ad,bc,bd), max(ac,ad,bc,bd)]
+		if constexpr (interval_detail::interval_eft_exact<Scalar>::value) {
+			// enclose each corner product to 1 ulp via TwoProduct, then take min/max
+			Scalar dlo[4], dhi[4];
+			const Scalar corners[4][2] = { {_lo, rhs._lo}, {_lo, rhs._hi}, {_hi, rhs._lo}, {_hi, rhs._hi} };
+			for (int k = 0; k < 4; ++k) {
+				Scalar p, e;
+				interval_detail::two_prod(corners[k][0], corners[k][1], p, e);
+				dlo[k] = interval_detail::tight_lo(p, e);
+				dhi[k] = interval_detail::tight_hi(p, e);
+			}
+			_lo = std::min({dlo[0], dlo[1], dlo[2], dlo[3]});
+			_hi = std::max({dhi[0], dhi[1], dhi[2], dhi[3]});
+		}
+		else {
+			Scalar ac = _lo * rhs._lo;
+			Scalar ad = _lo * rhs._hi;
+			Scalar bc = _hi * rhs._lo;
+			Scalar bd = _hi * rhs._hi;
+			_lo = interval_detail::round_down(std::min({ac, ad, bc, bd}));
+			_hi = interval_detail::round_up(std::max({ac, ad, bc, bd}));
+		}
 		return *this;
 	}
 
@@ -162,10 +247,25 @@ public:
 			return *this;
 		}
 #endif
-		// Compute reciprocal of rhs: [1/d, 1/c], each endpoint rounded outward
-		// (1/x is generally inexact); the subsequent *= rounds the products outward too.
-		Scalar recipLo = interval_detail::round_down(Scalar(Scalar(1) / rhs._hi));
-		Scalar recipHi = interval_detail::round_up(Scalar(Scalar(1) / rhs._lo));
+		// Compute reciprocal of rhs: [1/d, 1/c]. EFT (fma residual) widens each endpoint
+		// only when 1/x was inexact; the subsequent *= tightens the products too.
+		Scalar recipLo, recipHi;
+		if constexpr (interval_detail::interval_eft_exact<Scalar>::value) {
+			using std::fma;
+			// residual r = fma(s, x, -1) = (s - 1/x) * x, so sign(s - 1/x) = sign(r)*sign(x).
+			// recipLo must stay <= 1/d: widen down iff s overestimates 1/d, i.e. r*d > 0.
+			Scalar d = rhs._hi, s = Scalar(1) / d;
+			Scalar r = fma(s, d, Scalar(-1));
+			recipLo = (r * d > Scalar(0)) ? interval_detail::round_down(s) : s;
+			// recipHi must stay >= 1/c: widen up iff s2 underestimates 1/c, i.e. r2*c < 0.
+			Scalar c = rhs._lo, s2 = Scalar(1) / c;
+			Scalar r2 = fma(s2, c, Scalar(-1));
+			recipHi = (r2 * c < Scalar(0)) ? interval_detail::round_up(s2) : s2;
+		}
+		else {
+			recipLo = interval_detail::round_down(Scalar(Scalar(1) / rhs._hi));
+			recipHi = interval_detail::round_up(Scalar(Scalar(1) / rhs._lo));
+		}
 		interval reciprocal;
 		reciprocal.setlo(recipLo);
 		reciprocal.sethi(recipHi);
@@ -492,7 +592,19 @@ inline interval<Scalar> abs(const interval<Scalar>& x) {
 // square of an interval
 template<typename Scalar>
 inline interval<Scalar> sqr(const interval<Scalar>& x) {
-	if (x.contains_zero()) {
+	if constexpr (interval_detail::interval_eft_exact<Scalar>::value) {
+		if (x.contains_zero()) {
+			Scalar p, e; interval_detail::two_prod(x.mag(), x.mag(), p, e);
+			return interval<Scalar>(Scalar(0), interval_detail::tight_hi(p, e));
+		}
+		Scalar pl, el, ph, eh;
+		interval_detail::two_prod(x.lo(), x.lo(), pl, el);
+		interval_detail::two_prod(x.hi(), x.hi(), ph, eh);
+		Scalar lo = std::min(interval_detail::tight_lo(pl, el), interval_detail::tight_lo(ph, eh));
+		Scalar hi = std::max(interval_detail::tight_hi(pl, el), interval_detail::tight_hi(ph, eh));
+		return interval<Scalar>(lo, hi);
+	}
+	else if (x.contains_zero()) {
 		Scalar maxSq = interval_detail::round_up(Scalar(x.mag() * x.mag()));
 		return interval<Scalar>(Scalar(0), maxSq);   // lower bound 0 is exact
 	}
@@ -513,11 +625,30 @@ inline interval<Scalar> sqrt(const interval<Scalar>& x) {
 		throw interval_negative_sqrt_arg();
 	}
 #endif
-	// sqrt is inexact in general: round the lower bound down and the upper bound up.
-	// A clamped-to-zero lower bound (negative sqrt argument) stays exactly 0.
-	Scalar lo = x.lo() < Scalar(0) ? Scalar(0) : interval_detail::round_down(Scalar(sqrt(x.lo())));
-	Scalar hi = interval_detail::round_up(Scalar(sqrt(x.hi())));
-	return interval<Scalar>(lo, hi);
+	// sqrt is inexact in general. A clamped-to-zero lower bound (negative sqrt argument)
+	// stays exactly 0. EFT (fma residual s*s - x) widens an endpoint only when sqrt was
+	// actually inexact (#1247); otherwise round outward unconditionally (#1234).
+	if constexpr (interval_detail::interval_eft_exact<Scalar>::value) {
+		using std::fma;
+		Scalar lo;
+		if (x.lo() < Scalar(0)) {
+			lo = Scalar(0);
+		}
+		else {
+			Scalar s = sqrt(x.lo());
+			Scalar r = fma(s, s, -x.lo());                          // s*s - lo; >0 => s above sqrt(lo)
+			lo = (r > Scalar(0)) ? interval_detail::round_down(s) : s;
+		}
+		Scalar sh = sqrt(x.hi());
+		Scalar rh = fma(sh, sh, -x.hi());                           // sh*sh - hi; <0 => sh below sqrt(hi)
+		Scalar hi = (rh < Scalar(0)) ? interval_detail::round_up(sh) : sh;
+		return interval<Scalar>(lo, hi);
+	}
+	else {
+		Scalar lo = x.lo() < Scalar(0) ? Scalar(0) : interval_detail::round_down(Scalar(sqrt(x.lo())));
+		Scalar hi = interval_detail::round_up(Scalar(sqrt(x.hi())));
+		return interval<Scalar>(lo, hi);
+	}
 }
 
 // power function
