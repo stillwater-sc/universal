@@ -45,6 +45,7 @@ jobs:
             lns
             dbns
             areal
+            interval
             bfloat16
             dfloat
             hfloat
