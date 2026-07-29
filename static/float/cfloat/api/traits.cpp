@@ -130,16 +130,27 @@ try {
 			++nrOfFailedTestCases;
 			std::cout << "FAIL: cfloat round_style is not round_to_nearest\n";
 		}
-		// behavior: 0.25 * 3.9375 = 0.984375 lies exactly halfway between the representable
-		// 0.96875 (subnormal, odd) and 1.0 (normal, even); RNE picks the even neighbor 1.0,
-		// whereas round_toward_zero would pick the smaller-magnitude 0.96875.
-		Real tie = Real(0.25) * Real(3.9375);
-		if (double(tie) != 1.0) {
+		// behavior, normal-range tie (unambiguous): 1.5 * 1.09375 = 1.640625 lies exactly
+		// halfway between the representable 1.625 (even) and 1.65625 (odd); RNE picks the even
+		// neighbor 1.625, whereas round_toward_zero would pick the smaller-magnitude 1.625 too
+		// -- so pair it with a tie that rounds AWAY from zero to distinguish the two modes.
+		Real tieNormal = Real(1.5) * Real(1.09375);
+		if (double(tieNormal) != 1.625) {
 			++nrOfFailedTestCases;
-			std::cout << "FAIL: cfloat tie 0.25*3.9375 = " << double(tie) << " (expected 1.0 by round-to-even)\n";
+			std::cout << "FAIL: cfloat tie 1.5*1.09375 = " << double(tieNormal) << " (expected 1.625 by round-to-even)\n";
 		}
-		else {
-			std::cout << "cfloat round-to-nearest-even (label + tie behavior): PASS\n";
+		// behavior, subnormal-boundary tie: 0.25 * 3.9375 = 0.984375 lies exactly halfway
+		// between the adjacent 0.96875 (largest subnormal, odd) and 1.0 (min_normal, even) --
+		// for cfloat<8,2>, min_normal is 1.0, so 0.984375 is subnormal and NOT representable.
+		// RNE picks the even neighbor 1.0; round_toward_zero would pick 0.96875. This tie
+		// rounds AWAY from zero, so it distinguishes RNE from truncation.
+		Real tieSub = Real(0.25) * Real(3.9375);
+		if (double(tieSub) != 1.0) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat tie 0.25*3.9375 = " << double(tieSub) << " (expected 1.0 by round-to-even)\n";
+		}
+		if (double(tieNormal) == 1.625 && double(tieSub) == 1.0) {
+			std::cout << "cfloat round-to-nearest-even (label + normal/subnormal tie behavior): PASS\n";
 		}
 	}
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
