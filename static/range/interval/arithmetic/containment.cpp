@@ -92,11 +92,16 @@ namespace sw { namespace universal {
 		// underflows below denorm_min and is lost, so a naive EFT reports a zero-width
 		// [p,p] that does not contain the true product; the underflow-safe prod_enclose
 		// must widen it (#1252). truth computed in long double (80-bit holds ~2^-1074).
-		{ double a = std::ldexp(1.3, -540), b = std::ldexp(1.7, -540);   // product ~2^-1079 (subnormal)
+		{ double a = std::ldexp(1.3, -535), b = std::ldexp(1.7, -535);   // product ~2^-1069, an INEXACT nonzero subnormal
 		  I p = I(a) * I(b);
 		  check("subnormal product", p, (long double)a * (long double)b);
 		  if (!(p.width() > 0.0)) { ++fails; if (reportTestCases)
 			std::cout << "    FAIL subnormal product has zero width: [" << p.lo() << ", " << p.hi() << "]\n"; } }
+		// an EXACT nonzero subnormal product must stay exactly [denorm_min, denorm_min] (no widening)
+		{ double a = std::ldexp(1.0, -537); I p = I(a) * I(a);   // 2^-537 * 2^-537 = 2^-1074 = denorm_min, exact
+		  double dmin = std::numeric_limits<double>::denorm_min();
+		  if (!(p.lo() == dmin && p.hi() == dmin)) { ++fails; if (reportTestCases)
+			std::cout << "    FAIL exact-subnormal product widened: [" << p.lo() << ", " << p.hi() << "]\n"; } }
 		// a product that totally underflows to zero must still enclose the tiny true value
 		{ double a = std::ldexp(1.1, -700), b = std::ldexp(1.1, -700);   // product ~2^-1400 -> rounds to 0
 		  I p = I(a) * I(b);
