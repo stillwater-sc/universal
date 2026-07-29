@@ -185,7 +185,11 @@ namespace sw { namespace universal {
 		using I = interval<Scalar>;
 		int fails = 0;
 		std::mt19937_64 rng(seed);
-		std::uniform_real_distribution<double> U(-8.0, 8.0);
+		// scale the operand range to the type: sqrt(max)*0.7 keeps products/sums in range for
+		// narrow types (cfloat<8,2> max ~3.9) while staying <= 8 for wide ones.
+		double mx = (double)std::numeric_limits<Scalar>::max();
+		double lim = std::min(8.0, std::sqrt(mx) * 0.7);
+		std::uniform_real_distribution<double> U(-lim, lim);
 		std::uniform_real_distribution<double> Sd(0.0, 1.0);
 		const Op ops[] = { Op::add, Op::sub, Op::mul, Op::div };
 		for (int t = 0; t < nrTests; ++t) {
@@ -197,12 +201,17 @@ namespace sw { namespace universal {
 			for (Op op : ops) {
 				if (op == Op::div && double(Y.lo()) <= 0.0 && double(Y.hi()) >= 0.0) continue;   // straddles 0
 				I R = apply(op, X, Y);
+				// skip when the enclosure hit the type's range boundary (inf endpoint): the
+				// true result genuinely exceeds the representable range -- an inherent limit,
+				// not a containment defect.
+				if (!std::isfinite(double(R.lo())) || !std::isfinite(double(R.hi()))) continue;
 				long double Rlo = (long double)double(R.lo()), Rhi = (long double)double(R.hi());
 				for (double sx : {0.0, 1.0, Sd(rng)}) {
 					for (double sy : {0.0, 1.0, Sd(rng)}) {
 						long double x = alo + (long double)sx * (ahi - alo);
 						long double y = clo + (long double)sy * (chi - clo);
 						long double r = apply(op, x, y);
+						if (!std::isfinite((double)r) || (double)std::abs(r) > mx) continue;   // beyond range
 						if (!(Rlo <= r && r <= Rhi)) {
 							++fails;
 							if (reportTestCases && fails < 10) std::cout << "    FAIL " << tag << " containment: point "
@@ -303,6 +312,15 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyContainmentFuzzT<posit<32, 2>>("posit<32,2>", reportTestCases, base / 4, 0xF00DBEEF),
 		"containment fuzz, Stage-1 fallback posit<32,2>", "containment");
+	// cfloat WITH subnormals takes the Stage-2 EFT path (#1255); containment must hold for
+	// wide (bit-for-bit IEEE) and pathologically narrow configs alike (the narrow ones
+	// exercise the double-verify product path and the boundary NaN-clamp in round_down/up).
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyContainmentFuzzT<cfloat<16, 5, std::uint16_t, true>>("cfloat<16,5>+sub", reportTestCases, base / 4, 0x0EF7C0DE),
+		"containment fuzz, EFT cfloat<16,5> with subnormals (#1255)", "containment");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyContainmentFuzzT<cfloat<8, 2, std::uint8_t, true>>("cfloat<8,2>+sub", reportTestCases, base / 4, 0x0EF7BEEF),
+		"containment fuzz, EFT cfloat<8,2> with subnormals (narrow, #1255)", "containment");
 	nrOfFailedTestCases += ReportTestResult(VerifyTightness(reportTestCases, base, 0xCAFED00D),
 		"tightness bound (1-ulp optimal, Stage 2)", "containment");
 

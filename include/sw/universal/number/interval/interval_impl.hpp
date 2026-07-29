@@ -16,6 +16,8 @@
 #include <typeinfo>
 
 #include <universal/number/interval/exceptions.hpp>
+// forward decl of cfloat for the EFT-validity trait specialization (#1255)
+#include <universal/number/cfloat/cfloat_fwd.hpp>
 
 #ifndef INTERVAL_THROW_ARITHMETIC_EXCEPTION
 #define INTERVAL_THROW_ARITHMETIC_EXCEPTION 0
@@ -35,12 +37,18 @@ namespace interval_detail {
 	template<typename Scalar>
 	inline Scalar round_down(Scalar x) noexcept {   // toward -inf
 		using std::nextafter;
-		return nextafter(x, -std::numeric_limits<Scalar>::infinity());
+		Scalar ninf = -std::numeric_limits<Scalar>::infinity();
+		Scalar r = nextafter(x, ninf);
+		// some Universal types return NaN at the min boundary (nextafter(maxneg, -inf));
+		// the sound directed value there is -inf, so clamp (r != r is true only for NaN).
+		return (r == r) ? r : ninf;
 	}
 	template<typename Scalar>
 	inline Scalar round_up(Scalar x) noexcept {      // toward +inf
 		using std::nextafter;
-		return nextafter(x, std::numeric_limits<Scalar>::infinity());
+		Scalar pinf = std::numeric_limits<Scalar>::infinity();
+		Scalar r = nextafter(x, pinf);
+		return (r == r) ? r : pinf;   // clamp NaN at the max boundary to +inf
 	}
 	// widen a converted lower bound outward only when the conversion was inexact,
 	// so exactly-representable operands keep zero-width endpoints (interval<double>(2)
@@ -60,28 +68,35 @@ namespace interval_detail {
 	// EFT (Knuth TwoSum / Dekker-FMA TwoProduct) recovers the exact roundoff of an
 	// operation, so an endpoint can be widened only when the operation was actually
 	// inexact -- yielding 1-ulp-optimal enclosures instead of Stage-1's unconditional
-	// outward rounding. But the roundoff term is guaranteed REPRESENTABLE (hence the
-	// transform exact, hence containment preserved) ONLY for an IEEE-754-style format
-	// with round-to-nearest-even AND gradual underflow (subnormals). We therefore
-	// enable the tight path for the native floating-point types ONLY.
+	// outward rounding. The transform is exact (hence containment preserved) for any
+	// IEEE-754-style format: round-to-nearest-even AND gradual underflow (subnormals),
+	// with the over/underflow BOUNDARY caveats handled by prod_enclose / the isfinite
+	// guard (they fall back to outward rounding there). We enable it for:
+	//   - the native floating-point types, and
+	//   - cfloat WITH subnormals (hasSubnormals=true): it is genuine IEEE-754, so its
+	//     TwoSum/TwoProduct are exact in the safe band exactly like native floats (#1249,
+	//     #1255); wide configs (cfloat<32,8>+sub etc.) behave bit-for-bit like IEEE, narrow
+	//     ones just hit the guarded boundaries more often.
 	//
-	// It is deliberately NOT enabled for the Universal fixed-size types, even the
-	// round-to-nearest ones, because the representability precondition fails in ways
-	// that SILENTLY BREAK CONTAINMENT (the Fundamental Theorem, #1234):
-	//   - cfloat without subnormals (the default): the TwoSum error term underflows to
-	//     zero, so an inexact sum is mis-reported as exact and the endpoint is not
-	//     widened -- measured at 132 containment breaks / 200k random pairs for
-	//     cfloat<16,5>. cfloat WITH subnormals is sound in-range but is not the default.
-	//   - posit: tapered precision means the roundoff of a sum/product near the extremes
-	//     of the dynamic range need not be representable, so TwoSum/TwoProduct are not
-	//     unconditionally exact.
-	// Extending Stage 2 to those types (guarded on hasSubnormals / verified per config)
-	// is tracked as a follow-up. interval_eft_exact is SAFE BY DEFAULT: every type it
-	// does not recognize resolves false and falls back to Stage-1 unconditional outward
-	// rounding (correct containment, at most 1 ulp wider) -- so it can never silently
-	// lose containment.
+	// It is deliberately NOT enabled for:
+	//   - cfloat WITHOUT subnormals (the default): the TwoSum error term flushes to zero,
+	//     so an inexact sum is mis-reported as exact and containment is SILENTLY LOST
+	//     (measured 288 breaks / 300k for cfloat<16,5> no-subnormals). The specialization
+	//     below is gated on the hasSubnormals flag, so this case stays Stage-1.
+	//   - posit: tapered precision means the roundoff near the dynamic-range extremes need
+	//     not be representable, so TwoSum/TwoProduct are not unconditionally exact.
+	// interval_eft_exact is SAFE BY DEFAULT: every type it does not recognize resolves
+	// false and falls back to Stage-1 unconditional outward rounding (correct containment,
+	// at most 1 ulp wider) -- so it can never silently lose containment.
 	template<typename Scalar>
 	struct interval_eft_exact : std::bool_constant<std::is_floating_point_v<Scalar>> {};
+	// cfloat is EFT-exact ONLY with subnormals (4th template parameter == true) AND when the
+	// exact product of two significands fits in a double (2*digits <= 53, digits = nbits-es).
+	// prod_enclose then verifies the rounding direction by exact double promotion, which is
+	// robust where cfloat's own ldexp/frexp are not (they misbehave at narrow configurations).
+	template<unsigned nbits, unsigned es, typename bt, bool sup, bool sat>
+	struct interval_eft_exact<cfloat<nbits, es, bt, true, sup, sat>>
+		: std::bool_constant<(2u * (nbits - es) <= 53u)> {};
 
 	// Knuth TwoSum: s = fl(a+b), e = exact roundoff so that a+b = s+e exactly (RNE).
 	template<typename Scalar>
@@ -114,34 +129,48 @@ namespace interval_detail {
 	// optimal, preserving exact products (no widening when a*b is exactly representable).
 	// TwoProduct's roundoff fma(a,b,-p) is exact only when the product neither over- nor
 	// UNDERflows; a subnormal p loses the roundoff below denorm_min, so sign(e) wrongly
-	// reports "exact" and containment is lost (#1252). This handles all regimes:
-	//   overflow  -> outward round (round_down(+inf) is the largest finite value)
-	//   exact zero (a==0 or b==0) -> [0, 0]
-	//   safely-normal product -> the direct EFT residual sign (exact roundoff)
-	//   subnormal/underflow -> compute the exact residual sign in a normalized (frexp)
-	//     domain, where ma*mb = P+E is exact in the normal range and
-	//     resid = (P - ldexp(p, -(ea+eb))) + E has the sign of a*b - p without underflow.
+	// reports "exact" and containment is lost (#1252). Two implementations:
+	//   - native float (below): direct TwoProduct residual with a safely-normal threshold,
+	//     and in the subnormal region an exact residual sign in a normalized (frexp) domain
+	//     (ma*mb = P+E exact in the normal range; resid = (P - ldexp(p,-(ea+eb))) + E has the
+	//     sign of a*b - p without underflow).
+	//   - cfloat (below): the exact product a*b fits in a double (the interval_eft_exact gate
+	//     guarantees 2*digits <= 53), so double promotion gives the exact rounding direction
+	//     directly -- robust where cfloat's own ldexp/frexp misbehave at narrow configs (#1255).
+	// Overflow (either): outward round (round_down(+inf) is the largest finite value).
 	template<typename Scalar>
 	inline void prod_enclose(Scalar a, Scalar b, Scalar& lo, Scalar& hi) noexcept {
 		using std::fma; using std::frexp; using std::ldexp; using std::isfinite; using std::abs;
 		Scalar p = a * b;
 		if (!isfinite(p)) { lo = round_down(p); hi = round_up(p); return; }   // overflow
-		Scalar e = fma(a, b, -p);
-		// safely-normal: the roundoff is representable, so the residual sign is exact
-		if (isfinite(e) && abs(p) >= ldexp(std::numeric_limits<Scalar>::min(), std::numeric_limits<Scalar>::digits)) {
-			lo = (e < Scalar(0)) ? round_down(p) : p;
-			hi = (e > Scalar(0)) ? round_up(p) : p;
-			return;
+		if constexpr (std::is_floating_point_v<Scalar>) {
+			Scalar e = fma(a, b, -p);
+			// safely-normal: the roundoff is representable, so the residual sign is exact
+			if (isfinite(e) && abs(p) >= ldexp(std::numeric_limits<Scalar>::min(), std::numeric_limits<Scalar>::digits)) {
+				lo = (e < Scalar(0)) ? round_down(p) : p;
+				hi = (e > Scalar(0)) ? round_up(p) : p;
+				return;
+			}
+			if (p == Scalar(0) && (a == Scalar(0) || b == Scalar(0))) { lo = hi = Scalar(0); return; }  // exact zero
+			// subnormal/underflow region: exact residual sign via the normalized (frexp) domain
+			int ea, eb;
+			Scalar ma = frexp(a, &ea), mb = frexp(b, &eb);   // a = ma*2^ea, b = mb*2^eb, ma,mb in [0.5,1)
+			Scalar P = ma * mb, E = fma(ma, mb, -P);         // exact: ma*mb = P + E (normal range)
+			Scalar ps = ldexp(p, -(ea + eb));                // p mapped into the normalized product domain
+			Scalar resid = (P - ps) + E;                     // sign(resid) == sign(a*b - p)
+			lo = (resid < Scalar(0)) ? round_down(p) : p;
+			hi = (resid > Scalar(0)) ? round_up(p) : p;
 		}
-		if (p == Scalar(0) && (a == Scalar(0) || b == Scalar(0))) { lo = hi = Scalar(0); return; }  // exact zero
-		// subnormal/underflow region: exact residual sign via the normalized domain
-		int ea, eb;
-		Scalar ma = frexp(a, &ea), mb = frexp(b, &eb);   // a = ma*2^ea, b = mb*2^eb, ma,mb in [0.5,1)
-		Scalar P = ma * mb, E = fma(ma, mb, -P);         // exact: ma*mb = P + E (normal range)
-		Scalar ps = ldexp(p, -(ea + eb));                // p mapped into the normalized product domain
-		Scalar resid = (P - ps) + E;                     // sign(resid) == sign(a*b - p)
-		lo = (resid < Scalar(0)) ? round_down(p) : p;
-		hi = (resid > Scalar(0)) ? round_up(p) : p;
+		else {
+			// cfloat: verify the exact rounding direction by double promotion. cfloat -> double
+			// is exact, and double(a)*double(b) is exact because 2*digits <= 53 (trait gate), so
+			// prod (below) is the exact real product and the comparison to double(p) is exact.
+			double prod = double(a) * double(b);
+			double pd = double(p);
+			if (prod == pd) { lo = hi = p; }                    // a*b exactly representable
+			else if (prod > pd) { lo = p; hi = round_up(p); }   // p rounded down: true value above p
+			else { lo = round_down(p); hi = p; }                // p rounded up: true value below p
+		}
 	}
 }
 
@@ -283,12 +312,11 @@ public:
 		// Compute reciprocal of rhs: [1/d, 1/c]. EFT (fma residual) widens each endpoint
 		// only when 1/x was inexact; the subsequent *= tightens the products too.
 		Scalar recipLo, recipHi;
-		if constexpr (interval_detail::interval_eft_exact<Scalar>::value) {
+		if constexpr (interval_detail::interval_eft_exact<Scalar>::value && std::is_floating_point_v<Scalar>) {
 			using std::fma;
-			// residual r = fma(s, x, -1) = (s - 1/x) * x, so sign(s - 1/x) = sign(r)*sign(x).
-			// Compare signs directly rather than forming r*x: the product can underflow to
-			// zero for a tiny denominator (|r| ~ ulp(1), |x| subnormal), which would wrongly
-			// report "exact" and skip the widening.
+			// native float: residual r = fma(s, x, -1) = (s - 1/x) * x, so
+			// sign(s - 1/x) = sign(r)*sign(x). Compare signs directly rather than forming r*x:
+			// the product can underflow for a subnormal denominator and wrongly report "exact".
 			Scalar d = rhs._hi, s = Scalar(1) / d;
 			Scalar r = fma(s, d, Scalar(-1));
 			// recipLo must stay <= 1/d: widen down iff s overestimates 1/d, i.e. sign(r)==sign(d).
@@ -299,6 +327,9 @@ public:
 			recipHi = (r2 != Scalar(0) && ((r2 > Scalar(0)) != (c > Scalar(0)))) ? interval_detail::round_up(s2) : s2;
 		}
 		else {
+			// Stage-1 reciprocal (unconditional outward rounding). Used for cfloat too: its
+			// fma-residual is unreliable at narrow configs, and the subsequent tight *= (which
+			// double-verifies for cfloat) recovers most of the tightness anyway.
 			recipLo = interval_detail::round_down(Scalar(Scalar(1) / rhs._hi));
 			recipHi = interval_detail::round_up(Scalar(Scalar(1) / rhs._lo));
 		}
