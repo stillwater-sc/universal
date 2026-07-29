@@ -72,7 +72,9 @@ public:
 	static constexpr bool is_modulo                = false;
 	static constexpr bool traps                    = false;
 	static constexpr bool tinyness_before          = false;
-	static constexpr float_round_style round_style = round_toward_zero;
+	// cfloat rounds to nearest, ties to even (see cfloat_impl.hpp::round(), the classic
+	// guard/round/sticky round-to-even logic), not toward zero (#1254).
+	static constexpr float_round_style round_style = round_to_nearest;
 };
 
 }
