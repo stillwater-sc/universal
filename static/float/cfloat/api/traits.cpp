@@ -119,6 +119,29 @@ try {
 		std::cout << "one more than that                           = " << scale(sp) + 1 << '\n';
 		std::cout << "std::numeric_limits<single>::max_exponent    = " << std::numeric_limits<single>::max_exponent << '\n';
 	}
+
+	// round_style must report round_to_nearest: cfloat rounds to nearest, ties to even
+	// (cfloat_impl.hpp::round()), NOT toward zero (#1254). Verify the label AND the behavior.
+	{
+		using Real = cfloat<8, 2, std::uint8_t, true, false, false>;   // with subnormals
+		static_assert(std::numeric_limits<Real>::round_style == std::round_to_nearest,
+			"cfloat round_style must be round_to_nearest (#1254)");
+		if (std::numeric_limits<Real>::round_style != std::round_to_nearest) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat round_style is not round_to_nearest\n";
+		}
+		// behavior: 0.25 * 3.9375 = 0.984375 lies exactly halfway between the representable
+		// 0.96875 (subnormal, odd) and 1.0 (normal, even); RNE picks the even neighbor 1.0,
+		// whereas round_toward_zero would pick the smaller-magnitude 0.96875.
+		Real tie = Real(0.25) * Real(3.9375);
+		if (double(tie) != 1.0) {
+			++nrOfFailedTestCases;
+			std::cout << "FAIL: cfloat tie 0.25*3.9375 = " << double(tie) << " (expected 1.0 by round-to-even)\n";
+		}
+		else {
+			std::cout << "cfloat round-to-nearest-even (label + tie behavior): PASS\n";
+		}
+	}
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
