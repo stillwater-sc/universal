@@ -99,12 +99,20 @@ namespace interval_detail {
 	}
 	// enclose the exact value (s + roundoff) whose roundoff has sign 'roundoff':
 	// widen down only if the true value is below s, up only if above -- 1-ulp optimal.
+	// When the sum/product OVERFLOWED, s is +/-inf and roundoff is non-finite (NaN or
+	// +/-inf); the residual sign is then meaningless, so fall back to Stage-1
+	// unconditional outward rounding. round_down(+inf) is the largest finite value, which
+	// restores containment of the finite-but-unrepresentable true value (e.g. 1e308+1e308).
 	template<typename Scalar>
 	inline Scalar tight_lo(Scalar s, Scalar roundoff) noexcept {
+		using std::isfinite;
+		if (!isfinite(roundoff)) return round_down(s);
 		return (roundoff < Scalar(0)) ? round_down(s) : s;   // true value at or below s
 	}
 	template<typename Scalar>
 	inline Scalar tight_hi(Scalar s, Scalar roundoff) noexcept {
+		using std::isfinite;
+		if (!isfinite(roundoff)) return round_up(s);
 		return (roundoff > Scalar(0)) ? round_up(s) : s;     // true value at or above s
 	}
 }
@@ -253,14 +261,17 @@ public:
 		if constexpr (interval_detail::interval_eft_exact<Scalar>::value) {
 			using std::fma;
 			// residual r = fma(s, x, -1) = (s - 1/x) * x, so sign(s - 1/x) = sign(r)*sign(x).
-			// recipLo must stay <= 1/d: widen down iff s overestimates 1/d, i.e. r*d > 0.
+			// Compare signs directly rather than forming r*x: the product can underflow to
+			// zero for a tiny denominator (|r| ~ ulp(1), |x| subnormal), which would wrongly
+			// report "exact" and skip the widening.
 			Scalar d = rhs._hi, s = Scalar(1) / d;
 			Scalar r = fma(s, d, Scalar(-1));
-			recipLo = (r * d > Scalar(0)) ? interval_detail::round_down(s) : s;
-			// recipHi must stay >= 1/c: widen up iff s2 underestimates 1/c, i.e. r2*c < 0.
+			// recipLo must stay <= 1/d: widen down iff s overestimates 1/d, i.e. sign(r)==sign(d).
+			recipLo = (r != Scalar(0) && ((r > Scalar(0)) == (d > Scalar(0)))) ? interval_detail::round_down(s) : s;
 			Scalar c = rhs._lo, s2 = Scalar(1) / c;
 			Scalar r2 = fma(s2, c, Scalar(-1));
-			recipHi = (r2 * c < Scalar(0)) ? interval_detail::round_up(s2) : s2;
+			// recipHi must stay >= 1/c: widen up iff s2 underestimates 1/c, i.e. sign(r2)!=sign(c).
+			recipHi = (r2 != Scalar(0) && ((r2 > Scalar(0)) != (c > Scalar(0)))) ? interval_detail::round_up(s2) : s2;
 		}
 		else {
 			recipLo = interval_detail::round_down(Scalar(Scalar(1) / rhs._hi));

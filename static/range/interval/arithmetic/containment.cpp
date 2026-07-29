@@ -74,6 +74,20 @@ namespace sw { namespace universal {
 		{ interval<float> f(0.1);
 		  if (!((double)f.lo() <= 0.1 && 0.1 <= (double)f.hi())) {
 			++fails; if (reportTestCases) std::cout << "    FAIL interval<float>(0.1) does not contain double 0.1\n"; } }
+		// OVERFLOW: 1e308 + 1e308 = 2e308 exceeds double max. The EFT residual is non-finite,
+		// so tightening must fall back to outward rounding -- the enclosure is [maxfinite, +inf]
+		// and must still contain the finite real 2e308 (#1248, regression for the EFT overflow
+		// containment bug: without the isfinite guard the sum was [+inf, +inf]).
+		{ double big = 1e308; I s = I(big) + I(big);
+		  check("1e308+1e308 overflow", s, 2.0e308L);
+		  if (!(std::isinf((double)s.hi()) && std::isfinite((double)s.lo()))) {
+			++fails; if (reportTestCases) std::cout << "    FAIL overflow enclosure not [finite,+inf]: ["
+				<< s.lo() << ", " << s.hi() << "]\n"; } }
+		{ double big = 1e308; I p = I(big) * I(big);   // 1e616 overflow on the product
+		  check("1e308*1e308 overflow", p, 1.0e616L);
+		  if (!(std::isinf((double)p.hi()) && std::isfinite((double)p.lo()))) {
+			++fails; if (reportTestCases) std::cout << "    FAIL overflow product not [finite,+inf]: ["
+				<< p.lo() << ", " << p.hi() << "]\n"; } }
 		return fails;
 	}
 
@@ -158,7 +172,7 @@ namespace sw { namespace universal {
 	// [down(tlo), up(thi)] -- the tightest representable interval that still contains
 	// the range. EFT (TwoSum/TwoProduct) achieves this to within 1 ulp; Stage-1
 	// unconditional outward rounding widened EXACT corners too, so it could not. We
-	// assert the computed width does not exceed the optimal width by more than 1 ulp.
+	// assert each computed endpoint is within 1 ulp of the optimal endpoint.
 	int VerifyTightness(bool reportTestCases, int nrTests, uint64_t seed) {
 		using I = interval<double>;
 		int fails = 0;
