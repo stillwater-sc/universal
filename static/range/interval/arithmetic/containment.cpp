@@ -88,6 +88,54 @@ namespace sw { namespace universal {
 		  if (!(std::isinf((double)p.hi()) && std::isfinite((double)p.lo()))) {
 			++fails; if (reportTestCases) std::cout << "    FAIL overflow product not [finite,+inf]: ["
 				<< p.lo() << ", " << p.hi() << "]\n"; } }
+		// UNDERFLOW: a product that lands in the subnormal range. TwoProduct's roundoff
+		// underflows below denorm_min and is lost, so a naive EFT reports a zero-width
+		// [p,p] that does not contain the true product; the underflow-safe prod_enclose
+		// must widen it (#1252). truth computed in long double (80-bit holds ~2^-1074).
+		{ double a = std::ldexp(1.3, -535), b = std::ldexp(1.7, -535);   // product ~2^-1069, an INEXACT nonzero subnormal
+		  I p = I(a) * I(b);
+		  check("subnormal product", p, (long double)a * (long double)b);
+		  if (!(p.width() > 0.0)) { ++fails; if (reportTestCases)
+			std::cout << "    FAIL subnormal product has zero width: [" << p.lo() << ", " << p.hi() << "]\n"; } }
+		// an EXACT nonzero subnormal product must stay exactly [denorm_min, denorm_min] (no widening)
+		{ double a = std::ldexp(1.0, -537); I p = I(a) * I(a);   // 2^-537 * 2^-537 = 2^-1074 = denorm_min, exact
+		  double dmin = std::numeric_limits<double>::denorm_min();
+		  if (!(p.lo() == dmin && p.hi() == dmin)) { ++fails; if (reportTestCases)
+			std::cout << "    FAIL exact-subnormal product widened: [" << p.lo() << ", " << p.hi() << "]\n"; } }
+		// a product that totally underflows to zero must still enclose the tiny true value
+		{ double a = std::ldexp(1.1, -700), b = std::ldexp(1.1, -700);   // product ~2^-1400 -> rounds to 0
+		  I p = I(a) * I(b);
+		  check("total-underflow product", p, (long double)a * (long double)b);
+		  if (!(p.lo() < 0.0 || p.hi() > 0.0)) { ++fails; if (reportTestCases)
+			std::cout << "    FAIL total-underflow product is [0,0]: [" << p.lo() << ", " << p.hi() << "]\n"; } }
+		// exact zero product must stay exactly [0,0] (no spurious widening)
+		{ I p = I(std::ldexp(1.0, -700)) * I(0.0);
+		  if (!(p.lo() == 0.0 && p.hi() == 0.0)) { ++fails; if (reportTestCases)
+			std::cout << "    FAIL exact-zero product widened: [" << p.lo() << ", " << p.hi() << "]\n"; } }
+		return fails;
+	}
+
+	// ---- 1b. subnormal-product containment (#1252) -----------------------------
+	// products in the double subnormal range: TwoProduct's roundoff underflows below
+	// denorm_min, so the underflow-safe prod_enclose path must keep containment. long
+	// double (80-bit) holds the true tiny product exactly for the oracle.
+	int VerifySubnormalProductContainment(bool reportTestCases, int nrTests, uint64_t seed) {
+		using I = interval<double>;
+		int fails = 0;
+		std::mt19937_64 rng(seed);
+		std::uniform_real_distribution<double> M(1.0, 2.0);
+		std::uniform_int_distribution<int> E(-560, -515);   // product exponent ~ -1030..-1120
+		for (int t = 0; t < nrTests; ++t) {
+			double a = std::ldexp(M(rng), E(rng)) * ((rng() & 1) ? 1.0 : -1.0);
+			double b = std::ldexp(M(rng), E(rng)) * ((rng() & 1) ? 1.0 : -1.0);
+			I R = I(a) * I(b);
+			long double truth = (long double)a * (long double)b;
+			if (!((long double)R.lo() <= truth && truth <= (long double)R.hi())) {
+				++fails;
+				if (reportTestCases && fails < 10) std::cout << "    FAIL subnormal-product: " << (double)truth
+					<< " not in [" << R.lo() << ", " << R.hi() << "]\n";
+			}
+		}
 		return fails;
 	}
 
@@ -246,6 +294,8 @@ try {
 		"containment on inexact operands (0.1*0.1, 1/3, sqrt(2), sum, cross-type)", "containment");
 	nrOfFailedTestCases += ReportTestResult(VerifyContainmentFuzz(reportTestCases, base, 0x1234ABCD),
 		"randomized containment fuzz (+ - * /)", "containment");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalProductContainment(reportTestCases, base, 0x50B0DEEF),
+		"subnormal-product containment (#1252)", "containment");
 	// Stage-1 fallback types: EFT is NOT enabled for them; containment must still hold.
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyContainmentFuzzT<cfloat<16, 5, std::uint16_t>>("cfloat<16,5>", reportTestCases, base / 4, 0xBADC0FFE),
