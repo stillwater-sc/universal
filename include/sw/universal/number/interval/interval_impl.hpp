@@ -23,6 +23,40 @@
 
 namespace sw { namespace universal {
 
+// Outward-rounding helpers for interval arithmetic. Realizing the mathematical
+// interval rules in finite precision requires DIRECTED rounding: the lower bound
+// toward -inf and the upper bound toward +inf. Otherwise each endpoint can move
+// inward by up to half an ulp per operation and the enclosure loses the containment
+// property (the Fundamental Theorem of Interval Arithmetic). We round outward with
+// nextafter rather than the FPU rounding mode (fesetround) because nextafter is
+// Scalar-generic -- the hardware rounding mode has no effect on posit/cfloat/lns
+// arithmetic, and interval<posit<...>> is a target use case. (#1234)
+namespace interval_detail {
+	template<typename Scalar>
+	inline Scalar round_down(Scalar x) noexcept {   // toward -inf
+		using std::nextafter;
+		return nextafter(x, -std::numeric_limits<Scalar>::infinity());
+	}
+	template<typename Scalar>
+	inline Scalar round_up(Scalar x) noexcept {      // toward +inf
+		using std::nextafter;
+		return nextafter(x, std::numeric_limits<Scalar>::infinity());
+	}
+	// widen a converted lower bound outward only when the conversion was inexact,
+	// so exactly-representable operands keep zero-width endpoints (interval<double>(2)
+	// stays [2,2]) while an inexact cross-type cast (interval<float>(0.1)) is enclosed.
+	template<typename Scalar, typename T>
+	inline Scalar enclose_lo(T v) noexcept {
+		Scalar s = static_cast<Scalar>(v);
+		return (static_cast<T>(s) == v) ? s : round_down(s);
+	}
+	template<typename Scalar, typename T>
+	inline Scalar enclose_hi(T v) noexcept {
+		Scalar s = static_cast<Scalar>(v);
+		return (static_cast<T>(s) == v) ? s : round_up(s);
+	}
+}
+
 /// <summary>
 /// A parameterized interval number type [lo, hi] representing a closed interval.
 /// The Scalar type can be any numeric type: float, double, or Universal types like cfloat<>.
@@ -49,13 +83,17 @@ public:
 	constexpr interval& operator=(interval&&) noexcept = default;
 
 	// construct from a single value (degenerate interval [v, v])
+	// NOTE: NOT constexpr -- a cross-type or unrepresentable value must be enclosed
+	// with outward rounding (nextafter), which is not a constexpr operation. (#1234)
 	template<typename T, typename = std::enable_if_t<std::is_arithmetic_v<T> || std::is_same_v<T, Scalar>>>
-	constexpr interval(T v) noexcept : _lo(static_cast<Scalar>(v)), _hi(static_cast<Scalar>(v)) {}
+	interval(T v) noexcept
+		: _lo(interval_detail::enclose_lo<Scalar>(v)), _hi(interval_detail::enclose_hi<Scalar>(v)) {}
 
-	// construct from explicit lower and upper bounds
+	// construct from explicit lower and upper bounds (each enclosed outward if the
+	// conversion to Scalar is inexact)
 	template<typename T, typename U>
-	constexpr interval(T lo, U hi) noexcept
-		: _lo(static_cast<Scalar>(lo)), _hi(static_cast<Scalar>(hi)) {
+	interval(T lo, U hi) noexcept
+		: _lo(interval_detail::enclose_lo<Scalar>(lo)), _hi(interval_detail::enclose_hi<Scalar>(hi)) {
 		// ensure proper ordering
 		if (_lo > _hi) std::swap(_lo, _hi);
 	}
@@ -83,30 +121,30 @@ public:
 
 	// arithmetic operators
 	interval& operator+=(const interval& rhs) noexcept {
-		// [a,b] + [c,d] = [a+c, b+d]
-		_lo = _lo + rhs._lo;
-		_hi = _hi + rhs._hi;
+		// [a,b] + [c,d] = [a+c, b+d], rounded outward (lo down, hi up)
+		_lo = interval_detail::round_down(Scalar(_lo + rhs._lo));
+		_hi = interval_detail::round_up(Scalar(_hi + rhs._hi));
 		return *this;
 	}
 
 	interval& operator-=(const interval& rhs) noexcept {
-		// [a,b] - [c,d] = [a-d, b-c]
-		Scalar newLo = _lo - rhs._hi;
-		Scalar newHi = _hi - rhs._lo;
+		// [a,b] - [c,d] = [a-d, b-c], rounded outward
+		Scalar newLo = interval_detail::round_down(Scalar(_lo - rhs._hi));
+		Scalar newHi = interval_detail::round_up(Scalar(_hi - rhs._lo));
 		_lo = newLo;
 		_hi = newHi;
 		return *this;
 	}
 
 	interval& operator*=(const interval& rhs) noexcept {
-		// [a,b] * [c,d] = [min(ac,ad,bc,bd), max(ac,ad,bc,bd)]
+		// [a,b] * [c,d] = [min(ac,ad,bc,bd), max(ac,ad,bc,bd)], rounded outward
 		Scalar ac = _lo * rhs._lo;
 		Scalar ad = _lo * rhs._hi;
 		Scalar bc = _hi * rhs._lo;
 		Scalar bd = _hi * rhs._hi;
 
-		_lo = std::min({ac, ad, bc, bd});
-		_hi = std::max({ac, ad, bc, bd});
+		_lo = interval_detail::round_down(std::min({ac, ad, bc, bd}));
+		_hi = interval_detail::round_up(std::max({ac, ad, bc, bd}));
 		return *this;
 	}
 
@@ -124,8 +162,13 @@ public:
 			return *this;
 		}
 #endif
-		// Compute reciprocal of rhs: [1/d, 1/c]
-		interval reciprocal(Scalar(1) / rhs._hi, Scalar(1) / rhs._lo);
+		// Compute reciprocal of rhs: [1/d, 1/c], each endpoint rounded outward
+		// (1/x is generally inexact); the subsequent *= rounds the products outward too.
+		Scalar recipLo = interval_detail::round_down(Scalar(Scalar(1) / rhs._hi));
+		Scalar recipHi = interval_detail::round_up(Scalar(Scalar(1) / rhs._lo));
+		interval reciprocal;
+		reciprocal.setlo(recipLo);
+		reciprocal.sethi(recipHi);
 		return *this *= reciprocal;
 	}
 
@@ -180,14 +223,15 @@ public:
 		return (_lo + _hi) / Scalar(2);
 	}
 
-	// radius (half-width) of the interval
-	constexpr Scalar rad() const noexcept {
-		return (_hi - _lo) / Scalar(2);
+	// radius (half-width) of the interval -- rounded UP so that mid() +/- rad()
+	// still covers [lo, hi] (#1234). Not constexpr: nextafter is a runtime op.
+	Scalar rad() const noexcept {
+		return interval_detail::round_up(Scalar((_hi - _lo) / Scalar(2)));
 	}
 
-	// width of the interval
-	constexpr Scalar width() const noexcept {
-		return _hi - _lo;
+	// width of the interval -- rounded UP so it never underestimates the true width
+	Scalar width() const noexcept {
+		return interval_detail::round_up(Scalar(_hi - _lo));
 	}
 
 	// magnitude: max of |lo| and |hi|
@@ -449,13 +493,14 @@ inline interval<Scalar> abs(const interval<Scalar>& x) {
 template<typename Scalar>
 inline interval<Scalar> sqr(const interval<Scalar>& x) {
 	if (x.contains_zero()) {
-		Scalar maxSq = x.mag() * x.mag();
-		return interval<Scalar>(Scalar(0), maxSq);
+		Scalar maxSq = interval_detail::round_up(Scalar(x.mag() * x.mag()));
+		return interval<Scalar>(Scalar(0), maxSq);   // lower bound 0 is exact
 	}
 	else {
 		Scalar loSq = x.lo() * x.lo();
 		Scalar hiSq = x.hi() * x.hi();
-		return interval<Scalar>(std::min(loSq, hiSq), std::max(loSq, hiSq));
+		return interval<Scalar>(interval_detail::round_down(std::min(loSq, hiSq)),
+		                        interval_detail::round_up(std::max(loSq, hiSq)));
 	}
 }
 
@@ -468,8 +513,10 @@ inline interval<Scalar> sqrt(const interval<Scalar>& x) {
 		throw interval_negative_sqrt_arg();
 	}
 #endif
-	Scalar lo = x.lo() < Scalar(0) ? Scalar(0) : sqrt(x.lo());
-	Scalar hi = sqrt(x.hi());
+	// sqrt is inexact in general: round the lower bound down and the upper bound up.
+	// A clamped-to-zero lower bound (negative sqrt argument) stays exactly 0.
+	Scalar lo = x.lo() < Scalar(0) ? Scalar(0) : interval_detail::round_down(Scalar(sqrt(x.lo())));
+	Scalar hi = interval_detail::round_up(Scalar(sqrt(x.hi())));
 	return interval<Scalar>(lo, hi);
 }
 

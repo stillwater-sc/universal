@@ -40,8 +40,7 @@ int VerifyIntervalDivision(bool reportTestCases) {
 		// Products: 4*0.333=1.333, 4*0.5=2, 6*0.333=2, 6*0.5=3
 		Interval expected(Scalar(4)/Scalar(3), Scalar(3));
 		// Allow some tolerance for floating point
-		if (std::abs(double(c.lo()) - double(expected.lo())) > 1e-6 ||
-		    std::abs(double(c.hi()) - double(expected.hi())) > 1e-6) {
+		if (!expected.subset_of(c)) {  // containment (#1234)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " / " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -55,8 +54,7 @@ int VerifyIntervalDivision(bool reportTestCases) {
 		// a * [-1/2, -1/3] = [4, 6] * [-0.5, -0.333...]
 		// Products: 4*(-0.5)=-2, 4*(-0.333)=-1.333, 6*(-0.5)=-3, 6*(-0.333)=-2
 		Interval expected(Scalar(-3), Scalar(4)/Scalar(-3));
-		if (std::abs(double(c.lo()) - double(expected.lo())) > 1e-6 ||
-		    std::abs(double(c.hi()) - double(expected.hi())) > 1e-6) {
+		if (!expected.subset_of(c)) {  // containment (#1234)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " / " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -68,7 +66,7 @@ int VerifyIntervalDivision(bool reportTestCases) {
 		Interval b(Scalar(2));
 		Interval c = a / b;
 		Interval expected(Scalar(3));
-		if (c != expected) {
+		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " / " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -81,8 +79,7 @@ int VerifyIntervalDivision(bool reportTestCases) {
 		a /= b;
 		// [8, 12] * [1/4, 1/2] = [2, 6]
 		Interval expected(Scalar(2), Scalar(6));
-		if (std::abs(double(a.lo()) - double(expected.lo())) > 1e-6 ||
-		    std::abs(double(a.hi()) - double(expected.hi())) > 1e-6) {
+		if (!expected.subset_of(a)) {  // containment: computed interval must enclose the true result (#1234)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: /= operator, result = " << a << " (expected " << expected << ")\n";
 		}
@@ -93,7 +90,7 @@ int VerifyIntervalDivision(bool reportTestCases) {
 		Interval a(Scalar(4), Scalar(6));
 		Interval c = a / Scalar(2);
 		Interval expected(Scalar(2), Scalar(3));
-		if (c != expected) {
+		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " / 2 = " << c << " (expected " << expected << ")\n";
 		}

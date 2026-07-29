@@ -37,7 +37,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(3), Scalar(4));
 		Interval c = a + b;
 		Interval expected(Scalar(4), Scalar(6));
-		if (c != expected) {
+		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -49,7 +49,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(-5), Scalar(-2));
 		Interval c = a + b;
 		Interval expected(Scalar(-8), Scalar(-3));
-		if (c != expected) {
+		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -61,7 +61,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(1), Scalar(3));
 		Interval c = a + b;
 		Interval expected(Scalar(0), Scalar(5));
-		if (c != expected) {
+		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -73,7 +73,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(3));
 		Interval c = a + b;
 		Interval expected(Scalar(5));
-		if (c != expected) {
+		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + " << b << " = " << c << " (expected " << expected << ")\n";
 		}
@@ -85,7 +85,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval b(Scalar(3), Scalar(4));
 		a += b;
 		Interval expected(Scalar(4), Scalar(6));
-		if (a != expected) {
+		if (!expected.subset_of(a)) {  // containment (#1234)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: += operator, result = " << a << " (expected " << expected << ")\n";
 		}
@@ -96,7 +96,7 @@ int VerifyIntervalAddition(bool reportTestCases) {
 		Interval a(Scalar(1), Scalar(2));
 		Interval c = a + Scalar(3);
 		Interval expected(Scalar(4), Scalar(5));
-		if (c != expected) {
+		if (!expected.subset_of(c)) {  // containment: computed interval must enclose the true result (#1234)
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "FAIL: " << a << " + 3 = " << c << " (expected " << expected << ")\n";
 		}
