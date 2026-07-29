@@ -90,19 +90,13 @@ namespace interval_detail {
 		Scalar bb = s - a;
 		e = (a - (s - bb)) + (b - bb);
 	}
-	// TwoProduct via FMA: p = fl(a*b), e = fma(a,b,-p) is the exact roundoff (RNE).
-	template<typename Scalar>
-	inline void two_prod(Scalar a, Scalar b, Scalar& p, Scalar& e) noexcept {
-		using std::fma;
-		p = a * b;
-		e = fma(a, b, -p);
-	}
 	// enclose the exact value (s + roundoff) whose roundoff has sign 'roundoff':
 	// widen down only if the true value is below s, up only if above -- 1-ulp optimal.
-	// When the sum/product OVERFLOWED, s is +/-inf and roundoff is non-finite (NaN or
-	// +/-inf); the residual sign is then meaningless, so fall back to Stage-1
-	// unconditional outward rounding. round_down(+inf) is the largest finite value, which
-	// restores containment of the finite-but-unrepresentable true value (e.g. 1e308+1e308).
+	// Used by the sum path (TwoSum is exact for finite results, even subnormal ones; the
+	// product path uses prod_enclose, which additionally handles underflow). When the sum
+	// OVERFLOWED, s is +/-inf and roundoff is non-finite (NaN); the residual sign is then
+	// meaningless, so fall back to unconditional outward rounding. round_down(+inf) is the
+	// largest finite value, restoring containment of the true value (e.g. 1e308+1e308).
 	template<typename Scalar>
 	inline Scalar tight_lo(Scalar s, Scalar roundoff) noexcept {
 		using std::isfinite;
@@ -114,6 +108,40 @@ namespace interval_detail {
 		using std::isfinite;
 		if (!isfinite(roundoff)) return round_up(s);
 		return (roundoff > Scalar(0)) ? round_up(s) : s;     // true value at or above s
+	}
+
+	// Underflow/overflow-safe directed enclosure of a*b: sets lo <= a*b <= hi, 1-ulp
+	// optimal, preserving exact products (no widening when a*b is exactly representable).
+	// TwoProduct's roundoff fma(a,b,-p) is exact only when the product neither over- nor
+	// UNDERflows; a subnormal p loses the roundoff below denorm_min, so sign(e) wrongly
+	// reports "exact" and containment is lost (#1252). This handles all regimes:
+	//   overflow  -> outward round (round_down(+inf) is the largest finite value)
+	//   exact zero (a==0 or b==0) -> [0, 0]
+	//   safely-normal product -> the direct EFT residual sign (exact roundoff)
+	//   subnormal/underflow -> compute the exact residual sign in a normalized (frexp)
+	//     domain, where ma*mb = P+E is exact in the normal range and
+	//     resid = (P - ldexp(p, -(ea+eb))) + E has the sign of a*b - p without underflow.
+	template<typename Scalar>
+	inline void prod_enclose(Scalar a, Scalar b, Scalar& lo, Scalar& hi) noexcept {
+		using std::fma; using std::frexp; using std::ldexp; using std::isfinite; using std::abs;
+		Scalar p = a * b;
+		if (!isfinite(p)) { lo = round_down(p); hi = round_up(p); return; }   // overflow
+		Scalar e = fma(a, b, -p);
+		// safely-normal: the roundoff is representable, so the residual sign is exact
+		if (isfinite(e) && abs(p) >= ldexp(std::numeric_limits<Scalar>::min(), std::numeric_limits<Scalar>::digits)) {
+			lo = (e < Scalar(0)) ? round_down(p) : p;
+			hi = (e > Scalar(0)) ? round_up(p) : p;
+			return;
+		}
+		if (p == Scalar(0) && (a == Scalar(0) || b == Scalar(0))) { lo = hi = Scalar(0); return; }  // exact zero
+		// subnormal/underflow region: exact residual sign via the normalized domain
+		int ea, eb;
+		Scalar ma = frexp(a, &ea), mb = frexp(b, &eb);   // a = ma*2^ea, b = mb*2^eb, ma,mb in [0.5,1)
+		Scalar P = ma * mb, E = fma(ma, mb, -P);         // exact: ma*mb = P + E (normal range)
+		Scalar ps = ldexp(p, -(ea + eb));                // p mapped into the normalized product domain
+		Scalar resid = (P - ps) + E;                     // sign(resid) == sign(a*b - p)
+		lo = (resid < Scalar(0)) ? round_down(p) : p;
+		hi = (resid > Scalar(0)) ? round_up(p) : p;
 	}
 }
 
@@ -218,14 +246,11 @@ public:
 	interval& operator*=(const interval& rhs) noexcept {
 		// [a,b] * [c,d] = [min(ac,ad,bc,bd), max(ac,ad,bc,bd)]
 		if constexpr (interval_detail::interval_eft_exact<Scalar>::value) {
-			// enclose each corner product to 1 ulp via TwoProduct, then take min/max
+			// enclose each corner product to 1 ulp (underflow/overflow-safe), then min/max
 			Scalar dlo[4], dhi[4];
 			const Scalar corners[4][2] = { {_lo, rhs._lo}, {_lo, rhs._hi}, {_hi, rhs._lo}, {_hi, rhs._hi} };
 			for (int k = 0; k < 4; ++k) {
-				Scalar p, e;
-				interval_detail::two_prod(corners[k][0], corners[k][1], p, e);
-				dlo[k] = interval_detail::tight_lo(p, e);
-				dhi[k] = interval_detail::tight_hi(p, e);
+				interval_detail::prod_enclose(corners[k][0], corners[k][1], dlo[k], dhi[k]);
 			}
 			_lo = std::min({dlo[0], dlo[1], dlo[2], dlo[3]});
 			_hi = std::max({dhi[0], dhi[1], dhi[2], dhi[3]});
@@ -605,14 +630,14 @@ template<typename Scalar>
 inline interval<Scalar> sqr(const interval<Scalar>& x) {
 	if constexpr (interval_detail::interval_eft_exact<Scalar>::value) {
 		if (x.contains_zero()) {
-			Scalar p, e; interval_detail::two_prod(x.mag(), x.mag(), p, e);
-			return interval<Scalar>(Scalar(0), interval_detail::tight_hi(p, e));
+			Scalar mlo, mhi; interval_detail::prod_enclose(x.mag(), x.mag(), mlo, mhi);
+			return interval<Scalar>(Scalar(0), mhi);   // lower bound 0 is exact
 		}
-		Scalar pl, el, ph, eh;
-		interval_detail::two_prod(x.lo(), x.lo(), pl, el);
-		interval_detail::two_prod(x.hi(), x.hi(), ph, eh);
-		Scalar lo = std::min(interval_detail::tight_lo(pl, el), interval_detail::tight_lo(ph, eh));
-		Scalar hi = std::max(interval_detail::tight_hi(pl, el), interval_detail::tight_hi(ph, eh));
+		Scalar loLo, loHi, hiLo, hiHi;
+		interval_detail::prod_enclose(x.lo(), x.lo(), loLo, loHi);
+		interval_detail::prod_enclose(x.hi(), x.hi(), hiLo, hiHi);
+		Scalar lo = std::min(loLo, hiLo);
+		Scalar hi = std::max(loHi, hiHi);
 		return interval<Scalar>(lo, hi);
 	}
 	else if (x.contains_zero()) {
