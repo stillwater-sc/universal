@@ -709,6 +709,14 @@ try {
 	std::cout << "\nField round-trip tests\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyFieldRoundTrip<float>(reportTestCases), "float", "field round-trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyFieldRoundTrip<double>(reportTestCases), "double", "field round-trip");
+#if LONG_DOUBLE_SUPPORT && !defined(LONG_DOUBLE_DOWNCAST) && (defined(UNIVERSAL_ARCH_X86_64) || defined(UNIVERSAL_ARCH_RISCV))
+	// 80-bit extended long double (#1262): setFields must reconstruct the explicit integer
+	// bit, else every normal value round-trips to NaN. Scoped to the x86/RISC-V 63-bit-
+	// fraction layout: it is skipped where setFields downcasts to double (lossy for
+	// >53-bit values) and on binary128 layouts (112-bit fraction does not fit the uint64
+	// field interface, so the round-trip is inherently lossy there, independent of #1262).
+	nrOfFailedTestCases += ReportTestResult(VerifyFieldRoundTrip<long double>(reportTestCases), "long double", "field round-trip");
+#endif
 
 #endif
 

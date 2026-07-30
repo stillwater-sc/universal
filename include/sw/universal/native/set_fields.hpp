@@ -95,9 +95,25 @@ namespace sw { namespace universal {
 	// specialization to set fields on a long double
 	inline void setFields(long double& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
 		long_double_decoder decoder;
+		const uint64_t exponent = rawExponentBits & 0x7FFF;
 		decoder.parts.sign = s;
-		decoder.parts.exponent = rawExponentBits & 0x7FFF;
+		decoder.parts.exponent = exponent;
+#if defined(UNIVERSAL_ARCH_X86_64) || defined(UNIVERSAL_ARCH_RISCV)
+		// x86/RISC-V 80-bit extended: `fraction` is a 63-bit field (bits 62-0) and the
+		// integer part of the significand lives in an EXPLICIT `bit63` field that is 1 for
+		// every value with a nonzero exponent (normals, inf, NaN) and 0 for zero/subnormals.
+		// setFields' inputs carry only the 63-bit fraction (extractFields returns
+		// parts.fraction), so the integer bit must be reconstructed here -- without it every
+		// normal value decoded to a NaN (#1262). The 0x7FFF... mask also states the
+		// truncation to the field width explicitly; the old 0xFFFF... mask was a no-op that
+		// narrowed implicitly (-Wconversion / MSVC C4244).
+		decoder.parts.fraction = rawFractionBits & 0x7FFF'FFFF'FFFF'FFFF;
+		decoder.parts.bit63 = (exponent != 0) ? 1u : 0u;
+#else
+		// other long double layouts (binary128 / double-double) have an implicit integer
+		// bit like float/double and no `bit63` field; preserve the original assignment.
 		decoder.parts.fraction = rawFractionBits & 0xFFFF'FFFF'FFFF'FFFF;
+#endif
 		value = decoder.ld;
 	}
 
@@ -183,9 +199,25 @@ namespace sw { namespace universal {
 	// specialization to extract fields from a long double
 	inline void setFields(long double& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
 		long_double_decoder decoder;
+		const uint64_t exponent = rawExponentBits & 0x7FFF;
 		decoder.parts.sign = s;
-		decoder.parts.exponent = rawExponentBits & 0x7FFF;
+		decoder.parts.exponent = exponent;
+#if defined(UNIVERSAL_ARCH_X86_64) || defined(UNIVERSAL_ARCH_RISCV)
+		// x86/RISC-V 80-bit extended: `fraction` is a 63-bit field (bits 62-0) and the
+		// integer part of the significand lives in an EXPLICIT `bit63` field that is 1 for
+		// every value with a nonzero exponent (normals, inf, NaN) and 0 for zero/subnormals.
+		// setFields' inputs carry only the 63-bit fraction (extractFields returns
+		// parts.fraction), so the integer bit must be reconstructed here -- without it every
+		// normal value decoded to a NaN (#1262). The 0x7FFF... mask also states the
+		// truncation to the field width explicitly; the old 0xFFFF... mask was a no-op that
+		// narrowed implicitly (-Wconversion / MSVC C4244).
+		decoder.parts.fraction = rawFractionBits & 0x7FFF'FFFF'FFFF'FFFF;
+		decoder.parts.bit63 = (exponent != 0) ? 1u : 0u;
+#else
+		// other long double layouts (binary128 / double-double) have an implicit integer
+		// bit like float/double and no `bit63` field; preserve the original assignment.
 		decoder.parts.fraction = rawFractionBits & 0xFFFF'FFFF'FFFF'FFFF;
+#endif
 		value = decoder.ld;
 	}
 #endif // LONG_DOUBLE_DOWNCAST
