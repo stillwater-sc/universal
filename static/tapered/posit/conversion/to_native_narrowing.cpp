@@ -22,10 +22,16 @@
 // to float hit exactly that -- the regime underflowed float to 0, so the whole
 // product came out 0 and representable subnormals were silently flushed away.
 //
-// Ground truth here is the same posit converted to double. double has ample
-// exponent range for these values, so its result is exact, and the correct float
-// result is therefore static_cast<float>(that double). Any Real whose conversion
-// disagrees with that is wrong.
+// Ground truth here is the same posit converted to double, THEN to Real. double
+// has ample exponent RANGE for these values (the property under test), so it never
+// underflows the way an early narrow-to-float does. But double has only 53 bits of
+// precision: a posit whose exact value needs more (some posit<64,5>) is rounded by
+// double(p), and static_cast<Real>(double(p)) would then double-round (posit ->
+// double -> Real) and can disagree with the correct single rounding. So the double
+// oracle is used ONLY for encodings whose value round-trips through double exactly
+// (posit(double(p)) == p); higher-precision encodings are skipped. The skipped
+// values are near-1.0 high-significand cases, NOT the range-underflow subnormals the
+// regression is about (those have few significand bits and are double-exact).
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <iostream>
@@ -57,6 +63,12 @@ int VerifyNativeNarrowing(bool reportTestCases, unsigned long long maxCases = 65
 
 		const double reference = double(p);
 		if (!std::isfinite(reference)) continue;      // outside double's range: no ground truth
+
+		// use the double oracle only when double(p) is EXACT; otherwise
+		// static_cast<Real>(double(p)) double-rounds and is not a valid reference.
+		PositType roundtrip;
+		roundtrip = reference;
+		if (roundtrip != p) continue;
 
 		const Real expected = static_cast<Real>(reference);
 		const Real observed = Real(p);

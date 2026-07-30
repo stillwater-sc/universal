@@ -1213,13 +1213,14 @@ private:
 		// four implicit long double -> Real conversions, which MSVC reports as
 		// C4244 narrowing warnings at every instantiation site.
 		//
-		// Bit-for-bit identical results: regime and exponent are exact powers of
-		// two, so the only inexact factor is the fraction, and rounding it early
-		// then scaling by a power of two gives the same value as scaling first and
-		// rounding once. Deferring the conversion additionally keeps the
-		// intermediates out of Real's range limits, which matters for
-		// configurations whose regime alone over/underflows Real even though the
-		// product does not.
+		// Keeping the factors in long double and narrowing once, on return, avoids
+		// premature range loss: where the regime or exponent factor alone would
+		// under/overflow Real even though the complete product is representable, the
+		// early-narrowing form produced 0 or inf, whereas this form yields the correct
+		// value (e.g. 448 posit<32,5>/<64,5> -> float encodings that previously flushed
+		// to zero now return the right subnormal). Where range is not a factor the
+		// result is unchanged: regime and exponent are exact powers of two, so rounding
+		// the fraction early then scaling equals scaling first and rounding once.
 		const long double sign     = _sign ? -1.0l : 1.0l;
 		const long double scale    = _regime.value() * _exponent.value();
 		const long double fraction = 1.0l + _fraction.value();
