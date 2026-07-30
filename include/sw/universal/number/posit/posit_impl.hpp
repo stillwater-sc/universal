@@ -1200,18 +1200,31 @@ private:
 
 	template<typename Real>
 	Real to_native() const {
-		if (iszero())  return 0.0l;
-		if (isnar())   return std::numeric_limits<Real>::quiet_NaN();;
+		if (iszero())  return Real(0);
+		if (isnar())   return std::numeric_limits<Real>::quiet_NaN();
 		bool		     		_sign{ false };
 		positRegime<nbits, es, bt>   _regime;
 		positExponent<nbits, es, bt> _exponent;
 		positFraction<fbits, bt>     _fraction;
 		decode(_block, _sign, _regime, _exponent, _fraction);
-		Real s = (_sign ? -1.0l : 1.0l);
-		Real r = _regime.value();
-		Real e = _exponent.value();
-		Real f = (1.0l + _fraction.value());
-		return s * r * e * f;
+		// positRegime/positExponent/positFraction::value() all return long double,
+		// so keep the whole product in that width and narrow ONCE, explicitly, on
+		// return. Assigning each factor to Real instead (as this used to) forced
+		// four implicit long double -> Real conversions, which MSVC reports as
+		// C4244 narrowing warnings at every instantiation site.
+		//
+		// Keeping the factors in long double and narrowing once, on return, avoids
+		// premature range loss: where the regime or exponent factor alone would
+		// under/overflow Real even though the complete product is representable, the
+		// early-narrowing form produced 0 or inf, whereas this form yields the correct
+		// value (e.g. 448 posit<32,5>/<64,5> -> float encodings that previously flushed
+		// to zero now return the right subnormal). Where range is not a factor the
+		// result is unchanged: regime and exponent are exact powers of two, so rounding
+		// the fraction early then scaling equals scaling first and rounding once.
+		const long double sign     = _sign ? -1.0l : 1.0l;
+		const long double scale    = _regime.value() * _exponent.value();
+		const long double fraction = 1.0l + _fraction.value();
+		return static_cast<Real>(sign * scale * fraction);
 	}
 	
 	// Encode a positive value (sign=0) into the posit bit pattern as a uint64_t.
