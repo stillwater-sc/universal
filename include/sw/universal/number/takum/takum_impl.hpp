@@ -36,6 +36,8 @@
 #include <universal/internal/abstract/triple.hpp>
 #include <math/constexpr_math/exp2.hpp>
 
+#include <universal/internal/bit_manipulation.hpp>
+
 namespace sw {	namespace universal {
 
 // Forward definitions
@@ -298,7 +300,7 @@ public:
 		unsigned blockIndex = i / bitsInBlock;
 		if (i < nbits) {
 			bt block = _block[blockIndex];
-			bt null = ~(1ull << (i % bitsInBlock));
+			bt null = bit_clear_mask<bt>(i, bitsInBlock);
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
 			_block.setblock(blockIndex, bt((block & null) | mask));

@@ -51,6 +51,8 @@
 #define TRACE_CONVERSION 0
 #endif
 
+#include <universal/internal/bit_manipulation.hpp>
+
 namespace sw { namespace universal {
 
 /*
@@ -1308,7 +1310,7 @@ public:
 		unsigned blockIndex = i / bitsInBlock;
 		if (blockIndex < nrBlocks) {
 			bt block = _block[blockIndex];
-			bt null = ~(1ull << (i % bitsInBlock));
+			bt null = bit_clear_mask<bt>(i, bitsInBlock);
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
 			_block[blockIndex] = bt((block & null) | mask);
