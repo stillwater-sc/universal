@@ -1,4 +1,4 @@
-//  bit_clear_mask.cpp : test suite for the shared bit_clear_mask limb-mask helper (#1260)
+//  bit_clear_mask.cpp : test suite for the shared limb-mask helpers bit_clear_mask (#1260) and bit_high_mask (#1261)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -40,13 +40,32 @@ namespace {
 		return nrOfFailures;
 	}
 
+	// bit_high_mask<bt>(count, bitsInBlock) must equal all-ones shifted left by
+	// (bitsInBlock - count): the highest `count` bits of the limb set.
+	template<typename bt>
+	int VerifyBitHighMask(const char* tag, bool reportTestCases) {
+		constexpr unsigned bitsInBlock = sizeof(bt) * 8u;
+		int nrOfFailures = 0;
+		for (unsigned count = 1; count < bitsInBlock; ++count) {   // callers early-return count(bitsToShift)==0
+			bt observed = bit_high_mask<bt>(count, bitsInBlock);
+			bt expected = static_cast<bt>(~(static_cast<std::uint64_t>(0)) << (bitsInBlock - count));
+			if (observed != expected) {
+				++nrOfFailures;
+				if (reportTestCases) std::cout << "    FAIL " << tag << " count=" << count
+					<< " observed=0x" << std::hex << static_cast<std::uint64_t>(observed)
+					<< " expected=0x" << static_cast<std::uint64_t>(expected) << std::dec << '\n';
+			}
+		}
+		return nrOfFailures;
+	}
+
 }  // anonymous namespace
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "bit_clear_mask limb-mask helper (#1260)";
+	std::string test_suite  = "limb-mask helpers bit_clear_mask (#1260) / bit_high_mask (#1261)";
 	std::string test_tag    = "bit_clear_mask";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
@@ -57,11 +76,19 @@ try {
 	static_assert(bit_clear_mask<std::uint8_t>(0, 8) == std::uint8_t(0xFE), "bit_clear_mask<uint8_t>(0) must be 0xFE");
 	static_assert(bit_clear_mask<std::uint8_t>(7, 8) == std::uint8_t(0x7F), "bit_clear_mask<uint8_t>(7) must be 0x7F");
 	static_assert(bit_clear_mask<std::uint16_t>(15, 16) == std::uint16_t(0x7FFF), "bit_clear_mask<uint16_t>(15)");
+	// bit_high_mask (#1261): the highest `count` bits of the limb
+	static_assert(bit_high_mask<std::uint8_t>(3, 8) == std::uint8_t(0xE0), "bit_high_mask<uint8_t>(3) must be 0xE0");
+	static_assert(bit_high_mask<std::uint8_t>(1, 8) == std::uint8_t(0x80), "bit_high_mask<uint8_t>(1) must be 0x80");
+	static_assert(bit_high_mask<std::uint16_t>(4, 16) == std::uint16_t(0xF000), "bit_high_mask<uint16_t>(4)");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBitClearMask<std::uint8_t>("uint8_t", reportTestCases), "bit_clear_mask<uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyBitClearMask<std::uint16_t>("uint16_t", reportTestCases), "bit_clear_mask<uint16_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyBitClearMask<std::uint32_t>("uint32_t", reportTestCases), "bit_clear_mask<uint32_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyBitClearMask<std::uint64_t>("uint64_t", reportTestCases), "bit_clear_mask<uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyBitHighMask<std::uint8_t>("uint8_t", reportTestCases), "bit_high_mask<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyBitHighMask<std::uint16_t>("uint16_t", reportTestCases), "bit_high_mask<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyBitHighMask<std::uint32_t>("uint32_t", reportTestCases), "bit_high_mask<uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyBitHighMask<std::uint64_t>("uint64_t", reportTestCases), "bit_high_mask<uint64_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

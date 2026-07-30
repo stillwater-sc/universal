@@ -1891,7 +1891,7 @@ protected:
 			if (bitsToShift == 0) return;
 		}
 		// construct the mask for the upper bits in the block that need to move to the higher word
-		bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+		bt mask = bit_high_mask<bt>(bitsToShift, bitsInBlock);
 		for (unsigned i = MSU; i > 0; --i) {
 			_block[i] <<= bitsToShift;
 			// mix in the bits from the right

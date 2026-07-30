@@ -559,7 +559,7 @@ public:
 		}
 		if constexpr (MSU > 0) {
 			// construct the mask for the upper bits in the block that needs to move to the higher word
-			bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+			bt mask = bit_high_mask<bt>(bitsToShift, bitsInBlock);
 			for (unsigned i = MSU; i > 0; --i) {
 				_block[i] <<= bitsToShift;
 				// mix in the bits from the right
