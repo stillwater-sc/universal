@@ -18,6 +18,8 @@
 #include <universal/number/lns/lns_fwd.hpp>
 #include <universal/number/lns/lns_addsub_algorithms.hpp>
 
+#include <universal/internal/bit_manipulation.hpp>
+
 namespace sw { namespace universal {
 		
 	// arithmetic event statistics
@@ -319,7 +321,7 @@ public:
 		unsigned blockIndex = i / bitsInBlock;
 		if (i < nbits) {
 			bt block = _block[blockIndex];
-			bt null = ~(1ull << (i % bitsInBlock));
+			bt null = bit_clear_mask<bt>(i, bitsInBlock);
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
 			//_block[i / bitsInBlock] = bt((block & null) | mask);

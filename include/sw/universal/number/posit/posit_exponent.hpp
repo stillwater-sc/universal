@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <universal/internal/bit_manipulation.hpp>
+
 namespace sw { namespace universal {
 
 static constexpr int GEOMETRIC_ROUND_DOWN   = -2;
@@ -65,7 +67,7 @@ public:
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
 		if (i < es) {
 			std::uint32_t block = _expBits;
-			std::uint32_t null = ~(1ull << i);
+			std::uint32_t null = bit_clear_mask<std::uint32_t>(i, 32);
 			std::uint32_t bit = std::uint32_t(v ? 1u : 0u);
 			std::uint32_t mask = std::uint32_t(bit << i);
 			_expBits = std::uint32_t((block & null) | mask);
