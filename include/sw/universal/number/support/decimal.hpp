@@ -383,7 +383,7 @@ inline void convert_to_decimal(long long v, decimal& d) {
 	decimal base; // can't use base(1) semantics here as it would cause an infinite loop
 	base.setdigit(1);
 	while (v) { // minimum loop iterations; exits when no bits left
-		if (v & mask) {
+		if (static_cast<uint64_t>(v) & mask) {   // v is non-negative here (magnitude); cast avoids -Wsign-conversion (#1270)
 			add(d, base);
 		}
 		add(base, base);
