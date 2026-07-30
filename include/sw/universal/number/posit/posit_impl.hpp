@@ -380,10 +380,10 @@ constexpr inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const bl
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
 
-		unsigned len = 1 + std::max<unsigned>((nbits + 1ull), (2u + run + es));
+		unsigned len = 1 + std::max<unsigned>((nbits + 1u), (2u + run + es));
 		bool blast = pt_bits.test(len - nbits);
-		bool bafter = pt_bits.test(len - nbits - 1ull);
-		bool bsticky = pt_bits.anyAfter(len - nbits - 1ull);
+		bool bafter = pt_bits.test(len - nbits - 1u);      // len >= nbits + 2, so this is >= 1 (no unsigned wrap)
+		bool bsticky = pt_bits.anyAfter(len - nbits - 1u); // 1u (not 1ull) keeps the index expression unsigned
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
 

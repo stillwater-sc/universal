@@ -444,7 +444,7 @@ public:
 	constexpr int  scale()  const noexcept {
 		ExponentBlockBinary exp(_block);
 		exp >>= rbits;
-		return long(exp);
+		return static_cast<int>(exp);   // scale() returns int (matches posit/cfloat convention); long(exp) narrowed on LP64
 	}
 	constexpr blockbinary<nbits+2, std::uint32_t, BinaryNumberType::Unsigned> fraction() const noexcept {
 		blockbinary<nbits + 2, std::uint32_t, BinaryNumberType::Unsigned> bb{ 0 };
