@@ -67,6 +67,7 @@ jobs:
             efloat
             ereal
             elreal
+            native
             internal
             blockbinary
             blockdecimal
