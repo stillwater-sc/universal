@@ -198,9 +198,9 @@ inline void add(decimal& lhs, const decimal& rhs) {
 	}
 	decimal::iterator lit = lhs.begin();
 	decimal::iterator rit = _rhs.begin();
-	char carry = 0;
+	uint8_t carry = 0;   // only ever 0 or 1; uint8_t avoids char's implementation-defined signedness
 	for (; lit != lhs.end() || rit != _rhs.end(); ++lit, ++rit) {
-		*lit += *rit + carry;
+		*lit = static_cast<uint8_t>(*lit + *rit + carry);   // sum promotes to int; the digit narrows back explicitly
 		if (*lit > 9) {
 			carry = 1;
 			*lit -= 10;
@@ -281,7 +281,7 @@ inline void mul(decimal& lhs, const decimal& rhs) {
 		for (sit = lhs.begin(); sit != lhs.end(); ++sit) {
 			decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 			partial_sum.insert(partial_sum.end(), r + position, 0);
-			decimal::iterator pit = partial_sum.begin() + static_cast<const int64_t>(position);
+			decimal::iterator pit = partial_sum.begin() + static_cast<int64_t>(position);
 			uint8_t carry = 0;
 			for (bit = rhs.begin(); bit != rhs.end() && pit != partial_sum.end(); ++bit, ++pit) {
 				uint8_t digit = uint8_t(*sit * *bit + carry);
@@ -299,7 +299,7 @@ inline void mul(decimal& lhs, const decimal& rhs) {
 		for (sit = rhs.begin(); sit != rhs.end(); ++sit) {
 			decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 			partial_sum.insert(partial_sum.end(), l + position, 0);
-			decimal::iterator pit = partial_sum.begin() + static_cast<const int64_t>(position);
+			decimal::iterator pit = partial_sum.begin() + static_cast<int64_t>(position);
 			uint8_t carry = 0;
 			for (bit = lhs.begin(); bit != lhs.end() && pit != partial_sum.end(); ++bit, ++pit) {
 				uint8_t digit = uint8_t(*sit * *bit + carry);
