@@ -764,8 +764,11 @@ public:
 		}
 		if constexpr (MSU > 0) {
 			bt mask = ALL_ONES;
-			mask >>= (bitsInBlock - static_cast<unsigned>(bitsToShift)); // this is a mask for the lower bits in the block that need to move to the lower word
-			for (unsigned i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
+			// mask for the lower bits in the block that need to move to the lower word
+			mask >>= (bitsInBlock - static_cast<unsigned>(bitsToShift));
+			// TODO: can this be improved? we should not have to work on the upper
+			// blocks in case we block shifted
+			for (unsigned i = 0; i < MSU; ++i) {
 				_block[i] >>= bitsToShift;
 				// mix in the bits from the left
 				bt bits = bt(mask & _block[i + 1]);
@@ -1313,7 +1316,7 @@ public:
 		constexpr unsigned argbits = sizeof(rhs);
 		unsigned upper = (nbits <= _nbits ? nbits : argbits);
 		for (unsigned i = 0; i < upper; ++i) {
-			if ((v & 1) != 0) setbit(i);   // low-bit test; & with signed 1 avoids int64->uint64
+			if (v & 0x1ull) setbit(i);
 			v >>= 1;
 		}
 		return *this;
@@ -1887,10 +1890,12 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockTy
 	std::streamsize width = ostr.width();
 	if (width > static_cast<std::streamsize>(s.size())) {
 		char fill = ostr.fill();
+		// width > s.size() here, so the subtraction stays non-negative
+		std::string::size_type pad = static_cast<std::string::size_type>(width) - s.size();
 		if ((ostr.flags() & std::ios_base::left) == std::ios_base::left)
-			s.append(static_cast<std::string::size_type>(width) - s.size(), fill);
+			s.append(pad, fill);
 		else
-			s.insert(static_cast<std::string::size_type>(0), static_cast<std::string::size_type>(width) - s.size(), fill);
+			s.insert(static_cast<std::string::size_type>(0), pad, fill);
 	}
 	return ostr << s;
 }
