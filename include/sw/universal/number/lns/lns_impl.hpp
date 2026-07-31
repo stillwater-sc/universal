@@ -444,11 +444,12 @@ public:
 	// scale(): the integer power-of-two exponent (the integer part of the lns exponent).
 	// Returns int by the library-wide scale() convention (posit/cfloat/... all return int).
 	// LIMITATION (#1274): the lns exponent field is nbits-rbits-1 bits wide, so for
-	// astronomically wide configurations (e.g. lns<64,11> ~ 2^52, lns<128,15> ~ 2^111)
-	// the scale exceeds int range and this accessor truncates. lns ARITHMETIC is
-	// unaffected -- it operates on the full fixed-point exponent, not on scale(); only this
-	// metadata accessor saturates. If a use needs the full scale for such configs, read the
-	// exponent field directly rather than through scale().
+	// astronomically wide configurations (e.g. lns<64,11> ~ 2^52, lns<128,15> ~ 2^111) the
+	// scale exceeds int range. operator int() keeps at most the low 64 bits and the C++20
+	// int64->int conversion then reduces modulo 2^32 (well-defined, but not the true scale).
+	// lns ARITHMETIC is unaffected -- it operates on the full fixed-point exponent, not on
+	// scale(); only this metadata accessor loses the high bits. There is currently no public
+	// full-width scale() alternative for such configurations.
 	constexpr int  scale()  const noexcept {
 		ExponentBlockBinary exp(_block);
 		exp >>= rbits;
