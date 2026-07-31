@@ -106,8 +106,13 @@ int VerifyOrdinaryDivisionUnaffected(bool reportTestCases) {
 	int nrOfFailures = 0;
 	try {
 		const I q = I(Scalar(1), Scalar(4)) / I(Scalar(2), Scalar(4));
-		// [1,4]/[2,4] = [0.25, 2]
-		if (!(q.lower() <= Scalar(0.25)) || !(q.upper() >= Scalar(2))) {
+		// [1,4]/[2,4] = [0.25, 2]; require a FINITE enclosure strictly inside +-max() so the
+		// test catches ordinary division being wrongly routed through the zero-divisor path
+		// (which would return an unbounded / +-max() interval that still encloses [0.25, 2]).
+		if (!q.isfinite() ||
+		    !(q.lower() <= Scalar(0.25)) || !(q.upper() >= Scalar(2)) ||
+		    !(q.lower() > -std::numeric_limits<Scalar>::max()) ||
+		    !(q.upper() < std::numeric_limits<Scalar>::max())) {
 			++nrOfFailures;
 			if (reportTestCases)
 				std::cerr << "FAIL: [1,4]/[2,4] = [" << double(q.lower()) << ", "
