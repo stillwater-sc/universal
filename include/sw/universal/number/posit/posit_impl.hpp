@@ -356,7 +356,7 @@ constexpr inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const bl
 		regime.setbit(0, 1 ^ r);
 		for (unsigned i = 1; i <= run; ++i) regime.setbit(i, r);
 
-		exponent = e % (1ull << es);
+		exponent = static_cast<unsigned long long>(e) % (1ull << es);
 		int nbits_plus_one = static_cast<int>(nbits) + 1;
 		int sign_regime_es = static_cast<int>(2ull + run + es);
 		unsigned nrFbits = static_cast<unsigned>(std::max<int>(0, (nbits_plus_one - sign_regime_es)));
@@ -370,8 +370,8 @@ constexpr inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const bl
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
-		regime <<= es + nrFbits + 1u;
-		exponent <<= nrFbits + 1u;
+		regime <<= static_cast<int>(es + nrFbits + 1u);
+		exponent <<= static_cast<int>(nrFbits + 1u);
 		fraction <<= 1u;
 		sticky_bit.setbit(0, sb);
 
@@ -388,7 +388,7 @@ constexpr inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const bl
 		bool rb = (blast & bafter) | (bafter & bsticky);
 
 		blockbinary<nbits, bt> ptt{0};
-		pt_bits <<= pt_len - len;
+		pt_bits <<= static_cast<int>(pt_len - len);
 		truncate(pt_bits, ptt);
 		if (rb) ++ptt;
 		if (s) ptt = ptt.twosComplement();
