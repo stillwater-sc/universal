@@ -192,6 +192,23 @@ class interval {
 public:
 	using value_type = Scalar;
 
+	/// Can this interval represent an UNBOUNDED result?
+	///
+	/// Division by an interval containing zero has an unbounded exact result set,
+	/// and the only way to enclose it is +/-infinity. Some Scalars have no
+	/// infinity to offer: posit has NaR instead, and
+	/// numeric_limits<posit>::infinity() returns maxpos -- a finite value
+	/// indistinguishable from ordinary data. lns likewise reports
+	/// has_infinity = false.
+	///
+	/// The flag is derived from what infinity() actually IS, not from the
+	/// has_infinity claim, because the two disagree for posit. When this is false
+	/// the unbounded case throws rather than returning a finite interval that
+	/// would claim to enclose values it does not contain.
+	static constexpr bool can_represent_unbounded =
+		std::numeric_limits<Scalar>::has_infinity &&
+		(std::numeric_limits<Scalar>::infinity() > std::numeric_limits<Scalar>::max());
+
 	// constructors
 	constexpr interval() noexcept : _lo{}, _hi{} {}
 
@@ -305,10 +322,23 @@ public:
 		}
 #else
 		if (rhs.contains_zero()) {
-			// Division by interval containing zero results in [-inf, inf]
-			_lo = -std::numeric_limits<Scalar>::infinity();
-			_hi = std::numeric_limits<Scalar>::infinity();
-			return *this;
+			// The exact result set is unbounded, and the only enclosure of it is
+			// [-inf, +inf]. That requires Scalar to HAVE an infinity.
+			//
+			// For posit it does not: numeric_limits<posit>::infinity() returns
+			// maxpos, so this used to produce the finite [-maxpos, maxpos] -- an
+			// interval claiming to enclose an unbounded set while excluding
+			// everything beyond maxpos. Silently returning a too-narrow enclosure
+			// is the one failure mode interval arithmetic must never have, so
+			// throw instead: there is no correct value to return.
+			if constexpr (!can_represent_unbounded) {
+				throw interval_unrepresentable_unbounded();
+			}
+			else {
+				_lo = -std::numeric_limits<Scalar>::infinity();
+				_hi = std::numeric_limits<Scalar>::infinity();
+				return *this;
+			}
 		}
 #endif
 		// Compute reciprocal of rhs: [1/d, 1/c]. EFT (fma residual) widens each endpoint

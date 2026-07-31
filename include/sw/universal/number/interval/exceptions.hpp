@@ -24,6 +24,14 @@ struct interval_negative_sqrt_arg : public interval_arithmetic_exception {
 	interval_negative_sqrt_arg() : interval_arithmetic_exception("negative sqrt argument") {}
 };
 
+// The exact result is unbounded, but Scalar has no infinity with which to
+// represent it. Thrown instead of silently returning a finite interval, which
+// would claim to enclose values it does not contain.
+struct interval_unrepresentable_unbounded : public interval_arithmetic_exception {
+	interval_unrepresentable_unbounded() : interval_arithmetic_exception(
+		"unbounded result cannot be represented: Scalar has no infinity") {}
+};
+
 ///////////////////////////////////////////////////////////////
 // internal implementation exceptions
 
