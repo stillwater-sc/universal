@@ -95,9 +95,11 @@ namespace sw { namespace universal {
 	// specialization to set fields on a long double
 	inline void setFields(long double& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
 		long_double_decoder decoder;
-		const uint64_t exponent = rawExponentBits & 0x7FFF;
 		decoder.parts.sign = s;
-		decoder.parts.exponent = exponent;
+		// inline the 0x7FFF mask so the compiler sees the value fits the 15-bit exponent
+		// field: assigning a masked expression is warning-free, whereas assigning a uint64_t
+		// local is a narrowing to :15 (-Wconversion). (Regression from #1262's local, #1265.)
+		decoder.parts.exponent = rawExponentBits & 0x7FFF;
 #if defined(UNIVERSAL_ARCH_X86_64) || defined(UNIVERSAL_ARCH_RISCV)
 		// x86/RISC-V 80-bit extended: `fraction` is a 63-bit field (bits 62-0) and the
 		// integer part of the significand lives in an EXPLICIT `bit63` field that is 1 for
@@ -108,7 +110,7 @@ namespace sw { namespace universal {
 		// truncation to the field width explicitly; the old 0xFFFF... mask was a no-op that
 		// narrowed implicitly (-Wconversion / MSVC C4244).
 		decoder.parts.fraction = rawFractionBits & 0x7FFF'FFFF'FFFF'FFFF;
-		decoder.parts.bit63 = (exponent != 0) ? 1u : 0u;
+		decoder.parts.bit63 = ((rawExponentBits & 0x7FFF) != 0) ? 1u : 0u;
 #else
 		// other long double layouts (binary128 / double-double) have an implicit integer
 		// bit like float/double and no `bit63` field; preserve the original assignment.
@@ -199,9 +201,11 @@ namespace sw { namespace universal {
 	// specialization to extract fields from a long double
 	inline void setFields(long double& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
 		long_double_decoder decoder;
-		const uint64_t exponent = rawExponentBits & 0x7FFF;
 		decoder.parts.sign = s;
-		decoder.parts.exponent = exponent;
+		// inline the 0x7FFF mask so the compiler sees the value fits the 15-bit exponent
+		// field: assigning a masked expression is warning-free, whereas assigning a uint64_t
+		// local is a narrowing to :15 (-Wconversion). (Regression from #1262's local, #1265.)
+		decoder.parts.exponent = rawExponentBits & 0x7FFF;
 #if defined(UNIVERSAL_ARCH_X86_64) || defined(UNIVERSAL_ARCH_RISCV)
 		// x86/RISC-V 80-bit extended: `fraction` is a 63-bit field (bits 62-0) and the
 		// integer part of the significand lives in an EXPLICIT `bit63` field that is 1 for
@@ -212,7 +216,7 @@ namespace sw { namespace universal {
 		// truncation to the field width explicitly; the old 0xFFFF... mask was a no-op that
 		// narrowed implicitly (-Wconversion / MSVC C4244).
 		decoder.parts.fraction = rawFractionBits & 0x7FFF'FFFF'FFFF'FFFF;
-		decoder.parts.bit63 = (exponent != 0) ? 1u : 0u;
+		decoder.parts.bit63 = ((rawExponentBits & 0x7FFF) != 0) ? 1u : 0u;
 #else
 		// other long double layouts (binary128 / double-double) have an implicit integer
 		// bit like float/double and no `bit63` field; preserve the original assignment.
