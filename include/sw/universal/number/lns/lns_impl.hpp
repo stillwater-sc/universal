@@ -441,10 +441,18 @@ public:
 	constexpr bool sign()   const noexcept { 
 		return (SIGN_BIT_MASK & _block[MSU]) != 0;
 	}
+	// scale(): the integer power-of-two exponent (the integer part of the lns exponent).
+	// Returns int by the library-wide scale() convention (posit/cfloat/... all return int).
+	// LIMITATION (#1274): the lns exponent field is nbits-rbits-1 bits wide, so for
+	// astronomically wide configurations (e.g. lns<64,11> ~ 2^52, lns<128,15> ~ 2^111)
+	// the scale exceeds int range and this accessor truncates. lns ARITHMETIC is
+	// unaffected -- it operates on the full fixed-point exponent, not on scale(); only this
+	// metadata accessor saturates. If a use needs the full scale for such configs, read the
+	// exponent field directly rather than through scale().
 	constexpr int  scale()  const noexcept {
 		ExponentBlockBinary exp(_block);
 		exp >>= rbits;
-		return static_cast<int>(exp);   // scale() returns int (matches posit/cfloat convention); long(exp) narrowed on LP64
+		return static_cast<int>(exp);   // int by convention; wide configs truncate (see note above, #1274)
 	}
 	constexpr blockbinary<nbits+2, std::uint32_t, BinaryNumberType::Unsigned> fraction() const noexcept {
 		blockbinary<nbits + 2, std::uint32_t, BinaryNumberType::Unsigned> bb{ 0 };
