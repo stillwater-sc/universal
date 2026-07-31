@@ -51,6 +51,42 @@ int VerifyLeftShift(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// verify that operator<<= preserves the invariant that bits outside nbits are nulled,
+// so the raw-block iszero()/operator== stay correct. VerifyLeftShift above cannot catch
+// this because (long long)result masks the stray high bits away before comparison. #1280
+template<size_t nbits, typename BlockType = uint8_t>
+int VerifyLeftShiftInvariant(bool reportTestCases) {
+	using namespace sw::universal;
+	using BlockBinary = blockbinary<nbits, BlockType>;
+	int nrOfFailedTests = 0;
+	for (unsigned start = 0; start < nbits; ++start) {
+		for (int i = 0; i < static_cast<int>(nbits) + 1; ++i) {
+			BlockBinary shifted; shifted.clear(); shifted.setbit(start);
+			shifted <<= i;
+			// canonical value: reconstruct via operator=(long long), which nulls leading bits.
+			// a raw-block operator== then flags any stray bits left in the unused MSU storage.
+			BlockBinary canonical; canonical = static_cast<long long>(shifted);
+			if (shifted != canonical || shifted.iszero() != canonical.iszero()) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cout << "FAIL: setbit(" << start << ") <<= " << i
+					<< " left stray MSU bits\n";
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
+// run the MSU-invariant check across a few multi-block configurations (uint8 and uint16 limbs)
+int VerifyLeftShiftInvariants(bool reportTestCases) {
+	int f = 0;
+	f += VerifyLeftShiftInvariant<12, uint8_t>(reportTestCases);
+	f += VerifyLeftShiftInvariant<13, uint8_t>(reportTestCases);
+	f += VerifyLeftShiftInvariant<20, uint8_t>(reportTestCases);
+	f += VerifyLeftShiftInvariant<17, uint16_t>(reportTestCases);
+	f += VerifyLeftShiftInvariant<12, uint16_t>(reportTestCases);
+	return f;
+}
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -120,6 +156,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLeftShift<15>(reportTestCases), "blockbinary<15>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyLeftShift<16>(reportTestCases), "blockbinary<16>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyLeftShift<17>(reportTestCases), "blockbinary<17>", test_tag);
+
+	// #1280: left shift must not leave stray bits in the unused MSU storage (raw-block invariant)
+	nrOfFailedTestCases += ReportTestResult(VerifyLeftShiftInvariants(reportTestCases), "MSU invariant", test_tag);
 
 #endif
 
