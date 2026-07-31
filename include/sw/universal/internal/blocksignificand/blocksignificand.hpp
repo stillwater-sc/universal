@@ -329,7 +329,8 @@ public:
 			}
 			// adjust the shift
 			bitsToShift -= static_cast<int>(static_cast<unsigned>(blockShift) * bitsInBlock);
-			if (bitsToShift == 0) return *this;
+			// enforce the invariant that bits outside nbits are nulled before the early return
+			if (bitsToShift == 0) { _block[MSU] &= MSU_MASK; return *this; }
 		}
 		if constexpr (MSU > 0) {
 			// construct the mask for the upper bits in the block that need to move to the higher word
@@ -342,6 +343,9 @@ public:
 			}
 		}
 		_block[0] <<= bitsToShift;
+		// left shifts can push valid bits into the unused MSU storage bits; null them
+		// so iszero()/operator== (which compare raw blocks) stay correct
+		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
 	constexpr blocksignificand& operator>>=(int bitsToShift) noexcept {
