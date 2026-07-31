@@ -701,7 +701,7 @@ public:
 				_block[i] = bt(0);
 			}
 			// adjust the shift
-			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
+			bitsToShift -= static_cast<int>(static_cast<unsigned>(blockShift) * bitsInBlock);
 			if (bitsToShift == 0) {
 				_block[MSU] &= MSU_MASK;
 				return *this;
@@ -709,12 +709,15 @@ public:
 		}
 		if constexpr (MSU > 0) {
 			// construct the mask for the upper bits in the block that needs to move to the higher word
-			bt mask = 0xFFFFFFFFFFFFFFFFull << (bitsInBlock - bitsToShift);
+			// bitsToShift is > 0 here (guarded above); the shared helper also states the
+			// mask truncation explicitly (bit_high_mask, #1261) and the cast removes the
+			// unsigned/int mixing in the index arithmetic (#1283).
+			bt mask = bit_high_mask<bt>(static_cast<unsigned>(bitsToShift), bitsInBlock);
 			for (unsigned i = MSU; i > 0; --i) {
 				_block[i] <<= bitsToShift;
 				// mix in the bits from the right
 				bt bits = bt(mask & _block[i - 1]);
-				_block[i] |= (bits >> (bitsInBlock - bitsToShift));
+				_block[i] |= (bits >> (bitsInBlock - static_cast<unsigned>(bitsToShift)));
 			}
 		}
 		_block[0] <<= bitsToShift;	
@@ -731,7 +734,7 @@ public:
 		bool signext = sign();
 		unsigned blockShift = 0;
 		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
-			blockShift = bitsToShift / bitsInBlock;
+			blockShift = static_cast<unsigned>(bitsToShift) / bitsInBlock;
 			if (MSU >= blockShift) {
 				// shift by blocks
 				for (unsigned i = 0; i <= MSU - blockShift; ++i) {
@@ -745,14 +748,14 @@ public:
 				if (signext) {
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-					for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
+					for (unsigned i = nbits - static_cast<unsigned>(bitsToShift); i < nbits; ++i) {
 						setbit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-					for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
+					for (unsigned i = nbits - static_cast<unsigned>(bitsToShift); i < nbits; ++i) {
 						setbit(i, false);
 					}
 				}
@@ -761,12 +764,15 @@ public:
 		}
 		if constexpr (MSU > 0) {
 			bt mask = ALL_ONES;
-			mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
-			for (unsigned i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
+			// mask for the lower bits in the block that need to move to the lower word
+			mask >>= (bitsInBlock - static_cast<unsigned>(bitsToShift));
+			// TODO: can this be improved? we should not have to work on the upper
+			// blocks in case we block shifted
+			for (unsigned i = 0; i < MSU; ++i) {
 				_block[i] >>= bitsToShift;
 				// mix in the bits from the left
 				bt bits = bt(mask & _block[i + 1]);
-				_block[i] |= (bits << (bitsInBlock - bitsToShift));
+				_block[i] |= (bits << (bitsInBlock - static_cast<unsigned>(bitsToShift)));
 			}
 		}
 		_block[MSU] >>= bitsToShift;
@@ -775,14 +781,14 @@ public:
 		if (signext) {
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-			for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
+			for (unsigned i = nbits - static_cast<unsigned>(bitsToShift); i < nbits; ++i) {
 				setbit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-			for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
+			for (unsigned i = nbits - static_cast<unsigned>(bitsToShift); i < nbits; ++i) {
 				setbit(i, false);
 			}
 		}
@@ -1278,7 +1284,7 @@ public:
 
 		int64_t v = rhs;
 		for (unsigned i = 0; i < nbits && v != 0; ++i) {
-			if (v & 0x1ull) setbit(i);
+			if ((v & 1) != 0) setbit(i);   // low-bit test; & with signed 1 avoids int64->uint64
 			v >>= 1;
 		}
 		if constexpr (nbits > 64) {
@@ -1884,10 +1890,12 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockTy
 	std::streamsize width = ostr.width();
 	if (width > static_cast<std::streamsize>(s.size())) {
 		char fill = ostr.fill();
+		// width > s.size() here, so the subtraction stays non-negative
+		std::string::size_type pad = static_cast<std::string::size_type>(width) - s.size();
 		if ((ostr.flags() & std::ios_base::left) == std::ios_base::left)
-			s.append(static_cast<std::string::size_type>(width - s.size()), fill);
+			s.append(pad, fill);
 		else
-			s.insert(static_cast<std::string::size_type>(0), static_cast<std::string::size_type>(width - s.size()), fill);
+			s.insert(static_cast<std::string::size_type>(0), pad, fill);
 	}
 	return ostr << s;
 }

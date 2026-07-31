@@ -173,7 +173,7 @@ void printPrimes(const std::vector< IntegerType >& v) {
 		number /= 10;
 	}
 	std::cout << "largest prime: " << v[nrPrimes - 1] << " is " << COL_WIDTH - 1 << " decades\n";
-	int column = 1;
+	size_t column = 1;
 	for (auto p : v) {
 		std::cout << std::setw(COL_WIDTH) << p;
 		if (column * COL_WIDTH < PAGE_WIDTH) {

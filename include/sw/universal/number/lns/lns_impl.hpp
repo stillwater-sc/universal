@@ -745,7 +745,7 @@ protected:
 				// we need to project the bits we have on the fixpnt
 				for (unsigned i = 0; i < ieee754_parameter<Real>::fbits + 1; ++i) {
 					if (rawFraction & 0x01) {
-						lnsExponent.setbit(i + shiftLeft);
+						lnsExponent.setbit(i + static_cast<unsigned>(shiftLeft));
 					}
 					rawFraction >>= 1;
 				}
