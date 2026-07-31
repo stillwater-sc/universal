@@ -52,7 +52,8 @@ public:
 	}
 	inline void setvalue(long long v) {
 		setzero();
-		uint64_t absValue = (v < 0) ? static_cast<uint64_t>(-v) : static_cast<uint64_t>(v);
+		// unsigned negation for the magnitude: -v is UB for LLONG_MIN (#1273)
+		uint64_t absValue = (v < 0) ? (0ull - static_cast<uint64_t>(v)) : static_cast<uint64_t>(v);
 
 		uint64_t mask = 1ull;
 		support::decimal multiplier;
@@ -369,25 +370,25 @@ inline decimal div(const decimal& lhs, const decimal& rhs) {
 inline void convert_to_decimal(long long v, decimal& d) {
 	using namespace std;
 	d.setzero();
-	bool sign = false;
 	if (v == 0) return;
-	if (v < 0) {
-		sign = true; // negative number
-		// transform to sign-magnitude on positive side
-		v *= -1;
-	}
+	bool sign = (v < 0);
+	// magnitude in the UNSIGNED domain: negating a signed long long is UB for LLONG_MIN
+	// (its magnitude 2^63 is not representable in long long -- the old `v *= -1` left v
+	// negative and the loop below spun forever). Unsigned negation is well-defined and
+	// yields 2^63 for LLONG_MIN (#1273).
+	uint64_t magnitude = sign ? (0ull - static_cast<uint64_t>(v)) : static_cast<uint64_t>(v);
 	uint64_t mask = 0x1;
-	// IMPORTANT: can't use initializer or assignment operator as it would yield 
+	// IMPORTANT: can't use initializer or assignment operator as it would yield
 	// an infinite loop calling convert_to_decimal. So we need to construct the
 	// decimal from first principals
 	decimal base; // can't use base(1) semantics here as it would cause an infinite loop
 	base.setdigit(1);
-	while (v) { // minimum loop iterations; exits when no bits left
-		if (static_cast<uint64_t>(v) & mask) {   // v is non-negative here (magnitude); cast avoids -Wsign-conversion (#1270)
+	while (magnitude) { // minimum loop iterations; exits when no bits left
+		if (magnitude & mask) {
 			add(d, base);
 		}
 		add(base, base);
-		v >>= 1;
+		magnitude >>= 1;
 	}
 	// finally set the sign
 	d.setsign(sign);
