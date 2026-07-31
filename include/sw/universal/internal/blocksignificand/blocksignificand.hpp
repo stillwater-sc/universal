@@ -328,17 +328,17 @@ public:
 				_block[i] = bt(0);
 			}
 			// adjust the shift
-			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
+			bitsToShift -= static_cast<int>(static_cast<unsigned>(blockShift) * bitsInBlock);
 			if (bitsToShift == 0) return *this;
 		}
 		if constexpr (MSU > 0) {
 			// construct the mask for the upper bits in the block that need to move to the higher word
-			bt mask = bit_high_mask<bt>(bitsToShift, bitsInBlock);
+			bt mask = bit_high_mask<bt>(static_cast<unsigned>(bitsToShift), bitsInBlock);
 			for (unsigned i = MSU; i > 0; --i) {
 				_block[i] <<= bitsToShift;
 				// mix in the bits from the right
 				bt bits = bt(mask & _block[i - 1]);
-				_block[i] |= (bits >> (bitsInBlock - bitsToShift));
+				_block[i] |= (bits >> (bitsInBlock - static_cast<unsigned>(bitsToShift)));
 			}
 		}
 		_block[0] <<= bitsToShift;
@@ -354,7 +354,7 @@ public:
 
 		unsigned blockShift = 0;
 		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
-			blockShift = bitsToShift / bitsInBlock;
+			blockShift = static_cast<unsigned>(bitsToShift) / bitsInBlock;
 			if (MSU >= blockShift) {
 				// shift by blocks
 				for (unsigned i = 0; i <= MSU - blockShift; ++i) {
@@ -366,7 +366,7 @@ public:
 			if (bitsToShift == 0) {
 				// clean up the blocks we have shifted clean
 				bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-				for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
+				for (unsigned i = nbits - static_cast<unsigned>(bitsToShift); i < nbits; ++i) {
 					this->setbit(i, false); // reset
 				}
 
@@ -375,19 +375,20 @@ public:
 		}
 		if constexpr (MSU > 0) {
 			bt mask = ALL_ONES;
-			mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
+			// mask for the lower bits in the block that need to move to the lower word
+			mask >>= (bitsInBlock - static_cast<unsigned>(bitsToShift));
 			for (unsigned i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
 				_block[i] >>= bitsToShift;
 				// mix in the bits from the left
 				bt bits = bt(mask & _block[i + 1]);
-				_block[i] |= (bits << (bitsInBlock - bitsToShift));
+				_block[i] |= (bits << (bitsInBlock - static_cast<unsigned>(bitsToShift)));
 			}
 		}
 		_block[MSU] >>= bitsToShift;
 
 		// clean up the blocks we have shifted clean
 		bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-		for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
+		for (unsigned i = nbits - static_cast<unsigned>(bitsToShift); i < nbits; ++i) {
 			this->setbit(i, false); // reset
 		}
 
