@@ -3511,45 +3511,12 @@ std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, 
 	return str.str();
 }
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& value, long long precision) {
-	constexpr unsigned fbits = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::fbits;
-	std::stringstream str;
-	if (value.iszero()) {
-		str << '0';
-		return str.str();
-	}
-	if (value.sign()) str << '-';
+// NOTE: the legacy `to_string(const cfloat&, long long precision)` overload was
+// removed (#1282). It built the value with an integer-only `support::decimal`
+// and was lossy for every value with scale < fbits (e.g. 1.5 rendered as 48),
+// and a negative lsbScale would spin `powerOf2` ~2^64 times. It had no callers;
+// use operator<< (exact binary-to-decimal via blocktriple::to_string) instead.
 
-	// denormalize the number to gain access to the most sigificant digits
-	// 1.ffff^e
-	// scale is e
-	// lsbScale is e - fbits
-	// shift to get lsb to position 2^0 = (e - fbits)
-	std::int64_t scale = value.scale();
-//	std::int64_t shift = scale + fbits; // we want the lsb at 2^0
-	std::int64_t lsbScale = scale - fbits;  // scale of the lsb
-	support::decimal partial, multiplier;
-	partial.setzero();
-
-	// lsbScale is negative when |scale| < fbits (the lsb is a fraction); this integer
-	// decimal helper only represents lsbScale >= 0, and a raw size_t cast of a negative
-	// value would spin powerOf2 ~2^64 times, so guard the conversion. #1282
-	multiplier.powerOf2(lsbScale < 0 ? std::size_t{ 0 } : static_cast<std::size_t>(lsbScale));
-
-	// convert the fraction bits 
-	for (unsigned i = 0; i < fbits; ++i) {
-		if (value.at(i)) {
-			support::add(partial, multiplier);
-		}
-		support::add(multiplier, multiplier);
-	}
-	if (!value.isdenormal()) {
-		support::add(partial, multiplier); // add the hidden bit
-	}
-	str << partial;
-	return str.str();
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 /// stream operators
