@@ -270,7 +270,7 @@ jobs:
       # sccache for Windows (Ninja generator invokes cl.exe through sccache)
       - name: Install and configure sccache
         if: runner.os == 'Windows'
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Set sccache compiler launcher
         if: runner.os == 'Windows'
