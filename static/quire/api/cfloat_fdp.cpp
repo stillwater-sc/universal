@@ -6,13 +6,11 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // Test structure:
-//   quire<cfloat<32,8>> with uint32_t limbs:
-//     qbits=592, radix_point=281 (in limb 8, bit 25 of that limb)
-//     limb boundaries at accumulator positions 0,32,64,...,576
+//   quire<cfloat<32,8>> with uint32_t limbs (quire_traits<> is the source of truth):
+//     radix_point=298, upper_range=256, range=554, qbits=584 (19 uint32 limbs)
+//     radix_point 298 -> limb 9 (bits 288..319), radix at bit 10 of that limb
 //     MUL blocktriple: bfbits=48, radix=46
-//     accu_base_offset = 281 + scale - 46 = 235 + scale
-//     So a product with scale S starts at accumulator bit (235+S)
-//     Limb crossings when (235+S+i) mod 32 == 0 for some significand bit i
+//     a product at scale S starts at accumulator bit (radix_point + S - 46) = 252 + S
 //
 #include <universal/utility/directives.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
@@ -27,22 +25,17 @@ namespace sw { namespace universal {
 
 // ============================================================================
 // Key quire architectural constants for cfloat<32,8,uint32_t>
+// (derived by quire_traits<>; see include/sw/universal/traits/quire_traits.hpp)
 // ============================================================================
-//   radix_point   = 281
-//   limb size     = 32 bits
-//   limb of radix = 281/32 = limb 8 (bits 256..287), radix at bit 25 in limb
-//   qbits         = 592 (19 limbs: 0..18)
-//   MUL bfbits    = 48, MUL radix = 46
-//   base_offset   = 281 + scale - 46 = 235 + scale
+//   radix_point = 298   (limb 9, bit 10 of that limb)
+//   upper_range = 256,  range = 554,  qbits = 584  (19 uint32 limbs)
+//   MUL blocktriple: bfbits = 48, radix = 46
+//   base_offset = radix_point + scale - 46 = 252 + scale
+//   (a product at scale S occupies accumulator bits [252+S .. 252+S+47])
 //
-// To target limb boundary N*32, we need: 235 + scale + bit_in_sig = N*32
-// For the hidden-bit (bit 47 in 48-bit MUL significand):
-//   235 + scale + 47 = N*32  ->  scale = N*32 - 282
-// Limb  8: 256 -> scale = -26   (radix limb lower boundary)
-// Limb  9: 288 -> scale =   6   (radix limb upper boundary)
-// Limb 10: 320 -> scale =  38
-// Limb  7: 224 -> scale = -58
-// Limb  0:   0 -> scale = -282  (below quire range, would be clipped)
+// The per-limb scale->boundary table was removed: it is derivable from the
+// constants above and had drifted out of date (#1202). The carry/borrow tests
+// below validate the accumulator arithmetic independent of exact limb alignment.
 
 // Helper: compute the exact double-precision dot product of two cfloat vectors
 template<typename Scalar>
