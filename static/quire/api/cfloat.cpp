@@ -1383,6 +1383,67 @@ int TestDifferentConfigs() {
 	return nrOfFailedTestCases;
 }
 
+// ============================================================================
+// TestExactDotSmallNormals (#1202)
+// quire_traits<cfloat>::radix_point must reserve 2*fbits fraction bits below
+// minpos^2 so the quire captures products of small NORMAL operands exactly, in
+// BOTH subnormal modes. The smallest normal 2^(1-bias) still carries fbits
+// fraction bits down to 2^(1-bias-fbits), so its square reaches
+// 2^(2-2*bias-2*fbits). Before the fix the no-subnormals quire truncated at
+// ~2^-2*(bias-1), silently dropping those low bits -- a cfloat<16,5> "exact"
+// dot was ~1e-9, worse than accumulating in double.
+// ============================================================================
+template<typename Scalar>
+int VerifyExactDotSmallNormals(const std::string& tag) {
+	using QT = quire_traits<Scalar>;
+	int fails = 0;
+	const int      bias = static_cast<int>(QT::bias);
+	const unsigned fbits = QT::fbits;
+	// smallest normal value 2^(1-bias) and its ULP 2^(1-bias-fbits)
+	const double base = std::ldexp(1.0, 1 - bias);
+	const double ulp  = std::ldexp(base, -static_cast<int>(fbits));
+
+	// near-minpos NORMAL operands with low fraction bits set. Each stays inside the
+	// smallest normal binade (8*ulp < base for fbits >= 4) and is exactly representable,
+	// so operands, their products, and the short sum all fit a double exactly -> the
+	// double dot is an independent exact oracle.
+	std::vector<Scalar> x, y;
+	for (unsigned k = 1; k <= 8; ++k) {
+		x.push_back(Scalar(base + double(k) * ulp));
+		y.push_back(Scalar(base + double(9u - k) * ulp));
+	}
+	double oracle = 0.0;
+	for (size_t i = 0; i < x.size(); ++i) oracle += double(x[i]) * double(y[i]);
+
+	// the quire must deliver the exact sum (convert_to<double> is lossless for this range)
+	quire<Scalar> q;
+	for (size_t i = 0; i < x.size(); ++i) q += quire_mul(x[i], y[i]);
+	const double delivered = q.template convert_to<double>();
+
+	if (delivered != oracle) {
+		std::cerr << "FAIL: " << tag << " exact small-normal dot: quire delivered "
+		          << std::setprecision(std::numeric_limits<double>::max_digits10) << delivered
+		          << ", exact " << oracle << " (radix_point=" << QT::radix_point << ")\n";
+		++fails;
+	}
+	return fails;
+}
+
+int TestExactDotSmallNormals() {
+	int f = 0;
+	// exactness must hold in BOTH subnormal modes (#1202)
+	f += VerifyExactDotSmallNormals<cfloat< 8, 2, uint8_t,  false, false, false>>("cfloat<8,2> no-sub");
+	f += VerifyExactDotSmallNormals<cfloat< 8, 2, uint8_t,  true,  false, false>>("cfloat<8,2> sub");
+	f += VerifyExactDotSmallNormals<cfloat<16, 5, uint16_t, false, false, false>>("cfloat<16,5> no-sub");
+	f += VerifyExactDotSmallNormals<cfloat<16, 5, uint16_t, true,  false, false>>("cfloat<16,5> sub");
+	// radix_point is now mode-independent and matches the documented layout
+	static_assert(quire_traits<cfloat<16, 5, uint16_t, false, false, false>>::radix_point == 48, "cfloat<16,5> no-sub");
+	static_assert(quire_traits<cfloat<16, 5, uint16_t, true,  false, false>>::radix_point == 48, "cfloat<16,5> sub");
+	static_assert(quire_traits<cfloat<8, 3>>::radix_point  == 12,  "cfloat<8,3> documented radix_point");
+	static_assert(quire_traits<cfloat<32, 8>>::radix_point == 298, "cfloat<32,8> documented radix_point");
+	return f;
+}
+
 }} // namespace sw::universal
 
 int main()
@@ -1395,6 +1456,7 @@ try {
 	std::cout << test_suite << '\n';
 	std::cout << std::string(60, '=') << '\n';
 
+	nrOfFailedTestCases += ReportTestResult(TestExactDotSmallNormals(), "cfloat quire", "small-normal dot #1202");
 	nrOfFailedTestCases += ReportTestResult(TestQuireMul(), "cfloat quire_mul", "unrounded product + limb placement");
 	nrOfFailedTestCases += ReportTestResult(TestSpecialValues(), "cfloat quire_mul", "special values");
 	nrOfFailedTestCases += ReportTestResult(TestLimbBoundaryCarryBorrow(), "cfloat quire", "limb-boundary carry/borrow");

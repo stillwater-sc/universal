@@ -81,17 +81,24 @@ struct quire_traits<posit<nbits, es, bt>> {
 // subnormals extend the negative exponent range far beyond the positive range.
 //
 // Scale bounds for individual values:
-//   bias      = 2^(es-1) - 1
-//   max_scale = bias     (or bias+1 if hasMaxExpValues)
-//   min_scale = 1 - bias - fbits  (if hasSubnormals)
-//             = 1 - bias          (if !hasSubnormals)
+//   bias         = 2^(es-1) - 1
+//   max_scale    = bias     (or bias+1 if hasMaxExpValues)     [scale of maxpos]
+//   min_lsb_scale = 1 - bias - fbits                           [scale of the LSB of the
+//                                                               smallest representable value]
+//
+// The smallest representable magnitude's LSB sits at scale (1 - bias - fbits) in BOTH
+// subnormal modes: without subnormals the smallest normal 2^(1-bias) still carries fbits
+// fraction bits down to 2^(1-bias-fbits); with subnormals the smallest subnormal IS exactly
+// 2^(1-bias-fbits). So radix_point does NOT depend on hasSubnormals. (#1202: the old
+// no-subnormals branch used |min_scale| of the value (bias-1) instead of |min_lsb_scale|,
+// dropping 2*fbits fraction bits and truncating exact dot products of small normal operands.)
 //
 // Product scale bounds:
-//   max_product_scale = 2*max_scale + 1   (maxpos^2 significand in [2,4))
-//   min_product_scale = 2*min_scale       (minpos^2)
+//   max_product_scale = 2*max_scale + 1     (maxpos^2 significand in [2,4))
+//   min_product_lsb   = 2*min_lsb_scale     (smallest product bit)
 //
 // Quire layout:
-//   radix_point = |min_product_scale|     -> minpos^2 lands on bit 0
+//   radix_point = |min_product_lsb| = 2*(bias + fbits - 1)  -> smallest product bit at bit 0
 //   upper_range = max_product_scale + 1   -> maxpos^2 MSB lands on bit range-1
 //   range       = radix_point + upper_range
 //
@@ -110,15 +117,14 @@ struct quire_traits<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSatu
 	// Maximum scale of a representable value
 	static constexpr unsigned max_scale   = hasMaxExpValues ? (bias + 1u) : bias;
 
-	// |min_scale|: magnitude of the most negative scale
-	//   hasSubnormals:  min_scale = 1 - bias - fbits  ->  |min_scale| = bias + fbits - 1
-	//   !hasSubnormals: min_scale = 1 - bias           ->  |min_scale| = bias - 1
-	static constexpr unsigned abs_min_scale = hasSubnormals
-		? (bias + fbits - 1u)
-		: (bias >= 1u ? bias - 1u : 0u);
+	// |scale of the LSB of the smallest representable value| = bias + fbits - 1, in BOTH
+	// subnormal modes (see the note above; #1202). Matches the native float/double
+	// specializations below, which use bias + fbits - 1 unconditionally. The guard covers
+	// the degenerate bias + fbits == 0 case (e.g. cfloat<2,1>).
+	static constexpr unsigned abs_min_scale = (bias + fbits >= 1u) ? (bias + fbits - 1u) : 0u;
 
 	// Quire geometry derived from product scale bounds
-	static constexpr unsigned radix_point = 2u * abs_min_scale;   // minpos^2 at bit 0
+	static constexpr unsigned radix_point = 2u * abs_min_scale;   // smallest product bit at bit 0
 	static constexpr unsigned upper_range = 2u * max_scale + 2u;  // maxpos^2 MSB at bit range-1
 	static constexpr unsigned range       = radix_point + upper_range;
 
