@@ -1265,7 +1265,7 @@ public:
 			_block[MSU] |= SIGN_BIT_MASK;
 		}
 		else {
-			_block[MSU] &= ~SIGN_BIT_MASK;
+			_block[MSU] &= static_cast<bt>(~SIGN_BIT_MASK);
 		}
 	}
 	constexpr bool setexponent(int scale) {
@@ -2540,7 +2540,7 @@ protected:
 
 		// shift the msb to the msb of the fraction
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - exponent - 1;
+		uint32_t shift = sizeInBits - static_cast<uint32_t>(exponent) - 1;
 		raw <<= shift;
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
 
@@ -2936,8 +2936,9 @@ public:
 					setbits(bits);
 				}
 				else {
-					// the source real is a subnormal number				
-					mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+					// the source real is a subnormal number
+					// mask for the sticky bit (shift count computed in signed int; exponent < 0 here)
+					mask = 0x00FF'FFFFu >> (static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1);
 
 					// fraction processing: we have fbits+1 bits = 1 hidden + fbits explicit fraction bits 
 					// f = 1.ffff  2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
@@ -3531,7 +3532,10 @@ std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues
 	support::decimal partial, multiplier;
 	partial.setzero();
 
-	multiplier.powerOf2(lsbScale);
+	// lsbScale is negative when |scale| < fbits (the lsb is a fraction); this integer
+	// decimal helper only represents lsbScale >= 0, and a raw size_t cast of a negative
+	// value would spin powerOf2 ~2^64 times, so guard the conversion. #1282
+	multiplier.powerOf2(lsbScale < 0 ? std::size_t{ 0 } : static_cast<std::size_t>(lsbScale));
 
 	// convert the fraction bits 
 	for (unsigned i = 0; i < fbits; ++i) {
