@@ -296,8 +296,8 @@ public:
 		unsigned significandScale = static_cast<unsigned>(significandscale());
 		// find the shift that gets us to the lsb
 		unsigned shift = significandScale + static_cast<unsigned>(radix) - fbits;
-		bool roundup = _significand.roundingDirection(shift + adjustment);
-		return std::pair<bool, unsigned>(roundup, shift + adjustment);
+		bool roundup = _significand.roundingDirection(shift + static_cast<unsigned>(adjustment));
+		return std::pair<bool, unsigned>(roundup, shift + static_cast<unsigned>(adjustment));
 	}
 
 	// apply a 2's complement recoding of the fraction bits
