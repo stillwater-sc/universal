@@ -502,12 +502,21 @@ inline std::vector<T> tail_vec(const std::vector<T>& xs) {
     return std::vector<T>(xs.begin() + 1, xs.end());
 }
 
+template <typename FpType>
+constexpr bool is_nonzero_subnormal_block(const block<FpType>& b) noexcept {
+    return !b.is_zero_block() && !b.is_normalised();
+}
+
 // Build a finite ZBCL from a 0-overlap block list (front-first). Used to
 // re-inject a leftover workspace tail into an operand slot (see addRec_step).
+// The workspace is ordered from greater to lesser significance, so once the
+// tail reaches nonzero subnormal residuals they are below the valid block floor.
 template <typename FpType>
 inline ZBCL<FpType> zbcl_of_vec(const std::vector<block<FpType>>& bs) {
+    std::size_t end = bs.size();
+    while (end > 0 && is_nonzero_subnormal_block(bs[end - 1])) --end;
     ZBCL<FpType> out{};
-    for (std::size_t i = bs.size(); i-- > 0;) out = ZBCL<FpType>::cons(bs[i], out);
+    for (std::size_t i = end; i-- > 0;) out = ZBCL<FpType>::cons(bs[i], out);
     return out;
 }
 
@@ -530,11 +539,19 @@ addRec_step(addRec_state<FpType>& st) {
             // add [] gs = gs : we just relay gs as the result.
             B head = st.gs.head();
             st.gs = st.gs.tail();
+            if (is_nonzero_subnormal_block(head)) {
+                st.gs = ZBCL<FpType>{};
+                return std::nullopt;
+            }
             return head;
         }
         if (st.gs.is_empty()) {
             B head = st.fs.head();
             st.fs = st.fs.tail();
+            if (is_nonzero_subnormal_block(head)) {
+                st.fs = ZBCL<FpType>{};
+                return std::nullopt;
+            }
             return head;
         }
         B f = st.fs.head();
@@ -566,16 +583,31 @@ addRec_step(addRec_state<FpType>& st) {
             if (st.workspace.empty()) return std::nullopt;
             B e = st.workspace.front();
             st.workspace = tail_vec(st.workspace);
+            // Terminal workspace residuals are ordered from greater to lesser
+            // significance. A nonzero subnormal residual is below this host's
+            // valid ZBCL block floor, so the stream terminates there.
+            if (is_nonzero_subnormal_block(e)) {
+                st.workspace.clear();
+                return std::nullopt;
+            }
             return e;
         }
         if (st.gs.is_empty() && st.workspace.empty()) {
             B head = st.fs.head();
             st.fs = st.fs.tail();
+            if (is_nonzero_subnormal_block(head)) {
+                st.fs = ZBCL<FpType>{};
+                return std::nullopt;
+            }
             return head;
         }
         if (st.fs.is_empty() && st.workspace.empty()) {
             B head = st.gs.head();
             st.gs = st.gs.tail();
+            if (is_nonzero_subnormal_block(head)) {
+                st.gs = ZBCL<FpType>{};
+                return std::nullopt;
+            }
             return head;
         }
         if (st.gs.is_empty()) {

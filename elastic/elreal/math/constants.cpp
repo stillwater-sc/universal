@@ -34,7 +34,9 @@
 #include <universal/number/elreal/math/constants.hpp>
 #include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/verification/dyadic_exact.hpp>
+#include <universal/verification/elreal_reference_digits.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <math/constants/reference_constants.hpp>
 
 #include <universal/verification/elreal_oracle.hpp>
 
@@ -141,6 +143,55 @@ int verify_highprec_double() {
     return n;
 }
 
+template <typename FpType>
+int check_valid_prefix(const sw::universal::ZBCL<FpType>& z,
+                       std::size_t maxBlocks,
+                       const std::string& tag) {
+    using namespace sw::universal;
+    int n = 0;
+    const auto blocks = z.take(maxBlocks);
+    if (blocks.size() >= maxBlocks) {
+        std::cout << tag << " did not terminate within " << maxBlocks << " blocks\n"; ++n;
+    }
+    for (std::size_t i = 0; i < blocks.size(); ++i) {
+        const auto& b = blocks[i];
+        if (!b.is_zero_block() && !b.is_normalised()) {
+            std::cout << tag << " emitted nonzero subnormal block at " << i
+                      << " E=" << b.exponent() << '\n'; ++n;
+        }
+        if (i + 1 < blocks.size() && !zero_overlap(b, blocks[i + 1])) {
+            std::cout << tag << " 0-overlap FAILED at block " << i << '\n'; ++n;
+        }
+    }
+    return n;
+}
+
+int verify_bfloat16_series_floor() {
+    using namespace sw::universal;
+    int n = 0;
+    constexpr std::size_t depth = 8;
+    constexpr std::size_t maxBlocks = 1024;
+
+    auto x = div(from_native<bfloat16>(1.0), from_native<bfloat16>(5.0), depth);
+    auto atan_series = detail::odd_power_series(x, true, depth);
+    n += check_valid_prefix(atan_series, maxBlocks, "bfloat16 atan(1/5) series floor");
+    const double atanApprox = est::approx(atan_series);
+    const double atanRef = std::atan(0.2);
+    if (std::abs(atanApprox - atanRef) > 1e-6) {
+        std::cout << "bfloat16 atan(1/5) useful prefix lost: " << atanApprox
+                  << " != " << atanRef << '\n'; ++n;
+    }
+
+    auto pi = pi_zbcl<bfloat16>(depth);
+    n += check_valid_prefix(pi, maxBlocks, "bfloat16 pi depth-8 series floor");
+    const int digits = agreed_decimal_digits(pi, s_pi);
+    if (digits < 20) {
+        std::cout << "bfloat16 pi depth-8 useful prefix lost: " << digits
+                  << " decimal digits\n"; ++n;
+    }
+    return n;
+}
+
 } // anonymous
 
 #define MANUAL_TESTING 0
@@ -183,6 +234,7 @@ try {
     nrOfFailedTestCases += verify_radicals<bfloat16>(1e-2, "const<bfloat16>", kConstDepth);
 
     nrOfFailedTestCases += verify_highprec_double();
+    nrOfFailedTestCases += verify_bfloat16_series_floor();
 
 #endif
 
