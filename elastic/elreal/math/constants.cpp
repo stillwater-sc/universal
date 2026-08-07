@@ -44,15 +44,16 @@ namespace {
 
 namespace est = sw::universal::elreal_oracle;
 
-template <typename FpType>
+template<typename FpType>
 int check_value(const sw::universal::ZBCL<FpType>& z, double ref, double tol, const std::string& tag) {
-    using namespace sw::universal;
-    int n = 0;
-    if (std::abs(est::approx(z) - ref) > tol) {
-        std::cout << tag << " = " << est::approx(z) << " != " << ref << " (tol " << tol << ")\n"; ++n;
-    }
-    n += est::check_zero_overlap<FpType>(z, 24, tag);
-    return n;
+	using namespace sw::universal;
+	int n = 0;
+	if (std::abs(est::approx(z) - ref) > tol) {
+		std::cout << tag << " = " << est::approx(z) << " != " << ref << " (tol " << tol << ")\n";
+		++n;
+	}
+	n += est::check_zero_overlap<FpType>(z, 24, tag);
+	return n;
 }
 
 // Test generation depth. The constant generators default to deep precision (e=32,
@@ -64,186 +65,194 @@ int check_value(const sw::universal::ZBCL<FpType>& z, double ref, double tol, co
 static constexpr std::size_t kConstDepth = 6;
 
 // Series constants -- tested on double / float only.
-template <typename FpType>
+template<typename FpType>
 int verify_series(double tol, const std::string& host, std::size_t depth) {
-    using namespace sw::universal;
-    int n = 0;
-    n += check_value(e_zbcl<FpType>(depth),        std::numbers::e_v<double>,    tol, host + " e");
-    n += check_value(ln2_zbcl<FpType>(depth),      std::numbers::ln2_v<double>,  tol, host + " ln2");
-    n += check_value(ln10_zbcl<FpType>(depth),     std::numbers::ln10_v<double>, tol, host + " ln10");
-    n += check_value(log2_10_zbcl<FpType>(depth),  std::log2(10.0),              tol, host + " log2(10)");
-    n += check_value(pi_zbcl<FpType>(depth),       std::numbers::pi_v<double>,   tol, host + " pi");
-    return n;
+	using namespace sw::universal;
+	int n = 0;
+	n += check_value(e_zbcl<FpType>(depth), std::numbers::e_v<double>, tol, host + " e");
+	n += check_value(ln2_zbcl<FpType>(depth), std::numbers::ln2_v<double>, tol, host + " ln2");
+	n += check_value(ln10_zbcl<FpType>(depth), std::numbers::ln10_v<double>, tol, host + " ln10");
+	n += check_value(log2_10_zbcl<FpType>(depth), std::log2(10.0), tol, host + " log2(10)");
+	n += check_value(pi_zbcl<FpType>(depth), std::numbers::pi_v<double>, tol, host + " pi");
+	return n;
 }
 
 // Radical constants + euler_gamma -- tested on all hosts (stay in range).
-template <typename FpType>
+template<typename FpType>
 int verify_radicals(double tol, const std::string& host, std::size_t depth) {
-    using namespace sw::universal;
-    int n = 0;
-    struct { ZBCL<FpType> z; double ref; const char* name; } rad[] = {
-        { sqrt2_zbcl<FpType>(depth), std::numbers::sqrt2_v<double>, "sqrt2" },
-        { sqrt3_zbcl<FpType>(depth), std::numbers::sqrt3_v<double>, "sqrt3" },
-        { sqrt5_zbcl<FpType>(depth), std::sqrt(5.0),                "sqrt5" },
-        { phi_zbcl<FpType>(depth),   std::numbers::phi_v<double>,   "phi"   },
-    };
-    for (auto& r : rad) n += check_value(r.z, r.ref, tol, host + " " + r.name);
+	using namespace sw::universal;
+	int n = 0;
+	struct {
+		ZBCL<FpType> z;
+		double       ref;
+		const char*  name;
+	} rad[] = {
+	    {sqrt2_zbcl<FpType>(depth), std::numbers::sqrt2_v<double>, "sqrt2"},
+	    {sqrt3_zbcl<FpType>(depth), std::numbers::sqrt3_v<double>, "sqrt3"},
+	    {sqrt5_zbcl<FpType>(depth), std::sqrt(5.0), "sqrt5"},
+	    {phi_zbcl<FpType>(depth), std::numbers::phi_v<double>, "phi"},
+	};
+	for (auto& r : rad)
+		n += check_value(r.z, r.ref, tol, host + " " + r.name);
 
-    // Algebraic identities (tolerance-based; sqrt/phi are approximate streams).
-    for (double v : { 2.0, 3.0, 5.0 }) {
-        ZBCL<FpType> s = sqrt(from_native<FpType>(v), depth);
-        if (std::abs(est::approx(mul(s, s)) - v) > tol) {
-            std::cout << host << " sqrt(" << v << ")^2 != " << v << '\n'; ++n;
-        }
-    }
-    {   // phi^2 == phi + 1
-        ZBCL<FpType> phi = phi_zbcl<FpType>(depth);
-        double lhs = est::approx(mul(phi, phi));
-        double rhs = est::approx(add(phi, from_native<FpType>(1.0)));
-        if (std::abs(lhs - rhs) > tol) { std::cout << host << " phi^2 != phi+1\n"; ++n; }
-    }
-    // euler_gamma: a host-tolerance smoke check, only on hosts with float precision
-    // or better. Its Brent-McMillan generator (a) is O(n) eager terms -- slow at depth
-    // -- and (b) carries intermediate w_k = (n^k/k!)^2 that peaks at ~exp(2n), which
-    // overflows a narrow exponent range once n exceeds ~44 (float at depth >= 3). A
-    // shallow depth 2 keeps it fast and in range while clearing 1e-6/1e-12 (depth 2
-    // gives ~14 digits on float). bfloat16 (7-bit significand) is skipped: it cannot
-    // carry the H_k / A/B / ln(n) computation accurately -- the value oscillates ~5%
-    // around 0.5772 with depth, so any "pass" there is coincidental. Deep euler_gamma
-    // validation is double-only (#1053, LEVEL_4 high-precision test).
-    if constexpr (std::numeric_limits<FpType>::digits >= 24) {
-        n += check_value(euler_gamma_zbcl<FpType>(2), std::numbers::egamma_v<double>, tol, host + " egamma");
-    }
-    return n;
+	// Algebraic identities (tolerance-based; sqrt/phi are approximate streams).
+	for (double v : {2.0, 3.0, 5.0}) {
+		ZBCL<FpType> s = sqrt(from_native<FpType>(v), depth);
+		if (std::abs(est::approx(mul(s, s)) - v) > tol) {
+			std::cout << host << " sqrt(" << v << ")^2 != " << v << '\n';
+			++n;
+		}
+	}
+	{  // phi^2 == phi + 1
+		ZBCL<FpType> phi = phi_zbcl<FpType>(depth);
+		double       lhs = est::approx(mul(phi, phi));
+		double       rhs = est::approx(add(phi, from_native<FpType>(1.0)));
+		if (std::abs(lhs - rhs) > tol) {
+			std::cout << host << " phi^2 != phi+1\n";
+			++n;
+		}
+	}
+	// euler_gamma: a host-tolerance smoke check, only on hosts with float precision
+	// or better. Its Brent-McMillan generator (a) is O(n) eager terms -- slow at depth
+	// -- and (b) carries intermediate w_k = (n^k/k!)^2 that peaks at ~exp(2n), which
+	// overflows a narrow exponent range once n exceeds ~44 (float at depth >= 3). A
+	// shallow depth 2 keeps it fast and in range while clearing 1e-6/1e-12 (depth 2
+	// gives ~14 digits on float). bfloat16 (7-bit significand) is skipped: it cannot
+	// carry the H_k / A/B / ln(n) computation accurately -- the value oscillates ~5%
+	// around 0.5772 with depth, so any "pass" there is coincidental. Deep euler_gamma
+	// validation is double-only (#1053, LEVEL_4 high-precision test).
+	if constexpr (std::numeric_limits<FpType>::digits >= 24) {
+		n += check_value(euler_gamma_zbcl<FpType>(2), std::numbers::egamma_v<double>, tol, host + " egamma");
+	}
+	return n;
 }
 
 // Beyond-double precision check for the double host: pi and e must agree with a
 // multi-limb high-precision reference to well past double precision.
 int verify_highprec_double() {
-    using namespace sw::universal;
-    int n = 0;
-    // pi reference as a 3-limb non-overlapping double expansion (~159 bits).
-    std::vector<block<double>> pilimbs = {
-        block<double>{ 3.141592653589793,        0 },
-        block<double>{ 1.2246467991473532e-16,   0 },
-        block<double>{ -2.9947698097183397e-33,  0 },
-    };
-    ZBCL<double> ref = zbcl_from_blocks<double>(priestRenorm(pilimbs));
-    // depth 8 (~424 bits) is the suite's one deliberately-deep generation, well
-    // past the 3-limb (~159-bit) reference it is compared against.
-    ZBCL<double> diff = add(pi_zbcl<double>(8), negate(ref));
-    // Agreement to > 100 bits (~30 digits) demonstrates precision well beyond the
-    // host double (the 3-limb reference itself caps the check at ~159 bits). The
-    // leading limb cancels exactly, so the residual magnitude is the real signal
-    // (do not read diff.head().exponent() -- that may be a zero block).
-    const double residual = std::abs(to_double_approx(diff, 16));
-    if (residual > 1e-30) {
-        std::cout << "pi high-precision: residual " << residual << " too large (want < 1e-30)\n"; ++n;
-    }
-    return n;
+	using namespace sw::universal;
+	int n = 0;
+	// pi reference as a 3-limb non-overlapping double expansion (~159 bits).
+	std::vector<block<double>> pilimbs = {
+	    block<double>{3.141592653589793, 0},
+	    block<double>{1.2246467991473532e-16, 0},
+	    block<double>{-2.9947698097183397e-33, 0},
+	};
+	ZBCL<double> ref = zbcl_from_blocks<double>(priestRenorm(pilimbs));
+	// depth 8 (~424 bits) is the suite's one deliberately-deep generation, well
+	// past the 3-limb (~159-bit) reference it is compared against.
+	ZBCL<double> diff = add(pi_zbcl<double>(8), negate(ref));
+	// Agreement to > 100 bits (~30 digits) demonstrates precision well beyond the
+	// host double (the 3-limb reference itself caps the check at ~159 bits). The
+	// leading limb cancels exactly, so the residual magnitude is the real signal
+	// (do not read diff.head().exponent() -- that may be a zero block).
+	const double residual = std::abs(to_double_approx(diff, 16));
+	if (residual > 1e-30) {
+		std::cout << "pi high-precision: residual " << residual << " too large (want < 1e-30)\n";
+		++n;
+	}
+	return n;
 }
 
-template <typename FpType>
-int check_valid_prefix(const sw::universal::ZBCL<FpType>& z,
-                       std::size_t maxBlocks,
-                       const std::string& tag) {
-    using namespace sw::universal;
-    int n = 0;
-    const auto blocks = z.take(maxBlocks);
-    if (blocks.size() >= maxBlocks) {
-        std::cout << tag << " did not terminate within " << maxBlocks << " blocks\n"; ++n;
-    }
-    for (std::size_t i = 0; i < blocks.size(); ++i) {
-        const auto& b = blocks[i];
-        if (!b.is_zero_block() && !b.is_normalised()) {
-            std::cout << tag << " emitted nonzero subnormal block at " << i
-                      << " E=" << b.exponent() << '\n'; ++n;
-        }
-        if (i + 1 < blocks.size() && !zero_overlap(b, blocks[i + 1])) {
-            std::cout << tag << " 0-overlap FAILED at block " << i << '\n'; ++n;
-        }
-    }
-    return n;
+template<typename FpType>
+int check_valid_prefix(const sw::universal::ZBCL<FpType>& z, std::size_t maxBlocks, const std::string& tag) {
+	using namespace sw::universal;
+	int        n      = 0;
+	const auto blocks = z.take(maxBlocks);
+	if (blocks.size() >= maxBlocks) {
+		std::cout << tag << " did not terminate within " << maxBlocks << " blocks\n";
+		++n;
+	}
+	for (std::size_t i = 0; i < blocks.size(); ++i) {
+		const auto& b = blocks[i];
+		if (!b.is_zero_block() && !b.is_normalised()) {
+			std::cout << tag << " emitted nonzero subnormal block at " << i << " E=" << b.exponent() << '\n';
+			++n;
+		}
+		if (i + 1 < blocks.size() && !zero_overlap(b, blocks[i + 1])) {
+			std::cout << tag << " 0-overlap FAILED at block " << i << '\n';
+			++n;
+		}
+	}
+	return n;
 }
 
 int verify_bfloat16_series_floor() {
-    using namespace sw::universal;
-    int n = 0;
-    constexpr std::size_t depth = 8;
-    constexpr std::size_t maxBlocks = 1024;
+	using namespace sw::universal;
+	int                   n         = 0;
+	constexpr std::size_t depth     = 8;
+	constexpr std::size_t maxBlocks = 1024;
 
-    auto x = div(from_native<bfloat16>(1.0), from_native<bfloat16>(5.0), depth);
-    auto atan_series = detail::odd_power_series(x, true, depth);
-    n += check_valid_prefix(atan_series, maxBlocks, "bfloat16 atan(1/5) series floor");
-    const double atanApprox = est::approx(atan_series);
-    const double atanRef = std::atan(0.2);
-    if (std::abs(atanApprox - atanRef) > 1e-6) {
-        std::cout << "bfloat16 atan(1/5) useful prefix lost: " << atanApprox
-                  << " != " << atanRef << '\n'; ++n;
-    }
+	auto x           = div(from_native<bfloat16>(1.0), from_native<bfloat16>(5.0), depth);
+	auto atan_series = detail::odd_power_series(x, true, depth);
+	n += check_valid_prefix(atan_series, maxBlocks, "bfloat16 atan(1/5) series floor");
+	const double atanApprox = est::approx(atan_series);
+	const double atanRef    = std::atan(0.2);
+	if (std::abs(atanApprox - atanRef) > 1e-6) {
+		std::cout << "bfloat16 atan(1/5) useful prefix lost: " << atanApprox << " != " << atanRef << '\n';
+		++n;
+	}
 
-    auto pi = pi_zbcl<bfloat16>(depth);
-    n += check_valid_prefix(pi, maxBlocks, "bfloat16 pi depth-8 series floor");
-    const int digits = agreed_decimal_digits(pi, s_pi);
-    if (digits < 20) {
-        std::cout << "bfloat16 pi depth-8 useful prefix lost: " << digits
-                  << " decimal digits\n"; ++n;
-    }
-    return n;
+	auto pi = pi_zbcl<bfloat16>(depth);
+	n += check_valid_prefix(pi, maxBlocks, "bfloat16 pi depth-8 series floor");
+	const int digits = agreed_decimal_digits(pi, s_pi);
+	if (digits < 20) {
+		std::cout << "bfloat16 pi depth-8 useful prefix lost: " << digits << " decimal digits\n";
+		++n;
+	}
+	return n;
 }
 
-} // anonymous
+}  // namespace
 
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 #ifndef REGRESSION_LEVEL_OVERRIDE
-#undef REGRESSION_LEVEL_1
-#undef REGRESSION_LEVEL_2
-#undef REGRESSION_LEVEL_3
-#undef REGRESSION_LEVEL_4
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 0
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
+#	undef REGRESSION_LEVEL_1
+#	undef REGRESSION_LEVEL_2
+#	undef REGRESSION_LEVEL_3
+#	undef REGRESSION_LEVEL_4
+#	define REGRESSION_LEVEL_1 1
+#	define REGRESSION_LEVEL_2 0
+#	define REGRESSION_LEVEL_3 0
+#	define REGRESSION_LEVEL_4 0
 #endif
 
-int main()
-try {
-    using namespace sw::universal;
-    std::string test_suite = "elreal Phase 7.1 (#931) constants";
-    int nrOfFailedTestCases = 0;
-    bool reportTestCases = false;
-    ReportTestSuiteHeader(test_suite, reportTestCases);
+int main() try {
+	using namespace sw::universal;
+	std::string test_suite          = "elreal Phase 7.1 (#931) constants";
+	int         nrOfFailedTestCases = 0;
+	bool        reportTestCases     = false;
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-    // TODO: place hand-run diagnostics here (this branch ignores failures)
+	// TODO: place hand-run diagnostics here (this branch ignores failures)
 
-    ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-    return EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 
 #else
 
-#if REGRESSION_LEVEL_1
+#	if REGRESSION_LEVEL_1
 
-    nrOfFailedTestCases += verify_series<double>(1e-12, "const<double>", kConstDepth);
-    nrOfFailedTestCases += verify_series<float>(1e-6, "const<float>", kConstDepth);
+	nrOfFailedTestCases += verify_series<double>(1e-12, "const<double>", kConstDepth);
+	nrOfFailedTestCases += verify_series<float>(1e-6, "const<float>", kConstDepth);
 
-    nrOfFailedTestCases += verify_radicals<double>(1e-12, "const<double>", kConstDepth);
-    nrOfFailedTestCases += verify_radicals<float>(1e-6, "const<float>", kConstDepth);
-    nrOfFailedTestCases += verify_radicals<bfloat16>(1e-2, "const<bfloat16>", kConstDepth);
+	nrOfFailedTestCases += verify_radicals<double>(1e-12, "const<double>", kConstDepth);
+	nrOfFailedTestCases += verify_radicals<float>(1e-6, "const<float>", kConstDepth);
+	nrOfFailedTestCases += verify_radicals<bfloat16>(1e-2, "const<bfloat16>", kConstDepth);
 
-    nrOfFailedTestCases += verify_highprec_double();
-    nrOfFailedTestCases += verify_bfloat16_series_floor();
+	nrOfFailedTestCases += verify_highprec_double();
+	nrOfFailedTestCases += verify_bfloat16_series_floor();
 
-#endif
+#	endif
 
-    ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-    return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif  // MANUAL_TESTING
-}
-catch (const std::exception& err) {
-    std::cerr << "Caught unexpected exception: " << err.what() << std::endl;
-    return EXIT_FAILURE;
+} catch (const std::exception& err) {
+	std::cerr << "Caught unexpected exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
 }
