@@ -161,13 +161,14 @@ inline std::vector<block<FpType>> removeZeros(const std::vector<block<FpType>>& 
 // priestAdd works on FINITE lists. Outputs a DBL_k list whose total value
 // equals the sum of the input lists' values.
 template<typename FpType>
-std::vector<block<FpType>> priestRenorm_pass(std::vector<block<FpType>> xs);
+std::vector<block<FpType>> priestRenorm_pass(const std::vector<block<FpType>>& xs);
 template<typename FpType>
 std::vector<block<FpType>> priestRenorm(std::vector<block<FpType>> xs);
 
 template<typename FpType>
-inline std::vector<block<FpType>> priestAddStep2(std::vector<block<FpType>> as, std::vector<block<FpType>> bs,
-                                                 block<FpType> a, block<FpType> b) {
+inline std::vector<block<FpType>> priestAddStep2(const std::vector<block<FpType>>& as,
+                                                 const std::vector<block<FpType>>& bs, block<FpType> a,
+                                                 block<FpType> b) {
 	using B = block<FpType>;
 	// Following FCL.hs priestAddStep2 case-by-case.
 	if (as.empty() && bs.empty()) {
@@ -225,7 +226,8 @@ inline std::vector<block<FpType>> priestAddStep2(std::vector<block<FpType>> as, 
 }
 
 template<typename FpType>
-inline std::vector<block<FpType>> priestAddStep1(std::vector<block<FpType>> as, std::vector<block<FpType>> bs) {
+inline std::vector<block<FpType>> priestAddStep1(const std::vector<block<FpType>>& as,
+                                                 const std::vector<block<FpType>>& bs) {
 	using B = block<FpType>;
 	if (as.empty())
 		return bs;
@@ -266,7 +268,7 @@ inline std::vector<block<FpType>> priestAddNonNorm(std::vector<block<FpType>> as
 }
 
 template<typename FpType>
-inline std::vector<block<FpType>> sweepUpRec(std::vector<block<FpType>> as, block<FpType> b) {
+inline std::vector<block<FpType>> sweepUpRec(const std::vector<block<FpType>>& as, block<FpType> b) {
 	using B = block<FpType>;
 	if (as.empty())
 		return {b};
@@ -294,10 +296,10 @@ inline std::vector<block<FpType>> sweepUp(std::vector<block<FpType>> as) {
 }
 
 template<typename FpType>
-inline std::vector<block<FpType>> sweepDownRec(std::vector<block<FpType>> as, block<FpType> b);
+inline std::vector<block<FpType>> sweepDownRec(const std::vector<block<FpType>>& as, block<FpType> b);
 
 template<typename FpType>
-inline std::vector<block<FpType>> sweepDown(std::vector<block<FpType>> as) {
+inline std::vector<block<FpType>> sweepDown(const std::vector<block<FpType>>& as) {
 	using B = block<FpType>;
 	if (as.empty())
 		return {};
@@ -307,7 +309,7 @@ inline std::vector<block<FpType>> sweepDown(std::vector<block<FpType>> as) {
 }
 
 template<typename FpType>
-inline std::vector<block<FpType>> sweepDownRec(std::vector<block<FpType>> as, block<FpType> b) {
+inline std::vector<block<FpType>> sweepDownRec(const std::vector<block<FpType>>& as, block<FpType> b) {
 	using B = block<FpType>;
 	if (as.empty())
 		return {b};
@@ -330,7 +332,7 @@ inline std::vector<block<FpType>> sweepDownRec(std::vector<block<FpType>> as, bl
 // this pass to a 0-overlap fixpoint (the pass is value-preserving and idempotent
 // on an already-0-overlap list, and converges in a second pass in practice).
 template<typename FpType>
-inline std::vector<block<FpType>> priestRenorm_pass(std::vector<block<FpType>> as) {
+inline std::vector<block<FpType>> priestRenorm_pass(const std::vector<block<FpType>>& as) {
 	using B = block<FpType>;
 	if (as.empty())
 		return {};
@@ -417,7 +419,8 @@ inline std::vector<block<FpType>> priestRenorm(std::vector<block<FpType>> as) {
 }
 
 template<typename FpType>
-inline std::vector<block<FpType>> priestAdd(std::vector<block<FpType>> as, std::vector<block<FpType>> bs) {
+inline std::vector<block<FpType>> priestAdd(const std::vector<block<FpType>>& as,
+                                            const std::vector<block<FpType>>& bs) {
 	return priestRenorm(priestAddNonNorm(as, bs));
 }
 
