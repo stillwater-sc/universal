@@ -120,7 +120,7 @@ try {
 	std::cout << "+---------    Truncation rounding behavior\n";
 	{
 		// In hfloat, the result is truncated (never rounds up)
-		HfloatShort a(1.0), b(1.0);
+		HfloatShort a(1.0);
 		HfloatShort third = a / HfloatShort(3);
 		double d3 = double(third);
 		// truncation: 1/3 should be <= exact 1/3

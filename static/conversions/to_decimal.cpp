@@ -6,10 +6,11 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
+// configure the integer arithmetic class
+#define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 // configure the posit arithmetic
 #include <universal/number/posit/posit.hpp>
 // configure the integer arithmetic class
-#define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/edecimal/edecimal.hpp>
 #include <universal/verification/test_suite.hpp>

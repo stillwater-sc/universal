@@ -89,8 +89,6 @@ namespace {
 		// --- IEEE 754 special values ---
 		double qnan = std::numeric_limits<double>::quiet_NaN();
 		double pinf = std::numeric_limits<double>::infinity();
-		double ninf = -pinf;
-
 		if (reportTestCases) std::cout << "  NaN / finite...\n";
 		{
 			efloat<16> a(1.0), n(qnan);

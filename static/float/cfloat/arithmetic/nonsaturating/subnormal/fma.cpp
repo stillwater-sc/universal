@@ -86,10 +86,6 @@ int main() try {
 	bool        reportTestCases     = false;
 	int         nrOfFailedTestCases = 0;
 
-	constexpr bool hasSubnormals   = false;
-	constexpr bool hasMaxExpValues = false;
-	constexpr bool isSaturating    = false;
-
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
@@ -113,8 +109,6 @@ int main() try {
 
 #	if REGRESSION_LEVEL_1
 	using fp24    = cfloat<24, 5, uint16_t, true, false, false>;
-	using fp32    = cfloat<32, 8, uint32_t, true, false, false>;
-
 	nrOfFailedTestCases += ReportTestResult(VerifyFma<fp24>(nrSamples), type_tag(fp24{}), "fma");
 	nrOfFailedTestCases += ReportTestResult(VerifyResidual<cfloat<24, 5, uint16_t, true, false, false>>(nrSamples),
 	                                        type_tag(fp24{}), "residual");

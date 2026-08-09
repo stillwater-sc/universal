@@ -198,7 +198,6 @@ try {
 		static_assert(a >= b,    "constexpr 42 >= 7");
 
 		// Cross-check via runtime; use to_long() for value comparison
-		Q32 ra(42), rb(7);
 		Q32 r49(49), r294(294), r6(6), r0(0), r_neg42(-42), r168(168), r10(10);
 		auto check = [&](const char* name, bool ok) {
 			if (!ok) { ++nrOfFailedTestCases; std::cout << "FAIL " << name << '\n'; }
