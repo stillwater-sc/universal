@@ -950,7 +950,7 @@ public:
 	constexpr bool isinteger() const noexcept { return true; } // TODO: return (floor(*this) == *this) ? true : false; }
 
 	blockbinary<nbits, bt, BinaryNumberType::Signed> bits() const noexcept { return _block; }
-	unsigned long long encoding() const noexcept { return _block.to_ullong(); }
+	unsigned long long encoding() const noexcept { return _block.to_ull(); }
 
 	// Modifiers
 	constexpr void clear() noexcept { _block.clear(); }
