@@ -152,7 +152,9 @@ int VerifyDivision(bool reportTestCases) {
 	constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 	int     nrOfFailedTestCases = 0;
+#if LNS_THROW_ARITHMETIC_EXCEPTION
 	bool    firstTime           = true;
+#endif
 	LnsType a{}, b{}, c{}, cref{};
 	double  ref{};
 	if (reportTestCases)

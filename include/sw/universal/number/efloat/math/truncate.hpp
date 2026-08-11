@@ -167,40 +167,19 @@ constexpr efloat<nlimbs> round(const efloat<nlimbs>& x) {
 	}
 
 	bool guard = false;
-	bool sticky = false;
-
 	if (exp < 0) {
 		guard = (exp == -1);
-		for (size_t i = 0; i < limbs.size(); ++i) {
-			uint32_t val = limbs[i];
-			if (i == 0) {
-				if ((val & 0x7FFFFFFF) != 0) sticky = true;
-			} else {
-				if (val != 0) sticky = true;
-			}
-		}
 	} else {
 		size_t full_limbs = static_cast<size_t>(exp / 32);
 		unsigned bit_idx = static_cast<unsigned>(exp % 32);
 
 		if (bit_idx < 31) {
 			guard = (limbs[full_limbs] & (1u << (30u - bit_idx))) != 0;
-			if ((limbs[full_limbs] & ((1u << (30u - bit_idx)) - 1u)) != 0) {
-				sticky = true;
-			}
 		} else {
 			// bit_idx == 31, guard is MSB of next limb!
 			if (full_limbs + 1 < limbs.size()) {
 				guard = (limbs[full_limbs + 1] & 0x80000000u) != 0;
-				if ((limbs[full_limbs + 1] & 0x7FFFFFFFu) != 0) {
-					sticky = true;
-				}
 			}
-		}
-		// check any subsequent limbs (including full_limbs + 1 if bit_idx < 31)
-		const size_t first_extra_limb = (bit_idx < 31) ? full_limbs + 1 : full_limbs + 2;
-		for (size_t i = first_extra_limb; i < limbs.size(); ++i) {
-			if (limbs[i] != 0) sticky = true;
 		}
 	}
 

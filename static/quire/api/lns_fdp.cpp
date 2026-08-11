@@ -466,10 +466,14 @@ int TestCatastrophicCancellation() {
 	{
 		Scalar a(32.0);
 		Scalar one(1.0);
-		// Find the closest lns value to -1 that isn't exactly -1
+		// Use a nearby representable value.
 		Scalar neg_one(-1.0);
-		// Use the next representable value
 		Scalar almost_neg_one(-0.9375);  // -15/16 in lns approximation
+		Scalar zero(0.0);
+		if (!(almost_neg_one > neg_one && almost_neg_one < zero)) {
+			std::cerr << "FAIL: nearby negative operand should lie between -1 and 0\n";
+			++nrOfFailedTestCases;
+		}
 		std::vector<Scalar> x(1024, a);
 		std::vector<Scalar> y(1024);
 		double expected = 0.0;

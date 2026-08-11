@@ -296,7 +296,6 @@ try {
 
 	// Throughput iterations per config: scale down for the larger lns sizes
 	// so the benchmark completes in seconds rather than minutes.
-	constexpr std::size_t TPUT_TINY   = 1'000'000;
 	constexpr std::size_t TPUT_SMALL  =    75'000;
 	constexpr std::size_t TPUT_MEDIUM =    50'000;
 	constexpr std::size_t TPUT_LARGE  =    25'000;
