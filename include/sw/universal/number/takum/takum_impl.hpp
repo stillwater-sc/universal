@@ -49,6 +49,7 @@
 #include <math/constexpr_math/exp2.hpp>
 
 #include <universal/internal/bit_manipulation.hpp>
+#include <universal/number/takum/takum_codec.hpp>
 
 namespace sw {	namespace universal {
 
@@ -72,27 +73,25 @@ inline takum<nbits, rbits, bt>& convert(const triple<nbits, bt>& v, takum<nbits,
 // template class representing a takum value with two's complement encoding
 template<unsigned _nbits, unsigned _rbits = 3, typename bt = uint8_t>
 class takum {
-	static constexpr unsigned _overhead = 2 + _rbits;  // S:1 + D:1 + R:rbits
-	static_assert(_nbits > _overhead, "takum requires more bits than the fixed overhead (S + D + R)");
-	static_assert(_rbits > 0, "takum requires at least 1 regime bit");
-	// _rbits <= 5 keeps `1ull << (max_r + 1)` (with max_r = 2^_rbits - 1) within
-	// the [0, 63] shift range required by C++ for uint64_t.  Larger _rbits
-	// values exist only in degenerate test configurations; the takum reference
-	// uses _rbits = 3.
-	static_assert(_rbits <= 5, "takum regime field limited to 5 bits (avoids 1ull << 64+ UB)");
 public:
 	typedef bt BlockType;
 
+	// The field codec shared with the logarithmic takum.  It owns the bit layout,
+	// the DR/characteristic/mantissa geometry, and the rounded encode path; this
+	// class supplies only the linear value map.  Its static_asserts validate
+	// nbits / rbits on instantiation.
+	using Codec = takum_codec<_nbits, _rbits>;
+
 	static constexpr unsigned nbits    = _nbits;
 	static constexpr unsigned rbits    = _rbits;
-	static constexpr unsigned overhead = _overhead;  // S + D + R field width
+	static constexpr unsigned overhead = Codec::overhead;  // S + D + R field width
 
-	// DR field properties
-	static constexpr unsigned dr_bits       = 1 + rbits;           // D:1 + R:rbits
-	static constexpr unsigned nr_dr_values  = 1u << dr_bits;       // number of DR combinations
-	static constexpr unsigned max_r         = (1u << rbits) - 1;   // maximum characteristic bit count
-	static constexpr unsigned r_mask        = max_r;               // mask for the R field
-	static constexpr unsigned dr_field_mask = (1u << dr_bits) - 1; // mask for the DR field
+	// DR field properties (aliases of the codec's geometry)
+	static constexpr unsigned dr_bits       = Codec::dr_bits;
+	static constexpr unsigned nr_dr_values  = Codec::nr_dr_values;
+	static constexpr unsigned max_r         = Codec::max_r;
+	static constexpr unsigned r_mask        = Codec::r_mask;
+	static constexpr unsigned dr_field_mask = Codec::dr_field_mask;
 
 	// Storage parameters
 	static constexpr unsigned bitsInByte  = 8ull;
@@ -106,44 +105,16 @@ public:
 	static constexpr bt       DIRECTION_BIT_MASK  = bt(1ull << ((nbits - 2ull) % bitsInBlock));
 
 	// Maximum characteristic bits available for this nbits
-	static constexpr unsigned maxCharBits = (nbits > overhead) ? (nbits - overhead) : 0;
+	static constexpr unsigned maxCharBits = Codec::maxCharBits;
 
-	// Constexpr functions replacing hardcoded lookup tables
-	// Given DR index, return the number of characteristic bits (r)
-	static constexpr unsigned dr_to_r(unsigned dr) noexcept {
-		bool D = (dr >> rbits) & 1;
-		unsigned R = dr & r_mask;
-		return D ? R : (max_r - R);
-	}
-	// Given DR index, return the characteristic bias.
-	// Returns int64_t: for _rbits up to 5 the positive branch reaches 2^31 - 1
-	// and the negative branch reaches 1 - 2^32, which both exceed int range.
-	static constexpr int64_t dr_to_c_bias(unsigned dr) noexcept {
-		bool D = (dr >> rbits) & 1;
-		unsigned r = dr_to_r(dr);
-		// D=1: c_bias = 2^r - 1 (positive range start)
-		// D=0: c_bias = -(2^(r+1)) + 1 (negative range start)
-		return D ? static_cast<int64_t>((1ull << r) - 1ull)
-		         : (1 - static_cast<int64_t>(1ull << (r + 1)));
-	}
-	// Given a characteristic value c, find the DR index
-	static constexpr unsigned find_dr(int64_t c) noexcept {
-		for (int dr = static_cast<int>(nr_dr_values) - 1; dr >= 0; --dr) {
-			if (c >= dr_to_c_bias(static_cast<unsigned>(dr)))
-				return static_cast<unsigned>(dr);
-		}
-		return 0;
-	}
-	// Maximum representable characteristic value
-	static constexpr int64_t max_characteristic() noexcept {
-		// DR = nr_dr_values - 1 (D=1, R=max_r): c_bias + (2^max_r - 1)
-		return dr_to_c_bias(nr_dr_values - 1) + static_cast<int64_t>((1ull << max_r) - 1ull);
-	}
-	// Minimum representable characteristic value
-	static constexpr int64_t min_characteristic() noexcept {
-		// DR = 0 (D=0, R=0): c_bias = -(2^(max_r+1)) + 1
-		return dr_to_c_bias(0);
-	}
+	// Codec geometry, re-exported so that the public surface of takum<> is
+	// unchanged by the codec extraction (manipulators, numeric_limits and the
+	// api/constexpr.cpp static_asserts all reach for these).
+	static constexpr unsigned dr_to_r(unsigned dr)        noexcept { return Codec::dr_to_r(dr); }
+	static constexpr int64_t  dr_to_c_bias(unsigned dr)   noexcept { return Codec::dr_to_c_bias(dr); }
+	static constexpr unsigned find_dr(int64_t c)          noexcept { return Codec::find_dr(c); }
+	static constexpr int64_t  max_characteristic()        noexcept { return Codec::max_characteristic(); }
+	static constexpr int64_t  min_characteristic()        noexcept { return Codec::min_characteristic(); }
 
 	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Unsigned>;
 
@@ -384,15 +355,7 @@ public:
 	}
 	constexpr int64_t characteristic() const noexcept {
 		if (iszero() || isnar()) return 0;
-		unsigned dr = dr_field();
-		unsigned r = dr_to_r(dr);
-		unsigned avail = maxCharBits;
-		unsigned p = (r < avail) ? (avail - r) : 0;
-		unsigned c_stored = (r < avail) ? r : avail;
-		uint64_t mag = magnitude_bits();
-		uint64_t C_stored_bits = (c_stored > 0) ? ((mag >> p) & ((1ull << c_stored) - 1)) : 0;
-		uint64_t C_bits = (r > avail) ? (C_stored_bits << (r - c_stored)) : C_stored_bits;
-		return dr_to_c_bias(dr) + static_cast<int64_t>(C_bits);
+		return Codec::characteristic_of(magnitude_bits());
 	}
 	constexpr int64_t scale() const noexcept {
 		if (iszero() || isnar()) return 0;
@@ -471,14 +434,7 @@ protected:
 		return *this;
 	}
 
-	static constexpr uint64_t nbits_mask() noexcept {
-		if constexpr (nbits < 64) {
-			return (1ull << nbits) - 1;
-		}
-		else {
-			return ~0ull;
-		}
-	}
+	static constexpr uint64_t nbits_mask() noexcept { return Codec::nbits_mask(); }
 
 	//////////////////////////////////////////////////////
 	/// conversion routines from native types
@@ -566,97 +522,18 @@ protected:
 			m_real = static_cast<double>(f) / static_cast<double>(1ull << src_fbits);
 		}
 
-		constexpr int64_t c_max = max_characteristic();
-		constexpr int64_t c_min = min_characteristic();
-		if (c > c_max) { s ? maxneg() : maxpos(); return *this; }
-		if (c < c_min) { setzero(); return *this; }
+		// Everything from here is format-independent: the codec owns the field
+		// geometry, the round-to-nearest-even of C and M, the carry propagation
+		// into the next DR, and the saturation decision.  For the LINEAR takum
+		// the (c, m) pair handed over is exactly the IEEE 754 exponent and
+		// fraction; a logarithmic takum would instead pass c = floor(l),
+		// m = l - c and reach the identical code.
+		auto enc = Codec::encode_rounded(c, m_real);
+		if (enc.status == takum_encode_status::overflow)  { s ? maxneg() : maxpos(); return *this; }
+		if (enc.status == takum_encode_status::underflow) { setzero(); return *this; }
 
-		unsigned dr = find_dr(c);
-		unsigned r = dr_to_r(dr);
-		unsigned avail = maxCharBits;
-		unsigned p = (r < avail) ? (avail - r) : 0;
-		unsigned c_stored_bits = (r < avail) ? r : avail;
-
-		// C_bits_full holds c - c_bias, bounded by 2^max_r - 1 (= 2^31 - 1 at
-		// _rbits=5).  Use uint64_t to avoid the int / unsigned narrowing trap
-		// that landed us here in the first place.
-		uint64_t C_bits_full = static_cast<uint64_t>(c - dr_to_c_bias(dr));
-
-		// When r > avail, only the MSBs of C are stored (truncated)
-		uint64_t C_stored;
-		if (r <= avail) {
-			C_stored = C_bits_full;
-		}
-		else {
-			unsigned shift = r - c_stored_bits;
-			C_stored = C_bits_full >> shift;
-			uint64_t remainder = C_bits_full & ((1ull << shift) - 1ull);
-			uint64_t half = 1ull << (shift - 1);
-			if (remainder > half || (remainder == half && (C_stored & 1ull))) {
-				C_stored++;
-			}
-			if (C_stored >= (1ull << c_stored_bits)) {
-				if (dr < nr_dr_values - 1) {
-					dr++;
-					r = dr_to_r(dr);
-					p = (r < avail) ? (avail - r) : 0;
-					c_stored_bits = (r < avail) ? r : avail;
-					C_stored = 0;
-					m_real = 0.0;
-				}
-				else {
-					s ? maxneg() : maxpos();
-					return *this;
-				}
-			}
-		}
-
-		uint64_t M_bits = 0;
-		if (p > 0) {
-			double scaled = m_real * static_cast<double>(1ull << p);
-			M_bits = static_cast<uint64_t>(scaled);
-			double remainder = scaled - static_cast<double>(M_bits);
-			if (remainder > 0.5 || (remainder == 0.5 && (M_bits & 1))) {
-				M_bits++;
-			}
-			if (M_bits >= (1ull << p)) {
-				M_bits = 0;
-				C_stored++;
-				uint64_t max_c_val = (1ull << c_stored_bits);
-				if (C_stored >= max_c_val) {
-					if (dr < nr_dr_values - 1) {
-						dr++;
-						r = dr_to_r(dr);
-						p = (r < avail) ? (avail - r) : 0;
-						c_stored_bits = (r < avail) ? r : avail;
-						C_stored = 0;
-						M_bits = 0;
-					}
-					else {
-						s ? maxneg() : maxpos();
-						return *this;
-					}
-				}
-			}
-		}
-
-		uint64_t magnitude = 0;
-		magnitude |= (static_cast<uint64_t>(dr) << (nbits - overhead));
-		if (c_stored_bits > 0) {
-			magnitude |= (static_cast<uint64_t>(C_stored) << p);
-		}
-		if (p > 0) {
-			magnitude |= M_bits;
-		}
-
-		uint64_t raw;
-		if (s) {
-			raw = ((~magnitude) + 1ull) & nbits_mask();
-		}
-		else {
-			raw = magnitude;
-		}
-
+		// The codec never sets the sign bit (I4); two's-complement negate here.
+		uint64_t raw = s ? (((~enc.magnitude) + 1ull) & nbits_mask()) : enc.magnitude;
 		setbits(raw);
 		return *this;
 	}
@@ -687,33 +564,23 @@ protected:
 		static_assert(nbits <= 64, "takum > 64 bits not yet supported");
 
 		bool s = sign();
-		uint64_t mag = magnitude_bits();
 
-		unsigned dr = static_cast<unsigned>((mag >> (nbits - overhead)) & dr_field_mask);
-		unsigned r = dr_to_r(dr);
-		unsigned avail = maxCharBits;
-		unsigned p = (r < avail) ? (avail - r) : 0;
-		unsigned c_stored = (r < avail) ? r : avail;
-
-		uint64_t C_stored_bits = 0;
-		if (c_stored > 0) {
-			C_stored_bits = (mag >> p) & ((1ull << c_stored) - 1);
-		}
-		uint64_t C_bits = (r > avail) ? (C_stored_bits << (r - c_stored)) : C_stored_bits;
-		int64_t c = dr_to_c_bias(dr) + static_cast<int64_t>(C_bits);
+		// Shared codec: magnitude -> (c, m).  Only the value map below is
+		// specific to the linear takum.
+		auto d = Codec::decode(magnitude_bits());
 
 		TargetFloat f = TargetFloat(0);
-		if (p > 0) {
-			uint64_t M_bits = mag & ((1ull << p) - 1);
-			f = static_cast<TargetFloat>(M_bits) / static_cast<TargetFloat>(1ull << p);
+		if (d.p > 0) {
+			f = static_cast<TargetFloat>(d.M_bits) / static_cast<TargetFloat>(1ull << d.p);
 		}
 
+		// LINEAR value map: |value| = (1 + f) * 2^c.
 		// 2^c (c integer) via constexpr_math::exp2.  cm::exp2 is exact at
 		// integer arguments because detail::pow2 sets the IEEE 754 exponent
 		// field directly.  Route long double through double for portability;
 		// callers that need extreme exponent range get the runtime std::exp2
 		// path since CONSTEXPRESSION drops constexpr on those toolchains.
-		double scale_d = sw::math::constexpr_math::exp2(static_cast<double>(c));
+		double scale_d = sw::math::constexpr_math::exp2(static_cast<double>(d.c));
 		TargetFloat value = (TargetFloat(1) + f) * static_cast<TargetFloat>(scale_d);
 		if (s) value = -value;
 
@@ -770,12 +637,11 @@ std::string to_binary(const takum<nbits, rbits, bt>& number, bool nibbleMarker =
 	}
 	s << '.';
 
-	// Characteristic and mantissa bits
+	// Characteristic and mantissa bits (geometry from the shared codec)
 	unsigned dr = (D ? (1u << rbits) : 0) + regime;
-	unsigned r = T::dr_to_r(dr);
-	unsigned avail = T::maxCharBits;
-	unsigned p = (r < avail) ? (avail - r) : 0;
-	unsigned c_stored = (r < avail) ? r : avail;
+	auto g = T::Codec::layout_of(dr);
+	unsigned p = g.p;
+	unsigned c_stored = g.c_stored_bits;
 	int bit = static_cast<int>(nbits) - static_cast<int>(T::overhead) - 1;
 
 	for (unsigned i = 0; i < c_stored && bit >= 0; ++i) {
