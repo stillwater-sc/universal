@@ -208,14 +208,26 @@ int VerifyWideTrailingField(bool reportTestCases) {
 
 		// encode_rounded introduces no error of its own: whenever the fraction is
 		// one a double can hold exactly, it must reproduce encode_exact's result.
-		if (g.p > 0 && g.p <= 53) {
-			uint64_t M = (1ull << (g.p - 1)) | 1ull;
+		//
+		// Two fractions, chosen to separate the two ways this can be true:
+		//   m = 0.5                 exactly representable at EVERY p, so this
+		//                           reaches p = 59 and demonstrates that the
+		//                           m * 2^p scale step is exact past 53 bits
+		//   m = (2^(p-1) + 1)/2^p   needs p significant bits, so a double can
+		//                           only carry it while p <= 53
+		uint64_t hard = (g.p > 0) ? ((1ull << (g.p - 1)) | 1ull) : 0ull;
+		const uint64_t rounded_cases[] = {
+			(g.p > 0) ? (1ull << (g.p - 1)) : 0ull,
+			(g.p > 0 && g.p <= 53) ? hard : 0ull,
+		};
+		for (uint64_t M : rounded_cases) {
+			if (g.p == 0 || M == 0) continue;
 			auto exact   = Codec::encode_exact(c, M);
 			auto rounded = Codec::encode_rounded(c, static_cast<double>(M) / static_cast<double>(1ull << g.p));
 			if (!rounded.ok() || rounded.magnitude != exact.magnitude) {
 				++nrOfFailedTests;
 				if (reportTestCases) {
-					std::cout << "FAIL wide encode_rounded dr=" << dr << " p=" << g.p
+					std::cout << "FAIL wide encode_rounded dr=" << dr << " p=" << g.p << " M=" << M
 					          << " exact=" << exact.magnitude << " rounded=" << rounded.magnitude << '\n';
 				}
 			}
