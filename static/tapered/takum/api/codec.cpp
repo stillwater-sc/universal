@@ -236,6 +236,156 @@ int VerifyWideTrailingField(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// Rounding and carry propagation in encode_rounded.
+//
+// VerifyEncodeRounded above feeds back fractions it just decoded, so they are
+// exactly representable and no rounding ever happens.  That leaves the hardest
+// logic in the codec untested: the round-to-nearest-even of the trailing field,
+// the carry out of M into C, the carry out of C into the next DR, and the
+// saturation that follows when there is no next DR.  Drive those directly.
+template<unsigned nbits, unsigned rbits>
+int VerifyEncodeCarry(bool reportTestCases) {
+	using Codec = sw::universal::takum_codec<nbits, rbits>;
+	int nrOfFailedTests = 0;
+
+	auto fail = [&](const char* what, unsigned dr, int64_t c) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cout << "FAIL " << what << " dr=" << dr << " c=" << c << '\n';
+	};
+
+	for (unsigned dr = 0; dr < Codec::nr_dr_values; ++dr) {
+		auto g = Codec::layout_of(dr);
+		if (g.p == 0) continue;                       // no trailing field to carry out of
+		int64_t c = Codec::dr_to_c_bias(dr);
+
+		// A fraction close enough to 1 that it rounds up to 2^p and carries into
+		// the characteristic: scaled = 2^p - 1/4, so M_bits = 2^p - 1 with
+		// remainder 3/4 > 1/2.  The result must equal the encoding of (c+1, 0).
+		double m_carry = 1.0 - 0.25 / static_cast<double>(1ull << g.p);
+		auto got = Codec::encode_rounded(c, m_carry);
+		if (c + 1 <= Codec::max_characteristic()) {
+			auto want = Codec::encode_exact(c + 1, 0ull);
+			if (!got.ok() || got.magnitude != want.magnitude) fail("M carry into C", dr, c);
+		}
+		else if (!got.overflowed()) {
+			fail("M carry at max_characteristic must overflow", dr, c);
+		}
+
+		// Round-to-nearest-even at the exact midpoint: scaled = k + 1/2 must go to
+		// even.  Use k = 0 (ties down, stays 0) and k = 1 (ties up, to 2).
+		if (g.p >= 2) {
+			double half = 0.5 / static_cast<double>(1ull << g.p);
+			auto even_down = Codec::encode_rounded(c, half);            // 0.5 -> 0
+			auto even_up   = Codec::encode_rounded(c, 3.0 * half);      // 1.5 -> 2
+			auto want_down = Codec::encode_exact(c, 0ull);
+			auto want_up   = Codec::encode_exact(c, 2ull);
+			if (!even_down.ok() || even_down.magnitude != want_down.magnitude) fail("tie-to-even down", dr, c);
+			if (!even_up.ok()   || even_up.magnitude   != want_up.magnitude)   fail("tie-to-even up", dr, c);
+		}
+	}
+
+	// Carry past the top of the format saturates rather than wrapping.
+	{
+		int64_t cmax = Codec::max_characteristic();
+		auto g = Codec::layout_of(Codec::find_dr(cmax));
+		if (g.p > 0) {
+			double m_carry = 1.0 - 0.25 / static_cast<double>(1ull << g.p);
+			auto e = Codec::encode_rounded(cmax, m_carry);
+			if (!e.overflowed()) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cout << "FAIL carry past max_characteristic did not overflow\n";
+			}
+		}
+	}
+
+	// encode_exact reports the same saturation boundaries as encode_rounded.
+	if (!Codec::encode_exact(Codec::max_characteristic() + 1, 0ull).overflowed()) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cout << "FAIL encode_exact did not report overflow\n";
+	}
+	if (!Codec::encode_exact(Codec::min_characteristic() - 1, 0ull).underflowed()) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cout << "FAIL encode_exact did not report underflow\n";
+	}
+	return nrOfFailedTests;
+}
+
+// The truncated-characteristic path: when the format calls for more
+// characteristic bits than nbits can hold (r > maxCharBits), only the high
+// c_stored_bits of C are kept and the rest are rounded away.  Reachable only in
+// degenerate configurations, and never exercised by a decode/encode round-trip
+// because decode already returns a quantized c.
+inline void fail_carry(unsigned dr, const char* what, bool reportTestCases, int& nrOfFailedTests) {
+	++nrOfFailedTests;
+	if (reportTestCases) std::cout << "FAIL " << what << " dr=" << dr << '\n';
+}
+
+template<unsigned nbits, unsigned rbits>
+int VerifyTruncatedCharacteristic(bool reportTestCases) {
+	using Codec = sw::universal::takum_codec<nbits, rbits>;
+	int nrOfFailedTests = 0;
+	int exercised = 0;
+
+	for (unsigned dr = 0; dr < Codec::nr_dr_values; ++dr) {
+		auto g = Codec::layout_of(dr);
+		if (g.r <= Codec::maxCharBits) continue;      // not a truncating layout
+		unsigned shift = g.r - g.c_stored_bits;
+		if (shift == 0 || shift >= 63) continue;
+		int64_t base = Codec::dr_to_c_bias(dr);
+		uint64_t granularity = 1ull << shift;
+
+		// Just past the midpoint of the LAST step this DR can hold, so C_stored
+		// rounds up out of its field.  That carries into the next DR -- or, at the
+		// top DR, saturates, because there is no next one.
+		{
+			uint64_t top_carry = (((1ull << g.c_stored_bits) - 1ull) * granularity)
+			                   + (granularity / 2) + 1ull;
+			int64_t c = base + static_cast<int64_t>(top_carry);
+			if (c <= Codec::max_characteristic()) {
+				auto e = Codec::encode_rounded(c, 0.0);
+				++exercised;
+				if (dr + 1 >= Codec::nr_dr_values) {
+					if (!e.overflowed()) fail_carry(dr, "top DR carry must saturate", reportTestCases, nrOfFailedTests);
+				}
+				else if (!e.ok() || Codec::decode(e.magnitude).c != Codec::dr_to_c_bias(dr + 1)) {
+					fail_carry(dr, "carry must land on the first c of the next DR", reportTestCases, nrOfFailedTests);
+				}
+			}
+		}
+
+		// Offsets that land below, at, and above the midpoint of one step.
+		const uint64_t absolute[] = {
+			granularity + granularity / 4,
+			granularity + granularity / 2,
+			granularity + (3 * granularity) / 4,
+		};
+		for (uint64_t off : absolute) {
+			int64_t c = base + static_cast<int64_t>(off);
+			if (c > Codec::max_characteristic()) continue;
+			auto e = Codec::encode_rounded(c, 0.0);
+			if (!e.ok()) { ++nrOfFailedTests; if (reportTestCases) std::cout << "FAIL truncated encode dr=" << dr << '\n'; continue; }
+			++exercised;
+
+			// The recovered characteristic must be the nearest representable one,
+			// i.e. within half a step of what was asked for.
+			auto d = Codec::decode(e.magnitude);
+			int64_t err = (d.c > c) ? (d.c - c) : (c - d.c);
+			if (static_cast<uint64_t>(err) > granularity / 2) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cout << "FAIL truncated rounding dr=" << dr << " asked c=" << c
+					          << " got c=" << d.c << " step=" << granularity << '\n';
+				}
+			}
+		}
+	}
+	if (exercised == 0) {
+		++nrOfFailedTests;   // the configuration was supposed to reach this path
+		if (reportTestCases) std::cout << "FAIL truncated-characteristic path never exercised\n";
+	}
+	return nrOfFailedTests;
+}
+
 } // anonymous namespace
 
 int main()
@@ -318,6 +468,25 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyWideTrailingField<56, 3>(reportTestCases), "codec<56,3>", "wide trailing field");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideTrailingField<64, 3>(reportTestCases), "codec<64,3>", "wide trailing field");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideTrailingField<64, 5>(reportTestCases), "codec<64,5>", "wide trailing field");
+
+	// ----------------------------------------------------------------------------
+	// Rounding, carry propagation and saturation.  The round-trip suites above feed
+	// back exactly representable fractions and so never round; these drive the
+	// carry paths directly.
+	// ----------------------------------------------------------------------------
+	nrOfFailedTestCases += ReportTestResult(VerifyEncodeCarry< 8, 2>(reportTestCases), "codec< 8,2>", "rounding and carry");
+	nrOfFailedTestCases += ReportTestResult(VerifyEncodeCarry<12, 3>(reportTestCases), "codec<12,3>", "rounding and carry");
+	nrOfFailedTestCases += ReportTestResult(VerifyEncodeCarry<16, 3>(reportTestCases), "codec<16,3>", "rounding and carry");
+	nrOfFailedTestCases += ReportTestResult(VerifyEncodeCarry<32, 3>(reportTestCases), "codec<32,3>", "rounding and carry");
+	nrOfFailedTestCases += ReportTestResult(VerifyEncodeCarry<64, 3>(reportTestCases), "codec<64,3>", "rounding and carry");
+
+	// ----------------------------------------------------------------------------
+	// The truncated-characteristic path (r > maxCharBits), reachable only in
+	// degenerate configurations and never by a decode/encode round-trip.
+	// ----------------------------------------------------------------------------
+	nrOfFailedTestCases += ReportTestResult(VerifyTruncatedCharacteristic<12, 5>(reportTestCases), "codec<12,5>", "truncated characteristic");
+	nrOfFailedTestCases += ReportTestResult(VerifyTruncatedCharacteristic<16, 5>(reportTestCases), "codec<16,5>", "truncated characteristic");
+	nrOfFailedTestCases += ReportTestResult(VerifyTruncatedCharacteristic<24, 5>(reportTestCases), "codec<24,5>", "truncated characteristic");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

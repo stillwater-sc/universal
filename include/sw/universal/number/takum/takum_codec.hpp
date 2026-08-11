@@ -140,11 +140,13 @@ struct takum_codec {
 	//      underflow/overflow rather than relying on a fallback here.
 	// Post: result < nr_dr_values and dr_to_c_bias(result) <= c.
 	static constexpr unsigned find_dr(int64_t c) noexcept {
-		for (int dr = static_cast<int>(nr_dr_values) - 1; dr >= 0; --dr) {
-			if (c >= dr_to_c_bias(static_cast<unsigned>(dr)))
-				return static_cast<unsigned>(dr);
+		// Scan down to dr == 1; dr == 0 carries the lowest bias
+		// (dr_to_c_bias(0) == min_characteristic()), so it is the answer for any c
+		// that matches no higher DR -- a result, not an unreachable fallback.
+		for (unsigned dr = nr_dr_values - 1; dr > 0; --dr) {
+			if (c >= dr_to_c_bias(dr)) return dr;
 		}
-		return 0;  // unreachable given the precondition; keeps the function total
+		return 0;
 	}
 
 	// ------------------------------------------------------------------
@@ -272,7 +274,8 @@ struct takum_codec {
 	// Post: I4; status == ok implies the result is the round-to-nearest-even
 	//       encoding of (c, m_real), status otherwise reports saturation.
 	//
-	// Limited to p <= 53 by the double fraction; use encode_exact() beyond that.
+	// The rounding itself is exact at every p; it is the double argument that
+	// carries only 53 significant bits.  See the note at the top of this file.
 	static constexpr encoded encode_rounded(int64_t c, double m_real) noexcept {
 		if (c > max_characteristic()) return encoded{ magnitude_mask(), takum_encode_status::overflow };
 		if (c < min_characteristic()) return encoded{ 0ull, takum_encode_status::underflow };
