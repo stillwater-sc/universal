@@ -6,7 +6,13 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// Linear takum encoding (Hunhold, 2024, arXiv:2404.18603):
+// Linear takum encoding (Hunhold, 2024, arXiv:2408.10594, Definition 2):
+//   The linear (floating-point) takum is Definition 2 of the hardware codec paper,
+//   "Design and Implementation of a Takum Arithmetic Hardware Codec".
+//   The earlier paper, arXiv:2404.18603 "Beating Posits at Their Own Game: Takum
+//   Arithmetic", defines the *logarithmic* takum (Definition 1).  Both variants
+//   share the identical (S, D, R, C, M) bit layout and differ only in the value
+//   map.  See docs/takum-design.md.
 //
 // Bit layout (of the magnitude after removing the sign):
 //   [S:1][D:1][R:rbits][C:r bits][M:p bits]
