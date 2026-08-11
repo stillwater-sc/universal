@@ -122,8 +122,7 @@ namespace sw { namespace universal {
 		}
 		s << '.';
 		// characteristic and mantissa fields (geometry from the shared codec)
-		unsigned dr = (D ? (1u << rbits) : 0) + regime;
-		auto g = TakumType::Codec::layout_of(dr);
+		auto g = TakumType::Codec::layout_of(number.dr_field());
 		unsigned c_stored = g.c_stored_bits;
 		unsigned p = g.p;
 		int bit = static_cast<int>(nbits) - static_cast<int>(TakumType::overhead) - 1;
@@ -175,8 +174,7 @@ namespace sw { namespace universal {
 			s << ((regime >> i) & 1 ? '1' : '0');
 		}
 		// characteristic and mantissa fields (geometry from the shared codec)
-		unsigned dr = (D ? (1u << rbits) : 0) + regime;
-		auto g = TakumType::Codec::layout_of(dr);
+		auto g = TakumType::Codec::layout_of(number.dr_field());
 		unsigned c_stored = g.c_stored_bits;
 		unsigned p = g.p;
 		s << cyan;

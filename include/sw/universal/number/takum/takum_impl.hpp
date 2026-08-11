@@ -529,7 +529,10 @@ protected:
 		// fraction; a logarithmic takum would instead pass c = floor(l),
 		// m = l - c and reach the identical code.
 		auto enc = Codec::encode_rounded(c, m_real);
-		if (enc.overflowed())  { s ? maxneg() : maxpos(); return *this; }
+		if (enc.overflowed()) {
+			if (s) maxneg(); else maxpos();
+			return *this;
+		}
 		if (enc.underflowed()) { setzero(); return *this; }
 
 		// The codec never sets the sign bit (I4); two's-complement negate here.
@@ -634,8 +637,7 @@ std::string to_binary(const takum<nbits, rbits, bt>& number, bool nibbleMarker =
 	s << '.';
 
 	// Characteristic and mantissa bits (geometry from the shared codec)
-	unsigned dr = (D ? (1u << rbits) : 0) + regime;
-	auto g = T::Codec::layout_of(dr);
+	auto g = T::Codec::layout_of(number.dr_field());
 	unsigned p = g.p;
 	unsigned c_stored = g.c_stored_bits;
 	int bit = static_cast<int>(nbits) - static_cast<int>(T::overhead) - 1;

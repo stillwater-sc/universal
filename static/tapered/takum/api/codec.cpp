@@ -22,6 +22,8 @@
 
 #include <iostream>
 #include <iomanip>
+#include <cstdint>
+#include <type_traits>
 #include <universal/number/takum/takum.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -156,6 +158,72 @@ int VerifyEncodeRounded(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// Wide trailing fields.  takum_codec<64,3> reaches p = 59, past a double's 53
+// significand bits, so an exhaustive sweep is impossible and the two encode
+// entry points diverge in what they can carry:
+//
+//   encode_exact   takes M_bits as an integer and is lossless at every p
+//   encode_rounded takes a double, whose scale step m * 2^p stays exact at any
+//                  p, but which cannot express a trailing field needing more
+//                  than 53 significant bits in the first place
+//
+// This is the reason the two entry points exist; verify both halves of it.
+template<unsigned nbits, unsigned rbits>
+int VerifyWideTrailingField(bool reportTestCases) {
+	using Codec = sw::universal::takum_codec<nbits, rbits>;
+	int nrOfFailedTests = 0;
+
+	for (unsigned dr = 0; dr < Codec::nr_dr_values; ++dr) {
+		auto g = Codec::layout_of(dr);
+		int64_t c = Codec::dr_to_c_bias(dr);
+
+		// A spread of trailing-field patterns, including ones that need the full
+		// width and would not survive a trip through a double.
+		const uint64_t patterns[] = {
+			0ull,
+			1ull,
+			(g.p > 0) ? ((1ull << g.p) - 1ull) : 0ull,                       // all ones
+			(g.p > 1) ? (1ull << (g.p - 1)) : 0ull,                          // top bit
+			(g.p > 0) ? (((1ull << (g.p - 1))) | 1ull) : 0ull,               // top and bottom
+		};
+		for (uint64_t M : patterns) {
+			if (g.p == 0 && M != 0) continue;          // I3 precondition
+			if (g.p > 0 && M >= (1ull << g.p)) continue;
+
+			auto e = Codec::encode_exact(c, M);
+			if (!e.ok() || !e.sign_bit_clear()) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cout << "FAIL wide encode_exact dr=" << dr << " M=" << M << '\n';
+				continue;
+			}
+			auto d = Codec::decode(e.magnitude);
+			if (d.c != c || d.M_bits != M || d.p != g.p) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cout << "FAIL wide round-trip dr=" << dr << " p=" << g.p
+					          << " M=" << M << " -> c=" << d.c << " M'=" << d.M_bits << '\n';
+				}
+			}
+		}
+
+		// encode_rounded introduces no error of its own: whenever the fraction is
+		// one a double can hold exactly, it must reproduce encode_exact's result.
+		if (g.p > 0 && g.p <= 53) {
+			uint64_t M = (1ull << (g.p - 1)) | 1ull;
+			auto exact   = Codec::encode_exact(c, M);
+			auto rounded = Codec::encode_rounded(c, static_cast<double>(M) / static_cast<double>(1ull << g.p));
+			if (!rounded.ok() || rounded.magnitude != exact.magnitude) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cout << "FAIL wide encode_rounded dr=" << dr << " p=" << g.p
+					          << " exact=" << exact.magnitude << " rounded=" << rounded.magnitude << '\n';
+				}
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
 } // anonymous namespace
 
 int main()
@@ -228,6 +296,16 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyEncodeRounded<12, 3>(reportTestCases), "codec<12,3>", "encode_rounded");
 	nrOfFailedTestCases += ReportTestResult(VerifyEncodeRounded<16, 3>(reportTestCases), "codec<16,3>", "encode_rounded");
 	nrOfFailedTestCases += ReportTestResult(VerifyEncodeRounded<16, 5>(reportTestCases), "codec<16,5>", "encode_rounded");
+
+	// ----------------------------------------------------------------------------
+	// Wide trailing fields: codec<64,3> reaches p = 59, past a double's 53
+	// significand bits.  Exercises the reason encode_exact and encode_rounded are
+	// separate entry points.
+	// ----------------------------------------------------------------------------
+	nrOfFailedTestCases += ReportTestResult(VerifyWideTrailingField<32, 3>(reportTestCases), "codec<32,3>", "wide trailing field");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideTrailingField<56, 3>(reportTestCases), "codec<56,3>", "wide trailing field");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideTrailingField<64, 3>(reportTestCases), "codec<64,3>", "wide trailing field");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideTrailingField<64, 5>(reportTestCases), "codec<64,5>", "wide trailing field");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

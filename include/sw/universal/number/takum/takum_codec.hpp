@@ -40,10 +40,18 @@
 //   I6  mag1 < mag2  =>  (c1,m1) < (c2,m2)  lexicographically (Prop. 4)
 //
 // All entry points are constexpr and free of stdlib intrinsics, so they are
-// usable in constant-evaluated contexts.  encode_rounded() is the sole exception
-// in spirit: it takes a double fraction and is therefore limited to p <= 53.
-// Callers needing the full p range use encode_exact().
+// usable in constant-evaluated contexts.
+//
+// A note on encode_rounded() and wide trailing fields: its scale step
+// m * 2^p is exact for every supported p (scaling by a power of two only
+// adjusts the exponent), so the function introduces no error of its own even at
+// p = 59, which takum_codec<64,3> reaches.  The limit is the input channel, not
+// the arithmetic: a double carries at most 53 significant bits, so for p > 53
+// it simply cannot express a trailing field whose low p-53 bits are non-zero.
+// Callers that need the full width -- native arithmetic, exact round-trips --
+// use encode_exact(), which carries M_bits as an integer.
 
+#include <cassert>
 #include <cstdint>
 
 namespace sw { namespace universal {
@@ -240,6 +248,12 @@ struct takum_codec {
 		unsigned dr = find_dr(c);
 		field_layout g = layout_of(dr);
 
+		// I3 is a hard precondition here: pack() ORs M_bits into the magnitude
+		// without masking, so an oversized M_bits would silently corrupt the C and
+		// DR fields rather than fail.  Checked in debug builds only; the assert is
+		// not reached during constant evaluation when the precondition holds.
+		assert((g.p == 0) ? (M_bits == 0) : (M_bits < (1ull << g.p)));
+
 		uint64_t C_full = static_cast<uint64_t>(c - dr_to_c_bias(dr));
 		uint64_t C_stored = (g.r > maxCharBits) ? (C_full >> (g.r - g.c_stored_bits)) : C_full;
 
@@ -309,6 +323,11 @@ struct takum_codec {
 	}
 
 private:
+	// Stateless: the codec is a namespace of static constexpr members, never an
+	// object.  Deleting the default constructor makes that intent a compile error
+	// rather than a comment.
+	takum_codec() = delete;
+
 	// Lay the three fields out in a magnitude word.  Post: I4.
 	static constexpr uint64_t pack(unsigned dr, uint64_t C_stored, uint64_t M_bits,
 	                               const field_layout& g) noexcept {
