@@ -120,8 +120,8 @@ namespace areal_constexpr_contract {
 	static_assert(!(two_dbl != two_dbl), "operator!= should be constexpr");
 	static_assert( two_dbl <  three_dbl, "operator<  should be constexpr (2.0 < 3.0)");
 	static_assert( three_dbl > two_dbl,  "operator>  should be constexpr (3.0 > 2.0)");
-	static_assert( one_int < two_dbl,    "signed int construction should be constexpr");
-	static_assert( two_dbl <= three_dbl, "operator<= should be constexpr");
+    static_assert(one_int < two_dbl, "signed int construction should be constexpr");
+    static_assert( two_dbl <= three_dbl, "operator<= should be constexpr");
 	static_assert( three_dbl >= two_dbl, "operator>= should be constexpr");
 
 	// Unary negation: must be constexpr and yield a strictly smaller value.

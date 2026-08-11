@@ -108,7 +108,7 @@ int main() try {
 	int nrSamples = 1000000;
 
 #	if REGRESSION_LEVEL_1
-	using fp24    = cfloat<24, 5, uint16_t, true, false, false>;
+	using fp24 = cfloat<24, 5, uint16_t, true, false, false>;
 	nrOfFailedTestCases += ReportTestResult(VerifyFma<fp24>(nrSamples), type_tag(fp24{}), "fma");
 	nrOfFailedTestCases += ReportTestResult(VerifyResidual<cfloat<24, 5, uint16_t, true, false, false>>(nrSamples),
 	                                        type_tag(fp24{}), "residual");
