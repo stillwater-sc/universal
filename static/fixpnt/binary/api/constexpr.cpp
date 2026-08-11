@@ -203,6 +203,13 @@ try {
 		auto check = [&](const char* name, bool ok) {
 			if (!ok) { ++nrOfFailedTestCases; std::cout << "FAIL " << name << '\n'; }
 		};
+		check("runtime Q32 42 construction", ra == a);
+		check("runtime Q32 7 construction", rb == b);
+		check("runtime 42+7 matches constexpr +", (ra + rb) == cx_sum);
+		check("runtime 42-7 matches constexpr -", (ra - rb) == cx_diff);
+		check("runtime 42*7 matches constexpr *", (ra * rb) == cx_prod);
+		check("runtime 42/7 matches constexpr /", (ra / rb) == cx_quot);
+		check("runtime 42%7 matches constexpr %", (ra % rb) == cx_rem);
 		check("constexpr 42+7  == 49",  cx_sum  == r49);
 		check("constexpr 42*7  == 294", cx_prod == r294);
 		check("constexpr 42/7  == 6",   cx_quot == r6);
@@ -212,7 +219,6 @@ try {
 		check("constexpr 42>>2 == 10",  cx_shr  == r10);
 		check("constexpr += matches +", cx_addeq == r49);
 		check("constexpr *= matches *", cx_muleq == r294);
-		(void)cx_diff;
 
 		// Multi-limb constexpr: fixpnt<128, 64> via uint32 limbs.
 		using Q128_64 = fixpnt<128, 64, Modulo, std::uint32_t>;

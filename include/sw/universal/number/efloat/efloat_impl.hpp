@@ -993,7 +993,6 @@ protected:
 		}
 
 		if constexpr (std::is_same_v<Real, float>) {
-			constexpr unsigned S_bits = 1;
 			constexpr unsigned F_bits = 23;
 			constexpr unsigned E_bits = 8;
 			constexpr int E_max = 127;
@@ -1132,7 +1131,6 @@ protected:
 			return sw::bit_cast<float>(bits);
 
 		} else if constexpr (std::is_same_v<Real, double>) {
-			constexpr unsigned S_bits = 1;
 			constexpr unsigned F_bits = 52;
 			constexpr unsigned E_bits = 11;
 			constexpr int E_max = 1023;
