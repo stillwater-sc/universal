@@ -529,8 +529,8 @@ protected:
 		// fraction; a logarithmic takum would instead pass c = floor(l),
 		// m = l - c and reach the identical code.
 		auto enc = Codec::encode_rounded(c, m_real);
-		if (enc.status == takum_encode_status::overflow)  { s ? maxneg() : maxpos(); return *this; }
-		if (enc.status == takum_encode_status::underflow) { setzero(); return *this; }
+		if (enc.overflowed())  { s ? maxneg() : maxpos(); return *this; }
+		if (enc.underflowed()) { setzero(); return *this; }
 
 		// The codec never sets the sign bit (I4); two's-complement negate here.
 		uint64_t raw = s ? (((~enc.magnitude) + 1ull) & nbits_mask()) : enc.magnitude;
@@ -568,11 +568,7 @@ protected:
 		// Shared codec: magnitude -> (c, m).  Only the value map below is
 		// specific to the linear takum.
 		auto d = Codec::decode(magnitude_bits());
-
-		TargetFloat f = TargetFloat(0);
-		if (d.p > 0) {
-			f = static_cast<TargetFloat>(d.M_bits) / static_cast<TargetFloat>(1ull << d.p);
-		}
+		TargetFloat f = d.template fraction<TargetFloat>();
 
 		// LINEAR value map: |value| = (1 + f) * 2^c.
 		// 2^c (c integer) via constexpr_math::exp2.  cm::exp2 is exact at

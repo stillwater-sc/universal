@@ -83,7 +83,7 @@ int VerifyCodecRoundTrip(bool reportTestCases) {
 
 		// I5: exact round-trip through encode_exact
 		auto e = Codec::encode_exact(d.c, d.M_bits);
-		if (e.status != sw::universal::takum_encode_status::ok || e.magnitude != mag) {
+		if (!e.ok() || e.magnitude != mag) {
 			++nrOfFailedTests;
 			if (reportTestCases) {
 				std::cout << "FAIL I5 mag=" << mag << " -> c=" << d.c << " M=" << d.M_bits
@@ -91,7 +91,7 @@ int VerifyCodecRoundTrip(bool reportTestCases) {
 			}
 		}
 		// I4: the codec never sets the sign bit
-		if (e.magnitude >= limit) {
+		if (!e.sign_bit_clear()) {
 			++nrOfFailedTests;
 			if (reportTestCases) std::cout << "FAIL I4 mag=" << mag << " encode set the sign bit\n";
 		}
@@ -131,9 +131,9 @@ int VerifyEncodeRounded(bool reportTestCases) {
 	const uint64_t limit = 1ull << (nbits - 1);
 	for (uint64_t mag = 1; mag < limit; ++mag) {
 		auto d = Codec::decode(mag);
-		double m = (d.p > 0) ? (static_cast<double>(d.M_bits) / static_cast<double>(1ull << d.p)) : 0.0;
+		double m = d.fraction();
 		auto e = Codec::encode_rounded(d.c, m);
-		if (e.status != takum_encode_status::ok || e.magnitude != mag) {
+		if (!e.ok() || e.magnitude != mag) {
 			++nrOfFailedTests;
 			if (reportTestCases) {
 				std::cout << "FAIL encode_rounded mag=" << mag << " c=" << d.c << " m=" << m

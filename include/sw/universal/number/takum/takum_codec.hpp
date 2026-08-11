@@ -44,7 +44,6 @@
 // in spirit: it takes a double fraction and is therefore limited to p <= 53.
 // Callers needing the full p range use encode_exact().
 
-#include <cassert>
 #include <cstdint>
 
 namespace sw { namespace universal {
@@ -164,11 +163,20 @@ struct takum_codec {
 	// Decode
 	// ------------------------------------------------------------------
 
+	// The DR field is deliberately not carried here: no caller needs it, and it is
+	// recoverable as find_dr(c).  Add it back when a variant actually wants it.
 	struct decoded {
-		unsigned dr;       // DR field as stored
 		int64_t  c;        // characteristic
 		uint64_t M_bits;   // trailing field, unnormalized
 		unsigned p;        // width of M_bits; m == M_bits / 2^p
+
+		// The trailing field as a real in [0,1) (I3): the mantissa m of a
+		// logarithmic takum, the fraction f of a linear one.  Exact for p <= 53.
+		template<typename Real = double>
+		constexpr Real fraction() const noexcept {
+			if (p == 0) return Real(0);
+			return static_cast<Real>(M_bits) / static_cast<Real>(1ull << p);
+		}
 	};
 
 	// Split a magnitude into its takum fields.
@@ -193,7 +201,7 @@ struct takum_codec {
 
 		uint64_t M_bits = (g.p > 0) ? (magnitude & ((1ull << g.p) - 1)) : 0ull;
 
-		return decoded{ dr, c, M_bits, g.p };
+		return decoded{ c, M_bits, g.p };
 	}
 
 	// Convenience: characteristic only, for callers that do not need the trailing field.
@@ -209,6 +217,13 @@ struct takum_codec {
 	struct encoded {
 		uint64_t magnitude;
 		takum_encode_status status;
+
+		constexpr bool ok()          const noexcept { return status == takum_encode_status::ok; }
+		constexpr bool overflowed()  const noexcept { return status == takum_encode_status::overflow; }
+		constexpr bool underflowed() const noexcept { return status == takum_encode_status::underflow; }
+
+		// I4: the codec owns the magnitude only; the sign bit belongs to the caller.
+		constexpr bool sign_bit_clear() const noexcept { return magnitude <= magnitude_mask(); }
 	};
 
 	// Assemble a magnitude from already-resolved fields.  No rounding is performed;
