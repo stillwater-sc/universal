@@ -121,12 +121,10 @@ namespace sw { namespace universal {
 			s << ((regime >> i) & 1 ? '1' : '0');
 		}
 		s << '.';
-		// characteristic and mantissa fields
-		unsigned dr = (D ? (1u << rbits) : 0) + regime;
-		unsigned r_val = TakumType::dr_to_r(dr);
-		unsigned avail = TakumType::maxCharBits;
-		unsigned c_stored = (r_val < avail) ? r_val : avail;
-		unsigned p = (r_val < avail) ? (avail - r_val) : 0;
+		// characteristic and mantissa fields (geometry from the shared codec)
+		auto g = TakumType::Codec::layout_of(number.dr_field());
+		unsigned c_stored = g.c_stored_bits;
+		unsigned p = g.p;
 		int bit = static_cast<int>(nbits) - static_cast<int>(TakumType::overhead) - 1;
 		for (unsigned i = 0; i < c_stored && bit >= 0; ++i) {
 			s << ((mag >> bit) & 1 ? '1' : '0');
@@ -175,12 +173,10 @@ namespace sw { namespace universal {
 		for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
 			s << ((regime >> i) & 1 ? '1' : '0');
 		}
-		// characteristic and mantissa fields
-		unsigned dr = (D ? (1u << rbits) : 0) + regime;
-		unsigned r_val = TakumType::dr_to_r(dr);
-		unsigned avail = TakumType::maxCharBits;
-		unsigned c_stored = (r_val < avail) ? r_val : avail;
-		unsigned p = (r_val < avail) ? (avail - r_val) : 0;
+		// characteristic and mantissa fields (geometry from the shared codec)
+		auto g = TakumType::Codec::layout_of(number.dr_field());
+		unsigned c_stored = g.c_stored_bits;
+		unsigned p = g.p;
 		s << cyan;
 		int bit = static_cast<int>(nbits) - static_cast<int>(TakumType::overhead) - 1;
 		for (unsigned i = 0; i < c_stored && bit >= 0; ++i) {
