@@ -170,7 +170,7 @@ int VerifyScaleConvention(bool reportTestCases, uint64_t stride = 1) {
 	for (uint64_t b = 0; b < limit && b + stride > b; b += stride) {
 		TL x; x.setbits(b);
 		if (!comparable(x)) continue;
-		int want = std::ilogb(double(x));
+		int64_t want = std::ilogb(double(x));
 		if (x.scale() != want) {
 			++nrOfFailedTests;
 			if (reportTestCases) {
@@ -178,6 +178,52 @@ int VerifyScaleConvention(bool reportTestCases, uint64_t stride = 1) {
 				          << " scale()=" << x.scale() << " ilogb=" << want << '\n';
 			}
 		}
+	}
+	return nrOfFailedTests;
+}
+
+// scale() where a double cannot follow.
+//
+// VerifyScaleConvention checks against std::ilogb(double(x)), so it can only see
+// encodings whose magnitude a double can hold.  At rbits = 5 the characteristic
+// reaches ~2^32 and about a third of all encodings overflow a double, so that
+// entire region went unchecked -- which is how scale() came to narrow a ~3.1e9
+// result to int.  That is undefined behaviour, and it silently returned INT_MIN
+// for maxpos and INT_MAX for minpos, an inverted range, without any suite noticing.
+//
+// Check the properties that survive without a double oracle: scale() is
+// non-decreasing in the magnitude, and it separates the extremes in the right
+// order.  Either one alone catches the inversion.
+template<unsigned nbits, unsigned rbits, typename bt = std::uint8_t>
+int VerifyWideScale(bool reportTestCases, uint64_t stride = 1) {
+	using TL = sw::universal::takum_log<nbits, rbits, bt>;
+	int nrOfFailedTests = 0;
+
+	TL lo(sw::universal::SpecificValue::minpos), hi(sw::universal::SpecificValue::maxpos);
+	if (!(lo.scale() < hi.scale())) {
+		++nrOfFailedTests;
+		if (reportTestCases) {
+			std::cout << "FAIL scale(minpos)=" << lo.scale()
+			          << " must be below scale(maxpos)=" << hi.scale() << '\n';
+		}
+	}
+
+	// Positive magnitudes only, so increasing bits means increasing value (Prop. 4).
+	const uint64_t limit = 1ull << (nbits - 1);
+	int64_t prev = 0;
+	bool have_prev = false;
+	for (uint64_t b = 1; b < limit; b += stride) {
+		TL x; x.setbits(b);
+		if (x.iszero() || x.isnar()) continue;
+		int64_t s = x.scale();
+		if (have_prev && s < prev) {
+			++nrOfFailedTests;
+			if (reportTestCases) {
+				std::cout << "FAIL scale not monotonic at bits=" << b
+				          << ": " << s << " after " << prev << '\n';
+			}
+		}
+		prev = s; have_prev = true;
 	}
 	return nrOfFailedTests;
 }
@@ -379,6 +425,12 @@ try {
 		VerifyRoundTrip<12, 3>(reportTestCases), "takum_log<12,3>", "double round-trip");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyScaleConvention<12, 3>(reportTestCases), "takum_log<12,3>", "scale() base-2 convention");
+	// rbits=5 puts a third of the encodings out of a double's reach, so scale() there
+	// is only checkable structurally.  Cheap, and it is the configuration that broke.
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyWideScale<16, 5>(reportTestCases), "takum_log<16,5>", "scale() beyond double range");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyWideScale<16, 4>(reportTestCases), "takum_log<16,4>", "scale() beyond double range");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifySharedEncoding<12, 3>(reportTestCases), "takum_log<12,3>", "shared codec with takum<>");
 #endif
