@@ -18,5 +18,9 @@ template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> fma(const takum<nbits, rbits, bt>&, const takum<nbits, rbits, bt>&, const takum<nbits, rbits, bt>&);
 template<unsigned nbits, unsigned rbits, typename bt> takum<nbits, rbits, bt> sqrt(const takum<nbits, rbits, bt>&);
 
+// logarithmic takum: same codec, base sqrt(e) value map
+template<unsigned nbits, unsigned rbits, typename bt> class takum_log;
+template<unsigned nbits, unsigned rbits, typename bt> constexpr takum_log<nbits, rbits, bt> abs(const takum_log<nbits, rbits, bt>&) noexcept;
+
 }} // namespace sw::universal
 

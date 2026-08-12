@@ -1133,6 +1133,7 @@ endif(UNIVERSAL_BUILD_NUMBER_QUIRES)
 
 if(UNIVERSAL_BUILD_NUMBER_TAKUMS)
 add_subdirectory("static/tapered/takum")
+add_subdirectory("static/tapered/takum_log")
 endif(UNIVERSAL_BUILD_NUMBER_TAKUMS)
 
 # reals with an uncertainty bit
