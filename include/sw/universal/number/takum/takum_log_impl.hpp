@@ -321,6 +321,13 @@ public:
 	// that scale() is base 2 for every number system.  The characteristic is in
 	// units of sqrt(e), so it is converted here rather than returned directly.
 	//
+	// Returns int64_t, as takum<>::scale() does.  An int cannot hold the result: at
+	// rbits = 5 the characteristic reaches ~2^32, so takum_log<16,5> maxpos scales to
+	// ~3.1e9 and the narrowing conversion is undefined behaviour -- UBSan reported
+	// maxpos as INT_MIN and minpos as INT_MAX, an inverted range.  Widening the return
+	// type removes the conversion rather than clamping it, and manipulators.hpp's
+	// components() reaches this for every takum_log configuration.
+	//
 	// Accuracy: sqrt(e)^l is a power of two only for l = 2k ln2, which is irrational
 	// for k != 0, so no encoding sits exactly on a boundary and the floor below is
 	// always well defined.  It is computed in double, though, which at |l| ~ 255
@@ -330,12 +337,11 @@ public:
 	// caller ever needs it.  Note that std::ilogb(double(*this)) is NOT the fix: it
 	// agrees with this on every uniformly sampled encoding, is no better on the
 	// boundary set (both are coin flips there), and returns INT_MAX for the ~34% of
-	// wide-rbits encodings whose magnitude overflows a double -- which is precisely
-	// where attributes.hpp's minpos_scale() / maxpos_scale() land.
-	CONSTEXPRESSION int scale() const noexcept {
+	// wide-rbits encodings whose magnitude overflows a double.
+	CONSTEXPRESSION int64_t scale() const noexcept {
 		if (iszero() || isnar()) return 0;
-		double log2_magnitude = logarithmic_value() * log2_of_base;
-		int    s = static_cast<int>(log2_magnitude);
+		double  log2_magnitude = logarithmic_value() * log2_of_base;
+		int64_t s = static_cast<int64_t>(log2_magnitude);
 		if (log2_magnitude < 0.0 && static_cast<double>(s) != log2_magnitude) --s;  // floor
 		return s;
 	}

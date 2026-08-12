@@ -28,6 +28,24 @@ constexpr int takum_exponent_cast(std::int64_t c) noexcept {
 	return static_cast<int>((c < lo) ? lo : ((c > hi) ? hi : c));
 }
 
+// floor() as a constant expression.  The arguments here are characteristics scaled
+// by log2(sqrt(e)), at most ~3.1e9 in magnitude, so int64_t is ample.
+constexpr std::int64_t takum_exponent_floor(double x) noexcept {
+	std::int64_t t = static_cast<std::int64_t>(x);
+	return (x < 0.0 && static_cast<double>(t) != x) ? (t - 1) : t;
+}
+
+// log2(sqrt(e)): converts a takum_log characteristic, which counts powers of the
+// value base sqrt(e), into the power-of-two exponent numeric_limits must report.
+inline constexpr double takum_log2_of_sqrt_e = 0.7213475204444817;
+
+// floor(log2|value|) for a decoded takum_log magnitude, whose value is sqrt(e)^(c+m).
+template<typename Decoded>
+constexpr std::int64_t takum_log_exponent_of(const Decoded& d) noexcept {
+	return takum_exponent_floor(
+		(static_cast<double>(d.c) + d.template fraction<double>()) * takum_log2_of_sqrt_e);
+}
+
 }} // namespace sw::universal
 
 namespace std {
@@ -79,10 +97,23 @@ public:
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
-	// saturating: see takum_exponent_cast above
-	static constexpr int min_exponent   = sw::universal::takum_exponent_cast(TAKUM::min_characteristic());
+	// C++ specification: min_exponent is one more than the smallest negative power of
+	// the radix that is a normalized value, max_exponent one more than the largest
+	// integer power that is representable -- the +1 convention cfloat's specialization
+	// also documents.  A linear takum is (1 + f) * 2^c, so the exponent of an encoding
+	// is just its characteristic.
+	//
+	// Taken from the extreme ENCODINGS, magnitude 1 and magnitude_mask(), rather than
+	// from min/max_characteristic(): those are the range the format advertises, which
+	// the extremes need not attain.  takum<12,3> is the case in point -- its narrowest
+	// DR has no trailing field, so minpos sits at c == -254, not at the advertised
+	// -255.  Both agree with std::ilogb(minpos) + 1 and std::ilogb(maxpos) + 1.
+	// Saturating on the way to int: see takum_exponent_cast above.
+	static constexpr int min_exponent   = sw::universal::takum_exponent_cast(
+		TAKUM::Codec::decode(1ull).c + 1);
 	static constexpr int min_exponent10 = static_cast<int>(min_exponent * 0.301029995663981);
-	static constexpr int max_exponent   = sw::universal::takum_exponent_cast(TAKUM::max_characteristic());
+	static constexpr int max_exponent   = sw::universal::takum_exponent_cast(
+		TAKUM::Codec::decode(TAKUM::Codec::magnitude_mask()).c + 1);
 	static constexpr int max_exponent10 = static_cast<int>(max_exponent * 0.301029995663981);
 	static constexpr bool has_infinity = false;
 	static constexpr bool has_quiet_NaN = true;  // NaR serves as NaN
@@ -107,9 +138,9 @@ public:
 // static constexpr int and cannot express that.  Per the standard it describes
 // the radix of the integer representation of the significand, which here is the
 // base-2 fixed-point logarithmic value l, so it stays 2.  The value base is
-// exposed separately as takum_log<>::value_base.  Likewise min_exponent /
-// max_exponent below bound the characteristic c, which is in units of sqrt(e),
-// not a power of two.  See docs/takum-design.md.
+// exposed separately as takum_log<>::value_base.  Because radix is 2, the
+// exponent fields below are radix-2 exponents rather than characteristics --
+// the conversion is done where they are defined.  See docs/takum-design.md.
 template <unsigned nbits, unsigned rbits, typename bt>
 class numeric_limits< sw::universal::takum_log<nbits, rbits, bt> > {
 public:
@@ -146,12 +177,20 @@ public:
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;  // representation radix; value base is sqrt(e)
 
-	// bounds on the characteristic c (units of sqrt(e), not powers of two),
-	// saturating: see takum_exponent_cast above
-	static constexpr int min_exponent   = sw::universal::takum_exponent_cast(TAKUMLOG::min_characteristic());
-	static constexpr int min_exponent10 = static_cast<int>(min_exponent * 0.217147240951626); // log10(sqrt(e))
-	static constexpr int max_exponent   = sw::universal::takum_exponent_cast(TAKUMLOG::max_characteristic());
-	static constexpr int max_exponent10 = static_cast<int>(max_exponent * 0.217147240951626);
+	// These are radix-2 exponents, as radix == 2 above requires, NOT characteristics.
+	// A takum_log characteristic counts powers of sqrt(e), so reporting it raw would
+	// overstate the range by 1/log2(sqrt(e)) ~ 1.39x.  Taken from the extreme encodings
+	// and converted, with the same +1 convention the linear specialization documents.
+	// Both agree with std::ilogb(minpos) + 1 and std::ilogb(maxpos) + 1.
+	static constexpr int min_exponent   = sw::universal::takum_exponent_cast(
+		sw::universal::takum_log_exponent_of(TAKUMLOG::Codec::decode(1ull)) + 1);
+	static constexpr int max_exponent   = sw::universal::takum_exponent_cast(
+		sw::universal::takum_log_exponent_of(
+			TAKUMLOG::Codec::decode(TAKUMLOG::Codec::magnitude_mask())) + 1);
+	// base 10 follows from the base-2 bounds above, so log10(2) -- not log10(sqrt(e)),
+	// which would apply the base conversion a second time
+	static constexpr int min_exponent10 = static_cast<int>(min_exponent * 0.301029995663981);
+	static constexpr int max_exponent10 = static_cast<int>(max_exponent * 0.301029995663981);
 	static constexpr bool has_infinity = false;
 	static constexpr bool has_quiet_NaN = true;   // NaR serves as NaN
 	static constexpr bool has_signaling_NaN = false;

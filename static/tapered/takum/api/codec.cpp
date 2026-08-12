@@ -432,7 +432,12 @@ int VerifyTruncatedRounding(bool reportTestCases) {
 					int64_t c = base + k * step + off;
 					if (c < Codec::min_characteristic() || c > Codec::max_characteristic()) continue;
 					auto e = Codec::encode_rounded(c, m);
-					if (!e.ok()) continue;
+					if (!e.ok()) {
+						// c was range checked above and k+1 still fits the stored field,
+						// so saturation here is a defect, not an expected outcome.
+						report_fail(dr, "truncated rounded encode", reportTestCases, nrOfFailedTests);
+						continue;
+					}
 					++exercised;
 
 					// Where the value actually sits above k stored steps, and the
