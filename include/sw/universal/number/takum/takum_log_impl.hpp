@@ -129,10 +129,15 @@ public:
 		}
 	}
 
+	// The constructor set mirrors the assignment set below; see takum_impl.hpp for
+	// why a missing overload makes construction ambiguous while assignment still works.
 	constexpr takum_log(signed char initial_value)        noexcept : _block{} { *this = initial_value; }
 	constexpr takum_log(short initial_value)              noexcept : _block{} { *this = initial_value; }
 	constexpr takum_log(int initial_value)                noexcept : _block{} { *this = initial_value; }
+	constexpr takum_log(long initial_value)               noexcept : _block{} { *this = initial_value; }
 	constexpr takum_log(long long initial_value)          noexcept : _block{} { *this = initial_value; }
+	constexpr takum_log(unsigned int initial_value)       noexcept : _block{} { *this = initial_value; }
+	constexpr takum_log(unsigned long initial_value)      noexcept : _block{} { *this = initial_value; }
 	constexpr takum_log(unsigned long long initial_value) noexcept : _block{} { *this = initial_value; }
 	constexpr takum_log(float initial_value)              noexcept : _block{} { *this = initial_value; }
 	constexpr takum_log(double initial_value)             noexcept : _block{} { *this = initial_value; }
@@ -315,6 +320,18 @@ public:
 	// scale(): the integer power-of-two exponent, per the library-wide convention
 	// that scale() is base 2 for every number system.  The characteristic is in
 	// units of sqrt(e), so it is converted here rather than returned directly.
+	//
+	// Accuracy: sqrt(e)^l is a power of two only for l = 2k ln2, which is irrational
+	// for k != 0, so no encoding sits exactly on a boundary and the floor below is
+	// always well defined.  It is computed in double, though, which at |l| ~ 255
+	// leaves ~1e-13 of absolute slack; an encoding closer than that to a power of two
+	// can floor to the neighbouring exponent.  Deciding those cases needs the exact
+	// (c, M_bits) pair carried at more than double precision -- a follow-up if a
+	// caller ever needs it.  Note that std::ilogb(double(*this)) is NOT the fix: it
+	// agrees with this on every uniformly sampled encoding, is no better on the
+	// boundary set (both are coin flips there), and returns INT_MAX for the ~34% of
+	// wide-rbits encodings whose magnitude overflows a double -- which is precisely
+	// where attributes.hpp's minpos_scale() / maxpos_scale() land.
 	CONSTEXPRESSION int scale() const noexcept {
 		if (iszero() || isnar()) return 0;
 		double log2_magnitude = logarithmic_value() * log2_of_base;

@@ -5,6 +5,30 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstdint>
+#include <limits>
+
+namespace sw { namespace universal {
+
+// numeric_limits<>::min_exponent and max_exponent are int by standard mandate, but
+// a takum characteristic is int64_t.  The specification fixes rbits = 3, where the
+// range is [-255, 254] and the two agree; Universal also instantiates wider regime
+// fields, and at rbits = 5 the range is [1 - 2^32, 2^32 - 2], which does not fit.
+// Narrowing that silently wraps: takum<16,5> reported min_exponent == 1 and
+// max_exponent == -2, an inverted range, and gcc flagged it with -Woverflow.
+//
+// Saturate instead.  The reported bounds are then a conservative subset of the real
+// ones -- generic code that sizes a scratch exponent or picks a scaling strategy
+// from them stays correct, just pessimistic, rather than being handed a range with
+// the wrong sign.  Callers that need the exact bounds read min_characteristic() and
+// max_characteristic() off the type, which keep full int64_t width.
+constexpr int takum_exponent_cast(std::int64_t c) noexcept {
+	constexpr std::int64_t lo = static_cast<std::int64_t>((std::numeric_limits<int>::min)());
+	constexpr std::int64_t hi = static_cast<std::int64_t>((std::numeric_limits<int>::max)());
+	return static_cast<int>((c < lo) ? lo : ((c > hi) ? hi : c));
+}
+
+}} // namespace sw::universal
 
 namespace std {
 
@@ -55,9 +79,10 @@ public:
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
-	static constexpr int min_exponent   = TAKUM::min_characteristic();
+	// saturating: see takum_exponent_cast above
+	static constexpr int min_exponent   = sw::universal::takum_exponent_cast(TAKUM::min_characteristic());
 	static constexpr int min_exponent10 = static_cast<int>(min_exponent * 0.301029995663981);
-	static constexpr int max_exponent   = TAKUM::max_characteristic();
+	static constexpr int max_exponent   = sw::universal::takum_exponent_cast(TAKUM::max_characteristic());
 	static constexpr int max_exponent10 = static_cast<int>(max_exponent * 0.301029995663981);
 	static constexpr bool has_infinity = false;
 	static constexpr bool has_quiet_NaN = true;  // NaR serves as NaN
@@ -70,7 +95,10 @@ public:
 	static constexpr bool is_modulo = false;
 	static constexpr bool traps = false;
 	static constexpr bool tinyness_before = false;
-	static constexpr float_round_style round_style = round_toward_zero;
+	// takum_codec::encode_rounded() rounds the trailing field -- and, when the layout
+	// leaves none, the characteristic -- to nearest with ties to even.  Conversion
+	// never truncates toward zero.
+	static constexpr float_round_style round_style = round_to_nearest;
 };
 
 // numeric_limits for the LOGARITHMIC takum.
@@ -118,10 +146,11 @@ public:
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;  // representation radix; value base is sqrt(e)
 
-	// bounds on the characteristic c (units of sqrt(e), not powers of two)
-	static constexpr int min_exponent   = static_cast<int>(TAKUMLOG::min_characteristic());
+	// bounds on the characteristic c (units of sqrt(e), not powers of two),
+	// saturating: see takum_exponent_cast above
+	static constexpr int min_exponent   = sw::universal::takum_exponent_cast(TAKUMLOG::min_characteristic());
 	static constexpr int min_exponent10 = static_cast<int>(min_exponent * 0.217147240951626); // log10(sqrt(e))
-	static constexpr int max_exponent   = static_cast<int>(TAKUMLOG::max_characteristic());
+	static constexpr int max_exponent   = sw::universal::takum_exponent_cast(TAKUMLOG::max_characteristic());
 	static constexpr int max_exponent10 = static_cast<int>(max_exponent * 0.217147240951626);
 	static constexpr bool has_infinity = false;
 	static constexpr bool has_quiet_NaN = true;   // NaR serves as NaN
@@ -134,7 +163,7 @@ public:
 	static constexpr bool is_modulo = false;
 	static constexpr bool traps = false;
 	static constexpr bool tinyness_before = false;
-	static constexpr float_round_style round_style = round_toward_zero;
+	static constexpr float_round_style round_style = round_to_nearest;  // as takum<>, same codec
 };
 
 }

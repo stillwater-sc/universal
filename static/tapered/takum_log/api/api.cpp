@@ -158,11 +158,16 @@ int VerifyRoundTrip(bool reportTestCases) {
 // power-of-two exponent of the value actually stored.  takum_log's characteristic
 // is in units of sqrt(e), so scale() has to convert; std::ilogb gives the exact
 // reference exponent.
-template<unsigned nbits, unsigned rbits>
-int VerifyScaleConvention(bool reportTestCases) {
-	using TL = sw::universal::takum_log<nbits, rbits>;
+//
+// stride > 1 samples instead of enumerating, so that the widest configurations,
+// whose encoding space is far too large to walk, are still covered.  It is
+// deliberately coprime with the encoding structure so the sample sweeps every DR.
+template<unsigned nbits, unsigned rbits, typename bt = std::uint8_t>
+int VerifyScaleConvention(bool reportTestCases, uint64_t stride = 1) {
+	using TL = sw::universal::takum_log<nbits, rbits, bt>;
 	int nrOfFailedTests = 0;
-	for (uint64_t b = 0; b < (1ull << nbits); ++b) {
+	const uint64_t limit = (nbits >= 64) ? ~0ull : (1ull << nbits);
+	for (uint64_t b = 0; b < limit && b + stride > b; b += stride) {
 		TL x; x.setbits(b);
 		if (!comparable(x)) continue;
 		int want = std::ilogb(double(x));
@@ -237,6 +242,20 @@ int VerifySharedEncoding(bool reportTestCases) {
 }
 
 } // anonymous namespace
+
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
@@ -334,43 +353,79 @@ try {
 		if (!(double(lim::lowest()) < 0.0)) { ++nrOfFailedTestCases; std::cout << "FAIL lowest should be negative\n"; }
 	}
 
+#if MANUAL_TESTING
+
+	// Scratch space for investigating a single configuration.
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyInversion<12, 3>(true), "takum_log<12,3>", "inversion (Prop. 7)");
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore failures while iterating manually
+#else
+
 	// ----------------------------------------------------------------------------
-	// Exhaustive structural properties
+	// Level 1: the defining structural properties, exhaustive over the two narrow
+	// configurations.  takum_log<12,3> is the narrowest layout that still has a
+	// trailing field; <16,3> is the spec regime at a practical width.
 	// ----------------------------------------------------------------------------
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyNegation<12, 3>(reportTestCases), "takum_log<12,3>", "negation (Prop. 6)");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyNegation<16, 3>(reportTestCases), "takum_log<16,3>", "negation (Prop. 6)");
-
-	nrOfFailedTestCases += ReportTestResult(
 		VerifyInversion<12, 3>(reportTestCases), "takum_log<12,3>", "inversion (Prop. 7)");
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyInversion<16, 3>(reportTestCases), "takum_log<16,3>", "inversion (Prop. 7)");
-
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyOrdering<12, 3>(reportTestCases), "takum_log<12,3>", "ordering (Prop. 4)");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyOrdering<16, 3>(reportTestCases), "takum_log<16,3>", "ordering (Prop. 4)");
-
-	nrOfFailedTestCases += ReportTestResult(
 		VerifyRoundTrip<12, 3>(reportTestCases), "takum_log<12,3>", "double round-trip");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyScaleConvention<12, 3>(reportTestCases), "takum_log<12,3>", "scale() base-2 convention");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifySharedEncoding<12, 3>(reportTestCases), "takum_log<12,3>", "shared codec with takum<>");
+#endif
+
+	// ----------------------------------------------------------------------------
+	// Level 2: the same properties at 16 bits, plus a narrower regime field.
+	// ----------------------------------------------------------------------------
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyNegation<16, 3>(reportTestCases), "takum_log<16,3>", "negation (Prop. 6)");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyInversion<16, 3>(reportTestCases), "takum_log<16,3>", "inversion (Prop. 7)");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyOrdering<16, 3>(reportTestCases), "takum_log<16,3>", "ordering (Prop. 4)");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyRoundTrip<16, 3>(reportTestCases), "takum_log<16,3>", "double round-trip");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyRoundTrip<16, 1>(reportTestCases), "takum_log<16,1>", "double round-trip");
-
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyScaleConvention<12, 3>(reportTestCases), "takum_log<12,3>", "scale() base-2 convention");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyScaleConvention<16, 3>(reportTestCases), "takum_log<16,3>", "scale() base-2 convention");
-
-	nrOfFailedTestCases += ReportTestResult(
-		VerifySharedEncoding<12, 3>(reportTestCases), "takum_log<12,3>", "shared codec with takum<>");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifySharedEncoding<16, 3>(reportTestCases), "takum_log<16,3>", "shared codec with takum<>");
+#endif
+
+	// ----------------------------------------------------------------------------
+	// Level 3: 32 bits.  Too wide to enumerate, so the encoding space is sampled
+	// with a stride coprime to the field structure, which sweeps every DR.
+	// ----------------------------------------------------------------------------
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyScaleConvention<32, 3>(reportTestCases, 5749ull), "takum_log<32,3>", "scale() base-2 convention");
+#endif
+
+	// ----------------------------------------------------------------------------
+	// Level 4: 64 bits, where the trailing field runs past a double's 53 significand
+	// bits and scale() has the least headroom.  64-bit limbs, so the sample does not
+	// pay for byte-at-a-time block access.
+	// ----------------------------------------------------------------------------
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyScaleConvention<64, 3, std::uint64_t>(reportTestCases, 0x2AAAAAAAABull),
+		"takum_log<64,3>", "scale() base-2 convention");
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
