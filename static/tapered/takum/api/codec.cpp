@@ -236,6 +236,12 @@ int VerifyWideTrailingField(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// Shared failure reporter for the carry / truncation suites below.
+inline void report_fail(unsigned dr, const char* what, bool reportTestCases, int& nrOfFailedTests) {
+	++nrOfFailedTests;
+	if (reportTestCases) std::cout << "FAIL " << what << " dr=" << dr << '\n';
+}
+
 // Rounding and carry propagation in encode_rounded.
 //
 // VerifyEncodeRounded above feeds back fractions it just decoded, so they are
@@ -248,9 +254,8 @@ int VerifyEncodeCarry(bool reportTestCases) {
 	using Codec = sw::universal::takum_codec<nbits, rbits>;
 	int nrOfFailedTests = 0;
 
-	auto fail = [&](const char* what, unsigned dr, int64_t c) {
-		++nrOfFailedTests;
-		if (reportTestCases) std::cout << "FAIL " << what << " dr=" << dr << " c=" << c << '\n';
+	auto fail = [&](const char* what, unsigned dr, int64_t) {
+		report_fail(dr, what, reportTestCases, nrOfFailedTests);
 	};
 
 	for (unsigned dr = 0; dr < Codec::nr_dr_values; ++dr) {
@@ -315,11 +320,6 @@ int VerifyEncodeCarry(bool reportTestCases) {
 // c_stored_bits of C are kept and the rest are rounded away.  Reachable only in
 // degenerate configurations, and never exercised by a decode/encode round-trip
 // because decode already returns a quantized c.
-inline void fail_carry(unsigned dr, const char* what, bool reportTestCases, int& nrOfFailedTests) {
-	++nrOfFailedTests;
-	if (reportTestCases) std::cout << "FAIL " << what << " dr=" << dr << '\n';
-}
-
 template<unsigned nbits, unsigned rbits>
 int VerifyTruncatedCharacteristic(bool reportTestCases) {
 	using Codec = sw::universal::takum_codec<nbits, rbits>;
@@ -345,10 +345,12 @@ int VerifyTruncatedCharacteristic(bool reportTestCases) {
 				auto e = Codec::encode_rounded(c, 0.0);
 				++exercised;
 				if (dr + 1 >= Codec::nr_dr_values) {
-					if (!e.overflowed()) fail_carry(dr, "top DR carry must saturate", reportTestCases, nrOfFailedTests);
+					if (!e.overflowed()) {
+						report_fail(dr, "top DR carry must saturate", reportTestCases, nrOfFailedTests);
+					}
 				}
 				else if (!e.ok() || Codec::decode(e.magnitude).c != Codec::dr_to_c_bias(dr + 1)) {
-					fail_carry(dr, "carry must land on the first c of the next DR", reportTestCases, nrOfFailedTests);
+					report_fail(dr, "carry must land on the first c of the next DR", reportTestCases, nrOfFailedTests);
 				}
 			}
 		}
@@ -363,7 +365,10 @@ int VerifyTruncatedCharacteristic(bool reportTestCases) {
 			int64_t c = base + static_cast<int64_t>(off);
 			if (c > Codec::max_characteristic()) continue;
 			auto e = Codec::encode_rounded(c, 0.0);
-			if (!e.ok()) { ++nrOfFailedTests; if (reportTestCases) std::cout << "FAIL truncated encode dr=" << dr << '\n'; continue; }
+			if (!e.ok()) {
+				report_fail(dr, "truncated encode", reportTestCases, nrOfFailedTests);
+				continue;
+			}
 			++exercised;
 
 			// The recovered characteristic must be the nearest representable one,
@@ -443,50 +448,72 @@ try {
 	// I2/I3/I4/I5/I6: exhaustive over every magnitude.  takum<16,5> and takum<12,5>
 	// exercise the degenerate r > maxCharBits path where C is stored truncated.
 	// ----------------------------------------------------------------------------
-	nrOfFailedTestCases += ReportTestResult(VerifyCodecRoundTrip< 8, 2>(reportTestCases), "codec< 8,2>", "round-trip I2/I3/I5/I6");
-	nrOfFailedTestCases += ReportTestResult(VerifyCodecRoundTrip<12, 1>(reportTestCases), "codec<12,1>", "round-trip I2/I3/I5/I6");
-	nrOfFailedTestCases += ReportTestResult(VerifyCodecRoundTrip<12, 3>(reportTestCases), "codec<12,3>", "round-trip I2/I3/I5/I6");
-	nrOfFailedTestCases += ReportTestResult(VerifyCodecRoundTrip<12, 5>(reportTestCases), "codec<12,5>", "round-trip I2/I3/I5/I6");
-	nrOfFailedTestCases += ReportTestResult(VerifyCodecRoundTrip<16, 3>(reportTestCases), "codec<16,3>", "round-trip I2/I3/I5/I6");
-	nrOfFailedTestCases += ReportTestResult(VerifyCodecRoundTrip<16, 5>(reportTestCases), "codec<16,5>", "round-trip I2/I3/I5/I6");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCodecRoundTrip< 8, 2>(reportTestCases), "codec< 8,2>", "round-trip I2/I3/I5/I6");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCodecRoundTrip<12, 1>(reportTestCases), "codec<12,1>", "round-trip I2/I3/I5/I6");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCodecRoundTrip<12, 3>(reportTestCases), "codec<12,3>", "round-trip I2/I3/I5/I6");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCodecRoundTrip<12, 5>(reportTestCases), "codec<12,5>", "round-trip I2/I3/I5/I6");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCodecRoundTrip<16, 3>(reportTestCases), "codec<16,3>", "round-trip I2/I3/I5/I6");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCodecRoundTrip<16, 5>(reportTestCases), "codec<16,5>", "round-trip I2/I3/I5/I6");
 
 	// ----------------------------------------------------------------------------
 	// encode_rounded: agreement with encode_exact on representable fractions,
 	// and saturation signalling at the range boundaries
 	// ----------------------------------------------------------------------------
-	nrOfFailedTestCases += ReportTestResult(VerifyEncodeRounded< 8, 2>(reportTestCases), "codec< 8,2>", "encode_rounded");
-	nrOfFailedTestCases += ReportTestResult(VerifyEncodeRounded<12, 3>(reportTestCases), "codec<12,3>", "encode_rounded");
-	nrOfFailedTestCases += ReportTestResult(VerifyEncodeRounded<16, 3>(reportTestCases), "codec<16,3>", "encode_rounded");
-	nrOfFailedTestCases += ReportTestResult(VerifyEncodeRounded<16, 5>(reportTestCases), "codec<16,5>", "encode_rounded");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyEncodeRounded< 8, 2>(reportTestCases), "codec< 8,2>", "encode_rounded");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyEncodeRounded<12, 3>(reportTestCases), "codec<12,3>", "encode_rounded");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyEncodeRounded<16, 3>(reportTestCases), "codec<16,3>", "encode_rounded");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyEncodeRounded<16, 5>(reportTestCases), "codec<16,5>", "encode_rounded");
 
 	// ----------------------------------------------------------------------------
 	// Wide trailing fields: codec<64,3> reaches p = 59, past a double's 53
 	// significand bits.  Exercises the reason encode_exact and encode_rounded are
 	// separate entry points.
 	// ----------------------------------------------------------------------------
-	nrOfFailedTestCases += ReportTestResult(VerifyWideTrailingField<32, 3>(reportTestCases), "codec<32,3>", "wide trailing field");
-	nrOfFailedTestCases += ReportTestResult(VerifyWideTrailingField<56, 3>(reportTestCases), "codec<56,3>", "wide trailing field");
-	nrOfFailedTestCases += ReportTestResult(VerifyWideTrailingField<64, 3>(reportTestCases), "codec<64,3>", "wide trailing field");
-	nrOfFailedTestCases += ReportTestResult(VerifyWideTrailingField<64, 5>(reportTestCases), "codec<64,5>", "wide trailing field");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyWideTrailingField<32, 3>(reportTestCases), "codec<32,3>", "wide trailing field");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyWideTrailingField<56, 3>(reportTestCases), "codec<56,3>", "wide trailing field");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyWideTrailingField<64, 3>(reportTestCases), "codec<64,3>", "wide trailing field");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyWideTrailingField<64, 5>(reportTestCases), "codec<64,5>", "wide trailing field");
 
 	// ----------------------------------------------------------------------------
 	// Rounding, carry propagation and saturation.  The round-trip suites above feed
 	// back exactly representable fractions and so never round; these drive the
 	// carry paths directly.
 	// ----------------------------------------------------------------------------
-	nrOfFailedTestCases += ReportTestResult(VerifyEncodeCarry< 8, 2>(reportTestCases), "codec< 8,2>", "rounding and carry");
-	nrOfFailedTestCases += ReportTestResult(VerifyEncodeCarry<12, 3>(reportTestCases), "codec<12,3>", "rounding and carry");
-	nrOfFailedTestCases += ReportTestResult(VerifyEncodeCarry<16, 3>(reportTestCases), "codec<16,3>", "rounding and carry");
-	nrOfFailedTestCases += ReportTestResult(VerifyEncodeCarry<32, 3>(reportTestCases), "codec<32,3>", "rounding and carry");
-	nrOfFailedTestCases += ReportTestResult(VerifyEncodeCarry<64, 3>(reportTestCases), "codec<64,3>", "rounding and carry");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyEncodeCarry< 8, 2>(reportTestCases), "codec< 8,2>", "rounding and carry");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyEncodeCarry<12, 3>(reportTestCases), "codec<12,3>", "rounding and carry");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyEncodeCarry<16, 3>(reportTestCases), "codec<16,3>", "rounding and carry");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyEncodeCarry<32, 3>(reportTestCases), "codec<32,3>", "rounding and carry");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyEncodeCarry<64, 3>(reportTestCases), "codec<64,3>", "rounding and carry");
 
 	// ----------------------------------------------------------------------------
 	// The truncated-characteristic path (r > maxCharBits), reachable only in
 	// degenerate configurations and never by a decode/encode round-trip.
 	// ----------------------------------------------------------------------------
-	nrOfFailedTestCases += ReportTestResult(VerifyTruncatedCharacteristic<12, 5>(reportTestCases), "codec<12,5>", "truncated characteristic");
-	nrOfFailedTestCases += ReportTestResult(VerifyTruncatedCharacteristic<16, 5>(reportTestCases), "codec<16,5>", "truncated characteristic");
-	nrOfFailedTestCases += ReportTestResult(VerifyTruncatedCharacteristic<24, 5>(reportTestCases), "codec<24,5>", "truncated characteristic");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyTruncatedCharacteristic<12, 5>(reportTestCases), "codec<12,5>", "truncated characteristic");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyTruncatedCharacteristic<16, 5>(reportTestCases), "codec<16,5>", "truncated characteristic");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyTruncatedCharacteristic<24, 5>(reportTestCases), "codec<24,5>", "truncated characteristic");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
