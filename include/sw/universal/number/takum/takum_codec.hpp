@@ -302,8 +302,25 @@ struct takum_codec {
 			}
 		}
 
-		// Trailing field, round-to-nearest-even.
+		// When the layout leaves no trailing field, the fraction still carries value
+		// information and must round the CHARACTERISTIC -- discarding it would make
+		// conversion truncate rather than round to nearest, contradicting the
+		// format's rounding function.  Ties go to an even characteristic.
 		uint64_t M_bits = 0;
+		if (g.p == 0) {
+			if (m_real > 0.5 || (m_real == 0.5 && (C_stored & 1ull))) {
+				++C_stored;
+				if (C_stored >= (1ull << g.c_stored_bits)) {
+					if (dr + 1 >= nr_dr_values) return encoded{ magnitude_mask(), takum_encode_status::overflow };
+					++dr;
+					g = layout_of(dr);
+					C_stored = 0;
+				}
+			}
+			return encoded{ pack(dr, C_stored, 0ull, g), takum_encode_status::ok };
+		}
+
+		// Trailing field, round-to-nearest-even.
 		if (g.p > 0) {
 			double scaled = m_real * static_cast<double>(1ull << g.p);
 			M_bits = static_cast<uint64_t>(scaled);
