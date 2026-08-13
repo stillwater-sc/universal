@@ -346,6 +346,95 @@ struct takum_codec {
 		return encoded{ pack(dr, C_stored, M_bits, g), takum_encode_status::ok };
 	}
 
+	// Assemble a magnitude from a characteristic and an EXACT binary fraction N/2^q,
+	// rounding to nearest-even.  The third encode entry point, and the one the
+	// logarithmic takum's math library runs on.
+	//
+	// encode_rounded() takes the fraction as a double, which caps it at 53
+	// significant bits.  That is enough when the fraction comes from an IEEE
+	// significand, but not for arithmetic in the logarithmic domain: halving a
+	// logarithmic value to take a square root produces a fraction one bit WIDER than
+	// the source layout carries, and takum_log<64,3> already reaches p = 59.  Routing
+	// that through a double would discard the low bits before rounding ever happened.
+	// Carrying (N, q) as integers keeps the operation exact at every width, so the
+	// result is off by at most the single rounding the target layout forces.
+	//
+	// Pre: q < 64 and N < 2^q, i.e. a proper binary fraction.
+	// Post: I4; status == ok implies the result is the round-to-nearest-even encoding
+	//       of c + N/2^q.
+	static constexpr encoded encode_fraction(int64_t c, uint64_t N, unsigned q) noexcept {
+		if (c > max_characteristic()) return encoded{ magnitude_mask(), takum_encode_status::overflow };
+		if (c < min_characteristic()) return encoded{ 0ull, takum_encode_status::underflow };
+
+		unsigned dr = find_dr(c);
+		field_layout g = layout_of(dr);
+
+		uint64_t C_full   = static_cast<uint64_t>(c - dr_to_c_bias(dr));
+		uint64_t C_stored = C_full;
+		uint64_t dropped  = 0;      // characteristic bits the layout cannot store
+		uint64_t step_half = 0;     // half a stored step, in characteristic units
+		if (g.r > maxCharBits) {
+			unsigned shift = g.r - g.c_stored_bits;
+			C_stored  = C_full >> shift;
+			dropped   = C_full & ((1ull << shift) - 1ull);
+			step_half = 1ull << (shift - 1);
+		}
+
+		if (g.p == 0) {
+			// Round the characteristic, weighing the dropped bits and the fraction
+			// together exactly as encode_rounded() does.  Every comparison stays in
+			// integers: the residual is dropped + N/2^q against a threshold of either
+			// step_half or 1/2, and neither product is ever formed.
+			bool round_up;
+			if (g.r > maxCharBits) {
+				round_up = (dropped > step_half)
+				        || (dropped == step_half && (N > 0 || (C_stored & 1ull)));
+			}
+			else {
+				uint64_t half = (q > 0) ? (1ull << (q - 1)) : 0ull;
+				round_up = (q > 0) && (N > half || (N == half && (C_stored & 1ull)));
+			}
+			if (round_up) {
+				++C_stored;
+				if (C_stored >= (1ull << g.c_stored_bits)) {
+					if (dr + 1 >= nr_dr_values) return encoded{ magnitude_mask(), takum_encode_status::overflow };
+					++dr;
+					g = layout_of(dr);
+					C_stored = 0;
+				}
+			}
+			return encoded{ pack(dr, C_stored, 0ull, g), takum_encode_status::ok };
+		}
+
+		// Rescale N/2^q onto the layout's p bits.  Widening is exact; narrowing is the
+		// one place a value can be lost, and it rounds to nearest-even.
+		uint64_t M_bits = 0;
+		if (g.p >= q) {
+			M_bits = N << (g.p - q);
+		}
+		else {
+			unsigned s   = q - g.p;
+			M_bits       = N >> s;
+			uint64_t rem = N & ((1ull << s) - 1ull);
+			uint64_t half = 1ull << (s - 1);
+			if (rem > half || (rem == half && (M_bits & 1ull))) ++M_bits;
+			if (M_bits >= (1ull << g.p)) {
+				// Carry out of the trailing field into the characteristic.
+				M_bits = 0;
+				++C_stored;
+				if (C_stored >= (1ull << g.c_stored_bits)) {
+					if (dr + 1 >= nr_dr_values) return encoded{ magnitude_mask(), takum_encode_status::overflow };
+					++dr;
+					g = layout_of(dr);
+					C_stored = 0;
+					return encoded{ pack(dr, 0ull, 0ull, g), takum_encode_status::ok };
+				}
+			}
+		}
+
+		return encoded{ pack(dr, C_stored, M_bits, g), takum_encode_status::ok };
+	}
+
 private:
 	// Stateless: the codec is a namespace of static constexpr members, never an
 	// object.  Deleting the default constructor makes that intent a compile error

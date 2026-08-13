@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
+#include <cmath>
 
 namespace sw { namespace universal {
 
@@ -22,6 +23,21 @@ takum<nbits, rbits, bt> nextafter(const takum<nbits, rbits, bt>& x, const takum<
 	else {
 		if (x > target) { --result; } else { ++result; }
 	}
+	return result;
+}
+
+// ---------------------------------------------------------------------------
+// takum_log: adjacent encodings are adjacent values (Prop. 4), so stepping is a
+// two's-complement increment rather than a value computation.
+// ---------------------------------------------------------------------------
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> nextafter(const takum_log<nbits, rbits, bt>& x,
+                                             const takum_log<nbits, rbits, bt>& target) {
+	takum_log<nbits, rbits, bt> result(x);
+	if (x.isnar() || target.isnar()) { result.setnar(); return result; }
+	if (x == target) return result;
+	if (x < target) ++result; else --result;
 	return result;
 }
 

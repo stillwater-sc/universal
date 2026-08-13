@@ -21,4 +21,17 @@ takum<nbits, rbits, bt> erfc(const takum<nbits, rbits, bt>& x) {
 	return takum<nbits, rbits, bt>(std::erfc(double(x)));
 }
 
+// ---------------------------------------------------------------------------
+// takum_log
+// ---------------------------------------------------------------------------
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> erf(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::erf(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> erfc(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::erfc(double(x)));
+}
+
 }} // namespace sw::universal

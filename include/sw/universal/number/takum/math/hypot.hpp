@@ -24,4 +24,14 @@ takum<nbits, rbits, bt> hypotl(const takum<nbits, rbits, bt>& x, const takum<nbi
 	return takum<nbits, rbits, bt>(std::hypotl((long double)(x), (long double)(y)));
 }
 
+// ---------------------------------------------------------------------------
+// takum_log
+// ---------------------------------------------------------------------------
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> hypot(const takum_log<nbits, rbits, bt>& x,
+                                         const takum_log<nbits, rbits, bt>& y) {
+	return takum_log<nbits, rbits, bt>(std::hypot(double(x), double(y)));
+}
+
 }} // namespace sw::universal

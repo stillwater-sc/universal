@@ -25,4 +25,26 @@ takum<nbits, rbits, bt> frac(const takum<nbits, rbits, bt>& x) {
 	return takum<nbits, rbits, bt>(double(x) - std::trunc(double(x)));
 }
 
+// ---------------------------------------------------------------------------
+// takum_log: remainder and modulus are linear-domain operations.
+// ---------------------------------------------------------------------------
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> fmod(const takum_log<nbits, rbits, bt>& x,
+                                        const takum_log<nbits, rbits, bt>& y) {
+	return takum_log<nbits, rbits, bt>(std::fmod(double(x), double(y)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> remainder(const takum_log<nbits, rbits, bt>& x,
+                                             const takum_log<nbits, rbits, bt>& y) {
+	return takum_log<nbits, rbits, bt>(std::remainder(double(x), double(y)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> frac(const takum_log<nbits, rbits, bt>& x) {
+	double v = double(x);
+	return takum_log<nbits, rbits, bt>(v - std::trunc(v));
+}
+
 }} // namespace sw::universal
