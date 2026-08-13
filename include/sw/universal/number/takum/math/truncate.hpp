@@ -33,4 +33,28 @@ takum<nbits, rbits, bt> ceil(const takum<nbits, rbits, bt>& x) {
 	return takum<nbits, rbits, bt>(std::ceil(double(x)));
 }
 
+// ---------------------------------------------------------------------------
+// takum_log: rounding to an integer is a linear-domain operation with no
+// logarithmic shortcut, so these evaluate the value and re-encode.
+// ---------------------------------------------------------------------------
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> trunc(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::trunc(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> round(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::round(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> floor(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::floor(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> ceil(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::ceil(double(x)));
+}
+
 }} // namespace sw::universal

@@ -61,4 +61,59 @@ takum<nbits, rbits, bt> csc(const takum<nbits, rbits, bt>& x) {
     return takum<nbits, rbits, bt>(1.0 / std::sin(double(x)));
 }
 
+// ---------------------------------------------------------------------------
+// takum_log: the circular functions have no logarithmic-domain form; they are
+// evaluated as reals.  Kept here so takum_log is a complete plug-in type.
+// ---------------------------------------------------------------------------
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> sin(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::sin(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> cos(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::cos(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> tan(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::tan(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> asin(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::asin(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> acos(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::acos(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> atan(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::atan(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> atan2(const takum_log<nbits, rbits, bt>& y,
+                                         const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(std::atan2(double(y), double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> sec(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(1.0 / std::cos(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> csc(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(1.0 / std::sin(double(x)));
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> cot(const takum_log<nbits, rbits, bt>& x) {
+	return takum_log<nbits, rbits, bt>(1.0 / std::tan(double(x)));
+}
+
 }} // namespace sw::universal

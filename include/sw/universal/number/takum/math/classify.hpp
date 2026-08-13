@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
+#include <cmath>
 
 namespace sw { namespace universal {
 
@@ -43,6 +44,45 @@ inline bool isnormal(const takum<nbits, rbits, bt>& t) {
 // Takum has no subnormal encodings.
 template<unsigned nbits, unsigned rbits, typename bt>
 inline bool isdenorm(const takum<nbits, rbits, bt>& t) {
+	(void)t;
+	return false;
+}
+
+// ---------------------------------------------------------------------------
+// takum_log: classification is a property of the shared encoding, so these
+// mirror the linear takum exactly.  The value map does not enter into it.
+// ---------------------------------------------------------------------------
+
+template<unsigned nbits, unsigned rbits, typename bt>
+int fpclassify(const takum_log<nbits, rbits, bt>& t) {
+	if (t.isnar())  return FP_NAN;
+	if (t.iszero()) return FP_ZERO;
+	return FP_NORMAL;   // no subnormal or infinite encodings; see below
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline bool isfinite(const takum_log<nbits, rbits, bt>& t) {
+	return !t.isnar();
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline bool isinf(const takum_log<nbits, rbits, bt>& t) {
+	(void)t;
+	return false;
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline bool isnan(const takum_log<nbits, rbits, bt>& t) {
+	return t.isnar();
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline bool isnormal(const takum_log<nbits, rbits, bt>& t) {
+	return !t.isnar() && !t.iszero();
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline bool isdenorm(const takum_log<nbits, rbits, bt>& t) {
 	(void)t;
 	return false;
 }

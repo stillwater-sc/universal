@@ -28,4 +28,17 @@ takum<nbits, rbits, bt> fma(const takum<nbits, rbits, bt>& a, const takum<nbits,
 	return takum<nbits, rbits, bt>(std::fma(double(a), double(b), double(c)));
 }
 
+// ---------------------------------------------------------------------------
+// takum_log: fused multiply-add.  The multiply is exact in the logarithmic
+// domain but the addition is not, so this follows the linear takum and fuses in
+// double, which is wider than any takum_log the codec supports up to 64 bits.
+// ---------------------------------------------------------------------------
+
+template<unsigned nbits, unsigned rbits, typename bt>
+inline takum_log<nbits, rbits, bt> fma(const takum_log<nbits, rbits, bt>& a,
+                                       const takum_log<nbits, rbits, bt>& b,
+                                       const takum_log<nbits, rbits, bt>& c) {
+	return takum_log<nbits, rbits, bt>(std::fma(double(a), double(b), double(c)));
+}
+
 }} // namespace sw::universal
