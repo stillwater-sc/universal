@@ -46,6 +46,14 @@ constexpr std::int64_t takum_log_exponent_of(const Decoded& d) noexcept {
 		(static_cast<double>(d.c) + d.template fraction<double>()) * takum_log2_of_sqrt_e);
 }
 
+// Width of the trailing field at the value 1.0, which both variants encode as
+// c == 0.  That characteristic lives in the DR with r == 0, so the whole trailing
+// field is fraction and the step from 1.0 to its successor is 2^-p in c + m.
+template<typename Codec>
+constexpr unsigned takum_ulp_bits_at_one() noexcept {
+	return Codec::layout_of(Codec::find_dr(0)).p;
+}
+
 }} // namespace sw::universal
 
 namespace std {
@@ -67,10 +75,28 @@ public:
 		TAKUM lmaxneg(sw::universal::SpecificValue::maxneg);
 		return lmaxneg;
 	}
-	static constexpr TAKUM  epsilon() { // return smallest effective increment from 1.0
-		TAKUM one{ 1.0f }, incr{ 1.0f };
-		++incr;
-		return incr - one;
+	// The difference between 1.0 and the next representable value.
+	//
+	// This used to be computed as (++one) - one.  That subtraction runs through a
+	// double, so any takum finer than a double collapsed to zero: takum<64,3> has
+	// 59 fraction bits at 1.0, and 1 + 2^-59 is not a double, so the difference
+	// evaluated to exactly 0 -- claiming the type is EXACT, which is the most
+	// misleading answer available.
+	//
+	// The value is 2^-p, where p is the trailing-field width at c == 0, and a
+	// linear takum encodes it exactly as (1 + 0) * 2^-p.  Take it from the codec.
+	static constexpr TAKUM  epsilon() {
+		constexpr unsigned p = sw::universal::takum_ulp_bits_at_one<typename TAKUM::Codec>();
+		auto enc = TAKUM::Codec::encode_exact(-static_cast<std::int64_t>(p), 0ull);
+		TAKUM result;
+		// Narrow regime fields can leave the ulp below the smallest representable
+		// value -- takum<32,2> carries 28 fraction bits at 1.0 but bottoms out at
+		// 2^-15, and takum<24,1> at 2^-3.  There is no exact answer there; report
+		// the smallest representable difference rather than zero, which would again
+		// assert exactness.
+		if (!enc.ok()) return min();
+		result.setbits(enc.magnitude);
+		return result;
 	}
 	static constexpr TAKUM  round_error() { // return largest rounding error
 		return TAKUM(0.5);
@@ -158,10 +184,22 @@ public:
 		TAKUMLOG lmaxneg(sw::universal::SpecificValue::maxneg);
 		return lmaxneg;
 	}
+	// As the linear specialization: the old (++one) - one collapsed to zero for
+	// anything finer than a double.  The logarithmic value steps by 2^-p at l == 0,
+	// so the successor of 1.0 is sqrt(e)^(2^-p) == e^(x) with x == 2^-(p+1), and
+	// epsilon is e^x - 1.
+	//
+	// x is at most 2^-12 for any supported width, so the series x + x^2/2 is within
+	// x^3/6 of the true value -- below 2^-73 relative, far inside the format's own
+	// resolution -- and it keeps this free of a transcendental call.
 	static constexpr TAKUMLOG epsilon() {
-		TAKUMLOG one{ 1.0f }, incr{ 1.0f };
-		++incr;
-		return incr - one;
+		constexpr unsigned p = sw::universal::takum_ulp_bits_at_one<typename TAKUMLOG::Codec>();
+		constexpr double x = 1.0 / static_cast<double>(1ull << (p + 1 < 64 ? p + 1 : 63));
+		TAKUMLOG e(x + 0.5 * x * x);
+		// As in the linear specialization: a narrow regime field can put the ulp
+		// below minpos, and reporting zero would assert exactness.
+		if (e.iszero()) return min();
+		return e;
 	}
 	static constexpr TAKUMLOG round_error() { return TAKUMLOG(0.5); }
 	static constexpr TAKUMLOG denorm_min()  { return min(); }  // no denormals
