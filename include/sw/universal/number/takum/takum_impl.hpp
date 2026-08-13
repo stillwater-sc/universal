@@ -197,7 +197,15 @@ public:
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
 	CONSTEXPRESSION takum(long double initial_value)                      noexcept : _block{} { *this = initial_value; }
-	CONSTEXPRESSION takum& operator=(long double rhs)                     noexcept { return convert_ieee754(rhs); }
+	// Narrow to double first.  convert_ieee754() reads the source's IEEE 754
+	// fields, and a long double is not one format: x87 80-bit on x86, IEEE
+	// binary128 on ARM64, and plain double on MSVC, with different biases and,
+	// for x87, an explicit rather than implicit integer bit.  Rather than decode
+	// three layouts, take the one conversion the platform already provides.  The
+	// cost is the bits beyond double's 53; the alternative was a wrong answer.
+	CONSTEXPRESSION takum& operator=(long double rhs)                     noexcept {
+		return convert_ieee754(static_cast<double>(rhs));
+	}
 	explicit CONSTEXPRESSION operator long double()                 const noexcept { return to_ieee754<long double>(); }
 #endif
 
@@ -493,16 +501,23 @@ protected:
 		uint64_t bits = 0;
 		extractFields(abs_v, ignored_sign, rawExp, rawFrac, bits);
 
-		// Determine the source format's bias / fbits.  For long double on
-		// platforms where extractFields routes through double, we use double's
-		// parameters since the bits we got back are double-encoded.
+		// The source format's bias / fbits.  Real is float or double here and
+		// never long double: operator=(long double) narrows first, so the fields
+		// extracted above always carry that format's own encoding.
+		//
+		// This used to force double's parameters whenever Real was long double,
+		// on the assumption that extractFields routes long double through double.
+		// It does so only when LONG_DOUBLE_DOWNCAST is defined.  Everywhere else
+		// -- Linux and macOS x86-64 with gcc or clang -- it returns genuine x87
+		// 80-bit fields, whose exponent is biased by 16383 rather than 1023, and
+		// reading those with double's bias put every finite value past
+		// max_characteristic(): takum<32,3>{3.0L} came out as maxpos.
+		static_assert(!std::is_same_v<Real, long double>,
+		              "convert_ieee754 requires a format whose extractFields encoding matches "
+		              "ieee754_parameter<Real>; narrow long double to double before calling");
 		using Param = ieee754_parameter<Real>;
-		constexpr int src_bias  = (std::is_same_v<Real, long double>)
-		                        ? ieee754_parameter<double>::bias
-		                        : Param::bias;
-		constexpr int src_fbits = (std::is_same_v<Real, long double>)
-		                        ? ieee754_parameter<double>::fbits
-		                        : Param::fbits;
+		constexpr int src_bias  = Param::bias;
+		constexpr int src_fbits = Param::fbits;
 
 		// Use int64_t for the unbiased exponent / characteristic so that
 		// max_characteristic() / min_characteristic() comparisons stay correct
