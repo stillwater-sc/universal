@@ -30,6 +30,9 @@ An algebraic treatment of elementary functions was started by Joseph Fels Ritt i
 #include <universal/number/takum/math/sqrt.hpp>
 #include <universal/number/takum/math/trigonometry.hpp>
 #include <universal/number/takum/math/truncate.hpp>
+// constants: the two variants share an encoding but not a value map, so the same
+// mathematical constant lands on different bits in each and the tables are disjoint
+#include <universal/number/takum/math/constants/takum_log_constants.hpp>
 
 namespace sw { namespace universal {
     //////////////////////////////////////////////////////////////////////////
