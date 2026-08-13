@@ -157,10 +157,19 @@ public:
 		}
 	}
 
+	// Every type with an exact-match assignment operator below needs a matching
+	// constructor.  Without one, construction from that type is ambiguous -- it is a
+	// Conversion to each of int, long long, unsigned long long, float, double and
+	// long double alike, with nothing to break the tie -- while assignment keeps
+	// working, which makes the gap easy to miss.  char and unsigned short are the
+	// exceptions: they promote to int, and a Promotion outranks every Conversion.
 	constexpr takum(signed char initial_value)         noexcept : _block{} { *this = initial_value; }
 	constexpr takum(short initial_value)               noexcept : _block{} { *this = initial_value; }
 	constexpr takum(int initial_value)                 noexcept : _block{} { *this = initial_value; }
+	constexpr takum(long initial_value)                noexcept : _block{} { *this = initial_value; }
 	constexpr takum(long long initial_value)           noexcept : _block{} { *this = initial_value; }
+	constexpr takum(unsigned int initial_value)        noexcept : _block{} { *this = initial_value; }
+	constexpr takum(unsigned long initial_value)       noexcept : _block{} { *this = initial_value; }
 	constexpr takum(unsigned long long initial_value)  noexcept : _block{} { *this = initial_value; }
 	constexpr takum(float initial_value)               noexcept : _block{} { *this = initial_value; }
 	constexpr takum(double initial_value)              noexcept : _block{} { *this = initial_value; }

@@ -16,12 +16,13 @@ namespace sw { namespace universal {
 
 	// Generate a type tag for this takum
 	template<typename TakumType,
-		std::enable_if_t< is_takum<TakumType>, bool> = true
+		std::enable_if_t< is_any_takum<TakumType>, bool> = true
 	>
 	inline std::string type_tag(const TakumType & = {}) {
 		std::stringstream s;
 		typename TakumType::BlockType bt{0};
-		s << "takum<"
+		// name the variant: the two share an encoding but are different number systems
+		s << (is_takum_log<TakumType> ? "takum_log<" : "takum<")
 			<< std::setw(3) << TakumType::nbits << ", "
 			<< std::setw(1) << TakumType::rbits << ", "
 			<< type_tag(bt) << ">";
@@ -29,7 +30,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TakumType,
-		std::enable_if_t< is_takum<TakumType>, bool> = true
+		std::enable_if_t< is_any_takum<TakumType>, bool> = true
 	>
 	inline std::string range(const TakumType & = {}) {
 		std::stringstream s;
@@ -39,7 +40,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TakumType,
-		std::enable_if_t< is_takum<TakumType>, bool> = true
+		std::enable_if_t< is_any_takum<TakumType>, bool> = true
 	>
 	inline bool isInRange(double v) {
 		TakumType a{};
@@ -50,7 +51,7 @@ namespace sw { namespace universal {
 
 	// Generate a string representing the takum components
 	template<typename TakumType,
-		std::enable_if_t< is_takum<TakumType>, bool> = true
+		std::enable_if_t< is_any_takum<TakumType>, bool> = true
 	>
 	inline std::string components(const TakumType& v) {
 		std::stringstream s;
@@ -71,7 +72,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TakumType,
-		std::enable_if_t< is_takum<TakumType>, bool> = true
+		std::enable_if_t< is_any_takum<TakumType>, bool> = true
 	>
 	inline std::string to_hex(const TakumType& v, bool nibbleMarker = false, bool hexPrefix = true) {
 		constexpr unsigned nbits = TakumType::nbits;
@@ -91,7 +92,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TakumType,
-		std::enable_if_t< is_takum<TakumType>, bool> = true
+		std::enable_if_t< is_any_takum<TakumType>, bool> = true
 	>
 	inline std::string hex_print(const TakumType& c) {
 		constexpr unsigned nbits = TakumType::nbits;
@@ -101,7 +102,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TakumType,
-		std::enable_if_t< is_takum<TakumType>, bool> = true
+		std::enable_if_t< is_any_takum<TakumType>, bool> = true
 	>
 	inline std::string pretty_print(const TakumType& number, bool nibbleMarker = false) {
 		constexpr unsigned nbits = TakumType::nbits;
@@ -140,14 +141,14 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TakumType,
-		std::enable_if_t< is_takum<TakumType>, bool> = true
+		std::enable_if_t< is_any_takum<TakumType>, bool> = true
 	>
 	inline std::string info_print(const TakumType& p, int printPrecision = 17) {
 		return std::string("TBD");
 	}
 
 	template<typename TakumType,
-		std::enable_if_t< is_takum<TakumType>, bool> = true
+		std::enable_if_t< is_any_takum<TakumType>, bool> = true
 	>
 	inline std::string color_print(const TakumType& number, bool nibbleMarker = false) {
 		constexpr unsigned nbits = TakumType::nbits;

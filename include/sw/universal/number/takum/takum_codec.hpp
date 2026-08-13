@@ -283,35 +283,37 @@ struct takum_codec {
 		unsigned dr = find_dr(c);
 		field_layout g = layout_of(dr);
 
-		// Characteristic bits.  When the format calls for more characteristic bits
-		// than this nbits can hold, the low bits are dropped with round-to-nearest-even.
+		// Characteristic bits.  When the format calls for more characteristic bits than
+		// this nbits can hold, the low ones are dropped; the value they carry is not
+		// rounded away here but folded into the residual below.  Note g.r > maxCharBits
+		// implies c_stored_bits == maxCharBits and therefore g.p == 0 (I1), so the two
+		// quantities below are consumed by exactly one rounding decision.
 		uint64_t C_full = static_cast<uint64_t>(c - dr_to_c_bias(dr));
 		uint64_t C_stored = C_full;
+		// The part of the value sitting above C_stored, and half of one stored step,
+		// both in characteristic units.  Without dropped bits a stored step spans one
+		// characteristic unit; with them it spans 2^shift.
+		double dropped_value = 0.0;
+		double step_half     = 0.5;
 		if (g.r > maxCharBits) {
 			unsigned shift = g.r - g.c_stored_bits;
-			C_stored = C_full >> shift;
-			uint64_t remainder = C_full & ((1ull << shift) - 1ull);
-			uint64_t half = 1ull << (shift - 1);
-			if (remainder > half || (remainder == half && (C_stored & 1ull))) ++C_stored;
-			if (C_stored >= (1ull << g.c_stored_bits)) {
-				if (dr + 1 >= nr_dr_values) return encoded{ magnitude_mask(), takum_encode_status::overflow };
-				++dr;
-				g = layout_of(dr);
-				C_stored = 0;
-				m_real = 0.0;
-			}
+			C_stored      = C_full >> shift;
+			dropped_value = static_cast<double>(C_full & ((1ull << shift) - 1ull));
+			step_half     = static_cast<double>(1ull << (shift - 1));
 		}
 
-		// Trailing field, round-to-nearest-even.
-		uint64_t M_bits = 0;
-		if (g.p > 0) {
-			double scaled = m_real * static_cast<double>(1ull << g.p);
-			M_bits = static_cast<uint64_t>(scaled);
-			double remainder = scaled - static_cast<double>(M_bits);
-			if (remainder > 0.5 || (remainder == 0.5 && (M_bits & 1ull))) ++M_bits;
-			if (M_bits >= (1ull << g.p)) {
-				// Carry out of the trailing field into the characteristic.
-				M_bits = 0;
+		// When the layout leaves no trailing field, the residual still carries value
+		// information and must round the CHARACTERISTIC -- discarding it would make
+		// conversion truncate rather than round to nearest, contradicting the format's
+		// rounding function.  Ties go to an even stored characteristic.
+		//
+		// The dropped characteristic bits and m are weighed together, in one decision.
+		// Rounding them separately is wrong twice over: it can carry into C_stored
+		// twice, and it measures a bare m against half a CHARACTERISTIC unit when a
+		// stored step is 2^shift of them.
+		if (g.p == 0) {
+			double residual = dropped_value + m_real;
+			if (residual > step_half || (residual == step_half && (C_stored & 1ull))) {
 				++C_stored;
 				if (C_stored >= (1ull << g.c_stored_bits)) {
 					if (dr + 1 >= nr_dr_values) return encoded{ magnitude_mask(), takum_encode_status::overflow };
@@ -319,6 +321,25 @@ struct takum_codec {
 					g = layout_of(dr);
 					C_stored = 0;
 				}
+			}
+			return encoded{ pack(dr, C_stored, 0ull, g), takum_encode_status::ok };
+		}
+
+		// Trailing field, round-to-nearest-even.  Reached only when g.p > 0, hence
+		// g.r <= maxCharBits, C_stored == C_full and no characteristic bits were dropped.
+		double scaled = m_real * static_cast<double>(1ull << g.p);
+		uint64_t M_bits = static_cast<uint64_t>(scaled);
+		double remainder = scaled - static_cast<double>(M_bits);
+		if (remainder > 0.5 || (remainder == 0.5 && (M_bits & 1ull))) ++M_bits;
+		if (M_bits >= (1ull << g.p)) {
+			// Carry out of the trailing field into the characteristic.
+			M_bits = 0;
+			++C_stored;
+			if (C_stored >= (1ull << g.c_stored_bits)) {
+				if (dr + 1 >= nr_dr_values) return encoded{ magnitude_mask(), takum_encode_status::overflow };
+				++dr;
+				g = layout_of(dr);
+				C_stored = 0;
 			}
 		}
 

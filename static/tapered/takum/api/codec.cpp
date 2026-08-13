@@ -391,6 +391,82 @@ int VerifyTruncatedCharacteristic(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// Dropped characteristic bits TOGETHER WITH a fraction.
+//
+// VerifyTruncatedCharacteristic above always passes m = 0, so it only ever sees
+// one of the two quantities that live below a stored characteristic step.  When
+// r > maxCharBits the layout leaves p == 0, so the dropped low bits of C and the
+// caller's m both fall inside the same step and must be weighed on the same scale
+// in a single round-to-nearest-even decision.
+//
+// Rounding them independently is wrong twice over: it can carry into C_stored
+// twice, and it compares a bare m against half a CHARACTERISTIC unit when a
+// stored step spans 2^shift of them.  Both errors move the result by whole steps,
+// not one ulp, so drive the combination directly.
+template<unsigned nbits, unsigned rbits>
+int VerifyTruncatedRounding(bool reportTestCases) {
+	using Codec = sw::universal::takum_codec<nbits, rbits>;
+	int nrOfFailedTests = 0;
+	int exercised = 0;
+
+	for (unsigned dr = 0; dr < Codec::nr_dr_values; ++dr) {
+		auto g = Codec::layout_of(dr);
+		if (g.r <= Codec::maxCharBits) continue;      // not a truncating layout
+		unsigned shift = g.r - g.c_stored_bits;
+		if (shift == 0 || shift >= 63) continue;
+		if (g.c_stored_bits < 2) continue;            // need room for k and k+1
+		int64_t base = Codec::dr_to_c_bias(dr);
+		int64_t step = static_cast<int64_t>(1ull << shift);
+		double  half = static_cast<double>(step) / 2.0;
+
+		// Two adjacent stored steps, so both tie-to-even parities are exercised.
+		const int64_t mid = static_cast<int64_t>(1ull << (g.c_stored_bits - 1));
+		for (int64_t k : { mid, mid + 1 }) {
+			// Offsets bracketing the midpoint of one stored step.
+			const int64_t offsets[] = {
+				0, 1, step / 4, (step / 2) - 1, step / 2, (step / 2) + 1, (3 * step) / 4, step - 1,
+			};
+			for (int64_t off : offsets) {
+				if (off < 0 || off >= step) continue;
+				for (double m : { 0.0, 0.25, 0.5, 0.75 }) {
+					int64_t c = base + k * step + off;
+					if (c < Codec::min_characteristic() || c > Codec::max_characteristic()) continue;
+					auto e = Codec::encode_rounded(c, m);
+					if (!e.ok()) {
+						// c was range checked above and k+1 still fits the stored field,
+						// so saturation here is a defect, not an expected outcome.
+						report_fail(dr, "truncated rounded encode", reportTestCases, nrOfFailedTests);
+						continue;
+					}
+					++exercised;
+
+					// Where the value actually sits above k stored steps, and the
+					// single nearest-even decision that follows from it.
+					double  residual = static_cast<double>(off) + m;
+					int64_t want_k   = k;
+					if (residual > half || (residual == half && (k & 1))) ++want_k;
+
+					int64_t want_c = base + want_k * step;
+					int64_t got_c  = Codec::decode(e.magnitude).c;
+					if (got_c != want_c) {
+						++nrOfFailedTests;
+						if (reportTestCases) {
+							std::cout << "FAIL truncated rounding dr=" << dr << " step=" << step
+							          << " asked c=" << c << " m=" << m
+							          << " got c=" << got_c << " want c=" << want_c << '\n';
+						}
+					}
+				}
+			}
+		}
+	}
+	if (exercised == 0) {
+		++nrOfFailedTests;   // the configuration was supposed to reach this path
+		if (reportTestCases) std::cout << "FAIL truncated-rounding path never exercised\n";
+	}
+	return nrOfFailedTests;
+}
+
 } // anonymous namespace
 
 int main()
@@ -514,6 +590,22 @@ try {
 		VerifyTruncatedCharacteristic<16, 5>(reportTestCases), "codec<16,5>", "truncated characteristic");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyTruncatedCharacteristic<24, 5>(reportTestCases), "codec<24,5>", "truncated characteristic");
+
+	// ----------------------------------------------------------------------------
+	// Dropped characteristic bits combined with a fraction: the two quantities that
+	// share a stored step must be rounded once, together.  codec<11,3> is the
+	// narrowest spec-regime configuration that drops characteristic bits at all.
+	// ----------------------------------------------------------------------------
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyTruncatedRounding<11, 3>(reportTestCases), "codec<11,3>", "truncated rounding");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyTruncatedRounding<12, 4>(reportTestCases), "codec<12,4>", "truncated rounding");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyTruncatedRounding<12, 5>(reportTestCases), "codec<12,5>", "truncated rounding");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyTruncatedRounding<16, 5>(reportTestCases), "codec<16,5>", "truncated rounding");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyTruncatedRounding<24, 5>(reportTestCases), "codec<24,5>", "truncated rounding");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

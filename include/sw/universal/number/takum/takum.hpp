@@ -46,6 +46,7 @@
 #include <universal/number/takum/exceptions.hpp>
 #include <universal/number/takum/takum_fwd.hpp>
 #include <universal/number/takum/takum_impl.hpp>
+#include <universal/number/takum/takum_log_impl.hpp>
 #include <universal/number/takum/takum_traits.hpp>
 #include <universal/number/takum/numeric_limits.hpp>
 
