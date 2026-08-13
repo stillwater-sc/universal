@@ -163,7 +163,7 @@ int VerifyCorrectlyRoundedSqrt(bool reportTestCases, uint64_t stride = 1) {
 	// c * 2^Q + M with |c| < 2^32, so Q + 32 must stay inside the integer type.
 	const unsigned width_limit = (sizeof(wide) >= 16) ? 90u : 60u;
 
-	long exercised = 0, skipped = 0;
+	long exercised = 0, skipped = 0, ties = 0;
 	for (uint64_t b = 1; b < span; b += stride) {
 		TL x; x.setbits(b);
 		if (x.iszero() || x.isnar()) continue;
@@ -196,6 +196,7 @@ int VerifyCorrectlyRoundedSqrt(bool reportTestCases, uint64_t stride = 1) {
 		const wide half     = scaled(half_num, d.p + 1);
 
 		wide best = 0; bool have = false; wide mine = 0;
+		int  nbest = 0; uint64_t even_candidate = 0; bool have_even = false;
 		for (int64_t m = lo; m <= hi; ++m) {
 			if (m < 1 || static_cast<uint64_t>(m) > span) continue;
 			auto e = Codec::decode(static_cast<uint64_t>(m));
@@ -203,7 +204,17 @@ int VerifyCorrectlyRoundedSqrt(bool reportTestCases, uint64_t stride = 1) {
 			              + static_cast<wide>(e.M_bits);
 			wide diff = scaled(cand_num, e.p) - half;
 			if (diff < 0) diff = -diff;
-			if (!have || diff < best) { best = diff; have = true; }
+			if (!have || diff < best) {
+				best = diff; have = true; nbest = 1;
+				have_even = ((static_cast<uint64_t>(m) & 1ull) == 0);
+				even_candidate = static_cast<uint64_t>(m);
+			}
+			else if (diff == best) {
+				++nbest;
+				if ((static_cast<uint64_t>(m) & 1ull) == 0) {
+					even_candidate = static_cast<uint64_t>(m); have_even = true;
+				}
+			}
 			if (static_cast<uint64_t>(m) == gm) mine = diff;
 		}
 		++exercised;
@@ -211,6 +222,22 @@ int VerifyCorrectlyRoundedSqrt(bool reportTestCases, uint64_t stride = 1) {
 			++nrOfFailedTests;
 			if (reportTestCases) {
 				std::cout << "FAIL sqrt not correctly rounded at bits=" << b << '\n';
+			}
+		}
+		// Nearest alone does not pin the answer at a midpoint, and midpoints are not
+		// rare here: halving a logarithmic value produces a fraction one bit wider
+		// than the layout holds, so the dropped bit is a tie roughly half the time.
+		// Accepting either candidate would let a ties-to-ODD implementation pass.
+		// The codec breaks ties toward an even trailing field, which is the low bit
+		// of the magnitude for every layout, so require exactly that encoding.
+		else if (nbest > 1) {
+			++ties;
+			if (have_even && gm != even_candidate) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cout << "FAIL sqrt tie not resolved to even at bits=" << b
+					          << " got=" << gm << " want=" << even_candidate << '\n';
+				}
 			}
 		}
 	}
@@ -221,7 +248,15 @@ int VerifyCorrectlyRoundedSqrt(bool reportTestCases, uint64_t stride = 1) {
 			std::cout << "FAIL oracle evaluated no inputs (" << skipped << " skipped for width)\n";
 		}
 	}
-	else if (skipped > 0 && reportTestCases) {
+	// Nor may the tie rule go unexercised: if no midpoint was reached, the
+	// ties-to-even half of this check proved nothing and should not read as passing.
+	if (exercised > 0 && ties == 0) {
+		++nrOfFailedTests;
+		if (reportTestCases) {
+			std::cout << "FAIL oracle saw no midpoint, so the tie rule was never checked\n";
+		}
+	}
+	if (skipped > 0 && reportTestCases) {
 		std::cout << "note: " << skipped << " inputs skipped, oracle width limit " << width_limit << '\n';
 	}
 	return nrOfFailedTests;
@@ -353,14 +388,22 @@ int VerifySpecialValues(bool reportTestCases) {
 	{
 		TL big(sw::universal::SpecificValue::maxpos);
 		TL small(sw::universal::SpecificValue::maxneg);
-		if (!exp(big).isnar() && !(double(exp(big)) > 1.0)) {
-			++nrOfFailedTests;
-			if (reportTestCases) std::cout << "FAIL exp(maxpos) must saturate upward, got " << double(exp(big)) << '\n';
-		}
-		if (!exp(small).iszero()) {
+		// Require the exact saturation encoding.  An "is it not NaR and is it large"
+		// test would be satisfied by NaR itself, which is the failure mode most
+		// likely to appear here if the range guard is ever removed again.
+		const TL big_exp   = exp(big);
+		const TL small_exp = exp(small);
+		if (big_exp.raw_bits() != big.raw_bits()) {
 			++nrOfFailedTests;
 			if (reportTestCases) {
-				std::cout << "FAIL exp(maxneg) must underflow to zero, got " << double(exp(small)) << '\n';
+				std::cout << "FAIL exp(maxpos) must saturate to maxpos, got " << double(big_exp)
+				          << " (isnar=" << big_exp.isnar() << ")\n";
+			}
+		}
+		if (!small_exp.iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases) {
+				std::cout << "FAIL exp(maxneg) must underflow to zero, got " << double(small_exp) << '\n';
 			}
 		}
 	}
