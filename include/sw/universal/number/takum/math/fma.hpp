@@ -31,7 +31,15 @@ takum<nbits, rbits, bt> fma(const takum<nbits, rbits, bt>& a, const takum<nbits,
 // ---------------------------------------------------------------------------
 // takum_log: fused multiply-add.  The multiply is exact in the logarithmic
 // domain but the addition is not, so this follows the linear takum and fuses in
-// double, which is wider than any takum_log the codec supports up to 64 bits.
+// double.
+//
+// That bridge is only faithful while the operands AND the exact product-sum are
+// representable in binary64, which is not the whole of the type: at rbits = 5
+// the characteristic reaches ~2^32 and about a third of all finite encodings
+// convert to infinity as a double.  Once that happens the result is whatever
+// std::fma makes of an infinity -- with b == 0 that is NaN, and the constructor
+// turns it into NaR.  A range-safe native path, which would add in the linear
+// domain without leaving the type, is follow-up work.
 // ---------------------------------------------------------------------------
 
 template<unsigned nbits, unsigned rbits, typename bt>

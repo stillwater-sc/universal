@@ -48,14 +48,29 @@ takum_log<nbits, rbits, bt> exp(const takum_log<nbits, rbits, bt>& x) {
 	TL result;
 	if (x.isnar()) { result.setnar(); return result; }
 	if (x.iszero()) return TL(1.0);                 // e^0 == 1
-	const double l2 = 2.0 * double(x);              // the result's logarithmic value
+
+	// The result's logarithmic value is 2x -- which scales with the VALUE of x, not
+	// with its logarithmic value, and so leaves the characteristic range almost
+	// immediately.  takum_log<16,3> already reaches 2.3e55, whose double is finite
+	// but nowhere near an int64_t.  Saturate BEFORE the conversion: an out-of-range
+	// double to integer cast is undefined behaviour, and letting it wrap inverted
+	// the answer, returning zero for exp(maxpos) and maxpos for exp(maxneg).
+	//
+	// The !isfinite guard covers wide rbits, where double(x) itself overflows.
+	const double l2 = 2.0 * double(x);
+	const double cmax = static_cast<double>(Codec::max_characteristic());
+	const double cmin = static_cast<double>(Codec::min_characteristic());
+	if (std::isnan(l2))     { result.setnar(); return result; }
+	if (l2 >= cmax + 1.0)   { result.maxpos();  return result; }   // includes +inf
+	if (l2 <  cmin)         { result.setzero(); return result; }   // includes -inf
+
 	int64_t c = static_cast<int64_t>(l2);
 	if (l2 < 0.0 && static_cast<double>(c) != l2) --c;
 	double m = l2 - static_cast<double>(c);
 	if (m < 0.0) m = 0.0;
 	if (m >= 1.0) { m = 0.0; ++c; }
 	auto enc = Codec::encode_rounded(c, m);
-	if (enc.overflowed())  { result.maxpos(); return result; }
+	if (enc.overflowed())  { result.maxpos();  return result; }
 	if (enc.underflowed()) { result.setzero(); return result; }
 	result.setbits(enc.magnitude);                  // e^x is always positive
 	return result;

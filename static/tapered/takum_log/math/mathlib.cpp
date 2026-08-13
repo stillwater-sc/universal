@@ -131,16 +131,39 @@ int VerifyIntegerPow(bool reportTestCases, uint64_t stride = 1) {
 //
 // The correctly rounded square root is the representable encoding whose
 // logarithmic value l' lies nearest to l/2.  Both are exact binary fractions, so
-// the comparison is done in exact integers over a common denominator -- no
-// double or long double is involved, which matters because the whole point is
-// that those are too narrow above p = 53.
+// the comparison is done in exact integers -- no double or long double, because
+// the whole point is that those are too narrow above p = 53.
+//
+// The intermediates need more than 64 bits at the widest layouts: takum_log<64,3>
+// reaches p = 59, and a numerator scaled to a common denominator of 2^60 does not
+// fit an int64_t.  __int128 is used where the compiler has it, following
+// blockbinary and blocktype/carry.hpp.  Where it does not (MSVC), the wide
+// configurations are SKIPPED rather than silently passing, and the caller is told
+// so -- an oracle that quietly evaluates nothing is worse than no oracle.
+#if defined(__SIZEOF_INT128__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+using sqrt_oracle_int = __int128;
+#pragma GCC diagnostic pop
+#define TAKUM_LOG_HAVE_WIDE_ORACLE 1
+#else
+using sqrt_oracle_int = int64_t;
+#define TAKUM_LOG_HAVE_WIDE_ORACLE 0
+#endif
+
 template<unsigned nbits, unsigned rbits>
 int VerifyCorrectlyRoundedSqrt(bool reportTestCases, uint64_t stride = 1) {
 	using TL    = sw::universal::takum_log<nbits, rbits, std::uint64_t>;
 	using Codec = typename TL::Codec;
+	using wide  = sqrt_oracle_int;
 	int nrOfFailedTests = 0;
 	const uint64_t span = (1ull << (nbits - 1)) - 1;
 
+	// Widest common denominator this oracle can carry exactly.  A numerator is
+	// c * 2^Q + M with |c| < 2^32, so Q + 32 must stay inside the integer type.
+	const unsigned width_limit = (sizeof(wide) >= 16) ? 90u : 60u;
+
+	long exercised = 0, skipped = 0;
 	for (uint64_t b = 1; b < span; b += stride) {
 		TL x; x.setbits(b);
 		if (x.iszero() || x.isnar()) continue;
@@ -150,9 +173,7 @@ int VerifyCorrectlyRoundedSqrt(bool reportTestCases, uint64_t stride = 1) {
 		uint64_t gm = got.magnitude_bits();
 
 		// l/2 == (c*2^p + M) / 2^(p+1); a candidate l' == (c'*2^p' + M') / 2^p'.
-		// Scale both to a common denominator 2^Q and compare numerators.  The
-		// widths involved keep every product inside 64 bits for the configurations
-		// this suite runs, which the guard below enforces rather than assumes.
+		// Scale both to a common denominator 2^Q and compare numerators.
 		unsigned Q = d.p + 1;
 		const int64_t lo = (static_cast<int64_t>(gm) > 2) ? static_cast<int64_t>(gm) - 2 : 1;
 		const int64_t hi = static_cast<int64_t>(gm) + 2;
@@ -161,35 +182,47 @@ int VerifyCorrectlyRoundedSqrt(bool reportTestCases, uint64_t stride = 1) {
 			auto e = Codec::decode(static_cast<uint64_t>(m));
 			if (e.p > Q) Q = e.p;
 		}
-		if (Q > 60) continue;   // outside the exact-integer window; not reached here
+		if (Q > width_limit) { ++skipped; continue; }
 
 		// A value c + M/2^p is the fraction (c*2^p + M) / 2^p.  Halving it keeps the
 		// SAME numerator and moves the denominator to 2^(p+1) -- scaling c by 2^(p+1)
 		// instead is the easy mistake, and it silently compares against a different
 		// number.  Numerator and denominator exponent are therefore passed separately.
-		auto scaled = [&](int64_t num, unsigned dexp) -> int64_t {
-			return num * static_cast<int64_t>(1ull << (Q - dexp));
+		auto scaled = [&](wide num, unsigned dexp) -> wide {
+			return num * (static_cast<wide>(1) << (Q - dexp));
 		};
-		const int64_t half_num = d.c * static_cast<int64_t>(1ull << d.p) + static_cast<int64_t>(d.M_bits);
-		const int64_t half     = scaled(half_num, d.p + 1);
+		const wide half_num = static_cast<wide>(d.c) * (static_cast<wide>(1) << d.p)
+		                    + static_cast<wide>(d.M_bits);
+		const wide half     = scaled(half_num, d.p + 1);
 
-		int64_t best = 0; bool have = false; int64_t mine = 0;
+		wide best = 0; bool have = false; wide mine = 0;
 		for (int64_t m = lo; m <= hi; ++m) {
 			if (m < 1 || static_cast<uint64_t>(m) > span) continue;
 			auto e = Codec::decode(static_cast<uint64_t>(m));
-			int64_t cand_num = e.c * static_cast<int64_t>(1ull << e.p) + static_cast<int64_t>(e.M_bits);
-			int64_t diff = scaled(cand_num, e.p) - half;
+			wide cand_num = static_cast<wide>(e.c) * (static_cast<wide>(1) << e.p)
+			              + static_cast<wide>(e.M_bits);
+			wide diff = scaled(cand_num, e.p) - half;
 			if (diff < 0) diff = -diff;
 			if (!have || diff < best) { best = diff; have = true; }
 			if (static_cast<uint64_t>(m) == gm) mine = diff;
 		}
+		++exercised;
 		if (have && mine != best) {
 			++nrOfFailedTests;
 			if (reportTestCases) {
-				std::cout << "FAIL sqrt not correctly rounded at bits=" << b
-				          << " distance=" << mine << " best=" << best << '\n';
+				std::cout << "FAIL sqrt not correctly rounded at bits=" << b << '\n';
 			}
 		}
+	}
+	// A run that compared nothing must not report success.
+	if (exercised == 0) {
+		++nrOfFailedTests;
+		if (reportTestCases) {
+			std::cout << "FAIL oracle evaluated no inputs (" << skipped << " skipped for width)\n";
+		}
+	}
+	else if (skipped > 0 && reportTestCases) {
+		std::cout << "note: " << skipped << " inputs skipped, oracle width limit " << width_limit << '\n';
 	}
 	return nrOfFailedTests;
 }
@@ -312,6 +345,25 @@ int VerifySpecialValues(bool reportTestCases) {
 		++nrOfFailedTests;
 		if (reportTestCases) std::cout << "FAIL exp(0) should be 1\n";
 	}
+	// exp saturates in the right DIRECTION at the extremes.  The result's
+	// logarithmic value is 2x, which tracks the value of x rather than its
+	// logarithm and so leaves the characteristic range almost immediately; an
+	// unguarded conversion to int64_t wrapped and inverted the answer, returning
+	// zero for exp(maxpos) and maxpos for exp(maxneg).
+	{
+		TL big(sw::universal::SpecificValue::maxpos);
+		TL small(sw::universal::SpecificValue::maxneg);
+		if (!exp(big).isnar() && !(double(exp(big)) > 1.0)) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cout << "FAIL exp(maxpos) must saturate upward, got " << double(exp(big)) << '\n';
+		}
+		if (!exp(small).iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases) {
+				std::cout << "FAIL exp(maxneg) must underflow to zero, got " << double(exp(small)) << '\n';
+			}
+		}
+	}
 	// classification
 	if (!isnan(nar) || isfinite(nar) || !isfinite(one) || isnormal(zero) || !isnormal(one)) {
 		++nrOfFailedTests;
@@ -382,9 +434,6 @@ try {
 		VerifyIntegerPow<20, 3>(reportTestCases), "takum_log<20,3>", "integer pow identities");
 #endif
 
-	// Levels 3 and 4 reach the widths where a double round trip would fail: at
-	// nbits = 64 the trailing field runs to p = 59, past a double's 53 bits, and
-	// the exact-integer oracle is the only way to check the result at all.
 #if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCorrectlyRoundedSqrt<32, 3>(reportTestCases, 4093ull), "takum_log<32,3>", "sqrt correctly rounded");
@@ -394,11 +443,28 @@ try {
 		VerifyIntegerPow<24, 3>(reportTestCases, 7ull), "takum_log<24,3>", "integer pow identities");
 #endif
 
+	// Level 4 reaches the widths where the double round trip actually fails.  At
+	// nbits = 64 the trailing field runs to p = 59, past a double's 53 bits, so
+	// the exact-integer oracle is the only way to check the result at all -- and
+	// on a compiler without __int128 it says so rather than passing vacuously.
 #if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(
 		VerifySqrtRoundTrip<32, 3>(reportTestCases, 1031ull), "takum_log<32,3>", "sqr(sqrt(x)) round-trip");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyIntegerPow<32, 3>(reportTestCases, 1031ull), "takum_log<32,3>", "integer pow identities");
+#if TAKUM_LOG_HAVE_WIDE_ORACLE
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCorrectlyRoundedSqrt<48, 3>(reportTestCases, 0x2AAAAAAABull),
+		"takum_log<48,3>", "sqrt correctly rounded");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCorrectlyRoundedSqrt<64, 3>(reportTestCases, 0xAAAAAAAAAAABull),
+		"takum_log<64,3>", "sqrt correctly rounded");
+#else
+	std::cout << "\ntakum_log<48,3> / <64,3> sqrt oracle SKIPPED: no __int128 on this compiler\n";
+#endif
+	nrOfFailedTestCases += ReportTestResult(
+		VerifySqrtRoundTrip<64, 3>(reportTestCases, 0xAAAAAAAAAAABull),
+		"takum_log<64,3>", "sqr(sqrt(x)) round-trip");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
