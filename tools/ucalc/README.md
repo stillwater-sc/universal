@@ -19,10 +19,17 @@ agents, supporting structured JSON/CSV output for automated workflows.
 
 `ucalc` is a REPL calculator and compute engine that:
 
-- Supports **42+ number types** out of the box: IEEE float/double, posit (8-64),
-  takum (8-64), cfloat (8-64), bfloat16, FP8 variants, fixed-point, decimal
-  fixed-point, LNS, integer, hexadecimal float, decimal float, rational,
-  double-double, quad-double, and cascaded variants.
+- Supports **46+ number types** out of the box: IEEE float/double, posit (8-64),
+  takum (8-64) in both the linear and the logarithmic encoding, cfloat (8-64),
+  bfloat16, FP8 variants, fixed-point, decimal fixed-point, LNS, integer,
+  hexadecimal float, decimal float, rational, double-double, quad-double, and
+  cascaded variants.
+
+  The two takum variants are worth a word: `takum8`..`takum64` and
+  `takum_log8`..`takum_log64` share an identical bit layout but map those bits to
+  different numbers -- `(1+f)*2^c` against `sqrt(e)^(c+m)` -- so the same input
+  prints different encodings under each. `diverge <expr> takum32 takum_log32
+  <tol> for <var> in [a, b]` finds where they first disagree.
 - Parses **infix arithmetic** with standard operator precedence, parentheses,
   variables, constants, and math functions.
 - Provides **20+ analysis commands** organized in three categories:
