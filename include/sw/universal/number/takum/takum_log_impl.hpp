@@ -209,9 +209,24 @@ public:
 		return convert_ieee754(double(*this) - double(rhs));
 	}
 	CONSTEXPRESSION takum_log& operator-=(double rhs) { return *this -= takum_log(rhs); }
+	// Multiplication and division are EXACT in the logarithmic domain, so neither
+	// goes near a double.
+	//
+	// |x*y| = sqrt(e)^(lx + ly) and |x/y| = sqrt(e)^(lx - ly), and l is held as an
+	// integer characteristic plus a p-bit fraction, so combining them is exact
+	// integer arithmetic.  encode_fraction() then performs the single rounding the
+	// result actually needs.
+	//
+	// The double route these replaced was not merely slower: it rounded both
+	// operands to a double first, and takum_log<64,3> carries 59 fraction bits of
+	// l against a double's 53.  Measured against a 113-bit reference, 99% of
+	// wide-configuration products came back incorrectly rounded (issue #1300).
+	// The narrow configurations were already correct and stay so; this path is
+	// exact at every width, and needs no extended-precision type to be so.
 	CONSTEXPRESSION takum_log& operator*=(const takum_log& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
-		return convert_ieee754(double(*this) * double(rhs));
+		if (iszero() || rhs.iszero()) { setzero(); return *this; }
+		return combine_logarithmic(rhs, false, sign() != rhs.sign());
 	}
 	CONSTEXPRESSION takum_log& operator*=(double rhs) { return *this *= takum_log(rhs); }
 	CONSTEXPRESSION takum_log& operator/=(const takum_log& rhs) {
@@ -223,7 +238,8 @@ public:
 			setnar();
 			return *this;
 		}
-		return convert_ieee754(double(*this) / double(rhs));
+		if (iszero()) { setzero(); return *this; }
+		return combine_logarithmic(rhs, true, sign() != rhs.sign());
 	}
 	CONSTEXPRESSION takum_log& operator/=(double rhs) { return *this /= takum_log(rhs); }
 
@@ -376,6 +392,50 @@ public:
 	}
 
 protected:
+	// Combine two logarithmic values exactly: l = lx + ly for a product, lx - ly
+	// for a quotient.  Both are exact binary fractions over 2^p, so aligning them
+	// to a common denominator and adding is exact integer arithmetic -- no double,
+	// no extended-precision type, and one rounding at the end.
+	//
+	// Pre: neither operand is zero or NaR; the caller has handled those and knows
+	//      the sign of the result.
+	CONSTEXPRESSION takum_log& combine_logarithmic(const takum_log& rhs, bool subtract,
+	                                               bool negative) noexcept {
+		auto a = Codec::decode(magnitude_bits());
+		auto b = Codec::decode(rhs.magnitude_bits());
+
+		// Align the two fractions on the wider denominator.  Widening is exact, and
+		// p never exceeds 59, so the shifted numerators stay well inside uint64_t.
+		const unsigned q = (a.p > b.p) ? a.p : b.p;
+		const uint64_t Na = a.M_bits << (q - a.p);
+		const uint64_t Nb = b.M_bits << (q - b.p);
+		const uint64_t den = (q > 0) ? (1ull << q) : 1ull;
+
+		int64_t  c = subtract ? (a.c - b.c) : (a.c + b.c);
+		uint64_t N = 0;
+		if (subtract) {
+			if (Na >= Nb) {
+				N = Na - Nb;
+			}
+			else {
+				// borrow one whole unit from the characteristic
+				N = den - (Nb - Na);
+				--c;
+			}
+		}
+		else {
+			N = Na + Nb;                       // at most 2^60, no overflow
+			if (q > 0 && N >= den) { N -= den; ++c; }
+		}
+
+		auto enc = Codec::encode_fraction(c, N, q);
+		if (enc.overflowed())  { if (negative) maxneg(); else maxpos(); return *this; }
+		if (enc.underflowed()) { setzero(); return *this; }
+		// the codec never sets the sign bit (I4); apply it here
+		setbits(negative ? (((~enc.magnitude) + 1ull) & nbits_mask()) : enc.magnitude);
+		return *this;
+	}
+
 	constexpr takum_log& flip() noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) _block.setblock(i, bt(~_block[i]));
 		_block.setblock(MSU, bt(_block[MSU] & MSU_MASK));

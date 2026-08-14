@@ -58,6 +58,7 @@ jobs:
             unum2
             posit
             takum
+            takum_log
             bisection
             quire
             valid
