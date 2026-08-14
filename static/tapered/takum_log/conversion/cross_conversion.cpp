@@ -76,17 +76,22 @@ int VerifyNearest(const char* tag, bool reportTestCases, uint64_t stride) {
 	constexpr unsigned nbits = Source::nbits;
 	const uint64_t span = (1ull << (nbits - 1)) - 1;
 	const uint64_t tgt_span = (1ull << (Target::nbits - 1)) - 1;
+	const uint64_t tgt_saturation = wide_maxpos_magnitude<Target>();
 	long exercised = 0;
 
-	// The reference value of an encoding, in whichever domain the TARGET rounds in:
-	// a linear takum rounds on its fraction, which is linear in the value, while a
-	// logarithmic one rounds on l.  Judging a logarithmic target by value distance
-	// disagrees with the format's own rounding near the midpoint, because the
-	// geometric and arithmetic midpoints of two neighbours are not the same point.
+	// The quantity each target rounds ON, which is c + M/2^p for both: a logarithmic
+	// takum rounds on l, and a linear one on its fraction, which within a DR is
+	// linear in the value.  One expression serves both -- an earlier version wrote it
+	// as an if constexpr whose branches were identical, which implied a distinction
+	// the code did not make.
+	//
+	// What matters is that this is NOT value distance for a logarithmic target.
+	// Judging one that way disagrees with the format's own rounding near a midpoint,
+	// because the geometric and arithmetic midpoints of two neighbours differ; the
+	// offline reference showed 0.098% "failures" at 16 bits that were purely this
+	// metric mismatch.
 	auto target_metric = [](const typename Target::Codec::decoded& e) -> dd_cascade {
-		dd_cascade m = sw::universal::takum_xc::exact_value(e.c, e.M_bits, e.p);
-		if constexpr (sw::universal::is_takum_log<Target>) return m;       // l
-		else return m;                                                      // c + f, monotone in value
+		return sw::universal::takum_xc::exact_value(e.c, e.M_bits, e.p);
 	};
 
 	for (uint64_t b = 1; b < span; b += stride) {
@@ -94,7 +99,7 @@ int VerifyNearest(const char* tag, bool reportTestCases, uint64_t stride) {
 		if (x.iszero() || x.isnar()) continue;
 		Target y = sw::universal::takum_convert<Target>(x);
 		if (y.iszero() || y.isnar()) continue;
-		if (y.magnitude_bits() == wide_maxpos_magnitude<Target>()) continue;   // saturated
+		if (y.magnitude_bits() == tgt_saturation) continue;                    // saturated
 
 		// the exact answer, recomputed independently
 		auto d = Source::Codec::decode(x.magnitude_bits());
@@ -154,6 +159,7 @@ int VerifyRoundTripThroughWider(const char* tag, bool reportTestCases, uint64_t 
 	int nrOfFailedTests = 0;
 	constexpr unsigned nbits = Source::nbits;
 	const uint64_t span = 1ull << (nbits - 1);
+	const uint64_t wide_saturation = wide_maxpos_magnitude<Wide>();
 	long exercised = 0;
 
 	for (uint64_t b = 1; b < span; b += stride) {
@@ -165,7 +171,7 @@ int VerifyRoundTripThroughWider(const char* tag, bool reportTestCases, uint64_t 
 		// sqrt(e) rather than 2, so takum_log<64,3> spans about +/-2.4e55 while
 		// takum<16,3> already spans +/-5.8e76.  Values past that saturate, and a
 		// round trip through a saturated intermediate says nothing about accuracy.
-		if (w.magnitude_bits() == wide_maxpos_magnitude<Wide>()) continue;
+		if (w.magnitude_bits() == wide_saturation) continue;
 		Source back = sw::universal::takum_convert<Source>(w);
 		++exercised;
 		if (back.raw_bits() != x.raw_bits()) {
@@ -355,8 +361,14 @@ try {
 		VerifyOrderPreserved<L32, N32>("log32->lin32", reportTestCases, 4093ull),
 		"takum_log<32,3>", "order preserved");
 	nrOfFailedTestCases += ReportTestResult(
+		VerifyOrderPreserved<N32, L32>("lin32->log32", reportTestCases, 4093ull),
+		"takum<32,3>", "order preserved");
+	nrOfFailedTestCases += ReportTestResult(
 		VerifyOrderPreserved<N64, L64>("lin64->log64", reportTestCases, 0xAAAAAAAAAAABull),
 		"takum<64,3>", "order preserved");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyOrderPreserved<L64, N64>("log64->lin64", reportTestCases, 0xAAAAAAAAAAABull),
+		"takum_log<64,3>", "order preserved");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifySpecials<L64, N64>("log64->lin64", reportTestCases), "takum_log<64,3>", "special values");
 	nrOfFailedTestCases += ReportTestResult(
