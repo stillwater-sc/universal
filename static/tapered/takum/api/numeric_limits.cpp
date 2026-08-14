@@ -218,6 +218,12 @@ try {
 #if REGRESSION_LEVEL_1
 	CHECK_BOTH(32, 3);
 	CHECK_BOTH(16, 3);
+	// Narrow regime fields, where the ulp at 1.0 falls below minpos and epsilon has
+	// to saturate.  Kept at level 1 deliberately: that fallback is the new branch,
+	// and the coverage build runs level 1 only, so parking these deeper would leave
+	// the interesting path compiled in but never executed.
+	CHECK_BOTH(32, 2);
+	CHECK_BOTH(24, 1);
 #endif
 
 	// The widths where the old subtraction silently produced zero: at nbits = 64
@@ -227,11 +233,7 @@ try {
 	CHECK_BOTH(48, 3);
 #endif
 
-	// Narrow regime fields, where the ulp at 1.0 falls below minpos and epsilon
-	// has to saturate rather than report zero.
 #if REGRESSION_LEVEL_3
-	CHECK_BOTH(32, 2);
-	CHECK_BOTH(24, 1);
 	CHECK_BOTH(12, 3);
 #endif
 
