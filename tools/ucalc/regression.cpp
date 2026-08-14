@@ -454,6 +454,47 @@ try {
 	}
 
 	// ================================================================
+	// Takum, both variants
+	// ================================================================
+	// The family had no coverage here at all before takum_log was registered.
+	{
+		check_value(reg, "takum32",     "1 + 1",     2.0, 0.0,   "takum32 add");
+		check_value(reg, "takum_log32", "1 + 1",     2.0, 1e-7,  "takum_log32 add");
+		check_value(reg, "takum32",     "sqrt(4)",   2.0, 1e-7,  "takum32 sqrt");
+		check_value(reg, "takum_log32", "sqrt(4)",   2.0, 1e-7,  "takum_log32 sqrt");
+		check_value(reg, "takum_log32", "2 * 3",     6.0, 1e-7,  "takum_log32 mul");
+		check_value(reg, "takum_log32", "1 / 4",     0.25, 1e-7, "takum_log32 div");
+		check_value(reg, "takum_log32", "pi",        3.14159265358979324, 1e-7, "takum_log32 pi");
+		check_value(reg, "takum_log32", "exp(0)",    1.0, 1e-7,  "takum_log32 exp(0)");
+		check_value(reg, "takum_log32", "log(1)",    0.0, 1e-7,  "takum_log32 log(1)");
+		check_value(reg, "takum_log16", "1 + 1",     2.0, 1e-3,  "takum_log16 add");
+		check_value(reg, "takum_log64", "1 + 1",     2.0, 1e-12, "takum_log64 add");
+		check_value(reg, "takum_log8",  "1 + 1",     2.0, 0.2,   "takum_log8 add");
+
+		// e is exactly representable in the logarithmic takum and in no binary
+		// floating-point format: the value base is sqrt(e), so e is sqrt(e)^2 and
+		// its logarithmic value is the integer 2.
+		check_value(reg, "takum_log32", "e", 2.71828182845904524, 1e-9, "takum_log32 e");
+
+		// The two variants share a bit layout but not a value map, so the same
+		// number must land on DIFFERENT bits.  That is the reason both are
+		// registered, and a registration that silently aliased one to the other
+		// would pass every check above.
+		Value lin = eval_in(reg, "takum32",     "3.0");
+		Value log = eval_in(reg, "takum_log32", "3.0");
+		if (lin.binary_rep == log.binary_rep) {
+			std::cerr << "FAIL: takum32 and takum_log32 produced identical encodings for 3.0: "
+			          << lin.binary_rep << "\n";
+			++nrOfFailedTests;
+		}
+		if (lin.type_name == log.type_name) {
+			std::cerr << "FAIL: takum32 and takum_log32 report the same type tag: "
+			          << lin.type_name << "\n";
+			++nrOfFailedTests;
+		}
+	}
+
+	// ================================================================
 	// Report
 	// ================================================================
 	if (nrOfFailedTests > 0) {

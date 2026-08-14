@@ -183,6 +183,16 @@ inline TypeRegistry build_default_registry() {
 	reg.add("takum32",  register_type<takum<32, 3, uint32_t>>("takum32"));
 	reg.add("takum64",  register_type<takum<64, 3, uint64_t>>("takum64"));
 
+	// Takum, logarithmic encoding.  Same bit layout as the linear takum above and
+	// the same rbits = 3 the specification fixes, but a different value map:
+	// sqrt(e)^(c+m) rather than (1+f)*2^c.  The same input therefore prints
+	// different bits under takum32 and takum_log32, which is the point of having
+	// both in the calculator.
+	reg.add("takum_log8",  register_type<takum_log<8, 3, uint8_t>>("takum_log8"));
+	reg.add("takum_log16", register_type<takum_log<16, 3, uint16_t>>("takum_log16"));
+	reg.add("takum_log32", register_type<takum_log<32, 3, uint32_t>>("takum_log32"));
+	reg.add("takum_log64", register_type<takum_log<64, 3, uint64_t>>("takum_log64"));
+
 	// Decimal fixed-point (BCD encoding, Modulo arithmetic)
 	reg.add("dfixpnt8_4",  register_type<dfixpnt<8, 4>>("dfixpnt8_4"));
 	reg.add("dfixpnt16_8", register_type<dfixpnt<16, 8>>("dfixpnt16_8"));
