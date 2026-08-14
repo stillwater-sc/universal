@@ -58,7 +58,7 @@ template<unsigned nbits, unsigned rbits>
 int VerifyIdentities(bool reportTestCases) {
 	using TL = sw::universal::takum_log<nbits, rbits>;
 	int nrOfFailedTests = 0;
-	const uint64_t NR = 1ull << nbits;
+	const uint64_t NR = (nbits >= 64) ? ~0ull : (1ull << nbits);   // no 64-bit shift
 	TL one(1.0), zero; zero.setzero();
 	TL nar; nar.setnar();
 
@@ -89,7 +89,7 @@ template<unsigned nbits, unsigned rbits>
 int VerifyCommutative(bool reportTestCases) {
 	using TL = sw::universal::takum_log<nbits, rbits>;
 	int nrOfFailedTests = 0;
-	const uint64_t NR = 1ull << nbits;
+	const uint64_t NR = (nbits >= 64) ? ~0ull : (1ull << nbits);   // no 64-bit shift
 
 	for (uint64_t i = 0; i < NR; ++i) {
 		TL a; a.setbits(i);
@@ -113,12 +113,15 @@ int VerifyCommutative(bool reportTestCases) {
 // 67 that l needs, so the reference is exact for this purpose, and it is arrived
 // at independently of the operator's integer path.
 template<unsigned nbits, unsigned rbits>
-int VerifyCorrectlyRounded(bool divide, bool reportTestCases) {
+int VerifyCorrectlyRounded(bool divide, bool reportTestCases, uint64_t stride = 1) {
 	using sw::universal::dd_cascade;
 	using TL    = sw::universal::takum_log<nbits, rbits, std::uint64_t>;
 	using Codec = typename TL::Codec;
 	int nrOfFailedTests = 0;
-	const uint64_t NR = 1ull << nbits;
+	// 1ull << nbits is undefined at nbits == 64, and 64 is exactly the width this
+	// change exists for, so the bound is expressed without it.  stride > 1 samples
+	// rather than enumerating, since the sweep is over PAIRS.
+	const uint64_t NR = (nbits >= 64) ? ~0ull : (1ull << nbits);
 	const uint64_t span = (1ull << (nbits - 1)) - 1;
 	long exercised = 0;
 
@@ -135,10 +138,10 @@ int VerifyCorrectlyRounded(bool divide, bool reportTestCases) {
 		return l;
 	};
 
-	for (uint64_t i = 0; i < NR; ++i) {
+	for (uint64_t i = 0; i < NR && i + stride > i; i += stride) {
 		TL a; a.setbits(i);
 		if (a.isnar() || a.iszero()) continue;
-		for (uint64_t j = 0; j < NR; ++j) {
+		for (uint64_t j = 0; j < NR && j + stride > j; j += stride) {
 			TL b; b.setbits(j);
 			if (b.isnar() || b.iszero()) continue;
 
@@ -259,6 +262,18 @@ try {
 		VerifyCorrectlyRounded<8, 1>(true, reportTestCases), "takum_log<8,1>", "correctly rounded divide");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyIdentities<14, 3>(reportTestCases), "takum_log<14,3>", "identities");
+	// The width this change exists for.  takum_log<64,3> reaches p = 58 and 59,
+	// past a double's 53, and the double-mediated operators it replaced were
+	// incorrectly rounded for 99% of products here.  Sampled with a stride
+	// coprime to the field structure so the sweep crosses every DR (about 225
+	// samples per operand, so ~50k pairs); enumerating
+	// pairs at 64 bits is obviously out of the question.
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCorrectlyRounded<64, 3>(false, reportTestCases, 0x0123456789ABCDEFull),
+		"takum_log<64,3>", "correctly rounded multiply");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCorrectlyRounded<64, 3>(true, reportTestCases, 0x0123456789ABCDEFull),
+		"takum_log<64,3>", "correctly rounded divide");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
