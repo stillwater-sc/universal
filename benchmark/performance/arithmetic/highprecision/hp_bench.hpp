@@ -27,6 +27,7 @@
 #include <universal/utility/architecture.hpp>
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <iomanip>
@@ -368,8 +369,10 @@ namespace hpbench {
 	// measurement time for stability without recompiling: ./benchmark_highprecision_scalar 0.25
 	inline double targetWindow(int argc, char** argv, double defaultSeconds = 0.05) {
 		if (argc > 1) {
+			// atof reports failure as 0.0 and happily accepts "inf", which would let the
+			// calibration loop run to its 2^34 operation ceiling on the slowest workloads
 			double seconds = std::atof(argv[1]);
-			if (seconds > 0.0) return seconds;
+			if (std::isfinite(seconds) && seconds > 0.0) return seconds;
 		}
 		return defaultSeconds;
 	}

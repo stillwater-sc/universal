@@ -22,6 +22,7 @@
 // trailing limbs, so this is accurate enough for a diagnostic magnitude even though it is not an
 // exact expansion subtraction.
 #include <universal/utility/directives.hpp>
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -60,16 +61,33 @@ namespace {
 		bool        structural{ false };   // one produced a NaN or infinity where the other did not
 	};
 
+	// The two members of a pair do not have to carry the same number of components: dd has 2 and
+	// td_cascade has 3. Comparing only the shorter one's components would report two values as
+	// bit-identical when the longer one holds information in a component the comparison never
+	// looked at, so the shorter value is zero-padded to the longer shape - which is exactly what
+	// its missing components are worth.
+	struct Shape {
+		unsigned classicLimbs;
+		unsigned cascadeLimbs;
+		double   precisionBits;   // the ulp reference the reported distance is expressed in
+		unsigned compared() const { return std::max(classicLimbs, cascadeLimbs); }
+	};
+
+	template<typename Scalar>
+	double limb(Scalar& v, unsigned index, unsigned nrLimbs) {
+		return (index < nrLimbs) ? v[static_cast<int>(index)] : 0.0;
+	}
+
 	// relative difference of two multi-component values, and the same difference expressed in
-	// ulps of a significand of 'precisionBits' bits
+	// ulps of a significand of 'shape.precisionBits' bits
 	template<typename Classic, typename Cascade>
-	void accumulateDistance(Classic& a, Cascade& b, unsigned nrLimbs, double precisionBits, Divergence& d) {
+	void accumulateDistance(Classic& a, Cascade& b, const Shape& shape, Divergence& d) {
 		++d.samples;
 		bool identical = true;
 		double difference{ 0.0 };
-		for (unsigned i = 0; i < nrLimbs; ++i) {
-			double x = a[i];
-			double y = b[i];
+		for (unsigned i = 0; i < shape.compared(); ++i) {
+			double x = limb(a, i, shape.classicLimbs);
+			double y = limb(b, i, shape.cascadeLimbs);
 			if (std::isnan(x) != std::isnan(y) || std::isinf(x) != std::isinf(y)) {
 				d.structural = true;
 				return;
@@ -84,12 +102,12 @@ namespace {
 		double magnitude = std::fabs(double(a[0]));
 		double relative = (magnitude > 0.0) ? std::fabs(difference) / magnitude : std::fabs(difference);
 		if (relative > d.maxRelative) d.maxRelative = relative;
-		double ulps = relative * std::pow(2.0, precisionBits);
+		double ulps = relative * std::pow(2.0, shape.precisionBits);
 		if (ulps > d.maxUlps) d.maxUlps = ulps;
 	}
 
 	template<typename Classic, typename Cascade, typename BinaryOp>
-	Divergence compareBinary(const std::string& op, const std::string& pair, unsigned nrLimbs, double precisionBits, BinaryOp f) {
+	Divergence compareBinary(const std::string& op, const std::string& pair, const Shape& shape, BinaryOp f) {
 		const std::vector<double>& lhs = lhsData();
 		const std::vector<double>& rhs = rhsData();
 		Divergence d;
@@ -98,13 +116,13 @@ namespace {
 		for (std::size_t i = 0; i < lhs.size(); ++i) {
 			Classic classic = f(Classic(lhs[i]), Classic(rhs[i]));
 			Cascade cascade = f(Cascade(lhs[i]), Cascade(rhs[i]));
-			accumulateDistance(classic, cascade, nrLimbs, precisionBits, d);
+			accumulateDistance(classic, cascade, shape, d);
 		}
 		return d;
 	}
 
 	template<typename Classic, typename Cascade, typename UnaryOp>
-	Divergence compareUnary(const std::string& op, const std::string& pair, unsigned nrLimbs, double precisionBits, UnaryOp f) {
+	Divergence compareUnary(const std::string& op, const std::string& pair, const Shape& shape, UnaryOp f) {
 		const std::vector<double>& lhs = lhsData();
 		Divergence d;
 		d.op = op;
@@ -112,7 +130,7 @@ namespace {
 		for (std::size_t i = 0; i < lhs.size(); ++i) {
 			Classic classic = f(Classic(lhs[i]));
 			Cascade cascade = f(Cascade(lhs[i]));
-			accumulateDistance(classic, cascade, nrLimbs, precisionBits, d);
+			accumulateDistance(classic, cascade, shape, d);
 		}
 		return d;
 	}
@@ -138,7 +156,7 @@ namespace {
 	}
 
 	template<typename Classic, typename Cascade>
-	Divergence compareDot(const std::string& pair, unsigned nrLimbs, double precisionBits) {
+	Divergence compareDot(const std::string& pair, const Shape& shape) {
 		const std::vector<double>& x = lhsData();
 		const std::vector<double>& y = rhsData();
 		Divergence d;
@@ -147,13 +165,13 @@ namespace {
 		for (std::size_t offset = 0; offset + DOT_LENGTH <= x.size(); offset += DOT_LENGTH) {
 			Classic classic = dotKernel<Classic>(x, y, offset, DOT_LENGTH);
 			Cascade cascade = dotKernel<Cascade>(x, y, offset, DOT_LENGTH);
-			accumulateDistance(classic, cascade, nrLimbs, precisionBits, d);
+			accumulateDistance(classic, cascade, shape, d);
 		}
 		return d;
 	}
 
 	template<typename Classic, typename Cascade>
-	Divergence compareHorner(const std::string& pair, unsigned nrLimbs, double precisionBits) {
+	Divergence compareHorner(const std::string& pair, const Shape& shape) {
 		const std::vector<double>& c = lhsData();
 		Divergence d;
 		d.op = "horner deg 20";
@@ -161,24 +179,24 @@ namespace {
 		for (std::size_t offset = 0; offset + HORNER_DEGREE + 1 <= c.size(); offset += HORNER_DEGREE + 1) {
 			Classic classic = hornerKernel<Classic>(c, offset, HORNER_DEGREE);
 			Cascade cascade = hornerKernel<Cascade>(c, offset, HORNER_DEGREE);
-			accumulateDistance(classic, cascade, nrLimbs, precisionBits, d);
+			accumulateDistance(classic, cascade, shape, d);
 		}
 		return d;
 	}
 
 	template<typename Classic, typename Cascade>
-	void comparePair(const std::string& pair, unsigned nrLimbs, double precisionBits, std::vector<Divergence>& results) {
-		results.push_back(compareBinary<Classic, Cascade>("add", pair, nrLimbs, precisionBits, [](auto a, auto b) { return a + b; }));
-		results.push_back(compareBinary<Classic, Cascade>("subtract", pair, nrLimbs, precisionBits, [](auto a, auto b) { return a - b; }));
-		results.push_back(compareBinary<Classic, Cascade>("multiply", pair, nrLimbs, precisionBits, [](auto a, auto b) { return a * b; }));
-		results.push_back(compareBinary<Classic, Cascade>("divide", pair, nrLimbs, precisionBits, [](auto a, auto b) { return a / b; }));
-		results.push_back(compareUnary<Classic, Cascade>("sqrt", pair, nrLimbs, precisionBits, [](auto a) { using std::sqrt; return sqrt(a); }));
-		results.push_back(compareUnary<Classic, Cascade>("exp", pair, nrLimbs, precisionBits, [](auto a) { using std::exp; return exp(a); }));
-		results.push_back(compareUnary<Classic, Cascade>("log", pair, nrLimbs, precisionBits, [](auto a) { using std::log; return log(a); }));
-		results.push_back(compareUnary<Classic, Cascade>("sin", pair, nrLimbs, precisionBits, [](auto a) { using std::sin; return sin(a); }));
-		results.push_back(compareUnary<Classic, Cascade>("cos", pair, nrLimbs, precisionBits, [](auto a) { using std::cos; return cos(a); }));
-		results.push_back(compareDot<Classic, Cascade>(pair, nrLimbs, precisionBits));
-		results.push_back(compareHorner<Classic, Cascade>(pair, nrLimbs, precisionBits));
+	void comparePair(const std::string& pair, const Shape& shape, std::vector<Divergence>& results) {
+		results.push_back(compareBinary<Classic, Cascade>("add", pair, shape, [](auto a, auto b) { return a + b; }));
+		results.push_back(compareBinary<Classic, Cascade>("subtract", pair, shape, [](auto a, auto b) { return a - b; }));
+		results.push_back(compareBinary<Classic, Cascade>("multiply", pair, shape, [](auto a, auto b) { return a * b; }));
+		results.push_back(compareBinary<Classic, Cascade>("divide", pair, shape, [](auto a, auto b) { return a / b; }));
+		results.push_back(compareUnary<Classic, Cascade>("sqrt", pair, shape, [](auto a) { using std::sqrt; return sqrt(a); }));
+		results.push_back(compareUnary<Classic, Cascade>("exp", pair, shape, [](auto a) { using std::exp; return exp(a); }));
+		results.push_back(compareUnary<Classic, Cascade>("log", pair, shape, [](auto a) { using std::log; return log(a); }));
+		results.push_back(compareUnary<Classic, Cascade>("sin", pair, shape, [](auto a) { using std::sin; return sin(a); }));
+		results.push_back(compareUnary<Classic, Cascade>("cos", pair, shape, [](auto a) { using std::cos; return cos(a); }));
+		results.push_back(compareDot<Classic, Cascade>(pair, shape));
+		results.push_back(compareHorner<Classic, Cascade>(pair, shape));
 	}
 
 	// Where the two families disagree, 'they differ' is not actionable on its own: one of them is
@@ -279,17 +297,20 @@ try {
 	std::cout << "  samples/op     : " << NR_SAMPLES << " operand pairs drawn from [0.5, 2.0)\n";
 	std::cout << "  ulp reference  : the last place of the target significand, 106 bits for dd,"
 		<< " 159 for td, 212 for qd\n";
+	std::cout << "  shapes         : values are compared component by component, zero-padding the\n";
+	std::cout << "                   shorter of the two, so a td_cascade with a nonzero third\n";
+	std::cout << "                   component is not bit-identical to a dd\n";
 	std::cout << "  interpretation : bit-identical == samples means the benchmark compares two\n";
 	std::cout << "                   implementations of the same computation. A few ulps means the\n";
 	std::cout << "                   families renormalize differently. Orders of magnitude means the\n";
 	std::cout << "                   corresponding benchmark row is not a like-for-like comparison.\n\n";
 
 	std::vector<Divergence> results;
-	comparePair<dd, dd_cascade>("dd vs dd_cascade", 2, 106.0, results);
-	comparePair<qd, qd_cascade>("qd vs qd_cascade", 4, 212.0, results);
+	comparePair<dd, dd_cascade>("dd vs dd_cascade", Shape{ 2, 2, 106.0 }, results);
+	comparePair<qd, qd_cascade>("qd vs qd_cascade", Shape{ 4, 4, 212.0 }, results);
 	// td_cascade has no classic counterpart; compare it against dd to show that the third limb is
 	// carrying real information rather than noise (these are expected to differ by construction)
-	comparePair<dd, td_cascade>("dd vs td_cascade", 2, 106.0, results);
+	comparePair<dd, td_cascade>("dd vs td_cascade", Shape{ 2, 3, 106.0 }, results);
 
 	report(results);
 

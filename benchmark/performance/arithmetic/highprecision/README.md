@@ -35,8 +35,8 @@ The optional argument is the target wall-clock window per measurement. Every mea
 its own operation count to that window, so a `qd` division and a `double` addition both get a
 statistically useful sample without either taking minutes.
 
-On a hybrid CPU, pin the run: `taskset -c 0 ./benchmark_hp_scalar`. The numbers recorded below were
-taken that way.
+On a hybrid CPU, pin the run: `taskset -c 0 ./benchmark/performance/arithmetic/benchmark_hp_scalar`.
+The numbers recorded below were taken that way.
 
 ## Methodology
 
@@ -50,7 +50,7 @@ through a `volatile` sink. Consuming only the leading limb is not enough: conver
 `double` hands the compiler limb 0, and it is then free to prove the other three limbs dead. The
 generated code was checked:
 
-```
+```asm
 sinkLoop(size_t, dd const*):        # the empty-loop floor
         movsd   (%rax), %xmm0
         movsd   %xmm0, hpbench::g_sink(%rip)      # limb 0 stored
@@ -72,7 +72,7 @@ LCG in `[0.5, 2.0)`, so runs are reproducible and the multiplicative and additiv
 
 ## Recorded results
 
-```
+```text
 processor      : 12th Gen Intel(R) Core(TM) i7-12700K, pinned to core 0
 compiler       : gcc 13.3.0, -O3 -DNDEBUG, C++20, no ISA extensions beyond baseline
 measurement    : best of 3, 0.050 sec calibration window
@@ -81,7 +81,7 @@ date           : 2026-08-15
 
 ### Scalar operators (nsec/op, lower is better)
 
-```
+```text
 operation                    double           dd   dd_cascade   td_cascade           qd   qd_cascade
 ----------------------------------------------------------------------------------------------------
 sink only (floor)              0.21         0.37         0.37         0.41         0.49         0.49
@@ -106,7 +106,7 @@ because they distinguish the implementations.
 
 ### Kernels (nsec per elementary multiply-add)
 
-```
+```text
 operation                    double           dd   dd_cascade   td_cascade           qd   qd_cascade
 ----------------------------------------------------------------------------------------------------
 dot N=16                       0.10        40.38        52.68        82.08       145.66       114.42
@@ -123,7 +123,7 @@ of these implementations.
 
 ### Mathlib (nsec/op, includes one accumulate; subtract the `accumulate only` row)
 
-```
+```text
 operation                    double           dd   dd_cascade   td_cascade           qd   qd_cascade
 ----------------------------------------------------------------------------------------------------
 accumulate only                0.41        23.93        32.43        50.37        71.89        62.76
@@ -138,7 +138,7 @@ cos                            3.62      1008.58      1485.98      9769.45      
 
 Ratio of nsec/op. 1.00 is parity, above 1.00 means the cascade implementation is slower.
 
-```
+```text
 operation                dd_cascade/dd   qd_cascade/qd   td_cascade/dd
 ----------------------------------------------------------------------
 add                               0.67            0.78            1.47
@@ -206,11 +206,19 @@ evaluates three identities inside each type (`sqrt(x)^2 == x`, `exp(log(x)) == x
 
 **Arithmetic is bit-identical.** `add`, `subtract`, `multiply`, `divide`, the dot product and the
 Horner evaluation agree bit-for-bit on all 4096 samples, for both `dd` vs `dd_cascade` and `qd` vs
-`qd_cascade`. Every arithmetic and kernel row above is a like-for-like comparison.
+`qd_cascade`. The arithmetic and kernel rows of those two pairs are like-for-like comparisons.
+
+`td_cascade` has no classic counterpart, so its column is a datapoint about a 3-component type
+rather than a comparison: the guardrail runs it against `dd` only to establish that its third
+component carries information. It does. Comparing component by component with the `dd` value
+zero-padded to three components, `add`, `subtract` and `multiply` agree exactly (the third component
+is genuinely zero, because both operands came from a single `double`), while `divide`, the dot
+product and every mathlib function differ from `dd` by up to a few ulps of `dd` - which is the
+third component doing its job.
 
 **The mathlib is not.** Self-consistency residuals, in ulps of each type's own significand:
 
-```
+```text
 type                 sqrt(x)^2 - x   exp(log(x)) - x     sin^2 + cos^2 - 1
 --------------------------------------------------------------------------
 double                       1.999                 0                     2
@@ -226,9 +234,11 @@ Reading the large residuals as correct decimal digits:
 - `qd_cascade` `sqrt` is accurate to about 48 digits and `exp`/`log` to about 50, where `qd` delivers
   the full 63. So `qd_cascade` is both 2x to 6x slower on those functions *and* 13 to 15 digits
   short: there is no trade being made, it is worse on both axes.
-- `sin`/`cos` above double-double precision are inaccurate everywhere: `qd` holds about 41 digits,
-  `qd_cascade` and `td_cascade` about 32, which is `dd` precision. The extra limbs are not carrying
-  information through the trigonometric argument reduction.
+- `sin`/`cos` above double-double precision lose digits on every type tested, over the sampled
+  domain `[0.5, 2.0)`: `qd` holds about 41 digits, `qd_cascade` and `td_cascade` about 32, which is
+  `dd` precision. The extra limbs are not carrying information through the trigonometric evaluation.
+  Arguments outside `[0.5, 2.0)`, where a real argument reduction is needed, are not sampled here
+  and could well be worse.
 - `dd` and `dd_cascade` are both sound; `dd_cascade`'s `sqrt` is the more accurate of the two
   (2.9 vs 10.8 ulps).
 
@@ -254,14 +264,15 @@ benchmark results.
 2. **Does the `volatile` hardening cost throughput?** Not measurably at the level this benchmark can
    isolate. The add/subtract rows, where the hardened error-free transformations dominate, are the
    rows where the cascade types *win*.
-3. **Is `td_cascade` a useful middle point?** Not on speed. It costs 1.4x to 4x `dd` on arithmetic
-   and kernels, and its trigonometry is no more accurate than `dd`'s. Its value has to come from the
-   159-bit significand in code paths that need it (universal#1300 wants it for takum64), not from
-   filling a performance gap.
+3. **Is `td_cascade` a useful middle point?** Not on speed. Against `dd` it ranges from 0.83x
+   (divide) to 9.7x (multiply), with add/subtract at 1.4x and the kernels at 1.8x to 3.8x, and its
+   trigonometry is no more accurate than `dd`'s. Its value has to come from the 159-bit significand
+   in code paths that need it (universal#1300 wants it for takum64), not from filling a performance
+   gap.
 4. **Is there a crossover length where the cascade dot product wins?** No for `dd_cascade`: it is
    1.3x to 1.6x `dd` at every length from 16 to 4096, under both compilers. Yes, trivially, for
-   `qd_cascade`: it is faster than `qd` at every length (0.83x), because `qd`'s scalar multiply is
-   the bottleneck in both.
+   `qd_cascade`: it is faster than `qd` at every length (0.79x at N=16, 0.83x at N=256 and N=4096),
+   because `qd`'s scalar multiply is the bottleneck in both.
 5. **Can we retire classic `dd` and `qd`?** Not yet, on this evidence. `dd_cascade` is a defensible
    replacement for `dd` once the multiply is addressed. `qd_cascade` cannot replace `qd` today: its
    multiply is 8x slower and its `sqrt`/`exp`/`log` lose 13 to 15 digits.
