@@ -29,9 +29,18 @@
 // and 32 bits, which is the whole shape of the defect.  Disabling the round-to-odd
 // step in the shared tail fails a further 834 cases, all of them at 64 bits.
 //
-// Exact ties are accepted either way: the check fails only on a strictly closer
-// neighbour, so it never reports a correct implementation for a tie-break
-// convention it was not told about.
+// Exact ties are decided, not waved through.  The format rounds to nearest-even,
+// so at a tie the chosen encoding must carry an even trailing field; accepting
+// either side would leave tie-breaking unverified, and ties are precisely what the
+// round-to-odd intermediate width exists to get right.  They are not rare enough
+// to ignore: an addition sweep at 64 bits hits about 1100 of them.  Confirmed by
+// mutation -- flipping encode_fraction() to break ties towards odd fails this,
+// and fails NOTHING else in the sweep, since a mis-broken tie is by definition
+// equidistant and invisible to a nearest-neighbour comparison.
+//
+// Coverage is a checked property, not an assumption: report_coverage() fails the
+// sweep if it compared nothing, or if any pair was skipped because the exact
+// reference could not reach it.
 //
 // Saturated results -- zero, maxpos, maxneg -- are skipped.  Those are range
 // decisions the format makes on the caller's behalf, not rounding decisions, and
@@ -165,11 +174,30 @@ constexpr std::int64_t neighbour_margin(unsigned maxCharBits) noexcept {
 	return static_cast<std::int64_t>(maxCharBits) + 2;
 }
 
+// What a single comparison established.
+struct tally {
+	long skipped = 0;   // the exact reference could not be formed; NOT a pass
+	long ties    = 0;   // the exact value fell exactly between two encodings
+	long tiesTested = 0;  // ...and the two shared a layout, so the rule was checked
+};
+
 // Is `got` at least as close to num/den as both of its neighbours?  num and den
 // are exact, den > 0, and every value is scaled by the same 2^base, so comparing
 // |num - value(candidate) * den| across candidates decides it outright.
+//
+// An EXACT TIE is decided too, not waved through.  The format rounds to
+// nearest-even -- encode_fraction() breaks a tie towards an even trailing field --
+// so at a tie the chosen encoding must have an even M.  Accepting either side, as
+// an earlier draft did, left the entire tie-breaking path unverified, and ties are
+// the whole reason the shared tail rounds to odd at an intermediate width: they
+// are the case it exists to get right.
+//
+// The rule is only checked when the two tied encodings share a trailing width.
+// Across a DR boundary the candidates carry different p and "even M" is not a
+// statement about the same quantity, so those are counted and reported rather than
+// judged.
 template<typename T>
-bool nearest(const T& got, const BigInt& num, const BigInt& den, std::int64_t base, bool& skipped) {
+bool nearest(const T& got, const BigInt& num, const BigInt& den, std::int64_t base, tally& t) {
 	auto distance = [&](const T& cand, bool& ok) -> BigInt {
 		fields f = decode(cand);
 		if (f.zero) { ok = true; return babs(num); }
@@ -180,17 +208,65 @@ bool nearest(const T& got, const BigInt& num, const BigInt& den, std::int64_t ba
 
 	bool ok = false;
 	const BigInt mine = distance(got, ok);
-	if (!ok) { skipped = true; return true; }
+	if (!ok) { ++t.skipped; return true; }
 
 	const std::int64_t g = signed_bits(got);
 	for (int k = -1; k <= 1; k += 2) {
 		T nb;
 		if (!neighbour<T>(g + k, nb)) continue;
 		const BigInt d = distance(nb, ok);
-		if (!ok) { skipped = true; return true; }
+		if (!ok) { ++t.skipped; return true; }
 		if (d < mine) return false;
+		if (d == mine && !nb.iszero() && !got.iszero()) {
+			++t.ties;
+			const auto dg = T::Codec::decode(got.magnitude_bits());
+			const auto dn = T::Codec::decode(nb.magnitude_bits());
+			if (dg.p == dn.p && dg.p > 0) {
+				++t.tiesTested;
+				if ((dg.M_bits & 1ull) != 0ull) return false;   // tie went to odd
+			}
+		}
 	}
 	return true;
+}
+
+// Did the sweep actually verify anything, and did it verify everything it walked?
+//
+// A sweep that compares nothing and a sweep that compares everything report the
+// same PASS, so the coverage has to be a checked property rather than an assumed
+// one.  Two ways it can quietly evaporate:
+//
+//   exercised == 0   nothing was compared at all
+//   skipped > 0      individual pairs fell outside the exact reference's reach and
+//                    were passed over.  Every configuration in this suite is sized
+//                    to fit, so any skip at all is a defect in the suite -- either
+//                    BigInt is too narrow or neighbour_margin() is wrong -- and
+//                    NOT something to absorb silently.  A deliberately span-limited
+//                    configuration would have to relax this, loudly.
+//
+// Ties are reported rather than required: they are rare, and a sweep that happens
+// to produce none is not thereby broken.  Reporting them is what tells a reader
+// whether the tie rule was actually exercised or merely available.
+int report_coverage(const char* what, unsigned nbits, unsigned rbits,
+                    long exercised, const tally& t, bool reportTestCases) {
+	int failures = 0;
+	if (exercised == 0) {
+		++failures;
+		std::cout << "FAIL " << what << " takum<" << nbits << ',' << rbits
+		          << "> compared nothing\n";
+	}
+	if (t.skipped != 0) {
+		++failures;
+		std::cout << "FAIL " << what << " takum<" << nbits << ',' << rbits << "> skipped "
+		          << t.skipped << " of " << (exercised + t.skipped)
+		          << " pairs: the exact reference did not reach them\n";
+	}
+	if (reportTestCases) {
+		std::cout << "      takum<" << nbits << ',' << rbits << "> " << what
+		          << ": exercised " << exercised << ", ties " << t.ties
+		          << " (" << t.tiesTested << " with the rule checked)\n";
+	}
+	return failures;
 }
 
 // ---------------------------------------------------------------------------
@@ -201,6 +277,7 @@ int VerifyCorrectlyRounded(Op op, unsigned samples, bool reportTestCases) {
 	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
 	int nrOfFailedTests = 0;
 	long exercised = 0;
+	tally t;
 	const std::uint64_t LAST   = last_encoding(nbits);
 	const std::uint64_t stride = sample_stride(LAST, samples);
 
@@ -229,11 +306,10 @@ int VerifyCorrectlyRounded(Op op, unsigned samples, bool reportTestCases) {
 			const fields fg = decode(got);
 			BigInt num(0), den(1);
 			std::int64_t base = 0;
-			bool skipped = false;
 
 			if (op == Op::add || op == Op::sub) {
 				base = std::min(std::min(fa.e, fb.e), fg.e) - neighbour_margin(T::maxCharBits);
-				if (!fits(fa.e, base) || !fits(fb.e, base)) continue;
+				if (!fits(fa.e, base) || !fits(fb.e, base)) { ++t.skipped; continue; }
 				const BigInt A = scaled(fa.S, fa.e, fa.sign, base);
 				const BigInt B = scaled(fb.S, fb.e, (op == Op::sub) ? !fb.sign : fb.sign, base);
 				num = A + B;
@@ -241,7 +317,7 @@ int VerifyCorrectlyRounded(Op op, unsigned samples, bool reportTestCases) {
 			else if (op == Op::mul) {
 				const std::int64_t ep = fa.e + fb.e;
 				base = std::min(ep, fg.e) - neighbour_margin(T::maxCharBits);
-				if (!fits(ep, base)) continue;
+				if (!fits(ep, base)) { ++t.skipped; continue; }
 				BigInt P(fa.S);
 				P = P * BigInt(fb.S);
 				P <<= static_cast<int>(ep - base);
@@ -250,13 +326,14 @@ int VerifyCorrectlyRounded(Op op, unsigned samples, bool reportTestCases) {
 			else {
 				const std::int64_t eq = fa.e - fb.e;
 				base = std::min(eq, fg.e) - neighbour_margin(T::maxCharBits);
-				if (!fits(eq, base)) continue;
+				if (!fits(eq, base)) { ++t.skipped; continue; }
 				num = scaled(fa.S, eq, fa.sign != fb.sign, base);
 				den = BigInt(fb.S);
 			}
 
-			const bool ok = nearest(got, num, den, base, skipped);
-			if (skipped) continue;
+			const long skipsBefore = t.skipped;
+			const bool ok = nearest(got, num, den, base, t);
+			if (t.skipped != skipsBefore) continue;
 			++exercised;
 			if (!ok) {
 				++nrOfFailedTests;
@@ -268,10 +345,7 @@ int VerifyCorrectlyRounded(Op op, unsigned samples, bool reportTestCases) {
 			}
 		}
 	}
-	if (exercised == 0) {
-		++nrOfFailedTests;
-		if (reportTestCases) std::cout << "FAIL correctly-rounded check compared nothing\n";
-	}
+	nrOfFailedTests += report_coverage("correctly rounded", nbits, rbits, exercised, t, reportTestCases);
 	return nrOfFailedTests;
 }
 
@@ -287,6 +361,7 @@ int VerifyFmaCorrectlyRounded(unsigned samples, bool reportTestCases) {
 	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
 	int nrOfFailedTests = 0;
 	long exercised = 0;
+	tally t;
 	const std::uint64_t LAST   = last_encoding(nbits);
 	const std::uint64_t stride = sample_stride(LAST, samples);
 	// a third operand from the same sweep, offset so it is not a repeat of a or b
@@ -311,7 +386,7 @@ int VerifyFmaCorrectlyRounded(unsigned samples, bool reportTestCases) {
 			const fields fg = decode(got);
 			const std::int64_t ep = fa.e + fb.e;
 			const std::int64_t base = std::min(std::min(ep, fc.e), fg.e) - neighbour_margin(T::maxCharBits);
-			if (!fits(ep, base) || !fits(fc.e, base)) continue;
+			if (!fits(ep, base) || !fits(fc.e, base)) { ++t.skipped; continue; }
 
 			BigInt P(fa.S);
 			P = P * BigInt(fb.S);
@@ -319,9 +394,9 @@ int VerifyFmaCorrectlyRounded(unsigned samples, bool reportTestCases) {
 			if (fa.sign != fb.sign) P = -P;
 			const BigInt num = P + scaled(fc.S, fc.e, fc.sign, base);
 
-			bool skipped = false;
-			const bool ok = nearest(got, num, BigInt(1), base, skipped);
-			if (skipped) continue;
+			const long skipsBefore = t.skipped;
+			const bool ok = nearest(got, num, BigInt(1), base, t);
+			if (t.skipped != skipsBefore) continue;
 			++exercised;
 			if (!ok) {
 				++nrOfFailedTests;
@@ -333,10 +408,7 @@ int VerifyFmaCorrectlyRounded(unsigned samples, bool reportTestCases) {
 			}
 		}
 	}
-	if (exercised == 0) {
-		++nrOfFailedTests;
-		if (reportTestCases) std::cout << "FAIL fma correctly-rounded check compared nothing\n";
-	}
+	nrOfFailedTests += report_coverage("correctly rounded fma", nbits, rbits, exercised, t, reportTestCases);
 	return nrOfFailedTests;
 }
 
