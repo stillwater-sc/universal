@@ -307,9 +307,10 @@ inline ddouble exact_l(int64_t c, uint64_t M, unsigned p) noexcept {
 	if (p == 0 || M == 0) return r;
 	const uint64_t hi = M >> 32;
 	const uint64_t lo = M & 0xFFFFFFFFull;
-	const double scale = std::ldexp(1.0, -static_cast<int>(p));
-	if (hi != 0) r = add(r, make(static_cast<double>(hi) * std::ldexp(1.0, 32) * scale));
-	if (lo != 0) r = add(r, make(static_cast<double>(lo) * scale));
+	// named for what it is, and not `scale`, which shadows a free function
+	const double weight = std::ldexp(1.0, -static_cast<int>(p));
+	if (hi != 0) r = add(r, make(static_cast<double>(hi) * std::ldexp(1.0, 32) * weight));
+	if (lo != 0) r = add(r, make(static_cast<double>(lo) * weight));
 	return r;
 }
 
@@ -332,10 +333,10 @@ inline split_result to_integer_fraction(const ddouble& v) noexcept {
 
 	const ddouble fl = floor_dd(v);
 	int64_t c = static_cast<int64_t>(fl.hi) + static_cast<int64_t>(fl.lo);
-	const ddouble frac = sub(v, fl);                       // in [0,1), exact
+	const ddouble mantissa = sub(v, fl);                   // in [0,1), exact
 
-	// top HIBITS bits: frac < 1, so this is at most 2^31 - 1
-	const ddouble s1 = ldexp2(frac, static_cast<int>(HIBITS));
+	// top HIBITS bits: mantissa < 1, so this is at most 2^31 - 1
+	const ddouble s1 = ldexp2(mantissa, static_cast<int>(HIBITS));
 	const ddouble f1 = floor_dd(s1);
 	const uint64_t nhi = static_cast<uint64_t>(
 		static_cast<int64_t>(f1.hi) + static_cast<int64_t>(f1.lo));
