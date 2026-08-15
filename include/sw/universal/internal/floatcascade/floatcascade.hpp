@@ -1108,6 +1108,65 @@ namespace expansion_ops {
         return renormalize(result);
     }
 
+    // Shewchuk's COMPRESS (Robust Adaptive Floating-Point Geometric Predicates,
+    // Figure 22), adapted to the descending-significance convention used here.
+    //
+    // Why this is needed: accumulating a magnitude-sorted merge with a single
+    // running sum and collecting the two_sum errors produces an expansion whose
+    // *value* is exact but whose *components overlap* - consecutive errors can be
+    // within a factor of two of each other.  Every downstream renormalization
+    // (compress_4to2, compress_6to3, compress_8to4, renormalize) is built on
+    // fast_two_sum chains that assume a non-overlapping input, and silently drops
+    // the tail when that assumption is violated: for quad-double addition that
+    // cost the entire fourth component on ~12% of ordinary operands, a relative
+    // error of 2^-160 where the format carries 2^-212 (universal#1317).
+    //
+    // Compression is value-preserving.  Pass 1 sweeps down from the most
+    // significant component, carrying each rounding remainder into the next slot;
+    // pass 2 sweeps back up so the leading components come out correctly rounded.
+    // The result is non-overlapping and represents exactly the same number.
+    template<size_t M>
+    constexpr inline floatcascade<M> compress_expansion(const floatcascade<M>& e) {
+        double g[M]{};
+        for (size_t i = 0; i < M; ++i) g[i] = e[i];
+
+        // Pass 1: most significant downwards.  The input is magnitude sorted, so
+        // |Q| >= |g[i]| holds and fast_two_sum's precondition is satisfied.
+        double Q = g[0];
+        size_t bottom = 0;
+        for (size_t i = 1; i < M; ++i) {
+            double s{}, q{};
+            fast_two_sum(Q, g[i], s, q);
+            if (q != 0.0) {
+                g[bottom++] = s;
+                Q = q;
+            }
+            else {
+                Q = s;
+            }
+        }
+        g[bottom] = Q;
+
+        // Pass 2: least significant upwards, emitting each remainder as the next
+        // less significant output component.
+        double h[M]{};
+        size_t idx = M;
+        for (size_t i = bottom; i-- > 0; ) {
+            double s{}, q{};
+            fast_two_sum(g[i], Q, s, q);
+            Q = s;
+            if (q != 0.0 && idx > 0) h[--idx] = q;
+        }
+        if (idx > 0) h[--idx] = Q;
+
+        // Shift the populated tail down so component 0 is the most significant.
+        floatcascade<M> result;
+        size_t k = 0;
+        for (size_t i = idx; i < M; ++i) result[k++] = h[i];
+        for (; k < M; ++k) result[k] = 0.0;
+        return result;
+    }
+
     // ---------------------------------------------------------------------
     // Constexpr-friendly overloads for floatcascade<2> (used by dd_cascade)
     // ---------------------------------------------------------------------
@@ -1176,6 +1235,13 @@ namespace expansion_ops {
         }
         // result[nc+1..3] already zero (default-constructed).
 
+        // NOTE: unlike the <3> and <4> overloads below, this one deliberately
+        // does not call compress_expansion().  Four merged terms compressed into
+        // two components leave enough slack that the overlap never reaches the
+        // components that survive: over 400 random full-precision double-double
+        // additions, compressed and uncompressed results are bit-identical to
+        // each other and to classic dd.  Compressing anyway would double the
+        // cost of dd_cascade addition for no accuracy gain.
         return result;
     }
 
@@ -1256,6 +1322,11 @@ namespace expansion_ops {
         }
         // result[nc+1..5] already zero (default-constructed).
 
+        // NOTE: like the <2> overload above, and unlike <4> below, this one does
+        // not need compress_expansion().  Six merged terms compressed into three
+        // components leave enough slack that the overlap stays below the third
+        // component's ulp: measured over 5000 random full-precision triple-double
+        // additions, the worst error is 0.46 ulp of the 159-bit format either way.
         return result;
     }
 
@@ -1363,7 +1434,13 @@ namespace expansion_ops {
         }
         // result[nc+1..7] already zero (default-constructed).
 
-        return result;
+        // The sum above is exact but its components overlap; compression makes
+        // them non-overlapping so compress_8to4 can keep the tail.  Measured:
+        // without it, 25 in 200 random full-precision quad-double additions lose
+        // the fourth component entirely (relative error 2e-49 where the format
+        // carries 2^-212), which is what made qd_cascade sqrt/exp/log 13-15
+        // decimal digits worse than qd (universal#1317).
+        return compress_expansion(result);
     }
 
     // Multiply two floatcascade<4> -> floatcascade<4>.  Computes 16 partial

@@ -76,7 +76,7 @@ LCG in `[0.5, 2.0)`, so runs are reproducible and the multiplicative and additiv
 processor      : 12th Gen Intel(R) Core(TM) i7-12700K, pinned to core 0
 compiler       : gcc 13.3.0, -O3 -DNDEBUG, C++20, no ISA extensions beyond baseline
 measurement    : best of 3, 0.050 sec calibration window
-date           : 2026-08-15
+date           : 2026-08-15, re-measured after the universal#1317 fix
 ```
 
 ### Scalar operators (nsec/op, lower is better)
@@ -84,20 +84,20 @@ date           : 2026-08-15
 ```text
 operation                    double           dd   dd_cascade   td_cascade           qd   qd_cascade
 ----------------------------------------------------------------------------------------------------
-sink only (floor)              0.21         0.37         0.37         0.41         0.49         0.49
-construct                      0.20         0.27         0.29         0.41         0.41         0.41
-copy construct                 0.21         0.37         0.37         0.41         0.49         0.49
-assign                         0.20         0.37         0.37         0.41         0.49         0.49
-add                            0.41        23.86        16.05        35.05        62.37        48.44
-subtract                       0.41        23.87        15.30        32.62        61.57        45.59
-multiply                       0.82        22.21        29.77       216.22        72.99       585.36
-divide                         2.86       216.42        81.32       179.88       594.57       373.23
-compare (<)                    0.48         1.69         0.61         0.55         0.65         0.57
-compare (==)                   0.41         0.55         0.54         0.41         0.55         0.54
+sink only (floor)              0.20         0.37         0.37         0.41         0.49         0.49
+construct                      0.20         0.29         0.27         0.37         0.41         0.41
+copy construct                 0.20         0.37         0.37         0.41         0.49         0.49
+assign                         0.20         0.37         0.37         0.41         0.49         0.51
+add                            0.41        23.86        16.06        35.46        62.44        70.36
+subtract                       0.41        23.86        15.53        32.54        61.51        66.16
+multiply                       0.82        22.26        24.50       215.81        73.01       581.26
+divide                         2.86       216.47        81.30       180.49       594.88       429.73
+compare (<)                    0.60         1.69         0.60         0.78         0.67         0.76
+compare (==)                   0.41         0.54         0.54         0.41         0.55         0.55
 convert to double              0.41         0.41         0.41         0.41         0.41         0.41
-convert from double            0.21         0.29         0.27         0.37         0.41         0.41
-convert to string            511.09      2713.63      3792.76      4417.47      7728.11      6199.56
-convert from string          119.20    456606.59    458821.04    473846.43    489229.24    490162.74
+convert from double            0.20         0.27         0.29         0.41         0.41         0.41
+convert to string            510.09      2694.48      3804.09      4403.04      7722.31      7499.15
+convert from string          120.73    454849.97    453252.03    476934.70    486030.26    489235.67
 ```
 
 The construct/copy/assign/convert rows all sit at the sink floor: a copy is 2 to 4 `movsd`
@@ -109,12 +109,12 @@ because they distinguish the implementations.
 ```text
 operation                    double           dd   dd_cascade   td_cascade           qd   qd_cascade
 ----------------------------------------------------------------------------------------------------
-dot N=16                       0.10        40.38        52.68        82.08       145.66       114.42
-dot N=256                      0.31        33.30        46.32        87.71       147.02       122.69
-dot N=4096                     0.40        33.39        46.72        90.83       145.74       121.54
-axpy N=4096                    0.16        39.11        41.79        69.90       143.22        84.62
-matmul 32x32                   0.24        24.33        50.81        92.00       145.27       114.97
-horner deg 20                  0.32        47.66        59.38        89.26       154.24       124.43
+dot N=16                       0.10        39.37        49.95        77.57       137.13       157.74
+dot N=256                      0.29        29.49        46.51        83.99       141.93       165.08
+dot N=4096                     0.40        29.68        46.40        87.10       143.08       163.62
+axpy N=4096                    0.13        37.59        41.27        65.89       139.08       133.94
+matmul 32x32                   0.24        21.09        49.74        82.43       142.00       148.37
+horner deg 20                  0.32        47.49        59.42        75.35       150.29       153.61
 ```
 
 The `double` column is auto-vectorized and the multi-component columns are not, which is most of the
@@ -126,12 +126,12 @@ of these implementations.
 ```text
 operation                    double           dd   dd_cascade   td_cascade           qd   qd_cascade
 ----------------------------------------------------------------------------------------------------
-accumulate only                0.41        23.93        32.43        50.37        71.89        62.76
-sqrt                           1.23        42.77       326.05       793.15      1201.47      2484.26
-exp                            3.49       932.47      1335.72     13326.21      4436.20     25338.94
-log                            3.47      1992.89      2850.57     25703.05     14029.56     72903.92
-sin                            3.80      1000.84      1475.24      9648.44      3800.25     24301.56
-cos                            3.62      1008.58      1485.98      9769.45      3799.47     24583.19
+accumulate only                0.41        23.94        28.81        47.16        71.90        96.60
+sqrt                           1.23        42.74       313.70       771.98      1120.91      2879.21
+exp                            3.48       916.48      1230.00     13338.90      4169.76     26035.96
+log                            3.45      1960.27      2636.61     26134.51     13181.51     75320.89
+sin                            3.80       951.43      1446.23      9674.26      3531.18     24653.02
+cos                            3.63       960.57      1454.11      9832.77      3525.93     24816.82
 ```
 
 ### Normalized cost, cascade relative to classic (gcc)
@@ -141,20 +141,20 @@ Ratio of nsec/op. 1.00 is parity, above 1.00 means the cascade implementation is
 ```text
 operation                dd_cascade/dd   qd_cascade/qd   td_cascade/dd
 ----------------------------------------------------------------------
-add                               0.67            0.78            1.47
-subtract                          0.64            0.74            1.37
-multiply                          1.34            8.02            9.73
-divide                            0.38            0.63            0.83
-dot N=256                         1.39            0.83            2.63
-dot N=4096                        1.40            0.83            2.72
-axpy N=4096                       1.07            0.59            1.79
-matmul 32x32                      2.09            0.79            3.78
-horner deg 20                     1.25            0.81            1.87
-sqrt                              7.62            2.07           18.55
-exp                               1.43            5.71           14.29
-log                               1.43            5.20           12.90
-sin                               1.47            6.39            9.64
-cos                               1.47            6.47            9.69
+add                               0.67            1.13            1.49
+subtract                          0.65            1.08            1.36
+multiply                          1.10            7.96            9.69
+divide                            0.38            0.72            0.83
+dot N=256                         1.58            1.16            2.85
+dot N=4096                        1.56            1.14            2.93
+axpy N=4096                       1.10            0.96            1.75
+matmul 32x32                      2.36            1.04            3.91
+horner deg 20                     1.25            1.02            1.59
+sqrt                              7.34            2.57           18.06
+exp                               1.34            6.24           14.55
+log                               1.35            5.71           13.33
+sin                               1.52            6.98           10.17
+cos                               1.51            7.04           10.24
 ```
 
 ## Code generation sensitivity
@@ -187,7 +187,9 @@ depends on those two rows should be re-measured on the exact build in question, 
 made from a single compiler.
 
 Everything else is stable in direction across compilers: the kernel and mathlib ratios agree to
-within about 20% between gcc and clang, and `qd_cascade` multiply is 5x to 8x `qd` in both.
+within about 20% between gcc and clang, and `qd_cascade` multiply is 6x to 8x `qd` in both. The
+post-universal#1317 `qd_cascade` addition is 1.13x `qd` under gcc and 1.25x under clang - same
+direction, and slower than `qd` under both.
 
 ### AVX2
 
@@ -226,14 +228,18 @@ dd                           10.83             1.479                 10.88
 dd_cascade                   2.867             1.479                 2.389
 td_cascade                   7.198            0.8534             4.277e+15
 qd                           1.046             0.215             1.494e+23
-qd_cascade               2.091e+15         4.707e+13             3.852e+31
+qd_cascade                      15            0.2215             3.852e+31
 ```
 
 Reading the large residuals as correct decimal digits:
 
-- `qd_cascade` `sqrt` is accurate to about 48 digits and `exp`/`log` to about 50, where `qd` delivers
-  the full 63. So `qd_cascade` is both 2x to 6x slower on those functions *and* 13 to 15 digits
-  short: there is no trade being made, it is worse on both axes.
+- `qd_cascade` `sqrt`, `exp` and `log` were the original finding of this benchmark: 48 to 50 correct
+  digits where `qd` delivers 63. That was **fixed** in universal#1317 - the cause was not in those
+  functions but in addition, which returned an exact-valued but overlapping expansion whose fourth
+  component the renormalization then dropped. The rows above are post-fix; `exp` and `log` now agree
+  with `qd` to the last bit against an exact oracle, and `sqrt` sits at 15 ulps of 212 bits (63.2 of
+  63.6 digits). The cost is on the other axis: quad-double addition is now 46% more expensive, which
+  is what turned `qd_cascade`'s dot product from 0.83x `qd` into 1.15x.
 - `sin`/`cos` above double-double precision lose digits on every type tested, over the sampled
   domain `[0.5, 2.0)`: `qd` holds about 41 digits, `qd_cascade` and `td_cascade` about 32, which is
   `dd` precision. The extra limbs are not carrying information through the trigonometric evaluation.
@@ -242,9 +248,10 @@ Reading the large residuals as correct decimal digits:
 - `dd` and `dd_cascade` are both sound; `dd_cascade`'s `sqrt` is the more accurate of the two
   (2.9 vs 10.8 ulps).
 
-The mathlib rows in the tables above are therefore **not** like-for-like for the `qd` pair, and the
-`sqrt`/`exp`/`log`/`sin`/`cos` comparisons should be read with that caveat until the accuracy
-defects are fixed.
+After universal#1317, the `sqrt`/`exp`/`log` rows for the `qd` pair **are** like-for-like: both
+implementations now deliver the format's precision, so the timings compare equal work. The
+`sin`/`cos` rows are still not - every type above `dd` loses digits there (universal#1318) - and
+should be read with that caveat.
 
 **Decimal string parsing is pathologically slow** for all five types: 45 usec to parse `"1.5"` into a
 `dd` and ~460 usec for a 62-digit string, versus 119 nsec for `std::stod`. The cost scales with digit
@@ -256,11 +263,12 @@ benchmark results.
 
 ## What the numbers say
 
-1. **What does the generic `floatcascade<N>` renormalization cost?** For addition and division,
-   nothing: the cascade implementations match or beat the classic ones (and the arithmetic is
-   bit-identical, so this is a real win). For multiplication it is expensive and it grows with N:
-   1.3x at N=2 under gcc, 8.0x at N=4. `qd_cascade` multiply at 585 nsec/op against `qd`'s 73 is the
-   single worst row in the suite.
+1. **What does the generic `floatcascade<N>` renormalization cost?** For division, nothing: the
+   cascade implementations beat the classic ones (0.38x and 0.72x). For addition it is free at N=2
+   (0.67x) but costs 13% at N=4, which is the price of the universal#1317 correctness fix - the
+   expansion has to be compressed before it can be renormalized without dropping a component. For
+   multiplication it is expensive and grows with N: 1.1x at N=2 under gcc, 8.0x at N=4.
+   `qd_cascade` multiply at 581 nsec/op against `qd`'s 73 is the single worst row in the suite.
 2. **Does the `volatile` hardening cost throughput?** Not measurably at the level this benchmark can
    isolate. The add/subtract rows, where the hardened error-free transformations dominate, are the
    rows where the cascade types *win*.
@@ -269,13 +277,17 @@ benchmark results.
    trigonometry is no more accurate than `dd`'s. Its value has to come from the 159-bit significand
    in code paths that need it (universal#1300 wants it for takum64), not from filling a performance
    gap.
-4. **Is there a crossover length where the cascade dot product wins?** No for `dd_cascade`: it is
-   1.3x to 1.6x `dd` at every length from 16 to 4096, under both compilers. Yes, trivially, for
-   `qd_cascade`: it is faster than `qd` at every length (0.79x at N=16, 0.83x at N=256 and N=4096),
-   because `qd`'s scalar multiply is the bottleneck in both.
-5. **Can we retire classic `dd` and `qd`?** Not yet, on this evidence. `dd_cascade` is a defensible
-   replacement for `dd` once the multiply is addressed. `qd_cascade` cannot replace `qd` today: its
-   multiply is 8x slower and its `sqrt`/`exp`/`log` lose 13 to 15 digits.
+4. **Is there a crossover length where the cascade dot product wins?** No, at either width, and
+   this is the one conclusion universal#1317 reversed. `dd_cascade` is 1.3x to 1.6x `dd` at every
+   length from 16 to 4096 under both compilers, unchanged. `qd_cascade` used to be *faster* than
+   `qd` at every length (0.83x), but that margin came from an addition that was dropping a
+   component; with the correct addition it is 1.14x to 1.16x, i.e. slightly slower. The earlier
+   win was not real.
+5. **Can we retire classic `dd` and `qd`?** Closer than before, but not yet. `dd_cascade` is a
+   defensible replacement for `dd` once the multiply is addressed. `qd_cascade`'s accuracy blocker
+   is gone (universal#1317), so what remains is purely a speed question: its multiply is 8x `qd`'s,
+   and its addition is now 13% more expensive. Both are in the generic expansion code rather than
+   in the number system, which is where a follow-up should look.
 
 ## Caveats
 
