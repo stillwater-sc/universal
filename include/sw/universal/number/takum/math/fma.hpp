@@ -6,17 +6,18 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// For configurations NARROWER than 54 + rbits bits, fma widens the operands to
+// For configurations with nbits <= 54 + rbits, fma widens the operands to
 // double, forms a*b + c with std::fma (one IEEE rounding to double), and rounds
 // the result once into takum via the value constructor. A takum's significand is
-// 1 + p bits with p reaching nbits - 2 - rbits, so below that threshold -- which
-// is 57 bits for the specified rbits = 3 -- it stays under double's 53, and
-// double(x) is the exact represented value, the product is exact in double, and
-// the subsequent double -> takum rounding is the single rounding that determines
-// the result. takum's non-real state (NaR) absorbs the IEEE specials:
-// inf*0 -> NaN -> NaR, and any inf / NaN operand -> NaR.
+// 1 + p bits with p reaching nbits - 2 - rbits, so up to and including that
+// threshold -- 57 bits for the specified rbits = 3, where the significand is
+// exactly 53 -- it still fits a double, and double(x) is the exact represented
+// value, the product is exact in double, and the subsequent double -> takum
+// rounding is the single rounding that determines the result. takum's non-real
+// state (NaR) absorbs the IEEE specials: inf*0 -> NaN -> NaR, and any inf / NaN
+// operand -> NaR.
 //
-// AT AND ABOVE that threshold the reasoning fails, and it fails before the fma
+// ABOVE that threshold the reasoning fails, and it fails before the fma
 // begins: takum<64,3> carries a 60-bit significand, so double(a) is already a
 // rounded operand and std::fma then delivers an exact product of the wrong
 // numbers. Those configurations take the exact integer path instead

@@ -56,6 +56,39 @@ constexpr int64_t SPAN_LIMIT = 820;
 
 enum class Op { add, sub, mul, div };
 
+// The largest encoding as a bit pattern, and the largest POSITIVE one as the
+// signed integer it denotes (NaR is the most negative encoding, so the negative
+// range stops one short of it).
+//
+// Both are right shifts on purpose.  The natural left-shift forms are 1ull << 64
+// and int64_t(1) << 63 at nbits == 64, which is the width this suite exists for;
+// guarding them behind a runtime ternary leaves the shift in the source even
+// though the branch never runs, and cppcheck is right to call it out.  A right
+// shift by 64 - nbits is total over the whole supported range.
+constexpr std::uint64_t last_encoding(unsigned nbits) noexcept {
+	return (~0ull) >> (64u - nbits);
+}
+constexpr std::int64_t max_positive_encoding(unsigned nbits) noexcept {
+	return static_cast<std::int64_t>((~0ull) >> (64u - nbits + 1u));
+}
+
+// The step that walks `samples` values across the encoding space, or 1 when the
+// space is small enough to enumerate.
+//
+// Derived from the width rather than passed in as a literal.  A fixed stride is
+// silently width-dependent: 0x0123456789ABCDEF samples a 64-bit space about 225
+// times, but it is a third of a 58-bit space, and takum<58,3> was getting NINE
+// comparisons out of a sweep that reported PASS.  A sweep that covers almost
+// nothing and a sweep that covers everything report identically, so the sample
+// count is the thing to fix in place, not the stride.
+//
+// Odd, so it is coprime with the power-of-two field boundaries and the walk
+// crosses every DR rather than revisiting one layout.
+constexpr std::uint64_t sample_stride(std::uint64_t last, unsigned samples) noexcept {
+	const std::uint64_t step = last / samples;
+	return (step < 2ull) ? 1ull : (step | 1ull);
+}
+
 // |value| = S * 2^e, with S = 2^p + M the significand and its implicit bit.
 struct fields {
 	std::uint64_t S;
@@ -97,8 +130,7 @@ std::int64_t signed_bits(const T& x) {
 // NaR is the most negative encoding and is excluded by construction.
 template<typename T>
 bool neighbour(std::int64_t v, T& out) {
-	constexpr std::int64_t hi = (T::nbits >= 64) ? INT64_MAX
-	                                            : ((std::int64_t(1) << (T::nbits - 1)) - 1);
+	constexpr std::int64_t hi = max_positive_encoding(T::nbits);
 	if (v < -hi || v > hi) return false;
 	out.setbits(static_cast<std::uint64_t>(v) & T::Codec::nbits_mask());
 	return true;
@@ -110,7 +142,28 @@ bool saturated(const T& x) {
 	return x.iszero() || x.raw_bits() == maxpos.raw_bits() || x.raw_bits() == maxneg.raw_bits();
 }
 
-bool fits(std::int64_t e, std::int64_t base) { return (e - base) <= SPAN_LIMIT; }
+// Two-sided on purpose.  The upper bound keeps the shift inside BigInt; the lower
+// bound is what stops scaled() from being handed a negative shift, which integer<>
+// silently turns into a right shift and would quietly truncate a candidate's value
+// rather than fail.  neighbour_margin() below is sized so this never trips, and
+// this check is what makes that reasoning falsifiable rather than load-bearing.
+bool fits(std::int64_t e, std::int64_t base) {
+	return e >= base && (e - base) <= SPAN_LIMIT;
+}
+
+// How far below the operands' exponents `base` has to sit so that the RESULT'S
+// NEIGHBOURS are also placeable.
+//
+// A neighbour is one encoding step from the result, so its characteristic c' is
+// within 1 of the result's c, but its trailing width p' is not within 1 of p --
+// crossing a DR boundary moves p by a lot.  With e = c - p and p' at most
+// maxCharBits,  e' >= (c - 1) - maxCharBits = e + p - 1 - maxCharBits, so a
+// neighbour's exponent can sit maxCharBits + 1 below the result's own.  Taking the
+// minimum over only the operands and the result, as an earlier draft did, left the
+// neighbours unaccounted for.
+constexpr std::int64_t neighbour_margin(unsigned maxCharBits) noexcept {
+	return static_cast<std::int64_t>(maxCharBits) + 2;
+}
 
 // Is `got` at least as close to num/den as both of its neighbours?  num and den
 // are exact, den > 0, and every value is scaled by the same 2^base, so comparing
@@ -144,20 +197,19 @@ bool nearest(const T& got, const BigInt& num, const BigInt& den, std::int64_t ba
 // a OP b, correctly rounded
 // ---------------------------------------------------------------------------
 template<unsigned nbits, unsigned rbits>
-int VerifyCorrectlyRounded(Op op, std::uint64_t stride, bool reportTestCases) {
+int VerifyCorrectlyRounded(Op op, unsigned samples, bool reportTestCases) {
 	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
 	int nrOfFailedTests = 0;
 	long exercised = 0;
-	// 1ull << nbits is undefined at nbits == 64, and 64 is the width this exists
-	// for, so the bound avoids it.  stride samples, since the sweep is over PAIRS.
-	const std::uint64_t NR = (nbits >= 64) ? ~0ull : (1ull << nbits);
+	const std::uint64_t LAST   = last_encoding(nbits);
+	const std::uint64_t stride = sample_stride(LAST, samples);
 
-	for (std::uint64_t i = 0; i < NR && i + stride > i; i += stride) {
+	for (std::uint64_t i = 0; i <= LAST && i + stride > i; i += stride) {
 		T a; a.setbits(i);
 		if (a.isnar() || a.iszero()) continue;
 		const fields fa = decode(a);
 
-		for (std::uint64_t j = 0; j < NR && j + stride > j; j += stride) {
+		for (std::uint64_t j = 0; j <= LAST && j + stride > j; j += stride) {
 			T b; b.setbits(j);
 			if (b.isnar() || b.iszero()) continue;
 			const fields fb = decode(b);
@@ -180,7 +232,7 @@ int VerifyCorrectlyRounded(Op op, std::uint64_t stride, bool reportTestCases) {
 			bool skipped = false;
 
 			if (op == Op::add || op == Op::sub) {
-				base = std::min(std::min(fa.e, fb.e), fg.e) - 2;
+				base = std::min(std::min(fa.e, fb.e), fg.e) - neighbour_margin(T::maxCharBits);
 				if (!fits(fa.e, base) || !fits(fb.e, base)) continue;
 				const BigInt A = scaled(fa.S, fa.e, fa.sign, base);
 				const BigInt B = scaled(fb.S, fb.e, (op == Op::sub) ? !fb.sign : fb.sign, base);
@@ -188,7 +240,7 @@ int VerifyCorrectlyRounded(Op op, std::uint64_t stride, bool reportTestCases) {
 			}
 			else if (op == Op::mul) {
 				const std::int64_t ep = fa.e + fb.e;
-				base = std::min(ep, fg.e) - 2;
+				base = std::min(ep, fg.e) - neighbour_margin(T::maxCharBits);
 				if (!fits(ep, base)) continue;
 				BigInt P(fa.S);
 				P = P * BigInt(fb.S);
@@ -197,7 +249,7 @@ int VerifyCorrectlyRounded(Op op, std::uint64_t stride, bool reportTestCases) {
 			}
 			else {
 				const std::int64_t eq = fa.e - fb.e;
-				base = std::min(eq, fg.e) - 2;
+				base = std::min(eq, fg.e) - neighbour_margin(T::maxCharBits);
 				if (!fits(eq, base)) continue;
 				num = scaled(fa.S, eq, fa.sign != fb.sign, base);
 				den = BigInt(fb.S);
@@ -231,20 +283,21 @@ int VerifyCorrectlyRounded(Op op, std::uint64_t stride, bool reportTestCases) {
 // factors first and then computed an exact product of the wrong numbers.
 // ---------------------------------------------------------------------------
 template<unsigned nbits, unsigned rbits>
-int VerifyFmaCorrectlyRounded(std::uint64_t stride, bool reportTestCases) {
+int VerifyFmaCorrectlyRounded(unsigned samples, bool reportTestCases) {
 	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
 	int nrOfFailedTests = 0;
 	long exercised = 0;
-	const std::uint64_t NR = (nbits >= 64) ? ~0ull : (1ull << nbits);
+	const std::uint64_t LAST   = last_encoding(nbits);
+	const std::uint64_t stride = sample_stride(LAST, samples);
 	// a third operand from the same sweep, offset so it is not a repeat of a or b
 	const std::uint64_t skew = stride / 3ull + 1ull;
 
-	for (std::uint64_t i = 0; i < NR && i + stride > i; i += stride) {
+	for (std::uint64_t i = 0; i <= LAST && i + stride > i; i += stride) {
 		T a; a.setbits(i);
 		if (a.isnar() || a.iszero()) continue;
 		const fields fa = decode(a);
 
-		for (std::uint64_t j = 0; j < NR && j + stride > j; j += stride) {
+		for (std::uint64_t j = 0; j <= LAST && j + stride > j; j += stride) {
 			T b; b.setbits(j);
 			if (b.isnar() || b.iszero()) continue;
 			T c; c.setbits(i + j + skew);
@@ -257,7 +310,7 @@ int VerifyFmaCorrectlyRounded(std::uint64_t stride, bool reportTestCases) {
 
 			const fields fg = decode(got);
 			const std::int64_t ep = fa.e + fb.e;
-			const std::int64_t base = std::min(std::min(ep, fc.e), fg.e) - 2;
+			const std::int64_t base = std::min(std::min(ep, fc.e), fg.e) - neighbour_margin(T::maxCharBits);
 			if (!fits(ep, base) || !fits(fc.e, base)) continue;
 
 			BigInt P(fa.S);
@@ -296,10 +349,11 @@ int VerifyFmaCorrectlyRounded(std::uint64_t stride, bool reportTestCases) {
 // they discriminate -- the double path fails a + 0 at 64 bits.
 // ---------------------------------------------------------------------------
 template<unsigned nbits, unsigned rbits>
-int VerifyExactIdentities(std::uint64_t stride, bool reportTestCases) {
+int VerifyExactIdentities(unsigned samples, bool reportTestCases) {
 	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
 	int nrOfFailedTests = 0;
-	const std::uint64_t NR = (nbits >= 64) ? ~0ull : (1ull << nbits);
+	const std::uint64_t LAST   = last_encoding(nbits);
+	const std::uint64_t stride = sample_stride(LAST, samples);
 	T one(1.0), zero; zero.setzero();
 	T nar; nar.setnar();
 
@@ -308,7 +362,7 @@ int VerifyExactIdentities(std::uint64_t stride, bool reportTestCases) {
 		if (reportTestCases) std::cout << "FAIL " << what << " at bits=" << bits << '\n';
 	};
 
-	for (std::uint64_t i = 0; i < NR && i + stride > i; i += stride) {
+	for (std::uint64_t i = 0; i <= LAST && i + stride > i; i += stride) {
 		T a; a.setbits(i);
 		if (a.isnar()) continue;
 
@@ -333,15 +387,16 @@ int VerifyExactIdentities(std::uint64_t stride, bool reportTestCases) {
 // Addition and multiplication commute bit for bit.  Independent of any reference,
 // and it reaches the operand-ordering logic in the wide path's alignment step.
 template<unsigned nbits, unsigned rbits>
-int VerifyCommutative(std::uint64_t stride, bool reportTestCases) {
+int VerifyCommutative(unsigned samples, bool reportTestCases) {
 	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
 	int nrOfFailedTests = 0;
-	const std::uint64_t NR = (nbits >= 64) ? ~0ull : (1ull << nbits);
+	const std::uint64_t LAST   = last_encoding(nbits);
+	const std::uint64_t stride = sample_stride(LAST, samples);
 
-	for (std::uint64_t i = 0; i < NR && i + stride > i; i += stride) {
+	for (std::uint64_t i = 0; i <= LAST && i + stride > i; i += stride) {
 		T a; a.setbits(i);
 		if (a.isnar()) continue;
-		for (std::uint64_t j = 0; j < NR && j + stride > j; j += stride) {
+		for (std::uint64_t j = 0; j <= LAST && j + stride > j; j += stride) {
 			T b; b.setbits(j);
 			if (b.isnar()) continue;
 			if ((a + b).raw_bits() != (b + a).raw_bits()) {
@@ -413,18 +468,20 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	// Strides are odd and coprime with the field structure so a sweep crosses
-	// every DR rather than revisiting one layout.  maybe_unused because which of
-	// them a build reaches depends on the regression level.
-	[[maybe_unused]] constexpr std::uint64_t stride64 = 0x0123456789ABCDEFull;   // ~225 samples
-	[[maybe_unused]] constexpr std::uint64_t stride32 = 0x01234567ull;           // ~225 samples
-	[[maybe_unused]] constexpr std::uint64_t stride16 = 211ull;                  // ~310 samples
+	// Sample counts, not strides -- sample_stride() derives the step from the width
+	// so every configuration gets the same coverage regardless of nbits.  The
+	// pairwise sweeps square: 225 samples is ~50k operand pairs, each of which
+	// builds an exact 1024-bit reference.  maybe_unused because which of them a
+	// build reaches depends on the regression level.
+	[[maybe_unused]] constexpr unsigned rounding_samples = 225;    // ~50k pairs
+	[[maybe_unused]] constexpr unsigned identity_samples = 4096;   // single ops, so cheap
+	[[maybe_unused]] constexpr unsigned commutative_samples = 300; // ~90k pairs, no reference
 
 #if MANUAL_TESTING
 
 	nrOfFailedTestCases += ReportTestResult(VerifyIssue1300Repro(true), "takum<64,3>", "issue 1300 repro");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<64, 3>(Op::add, stride64, true), "takum<64,3>", "correctly rounded add");
+		VerifyCorrectlyRounded<64, 3>(Op::add, rounding_samples, true), "takum<64,3>", "correctly rounded add");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -434,40 +491,40 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyIssue1300Repro(true), "takum<64,3>", "issue 1300 repro");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyExactIdentities<64, 3>(stride64, reportTestCases), "takum<64,3>", "exact identities");
+		VerifyExactIdentities<64, 3>(identity_samples, reportTestCases), "takum<64,3>", "exact identities");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<64, 3>(Op::add, stride64, reportTestCases), "takum<64,3>", "correctly rounded add");
+		VerifyCorrectlyRounded<64, 3>(Op::add, rounding_samples, reportTestCases), "takum<64,3>", "correctly rounded add");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<64, 3>(Op::mul, stride64, reportTestCases), "takum<64,3>", "correctly rounded mul");
+		VerifyCorrectlyRounded<64, 3>(Op::mul, rounding_samples, reportTestCases), "takum<64,3>", "correctly rounded mul");
 #endif
 
 #if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<64, 3>(Op::sub, stride64, reportTestCases), "takum<64,3>", "correctly rounded sub");
+		VerifyCorrectlyRounded<64, 3>(Op::sub, rounding_samples, reportTestCases), "takum<64,3>", "correctly rounded sub");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<64, 3>(Op::div, stride64, reportTestCases), "takum<64,3>", "correctly rounded div");
+		VerifyCorrectlyRounded<64, 3>(Op::div, rounding_samples, reportTestCases), "takum<64,3>", "correctly rounded div");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCommutative<64, 3>(stride64, reportTestCases), "takum<64,3>", "commutativity");
+		VerifyCommutative<64, 3>(commutative_samples, reportTestCases), "takum<64,3>", "commutativity");
 	// The narrow configurations keep the double path, where the operands are exact
 	// doubles and one rounding decides the result.  Verified against the SAME exact
 	// reference, so the boundary the gate draws is measured rather than asserted.
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<32, 3>(Op::add, stride32, reportTestCases), "takum<32,3>", "correctly rounded add");
+		VerifyCorrectlyRounded<32, 3>(Op::add, rounding_samples, reportTestCases), "takum<32,3>", "correctly rounded add");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<32, 3>(Op::mul, stride32, reportTestCases), "takum<32,3>", "correctly rounded mul");
+		VerifyCorrectlyRounded<32, 3>(Op::mul, rounding_samples, reportTestCases), "takum<32,3>", "correctly rounded mul");
 #endif
 
 #if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyFmaCorrectlyRounded<64, 3>(stride64, reportTestCases), "takum<64,3>", "correctly rounded fma");
+		VerifyFmaCorrectlyRounded<64, 3>(rounding_samples, reportTestCases), "takum<64,3>", "correctly rounded fma");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<32, 3>(Op::sub, stride32, reportTestCases), "takum<32,3>", "correctly rounded sub");
+		VerifyCorrectlyRounded<32, 3>(Op::sub, rounding_samples, reportTestCases), "takum<32,3>", "correctly rounded sub");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<32, 3>(Op::div, stride32, reportTestCases), "takum<32,3>", "correctly rounded div");
+		VerifyCorrectlyRounded<32, 3>(Op::div, rounding_samples, reportTestCases), "takum<32,3>", "correctly rounded div");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<16, 3>(Op::add, stride16, reportTestCases), "takum<16,3>", "correctly rounded add");
+		VerifyCorrectlyRounded<16, 3>(Op::add, rounding_samples, reportTestCases), "takum<16,3>", "correctly rounded add");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<16, 3>(Op::div, stride16, reportTestCases), "takum<16,3>", "correctly rounded div");
+		VerifyCorrectlyRounded<16, 3>(Op::div, rounding_samples, reportTestCases), "takum<16,3>", "correctly rounded div");
 #endif
 
 #if REGRESSION_LEVEL_4
@@ -475,24 +532,24 @@ try {
 	// and takum<64,1> the widest significand the format allows at 64 bits, p = 61,
 	// which is what fixes the round-to-odd width at 63.
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyExactIdentities<58, 3>(stride64, reportTestCases), "takum<58,3>", "exact identities");
+		VerifyExactIdentities<58, 3>(identity_samples, reportTestCases), "takum<58,3>", "exact identities");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<58, 3>(Op::add, stride64, reportTestCases), "takum<58,3>", "correctly rounded add");
+		VerifyCorrectlyRounded<58, 3>(Op::add, rounding_samples, reportTestCases), "takum<58,3>", "correctly rounded add");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyExactIdentities<64, 1>(stride64, reportTestCases), "takum<64,1>", "exact identities");
+		VerifyExactIdentities<64, 1>(identity_samples, reportTestCases), "takum<64,1>", "exact identities");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<64, 1>(Op::mul, stride64, reportTestCases), "takum<64,1>", "correctly rounded mul");
+		VerifyCorrectlyRounded<64, 1>(Op::mul, rounding_samples, reportTestCases), "takum<64,1>", "correctly rounded mul");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCorrectlyRounded<64, 1>(Op::div, stride64, reportTestCases), "takum<64,1>", "correctly rounded div");
+		VerifyCorrectlyRounded<64, 1>(Op::div, rounding_samples, reportTestCases), "takum<64,1>", "correctly rounded div");
 	// rbits = 5 pushes the characteristic past 2^31, an exponent range no binary
 	// floating-point type can hold.  The exact integer path carries the exponent
 	// as an int64_t outside the significand, so it is indifferent; the reference
 	// above is not, and skips the pairs whose span exceeds its width, which is why
 	// this configuration is covered structurally.
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyExactIdentities<64, 5>(stride64, reportTestCases), "takum<64,5>", "exact identities");
+		VerifyExactIdentities<64, 5>(identity_samples, reportTestCases), "takum<64,5>", "exact identities");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCommutative<64, 5>(stride64, reportTestCases), "takum<64,5>", "commutativity");
+		VerifyCommutative<64, 5>(commutative_samples, reportTestCases), "takum<64,5>", "commutativity");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
