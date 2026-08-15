@@ -6,15 +6,23 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// takum has no extended-precision blocktriple product path, so fma widens the
-// operands to double, forms a*b + c with std::fma (one IEEE rounding to double),
-// and rounds the result once into takum via the value constructor. A takum's
-// significand precision is well under double's 53 bits for the practical
-// configurations, so double(x) is the exact represented value, the product is
-// exact in double, and the subsequent double -> takum rounding is the single
-// rounding that determines the result -- the double intermediate carries far more
-// precision than the takum target. takum's non-real state (NaR) absorbs the IEEE
-// specials: inf*0 -> NaN -> NaR, and any inf / NaN operand -> NaR.
+// For configurations NARROWER than 54 + rbits bits, fma widens the operands to
+// double, forms a*b + c with std::fma (one IEEE rounding to double), and rounds
+// the result once into takum via the value constructor. A takum's significand is
+// 1 + p bits with p reaching nbits - 2 - rbits, so below that threshold -- which
+// is 57 bits for the specified rbits = 3 -- it stays under double's 53, and
+// double(x) is the exact represented value, the product is exact in double, and
+// the subsequent double -> takum rounding is the single rounding that determines
+// the result. takum's non-real state (NaR) absorbs the IEEE specials:
+// inf*0 -> NaN -> NaR, and any inf / NaN operand -> NaR.
+//
+// AT AND ABOVE that threshold the reasoning fails, and it fails before the fma
+// begins: takum<64,3> carries a 60-bit significand, so double(a) is already a
+// rounded operand and std::fma then delivers an exact product of the wrong
+// numbers. Those configurations take the exact integer path instead
+// (takum_wide_arithmetic.hpp): the significand product is exact in 128 bits, c is
+// aligned into the same window, and the single rounding happens once at the end
+// in the codec -- which is what fma is FOR. Issue #1300.
 //
 // Sub-issue of #1189 (universal fma, linear takum epic #592). Relates to #1195.
 
@@ -25,7 +33,21 @@ namespace sw { namespace universal {
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> fma(const takum<nbits, rbits, bt>& a, const takum<nbits, rbits, bt>& b,
                             const takum<nbits, rbits, bt>& c) {
-	return takum<nbits, rbits, bt>(std::fma(double(a), double(b), double(c)));
+	using Takum = takum<nbits, rbits, bt>;
+	if constexpr (Takum::wide_significand) {
+		Takum result;
+		if (a.isnar() || b.isnar() || c.isnar()) { result.setnar(); return result; }
+		// takum has no signed zero, so a vanishing product is simply absent from
+		// the sum and there is no -0 + 0 sign convention to preserve.
+		if (a.iszero() || b.iszero()) return c;
+		auto product = takum_wide::multiply(a.to_wide_operand(), b.to_wide_operand());
+		if (c.iszero()) return result.assign_wide(product);
+		return result.assign_wide(
+			takum_wide::sum(product, takum_wide::widen(c.to_wide_operand()), false));
+	}
+	else {
+		return Takum(std::fma(double(a), double(b), double(c)));
+	}
 }
 
 // ---------------------------------------------------------------------------
