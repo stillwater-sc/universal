@@ -50,6 +50,7 @@
 
 #include <universal/internal/bit_manipulation.hpp>
 #include <universal/number/takum/takum_codec.hpp>
+#include <universal/number/takum/takum_wide_arithmetic.hpp>
 
 namespace sw {	namespace universal {
 
@@ -106,6 +107,17 @@ public:
 
 	// Maximum characteristic bits available for this nbits
 	static constexpr unsigned maxCharBits = Codec::maxCharBits;
+
+	// Does the significand outrun a double?  A takum significand is 1 + p bits and
+	// p reaches maxCharBits, so this is true exactly when nbits > 54 + rbits: 57
+	// for the specified rbits = 3, which puts takum<64,3> and its 60-bit
+	// significand on the wrong side of a double's 53.  Those configurations
+	// evaluate their arithmetic exactly in integers (takum_wide_arithmetic.hpp)
+	// rather than through a double that would quantize both operands before the
+	// operation ever happened -- issue #1300.  Everything narrower keeps the
+	// double path, where the operands ARE exact doubles and one rounding decides
+	// the result.
+	static constexpr bool wide_significand = (maxCharBits + 1u) > 53u;
 
 	// Codec geometry, re-exported so that the public surface of takum<> is
 	// unchanged by the codec extraction (manipulators, numeric_limits and the
@@ -221,26 +233,45 @@ public:
 		return result;
 	}
 
-	// in-place arithmetic via double conversion.  CONSTEXPRESSION because
-	// the underlying convert_ieee754 / to_ieee754 path becomes constexpr only
-	// when sw::bit_cast is constexpr (BIT_CAST_IS_CONSTEXPR=true) and the
-	// constexpr_math::exp2 helper is constant-evaluable.
+	// in-place arithmetic.  Narrow configurations evaluate in a double, where both
+	// operands are exact and the conversion back is the single rounding that
+	// decides the result; wide ones (see wide_significand) evaluate exactly in
+	// integers instead.  CONSTEXPRESSION because the underlying convert_ieee754 /
+	// to_ieee754 path becomes constexpr only when sw::bit_cast is constexpr
+	// (BIT_CAST_IS_CONSTEXPR=true) and the constexpr_math::exp2 helper is
+	// constant-evaluable; the integer path is constexpr throughout.
 	CONSTEXPRESSION takum& operator+=(const takum& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
-		double result = double(*this) + double(rhs);
-		return convert_ieee754(result);
+		if constexpr (wide_significand) {
+			return wide_sum(rhs, false);
+		}
+		else {
+			double result = double(*this) + double(rhs);
+			return convert_ieee754(result);
+		}
 	}
 	CONSTEXPRESSION takum& operator+=(double rhs) { return *this += takum(rhs); }
 	CONSTEXPRESSION takum& operator-=(const takum& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
-		double result = double(*this) - double(rhs);
-		return convert_ieee754(result);
+		if constexpr (wide_significand) {
+			return wide_sum(rhs, true);
+		}
+		else {
+			double result = double(*this) - double(rhs);
+			return convert_ieee754(result);
+		}
 	}
 	CONSTEXPRESSION takum& operator-=(double rhs) { return *this -= takum(rhs); }
 	CONSTEXPRESSION takum& operator*=(const takum& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
-		double result = double(*this) * double(rhs);
-		return convert_ieee754(result);
+		if constexpr (wide_significand) {
+			if (iszero() || rhs.iszero()) { setzero(); return *this; }
+			return assign_wide(takum_wide::multiply(to_wide_operand(), rhs.to_wide_operand()));
+		}
+		else {
+			double result = double(*this) * double(rhs);
+			return convert_ieee754(result);
+		}
 	}
 	CONSTEXPRESSION takum& operator*=(double rhs) { return *this *= takum(rhs); }
 	CONSTEXPRESSION takum& operator/=(const takum& rhs) {
@@ -255,10 +286,40 @@ public:
 			return *this;
 #endif
 		}
-		double result = double(*this) / double(rhs);
-		return convert_ieee754(result);
+		if constexpr (wide_significand) {
+			if (iszero()) { setzero(); return *this; }
+			return assign_wide(takum_wide::divide(to_wide_operand(), rhs.to_wide_operand()));
+		}
+		else {
+			double result = double(*this) / double(rhs);
+			return convert_ieee754(result);
+		}
 	}
 	CONSTEXPRESSION takum& operator/=(double rhs) { return *this /= takum(rhs); }
+
+	// Exact-arithmetic surface, public so that fma() -- which is a free function
+	// and cannot reach a private member -- shares this decode and this rounding
+	// tail rather than reimplementing either.  Both are well defined at every
+	// width; it is simply that configurations with wide_significand == false never
+	// reach them.
+
+	// Decode to  value = (-1)^sign * S * 2^e.  Pre: neither zero nor NaR.
+	constexpr takum_wide::operand to_wide_operand() const noexcept {
+		return takum_wide::decode_operand<Codec>(sign(), magnitude_bits());
+	}
+
+	// Round a fully evaluated exact result into this takum.  A zero V is the
+	// genuine zero the codec cannot express; saturation follows conversion from a
+	// native float and lands on maxpos / maxneg / zero.
+	CONSTEXPRESSION takum& assign_wide(const takum_wide::wide_value& r) noexcept {
+		if (takum_wide::iszero(r.V)) { setzero(); return *this; }
+		auto enc = takum_wide::encode<Codec>(r);
+		if (enc.overflowed()) { if (r.sign) maxneg(); else maxpos(); return *this; }
+		if (enc.underflowed()) { setzero(); return *this; }
+		// The codec never sets the sign bit (I4); two's-complement negate here.
+		setbits(r.sign ? (((~enc.magnitude) + 1ull) & nbits_mask()) : enc.magnitude);
+		return *this;
+	}
 
 	// prefix/postfix increment: advance to next/previous representable value
 	constexpr takum& operator++() noexcept {
@@ -452,6 +513,18 @@ protected:
 	}
 
 	static constexpr uint64_t nbits_mask() noexcept { return Codec::nbits_mask(); }
+
+	// Exact addition / subtraction for wide configurations.  The zero cases are
+	// peeled off here because takum_wide::sum() decodes a significand and a zero
+	// has none; they are also the cases issue #1300 opened on -- x + 0 came back
+	// quantized to a double rather than as x.
+	CONSTEXPRESSION takum& wide_sum(const takum& rhs, bool subtract) noexcept {
+		if (rhs.iszero()) return *this;
+		if (iszero()) { *this = (subtract ? -rhs : rhs); return *this; }
+		return assign_wide(takum_wide::sum(takum_wide::widen(to_wide_operand()),
+		                                   takum_wide::widen(rhs.to_wide_operand()),
+		                                   subtract));
+	}
 
 	//////////////////////////////////////////////////////
 	/// conversion routines from native types

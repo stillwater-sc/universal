@@ -196,9 +196,21 @@ public:
 		return result;
 	}
 
-	// in-place arithmetic via double conversion, matching takum<>'s current
-	// approach.  Native logarithmic arithmetic -- where multiply/divide become
-	// fixed-point add/subtract on l -- is tracked in #1297.
+	// Addition and subtraction still evaluate in a double.  They have no
+	// logarithmic shortcut -- unlike the multiply and divide below -- so an exact
+	// path has to leave the logarithmic domain and come back, which costs a
+	// transcendental per operand at the working width.
+	//
+	// That double is a single rounding only while the operands themselves are
+	// exact doubles.  The fraction of l is p bits wide with p reaching
+	// maxCharBits, so takum_log<64,3> carries 59 against a double's 53 and both
+	// operands are quantized before the addition: measured against a 113-bit
+	// reference, 99.22% of 64-bit sums come back incorrectly rounded, against
+	// 0.00% at 16 and 32 bits.  The linear takum resolved the same defect by
+	// evaluating in integers (takum_wide_arithmetic.hpp), which works there
+	// because its values are dyadic and its sums are not transcendental.  The
+	// remaining half of #1300.  Native logarithmic arithmetic more broadly is
+	// tracked in #1297.
 	CONSTEXPRESSION takum_log& operator+=(const takum_log& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
 		return convert_ieee754(double(*this) + double(rhs));

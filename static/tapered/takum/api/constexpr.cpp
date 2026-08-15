@@ -327,6 +327,43 @@ try {
 			"constexpr c_min for rbits=5 below int min");
 	}
 
+	// ----------------------------------------------------------------------------
+	// Wide configurations evaluate their arithmetic in integers rather than in a
+	// double (issue #1300).  That path has to stay constant-evaluable: the double
+	// path it replaced was constexpr, so losing it here would be a silent
+	// regression in what callers can write, and nothing else in the suite would
+	// notice.  These are static_asserts precisely so the compiler is the check.
+	// ----------------------------------------------------------------------------
+	{
+		using tk64 = takum<64, 3, std::uint64_t>;
+		static_assert(tk64::wide_significand, "takum<64,3> takes the exact integer path");
+
+		constexpr tk64 two(2.0), three(3.0);
+
+		constexpr tk64 sum  = two + three;
+		constexpr tk64 diff = two - three;
+		constexpr tk64 prod = two * three;
+		constexpr tk64 quot = tk64(6.0) / three;
+		static_assert(static_cast<double>(sum)  ==  5.0, "constexpr takum<64,3> 2+3 == 5");
+		static_assert(static_cast<double>(diff) == -1.0, "constexpr takum<64,3> 2-3 == -1");
+		static_assert(static_cast<double>(prod) ==  6.0, "constexpr takum<64,3> 2*3 == 6");
+		static_assert(static_cast<double>(quot) ==  2.0, "constexpr takum<64,3> 6/3 == 2");
+
+		// The reported symptom of #1300, decided at compile time: one encoding step
+		// above 1.0 plus zero is that same encoding, not a value quantized to a
+		// double on the way in.
+		constexpr tk64 eps = [] {
+			tk64 e;
+			e.setbits(tk64(1.0).raw_bits() + 1ull);
+			return e;
+		}();
+		constexpr tk64 zero{};
+		static_assert((eps + zero).raw_bits() == eps.raw_bits(),
+			"constexpr takum<64,3> eps + 0 == eps");
+		static_assert((eps - zero).raw_bits() == eps.raw_bits(),
+			"constexpr takum<64,3> eps - 0 == eps");
+	}
+
 	std::cout << "takum constexpr verification: "
 	          << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
 
