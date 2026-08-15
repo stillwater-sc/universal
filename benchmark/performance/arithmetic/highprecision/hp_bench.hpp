@@ -53,13 +53,12 @@ namespace hpbench {
 	// a qd to a double hands the compiler limb 0 and it is then free to prove that the other three
 	// limbs are dead and skip the work that produced them.
 	template<typename Scalar>
-	struct components {
-		static constexpr int value = 1;
-		static void sink(const Scalar& v) { g_sink = double(v); }
+	struct componentSink {
+		static void store(const Scalar& v) { g_sink = double(v); }
 	};
 
 	template<typename Scalar>
-	inline void consume(const Scalar& v) { components<Scalar>::sink(v); }
+	inline void consume(const Scalar& v) { componentSink<Scalar>::store(v); }
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	/// deterministic sample data
