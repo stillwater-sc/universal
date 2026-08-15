@@ -47,22 +47,19 @@ namespace hpbench {
 	// which in turn keeps the computation that produced the value
 	inline volatile double g_sink = 0.0;
 
-	// number of stored double components; specialized for the multi-component types in hp_types.hpp
+	// How a value reaches the sink. The primary template covers the single-component types, where
+	// the value is its own leading component. hp_types.hpp specializes this for each
+	// multi-component type: consuming only the leading component is not enough, because converting
+	// a qd to a double hands the compiler limb 0 and it is then free to prove that the other three
+	// limbs are dead and skip the work that produced them.
 	template<typename Scalar>
-	struct components { static constexpr int value = 1; };
+	struct components {
+		static constexpr int value = 1;
+		static void sink(const Scalar& v) { g_sink = double(v); }
+	};
 
-	// consuming only the leading component is not enough: converting a qd to a double hands the
-	// compiler limb 0, and it is then free to prove that the other three limbs are dead and skip
-	// the work that produced them. Every component goes through the sink.
 	template<typename Scalar>
-	inline void consume(const Scalar& v) {
-		if constexpr (components<Scalar>::value == 1) {
-			g_sink = double(v);
-		}
-		else {
-			for (int i = 0; i < components<Scalar>::value; ++i) g_sink = v[i];
-		}
-	}
+	inline void consume(const Scalar& v) { components<Scalar>::sink(v); }
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	/// deterministic sample data
@@ -343,26 +340,27 @@ namespace hpbench {
 		// compiler contract the two_prod error term into a single instruction, which changes both
 		// the instruction count and, when the code is not fma-aware, the result
 		static std::string isaExtensions() {
-			std::string extensions;
-#if defined(__AVX512F__)
-			extensions += "AVX512F ";
-#endif
-#if defined(__AVX2__)
-			extensions += "AVX2 ";
+			// the list starts at the baseline and grows, so it is never empty and the floor is
+			// stated rather than implied
+			std::string extensions("baseline");
+#if defined(__SSE3__)
+			extensions += " SSE3";
 #endif
 #if defined(__AVX__)
-			extensions += "AVX ";
+			extensions += " AVX";
+#endif
+#if defined(__AVX2__)
+			extensions += " AVX2";
+#endif
+#if defined(__AVX512F__)
+			extensions += " AVX512F";
 #endif
 #if defined(__FMA__)
-			extensions += "FMA ";
-#endif
-#if defined(__SSE3__)
-			extensions += "SSE3 ";
+			extensions += " FMA";
 #endif
 #if defined(LIB_USE_AVX2)
-			extensions += "(UNIVERSAL_USE_AVX2=ON) ";
+			extensions += " (UNIVERSAL_USE_AVX2=ON)";
 #endif
-			if (extensions.empty()) extensions = "baseline";
 			return extensions;
 		}
 	};

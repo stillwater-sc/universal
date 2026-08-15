@@ -28,10 +28,19 @@
 
 namespace hpbench {
 
-	template<> struct components<sw::universal::dd> { static constexpr int value = 2; };
-	template<> struct components<sw::universal::dd_cascade> { static constexpr int value = 2; };
-	template<> struct components<sw::universal::td_cascade> { static constexpr int value = 3; };
-	template<> struct components<sw::universal::qd> { static constexpr int value = 4; };
-	template<> struct components<sw::universal::qd_cascade> { static constexpr int value = 4; };
+	// every limb goes through the sink, so no part of a result can be proven dead and deleted
+	template<typename Scalar, int NR_COMPONENTS>
+	struct multiComponent {
+		static constexpr int value = NR_COMPONENTS;
+		static void sink(const Scalar& v) {
+			for (int i = 0; i < NR_COMPONENTS; ++i) g_sink = v[i];
+		}
+	};
+
+	template<> struct components<sw::universal::dd> : multiComponent<sw::universal::dd, 2> {};
+	template<> struct components<sw::universal::dd_cascade> : multiComponent<sw::universal::dd_cascade, 2> {};
+	template<> struct components<sw::universal::td_cascade> : multiComponent<sw::universal::td_cascade, 3> {};
+	template<> struct components<sw::universal::qd> : multiComponent<sw::universal::qd, 4> {};
+	template<> struct components<sw::universal::qd_cascade> : multiComponent<sw::universal::qd_cascade, 4> {};
 
 } // namespace hpbench
