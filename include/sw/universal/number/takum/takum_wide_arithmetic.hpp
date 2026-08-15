@@ -97,7 +97,13 @@ constexpr u128 sub(const u128& a, const u128& b) noexcept {
 	return r;
 }
 
-// Pre: s < 128, and no significant bit is shifted out.
+// Pre: s < 128, and no significant bit is shifted out of the 128-bit value.
+//
+// The low word's own overflow is intended and is not that: `v.lo << s` drops the
+// bits the `v.hi` term simultaneously carries up, which is what makes this a
+// 128-bit shift rather than two 64-bit ones.  Unsigned overflow is defined, so
+// this is clean under -fsanitize=undefined; -fsanitize=integer reports it, since
+// that group flags defined wraparound too.
 constexpr u128 shift_left(const u128& v, unsigned s) noexcept {
 	if (s == 0u) return v;
 	if (s >= 64u) return u128{ v.lo << (s - 64u), 0ull };
