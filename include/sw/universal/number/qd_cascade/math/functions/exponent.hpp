@@ -47,17 +47,26 @@ namespace sw { namespace universal {
            evaluated using the familiar Taylor series.  Reducing the
            argument substantially speeds up the convergence.
 
-           PRECISION NOTE (2026-03-16): The 16 repeated squarings
-           (s = 2*s + s^2) accumulate rounding error from the generic
-           floatcascade multiply_cascades(). For some input values,
-           this causes the qd_cascade exp() to lose ~10 decimal digits
-           compared to qd::exp(), which uses a hand-tuned sqr() and
-           multiplication. The log() function (which uses Newton iteration
-           on exp) is individually accurate to ~1e-65 when verified
-           against known constants (qdc_ln2, qdc_ln10, qdc_e), but
-           the round-trip log(exp(x)) can show errors up to ~1e-51
-           due to the compounded multiplication error in exp().
-           See floatcascade.hpp multiply_cascades() for details.
+           PRECISION NOTE (2026-08-15, supersedes the 2026-03-16 note):
+           The ~10 digit loss this note used to describe was real, but it
+           was NOT caused by multiply_cascades(). It came from addition:
+           expansion_ops::add_cascades() returned a sum whose value was
+           exact but whose components overlapped, and compress_8to4()
+           dropped the fourth component on roughly one addition in eight.
+           The 16 squarings amplified it, which is why exp() was where it
+           showed. Compressing the expansion (universal#1317) brought exp()
+           and log() to within a rounding of qd's, measured against an
+           exact decimal oracle:
+
+                        before      after       qd
+             exp      4.8e-51    4.0e-65   4.0e-65   worst relative error
+             log      1.3e-50    2.3e-63   2.3e-63
+
+           Multiplication is a separate, much smaller matter: with full
+           4-component operands multiply_cascades() is ~2 decimal digits
+           behind qd's hand-tuned qd_mul (1.7e-63 vs 1.6e-65 worst case).
+           That is inside the format's 63.6 digits, so it is a quality gap
+           rather than a defect; tracked separately.
          */
 
         constexpr double k = double(1ull << 16);
