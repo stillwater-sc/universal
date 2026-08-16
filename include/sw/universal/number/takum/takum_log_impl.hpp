@@ -54,6 +54,7 @@
 
 #include <universal/internal/bit_manipulation.hpp>
 #include <universal/number/takum/takum_codec.hpp>
+#include <universal/number/takum/takum_log_arithmetic.hpp>
 
 namespace sw {	namespace universal {
 
@@ -81,6 +82,15 @@ public:
 	static constexpr unsigned r_mask        = Codec::r_mask;
 	static constexpr unsigned dr_field_mask = Codec::dr_field_mask;
 	static constexpr unsigned maxCharBits   = Codec::maxCharBits;
+
+	// Does the format outrun a double?  l carries p fraction bits with p reaching
+	// maxCharBits, so this is true exactly when nbits > 54 + rbits -- 57 for the
+	// specified rbits = 3, which puts takum_log<64,3> and its 59 fraction bits on
+	// the wrong side of a double's 53.  Those configurations evaluate addition and
+	// subtraction in extended precision (takum_log_arithmetic.hpp); everything
+	// narrower keeps the double path, where the conversion error stays well below
+	// the format's own quantum.  Issue #1300.
+	static constexpr bool wide_significand = (maxCharBits + 1u) > 53u;
 
 	// The base of the value map.  std::numeric_limits<>::radix is a
 	// static constexpr int and cannot express sqrt(e), so the value base is
@@ -196,29 +206,40 @@ public:
 		return result;
 	}
 
-	// Addition and subtraction still evaluate in a double.  They have no
-	// logarithmic shortcut -- unlike the multiply and divide below -- so an exact
-	// path has to leave the logarithmic domain and come back, which costs a
-	// transcendental per operand at the working width.
+	// Addition and subtraction have no logarithmic shortcut -- unlike the multiply
+	// and divide below, which are exact integer work on l -- so they must leave the
+	// logarithmic domain and come back, at the cost of a transcendental or two.
 	//
-	// That double is a single rounding only while the operands themselves are
-	// exact doubles.  The fraction of l is p bits wide with p reaching
-	// maxCharBits, so takum_log<64,3> carries 59 against a double's 53 and both
-	// operands are quantized before the addition: measured against a 113-bit
-	// reference, 99.22% of 64-bit sums come back incorrectly rounded, against
-	// 0.00% at 16 and 32 bits.  The linear takum resolved the same defect by
-	// evaluating in integers (takum_wide_arithmetic.hpp), which works there
-	// because its values are dyadic and its sums are not transcendental.  The
-	// remaining half of #1300.  Native logarithmic arithmetic more broadly is
-	// tracked in #1297.
+	// Narrow configurations do that through a double, which is fine there: the
+	// operands' l carries p fraction bits, and while double(x) is never the exact
+	// value of a takum_log (e^(l/2) is transcendental), the conversion error sits
+	// far below the format's own quantum whenever p + 1 stays under 53.
+	//
+	// Wide ones do not have that luxury.  takum_log<64,3> carries 59 fraction bits
+	// of l against a double's 53, so both operands were quantized before the
+	// addition: measured against an 80-digit reference, 99.22% of 64-bit sums came
+	// back incorrectly rounded, against 0.00% at 16 and 32 bits.  Those evaluate
+	// the identity in an extended-precision local double-double instead, factoring
+	// out the larger operand so the transcendentals only ever see a bounded
+	// argument -- see takum_log_arithmetic.hpp.  Issue #1300.
 	CONSTEXPRESSION takum_log& operator+=(const takum_log& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
-		return convert_ieee754(double(*this) + double(rhs));
+		if constexpr (wide_significand) {
+			return wide_sum(rhs, false);
+		}
+		else {
+			return convert_ieee754(double(*this) + double(rhs));
+		}
 	}
 	CONSTEXPRESSION takum_log& operator+=(double rhs) { return *this += takum_log(rhs); }
 	CONSTEXPRESSION takum_log& operator-=(const takum_log& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
-		return convert_ieee754(double(*this) - double(rhs));
+		if constexpr (wide_significand) {
+			return wide_sum(rhs, true);
+		}
+		else {
+			return convert_ieee754(double(*this) - double(rhs));
+		}
 	}
 	CONSTEXPRESSION takum_log& operator-=(double rhs) { return *this -= takum_log(rhs); }
 	// Multiplication and division are EXACT in the logarithmic domain, so neither
@@ -454,6 +475,36 @@ protected:
 		return *this;
 	}
 	static constexpr uint64_t nbits_mask() noexcept { return Codec::nbits_mask(); }
+
+	// Extended-precision addition / subtraction for wide configurations.  The zero
+	// cases are peeled off first: takum_log_arith::combine() decodes an l and a
+	// zero has none, and x +/- 0 must return x unchanged rather than route through
+	// a conversion that would quantize it -- the symptom #1300 opened on.
+	takum_log& wide_sum(const takum_log& rhs, bool subtract) {
+		if (rhs.iszero()) return *this;
+		if (iszero()) { *this = (subtract ? -rhs : rhs); return *this; }
+
+		const auto da = Codec::decode(magnitude_bits());
+		const auto db = Codec::decode(rhs.magnitude_bits());
+		const auto la = takum_log_arith::exact_l(da.c, da.M_bits, da.p);
+		const auto lb = takum_log_arith::exact_l(db.c, db.M_bits, db.p);
+
+		const auto r = takum_log_arith::combine(la, sign(), lb, rhs.sign() != subtract);
+		if (r.zero)     { setzero(); return *this; }
+		if (r.take_big) {
+			// the smaller operand could not move the result
+			const bool aBig = !takum_log_arith::less(la, lb);
+			if (!aBig) *this = (subtract ? -rhs : rhs);
+			return *this;
+		}
+
+		const auto s = takum_log_arith::to_integer_fraction(r.l);
+		const auto enc = Codec::encode_fraction(s.c, s.N, takum_log_arith::qbits);
+		if (enc.overflowed())  { if (r.sign) maxneg(); else maxpos(); return *this; }
+		if (enc.underflowed()) { setzero(); return *this; }
+		setbits(r.sign ? (((~enc.magnitude) + 1ull) & nbits_mask()) : enc.magnitude);
+		return *this;
+	}
 
 	template<typename SignedInt>
 	CONSTEXPRESSION takum_log& convert_signed(SignedInt rhs) noexcept { return convert_ieee754(double(rhs)); }
