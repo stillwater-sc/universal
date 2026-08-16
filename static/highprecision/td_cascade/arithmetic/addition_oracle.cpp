@@ -85,6 +85,11 @@ namespace {
 	// ever dropped, which would cost roughly 2^53 times this budget.
 	constexpr int TOLERANCE_BITS = 152;
 
+	// Multiplication is held to a tighter budget: it is correctly rounded, measuring 0.23 ulp of
+	// the 159-bit format worst case over 400 random full-width products, where the sorted
+	// accumulation it replaced measured 5.5. 157 bits sits between the two.
+	constexpr int MULTIPLICATION_TOLERANCE_BITS = 157;
+
 	int VerifyAdditionAgainstOracle(bool reportTestCases, unsigned nrOfTestCases, std::uint64_t seed) {
 		using namespace sw::universal;
 		int nrOfFailedTests = 0;
@@ -104,6 +109,35 @@ namespace {
 					std::cerr << "  a   = " << to_triple(a) << '\n';
 					std::cerr << "  b   = " << to_triple(b) << '\n';
 					std::cerr << "  a+b = " << to_triple(sum) << '\n';
+				}
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+	// universal#1322 ported the classic qd_mul schedule to this width too. Before it, the sorted
+	// accumulation dropped the error term of every sub-ulp carry and was accurate to 5.5 ulps worst
+	// case, with a quarter of random full-width products past 1 ulp. Dyadic multiplication is
+	// exact, so the reference here is the true product.
+	int VerifyMultiplicationAgainstOracle(bool reportTestCases, unsigned nrOfTestCases, std::uint64_t seed) {
+		using namespace sw::universal;
+		int nrOfFailedTests = 0;
+		Generator gen(seed);
+		for (unsigned i = 0; i < nrOfTestCases; ++i) {
+			td_cascade a = gen.nextTripleDouble();
+			td_cascade b = gen.nextTripleDouble();
+			td_cascade product = a * b;
+
+			dyadic exact = exact_value<td_cascade, 3>(a) * exact_value<td_cascade, 3>(b);
+			dyadic computed = exact_value<td_cascade, 3>(product);
+
+			if (!within_tolerance(computed, exact, MULTIPLICATION_TOLERANCE_BITS)) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cerr << "FAIL: td_cascade multiplication is more than 2^-" << MULTIPLICATION_TOLERANCE_BITS << " relative from exact\n";
+					std::cerr << "  a   = " << to_triple(a) << '\n';
+					std::cerr << "  b   = " << to_triple(b) << '\n';
+					std::cerr << "  a*b = " << to_triple(product) << '\n';
 				}
 			}
 		}
@@ -162,7 +196,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "triple-double cascade addition against an exact dyadic oracle";
+	std::string test_suite         = "triple-double cascade addition and multiplication against an exact dyadic oracle";
 	std::string test_tag           = "td_cascade addition oracle";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
@@ -180,6 +214,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyAdditionAgainstOracle(reportTestCases, 64, 0xC0FFEEull), test_tag, "addition vs exact dyadic");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplicationAgainstOracle(reportTestCases, 64, 0xF00Dull), test_tag, "multiplication vs exact dyadic");
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtResidual(reportTestCases, 32, 0xBEEFull), test_tag, "sqrt residual vs exact dyadic");
 #endif
 
@@ -193,6 +228,7 @@ try {
 
 #if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyAdditionAgainstOracle(reportTestCases, 4096, 0x9ABCull), test_tag, "addition vs exact dyadic (level 4)");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplicationAgainstOracle(reportTestCases, 4096, 0xBCDEull), test_tag, "multiplication vs exact dyadic (level 4)");
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtResidual(reportTestCases, 512, 0xDEF0ull), test_tag, "sqrt residual vs exact dyadic (level 4)");
 #endif
 

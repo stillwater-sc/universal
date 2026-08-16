@@ -163,5 +163,25 @@ Two smaller pieces came with it:
 | sqrt residual, ulps of 2^-212 | 15 | **8.6** | 1.0 |
 | `inf * 3` | NaN | inf | inf |
 
-`floatcascade<3>` (td_cascade) still uses the generic sorted multiply and is 9.4x `dd` on that
-operation; porting the same schedule to N=3 is the natural next step.
+### N=3
+
+The same schedule was then ported to `floatcascade<3>`, one order shorter: products through eps^2
+are accumulated exactly with `three_sum`/`two_sum` chains, everything at eps^3 and below is summed
+in plain arithmetic, and `renorm4()` closes four terms into three components. `multiply_cascade_by_double`
+has an N=3 form for the same reason it has an N=4 one.
+
+Measured over 400 random full-width triple-double products against the exact dyadic oracle, and on
+the benchmark suite:
+
+| measurement | sorted accumulation | qd_mul schedule |
+|---|---|---|
+| multiply, worst error | 5.53 ulps of 2^-159 | **0.23 ulps** |
+| multiply, products past 1 ulp | 102 of 400 | **0 of 400** |
+| square, worst error | 9.72 ulps | **0.22 ulps** |
+| multiply, nsec/op | 214 | **63** |
+| exp, nsec/op | 13406 | **3280** |
+| log, nsec/op | 26224 | **7009** |
+| sin, nsec/op | 9763 | **2846** |
+
+Division is untouched by this and remains the weakest `td_cascade` operation at 3.2 ulps worst
+case; it uses a Newton refinement whose residual path has its own rounding behaviour.
