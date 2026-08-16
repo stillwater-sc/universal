@@ -147,6 +147,10 @@ export default defineConfig({
           items: [{ autogenerate: { directory: 'design' } }],
         },
         {
+          label: 'Assessments',
+          items: [{ autogenerate: { directory: 'assessments' } }],
+        },
+        {
           label: 'Build & Install',
           items: [{ autogenerate: { directory: 'build' } }],
         },

@@ -1,4 +1,7 @@
-# Multi-component arithmetic: cascade vs direct
+# Multi-component Systems
+
+**A design assessment of the cascade and direct implementations: what they cost against each other,
+what the August 2026 optimizations bought, and where a second pass should start.**
 
 Universal carries two implementations of multi-component floating-point. The **direct** types, `dd`
 and `qd`, are hand-specialized transliterations of the Hida/Li/Bailey QD library: one algorithm per
