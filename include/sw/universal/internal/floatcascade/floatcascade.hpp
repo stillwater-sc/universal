@@ -1549,7 +1549,6 @@ namespace expansion_ops {
         double p0 = tprod(a[0], b, q0);
         double p1 = tprod(a[1], b, q1);
         double p2 = tprod(a[2], b, q2);
-        double p3 = a[3] * b;
 
         double s0 = p0;
         double s2{};
@@ -1559,6 +1558,9 @@ namespace expansion_ops {
 
         // three_sum2: keep the sum and one residual, drop what falls below eps^4
         {
+            // the fourth partial product contributes only here, and only at
+            // eps^3, so it does not need its error term
+            double p3 = a[3] * b;
             double u{}, v{}, w{};
             u = tsum(q1, q2, v);
             q1 = tsum(p3, u, w);
