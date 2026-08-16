@@ -83,6 +83,13 @@ namespace {
 	// dropped component through.
 	constexpr int TOLERANCE_BITS = 205;
 
+	// Multiplication is held to a tighter budget, because the defect it guards against is a
+	// quality gap rather than a dropped component: before universal#1322 the worst case was
+	// 1.7e-63 (2^-209), against 1.6e-65 (2^-215) for both qd and the current implementation.
+	// 210 bits sits between the two - it fails the discarded-carry implementation while leaving
+	// the correct one a factor of 45 of headroom for platform-dependent rounding.
+	constexpr int MULTIPLICATION_TOLERANCE_BITS = 210;
+
 	int VerifyAdditionAgainstOracle(bool reportTestCases, unsigned nrOfTestCases, std::uint64_t seed) {
 		using namespace sw::universal;
 		int nrOfFailedTests = 0;
@@ -102,6 +109,35 @@ namespace {
 					std::cerr << "  a   = " << to_quad(a) << '\n';
 					std::cerr << "  b   = " << to_quad(b) << '\n';
 					std::cerr << "  a+b = " << to_quad(sum) << '\n';
+				}
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+	// universal#1322: multiplication had no accuracy defect of #1317's size, but it was about two
+	// decimal digits behind qd because it discarded the error term of every sub-ulp carry while
+	// folding a sorted 32-term expansion into 4 components. Dyadic multiplication is exact, so the
+	// reference here is the true product, not an approximation of it.
+	int VerifyMultiplicationAgainstOracle(bool reportTestCases, unsigned nrOfTestCases, std::uint64_t seed) {
+		using namespace sw::universal;
+		int nrOfFailedTests = 0;
+		Generator gen(seed);
+		for (unsigned i = 0; i < nrOfTestCases; ++i) {
+			qd_cascade a = gen.nextQuadDouble();
+			qd_cascade b = gen.nextQuadDouble();
+			qd_cascade product = a * b;
+
+			dyadic exact = exact_value<qd_cascade, 4>(a) * exact_value<qd_cascade, 4>(b);
+			dyadic computed = exact_value<qd_cascade, 4>(product);
+
+			if (!within_tolerance(computed, exact, MULTIPLICATION_TOLERANCE_BITS)) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cerr << "FAIL: qd_cascade multiplication is more than 2^-" << MULTIPLICATION_TOLERANCE_BITS << " relative from exact\n";
+					std::cerr << "  a   = " << to_quad(a) << '\n';
+					std::cerr << "  b   = " << to_quad(b) << '\n';
+					std::cerr << "  a*b = " << to_quad(product) << '\n';
 				}
 			}
 		}
@@ -160,7 +196,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "quad-double cascade addition against an exact dyadic oracle";
+	std::string test_suite         = "quad-double cascade addition and multiplication against an exact dyadic oracle";
 	std::string test_tag           = "qd_cascade addition oracle";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
@@ -170,6 +206,7 @@ try {
 #if MANUAL_TESTING
 
 	nrOfFailedTestCases += VerifyAdditionAgainstOracle(true, 32, 0xC0FFEEull);
+	nrOfFailedTestCases += VerifyMultiplicationAgainstOracle(true, 32, 0xF00Dull);
 	nrOfFailedTestCases += VerifySqrtResidual(true, 32, 0xBEEFull);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -178,11 +215,13 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyAdditionAgainstOracle(reportTestCases, 64, 0xC0FFEEull), test_tag, "addition vs exact dyadic");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplicationAgainstOracle(reportTestCases, 64, 0xF00Dull), test_tag, "multiplication vs exact dyadic");
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtResidual(reportTestCases, 32, 0xBEEFull), test_tag, "sqrt residual vs exact dyadic");
 #endif
 
 #if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyAdditionAgainstOracle(reportTestCases, 256, 0x1234ull), test_tag, "addition vs exact dyadic (level 2)");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplicationAgainstOracle(reportTestCases, 256, 0x2345ull), test_tag, "multiplication vs exact dyadic (level 2)");
 #endif
 
 #if REGRESSION_LEVEL_3
@@ -191,6 +230,7 @@ try {
 
 #if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyAdditionAgainstOracle(reportTestCases, 4096, 0x9ABCull), test_tag, "addition vs exact dyadic (level 4)");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplicationAgainstOracle(reportTestCases, 4096, 0xBCDEull), test_tag, "multiplication vs exact dyadic (level 4)");
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtResidual(reportTestCases, 512, 0xDEF0ull), test_tag, "sqrt residual vs exact dyadic (level 4)");
 #endif
 

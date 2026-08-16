@@ -1443,64 +1443,244 @@ namespace expansion_ops {
         return compress_expansion(result);
     }
 
-    // Multiply two floatcascade<4> -> floatcascade<4>.  Computes 16 partial
-    // products with two_prod, sorts the 32-term expansion (16 products + 16
-    // errors) by magnitude in a fixed-size array (no std::sort), then
-    // accumulates with two_sum chains into a 4-component result and
-    // renormalizes.
-    constexpr inline floatcascade<4> multiply_cascades(const floatcascade<4>& a, const floatcascade<4>& b) {
-        // Compute all 16 partial products with their error terms.
-        double prod[16] = {};
-        double err[16]  = {};
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < 4; ++j) {
-                two_prod(a[i], b[j], prod[i * 4 + j], err[i * 4 + j]);
+    // Five-term renormalization (Hida/Li/Bailey QD renorm), written against the
+    // hardened fast_two_sum above.  It is the companion to the multiplication
+    // below: that accumulation delivers five terms in decreasing magnitude, each
+    // within an ulp of the one before, which is the precondition a fast_two_sum
+    // chain needs (see compress_expansion for what happens when it is missing).
+    constexpr inline void renorm5(double& a0, double& a1, double& a2, double& a3, double& a4) {
+        if (std::is_constant_evaluated()) {
+            if (sw::universal::is_inf_cx(a0)) return;
+        }
+        else {
+            if (std::isinf(a0)) return;
+        }
+
+        double s0{}, s1{}, s2{ 0.0 }, s3{ 0.0 };
+
+        // Phase 1: bottom-up accumulation, carrying each remainder up one place.
+        fast_two_sum(a3, a4, s0, a4);
+        fast_two_sum(a2, s0, s0, a3);
+        fast_two_sum(a1, s0, s0, a2);
+        fast_two_sum(a0, s0, a0, a1);
+
+        // Phase 2: extract four non-overlapping components, shifting the
+        // remaining precision down whenever a component cancels to zero.
+        fast_two_sum(a0, a1, s0, s1);
+        if (s1 != 0.0) {
+            fast_two_sum(s1, a2, s1, s2);
+            if (s2 != 0.0) {
+                fast_two_sum(s2, a3, s2, s3);
+                if (s3 != 0.0) s3 += a4; else s2 += a4;
+            }
+            else {
+                fast_two_sum(s1, a3, s1, s2);
+                if (s2 != 0.0) fast_two_sum(s2, a4, s2, s3);
+                else           fast_two_sum(s1, a4, s1, s2);
+            }
+        }
+        else {
+            fast_two_sum(s0, a2, s0, s1);
+            if (s1 != 0.0) {
+                fast_two_sum(s1, a3, s1, s2);
+                if (s2 != 0.0) fast_two_sum(s2, a4, s2, s3);
+                else           fast_two_sum(s1, a4, s1, s2);
+            }
+            else {
+                fast_two_sum(s0, a3, s0, s1);
+                if (s1 != 0.0) fast_two_sum(s1, a4, s1, s2);
+                else           fast_two_sum(s0, a4, s0, s1);
             }
         }
 
-        // Build expansion: up to 32 terms.
-        double expansion[32] = {};
-        int n_expansion = 0;
-        for (int k = 0; k < 16; ++k) {
-            if (prod[k] != 0.0) expansion[n_expansion++] = prod[k];
-            if (err[k]  != 0.0) expansion[n_expansion++] = err[k];
-        }
+        a0 = s0;
+        a1 = s1;
+        a2 = s2;
+        a3 = s3;
+    }
 
-        auto absv = [](double x) constexpr -> double { return x < 0.0 ? -x : x; };
+    // Non-finite operands need to be taken out before the error-free transformations
+    // run.  two_prod(inf, x) computes fma(inf, x, -inf), which is NaN, and every
+    // sum downstream smears that NaN across the expansion: the old sort-based
+    // multiply turned inf * 3 into a NaN, and a transliteration of qd_mul returns
+    // the right leading value with -nan trailing components (qd itself does this).
+    // IEEE already defines the answer, and the trailing components of an infinity
+    // or a NaN carry no information, so they are cleared.
+    constexpr inline bool is_finite_product(double a, double b) {
+        double p = a * b;
+        if (std::is_constant_evaluated()) return sw::universal::is_finite_cx(p);
+        return std::isfinite(p);
+    }
 
-        // Sort expansion by descending magnitude (bubble sort over up to 32 elements).
-        for (int pass = 0; pass < n_expansion - 1; ++pass) {
-            for (int j = 0; j < n_expansion - 1 - pass; ++j) {
-                if (absv(expansion[j]) < absv(expansion[j + 1])) {
-                    double t = expansion[j]; expansion[j] = expansion[j + 1]; expansion[j + 1] = t;
-                }
-            }
-        }
-
-        // Accumulate sorted expansion into a 4-component result with carry
-        // propagation through two_sum chains.
+    constexpr inline floatcascade<4> nonfinite_product(double a, double b) {
         floatcascade<4> result;
-        if (n_expansion > 0) {
-            result[0] = expansion[0];
-            for (int i = 1; i < n_expansion; ++i) {
-                double carry = expansion[i];
-                for (int j = 0; j < 4 && carry != 0.0; ++j) {
-                    double s = 0.0, e = 0.0;
-                    two_sum(result[j], carry, s, e);
-                    result[j] = s;
-                    carry = e;
-                }
-                // Sub-ULP carry below the last component is precision loss
-                // beyond what 4 doubles can represent; absorb into result[3].
-                if (carry != 0.0) {
-                    double s = 0.0, e = 0.0;
-                    two_sum(result[3], carry, s, e);
-                    result[3] = s;
-                }
-            }
-        }
+        result[0] = a * b;
+        result[1] = 0.0;
+        result[2] = 0.0;
+        result[3] = 0.0;
+        return result;
+    }
 
-        return renormalize(result);
+    // Multiply a floatcascade<4> by a single double.  Classic qd gets this from a
+    // separate operator*=(double); the cascade framework needs it as a named
+    // function because the general multiply is reached through one entry point.
+    //
+    // It is worth having: scaling by a double is common on its own, and it is
+    // also the shape division produces internally, where the initial quotient
+    // estimate is a one-component cascade. Running that through the full
+    // 4x4 schedule wastes ten of the sixteen partial products.
+    constexpr inline floatcascade<4> multiply_cascade_by_double(const floatcascade<4>& a, double b) {
+        if (!is_finite_product(a[0], b)) return nonfinite_product(a[0], b);
+
+        auto tsum = [](double x, double y, double& err) constexpr -> double {
+            double s{}, e{};
+            two_sum(x, y, s, e);
+            err = e;
+            return s;
+        };
+        auto tprod = [](double x, double y, double& err) constexpr -> double {
+            double p{}, e{};
+            two_prod(x, y, p, e);
+            err = e;
+            return p;
+        };
+
+        double q0{}, q1{}, q2{};
+        double p0 = tprod(a[0], b, q0);
+        double p1 = tprod(a[1], b, q1);
+        double p2 = tprod(a[2], b, q2);
+
+        double s0 = p0;
+        double s2{};
+        double s1 = tsum(q0, p1, s2);
+
+        three_sum(s2, q1, p2);
+
+        // three_sum2: keep the sum and one residual, drop what falls below eps^4
+        {
+            // the fourth partial product contributes only here, and only at
+            // eps^3, so it does not need its error term
+            double p3 = a[3] * b;
+            double u{}, v{}, w{};
+            u = tsum(q1, q2, v);
+            q1 = tsum(p3, u, w);
+            q2 = v + w;
+        }
+        double s3 = q1;
+        double s4 = q2 + p2;
+
+        renorm5(s0, s1, s2, s3, s4);
+
+        floatcascade<4> result;
+        result[0] = s0;
+        result[1] = s1;
+        result[2] = s2;
+        result[3] = s3;
+        return result;
+    }
+
+    // Multiply two floatcascade<4> -> floatcascade<4>.
+    //
+    // This is a transliteration of the classic qd_mul (Hida/Li/Bailey accurate
+    // multiplication, as implemented by qd::accurate_multiplication), expressed
+    // with the volatile-hardened error-free transformations above.
+    //
+    // The previous implementation computed the same 16 partial products but then
+    // bubble sorted the resulting 32-term expansion - up to 496 compare-and-swap
+    // steps - and folded it into 4 components with a carry loop that discarded
+    // the error term of every sub-ulp carry.  That cost about two decimal digits
+    // against qd (1.7e-63 vs 1.6e-65 worst case on full-width operands) and ran
+    // 8x slower (universal#1322).
+    //
+    // The reference algorithm needs no sorting at all: the products are generated
+    // in order of decreasing significance by construction, grouped by the total
+    // order of their operands (a[i]*b[j] contributes at order eps^(i+j)), and the
+    // groups are accumulated with three_sum / two_sum chains that keep every
+    // error term.  Terms below eps^4 cannot affect a 4-component result and are
+    // summed in plain arithmetic, exactly as the reference does.
+    constexpr inline floatcascade<4> multiply_cascades(const floatcascade<4>& a, const floatcascade<4>& b) {
+        if (!is_finite_product(a[0], b[0])) return nonfinite_product(a[0], b[0]);
+
+        // A one-component operand is common enough to be worth three comparisons:
+        // scaling by a double lands here, and so does every division, whose
+        // initial quotient estimate is a single double. The general schedule
+        // would spend ten of its sixteen partial products multiplying by zero.
+        if (b[1] == 0.0 && b[2] == 0.0 && b[3] == 0.0) return multiply_cascade_by_double(a, b[0]);
+        if (a[1] == 0.0 && a[2] == 0.0 && a[3] == 0.0) return multiply_cascade_by_double(b, a[0]);
+
+        // return-style wrappers so the body reads like the published algorithm
+        auto tsum = [](double x, double y, double& err) constexpr -> double {
+            double s{}, e{};
+            two_sum(x, y, s, e);
+            err = e;
+            return s;
+        };
+        auto tprod = [](double x, double y, double& err) constexpr -> double {
+            double p{}, e{};
+            two_prod(x, y, p, e);
+            err = e;
+            return p;
+        };
+
+        // order eps^0 and eps^1
+        double q0{}, q1{}, q2{}, q3{}, q4{}, q5{};
+        double p0 = tprod(a[0], b[0], q0);
+
+        double p1 = tprod(a[0], b[1], q1);
+        double p2 = tprod(a[1], b[0], q2);
+
+        // order eps^2
+        double p3 = tprod(a[0], b[2], q3);
+        double p4 = tprod(a[1], b[1], q4);
+        double p5 = tprod(a[2], b[0], q5);
+
+        // start accumulation
+        three_sum(p1, p2, q0);
+
+        // six-three sum of p2, q1, q2, p3, p4, p5
+        three_sum(p2, q1, q2);
+        three_sum(p3, p4, p5);
+        double t0{}, t1{};
+        double s0 = tsum(p2, p3, t0);
+        double s1 = tsum(q1, p4, t1);
+        double s2 = q2 + p5;
+        s1 = tsum(s1, t0, t0);
+        s2 += (t0 + t1);
+
+        // order eps^3
+        double q6{}, q7{}, q8{}, q9{};
+        double p6 = tprod(a[0], b[3], q6);
+        double p7 = tprod(a[1], b[2], q7);
+        double p8 = tprod(a[2], b[1], q8);
+        double p9 = tprod(a[3], b[0], q9);
+
+        // nine-two sum of q0, s1, q3, q4, q5, p6, p7, p8, p9
+        q0 = tsum(q0, q3, q3);
+        q4 = tsum(q4, q5, q5);
+        p6 = tsum(p6, p7, p7);
+        p8 = tsum(p8, p9, p9);
+        t0 = tsum(q0, q4, t1);
+        t1 += (q3 + q5);
+        double r1{};
+        double r0 = tsum(p6, p8, r1);
+        r1 += (p7 + p9);
+        q3 = tsum(t0, r0, q4);
+        q4 += (t1 + r1);
+        t0 = tsum(q3, s1, t1);
+        t1 += q4;
+
+        // order eps^4 and below: too small to move a 4-component result, so a
+        // plain sum is all the reference algorithm spends here
+        t1 += a[1] * b[3] + a[2] * b[2] + a[3] * b[1] + q6 + q7 + q8 + q9 + s2;
+
+        renorm5(p0, p1, s0, t0, t1);
+
+        floatcascade<4> result;
+        result[0] = p0;
+        result[1] = p1;
+        result[2] = s0;
+        result[3] = t0;
+        return result;
     }
 
 } // namespace expansion_ops

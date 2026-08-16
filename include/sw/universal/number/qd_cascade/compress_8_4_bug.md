@@ -122,3 +122,46 @@ the overlap never reaches a surviving component. Compressing them anyway would h
 cost of `dd_cascade` addition for no accuracy gain, so the two overloads carry a comment saying
 so, and `static/highprecision/td_cascade/arithmetic/addition_oracle.cpp` pins the triple-double
 case in case that ever stops being true.
+
+
+## Follow-up (universal#1322, 2026-08-16): multiplication
+
+With the addition fixed, multiplication became the remaining gap: about two decimal digits behind
+`qd` (1.7e-63 vs 1.6e-65 worst case on full-width operands) and 8x slower.
+
+The old implementation computed the 16 partial products with `two_prod`, built a 32-term expansion,
+**bubble sorted it** - up to 496 compare-and-swap steps - and folded it into 4 components with a
+carry loop that discarded the error term of every sub-ulp carry. Both problems came from the same
+place: sorting throws away the structure that makes the reference algorithm work.
+
+`multiply_cascades(floatcascade<4>, floatcascade<4>)` is now a transliteration of the classic
+qd_mul (`qd::accurate_multiplication`), written against the volatile-hardened error-free
+transformations. It needs no sorting at all: `a[i]*b[j]` contributes at order eps^(i+j), so the
+products are generated in order of decreasing significance by construction, and the groups are
+accumulated with `three_sum`/`two_sum` chains that keep every error term. Terms below eps^4 cannot
+move a 4-component result and are summed in plain arithmetic, exactly as the reference does. The
+five-term accumulation is closed by `renorm5()`, the QD renormalization companion to that schedule.
+
+Two smaller pieces came with it:
+
+- `multiply_cascade_by_double()`, the equivalent of qd's separate `operator*=(double)`. A
+  one-component operand is common - scaling by a double, and the initial quotient estimate inside
+  every division - and running it through the full 4x4 schedule wastes ten of the sixteen partial
+  products. `multiply_cascades` dispatches to it on three comparisons.
+- A non-finite guard. `two_prod(inf, x)` computes `fma(inf, x, -inf)`, which is NaN, and the sums
+  downstream smear it across the expansion. The old sort-based multiply turned `inf * 3` into a
+  **NaN**; a faithful qd_mul returns `inf` with `-nan` in the trailing components, which is what
+  classic `qd` does to this day. Both are now short-circuited to the IEEE result with cleared
+  trailing components.
+
+| measurement | before | after | classic `qd` |
+|---|---|---|---|
+| multiply, worst rel err (full-width operands) | 1.7e-63 | **1.6e-65** | 1.6e-65 |
+| multiply, nsec/op | 581 | **82** | 73 |
+| exp, nsec/op | 26036 | **6642** | 4165 |
+| log, nsec/op | 75321 | **21814** | 13183 |
+| sqrt residual, ulps of 2^-212 | 15 | **8.6** | 1.0 |
+| `inf * 3` | NaN | inf | inf |
+
+`floatcascade<3>` (td_cascade) still uses the generic sorted multiply and is 9.4x `dd` on that
+operation; porting the same schedule to N=3 is the natural next step.
