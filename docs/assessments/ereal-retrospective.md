@@ -1,4 +1,6 @@
-# ereal Retrospective: Development, Testing, Bugs, and Architecture Mishaps
+# ereal Retrospective
+
+**Development, testing, bugs, and architecture mishaps.**
 
 **Type under review:** `ereal<maxlimbs>` — adaptive multi-component (Priest/Shewchuk
 expansion) floating-point over `std::vector<double>`.

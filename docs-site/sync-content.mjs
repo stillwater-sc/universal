@@ -103,6 +103,9 @@ const FILE_MAP = {
   'ereal_limb_limit_derivation.md': 'design/ereal_limb_limit.md',
 
   // -- Assessments -------------------------------------------------
+  'assessments/elreal-phase4-status.md': 'assessments/elreal-phase4-status.md',
+  'assessments/ereal-retrospective.md': 'assessments/ereal-retrospective.md',
+  'assessments/millions-of-digits.md': 'assessments/millions-of-digits.md',
   'assessments/multi-component-cascade-vs-direct.md': 'assessments/multi-component.md',
 
   // -- Build & Install --------------------------------------------
