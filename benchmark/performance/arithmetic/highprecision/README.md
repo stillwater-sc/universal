@@ -188,9 +188,11 @@ depends on those two rows should be re-measured on the exact build in question, 
 made from a single compiler.
 
 Everything else is stable in direction across compilers: the kernel and mathlib ratios agree to
-within about 20% between gcc and clang, and `qd_cascade` multiply is 6x to 8x `qd` in both. The
-post-universal#1317 `qd_cascade` addition is 1.13x `qd` under gcc and 1.25x under clang - same
-direction, and slower than `qd` under both.
+within about 20% between gcc and clang. After universal#1322, `qd_cascade` multiply is 1.13x `qd`
+under gcc and 0.89x under clang - the only remaining row where the two compilers disagree about
+which implementation is ahead, and by a margin small enough that neither answer is interesting.
+The post-universal#1317 `qd_cascade` addition is 1.13x `qd` under gcc and 1.33x under clang: same
+direction, slower than `qd` under both.
 
 ### AVX2
 
@@ -235,13 +237,21 @@ qd_cascade                   8.572            0.2392             3.852e+31
 Reading the large residuals as correct decimal digits:
 
 - `qd_cascade` `sqrt`, `exp` and `log` were the original finding of this benchmark: 48 to 50 correct
-  digits where `qd` delivers 63. That was **fixed** in universal#1317 - the cause was not in those
-  functions but in addition, which returned an exact-valued but overlapping expansion whose fourth
-  component the renormalization then dropped. universal#1322 then replaced the multiplication with
-  the classic qd_mul schedule, which took `sqrt` from 15 ulps to 8.6 and made multiplication agree
-  with `qd` bit for bit against an exact oracle. `exp` and `log` also match `qd` exactly. The cost
-  of the first fix is on the other axis: quad-double addition is 46% more expensive, which is what
-  turned `qd_cascade`'s dot product from 0.83x `qd` into 1.10x.
+  digits where `qd` delivers 63. That was **fixed** in universal#1317 (an overlapping expansion
+  returned by addition, whose fourth component the renormalization then dropped) and improved again
+  in universal#1322 (multiplication rewritten to the classic qd_mul schedule).
+
+  What the numbers above show, and what they do not: the residuals are *self-consistency* checks,
+  so they bound the error from below and cannot certify a result as correctly rounded. On that
+  evidence `qd_cascade` went from 2.1e+15 ulps to 8.6 on `sqrt` and from 4.7e+13 to 0.24 on
+  `exp(log(x))`, against 1.0 and 0.22 for `qd` - the same order of magnitude, no longer 13 to 15
+  digits apart. The stronger claim, that `qd_cascade` multiplication is now bit-for-bit identical
+  to `qd`, rests on an external exact oracle rather than on this program; the in-repo artifact for
+  it is `static/highprecision/qd_cascade/arithmetic/addition_oracle.cpp`, which pins addition and
+  multiplication to within 2^-205 and 2^-210 of exact dyadic arithmetic.
+
+  The cost of the first fix is on the other axis: quad-double addition is 46% more expensive, which
+  is what turned `qd_cascade`'s dot product from 0.83x `qd` into 1.10x.
 - `sin`/`cos` above double-double precision lose digits on every type tested, over the sampled
   domain `[0.5, 2.0)`: `qd` holds about 41 digits, `qd_cascade` and `td_cascade` about 32, which is
   `dd` precision. The extra limbs are not carrying information through the trigonometric evaluation.
@@ -273,8 +283,10 @@ benchmark results.
    it is now 1.13x. What remains is the generic machinery's floor: a cascade operation carries its
    components through a renormalization that the hand-specialized code folds into the arithmetic.
 2. **Does the `volatile` hardening cost throughput?** Not measurably at the level this benchmark can
-   isolate. The add/subtract rows, where the hardened error-free transformations dominate, are the
-   rows where the cascade types *win*.
+   isolate. On the add/subtract rows, where the hardened error-free transformations dominate,
+   `dd_cascade` is the faster implementation (0.68x and 0.63x `dd`). `qd_cascade` is slightly
+   slower there (1.13x and 1.07x `qd`), but that is the compression universal#1317 added, not the
+   hardening: the same hardening is in both widths and only the wider one pays.
 3. **Is `td_cascade` a useful middle point?** Not on speed, and it is now the odd one out: it is
    the only width still on the generic multiply, at 9.4x `dd`. Against `dd` it ranges from 0.84x
    (divide) to 9.4x (multiply), with add/subtract at 1.4x and the kernels at 1.9x to 4.0x, and its
@@ -287,9 +299,11 @@ benchmark results.
    from an addition that was dropping a component; with the correct addition it is 1.10x to 1.15x.
    The earlier win was not real.
 5. **Can we retire classic `dd` and `qd`?** For `qd`, this is now a real option. universal#1317
-   removed the accuracy blocker and universal#1322 removed the speed one: against an exact oracle
-   `qd_cascade` matches `qd` bit for bit on multiplication and to a rounding on sqrt/exp/log, and
-   the cost is 1.1x to 2.0x rather than 6x to 8x - with division actually faster (0.75x). Whether
+   removed the accuracy blocker and universal#1322 removed the speed one: `qd_cascade` multiplication
+   is exact to within 2^-210 of dyadic arithmetic (the in-repo oracle test) and identical to `qd`
+   against an external decimal oracle, the mathlib residuals are within an order of magnitude of
+   `qd`'s, and the cost is 1.1x to 2.0x rather than 6x to 8x - with division actually faster
+   (0.75x). Whether
    1.1x on add/multiply is an acceptable price for one implementation instead of two is a
    judgement call, not a measurement. `dd_cascade` is the better bargain: faster than `dd` on
    add/subtract/divide, 1.07x on multiply, and its `sqrt` is more accurate.
