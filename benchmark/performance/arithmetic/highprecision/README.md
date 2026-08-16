@@ -284,8 +284,8 @@ benchmark results.
    components through a renormalization that the hand-specialized code folds into the arithmetic.
 2. **Does the `volatile` hardening cost throughput?** Not measurably at the level this benchmark can
    isolate. On the add/subtract rows, where the hardened error-free transformations dominate,
-   `dd_cascade` is the faster implementation (0.68x and 0.63x `dd`). `qd_cascade` is slightly
-   slower there (1.13x and 1.07x `qd`), but that is the compression universal#1317 added, not the
+   `dd_cascade` is the faster implementation (0.67x and 0.64x `dd`). `qd_cascade` is slightly
+   slower there (1.12x and 1.08x `qd`), but that is the compression universal#1317 added, not the
    hardening: the same hardening is in both widths and only the wider one pays.
 3. **Is `td_cascade` a useful middle point?** On speed it is now what its width suggests: against
    `dd` it ranges from 0.96x (divide) to 2.8x (multiply), with add/subtract at 1.4x, the kernels at
