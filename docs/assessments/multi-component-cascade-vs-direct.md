@@ -184,18 +184,27 @@ Each width now uses the formulation its direct counterpart uses. They differ, an
 not arbitrary: Karp's trick doubles a *double* seed once, which reaches 106 bits and no further, so
 it fits N=2 and cannot serve N=3 or N=4.
 
-| | formulation | before | after | vs direct |
-|---|---|---|---|---|
-| `dd_cascade` | Karp's trick, as `dd` | 580 ns | **142 ns** | 3.4x (was 13.8x) |
-| `td_cascade` | reciprocal Newton, 2 iterations | 957 ns | **690 ns** | - |
-| `qd_cascade` | reciprocal Newton, 3 iterations, as `qd` | 2982 ns | **1572 ns** | 1.45x (was 2.74x) |
+| | formulation | before | after | residual | vs direct |
+|---|---|---|---|---|---|
+| `dd_cascade` | reciprocal Newton, 2 iterations | 580 ns | **376 ns** | 1.4 -> 3.8 ulps | 8.9x (was 13.8x) |
+| `dd_cascade` with `UNIVERSAL_DD_CASCADE_FAST_SQRT` | Karp's trick, as `dd` | 580 ns | **142 ns** | 1.4 -> 5.5 ulps | 3.4x |
+| `td_cascade` | reciprocal Newton, 2 iterations | 957 ns | **692 ns** | 1.10 -> 0.72 ulps | - |
+| `qd_cascade` | reciprocal Newton, 3 iterations, as `qd` | 2982 ns | **1562 ns** | 0.42 -> 1.05 ulps | 1.42x (was 2.74x) |
 
 The accuracy trade was the point of ranking this item as a judgement call rather than a fix, and it
-went three different ways. `dd_cascade` gave up real accuracy - 1.4 to 10.8 ulps residual - but 10.8
-is *exactly* `dd`'s, because it is now exactly `dd`'s algorithm. `qd_cascade` gave up a little, 0.42
-to 1.05, again landing exactly on `qd`. `td_cascade` improved on both axes at once, 1.10 to 0.72
-ulps and 1.4x faster, because two multiplication-only iterations beat three divisions outright at
-that width.
+went three different ways.
+
+`td_cascade` improved on both axes at once - two multiplication-only iterations beat three divisions
+outright at that width. `qd_cascade` gave up a little, 0.42 to 1.05 ulps, landing exactly on `qd`
+because it now runs exactly `qd`'s algorithm.
+
+`dd_cascade` is the one with a real choice, so it carries both. The default keeps accuracy: 3.8 ulps
+at 376 nsec/op, still 2.8x better than `dd`'s 10.8. Defining
+`UNIVERSAL_DD_CASCADE_FAST_SQRT` selects Karp's trick instead - `dd`'s own algorithm at `dd`'s own
+accuracy, 142 nsec/op and 5.5 ulps - for code that would rather have `dd`'s speed and has decided it
+can afford `dd`'s error. A third Newton iteration was measured and rejected: it reaches only 3.3
+ulps for 532 nsec/op, because what limits that path is the rounding inside the iteration and the
+closing multiply, not the iteration count.
 
 `sin` and `cos` improved as a side effect at every width (`qd_cascade` 8331 -> 6359 nsec/op), since
 they take square roots internally.
@@ -221,7 +230,7 @@ single-argument evaluations, where the operand shape is not the variable of inte
 | multiply | 0.46 | 0.46 | 0.23 | 0.11 | 0.11 |
 | square | 4.23 | 4.23 | 0.22 | 4.01 | 4.01 |
 | divide | 0.47 | 0.47 | 0.33 | 0.14 | 0.14 |
-| `sqrt` | 10.8 (*) | 10.8 (*) | 0.72 (*) | 0.37 | 0.37 |
+| `sqrt` | 10.8 (*) | 3.8 (*) | 0.72 (*) | 0.37 | 0.37 |
 | `exp` | - | - | - | 0.26 | 0.26 |
 | `log` | - | - | - | 15.3 | 15.3 |
 
@@ -240,7 +249,7 @@ rather than cascade problems.
 | subtract | 23.9 | 15.3 | **0.64** | 32.5 | 61.5 | 66.1 | 1.07 |
 | multiply | 22.3 | 24.6 | 1.10 | 63.4 | 73.1 | 89.5 | 1.22 |
 | divide | 216.7 | 219.2 | 1.01 | 319.4 | 587.5 | 639.8 | 1.09 |
-| `sqrt` | 42.0 | 141.8 | 3.37 | 689.7 | 1086.8 | 1572.3 | 1.45 |
+| `sqrt` | 42.0 | 375.7 | 8.93 | 692.1 | 1103.0 | 1562.4 | 1.42 |
 | `exp` | 917 | 1164 | 1.27 | 3290 | 3997 | 6691 | 1.67 |
 | `log` | 1959 | 2493 | 1.27 | 6997 | 12610 | 22075 | 1.75 |
 | `sin` | 916 | 1204 | 1.31 | 2987 | 3411 | 6359 | 1.86 |
@@ -257,13 +266,14 @@ list as it stands after that, reordered by what the measurements now say.
 
 ### 1. `sqrt` costs a division per iteration - CLOSED
 
-Closed by universal#1331. Each width now uses the formulation its direct counterpart uses - Karp's
-trick at N=2, reciprocal Newton at N=3 and N=4 - which took `dd_cascade` from 13.8x `dd` to 3.4x and
-`qd_cascade` from 2.74x `qd` to 1.45x, and fixed `sqrt(maxpos)` at all three widths along the way.
+Closed by universal#1331. Every width moved off the iteration that spent a division per step, which
+took `dd_cascade` from 13.8x `dd` to 8.9x and `qd_cascade` from 2.74x `qd` to 1.42x, and fixed
+`sqrt(maxpos)` at all three widths along the way.
 
-The accuracy trade this item flagged as a judgement call resolved three different ways: `dd_cascade`
-paid for it (1.4 -> 10.8 ulps, exactly `dd`'s), `qd_cascade` paid a little (0.42 -> 1.05, exactly
-`qd`'s), and `td_cascade` improved on both axes. See the fix section above.
+The accuracy trade this item flagged as a judgement call resolved three different ways: `td_cascade`
+improved on both axes, `qd_cascade` paid a little (0.42 -> 1.05 ulps, exactly `qd`'s), and
+`dd_cascade` carries both algorithms - reciprocal Newton by default at 3.8 ulps, Karp's trick behind
+`UNIVERSAL_DD_CASCADE_FAST_SQRT` at `dd`'s 5.5. See the fix section above.
 
 ### 2. The 46% that compression costs N=4 addition
 

@@ -28,6 +28,16 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
+// select the square root algorithm
+// default is the reciprocal Newton iteration, which is accurate to ~1.9 ulps of the
+// 106-bit significand.  Define UNIVERSAL_DD_CASCADE_FAST_SQRT to get Karp's trick
+// instead: 2.8x faster and 5.5 ulps, which is exactly classic dd's algorithm and
+// exactly its accuracy.  See math/functions/sqrt.hpp.
+#if !defined(UNIVERSAL_DD_CASCADE_FAST_SQRT)
+#define UNIVERSAL_DD_CASCADE_FAST_SQRT 0
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////
 // enable throwing specific exceptions for arithmetic errors
 // left to application to enable
 #if !defined(DD_CASCADE_THROW_ARITHMETIC_EXCEPTION)
