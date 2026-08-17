@@ -76,7 +76,7 @@ LCG in `[0.5, 2.0)`, so runs are reproducible and the multiplicative and additiv
 processor      : 12th Gen Intel(R) Core(TM) i7-12700K, pinned to core 0
 compiler       : gcc 13.3.0, -O3 -DNDEBUG, C++20, no ISA extensions beyond baseline
 measurement    : best of 3, 0.050 sec calibration window
-date           : 2026-08-16, re-measured after universal#1317, #1322, #1324 and #1326
+date           : 2026-08-17, re-measured after universal#1317, #1322, #1324, #1326 and #1331
   window         : 0.25 sec (the recorded run uses a longer window than the default)
 ```
 
@@ -85,20 +85,20 @@ date           : 2026-08-16, re-measured after universal#1317, #1322, #1324 and 
 ```text
 operation                    double           dd   dd_cascade   td_cascade           qd   qd_cascade
 ----------------------------------------------------------------------------------------------------
-sink only (floor)              0.20         0.37         0.37         0.41         0.49         0.49
-construct                      0.21         0.28         0.27         0.37         0.41         0.41
+sink only (floor)              0.20         0.37         0.37         0.42         0.49         0.49
+construct                      0.20         0.28         0.27         0.37         0.41         0.41
 copy construct                 0.20         0.37         0.37         0.41         0.49         0.49
-assign                         0.20         0.37         0.37         0.41         0.49         0.49
-add                            0.41        23.90        16.04        35.73        62.45        70.24
-subtract                       0.41        23.88        15.30        32.63        61.54        66.11
-multiply                       0.82        22.29        24.55        63.35        73.11        89.51
-divide                         2.86       216.66       219.24       319.43       587.54       639.78
-compare (<)                    0.68         1.69         0.77         0.58         0.65         0.55
-compare (==)                   0.41         0.54         0.54         0.41         0.54         0.55
-convert to double              0.41         0.41         0.41         0.41         0.41         0.41
-convert from double            0.20         0.29         0.27         0.37         0.41         0.41
-convert to string            510.10      2667.94      3604.45      6006.63      7722.98      9557.62
-convert from string          122.33    398920.27    399444.44    413846.80    430874.57    429212.17
+assign                         0.20         0.37         0.37         0.42         0.49         0.49
+add                            0.41        23.90        16.06        35.73        62.46        70.11
+subtract                       0.41        23.88        15.33        32.60        61.52        66.35
+multiply                       0.82        22.25        24.54        63.20        73.40        89.61
+divide                         2.86       216.44       219.23       319.95       589.03       641.40
+compare (<)                    0.69         1.69         0.71         0.57         0.67         0.55
+compare (==)                   0.41         0.54         0.54         0.42         0.55         0.55
+convert to double              0.41         0.41         0.41         0.42         0.41         0.41
+convert from double            0.20         0.29         0.27         0.38         0.41         0.41
+convert to string            510.86      2666.35      3603.92      6071.15      7722.56      9568.09
+convert from string          121.70    399330.72    400963.19    417259.43    432510.24    433802.55
 ```
 
 The construct/copy/assign/convert rows all sit at the sink floor: a copy is 2 to 4 `movsd`
@@ -110,12 +110,12 @@ because they distinguish the implementations.
 ```text
 operation                    double           dd   dd_cascade   td_cascade           qd   qd_cascade
 ----------------------------------------------------------------------------------------------------
-dot N=16                       0.10        39.37        50.07        80.43       136.50       157.19
-dot N=256                      0.29        29.51        46.34        84.79       138.27       167.10
-dot N=4096                     0.40        29.78        46.10        89.07       136.50       169.84
-axpy N=4096                    0.13        37.62        41.06        75.51       133.10       149.58
-matmul 32x32                   0.23        21.08        49.75        83.52       135.37       170.78
-horner deg 20                  0.32        47.55        58.70       102.91       143.33       183.96
+dot N=16                       0.10        40.41        52.68        81.50       145.79       164.90
+dot N=256                      0.29        33.55        46.85        85.88       147.36       173.00
+dot N=4096                     0.40        33.65        46.78        90.96       145.97       176.77
+axpy N=4096                    0.16        39.34        41.71        77.72       143.04       158.06
+matmul 32x32                   0.24        24.45        51.07        85.92       145.19       176.61
+horner deg 20                  0.32        47.73        58.96       105.82       154.41       186.70
 ```
 
 The `double` column is auto-vectorized and the multi-component columns are not, which is most of the
@@ -127,12 +127,12 @@ of these implementations.
 ```text
 operation                    double           dd   dd_cascade   td_cascade           qd   qd_cascade
 ----------------------------------------------------------------------------------------------------
-accumulate only                0.41        23.95        28.78        47.25        69.50        96.18
-sqrt                           1.23        42.08       580.65       957.54      1089.12      2981.69
-exp                            3.51       918.01      1165.73      3279.29      3996.47      6752.23
-log                            3.53      1958.54      2492.24      7033.81     12622.01     22267.09
-sin                            3.86       956.08      1679.88      3201.49      3415.07      8325.69
-cos                            3.79       961.95      1685.58      3216.46      3422.07      8268.15
+accumulate only                0.41        23.94        28.85        47.21        68.37        96.04
+sqrt                           1.23        42.02       606.65       690.93      1088.74      3017.05
+exp                            3.50       917.81      1166.63      3296.88      4002.46      6653.03
+log                            3.44      1961.13      2490.01      7047.42     12643.82     21972.02
+sin                            3.78       910.04      1648.69      2999.87      3412.51      8185.82
+cos                            3.71       917.47      1654.59      3004.15      3423.38      8173.20
 ```
 
 ### Normalized cost, cascade relative to classic (gcc)
@@ -143,19 +143,19 @@ Ratio of nsec/op. 1.00 is parity, above 1.00 means the cascade implementation is
 operation                dd_cascade/dd   qd_cascade/qd   td_cascade/dd
 ----------------------------------------------------------------------
 add                            0.67            1.12            1.49
-subtract                       0.64            1.07            1.37
+subtract                       0.64            1.08            1.37
 multiply                       1.10            1.22            2.84
-divide                         1.01            1.09            1.47
-dot N=256                      1.57            1.21            2.87
-dot N=4096                     1.55            1.24            2.99
-axpy N=4096                    1.09            1.12            2.01
-matmul 32x32                   2.36            1.26            3.96
-horner deg 20                  1.23            1.28            2.16
-sqrt                          13.80            2.74           22.76
-exp                            1.27            1.69            3.57
-log                            1.27            1.76            3.59
-sin                            1.76            2.44            3.35
-cos                            1.75            2.42            3.34
+divide                         1.01            1.09            1.48
+dot N=256                      1.40            1.17            2.56
+dot N=4096                     1.39            1.21            2.70
+axpy N=4096                    1.06            1.10            1.98
+matmul 32x32                   2.09            1.22            3.51
+horner deg 20                  1.24            1.21            2.22
+sqrt                          14.44            2.77           16.44
+exp                            1.27            1.66            3.59
+log                            1.27            1.74            3.59
+sin                            1.81            2.40            3.30
+cos                            1.80            2.39            3.27
 ```
 
 ## Code generation sensitivity
@@ -229,7 +229,7 @@ type                 sqrt(x)^2 - x   exp(log(x)) - x     sin^2 + cos^2 - 1
 double                       1.999                 0                     2
 dd                           10.83             1.479                 10.88
 dd_cascade                   1.433             1.479                 2.389
-td_cascade                   1.099            0.8538             4.277e+15
+td_cascade                  0.7247            0.8538             4.277e+15
 qd                           1.046             0.215             1.494e+23
 qd_cascade                  0.4185             0.215             3.852e+31
 ```
@@ -323,19 +323,21 @@ benchmark results.
 5. **Can we retire classic `dd` and `qd`?** For `qd`, this is now a real option on accuracy and a
    judgement call on speed. universal#1317, #1322 and #1326 closed the accuracy gaps in turn:
    `qd_cascade`'s addition, multiplication and division are bit-for-bit identical to `qd`'s against
-   an exact oracle, and its `sqrt` is more accurate than `qd`'s. What is left is a uniform 1.1x to
-   1.8x tax on everything except `sqrt`, which is 2.7x. Whether that is an acceptable price for one
+   an exact oracle, and its `sqrt` now matches `qd`'s exactly on both axes of algorithm and accuracy.
+   What is left is a uniform 1.1x to 1.9x tax. Whether that is an acceptable price for one
    implementation instead of two is a judgement call, not a measurement.
 
    `dd_cascade` is the better bargain: faster than `dd` on add and subtract (0.67x, 0.64x), at
    parity on multiply and divide, and more accurate on `sqrt` - though `sqrt` itself costs 13.8x
    there, which is the one number that would have to move first.
 
-   The remaining outlier at every width is `sqrt`, now 13.8x `dd` and 2.7x `qd` - it got *worse*
-   in universal#1326, because it iterates on division and division got correct. It is also now the
-   most accurate square root in the library (0.42 ulps residual against `qd`'s 1.05), so the
-   reciprocal-iteration reformulation is a deliberate accuracy-for-speed trade rather than a free
-   win.
+   `sqrt` is still the outlier by default, at 14.4x `dd` and 2.8x `qd`, and that is now a choice
+   rather than an oversight. universal#1331 put three formulations behind
+   `UNIVERSAL_*_CASCADE_SQRT_ALGORITHM` and made the default the most accurate one at each width, so
+   the speed is opt-in: `dd_cascade` reaches 3.4x `dd` with `..._SQRT_KARP` and `qd_cascade` reaches
+   1.4x `qd` with `..._SQRT_NEWTON_RECIPROCAL`, each at its direct counterpart's accuracy.
+   `td_cascade` is the one width where the faster formulation is also the more accurate one, so it
+   is the default there and the row improved outright, 957 -> 691 nsec/op and 1.10 -> 0.72 ulps.
 
 ## Caveats
 
