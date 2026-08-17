@@ -110,47 +110,162 @@ namespace detail {
 
 // Build the bigint M = int_digits || frac_digits (concatenated as a single
 // integer value).
+// Accumulate the decimal digits into a big integer, nine at a time.
+//
+// The obvious loop does one full-width bigint multiply per digit. At the default
+// 2048 bits that is a 64x64 limb multiply for every character, and it dominated
+// the parse of anything long: 147 usec for a 62-digit literal (universal#1319).
+//
+// Nine digits fit in a uint32 (10^9 < 2^32), so a chunk can be accumulated in
+// machine arithmetic and folded in with a single big multiply, cutting the number
+// of full-width multiplies by nine.
 template<unsigned BigBits>
 inline big_integer<BigBits>
 collect_digits(std::string_view int_part, std::string_view frac_part) {
 	using Big = big_integer<BigBits>;
+	constexpr std::size_t CHUNK_DIGITS = 9;
+	static const int power_of_ten[CHUNK_DIGITS + 1] = {
+		1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000
+	};
+
 	Big M(0);
-	const Big ten(10);
-	for (char c : int_part) {
-		M *= ten;
-		M += Big(static_cast<int>(c - '0'));
-	}
-	for (char c : frac_part) {
-		M *= ten;
-		M += Big(static_cast<int>(c - '0'));
-	}
+	auto absorb = [&M](std::string_view part) {
+		std::size_t i = 0;
+		while (i < part.size()) {
+			std::size_t n = part.size() - i;
+			if (n > CHUNK_DIGITS) n = CHUNK_DIGITS;
+			int chunk = 0;
+			for (std::size_t k = 0; k < n; ++k) chunk = chunk * 10 + static_cast<int>(part[i + k] - '0');
+			M *= Big(power_of_ten[n]);
+			M += Big(chunk);
+			i += n;
+		}
+	};
+	absorb(int_part);
+	absorb(frac_part);
 	return M;
 }
 
-// Multiply x in place by 5^e via repeated *= 5. O(e) bigint multiplications
-// by the single-limb constant 5; each step is fast.
+// Multiply x in place by 5^e.
+//
+// Was a loop of e multiplications by the single-limb constant 5. Each step is
+// cheap, but there are e of them: parsing 1e-300 spent 300 full-width multiplies
+// here, and a 62-digit literal spent 144 usec of its 382 (universal#1319).
+//
+// Binary exponentiation needs O(log e) multiplications instead. The squarings are
+// wider than a multiply by 5, but there are ~8 of them for e = 300 rather than 300.
+// No new overflow exposure: the running base never exceeds 5^e, which the caller
+// must already have room for.
 template<unsigned BigBits>
 inline void multiply_by_5_to_the_e(big_integer<BigBits>& x, std::int64_t e) {
 	if (e <= 0) return;
 	using Big = big_integer<BigBits>;
-	const Big five(5);
-	for (std::int64_t i = 0; i < e; ++i) x *= five;
+	Big base(5);
+	while (e > 0) {
+		if (e & 1) x *= base;
+		e >>= 1;
+		if (e > 0) base *= base;
+	}
+}
+
+// Position of the most significant set bit, or -1 when x is zero.
+//
+// Walks blocks rather than bits. convert() and distill() both need this, and at
+// the 2048-bit default working width the naive bit loop is 2048 iterations per
+// call, several calls per parse (universal#1319).
+template<unsigned BigBits>
+inline int msb_position(const big_integer<BigBits>& x) noexcept {
+	using Big = big_integer<BigBits>;
+	static_assert(Big::bitsInBlock == 32u, "block scan assumes 32-bit limbs");
+	for (int b = static_cast<int>(Big::nrBlocks) - 1; b >= 0; --b) {
+		std::uint32_t blk = x.block(static_cast<unsigned>(b));
+		if (blk != 0u) {
+			int bit = 31;
+			while (((blk >> bit) & 1u) == 0u) --bit;
+			return b * 32 + bit;
+		}
+	}
+	return -1;
+}
+
+// True when any bit strictly below position `limit` is set (the sticky test).
+template<unsigned BigBits>
+inline bool any_bit_below(const big_integer<BigBits>& x, int limit) noexcept {
+	if (limit <= 0) return false;
+	const int fullBlocks = limit / 32;
+	for (int b = 0; b < fullBlocks; ++b) {
+		if (x.block(static_cast<unsigned>(b)) != 0u) return true;
+	}
+	const int rest = limit % 32;
+	if (rest > 0) {
+		const std::uint32_t mask = (std::uint32_t{ 1 } << rest) - 1u;
+		if ((x.block(static_cast<unsigned>(fullBlocks)) & mask) != 0u) return true;
+	}
+	return false;
+}
+
+// Number of bigint bits the conversion below actually needs.
+//
+// The widest intermediate is the numerator just before the division:
+//   E >= 0:  M * 5^E                     ~ 3.33*digits + 2.33*E bits,
+//            normalized up to target bits when the product is smaller
+//   E <  0:  M << (target + 4 + 2.33*|E|) ~ 3.33*digits + target + 4 + 2.33*|E|
+// Both estimates round up, and a 32-bit slack covers the rounding.
+//
+// This is an estimate of a *storage* requirement, so it must never come out
+// too small: a shift that runs off the end of the fixed-width integer loses
+// bits silently. test_decimal_to_binary_oracle checks the dispatched result
+// against the undispatched 2048-bit path bit-for-bit.
+inline std::uint64_t required_working_bits(const sw::universal::string_parse::decimal_float_scan& d,
+                                           unsigned target_mantissa_bits) noexcept {
+	const std::uint64_t digits = static_cast<std::uint64_t>(d.int_part.size())
+	                           + static_cast<std::uint64_t>(d.frac_part.size());
+	// log2(10) ~= 3.3219, log2(5) ~= 2.3219, in 1/1024ths and rounded up.
+	const std::uint64_t mbits = (digits * 3402u) / 1024u + 2u;
+	const std::int64_t  E = static_cast<std::int64_t>(d.exp10)
+	                      - static_cast<std::int64_t>(d.frac_part.size());
+	const std::uint64_t target = static_cast<std::uint64_t>(target_mantissa_bits);
+
+	std::uint64_t need{ 0 };
+	if (E >= 0) {
+		need = mbits + (static_cast<std::uint64_t>(E) * 2378u) / 1024u + 2u;
+		if (need < target + 2u) need = target + 2u;
+	}
+	else {
+		const std::uint64_t neg_E = static_cast<std::uint64_t>(-E);
+		need = mbits + target + 4u + (neg_E * 2378u + 1023u) / 1024u;
+	}
+	return need + 32u;
+}
+
+// Copy a conversion produced at one working width into the caller's width.
+// The normalized mantissa occupies target_mantissa_bits + 2 bits at most, so
+// this is always a widening (or identity) copy of a small value.
+template<unsigned Out, unsigned Work>
+inline basic_result<Out> rewidth(const basic_result<Work>& in) {
+	basic_result<Out> out;
+	out.valid        = in.valid;
+	out.negative     = in.negative;
+	out.is_zero      = in.is_zero;
+	out.binary_scale = in.binary_scale;
+	out.mantissa     = big_integer<Out>(in.mantissa);
+	out.guard_bit    = in.guard_bit;
+	out.sticky_bit   = in.sticky_bit;
+	return out;
 }
 
 }  // namespace detail
 
-// Convert the components of a decimal-float scan into a normalized
-// (sign, mantissa, binary_scale, guard, sticky) result with at least
-// target_mantissa_bits significant bits of mantissa.
+// The conversion, carried out at a caller-chosen bigint width.
 //
-// `d` must be a successful `scan_decimal_float` result (d.valid == true).
-// target_mantissa_bits is the count of explicit mantissa bits the caller
-// wants (e.g., 24 for IEEE float, 53 for IEEE double, fbits+1 for a cfloat
-// or fbits+regime+1 for a posit).
-template<unsigned BigBits = default_big_bits>
+// `convert()` below is the entry point: it picks the narrowest width that can
+// hold the intermediates and calls this. Use convert_at_width directly only to
+// pin the width (the oracle test does, to check the dispatch against a fixed
+// 2048-bit reference).
+template<unsigned BigBits>
 inline basic_result<BigBits>
-convert(const sw::universal::string_parse::decimal_float_scan& d,
-        unsigned target_mantissa_bits) {
+convert_at_width(const sw::universal::string_parse::decimal_float_scan& d,
+                 unsigned target_mantissa_bits) {
 	using Big = big_integer<BigBits>;
 	basic_result<BigBits> out;
 	out.valid       = false;
@@ -206,22 +321,32 @@ convert(const sw::universal::string_parse::decimal_float_scan& d,
 		// quotient carries at least `headroom` precision bits AFTER dividing
 		// by 5^|E| (which consumes ~|E| * log2(5) ~= |E| * 2.322 bits).
 		//     value * 2^K = M * 2^K / (2^|E| * 5^|E|) = M * 2^(K - |E|) / 5^|E|
-		// Choosing K = headroom + |E| * 4 overshoots log2(5) ~= 2.32 with
-		// generous margin; cost is O(|E|) extra bigint bits, negligible vs
-		// the O(|E|) work of computing 5^|E|.
+		// so the quotient has about bits(M) + shift - |E|*log2(5) bits, and
+		// shift = headroom + ceil(|E| * log2(5)) + 2 covers `headroom` of them
+		// for any M (bits(M) >= 1). The extra bits an integral shift of 3*|E|
+		// would add are not free: they widen the numerator by ~0.68 bits per
+		// decimal digit of exponent, and the division that follows is quadratic
+		// in the limb count. At |E| = 317 that is the difference between a
+		// 1024-bit working width and a 2048-bit one (universal#1319).
+		//
+		// 2378/1024 = 2.32227 > log2(5) = 2.321928, so the ceiling never
+		// undershoots. required_working_bits() uses the same constant.
 		std::int64_t neg_E = -E;
+		const std::int64_t log2_of_5_to_the_E = (neg_E * 2378 + 1023) / 1024;
 		const std::int64_t shift_amount = static_cast<std::int64_t>(headroom)
-		                                + 3 * neg_E;
-		const std::int64_t K            = static_cast<std::int64_t>(headroom)
-		                                + 4 * neg_E;
+		                                + log2_of_5_to_the_E + 2;
+		const std::int64_t K            = shift_amount + neg_E;
 		num <<= static_cast<int>(shift_amount);
 		Big denom(1);
 		detail::multiply_by_5_to_the_e<BigBits>(denom, neg_E);
-		Big rem = num;
-		rem %= denom;
-		num /= denom;
-		Big zero(0);
-		const bool divide_residual = (rem != zero);
+		// One long division, not two. operator/= and operator%= each run the full
+		// algorithm and discard the half they were not asked for; idiv() returns
+		// both. The remainder is only needed as a sticky bit, but computing it
+		// separately doubled the cost of every parse with a negative exponent -
+		// 23 of the 30 usec floor (universal#1319).
+		auto division = sw::universal::idiv(num, denom);
+		num = division.quot;
+		const bool divide_residual = !division.rem.iszero();
 		lsb_scale = -K;
 		out.sticky_bit = divide_residual;
 	}
@@ -232,10 +357,7 @@ convert(const sw::universal::string_parse::decimal_float_scan& d,
 	// Find MSB by linear scan from the top (integer<> doesn't expose a
 	// dedicated findMsb in the same form as einteger; this is simple and
 	// sufficient).
-	int msb = -1;
-	for (int i = static_cast<int>(BigBits) - 1; i >= 0; --i) {
-		if (num.at(static_cast<unsigned>(i))) { msb = i; break; }
-	}
+	int msb = detail::msb_position<BigBits>(num);
 	int top = static_cast<int>(target_mantissa_bits) - 1;
 
 	if (msb > top) {
@@ -243,10 +365,7 @@ convert(const sw::universal::string_parse::decimal_float_scan& d,
 		// (msb - top - 1) is the guard; the OR of bits below is sticky.
 		int rshift = msb - top;
 		int guard_pos = rshift - 1;
-		bool sticky = out.sticky_bit;
-		for (int i = 0; i < guard_pos; ++i) {
-			if (num.at(static_cast<unsigned>(i))) { sticky = true; break; }
-		}
+		bool sticky = out.sticky_bit || detail::any_bit_below<BigBits>(num, guard_pos);
 		bool guard = (guard_pos >= 0) ? num.at(static_cast<unsigned>(guard_pos)) : false;
 		num >>= rshift;
 		out.guard_bit  = guard;
@@ -262,6 +381,50 @@ convert(const sw::universal::string_parse::decimal_float_scan& d,
 	out.binary_scale = lsb_scale + static_cast<std::int64_t>(target_mantissa_bits - 1);
 	out.valid        = true;
 	return out;
+}
+
+// Convert the components of a decimal-float scan into a normalized
+// (sign, mantissa, binary_scale, guard, sticky) result with at least
+// target_mantissa_bits significant bits of mantissa.
+//
+// `d` must be a successful `scan_decimal_float` result (d.valid == true).
+// target_mantissa_bits is the count of explicit mantissa bits the caller
+// wants (e.g., 24 for IEEE float, 53 for IEEE double, fbits+1 for a cfloat
+// or fbits+regime+1 for a posit).
+//
+// Everything runs at the narrowest of a handful of bigint widths that can hold
+// the intermediates. The width that matters is the numerator's, and it is set
+// by the decimal exponent: "1.5" needs ~170 bits for a dd, 1e-300 needs ~1050.
+// Running every parse at the 2048-bit worst case cost an order of magnitude on
+// the common short inputs, because the bigint multiply and divide are quadratic
+// in the limb count (universal#1319).
+//
+// The result is independent of the width chosen -- the working value is only
+// ever wider than it needs to be -- so this is purely a speed dispatch. Widths
+// beyond the largest instantiation (very large |exponent|, or a caller asking
+// for an unusually wide mantissa) fall back to the caller's own BigBits, which
+// is what the routine used to do unconditionally.
+template<unsigned BigBits = default_big_bits>
+inline basic_result<BigBits>
+convert(const sw::universal::string_parse::decimal_float_scan& d,
+        unsigned target_mantissa_bits) {
+	if (!d.valid || target_mantissa_bits == 0u || target_mantissa_bits > BigBits) {
+		return convert_at_width<BigBits>(d, target_mantissa_bits);
+	}
+	const std::uint64_t need = detail::required_working_bits(d, target_mantissa_bits);
+	if constexpr (BigBits > 256u) {
+		if (need <= 256u)  return detail::rewidth<BigBits>(convert_at_width<256u>(d, target_mantissa_bits));
+	}
+	if constexpr (BigBits > 512u) {
+		if (need <= 512u)  return detail::rewidth<BigBits>(convert_at_width<512u>(d, target_mantissa_bits));
+	}
+	if constexpr (BigBits > 1024u) {
+		if (need <= 1024u) return detail::rewidth<BigBits>(convert_at_width<1024u>(d, target_mantissa_bits));
+	}
+	if constexpr (BigBits > 2048u) {
+		if (need <= 2048u) return detail::rewidth<BigBits>(convert_at_width<2048u>(d, target_mantissa_bits));
+	}
+	return convert_at_width<BigBits>(d, target_mantissa_bits);
 }
 
 // Convenience overload: parse the string in one call.
@@ -319,10 +482,7 @@ inline void distill(const basic_result<BigBits>& d, double (&out)[N]) {
 	// Find MSB position of the magnitude mantissa to anchor the binary scale.
 	// The d2b normalization places the mantissa MSB at the bit position that
 	// has weight 2^binary_scale.
-	int top_msb = -1;
-	for (int i = static_cast<int>(BigBits) - 1; i >= 0; --i) {
-		if (d.mantissa.at(static_cast<unsigned>(i))) { top_msb = i; break; }
-	}
+	int top_msb = detail::msb_position<BigBits>(d.mantissa);
 	if (top_msb < 0) return;  // is_zero should have caught this
 
 	// mantissa.bit[k] has weight 2^(binary_scale - top_msb + k).
@@ -338,10 +498,7 @@ inline void distill(const basic_result<BigBits>& d, double (&out)[N]) {
 		// Magnitude + sign of the current residual.
 		bool neg = (rem < zero);
 		Big abs_rem = neg ? -rem : rem;
-		int msb = -1;
-		for (int k = static_cast<int>(BigBits) - 1; k >= 0; --k) {
-			if (abs_rem.at(static_cast<unsigned>(k))) { msb = k; break; }
-		}
+		int msb = detail::msb_position<BigBits>(abs_rem);
 		if (msb < 0) return;  // residual is exactly zero -- remaining out[] stay 0.0
 
 		// Extract top up-to-53 bits of abs_rem at positions [extract_lo, msb].
@@ -359,10 +516,7 @@ inline void distill(const basic_result<BigBits>& d, double (&out)[N]) {
 		bool round_bit = (extract_lo > 0)
 			? abs_rem.at(static_cast<unsigned>(extract_lo - 1))
 			: false;
-		bool sticky = false;
-		for (int k = 0; k < extract_lo - 1; ++k) {
-			if (abs_rem.at(static_cast<unsigned>(k))) { sticky = true; break; }
-		}
+		bool sticky = detail::any_bit_below<BigBits>(abs_rem, extract_lo - 1);
 		// On the first iteration the d2b residual guard/sticky bits live
 		// logically BELOW position 0 in the bigint, so they only contribute
 		// to sticky. Subsequent iterations track the exact integer residual
