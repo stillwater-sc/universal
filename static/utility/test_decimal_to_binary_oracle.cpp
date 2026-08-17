@@ -222,6 +222,66 @@ namespace {
 		return nrOfFailedTests;
 	}
 
+	// The converter runs its bigint arithmetic at the narrowest width that can hold the
+	// intermediates, chosen from the scanned digit count and decimal exponent. That estimate is a
+	// storage requirement: if it ever comes out too small, a shift runs off the end of the
+	// fixed-width integer and bits vanish silently -- no exception, just a wrong answer far below
+	// the leading bits, exactly where a tolerance-based test is least likely to notice.
+	//
+	// So check it structurally instead: the dispatched result must equal, field for field, what the
+	// undispatched 2048-bit path produces. Width selection is a speed decision and nothing else.
+	int VerifyWidthDispatch(bool reportTestCases, int exponentStep) {
+		using namespace sw::universal;
+		namespace d2b = sw::universal::decimal_to_binary;
+		constexpr unsigned W = d2b::default_big_bits;
+		int nrOfFailedTests = 0;
+
+		// significand shapes: one digit, a double's worth, and past a qd's
+		const std::vector<std::string> significands = {
+			"1", "9", "1.2345678901234567", "9.999999999999999",
+			"1.234567890123456789012345678901234567890123456789012345678901234567890",
+		};
+		// the mantissa targets the library actually asks for: float, double, dd, td, qd
+		const std::vector<unsigned> targets = { 24u, 53u, 126u, 179u, 232u };
+
+		auto check = [&](const std::string& text, unsigned target) {
+			auto scan = string_parse::scan_decimal_float(text);
+			if (!scan.valid) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "  scan rejected \"" << text << "\"\n";
+				return;
+			}
+			auto dispatched = d2b::convert<W>(scan, target);
+			auto reference  = d2b::convert_at_width<W>(scan, target);
+			const bool same = dispatched.valid        == reference.valid
+			               && dispatched.negative     == reference.negative
+			               && dispatched.is_zero      == reference.is_zero
+			               && dispatched.binary_scale == reference.binary_scale
+			               && dispatched.guard_bit    == reference.guard_bit
+			               && dispatched.sticky_bit   == reference.sticky_bit
+			               && dispatched.mantissa     == reference.mantissa;
+			if (!same) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cerr << "  FAIL width dispatch on \"" << text << "\" at " << target
+					          << " target bits: differs from the 2048-bit reference\n";
+				}
+			}
+		};
+
+		for (const auto& s : significands) {
+			for (int e = -340; e <= 340; e += exponentStep) {
+				check(s + "e" + std::to_string(e), 53u);
+			}
+			for (unsigned target : targets) check(s, target);
+		}
+		// the vectors the value oracle uses, at every target
+		for (const auto& text : decimal_test_vectors()) {
+			for (unsigned target : targets) check(text, target);
+		}
+		return nrOfFailedTests;
+	}
+
 }  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -251,32 +311,40 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	// A correctly rounded parse lands within half an ulp of the target significand, i.e. within
-	// 2^-precision relative. These budgets sit one bit looser, which still fails an implementation
-	// that drops a component or mis-scales, while tolerating a legitimately different tie break.
-	constexpr int DD_TOLERANCE = 105;   // 106-bit significand
-	constexpr int TD_TOLERANCE = 158;   // 159-bit
-	constexpr int QD_TOLERANCE = 211;   // 212-bit
 
 #if MANUAL_TESTING
 
+	// A correctly rounded parse lands within half an ulp of the target significand, i.e. within
+	// 2^-precision relative. The budgets below sit one bit looser, which still fails an
+	// implementation that drops a component or mis-scales, while tolerating a different tie break.
+	constexpr int DD_TOLERANCE = 105;   // 106-bit significand
+	constexpr int QD_TOLERANCE = 211;   // 212-bit
 	nrOfFailedTestCases += VerifyParseAgainstExact<dd_cascade, 2>(true, DD_TOLERANCE, "dd_cascade");
 	nrOfFailedTestCases += VerifyParseAgainstExact<qd_cascade, 4>(true, QD_TOLERANCE, "qd_cascade");
+	nrOfFailedTestCases += VerifyWidthDispatch(true, 13);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else  // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
+	// A correctly rounded parse lands within half an ulp of the target significand, i.e. within
+	// 2^-precision relative. The budgets below sit one bit looser, which still fails an
+	// implementation that drops a component or mis-scales, while tolerating a different tie break.
+	constexpr int DD_TOLERANCE = 105;   // 106-bit significand
 	nrOfFailedTestCases += ReportTestResult(VerifyParseAgainstExact<dd, 2>(reportTestCases, DD_TOLERANCE, "dd"), test_tag, "dd");
 	nrOfFailedTestCases += ReportTestResult(VerifyParseAgainstExact<dd_cascade, 2>(reportTestCases, DD_TOLERANCE, "dd_cascade"), test_tag, "dd_cascade");
+	nrOfFailedTestCases += ReportTestResult(VerifyWidthDispatch(reportTestCases, 13), test_tag, "width dispatch");
 #endif
 
 #if REGRESSION_LEVEL_2
+	constexpr int TD_TOLERANCE = 158;   // 159-bit significand
 	nrOfFailedTestCases += ReportTestResult(VerifyParseAgainstExact<td_cascade, 3>(reportTestCases, TD_TOLERANCE, "td_cascade"), test_tag, "td_cascade");
+	nrOfFailedTestCases += ReportTestResult(VerifyWidthDispatch(reportTestCases, 1), test_tag, "width dispatch, every exponent");
 #endif
 
 #if REGRESSION_LEVEL_3
+	constexpr int QD_TOLERANCE = 211;   // 212-bit significand
 	nrOfFailedTestCases += ReportTestResult(VerifyParseAgainstExact<qd, 4>(reportTestCases, QD_TOLERANCE, "qd"), test_tag, "qd");
 	nrOfFailedTestCases += ReportTestResult(VerifyParseAgainstExact<qd_cascade, 4>(reportTestCases, QD_TOLERANCE, "qd_cascade"), test_tag, "qd_cascade");
 #endif
