@@ -134,6 +134,45 @@ Two pieces came with it and are worth remembering as a pattern:
 Multiplication is now correctly rounded at this width, and `td_cascade` costs roughly what carrying
 a third component should rather than 9x-15x `dd`.
 
+### universal#1326 - one more quotient digit, and the error term the scalar multiply dropped
+
+Division computes its quotient one digit at a time. **Every cascade width computed exactly N digits
+for an N-component result; the correct algorithm needs N+1.** The extra digit carries no weight of
+its own - it is discarded - but the renormalization needs it to round the last component. Classic
+`dd` computes three digits for two components, classic `qd` five for four.
+
+Fixing the digit count got `qd_cascade` to 0.88 ulps, not to `qd`'s 0.14. The rest was a second,
+independent cause: `multiply_cascade_by_double`, added by #1322, computed the last partial product
+with a **plain multiply**, discarding an error term that lands exactly at the last component's ulp.
+That schedule is a transliteration of qd's own `operator*=(double)`, which has the same limitation -
+and which is why classic `qd` routes `a * double` through its full 4x4 multiply instead. Division
+inherits it, because every residual step is exactly that operation.
+
+| | before | after | direct |
+|---|---|---|---|
+| divide, N=2 | 2.21 ulps | **0.47** | `dd` 0.47 |
+| divide, N=3 | 3.16 ulps | **0.33** | - |
+| divide, N=4 | 1.84 ulps | **0.14** | `qd` 0.14 |
+| cascade x double, N=4 | 0.79 ulps | **0.11** | `qd` 0.11 |
+| `sqrt` residual, N=4 | 8.57 ulps | **0.42** | `qd` 1.05 |
+
+Two of the three divisions are now bit-identical to their direct counterparts - over 4096
+full-width operand pairs `dd_cascade` reproduces `dd` exactly on add, multiply and divide, and
+`qd_cascade` reproduces `qd` exactly on multiply and divide (`benchmark_hp_equivalence`). Where
+`qd_cascade`'s addition differs from `qd`'s, in 189 of those 4096 pairs, it is because `qd_cascade`
+is *exact* and `qd` is not, which is why the difference is bounded by half an ulp.
+
+`sqrt` improved without being touched - its Newton iteration divides, so it inherited the fix - and
+is now the most accurate square root in the library, better than `qd`'s.
+
+The cost is real and was anticipated: the cascade divisions were *faster* than the direct ones
+because they did less work. Doing the correct amount lands them at parity - `dd_cascade` divide goes
+78 -> 219 nsec/op against `dd`'s 217, `qd_cascade` 443 -> 640 against `qd`'s 588 - and `sqrt`, which
+divides, roughly doubles. A cheaper option exists at N=2: dropping the fused residual (classic `dd`
+uses `fma`) gives 0.67 ulps instead of 0.47 at 163 nsec/op instead of 219. Matching the reference
+exactly was chosen over keeping a speed margin, on the grounds that a type meant to replace `dd`
+should not be measurably worse than it.
+
 ## Where the two families stand today
 
 ### Accuracy, worst case in ulps of each format's own significand
@@ -148,8 +187,8 @@ single-argument evaluations, where the operand shape is not the variable of inte
 | add | 0.46 | 0.46 | 0.48 | 0.41 | **0.00** |
 | multiply | 0.46 | 0.46 | 0.23 | 0.11 | 0.11 |
 | square | 4.23 | 4.23 | 0.22 | 4.01 | 4.01 |
-| divide | 0.47 | **2.21** | **3.16** | 0.14 | **1.84** |
-| `sqrt` | 10.8 (*) | 2.9 (*) | 7.2 (*) | 0.37 | 4.03 |
+| divide | 0.47 | 0.47 | 0.33 | 0.14 | 0.14 |
+| `sqrt` | 10.8 (*) | 1.4 (*) | 1.1 (*) | 0.37 | **0.14** |
 | `exp` | - | - | - | 0.26 | 0.26 |
 | `log` | - | - | - | 15.3 | 15.3 |
 
@@ -164,110 +203,101 @@ rather than cascade problems.
 
 | | `dd` | `dd_cascade` | ratio | `td_cascade` | `qd` | `qd_cascade` | ratio |
 |---|---|---|---|---|---|---|---|
-| add | 23.9 | 16.1 | **0.67** | 35.1 | 62.5 | 70.3 | 1.12 |
-| subtract | 23.9 | 15.3 | **0.64** | 32.6 | 61.5 | 66.4 | 1.08 |
-| multiply | 22.3 | 24.6 | 1.10 | 63.0 | 73.1 | 83.1 | 1.14 |
-| divide | 216.9 | 78.2 | **0.36** | 209.2 | 587.8 | 442.6 | **0.75** |
-| `sqrt` | 42.8 | 299.0 | **6.99** | 726.0 | 1123.4 | 2221.9 | **1.98** |
-| `exp` | 918 | 1175 | 1.28 | 3280 | 4167 | 6761 | 1.62 |
-| `log` | 1964 | 2508 | 1.28 | 7009 | 13187 | 22050 | 1.67 |
-| `sin` | 953 | 1281 | 1.34 | 2846 | 3531 | 7106 | 2.01 |
+| add | 23.9 | 16.0 | **0.67** | 35.7 | 62.5 | 70.2 | 1.12 |
+| subtract | 23.9 | 15.3 | **0.64** | 32.5 | 61.5 | 66.1 | 1.07 |
+| multiply | 22.3 | 24.6 | 1.10 | 63.4 | 73.1 | 89.5 | 1.22 |
+| divide | 216.7 | 219.2 | 1.01 | 319.4 | 587.5 | 639.8 | 1.09 |
+| `sqrt` | 42.1 | 580.7 | **13.80** | 957.5 | 1089.1 | 2981.7 | **2.74** |
+| `exp` | 918 | 1164 | 1.27 | 3276 | 4009 | 6743 | 1.68 |
+| `log` | 1959 | 2494 | 1.27 | 7011 | 12669 | 22211 | 1.75 |
+| `sin` | 953 | 1678 | 1.76 | 3196 | 3422 | 8331 | 2.43 |
 
-The generic framework now costs 1.1x-1.7x on most operations, wins on division and on
-double-double add/subtract, and loses badly on exactly one: `sqrt`.
+The generic framework now costs 1.1x-1.8x on most operations, wins on double-double add/subtract,
+sits at parity on division, and loses badly on exactly one: `sqrt`. That last number moved the wrong
+way in #1326 and is no accident - `sqrt` iterates on division, so it paid the correctness fix twice
+over. It is now the clear next target.
 
 ## Remaining discrepancies, in the order a second pass should take them
 
-### 1. Division accuracy - all three widths (highest value)
+Item 1 of the original list - division accuracy - was closed by universal#1326. What follows is the
+list as it stands after that, reordered by what the measurements now say.
 
-The only operation where the cascade is *consistently* behind the direct implementation, and the
-gap is structural rather than incidental.
+### 1. `sqrt` costs a division per iteration (highest value)
 
-```text
-                worst      >1 ulp     direct counterpart
-dd_cascade      2.21 ulps   30/400    dd 0.47
-td_cascade      3.16 ulps   24/400    (none)
-qd_cascade      1.84 ulps    -        qd 0.14
-```
+The worst ratio in the suite and now the only one moving the wrong way: `dd_cascade` is **13.8x**
+`dd` and `qd_cascade` **2.74x** `qd`, up from 7.0x and 2.0x, because universal#1326 made division
+correct and `sqrt` iterates on division.
 
-The cascade divides by Newton refinement: estimate `q0 = a[0]/b[0]`, form the residual
-`a - q0*b` through `add_cascades` + compress, then refine. Two suspects, in order: the residual is
-formed through the compression path added by #1317 (which is exact but may not be the tightest
-formulation available), and the refinement takes a fixed number of steps rather than iterating to
-the format's precision. Classic `qd` uses long division with exact residuals instead.
+The cause is a design choice: the cascade iterates `x = (x + a/x)/2`, one **division** per step,
+while classic `qd` iterates on the reciprocal square root using **multiplication only** and
+multiplies through once at the end. With division now at 219-640 nsec/op and multiplication at
+25-90, the reciprocal formulation is clearly the right one.
 
-Note that cascade division is simultaneously *faster* than direct (0.36x at N=2, 0.75x at N=4), so
-there is budget to spend. This is the one place where a more accurate algorithm can plausibly be
-adopted without going backwards on speed.
+The complication is that it is no longer a free win. The cascade `sqrt` is currently the *most
+accurate* in the library - 0.42 ulps residual against `qd`'s 1.05, and 0.14 ulps against an oracle
+where `qd` measures 0.37 - precisely because it divides. A reciprocal iteration would trade some of
+that back for speed. Measure both before choosing; the accuracy headroom above `qd` is real budget
+to spend, but it should be spent deliberately.
 
-### 2. `sqrt` algorithm choice - all widths
+### 2. The 46% that compression costs N=4 addition
 
-`qd_cascade` is 2.0x `qd` and `dd_cascade` is 7.0x `dd`, the worst ratios in the suite, and
-`qd_cascade`'s result is 4.0 ulps against `qd`'s 0.37.
-
-The cause is a design choice, not an implementation flaw: the cascade iterates `x = (x + a/x)/2`,
-one **division** per step, while classic `qd` iterates on the reciprocal square root using
-**multiplication only**, then multiplies through once at the end. Now that cascade multiplication
-is at parity (1.10x-1.14x) and division is the expensive operation (443 ns at N=4 against 83 ns for
-a multiply), the reciprocal formulation is clearly the right one and was not when the cascade
-`sqrt` was written.
-
-Interesting counter-example worth preserving: `dd_cascade`'s `sqrt` is *more accurate* than `dd`'s
-(2.9 vs 10.8 ulps residual). The direct family could take something from the cascade here.
-
-### 3. The cost of #1317's compression at N=4
-
-Quad-double addition pays 46% for correctness, and that is the single largest performance
-regression this effort introduced. The compression is applied *after* the fact, to repair an
-expansion that was built without the non-overlapping invariant. The direct implementation never
-needs it because `accurate_addition` maintains a two-term running carry and emits components
+Unchanged from the original list. The compression added by universal#1317 is applied *after* the
+fact, to repair an expansion built without the non-overlapping invariant. The direct implementation
+never needs it, because `accurate_addition` maintains a two-term running carry and emits components
 already settled.
 
-Porting that formulation to `add_cascades<4>` would plausibly recover most of the 46% *and* keep
-the exactness, since it is the algorithm the compression is emulating. This is the same move that
-#1322 made for multiplication, and it is the obvious next application of the pattern.
+Porting that formulation to `add_cascades<4>` would plausibly recover most of the 46% *and* keep the
+exactness, since it is the algorithm the compression is emulating. Same move as #1322 and #1324 made
+for multiplication.
 
-### 4. The generic templates are still the old design (latent)
+### 3. The generic templates are still the old design
 
-`add_cascades<N>` and `multiply_cascades<N>` - the templates reached for any N outside {2, 3, 4} -
-still use `std::sort`/`std::vector` and the uncompressed, sorted-expansion formulation that #1317
-and #1322 replaced. Nothing instantiates them today, so this is not a live defect, but it is a trap:
-the first person to instantiate `floatcascade<5>` inherits every bug this effort fixed, silently.
+`add_cascades<N>` and `multiply_cascades<N>` - reached for any N outside {2, 3, 4} - still use
+`std::sort`/`std::vector` and the uncompressed, sorted-expansion formulation that #1317 and #1322
+replaced, and they know nothing of the quotient-digit fix. Nothing instantiates them today, so this
+is not a live defect, but the first person to instantiate `floatcascade<5>` inherits every bug this
+effort fixed, silently.
 
 Either specialize them the same way, or make the primary template `static_assert` that N is one of
 the supported widths.
 
-### 5. Shared weaknesses - not cascade problems, but they cap both families
+### 4. Shared weaknesses that cap both families
 
-- **Square is 4.0-4.2 ulps in both `dd` and `qd`** (and in their cascade counterparts, identically),
-  where multiplication is 0.11-0.46. `sqr(a)` is not simply `a*a` in these implementations, and
-  whatever it does is worse. `exp` squares 16 times.
+These are now the largest accuracy gaps left anywhere in the multi-component types, and none of them
+are cascade-specific:
+
+- **Square is 4.0-4.2 ulps in both `dd` and `qd`** (and identically in their cascade counterparts),
+  where multiplication is 0.11-0.46. `sqr(a)` is not simply `a*a` here, and whatever it does is
+  worse. `exp` squares 16 times.
 - **`log` is 15.3 ulps in both `qd` and `qd_cascade`**, an order of magnitude worse than `exp` at
   0.26.
-- **`sin`/`cos` never reach format precision above `dd`** - universal#1318. `qd` holds ~41 digits of
-  63, `qd_cascade` and `td_cascade` ~32, i.e. the third and fourth components carry nothing through
-  the trigonometric evaluation.
-- **Decimal string parsing costs 45-460 usec per value** across every multi-component type -
-  universal#1319 - which puts it in shared conversion machinery, not in any one number system.
+- **`sin`/`cos` never reach format precision above `dd`** (universal#1318). `qd` holds ~41 digits of
+  63, the two wider cascades ~32 - their extra components carry nothing through trigonometric
+  evaluation.
+- **`x / inf` returns NaN** in every multi-component type, direct and cascade alike, where IEEE says
+  zero (universal#1327). A shared conversion/guard issue, not an algorithmic one.
+- **Decimal string parsing costs 45-460 usec per value** (universal#1319) across every
+  multi-component type, which puts it in shared conversion machinery.
 
-Fixing these benefits both families at once, and #1318 in particular means the extra components of
-`td_cascade` and `qd_cascade` are currently wasted in trigonometric code.
+Fixing these benefits both families at once. The first two are now the ceiling on `exp`, and
+universal#1318 means the extra components of `td_cascade` and `qd_cascade` are wasted in
+trigonometric code.
 
 ## Suggested sequencing
 
-1. **Port `accurate_addition` to `add_cascades<4>`** (item 3). Highest confidence: the algorithm is
-   known-good, sitting next door, and the pattern is proven twice over. Recovers most of a 46%
-   regression.
-2. **Reformulate `sqrt` on the reciprocal iteration** (item 2). Removes the worst performance ratio
-   in the suite and should improve accuracy at the same time.
-3. **Attack division accuracy** (item 1). Highest value, least certain shape; there is speed budget
-   to trade.
-4. **Close the generic templates** (item 4). Cheap, prevents silent regression.
-5. **Then the shared items** (item 5), which are number-system work rather than framework work.
+1. **Reformulate `sqrt` on the reciprocal iteration** (item 1), measuring the accuracy cost rather
+   than assuming it. Removes the worst ratio in the suite.
+2. **Port `accurate_addition` to `add_cascades<4>`** (item 2). Highest confidence: the algorithm is
+   known-good, sitting next door, and the pattern is proven three times over.
+3. **Close the generic templates** (item 3). Cheap, prevents silent regression.
+4. **Then the shared items** (item 4), which are number-system work rather than framework work, and
+   which now hold the largest remaining errors in either family.
 
-Items 1-3 are all the same move: where the cascade improvises, adopt the direct family's proven
-schedule and express it with the framework's hardened primitives. That move has now paid off three
-times.
+The move that has paid off in #1317, #1322, #1324 and #1326 is the same one every time: where the
+cascade improvises, adopt the direct family's proven schedule and express it with the framework's
+hardened primitives. Item 1 is the first entry on this list where that rule does **not** simply
+apply - the cascade's `sqrt` is already more accurate than the direct one, and the question is what
+to trade, not what to copy.
 
 ## Reproducing any of this
 
