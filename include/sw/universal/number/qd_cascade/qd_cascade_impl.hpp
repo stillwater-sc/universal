@@ -372,37 +372,57 @@ public:
 			return *this;
 		}
 
-		// Newton-Raphson division: compute reciprocal then multiply
-		// For quad-double, we need more refinement iterations
-
-		// Initial approximation q0 = a/b using highest component
+		// Long division, one quotient digit at a time: each digit is the leading
+		// component of the running residual divided by the leading component of
+		// the divisor, and the residual is then reduced by that digit's product.
+		//
+		// A 4-component result needs FIVE digits, not four. The fifth carries no
+		// weight of its own - it is discarded - but renorm5 needs it to round the
+		// fourth component, exactly as the direct qd::accurate_division does.
+		// Computing only four left the last component unrounded, which measured
+		// 1.84 ulps of 2^-212 against an exact oracle where qd measures 0.14.
 		double q0 = cascade[0] / rhs.cascade[0];
+		// A non-finite leading quotient (an infinite dividend, or a quotient that
+		// overflows) has no residual to refine: every subtraction below would be
+		// inf - inf. Classic dd guards this the same way. The old code survived by
+		// accident, because the renormalize() it ended with bails out on infinity.
+		bool q0_finite;
+		if (std::is_constant_evaluated()) {
+			q0_finite = is_finite_cx(q0);
+		}
+		else {
+			q0_finite = std::isfinite(q0);
+		}
+		if (!q0_finite) {
+			cascade[0] = q0;
+			cascade[1] = 0.0;
+			cascade[2] = 0.0;
+			cascade[3] = 0.0;
+			return *this;
+		}
+		qd_cascade residual = *this - qd_cascade(q0) * rhs;
 
-		// Compute residual: *this - q0 * other
-		qd_cascade q0_times_other = q0 * rhs;
-		qd_cascade residual = *this - q0_times_other;
-
-		// Refine: q1 = q0 + residual/other
 		double q1 = residual.cascade[0] / rhs.cascade[0];
-		qd_cascade q1_times_other = qd_cascade(q1) * rhs;
-		residual = residual - q1_times_other;
+		residual = residual - qd_cascade(q1) * rhs;
 
-		// Refine again: q2 = q1 + residual/other
 		double q2 = residual.cascade[0] / rhs.cascade[0];
-		qd_cascade q2_times_other = qd_cascade(q2) * rhs;
-		residual = residual - q2_times_other;
+		residual = residual - qd_cascade(q2) * rhs;
 
-		// Final refinement: q3
 		double q3 = residual.cascade[0] / rhs.cascade[0];
+		residual = residual - qd_cascade(q3) * rhs;
 
-		// Combine quotients
+		double q4 = residual.cascade[0] / rhs.cascade[0];
+
+		// renorm5 leaves q0..q3 normalized and non-overlapping; q4 is absorbed
+		expansion_ops::renorm5(q0, q1, q2, q3, q4);
+
 		floatcascade<4> result_cascade;
 		result_cascade[0] = q0;
 		result_cascade[1] = q1;
 		result_cascade[2] = q2;
 		result_cascade[3] = q3;
 
-		*this = expansion_ops::renormalize(result_cascade);
+		*this = result_cascade;
         return *this;
     }
 

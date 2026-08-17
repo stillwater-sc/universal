@@ -50,6 +50,12 @@ inline bool parse(const std::string&, dd_cascade&);
 // TODO: Port remaining features from classic dd:
 // - Advanced mathematical functions (sqrt, exp, log, trig)
 // - Optimized special cases
+
+// forward reference: operator/= forms its residual with a fused multiply-add,
+// the way classic dd does, and fma is defined after the class
+class dd_cascade;
+constexpr dd_cascade fma(const dd_cascade&, const dd_cascade&, const dd_cascade&);
+
 class dd_cascade {
 private:
     floatcascade<2> cascade;
@@ -383,25 +389,51 @@ public:
 			return *this;
 		}
 
-		// Newton-Raphson division: compute reciprocal then multiply
-		// x / y ~ x * (1/y) where 1/y is computed iteratively
-
-		// Initial approximation q0 = a/b using highest component
+		// Long division, one quotient digit at a time: each digit is the leading
+		// component of the running residual divided by the leading component of
+		// the divisor, and the residual is then reduced by that digit's product.
+		//
+		// A 2-component result needs THREE digits, not two. The third carries no
+		// weight of its own - it is discarded - but three_sum needs it to round
+		// the second component, exactly as the direct dd::operator/= does.
+		// Computing only two left that component unrounded, which measured
+		// 2.21 ulps of 2^-106 against an exact oracle where dd measures 0.47.
+		// The residual is formed with a fused multiply-add rather than a separate
+		// multiply and subtract, which is what classic dd does here: the fused
+		// form rounds once instead of twice, and that difference is visible at
+		// this width (0.47 ulps of 2^-106 against 0.67 for the unfused chain).
 		double q0 = cascade[0] / rhs.cascade[0];
+		// A non-finite leading quotient (an infinite dividend, or a quotient that
+		// overflows) has no residual to refine: every subtraction below would be
+		// inf - inf. Classic dd guards this the same way. The old code survived by
+		// accident, because the renormalize() it ended with bails out on infinity.
+		bool q0_finite;
+		if (std::is_constant_evaluated()) {
+			q0_finite = is_finite_cx(q0);
+		}
+		else {
+			q0_finite = std::isfinite(q0);
+		}
+		if (!q0_finite) {
+			cascade[0] = q0;
+			cascade[1] = 0.0;
+			return *this;
+		}
+		dd_cascade residual = fma(dd_cascade(-q0), rhs, *this);
 
-		// Compute residual: *this - q0 * other
-		dd_cascade q0_times_other = q0 * rhs;
-		dd_cascade residual       = *this - q0_times_other;
-
-		// Refine: q1 = q0 + residual/other
 		double q1 = residual.cascade[0] / rhs.cascade[0];
+		residual = fma(dd_cascade(-q1), rhs, residual);
 
-		// Combine quotients
+		double q2 = residual.cascade[0] / rhs.cascade[0];
+
+		// three_sum leaves q0, q1 normalized and non-overlapping; q2 is absorbed
+		expansion_ops::three_sum(q0, q1, q2);
+
 		floatcascade<2> result_cascade;
 		result_cascade[0] = q0;
 		result_cascade[1] = q1;
 
-		*this = expansion_ops::renormalize(result_cascade);
+		*this = result_cascade;
         return *this;
     }
 
@@ -738,7 +770,7 @@ inline dd_cascade mul_pwr2(const dd_cascade& a, double b) {
 // quad-double operators
 
 // quad-double + double-double
-inline void qd_add(double const a[4], const dd_cascade& b, double s[4]) {
+constexpr inline void qd_add(double const a[4], const dd_cascade& b, double s[4]) {
 	double t[5];
 	s[0] = two_sum(a[0], b.high(), t[0]);  //	s0 - O( 1 ); t0 - O( e )
 	s[1] = two_sum(a[1], b.low(), t[1]);   //	s1 - O( e ); t1 - O( e^2 )
@@ -755,12 +787,20 @@ inline void qd_add(double const a[4], const dd_cascade& b, double s[4]) {
 }
 
 // quad-double = double-double * double-double
-inline void qd_mul(const dd_cascade& a, const dd_cascade& b, double p[4]) {
+constexpr inline void qd_mul(const dd_cascade& a, const dd_cascade& b, double p[4]) {
 	double p4, p5, p6, p7;
 
 	//	powers of e - 0, 1, 1, 1, 2, 2, 2, 3
 	p[0] = two_prod(a.high(), b.high(), p[1]);
-	if (std::isfinite(p[0])) {
+	// std::isfinite is not constexpr; is_finite_cx is the constant-evaluation path
+	bool p0_finite;
+	if (std::is_constant_evaluated()) {
+		p0_finite = is_finite_cx(p[0]);
+	}
+	else {
+		p0_finite = std::isfinite(p[0]);
+	}
+	if (p0_finite) {
 		p[2] = two_prod(a.high(), b.low(), p4);
 		p[3] = two_prod(a.low(), b.high(), p5);
 		p6   = two_prod(a.low(), b.low(), p7);
@@ -788,8 +828,8 @@ inline void qd_mul(const dd_cascade& a, const dd_cascade& b, double p[4]) {
 	}
 }
 
-inline dd_cascade fma(const dd_cascade& a, const dd_cascade& b, const dd_cascade& c) {
-	double p[4];
+constexpr inline dd_cascade fma(const dd_cascade& a, const dd_cascade& b, const dd_cascade& c) {
+	double p[4]{};
 	qd_mul(a, b, p);
 	qd_add(p, c, p);
 	p[0] = two_sum(p[0], p[1] + p[2] + p[3], p[1]);

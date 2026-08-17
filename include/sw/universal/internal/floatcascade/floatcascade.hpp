@@ -1414,10 +1414,13 @@ namespace expansion_ops {
         double s1 = tsum(q0, p1, s2);
 
         // order eps^2: the carry out of the eps^1 sum, the error of a[1]*b, and
-        // the last product; whatever spills goes to eps^3 in plain arithmetic
-        double p2 = a[2] * b;
+        // the last product.  That product needs its error term: the bits a plain
+        // multiply drops land at the third component's ulp, the same defect the
+        // 4-component form carried against the full schedule.
+        double q2{};
+        double p2 = tprod(a[2], b, q2);
         three_sum(s2, q1, p2);
-        double s3 = q1 + p2;
+        double s3 = q1 + p2 + q2;
 
         renorm4(s0, s1, s2, s3);
 
@@ -1635,18 +1638,22 @@ namespace expansion_ops {
 
         three_sum(s2, q1, p2);
 
-        // three_sum2: keep the sum and one residual, drop what falls below eps^4
-        {
-            // the fourth partial product contributes only here, and only at
-            // eps^3, so it does not need its error term
-            double p3 = a[3] * b;
-            double u{}, v{}, w{};
-            u = tsum(q1, q2, v);
-            q1 = tsum(p3, u, w);
-            q2 = v + w;
-        }
-        double s3 = q1;
-        double s4 = q2 + p2;
+        // Everything left is at eps^3: the two residuals that just spilled out of
+        // the eps^2 sum (q1, p2), the error of a[2]*b (q2), and the last partial
+        // product a[3]*b.
+        //
+        // That last product needs its error term.  The schedule qd uses for its
+        // own operator*=(double) computes it as a plain multiply, and the bits it
+        // drops land exactly at the fourth component's ulp: 0.79 ulps of 2^-212
+        // against 0.11 for the full 4x4 schedule, which is why qd routes a * double
+        // through the full multiply and reaches 0.11 too.  Taking the error costs
+        // one two_prod and closes the gap.
+        double q3{};
+        double p3 = tprod(a[3], b, q3);
+        three_sum(q1, q2, p2);
+        double t{};
+        double s3 = tsum(q1, p3, t);
+        double s4 = q2 + p2 + t + q3;
 
         renorm5(s0, s1, s2, s3, s4);
 

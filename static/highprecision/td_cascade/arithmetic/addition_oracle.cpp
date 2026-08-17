@@ -90,6 +90,10 @@ namespace {
 	// accumulation it replaced measured 5.5. 157 bits sits between the two.
 	constexpr int MULTIPLICATION_TOLERANCE_BITS = 157;
 
+	// Half an ulp of the 159-bit format, the budget a correctly rounded quotient keeps.
+	// The pre-universal#1326 implementation measured well outside it.
+	constexpr int DIVISION_TOLERANCE_BITS = 160;
+
 	int VerifyAdditionAgainstOracle(bool reportTestCases, unsigned nrOfTestCases, std::uint64_t seed) {
 		using namespace sw::universal;
 		int nrOfFailedTests = 0;
@@ -138,6 +142,37 @@ namespace {
 					std::cerr << "  a   = " << to_triple(a) << '\n';
 					std::cerr << "  b   = " << to_triple(b) << '\n';
 					std::cerr << "  a*b = " << to_triple(product) << '\n';
+				}
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+	// Division cannot be checked against an exact quotient - a/b is not a dyadic rational - but it
+	// can be checked exactly through its residual. Dyadic multiplication and subtraction are exact,
+	// so a - q*b is the true residual of the computed quotient, and |a - q*b| <= t*|a| bounds the
+	// quotient's error at t. universal#1326: each width computed one quotient digit too few, which
+	// left the last component unrounded.
+	int VerifyDivisionResidual(bool reportTestCases, unsigned nrOfTestCases, std::uint64_t seed) {
+		using namespace sw::universal;
+		int nrOfFailedTests = 0;
+		Generator gen(seed);
+		for (unsigned i = 0; i < nrOfTestCases; ++i) {
+			td_cascade a = gen.nextTripleDouble();
+			td_cascade b = gen.nextTripleDouble();
+			td_cascade q = a / b;
+
+			dyadic residual = exact_value<td_cascade, 3>(a) - exact_value<td_cascade, 3>(q) * exact_value<td_cascade, 3>(b);
+			dyadic magnitude = exact_value<td_cascade, 3>(a);
+
+			// half an ulp of the 159-bit format: the budget a correctly rounded quotient keeps
+			if (!within_tolerance(magnitude - residual, magnitude, DIVISION_TOLERANCE_BITS)) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cerr << "FAIL: td_cascade division residual exceeds 2^-" << DIVISION_TOLERANCE_BITS << " of the dividend\n";
+					std::cerr << "  a   = " << to_triple(a) << '\n';
+					std::cerr << "  b   = " << to_triple(b) << '\n';
+					std::cerr << "  a/b = " << to_triple(q) << '\n';
 				}
 			}
 		}
@@ -215,6 +250,7 @@ try {
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyAdditionAgainstOracle(reportTestCases, 64, 0xC0FFEEull), test_tag, "addition vs exact dyadic");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplicationAgainstOracle(reportTestCases, 64, 0xF00Dull), test_tag, "multiplication vs exact dyadic");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivisionResidual(reportTestCases, 64, 0xD1D1ull), test_tag, "division residual vs exact dyadic");
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtResidual(reportTestCases, 32, 0xBEEFull), test_tag, "sqrt residual vs exact dyadic");
 #endif
 
@@ -229,6 +265,7 @@ try {
 #if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyAdditionAgainstOracle(reportTestCases, 4096, 0x9ABCull), test_tag, "addition vs exact dyadic (level 4)");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplicationAgainstOracle(reportTestCases, 4096, 0xBCDEull), test_tag, "multiplication vs exact dyadic (level 4)");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivisionResidual(reportTestCases, 4096, 0xD1D2ull), test_tag, "division residual vs exact dyadic (level 4)");
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtResidual(reportTestCases, 512, 0xDEF0ull), test_tag, "sqrt residual vs exact dyadic (level 4)");
 #endif
 
