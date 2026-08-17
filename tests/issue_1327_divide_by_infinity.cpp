@@ -1,5 +1,7 @@
 #include <cassert>
+#include <bit>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 
 #include <universal/number/dd/dd.hpp>
@@ -7,6 +9,39 @@
 #include <universal/number/dd_cascade/dd_cascade.hpp>
 #include <universal/number/td_cascade/td_cascade.hpp>
 #include <universal/number/qd_cascade/qd_cascade.hpp>
+
+template <typename T>
+constexpr bool has_negative_zero_sign(const T& value) {
+	return (std::bit_cast<std::uint64_t>(value[0]) >> 63) != 0;
+}
+
+constexpr sw::universal::dd dd_positive_positive =
+	sw::universal::dd(2.0) / sw::universal::dd(sw::universal::SpecificValue::infpos);
+constexpr sw::universal::dd dd_negative_positive =
+	sw::universal::dd(-2.0) / sw::universal::dd(sw::universal::SpecificValue::infpos);
+constexpr sw::universal::dd dd_positive_negative =
+	sw::universal::dd(2.0) / sw::universal::dd(sw::universal::SpecificValue::infneg);
+constexpr sw::universal::dd dd_negative_negative =
+	sw::universal::dd(-2.0) / sw::universal::dd(sw::universal::SpecificValue::infneg);
+
+static_assert(dd_positive_positive.iszero() && !has_negative_zero_sign(dd_positive_positive));
+static_assert(dd_negative_positive.iszero() && has_negative_zero_sign(dd_negative_positive));
+static_assert(dd_positive_negative.iszero() && has_negative_zero_sign(dd_positive_negative));
+static_assert(dd_negative_negative.iszero() && !has_negative_zero_sign(dd_negative_negative));
+
+constexpr sw::universal::qd qd_positive_positive =
+	sw::universal::qd(2.0) / sw::universal::qd(sw::universal::SpecificValue::infpos);
+constexpr sw::universal::qd qd_negative_positive =
+	sw::universal::qd(-2.0) / sw::universal::qd(sw::universal::SpecificValue::infpos);
+constexpr sw::universal::qd qd_positive_negative =
+	sw::universal::qd(2.0) / sw::universal::qd(sw::universal::SpecificValue::infneg);
+constexpr sw::universal::qd qd_negative_negative =
+	sw::universal::qd(-2.0) / sw::universal::qd(sw::universal::SpecificValue::infneg);
+
+static_assert(qd_positive_positive.iszero() && !has_negative_zero_sign(qd_positive_positive));
+static_assert(qd_negative_positive.iszero() && has_negative_zero_sign(qd_negative_positive));
+static_assert(qd_positive_negative.iszero() && has_negative_zero_sign(qd_positive_negative));
+static_assert(qd_negative_negative.iszero() && !has_negative_zero_sign(qd_negative_negative));
 
 template <typename T>
 void verify_finite_dividend_by_infinity() {

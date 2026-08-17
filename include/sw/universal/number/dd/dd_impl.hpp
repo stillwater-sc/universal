@@ -618,8 +618,8 @@ public:
 	}
 	
 	// argument is not protected for speed
-	double operator[](int index) const { return (index == 0 ? hi : lo); }
-	double& operator[](int index) { return (index == 0 ? hi : lo); }
+	constexpr double operator[](int index) const { return (index == 0 ? hi : lo); }
+	constexpr double& operator[](int index) { return (index == 0 ? hi : lo); }
 
 	// create specific number system values of interest
 	constexpr dd& maxpos() noexcept {
