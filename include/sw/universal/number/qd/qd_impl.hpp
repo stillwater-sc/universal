@@ -379,7 +379,19 @@ public:
 			return *this;
 		}
 		if (rhs.isinf()) {
-			x[0] = (std::signbit(x[0]) == std::signbit(rhs.x[0])) ? 0.0 : -0.0;
+			if (isinf()) {
+				*this = qd(SpecificValue::qnan);
+				return *this;
+			}
+			bool same_sign;
+			if (std::is_constant_evaluated()) {
+				same_sign = ((std::bit_cast<std::uint64_t>(x[0]) >> 63) ==
+					(std::bit_cast<std::uint64_t>(rhs.x[0]) >> 63));
+			}
+			else {
+				same_sign = (std::signbit(x[0]) == std::signbit(rhs.x[0]));
+			}
+			x[0] = same_sign ? 0.0 : -0.0;
 			x[1] = x[2] = x[3] = 0.0;
 			return *this;
 		}

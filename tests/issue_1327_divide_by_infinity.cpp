@@ -10,13 +10,24 @@
 
 template <typename T>
 void verify_finite_dividend_by_infinity() {
-	const T positive = T(2.0) / std::numeric_limits<T>::infinity();
-	const T negative = T(-2.0) / std::numeric_limits<T>::infinity();
+	const T positive_inf = std::numeric_limits<T>::infinity();
+	const T negative_inf = -positive_inf;
+	const T positive = T(2.0) / positive_inf;
+	const T negative = T(-2.0) / positive_inf;
+	const T positive_by_negative = T(2.0) / negative_inf;
+	const T negative_by_negative = T(-2.0) / negative_inf;
 
 	assert(positive.iszero());
 	assert(!std::signbit(positive[0]));
 	assert(negative.iszero());
 	assert(std::signbit(negative[0]));
+	assert(positive_by_negative.iszero());
+	assert(std::signbit(positive_by_negative[0]));
+	assert(negative_by_negative.iszero());
+	assert(!std::signbit(negative_by_negative[0]));
+
+	const T inf_over_inf = positive_inf / positive_inf;
+	assert(inf_over_inf.isnan());
 }
 
 int main() {
