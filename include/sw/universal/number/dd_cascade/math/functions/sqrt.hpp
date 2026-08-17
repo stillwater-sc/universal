@@ -21,19 +21,32 @@ inline dd_cascade nroot(const dd_cascade&, int);
     // Computes the square root of the double-double number dd.
     //   NOTE: dd must be a non-negative number
     inline dd_cascade sqrt(const dd_cascade& a) {
-        /* Strategy:  Use Newton-Raphson iteration:
+        /* Strategy: Karp's trick, which is what classic dd uses.
 
-              x' = (x + a/x) / 2
+              sqrt(a) ~ a*x + [a - (a*x)^2] * x / 2
 
-           Starting with x = sqrt(a[0]), each iteration doubles the
-           number of correct digits. This method is numerically stable
-           across the entire range, including near-max values where
-           Karp's trick (a*x) would overflow.
+           where x is a double approximation to 1/sqrt(a). The correction term
+           needs only half the working precision, so the whole square root costs
+           about one double-double multiply - far less than any full-precision
+           iteration.
 
-           For dd_cascade (106 bits precision):
-           - Initial guess: ~53 bits
-           - After iteration 1: ~106 bits
-           - After iteration 2: ~212 bits (sufficient)
+           This replaced two Newton steps on (x + a/x)/2, one DIVISION each
+           (universal#1331). The old formulation was reasonable when division
+           was the cheap operation here; universal#1326 made division correct,
+           and correct division costs 219 nsec/op against 25 for a multiply.
+
+           Note the trade, because it goes the other way from the wider types:
+           Karp is faithful rather than correctly rounded, so this is 5.5 ulps
+           of 2^-106 where the iteration it replaced was 1.0 - but that is
+           exactly classic dd's accuracy, because it is exactly classic dd's
+           algorithm, at 99 nsec/op instead of 512. A type meant to be a drop-in
+           for dd should cost and deliver what dd does. The wider widths keep an
+           iteration because Karp doubles a double seed once, which reaches 106
+           bits and no further.
+
+           The argument is scaled into [0.5, 2) first, exactly, by a power of
+           two: (a*x)^2 overflows for a near maxpos otherwise, which is why
+           sqrt(maxpos) is broken today in dd itself (universal#1332).
         */
 
         if (a.iszero()) return dd_cascade(0.0);
@@ -41,19 +54,24 @@ inline dd_cascade nroot(const dd_cascade&, int);
 #	if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
         if (a.isneg()) throw dd_cascade_negative_sqrt_arg();
 #else
-        if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
+        if (a.isneg()) {
+            std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
+            return dd_cascade(SpecificValue::qnan);
+        }
 #endif
+        if (a.isnan() || a.isinf()) return a;
 
-        // Initial approximation from high component
-        dd_cascade x = std::sqrt(a.high());
+        int e{ 0 };
+        std::frexp(a[0], &e);
+        int k = e >> 1;                       // floor(e/2), correct for negative e
+        dd_cascade b = ldexp(a, -2 * k);
 
-        // Newton iteration 1: x = (x + a/x) / 2
-        x = (x + a / x) * 0.5;
+        double x  = 1.0 / std::sqrt(b[0]);
+        double ax = b[0] * x;
+        dd_cascade axd(ax);
+        dd_cascade correction = b - axd * axd;
 
-        // Newton iteration 2: doubles precision again
-        x = (x + a / x) * 0.5;
-
-        return x;
+        return ldexp(axd + dd_cascade(correction[0] * (x * 0.5)), k);
     }
 
 #else

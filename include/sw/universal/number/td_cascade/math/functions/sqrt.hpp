@@ -18,40 +18,49 @@ namespace sw { namespace universal {
     // Computes the square root of the triple-double number td.
     //   NOTE: td must be a non-negative number
 inline td_cascade sqrt(const td_cascade& a) {
-        /* Strategy:  Use Newton-Raphson iteration:
+    /* Strategy: Newton iteration on the RECIPROCAL square root,
 
-              x' = (x + a/x) / 2
+          r' = r + r * (0.5 - (a/2) * r^2)
 
-           Starting with x = sqrt(a[0]), each iteration doubles the
-           number of correct digits. This method is numerically stable
-           across the entire range, including near-max values where
-           Karp's trick (a*x) would overflow.
+       which converges to 1/sqrt(a) using multiplication only, with one final
+       multiply by a to reach sqrt(a). It replaced an iteration on (x + a/x)/2
+       that spent one DIVISION per step (universal#1331): after universal#1326
+       made division correct, a division costs 319 nsec/op against 63 for a
+       multiply, and the arithmetic that justified the old choice reversed.
 
-           For td_cascade (159 bits precision):
-           - Initial guess: ~53 bits
-           - After iteration 1: ~106 bits
-           - After iteration 2: ~212 bits (sufficient)
-        */
+       From a 53-bit seed, 53 -> 106 -> 212 covers the format's 159 bits in two
+       iterations. A third was measured and changes nothing.
 
-        if (a.iszero()) return td_cascade(0.0);
+       The argument is scaled into [0.5, 2) first, exactly, by a power of two.
+       The iteration squares r ~ 1/sqrt(a), which underflows for a near maxpos
+       and overflows for a near minpos; scaling makes the whole range work.
+    */
 
-#	if TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-        if (a.isneg()) throw td_cascade_negative_sqrt_arg();
+    if (a.iszero()) return td_cascade(0.0);
+
+#if TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
+    if (a.isneg()) throw td_cascade_negative_sqrt_arg();
 #else
-        if (a.isneg()) std::cerr << "triple-double argument to sqrt is negative: " << a << std::endl;
-#endif
-
-        // Initial approximation from high component
-        td_cascade x = std::sqrt(a[0]);
-
-        // Newton iteration 1: x = (x + a/x) / 2
-        x = (x + a / x) * 0.5;
-
-        // Newton iteration 2: doubles precision again
-        x = (x + a / x) * 0.5;
-
-        return x;
+    if (a.isneg()) {
+        std::cerr << "triple-double argument to sqrt is negative: " << a << std::endl;
+        return td_cascade(SpecificValue::qnan);
     }
+#endif
+    if (a.isnan() || a.isinf()) return a;
+
+    int e{ 0 };
+    std::frexp(a[0], &e);
+    int k = e >> 1;                        // floor(e/2), correct for negative e
+    td_cascade b = ldexp(a, -2 * k);
+
+    td_cascade r(1.0 / std::sqrt(b[0]));   // ~53 bits
+    td_cascade h = mul_pwr2(b, 0.5);
+
+    r = r + (td_cascade(0.5) - h * sqr(r)) * r;   // ~106 bits
+    r = r + (td_cascade(0.5) - h * sqr(r)) * r;   // ~212 bits, past the format
+
+    return ldexp(r * b, k);
+}
 
 #else
 
