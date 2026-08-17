@@ -250,16 +250,23 @@ Porting that formulation to `add_cascades<4>` would plausibly recover most of th
 exactness, since it is the algorithm the compression is emulating. Same move as #1322 and #1324 made
 for multiplication.
 
-### 3. The generic templates are still the old design
+### 3. The generic templates are still the old design - CLOSED
 
-`add_cascades<N>` and `multiply_cascades<N>` - reached for any N outside {2, 3, 4} - still use
-`std::sort`/`std::vector` and the uncompressed, sorted-expansion formulation that #1317 and #1322
-replaced, and they know nothing of the quotient-digit fix. Nothing instantiates them today, so this
-is not a live defect, but the first person to instantiate `floatcascade<5>` inherits every bug this
-effort fixed, silently.
+`add_cascades<N>` and `multiply_cascades<N>` - reached for any N outside {2, 3, 4} - still carry
+`std::sort`/`std::vector` and the uncompressed, sorted-expansion formulation that #1317, #1322 and
+#1324 replaced, and they know nothing of the quotient-digit fix. Nothing instantiated them, so this
+was never a live defect, but the first person to write `floatcascade<5>` would have inherited every
+bug this effort fixed, silently and with no indication anything was wrong.
 
-Either specialize them the same way, or make the primary template `static_assert` that N is one of
-the supported widths.
+Both templates now `static_assert` that N is 2, 3 or 4. Instantiating another width is a compile
+error naming this document rather than an arithmetic result that is quietly 15 digits short.
+
+Specializing them properly was considered and rejected: there is no generic form of the corrected
+algorithms to fall back on. The multiplication schedule is derived from the eps^(i+j) ordering of the
+partial products for one specific N; the division needs N+1 quotient digits closed by an N+1-term
+renormalization; and whether the addition needs compression is a measured property, not a derived one
+(N=2 and N=3 do not need it, N=4 does). A new width needs a new derivation, and the error message
+says so.
 
 ### 4. Shared weaknesses that cap both families
 
@@ -289,7 +296,7 @@ trigonometric code.
    than assuming it. Removes the worst ratio in the suite.
 2. **Port `accurate_addition` to `add_cascades<4>`** (item 2). Highest confidence: the algorithm is
    known-good, sitting next door, and the pattern is proven three times over.
-3. **Close the generic templates** (item 3). Cheap, prevents silent regression.
+3. ~~Close the generic templates~~ - done; they refuse to compile for unsupported widths.
 4. **Then the shared items** (item 4), which are number-system work rather than framework work, and
    which now hold the largest remaining errors in either family.
 
