@@ -110,31 +110,62 @@ namespace detail {
 
 // Build the bigint M = int_digits || frac_digits (concatenated as a single
 // integer value).
+// Accumulate the decimal digits into a big integer, nine at a time.
+//
+// The obvious loop does one full-width bigint multiply per digit. At the default
+// 2048 bits that is a 64x64 limb multiply for every character, and it dominated
+// the parse of anything long: 147 usec for a 62-digit literal (universal#1319).
+//
+// Nine digits fit in a uint32 (10^9 < 2^32), so a chunk can be accumulated in
+// machine arithmetic and folded in with a single big multiply, cutting the number
+// of full-width multiplies by nine.
 template<unsigned BigBits>
 inline big_integer<BigBits>
 collect_digits(std::string_view int_part, std::string_view frac_part) {
 	using Big = big_integer<BigBits>;
+	constexpr std::size_t CHUNK_DIGITS = 9;
+	static const int power_of_ten[CHUNK_DIGITS + 1] = {
+		1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000
+	};
+
 	Big M(0);
-	const Big ten(10);
-	for (char c : int_part) {
-		M *= ten;
-		M += Big(static_cast<int>(c - '0'));
-	}
-	for (char c : frac_part) {
-		M *= ten;
-		M += Big(static_cast<int>(c - '0'));
-	}
+	auto absorb = [&M](std::string_view part) {
+		std::size_t i = 0;
+		while (i < part.size()) {
+			std::size_t n = part.size() - i;
+			if (n > CHUNK_DIGITS) n = CHUNK_DIGITS;
+			int chunk = 0;
+			for (std::size_t k = 0; k < n; ++k) chunk = chunk * 10 + static_cast<int>(part[i + k] - '0');
+			M *= Big(power_of_ten[n]);
+			M += Big(chunk);
+			i += n;
+		}
+	};
+	absorb(int_part);
+	absorb(frac_part);
 	return M;
 }
 
-// Multiply x in place by 5^e via repeated *= 5. O(e) bigint multiplications
-// by the single-limb constant 5; each step is fast.
+// Multiply x in place by 5^e.
+//
+// Was a loop of e multiplications by the single-limb constant 5. Each step is
+// cheap, but there are e of them: parsing 1e-300 spent 300 full-width multiplies
+// here, and a 62-digit literal spent 144 usec of its 382 (universal#1319).
+//
+// Binary exponentiation needs O(log e) multiplications instead. The squarings are
+// wider than a multiply by 5, but there are ~8 of them for e = 300 rather than 300.
+// No new overflow exposure: the running base never exceeds 5^e, which the caller
+// must already have room for.
 template<unsigned BigBits>
 inline void multiply_by_5_to_the_e(big_integer<BigBits>& x, std::int64_t e) {
 	if (e <= 0) return;
 	using Big = big_integer<BigBits>;
-	const Big five(5);
-	for (std::int64_t i = 0; i < e; ++i) x *= five;
+	Big base(5);
+	while (e > 0) {
+		if (e & 1) x *= base;
+		e >>= 1;
+		if (e > 0) base *= base;
+	}
 }
 
 }  // namespace detail
@@ -217,11 +248,14 @@ convert(const sw::universal::string_parse::decimal_float_scan& d,
 		num <<= static_cast<int>(shift_amount);
 		Big denom(1);
 		detail::multiply_by_5_to_the_e<BigBits>(denom, neg_E);
-		Big rem = num;
-		rem %= denom;
-		num /= denom;
-		Big zero(0);
-		const bool divide_residual = (rem != zero);
+		// One long division, not two. operator/= and operator%= each run the full
+		// algorithm and discard the half they were not asked for; idiv() returns
+		// both. The remainder is only needed as a sticky bit, but computing it
+		// separately doubled the cost of every parse with a negative exponent -
+		// 23 of the 30 usec floor (universal#1319).
+		auto division = sw::universal::idiv(num, denom);
+		num = division.quot;
+		const bool divide_residual = !division.rem.iszero();
 		lsb_scale = -K;
 		out.sticky_bit = divide_residual;
 	}
