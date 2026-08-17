@@ -473,6 +473,23 @@ namespace expansion_ops {
     // Add two cascades of same size, result in double-size cascade
     template<size_t N>
     floatcascade<2 * N> add_cascades(const floatcascade<N>& a, const floatcascade<N>& b) {
+        // Widths 2, 3 and 4 never reach this template - they have non-template
+        // overloads below, which is where the corrected algorithms live. Anything
+        // else lands here, and this code is the superseded formulation: the
+        // uncompressed expansion universal#1317 fixed, and the sorted
+        // accumulation universal#1322 and #1324 replaced. Rather than hand a new
+        // width silently wrong arithmetic, refuse to compile it.
+        //
+        // Supporting another width is real work, not a generic fallback: the
+        // multiplication schedule is derived from the eps^(i+j) ordering of the
+        // partial products for that specific N, the division needs N+1 quotient
+        // digits closed by an N+1-term renormalization, and whether the addition
+        // needs compression has to be measured (N=2 and N=3 do not, N=4 does).
+        static_assert(N == 2 || N == 3 || N == 4,
+            "floatcascade arithmetic is derived per width; only 2, 3 and 4 components are "
+            "implemented. See docs/assessments/multi-component-cascade-vs-direct.md before "
+            "adding another.");
+
         // Merge the two N-component cascades
         std::array<double, 2 * N> merged;
         std::array<double, 2 * N> magnitudes;
@@ -998,6 +1015,23 @@ namespace expansion_ops {
     // accurate_multiplication() algorithm (qd_impl.hpp lines 619-675).
     template<size_t N>
     floatcascade<N> multiply_cascades(const floatcascade<N>& a, const floatcascade<N>& b) {
+        // Widths 2, 3 and 4 never reach this template - they have non-template
+        // overloads below, which is where the corrected algorithms live. Anything
+        // else lands here, and this code is the superseded formulation: the
+        // uncompressed expansion universal#1317 fixed, and the sorted
+        // accumulation universal#1322 and #1324 replaced. Rather than hand a new
+        // width silently wrong arithmetic, refuse to compile it.
+        //
+        // Supporting another width is real work, not a generic fallback: the
+        // multiplication schedule is derived from the eps^(i+j) ordering of the
+        // partial products for that specific N, the division needs N+1 quotient
+        // digits closed by an N+1-term renormalization, and whether the addition
+        // needs compression has to be measured (N=2 and N=3 do not, N=4 does).
+        static_assert(N == 2 || N == 3 || N == 4,
+            "floatcascade arithmetic is derived per width; only 2, 3 and 4 components are "
+            "implemented. See docs/assessments/multi-component-cascade-vs-direct.md before "
+            "adding another.");
+
         // Generate N*N products (partial products matrix)
         std::array<double, N * N> products;
         std::array<double, N * N> errors;
