@@ -246,10 +246,27 @@ Reading the large residuals as correct decimal digits:
   so they bound the error from below and cannot certify a result as correctly rounded. On that
   evidence `qd_cascade` went from 2.1e+15 ulps to 0.42 on `sqrt` and from 4.7e+13 to 0.22 on
   `exp(log(x))`, against 1.05 and 0.22 for `qd` - i.e. its square root is now the *more* accurate of
-  the two. The stronger claim, that `qd_cascade` multiplication and division are bit-for-bit
-  identical to `qd`, rests on an external exact oracle rather than on this program; the in-repo
-  artifact is `static/highprecision/qd_cascade/arithmetic/addition_oracle.cpp`, which pins addition,
-  multiplication and the division residual against exact dyadic arithmetic.
+  the two. The identity claim is now checked by this program directly, over
+  **full-width** operands rather than single doubles - the earlier rows could only ever report
+  agreement, because a product of two doubles is exactly representable and every implementation
+  returns it. Over 4096 full-width pairs:
+
+```text
+operation               pair                       samples   bit-identical    max ulp diff
+add (full width)        dd vs dd_cascade              4096            4096               0
+multiply (full width)   dd vs dd_cascade              4096            4096               0
+divide (full width)     dd vs dd_cascade              4096            4096               0
+add (full width)        qd vs qd_cascade              4096            3907          0.4626
+multiply (full width)   qd vs qd_cascade              4096            4096               0
+divide (full width)     qd vs qd_cascade              4096            4096               0
+```
+
+  `dd_cascade` reproduces `dd` exactly on all three operations. `qd_cascade` reproduces `qd` exactly
+  on multiply and divide; the 189 addition rows that differ are the ones where `qd_cascade` is
+  **exact and `qd` is not** (universal#1317 made its addition lose nothing), which is why the
+  difference is bounded by half an ulp. Accuracy against exact arithmetic - a separate question from
+  agreement - is pinned by
+  `static/highprecision/{qd,td}_cascade/arithmetic/addition_oracle.cpp`.
 
   The cost is on the other axis: quad-double addition is 46% more expensive and division is now at
   parity rather than 0.75x, which

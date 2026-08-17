@@ -51,6 +51,40 @@ namespace {
 		return data;
 	}
 
+	// Operands built from a single double prove nothing about arithmetic: their sum and product are
+	// exactly representable, so every implementation returns them bit-for-bit and the comparison
+	// below can only ever report agreement. A full-width operand - every component populated, each
+	// roughly 2^-53 below the last - is the shape that arises inside Taylor series, Newton
+	// iterations and Horner evaluations, and the only shape that can distinguish two
+	// implementations. Both are generated: the single-double set exercises the special-value and
+	// exactness paths, the full-width set exercises the arithmetic.
+	const std::vector<double>& fullWidthLimbs() {
+		static const std::vector<double> limbs = [] {
+			hpbench::Lcg rng(0xFEEDFACEull);
+			std::vector<double> v(NR_SAMPLES * 8);   // 4 limbs per operand, two operands per sample
+			for (std::size_t i = 0; i < NR_SAMPLES; ++i) {
+				for (int operand = 0; operand < 2; ++operand) {
+					double head = rng.uniform(0.5, 1.0);
+					double* out = &v[i * 8 + static_cast<std::size_t>(operand) * 4];
+					out[0] = head;
+					out[1] = head * rng.uniform(0.5, 1.0) * 0x1p-53;
+					out[2] = head * rng.uniform(0.5, 1.0) * 0x1p-106;
+					out[3] = head * rng.uniform(0.5, 1.0) * 0x1p-159;
+				}
+			}
+			return v;
+			}();
+		return limbs;
+	}
+
+	// build a value of the requested type from a full-width limb set
+	template<typename Scalar> Scalar makeValue(const double* l);
+	template<> sw::universal::dd         makeValue<sw::universal::dd>(const double* l)         { return sw::universal::dd(l[0], l[1]); }
+	template<> sw::universal::dd_cascade makeValue<sw::universal::dd_cascade>(const double* l) { return sw::universal::dd_cascade(l[0], l[1]); }
+	template<> sw::universal::td_cascade makeValue<sw::universal::td_cascade>(const double* l) { return sw::universal::td_cascade(l[0], l[1], l[2]); }
+	template<> sw::universal::qd         makeValue<sw::universal::qd>(const double* l)         { return sw::universal::qd(l[0], l[1], l[2], l[3]); }
+	template<> sw::universal::qd_cascade makeValue<sw::universal::qd_cascade>(const double* l) { return sw::universal::qd_cascade(l[0], l[1], l[2], l[3]); }
+
 	struct Divergence {
 		std::string op;
 		std::string pair;
@@ -116,6 +150,23 @@ namespace {
 		for (std::size_t i = 0; i < lhs.size(); ++i) {
 			Classic classic = f(Classic(lhs[i]), Classic(rhs[i]));
 			Cascade cascade = f(Cascade(lhs[i]), Cascade(rhs[i]));
+			accumulateDistance(classic, cascade, shape, d);
+		}
+		return d;
+	}
+
+	// the same comparison over full-width operands
+	template<typename Classic, typename Cascade, typename BinaryOp>
+	Divergence compareBinaryFullWidth(const std::string& op, const std::string& pair, const Shape& shape, BinaryOp f) {
+		const std::vector<double>& limbs = fullWidthLimbs();
+		Divergence d;
+		d.op = op;
+		d.pair = pair;
+		for (std::size_t i = 0; i < NR_SAMPLES; ++i) {
+			const double* la = &limbs[i * 8];
+			const double* lb = &limbs[i * 8 + 4];
+			Classic classic = f(makeValue<Classic>(la), makeValue<Classic>(lb));
+			Cascade cascade = f(makeValue<Cascade>(la), makeValue<Cascade>(lb));
 			accumulateDistance(classic, cascade, shape, d);
 		}
 		return d;
@@ -195,6 +246,9 @@ namespace {
 		results.push_back(compareUnary<Classic, Cascade>("log", pair, shape, [](auto a) { using std::log; return log(a); }));
 		results.push_back(compareUnary<Classic, Cascade>("sin", pair, shape, [](auto a) { using std::sin; return sin(a); }));
 		results.push_back(compareUnary<Classic, Cascade>("cos", pair, shape, [](auto a) { using std::cos; return cos(a); }));
+		results.push_back(compareBinaryFullWidth<Classic, Cascade>("add (full width)", pair, shape, [](auto a, auto b) { return a + b; }));
+		results.push_back(compareBinaryFullWidth<Classic, Cascade>("multiply (full width)", pair, shape, [](auto a, auto b) { return a * b; }));
+		results.push_back(compareBinaryFullWidth<Classic, Cascade>("divide (full width)", pair, shape, [](auto a, auto b) { return a / b; }));
 		results.push_back(compareDot<Classic, Cascade>(pair, shape));
 		results.push_back(compareHorner<Classic, Cascade>(pair, shape));
 	}
@@ -262,12 +316,12 @@ namespace {
 	}
 
 	void report(const std::vector<Divergence>& results) {
-		std::cout << std::left << std::setw(16) << "operation" << std::setw(24) << "pair"
+		std::cout << std::left << std::setw(24) << "operation" << std::setw(24) << "pair"
 			<< std::right << std::setw(10) << "samples" << std::setw(16) << "bit-identical"
 			<< std::setw(16) << "max ulp diff" << std::setw(14) << "max rel diff" << '\n';
-		std::cout << std::string(96, '-') << '\n';
+		std::cout << std::string(104, '-') << '\n';
 		for (const auto& d : results) {
-			std::cout << std::left << std::setw(16) << d.op << std::setw(24) << d.pair << std::right
+			std::cout << std::left << std::setw(24) << d.op << std::setw(24) << d.pair << std::right
 				<< std::setw(10) << d.samples
 				<< std::setw(16) << d.identical;
 			if (d.structural) {

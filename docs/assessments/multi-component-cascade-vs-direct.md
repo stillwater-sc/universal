@@ -156,9 +156,14 @@ inherits it, because every residual step is exactly that operation.
 | cascade x double, N=4 | 0.79 ulps | **0.11** | `qd` 0.11 |
 | `sqrt` residual, N=4 | 8.57 ulps | **0.42** | `qd` 1.05 |
 
-Two of the three divisions are now bit-identical to their direct counterparts, and `sqrt` improved
-without being touched - its Newton iteration divides, so it inherited the fix and is now the most
-accurate square root in the library, better than `qd`'s.
+Two of the three divisions are now bit-identical to their direct counterparts - over 4096
+full-width operand pairs `dd_cascade` reproduces `dd` exactly on add, multiply and divide, and
+`qd_cascade` reproduces `qd` exactly on multiply and divide (`benchmark_hp_equivalence`). Where
+`qd_cascade`'s addition differs from `qd`'s, in 189 of those 4096 pairs, it is because `qd_cascade`
+is *exact* and `qd` is not, which is why the difference is bounded by half an ulp.
+
+`sqrt` improved without being touched - its Newton iteration divides, so it inherited the fix - and
+is now the most accurate square root in the library, better than `qd`'s.
 
 The cost is real and was anticipated: the cascade divisions were *faster* than the direct ones
 because they did less work. Doing the correct amount lands them at parity - `dd_cascade` divide goes
