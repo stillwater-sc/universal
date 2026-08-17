@@ -28,6 +28,16 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
+// select the square root formulation
+// the default is always the most accurate one; the faster formulations are opt-in.
+// Define UNIVERSAL_DD_CASCADE_SQRT_ALGORITHM to one of
+//     UNIVERSAL_DD_CASCADE_SQRT_NEWTON_DIVISION     1.4 ulps   580 nsec/op  (default)
+//     UNIVERSAL_DD_CASCADE_SQRT_NEWTON_RECIPROCAL   3.8 ulps   376 nsec/op
+//     UNIVERSAL_DD_CASCADE_SQRT_KARP                5.5 ulps   142 nsec/op
+// The constants are defined in math/functions/sqrt.hpp, which also carries the
+// derivation of each formulation and the measurements above.
+
+////////////////////////////////////////////////////////////////////////////////////////
 // enable throwing specific exceptions for arithmetic errors
 // left to application to enable
 #if !defined(DD_CASCADE_THROW_ARITHMETIC_EXCEPTION)
