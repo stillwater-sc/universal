@@ -11,40 +11,48 @@
 #define QD_CASCADE_NATIVE_SQRT 1
 #endif
 
+// square root formulations; see the comment on sqrt() below for the trade
+#define UNIVERSAL_QD_CASCADE_SQRT_NEWTON_DIVISION   0
+#define UNIVERSAL_QD_CASCADE_SQRT_NEWTON_RECIPROCAL 1
+#ifndef UNIVERSAL_QD_CASCADE_SQRT_ALGORITHM
+#define UNIVERSAL_QD_CASCADE_SQRT_ALGORITHM UNIVERSAL_QD_CASCADE_SQRT_NEWTON_DIVISION
+#endif
+
 namespace sw { namespace universal {
 
 #if QD_CASCADE_NATIVE_SQRT
 
     // Computes the square root of the quad-double number qd.
     //   NOTE: qd must be a non-negative number
+    // Square root algorithm selection.
+    //
+    // Three formulations, kept side by side because the choice between them is a
+    // real trade rather than a settled question, and because seeing them together
+    // is the clearest statement of what each one costs.
+    //
+    //   NEWTON_DIVISION     x' = (x + a/x)/2
+    //                       one division per step. The most accurate of the three
+    //                       at this width, and the slowest.
+    //
+    //   NEWTON_RECIPROCAL   r' = r + r*(0.5 - (a/2)*r^2), then multiply by a
+    //                       converges to 1/sqrt(a) with multiplication only. This
+    //                       is what classic qd uses.
+    //
+    // The default is always the most accurate. The faster formulations have to be
+    // asked for, by defining UNIVERSAL_QD_CASCADE_SQRT_ALGORITHM.
+    //
+    // Measured on an i7-12700K, gcc 13.3 -O3, residual of r*r - a in ulps of
+    // 2^-212:
+    //
+    //     NEWTON_DIVISION    0.42 ulps  2982 nsec/op   (default)
+    //     NEWTON_RECIPROCAL  1.05 ulps  1562 nsec/op   = classic qd's algorithm,
+    //                                                    and classic qd's accuracy
+    //
+    // Every formulation scales the argument into [0.5, 2) first, exactly, by a
+    // power of two. Each of them squares a value of magnitude ~sqrt(a) or
+    // ~1/sqrt(a), which leaves the representable range at the extremes: that is
+    // why sqrt(maxpos) returns inf or NaN today in dd and qd (universal#1332).
 inline qd_cascade sqrt(const qd_cascade& a) {
-        /* Strategy: Newton iteration on the RECIPROCAL square root,
-           
-              r' = r + r * (0.5 - (a/2) * r^2)
-           
-           which converges to 1/sqrt(a) using multiplication only, and one
-           final multiply by a to reach sqrt(a). This is the schedule classic
-           qd uses, and it replaced an iteration on (x + a/x)/2 that spent one
-           DIVISION per step (universal#1331).
-           
-           Division used to be the cheaper operation here, which is why the old
-           formulation was reasonable when it was written. universal#1326 made
-           division correct, and correct division costs 640 nsec/op against 89
-           for a multiply, so the arithmetic that motivated the choice reversed:
-           the reciprocal form is now 1.9x faster.
-           
-           From a 53-bit seed each iteration doubles the correct digits, so
-           53 -> 106 -> 212 reaches the format and a third iteration carries the
-           rounding. Measured residual 0.67 ulps of 2^-212, against 1.05 for qd.
-           
-           The argument is scaled into [0.5, 2) first. That is not cosmetic: the
-           iteration squares r ~ 1/sqrt(a), and for a near maxpos that square
-           underflows while for a near minpos it overflows. Scaling by a power
-           of two is exact, so it costs nothing in accuracy, and it makes the
-           whole range work - sqrt(maxpos) is broken today in dd, dd_cascade and
-           qd for exactly this reason (universal#1332).
-        */
-
         if (a.iszero()) return qd_cascade(0.0);
 
 #	if QD_CASCADE_THROW_ARITHMETIC_EXCEPTION
@@ -57,20 +65,29 @@ inline qd_cascade sqrt(const qd_cascade& a) {
 #endif
         if (a.isnan() || a.isinf()) return a;
 
-        // exact power-of-two scaling into [0.5, 2)
         int e{ 0 };
         std::frexp(a[0], &e);
-        int k = e >> 1;                       // floor(e/2), correct for negative e
-        qd_cascade b = ldexp(a, -2 * k);
+        int k = e >> 1;                  // floor(e/2), correct for negative e
+        qd_cascade b = ldexp(a, -2 * k);       // b in [0.5, 2), exact
 
-        qd_cascade r(1.0 / std::sqrt(b[0]));  // ~53 bits
+#if UNIVERSAL_QD_CASCADE_SQRT_ALGORITHM == UNIVERSAL_QD_CASCADE_SQRT_NEWTON_DIVISION
+
+        qd_cascade x = std::sqrt(b[0]);
+        x = (x + b / x) * 0.5;
+        x = (x + b / x) * 0.5;
+        x = (x + b / x) * 0.5;
+        return ldexp(x, k);
+
+#else   // NEWTON_RECIPROCAL
+
+        qd_cascade r(1.0 / std::sqrt(b[0]));
         qd_cascade h = mul_pwr2(b, 0.5);
-
-        r = r + (qd_cascade(0.5) - h * sqr(r)) * r;   // ~106 bits
-        r = r + (qd_cascade(0.5) - h * sqr(r)) * r;   // ~212 bits
-        r = r + (qd_cascade(0.5) - h * sqr(r)) * r;   // carries the rounding
-
+        r = r + (qd_cascade(0.5) - h * sqr(r)) * r;
+        r = r + (qd_cascade(0.5) - h * sqr(r)) * r;
+        r = r + (qd_cascade(0.5) - h * sqr(r)) * r;
         return ldexp(r * b, k);
+
+#endif
     }
 
 #else
