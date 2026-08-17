@@ -344,6 +344,11 @@ public:
             return *this;
         if (rhs.isnan())
             return *this = rhs;
+        if (rhs.isinf()) {
+            cascade[0] = (cascade.isneg() == rhs.cascade.isneg()) ? 0.0 : -0.0;
+            cascade[1] = cascade[2] = 0.0;
+            return *this;
+        }
         if (rhs.iszero()) {
             if (iszero()) {
                 *this = td_cascade(SpecificValue::qnan);

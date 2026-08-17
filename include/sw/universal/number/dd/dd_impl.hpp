@@ -435,6 +435,11 @@ public:
 			*this = rhs;
 			return *this;
 		}
+		if (rhs.isinf()) {
+			hi = (std::signbit(hi) == std::signbit(rhs.hi)) ? 0.0 : -0.0;
+			lo = 0.0;
+			return *this;
+		}
 
 		if (rhs.iszero()) {
 			if (iszero()) {
