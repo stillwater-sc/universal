@@ -8,29 +8,28 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <universal/internal/floatcascade/sincos_tables.hpp>
+
 namespace sw { namespace universal {
 
-    // pi/16
-    constexpr qd_cascade qdc_pi16(1.963495408493620697e-01, 7.654042494670957545e-18, 0.0, 0.0);
+    // pi/1024, and sin/cos of k*pi/1024 for k = 1..256, read from the shared cascade tables.
+    //
+    // The reduction used to stop at pi/16, which leaves an argument as large as pi/32 for the
+    // Taylor series. A 15-entry inverse-factorial table cannot carry that argument past
+    // double-double accuracy, so every cascade type wider than a double-double delivered 32
+    // digits no matter how many limbs it had (universal#1318). Reducing to pi/2048 instead --
+    // the same schedule the qd type uses -- brings the series back inside the table.
+    //
+    // The shared table holds four doubles per entry. Dropping the trailing limbs of a correctly
+    // rounded expansion leaves a correctly rounded expansion, so this type reads the leading
+    // 4; the generator verifies that prefix against mpmath.
+    constexpr qd_cascade qdc_pi1024(cascade::pi1024[0], cascade::pi1024[1], cascade::pi1024[2], cascade::pi1024[3]);
 
-    // Table of sin(k * pi/16)
-    constexpr qd_cascade qdc_sin_table[4] = {
-        qd_cascade(1.950903220161282758e-01, -7.991079068461731263e-18, 0.0, 0.0),
-        qd_cascade(3.826834323650897818e-01, -1.005077269646158761e-17, 0.0, 0.0),
-        qd_cascade(5.555702330196021776e-01,  4.709410940561676821e-17, 0.0, 0.0),
-        qd_cascade(7.071067811865475727e-01, -4.833646656726456726e-17, 0.0, 0.0)
-    };
-
-    // Table of cos(k * pi/16)
-    constexpr qd_cascade qdc_cos_table[4] = {
-        qd_cascade(9.807852804032304306e-01, 1.854693999782500573e-17, 0.0, 0.0),
-        qd_cascade(9.238795325112867385e-01, 1.764504708433667706e-17, 0.0, 0.0),
-        qd_cascade(8.314696123025452357e-01, 1.407385698472802389e-18, 0.0, 0.0),
-        qd_cascade(7.071067811865475727e-01, -4.833646656726456726e-17, 0.0, 0.0)
-    };
+    inline qd_cascade qdc_sin_pi1024(unsigned k) { return qd_cascade(cascade::sin_pi1024[k][0], cascade::sin_pi1024[k][1], cascade::sin_pi1024[k][2], cascade::sin_pi1024[k][3]); }
+    inline qd_cascade qdc_cos_pi1024(unsigned k) { return qd_cascade(cascade::cos_pi1024[k][0], cascade::cos_pi1024[k][1], cascade::cos_pi1024[k][2], cascade::cos_pi1024[k][3]); }
 
     /* Computes sin(a) using Taylor series.
-       Assumes |a| <= pi/32.                           */
+       Assumes |a| <= pi/2048.                           */
     inline qd_cascade sin_taylor(const qd_cascade& a) {
         const double threshold = 0.5 * std::abs(double(a)) * qdc_eps;
 
@@ -87,14 +86,12 @@ namespace sw { namespace universal {
 
         /* Strategy.  To compute sin(x), we choose integers a, b so that
 
-             x = s + a * (pi/2) + b * (pi/16)
+             x = s + a * (pi/2) + b * (pi/1024)
 
-           and |s| <= pi/32.  Using the fact that
-
-             sin(pi/16) = 0.5 * sqrt(2 - sqrt(2 + sqrt(2)))
-
-           we can compute sin(x) from sin(s), cos(s).  This greatly
-           increases the convergence of the sine Taylor series. */
+           and |s| <= pi/2048.  Using a precomputed table of
+           sin(k pi / 1024) and cos(k pi / 1024), we can compute
+           sin(x) from sin(s) and cos(s).  This greatly increases the
+           convergence of the sine Taylor series. */
 
         if (a.iszero()) return 0.0;
 
@@ -102,13 +99,13 @@ namespace sw { namespace universal {
 	    qd_cascade z = nint(a / qdc_2pi);
 	    qd_cascade r = a - qdc_2pi * z;
 
-        // approximately reduce modulo pi/2 and then modulo pi/16.
+        // approximately reduce modulo pi/2 and then modulo pi/1024.
 	    qd_cascade t;
         double q = std::floor(r[0] / qdc_pi_2[0] + 0.5);
         t = r - qdc_pi_2 * q;
         int j = static_cast<int>(q);
-        q = std::floor(t[0] / qdc_pi16[0] + 0.5);
-        t -= qdc_pi16 * q;
+        q = std::floor(t[0] / qdc_pi1024[0] + 0.5);
+        t -= qdc_pi1024 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
 
@@ -117,8 +114,8 @@ namespace sw { namespace universal {
 		    return qd_cascade(SpecificValue::snan);
         }
 
-        if (abs_k > 4) {
-            std::cerr << "(dd::sin): Cannot reduce modulo pi/16\n";
+        if (abs_k > 256) {
+            std::cerr << "(sin): Cannot reduce modulo pi/1024\n";
 		    return qd_cascade(SpecificValue::snan);
         }
 
@@ -135,8 +132,8 @@ namespace sw { namespace universal {
             }
         }
 
-        qd_cascade u(qdc_cos_table[abs_k - 1]);
-	    qd_cascade v(qdc_sin_table[abs_k - 1]);
+        qd_cascade u(qdc_cos_pi1024(static_cast<unsigned>(abs_k) - 1));
+	    qd_cascade v(qdc_sin_pi1024(static_cast<unsigned>(abs_k) - 1));
 	    qd_cascade sin_t, cos_t;
         sincos_taylor(t, sin_t, cos_t);
         if (j == 0) {
@@ -183,13 +180,13 @@ namespace sw { namespace universal {
 	    qd_cascade z = nint(a / qdc_2pi);
 	    qd_cascade r = a - z * qdc_2pi;
 
-        // approximately reduce modulo pi/2 and then modulo pi/16
+        // approximately reduce modulo pi/2 and then modulo pi/1024
 	    qd_cascade t;
         double q = std::floor(r[0] / qdc_pi_2[0] + 0.5);
         t = r - qdc_pi_2 * q;
         int j = static_cast<int>(q);
-        q = std::floor(t[0] / qdc_pi16[0] + 0.5);
-        t -= qdc_pi16 * q;
+        q = std::floor(t[0] / qdc_pi1024[0] + 0.5);
+        t -= qdc_pi1024 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
 
@@ -198,7 +195,7 @@ namespace sw { namespace universal {
             return qd_cascade(SpecificValue::snan);
         }
 
-        if (abs_k > 4) {
+        if (abs_k > 256) {
             std::cerr << "cos: Cannot reduce modulo pi / 16\n";
             return qd_cascade(SpecificValue::snan);
         }
@@ -218,8 +215,8 @@ namespace sw { namespace universal {
 
         qd_cascade sin_t, cos_t;
         sincos_taylor(t, sin_t, cos_t);
-	    qd_cascade u(qdc_cos_table[abs_k - 1]);
-	    qd_cascade v(qdc_sin_table[abs_k - 1]);
+	    qd_cascade u(qdc_cos_pi1024(static_cast<unsigned>(abs_k) - 1));
+	    qd_cascade v(qdc_sin_pi1024(static_cast<unsigned>(abs_k) - 1));
 
         if (j == 0) {
             if (k > 0) {
@@ -269,14 +266,14 @@ namespace sw { namespace universal {
 	    qd_cascade z = nint(a / qdc_2pi);
 	    qd_cascade r = a - qdc_2pi * z;
 
-        // approximately reduce module pi/2 and pi/16
+        // approximately reduce modulo pi/2 and then modulo pi/1024
 	    qd_cascade t;
         double q = std::floor(r[0] / qdc_pi_2[0] + 0.5);
         t = r - qdc_pi_2 * q;
         int j = static_cast<int>(q);
         int abs_j = std::abs(j);
-        q = std::floor(t[0] / qdc_pi16[0] + 0.5);
-        t -= qdc_pi16 * q;
+        q = std::floor(t[0] / qdc_pi1024[0] + 0.5);
+        t -= qdc_pi1024 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
 
@@ -286,8 +283,8 @@ namespace sw { namespace universal {
             return;
         }
 
-        if (abs_k > 4) {
-            std::cerr << "sincos: Cannot reduce modulo pi/16\n";
+        if (abs_k > 256) {
+            std::cerr << "sincos: Cannot reduce modulo pi/1024\n";
 		    cos_a = sin_a = qd_cascade(SpecificValue::snan);
             return;
         }
@@ -302,8 +299,8 @@ namespace sw { namespace universal {
             c = cos_t;
         }
         else {
-		    qd_cascade u(qdc_cos_table[abs_k - 1]);
-		    qd_cascade v(qdc_sin_table[abs_k - 1]);
+		    qd_cascade u(qdc_cos_pi1024(static_cast<unsigned>(abs_k) - 1));
+		    qd_cascade v(qdc_sin_pi1024(static_cast<unsigned>(abs_k) - 1));
 
             if (k > 0) {
                 s = u * sin_t + v * cos_t;
@@ -382,15 +379,26 @@ namespace sw { namespace universal {
 	    qd_cascade z = std::atan2(double(y), double(x));
 	    qd_cascade sin_z, cos_z;
 
+        // Newton doubles the number of correct bits per step, and the seed above is a double:
+        // 53 -> 106 -> 212 -> 424. A quad-double's 212 bits need three.
+        // This file was derived from the double-double one, where a single step is right, and the
+        // extra steps did not come with it -- so atan, asin and acos all stopped at 106 bits no
+        // matter how wide the type was (universal#1318).
+        constexpr int newtonSteps = 3;
+
         if (std::abs(xx[0]) > std::abs(yy[0])) {
             // Use Newton iteration 1.  z' = z + (y - sin(z)) / cos(z)
-            sincos(z, sin_z, cos_z);
-            z += (yy - sin_z) / cos_z;
+            for (int i = 0; i < newtonSteps; ++i) {
+                sincos(z, sin_z, cos_z);
+                z += (yy - sin_z) / cos_z;
+            }
         }
         else {
             // Use Newton iteration 2.  z' = z - (x - cos(z)) / sin(z)
-            sincos(z, sin_z, cos_z);
-            z -= (xx - cos_z) / sin_z;
+            for (int i = 0; i < newtonSteps; ++i) {
+                sincos(z, sin_z, cos_z);
+                z -= (xx - cos_z) / sin_z;
+            }
         }
 
         return z;
