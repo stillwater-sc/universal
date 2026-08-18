@@ -208,14 +208,11 @@ FUNCTIONS = {
 
 
 def guard(x, fname):
-    """
-    Bits of relative accuracy the conditioning of the function costs at x.
-
-    The condition number of f at x is |x f'(x) / f(x)|; it blows up as f
-    approaches a zero -- which is where sin, tan, atan and acos each spend part
-    of their range -- and grows like |x| for a large argument, where the
-    reduction modulo 2*pi loses the same bits.
-    """
+    """Bits of relative accuracy the conditioning of the function costs at x."""
+    # The condition number of f at x is |x f'(x) / f(x)|; it blows up as f
+    # approaches a zero -- which is where sin, tan, atan and acos each spend part
+    # of their range -- and grows like |x| for a large argument, where the
+    # reduction modulo 2*pi loses the same bits.
     xm = mp.mpf(x)
     if xm == 0:
         return 0
@@ -228,13 +225,10 @@ def guard(x, fname):
 
 
 def emit_table(w, name, struct, args, fnames, comment):
-    """
-    Emit one reference table.
-
-    The rows are indexed by function rather than carrying a named member per
-    function, so the verifier loops over them instead of repeating a near
-    identical line each time.
-    """
+    """Emit one reference table."""
+    # The rows are indexed by function rather than carrying a named member per
+    # function, so the verifier loops over them instead of repeating a near
+    # identical line each time.
     count = '%s_count' % name.replace('_reference', '')
     w('\tconstexpr unsigned %s = %d;' % (count, len(fnames)))
     w('\tconstexpr const char* %s_name[%s] = { %s };'
