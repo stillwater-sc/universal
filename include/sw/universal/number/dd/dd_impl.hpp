@@ -435,6 +435,23 @@ public:
 			*this = rhs;
 			return *this;
 		}
+		if (rhs.isinf()) {
+			if (isinf()) {
+				*this = dd(SpecificValue::qnan);
+				return *this;
+			}
+			bool same_sign;
+			if (std::is_constant_evaluated()) {
+				same_sign = ((std::bit_cast<std::uint64_t>(hi) >> 63) ==
+					(std::bit_cast<std::uint64_t>(rhs.hi) >> 63));
+			}
+			else {
+				same_sign = (std::signbit(hi) == std::signbit(rhs.hi));
+			}
+			hi = same_sign ? 0.0 : -0.0;
+			lo = 0.0;
+			return *this;
+		}
 
 		if (rhs.iszero()) {
 			if (iszero()) {
@@ -601,8 +618,8 @@ public:
 	}
 	
 	// argument is not protected for speed
-	double operator[](int index) const { return (index == 0 ? hi : lo); }
-	double& operator[](int index) { return (index == 0 ? hi : lo); }
+	constexpr double operator[](int index) const { return (index == 0 ? hi : lo); }
+	constexpr double& operator[](int index) { return (index == 0 ? hi : lo); }
 
 	// create specific number system values of interest
 	constexpr dd& maxpos() noexcept {

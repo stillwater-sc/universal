@@ -2227,6 +2227,16 @@ floatcascade<N>& floatcascade<N>::operator/=(const floatcascade<N>& rhs) noexcep
         return *this;
     if (rhs.isnan())
         return *this = rhs;
+    if (rhs.isinf()) {
+        if (isinf()) {
+            e[0] = std::numeric_limits<double>::quiet_NaN();
+            for (size_t i = 1; i < N; ++i) e[i] = 0.0;
+            return *this;
+        }
+        e[0] = (isneg() == rhs.isneg()) ? 0.0 : -0.0;
+        for (size_t i = 1; i < N; ++i) e[i] = 0.0;
+        return *this;
+    }
     if (rhs.iszero()) {
         if (iszero()) {
             // Set to NaN
