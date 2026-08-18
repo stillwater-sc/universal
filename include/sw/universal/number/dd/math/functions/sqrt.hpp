@@ -36,9 +36,23 @@ namespace sw { namespace universal {
         if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
 #endif
 
-        double x = 1.0 / std::sqrt(a.high());
-        double ax = a.high() * x;
-        return add(ax, (a - sqr(dd(ax))).high() * (x * 0.5));
+        if (a.isnan() || a.isinf()) return a;
+
+        // Scale into [0.5, 2) first. The scaling is by a power of two, so it is exact and
+        // costs no accuracy, and it bounds every intermediate wherever the argument sits.
+        // Karp's trick forms (a*x)^2, a value of the argument's own magnitude: within a
+        // rounding of maxpos that square overflows and the result comes back inf or NaN,
+        // and at the bottom of the range the residual a - (a*x)^2 lands in the subnormals
+        // and takes the correction term's accuracy with it -- sqrt(1e-300) held 80 bits of
+        // its 106 (universal#1332).
+        int e{ 0 };
+        std::frexp(a.high(), &e);
+        int k = e >> 1;                  // floor(e/2), correct for negative e
+        dd b = ldexp(a, -2 * k);         // b in [0.5, 2), exact
+
+        double x  = 1.0 / std::sqrt(b.high());
+        double bx = b.high() * x;
+        return ldexp(add(bx, (b - sqr(dd(bx))).high() * (x * 0.5)), k);
     }
 
 #else

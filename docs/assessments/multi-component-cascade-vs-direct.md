@@ -204,8 +204,11 @@ and the speed is opt-in. What the change actually delivers is three things:
   counterpart's accuracy - `KARP` *is* `dd`'s algorithm, `NEWTON_RECIPROCAL` at N=4 *is* `qd`'s.
 - Every formulation now scales the argument into `[0.5, 2)` by an exact power of two first. Each
   squares a value of magnitude ~sqrt(a) or ~1/sqrt(a), which leaves the representable range at the
-  extremes: **`sqrt(maxpos)` returns inf or NaN today in `dd`, `dd_cascade` and `qd`**. All three
-  cascade types now handle the full range; `dd` and `qd` still do not (universal#1332).
+  extremes: `sqrt(maxpos)` used to return inf or NaN in `dd`, `dd_cascade` and `qd`. `dd` and `qd`
+  received the same prologue in universal#1332, which turned out to fix more than the overflow --
+  scored end to end over the exponent range, `dd`'s worst case went from 52 to 105 bits of its 106
+  and `qd`'s from 60 to 214 of its 212, and `qd`'s 28 non-finite results went to none. `qd::sqrt(0)`
+  also returned NaN, having never guarded zero at all.
 
 A third reciprocal iteration was measured at N=2 and rejected: 3.3 ulps for 532 nsec/op, dominated
 by the division iteration at 1.4 ulps for 607. What limits that path is the rounding inside the
