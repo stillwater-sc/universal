@@ -1,38 +1,43 @@
 #!/usr/bin/env python3
-"""Generate the shared multi-component sin/cos tables and the trigonometry oracle vectors.
-
-Two outputs, both derived from mpmath at 200 decimal digits:
-
-  tables    include/sw/universal/internal/floatcascade/sincos_tables.hpp
-            sin(k*pi/1024) and cos(k*pi/1024) for k = 1..256, each as four
-            doubles.  The values are the ones the qd sincos tables already
-            carry (Bailey/Hida); this script verifies them rather than
-            replacing them, so qd and qd_cascade evaluate from identical
-            constants.  Every truncation prefix is checked: the first two
-            limbs must hold double-double accuracy, the first three
-            triple-double, all four quad-double -- that is what lets one
-            table serve all three cascade widths.
-
-  vectors   the reference block pasted into
-            static/highprecision/qd_cascade/math/trigonometry_oracle.cpp
-            sin(x) and cos(x) for a set of arguments, each as six doubles
-            (~318 bits) so the reference stays well clear of the widest
-            format under test, plus the guard bits each argument needs.
-
-            The guard is the condition number of the function at that point,
-            log2|x f'(x) / f(x)|, rounded up.  Near a zero of sin or cos the
-            result is tiny while the argument is not, so no implementation can
-            hold relative accuracy there: sin(3.141592653589793) is 1.2e-16 and
-            an input perturbation of one ulp moves it by half of that.  Charging
-            each argument its own condition number is what lets the suite demand
-            full precision everywhere else without exempting the hard cases by
-            hand.  It also covers the argument reduction, whose error grows with
-            |x| at the same rate.
-
-Usage:  python3 tools/generators/cascade_trig_gen.py tables | vectors
-
-Requires mpmath.  Not run during the build; the generated header is checked in.
-"""
+# cascade_trig_gen.py: generate the shared multi-component sin/cos tables and the
+# trigonometry oracle vectors.
+#
+# Copyright (C) 2017 Stillwater Supercomputing, Inc.
+# SPDX-License-Identifier: MIT
+#
+# This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#
+# Two outputs, both derived from mpmath at 200 decimal digits:
+#
+#   tables    include/sw/universal/internal/floatcascade/sincos_tables.hpp
+#             sin(k*pi/1024) and cos(k*pi/1024) for k = 1..256, each as four
+#             doubles.  The values are the ones the qd sincos tables already
+#             carry (Bailey/Hida); this script verifies them rather than
+#             replacing them, so qd and qd_cascade evaluate from identical
+#             constants.  Every truncation prefix is checked: the first two
+#             limbs must hold double-double accuracy, the first three
+#             triple-double, all four quad-double -- that is what lets one
+#             table serve all three cascade widths.
+#
+#   vectors   the reference block pasted into
+#             static/highprecision/qd_cascade/math/trigonometry_oracle.cpp
+#             sin(x) and cos(x) for a set of arguments, each as six doubles
+#             (~318 bits) so the reference stays well clear of the widest
+#             format under test, plus the guard bits each argument needs.
+#
+#             The guard is the condition number of the function at that point,
+#             log2|x f'(x) / f(x)|, rounded up.  Near a zero of sin or cos the
+#             result is tiny while the argument is not, so no implementation can
+#             hold relative accuracy there: sin(3.141592653589793) is 1.2e-16 and
+#             an input perturbation of one ulp moves it by half of that.  Charging
+#             each argument its own condition number is what lets the suite demand
+#             full precision everywhere else without exempting the hard cases by
+#             hand.  It also covers the argument reduction, whose error grows with
+#             |x| at the same rate.
+#
+# Usage:  python3 tools/generators/cascade_trig_gen.py tables | vectors
+#
+# Requires mpmath.  Not run during the build; the generated header is checked in.
 import re
 import sys
 
@@ -203,7 +208,8 @@ FUNCTIONS = {
 
 
 def guard(x, fname):
-    """Bits of relative accuracy the conditioning of the function costs at x.
+    """
+    Bits of relative accuracy the conditioning of the function costs at x.
 
     The condition number of f at x is |x f'(x) / f(x)|; it blows up as f
     approaches a zero -- which is where sin, tan, atan and acos each spend part
@@ -222,24 +228,36 @@ def guard(x, fname):
 
 
 def emit_table(w, name, struct, args, fnames, comment):
+    """
+    Emit one reference table.
+
+    The rows are indexed by function rather than carrying a named member per
+    function, so the verifier loops over them instead of repeating a near
+    identical line each time.
+    """
+    count = '%s_count' % name.replace('_reference', '')
+    w('\tconstexpr unsigned %s = %d;' % (count, len(fnames)))
+    w('\tconstexpr const char* %s_name[%s] = { %s };'
+      % (name.replace('_reference', ''), count, ', '.join('"%s"' % f for f in fnames)))
     w('\tstruct %s {' % struct)
     w('\t\tdouble   x;')
-    for fname in fnames:
-        w('\t\tunsigned %s_guard;' % fname)
-    for fname in fnames:
-        w('\t\tdouble   %s[reference_limbs];' % fname)
+    w('\t\tunsigned guard[%s];                        // bits the conditioning of each costs here' % count)
+    w('\t\tdouble   reference[%s][reference_limbs];' % count)
     w('\t};')
     w('\t// %s' % comment)
     w('\tconstexpr %s %s[] = {' % (struct, name))
     for text in args:
         x = float(text)
-        w('\t\t{ %+.17e, %s,' % (x, ', '.join(str(guard(x, f)) for f in fnames)))
+        w('\t\t{ %+.17e, { %s },' % (x, ', '.join(str(guard(x, f)) for f in fnames)))
+        w('\t\t  {')
         for i, fname in enumerate(fnames):
             value = FUNCTIONS[fname](mp.mpf(x))
             limb = split(value, REFERENCE_LIMBS)
             if digits(sum(mp.mpf(v) for v in limb), value) < 90.0:
                 raise SystemExit('reference for %s(%s) is short' % (fname, text))
-            w('\t\t  { %s }%s' % (limbs(limb), ',' if i + 1 < len(fnames) else ' },'))
+            tail = ',' if i + 1 < len(fnames) else ' } },'
+            w('\t\t    { %s,' % limbs(limb[:3]))
+            w('\t\t      %s }%s' % (limbs(limb[3:]), tail))
     w('\t};')
 
 
@@ -264,7 +282,7 @@ def emit_vectors():
 
 if __name__ == '__main__':
     if len(sys.argv) != 2 or sys.argv[1] not in ('tables', 'vectors'):
-        raise SystemExit(__doc__)
+        raise SystemExit('usage: cascade_trig_gen.py tables | vectors')
     if sys.argv[1] == 'tables':
         emit_tables()
     else:
