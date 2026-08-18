@@ -841,6 +841,7 @@ private:
 				// 0.11111111.0000000.......000000000 +inf
 				_nan = false;
 				_inf = true;
+				_zero = false;   // clear() set it; a special is not a zero
 				_sign = s;  // + or - infinity
 				_scale = 10000;
 				return *this;
@@ -850,6 +851,7 @@ private:
 			constexpr uint64_t quietbit = ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask;
 			_nan = true;
 			_inf = false;
+			_zero = false;   // clear() set it; a special is not a zero
 			_sign = ((rawFraction & quietbit) == 0ull);   // clear quiet bit == signalling
 			_scale = 0;
 			return *this;

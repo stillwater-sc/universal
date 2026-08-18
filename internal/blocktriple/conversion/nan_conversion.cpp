@@ -64,6 +64,8 @@ int VerifyDoubleNaNPayloads(bool reportTestCases) {
 		0xFFF0000000000001ull,   // negative signalling
 		0xFFF8000000000000ull,   // negative quiet
 	};
+	// double's quiet bit is the fraction MSB, bit 51
+	constexpr uint64_t QUIETBIT = 0x0008000000000000ull;
 	for (uint64_t bits : payloads) {
 		BlockTriple t;
 		t = sw::bit_cast<double>(bits);
@@ -73,17 +75,42 @@ int VerifyDoubleNaNPayloads(bool reportTestCases) {
 				std::cout << "FAIL double NaN 0x" << std::hex << bits << std::dec
 				          << " -> isnan=" << t.isnan() << " isinf=" << t.isinf() << '\n';
 			}
+			continue;
+		}
+		// A special is not a zero.  clear() sets _zero at the top of the conversion
+		// and the special branches have to clear it again; when they did not, a NaN
+		// reported isnan() and iszero() at the same time, and iszero() is what the
+		// arithmetic paths consult for their shortcuts.
+		if (t.iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases) {
+				std::cout << "FAIL double NaN 0x" << std::hex << bits << std::dec
+				          << " reports iszero() as well\n";
+			}
+		}
+		// blocktriple carries the quiet / signalling distinction in its sign:
+		// sign set means signalling, matching cfloat's convention.  Asserting only
+		// "is a NaN" would pass a conversion that dropped or reversed that bit.
+		const bool srcQuiet = (bits & QUIETBIT) != 0ull;
+		if (t.sign() == srcQuiet) {
+			++nrOfFailedTests;
+			if (reportTestCases) {
+				std::cout << "FAIL double NaN 0x" << std::hex << bits << std::dec
+				          << " is a " << (srcQuiet ? "quiet" : "signalling")
+				          << " NaN but blocktriple sign says otherwise\n";
+			}
 		}
 	}
 	// and the infinities must stay infinities, distinct from the NaN class
 	for (uint64_t bits : { 0x7FF0000000000000ull, 0xFFF0000000000000ull }) {
 		BlockTriple t;
 		t = sw::bit_cast<double>(bits);
-		if (t.isnan() || !t.isinf()) {
+		if (t.isnan() || !t.isinf() || t.iszero()) {
 			++nrOfFailedTests;
 			if (reportTestCases) {
 				std::cout << "FAIL double inf 0x" << std::hex << bits << std::dec
-				          << " -> isnan=" << t.isnan() << " isinf=" << t.isinf() << '\n';
+				          << " -> isnan=" << t.isnan() << " isinf=" << t.isinf()
+				          << " iszero=" << t.iszero() << '\n';
 			}
 		}
 	}
@@ -146,17 +173,22 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyDoubleNaNPayloads<bt23>(true), "blocktriple<23>", "double NaN payloads");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<bt23>(reportTestCases), "blocktriple<23>", "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<bt23>(reportTestCases), "blocktriple<23>", "binary16 NaN space");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyDoubleNaNPayloads<bt52>(reportTestCases), "blocktriple<52>", "double NaN payloads");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<bt52>(reportTestCases), "blocktriple<52>", "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyDoubleNaNPayloads<bt52>(reportTestCases), "blocktriple<52>", "double NaN payloads");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<bt52>(reportTestCases), "blocktriple<52>", "binary16 NaN space");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyDoubleNaNPayloads<bt10>(reportTestCases), "blocktriple<10>", "double NaN payloads");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<bt10>(reportTestCases), "blocktriple<10>", "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyDoubleNaNPayloads<bt10>(reportTestCases), "blocktriple<10>", "double NaN payloads");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<bt10>(reportTestCases), "blocktriple<10>", "binary16 NaN space");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

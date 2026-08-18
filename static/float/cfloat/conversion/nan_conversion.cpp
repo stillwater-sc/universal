@@ -157,6 +157,23 @@ int VerifyBinary16NaNSpace(bool reportTestCases) {
 					          << (c.isinf() ? "infinity" : "a finite value") << '\n';
 				}
 			}
+			else {
+				// and it must be the RIGHT KIND of NaN.  Asserting only "is a NaN"
+				// would pass a conversion that discarded the source's quiet bit, or
+				// reversed it -- which is the very field this fix reads.  binary16's
+				// quiet bit is bit 9 of the fraction.
+				const bool srcQuiet = (h & 0x0200u) != 0u;
+				const bool gotQuiet = c.isnan(sw::universal::NAN_TYPE_QUIET);
+				if (gotQuiet != srcQuiet) {
+					++nrOfFailedTests;
+					if (reportTestCases) {
+						std::cout << "FAIL binary16 0x" << std::hex << h << std::dec
+						          << " is a " << (srcQuiet ? "quiet" : "signalling")
+						          << " NaN but converted to a "
+						          << (gotQuiet ? "quiet" : "signalling") << " one\n";
+					}
+				}
+			}
 		}
 		else {
 			++infs;
@@ -194,11 +211,17 @@ int VerifyIssue1303Repro(bool reportTestCases) {
 	const F16 fs(snan), fq(qnan);
 	if (!fs.isnan()) {
 		++nrOfFailedTests;
-		if (reportTestCases) std::cout << "FAIL sNaN double converted to " << (fs.isinf() ? "infinity\n" : "a finite value\n");
+		if (reportTestCases) {
+			std::cout << "FAIL sNaN double converted to "
+			          << (fs.isinf() ? "infinity\n" : "a finite value\n");
+		}
 	}
 	if (!fq.isnan()) {
 		++nrOfFailedTests;
-		if (reportTestCases) std::cout << "FAIL qNaN double converted to " << (fq.isinf() ? "infinity\n" : "a finite value\n");
+		if (reportTestCases) {
+			std::cout << "FAIL qNaN double converted to "
+			          << (fq.isinf() ? "infinity\n" : "a finite value\n");
+		}
 	}
 	return nrOfFailedTests;
 }
@@ -240,39 +263,53 @@ try {
 
 #if MANUAL_TESTING
 	nrOfFailedTestCases += ReportTestResult(VerifyIssue1303Repro(true), "cfloat<16,5>", "issue 1303 repro");
-	nrOfFailedTestCases += ReportTestResult((VerifyClassification<f16_sub, double>(true)), "cfloat<16,5>", "classification");
+	nrOfFailedTestCases += ReportTestResult(
+		(VerifyClassification<f16_sub, double>(true)), "cfloat<16,5>", "classification");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyIssue1303Repro(true), "cfloat<16,5>", "issue 1303 repro");
-	nrOfFailedTestCases += ReportTestResult((VerifyClassification<f16_sub, double>(reportTestCases)), "cfloat<16,5> from double", "classification");
-	nrOfFailedTestCases += ReportTestResult((VerifyClassification<f16_sub, float>(reportTestCases)),  "cfloat<16,5> from float",  "classification");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<f16_sub>(reportTestCases), "cfloat<16,5>", "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		(VerifyClassification<f16_sub, double>(reportTestCases)), "cfloat<16,5> from double", "classification");
+	nrOfFailedTestCases += ReportTestResult(
+		(VerifyClassification<f16_sub, float>(reportTestCases)),  "cfloat<16,5> from float",  "classification");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<f16_sub>(reportTestCases), "cfloat<16,5>", "binary16 NaN space");
 #endif
 
 #if REGRESSION_LEVEL_2
 	// the flag combinations from the issue's table: subnormals, supernormals and
 	// saturation are all irrelevant to the defect, and the suite says so
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<f16_super>(reportTestCases), "cfloat<16,5> supernormals", "binary16 NaN space");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<f16_nosub>(reportTestCases), "cfloat<16,5> no subnormals", "binary16 NaN space");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<f16_sat>(reportTestCases),   "cfloat<16,5> saturating",    "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<f16_super>(reportTestCases), "cfloat<16,5> supernormals", "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<f16_nosub>(reportTestCases), "cfloat<16,5> no subnormals", "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<f16_sat>(reportTestCases),   "cfloat<16,5> saturating",    "binary16 NaN space");
 #endif
 
 #if REGRESSION_LEVEL_3
 	// narrower and wider targets: e5m2 is narrower than the source fraction,
 	// cfloat<32,8> and cfloat<64,11> take the same-width fast paths
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<f8_e5m2>(reportTestCases),    "cfloat<8,5>",   "binary16 NaN space");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<f32_single>(reportTestCases), "cfloat<32,8>",  "binary16 NaN space");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<f64_double>(reportTestCases), "cfloat<64,11>", "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<f8_e5m2>(reportTestCases),    "cfloat<8,5>",   "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<f32_single>(reportTestCases), "cfloat<32,8>",  "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<f64_double>(reportTestCases), "cfloat<64,11>", "binary16 NaN space");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult((VerifyClassification<f8_e5m2, float>(reportTestCases)),    "cfloat<8,5>",   "classification");
-	nrOfFailedTestCases += ReportTestResult((VerifyClassification<f32_single, double>(reportTestCases)), "cfloat<32,8>",  "classification");
-	nrOfFailedTestCases += ReportTestResult((VerifyClassification<f64_double, double>(reportTestCases)), "cfloat<64,11>", "classification");
-	nrOfFailedTestCases += ReportTestResult((VerifyClassification<f16_super, double>(reportTestCases)),  "cfloat<16,5> supernormals", "classification");
+	nrOfFailedTestCases += ReportTestResult(
+		(VerifyClassification<f8_e5m2, float>(reportTestCases)),    "cfloat<8,5>",   "classification");
+	nrOfFailedTestCases += ReportTestResult(
+		(VerifyClassification<f32_single, double>(reportTestCases)), "cfloat<32,8>",  "classification");
+	nrOfFailedTestCases += ReportTestResult(
+		(VerifyClassification<f64_double, double>(reportTestCases)), "cfloat<64,11>", "classification");
+	nrOfFailedTestCases += ReportTestResult(
+		(VerifyClassification<f16_super, double>(reportTestCases)),  "cfloat<16,5> supernormals", "classification");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

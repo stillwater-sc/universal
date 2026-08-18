@@ -83,6 +83,10 @@ int VerifyDoublePayloads(bool reportTestCases) {
 		0xFFF0000000000001ull,   // negative signalling
 		0xFFF8000000000000ull,   // negative quiet
 	};
+	// No quiet / signalling assertion here, unlike cfloat's and blocktriple's
+	// suites: dbns has a SINGLE NaN encoding and isnan() takes no kind, so the
+	// source's quiet bit has nowhere to land and there is nothing to check.  Saying
+	// so beats adding an assertion that could only ever be vacuous.
 	for (uint64_t bits : payloads) {
 		const Number v(sw::bit_cast<double>(bits));
 		if (!v.isnan()) {
@@ -142,21 +146,27 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyDoublePayloads<dbns<16, 5>>(true), "dbns<16,5>", "double NaN payloads");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<dbns<16, 5>>(reportTestCases), "dbns<16,5>", "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<dbns<16, 5>>(reportTestCases), "dbns<16,5>", "binary16 NaN space");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<dbns<8, 3>>(reportTestCases), "dbns<8,3>", "binary16 NaN space");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<dbns<10, 4>>(reportTestCases), "dbns<10,4>", "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<dbns<8, 3>>(reportTestCases), "dbns<8,3>", "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<dbns<10, 4>>(reportTestCases), "dbns<10,4>", "binary16 NaN space");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyDoublePayloads<dbns<8, 3>>(reportTestCases), "dbns<8,3>", "double NaN payloads");
-	nrOfFailedTestCases += ReportTestResult(VerifyDoublePayloads<dbns<10, 4>>(reportTestCases), "dbns<10,4>", "double NaN payloads");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyDoublePayloads<dbns<8, 3>>(reportTestCases), "dbns<8,3>", "double NaN payloads");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyDoublePayloads<dbns<10, 4>>(reportTestCases), "dbns<10,4>", "double NaN payloads");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary16NaNSpace<dbns<10, 3>>(reportTestCases), "dbns<10,3>", "binary16 NaN space");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinary16NaNSpace<dbns<10, 3>>(reportTestCases), "dbns<10,3>", "binary16 NaN space");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
