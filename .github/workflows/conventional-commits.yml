@@ -74,6 +74,7 @@ jobs:
             blockdecimal
             blocksignificand
             blocktriple
+            floatcascade
             microfloat
             e8m0
             mxblock
