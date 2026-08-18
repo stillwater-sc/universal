@@ -305,10 +305,10 @@ both slower and less accurate. So the 46% was never the compression's to give ba
 work was the sort.
 
 The clang direction is the same compiler flip #1315 recorded for these benchmarks generally, and it
-is tracked as universal#1342. Four formulations of the merge - branchy, branchless,
-register-resident, and with both operands ordered unconditionally - landed within a couple of nsec of
-each other there, so the merge's shape is not the variable; clang's codegen for the bubble sort it
-replaces is simply good.
+is tracked as universal#1342. Four formulations of the merge were measured there: branchy, branchless
+and register-resident land within 2.6 nsec of each other (83.0, 83.6 and 85.6 nsec/op), and ordering
+both operands unconditionally is the outlier at 94.3. So no shape of the merge recovers what clang
+gets from the bubble sort it replaces.
 
 ### 3. The generic templates are still the old design - CLOSED
 
