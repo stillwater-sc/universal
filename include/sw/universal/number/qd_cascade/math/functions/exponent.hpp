@@ -83,8 +83,7 @@ namespace sw { namespace universal {
         double m = std::floor(x[0] / qdc_ln2[0] + 0.5);
         qd_cascade r = mul_pwr2(x - qdc_ln2 * m, inv_k);
         qd_cascade s, p, t;
-        constexpr double qdc_eps_true = 1.54e-63;  // 2^-208
-        double thresh = inv_k * qdc_eps_true;
+        double thresh = inv_k * qdc_eps;
 
         p = sqr(r);
         s = r + mul_pwr2(p, 0.5);
@@ -130,13 +129,12 @@ namespace sw { namespace universal {
     inline qd_cascade expm1(const qd_cascade& x) {
         if (x.iszero()) return qd_cascade(0.0);
         if (std::abs(x[0]) < 0.5) {
-            constexpr double qdc_eps_true = 1.54e-63;
             qd_cascade s = x;
             qd_cascade term = x;
             for (int i = 2; i < 50; ++i) {
                 term *= x / qd_cascade(i);
                 s += term;
-                if (std::abs(double(term)) < qdc_eps_true * std::abs(double(s))) break;
+                if (std::abs(double(term)) < qdc_eps * std::abs(double(s))) break;
             }
             return s;
         }

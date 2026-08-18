@@ -310,17 +310,29 @@ are cascade-specific:
   worse. `exp` squares 16 times.
 - **`log` is 15.3 ulps in both `qd` and `qd_cascade`**, an order of magnitude worse than `exp` at
   0.26.
-- **`sin`/`cos` never reach format precision above `dd`** (universal#1318). `qd` holds ~41 digits of
-  63, the two wider cascades ~32 - their extra components carry nothing through trigonometric
-  evaluation.
+- ~~**`sin`/`cos` never reach format precision above `dd`**~~ - fixed (universal#1318). Two
+  independent causes, both inherited from the double-double code the files were copied from: the
+  constant named `qd_eps` held the *double-double* unit roundoff (2^-104 rather than 2^-209), so the
+  Taylor series stopped at 43 of the 63 digits `qd` carries; and the cascades reduced the argument
+  modulo pi/16 with a four-entry double-double table, which a 15-entry inverse-factorial table
+  cannot carry past double-double accuracy no matter how wide the type is. The same file's `atan2`
+  took a single Newton step - right for a double-double, one third of what a quad-double needs - so
+  `atan`, `asin` and `acos` were capped at 106 bits too. `sin^2 + cos^2 - 1` in ulps of each format:
+
+  | type | before | after |
+  |---|---|---|
+  | `td_cascade` | 4.277e+15 | 1.141 |
+  | `qd` | 1.494e+23 | 1.34 |
+  | `qd_cascade` | 3.852e+31 | 0.3555 |
+
+  All six functions now deliver the full significand of their format, scored against mpmath.
 - **`x / inf` returns NaN** in every multi-component type, direct and cascade alike, where IEEE says
   zero (universal#1327). A shared conversion/guard issue, not an algorithmic one.
-- **Decimal string parsing costs 45-460 usec per value** (universal#1319) across every
-  multi-component type, which puts it in shared conversion machinery.
+- ~~**Decimal string parsing costs 45-460 usec per value**~~ - fixed (universal#1319). Four
+  algorithmic costs in shared conversion machinery, none of them inherent; parsing is now 12-58x
+  faster across every multi-component type.
 
-Fixing these benefits both families at once. The first two are now the ceiling on `exp`, and
-universal#1318 means the extra components of `td_cascade` and `qd_cascade` are wasted in
-trigonometric code.
+Fixing these benefits both families at once. The first two are now the ceiling on `exp`.
 
 ## Suggested sequencing
 
@@ -332,12 +344,14 @@ trigonometric code.
 3. ~~Close the generic templates~~ - done; they refuse to compile for unsupported widths.
 4. **Then the shared items** (item 4), which are number-system work rather than framework work, and
    which now hold the largest remaining errors in either family - `square` at 4 ulps and `log` at 15
-   are the ceiling on `exp`, and universal#1318 wastes the extra components of the two wider types
-   in trigonometric code.
+   are the ceiling on `exp`.
 
-The move that has paid off in #1317, #1322, #1324 and #1326 is the same one every time: where the
-cascade improvises, adopt the direct family's proven schedule and express it with the framework's
-hardened primitives. Item 1 is the first entry on this list where that rule does **not** simply
+The move that has paid off in #1317, #1322, #1324, #1326 and #1318 is the same one every time: where
+the cascade improvises, adopt the direct family's proven schedule and express it with the
+framework's hardened primitives. #1318 is the purest instance of it: the cascade trigonometry was
+the *double-double* schedule wearing a wider type, and porting the `qd` schedule - pi/1024 reduction,
+256-entry tables, and enough Newton steps in `atan2` for the width (two for `td_cascade`, three for
+`qd_cascade`) - was the whole fix. Item 1 is the first entry on this list where that rule does **not** simply
 apply - the cascade's `sqrt` is already more accurate than the direct one, and the question is what
 to trade, not what to copy.
 

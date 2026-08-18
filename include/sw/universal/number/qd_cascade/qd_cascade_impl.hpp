@@ -627,7 +627,9 @@ private:
 
 constexpr qd_cascade qdc_max(1.79769313486231570815e+308, 9.97920154767359795037e+291, 9.97920154767359795037e+274, 9.97920154767359795037e+247);
 
-constexpr double qdc_eps            = 4.93038065763132e-32;     // 2^-104
+// unit roundoff of a quad-double: eps(double)^4 / 2. Held the double-double value until
+// universal#1318; see the note on qd_eps.
+constexpr double qdc_eps            = 1.21543267145725e-63;     // 2^-209
 constexpr double qdc_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 53)
 
 ////////////////////////    helper functions   /////////////////////////////////
