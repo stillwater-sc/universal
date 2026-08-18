@@ -1,16 +1,18 @@
-# Development Session: Multi-component Cascade Parity -- every defect the #1315 benchmark surfaced
+# Development Session: Multi-component Cascade Parity -- closing what the #1315 benchmark exposed
 
 **Date:** 2026-08-15 (into 2026-08-18)
 **Branches:** per-issue branches off `main`, all merged: PRs #1316, #1321, #1323, #1325, #1328, #1330, #1333, #1335, #1336, #1338, #1339, #1341, #1343, #1344.
 **Focus:** Benchmark the multi-component families against each other (`dd`/`qd` vs `dd_cascade`/`td_cascade`/`qd_cascade`), then fix everything the comparison exposed.
-**Status:** Complete -- issues #1315, #1317, #1318, #1319, #1322, #1324, #1326, #1327, #1329, #1331, #1332, #1340 closed. Releases v4.8.4 through v4.8.8 cut. One follow-up open (#1342).
+**Status:** Complete -- issues #1315, #1317, #1318, #1319, #1322, #1324, #1326, #1327, #1330, #1331, #1332, #1340 closed. Releases v4.8.4 through v4.8.8 cut. One follow-up open (#1342).
 
 ## Session Overview
 
 The session began with a single question -- *is the cascade implementation as fast and as accurate as
 the direct one?* -- and a benchmark to answer it. The benchmark found that it was neither, and the
-rest of the session was spent closing the gap. Eight defects, seven of them found by the benchmark or
-by the oracles written to investigate it.
+rest of the session was spent closing the gap. Nine defects: six the benchmark reported directly
+(#1317, #1319, #1322, #1326, #1327, #1318), and three found by the work it prompted -- #1324 while
+porting the multiplication schedule to the third width, #1332 while reformulating `sqrt` for #1331,
+and #1330 while writing the assessment.
 
 The arc in one line each:
 
@@ -32,7 +34,7 @@ gcc.
 
 ## The move that kept working
 
-Five of the eight fixes were the same move: **where the cascade improvises, adopt the direct family's
+Five of the nine fixes were the same move: **where the cascade improvises, adopt the direct family's
 proven schedule and express it with the framework's hardened primitives.**
 
 - #1322/#1324: the cascade sorted its partial products by magnitude. It does not need to -- in
@@ -42,12 +44,14 @@ proven schedule and express it with the framework's hardened primitives.**
 - #1326: `qd`'s long division computes N+1 quotient digits and closes with an (N+1)-term
   renormalization. The cascade computed N.
 - #1318: the cascade trigonometry *was* the double-double implementation with zero-padded constants.
-  Porting `qd`'s pi/1024 schedule was the whole fix.
+  Porting `qd`'s pi/1024 schedule fixed the reduction, which was one of three causes -- the other two
+  (a `qd_eps` holding the double-double unit roundoff, and an `atan2` taking one Newton step) are the
+  same mistake in different places: values sized for a double-double left in a wider type.
 
-#1332 is the same rule pointing the other way: the cascades had the correct `sqrt` argument scaling
-from #1331 and the *direct* types did not, so the port went cascade -> direct.
+Issue #1332 is the same rule pointing the other way: the cascades had the correct `sqrt` argument
+scaling from #1331 and the *direct* types did not, so the port went cascade -> direct.
 
-#1340 is where the rule stopped applying, and the assessment's prediction was wrong (below).
+Issue #1340 is where the rule stopped applying, and the assessment's prediction was wrong (below).
 
 ## Testing: three suites that could see what the old ones could not
 
@@ -60,8 +64,9 @@ survived for years behind test suites that were structurally incapable of detect
   range, so `sqrt(maxpos)` returning NaN passed;
 - decimal parsing had no accuracy oracle at all.
 
-Each fix now carries a suite that scores against a reference **wider than the format under test**, in
-exact integer arithmetic:
+Each fix now carries a suite whose verdict is decided in exact integer arithmetic -- against a
+reference **wider than the format under test**, or, where no exact reference exists, against a
+residual that is itself exact:
 
 | suite | reference | verdict decided by |
 |---|---|---|
@@ -192,8 +197,13 @@ exponent, with the result copied back into the caller's width so no call site ch
 
 ## Appendix: reproducing the measurements
 
+The timings above are gcc 13.3, `-O3`, on an i7-12700K. Use a fresh build directory: an existing
+cache keeps whatever `CMAKE_BUILD_TYPE` and compiler it was configured with.
+
 ```bash
-cmake -DUNIVERSAL_BUILD_BENCHMARK_PERFORMANCE=ON -DUNIVERSAL_BUILD_NUMBER_STATICS=ON ..
+mkdir build_bench && cd build_bench
+CXX=g++-13 cmake -DCMAKE_BUILD_TYPE=Release \
+      -DUNIVERSAL_BUILD_BENCHMARK_PERFORMANCE=ON -DUNIVERSAL_BUILD_NUMBER_STATICS=ON ..
 make -j4 benchmark_hp_scalar benchmark_hp_kernels benchmark_hp_mathlib benchmark_hp_equivalence
 ./benchmark/performance/arithmetic/benchmark_hp_equivalence   # the identity table
 ./benchmark/performance/arithmetic/benchmark_hp_scalar        # per-operation timings
@@ -202,7 +212,7 @@ make -j4 benchmark_hp_scalar benchmark_hp_kernels benchmark_hp_mathlib benchmark
 The oracle suites build with the number systems they cover:
 
 ```bash
-cmake -DUNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE=ON -DUNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE=ON \
+CXX=g++-13 cmake -DCMAKE_BUILD_TYPE=Release -DUNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE=ON -DUNIVERSAL_BUILD_NUMBER_QUAD_DOUBLE=ON \
       -DUNIVERSAL_BUILD_NUMBER_DD_CASCADE=ON -DUNIVERSAL_BUILD_NUMBER_TD_CASCADE=ON \
       -DUNIVERSAL_BUILD_NUMBER_QD_CASCADE=ON -DUNIVERSAL_BUILD_UTILITY=ON ..
 make -j4 && ctest -j4
