@@ -45,15 +45,31 @@ namespace sw { namespace universal {
         }
 #endif
 
-        qd r = (1.0 / std::sqrt(a[0]));
-        qd h = mul_pwr2(a, 0.5);
+        // sqrt(0) is 0. Without this the seed below is 1/sqrt(0) = inf and the iteration
+        // returns NaN; dd has always guarded it, qd never did (universal#1332).
+        if (a.iszero()) return qd(0.0);
+        if (a.isnan() || a.isinf()) return a;
+
+        // Scale into [0.5, 2) first. The scaling is by a power of two, so it is exact and
+        // costs no accuracy, and it bounds every intermediate wherever the argument sits.
+        // The iteration converges to 1/sqrt(a) and then multiplies by a, so it holds values
+        // of magnitude 1/sqrt(a) and sqrt(a) and squares them: near maxpos that overflows,
+        // and near the bottom of the range the trailing limbs of those squares go subnormal
+        // -- sqrt(1e300) held 81 bits of its 212 (universal#1332).
+        int e{ 0 };
+        std::frexp(a[0], &e);
+        int k = e >> 1;                  // floor(e/2), correct for negative e
+        qd b = ldexp(a, -2 * k);         // b in [0.5, 2), exact
+
+        qd r = (1.0 / std::sqrt(b[0]));
+        qd h = mul_pwr2(b, 0.5);
 
         r += ((0.5 - h * sqr(r)) * r);
         r += ((0.5 - h * sqr(r)) * r);
         r += ((0.5 - h * sqr(r)) * r);
 
-        r *= a;
-        return r;
+        r *= b;
+        return ldexp(r, k);
 }
 
 #else
