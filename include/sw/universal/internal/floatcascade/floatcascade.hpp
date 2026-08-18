@@ -1538,46 +1538,82 @@ namespace expansion_ops {
 
     // Add two floatcascade<4> -> floatcascade<8>.  Magnitude-sorted merge
     // of the eight limbs, then accumulates smallest-to-largest with two_sum.
+    // Shewchuk's fast_expansion_sum (Geometric Predicates, Fig. 7).
+    //
+    // Both inputs are non-overlapping expansions already in decreasing magnitude, which is what
+    // makes this cheap: merging two sorted sequences is linear, and a single two_sum chain over
+    // the merged sequence produces a result that is exact and non-overlapping.
+    //
+    // What this replaces sorted the eight components with a bubble sort -- 28 comparisons on two
+    // sequences that arrive sorted -- then accumulated them smallest-first and emitted the two_sum
+    // errors in the order they fell out.
+    //
+    // The COMPRESS pass below stays, and it is worth being precise about why, because the
+    // assessment that motivated this change guessed otherwise. Compression is not repairing
+    // sloppiness that a better addition formulation avoids: the 2N -> N step needs a NONADJACENT
+    // expansion, not merely a non-overlapping one, and feeding it the raw chain output costs a
+    // factor of three on the composite identities (sqrt(x)^2 - x goes from 0.42 to 1.61 ulps).
+    // Folding the compression into that step instead of running it here was measured too, and
+    // came out both slower and less accurate. The redundant work was the sort, not the pass.
+    //
+    // The 2N result must stay exact, not merely accurate to N components: the division residual
+    // and the digit subtraction in to_decimal_string both depend on it.
+    //
+    // Results are bit-identical to the formulation this replaces, over 40,000 random full-width
+    // additions and subtractions, so this is a speed change and nothing else. Cost of an
+    // addition, i7-12700K -O3: gcc 13.3 69.6 -> 51.0 nsec/op, clang 18.1 80.1 -> 85.6. The clang
+    // direction is the same compiler flip #1315 recorded for these benchmarks generally, and it
+    // survives every formulation of the merge that was tried -- branchy, branchless,
+    // register-resident, and with the operands ordered unconditionally -- all within a couple of
+    // nsec of each other there (universal#1340).
     constexpr inline floatcascade<8> add_cascades(const floatcascade<4>& a, const floatcascade<4>& b) {
-        double m[8] = { a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3] };
-
+        // std::abs(double) is not constexpr in C++20; use a ternary helper.
         auto absv = [](double x) constexpr -> double { return x < 0.0 ? -x : x; };
 
-        // Bubble sort 8 elements by descending magnitude (7 passes).
-        for (int pass = 0; pass < 7; ++pass) {
-            for (int j = 0; j < 7 - pass; ++j) {
-                if (absv(m[j]) < absv(m[j + 1])) {
-                    double t = m[j]; m[j] = m[j + 1]; m[j + 1] = t;
-                }
-            }
+        double a0 = a[0], a1 = a[1], a2 = a[2], a3 = a[3];
+        double b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3];
+
+        // Six comparisons establish the merge's precondition. Operands that fail it are put in
+        // order by a five-comparator network -- nothing in the library produces one, but
+        // floatcascade exposes mutable component storage and the number types take raw limbs, so
+        // a caller can build one, and it should sum correctly rather than silently give zero.
+        auto ordered = [&absv](double x0, double x1, double x2, double x3) constexpr -> bool {
+            return absv(x0) >= absv(x1) && absv(x1) >= absv(x2) && absv(x2) >= absv(x3);
+        };
+        auto ce = [&absv](double& p, double& q) constexpr {
+            if (absv(p) < absv(q)) { double t = p; p = q; q = t; }
+        };
+        if (!ordered(a0, a1, a2, a3)) { ce(a0, a1); ce(a2, a3); ce(a0, a2); ce(a1, a3); ce(a1, a2); }
+        if (!ordered(b0, b1, b2, b3)) { ce(b0, b1); ce(b2, b3); ce(b0, b2); ce(b1, b3); ce(b1, b2); }
+
+        // Merge into increasing magnitude order, which is the direction the chain runs.
+        const double av[4] = { a3, a2, a1, a0 };
+        const double bv[4] = { b3, b2, b1, b0 };
+        double g[8]{};
+        int i = 0, j = 0;
+        for (int n = 0; n < 8; ++n) {
+            bool takeA = (j >= 4) || (i < 4 && absv(av[i]) < absv(bv[j]));
+            g[n] = takeA ? av[i] : bv[j];
+            i += takeA ? 1 : 0;
+            j += takeA ? 0 : 1;
         }
 
-        // Accumulate from smallest (m[7]) to largest (m[0]) with two_sum.
-        double sum = 0.0;
-        double corrections[7] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-        int nc = 0;
-
-        double new_sum = 0.0, error = 0.0;
-        for (int i = 7; i >= 0; --i) {
-            two_sum(sum, m[i], new_sum, error);
-            if (error != 0.0 && nc < 7) corrections[nc++] = error;
-            sum = new_sum;
+        // One two_sum chain, smallest to largest. The first step can be a fast_two_sum because
+        // the merge guarantees |g[1]| >= |g[0]|.
+        double h[8]{};
+        double Q{ 0.0 }, q{ 0.0 };
+        fast_two_sum(g[1], g[0], Q, h[0]);
+        for (int k = 2; k < 8; ++k) {
+            two_sum(Q, g[k], Q, q);
+            h[k - 1] = q;
         }
+        h[7] = Q;
 
+        // Store in decreasing magnitude. Zeros wherever the chain was exact are left in place:
+        // compress_expansion eliminates them itself, and filtering them here measured slower
+        // under both compilers.
         floatcascade<8> result;
-        result[0] = sum;
-        // Store corrections in decreasing order of significance.
-        for (int i = 0; i < nc; ++i) {
-            result[i + 1] = corrections[nc - 1 - i];
-        }
-        // result[nc+1..7] already zero (default-constructed).
-
-        // The sum above is exact but its components overlap; compression makes
-        // them non-overlapping so compress_8to4 can keep the tail.  Measured:
-        // without it, 25 in 200 random full-precision quad-double additions lose
-        // the fourth component entirely (relative error 2e-49 where the format
-        // carries 2^-212), which is what made qd_cascade sqrt/exp/log 13-15
-        // decimal digits worse than qd (universal#1317).
+        for (int k = 0; k < 8; ++k) result[k] = h[7 - k];
         return compress_expansion(result);
     }
 

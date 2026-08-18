@@ -274,16 +274,39 @@ away, each option landing on its direct counterpart's accuracy. `td_cascade` is 
 improved outright. `sqrt(maxpos)`, broken in `dd`, `dd_cascade` and `qd`, is fixed at all three
 cascade widths by the argument scaling every formulation now shares. See the fix section above.
 
-### 2. The 46% that compression costs N=4 addition
+### 2. The 46% that compression costs N=4 addition - CLOSED, and the diagnosis was wrong
 
-Unchanged from the original list. The compression added by universal#1317 is applied *after* the
-fact, to repair an expansion built without the non-overlapping invariant. The direct implementation
-never needs it, because `accurate_addition` maintains a two-term running carry and emits components
-already settled.
+The hypothesis here was that compression is applied *after the fact* to repair an expansion built
+without the non-overlapping invariant, and that a formulation which emits settled components would
+not need it. Measurement (universal#1340) says otherwise, and it is worth recording which half was
+wrong.
 
-Porting that formulation to `add_cascades<4>` would plausibly recover most of the 46% *and* keep the
-exactness, since it is the algorithm the compression is emulating. Same move as #1322 and #1324 made
-for multiplication.
+`add_cascades<4>` now merges its two operands instead of bubble-sorting them -- they arrive sorted,
+so the 28 comparisons were pure waste -- and runs one `two_sum` chain over the merged sequence,
+which is Shewchuk's `fast_expansion_sum`. Results are **bit-identical** to the previous formulation
+over 40,000 random full-width additions and subtractions. Addition cost, i7-12700K -O3:
+
+| | gcc 13.3 | clang 18.1 |
+|---|---|---|
+| before | 69.6 nsec/op | 80.1 nsec/op |
+| after | **51.0** | 85.6 |
+
+Operands that are not in magnitude order -- which nothing in the library produces, but which a
+caller can build through the raw-limb constructor or the mutable component accessor -- are put in
+order first, by a five-comparator network per operand behind a six-comparison test. Without that
+guard the merge returns zero where the exact answer is 2^-100, and `qd_cascade` would have been the
+one multi-component type that got such an operand wrong.
+
+**But the compression pass had to stay.** It is not repairing sloppiness: the 2N -> N step needs a
+*nonadjacent* expansion, not merely a non-overlapping one, and feeding it the raw chain output costs
+a factor of three on the composite identities (`sqrt(x)^2 - x` goes 0.42 -> 1.61 ulps). Folding the
+compression into that step rather than running it in the addition was measured too, and came out
+both slower and less accurate. So the 46% was never the compression's to give back - the redundant
+work was the sort.
+
+The clang direction is the same compiler flip #1315 recorded for these benchmarks generally. Three
+formulations of the merge - branchy, branchless, register-resident - landed within 1 nsec of each
+other there, so nothing in the merge itself explains it.
 
 ### 3. The generic templates are still the old design - CLOSED
 
@@ -341,9 +364,9 @@ Fixing these benefits both families at once. The first two are now the ceiling o
 
 1. ~~Reformulate `sqrt`~~ - done (universal#1331); the accuracy cost was measured, not assumed, and
    it differed by width.
-2. **Port `accurate_addition` to `add_cascades<4>`** (item 2), now the only open framework item.
-   Highest confidence: the algorithm is known-good, sitting next door, and the pattern is proven
-   four times over.
+2. ~~Port `accurate_addition` to `add_cascades<4>`~~ - done (universal#1340), though not as
+   predicted: the merge was the win, the compression pass had to stay, and the result is
+   bit-identical to what it replaced. No framework items remain open.
 3. ~~Close the generic templates~~ - done; they refuse to compile for unsupported widths.
 4. **Then the shared items** (item 4), which are number-system work rather than framework work, and
    which now hold the largest remaining errors in either family - `square` at 4 ulps and `log` at 15
