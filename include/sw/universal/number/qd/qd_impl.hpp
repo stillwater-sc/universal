@@ -1314,7 +1314,11 @@ private:
 
 constexpr qd qd_max(1.79769313486231570815e+308, 9.97920154767359795037e+291);
 
-constexpr double qd_eps = 4.93038065763132e-32;  // 2^-104
+// unit roundoff of a quad-double: eps(double)^4 / 2. This carried the DOUBLE-DOUBLE value
+// (2^-104) until universal#1318, which capped every algorithm that uses it as a convergence
+// threshold -- sin and cos truncated their Taylor series at 43 of the 63 digits qd carries, and
+// exp had already worked around it with a local constant of its own.
+constexpr double qd_eps = 1.21543267145725e-63;  // 2^-209
 constexpr double qd_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 53)
 
 ////////////////////////    helper functions   /////////////////////////////////

@@ -30,7 +30,7 @@ public:
 		          -3.07507899888268538886654502482441665e+259);
 	}
 	static constexpr QD epsilon() { // return smallest effective increment from 1.0
-		return QD(1.21543267145725712652978599954436861e-63, 0.0, 0.0, 0.0);  // 2^-212 for quad-double precision
+		return QD(1.21543267145725712652978599954436861e-63, 0.0, 0.0, 0.0);  // 2^-209 = eps(double)^4 / 2
 	}
 	static constexpr QD round_error() { // return largest rounding error
 		return QD(0.5, 0.0, 0.0, 0.0);

@@ -57,8 +57,7 @@ namespace sw { namespace universal {
         double m = std::floor(x[0] / qd_ln2[0] + 0.5);
         qd r = mul_pwr2(x - qd_ln2 * m, inv_k);
         qd s, p, t;
-        constexpr double qd_eps_true = 1.21543267145725e-63;  // 2^-209
-        double thresh = inv_k * qd_eps_true;
+        double thresh = inv_k * qd_eps;
 
         p = sqr(r);
         s = r + mul_pwr2(p, 0.5);
@@ -104,13 +103,12 @@ namespace sw { namespace universal {
     inline qd expm1(const qd& x) {
         if (x.iszero()) return qd(0.0);
         if (std::abs(x[0]) < 0.5) {
-            constexpr double qd_eps_true = 1.21543267145725e-63;
             qd s = x;
             qd term = x;
             for (int i = 2; i < 50; ++i) {
                 term *= x / qd(i);
                 s += term;
-                if (std::abs(double(term)) < qd_eps_true * std::abs(double(s))) break;
+                if (std::abs(double(term)) < qd_eps * std::abs(double(s))) break;
             }
             return s;
         }
