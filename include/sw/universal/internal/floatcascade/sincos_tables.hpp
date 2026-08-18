@@ -26,13 +26,18 @@
 
 namespace sw { namespace universal { namespace cascade {
 
-constexpr unsigned sincos_table_size = 256;
+// inline: one copy of the tables across every translation unit that includes this header.
+// A namespace-scope constexpr object is const, so it has internal linkage, and each TU would
+// otherwise carry its own 16 KB set.
+inline constexpr unsigned sincos_table_size = 256;
 
 // pi/1024
-constexpr double pi1024[4] = { +3.06796157577128234e-03, +1.19594413979233712e-19, -2.92457989230306608e-36, +1.08638107506188016e-52 };
+inline constexpr double pi1024[4] = {
+	+3.06796157577128234e-03, +1.19594413979233712e-19, -2.92457989230306608e-36, +1.08638107506188016e-52
+};
 
 // sin(k * pi/1024), k = 1..256
-constexpr double sin_pi1024[sincos_table_size][4] = {
+inline constexpr double sin_pi1024[sincos_table_size][4] = {
 	{ +3.06795676296597614e-03, +1.26902790854559250e-19, +5.28794642453283888e-36, -1.78203340819552983e-52 },
 	{ +6.13588464915447527e-03, +9.05452574824749325e-20, +1.62601131337453203e-37, -9.74920012087674099e-55 },
 	{ +9.20375478205981944e-03, -1.21365916935359338e-19, +5.56969039494255674e-36, +1.25056357919369509e-52 },
@@ -292,7 +297,7 @@ constexpr double sin_pi1024[sincos_table_size][4] = {
 };
 
 // cos(k * pi/1024), k = 1..256
-constexpr double cos_pi1024[sincos_table_size][4] = {
+inline constexpr double cos_pi1024[sincos_table_size][4] = {
 	{ +9.99995293809576191e-01, -1.96680642853221887e-17, -6.30539550958834812e-34, +5.32661108557267312e-52 },
 	{ +9.99981175282601109e-01, +3.35681035228955846e-17, -1.47401325593680629e-35, +9.86030975947555961e-52 },
 	{ +9.99957644551963898e-01, -3.15278368666472871e-17, +2.63632511866384370e-33, +1.00075048154883985e-49 },

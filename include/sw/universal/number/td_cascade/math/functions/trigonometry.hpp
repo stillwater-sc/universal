@@ -25,8 +25,14 @@ namespace sw { namespace universal {
     // 3; the generator verifies that prefix against mpmath.
     constexpr td_cascade tdc_pi1024(cascade::pi1024[0], cascade::pi1024[1], cascade::pi1024[2]);
 
-    inline td_cascade tdc_sin_pi1024(unsigned k) { return td_cascade(cascade::sin_pi1024[k][0], cascade::sin_pi1024[k][1], cascade::sin_pi1024[k][2]); }
-    inline td_cascade tdc_cos_pi1024(unsigned k) { return td_cascade(cascade::cos_pi1024[k][0], cascade::cos_pi1024[k][1], cascade::cos_pi1024[k][2]); }
+    inline td_cascade tdc_sin_pi1024(unsigned k) {
+        return td_cascade(cascade::sin_pi1024[k][0], cascade::sin_pi1024[k][1],
+                          cascade::sin_pi1024[k][2]);
+    }
+    inline td_cascade tdc_cos_pi1024(unsigned k) {
+        return td_cascade(cascade::cos_pi1024[k][0], cascade::cos_pi1024[k][1],
+                          cascade::cos_pi1024[k][2]);
+    }
 
     /* Computes sin(a) using Taylor series.
        Assumes |a| <= pi/2048.                           */
@@ -196,7 +202,7 @@ namespace sw { namespace universal {
         }
 
         if (abs_k > 256) {
-            std::cerr << "cos: Cannot reduce modulo pi / 16\n";
+            std::cerr << "cos: Cannot reduce modulo pi/1024\n";
             return td_cascade(SpecificValue::snan);
         }
 

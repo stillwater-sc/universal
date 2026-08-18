@@ -350,7 +350,8 @@ The move that has paid off in #1317, #1322, #1324, #1326 and #1318 is the same o
 the cascade improvises, adopt the direct family's proven schedule and express it with the
 framework's hardened primitives. #1318 is the purest instance of it: the cascade trigonometry was
 the *double-double* schedule wearing a wider type, and porting the `qd` schedule - pi/1024 reduction,
-256-entry tables, three Newton steps - was the whole fix. Item 1 is the first entry on this list where that rule does **not** simply
+256-entry tables, and enough Newton steps in `atan2` for the width (two for `td_cascade`, three for
+`qd_cascade`) - was the whole fix. Item 1 is the first entry on this list where that rule does **not** simply
 apply - the cascade's `sqrt` is already more accurate than the direct one, and the question is what
 to trade, not what to copy.
 
