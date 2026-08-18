@@ -289,7 +289,13 @@ over 40,000 random full-width additions and subtractions. Addition cost, i7-1270
 | | gcc 13.3 | clang 18.1 |
 |---|---|---|
 | before | 69.6 nsec/op | 80.1 nsec/op |
-| after | **50.1** | 83.0 |
+| after | **51.0** | 85.6 |
+
+Operands that are not in magnitude order -- which nothing in the library produces, but which a
+caller can build through the raw-limb constructor or the mutable component accessor -- are put in
+order first, by a five-comparator network per operand behind a six-comparison test. Without that
+guard the merge returns zero where the exact answer is 2^-100, and `qd_cascade` would have been the
+one multi-component type that got such an operand wrong.
 
 **But the compression pass had to stay.** It is not repairing sloppiness: the 2N -> N step needs a
 *nonadjacent* expansion, not merely a non-overlapping one, and feeding it the raw chain output costs
