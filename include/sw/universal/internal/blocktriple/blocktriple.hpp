@@ -830,30 +830,12 @@ private:
 
 		// special case handling
 		if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
-			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
-				rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
-				// 1.11111111.00000000.......00000001 signalling nan
-				// 0.11111111.00000000000000000000001 signalling nan
-				// MSVC
-				// 1.11111111.10000000.......00000001 signalling nan
-				// 0.11111111.10000000.......00000001 signalling nan
-				// NAN_TYPE_SIGNALLING;
-				_nan = true;
-				_inf = false; 
-				_sign = true; // this is the encoding of a signalling NaN
-				_scale = 0;
-				return *this;
-			}
-			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
-				// 1.11111111.10000000.......00000000 quiet nan
-				// 0.11111111.10000000.......00000000 quiet nan
-				// NAN_TYPE_QUIET);
-				_nan = true;
-				_inf = false; 
-				_sign = false; // this is the encoding of a quiet NaN
-				_scale = 0;
-				return *this;
-			}
+			// IEEE-754: exponent all ones with a ZERO fraction is infinity, and with ANY
+			// non-zero fraction is a NaN, whatever the payload.  This used to compare the
+			// fraction for equality against three specific payloads, so every other one --
+			// including the canonical signalling 0x1 -- missed all three and fell through to
+			// the numeric path below, turning a NaN into a finite value.  Fourth instance of
+			// the same copy-pasted defect; issue #1303.
 			if (rawFraction == 0ull) {
 				// 1.11111111.0000000.......000000000 -inf
 				// 0.11111111.0000000.......000000000 +inf
@@ -863,6 +845,14 @@ private:
 				_scale = 10000;
 				return *this;
 			}
+			// the fraction's MSB is the quiet bit; a blocktriple carries the distinction in
+			// its sign, matching cfloat's convention of sign 1 for signalling
+			constexpr uint64_t quietbit = ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask;
+			_nan = true;
+			_inf = false;
+			_sign = ((rawFraction & quietbit) == 0ull);   // clear quiet bit == signalling
+			_scale = 0;
+			return *this;
 		}
 		if (rhs == 0.0f) { // IEEE rule: this is valid for + and - 0.0
 			_nan = false;
