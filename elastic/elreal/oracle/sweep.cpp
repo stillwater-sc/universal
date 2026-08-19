@@ -223,6 +223,44 @@ namespace {
 		return fails;
 	}
 
+	// ---- exact geometric predicates (#1186) ----------------------------------
+	// orient2d's sign against the exact dyadic determinant, over collinear points
+	// perturbed by single ulps. The degenerate (exactly collinear) cases are the
+	// point of this test: elreal's sign() answers +1 for zero and a cancelling sum
+	// stays lazily unnormalised, so reading the raw leading block gives a phantom
+	// sign on precisely those inputs. The comparison operators route through
+	// elreal_cmp, which skips zero blocks. This guard fails if anyone swaps the
+	// one for the other.
+	int VerifyOrient2dExactSign(bool reportTestCases, int n) {
+		int fails = 0, degenerateSeen = 0;
+		const double bx = 12.0, by = 12.0, cx = 24.0, cy = 24.0;
+		const double u = std::ldexp(1.0, -53);
+		auto D = [](double v) { return dyadic::from_double(v); };
+		for (int i = 0; i < n; ++i) {
+			for (int j = 0; j < n; ++j) {
+				double ax = 0.5 + i * u, ay = 0.5 + j * u;
+				dyadic E = (D(ax) - D(cx)) * (D(by) - D(cy)) - (D(ay) - D(cy)) * (D(bx) - D(cx));
+				int expected = E.numerator.iszero() ? 0 : (E.numerator.sign() ? -1 : 1);
+				if (expected == 0) ++degenerateSeen;
+
+				elreal<double> Ax(ax), Ay(ay), Bx(bx), By(by), Cx(cx), Cy(cy), Z(0.0);
+				elreal<double> det = (Ax - Cx) * (By - Cy) - (Ay - Cy) * (Bx - Cx);
+				int got = det < Z ? -1 : (det > Z ? 1 : 0);
+				if (got != expected) {
+					if (reportTestCases && fails < 5)
+						std::cout << "    FAIL orient2d i=" << i << " j=" << j
+						          << " expected " << expected << " got " << got << '\n';
+					++fails;
+				}
+			}
+		}
+		if (degenerateSeen == 0) {   // the grid must actually contain degeneracies
+			if (reportTestCases) std::cout << "    FAIL orient2d grid has no degenerate cases\n";
+			++fails;
+		}
+		return fails;
+	}
+
 }  // anonymous namespace
 
 #define MANUAL_TESTING 0
@@ -265,6 +303,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMulAgreement<double>("double", reportTestCases, base, 24, 40), "elreal<double> mul agreement vs dyadic", "mul");
 	nrOfFailedTestCases += ReportTestResult(VerifyMulAgreement<float>("float", reportTestCases, base, 24, 30), "elreal<float> mul agreement vs dyadic", "mul");
 	nrOfFailedTestCases += ReportTestResult(VerifyCancellationExact<double>("double", reportTestCases), "elreal<double> cancellation-stressed accumulation is exact", "cancellation");
+	{
+		// operator* is depth-bounded; the default precision truncates the determinant
+		elreal_precision_guard predicateDepth(32);
+		nrOfFailedTestCases += ReportTestResult(VerifyOrient2dExactSign(reportTestCases, 24), "elreal<double> orient2d sign is exact", "predicates");
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
