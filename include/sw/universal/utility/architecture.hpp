@@ -55,10 +55,30 @@
 // ARM    : similar to RISC-V; the default-NaN mode in FPCR quiets
 //          sNaN on most operations (and many toolchains enable it).
 //
+// The hardware is not the only thing that can quiet an sNaN: the standard
+// library can too, and on one toolchain it does so by construction.
+//
+// MSVC : std::numeric_limits<T>::signaling_NaN() has the QUIET BIT SET.
+//        Measured on the CI runner, its float value is
+//            0b0.11111111.10000000000000000000001   (0x7FC00001)
+//        which IEEE-754 classifies as a QUIET NaN regardless of the name.
+//        cfloat::to_ieee754() hands a signalling cfloat out through that
+//        constant, so the value leaving the type is already quiet and no
+//        conforming classification can recover "signalling" on the way back.
+//        This is independent of the x86-64 register behaviour above -- the
+//        payload never carried the signal in the first place.
+//
+//        The previous conversion appeared to round-trip only because it
+//        matched that exact payload as a special case, which is the same
+//        exact-payload matching that turned every other NaN into infinity
+//        (issue #1303).  Reinstating it to keep this one round-trip working
+//        would reinstate the defect.
+//
 // Define this macro only on platforms where sNaN can survive a
-// round-trip through native float/double without being quieted.
+// round-trip through native float/double without being quieted -- by the
+// architecture OR by the standard library.
 #undef UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP
 
-#if defined(UNIVERSAL_ARCH_X86_64)
+#if defined(UNIVERSAL_ARCH_X86_64) && !defined(_MSC_VER)
 #define UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP 1
 #endif
