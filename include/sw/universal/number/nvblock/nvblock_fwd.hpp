@@ -17,7 +17,7 @@ namespace sw { namespace universal {
 // Template parameters:
 //   ElementType - microfloat element (default: e2m1 for NVFP4)
 //   BlockSize   - elements per block (default: 16 per NVIDIA spec)
-//   ScaleType   - block scale type (default: e4m3, fractional unlike MX's e8m0)
+//   ScaleType   - block scale type (default: e4m3_saturating, fractional unlike MX's e8m0)
 template<typename ElementType = e2m1, size_t BlockSize = 16, typename ScaleType = e4m3_saturating>
 class nvblock;
 

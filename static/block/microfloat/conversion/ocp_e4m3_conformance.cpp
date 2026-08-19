@@ -172,7 +172,8 @@ namespace {
 		return nrOfFailedTests;
 	}
 
-	[[maybe_unused]] int check(bool reportTestCases, const std::string& tag, float input, unsigned encoding, unsigned expected) {
+	[[maybe_unused]] int check(bool reportTestCases, const std::string& tag,
+	                           float input, unsigned encoding, unsigned expected) {
 		if (encoding == expected) return 0;
 		if (reportTestCases) std::cerr << "  FAIL " << tag << " (" << input << ") -> 0x" << std::hex
 		                               << encoding << " expected 0x" << expected << std::dec << '\n';
@@ -300,6 +301,25 @@ namespace {
 		return nrOfFailedTests;
 	}
 
+	// every alias, plus the two configurations that have no alias, in one place
+	[[maybe_unused]] int VerifyInfiniteSourceAcrossFormats(bool reportTestCases) {
+		using namespace sw::universal;
+		int nrOfFailedTests = 0;
+		nrOfFailedTests += VerifyInfiniteSourceIsNeverZero<e2m1>(reportTestCases, "e2m1");
+		nrOfFailedTests += VerifyInfiniteSourceIsNeverZero<e2m3>(reportTestCases, "e2m3");
+		nrOfFailedTests += VerifyInfiniteSourceIsNeverZero<e3m2>(reportTestCases, "e3m2");
+		nrOfFailedTests += VerifyInfiniteSourceIsNeverZero<e4m3>(reportTestCases, "e4m3");
+		nrOfFailedTests += VerifyInfiniteSourceIsNeverZero<e4m3_saturating>(reportTestCases, "e4m3_saturating");
+		nrOfFailedTests += VerifyInfiniteSourceIsNeverZero<e5m2>(reportTestCases, "e5m2");
+		// no infinity and no NaN to fall back on: maxpos is the only answer
+		nrOfFailedTests += VerifyInfiniteSourceIsNeverZero<microfloat<8, 4, false, false, false>>(
+			reportTestCases, "microfloat<8,4,-,-,->");
+		// no infinity, but a NaN to signal with
+		nrOfFailedTests += VerifyInfiniteSourceIsNeverZero<microfloat<6, 3, false, true, false>>(
+			reportTestCases, "microfloat<6,3,-,nan,->");
+		return nrOfFailedTests;
+	}
+
 }  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -339,26 +359,24 @@ try {
 #else  // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDecodeTable<e4m3>(reportTestCases, "e4m3"), test_tag, "e4m3 decode, all 256");
-	nrOfFailedTestCases += ReportTestResult(VerifyOcpDivergences(reportTestCases), test_tag, "e4m3 conversion, OCP cases");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversionAgainstOracle(reportTestCases), test_tag, "e4m3 conversion, vs oracle");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecodeTable<e4m3>(reportTestCases, "e4m3"),
+		test_tag, "e4m3 decode, all 256");
+	nrOfFailedTestCases += ReportTestResult(VerifyOcpDivergences(reportTestCases),
+		test_tag, "e4m3 conversion, OCP cases");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversionAgainstOracle(reportTestCases),
+		test_tag, "e4m3 conversion, vs oracle");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifySaturatingPolicy(reportTestCases), test_tag, "e4m3_saturating policy");
-	nrOfFailedTestCases += ReportTestResult(VerifyE5m2Boundary(reportTestCases), test_tag, "e5m2 overflow boundary");
+	nrOfFailedTestCases += ReportTestResult(VerifySaturatingPolicy(reportTestCases),
+		test_tag, "e4m3_saturating policy");
+	nrOfFailedTestCases += ReportTestResult(VerifyE5m2Boundary(reportTestCases),
+		test_tag, "e5m2 overflow boundary");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyInfiniteSourceIsNeverZero<e2m1>(reportTestCases, "e2m1"), test_tag, "e2m1 infinite source");
-	nrOfFailedTestCases += ReportTestResult(VerifyInfiniteSourceIsNeverZero<e2m3>(reportTestCases, "e2m3"), test_tag, "e2m3 infinite source");
-	nrOfFailedTestCases += ReportTestResult(VerifyInfiniteSourceIsNeverZero<e3m2>(reportTestCases, "e3m2"), test_tag, "e3m2 infinite source");
-	nrOfFailedTestCases += ReportTestResult(VerifyInfiniteSourceIsNeverZero<e4m3>(reportTestCases, "e4m3"), test_tag, "e4m3 infinite source");
-	nrOfFailedTestCases += ReportTestResult(VerifyInfiniteSourceIsNeverZero<e4m3_saturating>(reportTestCases, "e4m3_saturating"), test_tag, "e4m3_saturating infinite source");
-	nrOfFailedTestCases += ReportTestResult(VerifyInfiniteSourceIsNeverZero<e5m2>(reportTestCases, "e5m2"), test_tag, "e5m2 infinite source");
-	// the configurations without an alias: no infinity and no NaN to fall back on
-	nrOfFailedTestCases += ReportTestResult(VerifyInfiniteSourceIsNeverZero<microfloat<8, 4, false, false, false>>(reportTestCases, "microfloat<8,4,-,-,->"), test_tag, "no inf, no nan, no saturation");
-	nrOfFailedTestCases += ReportTestResult(VerifyInfiniteSourceIsNeverZero<microfloat<6, 3, false, true, false>>(reportTestCases, "microfloat<6,3,-,nan,->"), test_tag, "no inf, nan, no saturation");
+	nrOfFailedTestCases += ReportTestResult(VerifyInfiniteSourceAcrossFormats(reportTestCases),
+		test_tag, "infinite source is never zero");
 #endif
 
 #if REGRESSION_LEVEL_4

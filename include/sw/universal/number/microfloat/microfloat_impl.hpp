@@ -606,8 +606,10 @@ public:
 		// through biased_exp -- and a pre-clamp can only get that wrong.  The
 		// one that used to sit here answered maxpos for every value above
 		// maxpos, so e4m3 saturated where OCP requires NaN, and answered inf
-		// for every value above maxpos in e5m2, where 57344 < v <= 61440 must
-		// round back down to maxpos (universal#1302).
+		// for every value above maxpos in e5m2, where 57344 < v < 61440 must
+		// round back down to maxpos.  61440 itself is the tie, and it rounds
+		// the other way: the even candidate is 2^16, which e5m2 cannot
+		// represent, so that one really is infinity (universal#1302).
 
 		// Extract exponent and fraction from the float value.
 		// frexp returns frac in [0.5, 1.0), exp such that v = frac * 2^exp.
