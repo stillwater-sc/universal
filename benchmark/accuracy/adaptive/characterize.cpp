@@ -146,16 +146,32 @@ namespace {
 	}
 
 	// ----------------------------------------------------------------- sweeps
-	// A narrow host can run out of exponent range partway through a series (the
-	// same fp16/bfloat16 limit the block-shape study documents), so each cell is
-	// guarded: a host that cannot produce this (function, depth) ends that
-	// function's sweep instead of aborting the run. That a cell is missing is
-	// itself the datum the narrow-host question asks about.
+	// There is deliberately no exception guard around the sweep body.
+	//
+	// An earlier revision caught std::exception per cell and reported it as "this
+	// host ran out of range", which is wrong in both directions. The math paths
+	// reach infsum, which throws a bare std::runtime_error whose own message says
+	// "non-convergence bug"; elreal's exception family (elreal_sum_budget_exceeded,
+	// elreal_divide_by_zero) carries no host-range type at all; and std::bad_alloc
+	// is a std::exception too. Catching them all would turn a genuine defect, or an
+	// allocation failure, into a silently truncated sweep that reads as a normal
+	// narrow-host limit -- the exact failure mode this tool exists to detect.
+	//
+	// Nor is the guard needed for the hosts swept here: double, float and bfloat16
+	// all carry an 8-bit or wider exponent, and a probe of all nine functions on
+	// all three hosts throws nothing. The 5-bit fp16 host is the one that would
+	// exhaust its range, and it is not supported yet (it needs the online-division
+	// floor-lift). When it lands, the right answer is an explicit range-failure
+	// exception type to catch here, not a blanket handler.
+	//
+	// Accuracy saturation -- what the issue actually asked to be gated -- is not an
+	// exception at all: it shows up as a digit count that stops rising, which the
+	// CSV records and summary() reports.
 	template<typename FpType>
 	void run_elreal(const char* host, int maxDepth, int reps) {
 		for (const auto& c : cases()) {
 			for (int d = 2; d <= maxDepth; ++d) {
-				try {
+				{
 					elreal<FpType> x(c.arg);
 					x.precision(static_cast<std::size_t>(d));
 					volatile double sink = 0.0;
@@ -168,11 +184,6 @@ namespace {
 					(void)r.template approx<double>(static_cast<std::size_t>(d));       // force before reading the stream
 					int digits = agreed_decimal_digits(zbcl_to_dyadic(r.stream()), c.ref);
 					emit({ "elreal", host, c.name, d, t, digits });
-				}
-				catch (const std::exception&) {
-					std::cerr << "# note: elreal<" << host << "> " << c.name
-					          << " depth " << d << " exceeded the host's range; ending this sweep\n";
-					break;
 				}
 			}
 		}
@@ -209,7 +220,7 @@ namespace {
 	void run_arithmetic(const char* host, int maxDepth, int reps) {
 		const double A = 1.4142135623730951, B = 2.7182818284590452;
 		for (int d = 2; d <= maxDepth; ++d) {
-			try {
+			{
 				elreal<FpType> a(A), b(B);
 				a.precision(static_cast<std::size_t>(d));
 				b.precision(static_cast<std::size_t>(d));
@@ -221,11 +232,6 @@ namespace {
 				emit({ "elreal", host, "mul", d, timeOp([&] { return a * b; }), -1 });
 				emit({ "elreal", host, "div", d, timeOp([&] { return a / b; }), -1 });
 				(void)sink;
-			}
-			catch (const std::exception&) {
-				std::cerr << "# note: elreal<" << host << "> arithmetic at depth " << d
-				          << " exceeded the host's range; ending this sweep\n";
-				break;
 			}
 		}
 	}
