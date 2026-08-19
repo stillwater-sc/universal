@@ -38,7 +38,7 @@ make el_oracle_sweep && ./elastic/elreal/el_oracle_sweep
 
 ## Method
 
-- **Hosts (block shapes):** `half` (`cfloat<16,5>`, k=11), `bfloat16` (k=8),
+- **Hosts (block shapes):** `half` (`cfloat<16,5>`, k=11), `bfloat16` (k=7),
   `float` (k=24), `double` (k=53).
 - **Oracle:** the exact 320-digit reference constants
   (`include/sw/math/constants/reference_constants.hpp`) via
@@ -56,7 +56,7 @@ while the digits/blocks columns are reproducible for this configuration.
 | Host      | k (significand bits) | sizeof(block) | payload bits/block |
 |-----------|----------------------|---------------|--------------------|
 | half      | 11                   | 36 B          | 11                 |
-| bfloat16  | 8                    | 36 B          | 8 (7 stored)       |
+| bfloat16  | 7                    | 36 B          | 7                  |
 | float     | 24                   | 36 B          | 24                 |
 | double    | 53                   | 40 B          | 53                 |
 
@@ -77,12 +77,12 @@ digits, and the saturation point (max digits reached and at how many blocks).
 |----------|-------|------|-------|-------|-------|-----------------------|
 | half     | pi    |  -   |  -    |  -    |  -    | does not converge     |
 | bfloat16 | pi    |  -   |  -    |  -    |  -    | max 33 digits @ 13    |
-| float    | pi    |  -   |  -    |  -    |  -    | max 37 digits @ 6     |
-| double   | pi    |  5   |  9    | 17    |  -    | max 306 digits @ 20   |
+| float    | pi    |  -   |  -    |  -    |  -    | max 37 digits @ 5     |
+| double   | pi    |  5   |  9    | 17    |  -    | max 306 digits @ 19   |
 | half     | e     |  -   |  -    |  -    |  -    | does not converge     |
 | bfloat16 | e     |  -   |  -    |  -    |  -    | max 33 digits @ 14    |
 | float    | e     |  -   |  -    |  -    |  -    | max 37 digits @ 7     |
-| double   | e     |  7   |  9    | 18    |  -    | max 308 digits @ 20   |
+| double   | e     |  7   |  9    | 18    |  -    | max 307 digits @ 19   |
 | half     | sqrt2 |  -   |  -    |  -    |  -    | does not converge     |
 | bfloat16 | sqrt2 |  -   |  -    |  -    |  -    | max 36 digits @ 13    |
 | float    | sqrt2 |  -   |  -    |  -    |  -    | max 38 digits @ 5     |
@@ -91,10 +91,10 @@ digits, and the saturation point (max digits reached and at how many blocks).
 Reading the table:
 
 - **`double` is the only host that reaches the high-precision regime** the type
-  exists for -- ~300+ digits in ~20 blocks. It clears 200 digits in 16-18
+  exists for -- ~300+ digits in 19 blocks. It clears 200 digits in 16-18
   blocks across all three constants.
 - **`float` and `bfloat16` saturate at ~35 digits and stop improving with
-  depth.** Strikingly, `bfloat16` uses *more* blocks than `float` (13 vs 6) to
+  depth.** Strikingly, `bfloat16` uses *more* blocks than `float` (13 vs 5) to
   reach *fewer* digits. Precision is capped not by block storage but by the
   **series arithmetic degrading in the narrow host** -- the transcendental
   generators compute their terms in `FpType`, and below ~`float` those terms
@@ -110,14 +110,14 @@ Reading the table:
 Wall time to produce the first block of each transcendental generator at depth
 16 (the latency that matters when an algorithm needs only a few digits fast).
 
-| Host   | pi        | e        | sqrt2   |
-|--------|-----------|----------|---------|
-| float  | ~7.0 ms   | ~2.3 ms  | ~0.4 ms |
-| double | ~1000 ms  | ~71 ms   | ~5.8 ms |
+| Host   | pi       | e        | sqrt2    |
+|--------|----------|----------|----------|
+| float  | ~5.4 ms  | ~1.8 ms  | ~0.33 ms |
+| double | ~790 ms  | ~56 ms   | ~4.7 ms  |
 
 The `double` host's first-block latency is dominated by the cost of the
 division-heavy generators at width 53 (`pi` via Machin is ~170x more expensive
-than `sqrt2` via Newton: ~1000 ms vs ~5.8 ms). If time-to-first-digit matters
+than `sqrt2` via Newton: ~790 ms vs ~4.7 ms). If time-to-first-digit matters
 more than ultimate
 precision, a narrower host reaches its (lower) ceiling far faster.
 
@@ -127,8 +127,8 @@ Dot product of two length-N ZBCL vectors at multiply depth 32.
 
 | Host   | N=16       | N=64       | N=256      |
 |--------|------------|------------|------------|
-| float  | ~23 us/dot | ~142 us/dot| ~652 us/dot|
-| double | ~10 us/dot | ~41 us/dot | ~161 us/dot|
+| float  | ~20 us/dot | ~126 us/dot| ~548 us/dot|
+| double | ~8.7 us/dot| ~36 us/dot | ~140 us/dot|
 
 `double` is ~2-4x faster per dot than `float` here despite the wider datapath,
 because the `float` host needs more blocks to represent each product, so the
@@ -162,11 +162,45 @@ per-block latency -- is the whole point of the type.
   extended-precision intermediate series evaluation (#1051) before the narrow
   hosts can be fairly characterised.
 
+## Re-validation
+
+The study is a measurement, so it goes stale when the code under it moves. It
+was re-run end to end on `1e868e42` (2026-08-19), gcc 13.3 and clang 18.1,
+`-O2 -DNDEBUG`, and the tables above carry those numbers. Both compilers agree
+cell for cell on the digits/blocks columns; the timing columns are indicative
+and reproduce to within a few percent between runs on this host.
+
+Every qualitative finding held. Three cells moved, all in the same direction:
+
+| row              | at the MVP (2026-07-23) | now         |
+|------------------|-------------------------|-------------|
+| `double` / pi    | 306 digits @ 20 blocks  | 306 @ **19** |
+| `double` / e     | **308** digits @ 20 blocks | **307** @ **19** |
+| `float` / pi     | 37 digits @ 6 blocks    | 37 @ **5**  |
+
+These trace to #1292, which stopped streaming addition from emitting subnormal
+ZBCL blocks. The block that vanished was the subnormal one at the tail, so the
+same precision now arrives one block sooner -- and `e` loses the sliver of a
+digit that partial block had been carrying. A smaller number in the block
+column is the improvement here, not a regression.
+
+One correction rather than a change: table A gave `bfloat16` **8** significand
+bits. `numeric_limits<bfloat16>::digits` is 7, and was already 7 at the commit
+that published this study, so that cell was wrong when written -- the benchmark
+itself printed 7 all along. The 7 vs 8 does not affect any conclusion: the
+narrow hosts are capped by the series arithmetic, not by payload bits per
+block, which is the point table A exists to make.
+
 ## Follow-ups (remaining Phase 9 scope)
 
-- Geometric predicate suite (orient2d, incircle) once the narrow-host paths are
-  usable.
-- Cancellation-stressed sums (e.g. naive Taylor `exp(40)`).
-- Full recommendation matrix ("X precision at Y latency -> pick Z") once
-  narrow-host convergence is fixed.
+- **#1186** -- geometric predicate suite (orient2d, incircle). Independent of
+  the narrow-host work: it runs on the `double` host today.
+- **#1187** -- cancellation-stressed sums (e.g. naive Taylor `exp(40)`). Also
+  independent.
+- **#1188** -- full recommendation matrix ("X precision at Y latency -> pick
+  Z"). Still blocked, and blocked on the physics rather than on effort: the
+  matrix cannot be filled in while `half` does not converge and `float` /
+  `bfloat16` saturate near 35 digits. It needs the fp16 division floor-lift and
+  extended-precision intermediate series evaluation (#1051), plus the
+  characterisation tooling in #1176.
 - SIMD/FMA acceleration is explicitly a possible Phase 10, out of scope here.
