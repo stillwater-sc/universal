@@ -162,6 +162,81 @@ per-block latency -- is the whole point of the type.
   extended-precision intermediate series evaluation (#1051) before the narrow
   hosts can be fairly characterised.
 
+## F. Cancellation-stressed accumulation
+
+Sections A-E measure how fast `elreal` converges and how much it costs. This one
+measures the property the type exists for: accumulating sums whose individual
+terms dwarf their own total. Both workloads are scored against the **exact
+dyadic value of the same terms**, so the only thing being compared is the
+accumulator.
+
+### F1. Naive Taylor `exp(-40)`
+
+The textbook catastrophic-cancellation series. Terms come from the naive
+recurrence `t_k = t_{k-1} * (-40/k)` evaluated in `double` -- that is what
+"naive" means here: each term arrives already rounded. 180 terms, peak
+`|term|` ~ `1.48e16` against a true value of `4.25e-18`, so the condition
+number is ~`3.5e33`.
+
+| accumulator | digits agreeing with the exact sum of those terms |
+|-------------|--------------------------------------------------|
+| `double`    | 0                                                |
+| `qd`        | 320 (exact)                                      |
+| `elreal`    | 320 (exact)                                      |
+
+**`qd` is not beaten here, and the honest reading is more interesting than a
+win.** The terms span `1e16` down to `1e-40`, about 186 bits, which fits inside
+`qd`'s 212-bit budget -- so `qd` carries this sum exactly too. Naive `double` is
+the only casualty.
+
+The finding that matters is the next line: **the exact sum of those terms agrees
+with `exp(-40)` to 0 digits.** The terms were rounded before any accumulator saw
+them, and no amount of exactness downstream can rebuild information destroyed
+upstream. For this workload exact accumulation is necessary and nowhere near
+sufficient. This is worth stating plainly because the obvious reading of "elreal
+accumulates exactly, therefore elreal fixes naive Taylor" is wrong.
+
+What actually computes `exp(-40)` is `elreal`'s own `exp()`, which reduces the
+argument (`exp(x) = exp(x/2^r)^(2^r)`) instead of summing a wildly alternating
+series, and so never enters the cancellation regime at all. It agrees with
+`std::exp(-40)` to all 16 digits the `double` reference carries.
+
+### F2. Ill-conditioned dot product
+
+Here the answer itself is made to exceed what a fixed-limb type can represent.
+The exact dot is spread over `chunks` pieces of 52 bits each, separated by 100
+bits, and large `+P`/`-P` pairs at `2^500` supply the cancellation. The vectors
+are shuffled -- adjacent cancelling pairs would cancel with no rounding at all,
+which is the opposite of the intended stress. Both factors carry 26 bits, so
+every product is exact in `double` and product rounding is not part of what is
+measured.
+
+| chunks | answer spans | `double` | `qd` | `elreal` |
+|--------|--------------|----------|------|----------|
+| 2      | 152 bits     | 0        | 320  | 320      |
+| 4      | 352 bits     | 0        | 90   | 320      |
+| 6      | 552 bits     | 0        | 90   | 320      |
+| 8      | 752 bits     | 0        | 89   | 320      |
+| 12     | 1152 bits    | 0        | 90   | 320      |
+
+(320 is the reference cap -- exact as far as the oracle can see.)
+
+`double` returns nothing at any size. `qd` is exact while the answer fits its
+four limbs and then plateaus near **90 digits** -- not its usual ~64. The
+difference is instructive: `qd` is a non-overlapping expansion, so its four
+limbs can sit at arbitrary scales rather than packing 212 contiguous bits. Four
+limbs at 100-bit spacing reach down to about `2^-300`, hence ~90 decimal digits.
+The ceiling is the *limb count*, not the bit count, and the workload is built to
+find it. `elreal` carries every chunk, so it stays exact as the answer grows
+past a thousand bits.
+
+This is the clean statement of what the type buys: not "more precision" but
+**precision that is not budgeted in advance**.
+
+Both workloads are also pass/fail regressions in `elastic/elreal/oracle/sweep.cpp`
+(`elreal<double> cancellation-stressed accumulation is exact`), so the exactness
+claim is guarded rather than merely reported.
+
 ## Re-validation
 
 The study is a measurement, so it goes stale when the code under it moves. It
@@ -195,8 +270,7 @@ block, which is the point table A exists to make.
 
 - **#1186** -- geometric predicate suite (orient2d, incircle). Independent of
   the narrow-host work: it runs on the `double` host today.
-- **#1187** -- cancellation-stressed sums (e.g. naive Taylor `exp(40)`). Also
-  independent.
+- ~~#1187 -- cancellation-stressed sums~~ -- **done**, section F above.
 - **#1188** -- full recommendation matrix ("X precision at Y latency -> pick
   Z"). Still blocked, and blocked on the physics rather than on effort: the
   matrix cannot be filled in while `half` does not converge and `float` /

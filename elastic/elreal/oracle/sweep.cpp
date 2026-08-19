@@ -14,7 +14,13 @@
 //   - sub() (negate + add) is EXACT;
 //   - mul(a, b, depth) agrees with the exact dyadic product a*b to a high number
 //     of decimal digits (mul truncates at `depth`, so this is a floor, not an
-//     equality).
+//     equality);
+//   - cancellation-stressed accumulation (#1187) is EXACT: two workloads whose
+//     terms dwarf their own total -- the naive Taylor series for exp(-40), and an
+//     ill-conditioned dot product whose answer is spread over more separated
+//     pieces than a fixed-limb type can hold -- accumulate to the exact dyadic
+//     value of the same terms, to the bit. This is the property the benchmark's
+//     section F reports; here it is a pass/fail guard.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -22,6 +28,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <vector>
 #include <cstdint>
 #include <iostream>
 #include <random>
@@ -102,6 +109,86 @@ namespace {
 		return fails;
 	}
 
+	// ---- cancellation-stressed accumulation (#1187) --------------------------
+
+	// naive Taylor exp(-40): terms from the recurrence t_k = t_{k-1} * (-40/k),
+	// each pre-rounded in double. Their magnitudes peak near 1.5e16 while the sum
+	// is of order 1, so the accumulation is where everything can be lost.
+	std::vector<double> naive_exp_terms(double x, int maxTerms = 200) {
+		std::vector<double> terms;
+		double t = 1.0;
+		terms.push_back(t);
+		for (int k = 1; k <= maxTerms; ++k) {
+			t *= x / static_cast<double>(k);
+			terms.push_back(t);
+			if (k > 60 && std::fabs(t) < 1e-40) break;
+		}
+		return terms;
+	}
+
+	// an ill-conditioned dot product whose exact answer is spread over `chunks`
+	// 52-bit pieces separated by 100 bits, plus large exactly-cancelling pairs.
+	// Both factors carry 26 bits, so every product is exact in double and the only
+	// thing under test is the accumulation.
+	void gen_illconditioned_dot(int chunks, std::vector<double>& X, std::vector<double>& Y, dyadic& D) {
+		std::mt19937_64 rng(0xBEEF + static_cast<unsigned>(chunks));
+		X.clear(); Y.clear(); D = dyadic();
+		for (int j = 0; j < chunks; ++j) {
+			double xv = std::ldexp(static_cast<double>((rng() & 0x3FFFFFFull) | (1ull << 25)), -100 * j - 25);
+			double yv = static_cast<double>((rng() & 0x3FFFFFFull) | (1ull << 25));
+			X.push_back(xv); Y.push_back(yv);
+			D = D + dyadic::from_double(xv) * dyadic::from_double(yv);
+		}
+		for (int j = 0; j < 12; ++j) {
+			double b  = std::ldexp(static_cast<double>((rng() % 4000) + 1), 500);
+			double yb = static_cast<double>((rng() % 4000) + 1);
+			X.push_back(b);  Y.push_back(yb);
+			X.push_back(-b); Y.push_back(yb);
+		}
+		for (std::size_t i = X.size(); i > 1; --i) {   // adjacent +P/-P would not stress anything
+			std::size_t k = static_cast<std::size_t>(rng() % i);
+			std::swap(X[i - 1], X[k]); std::swap(Y[i - 1], Y[k]);
+		}
+	}
+
+	// double host only: the workload terms are doubles, so from_native<float> would
+	// round them on the way in and the exact-sum claim would be about different
+	// numbers than the dyadic reference was built from. The narrow hosts are
+	// covered by the add/sub exactness sweep above, which generates terms that are
+	// exact in every host it sweeps.
+	template<typename FpType>
+	int VerifyCancellationExact(const char* host, bool reportTestCases) {
+		int fails = 0;
+
+		// the Taylor sum accumulates to the exact dyadic sum of its terms
+		std::vector<double> terms = naive_exp_terms(-40.0);
+		dyadic exactSum;
+		ZBCL<FpType> z = from_native<FpType>(0.0);
+		for (double v : terms) {
+			exactSum = exactSum + dyadic::from_double(v);
+			z = add(z, from_native<FpType>(v));
+		}
+		if (dcmp(zbcl_to_dyadic(z), exactSum) != 0) {
+			if (reportTestCases) std::cout << "    FAIL taylor-exact " << host << '\n';
+			++fails;
+		}
+
+		// the dot product accumulates to the exact dyadic dot
+		for (int chunks : { 2, 6, 12 }) {
+			std::vector<double> X, Y;
+			dyadic D;
+			gen_illconditioned_dot(chunks, X, Y, D);
+			ZBCL<FpType> dz = from_native<FpType>(0.0);
+			for (std::size_t i = 0; i < X.size(); ++i)
+				dz = add(dz, mul(from_native<FpType>(X[i]), from_native<FpType>(Y[i]), 8));
+			if (dcmp(zbcl_to_dyadic(dz), D) != 0) {
+				if (reportTestCases) std::cout << "    FAIL dot-exact " << host << " chunks=" << chunks << '\n';
+				++fails;
+			}
+		}
+		return fails;
+	}
+
 }  // anonymous namespace
 
 #define MANUAL_TESTING 0
@@ -143,6 +230,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExactAddSub<float>("float", reportTestCases, base), "elreal<float> add/sub exact vs dyadic", "add/sub");
 	nrOfFailedTestCases += ReportTestResult(VerifyMulAgreement<double>("double", reportTestCases, base, 24, 40), "elreal<double> mul agreement vs dyadic", "mul");
 	nrOfFailedTestCases += ReportTestResult(VerifyMulAgreement<float>("float", reportTestCases, base, 24, 30), "elreal<float> mul agreement vs dyadic", "mul");
+	nrOfFailedTestCases += ReportTestResult(VerifyCancellationExact<double>("double", reportTestCases), "elreal<double> cancellation-stressed accumulation is exact", "cancellation");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
