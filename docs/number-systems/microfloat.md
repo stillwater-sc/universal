@@ -25,8 +25,33 @@ But not all 4-bit and 8-bit formats are the same. The OCP (Open Compute Project)
 | `e2m1` | `microfloat<4,2,false,false,true>` | [0.5, 6.0] | 1 fraction bit | Minimal storage, maximum compression |
 | `e2m3` | `microfloat<6,2,false,false,true>` | [0.0625, 7.5] | 3 fraction bits | More fraction bits |
 | `e3m2` | `microfloat<6,3,false,false,true>` | [0.03125, 28] | 2 fraction bits | More exponent range |
-| `e4m3` | `microfloat<8,4,false,true,true>` | [~0.002, 240] | 3 fraction bits | Balanced; NVIDIA FP8 |
-| `e5m2` | `microfloat<8,5,true,true,false>` | [~0.001, 57344] | 2 fraction bits | Wide range; non-saturating |
+| `e4m3` (= `e4m3fn`) | `microfloat<8,4,false,true,false>` | [~0.002, 448] | 3 fraction bits | Balanced; the OCP OFP8 FP8 format |
+| `e4m3_saturating` | `microfloat<8,4,false,true,true>` | [~0.002, 448] | 3 fraction bits | Same encoding, clamps on overflow; used by MX and NVFP4 blocks |
+| `e5m2` | `microfloat<8,5,true,true,false>` | [~0.001, 57344] | 2 fraction bits | Wide range; IEEE-like, has infinity |
+
+### The two e4m3 conversion policies
+
+`e4m3` and `e4m3_saturating` are the same encoding -- no infinity, NaN at
+`S.1111.111`, maxpos 448 at `0x7E` -- and all 256 patterns decode identically.
+They differ only in what a conversion from a wider type does with a value past
+maxpos:
+
+| source | `e4m3` (OCP) | `e4m3_saturating` |
+|--------|--------------|-------------------|
+| 464.0 (the round-to-even tie) | `0x7E` (448) | `0x7E` (448) |
+| 500.0 | `0x7F` (NaN) | `0x7E` (448) |
+| `-inf` | `0xFF` (-NaN) | `0xFE` (-448) |
+| `-NaN` | `0xFF` | `0xFF` |
+
+`e4m3` follows the [OCP 8-bit Floating Point
+Specification](https://www.opencompute.org/documents/ocp-8-bit-floating-point-specification-ofp8-revision-1-0-2023-12-01-pdf-1),
+which is what `ml_dtypes.float8_e4m3fn`, JAX and PyTorch implement: the format
+has no infinity, so overflow has to signal as NaN, and the sign is preserved.
+
+`e4m3_saturating` is what block quantization needs. MX and NVFP4 both scale the
+block maximum into a range whose top sits above 448, so the largest element of a
+block routinely lands past maxpos; clipping it is right, and poisoning the block
+with a NaN is not. `mxfp8` and the NVFP4 block scale use this policy.
 
 ### Key Properties
 
@@ -45,7 +70,7 @@ A microfloat follows the standard sign-exponent-fraction layout:
 ```
 
 The key differences from standard IEEE-754 are:
-1. **Saturation**: when `isSaturating=true`, overflow clamps to maxpos instead of producing infinity
+1. **Overflow policy**: a value that rounds past maxpos becomes maxpos when `isSaturating=true`, infinity when the format has one, and NaN when it has a NaN but no infinity (the OCP rule). A format with none of the three has only maxpos to offer.
 2. **No infinity/NaN**: when `hasInf=false` and `hasNaN=false`, all bit patterns encode valid numbers
 3. **Block scaling**: microfloats are typically not used alone -- they are elements in an `mxblock` or `nvblock`, where a shared scale factor extends their dynamic range
 
@@ -107,11 +132,11 @@ for (float w : fp32_weights) {
 #include <universal/number/mxfloat/mxfloat.hpp>
 
 // MX block: 32 e4m3 elements sharing one e8m0 scale
-mxblock<e4m3, 32> block;
+mxblock<e4m3_saturating, 32> block;   // == mxfp8
 
 // NVIDIA block: 16 e2m1 elements sharing one e4m3 scale
 #include <universal/number/nvblock/nvblock.hpp>
-nvblock<e2m1, 16, e4m3> nv_block;
+nvblock<e2m1, 16, e4m3_saturating> nv_block;   // == nvfp4
 ```
 
 ## Problems It Solves

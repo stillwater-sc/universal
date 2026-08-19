@@ -167,7 +167,7 @@ try {
 		std::cout << mxblock_range<e2m1, 32>() << '\n';
 		std::cout << mxblock_range<e3m2, 32>() << '\n';
 		std::cout << mxblock_range<e2m3, 32>() << '\n';
-		std::cout << mxblock_range<e4m3, 32>() << '\n';
+		std::cout << mxblock_range<e4m3_saturating, 32>() << '\n';
 		std::cout << mxblock_range<e5m2, 32>() << '\n';
 		std::cout << mxblock_range<int8_t, 32>() << '\n';
 	}

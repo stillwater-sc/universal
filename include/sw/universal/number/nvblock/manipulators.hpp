@@ -20,7 +20,7 @@ namespace sw { namespace universal {
 		// Return NVIDIA alias for the canonical configuration
 		if constexpr (std::is_same_v<ElementType, e2m1> &&
 			BlockSize == 16 &&
-			std::is_same_v<ScaleType, e4m3>) {
+			std::is_same_v<ScaleType, e4m3_saturating>) {
 			return "nvfp4";
 		}
 
@@ -32,8 +32,10 @@ namespace sw { namespace universal {
 			elemName = "e2m3";
 		} else if constexpr (std::is_same_v<ElementType, e3m2>) {
 			elemName = "e3m2";
-		} else if constexpr (std::is_same_v<ElementType, e4m3>) {
+		} else if constexpr (std::is_same_v<ElementType, e4m3fn>) {
 			elemName = "e4m3";
+		} else if constexpr (std::is_same_v<ElementType, e4m3_saturating>) {
+			elemName = "e4m3_saturating";
 		} else if constexpr (std::is_same_v<ElementType, e5m2>) {
 			elemName = "e5m2";
 		} else {
@@ -41,8 +43,10 @@ namespace sw { namespace universal {
 		}
 
 		std::string scaleName;
-		if constexpr (std::is_same_v<ScaleType, e4m3>) {
+		if constexpr (std::is_same_v<ScaleType, e4m3fn>) {
 			scaleName = "e4m3";
+		} else if constexpr (std::is_same_v<ScaleType, e4m3_saturating>) {
+			scaleName = "e4m3_saturating";
 		} else if constexpr (std::is_same_v<ScaleType, e5m2>) {
 			scaleName = "e5m2";
 		} else {

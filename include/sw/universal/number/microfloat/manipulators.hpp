@@ -19,7 +19,8 @@ namespace sw { namespace universal {
 		if constexpr (nbits == 4 && es == 2 && !hasInf && !hasNaN && isSaturating) return "e2m1";
 		if constexpr (nbits == 6 && es == 2 && !hasInf && !hasNaN && isSaturating) return "e2m3";
 		if constexpr (nbits == 6 && es == 3 && !hasInf && !hasNaN && isSaturating) return "e3m2";
-		if constexpr (nbits == 8 && es == 4 && !hasInf && hasNaN && isSaturating) return "e4m3";
+		if constexpr (nbits == 8 && es == 4 && !hasInf && hasNaN && !isSaturating) return "e4m3";
+		if constexpr (nbits == 8 && es == 4 && !hasInf && hasNaN && isSaturating) return "e4m3_saturating";
 		if constexpr (nbits == 8 && es == 5 && hasInf && hasNaN && !isSaturating) return "e5m2";
 		// Generic fallback
 		std::stringstream s;
