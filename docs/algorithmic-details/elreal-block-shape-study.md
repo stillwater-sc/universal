@@ -244,6 +244,74 @@ Both workloads are also pass/fail regressions in `elastic/elreal/oracle/sweep.cp
 (`elreal<double> cancellation-stressed accumulation is exact`), so the exactness
 claim is guarded rather than merely reported.
 
+## G. Exact geometric predicates
+
+`orient2d` and `incircle` are the canonical robust-predicates workload. Both are
+sign queries on a determinant, and the sign is what a mesh generator or convex
+hull consumes: a predicate that returns the wrong sign near a degeneracy does
+not produce a slightly wrong mesh, it produces an inconsistent one, and the
+algorithm above it can loop or crash.
+
+Each predicate is written once over a generic `Real` and instantiated for
+`double`, `qd` and `elreal<double>`; the reference is the same expression in
+exact dyadic rationals.
+
+| workload | `double` | `qd` | `elreal` | cases | exactly degenerate |
+|----------|----------|------|----------|-------|--------------------|
+| orient2d, collinear + ulp grid | **5474** | 0 | 0 | 16384 | 128 |
+| incircle, exactly cocircular +/- ulps | **105** | 0 | 0 | 288 | 60 |
+| incircle, near-cocircular | **486** | 0 | 0 | 4096 | 0 |
+
+The degenerate column is worth its own row rather than a footnote. Exact
+cocircularity of four independently rounded points is a measure-zero event, so
+the random near-cocircular sampling never produces one -- it cannot exercise the
+case where a predicate has to answer *zero*. The middle workload is built to:
+four points at the cardinal positions of a circle whose centre and radius are
+exactly representable are exactly cocircular by construction.
+
+`double` fails on a third of the orient2d grid and a sixth of the incircle
+cases. These are not exotic inputs -- they are ordinary coordinates near a
+degeneracy, which is where a mesh algorithm spends its time.
+
+**`qd` gets both exactly right, and that is the honest result.** Shewchuk's
+analysis puts `orient2d` at ~2x and `incircle` at ~4x working precision; `qd`
+supplies 4x, and on `double` inputs at ordinary scales that is enough. Attempts
+to break it here did not succeed: wide dynamic range alone does not help,
+because spreading the coordinates makes the determinant *large* relative to the
+error rather than small, so the inputs stop being degenerate at all.
+
+`elreal` is also exact, for a different reason. `qd` is exact because somebody
+did the error analysis and the answer happened to fit; `elreal` is exact because
+it has no budget to exceed. The guarantee survives a change of predicate, of
+scaling, or of input distribution without anyone re-deriving a bound -- which is
+the property a predicate library actually wants.
+
+### Three traps, for anyone using elreal this way
+
+Both cost real debugging time while this section was written, and both are now
+guarded in `elastic/elreal/oracle/sweep.cpp`.
+
+**`operator*` is depth-bounded.** At the default precision the determinant is
+truncated and near-degenerate signs come out wrong. Raise the depth with
+`elreal_precision_guard` for exact work.
+
+**Do not step ulps from a coordinate that is exactly zero.** `from_native`
+refuses subnormal inputs by contract, and `nextafter(0.0, ...)` lands squarely in
+the subnormal range. In a release build this silently produced non-normalised
+blocks and 12 wrong signs; in a debug build it aborted on the assertion. The
+generator now checks every coordinate and reports what it skipped, because a
+workload that quietly drops cases is worse than one that fails loudly. The
+failure was in the test data, not in elreal -- the contract is documented at
+`from_native`.
+
+**Take the sign from the comparison operators, not from `sign()` or the raw
+block stream.** `sign()` answers +1 for zero, and a cancelling sum stays lazily
+unnormalised, so the leading raw block carries a phantom sign. Reading the
+stream directly gave the wrong answer on 61 of the 128 exactly-collinear grid
+points -- precisely the inputs a predicate exists to detect -- while being
+correct on all 16256 non-degenerate ones. `elreal_cmp`, which the comparison
+operators route through, skips zero blocks and is correct everywhere.
+
 ## Re-validation
 
 The study is a measurement, so it goes stale when the code under it moves. It
@@ -275,8 +343,7 @@ block, which is the point table A exists to make.
 
 ## Follow-ups (remaining Phase 9 scope)
 
-- **#1186** -- geometric predicate suite (orient2d, incircle). Independent of
-  the narrow-host work: it runs on the `double` host today.
+- ~~#1186 -- geometric predicate suite~~ -- **done**, section G above.
 - ~~#1187 -- cancellation-stressed sums~~ -- **done**, section F above.
 - **#1188** -- full recommendation matrix ("X precision at Y latency -> pick
   Z"). Still blocked, and blocked on the physics rather than on effort: the
