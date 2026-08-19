@@ -25,6 +25,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <algorithm>
+#include <utility>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -34,6 +35,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/number/elreal/elreal.hpp>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/elreal_reference_digits.hpp>  // dyadic, zbcl_to_dyadic, agreed_decimal_digits
@@ -124,6 +126,7 @@ namespace {
 	// ------------------------------------------------------------------- rows
 	struct Row {
 		std::string type;    // "elreal" | "ereal"
+		std::string fptype;  // elreal host block type; always "double" for ereal
 		std::string func;
 		long        knob;    // elreal depth or ereal N
 		double      time_ns;
@@ -133,7 +136,7 @@ namespace {
 	std::vector<Row> g_rows;
 
 	void emit(const Row& r) {
-		std::cout << r.type << ",double," << r.func << ',' << r.knob << ','
+		std::cout << r.type << ',' << r.fptype << ',' << r.func << ',' << r.knob << ','
 		          << std::llround(r.time_ns) << ',' << r.digits << ','
 		          << (r.digits < 0 ? 0 : correct_bits(r.digits)) << ',';
 		if (r.digits < 0) std::cout << "n/a";
@@ -143,21 +146,34 @@ namespace {
 	}
 
 	// ----------------------------------------------------------------- sweeps
-	void run_elreal(int maxDepth, int reps) {
+	// A narrow host can run out of exponent range partway through a series (the
+	// same fp16/bfloat16 limit the block-shape study documents), so each cell is
+	// guarded: a host that cannot produce this (function, depth) ends that
+	// function's sweep instead of aborting the run. That a cell is missing is
+	// itself the datum the narrow-host question asks about.
+	template<typename FpType>
+	void run_elreal(const char* host, int maxDepth, int reps) {
 		for (const auto& c : cases()) {
 			for (int d = 2; d <= maxDepth; ++d) {
-				elreal<double> x(c.arg);
-				x.precision(static_cast<std::size_t>(d));
-				volatile double sink = 0.0;
-				double t = time_ns([&] {
-					elreal<double> r = apply(c.op, x);
-					sink = r.approx<double>(static_cast<std::size_t>(d));  // force materialization to depth d
-				}, reps);
-				(void)sink;
-				elreal<double> r = apply(c.op, x);
-				(void)r.approx<double>(static_cast<std::size_t>(d));       // force before reading the stream
-				int digits = agreed_decimal_digits(zbcl_to_dyadic(r.stream()), c.ref);
-				emit({ "elreal", c.name, d, t, digits });
+				try {
+					elreal<FpType> x(c.arg);
+					x.precision(static_cast<std::size_t>(d));
+					volatile double sink = 0.0;
+					double t = time_ns([&] {
+						elreal<FpType> r = apply(c.op, x);
+						sink = r.template approx<double>(static_cast<std::size_t>(d));  // force materialization to depth d
+					}, reps);
+					(void)sink;
+					elreal<FpType> r = apply(c.op, x);
+					(void)r.template approx<double>(static_cast<std::size_t>(d));       // force before reading the stream
+					int digits = agreed_decimal_digits(zbcl_to_dyadic(r.stream()), c.ref);
+					emit({ "elreal", host, c.name, d, t, digits });
+				}
+				catch (const std::exception&) {
+					std::cerr << "# note: elreal<" << host << "> " << c.name
+					          << " depth " << d << " exceeded the host's range; ending this sweep\n";
+					break;
+				}
 			}
 		}
 	}
@@ -178,7 +194,7 @@ namespace {
 			double t = time_ns([&] { r = apply(c.op, x); sink = sink_limb(r); }, reps);
 			(void)sink;
 			int digits = agreed_decimal_digits(ereal_to_dyadic(r), c.ref);
-			emit({ "ereal", c.name, static_cast<long>(N), t, digits });
+			emit({ "ereal", "double", c.name, static_cast<long>(N), t, digits });
 		}
 	}
 
@@ -189,20 +205,28 @@ namespace {
 
 	// arithmetic: accuracy is exact for a single op, so report time only (digits=-1).
 	// The interesting axis is the renorm cost growth (elreal ~depth^2, ereal ~N^2).
-	void run_arithmetic(int maxDepth, int reps) {
+	template<typename FpType>
+	void run_arithmetic(const char* host, int maxDepth, int reps) {
 		const double A = 1.4142135623730951, B = 2.7182818284590452;
 		for (int d = 2; d <= maxDepth; ++d) {
-			elreal<double> a(A), b(B);
-			a.precision(static_cast<std::size_t>(d));
-			b.precision(static_cast<std::size_t>(d));
-			volatile double sink = 0.0;
-			auto timeOp = [&](auto fn) {
-				return time_ns([&] { elreal<double> r = fn(); sink = r.approx<double>(static_cast<std::size_t>(d)); }, reps);
-			};
-			emit({ "elreal", "add", d, timeOp([&] { return a + b; }), -1 });
-			emit({ "elreal", "mul", d, timeOp([&] { return a * b; }), -1 });
-			emit({ "elreal", "div", d, timeOp([&] { return a / b; }), -1 });
-			(void)sink;
+			try {
+				elreal<FpType> a(A), b(B);
+				a.precision(static_cast<std::size_t>(d));
+				b.precision(static_cast<std::size_t>(d));
+				volatile double sink = 0.0;
+				auto timeOp = [&](auto fn) {
+					return time_ns([&] { elreal<FpType> r = fn(); sink = r.template approx<double>(static_cast<std::size_t>(d)); }, reps);
+				};
+				emit({ "elreal", host, "add", d, timeOp([&] { return a + b; }), -1 });
+				emit({ "elreal", host, "mul", d, timeOp([&] { return a * b; }), -1 });
+				emit({ "elreal", host, "div", d, timeOp([&] { return a / b; }), -1 });
+				(void)sink;
+			}
+			catch (const std::exception&) {
+				std::cerr << "# note: elreal<" << host << "> arithmetic at depth " << d
+				          << " exceeded the host's range; ending this sweep\n";
+				break;
+			}
 		}
 	}
 
@@ -212,9 +236,9 @@ namespace {
 		ereal<N> a(A), b(B), r;
 		volatile double sink = 0.0;
 		auto timeOp = [&](auto fn) { return time_ns([&] { r = fn(); sink = sink_limb(r); }, reps); };
-		emit({ "ereal", "add", static_cast<long>(N), timeOp([&] { return a + b; }), -1 });
-		emit({ "ereal", "mul", static_cast<long>(N), timeOp([&] { return a * b; }), -1 });
-		emit({ "ereal", "div", static_cast<long>(N), timeOp([&] { return a / b; }), -1 });
+		emit({ "ereal", "double", "add", static_cast<long>(N), timeOp([&] { return a + b; }), -1 });
+		emit({ "ereal", "double", "mul", static_cast<long>(N), timeOp([&] { return a * b; }), -1 });
+		emit({ "ereal", "double", "div", static_cast<long>(N), timeOp([&] { return a / b; }), -1 });
 		(void)sink;
 	}
 
@@ -230,12 +254,21 @@ namespace {
 		std::vector<std::string> funcs;
 		for (const auto& c : cases()) funcs.push_back(c.name);
 
+		// the distinct (type, host) series present, in first-seen order. Grouping by
+		// type alone would pool every host's rows together and report a saturation
+		// point that belongs to none of them.
+		std::vector<std::pair<std::string, std::string>> series;
+		for (const auto& r : g_rows) {
+			std::pair<std::string, std::string> key{ r.type, r.fptype };
+			if (std::find(series.begin(), series.end(), key) == series.end()) series.push_back(key);
+		}
+
 		std::cout << "\n== per-function summary (accuracy saturation + accuracy/time knee) ==\n";
-		for (const char* type : { "elreal", "ereal" }) {
+		for (const auto& [type, host] : series) {
 			for (const auto& f : funcs) {
 				std::vector<const Row*> rs;
 				for (const auto& r : g_rows)
-					if (r.type == type && r.func == f && r.digits >= 0) rs.push_back(&r);
+					if (r.type == type && r.fptype == host && r.func == f && r.digits >= 0) rs.push_back(&r);
 				if (rs.empty()) continue;
 				std::sort(rs.begin(), rs.end(), [](const Row* a, const Row* b) { return a->knob < b->knob; });
 				int maxDig = 0;
@@ -248,10 +281,11 @@ namespace {
 					double score = r->digits / std::max(1.0, std::log10(std::max(1.0, r->time_ns)));
 					if (score > bestScore) { bestScore = score; knee = r; }
 				}
-				std::cout << "  " << std::left << std::setw(7) << type << ' ' << std::setw(9) << f
-				          << " saturates ~" << (std::string(type) == "elreal" ? "depth " : "N=") << satKnob
+				const std::string label = type + "<" + host + ">";
+				std::cout << "  " << std::left << std::setw(17) << label << ' ' << std::setw(9) << f
+				          << " saturates ~" << (type == "elreal" ? "depth " : "N=") << satKnob
 				          << " (" << maxDig << " digits); knee at "
-				          << (std::string(type) == "elreal" ? "depth " : "N=") << knee->knob
+				          << (type == "elreal" ? "depth " : "N=") << knee->knob
 				          << " (" << knee->digits << " digits, " << std::llround(knee->time_ns) << " ns)\n";
 			}
 		}
@@ -260,18 +294,25 @@ namespace {
 		const int target = 30;  // digits
 		std::cout << "\n== elreal vs ereal: cheapest config reaching >=" << target << " digits ==\n";
 		for (const auto& f : funcs) {
-			auto cheapest = [&](const char* type) -> const Row* {
+			auto cheapest = [&](const std::string& type, const std::string& host) -> const Row* {
 				const Row* best = nullptr;
 				for (const auto& r : g_rows)
-					if (r.type == type && r.func == f && r.digits >= target)
+					if (r.type == type && r.fptype == host && r.func == f && r.digits >= target)
 						if (!best || r.time_ns < best->time_ns) best = &r;
 				return best;
 			};
-			const Row* e = cheapest("elreal");
-			const Row* r = cheapest("ereal");
+			// the best elreal host for this function, whichever it turns out to be
+			const Row* e = nullptr;
+			std::string eHost;
+			for (const auto& [type, host] : series) {
+				if (type != "elreal") continue;
+				const Row* cand = cheapest(type, host);
+				if (cand && (!e || cand->time_ns < e->time_ns)) { e = cand; eHost = host; }
+			}
+			const Row* r = cheapest("ereal", "double");
 			std::cout << "  " << std::left << std::setw(9) << f << ' ';
-			if (e) std::cout << "elreal depth " << e->knob << " @ " << std::llround(e->time_ns) << " ns";
-			else   std::cout << "elreal (not reached)";
+			if (e) std::cout << "elreal<" << eHost << "> depth " << e->knob << " @ " << std::llround(e->time_ns) << " ns";
+			else   std::cout << "elreal (not reached on any host)";
 			std::cout << "  vs  ";
 			if (r) std::cout << "ereal N=" << r->knob << " @ " << std::llround(r->time_ns) << " ns";
 			else   std::cout << "ereal (not reached)";
@@ -292,12 +333,21 @@ int main(int argc, char** argv) try {
 	if (reps < 1) reps = 1;
 
 	std::cout << "# adaptive-precision accuracy-vs-compute-time characterization (issue #1040)\n";
-	std::cout << "# elreal depth sweep 2.." << maxDepth << ", ereal limb list {2,4,8,12,16}, reps=" << reps << "\n";
+	std::cout << "# elreal depth sweep 2.." << maxDepth << " over hosts {double, float, bfloat16},"
+	          << " ereal limb list {2,4,8,12,16}, reps=" << reps << "\n";
 	std::cout << "type,FpType,function,depth,time_ns,correct_digits,correct_bits,rel_error\n";
 
-	run_elreal(maxDepth, reps);
+	// elreal is templated on its host block type, and the accuracy/time curve moves
+	// with it: a narrower host carries fewer significand bits per block, so it needs
+	// more blocks for the same accuracy. ereal's limbs are always double, so only
+	// the elreal side sweeps.
+	run_elreal<double>("double", maxDepth, reps);
+	run_elreal<float>("float", maxDepth, reps);
+	run_elreal<bfloat16>("bfloat16", maxDepth, reps);
 	run_ereal<2, 4, 8, 12, 16>(reps);
-	run_arithmetic(maxDepth, reps);
+	run_arithmetic<double>("double", maxDepth, reps);
+	run_arithmetic<float>("float", maxDepth, reps);
+	run_arithmetic<bfloat16>("bfloat16", maxDepth, reps);
 	run_arithmetic_ereal<2, 4, 8, 12, 16>(reps);
 
 	summary();
