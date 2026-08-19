@@ -2587,6 +2587,43 @@ protected:
 	}
 
 public:
+	// Map an IEEE-754 special -- exponent all ones -- onto this cfloat's encoding.
+	// Returns true when rhs was a special and *this has been set, false when the
+	// caller should carry on with the numeric path.
+	//
+	// The classification is IEEE-754's: exponent all ones with a ZERO fraction is
+	// infinity, and with ANY non-zero fraction is a NaN, whatever the payload.  The
+	// code this replaced instead compared the fraction for equality against three
+	// specific payloads -- the platform's canonical quiet and signalling patterns
+	// and their union -- so every other NaN payload, including the canonical 0x1,
+	// fell through to the numeric path and was projected to infinity.  A NaN
+	// silently becoming +-inf is worse than a failed conversion: it is a plausible
+	// value that survives arithmetic and round-trips.  Issue #1303.
+	//
+	// Which of the two NaN kinds is decided by the fraction's MSB, the quiet bit.
+	// ieee754_parameter's qnanmask is the platform's own canonical quiet NaN, so
+	// masking it to the fraction field names that bit without hard-coding a width.
+	//
+	// The payload beyond the quiet bit is NOT carried across.  It cannot be in
+	// general -- a narrowing conversion has nowhere to put 52 bits of diagnostic in
+	// a 10-bit fraction -- and attempting it is what produced this defect, since a
+	// truncated payload can land on the neighbouring infinity encoding.  cfloat's
+	// inf encoding is not IEEE's either, so specials are remapped on every path,
+	// including the same-width ones where the finite values copy across verbatim.
+	template<typename Real>
+	CONSTEXPRESSION bool convert_ieee754_special(bool s, uint64_t rawExponent, uint64_t rawFraction) noexcept {
+		if (rawExponent != ieee754_parameter<Real>::eallset) return false;
+		if (rawFraction == 0ull) {          // +-inf
+			setinf(s);
+			return true;
+		}
+		constexpr uint64_t quietbit = ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask;
+		// a cfloat encodes a signalling NaN with sign = 1 and a quiet NaN with
+		// sign = 0, so the source sign is deliberately not propagated here
+		setnan((rawFraction & quietbit) != 0ull ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING);
+		return true;
+	}
+
 	template<typename Real>
 	CONSTEXPRESSION cfloat& convert_ieee754(Real rhs) noexcept {
 		if constexpr (nbits == 32 && es == 8 && sizeof(Real) == 4) {
@@ -2600,32 +2637,8 @@ public:
 			uint64_t rawFraction{ 0 };
 			uint64_t bits{ 0 };
 			extractFields(rhs, s, rawExponent, rawFraction, bits);
-			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
-				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
-					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
-					// 1.11111111.00000000.......00000001 signalling nan
-					// 0.11111111.00000000000000000000001 signalling nan
-					// MSVC
-					// 1.11111111.10000000.......00000001 signalling nan
-					// 0.11111111.10000000.......00000001 signalling nan
-					setnan(NAN_TYPE_SIGNALLING);
-					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
-					return *this;
-				}
-				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
-					// 1.11111111.10000000.......00000000 quiet nan
-					// 0.11111111.10000000.......00000000 quiet nan
-					setnan(NAN_TYPE_QUIET);
-					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
-					return *this;
-				}
-				if (rawFraction == 0ull) {
-					// 1.11111111.0000000.......000000000 -inf
-					// 0.11111111.0000000.......000000000 +inf
-					setinf(s);
-					return *this;
-				}
-			}
+			// nan and inf need to be remapped; see convert_ieee754_special()
+			if (convert_ieee754_special<Real>(s, rawExponent, rawFraction)) return *this;
 			uint64_t raw{ s ? 1ull : 0ull };
 			raw <<= 31;
 			raw |= (rawExponent << fbits);
@@ -2640,32 +2653,8 @@ public:
 			uint64_t rawFraction{ 0 };
 			uint64_t bits{ 0 };
 			extractFields(rhs, s, rawExponent, rawFraction, bits);
-			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
-				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
-					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
-					// 1.11111111.00000000.......00000001 signalling nan
-					// 0.11111111.00000000000000000000001 signalling nan
-					// MSVC
-					// 1.11111111.10000000.......00000001 signalling nan
-					// 0.11111111.10000000.......00000001 signalling nan
-					setnan(NAN_TYPE_SIGNALLING);
-					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
-					return *this;
-				}
-				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
-					// 1.11111111.10000000.......00000000 quiet nan
-					// 0.11111111.10000000.......00000000 quiet nan
-					setnan(NAN_TYPE_QUIET);
-					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
-					return *this;
-				}
-				if (rawFraction == 0ull) {
-					// 1.11111111.0000000.......000000000 -inf
-					// 0.11111111.0000000.......000000000 +inf
-					setinf(s);
-					return *this;
-				}
-			}
+			// nan and inf need to be remapped; see convert_ieee754_special()
+			if (convert_ieee754_special<Real>(s, rawExponent, rawFraction)) return *this;
 			// normal and subnormal handling
 			uint64_t raw{ s ? 1ull : 0ull };
 			raw <<= 63;
@@ -2683,32 +2672,8 @@ public:
 			uint64_t bits{ 0 };
 			extractFields(rhs, s, rawExponent, rawFraction, bits);
 			// special case handling
-			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
-				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
-					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
-					// 1.11111111.00000000.......00000001 signalling nan
-					// 0.11111111.00000000000000000000001 signalling nan
-					// MSVC
-					// 1.11111111.10000000.......00000001 signalling nan
-					// 0.11111111.10000000.......00000001 signalling nan
-					setnan(NAN_TYPE_SIGNALLING);
-					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
-					return *this;
-				}
-				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
-					// 1.11111111.10000000.......00000000 quiet nan
-					// 0.11111111.10000000.......00000000 quiet nan
-					setnan(NAN_TYPE_QUIET);
-					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
-					return *this;
-				}
-				if (rawFraction == 0ull) {
-					// 1.11111111.0000000.......000000000 -inf
-					// 0.11111111.0000000.......000000000 +inf
-					setinf(s);
-					return *this;
-				}
-			}
+			// nan and inf need to be remapped; see convert_ieee754_special()
+			if (convert_ieee754_special<Real>(s, rawExponent, rawFraction)) return *this;
 			if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
 				setbit(nbits - 1ull, s);
 				return *this;
