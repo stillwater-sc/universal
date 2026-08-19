@@ -32,6 +32,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <string>
 
@@ -124,6 +125,59 @@ namespace {
 		row("orient2d, collinear + ulp grid", d, q, e);
 	}
 
+	// elreal's from_native refuses subnormal inputs by contract. Stepping ulps from
+	// a coordinate that is exactly zero lands in the subnormal range, which silently
+	// produced non-normalised blocks (and wrong signs) in a release build and an
+	// assertion failure in a debug one. Every generated coordinate is checked.
+	bool usable_coordinate(double v) { return v == 0.0 || std::isnormal(v); }
+
+	// step a coordinate by n true ulps. Adding a fixed 2^-52 does not do this: it
+	// sits below the ulp of any coordinate of magnitude 2 or more, so most of the
+	// grid collapses back onto the unperturbed point and the case count is a
+	// fiction. nextafter steps with the coordinate's own magnitude.
+	double ulps_away(double v, int n) {
+		const double dir = n < 0 ? -std::numeric_limits<double>::infinity()
+		                         :  std::numeric_limits<double>::infinity();
+		for (int k = 0; k < (n < 0 ? -n : n); ++k) v = std::nextafter(v, dir);
+		return v;
+	}
+
+	// ---- incircle: exactly cocircular configurations --------------------------
+	// Four points at the cardinal positions of a circle whose centre and radius are
+	// exactly representable are exactly cocircular, so the determinant is exactly
+	// zero. That is the degenerate case, and it is the one that catches a sign
+	// extraction which cannot say "zero" -- the incircle grid below never produces
+	// one, because exact cocircularity of four arbitrary rounded points is a
+	// measure-zero event.
+	void incircle_exact_degeneracies() {
+		tally d, q, e;
+		int skipped = 0;
+		for (int k = -3; k <= 6; ++k) {
+			const double r = std::ldexp(1.0, k);
+			for (double ox : { 0.0, 1.0, -8.0 }) {
+				for (double oy : { 0.0, 4.0 }) {
+					const double ax = ox + r, ay = oy;
+					const double bx = ox, by = oy + r;
+					const double cx = ox - r, cy = oy;
+					// the fourth cardinal point (exactly cocircular) and ulp neighbours
+					for (int n : { 0, -2, -1, 1, 2 }) {
+						const double dx = ox, dyv = ulps_away(oy - r, n);
+						if (!usable_coordinate(dyv)) { ++skipped; continue; }
+						int se = sgn_exact(incircle_exact(ax, ay, bx, by, cx, cy, dx, dyv));
+						++d.total; ++q.total; ++e.total;
+						if (se == 0) { ++d.degenerate; ++q.degenerate; ++e.degenerate; }
+						if (sgn_of(incircle_expr<double>(ax, ay, bx, by, cx, cy, dx, dyv)) != se) ++d.wrong;
+						if (sgn_of(incircle_expr<qd>(ax, ay, bx, by, cx, cy, dx, dyv)) != se) ++q.wrong;
+						if (sgn_of(incircle_expr<elreal<double>>(ax, ay, bx, by, cx, cy, dx, dyv)) != se) ++e.wrong;
+					}
+				}
+			}
+		}
+		row("incircle, exactly cocircular +/- ulps", d, q, e);
+		if (skipped) std::cout << "    (" << skipped << " perturbations skipped: stepping ulps from an exactly-zero"
+		                       << " coordinate lands in the subnormal range)\n";
+	}
+
 	// ---- incircle on near-cocircular full-mantissa points ---------------------
 	// Points placed on a random circle and rounded to double: near-cocircular to
 	// within an ulp, with every coordinate carrying a full 53-bit mantissa, which
@@ -133,7 +187,6 @@ namespace {
 		std::mt19937_64 rng(0x1186);
 		auto m01 = [&] { return static_cast<double>(rng() >> 11) * std::ldexp(1.0, -53); };
 		auto rnd = [&](double lo, double hi) { return lo + (hi - lo) * m01(); };
-		const double u = std::ldexp(1.0, -52);
 		for (int t = 0; t < trials; ++t) {
 			double ox = rnd(-4, 4), oy = rnd(-4, 4), r = rnd(0.5, 4);
 			auto on_circle = [&](double th, double& X, double& Y) { X = ox + r * std::cos(th); Y = oy + r * std::sin(th); };
@@ -144,7 +197,8 @@ namespace {
 			on_circle(rnd(5.5, 6.2), dx0, dy0);
 			for (int i = -half; i < half; ++i) {
 				for (int j = -half; j < half; ++j) {
-					double dx = dx0 + i * u, dyv = dy0 + j * u;
+					double dx = ulps_away(dx0, i), dyv = ulps_away(dy0, j);
+					if (!usable_coordinate(dx) || !usable_coordinate(dyv)) continue;
 					int se = sgn_exact(incircle_exact(ax, ay, bx, by, cx, cy, dx, dyv));
 					++d.total; ++q.total; ++e.total;
 					if (se == 0) { ++d.degenerate; ++q.degenerate; ++e.degenerate; }
@@ -174,6 +228,7 @@ try {
 	          << std::setw(9) << "double" << std::setw(7) << "qd" << std::setw(9) << "elreal" << '\n';
 
 	orient2d_kettner(128);
+	incircle_exact_degeneracies();
 	incircle_cocircular(64, 4);
 
 	std::cout << "\nReading the table:\n"

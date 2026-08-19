@@ -256,10 +256,18 @@ Each predicate is written once over a generic `Real` and instantiated for
 `double`, `qd` and `elreal<double>`; the reference is the same expression in
 exact dyadic rationals.
 
-| workload | `double` | `qd` | `elreal` | cases |
-|----------|----------|------|----------|-------|
-| orient2d, collinear + ulp grid | **5474** | 0 | 0 | 16384 (128 exactly collinear) |
-| incircle, near-cocircular | **629** | 0 | 0 | 4096 |
+| workload | `double` | `qd` | `elreal` | cases | exactly degenerate |
+|----------|----------|------|----------|-------|--------------------|
+| orient2d, collinear + ulp grid | **5474** | 0 | 0 | 16384 | 128 |
+| incircle, exactly cocircular +/- ulps | **105** | 0 | 0 | 288 | 60 |
+| incircle, near-cocircular | **486** | 0 | 0 | 4096 | 0 |
+
+The degenerate column is worth its own row rather than a footnote. Exact
+cocircularity of four independently rounded points is a measure-zero event, so
+the random near-cocircular sampling never produces one -- it cannot exercise the
+case where a predicate has to answer *zero*. The middle workload is built to:
+four points at the cardinal positions of a circle whose centre and radius are
+exactly representable are exactly cocircular by construction.
 
 `double` fails on a third of the orient2d grid and a sixth of the incircle
 cases. These are not exotic inputs -- they are ordinary coordinates near a
@@ -278,7 +286,7 @@ it has no budget to exceed. The guarantee survives a change of predicate, of
 scaling, or of input distribution without anyone re-deriving a bound -- which is
 the property a predicate library actually wants.
 
-### Two traps, for anyone using elreal this way
+### Three traps, for anyone using elreal this way
 
 Both cost real debugging time while this section was written, and both are now
 guarded in `elastic/elreal/oracle/sweep.cpp`.
@@ -286,6 +294,15 @@ guarded in `elastic/elreal/oracle/sweep.cpp`.
 **`operator*` is depth-bounded.** At the default precision the determinant is
 truncated and near-degenerate signs come out wrong. Raise the depth with
 `elreal_precision_guard` for exact work.
+
+**Do not step ulps from a coordinate that is exactly zero.** `from_native`
+refuses subnormal inputs by contract, and `nextafter(0.0, ...)` lands squarely in
+the subnormal range. In a release build this silently produced non-normalised
+blocks and 12 wrong signs; in a debug build it aborted on the assertion. The
+generator now checks every coordinate and reports what it skipped, because a
+workload that quietly drops cases is worse than one that fails loudly. The
+failure was in the test data, not in elreal -- the contract is documented at
+`from_native`.
 
 **Take the sign from the comparison operators, not from `sign()` or the raw
 block stream.** `sign()` answers +1 for zero, and a cancelling sum stays lazily
