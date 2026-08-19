@@ -125,14 +125,22 @@ precision, a narrower host reaches its (lower) ceiling far faster.
 
 Dot product of two length-N ZBCL vectors at multiply depth 32.
 
-| Host   | N=16       | N=64       | N=256      |
-|--------|------------|------------|------------|
-| float  | ~20 us/dot | ~126 us/dot| ~548 us/dot|
-| double | ~8.7 us/dot| ~36 us/dot | ~140 us/dot|
+| type            | N=16        | N=64        | N=256       |
+|-----------------|-------------|-------------|-------------|
+| `elreal<float>` | ~20 us/dot  | ~125 us/dot | ~548 us/dot |
+| `elreal<double>`| ~9 us/dot   | ~38 us/dot  | ~146 us/dot |
+| `dd`            | ~0.53 us/dot| ~2.0 us/dot | ~8.2 us/dot |
+| `qd`            | ~2.5 us/dot | ~8.5 us/dot | ~34 us/dot  |
 
-`double` is ~2-4x faster per dot than `float` here despite the wider datapath,
-because the `float` host needs more blocks to represent each product, so the
-online multiply/add churn more limbs.
+The fixed-size rows use the same harness, operand generation and N as the ZBCL
+rows, so the columns are comparable. They are one to two orders of magnitude
+faster: at N=256, `dd` is ~67x faster than `elreal<float>` and `qd` ~16x. That
+is the cost of laziness and unbounded refinement, and it is what section H's
+recommendation is weighing against.
+
+Within `elreal`, `double` is ~2-4x faster per dot than `float` despite the wider
+datapath, because the `float` host needs more blocks to represent each product,
+so the online multiply/add churn more limbs.
 
 ## E. Precision ceiling: elreal vs qd
 
@@ -148,7 +156,7 @@ online multiply/add churn more limbs.
 of digits with more depth. That unbounded refinement -- at the cost of lazy,
 per-block latency -- is the whole point of the type.
 
-## Recommendation (first cut)
+## Recommendation (first cut, superseded by section H)
 
 - **Want unbounded / very-high precision (100+ digits):** the only viable block
   shape today is **`double`**. It is also the fastest for multi-block work.
@@ -312,6 +320,72 @@ points -- precisely the inputs a predicate exists to detect -- while being
 correct on all 16256 non-degenerate ones. `elreal_cmp`, which the comparison
 operators route through, skips zero blocks and is correct everywhere.
 
+## H. The recommendation matrix (partial -- see the caveat)
+
+Sections B and C answer "how many blocks" and "how long to the first block"
+separately. Joining them gives what a caller actually asks: **for X digits, at
+what latency, on which type?** Wall time to produce pi at a given precision:
+
+| target | `elreal<float>` | `elreal<bfloat16>` | `elreal<double>` |
+|--------|-----------------|--------------------|------------------|
+| 16 digits  | 5.2 ms  | 19.4 ms | 47.7 ms |
+| 32 digits  | 5.4 ms  | 31.1 ms | 47.7 ms |
+| 64 digits  | unreachable | unreachable | 166 ms |
+| 100 digits | unreachable | unreachable | 486 ms |
+| 200 digits | unreachable | unreachable | 790 ms |
+| 300 digits | unreachable | unreachable | 793 ms |
+
+And the fixed-size types, which carry pi as compile-time constants: `double` 16
+digits, `dd` 33 digits, `qd` 64 digits.
+
+### The matrix
+
+| if you need | use | why |
+|-------------|-----|-----|
+| up to 16 digits | `double` | free; nothing here is competitive with hardware |
+| up to 33 digits | `dd` | a constant, and ~2x double's arithmetic cost |
+| up to 64 digits | `qd` | a constant; also exact for the geometric predicates in G |
+| 100+ digits | `elreal<double>` | the only option that gets there at all |
+| unbounded / unknown in advance | `elreal<double>` | no budget to exceed (F2, G) |
+| **narrow `elreal` hosts** | **nothing** | see below |
+
+### Narrow hosts are dominated, not merely limited
+
+The MVP concluded that narrow block shapes "are not yet a good precision trade".
+The latency data sharpens that into something stronger.
+
+Narrow hosts *are* faster than `double` inside `elreal`: at 16 digits
+`elreal<float>` beats `elreal<double>` by ~9x, exactly as a cheaper per-block
+EFT datapath predicts. But the precision range where they win -- at most 37
+digits for `float`, 33 for `bfloat16` -- is a range where **`dd` and `qd` already
+deliver the answer as a compile-time constant**, and beat them on arithmetic
+throughput by one to two orders of magnitude (section D, same harness: at N=256
+`dd` is ~67x faster than `elreal<float>`, `qd` ~16x).
+
+So there is no precision target for which a narrow `elreal` host is the right
+answer. Not "not yet competitive at high precision" -- dominated across its
+entire reachable range, by types that already exist in this library.
+
+That is a useful result for the silicon question this study exists to inform: a
+cheap narrow-width EFT datapath does not pay for itself through block count
+alone. It would have to come with something else -- parallelism across blocks, or
+a series evaluation that does not degrade in the narrow host.
+
+### Caveat: this matrix is for the implementation as it stands
+
+The rows above measure today's code, where the transcendental generators
+evaluate their terms *in the host type*. That is precisely what caps the narrow
+hosts, and it is what [#1051] proposes to change by evaluating the series on a
+wider intermediate host and storing narrow. Until that lands (and the fp16
+division floor-lift with it, plus the characterisation tooling in [#1176]), the
+counterfactual row -- what a narrow host would reach with a non-degrading series
+-- cannot be measured, only guessed at.
+
+So this is the **decision matrix for the library as it is**, which is the
+question a user asks. The **design matrix for the block shape**, which is the
+question silicon asks, still needs those three pieces. [#1188] tracks the
+remainder.
+
 ## Re-validation
 
 The study is a measurement, so it goes stale when the code under it moves. It
@@ -345,10 +419,10 @@ block, which is the point table A exists to make.
 
 - ~~#1186 -- geometric predicate suite~~ -- **done**, section G above.
 - ~~#1187 -- cancellation-stressed sums~~ -- **done**, section F above.
-- **#1188** -- full recommendation matrix ("X precision at Y latency -> pick
-  Z"). Still blocked, and blocked on the physics rather than on effort: the
-  matrix cannot be filled in while `half` does not converge and `float` /
-  `bfloat16` saturate near 35 digits. It needs the fp16 division floor-lift and
-  extended-precision intermediate series evaluation (#1051), plus the
-  characterisation tooling in #1176.
+- **#1188** -- the block-shape *design* matrix. The user-facing decision matrix
+  is section H above; what remains is the counterfactual it cannot answer -- what
+  a narrow host reaches once its series stops degrading. Blocked on the physics
+  rather than on effort: the fp16 division floor-lift, extended-precision
+  intermediate series evaluation (#1051), and the characterisation tooling
+  (#1176).
 - SIMD/FMA acceleration is explicitly a possible Phase 10, out of scope here.

@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <iostream>
 #include <iomanip>
+#include <utility>
 #include <vector>
 #include <string>
 #include <string_view>
@@ -39,6 +40,7 @@
 #include <universal/number/cfloat/cfloat.hpp>          // half = cfloat<16,5,...>
 #include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/number/elreal/elreal.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/number/qd/qd.hpp>
 #include <universal/verification/elreal_reference_digits.hpp>   // zbcl_to_dyadic, agreed_decimal_digits
 #include <math/constants/reference_constants.hpp>               // s_pi, s_e, s_sqrt2
@@ -65,6 +67,8 @@ namespace {
 	// a coarse depth ladder keeps the sweep O(ladder) rather than O(maxdepth)
 	const std::size_t kDepthLadder[] = { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512 };
 	const int kDigitTargets[] = { 50, 100, 200, 320 };
+	// the recommendation matrix's rows: precision a caller might actually ask for
+	const int kMatrixTargets[] = { 16, 32, 64, 100, 200, 300 };
 
 	// ---- A. memory footprint per block shape ---------------------------------
 	template<typename FpType>
@@ -145,6 +149,30 @@ namespace {
 		std::cout << "  " << std::left << std::setw(10) << host << "  N = " << std::right << std::setw(4) << N
 		          << "  " << std::setw(10) << std::fixed << std::setprecision(2) << (secs * 1e6) << " us/dot"
 		          << "  (" << std::setprecision(0) << dotsPerSec << " dots/s)\n";
+	}
+
+	// dot-product throughput for a fixed-size type, same shape as section D's ZBCL
+	// version so the two are comparable: same N, same operand generation, same
+	// timing harness. Without this the claim that dd/qd beat the narrow elreal
+	// hosts on throughput would be an assertion rather than a measurement.
+	template<typename Real>
+	void fixed_dot_throughput(const char* name, std::size_t N) {
+		std::mt19937_64 rng(0xD07 + N);
+		std::vector<Real> a, b;
+		a.reserve(N); b.reserve(N);
+		for (std::size_t i = 0; i < N; ++i) {
+			double x = static_cast<double>(static_cast<std::int64_t>(rng() % 20000) - 10000) / 128.0;
+			double y = static_cast<double>(static_cast<std::int64_t>(rng() % 20000) - 10000) / 128.0;
+			a.push_back(Real(x));
+			b.push_back(Real(y));
+		}
+		double secs = time_seconds([&] {
+			Real acc(0.0);
+			for (std::size_t i = 0; i < N; ++i) acc += a[i] * b[i];
+			volatile double sink = double(acc); (void)sink;
+		}, 5);
+		std::cout << "  " << std::left << std::setw(10) << name << "  N = " << std::right << std::setw(4) << N
+		          << "  " << std::fixed << std::setprecision(3) << std::setw(10) << (secs * 1e6) << " us/dot\n";
 	}
 
 	// ---- E. precision ceiling: elreal vs qd ----------------------------------
@@ -299,6 +327,62 @@ namespace {
 		std::cout << "  (320 is the reference cap, i.e. exact as far as the oracle can see)\n";
 	}
 
+	// ---- H. precision target -> latency (#1188, partial) ---------------------
+	// The block-shape recommendation asks "for X precision at Y latency, pick Z".
+	// Sections B and C answer that in two halves -- blocks-to-precision and
+	// time-to-first-block -- and this joins them: the wall time to actually
+	// produce pi at a given number of correct digits, per host.
+	//
+	// One pass over the depth ladder per host, reading every target off the
+	// resulting curve, rather than a search per target. A single timing rep: the
+	// useful signal here spans two orders of magnitude between hosts, and the
+	// deep-double cells cost most of a second each.
+	template<typename FpType>
+	void precision_latency_curve(const char* host) {
+		const std::size_t ladder[] = { 2, 4, 6, 8, 12, 16, 20 };
+		std::vector<std::pair<int, double>> pts;   // (digits reached, seconds)
+		for (std::size_t d : ladder) {
+			int digits = 0;
+			try { digits = agreed_decimal_digits(pi_zbcl<FpType>(d), s_pi); }
+			catch (const std::exception&) { break; }
+			double secs = 0.0;
+			try {
+				secs = time_seconds([&] {
+					ZBCL<FpType> z = pi_zbcl<FpType>(d);
+					volatile std::size_t n = z.take(1024).size(); (void)n;
+				}, 1);
+			}
+			catch (const std::exception&) { break; }   // a host that overruns its range
+			pts.push_back({ digits, secs });
+			if (digits >= 320) break;
+		}
+		for (int target : kMatrixTargets) {
+			const auto it = std::find_if(pts.begin(), pts.end(),
+				[&](const auto& p) { return p.first >= target; });
+			std::cout << "  " << std::left << std::setw(11) << host
+			          << std::right << std::setw(6) << target << "   ";
+			if (it == pts.end()) std::cout << "     unreachable\n";
+			else std::cout << std::fixed << std::setprecision(1) << std::setw(12) << (it->second * 1e6) << " us\n";
+		}
+	}
+
+	void precision_latency_matrix() {
+		std::cout << "\nH. wall time to produce pi at a given precision, per host\n";
+		std::cout << "  host        digits           time\n";
+		precision_latency_curve<float>("float");
+		precision_latency_curve<bfloat16>("bfloat16");
+		precision_latency_curve<double>("double");
+
+		// the fixed-size alternatives, for the same targets
+		dyadic ddpi = dyadic::from_double(dd_pi[0]) + dyadic::from_double(dd_pi[1]);
+		dyadic qdpi;
+		for (int i = 0; i < 4; ++i) qdpi = qdpi + dyadic::from_double(qd_pi[i]);
+		std::cout << "  fixed-size alternatives, as compile-time constants:\n"
+		          << "    double " << agreed_decimal_digits(dyadic::from_double(3.141592653589793), s_pi)
+		          << " digits,  dd " << agreed_decimal_digits(ddpi, s_pi)
+		          << " digits,  qd " << agreed_decimal_digits(qdpi, s_pi) << " digits\n";
+	}
+
 }  // anonymous namespace
 
 int main()
@@ -340,11 +424,15 @@ try {
 	std::cout << "\nD. stream-wise ZBCL dot-product throughput (depth 32)\n";
 	for (std::size_t N : { std::size_t(16), std::size_t(64), std::size_t(256) }) dot_throughput<float> ("float",  N, 32);
 	for (std::size_t N : { std::size_t(16), std::size_t(64), std::size_t(256) }) dot_throughput<double>("double", N, 32);
+	// the fixed-size types, same harness, for the comparison section H draws on
+	for (std::size_t N : { std::size_t(16), std::size_t(64), std::size_t(256) }) fixed_dot_throughput<dd>("dd", N);
+	for (std::size_t N : { std::size_t(16), std::size_t(64), std::size_t(256) }) fixed_dot_throughput<qd>("qd", N);
 
 	precision_ceiling();
 
 	cancellation_taylor();
 	cancellation_dot();
+	precision_latency_matrix();
 
 	std::cout << "\ndone.\n";
 	return EXIT_SUCCESS;
