@@ -125,14 +125,22 @@ precision, a narrower host reaches its (lower) ceiling far faster.
 
 Dot product of two length-N ZBCL vectors at multiply depth 32.
 
-| Host   | N=16       | N=64       | N=256      |
-|--------|------------|------------|------------|
-| float  | ~20 us/dot | ~126 us/dot| ~548 us/dot|
-| double | ~8.7 us/dot| ~36 us/dot | ~140 us/dot|
+| type            | N=16        | N=64        | N=256       |
+|-----------------|-------------|-------------|-------------|
+| `elreal<float>` | ~20 us/dot  | ~125 us/dot | ~548 us/dot |
+| `elreal<double>`| ~9 us/dot   | ~38 us/dot  | ~146 us/dot |
+| `dd`            | ~0.53 us/dot| ~2.0 us/dot | ~8.2 us/dot |
+| `qd`            | ~2.5 us/dot | ~8.5 us/dot | ~34 us/dot  |
 
-`double` is ~2-4x faster per dot than `float` here despite the wider datapath,
-because the `float` host needs more blocks to represent each product, so the
-online multiply/add churn more limbs.
+The fixed-size rows use the same harness, operand generation and N as the ZBCL
+rows, so the columns are comparable. They are one to two orders of magnitude
+faster: at N=256, `dd` is ~67x faster than `elreal<float>` and `qd` ~16x. That
+is the cost of laziness and unbounded refinement, and it is what section H's
+recommendation is weighing against.
+
+Within `elreal`, `double` is ~2-4x faster per dot than `float` despite the wider
+datapath, because the `float` host needs more blocks to represent each product,
+so the online multiply/add churn more limbs.
 
 ## E. Precision ceiling: elreal vs qd
 
@@ -350,9 +358,9 @@ Narrow hosts *are* faster than `double` inside `elreal`: at 16 digits
 `elreal<float>` beats `elreal<double>` by ~9x, exactly as a cheaper per-block
 EFT datapath predicts. But the precision range where they win -- at most 37
 digits for `float`, 33 for `bfloat16` -- is a range where **`dd` and `qd` already
-deliver the answer as a compile-time constant**, and beat both on arithmetic
-throughput too (section D: `float` is 2-4x slower per dot product than `double`
-because it churns more limbs).
+deliver the answer as a compile-time constant**, and beat them on arithmetic
+throughput by one to two orders of magnitude (section D, same harness: at N=256
+`dd` is ~67x faster than `elreal<float>`, `qd` ~16x).
 
 So there is no precision target for which a narrow `elreal` host is the right
 answer. Not "not yet competitive at high precision" -- dominated across its

@@ -40,6 +40,7 @@
 #include <universal/number/cfloat/cfloat.hpp>          // half = cfloat<16,5,...>
 #include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/number/elreal/elreal.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/number/qd/qd.hpp>
 #include <universal/verification/elreal_reference_digits.hpp>   // zbcl_to_dyadic, agreed_decimal_digits
 #include <math/constants/reference_constants.hpp>               // s_pi, s_e, s_sqrt2
@@ -148,6 +149,30 @@ namespace {
 		std::cout << "  " << std::left << std::setw(10) << host << "  N = " << std::right << std::setw(4) << N
 		          << "  " << std::setw(10) << std::fixed << std::setprecision(2) << (secs * 1e6) << " us/dot"
 		          << "  (" << std::setprecision(0) << dotsPerSec << " dots/s)\n";
+	}
+
+	// dot-product throughput for a fixed-size type, same shape as section D's ZBCL
+	// version so the two are comparable: same N, same operand generation, same
+	// timing harness. Without this the claim that dd/qd beat the narrow elreal
+	// hosts on throughput would be an assertion rather than a measurement.
+	template<typename Real>
+	void fixed_dot_throughput(const char* name, std::size_t N) {
+		std::mt19937_64 rng(0xD07 + N);
+		std::vector<Real> a, b;
+		a.reserve(N); b.reserve(N);
+		for (std::size_t i = 0; i < N; ++i) {
+			double x = static_cast<double>(static_cast<std::int64_t>(rng() % 20000) - 10000) / 128.0;
+			double y = static_cast<double>(static_cast<std::int64_t>(rng() % 20000) - 10000) / 128.0;
+			a.push_back(Real(x));
+			b.push_back(Real(y));
+		}
+		double secs = time_seconds([&] {
+			Real acc(0.0);
+			for (std::size_t i = 0; i < N; ++i) acc += a[i] * b[i];
+			volatile double sink = double(acc); (void)sink;
+		}, 5);
+		std::cout << "  " << std::left << std::setw(10) << name << "  N = " << std::right << std::setw(4) << N
+		          << "  " << std::fixed << std::setprecision(3) << std::setw(10) << (secs * 1e6) << " us/dot\n";
 	}
 
 	// ---- E. precision ceiling: elreal vs qd ----------------------------------
@@ -320,10 +345,14 @@ namespace {
 			int digits = 0;
 			try { digits = agreed_decimal_digits(pi_zbcl<FpType>(d), s_pi); }
 			catch (const std::exception&) { break; }
-			double secs = time_seconds([&] {
-				ZBCL<FpType> z = pi_zbcl<FpType>(d);
-				volatile std::size_t n = z.take(1024).size(); (void)n;
-			}, 1);
+			double secs = 0.0;
+			try {
+				secs = time_seconds([&] {
+					ZBCL<FpType> z = pi_zbcl<FpType>(d);
+					volatile std::size_t n = z.take(1024).size(); (void)n;
+				}, 1);
+			}
+			catch (const std::exception&) { break; }   // a host that overruns its range
 			pts.push_back({ digits, secs });
 			if (digits >= 320) break;
 		}
@@ -395,6 +424,9 @@ try {
 	std::cout << "\nD. stream-wise ZBCL dot-product throughput (depth 32)\n";
 	for (std::size_t N : { std::size_t(16), std::size_t(64), std::size_t(256) }) dot_throughput<float> ("float",  N, 32);
 	for (std::size_t N : { std::size_t(16), std::size_t(64), std::size_t(256) }) dot_throughput<double>("double", N, 32);
+	// the fixed-size types, same harness, for the comparison section H draws on
+	for (std::size_t N : { std::size_t(16), std::size_t(64), std::size_t(256) }) fixed_dot_throughput<dd>("dd", N);
+	for (std::size_t N : { std::size_t(16), std::size_t(64), std::size_t(256) }) fixed_dot_throughput<qd>("qd", N);
 
 	precision_ceiling();
 
