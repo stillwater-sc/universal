@@ -28,6 +28,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <cstdint>
 #include <vector>
 #include <cstdint>
 #include <iostream>
@@ -126,22 +127,47 @@ namespace {
 		return terms;
 	}
 
+	// A generated term is only usable if it survives binary64 intact: neither factor
+	// flushed to zero, the product finite and non-zero, and the 26 x 26 -> 52-bit
+	// integer product exact. Checked with integers rather than an fma residual,
+	// because a platform with a sloppy software fma would false-positive.
+	bool representable_term(double x, double y) {
+		if (x == 0.0 || y == 0.0) return false;
+		double p = x * y;
+		if (!std::isfinite(p) || p == 0.0) return false;
+		int ex = 0, ey = 0;
+		double mx = std::frexp(x, &ex), my = std::frexp(y, &ey);
+		std::uint64_t ix = static_cast<std::uint64_t>(std::ldexp(std::fabs(mx), 26));
+		std::uint64_t iy = static_cast<std::uint64_t>(std::ldexp(std::fabs(my), 26));
+		return (ix * iy) < (1ull << 53);
+	}
+
 	// an ill-conditioned dot product whose exact answer is spread over `chunks`
 	// 52-bit pieces separated by 100 bits, plus large exactly-cancelling pairs.
 	// Both factors carry 26 bits, so every product is exact in double and the only
 	// thing under test is the accumulation.
-	void gen_illconditioned_dot(int chunks, std::vector<double>& X, std::vector<double>& Y, dyadic& D) {
+	//
+	// The answer is centred on 2^0. Anchoring the top chunk at 2^0 instead would put
+	// the bottom one at 2^(-100*(chunks-1)), and at 12 chunks that is 2^-1100 --
+	// below the smallest subnormal, so the chunk would quietly round to zero and the
+	// test would be scoring a narrower answer than it claims. Returns the number of
+	// terms that did not survive binary64, which the caller treats as a failure.
+	int gen_illconditioned_dot(int chunks, std::vector<double>& X, std::vector<double>& Y, dyadic& D) {
 		std::mt19937_64 rng(0xBEEF + static_cast<unsigned>(chunks));
 		X.clear(); Y.clear(); D = dyadic();
+		int unrepresentable = 0;
+		const int hi = 50 * (chunks - 1);
 		for (int j = 0; j < chunks; ++j) {
-			double xv = std::ldexp(static_cast<double>((rng() & 0x3FFFFFFull) | (1ull << 25)), -100 * j - 25);
+			double xv = std::ldexp(static_cast<double>((rng() & 0x3FFFFFFull) | (1ull << 25)), hi - 100 * j - 25);
 			double yv = static_cast<double>((rng() & 0x3FFFFFFull) | (1ull << 25));
+			if (!representable_term(xv, yv)) ++unrepresentable;
 			X.push_back(xv); Y.push_back(yv);
 			D = D + dyadic::from_double(xv) * dyadic::from_double(yv);
 		}
 		for (int j = 0; j < 12; ++j) {
-			double b  = std::ldexp(static_cast<double>((rng() % 4000) + 1), 500);
+			double b  = std::ldexp(static_cast<double>((rng() % 4000) + 1), 850);
 			double yb = static_cast<double>((rng() % 4000) + 1);
+			if (!representable_term(b, yb)) ++unrepresentable;
 			X.push_back(b);  Y.push_back(yb);
 			X.push_back(-b); Y.push_back(yb);
 		}
@@ -149,6 +175,7 @@ namespace {
 			std::size_t k = static_cast<std::size_t>(rng() % i);
 			std::swap(X[i - 1], X[k]); std::swap(Y[i - 1], Y[k]);
 		}
+		return unrepresentable;
 	}
 
 	// double host only: the workload terms are doubles, so from_native<float> would
@@ -177,7 +204,14 @@ namespace {
 		for (int chunks : { 2, 6, 12 }) {
 			std::vector<double> X, Y;
 			dyadic D;
-			gen_illconditioned_dot(chunks, X, Y, D);
+			int unrepresentable = gen_illconditioned_dot(chunks, X, Y, D);
+			if (unrepresentable != 0) {
+				// the workload did not survive binary64, so whatever the accumulators
+				// agree on afterwards is not the question this test is asking
+				if (reportTestCases) std::cout << "    FAIL dot-generator " << host << " chunks=" << chunks
+				                               << " has " << unrepresentable << " unrepresentable terms\n";
+				++fails;
+			}
 			ZBCL<FpType> dz = from_native<FpType>(0.0);
 			for (std::size_t i = 0; i < X.size(); ++i)
 				dz = add(dz, mul(from_native<FpType>(X[i]), from_native<FpType>(Y[i]), 8));

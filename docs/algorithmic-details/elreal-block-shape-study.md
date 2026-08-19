@@ -205,11 +205,18 @@ series, and so never enters the cancellation regime at all. It agrees with
 
 Here the answer itself is made to exceed what a fixed-limb type can represent.
 The exact dot is spread over `chunks` pieces of 52 bits each, separated by 100
-bits, and large `+P`/`-P` pairs at `2^500` supply the cancellation. The vectors
-are shuffled -- adjacent cancelling pairs would cancel with no rounding at all,
-which is the opposite of the intended stress. Both factors carry 26 bits, so
-every product is exact in `double` and product rounding is not part of what is
-measured.
+bits, and large `+P`/`-P` pairs well above the answer supply the cancellation.
+The vectors are shuffled -- adjacent cancelling pairs would cancel with no
+rounding at all, which is the opposite of the intended stress. Both factors carry
+26 bits, so every product is exact in `double` and product rounding is not part
+of what is measured.
+
+The answer is centred on `2^0` rather than anchored at the top, because
+anchoring puts the bottom chunk at `2^(-100*(chunks-1))`, which at 12 chunks is
+`2^-1100` -- below the smallest subnormal. That chunk rounds to zero, and the row
+then reports a span it does not have. Both generators now check every term for
+survival in binary64 and the oracle fails outright if one does not, so the
+"answer spans" column cannot drift away from the answer actually being measured.
 
 | chunks | answer spans | `double` | `qd` | `elreal` |
 |--------|--------------|----------|------|----------|
