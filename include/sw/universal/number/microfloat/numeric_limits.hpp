@@ -41,7 +41,12 @@ public:
 		return Microfloat(sw::universal::SpecificValue::minpos);
 	}
 	static constexpr Microfloat infinity() {
-		return Microfloat(sw::universal::SpecificValue::infpos);
+		// has_infinity == false requires infinity() to return T(): the format
+		// has no infinity to hand back, and setinf() answers with whatever the
+		// overflow policy says (maxpos, or NaN for the OCP "fn" policy), which
+		// is not what this query means.
+		if constexpr (hasInf) return Microfloat(sw::universal::SpecificValue::infpos);
+		else return Microfloat(sw::universal::SpecificValue::zero);
 	}
 	static constexpr Microfloat quiet_NaN() {
 		return Microfloat(sw::universal::SpecificValue::qnan);

@@ -163,7 +163,7 @@ try {
 	// dynamic range
 	std::cout << "+---------    dynamic range   --------+\n";
 	{
-		std::cout << nvblock_range<e2m1, 16, e4m3>() << '\n';
+		std::cout << nvblock_range<e2m1, 16, e4m3_saturating>() << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

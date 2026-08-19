@@ -38,6 +38,15 @@ class microfloat {
 	static_assert(_es >= 1, "need at least 1 exponent bit");
 
 	// HELPER methods
+
+	// the IEEE-like infinity encoding: all-ones exponent, zero fraction.
+	// Only meaningful when hasInf; setinf() and setoverflow() both reach it.
+	constexpr void set_infinite_encoding(bool sign) noexcept {
+		_bits = exponent_mask;
+		if (sign) _bits |= sign_mask;
+		_bits &= bitmask;
+	}
+
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	constexpr microfloat& convert_signed(SignedInt v) noexcept {
@@ -276,19 +285,53 @@ public:
 		_bits &= bitmask;
 	}
 
-	constexpr void setinf(bool sign = false) noexcept {
-		if constexpr (hasInf) {
-			// e5m2 (IEEE-like): all-ones exponent, zero fraction
-			_bits = exponent_mask;
-			if (sign) _bits |= sign_mask;
-			_bits &= bitmask;
+	// set the NaN encoding, carrying the sign of the source.  Both e4m3 and
+	// e5m2 have signed NaN encodings, and OCP OFP8 requires a NaN produced by
+	// conversion to keep its sign: -NaN must land on 0xFF, not 0x7F.
+	constexpr void setnan(int NaNType, bool sign) noexcept {
+		setnan(NaNType);
+		if constexpr (hasNaN) {
+			if (sign) _bits = static_cast<uint8_t>((_bits | sign_mask) & bitmask);
 		}
-		else if constexpr (isSaturating) {
-			// saturate to maxpos/maxneg
+	}
+
+	// The overflow policy, in one place.  The same decision is needed for a
+	// finite value that rounds past maxpos and for an infinite source in a
+	// format that has no infinity, and the three copies it used to be written
+	// in did not agree (universal#1302):
+	//
+	//   isSaturating  -> maxpos / maxneg
+	//   hasInf        -> +-inf
+	//   hasNaN        -> NaN with the sign preserved.  This is the OCP OFP8
+	//                    E4M3 rule ("fn" = finite, NaN signals overflow), and
+	//                    it is what e4m3fn / JAX / PyTorch / ml_dtypes do.
+	//   neither       -> maxpos / maxneg, the only thing the format can say.
+	//
+	// The last case used to be zero, which turned an overflow into the most
+	// benign value in the format.
+	constexpr void setoverflow(bool sign) noexcept {
+		if constexpr (isSaturating) {
 			if (sign) maxneg(); else maxpos();
 		}
+		else if constexpr (hasInf) {
+			set_infinite_encoding(sign);
+		}
+		else if constexpr (hasNaN) {
+			setnan(NAN_TYPE_QUIET, sign);
+		}
 		else {
-			_bits = 0;
+			if (sign) maxneg(); else maxpos();
+		}
+	}
+
+	constexpr void setinf(bool sign = false) noexcept {
+		if constexpr (hasInf) {
+			set_infinite_encoding(sign);
+		}
+		else {
+			// no infinity in this format: say whatever it can say about a
+			// value beyond maxpos
+			setoverflow(sign);
 		}
 	}
 
@@ -506,38 +549,43 @@ public:
 	//                     plus cx_ldexp for the subnormal divisor
 	// Both paths converge on the same RNE-rounded encoding.
 	constexpr void from_float(float v) noexcept {
-		if (v != v) { // NaN check
+		// The sign is extracted before the NaN test: a NaN source carries a
+		// sign too, and OCP OFP8 requires the converted NaN to keep it.
+		bool s;
+		bool is_nan;
+		bool is_inf;
+		if (std::is_constant_evaluated()) {
+			float_fields ff = extract_float_fields(v);
+			s = ff.sign;
+			is_nan = (ff.rawExp == 0xFF) && (ff.rawFrac != 0u);
+			is_inf = (ff.rawExp == 0xFF) && (ff.rawFrac == 0u);
+		}
+		else {
+			s = std::signbit(v);
+			is_nan = (v != v);
+			is_inf = std::isinf(v);
+		}
+
+		if (is_nan) {
 			if constexpr (hasNaN) {
-				setnan(NAN_TYPE_QUIET);
+				setnan(NAN_TYPE_QUIET, s);
 			}
 			else {
 				setzero();
 			}
 			return;
 		}
-
-		bool s;
-		bool is_inf;
-		if (std::is_constant_evaluated()) {
-			float_fields ff = extract_float_fields(v);
-			s = ff.sign;
-			is_inf = (ff.rawExp == 0xFF) && (ff.rawFrac == 0u);
-		}
-		else {
-			s = std::signbit(v);
-			is_inf = std::isinf(v);
-		}
 		if (s) v = -v;
 
 		if (is_inf) {
+			// An infinite source is not an arithmetic overflow, but where the
+			// format has no infinity the answer is the same question: what can
+			// it say about a value beyond maxpos.
 			if constexpr (hasInf) {
 				setinf(s);
 			}
-			else if constexpr (isSaturating) {
-				if (s) maxneg(); else maxpos();
-			}
 			else {
-				setzero();
+				setoverflow(s);
 			}
 			return;
 		}
@@ -552,31 +600,16 @@ public:
 			return;
 		}
 
-		// Compute the maxpos value for clamping
-		microfloat mp;
-		mp.maxpos();
-		float maxval = mp.to_float();
-
-		if (v >= maxval) {
-			// Check if we need to round to maxpos or to inf
-			if constexpr (hasInf) {
-				// Compute the tie-point between maxpos and inf
-				// For IEEE-like types, values > maxval round to inf or stay at maxval
-				// The tie point is maxval + 0.5 ULP above maxval
-				// For simplicity with these small types: if v > maxval, go to inf
-				if (v > maxval) {
-					setinf(s);
-					return;
-				}
-			}
-			if constexpr (isSaturating) {
-				if (s) maxneg(); else maxpos();
-				return;
-			}
-			// non-saturating without inf: clamp to max
-			if (s) maxneg(); else maxpos();
-			return;
-		}
+		// There is deliberately no pre-clamp against maxpos here.  The rounding
+		// below already decides the top of the range correctly -- it rounds to
+		// nearest-even against the format's exponent range and reports overflow
+		// through biased_exp -- and a pre-clamp can only get that wrong.  The
+		// one that used to sit here answered maxpos for every value above
+		// maxpos, so e4m3 saturated where OCP requires NaN, and answered inf
+		// for every value above maxpos in e5m2, where 57344 < v < 61440 must
+		// round back down to maxpos.  61440 itself is the tie, and it rounds
+		// the other way: the even candidate is 2^16, which e5m2 cannot
+		// represent, so that one really is infinity (universal#1302).
 
 		// Extract exponent and fraction from the float value.
 		// frexp returns frac in [0.5, 1.0), exp such that v = frac * 2^exp.
@@ -672,31 +705,28 @@ public:
 				f_int = 0;
 				biased_exp += 1;
 			}
-			// Check for overflow after rounding
+			// Check for overflow after rounding.  What overflow *is* depends on
+			// which encodings the format reserves; what to do about it is the
+			// single policy in setoverflow().
+			bool overflow;
 			if constexpr (hasNaN && hasInf) {
-				// e5m2: max biased exp for normal = max_exp_code - 1
-				if (static_cast<unsigned>(biased_exp) >= max_exp_code) {
-					setinf(s);
-					return;
-				}
+				// e5m2: the all-ones exponent is Inf/NaN, so the last normal
+				// biased exponent is max_exp_code - 1
+				overflow = (static_cast<unsigned>(biased_exp) >= max_exp_code);
 			}
 			else if constexpr (hasNaN && !hasInf) {
-				// e4m3: max biased exp = max_exp_code, but all-ones exp + all-ones frac = NaN
-				if (static_cast<unsigned>(biased_exp) > max_exp_code) {
-					if (s) maxneg(); else maxpos();
-					return;
-				}
-				if (static_cast<unsigned>(biased_exp) == max_exp_code && f_int >= fraction_mask) {
-					if (s) maxneg(); else maxpos();
-					return;
-				}
+				// e4m3: the all-ones exponent is normal except for the
+				// all-ones fraction, which is NaN
+				overflow = (static_cast<unsigned>(biased_exp) > max_exp_code)
+					|| (static_cast<unsigned>(biased_exp) == max_exp_code && f_int >= fraction_mask);
 			}
 			else {
-				// No NaN, no Inf: all encodings valid
-				if (static_cast<unsigned>(biased_exp) > max_exp_code) {
-					if (s) maxneg(); else maxpos();
-					return;
-				}
+				// no NaN, no Inf: every encoding is a number
+				overflow = (static_cast<unsigned>(biased_exp) > max_exp_code);
+			}
+			if (overflow) {
+				setoverflow(s);
+				return;
 			}
 			_bits = static_cast<uint8_t>((static_cast<unsigned>(biased_exp) << fbits) | f_int);
 		}

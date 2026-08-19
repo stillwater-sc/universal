@@ -33,7 +33,7 @@ namespace sw { namespace universal {
 // Template parameters:
 //   ElementType - microfloat element type (e.g. e2m1 for NVFP4)
 //   BlockSize   - number of elements per block (16 for NVFP4)
-//   ScaleType   - block-level scale type (e4m3 for NVFP4, fractional precision)
+//   ScaleType   - block-level scale type (e4m3_saturating for NVFP4, fractional precision)
 template<typename ElementType, size_t BlockSize, typename ScaleType>
 class nvblock {
 public:

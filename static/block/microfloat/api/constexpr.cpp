@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <limits>
 #include <universal/number/microfloat/microfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -24,10 +25,10 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	// e4m3: 8 bits, 4 exponent bits, no infinity, has NaN, saturating.
+	// e4m3: 8 bits, 4 exponent bits, no infinity, has NaN, NaN on overflow (OCP).
 	// e5m2: 8 bits, 5 exponent bits, has infinity, has NaN, IEEE-like.
-	using e4m3 = microfloat<8, 4, false, true, true>;
-	using e5m2 = microfloat<8, 5, true,  true, false>;
+	// Both come from the library rather than being re-declared here, so these
+	// tests exercise the aliases downstream code actually uses.
 
 	// ----------------------------------------------------------------------------
 	// SpecificValue construction (smoke)
@@ -165,6 +166,44 @@ try {
 		// should produce a microfloat infinity, not maxpos.
 		constexpr e5m2 inf_pos(std::numeric_limits<float>::infinity());
 		static_assert(inf_pos.isinf(),        "constexpr e5m2(+inf) isinf");
+	}
+
+	// ----------------------------------------------------------------------------
+	// Overflow policy at compile time (universal#1302).  The constexpr path
+	// extracts the IEEE 754 fields by hand instead of calling frexp/signbit,
+	// so it has to reach the same verdict as the runtime path independently.
+	// ----------------------------------------------------------------------------
+	{
+		constexpr float finf = std::numeric_limits<float>::infinity();
+
+		// e4m3 is the OCP format: overflow and infinity both become NaN, and
+		// the sign survives
+		constexpr e4m3 tie(464.0f);       // the round-to-even tie, still maxpos
+		constexpr e4m3 over(465.0f);
+		constexpr e4m3 huge(-1e30f);
+		constexpr e4m3 infinite(finf);
+		constexpr e4m3 neg_infinite(-finf);
+		static_assert(tie == e4m3(SpecificValue::maxpos), "constexpr e4m3(464) is maxpos");
+		static_assert(over.isnan(),                       "constexpr e4m3(465) is NaN");
+		static_assert(huge.isnan() && huge.isneg(),       "constexpr e4m3(-1e30) is -NaN");
+		static_assert(infinite.isnan() && !infinite.isneg(),      "constexpr e4m3(+inf) is +NaN");
+		static_assert(neg_infinite.isnan() && neg_infinite.isneg(), "constexpr e4m3(-inf) is -NaN");
+
+		// the saturating policy over the same encoding still clamps
+		constexpr e4m3_saturating sat(1e30f);
+		constexpr e4m3_saturating sat_neg(-finf);
+		static_assert(sat == e4m3_saturating(SpecificValue::maxpos),     "constexpr saturating clamps");
+		static_assert(sat_neg == e4m3_saturating(SpecificValue::maxneg), "constexpr saturating clamps -inf");
+
+		// e5m2 rounds to nearest against infinity rather than clamping at maxpos
+		constexpr e5m2 below(58000.0f);
+		constexpr e5m2 at_tie(61440.0f);
+		static_assert(below == e5m2(SpecificValue::maxpos), "constexpr e5m2(58000) rounds to maxpos");
+		static_assert(at_tie.isinf(),                       "constexpr e5m2(61440) rounds to inf");
+
+		// and a format with neither infinity nor NaN has only one answer
+		constexpr e2m1 saturated(1e30f);
+		static_assert(saturated == e2m1(SpecificValue::maxpos), "constexpr e2m1(1e30) is maxpos");
 	}
 
 	// ----------------------------------------------------------------------------
