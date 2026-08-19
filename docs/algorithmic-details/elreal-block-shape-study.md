@@ -38,7 +38,7 @@ make el_oracle_sweep && ./elastic/elreal/el_oracle_sweep
 
 ## Method
 
-- **Hosts (block shapes):** `half` (`cfloat<16,5>`, k=11), `bfloat16` (k=8),
+- **Hosts (block shapes):** `half` (`cfloat<16,5>`, k=11), `bfloat16` (k=7),
   `float` (k=24), `double` (k=53).
 - **Oracle:** the exact 320-digit reference constants
   (`include/sw/math/constants/reference_constants.hpp`) via
