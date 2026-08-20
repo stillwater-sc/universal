@@ -48,6 +48,24 @@ int verify_constants() {
     if (!near(elreal_sqrt5(kConstDepth),   2.23606797749978969))  ++n;
     if (!near(elreal_phi(kConstDepth),     1.61803398874989485))  ++n;
     if (!near(elreal_log2_10(kConstDepth), 3.32192809488736235))  ++n;
+
+    // depth 0 must still mean "the generator's own default" -- the back-compat
+    // promise of the optional depth parameter. The dispatch is a single shared
+    // expression across all ten accessors, so exercising it on the two cheapest
+    // constants covers the same path pi and e would, for 0.25s instead of 31s at
+    // -O0 (elreal_e() alone is 18.8s, which is what put this test over the
+    // sanitizer build's 300s limit in the first place).
+    {
+        auto same = [](ZBCL<double> a, ZBCL<double> b) {
+            auto va = a.take(256), vb = b.take(256);
+            if (va.size() != vb.size()) return false;
+            for (std::size_t i = 0; i < va.size(); ++i)
+                if (va[i].v != vb[i].v || va[i].exp != vb[i].exp) return false;
+            return true;
+        };
+        if (!same(elreal_sqrt2().stream(), sqrt2_zbcl<double>())) ++n;
+        if (!same(elreal_phi().stream(),   phi_zbcl<double>()))   ++n;
+    }
     return n;
 }
 

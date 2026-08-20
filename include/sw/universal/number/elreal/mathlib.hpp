@@ -88,15 +88,25 @@ inline constexpr std::size_t default_depth_euler_gamma = 16;
 // that only needs a few should be able to say so rather than pay for all of it. FpType defaults to
 // double (elreal64); supply it explicitly for other hosts, e.g. elreal_pi<float>().
 // ---------------------------------------------------------------------------
-template <typename FpType = double> inline elreal<FpType> elreal_e(std::size_t depth = 0)           { return elreal<FpType>((e_zbcl<FpType>)(depth ? depth : detail::default_depth_e)); }
-template <typename FpType = double> inline elreal<FpType> elreal_pi(std::size_t depth = 0)          { return elreal<FpType>((pi_zbcl<FpType>)(depth ? depth : detail::default_depth_pi)); }
-template <typename FpType = double> inline elreal<FpType> elreal_ln2(std::size_t depth = 0)         { return elreal<FpType>((ln2_zbcl<FpType>)(depth ? depth : detail::default_depth_ln2)); }
-template <typename FpType = double> inline elreal<FpType> elreal_ln10(std::size_t depth = 0)        { return elreal<FpType>((ln10_zbcl<FpType>)(depth ? depth : detail::default_depth_ln10)); }
-template <typename FpType = double> inline elreal<FpType> elreal_log2_10(std::size_t depth = 0)     { return elreal<FpType>((log2_10_zbcl<FpType>)(depth ? depth : detail::default_depth_log2_10)); }
-template <typename FpType = double> inline elreal<FpType> elreal_sqrt2(std::size_t depth = 0)       { return elreal<FpType>((sqrt2_zbcl<FpType>)(depth ? depth : detail::default_depth_sqrt2)); }
-template <typename FpType = double> inline elreal<FpType> elreal_sqrt3(std::size_t depth = 0)       { return elreal<FpType>((sqrt3_zbcl<FpType>)(depth ? depth : detail::default_depth_sqrt3)); }
-template <typename FpType = double> inline elreal<FpType> elreal_sqrt5(std::size_t depth = 0)       { return elreal<FpType>((sqrt5_zbcl<FpType>)(depth ? depth : detail::default_depth_sqrt5)); }
-template <typename FpType = double> inline elreal<FpType> elreal_phi(std::size_t depth = 0)         { return elreal<FpType>((phi_zbcl<FpType>)(depth ? depth : detail::default_depth_phi)); }
-template <typename FpType = double> inline elreal<FpType> elreal_euler_gamma(std::size_t depth = 0) { return elreal<FpType>((euler_gamma_zbcl<FpType>)(depth ? depth : detail::default_depth_euler_gamma)); }
+template <typename FpType = double> inline elreal<FpType> elreal_e(std::size_t depth = 0)
+    { return elreal<FpType>((e_zbcl<FpType>)(depth ? depth : detail::default_depth_e)); }
+template <typename FpType = double> inline elreal<FpType> elreal_pi(std::size_t depth = 0)
+    { return elreal<FpType>((pi_zbcl<FpType>)(depth ? depth : detail::default_depth_pi)); }
+template <typename FpType = double> inline elreal<FpType> elreal_ln2(std::size_t depth = 0)
+    { return elreal<FpType>((ln2_zbcl<FpType>)(depth ? depth : detail::default_depth_ln2)); }
+template <typename FpType = double> inline elreal<FpType> elreal_ln10(std::size_t depth = 0)
+    { return elreal<FpType>((ln10_zbcl<FpType>)(depth ? depth : detail::default_depth_ln10)); }
+template <typename FpType = double> inline elreal<FpType> elreal_log2_10(std::size_t depth = 0)
+    { return elreal<FpType>((log2_10_zbcl<FpType>)(depth ? depth : detail::default_depth_log2_10)); }
+template <typename FpType = double> inline elreal<FpType> elreal_sqrt2(std::size_t depth = 0)
+    { return elreal<FpType>((sqrt2_zbcl<FpType>)(depth ? depth : detail::default_depth_sqrt2)); }
+template <typename FpType = double> inline elreal<FpType> elreal_sqrt3(std::size_t depth = 0)
+    { return elreal<FpType>((sqrt3_zbcl<FpType>)(depth ? depth : detail::default_depth_sqrt3)); }
+template <typename FpType = double> inline elreal<FpType> elreal_sqrt5(std::size_t depth = 0)
+    { return elreal<FpType>((sqrt5_zbcl<FpType>)(depth ? depth : detail::default_depth_sqrt5)); }
+template <typename FpType = double> inline elreal<FpType> elreal_phi(std::size_t depth = 0)
+    { return elreal<FpType>((phi_zbcl<FpType>)(depth ? depth : detail::default_depth_phi)); }
+template <typename FpType = double> inline elreal<FpType> elreal_euler_gamma(std::size_t depth = 0)
+    { return elreal<FpType>((euler_gamma_zbcl<FpType>)(depth ? depth : detail::default_depth_euler_gamma)); }
 
 }} // namespace sw::universal
