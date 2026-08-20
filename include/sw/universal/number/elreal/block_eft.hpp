@@ -31,6 +31,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <concepts>
 #include <utility>
 
 #include <universal/number/elreal/block.hpp>
@@ -95,6 +96,19 @@ inline void split_host(T a, T& hi, T& lo) {
     lo   = a - hi;
 }
 
+// eft_has_fma_v<T>: does T have a callable fma(a, b, c)?  Resolved with std::fma
+// visible, so a native type finds the standard one and a Universal type finds its
+// own by ADL. A correctly-rounded fma computes a*b + c with a SINGLE rounding, so
+// fma(a, b, -p) is the exact residual of a*b by construction -- no splitting, no
+// width arithmetic, no wider intermediate.
+namespace fma_detect {
+    using std::fma;
+    template <typename T>
+    concept callable = requires(T a, T b, T c) { { fma(a, b, c) } -> std::convertible_to<T>; };
+}
+template <typename T>
+inline constexpr bool eft_has_fma_v = fma_detect::callable<T>;
+
 // two_prod returning the rounded product p = a*b and the residual r = a*b - p.
 //
 // The generic Veltkamp/Dekker split is exact only when the precision p is EVEN:
@@ -123,17 +137,18 @@ inline void split_host(T a, T& hi, T& lo) {
 // Three residual paths, chosen at compile time:
 //   - even p: Veltkamp/Dekker, exact in host arithmetic at ANY width (the
 //     partial product a_hi*b_hi fits in p bits when p is even).
-//   - odd p, 2p > 53: a double cannot hold the exact product, so the double
-//     intermediate below would be wrong (it silently dropped the residual of a
-//     113-bit quad product -- issue #1024). Use the host's correctly-rounded
-//     fused fma instead: r = fma(a,b,-p) = a*b - p exactly (single rounding; the
-//     product's rounding error is always representable). cfloat<> has such an
-//     fma (verified at 113 bits: 0/20000 inexact against the exact dyadic
-//     oracle). This is the quad-and-up path.
-//   - odd p, 2p <= 53: a double holds the exact product, so wp - p is the exact
-//     residual (modulo the result type's representability, e.g. the cfloat<24,5>
-//     subnormal floor, #942). Covers half / cfloat<24,5> and any fma-less odd-p
-//     host in this range (e.g. bfloat16).
+//   - odd p, T has an fma: r = fma(a,b,-p) = a*b - p exactly, in host arithmetic.
+//     A correctly-rounded fma rounds once, so the residual is exact by
+//     construction at any width. This used to be gated on 2p > 53 -- a proxy for
+//     "a double cannot hold the exact product" (issue #1024, the 113-bit quad
+//     case). The proxy sent every narrow odd-p host down the wide-intermediate
+//     path below, including bfloat16, which has had a correctly-rounded fma since
+//     #1232. Dispatching on the fma itself keeps those hosts entirely in their own
+//     arithmetic, which is the binding rule at the top of this file and what a
+//     block-shape study of narrow hosts has to measure to mean anything (#1051).
+//   - odd p, no fma: fall back to a double intermediate, exact when 2p <= 53.
+//     wp - p is then the exact residual, modulo the result type's own
+//     representability (e.g. the cfloat<24,5> subnormal floor, #942).
 template <typename T>
 UNIVERSAL_ELREAL_EFT_NOINLINE
 inline void two_prod_host(T a, T b, T& p, T& r) {
@@ -144,8 +159,8 @@ inline void two_prod_host(T a, T b, T& p, T& r) {
         split_host(b, b_hi, b_lo);
         r = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
     }
-    else if constexpr (2 * std::numeric_limits<T>::digits > 53) {
-        using std::fma;          // std::fma (native) / sw::universal::fma (cfloat)
+    else if constexpr (eft_has_fma_v<T>) {
+        using std::fma;          // std::fma (native) / sw::universal::fma (Universal types)
         r = fma(a, b, -p);
     }
     else {
