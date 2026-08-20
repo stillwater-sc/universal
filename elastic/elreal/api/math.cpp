@@ -32,15 +32,22 @@ bool near(const Real& v, double ref, double tol = 1.0e-12) {
 // is validated to 320 digits by the math/constants suite.
 int verify_constants() {
     int n = 0;
-    if (!near(elreal_pi(),      3.14159265358979324))  ++n;
-    if (!near(elreal_e(),       2.71828182845904524))  ++n;
-    if (!near(elreal_ln2(),     0.69314718055994531))  ++n;
-    if (!near(elreal_ln10(),    2.30258509299404568))  ++n;
-    if (!near(elreal_sqrt2(),   1.41421356237309505))  ++n;
-    if (!near(elreal_sqrt3(),   1.73205080756887729))  ++n;
-    if (!near(elreal_sqrt5(),   2.23606797749978969))  ++n;
-    if (!near(elreal_phi(),     1.61803398874989485))  ++n;
-    if (!near(elreal_log2_10(), 3.32192809488736235))  ++n;
+    // Checked against double literals, so ~17 digits is the whole question and
+    // kConstDepth supplies it with room to spare. Taking each generator's default
+    // instead (16, and 32 for e) buys hundreds of digits nobody here looks at --
+    // cheap while the refinement floors capped it early, and 3x the runtime once
+    // they were removed (universal#1051), which pushed this test past the
+    // sanitizer build's 300s ctest limit.
+    constexpr std::size_t kConstDepth = 3;
+    if (!near(elreal_pi(kConstDepth),      3.14159265358979324))  ++n;
+    if (!near(elreal_e(kConstDepth),       2.71828182845904524))  ++n;
+    if (!near(elreal_ln2(kConstDepth),     0.69314718055994531))  ++n;
+    if (!near(elreal_ln10(kConstDepth),    2.30258509299404568))  ++n;
+    if (!near(elreal_sqrt2(kConstDepth),   1.41421356237309505))  ++n;
+    if (!near(elreal_sqrt3(kConstDepth),   1.73205080756887729))  ++n;
+    if (!near(elreal_sqrt5(kConstDepth),   2.23606797749978969))  ++n;
+    if (!near(elreal_phi(kConstDepth),     1.61803398874989485))  ++n;
+    if (!near(elreal_log2_10(kConstDepth), 3.32192809488736235))  ++n;
     return n;
 }
 
