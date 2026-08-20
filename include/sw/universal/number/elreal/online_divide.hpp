@@ -92,6 +92,14 @@ inline ZBCL<FpType> twoDivZBCL(block<FpType> x, block<FpType> y) {
         // infSum (singleDivHelper feeds it blocks of strictly decreasing E).
         return ZBCL<FpType>::singleton(x);
     }
+    // Normalise the OPERANDS, not the results. block_two_div_rem computes the
+    // remainder e = x - s*y in host arithmetic at the operands' natural scale; near
+    // a narrow host's subnormal wall that intermediate loses bits, so e is wrong
+    // before anything sees it and twoDiv's "e is >= k below s" guarantee fails.
+    // Normalising the outputs cannot restore what the subnormal arithmetic
+    // destroyed. Rescaled first, the division runs at scale ~1 (universal#1051).
+    x.normalise();
+    y.normalise();
     auto se = block_two_div_rem(x, y);                // (s, e): x/y = s + e/y
     // Host-floor guard, gated to narrow hosts -- mirrors divide.hpp's exp_floor.
     //
@@ -113,12 +121,8 @@ inline ZBCL<FpType> twoDivZBCL(block<FpType> x, block<FpType> y) {
     // producer cannot post-renormalise (the eager div() re-runs priestRenorm +
     // keep_normalised every step), so a narrow host keeps the min_exp+2k floor
     // (the same denormal floor #1044 respects).
-    constexpr int k = block<FpType>::k;
-    constexpr int host_exp_floor = (k >= 24)
-        ? (std::numeric_limits<int>::min() / 2)                       // wide host: no floor
-        : (std::numeric_limits<FpType>::min_exponent + 2 * k);        // narrow host: denormal floor
     const block<FpType> s = se.first;
-    if (!s.is_normalised() || s.exponent() < host_exp_floor) return ZBCL<FpType>{};
+    if (!s.is_normalised()) return ZBCL<FpType>{};    // zero quotient block: done
     const block<FpType> e = se.second;                // single remainder block x - s*y
     block<FpType> ycopy = y;
     return ZBCL<FpType>::cons(s, [e, ycopy]() { return twoDivZBCL(e, ycopy); });
