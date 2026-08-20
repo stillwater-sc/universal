@@ -2,7 +2,7 @@
 // Status:
 //  * SINGLE-BLOCK DIVISOR: WORKS. 1/7, 1/3, 22/7, ... match eager div() block-for-block;
 //    6/3 terminates. The lazy quotient refines to the host's natural ~19-component ceiling
-//    on demand: the min_exp+2k floor is now gated to narrow hosts only (#1061), so on a
+//    on demand: the min_exp+2k floor is gone entirely (universal#1051) -- blocks are
 //    wide host div_online(1,3) reaches ~293 digits / 19 blocks -- the same depth as eager
 //    div() -- instead of stopping ~33 digits short. Guarded by verify_div_deep_reach.
 //  * SPARSE (power-of-two) MULTI-BLOCK DIVISOR: WORKS to the host floor with the wide

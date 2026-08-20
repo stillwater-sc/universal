@@ -105,13 +105,59 @@ for `bfloat16` against 1.33 for `double` -- `double` is 6.8x more
 storage-efficient. A narrow host reaching high precision would need ~7.6x more
 blocks at ~0.9x the size each.
 
-## Status: DONE. The ceiling is gone on both narrow hosts.
+## Status: the exponent-range ceiling is gone on double, float and bfloat16
 
-| host | k | before | after | blocks | digits/block |
-|------|---|--------|-------|--------|--------------|
-| `double` | 53 | ~306 | ~306, **bit-identical** | 19 | 16.1 |
-| `float` | 24 | **37 (hard cap)** | **319** | 50 | 6.4 |
-| `bfloat16` | 7 | **33 (hard cap)** | **146 and climbing** | 53 | 2.8 |
+`half` is the exception and is tracked separately (#1363): it is still capped at
+20 digits, for a cause that survives this change.
+
+| host | k | before | after | blocks to 319 | digits/block (k log10 2) |
+|------|---|--------|-------|---------------|--------------------------|
+| `double` | 53 | **307 (its own wall)** | **319** | 22 | 16.0 |
+| `float` | 24 | **37 (hard cap)** | **319** | 50 | 7.2 |
+| `bfloat16` | 7 | **33 (hard cap)** | **146 and climbing** | -- | 2.1 |
+| `half` | 11 | 20 | **20, still capped** | -- | 3.3 |
+
+319 is the 320-digit reference's own limit, not the types': measuring past it needs
+a longer reference. `half` is a separate defect, tracked on its own.
+
+### The gate was wrong, twice, and the inconsistency is what caught it
+
+An earlier revision of this document reported double as unchanged and
+**bit-identical**, and treated that as the safety property. It was preserving a
+bug.
+
+double's ceiling was 307 decimal digits, and its smallest normal is `2^-1022`,
+which is `1022 * log10(2) = 307.7` digits. (C++ spells this `min_exponent = -1021`,
+defined so that `radix^(e-1)` is the smallest normal -- the off-by-one is the
+standard's convention, not a discrepancy.) double was sitting exactly on its own exponent wall, and excluding it
+from normalisation kept it there. The earlier reading that it had "33 bits of
+headroom" at `2^-988` missed that 33 is less than `k = 53`: less than one block.
+
+What exposed it was an ordering that cannot be true. Normalised float reached 319
+digits while unnormalised double stopped at 307 -- even though double's exponent
+range is eight times wider, and the entire thesis of this document is that the
+exponent range sets the ceiling. Two hosts limited by *different* mechanisms are
+not comparable, and the physical argument said so before any further measurement
+did.
+
+Normalised, double reaches the reference at 22 blocks and its representation
+extends well past its wall: trailing exponent -1097 at depth 16, -2793 (about
+`1e-841`) at depth 48.
+
+### Theory against measurement
+
+The three hosts that progress are now limited only by block count, at
+`k * log10(2)` digits per block. To reach the 320-digit reference (~1063 bits):
+
+| host | k | predicted blocks | measured | excess |
+|------|---|------------------|----------|--------|
+| `double` | 53 | 20 | 22 | +10% |
+| `float` | 24 | 44 | 50 | +14% |
+| `bfloat16` | 7 | 152 | (146 digits at 53 blocks, still climbing) | -- |
+
+The 10-14% excess is `kSeriesGuard`, the working blocks the series helpers carry
+internally. The ordering is now the physically expected one: the widest host needs
+the fewest blocks.
 
 float now reaches essentially the full 320-digit reference. bfloat16 grows
 linearly with depth with no ceiling in sight: 28 / 45 / 78 / 112 / 146 digits at
@@ -192,6 +238,115 @@ approaches, so it is limited by block count and has nothing to gain.
 static constexpr bool needs_scale_normalisation =
     (std::numeric_limits<FpType>::min_exponent > -500);
 ```
+
+## How a float block reaches past 2^-126
+
+This is the question any reader will ask, and the answer is the heart of the
+design.
+
+A chain of float *values* cannot do it. float's exponent runs to `2^-126`, so
+non-overlapping float values below 1.0 give `floor(126/24) = 5` blocks, about 120
+bits, about 36 decimal digits. That calculation is exactly right -- and it is
+precisely the 37-digit ceiling this document set out to explain. Before the fix,
+the implementation *was* that calculation.
+
+But a block is not a float value:
+
+```text
+value = v * 2^exp        v : FpType (normal)      exp : integer<256>
+```
+
+`e_zbcl<float>(48)`, dumped block by block:
+
+```text
+  idx |        v (float)  scale(v) |        exp (wide) |  combined E
+    0 |       1.359140873         0 |                 1 |           1
+    1 |       1.384932399         0 |               -24 |         -24
+    2 |      -1.668617368         0 |               -49 |         -49
+    ... |
+   49 |       1.239909887         0 |             -1256 |       -1256
+
+  blocks whose COMBINED exponent is below float's min_exponent: 45 / 50
+  blocks whose STORED v is a normal float:                      50 / 50
+```
+
+Block 49 is `1.2399 * 2^-1256`. float cannot hold that value; the *pair* holds it
+exactly. Every stored `v` remains a normal float, the spacing is `k = 24`, and
+the expansion spans 1280 bits -- about 385 decimal digits, comfortably covering
+the 319 measured.
+
+This is McCleeary's design, not a workaround. The dissertation's exponents live
+in Z (Haskell `Integer`), and `block.hpp` records that #1061 widened `exp` from
+`int32` precisely because streaming division doubles the divisor's exponent per
+level and overflowed a narrow field. The pre-fix bug was that the scale was being
+carried in `v` instead of `exp`, which collapsed the design back to the five-block
+calculation above.
+
+The arithmetic stays in the host: significands are normal floats, and the `k+1`
+shortcut means blocks further apart than `k+1` are never aligned, so every shift
+that does happen is smaller than `k`.
+
+### The cost, and why it is the silicon finding
+
+A block is 36 B for float against 40 B for double, because the `integer<256>`
+exponent dominates the struct -- 0.67 payload bits per byte for float and 0.19
+for bfloat16, against 1.33 for double. So "float blocks reach 320 digits" is true of the type and is
+simultaneously why narrow block shapes lose the hardware argument: a 256-bit
+exponent bought for a 24-bit significand. That is section H's dominance result,
+and this is its mechanism.
+
+## Reach: elreal against ereal
+
+The two adaptive-precision types in this library rest on different
+representations, and the difference is not one of degree.
+
+| | `ereal` (Priest / Shewchuk) | `elreal` (McCleeary LFPERA) |
+|---|---|---|
+| limb | a bare `double` | `(v : FpType, exp : integer<256>)` |
+| scale lives in | the limb's own IEEE exponent | the block's separate wide exponent |
+| reach | bounded by the host's exponent range | bounded by block count (the `integer<256>` exponent is finite but never reached) |
+| ceiling | ~`1022/53` = 19 limbs -> a few hundred digits | set by block budget |
+| evaluation | eager | lazy, refine on demand |
+
+A Priest/Shewchuk expansion is a sum of ordinary floating-point values. Its
+smallest limb is a real `double`, so the whole expansion bottoms out at the host's
+smallest normal, `2^-1022`, about 307 decimal digits. `ereal<19>` measuring out
+at ~293 digits is that wall, and no limb count escapes it, because limb 20 would
+have to be smaller than a `double` can be.
+
+McCleeary's block carries its scale *outside* the host type. The significand is
+still a host value and the arithmetic is still host arithmetic, but the exponent
+is a separate `integer<256>`, so a block can sit at `2^-1256` or `2^-100000` just
+as easily as at `2^-1`. That field is finite, not literally unbounded -- but its
+range is about `2^(2^255)`, which no realizable depth approaches, so the host's
+exponent stops being the binding constraint.
+
+Measured, against a 3000-digit reference for `e` generated by exact integer
+arithmetic (`sum 1/n!` scaled by `10^3050`, 1160 terms) rather than by anything in
+this library:
+
+| depth | digits | blocks | digits/block |
+|-------|--------|--------|--------------|
+| 16 | 322 | 22 | 14.6 |
+| 32 | 577 | 36 | 16.0 |
+| 48 | 833 | 52 | 16.0 |
+| 64 | 1089 | 68 | 16.0 |
+| 96 | **1598** | 99 | 16.1 |
+
+Linear at `k * log10(2) = 15.95` digits per block, with no ceiling in sight --
+1598 digits is where the sweep was stopped, not where the type stopped. The
+320-digit reference used elsewhere in this document is a limit of the *measuring
+instrument*; this one only has to be longer.
+
+So the interesting comparison is not "elreal is more accurate than ereal". At any
+precision `ereal` can reach, both are exact. It is that they have different
+*kinds* of limit: `ereal`'s is a wall set by the host format, `elreal`'s is a
+budget you choose. Past a few hundred digits `ereal` cannot be asked the question
+at all.
+
+What that costs is in the table above: 36-40 bytes per block against 8 bytes per
+limb, and laziness on every access. `ereal` is the right tool up to its wall and
+`elreal` is the only tool past it.
 
 ## Wrong turns, kept
 
