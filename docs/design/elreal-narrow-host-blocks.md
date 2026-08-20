@@ -198,13 +198,37 @@ The mechanism is confirmed.
 
 ### What remains
 
-**A 0-overlap violation at depth >= 24.** The non-monotonic 39 at depth 20 is the
-same fault showing up early. It is not `twoAdd` (the `k+1` shortcut is sound on
-its own), not the eager divide, not the streaming divide, and not the streaming
-multiply -- all of those normalise their outputs in the tried version. Some other
-producer still emits a pair closer than `k`. Finding it is the next step; the
-`zbcl.hpp` assertion already names the offending pair, so instrumenting it to
-print the producer should localise it quickly.
+**A 0-overlap violation at depth >= 24, in `addRec_step`.** Located: a backtrace
+from the `zbcl.hpp` assertion puts the producer in `addRec_step` (threeAdd.hpp),
+the streaming `add()`, reached through `infsum`. Exactly one violation in a full
+`e_zbcl<bfloat16>(24)` run:
+
+```
+k=7  E(head)=-189  E(tail)=-195  gap=6 (need >=7)
+head.v=-1.5 scale=0 exp=-189   tail.v=-1.71094 scale=0 exp=-195
+```
+
+Both blocks are properly normalised, so this is not a normalisation artifact.
+`head.v = -1.5` carries **two** significant bits, at 2^-189 and 2^-190, so the
+tail at -195 does not *numerically* overlap it. McCleeary's invariant is the
+k-based test `E(b1) >= E(b2) + k`, which assumes every block is full width;
+`addRec_step` emitted a short block and placed the next one by actual
+significance instead.
+
+**This is a latent pre-existing bug, exposed rather than caused by removing the
+floors.** The violating pair is at E = -189, about 57 decimal digits deep. The
+old narrow-host floor was `min_exponent + 2k = -125 + 14 = -111`, about 33
+digits -- so refinement never reached this pair before, and the floor was masking
+it. `addRec_step` has form here: its own comments record two earlier fixes of
+this exact shape, #1034 (workspace tail not re-injected) and #1057 (FCL.hs emits
+`e` unconditionally, which is only valid when the remaining operand head is >= k
+below it). Both patched specific cases of the same underlying gap. A third case
+survives, and short blocks are the trigger.
+
+Two further host-floor arrests live in `addRec_step` that the tried version left
+in place -- `is_nonzero_subnormal_block` checks that truncate the stream outright.
+With `normalise()` in effect blocks are never subnormal, so those guards are dead
+code in that configuration and want removing along with the rest.
 
 **A 23x slowdown.** The elreal suite goes from ~16s to ~364s. Part is real work
 (series now refine to the working depth instead of stopping at the floor), but
