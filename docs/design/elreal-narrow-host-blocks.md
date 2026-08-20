@@ -105,13 +105,54 @@ for `bfloat16` against 1.33 for `double` -- `double` is 6.8x more
 storage-efficient. A narrow host reaching high precision would need ~7.6x more
 blocks at ~0.9x the size each.
 
-## Status: DONE. The ceiling is gone on both narrow hosts.
+## Status: DONE. The ceiling is gone on every host, double included.
 
-| host | k | before | after | blocks | digits/block |
-|------|---|--------|-------|--------|--------------|
-| `double` | 53 | ~306 | ~306, **bit-identical** | 19 | 16.1 |
-| `float` | 24 | **37 (hard cap)** | **319** | 50 | 6.4 |
-| `bfloat16` | 7 | **33 (hard cap)** | **146 and climbing** | 53 | 2.8 |
+| host | k | before | after | blocks to 319 | digits/block (k log10 2) |
+|------|---|--------|-------|---------------|--------------------------|
+| `double` | 53 | **307 (its own wall)** | **319** | 22 | 16.0 |
+| `float` | 24 | **37 (hard cap)** | **319** | 50 | 7.2 |
+| `bfloat16` | 7 | **33 (hard cap)** | **146 and climbing** | -- | 2.1 |
+| `half` | 11 | 20 | **20, still capped** | -- | 3.3 |
+
+319 is the 320-digit reference's own limit, not the types': measuring past it needs
+a longer reference. `half` is a separate defect, tracked on its own.
+
+### The gate was wrong, twice, and the inconsistency is what caught it
+
+An earlier revision of this document reported double as unchanged and
+**bit-identical**, and treated that as the safety property. It was preserving a
+bug.
+
+double's ceiling was 307 decimal digits. `2^-1021` -- its `min_exponent` -- is
+`1e-307`. double was sitting exactly on its own exponent wall, and excluding it
+from normalisation kept it there. The earlier reading that it had "33 bits of
+headroom" at `2^-988` missed that 33 is less than `k = 53`: less than one block.
+
+What exposed it was an ordering that cannot be true. Normalised float reached 319
+digits while unnormalised double stopped at 307 -- even though double's exponent
+range is eight times wider, and the entire thesis of this document is that the
+exponent range sets the ceiling. Two hosts limited by *different* mechanisms are
+not comparable, and the physical argument said so before any further measurement
+did.
+
+Normalised, double reaches the reference at 22 blocks and its representation
+extends well past its wall: trailing exponent -1097 at depth 16, -2793 (about
+`1e-841`) at depth 48.
+
+### Theory against measurement
+
+Every host is now limited only by block count, at `k * log10(2)` digits per block.
+To reach the 320-digit reference (~1063 bits):
+
+| host | k | predicted blocks | measured | excess |
+|------|---|------------------|----------|--------|
+| `double` | 53 | 20 | 22 | +10% |
+| `float` | 24 | 44 | 50 | +14% |
+| `bfloat16` | 7 | 152 | (146 digits at 53 blocks, still climbing) | -- |
+
+The 10-14% excess is `kSeriesGuard`, the working blocks the series helpers carry
+internally. The ordering is now the physically expected one: the widest host needs
+the fewest blocks.
 
 float now reaches essentially the full 320-digit reference. bfloat16 grows
 linearly with depth with no ceiling in sight: 28 / 45 / 78 / 112 / 146 digits at

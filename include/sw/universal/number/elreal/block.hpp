@@ -150,27 +150,33 @@ struct block {
         return v == FpType{0};
     }
 
-    // needs_scale_normalisation: gated on the host's EXPONENT RANGE, not on k.
+    // needs_scale_normalisation: every host. There is no wide host.
     //
-    // The floors this replaces were gated on k >= 24, and copying that predicate was
-    // wrong: it excluded float, whose k is exactly 24 but whose ceiling is squarely
-    // an exponent-range ceiling. float and bfloat16 both carry an 8-bit exponent
-    // (min_exponent -125) and both exhaust it -- measured, v runs down to 2^-123 and
-    // 2^-117 respectively, within a couple of bits of the wall, capping them at 37
-    // and 33 decimal digits. That precision differs 3.4x while the ceilings differ
-    // by 4 digits is the whole point: the binding constraint is the exponent.
+    // This was gated, first on k >= 24 and then on min_exponent > -500, on the
+    // theory that a wide-exponent host never approaches its subnormal wall. The
+    // measurement said otherwise and the gate was wrong twice.
     //
-    // double's 11-bit exponent (min_exponent -1021) gives roughly a thousand binades
-    // of headroom; at its natural ~306-digit depth v only reaches 2^-988, still 33
-    // bits clear. It is limited by block count, not by its wall, so normalising it
-    // would buy nothing and cost a scale_of_v() plus a wide-integer add per operand
-    // per step. Excluding it keeps the double path bit-identical BY CONSTRUCTION --
-    // the whole change compiles away -- rather than by testing.
+    // double's ceiling was 307 decimal digits, and 2^-1021 -- its min_exponent --
+    // is 1e-307. That is not a coincidence: double was sitting exactly on its wall,
+    // and the gate preserved it there. The earlier reading that double had "33 bits
+    // of headroom" at 2^-988 missed that 33 < k = 53, i.e. less than a single block.
     //
-    // The -500 threshold simply separates 8-bit exponents from 11-bit ones; there is
-    // nothing between them to be delicate about.
-    static constexpr bool needs_scale_normalisation =
-        (std::numeric_limits<FpType>::min_exponent > -500);
+    // The inconsistency it produced is what exposed it: normalised float reached
+    // 319 digits while unnormalised double stopped at 307, even though double's
+    // exponent range is eight times wider. Two hosts limited by different
+    // mechanisms cannot be compared, and the ordering was physically impossible.
+    //
+    // Normalised, double reaches the 320-digit reference at 22 blocks and its
+    // representation extends past its own wall -- trailing exponent -1097 at depth
+    // 16, -2793 (about 1e-841) at depth 48. Every host is now limited only by block
+    // count, at k * log10(2) digits per block, which is the property the type is
+    // supposed to have.
+    //
+    // The cost is that double is no longer bit-identical to the pre-change library.
+    // That was never the right thing to preserve: the old bits were a value cut off
+    // at the host's exponent wall, and the new ones carry further. It is a change in
+    // reach, not a change in what the retained digits say.
+    static constexpr bool needs_scale_normalisation = true;   // EXPERIMENT: all hosts
 
     // normalise(): rescale `v` into [1,2) in magnitude, folding the scale it was
     // carrying into `exp`. E(b) = scale_of_v() + exp is invariant, so the block's
