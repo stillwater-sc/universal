@@ -76,10 +76,9 @@ inline ZBCL<FpType> div(ZBCL<FpType> x, ZBCL<FpType> y, std::size_t depth = 64) 
     // denormalises a couple of block-widths above it -- there the remainder
     // reductions stop staying normalised and 0-overlap accounting breaks -- so it
     // keeps the floor (this is the same denormal floor #1044 respects).
-    constexpr int k = block<FpType>::k;
-    constexpr int exp_floor = (k >= 24)
-        ? (std::numeric_limits<int>::min() / 2)                       // wide host: no floor
-        : (std::numeric_limits<FpType>::min_exponent + 2 * k);        // narrow host: denormal floor
+    // No refinement floor: keep_normalised makes the scale invariant true rather
+    // than testing for it, and the EFTs now normalise their operands, so v never
+    // approaches the host's subnormal wall (universal#1051).
 
     // Keep only normalised blocks (drop zeros and sub-floor denormals). On a
     // priestRenorm'd (descending, 0-overlap) list this only widens gaps, so the
@@ -87,7 +86,7 @@ inline ZBCL<FpType> div(ZBCL<FpType> x, ZBCL<FpType> y, std::size_t depth = 64) 
     auto keep_normalised = [](std::vector<B> v) {
         std::vector<B> out;
         out.reserve(v.size());
-        for (const auto& b : v) if (b.is_normalised()) out.push_back(b);
+        for (auto b : v) { b.normalise(); if (b.is_normalised()) out.push_back(b); }
         return out;
     };
 
@@ -102,7 +101,7 @@ inline ZBCL<FpType> div(ZBCL<FpType> x, ZBCL<FpType> y, std::size_t depth = 64) 
     for (std::size_t step = 0; step < depth; ++step) {
         if (rem.empty()) break;                  // exact division: remainder is 0
         const B r0 = rem.front();                // leading block (descending order)
-        if (!r0.is_normalised() || r0.exponent() < exp_floor) break;
+        if (!r0.is_normalised()) break;               // zero remainder only
         const int lead = static_cast<int>(r0.exponent());
         if (havePrev && lead >= prevLead) break; // no progress -> stop refining
         prevLead = lead;

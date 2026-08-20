@@ -90,7 +90,7 @@ UNIVERSAL_ELREAL_EFT_NOINLINE inline void host_two_sum<double>(double a, double 
 // Implementation: align both inputs to max(a.exp, b.exp), perform host EFT,
 // pack the results back as blocks at the aligned exp.
 template<typename FpType>
-inline std::pair<block<FpType>, block<FpType>> twoSumRN(const block<FpType>& a, const block<FpType>& b) {
+inline std::pair<block<FpType>, block<FpType>> twoSumRN(block<FpType> a, block<FpType> b) {
 	constexpr int k = block<FpType>::k;
 	if (a.is_zero_block()) {
 		// 0 + b = b, with zero residual at exp k below b's exponent.
@@ -99,6 +99,35 @@ inline std::pair<block<FpType>, block<FpType>> twoSumRN(const block<FpType>& a, 
 	if (b.is_zero_block()) {
 		return {a, createZero<FpType>(a.exp - k)};
 	}
+	// Already NONADJACENT: the exact sum is the pair itself, in decreasing order.
+	//
+	// The threshold is k+1, not k, and the extra bit is load-bearing. twoSumRN owes
+	// its callers property 5 above -- the residual is at most half an ulp, i.e. the
+	// ROUND-TO-NEAREST decomposition -- and threeAdd's 0-overlap proof rests on it.
+	// Plain 0-overlap allows b up to just under ulp(a), so anything above half an
+	// ulp CARRIES and RN(a+b) != a; returning {a,b} there is exact but not
+	// round-to-nearest, and the chain does not survive the substitution (measured:
+	// el_math_trigonometry fails 0-overlap at block 1). At k+1 the gap puts b
+	// strictly below half an ulp, where RN cannot carry. Same non-overlapping vs
+	// nonadjacent distinction as the Shewchuk COMPRESS step (#1340).
+	//
+	// Skipping here also bounds the alignment below: every surviving case has a gap
+	// under k+1, so a normalised v shifted by that much stays comfortably normal.
+	//
+	// Gated to narrow hosts with the rest -- a wide host never approaches its wall,
+	// so this buys it nothing and would only perturb a hot path that is already
+	// correct. With the gate the whole change is a no-op for k >= 24: double is
+	// bit-identical by construction rather than by testing.
+	if constexpr (block<FpType>::needs_scale_normalisation) {
+		if (expGreaterBy(block<FpType>::k + 1, a, b)) return {a, b};
+		if (expGreaterBy(block<FpType>::k + 1, b, a)) return {b, a};
+		// Normalise the OPERANDS before aligning them. The shift below is applied to
+		// the host value, and at the operands' natural scale it can drive v subnormal
+		// on a narrow host, losing bits before host_two_sum ever sees them.
+		a.normalise();
+		b.normalise();
+	}
+
 	auto   e_max = std::max(a.exp, b.exp);
 	FpType va    = (a.exp == e_max) ? a.v : detail_mccleeary::ldexp_block(a.v, static_cast<int>(a.exp - e_max));
 	FpType vb    = (b.exp == e_max) ? b.v : detail_mccleeary::ldexp_block(b.v, static_cast<int>(b.exp - e_max));

@@ -51,10 +51,7 @@ constexpr std::size_t kSeriesGuard = 4;
 template <typename FpType>
 constexpr int series_stop_exp(std::size_t wdepth) {
     constexpr int k = block<FpType>::k;
-    const int target = -static_cast<int>(wdepth) * k - 8;
-    const int floor  = (k >= 24) ? (std::numeric_limits<int>::min() / 2)
-                                 : (std::numeric_limits<FpType>::min_exponent + 2 * k);
-    return target > floor ? target : floor;
+    return -static_cast<int>(wdepth) * k - 8;   // working depth is the only stop
 }
 
 // take_while_above(z, floor_exp): the prefix of z whose block exponents are >=

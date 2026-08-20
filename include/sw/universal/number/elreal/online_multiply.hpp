@@ -45,7 +45,14 @@ namespace sw { namespace universal {
 template <typename FpType>
 inline series<FpType> singleMultHelper(const block<FpType>& f, ZBCL<FpType> gs) {
     if (gs.is_empty()) return series<FpType>{};
-    auto pr = block_two_mult(f, gs.head());               // (high, low), exact f*g
+    // Normalise the OPERANDS, not the results: block_two_mult computes its residual
+    // in host arithmetic at the operands' natural scale, and on a narrow host that
+    // denormalises near the wall -- losing bits that normalising the outputs cannot
+    // restore. Rescaled to [1,2) first, the product runs at scale ~1 and the residual
+    // stays a full k below the high block (universal#1051).
+    block<FpType> fN = f;          fN.normalise();
+    block<FpType> gN = gs.head();  gN.normalise();
+    auto pr = block_two_mult(fN, gN);                     // (high, low), exact f*g
     const auto subnormal = [](const block<FpType>& b) {
         return !b.is_zero_block() && !b.is_normalised();
     };

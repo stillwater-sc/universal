@@ -76,6 +76,22 @@ struct has_universal_fp_api<
 template <typename T>
 inline constexpr bool has_universal_fp_api_v = has_universal_fp_api<T>::value;
 
+namespace detail_block {
+
+// Scale by a power of two, exactly, without forming the multiplier.
+template <typename FpType>
+constexpr FpType ldexp_block(FpType v, int n) {
+    if constexpr (std::is_floating_point_v<FpType>) {
+        return std::ldexp(v, n);
+    } else {
+        using std::ldexp;
+        if constexpr (requires(FpType x) { ldexp(x, 0); }) return ldexp(v, n);
+        else return static_cast<FpType>(std::ldexp(static_cast<double>(v), n));
+    }
+}
+
+}  // namespace detail_block
+
 // block<FpType>: McCleeary's (sign, exp, bv) packed into FpType's value field
 // plus an explicit wide exponent (exp_t).
 //
@@ -132,6 +148,54 @@ struct block {
 
     constexpr bool is_zero_block() const noexcept {
         return v == FpType{0};
+    }
+
+    // needs_scale_normalisation: gated on the host's EXPONENT RANGE, not on k.
+    //
+    // The floors this replaces were gated on k >= 24, and copying that predicate was
+    // wrong: it excluded float, whose k is exactly 24 but whose ceiling is squarely
+    // an exponent-range ceiling. float and bfloat16 both carry an 8-bit exponent
+    // (min_exponent -125) and both exhaust it -- measured, v runs down to 2^-123 and
+    // 2^-117 respectively, within a couple of bits of the wall, capping them at 37
+    // and 33 decimal digits. That precision differs 3.4x while the ceilings differ
+    // by 4 digits is the whole point: the binding constraint is the exponent.
+    //
+    // double's 11-bit exponent (min_exponent -1021) gives roughly a thousand binades
+    // of headroom; at its natural ~306-digit depth v only reaches 2^-988, still 33
+    // bits clear. It is limited by block count, not by its wall, so normalising it
+    // would buy nothing and cost a scale_of_v() plus a wide-integer add per operand
+    // per step. Excluding it keeps the double path bit-identical BY CONSTRUCTION --
+    // the whole change compiles away -- rather than by testing.
+    //
+    // The -500 threshold simply separates 8-bit exponents from 11-bit ones; there is
+    // nothing between them to be delicate about.
+    static constexpr bool needs_scale_normalisation =
+        (std::numeric_limits<FpType>::min_exponent > -500);
+
+    // normalise(): rescale `v` into [1,2) in magnitude, folding the scale it was
+    // carrying into `exp`. E(b) = scale_of_v() + exp is invariant, so the block's
+    // value does not change; only its split between the two fields moves. Exact --
+    // a pure exponent shift -- and it cannot overflow, since exp is unbounded.
+    //
+    // This is McCleeary's own representation: his block is (s, e, bv) with bv a
+    // normalised significand and e a separate exponent in Z. Letting the host FpType
+    // carry the scale as well is what makes the host's exponent range binding.
+    //
+    // Call this on OPERANDS, before the arithmetic -- not on results. An EFT that
+    // runs at the operands' natural scale has already lost bits to the subnormal
+    // range by the time it returns, and normalising its outputs cannot put them
+    // back. See docs/design/elreal-narrow-host-blocks.md.
+    constexpr block& normalise() noexcept {
+        if constexpr (!needs_scale_normalisation) {
+            return *this;                          // wide host: nothing to gain
+        } else {
+            if (is_zero_block()) return *this;
+            const int sc = scale_of_v();
+            if (sc == 0) return *this;             // already in [1,2)
+            v = detail_block::ldexp_block(v, -sc);
+            exp = exp + exp_t(sc);
+            return *this;
+        }
     }
 
     // is_normalised(): true iff `v` is a finite, non-zero, non-subnormal value.

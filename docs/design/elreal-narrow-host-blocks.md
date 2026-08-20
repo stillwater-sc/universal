@@ -105,127 +105,135 @@ for `bfloat16` against 1.33 for `double` -- `double` is 6.8x more
 storage-efficient. A narrow host reaching high precision would need ~7.6x more
 blocks at ~0.9x the size each.
 
-## The proposal below was tried and does not work
+## Status: DONE. The ceiling is gone on both narrow hosts.
 
-**Status of this section: refuted by experiment.** Kept because the reason is the
-useful part, and because it is the obvious idea -- anyone reading the diagnosis
-above will reach for it.
+| host | k | before | after | blocks | digits/block |
+|------|---|--------|-------|--------|--------------|
+| `double` | 53 | ~306 | ~306, **bit-identical** | 19 | 16.1 |
+| `float` | 24 | **37 (hard cap)** | **319** | 50 | 6.4 |
+| `bfloat16` | 7 | **33 (hard cap)** | **146 and climbing** | 53 | 2.8 |
 
-`block::normalise()` was implemented and behaves exactly as specified: it rescales
-`v` into `[1,2)`, folds the scale into `exp`, preserves the block's value and its
-combined exponent exactly (0 changes over 20,000 random blocks per host), and
-lifts subnormal `v` back to normal. The three floors were removed. The `double`
-suite stayed green -- 46/46, bit-identical -- which is what the gate below asked
-for.
+float now reaches essentially the full 320-digit reference. bfloat16 grows
+linearly with depth with no ceiling in sight: 28 / 45 / 78 / 112 / 146 digits at
+depths 8 / 16 / 32 / 48 / 64. The prediction in the section above was that a
+narrow host would need roughly `53/k` times as many blocks -- 2.2x for float
+against 2.6x measured, 7.6x for bfloat16 against 5.9x measured.
 
-`bfloat16` then aborted on the 0-overlap assertion.
+`double` is untouched **by construction**, not by testing: the change sits behind
+`if constexpr (needs_scale_normalisation)` and compiles away entirely for a
+wide-exponent host. Verified bit-for-bit all the same -- every block's mantissa
+and exponent, across pi, e, sqrt2, division and ln2 -- against the pre-change
+build.
 
-The cause is not the 0-overlap comparison, which was the risk flagged below:
-`zero_overlap` compares `exponent()`, and `normalise()` preserves that exactly.
-It is **operand alignment**. `twoAdd` brings two blocks to a common scale before
-the EFT (`threeAdd.hpp`):
+46/46 elreal tests pass under gcc 13.3 and clang 18.1, in 17s against a 7s
+baseline. The increase is real work: float now computes 319 digits where it used
+to stop at 37.
 
+## What it took
+
+Three things. The order they were found in is the useful part, because two of the
+wrong turns came from reasoning ahead of the measurement.
+
+### 1. Normalise OPERANDS, not results
+
+This is the general rule, and it is the whole fix in one line. An EFT that runs at
+the operands' natural scale has already lost bits to the subnormal range by the
+time it returns; normalising its outputs cannot put them back.
+
+```cpp
+x.normalise();
+y.normalise();
+auto se = block_two_div_rem(x, y);
 ```
-auto   e_max = std::max(a.exp, b.exp);
-FpType va    = (a.exp == e_max) ? a.v : ldexp_block(a.v, int(a.exp - e_max));
+
+Applied at all three sites -- `twoSumRN`, `block_two_mult` through
+`singleMultHelper`, and `block_two_div_rem` through `twoDivZBCL`. Fixing only the
+divide lifted bfloat16 from 33 to 40 digits and then plateaued; only with all
+three does it become unbounded.
+
+### 2. The nonadjacent (k+1) shortcut in twoSumRN
+
+Blocks already `k+1` apart need no arithmetic at all: their exact sum is the pair,
+in decreasing order. Skipping there bounds every surviving alignment shift, which
+is what makes normalised operands safe to align.
+
+The threshold is `k+1`, not `k`. `twoSumRN` owes its callers its property 5 --
+the residual is at most half an ulp, i.e. the round-to-nearest decomposition --
+and `threeAdd` (Definition 4.2.1) is a fixed chain whose 0-overlap proof rests on
+it. Plain 0-overlap allows `b` up to just under `ulp(a)`, so anything above half
+an ulp carries and `RN(a+b) != a`; returning `{a,b}` there is exact but not
+round-to-nearest, and the chain does not survive it. Measured on a `double` host
+at `E(a) = 0`:
+
+| `b` | `RN(a+b) == a`? |
+|-----|------------------|
+| quarter-ulp | yes |
+| half-ulp | yes |
+| 0.75 ulp | **no** |
+| just under 1 ulp | **no** |
+
+This is the non-overlapping versus **nonadjacent** distinction that also governs
+the Shewchuk COMPRESS step (#1340) -- the same one-bit margin, for the same
+reason.
+
+It also turned out to be the performance fix. Without it the alignment shift is
+unbounded and the suite took 1469s; with it, 17s.
+
+### 3. Gate on EXPONENT RANGE, not on k
+
+The first gate copied the floors' `k >= 24` predicate. That was wrong: it excluded
+`float`, whose k is exactly 24 but whose ceiling is squarely an exponent ceiling.
+float and bfloat16 both carry an 8-bit exponent (`min_exponent` -125) and both
+exhaust it -- v runs to 2^-123 and 2^-117 respectively, within a couple of bits of
+the wall. double's 11-bit exponent gives ~1000 binades of headroom that it never
+approaches, so it is limited by block count and has nothing to gain.
+
+```cpp
+static constexpr bool needs_scale_normalisation =
+    (std::numeric_limits<FpType>::min_exponent > -500);
 ```
 
-That shift is applied to the host value. In the current representation the scale
-lives in `v` and the `exp` fields stay close together -- the instrumentation above
-shows `min combined exponent` within 1 of the minimum `v` scale, i.e. `exp` is
-carrying nearly nothing -- so the alignment shift is small and harmless.
-Normalising inverts that: the scale moves into `exp`, the `exp` fields spread
-apart by hundreds of binades, and the alignment shift underflows `v` to a
-subnormal or to zero. The operand is destroyed before the EFT sees it.
+## Wrong turns, kept
 
-So keeping the scale in `v` is not an oversight. It is what makes alignment
-expressible in host arithmetic, and the denormal floors are the price. The two
-designs are in tension, and the floors are the cheaper side of it.
+**Normalise alone.** Moving scale out of `v` spreads the `exp` fields, and
+`twoSumRN`'s then-unconditional alignment underflowed the operand before the EFT
+saw it. The lesson became rule 2.
 
-A real fix has to attack the alignment, not the storage. The promising direction:
-`twoAdd` only needs to align when the operands actually interact. If
-`|a.exp - b.exp| >= k` the blocks are already 0-overlap and their sum *is* the
-pair `{a, b}` -- no arithmetic, no shift, no underflow. Aligning unconditionally
-is what forces every operand onto a common host scale. That is a much smaller
-change than restructuring the block, and it is where the next attempt should
-start. It is untested.
+**The shortcut at threshold `k`.** Refuted on its own, before normalise was
+involved, by `el_math_trigonometry`. The lesson is in rule 2 above.
 
-## Superseded proposal: scale-normalised blocks
+**"The producer is `addRec_step`."** Reported from a backtrace, and wrong: the
+assertion fires there because `addRec_step` is the first thing to *consume* the
+offending stream via `tail()`. Instrumented per state rather than through a
+shared thread_local -- which was contaminating the first pass with cross-stream
+pairs -- its output is clean, as is its workspace over every consecutive pair. The
+real producer was `twoDivZBCL`, reproducible with no `add` and no `infsum` at all.
 
-Maintain `v` in `[1,2)` (or `[1,2)` in magnitude) and carry all scale in the
-`integer<256>` `exp` field, which is unbounded by construction.
+**The plateau at 40 digits** was the add path: `twoSumRN` had neither the shortcut
+nor operand normalisation, because the script meant to add them asserted on a
+stale function name and never wrote the file.
 
-Then `v` is always normal by construction, `is_normalised()` cannot fail for a
-scale reason, and the host's `min_exponent` is never approached. The three
-`min_exponent + 2*k` floors become dead code. A narrow host's reach is then
-bounded only by the number of blocks one is willing to carry -- that is, by `k`
--- rather than by exponent range.
+## A note on the test suite
 
-Expected consequences, stated so they can be falsified:
+`el_math_sqrt` went from 2.3s to not finishing in 500s, and the fix was in the
+test, not the library: it took sqrt's default `depth = 64` while checking a 1e-4
+tolerance. That was only ever cheap because the refinement floor stopped the
+underlying division early. Passing the depth the test actually needs restores it
+to 2.3s.
 
-- `bfloat16` and `float` should reach any target precision `double` reaches,
-  needing roughly `53/k` times as many blocks (~7.6x for `bfloat16`, ~2.2x for
-  `float`).
-- The measured ceilings (33 / 37 / 307) should all lift.
-- `double` results should be **bit-identical**, since a wide host never
-  approached its floor in the first place. This is the primary regression check.
+That is the same accidental coupling this whole exercise is about -- something
+that was fast because of an implementation limit rather than because it asked for
+little. Worth watching for elsewhere.
 
-### Where the work is
+## What this unblocks
 
-| area | change |
-|------|--------|
-| `block.hpp` | a `normalise()` that splits `v` into `[1,2)` mantissa plus exponent delta, folded into `exp`; apply at block construction and after each EFT result |
-| `block_eft.hpp` | renormalise `two_sum` / `two_prod` / `two_div` outputs before returning |
-| `divide.hpp`, `online_divide.hpp` | drop `exp_floor` / `host_exp_floor`; the remainder sequence no longer decays toward subnormal |
-| `math/constants.hpp` | drop the narrow-host branch of `series_stop_exp`; the target term becomes the only stop |
-| `zbcl.hpp` | confirm the 0-overlap comparison is expressed in combined exponents, not raw `v` scales |
+The block-shape study can now ask its real question -- what a narrow block shape
+costs in blocks and time at a *fixed* precision target -- instead of reporting
+that narrow hosts cannot reach the target at all. That is the missing half of
+#1188's design matrix, and it is answered without computing anything in a wider
+type: the limbs stay true to their FpType and every EFT runs in host arithmetic.
 
-### Risks
-
-- **The 0-overlap invariant is stated in terms of block exponents.** If any
-  comparison uses `scale_of_v()` rather than `combined_exponent()`,
-  renormalisation silently changes its meaning. This is the main correctness
-  risk and should be settled by reading before writing.
-- **Cost.** A renormalisation per EFT result is a `frexp`/`ldexp` pair on the
-  hot path. `double` must not regress; if it does, gate renormalisation to
-  `k < 24` hosts, which is where it is needed.
-- **Exact-zero and non-finite blocks** have no meaningful mantissa scale and
-  must bypass renormalisation.
-- **`from_native`** already asserts `is_normalised()`; it would need to
-  renormalise rather than reject, which changes an existing contract (#1136).
-
-### Validation
-
-- `double` bit-identity across the existing suites is the gate. If `double`
-  moves at all, the change is wrong.
-- The dyadic oracle sweep (`elastic/elreal/oracle/sweep.cpp`) extended to
-  `bfloat16`, asserting exact `add`/`sub` as it already does for `float`.
-- The block-shape study (`benchmark/performance/arithmetic/elreal/performance.cpp`)
-  re-run; section B's narrow-host rows are the headline result and section H's
-  matrix should change qualitatively.
-- A depth sweep showing `bfloat16` past 33 digits is the minimum bar for calling
-  this done.
-
-## What the experiment did settle
-
-The diagnosis in the first half stands: the ceiling is exponent range, not
-precision, and it is not the EFTs. What is now also established is that the
-ceiling cannot be lifted by moving scale out of `v`, because the multi-block
-operations depend on the scale being there.
-
-One independent bug fell out of the attempt. `bfloat16::scale()` read the biased
-exponent field and subtracted the bias, which is correct for normals and wrong for
-all 254 subnormals: it answered -127 for every one of them, where the true scale
-runs from -127 down to -133. `block<FpType>::scale_of_v()` calls it, and the
-block's combined exponent is `scale_of_v() + exp`, so any block holding a
-subnormal carried a combined exponent up to 6 binades wrong -- and the 0-overlap
-accounting built on it was wrong with it. Fixed and now guarded exhaustively over
-all 65536 encodings (`static/float/bfloat16/api/scale.cpp`).
-
-## What a working fix would settle
-
-If it works, the block-shape study can finally answer the question it exists to
-ask -- what a narrow block shape costs in blocks and time at a *fixed* precision
-target -- instead of reporting that narrow hosts cannot reach the target at all.
-That is the missing half of #1188's design matrix, and it does it without
-computing anything in a wider type.
+Note that this does not change the user-facing recommendation in section H of the
+block-shape study. Narrow hosts remain dominated for any actual precision target
+-- `dd` and `qd` cover their range as compile-time constants and beat them on
+throughput. What changes is that the silicon question can now be measured.

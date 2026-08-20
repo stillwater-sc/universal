@@ -26,6 +26,14 @@ namespace {
 
 namespace est = sw::universal::elreal_oracle;
 
+// `depth` is passed explicitly rather than taking sqrt's default of 64. The
+// tolerances checked here are 1e-12 at worst, which every host clears at a small
+// depth; depth 64 was only ever cheap because the narrow-host refinement floor
+// stopped the underlying division early. With that floor gone the default is
+// honoured, so a test that does not need it should not ask for it
+// (universal#1051).
+constexpr std::size_t kVerifyDepth = 16;
+
 template <typename FpType>
 int verify_all(double tol, const std::string& host) {
     using namespace sw::universal;
@@ -36,7 +44,7 @@ int verify_all(double tol, const std::string& host) {
         {4.0, 2.0}, {9.0, 3.0}, {16.0, 4.0}, {25.0, 5.0}, {100.0, 10.0}, {144.0, 12.0}
     };
     for (auto& p : perfect) {
-        ZBCL<FpType> r = sqrt(from_native<FpType>(p.sq));
+        ZBCL<FpType> r = sqrt(from_native<FpType>(p.sq), kVerifyDepth);
         if (!(est::exact_value(r) == est::exact_value(from_native<FpType>(p.root)))) {
             std::cout << host << " sqrt(" << p.sq << ") != " << p.root << '\n'; ++n;
         }
@@ -46,7 +54,7 @@ int verify_all(double tol, const std::string& host) {
     // (2) Irrational roots: value vs std::sqrt, and round-trip sqrt(a)^2 ~= a.
     for (double v : { 2.0, 3.0, 5.0, 7.0, 0.5 }) {
         ZBCL<FpType> a = from_native<FpType>(v);
-        ZBCL<FpType> r = sqrt(a);
+        ZBCL<FpType> r = sqrt(a, kVerifyDepth);
         if (std::abs(est::approx(r) - std::sqrt(v)) > tol) {
             std::cout << host << " sqrt(" << v << ") = " << est::approx(r)
                       << " != " << std::sqrt(v) << " (tol " << tol << ")\n"; ++n;
