@@ -418,7 +418,22 @@ public:
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
 	constexpr bool sign()   const noexcept { return isneg(); }
-	constexpr int  scale()  const noexcept { int biased = static_cast<int>((_bits & 0x7F80u) >> 7); return biased - 127; }
+	// scale(): the unbiased binary exponent, i.e. the e with |value| in [2^e, 2^(e+1)).
+	// Subnormals carry a zero exponent field but are NOT all of scale -127: their
+	// magnitude is set by the leading one of the 7-bit fraction, so the scale runs
+	// from -127 (fraction MSB set) down to -133 (fraction == 1). Returning -127 for
+	// every subnormal understated the exponent by up to 6 binades, which silently
+	// corrupted any accounting built on scale() -- elreal's block combined exponent
+	// among them (universal#1051).
+	constexpr int  scale()  const noexcept {
+		int biased = static_cast<int>((_bits & 0x7F80u) >> 7);
+		if (biased != 0) return biased - 127;
+		unsigned frac = _bits & 0x007Fu;
+		if (frac == 0) return 0;                       // zero: scale is conventionally 0
+		int b = 6;
+		while (b > 0 && ((frac >> b) & 1u) == 0u) --b;
+		return b - 133;                                // -126 + b - 7
+	}
 	constexpr unsigned short bits() const noexcept { return _bits; }
 
 	constexpr bool test(unsigned bitIndex) const noexcept { return at(bitIndex); }

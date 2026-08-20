@@ -105,7 +105,52 @@ for `bfloat16` against 1.33 for `double` -- `double` is 6.8x more
 storage-efficient. A narrow host reaching high precision would need ~7.6x more
 blocks at ~0.9x the size each.
 
-## Proposal: scale-normalised blocks
+## The proposal below was tried and does not work
+
+**Status of this section: refuted by experiment.** Kept because the reason is the
+useful part, and because it is the obvious idea -- anyone reading the diagnosis
+above will reach for it.
+
+`block::normalise()` was implemented and behaves exactly as specified: it rescales
+`v` into `[1,2)`, folds the scale into `exp`, preserves the block's value and its
+combined exponent exactly (0 changes over 20,000 random blocks per host), and
+lifts subnormal `v` back to normal. The three floors were removed. The `double`
+suite stayed green -- 46/46, bit-identical -- which is what the gate below asked
+for.
+
+`bfloat16` then aborted on the 0-overlap assertion.
+
+The cause is not the 0-overlap comparison, which was the risk flagged below:
+`zero_overlap` compares `exponent()`, and `normalise()` preserves that exactly.
+It is **operand alignment**. `twoAdd` brings two blocks to a common scale before
+the EFT (`threeAdd.hpp`):
+
+```
+auto   e_max = std::max(a.exp, b.exp);
+FpType va    = (a.exp == e_max) ? a.v : ldexp_block(a.v, int(a.exp - e_max));
+```
+
+That shift is applied to the host value. In the current representation the scale
+lives in `v` and the `exp` fields stay close together -- the instrumentation above
+shows `min combined exponent` within 1 of the minimum `v` scale, i.e. `exp` is
+carrying nearly nothing -- so the alignment shift is small and harmless.
+Normalising inverts that: the scale moves into `exp`, the `exp` fields spread
+apart by hundreds of binades, and the alignment shift underflows `v` to a
+subnormal or to zero. The operand is destroyed before the EFT sees it.
+
+So keeping the scale in `v` is not an oversight. It is what makes alignment
+expressible in host arithmetic, and the denormal floors are the price. The two
+designs are in tension, and the floors are the cheaper side of it.
+
+A real fix has to attack the alignment, not the storage. The promising direction:
+`twoAdd` only needs to align when the operands actually interact. If
+`|a.exp - b.exp| >= k` the blocks are already 0-overlap and their sum *is* the
+pair `{a, b}` -- no arithmetic, no shift, no underflow. Aligning unconditionally
+is what forces every operand onto a common host scale. That is a much smaller
+change than restructuring the block, and it is where the next attempt should
+start. It is untested.
+
+## Superseded proposal: scale-normalised blocks
 
 Maintain `v` in `[1,2)` (or `[1,2)` in magnitude) and carry all scale in the
 `integer<256>` `exp` field, which is unbounded by construction.
@@ -161,7 +206,23 @@ Expected consequences, stated so they can be falsified:
 - A depth sweep showing `bfloat16` past 33 digits is the minimum bar for calling
   this done.
 
-## What this would settle
+## What the experiment did settle
+
+The diagnosis in the first half stands: the ceiling is exponent range, not
+precision, and it is not the EFTs. What is now also established is that the
+ceiling cannot be lifted by moving scale out of `v`, because the multi-block
+operations depend on the scale being there.
+
+One independent bug fell out of the attempt. `bfloat16::scale()` read the biased
+exponent field and subtracted the bias, which is correct for normals and wrong for
+all 254 subnormals: it answered -127 for every one of them, where the true scale
+runs from -127 down to -133. `block<FpType>::scale_of_v()` calls it, and the
+block's combined exponent is `scale_of_v() + exp`, so any block holding a
+subnormal carried a combined exponent up to 6 binades wrong -- and the 0-overlap
+accounting built on it was wrong with it. Fixed and now guarded exhaustively over
+all 65536 encodings (`static/float/bfloat16/api/scale.cpp`).
+
+## What a working fix would settle
 
 If it works, the block-shape study can finally answer the question it exists to
 ask -- what a narrow block shape costs in blocks and time at a *fixed* precision
