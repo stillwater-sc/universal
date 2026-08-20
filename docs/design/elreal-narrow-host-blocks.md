@@ -140,7 +140,7 @@ This is the general rule, and it is the whole fix in one line. An EFT that runs 
 the operands' natural scale has already lost bits to the subnormal range by the
 time it returns; normalising its outputs cannot put them back.
 
-```
+```cpp
 x.normalise();
 y.normalise();
 auto se = block_two_div_rem(x, y);
@@ -188,7 +188,7 @@ exhaust it -- v runs to 2^-123 and 2^-117 respectively, within a couple of bits 
 the wall. double's 11-bit exponent gives ~1000 binades of headroom that it never
 approaches, so it is limited by block count and has nothing to gain.
 
-```
+```cpp
 static constexpr bool needs_scale_normalisation =
     (std::numeric_limits<FpType>::min_exponent > -500);
 ```
