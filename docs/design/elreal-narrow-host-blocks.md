@@ -198,37 +198,80 @@ The mechanism is confirmed.
 
 ### What remains
 
-**A 0-overlap violation at depth >= 24, in `addRec_step`.** Located: a backtrace
-from the `zbcl.hpp` assertion puts the producer in `addRec_step` (threeAdd.hpp),
-the streaming `add()`, reached through `infsum`. Exactly one violation in a full
-`e_zbcl<bfloat16>(24)` run:
+**The 0-overlap violation: found, and fixed. `addRec_step` was not the culprit.**
+
+The backtrace pointed at `addRec_step`, and that was reported here as the
+producer. It was wrong. Instrumenting `addRec_step` to compare each block it
+emits against the previous one, per state rather than globally, shows its output
+is **clean** -- as is its internal workspace, checked over every consecutive pair.
+The assertion fires there because `addRec_step` is the first thing to *consume*
+the offending stream via `tail()`, not because it produced it.
+
+The real producer is `twoDivZBCL` (online_divide.hpp). A standalone repro reaches
+it with no `add` and no `infsum` at all: iterate
+`take_while_above(div_online(term, n))` over the `e` series and it violates on its
+own.
+
+The mechanism is the same one that sank attempt 1, one level down.
+`block_two_div_rem(x, y)` computes the remainder `e = x - s*y` in host arithmetic
+**at the operands' natural scale**. Near the host's subnormal wall that
+intermediate loses bits, so `e` is already wrong before anything sees it, and
+twoDiv's "e is >= k below s" guarantee -- which the emitted pair's 0-overlap
+depends on -- fails. Normalising `s` and `e` afterwards cannot put back bits the
+subnormal arithmetic destroyed.
+
+The fix is to normalise the **operands**, not the results:
+
+```
+x.normalise();
+y.normalise();
+auto se = block_two_div_rem(x, y);
+```
+
+With both rescaled into `[1,2)` first -- exactly, the scale moving into the wide
+exponent -- the division happens at scale ~1 on every host, the remainder stays
+normal, and the guarantee holds. The crash is gone: `e_zbcl<bfloat16>` completes
+at depth 24 and 32 where it previously aborted, and `double` is unaffected at
+46/46.
+
+The general rule this pins down, and it applies to every EFT site: **normalise
+before the arithmetic, not after it.** Normalising outputs is cosmetic;
+normalising inputs is what keeps the host out of its subnormal range.
+
+For the record, the violating pair was:
 
 ```
 k=7  E(head)=-189  E(tail)=-195  gap=6 (need >=7)
 head.v=-1.5 scale=0 exp=-189   tail.v=-1.71094 scale=0 exp=-195
 ```
 
-Both blocks are properly normalised, so this is not a normalisation artifact.
-`head.v = -1.5` carries **two** significant bits, at 2^-189 and 2^-190, so the
-tail at -195 does not *numerically* overlap it. McCleeary's invariant is the
-k-based test `E(b1) >= E(b2) + k`, which assumes every block is full width;
-`addRec_step` emitted a short block and placed the next one by actual
-significance instead.
+It sits at E = -189, about 57 decimal digits deep, against an old narrow-host
+floor of `min_exponent + 2k = -111`, about 33 digits. So this was latent and
+unreachable before -- the floor was masking a real defect in the division stream,
+not merely limiting precision.
 
-**This is a latent pre-existing bug, exposed rather than caused by removing the
-floors.** The violating pair is at E = -189, about 57 decimal digits deep. The
-old narrow-host floor was `min_exponent + 2k = -125 + 14 = -111`, about 33
-digits -- so refinement never reached this pair before, and the floor was masking
-it. `addRec_step` has form here: its own comments record two earlier fixes of
-this exact shape, #1034 (workspace tail not re-injected) and #1057 (FCL.hs emits
-`e` unconditionally, which is only valid when the remaining operand head is >= k
-below it). Both patched specific cases of the same underlying gap. A third case
-survives, and short blocks are the trigger.
+Two further host-floor arrests live in `addRec_step` -- `is_nonzero_subnormal_block`
+checks that truncate the stream outright. With `normalise()` in effect blocks are
+never subnormal, so those are dead code in that configuration and want removing
+along with the rest.
 
-Two further host-floor arrests live in `addRec_step` that the tried version left
-in place -- `is_nonzero_subnormal_block` checks that truncate the stream outright.
-With `normalise()` in effect blocks are never subnormal, so those guards are dead
-code in that configuration and want removing along with the rest.
+### What still blocks it
+
+**Convergence plateaus at ~40 digits instead of continuing.** With the divide
+fixed, bfloat16 runs 19/23/28/32/36/40 digits at depths 4..16 and then sits at 39
+through depth 32 -- and the 40 -> 39 step is a real regression, not noise. Some
+other operation is still doing its arithmetic at natural scale; the multiply and
+the add are the candidates, and the same operands-not-outputs rule should be
+applied to both before looking further.
+
+**Performance.** The elreal suite goes from 7s to 352s, almost all of it in
+`el_math_sqrt`. That is far worse than the 23x measured before the divide fix,
+because the division now refines to the working depth everywhere instead of
+stopping early. `normalise()` on the hot path costs a `scale_of_v()` -- `ilogb`,
+or a Universal `scale()` -- plus a wide `integer<256>` add, per operand per
+division step. Caching the combined exponent in the block, or keeping a
+normalised flag to skip the no-op case, is the obvious first move. Nothing lands
+until this is addressed.
 
 **A 23x slowdown.** The elreal suite goes from ~16s to ~364s. Part is real work
 (series now refine to the working depth instead of stopping at the floor), but
