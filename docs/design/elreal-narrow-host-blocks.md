@@ -105,18 +105,24 @@ for `bfloat16` against 1.33 for `double` -- `double` is 6.8x more
 storage-efficient. A narrow host reaching high precision would need ~7.6x more
 blocks at ~0.9x the size each.
 
-## The proposal below was tried and does not work
+## Status: the approach works, and is not finished
 
-**Status of this section: refuted by experiment.** Kept because the reason is the
-useful part, and because it is the obvious idea -- anyone reading the diagnosis
-above will reach for it.
+**The ceiling has been lifted in a working tree: bfloat16 reached 40 decimal
+digits where it had been hard-capped at 33.** The diagnosis above is therefore
+confirmed end to end -- the floors were the cap, and removing them with the scale
+moved out of `v` does raise a narrow host past it.
 
-`block::normalise()` was implemented and behaves exactly as specified: it rescales
-`v` into `[1,2)`, folds the scale into `exp`, preserves the block's value and its
-combined exponent exactly (0 changes over 20,000 random blocks per host), and
-lifts subnormal `v` back to normal. The three floors were removed. The `double`
-suite stayed green -- 46/46, bit-identical -- which is what the gate below asked
-for.
+It is not landable yet. Two problems remain, both stated below. The record of
+what was tried, in order, is kept because each failure pins down a real
+constraint that the next attempt has to respect.
+
+### Attempt 1: normalise alone -- refuted
+
+`block::normalise()` behaves exactly as specified: it rescales `v` into `[1,2)`,
+folds the scale into `exp`, preserves the block's value and combined exponent
+exactly (0 changes over 20,000 random blocks per host), and lifts subnormal `v`
+back to normal. The three floors were removed. `double` stayed bit-identical at
+46/46, which is the gate below.
 
 `bfloat16` then aborted on the 0-overlap assertion.
 
@@ -142,15 +148,73 @@ So keeping the scale in `v` is not an oversight. It is what makes alignment
 expressible in host arithmetic, and the denormal floors are the price. The two
 designs are in tension, and the floors are the cheaper side of it.
 
-A real fix has to attack the alignment, not the storage. The promising direction:
-`twoAdd` only needs to align when the operands actually interact. If
-`|a.exp - b.exp| >= k` the blocks are already 0-overlap and their sum *is* the
-pair `{a, b}` -- no arithmetic, no shift, no underflow. Aligning unconditionally
-is what forces every operand onto a common host scale. That is a much smaller
-change than restructuring the block, and it is where the next attempt should
-start. It is untested.
+So a fix has to attack the alignment, not the storage.
 
-## Superseded proposal: scale-normalised blocks
+### Attempt 2: the alignment shortcut at `k` -- refuted, instructively
+
+`twoAdd` only needs to align when the operands actually interact. If the blocks
+are already far enough apart their sum *is* the pair `{a, b}` -- no arithmetic, no
+shift, no underflow.
+
+At a threshold of `k` -- plain 0-overlap, `E(a) >= E(b) + k` -- this is **wrong**,
+and it fails on its own, without normalise even being called
+(`el_math_trigonometry`, 0-overlap at block 1). `twoSumRN` is contractually the
+round-to-nearest sum plus its exact residual, and `threeAdd` (Definition 4.2.1,
+transcribed from FCL.hs) is a fixed chain whose 0-overlap proof rests on that.
+0-overlap permits `b` up to just under `ulp(a)`, so anything above **half** an ulp
+carries and `RN(a+b) != a`. Measured on a `double` host, `E(a) = 0`:
+
+| `b` | `RN(a+b) == a`? |
+|-----|------------------|
+| quarter-ulp | yes |
+| half-ulp | yes |
+| 0.75 ulp | **no** |
+| just under 1 ulp | **no** |
+
+`{a, b}` is a valid exact decomposition there, but not the *round-to-nearest*
+one, and the chain does not survive the substitution.
+
+### Attempt 3: the shortcut at `k+1` -- sound, and it lifts the ceiling
+
+At `k+1` the gap puts `b` strictly below half an ulp, where RN cannot carry and
+`RN(a+b) == a` exactly -- so the pair really is the transform's own output. This
+is the non-overlapping versus **nonadjacent** distinction that also governs the
+Shewchuk COMPRESS step (#1340); the same one-bit margin, for the same reason.
+
+With `normalise()` applied in `divide.hpp`, `online_divide.hpp` and
+`online_multiply.hpp`, the shortcut at `k+1`, and all three floors removed:
+
+| depth | digits | blocks |
+|-------|--------|--------|
+| 4 | 19 | 9 |
+| 8 | 28 | 11 |
+| 12 | 36 | 14 |
+| **16** | **40** | 16 |
+| 20 | 39 | 20 |
+| 24 | *0-overlap assertion* | -- |
+
+40 digits against a previous hard ceiling of 33, and `double` stayed at 46/46.
+The mechanism is confirmed.
+
+### What remains
+
+**A 0-overlap violation at depth >= 24.** The non-monotonic 39 at depth 20 is the
+same fault showing up early. It is not `twoAdd` (the `k+1` shortcut is sound on
+its own), not the eager divide, not the streaming divide, and not the streaming
+multiply -- all of those normalise their outputs in the tried version. Some other
+producer still emits a pair closer than `k`. Finding it is the next step; the
+`zbcl.hpp` assertion already names the offending pair, so instrumenting it to
+print the producer should localise it quickly.
+
+**A 23x slowdown.** The elreal suite goes from ~16s to ~364s. Part is real work
+(series now refine to the working depth instead of stopping at the floor), but
+not 23x worth. `normalise()` calls `scale_of_v()` -- `ilogb`, or a Universal
+`scale()` -- plus a wide `integer<256>` add, on the hot path, and the shortcut
+adds two `exponent()` evaluations per `twoAdd`. Both want a cheaper formulation
+before this lands: `exponent()` in particular is recomputed constantly and could
+be cached in the block.
+
+## The proposal, for reference
 
 Maintain `v` in `[1,2)` (or `[1,2)` in magnitude) and carry all scale in the
 `integer<256>` `exp` field, which is unbounded by construction.
@@ -206,12 +270,17 @@ Expected consequences, stated so they can be falsified:
 - A depth sweep showing `bfloat16` past 33 digits is the minimum bar for calling
   this done.
 
-## What the experiment did settle
+## What the experiments settled
 
-The diagnosis in the first half stands: the ceiling is exponent range, not
-precision, and it is not the EFTs. What is now also established is that the
-ceiling cannot be lifted by moving scale out of `v`, because the multi-block
-operations depend on the scale being there.
+The diagnosis in the first half stands, and is now demonstrated rather than
+inferred: the ceiling is exponent range, not precision, it is not the EFTs, and
+moving the scale out of `v` does lift it -- 33 to 40 digits on bfloat16.
+
+What the failures pin down is the shape of a correct fix. Moving scale out of `v`
+is necessary but not sufficient: every site that brings two blocks to a common
+host scale has to stop doing so unconditionally, and the threshold for skipping
+is `k+1`, not `k`, because `twoSumRN` owes its callers the round-to-nearest
+decomposition and not merely an exact one.
 
 One independent bug fell out of the attempt. `bfloat16::scale()` read the biased
 exponent field and subtracted the bias, which is correct for normals and wrong for
