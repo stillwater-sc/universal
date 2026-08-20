@@ -114,16 +114,20 @@ inline std::pair<block<FpType>, block<FpType>> twoSumRN(block<FpType> a, block<F
 	// Skipping here also bounds the alignment below: every surviving case has a gap
 	// under k+1, so a normalised v shifted by that much stays comfortably normal.
 	//
-	// Gated to narrow hosts with the rest -- a wide host never approaches its wall,
-	// so this buys it nothing and would only perturb a hot path that is already
-	// correct. With the gate the whole change is a no-op for k >= 24: double is
-	// bit-identical by construction rather than by testing.
+	// Applied on every host. This was briefly gated to narrow hosts on the theory
+	// that a wide-exponent host never reaches its wall; double turned out to be
+	// sitting exactly on its own -- it stopped at 307 digits, and its smallest
+	// normal 2^-1022 is 307.7 digits -- so the gate was capping it.
+	// needs_scale_normalisation is now true for every host, and the `if constexpr`
+	// remains only as the one place that would change if a host ever did need
+	// excluding.
 	if constexpr (block<FpType>::needs_scale_normalisation) {
 		if (expGreaterBy(block<FpType>::k + 1, a, b)) return {a, b};
 		if (expGreaterBy(block<FpType>::k + 1, b, a)) return {b, a};
 		// Normalise the OPERANDS before aligning them. The shift below is applied to
 		// the host value, and at the operands' natural scale it can drive v subnormal
-		// on a narrow host, losing bits before host_two_sum ever sees them.
+		// -- on any host, once the expansion runs deep enough -- losing bits before
+		// host_two_sum ever sees them.
 		a.normalise();
 		b.normalise();
 	}
