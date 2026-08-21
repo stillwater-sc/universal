@@ -98,8 +98,8 @@ inline ZBCL<FpType> twoDivZBCL(block<FpType> x, block<FpType> y) {
     // before anything sees it and twoDiv's "e is >= k below s" guarantee fails.
     // Normalising the outputs cannot restore what the subnormal arithmetic
     // destroyed. Rescaled first, the division runs at scale ~1 (universal#1051).
-    x.normalise();
-    y.normalise();
+    x.normalise();  x.bias_for_eft();
+    y.normalise();  y.bias_for_eft();
     auto se = block_two_div_rem(x, y);                // (s, e): x/y = s + e/y
     // Host-floor guard, gated to narrow hosts -- mirrors divide.hpp's exp_floor.
     //

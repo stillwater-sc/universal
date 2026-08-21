@@ -178,6 +178,64 @@ struct block {
     // reach, not a change in what the retained digits say.
     static constexpr bool needs_scale_normalisation = true;   // EXPERIMENT: all hosts
 
+    // eft_scale_bias: how far ABOVE [1,2) a SUM's operands must sit so its residual
+    // stays normal on this host.
+    //
+    // This applies to two_sum and to the division remainder, NOT to two_prod. A
+    // product's exponent is the SUM of its operands', so biasing both operands
+    // doubles the bias and overflows a narrow-range host: on half, two normalised
+    // operands biased by 8 each land in [256,512) and their product in [65536,
+    // 262144) against a finite maximum of 130880 -- block_two_mult returned
+    // high=inf, low=nan. A product also does not need the room: its residual sits
+    // only k below the product, not 2k, and half has 14 binades for k=11. So
+    // multiplication takes normalised operands and no bias. (Caught in review on
+    // universal#1366; the tests passed around it.)
+    //
+    // two_sum's residual can land a full 2k binades below the leading operand: the
+    // smaller operand is aligned up to k down, and the residual is up to another k
+    // below that. A host therefore needs 2k binades of room beneath a normalised
+    // operand. Measured need against available:
+    //
+    //     half      k=11   need 22, has   14   -> short by 8
+    //     bfloat16  k= 7   need 14, has  126   -> fine
+    //     float     k=24   need 48, has  126   -> fine
+    //     double    k=53   need 106, has 1022  -> fine
+    //
+    // half is the only host that comes up short, and the consequence was real:
+    // add() was inexact on it (5 in 2000 random multi-block additions), which broke
+    // the ZBCL exactness invariant and capped e at 19 digits no matter the depth
+    // (universal#1363).
+    //
+    // The fix borrows from the other end. half has 16 binades of unused headroom
+    // ABOVE 1.0, and a block's scale lives in its wide exponent, so shifting v up
+    // and exp down by the same amount is exact and leaves exponent() unchanged. The
+    // EFT then runs with room beneath it. Hosts with no shortfall get 0 and the
+    // whole thing compiles out.
+    static constexpr int eft_scale_bias() {
+        constexpr int haveBelow = -(std::numeric_limits<FpType>::min_exponent - 1);
+        constexpr int shortfall = 2 * k - haveBelow;
+        if constexpr (shortfall <= 0) return 0;
+        else {
+            // leave 2 binades so the sum's carry cannot overflow the host
+            constexpr int headroom = std::numeric_limits<FpType>::max_exponent - 2;
+            return shortfall < headroom ? shortfall : headroom;
+        }
+    }
+
+    // bias_for_eft(): shift v up and exp down by eft_scale_bias(). Exact -- a pure
+    // exponent move -- and the block's VALUE is preserved. The stored exponent is
+    // not: that is the point, and callers use the adjusted one for alignment and
+    // for constructing their results.
+    constexpr block& bias_for_eft() noexcept {
+        if constexpr (eft_scale_bias() == 0) return *this;
+        else {
+            if (is_zero_block()) return *this;
+            v = detail_block::ldexp_block(v, eft_scale_bias());
+            exp = exp - exp_t(eft_scale_bias());
+            return *this;
+        }
+    }
+
     // normalise(): rescale `v` into [1,2) in magnitude, folding the scale it was
     // carrying into `exp`. E(b) = scale_of_v() + exp is invariant, so the block's
     // value does not change; only its split between the two fields moves. Exact --

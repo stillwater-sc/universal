@@ -130,6 +130,14 @@ inline std::pair<block<FpType>, block<FpType>> twoSumRN(block<FpType> a, block<F
 		// host_two_sum ever sees them.
 		a.normalise();
 		b.normalise();
+		// and lift both into the host's upper range if its exponent span is too
+		// narrow to hold the residual 2k below a normalised operand (half; see
+		// block::eft_scale_bias). The shift moves v up and exp down by the same
+		// amount, so the block's VALUE is preserved exactly; the stored exponent
+		// deliberately is not, and the alignment and result construction below use
+		// the adjusted one.
+		a.bias_for_eft();
+		b.bias_for_eft();
 	}
 
 	auto   e_max = std::max(a.exp, b.exp);
