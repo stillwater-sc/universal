@@ -178,6 +178,52 @@ struct block {
     // reach, not a change in what the retained digits say.
     static constexpr bool needs_scale_normalisation = true;   // EXPERIMENT: all hosts
 
+    // eft_scale_bias: how far ABOVE [1,2) an EFT's operands must sit so its residual
+    // stays normal on this host.
+    //
+    // two_sum's residual can land a full 2k binades below the leading operand: the
+    // smaller operand is aligned up to k down, and the residual is up to another k
+    // below that. A host therefore needs 2k binades of room beneath a normalised
+    // operand. Measured need against available:
+    //
+    //     half      k=11   need 22, has   14   -> short by 8
+    //     bfloat16  k= 7   need 14, has  126   -> fine
+    //     float     k=24   need 48, has  126   -> fine
+    //     double    k=53   need 106, has 1022  -> fine
+    //
+    // half is the only host that comes up short, and the consequence was real:
+    // add() was inexact on it (5 in 2000 random multi-block additions), which broke
+    // the ZBCL exactness invariant and capped e at 19 digits no matter the depth
+    // (universal#1363).
+    //
+    // The fix borrows from the other end. half has 16 binades of unused headroom
+    // ABOVE 1.0, and a block's scale lives in its wide exponent, so shifting v up
+    // and exp down by the same amount is exact and leaves exponent() unchanged. The
+    // EFT then runs with room beneath it. Hosts with no shortfall get 0 and the
+    // whole thing compiles out.
+    static constexpr int eft_scale_bias() {
+        constexpr int haveBelow = -(std::numeric_limits<FpType>::min_exponent - 1);
+        constexpr int shortfall = 2 * k - haveBelow;
+        if constexpr (shortfall <= 0) return 0;
+        else {
+            // leave 2 binades so the sum's carry cannot overflow the host
+            constexpr int headroom = std::numeric_limits<FpType>::max_exponent - 2;
+            return shortfall < headroom ? shortfall : headroom;
+        }
+    }
+
+    // bias_for_eft(): shift v up (and exp down) by eft_scale_bias(). Exact -- a pure
+    // exponent move -- and exponent() is invariant, so the block's value is unchanged.
+    constexpr block& bias_for_eft() noexcept {
+        if constexpr (eft_scale_bias() == 0) return *this;
+        else {
+            if (is_zero_block()) return *this;
+            v = detail_block::ldexp_block(v, eft_scale_bias());
+            exp = exp - exp_t(eft_scale_bias());
+            return *this;
+        }
+    }
+
     // normalise(): rescale `v` into [1,2) in magnitude, folding the scale it was
     // carrying into `exp`. E(b) = scale_of_v() + exp is invariant, so the block's
     // value does not change; only its split between the two fields moves. Exact --

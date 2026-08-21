@@ -50,8 +50,8 @@ inline series<FpType> singleMultHelper(const block<FpType>& f, ZBCL<FpType> gs) 
     // denormalises near the wall -- losing bits that normalising the outputs cannot
     // restore. Rescaled to [1,2) first, the product runs at scale ~1 and the residual
     // stays a full k below the high block (universal#1051).
-    block<FpType> fN = f;          fN.normalise();
-    block<FpType> gN = gs.head();  gN.normalise();
+    block<FpType> fN = f;          fN.normalise();  fN.bias_for_eft();
+    block<FpType> gN = gs.head();  gN.normalise();  gN.bias_for_eft();
     auto pr = block_two_mult(fN, gN);                     // (high, low), exact f*g
     const auto subnormal = [](const block<FpType>& b) {
         return !b.is_zero_block() && !b.is_normalised();

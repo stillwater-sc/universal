@@ -51,7 +51,13 @@ inline ZBCL<FpType> mul_scalar(const block<FpType>& s, ZBCL<FpType> y,
     std::vector<B> pool;
     for (const auto& yj : y.take(depth)) {
         if (!yj.is_normalised()) continue;
-        auto pr = block_two_mult(s, yj);
+        // Normalise the OPERANDS, not the results (universal#1051/#1363): the
+        // residual is computed in host arithmetic at the operands' natural
+        // scale, and a narrow-exponent host denormalises there before
+        // block_two_mult ever returns.
+        B sN = s;  sN.normalise(); sN.bias_for_eft();
+        B yN = yj; yN.normalise(); yN.bias_for_eft();
+        auto pr = block_two_mult(sN, yN);
         // Keep only normalised product blocks: drop zeros and sub-floor
         // denormals (denormals would break 0-overlap accounting; their value is
         // below FpType's reliable precision).
@@ -75,7 +81,9 @@ inline ZBCL<FpType> mul(ZBCL<FpType> x, ZBCL<FpType> y, std::size_t depth = 64) 
         if (!xi.is_normalised()) continue;
         for (const auto& yj : ys) {
             if (!yj.is_normalised()) continue;
-            auto pr = block_two_mult(xi, yj);
+            B xN = xi; xN.normalise(); xN.bias_for_eft();
+            B yN = yj; yN.normalise(); yN.bias_for_eft();
+            auto pr = block_two_mult(xN, yN);
             if (pr.first.is_normalised())  pool.push_back(pr.first);
             if (pr.second.is_normalised()) pool.push_back(pr.second);
         }
