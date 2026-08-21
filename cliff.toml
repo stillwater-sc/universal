@@ -21,6 +21,24 @@ body = """
 ## [Unreleased]
 {% endif -%}
 
+{# Behaviour changes: collected from a BEHAVIOUR-CHANGE (or BEHAVIOR-CHANGE)
+   commit trailer, so a user-visible change in results reaches the release page
+   instead of living only in the annotated tag. The generated notes are built
+   from commit subjects, which cannot express "this changes what your code
+   returns". Both spellings are accepted. #}
+{%- set_global has_behaviour_change = false -%}
+{%- for commit in commits -%}
+  {%- for f in commit.footers -%}
+    {%- if f.token == "BEHAVIOUR-CHANGE" or f.token == "BEHAVIOR-CHANGE" -%}
+      {%- set_global has_behaviour_change = true -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endfor -%}
+{%- if has_behaviour_change %}
+### Behaviour changes
+{% for commit in commits %}{%- for f in commit.footers %}{%- if f.token == "BEHAVIOUR-CHANGE" or f.token == "BEHAVIOR-CHANGE" %}
+- {% if commit.scope %}**{{ commit.scope }}**: {% endif %}{{ f.value }}{% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.remote.pr_number }})){% endif %}{%- endif %}{%- endfor %}{%- endfor %}
+{%- endif %}
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group | striptags | trim | upper_first }}
 {% for commit in commits %}
