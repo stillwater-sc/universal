@@ -210,9 +210,20 @@ inline ZBCL<FpType> recip_newton(const ZBCL<FpType>& b, std::size_t depth) {
     ZBCL<FpType> r   = ZBCL<FpType>::singleton(r0blk);
     ZBCL<FpType> two = from_native<FpType>(2.0);
 
-    const std::size_t guard = depth + 1;
+    // `depth` is caller-controlled since universal#1371 (it used to be a small
+    // host-derived constant), so both of these must survive an absurd argument: at
+    // SIZE_MAX, depth + 1 wraps to 0 and would truncate every iterate to nothing, and
+    // p <<= 1 wraps to 0 and leaves `p < depth` true forever. Saturating keeps a
+    // nonsense depth to a terminating (if useless) call instead of a hang, and is
+    // exact for every depth a caller can actually afford to materialise.
+    constexpr std::size_t kSizeMax = std::numeric_limits<std::size_t>::max();
+    const std::size_t guard = (depth < kSizeMax) ? depth + 1 : kSizeMax;
     std::size_t iters = 1;                       // r0 is ~1 block correct ...
-    for (std::size_t p = 1; p < depth; p <<= 1) ++iters;   // ... double to >= depth
+    for (std::size_t p = 1; p < depth; ) {       // ... double to >= depth
+        ++iters;
+        if (p > kSizeMax / 2) break;             // one more doubling would wrap
+        p <<= 1;
+    }
     for (std::size_t i = 0; i < iters; ++i) {
         ZBCL<FpType> br = mul_online(b, r);                  // b*r ~ 1
         ZBCL<FpType> s  = add(two, negate(std::move(br)));   // 2 - b*r
