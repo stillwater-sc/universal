@@ -34,6 +34,7 @@
 
 #include <universal/number/elreal/elreal.hpp>
 #include <universal/verification/elreal_oracle.hpp>
+#include <universal/verification/elreal_reference_digits.hpp>   // agreed_decimal_digits
 #include <universal/verification/test_suite.hpp>
 
 namespace {
@@ -332,6 +333,65 @@ int verify_facade_division_precision(const char* host) {
     return n;
 }
 
+// mul_online must be invariant to INTERIOR ZERO BLOCKS in an operand. Zero blocks are
+// legitimate ZBCL blocks, so two expansions can carry the EXACT SAME VALUE and differ
+// only in how many of them they hold -- the product must not notice. It used to: the
+// streaming sum's null-sum branch discarded an unconsumed term when a term summed to
+// zero, so an operand with interior zero blocks lost everything past them (#1373).
+template <typename FpType>
+int verify_mul_ignores_zero_blocks(const char* host) {
+    using namespace sw::universal;
+    using B = block<FpType>;
+    int n = 0;
+    // same value, written with and without interior zero blocks
+    const int deep = 40 * B::k;                      // far below the leading block
+    std::vector<B> with  = { B{ FpType(1.0), typename B::exp_t(0) },
+                             B{ FpType(0.0), typename B::exp_t(-2 * B::k) },
+                             B{ FpType(0.0), typename B::exp_t(-3 * B::k) },
+                             B{ FpType(0.0), typename B::exp_t(-4 * B::k) },
+                             B{ FpType(1.0), typename B::exp_t(-deep) } };
+    std::vector<B> clean = { B{ FpType(1.0), typename B::exp_t(0) },
+                             B{ FpType(1.0), typename B::exp_t(-deep) } };
+    ZBCL<FpType> zw = zbcl_from_blocks<FpType>(with), zc = zbcl_from_blocks<FpType>(clean);
+    // premise: they really are the same value
+    if (agreed_decimal_digits(zw, zc, 2000) < 2000) {
+        std::cout << "zero-blocks [" << host << "]: the two operands are not the same value"
+                  << " -- test premise broken\n"; return 1;
+    }
+    ZBCL<FpType> m = sqrt(from_native<FpType>(2.0), 8);
+    ZBCL<FpType> pw = zbcl_from_blocks<FpType>(mul_online(m, zw).take(64));
+    ZBCL<FpType> pc = zbcl_from_blocks<FpType>(mul_online(m, zc).take(64));
+    const int agree = agreed_decimal_digits(pw, pc, 2000);
+    if (agree < 2000) {
+        std::cout << "zero-blocks [" << host << "]: products differ (" << agree
+                  << " digits) -- interior zero blocks truncated the product (#1373)\n";
+        ++n;
+    }
+    return n;
+}
+
+// A dense-divisor quotient must keep resolving with depth. Before #1373 the Newton
+// reciprocal fixed-pointed, capping the quotient at ~513 decimal digits on a double
+// host and ~62 on float NO MATTER what depth was requested -- so a depth whose
+// capacity exceeds that cap is what distinguishes fixed from broken. 2/sqrt(2) is
+// sqrt(2), so the divisor is its own reference and no decimal constant is needed.
+template <typename FpType>
+int verify_dense_div_resolves_with_depth(const char* host, std::size_t depth, int oldCap) {
+    using namespace sw::universal;
+    int n = 0;
+    ZBCL<FpType> b = sqrt(from_native<FpType>(2.0), depth);
+    ZBCL<FpType> q = zbcl_from_blocks<FpType>(div_online(from_native<FpType>(2.0), b, depth).take(depth + 4));
+    const int agree = agreed_decimal_digits(q, b, 4000);
+    // the quotient reproduces the divisor to most of the divisor's own precision
+    const int want = static_cast<int>(0.90 * double(depth) * double(block<FpType>::k) * 0.30103);
+    if (agree < want) {
+        std::cout << "dense-div [" << host << "] depth " << depth << ": 2/sqrt(2) reproduces sqrt(2) to only "
+                  << agree << " digits (want >= " << want << "; the #1373 cap was ~" << oldCap << ")\n";
+        ++n;
+    }
+    return n;
+}
+
 } // anonymous
 
 #define MANUAL_TESTING 0
@@ -377,6 +437,12 @@ try {
     nrOfFailedTestCases += verify_div_dense_honours_depth<float>("float");
     nrOfFailedTestCases += verify_facade_division_precision<double>("double");
     nrOfFailedTestCases += verify_facade_division_precision<float>("float");
+    nrOfFailedTestCases += verify_mul_ignores_zero_blocks<double>("double");
+    nrOfFailedTestCases += verify_mul_ignores_zero_blocks<float>("float");
+    // depth 40 -> capacity ~638 digits, comfortably above the old ~513 cap while
+    // keeping the check affordable for the fast CI tier.
+    nrOfFailedTestCases += verify_dense_div_resolves_with_depth<double>("double", 40, 513);
+    nrOfFailedTestCases += verify_dense_div_resolves_with_depth<float>("float", 24, 62);
 
 #endif
 
