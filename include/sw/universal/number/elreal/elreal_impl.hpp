@@ -54,6 +54,11 @@ namespace sw { namespace universal {
 // from it and may be changed per-scope (elreal_precision_guard).
 inline constexpr std::size_t kElrealDefaultPrecision = 8;   // ~128 decimal digits on a double host
 
+// Extra blocks requested of a dense quotient beyond the object's own precision, so a
+// boundary op that pulls `precision()` blocks is not reading the quotient's last,
+// least-settled block.
+inline constexpr std::size_t kQuotientGuard = 2;
+
 inline std::size_t& elreal_default_precision() {
     static thread_local std::size_t depth = kElrealDefaultPrecision;
     return depth;
@@ -195,7 +200,12 @@ public:
         if (rhs.iszero()) return iszero() ? become(elreal_class::qnan, nd)       // 0 / 0
                                           : become(detail::inf_with_sign(sign() * rhs.sign()), nd); // x / 0
         if (isinf()) return become(detail::inf_with_sign(sign() * rhs.sign()), nd);  // inf / finite
-        _value = div_online(_value, rhs._value); _depth = nd; return *this;
+        // Pass the working depth: div_online's DENSE path needs a budget up front, and
+        // it used to infer one from the host's exponent range -- capping a facade
+        // division at ~271 digits on double and ~22 on float no matter what precision()
+        // said (universal#1371). A small guard above nd covers the boundary op that
+        // will pull nd blocks out of this quotient.
+        _value = div_online(_value, rhs._value, nd + kQuotientGuard); _depth = nd; return *this;
     }
 
     // --- lazy API / state-machine extension ----------------------------------

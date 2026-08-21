@@ -269,7 +269,11 @@ inline std::pair<ZBCL<FpType>, ZBCL<FpType>> sincos(ZBCL<FpType> x, std::size_t 
         const std::size_t reddepth = depth + 6 + static_cast<std::size_t>(ex / B::k + 2);
         ZBCL<FpType> halfpi = mul_scalar(B{ static_cast<FpType>(0.5), 0 }, pi_zbcl<FpType>(reddepth), reddepth);
 
-        ZBCL<FpType> q = div_online(ax, halfpi);                 // |x| / (pi/2), full precision
+        // |x| / (pi/2) to the reduction depth. halfpi is a DENSE multi-block divisor,
+        // so this quotient used to be capped at div_online's host-derived 17 blocks
+        // (3 on float) regardless of reddepth -- silently limiting the reduction
+        // (universal#1371).
+        ZBCL<FpType> q = div_online(ax, halfpi, reddepth);
         integer<256, std::uint32_t> N = zbcl_round_to_int(q, reddepth);
         nmod4 = static_cast<int>(N % 4);                         // N >= 0
 

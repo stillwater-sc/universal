@@ -284,6 +284,54 @@ int verify_div_deep_reach() {
     return n;
 }
 
+// A DENSE-divisor quotient must reach the depth the CALLER asks for, on every host.
+// It used to stop at a depth derived from FpType's exponent range -- 17 blocks on
+// double, 3 on float -- regardless of how deep the caller pulled (#1371). That is the
+// premise #1362 removed elsewhere: a block carries its scale in a wide integer<256>
+// exponent, so min_exponent bounds nothing about an expansion's depth.
+template <typename FpType>
+int verify_div_dense_honours_depth(const char* host) {
+    using namespace sw::universal;
+    int n = 0;
+    // sqrt(2) is a genuinely dense multi-block divisor (no power-of-two blocks).
+    for (std::size_t d : { std::size_t(8), std::size_t(16), std::size_t(32), std::size_t(48) }) {
+        ZBCL<FpType> b = sqrt(from_native<FpType>(2.0), d);
+        if (!is_dense_divisor(b)) {           // guard the premise of this test
+            std::cout << "dense-depth [" << host << "] d=" << d
+                      << ": sqrt(2) is not classified dense -- test no longer exercises the Newton path\n";
+            ++n; continue;
+        }
+        const std::size_t got = div_online(from_native<FpType>(2.0), b, d).take(4 * d + 8).size();
+        if (got < d) {
+            std::cout << "dense-depth [" << host << "] requested " << d << " blocks, got " << got
+                      << " (the #1371 host-derived cap is back: 17 on double, 3 on float)\n";
+            ++n;
+        }
+    }
+    return n;
+}
+
+// The class facade must propagate precision() into division. Without it, elreal's
+// operator/ was pinned to that same host constant no matter what the object asked for,
+// which stalled a Newton iteration at ~282 digits on double and ~22 on float.
+template <typename FpType>
+int verify_facade_division_precision(const char* host) {
+    using namespace sw::universal;
+    int n = 0;
+    for (std::size_t d : { std::size_t(24), std::size_t(48) }) {
+        elreal<FpType> num(2.0);
+        elreal<FpType> den(ZBCL<FpType>(sqrt(from_native<FpType>(2.0), d)), d);
+        num.precision(d);
+        const std::size_t got = (num / den).stream().take(4 * d + 8).size();
+        if (got < d) {
+            std::cout << "facade-precision [" << host << "] precision(" << d << ") but quotient has "
+                      << got << " blocks (precision() not reaching div_online)\n";
+            ++n;
+        }
+    }
+    return n;
+}
+
 } // anonymous
 
 #define MANUAL_TESTING 0
@@ -325,6 +373,10 @@ try {
     nrOfFailedTestCases += verify_div_dense_shallow();
     nrOfFailedTestCases += verify_div_dense_deep();
     nrOfFailedTestCases += verify_div_deep_reach();
+    nrOfFailedTestCases += verify_div_dense_honours_depth<double>("double");
+    nrOfFailedTestCases += verify_div_dense_honours_depth<float>("float");
+    nrOfFailedTestCases += verify_facade_division_precision<double>("double");
+    nrOfFailedTestCases += verify_facade_division_precision<float>("float");
 
 #endif
 
