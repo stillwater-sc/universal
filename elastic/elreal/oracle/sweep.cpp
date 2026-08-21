@@ -283,31 +283,46 @@ namespace {
 	// sparseness were a defect: that the expansion is exact. A product of two
 	// deliberately sparse operands must equal the exact dyadic product.
 	template<typename FpType>
-	int VerifySparseExpansionExact(const char* host, bool reportTestCases, int nrTests) {
+	int VerifySparseExpansionExact(const char* host, bool reportTestCases, int nrValidWanted) {
 		int fails = 0;
 		std::mt19937_64 rng(0x5A17);
-		for (int t = 0; t < nrTests; ++t) {
-			// division produces sparse expansions with mixed signs
+
+		auto expansion_is_sparse = [](const std::vector<block<FpType>>& b, int& overlapFails) {
+			bool wide = false;
+			for (std::size_t i = 0; i + 1 < b.size(); ++i) {
+				if (!zero_overlap(b[i], b[i + 1])) ++overlapFails;
+				if ((b[i].exponent() - b[i + 1].exponent()) > block<FpType>::k) wide = true;
+			}
+			return wide;
+		};
+
+		// Collect nrValidWanted cases that genuinely exercise the precondition --
+		// both operands multi-block AND actually sparse -- rather than skipping
+		// quietly and passing on however few happen to qualify. A test that can
+		// report success without reaching its subject is the failure mode this whole
+		// suite exists to catch, so the shortfall is itself a failure below.
+		int valid = 0;
+		const int maxAttempts = nrValidWanted * 20;
+		for (int attempt = 0; attempt < maxAttempts && valid < nrValidWanted; ++attempt) {
 			auto x = div(from_native<FpType>(double(1 + rng() % 97)),
 			             from_native<FpType>(double(1 + rng() % 97)), 8);
 			auto y = div(from_native<FpType>(double(1 + rng() % 97)),
 			             from_native<FpType>(double(1 + rng() % 97)), 8);
-			auto blocks = x.take(64);
-			if (blocks.size() < 3) continue;          // want a real expansion
+			auto bx = x.take(64), by = y.take(64);
+			if (bx.size() < 3 || by.size() < 3) continue;
 
-			// 0-overlap holds, and the gaps are genuinely wider than k
-			bool sawWideGap = false;
-			for (std::size_t i = 0; i + 1 < blocks.size(); ++i) {
-				if (!zero_overlap(blocks[i], blocks[i + 1])) {
-					if (reportTestCases) std::cout << "    FAIL 0-overlap " << host << '\n';
-					++fails;
-				}
-				if ((blocks[i].exponent() - blocks[i + 1].exponent()) > block<FpType>::k)
-					sawWideGap = true;
+			int overlapFails = 0;
+			const bool sparseX = expansion_is_sparse(bx, overlapFails);
+			const bool sparseY = expansion_is_sparse(by, overlapFails);
+			if (overlapFails) {
+				if (reportTestCases) std::cout << "    FAIL 0-overlap " << host << '\n';
+				fails += overlapFails;
 			}
-			(void)sawWideGap;
+			if (!sparseX || !sparseY) continue;      // not the case under test
+			++valid;
 
-			// and the value is exact: sum-of-blocks times sum-of-blocks
+			// the value is exact: the product of two sparse operands equals the
+			// exact dyadic product of their values
 			dyadic dx = zbcl_to_dyadic(x), dy = zbcl_to_dyadic(y);
 			int digits = agreed_decimal_digits(zbcl_to_dyadic(mul(x, y, 24)), dx * dy);
 			if (digits < 60) {
@@ -315,6 +330,11 @@ namespace {
 				                               << " digits=" << digits << '\n';
 				++fails;
 			}
+		}
+		if (valid < nrValidWanted) {
+			if (reportTestCases) std::cout << "    FAIL " << host << " only " << valid << " of "
+			                               << nrValidWanted << " sparse cases found\n";
+			++fails;
 		}
 		return fails;
 	}
