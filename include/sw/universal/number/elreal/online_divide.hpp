@@ -20,8 +20,14 @@
 //      = r_n(2 - b r_n), error squaring per step, seeded from 1/leading-block. Reuses the
 //      working mul_online + add; terminates; 0-overlap; reconstructs q*b == a exactly.
 //      This is a DELIBERATE DEVIATION from McCleeary 4.2.6 for the dense case (#1068).
-//    - DEPTH: the dense quotient refines to the host floor (~17 components / ~265 digits
-//      on a double host), the same region as the single-block path. This required the
+//    - DEPTH: the dense quotient refines to the `depth` the CALLER asks for (default
+//      kDenseQuotientDepth, matching the eager div()). It used to stop at a depth
+//      DERIVED FROM THE HOST'S EXPONENT RANGE -- 17 components / ~265 digits on double,
+//      and only 3 / ~22 digits on float -- which capped every dense division no matter
+//      how deep the caller pulled (universal#1371). That was the same mistaken premise
+//      #1362 removed elsewhere: a block carries its scale in a wide integer<256>
+//      exponent, so min_exponent bounds nothing about how deep an expansion may go.
+//      This required the
 //      streaming-multiply host-floor arrest (#1068): mul_online USED to emit subnormal
 //      blocks once a product reached ~2^-1022, and a subnormal block cannot hold its k
 //      bits, so two of them landed ~22 apart and broke 0-overlap (an earlier draft of
@@ -204,9 +210,20 @@ inline ZBCL<FpType> recip_newton(const ZBCL<FpType>& b, std::size_t depth) {
     ZBCL<FpType> r   = ZBCL<FpType>::singleton(r0blk);
     ZBCL<FpType> two = from_native<FpType>(2.0);
 
-    const std::size_t guard = depth + 1;
+    // `depth` is caller-controlled since universal#1371 (it used to be a small
+    // host-derived constant), so both of these must survive an absurd argument: at
+    // SIZE_MAX, depth + 1 wraps to 0 and would truncate every iterate to nothing, and
+    // p <<= 1 wraps to 0 and leaves `p < depth` true forever. Saturating keeps a
+    // nonsense depth to a terminating (if useless) call instead of a hang, and is
+    // exact for every depth a caller can actually afford to materialise.
+    constexpr std::size_t kSizeMax = std::numeric_limits<std::size_t>::max();
+    const std::size_t guard = (depth < kSizeMax) ? depth + 1 : kSizeMax;
     std::size_t iters = 1;                       // r0 is ~1 block correct ...
-    for (std::size_t p = 1; p < depth; p <<= 1) ++iters;   // ... double to >= depth
+    for (std::size_t p = 1; p < depth; ) {       // ... double to >= depth
+        ++iters;
+        if (p > kSizeMax / 2) break;             // one more doubling would wrap
+        p <<= 1;
+    }
     for (std::size_t i = 0; i < iters; ++i) {
         ZBCL<FpType> br = mul_online(b, r);                  // b*r ~ 1
         ZBCL<FpType> s  = add(two, negate(std::move(br)));   // 2 - b*r
@@ -220,6 +237,13 @@ inline ZBCL<FpType> recip_newton(const ZBCL<FpType>& b, std::size_t depth) {
 // on the faithful long-division path (it reaches the host floor there); only the
 // genuinely DENSE case -- where divideHelper's fan-out cost-explodes past ~7 blocks
 // -- routes to Newton. A single-block divisor (e.g. 1/3) is never dense.
+// Default working depth for a DENSE-divisor quotient, in blocks. Matches the eager
+// div()'s default so the streaming and eager APIs agree, and is deliberately NOT
+// derived from FpType: the host's exponent range does not bound an expansion's depth
+// (universal#1371). Dense division costs roughly linearly in this, so callers with a
+// known working precision should pass it explicitly rather than pay for the default.
+inline constexpr std::size_t kDenseQuotientDepth = 64;
+
 template <typename FpType>
 inline bool is_dense_divisor(const ZBCL<FpType>& gs) {
     const std::vector<block<FpType>> bl = gs.take(4);
@@ -228,7 +252,7 @@ inline bool is_dense_divisor(const ZBCL<FpType>& gs) {
     return false;                                          // all power-of-two: sparse
 }
 
-// div_online(fs, gs): fs / gs. Single-block and sparse divisors use the faithful
+// div_online(fs, gs, depth): fs / gs. Single-block and sparse divisors use the faithful
 // McCleeary long division (div_raw); shiftUpToTwo normalises the divisor's leading
 // exponent to >= 1 (scaling BOTH operands, so the quotient is unchanged) for the
 // long-division series' convergence. A DENSE multi-block divisor instead uses
@@ -236,23 +260,27 @@ inline bool is_dense_divisor(const ZBCL<FpType>& gs) {
 // fan-out is correct but cost-explodes for dense divisors (#1061), so we deviate from
 // McCleeary 4.2.6 there -- tracked in #1068. 0/gs = 0; gs == 0 is the caller's
 // precondition (empty divisor).
+//
+// `depth` bounds the DENSE path only: the long-division path is genuinely streaming
+// and produces blocks for as long as the caller pulls, so passing a depth there would
+// be meaningless. The dense path cannot be lazy in the same way -- Newton recomputes
+// the whole reciprocal at each depth rather than extending it, so a deeper pull would
+// not agree block-for-block with a shallower one -- which is why it takes a budget up
+// front. Callers that know their working precision should pass it.
 template <typename FpType>
-inline ZBCL<FpType> div_online(ZBCL<FpType> fs, ZBCL<FpType> gs) {
+inline ZBCL<FpType> div_online(ZBCL<FpType> fs, ZBCL<FpType> gs,
+                               std::size_t depth = kDenseQuotientDepth) {
     if (gs.is_empty()) return ZBCL<FpType>{};   // divide-by-zero: caller's precondition
     if (fs.is_empty()) return ZBCL<FpType>{};   // 0 / gs = 0
 
     if (is_dense_divisor(gs)) {
-        // Target the host-floor depth: a 2k margin above min_exponent, so the Newton
-        // products stay normal. mul_online now ARRESTS at that same floor (#1068), so
-        // the reciprocal self-limits there and never emits a subnormal (0-overlap
-        // violating) block -- the earlier mul_canonical_cap=8 stopgap is gone, and the
-        // dense quotient reaches the host floor (~17 components for double, ~270
-        // digits) like the single-block path, instead of stopping at ~118 digits.
-        constexpr std::size_t target = static_cast<std::size_t>(
-            (-(std::numeric_limits<FpType>::min_exponent) - 2 * block<FpType>::k)
-            / block<FpType>::k);
-        ZBCL<FpType> r = recip_newton(gs, target);
-        return zbcl_truncate(mul_online(std::move(fs), std::move(r)), target);
+        // Refine the Newton reciprocal to the depth the CALLER asked for. This used to
+        // be a constant derived from the host's exponent range -- 17 blocks on double,
+        // 3 on float -- which silently capped every dense quotient regardless of how
+        // many blocks the caller pulled, stalling e.g. a Newton sqrt at ~282 digits
+        // (universal#1371). Depth is the caller's budget, not a property of FpType.
+        ZBCL<FpType> r = recip_newton(gs, depth);
+        return zbcl_truncate(mul_online(std::move(fs), std::move(r)), depth);
     }
 
     const typename block<FpType>::exp_t lead = gs.head().exponent();
