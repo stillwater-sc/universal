@@ -57,11 +57,14 @@
 // full-precision odd_power_series and already reach 300+, so they stay active.
 #define ELREAL_EXP_SERIES_HIGH_PRECISION 1
 
-// sin(asin(x))==x / cos(acos(x))==x cap at ~234 digits: sin/cos lose precision on a
-// high-precision multi-block argument near pi/6 (asin itself is 320-digit accurate; the
-// loss is in sin_series/cos_series and predates #1061 Ph3b -- eager was identical).
-// Gated off until #1076 lands; flip to 1 then.
-#define ELREAL_SINCOS_ROUNDTRIP_HIGH_PRECISION 0
+// sin(asin(x))==x / cos(acos(x))==x used to cap at ~234 digits and were gated off
+// (#1076). RESOLVED by v4.9.0's "normalise the OPERANDS" work -- specifically #1362,
+// which stopped exempting the double host. The cap was never a conditioning defect in
+// sin_series/cos_series: blocks carried their scale in the host significand, so the
+// chain bottomed out on double's own 2^-1022 wall. Both round-trips now reach 321
+// digits at depth 20 and scale with depth (385 at 24, 512 at 32), tracking sin(pi/6)
+// digit for digit. Active.
+#define ELREAL_SINCOS_ROUNDTRIP_HIGH_PRECISION 1
 
 #include <cmath>
 #include <iostream>
@@ -131,7 +134,10 @@ int fast_identities(bool reportTestCases) {
 #if REGRESSION_LEVEL_4
 using sw::universal::agreed_decimal_digits;
 
-constexpr std::size_t kDepth = 20;   // function-evaluation depth (double-host ceiling)
+// Function-evaluation depth. This is a cost knob, not a ceiling: since #1362 the
+// double host scales past 300 digits with depth (a depth-20 evaluation reaches ~321,
+// depth 32 reaches ~512). 20 keeps the suite's runtime sane while clearing kMinDigits.
+constexpr std::size_t kDepth = 20;
 constexpr std::size_t kWork  = 26;   // working depth for identity mul/div (kDepth + guard)
 constexpr int kMinDigits = 300;
 
@@ -229,10 +235,8 @@ try {
     // inverse round-trips
     nrOfFailedTestCases += check_value("log(exp(0.5))==0.5",  log(exp(half, D), D),                     "0.5", reportTestCases);
     nrOfFailedTestCases += check_value("exp(log(2))==2",      exp(log(from_native<double>(2.0), D), D), "2",   reportTestCases);
-    // sin(asin)/cos(acos) cap at ~234 digits: sin/cos lose precision on a high-precision
-    // MULTI-BLOCK argument near pi/6 (asin is itself 320-digit accurate; the loss is in
-    // sin_series/cos_series, and it predates the #1061 Ph3b online conversion -- eager was
-    // identical at ~239). Gated off until #1076 lands; flip to 1 then.
+    // sin(asin)/cos(acos): capped at ~234 digits until #1362 removed the double host's
+    // exemption from operand normalisation (#1076). Both reach 321 at this depth.
 #if ELREAL_SINCOS_ROUNDTRIP_HIGH_PRECISION
     nrOfFailedTestCases += check_value("sin(asin(0.5))==0.5", sin(asin(half, D), D),                    "0.5", reportTestCases);
     nrOfFailedTestCases += check_value("cos(acos(0.5))==0.5", cos(acos(half, D), D),                    "0.5", reportTestCases);

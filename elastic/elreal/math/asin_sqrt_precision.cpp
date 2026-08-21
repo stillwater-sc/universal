@@ -1,70 +1,58 @@
 // asin_sqrt_precision.cpp: diagnostic + characterization for the sin(asin(x))/
-//                          cos(acos(x)) round-trip precision cap (#1076).
+//                          cos(acos(x)) round-trip precision (#1076, RESOLVED).
 //
 // This is a DIAGNOSTIC regression test. It carries, under the MANUAL_TESTING
-// guard, the instrumented experiments that root-caused why the inverse round-trip
-// caps at ~234 digits (issue #1076, the sole remaining Phase-7 / #931 acceptance
-// gate), together with their measured results and the assessment below; and under
-// the regression path it locks the diagnosis facts so a future change to sqrt /
-// the inverse-trig chain / the sin-cos series is noticed.
+// guard, the instrumented experiments that were used to chase why the inverse
+// round-trip capped at ~234 digits (issue #1076, the last Phase-7 / #931
+// acceptance gate), and under the regression path it locks the RESOLVED
+// behaviour so the cap cannot come back unnoticed.
 //
 // ============================================================================
-// ASSESSMENT (double host, depth 20; measured 2026-07-21)
+// RESOLUTION (double host; measured 2026-08-21)
 // ============================================================================
-// Symptom: `sin(asin(0.5))` agrees with 0.5 to only ~234 digits, while every
-// other transcendental identity reaches 305-320 (e.g. sin(pi/6) itself = 306,
-// tan(atan(0.5)) = 320). Gated off in transcendentals_highprecision.cpp via
-// ELREAL_SINCOS_ROUNDTRIP_HIGH_PRECISION 0.
+// sin(asin(0.5)) and cos(acos(0.5)) now agree with 0.5 to 321 digits at depth
+// 20, and the agreement SCALES with depth -- 256 at depth 16, 321 at 20, 385 at
+// 24, 512 at 32, 768 at 48, a straight line at 16.0 digits per unit of depth
+// against a theoretical k * log10(2) = 15.95, with no ceiling in sight --
+// tracking a clean pi/6 (= pi_zbcl/6) digit for digit. The gate
+// ELREAL_SINCOS_ROUNDTRIP_HIGH_PRECISION in transcendentals_highprecision.cpp is
+// back on.
 //
-// Chain of cause, established by the experiments below:
+// Fixed by commit 386737c5 (#1362), part of v4.9.0's narrow-host work, whose
+// rule is: normalise the OPERANDS of an error-free transform, not its result.
+// #1361 had applied that to the narrow hosts but deliberately exempted double;
+// #1362 removed the exemption. Bisected: at #1361 the round-trip is still 234 at
+// both depth 20 and 24; at #1362 it is 321 and 385.
 //
-// 1. PREMATURE TERMINATION of the sin Maclaurin series. Replicating
-//    detail::sincos_term_stream and logging each term: the asin(0.5) argument
-//    drives the stream to EMPTY at term 60, while a clean pi/6 (= pi_zbcl/6)
-//    runs to term 76. The dropped terms 60-76 have magnitude 10^-234 .. 10^-306
-//    -- losing exactly them is the 234-digit cap.
+// WHY THE ORIGINAL DIAGNOSIS MISSED IT. Every investigation in #1076 concluded
+// the loss was a CONDITIONING defect in the sin/cos Maclaurin recurrence, on this
+// reasoning: sqrt(0.75) plateaued at 19 blocks regardless of depth while staying
+// 308-digit accurate, so the plateau "must be" the ~2^-1022 double-host precision
+// floor -- something sqrt physically could not push past; and since a clean pi/6
+// truncated to 19 blocks still gave sin = 306 while asin's own 19-block form gave
+// 234, the fault "must be" the series' handling of a ragged deep tail.
 //
-// 2. The terms progressively lose DEEP BLOCKS in the asin chain (value
-//    cancellation, not floor truncation). neg_t2 = -t^2 starts EQUAL for both
-//    inputs (19 blocks each, agree to 305); mul_online/div_online preserve block
-//    count per step; but the asin terms carry fewer and fewer deep blocks
-//    (term 40: 8 vs pi6's 10; term 52: 3 vs 7; term 58: 1 vs 5; term 60: EMPTY).
-//    A deeper internal recurrence floor (out_floor - extra*k, extra up to 12) has
-//    NO effect, confirming the deep blocks cancel in value rather than being cut.
+// The premise was wrong. That 2^-1022 floor was not physics, it was the bug: a
+// block is (v: FpType, exp: integer<256>) and its scale belongs in the WIDE
+// exponent, but un-normalised EFT operands carried the scale in the host
+// significand instead, so the chain bottomed out on double's own exponent range.
+// Once #1362 lifted it, sqrt(0.75) resolves one block per unit of depth --
+// 8 blocks/130 digits, 16/260, 20/320, and 40 blocks at depth 40, with no
+// plateau -- and the series consumes the deeper argument without complaint. The
+// sin/cos recurrence never needed changing.
 //
-// 3. sqrt IS NOT THE BOTTLENECK (sqrt-Newton hypothesis DISPROVEN 2026-07-21).
-//    sqrt(0.75) plateaus at 19 blocks, but it is 308-digit ACCURATE there: the
-//    Newton iteration converges 33 -> 65 -> 129 -> 260 -> 309 digits, and stays
-//    308 for depth 20..40. The 19-block/308-digit plateau is the ~2^-1022
-//    double-host precision FLOOR, not an under-resolution -- sqrt physically
-//    cannot go deeper on a double host. (div_online inside the Newton step is
-//    strictly WORSE: 224 digits. asin/atan inherit sqrt's 308-digit result.)
-//    pi_zbcl (odd_power_series, no sqrt) happens to pack pi/6 into 20 blocks at
-//    the same floor -- a decomposition difference, not a resolution difference.
+// The lesson worth keeping: a "physical floor" that was only ever inferred from
+// a plateau is a hypothesis, not a measurement. It named the observed symptom
+// (nothing gets deeper than 2^-1022) as its own cause, which made the real
+// defect -- that values were being kept in the wrong field of the block -- look
+// like a law of the host type.
 //
-// 4. It is the DECOMPOSITION, not accuracy or block count -- and the sin SERIES
-//    is where the loss happens. A clean pi/6 TRUNCATED to 19 blocks still gives
-//    sin = 306, but asin's own 19-block decomposition gives 234. Truncating the
-//    argument to k blocks and taking sin:
-//        k    14  15  16  17  18  19
-//        pi6 231 247 264 280 297 306      (each block adds ~16 digits -- usable)
-//        asin 231 234 234 234 234 234      (blocks 15..19 add NOTHING -- unusable)
-//    asin's value agrees with pi/6 to 306 and sin is well-conditioned at pi/6, so
-//    sin(asin) OUGHT to reach ~306; it reaches 234 because the sin Maclaurin
-//    recurrence cannot extract precision from asin's deep-block decomposition
-//    (blocks 15..19 are "dead weight"). The bug is in the series machinery's
-//    conditioning against a non-prefix deepest block, NOT in sqrt/asin accuracy.
-//
-// Fix directions RULED OUT: deeper series floor; div_online inside sqrt (worse);
-// wider sqrt working depth; and -- now added -- making sqrt "resolve deeper"
-// (sqrt is already at the double-host floor and 308-digit accurate). Candidate
-// fixes for a follow-up: (a) make the sin/cos series recurrence robust to a
-// non-prefix deep tail (the hard, real fix -- e.g. a different summation/EFT that
-// does not compound the deep-block error term-to-term); (b) a wider intermediate
-// host for the inverse-trig -> sin round-trip so the deep tail sits above the
-// float floor with margin. When one lands, flip
-// ELREAL_SINCOS_ROUNDTRIP_HIGH_PRECISION to 1 and update the CHARACTERIZATION
-// checks in this file.
+// Historical detail retained for the record: the 234-digit cap showed up in the
+// series as PREMATURE TERMINATION -- the asin argument drove the term stream to
+// EMPTY at term 60 where a clean pi/6 ran to 76, and the dropped terms 60-76
+// carry exactly the 10^-234..10^-306 contributions that were missing. That
+// observation was correct; it was the terms losing their deep blocks to the
+// host floor, one multiply at a time, not the recurrence mis-handling them.
 // ============================================================================
 //
 // Cost: the depth-20 diagnostic runs a full asin + sin per experiment (~seconds
@@ -208,103 +196,142 @@ try {
 
 #if MANUAL_TESTING
 	// ---- full instrumented diagnostic (hand-run: flip MANUAL_TESTING to 1) ----
+	// These are the traces used to chase #1076. The commentary records what each
+	// one showed BEFORE the fix (#1362); re-running them on a current tree now
+	// shows the healthy behaviour instead -- the term stream runs to completion,
+	// the block counts track depth, and the truncation sweep gains ~16 digits per
+	// block for the asin argument just as it does for a clean pi/6. They are kept
+	// because they are the instrumentation that localises this class of loss.
 	const int D = 20;
 	ZBCL<double> t_asin = asin(from_native<double>(0.5), D);
 	ZBCL<double> t_pi6  = clean_pi6(D);
 	std::printf("asin(0.5) vs clean pi/6 agree to %d digits\n\n", agreed_decimal_digits(t_asin, t_pi6, 340));
 
-	std::printf("[1] sin-series term streams (premature termination):\n");
-	int na = trace_term_stream("asin", t_asin, D);   // measured: stops at 60
-	int np = trace_term_stream("pi6 ", t_pi6,  D);   // measured: stops at 76
-	std::printf("    => asin drops terms %d..%d (mag 10^-234..10^-306) = the 234-digit cap\n\n", na, np);
+	std::printf("[1] sin-series term streams (pre-fix: premature termination):\n");
+	int na = trace_term_stream("asin", t_asin, D);   // pre-fix: stopped at 60
+	int np = trace_term_stream("pi6 ", t_pi6,  D);   // pre-fix: ran to 76
+	std::printf("    => pre-fix, asin stopped %d terms early (the dropped terms carry\n"
+	            "       10^-234..10^-306, i.e. exactly the 234-digit cap); both now run to %d\n\n",
+	            np - na, np);
 
-	std::printf("[2] block counts along asin = atan(x/sqrt(1-x^2)) vs depth (sqrt caps at 19):\n");
+	std::printf("[2] block counts along asin = atan(x/sqrt(1-x^2)) vs depth\n"
+	            "    (pre-fix sqrt plateaued at 19 for every depth; now one block per depth):\n");
 	for (int d : {16, 20, 24, 32, 40}) trace_chain_blocks(d);
 	std::printf("\n");
 
-	std::printf("[3] sqrt Newton convergence (sqrt is 308-digit ACCURATE, not under-resolving):\n");
+	std::printf("[3] sqrt Newton convergence (quadratic; pre-fix it stalled at 19 blocks /\n"
+	            "    ~308 digits, which was misread as double's physical floor):\n");
 	trace_sqrt_newton(D);
 	std::printf("\n");
 
-	std::printf("[4] decomposition, not count:\n");
+	std::printf("[4] asin's decomposition vs a clean-prefix pi/6 of the same width\n"
+	            "    (pre-fix: 234 vs 306 -- the difference that was blamed on the series):\n");
 	ZBCL<double> half = from_native<double>(0.5);
 	ZBCL<double> pi6_trunc = detail::take_while_above(t_pi6, static_cast<int>(t_pi6.head().exponent()) - block_count(t_asin) * block<double>::k + 1);
-	std::printf("    sin(asin,19blk)      vs 0.5 = %d\n", agreed_decimal_digits(sin(t_asin, D), half, 340));
+	std::printf("    sin(asin,%zublk)      vs 0.5 = %d\n", block_count(t_asin), agreed_decimal_digits(sin(t_asin, D), half, 340));
 	std::printf("    sin(pi6-trunc,%zublk) vs 0.5 = %d  (clean prefix works)\n\n", block_count(pi6_trunc), agreed_decimal_digits(sin(pi6_trunc, D), half, 340));
 
-	std::printf("[5] argument-truncation sweep (asin's deep blocks 15..19 are unusable by sin):\n");
+	std::printf("[5] argument-truncation sweep (pre-fix, asin's deep blocks 15..19 added\n"
+	            "    nothing -- a flat 234 -- while pi/6's each added ~16 digits):\n");
 	trace_truncation_sweep(D);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;  // diagnostic: ignore failures
 #else
-	// ---- characterization: lock the diagnosis facts (expensive: LEVEL_4) ----
+	// ---- characterization: lock the RESOLVED behaviour (expensive: LEVEL_4) ----
 #if REGRESSION_LEVEL_4
 	const int D = 20;
 	ZBCL<double> half = from_native<double>(0.5);
 
-	// (a) sqrt is NOT the bottleneck: sqrt(0.75) is >= 300-digit ACCURATE at its
-	//     19-block floor, and does not resolve deeper with depth (the plateau is
-	//     the ~2^-1022 double-host floor, not an under-resolution). This locks the
-	//     disproven sqrt-Newton hypothesis: a fix must be in the sin/cos series,
-	//     not in sqrt.
+	// (a) the acceptance criterion itself: the round-trip clears 300 digits.
+	//     This is the check that was gated off in transcendentals_highprecision.cpp
+	//     for the life of #1076.
+	int rt20 = 0;
+	{
+		rt20 = agreed_decimal_digits(sin(asin(half, D), D), half, 340);
+		if (rt20 < 300) {
+			std::cout << "  FAIL sin(asin(0.5)) round-trip = " << rt20
+			          << " digits (want >= 300; #1076 has regressed)\n";
+			++nrOfFailedTestCases;
+		}
+		else if (reportTestCases)
+			std::cout << "  ok   sin(asin(0.5)) round-trip = " << rt20 << " digits\n";
+	}
+
+	// (b) it SCALES with depth. This is the check that would have caught #1076:
+	//     the bug's signature was a FLAT line -- a pre-#1362 tree returns 234
+	//     digits at depth 16 and at depth 20 alike (and #1076 recorded the same
+	//     234 at 24 and beyond) -- so a round-trip that merely clears 300 at one
+	//     depth does not prove the ceiling is gone. Depth 16 now reaches 256 and
+	//     depth 20 reaches 321, so a gain of >= 40 digits is expected; a returned
+	//     ceiling shows up here as ~0.
+	{
+		int rt16 = agreed_decimal_digits(sin(asin(half, 16), 16), half, 340);
+		if (rt20 - rt16 < 40) {
+			std::cout << "  FAIL round-trip does not scale with depth: " << rt16
+			          << " digits @D16 -> " << rt20 << " @D20 (expected a gain >= 40;"
+			          << " a flat line is the #1076 ceiling signature)\n";
+			++nrOfFailedTestCases;
+		}
+		else if (reportTestCases)
+			std::cout << "  ok   round-trip scales with depth: " << rt16 << " @D16 -> " << rt20 << " @D20\n";
+	}
+
+	// (c) sqrt resolves one block per unit of depth. The #1076 investigation
+	//     read sqrt's depth-independent 19-block plateau as the double host's
+	//     physical precision floor; it was the un-normalised-operand bug, and
+	//     lifting it (#1362) removed the plateau. Cheap, and it pins the fact
+	//     that was mis-read.
 	{
 		auto sqrt075 = [](int d) {
 			ZBCL<double> x = from_native<double>(0.5);
 			return sqrt(add(from_native<double>(1.0), negate(mul_online(x, x))), d);   // sqrt(0.75)
 		};
-		int acc20 = agreed_decimal_digits(sqrt075(20), s_sqrt_075, 320);
-		int acc40 = agreed_decimal_digits(sqrt075(40), s_sqrt_075, 320);
-		if (acc20 < 300) {
-			std::cout << "  FAIL sqrt(0.75) only " << acc20 << " digits accurate (expected >= 300; sqrt regressed)\n";
-			++nrOfFailedTestCases;
-		}
-		else if (acc40 > acc20 + 8) {
-			std::cout << "  NOTE sqrt(0.75) now resolves deeper with depth (" << acc20 << " @D20 -> " << acc40
-			          << " @D40) -- the #1076 host-floor plateau may have moved; re-examine the assessment\n";
+		ZBCL<double> s16 = sqrt075(16), s40 = sqrt075(40);
+		std::size_t b16 = block_count(s16, 128), b40 = block_count(s40, 128);
+		// Demand PROPORTIONALITY to depth, not merely "more blocks than at D16":
+		// the pre-fix plateau sat at 19 blocks, which does exceed D16's 16 and so
+		// slips past a strict-increase test. sqrt now returns one block per unit
+		// of depth (40 blocks at depth 40); requiring 32 fails the 19-block
+		// plateau decisively while leaving room for a block or two of slack.
+		constexpr std::size_t kMinBlocksAtD40 = 32;
+		if (b40 < kMinBlocksAtD40) {
+			std::cout << "  FAIL sqrt(0.75) plateaus below its depth: " << b16
+			          << " blocks @D16, " << b40 << " @D40 (want >= " << kMinBlocksAtD40
+			          << "; the #1076 plateau sat at 19 for every depth)\n";
 			++nrOfFailedTestCases;
 		}
 		else if (reportTestCases)
-			std::cout << "  ok   sqrt(0.75) is " << acc20 << "-digit accurate, floored (D20==D40) -- not the bottleneck\n";
-	}
+			std::cout << "  ok   sqrt(0.75) resolves with depth: " << b16 << " blocks @D16 -> " << b40 << " @D40\n";
 
-	// (b) a CLEAN pi/6 truncated to asin's block count still reaches >= 300 --
-	//     proves the loss is the decomposition, not the block count. This must
-	//     hold regardless of any future fix.
-	{
-		ZBCL<double> t_asin = asin(from_native<double>(0.5), D);
-		ZBCL<double> t_pi6  = clean_pi6(D);
-		ZBCL<double> pi6_trunc = detail::take_while_above(
-		    t_pi6, static_cast<int>(t_pi6.head().exponent()) - static_cast<int>(block_count(t_asin)) * block<double>::k + 1);
-		int got = agreed_decimal_digits(sin(pi6_trunc, D), half, 340);
-		if (got < 300) {
-			std::cout << "  FAIL clean pi/6 truncated to " << block_count(t_asin) << " blocks: sin = " << got
-			          << " digits (expected >= 300; the 'clean prefix works' fact broke)\n";
+		// and it is accurate at that resolution, against an independent 320-digit
+		// reference (depth 16 lands at ~260 digits, well short of the reference's
+		// own length, so this measures sqrt and not the reference).
+		int acc16 = agreed_decimal_digits(s16, s_sqrt_075, 320);
+		if (acc16 < 250) {
+			std::cout << "  FAIL sqrt(0.75) @D16 only " << acc16 << " digits accurate (expected ~260)\n";
 			++nrOfFailedTestCases;
 		}
-		else if (reportTestCases) std::cout << "  ok   clean pi/6 @ " << block_count(t_asin) << " blocks: sin = " << got << " digits (decomposition, not count)\n";
+		else if (reportTestCases)
+			std::cout << "  ok   sqrt(0.75) @D16 is " << acc16 << "-digit accurate\n";
 	}
 
-	// (c) the known cap: sin(asin(0.5)) currently reaches ~234 digits. Assert it
-	//     is not WORSE than the documented floor, and shout if it has been FIXED
-	//     (so the gate in transcendentals_highprecision.cpp gets flipped).
+	// (d) asin's own decomposition agrees with a clean pi/6 to the round-trip's
+	//     precision. The old diagnosis blamed the DIFFERENCE between these two
+	//     equally-accurate representations; keeping the comparison documents that
+	//     they now feed sin equally well.
 	{
-		int got = agreed_decimal_digits(sin(asin(from_native<double>(0.5), D), D), half, 340);
-		if (reportTestCases) std::cout << "  --   sin(asin(0.5)) round-trip = " << got << " digits (known cap ~234, #1076)\n";
-		if (got < 200) {
-			std::cout << "  FAIL round-trip regressed below the documented floor (" << got << " < 200)\n";
+		int agree = agreed_decimal_digits(asin(half, D), clean_pi6(D), 340);
+		if (agree < 300) {
+			std::cout << "  FAIL asin(0.5) vs clean pi/6: " << agree << " digits (want >= 300)\n";
 			++nrOfFailedTestCases;
 		}
-		if (got >= 300) {
-			std::cout << "  **#1076 APPEARS FIXED**: sin(asin(0.5)) now reaches " << got
-			          << " digits. Flip ELREAL_SINCOS_ROUNDTRIP_HIGH_PRECISION to 1 in "
-			          << "transcendentals_highprecision.cpp and retire this characterization.\n";
-			++nrOfFailedTestCases;   // fail loudly so the fix is not silently un-tracked
-		}
+		else if (reportTestCases)
+			std::cout << "  ok   asin(0.5) agrees with clean pi/6 to " << agree << " digits\n";
 	}
 #else
 	if (reportTestCases)
-		std::cout << "  (diagnostic + characterization run at REGRESSION_LEVEL_4 / MANUAL_TESTING; see the file header for the #1076 assessment)\n";
+		std::cout << "  (diagnostic + characterization run at REGRESSION_LEVEL_4 / MANUAL_TESTING; see the file header for the #1076 resolution)\n";
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

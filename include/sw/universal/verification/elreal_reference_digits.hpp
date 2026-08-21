@@ -87,7 +87,23 @@ inline int agreed_decimal_digits(const dyadic& V, std::string_view ref, int cap 
 	}
 	if (digits.empty()) throw std::invalid_argument("decimal reference: no digits");
 	if (frac < 0) frac = 0;               // integer-only reference
+
+	// Strip leading zeros BEFORE handing the digit string to einteger::parse.
+	// That parser follows C literal conventions, so a leading '0' followed by
+	// octal digits is read as OCTAL: the reference "0.75" yields the digit
+	// string "075", which parses as 61 rather than 75, and the oracle then
+	// reports 0 agreeing digits for a value that is exactly equal. Stripping
+	// the zeros does not change the value, because `frac` -- not the digit
+	// count -- carries the scale (ref == N / 10^frac). ("0.5" survived only by
+	// coincidence: octal 5 == decimal 5, as it does for every single digit.)
+	std::size_t firstSignificant = digits.find_first_not_of('0');
+	digits = (firstSignificant == std::string::npos) ? "0" : digits.substr(firstSignificant);
+
 	bigint N; N.assign(digits);           // ref == N / 10^frac
+	// A relative-agreement measure needs a non-zero reference: with N == 0 the
+	// denominator below is 0 and every comparison against it is meaningless.
+	// Matches the dyadic/dyadic overload, which rejects a zero reference too.
+	if (N.iszero()) throw std::invalid_argument("decimal reference: zero reference value");
 
 	// V == Vn / Vd  (Vd a power of two, or 1).
 	bigint Vn = V.numerator, Vd(1);
