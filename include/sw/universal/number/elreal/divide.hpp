@@ -116,8 +116,8 @@ inline ZBCL<FpType> div(ZBCL<FpType> x, ZBCL<FpType> y, std::size_t depth = 64) 
         std::vector<B> pool = rem;
         for (const auto& yj : yb) {
             if (!yj.is_normalised()) continue;
-            B qN = q;  qN.normalise(); qN.bias_for_eft();
-            B yN = yj; yN.normalise(); yN.bias_for_eft();
+            B qN = q;  qN.normalise();
+            B yN = yj; yN.normalise();
             auto pr = block_two_mult(qN, yN);
             if (pr.first.is_normalised())  pool.push_back(B{ -pr.first.v,  pr.first.exp });
             if (pr.second.is_normalised()) pool.push_back(B{ -pr.second.v, pr.second.exp });

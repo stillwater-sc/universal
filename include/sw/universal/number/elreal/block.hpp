@@ -178,8 +178,18 @@ struct block {
     // reach, not a change in what the retained digits say.
     static constexpr bool needs_scale_normalisation = true;   // EXPERIMENT: all hosts
 
-    // eft_scale_bias: how far ABOVE [1,2) an EFT's operands must sit so its residual
+    // eft_scale_bias: how far ABOVE [1,2) a SUM's operands must sit so its residual
     // stays normal on this host.
+    //
+    // This applies to two_sum and to the division remainder, NOT to two_prod. A
+    // product's exponent is the SUM of its operands', so biasing both operands
+    // doubles the bias and overflows a narrow-range host: on half, two normalised
+    // operands biased by 8 each land in [256,512) and their product in [65536,
+    // 262144) against a finite maximum of 130880 -- block_two_mult returned
+    // high=inf, low=nan. A product also does not need the room: its residual sits
+    // only k below the product, not 2k, and half has 14 binades for k=11. So
+    // multiplication takes normalised operands and no bias. (Caught in review on
+    // universal#1366; the tests passed around it.)
     //
     // two_sum's residual can land a full 2k binades below the leading operand: the
     // smaller operand is aligned up to k down, and the residual is up to another k
@@ -212,8 +222,10 @@ struct block {
         }
     }
 
-    // bias_for_eft(): shift v up (and exp down) by eft_scale_bias(). Exact -- a pure
-    // exponent move -- and exponent() is invariant, so the block's value is unchanged.
+    // bias_for_eft(): shift v up and exp down by eft_scale_bias(). Exact -- a pure
+    // exponent move -- and the block's VALUE is preserved. The stored exponent is
+    // not: that is the point, and callers use the adjusted one for alignment and
+    // for constructing their results.
     constexpr block& bias_for_eft() noexcept {
         if constexpr (eft_scale_bias() == 0) return *this;
         else {
