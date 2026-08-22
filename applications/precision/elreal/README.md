@@ -8,7 +8,7 @@ silently rot.
 
 | Program | What it shows | Runtime |
 |---------|---------------|---------|
-| `thousand_digit_sqrt` | One Newton kernel, three host types: native `double` stalls at 16 digits, `elreal<float>` and `elreal<double>` both pass 1150 | ~35s |
+| `thousand_digit_sqrt` | One Newton kernel, three host types: native `double` stalls at 16 digits; `elreal<double>` reaches 1158 and `elreal<float>` 1177 | ~35s |
 
 ## thousand_digit_sqrt
 
@@ -30,7 +30,8 @@ Real newton_sqrt(const Real& a, int iterations) {
 
 Instantiated on `double` it stops at 16 digits no matter how many iterations it is
 given. Instantiated on `elreal<float>` and `elreal<double>` it converges to the same
-1150+ decimal digits of `sqrt(2)`, verified against a reference computed in exact
+1150+ decimal digits of `sqrt(2)` (1158 and 1177 respectively), verified against a
+reference computed in exact
 integer arithmetic outside the library. Float needs about 2.2x the blocks for the
 same digits, its limb carrying 24 bits against double's 53 -- that is the only
 difference the host type makes to the answer.
