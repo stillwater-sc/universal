@@ -924,9 +924,19 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 	bool bSuccess = false;
 	value.clear();
 	std::regex binary_regex("^[-+]*0b[01']+");
-	// check if the txt is an integer form: [0123456789]+
-	std::regex decimal_regex("^[-+]*[0-9]+");
-	std::regex octal_regex("^[-+]*0[1-7][0-7]*$");
+	// A LEADING ZERO SELECTS OCTAL, however many of them there are.
+	//
+	// The octal pattern used to require the second character to be [1-7], so the radix
+	// depended on the number of leading zeros: "0777" parsed as octal 511 while
+	// "00777" fell through to decimal 777, and "075" was 61 while "0075" was 75. A
+	// caller could not predict the radix of its own input, and zero-padding a value
+	// silently changed it (universal#1370).
+	std::regex octal_regex("^[-+]*0[0-7]*$");
+	// Decimal excludes a leading zero, so a string that opens with '0' is committed to
+	// the octal (or 0x / 0b) reading rather than quietly falling back. Without this,
+	// "08" and "0749" -- which are not valid octal, and which C rejects outright --
+	// would be re-interpreted as decimal, so "0747" would be 487 and "0749" 749.
+	std::regex decimal_regex("^[-+]*(0|[1-9][0-9]*)$");
 	std::regex hex_regex("^[-+]*0[xX][0-9a-fA-F']+");
 	// setup associative array to map chars to nibbles
 	std::map<char, int> charLookup{

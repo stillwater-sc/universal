@@ -150,6 +150,19 @@ try {
 		nrOfFailedTestCases += CheckParse<std::uint32_t>("01234567",     "342391",     reportTestCases);
 		nrOfFailedTestCases += CheckParse<std::uint32_t>("037777777777", "4294967295", reportTestCases);
 		nrOfFailedTestCases += CheckParse<std::uint32_t>("-017",         "-15",        reportTestCases);
+		// A LEADING ZERO SELECTS OCTAL, however many of them there are. The pattern
+		// used to require the second character to be [1-7], so the radix depended on
+		// the number of leading zeros: "0777" was octal 511 but "00777" fell through
+		// to decimal 777, and "075" was 61 while "0075" was 75. Zero-padding a value
+		// silently changed what it meant (#1370).
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("00777",        "511",        reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("0075",         "61",         reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("000075",       "61",         reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("00010",        "8",          reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("-00017",       "-15",        reportTestCases);
+		// "0" is zero in any radix
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("0",            "0",          reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("00",           "0",          reportTestCases);
 		ReportTestResult(nrOfFailedTestCases - start, "octal parse", "einteger parse");
 	}
 
@@ -172,6 +185,14 @@ try {
 		nrOfFailedTestCases += CheckReject<std::uint32_t>("0xFF_extra", reportTestCases);
 		nrOfFailedTestCases += CheckReject<std::uint32_t>("0b1010X",    reportTestCases);
 		nrOfFailedTestCases += CheckReject<std::uint32_t>("0777!",      reportTestCases);
+		// A leading zero commits the string to octal, so a digit outside [0-7] makes it
+		// malformed -- exactly as C rejects 08 and 0749. These used to be re-read as
+		// DECIMAL, which meant "0747" was 487 while "0749" was 749: the radix depended
+		// on the digits (#1370).
+		nrOfFailedTestCases += CheckReject<std::uint32_t>("08",         reportTestCases);
+		nrOfFailedTestCases += CheckReject<std::uint32_t>("09",         reportTestCases);
+		nrOfFailedTestCases += CheckReject<std::uint32_t>("0749",       reportTestCases);
+		nrOfFailedTestCases += CheckReject<std::uint32_t>("-08",        reportTestCases);
 		ReportTestResult(nrOfFailedTestCases - start, "malformed reject", "einteger parse");
 	}
 
