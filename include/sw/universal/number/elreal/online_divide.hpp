@@ -275,6 +275,57 @@ inline ZBCL<FpType> div_raw(ZBCL<FpType> fs, ZBCL<FpType> gs) {
     return infsum(divideHelper(std::move(fs), std::move(gs)));
 }
 
+// divideHelper_bounded / div_long_division: the FAITHFUL McCleeary long division
+// (4.2.6) for a dense divisor, with the fan-out bounded.
+//
+// divideHelper recurses with newfs = -(fs * divisorTail) and newdiv = g0 * divisor, so
+// the operands GROW every level and an unbounded recursion costs far more than the
+// output justifies. The contributions decay geometrically -- level L sits about L*k
+// bits down -- so level L only needs the precision that can still reach the frontier.
+// Truncating both operands to the remaining budget makes each level cheap while leaving
+// the result identical: verified against the unbounded form on 100 random dense
+// divisors across both hosts, matching to the expansion's full capacity, at 4-6x less
+// cost. A guard of +2 blocks is enough; +0 loses a few digits, +4 and +8 add nothing.
+template <typename FpType>
+inline series<FpType> divideHelper_bounded(ZBCL<FpType> fs, ZBCL<FpType> divisor, std::size_t budget) {
+    if (fs.is_empty() || divisor.is_empty() || budget == 0) return series<FpType>{};
+    const block<FpType> g = divisor.head();
+    if (g.is_zero_block()) {
+        ZBCL<FpType> zterm = ZBCL<FpType>::singleton(g);
+        ZBCL<FpType> drest = divisor.tail();
+        return series<FpType>::cons(zterm, [fs, drest, budget]() {
+            return divideHelper_bounded(fs, drest, budget);
+        });
+    }
+    ZBCL<FpType> qterm  = singleDiv(fs, g);
+    ZBCL<FpType> newfs  = zbcl_truncate(negate(mul_online(fs, divisor.tail())), budget);
+    ZBCL<FpType> newdiv = zbcl_truncate(singleMult(g, divisor), budget);
+    return series<FpType>::cons(qterm, [newfs, newdiv, budget]() {
+        return divideHelper_bounded(newfs, newdiv, budget - 1);
+    });
+}
+
+// Extra blocks of budget carried into the bounded long division beyond the requested
+// depth. Measured: 0 loses a few digits, 2 matches the unbounded result exactly, and
+// more buys nothing.
+inline constexpr std::size_t kLongDivisionGuard = 2;
+
+// div_long_division(fs, gs, depth): fs / gs by the faithful long division, to `depth`
+// blocks. Operands are range-reduced (shiftUpToTwo) exactly as div_online does.
+template <typename FpType>
+inline ZBCL<FpType> div_long_division(ZBCL<FpType> fs, ZBCL<FpType> gs, std::size_t depth) {
+    using B = block<FpType>;
+    if (gs.is_empty() || fs.is_empty()) return ZBCL<FpType>{};
+    const typename B::exp_t lead  = gs.head().exponent();
+    const typename B::exp_t shift = (lead < typename B::exp_t(1)) ? (typename B::exp_t(1) - lead)
+                                                                  : typename B::exp_t(0);
+    return zbcl_truncate(
+        infsum(divideHelper_bounded(zbcl_shift(std::move(fs), shift),
+                                    zbcl_shift(std::move(gs), shift),
+                                    depth + kLongDivisionGuard)),
+        depth);
+}
+
 // zbcl_truncate(z, m): the finite m-block prefix of z, rebuilt as a 0-overlap ZBCL.
 // (z is already 0-overlap, so take(m) is a canonical prefix; zbcl_from_blocks drops
 // any trailing zero blocks.) Used to keep Newton's intermediate products finite.
@@ -335,6 +386,59 @@ inline ZBCL<FpType> recip_newton(const ZBCL<FpType>& b, std::size_t depth) {
 // on the faithful long-division path (it reaches the host floor there); only the
 // genuinely DENSE case -- where divideHelper's fan-out cost-explodes past ~7 blocks
 // -- routes to Newton. A single-block divisor (e.g. 1/3) is never dense.
+// Which algorithm handles a DENSE (multi-block, non-power-of-two) divisor.
+//
+// Both are correct and both scale linearly in accuracy with depth. They are NOT a
+// fast-vs-accurate trade: measured on 8 random dense divisors per depth, reconstructing
+// q*b against a, they agree to within a few digits in a thousand --
+//
+//     depth            16     32     48     64
+//     Newton          263    528    793   1056  digits
+//     long division   264    529    795   1059
+//
+// -- so choose on cost and on what you need the result FOR:
+//
+//   NewtonReciprocal (the default)
+//       a/b as a * (1/b), the reciprocal refined by Newton-Raphson. Roughly log D
+//       iterations, each multiplying against the divisor, so its cost grows with the
+//       DIVISOR's width. A DELIBERATE DEVIATION from the dissertation, recorded in
+//       #1068, adopted because the faithful long division's fan-out was unaffordable
+//       before it was bounded.
+//
+//   FaithfulLongDivision
+//       McCleeary 4.2.6 as written, with the level operands truncated to the budget
+//       that can still reach the output frontier. Its cost is dominated by the depth
+//       rather than the divisor's width.
+//
+// WHICH IS CHEAPER DEPENDS ON THE DIVISOR'S WIDTH, not just on depth. Long division
+// relative to Newton, measured on a double host:
+//
+//     at depth 24, varying the divisor
+//         divisor blocks    2      4      6     10     16     24
+//         long div vs N   3.8x   2.4x   1.9x   1.5x   1.2x   0.92x
+//
+//     with a 6-block divisor, varying the depth
+//         depth            16     32     48     64
+//         long div vs N   1.5x   2.6x   3.2x   4.6x
+//
+// So Newton wins comfortably for a narrow divisor, the two converge as the divisor
+// widens, and long division is marginally AHEAD once the divisor is about as wide as
+// the requested depth. Newton is the default because a narrow divisor is the common
+// case -- dividing by a small constant, or by an iterate that is still shallow.
+//
+// Reach for FaithfulLongDivision when you want the dissertation's algorithm rather
+// than an equivalent: to check the Newton path against an independent implementation
+// (that is how #1373 was found), to study the algorithm, or when the divisor is wide
+// enough that it is the cheaper of the two.
+//
+// The single-block and sparse paths are unaffected: they always take the faithful long
+// division, which for them is genuinely streaming and produces blocks for as long as
+// the caller pulls.
+enum class DenseDivision {
+    NewtonReciprocal,      // default: a * (1/b), O(D log D)
+    FaithfulLongDivision   // McCleeary 4.2.6, bounded fan-out, O(D^2)
+};
+
 // Default working depth for a DENSE-divisor quotient, in blocks. Matches the eager
 // div()'s default so the streaming and eager APIs agree, and is deliberately NOT
 // derived from FpType: the host's exponent range does not bound an expansion's depth
@@ -367,11 +471,14 @@ inline bool is_dense_divisor(const ZBCL<FpType>& gs) {
 // front. Callers that know their working precision should pass it.
 template <typename FpType>
 inline ZBCL<FpType> div_online(ZBCL<FpType> fs, ZBCL<FpType> gs,
-                               std::size_t depth = kDenseQuotientDepth) {
+                               std::size_t depth = kDenseQuotientDepth,
+                               DenseDivision policy = DenseDivision::NewtonReciprocal) {
     if (gs.is_empty()) return ZBCL<FpType>{};   // divide-by-zero: caller's precondition
     if (fs.is_empty()) return ZBCL<FpType>{};   // 0 / gs = 0
 
     if (is_dense_divisor(gs)) {
+        if (policy == DenseDivision::FaithfulLongDivision)
+            return div_long_division(std::move(fs), std::move(gs), depth);
         // Refine the Newton reciprocal to the depth the CALLER asked for. This used to
         // be a constant derived from the host's exponent range -- 17 blocks on double,
         // 3 on float -- which silently capped every dense quotient regardless of how
