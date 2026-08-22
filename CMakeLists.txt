@@ -1379,6 +1379,7 @@ add_subdirectory("applications/performance/weather")
 # applications/performance/ir extracted to mp-ir (universal#1204, #1209)
 
 add_subdirectory("applications/precision/adaptive")
+add_subdirectory("applications/precision/elreal")
 add_subdirectory("applications/precision/constants")
 add_subdirectory("applications/precision/floating-point")
 add_subdirectory("applications/precision/math")
