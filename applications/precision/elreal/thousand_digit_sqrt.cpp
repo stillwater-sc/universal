@@ -224,7 +224,7 @@ int main() try {
 			break;
 		std::cout << "   " << got.substr(off, 80) << "\n";
 	}
-	std::cout << "   ... " << agree << " leading characters match a reference computed in\n"
+	std::cout << "   ... " << agree << " leading digits match a reference computed in\n"
 	          << "   exact integer arithmetic outside this library.\n";
 
 	// Self-check. This is a demonstration, not a ctest-registered regression, so it
