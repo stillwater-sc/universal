@@ -33,6 +33,7 @@
 #include <string>
 #include <vector>
 
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/elreal/elreal.hpp>
 #include <universal/verification/elreal_oracle.hpp>
 #include <universal/verification/elreal_reference_digits.hpp>   // agreed_decimal_digits
@@ -414,18 +415,25 @@ template <typename FpType>
 int verify_single_block_division_is_linear(const char* host) {
     using namespace sw::universal;
     using clk = std::chrono::steady_clock;
-    auto cost = [](std::size_t D) {
+    // The produced block count is checked, not discarded: a divider that terminated
+    // early would do less work and sail through a pure timing ratio.
+    int shortfall = 0;
+    auto cost = [&shortfall](std::size_t D) {
         ZBCL<FpType> big = zbcl_from_blocks<FpType>(
             div_online(from_native<FpType>(1.0), from_native<FpType>(7.0)).take(D));
         const auto t0 = clk::now();
-        volatile std::size_t n =
+        const std::size_t n =
             zbcl_from_blocks<FpType>(div_online(big, from_native<FpType>(5.0)).take(D)).take(D).size();
         const auto t1 = clk::now();
-        (void)n;
+        if (n < D) {
+            std::cout << "single-block division: asked for " << D << " blocks, got " << n << '\n';
+            ++shortfall;
+        }
         return std::chrono::duration<double, std::milli>(t1 - t0).count();
     };
     (void)cost(40);                                  // warm caches / first-touch
     const double small = cost(40), large = cost(160);
+    if (shortfall) return shortfall;
     const double ratio = (small > 0.0) ? large / small : 0.0;
     constexpr double kMaxRatio = 8.0;                // linear ~4, quadratic ~16-30
     if (ratio > kMaxRatio) {
@@ -443,13 +451,71 @@ int verify_single_block_division_is_linear(const char* host) {
 template <typename FpType>
 int verify_single_block_division_streams(const char* host) {
     using namespace sw::universal;
-    const std::size_t got = div_online(from_native<FpType>(1.0), from_native<FpType>(3.0)).take(400).size();
-    if (got < 400) {
-        std::cout << "single-block division [" << host << "] produced only " << got
+    int n = 0;
+    ZBCL<FpType> q = div_online(from_native<FpType>(1.0), from_native<FpType>(3.0));
+    const std::vector<block<FpType>> bl = q.take(400);
+    if (bl.size() < 400) {
+        std::cout << "single-block division [" << host << "] produced only " << bl.size()
                   << " blocks of 1/3, expected the stream to keep going to 400\n";
-        return 1;
+        ++n;
     }
-    return 0;
+    // ... and every block it hands out must be canonical. This is what the pending
+    // buffer exists for: the raw quotient blocks are 0-overlap on a double host but
+    // roughly 2 in 60 land a bit too close on float, so a length check alone would
+    // not notice the buffer being removed.
+    for (std::size_t i = 1; i < bl.size(); ++i) {
+        if (!zero_overlap(bl[i - 1], bl[i])) {
+            std::cout << "single-block division [" << host << "] block " << i
+                      << " overlaps its predecessor (exponents " << bl[i - 1].exponent()
+                      << ", " << bl[i].exponent() << "; k = " << block<FpType>::k
+                      << ") -- the quotient is not canonical\n";
+            ++n;
+            break;
+        }
+    }
+    return n;
+}
+
+// A NARROW host needs both division operands prepared with bias_for_eft(), not just
+// normalise(). block_two_div_rem forms the residual in host arithmetic, and a host
+// whose exponent span is under 2k has no room below a normalised operand for it, so
+// the residual denormalises and twoDiv's "e is >= k below s" guarantee fails.
+//
+// This only bites where block::eft_scale_bias() is non-zero -- 8 on half, 0 on
+// bfloat16, float and double -- so double/float coverage cannot see it. Measured on
+// half with the bias omitted: 13 of 80 random cases diverge and 12 get materially
+// worse, e.g. a quotient good to 139 digits collapsing to 4.
+//
+// half here is IEEE binary16 with subnormals, the configuration elreal's narrow-host
+// work (#1363/#1366) targets.
+using elreal_half = sw::universal::cfloat<16, 5, std::uint16_t, true, false, false>;
+
+template <typename FpType>
+int verify_narrow_host_division(const char* host) {
+    using namespace sw::universal;
+    int n = 0;
+    // pairs chosen from the divergent set found by sweeping the bias on/off
+    const int cases[][3] = { { 54, 51, 9 }, { 30, 29, 33 }, { 32, 31, 12 }, { 7, 3, 16 } };
+    for (const auto& c : cases) {
+        const std::size_t D = static_cast<std::size_t>(c[2]);
+        ZBCL<FpType> big = zbcl_from_blocks<FpType>(
+            div_online(from_native<FpType>(1.0), from_native<FpType>(double(c[0]))).take(D));
+        if (big.take(1).empty()) continue;
+        ZBCL<FpType> q = zbcl_from_blocks<FpType>(
+            div_online(big, from_native<FpType>(double(c[1]))).take(D));
+        // independent check: q * divisor must reproduce the dividend
+        const int agree = agreed_decimal_digits(
+            mul(q, from_native<FpType>(double(c[1])), 2 * D + 8), big, 4000);
+        const int want = static_cast<int>(0.60 * double(D) * double(block<FpType>::k) * 0.30103);
+        if (agree < want) {
+            std::cout << "narrow-host division [" << host << "] 1/" << c[0] << " / " << c[1]
+                      << " at depth " << D << ": q*divisor reproduces the dividend to only "
+                      << agree << " digits (want >= " << want
+                      << "; are both operands bias_for_eft'd?)\n";
+            ++n;
+        }
+    }
+    return n;
 }
 
 } // anonymous
@@ -506,6 +572,7 @@ try {
     nrOfFailedTestCases += verify_single_block_division_is_linear<double>("double");
     nrOfFailedTestCases += verify_single_block_division_streams<double>("double");
     nrOfFailedTestCases += verify_single_block_division_streams<float>("float");
+    nrOfFailedTestCases += verify_narrow_host_division<elreal_half>("half");
 
 #endif
 

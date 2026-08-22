@@ -194,7 +194,17 @@ inline std::optional<block<FpType>> singleDiv_step(singleDivState<FpType>& st) {
             }
             if (st.rem.is_empty()) { st.exhausted = true; continue; }
             block<FpType> x = st.rem.head();
-            x.normalise();                              // operands, not results (#1051)
+            // Prepare the operand exactly as twoDivZBCL does. normalise() alone is not
+            // enough: block_two_div_rem forms the residual in HOST arithmetic, and on a
+            // host whose exponent span is under 2k there is no room below a normalised
+            // operand for it, so the residual denormalises and twoDiv's "e is >= k below
+            // s" guarantee fails. bias_for_eft() borrows the unused headroom above 1.0.
+            // It changes the representation, not the value (v up, exp down), so the
+            // remainder that comes back is directly comparable with the running one.
+            // The bias is 0 on float and double -- which is why omitting it passed every
+            // test on those hosts -- and 8 on half, where it is load-bearing (#1051).
+            x.normalise();
+            x.bias_for_eft();
             auto se = block_two_div_rem(x, st.gN);      // (s, e): x/g = s + e/g
             if (!se.first.is_normalised()) { st.exhausted = true; continue; }
             st.rem = zbcl_from_blocks<FpType>(
@@ -215,22 +225,25 @@ inline std::optional<block<FpType>> singleDiv_step(singleDivState<FpType>& st) {
     }
 }
 
+// Pull one block and defer the rest. The thunk captures ONLY the shared state: a
+// self-capturing std::function (the shape infsum uses) would own itself, so the
+// control block never reaches zero and every division would strand its state.
+template <typename FpType>
+inline ZBCL<FpType> singleDiv_stream(std::shared_ptr<singleDivState<FpType>> st) {
+    auto nxt = singleDiv_step(*st);
+    if (!nxt) return ZBCL<FpType>{};
+    block<FpType> head = *nxt;
+    return ZBCL<FpType>::cons(head, [st]() { return singleDiv_stream<FpType>(st); });
+}
+
 template <typename FpType>
 inline ZBCL<FpType> singleDiv(ZBCL<FpType> fs, block<FpType> g) {
     using Z = ZBCL<FpType>;
     if (fs.is_empty() || g.is_zero_block()) return Z{};
-    block<FpType> gN = g; gN.normalise();
+    block<FpType> gN = g; gN.normalise(); gN.bias_for_eft();
     auto st = std::make_shared<singleDivState<FpType>>(
         singleDivState<FpType>{ std::move(fs), Z{}, Z{}, gN, false });
-    auto loop = std::make_shared<std::function<Z()>>();
-    *loop = [st, loop]() -> Z {
-        auto nxt = singleDiv_step(*st);
-        if (!nxt) return Z{};
-        return Z::cons(*nxt, [loop]() { return (*loop)(); });
-    };
-    auto first = singleDiv_step(*st);
-    if (!first) return Z{};
-    return Z::cons(*first, [loop]() { return (*loop)(); });
+    return singleDiv_stream<FpType>(std::move(st));
 }
 
 // divideHelper: the long division. q ~= fs/g0 (leading divisor block); the residual is
