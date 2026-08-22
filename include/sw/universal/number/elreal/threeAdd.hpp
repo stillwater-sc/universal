@@ -743,24 +743,28 @@ inline std::optional<block<FpType>> addRec_step(addRec_state<FpType>& st) {
 	                         "See threeAdd.hpp for diagnosis.");
 }
 
+// addRec_stream(st): pull one block and defer the rest.
+//
+// The thunk captures ONLY the state. It used to be a std::function holding a
+// shared_ptr to the control block that owned it -- the function object owned itself,
+// so releasing the returned ZBCL could never bring the count to zero and every add()
+// stranded its state for the life of the process. Measured before the fix: 0.29 kB
+// per add() and 41 kB per infsum()-based stream, growing without bound
+// (universal#1378).
+template<typename FpType>
+inline ZBCL<FpType> addRec_stream(std::shared_ptr<addRec_state<FpType>> st) {
+	auto nxt = addRec_step(*st);
+	if (!nxt)
+		return ZBCL<FpType>{};
+	block<FpType> head = *nxt;
+	return ZBCL<FpType>::cons(head, [st]() { return addRec_stream<FpType>(st); });
+}
+
 // add(x, y): the dissertation's add (Algorithm 4.2.1) wrapped as a lazy ZBCL.
 template<typename FpType>
 inline ZBCL<FpType> add(ZBCL<FpType> x, ZBCL<FpType> y) {
-	using Z = ZBCL<FpType>;
 	auto st = std::make_shared<addRec_state<FpType>>(addRec_state<FpType>{std::move(x), std::move(y), {}, 0, false});
-
-	auto loop = std::make_shared<std::function<Z()>>();
-	*loop     = [st, loop]() -> Z {
-		auto nxt = addRec_step(*st);
-		if (!nxt)
-			return Z{};
-		return Z::cons(*nxt, [loop]() { return (*loop)(); });
-	};
-
-	auto first = addRec_step(*st);
-	if (!first)
-		return Z{};
-	return Z::cons(*first, [loop]() { return (*loop)(); });
+	return addRec_stream<FpType>(std::move(st));
 }
 
 }  // namespace universal
