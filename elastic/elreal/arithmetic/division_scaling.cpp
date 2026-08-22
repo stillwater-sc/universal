@@ -35,12 +35,20 @@
 #include <string>
 
 #include <universal/number/elreal/elreal.hpp>
+#include <universal/verification/elreal_reference_digits.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // ---- global allocation counter (cumulative; never decremented) -------------------
 namespace {
 long g_totalAllocations = 0;
 }
+// GCC cannot see that these replacements are paired (each malloc has its free) and
+// warns about a mismatched allocation function. They are paired; the warning is a
+// false positive for a global operator replacement.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
+#endif
 void* operator new(std::size_t n) {
     void* p = std::malloc(n ? n : 1);
     if (!p) throw std::bad_alloc();
@@ -52,6 +60,9 @@ void operator delete(void* p, std::size_t) noexcept { std::free(p); }
 void* operator new[](std::size_t n) { return operator new(n); }
 void operator delete[](void* p) noexcept { operator delete(p); }
 void operator delete[](void* p, std::size_t) noexcept { operator delete(p); }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 namespace {
 
@@ -94,6 +105,49 @@ int verify_division_scaling(const char* host, bool reportTestCases) {
     return 0;
 }
 
+// The FaithfulLongDivision policy must actually reach the long division. Value alone
+// cannot show this: both policies produce bit-identical quotients, so a comparison of
+// results would pass even if the policy were ignored. Allocation count distinguishes
+// them -- the long division does materially more work (measured ~2.4x at depth 32) --
+// and is deterministic, unlike timing.
+template <typename FpType>
+int verify_dense_policy_dispatches(const char* host, bool reportTestCases) {
+    const std::size_t D = 24;
+    ZBCL<FpType> b = sqrt(from_native<FpType>(2.0), D);
+    ZBCL<FpType> a = from_native<FpType>(2.0);
+
+    const long n0 = g_totalAllocations;
+    ZBCL<FpType> qn = zbcl_from_blocks<FpType>(div_online(a, b, D).take(D));
+    const long nNewton = g_totalAllocations - n0;
+
+    const long l0 = g_totalAllocations;
+    ZBCL<FpType> ql = zbcl_from_blocks<FpType>(
+        div_online(a, b, D, DenseDivision::FaithfulLongDivision).take(D));
+    const long nLong = g_totalAllocations - l0;
+
+    int n = 0;
+    // same answer -- that is the point of offering the alternative at all
+    if (agreed_decimal_digits(qn, ql, 4000) < 4000) {
+        std::cout << "  FAIL [" << host << "] the two dense-division policies disagree\n";
+        ++n;
+    }
+    // ... reached by a DIFFERENT amount of work, which is how we know the policy was
+    // honoured. Deliberately not asserting a direction: which path is cheaper depends
+    // on the divisor's width, and long division is actually ahead once the divisor is
+    // about as wide as the depth (0.92x at 24 blocks). Asserting "long division costs
+    // more" would encode a fact that is only true for narrow divisors.
+    if (nLong == nNewton) {
+        std::cout << "  FAIL [" << host << "] both policies used " << nLong
+                  << " allocations -- the policy argument is not reaching the dense path\n";
+        ++n;
+    }
+    else if (reportTestCases) {
+        std::cout << "  ok   [" << host << "] policies agree in value, differ in work ("
+                  << (double(nLong) / double(nNewton)) << "x allocations)\n";
+    }
+    return n;
+}
+
 } // anonymous
 
 #define MANUAL_TESTING 0
@@ -127,6 +181,8 @@ try {
 
     nrOfFailedTestCases += verify_division_scaling<double>("double", reportTestCases);
     nrOfFailedTestCases += verify_division_scaling<float>("float", reportTestCases);
+    nrOfFailedTestCases += verify_dense_policy_dispatches<double>("double", reportTestCases);
+    nrOfFailedTestCases += verify_dense_policy_dispatches<float>("float", reportTestCases);
 
     ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
     return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
