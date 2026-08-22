@@ -964,16 +964,18 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 		{ 'F', 15 },
 	};
 	if (std::regex_match(number, octal_regex)) {
-		// Format: [+-]*0[1-7][0-7]*  (C-style octal, no separators).
-		// Walk left-to-right: skip sign(s), skip the leading '0', then
-		// accumulate value = value * 8 + digit.
+		// Format: [+-]*0[0-7]*  (C-style octal, no separators). The digits after the
+		// leading '0' are OPTIONAL, so "0" and "00" reach here and are zero, and the
+		// leading zeros of "00777" are not special -- only the first is a radix marker.
+		// Walk left-to-right: skip sign(s), skip the one marker '0', then accumulate
+		// value = value * 8 + digit. Any further zeros simply contribute nothing.
 		bool sign = false;
 		std::string::size_type pos = 0;
 		while (pos < number.size() && (number[pos] == '+' || number[pos] == '-')) {
 			if (number[pos] == '-') sign = !sign;
 			++pos;
 		}
-		// regex guarantees a leading '0' followed by an octal digit
+		// the regex guarantees a leading '0'; what follows it may be empty
 		++pos;
 		for (; pos < number.size(); ++pos) {
 			value *= 8LL;
