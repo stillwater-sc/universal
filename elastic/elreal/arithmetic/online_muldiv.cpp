@@ -26,6 +26,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -392,6 +393,65 @@ int verify_dense_div_resolves_with_depth(const char* host, std::size_t depth, in
     return n;
 }
 
+// Dividing a multi-block value by a SINGLE block must stay LINEAR in the requested
+// depth. It used to be quadratic: each dividend block was divided independently to a
+// full stream and D of them were summed, each carried to the output frontier, so
+// D quotient blocks cost D^2/2 block divisions. The schoolbook carry makes it O(1)
+// per emitted block.
+//
+// Guarded by a RATIO across a 4x span rather than an absolute time, so it does not
+// depend on machine speed. Linear predicts ~4x; the quadratic form measured 16-30x
+// over the same span. The threshold sits well clear of both, so ordinary CI noise
+// cannot trip it.
+//
+// Checked on the double host only. The COUNT of block divisions is linear on both --
+// 1.00 per emitted block on double and 1.06-1.09 on float -- but float carries a
+// larger running remainder, and that per-step overhead leaves its wall-clock ratio
+// around 6-10x rather than 4x. Asserting on float would either be flaky or need a
+// threshold too loose to catch anything, so the guard rides on the host where the
+// signal is clean; a regression to the per-block-then-sum form would show on both.
+template <typename FpType>
+int verify_single_block_division_is_linear(const char* host) {
+    using namespace sw::universal;
+    using clk = std::chrono::steady_clock;
+    auto cost = [](std::size_t D) {
+        ZBCL<FpType> big = zbcl_from_blocks<FpType>(
+            div_online(from_native<FpType>(1.0), from_native<FpType>(7.0)).take(D));
+        const auto t0 = clk::now();
+        volatile std::size_t n =
+            zbcl_from_blocks<FpType>(div_online(big, from_native<FpType>(5.0)).take(D)).take(D).size();
+        const auto t1 = clk::now();
+        (void)n;
+        return std::chrono::duration<double, std::milli>(t1 - t0).count();
+    };
+    (void)cost(40);                                  // warm caches / first-touch
+    const double small = cost(40), large = cost(160);
+    const double ratio = (small > 0.0) ? large / small : 0.0;
+    constexpr double kMaxRatio = 8.0;                // linear ~4, quadratic ~16-30
+    if (ratio > kMaxRatio) {
+        std::cout << "single-block division [" << host << "] scaled x" << ratio
+                  << " over a 4x depth span (want <= " << kMaxRatio
+                  << "; the O(D^2) per-block-then-sum form is back)\n";
+        return 1;
+    }
+    return 0;
+}
+
+// ... and it must still STREAM. The quotient of 1/3 never terminates, so the
+// implementation has to keep producing blocks for as long as the caller pulls; a
+// depth-budgeted rewrite would silently cap it.
+template <typename FpType>
+int verify_single_block_division_streams(const char* host) {
+    using namespace sw::universal;
+    const std::size_t got = div_online(from_native<FpType>(1.0), from_native<FpType>(3.0)).take(400).size();
+    if (got < 400) {
+        std::cout << "single-block division [" << host << "] produced only " << got
+                  << " blocks of 1/3, expected the stream to keep going to 400\n";
+        return 1;
+    }
+    return 0;
+}
+
 } // anonymous
 
 #define MANUAL_TESTING 0
@@ -443,6 +503,9 @@ try {
     // keeping the check affordable for the fast CI tier.
     nrOfFailedTestCases += verify_dense_div_resolves_with_depth<double>("double", 40, 513);
     nrOfFailedTestCases += verify_dense_div_resolves_with_depth<float>("float", 24, 62);
+    nrOfFailedTestCases += verify_single_block_division_is_linear<double>("double");
+    nrOfFailedTestCases += verify_single_block_division_streams<double>("double");
+    nrOfFailedTestCases += verify_single_block_division_streams<float>("float");
 
 #endif
 

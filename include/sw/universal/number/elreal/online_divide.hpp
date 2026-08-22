@@ -51,7 +51,10 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <memory>
+#include <optional>
 #include <vector>
 
 #include <universal/number/elreal/block.hpp>
@@ -135,17 +138,99 @@ inline ZBCL<FpType> twoDivZBCL(block<FpType> x, block<FpType> y) {
 }
 
 // singleDivHelper / singleDiv: a ZBCL divided by a single block g.
+//
+// FCL.hs computes this as infSum over [f_0/g, f_1/g, ...] -- each dividend block
+// divided INDEPENDENTLY to a full stream, then summed. That is correct but costs
+// O(D^2): term i must be carried down to the output frontier, i.e. D-i blocks, so
+// D terms cost D^2/2 block divisions. Measured directly: 2*D^2 twoDivZBCL calls to
+// produce D quotient blocks.
+//
+// Dividing an N-digit number by a ONE-digit divisor is a linear operation -- the
+// schoolbook carry. The observation that makes it work here is that the residual of
+// f_i/g lands at the scale of f_{i+1}, so the two add and one running remainder
+// suffices. Each emitted quotient block then costs O(1) instead of O(D):
+//
+//     rem  += next dividend block
+//     (s,e) = twoDiv(rem.head(), g)      -- one quotient block, exact residual
+//     rem   = rem.tail() + e             -- carry
+//
+// The remainder stays small (1 block on a double host, up to ~6 on float), and is
+// capped so a pathological carry cannot grow it without bound.
+//
+// PENDING BUFFER. The raw quotient blocks are not always 0-overlap: on a double host
+// they come out with gaps of k+1 and need nothing, but on float roughly 2 in 60 land
+// one bit too close. Rather than renormalising the whole expansion at the end -- a
+// pass that is itself superlinear and would dominate what we just made linear -- the
+// blocks are folded through a small canonical buffer and emitted with a lookahead, so
+// a late carry can still reach a block that has not been handed out yet. That keeps
+// the per-block cost O(1) and the output canonical.
+//
+// This stays a LAZY producer: one quotient block per pull, so an infinite quotient
+// (1/3) still streams for as long as the caller asks.
 template <typename FpType>
-inline series<FpType> singleDivHelper(ZBCL<FpType> fs, block<FpType> g) {
-    if (fs.is_empty()) return series<FpType>{};
-    ZBCL<FpType> term = twoDivZBCL(fs.head(), g);     // f_i / g
-    ZBCL<FpType> rest = fs.tail();
-    block<FpType> gcopy = g;
-    return series<FpType>::cons(term, [rest, gcopy]() { return singleDivHelper(rest, gcopy); });
+struct singleDivState {
+    ZBCL<FpType>   cur;              // dividend blocks not yet consumed
+    ZBCL<FpType>   rem;              // running remainder (small, capped)
+    ZBCL<FpType>   pending;          // quotient blocks not yet settled (small, canonical)
+    block<FpType>  gN;               // normalised divisor
+    bool           exhausted{false}; // no further raw quotient blocks
+};
+
+// Blocks of lookahead kept before a quotient block is handed out, and the cap on the
+// running remainder. Both are small constants: their only job is to bound the work per
+// emitted block, and the structures they bound are O(1) in practice.
+inline constexpr std::size_t kSingleDivLookahead = 3;
+inline constexpr std::size_t kSingleDivCarryCap  = 8;
+
+template <typename FpType>
+inline std::optional<block<FpType>> singleDiv_step(singleDivState<FpType>& st) {
+    using Z = ZBCL<FpType>;
+    for (;;) {
+        if (!st.exhausted) {
+            if (!st.cur.is_empty()) {
+                st.rem = zbcl_from_blocks<FpType>(
+                    add(st.rem, Z::singleton(st.cur.head())).take(kSingleDivCarryCap));
+                st.cur = st.cur.tail();
+            }
+            if (st.rem.is_empty()) { st.exhausted = true; continue; }
+            block<FpType> x = st.rem.head();
+            x.normalise();                              // operands, not results (#1051)
+            auto se = block_two_div_rem(x, st.gN);      // (s, e): x/g = s + e/g
+            if (!se.first.is_normalised()) { st.exhausted = true; continue; }
+            st.rem = zbcl_from_blocks<FpType>(
+                add(st.rem.tail(), Z::singleton(se.second)).take(kSingleDivCarryCap));
+            st.pending = zbcl_from_blocks<FpType>(
+                add(st.pending, Z::singleton(se.first)).take(kSingleDivCarryCap));
+            if (st.pending.take(kSingleDivLookahead + 1).size() > kSingleDivLookahead) {
+                block<FpType> out = st.pending.head();
+                st.pending = st.pending.tail();
+                return out;
+            }
+            continue;
+        }
+        if (st.pending.is_empty()) return std::nullopt;   // drained
+        block<FpType> out = st.pending.head();
+        st.pending = st.pending.tail();
+        return out;
+    }
 }
+
 template <typename FpType>
 inline ZBCL<FpType> singleDiv(ZBCL<FpType> fs, block<FpType> g) {
-    return infsum(singleDivHelper(std::move(fs), g));
+    using Z = ZBCL<FpType>;
+    if (fs.is_empty() || g.is_zero_block()) return Z{};
+    block<FpType> gN = g; gN.normalise();
+    auto st = std::make_shared<singleDivState<FpType>>(
+        singleDivState<FpType>{ std::move(fs), Z{}, Z{}, gN, false });
+    auto loop = std::make_shared<std::function<Z()>>();
+    *loop = [st, loop]() -> Z {
+        auto nxt = singleDiv_step(*st);
+        if (!nxt) return Z{};
+        return Z::cons(*nxt, [loop]() { return (*loop)(); });
+    };
+    auto first = singleDiv_step(*st);
+    if (!first) return Z{};
+    return Z::cons(*first, [loop]() { return (*loop)(); });
 }
 
 // divideHelper: the long division. q ~= fs/g0 (leading divisor block); the residual is
