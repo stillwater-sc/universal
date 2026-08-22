@@ -924,9 +924,19 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 	bool bSuccess = false;
 	value.clear();
 	std::regex binary_regex("^[-+]*0b[01']+");
-	// check if the txt is an integer form: [0123456789]+
-	std::regex decimal_regex("^[-+]*[0-9]+");
-	std::regex octal_regex("^[-+]*0[1-7][0-7]*$");
+	// A LEADING ZERO SELECTS OCTAL, however many of them there are.
+	//
+	// The octal pattern used to require the second character to be [1-7], so the radix
+	// depended on the number of leading zeros: "0777" parsed as octal 511 while
+	// "00777" fell through to decimal 777, and "075" was 61 while "0075" was 75. A
+	// caller could not predict the radix of its own input, and zero-padding a value
+	// silently changed it (universal#1370).
+	std::regex octal_regex("^[-+]*0[0-7]*$");
+	// Decimal excludes a leading zero, so a string that opens with '0' is committed to
+	// the octal (or 0x / 0b) reading rather than quietly falling back. Without this,
+	// "08" and "0749" -- which are not valid octal, and which C rejects outright --
+	// would be re-interpreted as decimal, so "0747" would be 487 and "0749" 749.
+	std::regex decimal_regex("^[-+]*(0|[1-9][0-9]*)$");
 	std::regex hex_regex("^[-+]*0[xX][0-9a-fA-F']+");
 	// setup associative array to map chars to nibbles
 	std::map<char, int> charLookup{
@@ -954,16 +964,18 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 		{ 'F', 15 },
 	};
 	if (std::regex_match(number, octal_regex)) {
-		// Format: [+-]*0[1-7][0-7]*  (C-style octal, no separators).
-		// Walk left-to-right: skip sign(s), skip the leading '0', then
-		// accumulate value = value * 8 + digit.
+		// Format: [+-]*0[0-7]*  (C-style octal, no separators). The digits after the
+		// leading '0' are OPTIONAL, so "0" and "00" reach here and are zero, and the
+		// leading zeros of "00777" are not special -- only the first is a radix marker.
+		// Walk left-to-right: skip sign(s), skip the one marker '0', then accumulate
+		// value = value * 8 + digit. Any further zeros simply contribute nothing.
 		bool sign = false;
 		std::string::size_type pos = 0;
 		while (pos < number.size() && (number[pos] == '+' || number[pos] == '-')) {
 			if (number[pos] == '-') sign = !sign;
 			++pos;
 		}
-		// regex guarantees a leading '0' followed by an octal digit
+		// the regex guarantees a leading '0'; what follows it may be empty
 		++pos;
 		for (; pos < number.size(); ++pos) {
 			value *= 8LL;
