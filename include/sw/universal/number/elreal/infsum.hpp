@@ -125,10 +125,50 @@ infsumRec_step(infsumRec_state<FpType>& st) {
         // dissertation (they broke 0-overlap for the correlated terms division generates).
         ZBCL<FpType> s = add(st.prevs, as);               // add (prev:prevs) as
         if (s.is_empty()) {
-            // null sum: full cancellation. Defensive -- McCleeary's pattern match
-            // (high:highs) = add ... assumes this cannot occur (prev dominates as).
-            st.prevs  = as;
-            st.inputs = rest1.tail();                     // rest (drop as and bs)
+            // prevs + as == 0 exactly, so the accumulator is now zero. McCleeary's
+            // pattern match (high:highs) = add ... assumes this cannot occur, but it
+            // does: a term may be an all-zero ZBCL (the multiply emits one whenever an
+            // operand block is zero) and add(zero, zero) is empty.
+            //
+            // Two things must hold here, and the original recovery had neither.
+            // (1) Do NOT drop `bs`. Advancing to rest1.tail() discarded an unconsumed
+            //     term, truncating any sum with an interior zero term -- a product
+            //     against [1@0, Z@-100, Z@-150, Z@-200, 1@-1700] lost the 2^-1700 term
+            //     and stopped at 2^-588 where the same VALUE without the zero blocks
+            //     reached 2^-2088 (universal#1373). Newton's reciprocal hit this
+            //     because 2 - b*r emits a growing run of zero blocks as it converges.
+            // (2) Stay PRODUCTIVE. Merely consuming a term without emitting turns an
+            //     infinite input whose terms keep cancelling into a non-emitting loop:
+            //     the old double-drop accidentally broke that cycle, and keeping bs
+            //     without emitting hangs on operands like 1/7 that never terminate.
+            //     Emitting an explicit zero at the frontier is value-neutral and gives
+            //     the consumer a block per pull, exactly as the cancellation region
+            //     above does.
+            // prevs + as == 0 exactly, so the accumulator is now zero.
+            //
+            // McCleeary's pattern match (high:highs) = add ... assumes this cannot
+            // occur, and the branch was written as defensive dead code for "full
+            // cancellation". It is NOT dead: a term may be an all-zero ZBCL -- zero
+            // blocks are legitimate, and the multiply emits an all-zero term whenever
+            // an operand block is zero -- and add(zero, zero) is empty.
+            //
+            // The old recovery advanced the input cursor to rest1.tail(), discarding
+            // `bs` along with `as`. `bs` had not been consumed, so an interior zero
+            // term silently DROPPED THE FOLLOWING TERM from the sum. That truncated
+            // any product against an operand carrying interior zero blocks: against
+            // [1@0, Z@-100, Z@-150, Z@-200, 1@-1700] the 2^-1700 term was lost and the
+            // product stopped at 2^-588, where the same VALUE written without the zero
+            // blocks reached 2^-2088 (universal#1373). Newton's reciprocal walked
+            // straight into it, because the cancellation in 2 - b*r emits a growing run
+            // of zero blocks as it converges (1, 2, 6, 14, 31 ...), so past a certain
+            // depth the correction term was discarded whole and the iteration
+            // fixed-pointed -- capping dense division at ~513 digits on a double host
+            // and ~62 on float, at any requested depth.
+            //
+            // Consume only `as`, and set the accumulator to the empty (zero) ZBCL,
+            // which is what prevs + as actually is here.
+            st.prevs  = ZBCL<FpType>{};                   // the sum is exactly zero
+            st.inputs = rest1;                            // (bs:rest) -- do NOT drop bs
             continue;
         }
         const B high = s.head();
