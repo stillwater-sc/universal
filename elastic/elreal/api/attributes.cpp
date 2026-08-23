@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -44,7 +45,28 @@ int verify_numeric_limits() {
     if (!(double(lim::max()) > 0.0)) ++n;
     if (!(double(lim::min()) > 0.0)) ++n;
     if (!(double(lim::lowest()) < 0.0)) ++n;
-    if (!(double(lim::epsilon()) > 0.0 && double(lim::epsilon()) < 1.0)) ++n;
+    // Compare epsilon AS AN ELREAL, not through a double. At the nominal default
+    // precision epsilon is 2^-digits, which is far below the host's exponent range --
+    // 2^-1696 on a double host -- so converting it to a double is a lossy operation
+    // that yields 0. That says nothing about epsilon; it is the whole reason the type
+    // carries its exponent in a wide integer (#1177).
+    if (!(lim::epsilon() > Real(0.0) && lim::epsilon() < Real(1.0))) ++n;
+    // ... and pin it structurally: epsilon must be exactly 2^-digits, i.e. a single
+    // block sitting at that exponent. The value check above only catches the zero case
+    // at a default deep enough to underflow a double (>= 21 blocks); this catches a
+    // regression to a host-computed epsilon at ANY default.
+    {
+        const auto eb = lim::epsilon().stream().take(2);
+        if (eb.size() != 1) {
+            std::cout << "  FAIL epsilon is " << eb.size() << " blocks, expected exactly 1\n";
+            ++n;
+        }
+        else if (static_cast<int>(eb.front().exponent()) != -lim::digits) {
+            std::cout << "  FAIL epsilon sits at 2^" << static_cast<int>(eb.front().exponent())
+                      << ", expected 2^-" << lim::digits << " -- was it computed through a host double?\n";
+            ++n;
+        }
+    }
     // non-finite factories now return real states (#1079 Phase 5)
     if (!std::isinf(double(lim::infinity()))) ++n;
     if (!(double(lim::infinity()) > 0.0)) ++n;       // +inf

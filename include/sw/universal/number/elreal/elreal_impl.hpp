@@ -52,7 +52,26 @@ namespace sw { namespace universal {
 // The compile-time nominal default precision (in blocks). numeric_limits reports
 // its precision-dependent fields against this; the runtime default below is seeded
 // from it and may be changed per-scope (elreal_precision_guard).
-inline constexpr std::size_t kElrealDefaultPrecision = 8;   // ~128 decimal digits on a double host
+//
+// Chosen from the characterization sweep (benchmark/accuracy/adaptive, #1177). elreal
+// has NO saturation depth to key a default to -- accuracy is linear in the knob and
+// unbounded, at k*log10(2) digits per block, so the choice is a policy about how much
+// headroom a caller gets before having to ask. 32 blocks is ~510 decimal digits on a
+// double host, ~231 on float and ~77 on bfloat16.
+//
+// The cost is per-operation and roughly linear in the knob. Measured on the class
+// facade at -O2 (double host), moving from 8 to 32 blocks:
+//
+//     operation      at 8       at 32
+//     a / b        0.114 ms   0.576 ms
+//     a * b        0.240 ms   1.004 ms
+//     a + b        0.022 ms   0.095 ms
+//     double(a)     ~0         ~0
+//
+// This governs the CLASS FACADE only -- an elreal's own _depth, used for boundary
+// operations (conversion / comparison / I/O) and for sizing facade arithmetic. The
+// free ZBCL math functions carry their own depth arguments and are unaffected.
+inline constexpr std::size_t kElrealDefaultPrecision = 32;   // ~510 decimal digits on a double host
 
 // Extra blocks requested of a dense quotient beyond the object's own precision, so a
 // boundary op that pulls `precision()` blocks is not reading the quotient's last,
