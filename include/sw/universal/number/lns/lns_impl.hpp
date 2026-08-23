@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // lns_impl.hpp: implementation of an arbitrary logarithmic number system configuration
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt_tables.hpp: specialized fixed-point configurations 
 //                  to support efficient sqrt for small fixpnts
 //

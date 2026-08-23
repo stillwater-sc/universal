@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // faithful_impl.hpp: definition of a faithfully rounded number system
 //
 // Copyright (C) 2023-2023 Stillwater Supercomputing, Inc.

@@ -18,7 +18,7 @@
 // uncomment to enable operator tracing
 //#define BLOCKTRIPLE_VERBOSE_OUTPUT
 //#define BLOCKTRIPLE_TRACE_DIV
-#include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/internal/blocktriple/blocktriple_debug.hpp>  // constexprClassParameters + tracing (#1334)
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 

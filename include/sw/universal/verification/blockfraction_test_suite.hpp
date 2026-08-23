@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 //  blockfraction_test_suite.hpp : test suite for blockfractionignificant
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // rational_impl.hpp: definition of a multi-radix rational arithmetic type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

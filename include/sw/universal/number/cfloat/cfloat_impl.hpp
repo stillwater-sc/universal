@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // cfloat_impl.hpp: implementation of an arbitrary configuration fixed-size 'classic' floating-point representation
 // cfloat<> can emulate IEEE-754 floats and the new Deep Learning types, such as 
 // IEEE-754 half-precision floats

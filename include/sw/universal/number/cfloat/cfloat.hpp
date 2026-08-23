@@ -64,6 +64,11 @@
 /// INCLUDE FILES that make up the library
 #include <universal/number/cfloat/exceptions.hpp>
 #include <universal/number/cfloat/cfloat_fwd.hpp>
+// blocktriple's introspection layer: blocktriple.hpp declares
+// constexprClassParameters() but does not define it, so the umbrella carries the
+// definition for cfloat's conversion suites, which call it. A core-only include
+// path (see #1334) would leave this out.
+#include <universal/internal/blocktriple/blocktriple_debug.hpp>
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/traits/cfloat_traits.hpp>
 #include <universal/number/cfloat/numeric_limits.hpp>

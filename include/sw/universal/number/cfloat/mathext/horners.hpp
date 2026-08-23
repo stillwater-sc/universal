@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // horners.hpp: Horner's polynomial evaluation and root finding functions for double-double (dd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

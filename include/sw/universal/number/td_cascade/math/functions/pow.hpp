@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // pow.hpp: pow functions for triple-double cascade (td_cascade) floating-point
 //
 // algorithms adapted from quad-double implementation by Scibuilders, Jack Poulson

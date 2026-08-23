@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for IBM System/360 hexadecimal floating-point hfloats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

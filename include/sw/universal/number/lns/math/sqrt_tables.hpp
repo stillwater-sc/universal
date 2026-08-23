@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt_tables.hpp: specialized logarithmic floating-point 
 //                  to support efficient sqrt for small lns configurations
 //

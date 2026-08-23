@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // areal_impl.hpp: implementation of an arbitrary configuration fixed-size floating-point representation with an uncertainty bit to represent a faithful floating-point system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

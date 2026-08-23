@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // posit_regime.hpp: definition of a posit positRegime
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

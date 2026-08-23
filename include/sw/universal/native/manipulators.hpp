@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iostream>
 #include <iomanip>
 #include <string>
 #include <sstream>
@@ -175,20 +174,6 @@ namespace sw { namespace universal {
 		    significantbits = 0;
 		}
 	    return significantbits;
-	}
-
-	// print representations of an IEEE-754 floating-point
-	template<typename Real>
-    void valueRepresentations(Real value, bool showhex = false) noexcept {
-		using namespace sw::universal;
-		std::cout << "IEEE-754 type : " << type_tag<Real>() << '\n';
-
-		std::cout << "binary : " << to_binary(value) << '\n';
-		std::cout << "triple : " << to_triple(value) << '\n';
-		std::cout << "base2  : " << to_base2_scientific(value) << '\n';
-		std::cout << "base10 : " << value << '\n';
-		std::cout << "color  : " << color_print(value) << '\n';
-	    if (showhex) std::cout << "hex    : " << to_hex(value) << '\n';
 	}
 
 	// return in triple form (sign, scale, fraction)

@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // primes.hpp: algorithms to create, categorize, classify, and identify prime factors
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
