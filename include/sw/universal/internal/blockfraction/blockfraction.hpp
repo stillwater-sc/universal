@@ -7,7 +7,17 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <cmath> // for std::pow() used in conversions to native IEEE-754 formats values
+// TRACE_DIV: compile-time tracing of the division algorithm, default off.
+// Declared ahead of the includes because <iostream> is needed only when it is
+// on. #ifndef-guarded so a caller can enable it by defining the macro first;
+// the previous unconditional #define silently reset it to 0.
+#ifndef TRACE_DIV
+#define TRACE_DIV 0
+#endif
+
+#if TRACE_DIV
 #include <iostream>
+#endif
 #include <string>
 #include <sstream>
 
@@ -669,7 +679,6 @@ std::string to_hex(const blockfraction<nbits, bt>& number, bool wordMarker = tru
 // specialty binary operators
 
 
-#define TRACE_DIV 0
 // unrounded division, returns a blockfraction that is of size 2*nbits
 template<unsigned nbits, unsigned roundingBits, typename bt>
 blockfraction<2 * nbits + roundingBits, bt> urdiv(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b, blockfraction<roundingBits, bt>& r) {
