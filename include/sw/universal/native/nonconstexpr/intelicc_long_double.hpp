@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 // intelicc_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.

@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <cstdio>
 // gcc_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
