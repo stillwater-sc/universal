@@ -61,8 +61,23 @@ that costs 4 ms in `sqrt` costs 374 ms in `sin`. Set `precision()` per object, o
 scope it with `elreal_precision_guard`, rather than raising the global default for the
 benefit of one call site.
 
-Reducing the `log`/trig constant is separate work -- it is the series evaluation, not
-the precision machinery.
+**Update (#1383):** the numbers above were measured before the transcendental
+constants were memoized, and the attribution in the original version of this page --
+that the gap was the series evaluation -- was wrong. Almost all of it was `pi_zbcl`
+and `ln2_zbcl` being recomputed from scratch on every call: at depth 8, `pi_zbcl`
+alone cost 371.9 ms against `sin(0.5)`'s 371.8 ms in total. The constants are now
+cached per `(FpType, depth)`, and in steady state the table reads:
+
+| function | before | after |
+|---|---|---|
+| `sin` / `cos` | ~372 ms | ~5.8 ms |
+| `tan` | 374 ms | ~9.1 ms |
+| `log` | 374 ms | ~0.01 ms |
+| `exp`, `sqrt` | unchanged | unchanged (they need no constant) |
+
+The first call at a given depth still pays for the constant. What remains is the
+series cost proper, and the spread between functions is now the ordinary few-fold
+difference rather than ~90x.
 
 ## The default
 
