@@ -11,7 +11,6 @@
 #include <cmath>
 #include <cstring>
 #include <climits>
-#include <iostream>
 #include <iomanip>
 #include <universal/number/zfpblock/zfpblock_fwd.hpp>
 #include <universal/number/zfpblock/zfp_codec_traits.hpp>

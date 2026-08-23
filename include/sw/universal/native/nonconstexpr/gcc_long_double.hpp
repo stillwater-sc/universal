@@ -1,4 +1,6 @@
 #pragma once
+#include <string>
+#include <cstdio>
 // gcc_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -288,7 +290,7 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 		}
 	}
 	else if constexpr (std::numeric_limits<long double>::digits == 113) {
-		std::cerr << "numeric_limits<long double>::digits = " << std::numeric_limits<long double>::digits << " currently unsupported\n";
+		std::fprintf(stderr, "numeric_limits<long double>::digits = %d currently unsupported\n", std::numeric_limits<long double>::digits);
 	}
 }
 #else
@@ -307,7 +309,7 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 		}
 	}
 	else {
-		std::cerr << "numeric_limits<long double>::digits = " << std::numeric_limits<long double>::digits << " currently unsupported\n";
+		std::fprintf(stderr, "numeric_limits<long double>::digits = %d currently unsupported\n", std::numeric_limits<long double>::digits);
 	}
 }
 #endif

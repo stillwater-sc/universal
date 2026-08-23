@@ -7,7 +7,6 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
 #include <cstdint>
-#include <iostream>
 #include <iomanip>
 #include <sstream>
 #include <string>

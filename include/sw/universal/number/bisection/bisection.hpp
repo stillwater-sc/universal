@@ -14,9 +14,7 @@
 // This file is part of the universal numbers project.
 
 #include <universal/utility/directives.hpp>
-#include <universal/utility/compiler.hpp>
 
-#include <iostream>
 #include <iomanip>
 #include <string>
 

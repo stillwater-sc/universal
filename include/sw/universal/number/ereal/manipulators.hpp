@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iostream>
 #include <iomanip>
 #include <string>
 #include <universal/number/ereal/ereal_fwd.hpp>

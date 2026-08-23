@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
+#include <iostream>
 
 #include <universal/number/unum2/common.hpp>
 #include <universal/number/unum2/op_matrix.hpp>

@@ -6,7 +6,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <iostream>
 #include <iomanip>
 #include <sstream>
 

@@ -1,4 +1,6 @@
 #pragma once
+#include <cstdio>
+#include <string>
 // ibmxlc_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
@@ -32,7 +34,7 @@ inline std::string to_triple(const long double& number) {
 }
 
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
-	std::cerr << "extract_fp_components not implemented for IBM compiler");
+	std::fprintf(stderr, "extract_fp_components not implemented for IBM compiler\n");
 }
 
 

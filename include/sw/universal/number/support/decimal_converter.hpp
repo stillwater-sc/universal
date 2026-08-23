@@ -23,7 +23,6 @@
 //   std::string s = sw::universal::to_decimal_string(bt, std::ios::fixed, 6);
 
 #include <string>
-#include <iostream>
 #include <iomanip>
 #include <universal/number/support/decimal.hpp>
 

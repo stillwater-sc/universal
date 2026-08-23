@@ -29,7 +29,6 @@
 #endif
 
 #include <vector>
-#include <iostream>
 #include <iomanip>
 #include <cmath>
 

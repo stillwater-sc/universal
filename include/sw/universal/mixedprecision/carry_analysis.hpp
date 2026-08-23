@@ -25,7 +25,6 @@
 #include <universal/mixedprecision/pop_solver.hpp>
 #include <vector>
 #include <cmath>
-#include <iostream>
 
 namespace sw { namespace universal {
 

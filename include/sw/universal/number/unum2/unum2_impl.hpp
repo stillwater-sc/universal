@@ -14,7 +14,6 @@
 #include <universal/number/unum2/common.hpp>
 #include <universal/number/unum2/unum2_fwd.hpp>
 
-#include <iostream>
 #include <sstream>
 #include <cstdint>
 #include <bitset>

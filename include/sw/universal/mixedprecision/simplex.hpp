@@ -25,7 +25,6 @@
 #include <limits>
 #include <algorithm>
 #include <cassert>
-#include <iostream>
 
 namespace sw { namespace universal {
 

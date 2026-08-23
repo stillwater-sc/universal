@@ -16,7 +16,6 @@
 // 3. PGO-style feedback loop for precision selection
 // 4. Energy regression across operation types and bit widths
 
-#include <iostream>
 #include <iomanip>
 #include <string>
 #include <vector>
