@@ -84,9 +84,13 @@ int verify_lazy_api() {
     int n = 0;
     elreal<double> q = elreal<double>(1.0) / elreal<double>(3.0);    // 1/3, irrational stream
     n += (q.limbs(3).size() == 3 ? 0 : 1);                          // pull 3 limbs
-    q.refine(16);
-    n += (q.precision() == 16 ? 0 : 1);                            // incremental refine
-    n += check("1/3 approx@16", q.approx<double>(16), 1.0 / 3.0, 1e-12);
+    // refine() RAISES the pull depth; it never lowers it. Express the target relative
+    // to the nominal default so the check tests that contract rather than whatever the
+    // default happens to be (it moved from 8 to 32 in #1177).
+    const std::size_t deeper = kElrealDefaultPrecision + 8;
+    q.refine(deeper);
+    n += (q.precision() == deeper ? 0 : 1);                        // incremental refine
+    n += check("1/3 approx deeper", q.approx<double>(deeper), 1.0 / 3.0, 1e-12);
     n += (q.stream().is_empty() ? 1 : 0);                          // raw state machine handle
     {   // scoped precision override
         elreal_precision_guard g(20);
@@ -94,7 +98,7 @@ int verify_lazy_api() {
         n += (z.precision() == 20 ? 0 : 1);
     }
     elreal<double> z2;
-    n += (z2.precision() == 8 ? 0 : 1);                            // restored
+    n += (z2.precision() == kElrealDefaultPrecision ? 0 : 1);      // restored
     return n;
 }
 

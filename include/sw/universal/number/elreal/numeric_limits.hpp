@@ -34,8 +34,20 @@ public:
     static ElrealType min()    { return ElrealType(std::numeric_limits<FpType>::min()); }
     static ElrealType max()    { return ElrealType(std::numeric_limits<FpType>::max()); }
     static ElrealType lowest() { return ElrealType(std::numeric_limits<FpType>::lowest()); }
-    // smallest increment from 1.0 at the nominal default precision (~2^-digits).
-    static ElrealType epsilon()     { return ElrealType(std::ldexp(1.0, -digits)); }
+    // Smallest increment from 1.0 at the nominal default precision, i.e. 2^-digits.
+    //
+    // Built as a block carrying its scale in the WIDE exponent rather than as
+    // ElrealType(std::ldexp(1.0, -digits)). That formulation computed the value
+    // through a host double, so it silently underflowed to ZERO once digits exceeded
+    // the host's exponent range -- from a nominal default of 21 blocks upward on a
+    // double host (21 * 53 = 1113 > 1074), epsilon() returned 0 rather than a small
+    // number. Representing a value that far below the host's range is the entire
+    // point of the type, so epsilon must not route through it (#1177).
+    static ElrealType epsilon() {
+        using Blk = sw::universal::block<FpType>;
+        Blk b{ static_cast<FpType>(1.0), typename Blk::exp_t(-digits) };
+        return ElrealType(sw::universal::ZBCL<FpType>::singleton(b));
+    }
     static ElrealType round_error() { return ElrealType(0.5); }
     // has_denorm = denorm_absent, so the C++20 contract requires denorm_min() to
     // return the minimum positive NORMALISED value, i.e. min().

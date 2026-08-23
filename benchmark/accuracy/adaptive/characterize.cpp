@@ -279,20 +279,53 @@ namespace {
 				std::sort(rs.begin(), rs.end(), [](const Row* a, const Row* b) { return a->knob < b->knob; });
 				int maxDig = 0;
 				for (auto* r : rs) maxDig = std::max(maxDig, r->digits);
+
+				// Saturation means additional knob buys (almost) nothing, and we can
+				// only claim it if the plateau STARTED BEFORE the sweep ended. Taking
+				// "first knob within 95% of the best" on its own is not enough: for a
+				// series that is still climbing, the best IS the last row, so the test
+				// fires at the sweep limit and reports the operator's choice of maxDepth
+				// back to them as a property of the type. elreal does exactly this --
+				// since v4.9.0 its accuracy is linear in the knob and unbounded, so it
+				// has no saturation point at any depth (#1177).
 				long satKnob = rs.back()->knob;
-				for (auto* r : rs) if (r->digits >= (maxDig * 95) / 100) { satKnob = r->knob; break; }
+				bool saturated = false;
+				for (auto* r : rs) {
+					if (r->digits >= (maxDig * 95) / 100) {
+						satKnob = r->knob;
+						saturated = (r != rs.back()) && (rs.size() > 1);
+						break;
+					}
+				}
 				const Row* knee = rs.front();
 				double bestScore = -1.0;
 				for (auto* r : rs) {
 					double score = r->digits / std::max(1.0, std::log10(std::max(1.0, r->time_ns)));
 					if (score > bestScore) { bestScore = score; knee = r; }
 				}
+				// The knee has the same failure mode: digits/log10(time) rises
+				// monotonically for a series that never plateaus, so the "best" is
+				// again just the last row. Only call it a knee when a plateau was seen.
+				const bool kneeIsSweepLimit = (knee == rs.back());
+				const char* unit = (type == "elreal" ? "depth " : "N=");
 				const std::string label = type + "<" + host + ">";
-				std::cout << "  " << std::left << std::setw(17) << label << ' ' << std::setw(9) << f
-				          << " saturates ~" << (type == "elreal" ? "depth " : "N=") << satKnob
-				          << " (" << maxDig << " digits); knee at "
-				          << (type == "elreal" ? "depth " : "N=") << knee->knob
-				          << " (" << knee->digits << " digits, " << std::llround(knee->time_ns) << " ns)\n";
+				std::cout << "  " << std::left << std::setw(17) << label << ' ' << std::setw(9) << f;
+				if (saturated) {
+					std::cout << " saturates ~" << unit << satKnob << " (" << maxDig << " digits)";
+				}
+				else {
+					std::cout << " NO saturation through " << unit << rs.back()->knob
+					          << " (" << maxDig << " digits, still climbing)";
+				}
+				if (saturated || !kneeIsSweepLimit) {
+					std::cout << "; knee at " << unit << knee->knob
+					          << " (" << knee->digits << " digits, " << std::llround(knee->time_ns) << " ns)";
+				}
+				else {
+					std::cout << "; no knee -- accuracy/time still improving at " << unit << knee->knob
+					          << " (" << knee->digits << " digits, " << std::llround(knee->time_ns) << " ns)";
+				}
+				std::cout << '\n';
 			}
 		}
 
