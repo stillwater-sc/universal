@@ -5,8 +5,23 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+// TRACE_URMUL / TRACE_DIV: compile-time tracing of the unrounded multiply and
+// divide. Both default to off. They are declared here, ahead of the includes,
+// because <iostream> is needed ONLY when one of them is on -- see below.
+// Guarded with #ifndef so a caller can enable tracing by defining the macro
+// before including this header; the previous unconditional #define silently
+// reset it to 0, so tracing could not in fact be turned on from outside.
+#ifndef TRACE_URMUL
+#define TRACE_URMUL 0
+#endif
+#ifndef TRACE_DIV
+#define TRACE_DIV 0
+#endif
+
 #include <cstdint>
+#if TRACE_URMUL || TRACE_DIV
 #include <iostream>
+#endif
 #include <iomanip>
 #include <string>
 #include <sstream>
@@ -1157,7 +1172,6 @@ constexpr blockbinary<N + 1, B, T> ursub(const blockbinary<N, B, T>& a, const bl
 	return result -= blockbinary<N + 1, B, T>(b);
 }
 
-#define TRACE_URMUL 0
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using brute-force sign-extending of operands to yield correct sign-extended result for 2*nbits 2's complement.
 template<unsigned N, typename B, BinaryNumberType T>
@@ -1228,7 +1242,6 @@ constexpr blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const b
 	return result;
 }
 
-#define TRACE_DIV 0
 // unrounded division, returns a blockbinary that is of size 2*nbits
 template<unsigned nbits, unsigned roundingBits, typename B, BinaryNumberType T>
 blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>& a, const blockbinary<nbits, B, T>& b) {
