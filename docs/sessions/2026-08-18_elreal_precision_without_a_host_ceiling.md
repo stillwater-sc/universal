@@ -230,8 +230,10 @@ block per pull, verified to 400 blocks.
 
 ## Follow-on work
 
-- **fp16 as a host** is still blocked on the division floor rework -- `min_exp + 2k` exceeds fp16's
-  5-bit exponent range. It is the only host not converging.
+- **`half`/`fp16` is not in the characterization sweep.** `fp16` is an alias of `half`
+  (`cfloat<16,5>`), and it converges as of #1366 -- the `min_exp + 2k` division floor that used to
+  block it was removed with the others in #1361/#1362. What remains is that #1176 swept only
+  `{double, float, bfloat16}`, so `half` has no accuracy-vs-time curve alongside them.
 - **The design matrix half of #1188** stays blocked: what a narrow block shape *would* reach once its
   series stops degrading cannot be measured without an extended-precision intermediate host. The
   decision matrix, delivered here, already says narrow hosts are dominated rather than merely limited.
