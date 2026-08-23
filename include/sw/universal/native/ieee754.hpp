@@ -13,7 +13,6 @@
 
 // configure the low level compiler interface to deal with floating-point bit manipulation
 #include <universal/utility/architecture.hpp>
-#include <universal/utility/compiler.hpp>
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/long_double.hpp>
 

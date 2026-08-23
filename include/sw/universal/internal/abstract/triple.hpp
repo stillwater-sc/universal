@@ -5,7 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
-#include <iostream>
 #include <iomanip>
 #include <limits>
 #include <tuple>

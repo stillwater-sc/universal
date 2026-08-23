@@ -9,7 +9,6 @@
 // Autotuning enables automatic precision selection by running a kernel
 // at multiple precisions and comparing accuracy, energy, and performance.
 
-#include <iostream>
 #include <iomanip>
 #include <string>
 #include <vector>

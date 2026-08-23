@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 // cfloat_fwd.hpp :  forward declarations of the classic floating-point cfloat environment
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

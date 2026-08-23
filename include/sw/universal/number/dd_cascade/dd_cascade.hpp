@@ -7,7 +7,6 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
-#include <universal/utility/compiler.hpp>
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/long_double.hpp>

@@ -24,7 +24,6 @@
 #include <cstring>
 #include <string>
 #include <sstream>
-#include <iostream>
 #include <iomanip>
 #include <universal/number/support/decimal.hpp>
 #include <universal/number/support/dragon.hpp>

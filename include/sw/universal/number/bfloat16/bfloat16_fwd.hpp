@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 // bfloat16_fwd.hpp: forward definitions of the Google Brain Float number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

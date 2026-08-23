@@ -6,7 +6,6 @@
 #pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
-#include <universal/utility/compiler.hpp>
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/long_double.hpp>

@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <iostream>
 #include <cstdint>
 
 #include <universal/number/unum2/common.hpp>
