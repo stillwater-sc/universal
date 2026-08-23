@@ -130,24 +130,70 @@ inline series<FpType> e_term_stream(ZBCL<FpType> term, double n, int floor_exp) 
 // term co-list, #1061 Phase 3b) -- ~100x faster than the previous eager form (every
 // term to full working depth + a batch priestRenorm sum), value-identical and
 // 0-overlap canonical. Carries kSeriesGuard extra working blocks like the other series.
+namespace detail {
+
+// memoize_by_depth: cache a constant that depends only on (FpType, depth).
+//
+// pi and ln2 were recomputed from scratch on EVERY call, and that -- not the series
+// each one wraps -- was essentially the whole cost of sin/cos/tan and log. Measured at
+// depth 8 on a double host: pi_zbcl alone 371.9 ms against sin(0.5) 371.8 ms in total,
+// while exp and sqrt, which need no constant, cost 9.6 ms and 4.0 ms (universal#1383).
+//
+// KEYED ON THE EXACT DEPTH, deliberately, rather than caching the deepest value and
+// truncating it for shallower requests. That would be cheaper and it is wrong: these
+// constants are NOT prefix-stable. Measured before choosing -- pi at depth 2 differs
+// from take(2) of pi at depth 8 after ~32 digits, because the deeper evaluation
+// refines the last block rather than merely extending it. Truncating a cached deeper
+// value would therefore make pi_zbcl(2) return one thing or another depending on
+// whether some unrelated earlier call happened to ask for more, i.e. results that
+// depend on call history. A numeric library cannot do that.
+//
+// thread_local, matching elreal_default_precision's runtime knob: the constants are
+// read-mostly and a shared cache would need synchronisation for no benefit.
+inline constexpr std::size_t kConstantMemoMaxDepth = 256;
+
+template <typename FpType, typename Gen>
+inline ZBCL<FpType> memoize_by_depth(std::vector<ZBCL<FpType>>& cache, std::size_t depth, Gen compute) {
+    if (depth > kConstantMemoMaxDepth) return compute(depth);   // absurd depth: do not retain
+    if (cache.size() <= depth) cache.resize(depth + 1);
+    if (cache[depth].is_empty()) cache[depth] = compute(depth);
+    return cache[depth];
+}
+
+}  // namespace detail
+
 template <typename FpType>
-inline ZBCL<FpType> e_zbcl(std::size_t depth = 32) {
+inline ZBCL<FpType> e_zbcl_compute(std::size_t depth) {
     const std::size_t wdepth = depth + detail::kSeriesGuard;
     const int floor_exp = detail::series_stop_exp<FpType>(wdepth);
     return infsum(detail::e_term_stream(from_native<FpType>(1.0), 1.0, floor_exp));
 }
 
+template <typename FpType>
+inline ZBCL<FpType> e_zbcl(std::size_t depth = 32) {
+    static thread_local std::vector<ZBCL<FpType>> cache;
+    return detail::memoize_by_depth<FpType>(cache, depth,
+        [](std::size_t d) { return e_zbcl_compute<FpType>(d); });
+}
+
 // ln2 = 2 * artanh(1/3)
 template <typename FpType>
-inline ZBCL<FpType> ln2_zbcl(std::size_t depth = 16) {
+inline ZBCL<FpType> ln2_zbcl_compute(std::size_t depth) {
     ZBCL<FpType> oneThird = div(from_native<FpType>(1.0), from_native<FpType>(3.0), depth);
     ZBCL<FpType> at = detail::odd_power_series(oneThird, false, depth);
     return mul_scalar(block<FpType>{ static_cast<FpType>(2.0), 0 }, at, depth);
 }
 
+template <typename FpType>
+inline ZBCL<FpType> ln2_zbcl(std::size_t depth = 16) {
+    static thread_local std::vector<ZBCL<FpType>> cache;
+    return detail::memoize_by_depth<FpType>(cache, depth,
+        [](std::size_t d) { return ln2_zbcl_compute<FpType>(d); });
+}
+
 // ln10 = 3*ln2 + 2*artanh(1/9)   (since ln10 = ln2 + ln5, ln5 = 2*ln2 + 2*artanh(1/9))
 template <typename FpType>
-inline ZBCL<FpType> ln10_zbcl(std::size_t depth = 16) {
+inline ZBCL<FpType> ln10_zbcl_compute(std::size_t depth) {
     ZBCL<FpType> threeLn2 = mul_scalar(block<FpType>{ static_cast<FpType>(3.0), 0 }, ln2_zbcl<FpType>(depth), depth);
     ZBCL<FpType> oneNinth = div(from_native<FpType>(1.0), from_native<FpType>(9.0), depth);
     ZBCL<FpType> twoAt = mul_scalar(block<FpType>{ static_cast<FpType>(2.0), 0 },
@@ -155,15 +201,29 @@ inline ZBCL<FpType> ln10_zbcl(std::size_t depth = 16) {
     return add(threeLn2, twoAt);
 }
 
+template <typename FpType>
+inline ZBCL<FpType> ln10_zbcl(std::size_t depth = 16) {
+    static thread_local std::vector<ZBCL<FpType>> cache;
+    return detail::memoize_by_depth<FpType>(cache, depth,
+        [](std::size_t d) { return ln10_zbcl_compute<FpType>(d); });
+}
+
 // log2(10) = ln10 / ln2
 template <typename FpType>
-inline ZBCL<FpType> log2_10_zbcl(std::size_t depth = 16) {
+inline ZBCL<FpType> log2_10_zbcl_compute(std::size_t depth) {
     return div(ln10_zbcl<FpType>(depth + 2), ln2_zbcl<FpType>(depth + 2), depth);
+}
+
+template <typename FpType>
+inline ZBCL<FpType> log2_10_zbcl(std::size_t depth = 16) {
+    static thread_local std::vector<ZBCL<FpType>> cache;
+    return detail::memoize_by_depth<FpType>(cache, depth,
+        [](std::size_t d) { return log2_10_zbcl_compute<FpType>(d); });
 }
 
 // pi = 16*atan(1/5) - 4*atan(1/239)   (Machin)
 template <typename FpType>
-inline ZBCL<FpType> pi_zbcl(std::size_t depth = 16) {
+inline ZBCL<FpType> pi_zbcl_compute(std::size_t depth) {
     ZBCL<FpType> a5   = detail::odd_power_series(div(from_native<FpType>(1.0), from_native<FpType>(5.0),   depth), true, depth);
     ZBCL<FpType> a239 = detail::odd_power_series(div(from_native<FpType>(1.0), from_native<FpType>(239.0), depth), true, depth);
     ZBCL<FpType> t1 = mul_scalar(block<FpType>{ static_cast<FpType>(16.0), 0 }, a5,   depth);
@@ -171,19 +231,54 @@ inline ZBCL<FpType> pi_zbcl(std::size_t depth = 16) {
     return add(t1, negate(t2));
 }
 
+template <typename FpType>
+inline ZBCL<FpType> pi_zbcl(std::size_t depth = 16) {
+    static thread_local std::vector<ZBCL<FpType>> cache;
+    return detail::memoize_by_depth<FpType>(cache, depth,
+        [](std::size_t d) { return pi_zbcl_compute<FpType>(d); });
+}
+
 // sqrt(n) radicals
 template <typename FpType>
-inline ZBCL<FpType> sqrt2_zbcl(std::size_t depth = 16) { return sqrt(from_native<FpType>(2.0), depth); }
+inline ZBCL<FpType> sqrt2_zbcl_compute(std::size_t depth) { return sqrt(from_native<FpType>(2.0), depth); }
+
 template <typename FpType>
-inline ZBCL<FpType> sqrt3_zbcl(std::size_t depth = 16) { return sqrt(from_native<FpType>(3.0), depth); }
+inline ZBCL<FpType> sqrt2_zbcl(std::size_t depth = 16) {
+    static thread_local std::vector<ZBCL<FpType>> cache;
+    return detail::memoize_by_depth<FpType>(cache, depth,
+        [](std::size_t d) { return sqrt2_zbcl_compute<FpType>(d); });
+}
 template <typename FpType>
-inline ZBCL<FpType> sqrt5_zbcl(std::size_t depth = 16) { return sqrt(from_native<FpType>(5.0), depth); }
+inline ZBCL<FpType> sqrt3_zbcl_compute(std::size_t depth) { return sqrt(from_native<FpType>(3.0), depth); }
+
+template <typename FpType>
+inline ZBCL<FpType> sqrt3_zbcl(std::size_t depth = 16) {
+    static thread_local std::vector<ZBCL<FpType>> cache;
+    return detail::memoize_by_depth<FpType>(cache, depth,
+        [](std::size_t d) { return sqrt3_zbcl_compute<FpType>(d); });
+}
+template <typename FpType>
+inline ZBCL<FpType> sqrt5_zbcl_compute(std::size_t depth) { return sqrt(from_native<FpType>(5.0), depth); }
+
+template <typename FpType>
+inline ZBCL<FpType> sqrt5_zbcl(std::size_t depth = 16) {
+    static thread_local std::vector<ZBCL<FpType>> cache;
+    return detail::memoize_by_depth<FpType>(cache, depth,
+        [](std::size_t d) { return sqrt5_zbcl_compute<FpType>(d); });
+}
 
 // phi = (1 + sqrt(5)) / 2
 template <typename FpType>
-inline ZBCL<FpType> phi_zbcl(std::size_t depth = 16) {
+inline ZBCL<FpType> phi_zbcl_compute(std::size_t depth) {
     ZBCL<FpType> s = add(from_native<FpType>(1.0), sqrt5_zbcl<FpType>(depth));
     return mul_scalar(block<FpType>{ static_cast<FpType>(0.5), 0 }, s, depth);
+}
+
+template <typename FpType>
+inline ZBCL<FpType> phi_zbcl(std::size_t depth = 16) {
+    static thread_local std::vector<ZBCL<FpType>> cache;
+    return detail::memoize_by_depth<FpType>(cache, depth,
+        [](std::size_t d) { return phi_zbcl_compute<FpType>(d); });
 }
 
 // euler_gamma via Brent-McMillan B1 (#1053): gamma = A(n)/B(n) - ln(n), with
@@ -202,7 +297,7 @@ inline ZBCL<FpType> phi_zbcl(std::size_t depth = 16) {
 // a double-host generator; on narrow hosts keep depth shallow (n below the overflow).
 // Validated to 305 digits on double vs the 320-digit reference (#1053, REGRESSION_LEVEL_4).
 template <typename FpType>
-inline ZBCL<FpType> euler_gamma_zbcl(std::size_t depth = 16) {
+inline ZBCL<FpType> euler_gamma_zbcl_compute(std::size_t depth) {
     using B = block<FpType>;
     const std::size_t wdepth = depth + detail::kSeriesGuard;
     const int wbits = static_cast<int>(wdepth) * block<FpType>::k;
@@ -274,6 +369,13 @@ inline ZBCL<FpType> euler_gamma_zbcl(std::size_t depth = 16) {
     ZBCL<FpType> lnN = mul_scalar(B{ static_cast<FpType>(2.0), 0 }, detail::odd_power_series(u, false, depth), depth);
     if (e != 0) lnN = add(lnN, mul_scalar(B{ static_cast<FpType>(static_cast<double>(e)), 0 }, ln2_zbcl<FpType>(depth), depth));
     return add(ratio, negate(lnN)); // gamma = A/B - ln(n)
+}
+
+template <typename FpType>
+inline ZBCL<FpType> euler_gamma_zbcl(std::size_t depth = 16) {
+    static thread_local std::vector<ZBCL<FpType>> cache;
+    return detail::memoize_by_depth<FpType>(cache, depth,
+        [](std::size_t d) { return euler_gamma_zbcl_compute<FpType>(d); });
 }
 
 }} // namespace sw::universal
