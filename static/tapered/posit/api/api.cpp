@@ -22,6 +22,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_reporters.hpp>
 #include <universal/verification/test_case.hpp>
+#include <universal/internal/blockbinary/iostream.hpp>   // operator<< on blockbinary (#1334)
 
 // File-level helper for the constexpr smoke tests below: compares the raw
 // bit pattern of two posits limb-by-limb. Used by both the integer and the

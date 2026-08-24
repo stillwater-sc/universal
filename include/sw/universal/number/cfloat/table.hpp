@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
+#include <universal/internal/blockbinary/iostream.hpp>   // operator<< on blockbinary (#1334)
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>  // for typeid()

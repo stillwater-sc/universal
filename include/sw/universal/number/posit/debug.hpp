@@ -9,6 +9,7 @@
 // Layer 3 of the posit headers (#1334). posit_impl.hpp declares
 // constexprClassParameters() and showLimbs() but does not define them, so it
 // needs no <iostream>. Include this header to call either.
+#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
 #include <iostream>
 #include <universal/number/posit/posit_impl.hpp>
 #include <universal/number/posit/manipulators.hpp>   // to_binary used by the dumps below

@@ -15,6 +15,7 @@
 #include <universal/internal/blocksignificand/blocksignificand.hpp>
 #include <universal/verification/test_reporters.hpp>
 #include <universal/verification/blocksignificand_test_suite.hpp>
+#include <universal/internal/blockbinary/iostream.hpp>   // operator<< on blockbinary (#1334)
 
 template<unsigned nbits, typename BlockType>
 void TestMostSignificantBit() {
