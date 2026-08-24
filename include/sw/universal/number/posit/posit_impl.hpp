@@ -15,7 +15,18 @@
 #else
 #define POSIT_TRACE_ENABLED 0
 #endif
+#include <cstdint>  // the fixed-width block types
 #include <iosfwd>   // std::ostream/std::istream in the friend declarations
+
+// POSIT_ENABLE_LITERALS: guarded so a caller can still turn the literal operators
+// off by defining it before the include. The default lives HERE, beside the
+// #if POSIT_ENABLE_LITERALS blocks that test it, rather than in the posit.hpp
+// umbrella -- otherwise including core.hpp directly leaves it undefined, #if
+// evaluates it as 0, and the literal operators silently disappear from that
+// include path. Two paths, two different APIs. See #1334.
+#if !defined(POSIT_ENABLE_LITERALS)
+#define POSIT_ENABLE_LITERALS 1
+#endif
 
 // posit_impl.hpp: implementation of fixed-size arbitrary configuration generalized posits
 //

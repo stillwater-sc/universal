@@ -6,6 +6,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cctype>
+#include <cstdint>
+#include <ios>
+#include <limits>
+#include <regex>
+#include <string_view>
 #include <iomanip>
 #include <string>
 #include <sstream>
@@ -245,7 +251,8 @@ inline std::string to_string(const posit<nbits, es, bt>& p, std::streamsize prec
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
 	
-	constexpr unsigned fbits = (es + 2ull >= nbits ? 0ull : nbits - 3ull - es);             // maximum number of fraction bits: derived
+	// maximum number of fraction bits: derived
+	constexpr unsigned fbits = (es + 2ull >= nbits ? 0ull : nbits - 3ull - es);
 
 	bool negative{ false };
 	positRegime<nbits, es, bt> r;
@@ -272,7 +279,8 @@ inline std::string to_native(const posit<nbits, es, bt>& number, bool nibbleMark
 
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
-	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+	// maximum number of fraction bits: derived
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 
 	bool s{ false };
 	positRegime<nbits, es, bt> r;
@@ -304,7 +312,8 @@ inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMark
 // binary exponent representation: i.e. 1.0101010e2^-37
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_base2_scientific(const posit<nbits, es, bt>& number) {
-	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+	// maximum number of fraction bits: derived
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	bool s{ false };
 	scale(number);
 	positRegime<nbits, es, bt> r;
@@ -319,7 +328,8 @@ inline std::string to_base2_scientific(const posit<nbits, es, bt>& number) {
 
 
 
-// quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
+// quadrant returns a two character string indicating the quadrant of the
+// projective reals the posit resides in: from 0, SE, NE, NaR, NW, SW
 template<unsigned nbits, unsigned es, typename bt>
 std::string quadrant(const posit<nbits, es, bt>& p) {
 	posit<nbits, es, bt> pOne(1), pMinusOne(-1);

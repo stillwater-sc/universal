@@ -12,6 +12,9 @@
 // only what genuinely needs the stream types: operator<< and operator>>.
 //
 // posit.hpp includes both, so existing code is unaffected.
+#include <ios>
+#include <sstream>
+#include <string>
 #include <iostream>
 #include <universal/number/posit/posit_impl.hpp>
 #include <universal/number/posit/manipulators.hpp>   // to_hex/parse used below
