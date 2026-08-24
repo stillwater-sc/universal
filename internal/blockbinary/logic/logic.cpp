@@ -12,6 +12,7 @@
 
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex (#1334)
 
 namespace sw {
 namespace universal {

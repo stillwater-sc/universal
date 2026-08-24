@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blockbinary/iostream.hpp>   // operator<< on blockbinary (#1334)
 
 using namespace sw::universal;
 

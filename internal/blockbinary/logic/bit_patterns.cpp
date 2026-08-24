@@ -13,6 +13,7 @@
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
+#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex (#1334)
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is set here
 #define MANUAL_TESTING 0

@@ -19,6 +19,7 @@
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 #include <universal/verification/test_case.hpp>
+#include <universal/internal/blockbinary/iostream.hpp>   // operator<< on blockbinary (#1334)
 
 // generate specific test case that you can trace with the trace conditions in fixed_point.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add

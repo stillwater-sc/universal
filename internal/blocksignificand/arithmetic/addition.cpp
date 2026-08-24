@@ -13,6 +13,7 @@
 #include <universal/internal/blocksignificand/blocksignificand.hpp>
 #include <universal/verification/test_reporters.hpp>
 #include <universal/verification/blocksignificand_test_suite.hpp>
+#include <universal/internal/blockbinary/iostream.hpp>   // operator<< on blockbinary (#1334)
 
 
 // generate specific test case that you can trace with the trace conditions in blocksignificand

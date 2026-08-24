@@ -12,6 +12,7 @@
 #include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/benchmark/performance_runner.hpp>
+#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary on blockbinary (#1334)
 
 /*
    The goal of the arbitrary fixed-precision reals is to provide a constrained 

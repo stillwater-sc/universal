@@ -1,4 +1,5 @@
 #pragma once
+#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 #include <iomanip>
 #include <string>

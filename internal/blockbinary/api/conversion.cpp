@@ -10,6 +10,7 @@
 
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex (#1334)
 
 int main()
 try {
