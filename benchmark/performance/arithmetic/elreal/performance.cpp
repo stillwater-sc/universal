@@ -385,11 +385,17 @@ namespace {
 
 }  // anonymous namespace
 
-int main()
+int main(int argc, char* argv[])
 try {
 	using namespace sw::universal;
 	std::cout << "elreal Phase 9 (#933) block-shape design study\n";
 	std::cout << "==============================================\n";
+
+    // this is a very long running benchmark, more than an hour, so we need to remove it from any automated testing. 
+    if (argc == 1) {
+         std::cout << "automated testing skips this test\n";
+	     return EXIT_SUCCESS;
+    }
 
 	std::cout << "\nA. memory footprint per block shape\n";
 	report_footprint<half>("half");

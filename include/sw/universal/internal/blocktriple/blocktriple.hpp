@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 // blocktriple.hpp: definition of a (sign, scale, significand) representation of a generic floating-point value that goes into an arithmetic operation
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -9,6 +8,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cmath>
+#include <string>
 #include <iomanip>
 #include <sstream>
 #include <limits>
@@ -584,8 +584,6 @@ public:
 			if (!_significand.test(bfbits - 1) && !_significand.test(bfbits - 2)) {
 				// found a denormalized form, thus need to normalize: find MSB
 				int msb = _significand.msb(); // zero case has been taken care off above
-//				std::cout << "div : " << to_binary(*this) << std::endl;
-//				std::cout << "msb : " << msb << std::endl;
 				int leftShift = static_cast<int>(bfbits) - 2 - msb;
 				_significand <<= leftShift;
 				_scale -= leftShift;
@@ -636,11 +634,8 @@ private:
 			constexpr int fullShift = srcbits - offset;  // srcbits includes the hidden bit, fbits does not
 			constexpr unsigned shift = (fullShift < 0 ? 0 : fullShift);
 			uint64_t mask = (srcbits < offset ? 0 : (1ull << shift));
-//			std::cout << "raw     : " << to_binary(raw, 64, true) << '\n';
-//			std::cout << "guard   : " << to_binary(mask, 64, true) << '\n';
 			bool guard = (mask & raw);
 			mask >>= 1;
-//			std::cout << "round   : " << to_binary(mask, 64, true) << '\n';
 			bool round = (mask & raw);
 			if constexpr (shift > 1 && shift < upper) { // protect against a negative shift
 				uint64_t allones(uint64_t(~0));
@@ -650,12 +645,10 @@ private:
 			else {
 				mask = 0;
 			}
-//			std::cout << "sticky  : " << to_binary(mask, 64, true) << '\n';
 			bool sticky = (mask & raw);
 
 			raw >>= (shift + 1);  // shift out the bits we are rounding away
 			bool lsb = (raw & 0x1);
-//			std::cout << "raw     : " << to_binary(raw, 64, true) << '\n';
 
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
@@ -674,7 +667,6 @@ private:
 			}
 		}
 		else {
-//			std::cout << "raw     : " << to_binary(raw, 64, true) << '\n';
 			constexpr unsigned shift = fbits - srcbits;
 			if constexpr (shift < ieee754_parameter<Real>::nbits) {
 				raw <<= shift;
@@ -684,7 +676,6 @@ private:
 				std::fprintf(stderr, "round: shift %d is too large (>= 64)\n", int(shift));
 #endif
 			}
-//			std::cout << "upshift : " << to_binary(raw, 64, true) << '\n';
 		}
 		return raw;
 	}
@@ -830,7 +821,6 @@ private:
 			switch(op) {
 			case BlockTripleOperator::REP:
 				_significand.setradix(fbits);
-				// std::cout << "rhs = " << rhs << " : significand = " << _significand << '\n';
 				break;
 			case BlockTripleOperator::ADD:
 				_significand.setradix(abits);

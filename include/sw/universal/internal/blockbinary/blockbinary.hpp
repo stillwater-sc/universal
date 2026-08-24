@@ -5,24 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-// TRACE_URMUL / TRACE_DIV: compile-time tracing of the unrounded multiply and
-// divide. Both default to off. They are declared here, ahead of the includes,
-// because <iostream> is needed ONLY when one of them is on -- see below.
-// Guarded with #ifndef so a caller can enable tracing by defining the macro
-// before including this header; the previous unconditional #define silently
-// reset it to 0, so tracing could not in fact be turned on from outside.
-#ifndef TRACE_URMUL
-#define TRACE_URMUL 0
-#endif
-#ifndef TRACE_DIV
-#define TRACE_DIV 0
-#endif
 
 #include <cstdint>
-#if TRACE_URMUL || TRACE_DIV
-#include <iostream>
-#include <iomanip>
-#endif
 #include <string>   // the std::string constructor
 #include <type_traits>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -1175,23 +1159,13 @@ constexpr blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const bloc
 	// compute the result
 	BlockBinary signextended_a(a);
 	BlockBinary multiplicant(b);
-#if TRACE_URMUL
-	std::cout << "    " << to_binary(a) << " * " << to_binary(b) << std::endl;
-	std::cout << std::setw(3) << 0 << ' ' << to_binary(multiplicant) << ' ' << to_binary(result) << std::endl;
-#endif
 	for (unsigned i = 0; i < 2*N; ++i) {
 		if (signextended_a.at(i)) {
 			result += multiplicant;
 		}
 		multiplicant <<= 1;
-#if TRACE_URMUL
-		std::cout << std::setw(3) << i << ' ' << to_binary(multiplicant) << ' ' << to_binary(result) << std::endl;
-#endif
 
 	}
-#if TRACE_URMUL
-	std::cout << "fnl " << to_binary(result) << std::endl;
-#endif
 	//blockbinary<2 * nbits, bt> clipped(result);
 	// since we used operator+=, which enforces the nulling of leading bits
 	// we don't need to null here
@@ -1214,23 +1188,13 @@ constexpr blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const b
 	if (b.sign()) b_new.twosComplement();
 	blockbinary<2*N, B, T> multiplicant(b_new);
 
-#if TRACE_URMUL
-	std::cout << "    " << a_new << " * " << b_new << std::endl;
-	std::cout << std::setw(3) << 0 << ' ' << multiplicant << ' ' << result << std::endl;
-#endif
 	for (unsigned i = 0; i < (N+1); ++i) {
 		if (a_new.at(i)) {
 			result += multiplicant;  // if multiplicant is not the same size as result, the assignment will get sign-extended if the MSB is true, this is not correct because we are assuming unsigned binaries in this loop
 		}
 		multiplicant <<= 1;
-#if TRACE_URMUL
-		std::cout << std::setw(3) << i << ' ' << multiplicant << ' ' << result << std::endl;
-#endif
 	}
 	if (result_sign) result.twosComplement();
-#if TRACE_URMUL
-	std::cout << "fnl " << result << std::endl;
-#endif
 	return result;
 }
 
@@ -1250,16 +1214,8 @@ blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>
 	// normalize both arguments to positive, which requires expansion by 1-bit to deal with maxneg
 	blockbinary<nbits + 1, B, T> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
 	blockbinary<nbits + 1, B, T> b_new(b);
-#if TRACE_DIV
-	std::cout << "a " << to_binary(a_new) << '\n';
-	std::cout << "b " << to_binary(b_new) << '\n';
-#endif
 	if (a_sign) a_new.twosComplement();
 	if (b_sign) b_new.twosComplement();
-#if TRACE_DIV
-	std::cout << "a " << to_binary(a_new) << '\n';
-	std::cout << "b " << to_binary(b_new) << '\n';
-#endif
 
 	// initialize the long division
 	blockbinary<2 * nbits + roundingBits + 1, B, T> decimator(a_new);
@@ -1276,10 +1232,6 @@ blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>
 	int offset = msb_a - static_cast<int>(msp);  // msb of the result
 	int scale  = shift - static_cast<int>(msp);  // scale of the result quotient
 
-#if TRACE_DIV
-	std::cout << "  " << to_binary(decimator, true)   << " msp  : " << msp << '\n';
-	std::cout << "- " << to_binary(subtractand, true) << " shift: " << shift << '\n';
-#endif
 	// long division
 	for (int i = msb_a; i >= 0; --i) {
 
@@ -1292,15 +1244,8 @@ blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>
 		}
 		subtractand >>= 1;
 
-#if TRACE_DIV
-		std::cout << "  " << to_binary(decimator, true) << "  current quotient: " << to_binary(result, true) << '\n';
-		std::cout << "- " << to_binary(subtractand, true) << '\n';
-#endif
 	}
 	result <<= (scale - offset);
-#if TRACE_DIV
-	std::cout << "  " << "scaled result: " << to_binary(result, true) << " scale : " << scale << " offset : " << offset << '\n';
-#endif
 	if (result_negative) result.twosComplement();
 	return result;
 }

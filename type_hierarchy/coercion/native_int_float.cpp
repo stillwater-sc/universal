@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <iostream>
 #include <universal/native/ieee754.hpp>
 
 int main()

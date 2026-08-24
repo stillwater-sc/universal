@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/utility/bit_cast.hpp>
+#include <iostream>
 #include <limits>
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
