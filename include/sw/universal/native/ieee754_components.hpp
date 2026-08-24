@@ -141,8 +141,8 @@ inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
 		static_assert(std::numeric_limits<long double>::is_iec559,
 			"This function only works when double complies with IEC 559 (IEEE 754)");
 
-        double_decoder decoder;
-        decoder.d = number; // implicit cast to double
+		double_decoder decoder;
+		decoder.d = number; // implicit cast to double
 		// Reading inactive union parts is forbidden in constexpr :-(
 		return std::make_tuple<bool, int, std::uint64_t>(
 			static_cast<bool>(decoder.parts.sign),
