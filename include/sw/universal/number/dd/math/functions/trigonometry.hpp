@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // trigonometry.hpp: trigonometry function support for double-double floating-point
 // 
 // algorithms and constants courtesy of Scibuilders, Jack Poulson

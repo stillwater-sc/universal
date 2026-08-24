@@ -1,4 +1,7 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <iomanip>
+#include <string>
 //  blocksignificand_test_suite.hpp : test suite for blocksignificand
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

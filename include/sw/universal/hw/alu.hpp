@@ -3,6 +3,8 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <string>
 #include <universal/number/shared/specific_value_encoding.hpp>
 
 namespace sw { namespace universal {

@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // newtons_iteration.hpp: Newton's Iteration to calculate the square root
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.

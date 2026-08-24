@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
 #include <sstream>
-#include <iostream>
+#include <cstdio>
 #include <cstdint>
 #include <iomanip>
 #include <regex>
@@ -255,7 +255,11 @@ inline void sub(decimal& lhs, const decimal& rhs) {
 			borrow = 0;
 		}
 	}
-	if (borrow) std::cout << "can this happen?" << std::endl;
+	// same stream and flush as the std::endl this replaces
+	if (borrow) {
+		std::fprintf(stdout, "can this happen?\n");
+		std::fflush(stdout);
+	}
 	lhs.unpad();
 	if (lhs.iszero()) { // special case of zero having positive sign
 		lhs.setpos();

@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // pow.hpp: pow functions for quad-double (qd) floating-point
 //
 // algorithms courtesy Scibuilders, Jack Poulson

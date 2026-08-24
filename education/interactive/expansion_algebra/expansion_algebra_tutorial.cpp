@@ -17,6 +17,7 @@
 #include <universal/number/td_cascade/td_cascade.hpp>
 #include <universal/number/qd_cascade/qd_cascade.hpp>
 #include <universal/internal/floatcascade/floatcascade.hpp>
+#include <universal/native/manipulators_io.hpp>  // valueRepresentations (#1334)
 #include <iostream>
 #include <iomanip>
 #include <string>

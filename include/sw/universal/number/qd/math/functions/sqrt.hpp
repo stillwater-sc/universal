@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for quad-double (qd) floats
 //
 // algorithm courtesy of Scibuilders, Jack Poulson

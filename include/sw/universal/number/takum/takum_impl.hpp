@@ -1,4 +1,7 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <sstream>
+#include <string>
 // takum_impl.hpp: implementation of a linear takum number system
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

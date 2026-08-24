@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 // blocktriple.hpp: definition of a (sign, scale, significand) representation of a generic floating-point value that goes into an arithmetic operation
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -6,8 +7,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
+#include <cstdio>
 #include <cmath>
-#include <iostream>
 #include <iomanip>
 #include <sstream>
 #include <limits>
@@ -223,19 +224,19 @@ public:
 					// simply ignore this delimiting character
 					break;
 				default:
-					std::cerr << "bitPattern contained a non-standard character: " << c << '\n';
+					std::fprintf(stderr, "bitPattern contained a non-standard character: %c\n", c);
 					return *this;
 				}
 			}
 		}
 		else {
-			std::cerr << "bitPattern must start with 0b: instead input pattern was " << bitPattern << '\n';
+			std::fprintf(stderr, "bitPattern must start with 0b: instead input pattern was %s\n", bitPattern.c_str());
 			return *this;
 		}
 
 		unsigned nrBits = bits.size();
 		if (nrBits != bfbits) {
-			std::cerr << "nr of bits in bitPattern is " << nrBits << " and needs to be " << bfbits << '\n';
+			std::fprintf(stderr, "nr of bits in bitPattern is %u and needs to be %u\n", nrBits, unsigned(bfbits));
 			return *this;
 		}
 		// assign the bits
@@ -409,40 +410,15 @@ public:
 	constexpr bool any(unsigned index)    const noexcept { return _significand.any(index); }
 	constexpr bt block(unsigned b)        const noexcept { return _significand.block(b); }
 
-	// helper debug function
-	void constexprClassParameters() const {
-		std::cout << "-------------------------------------------------------------\n";
-		std::cout << "type              : " << typeid(*this).name() << '\n';
-		std::cout << "fbits             : " << fbits << '\n';
-		std::cout << "operator          : " << op << '\n';
-		std::cout << "bitsInByte        : " << bitsInByte << '\n';
-		std::cout << "bitsInBlock       : " << bitsInBlock << '\n';
-		std::cout << "nrBlocks          : " << nrBlocks << '\n';
-		std::cout << "storageMask       : " << to_binary(storageMask) << '\n';
+	// trace helpers; defined out-of-line in blocktriple_debug.hpp so this header
+	// needs no <iostream>. Only reached when the matching _trace_btriple_* flag
+	// is on, which requires that header to be included.
+	void traceSignificandOp(const char* header, const char* label, const blocktriple& lhs, const blocktriple& rhs) const;
+	void traceNormalizedOp(const char* header, const char* label, const blocktriple& lhs, const blocktriple& rhs) const;
 
-		std::cout << "MSU               : " << MSU << '\n';
-
-		std::cout << "fhbits            : " << fhbits << '\n';
-		std::cout << "rbits             : " << rbits << "      rounding bits for addition/subtraction\n";
-		std::cout << "abits             : " << abits << "      size of the addend = fbits + rbits\n";
-		std::cout << "mbits             : " << mbits << "      size of the multiplier output\n";
-		std::cout << "divbits           : " << divbits << "      size of the divider output\n";
-		std::cout << "sqrtbits          : " << sqrtbits << "      size of the square root output\n";
-		// we transform input operands into the operation's target output size
-		// so that everything is aligned correctly before the operation starts.
-		std::cout << "bfbits            : " << bfbits << "      bits in the blocksignificand representation\n";
-		std::cout << "radix             : " << radix << "      position of the radix point of the ALU operator result\n";
-//		std::cout << "encoding          : " << encoding << '\n';
-		std::cout << "normalBits        : " << normalBits << "      normal bits to track: metaprogramming trick to remove warnings\n";
-		std::cout << "normalFormMask    : " << to_binary(normalFormMask) << "   normalFormMask for small configurations\n";
-		std::cout << "significand type  : " << typeid(significand_t).name() << '\n';
-
-		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES) << '\n';
-		std::cout << "maxbits           : " << maxbits << "        bit to check for overflow: metaprogramming trick\n";
-		std::cout << "overflowPattern   : " << to_binary(overflowPattern) << '\n';
-
-		std::cout << std::endl;
-	}
+	// helper debug function; defined out-of-line in blocktriple_debug.hpp so this
+	// header needs no <iostream>. Include that header to call it.
+	void constexprClassParameters() const;
 
 	/////////////////////////////////////////////////////////////
 	// ALU operators
@@ -494,11 +470,8 @@ public:
 		_significand.setradix(radix);                          // set the radix interpretation of the output
 
 		if constexpr (_trace_btriple_add) {
-			std::cout << "blocksignificand unrounded add: just the significand values\n";
-			std::cout << typeid(_significand).name() << '\n';
-			std::cout << "lhs significand : " << to_binary(lhs._significand) << " : " << lhs._significand << '\n';
-			std::cout << "rhs significand : " << to_binary(rhs._significand) << " : " << rhs._significand << '\n';
-			std::cout << "sum significand : " << to_binary(_significand) << " : " << _significand << '\n';
+			traceSignificandOp("blocksignificand unrounded add: just the significand values",
+			                   "sum", lhs, rhs);
 		}
 
 		if (_significand.iszero()) {
@@ -523,13 +496,7 @@ public:
 			}
 		}
 
-		if constexpr (_trace_btriple_add) {
-			std::cout << "blocktriple normalized add\n";
-			std::cout << typeid(*this).name() << '\n';
-			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
-			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
-			std::cout << "sum : " << to_binary(*this) << " : " << *this << '\n';
-		}
+		if constexpr (_trace_btriple_add) { traceNormalizedOp("blocktriple normalized add", "sum", lhs, rhs); }
 	}
 
 	constexpr void sub(blocktriple& lhs, blocktriple& rhs) {
@@ -562,13 +529,7 @@ public:
 		_significand.mul(lhs._significand, rhs._significand);  // do the bit arithmetic manipulation
 		_significand.setradix(2*fbits);                        // set the radix interpretation of the output
 
-		if constexpr (_trace_btriple_mul) {
-			std::cout << "blocksignificand unrounded mul\n";
-			std::cout << typeid(_significand).name() << '\n';
-			std::cout << "lhs significand : " << to_binary(lhs._significand) << " : " << lhs._significand << '\n';
-			std::cout << "rhs significand : " << to_binary(rhs._significand) << " : " << rhs._significand << '\n';
-			std::cout << "mul significand : " << to_binary(_significand) << " : " << _significand << '\n';
-		}
+		if constexpr (_trace_btriple_mul) { traceSignificandOp("blocksignificand unrounded mul", "mul", lhs, rhs); }
 		if (_significand.iszero()) {
 			clear();
 		}
@@ -592,13 +553,7 @@ public:
 				_scale -= leftShift;
 			}
 		}
-		if constexpr (_trace_btriple_mul) {
-			std::cout << "blocktriple normalized mul\n";
-			std::cout << typeid(*this).name() << '\n';
-			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
-			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
-			std::cout << "mul : " << to_binary(*this) << " : " << *this << '\n';
-		}
+		if constexpr (_trace_btriple_mul) { traceNormalizedOp("blocktriple normalized mul", "mul", lhs, rhs); }
 	}
 
 	constexpr void div(blocktriple& lhs, blocktriple& rhs) {
@@ -610,13 +565,7 @@ public:
 		_significand.div(lhs._significand, rhs._significand);
 		_significand.setradix(radix);
 
-		if constexpr (_trace_btriple_div) {
-			std::cout << "blocksignificand unrounded div\n";
-			std::cout << typeid(_significand).name() << '\n';
-			std::cout << "lhs significand : " << to_binary(lhs._significand) << " : " << lhs._significand << '\n';
-			std::cout << "rhs significand : " << to_binary(rhs._significand) << " : " << rhs._significand << '\n';
-			std::cout << "div significand : " << to_binary(_significand) << " : " << _significand << '\n';  // <-- the scale of this representation is not yet set
-		}
+		if constexpr (_trace_btriple_div) { traceSignificandOp("blocksignificand unrounded div", "div", lhs, rhs); }
 		if (_significand.iszero()) {
 			clear();
 		}
@@ -642,13 +591,7 @@ public:
 				_scale -= leftShift;
 			}
 		}
-		if constexpr (_trace_btriple_div) {
-			std::cout << "blocktriple normalized div\n";
-			std::cout << typeid(*this).name() << '\n';
-			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
-			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
-			std::cout << "div : " << to_binary(*this) << " : " << *this << '\n';
-		}
+		if constexpr (_trace_btriple_div) { traceNormalizedOp("blocktriple normalized div", "div", lhs, rhs); }
 	}
 
 private:
@@ -738,7 +681,7 @@ private:
 			}
 			else {
 #if !BIT_CAST_IS_CONSTEXPR
-				std::cerr << "round: shift " << shift << " is too large (>= 64)\n";
+				std::fprintf(stderr, "round: shift %d is too large (>= 64)\n", int(shift));
 #endif
 			}
 //			std::cout << "upshift : " << to_binary(raw, 64, true) << '\n';
@@ -867,7 +810,7 @@ private:
 		if (rawExponent == 0ull) {
 			// value is a subnormal: TBD
 #if ! BIT_CAST_IS_CONSTEXPR
-			std::cerr << "subnormal value TBD\n";
+			std::fprintf(stderr, "subnormal value TBD\n");
 #endif
 		}
 		else {
@@ -1361,3 +1304,20 @@ blocktriple<fbits> abs(const blocktriple<fbits, op, bt>& a) {
 
 
 }} // namespace sw::universal
+
+// When any blocktriple trace switch is on, add/mul/div instantiate the helpers
+// declared above, so their definitions must be in the translation unit. Pull
+// them in automatically rather than leaving every caller to remember: the
+// failure mode is a link error, which -fsyntax-only cannot see. The include is
+// safe from here -- blocktriple_debug.hpp includes this header, and #pragma once
+// makes that a no-op, so the out-of-line definitions land after the class.
+//
+// constexprClassParameters() has no macro to key on, so calling it still
+// requires including <universal/internal/blocktriple/blocktriple_debug.hpp>
+// explicitly. It is an opt-in debug facility, not something the arithmetic
+// reaches on its own.
+#if defined(BLOCKTRIPLE_VERBOSE_OUTPUT) || defined(BLOCKTRIPLE_TRACE_ALL) \
+ || defined(BLOCKTRIPLE_TRACE_ADD) || defined(BLOCKTRIPLE_TRACE_SUB) \
+ || defined(BLOCKTRIPLE_TRACE_MUL) || defined(BLOCKTRIPLE_TRACE_DIV)
+#include <universal/internal/blocktriple/blocktriple_debug.hpp>
+#endif

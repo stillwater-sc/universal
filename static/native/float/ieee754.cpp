@@ -9,6 +9,7 @@
 #include <universal/utility/bit_cast.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/native/manipulators_io.hpp>  // valueRepresentations (#1334)
 
 namespace sw { namespace universal {
 

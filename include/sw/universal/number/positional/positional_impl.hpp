@@ -1,4 +1,6 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <string>
 // positional_impl.hpp: definition of a sign-magnitude, multi-radix positional integer type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

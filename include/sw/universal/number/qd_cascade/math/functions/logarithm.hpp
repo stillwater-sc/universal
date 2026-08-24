@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // logarithm.hpp: logarithm functions for quad-double (qd) cascade floating-point
 //
 // base algorithm strategy courtesy Scibuilder, Jack Poulson

@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 //  lns_test_suite.hpp : test suite for the logarithmic number system (lns)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
