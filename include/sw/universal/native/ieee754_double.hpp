@@ -1,4 +1,5 @@
 #pragma once
+#include <universal/native/ieee754_components.hpp>   // ieee_components() moved here (#1334)
 // ieee754_double.hpp: manipulation functions for IEEE-754 double precision floating-point type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -126,21 +127,6 @@ inline std::string to_base2_scientific(double number) {
 }
 
 
-// ieee_components returns a tuple of sign, exponent, and fraction
-inline std::tuple<bool, int, std::uint64_t> ieee_components(double fp)
-{
-	static_assert(std::numeric_limits<double>::is_iec559,
-		"This function only works when double complies with IEC 559 (IEEE 754)");
-	static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
-
-	double_decoder dd{ fp }; // initializes the first member of the union
-	// Reading inactive union parts is forbidden in constexpr :-(
-	return std::make_tuple<bool, int, std::uint64_t>(
-		static_cast<bool>(dd.parts.sign), 
-		static_cast<int>(dd.parts.exponent),
-		static_cast<std::uint64_t>(dd.parts.fraction) 
-	);
-}
 
 // generate a color coded binary string for a native double precision IEEE floating point
 inline std::string color_print(double number) {
