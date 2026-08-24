@@ -10,6 +10,7 @@
 // to_hex, to_decimal -- everything that returns a std::string. blockbinary.hpp
 // holds the arithmetic and needs none of it, which is what keeps <sstream> and
 // <iomanip> out of every number system that builds on blockbinary.
+#include <cstdint>
 #include <iomanip>
 #include <sstream>
 #include <string>
