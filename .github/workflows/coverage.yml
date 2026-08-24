@@ -93,9 +93,27 @@ jobs:
             --ignore-errors unused,unused
           lcov --list coverage.info --ignore-errors unused,unused || true
 
+      # ADVISORY, NOT A GATE. Two separate things carry the name "coverage":
+      #
+      #   Coverage            this job. Required to pass -- it builds instrumented
+      #                       and runs the suite.
+      #   coverage/coveralls  a commit status posted by coveralls.io AFTER this
+      #                       step uploads. Advisory only: it is not in the
+      #                       branch-protection required list for main
+      #                       (check-ascii, build, lint-pr-title).
+      #
+      # coveralls.io fails that status on ANY decrease, including -0.01%, and its
+      # threshold is a coveralls.io repo setting rather than anything in this file
+      # -- continue-on-error below governs this step, not the posted status.
+      #
+      # A red coverage/coveralls with this job green usually means nothing changed
+      # about what is tested. Splitting a header into layers (see #1334) moves
+      # lines between files, and the tool re-apportions them; two hundredths of a
+      # percent against a gate that fires at one hundredth. Check the delta before
+      # treating it as a finding.
       - name: Upload to Coveralls
         uses: coverallsapp/github-action@v2
-        continue-on-error: true  # Don't fail the workflow if coveralls.io is unreachable
+        continue-on-error: true  # coveralls.io being unreachable must not fail the job
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: coverage.info
