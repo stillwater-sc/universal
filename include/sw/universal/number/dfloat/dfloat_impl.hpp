@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/internal/blockbinary/manipulators.hpp>   // to_decimal on the significand (#1334)
 #include <cstdint>
 #include <cstring>
 #include <cmath>

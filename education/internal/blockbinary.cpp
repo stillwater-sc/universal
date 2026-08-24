@@ -7,6 +7,8 @@
 #include <universal/utility/directives.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary on blockbinary (#1334)
+#include <universal/internal/blockbinary/iostream.hpp>   // operator<< on blockbinary (#1334)
 #include <iostream>
 #include <string>
 

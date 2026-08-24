@@ -12,6 +12,7 @@
 #define AREAL_ROUNDING_ERROR_FREE_IO_FORMAT 1
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/areal/table.hpp>
+#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary on blockbinary (#1334)
 
 #define MANUAL_TESTING 0
 
