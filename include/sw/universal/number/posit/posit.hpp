@@ -57,17 +57,17 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/posit/exceptions.hpp>
-#include <universal/number/posit/posit_fwd.hpp>
-//#include <universal/number/posit/posit_parse.hpp>
-#include <universal/number/posit/posit_scale_helpers.hpp>
-#include <universal/number/posit/posit_impl.hpp>
-#include <universal/traits/posit_traits.hpp>
-#include <universal/number/posit/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a
+// translation unit that only computes -- it pulls no <iostream>/<sstream>.
+#include <universal/number/posit/core.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // useful functions to work with posits
 #include <universal/number/posit/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/posit/iostream.hpp>
+// layer 3: introspection -- constexprClassParameters, showLimbs
+#include <universal/number/posit/debug.hpp>
 #include <universal/number/posit/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
