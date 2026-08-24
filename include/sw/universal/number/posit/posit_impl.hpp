@@ -1,4 +1,22 @@
 #pragma once
+// POSIT_TRACE_ENABLED: the trace statements below print, so they need <iostream>.
+// They are compiled only when tracing is actually switched on -- the guard is a
+// preprocessor one rather than `if constexpr` because a discarded `if constexpr`
+// branch still requires std::cout to be DECLARED, which would keep <iostream> in
+// the include graph of every translation unit. See #1334.
+#if defined(ALGORITHM_VERBOSE_OUTPUT) || defined(ALGORITHM_TRACE_ALL) \
+ || defined(ALGORITHM_TRACE_DECODE)   || defined(ALGORITHM_TRACE_CONVERSION) \
+ || defined(ALGORITHM_TRACE_ROUNDING) || defined(ALGORITHM_TRACE_ADD) \
+ || defined(ALGORITHM_TRACE_SUB)      || defined(ALGORITHM_TRACE_MUL) \
+ || defined(ALGORITHM_TRACE_DIV)      || defined(ALGORITHM_TRACE_RECIPROCAL)
+#define POSIT_TRACE_ENABLED 1
+#include <iostream>
+#include <iomanip>
+#else
+#define POSIT_TRACE_ENABLED 0
+#endif
+#include <iosfwd>   // std::ostream/std::istream in the friend declarations
+
 // posit_impl.hpp: implementation of fixed-size arbitrary configuration generalized posits
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -8,11 +26,8 @@
 #include <cmath>
 #include <cassert>
 #include <cctype>
-#include <iostream>
-#include <iomanip>
 #include <limits>
 #include <regex>
-#include <sstream>
 #include <string_view>
 #include <type_traits>
 
@@ -246,26 +261,36 @@ constexpr void decode(const blockbinary<nbits, bt, BinaryNumberType::Signed>& ra
 			extract_fields(raw_bits, _sign, _regime, _exponent, _fraction);
 		}
 	}
+#if POSIT_TRACE_ENABLED
 	if constexpr (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << std::endl;
+#endif
 }
 
 #ifdef TBD
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sign, int _scale, const blockbinary<fbits, bt>& fraction_in, blockbinary<nbits, bt, BinaryNumberType::Signed>& ptt) {
+#if POSIT_TRACE_ENABLED
 	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+#endif
+#if POSIT_TRACE_ENABLED
 	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
+#endif
 
 	ptt.reset(); // ptt will yield the final bits of the posit
 	// construct the posit
 	// interpolation rule checks
 	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
+#if POSIT_TRACE_ENABLED
 		if (_trace_conversion) std::cout << "inward projection" << std::endl;
+#endif
 		// we are projecting to minpos/maxpos
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
 		ptt = k < 0 ? minpos_pattern<nbits, es>(_sign) : maxpos_pattern<nbits, es>(_sign);
 		// we are done
+#if POSIT_TRACE_ENABLED
 		if (_trace_rounding) std::cout << "projection  rounding ";
+#endif
 	}
 	else {
 		const unsigned pt_len = nbits + 3 + es;
@@ -325,19 +350,27 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 constexpr inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignificand<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
+#if POSIT_TRACE_ENABLED
 	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+#endif
+#if POSIT_TRACE_ENABLED
 	if constexpr (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
+#endif
 
 	p.clear();
 	// construct the posit
 	// interpolation rule checks
 	if (check_inward_projection_range<nbits, es, bt>(_scale)) {    // regime dominated
+#if POSIT_TRACE_ENABLED
 		if constexpr (_trace_conversion) std::cout << "inward projection" << std::endl;
+#endif
 		// we are projecting to minpos/maxpos or minneg/maxneg
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
 		k < 0 ? (_sign ? p.minneg() : p.minpos()) : (_sign ? p.maxneg() : p.maxpos());
 		// we are done
+#if POSIT_TRACE_ENABLED
 		if constexpr (_trace_rounding) std::cout << "projection  rounding ";
+#endif
 	}
 	else {
 		constexpr unsigned pt_len = nbits + 3 + es;
@@ -400,8 +433,12 @@ constexpr inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const bl
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits, BlockTripleOperator op>
 constexpr inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<nbits, es, bt>& p) {
+#if POSIT_TRACE_ENABLED
 	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << '\n';
+#endif
+#if POSIT_TRACE_ENABLED
 	if constexpr (_trace_conversion) std::cout << to_triple(v) << " : " << v << '\n';
+#endif
 
 	if (v.iszero()) {
 		p.setzero();
@@ -444,29 +481,6 @@ constexpr inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>&
 	return convert_<nbits, es, bt, extractBits>(v.sign(), realScale, frac, p);
 }
 
-// quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
-template<unsigned nbits, unsigned es, typename bt>
-std::string quadrant(const posit<nbits, es, bt>& p) {
-	posit<nbits, es, bt> pOne(1), pMinusOne(-1);
-	if (sign(p)) {
-		// west
-		if (p > pMinusOne) {
-			return "SW";
-		}
-		else {
-			return "NW";
-		}
-	}
-	else {
-		// east
-		if (p < pOne) {
-			return "SE";
-		}
-		else {
-			return "NE";
-		}
-	}
-}
 
 // Construct posit from its components
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
@@ -671,7 +685,9 @@ public:
 
 	// we model a hw pipeline with register assignments, functional block, and conversion
 	constexpr posit& operator+=(const posit& rhs) {
+#if POSIT_TRACE_ENABLED
 		if constexpr (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+#endif
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
@@ -721,7 +737,9 @@ public:
 	}
 	constexpr posit& operator*=(const posit& rhs) {
 		static_assert(fhbits > 0, "posit configuration does not support multiplication");
+#if POSIT_TRACE_ENABLED
 		if constexpr (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
+#endif
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
@@ -762,7 +780,9 @@ public:
 		return *this *= posit<nbits, es, bt>(rhs);
 	}
 	constexpr posit& operator/=(const posit& rhs) {
+#if POSIT_TRACE_ENABLED
 		if constexpr (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
+#endif
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) {
 			throw posit_divide_by_zero{};    // not throwing is a quiet signalling NaR
@@ -828,7 +848,9 @@ public:
 	}
 	
 	posit reciprocal() const noexcept {
+#if POSIT_TRACE_ENABLED
 		if (_trace_reciprocal) std::cout << "-------------------- RECIPROCAL ----------------" << std::endl;
+#endif
 		posit<nbits, es, bt> p;
 		// special case of NaR (Not a Real)
 		if (isnar()) {
@@ -863,22 +885,28 @@ public:
 			constexpr unsigned reciprocal_size = 3 * fbits + 4;
 			blockbinary<reciprocal_size> reciprocal;
 			divide_with_fraction(one, frac, reciprocal);
+#if POSIT_TRACE_ENABLED
 			if (_trace_reciprocal) {
 				std::cout << "one    " << one << std::endl;
 				std::cout << "frac   " << frac << std::endl;
 				std::cout << "recip  " << reciprocal << std::endl;
 			}
+#endif
 
 			// radix point falls at operand size == reciprocal_size - operand_size - 1
 			reciprocal <<= operand_size - 1;
+#if POSIT_TRACE_ENABLED
 			if (_trace_reciprocal) std::cout << "frac   " << reciprocal << std::endl;
+#endif
 			int new_scale = -scale(*this);
 			int msb = findMostSignificantBit(reciprocal);
 			if (msb > 0) {
 				int shift = static_cast<int>(reciprocal_size - static_cast<unsigned>(msb));
 				reciprocal <<= static_cast<unsigned>(shift);
 				new_scale -= (shift-1);
+#if POSIT_TRACE_ENABLED
 				if (_trace_reciprocal) std::cout << "result " << reciprocal << std::endl;
+#endif
 			}
 			//std::bitset<operand_size> tr;
 			//truncate(reciprocal, tr);
@@ -1172,26 +1200,10 @@ public:
 	}
 
 	// helper debug function
-	void constexprClassParameters() const noexcept {
-		std::cout << "-------------------------------------------------------------\n";
-		std::cout << "type              : " << type_tag(*this) << '\n';
-		std::cout << "nbits             : " << nbits << '\n';
-		std::cout << "es                : " << es << std::endl;
-		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
-		std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, 0, true) << '\n';
-		std::cout << "nrBlocks          : " << nrBlocks << '\n';
-		std::cout << "bits in MSU       : " << bitsInMSU << '\n';
-		std::cout << "MSU               : " << MSU << '\n';
-		std::cout << "MSU MASK          : " << to_binary(MSU_MASK, 0, true) << '\n';
-		std::cout << "SIGN_BIT_MASK     : " << to_binary(SIGN_BIT_MASK, 0, true) << '\n';
-		std::cout << "LSB_BIT_MASK      : " << to_binary(LSB_BIT_MASK, 0, true) << '\n';
-	}
-	void showLimbs() const {
-		for (unsigned b = 0; b < nrBlocks; ++b) {
-			std::cout << to_binary(_block[nrBlocks - b - 1], sizeof(bt) * 8) << ' ';
-		}
-		std::cout << '\n';
-	}
+	// helper debug functions; defined out-of-line in posit_debug.hpp so this header
+	// needs no <iostream>. Include that header to call them.
+	void constexprClassParameters() const noexcept;
+	void showLimbs() const;
 
 private:
 	blockbinary<nbits, bt, BinaryNumberType::Signed> _block;
@@ -1925,275 +1937,12 @@ inline bool ispowerof2(const posit<nbits, es, bt>& p) {
 	return p.ispowerof2();
 }
 
-////////////////// POSIT operators
-
-// stream operators
-
-// generate a posit format ASCII format nbits.esxNN...NNp
-template<unsigned nbits, unsigned es, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es, bt>& p) {
-#if POSIT_ERROR_FREE_IO_FORMAT
-	std::stringstream ss;
-	ss << nbits << '.' << es << 'x' << to_hex(p.bits()) << 'p';
-	return ostr << ss.str();
-#else
-	std::ios_base::fmtflags fmt = ostr.flags();
-	std::streamsize prec = ostr.precision();
-	std::streamsize width = ostr.width();
-	char fillChar = ostr.fill();
-	bool bShowpos    = fmt & std::ios_base::showpos;
-	bool bUppercase  = fmt & std::ios_base::uppercase;
-	bool bFixed      = fmt & std::ios_base::fixed;
-	bool bScientific = fmt & std::ios_base::scientific;
-	bool bInternal   = fmt & std::ios_base::internal;
-	bool bLeft       = fmt & std::ios_base::left;
-
-	if (p.isnar()) {
-		std::string s = bUppercase ? "NAR" : "nar";
-		if (width > 0 && s.length() < static_cast<size_t>(width)) {
-			size_t pad = static_cast<size_t>(width) - s.length();
-			if (bLeft) { s.append(pad, fillChar); }
-			else { s.insert(static_cast<std::string::size_type>(0), pad, fillChar); }
-		}
-		return ostr << s;
-	}
-
-	constexpr unsigned pfbits = posit<nbits, es, bt>::fbits;
-	if constexpr (pfbits == 0) {
-		// degenerate posit with no fraction bits: format via double
-		std::ostringstream oss;
-		oss.precision(prec);
-		if (bFixed) oss << std::fixed;
-		if (bScientific) oss << std::scientific;
-		if (bUppercase) oss << std::uppercase;
-		if (bShowpos) oss << std::showpos;
-		oss << static_cast<double>(p);
-		std::string s = oss.str();
-		if (width > 0 && s.length() < static_cast<size_t>(width)) {
-			size_t pad = static_cast<size_t>(width) - s.length();
-			if (bInternal) {
-				bool hasSign = !s.empty() && (s[0] == '-' || s[0] == '+');
-				s.insert(hasSign ? 1u : 0u, pad, fillChar);
-			} else if (bLeft) { s.append(pad, fillChar); }
-			else { s.insert(0u, pad, fillChar); }
-		}
-		return ostr << s;
-	} else {
-		auto v = p.template to_value<BlockTripleOperator::REP>();
-		return ostr << v.to_string(prec, width, bFixed, bScientific,
-		                            bInternal, bLeft, bShowpos, bUppercase, fillChar);
-	}
-#endif
-}
-
-// parse a posit from a string in either posit hex format (nbits.esxHEXVALUEp)
-// or a decimal floating-point representation
-template<unsigned nbits, unsigned es, typename bt>
-bool parse(const std::string& txt, posit<nbits, es, bt>& p) {
-	// check if the txt is of the native posit form: nbits.esXhexvalue
-	std::regex posit_regex(R"(^[0-9]+\.[0-9]+[xX][0-9A-Fa-f]+p?$)");
-	if (std::regex_match(txt, posit_regex)) {
-		// found a posit representation: parse nbits.esxHEXVALUEp
-		std::string nbitsStr, esStr, bitStr;
-		auto it = txt.begin();
-		for (; it != txt.end(); ++it) {
-			if (*it == '.') break;
-			nbitsStr.append(1, *it);
-		}
-		for (++it; it != txt.end(); ++it) {
-			if (*it == 'x' || *it == 'X') break;
-			esStr.append(1, *it);
-		}
-		for (++it; it != txt.end(); ++it) {
-			if (*it == 'p') break;
-			bitStr.append(1, *it);
-		}
-		unsigned nbits_in = 0;
-		unsigned es_in = 0;
-		{
-			std::istringstream ss(nbitsStr);
-			ss >> nbits_in;
-			if (ss.fail()) return false;
-		}
-		{
-			std::istringstream ss(esStr);
-			ss >> es_in;
-			if (ss.fail()) return false;
-		}
-		// native posit form must match target configuration
-		if (nbits_in != nbits || es_in != es) return false;
-		uint64_t raw = 0;
-		std::istringstream ss(bitStr);
-		ss >> std::hex >> raw;
-		if (ss.fail()) return false;
-		ss >> std::ws;
-		if (!ss.eof()) return false;
-		p.setbits(raw);
-		return true;
-	}
-	else {
-		// Decimal floating-point representation.
-		// Route through the high-precision decimal_to_binary utility so that
-		// wide posit configurations (nbits > 64) don't lose precision through
-		// an intermediate double. The utility delivers a normalized mantissa
-		// with target_mantissa_bits bits plus guard/sticky; we feed that
-		// directly into convert_<>() so rounding is done once in the posit
-		// encoding step.
-		// Special-value literals (nan / inf in any common spelling) map to NaR.
-		{
-			std::string t; t.reserve(txt.size());
-			for (char c : txt) t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
-			std::string body = t;
-			if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
-			if (body == "nan" || body == "inf" || body == "infinity") {
-				p.setnar();
-				return true;
-			}
-		}
-		constexpr unsigned extractBits         = nbits + 4;
-		constexpr unsigned target_mantissa_bits = extractBits + 1;
-		auto d = ::sw::universal::decimal_to_binary::convert(
-			std::string_view{txt}, target_mantissa_bits);
-		if (!d.valid) return false;
-		if (d.is_zero) {
-			p.setzero();
-			return true;
-		}
-		blocksignificand<extractBits, bt> frac;
-		for (unsigned i = 0; i < extractBits; ++i) {
-			if (d.mantissa.at(i)) frac.setbit(i, true);
-		}
-		// Fold d2b's residual guard/sticky into the lowest bit so convert_'s
-		// own sticky accumulator picks them up.
-		if (d.guard_bit || d.sticky_bit) frac.setbit(0, true);
-		convert_<nbits, es, bt, extractBits>(d.negative,
-			static_cast<int>(d.binary_scale), frac, p);
-		return true;
-	}
-}
-
-// read an ASCII float or posit format: nbits.esxNN...NNp, for example: 32.2x80000000p
-template<unsigned nbits, unsigned es, typename bt>
-inline std::istream& operator>> (std::istream& istr, posit<nbits, es, bt>& p) {
-	std::string txt;
-	istr >> txt;
-	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
-
-// generate a posit format ASCII format nbits.esxNN...NNp
-template<unsigned nbits, unsigned es, typename bt>
-inline std::string hex_format(const posit<nbits, es, bt>& p) {
-	// we need to transform the posit into a string
-	std::stringstream ss;
-	ss << nbits << '.' << es << 'x' << to_hex(p.bits()) << 'p';
-	return ss.str();
-}
-
-template<typename Float>
-inline std::string hex_format(Float f) {
-	std::stringstream ss;
-	ss << std::hexfloat << std::setprecision(std::numeric_limits<Float>::digits10) << f;
-	return ss.str();
-}
-
-// convert a posit value to a string using "nar" as designation of NaR
-template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_string(const posit<nbits, es, bt>& p, std::streamsize precision = 17) {
-	if (p.isnar()) return std::string("nar");
-	constexpr unsigned pfbits = posit<nbits, es, bt>::fbits;
-	if constexpr (pfbits == 0) {
-		std::ostringstream oss;
-		oss << std::setprecision(precision) << static_cast<double>(p);
-		return oss.str();
-	} else {
-		auto v = p.template to_value<BlockTripleOperator::REP>();
-		return v.to_string(precision, 0, false, true, false, false, false, false, ' ');
-	}
-}
-
-// binary representation of a posit with delimiters: i.e. 0.10.00.000000 => sign.regime.exp.fraction
-template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
-	
-	constexpr unsigned fbits = (es + 2ull >= nbits ? 0ull : nbits - 3ull - es);             // maximum number of fraction bits: derived
-
-	bool negative{ false };
-	positRegime<nbits, es, bt> r;
-	positExponent<nbits, es, bt> e;
-	positFraction<fbits, bt> f;
-	auto raw = number.bits();
-	extract_fields(raw, negative, r, e, f);
-
-	std::stringstream s;
-	s << (negative ? "0b1." : "0b0.");
-	s << to_string(r, false, nibbleMarker) << "."
-	  << to_string(e, false, nibbleMarker) << "."
-	  << to_string(f, false, nibbleMarker);
-
-	return s.str();
-}
-
-// native semantic representation: radix-2, delegates to to_binary
-template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_native(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
-	return to_binary(number, nibbleMarker);
-}
-
-template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
-	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
-
-	bool s{ false };
-	positRegime<nbits, es, bt> r;
-	positExponent<nbits, es, bt> e;
-	positFraction<fbits, bt> f;
-	blockbinary<nbits, bt> raw = number.bits();
-	std::stringstream ss;
-	extract_fields(raw, s, r, e, f);
-
-	if (number.iszero()) {
-		ss << "(+, 0, ~)";
-	}
-	else if (number.isnar()) {
-		ss << "(nar)";
-	}
-	else {
-		ss << (s ? "(-, " : "(+, ");
-		ss << r.scale() + e.scale()
-		   << ", "
-		   << to_string(f, false, nibbleMarker)
-		   << ')';
-	}
-
-	return ss.str();
-}
-
 // numerical helpers
 
 template<unsigned nbits, unsigned es, typename bt>
 inline posit<nbits, es, bt> ulp(const posit<nbits, es, bt>& a) {
 	posit<nbits, es, bt> b(a);
 	return ++b - a;
-}
-
-// binary exponent representation: i.e. 1.0101010e2^-37
-template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_base2_scientific(const posit<nbits, es, bt>& number) {
-	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
-	bool s{ false };
-	scale(number);
-	positRegime<nbits, es, bt> r;
-	positExponent<nbits, es, bt> e;
-	positFraction<fbits, bt> f;
-	blockbinary<nbits, bt> raw = number.bits();
-	std::stringstream ss;
-	extract_fields(raw, s, r, e, f);
-	ss << (s ? "-" : "+") << "1." << to_string(f, true) << "e2^" << std::showpos << r.scale() + e.scale();
-	return ss.str();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
