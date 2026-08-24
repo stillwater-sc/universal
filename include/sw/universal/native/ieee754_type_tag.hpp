@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <string>        // std::string in the type_tag signatures
+#include <type_traits>   // std::enable_if_t, std::is_floating_point
 
 namespace sw { namespace universal {
 
