@@ -311,6 +311,16 @@ CI is tiered based on PR draft status:
 | Coverage (~29 min) | **Skipped** | Runs | Runs |
 | Clang-Tidy (~7 min) | **Skipped** | Runs | Runs |
 
+**Advisory checks** -- these post a status but are NOT in the branch-protection
+required list for `main`, which is only `check-ascii`, `build`, `lint-pr-title`:
+
+| Check | Why it goes red without anything being wrong |
+|-------|----------------------------------------------|
+| `coverage/coveralls` | Fails on any decrease, including `-0.01%`. Re-apportioning lines between files (a header split, a function moved) shifts the number without changing what is tested. The threshold lives in coveralls.io's repo settings, not in `.github/workflows/coverage.yml`. Distinct from the `Coverage` job, which IS required. |
+| `Codacy Static Code Analysis` | Pattern-based; flags idioms the tree uses deliberately. |
+
+Read the delta before treating either as a finding. Neither blocks a merge.
+
 Workflow:
 1. Create draft PR — iterate on CodeRabbit feedback and fast CI only
 2. When clean, promote: `gh pr ready NNN`
