@@ -26,6 +26,7 @@ namespace sw { namespace universal {
 	//////////////////////////////////////////////////////////////////////////////////////////
 	///        X86 architecture
 
+	// generate a color coded binary string for a native long double precision IEEE floating point
 	// generate a hex string for a native long double precision IEEE floating point
 	inline std::string to_hex(long double number, bool nibbleMarker = false, bool hexPrefix = true) {
 		char hexChar[16] = {
@@ -149,22 +150,6 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
-	// ieee_components returns a tuple of sign, exponent, and fraction.
-	inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
-		static_assert(std::numeric_limits<long double>::is_iec559,
-			"This function only works when long double complies with IEC 559 (IEEE 754)");
-		//static_assert(sizeof(long double) == 16, "This function only works when double is 80 bit.");
-
-		long_double_decoder dd{ fp }; // initializes the first member of the union
-		// Reading inactive union parts is forbidden in constexpr :-(
-		return std::make_tuple<bool, int, std::uint64_t>(
-			static_cast<bool>(dd.parts.sign),
-			static_cast<int>(dd.parts.exponent),
-			static_cast<std::uint64_t>(dd.parts.fraction)
-			);
-	}
-
-	// generate a color coded binary string for a native long double precision IEEE floating point
 	inline std::string color_print(long double number) {
 		std::stringstream s;
 		long_double_decoder decoder;
@@ -361,20 +346,6 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
-	// ieee_components returns a tuple of sign, exponent, and fraction.
-	inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
-		static_assert(std::numeric_limits<long double>::is_iec559,
-			"This function only works when long double complies with IEC 559 (IEEE 754)");
-
-		long_double_decoder dd{ fp }; // initializes the first member of the union
-		// Reading inactive union parts is forbidden in constexpr :-(
-		return std::make_tuple<bool, int, std::uint64_t>(
-			static_cast<bool>(dd.parts.sign),
-			static_cast<int>(dd.parts.exponent),
-			static_cast<std::uint64_t>(dd.parts.fraction)
-			);
-	}
-
 	// generate a color coded binary string for a native long double precision IEEE floating point
 	inline std::string color_print(long double number) {
 		std::stringstream s;
@@ -547,21 +518,6 @@ namespace sw { namespace universal {
 		}
 		s << "e" << std::showpos << (static_cast<int>(decoder.parts.exponent) - 1023);
 		return s.str();
-	}
-
-	// ieee_components returns a tuple of sign, exponent, and fraction
-	inline std::tuple<bool, int, std::uint64_t> ieee_components(long double number)	{
-		static_assert(std::numeric_limits<long double>::is_iec559,
-			"This function only works when double complies with IEC 559 (IEEE 754)");
-
-        double_decoder decoder;
-        decoder.d = number; // implicit cast to double
-		// Reading inactive union parts is forbidden in constexpr :-(
-		return std::make_tuple<bool, int, std::uint64_t>(
-			static_cast<bool>(decoder.parts.sign),
-			static_cast<int>(decoder.parts.exponent),
-			static_cast<std::uint64_t>(decoder.parts.fraction)
-		);
 	}
 
 	// generate a color coded binary string for a native long double precision IEEE floating point

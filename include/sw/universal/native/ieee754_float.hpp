@@ -1,4 +1,5 @@
 #pragma once
+#include <universal/native/ieee754_components.hpp>   // ieee_components() moved here (#1334)
 // ieee754_float.hpp: manipulation functions for IEEE-754 single precision floating-point type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -139,21 +140,6 @@ inline std::string to_base2_scientific(float number) {
 	return s.str();
 }
 
-// ieee_components returns a tuple of sign, exponent, and fraction
-inline std::tuple<bool, int, uint32_t> ieee_components(float fp)
-{
-	static_assert(std::numeric_limits<float>::is_iec559,
-		"This function only works when float complies with IEC 559 (IEEE 754)");
-	static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
-
-	float_decoder fd{ fp }; // initializes the first member of the union
-	// Reading inactive union parts is forbidden in constexpr :-(
-	return std::make_tuple<bool, int, uint32_t>(
-		static_cast<bool>(fd.parts.sign), 
-		static_cast<int>(fd.parts.exponent),
-		static_cast<uint32_t>(fd.parts.fraction) 
-	);
-}
 
 // generate a color coded binary string for a native single precision IEEE floating point
 inline std::string color_print(float number) {
