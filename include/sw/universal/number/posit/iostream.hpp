@@ -17,7 +17,7 @@
 #include <string>
 #include <iostream>
 #include <universal/number/posit/posit_impl.hpp>
-#include <universal/number/posit/manipulators.hpp>   // to_hex/parse used below
+#include <universal/number/posit/manipulators.hpp>   // to_hex/parse/quadrant used below
 
 namespace sw { namespace universal {
 
@@ -92,5 +92,77 @@ inline std::istream& operator>> (std::istream& istr, posit<nbits, es, bt>& p) {
 	}
 	return istr;
 }
+
+
+// pretty_print and info_print stream the posit itself, so they need operator<<
+// and belong in this layer rather than with the pure string producers in
+// manipulators.hpp. Moved here on review of #1390.
+
+	template<unsigned nbits, unsigned es, typename bt>
+	std::string pretty_print(const posit<nbits, es, bt>& p,
+			int printPrecision = std::numeric_limits<double>::max_digits10) {
+		constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+		std::stringstream str;
+		bool		     		     _sign;
+		positRegime<nbits, es, bt>   _regime;
+		positExponent<nbits, es, bt> _exponent;
+		positFraction<fbits, bt>     _fraction;
+		decode(p.bits(), _sign, _regime, _exponent, _fraction);
+		str << ( _sign ? "s1 r" : "s0 r" );
+		blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> r = _regime.bits();
+		int regimeBits = (int)_regime.nrBits();
+		int nrOfRegimeBitsProcessed = 0;
+		for (int i = nbits - 2; i >= 0; --i) {
+			if (regimeBits > nrOfRegimeBitsProcessed++) {
+				str << (r.test(static_cast<unsigned>(i)) ? "1" : "0");
+			}
+		}
+		str << " e";
+		std::uint32_t expBits = _exponent.bits();
+		int exponentBits = (int)_exponent.nrBits();
+		int nrOfExponentBitsProcessed = 0;
+		for (int i = int(es) - 1; i >= 0; --i) {
+			if (exponentBits > nrOfExponentBitsProcessed++) {
+				str << ((expBits >> i) & 1 ? "1" : "0");
+			}
+		}
+		str << " f";
+		if constexpr (fbits > 0) {
+			blockbinary<fbits, bt, BinaryNumberType::Unsigned> f = _fraction.bits();
+			int fractionBits = (int)_fraction.nrBits();
+			int nrOfFractionBitsProcessed = 0;
+			for (int i = int(fbits) - 1; i >= 0; --i) {
+				if (fractionBits > nrOfFractionBitsProcessed++) {
+					str << (f.test(static_cast<unsigned>(i)) ? "1" : "0");
+				}
+			}
+		}
+		str << " q";
+		str << quadrant(p) << " v"
+			<< std::setprecision(printPrecision) << p
+			<< std::setprecision(0);
+		return str.str();
+	}
+
+	template<unsigned nbits, unsigned es, typename bt>
+	std::string info_print(const posit<nbits, es, bt>& p, int printPrecision = 17) {
+		constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+		std::stringstream str;
+		bool		     		     _sign;
+		positRegime<nbits, es, bt>   _regime;
+		positExponent<nbits, es, bt> _exponent;
+		positFraction<fbits, bt>     _fraction;
+		decode(p.bits(), _sign, _regime, _exponent, _fraction);
+
+		str << "raw: " << p.bits() << " "
+			<< quadrant(p) << " "
+			<< (_sign ? "s1 r" : "s0 r")
+			<< _regime << " e"
+			<< _exponent << " f"
+			<< _fraction << " : value "
+			<< std::setprecision(printPrecision) << p
+			<< std::setprecision(0);
+		return str.str();
+	}
 
 }} // namespace sw::universal
