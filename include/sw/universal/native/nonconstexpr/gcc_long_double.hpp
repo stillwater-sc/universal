@@ -14,21 +14,6 @@
 
 namespace sw { namespace universal {
 
-// ieee_components returns a tuple of sign, exponent, and fraction.
-inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
-	static_assert(std::numeric_limits<double>::is_iec559,
-		"This function only works when double complies with IEC 559 (IEEE 754)");
-	static_assert(sizeof(long double) == 16, "This function only works when long double is 16 bytes.");
-
-	long_double_decoder dd{ fp }; // initializes the first member of the union
-	// Reading inactive union parts is forbidden in constexpr :-(
-	return std::make_tuple<bool, int, std::uint64_t>(
-		static_cast<bool>(dd.parts.sign),
-		static_cast<int>(dd.parts.exponent),
-		static_cast<std::uint64_t>(dd.parts.fraction)
-		);
-}
-
 // specialization for IEEE long double precision floats
 inline std::string to_base2_scientific(long double number) {
 	std::stringstream s;
@@ -43,18 +28,6 @@ inline std::string to_base2_scientific(long double number) {
 	s << "e" << std::showpos << (static_cast<int>(decoder.parts.exponent) - 16383);
 	return s.str();
 }
-
-#ifdef DEPRECATED
-// DEPRECATED: we have standardized on raw bit hex, not field hex format
-// generate a binary string for a native double precision IEEE floating point
-inline std::string to_hex(long double number) {
-	std::stringstream s;
-	long_double_decoder decoder;
-	decoder.ld = number;
-	s << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
-	return s.str();
-}
-#endif // DEPRECATED
 
 inline std::string to_hex(long double number, bool nibbleMarker = false, bool hexPrefix = true) {
 	char hexChar[16] = {
