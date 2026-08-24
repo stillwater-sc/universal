@@ -1,5 +1,7 @@
 #pragma once
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <sstream>
+#include <string>
 // edecimal_impl.hpp: definition of adaptive precision decimal integer data type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 // blocktriple.hpp: definition of a (sign, scale, significand) representation of a generic floating-point value that goes into an arithmetic operation
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -468,7 +469,10 @@ public:
 		_significand.add(lhs._significand, rhs._significand);  // do the bit arithmetic manipulation
 		_significand.setradix(radix);                          // set the radix interpretation of the output
 
-		if constexpr (_trace_btriple_add) { traceSignificandOp("blocksignificand unrounded add: just the significand values", "sum", lhs, rhs); }
+		if constexpr (_trace_btriple_add) {
+			traceSignificandOp("blocksignificand unrounded add: just the significand values",
+			                   "sum", lhs, rhs);
+		}
 
 		if (_significand.iszero()) {
 			clear();
@@ -1300,3 +1304,20 @@ blocktriple<fbits> abs(const blocktriple<fbits, op, bt>& a) {
 
 
 }} // namespace sw::universal
+
+// When any blocktriple trace switch is on, add/mul/div instantiate the helpers
+// declared above, so their definitions must be in the translation unit. Pull
+// them in automatically rather than leaving every caller to remember: the
+// failure mode is a link error, which -fsyntax-only cannot see. The include is
+// safe from here -- blocktriple_debug.hpp includes this header, and #pragma once
+// makes that a no-op, so the out-of-line definitions land after the class.
+//
+// constexprClassParameters() has no macro to key on, so calling it still
+// requires including <universal/internal/blocktriple/blocktriple_debug.hpp>
+// explicitly. It is an opt-in debug facility, not something the arithmetic
+// reaches on its own.
+#if defined(BLOCKTRIPLE_VERBOSE_OUTPUT) || defined(BLOCKTRIPLE_TRACE_ALL) \
+ || defined(BLOCKTRIPLE_TRACE_ADD) || defined(BLOCKTRIPLE_TRACE_SUB) \
+ || defined(BLOCKTRIPLE_TRACE_MUL) || defined(BLOCKTRIPLE_TRACE_DIV)
+#include <universal/internal/blocktriple/blocktriple_debug.hpp>
+#endif

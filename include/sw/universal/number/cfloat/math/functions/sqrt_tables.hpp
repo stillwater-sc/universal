@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <iomanip>
 // sqrt_tables.hpp: specialized classic floating-point cfloat configurations 
 //                  to support efficient sqrt for small cfloats
 //

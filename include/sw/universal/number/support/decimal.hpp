@@ -255,7 +255,11 @@ inline void sub(decimal& lhs, const decimal& rhs) {
 			borrow = 0;
 		}
 	}
-	if (borrow) { std::fprintf(stdout, "can this happen?\n"); std::fflush(stdout); }  // same stream and flush as the std::endl it replaces
+	// same stream and flush as the std::endl this replaces
+	if (borrow) {
+		std::fprintf(stdout, "can this happen?\n");
+		std::fflush(stdout);
+	}
 	lhs.unpad();
 	if (lhs.iszero()) { // special case of zero having positive sign
 		lhs.setpos();

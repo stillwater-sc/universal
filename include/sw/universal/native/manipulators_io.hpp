@@ -17,7 +17,7 @@ namespace sw { namespace universal {
 
 	// print representations of an IEEE-754 floating-point
 	template<typename Real>
-    void valueRepresentations(Real value, bool showhex = false) noexcept {
+    void valueRepresentations(Real value, bool showhex = false) {
 		using namespace sw::universal;
 		std::cout << "IEEE-754 type : " << type_tag<Real>() << '\n';
 

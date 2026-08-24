@@ -1,5 +1,7 @@
 #pragma once
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <iomanip>
+#include <string>
 //  bitblock_test_suite.hpp : bitblock-based arithmetic test suite
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.

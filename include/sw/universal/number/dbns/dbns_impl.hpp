@@ -1,5 +1,7 @@
 #pragma once
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <sstream>
+#include <string>
 // dbns_impl.hpp: implementation of a fixed-size, arbitrary configuration 2-base logarithmic number system configuration
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

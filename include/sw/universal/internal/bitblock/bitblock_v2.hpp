@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <string>
 //  bitblock.hpp : bitblock class
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.

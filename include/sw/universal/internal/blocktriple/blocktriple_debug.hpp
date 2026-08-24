@@ -42,7 +42,8 @@ void blocktriple<fbits, op, bt>::constexprClassParameters() const {
 	std::cout << "bfbits            : " << bfbits << "      bits in the blocksignificand representation\n";
 	std::cout << "radix             : " << radix << "      position of the radix point of the ALU operator result\n";
 //		std::cout << "encoding          : " << encoding << '\n';
-	std::cout << "normalBits        : " << normalBits << "      normal bits to track: metaprogramming trick to remove warnings\n";
+	std::cout << "normalBits        : " << normalBits
+			  << "      normal bits to track: metaprogramming trick to remove warnings\n";
 	std::cout << "normalFormMask    : " << to_binary(normalFormMask) << "   normalFormMask for small configurations\n";
 	std::cout << "significand type  : " << typeid(significand_t).name() << '\n';
 
@@ -55,7 +56,8 @@ void blocktriple<fbits, op, bt>::constexprClassParameters() const {
 
 // operand-level trace: the significands as the ALU sees them, before normalization
 template<unsigned fbits, BlockTripleOperator op, typename bt>
-void blocktriple<fbits, op, bt>::traceSignificandOp(const char* header, const char* label, const blocktriple& lhs, const blocktriple& rhs) const {
+void blocktriple<fbits, op, bt>::traceSignificandOp(const char* header, const char* label,
+		const blocktriple& lhs, const blocktriple& rhs) const {
 	std::cout << header << '\n';
 	std::cout << typeid(_significand).name() << '\n';
 	std::cout << "lhs significand : " << to_binary(lhs._significand) << " : " << lhs._significand << '\n';
@@ -65,7 +67,8 @@ void blocktriple<fbits, op, bt>::traceSignificandOp(const char* header, const ch
 
 // result-level trace: the normalized blocktriple
 template<unsigned fbits, BlockTripleOperator op, typename bt>
-void blocktriple<fbits, op, bt>::traceNormalizedOp(const char* header, const char* label, const blocktriple& lhs, const blocktriple& rhs) const {
+void blocktriple<fbits, op, bt>::traceNormalizedOp(const char* header, const char* label,
+		const blocktriple& lhs, const blocktriple& rhs) const {
 	std::cout << header << '\n';
 	std::cout << typeid(*this).name() << '\n';
 	std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
