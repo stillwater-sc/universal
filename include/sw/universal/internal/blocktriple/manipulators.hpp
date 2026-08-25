@@ -17,12 +17,16 @@
 // to_string(BlockTripleOperator) lives here rather than in iostream.hpp because
 // type_tag needs the operator's NAME, not a stream insertion. Keeping the string
 // form in the <iomanip> layer is what stops this header depending on that one.
+#include <algorithm>   // std::min
+#include <cmath>       // std::pow, std::log10, std::floor
+#include <cstddef>     // size_t
 #include <cstdint>
 #include <ios>
 #include <iomanip>
 #include <sstream>
 #include <string>
 #include <typeinfo>
+#include <vector>      // std::vector
 #include <universal/native/integers.hpp>          // to_binary(uint64_t)
 #include <universal/number/support/decimal.hpp>   // support::decimal, for power_of_five
 #include <universal/internal/blocktriple/blocktriple.hpp>
