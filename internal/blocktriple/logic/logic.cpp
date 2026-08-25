@@ -10,6 +10,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_status.hpp>
+#include <universal/internal/blocktriple/iostream.hpp>   // (#1334)
 
 namespace sw::universal {
 

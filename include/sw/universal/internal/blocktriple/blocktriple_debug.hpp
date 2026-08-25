@@ -15,6 +15,8 @@
 #include <iostream>
 #include <typeinfo>
 #include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/internal/blocktriple/manipulators.hpp>   // type_tag, to_binary (#1334)
+#include <universal/internal/blocktriple/iostream.hpp>       // operator<< for BlockTripleOperator (#1334)
 
 namespace sw { namespace universal {
 

@@ -20,6 +20,7 @@
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/support/teju_formatter.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/internal/blocktriple/manipulators.hpp>   // blocktriple::to_string (#1334)
 
 // Regression testing guards
 #define MANUAL_TESTING 0
