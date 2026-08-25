@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
+#include <universal/utility/icf_array_bounds.hpp>
 #include <cmath> // for std::pow() used in conversions to native IEEE-754 formats values
 
 #include <limits>
@@ -469,7 +470,11 @@ public:
 	constexpr bool test(unsigned bitIndex) const noexcept { return at(bitIndex); }
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false;
+		// in bounds: bitIndex < nbits => index <= nrBlocks-1. The pragma silences a
+		// GCC -fipa-icf false positive; see utility/icf_array_bounds.hpp.
+		UNIVERSAL_ICF_ARRAY_BOUNDS_PUSH
 		bt word = _block[bitIndex / bitsInBlock];
+		UNIVERSAL_ICF_ARRAY_BOUNDS_POP
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}

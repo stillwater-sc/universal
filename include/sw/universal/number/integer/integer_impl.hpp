@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
+#include <universal/utility/icf_array_bounds.hpp>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -1038,7 +1039,11 @@ public:
 	constexpr bool sign()   const noexcept { return at(nbits - 1); }
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex < nbits) {
+			// in bounds: bitIndex < nbits => index <= nrBlocks-1. The pragma silences a
+			// GCC -fipa-icf false positive; see utility/icf_array_bounds.hpp.
+			UNIVERSAL_ICF_ARRAY_BOUNDS_PUSH
 			bt word = _block[bitIndex / bitsInBlock];
+			UNIVERSAL_ICF_ARRAY_BOUNDS_POP
 			bt mask = bt(1ull << (bitIndex % bitsInBlock));
 			return (word & mask);
 		}
