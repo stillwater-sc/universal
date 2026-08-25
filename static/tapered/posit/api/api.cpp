@@ -24,6 +24,8 @@
 #include <universal/verification/test_case.hpp>
 #include <universal/internal/blockbinary/iostream.hpp>   // operator<< on blockbinary (#1334)
 #include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocktriple/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocktriple/iostream.hpp>   // operator<< on blocktriple (#1334)
 
 // File-level helper for the constexpr smoke tests below: compares the raw
 // bit pattern of two posits limb-by-limb. Used by both the integer and the

@@ -9,19 +9,16 @@
 #include <cstdio>
 #include <cmath>
 #include <string>
-#include <iomanip>
-#include <sstream>
+#include <ios>      // std::streamsize in the to_string declaration
 #include <limits>
 #include <algorithm>
 #include <vector>
 
 // dependent types for stand-alone use of this class
-#include <universal/native/integers.hpp> // to_binary(uint64_t)
 #include <universal/native/ieee754_core.hpp>   // bit manipulation only; the text layer is not needed here (#1334)
 #include <universal/native/subnormal.hpp>
 #include <universal/utility/find_msb.hpp>
 #include <universal/internal/blocksignificand/blocksignificand.hpp>
-#include <universal/number/support/decimal.hpp>
 // blocktriple operation trace options
 #include <universal/internal/blocktriple/trace_constants.hpp>
 
@@ -56,31 +53,20 @@ TBD SQRT      iiii.ffff'ffff'ffff         4 integer bits, 2*f fraction bits
 
  // operator specialization tag for blocktriple
 enum class BlockTripleOperator { REP, ADD, MUL, DIV, SQRT };
-inline std::ostream& operator<<(std::ostream& ostr, const BlockTripleOperator& op) {
-	switch (op) {
-	case BlockTripleOperator::REP:
-		ostr << "REP";
-		break;
-	case BlockTripleOperator::ADD:
-		ostr << "ADD";
-		break;
-	case BlockTripleOperator::MUL:
-		ostr << "MUL";
-		break;
-	case BlockTripleOperator::DIV:
-		ostr << "DIV";
-		break;
-	case BlockTripleOperator::SQRT:
-		ostr << "SQRT";
-		break;
-	default:
-		ostr << "NOP";
-	}
-	return ostr;
-}
 
 // Forward definitions
 template<unsigned fbits, BlockTripleOperator op, typename bt> class blocktriple;
+// to_binary and to_triple are defined in internal/blocktriple/manipulators.hpp.
+// Their DEFAULT ARGUMENTS are established here, at namespace scope, and not on
+// the definitions: the in-class friend declarations below cannot carry defaults
+// (a friend declaration may only do so when it is also a definition), and once
+// the friend declaration is the first one clang sees, adding defaults later is
+// an error -- "default arguments cannot be added". gcc accepts it; clang does
+// not, which is why this only appeared in CI. See #1334.
+template<unsigned fbits, BlockTripleOperator op, typename bt>
+std::string to_binary(const blocktriple<fbits, op, bt>& a, bool nibbleMarker = false);
+template<unsigned fbits, BlockTripleOperator op, typename bt>
+std::string to_triple(const blocktriple<fbits, op, bt>& a, bool nibbleMarker = true);
 template<unsigned fbits, BlockTripleOperator op, typename bt> blocktriple<fbits, op, bt> abs(const blocktriple<fbits, op, bt>& v);
 
 template<unsigned fbits, BlockTripleOperator op, typename bt>
@@ -88,16 +74,6 @@ blocktriple<fbits, op, bt>& convert(unsigned long long uint, blocktriple<fbits, 
 	return tgt;
 }
 
-// Generate a type tag for this type: blocktriple<fbits, operator, unsigned int>
-template<unsigned fbits, BlockTripleOperator op, typename bt>
-std::string type_tag(const blocktriple<fbits, op, bt>& = {}) {
-	std::stringstream s;
-	s << "blocktriple<"
-	  << std::setw(3) << fbits << ", "
-      << op << ", "
-	  << type_tag(bt{}) << '>';
-	return s.str();
-}
 
 /// <summary>
 /// Generalized blocktriple representing a (sign, scale, significand) with unrounded arithmetic
@@ -418,6 +394,14 @@ public:
 
 	// helper debug function; defined out-of-line in blocktriple_debug.hpp so this
 	// header needs no <iostream>. Include that header to call it.
+public:
+	// to_string: defined out-of-line in internal/blocktriple/manipulators.hpp so
+	// this header needs no <sstream>. Include that header to call it.
+	std::string to_string(std::streamsize precision = 7, std::streamsize width = 0,
+		bool fixed = false, bool scientific = true, bool internal = false,
+		bool left = false, bool showpos = false, bool uppercase = false,
+		char fill = ' ') const;
+
 	void constexprClassParameters() const;
 
 	/////////////////////////////////////////////////////////////
@@ -864,265 +848,8 @@ private:
 	}
 
 public:
-	// convert blocktriple to a formatted decimal string
-	// Follows the same interface as ereal::to_string() for consistency.
-	// Uses support::decimal for exact binary-to-decimal conversion.
-	std::string to_string(std::streamsize precision = 7, std::streamsize width = 0,
-		bool fixed = false, bool scientific = true, bool internal = false,
-		bool left = false, bool showpos = false, bool uppercase = false,
-		char fill = ' ') const
-	{
-		std::string s;
-		if (fixed && scientific) fixed = false; // scientific takes precedence
-		if (!fixed && !scientific) scientific = true; // defaultfloat -> scientific
-
-		if (_nan) {
-			s = _sign ? (uppercase ? "SNAN" : "snan") : (uppercase ? "QNAN" : "qnan");
-			goto apply_width;
-		}
-
-		{
-			// sign prefix for non-NaN values
-			if (_sign) { s += '-'; } else { if (showpos) s += '+'; }
-
-			if (_inf) {
-				s += uppercase ? "INF" : "inf";
-			}
-			else if (_zero) {
-				s += '0';
-				if (precision > 0) {
-					s += '.';
-					s.append(static_cast<size_t>(precision), '0');
-				}
-				if (!fixed) {
-					s += uppercase ? "E+00" : "e+00";
-				}
-			}
-			else {
-				// Normal value: exact binary-to-decimal via support::decimal
-				// Value = significand * 2^(scale - radix)
-				// where significand is stored as an integer with radix point at position 'radix'
-
-				// Step 1: accumulate significand bits into a decimal integer
-				support::decimal sig;
-				sig.setzero();
-				support::decimal bitWeight;
-				bitWeight.setdigit(1);
-				for (unsigned i = 0; i < bfbits; ++i) {
-					if (_significand.at(i)) {
-						support::add(sig, bitWeight);
-					}
-					support::add(bitWeight, bitWeight); // bitWeight *= 2
-				}
-
-				// Step 2: compute effective exponent
-				long long effExp = static_cast<long long>(_scale) - static_cast<long long>(radix);
-
-				// Step 3: scale the significand to get exact decimal digits
-				// sig * 2^effExp = exact value
-				// If effExp >= 0: multiply sig by 2^effExp
-				// If effExp < 0:  sig * 2^(-|e|) = sig * 5^|e| / 10^|e|
-				//   so multiply sig by 5^|e| and remember |e| implied fractional digits
-
-				long long impliedFracDigits = 0;
-
-				if (effExp > 0) {
-					if (effExp > 100000) {
-						// Extreme case: compute approximate scientific notation
-						// from significand and binary exponent directly.
-						// decimal exponent = effExp * log10(2) + log10(sig_value)
-						double sigVal = static_cast<double>(_significand);
-						double log10Val = effExp * 0.30102999566398119521 + std::log10(sigVal);
-						long long decExp = static_cast<long long>(std::floor(log10Val));
-						double mantissa = std::pow(10.0, log10Val - decExp);
-						if (mantissa >= 10.0) { mantissa /= 10.0; ++decExp; }
-						if (mantissa < 1.0) { mantissa *= 10.0; --decExp; }
-						std::ostringstream oss;
-						oss.precision(precision);
-						oss << std::fixed << mantissa;
-						if (!fixed) {
-							s += oss.str();
-							s += uppercase ? 'E' : 'e';
-							append_exponent(s, decExp);
-						} else {
-							// fixed with extreme exponent: just show the approximate value
-							s += oss.str();
-							s += uppercase ? 'E' : 'e';
-							append_exponent(s, decExp);
-						}
-						goto apply_width;
-					}
-					support::decimal pow2;
-					pow2.powerOf2(static_cast<size_t>(effExp));
-					support::mul(sig, pow2);
-				}
-				else if (effExp < 0) {
-					long long absExp = -effExp;
-					if (absExp > 100000) {
-						// Extreme case: compute approximate scientific notation
-						double sigVal = static_cast<double>(_significand);
-						double log10Val = effExp * 0.30102999566398119521 + std::log10(sigVal);
-						long long decExp = static_cast<long long>(std::floor(log10Val));
-						double mantissa = std::pow(10.0, log10Val - decExp);
-						if (mantissa >= 10.0) { mantissa /= 10.0; ++decExp; }
-						if (mantissa < 1.0) { mantissa *= 10.0; --decExp; }
-						std::ostringstream oss;
-						oss.precision(precision);
-						oss << std::fixed << mantissa;
-						s += oss.str();
-						s += uppercase ? 'E' : 'e';
-						append_exponent(s, decExp);
-						goto apply_width;
-					}
-					support::decimal pow5 = power_of_five(static_cast<size_t>(absExp));
-					support::mul(sig, pow5);
-					impliedFracDigits = absExp;
-				}
-
-				sig.unpad();
-
-				// Step 4: determine digit layout
-				// sig now represents the exact value * 10^impliedFracDigits
-				// Total decimal digits in sig
-				long long totalDigits = static_cast<long long>(sig.size());
-				// Position of decimal point: sciExponent is the power-of-10 of the MSD
-				long long sciExponent = (totalDigits - 1) - impliedFracDigits;
-
-				// Step 5: extract digits MSD-first into a vector
-				std::vector<int> digits(static_cast<size_t>(totalDigits));
-				for (long long i = 0; i < totalDigits; ++i) {
-					digits[static_cast<size_t>(i)] = sig[static_cast<size_t>(totalDigits - 1 - i)];
-				}
-
-				// Step 6: determine how many digits we need and round
-				long long neededDigits;
-				if (fixed) {
-					// fixed: we need (sciExponent + 1) integer digits + precision fraction digits
-					neededDigits = sciExponent + 1 + precision;
-					if (neededDigits < 1) neededDigits = 1;
-				}
-				else {
-					// scientific: 1 integer digit + precision fraction digits
-					neededDigits = 1 + precision;
-				}
-
-				// Round at the boundary
-				if (neededDigits < totalDigits) {
-					int roundDigit = digits[static_cast<size_t>(neededDigits)];
-					if (roundDigit >= 5) {
-						// propagate carry
-						long long k = neededDigits - 1;
-						while (k >= 0) {
-							digits[static_cast<size_t>(k)]++;
-							if (digits[static_cast<size_t>(k)] < 10) break;
-							digits[static_cast<size_t>(k)] = 0;
-							--k;
-						}
-						if (k < 0) {
-							// carry out of MSD: insert a 1 at front
-							digits.insert(digits.begin(), 1);
-							totalDigits++;
-							sciExponent++;
-							// neededDigits stays same, but we may have one more digit
-						}
-					}
-					digits.resize(static_cast<size_t>(neededDigits));
-					totalDigits = neededDigits;
-				}
-				else if (neededDigits > totalDigits) {
-					// pad with trailing zeros
-					digits.resize(static_cast<size_t>(neededDigits), 0);
-					totalDigits = neededDigits;
-				}
-
-				// Step 7: format the digits
-				if (fixed) {
-					long long intDigits = sciExponent + 1;
-					if (intDigits <= 0) {
-						s += "0.";
-						for (long long z = 0; z < -intDigits && z < precision; ++z) s += '0';
-						long long remaining = precision - (-intDigits);
-						if (remaining < 0) remaining = 0;
-						for (long long i = 0; i < remaining && i < totalDigits; ++i) {
-							s += static_cast<char>('0' + digits[static_cast<size_t>(i)]);
-						}
-						// pad if needed
-						long long written = (-intDigits) + std::min(remaining, totalDigits);
-						for (long long i = written; i < precision; ++i) s += '0';
-					}
-					else {
-						for (long long i = 0; i < intDigits && i < totalDigits; ++i) {
-							s += static_cast<char>('0' + digits[static_cast<size_t>(i)]);
-						}
-						// pad integer part if digits ran out
-						for (long long i = totalDigits; i < intDigits; ++i) s += '0';
-						if (precision > 0) {
-							s += '.';
-							for (long long i = intDigits; i < intDigits + precision; ++i) {
-								if (i < totalDigits)
-									s += static_cast<char>('0' + digits[static_cast<size_t>(i)]);
-								else
-									s += '0';
-							}
-						}
-					}
-				}
-				else {
-					// scientific: d.dddddde+/-EEE
-					if (totalDigits > 0)
-						s += static_cast<char>('0' + digits[0]);
-					else
-						s += '0';
-					if (precision > 0) {
-						s += '.';
-						for (long long i = 1; i <= precision; ++i) {
-							if (i < totalDigits)
-								s += static_cast<char>('0' + digits[static_cast<size_t>(i)]);
-							else
-								s += '0';
-						}
-					}
-					s += uppercase ? 'E' : 'e';
-					append_exponent(s, sciExponent);
-				}
-			}
-		}
-
-	apply_width:
-		// process width/fill/alignment
-		if (width > 0 && s.length() < static_cast<size_t>(width)) {
-			size_t nrCharsToFill = static_cast<size_t>(width) - s.length();
-			if (internal) {
-				const bool hasSign = !s.empty() && (s[0] == '-' || s[0] == '+');
-				s.insert(hasSign ? static_cast<std::string::size_type>(1)
-				                 : static_cast<std::string::size_type>(0),
-				         nrCharsToFill, fill);
-			}
-			else if (left) {
-				s.append(nrCharsToFill, fill);
-			}
-			else {
-				s.insert(static_cast<std::string::size_type>(0), nrCharsToFill, fill);
-			}
-		}
-
-		return s;
-	}
 
 private:
-	// Compute 5^n using repeated squaring with support::decimal
-	static support::decimal power_of_five(size_t n) {
-		support::decimal result;
-		result.setdigit(1);
-		support::decimal base;
-		base.setdigit(5);
-		while (n > 0) {
-			if (n & 1) support::mul(result, base);
-			if (n > 1) support::mul(base, base);
-			n >>= 1;
-		}
-		return result;
-	}
 
 	// Format exponent as +/-NNN (handles arbitrarily large exponents)
 	static void append_exponent(std::string& str, long long e) {
@@ -1138,10 +865,13 @@ private:
 
 public:
 
-	// template parameters need names different from class template parameters (for gcc and clang)
-	template<unsigned ffbits, BlockTripleOperator oop, typename bbt>
-	friend std::istream& operator>> (std::istream& istr, blocktriple<ffbits, oop, bbt>& a);
 
+	// no friend declaration for operator>>: it is defined in
+	// internal/blocktriple/iostream.hpp and needs no private access (it assigns
+	// through the public constructor). See #1334.
+	//
+	// to_binary and to_triple DO keep theirs: they read _sign, _scale and
+	// _significand directly, so friendship is load-bearing there.
 	// declare as friends to avoid needing a marshalling function to get significand bits out
 	template<unsigned ffbits, BlockTripleOperator oop, typename bbt>
 	friend std::string to_binary(const blocktriple<ffbits, oop, bbt>&, bool);
@@ -1165,30 +895,7 @@ public:
 
 ////////////////////// operators
 
-// blocktriple ostream operator: honors all standard formatting flags
-template<unsigned fbits, BlockTripleOperator op, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<fbits, op, bt>& a) {
-	std::ios_base::fmtflags fmt = ostr.flags();
-	std::streamsize precision = ostr.precision();
-	std::streamsize width = ostr.width();
-	char fillChar = ostr.fill();
-	bool bShowpos    = fmt & std::ios_base::showpos;
-	bool bUppercase  = fmt & std::ios_base::uppercase;
-	bool bFixed      = fmt & std::ios_base::fixed;
-	bool bScientific = fmt & std::ios_base::scientific;
-	bool bInternal   = fmt & std::ios_base::internal;
-	bool bLeft       = fmt & std::ios_base::left;
-	return ostr << a.to_string(precision, width, bFixed, bScientific,
-	                            bInternal, bLeft, bShowpos, bUppercase, fillChar);
-}
 
-template<unsigned fbits, BlockTripleOperator op, typename bt>
-inline std::istream& operator>> (std::istream& istr, blocktriple<fbits, op, bt>& a) {
-	double v{};
-	istr >> v;
-	a = blocktriple<fbits, op, bt>(v);
-	return istr;
-}
 
 template<unsigned fbits, BlockTripleOperator op, typename bt>
 inline bool operator==(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._significand == rhs._significand && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
@@ -1271,19 +978,7 @@ inline bool operator>=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<
 
 ////////////////////////////////// string conversion functions //////////////////////////////
 
-template<unsigned fbits, BlockTripleOperator op, typename bt>
-std::string to_binary(const sw::universal::blocktriple<fbits, op, bt>& a, bool nibbleMarker = false) {
-	return to_triple(a, nibbleMarker);
-}
 
-template<unsigned fbits, BlockTripleOperator op, typename bt>
-std::string to_triple(const blocktriple<fbits, op, bt>& a, bool nibbleMarker = true) {
-	std::stringstream s;
-	s << (a._sign ? "(-, " : "(+, ");
-	s << std::setw(3) << a._scale << ", ";
-	s << to_binary(a._significand, nibbleMarker) << ')';
-	return s.str();
-}
 
 template<unsigned fbits, BlockTripleOperator op, typename bt>
 blocktriple<fbits> abs(const blocktriple<fbits, op, bt>& a) {

@@ -17,6 +17,8 @@
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocktriple/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocktriple/iostream.hpp>   // operator<< on blocktriple (#1334)
 
 namespace sw::universal {
 

@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+// blocktriple::to_string, called on the value from to_value<> (#1334)
+#include <universal/internal/blocktriple/manipulators.hpp>
 #include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
 #include <cctype>
 #include <cstdint>

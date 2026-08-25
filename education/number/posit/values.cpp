@@ -6,6 +6,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
 #include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocktriple/iostream.hpp>   // (#1334)
+#include <universal/internal/blocktriple/manipulators.hpp>   // (#1334)
 
 /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //

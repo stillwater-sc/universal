@@ -12,6 +12,8 @@
 // only what genuinely needs the stream types: operator<< and operator>>.
 //
 // posit.hpp includes both, so existing code is unaffected.
+// blocktriple::to_string, called on the value from to_value<> (#1334)
+#include <universal/internal/blocktriple/manipulators.hpp>
 #include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
 #include <universal/internal/blockbinary/iostream.hpp>   // operator<< on blockbinary (#1334)
 #include <ios>

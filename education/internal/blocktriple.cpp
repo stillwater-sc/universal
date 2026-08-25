@@ -7,6 +7,8 @@
 #include <universal/utility/directives.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocktriple/iostream.hpp>   // (#1334)
+#include <universal/internal/blocktriple/manipulators.hpp>   // (#1334)
 #include <iostream>
 #include <string>
 

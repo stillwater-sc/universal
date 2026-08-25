@@ -10,6 +10,7 @@
 #include <universal/verification/test_reporters.hpp>
 
 #include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/internal/blocktriple/iostream.hpp>   // (#1334)
 
 namespace sw { namespace universal {
 
