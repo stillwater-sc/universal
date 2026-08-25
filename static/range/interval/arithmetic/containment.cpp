@@ -37,6 +37,22 @@ namespace sw { namespace universal {
 		default:      return x / y;
 		}
 	}
+	// A sample point that is GUARANTEED to lie in [lo,hi]. The obvious interpolation
+	// lo + s*(hi-lo) is not: evaluate it at the same precision as the endpoints and its
+	// three roundings can carry it past an endpoint. On a host where long double IS
+	// double (MSVC, ARM, RISC-V) that overshot the upper endpoint by up to 16 ulp in
+	// this fuzz -- worst when the interval is wide and the endpoint is near zero, so the
+	// absolute slop of (hi-lo) is many ulp of hi. The fuzz then demanded that a point
+	// OUTSIDE X have its image inside fl(X op Y), which is not what the Fundamental
+	// Theorem claims, and reported ~2000 bogus containment failures. Clamping restores
+	// the loop's own precondition ("sample points x in X"). On an x86-64 host, whose
+	// 80-bit long double absorbs the rounding, the clamp never fires -- so this costs
+	// no coverage, and the enclosures themselves were never at fault.
+	inline long double samplePoint(long double lo, long double hi, double s) {
+		long double p = lo + static_cast<long double>(s) * (hi - lo);
+		return (p < lo) ? lo : ((p > hi) ? hi : p);
+	}
+
 	template<typename Scalar>
 	inline interval<Scalar> apply(Op op, const interval<Scalar>& X, const interval<Scalar>& Y) {
 		switch (op) {
@@ -183,8 +199,8 @@ namespace sw { namespace universal {
 				// sample points: endpoints and a few interior points of each interval
 				for (double sx : {0.0, 1.0, S(rng), S(rng)}) {
 					for (double sy : {0.0, 1.0, S(rng), S(rng)}) {
-						long double x = (long double)a + (long double)sx * ((long double)b - a);
-						long double y = (long double)c + (long double)sy * ((long double)d - c);
+						long double x = samplePoint((long double)a, (long double)b, sx);
+						long double y = samplePoint((long double)c, (long double)d, sy);
 						long double r = apply(op, x, y);
 						if (!((long double)R.lo() <= r && r <= (long double)R.hi())) {
 							++fails;
@@ -233,8 +249,8 @@ namespace sw { namespace universal {
 				long double Rlo = (long double)double(R.lo()), Rhi = (long double)double(R.hi());
 				for (double sx : {0.0, 1.0, Sd(rng)}) {
 					for (double sy : {0.0, 1.0, Sd(rng)}) {
-						long double x = alo + (long double)sx * (ahi - alo);
-						long double y = clo + (long double)sy * (chi - clo);
+						long double x = samplePoint(alo, ahi, sx);
+						long double y = samplePoint(clo, chi, sy);
 						long double r = apply(op, x, y);
 						if (!std::isfinite((double)r) || (double)std::abs(r) > mx) continue;   // beyond range
 						if (!(Rlo <= r && r <= Rhi)) {
