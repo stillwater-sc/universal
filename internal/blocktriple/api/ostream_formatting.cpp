@@ -302,6 +302,57 @@ int test_zero_output() {
 	return nrOfFailedTests;
 }
 
+int test_negative_precision() {
+	int nrOfFailedTests = 0;
+
+	// std::ostream::precision() accepts negative values and operator<< forwards
+	// them unchanged. Before #1404 the scientific branch computed
+	// neededDigits = 1 + precision, which went negative for precision <= -2 and
+	// was then used to index the digits vector -- an out-of-bounds read.
+	// A negative precision is normalised to zero, so it must format exactly as
+	// precision 0 does.
+	constexpr std::streamsize negatives[] = { -1, -2, -5, -100 };
+
+	for (std::streamsize p : negatives) {
+		{
+			blocktriple<23, BlockTripleOperator::REP> x(1.5);
+			std::string expected = capture(x, 0, std::ios_base::scientific);
+			std::string s = capture(x, p, std::ios_base::scientific);
+			if (s != expected) {
+				std::cout << "FAIL: scientific precision " << p << " = '" << s
+					<< "', expected '" << expected << "' (precision 0)\n";
+				++nrOfFailedTests;
+			}
+		}
+
+		{
+			blocktriple<23, BlockTripleOperator::REP> x(1.5);
+			std::string expected = capture(x, 0, std::ios_base::fixed);
+			std::string s = capture(x, p, std::ios_base::fixed);
+			if (s != expected) {
+				std::cout << "FAIL: fixed precision " << p << " = '" << s
+					<< "', expected '" << expected << "' (precision 0)\n";
+				++nrOfFailedTests;
+			}
+		}
+
+		{
+			// defaultfloat, and a value whose exponent drives the fixed branch
+			// negative as well
+			blocktriple<23, BlockTripleOperator::REP> x(0.001953125);
+			std::string expected = capture(x, 0);
+			std::string s = capture(x, p);
+			if (s != expected) {
+				std::cout << "FAIL: defaultfloat precision " << p << " = '" << s
+					<< "', expected '" << expected << "' (precision 0)\n";
+				++nrOfFailedTests;
+			}
+		}
+	}
+
+	return nrOfFailedTests;
+}
+
 }} // namespace sw::universal
 
 int main()
@@ -350,6 +401,9 @@ try {
 
 	std::cout << "Width and alignment\n";
 	nrOfFailedTestCases += test_width_alignment();
+
+	std::cout << "Negative precision\n";
+	nrOfFailedTestCases += test_negative_precision();
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

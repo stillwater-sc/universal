@@ -85,6 +85,13 @@ std::string blocktriple<fbits, op, bt>::to_string(std::streamsize precision, std
 	std::string s;
 	if (fixed && scientific) fixed = false; // scientific takes precedence
 	if (!fixed && !scientific) scientific = true; // defaultfloat -> scientific
+	// std::ostream::precision() accepts a negative value and operator<< forwards
+	// it unchanged. A negative precision has no meaning as a digit count, and the
+	// scientific branch below would compute neededDigits = 1 + precision < 0 and
+	// then index the digits vector with static_cast<size_t>(neededDigits), which
+	// is an out-of-bounds read. Normalise here so both branches see a digit count
+	// of at least zero. See #1404.
+	if (precision < 0) precision = 0;
 
 	if (_nan) {
 		s = _sign ? (uppercase ? "SNAN" : "snan") : (uppercase ? "QNAN" : "qnan");
