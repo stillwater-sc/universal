@@ -56,6 +56,17 @@ enum class BlockTripleOperator { REP, ADD, MUL, DIV, SQRT };
 
 // Forward definitions
 template<unsigned fbits, BlockTripleOperator op, typename bt> class blocktriple;
+// to_binary and to_triple are defined in internal/blocktriple/manipulators.hpp.
+// Their DEFAULT ARGUMENTS are established here, at namespace scope, and not on
+// the definitions: the in-class friend declarations below cannot carry defaults
+// (a friend declaration may only do so when it is also a definition), and once
+// the friend declaration is the first one clang sees, adding defaults later is
+// an error -- "default arguments cannot be added". gcc accepts it; clang does
+// not, which is why this only appeared in CI. See #1334.
+template<unsigned fbits, BlockTripleOperator op, typename bt>
+std::string to_binary(const blocktriple<fbits, op, bt>& a, bool nibbleMarker = false);
+template<unsigned fbits, BlockTripleOperator op, typename bt>
+std::string to_triple(const blocktriple<fbits, op, bt>& a, bool nibbleMarker = true);
 template<unsigned fbits, BlockTripleOperator op, typename bt> blocktriple<fbits, op, bt> abs(const blocktriple<fbits, op, bt>& v);
 
 template<unsigned fbits, BlockTripleOperator op, typename bt>

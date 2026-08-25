@@ -316,12 +316,12 @@ apply_width:
 }
 
 template<unsigned fbits, BlockTripleOperator op, typename bt>
-std::string to_binary(const sw::universal::blocktriple<fbits, op, bt>& a, bool nibbleMarker = false) {
+std::string to_binary(const sw::universal::blocktriple<fbits, op, bt>& a, bool nibbleMarker) {
 	return to_triple(a, nibbleMarker);
 }
 
 template<unsigned fbits, BlockTripleOperator op, typename bt>
-std::string to_triple(const blocktriple<fbits, op, bt>& a, bool nibbleMarker = true) {
+std::string to_triple(const blocktriple<fbits, op, bt>& a, bool nibbleMarker) {
 	std::stringstream s;
 	s << (a._sign ? "(-, " : "(+, ");
 	s << std::setw(3) << a._scale << ", ";
