@@ -7,6 +7,8 @@
 #include <universal/utility/directives.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blocksignificand/blocksignificand.hpp>
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocksignificand/iostream.hpp>   // (#1334)
 #include <iostream>
 #include <string>
 

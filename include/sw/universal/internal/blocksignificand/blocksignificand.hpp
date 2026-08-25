@@ -7,19 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <cmath> // for std::pow() used in conversions to native IEEE-754 formats values
-// TRACE_DIV: compile-time tracing of the division algorithm, default off.
-// Declared ahead of the includes because <iostream> is needed only when it is
-// on. #ifndef-guarded so a caller can enable it by defining the macro first;
-// the previous unconditional #define silently reset it to 0.
-#ifndef TRACE_DIV
-#define TRACE_DIV 0
-#endif
 
-#if TRACE_DIV
-#include <iostream>
-#endif
-#include <string>
-#include <sstream>
 #include <limits>
 #include <type_traits>  // for std::is_constant_evaluated() in constexpr arithmetic dispatch
 
@@ -726,54 +714,21 @@ public:
 	}
 
 
-	// ostream operator
-	friend std::ostream& operator<<(std::ostream& ostr, const blocksignificand& v) {
-		return ostr << double(v);
-	}
+	// no friend declaration for operator<<: it is defined in
+	// internal/blocksignificand/iostream.hpp and needs no private access (it streams the
+	// public double() conversion). Declaring it here would let a translation unit
+	// that forgot that include COMPILE and then fail to link -- a compile error
+	// naming the missing function is the better failure. See #1334.
 };
 
-//////////////////////////////////////////////////////////////////////////////
-// conversions to string representations
-
-// create a binary representation of the blocksignificand: 00h.ffff
-// by design, the radix point is at nbits-3
-template<unsigned nbits, typename bt>
-std::string to_binary(const blocksignificand<nbits, bt>& number, bool nibbleMarker = false) {
-	std::stringstream s;
-	s << "0b";
-	for (int i = nbits - 1; i >= 0; --i) {
-		s << (number.at(unsigned(i)) ? '1' : '0');
-		if (i == number.radix()) {
-			s << '.';
-		}
-		else {
-			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
-		}
-	}
-	return s.str();
-}
-
-// local helper to display the contents of a byte array in hex format
-template<unsigned nbits, typename bt>
-std::string to_hex(const blocksignificand<nbits, bt>& number, bool nibbleMarker = true) {
-	char hexChar[16] = {
-		'0', '1', '2', '3', '4', '5', '6', '7',
-		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
-	};
-	std::stringstream ss;
-	ss << "0x" << std::hex;
-	int nrNibbles = int(1 + ((nbits - 1) >> 2));
-	for (int n = nrNibbles - 1; n >= 0; --n) {
-		uint8_t nibble = number.nibble(static_cast<unsigned>(n));
-		ss << hexChar[nibble];
-		if (nibbleMarker && n > 0 && (n % 4) == 0) ss << '\'';
-	}
-	return ss.str();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// specialty binary operators
-
+// urdiv: arithmetic, not text -- same story as twosComplementFree below. It sat
+// after the "conversions to string representations" banner in the original file,
+// so the text lift caught it by position rather than by kind (#1334).
+//
+// It is also dead and does not instantiate: nothing calls it, and it uses member
+// names this type does not have. That is pre-existing -- it fails to instantiate
+// on main too. Tracked separately; left here unchanged rather than repaired in a
+// move.
 // unrounded division, returns a blocksignificand that is of size 2*nbits
 template<unsigned nbits, unsigned roundingBits, typename bt>
 blocksignificand<2 * nbits + roundingBits, bt> urdiv(const blocksignificand<nbits, bt>& a, const blocksignificand<nbits, bt>& b, blocksignificand<roundingBits, bt>& r) {
@@ -809,10 +764,6 @@ blocksignificand<2 * nbits + roundingBits, bt> urdiv(const blocksignificand<nbit
 	int scale = shift - msp;   // scale of the result quotient
 	subtractand <<= shift;
 
-#if TRACE_DIV
-	std::cout << "  " << to_binary(decimator) << std::endl;
-	std::cout << "- " << to_binary(subtractand) << " shift: " << shift << std::endl;
-#endif
 	// long division
 	for (int i = msb_a; i >= 0; --i) {
 
@@ -825,10 +776,6 @@ blocksignificand<2 * nbits + roundingBits, bt> urdiv(const blocksignificand<nbit
 		}
 		subtractand >>= 1;
 
-#if TRACE_DIV
-		std::cout << "  " << to_binary(decimator) << ' ' << to_binary(result) << std::endl;
-		std::cout << "- " << to_binary(subtractand) << std::endl;
-#endif
 	}
 	result <<= scale;
 	if (result_negative) result.twosComplement();
@@ -836,6 +783,9 @@ blocksignificand<2 * nbits + roundingBits, bt> urdiv(const blocksignificand<nbit
 	return result;
 }
 
+// twosComplementFree: arithmetic, not text. It sat after the "conversions to
+// string representations" banner in the original file, so the text lift caught
+// it by position rather than by kind; it belongs here (#1334).
 // free function generator of the 2's complement of a blocksignificand
 template<unsigned nbits, typename bt>
 constexpr blocksignificand<nbits, bt> twosComplementFree(const blocksignificand<nbits, bt>& a) noexcept {

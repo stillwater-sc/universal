@@ -21,6 +21,8 @@
 #include <universal/internal/blocktriple/blocktriple_debug.hpp>  // constexprClassParameters + tracing (#1334)
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocksignificand/iostream.hpp>   // (#1334)
 
 // enumerate all addition cases for an blocktriple<nbits,BlockType> configuration
 template<typename BlockTripleConfiguration>

@@ -11,6 +11,8 @@
 #include <universal/native/integers.hpp>
 #include <universal/internal/blockfraction/blockfraction.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/internal/blockfraction/manipulators.hpp>   // (#1334)
+#include <universal/internal/blockfraction/iostream.hpp>   // (#1334)
 
 /*
 A blockfraction is a 1's complement binary encoding with a radix point that is aligned

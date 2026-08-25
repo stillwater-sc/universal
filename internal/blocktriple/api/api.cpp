@@ -14,6 +14,8 @@
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
 #define BLOCKTRIPLE_TRACE_ALL
 #include <universal/internal/blocktriple/blocktriple_debug.hpp>  // constexprClassParameters + tracing (#1334)
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocksignificand/iostream.hpp>   // (#1334)
 
 /*
  BlockTriple is the unifying compute engine for any of the

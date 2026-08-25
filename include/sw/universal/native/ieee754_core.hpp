@@ -45,6 +45,9 @@
 #include <universal/native/ieee754_parameter.hpp>
 #include <universal/native/ieee754_decoder.hpp>
 #include <universal/native/ieee754_type_tag.hpp>
+#include <universal/native/integer_type_tag.hpp>   // type_tag(IntegralType): the block
+                                                  // types name themselves through this, and
+                                                  // blocktriple's type_tag calls it (#1334)
 
 // constexpr compatible bit casts where the compiler allows, else a fallback
 #include <universal/native/extract_fields.hpp>

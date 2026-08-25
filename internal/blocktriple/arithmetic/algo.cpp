@@ -19,6 +19,8 @@
 #define BLOCKTRIPLE_TRACE_ALL
 #include <universal/internal/blocktriple/blocktriple_debug.hpp>  // constexprClassParameters + tracing (#1334)
 #include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocksignificand/iostream.hpp>   // (#1334)
 // #include <universal/verification/test_reporters.hpp>
 
 int main()

@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project
 #include <universal/utility/directives.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
 #include <iostream>
 #include <string>
 
