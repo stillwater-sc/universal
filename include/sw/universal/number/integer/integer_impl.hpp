@@ -447,10 +447,15 @@ public:
 							if (i + j < nrBlocks) {
 								uint64_t lo, hi;
 								mul128(base.block(i), multiplicant.block(j), lo, hi);
+								// accumulate: _block[i+j] += lo + carry
+								// two separate additions, matching blockbinary: keeps a
+								// multi-bit carry out of addcarry's carry_in slot
 								uint64_t c1 = 0;
-								uint64_t sum = addcarry(_block[i + j], lo, carry, c1);
+								uint64_t sum = addcarry(_block[i + j], lo, 0, c1);
+								uint64_t c2 = 0;
+								sum = addcarry(sum, carry, 0, c2);
 								_block[i + j] = sum;
-								carry = hi + c1;
+								carry = hi + c1 + c2;
 							}
 						}
 					}
@@ -528,10 +533,15 @@ public:
 							if (i + j < nrBlocks) {
 								uint64_t lo, hi;
 								mul128(base.block(i), multiplicant.block(j), lo, hi);
+								// accumulate: _block[i+j] += lo + carry
+								// two separate additions, matching blockbinary: keeps a
+								// multi-bit carry out of addcarry's carry_in slot
 								uint64_t c1 = 0;
-								uint64_t sum = addcarry(_block[i + j], lo, carry, c1);
+								uint64_t sum = addcarry(_block[i + j], lo, 0, c1);
+								uint64_t c2 = 0;
+								sum = addcarry(sum, carry, 0, c2);
 								_block[i + j] = sum;
-								carry = hi + c1;
+								carry = hi + c1 + c2;
 							}
 						}
 					}

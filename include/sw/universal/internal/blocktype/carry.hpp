@@ -29,14 +29,24 @@ using uint128_t = unsigned __int128;
 #endif
 
 /// add two uint64_t limbs with carry-in, producing a sum and carry-out
+///
+/// CONTRACT: carry_in is a FULL 64-bit addend, not a single carry bit. It computes
+/// a + b + carry_in as a 128-bit value, returning the low limb and setting carry_out
+/// to the high limb (0, 1 or 2). Multi-limb multiply relies on this: it feeds back
+/// the high half of a 64x64 partial product, which is an arbitrary 64-bit number.
 inline uint64_t addcarry(uint64_t a, uint64_t b, uint64_t carry_in, uint64_t& carry_out) {
 #if defined(_MSC_VER)
-	// MSVC: use _addcarry_u64 intrinsic
-	// Use local variables to avoid optimizer issues with reference-derived pointers
-	unsigned long long s;
-	unsigned char c = _addcarry_u64(static_cast<unsigned char>(carry_in), a, b, &s);
-	carry_out = c;
-	return static_cast<uint64_t>(s);
+	// _addcarry_u64's carry-in is a SINGLE BIT. Passing carry_in through it (the old
+	// static_cast<unsigned char>) silently discarded every bit but the lowest, so
+	// integer<N,uint64_t> and blockbinary multiply produced wrong products on MSVC
+	// while gcc/clang -- whose __int128 branch honours the whole value -- were correct.
+	// Add carry_in as a second operand instead of as the carry bit.
+	// Use distinct local variables to avoid optimizer issues with reference-derived pointers.
+	unsigned long long s1, s2;
+	unsigned char c1 = _addcarry_u64(0, a, b, &s1);
+	unsigned char c2 = _addcarry_u64(0, s1, carry_in, &s2);
+	carry_out = static_cast<uint64_t>(c1) + static_cast<uint64_t>(c2);
+	return static_cast<uint64_t>(s2);
 
 #elif defined(__SIZEOF_INT128__)
 	// GCC/Clang on 64-bit: use unsigned __int128 for widening add
@@ -56,24 +66,27 @@ inline uint64_t addcarry(uint64_t a, uint64_t b, uint64_t carry_in, uint64_t& ca
 }
 
 /// subtract two uint64_t limbs with borrow-in, producing a difference and borrow-out
+///
+/// CONTRACT, mirroring addcarry: borrow_in is a FULL 64-bit subtrahend, not a single
+/// borrow bit. Returns the low limb of a - b - borrow_in and sets borrow_out to the
+/// number of borrows out (0, 1 or 2).
+///
+/// No caller passes a multi-bit borrow_in today, but the MSVC branch had the same
+/// single-bit truncation that broke addcarry, and the __int128 branch capped
+/// borrow_out at 1 where the portable branch reported 2 -- three implementations,
+/// three different answers. They agree now.
 inline uint64_t subborrow(uint64_t a, uint64_t b, uint64_t borrow_in, uint64_t& borrow_out) {
 #if defined(_MSC_VER)
-	// MSVC: use _subborrow_u64 intrinsic
-	// Use local variables to avoid optimizer issues with reference-derived pointers
-	unsigned long long d;
-	unsigned char borrow = _subborrow_u64(static_cast<unsigned char>(borrow_in), a, b, &d);
-	borrow_out = borrow;
-	return static_cast<uint64_t>(d);
-
-#elif defined(__SIZEOF_INT128__)
-	// GCC/Clang on 64-bit: use unsigned __int128
-	uint128_t wide_a = static_cast<uint128_t>(a);
-	uint128_t wide_sub = static_cast<uint128_t>(b) + borrow_in;
-	borrow_out = (wide_a < wide_sub) ? 1u : 0u;
-	return static_cast<uint64_t>(wide_a - wide_sub);
+	// _subborrow_u64's borrow-in is a SINGLE BIT; subtract borrow_in as an operand.
+	// Use distinct local variables to avoid optimizer issues with reference-derived pointers.
+	unsigned long long d1, d2;
+	unsigned char b1 = _subborrow_u64(0, a, b, &d1);
+	unsigned char b2 = _subborrow_u64(0, d1, borrow_in, &d2);
+	borrow_out = static_cast<uint64_t>(b1) + static_cast<uint64_t>(b2);
+	return static_cast<uint64_t>(d2);
 
 #else
-	// Portable fallback
+	// Portable: two-step borrow detection. __int128 buys nothing for subtraction.
 	uint64_t diff = a - b;
 	uint64_t borrow1 = (a < b) ? 1u : 0u;
 	uint64_t result = diff - borrow_in;
