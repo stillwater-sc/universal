@@ -1,5 +1,6 @@
 #pragma once
 #include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
+#include <universal/utility/icf_array_bounds.hpp>
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 #include <string>
 // cfloat_impl.hpp: implementation of an arbitrary configuration fixed-size 'classic' floating-point representation
@@ -1847,7 +1848,11 @@ public:
 	}
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex < nbits) {
+			// in bounds: bitIndex < nbits => index <= nrBlocks-1. The pragma silences a
+			// GCC -fipa-icf false positive; see utility/icf_array_bounds.hpp.
+			UNIVERSAL_ICF_ARRAY_BOUNDS_PUSH
 			bt word = _block[bitIndex / bitsInBlock];
+			UNIVERSAL_ICF_ARRAY_BOUNDS_POP
 			bt mask = bt(1ull << (bitIndex % bitsInBlock));
 			return (word & mask);
 		}

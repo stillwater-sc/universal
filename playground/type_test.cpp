@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include<universal/utility/long_double.hpp>
 #include <string>
 #include <iostream>
 #include <typeinfo>
@@ -70,7 +70,9 @@ try {
         
     test<float>("float");
     test<double>("double");
+#if LONG_DOUBLE_SUPPORT
     test<long double>("long double");
+#endif
 
     return 0;
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <universal/utility/icf_array_bounds.hpp>
 #include <string>
 // lns_impl.hpp: implementation of an arbitrary logarithmic number system configuration
 //
@@ -467,7 +468,11 @@ public:
 	}
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
+		// in bounds: bitIndex < nbits => index <= nrBlocks-1. The pragma silences a
+		// GCC -fipa-icf false positive; see utility/icf_array_bounds.hpp.
+		UNIVERSAL_ICF_ARRAY_BOUNDS_PUSH
 		bt word = _block[bitIndex / bitsInBlock];
+		UNIVERSAL_ICF_ARRAY_BOUNDS_POP
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}

@@ -88,7 +88,11 @@ constexpr efloat<nlimbs> nextafter(const efloat<nlimbs>& x, const efloat<nlimbs>
 // through double as a workaround for the constructor returning 0.)
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> nexttoward(const efloat<nlimbs>& x, long double y) {
+#if LONG_DOUBLE_SUPPORT
 	return nextafter(x, efloat<nlimbs>(y));
+#else
+	return nextafter(x, efloat<nlimbs>(static_cast<double>(y)));
+#endif
 }
 
 }  // namespace universal

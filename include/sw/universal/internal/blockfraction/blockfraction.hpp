@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
+#include <universal/utility/icf_array_bounds.hpp>
 #include <cmath> // for std::pow() used in conversions to native IEEE-754 formats values
 
 
@@ -104,7 +105,8 @@ public:
 	constexpr blockfraction& operator=(const blockfraction&) noexcept = default;
 	constexpr blockfraction& operator=(blockfraction&&) noexcept = default;
 
-#ifdef NEVER
+/*
+  DESIGN NOTES
 	// disable the ability to copy different blockfractions to catch any
 	// unintended (implicit) copies when working with blockfractions.
 	// For performance, the blockfraction is used in-place.
@@ -112,31 +114,14 @@ public:
 	// uses in add/sub/mul/div/sqrt will directly access the bits of the encapsulated blockfraction.
 
 	/// construct a blockfraction from another: bt must be the same
-	template<unsigned nnbits>
-	blockfraction(const blockfraction<nnbits, bt>& rhs) { this->assign(rhs); }
+	// template<unsigned nnbits> blockfraction(const blockfraction<nnbits, bt>& rhs) { this->assign(rhs); }
 
 	// blockfraction cannot have decorated constructors or assignment
 	// as blockfraction does not have all the information to interpret a value
 	// So by design, the class interface does not interact with values
-	constexpr blockfraction(long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
-
-	constexpr blockfraction& operator=(long long rhs) noexcept {
-		if constexpr (1 < nrBlocks) {
-			for (unsigned i = 0; i < nrBlocks; ++i) {
-				_block[i] = rhs & storageMask;
-				rhs >>= bitsInBlock;
-			}
-			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-			_block[MSU] &= MSU_MASK;
-		} 
-		else if constexpr (1 == nrBlocks) {
-			_block[0] = rhs & storageMask;
-			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-			_block[MSU] &= MSU_MASK;
-		}
-		return *this;
-	}
-#endif
+	// constexpr blockfraction(long long initial_value) noexcept;
+	// constexpr blockfraction& operator=(long long rhs) noexcept;
+*/
 
 	/// explicit conversion operators
 	explicit constexpr operator float() const noexcept { return float(to_float()); }
@@ -144,9 +129,7 @@ public:
 
 #if LONG_DOUBLE_SUPPORT
 	explicit constexpr operator long double() const noexcept { return (long double)to_long_double(); }
-	constexpr long double to_long_double() const noexcept {
-		return (long double)to_double();
-	}
+	constexpr long double to_long_double() const noexcept { return (long double)to_double(); }
 #endif
 
 	/// prefix operators
@@ -443,7 +426,11 @@ public:
 	constexpr bool test(unsigned bitIndex) const noexcept { return at(bitIndex); }
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false;
+		// in bounds: bitIndex < nbits => index <= nrBlocks-1. The pragma silences a
+		// GCC -fipa-icf false positive; see utility/icf_array_bounds.hpp.
+		UNIVERSAL_ICF_ARRAY_BOUNDS_PUSH
 		bt word = _block[bitIndex / bitsInBlock];
+		UNIVERSAL_ICF_ARRAY_BOUNDS_POP
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}
@@ -623,69 +610,6 @@ public:
 	// naming the missing function is the better failure. See #1334.
 };
 
-// urdiv: arithmetic, not text -- same story as twosComplementFree below. It sat
-// after the "conversions to string representations" banner in the original file,
-// so the text lift caught it by position rather than by kind (#1334).
-//
-// It is also dead and does not instantiate: nothing calls it, and it uses member
-// names this type does not have. That is pre-existing -- it fails to instantiate
-// on main too. Tracked separately; left here unchanged rather than repaired in a
-// move.
-// unrounded division, returns a blockfraction that is of size 2*nbits
-template<unsigned nbits, unsigned roundingBits, typename bt>
-blockfraction<2 * nbits + roundingBits, bt> urdiv(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b, blockfraction<roundingBits, bt>& r) {
-	if (b.iszero()) {
-		// division by zero
-		throw "urdiv divide by zero";
-	}
-	// generate the absolute values to do long division 
-	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
-	bool a_sign = a.sign();
-	bool b_sign = b.sign();
-	bool result_negative = (a_sign ^ b_sign);
-
-	// normalize both arguments to positive in new size
-	blockfraction<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
-	blockfraction<nbits + 1, bt> b_new(b);
-	if (a_sign) a_new.twoscomplement();
-	if (b_sign) b_new.twoscomplement();
-
-	// initialize the long division
-	blockfraction<2 * nbits + roundingBits, bt> decimator(a_new);
-	blockfraction<2 * nbits + roundingBits, bt> subtractand(b_new); // prepare the subtractand
-	blockfraction<2 * nbits + roundingBits, bt> result;
-
-	int msp = nbits + roundingBits - 1; // msp = most significant position
-	decimator <<= msp; // scale the decimator to the largest possible positive value
-
-	int msb_b = subtractand.msb();
-	int msb_a = decimator.msb();
-	int shift = msb_a - msb_b;
-	int scale = shift - msp;   // scale of the result quotient
-	subtractand <<= shift;
-
-	// long division
-	for (int i = msb_a; i >= 0; --i) {
-
-		if (subtractand <= decimator) {
-			decimator -= subtractand;
-			result.set(static_cast<unsigned>(i));
-		}
-		else {
-			result.reset(static_cast<unsigned>(i));
-		}
-		subtractand >>= 1;
-
-	}
-	result <<= scale;
-	if (result_negative) result.twosComplement();
-	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
-	return result;
-}
-
-// twosComplementFree: arithmetic, not text. It sat after the "conversions to
-// string representations" banner in the original file, so the text lift caught
-// it by position rather than by kind; it belongs here (#1334).
 // free function generator of the 2's complement of a blockfraction
 template<unsigned nbits, typename bt>
 constexpr blockfraction<nbits, bt> twosComplementFree(const blockfraction<nbits, bt>& a) noexcept {

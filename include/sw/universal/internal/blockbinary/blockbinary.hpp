@@ -7,6 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <cstdint>
+#include <universal/utility/icf_array_bounds.hpp>
 #include <string>   // the std::string constructor
 #include <type_traits>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -832,7 +833,11 @@ public:
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
 		unsigned blockIndex = bitIndex / bitsInBlock;
+		// in bounds: bitIndex < nbits => blockIndex <= nrBlocks-1. The pragma silences a
+		// GCC -fipa-icf false positive; see utility/icf_array_bounds.hpp.
+		UNIVERSAL_ICF_ARRAY_BOUNDS_PUSH
 		bt limb = _block[blockIndex];
+		UNIVERSAL_ICF_ARRAY_BOUNDS_POP
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (limb & mask);
 	}

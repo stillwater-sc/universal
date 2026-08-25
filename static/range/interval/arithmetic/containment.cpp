@@ -37,6 +37,22 @@ namespace sw { namespace universal {
 		default:      return x / y;
 		}
 	}
+	// A sample point that is GUARANTEED to lie in [lo,hi]. The obvious interpolation
+	// lo + s*(hi-lo) is not: evaluate it at the same precision as the endpoints and its
+	// three roundings can carry it past an endpoint. On a host where long double IS
+	// double (MSVC, ARM, RISC-V) that overshot the upper endpoint by up to 16 ulp in
+	// this fuzz -- worst when the interval is wide and the endpoint is near zero, so the
+	// absolute slop of (hi-lo) is many ulp of hi. The fuzz then demanded that a point
+	// OUTSIDE X have its image inside fl(X op Y), which is not what the Fundamental
+	// Theorem claims, and reported ~2000 bogus containment failures. Clamping restores
+	// the loop's own precondition ("sample points x in X"). On an x86-64 host, whose
+	// 80-bit long double absorbs the rounding, the clamp never fires -- so this costs
+	// no coverage, and the enclosures themselves were never at fault.
+	inline long double samplePoint(long double lo, long double hi, double s) {
+		long double p = lo + static_cast<long double>(s) * (hi - lo);
+		return (p < lo) ? lo : ((p > hi) ? hi : p);
+	}
+
 	template<typename Scalar>
 	inline interval<Scalar> apply(Op op, const interval<Scalar>& X, const interval<Scalar>& Y) {
 		switch (op) {
@@ -78,16 +94,35 @@ namespace sw { namespace universal {
 		// so tightening must fall back to outward rounding -- the enclosure is [maxfinite, +inf]
 		// and must still contain the finite real 2e308 (#1248, regression for the EFT overflow
 		// containment bug: without the isfinite guard the sum was [+inf, +inf]).
-		{ double big = 1e308; I s = I(big) + I(big);
-		  check("1e308+1e308 overflow", s, 2.0e308L);
-		  if (!(std::isinf((double)s.hi()) && std::isfinite((double)s.lo()))) {
-			++fails; if (reportTestCases) std::cout << "    FAIL overflow enclosure not [finite,+inf]: ["
-				<< s.lo() << ", " << s.hi() << "]\n"; } }
-		{ double big = 1e308; I p = I(big) * I(big);   // 1e616 overflow on the product
-		  check("1e308*1e308 overflow", p, 1.0e616L);
-		  if (!(std::isinf((double)p.hi()) && std::isfinite((double)p.lo()))) {
-			++fails; if (reportTestCases) std::cout << "    FAIL overflow product not [finite,+inf]: ["
-				<< p.lo() << ", " << p.hi() << "]\n"; } }
+		//
+		// The truth is DERIVED from the operands rather than written as a literal: where
+		// long double is double (MSVC, ARM, RISC-V) the real results 2e308 and 1e616 are
+		// not representable and a literal is rejected outright (MSVC C2177 "constant too
+		// big"). Derived, the truth is the exact real value on a wide long double and +inf
+		// where it is not -- still a valid containment assertion, and the [finite,+inf]
+		// structural check below is what pins the #1248 regression on those platforms.
+
+		{ 
+			double big = 1e308; I s = I(big) + I(big);
+		    // check("1e308+1e308 overflow", s, 2.0e308L);  // fails on MSVC and ARM where long double is double
+															// so derive the truth from the operands
+		    check("1e308+1e308 overflow", s, (long double) big + (long double) big);
+			if (!(std::isinf((double)s.hi()) && std::isfinite((double)s.lo()))) {
+				++fails; 
+				if (reportTestCases) std::cout << "    FAIL overflow enclosure not [finite,+inf]: ["
+				<< s.lo() << ", " << s.hi() << "]\n"; 
+			} 
+		}
+		{
+			double big = 1e308; I p = I(big) * I(big);   // 1e616 overflow on the product
+			// check("1e308*1e308 overflow", p, 1.0e616L);
+		    check("1e308*1e308 overflow", p, (long double) big * (long double) big);
+			if (!(std::isinf((double)p.hi()) && std::isfinite((double)p.lo()))) {
+				++fails; 
+				if (reportTestCases) std::cout << "    FAIL overflow product not [finite,+inf]: ["
+				<< p.lo() << ", " << p.hi() << "]\n"; 
+			} 
+		}
 		// UNDERFLOW: a product that lands in the subnormal range. TwoProduct's roundoff
 		// underflows below denorm_min and is lost, so a naive EFT reports a zero-width
 		// [p,p] that does not contain the true product; the underflow-safe prod_enclose
@@ -164,8 +199,8 @@ namespace sw { namespace universal {
 				// sample points: endpoints and a few interior points of each interval
 				for (double sx : {0.0, 1.0, S(rng), S(rng)}) {
 					for (double sy : {0.0, 1.0, S(rng), S(rng)}) {
-						long double x = (long double)a + (long double)sx * ((long double)b - a);
-						long double y = (long double)c + (long double)sy * ((long double)d - c);
+						long double x = samplePoint((long double)a, (long double)b, sx);
+						long double y = samplePoint((long double)c, (long double)d, sy);
 						long double r = apply(op, x, y);
 						if (!((long double)R.lo() <= r && r <= (long double)R.hi())) {
 							++fails;
@@ -214,8 +249,8 @@ namespace sw { namespace universal {
 				long double Rlo = (long double)double(R.lo()), Rhi = (long double)double(R.hi());
 				for (double sx : {0.0, 1.0, Sd(rng)}) {
 					for (double sy : {0.0, 1.0, Sd(rng)}) {
-						long double x = alo + (long double)sx * (ahi - alo);
-						long double y = clo + (long double)sy * (chi - clo);
+						long double x = samplePoint(alo, ahi, sx);
+						long double y = samplePoint(clo, chi, sy);
 						long double r = apply(op, x, y);
 						if (!std::isfinite((double)r) || (double)std::abs(r) > mx) continue;   // beyond range
 						if (!(Rlo <= r && r <= Rhi)) {

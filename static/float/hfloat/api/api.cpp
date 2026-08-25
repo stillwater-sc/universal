@@ -14,7 +14,7 @@
 
 #include <iostream>
 #include <iomanip>
-#include <strstream>
+#include <sstream>   // std::stringstream, used by hfp_pair() below
 
 namespace sw::universal {
 	template<unsigned _ndigits, unsigned _es, typename bt>

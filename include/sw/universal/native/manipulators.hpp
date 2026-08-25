@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <string>
 #include <sstream>
+#include <universal/utility/bit_cast.hpp>
 #include <universal/utility/find_msb.hpp>
 #include <universal/native/ieee754_parameter.hpp>
 #include <universal/native/ieee754_type_tag.hpp>
@@ -16,20 +17,39 @@
 
 namespace sw { namespace universal {
 
-	// internal function to extract exponent bits: TODO: needs validation for subnormal numbers
 	namespace internal {
-		// internal function to extract exponent
+		// internal function to extract the scale, that is, the de-biased exponent
+		//
+		// Mask the exponent and the fraction out of the encoding INDEPENDENTLY, each
+		// with its own mask. The earlier version cleared only the sign bit and then
+		// reused that one variable as both the exponent (after a right shift) and the
+		// fraction (captured before the shift), so its "fraction" still carried the
+		// exponent bits. That is harmless only for as long as the subnormal branch is
+		// entered exclusively for subnormals, whose exponent bits are zero -- it makes
+		// the decoder silently wrong the moment that branch is entered for anything
+		// else, which is exactly what happened on MSVC (see below).
+		//
+		// Use sw::bit_cast, and take the constexpr-ness of this function from it via
+		// BIT_CAST_CONSTEXPR, rather than the memmove-based BitCast<>. A constexpr
+		// function that can never be evaluated in a constant expression -- which is
+		// what "constexpr" plus a memmove call adds up to -- is ill-formed, no
+		// diagnostic required, and MSVC /O2 (Release only; Debug and RelWithDebInfo
+		// were fine) miscompiled the guard so the subnormal correction was applied to
+		// every normal value. gcc and clang were unaffected at every -O level. The
+		// neighbouring extractFields() in extract_fields.hpp already decodes this way
+		// and stayed correct in the same Release binary.
 		template<typename Uint, typename Real>
-		constexpr int _extractExponent(Real v) noexcept {
+		BIT_CAST_CONSTEXPR int _extractExponent(Real v) noexcept {
 			static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
-			Uint raw{BitCast<Uint>(v)};
-			raw &= static_cast<Uint>(~ieee754_parameter<Real>::smask);
-			Uint frac{raw};
-			raw >>= ieee754_parameter<Real>::fbits;
+			constexpr Uint emask = static_cast<Uint>(ieee754_parameter<Real>::emask);
+			constexpr Uint fmask = static_cast<Uint>(ieee754_parameter<Real>::fmask);
+			const Uint bc{ sw::bit_cast<Uint>(v) };
+			const Uint rawExponent = static_cast<Uint>((bc & emask) >> ieee754_parameter<Real>::fbits);
+			const Uint rawFraction = static_cast<Uint>(bc & fmask);
 			// de-bias
-			int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
-			if (raw == 0) {  // a subnormal encoding
-				int msb = static_cast<int>(find_msb(frac));
+			int e = static_cast<int>(rawExponent) - static_cast<int>(ieee754_parameter<Real>::bias);
+			if (rawExponent == 0) {  // a subnormal or zero encoding
+				int msb = static_cast<int>(find_msb(rawFraction));
 				e -= (static_cast<int>(ieee754_parameter<Real>::fbits) - msb);
 			}
 			return e;
@@ -65,12 +85,11 @@ namespace sw { namespace universal {
 	}
 
 	template<typename Real, typename = typename ::std::enable_if<::std::is_floating_point<Real>::value, Real>::type>
-    constexpr int scale(Real v) noexcept {
+    BIT_CAST_CONSTEXPR int scale(Real v) noexcept {
 	    int _e{0};
 	    if constexpr (sizeof(Real) == 2) {  // half precision floating-point
 		    _e = internal::_extractExponent<std::uint16_t>(v);
-	    }
-	    if constexpr (sizeof(Real) == 4) {  // single precision floating-point
+	    } else if constexpr (sizeof(Real) == 4) {  // single precision floating-point
 		    _e = internal::_extractExponent<std::uint32_t>(v);
 	    } else if constexpr (sizeof(Real) == 8) {  // double precision floating-point
 		    _e = internal::_extractExponent<std::uint64_t>(v);
@@ -83,7 +102,7 @@ namespace sw { namespace universal {
     }
 
     template<typename Real, typename = typename ::std::enable_if<::std::is_floating_point<Real>::value, Real>::type>
-    constexpr int exponent(Real v) noexcept {
+    BIT_CAST_CONSTEXPR int exponent(Real v) noexcept {
 	    return scale(v);
     }
 
