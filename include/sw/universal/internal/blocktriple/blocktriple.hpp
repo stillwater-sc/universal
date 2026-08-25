@@ -17,7 +17,7 @@
 
 // dependent types for stand-alone use of this class
 #include <universal/native/integers.hpp> // to_binary(uint64_t)
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>   // bit manipulation only; the text layer is not needed here (#1334)
 #include <universal/native/subnormal.hpp>
 #include <universal/utility/find_msb.hpp>
 #include <universal/internal/blocksignificand/blocksignificand.hpp>

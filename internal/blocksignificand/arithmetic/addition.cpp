@@ -14,6 +14,8 @@
 #include <universal/verification/test_reporters.hpp>
 #include <universal/verification/blocksignificand_test_suite.hpp>
 #include <universal/internal/blockbinary/iostream.hpp>   // operator<< on blockbinary (#1334)
+#include <universal/internal/blocksignificand/iostream.hpp>   // (#1334)
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
 
 
 // generate specific test case that you can trace with the trace conditions in blocksignificand

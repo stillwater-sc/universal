@@ -10,6 +10,8 @@
 
 #include <universal/internal/blocksignificand/blocksignificand.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocksignificand/iostream.hpp>   // (#1334)
 
 /*
 A blocksignificand is a 1's or 2's complement binary encoding with a radix point 

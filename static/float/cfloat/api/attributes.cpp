@@ -16,6 +16,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_reporters.hpp>
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
 
 int main()
 try {

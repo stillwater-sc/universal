@@ -19,6 +19,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_reporters.hpp>
 #include <universal/internal/blockbinary/manipulators.hpp>   // to_binary on the blockbinary from bits() (#1334)
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
 
 template<unsigned nbits, unsigned es, typename BlockType>
 void PositComponents(const sw::universal::posit<nbits, es, BlockType>& p) {

@@ -14,6 +14,7 @@
 //#include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 #include <universal/number/cfloat/table.hpp>
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1

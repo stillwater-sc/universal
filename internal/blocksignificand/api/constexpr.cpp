@@ -10,6 +10,8 @@
 
 #include <universal/internal/blocksignificand/blocksignificand.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
+#include <universal/internal/blocksignificand/iostream.hpp>   // (#1334)
 
 template<typename blocksignificand>
 void ConstexprBlockConstructor(uint64_t pattern) {

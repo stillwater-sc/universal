@@ -18,6 +18,7 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
 
 /*
 How do you test the conversion state space of blocktriple to cfloat?

@@ -16,6 +16,8 @@
 #include <universal/verification/test_reporters.hpp>
 #include <universal/verification/blockfraction_test_suite.hpp>
 #include <universal/internal/blockbinary/iostream.hpp>   // operator<< on blockbinary (#1334)
+#include <universal/internal/blockfraction/iostream.hpp>   // (#1334)
+#include <universal/internal/blockfraction/manipulators.hpp>   // (#1334)
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0

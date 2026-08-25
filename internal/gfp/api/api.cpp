@@ -9,6 +9,7 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/internal/gfp/gfp.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
 
 // https://en.cppreference.com/w/cpp/utility/feature_test
 #include <version>
