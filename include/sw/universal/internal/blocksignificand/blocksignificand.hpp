@@ -721,6 +721,68 @@ public:
 	// naming the missing function is the better failure. See #1334.
 };
 
+// urdiv: arithmetic, not text -- same story as twosComplementFree below. It sat
+// after the "conversions to string representations" banner in the original file,
+// so the text lift caught it by position rather than by kind (#1334).
+//
+// It is also dead and does not instantiate: nothing calls it, and it uses member
+// names this type does not have. That is pre-existing -- it fails to instantiate
+// on main too. Tracked separately; left here unchanged rather than repaired in a
+// move.
+// unrounded division, returns a blocksignificand that is of size 2*nbits
+template<unsigned nbits, unsigned roundingBits, typename bt>
+blocksignificand<2 * nbits + roundingBits, bt> urdiv(const blocksignificand<nbits, bt>& a, const blocksignificand<nbits, bt>& b, blocksignificand<roundingBits, bt>& r) {
+	if (b.iszero()) {
+		// division by zero
+		throw "urdiv divide by zero";
+	}
+	// generate the absolute values to do long division 
+	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
+	bool a_sign = a.sign();
+	bool b_sign = b.sign();
+	bool result_negative = (a_sign ^ b_sign);
+
+	// normalize both arguments to positive in new size
+	blocksignificand<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
+	blocksignificand<nbits + 1, bt> b_new(b);
+	if (a_sign) a_new.twoscomplement();
+	if (b_sign) b_new.twoscomplement();
+
+	// initialize the long division
+	blocksignificand<2 * nbits + roundingBits, bt> decimator(a_new);
+	blocksignificand<2 * nbits + roundingBits, bt> subtractand(b_new); // prepare the subtractand
+	blocksignificand<2 * nbits + roundingBits, bt> result;
+
+	int msp = nbits + roundingBits - 1; // msp = most significant position
+	decimator <<= msp; // scale the decimator to the largest possible positive value
+
+	int msb_b = subtractand.msb();
+	int msb_a = decimator.msb();
+	int shift = msb_a - msb_b;
+	// The quotient is produced in an oversized fixed-point workspace. `scale` recenters it so the returned
+	// bits remain the unrounded quotient, while the truncated tail is left in `r` for the caller's rounding rule.
+	int scale = shift - msp;   // scale of the result quotient
+	subtractand <<= shift;
+
+	// long division
+	for (int i = msb_a; i >= 0; --i) {
+
+		if (subtractand <= decimator) {
+			decimator -= subtractand;
+			result.set(static_cast<unsigned>(i));
+		}
+		else {
+			result.reset(static_cast<unsigned>(i));
+		}
+		subtractand >>= 1;
+
+	}
+	result <<= scale;
+	if (result_negative) result.twosComplement();
+	r.assign(result); // low bits preserve rounding information for later rounding.
+	return result;
+}
+
 // twosComplementFree: arithmetic, not text. It sat after the "conversions to
 // string representations" banner in the original file, so the text lift caught
 // it by position rather than by kind; it belongs here (#1334).
