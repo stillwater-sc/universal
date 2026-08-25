@@ -78,16 +78,35 @@ namespace sw { namespace universal {
 		// so tightening must fall back to outward rounding -- the enclosure is [maxfinite, +inf]
 		// and must still contain the finite real 2e308 (#1248, regression for the EFT overflow
 		// containment bug: without the isfinite guard the sum was [+inf, +inf]).
-		{ double big = 1e308; I s = I(big) + I(big);
-		  check("1e308+1e308 overflow", s, 2.0e308L);
-		  if (!(std::isinf((double)s.hi()) && std::isfinite((double)s.lo()))) {
-			++fails; if (reportTestCases) std::cout << "    FAIL overflow enclosure not [finite,+inf]: ["
-				<< s.lo() << ", " << s.hi() << "]\n"; } }
-		{ double big = 1e308; I p = I(big) * I(big);   // 1e616 overflow on the product
-		  check("1e308*1e308 overflow", p, 1.0e616L);
-		  if (!(std::isinf((double)p.hi()) && std::isfinite((double)p.lo()))) {
-			++fails; if (reportTestCases) std::cout << "    FAIL overflow product not [finite,+inf]: ["
-				<< p.lo() << ", " << p.hi() << "]\n"; } }
+		//
+		// The truth is DERIVED from the operands rather than written as a literal: where
+		// long double is double (MSVC, ARM, RISC-V) the real results 2e308 and 1e616 are
+		// not representable and a literal is rejected outright (MSVC C2177 "constant too
+		// big"). Derived, the truth is the exact real value on a wide long double and +inf
+		// where it is not -- still a valid containment assertion, and the [finite,+inf]
+		// structural check below is what pins the #1248 regression on those platforms.
+
+		{ 
+			double big = 1e308; I s = I(big) + I(big);
+		    // check("1e308+1e308 overflow", s, 2.0e308L);  // fails on MSVC and ARM where long double is double
+															// so derive the truth from the operands
+		    check("1e308+1e308 overflow", s, (long double) big + (long double) big);
+			if (!(std::isinf((double)s.hi()) && std::isfinite((double)s.lo()))) {
+				++fails; 
+				if (reportTestCases) std::cout << "    FAIL overflow enclosure not [finite,+inf]: ["
+				<< s.lo() << ", " << s.hi() << "]\n"; 
+			} 
+		}
+		{
+			double big = 1e308; I p = I(big) * I(big);   // 1e616 overflow on the product
+			// check("1e308*1e308 overflow", p, 1.0e616L);
+		    check("1e308*1e308 overflow", p, (long double) big * (long double) big);
+			if (!(std::isinf((double)p.hi()) && std::isfinite((double)p.lo()))) {
+				++fails; 
+				if (reportTestCases) std::cout << "    FAIL overflow product not [finite,+inf]: ["
+				<< p.lo() << ", " << p.hi() << "]\n"; 
+			} 
+		}
 		// UNDERFLOW: a product that lands in the subnormal range. TwoProduct's roundoff
 		// underflows below denorm_min and is lost, so a naive EFT reports a zero-width
 		// [p,p] that does not contain the true product; the underflow-safe prod_enclose

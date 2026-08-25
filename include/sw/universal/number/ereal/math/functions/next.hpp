@@ -37,7 +37,7 @@ namespace sw { namespace universal {
 	// nexttoward: return next representable value after x in direction of y (long double)
 	template<unsigned maxlimbs>
 	inline ereal<maxlimbs> nexttoward(const ereal<maxlimbs>& x, long double y) {
-#ifdef LONG_DOUBLE_SUPPORT
+#if LONG_DOUBLE_SUPPORT
 	    ereal<maxlimbs> target(y);
 #else
 	    ereal<maxlimbs> target(static_cast<double>(y));
