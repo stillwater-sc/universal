@@ -73,12 +73,15 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.22
         with:
           key: ${{ matrix.artifact }}
-          max-size: "1G"
-          # Save the ccache only on pushes to main: PR/branch runs restore the warm
-          # main cache but do not create new ones. Without this every PR run saved a
-          # fresh cache and a CI burst evicted the warm caches under GitHub's 10GB
-          # limit, dropping the hit rate to ~1% and turning ~1-min cached builds into
-          # ~9-min cold rebuilds (#1009).
+          # 2G, not 1G. A CI_LITE build is 474 objects and Universal's template-heavy
+          # objects do not fit one build's worth into 1G: every run reported
+          # "Cache size (GB): 1.0 / 1.0 (99.9%)", so ccache was LRU-evicting DURING the
+          # build and throwing out objects before the next run could reuse them. Hit
+          # rates sat at 4-6% on main and on every branch alike.
+          max-size: "2G"
+          # Save only on pushes to main: PR/branch runs restore the warm main cache but
+          # do not create new ones. Without this every PR run saved a fresh cache and a
+          # CI burst evicted the warm caches under GitHub's 10GB limit (#1009).
           save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Set ccache compiler launcher
@@ -141,10 +144,12 @@ jobs:
           - os: ubuntu-latest
             name: Linux x64 (GCC)
             artifact: linux-x64-gcc
+            cache_save: "yes"   # keeps a saved ccache; see the ccache step
             cmake_flags: -DUNIVERSAL_BUILD_CI=ON
           - os: ubuntu-latest
             name: Linux x64 (Clang)
             artifact: linux-x64-clang
+            cache_save: "yes"   # keeps a saved ccache; see the ccache step
             compiler: clang
             cc: clang
             cxx: clang++
@@ -249,12 +254,16 @@ jobs:
         with:
           key: ${{ matrix.artifact }}
           max-size: "1G"
-          # Save the ccache only on pushes to main: PR/branch runs restore the warm
-          # main cache but do not create new ones. Without this every PR run saved a
-          # fresh cache and a CI burst evicted the warm caches under GitHub's 10GB
-          # limit, dropping the hit rate to ~1% and turning ~1-min cached builds into
-          # ~9-min cold rebuilds (#1009).
-          save: ${{ github.ref == 'refs/heads/main' }}
+          # Save only on pushes to main (#1009), AND only for the configurations that
+          # earn their share of GitHub's 10GB per-repo cache budget.
+          #
+          # 12 matrix artifacts x ~0.8GB had the repo sitting at 9.94GB of 10GB, so
+          # GitHub was LRU-evicting whole caches and a job could find its cache gone
+          # before it ran. The cross-compile and macOS jobs run only on ready PRs and
+          # main pushes -- a handful of times a day -- while the fast tier runs on every
+          # push to every branch, so the value is concentrated there. Those jobs now
+          # build cold by design; that is the trade for a fast tier that actually hits.
+          save: ${{ github.ref == 'refs/heads/main' && matrix.cache_save == 'yes' }}
 
       - name: Set ccache compiler launcher
         if: runner.os != 'Windows'

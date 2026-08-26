@@ -1,0 +1,116 @@
+name: Prune Actions caches
+
+# hendrikmuhs/ccache-action writes a NEW timestamped key on every save
+# (ccache-<artifact>-<ISO8601>), so each main push leaves the previous generation
+# behind. GitHub only reclaims those when the repo hits its 10GB ceiling, and by then
+# it is evicting by LRU across ALL caches -- including the warm ones a job is about to
+# restore. Two artifacts were already holding two generations (macos-x64 at 1.64GB,
+# windows-x64-mingw at 0.89GB) with the repo at 9.94GB of 10GB.
+#
+# This keeps the newest generation of each ccache artifact and deletes the rest, so the
+# budget stays bounded by the number of artifacts rather than by how often main moves.
+#
+# sccache entries (Windows/MSVC, SCCACHE_GHA_ENABLED) are deliberately left alone: they
+# are one entry per object hash, ~1170 of them, but only ~0.13GB in total. The limit is
+# on bytes, not entry count, and sccache manages its own reuse.
+
+on:
+  # Primary trigger: prune right after a run that may have SAVED a cache. main sees
+  # 4-7 pushes a day, and each one strands the previous generation of every saved
+  # artifact, so a once-daily sweep would let ~7 generations pile up between runs --
+  # far past the 10GB ceiling, which is the very thing this workflow exists to prevent.
+  # Pruning per cache-producing run bounds the strand to a single generation.
+  workflow_run:
+    workflows: ["CMake"]
+    types: [completed]
+    branches: [main]
+  # Backstop, in case a workflow_run event is missed.
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "List what would be deleted, without deleting it"
+        type: boolean
+        default: false
+
+permissions:
+  actions: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete superseded ccache generations
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          # true only for a manual run that ticked the box; null (-> "0") for the
+          # workflow_run and schedule triggers, which always delete.
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: |
+          set -euo pipefail
+
+          usage() { gh api "repos/$REPO/actions/cache/usage" \
+                      --jq '"\(.active_caches_size_in_bytes) \(.active_caches_count)"'; }
+          read -r before before_n <<<"$(usage)"
+          awk -v b="$before" -v n="$before_n" \
+            'BEGIN {printf "cache usage before: %.2f GB in %d entries\n", b/1073741824, n}'
+
+          # No "|| true": if the listing fails we must abort, not fall through to
+          # "nothing to do" on empty input and exit green having pruned nothing.
+          #
+          # Restrict to refs/heads/main. Caches are scoped by ref, and a PR merge-ref
+          # cache cannot be restored by a run on main -- so if a newer PR-scoped
+          # generation ever existed, grouping by artifact alone would keep the useless
+          # one and delete main's. The save gate in cmake.yml means PR-scoped ccache
+          # entries should not exist (none do today); this makes the script safe if that
+          # gate is ever relaxed, rather than relying on it.
+          gh api --paginate "repos/$REPO/actions/caches?per_page=100" \
+            --jq '.actions_caches[]
+                  | select(.ref == "refs/heads/main")
+                  | select(.key | startswith("ccache-"))
+                  | [.id, .key, .created_at, .size_in_bytes] | @tsv' > all.tsv
+
+          # Count by streaming one line per entry and using wc: an aggregate jq such as
+          # '[...] | length' emits its result ONCE PER PAGE under --paginate, which would
+          # make this a multi-line string and break the numeric test below.
+          strays=$(gh api --paginate "repos/$REPO/actions/caches?per_page=100" \
+            --jq '.actions_caches[]
+                  | select(.ref != "refs/heads/main")
+                  | select(.key | startswith("ccache-")) | .key' | wc -l)
+          if [ "$strays" -gt 0 ]; then
+            echo "note: $strays ccache entries outside refs/heads/main; left untouched"
+          fi
+
+          # newest first, then keep the first occurrence of each artifact prefix
+          sort -t"$(printf '\t')" -k3,3r all.tsv > sorted.tsv
+          awk -F'\t' '{
+            prefix = $2
+            sub(/-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z?$/, "", prefix)
+            if (seen[prefix]++) print $1 "\t" $2 "\t" $4
+          }' sorted.tsv > stale.tsv
+
+          count=$(wc -l < stale.tsv)
+          if [ "$count" -eq 0 ]; then
+            echo "no superseded ccache generations; nothing to do"
+            exit 0
+          fi
+
+          echo "superseded generations to delete:"
+          awk -F'\t' '{printf "  %6.2f GB  %s\n", $3/1073741824, $2}' stale.tsv
+
+          if [ "$DRY_RUN" = "1" ]; then
+            echo "DRY_RUN=1, not deleting"
+            exit 0
+          fi
+
+          while IFS="$(printf '\t')" read -r id key size; do
+            echo "deleting $key"
+            gh api -X DELETE "repos/$REPO/actions/caches/$id" >/dev/null
+          done < stale.tsv
+
+          read -r after after_n <<<"$(usage)"
+          awk -v a="$after" -v b="$before" -v n="$after_n" \
+            'BEGIN {printf "cache usage after: %.2f GB in %d entries (reclaimed %.2f GB)\n", \
+                    a/1073741824, n, (b-a)/1073741824}'
