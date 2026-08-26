@@ -26,6 +26,13 @@ on:
       - '.clang-format'
       - '.clang-tidy'
       - '.gitignore'
+  # Manual re-trigger. A run can be lost without any commit being at fault -- the
+  # 2026-08-26 Actions outage left the CMake and ASCII Guard runs for d63f3a84 queued
+  # for hours, and GitHub then refused both cancel ("Cannot cancel a workflow run that
+  # is completed") and rerun ("its workflow file may be broken") while dispatching new
+  # runs on the same commit perfectly well. Without this trigger the only way to get CI
+  # back onto main was an empty commit.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -126,8 +133,13 @@ jobs:
   # Full tier: 11-platform matrix with full CI (~45 min)
   # Skipped for draft PRs and feature-branch pushes
   full:
+    # workflow_dispatch is included so a manual run reproduces what a push to main
+    # does. That is the point of the trigger: recovering a lost main run needs the full
+    # matrix, not just the fast tier. Manual dispatch is deliberate and rare, so the
+    # ~45min cost is the right default rather than something to opt into.
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch') ||
       (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     concurrency:
       group: cmake-${{ matrix.artifact }}-${{ github.ref }}

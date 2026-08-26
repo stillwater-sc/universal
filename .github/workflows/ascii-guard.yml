@@ -12,6 +12,9 @@ on:
     branches: [main]
   push:
     branches: [main]
+  # Manual re-trigger; see the note in cmake.yml. check-ascii is one of the three
+  # required checks, so it must be recoverable without an empty commit.
+  workflow_dispatch:
 
 permissions:
   contents: read
