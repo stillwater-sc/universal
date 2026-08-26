@@ -4,22 +4,18 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
 #include <universal/utility/icf_array_bounds.hpp>
 #include <string>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
+#include <cstdio>   // fprintf(stderr,...) for the diagnostics; keeps <iostream> out of the core (#1334)
 #include <algorithm>
 #include <string_view>
 #include <type_traits>  // for std::is_constant_evaluated() dispatch around mul128/addcarry
-#include <vector>
 
 // supporting types and functions
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/blocktype.hpp>
-#include <universal/native/integers.hpp> // just for printing native integers in binary form
 #include <universal/internal/blocktype/carry.hpp> // carry-detection intrinsics for uint64_t limbs
+#include <universal/native/integer_core.hpp>  // nlz(), used by the Knuth division normalisation
 #include <universal/utility/string_parse.hpp>   // shared constexpr scan_prefix / scan_sign / char classifiers
 
 /*
@@ -30,11 +26,24 @@ the integer arithmetic can be configured to:
 
 you need the exception types defined, but you have the option to throw them
  */
+// INTEGER_ENABLE_LITERALS / INTEGER_THROW_ARITHMETIC_EXCEPTION: the defaults live
+// HERE, beside the #if blocks that test them, rather than in the integer.hpp
+// umbrella. Including core.hpp directly would otherwise leave them undefined, #if
+// would evaluate them as 0, and the literal operators would silently disappear from
+// that path -- the trap #1390 hit with POSIT_ENABLE_LITERALS. See #1334.
+#if !defined(INTEGER_ENABLE_LITERALS)
+#define INTEGER_ENABLE_LITERALS 1
+#endif
+#if !defined(INTEGER_THROW_ARITHMETIC_EXCEPTION)
+#define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
 #include <universal/number/integer/exceptions.hpp>
 
  // composition types used by integer
-#include <universal/number/support/decimal.hpp>
-#include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/internal/blocktriple/blocktriple_fwd.hpp>  // normalize() only NAMES blocktriple;
+                                                              // it is a member template, so the definition
+                                                              // is needed only where it is called (#1334)
 
 #include <universal/internal/bit_manipulation.hpp>
 
@@ -619,7 +628,7 @@ public:
 				// divide-by-zero below (UB at runtime; constexpr eval would
 				// be ill-formed). Set the result to 0 and bail out.
 				if (!std::is_constant_evaluated()) {
-					std::cerr << "integer_divide_by_zero\n";
+					std::fprintf(stderr, "integer_divide_by_zero\n");
 				}
 				clear();
 				return *this;
@@ -631,7 +640,7 @@ public:
 					throw integer_wholenumber_cannot_be_zero{};
 #else
 					if (!std::is_constant_evaluated()) {
-						std::cerr << "whole number cannot be zero but division would yield 0\n";
+						std::fprintf(stderr, "whole number cannot be zero but division would yield 0\n");
 					}
 					clear();
 					return *this;
@@ -668,7 +677,7 @@ public:
 				// modulo-by-zero below (UB at runtime; constexpr would be
 				// ill-formed). Set the result to 0 and bail out.
 				if (!std::is_constant_evaluated()) {
-					std::cerr << "integer_divide_by_zero\n";
+					std::fprintf(stderr, "integer_divide_by_zero\n");
 				}
 				clear();
 				return *this;
@@ -995,7 +1004,7 @@ public:
 	}
 	integer& assign(const std::string& txt) noexcept {
 		if (!parse(txt, *this)) {
-			std::cerr << "Unable to parse: " << txt << std::endl;
+			std::fprintf(stderr, "Unable to parse: %s\n", txt.c_str());
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] = static_cast<BlockType>(MSU_MASK & _block[MSU]);
@@ -1100,7 +1109,7 @@ public:
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 			throw integer_divide_by_zero{};
 #else
-			std::cerr << "integer_divide_by_zero\n";
+			std::fprintf(stderr, "integer_divide_by_zero\n");
 			return;
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 		}
@@ -1243,7 +1252,7 @@ public:
 
 				setblock(static_cast<unsigned>(j), static_cast<BlockType>(qhat));
 				if (signedBorrow < 0) { // subtracted too much, add back
-					std::cout << "subtracted too much, add back\n";
+					std::fprintf(stderr, "subtracted too much, add back\n");
 					_block[j] -= 1;
 					std::uint64_t carry{ 0 };
 					for (unsigned i = 0; i < n; ++i) {
@@ -1346,32 +1355,62 @@ public:
 	}
 
 	// show the binary encodings of the limbs
+	//
+	// Built with std::string rather than std::stringstream so the arithmetic core
+	// does not pull <sstream>/<iomanip> (#1334).
+	//
+	// BEHAVIOUR CHANGE: this used to call to_binary(_block[i], sizeof(BlockType)*8, true)
+	// against the signature to_binary(number, bNibbleMarker = true, nbits = 0). The
+	// bit width landed in the nibble-marker slot and `true` landed in nbits, so every
+	// limb printed as a single bit: integer<32,uint8_t>(0xA5B6C7D8).showLimbs() gave
+	// "0b1 0b0 0b1 0b0" instead of "0b1010'0101 0b1011'0110 0b1100'0111 0b1101'1000".
+	// Now emits the full limb. Debug output only -- no arithmetic depends on it.
 	std::string showLimbs() const {
 		using Integer = sw::universal::integer<nbits, BlockType, NumberType>;
-		std::stringstream s;
+		std::string str;
 		unsigned i = Integer::MSU;
 		while (i > 0) {
-			s << to_binary(_block[i], sizeof(BlockType) * 8, true) << ' ';
+			str += limb_to_binary(_block[i]);
+			str += ' ';
 			--i;
 		}
-		s << to_binary(_block[0], sizeof(BlockType) * 8, true);
-		return s.str();
+		str += limb_to_binary(_block[0]);
+		return str;
 	}
 	// show the values of the limbs as a radix-BlockType number
 	std::string showLimbValues() const {
 		using Integer = sw::universal::integer<nbits, BlockType, NumberType>;
-		std::stringstream s;
+		std::string str;
 		unsigned i = Integer::MSU;
 		while (i > 0) {
-			s << std::setw(5) << unsigned(_block[i]) << ", ";
+			str += limb_to_decimal(_block[i]);
+			str += ", ";
 			--i;
 		}
-		s << std::setw(5) << unsigned(_block[0]);
-		return s.str();
+		str += limb_to_decimal(_block[0]);
+		return str;
 	}
 
 protected:
 	// HELPER methods
+
+	// "0b" + the limb's bits, nibble-separated -- the shape to_binary() produces for
+	// a native integer, without the <sstream> dependency that header carries.
+	static std::string limb_to_binary(BlockType v) {
+		constexpr int limbBits = static_cast<int>(sizeof(BlockType) * 8);
+		std::string b("0b");
+		for (int i = limbBits - 1; i >= 0; --i) {
+			b += ((static_cast<std::uint64_t>(v) >> i) & 1ull) ? '1' : '0';
+			if (i > 0 && (i % 4) == 0) b += '\'';
+		}
+		return b;
+	}
+	// the limb's value, right-aligned in a field of 5 -- what std::setw(5) produced.
+	static std::string limb_to_decimal(BlockType v) {
+		std::string d = std::to_string(static_cast<unsigned long long>(v));
+		while (d.size() < 5u) d.insert(d.begin(), ' ');
+		return d;
+	}
 
 	// to_integer converts to native signed integer
 	// TODO: enable_if this for integral types only
@@ -1446,7 +1485,7 @@ protected:
 			}
 		}
 		else { // NaturalNumber
-			if (iszero()) std::cerr << "internal error: natural number is set to 0\n";
+			if (iszero()) std::fprintf(stderr, "internal error: natural number is set to 0\n");
 			for (unsigned i = 0; i < nbits; ++i) {
 				if (at(i)) r += bitValue;
 				bitValue *= static_cast<Real>(2.0);
@@ -1491,32 +1530,6 @@ template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> twosComplement(const integer<nbits, BlockType, NumberType>& value) {
 	integer<nbits, BlockType, NumberType> twos(value);
 	return twos.twosComplement();;
-}
-
-// convert integer to decimal string
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
-std::string convert_to_decimal_string(const integer<nbits, BlockType, NumberType>& value) {
-	if (value.iszero()) {
-		return std::string("0");
-	}
-	integer<nbits, BlockType, NumberType> number = value.sign() ? twosComplement(value) : value;
-	support::decimal partial, multiplier;
-	partial.setzero();
-	multiplier.setdigit(1);
-	// convert integer to decimal by adding and doubling multipliers
-	for (unsigned i = 0; i < nbits; ++i) {
-		if (number.at(i)) {
-			support::add(partial, multiplier);
-			// std::cout << partial << std::endl;
-		}
-		support::add(multiplier, multiplier);
-	}
-	std::stringstream str;
-	if (value.sign()) str << '-';
-	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-		str << (int)*rit;
-	}
-	return str.str();
 }
 
 // findMsb takes an integer<nbits, BlockType, NumberType> reference and returns the 0-based position of the most significant bit, -1 if v == 0
@@ -1575,7 +1588,7 @@ void remainder(integer<nbits, BlockType, NumberType>& c, const integer<nbits, Bl
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
 #else
-		std::cerr << "integer_divide_by_zero\n";
+		std::fprintf(stderr, "integer_divide_by_zero\n");
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
 	idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(a, b);
@@ -1593,7 +1606,7 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 		// long-division below (UB on integer div-by-zero; constexpr would
 		// be ill-formed). Return zeroed quot/rem and bail out.
 		if (!std::is_constant_evaluated()) {
-			std::cerr << "integer_divide_by_zero\n";
+			std::fprintf(stderr, "integer_divide_by_zero\n");
 		}
 		idiv_t<nbits, BlockType, NumberType> zeroed;
 		return zeroed;
@@ -1793,160 +1806,6 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 	if (negative) tmp = -tmp;
 	value = tmp;
 	return true;
-}
-
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
-std::string to_string(const integer<nbits, BlockType, NumberType>& n) {
-	return convert_to_decimal_string(n);
-}
-
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
-std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits, BlockType, NumberType>& n) {
-	using IntegerBase = integer<nbits, BlockType, NumberType>;
-
-	// set the base of the target number system to convert to
-	int base = 10;
-	if ((flags & std::ios_base::oct) == std::ios_base::oct) base = 8;
-	if ((flags & std::ios_base::hex) == std::ios_base::hex) base = 16;
-
-	std::string result;
-	if (base == 8 || base == 16) {
-		if (n.sign()) return std::string("negative value: ignored");
-
-		BlockType shift = static_cast<BlockType>(base == 8 ? 3 : 4);
-		BlockType mask = static_cast<BlockType>((1u << shift) - 1);
-		IntegerBase t(n);
-		result.assign(nbits / shift + ((nbits % shift) ? 1 : 0), '0');
-		std::string::size_type pos = result.size() - 1u;
-		for (unsigned i = 0; i < nbits / static_cast<unsigned>(shift); ++i) {
-			char c = '0' + static_cast<char>(t.block(0) & mask);
-			if (c > '9')
-				c += 'A' - '9' - static_cast<char>(1);
-			result[pos--] = c;
-			t >>= static_cast<int>(shift);
-		}
-		if (nbits % shift) {
-			mask = static_cast<BlockType>((1u << (nbits % shift)) - 1);
-			char c = '0' + static_cast<char>(t.block(0) & mask);
-			if (c > '9')
-				c += 'A' - '9';
-			result[pos] = c;
-		}
-		//
-		// Get rid of leading zeros:
-		//
-		std::string::size_type fnz = result.find_first_not_of('0');
-		if (!result.empty() && (fnz == std::string::npos)) fnz = result.size() - 1;
-		result.erase(0, fnz);
-		if (flags & std::ios_base::showbase) {
-			const char* pp = base == 8 ? "0" : "0x";
-			result.insert(0ull, pp);
-		}
-	}
-	else {
-		using Integer = integer<nbits + 1, BlockType, NumberType>;  // nbits+1 to be able to represent maxneg in 2's complement form
-
-		Integer t(n);
-		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
-			if (t.sign()) t.twosComplement();
-		}
-
-		Integer block10;
-		unsigned digits_in_block10 = 2;
-		if constexpr (IntegerBase::bitsInBlock == 8) {
-			block10 = 100u;
-			digits_in_block10 = 2;
-		}
-		else if constexpr (IntegerBase::bitsInBlock == 16) {
-			block10 = 10'000u;
-			digits_in_block10 = 4;
-		}
-		else if constexpr (IntegerBase::bitsInBlock == 32) {
-			block10 = 1'000'000'000ul;
-			digits_in_block10 = 9;
-		}
-		else if constexpr (IntegerBase::bitsInBlock == 64) {
-			block10 = 1'000'000'000'000'000'000ull;
-			digits_in_block10 = 18;
-		}
-
-		result.assign(nbits / 3 + 1u, '0');
-		int pos = static_cast<int>(result.size() - 1u);
-		while (!t.iszero()) {
-			Integer t2 = t / block10;
-			Integer r  = t % block10;
-			BlockType v = r.block(0);
-			for (unsigned i = 0; i < digits_in_block10; ++i) {
-				char c = '0' + static_cast<char>(v % 10);
-				v /= 10;
-				result[static_cast<unsigned>(pos)] = c;
-//				std::cout << "result : " << result << " : pos : " << pos << '\n';
-				if (pos-- == 0) break;
-			}
-			t = t2;
-			if (pos < 0) break;
-		}
-
-		std::string::size_type firstDigit = result.find_first_not_of('0');
-		result.erase(0, firstDigit);
-		if (result.empty())	result = std::string("0");
-		if (n.isneg()) { // no need to specialize as isneg() will return false for Natural and Whole Number types
-			result.insert(static_cast<std::string::size_type>(0), 1, '-');
-		}
-		else if (flags & std::ios_base::showpos) {
-			result.insert(static_cast<std::string::size_type>(0), 1, '+');
-		}
-	}
-	return result;
-}
-
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
-inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType, NumberType>& i) {
-	std::string s = convert_to_string(ostr.flags(), i);
-	std::streamsize width = ostr.width();
-	if (width > static_cast<std::streamsize>(s.size())) {
-		char fill = ostr.fill();
-		// width > s.size() here, so the subtraction stays non-negative
-		std::string::size_type pad = static_cast<std::string::size_type>(width) - s.size();
-		if ((ostr.flags() & std::ios_base::left) == std::ios_base::left)
-			s.append(pad, fill);
-		else
-			s.insert(static_cast<std::string::size_type>(0), pad, fill);
-	}
-	return ostr << s;
-}
-
-// read an ASCII integer format.
-// On parse failure: log a diagnostic to std::cerr AND set failbit on the stream
-// so callers (loops with `while (in >> x)`, etc.) can detect the error without
-// scraping stderr. Symmetric with fixpnt's operator>>.
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
-inline std::istream& operator>>(std::istream& istr, integer<nbits, BlockType, NumberType>& p) {
-	std::string txt;
-	istr >> txt;
-	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into an integer value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
-
-////////////////// string operators
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
-inline std::string to_binary(const integer<nbits, BlockType, NumberType>& number, bool nibbleMarker = false) {
-	std::stringstream s;
-	s << "0b";
-	for (int i = nbits - 1; i >= 0; --i) {
-		s << (number.at(static_cast<unsigned>(i)) ? "1" : "0");
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
-	}
-	return s.str();
-}
-
-// native semantic representation: radix-2, delegates to to_binary
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
-inline std::string to_native(const integer<nbits, BlockType, NumberType>& number, bool nibbleMarker = false) {
-	return to_binary(number, nibbleMarker);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////

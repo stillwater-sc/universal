@@ -63,7 +63,10 @@
 #include <cstdint>
 #include <string_view>
 #include <universal/utility/string_parse.hpp>
-#include <universal/number/integer/integer.hpp>
+// the ARITHMETIC core only: this header is reached from posit, cfloat, fixpnt, dd and
+// qd, and the integer umbrella would put all five I/O-family headers into every one of
+// those cores (#1334 Phase N). Nothing here needs integer's text or stream layers.
+#include <universal/number/integer/core.hpp>
 
 namespace sw { namespace universal { namespace decimal_to_binary {
 

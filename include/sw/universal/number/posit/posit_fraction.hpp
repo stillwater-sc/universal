@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <algorithm>
+#include <iosfwd>   // std::ostream/std::istream name the friend declarations below;
+                    // the definitions live in posit_fields_io.hpp (#1334)
 #include <universal/number/posit/exceptions.hpp>
 
 namespace sw { namespace universal {
@@ -220,55 +222,6 @@ private:
 	template<unsigned nfbits, typename bbt>
 	friend bool operator>=(const positFraction<nfbits, bbt>& lhs, const positFraction<nfbits, bbt>& rhs);
 };
-
-////////////////////// FRACTION operators
-template<unsigned nfbits, typename bbt>
-inline std::ostream& operator<<(std::ostream& ostr, const positFraction<nfbits, bbt>& f) {
-	unsigned nrOfFractionBitsProcessed = 0;
-	if constexpr (nfbits > 0) {
-		int upperbound = int(nfbits) - 1;
-		for (int i = upperbound; i >= 0; --i) {
-			if (f._nrBits > ++nrOfFractionBitsProcessed) {
-				ostr << (f._block.test(unsigned(i)) ? "1" : "0");
-			}
-			else {
-				ostr << "-";
-			}
-		}
-	}
-	if (nrOfFractionBitsProcessed == 0) ostr << "~"; // for proper alignment in tables
-	return ostr;
-}
-
-template<unsigned nfbits, typename bbt>
-inline std::istream& operator>> (std::istream& istr, const positFraction<nfbits, bbt>& f) {
-	istr >> f._block;
-	return istr;
-}
-
-template<unsigned nfbits, typename bbt>
-inline std::string to_string(const positFraction<nfbits, bbt>& f, bool dashExtent = true, bool nibbleMarker = false) {
-	unsigned int nrOfFractionBitsProcessed = 0;
-	std::stringstream s;
-	if constexpr (nfbits > 0) {
-		blockbinary<nfbits, bbt, BinaryNumberType::Unsigned> bb = f.bits();
-		for (unsigned i = 0; i < nfbits; ++i) {
-			unsigned bitIndex = nfbits - 1ull - i;
-			bool emitted = false;
-			if (f.nrBits() > nrOfFractionBitsProcessed++) {
-				s << (bb.test(bitIndex) ? '1' : '0');
-				emitted = true;
-			}
-			else if (dashExtent) {
-				s << '-';
-				emitted = true;
-			}
-			if (emitted && nibbleMarker && ((bitIndex % 4) == 0) && bitIndex != 0) s << '\'';
-		}
-	}
-	if (nrOfFractionBitsProcessed == 0) s << '~'; // for proper alignment in tables
-	return s.str();
-}
 
 template<unsigned nfbits, typename bbt>
 inline bool operator==(const positFraction<nfbits, bbt>& lhs, const positFraction<nfbits, bbt>& rhs) { return lhs._nrBits == rhs._nrBits && lhs._block == rhs._block; }

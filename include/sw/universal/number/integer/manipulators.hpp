@@ -4,11 +4,78 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+// Layer 2a of the integer headers (#1334): everything that turns an integer into a
+// std::string. Self-contained -- include it directly and it works.
+//
+// convert_to_decimal_string / to_string / to_binary / to_native moved here out of
+// integer_impl.hpp, which is now the arithmetic core. support/decimal.hpp came with
+// convert_to_decimal_string: it is that function's only user in the whole of integer,
+// and on its own it is 80,048 preprocessed lines and four I/O-family headers -- the
+// single largest item that was sitting in every core that reaches integer.
 #include <exception>
+#include <string>
+#include <sstream>
+#include <iomanip>
+
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 #include <universal/native/integer_type_tag.hpp>
+#include <universal/native/integers.hpp>                       // to_binary/to_hex on a native limb
+#include <universal/internal/blockbinary/manipulators.hpp>      // to_binary/to_hex on blockbinary
+#include <universal/number/support/decimal.hpp>                 // support::decimal, for convert_to_decimal_string
+#include <universal/number/integer/core.hpp>
+
 namespace sw { namespace universal {
+
+// convert integer to decimal string
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+std::string convert_to_decimal_string(const integer<nbits, BlockType, NumberType>& value) {
+	if (value.iszero()) {
+		return std::string("0");
+	}
+	integer<nbits, BlockType, NumberType> number = value.sign() ? twosComplement(value) : value;
+	support::decimal partial, multiplier;
+	partial.setzero();
+	multiplier.setdigit(1);
+	// convert integer to decimal by adding and doubling multipliers
+	for (unsigned i = 0; i < nbits; ++i) {
+		if (number.at(i)) {
+			support::add(partial, multiplier);
+			// std::cout << partial << std::endl;
+		}
+		support::add(multiplier, multiplier);
+	}
+	std::stringstream str;
+	if (value.sign()) str << '-';
+	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
+		str << (int)*rit;
+	}
+	return str.str();
+}
+
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+std::string to_string(const integer<nbits, BlockType, NumberType>& n) {
+	return convert_to_decimal_string(n);
+}
+
+////////////////// string operators
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+inline std::string to_binary(const integer<nbits, BlockType, NumberType>& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << "0b";
+	for (int i = nbits - 1; i >= 0; --i) {
+		s << (number.at(static_cast<unsigned>(i)) ? "1" : "0");
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+	return s.str();
+}
+
+// native semantic representation: radix-2, delegates to to_binary
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+inline std::string to_native(const integer<nbits, BlockType, NumberType>& number, bool nibbleMarker = false) {
+	return to_binary(number, nibbleMarker);
+}
+
 
 // helper to convert IntegerNumberType enum to string
 inline std::string integer_number_type_tag(IntegerNumberType nt) {

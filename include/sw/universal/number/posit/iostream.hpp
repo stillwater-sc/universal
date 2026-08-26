@@ -20,6 +20,7 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <universal/number/posit/posit_fields_io.hpp>   // operator<< on regime/exponent/fraction (#1334)
 #include <universal/number/posit/posit_impl.hpp>
 #include <universal/number/posit/manipulators.hpp>   // to_hex/parse/quadrant used below
 

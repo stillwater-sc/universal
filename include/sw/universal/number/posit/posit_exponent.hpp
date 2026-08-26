@@ -7,6 +7,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <universal/internal/bit_manipulation.hpp>
+#include <iosfwd>   // std::ostream/std::istream name the friend declarations below;
+                    // the definitions live in posit_fields_io.hpp (#1334)
 
 namespace sw { namespace universal {
 
@@ -133,60 +135,6 @@ private:
 
 template<unsigned nbits, unsigned es, typename bt>
 inline int scale(const positExponent<nbits, es, bt>& e) { return e.scale(); }
-
-/////////////////// EXPONENT operators
-template<unsigned nbits, unsigned es, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const positExponent<nbits, es, bt>& e) {
-	if constexpr (es > 0) {
-		unsigned nrOfExponentBitsProcessed = 0;
-		for (unsigned i = 0; i < es; ++i) {
-			unsigned bitIndex = es - 1ull - i;
-			if (e._nrExpBits > nrOfExponentBitsProcessed++) {
-				ostr << (e.test(bitIndex) ? "1" : "0");
-			}
-			else {
-				ostr << "-";
-			}
-		}
-	}
-	else {
-		ostr << "~"; // for proper alignment in tables
-	}
-	return ostr;
-}
-
-template<unsigned nbits, unsigned es, typename bt>
-inline std::istream& operator>> (std::istream& istr, const positExponent<nbits, es, bt>& e) {
-	istr >> e._Bits;
-	return istr;
-}
-
-template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_string(const positExponent<nbits, es, bt>& e, bool dashExtent = true, bool nibbleMarker = false) {
-	using UnsignedExponent = blockbinary<es, bt, BinaryNumberType::Unsigned>;
-	std::stringstream s;
-	unsigned nrOfExponentBitsProcessed = 0;
-	if constexpr (es > 0) {
-		for (unsigned i = 0; i < es; ++i) {
-			unsigned bitIndex = es - 1ull - i;
-			bool emitted = false;
-			if (e.nrBits() > nrOfExponentBitsProcessed++) {
-				UnsignedExponent positExponentBits = e.bits();
-				s << (positExponentBits.test(bitIndex) ? '1' : '0');
-				emitted = true;
-			}
-			else if (dashExtent) {
-				s << '-';
-				emitted = true;
-			}
-			if (emitted && nibbleMarker && ((bitIndex % 4) == 0) && bitIndex != 0) s << '\'';
-		}
-	}
-	else {
-		s << '~'; // for proper alignment in tables
-	}
-	return s.str();
-}
 
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator==(const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return lhs._Bits == rhs._Bits && lhs._NrOfBits == rhs._NrOfBits; }

@@ -1,7 +1,7 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
-#include <sstream>
-#include <string>
+#include <iosfwd>   // std::ostream/std::istream name the friend declarations below;
+                    // the definitions live in posit_fields_io.hpp (#1334)
+#include <cstdio>   // fprintf(stderr,...) for the expand diagnostic
 // posit_regime.hpp: definition of a posit positRegime
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -121,7 +121,10 @@ public:
 		if (_block.all()) return false; // rounding up/down as we are already at minpos/maxpos
 		bool carry = increment_unsigned(_block,_nrRegimeBits);
 		if (carry) {
-			std::cout << "Regime needs to expand" << std::endl;
+			// fprintf rather than std::cout: this is the arithmetic core, and a single
+			// diagnostic must not put <iostream> into every posit graph (the Phase 0
+			// idiom, #1386). NOTE: this now goes to stderr, not stdout.
+			std::fprintf(stderr, "Regime needs to expand\n");
 		}
 		else {
 			_k++;
@@ -156,46 +159,6 @@ private:
 
 template<unsigned nbits, unsigned es, typename bt>
 inline int scale(const positRegime<nbits, es, bt>& r) { return r.scale();  }
-
-/////////////////  REGIME operators
-template<unsigned nbits, unsigned es, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const positRegime<nbits, es, bt>& r) {
-	blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bb = r.bits();
-	unsigned nrOfRegimeBitsProcessed = 0;
-	for (int i = nbits - 2; i >= 0; --i) {
-		if (r._nrRegimeBits > nrOfRegimeBitsProcessed++) {
-			ostr << (bb.test(unsigned(i)) ? '1' : '0');
-		}
-		else {
-			ostr << '-';
-		}
-	}
-	return ostr;
-}
-
-template<unsigned nbits, unsigned es, typename bt>
-inline std::istream& operator>> (std::istream& istr, const positRegime<nbits, es, bt>& r) {
-	istr >> r._block;
-	return istr;
-}
-
-template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_string(const positRegime<nbits, es, bt>& r, bool dashExtent = true, bool nibbleMarker = false) {
-	std::stringstream s;
-	blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bb = r.bits();
-	unsigned nrOfRegimeBitsProcessed = 0;
-	for (unsigned i = 0; i < nbits - 1; ++i) {
-		unsigned bitIndex = nbits - 2ul - i;
-		if (r.nrBits() > nrOfRegimeBitsProcessed++) {
-			s << (bb.test(bitIndex) ? '1' : '0');
-			if (nibbleMarker && ((bitIndex % 4) == 0) && bitIndex != 0) s << '\'';
-		}
-		else {
-			s << (dashExtent ? "-" : "");
-		}	
-	}
-	return s.str();
-}
 
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator==(const positRegime<nbits, es, bt>& lhs, const positRegime<nbits, es, bt>& rhs) { return lhs._block == rhs._block && lhs._nrRegimeBits == rhs._nrRegimeBits; }
