@@ -91,12 +91,27 @@ jobs:
             echo "note: $strays ccache entries outside refs/heads/main; left untouched"
           fi
 
-          # newest first, then keep the first occurrence of each artifact prefix
+          # newest first, then keep the first occurrence of each artifact prefix.
+          #
+          # Also drop any entry older than STALE_DAYS regardless of whether it is the
+          # newest for its artifact. Artifacts that still save refresh on every push to
+          # main -- 4-7 a day -- so an entry this old can only belong to an artifact
+          # that no longer saves, whose cache is frozen and getting staler. Those were
+          # holding 5.14GB of the 10GB budget, and they do NOT expire on their own: the
+          # 7-day idle rule keys on last ACCESS, and every full-tier run restores them,
+          # which resets the clock. Without this they would sit there indefinitely,
+          # leaving no room for the artifacts that are actually being refreshed.
+          STALE_DAYS=10
+          cutoff=$(date -u -d "$STALE_DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)
+          echo "dropping entries not refreshed since $cutoff"
+
           sort -t"$(printf '\t')" -k3,3r all.tsv > sorted.tsv
-          awk -F'\t' '{
+          awk -F'\t' -v cutoff="$cutoff" '{
             prefix = $2
             sub(/-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z?$/, "", prefix)
-            if (seen[prefix]++) print $1 "\t" $2 "\t" $4
+            superseded = (seen[prefix]++ > 0)
+            aged = ($3 < cutoff)
+            if (superseded || aged) print $1 "\t" $2 "\t" $4
           }' sorted.tsv > stale.tsv
 
           count=$(wc -l < stale.tsv)

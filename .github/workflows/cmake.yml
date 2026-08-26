@@ -265,7 +265,16 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.22
         with:
           key: ${{ matrix.artifact }}
-          max-size: "1G"
+          # 2G for the configurations whose cache is kept, 1G for the rest -- whose
+          # in-run cache is discarded anyway, since they no longer save.
+          #
+          # The full-tier Linux jobs build UNIVERSAL_BUILD_CI: 912 objects against the
+          # fast tier's 474. At 1G they reported "Cache size (GB): 1.0 / 1.0 (99.96%)"
+          # on the first main run after #1408 -- twice the objects on half the relative
+          # budget, so they were still LRU-evicting mid-build, exactly the condition
+          # #1408 set out to remove. The fast tier, raised to 2G there, came back at
+          # 32-52% and had stopped thrashing.
+          max-size: ${{ matrix.cache_save == 'yes' && '2G' || '1G' }}
           # Save only on pushes to main (#1009), AND only for the configurations that
           # earn their share of GitHub's 10GB per-repo cache budget.
           #
