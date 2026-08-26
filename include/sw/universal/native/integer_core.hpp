@@ -15,6 +15,7 @@
 // integer<>'s Knuth division needs nlz() to normalise the divisor. Before this split
 // it reached it through integers.hpp, which put <sstream>, <ostream> and <istream>
 // into the arithmetic core of every type that uses integer<> (#1334 Phase N).
+#include <cstddef>   // std::size_t
 #include <cstdint>
 #include <type_traits>
 
@@ -24,8 +25,11 @@ namespace sw { namespace universal {
 // BlockType must be one of [uint8_t, uint16_t, uint32_t, uint64_t]
 template<typename BlockType>
 inline int nlz(BlockType x) {
-	constexpr size_t bitsInBlock = sizeof(BlockType) * 8;
-	if (x == 0) return bitsInBlock;
+	// std::size_t, qualified: this header includes only <cstddef>/<cstdint>/<type_traits>,
+	// none of which is required to declare an unqualified ::size_t. It compiled in its
+	// old home only because integers.hpp pulls <string>/<sstream> in ahead of it.
+	constexpr std::size_t bitsInBlock = sizeof(BlockType) * 8;
+	if (x == 0) return static_cast<int>(bitsInBlock);
 
 	int n = 0;
 	if constexpr (bitsInBlock == 64) {
