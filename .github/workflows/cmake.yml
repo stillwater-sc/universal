@@ -156,12 +156,10 @@ jobs:
           - os: ubuntu-latest
             name: Linux x64 (GCC)
             artifact: linux-x64-gcc
-            cache_save: "yes"   # keeps a saved ccache; see the ccache step
             cmake_flags: -DUNIVERSAL_BUILD_CI=ON
           - os: ubuntu-latest
             name: Linux x64 (Clang)
             artifact: linux-x64-clang
-            cache_save: "yes"   # keeps a saved ccache; see the ccache step
             compiler: clang
             cc: clang
             cxx: clang++
@@ -265,26 +263,25 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.22
         with:
           key: ${{ matrix.artifact }}
-          # 2G for the configurations whose cache is kept, 1G for the rest -- whose
-          # in-run cache is discarded anyway, since they no longer save.
+          # 2G everywhere. This is a CEILING, not an allocation: ccache stores only what
+          # the build produces, so the CI_LITE configurations plateau around 1.0GB
+          # internal (~0.84GB stored) and never approach it. Only the two full-CI Linux
+          # jobs -- 912 objects against CI_LITE's 474 -- actually need the headroom, and
+          # at 1G they sat pinned at "Cache size (GB): 1.0 / 1.0 (99.96%)", evicting
+          # mid-build.
+          max-size: "2G"
+          # Save on every push to main again (#1009 still gates PR branches).
           #
-          # The full-tier Linux jobs build UNIVERSAL_BUILD_CI: 912 objects against the
-          # fast tier's 474. At 1G they reported "Cache size (GB): 1.0 / 1.0 (99.96%)"
-          # on the first main run after #1408 -- twice the objects on half the relative
-          # budget, so they were still LRU-evicting mid-build, exactly the condition
-          # #1408 set out to remove. The fast tier, raised to 2G there, came back at
-          # 32-52% and had stopped thrashing.
-          max-size: ${{ matrix.cache_save == 'yes' && '2G' || '1G' }}
-          # Save only on pushes to main (#1009), AND only for the configurations that
-          # earn their share of GitHub's 10GB per-repo cache budget.
+          # #1408 restricted saving to four artifacts because 12 of them at ~0.8GB had
+          # the repo at 9.94GB of a 10GB ceiling, and GitHub was evicting whole caches by
+          # LRU. That was triage against a limit that no longer applies: the repository
+          # cache limit is now 20GB. Projected steady state with everything saving is
+          # 9 CI_LITE x ~0.84GB + 2 full-CI x ~1.6GB + ~0.74GB of sccache/codeql/node,
+          # about 11.5GB -- comfortably inside 20GB, with the prune bounding generations.
           #
-          # 12 matrix artifacts x ~0.8GB had the repo sitting at 9.94GB of 10GB, so
-          # GitHub was LRU-evicting whole caches and a job could find its cache gone
-          # before it ran. The cross-compile and macOS jobs run only on ready PRs and
-          # main pushes -- a handful of times a day -- while the fast tier runs on every
-          # push to every branch, so the value is concentrated there. Those jobs now
-          # build cold by design; that is the trade for a fast tier that actually hits.
-          save: ${{ github.ref == 'refs/heads/main' && matrix.cache_save == 'yes' }}
+          # So the seven platforms that #1408 left cold get their caches back: both
+          # macOS, ARM64 native, POWER64, RISC-V, Android and MinGW.
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Set ccache compiler launcher
         if: runner.os != 'Windows'
