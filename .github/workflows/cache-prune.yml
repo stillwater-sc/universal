@@ -101,9 +101,18 @@ jobs:
           # 7-day idle rule keys on last ACCESS, and every full-tier run restores them,
           # which resets the clock. Without this they would sit there indefinitely,
           # leaving no room for the artifacts that are actually being refreshed.
-          STALE_DAYS=10
-          cutoff=$(date -u -d "$STALE_DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)
-          echo "dropping entries not refreshed since $cutoff"
+          # The cutoff is measured from the NEWEST ccache entry, not from wall-clock
+          # "now". Wall-clock would delete the caches we are trying to protect during
+          # any quiet spell: with STALE_DAYS=2, a weekend without a push to main makes
+          # every entry -- including the four that still save -- older than the cutoff,
+          # and the next prune would wipe them and force a cold rebuild we inflicted on
+          # ourselves. Anchoring to the newest entry expresses the actual intent, which
+          # is "this artifact has fallen behind the ones being maintained": on a quiet
+          # weekend nothing refreshes, the anchor ages too, and the gap stays closed.
+          STALE_DAYS=2
+          newest=$(cut -f3 all.tsv | sort -r | head -1)
+          cutoff=$(date -u -d "$newest - $STALE_DAYS days" +%Y-%m-%dT%H:%M:%SZ)
+          echo "newest ccache entry $newest; dropping entries older than $cutoff"
 
           sort -t"$(printf '\t')" -k3,3r all.tsv > sorted.tsv
           awk -F'\t' -v cutoff="$cutoff" '{
