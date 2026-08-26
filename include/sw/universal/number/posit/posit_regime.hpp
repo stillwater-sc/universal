@@ -1,7 +1,12 @@
 #pragma once
 #include <iosfwd>   // std::ostream/std::istream name the friend declarations below;
                     // the definitions live in posit_fields_io.hpp (#1334)
-#include <cstdio>   // fprintf(stderr,...) for the expand diagnostic
+#include <cstdio>    // fprintf(stderr,...) for the expand diagnostic
+#include <cstddef>   // std::size_t, used by nrBits()/assign()
+#include <cmath>     // std::ldexp in value()
+// These two arrived transitively through <sstream>/<string>/<iostream> before the
+// field text layer moved out (#1334). Named explicitly rather than left to whatever
+// happens to precede this header in the include graph.
 // posit_regime.hpp: definition of a posit positRegime
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -34,7 +39,7 @@ public:
 		_nrRegimeBits = 0;
 		_block.clear();
 	}
-	constexpr size_t nrBits() const { return _nrRegimeBits;	}
+	constexpr std::size_t nrBits() const { return _nrRegimeBits;	}
 	constexpr int scale() const {
 		return _k > 0 ? int(_k) * (1 << es) : -(int(-_k) * (1 << es));
 	}
@@ -73,7 +78,7 @@ public:
 		if (k < 0) k = -k - 1;
 		return (k < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
 	}
-	constexpr size_t assign(int scale) {
+	constexpr std::size_t assign(int scale) {
 		bool r = scale > 0;
 		_k = calculate_k<nbits,es,bt>(scale);
 		_run = static_cast<unsigned>(r ? 1 + (scale >> es) : -scale >> es);

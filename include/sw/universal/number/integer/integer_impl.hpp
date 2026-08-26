@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/icf_array_bounds.hpp>
 #include <string>
+#include <cstdint>   // std::uint8_t/uint64_t and the signed fixed-width types, used throughout
 #include <cstdio>   // fprintf(stderr,...) for the diagnostics; keeps <iostream> out of the core (#1334)
 #include <algorithm>
 #include <string_view>
