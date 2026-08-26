@@ -15,6 +15,7 @@
 #include <vector>
 
 // dependent types for stand-alone use of this class
+#include <universal/internal/blocktriple/blocktriple_fwd.hpp>
 #include <universal/native/ieee754_core.hpp>   // bit manipulation only; the text layer is not needed here (#1334)
 #include <universal/native/subnormal.hpp>
 #include <universal/utility/find_msb.hpp>
@@ -51,11 +52,9 @@ TBD SQRT      iiii.ffff'ffff'ffff         4 integer bits, 2*f fraction bits
 
 */
 
- // operator specialization tag for blocktriple
-enum class BlockTripleOperator { REP, ADD, MUL, DIV, SQRT };
-
-// Forward definitions
-template<unsigned fbits, BlockTripleOperator op, typename bt> class blocktriple;
+ // the operator tag and the class declaration (with its default template arguments)
+ // live in blocktriple_fwd.hpp, so a header that only names blocktriple can include
+ // that instead of these ~70,000 lines (#1334).
 // to_binary and to_triple are defined in internal/blocktriple/manipulators.hpp.
 // Their DEFAULT ARGUMENTS are established here, at namespace scope, and not on
 // the definitions: the in-class friend declarations below cannot carry defaults
@@ -92,7 +91,7 @@ blocktriple<fbits, op, bt>& convert(unsigned long long uint, blocktriple<fbits, 
 /// </summary>
 /// <typeparam name="fbits">number of fraction bits in the significand</typeparam>
 /// <typeparam name="bt">block type: one of [uint8_t, uint16_t, uint32_t, uint64_t]</typeparam>
-template<unsigned _fbits, BlockTripleOperator _op = BlockTripleOperator::ADD, typename bt = std::uint32_t>
+template<unsigned _fbits, BlockTripleOperator _op, typename bt>
 class blocktriple {
 public:
 	static constexpr unsigned fbits = _fbits;  // a convenience and consistency alias

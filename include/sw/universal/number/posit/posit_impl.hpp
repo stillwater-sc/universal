@@ -38,7 +38,6 @@
 #include <cassert>
 #include <cctype>
 #include <limits>
-#include <regex>
 #include <string_view>
 #include <type_traits>
 
@@ -70,6 +69,12 @@
 #include <universal/number/posit/posit_fraction.hpp>
 #include <universal/number/posit/posit_exponent.hpp>
 #include <universal/number/posit/posit_regime.hpp>
+
+#if POSIT_TRACE_ENABLED
+// the trace statements stream _regime/_exponent/_fraction, whose operator<< lives in
+// the text layer. Only tracing needs it; the default core path does not (#1334).
+#include <universal/number/posit/posit_fields_io.hpp>
+#endif
 
 namespace sw { namespace universal {
 

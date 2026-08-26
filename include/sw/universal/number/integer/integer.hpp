@@ -12,27 +12,11 @@
 #include <universal/utility/long_double.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
-/// required std libraries 
-#include <iostream>
-#include <iomanip>
-
-////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(INTEGER_ENABLE_LITERALS)
-// default is to enable them
-#define INTEGER_ENABLE_LITERALS 1
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for integer arithmetic errors
-// left to application to enable
-#if !defined(INTEGER_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr as a signalling error
-#define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
-#endif
+//
+// INTEGER_ENABLE_LITERALS and INTEGER_THROW_ARITHMETIC_EXCEPTION now default in
+// integer_impl.hpp, beside the #if blocks that test them, so core.hpp gets the same
+// defaults this umbrella does. A caller can still set either before the include.
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
@@ -42,16 +26,20 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/integer/exceptions.hpp>
-#include <universal/number/integer/integer_fwd.hpp>
-#include <universal/number/integer/integer_impl.hpp>
-#include <universal/traits/integer_traits.hpp>
-#include <universal/number/integer/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/integer/core.hpp>
+// the complete blocktriple, so existing callers of integer::normalize() (the quire)
+// need no new include. The core only forward-declares it (#1334).
+#include <universal/internal/blocktriple/blocktriple.hpp>
 
 /// useful functions to work with integers
 #include <universal/number/integer/primes.hpp>
 #include <universal/number/integer/sieves.hpp>
+// layer 2a: the string producers -- to_binary, to_hex, to_string, color_print
 #include <universal/number/integer/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/integer/iostream.hpp>
 #include <universal/number/integer/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////

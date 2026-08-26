@@ -22,6 +22,9 @@
 #include <typeinfo>  // for typeid()
 
 // pull in the color printing for shells utility
+// to_string(positRegime/positExponent/positFraction), called by posit_components() below.
+// They moved out of the field headers with the rest of posit's field text layer (#1334).
+#include <universal/number/posit/posit_fields_io.hpp>
 #include <universal/utility/color_print.hpp>
 #include <universal/number/posit/core.hpp>        // the type itself
 #include <universal/number/posit/attributes.hpp>  // sign(), used by quadrant()
