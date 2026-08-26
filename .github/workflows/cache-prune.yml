@@ -41,7 +41,7 @@ jobs:
   prune:
     runs-on: ubuntu-latest
     steps:
-      - name: Delete superseded ccache generations
+      - name: Delete superseded and stale ccache generations
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -91,22 +91,51 @@ jobs:
             echo "note: $strays ccache entries outside refs/heads/main; left untouched"
           fi
 
-          # newest first, then keep the first occurrence of each artifact prefix
+          # newest first, then keep the first occurrence of each artifact prefix.
+          #
+          # Also drop any entry older than STALE_DAYS regardless of whether it is the
+          # newest for its artifact. Artifacts that still save refresh on every push to
+          # main -- 4-7 a day -- so an entry this old can only belong to an artifact
+          # that no longer saves, whose cache is frozen and getting staler. Those were
+          # holding 5.14GB of the 10GB budget, and they do NOT expire on their own: the
+          # 7-day idle rule keys on last ACCESS, and every full-tier run restores them,
+          # which resets the clock. Without this they would sit there indefinitely,
+          # leaving no room for the artifacts that are actually being refreshed.
+          # The cutoff is measured from the NEWEST ccache entry, not from wall-clock
+          # "now". Wall-clock would delete the caches we are trying to protect during
+          # any quiet spell: with STALE_DAYS=2, a weekend without a push to main makes
+          # every entry -- including the four that still save -- older than the cutoff,
+          # and the next prune would wipe them and force a cold rebuild we inflicted on
+          # ourselves. Anchoring to the newest entry expresses the actual intent, which
+          # is "this artifact has fallen behind the ones being maintained": on a quiet
+          # weekend nothing refreshes, the anchor ages too, and the gap stays closed.
+          STALE_DAYS=2
+          newest=$(cut -f3 all.tsv | sort -r | head -1)
+          cutoff=$(date -u -d "$newest - $STALE_DAYS days" +%Y-%m-%dT%H:%M:%SZ)
+          echo "newest ccache entry $newest; dropping entries older than $cutoff"
+
           sort -t"$(printf '\t')" -k3,3r all.tsv > sorted.tsv
-          awk -F'\t' '{
+          awk -F'\t' -v cutoff="$cutoff" '{
             prefix = $2
             sub(/-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z?$/, "", prefix)
-            if (seen[prefix]++) print $1 "\t" $2 "\t" $4
+            superseded = (seen[prefix]++ > 0)
+            aged = ($3 < cutoff)
+            # carry WHY each entry was selected: an aged entry may be the newest of its
+            # artifact and not superseded at all, and calling that "superseded" in the
+            # log misreports a working prune -- the same way reporting reclaim from the
+            # eventually-consistent usage endpoint did before eef95eaa.
+            reason = superseded ? (aged ? "superseded+stale" : "superseded") : (aged ? "stale" : "")
+            if (reason != "") print $1 "\t" $2 "\t" $4 "\t" reason
           }' sorted.tsv > stale.tsv
 
           count=$(wc -l < stale.tsv)
           if [ "$count" -eq 0 ]; then
-            echo "no superseded ccache generations; nothing to do"
+            echo "no superseded or stale ccache generations; nothing to do"
             exit 0
           fi
 
-          echo "superseded generations to delete:"
-          awk -F'\t' '{printf "  %6.2f GB  %s\n", $3/1073741824, $2}' stale.tsv
+          echo "to delete (superseded = a newer generation exists; stale = fallen behind the maintained artifacts):"
+          awk -F'\t' '{printf "  %-16s %6.2f GB  %s\n", $4, $3/1073741824, $2}' stale.tsv
 
           if [ "$DRY_RUN" = "1" ]; then
             echo "DRY_RUN=1, not deleting"
@@ -125,4 +154,8 @@ jobs:
           # "reclaimed 0.00 GB" on a prune that had worked. An honest number here matters
           # -- a run that always looks like a no-op invites someone to "fix" a workflow
           # that is doing its job.
-          awk -F'\t' '{n++; s+=$3} END {printf "deleted %d superseded generations, reclaimed %.2f GB\n", n, s/1073741824}' stale.tsv
+          awk -F'\t' '{n++; s+=$3; c[$4]++} END {
+            printf "deleted %d entries, reclaimed %.2f GB (", n, s/1073741824
+            sep=""; for (k in c) { printf "%s%s: %d", sep, k, c[k]; sep=", " }
+            printf ")\n"
+          }' stale.tsv
