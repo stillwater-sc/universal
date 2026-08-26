@@ -15,10 +15,24 @@ name: Prune Actions caches
 # on bytes, not entry count, and sccache manages its own reuse.
 
 on:
+  # Primary trigger: prune right after a run that may have SAVED a cache. main sees
+  # 4-7 pushes a day, and each one strands the previous generation of every saved
+  # artifact, so a once-daily sweep would let ~7 generations pile up between runs --
+  # far past the 10GB ceiling, which is the very thing this workflow exists to prevent.
+  # Pruning per cache-producing run bounds the strand to a single generation.
+  workflow_run:
+    workflows: ["CMake"]
+    types: [completed]
+    branches: [main]
+  # Backstop, in case a workflow_run event is missed.
   schedule:
-    # daily, after the usual working day in US Pacific
     - cron: "0 5 * * *"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "List what would be deleted, without deleting it"
+        type: boolean
+        default: false
 
 permissions:
   actions: write
@@ -31,8 +45,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          # set to "1" via workflow_dispatch inputs or an edit to preview without deleting
-          DRY_RUN: "0"
+          # true only for a manual run that ticked the box; null (-> "0") for the
+          # workflow_run and schedule triggers, which always delete.
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
         run: |
           set -euo pipefail
 
@@ -42,9 +57,31 @@ jobs:
           awk -v b="$before" -v n="$before_n" \
             'BEGIN {printf "cache usage before: %.2f GB in %d entries\n", b/1073741824, n}'
 
+          # No "|| true": if the listing fails we must abort, not fall through to
+          # "nothing to do" on empty input and exit green having pruned nothing.
+          #
+          # Restrict to refs/heads/main. Caches are scoped by ref, and a PR merge-ref
+          # cache cannot be restored by a run on main -- so if a newer PR-scoped
+          # generation ever existed, grouping by artifact alone would keep the useless
+          # one and delete main's. The save gate in cmake.yml means PR-scoped ccache
+          # entries should not exist (none do today); this makes the script safe if that
+          # gate is ever relaxed, rather than relying on it.
           gh api --paginate "repos/$REPO/actions/caches?per_page=100" \
-            --jq '.actions_caches[] | select(.key | startswith("ccache-"))
-                  | [.id, .key, .created_at, .size_in_bytes] | @tsv' > all.tsv || true
+            --jq '.actions_caches[]
+                  | select(.ref == "refs/heads/main")
+                  | select(.key | startswith("ccache-"))
+                  | [.id, .key, .created_at, .size_in_bytes] | @tsv' > all.tsv
+
+          # Count by streaming one line per entry and using wc: an aggregate jq such as
+          # '[...] | length' emits its result ONCE PER PAGE under --paginate, which would
+          # make this a multi-line string and break the numeric test below.
+          strays=$(gh api --paginate "repos/$REPO/actions/caches?per_page=100" \
+            --jq '.actions_caches[]
+                  | select(.ref != "refs/heads/main")
+                  | select(.key | startswith("ccache-")) | .key' | wc -l)
+          if [ "$strays" -gt 0 ]; then
+            echo "note: $strays ccache entries outside refs/heads/main; left untouched"
+          fi
 
           # newest first, then keep the first occurrence of each artifact prefix
           sort -t"$(printf '\t')" -k3,3r all.tsv > sorted.tsv
