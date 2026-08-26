@@ -53,8 +53,17 @@ jobs:
 
           # Informational only -- see the note on the closing report. /actions/cache/usage
           # is eventually consistent and can read high by a GB or more.
-          gh api "repos/$REPO/actions/cache/usage" \
-            --jq '"cache usage before (lags reality): \(.active_caches_size_in_bytes/1073741824*100|floor/100) GB in \(.active_caches_count) entries"'
+          #
+          # Guarded, unlike the listing below, and for the opposite reason: nothing
+          # consumes this value, so under "set -e" a transient API blip on a decorative
+          # readout would abort the job before it prunes anything -- backwards for a
+          # workflow whose whole purpose is keeping the repo under the cache ceiling.
+          # The listing IS load-bearing, so it must still abort rather than fall through
+          # to a green no-op.
+          if ! gh api "repos/$REPO/actions/cache/usage" \
+                 --jq '"cache usage before (lags reality): \(.active_caches_size_in_bytes/1073741824*100|floor/100) GB in \(.active_caches_count) entries"'; then
+            echo "warning: could not read cache usage; it is informational only, continuing"
+          fi
 
           # No "|| true": if the listing fails we must abort, not fall through to
           # "nothing to do" on empty input and exit green having pruned nothing.
