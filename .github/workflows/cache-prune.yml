@@ -41,7 +41,7 @@ jobs:
   prune:
     runs-on: ubuntu-latest
     steps:
-      - name: Delete superseded ccache generations
+      - name: Delete superseded and stale ccache generations
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -120,17 +120,22 @@ jobs:
             sub(/-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z?$/, "", prefix)
             superseded = (seen[prefix]++ > 0)
             aged = ($3 < cutoff)
-            if (superseded || aged) print $1 "\t" $2 "\t" $4
+            # carry WHY each entry was selected: an aged entry may be the newest of its
+            # artifact and not superseded at all, and calling that "superseded" in the
+            # log misreports a working prune -- the same way reporting reclaim from the
+            # eventually-consistent usage endpoint did before eef95eaa.
+            reason = superseded ? (aged ? "superseded+stale" : "superseded") : (aged ? "stale" : "")
+            if (reason != "") print $1 "\t" $2 "\t" $4 "\t" reason
           }' sorted.tsv > stale.tsv
 
           count=$(wc -l < stale.tsv)
           if [ "$count" -eq 0 ]; then
-            echo "no superseded ccache generations; nothing to do"
+            echo "no superseded or stale ccache generations; nothing to do"
             exit 0
           fi
 
-          echo "superseded generations to delete:"
-          awk -F'\t' '{printf "  %6.2f GB  %s\n", $3/1073741824, $2}' stale.tsv
+          echo "to delete (superseded = a newer generation exists; stale = fallen behind the maintained artifacts):"
+          awk -F'\t' '{printf "  %-16s %6.2f GB  %s\n", $4, $3/1073741824, $2}' stale.tsv
 
           if [ "$DRY_RUN" = "1" ]; then
             echo "DRY_RUN=1, not deleting"
@@ -149,4 +154,8 @@ jobs:
           # "reclaimed 0.00 GB" on a prune that had worked. An honest number here matters
           # -- a run that always looks like a no-op invites someone to "fix" a workflow
           # that is doing its job.
-          awk -F'\t' '{n++; s+=$3} END {printf "deleted %d superseded generations, reclaimed %.2f GB\n", n, s/1073741824}' stale.tsv
+          awk -F'\t' '{n++; s+=$3; c[$4]++} END {
+            printf "deleted %d entries, reclaimed %.2f GB (", n, s/1073741824
+            sep=""; for (k in c) { printf "%s%s: %d", sep, k, c[k]; sep=", " }
+            printf ")\n"
+          }' stale.tsv
