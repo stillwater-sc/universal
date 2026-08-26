@@ -51,11 +51,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          usage() { gh api "repos/$REPO/actions/cache/usage" \
-                      --jq '"\(.active_caches_size_in_bytes) \(.active_caches_count)"'; }
-          read -r before before_n <<<"$(usage)"
-          awk -v b="$before" -v n="$before_n" \
-            'BEGIN {printf "cache usage before: %.2f GB in %d entries\n", b/1073741824, n}'
+          # Informational only -- see the note on the closing report. /actions/cache/usage
+          # is eventually consistent and can read high by a GB or more.
+          gh api "repos/$REPO/actions/cache/usage" \
+            --jq '"cache usage before (lags reality): \(.active_caches_size_in_bytes/1073741824*100|floor/100) GB in \(.active_caches_count) entries"'
 
           # No "|| true": if the listing fails we must abort, not fall through to
           # "nothing to do" on empty input and exit green having pruned nothing.
@@ -110,7 +109,11 @@ jobs:
             gh api -X DELETE "repos/$REPO/actions/caches/$id" >/dev/null
           done < stale.tsv
 
-          read -r after after_n <<<"$(usage)"
-          awk -v a="$after" -v b="$before" -v n="$after_n" \
-            'BEGIN {printf "cache usage after: %.2f GB in %d entries (reclaimed %.2f GB)\n", \
-                    a/1073741824, n, (b-a)/1073741824}'
+          # Report what we reclaimed from the sizes of the entries we actually deleted,
+          # NOT by re-reading /actions/cache/usage. That endpoint is eventually
+          # consistent: the first live run deleted four generations totalling 2.83GB and
+          # the re-read still returned the pre-prune figure, so the job reported
+          # "reclaimed 0.00 GB" on a prune that had worked. An honest number here matters
+          # -- a run that always looks like a no-op invites someone to "fix" a workflow
+          # that is doing its job.
+          awk -F'\t' '{n++; s+=$3} END {printf "deleted %d superseded generations, reclaimed %.2f GB\n", n, s/1073741824}' stale.tsv
