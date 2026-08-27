@@ -36,6 +36,7 @@
 // DEPENDENCY: this is the only takum header that reaches outside the takum family,
 // and it is deliberately NOT included by takum.hpp or takum_log.hpp.  Include it
 // explicitly when you need cross-conversion, and pay for dd_cascade then.
+#include <cmath>         // std::ldexp
 #include <cstdint>
 #include <universal/number/takum/takum.hpp>
 #include <universal/number/takum/takum_log.hpp>

@@ -31,4 +31,4 @@
 /// The linear takum comes first: it defines the shared behavioral switches, the
 /// exception hierarchy and the shared codec that takum_log builds on.
 #include <universal/number/takum/takum.hpp>
-#include <universal/number/takum/takum_log_impl.hpp>
+// takum_log_impl.hpp arrives via takum.hpp -> core.hpp (#1334)

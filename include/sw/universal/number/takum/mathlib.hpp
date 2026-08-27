@@ -15,6 +15,7 @@ sin, cos, exp, and their inverse functions (including arcsin, log, x^(1/n)).
 Elementary functions were introduced by Joseph Liouville in a series of papers from 1833 to 1841. 
 An algebraic treatment of elementary functions was started by Joseph Fels Ritt in the 1930s.
 */
+#include <cstdint>       // the fixed-width integer types
 #include <universal/number/takum/math/classify.hpp>
 #include <universal/number/takum/math/complex.hpp>
 #include <universal/number/takum/math/error_and_gamma.hpp>

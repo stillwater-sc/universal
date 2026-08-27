@@ -6,6 +6,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cstdint>       // std::uint8_t
+#include <ostream>       // std::ostream
+#include <iomanip>       // std::setw
 namespace sw { namespace universal {
 
 // Generate a full binary representation table for a takum or takum_log

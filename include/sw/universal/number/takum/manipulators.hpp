@@ -5,6 +5,12 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <sstream>       // std::stringstream
+#include <string>        // std::string
+#include <cstddef>       // std::size_t
+#include <universal/number/takum/core.hpp>
+#include <cstdint>       // the fixed-width integer types
+#include <type_traits>   // std::enable_if_t
 #include <iomanip>
 #include <typeinfo>  // for typeid()
 
@@ -12,6 +18,91 @@
 #include <universal/utility/color_print.hpp>
 
 namespace sw { namespace universal {
+template<unsigned nbits, unsigned rbits, typename bt>
+std::string to_native(const takum<nbits, rbits, bt>& number, bool nibbleMarker = false) {
+	return to_binary(number, nibbleMarker);
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+std::string to_native(const takum_log<nbits, rbits, bt>& number, bool nibbleMarker = false) {
+	return to_binary(number, nibbleMarker);
+}
+
+
+// Moved out of the impl headers (#1334): these turn a takum into a std::string.
+template<unsigned nbits, unsigned rbits, typename bt>
+std::string to_binary(const takum<nbits, rbits, bt>& number, bool nibbleMarker = false) {
+	using T = takum<nbits, rbits, bt>;
+	std::stringstream s;
+	bool negative = number.sign();
+	uint64_t mag = number.magnitude_bits();
+
+	s << "0b";
+	s << (negative ? "1." : "0.");
+
+	// Direction bit from magnitude
+	bool D = static_cast<bool>((mag >> (nbits - 2)) & 1);
+	s << (D ? "1." : "0.");
+
+	// Regime field from magnitude (rbits bits)
+	unsigned regime = static_cast<unsigned>((mag >> (nbits - T::overhead)) & T::r_mask);
+	for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+		s << ((regime >> i) & 1 ? '1' : '0');
+	}
+	s << '.';
+
+	// Characteristic and mantissa bits (geometry from the shared codec)
+	auto g = T::Codec::layout_of(number.dr_field());
+	unsigned p = g.p;
+	unsigned c_stored = g.c_stored_bits;
+	int bit = static_cast<int>(nbits) - static_cast<int>(T::overhead) - 1;
+
+	for (unsigned i = 0; i < c_stored && bit >= 0; ++i) {
+		s << ((mag >> bit) & 1 ? '1' : '0');
+		--bit;
+		if (i < c_stored - 1 && ((c_stored - 1 - i) % 4) == 0 && nibbleMarker) s << '\'';
+	}
+	s << '.';
+	for (unsigned i = 0; i < p && bit >= 0; ++i) {
+		s << ((mag >> bit) & 1 ? '1' : '0');
+		if (bit > 0 && (bit % 4) == 0 && nibbleMarker) s << '\'';
+		--bit;
+	}
+
+	return s.str();
+}
+
+template<unsigned nbits, unsigned rbits, typename bt>
+std::string to_binary(const takum_log<nbits, rbits, bt>& number, bool nibbleMarker = false) {
+	using T = takum_log<nbits, rbits, bt>;
+	std::stringstream s;
+	uint64_t mag = number.magnitude_bits();
+
+	s << "0b";
+	s << (number.sign() ? "1." : "0.");
+	bool D = static_cast<bool>((mag >> (nbits - 2)) & 1);
+	s << (D ? "1." : "0.");
+
+	unsigned regime = static_cast<unsigned>((mag >> (nbits - T::overhead)) & T::r_mask);
+	for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) s << ((regime >> i) & 1 ? '1' : '0');
+	s << '.';
+
+	auto g = T::Codec::layout_of(number.dr_field());
+	int bit = static_cast<int>(nbits) - static_cast<int>(T::overhead) - 1;
+	for (unsigned i = 0; i < g.c_stored_bits && bit >= 0; ++i) {
+		s << ((mag >> bit) & 1 ? '1' : '0');
+		--bit;
+		if (i < g.c_stored_bits - 1 && ((g.c_stored_bits - 1 - i) % 4) == 0 && nibbleMarker) s << '\'';
+	}
+	s << '.';
+	for (unsigned i = 0; i < g.p && bit >= 0; ++i) {
+		s << ((mag >> bit) & 1 ? '1' : '0');
+		if (bit > 0 && (bit % 4) == 0 && nibbleMarker) s << '\'';
+		--bit;
+	}
+	return s.str();
+}
+
 
 	// Generate a type tag for this takum
 	template<typename TakumType,
