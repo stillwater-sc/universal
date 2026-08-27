@@ -14,9 +14,10 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
+#include <algorithm>    // std::max, in to_string()'s fixed-format path
+#include <ios>          // std::streamsize / std::ios_base, in the to_string() signature
+#include <iosfwd>       // std::ostream in the operator<< forward declaration (#1334)
+#include <cstdio>       // fprintf(stderr,...) for the diagnostics and traces
 #include <limits>
 #include <cmath>
 #include <vector>
@@ -26,7 +27,8 @@
 // supporting types and functions
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/decimal_to_binary.hpp>
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>          // extractFields/ieee754_parameter (#1334)
+#include <universal/native/manipulators_core.hpp>   // scale(), without the to_triple/to_hex text layer
 #include <universal/numerics/error_free_ops.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
@@ -36,13 +38,6 @@
 #include <universal/number/dd/dd_fwd.hpp>
 
 namespace sw { namespace universal {
-
-	inline std::ostream& operator<<(std::ostream& ostr, const std::vector<char>& s) {
-		for (auto c : s) {
-			ostr << c;
-		}
-		return ostr;
-	}
 
 // fwd references to free functions
 constexpr dd operator-(const dd&, const dd&);
@@ -724,10 +719,10 @@ public:
 					nrDigitsForFixedFormat = std::max(60, nrDigits); // can be much longer than the max accuracy for double-double
 
 				if constexpr (bTraceDecimalConversion) {
-					std::cout << "powerOfTenScale  : " << powerOfTenScale << '\n';
-					std::cout << "integerDigits    : " << integerDigits   << '\n';
-					std::cout << "nrDigits         : " << nrDigits        << '\n';
-					std::cout << "nrDigitsForFixedFormat  : " << nrDigitsForFixedFormat << '\n';
+					std::fprintf(stdout, "powerOfTenScale  : %d\n", powerOfTenScale);
+					std::fprintf(stdout, "integerDigits    : %d\n", integerDigits);
+					std::fprintf(stdout, "nrDigits         : %d\n", nrDigits);
+					std::fprintf(stdout, "nrDigitsForFixedFormat  : %d\n", nrDigitsForFixedFormat);
 				}
 
 
@@ -815,7 +810,7 @@ public:
 					from_string = atof(s.c_str());
 					// if this ratio is large, then the string has not been fixed
 					if (std::fabs(from_string / hi) > 3.0) {
-						std::cerr << "re-rounding unsuccessful in fixed point fix\n";
+						std::fprintf(stderr, "re-rounding unsuccessful in fixed point fix\n");
 					}
 				}
 			}
@@ -903,16 +898,16 @@ protected:
 	// precondition: string s must be all digits
 	void round_string(std::vector<char>& s, int precision, int* decimalPoint) const {
 		if constexpr(bTraceDecimalRounding) {
-			std::cout << "string       : " << s << '\n';
-			std::cout << "precision    : " << precision << '\n';
-			std::cout << "decimalPoint : " << *decimalPoint << '\n';
+			std::fprintf(stdout, "string       : %s\n", std::string(s.begin(), s.end()).c_str());
+			std::fprintf(stdout, "precision    : %d\n", precision);
+			std::fprintf(stdout, "decimalPoint : %d\n", *decimalPoint);
 		}
 
 		int nrDigits = precision;
 		// round decimal string and propagate carry
 		int lastDigit = nrDigits - 1;
 		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
-			if constexpr(bTraceDecimalRounding) std::cout << "need to round\n";
+			if constexpr(bTraceDecimalRounding) std::fprintf(stdout, "need to round\n");
 			int i = nrDigits - 2;
 			s[static_cast<unsigned>(i)]++;
 			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
@@ -923,7 +918,7 @@ protected:
 
 		// if first digit is 10, shift everything.
 		if (s[0] > '9') {
-			if constexpr(bTraceDecimalRounding) std::cout << "shift right to handle overflow\n";
+			if constexpr(bTraceDecimalRounding) std::fprintf(stdout, "shift right to handle overflow\n");
 			for (int i = precision; i >= 2; --i) s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
 			s[0u] = '1';
 			s[1u] = '0';
@@ -1019,7 +1014,7 @@ protected:
 		}
 
 		if ((r >= _ten) || (r < _one)) {
-			std::cerr << "to_digits() failed to compute exponent\n";
+			std::fprintf(stderr, "to_digits() failed to compute exponent\n");
 			return;
 		}
 
@@ -1037,7 +1032,7 @@ protected:
 			r *= 10.0;
 
 			s[static_cast<unsigned>(i)] = static_cast<char>(mostSignificantDigit + '0');
-			if constexpr (bTraceDecimalConversion) std::cout << "to_digits  digit[" << i << "] : " << s << '\n';
+			if constexpr (bTraceDecimalConversion) std::fprintf(stdout, "to_digits  digit[%d] : %s\n", i, std::string(s.begin(), s.end()).c_str());
 		}
 
 		// Fix out of range digits
@@ -1055,7 +1050,7 @@ protected:
 		}
 
 		if (s[0] <= '0') {
-			std::cerr << "to_digits() non-positive leading digit\n";
+			std::fprintf(stderr, "to_digits() non-positive leading digit\n");
 			return;
 		}
 
@@ -1357,7 +1352,7 @@ inline dd pown(const dd& a, int n) {
 	switch (N) {
 	case 0:
 		if (a.iszero()) {
-			std::cerr << "pown: invalid argument\n";
+			std::fprintf(stderr, "pown: invalid argument\n");
 			errno = EDOM;
 			return dd(SpecificValue::qnan);
 		}
@@ -1389,37 +1384,6 @@ inline dd pown(const dd& a, int n) {
 
 	// Compute the reciprocal if n is negative.
 	return n < 0 ? reciprocal(s) : s;
-}
-
-////////////////////////  stream operators   /////////////////////////////////
-
-// stream out a decimal floating-point representation of the double-double
-inline std::ostream& operator<<(std::ostream& ostr, const dd& v) {
-	std::ios_base::fmtflags fmt = ostr.flags();
-	std::streamsize precision = ostr.precision();
-	std::streamsize width = ostr.width();
-	char fillChar = ostr.fill();
-	bool showpos = fmt & std::ios_base::showpos;
-	bool uppercase = fmt & std::ios_base::uppercase;
-	bool fixed = fmt & std::ios_base::fixed;
-	bool scientific = fmt & std::ios_base::scientific;
-	bool internal = fmt & std::ios_base::internal;
-	bool left = fmt & std::ios_base::left;
-	return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
-}
-
-// stream in an ASCII decimal floating-point format and assign it to a double-double
-inline std::istream& operator>>(std::istream& istr, dd& v) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit is set by >>.
-		return istr;
-	}
-	if (!parse(txt, v)) {
-		std::cerr << "unable to parse -" << txt << "- into a double-double value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
 }
 
 ////////////////// string operators

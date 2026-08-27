@@ -1,9 +1,23 @@
+#pragma once
 // manipulators.hpp: definitions of helper functions for double-double (dd) type manipulation
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Layer 2a of the dd headers (#1334): the string-producing half. These build a
+// std::string, so they need <sstream> but not <iostream>; the stream operators are in
+// iostream.hpp.
+#include <string>
+#include <sstream>
+#include <cassert>
+#include <iomanip>
+#include <cstdint>
+#include <type_traits>
+
+#include <universal/number/dd/core.hpp>
+#include <universal/traits/dd_traits.hpp>   // is_dd, the enable_if guard on every function here
 #include <string>
 #include <iomanip>
 #include <universal/number/dd/dd_fwd.hpp>

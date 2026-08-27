@@ -13,8 +13,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries 
-#include <iostream>
-#include <iomanip>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -50,24 +48,26 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
-#include <universal/traits/number_traits.hpp>
+/// INCLUDE FILES that make up the library
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  type_tag / to_binary / to_triple
+///     iostream.hpp      operator<< / operator>>
+///
+/// A translation unit that only computes can include core.hpp directly and skip the
+/// stream headers entirely. to_string() and parse() are in the CORE, not the text
+/// layers: assign(const std::string&) calls parse(), and to_string() concatenates a
+/// std::string without ever touching a stream.
+#include <universal/number/dd/core.hpp>
+#include <universal/number/dd/manipulators.hpp>
+#include <universal/number/dd/iostream.hpp>
+#include <universal/number/dd/attributes.hpp>
+
+/// the report builders stay at the umbrella: they pull <sstream>/<iomanip> by design
 #include <universal/traits/arithmetic_traits.hpp>
 #include <universal/common/number_traits_reports.hpp>
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// INCLUDE FILES that make up the library
-#include <universal/number/dd/exceptions.hpp>
-#include <universal/number/dd/dd_fwd.hpp>
-#include <universal/number/dd/dd_impl.hpp>
-#include <universal/number/dd/numeric_limits.hpp>
-#include <universal/traits/dd_traits.hpp>
-
-// useful functions to work with doubledoubles
-#include <universal/number/dd/manipulators.hpp>
-#include <universal/number/dd/attributes.hpp>
-
-///////////////////////////////////////////////////////////////////////////////////////
-/// elementary math functions library
 #include <universal/number/dd/math/constants/dd_constants.hpp>
 #include <universal/number/dd/mathlib.hpp>
 #include <universal/number/dd/mathext.hpp>
