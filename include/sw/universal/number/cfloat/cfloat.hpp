@@ -8,6 +8,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
+#include <ostream>       // std::ostream in the report helpers
+#include <iomanip>       // std::setprecision
 #include <cstdint>       // the fixed-width integer types
 #include <limits>        // std::numeric_limits
 #include <universal/utility/architecture.hpp>
@@ -16,8 +18,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries 
-#include <iostream>
-#include <iomanip>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -64,21 +64,19 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/cfloat/exceptions.hpp>
-#include <universal/number/cfloat/cfloat_fwd.hpp>
-// blocktriple's introspection layer: blocktriple.hpp declares
-// constexprClassParameters() but does not define it, so the umbrella carries the
-// definition for cfloat's conversion suites, which call it. A core-only include
-// path (see #1334) would leave this out.
-#include <universal/internal/blocktriple/blocktriple_debug.hpp>
-#include <universal/number/cfloat/cfloat_impl.hpp>
-#include <universal/traits/cfloat_traits.hpp>
-#include <universal/number/cfloat/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/cfloat/core.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// useful functions to work with cfloats
-#include <universal/number/cfloat/attributes.hpp>
+// layer 2a: the string producers -- to_binary, to_triple, parse, color_print
 #include <universal/number/cfloat/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/cfloat/iostream.hpp>
+// layer 3: introspection -- constexprClassParameters, ReportCfloatClassParameters
+#include <universal/number/cfloat/debug.hpp>
+#include <universal/number/cfloat/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library

@@ -18,6 +18,7 @@
 // type_tag needs the operator's NAME, not a stream insertion. Keeping the string
 // form in the <iomanip> layer is what stops this header depending on that one.
 #include <algorithm>   // std::min
+#include <universal/internal/blocksignificand/manipulators.hpp>   // to_binary(blocksignificand), used by to_triple below (#1389)
 #include <cmath>       // std::pow, std::log10, std::floor
 #include <cstddef>     // size_t
 #include <cstdint>
