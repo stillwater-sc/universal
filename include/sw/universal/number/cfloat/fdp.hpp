@@ -15,6 +15,7 @@
 //
 // Relates to #345, #547
 
+#include <type_traits>   // std::is_same / std::true_type
 #include <vector>
 #include <cassert>
 #include <universal/traits/cfloat_traits.hpp>

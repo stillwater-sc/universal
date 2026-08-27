@@ -1,4 +1,7 @@
 #pragma once
+#include <cstdint>       // the fixed-width integer types
+#include <cmath>         // the <cmath> functions used below
+#include <utility>       // std::pair
 #include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
 #include <universal/utility/icf_array_bounds.hpp>
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)

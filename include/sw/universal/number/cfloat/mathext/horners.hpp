@@ -1,4 +1,8 @@
 #pragma once
+#include <limits>        // std::numeric_limits
+#include <cmath>         // the <cmath> functions used below
+#include <cassert>       // assert()
+#include <cstddef>       // std::size_t
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // horners.hpp: Horner's polynomial evaluation and root finding functions for double-double (dd) floating-point
 //

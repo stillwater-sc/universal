@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>         // the <cmath> functions used below
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for cfloat
 //

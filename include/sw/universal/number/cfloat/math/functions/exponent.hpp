@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cmath>         // the <cmath> functions used below
 namespace sw { namespace universal {
 
 // the current shims are NON-COMPLIANT with the Universal standard, which says that every function must be
