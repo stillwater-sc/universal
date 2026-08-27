@@ -1,4 +1,5 @@
 #pragma once
+#include <limits>        // std::numeric_limits
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for fixed-points
 //

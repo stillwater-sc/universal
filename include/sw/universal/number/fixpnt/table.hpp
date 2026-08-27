@@ -1,8 +1,17 @@
+#pragma once
 // table.hpp: generate a table of encoding and values for fixed-size arbitrary fixed-point configurations
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
+#include <cstddef>     // std::size_t
+#include <ostream>     // std::ostream
+#include <iomanip>     // std::setw
+
+// This header uses fixpnt<> and to_binary(), and streams them, but had no project
+// include at all -- it only ever worked when something else was included first.
+#include <universal/number/fixpnt/iostream.hpp>   // the core, to_binary and operator<<
 
 namespace sw { namespace universal {
 

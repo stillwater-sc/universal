@@ -6,6 +6,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <ostream>   // std::ostream, streamed to by the Color manipulators below.
+#include <iomanip>   // std::setw
+                    // This header had no includes at all and relied on whatever
+                    // preceded it in the graph (#1389).
+
 namespace sw { namespace universal {
 
 struct ColorCode {

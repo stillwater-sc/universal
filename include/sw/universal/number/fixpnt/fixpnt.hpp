@@ -13,8 +13,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries 
-#include <iostream>
-#include <iomanip>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -55,15 +53,15 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/fixpnt/exceptions.hpp>
-#include <universal/number/fixpnt/fixpnt_fwd.hpp>
-#include <universal/number/fixpnt/fixpnt_impl.hpp>
-#include <universal/traits/fixpnt_traits.hpp>
-#include <universal/number/fixpnt/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/fixpnt/core.hpp>
 
 // useful functions to work with fixpnts
 #include <universal/number/fixpnt/attributes.hpp>
 #include <universal/number/fixpnt/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>> / parse
+#include <universal/number/fixpnt/iostream.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
