@@ -5,6 +5,13 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// This header had NO includes while using std::string, std::stringstream and
+// to_binary(blockdigit) -- it compiled only behind a prior include (#1334 / #1422).
+#include <string>
+#include <sstream>
+#include <universal/internal/blockdigit/manipulators.hpp>   // to_binary(blockdigit), the Storage type (#1334)
+#include <universal/number/positional/positional_impl.hpp>
 
 namespace sw { namespace universal {
 

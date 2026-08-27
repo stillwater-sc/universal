@@ -12,6 +12,8 @@
 
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/internal/blockdigit/blockdigit.hpp>
+#include <universal/internal/blockdigit/iostream.hpp>   // operator<<(ostream, blockdigit): positional's own
+                                                        // operator<< streams its Storage through it (#1334)
 
 // Forward definitions
 #include <universal/number/positional/positional_fwd.hpp>
