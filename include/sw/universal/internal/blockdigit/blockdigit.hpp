@@ -7,6 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iosfwd>       // std::ostream in the friend declaration (#1334)
 #include <cstdio>       // fprintf(stderr,...) for the divide-by-zero diagnostic
+#include <utility>      // std::pair, returned by the divide helpers
 #include <string>       // std::string, returned by the to_string() member
 #include <cstdint>
 #include <cassert>

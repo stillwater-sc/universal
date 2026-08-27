@@ -11,6 +11,9 @@
 #include <iomanip>
 #include <string>
 #include <sstream>
+#include <cstdint>       // uint64_t
+#include <limits>        // std::numeric_limits
+#include <type_traits>   // std::enable_if / std::is_floating_point
 #include <universal/native/manipulators_core.hpp>
 #include <universal/native/ieee754_type_tag.hpp>
 #include <universal/utility/color_print.hpp>
