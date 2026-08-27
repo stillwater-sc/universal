@@ -1,11 +1,13 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for adaptive precision decimal integers
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/native/ieee754.hpp>
+#include <cmath>       // std::sqrt on the double fallback path
+#include <cstdio>      // fprintf(stderr,...) for the diagnostic (#1334: no <iostream> in a math header)
+#include <universal/native/ieee754_core.hpp>
+#include <universal/number/edecimal/core.hpp>            // the edecimal type itself; this header was relying on a prior include
 #include <universal/number/edecimal/numeric_limits.hpp>
 
 #ifndef EDECIMAL_NATIVE_SQRT
@@ -38,13 +40,17 @@ namespace sw { namespace universal {
 	}
 #else
 	inline edecimal sqrt(const edecimal& f) {
-#if EDECIMAL_THROW_ARITHMETIC_EXCEPTION
+		// The negative-argument report has to be INSIDE the sign test. It was not: the
+		// #else branch ran unconditionally, so every call -- sqrt(144) included -- wrote
+		// "decimal_negative_sqrt_arg" to stderr while returning the right answer.
 		if (f.isneg()) {
+#if EDECIMAL_THROW_ARITHMETIC_EXCEPTION
 			throw edecimal_negative_sqrt_arg();
-		}
 #else
-		std::cerr << "decimal_negative_sqrt_arg\n";
+			std::fprintf(stderr, "edecimal_negative_sqrt_arg\n");
+			return edecimal(0);
 #endif
+		}
 		return edecimal(std::sqrt((double)f));
 	}
 #endif

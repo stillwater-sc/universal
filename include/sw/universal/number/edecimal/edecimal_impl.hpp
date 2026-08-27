@@ -1,7 +1,11 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
-#include <sstream>
-#include <string>
+#include <cstdint>       // uint8_t, the digit type
+#include <cassert>       // assert(), used by findMsd() and the helpers
+#include <vector>        // std::vector, the base class
+#include <algorithm>     // std::swap / std::equal
+#include <iosfwd>        // std::ostream/std::istream in the friend declarations (#1334)
+#include <string>        // std::string, used by parse() and operator=(const std::string&)
+#include <cstdio>        // fprintf(stderr,...) for the diagnostics
 // edecimal_impl.hpp: definition of adaptive precision decimal integer data type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -14,6 +18,7 @@
 #define EDECIMAL_OPERATIONS_COUNT 0
 #endif
 #if EDECIMAL_OPERATIONS_COUNT
+#include <ostream>       // printStats() calls ops.report(ostr), which needs the complete type
 #include <universal/utility/occurrence.hpp>
 #endif
 
@@ -169,7 +174,7 @@ public:
 				borrow = 0;
 			}
 		}
-		if (borrow) std::cout << "can this happen?" << std::endl;
+		if (borrow) std::fprintf(stderr, "can this happen?\n");
 		unpad();
 		if (this->iszero()) { // special case of zero having positive sign
 			this->setpos();
@@ -602,58 +607,6 @@ inline int findMsd(const edecimal& v) {
 
 ////////////////// DECIMAL operators
 
-/// stream operators
-
-inline std::string to_binary(const edecimal& d) {
-	std::stringstream s;
-	if (d.isneg()) s << '-';
-	for (edecimal::const_reverse_iterator rit = d.rbegin(); rit != d.rend(); ++rit) {
-		s << (int)*rit;
-	}
-	return s.str();
-}
-
-// generate an ASCII edecimal string
-inline std::string to_string(const edecimal& d) {
-	std::stringstream s;
-	if (d.isneg()) s << '-';
-	for (edecimal::const_reverse_iterator rit = d.rbegin(); rit != d.rend(); ++rit) {
-		s << (int)*rit;
-	}
-	return s.str();
-}
-
-// generate an ASCII edecimal format and send to ostream
-inline std::ostream& operator<<(std::ostream& ostr, const edecimal& d) {
-	// to make certain that setw and left/right operators work properly
-	// we need to transform the integer into a string
-	std::stringstream ss;
-
-	//std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-	if (d.isneg()) ss << '-';
-	for (edecimal::const_reverse_iterator rit = d.rbegin(); rit != d.rend(); ++rit) {
-		ss << (int)*rit;
-	}
-	return ostr << ss.str();
-}
-
-// read an ASCII edecimal format from an istream
-inline std::istream& operator>>(std::istream& istr, edecimal& p) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit set by >>.
-		return istr;
-	}
-	if (!p.parse(txt)) {
-		std::cerr << "unable to parse -" << txt << "- into an edecimal value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
-
 /// edecimal binary arithmetic operators
 
 // binary addition of edecimal numbers
@@ -824,7 +777,7 @@ decintdiv decint_divide(const edecimal& _a, const edecimal& _b) {
 #if EDECIMAL_THROW_ARITHMETIC_EXCEPTION
 		throw edecimal_integer_divide_by_zero{};
 #else
-		std::cerr << "integer_divide_by_zero\n";
+		std::fprintf(stderr, "integer_divide_by_zero\n");
 #endif // EDECIMAL_THROW_ARITHMETIC_EXCEPTION
 	}
 	// generate the absolute values to do long division 

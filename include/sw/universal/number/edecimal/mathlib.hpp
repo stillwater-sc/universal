@@ -5,6 +5,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <universal/number/edecimal/core.hpp>   // the edecimal type the math functions operate on
+
 //#include <universal/number/edecimal/math/classify.hpp>
 //#include <universal/number/edecimal/math/complex.hpp>
 //#include <universal/number/edecimal/math/error_and_gamma.hpp>

@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <string>       // std::string, the exception message type
 #include <universal/common/exceptions.hpp>
 
 namespace sw { namespace universal {

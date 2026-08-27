@@ -12,19 +12,6 @@
 #include <universal/utility/long_double.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
-/// required std libraries 
-#include <cstdint>
-#include <cassert>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <vector>
-#include <limits>
-#include <regex>
-#include <algorithm>
-#include <type_traits>
-
-////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -43,17 +30,20 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
-/// support functions
-#include <universal/native/ieee754.hpp>
-#include <universal/string/strmanip.hpp>
-#include <universal/utility/string_parse.hpp>
-
-////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/edecimal/exceptions.hpp>
-#include <universal/number/edecimal/edecimal_fwd.hpp>
-#include <universal/number/edecimal/edecimal_impl.hpp>
-#include <universal/number/edecimal/numeric_limits.hpp>
+///
+/// Layered per #1334. The two switches above must be defined BEFORE core.hpp, which is
+/// why they precede it rather than sitting with the other directives at the top.
+///
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  to_binary / to_string
+///     iostream.hpp      operator<< / operator>>
+///
+/// A translation unit that only computes can include core.hpp directly and skip the
+/// stream headers entirely.
+#include <universal/number/edecimal/core.hpp>
+#include <universal/number/edecimal/manipulators.hpp>
+#include <universal/number/edecimal/iostream.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
