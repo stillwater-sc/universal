@@ -5,9 +5,6 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iomanip>
-#include <string>
-#include <sstream>
 #include <cmath>
 #include <limits>
 #include <type_traits>
