@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cstdint>       // the fixed-width integer types
 #include <universal/number/lns/math/classify.hpp>
 #include <universal/number/lns/math/complex.hpp>
 #include <universal/number/lns/math/error_and_gamma.hpp>

@@ -5,6 +5,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <string>        // std::string
+#include <sstream>       // std::stringstream
+#include <iomanip>       // std::setw
 #include <cmath> // for std:pow()
 
 namespace sw { namespace universal {

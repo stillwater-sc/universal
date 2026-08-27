@@ -1,5 +1,19 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <cstdint>       // the fixed-width integer types
+#include <cmath>         // std::frexp / std::ldexp
+#include <type_traits>   // std::is_same_v
+// Behavioural switches default HERE, beside the #if blocks that test them, rather than
+// in the lns.hpp umbrella: including core.hpp directly would otherwise leave them
+// undefined, #if would evaluate them as 0, and the literal operators would silently
+// disappear from that path -- the trap #1390 hit with POSIT_ENABLE_LITERALS (#1334).
+#if !defined(LNS_ENABLE_LITERALS)
+#define LNS_ENABLE_LITERALS 1
+#endif
+#if !defined(LNS_THROW_ARITHMETIC_EXCEPTION)
+#define LNS_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
+#include <iosfwd>     // std::ostream/std::istream in the friend declarations (#1334)
 #include <universal/utility/icf_array_bounds.hpp>
 #include <string>
 // lns_impl.hpp: implementation of an arbitrary logarithmic number system configuration
@@ -12,7 +26,7 @@
 #include <limits>
 
 #include <math/constexpr_math.hpp>
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>   // extractFields / ieee754_parameter; the text layer is not needed here (#1334)
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/internal/abstract/triple.hpp>
@@ -34,10 +48,7 @@ namespace sw { namespace universal {
 		}
 		int conversionEvents;
 	};
-	inline std::ostream& operator<<(std::ostream& ostr, const LnsArithmeticStatistics& stats) {
-		ostr << "Conversions                     : " << stats.conversionEvents << '\n';
-		return ostr;
-	}
+	std::ostream& operator<<(std::ostream& ostr, const LnsArithmeticStatistics& stats);
 	static LnsArithmeticStatistics lnsStats;
 
 // convert a floating-point value to a specific lns configuration. Semantically, p = v, return reference to p
@@ -513,27 +524,9 @@ public:
 	explicit constexpr operator long double()       const noexcept { return to_ieee754<long double>(); }
 #endif
 
-	void debugConstexprParameters() {
-		std::cout << "constexpr parameters for " << type_tag(*this) << '\n';
-		std::cout << "scaling               " << scaling << '\n';
-		std::cout << "bitsInByte            " << bitsInByte << '\n';
-		std::cout << "bitsInBlock           " << bitsInBlock << '\n';
-		std::cout << "nrBlocks              " << nrBlocks << '\n';
-		std::cout << "storageMask           " << to_binary(storageMask, bitsInBlock) << '\n';
-		std::cout << "MSU                   " << MSU << '\n';
-		std::cout << "MSU_MASK              " << to_binary(MSU_MASK, bitsInBlock) << '\n';
-		std::cout << "MSB_UNIT              " << MSB_UNIT << '\n';
-		std::cout << "SPECIAL_BITS_TOGETHER " << (SPECIAL_BITS_TOGETHER ? "yes" : "no") << '\n';
-		std::cout << "SIGN_BIT_MASK         " << to_binary(SIGN_BIT_MASK, bitsInBlock) << '\n';
-		std::cout << "MSB_BIT_MASK          " << to_binary(MSB_BIT_MASK, bitsInBlock) << '\n';
-		std::cout << "BLOCK_MSB_MASK        " << to_binary(BLOCK_MSB_MASK, bitsInBlock) << '\n';
-		std::cout << "MSU_ZERO              " << to_binary(MSU_ZERO, bitsInBlock) << '\n';
-		std::cout << "MSU_NAN               " << to_binary(MSU_NAN, bitsInBlock) << '\n';
-		std::cout << "maxShift              " << maxShift << '\n';
-		std::cout << "leftShift             " << leftShift << '\n';
-		std::cout << "min_exponent          " << min_exponent << '\n';
-		std::cout << "max_exponent          " << max_exponent << '\n';
-	}
+	// DECLARED here, DEFINED in lns/debug.hpp, so the arithmetic core needs no
+	// <iostream> (#1334). Include debug.hpp to call it.
+	void debugConstexprParameters();
 
 	// normalize: decompose lns value into a blocktriple<rbits, REP> for quire accumulation.
 	// LNS stores values in logarithmic domain; materializing to linear domain is inherently
@@ -840,16 +833,14 @@ private:
 
 	/// stream operators
 
-	friend std::ostream& operator<< (std::ostream& ostr, const lns& r) {
-		ostr << double(r);
-		return ostr;
-	}
-	friend std::istream& operator>> (std::istream& istr, lns& r) {
-		double item;
-		istr >> item;
-		r = item;
-		return istr;
-	}
+	// Declared, not defined: the definitions live in lns/iostream.hpp so the core needs
+	// only <iosfwd> (#1334). Declaring them as templates -- rather than the in-class
+	// non-template friends they were -- is what lets the definition sit at namespace
+	// scope in another header.
+	template<unsigned nnbits, unsigned nrbits, typename nbt, auto... nxtra>
+	friend std::ostream& operator<<(std::ostream& ostr, const lns<nnbits, nrbits, nbt, nxtra...>& r);
+	template<unsigned nnbits, unsigned nrbits, typename nbt, auto... nxtra>
+	friend std::istream& operator>>(std::istream& istr, lns<nnbits, nrbits, nbt, nxtra...>& r);
 
 	// lns - logic operators
 

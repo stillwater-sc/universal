@@ -35,6 +35,8 @@
 //
 // Relates to #345, #549, #1203
 
+#include <cstddef>       // std::size_t
+#include <type_traits>   // std::enable_if_t
 #include <vector>
 #include <cmath>
 #include <stdexcept>

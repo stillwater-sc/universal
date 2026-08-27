@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cmath>         // std::trunc
 namespace sw { namespace universal {
 
 // Truncate value by rounding toward zero, returning the nearest integral value that is not larger in magnitude than x
