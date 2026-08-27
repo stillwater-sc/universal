@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <iomanip>
+#include <iosfwd>       // std::ostream in the friend declaration (#1334)
+#include <cstdio>       // fprintf(stderr,...) for the divide-by-zero diagnostic
+#include <utility>      // std::pair, returned by the divide helpers
+#include <string>       // std::string, returned by the to_string() member
 #include <cstdint>
 #include <cassert>
 #include <limits>
@@ -446,7 +446,7 @@ private:
 	// long division: returns {quotient, remainder}
 	static std::pair<blockdigit, blockdigit> div_mod(const blockdigit& _a, const blockdigit& _b) {
 		if (_b.iszero()) {
-			std::cerr << "blockdigit: division by zero\n";
+			std::fprintf(stderr, "blockdigit: division by zero\n");
 			return { blockdigit(0), blockdigit(0) };
 		}
 		bool resultSign = (_a._negative != _b._negative);
@@ -622,46 +622,5 @@ inline blockdigit<N, R, D> operator>>(const blockdigit<N, R, D>& lhs, int shift)
 }
 
 //////////////////////////////////////////////////////////////////////
-// stream I/O
-
-template<unsigned N, unsigned R, typename D>
-inline std::ostream& operator<<(std::ostream& ostr, const blockdigit<N, R, D>& v) {
-	return ostr << v.to_string();
-}
-
-//////////////////////////////////////////////////////////////////////
-// manipulation functions
-
-// Generate a type tag for blockdigit
-template<unsigned N, unsigned R, typename D>
-inline std::string type_tag(const blockdigit<N, R, D>& = {}) {
-	std::stringstream s;
-	if constexpr (R == 8) {
-		s << "blockoctal<" << N << '>';
-	}
-	else if constexpr (R == 10) {
-		s << "blockdecimal<" << N << '>';
-	}
-	else if constexpr (R == 16) {
-		s << "blockhexadecimal<" << N << '>';
-	}
-	else {
-		s << "blockdigit<" << N << ", " << R << '>';
-	}
-	return s.str();
-}
-
-// to_binary: show internal digit storage
-template<unsigned N, unsigned R, typename D>
-inline std::string to_binary(const blockdigit<N, R, D>& v) {
-	std::stringstream s;
-	s << (v.sign() ? '-' : '+') << "[ ";
-	for (int i = static_cast<int>(N) - 1; i >= 0; --i) {
-		s << static_cast<int>(v.digit(static_cast<unsigned>(i)));
-		if (i > 0) s << '.';
-	}
-	s << " ]";
-	return s.str();
-}
 
 }} // namespace sw::universal

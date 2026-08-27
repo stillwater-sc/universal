@@ -7,19 +7,21 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <cmath>
-#include <sstream>
 #include <cassert>
-#include <iostream>
-#include <iomanip>
+#include <type_traits>  // std::enable_if / std::is_floating_point
+#include <utility>      // std::pair
+#include <iosfwd>       // std::ostream/std::istream in the friend declarations (#1334)
+#include <cstdio>       // fprintf(stderr,...) for the diagnostics
+#include <string>       // std::string, used by parse()
 #include <vector>
 #include <limits>
-#include <regex>
 #include <algorithm>
 
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>        // extractFields/ieee754_parameter (#1334)
+#include <universal/native/manipulators_core.hpp>   // scale(), without the text layer (#1334)
 #include <universal/string/strmanip.hpp>
 #include <universal/number/erational/exceptions.hpp>
-#include <universal/number/edecimal/edecimal.hpp>
+#include <universal/number/edecimal/core.hpp>   // erational stores numerator/denominator as edecimal; the text layer is not needed here (#1334)
 
 namespace sw { namespace universal {
 
@@ -196,7 +198,7 @@ public:
 #if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
 			throw erational_divide_by_zero();
 #else
-			std::cerr << "erational_divide_by_zero\n";
+			std::fprintf(stderr, "erational_divide_by_zero\n");
 #endif
 		}
 		negative = !((negative && rhs.negative) || (!negative && !rhs.negative));
@@ -352,7 +354,7 @@ protected:
 #if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
 			throw erational_divide_by_zero();
 #else
-			std::cerr << "erational_divide_by_zero\n";
+			std::fprintf(stderr, "erational_divide_by_zero\n");
 			denominator = 0;
 			numerator = 0;
 #endif
@@ -568,39 +570,6 @@ private:
 
 ////////////////// erational operators
 
-/// stream operators
-
-// generate an ASCII erational string
-inline std::string to_string(const erational& d) {
-	std::stringstream str;
-	if (d.isneg()) str << '-';
-	str << "TBD";
-	return str.str();
-}
-
-// generate an ASCII erational format and send to ostream
-inline std::ostream& operator<<(std::ostream& ostr, const erational& d) {
-	// make certain that setw and left/right operators work properly
-	std::stringstream str;
-	if (d.isneg()) str << '-';
-	str << d.numerator << '/' << d.denominator;
-	return ostr << str.str();
-}
-
-// read an ASCII erational format from an istream
-inline std::istream& operator>>(std::istream& istr, erational& p) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit set by >>.
-		return istr;
-	}
-	if (!p.parse(txt)) {
-		std::cerr << "unable to parse -" << txt << "- into an erational value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
-
 /// erational binary arithmetic operators
 
 // binary addition of erational numbers
@@ -725,7 +694,7 @@ erationalintdiv erational_divide(const erational& lhs, const erational& rhs) {
 #if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
 		throw erational_divide_by_zero{};
 #else
-		std::cerr << "erational_divide_by_zero\n";
+		std::fprintf(stderr, "erational_divide_by_zero\n");
 #endif
 	}
 

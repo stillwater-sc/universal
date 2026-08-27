@@ -15,8 +15,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries 
-#include <iostream>
-#include <iomanip>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -38,14 +36,18 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/erational/exceptions.hpp>
-#include <universal/number/erational/erational_fwd.hpp>
-#include <universal/number/erational/erational_impl.hpp>
-#include <universal/number/erational/numeric_limits.hpp>
-#include <universal/traits/erational_traits.hpp>
-
-// useful functions to work with rationals
+/// INCLUDE FILES that make up the library
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  type_tag / to_string
+///     iostream.hpp      operator<< / operator>>
+///
+/// A translation unit that only computes can include core.hpp directly and skip the
+/// stream headers entirely.
+#include <universal/number/erational/core.hpp>
 #include <universal/number/erational/manipulators.hpp>
+#include <universal/number/erational/iostream.hpp>
 #include <universal/number/erational/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////

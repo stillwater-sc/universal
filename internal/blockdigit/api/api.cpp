@@ -11,6 +11,8 @@
 #include <universal/internal/blockdecimal/blockdecimal.hpp>
 #include <universal/internal/blockhexadecimal/blockhexadecimal.hpp>
 
+#include <universal/internal/blockdigit/manipulators.hpp>   // type_tag/to_binary (#1334)
+#include <universal/internal/blockdigit/iostream.hpp>       // operator<< on blockdigit (#1334)
 #include <universal/verification/test_suite.hpp>
 
 

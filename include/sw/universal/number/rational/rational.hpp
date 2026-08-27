@@ -7,14 +7,13 @@
 #pragma once
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
+#include <cstdint>      // std::uint8_t, in the type aliases below
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/long_double.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries
-#include <iostream>
-#include <iomanip>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -36,21 +35,23 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
-#include <universal/traits/number_traits.hpp>
+/// INCLUDE FILES that make up the library
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  type_tag / to_binary / to_native
+///     iostream.hpp      operator<< / operator>>
+///
+/// A translation unit that only computes can include core.hpp directly and skip the
+/// stream headers entirely.
+#include <universal/number/rational/core.hpp>
+#include <universal/number/rational/manipulators.hpp>
+#include <universal/number/rational/iostream.hpp>
+#include <universal/number/rational/attributes.hpp>
+
+/// the report builders stay at the umbrella: they pull <sstream>/<iomanip> by design
 #include <universal/traits/arithmetic_traits.hpp>
 #include <universal/common/number_traits_reports.hpp>
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// INCLUDE FILES that make up the library
-#include <universal/number/rational/exceptions.hpp>
-#include <universal/number/rational/rational_fwd.hpp>
-#include <universal/number/rational/rational_impl.hpp>
-#include <universal/traits/rational_traits.hpp>
-#include <universal/number/rational/numeric_limits.hpp>
-
-// useful functions to work with rational numbers
-#include <universal/number/rational/manipulators.hpp>
-#include <universal/number/rational/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
