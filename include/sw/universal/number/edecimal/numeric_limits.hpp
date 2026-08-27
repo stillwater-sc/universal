@@ -5,6 +5,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cstdint>     // uint64_t, used in the digits/digits10 computation
+#include <limits>      // std::numeric_limits, the template being specialised
+
+#include <universal/number/edecimal/edecimal_fwd.hpp>   // class edecimal, the type being specialised on
+
 namespace std {
 
 using namespace sw::universal;
