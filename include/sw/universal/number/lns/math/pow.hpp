@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cmath>         // std::pow
 namespace sw { namespace universal {
 
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>

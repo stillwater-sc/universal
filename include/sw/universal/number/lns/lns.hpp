@@ -12,8 +12,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries 
-#include <iostream>
-#include <iomanip>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -49,14 +47,17 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/lns/exceptions.hpp>
-#include <universal/number/lns/lns_fwd.hpp>
-#include <universal/number/lns/lns_impl.hpp>
-#include <universal/number/lns/lns_traits.hpp>
-#include <universal/number/lns/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/lns/core.hpp>
 
 // useful functions to work with logarithmic numbers
+// layer 2a: the string producers
 #include <universal/number/lns/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/lns/iostream.hpp>
+// layer 3: introspection -- debugConstexprParameters, the statistics printer
+#include <universal/number/lns/debug.hpp>
 #include <universal/number/lns/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////

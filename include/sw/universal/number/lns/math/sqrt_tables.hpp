@@ -1,4 +1,6 @@
 #pragma once
+#include <cstddef>       // std::size_t
+#include <cmath>         // std::sqrt
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 #include <iomanip>
 // sqrt_tables.hpp: specialized logarithmic floating-point 

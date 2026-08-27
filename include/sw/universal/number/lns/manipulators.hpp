@@ -5,6 +5,11 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <string>        // std::string
+#include <sstream>       // std::stringstream
+#include <cstdint>       // the fixed-width integer types
+#include <cmath>         // std::ldexp
+#include <type_traits>   // std::enable_if_t
 #include <iomanip>
 #include <typeinfo>  // for typeid()
 

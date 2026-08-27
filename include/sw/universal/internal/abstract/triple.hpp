@@ -5,11 +5,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
-#include <iomanip>
+#include <iosfwd>    // std::ostream/std::istream in the friend declarations (#1334)
 #include <limits>
 #include <tuple>
 
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>   // the bit-manipulation half (#1334)
 #include <universal/internal/blockbinary/blockbinary.hpp>
 
 namespace sw { namespace universal {
@@ -281,24 +281,6 @@ private:
 	friend bool operator>=(const triple<nfbits,nbt>& lhs, const triple<nfbits,nbt>& rhs);
 };
 
-////////////////////// VALUE operators
-template<size_t nfbits, typename nbt>
-inline std::ostream& operator<<(std::ostream& ostr, const triple<nfbits,nbt>& v) {
-	if (v._inf) {
-		ostr << FP_INFINITE;
-	}
-	else {
-		ostr << (long double)v;
-	}
-	return ostr;
-}
-
-template<size_t nfbits, typename nbt>
-inline std::istream& operator>> (std::istream& istr, const triple<nfbits,nbt>& v) {
-	istr >> v._fraction;
-	return istr;
-}
-
 template<size_t nfbits, typename nbt>
 inline bool operator==(const triple<nfbits,nbt>& lhs, const triple<nfbits,nbt>& rhs) { 
 	return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction && lhs._zero == rhs._zero && lhs._inf == rhs._inf; 
@@ -379,21 +361,6 @@ template<size_t nfbits, typename nbt>
 inline bool operator<=(const triple<nfbits,nbt>& lhs, const triple<nfbits,nbt>& rhs) { return !operator> (lhs, rhs); }
 template<size_t nfbits, typename nbt>
 inline bool operator>=(const triple<nfbits,nbt>& lhs, const triple<nfbits,nbt>& rhs) { return !operator< (lhs, rhs); }
-
-template<size_t fbits, typename BlockType>
-inline std::string components(const triple<fbits,BlockType>& v) {
-	std::stringstream s;
-	if (v.iszero()) {
-		s << "(+,0," << std::setw(fbits) << v.fraction() << ')';
-		return s.str();
-	}
-	else if (v.isinf()) {
-		s << "(inf," << std::setw(fbits) << v.fraction() << ')';
-		return s.str();
-	}
-	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ')';
-	return s.str();
-}
 
 /// Magnitude of a scientific notation triple (equivalent to turning the sign bit off).
 template<size_t nfbits, typename BlockType>

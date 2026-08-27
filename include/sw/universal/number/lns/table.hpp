@@ -6,6 +6,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cstddef>       // std::size_t
+#include <cstdint>       // std::uint8_t
+#include <ostream>       // std::ostream
+#include <iomanip>       // std::setw
 namespace sw { namespace universal {
 
 // generate a full binary representation table for a given posit configuration
