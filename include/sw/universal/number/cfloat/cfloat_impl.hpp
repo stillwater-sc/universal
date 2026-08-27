@@ -1,11 +1,48 @@
 #pragma once
+// CFLOAT_TRACE_ENABLED: the trace statements below print, so they need <iostream>.
+// They are compiled only when tracing is actually switched on -- a preprocessor guard
+// rather than `if constexpr`, because a discarded `if constexpr` branch still requires
+// std::cout to be DECLARED, which would keep <iostream> in the include graph of every
+// translation unit. Same treatment posit got in #1390. See #1334.
+#if defined(ALGORITHM_VERBOSE_OUTPUT) || defined(ALGORITHM_TRACE_ALL) \
+ || defined(ALGORITHM_TRACE_CONVERSION) || defined(TRACE_CONVERSION) \
+ || defined(ALGORITHM_TRACE_ROUNDING) || defined(ALGORITHM_TRACE_ADD) \
+ || defined(ALGORITHM_TRACE_SUB)      || defined(ALGORITHM_TRACE_MUL) \
+ || defined(ALGORITHM_TRACE_DIV)      || defined(ALGORITHM_TRACE_SQRT)
+#define CFLOAT_TRACE_ENABLED 1
+#include <iostream>
+#include <iomanip>
+#else
+#define CFLOAT_TRACE_ENABLED 0
+#endif
+
+// Behavioural switches default HERE, beside the #if blocks that test them, rather than
+// in the cfloat.hpp umbrella: including core.hpp directly would otherwise leave them
+// undefined, #if would evaluate them as 0, and the literal operators would silently
+// disappear from that path -- the trap #1390 hit with POSIT_ENABLE_LITERALS (#1334).
+#if !defined(CFLOAT_ENABLE_LITERALS)
+#define CFLOAT_ENABLE_LITERALS 1
+#endif
+#if !defined(CFLOAT_THROW_ARITHMETIC_EXCEPTION)
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+#if !defined(CFLOAT_EXCEPT)
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
+#define CFLOAT_EXCEPT
+#else
+#define CFLOAT_EXCEPT noexcept
+#endif
+#endif
+#if !defined(CFLOAT_NATIVE_SQRT)
+#define CFLOAT_NATIVE_SQRT 0
+#endif
+
 #include <cstdint>       // the fixed-width integer types
+#include <cstdio>        // fprintf(stderr,...) for the diagnostics; keeps <iostream> out of the core
 #include <cmath>         // the <cmath> functions used below
 #include <utility>       // std::pair
-#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
-#include <universal/utility/icf_array_bounds.hpp>
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 #include <string>
+#include <universal/utility/icf_array_bounds.hpp>
 // cfloat_impl.hpp: implementation of an arbitrary configuration fixed-size 'classic' floating-point representation
 // cfloat<> can emulate IEEE-754 floats and the new Deep Learning types, such as 
 // IEEE-754 half-precision floats
@@ -30,11 +67,9 @@
 // supporting types and functions
 #include <cctype>
 #include <limits>
-#include <regex>
-#include <sstream>
 #include <string_view>
 #include <type_traits>
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>   // bit manipulation only; the text layer is not needed here (#1334)
 #include <universal/native/subnormal.hpp>
 #include <universal/utility/find_msb.hpp>
 #include <universal/utility/decimal_to_binary.hpp>
@@ -48,7 +83,6 @@
 // composition types used by cfloat
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
-#include <universal/number/support/decimal.hpp>
 
 #ifndef CFLOAT_THROW_ARITHMETIC_EXCEPTION
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
@@ -339,7 +373,7 @@ constexpr inline void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nb
 				// (only triggered when blocktriple bfbits >= 65 and the
 				// computed exponent doesn't fit the cfloat config).
 				if (!std::is_constant_evaluated()) {
-					std::cerr << "exponent value is out of range: " << exponent << '\n';
+					std::fprintf(stderr, "exponent value is out of range: %d\n", static_cast<int>(exponent));
 				}
 			}
 
@@ -646,7 +680,9 @@ public:
 	}
 
 	constexpr cfloat& operator+=(const cfloat& rhs) CFLOAT_EXCEPT {
+#if CFLOAT_TRACE_ENABLED
 		if constexpr (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+#endif
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
@@ -710,7 +746,9 @@ public:
 		return *this += cfloat(rhs);
 	}
 	constexpr cfloat& operator-=(const cfloat& rhs) CFLOAT_EXCEPT {
+#if CFLOAT_TRACE_ENABLED
 		if constexpr (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
+#endif
 		if (rhs.isnan()) 
 			return *this += rhs;
 		else 
@@ -720,7 +758,9 @@ public:
 		return *this -= cfloat(rhs);
 	}
 	constexpr cfloat& operator*=(const cfloat& rhs) CFLOAT_EXCEPT {
+#if CFLOAT_TRACE_ENABLED
 		if constexpr (_trace_mul) std::cout << "---------------------- MUL -------------------\n";
+#endif
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
@@ -777,17 +817,19 @@ public:
 		rhs.normalizeMultiplication(b);
 		product.mul(a, b);
 		convert(product, *this);
+#if CFLOAT_TRACE_ENABLED
 
 		if constexpr (_trace_mul) std::cout << to_binary(a) << " : " << a << " *\n" << to_binary(b) << " : " << b << " =\n" << to_binary(product) << " : " << product << '\n';
-
+#endif
 		return *this;
 	}
 	constexpr cfloat& operator*=(double rhs) CFLOAT_EXCEPT {
 		return *this *= cfloat(rhs);
 	}
 	constexpr cfloat& operator/=(const cfloat& rhs) CFLOAT_EXCEPT {
+#if CFLOAT_TRACE_ENABLED
 		if constexpr (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
-
+#endif
 		// special case handling of the inputs
 		// qnan / qnan = qnan
 		// qnan / snan = qnan
@@ -862,9 +904,10 @@ public:
 		quotient.div(a, b);
 		quotient.setradix(BlockTriple::radix);
 		convert(quotient, *this);
+#if CFLOAT_TRACE_ENABLED
 
 		if constexpr (_trace_div) std::cout << to_binary(a) << " : " << a << " /\n" << to_binary(b) << " : " << b << " =\n" << to_binary(quotient) << " : " << quotient << '\n';
-
+#endif
 		return *this;
 	}
 	constexpr cfloat& operator/=(double rhs) CFLOAT_EXCEPT {
@@ -1533,27 +1576,27 @@ public:
 						// consume this delimiting character
 						break;
 					default:
-						std::cerr << "string contained a non-standard character: " << c << '\n';
+						std::fprintf(stderr, "string contained a non-standard character: %c\n", c);
 						return *this;
 					}
 				}
 			}
 			else {
-				std::cerr << "string must start with 0b: instead input pattern was " << str << '\n';
+				std::fprintf(stderr, "string must start with 0b: instead input pattern was %s\n", str.c_str());
 				return *this;
 			}
 		}
 		else {
-			std::cerr << "string is too short\n";
+			std::fprintf(stderr, "string is too short\n");
 			return *this;
 		}
 
 		if (nrBits != nbits) {
-			std::cerr << "number of bits in the string is " << nrBits << " and needs to be " << nbits << '\n';
+			std::fprintf(stderr, "number of bits in the string is %u and needs to be %u\n", nrBits, nbits);
 			return *this;
 		}
 		if (nrDots != 2) {
-			std::cerr << "number of segment delimiters in string is " << nrDots << " and needs to be 2 for a cfloat<>\n";
+			std::fprintf(stderr, "number of segment delimiters in string is %u and needs to be 2 for a cfloat<>\n", nrDots);
 			return *this;
 		}
 
@@ -1567,7 +1610,7 @@ public:
 				++field;
 				if (field == 2) { // just finished parsing exponent field: we can now check the number of exponent bits
 					if (nrExponentBits != es) {
-						std::cerr << "provided binary string representation does not contain " << es << " exponent bits. Found " << nrExponentBits << ". Reset to 0\n";
+						std::fprintf(stderr, "provided binary string representation does not contain %u exponent bits. Found %u. Reset to 0\n", es, nrExponentBits);
 						clear();
 						return *this;
 					}
@@ -1581,7 +1624,7 @@ public:
 			}
 		}
 		if (field != 2) {
-			std::cerr << "provided binary string did not contain three fields separated by '.': Reset to 0\n";
+			std::fprintf(stderr, "provided binary string did not contain three fields separated by '.': Reset to 0\n");
 			clear();
 			return *this;
 		}
@@ -2383,44 +2426,12 @@ public:
 		tgt.setradix(blocktriple<fbits, BlockTripleOperator::DIV, bt>::radix);
 	}
 
-	// helper debug function
-	void constexprClassParameters() const noexcept {
-		std::cout << "-------------------------------------------------------------\n";
-		std::cout << "type              : " << typeid(*this).name() << '\n';
-		std::cout << "nbits             : " << nbits << '\n';
-		std::cout << "es                : " << es << std::endl;
-		std::cout << "hasSubnormals     : " << (hasSubnormals ? "true" : "false") << '\n';
-		std::cout << "hasMaxExpValues   : " << (hasMaxExpValues ? "true" : "false") << '\n';
-		std::cout << "isSaturating      : " << (isSaturating ? "true" : "false") << '\n';
-		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
-		std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, 0, true) << '\n';
-		std::cout << "nrBlocks          : " << nrBlocks << '\n';
-		std::cout << "bits in MSU       : " << bitsInMSU << '\n';
-		std::cout << "MSU               : " << MSU << '\n';
-		std::cout << "MSU MASK          : " << to_binary(MSU_MASK, 0, true) << '\n';
-		std::cout << "SIGN_BIT_MASK     : " << to_binary(SIGN_BIT_MASK, 0, true) << '\n';
-		std::cout << "LSB_BIT_MASK      : " << to_binary(LSB_BIT_MASK, 0, true) << '\n';
-		std::cout << "MSU CAPTURES_EXP  : " << (MSU_CAPTURES_EXP ? "yes\n" : "no\n");
-		std::cout << "EXP_SHIFT         : " << EXP_SHIFT << '\n';
-		std::cout << "MSU EXP MASK      : " << to_binary(MSU_EXP_MASK, 0, true) << '\n';
-		std::cout << "ALL_ONE_MASK_ES   : " << to_binary(ALL_ONES_ES) << '\n';
-		std::cout << "EXP_BIAS          : " << EXP_BIAS << '\n';
-		std::cout << "MAX_EXP           : " << MAX_EXP << '\n';
-		std::cout << "MIN_EXP_NORMAL    : " << MIN_EXP_NORMAL << '\n';
-		std::cout << "MIN_EXP_SUBNORMAL : " << MIN_EXP_SUBNORMAL << '\n';
-		std::cout << "fraction Blocks   : " << fBlocks << '\n';
-		std::cout << "bits in FSU       : " << bitsInFSU << '\n';
-		std::cout << "FSU               : " << FSU << '\n';
-		std::cout << "FSU MASK          : " << to_binary(FSU_MASK, 0, true) << '\n';
-		std::cout << "topfbits          : " << topfbits << '\n';
-		std::cout << "ALL_ONE_MASK_FR   : " << to_binary(ALL_ONES_FR) << '\n';
-	}
-	void showLimbs() const {
-		for (unsigned b = 0; b < nrBlocks; ++b) {
-			std::cout << to_binary(_block[nrBlocks - b - 1], sizeof(bt) * 8) << ' ';
-		}
-		std::cout << '\n';
-	}
+	// helper debug function. DECLARED here, DEFINED in cfloat/debug.hpp, so the
+	// arithmetic core needs no <iostream> (#1334). Include debug.hpp to call it.
+	void constexprClassParameters() const noexcept;
+	// DECLARED here, DEFINED in cfloat/debug.hpp, for the same reason as
+	// constexprClassParameters above (#1334).
+	void showLimbs() const;
 
 protected:
 	// HELPER methods
@@ -3411,257 +3422,6 @@ private:
 	friend constexpr bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs);
 };
 
-///////////////////////////// IOSTREAM operators ///////////////////////////////////////////////
-
-// convert cfloat to decimal fixpnt string, i.e. "-1234.5678"
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& value, long long precision) {
-	constexpr unsigned fbits = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::fbits;
-	constexpr unsigned bias = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::EXP_BIAS;
-	std::stringstream str;
-	if (value.iszero()) {
-		str << '0';
-		return str.str();
-	}
-	if (value.sign()) str << '-';
-
-	// construct the discretization levels of the fraction part
-	support::decimal range, discretizationLevels, step;
-	// create the decimal range we are discretizing
-	range.setdigit(1);
-	range.shiftLeft(fbits); // the decimal range of the fraction
-	discretizationLevels.powerOf2(fbits); // calculate the discretization levels of this range
-	step = div(range, discretizationLevels);
-	// now construct the value of this range by adding the fraction samples
-	support::decimal partial, multiplier;
-	partial.setzero();  // if you just want the fraction
-	multiplier.setdigit(1);
-	// convert the fraction part
-	for (unsigned i = 0; i < fbits; ++i) {
-		if (value.at(i)) {
-			support::add(partial, multiplier);
-		}
-		support::add(multiplier, multiplier);
-	}
-	if (value.isdenormal()) {
-		support::mul(partial, step);
-		support::decimal scale;
-		scale.powerOf2(bias - 1ull);
-		partial = support::div(partial, scale);
-	} 
-	else {
-		support::add(partial, multiplier); // add the hidden bit
-		support::mul(partial, step);
-		support::decimal scale;
-		int exponent = value.scale();
-		if (exponent < 0) {
-			scale.powerOf2(static_cast<unsigned>(-exponent));
-			partial = support::div(partial, scale);
-		}
-		else {
-			scale.powerOf2(static_cast<unsigned>(exponent));
-			support::mul(partial, scale);
-		}
-	}
-
-	// the radix is at fbits
-	// The partial represents the parts in the range, so we can deduce
-	// the number of leading zeros by comparing to the length of range
-	int nrLeadingZeros = static_cast<int>(range.size()) - static_cast<int>(partial.size()) - 1;
-	if (nrLeadingZeros >= 0) str << "0.";
-	for (int i = 0; i < nrLeadingZeros; ++i) str << '0';
-	int digitsWritten = (nrLeadingZeros > 0) ? nrLeadingZeros : 0;
-	int position = static_cast<int>(partial.size()) - 1;
-	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-		str << (int)*rit;
-		++digitsWritten;
-		if (position == fbits) str << '.';
-		--position;
-	}
-	if (digitsWritten < precision) { // deal with trailing 0s
-		for (unsigned i = static_cast<unsigned>(digitsWritten); i < fbits; ++i) {
-			str << '0';
-		}
-	}
-
-	return str.str();
-}
-
-// NOTE: the legacy `to_string(const cfloat&, long long precision)` overload was
-// removed (#1282). It built the value with an integer-only `support::decimal`
-// and was lossy for every value with scale < fbits (e.g. 1.5 rendered as 48),
-// and a negative lsbScale would spin `powerOf2` ~2^64 times. It had no callers;
-// use operator<< (exact binary-to-decimal via blocktriple::to_string) instead.
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-/// stream operators
-
-// ostream output generates an ASCII format for the floating-point argument
-// Uses native binary-to-decimal conversion via blocktriple::to_string()
-// to produce exact output for all cfloat sizes without double conversion.
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& v) {
-	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
-	constexpr unsigned cfbits = Cfloat::fbits;
-
-	std::streamsize prec  = ostr.precision();
-	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff = ostr.flags();
-	bool bFixed      = (ff & std::ios_base::fixed) == std::ios_base::fixed;
-	bool bScientific = (ff & std::ios_base::scientific) == std::ios_base::scientific;
-	bool bShowpos    = (ff & std::ios_base::showpos) != 0;
-	bool bUppercase  = (ff & std::ios_base::uppercase) != 0;
-	bool bInternal   = (ff & std::ios_base::internal) != 0;
-	bool bLeft       = (ff & std::ios_base::left) != 0;
-	char fillChar    = ostr.fill();
-
-	if constexpr (cfbits == 0) {
-		// degenerate cfloat with no fraction bits: fall back to double
-		std::ostringstream oss;
-		oss.precision(prec);
-		if (bFixed) oss << std::fixed;
-		if (bScientific) oss << std::scientific;
-		if (bUppercase) oss << std::uppercase;
-		if (bShowpos) oss << std::showpos;
-		oss << static_cast<double>(v);
-		std::string s = oss.str();
-		if (width > 0 && s.length() < static_cast<size_t>(width)) {
-			size_t pad = static_cast<size_t>(width) - s.length();
-			if (bLeft) { s.append(pad, fillChar); }
-			else { s.insert(0u, pad, fillChar); }
-		}
-		return ostr << s;
-	} else {
-		blocktriple<cfbits, BlockTripleOperator::REP, bt> a;
-		v.normalize(a);
-		return ostr << a.to_string(prec, width, bFixed, bScientific,
-		                           bInternal, bLeft, bShowpos, bUppercase, fillChar);
-	}
-}
-
-// parse a cfloat from a string in either cfloat hex format (nbits.esxHEXVALUEc)
-// or a decimal floating-point representation
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-bool parse(const std::string& txt, cfloat<nbits,es,bt,hasSubnormals,hasMaxExpValues,isSaturating>& v) {
-	// check if the txt is of the native cfloat form: nbits.esX[0x]hexvaluec
-	std::regex cfloat_regex(R"(^[0-9]+\.[0-9]+[xX](0[xX])?[0-9A-Fa-f]+c?$)");
-	if (std::regex_match(txt, cfloat_regex)) {
-		// found a cfloat representation: parse nbits.esxHEXVALUEc
-		std::string nbitsStr, esStr, bitStr;
-		auto it = txt.begin();
-		for (; it != txt.end(); ++it) {
-			if (*it == '.') break;
-			nbitsStr.append(1, *it);
-		}
-		for (++it; it != txt.end(); ++it) {
-			if (*it == 'x' || *it == 'X') break;
-			esStr.append(1, *it);
-		}
-		for (++it; it != txt.end(); ++it) {
-			if (*it == 'c') break;
-			bitStr.append(1, *it);
-		}
-		unsigned nbits_in = 0;
-		unsigned es_in = 0;
-		{
-			std::istringstream ss(nbitsStr);
-			ss >> nbits_in;
-			if (ss.fail()) return false;
-		}
-		{
-			std::istringstream ss(esStr);
-			ss >> es_in;
-			if (ss.fail()) return false;
-		}
-		// native cfloat form must match target configuration
-		if (nbits_in != nbits || es_in != es) return false;
-		uint64_t raw = 0;
-		std::istringstream ss(bitStr);
-		ss >> std::hex >> raw;
-		if (ss.fail()) return false;
-		ss >> std::ws;
-		if (!ss.eof()) return false;
-		v.setbits(raw);
-		return true;
-	}
-	else {
-		// Decimal floating-point representation.
-		// Route through the high-precision decimal_to_binary utility so that
-		// wide cfloat configurations (nbits > 64, including IEEE quad and
-		// posit-killer formats) don't lose precision through an intermediate
-		// double. The utility delivers a normalized mantissa with
-		// target_mantissa_bits bits plus guard/sticky; we package that as a
-		// blocktriple and hand it to convert(blocktriple, cfloat), which
-		// handles all IEEE-754 edge cases (subnormals, saturation, etc.).
-		// Special-value tokens (nan / inf in any common spelling) are
-		// recognised directly so callers don't depend on locale-sensitive
-		// std::istringstream parsing of those literals.
-		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
-		{
-			std::string t; t.reserve(txt.size());
-			for (char c : txt) t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
-			bool negative = !t.empty() && t.front() == '-';
-			std::string body = t;
-			if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
-			if (body == "nan") {
-				v.setnan(NAN_TYPE_QUIET);
-				return true;
-			}
-			if (body == "inf" || body == "infinity") {
-				v.setinf(negative);
-				return true;
-			}
-		}
-		// We pack the d2b result into a blocktriple<fbits, MUL, bt>. The MUL
-		// layout has bfbits = 2*fbits + 2 and radix = 2*fbits, which gives us
-		// exactly fbits of headroom below the cfloat fraction for guard/
-		// sticky -- enough room for cfloat's convert() to make a correct
-		// round-to-nearest-even decision. (The REP layout has no such
-		// headroom: its fraction is exactly cfloat::fbits wide.)
-		using BT = blocktriple<Cfloat::fbits, BlockTripleOperator::MUL, bt>;
-		constexpr unsigned radix_pos          = static_cast<unsigned>(BT::radix);
-		constexpr unsigned target_mantissa_bits = radix_pos + 1u;
-		auto d = ::sw::universal::decimal_to_binary::convert(
-			std::string_view{txt}, target_mantissa_bits);
-		if (!d.valid) return false;
-		if (d.is_zero) {
-			v.setzero();
-			v.setsign(d.negative);
-			return true;
-		}
-		BT bt_val;
-		bt_val.setnormal();
-		bt_val.setsign(d.negative);
-		bt_val.setscale(static_cast<int>(d.binary_scale));
-		// d2b mantissa has its MSB at position radix_pos (the hidden bit);
-		// below it are radix_pos extra precision bits. Copy bit-for-bit
-		// into the blocktriple significand aligned to the same radix.
-		for (unsigned i = 0; i <= radix_pos; ++i) {
-			if (d.mantissa.at(i)) bt_val.setbit(i, true);
-		}
-		// Fold d2b's residual guard/sticky into the lowest bit so cfloat's
-		// own rounding decision picks them up as sticky tail.
-		if (d.guard_bit || d.sticky_bit) bt_val.setbit(0, true);
-		convert(bt_val, v);
-		return true;
-	}
-}
-
-// read an ASCII float or cfloat format: nbits.esxNN...NNc, for example: 16.5x7C00c
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-inline std::istream& operator>>(std::istream& istr, cfloat<nbits,es,bt,hasSubnormals,hasMaxExpValues,isSaturating>& v) {
-	std::string txt;
-	istr >> txt;
-	if (!parse(txt, v)) {
-		std::cerr << "unable to parse -" << txt << "- into a cfloat value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
-
-// encoding helpers
-
 // return the Unit in the Last Position
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ulp(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a) {
@@ -3669,45 +3429,6 @@ constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturat
 	return ++b - a;
 }
 
-// transform cfloat to a binary representation
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& number, bool nibbleMarker = false) {
-	std::stringstream s;
-	s << "0b";
-	unsigned index = nbits;
-	s << (number.at(--index) ? '1' : '0') << '.';
-
-	for (int i = int(es) - 1; i >= 0; --i) {
-		s << (number.at(--index) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
-	}
-
-	s << '.';
-
-	constexpr int fbits = nbits - 1ull - es;
-	for (int i = fbits - 1; i >= 0; --i) {
-		s << (number.at(--index) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
-	}
-
-	return s.str();
-}
-
-// native semantic representation: radix-2, delegates to to_binary
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-inline std::string to_native(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& number, bool nibbleMarker = false) {
-	return to_binary(number, nibbleMarker);
-}
-
-// transform a cfloat into a triple representation
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& number, bool nibbleMarker = true) {
-	std::stringstream s;
-	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::fbits, BlockTripleOperator::REP, bt> triple;
-	number.normalize(triple);
-	s << to_triple(triple, nibbleMarker);
-	return s.str();
-}
 
 // Magnitude of a cfloat (equivalent to turning the sign bit off).
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
@@ -3725,13 +3446,6 @@ fabs(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> v) {
 }
 
 ////////////////////// debug helpers
-
-// convenience method to gain access to the values of the constexpr variables that govern the cfloat behavior
-template<unsigned nbits, unsigned es, typename bt = uint8_t, bool hasSubnormals = false, bool hasMaxExpValues = false, bool isSaturating = false>
-void ReportCfloatClassParameters() {
-	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> a;
-	a.constexprClassParameters();
-}
 
 //////////////////////////////////////////////////////
 /// cfloat - cfloat binary logic operators

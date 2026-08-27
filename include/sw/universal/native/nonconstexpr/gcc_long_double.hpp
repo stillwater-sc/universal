@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <cmath>    // std::frexp / std::ldexp, previously arriving transitively (#1389)
 #include <cstdio>
 // gcc_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
@@ -253,12 +254,12 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 	if constexpr (std::numeric_limits<long double>::digits <= 64) {
 		if constexpr (sizeof(long double) == 8) { // it is just a double
 			_sign = fp < 0.0 ? true : false;
-			_fr = frexp(double(fp), &_exponent);
+			_fr = std::frexp(double(fp), &_exponent);
 			_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
 		}
 		else if constexpr (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
 			_sign = fp < 0.0 ? true : false;
-			_fr = frexpl(fp, &_exponent);
+			_fr = std::frexp(fp, &_exponent);
 			_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
 		}
 	}
@@ -272,12 +273,12 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 	if (std::numeric_limits<long double>::digits <= 64) {
 		if (sizeof(long double) == 8) { // it is just a double
 			_sign = fp < 0.0 ? true : false;
-			_fr = frexp(double(fp), &_exponent);
+			_fr = std::frexp(double(fp), &_exponent);
 			_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
 		}
 		else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
 			_sign = fp < 0.0 ? true : false;
-			_fr = frexpl(fp, &_exponent);
+			_fr = std::frexp(fp, &_exponent);
 			_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
 		}
 	}
