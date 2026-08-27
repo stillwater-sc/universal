@@ -17,6 +17,10 @@
 #include <type_traits>
 
 #include <universal/number/dd/core.hpp>
+#include <universal/number/dd/iostream.hpp>   // to_triple() formats a dd fraction THROUGH operator<<,
+                                             // which is declared in the core but DEFINED there (#1334).
+                                             // Without this a caller of to_triple() that includes only
+                                             // this header gets an undefined reference at link time.
 #include <universal/traits/dd_traits.hpp>   // is_dd, the enable_if guard on every function here
 #include <string>
 #include <iomanip>

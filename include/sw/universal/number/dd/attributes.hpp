@@ -10,6 +10,8 @@
 #include <string>      // std::string
 #include <universal/number/dd/core.hpp>           // the dd type these attributes report on (#1334)
 #include <universal/number/dd/manipulators.hpp>   // type_tag()
+#include <universal/number/dd/iostream.hpp>       // dd_range() and friends stream dd values
+                                                 // (maxneg/minpos/...) through operator<<
 
 namespace sw { namespace universal {
 

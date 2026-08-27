@@ -6,6 +6,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
+// NOTE on layer order: this header does NOT include manipulators.hpp, and must not.
+// operator<< calls only the to_string() member and operator>> only parse(), both core,
+// so the dependency runs the OTHER way: dd's string builders format dd values THROUGH
+// operator<<, so manipulators.hpp includes THIS header. Keeping the include out here is
+// what stops that being a cycle.
+//
 // Layer 2b of the dd headers (#1334): the <iostream> half. manipulators.hpp is the
 // string-producing half. operator>> reports a parse failure on std::cerr, which is why
 // <iostream> belongs at this layer and not in the core.
