@@ -14,9 +14,10 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
+#include <algorithm>    // std::max, in to_string()'s fixed-format path
+#include <ios>          // std::streamsize / std::ios_base, in the to_string() signature
+#include <iosfwd>       // std::ostream in the operator<< forward declaration (#1334)
+#include <cstdio>       // fprintf(stderr,...) for the diagnostics
 #include <limits>
 #include <cmath>
 #include <vector>
@@ -26,7 +27,8 @@
 // supporting types and functions
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/decimal_to_binary.hpp>
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>          // extractFields/ieee754_parameter (#1334)
+#include <universal/native/manipulators_core.hpp>   // scale(), without the to_triple/to_hex text layer
 #include <universal/numerics/error_free_ops.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
@@ -1235,7 +1237,7 @@ protected:
 		}
 
 		if ((r >= _ten) || (r < _one)) {
-			std::cerr << "to_digits() failed to compute exponent\n";
+			std::fprintf(stderr, "to_digits() failed to compute exponent\n");
 			return;
 		}
 
@@ -1278,7 +1280,7 @@ protected:
 		}
 
 		if (s[0] <= '0') {
-			std::cerr << "to_digits() non-positive leading digit\n";
+			std::fprintf(stderr, "to_digits() non-positive leading digit\n");
 			return;
 		}
 
@@ -1343,141 +1345,6 @@ constexpr double qd_min_normalized = 2.0041683600089728e-292;  // = 2^(-1022 + 5
 inline qd ulp(const qd& a) {
 	int scaleOf = scale(a[0]);
 	return ldexp(qd(1.0), scaleOf - 159);
-}
-
-inline std::string to_quad(const qd& v, int precision = 17) {
-	std::stringstream s;
-	s << std::setprecision(precision) << "( " << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ')';
-	return s.str();
-}
-
-inline std::string to_triple(const qd& v, int precision = 17) {
-	std::stringstream s;
-	bool isneg = v.isneg();
-	int scale = v.scale();
-	int exponent;
-	qd fraction = frexp(v, &exponent);
-	s << '(' << (isneg ? '1' : '0') << ", " << scale << ", " << std::setprecision(precision) << fraction << ')';
-	return s.str();
-}
-
-inline std::string to_binary(const qd& number, bool nibbleMarker = false) {
-	std::stringstream s;
-	double_decoder decoder;
-	decoder.d = number[0];	
-
-	s << "0b";
-	// print sign bit
-	s << (decoder.parts.sign ? '1' : '0') << '.';
-
-	// print exponent bits
-	{
-		uint64_t mask = 0x400;
-		for (int bit = 10; bit >= 0; --bit) {
-			s << ((decoder.parts.exponent & mask) ? '1' : '0');
-			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
-			mask >>= 1;
-		}
-	}
-
-	s << '.';
-
-	// print first limb's fraction bits
-	{
-		uint64_t mask = (uint64_t(1) << 51);
-		for (int bit = 51; bit >= 0; --bit) {
-			s << ((decoder.parts.fraction & mask) ? '1' : '0');
-			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
-			mask >>= 1;
-		}
-	}
-
-// remove debugging statements when validated
-//	auto defaultPrec = std::cout.precision();
-//	std::cout << std::setprecision(7);
-	// print the extension fraction bits
-	// this is bit of a trick as there can be many different ways in which the limbs represent
-	// more precise fraction bits
-
-	// For quad-double we need to enumerate in the qd bit space, 
-	// since we know the scale of the bits in this space, set by the scale of the first limb
-	int limb{ 0 };
-	int scaleOfBit = scale(number[limb++]) - 53;  // this is the scale of the first extension bit
-	double bitValue = std::ldexp(1.0, scaleOfBit-1);
-	constexpr int firstExtensionBit = 212 - 53;
-	double segment = number[limb];
-	// when do you know to switch to a new limb?
-	for (int bit = firstExtensionBit; bit > 0; --bit) {
-		if (bit == firstExtensionBit || bit == 106 || bit == 53) s << '|';
-		double diff = segment - bitValue;
-//		std::cout << "segment    : " << to_binary(segment) << " : " << segment << '\n';
-//		std::cout << "bitValue   : " << to_binary(bitValue) << " : " << bitValue << '\n';
-//		std::cout << "difference : " << diff << '\n';
-		if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
-		if (diff >= 0.0) {
-			// segment > bitValue
-			segment -= bitValue;
-			s << '1';
-		}
-		else {
-			s << '0';
-		}
-		bitValue /= 2;
-		if (segment == 0.0) {
-			// configurations where there are segments that are 0.0 have these segments
-			// after non-zero segments. This logic is consistent, as the conditional
-			// will avoid stepping out the segment array.
-			if (limb < 3) segment = number[++limb];
-		}
-	}
-//	std::cout << std::setprecision(defaultPrec);
-
-	return s.str();
-}
-
-// native semantic representation: radix-2, delegates to to_binary
-inline std::string to_native(const qd& number, bool nibbleMarker = false) {
-	return to_binary(number, nibbleMarker);
-}
-
-inline std::string to_components(const qd& number, bool nibbleMarker = false) {
-	std::stringstream s;
-	constexpr int nrLimbs = 4;
-	for (int i = 0; i < nrLimbs; ++i) {
-		double_decoder decoder;
-		decoder.d = number[i];
-
-		std::string label = "x[" + std::to_string(i) + "]";
-		s << label << " : ";
-		s << "0b";
-		// print sign bit
-		s << (decoder.parts.sign ? '1' : '0') << '.';
-
-		// print exponent bits
-		{
-			uint64_t mask = 0x400;
-			for (int bit = 10; bit >= 0; --bit) {
-				s << ((decoder.parts.exponent & mask) ? '1' : '0');
-				if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
-				mask >>= 1;
-			}
-		}
-
-		s << '.';
-
-		// print hi fraction bits
-		uint64_t mask = (uint64_t(1) << 51);
-		for (int bit = 51; bit >= 0; --bit) {
-			s << ((decoder.parts.fraction & mask) ? '1' : '0');
-			if (nibbleMarker && bit != 0 && (bit % 4) == 0) s << '\'';
-			mask >>= 1;
-		}
-
-		s << std::scientific << std::showpos << std::setprecision(15); // we are printing a double
-		s << " : " << number[i] << " : binary scale " << scale(number[i]) << '\n';
-	}
-
-	return s.str();
 }
 
 ////////////////////////    math functions   /////////////////////////////////
@@ -1722,37 +1589,6 @@ inline qd pown(const qd& a, int n) {
 		return (qd(1.0) / s);
 
 	return s;
-}
-
-////////////////////////  stream operators   /////////////////////////////////
-
-// stream out a decimal floating-point representation of the quad-double
-inline std::ostream& operator<<(std::ostream& ostr, const qd& v) {
-	std::ios_base::fmtflags fmt = ostr.flags();
-	std::streamsize precision = ostr.precision();
-	std::streamsize width = ostr.width();
-	char fillChar = ostr.fill();
-	bool showpos = fmt & std::ios_base::showpos;
-	bool uppercase = fmt & std::ios_base::uppercase;
-	bool fixed = fmt & std::ios_base::fixed;
-	bool scientific = fmt & std::ios_base::scientific;
-	bool internal = fmt & std::ios_base::internal;
-	bool left = fmt & std::ios_base::left;
-	return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
-}
-
-// stream in an ASCII decimal floating-point format and assign it to a quad-double
-inline std::istream& operator>>(std::istream& istr, qd& v) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit is set by >>.
-		return istr;
-	}
-	if (!parse(txt, v)) {
-		std::cerr << "unable to parse -" << txt << "- into a quad-double value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
 }
 
 ////////////////// string operators

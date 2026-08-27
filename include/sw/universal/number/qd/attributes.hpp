@@ -5,6 +5,13 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <sstream>     // std::stringstream
+#include <iomanip>     // std::setw
+#include <string>      // std::string
+#include <universal/number/qd/core.hpp>           // the qd type these attributes report on (#1334)
+#include <universal/number/qd/manipulators.hpp>   // type_tag()
+#include <universal/number/qd/iostream.hpp>       // qd_range() and friends stream qd values
+                                                 // (maxneg/minpos/...) through operator<<
 
 namespace sw { namespace universal {
 
