@@ -42,15 +42,17 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/takum/exceptions.hpp>
-#include <universal/number/takum/takum_fwd.hpp>
-#include <universal/number/takum/takum_impl.hpp>
-#include <universal/number/takum/takum_log_impl.hpp>
-#include <universal/number/takum/takum_traits.hpp>
-#include <universal/number/takum/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/takum/core.hpp>
 
 // useful functions to work with takum numbers
+// layer 2a: the string producers
 #include <universal/number/takum/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/takum/iostream.hpp>
+// layer 3: introspection -- debugConstexprParameters
+#include <universal/number/takum/debug.hpp>
 #include <universal/number/takum/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////

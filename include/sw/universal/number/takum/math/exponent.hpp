@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
+#include <cstdint>       // std::int64_t
 #include <cmath>
 #include <universal/number/takum/math/takum_log_domain.hpp>
 

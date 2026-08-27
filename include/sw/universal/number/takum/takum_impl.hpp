@@ -1,7 +1,8 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <cstdint>       // the fixed-width integer types
+#include <type_traits>   // std::is_same_v
+#include <iosfwd>     // std::ostream/std::istream in the friend declarations (#1334)
 #include <universal/utility/icf_array_bounds.hpp>
-#include <sstream>
 #include <string>
 // takum_impl.hpp: implementation of a linear takum number system
 //
@@ -47,7 +48,7 @@
 #include <limits>
 #include <cmath>
 
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>   // the bit-manipulation half (#1334)
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/abstract/triple.hpp>
 #include <math/constexpr_math/exp2.hpp>
@@ -470,22 +471,6 @@ public:
 
 	inline std::string get() const noexcept { return std::string("tbd"); }
 
-	void debugConstexprParameters() {
-		std::cout << "constexpr parameters for " << type_tag(*this) << '\n';
-		std::cout << "nbits                 " << nbits << '\n';
-		std::cout << "rbits                 " << rbits << '\n';
-		std::cout << "overhead              " << overhead << '\n';
-		std::cout << "dr_bits               " << dr_bits << '\n';
-		std::cout << "nr_dr_values          " << nr_dr_values << '\n';
-		std::cout << "max_r                 " << max_r << '\n';
-		std::cout << "maxCharBits           " << maxCharBits << '\n';
-		std::cout << "min characteristic    " << min_characteristic() << '\n';
-		std::cout << "max characteristic    " << max_characteristic() << '\n';
-		std::cout << "bitsInBlock           " << bitsInBlock << '\n';
-		std::cout << "nrBlocks              " << nrBlocks << '\n';
-		std::cout << "MSU_MASK              " << to_binary(MSU_MASK, bitsInBlock) << '\n';
-		std::cout << "SIGN_BIT_MASK         " << to_binary(SIGN_BIT_MASK, bitsInBlock) << '\n';
-	}
 
 	// Get the raw bit pattern as a uint64_t (works for nbits <= 64)
 	constexpr uint64_t raw_bits() const noexcept {
@@ -504,6 +489,10 @@ public:
 		}
 		return raw;
 	}
+
+	// DECLARED here, DEFINED in takum/debug.hpp, so the arithmetic core needs no
+	// <iostream> (#1334). Include debug.hpp to call it.
+	void debugConstexprParameters();
 
 protected:
 
@@ -720,68 +709,9 @@ inline CONSTEXPRESSION takum<nbits, rbits, bt> ulp(const takum<nbits, rbits, bt>
 	return ++b - a;
 }
 
-template<unsigned nbits, unsigned rbits, typename bt>
-std::string to_binary(const takum<nbits, rbits, bt>& number, bool nibbleMarker = false) {
-	using T = takum<nbits, rbits, bt>;
-	std::stringstream s;
-	bool negative = number.sign();
-	uint64_t mag = number.magnitude_bits();
-
-	s << "0b";
-	s << (negative ? "1." : "0.");
-
-	// Direction bit from magnitude
-	bool D = static_cast<bool>((mag >> (nbits - 2)) & 1);
-	s << (D ? "1." : "0.");
-
-	// Regime field from magnitude (rbits bits)
-	unsigned regime = static_cast<unsigned>((mag >> (nbits - T::overhead)) & T::r_mask);
-	for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
-		s << ((regime >> i) & 1 ? '1' : '0');
-	}
-	s << '.';
-
-	// Characteristic and mantissa bits (geometry from the shared codec)
-	auto g = T::Codec::layout_of(number.dr_field());
-	unsigned p = g.p;
-	unsigned c_stored = g.c_stored_bits;
-	int bit = static_cast<int>(nbits) - static_cast<int>(T::overhead) - 1;
-
-	for (unsigned i = 0; i < c_stored && bit >= 0; ++i) {
-		s << ((mag >> bit) & 1 ? '1' : '0');
-		--bit;
-		if (i < c_stored - 1 && ((c_stored - 1 - i) % 4) == 0 && nibbleMarker) s << '\'';
-	}
-	s << '.';
-	for (unsigned i = 0; i < p && bit >= 0; ++i) {
-		s << ((mag >> bit) & 1 ? '1' : '0');
-		if (bit > 0 && (bit % 4) == 0 && nibbleMarker) s << '\'';
-		--bit;
-	}
-
-	return s.str();
-}
 
 // native semantic representation: radix-2, delegates to to_binary
-template<unsigned nbits, unsigned rbits, typename bt>
-std::string to_native(const takum<nbits, rbits, bt>& number, bool nibbleMarker = false) {
-	return to_binary(number, nibbleMarker);
-}
 
-////////////////////// operators
-template<unsigned nnbits, unsigned nrbits, typename nbt>
-inline std::ostream& operator<<(std::ostream& ostr, const takum<nnbits, nrbits, nbt>& v) {
-	ostr << double(v);
-	return ostr;
-}
-
-template<unsigned nnbits, unsigned nrbits, typename nbt>
-inline std::istream& operator>>(std::istream& istr, takum<nnbits, nrbits, nbt>& v) {
-	double d;
-	istr >> d;
-	v = d;
-	return istr;
-}
 
 template<unsigned nnbits, unsigned nrbits, typename nbt>
 inline constexpr bool operator==(const takum<nnbits, nrbits, nbt>& lhs, const takum<nnbits, nrbits, nbt>& rhs) noexcept {

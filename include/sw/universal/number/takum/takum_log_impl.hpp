@@ -43,12 +43,15 @@
 // has the same constraint and uses long double for takum_log64.  Tracked with
 // the native-arithmetic work in #1297.
 
+#include <cstdint>       // the fixed-width integer types
+#include <type_traits>   // std::enable_if
 #include <cassert>
+#include <iosfwd>     // std::ostream/std::istream in the friend declarations (#1334)
 #include <universal/utility/icf_array_bounds.hpp>
 #include <limits>
 #include <cmath>
 
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>   // the bit-manipulation half (#1334)
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <math/constexpr_math/exp.hpp>
 #include <math/constexpr_math/log.hpp>
@@ -632,50 +635,8 @@ inline CONSTEXPRESSION takum_log<nbits, rbits, bt> ulp(const takum_log<nbits, rb
 	return ++b - a;
 }
 
-template<unsigned nbits, unsigned rbits, typename bt>
-std::string to_binary(const takum_log<nbits, rbits, bt>& number, bool nibbleMarker = false) {
-	using T = takum_log<nbits, rbits, bt>;
-	std::stringstream s;
-	uint64_t mag = number.magnitude_bits();
 
-	s << "0b";
-	s << (number.sign() ? "1." : "0.");
-	bool D = static_cast<bool>((mag >> (nbits - 2)) & 1);
-	s << (D ? "1." : "0.");
 
-	unsigned regime = static_cast<unsigned>((mag >> (nbits - T::overhead)) & T::r_mask);
-	for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) s << ((regime >> i) & 1 ? '1' : '0');
-	s << '.';
-
-	auto g = T::Codec::layout_of(number.dr_field());
-	int bit = static_cast<int>(nbits) - static_cast<int>(T::overhead) - 1;
-	for (unsigned i = 0; i < g.c_stored_bits && bit >= 0; ++i) {
-		s << ((mag >> bit) & 1 ? '1' : '0');
-		--bit;
-		if (i < g.c_stored_bits - 1 && ((g.c_stored_bits - 1 - i) % 4) == 0 && nibbleMarker) s << '\'';
-	}
-	s << '.';
-	for (unsigned i = 0; i < g.p && bit >= 0; ++i) {
-		s << ((mag >> bit) & 1 ? '1' : '0');
-		if (bit > 0 && (bit % 4) == 0 && nibbleMarker) s << '\'';
-		--bit;
-	}
-	return s.str();
-}
-
-template<unsigned nbits, unsigned rbits, typename bt>
-std::string to_native(const takum_log<nbits, rbits, bt>& number, bool nibbleMarker = false) {
-	return to_binary(number, nibbleMarker);
-}
-
-////////////////////// operators
-template<unsigned nn, unsigned nr, typename nb>
-inline std::ostream& operator<<(std::ostream& ostr, const takum_log<nn, nr, nb>& v) { ostr << double(v); return ostr; }
-template<unsigned nn, unsigned nr, typename nb>
-inline std::istream&
-operator>>(std::istream& istr, takum_log<nn, nr, nb>& v) {
-	double d; istr >> d; v = d; return istr;
-}
 
 template<unsigned nn, unsigned nr, typename nb>
 inline constexpr bool operator==(const takum_log<nn, nr, nb>& lhs, const takum_log<nn, nr, nb>& rhs) noexcept {
