@@ -10,6 +10,7 @@
  || defined(ALGORITHM_TRACE_SUB)      || defined(ALGORITHM_TRACE_MUL) \
  || defined(ALGORITHM_TRACE_DIV)      || defined(ALGORITHM_TRACE_SQRT)
 #define CFLOAT_TRACE_ENABLED 1
+#include <iosfwd>        // std::ostream/std::istream in the friend declarations
 #include <iostream>
 #include <iomanip>
 #else

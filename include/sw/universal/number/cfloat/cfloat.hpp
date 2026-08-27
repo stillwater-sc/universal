@@ -8,6 +8,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
+#include <ostream>       // std::ostream in the report helpers
+#include <iomanip>       // std::setprecision
 #include <cstdint>       // the fixed-width integer types
 #include <limits>        // std::numeric_limits
 #include <universal/utility/architecture.hpp>

@@ -9,6 +9,7 @@
 // Layer 3 of the cfloat headers (#1334). cfloat_impl.hpp DECLARES
 // constexprClassParameters() but does not define it, so the arithmetic core needs no
 // <iostream>. Include this header to call it, or ReportCfloatClassParameters().
+#include <cstdint>       // uint8_t in the default template argument
 #include <iostream>
 #include <typeinfo>
 

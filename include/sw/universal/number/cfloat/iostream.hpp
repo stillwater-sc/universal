@@ -8,6 +8,7 @@
 //
 // Layer 2b of the cfloat headers (#1334): the <iostream> half. manipulators.hpp is the
 // <iomanip> half -- everything that turns a cfloat into a std::string. Self-contained.
+#include <cstddef>       // std::size_t
 #include <ios>
 #include <iostream>
 #include <sstream>
@@ -47,8 +48,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, 
 		if (bShowpos) oss << std::showpos;
 		oss << static_cast<double>(v);
 		std::string s = oss.str();
-		if (width > 0 && s.length() < static_cast<size_t>(width)) {
-			size_t pad = static_cast<size_t>(width) - s.length();
+		if (width > 0 && s.length() < static_cast<std::size_t>(width)) {
+			std::size_t pad = static_cast<std::size_t>(width) - s.length();
 			if (bLeft) { s.append(pad, fillChar); }
 			else { s.insert(0u, pad, fillChar); }
 		}

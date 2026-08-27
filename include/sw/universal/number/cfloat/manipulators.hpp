@@ -5,6 +5,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cctype>        // std::tolower
+#include <string_view>   // std::string_view
+#include <type_traits>   // std::enable_if_t
 #include <regex>       // parse() below
 #include <universal/number/support/decimal.hpp>   // support::decimal, for to_decimal_fixpnt_string
 #include <universal/internal/blocktriple/manipulators.hpp>   // to_triple(blocktriple), used by to_triple(cfloat)
@@ -32,7 +35,14 @@ namespace sw { namespace universal {
 
 // convert cfloat to decimal fixpnt string, i.e. "-1234.5678"
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& value, long long precision) {
+std::string to_decimal_fixpnt_string(
+		const cfloat<nbits,
+		es,
+		bt,
+		hasSubnormals,
+		hasMaxExpValues,
+		isSaturating>& value,
+		long long precision) {
 	constexpr unsigned fbits = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::fbits;
 	constexpr unsigned bias = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::EXP_BIAS;
 	std::stringstream str;
@@ -228,7 +238,14 @@ bool parse(const std::string& txt, cfloat<nbits,es,bt,hasSubnormals,hasMaxExpVal
 
 // transform cfloat to a binary representation
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& number, bool nibbleMarker = false) {
+inline std::string to_binary(
+		const cfloat<nbits,
+		es,
+		bt,
+		hasSubnormals,
+		hasMaxExpValues,
+		isSaturating>& number,
+		bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	unsigned index = nbits;
@@ -252,15 +269,30 @@ inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasMaxEx
 
 // native semantic representation: radix-2, delegates to to_binary
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-inline std::string to_native(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& number, bool nibbleMarker = false) {
+inline std::string to_native(
+		const cfloat<nbits,
+		es,
+		bt,
+		hasSubnormals,
+		hasMaxExpValues,
+		isSaturating>& number,
+		bool nibbleMarker = false) {
 	return to_binary(number, nibbleMarker);
 }
 
 // transform a cfloat into a triple representation
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& number, bool nibbleMarker = true) {
+inline std::string to_triple(
+		const cfloat<nbits,
+		es,
+		bt,
+		hasSubnormals,
+		hasMaxExpValues,
+		isSaturating>& number,
+		bool nibbleMarker = true) {
 	std::stringstream s;
-	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::fbits, BlockTripleOperator::REP, bt> triple;
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
+	blocktriple<Cfloat::fbits, BlockTripleOperator::REP, bt> triple;
 	number.normalize(triple);
 	s << to_triple(triple, nibbleMarker);
 	return s.str();
@@ -357,7 +389,7 @@ inline void subnormals() {
 		constexpr unsigned fbits = CfloatType::fbits;
 		std::cout << type_tag(a) << " subnormals\n";
 		if constexpr (nbits < 65u) {
-			for (size_t i = 0; i < fbits; ++i) {
+			for (std::size_t i = 0; i < fbits; ++i) {
 				std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
 				uint64_t fraction = a.fraction_ull();
 				fraction <<= 1;
@@ -367,7 +399,7 @@ inline void subnormals() {
 		else {
 #ifdef DEPRECATED
 			blockbinary<fbits, bt> fraction{ 0 };
-			for (size_t i = 0; i < fbits; ++i) {
+			for (std::size_t i = 0; i < fbits; ++i) {
 				std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
 				a.fraction(fraction);
 				fraction <<= 1;
@@ -471,13 +503,13 @@ inline std::string pretty_print(const CfloatType& r) {
 	// exponent bits
 	s << ':';
 	for (int i = int(es) - 1; i >= 0; --i) {
-		s << (e.test(static_cast<size_t>(i)) ? '1' : '0');
+		s << (e.test(static_cast<std::size_t>(i)) ? '1' : '0');
 	}
 
 	// fraction bits
 	s << ':';
 	for (int i = int(r.fbits) - 1; i >= 0; --i) {
-		s << (f.test(static_cast<size_t>(i)) ? '1' : '0');
+		s << (f.test(static_cast<std::size_t>(i)) ? '1' : '0');
 	}
 
 	return s.str();
@@ -517,13 +549,13 @@ inline std::string color_print(const CfloatType& r, bool nibbleMarker = false) {
 
 	// exponent bits
 	for (int i = int(es) - 1; i >= 0; --i) {
-		s << cyan << (e.test(static_cast<size_t>(i)) ? '1' : '0');
+		s << cyan << (e.test(static_cast<std::size_t>(i)) ? '1' : '0');
 		if ((i - es) > 0 && ((i - es) % 4) == 0 && nibbleMarker) s << yellow << '\'';
 	}
 
 	// fraction bits
 	for (int i = int(r.fbits) - 1; i >= 0; --i) {
-		s << magenta << (f.test(static_cast<size_t>(i)) ? '1' : '0');
+		s << magenta << (f.test(static_cast<std::size_t>(i)) ? '1' : '0');
 		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << yellow << '\'';
 	}
 
