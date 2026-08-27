@@ -16,6 +16,7 @@
 // Relates to #345, #547
 
 #include <type_traits>   // std::is_same / std::true_type
+#include <cstddef>     // std::size_t in the fdp_qc signatures
 #include <vector>
 #include <cassert>
 #include <universal/traits/cfloat_traits.hpp>
@@ -140,9 +141,9 @@ quire_resolve(const quire<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, 
 /// Accumulates products into an existing quire without resolving.
 /// The quire must be parameterized on the same scalar type as the vectors.
 template<typename Qy, typename Vector>
-void fdp_qc(Qy& sum_of_products, size_t n,
-            const Vector& x, size_t incx,
-            const Vector& y, size_t incy,
+void fdp_qc(Qy& sum_of_products, std::size_t n,
+            const Vector& x, std::size_t incx,
+            const Vector& y, std::size_t incy,
             std::enable_if_t<is_cfloat<typename Vector::value_type>, int> = 0) {
 	using Scalar = typename Vector::value_type;
 	static_assert(std::is_same<Qy, quire<Scalar>>::value,
@@ -150,7 +151,7 @@ void fdp_qc(Qy& sum_of_products, size_t n,
 	if (n == 0) return;
 	assert(incx > 0 && "fdp_qc: incx must be positive");
 	assert(incy > 0 && "fdp_qc: incy must be positive");
-	size_t ix, iy;
+	std::size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
 		assert(ix < x.size() && iy < y.size() && "fdp_qc: index out of bounds");
 		sum_of_products += quire_mul(x[ix], y[iy]);
@@ -162,14 +163,14 @@ void fdp_qc(Qy& sum_of_products, size_t n,
 /// via blocktriple conversion (no double intermediate, supports all cfloat widths).
 template<typename Vector>
 enable_if_cfloat<typename Vector::value_type>
-fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
+fdp_stride(std::size_t n, const Vector& x, std::size_t incx, const Vector& y, std::size_t incy) {
 	using Scalar = typename Vector::value_type;
 	quire<Scalar> q;
 
 	if (n == 0) return Scalar(0);
 	assert(incx > 0 && "fdp_stride: incx must be positive");
 	assert(incy > 0 && "fdp_stride: incy must be positive");
-	size_t ix, iy;
+	std::size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
 		assert(ix < x.size() && iy < y.size() && "fdp_stride: index out of bounds");
 		q += quire_mul(x[ix], y[iy]);
@@ -187,9 +188,9 @@ fdp(const Vector& x, const Vector& y) {
 	using Scalar = typename Vector::value_type;
 	quire<Scalar> q;
 
-	size_t n = size(x);
+	std::size_t n = size(x);
 	assert(n <= size(y) && "fdp: y vector must be at least as long as x");
-	for (size_t i = 0; i < n; ++i) {
+	for (std::size_t i = 0; i < n; ++i) {
 		q += quire_mul(x[i], y[i]);
 	}
 
