@@ -39,6 +39,7 @@ jobs:
           # Allowed scopes (number systems + infrastructure)
           scopes: |
             integer
+            rational
             fixpnt
             dfixpnt
             cfloat
@@ -72,6 +73,7 @@ jobs:
             internal
             blockbinary
             blockdecimal
+            blockdigit
             blocksignificand
             blocktriple
             floatcascade
