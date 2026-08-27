@@ -10,7 +10,6 @@
  || defined(ALGORITHM_TRACE_SUB)      || defined(ALGORITHM_TRACE_MUL) \
  || defined(ALGORITHM_TRACE_DIV)      || defined(ALGORITHM_TRACE_SQRT)
 #define CFLOAT_TRACE_ENABLED 1
-#include <iosfwd>        // std::ostream/std::istream in the friend declarations
 #include <iostream>
 #include <iomanip>
 #else
@@ -38,6 +37,9 @@
 #define CFLOAT_NATIVE_SQRT 0
 #endif
 
+#include <iosfwd>        // std::ostream/std::istream in the friend declarations. UNCONDITIONAL:
+                         // the declarations exist whether or not tracing is on, so this must not
+                         // sit inside the CFLOAT_TRACE_ENABLED guard above.
 #include <cstdint>       // the fixed-width integer types
 #include <cstdio>        // fprintf(stderr,...) for the diagnostics; keeps <iostream> out of the core
 #include <cmath>         // the <cmath> functions used below
