@@ -1,5 +1,5 @@
 #pragma once
-// core.hpp: the fixpnt arithmetic core -- no I/O, no text
+// core.hpp: the fixpnt arithmetic core -- no streams
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -10,6 +10,18 @@
 //
 //     #include <universal/number/fixpnt/fixpnt.hpp>   // everything, as before
 //     #include <universal/number/fixpnt/core.hpp>     // arithmetic only
+//
+// WHAT "core" EXCLUDES, precisely: the stream family -- <iostream>, <sstream>,
+// <iomanip>, <ostream>, <istream>. Measured: this header pulls zero of the five.
+//
+// It does NOT exclude <string>. assign(const std::string&) and the parse() declaration
+// in fixpnt_fwd.hpp are part of the type's arithmetic surface, exactly as integer's
+// string constructor is, and <string> is inside the epic's derived line budget
+// (<cstdint>+<type_traits>+<limits>+<cmath>+<concepts> is 24,977 lines; adding <string>
+// reaches 42,091, against a 45,000 ceiling). <map> backs the character lookup in
+// assign(); <cstdio> backs fprintf(stderr, ...), the Phase 0 idiom adopted specifically
+// so diagnostics do not require <iostream>. The regex/sstream parse() DEFINITION lives
+// in iostream.hpp.
 //
 // NOTE: traits/arithmetic_traits.hpp and common/number_traits_reports.hpp are
 // deliberately NOT included -- they build report strings and pull <sstream>/<iomanip>.

@@ -9,6 +9,10 @@
 #include <ostream>     // std::ostream
 #include <iomanip>     // std::setw
 
+// This header uses fixpnt<> and to_binary(), and streams them, but had no project
+// include at all -- it only ever worked when something else was included first.
+#include <universal/number/fixpnt/iostream.hpp>   // the core, to_binary and operator<<
+
 namespace sw { namespace universal {
 
 // generate a full binary representation table for a given posit configuration
