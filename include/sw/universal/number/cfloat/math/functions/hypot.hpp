@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cmath>         // the <cmath> functions used below
 /*
 Computes the square root of the sum of the squares of x and y, without undue overflow or underflow at intermediate stages of the computation.
 

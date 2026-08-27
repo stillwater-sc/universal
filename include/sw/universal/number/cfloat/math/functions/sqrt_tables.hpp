@@ -1,4 +1,6 @@
 #pragma once
+#include <cstddef>       // std::size_t
+#include <cmath>         // the <cmath> functions used below
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 #include <iomanip>
 // sqrt_tables.hpp: specialized classic floating-point cfloat configurations 

@@ -11,6 +11,7 @@
 // The std::complex<cfloat> overloads are retained for backward compatibility on compilers
 // that do not strictly enforce ISO C++ 26.2/2.
 
+#include <type_traits>   // std::is_same / std::true_type
 #include <complex>
 #include <universal/math/complex.hpp>
 

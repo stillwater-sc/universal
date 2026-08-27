@@ -8,6 +8,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
+#include <cstdint>       // the fixed-width integer types
+#include <limits>        // std::numeric_limits
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/long_double.hpp>

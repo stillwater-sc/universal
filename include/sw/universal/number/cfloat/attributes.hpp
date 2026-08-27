@@ -6,6 +6,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <string>        // std::string
+#include <sstream>       // std::stringstream
+#include <iomanip>       // std::setw
 namespace sw { namespace universal {
 
 // functions to provide details about
