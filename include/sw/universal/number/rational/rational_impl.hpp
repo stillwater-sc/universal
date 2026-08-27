@@ -1,8 +1,8 @@
 #pragma once
-#include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
-#include <sstream>
-#include <string>
+#include <cstdint>      // std::int64_t
+#include <type_traits>  // std::enable_if / std::is_floating_point
+#include <iosfwd>       // std::ostream/std::istream in the friend declarations (#1334)
+#include <cstdio>       // fprintf(stderr,...) for the diagnostics
 // rational_impl.hpp: definition of a multi-radix rational arithmetic type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -13,7 +13,8 @@
 #include <cmath>
 #include <limits>
 
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>          // extractFields/ieee754_parameter; the text half is not needed here (#1334)
+#include <universal/native/manipulators_core.hpp>   // scale() and find_msb(), without the to_triple/to_hex text layer
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/abstract/triple.hpp>
 #include <universal/internal/blockdigit/blockdigit.hpp>
@@ -321,7 +322,7 @@ protected:
 #if RATIONAL_THROW_ARITHMETIC_EXCEPTION
 			throw rational_divide_by_zero();
 #else
-			std::cerr << "rational_divide_by_zero\n";
+			std::fprintf(stderr, "rational_divide_by_zero\n");
 			d = 0;
 			n = 0;
 #endif
@@ -416,13 +417,13 @@ protected:
 					uint64_t maxDownShift = find_msb(b);
 					uint64_t scale = static_cast<uint64_t>(exponent);
 					if (scale >= 64) {
-						std::cerr << "overflow: scale = " << exponent << '\n';
+						std::fprintf(stderr, "overflow: scale = %d\n", exponent);
 						maxpos();
 						return *this;
 					}
 					if (scale > maxUpShift) {
 						if (scale > (maxUpShift + maxDownShift)) {
-							std::cerr << "overflow: scale = " << exponent << '\n';
+							std::fprintf(stderr, "overflow: scale = %d\n", exponent);
 							maxpos();
 							return *this;
 						}
@@ -447,13 +448,13 @@ protected:
 					uint64_t maxDownShift = find_msb(a);
 					uint64_t scale = static_cast<uint64_t>(-exponent);
 					if (scale >= 64) {
-						std::cerr << "underflow: scale = " << exponent << '\n';
+						std::fprintf(stderr, "underflow: scale = %d\n", exponent);
 						setzero();
 						return *this;
 					}
 					if (scale > maxUpShift) {
 						if (scale > (maxUpShift + maxDownShift)) {
-							std::cerr << "underflow: scale = " << exponent << '\n';
+							std::fprintf(stderr, "underflow: scale = %d\n", exponent);
 							setzero();
 							return *this;
 						}
@@ -880,66 +881,6 @@ private:
 	double to_double() const { return static_cast<double>(n) / static_cast<double>(d); }
 };
 
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// stream operators
-
-template<unsigned nnbits, typename nBase, typename nbt>
-inline std::ostream& operator<<(std::ostream& ostr, const rational<nnbits,nBase,nbt>& v) {
-	return ostr << double(v);
-}
-
-template<unsigned nnbits, typename nBase, typename nbt>
-inline std::istream& operator>>(std::istream& istr, const rational<nnbits,nBase,nbt>& v) {
-	istr >> v._fraction;
-	return istr;
-}
-
-template<unsigned nbits, unsigned base, typename bt>
-inline std::string to_binary(const blockdigit<nbits, base, bt>& v, bool nibbleMarker = true) {
-	if constexpr (base == 8) {
-		std::stringstream s;
-		for (unsigned i = 0; i < blockdigit<nbits, 8, bt>::ndigits; ++i) {
-			if (nibbleMarker && (i > 0) && (i % 2 == 0)) s << '\'';
-			s << std::oct << static_cast<unsigned>(v.digit(i));
-		}
-		return s.str();
-	} else if constexpr (base == 10) {
-		std::stringstream s;
-		for (unsigned i = 0; i < blockdigit<nbits, 10, bt>::ndigits; ++i) {
-			if (nibbleMarker && (i > 0) && (i % 2 == 0)) s << '\'';
-			s << std::dec << static_cast<unsigned>(v.digit(i));
-		}
-		return s.str();
-	} else if constexpr (base == 16) {
-		std::stringstream s;
-		for (unsigned i = 0; i < blockdigit<nbits, 16, bt>::ndigits; ++i) {
-			if (nibbleMarker && (i > 0) && (i % 2 == 0)) s << '\'';
-			s << std::hex << static_cast<unsigned>(v.digit(i));
-		}
-		return s.str();
-	}
-	else {
-		return to_binary(static_cast<int64_t>(v), nibbleMarker);
-	}
-}
-
-template<unsigned nbits, typename Base, typename bt>
-inline std::string to_binary(const rational<nbits,Base,bt>& v, bool nibbleMarker = true) {
-	std::stringstream s;
-	s << to_binary(v.numerator(), nibbleMarker)
-		<< " / "
-		<< to_binary(v.denominator(), nibbleMarker);
-	return s.str();
-}
-
-// native semantic representation: rational as N/D in decimal
-template<unsigned nbits, typename Base, typename bt>
-inline std::string to_native(const rational<nbits,Base,bt>& v, bool = false) {
-	std::stringstream s;
-	s << v.numerator() << " / " << v.denominator();
-	return s.str();
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// binary logic functions
