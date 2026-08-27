@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstdint>      // uint64_t
+#include <limits>       // std::numeric_limits, the template being specialised
 
 namespace std {
 
