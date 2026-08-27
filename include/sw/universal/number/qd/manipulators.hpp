@@ -27,6 +27,10 @@
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/number/qd/qd_fwd.hpp>
 // pull in the color printing for shells utility
+#include <universal/native/ieee754.hpp>   // for the NON-TEMPLATE color_print(double) in ieee754_double.hpp.
+                                         // ieee754_core.hpp deliberately omits it; it is an exact match that
+                                         // outranks the color_print<Real> template, so losing it changed both
+                                         // overload resolution AND the printed format (#1334).
 #include <universal/utility/color_print.hpp>
 
 namespace sw { namespace universal {
