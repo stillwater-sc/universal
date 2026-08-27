@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cmath>         // the <cmath> functions used below
 namespace sw { namespace universal {
 
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>

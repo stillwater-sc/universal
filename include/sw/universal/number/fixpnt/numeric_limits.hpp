@@ -5,7 +5,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/fixpnt_impl.hpp>   // the class, not the umbrella: including
+                                                   // fixpnt.hpp here is circular and dragged the
+                                                   // whole text layer into the core (#1334)
 
 namespace std {
 

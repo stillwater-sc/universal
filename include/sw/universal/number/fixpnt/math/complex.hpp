@@ -11,6 +11,7 @@
 // The std::complex<fixpnt> overloads are retained for backward compatibility on compilers
 // that do not strictly enforce ISO C++ 26.2/2.
 
+#include <type_traits>   // the type traits used below
 #include <complex>
 #include <universal/math/complex.hpp>
 

@@ -5,6 +5,12 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/color_print.hpp>   // Color / ColorCode, used by color_print()
+#include <universal/number/fixpnt/core.hpp>
+#include <string>        // std::string
+#include <iomanip>       // std::setw
+#include <cstddef>       // std::size_t
+#include <cstdint>       // the fixed-width integer types
 #include <sstream>
 #include <universal/native/integer_type_tag.hpp>
 #include <universal/number/fixpnt/fixpnt_fwd.hpp>

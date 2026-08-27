@@ -13,6 +13,8 @@
 //
 // Relates to #345, #548
 
+#include <cstddef>       // std::size_t
+#include <type_traits>   // the type traits used below
 #include <vector>
 #include <stdexcept>
 #include <universal/traits/fixpnt_traits.hpp>
