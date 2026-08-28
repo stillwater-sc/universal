@@ -1,3 +1,4 @@
+#pragma once
 #ifdef DEPRECATED
 	integer& operator*=(const integer& rhs) {
 		integer<nbits, BlockType, NumberType> base(*this);

@@ -5,6 +5,10 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Self-contained: this header uses the type, its to_binary() and its stream operator, so
+// it states those dependencies rather than relying on a prior include (#1422).
+#include <universal/number/lns/iostream.hpp>      // lns<>, to_binary() and operator<< (#1422)
 
 #include <cstddef>       // std::size_t
 #include <cstdint>       // std::uint8_t

@@ -1,3 +1,4 @@
+#pragma once
 
 // __arm__ which is defined for 32bit arm, and 32bit arm only.
 // __aarch64__ which is defined for 64bit arm, and 64bit arm only.
