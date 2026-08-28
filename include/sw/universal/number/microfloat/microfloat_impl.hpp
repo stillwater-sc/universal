@@ -6,8 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
-#include <sstream>
-#include <iomanip>
+#include <iosfwd>       // std::ostream/std::istream in the stream-operator declarations (#1334)
+#include <string>       // std::string, returned by the text layer's builders
 #include <cstdint>
 #include <cstring>
 #include <cmath>
@@ -766,54 +766,6 @@ private:
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline constexpr microfloat<n,e,i,na,s> abs(microfloat<n,e,i,na,s> a) {
 	return (a.isneg() ? -a : a);
-}
-
-/// stream operators
-
-template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline std::ostream& operator<<(std::ostream& ostr, microfloat<n,e,i,na,s> mf) {
-	return ostr << float(mf);
-}
-
-template<unsigned n, unsigned e, bool i, bool na, bool s>
-inline std::istream& operator>>(std::istream& istr, microfloat<n,e,i,na,s>& p) {
-	float f;
-	istr >> f;
-	p = microfloat<n,e,i,na,s>(f);
-	return istr;
-}
-
-////////////////// string operators
-
-template<unsigned nbits, unsigned es, bool hasInf, bool hasNaN, bool isSaturating>
-inline std::string to_binary(microfloat<nbits, es, hasInf, hasNaN, isSaturating> mf, bool bNibbleMarker = false) {
-	constexpr unsigned fbits = nbits - 1u - es;
-	std::stringstream ss;
-	uint8_t bits = mf.bits();
-	uint8_t mask = static_cast<uint8_t>(1u << (nbits - 1u));
-
-	ss << (bits & mask ? "0b1." : "0b0.");
-	mask >>= 1;
-	// exponent bits
-	for (unsigned j = 0; j < es; ++j) {
-		if (bNibbleMarker && j > 0 && (j % 4) == 0) ss << '\'';
-		ss << ((bits & mask) ? '1' : '0');
-		mask >>= 1;
-	}
-	ss << '.';
-	// fraction bits
-	for (unsigned j = 0; j < fbits; ++j) {
-		if (bNibbleMarker && j > 0 && (j % 4) == 0) ss << '\'';
-		ss << ((bits & mask) ? '1' : '0');
-		mask >>= 1;
-	}
-	return ss.str();
-}
-
-// native semantic representation: radix-2, delegates to to_binary
-template<unsigned nbits, unsigned es, bool hasInf, bool hasNaN, bool isSaturating>
-inline std::string to_native(microfloat<nbits, es, hasInf, hasNaN, isSaturating> mf, bool nibbleMarker = false) {
-	return to_binary(mf, nibbleMarker);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////

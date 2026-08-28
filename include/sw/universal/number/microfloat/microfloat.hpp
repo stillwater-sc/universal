@@ -44,12 +44,16 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/microfloat/exceptions.hpp>
-#include <universal/number/microfloat/microfloat_impl.hpp>
-#include <universal/traits/microfloat_traits.hpp>
-#include <universal/number/microfloat/numeric_limits.hpp>
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// useful functions to work with microfloats
+/// INCLUDE FILES that make up the library
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  type_tag / to_binary / to_native
+///     iostream.hpp      operator<< / operator>>
+///
+/// A translation unit that only computes can include core.hpp directly. mxfloat and
+/// nvblock layer on microfloat/core.hpp for exactly that reason.
+#include <universal/number/microfloat/core.hpp>
 #include <universal/number/microfloat/manipulators.hpp>
+#include <universal/number/microfloat/iostream.hpp>
 #include <universal/number/microfloat/attributes.hpp>

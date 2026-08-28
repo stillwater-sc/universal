@@ -34,12 +34,16 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/e8m0/exceptions.hpp>
-#include <universal/number/e8m0/e8m0_impl.hpp>
-#include <universal/traits/e8m0_traits.hpp>
-#include <universal/number/e8m0/numeric_limits.hpp>
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// useful functions to work with e8m0
+/// INCLUDE FILES that make up the library
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  type_tag / to_binary / to_native
+///     iostream.hpp      operator<< / operator>>
+///
+/// A translation unit that only computes can include core.hpp directly. mxfloat and
+/// nvblock layer on e8m0/core.hpp for exactly that reason.
+#include <universal/number/e8m0/core.hpp>
 #include <universal/number/e8m0/manipulators.hpp>
+#include <universal/number/e8m0/iostream.hpp>
 #include <universal/number/e8m0/attributes.hpp>

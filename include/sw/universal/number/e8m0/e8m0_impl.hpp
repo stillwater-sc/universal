@@ -20,8 +20,8 @@
 // - All values are positive powers of 2
 
 #include <string>
-#include <sstream>
-#include <iomanip>
+#include <iosfwd>       // std::ostream/std::istream in the stream-operator declarations (#1334)
+#include <string>       // std::string, returned by the text layer's builders
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -266,38 +266,6 @@ private:
 };
 
 ////////////////////////    functions   /////////////////////////////////
-
-/// stream operators
-
-inline std::ostream& operator<<(std::ostream& ostr, e8m0 v) {
-	if (v.isnan()) return ostr << "NaN";
-	return ostr << float(v);
-}
-
-inline std::istream& operator>>(std::istream& istr, e8m0& v) {
-	float f;
-	istr >> f;
-	v = e8m0(f);
-	return istr;
-}
-
-////////////////// string operators
-
-inline std::string to_binary(e8m0 v, bool = false) {
-	std::stringstream ss;
-	uint8_t bits = v.bits();
-	ss << "0b";
-	for (int j = 7; j >= 0; --j) {
-		ss << ((bits & (1u << j)) ? '1' : '0');
-		if (j == 4) ss << '.'; // visual separator at nibble boundary
-	}
-	return ss.str();
-}
-
-// native semantic representation: radix-2, delegates to to_binary
-inline std::string to_native(e8m0 v, bool nibbleMarker = false) {
-	return to_binary(v, nibbleMarker);
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // e8m0 - e8m0 binary logic operators
