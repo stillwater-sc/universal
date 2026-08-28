@@ -38,14 +38,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 // Prerequisites: microfloat and e8m0 must be included first
-#include <universal/number/e8m0/e8m0.hpp>
-#include <universal/number/microfloat/microfloat.hpp>
 
-#include <universal/number/mxfloat/exceptions.hpp>
-#include <universal/number/mxfloat/mxblock_impl.hpp>
-#include <universal/traits/mxfloat_traits.hpp>
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// useful functions to work with mxblocks
+/// INCLUDE FILES that make up the library
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  the string builders
+///     iostream.hpp      operator<<
+#include <universal/number/mxfloat/core.hpp>
 #include <universal/number/mxfloat/manipulators.hpp>
+#include <universal/number/mxfloat/iostream.hpp>
 #include <universal/number/mxfloat/attributes.hpp>

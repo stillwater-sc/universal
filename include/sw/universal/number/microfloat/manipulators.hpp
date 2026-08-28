@@ -5,6 +5,15 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstdint>       // the fixed-width integer types
+//
+// Layer 2a of the microfloat headers (#1334): the string-producing half. These build a
+// std::string, so they need <sstream> but not <iostream>; the stream operators are in
+// iostream.hpp.
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <universal/number/microfloat/core.hpp>
 #include <string>
 #include <iomanip>
 #include <universal/number/microfloat/microfloat_fwd.hpp>
@@ -102,5 +111,36 @@ namespace sw { namespace universal {
 		s << def;
 		return s.str();
 	}
+
+template<unsigned nbits, unsigned es, bool hasInf, bool hasNaN, bool isSaturating>
+inline std::string to_binary(microfloat<nbits, es, hasInf, hasNaN, isSaturating> mf, bool bNibbleMarker = false) {
+	constexpr unsigned fbits = nbits - 1u - es;
+	std::stringstream ss;
+	uint8_t bits = mf.bits();
+	uint8_t mask = static_cast<uint8_t>(1u << (nbits - 1u));
+
+	ss << (bits & mask ? "0b1." : "0b0.");
+	mask >>= 1;
+	// exponent bits
+	for (unsigned j = 0; j < es; ++j) {
+		if (bNibbleMarker && j > 0 && (j % 4) == 0) ss << '\'';
+		ss << ((bits & mask) ? '1' : '0');
+		mask >>= 1;
+	}
+	ss << '.';
+	// fraction bits
+	for (unsigned j = 0; j < fbits; ++j) {
+		if (bNibbleMarker && j > 0 && (j % 4) == 0) ss << '\'';
+		ss << ((bits & mask) ? '1' : '0');
+		mask >>= 1;
+	}
+	return ss.str();
+}
+
+// native semantic representation: radix-2, delegates to to_binary
+template<unsigned nbits, unsigned es, bool hasInf, bool hasNaN, bool isSaturating>
+inline std::string to_native(microfloat<nbits, es, hasInf, hasNaN, isSaturating> mf, bool nibbleMarker = false) {
+	return to_binary(mf, nibbleMarker);
+}
 
 }} // namespace sw::universal

@@ -11,8 +11,8 @@
 // Each MX block provides 4-8x compression vs FP32 with controlled quantization error.
 
 #include <string>
-#include <sstream>
-#include <iomanip>
+#include <iosfwd>       // std::ostream in the stream-operator declaration (#1334)
+#include <string>       // std::string, returned by the text layer's builders
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -21,8 +21,8 @@
 #include <type_traits>
 
 #include <universal/utility/bit_cast.hpp>
-#include <universal/number/e8m0/e8m0.hpp>
-#include <universal/number/microfloat/microfloat.hpp>
+#include <universal/number/e8m0/core.hpp>         // the scale type; its text layer is separate (#1334)
+#include <universal/number/microfloat/core.hpp>   // the element type; its text layer is separate (#1334)
 #include <universal/number/mxfloat/mxfloat_fwd.hpp>
 #include <universal/number/mxfloat/exceptions.hpp>
 
@@ -277,20 +277,5 @@ private:
 
 /// stream operators
 
-template<typename ElementType, size_t BlockSize>
-inline std::ostream& operator<<(std::ostream& ostr, const mxblock<ElementType, BlockSize>& blk) {
-	ostr << "mxblock(scale=" << blk.scale();
-	ostr << ", elements=[";
-	for (size_t i = 0; i < BlockSize; ++i) {
-		if (i > 0) ostr << ", ";
-		ostr << blk[i];
-		if (i >= 7 && BlockSize > 10) {
-			ostr << ", ... (" << (BlockSize - i - 1) << " more)";
-			break;
-		}
-	}
-	ostr << "])";
-	return ostr;
-}
 
 }} // namespace sw::universal

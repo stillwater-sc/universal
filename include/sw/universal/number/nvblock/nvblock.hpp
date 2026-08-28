@@ -38,13 +38,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 // Prerequisites: microfloat must be included first (provides both element and scale types)
-#include <universal/number/microfloat/microfloat.hpp>
 
-#include <universal/number/nvblock/exceptions.hpp>
-#include <universal/number/nvblock/nvblock_impl.hpp>
-#include <universal/traits/nvblock_traits.hpp>
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// useful functions to work with nvblocks
+/// INCLUDE FILES that make up the library
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  the string builders
+///     iostream.hpp      operator<<
+#include <universal/number/nvblock/core.hpp>
 #include <universal/number/nvblock/manipulators.hpp>
+#include <universal/number/nvblock/iostream.hpp>
 #include <universal/number/nvblock/attributes.hpp>

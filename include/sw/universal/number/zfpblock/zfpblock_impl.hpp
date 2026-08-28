@@ -5,13 +5,13 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <type_traits>   // std::is_same_v
 
 #include <cstdint>
 #include <cstddef>
 #include <cmath>
 #include <cstring>
 #include <climits>
-#include <iomanip>
 #include <universal/number/zfpblock/zfpblock_fwd.hpp>
 #include <universal/number/zfpblock/zfp_codec_traits.hpp>
 #include <universal/number/zfpblock/zfp_codec.hpp>

@@ -5,6 +5,14 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstddef>       // size_t
+//
+// Layer 2a of the nvblock headers (#1334): the string-producing half.
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <universal/number/nvblock/core.hpp>
+#include <universal/number/microfloat/manipulators.hpp>
 
 #include <string>
 #include <sstream>

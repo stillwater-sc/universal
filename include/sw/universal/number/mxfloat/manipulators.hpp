@@ -5,6 +5,16 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstddef>       // size_t
+#include <cstdint>       // the fixed-width integer types
+//
+// Layer 2a of the mxfloat headers (#1334): the string-producing half.
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <universal/number/mxfloat/core.hpp>
+#include <universal/number/microfloat/manipulators.hpp>
+#include <universal/number/e8m0/manipulators.hpp>         // to_binary(e8m0): mxblock streams its scale (#1334)
 #include <string>
 #include <sstream>
 #include <iomanip>

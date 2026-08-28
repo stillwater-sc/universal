@@ -15,14 +15,14 @@
 // Quantize:   raw_scale = amax / elem_max, block_scale = round_to_e4m3(raw_scale)
 
 #include <string>
-#include <sstream>
-#include <iomanip>
+#include <iosfwd>       // std::ostream in the stream-operator declaration (#1334)
+#include <string>       // std::string, returned by the text layer's builders
 #include <cmath>
 #include <cstring>
 #include <limits>
 #include <algorithm>
 
-#include <universal/number/microfloat/microfloat.hpp>
+#include <universal/number/microfloat/core.hpp>   // the element type; its text layer is separate (#1334)
 #include <universal/number/nvblock/nvblock_fwd.hpp>
 #include <universal/number/nvblock/exceptions.hpp>
 
@@ -196,20 +196,5 @@ private:
 
 /// stream operators
 
-template<typename ElementType, size_t BlockSize, typename ScaleType>
-inline std::ostream& operator<<(std::ostream& ostr, const nvblock<ElementType, BlockSize, ScaleType>& blk) {
-	ostr << "nvblock(scale=" << blk.block_scale().to_float();
-	ostr << ", elements=[";
-	for (size_t i = 0; i < BlockSize; ++i) {
-		if (i > 0) ostr << ", ";
-		ostr << blk[i];
-		if (i >= 7 && BlockSize > 10) {
-			ostr << ", ... (" << (BlockSize - i - 1) << " more)";
-			break;
-		}
-	}
-	ostr << "])";
-	return ostr;
-}
 
 }} // namespace sw::universal

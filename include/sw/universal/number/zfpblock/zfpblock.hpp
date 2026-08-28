@@ -15,8 +15,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries
-#include <iostream>
-#include <iomanip>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -31,21 +29,18 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
-#include <universal/traits/number_traits.hpp>
-#include <universal/traits/arithmetic_traits.hpp>
-#include <universal/common/number_traits_reports.hpp>
-
-////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-
-#include <universal/number/zfpblock/exceptions.hpp>
-#include <universal/number/zfpblock/zfpblock_impl.hpp>
-#include <universal/traits/zfpblock_traits.hpp>
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// useful functions to work with zfpblocks
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  to_binary and the other string builders
+#include <universal/number/zfpblock/core.hpp>
 #include <universal/number/zfpblock/manipulators.hpp>
 #include <universal/number/zfpblock/attributes.hpp>
+
+/// the report builders stay at the umbrella: they pull <sstream>/<iomanip> by design
+#include <universal/traits/arithmetic_traits.hpp>
+#include <universal/common/number_traits_reports.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// compressed array container wrapping the zfpblock codec
