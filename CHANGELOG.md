@@ -145,13 +145,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * **`erational` and `edecimal` could not be used from two translation units ([#1424](https://github.com/stillwater-sc/universal/issues/1424) / PR [#1430](https://github.com/stillwater-sc/universal/pull/1430))** -- non-template free functions **defined** in headers without `inline`. Each including translation unit emits its own strong definition, so one TU is fine and two collide:
 
-    ```
+    ```text
     $ g++ -std=c++20 -Iinclude/sw a.cpp b.cpp     # both #include erational.hpp
     multiple definition of `sw::universal::ltrim(std::string&)'
     ... 68 in total
     ```
 
-    `erational` 68 duplicate symbols to 0, `edecimal` 12 to 0, and `dfloat` 1 to 0 -- `dfloat` is not in the issue and came from sweeping all 38 number systems with a two-TU link; the other 37 were already clean. Offenders were found **by symbol rather than by pattern**: compile with `-g`, then `nm -C --defined-only -l` filtered to the strong (non-weak) global text symbols, which is exactly the ODR-violating set. 69 definition sites, including `ltrim`/`rtrim` in the widely-included `string/strmanip.hpp` and the whole of erational's mathlib. Every test in the suite is single-TU, which is why this survived.
+    `erational` 68 duplicate symbols to 0, `edecimal` 12 to 0, and `dfloat` 1 to 0 -- `dfloat` is not in the issue and came from sweeping all 38 number systems with a two-TU link; the other 37 were already clean. Offenders were found **by symbol rather than by pattern**: compile with `-g`, then `nm -C --defined-only -l` filtered to the strong (non-weak) global text symbols, which is exactly the ODR-violating set. 69 definition sites, including `ltrim`/`rtrim` in the widely-included `string/strmanip.hpp` and the whole of erational's mathlib. No multi-translation-unit test covered these three types -- `static/appenv/multifile` is the only test in the suite that links several TUs together, and it did not include them -- which is why this survived.
 
 * **Six `table.hpp` headers were not self-contained, and 7 headers had no include guard ([#1422](https://github.com/stillwater-sc/universal/issues/1422) / PRs [#1421](https://github.com/stillwater-sc/universal/pull/1421), [#1431](https://github.com/stillwater-sc/universal/pull/1431))** -- each used its type, its `to_binary()` and its stream operator with no include that provides them, so they compiled only behind a prior include. As the first Universal header in a translation unit: `cfloat` 47 errors, `areal` 8, `lns` 8, `dbns` 7, `takum` 6, `fixpnt` 6 -- all now 0. The guards were verified to work rather than assumed: three of the seven newly guarded headers still error when included twice, but with counts *identical* to a single include (7/7, 22/22, 73/73), so the guard is doing its job and those headers are simply not self-contained, which is a separate defect and was left alone.
 

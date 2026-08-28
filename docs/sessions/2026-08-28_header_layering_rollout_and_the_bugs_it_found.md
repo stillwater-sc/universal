@@ -80,7 +80,7 @@ target is the **non-template** `color_print(double)` in `native/ieee754_double.h
 the recursion but selects a *different function* -- the `color_print<Real>` template -- which prints
 a different format:
 
-```
+```text
 color_print(d)          0b0.0111'1111'1111.1000'...     <- non-template, ieee754_double.hpp
 color_print<double>(d)  0011111111111000...             <- template, native/manipulators.hpp
 ```
@@ -102,7 +102,7 @@ it had been killed and never flushed its log.
 
 `erational` and `edecimal` could not be used from **two translation units**:
 
-```
+```text
 $ g++ -std=c++20 -Iinclude/sw a.cpp b.cpp     # both #include erational.hpp
 multiple definition of `sw::universal::ltrim(std::string&)'
 ... 68 in total
@@ -129,7 +129,9 @@ A regression test nobody has watched fail proves nothing.
 ### 4. Headers that only worked behind a prior include (#1422)
 
 Every `number/*/table.hpp` used its type, its `to_binary()` and its stream operator with no include
-that provides them: cfloat 47 errors as the sole include, areal 8, lns 8, dbns 7, takum 6, all to 0.
+that provides them. As the sole Universal include: cfloat 47 errors, areal 8, lns 8, dbns 7,
+takum 6 and fixpnt 6 -- six headers, all now 0. fixpnt's was fixed in #1421 when that type was
+split; the other five in #1431.
 Seven headers tree-wide had no include guard at all, now 0. The guards were verified to *work* --
 three of the seven still error when double-included, but with counts identical to a single include
 (7/7, 22/22, 73/73), so they are guarded and merely not self-contained, which is a different defect
