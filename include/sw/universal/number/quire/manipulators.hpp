@@ -5,6 +5,15 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstdint>       // the fixed-width integer types
+#include <limits>        // std::numeric_limits
+//
+// Layer 2a of the quire headers (#1334): the string-producing half. These build a
+// std::string, so they need <sstream> but not <iostream>.
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <universal/number/quire/core.hpp>
 
 #include <iomanip>
 #include <cmath>  // for frexp/frexpf
@@ -65,5 +74,48 @@ namespace sw { namespace universal {
 		str << def;
 		return str.str();
 	}
+
+template<typename NumberType, unsigned capacity, typename LimbType>
+std::string to_binary(const quire<NumberType, capacity, LimbType>& q) {
+	constexpr unsigned rp = quire<NumberType, capacity, LimbType>::radix_point;
+	constexpr unsigned qb = quire<NumberType, capacity, LimbType>::qbits;
+	constexpr unsigned cb = qb - capacity;
+	std::stringstream  ostr;
+	if (q.isnan()) { ostr << "nar"; return ostr.str(); }
+	ostr << (q.sign() ? "-:" : "+:");
+	// print capacity + '_' + upper bits (above radix), then '.', then lower bits
+	for (int i = static_cast<int>(qb) - 1; i >= static_cast<int>(cb); --i) {
+		ostr << (q.testbit(static_cast<unsigned>(i)) ? '1' : '0');
+	}
+	ostr << '_';
+	for (int i = static_cast<int>(cb) - 1; i >= static_cast<int>(rp); --i) {
+		ostr << (q.testbit(static_cast<unsigned>(i)) ? '1' : '0');
+	}
+	ostr << '.';
+	for (int i = static_cast<int>(rp) - 1; i >= 0; --i) {
+		ostr << (q.testbit(static_cast<unsigned>(i)) ? '1' : '0');
+	}
+	return ostr.str();
+}
+
+/// quire_properties: return a string describing the quire configuration
+template<typename NumberType,
+         unsigned capacity = quire_traits<NumberType>::capacity,
+         typename LimbType = uint32_t>
+std::string quire_properties() {
+	using QT = quire_traits<NumberType>;
+	constexpr unsigned qbits = QT::range + capacity;
+	std::stringstream ss;
+	ss << "Properties of a quire<" << type_tag(NumberType{}) << ", " << capacity << ">\n";
+	ss << "  dynamic range of product   : " << QT::range << '\n';
+	ss << "  radix point of accumulator : " << QT::radix_point << '\n';
+	ss << "  full  quire size in bits   : " << qbits << '\n';
+	ss << "  lower range in bits        : " << QT::half_range << '\n';
+	ss << "  upper range in bits        : " << QT::upper_range << '\n';
+	ss << "  capacity bits              : " << capacity << '\n';
+	ss << "  limb type                  : " << type_tag(LimbType{}) << '\n';
+	ss << "  limb size                  : " << sizeof(LimbType) * 8 << " bits\n";
+	return ss.str();
+}
 
 }} // namespace sw::universal

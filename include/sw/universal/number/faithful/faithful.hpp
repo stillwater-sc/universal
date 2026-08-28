@@ -12,8 +12,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries 
-#include <iostream>
-#include <iomanip>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -41,11 +39,17 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/faithful/exceptions.hpp>
-//#include <universal/number/faithful/faithful_fwd.hpp>
-#include <universal/number/faithful/faithful_impl.hpp>
-#include <universal/number/faithful/faithful_traits.hpp>
-#include <universal/number/faithful/numeric_limits.hpp>
+/// INCLUDE FILES that make up the library
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     iostream.hpp      operator<< / operator>> and components()
+///
+/// manipulators.hpp is deliberately NOT included: it was already commented out here long
+/// before this epic and does not compile (18 errors on main). components() therefore lives
+/// in iostream.hpp so that it stays reachable rather than being stranded in a dead header.
+#include <universal/number/faithful/core.hpp>
+#include <universal/number/faithful/iostream.hpp>
 
 // useful functions to work with faithful numbers
 //#include <universal/number/faithful/manipulators.hpp>

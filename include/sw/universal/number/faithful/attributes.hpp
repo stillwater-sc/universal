@@ -4,6 +4,9 @@
 // Copyright (C) 2023-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iomanip>       // std::setw
+#include <sstream>       // std::stringstream
+#include <string>        // std::string
 #include <cmath> // for std:pow()
 
 namespace sw { namespace universal {
