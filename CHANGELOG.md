@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* **A compute kernel no longer pays for I/O: 22 of 38 number systems layered (Epic [#1334](https://github.com/stillwater-sc/universal/issues/1334) / PRs [#1416](https://github.com/stillwater-sc/universal/pull/1416)-[#1435](https://github.com/stillwater-sc/universal/pull/1435))** -- each layered type now offers a `core.hpp` that pulls **zero** of the five I/O-family headers (`<iostream>`, `<sstream>`, `<iomanip>`, `<ostream>`, `<istream>`), alongside `manipulators.hpp` (the string builders) and `iostream.hpp` (the stream operators). The umbrella `<universal/number/T/T.hpp>` is unchanged, so existing code needs no edit:
+
+    ```cpp
+    #include <universal/number/posit/posit.hpp>   // unchanged: everything
+    #include <universal/number/posit/core.hpp>    // new: arithmetic only, no I/O
+    ```
+
+    | type | core | umbrella | | type | core | umbrella |
+    |---|---:|---:|---|---|---:|---:|
+    | `integer` | 48,328 | 103,498 | | `edecimal` | 73,040 | 77,265 |
+    | `e8m0` | 43,857 | 61,144 | | `dd` | 73,665 | 85,110 |
+    | `microfloat` | 44,567 | 61,922 | | `qd` | 73,739 | 86,931 |
+    | `faithful` | 46,983 | 64,058 | | `erational` | 74,434 | 82,739 |
+    | `takum` | 49,429 | 70,706 | | `lns` | 74,762 | 89,944 |
+    | `interval` | 55,016 | 71,958 | | `td_cascade` | 75,384 | 87,240 |
+    | `nvblock` | 55,588 | 73,044 | | `qd_cascade` | 75,469 | 87,347 |
+    | `zfpblock` | 55,705 | 77,789 | | `dd_cascade` | 75,583 | 87,006 |
+    | `mxfloat` | 56,069 | 73,614 | | `posit` | 77,430 | 114,007 |
+    | `rational` | 59,633 | 78,042 | | `fixpnt` | 78,123 | 108,901 |
+    | `quire` | 72,139 | 81,368 | | `cfloat` | 78,330 | 114,629 |
+
+    **The cost was almost never in the type being split.** Four shared headers were the binding constraint, and each paid out across many types at once. `native/manipulators_core.hpp` is new: `sign()`, `scale()`, `fraction()` and the field accessors are mask-and-shift on the IEEE encoding but shared a header with `to_triple()`/`to_hex()`/`color_print()`, so **seven** number systems were dragging four stream headers in to reach `scale()`. `numerics/error_free_ops.hpp` included `<iomanip>`, `<string>` and `<sstream>` and used **none of them** -- 532 lines of error-free-transformation arithmetic billed to `dd`, `qd`, all three cascades, `ereal` and `elreal` (59,835 lines / 4 I/O to 25,240 / 0). `internal/blockdigit` and `internal/floatcascade` both defined `operator<<` as an *in-class friend definition*, which pins `<iostream>` into every consumer; both are now declarations with the definition out-of-line. And `mxfloat`/`nvblock` included the *umbrellas* of their element types, so `microfloat` and `e8m0` had to be layered first.
+
+    Two contract decisions are worth knowing when reading the headers. **`to_string()` and `parse()` stay in the core**: `parse()` backs `assign(const std::string&)`, and `to_string()` concatenates a `std::string` without ever opening a stream -- it only *takes* `std::streamsize`, which is what `<ios>` is for. And for `dd`/`qd`/the cascades the dependency runs **manipulators -> iostream**, the opposite of `fixpnt`, because their builders format values through `operator<<`; `iostream.hpp` therefore includes only `core.hpp`, since including `manipulators.hpp` back makes a cycle that `#pragma once` merely masks.
+
+* **A link-time regression guard for header-defined functions ([#1424](https://github.com/stillwater-sc/universal/issues/1424) / PR [#1430](https://github.com/stillwater-sc/universal/pull/1430))** -- `static/appenv/multifile` is the only test that compiles several translation units and links them, and it covered eleven types but not `edecimal`, `erational` or `dfloat` -- precisely the three that turned out to be broken. Adding them takes the linked set from 12 to 15 TUs. The guard was checked to actually guard rather than merely pass: removing one `inline` again makes the link fail with `multiple definition of quotient(edecimal const&, edecimal const&)`, and restoring it links clean.
+
 * **`elreal` refines without a host ceiling, on every host ([#1051](https://github.com/stillwater-sc/universal/issues/1051), [#1363](https://github.com/stillwater-sc/universal/issues/1363) / PRs [#1361](https://github.com/stillwater-sc/universal/pull/1361), [#1362](https://github.com/stillwater-sc/universal/pull/1362), [#1366](https://github.com/stillwater-sc/universal/pull/1366))** -- every host was capped by its *exponent range*, not by its precision: `float` stopped at 37 decimal digits, `bfloat16` at 33, `half` at 20, and `double` at 307 -- which is `1022 * log10(2)`, its own subnormal wall. All four now grow linearly with depth and stop only where the caller stops pulling. The fix is one rule applied at every error-free transform: **normalise the OPERANDS, not the results**. An EFT run at the operands' natural scale has already lost bits to the subnormal range by the time it returns, and normalising its outputs cannot put them back; `block::normalise()` rescales `v` into `[1,2)` and folds the scale it was carrying into the wide `integer<256>` exponent added in [#1061](https://github.com/stillwater-sc/universal/issues/1061), exactly, leaving the value invariant. The three `min_exponent + 2k` refinement floors are gone with it.
 
   | host | k | before | after | blocks | digits/block |
@@ -115,6 +142,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * **cfloat integer conversion test suite** -- `VerifyInteger2CfloatConversion` and `VerifyCfloat2IntegerConversion` in `cfloat_test_suite.hpp` with exhaustive coverage for 8/10/12/16-bit cfloats ([#684](https://github.com/stillwater-sc/universal/issues/684), [#685](https://github.com/stillwater-sc/universal/pull/685))
 
 ### Fixed
+
+* **`erational` and `edecimal` could not be used from two translation units ([#1424](https://github.com/stillwater-sc/universal/issues/1424) / PR [#1430](https://github.com/stillwater-sc/universal/pull/1430))** -- non-template free functions **defined** in headers without `inline`. Each including translation unit emits its own strong definition, so one TU is fine and two collide:
+
+    ```text
+    $ g++ -std=c++20 -Iinclude/sw a.cpp b.cpp     # both #include erational.hpp
+    multiple definition of `sw::universal::ltrim(std::string&)'
+    ... 68 in total
+    ```
+
+    `erational` 68 duplicate symbols to 0, `edecimal` 12 to 0, and `dfloat` 1 to 0 -- `dfloat` is not in the issue and came from sweeping all 38 number systems with a two-TU link; the other 37 were already clean. Offenders were found **by symbol rather than by pattern**: compile with `-g`, then `nm -C --defined-only -l` filtered to the strong (non-weak) global text symbols, which is exactly the ODR-violating set. 69 definition sites, including `ltrim`/`rtrim` in the widely-included `string/strmanip.hpp` and the whole of erational's mathlib. No multi-translation-unit test covered these three types -- `static/appenv/multifile` is the only test in the suite that links several TUs together, and it did not include them -- which is why this survived.
+
+* **Six `table.hpp` headers were not self-contained, and 7 headers had no include guard ([#1422](https://github.com/stillwater-sc/universal/issues/1422) / PRs [#1421](https://github.com/stillwater-sc/universal/pull/1421), [#1431](https://github.com/stillwater-sc/universal/pull/1431))** -- each used its type, its `to_binary()` and its stream operator with no include that provides them, so they compiled only behind a prior include. As the first Universal header in a translation unit: `cfloat` 47 errors, `areal` 8, `lns` 8, `dbns` 7, `takum` 6, `fixpnt` 6 -- all now 0. The guards were verified to work rather than assumed: three of the seven newly guarded headers still error when included twice, but with counts *identical* to a single include (7/7, 22/22, 73/73), so the guard is doing its job and those headers are simply not self-contained, which is a separate defect and was left alone.
+
+* **`color_print` recursed until the stack died, on `qd`, `td_cascade` and `qd_cascade` (PRs [#1427](https://github.com/stillwater-sc/universal/pull/1427), [#1429](https://github.com/stillwater-sc/universal/pull/1429))** -- `color_print(const qd&)` formats each limb with `color_print(r[i])` on a `double`, whose intended target is the **non-template** `color_print(double)` in `native/ieee754_double.hpp`. Re-pointing the impls at `ieee754_core.hpp`, which deliberately omits it, removed that overload; the `double` converted implicitly back to `qd` and the function called itself. Linux CI caught it as a SegFault in 1 of 894 tests on both gcc and clang. Worth recording that the *obvious* fix is wrong: binding `color_print<double>` explicitly stops the recursion but selects a different function -- the `color_print<Real>` template -- which prints `0011111111111000...` where the non-template prints `0b0.0111'1111'1111.1000'...`, trading a crash for a silent output change that no test asserts on. The fix is the include, not the call site.
+
+* **`sqrt(edecimal)` reported a negative argument on every call (PR [#1423](https://github.com/stillwater-sc/universal/pull/1423))** -- the `#else` of the `EDECIMAL_THROW_ARITHMETIC_EXCEPTION` guard sat outside the sign test, so `sqrt(edecimal(144))` returned 12 and still wrote `decimal_negative_sqrt_arg` to stderr. The report is now inside `if (f.isneg())`, and the non-throwing path returns zero rather than building from `std::sqrt(-x)`.
+
+* **`operator>>` assigned from an indeterminate value on `e8m0` and `microfloat` (PR [#1433](https://github.com/stillwater-sc/universal/pull/1433))** -- both did `istr >> f; v = e8m0(f);` unconditionally. On an already-bad stream `operator>>` never reaches the conversion, so `f` stays indeterminate: constructing from it is undefined behaviour and clobbers the destination. Both now return early without touching it, matching the idiom `edecimal`, `erational`, `dd` and `qd` already use.
+
+* **`dd/manipulators.hpp` and `qd/manipulators.hpp` had no `#pragma once` (PRs [#1426](https://github.com/stillwater-sc/universal/pull/1426), [#1427](https://github.com/stillwater-sc/universal/pull/1427))** -- which surfaced not as a double-include problem but as *redefinition* errors for `type_tag`, `to_pair`, `to_triple` and `to_binary` the moment `attributes.hpp` needed the header alongside the umbrella.
 
 * **elreal's division was capped three independent ways** -- each cap looked like the type's limit until the one beneath it was removed:
   - **A host-derived depth constant** ([#1371](https://github.com/stillwater-sc/universal/issues/1371) / PR [#1374](https://github.com/stillwater-sc/universal/pull/1374)) -- `div_online`'s dense path pinned its Newton reciprocal to `(-min_exponent - 2*k) / k`, so every division by a multi-block value stopped at 17 blocks (~271 digits) on `double` and 3 (~22 digits) on `float`, however deep the caller pulled. Same mistaken premise the ceiling work removed elsewhere; this one survived the sweep because it is a target *depth* rather than a guard. `div_online` now takes the depth as a parameter, `operator/=` passes `precision()` plus a guard, and the Payne-Hanek reduction passes the `reddepth` it had already computed and then ignored.
