@@ -13,8 +13,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries
-#include <iostream>
-#include <iomanip>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -43,23 +41,27 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
-#include <universal/traits/number_traits.hpp>
+/// INCLUDE FILES that make up the library
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  type_tag / to_binary / to_triple
+///     iostream.hpp      operator<< / operator>>
+///
+/// A translation unit that only computes can include core.hpp directly and skip the
+/// stream headers entirely. to_string() and parse() are in the CORE, not the text
+/// layers: assign(const std::string&) calls parse(), and to_string() concatenates a
+/// std::string without ever touching a stream.
+#include <universal/number/td_cascade/core.hpp>
+#include <universal/traits/td_cascade_traits.hpp>
+#include <universal/number/td_cascade/manipulators.hpp>
+#include <universal/number/td_cascade/iostream.hpp>
+#include <universal/number/td_cascade/attributes.hpp>
+
+/// the report builders stay at the umbrella: they pull <sstream>/<iomanip> by design
 #include <universal/traits/arithmetic_traits.hpp>
 #include <universal/common/number_traits_reports.hpp>
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// INCLUDE FILES that make up the library
-#include <universal/number/td_cascade/exceptions.hpp>
-#include <universal/number/td_cascade/td_cascade_fwd.hpp>
-#include <universal/number/td_cascade/td_cascade_impl.hpp>
-#include <universal/number/td_cascade/numeric_limits.hpp>
-#include <universal/traits/td_cascade_traits.hpp>
-// useful functions to work with double-doubles
-#include <universal/number/td_cascade/manipulators.hpp>
-#include <universal/number/td_cascade/attributes.hpp>
-
-///////////////////////////////////////////////////////////////////////////////////////
-/// mathematical constants library
 #include <universal/number/td_cascade/math/constants/td_cascade_constants.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////

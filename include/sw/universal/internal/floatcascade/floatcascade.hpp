@@ -11,7 +11,9 @@
 #include <cctype>
 #include <cmath>
 #include <cstdint>
-#include <iostream>
+#include <limits>       // std::numeric_limits
+#include <cstdio>       // fprintf(stderr,...) for the diagnostics (#1334)
+#include <iosfwd>       // std::ostream in the operator<< friend declaration
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -20,7 +22,8 @@
 // supporting types and functions
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/decimal_to_binary.hpp>
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>          // extractFields/ieee754_parameter (#1334)
+#include <universal/native/manipulators_core.hpp>   // scale(), without the to_triple/to_hex text layer
 #include <universal/numerics/error_free_ops.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
@@ -216,15 +219,10 @@ public:
 	template<size_t M>
     friend std::string to_tuple(const floatcascade<M>& fc);
 
-    friend std::ostream& operator<<(std::ostream& os, const floatcascade& fc) {
-        os << "floatcascade<" << N << ">[";
-        for (size_t i = 0; i < N; ++i) {
-            if (i > 0) os << ", ";
-            os << fc.e[i];
-        }
-        os << "] ~ " << fc.to_double();
-        return os;
-    }
+    // Declared, not defined: the definition is in floatcascade/iostream.hpp so the
+    // arithmetic core needs only <iosfwd> (#1334).
+    template<size_t M>
+    friend std::ostream& operator<<(std::ostream& os, const floatcascade<M>& fc);
 
 private:
 
@@ -300,110 +298,6 @@ private:
 
 };
 
-template<size_t N>
-std::string to_tuple(const floatcascade<N>& fc) {
-    std::stringstream ss;
-	ss << std::scientific;
-	//ss.setprecision(17); // max precision of double
-    ss << "{ ";
-    for (size_t i = 0; i < N; ++i) {
-        if (i > 0) ss << ", ";
-        ss << fc.e[i];
-    }
-    ss << '}';
-    return ss.str();
-}
-
-template<size_t N>
-std::string to_scientific(const floatcascade<N>& fc,
-    int precision = N * 17,
-    bool showpos = false,
-    bool uppercase = false,
-    bool trailing_zeros = true) {
-    // precondition: fc is a normalized floatcascade
-
-    // Handle special cases early
-    if (fc.isnan(NAN_TYPE_QUIET)) return std::string("qNaN");
-    if (fc.isnan(NAN_TYPE_SIGNALLING)) return std::string("sNaN");
-    if (fc.isinf(INF_TYPE_POSITIVE)) return std::string("Inf");
-    if (fc.isinf(INF_TYPE_NEGATIVE)) return std::string("-Inf");
-    if (fc.iszero()) return std::string(showpos ? "+0.0e+0" : "0.0e+0");
-
-    // Step 1: Estimate exponent from the most significant non-zero component
-    double hi = fc[0];
-    int exp10 = static_cast<int>(std::floor(std::log10(std::abs(hi))));
-    if (!std::isfinite(exp10)) exp10 = 0; // handle log10(0) = -inf case
-    double scale = std::pow(10.0, -exp10);
-
-	// Step 2: Scale all components so we are in the range [0.0, 10.0)
-    double scaled[N];
-    for (size_t i = 0; i < N; ++i) {
-        scaled[i] = fc[i] * scale;
-    }
-    double acc = 0.0;
-    for (size_t i = 0; (i < N) && (i < 3); ++i) acc += scaled[i];
-	bool negative = std::signbit(acc);
-	acc = std::abs(acc);
-
-    // Step 3: Generate digits iteratively
-    std::string digits;
-	digits.reserve(static_cast<size_t>(precision) + 2); // leading digit + precision digits
-
-    for (int i = 0; i <= precision; ++i) {
-        int digit = static_cast<int>(acc);
-		if (digit > 9) digit = 9; // defensive clamp
-        digits.push_back(static_cast<char>('0' + digit));
-        acc = (acc - digit) * 10.0;
-    }
-
-	// Step 4: Round last digit and propagate carry (with exponent adjustment)
-    if (acc >= 5.0) {
-		int i = precision;
-        for (; i >= 0 && digits[i] == '9'; --i) {
-			digits[i] = '0';
-        }
-        if (i >= 0) {
-            digits[i] += 1; // increment this digit
-        }
-        else {
-			// overflowed the leading digit: 9.99... 9 -> 10.0...0
-            digits.insert(digits.begin(), '1');
-            exp10 += 1;
-		}
-    }
-
-    // Step 5: Format string
-    std::string result;
-    if (negative) result += '-';
-    else if (showpos) result += '+';
-
-    result += digits[0]; // leading digit
-    result += '.';
-    if (precision > 0) {
-        result.append(digits.begin() + 1, digits.begin() + 1 + precision);
-        if (trailing_zeros) {
-            // digits already has length precision + 1
-        }
-        else {
-			// trim trailing zeros after decimal point
-            while (!result.empty() && result.back() == '0') {
-                result.pop_back();
-			}
-            if (!result.empty() && result.back() == '.') {
-                result.pop_back(); // remove decimal point if no digits follow
-			}
-        }
-    }
-    else {
-		result += '0'; // no precision requested, just add a zero
-    }
-
-    result += uppercase ? "E" : "e";
-    result += (exp10 >= 0 ? "+" : "-");
-    result += std::to_string(std::abs(exp10));
-
-    return result;
-}
 
 
 // Core expansion operations - the "engine" for all cascade operations
@@ -1923,7 +1817,7 @@ void floatcascade<N>::to_digits(std::vector<char>& s, int& exponent, int precisi
 
     // Use full floatcascade comparison (not just r[0]) to match dd behavior
     if ((r >= _ten) || (r < _one)) {
-        std::cerr << "to_digits() failed to compute exponent\n";
+        std::fprintf(stderr, "to_digits() failed to compute exponent\n");
         return;
     }
 
@@ -1981,7 +1875,7 @@ void floatcascade<N>::to_digits(std::vector<char>& s, int& exponent, int precisi
     }
 
     if (s[0] <= '0') {
-        std::cerr << "to_digits() non-positive leading digit\n";
+        std::fprintf(stderr, "to_digits() non-positive leading digit\n");
         return;
     }
 
@@ -2148,7 +2042,7 @@ std::string floatcascade<N>::to_string(
                 from_string = atof(s.c_str());
                 // if this ratio is large, then the string has not been fixed
                 if (std::fabs(from_string / e[0]) > 3.0) {
-                    std::cerr << "re-rounding unsuccessful in fixed point fix\n";
+                    std::fprintf(stderr, "re-rounding unsuccessful in fixed point fix\n");
                 }
             }
         }
@@ -2463,7 +2357,7 @@ inline floatcascade<N> pown(const floatcascade<N>& a, int n) {
     // Handle special cases
     if (abs_n == 0) {
         if (a.iszero()) {
-            std::cerr << "pown: 0^0 is undefined\n";
+            std::fprintf(stderr, "pown: 0^0 is undefined\n");
             result[0] = std::numeric_limits<double>::quiet_NaN();
             for (size_t i = 1; i < N; ++i) result[i] = 0.0;
             return result;
