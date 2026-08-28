@@ -28,11 +28,11 @@ namespace sw { namespace universal {
 	  return std::complex< erational >(x.real(), -x.imag());
 	}
 
-	bool isnan(std::complex< erational > x) {
+	inline bool isnan(std::complex< erational > x) {
 		return (isnan(x.real()) || isnan(x.imag()));
 	}
 
-	bool isinf(std::complex< erational > x) {
+	inline bool isinf(std::complex< erational > x) {
 		return (isinf(x.real()) || isinf(x.imag()));
 	}
 

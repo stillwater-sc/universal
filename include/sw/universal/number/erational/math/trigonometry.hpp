@@ -14,52 +14,52 @@ namespace sw { namespace universal {
 // One radian is equivalent to 180/PI degrees
 
 // sine of an angle of x radians
-erational sin(erational x) {
+inline erational sin(erational x) {
 	return erational(std::sin(double(x)));
 }
 
 // cosine of an angle of x radians
-erational cos(erational x) {
+inline erational cos(erational x) {
 	return erational(std::cos(double(x)));
 }
 
 // tangent of an angle of x radians
-erational tan(erational x) {
+inline erational tan(erational x) {
 	return erational(std::tan(double(x)));
 }
 
 // cotangent of an angle of x radians
-erational atan(erational x) {
+inline erational atan(erational x) {
 	return erational(std::atan(double(x)));
 }
 		
 // Arc tangent with two parameters
-erational atan2(erational y, erational x) {
+inline erational atan2(erational y, erational x) {
 	return erational(std::atan2(double(y),double(x)));
 }
 
 // cosecant of an angle of x radians
-erational acos(erational x) {
+inline erational acos(erational x) {
 	return erational(std::acos(double(x)));
 }
 
 // secant of an angle of x radians
-erational asin(erational x) {
+inline erational asin(erational x) {
 	return erational(std::asin(double(x)));
 }
 
 // cotangent an angle of x radians
-erational cot(erational x) {
+inline erational cot(erational x) {
 	return erational(std::tan(sw::universal::d_pi_2-double(x)));
 }
 
 // secant of an angle of x radians
-erational sec(erational x) {
+inline erational sec(erational x) {
 	return erational(1.0/std::cos(double(x)));
 }
 
 // cosecant of an angle of x radians
-erational csc(erational x) {
+inline erational csc(erational x) {
 	return erational(1.0/std::sin(double(x)));
 }
 

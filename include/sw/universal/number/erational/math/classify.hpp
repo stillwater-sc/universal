@@ -9,7 +9,7 @@
 namespace sw { namespace universal {
 
 	// STD LIB function for IEEE floats: Categorizes floating point value arg into the following categories: zero, subnormal, normal, infinite, NAN, or implementation-defined category.
-	int fpclassify(const erational& a) {
+	inline int fpclassify(const erational& a) {
 		return std::fpclassify(double(a));
 	}
 	

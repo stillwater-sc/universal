@@ -9,15 +9,15 @@
 
 namespace sw { namespace universal {
 
-	erational fmod(erational x, erational y) {
+	inline erational fmod(erational x, erational y) {
 		return erational(std::fmod(double(x), double(y)));
 	}
 
-	erational remainder(erational x, erational y) {
+	inline erational remainder(erational x, erational y) {
 		return erational(std::remainder(double(x), double(y)));
 	}
 
-	erational frac(erational x) {
+	inline erational frac(erational x) {
 		return erational(double(x)-long(x));
 	}
 
