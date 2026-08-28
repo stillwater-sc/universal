@@ -12,6 +12,12 @@
 // operator<<, so manipulators.hpp includes THIS header. Keeping the include out here is
 // what stops that being a cycle.
 //
+// NOTE on layer order: this header does NOT include manipulators.hpp, and must not.
+// operator<< calls only the to_string() member and operator>> only parse(), both core,
+// so the dependency runs the OTHER way: qd's string builders format qd values THROUGH
+// operator<<, so manipulators.hpp includes THIS header. Including it back here made a
+// cycle that #pragma once merely masked, leaving visibility dependent on include order.
+//
 // Layer 2b of the qd headers (#1334): the <iostream> half. manipulators.hpp is the
 // string-producing half. operator>> reports a parse failure on std::cerr, which is why
 // <iostream> belongs at this layer and not in the core.
@@ -25,7 +31,6 @@
 #include <ios>           // std::ios_base flags, std::ios::failbit
 
 #include <universal/number/qd/core.hpp>
-#include <universal/number/qd/manipulators.hpp>
 
 namespace sw { namespace universal {
 
