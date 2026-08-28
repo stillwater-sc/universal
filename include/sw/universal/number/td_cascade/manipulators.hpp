@@ -5,6 +5,20 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <cstdint>
+#include <cstddef>
+#include <cassert>
+#include <cmath>
+#include <universal/native/ieee754.hpp>   // for the NON-TEMPLATE color_print(double) in ieee754_double.hpp.
+                                         // ieee754_core.hpp deliberately omits it; it is an exact match that
+                                         // outranks the color_print<Real> template, so losing it changed both
+                                         // overload resolution AND the printed format (#1334).
+#include <universal/number/td_cascade/core.hpp>
+#include <universal/number/td_cascade/iostream.hpp>   // the text builders format td_cascade values THROUGH operator<<,
+                                                    // which is defined there, not in the core (#1334)
 #include <iostream>
 #include <iomanip>
 #include <sstream>

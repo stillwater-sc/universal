@@ -5,6 +5,16 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <cstdint>
+#include <cstddef>
+#include <cassert>
+#include <cmath>
+#include <universal/number/dd_cascade/core.hpp>
+#include <universal/number/dd_cascade/iostream.hpp>   // the text builders format dd_cascade values THROUGH operator<<,
+                                                    // which is defined there, not in the core (#1334)
 #include <iomanip>
 #include <sstream>
 #include <universal/native/integers.hpp>  // for hex_print

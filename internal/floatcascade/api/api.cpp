@@ -9,6 +9,8 @@
 #include <iostream>
 
 #include <universal/internal/floatcascade/floatcascade.hpp>
+#include <universal/internal/floatcascade/manipulators.hpp>   // to_tuple / to_scientific (#1334)
+#include <universal/internal/floatcascade/iostream.hpp>       // operator<<(ostream, floatcascade) (#1334)
 #include <universal/verification/test_suite.hpp>
 
 

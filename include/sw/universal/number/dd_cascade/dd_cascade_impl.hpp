@@ -10,14 +10,17 @@
 #include <bit>
 #include <cctype>
 #include <cmath>
-#include <iostream>
-#include <iomanip>
+#include <cstdint>      // std::uint64_t
+#include <limits>       // std::numeric_limits
+#include <ios>          // std::streamsize / std::ios_base, in the to_string() signature
+#include <iosfwd>       // std::ostream/std::istream in the forward declarations (#1334)
+#include <cstdio>       // fprintf(stderr,...) for the diagnostics
 #include <string>
-#include <sstream>
 #include <type_traits>
 #include <vector>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/internal/floatcascade/floatcascade.hpp>
+#include <universal/internal/floatcascade/floatcascade.hpp>   // the arithmetic substrate; its text and
+                                                              // stream layers are separate headers now (#1334)
 
 namespace sw::universal {
 
@@ -600,19 +603,6 @@ protected:
     // fully resolved at the point of declaration.)
 
     // Stream output - uses floatcascade-based to_string with proper formatting
-    friend std::ostream& operator<<(std::ostream& ostr, const dd_cascade& v) {
-        std::ios_base::fmtflags fmt = ostr.flags();
-        std::streamsize precision = ostr.precision();
-        std::streamsize width = ostr.width();
-        char fillChar = ostr.fill();
-        bool showpos = fmt & std::ios_base::showpos;
-        bool uppercase = fmt & std::ios_base::uppercase;
-        bool fixed = fmt & std::ios_base::fixed;
-        bool scientific = fmt & std::ios_base::scientific;
-        bool internal = fmt & std::ios_base::internal;
-        bool left = fmt & std::ios_base::left;
-        return ostr << v.to_string(precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
-    }
 };
 
 ////////////////////////  precomputed constants of note  /////////////////////////////////
@@ -890,7 +880,7 @@ inline dd_cascade pown(const dd_cascade& a, int n) {
 	switch (N) {
 	case 0:
 		if (a.iszero()) {
-			std::cerr << "pown: invalid argument\n";
+			std::fprintf(stderr, "pown: invalid argument\n");
 			errno = EDOM;
 			return dd_cascade(SpecificValue::qnan);
 		}
@@ -959,19 +949,6 @@ inline bool parse(const std::string& number, dd_cascade& value) {
 	return false;
 }
 
-// stream in an ASCII decimal floating-point format and assign it to a dd_cascade
-inline std::istream& operator>>(std::istream& istr, dd_cascade& v) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit is set by >>.
-		return istr;
-	}
-	if (!parse(txt, v)) {
-		std::cerr << "unable to parse -" << txt << "- into a dd_cascade value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
 
 
 } // namespace sw::universal
