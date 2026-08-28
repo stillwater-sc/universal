@@ -1,6 +1,7 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
-#include <sstream>
+#include <iosfwd>       // std::ostream/std::istream in the friend declarations (#1334)
+#include <cstdio>       // fprintf(stderr,...) for the TBD diagnostics
+#include <string>       // std::string, returned by the text layer's builders
 #include <string>
 // faithful_impl.hpp: definition of a faithfully rounded number system
 //
@@ -10,7 +11,8 @@
 #include <cassert>
 #include <limits>
 
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>          // the bit-manipulation half (#1334)
+#include <universal/native/manipulators_core.hpp>   // scale(), without the text layer
 #include <universal/internal/abstract/triple.hpp>
 #include <universal/numerics/eft.hpp>
 
@@ -132,7 +134,7 @@ public:
 
 	// prefix/postfix operators
 	faithful& operator++() {
-		std::cerr << "operator++() TBD\n";
+		std::fprintf(stderr, "operator++() TBD\n");
 		return *this;
 	}
 	faithful operator++(int) {
@@ -141,7 +143,7 @@ public:
 		return tmp;
 	}
 	faithful& operator--() {
-		std::cerr << "operator--() TBD\n";
+		std::fprintf(stderr, "operator--() TBD\n");
 		return *this;
 	}
 	faithful operator--(int) {
@@ -186,18 +188,6 @@ private:
 };
 
 ////////////////////// operators
-template<typename FPType>
-inline std::ostream& operator<<(std::ostream& ostr, const faithful<FPType>& v) {
-	ostr << "( " << v.value << ", " << v.error << ')';
-	return ostr;
-}
-
-template<typename FPType>
-inline std::istream& operator>>(std::istream& istr, faithful<FPType>& v) {
-	std::string token;
-	istr >> token >> v.value >> token >> v.error >> token;
-	return istr;
-}
 
 template<typename FPType>
 inline bool operator==(const faithful<FPType>& lhs, const faithful<FPType>& rhs) { return false; }
@@ -243,20 +233,6 @@ inline faithful<FloatingPointType> operator/(const faithful<FloatingPointType>& 
 }
 
 
-template<typename FloatingPointType>
-inline std::string components(const faithful<FloatingPointType>& v) {
-	std::stringstream s;
-	if (v.iszero()) {
-		s << " zero";
-		return s.str();
-	}
-	else if (v.isinf()) {
-		s << " infinite";
-		return s.str();
-	}
-	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
-	return s.str();
-}
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
 template<typename FloatingPointType>

@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <type_traits>   // std::enable_if_t
 #include <universal/traits/integral_constant.hpp>
 
 namespace sw { namespace universal {

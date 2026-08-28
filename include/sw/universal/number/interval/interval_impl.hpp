@@ -10,9 +10,8 @@
 #include <type_traits>
 #include <algorithm>
 #include <cmath>
-#include <ostream>
-#include <istream>
-#include <sstream>
+#include <iosfwd>       // std::ostream/std::istream in the friend declarations (#1334)
+#include <string>       // std::string, returned by the text layer's builders
 #include <typeinfo>
 
 #include <universal/number/interval/exceptions.hpp>
@@ -530,22 +529,6 @@ private:
 
 ////////////////////// operators
 
-// stream output
-template<typename Scalar>
-inline std::ostream& operator<<(std::ostream& ostr, const interval<Scalar>& v) {
-	return ostr << '[' << v._lo << ", " << v._hi << ']';
-}
-
-// stream input
-template<typename Scalar>
-inline std::istream& operator>>(std::istream& istr, interval<Scalar>& v) {
-	Scalar lo, hi;
-	char c;
-	istr >> c >> lo >> c >> hi >> c;  // expects format [lo, hi]
-	v._lo = lo;
-	v._hi = hi;
-	return istr;
-}
 
 // comparison operators
 // Two intervals are equal if both bounds are equal
@@ -786,20 +769,5 @@ inline interval<Scalar> hull(const interval<Scalar>& a, const interval<Scalar>& 
 
 ////////////////////// utility functions
 
-// string conversion
-template<typename Scalar>
-inline std::string to_string(const interval<Scalar>& v) {
-	std::stringstream s;
-	s << v;
-	return s.str();
-}
-
-// type tag for reporting
-template<typename Scalar>
-inline std::string type_tag(const interval<Scalar>& = {}) {
-	std::stringstream s;
-	s << "interval<" << typeid(Scalar).name() << '>';
-	return s.str();
-}
 
 }} // namespace sw::universal

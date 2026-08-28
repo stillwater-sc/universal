@@ -27,9 +27,14 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/interval/exceptions.hpp>
-#include <universal/number/interval/interval_fwd.hpp>
-#include <universal/number/interval/interval_impl.hpp>
-#include <universal/number/interval/interval_traits.hpp>
-#include <universal/number/interval/numeric_limits.hpp>
+/// INCLUDE FILES that make up the library
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  to_string / type_tag
+///     iostream.hpp      operator<< / operator>>
+///
+/// A translation unit that only computes can include core.hpp directly.
+#include <universal/number/interval/core.hpp>
 #include <universal/number/interval/manipulators.hpp>
+#include <universal/number/interval/iostream.hpp>

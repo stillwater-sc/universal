@@ -4,6 +4,8 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <stdexcept>     // std::runtime_error
+#include <string>        // std::string
 #include <universal/common/exceptions.hpp>
 
 namespace sw { namespace universal {

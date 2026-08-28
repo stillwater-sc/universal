@@ -29,8 +29,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries 
-#include <iostream>
-#include <iomanip>
 #include <stdexcept>
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -65,13 +63,15 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/quire/exceptions.hpp>
-#include <universal/traits/quire_traits.hpp>
-#include <universal/number/quire/quire_fwd.hpp>
-#include <universal/number/quire/quire_impl.hpp>
-#include <universal/number/quire/numeric_limits.hpp>
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// useful external functions to work with quires
+/// INCLUDE FILES that make up the library
+///
+/// Layered per #1334:
+///     core.hpp          arithmetic, no streams
+///     manipulators.hpp  quire_properties() and the string builders
+///     iostream.hpp      operator<<
+///
+/// A translation unit that only accumulates can include core.hpp directly.
+#include <universal/number/quire/core.hpp>
 #include <universal/number/quire/manipulators.hpp>
+#include <universal/number/quire/iostream.hpp>
 #include <universal/number/quire/attributes.hpp>

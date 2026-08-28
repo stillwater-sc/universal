@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstdint>       // the fixed-width integer types
 
 /*
 https://en.wikipedia.org/wiki/Elementary_function

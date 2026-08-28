@@ -5,6 +5,15 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <limits>        // std::numeric_limits
+#include <type_traits>   // std::is_same_v
+//
+// Layer 2a of the interval headers (#1334): the string-producing half. These build a
+// std::string, so they need <sstream> but not <iostream>.
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <universal/number/interval/core.hpp>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -81,6 +90,22 @@ void interval_range(std::ostream& ostr = std::cout) {
 template<typename Scalar>
 bool isInRange(const interval<Scalar>& v) {
 	return v.isfinite();
+}
+
+// string conversion
+template<typename Scalar>
+inline std::string to_string(const interval<Scalar>& v) {
+	std::stringstream s;
+	s << v;
+	return s.str();
+}
+
+// type tag for reporting
+template<typename Scalar>
+inline std::string type_tag(const interval<Scalar>& = {}) {
+	std::stringstream s;
+	s << "interval<" << typeid(Scalar).name() << '>';
+	return s.str();
 }
 
 }} // namespace sw::universal
