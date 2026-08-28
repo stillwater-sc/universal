@@ -17,6 +17,29 @@
 // quire is the exact dot-product accumulator; it is generic over the NumberType it
 // accumulates, so it layers on internal/blockbinary and internal/blocktriple -- both
 // already at 0 I/O from Phase N -- rather than on any one number system.
+////////////////////////////////////////////////////////////////////////////////////////
+///  BEHAVIORAL COMPILATION SWITCHES
+///
+/// These live HERE, not only in the umbrella, because core.hpp is a public entry point:
+/// quire_impl.hpp tests them in #if directives, so a translation unit that includes only
+/// core.hpp would otherwise leave them undefined. That still evaluates to 0 -- the
+/// intended default -- but it is a diagnostic under -Wundef and it makes the core's
+/// configuration depend on an include the caller was told they do not need (#1334).
+/// The umbrella's own #if !defined guards make this a no-op when both are included.
+
+// enable/disable the ability to use literals in binary logic and arithmetic operators
+#if !defined(QUIRE_ENABLE_LITERALS)
+// default is to enable them
+#	define QUIRE_ENABLE_LITERALS 1
+#endif
+
+// enable throwing specific exceptions for arithmetic errors
+// left to application to enable
+#if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
+// default is to use a stderr diagnostic as the signalling error
+#	define QUIRE_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/long_double.hpp>
