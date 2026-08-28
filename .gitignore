@@ -48,3 +48,14 @@ docker/.Dockerfile.*.tmp
 # editor swap files
 .*.sw?
 *.swp
+
+# generated number-table dumps: the table.hpp GenerateTable() helpers write these into
+# whatever the working directory is, which is the repo root when a test is run by hand
+lns.txt
+takums.txt
+takum_logs.txt
+posits.txt
+cfloats.txt
+fixpnts.txt
+areals.txt
+dbns.txt
