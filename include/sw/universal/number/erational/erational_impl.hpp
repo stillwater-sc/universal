@@ -603,30 +603,30 @@ inline erational operator/(const erational& lhs, const erational& rhs) {
 /// erational - erational logic operators
 
 // equality test
-bool operator==(const erational& lhs, const erational& rhs) {
+inline bool operator==(const erational& lhs, const erational& rhs) {
 	return lhs.numerator == rhs.numerator && lhs.denominator == rhs.denominator;
 }
 // inequality test
-bool operator!=(const erational& lhs, const erational& rhs) {
+inline bool operator!=(const erational& lhs, const erational& rhs) {
 	return !operator==(lhs, rhs);
 }
 // less-than test
-bool operator<(const erational& lhs, const erational& rhs) {
+inline bool operator<(const erational& lhs, const erational& rhs) {
 	// a/b < c/d  => ad / bd < cb / bd => ad < cb
 	edecimal ad = lhs.numerator * rhs.denominator;
 	edecimal bc = lhs.denominator * rhs.numerator;
 	return ad < bc;
 }
 // greater-than test
-bool operator>(const erational& lhs, const erational& rhs) {
+inline bool operator>(const erational& lhs, const erational& rhs) {
 	return operator<(rhs, lhs);
 }
 // less-or-equal test
-bool operator<=(const erational& lhs, const erational& rhs) {
+inline bool operator<=(const erational& lhs, const erational& rhs) {
 	return operator<(lhs, rhs) || operator==(lhs, rhs);
 }
 // greater-or-equal test
-bool operator>=(const erational& lhs, const erational& rhs) {
+inline bool operator>=(const erational& lhs, const erational& rhs) {
 	return !operator<(lhs, rhs);
 }
 
@@ -674,7 +674,7 @@ inline bool operator>=(long lhs, const erational& rhs) {
 
 
 // find largest multiplier of rhs being less or equal to lhs by subtraction; assumes 0*rhs <= lhs <= 9*rhs 
-erational findLargestMultiple_(const erational& lhs, const erational& rhs) {
+inline erational findLargestMultiple_(const erational& lhs, const erational& rhs) {
 	erational multiplier;
 
 	return multiplier;
@@ -689,7 +689,7 @@ struct erationalintdiv {
 };
 
 // divide integer erational a and b and return result argument
-erationalintdiv erational_divide(const erational& lhs, const erational& rhs) {
+inline erationalintdiv erational_divide(const erational& lhs, const erational& rhs) {
 	if (rhs.iszero()) {
 #if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
 		throw erational_divide_by_zero{};
@@ -706,11 +706,11 @@ erationalintdiv erational_divide(const erational& lhs, const erational& rhs) {
 }
 
 // return quotient of a erational integer division
-erational quotient(const erational& _a, const erational& _b) {
+inline erational quotient(const erational& _a, const erational& _b) {
 	return erational_divide(_a, _b).quot;
 }
 // return remainder of a erational integer division
-erational remainder(const erational& _a, const erational& _b) {
+inline erational remainder(const erational& _a, const erational& _b) {
 	return erational_divide(_a, _b).rem;
 }
 

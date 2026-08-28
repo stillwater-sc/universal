@@ -9,11 +9,11 @@
 
 namespace sw { namespace universal {
 
-	erational min(erational x, erational y) {
+	inline erational min(erational x, erational y) {
 		return erational(std::min(double(x), double(y)));
 	}
 
-	erational max(erational x, erational y) {
+	inline erational max(erational x, erational y) {
 		return erational(std::max(double(x), double(y)));
 	}
 

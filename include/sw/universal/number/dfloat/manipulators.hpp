@@ -13,7 +13,7 @@ namespace sw { namespace universal {
 
 	
 	// Generate a type tag for this decimal encoding
-	std::string type_tag(const DecimalEncoding encoding = {}) {
+	inline std::string type_tag(const DecimalEncoding encoding = {}) {
 		std::stringstream s;
 		switch (encoding) {
 		case DecimalEncoding::BCD:

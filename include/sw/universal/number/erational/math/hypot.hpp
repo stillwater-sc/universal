@@ -42,16 +42,16 @@ hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN
 
 namespace sw { namespace universal {
 
-erational hypot(erational x, erational y) {
+inline erational hypot(erational x, erational y) {
 	return erational(std::hypot(double(x),double(y)));
 }
 
-erational hypotf(erational x, erational y) {
+inline erational hypotf(erational x, erational y) {
 	return erational(std::hypotf(float(x),float(y)));
 }
 
 #if LONG_DOUBLE_SUPPORT
-erational hypotl(erational x, erational y) {
+inline erational hypotl(erational x, erational y) {
 	return erational(std::hypotl((long double)(x),(long double)(y)));
 }
 #endif

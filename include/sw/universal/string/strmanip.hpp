@@ -9,7 +9,7 @@
 namespace sw { namespace universal {
 
 // remove white space from the left side of the string
-std::string& ltrim(std::string& s)
+inline std::string& ltrim(std::string& s)
 {
 	auto it = std::find_if(s.begin(), s.end(),
 		[](char c) {
@@ -20,7 +20,7 @@ std::string& ltrim(std::string& s)
 }
 
 // remove white space at the right side of the string
-std::string& rtrim(std::string& s) {
+inline std::string& rtrim(std::string& s) {
 	auto it = std::find_if(s.rbegin(), s.rend(),
 		[](char c) {
 		return !std::isspace<char>(c, std::locale::classic());

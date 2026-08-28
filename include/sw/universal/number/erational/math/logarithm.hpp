@@ -10,22 +10,22 @@
 namespace sw { namespace universal {
 
 	// Natural logarithm of x
-	erational log(erational x) {
+	inline erational log(erational x) {
 		return erational(std::log(double(x)));
 	}
 
 	// Binary logarithm of x
-	erational log2(erational x) {
+	inline erational log2(erational x) {
 		return erational(std::log2(double(x)));
 	}
 
 	// Decimal logarithm of x
-	erational log10(erational x) {
+	inline erational log10(erational x) {
 		return erational(std::log10(double(x)));
 	}
 		
 	// Natural logarithm of 1+x
-	erational log1p(erational x) {
+	inline erational log1p(erational x) {
 		return erational(std::log1p(double(x)));
 	}
 

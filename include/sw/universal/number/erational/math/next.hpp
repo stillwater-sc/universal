@@ -25,7 +25,7 @@ Return Value
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 */
 
-erational nextafter(erational x, erational target) {
+inline erational nextafter(erational x, erational target) {
 	if (x == target) return target;
 
 		if (x > target) {
@@ -38,7 +38,7 @@ erational nextafter(erational x, erational target) {
 	return x;
 }
 		
-erational nexttoward(erational x, erational target) {
+inline erational nexttoward(erational x, erational target) {
 	if (x == target) return x;
 
 		if (x > target) {

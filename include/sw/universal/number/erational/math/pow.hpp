@@ -9,15 +9,15 @@
 
 namespace sw { namespace universal {
 
-	erational pow(erational x, erational y) {
+	inline erational pow(erational x, erational y) {
 		return erational(std::pow(double(x), double(y)));
 	}
 		
-	erational pow(erational x, int y) {
+	inline erational pow(erational x, int y) {
 		return erational(std::pow(double(x), double(y)));
 	}
 		
-	erational pow(erational x, double y) {
+	inline erational pow(erational x, double y) {
 		return erational(std::pow(double(x), y));
 	}
 

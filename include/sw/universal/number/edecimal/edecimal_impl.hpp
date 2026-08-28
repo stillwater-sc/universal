@@ -653,17 +653,17 @@ inline edecimal operator>>(const edecimal& lhs, int shift) {
 
 	// edecimal - edecimal logic operators
 // equality test
-bool operator==(const edecimal& lhs, const edecimal& rhs) {
+inline bool operator==(const edecimal& lhs, const edecimal& rhs) {
 	if (lhs.size() != rhs.size()) return false;
 	bool areEqual = std::equal(lhs.begin(), lhs.end(), rhs.begin()) && lhs.sign() == rhs.sign();
 	return areEqual;
 }
 // inequality test
-bool operator!=(const edecimal& lhs, const edecimal& rhs) {
+inline bool operator!=(const edecimal& lhs, const edecimal& rhs) {
 	return !operator==(lhs, rhs);
 }
 // less-than test
-bool operator<(const edecimal& lhs, const edecimal& rhs) {
+inline bool operator<(const edecimal& lhs, const edecimal& rhs) {
 	if (lhs.sign() != rhs.sign()) {
 		return lhs.sign() ? true : false;
 	}
@@ -686,15 +686,15 @@ bool operator<(const edecimal& lhs, const edecimal& rhs) {
 	return false;
 }
 // greater-than test
-bool operator>(const edecimal& lhs, const edecimal& rhs) {
+inline bool operator>(const edecimal& lhs, const edecimal& rhs) {
 	return operator<(rhs, lhs);
 }
 // less-or-equal test
-bool operator<=(const edecimal& lhs, const edecimal& rhs) {
+inline bool operator<=(const edecimal& lhs, const edecimal& rhs) {
 	return operator<(lhs, rhs) || operator==(lhs, rhs);
 }
 // greater-or-equal test
-bool operator>=(const edecimal& lhs, const edecimal& rhs) {
+inline bool operator>=(const edecimal& lhs, const edecimal& rhs) {
 	return !operator<(lhs, rhs);
 }
 
@@ -741,7 +741,7 @@ inline bool operator>=(long lhs, const edecimal& rhs) {
 ///////////////////////////////////////////////////////////////////////
 // 
 // find largest multiplier of rhs being less or equal to lhs by subtraction; assumes 0*rhs <= lhs <= 9*rhs 
-edecimal findLargestMultiple(const edecimal& lhs, const edecimal& rhs) {
+inline edecimal findLargestMultiple(const edecimal& lhs, const edecimal& rhs) {
 	// check argument assumption	assert(0 <= lhs && lhs >= 9 * rhs);
 	edecimal remainder = lhs;
 	remainder.setpos();
@@ -772,7 +772,7 @@ struct decintdiv {
 };
 
 // divide integer edecimal a and b and return result argument
-decintdiv decint_divide(const edecimal& _a, const edecimal& _b) {
+inline decintdiv decint_divide(const edecimal& _a, const edecimal& _b) {
 	if (_b.iszero()) {
 #if EDECIMAL_THROW_ARITHMETIC_EXCEPTION
 		throw edecimal_integer_divide_by_zero{};
@@ -829,11 +829,11 @@ decintdiv decint_divide(const edecimal& _a, const edecimal& _b) {
 }
 
 // return quotient of a edecimal integer division
-edecimal quotient(const edecimal& _a, const edecimal& _b) {
+inline edecimal quotient(const edecimal& _a, const edecimal& _b) {
 	return decint_divide(_a, _b).quot;
 }
 // return remainder of a edecimal integer division
-edecimal remainder(const edecimal& _a, const edecimal& _b) {
+inline edecimal remainder(const edecimal& _a, const edecimal& _b) {
 	return decint_divide(_a, _b).rem;
 }
 

@@ -12,32 +12,32 @@ namespace sw { namespace universal {
 // One radian is equivalent to 180/PI degrees
 
 // hyperbolic sine of an angle of x radians
-erational sinh(erational x) {
+inline erational sinh(erational x) {
 	return erational(std::sinh(double(x)));
 }
 
 // hyperbolic cosine of an angle of x radians
-erational cosh(erational x) {
+inline erational cosh(erational x) {
 	return erational(std::cosh(double(x)));
 }
 
 // hyperbolic tangent of an angle of x radians
-erational tanh(erational x) {
+inline erational tanh(erational x) {
 	return erational(std::tanh(double(x)));
 }
 
 // hyperbolic cotangent of an angle of x radians
-erational atanh(erational x) {
+inline erational atanh(erational x) {
 	return erational(std::atanh(double(x)));
 }
 
 // hyperbolic cosecant of an angle of x radians
-erational acosh(erational x) {
+inline erational acosh(erational x) {
 	return erational(std::acosh(double(x)));
 }
 
 // hyperbolic secant of an angle of x radians
-erational asinh(erational x) {
+inline erational asinh(erational x) {
 	return erational(std::asinh(double(x)));
 }
 

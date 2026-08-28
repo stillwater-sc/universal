@@ -9,12 +9,12 @@
 namespace sw { namespace universal {
 
 	// Compute the error function erf(x) = 2 over sqrt(PI) times Integral from 0 to x of e ^ (-t)^2 dt
-	erational erf(erational x) {
+	inline erational erf(erational x) {
 		return erational(std::erf(double(x)));
 	}
 
 	// Compute the complementary error function: 1 - erf(x)
-	erational erfc(erational x) {
+	inline erational erfc(erational x) {
 		return erational(std::erfc(double(x)));
 	}
 
