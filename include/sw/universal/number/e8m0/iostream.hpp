@@ -24,7 +24,12 @@ inline std::ostream& operator<<(std::ostream& ostr, e8m0 v) {
 
 inline std::istream& operator>>(std::istream& istr, e8m0& v) {
 	float f;
-	istr >> f;
+	if (!(istr >> f)) {
+		// extraction failed (already-bad stream, EOF, or a non-numeric token). On an
+		// already-bad stream operator>> never assigns, so f stays indeterminate --
+		// constructing from it would be UB and would clobber v with garbage.
+		return istr;
+	}
 	v = e8m0(f);
 	return istr;
 }

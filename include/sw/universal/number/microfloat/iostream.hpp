@@ -25,7 +25,11 @@ inline std::ostream& operator<<(std::ostream& ostr, microfloat<n,e,i,na,s> mf) {
 template<unsigned n, unsigned e, bool i, bool na, bool s>
 inline std::istream& operator>>(std::istream& istr, microfloat<n,e,i,na,s>& p) {
 	float f;
-	istr >> f;
+	if (!(istr >> f)) {
+		// extraction failed; f is indeterminate on an already-bad stream, so do not
+		// construct from it and do not overwrite p.
+		return istr;
+	}
 	p = microfloat<n,e,i,na,s>(f);
 	return istr;
 }
