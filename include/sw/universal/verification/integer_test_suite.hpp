@@ -1,3 +1,4 @@
+#pragma once
 // integer_test_suite.hpp : arithmetic test suite for abitrary precision integers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.

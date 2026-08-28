@@ -1,3 +1,4 @@
+#pragma once
 // blockbinary_test_status.cpp : functions to aid in testing and test reporting block binary numbers
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.

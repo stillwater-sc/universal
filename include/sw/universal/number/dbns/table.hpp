@@ -5,6 +5,14 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Self-contained: this header uses the type, its to_binary() and its stream operator, so
+// it states those dependencies rather than relying on a prior include (#1422).
+#include <cstddef>      // std::size_t
+#include <iostream>     // std::ostream
+#include <iomanip>      // std::setw
+#include <universal/number/dbns/dbns.hpp>   // dbns<>, to_binary(), operator<< -- dbns is not layered
+                                            // yet, so the umbrella is the entry point (#1422)
 
 namespace sw { namespace universal {
 

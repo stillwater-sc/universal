@@ -1,3 +1,4 @@
+#pragma once
 // alu.hpp: a generic module to model a hardware ALU
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
