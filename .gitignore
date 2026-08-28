@@ -59,3 +59,10 @@ cfloats.txt
 fixpnts.txt
 areals.txt
 dbns.txt
+
+# generated artifacts a demo or test writes into its working directory. The dumps below
+# were committed by accident three times (#1432 and again in #1435) because tests were run
+# from the repo root; the durable fix is to run them from a scratch directory, and these
+# patterns are the backstop.
+*.ppm
+mandelbrot*.ppm
