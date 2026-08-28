@@ -34,6 +34,7 @@
 
 #include <universal/utility/directives.hpp>
 #include <universal/internal/floatcascade/floatcascade.hpp>
+#include <universal/internal/floatcascade/iostream.hpp>   // operator<<(ostream, floatcascade) (#1334)
 #include <universal/number/qd/qd.hpp>
 #include <universal/number/qd_cascade/qd_cascade.hpp>
 #include <universal/verification/test_suite.hpp>

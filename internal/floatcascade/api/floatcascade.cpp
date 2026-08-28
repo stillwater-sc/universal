@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iomanip>
 #include <universal/internal/floatcascade/floatcascade.hpp>
+#include <universal/internal/floatcascade/iostream.hpp>   // operator<<(ostream, floatcascade) (#1334)
 
 using namespace sw::universal;
 
