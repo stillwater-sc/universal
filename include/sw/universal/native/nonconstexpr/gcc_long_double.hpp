@@ -10,7 +10,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <type_traits>
 
-#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
+#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__) && !defined(__riscv)
 /* GNU GCC/G++. --------------------------------------------- */
 
 namespace sw { namespace universal {

@@ -35,8 +35,8 @@ value is a denormal number and the exponent of 2 is 16382.
 // specialize for the different compiler environments
 #include <universal/native/nonconstexpr/msvc_long_double.hpp>
 #include <universal/native/nonconstexpr/clang_long_double.hpp>
-#include <universal/native/nonconstexpr/gcc_long_double.hpp>
 #include <universal/native/nonconstexpr/riscv_long_double.hpp>
+#include <universal/native/nonconstexpr/gcc_long_double.hpp>
 /*
   the support for these compilers is not up to date
 #include <universal/native/nonconstexpr/intelicc_long_double.hpp>
