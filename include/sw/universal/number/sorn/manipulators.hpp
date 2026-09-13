@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstddef>   // std::size_t
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -52,7 +53,7 @@ template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bo
 std::string sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::getDT() {
 	std::stringstream DTstream;
 	DTstream << "-- SORN datatype:" << "\t\t";
-	for (size_t b = 0; b < sornDT.size(); b++) {
+	for (std::size_t b = 0; b < sornDT.size(); b++) {
 		DTstream << sornDT[b].getInt() << ' ';
 	}
 	DTstream << '\n';
