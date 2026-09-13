@@ -5,14 +5,95 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <string>
-#include <iomanip>
+//
+// Layer 2a of the bfloat16 headers (#1334): the <iomanip> half -- everything that
+// turns a bfloat16 into a std::string. iostream.hpp is the <iostream> half.
+// Self-contained: it names every header it uses rather than relying on the umbrella's
+// include order.
+#include <cctype>        // std::tolower, used by parse()
+#include <cstdint>       // the fixed-width integer types
+#include <string>        // std::string
+#include <sstream>       // std::stringstream, std::istringstream
+#include <iomanip>       // std::hex
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/number/bfloat16/core.hpp>
 #include <universal/number/bfloat16/bfloat16_fwd.hpp>
+#include <universal/traits/bfloat16_traits.hpp>   // is_bfloat16, used by type_field
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 
 namespace sw { namespace universal {
+
+// Moved out of bfloat16_impl.hpp (#1334): these turn text into a bfloat16 and a
+// bfloat16 into text through a stringstream, which is what keeps them out of the core.
+
+// parse a bfloat16 ASCII format and make a binary bfloat16 out of it
+inline bool parse(const std::string& number, bfloat16& value) {
+	// Detect nan / inf / infinity tokens (case-insensitive, optional sign).
+	{
+		std::string t;
+		t.reserve(number.size());
+		for (char c : number) {
+			t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+		}
+		bool negative = !t.empty() && t.front() == '-';
+		std::string body = t;
+		if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
+		if (body == "nan") {
+			value.setnan(NAN_TYPE_QUIET);
+			return true;
+		}
+		if (body == "inf" || body == "infinity") {
+			value.setinf(negative);
+			return true;
+		}
+	}
+	// Decimal floating-point: bfloat16 has only 7 explicit mantissa bits,
+	// so std::istringstream's double extraction is more than enough
+	// precision -- the value gets immediately rounded into the bfloat16
+	// encoding via convert_ieee754.
+	std::istringstream ss(number);
+	double d;
+	ss >> d;
+	if (ss.fail()) return false;
+	ss >> std::ws;
+	if (!ss.eof()) return false;
+	value = d;
+	return true;
+}
+
+////////////////// string operators
+
+inline std::string to_binary(bfloat16 bf, bool bNibbleMarker = false) {
+	std::stringstream s;
+	unsigned short bits = bf.bits();
+	unsigned short mask = 0x8000u;
+	s << (bits & mask ? "0b1." : "0x0.");
+	mask >>= 1;
+	// exponent bits
+	for (unsigned i = 0; i < 8; ++i) {
+		if (bNibbleMarker && (4 == i)) {
+			s << '\'';
+		}
+		s << (bits & mask ? '1' : '0');
+		mask >>= 1;
+	}
+	s << '.';
+	for (unsigned i = 0; i < 7; ++i) {
+		if (bNibbleMarker && (3 == i)) {
+			s << '\'';
+		}	
+		s << (bits & mask ? '1' : '0');
+		mask >>= 1;
+	}
+	return s.str();
+}
+
+// native semantic representation: radix-2, delegates to to_binary
+inline std::string to_native(bfloat16 v, bool nibbleMarker = false) {
+	return to_binary(v, nibbleMarker);
+}
+
 
 	// Generate a type tag for bfloat16
 	inline std::string type_tag(const bfloat16& = {}) {
