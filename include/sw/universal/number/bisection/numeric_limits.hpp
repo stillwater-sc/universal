@@ -5,6 +5,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project.
+#include <limits>
+
+#include <universal/number/bisection/bisection_fwd.hpp>
 
 namespace std {
 

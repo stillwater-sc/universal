@@ -17,10 +17,14 @@
 #include <cmath>
 #include <cassert>
 #include <limits>
-#include <string>
-#include <sstream>
-#include <iomanip>
+#include <string>       // std::string, in the to_binary friend declaration
 #include <type_traits>
+
+// Exception behavior: defaults here rather than in the bisection.hpp umbrella, so that a
+// translation unit which includes core.hpp directly gets the same default (#1334, #1436).
+#if !defined(BISECTION_THROW_ARITHMETIC_EXCEPTION)
+#define BISECTION_THROW_ARITHMETIC_EXCEPTION 0
+#endif
 
 #include <universal/internal/blockbinary/blockbinary.hpp>
 
@@ -580,12 +584,6 @@ bisection<G, R, n, b, A> pow(const bisection<G, R, n, b, A>& base, const bisecti
 	return bisection<G, R, n, b, A>(std::pow(double(base), double(exp)));
 }
 
-// -- Stream I/O ---------------------------------------------------
-
-template<typename G, typename R, unsigned n, typename b, typename A>
-inline std::ostream& operator<<(std::ostream& ostr, const bisection<G, R, n, b, A>& v) {
-	double d = double(v);
-	return ostr << d;
-}
+// operator<< is in iostream.hpp (#1334)
 
 }} // namespace sw::universal

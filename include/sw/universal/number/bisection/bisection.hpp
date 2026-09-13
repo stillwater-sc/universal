@@ -18,15 +18,15 @@
 #include <iomanip>
 #include <string>
 
-// Exception behavior
-#if !defined(BISECTION_THROW_ARITHMETIC_EXCEPTION)
-#define BISECTION_THROW_ARITHMETIC_EXCEPTION 0
-#endif
+// BISECTION_THROW_ARITHMETIC_EXCEPTION now defaults in bisection_impl.hpp, so that a
+// translation unit which includes core.hpp directly gets the same default (#1334,
+// #1436). Defining it before this header still wins, as before.
 
-#include <universal/number/bisection/exceptions.hpp>
-#include <universal/number/bisection/bisection_fwd.hpp>
-#include <universal/number/bisection/bisection_impl.hpp>
-#include <universal/number/bisection/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation unit
+// that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/bisection/core.hpp>
+// layer 2a: the string producers -- to_binary, type_tag, color_print, components
 #include <universal/number/bisection/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<<
+#include <universal/number/bisection/iostream.hpp>
 #include <universal/number/bisection/attributes.hpp>
-#include <universal/number/bisection/generators.hpp>
