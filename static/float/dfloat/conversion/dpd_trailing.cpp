@@ -27,25 +27,25 @@
 
 namespace sw { namespace universal {
 
-// a random N-digit decimal significand as a string. The digits just below the leading
-// one, which land in the leftover group, are 8 or 9 in every third sample. The last
-// digit is never 0: parse() strips trailing zeros, and a short divisor significand
-// overflows long division (#1484), which is not what this test is about.
+// a random decimal significand of up to N digits as a string. The digits just below the
+// leading one, which land in the leftover group, are 8 or 9 in every third sample, and
+// every third sample is shorter than N digits. Trailing zeros are allowed: parse()
+// strips them, which leaves short significands, and short divisors among them.
 template<unsigned N>
 std::string RandomSignificand(std::mt19937_64& rng, int k) {
+	const unsigned len = (k % 3 == 1) ? 1u + static_cast<unsigned>(rng() % N) : N;
 	std::string s;
 	s += static_cast<char>('1' + rng() % 9);
-	for (unsigned i = 1; i < N; ++i) {
+	for (unsigned i = 1; i < len; ++i) {
 		const bool leftover = i <= 2;
-		unsigned d = (leftover && k % 3 == 0) ? 8u + static_cast<unsigned>(rng() % 2) : static_cast<unsigned>(rng() % 10);
-		if (i == N - 1 && d == 0) d = 1u + static_cast<unsigned>(rng() % 9);
+		const unsigned d = (leftover && k % 3 == 0) ? 8u + static_cast<unsigned>(rng() % 2) : static_cast<unsigned>(rng() % 10);
 		s += static_cast<char>('0' + d);
 	}
 	return s;
 }
 
 // the same decimal text in BID and DPD: it must unpack identically, and BID must hold
-// exactly the digits written
+// exactly the digits written, less the trailing zeros parse() moves into the exponent
 template<typename BID, typename DPD>
 bool CheckSameValue(const std::string& sig, const std::string& txt, BID& b, DPD& d, std::string& why) {
 	b.assign(txt);
@@ -54,7 +54,9 @@ bool CheckSameValue(const std::string& sig, const std::string& txt, BID& b, DPD&
 	typename BID::significand_t bsig; typename DPD::significand_t dsig;
 	b.unpack(bs, be, bsig);
 	d.unpack(ds, de, dsig);
-	if (BID::sig_to_string(bsig) != sig) { why = txt + ": BID reference holds " + BID::sig_to_string(bsig); return false; }
+	std::string written = sig;
+	while (written.size() > 1 && written.back() == '0') written.pop_back();
+	if (BID::sig_to_string(bsig) != written) { why = txt + ": BID reference holds " + BID::sig_to_string(bsig); return false; }
 	if (bs != ds || be != de || !(bsig == dsig)) {
 		why = txt + ": DPD unpacks to " + std::string(ds ? "-" : "") + DPD::sig_to_string(dsig) + "e" + std::to_string(de)
 		    + ", BID to " + std::string(bs ? "-" : "") + BID::sig_to_string(bsig) + "e" + std::to_string(be);
@@ -64,10 +66,11 @@ bool CheckSameValue(const std::string& sig, const std::string& txt, BID& b, DPD&
 }
 
 // dfloat<N, ES> in BID and DPD: random values must unpack identically, and + - * / on
-// pairs of them must give the same results. The two operands of a pair are at most
-// two decades apart: a wider gap overflows the significand while add aligns exponents
-// (#1484), in both encodings. With N-digit significands and that gap every
-// intermediate stays within N + 2 digits, which the significand type holds.
+// pairs of them must give the same results. The two operands of a pair are up to
+// 2N + 3 decades apart, so + and - run their aligned path, the far-gap shortcut and the
+// boundary between them. (The first version kept them within two decades and their
+// significands N digits long: until #1484 was fixed, anything wider overflowed the
+// significand in both encodings.)
 template<unsigned N, unsigned ES>
 int VerifyDpdMatchesBid(int nrSamples, bool reportTestCases) {
 	using BID = dfloat<N, ES, DecimalEncoding::BID, std::uint32_t>;
@@ -82,11 +85,13 @@ int VerifyDpdMatchesBid(int nrSamples, bool reportTestCases) {
 	std::vector<BID> bids;
 	std::vector<DPD> dpds;
 	for (int k = 0; k < nrSamples; ++k) {
-		// exponents well inside the range, so nothing overflows or goes subnormal
+		// a base exponent well inside the range; a result that still overflows or
+		// underflows does so to the same inf or 0 in both encodings
 		const int exponent = static_cast<int>(rng() % 21) - 10 - static_cast<int>(N) / 2;
 		for (int side = 0; side < 2; ++side) {
 			const std::string sig = RandomSignificand<N>(rng, k + side);
-			const int e = exponent + (side ? static_cast<int>(rng() % 5) - 2 : 0);
+			const int gap = static_cast<int>(2 * N + 3);
+			const int e = exponent + (side ? static_cast<int>(rng() % static_cast<unsigned>(2 * gap + 1)) - gap : 0);
 			const std::string txt = ((k + side) % 2 ? "-" : "") + sig + "e" + std::to_string(e);
 			BID b; DPD d; std::string why;
 			if (!CheckSameValue(sig, txt, b, d, why)) fail(why);
