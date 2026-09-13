@@ -8,8 +8,10 @@
 #include <algorithm>  // std::max, std::min, std::reverse, std::find_if
 #include <cctype>     // std::isspace, std::tolower, in parse()
 #include <cmath>      // std::fpclassify, std::frexp, std::ldexp (long double conversions)
+#include <cstddef>    // std::size_t
 #include <cstdint>
 #include <ios>        // std::streamsize, taken by to_string(); no stream is opened
+#include <limits>     // std::numeric_limits
 #include <string>
 #include <type_traits>
 #include <vector>

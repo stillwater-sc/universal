@@ -13,6 +13,7 @@
 #include <iomanip>   // std::setw, std::setfill, std::hex, in to_binary()
 #include <sstream>
 #include <string>
+#include <type_traits>  // std::enable_if_t
 #include <typeinfo>  // for typeid()
 #include <universal/number/efloat/core.hpp>
 // pull in the color printing for shells utility
