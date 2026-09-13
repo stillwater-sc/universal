@@ -323,25 +323,22 @@ public:
 		// result exponent = min(lhs_exp, rhs_exp)
 		int shift = lhs_exp - rhs_exp;
 
-		// When the smaller operand cannot change the result, return the larger one
+		// When the smaller operand cannot change the rounded result, return the larger one
 		// unchanged -- short-circuit. Unpacked significands are not normalized to ndigits
 		// (parse strips trailing zeros into the exponent), so the exponent gap alone does
 		// not say that: 51e6 has exponent 6 but only 2 digits, and -88925e0 still changes
-		// its sum. The gap between the leading digits decides (#1484):
-		// - same signs: the smaller operand is below one unit in the larger one's last
-		//   place when its leading digit is ndigits or more below, so the truncated sum
-		//   is the larger operand;
-		// - opposite signs: the result can fall below a power of ten and gain a digit
-		//   (decimal64 1e16 - 6 = 9999999999999994, which the old shortcut returned as
-		//   1e16), so only a smaller operand more than ndigits + 1 digits below, less than
-		//   a tenth of a unit in the last place, is absorbed. That returns the nearest
-		//   value, where truncation would give one unit less (#1487).
+		// its sum. The gap between the leading digits decides (#1484). A smaller operand
+		// more than ndigits + 1 digits below the larger one is under a tenth of a unit in
+		// its last place, and under half a unit of the result's last place even when a
+		// subtraction takes the result below a power of ten, so the nearest value is the
+		// larger operand, with either sign. Anything closer, such as decimal64 1e16 - 6 =
+		// 9999999999999994, goes through the exact sum.
 		const int lhs_top = lhs_exp + static_cast<int>(count_digits_s(lhs_sig)) - 1;
 		const int rhs_top = rhs_exp + static_cast<int>(count_digits_s(rhs_sig)) - 1;
 		const int top_gap = (lhs_top >= rhs_top) ? lhs_top - rhs_top : rhs_top - lhs_top;
 		const int n = static_cast<int>(ndigits);
 		const int abs_shift = (shift >= 0) ? shift : -shift;
-		if (abs_shift >= n && top_gap >= ((lhs_sign == rhs_sign) ? n : n + 2)) {
+		if (abs_shift >= n && top_gap >= n + 2) {
 			if (shift > 0) return *this;       // lhs dominates
 			*this = rhs; return *this;         // rhs dominates
 		}
@@ -413,29 +410,10 @@ public:
 		bool result_sign = (lhs_sign != rhs_sign);
 		int result_exp = lhs_exp + rhs_exp;
 
-		// Wide multiplication: urmul returns blockbinary<2*sig_bits>
+		// Wide multiplication: urmul returns blockbinary<2*sig_bits>, which holds the
+		// exact product; round it to ndigits
 		wide_significand_t wide = urmul(lhs_sig, rhs_sig);
-		wide_significand_t ten_w(10);
-
-		// Count digits in wide result and trim to ndigits
-		// Use a helper to count digits of the wide result
-		unsigned wd = 0;
-		{
-			wide_significand_t tmp(wide);
-			if (tmp.iszero()) { wd = 1; }
-			else { while (!tmp.iszero()) { tmp /= ten_w; ++wd; } }
-		}
-		while (wd > ndigits) {
-			wide /= ten_w;
-			result_exp++;
-			wd--;
-		}
-
-		// Truncate wide result to significand_t
-		significand_t result_sig;
-		result_sig.assign(wide);
-
-		normalize_and_pack(result_sign, result_exp, result_sig);
+		normalize_wide_and_pack(result_sign, result_exp, wide);
 		return *this;
 	}
 	constexpr dfloat& operator/=(const dfloat& rhs) {
@@ -487,14 +465,15 @@ public:
 
 		// When the dividend's significand is the smaller one, those steps leave fewer
 		// than ndigits digits (#1484: decimal32 1 / 1234567 gave 8e-7, not 8.100005e-7).
-		// An inexact quotient continues until it has ndigits; an exact one keeps the
-		// digits it has, as before.
+		// An inexact quotient continues to ndigits + 1 digits, a guard digit for the
+		// rounding, and the remainder is the sticky part; an exact one keeps the digits
+		// it has, as before.
 		unsigned qdigits = 0;
 		{
 			wide_significand_t tmp(quotient);
 			while (!tmp.iszero()) { tmp /= ten; ++qdigits; }
 		}
-		while (qdigits < ndigits && !remainder.iszero()) {
+		while (qdigits < ndigits + 1 && !remainder.iszero()) {
 			remainder *= ten;
 			quotient = quotient * ten + remainder / divisor;
 			remainder = remainder % divisor;
@@ -502,7 +481,7 @@ public:
 			++qdigits;
 		}
 
-		normalize_wide_and_pack(result_sign, result_exp, quotient);
+		normalize_wide_and_pack(result_sign, result_exp, quotient, !remainder.iszero());
 		return *this;
 	}
 
@@ -693,12 +672,14 @@ public:
 		// Parse integer and fractional parts, keeping value = sig * 10^(decimal_exponent -
 		// frac_digits), where frac_digits counts the fraction digits appended to sig.
 		// Leading zeros are not significant: they take no digit of precision, and after
-		// the point they only set the scale. Digits beyond the precision are dropped
-		// (truncation); a dropped integer digit scales the value up, a dropped fraction
-		// digit changes nothing. Both used to be counted wrong (#1485): leading zeros
-		// filled the ndigits slots ("0000000123" read as 0 in decimal32, and
-		// "0.0001234567" as 1.23e-8), and dropped fraction digits still moved the
+		// the point they only set the scale. Both used to be counted wrong (#1485):
+		// leading zeros filled the ndigits slots ("0000000123" read as 0 in decimal32,
+		// and "0.0001234567" as 1.23e-8), and dropped fraction digits still moved the
 		// exponent ("1.23456789" read as 0.01234567).
+		// sig keeps one guard digit past the precision and any nonzero digit after it sets
+		// sticky, so the value rounds to nearest, ties to even (#1487). A digit dropped
+		// from the integer part scales the value up; one dropped from the fraction does not.
+		bool sticky = false;
 		while (pos < txt.size()) {
 			char ch = txt[pos];
 			if (ch == '.') {
@@ -712,13 +693,14 @@ public:
 				if (leading_zero) {
 					if (seen_dot) frac_digits++;
 				}
-				else if (digit_count < ndigits) {
+				else if (digit_count < ndigits + 1) {
 					sig = sig * ten + significand_t(static_cast<long long>(ch - '0'));
 					digit_count++;
 					if (seen_dot) frac_digits++;
 				}
-				else if (!seen_dot) {
-					decimal_exponent++;
+				else {
+					if (ch != '0') sticky = true;
+					if (!seen_dot) decimal_exponent++;
 				}
 				++pos;
 				continue;
@@ -750,7 +732,9 @@ public:
 			decimal_exponent += exp_neg ? -exp_val : exp_val;
 		}
 
-		// Remove trailing zeros from significand (normalize)
+		// Remove trailing zeros from significand (normalize). Stripping the guard digit
+		// when it is 0 is safe even with sticky set: the dropped part is then under half a
+		// unit, and rounds down.
 		while (!sig.iszero() && digit_count > 1) {
 			significand_t remainder = sig % ten;
 			if (!remainder.iszero()) break;
@@ -765,7 +749,7 @@ public:
 			return *this;
 		}
 
-		normalize_and_pack(negative, decimal_exponent, sig);
+		normalize_and_pack(negative, decimal_exponent, sig, sticky);
 		return *this;
 	}
 
@@ -847,9 +831,26 @@ public:
 
 		// Determine effective precision (number of significant digits to show)
 		size_t prec = (precision > 0) ? precision : static_cast<size_t>(ndigits);
-		// Trim digits to requested precision
+		// Round to the requested precision, to nearest with ties to even (#1487: this
+		// truncated, so std::scientific with std::setprecision(3) printed 2/3 as 6.66e-1)
 		if (digits.size() > prec) {
+			const char round_digit = digits[prec];
+			const bool sticky = digits.find_first_not_of('0', prec + 1) != std::string::npos;
 			digits.resize(prec);
+			const bool odd = ((digits.back() - '0') & 1) != 0;
+			if (round_digit > '5' || (round_digit == '5' && (sticky || odd))) {
+				size_t i = prec;
+				while (i > 0 && digits[i - 1] == '9') { digits[i - 1] = '0'; --i; }
+				if (i > 0) {
+					++digits[i - 1];
+				}
+				else {
+					// 99...9 rounds up to 100...0: one more integer digit
+					digits.insert(digits.begin(), '1');
+					digits.pop_back();
+					++decimal_pos;
+				}
+			}
 		}
 		num_digits = static_cast<int>(digits.size());
 
@@ -1040,21 +1041,48 @@ protected:
 	}
 
 	///////////////////////////////////////////////////////////////////
-	// Normalize significand to ndigits and pack
-	constexpr void normalize_and_pack(bool s, int exponent, significand_t significand) noexcept {
+	// Round a significand to at most ndigits digits, to nearest with ties to even: IEEE
+	// 754 roundTiesToEven, the round_to_nearest that numeric_limits declares (#1487; the
+	// arithmetic used to truncate). sticky says the exact value exceeds
+	// significand * 10^exponent by a nonzero amount below one unit in its last digit.
+	// Callers that can lose information keep at least one guard digit past ndigits, so
+	// the digit that decides the rounding is always among the ones dropped here.
+	template<typename Sig>
+	static constexpr void round_to_ndigits(Sig& significand, int& exponent, bool sticky) noexcept {
+		const Sig ten(10);
+		unsigned digits = 0;
+		{
+			Sig tmp(significand);
+			while (!tmp.iszero()) { tmp /= ten; ++digits; }
+		}
+		if (digits <= ndigits) return;
+		unsigned round_digit = 0;   // the most significant dropped digit
+		while (digits > ndigits) {
+			sticky = sticky || (round_digit != 0);
+			round_digit = static_cast<unsigned>(static_cast<long long>(significand % ten));
+			significand /= ten;
+			++exponent;
+			--digits;
+		}
+		const bool odd = significand.at(0);
+		if (round_digit > 5 || (round_digit == 5 && (sticky || odd))) {
+			significand += Sig(1);
+			// 99...9 + 1 carries into a new digit; the digit it drops is a 0
+			Sig limit(1);
+			for (unsigned i = 0; i < ndigits; ++i) limit *= ten;
+			if (significand == limit) { significand /= ten; ++exponent; }
+		}
+	}
+
+	///////////////////////////////////////////////////////////////////
+	// Round significand to ndigits and pack
+	constexpr void normalize_and_pack(bool s, int exponent, significand_t significand, bool sticky = false) noexcept {
 		if (significand.iszero()) { setzero(); if (s) setsign(true); return; }
 
-		// Normalize: ensure significand has exactly ndigits digits
-		significand_t ten(10);
-		unsigned digits = count_digits_s(significand);
-		while (digits > ndigits) {
-			significand /= ten;
-			exponent++;
-			digits--;
-		}
-		// No need to scale up - smaller significands are valid
+		// Round to at most ndigits digits; smaller significands are valid as they are
+		round_to_ndigits(significand, exponent, sticky);
 
-		// Check for overflow/underflow
+		// Check for overflow/underflow, after rounding: a carry can raise the exponent
 		if (exponent > emax) {
 			setinf(s);
 			return;
@@ -1069,20 +1097,10 @@ protected:
 		pack(s, exponent, significand);
 	}
 
-	// Reduce a double-width significand to ndigits (truncating, as normalize_and_pack
-	// does), then pack it
-	constexpr void normalize_wide_and_pack(bool s, int exponent, wide_significand_t significand) noexcept {
-		wide_significand_t ten(10);
-		unsigned digits = 0;
-		{
-			wide_significand_t tmp(significand);
-			while (!tmp.iszero()) { tmp /= ten; ++digits; }
-		}
-		while (digits > ndigits) {
-			significand /= ten;
-			exponent++;
-			digits--;
-		}
+	// Round a double-width significand to ndigits, then pack it
+	constexpr void normalize_wide_and_pack(bool s, int exponent, wide_significand_t significand, bool sticky = false) noexcept {
+		if (significand.iszero()) { setzero(); if (s) setsign(true); return; }
+		round_to_ndigits(significand, exponent, sticky);
 		significand_t narrow;
 		narrow.assign(significand);
 		normalize_and_pack(s, exponent, narrow);
@@ -1251,10 +1269,11 @@ protected:
 				scaled *= static_cast<double>(pow10_64(remaining));
 			}
 		}
-		// Round-half-up via floor(x + 0.5).  scaled is positive here.
-		// Cast to uint64_t truncates (same as std::round for positive values
-		// after the +0.5 nudge).
-		uint64_t sig_narrow = static_cast<uint64_t>(scaled + 0.5);
+		// Round to nearest, ties to even (#1487; this used floor(x + 0.5), half up).
+		// scaled is positive, and the cast to uint64_t truncates it.
+		uint64_t sig_narrow = static_cast<uint64_t>(scaled);
+		const double frac = scaled - static_cast<double>(sig_narrow);
+		if (frac > 0.5 || (frac == 0.5 && (sig_narrow & 1u) != 0u)) ++sig_narrow;
 
 		// Adjust if rounding pushed us over
 		uint64_t limit = pow10_64(effective_digits);

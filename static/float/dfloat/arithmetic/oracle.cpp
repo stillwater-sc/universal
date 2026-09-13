@@ -19,12 +19,10 @@
 //
 // The oracle here is independent of blockbinary: operands are read back from each
 // dfloat as a digit string and an exponent, and the exact result is computed on digit
-// strings. It encodes dfloat's rounding as it stands. Results are the exact value
-// truncated toward zero to ndigits significant digits, except that + and - return the
-// larger operand unchanged when the smaller one cannot change it: with the same sign,
-// when the smaller one's leading digit is ndigits or more below; with opposite signs,
-// more than ndigits + 1 below, where that is the nearest value. (numeric_limits
-// declares round_to_nearest; the mix of truncation and nearest is #1487.)
+// strings. Every result must be the exact value rounded to ndigits significant digits,
+// to nearest with ties to even (IEEE 754 roundTiesToEven, #1487). + and - may return
+// the larger operand unchanged when the smaller one's leading digit is more than
+// ndigits + 1 below it: that is then the nearest value, and keeps its encoding.
 #include <universal/utility/directives.hpp>
 #include <algorithm>
 #include <cstdint>
@@ -94,24 +92,34 @@ struct Value {
 	int top() const { return exp + static_cast<int>(digits.size()) - 1; }   // position of the leading digit
 };
 
-// truncate toward zero to n significant digits, then drop trailing zeros
-Value truncate(Value v, unsigned n) {
+// round to n significant digits, to nearest with ties to even, then drop trailing
+// zeros. sticky says the exact value exceeds v by a nonzero amount below v's last digit;
+// callers that set it keep a guard digit, so the deciding digit is always present.
+Value round(Value v, unsigned n, bool sticky = false) {
 	if (v.iszero()) return Value{};
 	if (v.digits.size() > n) {
+		const char round_digit = v.digits[n];
+		sticky = sticky || v.digits.find_first_not_of('0', n + 1) != std::string::npos;
 		v.exp += static_cast<int>(v.digits.size() - n);
-		v.digits = v.digits.substr(0, n);
+		v.digits.resize(n);
+		const bool odd = ((v.digits.back() - '0') & 1) != 0;
+		if (round_digit > '5' || (round_digit == '5' && (sticky || odd))) {
+			v.digits = add(v.digits, "1");
+			if (v.digits.size() > n) { v.digits.pop_back(); ++v.exp; }   // 99...9 + 1: the dropped digit is 0
+		}
 	}
 	while (v.digits.size() > 1 && v.digits.back() == '0') { v.digits.pop_back(); ++v.exp; }
 	return v;
 }
 
 Value add(const Value& x, const Value& y, unsigned n) {
-	if (x.iszero()) return truncate(y, n);
-	if (y.iszero()) return truncate(x, n);
-	// the smaller operand cannot change the result: return the larger one
+	if (x.iszero()) return round(y, n);
+	if (y.iszero()) return round(x, n);
+	// dfloat returns the larger operand when the smaller one's leading digit is more
+	// than n + 1 below: it must then be the nearest value, which round() of the exact
+	// sum would give too; returning it keeps the operand's own encoding
 	const int gap = x.exp - y.exp, top_gap = x.top() - y.top();
-	const int reach = (x.neg == y.neg) ? static_cast<int>(n) : static_cast<int>(n) + 2;
-	if (std::abs(gap) >= static_cast<int>(n) && std::abs(top_gap) >= reach) return truncate(gap > 0 ? x : y, n);
+	if (std::abs(gap) >= static_cast<int>(n) && std::abs(top_gap) >= static_cast<int>(n) + 2) return round(gap > 0 ? x : y, n);
 	const int e = std::min(x.exp, y.exp);
 	const std::string a = x.digits + std::string(static_cast<size_t>(x.exp - e), '0');
 	const std::string b = y.digits + std::string(static_cast<size_t>(y.exp - e), '0');
@@ -120,7 +128,7 @@ Value add(const Value& x, const Value& y, unsigned n) {
 	if (x.neg == y.neg) { r.digits = add(a, b); r.neg = x.neg; }
 	else if (compare(a, b) >= 0) { r.digits = sub(a, b); r.neg = x.neg; }
 	else { r.digits = sub(b, a); r.neg = y.neg; }
-	return truncate(r, n);
+	return round(r, n);
 }
 
 Value mul(const Value& x, const Value& y, unsigned n) {
@@ -128,10 +136,11 @@ Value mul(const Value& x, const Value& y, unsigned n) {
 	r.digits = mul(x.digits, y.digits);
 	r.exp = x.exp + y.exp;
 	r.neg = (x.neg != y.neg);
-	return truncate(r, n);
+	return round(r, n);
 }
 
-// n significant digits of x / y, truncated, by schoolbook long division
+// x / y rounded to n significant digits: schoolbook long division to n + 1 digits,
+// with the remainder as the sticky part
 Value div(const Value& x, const Value& y, unsigned n) {
 	Value q;
 	q.neg = (x.neg != y.neg);
@@ -140,7 +149,7 @@ Value div(const Value& x, const Value& y, unsigned n) {
 	size_t next = 0;   // next digit of x.digits to bring down; zeros after it
 	unsigned significant = 0;
 	int scaled = 0;    // digits brought down beyond x.digits
-	while (significant < n) {
+	while (significant < n + 1) {
 		const char d = (next < x.digits.size()) ? x.digits[next] : '0';
 		if (next >= x.digits.size()) ++scaled;
 		++next;
@@ -155,7 +164,9 @@ Value div(const Value& x, const Value& y, unsigned n) {
 	q.digits = trim(quotient);
 	q.exp = e - scaled;
 	if (next < x.digits.size()) q.exp += static_cast<int>(x.digits.size() - next);
-	return truncate(q, n);
+	// digits of x not yet brought down count as a nonzero remainder too
+	const bool rest = (next < x.digits.size()) && x.digits.find_first_not_of('0', next) != std::string::npos;
+	return round(q, n, rem != "0" || rest);
 }
 
 } // namespace exact
@@ -246,20 +257,20 @@ int VerifyReportedCases(bool reportTestCases) {
 	auto v32 = [](const char* s) { d32 v; v.assign(s); return v; };
 	auto v64 = [](const char* s) { d64 v; v.assign(s); return v; };
 	auto v5  = [](const char* s) { d5 v; v.assign(s); return v; };
-	expect("decimal64 3812837151747335e1 - 4304704077704107e-12", ValueOf(v64("3812837151747335e1") - v64("4304704077704107e-12")), "3812837151746904e1");
+	expect("decimal64 3812837151747335e1 - 4304704077704107e-12", ValueOf(v64("3812837151747335e1") - v64("4304704077704107e-12")), "3812837151746905e1");
 	expect("decimal64 3812837151747335e1 + 4304704077704107e-12", ValueOf(v64("3812837151747335e1") + v64("4304704077704107e-12")), "3812837151747765e1");
 	expect("decimal32 1234567 / 1", ValueOf(v32("1234567") / v32("1")), "1234567e0");
 	expect("decimal32 9999999 / 0.001", ValueOf(v32("9999999") / v32("1e-3")), "9999999e3");
-	expect("decimal32 1 / 1234567", ValueOf(v32("1") / v32("1234567")), "8100005e-13");
+	expect("decimal32 1 / 1234567", ValueOf(v32("1") / v32("1234567")), "8100006e-13");
 	expect("dfloat<5> -88925 + 5.1e7", ValueOf(v5("-88925") + v5("51e6")), "50911e3");
 	expect("decimal64 1e16 - 6", ValueOf(v64("1e16") - v64("6")), "9999999999999994e0");
 	expect("decimal64 1e16 - 1e-5", ValueOf(v64("1e16") - v64("1e-5")), "1e16");
 	expect("decimal64 1e16 + 1e-5", ValueOf(v64("1e16") + v64("1e-5")), "1e16");
 	expect("decimal32 1 - 1e-7", ValueOf(v32("1") - v32("1e-7")), "9999999e-7");
-	expect("decimal32 1 - 1e-8", ValueOf(v32("1") - v32("1e-8")), "9999999e-7");
+	expect("decimal32 1 - 1e-8", ValueOf(v32("1") - v32("1e-8")), "1e0");
 	expect("decimal32 -1 + 1e-30", ValueOf(v32("-1") + v32("1e-30")), "-1e0");
 	expect("decimal32 5 - 5e-9", ValueOf(v32("5") - v32("5e-9")), "5e0");
-	expect("decimal32 5 - 5e-8", ValueOf(v32("5") - v32("5e-8")), "4999999e-6");
+	expect("decimal32 5 - 5e-8", ValueOf(v32("5") - v32("5e-8")), "5e0");
 	expect("dfloat<5> -88925 / 5.1e7", ValueOf(v5("-88925") / v5("51e6")), "-17436e-7");
 	return nrOfFailedTests;
 }

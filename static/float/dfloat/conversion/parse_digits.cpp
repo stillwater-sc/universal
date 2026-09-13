@@ -13,12 +13,14 @@
 //   decimal32  "1.23456789"              -> 0.01234567  (1.234567)
 //   decimal32  "12345678.9"              -> 1234567     (1.234567e7)
 //   decimal64  "3.14159265358979323846"  -> 3.141592653589793e-5
-// and an exponent of ten or more digits overflowed an int (undefined behaviour).
+// and an exponent of ten or more digits overflowed an int (undefined behaviour). With
+// #1487 parsing and str(precision) round to nearest, ties to even.
 //
 // Each value here is a random digit string D and an exponent E. It is written out in
 // several textual forms (positional, with leading and trailing zeros, with the point
 // shifted against an explicit exponent, scientific) and every form must parse to D * 10^E
-// truncated to ndigits significant digits, computed on the digit strings.
+// rounded to ndigits significant digits, to nearest with ties to even (#1487), computed
+// on the digit strings.
 #include <universal/utility/directives.hpp>
 #include <cstdint>
 #include <iostream>
@@ -29,10 +31,22 @@
 
 namespace sw { namespace universal {
 
-// D * 10^E with D a digit string without leading zeros, truncated to n significant
-// digits and stripped of trailing zeros, as "digits e exponent"
-std::string Truncated(std::string d, int e, unsigned n) {
-	if (d.size() > n) { e += static_cast<int>(d.size() - n); d.resize(n); }
+// D * 10^E with D a digit string without leading zeros, rounded to n significant
+// digits (to nearest, ties to even) and stripped of trailing zeros, as "digits e exponent"
+std::string Rounded(std::string d, int e, unsigned n) {
+	if (d.size() > n) {
+		const char round_digit = d[n];
+		const bool sticky = d.find_first_not_of('0', n + 1) != std::string::npos;
+		e += static_cast<int>(d.size() - n);
+		d.resize(n);
+		const bool odd = ((d.back() - '0') & 1) != 0;
+		if (round_digit > '5' || (round_digit == '5' && (sticky || odd))) {
+			size_t i = n;
+			while (i > 0 && d[i - 1] == '9') { d[i - 1] = '0'; --i; }
+			if (i > 0) ++d[i - 1];
+			else { d.insert(d.begin(), '1'); d.pop_back(); ++e; }   // 99...9 carries into a new digit
+		}
+	}
 	while (d.size() > 1 && d.back() == '0') { d.pop_back(); ++e; }
 	return d + "e" + std::to_string(e);
 }
@@ -72,7 +86,7 @@ int VerifyParseForms(int nrSamples, bool reportTestCases) {
 		const int e = top - static_cast<int>(len) + 1;
 		const bool neg = (k % 2) != 0;
 		const std::string sign = neg ? "-" : "";
-		const std::string want = sign + Truncated(d, e, N);
+		const std::string want = sign + Rounded(d, e, N);
 
 		const unsigned lz = static_cast<unsigned>(rng() % 5), tz = static_cast<unsigned>(rng() % 5);
 		const int shift = static_cast<int>(rng() % 9) - 4;
@@ -116,12 +130,48 @@ int VerifyNegativePowers(bool reportTestCases) {
 		const std::string txt = Positional("1234567", -6 - k);
 		F positional; positional.assign(txt);
 		F scientific; scientific.assign("1.234567e-" + std::to_string(k));
-		const std::string want = Truncated("1234567", -6 - k, N);
+		const std::string want = Rounded("1234567", -6 - k, N);
 		if (Held(positional) != want || !(positional == scientific)) {
 			++nrOfFailedTests;
 			if (reportTestCases)
 				std::cerr << "FAIL: dfloat<" << N << ',' << ES << "> \"" << txt << "\" -> " << Held(positional)
 				          << ", expected " << want << '\n';
+		}
+	}
+	return nrOfFailedTests;
+}
+
+// str(precision) with fewer digits than the value holds must round to nearest, ties
+// to even, like every other conversion (#1487: it truncated). Each printed string is
+// parsed back and compared with the stored digits rounded on the digit string.
+template<unsigned N, unsigned ES>
+int VerifyStringRounding(int nrSamples, bool reportTestCases) {
+	using F = dfloat<N, ES, DecimalEncoding::BID, std::uint32_t>;
+	std::mt19937_64 rng(1487 + N);   // deterministic: the engine's output sequence is specified by the standard
+	int nrOfFailedTests = 0;
+	for (int k = 0; k < nrSamples; ++k) {
+		std::string d;
+		d += static_cast<char>('1' + rng() % 9);
+		for (unsigned i = 1; i < N; ++i) d += static_cast<char>('0' + rng() % 10);
+		const unsigned prec = 1 + static_cast<unsigned>(rng() % (N - 1));
+		// every third sample is an exact tie at the printed precision, every third one
+		// a tie broken by a later digit
+		if (k % 3 != 2) {
+			d[prec] = '5';
+			for (unsigned i = prec + 1; i < N; ++i) d[i] = '0';
+			if (k % 3 == 1) d[N - 1] = '1';
+		}
+		const int e = static_cast<int>(rng() % 21) - 10 - static_cast<int>(N);
+		F v; v.assign(d + "e" + std::to_string(e));
+		const std::string printed = v.str(prec, F::FmtMode::scientific);
+		F back; back.assign(printed);
+		const std::string want = Rounded(d, e, prec);
+		if (Held(back) != want) {
+			++nrOfFailedTests;
+			if (reportTestCases && nrOfFailedTests < 12) {
+				std::cerr << "FAIL: dfloat<" << N << ',' << ES << "> " << d << "e" << e << ".str(" << prec
+				          << ") = " << printed << ", expected " << want << '\n';
+			}
 		}
 	}
 	return nrOfFailedTests;
@@ -145,8 +195,13 @@ int VerifyReportedCases(bool reportTestCases) {
 	expect("decimal32 \"0.0001234567\"", p32("0.0001234567"), "1234567e-10");
 	expect("decimal32 \"0.000001234567\"", p32("0.000001234567"), "1234567e-12");
 	expect("decimal32 \"0000000123\"", p32("0000000123"), "123e0");
-	expect("decimal32 \"1.23456789\"", p32("1.23456789"), "1234567e-6");
-	expect("decimal32 \"12345678.9\"", p32("12345678.9"), "1234567e1");
+	expect("decimal32 \"1.23456789\"", p32("1.23456789"), "1234568e-6");
+	expect("decimal32 \"12345678.9\"", p32("12345678.9"), "1234568e1");
+	// ties go to the even neighbour, and a nonzero digit after the tie breaks it
+	expect("decimal32 \"1.0000005\"", p32("1.0000005"), "1e0");
+	expect("decimal32 \"1.0000015\"", p32("1.0000015"), "1000002e-6");
+	expect("decimal32 \"1.00000050001\"", p32("1.00000050001"), "1000001e-6");
+	expect("decimal32 \"9999999.5\"", p32("9999999.5"), "1e7");
 	expect("decimal64 \"0.00000000001234567890123456\"", p64("0.00000000001234567890123456"), "1234567890123456e-26");
 	expect("decimal64 \"3.14159265358979323846\"", p64("3.14159265358979323846"), "3141592653589793e-15");
 	expect("dfloat<4> \"-0.09982\"", p4("-0.09982"), "-9982e-5");
@@ -216,6 +271,10 @@ try {
 	// a narrow width, where 1.234567 has more digits than the precision
 	nrOfFailedTestCases +=
 	    ReportTestResult(VerifyNegativePowers<4, 6>(reportTestCases), "dfloat<4,6> 1.234567e-k positional", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyStringRounding<7, 6>(1000, reportTestCases), "decimal32 str(precision)", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyStringRounding<16, 8>(1000, reportTestCases), "decimal64 str(precision)", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<4, 6, DecimalEncoding::BID>(500, reportTestCases),
 	                                        "dfloat<4,6,BID> forms", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<7, 6, DecimalEncoding::BID>(500, reportTestCases),
