@@ -4,21 +4,43 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstdint>
+#include <cstdio>    // fprintf/fputs/fwrite(stderr, ...) for the diagnostics; keeps <iostream> out of the core (#1334)
 #include <string>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-#include <regex>
 #include <map>
 #include <vector>
 #include <limits>
 #include <type_traits>
 
+////////////////////////////////////////////////////////////////////////////////////////
+///  BEHAVIORAL COMPILATION SWITCHES
+///
+/// These default here, beside the code they govern, rather than in the einteger.hpp
+/// umbrella, so that a translation unit which includes core.hpp directly gets the same
+/// defaults (#1334, #1436). Defining either before any einteger header still wins.
+
+// enable/disable the ability to use literals in binary logic and arithmetic operators
+#if !defined(EINTEGER_ENABLE_LITERALS)
+// default is to enable them
+#define EINTEGER_ENABLE_LITERALS 1
+#endif
+
+// enable throwing specific exceptions for integer arithmetic errors
+// left to application to enable
+#if !defined(EINTEGER_THROW_ARITHMETIC_EXCEPTION)
+// default is to write a diagnostic to stderr for signalling an error
+#define EINTEGER_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
 #include <universal/number/einteger/exceptions.hpp>
 #include <universal/number/einteger/einteger_fwd.hpp>
 
-// supporting types and functions
-#include <universal/native/ieee754.hpp>
+// supporting types and functions: extractFields and ieee754_parameter only, so the
+// bit-manipulation half of the native IEEE-754 support -- the umbrella brings text
+#include <universal/native/ieee754_core.hpp>
+// nlz(), for the Knuth division normalisation. It used to arrive through ieee754.hpp's
+// native/integers.hpp, whose to_binary/to_hex carry <sstream>; this is its I/O-free half.
+#include <universal/native/integer_core.hpp>
 
 namespace sw { namespace universal {
 
@@ -375,7 +397,7 @@ public:
 #if EINTEGER_THROW_ARITHMETIC_EXCEPTION
 			throw einteger_divide_by_zero{};
 #else
-			std::cerr << "einteger_divide_by_zero\n";
+			std::fprintf(stderr, "einteger_divide_by_zero\n");
 			return;
 #endif // EINTEGER_THROW_ARITHMETIC_EXCEPTION
 		}
@@ -688,7 +710,11 @@ public:
 	}
 	einteger& assign(const std::string& txt) {
 		if (!parse(txt, *this)) {
-			std::cerr << "Unable to parse: " << txt << std::endl;
+			// fwrite rather than %s: std::cerr wrote every byte of txt, embedded NULs
+			// included, and stderr is unbuffered, so this is what std::endl flushed
+			std::fputs("Unable to parse: ", stderr);
+			std::fwrite(txt.data(), 1, txt.size(), stderr);
+			std::fputc('\n', stderr);
 		}
 		return *this;
 	}
@@ -749,30 +775,10 @@ public:
 		return std::string("tbd");
 	}
 
-	// show the binary encodings of the limbs
-	std::string showLimbs() const {
-		if (_block.empty()) return "no limbs";
-		std::stringstream s;
-		size_t i = _block.size() - 1;
-		while (i > 0) {
-			s << to_binary(_block[i], sizeof(BlockType) * 8, true) << ' ';
-			--i;
-		}
-		s << to_binary(_block[0], sizeof(BlockType) * 8, true);
-		return s.str();
-	}
-	// show the values of the limbs as a radix-BlockType number
-	std::string showLimbValues() const {
-		if (_block.empty()) return "no limbs";
-		std::stringstream s;
-		size_t i = _block.size() - 1;
-		while (i > 0) {
-			s << std::setw(5) << unsigned(_block[i]) << ", ";
-			--i;
-		}
-		s << std::setw(5) << unsigned(_block[0]);
-		return s.str();
-	}
+	// Introspection, declared here and defined out-of-line in debug.hpp: both build
+	// their text with a stringstream (#1334, the shape blocktriple got in #1388).
+	std::string showLimbs() const;       // the binary encodings of the limbs
+	std::string showLimbValues() const;  // the limb values as a radix-BlockType number
 
 protected:
 	bool                   _sign;   // sign of the number: -1 if true, +1 if false, zero is positive
@@ -915,7 +921,77 @@ inline einteger<BlockType> abs(const einteger<BlockType>& a) {
 
 ////////////////////////    INTEGER operators   /////////////////////////////////
 
-/// stream operators
+/// string parsing
+
+// The four input grammars parse() accepts, matched by hand.
+//
+// These were std::regex patterns, compiled on every call. <regex> alone is 78,114
+// preprocessed lines and pulls <sstream>, <istream> and <ostream>, and parse() has to
+// stay in the core because assign(const std::string&) is built on it (#1334). Each
+// matcher accepts exactly the language of the pattern quoted above it under
+// std::regex_match -- the WHOLE string, so the patterns without a trailing '$' are
+// anchored at both ends too. None of the four needs backtracking: a sign run can never
+// swallow the '0' that follows it. conversion/string_parse.cpp checks all four against
+// the original std::regex patterns.
+namespace einteger_detail {
+
+inline bool is_sign(char c) noexcept { return c == '+' || c == '-'; }
+inline bool is_octal_digit(char c) noexcept { return c >= '0' && c <= '7'; }
+inline bool is_decimal_digit(char c) noexcept { return c >= '0' && c <= '9'; }
+inline bool is_hex_digit(char c) noexcept {
+	return is_decimal_digit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+// position of the first character past the leading [-+]* run
+inline std::string::size_type skip_signs(const std::string& s) noexcept {
+	std::string::size_type pos = 0;
+	while (pos < s.size() && is_sign(s[pos])) ++pos;
+	return pos;
+}
+
+// ^[-+]*0b[01']+
+inline bool matches_binary(const std::string& s) noexcept {
+	std::string::size_type pos = skip_signs(s);
+	if (s.size() - pos < 3 || s[pos] != '0' || s[pos + 1] != 'b') return false;
+	for (pos += 2; pos < s.size(); ++pos) {
+		if (s[pos] != '0' && s[pos] != '1' && s[pos] != '\'') return false;
+	}
+	return true;
+}
+
+// ^[-+]*0[0-7]*$
+inline bool matches_octal(const std::string& s) noexcept {
+	std::string::size_type pos = skip_signs(s);
+	if (pos == s.size() || s[pos] != '0') return false;
+	for (++pos; pos < s.size(); ++pos) {
+		if (!is_octal_digit(s[pos])) return false;
+	}
+	return true;
+}
+
+// ^[-+]*(0|[1-9][0-9]*)$
+inline bool matches_decimal(const std::string& s) noexcept {
+	std::string::size_type pos = skip_signs(s);
+	if (pos == s.size()) return false;
+	if (s[pos] == '0') return pos + 1 == s.size();
+	if (!is_decimal_digit(s[pos])) return false;
+	for (++pos; pos < s.size(); ++pos) {
+		if (!is_decimal_digit(s[pos])) return false;
+	}
+	return true;
+}
+
+// ^[-+]*0[xX][0-9a-fA-F']+
+inline bool matches_hex(const std::string& s) noexcept {
+	std::string::size_type pos = skip_signs(s);
+	if (s.size() - pos < 3 || s[pos] != '0' || (s[pos + 1] != 'x' && s[pos + 1] != 'X')) return false;
+	for (pos += 2; pos < s.size(); ++pos) {
+		if (!is_hex_digit(s[pos]) && s[pos] != '\'') return false;
+	}
+	return true;
+}
+
+} // namespace einteger_detail
 
 // read a einteger ASCII format and make a binary einteger out of it
 template<typename BlockType>
@@ -923,7 +999,8 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 	using Integer = einteger<BlockType>;
 	bool bSuccess = false;
 	value.clear();
-	std::regex binary_regex("^[-+]*0b[01']+");
+	// binary: ^[-+]*0b[01']+
+	//
 	// A LEADING ZERO SELECTS OCTAL, however many of them there are.
 	//
 	// The octal pattern used to require the second character to be [1-7], so the radix
@@ -931,13 +1008,14 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 	// "00777" fell through to decimal 777, and "075" was 61 while "0075" was 75. A
 	// caller could not predict the radix of its own input, and zero-padding a value
 	// silently changed it (universal#1370).
-	std::regex octal_regex("^[-+]*0[0-7]*$");
+	// octal: ^[-+]*0[0-7]*$
+	//
 	// Decimal excludes a leading zero, so a string that opens with '0' is committed to
 	// the octal (or 0x / 0b) reading rather than quietly falling back. Without this,
 	// "08" and "0749" -- which are not valid octal, and which C rejects outright --
 	// would be re-interpreted as decimal, so "0747" would be 487 and "0749" 749.
-	std::regex decimal_regex("^[-+]*(0|[1-9][0-9]*)$");
-	std::regex hex_regex("^[-+]*0[xX][0-9a-fA-F']+");
+	// decimal: ^[-+]*(0|[1-9][0-9]*)$
+	// hex: ^[-+]*0[xX][0-9a-fA-F']+
 	// setup associative array to map chars to nibbles
 	std::map<char, int> charLookup{
 		{ '0', 0 },
@@ -963,7 +1041,7 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 		{ 'E', 14 },
 		{ 'F', 15 },
 	};
-	if (std::regex_match(number, octal_regex)) {
+	if (einteger_detail::matches_octal(number)) {
 		// Format: [+-]*0[0-7]*  (C-style octal, no separators). The digits after the
 		// leading '0' are OPTIONAL, so "0" and "00" reach here and are zero, and the
 		// leading zeros of "00777" are not special -- only the first is a radix marker.
@@ -975,7 +1053,7 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 			if (number[pos] == '-') sign = !sign;
 			++pos;
 		}
-		// the regex guarantees a leading '0'; what follows it may be empty
+		// matches_octal guarantees a leading '0'; what follows it may be empty
 		++pos;
 		for (; pos < number.size(); ++pos) {
 			value *= 8LL;
@@ -984,7 +1062,7 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 		value.setsign(sign && !value.iszero());
 		bSuccess = true;
 	}
-	else if (std::regex_match(number, hex_regex)) {
+	else if (einteger_detail::matches_hex(number)) {
 		//std::cout << "found a hexadecimal representation\n";
 		// each char is a nibble
 		int byte = 0;
@@ -1021,17 +1099,17 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 							bSuccess = true;
 						}
 						else {
-							// the regex will have filtered this out
+							// matches_hex will have filtered this out
 							bSuccess = false;
 						}
 					}
 					else {
-						// we didn't find the obligatory '0', the regex should have filtered this out
+						// we didn't find the obligatory '0', matches_hex should have filtered this out
 						bSuccess = false;
 					}
 				}
 				else {
-					// we are missing the obligatory '0', the regex should have filtered this out
+					// we are missing the obligatory '0', matches_hex should have filtered this out
 					bSuccess = false;
 				}
 				// we have reached the end of our parse
@@ -1050,7 +1128,7 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 			}
 		}
 	}
-	else if (std::regex_match(number, decimal_regex)) {
+	else if (einteger_detail::matches_decimal(number)) {
 		//std::cout << "found a decimal integer representation\n";
 		Integer scale = 1;
 		bool sign{ false };
@@ -1072,7 +1150,7 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 		value.setsign(sign);
 		bSuccess = true;
 	}
-	else if (std::regex_match(number, binary_regex)) {
+	else if (einteger_detail::matches_binary(number)) {
 		// '0b' prefix is at positions [0..2) after an optional leading sign.
 		// We walk the digits left-to-right, accumulating value = value*2 + bit.
 		// Apostrophes are digit-group separators and are ignored.
@@ -1082,7 +1160,7 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 			if (number[pos] == '-') sign = !sign;
 			++pos;
 		}
-		// regex guarantees '0b' present after the sign run
+		// matches_binary guarantees '0b' present after the sign run
 		pos += 2;
 		for (; pos < number.size(); ++pos) {
 			char c = number[pos];
@@ -1094,192 +1172,6 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 		bSuccess = true;
 	}
 	return bSuccess;
-}
-
-template<typename BlockType>
-std::string convert_to_string(std::ios_base::fmtflags flags, const einteger<BlockType>& n) {
-	using AdaptiveInteger = einteger<BlockType>;
-
-	if (n.limbs() == 0) return std::string("0");
-
-	// set the base of the target number system to convert to
-	int base = 10;
-	if ((flags & std::ios_base::oct) == std::ios_base::oct) base = 8;
-	if ((flags & std::ios_base::hex) == std::ios_base::hex) base = 16;
-
-	unsigned nbits = n.limbs() * sizeof(BlockType) * 8;
-
-	std::string result;
-	if (base == 8 || base == 16) {
-		if (n.sign()) return std::string("negative value: ignored");
-
-		size_t shift = (base == 8 ? 3ull : 4ull);
-		BlockType mask = static_cast<BlockType>((1u << shift) - 1);
-		AdaptiveInteger t(n);
-		result.assign(nbits / shift + ((nbits % shift) ? 1 : 0), '0');
-		size_t pos = result.size() - 1ull;
-		for (size_t i = 0; i < nbits / shift; ++i) {
-			char c = '0' + static_cast<char>(t.block(0) & mask);
-			if (c > '9')
-				c += 'A' - '9' - 1;
-			result[pos--] = c;
-			t >>= static_cast<int>(shift);
-		}
-		if (nbits % shift) {
-			mask = static_cast<BlockType>((1u << (nbits % shift)) - 1);
-			char c = '0' + static_cast<char>(t.block(0) & mask);
-			if (c > '9')
-				c += 'A' - '9';
-			result[pos] = c;
-		}
-		//
-		// Get rid of leading zeros:
-		//
-		std::string::size_type fnz = result.find_first_not_of('0');
-		if (!result.empty() && (fnz == std::string::npos)) fnz = result.size() - 1;
-		result.erase(0, fnz);
-		if (flags & std::ios_base::showbase) {
-			const char* pp = base == 8 ? "0" : "0x";
-			result.insert(static_cast<std::string::size_type>(0), pp);
-		}
-	}
-	else {
-		unsigned block10;
-		unsigned digits_in_block10;
-		if constexpr (AdaptiveInteger::bitsInBlock == 8) {
-			block10 = 100u;
-			digits_in_block10 = 2;
-		}
-		else if constexpr (AdaptiveInteger::bitsInBlock == 16) {
-			block10 = 10'000ul;
-			digits_in_block10 = 4;
-		}
-		else if constexpr (AdaptiveInteger::bitsInBlock == 32) {
-			block10 = 1'000'000'000ul;
-			digits_in_block10 = 9;
-		}
-		else if constexpr (AdaptiveInteger::bitsInBlock == 64) {
-			// not allowed as the whole multi-digit arithmetic
-			// requires that there is a 'larger' type that
-			// can receive carries and borrows.
-			// If your platform does have a native 128bit
-			// integer, this could be enabled
-			//block10 = 1'000'000'000'000'000'000ull;
-			//digits_in_block10 = 18;
-		}
-		result.assign(nbits / 3 + 1ull, '0');
-		size_t pos = result.size() - 1ull;
-		AdaptiveInteger t(n);
-		while (!t.iszero()) {
-			AdaptiveInteger q,r;
-			q.reduce(t, block10, r);
-			BlockType v = r.block(0);
-//			std::cout << "v  " << uint32_t(v) << '\n';
-			for (unsigned i = 0; i < digits_in_block10; ++i) {
-				char c = '0' + static_cast<char>(v % 10);
-				v /= 10;
-				result[pos] = c;
-//				std::cout << result << " pos: " << pos << '\n';
-				if (pos-- == 0)	break;
-			}
-			t = q;
-		}
-
-		std::string::size_type firstDigit = result.find_first_not_of('0');
-		result.erase(0, firstDigit);
-		if (result.empty())
-			result = "0";
-		if (n.isneg())
-			result.insert(0ull, 1ull, '-');
-		else if (flags & std::ios_base::showpos)
-			result.insert(0ull, 1ull, '+');
-	}
-	return result;
-}
-
-// generate an einteger format ASCII format
-template<typename BlockType>
-inline std::ostream& operator<<(std::ostream& ostr, const einteger<BlockType>& i) {
-	std::string s = convert_to_string(ostr.flags(), i);
-	std::streamsize width = ostr.width();
-	if (width > static_cast<std::streamsize>(s.size())) {
-		char fill = ostr.fill();
-		if ((ostr.flags() & std::ios_base::left) == std::ios_base::left)
-			s.append(static_cast<std::string::size_type>(width - s.size()), fill);
-		else
-			s.insert(static_cast<std::string::size_type>(0), static_cast<std::string::size_type>(width - s.size()), fill);
-	}
-	return ostr << s;
-}
-
-// read an ASCII einteger format
-
-template<typename BlockType>
-inline std::istream& operator>>(std::istream& istr, einteger<BlockType>& p) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit set by >>.
-		return istr;
-	}
-	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into an einteger value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
-
-////////////////// string operators
-
-template<typename BlockType>
-inline std::string to_binary(const einteger<BlockType>& a, bool nibbleMarker = true) {
-	if (a.limbs() == 0) return std::string("0b0");
-
-	std::stringstream s;
-	s << "0b";
-	for (int b = static_cast<int>(a.limbs()) - 1; b >= 0; --b) {
-		BlockType segment = a.block(static_cast<size_t>(b));
-		BlockType mask = (0x1u << (a.bitsInBlock - 1));
-		for (int i = a.bitsInBlock - 1; i >= 0; --i) {
-			s << ((segment & mask) ? '1' : '0');
-			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
-			if (b > 0 && i == 0 && nibbleMarker) s << '\'';
-			mask >>= 1;
-		}
-	}
-
-	return s.str();
-}
-
-template<typename BlockType>
-inline std::string to_hex(const einteger<BlockType>& a, bool wordMarker = true) {
-	if (a.limbs() == 0) return std::string("0x0");
-
-	std::vector<char> nibbleLookup = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-	std::stringstream s;
-	s << "0x";
-	unsigned bitIndex = a.limbs() * a.bitsInBlock - 1u;
-	for (int b = static_cast<int>(a.limbs()) - 1; b >= 0; --b) {
-		BlockType limb = a.block(static_cast<size_t>(b));
-		BlockType mask = (0x1u << (a.bitsInBlock - 1));
-		unsigned nibble{ 0 };
-		unsigned rightShift = a.bitsInBlock - 4u;
-		for (int i = a.bitsInBlock - 1; i >= 0; --i) {
-
-			nibble |= (limb & mask);
-			if ((i % 4) == 0) {
-				nibble >>= rightShift;
-				s << nibbleLookup[nibble];
-				nibble = 0;
-				rightShift -= 4u;
-			}
-			if (bitIndex > 0 && ((bitIndex % 16) == 0) && wordMarker) s << '\'';
-			mask >>= 1;
-			--bitIndex;
-		}
-	}
-
-	return s.str();
-
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
