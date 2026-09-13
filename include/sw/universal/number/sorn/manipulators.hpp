@@ -5,12 +5,59 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iomanip>
+#include <sstream>
+#include <string>
 #include <typeinfo>  // for typeid()
 
 #include <universal/native/manipulators.hpp>
 #include <universal/utility/color_print.hpp>  // pull in the color printing for shells utility
+#include <universal/number/sorn/core.hpp>
+#include <universal/number/sorn/sorn_type_tag.hpp>
 
 namespace sw { namespace universal {
+
+// The text members of sornInterval and sorn: declared in their classes, defined here
+// because they build their text with a stringstream (#1334, #1467).
+
+// sornInterval::getInt: the interval as text, "v" for a point, "(a,b]" etc otherwise
+template<typename Real>
+std::string sornInterval<Real>::getInt() {
+	std::stringstream configStream;
+	if ((this->lowerBound == this->upperBound) && (not this->lowerIsOpen && not this->upperIsOpen)) {
+		configStream << this->lowerBound;
+	}
+	else {
+		configStream << (this->lowerIsOpen ? '(' : '[') << this->lowerBound << ',' << this->upperBound << (this->upperIsOpen ? ')' : ']');
+	}
+	return configStream.str();
+}
+
+// sorn::getConfig: all configuration parameters and flags as text
+template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero>
+std::string sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::getConfig() {
+	std::stringstream configStream;
+	configStream << "-- configuration parameters:" << '\t' << "start: " << start << ", stop: " << stop << ", steps: " << steps << ", stepSize: " << stepSize << '\n';
+	configStream << "-- configuration flags:" << "\t\t";
+	if (flagLin) configStream << "Lin, "; else if (flagLog) configStream << "Log, ";
+	if (flagHalfopen) configStream << "Halfopen, "; else if (flagOpen) configStream << "Open, ";
+	if (flagNeg) configStream << "Neg, ";
+	if (flagInf) configStream << "Inf, ";
+	if (flagZero) configStream << "Zero";
+	configStream << '\n';
+	return configStream.str();
+}
+
+// sorn::getDT: the SORN datatype configuration as text
+template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero>
+std::string sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::getDT() {
+	std::stringstream DTstream;
+	DTstream << "-- SORN datatype:" << "\t\t";
+	for (size_t b = 0; b < sornDT.size(); b++) {
+		DTstream << sornDT[b].getInt() << ' ';
+	}
+	DTstream << '\n';
+	return DTstream.str();
+}
 
 #ifdef LATER
 	// report dynamic range of a type, specialized for sorn
