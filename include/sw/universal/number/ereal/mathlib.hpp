@@ -23,6 +23,11 @@
 // (A few loops cast a series term to double only to test its magnitude for loop
 // termination; the term itself is computed in full ereal precision.)
 
+// The math functions compute; none of them formats text, so the core is all they
+// need (#1334). math/functions/complex.hpp still reaches <complex>, which is
+// libstdc++'s <sstream>, so the mathlib as a whole is not I/O-free.
+#include <universal/number/ereal/core.hpp>
+
 // High-precision math constants (parsed/derived, not double-truncated -- #1002).
 // Included before the function headers so they can reference the shared constants.
 #include <universal/number/ereal/math/constants/ereal_constants.hpp>
@@ -55,48 +60,14 @@
 
 namespace sw { namespace universal {
 
-	// pown returns x raised to the integer power n
-	// Adaptive-precision repeated squaring (no double conversion)
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> pown(const ereal<maxlimbs>& x, int n) {
-		using Real = ereal<maxlimbs>;
-
-		// Special cases
-		if (n == 0) return Real(1.0);
-		if (n == 1) return x;
-		if (x.iszero()) {
-			if (n < 0) return Real(std::numeric_limits<double>::quiet_NaN());
-			return Real(0.0);
-		}
-		if (x.isone()) return Real(1.0);
-
-		// Handle negative exponents: x^(-n) = 1 / x^n
-		if (n < 0) {
-			Real result = pown(x, -n);
-			return Real(1.0) / result;
-		}
-
-		// Positive integer power using repeated squaring
-		// This algorithm is O(log n) and maintains full precision
-		Real result(1.0);
-		Real base = x;
-		unsigned int exp = static_cast<unsigned int>(n);
-
-		while (exp > 0) {
-			if (exp & 1) {
-				result = result * base;  // Uses ereal multiplication, maintains precision
-			}
-			base = base * base;
-			exp >>= 1;
-		}
-
-		return result;
-	}
+	// pown(ereal, int) is defined in ereal_impl.hpp, not here: the core's parse() and
+	// to_digits() call it, so a translation unit that includes only core.hpp needs it
+	// (#1334). dd keeps its pown in dd_impl.hpp for the same reason.
 
 	// Note: abs() is already defined in ereal_impl.hpp
 
 	// Note: exp(), expm1(), exp2(), exp10() are defined in math/functions/exponent.hpp
-	// Note: pow(), pown() are defined above and in math/functions/pow.hpp
+	// Note: pow() is defined in math/functions/pow.hpp; pown() in ereal_impl.hpp
 	// Note: sinh(), cosh(), tanh(), asinh(), acosh(), atanh() are defined in math/functions/hyperbolic.hpp
 	// Note: log(), log2(), log10(), log1p() are defined in math/functions/logarithm.hpp
 	// Note: sqrt(), cbrt() are defined in math/functions/sqrt.hpp and cbrt.hpp

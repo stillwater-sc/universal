@@ -5,18 +5,37 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <algorithm>    // std::fill, std::max
 #include <cctype>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>       // fprintf(stdout/stderr, ...) for the traces and diagnostics (#1334)
+#include <cstdlib>      // std::abs(int)
+#include <ios>          // std::streamsize, taken by to_string(); no stream is opened
+#include <limits>
 #include <string>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-#include <regex>
 #include <vector>
-#include <map>
 #include <type_traits>
 
-// supporting types and functions
-#include <universal/native/ieee754.hpp>   // IEEE-754 decoders
+////////////////////////////////////////////////////////////////////////////////////////
+///  BEHAVIORAL COMPILATION SWITCHES
+///
+/// Defaults here rather than in the ereal.hpp umbrella, so that a translation unit which
+/// includes core.hpp directly gets the same default (#1334, #1436). Defining it before
+/// any ereal header still wins.
+
+// enable throwing specific exceptions for ereal arithmetic errors
+// left to application to enable
+#if !defined(EREAL_THROW_ARITHMETIC_EXCEPTION)
+// default is to return the IEEE-754 special value
+#define EREAL_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
+// supporting types and functions, from the I/O-free halves of the native support:
+// sw::universal::isinf/isnan (ieee754_core.hpp) and scale(double)
+// (manipulators_core.hpp). The ereal.hpp umbrella still brings the text halves.
+#include <universal/native/ieee754_core.hpp>
+#include <universal/native/manipulators_core.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/internal/expansion/expansion_ops.hpp>  // Shewchuk's expansion arithmetic
 
@@ -30,6 +49,7 @@ Compile-time configuration flags are used to select the exception mode.
 The exception types are defined, but you have the option to throw them
 */
 #include <universal/number/ereal/exceptions.hpp>
+#include <universal/number/ereal/ereal_fwd.hpp>   // abs(ereal), called before its definition
 
 namespace sw { namespace universal {
 
@@ -126,8 +146,7 @@ public:
 	//                         expansion (also a non-constexpr path today)
 	//   * conversion-out    - sums the limb vector at runtime
 	//   * native-type ctors / operator= - convert_* allocate
-	//   * parse() / to_string() / to_digits() - std::frexp, regex,
-	//                                           stringstream
+	//   * parse() / to_string() / to_digits() - std::frexp, std::string
 	constexpr ereal() : _limb{} {
 		if (!std::is_constant_evaluated()) {
 			_limb.push_back(0.0);
@@ -614,10 +633,10 @@ public:
 					nrDigitsForFixedFormat = std::max(minBuffer, nrDigits);
 
 				if constexpr (bTraceDecimalConversion) {
-					std::cout << "powerOfTenScale  : " << powerOfTenScale << '\n';
-					std::cout << "integerDigits    : " << integerDigits   << '\n';
-					std::cout << "nrDigits         : " << nrDigits        << '\n';
-					std::cout << "nrDigitsForFixedFormat  : " << nrDigitsForFixedFormat << '\n';
+					std::fprintf(stdout, "powerOfTenScale  : %d\n", powerOfTenScale);
+					std::fprintf(stdout, "integerDigits    : %d\n", integerDigits);
+					std::fprintf(stdout, "nrDigits         : %d\n", nrDigits);
+					std::fprintf(stdout, "nrDigitsForFixedFormat  : %d\n", nrDigitsForFixedFormat);
 				}
 
 				// a number in the range of [0.5, 1.0) to be printed with zero precision
@@ -1007,7 +1026,7 @@ protected:
 		}
 
 		if ((r >= _ten) || (r < _one)) {
-			std::cerr << "ereal::to_digits() failed to compute exponent\n";
+			std::fprintf(stderr, "ereal::to_digits() failed to compute exponent\n");
 			std::fill(s.begin(), s.end(), '0');
 			if (!s.empty()) s.back() = 0;
 			exponent = 0;
@@ -1028,7 +1047,9 @@ protected:
 			r *= 10.0;
 
 			s[static_cast<unsigned>(i)] = static_cast<char>(mostSignificantDigit + '0');
-			if constexpr (bTraceDecimalConversion) std::cout << "to_digits  digit[" << i << "] : " << s.data() << '\n';
+			// the buffer is not NUL-terminated until the loop ends: format a bounded copy, as
+			// dd does, rather than s.data(), which read past the vector on the last digit
+			if constexpr (bTraceDecimalConversion) std::fprintf(stdout, "to_digits  digit[%d] : %s\n", i, std::string(s.begin(), s.end()).c_str());
 		}
 
 		// Fix out of range digits
@@ -1046,7 +1067,7 @@ protected:
 		}
 
 		if (s[0] <= '0') {
-			std::cerr << "ereal::to_digits() non-positive leading digit\n";
+			std::fprintf(stderr, "ereal::to_digits() non-positive leading digit\n");
 			std::fill(s.begin(), s.end(), '0');
 			if (!s.empty()) s.back() = 0;
 			exponent = 0;
@@ -1081,16 +1102,16 @@ protected:
 	// precondition: string s must be all digits
 	void round_string(std::vector<char>& s, int precision, int* decimalPoint) const {
 		if constexpr (bTraceDecimalRounding) {
-			std::cout << "string       : " << s.data() << '\n';
-			std::cout << "precision    : " << precision << '\n';
-			std::cout << "decimalPoint : " << *decimalPoint << '\n';
+			std::fprintf(stdout, "string       : %s\n", std::string(s.begin(), s.end()).c_str());
+			std::fprintf(stdout, "precision    : %d\n", precision);
+			std::fprintf(stdout, "decimalPoint : %d\n", *decimalPoint);
 		}
 
 		int nrDigits = precision;
 		// round decimal string and propagate carry
 		int lastDigit = nrDigits - 1;
 		if (s[static_cast<unsigned>(lastDigit)] >= '5') {
-			if constexpr (bTraceDecimalRounding) std::cout << "need to round\n";
+			if constexpr (bTraceDecimalRounding) std::fprintf(stdout, "need to round\n");
 			int i = nrDigits - 2;
 			s[static_cast<unsigned>(i)]++;
 			while (i > 0 && s[static_cast<unsigned>(i)] > '9') {
@@ -1101,7 +1122,7 @@ protected:
 
 		// if first digit is 10, shift everything.
 		if (s[0] > '9') {
-			if constexpr (bTraceDecimalRounding) std::cout << "shift right to handle overflow\n";
+			if constexpr (bTraceDecimalRounding) std::fprintf(stdout, "shift right to handle overflow\n");
 			for (int i = precision; i >= 2; --i) s[static_cast<unsigned>(i)] = s[static_cast<unsigned>(i - 1)];
 			s[0u] = '1';
 			s[1u] = '0';
@@ -1143,49 +1164,52 @@ inline ereal<nlimbs> abs(const ereal<nlimbs>& a) {
 	return (a < 0 ? -a : a);
 }
 
+// pown returns x raised to the integer power n
+// Adaptive-precision repeated squaring (no double conversion)
+template<unsigned maxlimbs>
+inline ereal<maxlimbs> pown(const ereal<maxlimbs>& x, int n) {
+	using Real = ereal<maxlimbs>;
+
+	// Special cases
+	if (n == 0) return Real(1.0);
+	if (n == 1) return x;
+	if (x.iszero()) {
+		if (n < 0) return Real(std::numeric_limits<double>::quiet_NaN());
+		return Real(0.0);
+	}
+	if (x.isone()) return Real(1.0);
+
+	// Handle negative exponents: x^(-n) = 1 / x^n
+	if (n < 0) {
+		Real result = pown(x, -n);
+		return Real(1.0) / result;
+	}
+
+	// Positive integer power using repeated squaring
+	// This algorithm is O(log n) and maintains full precision
+	Real result(1.0);
+	Real base = x;
+	unsigned int exp = static_cast<unsigned int>(n);
+
+	while (exp > 0) {
+		if (exp & 1) {
+			result = result * base;  // Uses ereal multiplication, maintains precision
+		}
+		base = base * base;
+		exp >>= 1;
+	}
+
+	return result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
-/// stream operators
+/// string parsing
 
 // read a ereal ASCII format and make a binary ereal out of it
 template<unsigned nlimbs>
 bool parse(const std::string& txt, ereal<nlimbs>& value) {
 	return value.parse(txt);
 }
-
-// generate an ereal format ASCII format
-template<unsigned nlimbs>
-inline std::ostream& operator<<(std::ostream& ostr, const ereal<nlimbs>& rhs) {
-	std::ios_base::fmtflags fmt = ostr.flags();
-	std::streamsize precision = ostr.precision();
-	std::streamsize width = ostr.width();
-	char fillChar = ostr.fill();
-	bool showpos    = fmt & std::ios_base::showpos;
-	bool uppercase  = fmt & std::ios_base::uppercase;
-	bool fixed      = fmt & std::ios_base::fixed;
-	bool scientific = fmt & std::ios_base::scientific;
-	bool internal   = fmt & std::ios_base::internal;
-	bool left       = fmt & std::ios_base::left;
-	return ostr << rhs.to_string(precision, width, fixed, scientific,
-	                              internal, left, showpos, uppercase, fillChar);
-}
-
-// read an ASCII ereal format
-template<unsigned nlimbs>
-inline std::istream& operator>>(std::istream& istr, ereal<nlimbs>& p) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit set by >>.
-		return istr;
-	}
-	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into an ereal value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
-
-////////////////// string operators
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // ereal - ereal binary logic operators

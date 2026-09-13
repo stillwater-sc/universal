@@ -5,9 +5,21 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iomanip>
+//
+// Layer 2a of the ereal headers (#1334, Phase 2 group 5b, #1455): the <iomanip> half
+// -- everything that turns an ereal into a std::string by way of a stringstream.
+// Self-contained.
+//
+// The dependency runs manipulators -> iostream here, as it does for dd and qd:
+// to_triple() streams the fraction it gets from frexp(), so it needs operator<<.
+// iostream.hpp does not include this header back.
+#include <iomanip>   // std::setw
+#include <sstream>
 #include <string>
-#include <universal/number/ereal/ereal_fwd.hpp>
+#include <type_traits>
+#include <universal/number/ereal/core.hpp>                  // frexp(ereal), for to_triple(), comes with it
+#include <universal/number/ereal/iostream.hpp>              // operator<<, for to_triple()
+#include <universal/native/ieee754.hpp>                     // to_binary(double), for to_binary()
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 
