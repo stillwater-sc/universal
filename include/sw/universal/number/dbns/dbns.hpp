@@ -18,26 +18,16 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(DBNS_ENABLE_LITERALS)
-// default is to enable them
-#define DBNS_ENABLE_LITERALS 1
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for logarithmic number system arithmetic errors
-// left to application to enable
-#if !defined(DBNS_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define DBNS_THROW_ARITHMETIC_EXCEPTION 0
-#endif
-// the fused dot product accumulator (quire, via fdp.hpp) must honor the same
-// exception policy as the dbns it accumulates for (#1226)
-#if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
-#define QUIRE_THROW_ARITHMETIC_EXCEPTION DBNS_THROW_ARITHMETIC_EXCEPTION
-#endif
+///
+/// DBNS_ENABLE_LITERALS, DBNS_THROW_ARITHMETIC_EXCEPTION and the
+/// QUIRE_THROW_ARITHMETIC_EXCEPTION cascade now default in dbns_impl.hpp, beside the
+/// code they govern, so that a translation unit which includes core.hpp directly gets
+/// the same defaults this umbrella used to supply (#1334, #1436). Defining any of them
+/// before this header still wins, as before.
+///
+/// DBNS_TRACE_CONVERSION is new: it switches on the (a,b) search trace in
+/// convert_ieee754, which used to be a local `constexpr bool bDebug = false` that no
+/// caller could reach.
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
@@ -47,14 +37,17 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/dbns/exceptions.hpp>
-#include <universal/number/dbns/dbns_fwd.hpp>
-#include <universal/number/dbns/dbns_impl.hpp>
-#include <universal/number/dbns/dbns_traits.hpp>
-#include <universal/number/dbns/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/dbns/core.hpp>
 
 // useful functions to work with logarithmic numbers
+// layer 2a: the string producers -- to_binary, to_hex, pretty_print, color_print
 #include <universal/number/dbns/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/dbns/iostream.hpp>
+// layer 3: introspection -- debugConstexprParameters
+#include <universal/number/dbns/debug.hpp>
 #include <universal/number/dbns/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
