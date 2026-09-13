@@ -5,9 +5,18 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <cstdint>  
+//
+// Part of the text layer (#1334): sign(), scale() and significant() are pure
+// bit inspection, but bfloat_range() streams bfloat16 values through a
+// stringstream, so this header sits above iostream.hpp and is not included by
+// core.hpp. Self-contained: <iomanip> for std::setw was used but never named.
+#include <cstdint>
 #include <string>
 #include <sstream>
+#include <iomanip>   // std::setw
+#include <universal/number/bfloat16/core.hpp>
+#include <universal/number/bfloat16/manipulators.hpp>   // type_tag
+#include <universal/number/bfloat16/iostream.hpp>       // operator<< on bfloat16, used by bfloat_range
 
 namespace sw { namespace universal {  
 
