@@ -12,6 +12,12 @@
 #include <cstddef>
 #include <cassert>
 #include <cmath>
+// to_hex(dd_cascade) formats each limb with to_hex(high(), ...), and the only overload that
+// takes a double is the NON-TEMPLATE to_hex(double, bool, bool) in ieee754_double.hpp. The
+// core pulls ieee754_core.hpp, which omits it; without this include the double converts
+// back to dd_cascade and to_hex calls itself until the stack overflows (#1334 regression,
+// introduced by #1429). td_cascade and qd_cascade already include it for the same reason.
+#include <universal/native/ieee754.hpp>
 #include <universal/number/dd_cascade/core.hpp>
 #include <universal/number/dd_cascade/iostream.hpp>   // the text builders format dd_cascade values THROUGH operator<<,
                                                     // which is defined there, not in the core (#1334)
