@@ -18,39 +18,17 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(DFLOAT_ENABLE_LITERALS)
-// default is to enable them
-#define DFLOAT_ENABLE_LITERALS 1
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for arithmetic errors
-// left to application to enable
-#if !defined(DFLOAT_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define DFLOAT_THROW_ARITHMETIC_EXCEPTION 0
-#define DFLOAT_EXCEPT noexcept
-#else
-#if DFLOAT_THROW_ARITHMETIC_EXCEPTION
-#define DFLOAT_EXCEPT
-#else
-#define DFLOAT_EXCEPT noexcept
-#endif
-#endif
+///
+/// DFLOAT_ENABLE_LITERALS, DFLOAT_THROW_ARITHMETIC_EXCEPTION, DFLOAT_EXCEPT and
+/// DFLOAT_NATIVE_SQRT now default in dfloat_impl.hpp, beside the code they govern, so
+/// that a translation unit which includes core.hpp directly gets the same defaults this
+/// umbrella used to supply (#1334, #1436). Defining any of them before this header still
+/// wins, as before.
+///
 // NOTE: blockbinary does not currently consume BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION.
 // dfloat's own divide-by-zero check at the dfloat layer handles the throw-vs-NaN
 // branch; blockbinary's divide silently zero-fills.  If/when blockbinary gains
 // a throw path we should add a DFLOAT_... -> BLOCKBINARY_... cascade here.
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable native sqrt implementation
-//
-#if !defined(DFLOAT_NATIVE_SQRT)
-#define DFLOAT_NATIVE_SQRT 0
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
@@ -60,15 +38,16 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/dfloat/exceptions.hpp>
-#include <universal/number/dfloat/dfloat_fwd.hpp>
-#include <universal/number/dfloat/dfloat_impl.hpp>
-#include <universal/traits/dfloat_traits.hpp>
-#include <universal/number/dfloat/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/dfloat/core.hpp>
 
 // useful functions to work with dfloats
-#include <universal/number/dfloat/attributes.hpp>
+// layer 2a: the string producers -- to_binary, to_native, type_tag, color_print
 #include <universal/number/dfloat/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/dfloat/iostream.hpp>
+#include <universal/number/dfloat/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library
