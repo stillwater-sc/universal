@@ -322,23 +322,44 @@ public:
 		// align exponents by scaling the higher-exponent significand UP
 		// result exponent = min(lhs_exp, rhs_exp)
 		int shift = lhs_exp - rhs_exp;
-		int abs_shift = (shift >= 0) ? shift : -shift;
 
-		// When the magnitude difference exceeds the precision, the smaller
-		// operand cannot contribute any digits to the result -- short-circuit.
-		if (abs_shift >= static_cast<int>(ndigits)) {
+		// When the smaller operand cannot change the result, return the larger one
+		// unchanged -- short-circuit. Unpacked significands are not normalized to ndigits
+		// (parse strips trailing zeros into the exponent), so the exponent gap alone does
+		// not say that: 51e6 has exponent 6 but only 2 digits, and -88925e0 still changes
+		// its sum. The gap between the leading digits decides (#1484):
+		// - same signs: the smaller operand is below one unit in the larger one's last
+		//   place when its leading digit is ndigits or more below, so the truncated sum
+		//   is the larger operand;
+		// - opposite signs: the result can fall below a power of ten and gain a digit
+		//   (decimal64 1e16 - 6 = 9999999999999994, which the old shortcut returned as
+		//   1e16), so only a smaller operand more than ndigits + 1 digits below, less than
+		//   a tenth of a unit in the last place, is absorbed. That returns the nearest
+		//   value, where truncation would give one unit less (#1487).
+		const int lhs_top = lhs_exp + static_cast<int>(count_digits_s(lhs_sig)) - 1;
+		const int rhs_top = rhs_exp + static_cast<int>(count_digits_s(rhs_sig)) - 1;
+		const int top_gap = (lhs_top >= rhs_top) ? lhs_top - rhs_top : rhs_top - lhs_top;
+		const int n = static_cast<int>(ndigits);
+		const int abs_shift = (shift >= 0) ? shift : -shift;
+		if (abs_shift >= n && top_gap >= ((lhs_sign == rhs_sign) ? n : n + 2)) {
 			if (shift > 0) return *this;       // lhs dominates
 			*this = rhs; return *this;         // rhs dominates
 		}
 
+		wide_significand_t ten(10);
+
 		int result_exp;
 		bool result_sign;
-		significand_t abs_sig;
+		wide_significand_t abs_sig;
 
-		// Unified path using blockbinary significand_t
-		significand_t aligned_lhs(lhs_sig);
-		significand_t aligned_rhs(rhs_sig);
-		significand_t ten(10);
+		// Align in the double-width significand: past the shortcut the scaled operand
+		// needs up to 2*ndigits + 1 digits and the sum one more, while significand_t
+		// holds only about 1.2*ndigits + 2 (#1484: the overflow returned garbage, e.g.
+		// decimal64 3.812837151747335e16 - 4304.704077704107 = -1298121021.55). The
+		// double width holds about 2.4*ndigits + 4.
+		wide_significand_t aligned_lhs, aligned_rhs;
+		aligned_lhs.assign(lhs_sig);
+		aligned_rhs.assign(rhs_sig);
 
 		if (shift >= 0) {
 			result_exp = rhs_exp;
@@ -364,8 +385,8 @@ public:
 			}
 		}
 
-		// normalize to ndigits precision
-		normalize_and_pack(result_sign, result_exp, abs_sig);
+		// reduce to ndigits precision
+		normalize_wide_and_pack(result_sign, result_exp, abs_sig);
 		return *this;
 	}
 	constexpr dfloat& operator-=(const dfloat& rhs) {
@@ -450,18 +471,38 @@ public:
 		bool result_sign = (lhs_sign != rhs_sign);
 		int result_exp = lhs_exp - rhs_exp;
 
-		// Unified iterative long division using blockbinary
-		significand_t remainder(lhs_sig);
-		significand_t quotient(0);
-		significand_t ten(10);
+		// Long division, one quotient digit per step, in the double-width significand.
+		// ndigits steps accumulate about lhs_sig * 10^ndigits / rhs_sig, up to
+		// 2*ndigits digits, which overflowed significand_t for a short divisor
+		// (#1484: decimal32 1234567 / 1 gave 8664.995).
+		wide_significand_t remainder, divisor, quotient(0), ten(10);
+		remainder.assign(lhs_sig);
+		divisor.assign(rhs_sig);
 		for (unsigned i = 0; i < ndigits; ++i) {
 			remainder *= ten;
-			quotient = quotient * ten + remainder / rhs_sig;
-			remainder = remainder % rhs_sig;
+			quotient = quotient * ten + remainder / divisor;
+			remainder = remainder % divisor;
 		}
 		result_exp -= static_cast<int>(ndigits);
 
-		normalize_and_pack(result_sign, result_exp, quotient);
+		// When the dividend's significand is the smaller one, those steps leave fewer
+		// than ndigits digits (#1484: decimal32 1 / 1234567 gave 8e-7, not 8.100005e-7).
+		// An inexact quotient continues until it has ndigits; an exact one keeps the
+		// digits it has, as before.
+		unsigned qdigits = 0;
+		{
+			wide_significand_t tmp(quotient);
+			while (!tmp.iszero()) { tmp /= ten; ++qdigits; }
+		}
+		while (qdigits < ndigits && !remainder.iszero()) {
+			remainder *= ten;
+			quotient = quotient * ten + remainder / divisor;
+			remainder = remainder % divisor;
+			--result_exp;
+			++qdigits;
+		}
+
+		normalize_wide_and_pack(result_sign, result_exp, quotient);
 		return *this;
 	}
 
@@ -1010,6 +1051,25 @@ protected:
 		}
 
 		pack(s, exponent, significand);
+	}
+
+	// Reduce a double-width significand to ndigits (truncating, as normalize_and_pack
+	// does), then pack it
+	constexpr void normalize_wide_and_pack(bool s, int exponent, wide_significand_t significand) noexcept {
+		wide_significand_t ten(10);
+		unsigned digits = 0;
+		{
+			wide_significand_t tmp(significand);
+			while (!tmp.iszero()) { tmp /= ten; ++digits; }
+		}
+		while (digits > ndigits) {
+			significand /= ten;
+			exponent++;
+			digits--;
+		}
+		significand_t narrow;
+		narrow.assign(significand);
+		normalize_and_pack(s, exponent, narrow);
 	}
 
 	///////////////////////////////////////////////////////////////////
