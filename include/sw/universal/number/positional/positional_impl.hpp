@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>    // uint8_t, in setdigit() and digit()
 #include <cstdio>     // fprintf(stderr, ...) for the divide/modulo-by-zero diagnostics (#1334)
 #include <iosfwd>     // std::ostream, named by the operator<< friend declaration
 #include <string>
