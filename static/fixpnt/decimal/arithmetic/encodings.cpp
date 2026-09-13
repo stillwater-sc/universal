@@ -13,8 +13,9 @@
 // BCD, DPD and BID hold the same values, so here they must agree, operation by
 // operation, and + and - must also match exact integer arithmetic.
 //
-// Digit counts with N % 3 == 2 are avoided: DPD drops the top bit of the leading digit
-// there (#1480), which is a separate defect.
+// Digit counts with N % 3 == 2 also cover #1480: DPD used to drop bit 3 of the leading
+// digit there, so a leading 8 or 9 read back as 0 or 1, and maxpos() was 19999.999 for
+// dfixpnt<8,3,DPD> (#1477).
 #include <universal/utility/directives.hpp>
 #include <cstdint>
 #include <cstdlib>
@@ -76,6 +77,25 @@ int VerifyEncodingsAgree(int nrSamples, bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// maxpos, maxneg and minpos must print the same in all three encodings
+template<unsigned N, unsigned R>
+int VerifyLimitsAgree(bool reportTestCases) {
+	using BCD = dfixpnt<N, R, DecimalEncoding::BCD, Modulo, std::uint8_t>;
+	using DPD = dfixpnt<N, R, DecimalEncoding::DPD, Modulo, std::uint16_t>;
+	using BID = dfixpnt<N, R, DecimalEncoding::BID, Modulo, std::uint32_t>;
+	int nrOfFailedTests = 0;
+	auto check = [&](const std::string& what, const std::string& a, const std::string& b, const std::string& c) {
+		if (a != b || a != c) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: dfixpnt<" << N << ',' << R << "> " << what << ": " << a << " / " << b << " / " << c << '\n';
+		}
+	};
+	check("maxpos", BCD().maxpos().to_string(), DPD().maxpos().to_string(), BID().maxpos().to_string());
+	check("maxneg", BCD().maxneg().to_string(), DPD().maxneg().to_string(), BID().maxneg().to_string());
+	check("minpos", BCD().minpos().to_string(), DPD().minpos().to_string(), BID().minpos().to_string());
+	return nrOfFailedTests;
+}
+
 }} // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -123,6 +143,15 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyEncodingsAgree<9, 4, Modulo>(2000, reportTestCases), "dfixpnt<9,4,Modulo>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyEncodingsAgree<9, 4, Saturate>(2000, reportTestCases), "dfixpnt<9,4,Saturate>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyEncodingsAgree<7, 3, Modulo>(2000, reportTestCases), "dfixpnt<7,3,Modulo>", test_tag);
+	// N % 3 == 2: DPD's leading digit sits in a 7-bit two-digit group (#1480)
+	nrOfFailedTestCases += ReportTestResult(VerifyEncodingsAgree<8, 4, Modulo>(2000, reportTestCases), "dfixpnt<8,4,Modulo>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEncodingsAgree<8, 4, Saturate>(2000, reportTestCases), "dfixpnt<8,4,Saturate>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEncodingsAgree<5, 2, Modulo>(2000, reportTestCases), "dfixpnt<5,2,Modulo>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimitsAgree<1, 0>(reportTestCases) + VerifyLimitsAgree<2, 1>(reportTestCases)
+		+ VerifyLimitsAgree<3, 1>(reportTestCases) + VerifyLimitsAgree<4, 2>(reportTestCases) + VerifyLimitsAgree<5, 2>(reportTestCases)
+		+ VerifyLimitsAgree<6, 3>(reportTestCases) + VerifyLimitsAgree<7, 3>(reportTestCases) + VerifyLimitsAgree<8, 3>(reportTestCases)
+		+ VerifyLimitsAgree<9, 4>(reportTestCases) + VerifyLimitsAgree<10, 4>(reportTestCases) + VerifyLimitsAgree<11, 5>(reportTestCases)
+		+ VerifyLimitsAgree<12, 6>(reportTestCases), "dfixpnt<1..12> limits", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyEncodingsAgree<4, 2, Modulo>(2000, reportTestCases), "dfixpnt<4,2,Modulo>", test_tag);
 #endif
 
