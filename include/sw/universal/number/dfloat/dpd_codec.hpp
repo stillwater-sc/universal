@@ -308,10 +308,8 @@ static inline uint64_t dpd_encode_significand(uint64_t significand, unsigned ndi
 
 	// Handle remaining 1 or 2 digits
 	if (remaining_digits == 2) {
-		unsigned d1 = static_cast<unsigned>((trailing / 10) % 10);
-		unsigned d0 = static_cast<unsigned>(trailing % 10);
-		// 2 digits encoded in 7 bits
-		result |= (static_cast<uint64_t>((d1 << 4) | d0) << shift);
+		// 2 digits as a 7-bit DPD group; (d1 << 4) | d0 needed 8 bits for d1 >= 8 (#1482)
+		result |= (static_cast<uint64_t>(dpd_encode_2digits(static_cast<unsigned>(trailing % 100))) << shift);
 	}
 	else if (remaining_digits == 1) {
 		// 1 digit encoded in 4 bits
@@ -338,10 +336,8 @@ static inline uint64_t dpd_decode_significand(uint64_t dpd_bits, unsigned ndigit
 	}
 
 	if (remaining_digits == 2) {
-		unsigned bits = static_cast<unsigned>((dpd_bits >> shift) & 0x7F);
-		unsigned d1 = (bits >> 4) & 0xF;
-		unsigned d0 = bits & 0xF;
-		result += (static_cast<uint64_t>(d1) * 10 + d0) * multiplier;
+		uint16_t bits = static_cast<uint16_t>((dpd_bits >> shift) & 0x7F);
+		result += static_cast<uint64_t>(dpd_decode_2digits(bits)) * multiplier;
 	}
 	else if (remaining_digits == 1) {
 		unsigned d = static_cast<unsigned>((dpd_bits >> shift) & 0xF);

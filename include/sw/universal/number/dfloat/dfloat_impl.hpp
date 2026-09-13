@@ -1096,6 +1096,18 @@ protected:
 			remaining -= 3;
 		}
 
+		// One or two digits are left when (ndigits - 1) % 3 != 0; dpd_trailing_bits()
+		// gives them the top 4 or 7 trailing bits (#1482: they were never read or written)
+		if (remaining > 0) {
+			const unsigned width = (remaining == 1) ? 4u : 7u;
+			uint16_t bits = 0;
+			for (unsigned b = 0; b < width; ++b) {
+				if (getbit(bit_offset + b)) bits |= static_cast<uint16_t>(1u << b);
+			}
+			const unsigned value = (remaining == 1) ? dpd_decode(bits) % 10 : dpd_decode_2digits(bits);
+			result += significand_t(static_cast<long long>(value)) * multiplier;
+		}
+
 		return significand_t(static_cast<long long>(msd)) * pow10_s(ndigits - 1) + result;
 	}
 
@@ -1117,6 +1129,17 @@ protected:
 			}
 			bit_offset += 10;
 			remaining -= 3;
+		}
+
+		// the one or two leftover digits: a lone digit in 4 bits (DPD and BCD coincide
+		// there), a pair as a 7-bit DPD group
+		if (remaining > 0) {
+			const unsigned value = static_cast<unsigned>(static_cast<long long>(trailing_val));
+			const unsigned width = (remaining == 1) ? 4u : 7u;
+			const uint16_t bits = (remaining == 1) ? dpd_encode(value % 10) : dpd_encode_2digits(value);
+			for (unsigned b = 0; b < width; ++b) {
+				setbit(bit_offset + b, (bits >> b) & 1);
+			}
 		}
 	}
 
