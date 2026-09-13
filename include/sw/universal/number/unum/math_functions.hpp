@@ -12,6 +12,8 @@
 #include <cmath>
 #include <algorithm>
 
+#include <universal/number/unum/unum_impl.hpp>
+
 namespace sw { namespace universal {
 
 // helper: convert a native double result back to unum, mapping non-finite values to NaN

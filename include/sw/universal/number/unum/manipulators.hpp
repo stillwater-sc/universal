@@ -5,13 +5,67 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+//
+// Layer 2a of the unum headers (#1334, Phase 2 group 5c, #1467): the <iomanip> half --
+// everything that turns a unum into a std::string, and parse(), which reads a decimal
+// literal through an istringstream (the cfloat/bfloat16 placement). Self-contained.
+#include <cctype>
 #include <iomanip>
 #include <sstream>
+#include <string>
 
 #include <universal/utility/color_print.hpp>
+#include <universal/number/unum/core.hpp>
 
 namespace sw { namespace universal {
+
+// parse a unum from a decimal floating-point string
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+bool parse(const std::string& txt, unum<esizesize, fsizesize, bt>& v) {
+	// Detect nan / inf / infinity tokens (case-insensitive, optional sign).
+	// unum Type I has no Inf encoding -- inf tokens collapse to NaN, matching
+	// the existing operator=(double) behavior which also maps +/-inf to NaN.
+	{
+		std::string t;
+		t.reserve(txt.size());
+		for (char c : txt) {
+			t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+		}
+		std::string body = t;
+		if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
+		if (body == "nan" || body == "inf" || body == "infinity") {
+			v.setnan();
+			return true;
+		}
+	}
+	std::istringstream ss(txt);
+	double d;
+	ss >> d;
+	if (ss.fail()) return false;
+	ss >> std::ws;
+	if (!ss.eof()) return false;
+	v = d;
+	return true;
+}
+
+template<unsigned esizesize, unsigned fsizesize, typename bt>
+inline std::string components(const unum<esizesize, fsizesize, bt>& v) {
+	std::stringstream s;
+	if (v.iszero()) {
+		s << "zero";
+	}
+	else if (v.isnan()) {
+		s << "NaN";
+	}
+	else {
+		s << (v.sign() ? "-" : "+")
+		  << " esize:" << (v.esize() + 1u) << " fsize:" << v.fsize()
+		  << " exp:" << v.exponent() << " frac:" << v.fraction()
+		  << " ubit:" << v.ubit();
+	}
+	return s.str();
+}
+
 
 // Generate a type tag for this unum
 template<unsigned esizesize, unsigned fsizesize, typename bt>

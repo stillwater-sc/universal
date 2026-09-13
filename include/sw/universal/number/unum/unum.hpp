@@ -10,32 +10,19 @@
 ///  BEHAVIORAL COMPILATION SWITCHES
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(UNUM_ENABLE_LITERALS)
-// default is to enable them
-#define UNUM_ENABLE_LITERALS 1
-#endif
+// UNUM_ENABLE_LITERALS and UNUM_THROW_ARITHMETIC_EXCEPTION now default in unum_impl.hpp,
+// so that a translation unit which includes core.hpp directly gets the same defaults this
+// umbrella used to supply (#1334, #1436). Defining either before this header still wins.
 
-////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for unum arithmetic errors
-// left to application to enable
-#if !defined(UNUM_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define UNUM_THROW_ARITHMETIC_EXCEPTION 0
-#endif
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation unit
+// that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/unum/core.hpp>
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// INCLUDE FILES that make up the library
-#include <universal/number/unum/exceptions.hpp>
-#include <universal/number/unum/unum_fwd.hpp>
-#include <universal/number/unum/unum_impl.hpp>
-#include <universal/number/unum/numeric_limits.hpp>
+// The core reads IEEE-754 fields through native/ieee754_core.hpp. The full native
+// support -- to_binary/to_hex/color_print on float and double -- used to arrive here
+// through unum_impl.hpp, so the umbrella keeps providing it.
+#include <universal/native/ieee754.hpp>
+
+// layer 2a: the string producers and parse(); layer 2b: operator<< / operator>>
 #include <universal/number/unum/manipulators.hpp>
-
-///////////////////////////////////////////////////////////////////////////////////////
-/// math functions
-#include <universal/number/unum/math_functions.hpp>
-
-///////////////////////////////////////////////////////////////////////////////////////
-/// ubound interval arithmetic
-#include <universal/number/unum/ubound.hpp>
+#include <universal/number/unum/iostream.hpp>

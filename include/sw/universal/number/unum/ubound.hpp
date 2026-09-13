@@ -11,8 +11,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <sstream>
+#include <algorithm>   // std::min/std::max over an initializer list
 #include <cmath>
+
+#include <universal/number/unum/unum_impl.hpp>
 
 namespace sw { namespace universal {
 
@@ -234,19 +236,6 @@ ubound<esizesize, fsizesize, bt> operator/(const ubound<esizesize, fsizesize, bt
 	return quot;
 }
 
-// IO
-template<unsigned esizesize, unsigned fsizesize, typename bt>
-std::ostream& operator<<(std::ostream& ostr, const ubound<esizesize, fsizesize, bt>& ub) {
-	if (ub.isnan()) {
-		ostr << "[NaN]";
-	}
-	else if (ub.ispoint()) {
-		ostr << '[' << ub.lower() << ']';
-	}
-	else {
-		ostr << '[' << ub.lower() << ", " << ub.upper() << ']';
-	}
-	return ostr;
-}
+// operator<< is in iostream.hpp (#1334)
 
 }} // namespace sw::universal

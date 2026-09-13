@@ -34,13 +34,30 @@
 #include <cassert>
 #include <cctype>
 #include <cstdint>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
+#include <cstdio>     // fprintf(stderr, ...) for the division-by-zero diagnostic (#1334)
+#include <iosfwd>     // std::ostream/std::istream, named by the operator<< / operator>> friend declarations
 #include <limits>
 #include <string>
+#include <type_traits>
 
-#include <universal/native/ieee754.hpp>
+////////////////////////////////////////////////////////////////////////////////////////
+///  BEHAVIORAL COMPILATION SWITCHES
+///
+/// These default here rather than in the unum.hpp umbrella, so that a translation unit
+/// which includes core.hpp directly gets the same defaults (#1334, #1436). Defining
+/// either before any unum header still wins.
+#if !defined(UNUM_ENABLE_LITERALS)
+#define UNUM_ENABLE_LITERALS 1
+#endif
+#if !defined(UNUM_THROW_ARITHMETIC_EXCEPTION)
+#define UNUM_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
+#include <universal/number/unum/exceptions.hpp>
+#include <universal/number/unum/unum_fwd.hpp>   // unum is named before it is defined
+
+// extractFields and ieee754_parameter: the I/O-free half of the native support (#1334)
+#include <universal/native/ieee754_core.hpp>
 #include <universal/native/extract_fields.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <math/constexpr_math/exp2.hpp>
@@ -356,7 +373,7 @@ public:
 			return *this;
 #else
 			// Diagnostic stream is runtime-only.
-			if (!std::is_constant_evaluated()) std::cerr << "unum division by zero\n";
+			if (!std::is_constant_evaluated()) std::fprintf(stderr, "unum division by zero\n");
 			setnan();
 			return *this;
 #endif
@@ -540,65 +557,8 @@ private:
 };
 
 ////////////////////// IO operators
-
-template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const unum<esizesize, fsizesize, bt>& v) {
-	if (v.isnan()) {
-		ostr << "NaN";
-	}
-	else if (v.iszero()) {
-		ostr << 0;
-	}
-	else {
-		// use decoded double value
-		double d = v.to_double();
-		ostr << d;
-	}
-	return ostr;
-}
-
-// parse a unum from a decimal floating-point string
-template<unsigned esizesize, unsigned fsizesize, typename bt>
-bool parse(const std::string& txt, unum<esizesize, fsizesize, bt>& v) {
-	// Detect nan / inf / infinity tokens (case-insensitive, optional sign).
-	// unum Type I has no Inf encoding -- inf tokens collapse to NaN, matching
-	// the existing operator=(double) behavior which also maps +/-inf to NaN.
-	{
-		std::string t;
-		t.reserve(txt.size());
-		for (char c : txt) {
-			t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
-		}
-		std::string body = t;
-		if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
-		if (body == "nan" || body == "inf" || body == "infinity") {
-			v.setnan();
-			return true;
-		}
-	}
-	std::istringstream ss(txt);
-	double d;
-	ss >> d;
-	if (ss.fail()) return false;
-	ss >> std::ws;
-	if (!ss.eof()) return false;
-	v = d;
-	return true;
-}
-
-template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline std::istream& operator>>(std::istream& istr, unum<esizesize, fsizesize, bt>& v) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit set by >>.
-		return istr;
-	}
-	if (!parse(txt, v)) {
-		std::cerr << "unable to parse -" << txt << "- into a unum value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
+// operator<< and operator>> are declared friends above and defined in iostream.hpp; parse()
+// is declared in unum_fwd.hpp and defined in manipulators.hpp (#1334)
 
 ////////////////////// comparison operators (value-domain via to_double)
 
@@ -668,23 +628,7 @@ inline CONSTEXPRESSION unum<esizesize, fsizesize, bt> operator/(const unum<esize
 
 ////////////////////// helper functions
 
-template<unsigned esizesize, unsigned fsizesize, typename bt>
-inline std::string components(const unum<esizesize, fsizesize, bt>& v) {
-	std::stringstream s;
-	if (v.iszero()) {
-		s << "zero";
-	}
-	else if (v.isnan()) {
-		s << "NaN";
-	}
-	else {
-		s << (v.sign() ? "-" : "+")
-		  << " esize:" << (v.esize() + 1u) << " fsize:" << v.fsize()
-		  << " exp:" << v.exponent() << " frac:" << v.fraction()
-		  << " ubit:" << v.ubit();
-	}
-	return s.str();
-}
+// components() is in manipulators.hpp (#1334)
 
 // abs() is defined in math_functions.hpp
 
