@@ -166,7 +166,9 @@ public:
 
 	// set all digits to 9 (max representable value)
 	constexpr void maxval() {
-		_negative = false;
+		// clear first: BCD and DPD set digits one at a time, which leaves any storage bits
+		// above the top digit as they were, and operator== compares whole blocks
+		clear();
 		if constexpr (encoding == DecimalEncoding::BID) {
 			uint64_t max_v = pow10(ndigits) - 1;
 			from_uint64(max_v);
@@ -725,7 +727,13 @@ private:
 	// digit-by-digit comparison of magnitude (MSD to LSD)
 	static constexpr bool less_than_magnitude(const blockdecimal& lhs, const blockdecimal& rhs) {
 		if constexpr (encoding == DecimalEncoding::BID) {
-			return lhs._block < rhs._block;
+			// Compare the binary magnitudes as UNSIGNED integers. blockbinary's operator<
+			// reads the top storage bit as a sign bit even for BinaryNumberType::Unsigned
+			// (#1479), so every magnitude >= 2^(nbits-1) compared as negative: ordering was
+			// wrong for about a quarter of all pairs, and long division exited early (518/52
+			// gave 0) or never terminated (1/512) (#1474). BID is limited to 19 digits, so both
+			// fit in uint64_t.
+			return lhs.bb_to_uint64() < rhs.bb_to_uint64();
 		} else {
 			for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
 				unsigned ld = lhs.digit(static_cast<unsigned>(i));
