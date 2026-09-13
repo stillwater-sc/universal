@@ -1,7 +1,21 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+
+// Behavioural switches default HERE, beside the code they govern, rather than in the
+// areal.hpp umbrella: including core.hpp directly would otherwise leave them undefined,
+// #if would evaluate them as 0, and the switch would silently flip on that path -- the
+// trap #1390 hit with POSIT_ENABLE_LITERALS (#1334, #1436).
+#if !defined(AREAL_ENABLE_LITERALS)
+#define AREAL_ENABLE_LITERALS 1
+#endif
+#if !defined(AREAL_THROW_ARITHMETIC_EXCEPTION)
+#define AREAL_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
+#include <cstdio>     // std::printf/fprintf; keeps <iostream> out of the core
+#include <iosfwd>     // std::ostream/std::istream in the friend declarations. UNCONDITIONAL:
+                      // the declarations exist whether or not tracing is on, so this must not
+                      // sit inside the TRACE_CONVERSION guard below.
 #include <universal/utility/icf_array_bounds.hpp>
-#include <sstream>
 #include <string>
 // areal_impl.hpp: implementation of an arbitrary configuration fixed-size floating-point representation with an uncertainty bit to represent a faithful floating-point system
 //
@@ -12,10 +26,20 @@
 #include <cassert>
 #include <limits>
 
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>   // the stream-free half of <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/utility/find_msb.hpp>
+// The text headers the trace blocks need, and ONLY they need: every to_binary() call in
+// this header sits inside `#if TRACE_CONVERSION`. native/integers.hpp supplies
+// to_binary(Integer) and carries <sstream>; native/manipulators.hpp supplies
+// to_binary(float)/to_binary(double), which the core's ieee754_core.hpp deliberately
+// omits. Leaving them unconditional kept three I/O-family headers in the graph of every
+// areal translation unit (#1334). debug.hpp includes integers.hpp in its own right.
+#if TRACE_CONVERSION
 #include <universal/native/integers.hpp>
+#include <universal/native/ieee754.hpp>   // to_binary(float)/to_binary(double): the text
+                                          // half of ieee754, which ieee754_core.hpp omits
+#endif
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
@@ -26,8 +50,16 @@
 #ifndef THROW_ARITHMETIC_EXCEPTION
 #define THROW_ARITHMETIC_EXCEPTION 0
 #endif
+// TRACE_CONVERSION: the trace statements below print, so they need <iostream>. They are
+// compiled only when tracing is actually switched on, and the include now moves inside the
+// guard with them -- an unconditional <iostream> here put four stream headers into the
+// graph of every translation unit that touched an areal (#1334, the same move cfloat's
+// trace includes got in #1417/#1418).
 #ifndef TRACE_CONVERSION
 #define TRACE_CONVERSION 0
+#endif
+#if TRACE_CONVERSION
+#include <iostream>
 #endif
 
 #include <universal/internal/bit_manipulation.hpp>
@@ -1269,7 +1301,10 @@ public:
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this areal</returns>
 	inline areal& assign(const std::string& stringRep) {
-		std::cout << "assign TBD\n";
+		// std::printf rather than std::cout: same destination, same text, and it keeps
+		// <iostream> out of the core (#1334). stdout ordering with std::cout is
+		// guaranteed while sync_with_stdio is on, which is the default.
+		std::printf("assign TBD\n");
 		return *this;
 	}
 
@@ -1473,25 +1508,11 @@ public:
 	}
 
 	// helper debug function, can remove/deprecate
-	void constexprClassParameters() const {
-		std::cout << "nbits             : " << nbits << '\n';
-		std::cout << "es                : " << es << std::endl;
-		std::cout << "ALLONES           : " << to_binary(ALLONES, bitsInBlock, true) << '\n';
-		std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, bitsInBlock, true) << '\n';
-		std::cout << "nrBlocks          : " << nrBlocks << '\n';
-		std::cout << "bits in MSU       : " << bitsInMSU << '\n';
-		std::cout << "MSU               : " << MSU << '\n';
-		std::cout << "MSU MASK          : " << to_binary(MSU_MASK, bitsInBlock, true) << '\n';
-		std::cout << "SIGN_BIT_MASK     : " << to_binary(SIGN_BIT_MASK, bitsInBlock, true) << '\n';
-		std::cout << "LSB_BIT_MASK      : " << to_binary(LSB_BIT_MASK, bitsInBlock, true) << '\n';
-		std::cout << "MSU CAPTURES E    : " << (MSU_CAPTURES_E ? "yes\n" : "no\n");
-		std::cout << "EXP_SHIFT         : " << EXP_SHIFT << '\n';
-		std::cout << "MSU EXP MASK      : " << to_binary(MSU_EXP_MASK, bitsInBlock, true) << '\n';
-		std::cout << "EXP_BIAS          : " << EXP_BIAS << '\n';
-		std::cout << "MAX_EXP           : " << MAX_EXP << '\n';
-		std::cout << "MIN_EXP_NORMAL    : " << MIN_EXP_NORMAL << '\n';
-		std::cout << "MIN_EXP_SUBNORMAL : " << MIN_EXP_SUBNORMAL << '\n';
-	}
+	// defined out-of-line in number/areal/debug.hpp so this header needs no <iostream>
+	// (#1334). Include that header to call it -- forgetting to is a link error naming the
+	// missing function, the same shape blocktriple's constexprClassParameters() got in
+	// #1388.
+	void constexprClassParameters() const;
 
 	// extract the exponent field from the encoding
 	inline constexpr void exponent(blockbinary<es, bt>& e) const {
@@ -2165,33 +2186,9 @@ constexpr void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es,
 }
 
 ////////////////////// operators
-template<unsigned nbits, unsigned es, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const areal<nbits,es,bt>& v) {
-	// TODO: make it a native conversion
-	double d = double(v);
-	bool ubit = v.at(0);
-	if (ubit) {
-		if (v.isnan()) {
-			ostr << '[' << d << ']';
-		}
-		else {
-			areal<nbits, es, bt> next(v);
-			++next;
-			double dnext = double(next);
-			ostr << '(' << d << ", " << dnext << ')';
-		}
-	}
-	else { // exact value
-		ostr << '[' << d << ']';
-	}
-	return ostr;
-}
-
-template<unsigned nnbits, unsigned nes, typename nbt>
-inline std::istream& operator>>(std::istream& istr, const areal<nnbits,nes,nbt>& v) {
-	istr >> v._fraction;
-	return istr;
-}
+// operator<< and operator>> moved to iostream.hpp in #1334. They stay friends of the
+// class (declared above) because operator>> reaches _fraction directly; only their
+// DEFINITIONS move, which is what lets this header get by with <iosfwd>.
 
 // areal-specific equality: bit-pattern equality, intentionally diverging
 // from IEEE-754 in two cases:
@@ -2301,34 +2298,8 @@ constexpr areal<nbits, es, bt> operator/(const areal<nbits, es, bt>& lhs, const 
 	return ratio;
 }
 
-// convert to std::string
-template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_string(const areal<nbits,es,bt>& v) {
-	std::stringstream s;
-	if (v.iszero()) {
-		s << " zero b";
-		return s.str();
-	}
-	else if (v.isinf()) {
-		s << " infinite b";
-		return s.str();
-	}
-//	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
-	return s.str();
-}
-
-// transform areal to a binary representation
-template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_binary(const areal<nbits, es, bt>& number, bool nibbleMarker = false) {
-	std::stringstream ss;
-	ss << 'b';
-	unsigned index = nbits;
-	for (unsigned i = 0; i < nbits; ++i) {
-		ss << (number.at(--index) ? '1' : '0');
-		if (index > 0 && (index % 4) == 0 && nibbleMarker) ss << '\'';
-	}
-	return ss.str();
-}
+// to_string() and to_binary() moved to manipulators.hpp in #1334: both format through a
+// std::stringstream, which is what keeps them out of the core.
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
 template<unsigned nbits, unsigned es, typename bt>
