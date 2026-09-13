@@ -5,7 +5,16 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Part of the text layer (#1334): these are convenience queries over a dbns value, so
+// they sit above the core rather than in it. Self-contained.
 #include <cmath> // for std:pow()
+#include <string>
+#include <sstream>   // std::stringstream in dbns_range
+#include <iomanip>   // std::setw
+#include <universal/number/dbns/core.hpp>
+#include <universal/number/dbns/manipulators.hpp>   // type_tag
+#include <universal/number/dbns/iostream.hpp>       // operator<< on dbns, used by dbns_range
 
 namespace sw { namespace universal {
 
