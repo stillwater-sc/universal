@@ -5,18 +5,44 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/internal/blockbinary/manipulators.hpp>   // to_decimal on the significand (#1334)
+
+// Behavioural switches default HERE, beside the code they govern, rather than in the
+// dfloat.hpp umbrella: including core.hpp directly would otherwise leave them
+// undefined, #if would evaluate them as 0, and the switch would silently flip on that
+// path -- the trap #1390 hit with POSIT_ENABLE_LITERALS (#1334, #1436).
+#if !defined(DFLOAT_ENABLE_LITERALS)
+#define DFLOAT_ENABLE_LITERALS 1
+#endif
+#if !defined(DFLOAT_THROW_ARITHMETIC_EXCEPTION)
+#define DFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+#if !defined(DFLOAT_EXCEPT)
+#if DFLOAT_THROW_ARITHMETIC_EXCEPTION
+#define DFLOAT_EXCEPT
+#else
+#define DFLOAT_EXCEPT noexcept
+#endif
+#endif
+#if !defined(DFLOAT_NATIVE_SQRT)
+#define DFLOAT_NATIVE_SQRT 0
+#endif
+
+#include <universal/internal/blockbinary/to_decimal.hpp>   // to_decimal on the significand: str()
+                                                           // and the wide double path need it, and
+                                                           // it concatenates rather than streams,
+                                                           // so the core can have it (#1334)
+#include <cctype>        // std::isspace, std::tolower in assign() and parse()
 #include <cstdint>
+#include <cstdlib>       // std::strtod in the wide significand path
 #include <cstring>
 #include <cmath>
+#include <limits>        // std::numeric_limits
 #include <string>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
+#include <type_traits>   // std::is_constant_evaluated, std::enable_if
 #include <algorithm>
 
 // supporting types and functions
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>   // the stream-free half of <universal/native/ieee754.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -1299,64 +1325,9 @@ void divide(const dfloat<ndigits, es, Encoding, BlockType>& a, const dfloat<ndig
 	quotient /= b;
 }
 
-template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
-inline std::string to_binary(const dfloat<ndigits, es, Encoding, BlockType>& number, bool nibbleMarker = false) {
-	using Dfloat = dfloat<ndigits, es, Encoding, BlockType>;
-	std::stringstream s;
-
-	// sign bit
-	s << "0b" << (number.sign() ? '1' : '0') << '.';
-
-	// combination field (5 bits)
-	unsigned combStart = Dfloat::nbits - 2;
-	for (unsigned i = 0; i < Dfloat::combBits; ++i) {
-		s << (number.getbit(combStart - i) ? '1' : '0');
-	}
-	s << '.';
-
-	// exponent continuation (es bits)
-	unsigned expStart = Dfloat::nbits - 1 - 1 - Dfloat::combBits;
-	for (unsigned i = 0; i < es; ++i) {
-		s << (number.getbit(expStart - i) ? '1' : '0');
-	}
-	s << '.';
-
-	// trailing significand (t bits, MSB first)
-	for (int i = static_cast<int>(Dfloat::t) - 1; i >= 0; --i) {
-		s << (number.getbit(static_cast<unsigned>(i)) ? '1' : '0');
-		if (nibbleMarker && i > 0 && (i % 4 == 0)) s << '\'';
-	}
-
-	return s.str();
-}
-
-// native semantic representation: radix-10, shows decimal coefficient and exponent
-// Format: +DDDDDDDDDDDDDDDDe+EEE (fixed-width for visual alignment)
-template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
-inline std::string to_native(const dfloat<ndigits, es, Encoding, BlockType>& number, bool = false) {
-	using Dfloat = dfloat<ndigits, es, Encoding, BlockType>;
-	std::stringstream s;
-
-	if (number.isnan()) { s << "NaN"; return s.str(); }
-	if (number.isinf()) { s << (number.sign() ? "-inf" : "+inf"); return s.str(); }
-	if (number.iszero()) {
-		s << (number.sign() ? '-' : '+');
-		s << std::string(ndigits, '0') << "e+0";
-		return s.str();
-	}
-
-	bool sign; int exp; typename Dfloat::significand_t sig;
-	number.unpack(sign, exp, sig);
-
-	s << (sign ? '-' : '+');
-
-	// Convert significand to decimal string, left-pad to ndigits
-	std::string digits = Dfloat::sig_to_string(sig);
-	while (digits.size() < ndigits) digits = "0" + digits;
-
-	s << digits << 'e' << std::showpos << exp;
-	return s.str();
-}
+// to_binary() and to_native() moved to manipulators.hpp in #1334: both format through a
+// std::stringstream, which is what keeps them out of the core. str(), sig_to_string()
+// and parse() stay here -- they concatenate strings and open no stream.
 
 ////////////////////////    DFLOAT functions   /////////////////////////////////
 
@@ -1374,65 +1345,8 @@ constexpr dfloat<ndigits, es, Encoding, BlockType> fabs(dfloat<ndigits, es, Enco
 }
 
 
-////////////////////////  stream operators   /////////////////////////////////
-
-// generate a dfloat format ASCII format
-template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
-inline std::ostream& operator<<(std::ostream& ostr, const dfloat<ndigits, es, Encoding, BlockType>& i) {
-	using Dfloat = dfloat<ndigits, es, Encoding, BlockType>;
-	using FmtMode = typename Dfloat::FmtMode;
-
-	std::streamsize prec = ostr.precision();
-	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff = ostr.flags();
-
-	// Map iostream format flags to dfloat FmtMode
-	FmtMode mode = FmtMode::automatic;
-	bool scientific = (ff & std::ios_base::scientific) == std::ios_base::scientific;
-	bool fixed      = (ff & std::ios_base::fixed) == std::ios_base::fixed;
-	if (scientific && !fixed) mode = FmtMode::scientific;
-	else if (fixed && !scientific) mode = FmtMode::fixed;
-
-	// Default to ndigits precision so all stored digits are shown.
-	// The iostream default precision is 6, which would silently truncate
-	// exact decimal digits. Only use the stream precision when the user
-	// has explicitly set scientific or fixed mode.
-	size_t effective_prec = (scientific || fixed)
-		? static_cast<size_t>(prec)
-		: 0;  // 0 tells str() to use ndigits
-
-	std::string representation = i.str(effective_prec, mode);
-
-	// Handle setw and alignment
-	std::streamsize repWidth = static_cast<std::streamsize>(representation.size());
-	if (width > repWidth) {
-		std::streamsize diff = width - repWidth;
-		char fill = ostr.fill();
-		if ((ff & std::ios_base::left) == std::ios_base::left) {
-			representation.append(static_cast<size_t>(diff), fill);
-		}
-		else {
-			representation.insert(0, static_cast<size_t>(diff), fill);
-		}
-	}
-
-	return ostr << representation;
-}
-
-// read an ASCII dfloat format
-template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
-inline std::istream& operator>>(std::istream& istr, dfloat<ndigits, es, Encoding, BlockType>& p) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit set by >>.
-		return istr;
-	}
-	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a dfloat value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
+// operator<< and operator>> moved to iostream.hpp in #1334. dfloat.hpp includes it, so
+// callers that stream a dfloat are unaffected.
 
 ////////////////// string operators
 
