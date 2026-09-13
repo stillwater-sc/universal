@@ -23,19 +23,38 @@
 //   Long:     hfloat<14, 7> = 1+7+56 = 64 bits
 //   Extended: hfloat<28, 7> = 1+7+112 = 120 bits (stored in 128)
 
+
+// Behavioural switches default HERE, beside the code they govern, rather than in the
+// hfloat.hpp umbrella: including core.hpp directly would otherwise leave them
+// undefined, #if would evaluate them as 0, and the switch would silently flip on that
+// path -- the trap #1390 hit with POSIT_ENABLE_LITERALS (#1334, #1436).
+#if !defined(HFLOAT_ENABLE_LITERALS)
+#define HFLOAT_ENABLE_LITERALS 1
+#endif
+#if !defined(HFLOAT_THROW_ARITHMETIC_EXCEPTION)
+#define HFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+#if !defined(HFLOAT_EXCEPT)
+#if HFLOAT_THROW_ARITHMETIC_EXCEPTION
+#define HFLOAT_EXCEPT
+#else
+#define HFLOAT_EXCEPT noexcept
+#endif
+#endif
+
 #include <cctype>
 #include <cstdint>
+#include <cstdio>        // std::snprintf in str(); keeps <sstream> out of the core
 #include <cstring>
 #include <cmath>
+#include <limits>        // std::numeric_limits
 #include <string>
 #include <string_view>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
+#include <type_traits>
 #include <algorithm>
 
 // supporting types and functions
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>   // the stream-free half of <universal/native/ieee754.hpp>
 #include <universal/utility/decimal_to_binary.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
@@ -591,16 +610,28 @@ public:
 	}
 
 	// convert to string
+	//
+	// This was `std::stringstream ss; if (nrDigits) ss << std::setprecision(nrDigits);
+	// ss << d;`. That is the only reason hfloat's core would have needed <sstream>, and
+	// str() is core surface -- operator<< formats through it. std::ostream's
+	// `defaultfloat` presentation of a double IS printf's %g at the stream's precision
+	// (which defaults to 6), so snprintf("%.*g") is the same formatter reached without a
+	// stream -- the <cstdio> idiom Phase 0 adopted. Verified byte-identical over 604,742
+	// (value, precision) pairs spanning the full double exponent range on gcc and clang;
+	// see the differential in the PR (#1334, #1444).
 	std::string str(size_t nrDigits = 0) const {
 		if (iszero()) return sign() ? std::string("-0") : std::string("0");
 
 		double d = convert_to_double();
-		std::stringstream ss;
-		if (nrDigits > 0) {
-			ss << std::setprecision(static_cast<int>(nrDigits));
-		}
-		ss << d;
-		return ss.str();
+		constexpr size_t maxPrecision = 512;   // guard the size_t -> int narrowing
+		const int precision = (nrDigits > 0)
+			? static_cast<int>(nrDigits < maxPrecision ? nrDigits : maxPrecision)
+			: 6;                               // std::ios_base's default precision
+		const int len = std::snprintf(nullptr, 0, "%.*g", precision, d);
+		if (len < 0) return std::string{};
+		std::string text(static_cast<size_t>(len), '\0');
+		std::snprintf(text.data(), static_cast<size_t>(len) + 1u, "%.*g", precision, d);
+		return text;
 	}
 
 	///////////////////////////////////////////////////////////////////
@@ -932,72 +963,10 @@ private:
 };
 
 
-////////////////////////    helper functions   /////////////////////////////////
-
-template<unsigned ndigits, unsigned es, typename BlockType>
-inline std::string to_binary(const hfloat<ndigits, es, BlockType>& number, bool nibbleMarker = false) {
-	using Hfloat = hfloat<ndigits, es, BlockType>;
-	std::stringstream s;
-
-	// sign bit
-	s << "0b" << (number.sign() ? '1' : '0') << '.';
-
-	// exponent field (es bits)
-	unsigned expStart = Hfloat::nbits - 2;
-	for (unsigned i = 0; i < es; ++i) {
-		s << (number.getbit(expStart - i) ? '1' : '0');
-	}
-	s << '.';
-
-	// fraction field (fbits bits, show in hex-digit groups)
-	for (int i = static_cast<int>(Hfloat::fbits) - 1; i >= 0; --i) {
-		s << (number.getbit(static_cast<unsigned>(i)) ? '1' : '0');
-		if (nibbleMarker && i > 0 && (i % 4 == 0)) s << '\'';
-	}
-
-	return s.str();
-}
-
-template<unsigned ndigits, unsigned es, typename BlockType>
-inline std::string to_hex(const hfloat<ndigits, es, BlockType>& number) {
-	std::stringstream s;
-
-	s << (number.sign() ? '-' : '+');
-	s << "0x0.";
-
-	// Read exponent and fraction directly from bit storage. unpack() returns
-	// the fraction as uint64_t, which loses bits for wide configs
-	// (hfloat_extended has fbits=112); the legacy `frac_val >> (i*4)` loop
-	// below also had UB for i*4 >= 64, producing wrapped/duplicated digits.
-	// MSB-first left-fold to assemble the exponent field; safe for any es.
-	using Hfloat = hfloat<ndigits, es, BlockType>;
-	unsigned exp_field = 0;
-	unsigned expStart  = Hfloat::nbits - 2;
-	for (unsigned i = 0; i < es; ++i) {
-		exp_field = (exp_field << 1) | (number.getbit(expStart - i) ? 1u : 0u);
-	}
-	int exp_val = static_cast<int>(exp_field) - Hfloat::bias;
-
-	for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
-		unsigned hex_digit = 0;
-		for (unsigned b = 0; b < 4u; ++b) {
-			if (number.getbit(static_cast<unsigned>(i) * 4u + b)) {
-				hex_digit |= (1u << b);
-			}
-		}
-		s << "0123456789ABCDEF"[hex_digit];
-	}
-	s << " * 16^" << exp_val;
-
-	return s.str();
-}
-
-
-// native semantic representation: radix-16, delegates to to_hex
-template<unsigned ndigits, unsigned es, typename BlockType>
-inline std::string to_native(const hfloat<ndigits, es, BlockType>& v, bool = false) {
-	return to_hex(v);
-}
+// to_binary(), to_hex() and to_native() moved to manipulators.hpp in #1334: all three
+// format through a std::stringstream, which is what keeps them out of the core. str()
+// and parse() stay here -- str() now formats with snprintf, and parse() converts through
+// decimal_to_binary, so neither opens a stream.
 
 ////////////////////////    HFLOAT functions   /////////////////////////////////
 
@@ -1015,33 +984,8 @@ inline constexpr hfloat<ndigits, es, BlockType> fabs(hfloat<ndigits, es, BlockTy
 }
 
 
-////////////////////////  stream operators   /////////////////////////////////
-
-template<unsigned ndigits, unsigned es, typename BlockType>
-inline std::ostream& operator<<(std::ostream& ostr, const hfloat<ndigits, es, BlockType>& i) {
-	std::stringstream ss;
-	std::streamsize prec = ostr.precision();
-	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-	ss << std::setw(width) << std::setprecision(prec) << i.str(size_t(prec));
-	return ostr << ss.str();
-}
-
-template<unsigned ndigits, unsigned es, typename BlockType>
-inline std::istream& operator>>(std::istream& istr, hfloat<ndigits, es, BlockType>& p) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit set by >>.
-		return istr;
-	}
-	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into an hfloat value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
+// operator<< and operator>> moved to iostream.hpp in #1334. hfloat.hpp includes it, so
+// callers that stream an hfloat are unaffected.
 
 ////////////////// string operators
 

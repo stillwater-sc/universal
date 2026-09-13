@@ -17,25 +17,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(HFLOAT_ENABLE_LITERALS)
-#define HFLOAT_ENABLE_LITERALS 1
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for arithmetic errors
-#if !defined(HFLOAT_THROW_ARITHMETIC_EXCEPTION)
-#define HFLOAT_THROW_ARITHMETIC_EXCEPTION 0
-#define HFLOAT_EXCEPT noexcept
-#else
-#if HFLOAT_THROW_ARITHMETIC_EXCEPTION
-#define HFLOAT_EXCEPT
-#else
-#define HFLOAT_EXCEPT noexcept
-#endif
-#endif
+///
+/// HFLOAT_ENABLE_LITERALS, HFLOAT_THROW_ARITHMETIC_EXCEPTION and HFLOAT_EXCEPT now
+/// default in hfloat_impl.hpp, beside the code they govern, so that a translation unit
+/// which includes core.hpp directly gets the same defaults this umbrella used to supply
+/// (#1334, #1436). Defining any of them before this header still wins, as before.
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
@@ -45,15 +31,16 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/hfloat/exceptions.hpp>
-#include <universal/number/hfloat/hfloat_fwd.hpp>
-#include <universal/number/hfloat/hfloat_impl.hpp>
-#include <universal/traits/hfloat_traits.hpp>
-#include <universal/number/hfloat/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/hfloat/core.hpp>
 
 // useful functions to work with hfloats
-#include <universal/number/hfloat/attributes.hpp>
+// layer 2a: the string producers -- to_binary, to_hex, to_native, type_tag, color_print
 #include <universal/number/hfloat/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/hfloat/iostream.hpp>
+#include <universal/number/hfloat/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library
