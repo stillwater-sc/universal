@@ -28,3 +28,9 @@
 #include <universal/number/qd/qd_impl.hpp>
 #include <universal/traits/qd_traits.hpp>
 #include <universal/number/qd/numeric_limits.hpp>
+// copysign/frexp/ldexp: ulp() in qd_impl.hpp calls ldexp(qd, int), which the impl
+// declares but this header defines. Without it a core-only translation unit that
+// calls ulp() fails to LINK -- -fsyntax-only is clean, and -Wall only warns
+// "used but never defined" (#1334). Pure computation, no I/O; it follows
+// numeric_limits.hpp because ldexp static_asserts on numeric_limits<qd>::radix.
+#include <universal/number/qd/math/functions/numerics.hpp>

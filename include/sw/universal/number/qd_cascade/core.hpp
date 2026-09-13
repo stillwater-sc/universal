@@ -30,3 +30,9 @@
 #include <universal/number/qd_cascade/qd_cascade_fwd.hpp>
 #include <universal/number/qd_cascade/qd_cascade_impl.hpp>
 #include <universal/number/qd_cascade/numeric_limits.hpp>
+// copysign/frexp/ldexp: ulp() in qd_cascade_impl.hpp calls ldexp(qd_cascade, int), which the impl
+// declares but this header defines. Without it a core-only translation unit that
+// calls ulp() fails to LINK -- -fsyntax-only is clean, and -Wall only warns
+// "used but never defined" (#1334). Pure computation, no I/O; it follows
+// numeric_limits.hpp because ldexp static_asserts on numeric_limits<qd_cascade>::radix.
+#include <universal/number/qd_cascade/math/functions/numerics.hpp>
