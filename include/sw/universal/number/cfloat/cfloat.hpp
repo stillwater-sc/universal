@@ -138,7 +138,7 @@ using tf32 = cfloat<19, 8, std::uint32_t, true, false, false>;
 // it provides much faster computation, up to 8 times on a A100 (compared to a V100 using FP32).
 //
 // Stored in the same space as FP32, it is not a distinct storage format, but a specification 
-// for reduced-precision FP32 multiply–accumulate operations. FP32 inputs are rounded to TF32, 
+// for reduced-precision FP32 multiply-accumulate operations. FP32 inputs are rounded to TF32,
 // multiplied to produce a 21-bit product (including the implicit msbit, this is an 11x11->22-bit multiply), 
 // and summed into a standard FP32 accumulator.
 
