@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/traits/integral_constant.hpp>
+#include <universal/number/sorn/sorn_fwd.hpp>   // the trait names sorn<>
 
 namespace sw { namespace universal {
 

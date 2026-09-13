@@ -16,31 +16,20 @@
 ///  BEHAVIORAL COMPILATION SWITCHES
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(SORN_ENABLE_LITERALS)
-// default is to enable them
-#define SORN_ENABLE_LITERALS 1
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for logarithmic number system arithmetic errors
-// left to application to enable
-#if !defined(SORN_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define SORN_THROW_ARITHMETIC_EXCEPTION 0
-#endif
+// SORN_ENABLE_LITERALS and SORN_THROW_ARITHMETIC_EXCEPTION now default in sorn_impl.hpp,
+// so that a translation unit which includes core.hpp directly gets the same defaults this
+// umbrella used to supply (#1334, #1436). Defining either before this header still wins.
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/sorn/exceptions.hpp>
-#include <universal/number/sorn/sorn_fwd.hpp>
-#include <universal/number/sorn/sorn_impl.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation unit
+// that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/sorn/core.hpp>
+// layer 2: the text -- type_tag, the getInt/getConfig/getDT members, to_binary,
+// color_print, then the two operator<< overloads
 #include <universal/number/sorn/sorn_type_tag.hpp>
-#include <universal/number/sorn/sorn_traits.hpp>
-#include <universal/number/sorn/numeric_limits.hpp>
-
-// useful functions to work with logarithmic numbers
 #include <universal/number/sorn/manipulators.hpp>
+#include <universal/number/sorn/iostream.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
