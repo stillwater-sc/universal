@@ -768,7 +768,10 @@ protected:
 			}
 		}
 #if DBNS_TRACE_CONVERSION
-		std::cout << "scale : " << scale << '\n';
+		// the !is_constant_evaluated() guard keeps convert_ieee754 usable in a constexpr
+		// context with tracing on -- std::cout is not constant-evaluable. Same idiom the
+		// statistics counters below already use.
+		if (!std::is_constant_evaluated()) std::cout << "scale : " << scale << '\n';
 #endif
 		double lowestError = 1.0e10;
 		constexpr int kNotFound = std::numeric_limits<int>::max();
@@ -787,7 +790,7 @@ protected:
 			double diff = scale - (a + b * log2of3);
 			double err = (diff < 0.0 ? -diff : diff);
 #if DBNS_TRACE_CONVERSION
-			{
+			if (!std::is_constant_evaluated()) {
 				double fb = sw::math::constexpr_math::exp2(static_cast<double>(a));
 				double sb = sw::math::constexpr_math::pow(3.0, static_cast<double>(b));
 				double value = fb * sb;
@@ -801,7 +804,7 @@ protected:
 			}
 		}
 #if DBNS_TRACE_CONVERSION
-		std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
+		if (!std::is_constant_evaluated()) std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
 #endif
 		clear();
 

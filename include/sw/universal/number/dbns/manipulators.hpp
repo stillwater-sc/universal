@@ -54,7 +54,11 @@ namespace sw { namespace universal {
 	inline std::string range(const DbnsType & = {}) {
 		std::stringstream s;
 		DbnsType b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
-		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
+		// stream the double conversions rather than the dbns values themselves: this
+		// layer must not depend on iostream.hpp (#1334), and operator<<(ostream, dbns)
+		// lives there. It is `ostr << double(r)`, so this is the same text -- and the
+		// same text is what the differential in the PR checks.
+		s << "[" << double(b) << " ... " << double(c) << ", 0, " << double(d) << " ... " << double(e) << "]\n";
 		return s.str();
 	}
 
