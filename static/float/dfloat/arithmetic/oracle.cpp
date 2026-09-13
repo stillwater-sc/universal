@@ -40,7 +40,7 @@ namespace exact {
 
 // non-negative integers as decimal digit strings, most significant digit first, no
 // leading zeros ("0" for zero)
-std::string trim(std::string a) {
+std::string trim(const std::string& a) {
 	size_t i = a.find_first_not_of('0');
 	return (i == std::string::npos) ? std::string("0") : a.substr(i);
 }
