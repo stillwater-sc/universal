@@ -292,10 +292,9 @@ public:
 
 	// prefix operators
 	constexpr dfloat operator-() const {
+		// IEEE 754 negate flips the sign of every value, zeros included: -(+0) is -0 (#1491)
 		dfloat negated(*this);
-		if (!negated.iszero()) {
-			negated.setsign(!negated.sign());
-		}
+		negated.setsign(!negated.sign());
 		return negated;
 	}
 
@@ -316,7 +315,12 @@ public:
 		}
 		if (isinf()) return *this;
 		if (rhs.isinf()) { *this = rhs; return *this; }
-		if (rhs.iszero()) return *this;
+		// x + 0 = x; the sum of two zeros is -0 only when both are -0 (IEEE 754 under
+		// roundTiesToEven; -0 + +0 used to keep the left operand's -0, #1491)
+		if (rhs.iszero()) {
+			if (iszero()) setsign(lhs_sign && rhs_sign);
+			return *this;
+		}
 		if (iszero()) { *this = rhs; return *this; }
 
 		// align exponents by scaling the higher-exponent significand UP
@@ -380,6 +384,8 @@ public:
 				abs_sig = aligned_rhs - aligned_lhs;
 				result_sign = rhs_sign;
 			}
+			// an exact zero sum of opposite signs is +0 under roundTiesToEven (-2 + 2 gave -0, #1491)
+			if (abs_sig.iszero()) result_sign = false;
 		}
 
 		// reduce to ndigits precision
@@ -387,8 +393,9 @@ public:
 		return *this;
 	}
 	constexpr dfloat& operator-=(const dfloat& rhs) {
+		// negate rhs including a zero, so -0 - -0 = -0 + +0 = +0 (#1491)
 		dfloat neg(rhs);
-		if (!neg.iszero()) neg.setsign(!neg.sign());
+		neg.setsign(!neg.sign());
 		return operator+=(neg);
 	}
 	constexpr dfloat& operator*=(const dfloat& rhs) {
@@ -405,7 +412,8 @@ public:
 			setinf(lhs_sign != rhs_sign);
 			return *this;
 		}
-		if (iszero() || rhs.iszero()) { setzero(); return *this; }
+		// a zero product takes the sign of the product (-0 * 2 is -0; this gave +0, #1491)
+		if (iszero() || rhs.iszero()) { setzero(); setsign(lhs_sign != rhs_sign); return *this; }
 
 		bool result_sign = (lhs_sign != rhs_sign);
 		int result_exp = lhs_exp + rhs_exp;
@@ -443,7 +451,8 @@ public:
 			return *this;
 #endif
 		}
-		if (iszero()) { setzero(); return *this; }
+		// a zero quotient takes the sign of the quotient (0 / -2 is -0; this gave +0, #1491)
+		if (iszero()) { setzero(); setsign(lhs_sign != rhs_sign); return *this; }
 		if (isinf()) { setsign(lhs_sign != rhs_sign); return *this; }
 
 		bool result_sign = (lhs_sign != rhs_sign);
