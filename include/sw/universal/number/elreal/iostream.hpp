@@ -23,17 +23,17 @@ namespace sw { namespace universal {
 // (A full high-precision decimal printer is tracked as later manipulators work.)
 template <typename FpType>
 inline std::ostream& operator<<(std::ostream& ostr, const elreal<FpType>& v) {
-    return ostr << static_cast<double>(v);
+	return ostr << static_cast<double>(v);
 }
 
 // stream input: parse a host-double literal into an elreal (exact for values a
 // double represents exactly; otherwise the nearest double).
 template <typename FpType>
 inline std::istream& operator>>(std::istream& istr, elreal<FpType>& v) {
-    double d{};
-    istr >> d;
-    if (!istr.fail()) v = d;
-    return istr;
+	double d{};
+	istr >> d;
+	if (!istr.fail()) v = d;
+	return istr;
 }
 
 }} // namespace sw::universal

@@ -10,6 +10,7 @@
 // -- everything that turns an elreal into a std::string. The stream operators moved to
 // iostream.hpp. Self-contained.
 #include <cmath>
+#include <cstddef>   // std::size_t
 #include <cstdint>
 #include <iomanip>
 #include <sstream>
