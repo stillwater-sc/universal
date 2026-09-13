@@ -13,6 +13,7 @@
 // The dependency runs manipulators -> iostream here, as it does for dd and qd:
 // to_triple() streams the fraction it gets from frexp(), so it needs operator<<.
 // iostream.hpp does not include this header back.
+#include <cstddef>   // std::size_t
 #include <iomanip>   // std::setw
 #include <sstream>
 #include <string>
@@ -41,7 +42,7 @@ template<typename ErealType,
 inline std::string to_components(const ErealType& v) {
 	std::stringstream s;
 	s << "( ";
-	for (size_t i = 0; i < v.limbs().size(); ++i) {
+	for (std::size_t i = 0; i < v.limbs().size(); ++i) {
 		s << std::setw(17) << v.limbs()[i];
 		if (i < v.limbs().size() - 1) s << ", ";
 	}
@@ -68,8 +69,8 @@ template<typename ErealType,
 inline std::string to_binary(const ErealType& v, bool nibbleMarker = false) {
 	std::stringstream s;
 	// present first and last limb in binary
-	size_t firstLimb = 0;
-	size_t lastLimb  = v.limbs().size() - 1;
+	std::size_t firstLimb = 0;
+	std::size_t lastLimb  = v.limbs().size() - 1;
 	if (firstLimb == lastLimb) {
 		// only one limb
 		s << to_binary(v.limbs()[firstLimb], nibbleMarker);
