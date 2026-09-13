@@ -4,14 +4,12 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-#include <iostream>
 
 #include <universal/number/unum2/common.hpp>
 #include <universal/number/unum2/op_matrix.hpp>
 
 #include <vector>
-#include <string>
-#include <sstream>
+#include <string>       // std::string, returned by get_exact() (declared here, defined in manipulators.hpp)
 #include <cstdint>
 #include <cmath>
 #include <initializer_list>
@@ -57,59 +55,12 @@ public:
     lattice(const lattice&) = delete;
     lattice& operator=(const lattice&) = delete;
 
-    std::string get_exact(uint64_t i) const {
-        if(i >= _N) 
-            throw std::out_of_range("Lattice index out of range");
-    
-        // Return nothing if not exact.
-        if(i & 0x01) 
-            return "";
+    // the exact value at lattice index i as text ("" for an inexact index); defined in
+    // manipulators.hpp -- it builds the text with a stringstream (#1334)
+    std::string get_exact(uint64_t i) const;
 
-        // Check for infinity, zero, -1 or 1.
-        if(i == _N_half) 
-            return "inf";
-        else if(i == 0)
-            return "0";
-        else if(i == _N_quarter)
-            return "1";
-        else if(i == 3 * _N_quarter)
-            return "-1";
-        
-        std::ostringstream oss;
-
-        // Negative
-        if(i > _N_half) {
-            oss << '-';
-            i = _horizontal_invert(i, _MASK);
-        }
-
-        // Vertical invert
-        if(i >= _N_quarter) 
-            oss << _exacts[(i - _N_quarter) >> 1];
-        else oss << '/' << _exacts[_exacts.size() - (i >> 1)];
-
-        return oss.str();
-    }
-
-    void print() const {
-        std::cout << "inf <-->";
-
-        int size = _exacts.size();
-    
-        for(int i = size - 1; ~i; i--) 
-            std::cout << " -" << _exacts[i] << " <-->";
-        for(int i = 1; i < size; i++)
-            std::cout << " -/" << _exacts[i] << " <-->";
-
-        std::cout << " 0 <-->";
-
-        for(int i = size - 1; i; i--) 
-            std::cout << " /" << _exacts[i] << " <-->";
-        for(int i = 0; i < size; i++)
-            std::cout << " " << _exacts[i] << " <-->";
-        
-        std::cout << " inf" << std::endl;
-    }
+    // write the lattice to std::cout; defined in iostream.hpp (#1334)
+    void print() const;
 
     double exactvalue(uint64_t i) const {
         if(i >= _N) 

@@ -6,6 +6,8 @@
 #pragma once
 
 #include <cstdint>
+#include <new>         // std::bad_alloc
+#include <stdexcept>   // std::runtime_error; it used to arrive with lattice.hpp's <iostream> (#1334)
 
 #include <universal/number/unum2/common.hpp>
 #include <universal/number/unum2/unum2_impl.hpp>
