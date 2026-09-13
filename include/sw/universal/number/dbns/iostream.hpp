@@ -38,7 +38,21 @@ inline std::ostream& operator<<(std::ostream& ostr, const dbns<nbits, fbbits, bt
 
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
 inline std::istream& operator>>(std::istream& istr, dbns<nbits, fbbits, bt, xtra...>& r) {
-	double d;
+	// d is INITIALISED, which the version this was moved from was not. Extraction has
+	// three outcomes and they are not symmetric:
+	//   success                 -> num_get stores the value
+	//   good stream, bad input  -> num_get stores 0 and sets failbit (required since C++11)
+	//   already-failed stream   -> the sentry fails, num_get never runs, d is UNTOUCHED
+	// Only the third path was ever a problem, and there it read an indeterminate value.
+	// Initialising to 0 removes that without altering either defined path: bad input
+	// already yielded 0, and now a bad stream does too, which is the consistent answer.
+	//
+	// Guarding the assignment instead -- `if (istr >> d) r = d;` -- would leave r
+	// untouched on BOTH failure paths, changing the defined one, and Universal's number
+	// types are deliberately trivially constructible, so an untouched r is whatever was
+	// on the stack. Whether extraction failure should leave the target alone is a real
+	// design question; it is #1450's, not this refactor's.
+	double d{ 0 };
 	istr >> d;
 	r = d;
 	return istr;
