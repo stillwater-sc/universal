@@ -11,7 +11,7 @@
 #include <string>
 #include <sstream>
 #include <universal/internal/blockdigit/manipulators.hpp>   // to_binary(blockdigit), the Storage type (#1334)
-#include <universal/number/positional/positional_impl.hpp>
+#include <universal/number/positional/core.hpp>
 
 namespace sw { namespace universal {
 

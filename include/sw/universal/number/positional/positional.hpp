@@ -18,21 +18,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(POSITIONAL_ENABLE_LITERALS)
-// default is to enable them
-#define POSITIONAL_ENABLE_LITERALS 1
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for positional integer arithmetic errors
-// left to application to enable
-#if !defined(POSITIONAL_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define POSITIONAL_THROW_ARITHMETIC_EXCEPTION 0
-#endif
+///
+/// POSITIONAL_ENABLE_LITERALS and POSITIONAL_THROW_ARITHMETIC_EXCEPTION now default in
+/// positional_impl.hpp, so that a translation unit which includes core.hpp directly gets
+/// the same defaults this umbrella used to supply (#1334, #1436). Defining either before
+/// this header still wins, as before.
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
@@ -42,14 +32,15 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/positional/exceptions.hpp>
-#include <universal/number/positional/positional_fwd.hpp>
-#include <universal/number/positional/positional_impl.hpp>
-#include <universal/traits/positional_traits.hpp>
-#include <universal/number/positional/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/positional/core.hpp>
 
 // useful functions to work with positional integers
+// layer 2a: the string producers -- type_tag, to_binary, color_print
 #include <universal/number/positional/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<<
+#include <universal/number/positional/iostream.hpp>
 #include <universal/number/positional/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
