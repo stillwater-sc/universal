@@ -5,6 +5,16 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Part of the text layer (#1334): dfloat_range() streams dfloat values through a
+// stringstream, so this header sits above iostream.hpp and is not included by core.hpp.
+// Self-contained: <string>, <sstream> and <iomanip> were all used but never named.
+#include <string>
+#include <sstream>
+#include <iomanip>   // std::setw
+#include <universal/number/dfloat/core.hpp>
+#include <universal/number/dfloat/manipulators.hpp>   // type_tag
+#include <universal/number/dfloat/iostream.hpp>       // operator<< on dfloat, used by dfloat_range
 
 namespace sw { namespace universal {
 
