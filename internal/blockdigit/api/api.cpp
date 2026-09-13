@@ -9,6 +9,8 @@
 #include <universal/internal/blockdigit/blockdigit.hpp>
 #include <universal/internal/blockoctal/blockoctal.hpp>
 #include <universal/internal/blockdecimal/blockdecimal.hpp>
+#include <universal/internal/blockdecimal/manipulators.hpp>   // type_tag, to_binary (#1473)
+#include <universal/internal/blockdecimal/iostream.hpp>       // operator<< (#1473)
 #include <universal/internal/blockhexadecimal/blockhexadecimal.hpp>
 
 #include <universal/internal/blockdigit/manipulators.hpp>   // type_tag/to_binary (#1334)
