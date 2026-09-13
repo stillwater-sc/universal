@@ -10,6 +10,7 @@
 /// required std libraries
 #include <ostream>
 #include <iomanip>
+#include <limits>
 
 namespace sw {
     namespace universal {
