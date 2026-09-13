@@ -737,11 +737,14 @@ public:
 			if (pos < txt.size() && txt[pos] == '-') { exp_neg = true; ++pos; }
 			else if (pos < txt.size() && txt[pos] == '+') { ++pos; }
 
-			// saturate: any exponent this large overflows or underflows every dfloat,
-			// and an unbounded int accumulation would be undefined behaviour
+			// Clamp at exactly 10^8: beyond every dfloat's range even after a mantissa of up
+			// to ~10^8 digits has shifted the exponent the other way, and far from int
+			// overflow, which an unbounded accumulation would reach (undefined behaviour)
+			constexpr int exp_cap = 100000000;
 			int exp_val = 0;
 			while (pos < txt.size() && txt[pos] >= '0' && txt[pos] <= '9') {
-				if (exp_val < 1000000) exp_val = exp_val * 10 + (txt[pos] - '0');
+				const int digit = txt[pos] - '0';
+				exp_val = (exp_val > (exp_cap - digit) / 10) ? exp_cap : exp_val * 10 + digit;
 				++pos;
 			}
 			decimal_exponent += exp_neg ? -exp_val : exp_val;

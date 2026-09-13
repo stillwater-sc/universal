@@ -78,12 +78,18 @@ int VerifyParseForms(int nrSamples, bool reportTestCases) {
 		const int shift = static_cast<int>(rng() % 9) - 4;
 		std::string pos = Positional(d, e);
 		std::string forms[] = {
-			sign + pos,                                                                   // plain positional
-			sign + std::string(lz, '0') + pos,                                            // leading integer zeros
-			sign + pos + (pos.find('.') == std::string::npos ? "." : "") + std::string(tz, '0'),   // trailing fraction zeros
-			sign + Positional(d, e - shift) + "e" + std::to_string(shift),                // point shifted against an exponent
-			sign + d.substr(0, 1) + (len > 1 ? "." + d.substr(1) : "") + "e" + std::to_string(top),   // scientific
-			sign + d + "e" + std::to_string(e),                                           // integer significand
+			// plain positional
+			sign + pos,
+			// leading integer zeros
+			sign + std::string(lz, '0') + pos,
+			// trailing fraction zeros
+			sign + pos + (pos.find('.') == std::string::npos ? "." : "") + std::string(tz, '0'),
+			// point shifted against an explicit exponent
+			sign + Positional(d, e - shift) + "e" + std::to_string(shift),
+			// scientific
+			sign + d.substr(0, 1) + (len > 1 ? "." + d.substr(1) : "") + "e" + std::to_string(top),
+			// integer significand with an exponent
+			sign + d + "e" + std::to_string(e),
 		};
 		for (const std::string& txt : forms) {
 			F a; a.assign(txt);
@@ -92,8 +98,8 @@ int VerifyParseForms(int nrSamples, bool reportTestCases) {
 			if (got != want || !ok || !(p == a)) {
 				++nrOfFailedTests;
 				if (reportTestCases && nrOfFailedTests < 12) {
-					std::cerr << "FAIL: dfloat<" << N << ',' << ES << "> \"" << txt << "\" -> " << got << ", expected " << want
-					          << (ok ? "" : " (parse() rejected it)") << '\n';
+					std::cerr << "FAIL: dfloat<" << N << ',' << ES << "> \"" << txt << "\" -> " << got << ", expected "
+					          << want << (ok ? "" : " (parse() rejected it)") << '\n';
 				}
 			}
 		}
@@ -113,7 +119,9 @@ int VerifyNegativePowers(bool reportTestCases) {
 		const std::string want = Truncated("1234567", -6 - k, N);
 		if (Held(positional) != want || !(positional == scientific)) {
 			++nrOfFailedTests;
-			if (reportTestCases) std::cerr << "FAIL: dfloat<" << N << ',' << ES << "> \"" << txt << "\" -> " << Held(positional) << ", expected " << want << '\n';
+			if (reportTestCases)
+				std::cerr << "FAIL: dfloat<" << N << ',' << ES << "> \"" << txt << "\" -> " << Held(positional)
+				          << ", expected " << want << '\n';
 		}
 	}
 	return nrOfFailedTests;
@@ -150,6 +158,11 @@ int VerifyReportedCases(bool reportTestCases) {
 		++nrOfFailedTests;
 		if (reportTestCases) std::cerr << "FAIL: 1e+-99999999999 -> " << big << ", " << tiny << '\n';
 	}
+	// a long mantissa can offset a large exponent. The exponent used to stop growing
+	// once it passed 10^6, so an 8-digit exponent lost digits: 10 million leading
+	// fraction zeros against e+10000001 left an exponent of -9000001 and read as 0, not 1
+	expect("\"0.<10^7 zeros>1e10000001\"", p32(("0." + std::string(10000000, '0') + "1e10000001").c_str()), "1e0");
+	expect("\"1<2*10^6 zeros>e-2000000\"", p32(("1" + std::string(2000000, '0') + "e-2000000").c_str()), "1e0");
 	return nrOfFailedTests;
 }
 
@@ -196,29 +209,42 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyReportedCases(reportTestCases), "reported cases", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNegativePowers<7, 6>(reportTestCases), "decimal32 1.234567e-k positional", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNegativePowers<16, 8>(reportTestCases), "decimal64 1.234567e-k positional", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyNegativePowers<7, 6>(reportTestCases), "decimal32 1.234567e-k positional", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyNegativePowers<16, 8>(reportTestCases), "decimal64 1.234567e-k positional", test_tag);
 	// a narrow width, where 1.234567 has more digits than the precision
-	nrOfFailedTestCases += ReportTestResult(VerifyNegativePowers<4, 6>(reportTestCases), "dfloat<4,6> 1.234567e-k positional", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<4, 6, DecimalEncoding::BID>(500, reportTestCases), "dfloat<4,6,BID> forms", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<7, 6, DecimalEncoding::BID>(500, reportTestCases), "decimal32 BID forms", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<7, 6, DecimalEncoding::DPD>(500, reportTestCases), "decimal32 DPD forms", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<16, 8, DecimalEncoding::BID>(500, reportTestCases), "decimal64 BID forms", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<16, 8, DecimalEncoding::DPD>(500, reportTestCases), "decimal64 DPD forms", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyNegativePowers<4, 6>(reportTestCases), "dfloat<4,6> 1.234567e-k positional", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<4, 6, DecimalEncoding::BID>(500, reportTestCases),
+	                                        "dfloat<4,6,BID> forms", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<7, 6, DecimalEncoding::BID>(500, reportTestCases),
+	                                        "decimal32 BID forms", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<7, 6, DecimalEncoding::DPD>(500, reportTestCases),
+	                                        "decimal32 DPD forms", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<16, 8, DecimalEncoding::BID>(500, reportTestCases),
+	                                        "decimal64 BID forms", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<16, 8, DecimalEncoding::DPD>(500, reportTestCases),
+	                                        "decimal64 DPD forms", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<34, 12, DecimalEncoding::BID>(500, reportTestCases), "decimal128 BID forms", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<34, 12, DecimalEncoding::DPD>(500, reportTestCases), "decimal128 DPD forms", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<10, 8, DecimalEncoding::BID>(2000, reportTestCases), "dfloat<10,8,BID> forms", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<34, 12, DecimalEncoding::BID>(500, reportTestCases),
+	                                        "decimal128 BID forms", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<34, 12, DecimalEncoding::DPD>(500, reportTestCases),
+	                                        "decimal128 DPD forms", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<10, 8, DecimalEncoding::BID>(2000, reportTestCases),
+	                                        "dfloat<10,8,BID> forms", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<7, 6, DecimalEncoding::BID>(20000, reportTestCases), "decimal32 BID forms 20k", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<7, 6, DecimalEncoding::BID>(20000, reportTestCases),
+	                                        "decimal32 BID forms 20k", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<16, 8, DecimalEncoding::BID>(20000, reportTestCases), "decimal64 BID forms 20k", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<16, 8, DecimalEncoding::BID>(20000, reportTestCases),
+	                                        "decimal64 BID forms 20k", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
