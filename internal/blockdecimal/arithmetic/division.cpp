@@ -57,7 +57,10 @@ int VerifyDivisionAndRemainder(long long xstride, long long ystride, bool report
 }
 
 // magnitudes at and above the top storage bit, where the signed comparison broke:
-// 2^(nbits-1) and its neighbours, as dividend and as divisor
+// 2^(nbits-1) and its neighbours, as dividend and as divisor, in all four sign
+// combinations. Division truncates toward zero, so the quotient is negative when the
+// signs differ and the remainder takes the sign of the dividend, as in C++. The
+// operands are built from their magnitudes because 19-digit values exceed LLONG_MAX.
 template<unsigned N, DecimalEncoding E, typename BT>
 int VerifyTopBitDivision(bool reportTestCases) {
 	using B = blockdecimal<N, E, BT>;
@@ -71,14 +74,19 @@ int VerifyTopBitDivision(bool reportTestCases) {
 	for (std::uint64_t x : cases) {
 		for (std::uint64_t y : cases) {
 			if (x > maxmag || y > maxmag || y == 0) continue;
-			B a(static_cast<unsigned long long>(x)), b(static_cast<unsigned long long>(y));
-			B q(a); q /= b;
-			B r(a); r %= b;
-			if (!matches(q, false, x / y) || !matches(r, false, x % y)) {
-				++nrOfFailedTests;
-				if (reportTestCases) {
-					std::cerr << "FAIL: " << x << " / " << y << " -> q " << q.to_string() << " (expected " << x / y
-					          << "), r " << r.to_string() << " (expected " << x % y << ")\n";
+			for (int signs = 0; signs < 4; ++signs) {
+				const bool xneg = (signs & 1) != 0, yneg = (signs & 2) != 0;
+				B a(static_cast<unsigned long long>(x)), b(static_cast<unsigned long long>(y));
+				if (xneg) a = -a;
+				if (yneg) b = -b;
+				B q(a); q /= b;
+				B r(a); r %= b;
+				if (!matches(q, xneg != yneg, x / y) || !matches(r, xneg, x % y)) {
+					++nrOfFailedTests;
+					if (reportTestCases) {
+						std::cerr << "FAIL: " << (xneg ? "-" : "") << x << " / " << (yneg ? "-" : "") << y << " -> q " << q.to_string()
+						          << " (expected magnitude " << x / y << "), r " << r.to_string() << " (expected magnitude " << x % y << ")\n";
+					}
 				}
 			}
 		}
