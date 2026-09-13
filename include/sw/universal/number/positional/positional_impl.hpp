@@ -1,5 +1,7 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <cstdint>    // uint8_t, in setdigit() and digit()
+#include <cstdio>     // fprintf(stderr, ...) for the divide/modulo-by-zero diagnostics (#1334)
+#include <iosfwd>     // std::ostream, named by the operator<< friend declaration
 #include <string>
 // positional_impl.hpp: definition of a sign-magnitude, multi-radix positional integer type
 //
@@ -11,9 +13,28 @@
 #include <limits>
 
 #include <universal/number/shared/specific_value_encoding.hpp>
-#include <universal/internal/blockdigit/blockdigit.hpp>
-#include <universal/internal/blockdigit/iostream.hpp>   // operator<<(ostream, blockdigit): positional's own
-                                                        // operator<< streams its Storage through it (#1334)
+#include <universal/internal/blockdigit/blockdigit.hpp>   // blockdigit's core; its iostream.hpp comes
+                                                          // with positional's own (#1334)
+
+////////////////////////////////////////////////////////////////////////////////////////
+///  BEHAVIORAL COMPILATION SWITCHES
+///
+/// These default here rather than in the positional.hpp umbrella, so that a translation
+/// unit which includes core.hpp directly gets the same defaults (#1334, #1436).
+/// Defining either before any positional header still wins.
+
+// enable/disable the ability to use literals in binary logic and arithmetic operators
+#if !defined(POSITIONAL_ENABLE_LITERALS)
+// default is to enable them
+#define POSITIONAL_ENABLE_LITERALS 1
+#endif
+
+// enable throwing specific exceptions for positional integer arithmetic errors
+// left to application to enable
+#if !defined(POSITIONAL_THROW_ARITHMETIC_EXCEPTION)
+// default is to write a diagnostic to stderr for signalling an error
+#define POSITIONAL_THROW_ARITHMETIC_EXCEPTION 0
+#endif
 
 // Forward definitions
 #include <universal/number/positional/positional_fwd.hpp>
@@ -130,7 +151,7 @@ public:
 #if POSITIONAL_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) throw positional_divide_by_zero();
 #else
-		if (rhs.iszero()) std::cerr << "positional: division by zero\n";
+		if (rhs.iszero()) std::fprintf(stderr, "positional: division by zero\n");
 #endif
 		_value /= rhs._value;
 		return *this;
@@ -139,7 +160,7 @@ public:
 #if POSITIONAL_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) throw positional_divide_by_zero();
 #else
-		if (rhs.iszero()) std::cerr << "positional: modulo by zero\n";
+		if (rhs.iszero()) std::fprintf(stderr, "positional: modulo by zero\n");
 #endif
 		_value %= rhs._value;
 		return *this;
@@ -271,13 +292,7 @@ inline positional<N, R> operator>>(const positional<N, R>& lhs, int shift) {
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////
-// stream I/O
-
-template<unsigned N, unsigned R>
-inline std::ostream& operator<<(std::ostream& ostr, const positional<N, R>& v) {
-	return ostr << v._value;
-}
+// operator<< is declared a friend above and defined in iostream.hpp (#1334)
 
 //////////////////////////////////////////////////////////////////////
 // abs function

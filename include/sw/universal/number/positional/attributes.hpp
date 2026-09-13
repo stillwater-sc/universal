@@ -5,6 +5,16 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Self-contained (#1334): positional_range() streams positional values and names their
+// type_tag, so this header needs both text layers, not just the core.
+#include <iomanip>   // std::setw
+#include <sstream>
+#include <string>
+
+#include <universal/number/positional/core.hpp>
+#include <universal/number/positional/manipulators.hpp>   // type_tag
+#include <universal/number/positional/iostream.hpp>       // operator<<
 
 namespace sw { namespace universal {
 
