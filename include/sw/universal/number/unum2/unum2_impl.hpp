@@ -19,6 +19,7 @@
 #include <iosfwd>     // std::ostream, named by the operator<< friend declaration
 #include <algorithm>
 #include <cmath>
+#include <utility>    // std::move, in the move constructor and move assignment
 
 namespace sw { namespace universal {
 
