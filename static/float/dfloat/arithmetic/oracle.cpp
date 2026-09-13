@@ -119,7 +119,8 @@ Value add(const Value& x, const Value& y, unsigned n) {
 	// than n + 1 below: it must then be the nearest value, which round() of the exact
 	// sum would give too; returning it keeps the operand's own encoding
 	const int gap = x.exp - y.exp, top_gap = x.top() - y.top();
-	if (std::abs(gap) >= static_cast<int>(n) && std::abs(top_gap) >= static_cast<int>(n) + 2) return round(gap > 0 ? x : y, n);
+	if (std::abs(gap) >= static_cast<int>(n) && std::abs(top_gap) >= static_cast<int>(n) + 2)
+		return round(gap > 0 ? x : y, n);
 	const int e = std::min(x.exp, y.exp);
 	const std::string a = x.digits + std::string(static_cast<size_t>(x.exp - e), '0');
 	const std::string b = y.digits + std::string(static_cast<size_t>(y.exp - e), '0');
@@ -205,15 +206,17 @@ bool SameValue(const exact::Value& x, const exact::Value& y) {
 template<unsigned N, unsigned ES, DecimalEncoding E>
 int VerifyAgainstOracle(int nrSamples, bool reportTestCases) {
 	using F = dfloat<N, ES, E, std::uint32_t>;
-	std::mt19937_64 rng(1484 + N * 7 + static_cast<unsigned>(E));   // deterministic: the engine's output sequence is specified by the standard
+	// deterministic: the engine's output sequence is specified by the standard
+	std::mt19937_64 rng(1484 + N * 7 + static_cast<unsigned>(E));
 	int nrOfFailedTests = 0;
 	auto check = [&](const char* op, const F& a, const F& b, const F& got, const exact::Value& want) {
 		const exact::Value g = ValueOf(got);
 		if (!SameValue(g, want)) {
 			++nrOfFailedTests;
 			if (reportTestCases && nrOfFailedTests < 12) {
-				std::cerr << "FAIL: dfloat<" << N << ',' << ES << "> " << ToString(ValueOf(a)) << ' ' << op << ' ' << ToString(ValueOf(b))
-				          << " = " << ToString(g) << ", exact oracle " << ToString(want) << '\n';
+				std::cerr << "FAIL: dfloat<" << N << ',' << ES << "> " << ToString(ValueOf(a)) << ' ' << op << ' '
+				          << ToString(ValueOf(b)) << " = " << ToString(g) << ", exact oracle " << ToString(want)
+				          << '\n';
 			}
 		}
 	};
@@ -257,8 +260,10 @@ int VerifyReportedCases(bool reportTestCases) {
 	auto v32 = [](const char* s) { d32 v; v.assign(s); return v; };
 	auto v64 = [](const char* s) { d64 v; v.assign(s); return v; };
 	auto v5  = [](const char* s) { d5 v; v.assign(s); return v; };
-	expect("decimal64 3812837151747335e1 - 4304704077704107e-12", ValueOf(v64("3812837151747335e1") - v64("4304704077704107e-12")), "3812837151746905e1");
-	expect("decimal64 3812837151747335e1 + 4304704077704107e-12", ValueOf(v64("3812837151747335e1") + v64("4304704077704107e-12")), "3812837151747765e1");
+	expect("decimal64 3812837151747335e1 - 4304704077704107e-12",
+	       ValueOf(v64("3812837151747335e1") - v64("4304704077704107e-12")), "3812837151746905e1");
+	expect("decimal64 3812837151747335e1 + 4304704077704107e-12",
+	       ValueOf(v64("3812837151747335e1") + v64("4304704077704107e-12")), "3812837151747765e1");
 	expect("decimal32 1234567 / 1", ValueOf(v32("1234567") / v32("1")), "1234567e0");
 	expect("decimal32 9999999 / 0.001", ValueOf(v32("9999999") / v32("1e-3")), "9999999e3");
 	expect("decimal32 1 / 1234567", ValueOf(v32("1") / v32("1234567")), "8100006e-13");
@@ -317,27 +322,39 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyReportedCases(reportTestCases), "reported cases", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<4, 6, DecimalEncoding::BID>(1000, reportTestCases), "dfloat<4,6,BID>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<5, 6, DecimalEncoding::BID>(1000, reportTestCases), "dfloat<5,6,BID>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<7, 6, DecimalEncoding::BID>(1000, reportTestCases), "decimal32 BID", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<7, 6, DecimalEncoding::DPD>(1000, reportTestCases), "decimal32 DPD", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<16, 8, DecimalEncoding::BID>(500, reportTestCases), "decimal64 BID", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<16, 8, DecimalEncoding::DPD>(500, reportTestCases), "decimal64 DPD", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<4, 6, DecimalEncoding::BID>(1000, reportTestCases),
+	                                        "dfloat<4,6,BID>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<5, 6, DecimalEncoding::BID>(1000, reportTestCases),
+	                                        "dfloat<5,6,BID>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<7, 6, DecimalEncoding::BID>(1000, reportTestCases),
+	                                        "decimal32 BID", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<7, 6, DecimalEncoding::DPD>(1000, reportTestCases),
+	                                        "decimal32 DPD", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<16, 8, DecimalEncoding::BID>(500, reportTestCases),
+	                                        "decimal64 BID", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<16, 8, DecimalEncoding::DPD>(500, reportTestCases),
+	                                        "decimal64 DPD", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<34, 12, DecimalEncoding::BID>(200, reportTestCases), "decimal128 BID", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<34, 12, DecimalEncoding::DPD>(200, reportTestCases), "decimal128 DPD", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<10, 8, DecimalEncoding::BID>(2000, reportTestCases), "dfloat<10,8,BID>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<34, 12, DecimalEncoding::BID>(200, reportTestCases),
+	                                        "decimal128 BID", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<34, 12, DecimalEncoding::DPD>(200, reportTestCases),
+	                                        "decimal128 DPD", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<10, 8, DecimalEncoding::BID>(2000, reportTestCases),
+	                                        "dfloat<10,8,BID>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<7, 6, DecimalEncoding::BID>(20000, reportTestCases), "decimal32 BID 20k", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<16, 8, DecimalEncoding::BID>(5000, reportTestCases), "decimal64 BID 5k", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<7, 6, DecimalEncoding::BID>(20000, reportTestCases),
+	                                        "decimal32 BID 20k", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<16, 8, DecimalEncoding::BID>(5000, reportTestCases),
+	                                        "decimal64 BID 5k", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<34, 12, DecimalEncoding::BID>(2000, reportTestCases), "decimal128 BID 2k", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<34, 12, DecimalEncoding::BID>(2000, reportTestCases),
+	                                        "decimal128 BID 2k", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

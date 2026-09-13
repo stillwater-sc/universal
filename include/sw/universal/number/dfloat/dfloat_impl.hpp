@@ -1098,7 +1098,8 @@ protected:
 	}
 
 	// Round a double-width significand to ndigits, then pack it
-	constexpr void normalize_wide_and_pack(bool s, int exponent, wide_significand_t significand, bool sticky = false) noexcept {
+	constexpr void normalize_wide_and_pack(bool s, int exponent, wide_significand_t significand,
+	                                       bool sticky = false) noexcept {
 		if (significand.iszero()) { setzero(); if (s) setsign(true); return; }
 		round_to_ndigits(significand, exponent, sticky);
 		significand_t narrow;
