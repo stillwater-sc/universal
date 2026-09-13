@@ -5,6 +5,12 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <limits>
+
+// unum_impl.hpp, not the unum.hpp umbrella: min()/max() call the free minpos()/maxpos()
+// defined there, and the umbrella includes core.hpp, which includes this header -- a cycle
+// that #pragma once would merely mask (the trap areal hit, #1452)
+#include <universal/number/unum/unum_impl.hpp>
 
 namespace std {
 
