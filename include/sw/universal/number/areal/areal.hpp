@@ -15,28 +15,27 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(AREAL_ENABLE_LITERALS)
-// default is to enable them
-#define AREAL_ENABLE_LITERALS 1
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for integer arithmetic errors
-// left to application to enable
-#if !defined(AREAL_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define AREAL_THROW_ARITHMETIC_EXCEPTION 0
-#endif
+///
+/// AREAL_ENABLE_LITERALS and AREAL_THROW_ARITHMETIC_EXCEPTION now default in
+/// areal_impl.hpp, beside the code they govern, so that a translation unit which includes
+/// core.hpp directly gets the same defaults this umbrella used to supply (#1334, #1436).
+/// Defining either before this header still wins, as before.
+///
+/// TRACE_CONVERSION, which switches on the conversion tracing, has always defaulted in
+/// areal_impl.hpp; its <iostream> include now sits inside that guard too.
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/areal/exceptions.hpp>
-#include <universal/number/areal/areal_impl.hpp>
-#include <universal/number/areal/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/areal/core.hpp>
+
+// layer 2a: the string producers -- to_string, to_binary, to_hex, pretty_print, color_print
 #include <universal/number/areal/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/areal/iostream.hpp>
+// layer 3: introspection -- constexprClassParameters
+#include <universal/number/areal/debug.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions

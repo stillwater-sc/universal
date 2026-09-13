@@ -5,7 +5,12 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/areal/areal.hpp>
+// areal_impl.hpp, NOT the areal.hpp umbrella (#1334). This header is part of the core,
+// and the umbrella includes the core -- so including the umbrella back from here made a
+// cycle that #pragma once merely masked, dragging manipulators.hpp and iostream.hpp into
+// every core-only translation unit and keeping all five I/O-family headers in the graph.
+// numeric_limits needs the complete type and nothing else.
+#include <universal/number/areal/areal_impl.hpp>
 namespace std {
 
 template <unsigned nbits, unsigned es, typename bt> 

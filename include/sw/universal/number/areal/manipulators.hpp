@@ -5,9 +5,18 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Layer 2a of the areal headers (#1334): the <iomanip> half -- everything that turns an
+// areal into a std::string through a stringstream. iostream.hpp is the <iostream> half.
+// This header does NOT include iostream.hpp: areal's builders format from the bit
+// pattern rather than streaming the value, so the dependency runs one way only.
+// Self-contained.
+#include <string>        // std::string
+#include <sstream>       // std::stringstream
 #include <iomanip>
 #include <typeinfo>  // for typeid()
 
+#include <universal/number/areal/core.hpp>
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 
@@ -148,5 +157,36 @@ std::string color_print(const areal<nbits, es, bt>& r) {
 	return str.str();
 }
 
-}} // namespace sw::universal
 
+// Moved out of areal_impl.hpp (#1334): both format an areal through a stringstream,
+// which is what keeps them out of the core.
+// convert to std::string
+template<unsigned nbits, unsigned es, typename bt>
+inline std::string to_string(const areal<nbits,es,bt>& v) {
+	std::stringstream s;
+	if (v.iszero()) {
+		s << " zero b";
+		return s.str();
+	}
+	else if (v.isinf()) {
+		s << " infinite b";
+		return s.str();
+	}
+//	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
+	return s.str();
+}
+
+// transform areal to a binary representation
+template<unsigned nbits, unsigned es, typename bt>
+inline std::string to_binary(const areal<nbits, es, bt>& number, bool nibbleMarker = false) {
+	std::stringstream ss;
+	ss << 'b';
+	unsigned index = nbits;
+	for (unsigned i = 0; i < nbits; ++i) {
+		ss << (number.at(--index) ? '1' : '0');
+		if (index > 0 && (index % 4) == 0 && nibbleMarker) ss << '\'';
+	}
+	return ss.str();
+}
+
+}} // namespace sw::universal
