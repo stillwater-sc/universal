@@ -5,13 +5,22 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <cctype>
+
+// Behavioural switches default HERE, beside the code they govern, rather than in the
+// bfloat16.hpp umbrella: including core.hpp directly would otherwise leave them
+// undefined, #if would evaluate them as 0, and the switch would silently flip on that
+// path -- the trap #1390 hit with POSIT_ENABLE_LITERALS (#1334, #1436).
+#if !defined(BFLOAT_ENABLE_LITERALS)
+#define BFLOAT_ENABLE_LITERALS 1
+#endif
+#if !defined(BFLOAT_THROW_ARITHMETIC_EXCEPTION)
+#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
+#include <cmath>         // std::floor, used by isinteger()
 #include <cstdint>
+#include <cstdio>        // fprintf(stderr,...) for the diagnostics; keeps <iostream> out of the core
 #include <string>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-#include <regex>
 
 #include <universal/utility/bit_cast.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -24,8 +33,6 @@ namespace sw { namespace universal {
 
 	// forward reference
 	inline bfloat16 abs(bfloat16);
-	inline bfloat16 sqrt(bfloat16);
-	inline bfloat16 floor(bfloat16);
 
 // bfloat16 is Google's Brain Float type
 class bfloat16 {
@@ -325,27 +332,27 @@ public:
 						// consume this delimiting character
 						break;
 					default:
-						std::cerr << "string contained a non-standard character: " << c << '\n';
+						std::fprintf(stderr, "string contained a non-standard character: %c\n", c);
 						return *this;
 					}
 				}
 			}
 			else {
-				std::cerr << "string must start with 0b: instead input pattern was " << str << '\n';
+				std::fprintf(stderr, "string must start with 0b: instead input pattern was %s\n", str.c_str());
 				return *this;
 			}
 		}
 		else {
-			std::cerr << "string is too short\n";
+			std::fprintf(stderr, "string is too short\n");
 			return *this;
 		}
 
 		if (nrBits != nbits) {
-			std::cerr << "number of bits in the string is " << nrBits << " and needs to be " << nbits << '\n';
+			std::fprintf(stderr, "number of bits in the string is %u and needs to be %u\n", nrBits, static_cast<unsigned>(nbits));
 			return *this;
 		}
 		if (nrDots != 2) {
-			std::cerr << "number of segment delimiters in string is " << nrDots << " and needs to be 2 for a cfloat<>\n";
+			std::fprintf(stderr, "number of segment delimiters in string is %u and needs to be 2 for a cfloat<>\n", nrDots);
 			return *this;
 		}
 
@@ -359,7 +366,7 @@ public:
 				++field;
 				if (field == 2) { // just finished parsing exponent field: we can now check the number of exponent bits
 					if (nrExponentBits != es) {
-						std::cerr << "provided binary string representation does not contain " << es << " exponent bits. Found " << nrExponentBits << ". Reset to 0\n";
+						std::fprintf(stderr, "provided binary string representation does not contain %u exponent bits. Found %d. Reset to 0\n", static_cast<unsigned>(es), nrExponentBits);
 						clear();
 						return *this;
 					}
@@ -373,7 +380,7 @@ public:
 			}
 		}
 		if (field != 2) {
-			std::cerr << "provided binary string did not contain three fields separated by '.': Reset to 0\n";
+			std::fprintf(stderr, "provided binary string did not contain three fields separated by '.': Reset to 0\n");
 			clear();
 			return *this;
 		}
@@ -385,10 +392,14 @@ public:
 	constexpr bool isone()     const noexcept { return (_bits == 0x3F80u); }
 	constexpr bool isodd()     const noexcept { return (_bits & 0x0001u); }
 	constexpr bool iseven()    const noexcept { return !isodd(); }
-	// not constexpr because of floor()
+	// not constexpr because of std::floor()
 	bool isinteger() const noexcept {
 		if (isnan() || isinf()) return false;
-		return (floor(*this) == *this);
+		// this is sw::universal::floor(bfloat16) inlined -- that overload is
+		// bfloat16(std::floor(float(x))) and lives in mathlib, which the core does not
+		// include (#1334). bfloat16 -> float is exact, so the two agree bit for bit.
+		float f = float(*this);
+		return std::floor(f) == f;
 	}
 	constexpr bool ispos()     const noexcept { return !isneg(); }
 	constexpr bool isneg()     const noexcept { return (_bits & 0x8000u); }
@@ -487,93 +498,10 @@ inline bfloat16 abs(bfloat16 a) {
 }
 
 
-/// stream operators
-
-// parse a bfloat16 ASCII format and make a binary bfloat16 out of it
-inline bool parse(const std::string& number, bfloat16& value) {
-	// Detect nan / inf / infinity tokens (case-insensitive, optional sign).
-	{
-		std::string t;
-		t.reserve(number.size());
-		for (char c : number) {
-			t.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
-		}
-		bool negative = !t.empty() && t.front() == '-';
-		std::string body = t;
-		if (!body.empty() && (body.front() == '+' || body.front() == '-')) body.erase(0, 1);
-		if (body == "nan") {
-			value.setnan(NAN_TYPE_QUIET);
-			return true;
-		}
-		if (body == "inf" || body == "infinity") {
-			value.setinf(negative);
-			return true;
-		}
-	}
-	// Decimal floating-point: bfloat16 has only 7 explicit mantissa bits,
-	// so std::istringstream's double extraction is more than enough
-	// precision -- the value gets immediately rounded into the bfloat16
-	// encoding via convert_ieee754.
-	std::istringstream ss(number);
-	double d;
-	ss >> d;
-	if (ss.fail()) return false;
-	ss >> std::ws;
-	if (!ss.eof()) return false;
-	value = d;
-	return true;
-}
-
-// generate an bfloat16 format ASCII format
-inline std::ostream& operator<<(std::ostream& ostr, bfloat16 bf) {
-	return ostr << float(bf);
-}
-
-// read an ASCII bfloat16 format
-inline std::istream& operator>>(std::istream& istr, bfloat16& p) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit set by >>.
-		return istr;
-	}
-	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a bfloat16 value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
-
-////////////////// string operators
-
-inline std::string to_binary(bfloat16 bf, bool bNibbleMarker = false) {
-	std::stringstream s;
-	unsigned short bits = bf.bits();
-	unsigned short mask = 0x8000u;
-	s << (bits & mask ? "0b1." : "0x0.");
-	mask >>= 1;
-	// exponent bits
-	for (unsigned i = 0; i < 8; ++i) {
-		if (bNibbleMarker && (4 == i)) {
-			s << '\'';
-		}
-		s << (bits & mask ? '1' : '0');
-		mask >>= 1;
-	}
-	s << '.';
-	for (unsigned i = 0; i < 7; ++i) {
-		if (bNibbleMarker && (3 == i)) {
-			s << '\'';
-		}	
-		s << (bits & mask ? '1' : '0');
-		mask >>= 1;
-	}
-	return s.str();
-}
-
-// native semantic representation: radix-2, delegates to to_binary
-inline std::string to_native(bfloat16 v, bool nibbleMarker = false) {
-	return to_binary(v, nibbleMarker);
-}
+// parse(), operator<<, operator>>, to_binary() and to_native() moved out of the core
+// in #1334: parse() and to_binary() build strings through a stringstream and live in
+// manipulators.hpp; the stream operators live in iostream.hpp. bfloat16.hpp includes
+// both, so callers that use them are unaffected.
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // bfloat16 - bfloat16 binary logic operators
