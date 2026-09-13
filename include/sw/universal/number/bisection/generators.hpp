@@ -17,8 +17,11 @@
 //
 // This file is part of the universal numbers project.
 #include <cmath>
+#include <cstdint>    // uint64_t (#1334: it was not self-contained)
 #include <algorithm>
 #include <limits>
+
+#include <universal/number/bisection/bisection_fwd.hpp>   // the aliases at the end name bisection<>
 
 namespace sw { namespace universal {
 

@@ -5,8 +5,13 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project.
-#include <string>
+//
+// Layer 2a of the bisection headers (#1334, Phase 2 group 5c, #1467): the <iomanip> half
+// -- everything that turns a bisection value into a std::string. Self-contained.
 #include <sstream>
+#include <string>
+
+#include <universal/number/bisection/core.hpp>
 
 namespace sw { namespace universal {
 

@@ -9,6 +9,8 @@
 #include <sstream>
 #include <iomanip>
 
+#include <universal/number/bisection/core.hpp>
+
 namespace sw { namespace universal {
 
 template<typename G, typename R, unsigned nbits, typename bt, typename A>
