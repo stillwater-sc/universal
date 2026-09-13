@@ -54,7 +54,8 @@
 
 #include <universal/number/cfloat/cfloat_fwd.hpp>
 #include <universal/number/bfloat16/bfloat16_fwd.hpp>
-#include <universal/number/integer/integer.hpp>   // exp_t: wide, trivially-copyable exponent
+#include <universal/number/integer/core.hpp>   // exp_t: wide, trivially-copyable exponent; the core, not the
+                                                // umbrella, so block pulls no I/O-family header (#1334)
 
 namespace sw { namespace universal {
 

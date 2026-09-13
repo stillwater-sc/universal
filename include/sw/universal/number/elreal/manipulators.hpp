@@ -1,21 +1,24 @@
 #pragma once
-// manipulators.hpp: type identification, rendering, and stream I/O for elreal.
+// manipulators.hpp: type identification and rendering for elreal.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Layer 2a of the elreal headers (#1334, Phase 2 group 5b, #1455): the <iomanip> half
+// -- everything that turns an elreal into a std::string. The stream operators moved to
+// iostream.hpp. Self-contained.
 #include <cmath>
+#include <cstddef>   // std::size_t
 #include <cstdint>
 #include <iomanip>
 #include <sstream>
 #include <string>
 #include <vector>
 
-#include <universal/number/elreal/elreal_fwd.hpp>
-#include <universal/number/elreal/elreal_impl.hpp>
+#include <universal/number/elreal/core.hpp>
 #include <universal/number/elreal/block_manipulators.hpp>   // to_binary(block) / to_hex(block)
-#include <universal/traits/elreal_traits.hpp>
 
 namespace sw { namespace universal {
 
@@ -77,23 +80,6 @@ inline std::string to_triple(const elreal<FpType>& v) {
     s << (v.isneg() ? "(-, " : "(+, ") << e << ", "
       << std::setprecision(17) << m << ')';
     return s.str();
-}
-
-// stream output: the value at its current precision as a host-double approximation.
-// (A full high-precision decimal printer is tracked as later manipulators work.)
-template <typename FpType>
-inline std::ostream& operator<<(std::ostream& ostr, const elreal<FpType>& v) {
-    return ostr << static_cast<double>(v);
-}
-
-// stream input: parse a host-double literal into an elreal (exact for values a
-// double represents exactly; otherwise the nearest double).
-template <typename FpType>
-inline std::istream& operator>>(std::istream& istr, elreal<FpType>& v) {
-    double d{};
-    istr >> d;
-    if (!istr.fail()) v = d;
-    return istr;
 }
 
 }} // namespace sw::universal

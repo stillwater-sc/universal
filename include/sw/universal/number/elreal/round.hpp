@@ -30,9 +30,11 @@
 #include <universal/behavior/rounding.hpp>          // RoundingMode
 #include <universal/number/elreal/block.hpp>
 #include <universal/number/elreal/zbcl.hpp>
-#include <universal/number/dd/dd.hpp>
-#include <universal/number/qd/qd.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
+// the cores, not the umbrellas: round_to only converts into these types, it never
+// formats them, so it needs none of their text layers (#1334)
+#include <universal/number/dd/core.hpp>
+#include <universal/number/qd/core.hpp>
+#include <universal/number/cfloat/core.hpp>
 #include <universal/traits/cfloat_traits.hpp>
 
 namespace sw { namespace universal {
