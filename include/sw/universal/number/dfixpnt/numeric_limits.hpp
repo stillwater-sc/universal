@@ -7,6 +7,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
 
+#include <universal/number/dfixpnt/dfixpnt_fwd.hpp>
+#include <universal/number/shared/specific_value_encoding.hpp>   // SpecificValue
+
 namespace std {
 
 template<unsigned ndigits, unsigned radix, sw::universal::DecimalEncoding encoding, bool arithmetic, typename bt>
