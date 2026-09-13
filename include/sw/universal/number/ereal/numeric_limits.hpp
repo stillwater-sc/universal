@@ -6,7 +6,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
-#include <universal/number/dd/dd_fwd.hpp>
+// ereal_impl.hpp, not the ereal.hpp umbrella: the umbrella includes core.hpp, which
+// includes this header, so naming it here would be a cycle that #pragma once merely
+// masks (the trap areal hit, #1452). dd_fwd.hpp was included here and never used.
+#include <universal/number/ereal/ereal_impl.hpp>
 namespace std {
 
 template<unsigned maxLimbs>

@@ -6,8 +6,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>  
-#include <string>
-#include <sstream>
+#include <type_traits>
+
+#include <universal/number/ereal/core.hpp>
 
 namespace sw { namespace universal {  
 

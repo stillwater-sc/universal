@@ -19,14 +19,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for integer arithmetic errors
-// left to application to enable
-#if !defined(EREAL_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define EREAL_THROW_ARITHMETIC_EXCEPTION 0
-#endif
+///
+/// EREAL_THROW_ARITHMETIC_EXCEPTION now defaults in ereal_impl.hpp, so that a
+/// translation unit which includes core.hpp directly gets the same default this
+/// umbrella used to supply (#1334, #1436). Defining it before this header still wins.
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
@@ -36,15 +32,21 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/ereal/exceptions.hpp>
-#include <universal/number/ereal/ereal_fwd.hpp>
-#include <universal/number/ereal/ereal_impl.hpp>
-#include <universal/traits/ereal_traits.hpp>
-#include <universal/number/ereal/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/ereal/core.hpp>
+
+// The core reads scale(double) through native/manipulators_core.hpp. The full native
+// support -- to_binary/to_hex/color_print on float and double -- used to arrive here
+// through ereal_impl.hpp, so the umbrella keeps providing it.
+#include <universal/native/ieee754.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // useful functions to work with ereals
 #include <universal/number/ereal/attributes.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/ereal/iostream.hpp>
+// layer 2a: the string producers -- to_binary, to_triple, to_components, ...
 #include <universal/number/ereal/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
