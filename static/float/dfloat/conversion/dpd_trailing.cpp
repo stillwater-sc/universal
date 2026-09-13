@@ -38,7 +38,8 @@ std::string RandomSignificand(std::mt19937_64& rng, int k) {
 	s += static_cast<char>('1' + rng() % 9);
 	for (unsigned i = 1; i < len; ++i) {
 		const bool leftover = i <= 2;
-		const unsigned d = (leftover && k % 3 == 0) ? 8u + static_cast<unsigned>(rng() % 2) : static_cast<unsigned>(rng() % 10);
+		const unsigned d =
+		    (leftover && k % 3 == 0) ? 8u + static_cast<unsigned>(rng() % 2) : static_cast<unsigned>(rng() % 10);
 		s += static_cast<char>('0' + d);
 	}
 	return s;
@@ -56,10 +57,14 @@ bool CheckSameValue(const std::string& sig, const std::string& txt, BID& b, DPD&
 	d.unpack(ds, de, dsig);
 	std::string written = sig;
 	while (written.size() > 1 && written.back() == '0') written.pop_back();
-	if (BID::sig_to_string(bsig) != written) { why = txt + ": BID reference holds " + BID::sig_to_string(bsig); return false; }
+	if (BID::sig_to_string(bsig) != written) {
+		why = txt + ": BID reference holds " + BID::sig_to_string(bsig);
+		return false;
+	}
 	if (bs != ds || be != de || !(bsig == dsig)) {
-		why = txt + ": DPD unpacks to " + std::string(ds ? "-" : "") + DPD::sig_to_string(dsig) + "e" + std::to_string(de)
-		    + ", BID to " + std::string(bs ? "-" : "") + BID::sig_to_string(bsig) + "e" + std::to_string(be);
+		why = txt + ": DPD unpacks to " + std::string(ds ? "-" : "") + DPD::sig_to_string(dsig) + "e" +
+		      std::to_string(de) + ", BID to " + std::string(bs ? "-" : "") + BID::sig_to_string(bsig) + "e" +
+		      std::to_string(be);
 		return false;
 	}
 	return true;
@@ -79,7 +84,8 @@ int VerifyDpdMatchesBid(int nrSamples, bool reportTestCases) {
 	int nrOfFailedTests = 0;
 	auto fail = [&](const std::string& what) {
 		++nrOfFailedTests;
-		if (reportTestCases && nrOfFailedTests < 10) std::cerr << "FAIL: dfloat<" << N << ',' << ES << "> " << what << '\n';
+		if (reportTestCases && nrOfFailedTests < 10)
+			std::cerr << "FAIL: dfloat<" << N << ',' << ES << "> " << what << '\n';
 	};
 
 	std::vector<BID> bids;
@@ -104,10 +110,14 @@ int VerifyDpdMatchesBid(int nrSamples, bool reportTestCases) {
 	for (size_t i = 0; i + 1 < bids.size(); i += 2) {
 		const BID& a = bids[i]; const BID& b = bids[i + 1];
 		const DPD& c = dpds[i]; const DPD& d = dpds[i + 1];
-		if ((a + b).str() != (c + d).str()) fail("sum " + a.str() + " + " + b.str() + ": BID " + (a + b).str() + ", DPD " + (c + d).str());
-		if ((a - b).str() != (c - d).str()) fail("difference " + a.str() + " - " + b.str() + ": BID " + (a - b).str() + ", DPD " + (c - d).str());
-		if ((a * b).str() != (c * d).str()) fail("product " + a.str() + " * " + b.str() + ": BID " + (a * b).str() + ", DPD " + (c * d).str());
-		if ((a / b).str() != (c / d).str()) fail("quotient " + a.str() + " / " + b.str() + ": BID " + (a / b).str() + ", DPD " + (c / d).str());
+		if ((a + b).str() != (c + d).str())
+			fail("sum " + a.str() + " + " + b.str() + ": BID " + (a + b).str() + ", DPD " + (c + d).str());
+		if ((a - b).str() != (c - d).str())
+			fail("difference " + a.str() + " - " + b.str() + ": BID " + (a - b).str() + ", DPD " + (c - d).str());
+		if ((a * b).str() != (c * d).str())
+			fail("product " + a.str() + " * " + b.str() + ": BID " + (a * b).str() + ", DPD " + (c * d).str());
+		if ((a / b).str() != (c / d).str())
+			fail("quotient " + a.str() + " / " + b.str() + ": BID " + (a / b).str() + ", DPD " + (c / d).str());
 	}
 	return nrOfFailedTests;
 }
@@ -129,7 +139,8 @@ int VerifySignificandCodec(unsigned ndigits, bool reportTestCases) {
 		const std::uint64_t decoded = dpd_decode_significand(dpd_encode_significand(s, ndigits), ndigits);
 		if (decoded != s % trailing) {
 			++nrOfFailedTests;
-			if (reportTestCases && nrOfFailedTests < 10) std::cerr << "FAIL: significand codec, " << ndigits << " digits: " << s << " -> " << decoded << '\n';
+			if (reportTestCases && nrOfFailedTests < 10)
+				std::cerr << "FAIL: significand codec, " << ndigits << " digits: " << s << " -> " << decoded << '\n';
 		}
 	}
 	return nrOfFailedTests;
@@ -177,25 +188,35 @@ try {
 
 #if REGRESSION_LEVEL_1
 	// every precision from 2 to 12 digits: (ndigits - 1) % 3 is 0, 1 and 2 in turn
-	nrOfFailedTestCases += ReportTestResult(VerifyDpdMatchesBidAt<6, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12>(200, reportTestCases), "dfloat<2..12,6> DPD == BID", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyDpdMatchesBidAt<6, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12>(200, reportTestCases),
+	                     "dfloat<2..12,6> DPD == BID", test_tag);
 	// the IEEE interchange precisions, which have no leftover digits
-	nrOfFailedTestCases += ReportTestResult(VerifyDpdMatchesBid<16, 8>(200, reportTestCases), "decimal64 DPD == BID", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySignificandCodec(5, reportTestCases), "significand codec, 5 digits", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySignificandCodec(6, reportTestCases), "significand codec, 6 digits", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyDpdMatchesBid<16, 8>(200, reportTestCases), "decimal64 DPD == BID", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifySignificandCodec(5, reportTestCases), "significand codec, 5 digits", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifySignificandCodec(6, reportTestCases), "significand codec, 6 digits", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyDpdMatchesBidAt<8, 13, 14, 15, 17, 18, 19>(500, reportTestCases), "dfloat<13..19,8> DPD == BID", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySignificandCodec(7, reportTestCases), "significand codec, 7 digits", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDpdMatchesBidAt<8, 13, 14, 15, 17, 18, 19>(500, reportTestCases),
+	                                        "dfloat<13..19,8> DPD == BID", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifySignificandCodec(7, reportTestCases), "significand codec, 7 digits", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyDpdMatchesBidAt<6, 5, 6, 8, 9>(5000, reportTestCases), "dfloat<5,6,8,9> DPD == BID, 5000", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDpdMatchesBidAt<6, 5, 6, 8, 9>(5000, reportTestCases),
+	                                        "dfloat<5,6,8,9> DPD == BID, 5000", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyDpdMatchesBid<34, 12>(500, reportTestCases), "decimal128 DPD == BID", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySignificandCodec(8, reportTestCases), "significand codec, 8 digits", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyDpdMatchesBid<34, 12>(500, reportTestCases), "decimal128 DPD == BID", test_tag);
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifySignificandCodec(8, reportTestCases), "significand codec, 8 digits", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
