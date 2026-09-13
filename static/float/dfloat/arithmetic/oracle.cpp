@@ -280,6 +280,48 @@ int VerifyReportedCases(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// The range limits (CodeRabbit on #1490), with expectations from Python's decimal module
+// in the matching IEEE context (prec 7, Emax 96, Emin -95, clamp 1, ties to even). A value
+// past emax folds down while its significand has room (1e91 is 10e90) and saturates to
+// inf only when it cannot; a value below 10^emin keeps what it can at exponent emin,
+// rounded there (gradual underflow), instead of flushing to 0.
+int VerifyRangeLimits(bool reportTestCases) {
+	using d32 = dfloat<7, 6, DecimalEncoding::BID, std::uint32_t>;
+	int nrOfFailedTests = 0;
+	auto show = [](const d32& v) -> std::string {
+		if (v.isinf()) return v.sign() ? "-inf" : "inf";
+		if (v.iszero()) return "0";
+		return ToString(Stripped(ValueOf(v)));
+	};
+	auto expect = [&](const std::string& what, const d32& got, const std::string& want) {
+		if (show(got) != want) {
+			++nrOfFailedTests;
+			if (reportTestCases)
+				std::cerr << "FAIL: decimal32 " << what << " = " << show(got) << ", expected " << want << '\n';
+		}
+	};
+	auto v = [](const char* s) { d32 x; x.assign(s); return x; };
+	const struct { const char* txt; const char* want; } parses[] = {
+		{ "1e91", "1e91" },           { "1e96", "1e96" },           { "9999999e90", "9999999e90" },
+		{ "1e97", "inf" },            { "99999995e90", "inf" },     { "-1e96", "-1e96" },
+		{ "15e-102", "2e-101" },      { "25e-102", "2e-101" },      { "35e-102", "4e-101" },
+		{ "5e-102", "0" },            { "51e-103", "1e-101" },      { "4e-102", "0" },
+		{ "1e-101", "1e-101" },       { "123456789e-104", "123457e-101" }, { "-15e-102", "-2e-101" },
+	};
+	for (const auto& c : parses) expect(std::string("\"") + c.txt + "\"", v(c.txt), c.want);
+	const d32 maxpos(SpecificValue::maxpos), minpos(SpecificValue::minpos);
+	expect("1e90 * 10", v("1e90") * v("10"), "1e91");
+	expect("maxpos + 5e89", maxpos + v("5e89"), "inf");
+	expect("maxpos + 4e89", maxpos + v("4e89"), "9999999e90");
+	expect("maxpos * 1.000001", maxpos * v("1.000001"), "inf");
+	expect("minpos / 2", minpos / v("2"), "0");
+	expect("minpos * 0.6", minpos * v("0.6"), "1e-101");
+	expect("minpos * 0.5", minpos * v("0.5"), "0");
+	expect("3e-101 / 2", v("3e-101") / v("2"), "2e-101");
+	expect("1e-100 - 9e-101", v("1e-100") - v("9e-101"), "1e-101");
+	return nrOfFailedTests;
+}
+
 }} // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -322,6 +364,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyReportedCases(reportTestCases), "reported cases", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRangeLimits(reportTestCases), "decimal32 range limits", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<4, 6, DecimalEncoding::BID>(1000, reportTestCases),
 	                                        "dfloat<4,6,BID>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAgainstOracle<5, 6, DecimalEncoding::BID>(1000, reportTestCases),

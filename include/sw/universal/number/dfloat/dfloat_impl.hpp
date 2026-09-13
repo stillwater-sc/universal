@@ -1041,70 +1041,79 @@ protected:
 	}
 
 	///////////////////////////////////////////////////////////////////
-	// Round a significand to at most ndigits digits, to nearest with ties to even: IEEE
-	// 754 roundTiesToEven, the round_to_nearest that numeric_limits declares (#1487; the
-	// arithmetic used to truncate). sticky says the exact value exceeds
-	// significand * 10^exponent by a nonzero amount below one unit in its last digit.
-	// Callers that can lose information keep at least one guard digit past ndigits, so
-	// the digit that decides the rounding is always among the ones dropped here.
+	// Round a significand to ndigits, to nearest with ties to even, and pack it. This is
+	// IEEE 754 roundTiesToEven, the round_to_nearest that numeric_limits declares (#1487;
+	// the arithmetic used to truncate), with IEEE's treatment of the range limits:
+	// - underflow is gradual: a value below 10^emin keeps the digits it has at exponent
+	//   emin, rounded there, and becomes 0 only when it rounds to 0 (15e-102 is 2e-101
+	//   in decimal32; it used to flush to 0);
+	// - a value above emax is folded down: a short significand takes trailing zeros
+	//   while it has room (decimal32 1e91 is 10e90), and only what still does not fit
+	//   saturates to inf (1e91 used to be inf).
+	// The digits dropped for precision and for underflow go in one rounding step, so
+	// nothing is rounded twice. sticky says the exact value exceeds
+	// significand * 10^exponent by a nonzero amount below its last digit; callers that
+	// can lose information keep at least one guard digit past ndigits, so the digit that
+	// decides the rounding is always among the dropped ones.
 	template<typename Sig>
-	static constexpr void round_to_ndigits(Sig& significand, int& exponent, bool sticky) noexcept {
-		const Sig ten(10);
-		unsigned digits = 0;
-		{
-			Sig tmp(significand);
-			while (!tmp.iszero()) { tmp /= ten; ++digits; }
-		}
-		if (digits <= ndigits) return;
-		unsigned round_digit = 0;   // the most significant dropped digit
-		while (digits > ndigits) {
-			sticky = sticky || (round_digit != 0);
-			round_digit = static_cast<unsigned>(static_cast<long long>(significand % ten));
-			significand /= ten;
-			++exponent;
-			--digits;
-		}
-		const bool odd = significand.at(0);
-		if (round_digit > 5 || (round_digit == 5 && (sticky || odd))) {
-			significand += Sig(1);
-			// 99...9 + 1 carries into a new digit; the digit it drops is a 0
-			Sig limit(1);
-			for (unsigned i = 0; i < ndigits; ++i) limit *= ten;
-			if (significand == limit) { significand /= ten; ++exponent; }
-		}
-	}
-
-	///////////////////////////////////////////////////////////////////
-	// Round significand to ndigits and pack
-	constexpr void normalize_and_pack(bool s, int exponent, significand_t significand, bool sticky = false) noexcept {
+	constexpr void round_and_pack(bool s, int exponent, Sig significand, bool sticky) noexcept {
 		if (significand.iszero()) { setzero(); if (s) setsign(true); return; }
+		const Sig ten(10);
+		auto count_digits = [&ten](const Sig& v) {
+			unsigned d = 0;
+			Sig tmp(v);
+			while (!tmp.iszero()) { tmp /= ten; ++d; }
+			return d;
+		};
+		unsigned digits = count_digits(significand);
 
-		// Round to at most ndigits digits; smaller significands are valid as they are
-		round_to_ndigits(significand, exponent, sticky);
-
-		// Check for overflow/underflow, after rounding: a carry can raise the exponent
-		if (exponent > emax) {
-			setinf(s);
-			return;
-		}
-		if (exponent < emin) {
-			// underflow to zero
+		// digits to drop: those past ndigits, or more if the exponent would fall below emin
+		long long drop = (digits > ndigits) ? static_cast<long long>(digits - ndigits) : 0;
+		if (static_cast<long long>(exponent) + drop < emin) drop = static_cast<long long>(emin) - exponent;
+		if (drop > static_cast<long long>(digits)) {
+			// the whole value is below a tenth of a unit at emin: it rounds to 0
 			setzero();
 			if (s) setsign(true);
 			return;
 		}
+		if (drop > 0) {
+			unsigned round_digit = 0;   // the most significant dropped digit
+			for (long long i = 0; i < drop; ++i) {
+				sticky = sticky || (round_digit != 0);
+				round_digit = static_cast<unsigned>(static_cast<long long>(significand % ten));
+				significand /= ten;
+			}
+			exponent += static_cast<int>(drop);
+			const bool odd = significand.at(0);
+			if (round_digit > 5 || (round_digit == 5 && (sticky || odd))) {
+				significand += Sig(1);
+				// 99...9 + 1 can carry past ndigits; the digit that drops is then a 0
+				if (count_digits(significand) > ndigits) { significand /= ten; ++exponent; }
+			}
+			if (significand.iszero()) { setzero(); if (s) setsign(true); return; }
+		}
 
-		pack(s, exponent, significand);
+		// fold down: trailing zeros bring the exponent back to emax while there is room
+		if (exponent > emax) {
+			unsigned d = count_digits(significand);
+			while (exponent > emax && d < ndigits) { significand *= ten; --exponent; ++d; }
+			if (exponent > emax) { setinf(s); return; }
+		}
+
+		significand_t narrow;
+		narrow.assign(significand);
+		pack(s, exponent, narrow);
+	}
+
+	// Round significand to ndigits and pack
+	constexpr void normalize_and_pack(bool s, int exponent, significand_t significand, bool sticky = false) noexcept {
+		round_and_pack(s, exponent, significand, sticky);
 	}
 
 	// Round a double-width significand to ndigits, then pack it
 	constexpr void normalize_wide_and_pack(bool s, int exponent, wide_significand_t significand,
 	                                       bool sticky = false) noexcept {
-		if (significand.iszero()) { setzero(); if (s) setsign(true); return; }
-		round_to_ndigits(significand, exponent, sticky);
-		significand_t narrow;
-		narrow.assign(significand);
-		normalize_and_pack(s, exponent, narrow);
+		round_and_pack(s, exponent, significand, sticky);
 	}
 
 	///////////////////////////////////////////////////////////////////
