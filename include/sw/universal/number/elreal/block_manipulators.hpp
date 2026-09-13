@@ -15,6 +15,9 @@
 #include <typeinfo>
 
 #include <universal/number/elreal/block.hpp>
+// to_binary/to_hex stream the block's integer<256> exponent: block.hpp brings integer's
+// core, and operator<< for it lives in integer's text layer (#1334)
+#include <universal/number/integer/iostream.hpp>
 
 namespace sw { namespace universal {
 
