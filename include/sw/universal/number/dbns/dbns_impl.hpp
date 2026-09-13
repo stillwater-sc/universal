@@ -1,7 +1,40 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+
+// Behavioural switches default HERE, beside the code they govern, rather than in the
+// dbns.hpp umbrella: including core.hpp directly would otherwise leave them undefined,
+// #if would evaluate them as 0, and the switch would silently flip on that path -- the
+// trap #1390 hit with POSIT_ENABLE_LITERALS (#1334, #1436).
+#if !defined(DBNS_ENABLE_LITERALS)
+#define DBNS_ENABLE_LITERALS 1
+#endif
+#if !defined(DBNS_THROW_ARITHMETIC_EXCEPTION)
+#define DBNS_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+// the fused dot product accumulator (quire, via fdp.hpp) must honor the same
+// exception policy as the dbns it accumulates for (#1226)
+#if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
+#define QUIRE_THROW_ARITHMETIC_EXCEPTION DBNS_THROW_ARITHMETIC_EXCEPTION
+#endif
+
+// DBNS_TRACE_CONVERSION: the trace statements in convert_ieee754's (a,b) search print,
+// so they need <iostream>. They are compiled only when tracing is actually switched on
+// -- a preprocessor guard rather than `if constexpr`, because a discarded `if constexpr`
+// branch still requires std::cout to be DECLARED, which would keep <iostream> in the
+// include graph of every translation unit. Same treatment cfloat got in #1417.
+//
+// This replaces a local `constexpr bool bDebug = false;` that no caller could reach:
+// tracing could not be enabled from outside at all, which is the same defect #1387 found
+// in the block layer. Define DBNS_TRACE_CONVERSION=1 before including dbns to switch it
+// on.
+#if !defined(DBNS_TRACE_CONVERSION)
+#define DBNS_TRACE_CONVERSION 0
+#endif
+#if DBNS_TRACE_CONVERSION
+#include <iostream>
+#endif
+
+#include <iosfwd>     // std::ostream/std::istream in the stream-operator declarations
 #include <universal/utility/icf_array_bounds.hpp>
-#include <sstream>
 #include <string>
 // dbns_impl.hpp: implementation of a fixed-size, arbitrary configuration 2-base logarithmic number system configuration
 //
@@ -13,7 +46,7 @@
 #include <limits>
 #include <type_traits>
 
-#include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_core.hpp>   // the stream-free half of <universal/native/ieee754.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/internal/abstract/triple.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -39,13 +72,9 @@ namespace sw { namespace universal {
 		int roundingFailure;
 	};
 
-	inline std::ostream& operator<<(std::ostream& ostr, const DbnsArithmeticStatistics stats) {
-		ostr << "Conversions                     : " << stats.conversionEvents << '\n';
-		ostr << "Exponent Overflow During Search : " << stats.exponentOverflowDuringSearch << '\n';
-		ostr << "Rounding Successes              : " << (stats.conversionEvents - stats.roundingFailure) << '\n';
-		ostr << "Rounding Failures               : " << stats.roundingFailure << '\n';
-		return ostr;
-	}
+	// defined out-of-line in number/dbns/iostream.hpp so this header needs no
+	// <iostream> (#1334). Include that header to stream the statistics.
+	std::ostream& operator<<(std::ostream& ostr, const DbnsArithmeticStatistics stats);
 	static DbnsArithmeticStatistics dbnsStats;
 
 // convert a floating-point value to a specific dbns configuration. Semantically, p = v, return reference to p
@@ -612,29 +641,12 @@ public:
 	CONSTEXPRESSION dbns& operator=(long double rhs)      noexcept { return convert_ieee754(rhs); }
 #endif
 
-	void debugConstexprParameters() {
-		std::cout << "constexpr parameters for " << type_tag(*this) << '\n';
-		std::cout << "scaling               " << scaling << '\n';
-		std::cout << "bitsInByte            " << bitsInByte << '\n';
-		std::cout << "bitsInBlock           " << bitsInBlock << '\n';
-		std::cout << "nrBlocks              " << nrBlocks << '\n';
-		std::cout << "storageMask           " << to_binary(storageMask, bitsInBlock) << '\n';
-		std::cout << "MSU                   " << MSU << '\n';
-		std::cout << "MSU_MASK              " << to_binary(MSU_MASK, bitsInBlock) << '\n';
-		std::cout << "MSB_UNIT              " << MSB_UNIT << '\n';
-		std::cout << "SPECIAL_BITS_TOGETHER " << (SPECIAL_BITS_TOGETHER ? "yes" : "no") << '\n';
-		std::cout << "SIGN_BIT_MASK         " << to_binary(SIGN_BIT_MASK, bitsInBlock) << '\n';
-		std::cout << "MSB_BIT_MASK          " << to_binary(MSB_BIT_MASK, bitsInBlock) << '\n';
-		std::cout << "BLOCK_MSB_MASK        " << to_binary(BLOCK_MSB_MASK, bitsInBlock) << '\n';
-		std::cout << "MSU_ZERO              " << to_binary(MSU_ZERO, bitsInBlock) << '\n';
-		std::cout << "MSU_NAN               " << to_binary(MSU_NAN, bitsInBlock) << '\n';
-		std::cout << "maxShift              " << maxShift << '\n';
-		std::cout << "leftShift             " << leftShift << '\n';
-		std::cout << "min_exponent          " << min_exponent << '\n';
-		std::cout << "max_exponent          " << max_exponent << '\n';
-		std::cout << "FB_MASK               " << to_binary(FB_MASK, bitsInBlock) << '\n';
-		std::cout << "SB_MASK               " << to_binary(SB_MASK, bitsInBlock) << '\n';
-	}
+	// defined out-of-line in number/dbns/debug.hpp so this header needs no <iostream>
+	// (#1334). Include that header to call it -- it is an opt-in debug facility, not
+	// something the arithmetic reaches on its own, so the failure mode of forgetting it
+	// is a link error naming the missing function. Same shape as blocktriple's
+	// constexprClassParameters() in #1388.
+	void debugConstexprParameters();
 
 	// normalize: decompose dbns value into a blocktriple<fbbits, REP> for quire accumulation.
 	// DBNS stores values as (-1)^sign * 2^a * 3^b; materializing to linear domain is inherently
@@ -738,7 +750,6 @@ protected:
 		// we use this relationship to search among the second base exponents 
 		// and find a first base exponent that minimizes the error
 		// between the result and the value we are trying to approximate.
-		constexpr bool bDebug = false;
 		// Use sw::math::constexpr_math::log2 (not std::log2 which isn't
 		// constexpr until C++26) so this whole conversion is evaluable at
 		// compile time. cm only has float/double overloads; for long double
@@ -756,7 +767,12 @@ protected:
 				scale = static_cast<double>(std::log2(abs_v));
 			}
 		}
-		if constexpr (bDebug) std::cout << "scale : " << scale << '\n';
+#if DBNS_TRACE_CONVERSION
+		// the !is_constant_evaluated() guard keeps convert_ieee754 usable in a constexpr
+		// context with tracing on -- std::cout is not constant-evaluable. Same idiom the
+		// statistics counters below already use.
+		if (!std::is_constant_evaluated()) std::cout << "scale : " << scale << '\n';
+#endif
 		double lowestError = 1.0e10;
 		constexpr int kNotFound = std::numeric_limits<int>::max();
 		int best_a = kNotFound;
@@ -773,19 +789,23 @@ protected:
 			}
 			double diff = scale - (a + b * log2of3);
 			double err = (diff < 0.0 ? -diff : diff);
-			if constexpr (bDebug) {
+#if DBNS_TRACE_CONVERSION
+			if (!std::is_constant_evaluated()) {
 				double fb = sw::math::constexpr_math::exp2(static_cast<double>(a));
 				double sb = sw::math::constexpr_math::pow(3.0, static_cast<double>(b));
 				double value = fb * sb;
 				std::cout << "a : " << a << " b : " << b << " err : " << err << " fb : " << fb << " sb : " << sb << " value : " << value << '\n';
 			}
+#endif
 			if (err < lowestError) {
 				lowestError = err;
 				best_a = a;
 				best_b = b;
 			}
 		}
-		if constexpr (bDebug) std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
+#if DBNS_TRACE_CONVERSION
+		if (!std::is_constant_evaluated()) std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
+#endif
 		clear();
 
 		// If the search produced no candidate, avoid using sentinel values in the
@@ -901,18 +921,12 @@ private:
 
 	////////////////////// operators
 
-	// stream operators
-
-	friend std::ostream& operator<< (std::ostream& ostr, const dbns& r) {
-		ostr << double(r);
-		return ostr;
-	}
-	friend std::istream& operator>> (std::istream& istr, dbns& r) {
-		double d;
-		istr >> d;
-		r = d;
-		return istr;
-	}
+	// stream operators: operator<< and operator>> are defined in
+	// number/dbns/iostream.hpp (#1334). They were in-class friend DEFINITIONS, which
+	// pin <iostream> into every consumer of this header -- the same trap blockdigit and
+	// floatcascade had. They need no private access (they go through the public double
+	// conversion and assignment), so they are plain namespace-scope templates there
+	// rather than friends here.
 
 	// dbns - logic operators
 
@@ -1055,28 +1069,8 @@ inline dbns<nbits, fbbits, bt, xtra...> ulp(const dbns<nbits, fbbits, bt, xtra..
 	return ++b - a;
 }
 
-template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-std::string to_binary(const dbns<nbits, fbbits, bt, xtra...>& number, bool nibbleMarker = false) {
-	std::stringstream s;
-	s << "0b";
-	s << (number.sign() ? "1." : "0.");
-	// first base exponent bits
-	constexpr int lsbFirstBase = static_cast<int>(nbits - fbbits - 1);
-	if constexpr (nbits - 2 >= fbbits) {
-		for (int i = static_cast<int>(nbits) - 2; i >= lsbFirstBase; --i) {
-			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
-			if ((i - fbbits) > 0 && ((i - fbbits) % 4) == 0 && nibbleMarker) s << '\'';
-		}
-	}
-	if constexpr (lsbFirstBase > 0) {
-		s << '.';
-		for (int i = lsbFirstBase - 1; i >= 0; --i) {
-			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
-			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
-		}
-	}
-	return s.str();
-}
+// to_binary() moved to manipulators.hpp in #1334: it formats through a std::stringstream,
+// which is what keeps it out of the core.
 
 // standard library functions for floating point
 

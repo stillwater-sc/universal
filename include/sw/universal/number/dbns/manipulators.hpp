@@ -5,9 +5,18 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Layer 2a of the dbns headers (#1334): the <iomanip> half -- everything that turns a
+// dbns into a std::string through a stringstream. iostream.hpp is the <iostream> half.
+// This header does NOT include iostream.hpp: dbns's pretty_print/info_print build from
+// the bit pattern rather than streaming the value, so the dependency runs one way only.
+// Self-contained.
+#include <string>        // std::string
+#include <sstream>       // std::stringstream
 #include <iomanip>
 #include <typeinfo>
 
+#include <universal/number/dbns/core.hpp>
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 
@@ -45,7 +54,11 @@ namespace sw { namespace universal {
 	inline std::string range(const DbnsType & = {}) {
 		std::stringstream s;
 		DbnsType b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
-		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
+		// stream the double conversions rather than the dbns values themselves: this
+		// layer must not depend on iostream.hpp (#1334), and operator<<(ostream, dbns)
+		// lives there. It is `ostr << double(r)`, so this is the same text -- and the
+		// same text is what the differential in the PR checks.
+		s << "[" << double(b) << " ... " << double(c) << ", 0, " << double(d) << " ... " << double(e) << "]\n";
 		return s.str();
 	}
 
@@ -173,5 +186,31 @@ namespace sw { namespace universal {
 		s << def;
 		return s.str();
 	}
+
+
+// Moved out of dbns_impl.hpp (#1334): formats a dbns through a stringstream, which is
+// what keeps it out of the core.
+template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
+std::string to_binary(const dbns<nbits, fbbits, bt, xtra...>& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << "0b";
+	s << (number.sign() ? "1." : "0.");
+	// first base exponent bits
+	constexpr int lsbFirstBase = static_cast<int>(nbits - fbbits - 1);
+	if constexpr (nbits - 2 >= fbbits) {
+		for (int i = static_cast<int>(nbits) - 2; i >= lsbFirstBase; --i) {
+			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
+			if ((i - fbbits) > 0 && ((i - fbbits) % 4) == 0 && nibbleMarker) s << '\'';
+		}
+	}
+	if constexpr (lsbFirstBase > 0) {
+		s << '.';
+		for (int i = lsbFirstBase - 1; i >= 0; --i) {
+			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
+			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+		}
+	}
+	return s.str();
+}
 
 }} // namespace sw::universal
