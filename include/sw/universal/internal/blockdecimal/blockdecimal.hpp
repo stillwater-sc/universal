@@ -37,7 +37,8 @@ namespace sw { namespace universal {
 //
 // BCD: 4 bits per digit (nibble access)
 // BID: binary integer representation (value stored directly)
-// DPD: 10 bits per 3 digits (declet access)
+// DPD: 10 bits per 3 digits (declet access); one or two leftover digits at the top
+//      take 4 bits (a BCD digit) or 7 bits (a DPD group of two digits)
 //
 // The digit at index 0 is the least significant digit.
 // Sign is stored separately (sign-magnitude representation).
@@ -655,6 +656,28 @@ private:
 		}
 	}
 
+	// A two-digit remainder (ndigits % 3 == 2) is one 7-bit DPD group, the width
+	// dpd_bits() reserves for it. It used to be two 4-bit nibbles, 8 bits, so bit 3 of
+	// the leading digit fell outside the storage and a leading 8 or 9 read back as 0 or
+	// 1 (#1480). Returns the group's value, 0-99.
+	constexpr unsigned extract_dpd_remainder_pair(unsigned bit_start) const {
+		uint16_t bits = 0;
+		for (unsigned b = 0; b < 7; ++b) {
+			if (bit_start + b < nbits && _block.test(bit_start + b))
+				bits |= static_cast<uint16_t>(1u << b);
+		}
+		return dpd_decode_2digits(bits);
+	}
+
+	// store a two-digit value, 0-99, as a 7-bit DPD group
+	constexpr void store_dpd_remainder_pair(unsigned bit_start, unsigned value) {
+		const uint16_t bits = dpd_encode_2digits(value);
+		for (unsigned b = 0; b < 7; ++b) {
+			if (bit_start + b < nbits)
+				_block.setbit(bit_start + b, (bits >> b) & 1);
+		}
+	}
+
 	// DPD digit extraction: extract the i-th decimal digit
 	constexpr unsigned dpd_extract_digit(unsigned i) const {
 		// digits are organized as: groups of 3 from LSB, with remainder at top
@@ -679,11 +702,8 @@ private:
 			if (remainder_digits == 1) {
 				return extract_dpd_remainder_digit(bit_start);
 			} else { // remainder_digits == 2
-				if (rem_pos == 0) {
-					return extract_dpd_remainder_digit(bit_start) & 0xF;
-				} else {
-					return extract_dpd_remainder_digit(bit_start + 4) & 0xF;
-				}
+				unsigned value = extract_dpd_remainder_pair(bit_start);
+				return (rem_pos == 0) ? value % 10 : value / 10;
 			}
 		}
 	}
@@ -712,11 +732,10 @@ private:
 			if (remainder_digits == 1) {
 				store_dpd_remainder_digit(bit_start, d);
 			} else {
-				if (rem_pos == 0) {
-					store_dpd_remainder_digit(bit_start, d);
-				} else {
-					store_dpd_remainder_digit(bit_start + 4, d);
-				}
+				unsigned value = extract_dpd_remainder_pair(bit_start);
+				unsigned lo = value % 10, hi = value / 10;
+				if (rem_pos == 0) lo = d; else hi = d;
+				store_dpd_remainder_pair(bit_start, hi * 10 + lo);
 			}
 		}
 	}

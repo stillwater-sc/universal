@@ -266,6 +266,22 @@ static constexpr unsigned dpd_decode(uint16_t declet) {
 	return dpd_detail::dpd_decode_declet(declet & 0x3FF);
 }
 
+// A DPD group of two digits, as at the top of a digit string whose length is 2 mod 3.
+// It is the declet of 0XY: with a zero leading digit the upper three declet bits are
+// always zero, so the group is the declet's low 7 bits. (Likewise a lone digit is the
+// low 4 bits, where DPD and BCD coincide.) For XY with both digits <= 7 this is
+// (X << 4) | Y; an 8 or 9 is what needs the declet form (#1480).
+static constexpr uint16_t dpd_encode_2digits(unsigned value) {
+	return static_cast<uint16_t>(dpd_encode(value % 100) & 0x7F);
+}
+
+// Decode a 7-bit two-digit DPD group to a decimal value (0-99). Some 7-bit patterns
+// that dpd_encode_2digits never produces decode as a declet with a leading 8 or 9;
+// the % 100 keeps the result a two-digit value for all 128 inputs.
+static constexpr unsigned dpd_decode_2digits(uint16_t bits) {
+	return dpd_decode(static_cast<uint16_t>(bits & 0x7F)) % 100;
+}
+
 // Encode a full significand (minus MSD) into DPD-encoded trailing bits
 // ndigits_minus_1 digits are encoded into groups of 3 (declets of 10 bits)
 // Returns the DPD-encoded value as a uint64_t
