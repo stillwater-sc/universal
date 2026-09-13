@@ -17,6 +17,7 @@
 // I/O-family headers.
 //
 // manipulators.hpp includes this file, so every existing caller is unaffected.
+#include <cstdint>   // uint64_t in the digit-extraction loop
 #include <string>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 

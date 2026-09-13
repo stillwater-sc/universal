@@ -36,7 +36,9 @@
 #include <cstdlib>       // std::strtod in the wide significand path
 #include <cstring>
 #include <cmath>
+#include <limits>        // std::numeric_limits
 #include <string>
+#include <type_traits>   // std::is_constant_evaluated, std::enable_if
 #include <algorithm>
 
 // supporting types and functions

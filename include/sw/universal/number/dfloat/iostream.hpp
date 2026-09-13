@@ -13,6 +13,7 @@
 // str(), which is a core member, and operator>> hands its token to parse(), which is
 // also core -- so unlike bfloat16 there is no dependency on manipulators.hpp at all,
 // and certainly no cycle for #pragma once to mask (the trap caught on #1427).
+#include <cstddef>       // size_t
 #include <ios>           // std::streamsize, std::ios_base, std::ios::failbit
 #include <iostream>      // std::ostream, std::istream, std::cerr
 #include <string>        // std::string
