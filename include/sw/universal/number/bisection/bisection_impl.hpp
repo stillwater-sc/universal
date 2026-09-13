@@ -17,7 +17,6 @@
 #include <cmath>
 #include <cassert>
 #include <limits>
-#include <iosfwd>       // std::ostream, named by operator<< -- defined in iostream.hpp (#1334)
 #include <string>       // std::string, in the to_binary friend declaration
 #include <type_traits>
 
