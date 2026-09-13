@@ -14,11 +14,12 @@
 #include <universal/number/unum2/common.hpp>
 #include <universal/number/unum2/unum2_fwd.hpp>
 
-#include <sstream>
 #include <cstdint>
 #include <bitset>
+#include <iosfwd>     // std::ostream, named by the operator<< friend declaration
 #include <algorithm>
 #include <cmath>
+#include <utility>    // std::move, in the move constructor and move assignment
 
 namespace sw { namespace universal {
 
@@ -77,106 +78,10 @@ public:
         return *this;
     }
 
-    friend std::ostream& operator << (std::ostream& os, const unum2<T>& u) {
-        std::ostringstream oss;
-
-        uint64_t left_bound = 0;
-        bool has_left_bound = false;
-        bool bound = false;  // Series of continuous 1s in the SORN bitset
-        bool written = false;  // Has something been written to sstream?
-        for(uint64_t i = 0; i < u.sorn_length; i++) {
-            if(u._sorn[i] == 1) {
-                // If already bound, continue
-                if(bound) continue;
-
-                // Set left bound
-                bound = true;
-                has_left_bound = true;
-                left_bound = i;
-
-                // If something has been written, that means there were other bounds. Add Union sign.
-                if(written)
-                    oss << " U ";
-            } else {
-                // Single bit bound. Can be exact or inexact.
-                if(bound) {
-                    // End bound
-                    bound = false;
-                    written = true;
-
-                    if(static_cast<int64_t>(left_bound) == static_cast<int64_t>(i - 1)) {
-                        // If inexact
-                        if(left_bound & 0x01) {  // Check ubit
-                            oss << "(" << u._lattice.get_exact(u._conv_idx(left_bound - 1))
-                                << ", " << u._lattice.get_exact(u._conv_idx(left_bound + 1))
-                                << ")";
-                        } else {
-                            if(left_bound == 0) { 
-                                if(u._sorn[u._lattice._N - 1] != 1) 
-                                    oss << "inf";
-                                else written = false;
-                            } else oss << u._lattice.get_exact(u._conv_idx(left_bound));
-                        }
-                    } else {  // Multiple bit bound
-                              // Check if left_bound is inexact. If so, get previous exact.
-                        if(left_bound & 0x01) {
-                            left_bound--;
-                            oss << "(";
-                        } else oss << "[";
-
-                        int64_t right_bound;
-                        char brace = ']';
-                        if((i - 1) & 0x01) {
-                            right_bound = i;
-                            brace = ')';
-                        } else right_bound = i - 1;
-
-                        oss << u._lattice.get_exact(u._conv_idx(left_bound)) << ", "
-                            << u._lattice.get_exact(u._conv_idx(right_bound)) << brace;
-                    }
-                }
-            }
-        }
-
-        // No bounds.
-        if(!has_left_bound)
-            oss << "[EMPTY]";
-        else if(bound == true && left_bound == 0)
-            oss << "[EVERYTHING]";
-
-        // Bit equal 0 code over again.
-        else if(bound) {
-            // Final bit should be 1 if there is a bound.
-            uint64_t i = u.sorn_length - 1;
-
-            if(left_bound == i) {
-                // Final bit index in SORN is always inexact
-                oss << "(" << u._lattice.get_exact(u._conv_idx(i - 1));
-
-                // If only the first SORN bit is set, that infers infinity is included.
-                if(u._sorn[0] == 1)
-                    oss << ", inf]";
-                else oss << ", " << u._lattice.get_exact(u._conv_idx(i + 1)) << ")";
-            } else {  // Multiple bit bound
-                if(left_bound & 0x01) {
-                    left_bound--;
-                    oss << "(";
-                } else oss << "[";
-
-                int64_t right_bound;
-                char brace = ')';
-                if(u._sorn[0] == 1) { 
-                    right_bound = 0;
-                    brace = ']';
-                } else right_bound = i + 1;
-
-                oss << u._lattice.get_exact(u._conv_idx(left_bound)) << ", "
-                    << u._lattice.get_exact(u._conv_idx(right_bound)) << brace;
-            }
-        }
-
-        return (os << oss.str());
-    }
+    // stream insertion: declared here -- it reads the SORN and the lattice -- and defined
+    // in iostream.hpp, which is what keeps <sstream> out of the core (#1334)
+    template<typename U>
+    friend std::ostream& operator<<(std::ostream& os, const unum2<U>& u);
 
     static unum2<T> empty() {
         unum2<T> res(0);
