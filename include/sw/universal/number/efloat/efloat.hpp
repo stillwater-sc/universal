@@ -20,21 +20,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(EFLOAT_ENABLE_LITERALS)
-// default is to enable them
-#define EFLOAT_ENABLE_LITERALS 1
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for integer arithmetic errors
-// left to application to enable
-#if !defined(EFLOAT_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define EFLOAT_THROW_ARITHMETIC_EXCEPTION 0
-#endif
+///
+/// EFLOAT_ENABLE_LITERALS and EFLOAT_THROW_ARITHMETIC_EXCEPTION now default in
+/// efloat_impl.hpp, so that a translation unit which includes core.hpp directly gets
+/// the same defaults this umbrella used to supply (#1334, #1436). Defining either
+/// before this header still wins, as before.
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
@@ -44,16 +34,24 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/efloat/exceptions.hpp>
-#include <universal/number/efloat/efloat_fwd.hpp>
-#include <universal/number/efloat/efloat_impl.hpp>
-#include <universal/traits/efloat_traits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
+// unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/efloat/core.hpp>
 //#include <universal/number/efloat/numeric_limits.hpp>
+
+// The core reads IEEE-754 fields through native/ieee754_core.hpp and
+// native/manipulators_core.hpp. The full native support -- to_binary/to_hex/
+// color_print on float and double -- used to arrive here through efloat_impl.hpp,
+// so the umbrella keeps providing it.
+#include <universal/native/ieee754.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // useful functions to work with efloats
 #include <universal/number/efloat/attributes.hpp>
+// layer 2a: the string producers -- to_binary, type_tag, components, to_triple, ...
 #include <universal/number/efloat/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/efloat/iostream.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions

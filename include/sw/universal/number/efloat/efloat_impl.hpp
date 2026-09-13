@@ -5,17 +5,42 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <algorithm>  // std::max, std::min, std::reverse, std::find_if
+#include <cctype>     // std::isspace, std::tolower, in parse()
 #include <cmath>      // std::fpclassify, std::frexp, std::ldexp (long double conversions)
+#include <cstddef>    // std::size_t
+#include <cstdint>
+#include <ios>        // std::streamsize, taken by to_string(); no stream is opened
+#include <limits>     // std::numeric_limits
 #include <string>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-#include <regex>
+#include <type_traits>
 #include <vector>
-#include <map>
 
-// supporting types and functions
-#include <universal/native/ieee754.hpp>   // IEEE-754 decoders
+////////////////////////////////////////////////////////////////////////////////////////
+///  BEHAVIORAL COMPILATION SWITCHES
+///
+/// These default here rather than in the efloat.hpp umbrella, so that a translation
+/// unit which includes core.hpp directly gets the same defaults (#1334, #1436).
+/// Defining either before any efloat header still wins.
+
+// enable/disable the ability to use literals in binary logic and arithmetic operators
+#if !defined(EFLOAT_ENABLE_LITERALS)
+// default is to enable them
+#define EFLOAT_ENABLE_LITERALS 1
+#endif
+
+// enable throwing specific exceptions for efloat arithmetic errors
+// left to application to enable
+#if !defined(EFLOAT_THROW_ARITHMETIC_EXCEPTION)
+// default is to not throw
+#define EFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
+// supporting types and functions: the I/O-free halves of the native support --
+// checkNaN from ieee754_core.hpp, scale(Real) and fractionBits(Real) from
+// manipulators_core.hpp. The efloat.hpp umbrella still brings the text halves.
+#include <universal/native/ieee754_core.hpp>
+#include <universal/native/manipulators_core.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/utility/string_parse.hpp>   // scan_decimal_float
 #include <universal/utility/decimal_to_binary.hpp>  // d2b convert (Phase B2a)
@@ -120,7 +145,7 @@ public:
 	// so cannot be exercised in a constant expression.
 	// Out of scope (heap-escape boundary): native-type ctors / operator=
 	// (convert_ieee754 calls std::fpclassify which is not constexpr in
-	// C++20), conversion-out (std::pow), parse() (std::regex).
+	// C++20), conversion-out (std::pow), parse() (std::string).
 	constexpr efloat() noexcept
 		: _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{} {
 		if (!std::is_constant_evaluated()) {
@@ -1304,28 +1329,6 @@ private:
 	friend constexpr efloat<nnlimbs> rint(const efloat<nnlimbs>& x);
 	};
 
-	// to_binary formatter for efloat to support test reporters
-	template<unsigned nlimbs>
-	inline std::string to_binary(const efloat<nlimbs>& number, bool nibbleMarker = false) {
-		std::stringstream ss;
-		if (number.isnan()) {
-			ss << "nan";
-		} else if (number.isinf()) {
-			ss << (number.sign() == -1 ? "-inf" : "+inf");
-		} else if (number.iszero()) {
-			ss << "0b0.0.0";
-		} else {
-			ss << "0b" << (number.sign() == -1 ? "1" : "0") << "."
-			   << number.scale() << ".";
-			auto limbs = number.bits();
-			for (int i = limbs.size() - 1; i >= 0; --i) {
-				ss << std::setw(8) << std::setfill('0') << std::hex << limbs[i];
-				if (i > 0) ss << "'";
-			}
-		}
-		return ss.str();
-	}
-
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////    efloat functions   /////////////////////////////////
 
@@ -1346,7 +1349,7 @@ inline efloat<nlimbs> fabs(const efloat<nlimbs>& a) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// stream operators
+/// string parsing
 
 // read an ASCII decimal literal and make a binary efloat out of it.
 // Supports:
@@ -1506,39 +1509,6 @@ template<unsigned nlimbs>
 std::string to_string(const efloat<nlimbs>& value, std::streamsize precision, std::streamsize width,
                       bool fixed, bool scientific, bool internal, bool left, bool showpos,
                       bool uppercase, char fill);
-
-template<unsigned nlimbs>
-inline std::ostream& operator<<(std::ostream& ostr, const efloat<nlimbs>& rhs) {
-	std::ios_base::fmtflags fmt = ostr.flags();
-	std::streamsize precision   = ostr.precision();
-	std::streamsize width       = ostr.width();
-	char fillChar               = ostr.fill();
-	bool showpos    = (fmt & std::ios_base::showpos)    != 0;
-	bool uppercase  = (fmt & std::ios_base::uppercase)  != 0;
-	bool fixed      = (fmt & std::ios_base::fixed)      != 0;
-	bool scientific = (fmt & std::ios_base::scientific) != 0;
-	bool internal   = (fmt & std::ios_base::internal)   != 0;
-	bool left       = (fmt & std::ios_base::left)       != 0;
-	return ostr << to_string(rhs, precision, width, fixed, scientific, internal, left, showpos, uppercase, fillChar);
-}
-
-// read an ASCII efloat format
-template<unsigned nlimbs>
-inline std::istream& operator>>(std::istream& istr, efloat<nlimbs>& p) {
-	std::string txt;
-	if (!(istr >> txt)) {
-		// extraction failed (already-bad stream or EOF); failbit set by >>.
-		return istr;
-	}
-	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into an efloat value\n";
-		istr.setstate(std::ios::failbit);
-	}
-	return istr;
-}
-
-////////////////// string operators
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // efloat - efloat binary logic operators

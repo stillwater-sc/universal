@@ -5,9 +5,17 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iomanip>
+//
+// Layer 2a of the efloat headers (#1334, Phase 2 group 5b, #1455): the <iomanip> half
+// -- everything that turns an efloat into a std::string by way of a stringstream.
+// iostream.hpp is the <iostream> half. Self-contained.
+#include <cstdint>
+#include <iomanip>   // std::setw, std::setfill, std::hex, in to_binary()
+#include <sstream>
+#include <string>
+#include <type_traits>  // std::enable_if_t
 #include <typeinfo>  // for typeid()
-#include <universal/number/efloat/efloat_fwd.hpp>
+#include <universal/number/efloat/core.hpp>
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 
@@ -15,6 +23,28 @@
 // using efloat number system knowledge.
 
 namespace sw { namespace universal {
+
+// to_binary formatter for efloat to support test reporters
+template<unsigned nlimbs>
+inline std::string to_binary(const efloat<nlimbs>& number, bool nibbleMarker = false) {
+	std::stringstream ss;
+	if (number.isnan()) {
+		ss << "nan";
+	} else if (number.isinf()) {
+		ss << (number.sign() == -1 ? "-inf" : "+inf");
+	} else if (number.iszero()) {
+		ss << "0b0.0.0";
+	} else {
+		ss << "0b" << (number.sign() == -1 ? "1" : "0") << "."
+		   << number.scale() << ".";
+		auto limbs = number.bits();
+		for (int i = limbs.size() - 1; i >= 0; --i) {
+			ss << std::setw(8) << std::setfill('0') << std::hex << limbs[i];
+			if (i > 0) ss << "'";
+		}
+	}
+	return ss.str();
+}
 
 // Generate a type tag
 template<unsigned nlimbs>
