@@ -5,6 +5,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
+// The math functions compute; none of them formats text, so the core is all they
+// need (#1334). math/complex.hpp still reaches <complex>, which is libstdc++'s
+// <sstream>, so the mathlib as a whole is not I/O-free.
+#include <universal/number/efloat/core.hpp>
 
 #include <universal/number/efloat/math/sqrt.hpp>
 #include <universal/number/efloat/math/hypot.hpp>
