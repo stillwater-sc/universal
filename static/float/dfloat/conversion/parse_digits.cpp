@@ -198,6 +198,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyReportedCases(reportTestCases), "reported cases", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNegativePowers<7, 6>(reportTestCases), "decimal32 1.234567e-k positional", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNegativePowers<16, 8>(reportTestCases), "decimal64 1.234567e-k positional", test_tag);
+	// a narrow width, where 1.234567 has more digits than the precision
+	nrOfFailedTestCases += ReportTestResult(VerifyNegativePowers<4, 6>(reportTestCases), "dfloat<4,6> 1.234567e-k positional", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<4, 6, DecimalEncoding::BID>(500, reportTestCases), "dfloat<4,6,BID> forms", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<7, 6, DecimalEncoding::BID>(500, reportTestCases), "decimal32 BID forms", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyParseForms<7, 6, DecimalEncoding::DPD>(500, reportTestCases), "decimal32 DPD forms", test_tag);
