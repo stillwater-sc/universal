@@ -5,11 +5,11 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
+#include <string>       // std::string, returned by to_string()
 #include <cstdint>
+#include <cstdio>       // fprintf(stderr, ...) for the division-by-zero diagnostics (#1334)
+#include <iosfwd>       // std::ostream/std::istream, named by the stream-operator friend declarations
+#include <type_traits>  // std::is_constant_evaluated
 #include <cassert>
 #include <limits>
 
@@ -22,7 +22,7 @@
 // blockdecimal exception behavior is configured by the calling number system.
 // For example, dfixpnt.hpp sets BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION
 // to DFIXPNT_THROW_ARITHMETIC_EXCEPTION before including this header.
-// When used standalone, default to std::cerr signalling.
+// When used standalone, default to a diagnostic on stderr.
 #if !defined(BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION)
 #define BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION 0
 #endif
@@ -362,9 +362,9 @@ public:
 #if BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION
 			throw blockdecimal_divide_by_zero();
 #else
-			// std::cerr is not constexpr; suppress at compile time.
+			// the diagnostic is not constexpr; suppress at compile time.
 			if (!std::is_constant_evaluated()) {
-				std::cerr << "blockdecimal: division by zero\n";
+				std::fprintf(stderr, "blockdecimal: division by zero\n");
 			}
 			return *this;
 #endif
@@ -401,7 +401,7 @@ public:
 			throw blockdecimal_divide_by_zero();
 #else
 			if (!std::is_constant_evaluated()) {
-				std::cerr << "blockdecimal: division by zero\n";
+				std::fprintf(stderr, "blockdecimal: division by zero\n");
 			}
 			return *this;
 #endif
@@ -502,25 +502,12 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	// stream I/O
 
-	friend std::ostream& operator<<(std::ostream& os, const blockdecimal& v) {
-		return os << v.to_string();
-	}
-	friend std::istream& operator>>(std::istream& is, blockdecimal& v) {
-		std::string s;
-		is >> s;
-		v.clear();
-		if (s.empty()) return is;
-		unsigned start = 0;
-		if (s[0] == '-') { v._negative = true; start = 1; }
-		else if (s[0] == '+') { start = 1; }
-		unsigned len = static_cast<unsigned>(s.size()) - start;
-		for (unsigned i = 0; i < len && i < ndigits; ++i) {
-			char c = s[s.size() - 1 - i];
-			if (c >= '0' && c <= '9') v.setdigit(i, static_cast<unsigned>(c - '0'));
-		}
-		if (v.iszero()) v._negative = false;
-		return is;
-	}
+	// declared here -- operator>> writes the private sign -- and defined in iostream.hpp,
+	// which is what keeps the stream headers out of this one (#1334, #1473)
+	template<unsigned N, DecimalEncoding E, typename B>
+	friend std::ostream& operator<<(std::ostream& os, const blockdecimal<N, E, B>& v);
+	template<unsigned N, DecimalEncoding E, typename B>
+	friend std::istream& operator>>(std::istream& is, blockdecimal<N, E, B>& v);
 
 	// access to underlying bit storage
 	const StorageType& bits() const { return _block; }
@@ -814,28 +801,6 @@ constexpr blockdecimal<N, E, BT> operator%(const blockdecimal<N, E, BT>& lhs, co
 	return remainder;
 }
 
-/////////////////////////////////////////////////////////////////////////
-// manipulation functions
-
-// Generate a type tag for blockdecimal
-template<unsigned N, DecimalEncoding E, typename BT>
-inline std::string type_tag(const blockdecimal<N, E, BT>& = {}) {
-	std::stringstream s;
-	s << "blockdecimal<" << N << '>';
-	return s.str();
-}
-
-// to_binary: show internal digit storage
-template<unsigned N, DecimalEncoding E, typename BT>
-inline std::string to_binary(const blockdecimal<N, E, BT>& v) {
-	std::stringstream s;
-	s << (v.sign() ? '-' : '+') << "[ ";
-	for (int i = static_cast<int>(N) - 1; i >= 0; --i) {
-		s << v.digit(static_cast<unsigned>(i));
-		if (i > 0) s << '.';
-	}
-	s << " ]";
-	return s.str();
-}
+// type_tag and to_binary are in manipulators.hpp (#1334, #1473)
 
 }} // namespace sw::universal
