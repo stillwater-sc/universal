@@ -18,22 +18,12 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
-
-////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for dfixpnt arithmetic errors
-// left to application to enable
-#if !defined(DFIXPNT_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define DFIXPNT_THROW_ARITHMETIC_EXCEPTION 0
-#if !defined(BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION)
-#define BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION 0
-#endif
-#else
-// for the blockdecimal building block assume the same behavior as requested for dfixpnt
-#if !defined(BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION)
-#define BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION DFIXPNT_THROW_ARITHMETIC_EXCEPTION
-#endif
-#endif
+///
+/// DFIXPNT_THROW_ARITHMETIC_EXCEPTION, and its forwarding to the blockdecimal building
+/// block's BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION, now live in dfixpnt_impl.hpp, ahead of
+/// the blockdecimal include, so that a translation unit which includes core.hpp directly
+/// gets the same behavior this umbrella used to supply (#1334, #1436). Defining either
+/// before this header still wins, as before.
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions
@@ -43,15 +33,16 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/dfixpnt/exceptions.hpp>
-#include <universal/number/dfixpnt/dfixpnt_fwd.hpp>
-#include <universal/number/dfixpnt/dfixpnt_impl.hpp>
-#include <universal/traits/dfixpnt_traits.hpp>
-#include <universal/number/dfixpnt/numeric_limits.hpp>
+// layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation unit
+// that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/dfixpnt/core.hpp>
 
 // useful functions to work with dfixpnts
 #include <universal/number/dfixpnt/attributes.hpp>
+// layer 2a: the string producers -- type_tag, type_field, to_binary, to_native, color_print
 #include <universal/number/dfixpnt/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/dfixpnt/iostream.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions

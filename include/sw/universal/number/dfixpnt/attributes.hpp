@@ -5,8 +5,15 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <sstream>
 #include <iomanip>
+#include <sstream>
+#include <string>
+
+// Self-contained (#1334): dfixpnt_range() streams dfixpnt values and names their type_tag,
+// so this header needs both text layers, not just the core.
+#include <universal/number/dfixpnt/core.hpp>
+#include <universal/number/dfixpnt/manipulators.hpp>   // type_tag
+#include <universal/number/dfixpnt/iostream.hpp>       // operator<<
 
 namespace sw { namespace universal {
 

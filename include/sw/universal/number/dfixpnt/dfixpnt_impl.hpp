@@ -5,11 +5,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
+#include <string>       // std::string: assign() and to_string() stay in the core
 #include <cstdint>
+#include <cstdio>       // fprintf(stderr, ...) for the division-by-zero diagnostic (#1334)
 #include <cmath>
 #include <cassert>
 #include <limits>
@@ -22,6 +20,27 @@
 
 // exceptions
 #include <universal/number/dfixpnt/exceptions.hpp>
+
+////////////////////////////////////////////////////////////////////////////////////////
+///  BEHAVIORAL COMPILATION SWITCHES
+///
+/// These default here rather than in the dfixpnt.hpp umbrella, so that a translation unit
+/// which includes core.hpp directly gets the same defaults (#1334, #1436). They MUST stay
+/// above the blockdecimal include below: the blockdecimal building block reads its own
+/// BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION, and dfixpnt forwards its choice to it.
+/// Defining either macro before any dfixpnt header still wins.
+#if !defined(DFIXPNT_THROW_ARITHMETIC_EXCEPTION)
+// default is to write a diagnostic to stderr for signalling an error
+#define DFIXPNT_THROW_ARITHMETIC_EXCEPTION 0
+#if !defined(BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION)
+#define BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+#else
+// for the blockdecimal building block assume the same behavior as requested for dfixpnt
+#if !defined(BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION)
+#define BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION DFIXPNT_THROW_ARITHMETIC_EXCEPTION
+#endif
+#endif
 
 // the building block
 #include <universal/internal/blockdecimal/blockdecimal.hpp>
@@ -378,7 +397,7 @@ public:
 			throw dfixpnt_divide_by_zero();
 #else
 			if (!std::is_constant_evaluated()) {
-				std::cerr << "dfixpnt: division by zero\n";
+				std::fprintf(stderr, "dfixpnt: division by zero\n");
 			}
 			return *this;
 #endif
@@ -551,16 +570,8 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	// stream I/O
 
-	friend std::ostream& operator<<(std::ostream& os, const dfixpnt& v) {
-		return os << v.to_string();
-	}
-
-	friend std::istream& operator>>(std::istream& is, dfixpnt& v) {
-		std::string s;
-		is >> s;
-		v.assign(s);
-		return is;
-	}
+	// operator<< and operator>> are in iostream.hpp: they need only the public to_string()
+	// and assign(), so they are free function templates, not friends (#1334)
 
 	/////////////////////////////////////////////////////////////////////////
 	// comparison operators

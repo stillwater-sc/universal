@@ -5,8 +5,13 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <sstream>
+//
+// Layer 2a of the dfixpnt headers (#1334): the <iomanip> half -- everything that turns a
+// dfixpnt into a std::string by way of a stringstream. Self-contained.
 #include <iomanip>
+#include <sstream>
+#include <string>
+#include <universal/number/dfixpnt/core.hpp>
 #include <universal/native/integer_type_tag.hpp>
 
 namespace sw { namespace universal {
