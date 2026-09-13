@@ -690,7 +690,15 @@ public:
 		bool seen_dot = false;
 		int frac_digits = 0;
 
-		// Parse integer and fractional parts
+		// Parse integer and fractional parts, keeping value = sig * 10^(decimal_exponent -
+		// frac_digits), where frac_digits counts the fraction digits appended to sig.
+		// Leading zeros are not significant: they take no digit of precision, and after
+		// the point they only set the scale. Digits beyond the precision are dropped
+		// (truncation); a dropped integer digit scales the value up, a dropped fraction
+		// digit changes nothing. Both used to be counted wrong (#1485): leading zeros
+		// filled the ndigits slots ("0000000123" read as 0 in decimal32, and
+		// "0.0001234567" as 1.23e-8), and dropped fraction digits still moved the
+		// exponent ("1.23456789" read as 0.01234567).
 		while (pos < txt.size()) {
 			char ch = txt[pos];
 			if (ch == '.') {
@@ -700,15 +708,18 @@ public:
 				continue;
 			}
 			if (ch >= '0' && ch <= '9') {
-				if (digit_count < ndigits) {
+				const bool leading_zero = (ch == '0' && digit_count == 0);
+				if (leading_zero) {
+					if (seen_dot) frac_digits++;
+				}
+				else if (digit_count < ndigits) {
 					sig = sig * ten + significand_t(static_cast<long long>(ch - '0'));
 					digit_count++;
+					if (seen_dot) frac_digits++;
 				}
-				else {
-					// Beyond precision: count but don't store
-					if (!seen_dot) decimal_exponent++;
+				else if (!seen_dot) {
+					decimal_exponent++;
 				}
-				if (seen_dot) frac_digits++;
 				++pos;
 				continue;
 			}
@@ -726,9 +737,14 @@ public:
 			if (pos < txt.size() && txt[pos] == '-') { exp_neg = true; ++pos; }
 			else if (pos < txt.size() && txt[pos] == '+') { ++pos; }
 
+			// Clamp at exactly 10^8: beyond every dfloat's range even after a mantissa of up
+			// to ~10^8 digits has shifted the exponent the other way, and far from int
+			// overflow, which an unbounded accumulation would reach (undefined behaviour)
+			constexpr int exp_cap = 100000000;
 			int exp_val = 0;
 			while (pos < txt.size() && txt[pos] >= '0' && txt[pos] <= '9') {
-				exp_val = exp_val * 10 + (txt[pos] - '0');
+				const int digit = txt[pos] - '0';
+				exp_val = (exp_val > (exp_cap - digit) / 10) ? exp_cap : exp_val * 10 + digit;
 				++pos;
 			}
 			decimal_exponent += exp_neg ? -exp_val : exp_val;
