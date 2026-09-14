@@ -791,7 +791,10 @@ public:
 	}
 
 	// selectors
-	constexpr bool sign() const noexcept { return _block[MSU] & SIGN_BIT_MASK; }
+	// only a Signed blockbinary has a sign bit: for Unsigned the MSB is a data bit (#1479)
+	constexpr bool sign() const noexcept {
+		if constexpr (NumberType == BinaryNumberType::Signed) return _block[MSU] & SIGN_BIT_MASK; else return false;
+	}
 	constexpr bool ispos() const noexcept { return !sign(); }
 	constexpr bool isneg() const noexcept { return sign(); }
 	constexpr bool iszero() const noexcept {
@@ -1019,13 +1022,22 @@ constexpr bool operator!=(const blockbinary<N, B, T>& lhs, const blockbinary<N, 
 }
 template<unsigned N, typename B, BinaryNumberType T>
 constexpr bool operator<(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
-	if (lhs.ispos() && rhs.isneg()) return false; // need to filter out possible overflow conditions
-	if (lhs.isneg() && rhs.ispos()) return true;  // need to filter out possible underflow conditions
-	if (lhs == rhs) return false; // so the maxneg logic works
-	blockbinary<N, B, T> mneg; maxneg<N, B>(mneg);
-	if (rhs == mneg) return false; // special case: nothing is smaller than maximum negative
-	blockbinary<N, B, T> diff = lhs - rhs;
-	return diff.isneg();
+	if constexpr (T == BinaryNumberType::Unsigned) {
+		// magnitude order: the most significant block that differs decides
+		for (unsigned i = blockbinary<N, B, T>::nrBlocks; i > 0; --i) {
+			if (lhs.block(i - 1) != rhs.block(i - 1)) return lhs.block(i - 1) < rhs.block(i - 1);
+		}
+		return false;
+	}
+	else {
+		if (lhs.ispos() && rhs.isneg()) return false; // need to filter out possible overflow conditions
+		if (lhs.isneg() && rhs.ispos()) return true;  // need to filter out possible underflow conditions
+		if (lhs == rhs) return false; // so the maxneg logic works
+		blockbinary<N, B, T> mneg; maxneg<N, B>(mneg);
+		if (rhs == mneg) return false; // special case: nothing is smaller than maximum negative
+		blockbinary<N, B, T> diff = lhs - rhs;
+		return diff.isneg();
+	}
 }
 template<unsigned N, typename B, BinaryNumberType T>
 constexpr bool operator<=(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T>& rhs) {
