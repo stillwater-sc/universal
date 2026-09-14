@@ -824,7 +824,19 @@ public:
 		return *this;
 	}
 	CONSTEXPRESSION areal& operator=(long double rhs) {
-		return *this = double(rhs);
+		if constexpr (std::numeric_limits<long double>::digits > std::numeric_limits<double>::digits) {
+			// Narrowing to double rounds: a finite value past DBL_MAX became inf, one below double's
+			// range became an exact zero, and bits below double's precision were gone before truncation
+			// could see them, so 1 + 2^-60 read as exactly 1 (#1503). Zero, inf and nan narrow exactly.
+			// Keyed on the format, not LONG_DOUBLE_SUPPORT, which is 1 where long double is double.
+			constexpr long double ldmax = std::numeric_limits<long double>::max();
+			if (rhs != rhs || rhs == 0.0l || rhs > ldmax || rhs < -ldmax)
+				return *this = double(rhs);
+			return assign_extended(rhs);
+		}
+		else {
+			return *this = double(rhs);  // long double is double
+		}
 	}
 
 	// arithmetic operators
@@ -1862,6 +1874,61 @@ public:
 
 protected:
 	// HELPER methods
+
+	// a finite, non-zero long double, truncated toward zero with the ubit set when that loses
+	// anything. Scaling by a power of two is exact, so |rhs| is normalized into [1, 2) with the
+	// factors 2^(2^i) and no frexp, which keeps this constexpr; the top 64 bits of the significand
+	// then go into a blocktriple the way parse() packs one, and any bits below them into the ubit.
+	CONSTEXPRESSION areal& assign_extended(long double rhs) {
+		using BT = blocktriple<fbits, BlockTripleOperator::MUL, bt>;
+		constexpr int radix_pos = static_cast<int>(BT::radix);
+		constexpr int ldmaxexp  = std::numeric_limits<long double>::max_exponent;
+		constexpr int levels    = (ldmaxexp > 8192 ? 14 : ldmaxexp > 512 ? 10 : 7);  // 2^(2^(levels-1)) is finite
+		long double pow2[levels]{}, inv2[levels]{};  // 2^(2^i) and 2^-(2^i)
+		pow2[0] = 2.0l;
+		inv2[0] = 0.5l;
+		for (int i = 1; i < levels; ++i) {
+			pow2[i] = pow2[i - 1] * pow2[i - 1];
+			inv2[i] = inv2[i - 1] * inv2[i - 1];
+		}
+		const bool negative = rhs < 0.0l;
+		long double m = negative ? -rhs : rhs;
+		int scale = 0;
+		for (int i = levels - 1; i >= 0; --i) {
+			while (m >= pow2[i]) {
+				m *= inv2[i];
+				scale += (1 << i);
+			}
+			while (m < inv2[i]) {
+				m *= pow2[i];
+				scale -= (1 << i);
+			}
+		}
+		if (m < 1.0l) {  // a value below 1 ends in [0.5, 1); now m is in [1, 2)
+			m *= 2.0l;
+			scale -= 1;
+		}
+		const long double sig = m * 9223372036854775808.0l;  // 2^63: [2^63, 2^64)
+		const uint64_t top = static_cast<uint64_t>(sig);
+		bool uncertain = (sig != static_cast<long double>(top));  // a significand wider than 64 bits
+		BT t;
+		t.setnormal();
+		t.setsign(negative);
+		t.setscale(scale);
+		for (int k = 0; k < 64; ++k) {
+			const bool bit = (top >> (63 - k)) & 1u;
+			if (radix_pos - k >= 0) {
+				if (bit)
+					t.setbit(static_cast<unsigned>(radix_pos - k), true);
+			}
+			else if (bit) {
+				uncertain = true;
+			}
+		}
+		clear();
+		convert(t, *this, uncertain);
+		return *this;
+	}
 
 	/// <summary>
 	/// round a set of source bits to the present representation.

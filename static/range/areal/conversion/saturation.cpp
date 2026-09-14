@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <vector>
 #include <universal/number/areal/areal.hpp>
@@ -30,6 +31,8 @@
    ones, and a sweep of the top binade and beyond; +, - and * of every pair of exact values
    against their exact double result. Wider configurations are checked at the boundary:
    the native integer path of areal<64,6>, and the blocktriple arithmetic of areal<128,15>.
+   Conversion from long double is checked the same way, with values double cannot hold where
+   long double is wider: it used to narrow to double first, which rounded them.
 
    The arithmetic check runs on single-limb configurations: where the exponent field
    straddles two limbs, + - * are wrong across the whole range (#1506). An exact zero result
@@ -56,12 +59,12 @@ std::vector<std::pair<double, std::uint64_t>> ExactValues() {
 }
 
 // the encoding the faithful rule gives the finite x
-template<typename A>
-A Reference(double x, const std::vector<std::pair<double, std::uint64_t>>& table) {
+template<typename A, typename Real>
+A Reference(Real x, const std::vector<std::pair<double, std::uint64_t>>& table) {
 	const bool negative = std::signbit(x);
-	const double m = std::fabs(x);
+	const Real m = std::fabs(x);
 	A r;
-	const auto it = std::upper_bound(table.begin(), table.end(), std::make_pair(m, ~std::uint64_t(0)));
+	const auto it = std::upper_bound(table.begin(), table.end(), m, [](Real v, const std::pair<double, std::uint64_t>& e) { return v < e.first; });
 	// the largest exact value <= m; table[0] is zero
 	const auto& below = *(it - 1);
 	r.setbits(below.second);
@@ -115,6 +118,50 @@ int VerifyConversions(bool reportTestCases) {
 		VerifyConversion<A>(-x, table, fail);
 	}
 	return fail.count;
+}
+
+// conversion from long double, which used to narrow to double first: every exact value, and a
+// value 2^-58 of its scale above and below it, which double cannot hold; past the double range
+template<typename A>
+int VerifyLongDouble(bool reportTestCases) {
+	Failures fail(reportTestCases);
+	const auto table = ExactValues<A>();
+	std::vector<long double> xs;
+	for (const auto& e : table) {
+		const long double v = e.first;
+		xs.push_back(v);
+		if (v == 0.0l) continue;
+		const long double tiny = std::ldexp(1.0l, std::ilogb(v) - 58);
+		xs.push_back(v + tiny);
+		xs.push_back(v - tiny);
+	}
+	if (std::numeric_limits<long double>::max_exponent > 2000) xs.push_back(std::ldexp(1.0l, 2000));
+	if (std::numeric_limits<long double>::min_exponent < -2000) xs.push_back(std::ldexp(1.0l, -2000));
+	for (long double x : xs) {
+		for (long double y : { x, -x }) {
+			A a;
+			a = y;
+			fail.check("areal(" + std::to_string(y) + "l)", a, Reference<A>(y, table));
+		}
+	}
+	return fail.count;
+}
+
+// the areal<128,15> encoding of a long double it holds exactly, built with frexp rather than the
+// conversion under test: sign, biased exponent, the fraction below the hidden bit, a clear ubit
+inline std::string Exact128(long double x) {
+	constexpr int es = 15, fbits = 128 - 2 - es, bias = (1 << (es - 1)) - 1;
+	int e = 0;
+	long double m = std::frexp(std::fabs(x), &e) * 2.0l - 1.0l;  // [0.5, 1) to the fraction of [1, 2)
+	std::string s = std::signbit(x) ? "b1" : "b0";
+	const int biased = e - 1 + bias;
+	for (int i = es - 1; i >= 0; --i) s += ((biased >> i) & 1) ? '1' : '0';
+	for (int i = 0; i < fbits; ++i) {
+		m *= 2.0l;
+		s += (m >= 1.0l) ? '1' : '0';
+		if (m >= 1.0l) m -= 1.0l;
+	}
+	return s + '0';
 }
 
 // +, - and * of every pair of exact values against the exact double result
@@ -210,6 +257,34 @@ inline int VerifyReportedAndWide(bool reportTestCases) {
 		X half(m);
 		half *= X(0.5);
 		fail.check("areal<128,15> (maxpos / 2) * 2 is maxpos", half * X(2.0), m);
+		// wide enough for a 64-bit significand and a long double's exponent range: held exactly.
+		// Checked on the encoding: conversion back to long double has its own defects (#1509)
+		const long double third = std::ldexp(static_cast<long double>(0x5555'5555'5555'5555ull), -64);  // 63 bits
+		for (long double x : { third, 1.0l + std::ldexp(1.0l, -60), -1.0l + std::ldexp(1.0l, -60), std::ldexp(1.0l, 2000),
+		                       std::ldexp(1.0l, -2000) }) {
+			if (!std::isfinite(x) || x == 0.0l) continue;
+			X a(x);
+			if (to_binary(a) != Exact128(x)) {
+				++fail.count;
+				std::cerr << "FAIL: areal<128,15>(" << x << "l) is " << to_binary(a) << ", not " << Exact128(x) << '\n';
+			}
+		}
+	}
+	if (std::numeric_limits<long double>::digits > 60) {
+		// narrower than a long double significand: 1 +/- 2^-60 lie strictly inside an interval
+		using Y = areal<64, 11, std::uint64_t>;
+		Y above(1.0), below(1.0 - std::ldexp(1.0, -52));  // 1 and the exact value before it
+		above.set(0, true);
+		below.set(0, true);
+		Y a, b;
+		a = 1.0l + std::ldexp(1.0l, -60);
+		b = 1.0l - std::ldexp(1.0l, -60);
+		fail.check("areal<64,11>(1 + 2^-60)", a, above);
+		fail.check("areal<64,11>(1 - 2^-60)", b, below);
+		BIT_CAST_CONSTEXPR areal<16, 5, std::uint16_t> c(1.0l - 0x1p-60l);  // the conversion stays constexpr
+		areal<16, 5, std::uint16_t> cref(1.0 - 0x1p-10);
+		cref.set(0, true);
+		fail.check("constexpr areal<16,5>(1 - 2^-60)", c, cref);
 	}
 	return fail.count;
 }
@@ -266,6 +341,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversions<areal<12, 4, std::uint16_t>>(reportTestCases), "areal<12,4,uint16_t>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversions<areal<16, 5, std::uint16_t>>(reportTestCases), "areal<16,5,uint16_t>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversions<areal<16, 5, std::uint8_t >>(reportTestCases), "areal<16,5,uint8_t >", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyLongDouble<areal< 8, 2, std::uint8_t >>(reportTestCases), "areal< 8,2,uint8_t >", "long double");
+	nrOfFailedTestCases += ReportTestResult(VerifyLongDouble<areal<12, 4, std::uint16_t>>(reportTestCases), "areal<12,4,uint16_t>", "long double");
+	nrOfFailedTestCases += ReportTestResult(VerifyLongDouble<areal<16, 5, std::uint16_t>>(reportTestCases), "areal<16,5,uint16_t>", "long double");
+	nrOfFailedTestCases += ReportTestResult(VerifyLongDouble<areal<16, 5, std::uint8_t >>(reportTestCases), "areal<16,5,uint8_t >", "long double");
 	// arithmetic: every pair of exact values, single-limb configurations (#1506)
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<areal< 8, 2, std::uint8_t >>(reportTestCases), "areal< 8,2,uint8_t >", "+ - *");
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<areal< 9, 3, std::uint16_t>>(reportTestCases), "areal< 9,3,uint16_t>", "+ - *");
