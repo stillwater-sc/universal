@@ -133,6 +133,29 @@ int VerifyNumberType(bool exhaustive, unsigned samples, bool reportTestCases) {
 	return fail.count;
 }
 
+// setblock() keeps the bits above nbits clear, as every other setter does, so a most
+// significant block written with them set compares and reads as its nbits value
+template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
+int VerifySetblockMasks(bool reportTestCases) {
+	using BB = blockbinary<nbits, BlockType, NumberType>;
+	Failures fail(reportTestCases);
+	const std::string tag = std::string("blockbinary<") + std::to_string(nbits) + ", " +
+	                        std::to_string(sizeof(BlockType) * 8) + "-bit, " + Name(NumberType) + ">: ";
+	BB zero, a;
+	zero.setbits(0);
+	a.setbits(0);
+	a.setblock(BB::MSU, static_cast<BlockType>(~BlockType(0)));  // every storage bit of the MSU
+	const std::uint64_t expected =
+	    Reference<nbits, NumberType>::mask & ~((std::uint64_t(1) << (BB::MSU * BB::bitsInBlock)) - 1u);
+	if (a.to_ull() != expected)
+		fail(tag + "setblock(MSU, all ones) value", std::to_string(a.to_ull()), std::to_string(expected));
+	a.setbits(0);
+	a.setblock(BB::MSU, static_cast<BlockType>(~BlockType(0) & ~BB::MSU_MASK));  // only bits above nbits
+	if (!(a == zero)) fail(tag + "setblock(MSU, bits above nbits) == 0", "false", "true");
+	if (zero < a || a < zero) fail(tag + "setblock(MSU, bits above nbits) ordered apart from 0", "true", "false");
+	return fail.count;
+}
+
 // both number types of one configuration
 template<unsigned nbits, typename BlockType>
 int VerifyConfiguration(bool exhaustive, unsigned samples, bool reportTestCases) {
@@ -195,6 +218,13 @@ try {
 		if (fails) std::cerr << "FAIL: Unsigned 200 < 100 = " << (a < b) << ", 100 < 200 = " << (b < a) << '\n';
 		nrOfFailedTestCases += ReportTestResult(fails, "blockbinary< 8, uint8_t >", "reported case");
 	}
+	// setblock() with bits above nbits: one block, and the top block of two (CodeRabbit on #1499)
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifySetblockMasks<12, std::uint16_t, BinaryNumberType::Unsigned>(reportTestCases) +
+	                         VerifySetblockMasks<12, std::uint16_t, BinaryNumberType::Signed>(reportTestCases) +
+	                         VerifySetblockMasks<12, std::uint8_t, BinaryNumberType::Unsigned>(reportTestCases) +
+	                         VerifySetblockMasks<12, std::uint8_t, BinaryNumberType::Signed>(reportTestCases),
+	                     "blockbinary<12>", "setblock masks");
 	// exhaustive: one block, two blocks (the multi-block case the issue asks for), and one
 	// block that the value does not fill
 	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<8, std::uint8_t>(true, 0, reportTestCases),

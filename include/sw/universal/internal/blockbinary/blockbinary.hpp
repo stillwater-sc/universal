@@ -712,7 +712,10 @@ public:
 	}
 	constexpr void setblock(unsigned b, const bt& blockBits) noexcept {
 		if (b < nrBlocks) _block[b] = blockBits; // nop if b is out of range
-	}	
+		// keep the bits above nbits clear, as every other setter does: ==, < and the other
+		// relational operators compare raw blocks
+		if (b == MSU) _block[MSU] &= MSU_MASK;
+	}
 	constexpr blockbinary& flip() noexcept { // in-place one's complement
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
