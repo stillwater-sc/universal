@@ -27,6 +27,8 @@
 //     this header get by with <iosfwd>.
 //   - assign()'s "assign TBD" stub prints with std::printf rather than std::cout: same
 //     destination, same text, no stream header.
+//   (#1454 later replaced that stub with parse(), and made operator>> a plain function over
+//   it, so only operator<< is still a friend.)
 //
 // to_string() and to_binary() are free functions that format through a stringstream, so
 // they are manipulators.hpp's. This is the same criterion applied everywhere in the epic

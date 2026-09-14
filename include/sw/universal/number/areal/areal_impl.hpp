@@ -11,7 +11,11 @@
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 
-#include <cstdio>     // std::printf/fprintf; keeps <iostream> out of the core
+#include <cstddef>    // std::size_t in parse()
+#include <cstdint>    // std::int64_t, std::uint64_t in parse() and the encodings
+#include <cstdio>     // no longer used here (assign()'s printf stub is gone, #1454); kept for
+                      // code that has reached <cstdio> through this header
+#include <string_view> // parse()
 #include <iosfwd>     // std::ostream/std::istream in the friend declarations. UNCONDITIONAL:
                       // the declarations exist whether or not tracing is on, so this must not
                       // sit inside the TRACE_CONVERSION guard below.
@@ -47,6 +51,7 @@
 #endif
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/utility/decimal_to_binary.hpp>   // parse(): exact decimal text to binary (#1454)
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -72,6 +77,8 @@ namespace sw { namespace universal {
 
 // Forward definitions
 template<unsigned nbits, unsigned es, typename bt> class areal;
+// text to areal (#1454): defined after the class, used by assign() and operator>>
+template<unsigned nbits, unsigned es, typename bt> bool parse(const std::string& txt, areal<nbits, es, bt>& v);
 template<unsigned nbits, unsigned es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>&);
 // fused multiply-add: a*b + c, faithfully rounded with the uncertainty bit (see math_functions.hpp)
 template<unsigned nbits, unsigned es, typename bt>
@@ -1280,9 +1287,17 @@ public:
 	/// <returns>void</returns>
 	inline constexpr void reset(unsigned i) noexcept {
 		if (i < nbits) {
+			// in bounds: i < nbits => index <= nrBlocks-1. The pragma silences a GCC
+			// -fipa-icf false positive, as in at(); see utility/icf_array_bounds.hpp. The folded
+			// write draws -Wstringop-overflow as well as -Warray-bounds.
+			UNIVERSAL_ICF_ARRAY_BOUNDS_PUSH
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
 			bt block = _block[i / bitsInBlock];
 			bt mask = ~(1ull << (i % bitsInBlock));
 			_block[i / bitsInBlock] = bt(block & mask);
+			UNIVERSAL_ICF_ARRAY_BOUNDS_POP
 			return;
 		}
 	}
@@ -1298,15 +1313,13 @@ public:
 		return *this;
 	}
 	/// <summary>
-	/// assign the value of the string representation of a scientific number to the areal
+	/// assign the value of a text representation to the areal: a decimal, the exact form
+	/// [d], or the uncertain form (d, dnext) that operator<< writes. See parse().
 	/// </summary>
-	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
-	/// <returns>reference to this areal</returns>
+	/// <param name="stringRep">the text to assign</param>
+	/// <returns>reference to this areal; zero if the text does not parse, as dfloat and bfloat16 do</returns>
 	inline areal& assign(const std::string& stringRep) {
-		// std::printf rather than std::cout: same destination, same text, and it keeps
-		// <iostream> out of the core (#1334). stdout ordering with std::cout is
-		// guaranteed while sync_with_stdio is on, which is the default.
-		std::printf("assign TBD\n");
+		if (!parse(stringRep, *this)) clear();
 		return *this;
 	}
 
@@ -2024,8 +2037,7 @@ private:
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend std::ostream& operator<< (std::ostream& ostr, const areal<nnbits,nes,nbt>& r);
-	template<unsigned nnbits, unsigned nes, typename nbt>
-	friend std::istream& operator>> (std::istream& istr, areal<nnbits,nes,nbt>& r);
+	// operator>> is not a friend: it goes through parse() and the public interface (#1454)
 
 	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend constexpr bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
@@ -2187,10 +2199,201 @@ constexpr void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es,
 	}
 }
 
+////////////////////// text to areal (#1454)
+//
+// parse() accepts the three forms an areal is written in:
+//   d          a decimal (or inf, nan): its value truncated toward zero, with the ubit set
+//              when that loses anything -- the same faithful rule as conversion from double,
+//              but from the exact decimal, so digits beyond double precision still count
+//   [d]        an exact value, as operator<< writes one: the exact areal nearest to d.
+//              operator<< prints only a few digits, so d need not be exact itself
+//   (d, dnext) an uncertain value, as operator<< writes one: the open interval between two
+//              adjacent exact values, the nearest ones to d and dnext. Either order is
+//              accepted; endpoints that are not adjacent are an error
+// Inf and nan are accepted in any of the common spellings, bare or bracketed. A nan parses
+// as a quiet nan: the text does not say which kind it was.
+namespace areal_parse {
+
+inline bool is_space(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; }
+
+inline std::string_view trim(std::string_view s) {
+	while (!s.empty() && is_space(s.front())) s.remove_prefix(1);
+	while (!s.empty() && is_space(s.back())) s.remove_suffix(1);
+	return s;
+}
+
+// 1 for nan, 2 for inf, 0 otherwise; negative is set from a leading '-'
+inline int special_value(std::string_view s, bool& negative) {
+	negative = false;
+	if (!s.empty() && (s.front() == '+' || s.front() == '-')) {
+		negative = (s.front() == '-');
+		s.remove_prefix(1);
+	}
+	std::string t;
+	for (char c : s) t.push_back(static_cast<char>((c >= 'A' && c <= 'Z') ? c - 'A' + 'a' : c));
+	if (t == "nan" || t == "qnan" || t == "snan") return 1;
+	if (t == "inf" || t == "infinity") return 2;
+	return 0;
+}
+
+// the exact binary value d, truncated toward zero, with the ubit set when that loses anything.
+// It is packed like cfloat's parse(): blocktriple<fbits, MUL> leaves fbits bits below the
+// fraction, and convert() truncates and sets the ubit for anything below the fraction,
+// including the converter's own guard and sticky bits.
+template<unsigned BigBits, unsigned nbits, unsigned es, typename bt>
+bool from_binary(const ::sw::universal::decimal_to_binary::basic_result<BigBits>& d, areal<nbits, es, bt>& v) {
+	using BT = blocktriple<areal<nbits, es, bt>::fbits, BlockTripleOperator::MUL, bt>;
+	constexpr unsigned radix_pos = static_cast<unsigned>(BT::radix);
+	if (!d.valid) return false;
+	if (d.is_zero) {
+		v.setzero();
+		v.setsign(d.negative);
+		return true;
+	}
+	// clamp absurd decimal exponents; convert() saturates or underflows well inside this range
+	constexpr std::int64_t scale_limit = std::int64_t(1) << 30;
+	std::int64_t scale = d.binary_scale;
+	if (scale > scale_limit) scale = scale_limit;
+	if (scale < -scale_limit) scale = -scale_limit;
+	BT t;
+	t.setnormal();
+	t.setsign(d.negative);
+	t.setscale(static_cast<int>(scale));
+	for (unsigned i = 0; i <= radix_pos; ++i) {
+		if (d.mantissa.at(i)) t.setbit(i, true);
+	}
+	convert(t, v, d.guard_bit || d.sticky_bit);
+	return true;
+}
+
+// the decimal s truncated toward zero, with the ubit set when that loses anything
+template<unsigned nbits, unsigned es, typename bt>
+bool faithful(std::string_view s, areal<nbits, es, bt>& v) {
+	bool negative{ false };
+	switch (special_value(s, negative)) {
+	case 1: v.setnan(NAN_TYPE_QUIET); return true;
+	case 2: v.setinf(negative); return true;
+	default: break;
+	}
+	// The exact binary value. The converter's working integer has a fixed width, and a decimal
+	// that needs more loses bits silently (#1504), so the width comes from the converter's own estimate:
+	// 2048 bits (which dispatches down itself), 8192 and 32768 bits for long exact expansions and
+	// the exponent range of the widest areals, and a rejection beyond that rather than a wrong value.
+	using BT = blocktriple<areal<nbits, es, bt>::fbits, BlockTripleOperator::MUL, bt>;
+	constexpr unsigned target_bits = static_cast<unsigned>(BT::radix) + 1u;
+	const auto scan = ::sw::universal::string_parse::scan_decimal_float(s);
+	if (!scan.valid) return false;
+	// A value far outside the type needs no exact conversion, only its order of magnitude: the
+	// first nonzero digit puts it in [10^p, 10^(p+1)). Saturate or underflow directly, so a short
+	// text such as 1e5000 does not ask the converter for thousands of working bits.
+	std::int64_t p{ 0 };
+	bool nonzero{ false };
+	for (std::size_t i = 0; i < scan.int_part.size() && !nonzero; ++i) {
+		if (scan.int_part[i] != '0') { nonzero = true; p = static_cast<std::int64_t>(scan.int_part.size() - 1 - i); }
+	}
+	for (std::size_t i = 0; i < scan.frac_part.size() && !nonzero; ++i) {
+		if (scan.frac_part[i] != '0') { nonzero = true; p = -static_cast<std::int64_t>(i + 1); }
+	}
+	if (nonzero) {
+		p += scan.exp10;
+		using A = areal<nbits, es, bt>;
+		// log2(10) is 3.3219...: 3321/1000 and 3322/1000 bound it, and the margin of 4 absorbs the rest
+		if ((p * 3321) / 1000 > static_cast<std::int64_t>(A::MAX_EXP) + 4) {
+			if (scan.negative) v.maxneg(); else v.maxpos();
+			v.set(0, true);  // (maxpos, inf) or (maxneg, -inf)
+			return true;
+		}
+		if (((p + 1) * 3322) / 1000 < static_cast<std::int64_t>(A::MIN_EXP_SUBNORMAL) - 4) {
+			v.setzero();
+			v.setsign(scan.negative);
+			v.set(0, true);  // (0, minpos) or (-0, minneg)
+			return true;
+		}
+	}
+	const std::uint64_t need = ::sw::universal::decimal_to_binary::detail::required_working_bits(scan, target_bits);
+	if (need <= 2048u) return from_binary(::sw::universal::decimal_to_binary::convert<2048u>(scan, target_bits), v);
+	if (need <= 8192u) return from_binary(::sw::universal::decimal_to_binary::convert<8192u>(scan, target_bits), v);
+	if (need <= 32768u) return from_binary(::sw::universal::decimal_to_binary::convert<32768u>(scan, target_bits), v);
+	return false;  // a decimal this long cannot be converted exactly here
+}
+
+// the exact areal nearest to the decimal s; ties go to the even encoding, and a finite value
+// beyond maxpos stays finite
+template<unsigned nbits, unsigned es, typename bt>
+bool nearest_exact(std::string_view s, areal<nbits, es, bt>& v) {
+	areal<nbits, es, bt> t;
+	if (!faithful(s, t)) return false;
+	if (!t.ubit() || t.isnan() || t.isinf()) {
+		v = t;
+		return true;
+	}
+	// s lies strictly between the exact values lo and hi
+	areal<nbits, es, bt> lo(t), hi(t);
+	lo.set(0, false);
+	++hi;
+	if (hi.isinf() || hi.isnan()) {  // beyond maxpos: the nearest finite exact value
+		v = lo;
+		return true;
+	}
+	// one more fraction bit, same exponent range: its last fraction bit says whether s is at
+	// or past the midpoint of lo and hi, and its ubit whether s is past it
+	areal<nbits + 1, es, bt> w;
+	faithful(s, w);
+	const bool atOrPastMidpoint = w.at(1), pastMidpoint = w.ubit();
+	if (!atOrPastMidpoint) v = lo;
+	else if (pastMidpoint) v = hi;
+	else v = lo.at(1) ? hi : lo;  // a tie: the encoding whose last fraction bit is 0
+	return true;
+}
+
+// lo is exact and hi the next exact value after it
+template<unsigned nbits, unsigned es, typename bt>
+bool adjacent(const areal<nbits, es, bt>& lo, const areal<nbits, es, bt>& hi) {
+	if (lo.ubit() || lo.isnan() || lo.isinf() || hi.isnan()) return false;
+	areal<nbits, es, bt> next(lo);
+	next.set(0, true);
+	++next;
+	return next == hi;
+}
+
+} // namespace areal_parse
+
+template<unsigned nbits, unsigned es, typename bt>
+bool parse(const std::string& txt, areal<nbits, es, bt>& v) {
+	std::string_view s = areal_parse::trim(txt);
+	if (s.empty()) return false;
+	if (s.front() == '[') {
+		if (s.back() != ']') return false;
+		return areal_parse::nearest_exact(areal_parse::trim(s.substr(1, s.size() - 2)), v);
+	}
+	if (s.front() == '(') {
+		if (s.back() != ')') return false;
+		const std::string_view inner = s.substr(1, s.size() - 2);
+		const auto comma = inner.find(',');
+		if (comma == std::string_view::npos || inner.find(',', comma + 1) != std::string_view::npos) return false;
+		areal<nbits, es, bt> a, b;
+		if (!areal_parse::nearest_exact(areal_parse::trim(inner.substr(0, comma)), a)) return false;
+		if (!areal_parse::nearest_exact(areal_parse::trim(inner.substr(comma + 1)), b)) return false;
+		// operator<< writes the endpoint nearer zero first; a mathematical interval of negative
+		// values reads the other way round
+		if (areal_parse::adjacent(a, b)) {
+			v = a;
+		}
+		else if (areal_parse::adjacent(b, a)) {
+			v = b;
+		}
+		else {
+			return false;
+		}
+		v.set(0, true);
+		return true;
+	}
+	return areal_parse::faithful(s, v);
+}
+
 ////////////////////// operators
-// operator<< and operator>> moved to iostream.hpp in #1334. They stay friends of the
-// class (declared above) because operator>> reaches _fraction directly; only their
-// DEFINITIONS move, which is what lets this header get by with <iosfwd>.
+// operator<< and operator>> moved to iostream.hpp in #1334; operator<< stays a friend of the
+// class (declared above), which is what lets this header get by with <iosfwd>.
 
 // areal-specific equality: bit-pattern equality, intentionally diverging
 // from IEEE-754 in two cases:
