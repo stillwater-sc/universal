@@ -254,8 +254,14 @@ public:
 		operator++();
 		return tmp;
 	}
+	// ++ and -- work on the limbs directly. They used to add or subtract a temporary
+	// integer(1), and on MSVC that gave 0 + 1 == 0 for integer<nbits < 64, uint64_t>, and
+	// with it wrong twosComplement(), subtraction, comparison and division (#1500).
 	constexpr integer& operator++() {
-		*this += integer(1);
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			_block[i] = static_cast<bt>(_block[i] + bt(1));
+			if (_block[i] != bt(0)) break;  // no carry into the next limb
+		}
 		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
@@ -266,7 +272,20 @@ public:
 		return tmp;
 	}
 	constexpr integer& operator--() {
-		*this -= integer(1);
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+		// the domain checks operator-= applies to x - 1
+		if constexpr (NumberType == WholeNumber || NumberType == NaturalNumber) {
+			if (iszero()) throw integer_wholenumber_cannot_be_negative{};
+			if constexpr (NumberType == WholeNumber) {
+				if (isone()) throw integer_wholenumber_cannot_be_zero{};
+			}
+		}
+#endif
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			const bool borrow = (_block[i] == bt(0));
+			_block[i] = static_cast<bt>(_block[i] - bt(1));
+			if (!borrow) break;  // no borrow from the next limb
+		}
 		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
