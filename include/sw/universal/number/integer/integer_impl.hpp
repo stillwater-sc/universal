@@ -648,7 +648,10 @@ public:
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 				}
 			}
-			if constexpr (sizeof(BlockType) == 1) {
+			if constexpr (NumberType != IntegerNumberType::IntegerNumber) {
+				_block[0] = static_cast<bt>(_block[0] / rhs._block[0]);  // unsigned: no sign bit to extend
+			}
+			else if constexpr (sizeof(BlockType) == 1) {
 				_block[0] = static_cast<bt>(std::int8_t(_block[0]) / std::int8_t(rhs._block[0]));
 			}
 			else if constexpr (sizeof(BlockType) == 2) {
@@ -684,7 +687,10 @@ public:
 				return *this;
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 			}
-			if constexpr (sizeof(BlockType) == 1) {
+			if constexpr (NumberType != IntegerNumberType::IntegerNumber) {
+				_block[0] = static_cast<bt>(_block[0] % rhs._block[0]);  // unsigned: no sign bit to extend
+			}
+			else if constexpr (sizeof(BlockType) == 1) {
 				_block[0] = static_cast<bt>(std::int8_t(_block[0]) % std::int8_t(rhs._block[0]));
 			}
 			else if constexpr (sizeof(BlockType) == 2) {
@@ -1056,7 +1062,11 @@ public:
 	}
 	constexpr bool isodd()  const noexcept  { return bool(_block[0] & 0x01); }
 	constexpr bool iseven() const noexcept { return !isodd(); }
-	constexpr bool sign()   const noexcept { return at(nbits - 1); }
+	// only IntegerNumber has a sign bit: for WholeNumber and NaturalNumber the MSB is a
+	// data bit, so they are never negative, as isneg() already reports
+	constexpr bool sign()   const noexcept {
+		if constexpr (NumberType == IntegerNumberType::IntegerNumber) return at(nbits - 1); else return false;
+	}
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex < nbits) {
 			// in bounds: bitIndex < nbits => index <= nrBlocks-1. The pragma silences a
@@ -1087,9 +1097,7 @@ public:
 		if (iszero()) { tgt.setzero(); return; }
 		tgt.setzero();
 		tgt.setnormal();
-		// For WholeNumber/NaturalNumber, sign() returns the raw MSB which is a data bit,
-		// not a sign indicator. Only IntegerNumber has a true sign bit.
-		const bool negative = (NumberType == IntegerNumberType::IntegerNumber) && sign();
+		const bool negative = sign();  // always false for WholeNumber/NaturalNumber
 		tgt.setsign(negative);
 		// get magnitude
 		integer mag = negative ? -(*this) : *this;
@@ -1829,7 +1837,8 @@ constexpr inline bool operator< (const integer<nbits, BlockType, NumberType>& lh
 	if constexpr (NumberType == WholeNumber || NumberType == NaturalNumber) {
 		for (int i = static_cast<int>(lhs.nrBlocks) - 1; i >= 0; --i) {
 			if (lhs.block(static_cast<unsigned>(i)) == rhs.block(static_cast<unsigned>(i))) continue;
-			if (lhs.block(static_cast<unsigned>(i)) < rhs.block(static_cast<unsigned>(i))) return true;
+			// the most significant block that differs decides
+			return lhs.block(static_cast<unsigned>(i)) < rhs.block(static_cast<unsigned>(i));
 		}
 		return false;
 	}
