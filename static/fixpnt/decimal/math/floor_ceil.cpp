@@ -80,8 +80,7 @@ int VerifyValue(std::int64_t n, bool reportTestCases, const std::string& config)
 		// outside the type, and those are exactly the cases that exercise UnitOf() there.
 		if constexpr (F::radix == F::ndigits) {
 			expected = 0;
-		}
-		else if (expected < -limit || expected > limit) {
+		} else if (expected < -limit || expected > limit) {
 			return;  // the result does not fit the type
 		}
 		if (ToScaled(got) != expected) {
