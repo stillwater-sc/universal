@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <string>
@@ -31,8 +32,9 @@
    ones, and a sweep of the top binade and beyond; +, - and * of every pair of exact values
    against their exact double result. Wider configurations are checked at the boundary:
    the native integer path of areal<64,6>, and the blocktriple arithmetic of areal<128,15>.
-   Conversion from long double is checked the same way, with values double cannot hold where
-   long double is wider: it used to narrow to double first, which rounded them.
+   Every IEEE NaN payload converts to a NaN of its kind. Conversion from long double is checked
+   the same way, with values double cannot hold where long double is wider: it used to narrow to
+   double first, which rounded them.
 
    The arithmetic check runs on single-limb configurations: where the exponent field
    straddles two limbs, + - * are wrong across the whole range (#1506). An exact zero result
@@ -162,6 +164,51 @@ inline std::string Exact128(long double x) {
 		if (m >= 1.0l) m -= 1.0l;
 	}
 	return s + '0';
+}
+
+// every IEEE NaN converts to a NaN of the same kind, whatever its payload: only two payloads used
+// to be recognized, and the rest came out as (maxpos, inf), inf, or a finite value
+inline std::string Hex(std::uint64_t bits) {
+	const char* digits = "0123456789ABCDEF";
+	std::string s;
+	do {
+		s.insert(s.begin(), digits[bits & 0xFu]);
+		bits >>= 4;
+	} while (bits != 0);
+	return "0x" + s;
+}
+
+template<typename A>
+int VerifyNaNPayloads(bool reportTestCases) {
+	int fails = 0;
+	auto verify = [&](const std::string& what, const A& a, bool quiet) {
+		if (a.isnan(quiet ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING)) return;
+		++fails;
+		if (reportTestCases || fails < 6)
+			std::cerr << "FAIL: " << what << " gave " << to_binary(a) << ' ' << a << ", expected a " << (quiet ? "quiet" : "signalling") << " nan\n";
+	};
+	for (std::uint64_t sign : { std::uint64_t(0), std::uint64_t(1) << 63 }) {
+		for (std::uint64_t payload : { 0x8'0000'0000'0000ull, 0x8'0000'0000'0001ull, 0x8'0000'0000'0002ull, 0xF'FFFF'FFFF'FFFFull,
+		                               0x1ull, 0x2ull, 0x7'FFFF'FFFF'FFFFull, 0x4'0000'0000'0000ull }) {
+			const std::uint64_t bits = sign | 0x7FF0'0000'0000'0000ull | payload;
+			double d;
+			std::memcpy(&d, &bits, sizeof(d));
+			A a;
+			a = d;
+			verify("double " + Hex(bits), a, (payload & 0x8'0000'0000'0000ull) != 0);
+		}
+	}
+	for (std::uint32_t sign : { 0u, 1u << 31 }) {
+		for (std::uint32_t payload : { 0x40'0000u, 0x40'0001u, 0x40'0002u, 0x7F'FFFFu, 0x1u, 0x2u, 0x3F'FFFFu, 0x20'0000u }) {
+			const std::uint32_t bits = sign | 0x7F80'0000u | payload;
+			float f;
+			std::memcpy(&f, &bits, sizeof(f));
+			A a;
+			a = f;
+			verify("float " + Hex(bits), a, (payload & 0x40'0000u) != 0);
+		}
+	}
+	return fails;
 }
 
 // +, - and * of every pair of exact values against the exact double result
@@ -341,6 +388,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversions<areal<12, 4, std::uint16_t>>(reportTestCases), "areal<12,4,uint16_t>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversions<areal<16, 5, std::uint16_t>>(reportTestCases), "areal<16,5,uint16_t>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversions<areal<16, 5, std::uint8_t >>(reportTestCases), "areal<16,5,uint8_t >", "conversion");
+	// every NaN payload stays a NaN of its kind
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNPayloads<areal<16, 5, std::uint16_t>>(reportTestCases), "areal<16,5,uint16_t>", "nan payload");
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNPayloads<areal<16, 5, std::uint8_t >>(reportTestCases), "areal<16,5,uint8_t >", "nan payload");
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNPayloads<areal<32, 8, std::uint32_t>>(reportTestCases), "areal<32,8,uint32_t>", "nan payload");
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNPayloads<areal<64, 11, std::uint64_t>>(reportTestCases), "areal<64,11,uint64_t>", "nan payload");
 	nrOfFailedTestCases += ReportTestResult(VerifyLongDouble<areal< 8, 2, std::uint8_t >>(reportTestCases), "areal< 8,2,uint8_t >", "long double");
 	nrOfFailedTestCases += ReportTestResult(VerifyLongDouble<areal<12, 4, std::uint16_t>>(reportTestCases), "areal<12,4,uint16_t>", "long double");
 	nrOfFailedTestCases += ReportTestResult(VerifyLongDouble<areal<16, 5, std::uint16_t>>(reportTestCases), "areal<16,5,uint16_t>", "long double");

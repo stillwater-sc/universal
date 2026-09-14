@@ -426,24 +426,18 @@ public:
 
 		// special case handling
 		if (raw_exp == 0xFFu) { // special cases
-			if (raw == 1ul) {
-				// 1.11111111.00000000000000000000001 signalling nan
-				// 0.11111111.00000000000000000000001 signalling nan
-				setnan(NAN_TYPE_SIGNALLING);
-				return *this;
-			}
-			if (raw == 0x0040'0000ul) {
-				// 1.11111111.10000000000000000000000 quiet nan
-				// 0.11111111.10000000000000000000000 quiet nan
-				setnan(NAN_TYPE_QUIET);
-				return *this;
-			}
+			// IEEE-754: exponent all ones is infinity with a zero fraction, and a NaN with ANY other
+			// fraction, whatever the payload; the quiet bit, the fraction's MSB, tells the two NaNs
+			// apart. This used to match two payloads only, so every other NaN fell through to the
+			// numeric path and came out as (maxpos, inf), inf, or a finite value (the #1303 defect)
 			if (raw == 0ul) {
 				// 1.11111111.00000000000000000000000 -inf
 				// 0.11111111.00000000000000000000000 +inf
 				setinf(s);
 				return *this;
 			}
+			setnan((raw & 0x0040'0000ul) ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING);
+			return *this;
 		}
 		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
 			set(nbits - 1ull, s);
@@ -617,24 +611,15 @@ public:
 		uint64_t raw     = rawFraction;
 
 		if (raw_exp == 0x7FFul) { // special cases
-			if (raw == 1ull) {
-				// 1.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
-				// 0.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
-				setnan(NAN_TYPE_SIGNALLING);
-				return *this;
-			}
-			if (raw == 0x0008'0000'0000'0000ull) {
-				// 1.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
-				// 0.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
-				setnan(NAN_TYPE_QUIET);
-				return *this;
-			}
+			// infinity with a zero fraction, a NaN with any other; see operator=(float)
 			if (raw == 0ull) {
 				// 1.11111111111.0000000000000000000000000000000000000000000000000000 -inf
 				// 0.11111111111.0000000000000000000000000000000000000000000000000000 +inf
 				setinf(s);
 				return *this;
 			}
+			setnan((raw & 0x0008'0000'0000'0000ull) ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING);
+			return *this;
 		}
 		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
 			set(nbits - 1ull, s);
