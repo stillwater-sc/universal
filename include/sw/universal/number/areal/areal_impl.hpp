@@ -151,7 +151,10 @@ public:
 	static constexpr unsigned EXP_SHIFT = (MSU_CAPTURES_E ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALLONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
-	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
+	// the largest finite scale: the all-ones exponent field, 2^es - 1, less the bias. It used to be
+	// one more, which let a value of scale MAX_EXP + 1 through the overflow checks, where its biased
+	// exponent then ran into the sign bit (#1503)
+	static constexpr int MAX_EXP = (1l << es) - 1l - EXP_BIAS;
 	static constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
 	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
 	static constexpr bt BLOCK_MASK = bt(-1);
@@ -318,7 +321,7 @@ public:
 				// unsigned: no sign bit
 				if (ubit) set(0);
 			}
-
+			saturate_reserved();
 			return *this;
 		}
 	}
@@ -404,7 +407,7 @@ public:
 				if (sign) set(nbits - 1);
 				if (ubit) set(0);
 			}
-
+			saturate_reserved();
 			return *this;
 		}
 	}
@@ -599,6 +602,7 @@ public:
 			// set ubit
 			if (ubit) set(0);
 		}
+		saturate_reserved();
 		return *this;
 	}
 	CONSTEXPRESSION areal& operator=(double rhs) {
@@ -816,6 +820,7 @@ public:
 			// set ubit
 			if (ubit) set(0);
 		}
+		saturate_reserved();
 		return *this;
 	}
 	CONSTEXPRESSION areal& operator=(long double rhs) {
@@ -1226,6 +1231,19 @@ public:
 		reset(0ull);
 		reset(1ull);
 		return *this;
+	}
+	// Conversions of a finite value call this after they assemble the encoding. In the top binade,
+	// every value past maxpos + ulp truncates onto the all-ones fraction, which encodes inf (ubit
+	// clear) or nan (ubit set). A finite value there lies in (maxpos, inf), where larger values
+	// already saturate, so it saturates the same way (#1503).
+	inline constexpr void saturate_reserved() noexcept {
+		if (isinf() || isnan()) {
+			if (sign())
+				maxneg();
+			else
+				maxpos();
+			set(0);  // (maxpos, inf) or (maxneg, -inf)
+		}
 	}
 
 	/// <summary>
@@ -2196,6 +2214,7 @@ constexpr void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es,
 				tgt.set(0);
 			}
 		}
+		tgt.saturate_reserved();  // a finite result past maxpos + ulp (#1503)
 	}
 }
 
