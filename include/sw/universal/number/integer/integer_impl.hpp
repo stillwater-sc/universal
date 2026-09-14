@@ -254,8 +254,15 @@ public:
 		operator++();
 		return tmp;
 	}
+	// The prefix ++ and -- work on the limbs directly. They used to add or subtract a
+	// temporary integer(1), and on MSVC that gave 0 + 1 == 0 for integer<nbits < 64, uint64_t>,
+	// and with it wrong twosComplement(), subtraction, comparison and division (#1500). The
+	// postfix forms above and below still copy the old value, which is what they return.
 	constexpr integer& operator++() {
-		*this += integer(1);
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			_block[i] = static_cast<bt>(_block[i] + bt(1));
+			if (_block[i] != bt(0)) break;  // no carry into the next limb
+		}
 		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
@@ -266,7 +273,20 @@ public:
 		return tmp;
 	}
 	constexpr integer& operator--() {
-		*this -= integer(1);
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+		// the domain checks operator-= applies to x - 1
+		if constexpr (NumberType == WholeNumber || NumberType == NaturalNumber) {
+			if (iszero()) throw integer_wholenumber_cannot_be_negative{};
+			if constexpr (NumberType == WholeNumber) {
+				if (isone()) throw integer_wholenumber_cannot_be_zero{};
+			}
+		}
+#endif
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			const bool borrow = (_block[i] == bt(0));
+			_block[i] = static_cast<bt>(_block[i] - bt(1));
+			if (!borrow) break;  // no borrow from the next limb
+		}
 		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
@@ -651,6 +671,11 @@ public:
 			if constexpr (NumberType != IntegerNumberType::IntegerNumber) {
 				_block[0] = static_cast<bt>(_block[0] / rhs._block[0]);  // unsigned: no sign bit to extend
 			}
+			else if (rhs._block[0] == ALL_ONES) {
+				// x / -1 is -x. For maxneg that overflows the native signed type, a hardware trap
+				// with 32- and 64-bit limbs, while two's complement wraps it to itself.
+				_block[0] = static_cast<bt>(bt(0) - _block[0]);
+			}
 			else if constexpr (sizeof(BlockType) == 1) {
 				_block[0] = static_cast<bt>(std::int8_t(_block[0]) / std::int8_t(rhs._block[0]));
 			}
@@ -689,6 +714,10 @@ public:
 			}
 			if constexpr (NumberType != IntegerNumberType::IntegerNumber) {
 				_block[0] = static_cast<bt>(_block[0] % rhs._block[0]);  // unsigned: no sign bit to extend
+			}
+			else if (rhs._block[0] == ALL_ONES) {
+				// x % -1 is 0; computing it natively traps for maxneg with 32- and 64-bit limbs
+				_block[0] = 0;
 			}
 			else if constexpr (sizeof(BlockType) == 1) {
 				_block[0] = static_cast<bt>(std::int8_t(_block[0]) % std::int8_t(rhs._block[0]));
