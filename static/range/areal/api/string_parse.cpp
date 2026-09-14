@@ -68,8 +68,8 @@ inline std::string ExactDecimal(bool negative, std::uint64_t m, int k) {
 		for (int i = 0; i < k; ++i) times(2);
 	}
 	else {
-		for (int i = 0; i < -k; ++i) times(5);  // m * 2^k = m * 5^-k / 10^-k
-		fractionDigits = -k;
+		fractionDigits = -k;  // m * 2^k = m * 5^-k / 10^-k
+		for (int i = 0; i < fractionDigits; ++i) times(5);
 	}
 	std::string s;
 	for (auto it = d.rbegin(); it != d.rend(); ++it) s.push_back(static_cast<char>('0' + *it));
