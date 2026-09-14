@@ -38,7 +38,7 @@ namespace number_types {
 // the reference: the bit pattern, and its value as the number type reads it
 template<unsigned nbits, IntegerNumberType NumberType>
 struct Reference {
-	static constexpr std::uint64_t mask = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << nbits) - 1u);
+	static constexpr std::uint64_t mask = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << (nbits % 64)) - 1u);
 	static constexpr bool isSigned = (NumberType == IntegerNumberType::IntegerNumber);
 
 	static bool negative(std::uint64_t u) { return isSigned && ((u >> (nbits - 1)) & 1u); }
@@ -319,11 +319,10 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// one uint16_t block is 14 bits here: at 12 bits operator<< trips the formatter bug #1494
 	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<12, std::uint8_t>(true, 0, reportTestCases),
 	                                        "integer<12, uint8_t >", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<14, std::uint16_t>(false, 200000, reportTestCases),
-	                                        "integer<14, uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<12, std::uint16_t>(true, 0, reportTestCases),
+	                                        "integer<12, uint16_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
