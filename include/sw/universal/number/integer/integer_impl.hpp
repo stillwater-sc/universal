@@ -254,9 +254,10 @@ public:
 		operator++();
 		return tmp;
 	}
-	// ++ and -- work on the limbs directly. They used to add or subtract a temporary
-	// integer(1), and on MSVC that gave 0 + 1 == 0 for integer<nbits < 64, uint64_t>, and
-	// with it wrong twosComplement(), subtraction, comparison and division (#1500).
+	// The prefix ++ and -- work on the limbs directly. They used to add or subtract a
+	// temporary integer(1), and on MSVC that gave 0 + 1 == 0 for integer<nbits < 64, uint64_t>,
+	// and with it wrong twosComplement(), subtraction, comparison and division (#1500). The
+	// postfix forms above and below still copy the old value, which is what they return.
 	constexpr integer& operator++() {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = static_cast<bt>(_block[i] + bt(1));
