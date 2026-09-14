@@ -26,10 +26,10 @@ std::string einteger<BlockType>::showLimbs() const {
 	std::stringstream s;
 	size_t i = _block.size() - 1;
 	while (i > 0) {
-		s << to_binary(_block[i], sizeof(BlockType) * 8, true) << ' ';
+		s << to_binary(_block[i], true, static_cast<int>(sizeof(BlockType) * 8)) << ' ';
 		--i;
 	}
-	s << to_binary(_block[0], sizeof(BlockType) * 8, true);
+	s << to_binary(_block[0], true, static_cast<int>(sizeof(BlockType) * 8));
 	return s.str();
 }
 
