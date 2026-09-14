@@ -54,7 +54,14 @@ inline std::istream& operator>>(std::istream& istr, areal<nbits, es, bt>& v) {
 	if (first == '[' || first == '(') {
 		const char close = (first == '[') ? ']' : ')';
 		std::getline(istr, txt, close);
-		if (!istr) return istr;  // no closing bracket before the end of the stream
+		// getline consumes the closing bracket when it finds one, and stops without eofbit. Reaching
+		// the end first sets eofbit alone, since characters were extracted: that is malformed input,
+		// not a value to complete with the missing bracket.
+		if (istr.eof() || istr.fail()) {
+			std::cerr << "unable to parse -" << txt << "- into an areal value: no closing '" << close << "'\n";
+			istr.setstate(std::ios::failbit);
+			return istr;
+		}
 		txt.push_back(close);
 	}
 	else {

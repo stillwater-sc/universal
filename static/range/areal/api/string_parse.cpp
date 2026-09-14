@@ -233,6 +233,21 @@ inline int VerifyReportedAndRejected(bool reportTestCases) {
 		is >> a;
 		fail.check("operator>> of (1, 2) sets failbit", is.fail(), a, a);
 	}
+	// a bracket still open at the end of the stream is malformed, not a value to complete
+	// (CodeRabbit on #1505); a bracket closed as the last character still reads
+	for (const char* open : { "[1.5", "(0.0999756, 0.100098" }) {
+		std::istringstream is(open);
+		A a(7.0);
+		is >> a;
+		fail.check(std::string("operator>> of \"") + open + "\" sets failbit, leaves the value",
+		           is.fail() && a == A(7.0), a, A(7.0));
+	}
+	{
+		std::istringstream is("[1.5]");
+		A a;
+		is >> a;
+		fail.check("operator>> of \"[1.5]\" at the end of the stream", !is.fail() && a == A(1.5), a, A(1.5));
+	}
 	return fail.count;
 }
 
