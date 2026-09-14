@@ -1,4 +1,12 @@
 #pragma once
+// RATIONAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
+// application to enable. The default lives here rather than in the rational.hpp umbrella,
+// so that including core.hpp alone defines it as well (#1436).
+#if !defined(RATIONAL_THROW_ARITHMETIC_EXCEPTION)
+// default is to use std::cerr for signalling an error
+#define RATIONAL_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
 #include <cstdint>      // std::int64_t
 #include <type_traits>  // std::enable_if / std::is_floating_point
 #include <iosfwd>       // std::ostream/std::istream in the friend declarations (#1334)

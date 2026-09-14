@@ -1,4 +1,12 @@
 #pragma once
+// EDECIMAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
+// application to enable. The default lives here rather than in the edecimal.hpp umbrella,
+// so that including core.hpp alone defines it as well (#1436).
+#if !defined(EDECIMAL_THROW_ARITHMETIC_EXCEPTION)
+// default is to use std::cerr as a signalling error
+#define EDECIMAL_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
 #include <cstdint>       // uint8_t, the digit type
 #include <cassert>       // assert(), used by findMsd() and the helpers
 #include <vector>        // std::vector, the base class

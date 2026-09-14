@@ -1,4 +1,12 @@
 #pragma once
+// ERATIONAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
+// application to enable. The default lives here rather than in the erational.hpp umbrella,
+// so that including core.hpp alone defines it as well (#1436).
+#if !defined(ERATIONAL_THROW_ARITHMETIC_EXCEPTION)
+// default is to use std::cerr for signalling an error
+#define ERATIONAL_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
 // erational_impl.hpp: implementation of adaptive precision decimal erational arithmetic type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

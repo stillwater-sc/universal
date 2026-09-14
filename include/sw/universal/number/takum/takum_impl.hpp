@@ -1,4 +1,12 @@
 #pragma once
+// TAKUM_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
+// application to enable. The default lives here rather than in the takum.hpp umbrella,
+// so that including core.hpp alone defines it as well (#1436).
+#if !defined(TAKUM_THROW_ARITHMETIC_EXCEPTION)
+// default is to use std::cerr for signalling an error
+#define TAKUM_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
 #include <cstdint>       // the fixed-width integer types
 #include <type_traits>   // std::is_same_v
 #include <iosfwd>     // std::ostream/std::istream in the friend declarations (#1334)

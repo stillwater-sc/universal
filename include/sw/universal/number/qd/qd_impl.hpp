@@ -1,4 +1,19 @@
 #pragma once
+// QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
+// application to enable. The default lives here rather than in the qd.hpp umbrella,
+// so that including core.hpp alone defines it as well (#1436).
+#if !defined(QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION)
+// default is to use std::cerr for signalling an error
+#define QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION 0
+#define QUADDOUBLE_EXCEPT noexcept
+#else
+#if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
+#define QUADDOUBLE_EXCEPT 
+#else
+#define QUADDOUBLE_EXCEPT noexcept
+#endif
+#endif
+
 // qd_impl.hpp: implementation of the double-double floating-point number system described in
 // 
 // Sherry Li, David Bailey, LBNL, "Library for Double-Double and Quad-Double Arithmetic", 2008

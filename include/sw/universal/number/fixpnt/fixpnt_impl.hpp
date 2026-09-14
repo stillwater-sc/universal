@@ -1,4 +1,17 @@
 #pragma once
+// FIXPNT_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
+// application to enable. The default lives here rather than in the fixpnt.hpp umbrella,
+// so that including core.hpp alone defines it as well (#1436).
+#if !defined(FIXPNT_THROW_ARITHMETIC_EXCEPTION)
+// default is to use std::cerr for signalling an error
+#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+// the fused dot product accumulator (quire, via fdp.hpp) must honor the same
+// exception policy as the fixpnt it accumulates for (#1226)
+#if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
+#define QUIRE_THROW_ARITHMETIC_EXCEPTION FIXPNT_THROW_ARITHMETIC_EXCEPTION
+#endif
+
 // fixpnt_impl.hpp: implementation of an arbitrary configuration binary fixed-point number parameterized in total bits and radix bits
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
