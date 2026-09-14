@@ -29,20 +29,9 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for posit arithmetic errors
-// left to application to enable
-#if !defined(POSIT_THROW_ARITHMETIC_EXCEPTION)
-// default is to use NaR as a signalling error
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#else
-// for the blocktriple<> class assume the same behavior as requested for posits
-#define BLOCKTRIPLE_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
-#endif
-// the fused dot product accumulator (quire, via fdp.hpp) must honor the same
-// exception policy as the posit it accumulates for (#1226)
-#if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
-#define QUIRE_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
-#endif
+// POSIT_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
+// application to enable by defining it before this include. Its default, and its forwarding to blocktriple and the quire, lives in
+// posit_impl.hpp, so that core.hpp alone defines it as well (#1436).
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///                         END OF BEHAVIOR SWITCHES                                 ///

@@ -22,12 +22,9 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for integer arithmetic errors
-// left to application to enable
-#if !defined(EDECIMAL_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr as a signalling error
-#define EDECIMAL_THROW_ARITHMETIC_EXCEPTION 0
-#endif
+// EDECIMAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
+// application to enable by defining it before this include. Its default lives in
+// edecimal_impl.hpp, so that core.hpp alone defines it as well (#1436).
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library

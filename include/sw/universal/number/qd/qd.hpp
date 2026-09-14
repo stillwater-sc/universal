@@ -25,19 +25,9 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for arithmetic errors
-// left to application to enable
-#if !defined(QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION 0
-#define QUADDOUBLE_EXCEPT noexcept
-#else
-#if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
-#define QUADDOUBLE_EXCEPT 
-#else
-#define QUADDOUBLE_EXCEPT noexcept
-#endif
-#endif
+// QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
+// application to enable by defining it before this include. Its default, and QUADDOUBLE_EXCEPT, lives in
+// qd_impl.hpp, so that core.hpp alone defines it as well (#1436).
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // configure the library implementation

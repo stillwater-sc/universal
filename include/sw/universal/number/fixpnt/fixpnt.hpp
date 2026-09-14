@@ -33,17 +33,9 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for integer arithmetic errors
-// left to application to enable
-#if !defined(FIXPNT_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
-#endif
-// the fused dot product accumulator (quire, via fdp.hpp) must honor the same
-// exception policy as the fixpnt it accumulates for (#1226)
-#if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
-#define QUIRE_THROW_ARITHMETIC_EXCEPTION FIXPNT_THROW_ARITHMETIC_EXCEPTION
-#endif
+// FIXPNT_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
+// application to enable by defining it before this include. Its default, and its forwarding to the quire, lives in
+// fixpnt_impl.hpp, so that core.hpp alone defines it as well (#1436).
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

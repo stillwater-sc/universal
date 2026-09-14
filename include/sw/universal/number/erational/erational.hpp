@@ -27,12 +27,9 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// enable throwing specific exceptions for integer arithmetic errors
-// left to application to enable
-#if !defined(ERATIONAL_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr for signalling an error
-#define ERATIONAL_THROW_ARITHMETIC_EXCEPTION 0
-#endif
+// ERATIONAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
+// application to enable by defining it before this include. Its default lives in
+// erational_impl.hpp, so that core.hpp alone defines it as well (#1436).
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library

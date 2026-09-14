@@ -35,6 +35,11 @@
 // to_binary(float)/to_binary(double), which the core's ieee754_core.hpp deliberately
 // omits. Leaving them unconditional kept three I/O-family headers in the graph of every
 // areal translation unit (#1334). debug.hpp includes integers.hpp in its own right.
+// TRACE_CONVERSION defaults to 0 here, before its first use; the default used to
+// come after this #if, which then tested it undefined (-Wundef, #1436)
+#ifndef TRACE_CONVERSION
+#define TRACE_CONVERSION 0
+#endif
 #if TRACE_CONVERSION
 #include <universal/native/integers.hpp>
 #include <universal/native/ieee754.hpp>   // to_binary(float)/to_binary(double): the text
@@ -55,9 +60,6 @@
 // guard with them -- an unconditional <iostream> here put four stream headers into the
 // graph of every translation unit that touched an areal (#1334, the same move cfloat's
 // trace includes got in #1417/#1418).
-#ifndef TRACE_CONVERSION
-#define TRACE_CONVERSION 0
-#endif
 #if TRACE_CONVERSION
 #include <iostream>
 #endif
