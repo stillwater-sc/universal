@@ -75,8 +75,15 @@ int VerifyValue(std::int64_t n, bool reportTestCases, const std::string& config)
 	const F v = FromScaled<F>(n);
 	int fails = 0;
 	auto check = [&](const char* op, const F& got, std::int64_t expected) {
-		if (expected < -limit || expected > limit) return;  // the result does not fit the type
-		if constexpr (F::radix == F::ndigits) expected = 0;  // no integer digit: the integer part is 0
+		// With no integer digit the integer part is 0. Decide that before the range filter: the
+		// reference floor of a negative fraction, and ceil of a positive one, is +-10^radix,
+		// outside the type, and those are exactly the cases that exercise UnitOf() there.
+		if constexpr (F::radix == F::ndigits) {
+			expected = 0;
+		}
+		else if (expected < -limit || expected > limit) {
+			return;  // the result does not fit the type
+		}
 		if (ToScaled(got) != expected) {
 			++fails;
 			if (reportTestCases || fails == 1)
