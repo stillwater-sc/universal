@@ -651,6 +651,11 @@ public:
 			if constexpr (NumberType != IntegerNumberType::IntegerNumber) {
 				_block[0] = static_cast<bt>(_block[0] / rhs._block[0]);  // unsigned: no sign bit to extend
 			}
+			else if (rhs._block[0] == ALL_ONES) {
+				// x / -1 is -x. For maxneg that overflows the native signed type, a hardware trap
+				// with 32- and 64-bit limbs, while two's complement wraps it to itself.
+				_block[0] = static_cast<bt>(bt(0) - _block[0]);
+			}
 			else if constexpr (sizeof(BlockType) == 1) {
 				_block[0] = static_cast<bt>(std::int8_t(_block[0]) / std::int8_t(rhs._block[0]));
 			}
@@ -689,6 +694,10 @@ public:
 			}
 			if constexpr (NumberType != IntegerNumberType::IntegerNumber) {
 				_block[0] = static_cast<bt>(_block[0] % rhs._block[0]);  // unsigned: no sign bit to extend
+			}
+			else if (rhs._block[0] == ALL_ONES) {
+				// x % -1 is 0; computing it natively traps for maxneg with 32- and 64-bit limbs
+				_block[0] = 0;
 			}
 			else if constexpr (sizeof(BlockType) == 1) {
 				_block[0] = static_cast<bt>(std::int8_t(_block[0]) % std::int8_t(rhs._block[0]));
