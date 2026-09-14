@@ -11,7 +11,11 @@
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 
-#include <cstdio>     // std::printf/fprintf; keeps <iostream> out of the core
+#include <cstddef>    // std::size_t in parse()
+#include <cstdint>    // std::int64_t, std::uint64_t in parse() and the encodings
+#include <cstdio>     // no longer used here (assign()'s printf stub is gone, #1454); kept for
+                      // code that has reached <cstdio> through this header
+#include <string_view> // parse()
 #include <iosfwd>     // std::ostream/std::istream in the friend declarations. UNCONDITIONAL:
                       // the declarations exist whether or not tracing is on, so this must not
                       // sit inside the TRACE_CONVERSION guard below.
