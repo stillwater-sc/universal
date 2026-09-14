@@ -319,11 +319,10 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	// one uint16_t block is 14 bits here: at 12 bits operator<< trips the formatter bug #1494
 	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<12, std::uint8_t>(true, 0, reportTestCases),
 	                                        "integer<12, uint8_t >", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<14, std::uint16_t>(false, 200000, reportTestCases),
-	                                        "integer<14, uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<12, std::uint16_t>(true, 0, reportTestCases),
+	                                        "integer<12, uint16_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

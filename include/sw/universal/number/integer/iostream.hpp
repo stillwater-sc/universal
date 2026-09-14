@@ -61,12 +61,28 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 		}
 	}
 	else {
-		using Integer = integer<nbits + 1, BlockType, NumberType>;  // nbits+1 to be able to represent maxneg in 2's complement form
+		// The digits come off in blocks of 10^k, the largest power of ten a limb holds. The
+		// magnitude and 10^k are held in a signed type wide enough for both, plus a sign bit
+		// that stays clear: a narrower one wraps 10^k (#1494), and a WholeNumber one would
+		// report every zero quotient as a domain error.
+		// bits in 10^k: 100 needs 7, 10^4 needs 14, 10^9 needs 30, 10^18 needs 60
+		constexpr unsigned bitsInBlock      = IntegerBase::bitsInBlock;
+		constexpr unsigned decimalBlockBits = bitsInBlock == 8    ? 7u
+		                                      : bitsInBlock == 16 ? 14u
+		                                      : bitsInBlock == 32 ? 30u
+		                                                          : 60u;
+		constexpr unsigned magnitudeBits = (nbits > decimalBlockBits) ? nbits : decimalBlockBits;
+		using Integer = integer<magnitudeBits + 1, BlockType, IntegerNumberType::IntegerNumber>;
 
-		Integer t(n);
+		// the magnitude: negating in nbits leaves maxneg's bit pattern, which read as unsigned
+		// is its magnitude, 2^(nbits-1)
+		IntegerBase m(n);
 		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
-			if (t.sign()) t.twosComplement();
+			if (m.sign()) m.twosComplement();
 		}
+		Integer t;
+		t.clear();
+		for (unsigned i = 0; i < IntegerBase::nrBlocks; ++i) t.setblock(i, m.block(i));
 
 		Integer block10;
 		unsigned digits_in_block10 = 2;
