@@ -38,7 +38,7 @@ namespace number_types {
 // the reference: the bit pattern, and its value as the number type reads it
 template<unsigned nbits, IntegerNumberType NumberType>
 struct Reference {
-	static constexpr std::uint64_t mask = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << nbits) - 1u);
+	static constexpr std::uint64_t mask = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << (nbits % 64)) - 1u);
 	static constexpr bool isSigned = (NumberType == IntegerNumberType::IntegerNumber);
 
 	static bool negative(std::uint64_t u) { return isSigned && ((u >> (nbits - 1)) & 1u); }

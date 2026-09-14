@@ -9,6 +9,7 @@
 // Layer 2b of the integer headers (#1334). Moved out of integer_impl.hpp so a
 // translation unit that only computes does not pay for the stream machinery.
 // Self-contained: include it directly and it works.
+#include <cstdint>    // std::uint64_t, the native path of convert_to_string
 #include <ios>        // std::ios_base::fmtflags, consumed by convert_to_string
 #include <iostream>   // std::ostream / std::istream / std::cerr
 #include <string>
@@ -60,19 +61,32 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 			result.insert(0ull, pp);
 		}
 	}
+	else if constexpr (nbits <= 64) {
+		// Up to 64 bits the magnitude fits a native uint64_t: gather the limbs and let the
+		// standard library write the digits. No integer<> arithmetic is involved, so the
+		// digits cannot depend on how a narrow type holds 10^k (#1494).
+		constexpr std::uint64_t mask = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << (nbits % 64)) - 1u);
+		std::uint64_t bits = 0;
+		for (unsigned i = 0; i < IntegerBase::nrBlocks; ++i) {
+			bits |= static_cast<std::uint64_t>(n.block(i)) << (i * IntegerBase::bitsInBlock);
+		}
+		bits &= mask;
+		const bool negative = (NumberType == IntegerNumberType::IntegerNumber) && ((bits >> (nbits - 1)) & 1u);
+		// two's complement in nbits; maxneg maps to itself, which read as unsigned is 2^(nbits-1)
+		result = std::to_string(negative ? ((~bits + 1u) & mask) : bits);
+		if (negative) {
+			result.insert(static_cast<std::string::size_type>(0), 1, '-');
+		}
+		else if (flags & std::ios_base::showpos) {
+			result.insert(static_cast<std::string::size_type>(0), 1, '+');
+		}
+	}
 	else {
-		// The digits come off in blocks of 10^k, the largest power of ten a limb holds. The
-		// magnitude and 10^k are held in a signed type wide enough for both, plus a sign bit
-		// that stays clear: a narrower one wraps 10^k (#1494), and a WholeNumber one would
-		// report every zero quotient as a domain error.
-		// bits in 10^k: 100 needs 7, 10^4 needs 14, 10^9 needs 30, 10^18 needs 60
-		constexpr unsigned bitsInBlock      = IntegerBase::bitsInBlock;
-		constexpr unsigned decimalBlockBits = bitsInBlock == 8    ? 7u
-		                                      : bitsInBlock == 16 ? 14u
-		                                      : bitsInBlock == 32 ? 30u
-		                                                          : 60u;
-		constexpr unsigned magnitudeBits = (nbits > decimalBlockBits) ? nbits : decimalBlockBits;
-		using Integer = integer<magnitudeBits + 1, BlockType, IntegerNumberType::IntegerNumber>;
+		// Wider than 64 bits the digits come off in blocks of 10^k, the largest power of ten
+		// a limb holds (10^18 at most, 60 bits), so integer<nbits + 1> always holds the block.
+		// The magnitude lives in an IntegerNumber type whose extra bit keeps the sign clear:
+		// a WholeNumber one would report every zero quotient as a domain error.
+		using Integer = integer<nbits + 1, BlockType, IntegerNumberType::IntegerNumber>;
 
 		// the magnitude: negating in nbits leaves maxneg's bit pattern, which read as unsigned
 		// is its magnitude, 2^(nbits-1)

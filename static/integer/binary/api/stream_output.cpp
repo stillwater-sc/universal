@@ -41,7 +41,7 @@ inline const char* Name(IntegerNumberType t) {
 // operator<< of the bit pattern u against std::to_string of its value
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 int VerifyValue(std::uint64_t u, bool reportTestCases) {
-	constexpr std::uint64_t mask = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << nbits) - 1u);
+	constexpr std::uint64_t mask = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << (nbits % 64)) - 1u);
 	const bool negative = (NumberType == IntegerNumberType::IntegerNumber) && ((u >> (nbits - 1)) & 1u);
 	const std::string expected =
 	    negative ? std::to_string(static_cast<std::int64_t>(u | ~mask)) : std::to_string(u);
@@ -67,7 +67,7 @@ int VerifyWidth(bool exhaustive, unsigned samples, bool reportTestCases) {
 		if (fails && nrOfFailedTestCases == 0 && !reportTestCases) VerifyValue<nbits, BlockType, NumberType>(u, true);
 		nrOfFailedTestCases += fails;
 	};
-	constexpr std::uint64_t mask = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << nbits) - 1u);
+	constexpr std::uint64_t mask = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << (nbits % 64)) - 1u);
 	if constexpr (nbits <= 20) {
 		if (exhaustive) {
 			for (std::uint64_t u = 0; u <= mask; ++u) check(u);
