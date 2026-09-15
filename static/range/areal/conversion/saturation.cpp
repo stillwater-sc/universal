@@ -326,7 +326,8 @@ inline int VerifyReportedAndWide(bool reportTestCases) {
 		half *= X(0.5);
 		fail.check("areal<128,15> (maxpos / 2) * 2 is maxpos", half * X(2.0), m);
 		// wide enough for a 64-bit significand and a long double's exponent range: held exactly.
-		// Checked on the encoding: conversion back to long double has its own defects (#1509)
+		// Checked on the encoding, independent of the conversion back to long double, which
+		// native_conversion.cpp round-trips (#1509)
 		const long double third = std::ldexp(static_cast<long double>(0x5555'5555'5555'5555ull), -64);  // 63 bits
 		for (long double x : {third, 1.0l + std::ldexp(1.0l, -60), -1.0l + std::ldexp(1.0l, -60),
 		                      std::ldexp(1.0l, 2000), std::ldexp(1.0l, -2000)}) {
