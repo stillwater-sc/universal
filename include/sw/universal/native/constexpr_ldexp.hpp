@@ -18,6 +18,9 @@ namespace sw { namespace universal {
 	// number of steps that stays inside MSVC's constexpr step limit. Every step is exact while the
 	// running value stays normal; only the last can take it below the normal range, so it rounds
 	// once. Overflow gives inf, and an infinite or nan x stays one. Run-time calls go to std::ldexp.
+	// POWER's IBM double-double long double (106 digits) is not a binary format: gcc evaluates it in
+	// a constant expression only where every step is exact, so a result that has to round, below
+	// its normal range, is not a constant expression there. Run time is unaffected.
 	template<typename Real>
 	constexpr Real constexpr_ldexp(Real x, int e) {
 		static_assert(std::numeric_limits<Real>::radix == 2, "constexpr_ldexp scales by powers of two");

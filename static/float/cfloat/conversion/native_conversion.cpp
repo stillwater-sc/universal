@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <array>
+#include <cfloat>  // LDBL_MANT_DIG
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -15,6 +16,16 @@
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
+
+// compile-time long double checks need a long double conversion (LONG_DOUBLE_SUPPORT, which RISC-V
+// leaves off) and a binary long double: gcc does not evaluate an inexact operation on POWER's IBM
+// double-double long double (106 digits) in a constant expression, so there a constant-evaluated
+// long double conversion compiles only where its result is exact
+#if LONG_DOUBLE_SUPPORT && (LDBL_MANT_DIG != 106)
+#	define CONSTEXPR_LONG_DOUBLE_CHECKS 1
+#else
+#	define CONSTEXPR_LONG_DOUBLE_CHECKS 0
+#endif
 
 /*
    Conversion to native floating-point lost values (#1513): a long double cfloat outside double's
@@ -213,7 +224,7 @@ int VerifyConstexpr(bool reportTestCases) {
 	Failures fail(reportTestCases);
 	VerifyConstexprTarget<C, float>(fail, "float");
 	VerifyConstexprTarget<C, double>(fail, "double");
-#if LONG_DOUBLE_SUPPORT
+#if CONSTEXPR_LONG_DOUBLE_CHECKS
 	VerifyConstexprTarget<C, long double>(fail, "long double");
 #endif
 	return fail.count;
@@ -393,7 +404,7 @@ int main() try {
 	// the constant-evaluated conversion, and the scaling it uses
 	nrOfFailedTestCases += ReportTestResult(VerifyConstexprLdexp<float>(reportTestCases), "float", "constexpr_ldexp");
 	nrOfFailedTestCases += ReportTestResult(VerifyConstexprLdexp<double>(reportTestCases), "double", "constexpr_ldexp");
-#		if LONG_DOUBLE_SUPPORT
+#		if CONSTEXPR_LONG_DOUBLE_CHECKS
 	nrOfFailedTestCases +=
 	    ReportTestResult(VerifyConstexprLdexp<long double>(reportTestCases), "long double", "constexpr_ldexp");
 #		endif
