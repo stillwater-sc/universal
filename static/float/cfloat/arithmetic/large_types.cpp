@@ -14,6 +14,8 @@
 // - The round() function with large shifts
 
 #include <universal/utility/directives.hpp>
+#include <cmath>
+#include <string>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -262,6 +264,39 @@ int VerifyMullerStep(bool reportTestCases) {
     return nrOfFailedTests;
 }
 
+// Products deep in the subnormal range: min normal * 2^-k is the subnormal with only fraction bit
+// fbits - k set, for k = 1 .. fbits; at k = fbits + 1 it is half of minpos, a tie that rounds to 0;
+// 1.5 * minpos is a tie that rounds to 2 * minpos. convert(blocktriple) for a blocktriple of 65 or
+// more fraction bits used setexponent(exponent) for these, which cannot encode a subnormal scale:
+// only k = 1 landed on exponent field 0, and cfloat<128,15> min normal * 2^-60 came out near
+// 2^16000 (#1517). The expected encodings are single bits, set directly.
+template<typename CfloatType>
+int VerifySubnormalProducts(bool reportTestCases) {
+    constexpr unsigned fbits = CfloatType::fbits;
+    int nrOfFailedTests = 0;
+    CfloatType minNormal;
+    minNormal.clear();
+    minNormal.setbit(fbits);  // exponent field 1, fraction 0
+    auto check = [&](const CfloatType& got, const CfloatType& expected, const std::string& what) {
+        if (got == expected) return;
+        ++nrOfFailedTests;
+        if (reportTestCases) std::cerr << "FAIL: " << what << " = " << to_binary(got) << ", expected " << to_binary(expected) << '\n';
+    };
+    for (unsigned k = 1; k <= fbits + 1; ++k) {
+        CfloatType scale(std::ldexp(1.0, -static_cast<int>(k)));
+        CfloatType expected;
+        expected.clear();
+        if (k <= fbits) expected.setbit(fbits - k);  // k == fbits + 1: the tie at half minpos rounds to 0
+        check(minNormal * scale, expected, "min normal * 2^-" + std::to_string(k));
+        check((-minNormal) * scale, -expected, "-min normal * 2^-" + std::to_string(k));
+    }
+    CfloatType threeHalves(1.5), scale(std::ldexp(1.0, -static_cast<int>(fbits))), twoMinpos;
+    twoMinpos.clear();
+    twoMinpos.setbit(1);
+    check((minNormal * threeHalves) * scale, twoMinpos, "1.5 * minpos");
+    return nrOfFailedTests;
+}
+
 }} // namespace sw::universal
 
 // Regression testing guards
@@ -310,6 +345,9 @@ try {
     nrOfFailedTestCases += ReportTestResult(
         VerifyMullerStep<Cfloat80>(reportTestCases),
         "cfloat<80,11>", "Muller step");
+    nrOfFailedTestCases += ReportTestResult(
+        VerifySubnormalProducts<Cfloat80>(reportTestCases),
+        "cfloat<80,11>", "subnormal products");
 
     std::cout << "\nTesting cfloat<128,15> (IEEE quad precision equivalent)\n";
     using Cfloat128 = cfloat<128, 15, uint32_t, true, false, false>;
@@ -325,6 +363,9 @@ try {
     nrOfFailedTestCases += ReportTestResult(
         VerifyMullerStep<Cfloat128>(reportTestCases),
         "cfloat<128,15>", "Muller step");
+    nrOfFailedTestCases += ReportTestResult(
+        VerifySubnormalProducts<Cfloat128>(reportTestCases),
+        "cfloat<128,15>", "subnormal products");
 
     std::cout << "\nTesting cfloat<256,19> (octuple precision)\n";
     using Cfloat256 = cfloat<256, 19, uint32_t, true, false, false>;
@@ -340,6 +381,9 @@ try {
     nrOfFailedTestCases += ReportTestResult(
         VerifyMullerStep<Cfloat256>(reportTestCases),
         "cfloat<256,19>", "Muller step");
+    nrOfFailedTestCases += ReportTestResult(
+        VerifySubnormalProducts<Cfloat256>(reportTestCases),
+        "cfloat<256,19>", "subnormal products");
 
 #endif
 

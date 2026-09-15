@@ -512,6 +512,47 @@ protected:
 		if (rhs == 0) return *this;                       // +/-0 -> 0/1
 		if (std::isinf(rhs) || std::isnan(rhs)) return *this;  // not representable; map to 0
 
+		// 2^k as an exact edecimal via square-and-multiply (k >= 0).
+		auto pow2 = [](int k) {
+			edecimal result(1), base(2);
+			while (k > 0) {
+				if (k & 1) result *= base;
+				base *= base;
+				k >>= 1;
+			}
+			return result;
+		};
+
+#if LONG_DOUBLE_SUPPORT
+		if constexpr (std::is_same_v<Real, long double>) {
+			// every bit of the significand: extractFields() gives only its leading 64, so 1 + 2^-100
+			// on IEEE binary128 became the different exact rational 1 + 2^-63 (#1517). The words run
+			// out once the value is read: one on x87, two on binary128, more on a double-double
+			// whose two doubles are far apart.
+			long_double_significand ld(rhs);
+			negative = ld.negative();
+			edecimal two64(4294967296ull);
+			two64 *= two64;
+			edecimal sig(0ull);
+			int      exp_pow = ld.scale() + 1;  // |rhs| = 0.w0 w1 ... * 2^exp_pow
+			while (!ld.empty()) {
+				sig *= two64;
+				sig += edecimal(static_cast<unsigned long long>(ld.next()));
+				exp_pow -= 64;
+			}
+			if (exp_pow >= 0) {
+				numerator   = sig * pow2(exp_pow);
+				denominator = 1;
+			}
+			else {
+				numerator   = sig;
+				denominator = pow2(-exp_pow);
+			}
+			normalize();
+			return *this;
+		}
+#endif
+
 		uint64_t bits{ 0 }, e{ 0 }, f{ 0 };
 		bool s{ false };
 		extractFields(rhs, s, e, f, bits);
@@ -529,17 +570,6 @@ protected:
 			significand = f | ieee754_parameter<Real>::hmask;
 			exp_pow     = static_cast<int>(e) - bias - fbits;
 		}
-
-		// 2^k as an exact edecimal via square-and-multiply (k >= 0).
-		auto pow2 = [](int k) {
-			edecimal result(1), base(2);
-			while (k > 0) {
-				if (k & 1) result *= base;
-				base *= base;
-				k >>= 1;
-			}
-			return result;
-		};
 
 		edecimal sig(significand);   // unsigned ctor: safe for wide significands (long double fbits >= 63)
 		if (exp_pow >= 0) {

@@ -370,7 +370,11 @@ constexpr inline void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nb
 				tgt.setblock(b, fracbits.block(b));
 			}
 			tgt.setsign(src.sign());
-			if (!tgt.setexponent(exponent)) {
+			// The exponent field comes from biasedExponent, which is 0 for a subnormal result. It
+			// used to be setexponent(exponent), which cannot encode a scale below MIN_EXP_NORMAL:
+			// only 2^(MIN_EXP_NORMAL - 1) happened to land on field 0, and deeper subnormals got a
+			// garbage field -- cfloat<128,15> min normal * 2^-60 came out near 2^16000 (#1517).
+			if (biasedExponent != 0 && !tgt.setexponent(static_cast<int>(biasedExponent) - cfloatType::EXP_BIAS)) {
 				// std::cerr is not constexpr-callable; gate the diagnostic on
 				// runtime context only. The constant-evaluator silently drops
 				// the diagnostic but the enclosing branch is rare in practice
@@ -2594,6 +2598,41 @@ protected:
 		return *this;
 	}
 
+#if LONG_DOUBLE_SUPPORT
+	// A finite, non-zero long double into a cfloat that keeps 63 or more significand bits. The
+	// uint64_t path above gets a 64-bit significand from extractFields(), whose last bit is a
+	// round-to-odd sticky on IEEE binary128 and double-double: correct for 62 bits or fewer, but
+	// wider cfloats took it for a real bit (cfloat<128,15>(1 + 2^-100) became 1 + 2^-63) or
+	// rounded twice (#1517). Here the long double's leading 128 bits go into a blocktriple sized
+	// for a product, the hidden bit at its radix and 2 * fbits - 127 >= -3 its lowest, with any
+	// bits below folded into bit 0 -- at least fbits below the cfloat's lsb, so still a sticky --
+	// and convert() rounds that once, to nearest even, subnormal targets and saturation included.
+	cfloat& convert_long_double_wide(long double rhs) {
+		using BT = blocktriple<fbits, BlockTripleOperator::MUL, bt>;
+		long_double_significand sig(rhs);
+		BT t;
+		t.clear();
+		t.setradix();
+		t.setnormal();
+		t.setsign(sig.negative());
+		t.setscale(sig.scale());
+		int  position = BT::radix;  // of the next bit: the leading one is the hidden bit
+		bool sticky   = false;
+		for (int word = 0; word < 2 && !sig.empty(); ++word) {
+			const uint64_t bits = sig.next();
+			for (int k = 63; k >= 0; --k, --position) {
+				if (((bits >> k) & 1ull) == 0) continue;
+				if (position >= 0) t.setbit(static_cast<unsigned>(position));
+				else sticky = true;
+			}
+		}
+		if (sticky || !sig.empty()) t.setbit(0);
+		clear();
+		convert(t, *this);
+		return *this;
+	}
+#endif
+
 public:
 	// Map an IEEE-754 special -- exponent all ones -- onto this cfloat's encoding.
 	// Returns true when rhs was a special and *this has been set, false when the
@@ -2686,7 +2725,12 @@ public:
 				setbit(nbits - 1ull, s);
 				return *this;
 			}
-	
+#if LONG_DOUBLE_SUPPORT
+			if constexpr (std::is_same_v<Real, long double> && fbits >= 62) {
+				return convert_long_double_wide(rhs);
+			}
+#endif
+
 			// normal number consists of fbits fraction bits and one hidden bit
 			// subnormal number has no hidden bit
 			int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent

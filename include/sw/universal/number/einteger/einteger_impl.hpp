@@ -844,6 +844,11 @@ protected:
 
 	template<typename Real>
 	einteger& convert_ieee754(Real& rhs) {
+#if LONG_DOUBLE_SUPPORT
+		if constexpr (std::is_same_v<std::remove_cv_t<Real>, long double>) {
+			return convert_long_double(rhs);
+		}
+#endif
 		clear();
 		bool s{ false };
 		std::uint64_t rawExponent{ 0 };
@@ -868,6 +873,29 @@ protected:
 		*this <<= static_cast<int>(exponent - fbits);
 		return *this;
 	}
+
+#if LONG_DOUBLE_SUPPORT
+	// a long double, truncated toward zero, from all of its significand: extractFields() gives only
+	// its leading 64 bits, and 2^100 + 1 on IEEE binary128 came out as 2^100 + 2^37 (#1517)
+	einteger& convert_long_double(long double rhs) {
+		clear();
+		if (rhs != rhs || std::isinf(rhs) || rhs == 0.0l) return *this;  // nan and inf are not representable
+		long_double_significand sig(rhs);
+		int shift = sig.scale() + 1;  // |rhs| = 0.w0 w1 ... * 2^shift
+		if (shift <= 0) return *this;  // |rhs| < 1
+		einteger word;
+		while (!sig.empty() && shift > 0) {  // the words below 2^0 are truncated away
+			*this <<= 64;
+			word = static_cast<unsigned long long>(sig.next());
+			*this += word;
+			shift -= 64;
+		}
+		if (shift > 0) *this <<= shift;
+		else if (shift < 0) *this >>= -shift;
+		setsign(sig.negative());
+		return *this;
+	}
+#endif
 
 	template<typename Integer>
 	Integer convert_to_native_integer() const noexcept {
