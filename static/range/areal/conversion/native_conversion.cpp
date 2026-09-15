@@ -152,10 +152,11 @@ inline int VerifyReported(bool reportTestCases) {
 	return fail.count;
 }
 
-// long double -> areal<128,15> -> long double gives the value back for every long double of a
-// significand of up to 112 bits: areal<128,15> has a 111-bit fraction and one more binade than a
-// long double, and its subnormals reach below a long double's. The conversion to the areal is exact
-// and is checked on its encoding in saturation.cpp.
+// long double -> areal<128,15> -> long double gives the value back for every long double the areal
+// holds: areal<128,15> has a 111-bit fraction, one more binade than a long double at the top, and
+// subnormals down to 2^-16493. An x87 long double of any significand fits; a quad's 113-bit
+// significands and its denorm_min, 2^-16494, do not. The conversion to the areal is exact and is
+// checked on its encoding in saturation.cpp.
 inline int VerifyRoundTrip(bool reportTestCases) {
 	using X     = areal<128, 15, std::uint32_t>;
 	using limit = std::numeric_limits<long double>;
@@ -166,9 +167,10 @@ inline int VerifyRoundTrip(bool reportTestCases) {
 	                                  1.0l + std::ldexp(1.0l, -60),
 	                                  1.0l - std::ldexp(1.0l, -60),
 	                                  limit::min(),
-	                                  limit::denorm_min(),
 	                                  limit::min() / 2.0l,  // a subnormal long double, an areal subnormal on x87 and quad
 	                                  limit::min() * 3.0l};
+	if (std::ilogb(limit::denorm_min()) >= X::MIN_EXP_SUBNORMAL)  // x87 2^-16445, double 2^-1074
+		xs.push_back(limit::denorm_min());
 	if (limit::digits <= 112) {  // a full long double significand: not a quad's 113 bits
 		xs.push_back(0.1l);
 		xs.push_back(limit::max());
