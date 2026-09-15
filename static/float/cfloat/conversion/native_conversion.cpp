@@ -37,8 +37,8 @@
    wherever the target holds the significand exactly, so that the conversion rounds once.
    cfloat<128,15> with subnormals is the IEEE binary128 layout and holds every long double, so a
    cfloat<128,15> holding a long double must convert back to it. Its encoding is built from frexp
-   rather than with the conversion from long double, which drops a quad long double's fraction
-   bits past 64.
+   rather than with the conversion from long double, which reads a quad long double as x87 and
+   gets the value wrong (#1515).
 */
 
 namespace sw {
@@ -268,8 +268,8 @@ int VerifyConstexprLdexp(bool reportTestCases) {
 using Binary128 = cfloat<128, 15, std::uint32_t, true, false, false>;
 
 // the cfloat<128,15> encoding of a long double, built bit by bit from frexp rather than with the
-// conversion from long double, which drops a quad long double's fraction bits past 64: it carries
-// the fraction in a uint64_t. Exact: binary128 holds every x87 and every quad long double.
+// conversion from long double, which reads a quad long double as x87: the low 64 bits of its 112-bit
+// fraction as the top 63 (#1515). Exact: binary128 holds every x87 and every quad long double.
 inline Binary128 Encode128(long double x) {
 	constexpr int fbits = 112, bias = 16383;
 	Binary128     c;
