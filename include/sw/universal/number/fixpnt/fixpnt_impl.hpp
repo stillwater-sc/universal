@@ -738,6 +738,44 @@ protected:
 	// 
 	// conversion helpers
 
+#if LONG_DOUBLE_SUPPORT
+	// A finite, non-zero long double into a fixpnt that can hold more than 62 significant bits, from
+	// every bit of its significand: the 64 extractFields() gives end in a round-to-odd sticky on
+	// IEEE binary128 and double-double, and fixpnt<128,64> of 2^40 + 2^-60 lost the 2^-60 (#1517).
+	// Bit j of the significand, the leading one j = 0, has weight 2^(scale - j) and lands at
+	// position scale + rbits - j. Positions from nbits up wrap away, as they do for a double; below
+	// position 0 the first is the guard bit and the rest sticky. Rounded to nearest even on the
+	// magnitude, then negated, as the double path does.
+	static fixpnt convert_long_double(long double v) {
+		fixpnt f;
+		f.clear();
+		long_double_significand sig(v);
+		int  position = sig.scale() + static_cast<int>(rbits);
+		bool lsb = false, guard = false, sticky = false;
+		while (!sig.empty() && position >= -1) {
+			const uint64_t word = sig.next();
+			for (int k = 63; k >= 0; --k, --position) {
+				if (((word >> k) & 1ull) == 0) continue;
+				if (position >= static_cast<int>(nbits)) continue;  // wraps away
+				if (position >= 0) {
+					f.setbit(static_cast<unsigned>(position));
+					if (position == 0) lsb = true;
+				}
+				else if (position == -1) {
+					guard = true;
+				}
+				else {
+					sticky = true;
+				}
+			}
+		}
+		if (!sig.empty()) sticky = true;
+		if (guard && (sticky || lsb)) ++f;
+		if (sig.negative()) f.twosComplement();
+		return f;
+	}
+#endif
+
 	// convert arithmetic types into a fixpnt
 	template<typename Arith>
 	static constexpr fixpnt convert(Arith v) {
@@ -795,6 +833,11 @@ protected:
 				if (v <= float(a)) { return a; } // set to max neg value
 			}
 
+#if LONG_DOUBLE_SUPPORT
+			if constexpr (std::is_same_v<Arith, long double> && nbits > 62) {
+				return convert_long_double(v);
+			}
+#endif
 			bool s{ false };
 			uint64_t unbiasedExponent{ 0 };
 			uint64_t fraction{ 0 };

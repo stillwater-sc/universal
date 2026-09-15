@@ -1895,22 +1895,37 @@ protected:
 			m *= 2.0l;
 			scale -= 1;
 		}
-		const long double sig = m * 9223372036854775808.0l;  // 2^63: [2^63, 2^64)
-		const uint64_t top = static_cast<uint64_t>(sig);
-		bool uncertain = (sig != static_cast<long double>(top));  // a significand wider than 64 bits
+		// The significand, 64 bits at a time: the integer part of the scaled remainder, subtracted
+		// off, both exact. It used to stop after one word, so on IEEE binary128 and double-double a
+		// wide areal set the ubit for bits it had room for: areal<128,15> of 1 + 2^-100 became
+		// (1, 1 + 2^-63) instead of 1 + 2^-100 exactly (#1517). Now the words go on until the
+		// value is read or the blocktriple has no room, and only bits that do not fit set the ubit.
+		long double rest = m * 9223372036854775808.0l;  // 2^63: [2^63, 2^64), the leading word
+		bool uncertain = false;
 		BT t;
 		t.setnormal();
 		t.setsign(negative);
 		t.setscale(scale);
-		for (int k = 0; k < 64; ++k) {
-			const bool bit = (top >> (63 - k)) & 1u;
-			if (radix_pos - k >= 0) {
-				if (bit)
-					t.setbit(static_cast<unsigned>(radix_pos - k), true);
+		for (int word = 0;; ++word) {
+			const uint64_t bits = static_cast<uint64_t>(rest);
+			rest -= static_cast<long double>(bits);  // [0, 1)
+			for (int k = 0; k < 64; ++k) {
+				const bool bit = (bits >> (63 - k)) & 1u;
+				const int  pos = radix_pos - 64 * word - k;
+				if (pos >= 0) {
+					if (bit)
+						t.setbit(static_cast<unsigned>(pos), true);
+				}
+				else if (bit) {
+					uncertain = true;
+				}
 			}
-			else if (bit) {
+			if (rest == 0.0l) break;
+			if (radix_pos - 64 * (word + 1) < 0) {  // no room for the next word
 				uncertain = true;
+				break;
 			}
+			rest *= 18446744073709551616.0l;  // 2^64: the next word's bits into the integer part
 		}
 		clear();
 		convert(t, *this, uncertain);

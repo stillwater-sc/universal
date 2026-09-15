@@ -54,7 +54,12 @@
    - einteger, edecimal and erational keep 2^100 + 1 and 1 + 2^-100, and on double-double
      2^1000 + 1 and 1 + 2^-1000, whose two doubles are far apart;
    - blocktriple<112> keeps every bit, and blocktriple<62> rounds to nearest even at a tie.
-   fixpnt, areal, rational and lns still take 64 bits: the second part of #1517.
+   The second part of #1517 does the same for fixpnt (more than 62 bits), areal (a word at a time
+   until the blocktriple is full, the ubit only for bits that do not fit), rational (its uint64_t core
+   widened, which also removes the scale-64 cap and message of #1519 and fixes the sign of -1.0 and
+   of a negative overflow) and lns (the log2's significand into a wide exponent). Checked here:
+   fixpnt<128,64> and areal<128,15> exact past 64 bits, areal<80,15> truncated with the ubit,
+   rational<128> exact and past scale 64, and the bits of lns<80,60>'s exponent.
 */
 
 namespace sw {
@@ -161,6 +166,108 @@ inline int VerifyRounding(bool reportTestCases) {
 	VerifyTies<cfloat<80, 15, std::uint32_t, true, false, false>>("cfloat<80,15>", 64, f);
 	VerifyTies<cfloat<96, 15, std::uint16_t, true, false, false>>("cfloat<96,15>", 80, f);
 	VerifyTies<posit<96, 2>>("posit<96,2>", 91, f);  // near 1: 96 - sign - regime 2 - es 2 = 91 fraction bits
+	VerifyTies<fixpnt<128, 64>>("fixpnt<128,64>", 64, f);
+	return f.count;
+}
+
+// fixpnt, areal, rational and lns wider than the 64 bits extractFields() hands out: the second part
+// of #1517. The expected values come from the types' own arithmetic or are set bit by bit.
+inline int VerifyWideFixedAndRational(bool reportTestCases) {
+	Failures f(reportTestCases);
+	constexpr int digits = std::numeric_limits<long double>::digits;
+	if (digits >= 101) {  // 2^40 + 2^-60 and 1 + 2^-100 are exact in the long double
+		for (int sign : {1, -1}) {
+			fixpnt<128, 64> got{}, big{}, tiny{};
+			got  = sign * (std::ldexp(1.0l, 40) + std::ldexp(1.0l, -60));
+			big  = std::ldexp(1.0, 40);
+			tiny = std::ldexp(1.0, -60);
+			fixpnt<128, 64> expected = big + tiny;
+			if (sign < 0) expected = -expected;
+			if (!(got == expected)) f.fail("fixpnt<128,64> = " + Hex(sign * (std::ldexp(1.0l, 40) + std::ldexp(1.0l, -60))) + " gave " + to_binary(got));
+		}
+		const long double x = 1.0l + std::ldexp(1.0l, -100);
+		{
+			// areal<128,15> holds it exactly: fraction bit 2^-100 sits at index fbits - 100 + 1
+			using A = areal<128, 15, std::uint32_t>;
+			A got{}, expected(1.0);
+			got = x;
+			expected.set(A::fbits - 100u + 1u, true);
+			if (!(got == expected)) f.fail("areal<128,15> = 1 + 2^-100 gave " + to_binary(got) + ", expected " + to_binary(expected));
+		}
+		{
+			// areal<80,15> has 64 fraction bits: truncated to 1, with the ubit set
+			using A = areal<80, 15, std::uint32_t>;
+			A got{}, expected(1.0);
+			got = x;
+			expected.set(0, true);
+			if (!(got == expected)) f.fail("areal<80,15> = 1 + 2^-100 gave " + to_binary(got) + ", expected (1, next)");
+		}
+		{
+			rational<128> got, one, tiny;
+			got  = x;
+			one  = 1.0;
+			tiny = std::ldexp(1.0, -100);
+			rational<128> expected = one + tiny;
+			if (!(got == expected)) f.fail("rational<128> = 1 + 2^-100 gave " + to_binary(got));
+		}
+	}
+	// rational from a double past scale 64, which saturated or went to zero with a message (#1519)
+	for (int k : {60, 64, 70, 100, 120}) {
+		for (double v : {std::ldexp(1.0, k), std::ldexp(3.0, k - 2), std::ldexp(1.0, -k), -std::ldexp(3.0, -k)}) {
+			rational<128> r;
+			r = v;
+			if (double(r) != v) f.fail("rational<128> = " + Hex(static_cast<long double>(v)) + " gave " + std::to_string(double(r)));
+		}
+	}
+	{
+		rational<8> a, b;
+		a = -1.0;     // used to give +1
+		b = -1000.0;  // used to saturate to maxpos
+		rational<8> maxneg;
+		maxneg.maxneg();
+		if (double(a) != -1.0) f.fail("rational<8> = -1.0 gave " + std::to_string(double(a)));
+		if (!(b == maxneg)) f.fail("rational<8> = -1000.0 gave " + to_binary(b) + ", expected maxneg");
+		rational<16> c;
+		c = std::ldexp(1.0, -1030);  // a subnormal double: used to be left unconverted
+		if (!c.iszero()) f.fail("rational<16> = 2^-1030 gave " + to_binary(c) + ", expected 0");
+		// at the top of the range: a numerator of exactly nbits bits was not trimmed (255 gave 1),
+		// and a scale of exactly maxUpShift + maxDownShift shifted the denominator out to 0
+		// (128 and 200 gave NaN); -128 is rational<8>'s maxneg, -128/1
+		rational<8> maxpos;
+		maxpos.maxpos();
+		for (double v : {255.0, 128.0, 200.0, 1.0e10}) {
+			rational<8> r;
+			r = v;
+			if (!(r == maxpos)) f.fail("rational<8> = " + std::to_string(v) + " gave " + to_binary(r) + ", expected maxpos");
+		}
+		rational<8> r;
+		r = -128.0;
+		if (!(r == maxneg) || double(r) != -128.0) f.fail("rational<8> = -128.0 gave " + to_binary(r));
+	}
+	return f.count;
+}
+
+// lns<80,60>: the exponent is round(log2(v) * 2^60) in two's complement, 79 bits: with the 7 integer
+// bits of log2(1e30) that is 67 significant bits, past the 64 extractFields() gives. The expected
+// bits come from the long double log2 itself, scaled by 2^60 and rounded with rint, and are read
+// with exact long double arithmetic: floor(E / 2^i) mod 2. Only values above 1, whose log is
+// positive. (lns needs rbits < 64.)
+inline int VerifyWideLns(bool reportTestCases) {
+	using L = lns<80, 60, std::uint32_t>;
+	Failures f(reportTestCases);
+	for (long double v : {1.5l, 3.0l, 10.0l, 1.0e30l, 1.0l + std::ldexp(1.0l, -40)}) {
+		const long double E = std::rint(std::ldexp(std::log2(v), 60));
+		for (int sign : {1, -1}) {
+			L got;
+			got = sign * v;
+			bool ok = (got.at(79) == (sign < 0));
+			for (unsigned i = 0; i < 79 && ok; ++i) {
+				const bool expected = std::fmod(std::floor(std::ldexp(E, -static_cast<int>(i))), 2.0l) != 0.0l;
+				ok = (got.at(i) == expected);
+			}
+			if (!ok) f.fail("lns<80,60> = " + Hex(sign * v) + " gave " + to_binary(got));
+		}
+	}
 	return f.count;
 }
 
@@ -436,6 +543,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinary128(reportTestCases), "cfloat<128,15> exact", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyExactTypes(reportTestCases), "exact types", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktriple(reportTestCases), "blocktriple", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideFixedAndRational(reportTestCases), "fixpnt, areal, rational", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideLns(reportTestCases), "lns<80,60>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySpecials(reportTestCases), "nan and inf", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyToLongDouble(reportTestCases), "to long double", test_tag);
 #		endif
