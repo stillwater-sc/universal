@@ -28,6 +28,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
+#include <cmath>      // std::ldexp in to_native()
 #include <limits>
 
 #include <universal/native/ieee754_core.hpp>   // the stream-free half of <universal/native/ieee754.hpp>
@@ -1645,22 +1646,19 @@ public:
 			}
 			blockbinary<es, bt> ebits;
 			exponent(ebits);
+			// The power of two is applied with std::ldexp in TargetFloat itself (#1509). It used to be
+			// built from 1ull << e, and as a double outside (-64, 64): clang 18 miscompiles
+			// 1 / (long double)(1ull << n) for a runtime n (0.75 read back as -nan, the #937 cfloat
+			// fault), a double cannot hold a long double's exponent range, and the subnormal scale
+			// table in native/subnormal.hpp is 0 for es >= 12.
 			if (ebits.iszero()) {
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
-				TargetFloat exponentiation = static_cast<TargetFloat>(subnormal_exponent[es]); // precomputed values for 2^(2-2^(es-1))
-				v = exponentiation * f;
+				v = std::ldexp(f, MIN_EXP_NORMAL);
 			}
 			else {
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 				int exponent = unsigned(ebits) + 1ll - (1ll << (es - 1ull));
-				if (exponent > -64 && exponent < 64) {
-					TargetFloat exponentiation = (exponent >= 0 ? TargetFloat(1ull << exponent) : (1.0f / TargetFloat(1ull << -exponent)));
-					v = exponentiation * (TargetFloat(1) + f);
-				}
-				else {
-					double exponentiation = ipow(exponent);
-					v = static_cast<TargetFloat>(exponentiation * (1.0 + f));
-				}
+				v = std::ldexp(TargetFloat(1) + f, exponent);
 			}
 			v = sign() ? -v : v;
 		}
@@ -2085,21 +2083,6 @@ protected:
 
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
-	}
-
-	// calculate the integer power 2 ^ b using exponentiation by squaring
-	double ipow(int exponent) const {
-		bool negative = (exponent < 0);
-		exponent = negative ? -exponent : exponent;
-		double result(1.0);
-		double base = 2.0;
-		for (;;) {
-			if (exponent % 2) result *= base;
-			exponent >>= 1;
-			if (exponent == 0) break;
-			base *= base;
-		}
-		return (negative ? (1.0 / result) : result);
 	}
 
 private:
