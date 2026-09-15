@@ -1346,36 +1346,30 @@ public:
 	inline constexpr bool sign() const noexcept { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
 	inline constexpr bool ubit() const noexcept { return (_block[0] & LSB_BIT_MASK) != 0; }
 	inline constexpr int scale() const {
+		// the biased exponent field, read as the unsigned number it is
 		int e{ 0 };
 		if constexpr (MSU_CAPTURES_E) {
 			e = int((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
-			if (e == 0) {
-				// subnormal scale is determined by fraction
-				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
-				e = (2l - (1l << (es - 1ull))) - 1;
-				for (unsigned i = nbits - 2ull - es; i > 0; --i) {
-					if (test(i)) break;
-					--e;
-				}
-			}
-			else {
-				e -= EXP_BIAS;
+		}
+		else {
+			// the field straddles a limb boundary. blockbinary<es, bt> is Signed, and its int()
+			// sign-extends, which read every code with the top bit set as code - 2^es (#1506)
+			blockbinary<es, bt> ebits;
+			exponent(ebits);
+			e = static_cast<int>(unsigned(ebits));
+		}
+		if (e == 0) {
+			// subnormal scale is determined by fraction
+			// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits)), so the leading fraction bit is
+			// at MIN_EXP_NORMAL - 1. The straddling branch used to count down from -1 (#1506)
+			e = (2l - (1l << (es - 1ull))) - 1;
+			for (unsigned i = nbits - 2ull - es; i > 0; --i) {
+				if (test(i)) break;
+				--e;
 			}
 		}
 		else {
-			blockbinary<es, bt> ebits;
-			exponent(ebits);
-			if (ebits.iszero()) {
-				// subnormal scale is determined by fraction
-				e = -1;
-				for (unsigned i = nbits - 2ull - es; i > 0; --i) {
-					if (test(i)) break;
-					--e;
-				}
-			}
-			else {
-				e = int(ebits) - EXP_BIAS;
-			}
+			e -= EXP_BIAS;
 		}
 		return e;
 	}

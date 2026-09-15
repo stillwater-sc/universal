@@ -36,9 +36,10 @@
    the same way, with values double cannot hold where long double is wider: it used to narrow to
    double first, which rounded them.
 
-   The arithmetic check runs on single-limb configurations: where the exponent field
-   straddles two limbs, + - * are wrong across the whole range (#1506). An exact zero result
-   may carry either sign: +0 - +0 gives -0 where IEEE gives +0 (#1507).
+   The arithmetic check covers configurations whose exponent field straddles two uint8_t
+   limbs as well, where + - * used to be wrong across the whole range (#1506; see also
+   static/range/areal/arithmetic/limb_layout.cpp). An exact zero result may carry either
+   sign: +0 - +0 gives -0 where IEEE gives +0 (#1507).
 */
 
 namespace sw {
@@ -436,23 +437,32 @@ int main() try {
 	                                        "areal<16,5,uint16_t>", "long double");
 	nrOfFailedTestCases += ReportTestResult(VerifyLongDouble<areal<16, 5, std::uint8_t>>(reportTestCases),
 	                                        "areal<16,5,uint8_t >", "long double");
-	// arithmetic: every pair of exact values, single-limb configurations (#1506)
+	// arithmetic: every pair of exact values, over one limb and with the exponent field
+	// straddling two uint8_t limbs (#1506)
 	nrOfFailedTestCases +=
 	    ReportTestResult(VerifyArithmetic<areal<8, 2, std::uint8_t>>(reportTestCases), "areal< 8,2,uint8_t >", "+ - *");
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<areal<9, 3, std::uint16_t>>(reportTestCases),
 	                                        "areal< 9,3,uint16_t>", "+ - *");
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<areal<10, 3, std::uint16_t>>(reportTestCases),
 	                                        "areal<10,3,uint16_t>", "+ - *");
+	nrOfFailedTestCases +=
+	    ReportTestResult(VerifyArithmetic<areal<9, 3, std::uint8_t>>(reportTestCases), "areal< 9,3,uint8_t >", "+ - *");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<areal<10, 3, std::uint8_t>>(reportTestCases),
+	                                        "areal<10,3,uint8_t >", "+ - *");
 #	endif
 
 #	if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<areal<12, 5, std::uint16_t>>(reportTestCases),
 	                                        "areal<12,5,uint16_t>", "+ - *");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<areal<11, 4, std::uint8_t>>(reportTestCases),
+	                                        "areal<11,4,uint8_t >", "+ - *");
 #	endif
 
 #	if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<areal<12, 4, std::uint16_t>>(reportTestCases),
 	                                        "areal<12,4,uint16_t>", "+ - *");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<areal<12, 4, std::uint8_t>>(reportTestCases),
+	                                        "areal<12,4,uint8_t >", "+ - *");
 #	endif
 
 #	if REGRESSION_LEVEL_4
