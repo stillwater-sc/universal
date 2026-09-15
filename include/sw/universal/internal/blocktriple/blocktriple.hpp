@@ -781,6 +781,11 @@ private:
 			_scale = 0;
 			return *this;
 		}
+#if LONG_DOUBLE_SUPPORT
+		if constexpr (std::is_same_v<Real, long double>) {
+			return convert_long_double(rhs);
+		}
+#endif
 		if (rawExponent == 0ull) {
 			// value is a subnormal: TBD
 #if ! BIT_CAST_IS_CONSTEXPR
@@ -801,31 +806,75 @@ private:
 			rawFraction |= (1ull << ieee754_parameter<Real>::fbits);
 			uint64_t rounded_bits = round<ieee754_parameter<Real>::fbits+1, Real>(rawFraction);
 			_significand.setbits(rounded_bits);
-			switch(op) {
-			case BlockTripleOperator::REP:
-				_significand.setradix(fbits);
-				break;
-			case BlockTripleOperator::ADD:
-				_significand.setradix(abits);
-				_significand <<= rbits;
-				break;
-			case BlockTripleOperator::MUL:
-				_significand.setradix(2*fbits);
-				_significand <<= fbits;
-				break;
-			case BlockTripleOperator::DIV:
-				_significand.setradix(2*fbits);
-				_significand <<= fbits;
-				break;
-			case BlockTripleOperator::SQRT:
-				_significand.setradix(2 * fbits);
-				_significand <<= fbits;
-				break;
-			}
+			alignForOperator();
 		}
 
 		return *this;
 	}
+
+	// move a significand held as 1.fff (fbits + 1 bits, hidden bit at fbits) to the operator's layout
+	constexpr void alignForOperator() noexcept {
+		switch(op) {
+		case BlockTripleOperator::REP:
+			_significand.setradix(fbits);
+			break;
+		case BlockTripleOperator::ADD:
+			_significand.setradix(abits);
+			_significand <<= rbits;
+			break;
+		case BlockTripleOperator::MUL:
+			_significand.setradix(2*fbits);
+			_significand <<= fbits;
+			break;
+		case BlockTripleOperator::DIV:
+			_significand.setradix(2*fbits);
+			_significand <<= fbits;
+			break;
+		case BlockTripleOperator::SQRT:
+			_significand.setradix(2 * fbits);
+			_significand <<= fbits;
+			break;
+		}
+	}
+
+#if LONG_DOUBLE_SUPPORT
+	// A finite, non-zero long double, rounded to fbits + 1 significand bits, to nearest even, from
+	// all of its bits. The uint64_t path above gets 64 bits from extractFields(), whose last is a
+	// round-to-odd sticky on IEEE binary128 and double-double: a blocktriple of fbits >= 62 took it
+	// for a real bit or rounded twice, and a subnormal long double was not converted at all (#1517).
+	blocktriple& convert_long_double(long double rhs) noexcept {
+		long_double_significand sig(rhs);
+		_nan   = false;
+		_inf   = false;
+		_zero  = false;
+		_sign  = sig.negative();
+		_scale = sig.scale();
+		int  position = static_cast<int>(fbits);  // of the next bit: the leading one is the hidden bit
+		bool guard = false, sticky = false;
+		while (!sig.empty() && position >= -1) {  // the kept bits, then the guard bit at -1
+			const uint64_t bits = sig.next();
+			for (int k = 63; k >= 0; --k, --position) {
+				const bool bit = ((bits >> k) & 1ull) != 0;
+				if (position >= 0) {
+					if (bit) _significand.setbit(static_cast<unsigned>(position));
+				}
+				else if (position == -1) guard = bit;
+				else sticky = sticky || bit;
+			}
+		}
+		sticky = sticky || !sig.empty();
+		if (guard && (sticky || _significand.test(0))) {
+			_significand.increment();
+			if (_significand.test(fhbits)) {  // 1.11...1 + ulp = 10.00...0
+				_significand.clear();
+				_significand.setbit(fbits);
+				++_scale;
+			}
+		}
+		alignForOperator();
+		return *this;
+	}
+#endif
 
 	template<typename Real>
 	constexpr Real to_native() const noexcept {

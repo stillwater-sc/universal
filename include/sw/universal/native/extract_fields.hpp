@@ -10,6 +10,7 @@
 #include <cmath>    // std::frexp, std::ldexp
 #include <cstdint>
 #include <cstring>  // std::memcpy
+#include <universal/native/long_double_significand.hpp>  // the full significand, for types wider than 62 bits (#1517)
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 

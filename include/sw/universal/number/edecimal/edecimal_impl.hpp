@@ -533,12 +533,20 @@ protected:
 	}
 	template<typename Ty>
 	edecimal& convert_ieee754(Ty rhs) {
+#if LONG_DOUBLE_SUPPORT
+		if constexpr (std::is_same_v<Ty, long double>) {
+			return convert_long_double(rhs);
+		}
+#endif
 		clear();
 		if (rhs <= 0.5 && rhs >= -0.5) {
 			return *this = 0;
 		}
 		else {
-			if (rhs < -0.5) negative = true; else negative = false;
+			// The magnitude is built positive and the sign applied at the end: setting negative here,
+			// before the += below built the value, dropped it, so -2.5 converted to 2 and -3 to 3.
+			const bool isNegative = (rhs < -0.5);
+			negative = false;
 
 			bool s{ false };
 			uint64_t unbiasedExponent{ 0 };
@@ -582,9 +590,40 @@ protected:
 				// multiply to add the missing factor
 				*this *= upConvert;
 			}
+			if (!iszero()) negative = isNegative;
 		}
 		return *this;
 	}
+
+#if LONG_DOUBLE_SUPPORT
+	// a long double from all of its significand, truncated toward zero as the path above does:
+	// extractFields() gives only its leading 64 bits, and 2^100 + 1 on IEEE binary128 came out as
+	// 2^100 + 2^37 (#1517)
+	edecimal& convert_long_double(long double rhs) {
+		clear();
+		if (rhs != rhs || std::isinf(rhs) || (rhs <= 0.5l && rhs >= -0.5l)) return *this = 0;
+		long_double_significand sig(rhs);
+		int shift = sig.scale() + 1;  // |rhs| = 0.w0 w1 ... * 2^shift
+		edecimal two64(4294967296ull);
+		two64 *= two64;
+		edecimal magnitude(0ull);
+		while (!sig.empty() && shift > 0) {  // the words below 2^0 are truncated away
+			magnitude *= two64;
+			magnitude += edecimal(static_cast<unsigned long long>(sig.next()));
+			shift -= 64;
+		}
+		edecimal power(1ull), two(2ull);  // 2^|shift|
+		for (int k = (shift < 0 ? -shift : shift); k > 0; k >>= 1) {
+			if (k & 1) power *= two;
+			two *= two;
+		}
+		if (shift >= 0) magnitude *= power;
+		else magnitude /= power;
+		*this = magnitude;
+		if (!iszero()) negative = sig.negative();
+		return *this;
+	}
+#endif
 
 private:
 	// sign-magnitude number: indicate if number is positive or negative

@@ -1457,6 +1457,41 @@ private:
 		}
 	}
 
+#if LONG_DOUBLE_SUPPORT
+	// A finite, non-zero long double into a posit wider than 64 bits, from all of its significand
+	// after the hidden bit, not the 64 bits extractFields() gives, whose last is a round-to-odd sticky
+	// on IEEE binary128 and double-double: a posit keeping 62 or more fraction bits took it for a
+	// real one, so posit<128,2> of 1 + 2^-100 became 1 + 2^-63 (#1517). Bits past the field fold into
+	// its lowest bit, which convert_<>() reads as sticky. Not constexpr: it reads with frexp.
+	posit<nbits, es, bt>& convert_long_double_wide(long double rhs, bool negative) noexcept {
+		constexpr unsigned wideBits = (nbits + 4u > 128u) ? (nbits + 4u) : 128u;
+		blocksignificand<wideBits, bt> wide;
+		long_double_significand sig(rhs);
+		int  position = static_cast<int>(wideBits);  // the first fraction bit goes at wideBits - 1
+		bool leading  = true;
+		bool sticky   = false;
+		while (!sig.empty() && position > 0) {
+			const uint64_t word = sig.next();
+			for (int k = 63; k >= 0; --k) {
+				const bool bit = ((word >> k) & 1ull) != 0;
+				if (leading) {  // the hidden bit
+					leading = false;
+					continue;
+				}
+				--position;
+				if (position >= 0) {
+					if (bit) wide.setbit(static_cast<unsigned>(position));
+				}
+				else {
+					sticky = sticky || bit;
+				}
+			}
+		}
+		if (sticky || !sig.empty()) wide.setbit(0);
+		return convert_<nbits, es, bt, wideBits>(negative, sig.scale(), wide, *this);
+	}
+#endif
+
 	template <typename Real>
 	BIT_CAST_CONSTEXPR posit<nbits, es, bt>& convert_ieee754(const Real& rhs) noexcept {
 		// Direct IEEE-754 to posit conversion via bit-cast field extraction.
@@ -1522,6 +1557,11 @@ private:
 			return *this;
 		}
 		else {
+#if LONG_DOUBLE_SUPPORT
+			if constexpr (std::is_same_v<Real, long double>) {
+				return convert_long_double_wide(rhs, s);
+			}
+#endif
 			// nbits > 64: route through convert_<>() with a blocksignificand.
 			// convert_<>() is constexpr (PR 716) and handles wide blockbinary arithmetic.
 			constexpr unsigned ieeeBits = ieee_fbits + 1u; // hidden bit + fraction bits

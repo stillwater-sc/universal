@@ -10,6 +10,7 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <vector>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
@@ -42,6 +43,18 @@
    - a signalling long double NaN stays signalling in a cfloat. x87's qnanmask used to be double's
      pattern, which classified every x87 NaN with a payload as quiet;
    - fixpnt and lns values that are exact in a long double convert to it exactly.
+
+   The 64 bits extractFields() hands out lose the rest of a binary128 or double-double significand
+   in a type that keeps more (#1517). cfloat (63 or more significand bits), posit (nbits > 64),
+   blocktriple, einteger, edecimal and erational now read all of it through
+   long_double_significand. Checked here:
+   - cfloat<128,15>, the binary128 layout, holds every sample long double exactly, compared with
+     an encoding built from frexp: on x87 through that path too;
+   - cfloat<80,15>, cfloat<96,15> and posit<96,2> round at ties whose sticky bit lies past 64 bits;
+   - einteger, edecimal and erational keep 2^100 + 1 and 1 + 2^-100, and on double-double
+     2^1000 + 1 and 1 + 2^-1000, whose two doubles are far apart;
+   - blocktriple<112> keeps every bit, and blocktriple<62> rounds to nearest even at a tie.
+   fixpnt, areal, rational and lns still take 64 bits: the second part of #1517.
 */
 
 namespace sw {
@@ -111,24 +124,28 @@ void VerifyTies(const std::string& name, int q, Failures& f) {
 		return;  // the long double has no bit below this type's tie
 	const long double ulp = std::ldexp(1.0l, -q), half = ulp / 2.0l, sticky = std::ldexp(1.0l, t);
 	struct Case {
-		long double x, expected;
+		long double x;
+		int         ulps;  // the expected result, 1 + ulps * 2^-q
 	};
 	const Case cases[] = {
-	    {1.0l + half, 1.0l},                          // tie, even below
-	    {1.0l + half + sticky, 1.0l + ulp},           // just past the tie: only the sticky bit says so
-	    {1.0l + half - sticky, 1.0l},                 // just short of it
-	    {1.0l + ulp + half, 1.0l + 2.0l * ulp},       // tie, even above
-	    {1.0l + ulp + half - sticky, 1.0l + ulp},     // just short of it
-	    {1.0l + ulp + sticky, 1.0l + ulp},            // far from a tie
+	    {1.0l + half, 0},                 // tie, even below
+	    {1.0l + half + sticky, 1},        // just past the tie: only the sticky bit says so
+	    {1.0l + half - sticky, 0},        // just short of it
+	    {1.0l + ulp + half, 2},           // tie, even above
+	    {1.0l + ulp + half - sticky, 1},  // just short of it
+	    {1.0l + ulp + sticky, 1},         // far from a tie
 	};
 	for (const Case& c : cases) {
 		for (int sign : {1, -1}) {
-			T got{}, expected{};
-			got      = sign * c.x;
-			expected = static_cast<double>(sign * c.expected);  // exact in a double: 1 + 2 ulp needs q + 1 bits
+			// the expected value in the type's own arithmetic: 1 + 2 ulp need not fit a double
+			T got{}, one{}, step{};
+			got  = sign * c.x;
+			one  = 1.0;
+			step = std::ldexp(static_cast<double>(c.ulps), -q);  // exact in a double
+			T expected = one + step;
+			if (sign < 0) expected = -expected;
 			if (!(got == expected))
-				f.fail(name + " = " + Hex(sign * c.x) + " gave " + std::to_string(double(got)) + ", expected " +
-				       Hex(sign * c.expected));
+				f.fail(name + " = " + Hex(sign * c.x) + " gave " + to_binary(got) + ", expected " + to_binary(expected));
 		}
 	}
 }
@@ -139,6 +156,156 @@ inline int VerifyRounding(bool reportTestCases) {
 	VerifyTies<cfloat<64, 11, std::uint64_t, true, false, false>>("cfloat<64,11>", 52, f);
 	VerifyTies<posit<32, 2>>("posit<32,2>", 27, f);  // near 1: 32 - sign - regime 2 - es 2 = 27 fraction bits
 	VerifyTies<fixpnt<32, 16>>("fixpnt<32,16>", 16, f);
+	// wider than the 64-bit significand extractFields() hands out: binary128 and double-double
+	// reach the sticky bit only through the full significand (#1517)
+	VerifyTies<cfloat<80, 15, std::uint32_t, true, false, false>>("cfloat<80,15>", 64, f);
+	VerifyTies<cfloat<96, 15, std::uint16_t, true, false, false>>("cfloat<96,15>", 80, f);
+	VerifyTies<posit<96, 2>>("posit<96,2>", 91, f);  // near 1: 96 - sign - regime 2 - es 2 = 91 fraction bits
+	return f.count;
+}
+
+// the cfloat<128,15> encoding of a long double, built bit by bit from frexp rather than with the
+// conversion under test: sign, biased exponent, the 112 fraction bits. Exact: cfloat<128,15> with
+// subnormals is IEEE binary128, which holds every x87 and binary128 long double, and a
+// double-double whose two doubles are within 112 bits of each other
+using Binary128 = cfloat<128, 15, std::uint32_t, true, false, false>;
+
+inline Binary128 Encode128(long double x) {
+	constexpr int fbits = 112, bias = 16383;
+	Binary128     c;
+	c.clear();
+	c.setbit(127, std::signbit(x));
+	int e = 0;
+	std::frexp(std::fabs(x), &e);  // |x| in [2^(e-1), 2^e)
+	const int   biased = e - 1 + bias;
+	long double t      = (biased >= 1) ? std::ldexp(std::fabs(x), 1 - e) - 1.0l  // the fraction of 1.f
+	                                   : std::ldexp(std::fabs(x), bias - 1);     // subnormal: 0.f * 2^(1 - bias)
+	const int   field  = (biased >= 1) ? biased : 0;
+	for (int i = 0; i < 15; ++i)
+		c.setbit(unsigned(fbits + i), ((field >> i) & 1) != 0);
+	for (int i = fbits - 1; i >= 0; --i) {
+		t *= 2.0l;
+		const bool bit = (t >= 1.0l);
+		c.setbit(unsigned(i), bit);
+		if (bit)
+			t -= 1.0l;
+	}
+	return c;
+}
+
+// every long double of up to 112 significant bits assigns to cfloat<128,15> exactly: on x87 (64
+// bits) through the new wide path too, on binary128 and double-double past the 64-bit cut
+inline int VerifyBinary128(bool reportTestCases) {
+	using limit = std::numeric_limits<long double>;
+	Failures                 f(reportTestCases);
+	std::vector<long double> xs = {0.75l,
+	                               1.0l / 3.0l,
+	                               0.1l,
+	                               1.0l + std::ldexp(1.0l, 2 - limit::digits),  // the last place
+	                               std::ldexp(1.0l, 100) + 1.0l,
+	                               limit::min(),
+	                               limit::min() * 3.0l,
+	                               limit::min() / 2.0l};
+	if (limit::digits <= 112) xs.push_back(limit::max());  // a quad's 113th bit does not fit
+	if (std::ilogb(limit::denorm_min()) >= -16494) xs.push_back(limit::denorm_min());
+	for (long double x : xs) {
+		for (long double y : {x, -x}) {
+			Binary128 got;
+			got = y;
+			const Binary128 expected = Encode128(y);
+			if (!(got == expected))
+				f.fail("cfloat<128,15> = " + Hex(y) + " gave " + to_binary(got) + ", expected " + to_binary(expected));
+		}
+	}
+	return f.count;
+}
+
+// the exact types keep every bit, however many words the significand takes: 2^100 + 1 and
+// 1 + 2^-100 on binary128 and double-double, and on a double-double also values whose two
+// doubles are far apart (1 + 2^-1000 spans 1001 bits). The expected values are built with the
+// types' own exact arithmetic from doubles.
+inline int VerifyExactTypes(bool reportTestCases) {
+	Failures f(reportTestCases);
+	auto representable = [](long double big, long double small) { return (big + small) != big; };
+	for (int k : {100, 1000}) {
+		const long double big = std::ldexp(1.0l, k);
+		if (!std::isfinite(big) || !representable(big, 1.0l)) continue;
+		for (int sign : {1, -1}) {
+			const long double x = sign * (big + 1.0l);
+			einteger ei, eexp;
+			ei   = x;
+			eexp = std::ldexp(1.0, k);
+			eexp += einteger(1);
+			if (sign < 0) eexp.setsign(true);
+			if (!(ei == eexp)) f.fail("einteger = " + Hex(x) + " is not exact");
+			edecimal ed, dexp;
+			ed   = x;
+			dexp = std::ldexp(1.0, k);
+			dexp += edecimal(1);
+			if (sign < 0) dexp = -dexp;
+			if (!(ed == dexp)) f.fail("edecimal = " + Hex(x) + " is not exact");
+		}
+		const long double tiny = std::ldexp(1.0l, -k);
+		if (!representable(1.0l, tiny)) continue;
+		for (int sign : {1, -1}) {
+			const long double x = sign * (1.0l + tiny);
+			erational er, one(1.0), t;
+			er = x;
+			t  = std::ldexp(1.0, -k);
+			erational expected = one + t;
+			if (sign < 0) expected = -expected;
+			if (!(er == expected)) f.fail("erational = " + Hex(x) + " is not exact");
+		}
+	}
+	// truncation toward zero keeps the integer part only
+	if (representable(std::ldexp(1.0l, 100), 3.75l)) {
+		einteger ei, eexp;
+		ei   = -(std::ldexp(1.0l, 100) + 3.75l);
+		eexp = std::ldexp(1.0, 100);
+		eexp += einteger(3);
+		eexp.setsign(true);
+		if (!(ei == eexp)) f.fail("einteger = -(2^100 + 3.75) is not -(2^100 + 3)");
+	}
+	return f.count;
+}
+
+// blocktriple from a long double: every bit kept at fbits = 112, and rounded to nearest even at
+// fbits = 62 with the sticky bit past the 64-bit cut
+inline int VerifyBlocktriple(bool reportTestCases) {
+	Failures f(reportTestCases);
+	constexpr int digits = std::numeric_limits<long double>::digits;
+	{
+		using B = blocktriple<112, BlockTripleOperator::REP, std::uint32_t>;
+		for (long double x : {1.0l / 3.0l, 0.1l, -0.75l, std::ldexp(1.0l, 100) + 1.0l}) {
+			if (digits > 112) continue;
+			B b;
+			b = x;
+			int e = 0;
+			long double t = std::frexp(std::fabs(x), &e) * 2.0l - 1.0l;  // the fraction of 1.f
+			bool ok = (b.sign() == std::signbit(x)) && (b.scale() == e - 1) && b.significand().test(112);
+			for (int i = 111; i >= 0 && ok; --i) {
+				t *= 2.0l;
+				const bool bit = (t >= 1.0l);
+				if (bit) t -= 1.0l;
+				ok = (b.significand().test(unsigned(i)) == bit);
+			}
+			if (!ok) f.fail("blocktriple<112> = " + Hex(x) + " is " + to_binary(b));
+		}
+	}
+	if (2 - digits < -64) {  // a sticky bit below blocktriple<62>'s tie
+		using B = blocktriple<62, BlockTripleOperator::REP, std::uint32_t>;
+		const long double half = std::ldexp(1.0l, -63), sticky = std::ldexp(1.0l, 2 - digits);
+		struct Case {
+			long double x;
+			bool        up;
+		};
+		for (const Case& c : {Case{1.0l + half, false}, Case{1.0l + half + sticky, true}, Case{1.0l + half - sticky, false}}) {
+			B b;
+			b = c.x;
+			const bool ok = b.significand().test(62) && (b.significand().test(0) == c.up) && b.scale() == 0;
+			if (!ok) f.fail("blocktriple<62> = " + Hex(c.x) + " is " + to_binary(b) + (c.up ? ", expected 1 + ulp" : ", expected 1"));
+		}
+	}
 	return f.count;
 }
 
@@ -266,6 +433,9 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExactValues(reportTestCases), "exact values", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyRounding(reportTestCases), "rounding at ties", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDeepSubnormals(reportTestCases), "deep subnormals", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyBinary128(reportTestCases), "cfloat<128,15> exact", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyExactTypes(reportTestCases), "exact types", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktriple(reportTestCases), "blocktriple", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySpecials(reportTestCases), "nan and inf", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyToLongDouble(reportTestCases), "to long double", test_tag);
 #		endif
