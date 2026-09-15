@@ -5,10 +5,87 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <bit>      // std::endian
+#include <cfloat>   // LDBL_MANT_DIG
+#include <cmath>    // std::frexp, std::ldexp
+#include <cstdint>
+#include <cstring>  // std::memcpy
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 
 namespace sw { namespace universal {
+
+#if LONG_DOUBLE_SUPPORT && (LDBL_MANT_DIG != 64) && (LDBL_MANT_DIG != 53)
+	// the quiet bit of a long double NaN, read from the format's own leading fraction bit
+	inline bool longDoubleNaNIsQuiet(long double value) noexcept {
+#	if LDBL_MANT_DIG == 113  // IEEE binary128: the fraction's MSB, bit 111
+		std::uint64_t word[2]{};
+		std::memcpy(word, &value, sizeof(word));
+		const std::uint64_t upper = (std::endian::native == std::endian::little) ? word[1] : word[0];
+		return ((upper >> 47) & 1u) != 0;
+#	elif LDBL_MANT_DIG == 106  // IBM double-double: the leading double carries the NaN
+		std::uint64_t leading{};
+		std::memcpy(&leading, &value, sizeof(leading));
+		return ((leading >> 51) & 1u) != 0;
+#	else
+		(void)value;
+		return true;
+#	endif
+	}
+
+	// x87-shaped fields of a long double that is not x87: IEEE binary128 (aarch64 Linux) or IBM
+	// double-double (POWER). Callers read the fields through ieee754_parameter<long double>, which
+	// describes the x87 layout -- sign, a 15-bit exponent biased by 16383, 63 fraction bits below an
+	// explicit integer bit -- and carry the fraction in a uint64_t. The x87 bit decoder read these
+	// formats as if they were x87 and got the value wrong: 0.75 as 0.5, 3 as 2, on POWER 0 (#1515).
+	// So the fields are computed from the value instead: frexp gives the exponent, and the
+	// significand is cut to 64 bits with any bits below folded into the last one (round to odd).
+	// A caller that rounds that to 62 significand bits or fewer rounds the long double correctly,
+	// and a caller that truncates truncates it correctly; a wider one gets its leading 64 bits.
+	// NaN and inf take x87's canonical encodings, so they classify as they do on x86.
+	inline void extractLongDoubleFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		constexpr int           bias        = 16383;
+		constexpr std::uint64_t integerBit  = 0x8000'0000'0000'0000ull;
+		constexpr std::uint64_t fmask       = 0x7FFF'FFFF'FFFF'FFFFull;
+		s = std::signbit(value);
+		if (value != value) {  // nan
+			rawExponentBits = 0x7FFF;
+			rawFractionBits = longDoubleNaNIsQuiet(value) ? 0x4000'0000'0000'0000ull : 0x2000'0000'0000'0000ull;
+			bits            = integerBit | rawFractionBits;
+			return;
+		}
+		if (std::isinf(value)) {
+			rawExponentBits = 0x7FFF;
+			rawFractionBits = 0;
+			bits            = integerBit;
+			return;
+		}
+		if (value == 0.0l) {
+			rawExponentBits = 0;
+			rawFractionBits = 0;
+			bits            = 0;
+			return;
+		}
+		int               e   = 0;
+		const long double sig = std::ldexp(std::frexp(std::fabs(value), &e), 64);  // [2^63, 2^64)
+		std::uint64_t     top = static_cast<std::uint64_t>(sig);                 // the leading 64 bits
+		if (sig != static_cast<long double>(top)) top |= 1u;                     // round to odd
+		const int biased = e - 1 + bias;  // |value| = 1.f * 2^(e - 1)
+		if (biased >= 1) {
+			rawExponentBits = static_cast<std::uint64_t>(biased);
+			rawFractionBits = top & fmask;
+			bits            = top;
+		}
+		else {  // below x87's normal range, which only binary128 reaches: an x87 denormal
+			const int     shift = 1 - biased;
+			std::uint64_t f     = (shift < 64) ? (top >> shift) : 0u;
+			if (shift >= 64 || (top & ((std::uint64_t(1) << shift) - 1u)) != 0) f |= 1u;  // round to odd
+			rawExponentBits = 0;
+			rawFractionBits = f;
+			bits            = f;
+		}
+	}
+#endif
 
 #if BIT_CAST_IS_CONSTEXPR
 // sw::bit_cast is provided by <universal/utility/bit_cast.hpp>
@@ -63,6 +140,7 @@ namespace sw { namespace universal {
 	*/
 	// falling back to non-constexpr
 	// specialization to extract fields from a long double
+#if (LDBL_MANT_DIG == 64) || (LDBL_MANT_DIG == 53)  // x87, or long double is double: read the bits
 	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		long_double_decoder decoder;
 		decoder.ld = value;
@@ -71,6 +149,11 @@ namespace sw { namespace universal {
 		rawFractionBits = decoder.parts.fraction;
 		bits = decoder.bits[0];  // communicate the lower order bits which represent the fraction bits
 	}
+#else  // binary128, double-double: x87-shaped fields computed from the value (#1515)
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		extractLongDoubleFields(value, s, rawExponentBits, rawFractionBits, bits);
+	}
+#endif
 
 #endif // LONG_DOUBLE_DOWNCAST
 #endif // LONG_DOUBLE_SUPPORT
@@ -104,7 +187,11 @@ namespace sw { namespace universal {
 #if LONG_DOUBLE_SUPPORT
 // Clang bit_cast<> can't deal with long double
 #define LONG_DOUBLE_DOWNCAST
-#ifdef LONG_DOUBLE_DOWNCAST
+#if (LDBL_MANT_DIG != 64) && (LDBL_MANT_DIG != 53)  // binary128, double-double: x87-shaped fields (#1515)
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		extractLongDoubleFields(value, s, rawExponentBits, rawFractionBits, bits);
+	}
+#elif defined(LONG_DOUBLE_DOWNCAST)
 	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 		extractFields(double(value), s, rawExponentBits, rawFractionBits, bits);
 	}
