@@ -65,7 +65,7 @@ int VerifyLimbInvariance(unsigned samples, bool reportTestCases) {
 	using Wide   = areal<nbits, es, WideLimb>;
 	static_assert(nbits <= 64, "operands are drawn as 64-bit patterns");
 	std::mt19937_64     rng(1000u * nbits + es);
-	const std::uint64_t mask  = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << nbits) - 1u);
+	const std::uint64_t mask  = ~std::uint64_t(0) >> (64u - nbits);  // nbits low bits; the shift stays in [0, 63]
 	int                 fails = 0;
 
 	auto verify = [&](char op, std::uint64_t x, std::uint64_t y, const Narrow& n, const Wide& w) {
