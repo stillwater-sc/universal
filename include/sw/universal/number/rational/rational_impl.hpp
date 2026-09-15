@@ -388,98 +388,125 @@ protected:
 			n = 0; d = 1;
 			return *this;
 		}
-		uint64_t bits{ 0 };
-		uint64_t e{ 0 }, f{ 0 };
+		// |rhs| = (a / b) * 2^exponent with b = 2^hb, the weight of a's leading bit. The algorithm
+		// below is the one this function always used -- reduce by the common power of two, shift
+		// both down when the numerator is wider than nbits, and shift the numerator (or the
+		// denominator) up by the scale as far as nbits allows -- but on an integer wide enough for
+		// nbits and for a long double's significand. It used to run in a uint64_t: past scale 64 it
+		// gave up ("overflow: scale = 70" on stdout, rational<128> of 2^70 became maxpos, #1519),
+		// and a long double brought only its leading 64 significand bits (#1517). It also returned
+		// +1 for -1.0, maxpos for any negative overflow, and left a subnormal double unconverted.
+		constexpr unsigned wideBits = 64u * (nbits / 64u + 3u);  // >= nbits + 64, and 2 words of headroom
+		using Wide = blockbinary<wideBits, bt, BinaryNumberType::Signed>;
+		Wide a, b;
+		a.clear();
+		b.clear();
 		bool s{ false };
-		extractFields(rhs, s, e, f, bits);
-		int exponent = static_cast<int>(e - ieee754_parameter<Real>::bias);
-		if (e == 0) { // subnormal
-		}
-		else { // normal
-			uint64_t a = f | ieee754_parameter<Real>::hmask;
-			uint64_t b = ieee754_parameter<Real>::hmask;
-
-			uint64_t rr{ 0 }, aa{ a }, bb{ b };
-			while (aa % bb > 0ull) {
-				rr = aa % bb;
-				aa = bb;
-				bb = rr;
+		int  exponent{ 0 };
+		int  hb{ 0 };
+#if LONG_DOUBLE_SUPPORT
+		if constexpr (std::is_same_v<Real, long double>) {
+			// the leading words of the significand: at least nbits + 64 bits, more than can survive
+			// the shift to nbits below, which makes the rest irrelevant
+			long_double_significand sig(rhs);
+			s        = sig.negative();
+			exponent = sig.scale();
+			constexpr int words = static_cast<int>(wideBits / 64u) - 2;
+			for (int w = 0; w < words; ++w) {
+				a <<= 64;
+				const uint64_t bits = sig.next();
+				for (int k = 0; k < 64; ++k)
+					if ((bits >> k) & 1ull) a.setbit(static_cast<unsigned>(k));
 			}
-			a /= bb;
-			b /= bb;
-
-			if (exponent == 0 && a == b) {
-				n = 1;
-				d = 1;
+			hb = 64 * words - 1;
+		}
+		else
+#endif
+		{
+			uint64_t bits{ 0 }, e{ 0 }, f{ 0 };
+			extractFields(rhs, s, e, f, bits);
+			constexpr int fbits = ieee754_parameter<Real>::fbits;
+			if (e == 0) {  // subnormal: f * 2^(1 - bias - fbits), its leading bit at find_msb(f) - 1
+				hb       = static_cast<int>(find_msb(f)) - 1;
+				exponent = 1 - ieee754_parameter<Real>::bias - fbits + hb;
+				a.setbits(f);
 			}
 			else {
-				if (exponent >= 0) {
-					unsigned msb = find_msb(a);
-					if (msb > nbits) {
-						unsigned shift = 1u + msb - nbits;
-						a >>= shift;
-						b >>= shift;
-					}
-					msb = find_msb(a);
-					uint64_t maxUpShift = (nbits - msb - 1u);
-					uint64_t maxDownShift = find_msb(b);
-					uint64_t scale = static_cast<uint64_t>(exponent);
-					if (scale >= 64) {
-						std::fprintf(stderr, "overflow: scale = %d\n", exponent);
-						maxpos();
-						return *this;
-					}
-					if (scale > maxUpShift) {
-						if (scale > (maxUpShift + maxDownShift)) {
-							std::fprintf(stderr, "overflow: scale = %d\n", exponent);
-							maxpos();
-							return *this;
-						}
-						else {
-							a <<= maxUpShift;
-							b >>= (scale - maxUpShift);
-						}
-					}
-					else {
-						a <<= scale;
-					}
-				}
-				else {
-					unsigned msb = find_msb(b);
-					if (msb > nbits) {
-						unsigned shift = 1u + msb - nbits;
-						a >>= shift;
-						b >>= shift;
-					}
-					msb = find_msb(b);
-					uint64_t maxUpShift = (nbits - msb - 1u);
-					uint64_t maxDownShift = find_msb(a);
-					uint64_t scale = static_cast<uint64_t>(-exponent);
-					if (scale >= 64) {
-						std::fprintf(stderr, "underflow: scale = %d\n", exponent);
-						setzero();
-						return *this;
-					}
-					if (scale > maxUpShift) {
-						if (scale > (maxUpShift + maxDownShift)) {
-							std::fprintf(stderr, "underflow: scale = %d\n", exponent);
-							setzero();
-							return *this;
-						}
-						else {
-							b <<= maxUpShift;
-							a >>= (scale - maxUpShift);
-						}
-					}
-					else {
-						b <<= scale;
-					}
-				}
-				n = (s ? -static_cast<int64_t>(a) : static_cast<int64_t>(a));
-				d = static_cast<int64_t>(b);
-				normalize();
+				hb       = fbits;
+				exponent = static_cast<int>(e) - ieee754_parameter<Real>::bias;
+				a.setbits(f | ieee754_parameter<Real>::hmask);
 			}
 		}
+		b.setbit(static_cast<unsigned>(hb));
+
+		// b is a power of two, so the gcd of a and b is the power of two a ends in
+		int tz = 0;
+		while (tz < hb && !a.test(static_cast<unsigned>(tz))) ++tz;
+		a >>= tz;
+		b >>= tz;
+		auto msb1 = [](const Wide& v) { return static_cast<unsigned>(v.msb() + 1); };  // find_msb(): 1-indexed
+
+		if (exponent == 0 && a == b) {
+			n = (s ? -1 : 1);
+			d = 1;
+			return *this;
+		}
+		if (exponent >= 0) {
+			unsigned msb = msb1(a);
+			if (msb >= nbits) {  // nbits bits do not fit: bit nbits - 1 is the sign
+				const unsigned shift = 1u + msb - nbits;
+				a >>= static_cast<int>(shift);
+				b >>= static_cast<int>(shift);
+			}
+			msb = msb1(a);
+			const uint64_t maxUpShift   = (nbits - msb - 1u);
+			const uint64_t maxDownShift = msb1(b);
+			const uint64_t scale        = static_cast<uint64_t>(exponent);
+			if (scale > maxUpShift) {
+				if (scale >= (maxUpShift + maxDownShift)) {  // too large: the denominator would shift out to 0
+					if (s) maxneg(); else maxpos();
+					return *this;
+				}
+				a <<= static_cast<int>(maxUpShift);
+				b >>= static_cast<int>(scale - maxUpShift);
+			}
+			else {
+				a <<= static_cast<int>(scale);
+			}
+		}
+		else {
+			unsigned msb = msb1(b);
+			if (msb >= nbits) {  // nbits bits do not fit: bit nbits - 1 is the sign
+				const unsigned shift = 1u + msb - nbits;
+				a >>= static_cast<int>(shift);
+				b >>= static_cast<int>(shift);
+			}
+			msb = msb1(b);
+			const uint64_t maxUpShift   = (nbits - msb - 1u);
+			const uint64_t maxDownShift = msb1(a);
+			const uint64_t scale        = static_cast<uint64_t>(-static_cast<int64_t>(exponent));
+			if (scale > maxUpShift) {
+				if (scale >= (maxUpShift + maxDownShift)) {  // too small: the numerator would shift out to 0
+					setzero();
+					return *this;
+				}
+				b <<= static_cast<int>(maxUpShift);
+				a >>= static_cast<int>(scale - maxUpShift);
+			}
+			else {
+				b <<= static_cast<int>(scale);
+			}
+		}
+		// the low nbits bits, two's complement for a negative numerator, as the int64_t assignment
+		// of the uint64_t version did
+		if (s) a.twosComplement();
+		n.clear();
+		d.clear();
+		for (unsigned i = 0; i < nbits; ++i) {
+			if (a.test(i)) n.setbit(i);
+			if (b.test(i)) d.setbit(i);
+		}
+		normalize();
 		return *this;
 	}
 

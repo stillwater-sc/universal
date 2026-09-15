@@ -588,6 +588,48 @@ protected:
 	CONSTEXPRESSION lns& convert_unsigned(UnsignedInt v) noexcept {
 		return convert_ieee754(double(v));
 	}
+#if LONG_DOUBLE_SUPPORT
+	// The log2 of a long double as the exponent of an lns wider than 63 bits, from every bit of its
+	// significand: the 64 extractFields() gives end in a round-to-odd sticky on IEEE binary128 and
+	// double-double (#1517). The exponent is a two's complement fixed-point number with rbits
+	// fraction bits: bit j of the significand, the leading one j = 0, lands at position
+	// scale + rbits - j; positions from nbits - 1 up wrap away, below 0 the first is the guard bit and
+	// the rest sticky. Rounded to nearest even on the magnitude, then negated.
+	static ExponentBlockBinary log_exponent_from_long_double(long double logv) {
+		ExponentBlockBinary e;
+		e.clear();
+		long_double_significand sig(logv);
+		int  position = sig.scale() + static_cast<int>(rbits);
+		bool lsb = false, guard = false, sticky = false;
+		while (!sig.empty() && position >= -1) {
+			const uint64_t word = sig.next();
+			for (int k = 63; k >= 0; --k, --position) {
+				if (((word >> k) & 1ull) == 0) continue;
+				if (position >= static_cast<int>(nbits - 1u)) continue;  // wraps away
+				if (position >= 0) {
+					e.setbit(static_cast<unsigned>(position));
+					if (position == 0) lsb = true;
+				}
+				else if (position == -1) {
+					guard = true;
+				}
+				else {
+					sticky = true;
+				}
+			}
+		}
+		if (!sig.empty()) sticky = true;
+		if (guard && (sticky || lsb)) {
+			ExponentBlockBinary ulp;
+			ulp.clear();
+			ulp.setbit(0);
+			e += ulp;
+		}
+		if (sig.negative()) e.twosComplement();
+		return e;
+	}
+#endif
+
 	template<typename Real>
 	CONSTEXPRESSION lns& convert_ieee754(Real v) noexcept {
 		if constexpr (bCollectLnsEventStatistics) ++lnsStats.conversionEvents;
@@ -674,6 +716,15 @@ protected:
 			return *this;
 		}
 
+#if LONG_DOUBLE_SUPPORT
+		if constexpr (std::is_same_v<Real, long double> && (nbits - 1u) > 62u) {
+			if (!std::is_constant_evaluated()) {
+				_block = log_exponent_from_long_double(logv);
+				setsign(negative);
+				return *this;
+			}
+		}
+#endif
 		ExponentBlockBinary lnsExponent{ 0 };
 
 		extractFields(logv, s, unbiasedExponent, rawFraction, bits); // use native conversion
