@@ -74,6 +74,7 @@
 #include <type_traits>
 #include <universal/native/ieee754_core.hpp>   // bit manipulation only; the text layer is not needed here (#1334)
 #include <universal/native/subnormal.hpp>
+#include <universal/native/constexpr_ldexp.hpp>  // to_native(): x * 2^e in the target type
 #include <universal/utility/find_msb.hpp>
 #include <universal/utility/decimal_to_binary.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
@@ -2097,11 +2098,17 @@ public:
 			}
 			blockbinary<es, bt> ebits;
 			exponent(ebits);
+			// The power of two is applied with constexpr_ldexp in TargetFloat itself (#1513): std::ldexp
+			// at run time, exact scaling in a constant expression. It used to be a double from ipow()
+			// outside (-64, 64), which capped a long double at double's range and, computing 2^-e as
+			// 1 / 2^e, returned 0 for e <= -1024; and for subnormals a table of doubles that is 0 for
+			// es >= 12. Inside (-64, 64) it was 1ull << e, with std::ldexp for e < 0 because clang
+			// miscompiles 1 / (long double)(1ull << n) (#937); but clang cannot call std::ldexp in a
+			// constant expression, so a constexpr double(cfloat) of 0.5 did not compile there.
 			if constexpr (hasSubnormals) {
 				if (ebits.iszero()) {
 					// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
-					TargetFloat exponentiation = TargetFloat(subnormal_exponent[es]); // precomputed values for 2^(2-2^(es-1))
-					v = exponentiation * f;  // f is already f/2^fbits
+					v = constexpr_ldexp(f, MIN_EXP_NORMAL);  // f is already f/2^fbits
 					return sign() ? -v : v;
 				}
 			}
@@ -2114,21 +2121,7 @@ public:
 			if constexpr (hasMaxExpValues) {
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 				int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
-				if (-64 < exponent && exponent < 64) {
-					// NB: the negative branch uses std::ldexp instead of
-					// 1.0f / TargetFloat(1ull << -exponent) because clang -O2
-					// miscompiles the latter for TargetFloat == long double via
-					// a buggy direct-bit-pattern optimisation (see issue #937).
-					// gcc handles either form correctly; ldexp is portable.
-					TargetFloat exponentiation = (exponent >= 0
-						? TargetFloat(1ull << exponent)
-						: std::ldexp(TargetFloat(1), exponent));
-					v = exponentiation * (TargetFloat(1.0) + f);
-				}
-				else {
-					double exponentiation = ipow(exponent);
-					v = TargetFloat(exponentiation * (1.0 + f));
-				}
+				v = constexpr_ldexp(TargetFloat(1.0) + f, exponent);
 			}
 			else {
 				if (ebits.all()) {
@@ -2139,17 +2132,7 @@ public:
 				else {
 					// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 					int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
-					if (-64 < exponent && exponent < 64) {
-						// See above re: clang -O2 miscompile, issue #937.
-						TargetFloat exponentiation = (exponent >= 0
-							? TargetFloat(1ull << exponent)
-							: std::ldexp(TargetFloat(1), exponent));
-						v = exponentiation * (TargetFloat(1.0) + f);
-					}
-					else {
-						double exponentiation = ipow(exponent);
-						v = TargetFloat(exponentiation * (1.0 + f));
-					}
+					v = constexpr_ldexp(TargetFloat(1.0) + f, exponent);
 				}
 			}
 			v = sign() ? -v : v;
@@ -3319,21 +3302,6 @@ protected:
 
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
-	}
-
-	// calculate the integer power 2 ^ b using exponentiation by squaring
-	constexpr double ipow(int exponent) const {
-		bool negative = (exponent < 0);
-		exponent = negative ? -exponent : exponent;
-		double result(1.0);
-		double base = 2.0;
-		for (;;) {
-			if (exponent % 2) result *= base;
-			exponent >>= 1;
-			if (exponent == 0) break;
-			base *= base;
-		}
-		return (negative ? (1.0 / result) : result);
 	}
 
 	template<BlockTripleOperator btop, typename TargetBlockType = bt>
