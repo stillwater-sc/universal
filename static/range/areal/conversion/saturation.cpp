@@ -38,8 +38,8 @@
 
    The arithmetic check covers configurations whose exponent field straddles two uint8_t
    limbs as well, where + - * used to be wrong across the whole range (#1506; see also
-   static/range/areal/arithmetic/limb_layout.cpp). An exact zero result may carry either
-   sign: +0 - +0 gives -0 where IEEE gives +0 (#1507).
+   static/range/areal/arithmetic/limb_layout.cpp). The operands include both zeros, and an
+   exact zero result must carry IEEE's sign: +0 + -0 and +0 - +0 used to give -0 (#1507).
 */
 
 namespace sw {
@@ -232,7 +232,8 @@ int VerifyNaNPayloads(bool reportTestCases) {
 	return fails;
 }
 
-// +, - and * of every pair of exact values against the exact double result
+// +, - and * of every pair of exact values, both zeros included, against the exact double
+// result; double carries IEEE's zero signs, and areal's == compares encodings, so -0 != +0
 template<typename A>
 int VerifyArithmetic(bool reportTestCases) {
 	Failures            fail(reportTestCases);
@@ -240,26 +241,20 @@ int VerifyArithmetic(bool reportTestCases) {
 	std::vector<double> values;
 	for (const auto& e : table) {
 		values.push_back(e.first);
-		if (e.first != 0.0)
-			values.push_back(-e.first);
+		values.push_back(-e.first);  // -0.0 for the zero entry
 	}
-	// an exact zero result may carry either sign (#1507)
-	auto sameOrZero = [](const A& got, const A& expected) {
-		return got == expected || (got.iszero() && expected.iszero() && !got.ubit() && !expected.ubit());
-	};
 	for (double x : values) {
 		for (double y : values) {
 			const A a(x), b(y);
 			// sums, differences and products of these values are exact in double
 			const A sum = a + b, difference = a - b, product = a * b;
 			const A rs = Reference<A>(x + y, table), rd = Reference<A>(x - y, table), rp = Reference<A>(x * y, table);
+			if (sum == rs && difference == rd && product == rp)
+				continue;
 			const std::string xy = std::to_string(x) + ", " + std::to_string(y);
-			if (!sameOrZero(sum, rs))
-				fail.check("+ of " + xy, sum, rs);
-			if (!sameOrZero(difference, rd))
-				fail.check("- of " + xy, difference, rd);
-			if (!sameOrZero(product, rp))
-				fail.check("* of " + xy, product, rp);
+			fail.check("+ of " + xy, sum, rs);
+			fail.check("- of " + xy, difference, rd);
+			fail.check("* of " + xy, product, rp);
 		}
 	}
 	return fail.count;

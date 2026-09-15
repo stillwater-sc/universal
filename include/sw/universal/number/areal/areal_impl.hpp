@@ -867,6 +867,12 @@ public:
 		}
 		// zero cases
 		if (iszero()) {
+			if (rhs.iszero()) {
+				// two exact zeros sum to -0 only when both are -0, as IEEE-754 has it in every
+				// rounding mode but toward negative: +0 + -0 and +0 - +0 are +0 (#1507)
+				setsign(sign() && rhs.sign());
+				return *this;
+			}
 			*this = rhs;
 			return *this;
 		}
