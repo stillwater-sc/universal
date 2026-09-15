@@ -142,6 +142,46 @@ inline int VerifyRounding(bool reportTestCases) {
 	return f.count;
 }
 
+// Rounding at the bottom of the range, at the subnormal tie of cfloat<64,15>: minpos 2^-16430, the
+// tie 2^-16431. The sticky bit is the long double's denorm_min: 2^-16445 on x87, 2^-16494 on
+// binary128, where it lies below x87's range and reaches the cfloat only through the round-to-odd
+// bit that extractFields() folds every such value into. That bit is at x87's 2^-16445, far below
+// this tie, so the rounding is still correct; only a target resolving 2^-16445 itself would see
+// the difference (#1517). Needs a long double reaching 2^-16433 (not double-double).
+inline int VerifyDeepSubnormals(bool reportTestCases) {
+	using C     = cfloat<64, 15, std::uint32_t, true, false, false>;
+	using limit = std::numeric_limits<long double>;
+	Failures f(reportTestCases);
+	if (limit::min_exponent > -16381)
+		return 0;
+	const long double minpos = std::ldexp(1.0l, -16430), tie = std::ldexp(1.0l, -16431), sticky = limit::denorm_min();
+	C                 cminpos, czero;
+	cminpos.minpos();
+	czero.setzero();
+	struct Case {
+		long double x;
+		C           expected;
+	};
+	const Case cases[] = {
+	    {minpos, cminpos},                  // exact
+	    {tie, czero},                       // tie, even below
+	    {tie + sticky, cminpos},            // just past the tie: only the sticky bit says so
+	    {std::ldexp(3.0l, -16432), cminpos},  // 0.75 minpos
+	    {sticky, czero},                    // denorm_min: far below half minpos
+	    {std::ldexp(1.0l, -16440), czero},  // below half minpos
+	};
+	for (const Case& c : cases) {
+		for (int sign : {1, -1}) {
+			C got{}, expected = c.expected;
+			got = sign * c.x;
+			if (sign < 0) expected.setsign(!expected.sign());
+			if (!(got == expected))
+				f.fail("cfloat<64,15> = " + Hex(sign * c.x) + " gave " + to_binary(got) + ", expected " + to_binary(expected));
+		}
+	}
+	return f.count;
+}
+
 // a signalling NaN stays signalling, a quiet one quiet; inf stays inf
 inline int VerifySpecials(bool reportTestCases) {
 	using C = cfloat<32, 8, std::uint32_t, true, false, false>;
@@ -225,6 +265,7 @@ int main() try {
 #		if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyExactValues(reportTestCases), "exact values", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyRounding(reportTestCases), "rounding at ties", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDeepSubnormals(reportTestCases), "deep subnormals", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySpecials(reportTestCases), "nan and inf", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyToLongDouble(reportTestCases), "to long double", test_tag);
 #		endif
