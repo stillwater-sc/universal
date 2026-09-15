@@ -3054,7 +3054,7 @@ public:
 					// we need to write the fields and then shifting them in place
 					// 
 					// common case: normal to normal
-					if constexpr (bitsInBlock < 64) {
+					{
 						if (rawExponent != 0) {
 							// reference example: nbits = 128, es = 15, fbits = 112: rhs = float: shift left by (112 - 23) = 89
 							setbits(biasedExponent);
@@ -3081,55 +3081,67 @@ public:
 								}
 								bitsToShift = 0;
 							}
-							bt fractionBlock[nrBlocks]{ 0 };
-							// copy fraction bits
-							unsigned blocksRequired = (8 * sizeof(fractionToCopy) + 1) / bitsInBlock;
-							unsigned maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
-							uint64_t mask = static_cast<uint64_t>(ALL_ONES); // set up the block mask
-							unsigned shift = 0;
-							for (unsigned i = 0; i < maxBlockNr; ++i) {
-								fractionBlock[i] = bt((mask & fractionToCopy) >> shift);
-								mask <<= bitsInBlock;
-								shift += bitsInBlock;
-							}
-							if (bitsToShift >= static_cast<int>(bitsInBlock)) {
-								int blockShift = static_cast<int>(bitsToShift / bitsInBlock);
-								for (int i = MSU; i >= blockShift; --i) {
-									fractionBlock[i] = fractionBlock[i - blockShift];
+							if constexpr (bitsInBlock == 64) {
+								// uint64_t blocks: the fraction bits one at a time. This branch was empty -- the
+								// block copy below assumes blocks narrower than the uint64_t it copies from -- so
+								// cfloat<128,15,uint64_t> = 1.5 stayed 0 (#1518). setbit() ORs the bits in, as
+								// the block copy does: a subnormal rounded up to min normal carries into the
+								// exponent field's lsb.
+								for (unsigned i = 0; i < 64; ++i) {
+									if (((fractionToCopy >> i) & 1ull) == 0) continue;
+									const unsigned position = i + static_cast<unsigned>(bitsToShift);
+									if (position < nbits - 1u) setbit(position, true);
 								}
-								for (int i = blockShift - 1; i >= 0; --i) {
-									fractionBlock[i] = bt(0);
+								setsign(s);
+							}
+							else {
+								bt fractionBlock[nrBlocks]{ 0 };
+								// copy fraction bits
+								unsigned blocksRequired = (8 * sizeof(fractionToCopy) + 1) / bitsInBlock;
+								unsigned maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
+								uint64_t mask = static_cast<uint64_t>(ALL_ONES); // set up the block mask
+								unsigned shift = 0;
+								for (unsigned i = 0; i < maxBlockNr; ++i) {
+									fractionBlock[i] = bt((mask & fractionToCopy) >> shift);
+									mask <<= bitsInBlock;
+									shift += bitsInBlock;
 								}
-								// adjust the shift
-								bitsToShift -= blockShift * bitsInBlock;
-							}
-							if (bitsToShift > 0) {
-								// construct the mask for the upper bits in the block that need to move to the higher word
-								bt bitsToMoveMask = bt(ALL_ONES << (bitsInBlock - bitsToShift));
-								for (unsigned i = MSU; i > 0; --i) {
-									fractionBlock[i] <<= bitsToShift;
-									// mix in the bits from the right
-									bt fracbits = static_cast<bt>(bitsToMoveMask & fractionBlock[i - 1]); // operator & yields an int
-									fractionBlock[i] |= (fracbits >> (bitsInBlock - bitsToShift));
+								if (bitsToShift >= static_cast<int>(bitsInBlock)) {
+									int blockShift = static_cast<int>(bitsToShift / bitsInBlock);
+									for (int i = MSU; i >= blockShift; --i) {
+										fractionBlock[i] = fractionBlock[i - blockShift];
+									}
+									for (int i = blockShift - 1; i >= 0; --i) {
+										fractionBlock[i] = bt(0);
+									}
+									// adjust the shift
+									bitsToShift -= blockShift * bitsInBlock;
 								}
-								fractionBlock[0] <<= bitsToShift;
+								if (bitsToShift > 0) {
+									// construct the mask for the upper bits in the block that need to move to the higher word
+									bt bitsToMoveMask = bt(ALL_ONES << (bitsInBlock - bitsToShift));
+									for (unsigned i = MSU; i > 0; --i) {
+										fractionBlock[i] <<= bitsToShift;
+										// mix in the bits from the right
+										bt fracbits = static_cast<bt>(bitsToMoveMask & fractionBlock[i - 1]); // operator & yields an int
+										fractionBlock[i] |= (fracbits >> (bitsInBlock - bitsToShift));
+									}
+									fractionBlock[0] <<= bitsToShift;
+								}
+								// OR the bits in
+								for (unsigned i = 0; i <= MSU; ++i) {
+									_block[i] |= fractionBlock[i];
+								}
+								// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+								_block[MSU] &= MSU_MASK;
+								// finally, set the sign bit
+								setsign(s);
 							}
-							// OR the bits in
-							for (unsigned i = 0; i <= MSU; ++i) {
-								_block[i] |= fractionBlock[i];
-							}
-							// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-							_block[MSU] &= MSU_MASK;
-							// finally, set the sign bit
-							setsign(s);
 						}
 						else {
 							// rhs is a subnormal
 		//					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
 						}
-					}
-					else {
-						// BlockType is incorrect
 					}
 				}
 			}
