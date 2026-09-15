@@ -410,7 +410,7 @@ constexpr inline void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nb
 /// /// </summary>
 /// <typeparam name="nbits">number of bits in the encoding</typeparam>
 /// <typeparam name="es">number of exponent bits in the encoding</typeparam>
-/// <typeparam name="bt">the type to use as storage class: one of [uint8_t|uint16_t|uint32_t]</typeparam>
+/// <typeparam name="bt">the type to use as storage class: one of [uint8_t|uint16_t|uint32_t|uint64_t]</typeparam>
 /// <typeparam name="hasSubnormals">configure gradual underflow (==subnormals)</typeparam>
 /// <typeparam name="hasMaxExpValues">reclaim max-exponent encodings as numeric values</typeparam>
 /// <typeparam name="isSaturating">configure saturation arithmetic</typeparam>

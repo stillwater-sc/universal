@@ -24,7 +24,10 @@
    Checked for cfloat<80,11>, <96,11>, <128,15> and <256,19>, whose ranges and precisions hold every
    double exactly, over normal, subnormal and extreme doubles and floats, both signs: the
    uint64_t-block cfloat has the same encoding as the uint32_t- and uint8_t-block ones, and converts
-   back to the value it was given. For long double, see static/conversions/long_double_conversion.cpp.
+   back to the value it was given. Long double, which reaches these cfloats through
+   convert(blocktriple) with a blocktriple of the cfloat's block type (#1520), is checked the same
+   way: every block type gives the same encoding, and the value comes back where the cfloat holds all
+   of its bits; with es >= 15 that includes min, denorm_min and max.
 */
 
 namespace sw {
@@ -42,8 +45,10 @@ inline std::vector<double> Samples() {
 	return xs;
 }
 
+// the uint64_t-block cfloat has the encoding of the uint32_t- and uint8_t-block ones, and, when the
+// cfloat holds v exactly, converts back to v in v's own type
 template<unsigned nbits, unsigned es, typename Real>
-int VerifyValue(Real v, bool reportTestCases) {
+int VerifyValue(Real v, bool exact, bool reportTestCases) {
 	cfloat<nbits, es, std::uint64_t, true, false, false> wide;
 	cfloat<nbits, es, std::uint32_t, true, false, false> mid;
 	cfloat<nbits, es, std::uint8_t, true, false, false>  narrow;
@@ -51,7 +56,7 @@ int VerifyValue(Real v, bool reportTestCases) {
 	mid    = v;
 	narrow = v;
 	const bool sameEncoding = (to_binary(wide) == to_binary(mid)) && (to_binary(mid) == to_binary(narrow));
-	const bool sameValue    = (static_cast<double>(wide) == static_cast<double>(v));  // every double is exact here
+	const bool sameValue    = !exact || (static_cast<Real>(wide) == v);
 	if (sameEncoding && sameValue) return 0;
 	if (reportTestCases)
 		std::cerr << "FAIL: cfloat<" << nbits << ',' << es << ",uint64_t> = " << std::hexfloat << static_cast<double>(v)
@@ -63,11 +68,28 @@ int VerifyValue(Real v, bool reportTestCases) {
 template<unsigned nbits, unsigned es>
 int VerifyConfiguration(bool reportTestCases) {
 	int fails = 0;
-	for (double d : Samples()) {
-		fails += VerifyValue<nbits, es>(d, reportTestCases);
+	for (double d : Samples()) {  // every double and float is exact in these configurations
+		fails += VerifyValue<nbits, es>(d, true, reportTestCases);
 		const float f = static_cast<float>(d);
-		if (std::isfinite(f) && f != 0.0f) fails += VerifyValue<nbits, es>(f, reportTestCases);
+		if (std::isfinite(f) && f != 0.0f) fails += VerifyValue<nbits, es>(f, true, reportTestCases);
 	}
+#if LONG_DOUBLE_SUPPORT
+	// long double reaches these cfloats through convert(blocktriple), whose blocktriple takes the
+	// cfloat's block type. Exact when the cfloat holds every significand bit and the range.
+	using ld                  = std::numeric_limits<long double>;
+	constexpr unsigned fbits  = nbits - 1u - es;
+	const bool         wideEnough = unsigned(ld::digits) <= fbits + 1u;
+	std::vector<long double> lds = {1.0l / 3.0l, 0.1l, 1.0l + std::ldexp(1.0l, 2 - ld::digits)};
+	if constexpr (es >= 15) {  // the long double's whole range, x87 and binary128 alike
+		lds.push_back(ld::min());
+		lds.push_back(ld::min() / 3.0l);
+		lds.push_back(ld::denorm_min());
+		lds.push_back(ld::max());
+	}
+	for (long double x : lds) {
+		for (long double y : {x, -x}) fails += VerifyValue<nbits, es>(y, wideEnough, reportTestCases);
+	}
+#endif
 	return fails;
 }
 
