@@ -809,18 +809,22 @@ public:
 		return *this;
 	}
 	CONSTEXPRESSION areal& operator=(long double rhs) {
-		if constexpr (std::numeric_limits<long double>::digits > std::numeric_limits<double>::digits) {
-			// Narrowing to double rounds: a finite value past DBL_MAX became inf, one below double's
-			// range became an exact zero, and bits below double's precision were gone before truncation
-			// could see them, so 1 + 2^-60 read as exactly 1 (#1503). Zero, inf and nan narrow exactly.
-			// Keyed on the format, not LONG_DOUBLE_SUPPORT, which is 1 where long double is double.
+		// Narrowing to double rounds: a finite value past DBL_MAX became inf, one below double's range
+		// became an exact zero, and bits below double's precision were gone before truncation could
+		// see them, so 1 + 2^-60 read as exactly 1 (#1503). The exact path is taken when long double
+		// has more precision or range than double; keyed on the format, not LONG_DOUBLE_SUPPORT,
+		// which is 1 where long double is double. Zero, inf and nan narrow exactly.
+		using ld = std::numeric_limits<long double>;
+		using d  = std::numeric_limits<double>;
+		if constexpr (ld::digits > d::digits || ld::max_exponent > d::max_exponent
+		              || ld::min_exponent < d::min_exponent) {
 			constexpr long double ldmax = std::numeric_limits<long double>::max();
 			if (rhs != rhs || rhs == 0.0l || rhs > ldmax || rhs < -ldmax)
 				return *this = double(rhs);
 			return assign_extended(rhs);
 		}
 		else {
-			return *this = double(rhs);  // long double is double
+			return *this = double(rhs);  // long double has double's format: narrowing is exact
 		}
 	}
 
