@@ -8,6 +8,8 @@
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
+#include <limits>
+
 namespace sw { namespace universal {
 
 // IEEE-754 specializations for Clang
@@ -74,8 +76,8 @@ public:
 	static constexpr uint64_t fmask    = 0x7FFF'FFFF'FFFF'FFFFull; // mask for the bottom half
 	static constexpr uint64_t hfmask   = 0xFFFF'FFFF'FFFF'FFFFull; // mask for the bottom half
 	static constexpr uint64_t fmsb     = 0x8000'0000'0000'0000ull;
-	static constexpr uint64_t qnanmask = 0x7FF8'0000'0000'0000ull;
-	static constexpr uint64_t snanmask = 0x7FF4'0000'0000'0000ull;
+	static constexpr uint64_t qnanmask = 0x4000'0000'0000'0000ull; // the quiet bit, in the fraction field
+	static constexpr uint64_t snanmask = 0x2000'0000'0000'0000ull; // canonical signalling payload, quiet bit clear
 	static constexpr long double minNormal       = 3.3621031431120935062626778173218e-4932l; // == 2^-16382
 	static constexpr long double minSubnormal    = 3.6451995318824746025284059336194e-4951l; // == 2^-16445
 	static constexpr int         minNormalExp    = -16382;
@@ -85,27 +87,32 @@ public:
 #elif defined(UNIVERSAL_ARCH_ARM)
 
 #if __LDBL_MANT_DIG__ == 113
-// Clang targeting Linux/Android aarch64: IEEE 754 binary128
+// Clang targeting Linux/Android aarch64: long double is IEEE binary128, but extractFields() hands
+// out its fields in the x87 shape these parameters describe, computed from the value (#1515):
+// every caller carries the fraction in a uint64_t, and a 112-bit fraction field made them shift
+// a uint64_t by 64 or more bits.
 template<>
 class ieee754_parameter<long double> {
 public:
-	static constexpr int      nbits    = 128;
+	static constexpr int      nbits    = 80;
 	static constexpr uint64_t smask    = 0x0000'0000'0000'8000ull; // mask for the top half
 	static constexpr int      ebits    = 15;
 	static constexpr int      bias     = 16383;
 	static constexpr uint64_t emask    = 0x0000'0000'0000'7FFFull; // mask for the top half
 	static constexpr uint64_t eallset  = 0x7FFF;
-	static constexpr int      fbits    = 112;
-	static constexpr uint64_t hmask    = 0x0001'0000'0000'0000ull; // mask for the upper half
-	static constexpr uint64_t fmask    = 0x0000'FFFF'FFFF'FFFFull; // mask for the upper half
-	static constexpr uint64_t hfmask   = 0x0001'FFFF'FFFF'FFFFull; // mask for the upper half
-	static constexpr uint64_t fmsb     = 0x0000'8000'0000'0000ull;
-	static constexpr uint64_t qnanmask = 0x7FFF'8000'0000'0000ull;
-	static constexpr uint64_t snanmask = 0x7FFF'4000'0000'0000ull;
-	static constexpr long double minNormal       = 3.3621031431120935062626778173218e-4932l; // == 2^-16382
-	static constexpr long double minSubnormal    = 6.4751751194380251109244389582276e-4966l; // == 2^-16494
-	static constexpr int         minNormalExp    = -16382;
-	static constexpr int         minSubnormalExp = -16494;
+	static constexpr int      fbits    = 63;
+	static constexpr uint64_t hmask    = 0x8000'0000'0000'0000ull; // mask for the bottom half
+	static constexpr uint64_t fmask    = 0x7FFF'FFFF'FFFF'FFFFull; // mask for the bottom half
+	static constexpr uint64_t hfmask   = 0xFFFF'FFFF'FFFF'FFFFull; // mask for the bottom half
+	static constexpr uint64_t fmsb     = 0x8000'0000'0000'0000ull;
+	static constexpr uint64_t qnanmask = 0x4000'0000'0000'0000ull; // the quiet bit, in the fraction field
+	static constexpr uint64_t snanmask = 0x2000'0000'0000'0000ull; // canonical signalling payload, quiet bit clear
+	// the format's own range, which differs from x87's: binary128 reaches 2^-16494, and IBM
+	// double-double's normal range ends at 2^-969, where x87's 2^-16382 is 0 (#1515)
+	static constexpr long double minNormal       = std::numeric_limits<long double>::min();
+	static constexpr long double minSubnormal    = std::numeric_limits<long double>::denorm_min();
+	static constexpr int         minNormalExp    = std::numeric_limits<long double>::min_exponent - 1;
+	static constexpr int         minSubnormalExp = std::numeric_limits<long double>::min_exponent - std::numeric_limits<long double>::digits;
 };
 #else
 // Apple Clang on macOS aarch64: long double == double

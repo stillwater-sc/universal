@@ -2837,9 +2837,14 @@ public:
 						std::cout << "fraction bits     : " << to_binary(rawFraction, ieee754_parameter<Real>::nbits, true) << '\n';
 						std::cout << "lsb mask bits     : " << to_binary(mask, ieee754_parameter<Real>::nbits, true) << '\n';
 #endif
-						mask = (1ull << (rightShift + adjustment)); // bit mask for the lsb bit
-						bool lsb = (mask & rawFraction);
-						mask >>= 1;
+						// The lsb sits at bit (rightShift + adjustment): the source's fraction bits plus
+						// one at most, at the tie just below minpos. For a long double that is bit 64,
+						// past its 63 fraction bits and hidden bit, and 1ull << 64 is undefined; it
+						// turned values at that tie into large negative cfloats (#1515). The lsb there
+						// is 0, and guard, round and sticky are still inside the word.
+						const int shiftToLsb = rightShift + adjustment;
+						bool lsb = (shiftToLsb < 64) && (((rawFraction >> shiftToLsb) & 1ull) != 0);
+						mask = (1ull << (shiftToLsb - 1));  // the guard bit
 						bool guard = (mask & rawFraction);
 						mask >>= 1;
 						bool round = (mask & rawFraction);
@@ -2858,7 +2863,7 @@ public:
 						std::cout << "sticky mask bits  : " << to_binary(mask, ieee754_parameter<Real>::nbits, true) << '\n';
 #endif
 						bool sticky = (mask & rawFraction);
-						rawFraction >>= (static_cast<int64_t>(rightShift) + static_cast<int64_t>(adjustment));
+						rawFraction = (shiftToLsb < 64) ? (rawFraction >> shiftToLsb) : 0ull;
 
 						// execute rounding operation
 						if (guard) {
