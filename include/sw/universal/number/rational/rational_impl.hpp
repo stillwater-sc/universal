@@ -453,7 +453,7 @@ protected:
 		}
 		if (exponent >= 0) {
 			unsigned msb = msb1(a);
-			if (msb > nbits) {
+			if (msb >= nbits) {  // nbits bits do not fit: bit nbits - 1 is the sign
 				const unsigned shift = 1u + msb - nbits;
 				a >>= static_cast<int>(shift);
 				b >>= static_cast<int>(shift);
@@ -463,7 +463,7 @@ protected:
 			const uint64_t maxDownShift = msb1(b);
 			const uint64_t scale        = static_cast<uint64_t>(exponent);
 			if (scale > maxUpShift) {
-				if (scale > (maxUpShift + maxDownShift)) {  // too large for nbits
+				if (scale >= (maxUpShift + maxDownShift)) {  // too large: the denominator would shift out to 0
 					if (s) maxneg(); else maxpos();
 					return *this;
 				}
@@ -476,7 +476,7 @@ protected:
 		}
 		else {
 			unsigned msb = msb1(b);
-			if (msb > nbits) {
+			if (msb >= nbits) {  // nbits bits do not fit: bit nbits - 1 is the sign
 				const unsigned shift = 1u + msb - nbits;
 				a >>= static_cast<int>(shift);
 				b >>= static_cast<int>(shift);
@@ -486,7 +486,7 @@ protected:
 			const uint64_t maxDownShift = msb1(a);
 			const uint64_t scale        = static_cast<uint64_t>(-static_cast<int64_t>(exponent));
 			if (scale > maxUpShift) {
-				if (scale > (maxUpShift + maxDownShift)) {  // too small for nbits
+				if (scale >= (maxUpShift + maxDownShift)) {  // too small: the numerator would shift out to 0
 					setzero();
 					return *this;
 				}

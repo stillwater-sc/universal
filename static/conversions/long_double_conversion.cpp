@@ -230,6 +230,19 @@ inline int VerifyWideFixedAndRational(bool reportTestCases) {
 		rational<16> c;
 		c = std::ldexp(1.0, -1030);  // a subnormal double: used to be left unconverted
 		if (!c.iszero()) f.fail("rational<16> = 2^-1030 gave " + to_binary(c) + ", expected 0");
+		// at the top of the range: a numerator of exactly nbits bits was not trimmed (255 gave 1),
+		// and a scale of exactly maxUpShift + maxDownShift shifted the denominator out to 0
+		// (128 and 200 gave NaN); -128 is rational<8>'s maxneg, -128/1
+		rational<8> maxpos;
+		maxpos.maxpos();
+		for (double v : {255.0, 128.0, 200.0, 1.0e10}) {
+			rational<8> r;
+			r = v;
+			if (!(r == maxpos)) f.fail("rational<8> = " + std::to_string(v) + " gave " + to_binary(r) + ", expected maxpos");
+		}
+		rational<8> r;
+		r = -128.0;
+		if (!(r == maxneg) || double(r) != -128.0) f.fail("rational<8> = -128.0 gave " + to_binary(r));
 	}
 	return f.count;
 }
