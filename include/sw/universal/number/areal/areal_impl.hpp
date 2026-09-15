@@ -151,7 +151,10 @@ public:
 	static constexpr unsigned EXP_SHIFT = (MSU_CAPTURES_E ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALLONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
-	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
+	// the largest finite scale: the all-ones exponent field, 2^es - 1, less the bias. It used to be
+	// one more, which let a value of scale MAX_EXP + 1 through the overflow checks, where its biased
+	// exponent then ran into the sign bit (#1503)
+	static constexpr int MAX_EXP = (1l << es) - 1l - EXP_BIAS;
 	static constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
 	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
 	static constexpr bt BLOCK_MASK = bt(-1);
@@ -318,7 +321,7 @@ public:
 				// unsigned: no sign bit
 				if (ubit) set(0);
 			}
-
+			saturate_reserved();
 			return *this;
 		}
 	}
@@ -404,7 +407,7 @@ public:
 				if (sign) set(nbits - 1);
 				if (ubit) set(0);
 			}
-
+			saturate_reserved();
 			return *this;
 		}
 	}
@@ -423,24 +426,18 @@ public:
 
 		// special case handling
 		if (raw_exp == 0xFFu) { // special cases
-			if (raw == 1ul) {
-				// 1.11111111.00000000000000000000001 signalling nan
-				// 0.11111111.00000000000000000000001 signalling nan
-				setnan(NAN_TYPE_SIGNALLING);
-				return *this;
-			}
-			if (raw == 0x0040'0000ul) {
-				// 1.11111111.10000000000000000000000 quiet nan
-				// 0.11111111.10000000000000000000000 quiet nan
-				setnan(NAN_TYPE_QUIET);
-				return *this;
-			}
+			// IEEE-754: exponent all ones is infinity with a zero fraction, and a NaN with ANY other
+			// fraction, whatever the payload; the quiet bit, the fraction's MSB, tells the two NaNs
+			// apart. This used to match two payloads only, so every other NaN fell through to the
+			// numeric path and came out as (maxpos, inf), inf, or a finite value (the #1303 defect)
 			if (raw == 0ul) {
 				// 1.11111111.00000000000000000000000 -inf
 				// 0.11111111.00000000000000000000000 +inf
 				setinf(s);
 				return *this;
 			}
+			setnan((raw & 0x0040'0000ul) ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING);
+			return *this;
 		}
 		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
 			set(nbits - 1ull, s);
@@ -599,6 +596,7 @@ public:
 			// set ubit
 			if (ubit) set(0);
 		}
+		saturate_reserved();
 		return *this;
 	}
 	CONSTEXPRESSION areal& operator=(double rhs) {
@@ -613,24 +611,15 @@ public:
 		uint64_t raw     = rawFraction;
 
 		if (raw_exp == 0x7FFul) { // special cases
-			if (raw == 1ull) {
-				// 1.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
-				// 0.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
-				setnan(NAN_TYPE_SIGNALLING);
-				return *this;
-			}
-			if (raw == 0x0008'0000'0000'0000ull) {
-				// 1.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
-				// 0.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
-				setnan(NAN_TYPE_QUIET);
-				return *this;
-			}
+			// infinity with a zero fraction, a NaN with any other; see operator=(float)
 			if (raw == 0ull) {
 				// 1.11111111111.0000000000000000000000000000000000000000000000000000 -inf
 				// 0.11111111111.0000000000000000000000000000000000000000000000000000 +inf
 				setinf(s);
 				return *this;
 			}
+			setnan((raw & 0x0008'0000'0000'0000ull) ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING);
+			return *this;
 		}
 		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
 			set(nbits - 1ull, s);
@@ -816,10 +805,27 @@ public:
 			// set ubit
 			if (ubit) set(0);
 		}
+		saturate_reserved();
 		return *this;
 	}
 	CONSTEXPRESSION areal& operator=(long double rhs) {
-		return *this = double(rhs);
+		// Narrowing to double rounds: a finite value past DBL_MAX became inf, one below double's range
+		// became an exact zero, and bits below double's precision were gone before truncation could
+		// see them, so 1 + 2^-60 read as exactly 1 (#1503). The exact path is taken when long double
+		// has more precision or range than double; keyed on the format, not LONG_DOUBLE_SUPPORT,
+		// which is 1 where long double is double. Zero, inf and nan narrow exactly.
+		using ld = std::numeric_limits<long double>;
+		using d  = std::numeric_limits<double>;
+		if constexpr (ld::digits > d::digits || ld::max_exponent > d::max_exponent
+		              || ld::min_exponent < d::min_exponent) {
+			constexpr long double ldmax = std::numeric_limits<long double>::max();
+			if (rhs != rhs || rhs == 0.0l || rhs > ldmax || rhs < -ldmax)
+				return *this = double(rhs);
+			return assign_extended(rhs);
+		}
+		else {
+			return *this = double(rhs);  // long double has double's format: narrowing is exact
+		}
 	}
 
 	// arithmetic operators
@@ -1226,6 +1232,19 @@ public:
 		reset(0ull);
 		reset(1ull);
 		return *this;
+	}
+	// Conversions of a finite value call this after they assemble the encoding. In the top binade,
+	// every value past maxpos + ulp truncates onto the all-ones fraction, which encodes inf (ubit
+	// clear) or nan (ubit set). A finite value there lies in (maxpos, inf), where larger values
+	// already saturate, so it saturates the same way (#1503).
+	inline constexpr void saturate_reserved() noexcept {
+		if (isinf() || isnan()) {
+			if (sign())
+				maxneg();
+			else
+				maxpos();
+			set(0);  // (maxpos, inf) or (maxneg, -inf)
+		}
 	}
 
 	/// <summary>
@@ -1845,6 +1864,61 @@ public:
 protected:
 	// HELPER methods
 
+	// a finite, non-zero long double, truncated toward zero with the ubit set when that loses
+	// anything. Scaling by a power of two is exact, so |rhs| is normalized into [1, 2) with the
+	// factors 2^(2^i) and no frexp, which keeps this constexpr; the top 64 bits of the significand
+	// then go into a blocktriple the way parse() packs one, and any bits below them into the ubit.
+	CONSTEXPRESSION areal& assign_extended(long double rhs) {
+		using BT = blocktriple<fbits, BlockTripleOperator::MUL, bt>;
+		constexpr int radix_pos = static_cast<int>(BT::radix);
+		constexpr int ldmaxexp  = std::numeric_limits<long double>::max_exponent;
+		constexpr int levels    = (ldmaxexp > 8192 ? 14 : ldmaxexp > 512 ? 10 : 7);  // 2^(2^(levels-1)) is finite
+		long double pow2[levels]{}, inv2[levels]{};  // 2^(2^i) and 2^-(2^i)
+		pow2[0] = 2.0l;
+		inv2[0] = 0.5l;
+		for (int i = 1; i < levels; ++i) {
+			pow2[i] = pow2[i - 1] * pow2[i - 1];
+			inv2[i] = inv2[i - 1] * inv2[i - 1];
+		}
+		const bool negative = rhs < 0.0l;
+		long double m = negative ? -rhs : rhs;
+		int scale = 0;
+		for (int i = levels - 1; i >= 0; --i) {
+			while (m >= pow2[i]) {
+				m *= inv2[i];
+				scale += (1 << i);
+			}
+			while (m < inv2[i]) {
+				m *= pow2[i];
+				scale -= (1 << i);
+			}
+		}
+		if (m < 1.0l) {  // a value below 1 ends in [0.5, 1); now m is in [1, 2)
+			m *= 2.0l;
+			scale -= 1;
+		}
+		const long double sig = m * 9223372036854775808.0l;  // 2^63: [2^63, 2^64)
+		const uint64_t top = static_cast<uint64_t>(sig);
+		bool uncertain = (sig != static_cast<long double>(top));  // a significand wider than 64 bits
+		BT t;
+		t.setnormal();
+		t.setsign(negative);
+		t.setscale(scale);
+		for (int k = 0; k < 64; ++k) {
+			const bool bit = (top >> (63 - k)) & 1u;
+			if (radix_pos - k >= 0) {
+				if (bit)
+					t.setbit(static_cast<unsigned>(radix_pos - k), true);
+			}
+			else if (bit) {
+				uncertain = true;
+			}
+		}
+		clear();
+		convert(t, *this, uncertain);
+		return *this;
+	}
+
 	/// <summary>
 	/// round a set of source bits to the present representation.
 	/// srcbits is the number of bits of significant in the source representation
@@ -2196,6 +2270,7 @@ constexpr void convert(const blocktriple<srcbits, op, bt>& src, areal<nbits, es,
 				tgt.set(0);
 			}
 		}
+		tgt.saturate_reserved();  // a finite result past maxpos + ulp (#1503)
 	}
 }
 
