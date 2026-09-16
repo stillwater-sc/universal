@@ -480,6 +480,12 @@ private:
 			for (unsigned m = 1; m < radix; ++m) {
 				blockdigit candidate(multiple);
 				candidate += subtractand;
+				// operator+= is modular, so a multiple past the top of the range wraps around to a
+				// small value that still compares under the accumulator and takes the quotient digit
+				// with it: 50 / 3 in a blockdigit<2,8> tried 3 * 24 == 72, kept the 8 it wrapped to,
+				// and answered 38 (#1528). A positive subtractand can only fail to grow the multiple
+				// by wrapping, so that is the signal to stop.
+				if (candidate.compare_magnitude(multiple) <= 0) break;
 				if (candidate.compare_magnitude(accumulator) <= 0) {
 					multiple = candidate;
 					k = static_cast<DigitType>(m);
