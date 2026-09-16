@@ -23,11 +23,19 @@ namespace sw { namespace universal {
 	template<typename RationalType>
 	struct rational_has_digit_component<RationalType, std::void_t<typename RationalType::Component>> : std::true_type {};
 
-	// radix^ndigits: how many encodings a digit component holds, sign apart
+	// the largest encoding count these sweeps will walk: 4096 per component is about 16.7M pairs
+	constexpr unsigned long long exhaustive_encoding_limit = 4096ull;
+
+	// radix^ndigits: how many encodings a digit component holds, sign apart. A configuration past
+	// the limit answers one over it rather than the product, which would wrap -- 16^16 is 2^64, and
+	// a span of 0 would satisfy the caller's static_assert and then sweep nothing.
 	template<unsigned ndigits, unsigned radix>
 	constexpr unsigned long long encoding_span() noexcept {
 		unsigned long long span = 1ull;
-		for (unsigned i = 0; i < ndigits; ++i) span *= radix;
+		for (unsigned i = 0; i < ndigits; ++i) {
+			if (span > exhaustive_encoding_limit / radix) return exhaustive_encoding_limit + 1ull;
+			span *= radix;
+		}
 		return span;
 	}
 
@@ -81,7 +89,7 @@ namespace sw { namespace universal {
 		constexpr unsigned radix   = Component::radix;
 
 		constexpr unsigned long long SPAN = encoding_span<ndigits, radix>();
-		static_assert(SPAN <= 4096ull, "rational state space is too large to exhaustively test with ValidateAssignment<rational>");
+		static_assert(SPAN <= exhaustive_encoding_limit, "rational state space is too large to exhaustively test with ValidateAssignment<rational>");
 
 		auto encode = [](unsigned long long magnitude, bool negative) {
 			Component c;
@@ -205,7 +213,7 @@ namespace sw { namespace universal {
 		constexpr unsigned radix   = Component::radix;
 
 		constexpr unsigned long long SPAN = encoding_span<ndigits, radix>();
-		static_assert(SPAN <= 4096ull, "rational state space is too large to exhaustively test with ValidateNormalization<rational>");
+		static_assert(SPAN <= exhaustive_encoding_limit, "rational state space is too large to exhaustively test with ValidateNormalization<rational>");
 
 		int nrOfFailedTestCases = 0;
 
