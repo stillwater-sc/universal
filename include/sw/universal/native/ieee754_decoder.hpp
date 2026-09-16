@@ -141,6 +141,37 @@ namespace sw { namespace universal {
 #endif
 
 #elif defined(UNIVERSAL_ARCH_RISCV)
+
+#if __LDBL_MANT_DIG__ == 113
+	// the RISC-V ABI defines long double as IEEE 754 binary128: 1 sign, 15 exponent, 112 fraction,
+	// and no explicit integer bit. This used to carry the x87 layout -- "for the moment, just use
+	// the x86 interpretation" -- which names the same fields over a different format (#1399).
+	union long_double_decoder {
+		long_double_decoder() : ld{ 0.0l } {}
+		long_double_decoder(long double _ld) : ld{ _ld } {}
+		long double ld;
+		struct {
+			uint64_t fraction : 64;   // the low 64 of the 112 fraction bits
+			uint64_t upper : 48;      // the high 48
+			uint64_t exponent : 15;
+			uint64_t sign : 1;
+		} parts;
+		uint64_t bits[2];
+	};
+#elif __LDBL_MANT_DIG__ == 53
+	// a RISC-V target where long double is double
+	union long_double_decoder {
+		long_double_decoder() : ld{ 0.0l } {}
+		long_double_decoder(long double _ld) : ld{ _ld } {}
+		long double ld;
+		struct {
+			uint64_t fraction : 52;
+			uint64_t exponent : 11;
+			uint64_t sign : 1;
+		} parts;
+		uint64_t bits[2];
+	};
+#else
 	union long_double_decoder {
 		long_double_decoder() : ld{ 0.0l } {}
 		long_double_decoder(long double _ld) : ld{ _ld } {}
@@ -153,6 +184,7 @@ namespace sw { namespace universal {
 		} parts;
 		uint64_t bits[2];
 	};
+#endif
 
 #else
 #pragma message("long double unsupported for unidentified architecture")

@@ -529,6 +529,62 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
+#if LONG_DOUBLE_SUPPORT && !defined(LONG_DOUBLE_DOWNCAST)
+	// What extractFields() says about a long double has to describe the value it was given, on
+	// every host: x87, IEEE binary128 and IBM double-double alike. The fields come out x87-shaped
+	// (#1515) -- a biased 15-bit exponent and a 64-bit significand whose top bit is the integer
+	// part -- so significand * 2^(exponent - bias - 63) is the value, for the values whose
+	// significand fits those 64 bits.
+	//
+	// This is the check RISC-V never got: its decoder carried the x87 layout for a binary128 type
+	// and its ieee754_parameter<long double> carried DOUBLE's field widths, and CI cross-compiles
+	// RISC-V without running it, so the fields type-checked and nothing read them (#1399).
+	int VerifyLongDoubleDecode(bool reportTestCases) {
+		using namespace sw::universal;
+		int nrOfFailedTests = 0;
+
+		auto testDecode = [&](long double value, const char* name) {
+			bool     s{ false };
+			uint64_t rawExponent{ 0 }, rawFraction{ 0 }, bits{ 0 };
+			extractFields(value, s, rawExponent, rawFraction, bits);
+
+			if (s != std::signbit(value)) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: decode " << name << ": sign " << s << " expected " << std::signbit(value) << '\n';
+				return;
+			}
+			// the significand carries the integer bit, so the scale is exponent - bias
+			const int expected = static_cast<int>(std::ilogb(value));
+			const int observed = static_cast<int>(rawExponent) - ieee754_parameter<long double>::bias;
+			if (observed != expected) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: decode " << name << ": scale " << observed << " expected " << expected << '\n';
+				return;
+			}
+			const uint64_t significand = rawFraction | ieee754_parameter<long double>::hmask;
+			const long double reconstructed = std::ldexp(static_cast<long double>(significand),
+				observed - ieee754_parameter<long double>::fbits);
+			if (reconstructed != (value < 0.0l ? -value : value)) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: decode " << name << ": reconstructed " << reconstructed
+				                               << " expected " << (value < 0.0l ? -value : value) << '\n';
+			}
+		};
+
+		testDecode(1.0l, "1.0");
+		testDecode(-1.0l, "-1.0");
+		testDecode(1.5l, "1.5");
+		testDecode(-3.25l, "-3.25");
+		testDecode(0.75l, "0.75");
+		testDecode(100.0l, "100.0");
+		testDecode(std::ldexp(1.0l, 100), "2^100");
+		testDecode(std::ldexp(1.0l, -100), "2^-100");
+		testDecode(std::ldexp(3.0l, -1000), "3 * 2^-1000");
+
+		return nrOfFailedTests;
+	}
+#endif
+
 } } // namespace sw::universal
 
 template<typename Real,
@@ -710,7 +766,17 @@ try {
 	std::cout << "\nField round-trip tests\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyFieldRoundTrip<float>(reportTestCases), "float", "field round-trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyFieldRoundTrip<double>(reportTestCases), "double", "field round-trip");
-#if LONG_DOUBLE_SUPPORT && !defined(LONG_DOUBLE_DOWNCAST) && (defined(UNIVERSAL_ARCH_X86_64) || defined(UNIVERSAL_ARCH_RISCV))
+
+#if LONG_DOUBLE_SUPPORT && !defined(LONG_DOUBLE_DOWNCAST)
+	// runs on every long double format, x87 and binary128 alike (#1399)
+	nrOfFailedTestCases += ReportTestResult(VerifyLongDoubleDecode(reportTestCases), "long double", "decode");
+#endif
+#if LONG_DOUBLE_SUPPORT && !defined(LONG_DOUBLE_DOWNCAST) && LDBL_MANT_DIG == 64
+	// x87 is the host where the two functions are inverse for EVERY value. A binary128 host is
+	// not: extractFields hands out x87-shaped fields there (#1515), which carry 64 significand
+	// bits and x87's exponent range, so long double max (113 bits) and denorm_min (2^-16494)
+	// cannot come back. VerifyLongDoubleDecode below covers those hosts instead. The guard is on
+	// the format rather than on an architecture list, which used to call RISC-V x87 (#1399).
 	// 80-bit extended long double (#1262): setFields must reconstruct the explicit integer
 	// bit, else every normal value round-trips to NaN. Scoped to the x86/RISC-V 63-bit-
 	// fraction layout: it is skipped where setFields downcasts to double (lossy for

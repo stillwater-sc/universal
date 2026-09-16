@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
+#include <cfloat>    // LDBL_MANT_DIG: the long double format, not the architecture (#1399)
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 
@@ -100,8 +101,8 @@ namespace sw { namespace universal {
 		// field: assigning a masked expression is warning-free, whereas assigning a uint64_t
 		// local is a narrowing to :15 (-Wconversion). (Regression from #1262's local, #1265.)
 		decoder.parts.exponent = rawExponentBits & 0x7FFF;
-#if defined(UNIVERSAL_ARCH_X86_64) || defined(UNIVERSAL_ARCH_RISCV)
-		// x86/RISC-V 80-bit extended: `fraction` is a 63-bit field (bits 62-0) and the
+#if defined(UNIVERSAL_ARCH_X86_64)
+		// x86 80-bit extended: `fraction` is a 63-bit field (bits 62-0) and the
 		// integer part of the significand lives in an EXPLICIT `bit63` field that is 1 for
 		// every value with a nonzero exponent (normals, inf, NaN) and 0 for zero/subnormals.
 		// setFields' inputs carry only the 63-bit fraction (extractFields returns
@@ -111,9 +112,18 @@ namespace sw { namespace universal {
 		// narrowed implicitly (-Wconversion / MSVC C4244).
 		decoder.parts.fraction = rawFractionBits & 0x7FFF'FFFF'FFFF'FFFF;
 		decoder.parts.bit63 = ((rawExponentBits & 0x7FFF) != 0) ? 1u : 0u;
+#elif LDBL_MANT_DIG == 113
+		// IEEE binary128: an implicit integer bit and a 112-bit fraction split across the two
+		// words. extractFields() hands out x87-SHAPED fields on this host -- a 63-bit fraction
+		// top-aligned in a 64-bit significand (#1515) -- so writing them here as if they were
+		// binary128's own fraction put them 49 bits too low, and 1.5 came back as 1 (#1399).
+		// Putting them back where they came from makes the two functions inverse for every
+		// value whose significand fits the 64 bits the shaped extraction carries.
+		decoder.parts.upper    = (rawFractionBits >> 15) & 0xFFFF'FFFF'FFFFull;   // fraction bits 111-64
+		decoder.parts.fraction = (rawFractionBits & 0x7FFFull) << 49;             // fraction bits 63-0
 #else
-		// other long double layouts (binary128 / double-double) have an implicit integer
-		// bit like float/double and no `bit63` field; preserve the original assignment.
+		// other long double layouts (IBM double-double) have an implicit integer bit like
+		// float/double and no `bit63` field; preserve the original assignment.
 		decoder.parts.fraction = rawFractionBits & 0xFFFF'FFFF'FFFF'FFFF;
 #endif
 		value = decoder.ld;
@@ -206,8 +216,8 @@ namespace sw { namespace universal {
 		// field: assigning a masked expression is warning-free, whereas assigning a uint64_t
 		// local is a narrowing to :15 (-Wconversion). (Regression from #1262's local, #1265.)
 		decoder.parts.exponent = rawExponentBits & 0x7FFF;
-#if defined(UNIVERSAL_ARCH_X86_64) || defined(UNIVERSAL_ARCH_RISCV)
-		// x86/RISC-V 80-bit extended: `fraction` is a 63-bit field (bits 62-0) and the
+#if defined(UNIVERSAL_ARCH_X86_64)
+		// x86 80-bit extended: `fraction` is a 63-bit field (bits 62-0) and the
 		// integer part of the significand lives in an EXPLICIT `bit63` field that is 1 for
 		// every value with a nonzero exponent (normals, inf, NaN) and 0 for zero/subnormals.
 		// setFields' inputs carry only the 63-bit fraction (extractFields returns
@@ -217,9 +227,18 @@ namespace sw { namespace universal {
 		// narrowed implicitly (-Wconversion / MSVC C4244).
 		decoder.parts.fraction = rawFractionBits & 0x7FFF'FFFF'FFFF'FFFF;
 		decoder.parts.bit63 = ((rawExponentBits & 0x7FFF) != 0) ? 1u : 0u;
+#elif LDBL_MANT_DIG == 113
+		// IEEE binary128: an implicit integer bit and a 112-bit fraction split across the two
+		// words. extractFields() hands out x87-SHAPED fields on this host -- a 63-bit fraction
+		// top-aligned in a 64-bit significand (#1515) -- so writing them here as if they were
+		// binary128's own fraction put them 49 bits too low, and 1.5 came back as 1 (#1399).
+		// Putting them back where they came from makes the two functions inverse for every
+		// value whose significand fits the 64 bits the shaped extraction carries.
+		decoder.parts.upper    = (rawFractionBits >> 15) & 0xFFFF'FFFF'FFFFull;   // fraction bits 111-64
+		decoder.parts.fraction = (rawFractionBits & 0x7FFFull) << 49;             // fraction bits 63-0
 #else
-		// other long double layouts (binary128 / double-double) have an implicit integer
-		// bit like float/double and no `bit63` field; preserve the original assignment.
+		// other long double layouts (IBM double-double) have an implicit integer bit like
+		// float/double and no `bit63` field; preserve the original assignment.
 		decoder.parts.fraction = rawFractionBits & 0xFFFF'FFFF'FFFF'FFFF;
 #endif
 		value = decoder.ld;
