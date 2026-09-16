@@ -173,6 +173,12 @@ public:
 		if (!n.iszero() && negated.sign() == n.sign()) {   // negating the numerator overflowed
 			SignedBlockBinary flipped = -d;
 			if (d.iszero() || flipped.sign() != d.sign()) return rational(n, flipped);
+			// both fields are the signed minimum, so neither can carry the sign. Only the raw
+			// constructor builds such a pair, since it does not normalize; reducing it takes both
+			// fields off the minimum -- -8/-8 becomes 1/1 -- and then the numerator can be negated.
+			rational reduced(n, d);
+			reduced.normalize();
+			return -reduced;
 		}
 		return rational(negated, d);
 	}
