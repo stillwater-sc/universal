@@ -437,77 +437,137 @@ protected:
 				a.setbits(f | ieee754_parameter<Real>::hmask);
 			}
 		}
-		b.setbit(static_cast<unsigned>(hb));
+		b.setbit(static_cast<unsigned>(hb));  // |rhs| = (a / b) * 2^exponent, b = 2^hb
 
-		// b is a power of two, so the gcd of a and b is the power of two a ends in
-		int tz = 0;
-		while (tz < hb && !a.test(static_cast<unsigned>(tz))) ++tz;
-		a >>= tz;
-		b >>= tz;
-		auto msb1 = [](const Wide& v) { return static_cast<unsigned>(v.msb() + 1); };  // find_msb(): 1-indexed
-
-		if (exponent == 0 && a == b) {
-			n = (s ? -1 : 1);
-			d = 1;
-			return *this;
-		}
-		if (exponent >= 0) {
-			unsigned msb = msb1(a);
-			if (msb >= nbits) {  // nbits bits do not fit: bit nbits - 1 is the sign
-				const unsigned shift = 1u + msb - nbits;
-				a >>= static_cast<int>(shift);
-				b >>= static_cast<int>(shift);
+		// |rhs| is the exact dyadic A / B. This used to shift A and B to fit nbits, which is not the
+		// closest rational a nbits numerator and denominator can hold: rational<8> of 1/3's double
+		// came out as 21/64, so r -> double -> r did not give r back for a non-dyadic r (#1523).
+		// The continued fraction of A / B gives its convergents, each the closest rational of its
+		// denominator or smaller; the last one that fits, or the better of it and the largest
+		// semiconvergent that fits, is the closest rational this type can hold.
+		Wide A, B;
+		A.clear();
+		B.clear();
+		const int E = exponent - hb;  // |rhs| = a * 2^E
+		Wide maxMagnitude;            // the largest numerator or denominator: 2^(nbits-1) - 1
+		maxMagnitude.clear();
+		for (unsigned i = 0; i + 1 < nbits; ++i) maxMagnitude.setbit(i);
+		const int significandBits = a.msb() + 1;
+		if (E >= 0) {
+			if (significandBits + E > static_cast<int>(nbits)) {  // past 2^nbits: over the largest numerator
+				if (s) maxneg(); else maxpos();
+				return *this;
 			}
-			msb = msb1(a);
-			const uint64_t maxUpShift   = (nbits - msb - 1u);
-			const uint64_t maxDownShift = msb1(b);
-			const uint64_t scale        = static_cast<uint64_t>(exponent);
-			if (scale > maxUpShift) {
-				if (scale >= (maxUpShift + maxDownShift)) {  // too large: the denominator would shift out to 0
-					if (s) maxneg(); else maxpos();
-					return *this;
-				}
-				a <<= static_cast<int>(maxUpShift);
-				b >>= static_cast<int>(scale - maxUpShift);
-			}
-			else {
-				a <<= static_cast<int>(scale);
-			}
+			A = a;
+			A <<= E;
+			B.setbit(0);
 		}
 		else {
-			unsigned msb = msb1(b);
-			if (msb >= nbits) {  // nbits bits do not fit: bit nbits - 1 is the sign
-				const unsigned shift = 1u + msb - nbits;
-				a >>= static_cast<int>(shift);
-				b >>= static_cast<int>(shift);
+			if (-E - significandBits > static_cast<int>(nbits)) {  // below 2^-nbits: under half of 1 / maxMagnitude
+				setzero();
+				return *this;
 			}
-			msb = msb1(b);
-			const uint64_t maxUpShift   = (nbits - msb - 1u);
-			const uint64_t maxDownShift = msb1(a);
-			const uint64_t scale        = static_cast<uint64_t>(-static_cast<int64_t>(exponent));
-			if (scale > maxUpShift) {
-				if (scale >= (maxUpShift + maxDownShift)) {  // too small: the numerator would shift out to 0
-					setzero();
-					return *this;
+			A = a;
+			B.setbit(static_cast<unsigned>(-E));
+		}
+		if ((A / B) > maxMagnitude) {  // the integer part alone does not fit
+			if (s) maxneg(); else maxpos();
+			return *this;
+		}
+
+		// the convergents h / k of the continued fraction of A / B
+		Wide h, hPrev, k, kPrev, x, y, one;
+		one.clear();
+		one.setbit(0);
+		h     = one;   // h(-1)
+		hPrev.clear(); // h(-2)
+		k.clear();     // k(-1)
+		kPrev = one;   // k(-2)
+		x     = A;
+		y     = B;
+		bool exact = false;
+		Wide bestNumerator, bestDenominator;
+		bestNumerator.clear();
+		bestDenominator = one;
+		while (!y.iszero()) {
+			const Wide quotient  = x / y;
+			const Wide remainder = x % y;
+			// h = quotient * h + hPrev, k = quotient * k + kPrev, unless that no longer fits
+			const bool fits = (quotient <= maxMagnitude) && ((quotient * h + hPrev) <= maxMagnitude) &&
+			                  ((quotient * k + kPrev) <= maxMagnitude);
+			if (!fits) {
+				// the largest semiconvergent that fits: hPrev + t * h over kPrev + t * k
+				Wide t = quotient;
+				if (!h.iszero()) {
+					const Wide room = (maxMagnitude - hPrev) / h;
+					if (room < t) t = room;
 				}
-				b <<= static_cast<int>(maxUpShift);
-				a >>= static_cast<int>(scale - maxUpShift);
+				if (!k.iszero()) {
+					const Wide room = (maxMagnitude - kPrev) / k;
+					if (room < t) t = room;
+				}
+				bestNumerator   = h;
+				bestDenominator = k;
+				if (!t.iszero()) {
+					const Wide semiNumerator   = hPrev + t * h;
+					const Wide semiDenominator = kPrev + t * k;
+					// keep the closer of h / k and the semiconvergent: compare |A/B - p/q| by
+					// |A q - p B| * q', the denominators being positive
+					if (closerToTarget(A, B, semiNumerator, semiDenominator, h, k)) {
+						bestNumerator   = semiNumerator;
+						bestDenominator = semiDenominator;
+					}
+				}
+				break;
 			}
-			else {
-				b <<= static_cast<int>(scale);
+			const Wide nextH = quotient * h + hPrev;
+			const Wide nextK = quotient * k + kPrev;
+			hPrev = h;
+			h     = nextH;
+			kPrev = k;
+			k     = nextK;
+			x     = y;
+			y     = remainder;
+			if (y.iszero()) {  // A / B itself fits: exact
+				bestNumerator   = h;
+				bestDenominator = k;
+				exact           = true;
 			}
 		}
-		// the low nbits bits, two's complement for a negative numerator, as the int64_t assignment
-		// of the uint64_t version did
-		if (s) a.twosComplement();
+		(void)exact;
+		if (bestDenominator.iszero()) bestDenominator = one;  // a zero value: 0 / 1
+
+		if (s) bestNumerator.twosComplement();
 		n.clear();
 		d.clear();
 		for (unsigned i = 0; i < nbits; ++i) {
-			if (a.test(i)) n.setbit(i);
-			if (b.test(i)) d.setbit(i);
+			if (bestNumerator.test(i)) n.setbit(i);
+			if (bestDenominator.test(i)) d.setbit(i);
 		}
 		normalize();
 		return *this;
+	}
+
+	// is p1 / q1 closer to A / B than p2 / q2? |A q1 - p1 B| q2 vs |A q2 - p2 B| q1, in twice the
+	// width so the products cannot overflow. A tie keeps the smaller denominator, p2 / q2.
+	template<typename Wide>
+	static bool closerToTarget(const Wide& A, const Wide& B, const Wide& p1, const Wide& q1, const Wide& p2,
+	                           const Wide& q2) noexcept {
+		using Wider = blockbinary<2 * Wide::nbits, bt, BinaryNumberType::Signed>;
+		auto widen  = [](const Wide& v) {
+			Wider w;
+			w.clear();
+			for (unsigned i = 0; i < Wide::nbits; ++i)
+				if (v.test(i)) w.setbit(i);
+			return w;
+		};
+		const Wider a = widen(A), b = widen(B);
+		auto distance = [&](const Wide& p, const Wide& q) {
+			Wider e = a * widen(q) - widen(p) * b;
+			if (e.sign()) e.twosComplement();  // |A q - p B|
+			return e;
+		};
+		return (distance(p1, q1) * widen(q2)) < (distance(p2, q2) * widen(q1));
 	}
 
 private:

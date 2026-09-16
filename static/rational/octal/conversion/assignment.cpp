@@ -130,8 +130,12 @@ try {
 
 	// manual exhaustive test
 	
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb8>(reportTestCases), type_tag(rb8()), test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb16>(reportTestCases), type_tag(rb16()), test_tag);
+	// rb8 and rb16 are the library's base2 aliases: this file is a base8 test, and
+	// ValidateAssignment<rb16> is an exhaustive 2^32 pair sweep. It used to return after its
+	// first 10 failures, which arrived immediately because conversion was wrong; now that a
+	// base2 rational converts back exactly (#1523), it runs to completion and takes hours.
+	using Exhaustive = rational<8, base8, std::uint8_t>;
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<Exhaustive>(reportTestCases), type_tag(Exhaustive()), test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
