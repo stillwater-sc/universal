@@ -158,20 +158,12 @@ namespace sw { namespace universal {
 		} parts;
 		uint64_t bits[2];
 	};
-#elif __LDBL_MANT_DIG__ == 53
-	// a RISC-V target where long double is double
-	union long_double_decoder {
-		long_double_decoder() : ld{ 0.0l } {}
-		long_double_decoder(long double _ld) : ld{ _ld } {}
-		long double ld;
-		struct {
-			uint64_t fraction : 52;
-			uint64_t exponent : 11;
-			uint64_t sign : 1;
-		} parts;
-		uint64_t bits[2];
-	};
 #else
+	// A RISC-V target whose long double is not binary128 is not supported by the GNU long double
+	// path: its renderers carry an x87 and a binary128 shape only, and ieee754_parameter<long
+	// double> describes the x87 one. Rather than a decoder that implies support the rest of the
+	// layer does not have, this keeps the previous layout and says what it is.
+#pragma message("RISC-V long double is not IEEE binary128: the x87 layout below does not describe it")
 	union long_double_decoder {
 		long_double_decoder() : ld{ 0.0l } {}
 		long_double_decoder(long double _ld) : ld{ _ld } {}
