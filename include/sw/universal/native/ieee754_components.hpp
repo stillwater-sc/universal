@@ -71,7 +71,18 @@ inline std::tuple<bool, int, std::uint64_t> ieee_components(double fp)
 // should use extractFields(), which hands out a 64-bit significand with a sticky low bit and says
 // so, or read the decoder directly. Widening or retiring this signature is #1536.
 
-#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__) && (LDBL_MANT_DIG != DBL_MANT_DIG)
+#if LDBL_MANT_DIG == DBL_MANT_DIG
+/* long double is double ------------------------------------ */
+// MSVC, Apple arm64, and any build with -mlong-double-64. The type is still distinct, so the
+// overload has to exist or every call to it is ambiguous, and reading double's fields is the whole
+// of the work. This has to be asked BEFORE the compiler branches, because those read the fields
+// through a decoder chosen by architecture: a clang x86 build with -mlong-double-64 would
+// otherwise take the x87 reader for an 8-byte type (#1534).
+inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
+	return ieee_components(double(fp));
+}
+
+#elif (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
 /* GNU GCC/G++, with a long double that is not double ------- */
 
 // ieee_components returns a tuple of sign, exponent, and fraction.
@@ -165,18 +176,6 @@ inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
 #endif
 #endif
 //---- end of Clang
-
-
-#elif defined(_MSC_VER) || (LDBL_MANT_DIG == DBL_MANT_DIG)
-/* long double is double ------------------------------------ */
-// Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
-
-// Visual C++ does not support long double, it is just an alias for double, and a GNU build with
-// -mlong-double-64 is in the same position: the type is still distinct, so the overload has to
-// exist or every call to it is ambiguous, and reading double's fields is the whole of the work.
-inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
-	return ieee_components(double(fp));
-}
 
 
 #elif defined(__riscv)
