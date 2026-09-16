@@ -29,9 +29,9 @@
 //                                            so include it directly if you need
 //                                            the integer helpers
 //
-// ieee_components() for float, double and long double IS here, via
-// ieee754_components.hpp -- that is the one core function those text headers
-// used to carry.
+// Taking a native value apart is extractFields() (extract_fields.hpp). ieee_components() used
+// to sit beside it, returning a tuple whose uint64_t fraction could not describe a binary128;
+// it was retired in favour of the one machine (#1536).
 #include <cmath>    // frexpf/frexp/frexpl fraction/exponent extraction
 #include <limits>
 #include <tuple>
@@ -54,8 +54,9 @@
 #include <universal/native/set_fields.hpp>
 #include <universal/native/nonconst_bitcast.hpp>
 
-// sign/exponent/fraction extraction for float, double and long double
-#include <universal/native/ieee754_components.hpp>
+// sign/exponent/fraction extraction for float, double and long double is extractFields(),
+// which arrives with extract_fields.hpp below; the decoder unions it reads live here (#1536)
+#include <universal/native/ieee754_decoder.hpp>
 #include <universal/native/nonconstexpr/extract_fp_components.hpp>
 
 // numeric helpers

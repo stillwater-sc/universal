@@ -235,18 +235,10 @@ public:
 		case FP_SUBNORMAL:
 		case FP_NORMAL:
 			{
-#if 1
 				double _fr{0};
 				unsigned long long _52b_fraction_without_hidden_bit{0};
 				int _exponent{0};
 				extract_fp_components(rhs, _sign, _exponent, _fr, _52b_fraction_without_hidden_bit);
-#endif
-#if 0
-                                auto components= ieee_components(rhs);
-                                _sign= get<0>(components);
-                                int _exponent= get<1>(components);
-                                unsigned long long _52b_fraction_without_hidden_bit= get<2>(components);
-#endif
 				_scale = _exponent - 1;
 				_fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
 				_nrOfBits = fbits;

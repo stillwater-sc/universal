@@ -43,9 +43,11 @@ try {
 			std::cout << "  scale       : " << exponent(a) << '\n';
 			std::cout << "  fraction    : " << fraction(a) << '\n';
 			std::cout << "  significand : " << normalizedSignificand << '\n';
-			auto results = ieee_components(a);
-			std::cout << "  ieee parts  : " << (std::get<0>(results) ? "1" : "0") << " : " << std::get<1>(results)
-			          << " : " << std::get<2>(results) << '\n';
+			bool s{ false };
+			uint64_t rawExponentBits{ 0 }, lowerBits{ 0 }, upperBits{ 0 };
+			extractFields(a, s, rawExponentBits, lowerBits, upperBits);
+			std::cout << "  ieee parts  : " << (s ? "1" : "0") << " : " << rawExponentBits
+			          << " : " << lowerBits << '\n';
 			a += 0.5;
 		}
 	}

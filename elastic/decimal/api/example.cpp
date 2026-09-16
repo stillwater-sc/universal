@@ -17,10 +17,12 @@ try {
 	std::cout << "                         d : " << d << std::endl;
 
     long double ld{std::pow(2.0l, 2000.0l)};
-    auto tpl = ieee_components(ld);
-    std::cout << "sign      : " << (get<0>(tpl) ? "1" : "0") << '\n';
-    std::cout << "exponent  : " << get<1>(tpl) << '\n';
-    std::cout << "fraction  : " << to_binary(get<2>(tpl)) << '\n';
+    bool s{ false };
+    uint64_t rawExponentBits{ 0 }, lowerBits{ 0 }, upperBits{ 0 };
+    extractFields(ld, s, rawExponentBits, lowerBits, upperBits);
+    std::cout << "sign      : " << (s ? "1" : "0") << '\n';
+    std::cout << "exponent  : " << rawExponentBits << '\n';
+    std::cout << "fraction  : " << to_binary(lowerBits) << '\n';
     
     return EXIT_SUCCESS;
 

@@ -81,14 +81,16 @@ template<typename Real,
 	typename = typename std::enable_if<std::is_floating_point<Real>::value, Real>::type>
 void ShowComponentsOfNativeReal(Real fp) {
 	constexpr unsigned fbits = sw::universal::ieee754_parameter<Real>::fbits;
-	auto components = ieee_components(fp);
+	bool s{ false };
+	uint64_t rawExponentBits{ 0 }, lowerBits{ 0 }, upperBits{ 0 };
+	sw::universal::extractFields(fp, s, rawExponentBits, lowerBits, upperBits);
 	auto oldPrecision = std::cout.precision();
 	auto max_digits = std::numeric_limits<long double>::digits10 + 1;
 	std::cout << std::setprecision(std::numeric_limits<Real>::digits10);
 	std::cout << "components of a " 
 		<< std::setw(25) << typeid(Real).name() << " : " 
 		<< std::setw(max_digits) << fp 
-		<< " : (" << std::get<0>(components) << ", " << std::get<1>(components) << ", " << to_binary(std::get<2>(components), fbits, true) << ")\n";
+		<< " : (" << s << ", " << rawExponentBits << ", " << to_binary(lowerBits, fbits, true) << ")\n";
 	std::cout << std::setprecision(oldPrecision);
 }
 
