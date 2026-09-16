@@ -9,8 +9,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <type_traits>
+#include <cfloat>   // LDBL_MANT_DIG: the long double format, which is not the architecture (#1399)
 
-#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__) && !defined(__riscv)
+#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
 /* GNU GCC/G++. --------------------------------------------- */
 
 namespace sw { namespace universal {
@@ -92,7 +93,7 @@ inline std::string to_binary(long double number, bool bNibbleMarker = false) {
 
 	s << '.';
 
-#if defined(UNIVERSAL_ARCH_POWER) || (defined(UNIVERSAL_ARCH_ARM) && __LDBL_MANT_DIG__ == 113)
+#if defined(UNIVERSAL_ARCH_POWER) || (LDBL_MANT_DIG == 113)   // binary128, whatever the architecture (#1399)
 	// POWER: IEEE 754 binary128 -- 112 fraction bits (48 upper + 64 lower)
 	// No explicit integer bit (implicit leading 1 for normals)
 	{
@@ -149,7 +150,7 @@ inline std::string to_triple(long double number) {
 	s << scale << ',';
 
 	// print fraction bits
-#if defined(UNIVERSAL_ARCH_POWER) || (defined(UNIVERSAL_ARCH_ARM) && __LDBL_MANT_DIG__ == 113)
+#if defined(UNIVERSAL_ARCH_POWER) || (LDBL_MANT_DIG == 113)   // binary128, whatever the architecture (#1399)
 	// POWER: 112 fraction bits (48 upper + 64 lower), implicit leading 1
 	{
 		uint64_t mask = (uint64_t(1) << 47);
@@ -211,7 +212,7 @@ inline std::string color_print(long double number) {
 	s << '.';
 
 	// print fraction bits
-#if defined(UNIVERSAL_ARCH_POWER) || (defined(UNIVERSAL_ARCH_ARM) && __LDBL_MANT_DIG__ == 113)
+#if defined(UNIVERSAL_ARCH_POWER) || (LDBL_MANT_DIG == 113)   // binary128, whatever the architecture (#1399)
 	// POWER: 112 fraction bits (48 upper + 64 lower), implicit leading 1
 	{
 		uint64_t mask = (uint64_t(1) << 47);
