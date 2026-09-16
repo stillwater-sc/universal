@@ -63,6 +63,13 @@ inline std::tuple<bool, int, std::uint64_t> ieee_components(double fp)
 #if LONG_DOUBLE_SUPPORT
 // the long double overloads read a type whose fields this build can reach; LONG_DOUBLE_SUPPORT is
 // the one place that decides, from the format the compiler reports (#1534)
+//
+// CARRIER LIMIT: the tuple's fraction is a std::uint64_t, and a long double can have more fraction
+// bits than that. On IEEE binary128 -- aarch64, RISC-V -- the fraction is 112 bits, and what comes
+// back is the low 64 of them: the decoder's parts.upper, the high 48, has nowhere to go. On IBM
+// double-double the tuple describes the leading double only. Callers that need the whole value
+// should use extractFields(), which hands out a 64-bit significand with a sticky low bit and says
+// so, or read the decoder directly. Widening or retiring this signature is #1536.
 
 #if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
 /* GNU GCC/G++. --------------------------------------------- */
