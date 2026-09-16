@@ -24,43 +24,52 @@
 namespace sw { namespace universal {
 
 // decimal string conversion
+//
+// The digits are accumulated from the bits rather than by dividing the blockbinary, which had two
+// problems (#1395). Dividing used longdivision above 64 bits, and that is signed-only, so a wide
+// UNSIGNED blockbinary would not compile the moment to_decimal was instantiated. And the negative
+// path complemented in place, which leaves -2^(nbits-1) negative -- it has no positive twin in
+// nbits -- so the divide-and-collect loop went on to emit characters below '0': a blockbinary<128>
+// of its most negative value printed "-/)0/,//(-,*0,*'.-/...".
+//
+// Reading the magnitude's bits instead needs neither. The complement is taken bit by bit here, into
+// a magnitude that is at most 2^(nbits-1) and so always fits, and the accumulation is the schoolbook
+// "double the digits, add the bit" from the most significant bit down.
 template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
 std::string to_decimal(const blockbinary<nbits, BlockType, NumberType>& number) {
 	if (number.iszero()) return "0";
 
-	std::string result;
-	blockbinary<nbits, BlockType, NumberType> dividend(number);
 	bool isNegative = false;
+	if constexpr (NumberType == BinaryNumberType::Signed) isNegative = number.isneg();
 
-	// Handle negative numbers for signed types
-	if constexpr (NumberType == BinaryNumberType::Signed) {
-		if (dividend.isneg()) {
-			isNegative = true;
-			dividend.twosComplement(); // Convert to positive
-		}
-	}
-
-	// Repeatedly divide by 10 and collect remainders
-	blockbinary<nbits, BlockType, NumberType> ten(10);
-	while (!dividend.iszero()) {
-		if constexpr (nbits <= 64) {
-			// For smaller sizes, use native division to avoid complexity
-			uint64_t temp = dividend.to_ull();
-			uint64_t remainder = temp % 10;
-			result = char('0' + remainder) + result;
-			dividend = temp / 10;
-		} else {
-			// For larger sizes, use blockbinary division operators
-			blockbinary<nbits, BlockType, NumberType> remainder = dividend % ten;
-			uint64_t digit = remainder.to_ull();
-			result = char('0' + digit) + result;
-			dividend /= ten;
-		}
-	}
-
+	std::string magnitude(nbits, '0');   // bit i of |number| at index i
 	if (isNegative) {
-		result = "-" + result;
+		unsigned carry = 1;              // invert and add one, low bit first
+		for (unsigned i = 0; i < nbits; ++i) {
+			const unsigned bit = (number.test(i) ? 0u : 1u) + carry;
+			magnitude[i] = static_cast<char>('0' + (bit & 1u));
+			carry = bit >> 1;
+		}
 	}
+	else {
+		for (unsigned i = 0; i < nbits; ++i) magnitude[i] = number.test(i) ? '1' : '0';
+	}
+
+	std::string result("0");             // decimal digits, most significant first
+	for (unsigned i = nbits; i > 0; --i) {
+		unsigned carry = (magnitude[i - 1] == '1') ? 1u : 0u;
+		for (unsigned d = static_cast<unsigned>(result.size()); d > 0; --d) {
+			const unsigned digit = static_cast<unsigned>(result[d - 1] - '0') * 2u + carry;
+			result[d - 1] = static_cast<char>('0' + digit % 10u);
+			carry = digit / 10u;
+		}
+		while (carry > 0) {
+			result.insert(result.begin(), static_cast<char>('0' + carry % 10u));
+			carry /= 10u;
+		}
+	}
+
+	if (isNegative) result = "-" + result;
 
 	return result;
 }
