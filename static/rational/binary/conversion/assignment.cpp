@@ -5,59 +5,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <numeric>   // std::gcd, to skip the encodings that are not normalized
 #include <universal/number/rational/rational.hpp>
 #include <universal/verification/test_suite.hpp>
-
-
-namespace sw { namespace universal {
-
-	// WRONG SFINAE as it yields a default template argument that is ambiguous and leads to redeclaration 
-	//template<typename RationalType,
- 	//        typename = typename std::enable_if_t<is_rational<RationalType>, RationalType> >
-
-	// every normalized value: a positive denominator and no common factor, both fields in range. The
-	// other encodings do not round-trip by construction -- 6/8 comes back as the 3/4 it equals, and a
-	// value needing a field of 2^(nbits-1), like 1/128 in a rational<8>, has no normalized form -- so
-	// they are skipped rather than counted as conversion failures (#1523).
-	template<typename RationalType, std::enable_if_t<is_rational<RationalType>, bool> = true >
-	int ValidateAssignment(bool reportTestCases) {
-		constexpr unsigned nbits = RationalType::nbits;
-		static_assert(nbits <= 20, "rational state space is too large to exhaustively test with ValidateAssignment<rational>");
-
-		constexpr unsigned NR_ENCODINGS = (1ull << nbits);
-		constexpr int      half         = (1 << (nbits - 1));
-		auto signedValue = [](unsigned bits) { return (bits & (half)) ? static_cast<int>(bits) - 2 * half : static_cast<int>(bits); };
-		int nrOfFailedTestCases = 0;
-
-		RationalType a{}, b{};
-		for (unsigned numerator = 0; numerator < NR_ENCODINGS; ++numerator) {
-			for (unsigned denominator = 0; denominator < NR_ENCODINGS; ++denominator) {
-				const int nv = signedValue(numerator), dv = signedValue(denominator);
-				if (dv <= 0) continue;                                    // not normalized, or a NaN encoding
-				if (std::gcd(nv < 0 ? -nv : nv, dv) != 1) continue;       // not in lowest terms
-				a.set(numerator, denominator);
-				double da = double(a);
-				b = da;
-				// std::cout << to_binary(a) << " : " << da << " vs " << b << '\n';
-				if (a != b) {
-					if (a.isnan() && b.isnan()) continue;
-					++nrOfFailedTestCases;
-					if (reportTestCases) ReportAssignmentError("FAIL", "=", da, b, a);
-				}
-				else {
-					// if (reportTestCases) ReportAssignmentSuccess("PASS", "=", da, b, a);
-				}
-				if (nrOfFailedTestCases > 9) return nrOfFailedTestCases;
-			}
-		}
-
-		// test clipping or saturation
-
-		return nrOfFailedTestCases;
-	}
-
-} }
+#include <universal/verification/rational_test_suite.hpp>
 
 template<typename TargetFloat>
 void GenerateBitWeightTable() {
@@ -118,8 +68,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "rational float assignment validation";
-	std::string test_tag    = "assignment";
+	std::string test_suite  = "binary rational float assignment validation";
+	std::string test_tag    = "binary rational assignment";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
