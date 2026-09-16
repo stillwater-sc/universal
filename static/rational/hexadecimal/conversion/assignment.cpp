@@ -106,6 +106,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<1, base16, std::uint8_t> >(reportTestCases), type_tag(rational<1, base16, std::uint8_t>()), test_tag);
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<2, base16, std::uint8_t> >(reportTestCases), type_tag(rational<2, base16, std::uint8_t>()), test_tag);
+
+	// set(n, d) must hold the value it was given: the reduction cannot change n / d (#1525)
+	nrOfFailedTestCases += ReportTestResult(ValidateNormalization< rational<2, base16, std::uint8_t> >(reportTestCases), type_tag(rational<2, base16, std::uint8_t>()), "normalization");
 #endif
 
 #if REGRESSION_LEVEL_2

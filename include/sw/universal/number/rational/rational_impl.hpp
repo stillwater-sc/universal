@@ -164,9 +164,23 @@ public:
 	// arithmetic operators
 
 	// unitary operators
+	// negate the value, which is not always the numerator's job: -2^(nbits-1) has no positive twin
+	// in nbits, so for those the denominator carries the sign instead and -(-8/7) is -8/-7, the
+	// value 8/7 exactly. Only a pair that is the signed minimum over the signed minimum has neither
+	// field to give, and normalize() reduces that one away (#1525).
 	rational operator-() const {
-		rational tmp(-n,d);
-		return tmp;
+		SignedBlockBinary negated = -n;
+		if (!n.iszero() && negated.sign() == n.sign()) {   // negating the numerator overflowed
+			SignedBlockBinary flipped = -d;
+			if (d.iszero() || flipped.sign() != d.sign()) return rational(n, flipped);
+			// both fields are the signed minimum, so neither can carry the sign. Only the raw
+			// constructor builds such a pair, since it does not normalize; reducing it takes both
+			// fields off the minimum -- -8/-8 becomes 1/1 -- and then the numerator can be negated.
+			rational reduced(n, d);
+			reduced.normalize();
+			return -reduced;
+		}
+		return rational(negated, d);
 	}
 
 	// in-place arithmetic assignment operators
@@ -307,10 +321,13 @@ public:
 
 	// selectors
 	constexpr bool iszero() const noexcept { return (n.iszero() && !d.iszero()); }
-	constexpr bool isneg()  const noexcept { return n.isneg(); }
+	// the sign lives in the pair, not in the numerator alone: normalize() keeps a negative
+	// denominator whenever moving its sign would take a field out of range, so -8/-7 in a
+	// rational<4> is the positive value 8/7 (#1525)
+	constexpr bool isneg()  const noexcept { return (n.sign() != d.sign()) && !n.iszero(); }
 	constexpr bool isinf()  const noexcept { return false; }
 	constexpr bool isnan()  const noexcept { return (n.iszero() && d.iszero()); }
-	constexpr bool sign()   const noexcept { return n.sign(); }
+	constexpr bool sign()   const noexcept { return isneg(); }
 	constexpr int  scale()  const noexcept { return sw::universal::scale(double(n) / double(d)); }
 
 	SignedBlockBinary numerator() const noexcept { return n; }
@@ -320,33 +337,67 @@ protected:
 	// HELPER methods
 
 	// remove greatest common divisor out of the numerator/denominator pair
+	//
+	// The reduction runs one bit wider than the fields. In nbits the signed minimum -2^(nbits-1)
+	// negates to itself, so taking |n| in place left the Euclidean loop with a negative operand and
+	// it reduced the pair to nonsense: set(-8, 7) in a rational<4> came out as -1/1 (#1525). One
+	// extra bit holds every magnitude, and the reduced pair always fits back into nbits, since
+	// dividing by the gcd cannot grow either field.
 	void normalize() {
-		bool nsign = n.sign();
-		bool dsign = d.sign();
-		bool sign = n.sign() ^ d.sign();
-		SignedBlockBinary a, b, r;
-		a = (nsign ? -n : n); b = (dsign ? -d : d);
-
-		if (b.iszero()) {
+		if (d.iszero()) {
 #if RATIONAL_THROW_ARITHMETIC_EXCEPTION
 			throw rational_divide_by_zero();
 #else
 			std::fprintf(stderr, "rational_divide_by_zero\n");
 			d = 0;
 			n = 0;
+			return;
 #endif
 		}
-		SignedBlockBinary zero{ 0 };
-		while (a % b > zero) {
-			r = a % b;
+		using WideBlockBinary = blockbinary<nbits + 1, bt, BinaryNumberType::Signed>;
+		auto widen = [](const SignedBlockBinary& v) {            // sign extend into the extra bit
+			WideBlockBinary w;
+			w.clear();
+			for (unsigned i = 0; i < nbits; ++i)
+				if (v.test(i)) w.setbit(i);
+			if (v.sign()) w.setbit(nbits);
+			return w;
+		};
+		auto narrow = [](const WideBlockBinary& w, SignedBlockBinary& v) {
+			v.clear();
+			for (unsigned i = 0; i < nbits; ++i)
+				if (w.test(i)) v.setbit(i);
+		};
+
+		WideBlockBinary wn = widen(n), wd = widen(d);
+		WideBlockBinary a = wn, b = wd;
+		if (a.sign()) a.twosComplement();
+		if (b.sign()) b.twosComplement();
+		WideBlockBinary zero{ 0 };
+		while (a % b > zero) {                                   // Euclid: b ends up the gcd
+			WideBlockBinary r = a % b;
 			a = b;
 			b = r;
 		}
-		n /= b;
-		d /= b;
-		if (sign && dsign) {
-			n = -n; d = -d;
+		wn /= b;
+		wd /= b;
+		// canonical form keeps the denominator positive, but negating the pair can take either field
+		// out of range: a magnitude of 2^(nbits-1) is representable only as a negative value. When
+		// the flipped pair does not fit, this one stays as it is; the value is the same either way.
+		auto fits = [](const WideBlockBinary& w) {               // sign extension still consistent
+			return w.test(nbits) == w.test(nbits - 1);
+		};
+		if (wd.sign()) {
+			WideBlockBinary flippedN = wn, flippedD = wd;
+			flippedN.twosComplement();
+			flippedD.twosComplement();
+			if (fits(flippedN) && fits(flippedD)) {
+				wn = flippedN;
+				wd = flippedD;
+			}
 		}
+		narrow(wn, n);
+		narrow(wd, d);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////
@@ -386,12 +437,19 @@ protected:
 		// rational<8> of 1/3's double came out as 21/64 (#1523).
 		constexpr unsigned wideBits = 64u * (nbits / 64u + 3u);  // the bound, a 113-bit significand, and room
 		using Wide = blockbinary<wideBits, bt, BinaryNumberType::Signed>;
-		Wide bound;  // the largest numerator or denominator: 2^(nbits-1) - 1
-		bound.clear();
-		for (unsigned i = 0; i + 1 < nbits; ++i) bound.setbit(i);
+		Wide qBound;  // the largest denominator, and the largest positive numerator: 2^(nbits-1) - 1
+		qBound.clear();
+		for (unsigned i = 0; i + 1 < nbits; ++i) qBound.setbit(i);
+		// two's complement reaches one further down, so a negative value gets -2^(nbits-1) as well:
+		// rational<4> of -8/7 used to come back as -7/6 (#1525)
+		Wide pBound{ qBound };
+		if (std::signbit(rhs)) {
+			pBound.clear();
+			pBound.setbit(nbits - 1);
+		}
 		bool negative{ false };
 		Wide p, q;
-		switch (best_rational_from_native<Wide, Real>(rhs, bound, negative, p, q)) {
+		switch (best_rational_from_native<Wide, Real>(rhs, pBound, qBound, negative, p, q)) {
 		case rational_conversion::nan:
 			n = 0;
 			d = 0;
@@ -545,10 +603,12 @@ public:
 	rational& maxneg() { maxpos(); n = -n; return *this; }
 
 	bool iszero() const { return n.iszero() && !d.iszero(); }
-	bool isneg()  const { return n.isneg(); }
+	// the sign lives in the pair: the raw two-component constructor can hand this type a negative
+	// denominator, which normalize() has not seen (#1525)
+	bool isneg()  const { return (n.sign() != d.sign()) && !n.iszero(); }
 	bool isinf()  const { return false; }
 	bool isnan()  const { return n.iszero() && d.iszero(); }
-	bool sign()   const { return n.sign(); }
+	bool sign()   const { return isneg(); }
 	int  scale()  const { double v = to_double(); return (v == 0.0) ? 0 : static_cast<int>(std::floor(std::log2(std::abs(v)))); }
 
 	Component numerator() const { return n; }
@@ -715,10 +775,12 @@ public:
 	rational& maxneg() { maxpos(); n = -n; return *this; }
 
 	bool iszero() const { return n.iszero() && !d.iszero(); }
-	bool isneg()  const { return n.isneg(); }
+	// the sign lives in the pair: the raw two-component constructor can hand this type a negative
+	// denominator, which normalize() has not seen (#1525)
+	bool isneg()  const { return (n.sign() != d.sign()) && !n.iszero(); }
 	bool isinf()  const { return false; }
 	bool isnan()  const { return n.iszero() && d.iszero(); }
-	bool sign()   const { return n.sign(); }
+	bool sign()   const { return isneg(); }
 	int  scale()  const { double v = to_double(); return (v == 0.0) ? 0 : static_cast<int>(std::floor(std::log2(std::abs(v)))); }
 
 	Component numerator() const { return n; }
@@ -883,10 +945,12 @@ public:
 	rational& maxneg() { maxpos(); n = -n; return *this; }
 
 	bool iszero() const { return n.iszero() && !d.iszero(); }
-	bool isneg()  const { return n.isneg(); }
+	// the sign lives in the pair: the raw two-component constructor can hand this type a negative
+	// denominator, which normalize() has not seen (#1525)
+	bool isneg()  const { return (n.sign() != d.sign()) && !n.iszero(); }
 	bool isinf()  const { return false; }
 	bool isnan()  const { return n.iszero() && d.iszero(); }
-	bool sign()   const { return n.sign(); }
+	bool sign()   const { return isneg(); }
 	int  scale()  const { double v = to_double(); return (v == 0.0) ? 0 : static_cast<int>(std::floor(std::log2(std::abs(v)))); }
 
 	Component numerator() const { return n; }

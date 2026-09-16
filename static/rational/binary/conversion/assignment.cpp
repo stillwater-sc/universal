@@ -104,15 +104,24 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<4, base2, std::uint8_t> >(reportTestCases), type_tag(rational<4, base2, std::uint8_t>()), test_tag);
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<8, base2, std::uint8_t> >(reportTestCases), type_tag(rational<8, base2, std::uint8_t>()), test_tag);
+
+	// set(n, d) must hold the value it was given, for every encoding with a denominator, the signed
+	// minimum -2^(nbits-1) included (#1525)
+	nrOfFailedTestCases += ReportTestResult(ValidateNormalization< rational<4, base2, std::uint8_t> >(reportTestCases), type_tag(rational<4, base2, std::uint8_t>()), "normalization");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateNormalization< rational<8, base2, std::uint8_t> >(reportTestCases), type_tag(rational<8, base2, std::uint8_t>()), "normalization");
 #endif
 
 #if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(ValidateNormalization< rational<10, base2, std::uint16_t> >(reportTestCases), type_tag(rational<10, base2, std::uint16_t>()), "normalization");
 #endif
 
 #if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<12, base2, std::uint16_t> >(reportTestCases), type_tag(rational<12, base2, std::uint16_t>()), test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(ValidateNormalization< rational<12, base2, std::uint16_t> >(reportTestCases), type_tag(rational<12, base2, std::uint16_t>()), "normalization");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
