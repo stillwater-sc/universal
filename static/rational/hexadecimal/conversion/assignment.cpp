@@ -26,6 +26,9 @@ namespace sw { namespace universal {
 		RationalType a{}, b{};
 		for (unsigned numerator = 0; numerator < NR_ENCODINGS; ++numerator) {
 			for (unsigned denominator = 0; denominator < NR_ENCODINGS; ++denominator) {
+				if (denominator == 0) continue;  // set() normalizes, and a zero denominator lands in
+				                                 // divide-by-zero handling: it would spend the failure
+				                                 // budget before any valid pair is tested
 				a.set(numerator, denominator);
 				double da = double(a);
 				b = da;
@@ -130,8 +133,15 @@ try {
 
 	// manual exhaustive test
 	
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb8>(reportTestCases), type_tag(rb8()), test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb16>(reportTestCases), type_tag(rb16()), test_tag);
+	// rb8 and rb16 are the library's base2 aliases, and this is a base16 test. ValidateAssignment<rb16>
+	// is also a 2^32 pair sweep: it used to return after its first 10 failures, which arrived at once
+	// because conversion was wrong, and now that a base2 rational converts back exactly (#1523) it
+	// runs to completion, which takes hours. This sweeps this file's own base instead. Note what
+	// ValidateAssignment covers for base16: its bound is 1 << nbits, and nbits is this
+	// specialization's compatibility alias for ndigits, so it walks 2^ndigits numerator and
+	// denominator VALUES through set(), not every raw blockdigit<ndigits,16> encoding.
+	using Sweep = rational<8, base16, std::uint8_t>;
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<Sweep>(reportTestCases), type_tag(Sweep()), test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
