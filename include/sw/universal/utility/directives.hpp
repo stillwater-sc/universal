@@ -23,26 +23,35 @@
 #endif // _MSC_VER
 
 // ========== LONG_DOUBLE_SUPPORT detection ==========
-// Many platforms alias `long double` to `double` (53-bit mantissa) rather than
-// providing extended precision. Tests and APIs that rely on long double having
-// extra headroom over double must guard with LONG_DOUBLE_SUPPORT.
+// The single definition of LONG_DOUBLE_SUPPORT (#1534). utility/long_double.hpp used to define it
+// as well, from a hand-maintained per-compiler table, and neither header could see the other's
+// answer: whichever a translation unit included first won. Where they disagreed the compiler said
+// so -- every RISC-V TU on main warned "LONG_DOUBLE_SUPPORT redefined", the table calling the type
+// unsupported while the format reported IEEE binary128 (#1399).
 //
-//   1 -- long double has more precision than double (e.g., x86_64 Linux/macOS
-//        80-bit x87 extended, PowerPC double-double, sparc64 IEEE quadruple).
-//   0 -- long double is the same as double (MSVC always, plus most ARM,
-//        RISC-V, Android NDK, and 32-bit x86 with -mlong-double-64).
+// The question this answers is "does this build have a long double whose fields this library can
+// read?", and the answer comes from the format the compiler reports, which is the ABI choice it
+// made. The compiler only selects WHICH formats the layer implements for it:
 //
-// Detection uses <cfloat>'s LDBL_MANT_DIG / DBL_MANT_DIG which are required
-// by the C/C++ standard and reflect the ABI choice the compiler made.
+//   MSVC      long double is double, and the long double paths do not compile there
+//   RISC-V    IEEE binary128 only; no other format has a shape in the GNU layer (#1399)
+//   GNU       x87, binary128 and double-double; with long double == double, ieee754_components
+//             static_asserts on sizeof(long double) == 16, so that build has no shape either
+//   clang     as GNU, plus the long double == double shape its own config carries
+//
+// "Has more precision than double" is a DIFFERENT question, and the sites that mean that one
+// should ask it directly, as LDBL_MANT_DIG > DBL_MANT_DIG. Sorting the call sites by which
+// question they ask is the next step of #1534.
 #ifndef LONG_DOUBLE_SUPPORT
 #include <cfloat>
 #if defined(_MSC_VER)
-// MSVC always aliases long double to double regardless of /arch flags.
 #define LONG_DOUBLE_SUPPORT 0
-#elif defined(LDBL_MANT_DIG) && defined(DBL_MANT_DIG) && (LDBL_MANT_DIG > DBL_MANT_DIG)
-#define LONG_DOUBLE_SUPPORT 1
+#elif defined(__riscv) && (LDBL_MANT_DIG != 113)
+#define LONG_DOUBLE_SUPPORT 0
+#elif (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__) && (LDBL_MANT_DIG == DBL_MANT_DIG)
+#define LONG_DOUBLE_SUPPORT 0
 #else
-#define LONG_DOUBLE_SUPPORT 0
+#define LONG_DOUBLE_SUPPORT 1
 #endif
 #endif // LONG_DOUBLE_SUPPORT
 

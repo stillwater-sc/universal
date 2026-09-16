@@ -60,8 +60,30 @@ inline std::tuple<bool, int, std::uint64_t> ieee_components(double fp)
 	);
 }
 
-#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
-/* GNU GCC/G++. --------------------------------------------- */
+// Each branch below reads the long double format its compiler actually has. The type exists on
+// every host -- on the ones where it is double, the overload forwards -- so the overloads are
+// always declared and a call is never ambiguous (#1534).
+//
+// CARRIER LIMIT: the tuple's fraction is a std::uint64_t, and a long double can have more fraction
+// bits than that. On IEEE binary128 -- aarch64, RISC-V -- the fraction is 112 bits, and what comes
+// back is the low 64 of them: the decoder's parts.upper, the high 48, has nowhere to go. On IBM
+// double-double the tuple describes the leading double only. Callers that need the whole value
+// should use extractFields(), which hands out a 64-bit significand with a sticky low bit and says
+// so, or read the decoder directly. Widening or retiring this signature is #1536.
+
+#if LDBL_MANT_DIG == DBL_MANT_DIG
+/* long double is double ------------------------------------ */
+// MSVC, Apple arm64, and any build with -mlong-double-64. The type is still distinct, so the
+// overload has to exist or every call to it is ambiguous, and reading double's fields is the whole
+// of the work. This has to be asked BEFORE the compiler branches, because those read the fields
+// through a decoder chosen by architecture: a clang x86 build with -mlong-double-64 would
+// otherwise take the x87 reader for an 8-byte type (#1534).
+inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
+	return ieee_components(double(fp));
+}
+
+#elif (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
+/* GNU GCC/G++, with a long double that is not double ------- */
 
 // ieee_components returns a tuple of sign, exponent, and fraction.
 inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
@@ -156,16 +178,6 @@ inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
 //---- end of Clang
 
 
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-// Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
-
-// Visual C++ does not support long double, it is just an alias for double
-inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
-	return ieee_components(double(fp));
-}
-
-
 #elif defined(__riscv)
 /* RISC-V G++ tool chain */
 
@@ -174,5 +186,4 @@ inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
 
 #endif
 
-// specialization for IEEE long double precision floats
 }} // namespace sw::universal
