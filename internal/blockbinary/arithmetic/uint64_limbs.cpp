@@ -18,7 +18,6 @@
 // cast-to-uint64_t path) for identical small values, and against __int128
 // or manual construction for large values.
 #include <universal/utility/directives.hpp>
-#include <universal/utility/long_double.hpp>
 #include <iostream>
 #include <iomanip>
 

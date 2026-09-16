@@ -37,7 +37,7 @@
 //
 // native/ieee754.hpp was re-pointed to native/ieee754_core.hpp.
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 #include <universal/number/areal/exceptions.hpp>
 #include <universal/number/areal/areal_impl.hpp>

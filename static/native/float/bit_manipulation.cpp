@@ -5,7 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/utility/long_double.hpp> // set up the compiler environment to support long doubles
 #include <universal/utility/bit_cast.hpp>    // set up the compiler environment to support C++20 <bit> library
 #include <cstdlib>
 #include <iostream>

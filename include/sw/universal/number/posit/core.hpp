@@ -18,7 +18,7 @@
 // only computes: it does not pull <iostream>, <sstream> or <iomanip>.
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 #include <universal/number/posit/exceptions.hpp>
 #include <universal/number/posit/posit_fwd.hpp>

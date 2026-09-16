@@ -20,7 +20,7 @@
 // deliberately NOT included -- they build report strings and pull <sstream>/<iomanip>.
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 #include <universal/traits/number_traits.hpp>
 

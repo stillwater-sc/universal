@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 #include <math/functions/isrepresentable.hpp>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1

@@ -18,7 +18,7 @@
 // number system of its own.
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 #include <universal/number/faithful/exceptions.hpp>
 #include <universal/number/faithful/faithful_impl.hpp>

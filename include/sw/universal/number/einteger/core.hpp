@@ -22,7 +22,7 @@
 // in the core use fprintf(stderr, ...), the idiom Phase 0 established.
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 #include <universal/number/einteger/exceptions.hpp>
 #include <universal/number/einteger/einteger_fwd.hpp>

@@ -32,7 +32,7 @@
 // and <iomanip>. The umbrella provides them.
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 #include <universal/traits/number_traits.hpp>
 

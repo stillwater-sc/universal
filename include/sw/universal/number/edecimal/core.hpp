@@ -29,7 +29,7 @@
 // text half of that header is not needed by the core (#1334).
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 #include <cstdint>
 #include <cassert>
