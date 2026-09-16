@@ -21,7 +21,15 @@
 
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
+#if defined(__riscv) && (__LDBL_MANT_DIG__ != 113)
+// RISC-V's ABI defines long double as IEEE binary128, which the layer handles (#1399). A RISC-V
+// target reporting any other format has no shape here -- the decoder falls back to x87, which does
+// not describe it -- so long double stays unsupported there, as it was for every RISC-V target
+// before that fix.
+#define LONG_DOUBLE_SUPPORT 0
+#else
 #define LONG_DOUBLE_SUPPORT 1
+#endif
 
 #elif defined(__HP_cc) || defined(__HP_aCC)
 /* Hewlett-Packard C/aC++. ---------------------------------- */
