@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>  // std::cerr, for the failure reports this file writes itself
 #include <numeric>   // std::gcd, to skip the encodings that are not normalized
 #include <type_traits>
 #include <universal/verification/test_reporters.hpp>
@@ -116,6 +117,129 @@ namespace sw { namespace universal {
 		}
 
 		return nrOfFailedTestCases;
+	}
+
+	// set(n, d) must preserve the value it was handed: reducing by the gcd cannot change n / d, and
+	// neither can moving the sign to the numerator. Every encoding with a non-zero denominator
+	// qualifies, the signed minimum -2^(nbits-1) included.
+	//
+	// The assignment sweep cannot see this. It compares what set() produced against the round trip
+	// of that value's own double, so when the reduction mangles the pair both sides carry the same
+	// wrong value and the case passes: set(-8, 7) in a rational<4> answered -1/1, and -1/1 round
+	// trips perfectly (#1525).
+	template<typename RationalType>
+	int VerifyBinaryRationalNormalization(bool reportTestCases) {
+		constexpr unsigned nbits = RationalType::nbits;
+		static_assert(nbits <= 20, "rational state space is too large to exhaustively test with ValidateNormalization<rational>");
+
+		constexpr unsigned NR_ENCODINGS = (1ull << nbits);
+		constexpr int      half         = (1 << (nbits - 1));
+		auto signedValue = [](unsigned bits) { return (bits & (half)) ? static_cast<int>(bits) - 2 * half : static_cast<int>(bits); };
+		int nrOfFailedTestCases = 0;
+
+		RationalType a{};
+		for (unsigned numerator = 0; numerator < NR_ENCODINGS; ++numerator) {
+			for (unsigned denominator = 0; denominator < NR_ENCODINGS; ++denominator) {
+				const int nv = signedValue(numerator), dv = signedValue(denominator);
+				if (dv == 0) continue;                                    // the NaN encoding
+				a.set(nv, dv);
+				const double expected = static_cast<double>(nv) / static_cast<double>(dv);
+				const double observed = double(a);
+				if (observed != expected) {
+					++nrOfFailedTestCases;
+					if (reportTestCases)
+						std::cerr << "FAIL: set(" << nv << ", " << dv << ") = " << observed
+						          << " expected " << expected << '\n';
+					if (nrOfFailedTestCases > 9) return nrOfFailedTestCases;
+				}
+			}
+		}
+
+		return nrOfFailedTestCases;
+	}
+
+	// the signed minimum -2^(nbits-1) is a usable numerator: the arithmetic that lands on it, the
+	// reduction that starts from it, and the value that needs it all have to come out exact. Every
+	// operator routes through normalize(), which used to take |n| in the field's own width (#1525).
+	template<typename RationalType>
+	int VerifyBinaryRationalSignedMinimum(bool reportTestCases) {
+		constexpr unsigned  nbits        = RationalType::nbits;
+		constexpr long long signedMin    = -(1ll << (nbits - 1));
+		constexpr long long maxMagnitude = -(signedMin + 1);   // 2^(nbits-1) - 1
+		int nrOfFailedTestCases = 0;
+
+		auto check = [&](const RationalType& r, double expected, const char* what) {
+			if (double(r) != expected) {
+				++nrOfFailedTestCases;
+				if (reportTestCases)
+					std::cerr << "FAIL: " << what << " = " << double(r) << " expected " << expected << '\n';
+			}
+		};
+
+		RationalType a{}, b{}, c{};
+		a.set(signedMin + 1, 1);                               // -(2^(nbits-1) - 1) + -1
+		b.set(-1, 1);
+		c = a;
+		c += b;
+		check(c, double(signedMin), "arithmetic onto the signed minimum");
+
+		a.set(signedMin, 2);                                   // reduce, starting from the minimum
+		check(a, double(signedMin) / 2.0, "the signed minimum over 2");
+
+		a.set(signedMin, maxMagnitude);                        // the pair that needs the minimum
+		check(a, double(signedMin) / double(maxMagnitude), "the signed minimum over the maximum");
+
+		b = double(signedMin) / double(maxMagnitude);          // and converting that value back
+		check(b, double(signedMin) / double(maxMagnitude), "conversion onto the signed minimum");
+
+		return nrOfFailedTestCases;
+	}
+
+	// the same value-preservation check for a digit-based rational. Its components are
+	// sign-magnitude, so there is no signed minimum to negate and every magnitude the field holds is
+	// usable; what is checked is that the reduction leaves the value alone.
+	template<typename RationalType>
+	int VerifyDigitRationalNormalization(bool reportTestCases) {
+		using Component = typename RationalType::Component;
+		constexpr unsigned ndigits = Component::ndigits;
+		constexpr unsigned radix   = Component::radix;
+
+		constexpr unsigned long long SPAN = encoding_span<ndigits, radix>();
+		static_assert(SPAN <= 4096ull, "rational state space is too large to exhaustively test with ValidateNormalization<rational>");
+
+		int nrOfFailedTestCases = 0;
+
+		RationalType a{};
+		const long long limit = static_cast<long long>(SPAN) - 1;
+		for (long long nv = -limit; nv <= limit; ++nv) {
+			for (long long dv = -limit; dv <= limit; ++dv) {
+				if (dv == 0) continue;                                    // the NaN encoding
+				a.set(nv, dv);
+				const double expected = static_cast<double>(nv) / static_cast<double>(dv);
+				const double observed = double(a);
+				if (observed != expected) {
+					++nrOfFailedTestCases;
+					if (reportTestCases)
+						std::cerr << "FAIL: set(" << nv << ", " << dv << ") = " << observed
+						          << " expected " << expected << '\n';
+					if (nrOfFailedTestCases > 9) return nrOfFailedTestCases;
+				}
+			}
+		}
+
+		return nrOfFailedTestCases;
+	}
+
+	// set(n, d) preserves the value it was handed, in whatever base the type is
+	template<typename RationalType, std::enable_if_t<is_rational<RationalType>, bool> = true >
+	int ValidateNormalization(bool reportTestCases) {
+		if constexpr (rational_has_digit_component<RationalType>::value) {
+			return VerifyDigitRationalNormalization<RationalType>(reportTestCases);
+		}
+		else {
+			return VerifyBinaryRationalNormalization<RationalType>(reportTestCases)
+			     + VerifyBinaryRationalSignedMinimum<RationalType>(reportTestCases);
+		}
 	}
 
 	// round trip every normalized encoding of a rational through a double, in whatever base it is
