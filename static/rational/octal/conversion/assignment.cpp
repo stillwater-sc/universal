@@ -130,8 +130,15 @@ try {
 
 	// manual exhaustive test
 	
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb8>(reportTestCases), type_tag(rb8()), test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb16>(reportTestCases), type_tag(rb16()), test_tag);
+	// rb8 and rb16 are the library's base2 aliases, and this is a base8 test. ValidateAssignment<rb16>
+	// is also a 2^32 pair sweep: it used to return after its first 10 failures, which arrived at once
+	// because conversion was wrong, and now that a base2 rational converts back exactly (#1523) it
+	// runs to completion, which takes hours. This sweeps this file's own base instead. Note what
+	// ValidateAssignment covers for base8: its bound is 1 << nbits, and nbits is this
+	// specialization's compatibility alias for ndigits, so it walks 2^ndigits numerator and
+	// denominator VALUES through set(), not every raw blockdigit<ndigits,8> encoding.
+	using Sweep = rational<8, base8, std::uint8_t>;
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<Sweep>(reportTestCases), type_tag(Sweep()), test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

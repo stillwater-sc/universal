@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <numeric>   // std::gcd, to skip the encodings that are not normalized
 #include <universal/number/rational/rational.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -15,17 +16,26 @@ namespace sw { namespace universal {
 	//template<typename RationalType,
  	//        typename = typename std::enable_if_t<is_rational<RationalType>, RationalType> >
 
+	// every normalized value: a positive denominator and no common factor, both fields in range. The
+	// other encodings do not round-trip by construction -- 6/8 comes back as the 3/4 it equals, and a
+	// value needing a field of 2^(nbits-1), like 1/128 in a rational<8>, has no normalized form -- so
+	// they are skipped rather than counted as conversion failures (#1523).
 	template<typename RationalType, std::enable_if_t<is_rational<RationalType>, bool> = true >
 	int ValidateAssignment(bool reportTestCases) {
 		constexpr unsigned nbits = RationalType::nbits;
 		static_assert(nbits <= 20, "rational state space is too large to exhaustively test with ValidateAssignment<rational>");
 
 		constexpr unsigned NR_ENCODINGS = (1ull << nbits);
+		constexpr int      half         = (1 << (nbits - 1));
+		auto signedValue = [](unsigned bits) { return (bits & (half)) ? static_cast<int>(bits) - 2 * half : static_cast<int>(bits); };
 		int nrOfFailedTestCases = 0;
 
 		RationalType a{}, b{};
 		for (unsigned numerator = 0; numerator < NR_ENCODINGS; ++numerator) {
 			for (unsigned denominator = 0; denominator < NR_ENCODINGS; ++denominator) {
+				const int nv = signedValue(numerator), dv = signedValue(denominator);
+				if (dv <= 0) continue;                                    // not normalized, or a NaN encoding
+				if (std::gcd(nv < 0 ? -nv : nv, dv) != 1) continue;       // not in lowest terms
 				a.set(numerator, denominator);
 				double da = double(a);
 				b = da;
@@ -89,7 +99,7 @@ void Ranges(Real v) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -131,7 +141,10 @@ try {
 	// manual exhaustive test
 	
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb8>(reportTestCases), type_tag(rb8()), test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb16>(reportTestCases), type_tag(rb16()), test_tag);
+	// rb16 is an exhaustive 2^32 pair sweep: minutes now that the conversions come back exact and
+	// the loop no longer returns after its first 10 failures (#1523). rb12 is 2^24 pairs.
+	using rb12 = rational<12, base2, std::uint16_t>;
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rb12>(reportTestCases), type_tag(rb12()), test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
