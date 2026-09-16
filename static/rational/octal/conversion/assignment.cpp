@@ -7,50 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/rational/rational.hpp>
 #include <universal/verification/test_suite.hpp>
-
-
-namespace sw { namespace universal {
-
-	// WRONG SFINAE as it yields a default template argument that is ambiguous and leads to redeclaration 
-	//template<typename RationalType,
- 	//        typename = typename std::enable_if_t<is_rational<RationalType>, RationalType> >
-
-	template<typename RationalType, std::enable_if_t<is_rational<RationalType>, bool> = true >
-	int ValidateAssignment(bool reportTestCases) {
-		constexpr unsigned nbits = RationalType::nbits;
-		static_assert(nbits <= 20, "rational state space is too large to exhaustively test with ValidateAssignment<rational>");
-
-		constexpr unsigned NR_ENCODINGS = (1ull << nbits);
-		int nrOfFailedTestCases = 0;
-
-		RationalType a{}, b{};
-		for (unsigned numerator = 0; numerator < NR_ENCODINGS; ++numerator) {
-			for (unsigned denominator = 0; denominator < NR_ENCODINGS; ++denominator) {
-				if (denominator == 0) continue;  // set() normalizes, and a zero denominator lands in
-				                                 // divide-by-zero handling: it would spend the failure
-				                                 // budget before any valid pair is tested
-				a.set(numerator, denominator);
-				double da = double(a);
-				b = da;
-				// std::cout << to_binary(a) << " : " << da << " vs " << b << '\n';
-				if (a != b) {
-					if (a.isnan() && b.isnan()) continue;
-					++nrOfFailedTestCases;
-					if (reportTestCases) ReportAssignmentError("FAIL", "=", da, b, a);
-				}
-				else {
-					// if (reportTestCases) ReportAssignmentSuccess("PASS", "=", da, b, a);
-				}
-				if (nrOfFailedTestCases > 9) return nrOfFailedTestCases;
-			}
-		}
-
-		// test clipping or saturation
-
-		return nrOfFailedTestCases;
-	}
-
-} }
+#include <universal/verification/rational_test_suite.hpp>
 
 template<typename TargetFloat>
 void GenerateBitWeightTable() {
@@ -68,19 +25,21 @@ void GenerateBitWeightTable() {
 template<typename Real>
 void Ranges(Real v) {
 	using namespace sw::universal;
-	using rb10 = rational<10, base8, std::uint16_t>;
-	using rb12 = rational<12, base8, std::uint16_t>;
-	using rb14 = rational<14, base8, std::uint16_t>;
-	using rb20 = rational<20, base8, std::uint32_t>;
-	using rb24 = rational<24, base8, std::uint32_t>;
+	// every one of these is a base8 rational, so their digit counts are ndigits, not nbits:
+	// rb8 and rb16 are the library's base2 aliases and do not belong in this file (#1526)
+	using ro10 = rational<10, base8, std::uint16_t>;
+	using ro12 = rational<12, base8, std::uint16_t>;
+	using ro14 = rational<14, base8, std::uint16_t>;
+	using ro20 = rational<20, base8, std::uint32_t>;
+	using ro24 = rational<24, base8, std::uint32_t>;
 
-	rb8 r8{ v };
-	rb10 r10{ v };
-	rb12 r12{ v };
-	rb14 r14{ v };
-	rb16 r16{ v };
-	rb20 r20{ v };
-	rb24 r24{ v };
+	ro8  r8{ v };
+	ro10 r10{ v };
+	ro12 r12{ v };
+	ro14 r14{ v };
+	ro16 r16{ v };
+	ro20 r20{ v };
+	ro24 r24{ v };
 
 	std::cout << symmetry_range(r8)  << '\n' << to_binary(r8)  << " : " << r8  << '\n';
 	std::cout << symmetry_range(r10) << '\n' << to_binary(r10) << " : " << r10 << '\n';
@@ -92,7 +51,7 @@ void Ranges(Real v) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -120,7 +79,7 @@ try {
 
 #if MANUAL_TESTING
 
-	rb16 a,b;
+	ro16 a,b;
 	a.set(0x02, 0x0A);
 	std::cout << to_binary(a) << '\n';
 	double da = double(a);
@@ -133,14 +92,10 @@ try {
 
 	// manual exhaustive test
 	
-	// rb8 and rb16 are the library's base2 aliases, and this is a base8 test. ValidateAssignment<rb16>
-	// is also a 2^32 pair sweep: it used to return after its first 10 failures, which arrived at once
-	// because conversion was wrong, and now that a base2 rational converts back exactly (#1523) it
-	// runs to completion, which takes hours. This sweeps this file's own base instead. Note what
-	// ValidateAssignment covers for base8: its bound is 1 << nbits, and nbits is this
-	// specialization's compatibility alias for ndigits, so it walks 2^ndigits numerator and
-	// denominator VALUES through set(), not every raw blockdigit<ndigits,8> encoding.
-	using Sweep = rational<8, base8, std::uint8_t>;
+	// ValidateAssignment enumerates the raw component encodings of whatever base it is given, and a
+	// base8 component holds 8^ndigits of them, so the digit count is what keeps the sweep feasible:
+	// 3 digits is 512 encodings per component, 4 digits is 4096 and about 10 minutes (#1526).
+	using Sweep = rational<3, base8, std::uint8_t>;
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<Sweep>(reportTestCases), type_tag(Sweep()), test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -148,18 +103,22 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<4, base8, std::uint8_t> >(reportTestCases), type_tag(rational<4, base8, std::uint8_t>()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<1, base8, std::uint8_t> >(reportTestCases), type_tag(rational<1, base8, std::uint8_t>()), test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<8, base8, std::uint8_t> >(reportTestCases), type_tag(rational<8, base8, std::uint8_t>()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<2, base8, std::uint8_t> >(reportTestCases), type_tag(rational<2, base8, std::uint8_t>()), test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
+	// 512 encodings per component
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<3, base8, std::uint8_t> >(reportTestCases), type_tag(rational<3, base8, std::uint8_t>()), test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
 #endif
 
 #if REGRESSION_LEVEL_4
+	// 4096 encodings per component: about 16.7M pairs
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<4, base8, std::uint8_t> >(reportTestCases), type_tag(rational<4, base8, std::uint8_t>()), test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

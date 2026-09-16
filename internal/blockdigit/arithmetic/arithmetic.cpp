@@ -143,6 +143,37 @@ int VerifyDivision(bool reportTestCases) {
 	return nrOfFailedTestCases;
 }
 
+// every dividend and divisor a narrow blockdigit can hold, against native integer division. The
+// hand-picked cases above run in a blockdigit<8, radix>, where a small operand leaves the digit
+// vector far from full; the trial multiples inside div_mod() overflow it long before the quotient
+// does, and that overflow used to wrap around and take the quotient digit with it: 50 / 3 in a
+// blockdigit<2, 8> tried 3 * 24 == 72, kept the 8 it wrapped to, and answered 38 remainder 0 (#1528).
+template<unsigned ndigits, unsigned radix>
+int VerifyExhaustiveDivision(bool reportTestCases) {
+	using namespace sw::universal;
+	int nrOfFailedTestCases = 0;
+
+	long long span = 1;
+	for (unsigned i = 0; i < ndigits; ++i) span *= static_cast<long long>(radix);
+	for (long long dividend = -(span - 1); dividend < span; ++dividend) {
+		for (long long divisor = -(span - 1); divisor < span; ++divisor) {
+			if (divisor == 0) continue;
+			blockdigit<ndigits, radix> a(dividend), b(divisor);
+			long long q = static_cast<long long>(a / b);
+			long long r = static_cast<long long>(a % b);
+			if (q != dividend / divisor || r != dividend % divisor) {
+				if (reportTestCases)
+					std::cerr << "FAIL: base-" << radix << ' ' << dividend << " / " << divisor
+					          << " = " << q << " rem " << r
+					          << " expected " << (dividend / divisor) << " rem " << (dividend % divisor) << '\n';
+				++nrOfFailedTestCases;
+				if (nrOfFailedTestCases > 9) return nrOfFailedTestCases;
+			}
+		}
+	}
+	return nrOfFailedTestCases;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -216,6 +247,13 @@ try {
 	std::cout << "+---------    Division: hexadecimal\n";
 	nrOfFailedTestCases += VerifyDivision<8, 16>(reportTestCases);
 
+	std::cout << "+---------    Division, exhaustive: octal\n";
+	nrOfFailedTestCases += VerifyExhaustiveDivision<2, 8>(reportTestCases);
+	std::cout << "+---------    Division, exhaustive: decimal\n";
+	nrOfFailedTestCases += VerifyExhaustiveDivision<2, 10>(reportTestCases);
+	std::cout << "+---------    Division, exhaustive: hexadecimal\n";
+	nrOfFailedTestCases += VerifyExhaustiveDivision<2, 16>(reportTestCases);
+
 	// digit shift tests
 	std::cout << "+---------    Digit shift\n";
 	{
@@ -235,6 +273,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
+	std::cout << "+---------    Division, exhaustive, 3 digits: octal\n";
+	nrOfFailedTestCases += VerifyExhaustiveDivision<3, 8>(reportTestCases);
 #endif
 
 

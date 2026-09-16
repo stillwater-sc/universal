@@ -7,50 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/rational/rational.hpp>
 #include <universal/verification/test_suite.hpp>
-
-
-namespace sw { namespace universal {
-
-	// WRONG SFINAE as it yields a default template argument that is ambiguous and leads to redeclaration 
-	//template<typename RationalType,
- 	//        typename = typename std::enable_if_t<is_rational<RationalType>, RationalType> >
-
-	template<typename RationalType, std::enable_if_t<is_rational<RationalType>, bool> = true >
-	int ValidateAssignment(bool reportTestCases) {
-		constexpr unsigned nbits = RationalType::nbits;
-		static_assert(nbits <= 20, "rational state space is too large to exhaustively test with ValidateAssignment<rational>");
-
-		constexpr unsigned NR_ENCODINGS = (1ull << nbits);
-		int nrOfFailedTestCases = 0;
-
-		RationalType a{}, b{};
-		for (unsigned numerator = 0; numerator < NR_ENCODINGS; ++numerator) {
-			for (unsigned denominator = 0; denominator < NR_ENCODINGS; ++denominator) {
-				if (denominator == 0) continue;  // set() normalizes, and a zero denominator lands in
-				                                 // divide-by-zero handling: it would spend the failure
-				                                 // budget before any valid pair is tested
-				a.set(numerator, denominator);
-				double da = double(a);
-				b = da;
-				// std::cout << to_binary(a) << " : " << da << " vs " << b << '\n';
-				if (a != b) {
-					if (a.isnan() && b.isnan()) continue;
-					++nrOfFailedTestCases;
-					if (reportTestCases) ReportAssignmentError("FAIL", "=", da, b, a);
-				}
-				else {
-					// if (reportTestCases) ReportAssignmentSuccess("PASS", "=", da, b, a);
-				}
-				if (nrOfFailedTestCases > 9) return nrOfFailedTestCases;
-			}
-		}
-
-		// test clipping or saturation
-
-		return nrOfFailedTestCases;
-	}
-
-} }
+#include <universal/verification/rational_test_suite.hpp>
 
 template<typename TargetFloat>
 void GenerateBitWeightTable() {
@@ -92,7 +49,7 @@ void Ranges(Real v) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -111,8 +68,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "rational float assignment validation";
-	std::string test_tag    = "assignment";
+	std::string test_suite  = "decimal rational float assignment validation";
+	std::string test_tag    = "decimal rational assignment";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -133,25 +90,25 @@ try {
 
 	// manual exhaustive test
 	
-	// rd16 is rational<16, base10>: ValidateAssignment's bound is 1 << nbits, and nbits is this
-	// specialization's compatibility alias for ndigits, so that is a 2^32 pair sweep. It used to
-	// return after its first 10 failures, which arrived at once because conversion truncated to an
-	// integer; now that it converts (#1526) the sweep would run to completion, which takes hours.
-	// Note what this covers for base10: 2^ndigits numerator and denominator VALUES through set(),
-	// not every raw blockdigit<ndigits,10> encoding.
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<rd8>(reportTestCases), type_tag(rd8()), test_tag);
+	// ValidateAssignment enumerates the raw component encodings of whatever base it is given, and a
+	// base10 component holds 10^ndigits of them, so the digit count is what keeps the sweep feasible:
+	// 3 digits is 1000 encodings per component, and rd8 -- 8 digits -- is not a sweep you can run (#1526).
+	using Sweep = rational<3, base10, std::uint8_t>;
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<Sweep>(reportTestCases), type_tag(Sweep()), test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<4, base10, std::uint8_t> >(reportTestCases), type_tag(rational<4, base10, std::uint8_t>()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<1, base10, std::uint8_t> >(reportTestCases), type_tag(rational<1, base10, std::uint8_t>()), test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<8, base10, std::uint8_t> >(reportTestCases), type_tag(rational<8, base10, std::uint8_t>()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<2, base10, std::uint8_t> >(reportTestCases), type_tag(rational<2, base10, std::uint8_t>()), test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
+	// 1000 encodings per component: about 1M pairs
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< rational<3, base10, std::uint8_t> >(reportTestCases), type_tag(rational<3, base10, std::uint8_t>()), test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
