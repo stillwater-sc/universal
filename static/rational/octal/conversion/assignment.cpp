@@ -26,6 +26,9 @@ namespace sw { namespace universal {
 		RationalType a{}, b{};
 		for (unsigned numerator = 0; numerator < NR_ENCODINGS; ++numerator) {
 			for (unsigned denominator = 0; denominator < NR_ENCODINGS; ++denominator) {
+				if (denominator == 0) continue;  // set() normalizes, and a zero denominator lands in
+				                                 // divide-by-zero handling: it would spend the failure
+				                                 // budget before any valid pair is tested
 				a.set(numerator, denominator);
 				double da = double(a);
 				b = da;
