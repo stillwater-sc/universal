@@ -21,7 +21,7 @@
 // to_native/to_components builders, which do use <sstream>, are in manipulators.hpp.
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 #include <universal/number/qd/exceptions.hpp>
 #include <universal/number/qd/qd_fwd.hpp>

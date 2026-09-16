@@ -29,7 +29,7 @@
 // scale(), which is bit manipulation, not text.
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 #include <universal/number/dd/exceptions.hpp>
 #include <universal/number/dd/dd_fwd.hpp>

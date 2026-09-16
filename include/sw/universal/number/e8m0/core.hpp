@@ -19,7 +19,7 @@
 // zero too.
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 #include <universal/number/e8m0/exceptions.hpp>
 #include <universal/number/e8m0/e8m0_fwd.hpp>

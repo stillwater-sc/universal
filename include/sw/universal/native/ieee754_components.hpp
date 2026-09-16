@@ -22,7 +22,7 @@
 // long_double_decoder unions in ieee754_decoder.hpp; without it no branch fires
 // and ieee_components(long double) cannot see a decoder.
 #include <universal/utility/architecture.hpp>
-#include <universal/utility/long_double.hpp>   // LONG_DOUBLE_SUPPORT
+#include <universal/utility/directives.hpp>   // LONG_DOUBLE_SUPPORT
 #include <universal/utility/bit_cast.hpp>
 #include <universal/native/ieee754_decoder.hpp>
 

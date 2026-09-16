@@ -18,7 +18,7 @@
 // system of its own.
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 #include <universal/number/interval/exceptions.hpp>
 #include <universal/number/interval/interval_fwd.hpp>

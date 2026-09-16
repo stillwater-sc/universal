@@ -15,7 +15,7 @@
 // sorn.hpp includes this plus sorn_type_tag.hpp, manipulators.hpp and iostream.hpp, so
 // existing code is unaffected. getInt(), getConfig() and getDT() -- the members that
 // produce text -- are declared in their classes and defined in manipulators.hpp.
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 #include <universal/utility/bit_cast.hpp>
 
 #include <universal/number/sorn/exceptions.hpp>

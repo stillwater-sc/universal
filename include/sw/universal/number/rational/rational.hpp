@@ -10,7 +10,7 @@
 #include <cstdint>      // std::uint8_t, in the type aliases below
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries

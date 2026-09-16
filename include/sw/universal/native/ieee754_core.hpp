@@ -39,7 +39,7 @@
 // configure the low level compiler interface for floating-point bit manipulation
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
+#include <universal/utility/directives.hpp>
 
 // the database of compiler/architecture specific floating-point parameters
 #include <universal/native/ieee754_parameter.hpp>

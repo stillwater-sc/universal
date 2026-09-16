@@ -5,7 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/utility/long_double.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/internal/f2s/f2s.hpp>
