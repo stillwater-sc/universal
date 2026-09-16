@@ -127,6 +127,31 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
+	// what the sign selectors, unary minus and abs() say about a value has to match the value. The
+	// sign is not the numerator's alone: normalize() keeps a negative denominator when moving its
+	// sign would take a field out of range, and negating -2^(nbits-1) overflows, so the numerator
+	// keeps its magnitude and the denominator takes the sign instead (#1525).
+	template<typename RationalType>
+	int VerifyRationalSignAgreement(const RationalType& a, double value, bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		auto report = [&](const char* what, double observed, double expected) {
+			++nrOfFailedTestCases;
+			if (reportTestCases)
+				std::cerr << "FAIL: " << what << " of " << value << " = " << observed
+				          << " expected " << expected << '\n';
+		};
+
+		const double magnitude = (value < 0.0 ? -value : value);
+		if (a.isneg() != (value < 0.0)) report("isneg", a.isneg() ? 1.0 : 0.0, (value < 0.0) ? 1.0 : 0.0);
+		if (a.sign() != (value < 0.0))  report("sign",  a.sign()  ? 1.0 : 0.0, (value < 0.0) ? 1.0 : 0.0);
+		const RationalType negated = -a;
+		if (double(negated) != -value) report("negation", double(negated), -value);
+		const RationalType absolute = abs(a);
+		if (double(absolute) != magnitude) report("abs", double(absolute), magnitude);
+
+		return nrOfFailedTestCases;
+	}
+
 	// set(n, d) must preserve the value it was handed: reducing by the gcd cannot change n / d, and
 	// neither can moving the sign to the numerator. Every encoding with a non-zero denominator
 	// qualifies, the signed minimum -2^(nbits-1) included.
@@ -160,6 +185,8 @@ namespace sw { namespace universal {
 						          << " expected " << expected << '\n';
 					if (nrOfFailedTestCases > 9) return nrOfFailedTestCases;
 				}
+				nrOfFailedTestCases += VerifyRationalSignAgreement(a, observed, reportTestCases);
+				if (nrOfFailedTestCases > 9) return nrOfFailedTestCases;
 			}
 		}
 
@@ -232,6 +259,8 @@ namespace sw { namespace universal {
 						          << " expected " << expected << '\n';
 					if (nrOfFailedTestCases > 9) return nrOfFailedTestCases;
 				}
+				nrOfFailedTestCases += VerifyRationalSignAgreement(a, observed, reportTestCases);
+				if (nrOfFailedTestCases > 9) return nrOfFailedTestCases;
 			}
 		}
 

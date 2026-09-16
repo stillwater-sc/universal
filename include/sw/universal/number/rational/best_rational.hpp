@@ -197,7 +197,8 @@ namespace sw { namespace universal {
 			A = significand;
 			B.setbit(static_cast<unsigned>(-exponent));
 		}
-		if ((A / B) > pBound) return rational_conversion::overflow;
+		const Wide whole = A / B;   // the integer part alone can equal the bound and the value still be past it
+		if (whole > pBound || (whole == pBound && !(A % B).iszero())) return rational_conversion::overflow;
 
 		best_rational(A, B, pBound, qBound, p, q);
 		if (p.iszero()) return rational_conversion::zero;

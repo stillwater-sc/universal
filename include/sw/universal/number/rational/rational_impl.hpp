@@ -164,9 +164,17 @@ public:
 	// arithmetic operators
 
 	// unitary operators
+	// negate the value, which is not always the numerator's job: -2^(nbits-1) has no positive twin
+	// in nbits, so for those the denominator carries the sign instead and -(-8/7) is -8/-7, the
+	// value 8/7 exactly. Only a pair that is the signed minimum over the signed minimum has neither
+	// field to give, and normalize() reduces that one away (#1525).
 	rational operator-() const {
-		rational tmp(-n,d);
-		return tmp;
+		SignedBlockBinary negated = -n;
+		if (!n.iszero() && negated.sign() == n.sign()) {   // negating the numerator overflowed
+			SignedBlockBinary flipped = -d;
+			if (d.iszero() || flipped.sign() != d.sign()) return rational(n, flipped);
+		}
+		return rational(negated, d);
 	}
 
 	// in-place arithmetic assignment operators
@@ -307,10 +315,13 @@ public:
 
 	// selectors
 	constexpr bool iszero() const noexcept { return (n.iszero() && !d.iszero()); }
-	constexpr bool isneg()  const noexcept { return n.isneg(); }
+	// the sign lives in the pair, not in the numerator alone: normalize() keeps a negative
+	// denominator whenever moving its sign would take a field out of range, so -8/-7 in a
+	// rational<4> is the positive value 8/7 (#1525)
+	constexpr bool isneg()  const noexcept { return (n.sign() != d.sign()) && !n.iszero(); }
 	constexpr bool isinf()  const noexcept { return false; }
 	constexpr bool isnan()  const noexcept { return (n.iszero() && d.iszero()); }
-	constexpr bool sign()   const noexcept { return n.sign(); }
+	constexpr bool sign()   const noexcept { return isneg(); }
 	constexpr int  scale()  const noexcept { return sw::universal::scale(double(n) / double(d)); }
 
 	SignedBlockBinary numerator() const noexcept { return n; }
@@ -586,10 +597,12 @@ public:
 	rational& maxneg() { maxpos(); n = -n; return *this; }
 
 	bool iszero() const { return n.iszero() && !d.iszero(); }
-	bool isneg()  const { return n.isneg(); }
+	// the sign lives in the pair: the raw two-component constructor can hand this type a negative
+	// denominator, which normalize() has not seen (#1525)
+	bool isneg()  const { return (n.sign() != d.sign()) && !n.iszero(); }
 	bool isinf()  const { return false; }
 	bool isnan()  const { return n.iszero() && d.iszero(); }
-	bool sign()   const { return n.sign(); }
+	bool sign()   const { return isneg(); }
 	int  scale()  const { double v = to_double(); return (v == 0.0) ? 0 : static_cast<int>(std::floor(std::log2(std::abs(v)))); }
 
 	Component numerator() const { return n; }
@@ -756,10 +769,12 @@ public:
 	rational& maxneg() { maxpos(); n = -n; return *this; }
 
 	bool iszero() const { return n.iszero() && !d.iszero(); }
-	bool isneg()  const { return n.isneg(); }
+	// the sign lives in the pair: the raw two-component constructor can hand this type a negative
+	// denominator, which normalize() has not seen (#1525)
+	bool isneg()  const { return (n.sign() != d.sign()) && !n.iszero(); }
 	bool isinf()  const { return false; }
 	bool isnan()  const { return n.iszero() && d.iszero(); }
-	bool sign()   const { return n.sign(); }
+	bool sign()   const { return isneg(); }
 	int  scale()  const { double v = to_double(); return (v == 0.0) ? 0 : static_cast<int>(std::floor(std::log2(std::abs(v)))); }
 
 	Component numerator() const { return n; }
@@ -924,10 +939,12 @@ public:
 	rational& maxneg() { maxpos(); n = -n; return *this; }
 
 	bool iszero() const { return n.iszero() && !d.iszero(); }
-	bool isneg()  const { return n.isneg(); }
+	// the sign lives in the pair: the raw two-component constructor can hand this type a negative
+	// denominator, which normalize() has not seen (#1525)
+	bool isneg()  const { return (n.sign() != d.sign()) && !n.iszero(); }
 	bool isinf()  const { return false; }
 	bool isnan()  const { return n.iszero() && d.iszero(); }
-	bool sign()   const { return n.sign(); }
+	bool sign()   const { return isneg(); }
 	int  scale()  const { double v = to_double(); return (v == 0.0) ? 0 : static_cast<int>(std::floor(std::log2(std::abs(v)))); }
 
 	Component numerator() const { return n; }
