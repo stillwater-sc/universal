@@ -26,6 +26,7 @@
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/abstract/triple.hpp>
 #include <universal/internal/blockdigit/blockdigit.hpp>
+#include <universal/number/rational/best_rational.hpp>  // the closest rational p / q to a native value (#1523, #1526)
 
 // Forward definitions
 #include <universal/number/rational/rational_fwd.hpp>
@@ -380,194 +381,42 @@ protected:
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	rational& convert_ieee754(Real rhs) noexcept {
-		if (std::isnan(rhs)) {
-			n = 0; d = 0;
-			return *this;
-		}
-		if (rhs == 0.0) {
-			n = 0; d = 1;
-			return *this;
-		}
-		// |rhs| = (a / b) * 2^exponent with b = 2^hb, the weight of a's leading bit. The algorithm
-		// below is the one this function always used -- reduce by the common power of two, shift
-		// both down when the numerator is wider than nbits, and shift the numerator (or the
-		// denominator) up by the scale as far as nbits allows -- but on an integer wide enough for
-		// nbits and for a long double's significand. It used to run in a uint64_t: past scale 64 it
-		// gave up ("overflow: scale = 70" on stdout, rational<128> of 2^70 became maxpos, #1519),
-		// and a long double brought only its leading 64 significand bits (#1517). It also returned
-		// +1 for -1.0, maxpos for any negative overflow, and left a subnormal double unconverted.
-		constexpr unsigned wideBits = 64u * (nbits / 64u + 3u);  // >= nbits + 64, and 2 words of headroom
+		// the closest rational this type can hold, from best_rational.hpp. The conversion used to
+		// build the exact dyadic fraction and shift it to fit, which is a different, worse rational:
+		// rational<8> of 1/3's double came out as 21/64 (#1523).
+		constexpr unsigned wideBits = 64u * (nbits / 64u + 3u);  // the bound, a 113-bit significand, and room
 		using Wide = blockbinary<wideBits, bt, BinaryNumberType::Signed>;
-		Wide a, b;
-		a.clear();
-		b.clear();
-		bool s{ false };
-		int  exponent{ 0 };
-		int  hb{ 0 };
-#if LONG_DOUBLE_SUPPORT
-		if constexpr (std::is_same_v<Real, long double>) {
-			// the leading words of the significand: at least nbits + 64 bits, more than can survive
-			// the shift to nbits below, which makes the rest irrelevant
-			long_double_significand sig(rhs);
-			s        = sig.negative();
-			exponent = sig.scale();
-			constexpr int words = static_cast<int>(wideBits / 64u) - 2;
-			for (int w = 0; w < words; ++w) {
-				a <<= 64;
-				const uint64_t bits = sig.next();
-				for (int k = 0; k < 64; ++k)
-					if ((bits >> k) & 1ull) a.setbit(static_cast<unsigned>(k));
-			}
-			hb = 64 * words - 1;
-		}
-		else
-#endif
-		{
-			uint64_t bits{ 0 }, e{ 0 }, f{ 0 };
-			extractFields(rhs, s, e, f, bits);
-			constexpr int fbits = ieee754_parameter<Real>::fbits;
-			if (e == 0) {  // subnormal: f * 2^(1 - bias - fbits), its leading bit at find_msb(f) - 1
-				hb       = static_cast<int>(find_msb(f)) - 1;
-				exponent = 1 - ieee754_parameter<Real>::bias - fbits + hb;
-				a.setbits(f);
-			}
-			else {
-				hb       = fbits;
-				exponent = static_cast<int>(e) - ieee754_parameter<Real>::bias;
-				a.setbits(f | ieee754_parameter<Real>::hmask);
-			}
-		}
-		b.setbit(static_cast<unsigned>(hb));  // |rhs| = (a / b) * 2^exponent, b = 2^hb
-
-		// |rhs| is the exact dyadic A / B. This used to shift A and B to fit nbits, which is not the
-		// closest rational a nbits numerator and denominator can hold: rational<8> of 1/3's double
-		// came out as 21/64, so r -> double -> r did not give r back for a non-dyadic r (#1523).
-		// The continued fraction of A / B gives its convergents, each the closest rational of its
-		// denominator or smaller; the last one that fits, or the better of it and the largest
-		// semiconvergent that fits, is the closest rational this type can hold.
-		Wide A, B;
-		A.clear();
-		B.clear();
-		const int E = exponent - hb;  // |rhs| = a * 2^E
-		Wide maxMagnitude;            // the largest numerator or denominator: 2^(nbits-1) - 1
-		maxMagnitude.clear();
-		for (unsigned i = 0; i + 1 < nbits; ++i) maxMagnitude.setbit(i);
-		const int significandBits = a.msb() + 1;
-		if (E >= 0) {
-			if (significandBits + E > static_cast<int>(nbits)) {  // past 2^nbits: over the largest numerator
-				if (s) maxneg(); else maxpos();
-				return *this;
-			}
-			A = a;
-			A <<= E;
-			B.setbit(0);
-		}
-		else {
-			if (-E - significandBits > static_cast<int>(nbits)) {  // below 2^-nbits: under half of 1 / maxMagnitude
-				setzero();
-				return *this;
-			}
-			A = a;
-			B.setbit(static_cast<unsigned>(-E));
-		}
-		if ((A / B) > maxMagnitude) {  // the integer part alone does not fit
-			if (s) maxneg(); else maxpos();
+		Wide bound;  // the largest numerator or denominator: 2^(nbits-1) - 1
+		bound.clear();
+		for (unsigned i = 0; i + 1 < nbits; ++i) bound.setbit(i);
+		bool negative{ false };
+		Wide p, q;
+		switch (best_rational_from_native<Wide, Real>(rhs, bound, negative, p, q)) {
+		case rational_conversion::nan:
+			n = 0;
+			d = 0;
 			return *this;
+		case rational_conversion::infinite:
+		case rational_conversion::overflow:
+			if (negative) maxneg(); else maxpos();
+			return *this;
+		case rational_conversion::zero:
+			setzero();
+			return *this;
+		case rational_conversion::finite:
+		default:
+			break;
 		}
-
-		// the convergents h / k of the continued fraction of A / B
-		Wide h, hPrev, k, kPrev, x, y, one;
-		one.clear();
-		one.setbit(0);
-		h     = one;   // h(-1)
-		hPrev.clear(); // h(-2)
-		k.clear();     // k(-1)
-		kPrev = one;   // k(-2)
-		x     = A;
-		y     = B;
-		bool exact = false;
-		Wide bestNumerator, bestDenominator;
-		bestNumerator.clear();
-		bestDenominator = one;
-		while (!y.iszero()) {
-			const Wide quotient  = x / y;
-			const Wide remainder = x % y;
-			// h = quotient * h + hPrev, k = quotient * k + kPrev, unless that no longer fits
-			const bool fits = (quotient <= maxMagnitude) && ((quotient * h + hPrev) <= maxMagnitude) &&
-			                  ((quotient * k + kPrev) <= maxMagnitude);
-			if (!fits) {
-				// the largest semiconvergent that fits: hPrev + t * h over kPrev + t * k
-				Wide t = quotient;
-				if (!h.iszero()) {
-					const Wide room = (maxMagnitude - hPrev) / h;
-					if (room < t) t = room;
-				}
-				if (!k.iszero()) {
-					const Wide room = (maxMagnitude - kPrev) / k;
-					if (room < t) t = room;
-				}
-				bestNumerator   = h;
-				bestDenominator = k;
-				if (!t.iszero()) {
-					const Wide semiNumerator   = hPrev + t * h;
-					const Wide semiDenominator = kPrev + t * k;
-					// keep the closer of h / k and the semiconvergent: compare |A/B - p/q| by
-					// |A q - p B| * q', the denominators being positive
-					if (closerToTarget(A, B, semiNumerator, semiDenominator, h, k)) {
-						bestNumerator   = semiNumerator;
-						bestDenominator = semiDenominator;
-					}
-				}
-				break;
-			}
-			const Wide nextH = quotient * h + hPrev;
-			const Wide nextK = quotient * k + kPrev;
-			hPrev = h;
-			h     = nextH;
-			kPrev = k;
-			k     = nextK;
-			x     = y;
-			y     = remainder;
-			if (y.iszero()) {  // A / B itself fits: exact
-				bestNumerator   = h;
-				bestDenominator = k;
-				exact           = true;
-			}
-		}
-		(void)exact;
-		if (bestDenominator.iszero()) bestDenominator = one;  // a zero value: 0 / 1
-
-		if (s) bestNumerator.twosComplement();
+		// the low nbits bits, two's complement for a negative numerator
+		if (negative) p.twosComplement();
 		n.clear();
 		d.clear();
 		for (unsigned i = 0; i < nbits; ++i) {
-			if (bestNumerator.test(i)) n.setbit(i);
-			if (bestDenominator.test(i)) d.setbit(i);
+			if (p.test(i)) n.setbit(i);
+			if (q.test(i)) d.setbit(i);
 		}
 		normalize();
 		return *this;
-	}
-
-	// is p1 / q1 closer to A / B than p2 / q2? |A q1 - p1 B| q2 vs |A q2 - p2 B| q1, in twice the
-	// width so the products cannot overflow. A tie keeps the smaller denominator, p2 / q2.
-	template<typename Wide>
-	static bool closerToTarget(const Wide& A, const Wide& B, const Wide& p1, const Wide& q1, const Wide& p2,
-	                           const Wide& q2) noexcept {
-		using Wider = blockbinary<2 * Wide::nbits, bt, BinaryNumberType::Signed>;
-		auto widen  = [](const Wide& v) {
-			Wider w;
-			w.clear();
-			for (unsigned i = 0; i < Wide::nbits; ++i)
-				if (v.test(i)) w.setbit(i);
-			return w;
-		};
-		const Wider a = widen(A), b = widen(B);
-		auto distance = [&](const Wide& p, const Wide& q) {
-			Wider e = a * widen(q) - widen(p) * b;
-			if (e.sign()) e.twosComplement();  // |A q - p B|
-			return e;
-		};
-		return (distance(p1, q1) * widen(q2)) < (distance(p2, q2) * widen(q1));
 	}
 
 private:
@@ -664,8 +513,11 @@ public:
 	rational& operator=(unsigned int rhs)       { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long rhs)      { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long long rhs) { n = rhs; d = 1; return *this; }
-	rational& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
-	rational& operator=(double rhs)             { if (std::isfinite(rhs)) { n = static_cast<long long>(rhs); } else { n = 0; } d = 1; return *this; }
+	rational& operator=(float rhs)              { return convert_ieee754(rhs); }
+	rational& operator=(double rhs)             { return convert_ieee754(rhs); }
+#if LONG_DOUBLE_SUPPORT
+	rational& operator=(long double rhs)        { return convert_ieee754(rhs); }
+#endif
 
 	explicit operator int()       const noexcept { return static_cast<int>(to_double()); }
 	explicit operator long()      const noexcept { return static_cast<long>(to_double()); }
@@ -686,8 +538,8 @@ public:
 	void set(long long _n, long long _d) { n = _n; d = _d; normalize(); }
 	void setbits(int64_t bits) { n = bits; d = 1; }
 
-	rational& maxpos() { n = Component(); for (unsigned i = 0; i < ndigits; ++i) n.setdigit(i, 8 - 1); d = 1; return *this; }
-	rational& minpos() { n = 1; d = Component(); for (unsigned i = 0; i < ndigits; ++i) d.setdigit(i, 8 - 1); return *this; }
+	rational& maxpos() { n = Component(); n.clear(); for (unsigned i = 0; i < ndigits; ++i) n.setdigit(i, 8 - 1); d = 1; return *this; }
+	rational& minpos() { n = 1; d = Component(); d.clear(); for (unsigned i = 0; i < ndigits; ++i) d.setdigit(i, 8 - 1); return *this; }
 	rational& zero() { n = 0; d = 1; return *this; }
 	rational& minneg() { minpos(); n = -n; return *this; }
 	rational& maxneg() { maxpos(); n = -n; return *this; }
@@ -705,6 +557,46 @@ public:
 private:
 	Component n;
 	Component d;
+
+	// The closest rational this type can hold, from best_rational.hpp. This used to truncate to an
+	// integer -- n = (long long)rhs, d = 1 -- so 0.75 became 0/1 (#1526).
+	template<typename Real>
+	rational& convert_ieee754(Real rhs) noexcept {
+		constexpr unsigned digitBits = (Component::radix <= 8u ? 3u : 4u);   // bits per digit
+		constexpr unsigned wideBits  = 64u * ((ndigits * digitBits) / 64u + 4u);  // the bound, a 113-bit significand, and room
+		using Wide = blockbinary<wideBits, bt, BinaryNumberType::Signed>;
+		Wide bound, radixWide, one;
+		bound.clear();
+		radixWide.clear();
+		one.clear();
+		bound.setbit(0);
+		one.setbit(0);
+		radixWide.setbits(Component::radix);
+		for (unsigned i = 0; i < ndigits; ++i) bound = bound * radixWide;  // radix^ndigits
+		bound = bound - one;                                              // the largest component
+		bool negative{ false };
+		Wide p, q;
+		switch (best_rational_from_native<Wide, Real>(rhs, bound, negative, p, q)) {
+		case rational_conversion::nan:
+			setnan();
+			return *this;
+		case rational_conversion::infinite:
+		case rational_conversion::overflow:
+			if (negative) maxneg(); else maxpos();
+			return *this;
+		case rational_conversion::zero:
+			setzero();
+			return *this;
+		case rational_conversion::finite:
+		default:
+			break;
+		}
+		n = to_digit_component<Component>(p);
+		if (negative) n = -n;
+		d = to_digit_component<Component>(q);
+		normalize();
+		return *this;
+	}
 
 	void normalize() {
 		if (d.iszero()) return;
@@ -791,8 +683,11 @@ public:
 	rational& operator=(unsigned int rhs)       { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long rhs)      { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long long rhs) { n = rhs; d = 1; return *this; }
-	rational& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
-	rational& operator=(double rhs)             { if (std::isfinite(rhs)) { n = static_cast<long long>(rhs); } else { n = 0; } d = 1; return *this; }
+	rational& operator=(float rhs)              { return convert_ieee754(rhs); }
+	rational& operator=(double rhs)             { return convert_ieee754(rhs); }
+#if LONG_DOUBLE_SUPPORT
+	rational& operator=(long double rhs)        { return convert_ieee754(rhs); }
+#endif
 
 	explicit operator int()       const noexcept { return static_cast<int>(to_double()); }
 	explicit operator long()      const noexcept { return static_cast<long>(to_double()); }
@@ -813,8 +708,8 @@ public:
 	void set(long long _n, long long _d) { n = _n; d = _d; normalize(); }
 	void setbits(int64_t bits) { n = bits; d = 1; }
 
-	rational& maxpos() { n = Component(); for (unsigned i = 0; i < ndigits; ++i) n.setdigit(i, 9); d = 1; return *this; }
-	rational& minpos() { n = 1; d = Component(); for (unsigned i = 0; i < ndigits; ++i) d.setdigit(i, 9); return *this; }
+	rational& maxpos() { n = Component(); n.clear(); for (unsigned i = 0; i < ndigits; ++i) n.setdigit(i, 9); d = 1; return *this; }
+	rational& minpos() { n = 1; d = Component(); d.clear(); for (unsigned i = 0; i < ndigits; ++i) d.setdigit(i, 9); return *this; }
 	rational& zero() { n = 0; d = 1; return *this; }
 	rational& minneg() { minpos(); n = -n; return *this; }
 	rational& maxneg() { maxpos(); n = -n; return *this; }
@@ -832,6 +727,46 @@ public:
 private:
 	Component n;
 	Component d;
+
+	// The closest rational this type can hold, from best_rational.hpp. This used to truncate to an
+	// integer -- n = (long long)rhs, d = 1 -- so 0.75 became 0/1 (#1526).
+	template<typename Real>
+	rational& convert_ieee754(Real rhs) noexcept {
+		constexpr unsigned digitBits = (Component::radix <= 8u ? 3u : 4u);   // bits per digit
+		constexpr unsigned wideBits  = 64u * ((ndigits * digitBits) / 64u + 4u);  // the bound, a 113-bit significand, and room
+		using Wide = blockbinary<wideBits, bt, BinaryNumberType::Signed>;
+		Wide bound, radixWide, one;
+		bound.clear();
+		radixWide.clear();
+		one.clear();
+		bound.setbit(0);
+		one.setbit(0);
+		radixWide.setbits(Component::radix);
+		for (unsigned i = 0; i < ndigits; ++i) bound = bound * radixWide;  // radix^ndigits
+		bound = bound - one;                                              // the largest component
+		bool negative{ false };
+		Wide p, q;
+		switch (best_rational_from_native<Wide, Real>(rhs, bound, negative, p, q)) {
+		case rational_conversion::nan:
+			setnan();
+			return *this;
+		case rational_conversion::infinite:
+		case rational_conversion::overflow:
+			if (negative) maxneg(); else maxpos();
+			return *this;
+		case rational_conversion::zero:
+			setzero();
+			return *this;
+		case rational_conversion::finite:
+		default:
+			break;
+		}
+		n = to_digit_component<Component>(p);
+		if (negative) n = -n;
+		d = to_digit_component<Component>(q);
+		normalize();
+		return *this;
+	}
 
 	void normalize() {
 		if (d.iszero()) return;
@@ -916,8 +851,11 @@ public:
 	rational& operator=(unsigned int rhs)       { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long rhs)      { n = static_cast<unsigned long long>(rhs); d = 1; return *this; }
 	rational& operator=(unsigned long long rhs) { n = rhs; d = 1; return *this; }
-	rational& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
-	rational& operator=(double rhs)             { if (std::isfinite(rhs)) { n = static_cast<long long>(rhs); } else { n = 0; } d = 1; return *this; }
+	rational& operator=(float rhs)              { return convert_ieee754(rhs); }
+	rational& operator=(double rhs)             { return convert_ieee754(rhs); }
+#if LONG_DOUBLE_SUPPORT
+	rational& operator=(long double rhs)        { return convert_ieee754(rhs); }
+#endif
 
 	explicit operator int()       const noexcept { return static_cast<int>(to_double()); }
 	explicit operator long()      const noexcept { return static_cast<long>(to_double()); }
@@ -938,8 +876,8 @@ public:
 	void set(long long _n, long long _d) { n = _n; d = _d; normalize(); }
 	void setbits(int64_t bits) { n = bits; d = 1; }
 
-	rational& maxpos() { n = Component(); for (unsigned i = 0; i < ndigits; ++i) n.setdigit(i, 15); d = 1; return *this; }
-	rational& minpos() { n = 1; d = Component(); for (unsigned i = 0; i < ndigits; ++i) d.setdigit(i, 15); return *this; }
+	rational& maxpos() { n = Component(); n.clear(); for (unsigned i = 0; i < ndigits; ++i) n.setdigit(i, 15); d = 1; return *this; }
+	rational& minpos() { n = 1; d = Component(); d.clear(); for (unsigned i = 0; i < ndigits; ++i) d.setdigit(i, 15); return *this; }
 	rational& zero() { n = 0; d = 1; return *this; }
 	rational& minneg() { minpos(); n = -n; return *this; }
 	rational& maxneg() { maxpos(); n = -n; return *this; }
@@ -957,6 +895,46 @@ public:
 private:
 	Component n;
 	Component d;
+
+	// The closest rational this type can hold, from best_rational.hpp. This used to truncate to an
+	// integer -- n = (long long)rhs, d = 1 -- so 0.75 became 0/1 (#1526).
+	template<typename Real>
+	rational& convert_ieee754(Real rhs) noexcept {
+		constexpr unsigned digitBits = (Component::radix <= 8u ? 3u : 4u);   // bits per digit
+		constexpr unsigned wideBits  = 64u * ((ndigits * digitBits) / 64u + 4u);  // the bound, a 113-bit significand, and room
+		using Wide = blockbinary<wideBits, bt, BinaryNumberType::Signed>;
+		Wide bound, radixWide, one;
+		bound.clear();
+		radixWide.clear();
+		one.clear();
+		bound.setbit(0);
+		one.setbit(0);
+		radixWide.setbits(Component::radix);
+		for (unsigned i = 0; i < ndigits; ++i) bound = bound * radixWide;  // radix^ndigits
+		bound = bound - one;                                              // the largest component
+		bool negative{ false };
+		Wide p, q;
+		switch (best_rational_from_native<Wide, Real>(rhs, bound, negative, p, q)) {
+		case rational_conversion::nan:
+			setnan();
+			return *this;
+		case rational_conversion::infinite:
+		case rational_conversion::overflow:
+			if (negative) maxneg(); else maxpos();
+			return *this;
+		case rational_conversion::zero:
+			setzero();
+			return *this;
+		case rational_conversion::finite:
+		default:
+			break;
+		}
+		n = to_digit_component<Component>(p);
+		if (negative) n = -n;
+		d = to_digit_component<Component>(q);
+		normalize();
+		return *this;
+	}
 
 	void normalize() {
 		if (d.iszero()) return;
