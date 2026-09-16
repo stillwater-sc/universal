@@ -60,6 +60,10 @@ inline std::tuple<bool, int, std::uint64_t> ieee_components(double fp)
 	);
 }
 
+#if LONG_DOUBLE_SUPPORT
+// the long double overloads read a type whose fields this build can reach; LONG_DOUBLE_SUPPORT is
+// the one place that decides, from the format the compiler reports (#1534)
+
 #if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
 /* GNU GCC/G++. --------------------------------------------- */
 
@@ -174,5 +178,6 @@ inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
 
 #endif
 
-// specialization for IEEE long double precision floats
+#endif // LONG_DOUBLE_SUPPORT
+
 }} // namespace sw::universal
