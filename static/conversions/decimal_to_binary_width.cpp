@@ -138,6 +138,49 @@ int VerifyLongDigitStringsRefused(bool reportTestCases) {
 	return nrOfFailedTestCases;
 }
 
+// Leading zeros add nothing to the value's size, so they must not count against the working width:
+// 0.000...0001 is M = 1. Counting them refused a one-digit value, and an all-zero string, once the
+// raw length passed the widest rung. The reference scale is -(10^12001).bit_length(), from exact
+// integer arithmetic (#1504, raised by CodeRabbit on #1541).
+int VerifyLeadingZeros(bool reportTestCases) {
+	int nrOfFailedTestCases = 0;
+	const auto one = d2b::convert("0." + std::string(12000, '0') + "1", 53);
+	if (!(one.valid && !one.is_zero && one.binary_scale == -39867)) {
+		++nrOfFailedTestCases;
+		if (reportTestCases)
+			std::cerr << "FAIL: 1e-12001 written with 12000 leading zeros: valid " << one.valid
+			          << " scale " << one.binary_scale << " expected -39867\n";
+	}
+	const auto zero = d2b::convert("0." + std::string(20000, '0'), 53);
+	if (!(zero.valid && zero.is_zero)) {
+		++nrOfFailedTestCases;
+		if (reportTestCases) std::cerr << "FAIL: 20000 zeros is not a valid zero\n";
+	}
+	return nrOfFailedTestCases;
+}
+
+// A result the converter calls valid must have an exact exponent. The exact expansion of 2^-8000 and
+// the same text with its last digit lowered share their first 19 significant digits, but their
+// binary exponents are -8000 and -8001: an estimate from those digits returned -8000 for both, one of
+// them valid and wrong. Past the widest rung neither may come back valid with the wrong scale.
+int VerifyNoEstimateAcrossAPowerOfTwo(bool reportTestCases) {
+	int nrOfFailedTestCases = 0;
+	std::string exact = exact_power_of_two(-8000);
+	std::string below = exact;
+	below.back() = static_cast<char>(below.back() - 1);   // the expansion of 2^-8000 ends in 5
+	const auto a = d2b::convert(exact, 53);
+	const auto b = d2b::convert(below, 53);
+	if (a.valid && a.binary_scale != -8000) {
+		++nrOfFailedTestCases;
+		if (reportTestCases) std::cerr << "FAIL: 2^-8000 came back valid with scale " << a.binary_scale << '\n';
+	}
+	if (b.valid && b.binary_scale != -8001) {
+		++nrOfFailedTestCases;
+		if (reportTestCases) std::cerr << "FAIL: just below 2^-8000 came back valid with scale " << b.binary_scale << '\n';
+	}
+	return nrOfFailedTestCases;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -181,6 +224,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPowersOfTwo(-1074, 1023, 17, reportTestCases), "2^-1074..2^1023 sampled", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyHugeExponents(reportTestCases), "huge exponents", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyLongDigitStringsRefused(reportTestCases), "long digit strings", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLeadingZeros(reportTestCases), "leading zeros", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNoEstimateAcrossAPowerOfTwo(reportTestCases), "2^-8000 and just below", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -62,6 +62,7 @@
 #include <cfloat>    // LDBL_MANT_DIG, DBL_MANT_DIG: the width the magnitude estimate is carried in
 #include <cmath>     // std::ldexp; std::log2, std::floor, std::pow, std::nextafter for the magnitude estimate
 #include <cstdint>
+#include <limits>    // std::numeric_limits, for the estimate's error bound
 #include <type_traits> // std::conditional_t
 #include <string_view>
 #include <universal/utility/string_parse.hpp>
@@ -221,10 +222,25 @@ inline bool any_bit_below(const big_integer<BigBits>& x, int limit) noexcept {
 // too small: a shift that runs off the end of the fixed-width integer loses
 // bits silently. test_decimal_to_binary_oracle checks the dispatched result
 // against the undispatched 2048-bit path bit-for-bit.
+// The digits that make up M. scan_decimal_float keeps leading zeros in int_part and frac_part,
+// and they add nothing to M's size -- 0.000...0001 is M = 1 -- so counting them would ask for
+// working bits a value does not need, and past the widest rung refuse a value that is only a
+// digit long (#1504). They still count toward E, which uses frac_part's full length.
+inline std::uint64_t significant_digits(const sw::universal::string_parse::decimal_float_scan& d) noexcept {
+	std::uint64_t leading{ 0 };
+	bool          seen{ false };
+	for (char c : d.int_part)  { if (c != '0') { seen = true; break; } ++leading; }
+	if (!seen) {
+		for (char c : d.frac_part) { if (c != '0') { seen = true; break; } ++leading; }
+	}
+	const std::uint64_t total = static_cast<std::uint64_t>(d.int_part.size())
+	                          + static_cast<std::uint64_t>(d.frac_part.size());
+	return seen ? total - leading : 0u;
+}
+
 inline std::uint64_t required_working_bits(const sw::universal::string_parse::decimal_float_scan& d,
                                            unsigned target_mantissa_bits) noexcept {
-	const std::uint64_t digits = static_cast<std::uint64_t>(d.int_part.size())
-	                           + static_cast<std::uint64_t>(d.frac_part.size());
+	const std::uint64_t digits = significant_digits(d);
 	// log2(10) ~= 3.3219, log2(5) ~= 2.3219, in 1/1024ths and rounded up.
 	const std::uint64_t mbits = (digits * 3402u) / 1024u + 2u;
 	const std::int64_t  E = static_cast<std::int64_t>(d.exp10)
@@ -265,58 +281,57 @@ inline basic_result<Out> rewidth(const basic_result<Work>& in) {
 // rung convert() offers (#1504). Such input comes in two kinds, and they deserve different
 // answers:
 //
-//  - A SHORT number with a HUGE exponent, like 1e100000 or 7e-15000. The digits are few; it is
-//    the exponent alone that makes 5^|E| enormous. Every fixed-size parser either saturates such
-//    a value -- to infinity, or to zero -- or, for a type with a very wide exponent field, can
-//    hold it. Saturating needs only the binary exponent, and that comes cheaply and exactly from
-//    the leading digits and log2(10). The mantissa is their value to the precision of a long
-//    double, with the sticky bit set to say it is not exact. This is what main used to produce
-//    by accident, through bits falling off the end; here it is produced on purpose, and the
-//    mantissa is approximate rather than garbage.
+//  - A SHORT number with a HUGE exponent, like 1e100000 or 7e-15000. Every fixed-size parser
+//    either saturates such a value -- to infinity, or to zero -- or, for a type with a very wide
+//    exponent field, can hold it. Saturating needs only the binary exponent, and it can be had
+//    exactly and cheaply, but only when the digits are known exactly: at most 19 significant
+//    digits, which fit a uint64_t, with nothing nonzero after them. Then |value| = D * 10^q
+//    EXACTLY, and floor(log2(D) + q log2(10)) is its binary exponent -- provided the floating
+//    point error in that sum cannot straddle an integer, which is checked with an explicit error
+//    bound rather than assumed. The mantissa is D's value to the estimate's precision, marked
+//    sticky. This is what main used to produce by accident, through bits falling off the end.
 //
-//  - A LONG digit string, whose digits alone need more room than the widest rung. Its exponent
-//    may be ordinary, so its value may well be representable, and an approximate mantissa would
-//    be exactly the silent wrong answer #1504 is about. It is refused.
+//  - Anything else is refused. A digit string with more than 19 significant digits cannot be
+//    reduced to D without dropping digits, and dropped digits can move the binary exponent: the
+//    exact expansion of 2^-8000 and the same text with its last digit lowered share their first
+//    19 digits, yet their exponents are -8000 and -8001. An estimate there would be exactly the
+//    silent wrong answer #1504 is about. A result this path calls valid has an exact exponent.
 template<unsigned BigBits>
 inline basic_result<BigBits>
 convert_by_magnitude(const sw::universal::string_parse::decimal_float_scan& d,
-                     unsigned target_mantissa_bits,
-                     std::uint64_t widest_bits) {
+                     unsigned target_mantissa_bits) {
 	basic_result<BigBits> out{};
 	out.valid    = false;
 	out.negative = d.negative;
 
-	const std::uint64_t digits = static_cast<std::uint64_t>(d.int_part.size())
-	                           + static_cast<std::uint64_t>(d.frac_part.size());
-	// the digits' own share of required_working_bits(): past the widest rung, this is a long
-	// digit string rather than a short number with a large exponent
-	const std::uint64_t digitBits = (digits * 3402u) / 1024u + 2u
-	                              + static_cast<std::uint64_t>(target_mantissa_bits) + 4u + 32u;
-	if (digitBits > widest_bits) return out;   // refused
-
-	// the leading significant digits, at most 19 of them so they fit a uint64_t, and the decimal
-	// exponent of the last one used: |value| = D * 10^q, give or take the digits left over
+	// the significant digits, at most 19 of them, and the decimal exponent of the last one kept
+	constexpr int maxDigits = 19;             // 10^19 - 1 < 2^64
 	std::uint64_t D{ 0 };
 	int           used{ 0 };
+	bool          inexact{ false };           // a nonzero digit past the ones D can hold
 	std::int64_t  position = static_cast<std::int64_t>(d.int_part.size()) - 1;   // 10^position of the digit
 	std::int64_t  q{ 0 };
 	auto take = [&](char c) {
 		const unsigned digit = static_cast<unsigned>(c - '0');
 		if (used == 0 && digit == 0u) { --position; return; }   // a leading zero
-		if (used < 19) {   // digits past these only refine an estimate already marked inexact
+		if (used < maxDigits) {
 			D = D * 10u + digit;
 			++used;
 			q = position;
+		}
+		else if (digit != 0u) {
+			inexact = true;                   // trailing zeros past the 19th are harmless; this is not
 		}
 		--position;
 	};
 	for (char c : d.int_part) take(c);
 	for (char c : d.frac_part) take(c);
-	if (used == 0) {   // every digit is zero
+	if (used == 0) {   // every digit is zero, whatever the exponent
 		out.is_zero = true;
 		out.valid   = true;
 		return out;
 	}
+	if (inexact) return out;   // refused: dropped digits can move the exponent
 	q += static_cast<std::int64_t>(d.exp10);
 
 	// |value| = m * 2^e with m in [1, 2), from log2(D) + q * log2(10). The estimate is carried in
@@ -327,7 +342,17 @@ convert_by_magnitude(const sw::universal::string_parse::decimal_float_scan& d,
 	using Estimate = std::conditional_t<(LDBL_MANT_DIG > DBL_MANT_DIG), long double, double>;
 	constexpr Estimate log2of10 = static_cast<Estimate>(3.321928094887362347870319429489390175864831393L);
 	const Estimate L = std::log2(static_cast<Estimate>(D)) + static_cast<Estimate>(q) * log2of10;
-	const Estimate e = std::floor(L);
+
+	// The error in L comes from log2(D) (|log2 D| < 64), from the product q * log2(10) and the
+	// constant itself (|q log2 10| < 3.33 |q|), and from the final sum; each is within a few ulps
+	// of its own magnitude. Bound them all generously, and refuse if the bound reaches an integer:
+	// a scale this path returns is exact, never a guess near a power of two.
+	const Estimate eps   = std::numeric_limits<Estimate>::epsilon();
+	const Estimate scale = static_cast<Estimate>(64) + static_cast<Estimate>(3.33L) * std::fabs(static_cast<Estimate>(q)) + std::fabs(L);
+	const Estimate err   = static_cast<Estimate>(8) * eps * scale;
+	const Estimate e     = std::floor(L);
+	if (std::floor(L - err) != e || std::floor(L + err) != e) return out;   // refused: the floor is not certain
+
 	Estimate m = std::pow(static_cast<Estimate>(2), L - e);
 	if (m < static_cast<Estimate>(1)) m = static_cast<Estimate>(1);   // guard the rounding at the boundaries
 	if (m >= static_cast<Estimate>(2)) m = std::nextafter(static_cast<Estimate>(2), static_cast<Estimate>(1));
@@ -348,7 +373,7 @@ convert_by_magnitude(const sw::universal::string_parse::decimal_float_scan& d,
 	}
 	out.mantissa     = mantissa;
 	out.binary_scale = static_cast<std::int64_t>(e);
-	out.sticky_bit   = true;   // an estimate, never exact: say so to whoever rounds it
+	out.sticky_bit   = true;   // the mantissa is an estimate: say so to whoever rounds it
 	out.valid        = true;
 	return out;
 }
@@ -562,7 +587,7 @@ convert(const sw::universal::string_parse::decimal_float_scan& d,
 	}
 	// past the widest rung: a short number with a huge exponent saturates from its magnitude, and
 	// a digit string too long to convert exactly is refused rather than losing bits
-	return detail::convert_by_magnitude<BigBits>(d, target_mantissa_bits, widest_working_bits);
+	return detail::convert_by_magnitude<BigBits>(d, target_mantissa_bits);
 }
 
 // Convenience overload: parse the string in one call.
