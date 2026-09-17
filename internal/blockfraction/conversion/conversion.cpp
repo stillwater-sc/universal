@@ -156,14 +156,15 @@ try {
 		float v{ 1.5f };
 		bool s{ false };
 		uint64_t rawExp{ 0 };
-		uint64_t rawFraction{ 0 };
-		extractFields(v, s, rawExp, rawFraction);
+		uint64_t lowerBits{ 0 };
+		uint64_t upperBits{ 0 };   // a float has no fraction bits above the low word
+		extractFields(v, s, rawExp, lowerBits, upperBits);
 		std::cout << "floating-point " << to_binary(v) << " : " << v << '\n';
-		std::cout << "exponent bits  " << to_binary(rawExp, 8) << '\n';
-		std::cout << "fraction bits  " << to_binary(rawFraction, 24) << '\n';
+		std::cout << "exponent bits  " << to_binary(rawExp, true, 8) << '\n';
+		std::cout << "fraction bits  " << to_binary(lowerBits, true, 24) << '\n';
 		blockfraction<26, uint32_t> sp;
 		sp.setradix(23);
-		sp.setbits(rawFraction);
+		sp.setbits(lowerBits);
 		std::cout << "fraction bits  " << to_binary(sp, true) << " : " << sp << '\n';
 	}
 #endif
