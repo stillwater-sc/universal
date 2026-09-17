@@ -51,20 +51,20 @@ namespace sw { namespace universal {
 		s = std::signbit(value);
 		if (value != value) {  // nan
 			rawExponentBits = 0x7FFF;
-			lowerBits = longDoubleNaNIsQuiet(value) ? 0x4000'0000'0000'0000ull : 0x2000'0000'0000'0000ull;
-			upperBits            = 0;   // the shaped significand is 64 bits: nothing above it
+			lowerBits       = longDoubleNaNIsQuiet(value) ? 0x4000'0000'0000'0000ull : 0x2000'0000'0000'0000ull;
+			upperBits       = 0;   // the shaped significand is 64 bits: nothing above it
 			return;
 		}
 		if (std::isinf(value)) {
 			rawExponentBits = 0x7FFF;
-			lowerBits = 0;
-			upperBits            = 0;   // the shaped significand is 64 bits: nothing above it
+			lowerBits       = 0;
+			upperBits       = 0;   // the shaped significand is 64 bits: nothing above it
 			return;
 		}
 		if (value == 0.0l) {
 			rawExponentBits = 0;
-			lowerBits = 0;
-			upperBits            = 0;   // the shaped significand is 64 bits: nothing above it
+			lowerBits       = 0;
+			upperBits       = 0;   // the shaped significand is 64 bits: nothing above it
 			return;
 		}
 		int               e   = 0;
@@ -74,16 +74,16 @@ namespace sw { namespace universal {
 		const int biased = e - 1 + bias;  // |value| = 1.f * 2^(e - 1)
 		if (biased >= 1) {
 			rawExponentBits = static_cast<std::uint64_t>(biased);
-			lowerBits = top & fmask;
-			upperBits            = 0;   // the shaped significand is 64 bits: nothing above it
+			lowerBits       = top & fmask;
+			upperBits       = 0;   // the shaped significand is 64 bits: nothing above it
 		}
 		else {  // below x87's normal range, which only binary128 reaches: an x87 denormal
 			const int     shift = 1 - biased;
 			std::uint64_t f     = (shift < 64) ? (top >> shift) : 0u;
 			if (shift >= 64 || (top & ((std::uint64_t(1) << shift) - 1u)) != 0) f |= 1u;  // round to odd
 			rawExponentBits = 0;
-			lowerBits = f;
-			upperBits            = 0;   // the shaped significand is 64 bits: nothing above it
+			lowerBits       = f;
+			upperBits       = 0;   // the shaped significand is 64 bits: nothing above it
 		}
 	}
 #endif
@@ -183,7 +183,12 @@ namespace sw { namespace universal {
 ////////////////////////////////////////////////////////////////////////
 // nonconst extractFields for single precision floating-point
 
-	inline void extractFields(float value, bool& s, uint32_t& rawExponentBits, uint32_t& lowerBits, uint32_t& upperBits) noexcept {
+	// the fields come back in a uint64_t here as they do on the constexpr path above. They used to
+	// be uint32_t on this one, so the same call could not serve every Real: generic code passing
+	// uint64_t got an exact match for a double and, for a float, an overload it could not bind to,
+	// leaving the double and long double candidates to tie. MSVC, which takes this path, reported
+	// the ambiguity (#1536).
+	inline void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
 		float_decoder decoder;
 		decoder.f = value;
 		s = decoder.parts.sign ? true : false;
@@ -228,6 +233,20 @@ namespace sw { namespace universal {
 #endif // LONG_DOUBLE_DOWNCAST
 #endif // LONG_DOUBLE_SUPPORT
 #endif // BIT_CAST_IS_CONSTEXPR
+
+#if !LONG_DOUBLE_SUPPORT
+	// A host whose long double this library cannot take apart still HAS the type, and it is a
+	// distinct one for overload resolution, so a call has to have somewhere to go: with only the
+	// float and double overloads in scope, extractFields(aLongDouble, ...) is ambiguous rather than
+	// absent. ieee_components carried a forwarding overload for exactly this, and retiring it left
+	// the hole (#1536); the same reasoning as #1535.
+	//
+	// LONG_DOUBLE_SUPPORT is 0 only where long double is double -- MSVC, and a GNU build with
+	// -mlong-double-64 -- so forwarding to the double overload reads the very same bits.
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
+		extractFields(static_cast<double>(value), s, rawExponentBits, lowerBits, upperBits);
+	}
+#endif
 
 template<typename Real>
 	inline BIT_CAST_CONSTEXPR bool checkNaN(Real value, int& nan_type) {
