@@ -893,6 +893,11 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	# conversions
 	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)
 
+	# utility tests: the decimal-to-binary converter, string parsing, fma traits and error
+	# tracking. Enabled only by UNIVERSAL_BUILD_ALL before, so no CI job built them and they
+	# never gated a merge -- which is how the converter's #1504 went unnoticed (#1542).
+	set(UNIVERSAL_BUILD_UTILITY ON)
+
 	# linalg data serialization extracted to MTL5 (universal#1204, #1209)
 
 	# build the C API library
