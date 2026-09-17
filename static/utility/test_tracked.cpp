@@ -1,379 +1,427 @@
-// test_tracked.cpp: comprehensive test of unified Tracked<T> interface
+// test_tracked.cpp: verification of the unified Tracked<T> interface
+//
+// Tracked<T> (include/sw/universal/utility/tracked.hpp) is the front door to error
+// tracking: it picks a strategy from error_tracking_traits<T> and inherits the matching
+// implementation, so a caller writes Tracked<float> or Tracked<posit<32,2>> without
+// knowing which machinery runs underneath. The header also supplies the two wrappers
+// for types that track uncertainty natively: TrackedAreal (areal's ubit) and
+// TrackedInterval (interval's bounds).
+//
+// The contracts pinned here:
+//   - the strategy each type selects, and the implementation it inherits, checked at
+//     COMPILE time so a mis-routed type cannot reach a test at all
+//   - an explicit strategy argument overrides the default and reaches the right class
+//   - Tracked<T> really delegates: the numbers it reports are the ones the underlying
+//     tracker reports, not a reimplementation
+//   - TrackedAreal reads areal's ubit: an exact encoding reports no error, an uncertain
+//     one reports the width to the next encoding
+//   - TrackedInterval reports the interval width as its error, encloses the true result,
+//     and never narrows through arithmetic
+//   - both wrappers count one operation per operation and sum the operand counts
+//
+// One check below pins behaviour that is wrong (#1547); it says so, so that a fix is
+// noticed here rather than silently changing what callers see.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
-// This file is part of the universal numbers project, which is
-// released under an MIT Open Source license.
-
-#include <iostream>
-#include <iomanip>
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <string>
 
-// Include all number types
-#include <universal/native/ieee754.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/posit/posit.hpp>
 #include <universal/number/areal/areal.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/interval/interval.hpp>
-
-// Include unified tracking interface
+#include <universal/number/posit/posit.hpp>
 #include <universal/utility/tracked.hpp>
+#include <universal/verification/test_suite.hpp>
 
-using namespace sw::universal;
+// set to 1 to run the exploratory walk-through instead of the regression suite
+#define MANUAL_TESTING 0
 
-// ============================================================================
-// Test helper to run a computation and report results
-// ============================================================================
+namespace {
 
-template<typename TrackedType>
-void test_computation(const char* type_name) {
-	std::cout << "\n--- " << type_name << " ---\n";
-	std::cout << "Strategy: " << TrackedType::strategy_name() << "\n";
+	using namespace sw::universal;
 
-	TrackedType a = 1.0;
-	TrackedType b = 1e-8;
+	using Posit32   = posit<32, 2, std::uint32_t>;
+	using CFloat32  = cfloat<32, 8, std::uint32_t, true, false, false>;
+	using Areal32   = areal<32, 8>;
+	using Interval  = interval<double>;
 
-	auto sum = a + b;
-	auto prod = a * b;
-	auto diff = a - b;
+	// ---- compile-time contract: which strategy, which implementation ---------------
+	//
+	// Tracked<T> is a thin facade over one of five classes. If the selection ever
+	// changed -- a trait edited, a specialisation shadowed -- every runtime check below
+	// would still pass while callers silently got a different tracker. These pin it.
 
-	std::cout << "a = 1.0, b = 1e-8\n";
-	std::cout << "a + b = " << sum << " (error: " << std::scientific << sum.error()
-	          << ", valid bits: " << std::fixed << std::setprecision(1) << sum.valid_bits() << ")\n";
-	std::cout << "a * b = " << prod << " (error: " << std::scientific << prod.error() << ")\n";
-	std::cout << "a - b = " << diff << " (error: " << std::scientific << diff.error() << ")\n";
-}
+	// the default strategy each type selects
+	static_assert(Tracked<float>::strategy()    == ErrorStrategy::Exact,    "float defaults to Exact");
+	static_assert(Tracked<double>::strategy()   == ErrorStrategy::Exact,    "double defaults to Exact");
+	static_assert(Tracked<Posit32>::strategy()  == ErrorStrategy::Shadow,   "posit defaults to Shadow");
+	static_assert(Tracked<CFloat32>::strategy() == ErrorStrategy::Shadow,   "cfloat defaults to Shadow");
+	static_assert(Tracked<Areal32>::strategy()  == ErrorStrategy::Inherent, "areal tracks natively");
+	static_assert(Tracked<Interval>::strategy() == ErrorStrategy::Inherent, "interval tracks natively");
 
-// ============================================================================
-// Test with different number types
-// ============================================================================
+	// the implementation each one inherits
+	static_assert(std::is_base_of_v<TrackedExact<float>,     Tracked<float>>,     "float uses TrackedExact");
+	static_assert(std::is_base_of_v<TrackedExact<double>,    Tracked<double>>,    "double uses TrackedExact");
+	static_assert(std::is_base_of_v<TrackedShadow<Posit32>,  Tracked<Posit32>>,   "posit uses TrackedShadow");
+	static_assert(std::is_base_of_v<TrackedShadow<CFloat32>, Tracked<CFloat32>>,  "cfloat uses TrackedShadow");
+	static_assert(std::is_base_of_v<TrackedAreal<Areal32>,   Tracked<Areal32>>,   "areal uses TrackedAreal");
+	static_assert(std::is_base_of_v<TrackedInterval<double>, Tracked<Interval>>,  "interval uses TrackedInterval");
 
-void test_float() {
-	std::cout << std::defaultfloat;  // reset formatting from previous tests
-	std::cout << "\n=== IEEE float (Exact Strategy) ===\n";
+	// an explicit strategy overrides the default
+	static_assert(std::is_base_of_v<TrackedShadow<double>,      Tracked<double, ErrorStrategy::Shadow>>,
+		"an explicit Shadow strategy reaches TrackedShadow");
+	static_assert(std::is_base_of_v<TrackedBounded<double>,     Tracked<double, ErrorStrategy::Bounded>>,
+		"an explicit Bounded strategy reaches TrackedBounded");
+	static_assert(std::is_base_of_v<TrackedStatistical<double>, Tracked<double, ErrorStrategy::Statistical>>,
+		"an explicit Statistical strategy reaches TrackedStatistical");
+	static_assert(std::is_base_of_v<TrackedExact<double>,       Tracked<double, ErrorStrategy::Exact>>,
+		"an explicit Exact strategy reaches TrackedExact");
+	static_assert(Tracked<double, ErrorStrategy::Bounded>::strategy() == ErrorStrategy::Bounded,
+		"the override is reported back");
 
-	float          fa = 1.0f;
-	float          fb = 1e-7f;
-	Tracked<float> a  = fa;
-	Tracked<float> b  = fb;
+	// the traits the selection reads
+	static_assert(error_tracking_traits<float>::has_exact_errors,      "float has exact errors");
+	static_assert(!error_tracking_traits<Posit32>::has_exact_errors,   "posit has no exact errors");
+	static_assert(error_tracking_traits<Areal32>::tracks_uncertainty,  "areal tracks uncertainty");
+	static_assert(error_tracking_traits<Interval>::is_interval_type,   "interval is an interval type");
 
-	std::cout << "Strategy: " << Tracked<float>::strategy_name() << "\n";
+	// ---- reporting helpers -----------------------------------------------------
 
-	auto fc = fa + fb;
-	std::cout << to_binary(fa) << " : " << fa << "\n";
-	std::cout << to_binary(fb) << " : " << fb << "\n";
-	std::cout << to_binary(fc) << " : " << std::setprecision(8) << fc << "\n";
-	auto c = a + b;
-	std::cout << "1.0f + 1e-7f = " << c.value() << "\n";
-	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
-	std::cout << "  Valid bits: " << c.valid_bits() << "\n";
-	std::cout << "  Operations: " << c.operations() << "\n";
-}
-
-void test_double() {
-	std::cout << std::defaultfloat << std::setprecision(17);  // reset formatting from previous tests
-	std::cout << "\n=== IEEE double (Exact Strategy) ===\n";
-
-	double da = 1.0;
-	double db = 1e-15;
-	Tracked<double> a = da;
-	Tracked<double> b = db;
-
-	std::cout << "Strategy: " << Tracked<double>::strategy_name() << "\n";
-
-	double dc = da + db;
-	std::cout << to_binary(da) << " : " << da << "\n";
-	std::cout << to_binary(db) << " : " << db << "\n";
-	std::cout << to_binary(dc) << " : " << dc << "\n";
-	auto c = a + b;
-	std::cout << "1.0 + 1e-15 = " << c.value() << "\n";
-	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
-	std::cout << "  Valid bits: " << c.valid_bits() << "\n";
-}
-
-void test_cfloat() {
-	std::cout << std::defaultfloat << std::setprecision(8);  // reset formatting from previous tests
-	std::cout << "\n=== cfloat<32,8> (IEEE single equivalent) ===\n";
-
-	// cfloat<32,8> with subnormals matches IEEE single precision
-	using CF = cfloat<32, 8, std::uint32_t, true, false, false>;
-	CF cfa = 1.0f;
-	CF cfb = 1e-7f;  // same value as float test
-	Tracked<CF> a = cfa;
-	Tracked<CF> b = cfb;
-
-	std::cout << "Strategy: " << Tracked<CF>::strategy_name() << "\n";
-
-	CF cfc = cfa + cfb;
-	std::cout << to_binary(cfa) << " : " << cfa << "\n";
-	std::cout << to_binary(cfb) << " : " << cfb << "\n";
-	std::cout << to_binary(cfc) << " : " << cfc << "\n";
-	auto c = a + b;
-	std::cout << "1.0f + 1e-7f = " << double(c.value()) << "\n";
-	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
-	std::cout << "  Valid bits: " << c.valid_bits() << "\n";
-}
-
-void test_posit() {
-	std::cout << std::defaultfloat << std::setprecision(10);  // reset formatting from previous tests
-	std::cout << "\n=== posit<32,2> (Shadow Strategy) ===\n";
-
-	using P = posit<32, 2>;
-	P pa = 1.0;
-	P pb = 1e-8;
-	Tracked<P> a = pa;
-	Tracked<P> b = pb;
-
-	std::cout << "Strategy: " << Tracked<P>::strategy_name() << "\n";
-
-	P pc = pa + pb;
-	std::cout << to_binary(pa) << " : " << pa << "\n";
-	std::cout << to_binary(pb) << " : " << pb << "\n";
-	std::cout << to_binary(pc) << " : " << pc << "\n";
-	auto c = a + b;
-	std::cout << "1.0 + 1e-8 = " << double(c.value()) << "\n";
-	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
-	std::cout << "  Valid bits: " << c.valid_bits() << "\n";
-
-	// Test accumulation
-	Tracked<posit<16, 1>> sum = 0.0;
-	for (int i = 0; i < 100; ++i) {
-		sum += 0.01;
-	}
-	std::cout << "\n100 additions of 0.01 in posit<16,1>:\n";
-	std::cout << "  Result: " << double(sum.value()) << " (expected 1.0)\n";
-	std::cout << "  Error: " << sum.error() << "\n";
-	std::cout << "  Valid bits: " << sum.valid_bits() << "\n";
-}
-
-void test_areal() {
-	std::cout << std::defaultfloat;  // reset formatting from previous tests
-	std::cout << "\n=== areal<32,8> (Inherent Strategy - ubit) ===\n";
-
-	// Note: areal arithmetic uses TrackedAreal which wraps native ubit tracking
-	// For now, just demonstrate the interface
-	using A = areal<32, 8>;
-	A raw_a = 1.0;
-	A raw_b = 0.1;
-
-	std::cout << "areal<32,8> native values:\n";
-	std::cout << to_binary(raw_a) << " : " << raw_a << ", ubit: " << raw_a.ubit() << "\n";
-	std::cout << to_binary(raw_b) << " : " << raw_b << ", ubit: " << raw_b.ubit() << "\n";
-
-	A raw_c = raw_a + raw_b;
-	std::cout << to_binary(raw_c) << " : " << raw_c << ", ubit: " << raw_c.ubit() << "\n";
-	std::cout << "  (ubit=1 means value is uncertain, in interval (v, next(v)))\n";
-}
-
-void test_interval() {
-	std::cout << std::defaultfloat;  // reset formatting from previous tests
-	std::cout << "\n=== interval<double> (Inherent Strategy - bounds) ===\n";
-
-	using I = interval<double>;
-	I ia(1.0, 1.0);
-	I ib(0.99, 1.01);
-	Tracked<I> a = ia;
-	Tracked<I> b = ib;  // Uncertain value in [0.99, 1.01]
-
-	std::cout << "Strategy: " << Tracked<I>::strategy_name() << "\n";
-
-	std::cout << to_binary(ia.lower()) << " : a.lo = " << ia.lower() << "\n";
-	std::cout << to_binary(ia.upper()) << " : a.hi = " << ia.upper() << "\n";
-	std::cout << to_binary(ib.lower()) << " : b.lo = " << ib.lower() << "\n";
-	std::cout << to_binary(ib.upper()) << " : b.hi = " << ib.upper() << "\n";
-
-	std::cout << "a = " << a.value() << ", is_exact: " << (a.is_exact() ? "yes" : "no") << "\n";
-	std::cout << "b = " << b.value() << ", is_exact: " << (b.is_exact() ? "yes" : "no") << "\n";
-
-	I ic = ia + ib;
-	std::cout << to_binary(ic.lower()) << " : c.lo = " << ic.lower() << "\n";
-	std::cout << to_binary(ic.upper()) << " : c.hi = " << ic.upper() << "\n";
-	auto c = a + b;
-	std::cout << "a + b = " << c.value() << "\n";
-	std::cout << "  Error (width): " << c.error() << "\n";
-	std::cout << "  Valid bits: " << c.valid_bits() << "\n";
-
-	auto d = a * b;
-	std::cout << "a * b = " << d.value() << "\n";
-	std::cout << "  Error (width): " << d.error() << "\n";
-}
-
-void test_strategy_override() {
-	std::cout << std::defaultfloat;  // reset formatting from previous tests
-	std::cout << "\n=== Strategy Override ===\n";
-
-	// Force Shadow strategy for double (normally uses Exact)
-	Tracked<double, ErrorStrategy::Shadow> a = 1.0;
-	Tracked<double, ErrorStrategy::Shadow> b = 1e-15;
-
-	std::cout << "double with Shadow strategy (overriding Exact default):\n";
-	auto c = a + b;
-	std::cout << "1.0 + 1e-15 = " << c.value() << "\n";
-	std::cout << "  Error: " << std::scientific << c.error() << std::defaultfloat << "\n";
-}
-
-void test_dot_product_comparison() {
-	std::cout << std::defaultfloat;  // reset formatting from previous tests
-	std::cout << "\n=== Dot Product Comparison Across Types ===\n";
-
-	const int n = 50;
-
-	// Float with Exact tracking
-	{
-		Tracked<float> dot = 0.0f;
-		for (int i = 0; i < n; ++i) {
-			Tracked<float> ai = 1.0f / (i + 1);
-			Tracked<float> bi = 1.0f / (i + 2);
-			dot += ai * bi;
+	int expect_exact(double actual, double wanted, const char* what, bool reportTestCases) {
+		if (actual == wanted) return 0;
+		if (reportTestCases) {
+			std::cout << "    FAIL " << what << ": got " << std::setprecision(17) << std::scientific
+			          << actual << ", expected " << wanted << std::defaultfloat << '\n';
 		}
-		std::cout << "float (Exact):      " << std::setprecision(10) << dot.value()
-		          << " error=" << std::scientific << dot.error()
-		          << " bits=" << std::fixed << std::setprecision(1) << dot.valid_bits() << "\n";
+		return 1;
 	}
 
-	// Double with Exact tracking
-	{
-		Tracked<double> dot = 0.0;
-		for (int i = 0; i < n; ++i) {
-			Tracked<double> ai = 1.0 / (i + 1);
-			Tracked<double> bi = 1.0 / (i + 2);
-			dot += ai * bi;
+	int expect_count(std::uint64_t actual, std::uint64_t wanted, const char* what, bool reportTestCases) {
+		if (actual == wanted) return 0;
+		if (reportTestCases) {
+			std::cout << "    FAIL " << what << ": got " << actual << ", expected " << wanted << '\n';
 		}
-		std::cout << "double (Exact):     " << std::setprecision(10) << dot.value()
-		          << " error=" << std::scientific << dot.error()
-		          << " bits=" << std::fixed << std::setprecision(1) << dot.valid_bits() << "\n";
+		return 1;
 	}
 
-	// Posit with Shadow tracking
-	{
-		Tracked<posit<32, 2>> dot = 0.0;
-		for (int i = 0; i < n; ++i) {
-			Tracked<posit<32, 2>> ai = 1.0 / (i + 1);
-			Tracked<posit<32, 2>> bi = 1.0 / (i + 2);
-			dot += ai * bi;
+	int expect_true(bool actual, const char* what, bool reportTestCases) {
+		if (actual) return 0;
+		if (reportTestCases) std::cout << "    FAIL " << what << '\n';
+		return 1;
+	}
+
+	// ---- the strategy names reported at run time -----------------------------------
+
+	int VerifyStrategyNames(bool reportTestCases) {
+		int fails = 0;
+
+		fails += expect_true(std::string(Tracked<float>::strategy_name())    == "Exact",    "float", reportTestCases);
+		fails += expect_true(std::string(Tracked<double>::strategy_name())   == "Exact",    "double", reportTestCases);
+		fails += expect_true(std::string(Tracked<Posit32>::strategy_name())  == "Shadow",   "posit", reportTestCases);
+		fails += expect_true(std::string(Tracked<CFloat32>::strategy_name()) == "Shadow",   "cfloat", reportTestCases);
+		fails += expect_true(std::string(Tracked<Areal32>::strategy_name())  == "Inherent", "areal", reportTestCases);
+		fails += expect_true(std::string(Tracked<Interval>::strategy_name()) == "Inherent", "interval", reportTestCases);
+		fails += expect_true(std::string(Tracked<double, ErrorStrategy::Bounded>::strategy_name()) == "Bounded",
+			"an override reports its own name", reportTestCases);
+
+		// and the free function agrees with the class
+		fails += expect_true(std::string(strategy_name(ErrorStrategy::Statistical)) == "Statistical",
+			"the free strategy_name", reportTestCases);
+
+		return fails;
+	}
+
+	// ---- Tracked<T> delegates rather than reimplements --------------------------------
+	//
+	// The facade must report exactly what the underlying tracker reports. Each case runs
+	// the same computation through Tracked<T> and through the implementation class and
+	// requires the answers to agree bit for bit.
+
+	int VerifyDelegation(bool reportTestCases) {
+		int fails = 0;
+
+		// double: the two_sum residual of 1.0 + 1e-16 is the whole addend
+		{
+			Tracked<double> a = 1.0, b = 1e-16;
+			auto viaFacade = a + b;
+			TrackedExact<double> ea = 1.0, eb = 1e-16;
+			auto viaClass = ea + eb;
+			fails += expect_exact(viaFacade.value(), viaClass.value(), "double value", reportTestCases);
+			fails += expect_exact(viaFacade.error(), viaClass.error(), "double error", reportTestCases);
+			fails += expect_exact(viaFacade.error(), 1e-16, "double error is the residual", reportTestCases);
+			fails += expect_count(viaFacade.operations(), viaClass.operations(), "double operations",
+				reportTestCases);
 		}
-		std::cout << "posit<32,2> (Shadow): " << std::setprecision(10) << double(dot.value())
-		          << " error=" << std::scientific << dot.error()
-		          << " bits=" << std::fixed << std::setprecision(1) << dot.valid_bits() << "\n";
-	}
 
-	// Interval with Inherent tracking
-	{
-		Tracked<interval<double>> dot = 0.0;
-		for (int i = 0; i < n; ++i) {
-			Tracked<interval<double>> ai = 1.0 / (i + 1);
-			Tracked<interval<double>> bi = 1.0 / (i + 2);
-			dot += ai * bi;
+		// posit: the shadow gap
+		{
+			Tracked<Posit32> a = 1.0, b = 3.0;
+			auto viaFacade = a / b;
+			TrackedShadow<Posit32> sa = 1.0, sb = 3.0;
+			auto viaClass = sa / sb;
+			fails += expect_true(viaFacade.value() == viaClass.value(), "posit value", reportTestCases);
+			fails += expect_exact(viaFacade.error(), viaClass.error(), "posit error", reportTestCases);
+			fails += expect_true(viaFacade.error() > 0.0, "1/3 is not exact in a posit", reportTestCases);
 		}
-		std::cout << "interval<double> (Inherent): " << dot.value()
-		          << " error=" << std::scientific << dot.error()
-		          << " bits=" << std::fixed << std::setprecision(1) << dot.valid_bits() << "\n";
+
+		// cfloat, which the traits also route to the shadow tracker
+		{
+			Tracked<CFloat32> a = 1.0, b = 3.0;
+			auto q = a / b;
+			fails += expect_true(q.error() > 0.0, "1/3 is not exact in a cfloat", reportTestCases);
+			fails += expect_count(q.operations(), 1, "cfloat operations", reportTestCases);
+			// a cfloat<32,8> mirrors IEEE single precision, so the gap is a float's
+			fails += expect_exact(q.error(), std::abs(1.0 / 3.0 - double(float(1.0f / 3.0f))),
+				"the cfloat gap is the float gap", reportTestCases);
+		}
+
+		// an explicit override really changes the machinery: the bounded tracker reports
+		// bounds where the exact tracker reports a residual. What those bounds are for a
+		// result that ROUNDS is up to the optimizer -- see the note at the top of
+		// test_tracked_bounded.cpp, and #1544 -- so this checks the wiring, on operands whose own
+		// width settles the answer.
+		{
+			Tracked<double, ErrorStrategy::Bounded> a(1.0, 2.0), b(10.0, 20.0);
+			auto sum = a + b;
+			fails += expect_true(sum.lo() <= 11.0 && 22.0 <= sum.hi(),
+				"the bounded override encloses the sum", reportTestCases);
+			fails += expect_exact(sum.error(), sum.radius(), "the bounded override reports a radius",
+				reportTestCases);
+			fails += expect_count(sum.operations(), 1, "the bounded override counts the operation",
+				reportTestCases);
+		}
+
+		return fails;
 	}
-}
 
-void test_reports() {
-	std::cout << std::defaultfloat;  // reset formatting from previous tests
-	std::cout << "\n=== Detailed Reports ===\n";
+	// ---- TrackedAreal reads the ubit ---------------------------------------------------
 
-	// TrackedExact report
-	{
-		double dx = 3.14159265358979;
-		Tracked<double> x = dx;
-		auto y = x * x;
-		auto z = sqrt(y);
-		std::cout << "\nTrackedExact<double> - sqrt(pi^2):\n";
-		std::cout << to_binary(dx) << " : x = " << dx << "\n";
-		std::cout << to_binary(y.value()) << " : x^2 = " << y.value() << "\n";
-		std::cout << to_binary(z.value()) << " : sqrt(x^2) = " << z.value() << "\n";
+	int VerifyTrackedAreal(bool reportTestCases) {
+		int fails = 0;
+
+		// an exactly representable value has ubit 0 and nothing to report
+		{
+			Tracked<Areal32> a = 1.0;
+			fails += expect_true(Areal32(1.0).ubit() == false, "1.0 is exact in areal<32,8>", reportTestCases);
+			fails += expect_true(a.is_exact(), "an exact encoding is exact", reportTestCases);
+			fails += expect_exact(a.error(), 0.0, "an exact encoding has no error", reportTestCases);
+			fails += expect_exact(a.relative_error(), 0.0, "and no relative error", reportTestCases);
+			fails += expect_count(a.operations(), 0, "construction is not an operation", reportTestCases);
+			// areal's valid_bits uses nbits as its precision proxy
+			fails += expect_exact(a.valid_bits(), 32.0, "an exact areal reports nbits valid bits",
+				reportTestCases);
+		}
+
+		// a value between two encodings sets the ubit, and the reported error is the
+		// width to the next encoding
+		{
+			const double v = 0.1;
+			Tracked<Areal32> a = v;
+			Areal32 raw = v;
+			fails += expect_true(raw.ubit(), "0.1 is uncertain in areal<32,8>", reportTestCases);
+			fails += expect_true(!a.is_exact(), "an uncertain encoding is not exact", reportTestCases);
+			Areal32 next = raw;
+			++next;
+			fails += expect_exact(a.error(), std::abs(double(next) - double(raw)),
+				"the error is the width to the next encoding", reportTestCases);
+			fails += expect_true(a.error() > 0.0, "an uncertain value has a positive error", reportTestCases);
+			fails += expect_true(a.valid_bits() < 32.0, "and fewer than nbits valid bits", reportTestCases);
+		}
+
+		// operation counting
+		{
+			Tracked<Areal32> a = 1.0, b = 0.5, c = 0.25;
+			fails += expect_count((a + b).operations(), 1, "one addition", reportTestCases);
+			fails += expect_count(((a + b) * c).operations(), 2, "an addition and a product", reportTestCases);
+			fails += expect_count((-(a + b)).operations(), 1, "unary minus charges nothing", reportTestCases);
+			// the value follows areal's own arithmetic
+			fails += expect_true((a + b).value() == Areal32(1.0) + Areal32(0.5), "the value is areal's",
+				reportTestCases);
+		}
+
+		// comparisons forward to the underlying value
+		{
+			Tracked<Areal32> a = 1.0, b = 2.0;
+			fails += expect_true(a < b && b > a && a != b, "ordering forwards to areal", reportTestCases);
+			fails += expect_true(a == Tracked<Areal32>(1.0), "equality forwards to areal", reportTestCases);
+		}
+
+		return fails;
+	}
+
+	// ---- TrackedInterval reports the width ----------------------------------------------
+
+	int VerifyTrackedInterval(bool reportTestCases) {
+		int fails = 0;
+
+		// a value with bounds reports its width as the error
+		{
+			Tracked<Interval> y(0.99, 1.01);
+			fails += expect_true(!y.is_exact(), "a proper interval is not exact", reportTestCases);
+			fails += expect_exact(y.error(), double(Interval(0.99, 1.01).width()),
+				"the error is the interval width", reportTestCases);
+			fails += expect_true(y.error() >= 1.01 - 0.99, "the width is not understated", reportTestCases);
+			fails += expect_exact(y.midpoint(), 1.0, "the midpoint of [0.99,1.01]", reportTestCases);
+		}
+
+		// arithmetic encloses the true result and never narrows
+		{
+			Tracked<Interval> x(1.0, 1.0), y(0.99, 1.01);
+			auto sum = x + y;
+			fails += expect_true(double(sum.value().lower()) <= 1.99 && 2.01 <= double(sum.value().upper()),
+				"the sum encloses [1.99, 2.01]", reportTestCases);
+			fails += expect_true(sum.error() >= y.error(), "the sum is no narrower than its operand",
+				reportTestCases);
+			fails += expect_exact(sum.midpoint(), 2.0, "the midpoint of the sum", reportTestCases);
+			fails += expect_count(sum.operations(), 1, "one addition", reportTestCases);
+
+			auto prod = y * y;
+			fails += expect_true(double(prod.value().lower()) <= 0.9801 && 1.0201 <= double(prod.value().upper()),
+				"the square encloses [0.9801, 1.0201]", reportTestCases);
+			fails += expect_true(prod.error() > y.error(), "squaring widens", reportTestCases);
+			fails += expect_count(prod.operations(), 1, "one multiplication", reportTestCases);
+			fails += expect_count(((x + y) * y).operations(), 2, "an addition and a product", reportTestCases);
+		}
+
+		// valid_bits falls as the interval widens
+		{
+			Tracked<Interval> tight(0.9999, 1.0001), loose(0.9, 1.1);
+			fails += expect_true(tight.valid_bits() > loose.valid_bits(),
+				"a tighter interval leaves more valid bits", reportTestCases);
+			fails += expect_true(loose.valid_bits() < 53.0, "a loose interval is well below full precision",
+				reportTestCases);
+		}
+
+		return fails;
+	}
+
+	// ---- behaviour that is pinned although it is arguably wrong ---------------------------
+
+	int VerifyKnownDefects(bool reportTestCases) {
+		int fails = 0;
+
+		// A degenerate interval [v,v] is exact -- is_exact() says so -- yet error()
+		// reports the smallest subnormal rather than zero, because interval::width()
+		// rounds its result outward unconditionally and nextafter(0) is denorm_min.
+		// Harmless in magnitude, but it means "exact" and "zero error" disagree, and a
+		// caller testing error() == 0 to detect an exact value never sees one.
+		Tracked<Interval> point(1.0, 1.0);
+		fails += expect_true(point.is_exact(), "a degenerate interval is exact", reportTestCases);
+		fails += expect_exact(point.error(), std::numeric_limits<double>::denorm_min(),
+			"but its error is one subnormal, not zero (known defect #1547)", reportTestCases);
+		fails += expect_exact(point.valid_bits(), 53.0,
+			"valid_bits takes the is_exact path and reports full precision", reportTestCases);
+
+		return fails;
+	}
+
+	// ---- the exploratory narrative, kept for manual inspection -----------------------------
+
+#if MANUAL_TESTING
+	void ReportTrackedBehaviour() {
+		std::cout << "\n=== Tracked<T> across the number systems ===\n";
+
+		std::cout << "\nTracked<double> (Exact), 1.0 + 1e-15:\n";
+		auto d = Tracked<double>(1.0) + Tracked<double>(1e-15);
+		d.report(std::cout);
+
+		std::cout << "\nTracked<posit<32,2>> (Shadow), sqrt(pi^2):\n";
+		Tracked<Posit32> x = 3.14159265358979;
+		auto z = sqrt(x * x);
 		z.report(std::cout);
+
+		std::cout << "\nTracked<areal<32,8>> (Inherent), 1.0 + 0.1:\n";
+		Tracked<Areal32> a = 1.0, b = 0.1;
+		auto s = a + b;
+		s.report(std::cout);
+
+		std::cout << "\nTracked<interval<double>> (Inherent), [1,1] + [0.99,1.01]:\n";
+		Tracked<Interval> p(1.0, 1.0), q(0.99, 1.01);
+		auto r = p + q;
+		r.report(std::cout);
 	}
+#endif  // MANUAL_TESTING
 
-	// TrackedShadow report
-	{
-		posit<32, 2> px = 3.14159265358979;
-		Tracked<posit<32, 2>> x = px;
-		auto y = x * x;
-		auto z = sqrt(y);
-		std::cout << "\nTrackedShadow<posit<32,2>> - sqrt(pi^2):\n";
-		std::cout << to_binary(px) << " : x = " << px << "\n";
-		std::cout << to_binary(y.value()) << " : x^2 = " << y.value() << "\n";
-		std::cout << to_binary(z.value()) << " : sqrt(x^2) = " << z.value() << "\n";
-		z.report(std::cout);
-	}
+}  // anonymous namespace
+
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
+int main()
+try {
+	using namespace sw::universal;
+
+	std::string test_suite  = "Tracked<T> unified error tracking interface";
+	std::string test_tag    = "tracked";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+#if MANUAL_TESTING
+
+	ReportTrackedBehaviour();
+	nrOfFailedTestCases += VerifyDelegation(true);
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;  // ignore failures
+#else  // !MANUAL_TESTING
+
+	// The strategy selection is enforced by the static_asserts above; these runtime
+	// checks cover the behaviour. It all belongs at level 1: CI configures
+	// REGRESSION_LEVEL_1 only, and a contract that is not checked there does not gate.
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyStrategyNames(reportTestCases), test_tag, "strategy names");
+	nrOfFailedTestCases += ReportTestResult(VerifyDelegation(reportTestCases), test_tag, "delegation");
+	nrOfFailedTestCases += ReportTestResult(VerifyTrackedAreal(reportTestCases), test_tag, "TrackedAreal");
+	nrOfFailedTestCases += ReportTestResult(VerifyTrackedInterval(reportTestCases), test_tag, "TrackedInterval");
+	nrOfFailedTestCases += ReportTestResult(VerifyKnownDefects(reportTestCases), test_tag, "pinned known defects");
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
-
-int main() {
-	std::cout << "Unified Tracked<T> Interface Test\n";
-	std::cout << "==================================\n";
-
-	test_float();
-	test_double();
-	test_cfloat();
-	test_posit();
-	test_areal();
-	test_interval();
-	test_strategy_override();
-	test_dot_product_comparison();
-	test_reports();
-
-	std::cout << "\n\nUnified Tracked<T>: PASS\n";
-	return 0;
+catch (char const* msg) {
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
 }
-
-/*
-There are Two different Meanings of "Precision"
-
-What we're measuring (Result Accuracy): 
-True mathematical result : 1.0 + 1e-7 = 1.0000001 
-Computed result : 1.0 + ulp(1.0) ~= 1.00000012 
-Absolute error : ~1.9e-8 Relative error : 1.9e-8 / 1.0 ~= 1.9e-8
-
-By this measure, the result IS accurate to ~25 bits because 1.00000012 is 
-very close to 1.0000001. The relative error is tiny.
-
-We can also be concerned about Information Preservation: 
-Input b = 1e-7 had ~7 significant decimal digits of information 
-After addition: almost ALL of b's bits were discarded The ULP bit in the 
-result is an approximation of b, not b itself
-
- Precision and Information Preservation are two different metrics:
-  +-----------------------+--------------+---------------------------------------+
-  | Metric                |    Value     |            Interpretation             |
-  +-----------------------+--------------+---------------------------------------+
-  | Result accuracy       | 24+ bits     | "How close is result to true answer?" |
-  +-----------------------+--------------+---------------------------------------+
-  | Information preserved | ~0 bits of b | "How much of b survived?"             |
-  +-----------------------+--------------+---------------------------------------+ 
-  
-# The Absorption Problem
-
-This is the dual of cancellation. In subtraction of nearly-equal values,
-error gets magnified.In addition of vastly-different magnitudes,
-information gets absorbed :
-
-    1.0f     = 1.00000000000000000000000 * 2 ^ 0
-    1e-7f    = 0.00000000000000000000000 11010110111... * 2 ^ 0(shifted)
-                                         ^ These bits fall off the end
-
-The bits of 1e-7 that would appear after position 24 are simply lost.
-The result's ULP is a 1-bit approximation of a value that had 24 bits of information.
-
-# Is 24 Bits Correct?
-
-    For answering "how trustworthy is this result for further computation?" 
-	- yes, 24 bits is correct.The result really is close to the true sum.
-
-    But for answering "did this computation preserve input information?" 
-	- no, we lost almost everything from b.
-
-# What Should We Track?
-
-    The current trackers answer question 1(result accuracy) but not question 2(information preservation)
-
-we could add :
-
-    1. Absorption detection : Flag when | b | < ulp(a + b) 
-	2. Effective contribution : Track what fraction of each operand's bits survived 
-	3. Condition number  How sensitive is the result to input perturbations ?
-*/
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
+}

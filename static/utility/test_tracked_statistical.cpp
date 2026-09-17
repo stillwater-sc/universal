@@ -1,341 +1,572 @@
-// test_tracked_statistical.cpp: verify TrackedStatistical ULP-based error tracking
+// test_tracked_statistical.cpp: verification of TrackedStatistical<T, Model> error estimation
+//
+// TrackedStatistical<T, Model> (include/sw/universal/utility/tracked_statistical.hpp) is the
+// cheap tracker: instead of computing the rounding error, it accumulates a COUNT of ULPs,
+// charging a fixed cost per operation and combining costs either in quadrature
+// (ErrorModel::RandomWalk, errors assumed independent) or by summing them
+// (ErrorModel::Linear, worst case).
+//
+// The contracts pinned here:
+//   - the ULP helpers (ulp, ulp_distance, mantissa_bits) return the IEEE quantities
+//   - combine_errors and add_operation_error implement exactly the two documented
+//     formulas, and Linear is never below RandomWalk
+//   - a fresh value costs nothing; one operation on fresh operands costs exactly half
+//     a ULP under both models, and the models first diverge on the second operation
+//   - error() is ulp_error() scaled by the ULP at the result
+//   - operations() counts one per operation and sums the operand counts, while unary
+//     minus and abs charge nothing
+//   - subtraction that cancels is charged a magnified cost, capped at 500 ULP
+//   - assignment from a raw value resets the tracking state
+//
+// Four checks below pin behaviour that is wrong (#1546); each says so, so that a fix is
+// noticed here rather than silently changing what callers see.
+//
+// INCLUDES: this file must NOT include <universal/native/ieee754.hpp>, any number
+// system header, or any of the ieee754_float/ieee754_double headers that reach
+// ieee754_core.hpp. That header and this one both define sw::universal::ulp, neither
+// overload is more specialised, and TrackedStatistical::error() calls ulp() unqualified
+// from inside the namespace -- so the class stops compiling as soon as both are visible.
+// That is why there is no to_binary in this file and why the include list is this
+// short. The collision is #1545.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
-
-#include <iostream>
-#include <iomanip>
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <cmath>
-// Include specific ieee754 headers for to_binary without the conflicting ulp()
-#include <universal/utility/architecture.hpp>
-#include <universal/utility/compiler.hpp>
-#include <universal/utility/bit_cast.hpp>
-#include <universal/native/ieee754_parameter.hpp>
-#include <universal/native/ieee754_decoder.hpp>
-#include <universal/native/nonconst_bitcast.hpp>
-#include <universal/native/ieee754_float.hpp>
-#include <universal/native/ieee754_double.hpp>
+#include <iomanip>
+#include <iostream>
+#include <string>
+
 #include <universal/utility/tracked_statistical.hpp>
+#include <universal/verification/test_suite.hpp>
 
-using namespace sw::universal;
+// set to 1 to run the exploratory walk-through instead of the regression suite
+#define MANUAL_TESTING 0
 
-void test_ulp_function() {
-	std::cout << "=== ULP Function Tests ===\n\n";
+namespace {
 
-	// Show binary representations and ULP values
-	double d1 = 1.0, d2 = 2.0, d05 = 0.5, d1e10 = 1e10, d1em10 = 1e-10, d0 = 0.0;
-	std::cout << to_binary(d1) << " : 1.0,   ulp = " << std::scientific << ulp(d1) << "\n";
-	std::cout << to_binary(d2) << " : 2.0,   ulp = " << ulp(d2) << "\n";
-	std::cout << to_binary(d05) << " : 0.5,   ulp = " << ulp(d05) << "\n";
-	std::cout << to_binary(d1e10) << " : 1e10,  ulp = " << ulp(d1e10) << "\n";
-	std::cout << to_binary(d1em10) << " : 1e-10, ulp = " << ulp(d1em10) << "\n";
-	std::cout << to_binary(d0) << " : 0.0,   ulp = " << ulp(d0) << " (denorm_min)\n";
+	using namespace sw::universal;
 
-	std::cout << "\nExpected ulp(1.0) ~= 2.22e-16 (machine epsilon)\n";
-	std::cout << "Actual epsilon    = " << std::numeric_limits<double>::epsilon() << "\n";
-}
+	using Walk   = TrackedStatistical<double, ErrorModel::RandomWalk>;
+	using Linear = TrackedStatistical<double, ErrorModel::Linear>;
 
-void test_basic_operations() {
-	std::cout << "\n=== Basic Operations ===\n\n";
+	// ---- reporting helpers -----------------------------------------------------
 
-	double da = 1.0;
-	double db = 1e-15;
-	TrackedStatDouble a = da;
-	TrackedStatDouble b = db;
-
-	std::cout << to_binary(da) << " : a = " << da << "\n";
-	std::cout << to_binary(db) << " : b = " << db << "\n";
-	std::cout << "Model: " << TrackedStatDouble::model_name() << "\n\n";
-
-	double dsum = da + db;
-	auto sum = a + b;
-	std::cout << to_binary(dsum) << " : a + b = " << std::setprecision(17) << dsum << "\n";
-	std::cout << "  ULP error: " << std::setprecision(3) << sum.ulp_error() << "\n";
-	std::cout << "  Valid bits: " << std::setprecision(1) << sum.valid_bits() << "\n";
-	std::cout << "  Operations: " << sum.operations() << "\n";
-
-	double dprod = da * db;
-	auto prod = a * b;
-	std::cout << "\n" << to_binary(dprod) << " : a * b = " << std::scientific << dprod << "\n";
-	std::cout << "  ULP error: " << std::setprecision(3) << prod.ulp_error() << "\n";
-
-	double dquot = da / db;
-	auto quot = a / b;
-	std::cout << "\n" << to_binary(dquot) << " : a / b = " << dquot << "\n";
-	std::cout << "  ULP error: " << std::setprecision(3) << quot.ulp_error() << "\n";
-}
-
-void test_error_accumulation() {
-	std::cout << "\n=== Error Accumulation Comparison ===\n\n";
-
-	const int n = 100;
-
-	// Random walk model
-	{
-		TrackedStatistical<double, ErrorModel::RandomWalk> sum = 0.0;
-		for (int i = 0; i < n; ++i) {
-			sum += TrackedStatistical<double, ErrorModel::RandomWalk>(0.1);
+	int expect_exact(double actual, double wanted, const char* what, bool reportTestCases) {
+		if (actual == wanted) return 0;
+		if (reportTestCases) {
+			std::cout << "    FAIL " << what << ": got " << std::setprecision(17) << std::scientific
+			          << actual << ", expected " << wanted << std::defaultfloat << '\n';
 		}
-		std::cout << "100 additions (RandomWalk model):\n";
-		std::cout << "  Value: " << std::setprecision(15) << sum.value() << "\n";
-		std::cout << "  ULP error: " << std::setprecision(2) << sum.ulp_error() << "\n";
-		std::cout << "  Expected sqrt(100) * 0.5 = " << std::sqrt(100.0) * 0.5 << " ULPs\n";
-		std::cout << "  Valid bits: " << std::setprecision(1) << sum.valid_bits() << "\n";
+		return 1;
 	}
 
-	// Linear model
-	{
-		TrackedStatistical<double, ErrorModel::Linear> sum = 0.0;
-		for (int i = 0; i < n; ++i) {
-			sum += TrackedStatistical<double, ErrorModel::Linear>(0.1);
+	int expect_count(std::size_t actual, std::size_t wanted, const char* what, bool reportTestCases) {
+		if (actual == wanted) return 0;
+		if (reportTestCases) {
+			std::cout << "    FAIL " << what << ": got " << actual << ", expected " << wanted << '\n';
 		}
-		std::cout << "\n100 additions (Linear model):\n";
-		std::cout << "  Value: " << std::setprecision(15) << sum.value() << "\n";
-		std::cout << "  ULP error: " << std::setprecision(2) << sum.ulp_error() << "\n";
-		std::cout << "  Expected 100 * 0.5 = " << 100 * 0.5 << " ULPs\n";
-		std::cout << "  Valid bits: " << std::setprecision(1) << sum.valid_bits() << "\n";
+		return 1;
 	}
-}
 
-void test_cancellation_detection() {
-	std::cout << "\n=== Cancellation Detection ===\n\n";
+	int expect_true(bool actual, const char* what, bool reportTestCases) {
+		if (actual) return 0;
+		if (reportTestCases) std::cout << "    FAIL " << what << '\n';
+		return 1;
+	}
 
-	double da = 1.0;
-	double db = 0.9999999;
-	TrackedStatDouble a = da;
-	TrackedStatDouble b = db;
+	// ---- the ULP helpers ---------------------------------------------------------
 
-	double dc = da - db;
-	auto c = a - b;
-	std::cout << "1.0 - 0.9999999 (near-cancellation):\n";
-	std::cout << to_binary(da) << " : a = " << da << "\n";
-	std::cout << to_binary(db) << " : b = " << db << "\n";
-	std::cout << to_binary(dc) << " : a - b = " << std::scientific << dc << "\n";
-	std::cout << "  ULP error: " << std::setprecision(2) << c.ulp_error() << "\n";
-	std::cout << "  Valid bits: " << std::setprecision(1) << c.valid_bits() << "\n";
+	// The ULP spacing at v, computed independently of the header under test.
+	double spacing(double v) {
+		return std::nextafter(v, std::numeric_limits<double>::infinity()) - v;
+	}
 
-	// More severe cancellation
-	double dx = 1.0;
-	double dy = 0.9999999999999;
-	TrackedStatDouble x = dx;
-	TrackedStatDouble y = dy;
+	int VerifyUlpHelpers(bool reportTestCases) {
+		int fails = 0;
+		const double eps = std::numeric_limits<double>::epsilon();
 
-	double dz = dx - dy;
-	auto z = x - y;
-	std::cout << "\n1.0 - 0.9999999999999 (severe cancellation):\n";
-	std::cout << to_binary(dx) << " : x = " << dx << "\n";
-	std::cout << to_binary(dy) << " : y = " << dy << "\n";
-	std::cout << to_binary(dz) << " : x - y = " << std::scientific << dz << "\n";
-	std::cout << "  ULP error: " << std::setprecision(2) << z.ulp_error() << "\n";
-	std::cout << "  Valid bits: " << std::setprecision(1) << z.valid_bits() << "\n";
-}
-
-void test_math_functions() {
-	std::cout << "\n=== Mathematical Functions ===\n\n";
-
-	double dx = 2.0;
-	TrackedStatDouble x = dx;
-
-	double dsqrt = std::sqrt(dx);
-	auto s = sqrt(x);
-	std::cout << to_binary(dx) << " : x = " << dx << "\n";
-	std::cout << to_binary(dsqrt) << " : sqrt(x) = " << std::setprecision(17) << dsqrt << "\n";
-	std::cout << "  ULP error: " << std::setprecision(3) << s.ulp_error() << "\n";
-
-	double dangle = 0.5;
-	TrackedStatDouble angle = dangle;
-	double dsin = std::sin(dangle);
-	auto sine = sin(angle);
-	std::cout << "\n" << to_binary(dangle) << " : angle = " << dangle << "\n";
-	std::cout << to_binary(dsin) << " : sin(angle) = " << std::setprecision(17) << dsin << "\n";
-	std::cout << "  ULP error: " << sine.ulp_error() << "\n";
-
-	double done = 1.0;
-	double dexp = std::exp(done);
-	auto e = exp(TrackedStatDouble(done));
-	std::cout << "\n" << to_binary(done) << " : x = " << done << "\n";
-	std::cout << to_binary(dexp) << " : exp(x) = " << dexp << "\n";
-	std::cout << "  ULP error: " << e.ulp_error() << "\n";
-
-	double dtwo = 2.0;
-	double dlog = std::log(dtwo);
-	auto ln = log(TrackedStatDouble(dtwo));
-	std::cout << "\n" << to_binary(dtwo) << " : x = " << dtwo << "\n";
-	std::cout << to_binary(dlog) << " : log(x) = " << dlog << "\n";
-	std::cout << "  ULP error: " << ln.ulp_error() << "\n";
-}
-
-void test_power() {
-	std::cout << "\n=== Integer Power ===\n\n";
-
-	double dx = 2.0;
-	TrackedStatDouble x = dx;
-
-	double dx2 = std::pow(dx, 2);
-	double dx5 = std::pow(dx, 5);
-	double dx10 = std::pow(dx, 10);
-	auto x2 = pow(x, 2);
-	auto x5 = pow(x, 5);
-	auto x10 = pow(x, 10);
-
-	std::cout << to_binary(dx) << " : x = " << dx << "\n";
-	std::cout << to_binary(dx2) << " : 2^2 = " << dx2 << " (ULP error: " << x2.ulp_error() << ")\n";
-	std::cout << to_binary(dx5) << " : 2^5 = " << dx5 << " (ULP error: " << x5.ulp_error() << ")\n";
-	std::cout << to_binary(dx10) << " : 2^10 = " << dx10 << " (ULP error: " << x10.ulp_error() << ")\n";
-}
-
-void test_dot_product() {
-	std::cout << "\n=== Dot Product Comparison ===\n\n";
-
-	const int n = 100;
-
-	// Random walk model
-	{
-		TrackedStatistical<double, ErrorModel::RandomWalk> dot = 0.0;
-		for (int i = 0; i < n; ++i) {
-			TrackedStatistical<double, ErrorModel::RandomWalk> ai = 1.0 / (i + 1);
-			TrackedStatistical<double, ErrorModel::RandomWalk> bi = 1.0 / (i + 2);
-			dot += ai * bi;
+		// The header's own ulp() cannot be CALLED from here -- see the INCLUDES note at
+		// the top -- so it is exercised through error(), which is ulp_error() scaled by
+		// the ULP at the result, against nextafter as the independent oracle.
+		for (double v : { 1.0, 2.0, 0.5, 1024.0, 1e-10, 1e10 }) {
+			Walk a = v, b = v;
+			auto c = a + b;                       // one operation: exactly 0.5 ULP
+			fails += expect_exact(c.ulp_error(), 0.5, "one operation costs half a ULP", reportTestCases);
+			fails += expect_exact(c.error(), 0.5 * spacing(c.value()),
+				"error is half the spacing at the result", reportTestCases);
 		}
-		std::cout << "Dot product (RandomWalk model):\n";
-		std::cout << "  Value: " << std::setprecision(10) << dot.value() << "\n";
-		std::cout << "  ULP error: " << std::setprecision(2) << dot.ulp_error() << "\n";
-		std::cout << "  Valid bits: " << std::setprecision(1) << dot.valid_bits() << "\n";
-		std::cout << "  Operations: " << dot.operations() << "\n";
+		fails += expect_exact(spacing(1.0), eps, "the spacing at 1.0 is the epsilon", reportTestCases);
+
+		fails += expect_exact(ulp_distance(1.0, 1.0), 0.0, "a value is zero ULPs from itself",
+			reportTestCases);
+		fails += expect_exact(ulp_distance(1.0, 1.0 + eps), 1.0, "one ULP apart", reportTestCases);
+		fails += expect_exact(ulp_distance(1.0, 1.0 + 4.0 * eps), 4.0, "four ULPs apart", reportTestCases);
+		fails += expect_true(std::isinf(ulp_distance(1.0, std::numeric_limits<double>::infinity())),
+			"a non-finite argument is infinitely far", reportTestCases);
+
+		fails += expect_count(std::size_t(mantissa_bits<float>()),  23, "float mantissa bits", reportTestCases);
+		fails += expect_count(std::size_t(mantissa_bits<double>()), 52, "double mantissa bits", reportTestCases);
+
+		return fails;
 	}
 
-	// Linear model
-	{
-		TrackedStatistical<double, ErrorModel::Linear> dot = 0.0;
-		for (int i = 0; i < n; ++i) {
-			TrackedStatistical<double, ErrorModel::Linear> ai = 1.0 / (i + 1);
-			TrackedStatistical<double, ErrorModel::Linear> bi = 1.0 / (i + 2);
-			dot += ai * bi;
+	// ---- the two error models ----------------------------------------------------
+
+	int VerifyErrorModels(bool reportTestCases) {
+		int fails = 0;
+
+		// RandomWalk combines in quadrature, Linear by summing -- assert the formulas
+		// directly on the public statics, with a Pythagorean triple so the RandomWalk
+		// result is exact in binary.
+		fails += expect_exact(Walk::combine_errors(3.0, 4.0, 0.0), 5.0,
+			"RandomWalk combines in quadrature", reportTestCases);
+		fails += expect_exact(Linear::combine_errors(3.0, 4.0, 0.0), 7.0,
+			"Linear sums", reportTestCases);
+		fails += expect_exact(Walk::combine_errors(0.0, 3.0, 4.0), 5.0,
+			"the operation cost enters the quadrature", reportTestCases);
+		fails += expect_exact(Linear::combine_errors(1.0, 2.0, 0.5), 3.5,
+			"the operation cost enters the sum", reportTestCases);
+		fails += expect_exact(Walk::add_operation_error(3.0, 4.0), 5.0,
+			"RandomWalk unary combination", reportTestCases);
+		fails += expect_exact(Linear::add_operation_error(3.0, 4.0), 7.0,
+			"Linear unary combination", reportTestCases);
+
+		// quadrature never exceeds the sum, for any non-negative inputs
+		const double samples[] = { 0.0, 0.25, 0.5, 1.0, 2.5, 17.0 };
+		for (double e1 : samples) {
+			for (double e2 : samples) {
+				if (!(Walk::combine_errors(e1, e2, 0.5) <= Linear::combine_errors(e1, e2, 0.5))) {
+					++fails;
+					if (reportTestCases) {
+						std::cout << "    FAIL RandomWalk exceeded Linear at (" << e1 << ", " << e2 << ")\n";
+					}
+				}
+			}
 		}
-		std::cout << "\nDot product (Linear model):\n";
-		std::cout << "  Value: " << std::setprecision(10) << dot.value() << "\n";
-		std::cout << "  ULP error: " << std::setprecision(2) << dot.ulp_error() << "\n";
-		std::cout << "  Valid bits: " << std::setprecision(1) << dot.valid_bits() << "\n";
-		std::cout << "  Operations: " << dot.operations() << "\n";
-	}
-}
 
-void test_validation() {
-	std::cout << "\n=== Validation Against Shadow Computation ===\n\n";
+		// the documented per-operation costs
+		fails += expect_exact(Walk::ADD_COST,   0.5, "ADD_COST", reportTestCases);
+		fails += expect_exact(Walk::MUL_COST,   0.5, "MUL_COST", reportTestCases);
+		fails += expect_exact(Walk::DIV_COST,   0.5, "DIV_COST", reportTestCases);
+		fails += expect_exact(Walk::SQRT_COST,  0.5, "SQRT_COST", reportTestCases);
+		fails += expect_exact(Walk::TRANS_COST, 1.0, "TRANS_COST", reportTestCases);
 
-	// Compute same thing with statistical tracking and shadow
-	const int n = 50;
-	TrackedStatDouble stat_sum = 0.0;
-	long double shadow_sum = 0.0L;
+		fails += expect_true(std::string(Walk::model_name()) == "RandomWalk", "RandomWalk model name",
+			reportTestCases);
+		fails += expect_true(std::string(Linear::model_name()) == "Linear", "Linear model name",
+			reportTestCases);
+		fails += expect_true(std::string(Walk::strategy_name()) == "Statistical", "strategy name",
+			reportTestCases);
 
-	for (int i = 0; i < n; ++i) {
-		stat_sum += TrackedStatDouble(0.1);
-		shadow_sum += 0.1L;
+		return fails;
 	}
 
-	auto validation = StatisticalValidation<double, ErrorModel::RandomWalk>::compute(
-		stat_sum, static_cast<double>(shadow_sum));
+	// ---- accumulation through operations -----------------------------------------
 
-	std::cout << "Sum of 50 * 0.1:\n";
-	validation.report(std::cout);
-}
+	int VerifyAccumulation(bool reportTestCases) {
+		int fails = 0;
 
-void test_uncertain_comparison() {
-	std::cout << "\n=== Uncertain Comparisons ===\n\n";
+		// a fresh value has cost nothing yet
+		Walk a = 1.0;
+		fails += expect_exact(a.value(), 1.0, "fresh value", reportTestCases);
+		fails += expect_exact(a.ulp_error(), 0.0, "fresh ULP error", reportTestCases);
+		fails += expect_count(a.operations(), 0, "fresh operations", reportTestCases);
+		fails += expect_true(a.is_exact(), "fresh is_exact", reportTestCases);
+		fails += expect_exact(a.error(), 0.0, "fresh error", reportTestCases);
+		fails += expect_exact(a.relative_error(), 0.0, "fresh relative_error", reportTestCases);
+		fails += expect_exact(a.valid_bits(), double(mantissa_bits<double>()), "fresh valid_bits",
+			reportTestCases);
 
-	double da = 1.0;
-	double db = 1.0 + 1e-15;
-	TrackedStatDouble a = da;
-	TrackedStatDouble b = db;
-
-	std::cout << to_binary(da) << " : a = " << da << "\n";
-	std::cout << to_binary(db) << " : b = " << db << "\n";
-	std::cout << "a == b (value): " << (a.value() == b.value() ? "yes" : "no") << "\n";
-	std::cout << "definitely_different: " << (a.definitely_different(b) ? "yes" : "no") << "\n";
-	std::cout << "possibly_equal: " << (a.possibly_equal(b) ? "yes" : "no") << "\n";
-
-	// After operations, error grows
-	double dc = da + da + da;
-	double dd = 3.0;
-	auto c = a + a + a;  // 3.0 with some error
-	auto d = TrackedStatDouble(dd);  // exactly 3.0
-
-	std::cout << "\n" << to_binary(dc) << " : c = a + a + a (has error)\n";
-	std::cout << to_binary(dd) << " : d = 3.0 (exact)\n";
-	std::cout << "c.ulp_error: " << c.ulp_error() << "\n";
-	std::cout << "d.ulp_error: " << d.ulp_error() << "\n";
-	std::cout << "definitely_different: " << (c.definitely_different(d) ? "yes" : "no") << "\n";
-	std::cout << "possibly_equal: " << (c.possibly_equal(d) ? "yes" : "no") << "\n";
-}
-
-void test_report() {
-	std::cout << "\n=== Detailed Report ===\n\n";
-
-	double dx = 3.14159265358979;
-	TrackedStatDouble x = dx;
-	double dy = dx * dx;
-	double dz = std::sqrt(dy);
-	auto y = x * x;
-	auto z = sqrt(y);
-
-	std::cout << "Computing sqrt(x^2) for x = pi:\n";
-	std::cout << to_binary(dx) << " : x = " << dx << "\n";
-	std::cout << to_binary(dy) << " : x^2 = " << dy << "\n";
-	std::cout << to_binary(dz) << " : sqrt(x^2) = " << dz << "\n";
-	z.report(std::cout);
-}
-
-void test_float_vs_double() {
-	std::cout << "\n=== Float vs Double ===\n\n";
-
-	const int n = 100;
-
-	// Float
-	{
-		float f01 = 0.1f;
-		std::cout << to_binary(f01) << " : 0.1f = " << f01 << "\n\n";
-		TrackedStatFloat sum = 0.0f;
-		for (int i = 0; i < n; ++i) {
-			sum += TrackedStatFloat(0.1f);
+		// one operation on fresh operands costs exactly half a ULP under either model
+		{
+			Walk b = 2.0;
+			Linear la = 1.0, lb = 2.0;
+			fails += expect_exact((a + b).ulp_error(), 0.5, "one addition, RandomWalk", reportTestCases);
+			fails += expect_exact((la + lb).ulp_error(), 0.5, "one addition, Linear", reportTestCases);
+			fails += expect_exact((a * b).ulp_error(), 0.5, "one multiplication", reportTestCases);
+			fails += expect_exact((a / b).ulp_error(), 0.5, "one division", reportTestCases);
+			fails += expect_true(!(a + b).is_exact(), "an operation ends exactness", reportTestCases);
+			fails += expect_count((a + b).operations(), 1, "one operation counted", reportTestCases);
 		}
-		std::cout << "float (100 additions of 0.1f):\n";
-		std::cout << to_binary(sum.value()) << " : sum = " << std::setprecision(10) << sum.value() << "\n";
-		std::cout << "  ULP error: " << sum.ulp_error() << "\n";
-		std::cout << "  Valid bits: " << sum.valid_bits() << " / " << mantissa_bits<float>() << "\n";
-	}
 
-	// Double
-	{
-		double d01 = 0.1;
-		std::cout << "\n" << to_binary(d01) << " : 0.1 = " << d01 << "\n\n";
-		TrackedStatDouble sum = 0.0;
-		for (int i = 0; i < n; ++i) {
-			sum += TrackedStatDouble(0.1);
+		// the models diverge from the second operation onward
+		{
+			Walk x = 1.0, y = 2.0, z = 3.0;
+			Linear lx = 1.0, ly = 2.0, lz = 3.0;
+			const double walkTwo   = ((x + y) + z).ulp_error();
+			const double linearTwo = ((lx + ly) + lz).ulp_error();
+			fails += expect_exact(walkTwo, std::sqrt(0.5), "two additions in quadrature", reportTestCases);
+			fails += expect_exact(linearTwo, 1.0, "two additions summed", reportTestCases);
+			fails += expect_true(walkTwo < linearTwo, "quadrature grows more slowly", reportTestCases);
 		}
-		std::cout << "double (100 additions of 0.1):\n";
-		std::cout << to_binary(sum.value()) << " : sum = " << std::setprecision(17) << sum.value() << "\n";
-		std::cout << "  ULP error: " << sum.ulp_error() << "\n";
-		std::cout << "  Valid bits: " << sum.valid_bits() << " / " << mantissa_bits<double>() << "\n";
+
+		// Linear accumulation is exactly additive, so a chain is predictable
+		{
+			Linear sum = 0.0;
+			for (int i = 0; i < 4; ++i) sum += Linear(1.0);
+			// each step adds a fresh operand (0 error) plus ADD_COST
+			fails += expect_exact(sum.ulp_error(), 4.0 * 0.5, "four Linear additions", reportTestCases);
+			fails += expect_count(sum.operations(), 4, "four operations", reportTestCases);
+		}
+
+		// the ULP error never decreases through an operation
+		{
+			Walk acc = 1.0;
+			double previous = acc.ulp_error();
+			for (int i = 0; i < 10; ++i) {
+				acc = acc + Walk(1.0);
+				if (!(acc.ulp_error() >= previous)) {
+					++fails;
+					if (reportTestCases) std::cout << "    FAIL the ULP error decreased at step " << i << '\n';
+				}
+				previous = acc.ulp_error();
+			}
+		}
+
+		// error() is the ULP count scaled by the ULP at the result
+		{
+			Walk p = 1024.0, q = 3.0;
+			auto r = p + q;
+			fails += expect_exact(r.error(), r.ulp_error() * spacing(r.value()),
+				"error is the scaled ULP count", reportTestCases);
+			fails += expect_exact(r.relative_error(), r.error() / std::abs(r.value()),
+				"relative_error", reportTestCases);
+		}
+
+		return fails;
 	}
+
+	// ---- operation counting ------------------------------------------------------
+
+	int VerifyOperationCounts(bool reportTestCases) {
+		int fails = 0;
+
+		Walk a = 2.0, b = 3.0, c = 5.0;
+		fails += expect_count((a + b).operations(), 1, "one addition", reportTestCases);
+		fails += expect_count((a - b).operations(), 1, "one subtraction", reportTestCases);
+		fails += expect_count((a * b).operations(), 1, "one multiplication", reportTestCases);
+		fails += expect_count((a / b).operations(), 1, "one division", reportTestCases);
+		fails += expect_count(((a + b) + c).operations(), 2, "two chained additions", reportTestCases);
+		fails += expect_count(((a + b) * (a + c)).operations(), 3, "two additions and a product",
+			reportTestCases);
+
+		// unary minus and abs charge nothing and leave the error alone
+		{
+			auto lossy = a + b;
+			fails += expect_count((-lossy).operations(), lossy.operations(), "unary minus charges nothing",
+				reportTestCases);
+			fails += expect_exact((-lossy).ulp_error(), lossy.ulp_error(), "unary minus keeps the error",
+				reportTestCases);
+			fails += expect_count(abs(lossy).operations(), lossy.operations(), "abs charges nothing",
+				reportTestCases);
+			fails += expect_exact(abs(lossy).ulp_error(), lossy.ulp_error(), "abs keeps the error",
+				reportTestCases);
+		}
+
+		// sqrt charges the sqrt cost; the transcendentals charge a full ULP
+		{
+			fails += expect_count(sqrt(a).operations(), 1, "sqrt counts one", reportTestCases);
+			fails += expect_exact(sqrt(a).ulp_error(), Walk::SQRT_COST, "sqrt costs SQRT_COST",
+				reportTestCases);
+			fails += expect_count(exp(a).operations(), 1, "exp counts one", reportTestCases);
+			fails += expect_exact(exp(a).ulp_error(), Walk::TRANS_COST, "exp costs TRANS_COST",
+				reportTestCases);
+			for (const char* tag : { "log", "sin", "cos" }) (void)tag;
+			fails += expect_exact(log(a).ulp_error(), Walk::TRANS_COST, "log costs TRANS_COST",
+				reportTestCases);
+			fails += expect_exact(sin(a).ulp_error(), Walk::TRANS_COST, "sin costs TRANS_COST",
+				reportTestCases);
+			fails += expect_exact(cos(a).ulp_error(), Walk::TRANS_COST, "cos costs TRANS_COST",
+				reportTestCases);
+		}
+
+		// binary exponentiation charges n operations for x^n
+		fails += expect_count(pow(a, 2).operations(), 2, "pow(x,2)", reportTestCases);
+		fails += expect_count(pow(a, 10).operations(), 10, "pow(x,10)", reportTestCases);
+		fails += expect_count(pow(a, 1).operations(), 0, "pow(x,1) returns the base", reportTestCases);
+		fails += expect_count(pow(a, -2).operations(), 3, "pow(x,-2) adds the reciprocal", reportTestCases);
+
+		return fails;
+	}
+
+	// ---- subtraction charges for cancellation ------------------------------------
+	//
+	// The one place the model looks at the data: when a difference is tiny against its
+	// operands, the ULP cost is magnified by the ratio, capped at 1000x.
+
+	int VerifyCancellationCost(bool reportTestCases) {
+		int fails = 0;
+
+		// a difference of the same order as its operands is charged the flat cost
+		{
+			Walk a = 3.0, b = 1.0;
+			auto d = a - b;
+			fails += expect_exact(d.value(), 2.0, "3 - 1", reportTestCases);
+			fails += expect_exact(d.ulp_error(), 0.5, "a harmless subtraction costs ADD_COST",
+				reportTestCases);
+		}
+
+		// a difference 1e13 times smaller than its operands saturates the cap:
+		// ADD_COST * 1000 = 500 ULP
+		{
+			Walk a = 1.0, b = 1.0 - 1e-13;
+			auto d = a - b;
+			fails += expect_exact(d.ulp_error(), 500.0, "catastrophic cancellation saturates the cap",
+				reportTestCases);
+			fails += expect_true(d.ulp_error() > (a - Walk(0.5)).ulp_error(),
+				"cancellation costs more than an ordinary subtraction", reportTestCases);
+		}
+
+		// a moderate cancellation is charged proportionally, between the two extremes
+		{
+			Walk a = 1.0, b = 1.0 - 1e-3;
+			auto d = a - b;
+			fails += expect_true(d.ulp_error() > 0.5 && d.ulp_error() < 500.0,
+				"a moderate cancellation is charged in between", reportTestCases);
+		}
+
+		return fails;
+	}
+
+	// ---- comparison under uncertainty ---------------------------------------------
+
+	int VerifyUncertainComparison(bool reportTestCases) {
+		int fails = 0;
+
+		Walk a = 1.0, b = 2.0;
+		// two fresh, distinct values carry no error, so they are definitely different
+		fails += expect_true(a.definitely_different(b), "1 and 2 are definitely different", reportTestCases);
+		fails += expect_true(!a.possibly_equal(b), "1 and 2 are not possibly equal", reportTestCases);
+		// a value is never definitely different from itself
+		fails += expect_true(!a.definitely_different(a), "a value equals itself", reportTestCases);
+		fails += expect_true(a.possibly_equal(a), "a value is possibly equal to itself", reportTestCases);
+		// the two predicates are exact complements
+		const Walk samples[] = { Walk(1.0), Walk(2.0), Walk(1.0) + Walk(1e-16), Walk(0.0) };
+		for (const Walk& x : samples) {
+			for (const Walk& y : samples) {
+				if (x.possibly_equal(y) == x.definitely_different(y)) {
+					++fails;
+					if (reportTestCases) std::cout << "    FAIL possibly_equal is not the complement\n";
+				}
+			}
+		}
+
+		return fails;
+	}
+
+	// ---- assignment resets the tracking state --------------------------------------
+
+	int VerifyResetOnAssignment(bool reportTestCases) {
+		int fails = 0;
+
+		Walk a = 1.0;
+		a += Walk(2.0);
+		a *= Walk(3.0);
+		fails += expect_true(a.ulp_error() > 0.0, "error accumulated before the reset", reportTestCases);
+		fails += expect_count(a.operations(), 2, "operations accumulated before the reset", reportTestCases);
+
+		a = 5.0;
+		fails += expect_exact(a.value(), 5.0, "value after assignment", reportTestCases);
+		fails += expect_exact(a.ulp_error(), 0.0, "error reset by assignment", reportTestCases);
+		fails += expect_count(a.operations(), 0, "operations reset by assignment", reportTestCases);
+		fails += expect_true(a.is_exact(), "is_exact after assignment", reportTestCases);
+
+		// copy assignment carries the state instead
+		Walk lossy = Walk(1.0) + Walk(2.0);
+		Walk copy = 0.0;
+		copy = lossy;
+		fails += expect_exact(copy.ulp_error(), lossy.ulp_error(), "copy carries the error", reportTestCases);
+		fails += expect_count(copy.operations(), lossy.operations(), "copy carries the operations",
+			reportTestCases);
+
+		return fails;
+	}
+
+	// ---- the validation helper -------------------------------------------------------
+
+	int VerifyStatisticalValidation(bool reportTestCases) {
+		int fails = 0;
+
+		Walk a = 1.0, b = 1.0 / 3.0;
+		auto c = a + b;
+		// measured against its own value, the estimate is trivially conservative
+		auto self = StatisticalValidation<double, ErrorModel::RandomWalk>::compute(c, c.value());
+		fails += expect_exact(self.actual_error, 0.0, "no error against itself", reportTestCases);
+		fails += expect_exact(self.estimated_ulps, c.ulp_error(), "the estimate is carried over",
+			reportTestCases);
+		fails += expect_true(self.conservative, "an estimate above zero is conservative", reportTestCases);
+
+		// measured against a reference that is far off, the estimate is NOT conservative.
+		// Doubling is exact in binary, so the gap is exactly the value itself.
+		auto off = StatisticalValidation<double, ErrorModel::RandomWalk>::compute(c, 2.0 * c.value());
+		fails += expect_exact(off.actual_error, c.value(), "the actual error is the gap to the reference",
+			reportTestCases);
+		fails += expect_true(!off.conservative, "an estimate below the truth is not conservative",
+			reportTestCases);
+
+		return fails;
+	}
+
+	// ---- behaviour that is pinned although it is wrong ---------------------------------
+	//
+	// All three assert what the header does TODAY, so that a fix shows up as a failing
+	// test here rather than as a silent change in what callers see.
+
+	int VerifyKnownDefects(bool reportTestCases) {
+		int fails = 0;
+
+		// 1. valid_bits() can exceed the type's precision. After one operation the ULP
+		// error is 0.5, log2(0.5) is -1, and subtracting it ADDS a bit: a double reports
+		// 53 valid bits where it has 52, and reports MORE after an operation than before.
+		// The other two trackers clamp with std::min against the type precision.
+		{
+			Walk a = 1.0, b = 2.0;
+			auto c = a + b;
+			fails += expect_exact(c.valid_bits(), 53.0,
+				"one operation reports 53 valid bits (known defect #1546)", reportTestCases);
+			fails += expect_exact(double(mantissa_bits<double>()), 52.0,
+				"a double has 52 mantissa bits", reportTestCases);
+			fails += expect_true(c.valid_bits() > a.valid_bits(),
+				"an operation appears to ADD precision (known defect #1546)", reportTestCases);
+		}
+
+		// 2. Total cancellation is charged the CHEAPEST cost. The magnification branch
+		// computes a ratio, and guards it with result != 0 -- so x - x, where every bit
+		// is lost, falls through to the flat ADD_COST that an ordinary subtraction pays.
+		{
+			Walk x = 1.0;
+			auto d = x - x;
+			fails += expect_exact(d.value(), 0.0, "x - x is zero", reportTestCases);
+			fails += expect_exact(d.ulp_error(), 0.5,
+				"total cancellation is charged the minimum (known defect #1546)", reportTestCases);
+			Walk a = 1.0, b = 1.0 - 1e-13;
+			fails += expect_true((a - b).ulp_error() > d.ulp_error(),
+				"partial cancellation costs more than total cancellation (known defect #1546)", reportTestCases);
+		}
+
+		// 3. Division by zero is not detected. The value becomes infinite, ulp(inf) is
+		// NaN, so error() is NaN -- while valid_bits(), which never looks at the value,
+		// still reports 53 bits of a meaningless infinity.
+		{
+			Walk a = 1.0, zero = 0.0;
+			auto q = a / zero;
+			fails += expect_true(std::isinf(q.value()), "division by zero gives an infinity",
+				reportTestCases);
+			fails += expect_true(std::isnan(q.error()),
+				"the error of an infinity is NaN (known defect #1546)", reportTestCases);
+			fails += expect_exact(q.valid_bits(), 53.0,
+				"an infinity still reports 53 valid bits (known defect #1546)", reportTestCases);
+		}
+
+		// 4. is_exact() asks only whether any operation has run, so a value built with
+		// an explicit error through the three-argument constructor claims to be exact.
+		{
+			Walk fabricated(1.0, 5.0, 0);
+			fails += expect_exact(fabricated.ulp_error(), 5.0, "the fabricated error is kept",
+				reportTestCases);
+			fails += expect_true(fabricated.is_exact(),
+				"a value with an error claims to be exact (known defect #1546)", reportTestCases);
+		}
+
+		return fails;
+	}
+
+	// ---- the exploratory narrative, kept for manual inspection -------------------------
+
+#if MANUAL_TESTING
+	void ReportTrackedStatisticalBehaviour() {
+		std::cout << "\n=== TrackedStatistical<double> walk-through ===\n";
+
+		std::cout << "ULP of a few values:\n";
+		for (double v : { 1.0, 2.0, 0.5, 1e10, 1e-10 }) {
+			std::cout << "  spacing(" << v << ") = " << spacing(v) << "\n";
+		}
+
+		std::cout << "\nthe two models over a chain of 100 additions:\n";
+		Walk w = 0.0;
+		Linear l = 0.0;
+		for (int i = 0; i < 100; ++i) { w += Walk(0.1); l += Linear(0.1); }
+		std::cout << "  RandomWalk: "; w.report(std::cout);
+		std::cout << "  Linear:     "; l.report(std::cout);
+
+		std::cout << "\ncatastrophic cancellation, 1.0 - (1.0 - 1e-13):\n";
+		auto d = Walk(1.0) - Walk(1.0 - 1e-13);
+		d.report(std::cout);
+	}
+#endif  // MANUAL_TESTING
+
+}  // anonymous namespace
+
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
+int main()
+try {
+	using namespace sw::universal;
+
+	std::string test_suite  = "TrackedStatistical<T, Model> ULP-count error estimation";
+	std::string test_tag    = "tracked_statistical";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+#if MANUAL_TESTING
+
+	ReportTrackedStatisticalBehaviour();
+	nrOfFailedTestCases += VerifyErrorModels(true);
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;  // ignore failures
+#else  // !MANUAL_TESTING
+
+	// A few hundred operations, so it all belongs at level 1: CI configures
+	// REGRESSION_LEVEL_1 only, and a contract that is not checked there does not gate.
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyUlpHelpers(reportTestCases), test_tag, "ULP helpers");
+	nrOfFailedTestCases += ReportTestResult(VerifyErrorModels(reportTestCases), test_tag, "error models");
+	nrOfFailedTestCases += ReportTestResult(VerifyAccumulation(reportTestCases), test_tag, "accumulation");
+	nrOfFailedTestCases += ReportTestResult(VerifyOperationCounts(reportTestCases), test_tag, "operation counts");
+	nrOfFailedTestCases += ReportTestResult(VerifyCancellationCost(reportTestCases), test_tag, "cancellation cost");
+	nrOfFailedTestCases += ReportTestResult(VerifyUncertainComparison(reportTestCases), test_tag, "uncertain comparison");
+	nrOfFailedTestCases += ReportTestResult(VerifyResetOnAssignment(reportTestCases), test_tag, "reset on assignment");
+	nrOfFailedTestCases += ReportTestResult(VerifyStatisticalValidation(reportTestCases), test_tag, "validation helper");
+	nrOfFailedTestCases += ReportTestResult(VerifyKnownDefects(reportTestCases), test_tag, "pinned known defects");
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
-
-int main() {
-	std::cout << "TrackedStatistical ULP-Based Error Tracking Test\n";
-	std::cout << "=================================================\n";
-	std::cout << "Key insight: Fast approximate tracking using ULP statistics!\n\n";
-
-	test_ulp_function();
-	test_basic_operations();
-	test_error_accumulation();
-	test_cancellation_detection();
-	test_math_functions();
-	test_power();
-	test_dot_product();
-	test_validation();
-	test_uncertain_comparison();
-	test_report();
-	test_float_vs_double();
-
-	std::cout << "\n\nTrackedStatistical: PASS\n";
-	return 0;
+catch (char const* msg) {
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
 }
