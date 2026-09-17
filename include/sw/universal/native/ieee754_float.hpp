@@ -1,5 +1,5 @@
 #pragma once
-#include <universal/native/ieee754_components.hpp>   // ieee_components() moved here (#1334)
+#include <universal/native/ieee754_decoder.hpp>   // the decoder unions this header reads (#1536)
 // ieee754_float.hpp: manipulation functions for IEEE-754 single precision floating-point type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

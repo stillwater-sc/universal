@@ -44,27 +44,27 @@ namespace sw { namespace universal {
 	// A caller that rounds that to 62 significand bits or fewer rounds the long double correctly,
 	// and a caller that truncates truncates it correctly; a wider one gets its leading 64 bits.
 	// NaN and inf take x87's canonical encodings, so they classify as they do on x86.
-	inline void extractLongDoubleFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline void extractLongDoubleFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
 		constexpr int           bias        = 16383;
 		constexpr std::uint64_t integerBit  = 0x8000'0000'0000'0000ull;
 		constexpr std::uint64_t fmask       = 0x7FFF'FFFF'FFFF'FFFFull;
 		s = std::signbit(value);
 		if (value != value) {  // nan
 			rawExponentBits = 0x7FFF;
-			rawFractionBits = longDoubleNaNIsQuiet(value) ? 0x4000'0000'0000'0000ull : 0x2000'0000'0000'0000ull;
-			bits            = integerBit | rawFractionBits;
+			lowerBits       = longDoubleNaNIsQuiet(value) ? 0x4000'0000'0000'0000ull : 0x2000'0000'0000'0000ull;
+			upperBits       = 0;   // the shaped significand is 64 bits: nothing above it
 			return;
 		}
 		if (std::isinf(value)) {
 			rawExponentBits = 0x7FFF;
-			rawFractionBits = 0;
-			bits            = integerBit;
+			lowerBits       = 0;
+			upperBits       = 0;   // the shaped significand is 64 bits: nothing above it
 			return;
 		}
 		if (value == 0.0l) {
 			rawExponentBits = 0;
-			rawFractionBits = 0;
-			bits            = 0;
+			lowerBits       = 0;
+			upperBits       = 0;   // the shaped significand is 64 bits: nothing above it
 			return;
 		}
 		int               e   = 0;
@@ -74,16 +74,16 @@ namespace sw { namespace universal {
 		const int biased = e - 1 + bias;  // |value| = 1.f * 2^(e - 1)
 		if (biased >= 1) {
 			rawExponentBits = static_cast<std::uint64_t>(biased);
-			rawFractionBits = top & fmask;
-			bits            = top;
+			lowerBits       = top & fmask;
+			upperBits       = 0;   // the shaped significand is 64 bits: nothing above it
 		}
 		else {  // below x87's normal range, which only binary128 reaches: an x87 denormal
 			const int     shift = 1 - biased;
 			std::uint64_t f     = (shift < 64) ? (top >> shift) : 0u;
 			if (shift >= 64 || (top & ((std::uint64_t(1) << shift) - 1u)) != 0) f |= 1u;  // round to odd
 			rawExponentBits = 0;
-			rawFractionBits = f;
-			bits            = f;
+			lowerBits       = f;
+			upperBits       = 0;   // the shaped significand is 64 bits: nothing above it
 		}
 	}
 #endif
@@ -91,22 +91,41 @@ namespace sw { namespace universal {
 #if BIT_CAST_IS_CONSTEXPR
 // sw::bit_cast is provided by <universal/utility/bit_cast.hpp>
 
+// THE CONTRACT (#1536): extractFields is where a native floating-point value is taken apart, and
+// the fields it hands back are
+//
+//   s                the sign
+//   rawExponentBits  the biased exponent, as the format encodes it
+//   lowerBits        the fraction, low word
+//   upperBits        the fraction bits above 64, for a format that has them
+//
+// upperBits is what the old `bits` parameter became. That one carried the whole encoding for a
+// float and a double but only the low word for a long double, no caller ever read it, and a
+// uint64_t fraction is what made ieee_components unable to describe a binary128 at all -- the
+// reason that function is gone and this one is the only way in.
+//
+// upperBits is zero in every configuration today: float, double and x87 all have fewer than 64
+// fraction bits, and the formats that have more -- IEEE binary128, IBM double-double -- come
+// through extractLongDoubleFields, which hands back x87-SHAPED fields so that every consumer can
+// read them through ieee754_parameter<long double> (#1515). Giving those formats their own
+// two-word fields means giving the consumers a second shape to read, which is a separate change.
+
 	// specialization to extract fields from a float
-	inline BIT_CAST_CONSTEXPR void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline BIT_CAST_CONSTEXPR void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
 		uint32_t bc = sw::bit_cast<uint32_t>(value);
 		s = (ieee754_parameter<float>::smask & bc);
 		rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
-		rawFractionBits = (ieee754_parameter<float>::fmask & bc);
-		bits = bc;
+		lowerBits = (ieee754_parameter<float>::fmask & bc);
+		upperBits = 0;   // no fraction bits above the low word in this format
 	}
 
 	// specialization to extract fields from a double
-	inline BIT_CAST_CONSTEXPR void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline BIT_CAST_CONSTEXPR void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
 		uint64_t bc = sw::bit_cast<uint64_t>(value);
 		s = (ieee754_parameter<double>::smask & bc);
 		rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
-		rawFractionBits = (ieee754_parameter<double>::fmask & bc);
-		bits = bc;
+		lowerBits = (ieee754_parameter<double>::fmask & bc);
+		upperBits = 0;   // no fraction bits above the low word in this format
 	}
 
 #if LONG_DOUBLE_SUPPORT
@@ -115,20 +134,20 @@ namespace sw { namespace universal {
 
 #if defined(LONG_DOUBLE_DOWNCAST)
 
-	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
 		double d = static_cast<double>(value);
 		uint64_t bc = sw::bit_cast<uint64_t>(d);
 		s = (ieee754_parameter<double>::smask & bc);
 		rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
-		rawFractionBits = (ieee754_parameter<double>::fmask & bc);
-		bits = bc;
+		lowerBits = (ieee754_parameter<double>::fmask & bc);
+		upperBits = 0;   // no fraction bits above the low word in this format
 	}
 #else // !DOWNCAST
 /*
 	ETLO 8/1/2024: not able to make std::bit_cast<> work for long double
 	// specialization to extract fields from a long double
 
-	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline BIT_CAST_CONSTEXPR void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
 		struct blob {
 			std::uint64_t hi;
 			std::uint64_t fraction;
@@ -136,23 +155,23 @@ namespace sw { namespace universal {
 		raw = std::bit_cast<blob, long double>(value);
 		s = (ieee754_parameter<long double>::smask & raw.hi);
 		rawExponentBits = (ieee754_parameter<long double>::emask & raw.hi);
-		rawFractionBits = (ieee754_parameter<long double>::fmask & raw.fraction);
+		lowerBits = (ieee754_parameter<long double>::fmask & raw.fraction);
 	}
 	*/
 	// falling back to non-constexpr
 	// specialization to extract fields from a long double
 #if (LDBL_MANT_DIG == 64) || (LDBL_MANT_DIG == 53)  // x87, or long double is double: read the bits
-	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
 		long_double_decoder decoder;
 		decoder.ld = value;
 		s = decoder.parts.sign ? true : false;
 		rawExponentBits = decoder.parts.exponent;
-		rawFractionBits = decoder.parts.fraction;
-		bits = decoder.bits[0];  // communicate the lower order bits which represent the fraction bits
+		lowerBits = decoder.parts.fraction;
+		upperBits = 0;   // no fraction bits above the low word in this format
 	}
 #else  // binary128, double-double: x87-shaped fields computed from the value (#1515)
-	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		extractLongDoubleFields(value, s, rawExponentBits, rawFractionBits, bits);
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
+		extractLongDoubleFields(value, s, rawExponentBits, lowerBits, upperBits);
 	}
 #endif
 
@@ -164,51 +183,70 @@ namespace sw { namespace universal {
 ////////////////////////////////////////////////////////////////////////
 // nonconst extractFields for single precision floating-point
 
-	inline void extractFields(float value, bool& s, uint32_t& rawExponentBits, uint32_t& rawFractionBits, uint32_t& bits) noexcept {
+	// the fields come back in a uint64_t here as they do on the constexpr path above. They used to
+	// be uint32_t on this one, so the same call could not serve every Real: generic code passing
+	// uint64_t got an exact match for a double and, for a float, an overload it could not bind to,
+	// leaving the double and long double candidates to tie. MSVC, which takes this path, reported
+	// the ambiguity (#1536).
+	inline void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
 		float_decoder decoder;
 		decoder.f = value;
 		s = decoder.parts.sign ? true : false;
 		rawExponentBits = decoder.parts.exponent;
-		rawFractionBits = decoder.parts.fraction;
-		bits = uint64_t(decoder.bits);
+		lowerBits = decoder.parts.fraction;
+		upperBits = 0;   // no fraction bits above the low word in this format
 	}
 
 ////////////////////////////////////////////////////////////////////////
 // nonconst extractFields for double precision floating-point
 
-	inline void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
 		double_decoder decoder;
 		decoder.d = value;
 		s = decoder.parts.sign ? true : false;
 		rawExponentBits = decoder.parts.exponent;
-		rawFractionBits = decoder.parts.fraction;
-		bits = uint64_t(decoder.bits);
+		lowerBits = decoder.parts.fraction;
+		upperBits = 0;   // no fraction bits above the low word in this format
 	}
 
 #if LONG_DOUBLE_SUPPORT
 // Clang bit_cast<> can't deal with long double
 #define LONG_DOUBLE_DOWNCAST
 #if (LDBL_MANT_DIG != 64) && (LDBL_MANT_DIG != 53)  // binary128, double-double: x87-shaped fields (#1515)
-	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		extractLongDoubleFields(value, s, rawExponentBits, rawFractionBits, bits);
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
+		extractLongDoubleFields(value, s, rawExponentBits, lowerBits, upperBits);
 	}
 #elif defined(LONG_DOUBLE_DOWNCAST)
-	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-		extractFields(double(value), s, rawExponentBits, rawFractionBits, bits);
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
+		extractFields(double(value), s, rawExponentBits, lowerBits, upperBits);
 	}
 #else
 	// specialization to extract fields from a long double
-	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
 		long_double_decoder decoder;
 		decoder.ld = value;
 		s = decoder.parts.sign ? true : false;
 		rawExponentBits = decoder.parts.exponent;
-		rawFractionBits = decoder.parts.fraction;
-		bits = decoder.bits[0];  // communicate the lower order bits which represent the fraction bits
+		lowerBits = decoder.parts.fraction;
+		upperBits = 0;   // no fraction bits above the low word in this format
 	}
 #endif // LONG_DOUBLE_DOWNCAST
 #endif // LONG_DOUBLE_SUPPORT
 #endif // BIT_CAST_IS_CONSTEXPR
+
+#if !LONG_DOUBLE_SUPPORT
+	// A host whose long double this library cannot take apart still HAS the type, and it is a
+	// distinct one for overload resolution, so a call has to have somewhere to go: with only the
+	// float and double overloads in scope, extractFields(aLongDouble, ...) is ambiguous rather than
+	// absent. ieee_components carried a forwarding overload for exactly this, and retiring it left
+	// the hole (#1536); the same reasoning as #1535.
+	//
+	// LONG_DOUBLE_SUPPORT is 0 only where long double is double -- MSVC, and a GNU build with
+	// -mlong-double-64 -- so forwarding to the double overload reads the very same bits.
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
+		extractFields(static_cast<double>(value), s, rawExponentBits, lowerBits, upperBits);
+	}
+#endif
 
 template<typename Real>
 	inline BIT_CAST_CONSTEXPR bool checkNaN(Real value, int& nan_type) {
