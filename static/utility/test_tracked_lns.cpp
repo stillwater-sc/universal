@@ -18,8 +18,9 @@
 //     requested value, from an LNS it keeps the already-rounded one
 //   - cancellation and absorption are detected by the documented shadow predicates
 //
-// Two checks below pin behaviour that is wrong (#1546); each says so, so that a fix is
-// noticed here rather than silently changing what callers see.
+// The metrics are checked too, including the two cases #1546 corrected: a shadow that
+// cancels to zero no longer reads as a perfect answer, and valid_bits is capped by the
+// fraction bits the encoding resolves rather than by the width of the encoding.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -406,39 +407,54 @@ namespace {
 		return fails;
 	}
 
-	// ---- behaviour that is pinned although it is wrong -------------------------------
+	// ---- the metrics, including the cases that used to lie -----------------------------
 
-	int VerifyKnownDefects(bool reportTestCases) {
+	int VerifyErrorMetrics(bool reportTestCases) {
 		int fails = 0;
 
-		// 1. A completely cancelled result claims FULL precision. relative_error()
-		// returns 0 when the shadow is zero -- reading "no relative error" off a value
-		// that has lost every significant bit -- and valid_bits() maps that to the cap.
-		// The cancellation counter does record the event, so the information is there;
-		// it just does not reach the two metrics a caller is most likely to read.
+		// A shadow that cancels to zero no longer means "perfectly accurate". The guard
+		// used to return a relative error of 0 whenever the shadow was zero, whatever
+		// the value was, which is precisely the case a caller needs told about (#1546).
+		// Built here through the full-state constructor, since reaching it through
+		// arithmetic takes a reassociation that lns<32,8> happens to round identically.
+		{
+			Tracked32 lost(LNS32(2.0), 0.0, 0.0, 1, 0, 0, 1, 0);
+			fails += expect_true(lost.error() > 0.0, "the value is nowhere near the shadow",
+				reportTestCases);
+			fails += expect_true(!std::isfinite(lost.relative_error()),
+				"so there is no relative accuracy to report", reportTestCases);
+			fails += expect_exact(lost.valid_bits(), 0.0, "and no valid bits", reportTestCases);
+		}
+
+		// A difference that really is zero, on the other hand, is exactly right, and
+		// says so -- the cancellation counter records the event without the metrics
+		// pretending the answer is wrong.
 		{
 			Tracked32 a = 2.0;
 			auto d = a - a;
 			fails += expect_exact(d.shadow(), 0.0, "the shadow cancels to zero", reportTestCases);
-			fails += expect_count(d.additions(), 1, "the subtraction is counted", reportTestCases);
-			fails += expect_count(d.cancellations(), 1, "and recorded as a cancellation", reportTestCases);
-			fails += expect_exact(d.relative_error(), 0.0,
-				"a fully cancelled result reports no relative error (known defect #1546)", reportTestCases);
-			fails += expect_exact(d.valid_bits(), 32.0,
-				"and reports the full 32 valid bits (known defect #1546)", reportTestCases);
+			fails += expect_exact(double(d.value()), 0.0, "and so does the value", reportTestCases);
+			fails += expect_exact(d.error(), 0.0, "which makes the result exact", reportTestCases);
+			fails += expect_exact(d.relative_error(), 0.0, "with no relative error", reportTestCases);
+			fails += expect_count(d.cancellations(), 1, "the cancellation is still recorded",
+				reportTestCases);
 		}
 
-		// 2. valid_bits() is capped by nbits, which is not a precision. lns<32,8> keeps
-		// eight fractional bits of the logarithm -- roughly nine bits of relative
-		// precision -- yet an exact value reports 32. The header admits the proxy in a
-		// comment; the number is still four times the truth.
+		// valid_bits is capped by what an LNS encoding RESOLVES -- the fractional bits
+		// of the logarithm -- not by the width of the encoding. lns<32,8> used to claim
+		// 32 bits where it resolves about 8 (#1546).
 		{
-			Tracked32 exact = 2.0;
-			fails += expect_exact(exact.valid_bits(), 32.0,
-				"an exact value reports nbits valid bits (known defect #1546: nbits is not a precision)",
-				reportTestCases);
-			fails += expect_exact(TrackedLNS<LNS16>(2.0).valid_bits(), 16.0,
-				"and the narrow type reports its own nbits (known defect #1546)", reportTestCases);
+			fails += expect_exact(Tracked32(2.0).valid_bits(), 8.0,
+				"lns<32,8> resolves its 8 fraction bits", reportTestCases);
+			fails += expect_exact(TrackedLNS<LNS16>(2.0).valid_bits(), 5.0,
+				"lns<16,5> resolves its 5", reportTestCases);
+			// and the cap is an upper bound, not a floor: once error accumulates past
+			// the encoding's resolution, fewer bits are reported
+			Tracked32 sum = 0.0;
+			for (int i = 0; i < 200; ++i) sum = sum + Tracked32(0.001);
+			fails += expect_true(sum.valid_bits() < 8.0,
+				"an accumulation reports fewer than the cap", reportTestCases);
+			fails += expect_true(sum.valid_bits() > 0.0, "but not none", reportTestCases);
 		}
 
 		return fails;
@@ -523,7 +539,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyResetOnAssignment(reportTestCases), test_tag, "reset on assignment");
 	nrOfFailedTestCases += ReportTestResult(VerifyNarrowerIsCoarser(reportTestCases), test_tag, "narrower is coarser");
 	nrOfFailedTestCases += ReportTestResult(VerifyTypeTag(reportTestCases), test_tag, "type tag");
-	nrOfFailedTestCases += ReportTestResult(VerifyKnownDefects(reportTestCases), test_tag, "pinned known defects");
+	nrOfFailedTestCases += ReportTestResult(VerifyErrorMetrics(reportTestCases), test_tag, "error metrics");
 #endif
 
 #if REGRESSION_LEVEL_2

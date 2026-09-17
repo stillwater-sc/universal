@@ -12,16 +12,17 @@
 // within the computed interval.
 //
 // Key properties:
-// - Uses IEEE directed rounding (fesetround) for rigorous bounds
-// - Lower bound computed with round-toward-negative-infinity
-// - Upper bound computed with round-toward-positive-infinity
+// - Each bound is rounded outward whenever the operation was inexact, using an
+//   error-free transformation rather than the FPU rounding mode (see #1544 and the
+//   note above namespace detail below)
 // - Error = interval width (hi - lo)
 // - Guaranteed enclosure: true value always in [lo, hi]
+// - An operation that rounds nothing does not widen
 //
 // Trade-offs:
 // - More conservative than shadow (intervals can grow)
 // - Provides mathematical guarantees (not just estimates)
-// - Slightly slower due to rounding mode switches
+// - Slightly slower: each bound costs an extra fma or TwoSum
 //
 // Usage:
 //   #include <universal/utility/tracked_bounded.hpp>
@@ -36,7 +37,6 @@
 //   std::cout << "Width: " << c.width() << "\n";
 //   std::cout << "Valid bits: " << c.valid_bits() << "\n";
 
-#include <cfenv>
 #include <cmath>
 #include <iostream>
 #include <iomanip>
@@ -44,35 +44,163 @@
 #include <type_traits>
 #include <algorithm>
 
-// Enable floating-point environment access for directed rounding
-// MSVC uses a different pragma than the C99 standard
-#if defined(_MSC_VER)
-#pragma fenv_access (on)
-#elif defined(__GNUC__) || defined(__clang__)
-// GCC/Clang: STDC pragma often ignored, but fesetround() still works
-#endif
-
 namespace sw { namespace universal {
 
 // ============================================================================
-// RAII guard for directed rounding mode
+// Directed rounding
 // ============================================================================
+//
+// The bounds must enclose the true real result, which means each one has to be
+// rounded outward whenever the operation was inexact. This was once done by
+// switching the FPU rounding mode around each operation with fesetround. That is
+// not sound in practice: without "#pragma STDC FENV_ACCESS ON" -- which GCC and
+// Clang do not honour -- the compiler may evaluate the arithmetic under whatever
+// mode it likes, including at compile time. Measured before this was replaced,
+// Clang at -O2 returned 1/3 as the single point 0.33333333333333337034, the
+// UPWARD-rounded value, which excludes the true 1/3 altogether (#1544).
+//
+// So the widening is done in arithmetic instead, the way interval<Scalar> does it
+// (interval_detail in interval_impl.hpp): compute the result, recover the exact
+// roundoff with an error-free transformation, and step one ulp outward only in the
+// direction the roundoff says the true value lies. Nothing depends on the rounding
+// mode, so nothing the optimizer does can invalidate it, and an operation that
+// rounds nothing still yields a point interval.
+//
+// These are correct for the native floating-point types this class accepts; the
+// EFTs they rest on are not sound for tapered or subnormal-flushing types, which
+// is why TrackedBounded static_asserts on std::is_floating_point.
 
-/// RAII guard that saves and restores the floating-point rounding mode
-class RoundingGuard {
-public:
-	explicit RoundingGuard(int mode) : saved_mode_(std::fegetround()) {
-		std::fesetround(mode);
-	}
-	~RoundingGuard() {
-		std::fesetround(saved_mode_);
-	}
-	// Non-copyable
-	RoundingGuard(const RoundingGuard&) = delete;
-	RoundingGuard& operator=(const RoundingGuard&) = delete;
-private:
-	int saved_mode_;
-};
+namespace detail {
+
+template<typename T>
+inline T next_up(T x) noexcept {
+	return std::nextafter(x, std::numeric_limits<T>::infinity());
+}
+
+template<typename T>
+inline T next_down(T x) noexcept {
+	return std::nextafter(x, -std::numeric_limits<T>::infinity());
+}
+
+/// The exact roundoff of a + b, given the rounded sum s (Knuth's TwoSum).
+/// Exact for every finite s, subnormal results included. The volatile
+/// temporaries keep an aggressive optimizer from algebraically cancelling the
+/// expression, which would defeat the whole point.
+template<typename T>
+inline T two_sum_roundoff(T a, T b, T s) noexcept {
+	volatile T bb = s - a;
+	volatile T lhs = a - (s - bb);
+	volatile T rhs = b - bb;
+	return T(lhs) + T(rhs);
+}
+
+/// a + b, rounded toward -infinity
+template<typename T>
+inline T add_down(T a, T b) noexcept {
+	T s = a + b;
+	if (!std::isfinite(s)) return s;
+	return (two_sum_roundoff(a, b, s) < T(0)) ? next_down(s) : s;
+}
+
+/// a + b, rounded toward +infinity
+template<typename T>
+inline T add_up(T a, T b) noexcept {
+	T s = a + b;
+	if (!std::isfinite(s)) return s;
+	return (two_sum_roundoff(a, b, s) > T(0)) ? next_up(s) : s;
+}
+
+template<typename T>
+inline T sub_down(T a, T b) noexcept { return add_down(a, T(-b)); }
+
+template<typename T>
+inline T sub_up(T a, T b) noexcept { return add_up(a, T(-b)); }
+
+/// The exact roundoff of a * b is fma(a, b, -p), which holds whenever the product
+/// neither overflows nor falls into the subnormal range; below the smallest normal
+/// the roundoff itself is no longer representable, so the sign cannot be trusted
+/// and the bound is widened unconditionally. An exactly zero operand is exact.
+template<typename T>
+inline bool product_roundoff(T a, T b, T p, T& roundoff) noexcept {
+	if (a == T(0) || b == T(0)) { roundoff = T(0); return true; }
+	if (std::abs(p) < std::numeric_limits<T>::min()) return false;
+	roundoff = std::fma(a, b, -p);
+	return std::isfinite(roundoff);
+}
+
+template<typename T>
+inline T mul_down(T a, T b) noexcept {
+	T p = a * b;
+	if (!std::isfinite(p)) return p;
+	T e;
+	if (!product_roundoff(a, b, p, e)) return next_down(p);
+	return (e < T(0)) ? next_down(p) : p;
+}
+
+template<typename T>
+inline T mul_up(T a, T b) noexcept {
+	T p = a * b;
+	if (!std::isfinite(p)) return p;
+	T e;
+	if (!product_roundoff(a, b, p, e)) return next_up(p);
+	return (e > T(0)) ? next_up(p) : p;
+}
+
+/// Where the true quotient sits relative to the rounded one.
+enum class quotient_position { exact, above, below, unknown };
+
+/// For a quotient q of a / b, fma(-q, b, a) is the exact residual a - q*b, and the
+/// true quotient lies above q exactly when that residual has the same sign as b.
+/// The residual is not to be trusted for a subnormal quotient, as for the product.
+template<typename T>
+inline quotient_position locate_quotient(T a, T b, T q) noexcept {
+	if (a == T(0)) return quotient_position::exact;
+	if (std::abs(q) < std::numeric_limits<T>::min()) return quotient_position::unknown;
+	T r = std::fma(-q, b, a);
+	if (!std::isfinite(r)) return quotient_position::unknown;
+	if (r == T(0)) return quotient_position::exact;
+	return ((r > T(0)) == (b > T(0))) ? quotient_position::above : quotient_position::below;
+}
+
+template<typename T>
+inline T div_down(T a, T b) noexcept {
+	T q = a / b;
+	if (!std::isfinite(q)) return q;
+	const quotient_position where = locate_quotient(a, b, q);
+	return (where == quotient_position::below || where == quotient_position::unknown)
+		? next_down(q) : q;
+}
+
+template<typename T>
+inline T div_up(T a, T b) noexcept {
+	T q = a / b;
+	if (!std::isfinite(q)) return q;
+	const quotient_position where = locate_quotient(a, b, q);
+	return (where == quotient_position::above || where == quotient_position::unknown)
+		? next_up(q) : q;
+}
+
+/// sqrt(x) is exact when x - r*r is zero; otherwise the true root lies above r
+/// when r*r undershoots x.
+template<typename T>
+inline T sqrt_down(T x) noexcept {
+	T r = std::sqrt(x);
+	if (!std::isfinite(r) || r == T(0)) return r;
+	T e = std::fma(-r, r, x);
+	if (!std::isfinite(e)) return next_down(r);
+	return (e < T(0)) ? next_down(r) : r;
+}
+
+template<typename T>
+inline T sqrt_up(T x) noexcept {
+	T r = std::sqrt(x);
+	if (!std::isfinite(r) || r == T(0)) return r;
+	T e = std::fma(-r, r, x);
+	if (!std::isfinite(e)) return next_up(r);
+	return (e > T(0)) ? next_up(r) : r;
+}
+
+} // namespace detail
 
 // ============================================================================
 // TrackedBounded: Interval-based rigorous error tracking
@@ -147,20 +275,26 @@ public:
 		return radius();
 	}
 
-	/// Get the relative error bound
+	/// Get the relative error bound.
+	/// A zero-width interval is exact whatever it brackets, zero included: there is
+	/// no relative error to report. Only a value that spans zero has a relative
+	/// error with no meaning, and that is the case the infinity is for.
 	T relative_error() const noexcept {
+		T r = radius();
+		if (r == T(0)) return T(0);
 		T mid = value();
 		if (mid == T(0)) return std::numeric_limits<T>::infinity();
-		return radius() / std::abs(mid);
+		return r / std::abs(mid);
 	}
 
-	/// Estimate valid bits of precision, capped at type precision
+	/// Estimate valid bits of precision, clamped to [0, the type's precision]
 	double valid_bits() const noexcept {
 		constexpr double type_precision = static_cast<double>(std::numeric_limits<T>::digits);
 		T rel = relative_error();
 		if (rel <= T(0)) return type_precision;
 		if (!std::isfinite(rel)) return 0.0;
-		return std::min(type_precision, -std::log2(static_cast<double>(rel)));
+		// an interval wider than its own midpoint has nothing left to report
+		return std::min(type_precision, std::max(0.0, -std::log2(static_cast<double>(rel))));
 	}
 
 	/// Check if the interval is exact (zero width)
@@ -190,32 +324,18 @@ public:
 	// Arithmetic operators
 	// ------------------------------------------------------------------------
 
-	/// Addition with directed rounding
+	/// Addition with outward rounding
 	TrackedBounded operator+(const TrackedBounded& rhs) const {
-		T new_lo, new_hi;
-		{
-			RoundingGuard guard(FE_DOWNWARD);
-			new_lo = lo_ + rhs.lo_;
-		}
-		{
-			RoundingGuard guard(FE_UPWARD);
-			new_hi = hi_ + rhs.hi_;
-		}
-		return TrackedBounded(new_lo, new_hi, ops_ + rhs.ops_ + 1);
+		return TrackedBounded(detail::add_down(lo_, rhs.lo_),
+		                      detail::add_up(hi_, rhs.hi_),
+		                      ops_ + rhs.ops_ + 1);
 	}
 
-	/// Subtraction with directed rounding
+	/// Subtraction with outward rounding
 	TrackedBounded operator-(const TrackedBounded& rhs) const {
-		T new_lo, new_hi;
-		{
-			RoundingGuard guard(FE_DOWNWARD);
-			new_lo = lo_ - rhs.hi_;  // lo - hi for lower bound
-		}
-		{
-			RoundingGuard guard(FE_UPWARD);
-			new_hi = hi_ - rhs.lo_;  // hi - lo for upper bound
-		}
-		return TrackedBounded(new_lo, new_hi, ops_ + rhs.ops_ + 1);
+		return TrackedBounded(detail::sub_down(lo_, rhs.hi_),   // lo - hi for the lower bound
+		                      detail::sub_up(hi_, rhs.lo_),     // hi - lo for the upper bound
+		                      ops_ + rhs.ops_ + 1);
 	}
 
 	/// Unary negation
@@ -223,44 +343,26 @@ public:
 		return TrackedBounded(-hi_, -lo_, ops_);
 	}
 
-	/// Multiplication with directed rounding
+	/// Multiplication with outward rounding
 	/// Must consider all four products to handle signs correctly
 	TrackedBounded operator*(const TrackedBounded& rhs) const {
-		T new_lo, new_hi;
+		// each corner product, rounded down for the lower bound and up for the upper
+		const T products_lo[4] = { detail::mul_down(lo_, rhs.lo_), detail::mul_down(lo_, rhs.hi_),
+		                           detail::mul_down(hi_, rhs.lo_), detail::mul_down(hi_, rhs.hi_) };
+		const T products_hi[4] = { detail::mul_up(lo_, rhs.lo_), detail::mul_up(lo_, rhs.hi_),
+		                           detail::mul_up(hi_, rhs.lo_), detail::mul_up(hi_, rhs.hi_) };
 
-		// Compute all four possible products with appropriate rounding
-		T products_lo[4], products_hi[4];
-		{
-			RoundingGuard guard(FE_DOWNWARD);
-			products_lo[0] = lo_ * rhs.lo_;
-			products_lo[1] = lo_ * rhs.hi_;
-			products_lo[2] = hi_ * rhs.lo_;
-			products_lo[3] = hi_ * rhs.hi_;
-		}
-		{
-			RoundingGuard guard(FE_UPWARD);
-			products_hi[0] = lo_ * rhs.lo_;
-			products_hi[1] = lo_ * rhs.hi_;
-			products_hi[2] = hi_ * rhs.lo_;
-			products_hi[3] = hi_ * rhs.hi_;
-		}
-
-		// Find min of all lower-rounded products for new_lo
-		new_lo = products_lo[0];
+		T new_lo = products_lo[0];
+		T new_hi = products_hi[0];
 		for (int i = 1; i < 4; ++i) {
 			new_lo = std::min(new_lo, products_lo[i]);
-		}
-
-		// Find max of all upper-rounded products for new_hi
-		new_hi = products_hi[0];
-		for (int i = 1; i < 4; ++i) {
 			new_hi = std::max(new_hi, products_hi[i]);
 		}
 
 		return TrackedBounded(new_lo, new_hi, ops_ + rhs.ops_ + 1);
 	}
 
-	/// Division with directed rounding
+	/// Division with outward rounding
 	/// Requires that rhs does not contain zero
 	TrackedBounded operator/(const TrackedBounded& rhs) const {
 		// Check for division by interval containing zero
@@ -273,28 +375,14 @@ public:
 			);
 		}
 
-		T new_lo, new_hi;
+		// each corner quotient, rounded down for the lower bound and up for the upper
+		const T quotients_lo[4] = { detail::div_down(lo_, rhs.lo_), detail::div_down(lo_, rhs.hi_),
+		                            detail::div_down(hi_, rhs.lo_), detail::div_down(hi_, rhs.hi_) };
+		const T quotients_hi[4] = { detail::div_up(lo_, rhs.lo_), detail::div_up(lo_, rhs.hi_),
+		                            detail::div_up(hi_, rhs.lo_), detail::div_up(hi_, rhs.hi_) };
 
-		// Compute all four possible quotients with appropriate rounding
-		T quotients_lo[4], quotients_hi[4];
-		{
-			RoundingGuard guard(FE_DOWNWARD);
-			quotients_lo[0] = lo_ / rhs.lo_;
-			quotients_lo[1] = lo_ / rhs.hi_;
-			quotients_lo[2] = hi_ / rhs.lo_;
-			quotients_lo[3] = hi_ / rhs.hi_;
-		}
-		{
-			RoundingGuard guard(FE_UPWARD);
-			quotients_hi[0] = lo_ / rhs.lo_;
-			quotients_hi[1] = lo_ / rhs.hi_;
-			quotients_hi[2] = hi_ / rhs.lo_;
-			quotients_hi[3] = hi_ / rhs.hi_;
-		}
-
-		// Find min/max
-		new_lo = quotients_lo[0];
-		new_hi = quotients_hi[0];
+		T new_lo = quotients_lo[0];
+		T new_hi = quotients_hi[0];
 		for (int i = 1; i < 4; ++i) {
 			new_lo = std::min(new_lo, quotients_lo[i]);
 			new_hi = std::max(new_hi, quotients_hi[i]);
@@ -325,25 +413,37 @@ public:
 	}
 
 	// ------------------------------------------------------------------------
-	// Comparison operators (for ordering, uses midpoint)
+	// Comparison operators
 	// ------------------------------------------------------------------------
+	//
+	// Intervals are only PARTIALLY ordered: two that overlap have no order between
+	// them, because the true values they stand for may fall either way round. These
+	// operators therefore answer on the bounds, and agree with operator==.
+	//
+	// They used to compare midpoints, which pretends to a total order and disagreed
+	// with operator== -- [0,2] and [1,1] were neither less, nor greater, nor equal
+	// (#1547). Reach for definitely_less / definitely_greater / overlaps when the
+	// distinction matters at a call site.
 
+	/// Every value in this interval is below every value in rhs
 	bool operator<(const TrackedBounded& rhs) const {
-		return value() < rhs.value();
+		return hi_ < rhs.lo_;
 	}
 
+	/// Every value in this interval is above every value in rhs
 	bool operator>(const TrackedBounded& rhs) const {
-		return value() > rhs.value();
+		return lo_ > rhs.hi_;
 	}
 
 	bool operator<=(const TrackedBounded& rhs) const {
-		return value() <= rhs.value();
+		return hi_ <= rhs.lo_ || *this == rhs;
 	}
 
 	bool operator>=(const TrackedBounded& rhs) const {
-		return value() >= rhs.value();
+		return lo_ >= rhs.hi_ || *this == rhs;
 	}
 
+	/// Same interval, not merely an overlapping one
 	bool operator==(const TrackedBounded& rhs) const {
 		return lo_ == rhs.lo_ && hi_ == rhs.hi_;
 	}
@@ -380,7 +480,7 @@ public:
 	// Mathematical functions
 	// ------------------------------------------------------------------------
 
-	/// Square root with directed rounding
+	/// Square root with outward rounding
 	friend TrackedBounded sqrt(const TrackedBounded& x) {
 		if (x.hi_ < T(0)) {
 			// Entirely negative - return NaN interval
@@ -388,16 +488,9 @@ public:
 			return TrackedBounded(nan, nan, x.ops_ + 1);
 		}
 
-		T new_lo, new_hi;
-		{
-			RoundingGuard guard(FE_DOWNWARD);
-			new_lo = std::sqrt(std::max(x.lo_, T(0)));
-		}
-		{
-			RoundingGuard guard(FE_UPWARD);
-			new_hi = std::sqrt(x.hi_);
-		}
-		return TrackedBounded(new_lo, new_hi, x.ops_ + 1);
+		return TrackedBounded(detail::sqrt_down(std::max(x.lo_, T(0))),
+		                      detail::sqrt_up(x.hi_),
+		                      x.ops_ + 1);
 	}
 
 	/// Absolute value
@@ -484,8 +577,9 @@ using TrackedBoundedDouble = TrackedBounded<double>;
 /// Compute enclosing interval for a value with relative uncertainty
 template<typename T>
 TrackedBounded<T> make_uncertain(T value, T relative_uncertainty) {
-	T delta = std::abs(value) * relative_uncertainty;
-	return TrackedBounded<T>(value - delta, value + delta);
+	// rounded outward, so the interval is never narrower than the uncertainty asked for
+	T delta = detail::mul_up(std::abs(value), relative_uncertainty);
+	return TrackedBounded<T>(detail::sub_down(value, delta), detail::add_up(value, delta));
 }
 
 /// Compute intersection of two intervals (empty if disjoint)

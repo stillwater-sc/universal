@@ -423,12 +423,17 @@ public:
 
 	// radius (half-width) of the interval -- rounded UP so that mid() +/- rad()
 	// still covers [lo, hi] (#1234). Not constexpr: nextafter is a runtime op.
+	// A degenerate interval has no width to round outward from: it is exactly zero,
+	// and rounding that up to a subnormal made is_exact() and a zero width disagree
+	// (#1547).
 	Scalar rad() const noexcept {
+		if (_lo == _hi) return Scalar(0);
 		return interval_detail::round_up(Scalar((_hi - _lo) / Scalar(2)));
 	}
 
 	// width of the interval -- rounded UP so it never underestimates the true width
 	Scalar width() const noexcept {
+		if (_lo == _hi) return Scalar(0);
 		return interval_detail::round_up(Scalar(_hi - _lo));
 	}
 

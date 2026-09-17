@@ -110,6 +110,11 @@ struct error_tracking_traits {
 
 	/// Number of bits in the type (0 if unknown/variable)
 	static constexpr unsigned nbits = 0;
+
+	/// Number of fraction bits, where the type has a meaningful one (0 if not).
+	/// nbits counts the whole encoding, so it is not a precision: an lns<32,8> is
+	/// 32 bits wide but keeps only 8 fractional bits of the logarithm (#1546).
+	static constexpr unsigned rbits = 0;
 };
 
 // ============================================================================
@@ -208,8 +213,8 @@ struct error_tracking_traits<posit<_nbits, es, bt>> {
 // Only addition/subtraction introduces error
 // ============================================================================
 
-template<unsigned _nbits, unsigned rbits, typename bt, auto...x>
-struct error_tracking_traits<lns<_nbits, rbits, bt, x...>> {
+template<unsigned _nbits, unsigned _rbits, typename bt, auto...x>
+struct error_tracking_traits<lns<_nbits, _rbits, bt, x...>> {
 	static constexpr bool has_exact_errors = false;      // No two_sum
 	static constexpr bool has_directed_rounding = false;
 	static constexpr bool exact_multiplication = true;   // KEY: Mult is exact!
@@ -219,6 +224,7 @@ struct error_tracking_traits<lns<_nbits, rbits, bt, x...>> {
 
 	using shadow_type = double;
 	static constexpr unsigned nbits = _nbits;
+	static constexpr unsigned rbits = _rbits;   // fractional bits of the logarithm
 };
 
 // ============================================================================
