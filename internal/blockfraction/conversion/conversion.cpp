@@ -161,7 +161,7 @@ try {
 		extractFields(v, s, rawExp, lowerBits, upperBits);
 		std::cout << "floating-point " << to_binary(v) << " : " << v << '\n';
 		std::cout << "exponent bits  " << to_binary(rawExp, true, 8) << '\n';
-		std::cout << "fraction bits  " << to_binary(lowerBits, true, 24) << '\n';
+		std::cout << "fraction bits  " << to_binary(lowerBits, true, 23) << '\n';
 		blockfraction<26, uint32_t> sp;
 		sp.setradix(23);
 		sp.setbits(lowerBits);
