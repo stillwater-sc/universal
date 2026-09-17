@@ -74,6 +74,7 @@ jobs:
             blockbinary
             blockdecimal
             blockdigit
+            blockfraction
             blocksignificand
             blocktriple
             floatcascade
