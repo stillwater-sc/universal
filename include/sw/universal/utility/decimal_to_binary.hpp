@@ -59,8 +59,10 @@
 // - "inf" / "nan" string literals are NOT handled here. Callers route them
 //   separately if they want stream-extraction parity with native floats.
 
-#include <cmath>     // std::ldexp
+#include <cfloat>    // LDBL_MANT_DIG, DBL_MANT_DIG: the width the magnitude estimate is carried in
+#include <cmath>     // std::ldexp; std::log2, std::floor, std::pow, std::nextafter for the magnitude estimate
 #include <cstdint>
+#include <type_traits> // std::conditional_t
 #include <string_view>
 #include <universal/utility/string_parse.hpp>
 // the ARITHMETIC core only: this header is reached from posit, cfloat, fixpnt, dd and
@@ -242,8 +244,10 @@ inline std::uint64_t required_working_bits(const sw::universal::string_parse::de
 }
 
 // Copy a conversion produced at one working width into the caller's width.
-// The normalized mantissa occupies target_mantissa_bits + 2 bits at most, so
-// this is always a widening (or identity) copy of a small value.
+// The normalized mantissa occupies target_mantissa_bits + 2 bits at most, and
+// convert() only calls this once target_mantissa_bits fits the caller's width, so
+// the copy is lossless in either direction: widening from a narrow speed-dispatch
+// width, or narrowing from a working width wider than the caller's (#1504).
 template<unsigned Out, unsigned Work>
 inline basic_result<Out> rewidth(const basic_result<Work>& in) {
 	basic_result<Out> out;
@@ -254,6 +258,98 @@ inline basic_result<Out> rewidth(const basic_result<Work>& in) {
 	out.mantissa     = big_integer<Out>(in.mantissa);
 	out.guard_bit    = in.guard_bit;
 	out.sticky_bit   = in.sticky_bit;
+	return out;
+}
+
+// The value of decimal text whose exact conversion needs more working bits than the widest
+// rung convert() offers (#1504). Such input comes in two kinds, and they deserve different
+// answers:
+//
+//  - A SHORT number with a HUGE exponent, like 1e100000 or 7e-15000. The digits are few; it is
+//    the exponent alone that makes 5^|E| enormous. Every fixed-size parser either saturates such
+//    a value -- to infinity, or to zero -- or, for a type with a very wide exponent field, can
+//    hold it. Saturating needs only the binary exponent, and that comes cheaply and exactly from
+//    the leading digits and log2(10). The mantissa is their value to the precision of a long
+//    double, with the sticky bit set to say it is not exact. This is what main used to produce
+//    by accident, through bits falling off the end; here it is produced on purpose, and the
+//    mantissa is approximate rather than garbage.
+//
+//  - A LONG digit string, whose digits alone need more room than the widest rung. Its exponent
+//    may be ordinary, so its value may well be representable, and an approximate mantissa would
+//    be exactly the silent wrong answer #1504 is about. It is refused.
+template<unsigned BigBits>
+inline basic_result<BigBits>
+convert_by_magnitude(const sw::universal::string_parse::decimal_float_scan& d,
+                     unsigned target_mantissa_bits,
+                     std::uint64_t widest_bits) {
+	basic_result<BigBits> out{};
+	out.valid    = false;
+	out.negative = d.negative;
+
+	const std::uint64_t digits = static_cast<std::uint64_t>(d.int_part.size())
+	                           + static_cast<std::uint64_t>(d.frac_part.size());
+	// the digits' own share of required_working_bits(): past the widest rung, this is a long
+	// digit string rather than a short number with a large exponent
+	const std::uint64_t digitBits = (digits * 3402u) / 1024u + 2u
+	                              + static_cast<std::uint64_t>(target_mantissa_bits) + 4u + 32u;
+	if (digitBits > widest_bits) return out;   // refused
+
+	// the leading significant digits, at most 19 of them so they fit a uint64_t, and the decimal
+	// exponent of the last one used: |value| = D * 10^q, give or take the digits left over
+	std::uint64_t D{ 0 };
+	int           used{ 0 };
+	std::int64_t  position = static_cast<std::int64_t>(d.int_part.size()) - 1;   // 10^position of the digit
+	std::int64_t  q{ 0 };
+	auto take = [&](char c) {
+		const unsigned digit = static_cast<unsigned>(c - '0');
+		if (used == 0 && digit == 0u) { --position; return; }   // a leading zero
+		if (used < 19) {   // digits past these only refine an estimate already marked inexact
+			D = D * 10u + digit;
+			++used;
+			q = position;
+		}
+		--position;
+	};
+	for (char c : d.int_part) take(c);
+	for (char c : d.frac_part) take(c);
+	if (used == 0) {   // every digit is zero
+		out.is_zero = true;
+		out.valid   = true;
+		return out;
+	}
+	q += static_cast<std::int64_t>(d.exp10);
+
+	// |value| = m * 2^e with m in [1, 2), from log2(D) + q * log2(10). The estimate is carried in
+	// long double where that is wider than double, for a few more mantissa bits, and in double
+	// where it is not: such a build gains nothing from long double, and on glibc with
+	// -mlong-double-64 the long double math library does not even agree with the type --
+	// log2l(1000) returns 1000 there. The choice follows the format, as #1534 has it.
+	using Estimate = std::conditional_t<(LDBL_MANT_DIG > DBL_MANT_DIG), long double, double>;
+	constexpr Estimate log2of10 = static_cast<Estimate>(3.321928094887362347870319429489390175864831393L);
+	const Estimate L = std::log2(static_cast<Estimate>(D)) + static_cast<Estimate>(q) * log2of10;
+	const Estimate e = std::floor(L);
+	Estimate m = std::pow(static_cast<Estimate>(2), L - e);
+	if (m < static_cast<Estimate>(1)) m = static_cast<Estimate>(1);   // guard the rounding at the boundaries
+	if (m >= static_cast<Estimate>(2)) m = std::nextafter(static_cast<Estimate>(2), static_cast<Estimate>(1));
+
+	// place m's bits with the MSB at target_mantissa_bits - 1
+	const std::uint64_t word = static_cast<std::uint64_t>(std::ldexp(m, 63));   // MSB at bit 63
+	using Big = big_integer<BigBits>;
+	const int top = static_cast<int>(target_mantissa_bits) - 1;
+	Big mantissa(0);
+	if (top >= 63) {
+		mantissa = Big(word);
+		mantissa <<= (top - 63);
+	}
+	else {
+		const int rshift = 63 - top;
+		mantissa = Big(word >> rshift);
+		out.guard_bit = ((word >> (rshift - 1)) & 1u) != 0u;
+	}
+	out.mantissa     = mantissa;
+	out.binary_scale = static_cast<std::int64_t>(e);
+	out.sticky_bit   = true;   // an estimate, never exact: say so to whoever rounds it
+	out.valid        = true;
 	return out;
 }
 
@@ -403,10 +499,26 @@ convert_at_width(const sw::universal::string_parse::decimal_float_scan& d,
 // in the limb count (universal#1319).
 //
 // The result is independent of the width chosen -- the working value is only
-// ever wider than it needs to be -- so this is purely a speed dispatch. Widths
-// beyond the largest instantiation (very large |exponent|, or a caller asking
-// for an unusually wide mantissa) fall back to the caller's own BigBits, which
-// is what the routine used to do unconditionally.
+// ever wider than it needs to be -- so below the caller's BigBits this is purely
+// a speed dispatch.
+//
+// ABOVE BigBits it is a correctness dispatch. Long decimal text needs more room
+// than 2048 bits: the exact expansion of 2^-600 needs ~3500, of 2^-1074 (double's
+// denorm_min) ~6200, and scientific notation across the x87 long double range
+// ~11600. Running those at BigBits anyway -- which is what this used to do -- lets
+// a shift run off the end of the integer, the bits vanish, and the result comes
+// back valid and wrong: cfloat's parse() of 2^-600 returned 0 and reported success
+// (#1504). The intermediates need the room, but the RESULT is still
+// target_mantissa_bits + 2 bits, so a wider working width narrows back into the
+// caller's BigBits without loss.
+//
+// Beyond the widest rung, see detail::convert_by_magnitude: a short number with a
+// huge exponent (1e100000) gets its exact binary exponent and an approximate,
+// sticky mantissa, so every parser saturates it as it always has; a digit string
+// too long to convert exactly is refused, valid == false, and the parse fails
+// rather than inventing a value.
+inline constexpr unsigned widest_working_bits = 32768u;
+
 template<unsigned BigBits = default_big_bits>
 inline basic_result<BigBits>
 convert(const sw::universal::string_parse::decimal_float_scan& d,
@@ -427,7 +539,30 @@ convert(const sw::universal::string_parse::decimal_float_scan& d,
 	if constexpr (BigBits > 2048u) {
 		if (need <= 2048u) return detail::rewidth<BigBits>(convert_at_width<2048u>(d, target_mantissa_bits));
 	}
-	return convert_at_width<BigBits>(d, target_mantissa_bits);
+	if (need <= BigBits) return convert_at_width<BigBits>(d, target_mantissa_bits);
+
+	// the intermediates need more than the caller's width: widen, then narrow the result back.
+	// Two rungs, not the full power-of-two ladder, because every translation unit that parses
+	// pays to instantiate each one. Measured on a minimal cfloat parse TU (2.88 s baseline) and on
+	// the exact expansion of every power of two in double's range:
+	//
+	//   rungs                    compile     2098 long conversions
+	//   4096/8192/16384/32768    +0.79 s     2.1 s
+	//   8192/32768               +0.45 s     2.8 s
+	//   32768                    +0.26 s    37.2 s
+	//
+	// 8192 covers every exact expansion in double's range (2^-1074 needs ~6200 bits) and 32768
+	// covers scientific notation across x87 long double's (~11600). They are the widths areal's
+	// parser already chose, so it can defer to this.
+	if constexpr (BigBits < 8192u) {
+		if (need <= 8192u)  return detail::rewidth<BigBits>(convert_at_width<8192u>(d, target_mantissa_bits));
+	}
+	if constexpr (BigBits < widest_working_bits) {
+		if (need <= widest_working_bits) return detail::rewidth<BigBits>(convert_at_width<widest_working_bits>(d, target_mantissa_bits));
+	}
+	// past the widest rung: a short number with a huge exponent saturates from its magnitude, and
+	// a digit string too long to convert exactly is refused rather than losing bits
+	return detail::convert_by_magnitude<BigBits>(d, target_mantissa_bits, widest_working_bits);
 }
 
 // Convenience overload: parse the string in one call.
