@@ -732,7 +732,50 @@ inline int sign_adaptive(const std::vector<double>& e) {
  *
  * Note: Result may have up to 2*m*n components before compression
  */
-inline std::vector<double> expansion_product(const std::vector<double>& e, const std::vector<double>& f) {
+/*
+ * RANGE MANAGEMENT AT THE TOP OF DOUBLE'S RANGE (#1553)
+ * ======================================================
+ *
+ * The error-free transformations underneath these operations compute a rounded
+ * result and then its roundoff. When the rounded LEADING term overflows, the roundoff
+ * comes out as inf - inf = NaN, and renormalization spreads that NaN through every
+ * component: DBL_MAX + DBL_MAX was [nan, nan] rather than inf. The same happens inside
+ * an algorithm whose true result is in range -- DBL_MAX / 2 was NaN, because the
+ * product with the divisor's reciprocal overflowed on the way.
+ *
+ * So each operation near the top of the range scales its operands down by an exact
+ * power of two, computes where nothing can overflow, and scales the result back up.
+ * Rounding commutes with power-of-two scaling, so this is exact; and a result whose
+ * leading component overflows on the way back up is a genuine overflow, for which the
+ * IEEE answer is a single signed infinity. The components beneath it would be
+ * meaningless, so they are dropped.
+ */
+namespace expansion_range {
+
+    // scale every component by 2^s: exact unless a component leaves the normal range
+    inline std::vector<double> scaled(const std::vector<double>& e, int s) {
+        std::vector<double> r(e.size());
+        for (std::size_t i = 0; i < e.size(); ++i) r[i] = std::ldexp(e[i], s);
+        return r;
+    }
+
+    // a leading component that overflowed on the way back up is the whole answer
+    inline std::vector<double> canonical_overflow(std::vector<double> r) {
+        if (!r.empty() && std::isinf(r[0])) return std::vector<double>{ r[0] };
+        return r;
+    }
+
+    // exponent of an expansion's leading component, or a floor for zero / non-finite
+    inline int leading_exponent(const std::vector<double>& e) {
+        if (e.empty() || e[0] == 0.0 || !std::isfinite(e[0])) return -1100;
+        return std::ilogb(e[0]);
+    }
+
+}
+
+// expansion_product without range management: the caller guarantees the product of the
+// leading components cannot overflow
+inline std::vector<double> expansion_product_in_range(const std::vector<double>& e, const std::vector<double>& f) {
     if (e.empty() || f.empty()) return std::vector<double>{0.0};
 
     // Handle zero cases
@@ -760,6 +803,38 @@ inline std::vector<double> expansion_product(const std::vector<double>& e, const
     result = renormalize_expansion(result);
     if (result.empty()) result.push_back(0.0);  // canonical zero
     return result;
+}
+
+inline std::vector<double> expansion_product(const std::vector<double>& e, const std::vector<double>& f) {
+    using namespace expansion_range;
+    // Leading components at 2^a and 2^b multiply to at most 2^(a+b+2). Below a combined
+    // exponent of 1000 nothing can overflow, and the product runs unscaled, exactly as it
+    // always has. Above it, the excess is taken off both operands -- split between them,
+    // so neither has its smallest components pushed toward the subnormal range -- and put
+    // back on the result.
+    const int combined = leading_exponent(e) + leading_exponent(f);
+    if (combined <= 1000) return expansion_product_in_range(e, f);
+    const int excess = combined - 1000;
+    const int se = excess / 2;
+    const int sf = excess - se;
+    return canonical_overflow(scaled(expansion_product_in_range(scaled(e, -se), scaled(f, -sf)), excess));
+}
+
+/*
+ * EXPANSION-SUM (range managed): the sum of two expansions, renormalized
+ * =====================================================================
+ *
+ * linear_expansion_sum followed by renormalize_expansion, with the operands scaled
+ * down first when either leading component is within a factor of four of overflow:
+ * two values below 2^1021 cannot sum past 2^1022, so a shift of at most three bits
+ * is all the headroom a sum ever needs (#1553).
+ */
+inline std::vector<double> expansion_sum_normalized(const std::vector<double>& e, const std::vector<double>& f) {
+    using namespace expansion_range;
+    const int top = std::max(leading_exponent(e), leading_exponent(f));
+    if (top <= 1020) return renormalize_expansion(linear_expansion_sum(e, f));
+    const int shift = top - 1020;
+    return canonical_overflow(scaled(renormalize_expansion(linear_expansion_sum(scaled(e, -shift), scaled(f, -shift))), shift));
 }
 
 /*
@@ -841,8 +916,20 @@ inline std::vector<double> expansion_quotient(const std::vector<double>& e, cons
     std::vector<double> fscaled(f.size());
     for (std::size_t i = 0; i < f.size(); ++i) fscaled[i] = std::ldexp(f[i], -k);
     std::vector<double> reciprocal = expansion_reciprocal(fscaled, iterations);
-    std::vector<double> quotient = expansion_product(e, reciprocal);
-    for (auto& v : quotient) v = std::ldexp(v, -k);  // exact: * 2^-k
+    // The reciprocal of f' lies in (1, 2], so the product below can be up to twice the
+    // dividend. For a dividend near the top of double's range that product overflowed
+    // even when the true quotient is nowhere near the limit: DBL_MAX / 2 and DBL_MAX / 1e10
+    // both came back NaN in every limb (#1553). A large dividend is scaled down first --
+    // only as far as needed, so its smallest components are not pushed into the subnormal
+    // range -- and the scaling is undone by the same exact ldexp that undoes 2^k.
+    const int headroom = (!e.empty() && e[0] != 0.0 && std::isfinite(e[0]))
+                       ? std::max(0, std::ilogb(e[0]) - 1000) : 0;
+    std::vector<double> escaled(e.size());
+    for (std::size_t i = 0; i < e.size(); ++i) escaled[i] = std::ldexp(e[i], -headroom);
+    std::vector<double> quotient = expansion_product(escaled, reciprocal);
+    for (auto& v : quotient) v = std::ldexp(v, headroom - k);  // exact: * 2^(headroom - k)
+    // a leading component that overflowed on the way back is a genuine overflow
+    if (!quotient.empty() && std::isinf(quotient[0])) return std::vector<double>{ quotient[0] };
     // ldexp can underflow the smallest components to 0; renormalize to strip
     // those zeros and restore Priest canonical (non-overlapping, no interior
     // zero) form.
