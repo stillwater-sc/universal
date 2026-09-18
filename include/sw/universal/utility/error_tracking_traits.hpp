@@ -131,6 +131,7 @@ struct error_tracking_traits<float> {
 	static constexpr ErrorStrategy default_strategy = ErrorStrategy::Exact;
 	using shadow_type = double;
 	static constexpr unsigned nbits = 32;
+	static constexpr unsigned rbits = 0;   // not a fraction-bit encoding
 };
 
 // ============================================================================
@@ -147,6 +148,7 @@ struct error_tracking_traits<double> {
 	static constexpr ErrorStrategy default_strategy = ErrorStrategy::Exact;
 	using shadow_type = long double;
 	static constexpr unsigned nbits = 64;
+	static constexpr unsigned rbits = 0;   // not a fraction-bit encoding
 };
 
 // ============================================================================
@@ -163,6 +165,7 @@ struct error_tracking_traits<long double> {
 	static constexpr ErrorStrategy default_strategy = ErrorStrategy::Exact;
 	using shadow_type = long double;  // No higher precision available
 	static constexpr unsigned nbits = sizeof(long double) * 8;
+	static constexpr unsigned rbits = 0;   // not a fraction-bit encoding
 };
 
 // ============================================================================
@@ -184,6 +187,7 @@ struct error_tracking_traits<cfloat<_nbits, es, bt, hasSubnormals, hasMaxExpValu
 	// Shadow to double if small, long double if larger
 	using shadow_type = std::conditional_t<(_nbits <= 32), double, long double>;
 	static constexpr unsigned nbits = _nbits;
+	static constexpr unsigned rbits = 0;   // not a fraction-bit encoding
 };
 
 // ============================================================================
@@ -204,6 +208,7 @@ struct error_tracking_traits<posit<_nbits, es, bt>> {
 	// Use double for small posits, long double for larger
 	using shadow_type = std::conditional_t<(_nbits <= 32), double, long double>;
 	static constexpr unsigned nbits = _nbits;
+	static constexpr unsigned rbits = 0;   // not a fraction-bit encoding
 };
 
 // ============================================================================
@@ -249,6 +254,7 @@ struct error_tracking_traits<areal<_nbits, es, bt>> {
 	// Shadow typically not needed since uncertainty is tracked natively
 	using shadow_type = double;
 	static constexpr unsigned nbits = _nbits;
+	static constexpr unsigned rbits = 0;   // not a fraction-bit encoding
 };
 
 // ============================================================================
@@ -269,6 +275,7 @@ struct error_tracking_traits<interval<Scalar>> {
 	// Self-shadowing: interval bounds themselves
 	using shadow_type = interval<Scalar>;
 	static constexpr unsigned nbits = 2 * error_tracking_traits<Scalar>::nbits;
+	static constexpr unsigned rbits = 0;   // not a fraction-bit encoding
 };
 
 // ============================================================================
@@ -287,6 +294,7 @@ struct error_tracking_traits<valid<_nbits, es>> {
 
 	using shadow_type = valid<_nbits, es>;  // Self-shadowing
 	static constexpr unsigned nbits = 2 * _nbits;  // Two posit bounds
+	static constexpr unsigned rbits = 0;   // not a fraction-bit encoding
 };
 
 // ============================================================================

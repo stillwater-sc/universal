@@ -193,7 +193,10 @@ public:
 	/// needs told about: a difference that cancels in the shadow but not in the LNS
 	/// encoding has lost every significant bit (#1546).
 	double relative_error() const noexcept {
-		if (std::abs(shadow_) < std::numeric_limits<double>::min()) {
+		// Only an exactly zero shadow has no relative error to speak of. A subnormal
+		// one is small, not meaningless: dividing by it gives a huge relative error,
+		// which is the right answer, and valid_bits() floors an overflow at zero bits.
+		if (shadow_ == ShadowType(0)) {
 			return (error() == 0.0) ? 0.0 : std::numeric_limits<double>::infinity();
 		}
 		return error() / std::abs(static_cast<double>(shadow_));

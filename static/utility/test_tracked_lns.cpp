@@ -33,6 +33,7 @@
 #include <string>
 
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/utility/tracked_lns.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -426,6 +427,20 @@ namespace {
 			fails += expect_exact(lost.valid_bits(), 0.0, "and no valid bits", reportTestCases);
 		}
 
+		// Only an EXACTLY zero shadow is treated that way. A subnormal shadow is merely
+		// small: the relative error against it is enormous but computable, and reporting
+		// it beats declaring the question meaningless.
+		{
+			const double subnormal = std::numeric_limits<double>::denorm_min();
+			Tracked32 tiny(LNS32(0.0), subnormal, 0.0, 0, 0, 0, 0, 0);
+			fails += expect_exact(tiny.error(), subnormal, "the gap to a subnormal shadow",
+				reportTestCases);
+			fails += expect_exact(tiny.relative_error(), 1.0,
+				"a relative error of one, not an infinity", reportTestCases);
+			fails += expect_true(std::isfinite(tiny.relative_error()),
+				"a subnormal shadow still has a relative error", reportTestCases);
+		}
+
 		// A difference that really is zero, on the other hand, is exactly right, and
 		// says so -- the cancellation counter records the event without the metrics
 		// pretending the answer is wrong.
@@ -456,6 +471,32 @@ namespace {
 				"an accumulation reports fewer than the cap", reportTestCases);
 			fails += expect_true(sum.valid_bits() > 0.0, "but not none", reportTestCases);
 		}
+
+		return fails;
+	}
+
+	// ---- the tracker still instantiates for a type that is not an LNS ------------------
+	//
+	// TrackedLNS has no static_assert constraining its parameter, and valid_bits() reads
+	// error_tracking_traits<T>::rbits. An explicit specialization inherits nothing from
+	// the primary template, so every specialization has to define rbits or this stops
+	// compiling -- which it did while only the primary and lns had it.
+
+	int VerifyNonLnsInstantiation(bool reportTestCases) {
+		int fails = 0;
+
+		TrackedLNS<double> plain = 3.0;
+		fails += expect_exact(plain.value(), 3.0, "a double-backed tracker holds its value",
+			reportTestCases);
+		fails += expect_exact(plain.error(), 0.0, "and has no representation error", reportTestCases);
+		fails += expect_true(plain.valid_bits() > 0.0, "valid_bits instantiates and answers",
+			reportTestCases);
+
+		// the same for a tracker over a posit, whose traits also carry no fraction bits
+		TrackedLNS<posit<32, 2>> tapered = 4.0;
+		fails += expect_exact(double(tapered.value()), 4.0, "a posit-backed tracker holds its value",
+			reportTestCases);
+		fails += expect_true(tapered.valid_bits() > 0.0, "and reports valid bits", reportTestCases);
 
 		return fails;
 	}
@@ -539,6 +580,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyResetOnAssignment(reportTestCases), test_tag, "reset on assignment");
 	nrOfFailedTestCases += ReportTestResult(VerifyNarrowerIsCoarser(reportTestCases), test_tag, "narrower is coarser");
 	nrOfFailedTestCases += ReportTestResult(VerifyTypeTag(reportTestCases), test_tag, "type tag");
+	nrOfFailedTestCases += ReportTestResult(VerifyNonLnsInstantiation(reportTestCases), test_tag, "non-LNS instantiation");
 	nrOfFailedTestCases += ReportTestResult(VerifyErrorMetrics(reportTestCases), test_tag, "error metrics");
 #endif
 
