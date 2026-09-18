@@ -37,19 +37,30 @@ std::string type_tag(const areal<nbits, es, bt>& = {}) {
 template<unsigned nbits, unsigned es, typename bt>
 std::string components(const areal<nbits, es, bt>& v) {
 	std::stringstream ss;
+	// decode() takes the exponent and fraction as blockbinary fields, and fbits is a
+	// static member of the type -- not of the value. Reading them off an instance, with
+	// an int exponent, is why this template never compiled: nothing instantiated it, and
+	// a function template's body is not checked until it is (#1453).
+	constexpr unsigned fbits = areal<nbits, es, bt>::fbits;
 	bool s{ false };
-	int  e{ 0 };
-	blockbinary<v.fbits> f;
+	blockbinary<es, bt> e;
+	blockbinary<fbits, bt> f;
 	bool u{ false };
 	decode(v, s, e, f, u);
 
 	// TODO: hardcoded field width is governed by pretty printing areal tables, which by construction will always be small areals
-	ss << std::setw(14) << to_binary(v) 
-		<< " Sign : " << std::setw(2) << s
-		<< " Exponent : " << std::setw(5) << e
-		<< " Fraction : " << std::setw(8) << std::setprecision(21) << "TBD"
-		<< " Uncertainty : " << std::setw(2) << u
-		<< " Value : " << std::setw(16) << u;
+	// the fields are rendered bit by bit, the way pretty_print in this header does:
+	// to_binary(blockbinary) is not reachable from the manipulator layer (#1334)
+	std::string ebits, fbits_str;
+	for (int i = int(es) - 1; i >= 0; --i)    ebits     += (e.test(static_cast<size_t>(i)) ? '1' : '0');
+	for (int i = int(fbits) - 1; i >= 0; --i) fbits_str += (f.test(static_cast<size_t>(i)) ? '1' : '0');
+
+	ss << std::setw(14) << to_binary(v)
+		<< " Sign : " << std::setw(2) << (s ? '1' : '0')
+		<< " Exponent : " << std::setw(5) << ebits
+		<< " Fraction : " << std::setw(8) << fbits_str
+		<< " Uncertainty : " << std::setw(2) << (u ? '1' : '0')
+		<< " Value : " << std::setw(16) << double(v);
 
 	return ss.str();
 }

@@ -55,13 +55,18 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
-inline std::string to_binary(e8m0 v, bool = false) {
+inline std::string to_binary(e8m0 v, bool nibbleMarker = false) {
 	std::stringstream ss;
 	uint8_t bits = v.bits();
 	ss << "0b";
 	for (int j = 7; j >= 0; --j) {
 		ss << ((bits & (1u << j)) ? '1' : '0');
-		if (j == 4) ss << '.'; // visual separator at nibble boundary
+		// Tree convention: '.' separates FIELDS and is unconditional, '\'' marks nibbles
+		// and is emitted only on request. e8m0 is eight exponent bits with no sign and no
+		// fraction, so it has no field boundary at all -- the '.' it used to print here
+		// unconditionally was a nibble marker wearing the field separator's character,
+		// and it ignored the flag that mxfloat and nvblock forward (#1434).
+		if (nibbleMarker && j > 0 && (j % 4) == 0) ss << '\'';
 	}
 	return ss.str();
 }

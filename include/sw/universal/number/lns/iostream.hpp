@@ -22,9 +22,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const lns<nbits, rbits, bt, 
 
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 inline std::istream& operator>>(std::istream& istr, lns<nbits, rbits, bt, xtra...>& r) {
-	double item;
-	istr >> item;
-	r = item;
+	// A failed extraction leaves the target alone, which is what the rest of the tree does
+	// (bfloat16, dfloat, hfloat, ereal, einteger all return early on a failed read, and so
+	// do e8m0 and microfloat) and what native extraction does on a failed sentry. It also
+	// removes the read of an indeterminate value: on an already-failed stream the sentry
+	// fails, num_get never runs, and d is never written (#1450).
+	double d{};
+	if (istr >> d) r = d;
 	return istr;
 }
 

@@ -1367,6 +1367,12 @@ inline efloat<nlimbs> fabs(const efloat<nlimbs>& a) {
 // covers any literal a user types at ordinary precision.
 template<unsigned BigBits, unsigned nlimbs>
 bool parse(const std::string& txt, efloat<nlimbs>& value) {
+	// clear() leaves the Normal state with NO limbs, which is the state the digit loop
+	// below builds on -- but it is also a value no arithmetic produces: not zero to
+	// iszero() or operator==, printing as 0.000000e-01, with a truncated to_binary. Every
+	// `return false` used to hand that half-built value back, and assign() ignores the
+	// result, so a failed assign() left it in the caller's object (#1458). Each failure
+	// path now leaves the canonical zero instead.
 	value.clear();
 
 	std::string s = txt;
@@ -1375,7 +1381,10 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	auto first = std::find_if(s.begin(), s.end(), not_space);
 	auto last  = std::find_if(s.rbegin(), s.rend(), not_space).base();
 	s = (first < last) ? std::string(first, last) : std::string{};
-	if (s.empty()) return false;
+	if (s.empty()) {
+		value.setzero();   // empty or whitespace-only input
+		return false;
+	}
 
 	// nan / inf / infinity tokens (case-insensitive, optional leading sign).
 	{
@@ -1416,7 +1425,10 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	// rounded to that ceiling. Callers needing more precision or a wider magnitude
 	// pass a larger BigBits, e.g. parse<16384>(...).
 	auto scan = sw::universal::string_parse::scan_decimal_float(s);
-	if (!scan.valid) return false;
+	if (!scan.valid) {
+		value.setzero();   // malformed digits
+		return false;
+	}
 
 	const std::int64_t  E        = static_cast<std::int64_t>(scan.exp10)
 	                             - static_cast<std::int64_t>(scan.frac_part.size());
@@ -1428,7 +1440,10 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 
 	// If the digit-integer plus its 5^|E| growth cannot fit, this budget is too
 	// small for the literal's magnitude -- fail rather than overflow to garbage.
-	if (sig_bits + 3ull * mag + 64ull > BigBits) return false;
+	if (sig_bits + 3ull * mag + 64ull > BigBits) {
+		value.setzero();   // beyond the working budget (#1141)
+		return false;
+	}
 
 	// Overflow-safe target. For E<0 the shift is target-relative, so cap target
 	// below BigBits - (3*neg_E + sig_bits). For E>=0 the growth is target-
@@ -1448,7 +1463,10 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	if (target_bits == 0u) target_bits = 1u;
 
 	auto r = sw::universal::decimal_to_binary::convert<BigBits>(scan, target_bits);
-	if (!r.valid) return false;
+	if (!r.valid) {
+		value.setzero();   // the converter refused it
+		return false;
+	}
 
 	if (r.is_zero) {
 		value.setzero();

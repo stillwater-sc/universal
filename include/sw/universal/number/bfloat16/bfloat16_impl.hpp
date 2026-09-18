@@ -101,6 +101,7 @@ class bfloat16 {
 public:
 	static constexpr unsigned nbits = 16;
 	static constexpr unsigned es = 8;
+	static constexpr unsigned fbits = nbits - 1u - es;   // 7 explicit fraction bits
 
 	bfloat16() = default;
 
