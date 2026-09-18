@@ -17,7 +17,7 @@
 #include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -41,7 +41,7 @@ try {
 	constexpr bool hasMaxExpValues = true;
 	constexpr bool isSaturating    = true;
 
-	std::string test_suite         = "Arithmetic multiplication with classic saturating floating-point configurations with subnormals and max-exponent values";
+	std::string test_suite         = "classic cfloat saturating multiplication validation with subnormals, normals, and max-exponent values";
 	std::string test_tag           = "cfloat_ttt multiplication";
 	bool reportTestCases           = true;
 	int nrOfFailedTestCases        = 0;
@@ -168,6 +168,10 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<8, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 8, 5,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<8, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 8, 6,uint8_t,t,t,t>", "multiplication");
 
+#endif
+
+#if REGRESSION_LEVEL_2
+	// the 9-bit sweeps: about 11 s, too slow for level 1 under the sanitizer build
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<9, 1, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 1,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<9, 2, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 2,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<9, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 3,uint8_t,t,t,t>", "multiplication");
@@ -175,9 +179,6 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<9, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 5,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<9, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 6,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<9, 7, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 9, 7,uint8_t,t,t,t>", "multiplication");
-#endif
-
-#if REGRESSION_LEVEL_2
 #endif
 
 #if REGRESSION_LEVEL_3
@@ -232,7 +233,10 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<14, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14, 8,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<14, 9, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14, 9,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<14, 10, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14,10,uint8_t,t,t,t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<14, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<14,11,uint8_t,t,t,t>", "multiplication");
+	// cfloat<14..16,11> with max-exponent values are left out: their top binade reaches 2^1024,
+	// past DBL_MAX, so the double reference in cfloat_test_suite.hpp reads those operands as inf
+	// and reports a correct result as a failure (#1557). cfloat<13,11> has one fraction bit, so
+	// its top binade holds only inf and NaN, and it stays.
 
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<15, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15, 3,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<15, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15, 4,uint8_t,t,t,t>", "multiplication");
@@ -242,7 +246,6 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<15, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15, 8,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<15, 9, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15, 9,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<15, 10, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15,10,uint8_t,t,t,t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<15, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<15,11,uint8_t,t,t,t>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<16, 3, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16, 3,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<16, 4, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16, 4,uint8_t,t,t,t>", "multiplication");
@@ -252,7 +255,6 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<16, 8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16, 8,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<16, 9, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16, 9,uint8_t,t,t,t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<16, 10, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16,10,uint8_t,t,t,t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<16, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat<16,11,uint8_t,t,t,t>", "multiplication");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
