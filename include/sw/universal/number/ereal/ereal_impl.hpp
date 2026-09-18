@@ -273,17 +273,21 @@ public:
 	// residual, and `convert_to_ieee754` sums them back to NaN. To avoid
 	// this, we apply IEEE 754 addition rules to special values BEFORE the
 	// EFT chain runs.
+	// The special-value guards resolve NaN, Inf and zero OPERANDS. A result that overflows
+	// from finite operands is handled inside the expansion operations themselves, which
+	// scale near the top of the range and return a single signed infinity on a genuine
+	// overflow rather than the NaN the error-free transformations produce (#1553).
 	ereal& operator+=(const ereal& rhs) {
 		using namespace expansion_ops;
 		if (apply_ieee754_add_special_values(rhs)) return *this;
-		_limb = renormalize_expansion(linear_expansion_sum(_limb, rhs._limb));
+		_limb = expansion_sum_normalized(_limb, rhs._limb);
 		return *this;
 	}
 	ereal& operator+=(double rhs) {
 		using namespace expansion_ops;
 		ereal<maxlimbs> rhs_expansion(rhs);
 		if (apply_ieee754_add_special_values(rhs_expansion)) return *this;
-		_limb = renormalize_expansion(linear_expansion_sum(_limb, rhs_expansion._limb));
+		_limb = expansion_sum_normalized(_limb, rhs_expansion._limb);
 		return *this;
 	}
 	ereal& operator-=(const ereal& rhs) {
@@ -293,7 +297,7 @@ public:
 		// not (+Inf) + (-Inf) = NaN.
 		ereal<maxlimbs> neg_rhs_e = -rhs;
 		if (apply_ieee754_add_special_values(neg_rhs_e)) return *this;
-		_limb = renormalize_expansion(linear_expansion_sum(_limb, neg_rhs_e._limb));
+		_limb = expansion_sum_normalized(_limb, neg_rhs_e._limb);
 		return *this;
 	}
 	ereal& operator-=(double rhs) {

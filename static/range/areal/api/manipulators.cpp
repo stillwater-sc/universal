@@ -11,6 +11,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <sstream>
 #include <string>
 
 #include <universal/number/areal/areal.hpp>
@@ -56,6 +57,43 @@ namespace {
 		return fails;
 	}
 
+	// ---- to_string renders what operator<< renders -----------------------------------
+	//
+	// It used to return an empty string for every value but zero and infinity (#1554).
+	// operator<< is the reference: [v] for an exact value, (v, next) for an uncertain one.
+
+	int VerifyToString(bool reportTestCases) {
+		int fails = 0;
+
+		for (unsigned bits = 0; bits < 256u; ++bits) {
+			Areal a;
+			a.setbits(bits);
+			const std::string text = to_string(a);
+			std::stringstream reference;
+			reference << a;
+			if (text.empty() || text != reference.str()) {
+				++fails;
+				if (reportTestCases && fails < 5) {
+					std::cout << "    FAIL encoding " << bits << ": to_string '" << text
+					          << "' vs operator<< '" << reference.str() << "'\n";
+				}
+			}
+		}
+
+		// the shapes, spelled out
+		fails += expect_true(to_string(Areal(1.5f)) == "[1.5]", "an exact value is bracketed", reportTestCases);
+		fails += expect_true(to_string(Areal(0.0f)) == "[0]", "so is zero", reportTestCases);
+		{
+			Areal third(1.0f / 3.0f);
+			fails += expect_true(third.ubit(), "1/3 is uncertain in areal<8,2>", reportTestCases);
+			const std::string t = to_string(third);
+			fails += expect_true(!t.empty() && t.front() == '(' && t.back() == ')',
+				"an uncertain value is an open interval", reportTestCases);
+		}
+
+		return fails;
+	}
+
 	// ---- every manipulator is instantiated ------------------------------------------
 
 	int VerifyManipulatorSurface(bool reportTestCases) {
@@ -68,6 +106,7 @@ namespace {
 			{ to_binary(v),        "to_binary" },
 			{ to_hex(v),           "to_hex" },
 			{ hex_print(v),        "hex_print" },
+			{ to_string(v),        "to_string" },
 			{ components(v),       "components" },
 			{ pretty_print(v),     "pretty_print" },
 			{ info_print(v),       "info_print" },
@@ -76,14 +115,6 @@ namespace {
 		for (const Named& r : rendered) {
 			fails += expect_true(!r.text.empty(), r.what, reportTestCases);
 		}
-
-		// to_string is instantiated but NOT asserted non-empty: its body returns early for
-		// zero and infinity and falls through to an empty string for every ordinary value,
-		// the rendering itself being commented out. Instantiating it is what this suite is
-		// for; the empty result is a separate defect, not one of #1453's two.
-		fails += expect_true(to_string(Areal(0.0f)).find("zero") != std::string::npos,
-			"to_string names a zero", reportTestCases);
-		(void)to_string(v);
 
 		return fails;
 	}
@@ -115,6 +146,7 @@ try {
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyComponents(reportTestCases), test_tag, "components");
 	nrOfFailedTestCases += ReportTestResult(VerifyManipulatorSurface(reportTestCases), test_tag, "manipulator surface");
+	nrOfFailedTestCases += ReportTestResult(VerifyToString(reportTestCases), test_tag, "to_string");
 #endif
 
 #if REGRESSION_LEVEL_2

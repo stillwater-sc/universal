@@ -174,16 +174,24 @@ std::string color_print(const areal<nbits, es, bt>& r) {
 // convert to std::string
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_string(const areal<nbits,es,bt>& v) {
+	// Rendered the way operator<< renders it: [v] for an exact value and (v, next) for an
+	// uncertain one, since the uncertainty bit is what an areal is for. The rendering is
+	// repeated here rather than borrowed from operator<<, which lives in iostream.hpp:
+	// the manipulator layer does not depend on the stream layer (#1334).
+	//
+	// This used to return an EMPTY string for every value but zero and infinity -- its
+	// rendering line was commented out, calling a fraction() that no longer takes that
+	// form -- and those two came back as " zero b" and " infinite b" (#1554).
 	std::stringstream s;
-	if (v.iszero()) {
-		s << " zero b";
-		return s.str();
+	const double d = double(v);
+	if (v.at(0) && !v.isnan()) {
+		areal<nbits, es, bt> next(v);
+		++next;
+		s << '(' << d << ", " << double(next) << ')';
 	}
-	else if (v.isinf()) {
-		s << " infinite b";
-		return s.str();
+	else {
+		s << '[' << d << ']';
 	}
-//	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
 	return s.str();
 }
 
