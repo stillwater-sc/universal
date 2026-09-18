@@ -161,9 +161,17 @@ namespace sw { namespace universal {
 // generate a posit format ASCII format nbits.esxNN...NNp
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string hex_format(const posit<nbits, es, bt>& p) {
-	// we need to transform the posit into a string
+	// The digits are rendered here rather than through to_hex(blockbinary), which always
+	// adds a 0x prefix and nibble markers by default. With them this wrote
+	// "16.1x0x40'00p", which is not the documented nbits.esxNN...NNp form, and which
+	// parse() rejected -- so the native format did not round-trip at ANY width (#1391).
+	constexpr char hexChar[] = "0123456789ABCDEF";
+	const auto raw = p.bits();
 	std::stringstream ss;
-	ss << nbits << '.' << es << 'x' << to_hex(p.bits()) << 'p';
+	ss << nbits << '.' << es << 'x';
+	const int nrNibbles = int(1 + ((nbits - 1) >> 2));
+	for (int n = nrNibbles - 1; n >= 0; --n) ss << hexChar[raw.nibble(static_cast<unsigned>(n))];
+	ss << 'p';
 	return ss.str();
 }
 
@@ -256,6 +264,11 @@ inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMark
 // binary exponent representation: i.e. 1.0101010e2^-37
 template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_base2_scientific(const posit<nbits, es, bt>& number) {
+	// Zero and NaR have no regime, exponent or fraction to decode: decoding them
+	// anyway rendered zero as +1.---e2^-30 and NaR as -1.---e2^+30 (#1391). The
+	// spellings match to_string, which designates NaR as "nar".
+	if (number.iszero()) return "0";
+	if (number.isnar())  return "nar";
 	// maximum number of fraction bits: derived
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	bool s{ false };
@@ -272,10 +285,16 @@ inline std::string to_base2_scientific(const posit<nbits, es, bt>& number) {
 
 
 
-// quadrant returns a two character string indicating the quadrant of the
-// projective reals the posit resides in: from 0, SE, NE, NaR, NW, SW
+// quadrant returns a short string indicating the quadrant of the projective reals
+// the posit resides in: one of 0, SE, NE, NaR, NW, SW
 template<unsigned nbits, unsigned es, typename bt>
 std::string quadrant(const posit<nbits, es, bt>& p) {
+	// Zero and NaR sit on the boundaries between quadrants, and the branches below
+	// classify by sign and magnitude, so they have to be caught first. They used to
+	// fall through: zero came back SE and NaR, whose sign bit is set, came back NW, so
+	// two of the six documented results could never be returned (#1391).
+	if (p.iszero()) return "0";
+	if (p.isnar())  return "NaR";
 	posit<nbits, es, bt> pOne(1), pMinusOne(-1);
 	if (sign(p)) {
 		// west
@@ -303,7 +322,9 @@ std::string quadrant(const posit<nbits, es, bt>& p) {
 template<unsigned nbits, unsigned es, typename bt>
 bool parse(const std::string& txt, posit<nbits, es, bt>& p) {
 	// check if the txt is of the native posit form: nbits.esXhexvalue
-	std::regex posit_regex(R"(^[0-9]+\.[0-9]+[xX][0-9A-Fa-f]+p?$)");
+	// The digit field also accepts a 0x prefix and ' separators: hex_format used to
+	// emit both, and strings it wrote should still read back.
+	std::regex posit_regex(R"(^[0-9]+\.[0-9]+[xX](0[xX])?[0-9A-Fa-f']+p?$)");
 	if (std::regex_match(txt, posit_regex)) {
 		// found a posit representation: parse nbits.esxHEXVALUEp
 		std::string nbitsStr, esStr, bitStr;
@@ -334,12 +355,29 @@ bool parse(const std::string& txt, posit<nbits, es, bt>& p) {
 		}
 		// native posit form must match target configuration
 		if (nbits_in != nbits || es_in != es) return false;
-		uint64_t raw = 0;
-		std::istringstream ss(bitStr);
-		ss >> std::hex >> raw;
-		if (ss.fail()) return false;
-		ss >> std::ws;
-		if (!ss.eof()) return false;
+		// Read the digits into the full nbits. This used to go through a uint64_t, which
+		// silently dropped every bit above bit 63 of a posit wider than 64 bits (#1391).
+		std::string digits;
+		for (char c : bitStr) if (c != '\'') digits.push_back(c);
+		if (digits.size() >= 2 && digits[0] == '0' && (digits[1] == 'x' || digits[1] == 'X')) digits.erase(0, 2);
+		if (digits.empty()) return false;
+		blockbinary<nbits, bt, BinaryNumberType::Signed> raw;
+		raw.clear();
+		const std::size_t nrDigits = digits.size();
+		for (std::size_t k = 0; k < nrDigits; ++k) {
+			const char c = digits[nrDigits - 1 - k];        // least significant digit first
+			unsigned v = 0;
+			if (c >= '0' && c <= '9')      v = unsigned(c - '0');
+			else if (c >= 'a' && c <= 'f') v = unsigned(c - 'a' + 10);
+			else if (c >= 'A' && c <= 'F') v = unsigned(c - 'A' + 10);
+			else return false;
+			for (unsigned b = 0; b < 4u; ++b) {
+				if (((v >> b) & 1u) == 0u) continue;
+				const std::size_t bitIndex = 4u * k + b;
+				if (bitIndex >= nbits) return false;          // a set bit the posit cannot hold
+				raw.setbit(static_cast<unsigned>(bitIndex), true);
+			}
+		}
 		p.setbits(raw);
 		return true;
 	}

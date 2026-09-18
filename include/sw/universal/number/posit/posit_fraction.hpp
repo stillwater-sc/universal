@@ -206,8 +206,6 @@ private:
 	// Without the template (i.e. only own operators are friends) we get linker errors
 	template<unsigned nfbits, typename bbt>
 	friend std::ostream& operator<< (std::ostream& ostr, const positFraction<nfbits, bbt>& f);
-	template<unsigned nfbits, typename bbt>
-	friend std::istream& operator>> (std::istream& istr, positFraction<nfbits, bbt>& f);
 
 	template<unsigned nfbits, typename bbt>
 	friend bool operator==(const positFraction<nfbits, bbt>& lhs, const positFraction<nfbits, bbt>& rhs);
