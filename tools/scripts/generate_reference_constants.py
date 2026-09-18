@@ -2,7 +2,7 @@
 """
 generate_reference_constants.py
 
-Generate ~320-decimal-digit reference strings for mathematical constants
+Generate ~340-decimal-digit reference strings for mathematical constants
 used by Universal's multi-component types (ereal<N>, elreal, ...).
 
 Background
@@ -11,9 +11,11 @@ An IEEE 754 double has 53 bits of significand and a maximum exponent of
 ~ 2^1023, so the natural ceiling for a multi-component representation
 over double components (with the Shewchuk non-overlapping property) is
 floor(1023 / 53) = 19 components for values near 1. In decimal digits,
-that is roughly 1023 / 3.32 ~ 308 digits. We emit 320 digits so that
-the round-trip through string -> ereal<19> has comfortable margin
-beyond what any 19-component expansion can capture.
+that is roughly 1023 / 3.32 ~ 308 digits. We emit 340 digits: margin
+beyond what any 19-component expansion can capture for the round-trip
+through string -> ereal<19>, and twenty digits beyond the 320-digit cap
+that agreement is measured to, so that no reference's own rounding is
+ever held against the value being checked (see EMIT_DPS below).
 
 Reproducibility
 ===============
@@ -40,8 +42,8 @@ Generation source
 =================
 mpmath provides arbitrary-precision floating-point arithmetic in pure
 Python. It is the standard tool for generating reference constants in
-the scientific-computing community. Constants are computed at 350
-working digits and printed at 320 to avoid trailing-digit rounding
+the scientific-computing community. Constants are computed at 380
+working digits and printed at 340 to avoid trailing-digit rounding
 artifacts.
 
 License
@@ -64,13 +66,23 @@ except ImportError:
     sys.exit(1)
 
 
-# Working precision: 350 decimal digits gives ~ 30-digit headroom past
-# the 320 we emit. Trailing digits in the printout are guaranteed
-# correctly rounded.
-mp.mp.dps = 350
-
 # Target output precision in decimal digits.
-EMIT_DPS = 320
+#
+# 340, not 320, although nothing certifies agreement past 320 digits (the default
+# cap of agreed_decimal_digits). A reference cannot certify its OWN last digit: a
+# value correctly rounded to 320 digits is off by up to half a unit in that digit,
+# which for a constant in [1, 10) is up to 5e-320 -- more than the 1e-320 relative
+# error that 320 digits of agreement allows. So a PERFECT evaluation scored 319
+# against s_sqrt2, whose digits after the 320th are 2964..., and every benchmark
+# row that stops at 320 digits ran to the end of its depth ladder (#1397). pi
+# reached 320 only because its tail past the 320th digit happens to be small.
+# Twenty guard digits put each reference's own error far below anything measured.
+EMIT_DPS = 340
+
+# Working precision: 40 digits of headroom past what we emit. Trailing digits in
+# the printout are guaranteed correctly rounded; the large-argument trig values
+# (sin(1e20) etc.) spend some of it on argument reduction.
+mp.mp.dps = EMIT_DPS + 40
 
 
 def fmt(name: str, value, comment: str) -> str:

@@ -181,6 +181,9 @@ struct singleDivState {
 // emitted block, and the structures they bound are O(1) in practice.
 inline constexpr std::size_t kSingleDivLookahead = 3;
 inline constexpr std::size_t kSingleDivCarryCap  = 8;
+// Zero dividend blocks read past an empty remainder before the dividend is taken to have
+// ended (see singleDiv_step).
+inline constexpr std::size_t kSingleDivZeroRun   = 4;
 
 template <typename FpType>
 inline std::optional<block<FpType>> singleDiv_step(singleDivState<FpType>& st) {
@@ -192,7 +195,29 @@ inline std::optional<block<FpType>> singleDiv_step(singleDivState<FpType>& st) {
                     add(st.rem, Z::singleton(st.cur.head())).take(kSingleDivCarryCap));
                 st.cur = st.cur.tail();
             }
-            if (st.rem.is_empty()) { st.exhausted = true; continue; }
+            if (st.rem.is_empty()) {
+                // An empty remainder means the prefix consumed so far divided EXACTLY (or
+                // the block just added was zero), not that the division is over: there may
+                // be dividend blocks still to come. This used to declare the division
+                // exhausted here, which silently dropped the rest of the dividend whenever a
+                // prefix happened to divide evenly -- x^83 / 83 on half kept 79 digits where
+                // x^83 / 81 kept 278, and every odd_power_series constant with a term that
+                // hit it (pi_zbcl<half> among them) stopped refining there (#1396).
+                //
+                // But a dividend can also end in an endless run of zero blocks -- an exact
+                // value produced lazily, as inside sin(1/3) on a double host -- and reading
+                // on through it never returns. So a short run of zeros is skipped, and a run
+                // longer than that is taken as the end of the dividend: the only case still
+                // truncated, and only after kSingleDivZeroRun zero blocks, where this used to
+                // stop at the first empty remainder.
+                std::size_t zeros = 0;
+                while (!st.cur.is_empty() && st.cur.head().is_zero_block() && zeros < kSingleDivZeroRun) {
+                    st.cur = st.cur.tail();
+                    ++zeros;
+                }
+                if (st.cur.is_empty() || st.cur.head().is_zero_block()) st.exhausted = true;
+                continue;
+            }
             block<FpType> x = st.rem.head();
             // Prepare the operand exactly as twoDivZBCL does. normalise() alone is not
             // enough: block_two_div_rem forms the residual in HOST arithmetic, and on a

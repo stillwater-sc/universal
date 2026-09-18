@@ -119,8 +119,10 @@ inline ZBCL<FpType> div(ZBCL<FpType> x, ZBCL<FpType> y, std::size_t depth = 64) 
             B qN = q;  qN.normalise();
             B yN = yj; yN.normalise();
             auto pr = block_two_mult(qN, yN);
-            if (pr.first.is_normalised())  pool.push_back(B{ -pr.first.v,  pr.first.exp });
-            if (pr.second.is_normalised()) pool.push_back(B{ -pr.second.v, pr.second.exp });
+            // keep every non-zero block of the product, normalised and negated: a
+            // subnormal one is an exact part of it (#1396; see keep_product_block)
+            keep_product_block(pool, B{ -pr.first.v,  pr.first.exp });
+            keep_product_block(pool, B{ -pr.second.v, pr.second.exp });
         }
         rem = keep_normalised(priestRenorm(pool));
     }

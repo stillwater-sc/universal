@@ -58,11 +58,11 @@ inline ZBCL<FpType> mul_scalar(const block<FpType>& s, ZBCL<FpType> y,
         B sN = s;  sN.normalise();
         B yN = yj; yN.normalise();
         auto pr = block_two_mult(sN, yN);
-        // Keep only normalised product blocks: drop zeros and sub-floor
-        // denormals (denormals would break 0-overlap accounting; their value is
-        // below FpType's reliable precision).
-        if (pr.first.is_normalised())  pool.push_back(pr.first);
-        if (pr.second.is_normalised()) pool.push_back(pr.second);
+        // Keep every non-zero product block, normalised. A subnormal one is an exact
+        // part of the product, not a value below FpType's precision: its scale lives in
+        // the wide exponent (#1396, and see singleMultHelper in online_multiply.hpp).
+        keep_product_block(pool, pr.first);
+        keep_product_block(pool, pr.second);
     }
     return zbcl_from_blocks<FpType>(priestRenorm(pool));
 }
@@ -84,8 +84,8 @@ inline ZBCL<FpType> mul(ZBCL<FpType> x, ZBCL<FpType> y, std::size_t depth = 64) 
             B xN = xi; xN.normalise();
             B yN = yj; yN.normalise();
             auto pr = block_two_mult(xN, yN);
-            if (pr.first.is_normalised())  pool.push_back(pr.first);
-            if (pr.second.is_normalised()) pool.push_back(pr.second);
+            keep_product_block(pool, pr.first);
+            keep_product_block(pool, pr.second);
         }
     }
     return zbcl_from_blocks<FpType>(priestRenorm(pool));

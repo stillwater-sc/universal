@@ -53,13 +53,18 @@ inline series<FpType> singleMultHelper(const block<FpType>& f, ZBCL<FpType> gs) 
     block<FpType> fN = f;          fN.normalise();
     block<FpType> gN = gs.head();  gN.normalise();
     auto pr = block_two_mult(fN, gN);                     // (high, low), exact f*g
-    const auto subnormal = [](const block<FpType>& b) {
-        return !b.is_zero_block() && !b.is_normalised();
-    };
-    if (subnormal(pr.first)) return series<FpType>{};     // high below the floor: stop
-    ZBCL<FpType> term = subnormal(pr.second)
-        ? ZBCL<FpType>::singleton(pr.first)               // drop subnormal residual
-        : ZBCL<FpType>::cons(pr.first, ZBCL<FpType>::singleton(pr.second));
+    // Both halves are EXACT: the operands are normalised k-bit values, so every bit of
+    // the product sits at or above 2^-(2k-2), which even a narrow host holds exactly --
+    // as a subnormal, if it must. A subnormal half is therefore not "below the floor"; a
+    // block's scale lives in its wide exponent, and normalise() moves it there exactly.
+    // Dropping the residual instead, as this used to, discarded genuine bits of the
+    // product whenever it came out below half's smallest normal: x^3 * x^2 kept 5
+    // digits of x^5 where the operands carried 115, and every constant built on
+    // odd_power_series stalled -- pi_zbcl<half> at 8 digits at any depth (#1396).
+    // Normalised, the pair is still 0-overlap: normalising changes neither value.
+    block<FpType> high = pr.first;   high.normalise();
+    block<FpType> low  = pr.second;  low.normalise();
+    ZBCL<FpType> term = ZBCL<FpType>::cons(high, ZBCL<FpType>::singleton(low));
     ZBCL<FpType> rest = gs.tail();
     block<FpType> fcopy = f;
     return series<FpType>::cons(term, [fcopy, rest]() { return singleMultHelper(fcopy, rest); });
