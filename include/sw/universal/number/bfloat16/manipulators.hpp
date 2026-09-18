@@ -109,7 +109,7 @@ inline std::string to_native(bfloat16 v, bool nibbleMarker = false) {
 
 		//	unsigned nbits = BfloatType::nbits;  // total bits
 		unsigned ebits = BfloatType::es;     // exponent bits
-		unsigned fbits = BfloatType::fbits;  // integer bits
+		unsigned fbits = BfloatType::fbits;  // explicit fraction bits
 		s << "fields(s:1|e:" << ebits << "|m:" << fbits << ')';
 		return s.str();
 	}

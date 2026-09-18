@@ -168,7 +168,19 @@ inline std::string to_hex(const hfloat<ndigits, es, BlockType>& number) {
 	for (unsigned i = 0; i < es; ++i) {
 		exp_field = (exp_field << 1) | (number.getbit(expStart - i) ? 1u : 0u);
 	}
-	int exp_val = static_cast<int>(exp_field) - Hfloat::bias;
+	// hfloat has no single zero encoding: the value is the fraction scaled by 16^e, so ANY
+	// exponent field with an all-zero fraction is a zero. This used to decode the stored
+	// exponent unconditionally, and so rendered mathematically equal zeros with different
+	// exponents -- 0x0.000000 * 16^-64 and 0x0.000000 * 16^-63 both came out of a sweep of
+	// the hfp32 encodings (#1448). The test is on the FRACTION, not on iszero(), which is
+	// stricter: it requires the exponent field to be clear as well, so it would have
+	// normalised the canonical zero alone and left the rest disagreeing with it.
+	// The sign is kept, exactly as unpack() keeps it.
+	bool fractionIsZero = true;
+	for (unsigned b = 0; b < Hfloat::fbits; ++b) {
+		if (number.getbit(b)) { fractionIsZero = false; break; }
+	}
+	int exp_val = fractionIsZero ? 0 : static_cast<int>(exp_field) - Hfloat::bias;
 
 	for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
 		unsigned hex_digit = 0;
