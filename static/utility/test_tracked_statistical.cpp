@@ -18,16 +18,10 @@
 //   - subtraction that cancels is charged a magnified cost, capped at 500 ULP
 //   - assignment from a raw value resets the tracking state
 //
-// Four checks below pin behaviour that is wrong (#1546); each says so, so that a fix is
-// noticed here rather than silently changing what callers see.
-//
-// INCLUDES: this file must NOT include <universal/native/ieee754.hpp>, any number
-// system header, or any of the ieee754_float/ieee754_double headers that reach
-// ieee754_core.hpp. That header and this one both define sw::universal::ulp, neither
-// overload is more specialised, and TrackedStatistical::error() calls ulp() unqualified
-// from inside the namespace -- so the class stops compiling as soon as both are visible.
-// That is why there is no to_binary in this file and why the include list is this
-// short. The collision is #1545.
+// #1545 moved this header's own ulp() into a detail namespace, where it no longer
+// collides with sw::universal::ulp from native/ieee754_numeric.hpp. That collision made
+// error() uncompilable in any translation unit that also used a number system, so this
+// file includes one deliberately, as the regression for it.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -39,6 +33,8 @@
 #include <iostream>
 #include <string>
 
+#include <universal/native/ieee754.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/utility/tracked_statistical.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -82,6 +78,23 @@ namespace {
 	// The ULP spacing at v, computed independently of the header under test.
 	double spacing(double v) {
 		return std::nextafter(v, std::numeric_limits<double>::infinity()) - v;
+	}
+
+	// #1545: this header and native/ieee754.hpp both used to define sw::universal::ulp,
+	// and an unqualified call was ambiguous once both were visible. Both headers are
+	// included above, so these calls not compiling would be the regression.
+	int VerifyNoUlpAmbiguity(bool reportTestCases) {
+		int fails = 0;
+		fails += expect_exact(ulp(1.0), std::numeric_limits<double>::epsilon(),
+			"the native ulp resolves", reportTestCases);
+		// and a tracker used alongside a number system still reports its error
+		Walk a = 1.0, b = 2.0;
+		auto c = a + b;
+		fails += expect_exact(c.error(), 0.5 * spacing(c.value()),
+			"error() compiles and answers next to a number system header", reportTestCases);
+		posit<32, 2> p = 1.0;   // the header whose presence used to break the build
+		fails += expect_exact(double(p), 1.0, "and the number system still works", reportTestCases);
+		return fails;
 	}
 
 	int VerifyUlpHelpers(bool reportTestCases) {
@@ -410,65 +423,71 @@ namespace {
 		return fails;
 	}
 
-	// ---- behaviour that is pinned although it is wrong ---------------------------------
-	//
-	// All three assert what the header does TODAY, so that a fix shows up as a failing
-	// test here rather than as a silent change in what callers see.
+	// ---- the metrics, including the cases that used to lie -----------------------------
 
-	int VerifyKnownDefects(bool reportTestCases) {
+	int VerifyErrorMetrics(bool reportTestCases) {
 		int fails = 0;
 
-		// 1. valid_bits() can exceed the type's precision. After one operation the ULP
-		// error is 0.5, log2(0.5) is -1, and subtracting it ADDS a bit: a double reports
-		// 53 valid bits where it has 52, and reports MORE after an operation than before.
-		// The other two trackers clamp with std::min against the type precision.
+		// 1. valid_bits() is capped at the type's mantissa. Before #1546 it subtracted
+		// log2(ulp_error), which is NEGATIVE below one ULP, so a single operation
+		// reported 53 valid bits of a double -- one more than the type has, and more
+		// than before the operation.
 		{
 			Walk a = 1.0, b = 2.0;
 			auto c = a + b;
-			fails += expect_exact(c.valid_bits(), 53.0,
-				"one operation reports 53 valid bits (known defect #1546)", reportTestCases);
-			fails += expect_exact(double(mantissa_bits<double>()), 52.0,
-				"a double has 52 mantissa bits", reportTestCases);
-			fails += expect_true(c.valid_bits() > a.valid_bits(),
-				"an operation appears to ADD precision (known defect #1546)", reportTestCases);
+			fails += expect_exact(c.ulp_error(), 0.5, "one operation costs half a ULP", reportTestCases);
+			fails += expect_exact(c.valid_bits(), double(mantissa_bits<double>()),
+				"and leaves the type's precision, not more", reportTestCases);
+			fails += expect_true(c.valid_bits() <= a.valid_bits(),
+				"an operation never adds precision", reportTestCases);
+			fails += expect_true(c.valid_bits() <= double(mantissa_bits<double>()),
+				"valid_bits never exceeds the mantissa", reportTestCases);
 		}
 
-		// 2. Total cancellation is charged the CHEAPEST cost. The magnification branch
-		// computes a ratio, and guards it with result != 0 -- so x - x, where every bit
-		// is lost, falls through to the flat ADD_COST that an ordinary subtraction pays.
+		// an error of several ULPs does cost bits
+		{
+			Walk acc = 1.0;
+			for (int i = 0; i < 64; ++i) acc = acc + Walk(1.0);
+			fails += expect_true(acc.ulp_error() > 1.0, "the error grew past a ULP", reportTestCases);
+			fails += expect_true(acc.valid_bits() < double(mantissa_bits<double>()),
+				"so the valid bits fell", reportTestCases);
+			fails += expect_true(acc.valid_bits() >= 0.0, "and never went negative", reportTestCases);
+		}
+
+		// 2. Total cancellation is the WORST case, and is now charged as such. The
+		// magnification branch used to skip result == 0 and fall through to the flat
+		// ADD_COST, so losing every bit cost less than losing most of them.
 		{
 			Walk x = 1.0;
-			auto d = x - x;
-			fails += expect_exact(d.value(), 0.0, "x - x is zero", reportTestCases);
-			fails += expect_exact(d.ulp_error(), 0.5,
-				"total cancellation is charged the minimum (known defect #1546)", reportTestCases);
+			auto total = x - x;
 			Walk a = 1.0, b = 1.0 - 1e-13;
-			fails += expect_true((a - b).ulp_error() > d.ulp_error(),
-				"partial cancellation costs more than total cancellation (known defect #1546)", reportTestCases);
+			auto partial = a - b;
+			fails += expect_exact(total.value(), 0.0, "x - x is zero", reportTestCases);
+			fails += expect_exact(total.ulp_error(), 500.0,
+				"total cancellation is charged the capped cost", reportTestCases);
+			fails += expect_true(total.ulp_error() >= partial.ulp_error(),
+				"and is never cheaper than partial cancellation", reportTestCases);
 		}
 
-		// 3. Division by zero is not detected. The value becomes infinite, ulp(inf) is
-		// NaN, so error() is NaN -- while valid_bits(), which never looks at the value,
-		// still reports 53 bits of a meaningless infinity.
+		// 3. Division by zero says so, instead of carrying an ordinary half-ULP estimate
+		// alongside an infinity and reporting a NaN error with 53 valid bits.
 		{
 			Walk a = 1.0, zero = 0.0;
 			auto q = a / zero;
 			fails += expect_true(std::isinf(q.value()), "division by zero gives an infinity",
 				reportTestCases);
-			fails += expect_true(std::isnan(q.error()),
-				"the error of an infinity is NaN (known defect #1546)", reportTestCases);
-			fails += expect_exact(q.valid_bits(), 53.0,
-				"an infinity still reports 53 valid bits (known defect #1546)", reportTestCases);
+			fails += expect_true(std::isinf(q.ulp_error()), "the ULP error is unbounded",
+				reportTestCases);
+			fails += expect_true(std::isinf(q.error()), "so is the absolute error", reportTestCases);
+			fails += expect_true(!std::isnan(q.error()), "and it is not a NaN", reportTestCases);
+			fails += expect_exact(q.valid_bits(), 0.0, "an infinity has no valid bits", reportTestCases);
 		}
 
-		// 4. is_exact() asks only whether any operation has run, so a value built with
-		// an explicit error through the three-argument constructor claims to be exact.
+		// a zero value with an accumulated error has no relative accuracy to report
 		{
-			Walk fabricated(1.0, 5.0, 0);
-			fails += expect_exact(fabricated.ulp_error(), 5.0, "the fabricated error is kept",
-				reportTestCases);
-			fails += expect_true(fabricated.is_exact(),
-				"a value with an error claims to be exact (known defect #1546)", reportTestCases);
+			Walk z(0.0, 4.0, 2);
+			fails += expect_true(!std::isfinite(z.relative_error()),
+				"a zero carrying error has no relative error", reportTestCases);
 		}
 
 		return fails;
@@ -542,7 +561,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyUncertainComparison(reportTestCases), test_tag, "uncertain comparison");
 	nrOfFailedTestCases += ReportTestResult(VerifyResetOnAssignment(reportTestCases), test_tag, "reset on assignment");
 	nrOfFailedTestCases += ReportTestResult(VerifyStatisticalValidation(reportTestCases), test_tag, "validation helper");
-	nrOfFailedTestCases += ReportTestResult(VerifyKnownDefects(reportTestCases), test_tag, "pinned known defects");
+	nrOfFailedTestCases += ReportTestResult(VerifyErrorMetrics(reportTestCases), test_tag, "error metrics");
+	nrOfFailedTestCases += ReportTestResult(VerifyNoUlpAmbiguity(reportTestCases), test_tag, "no ulp ambiguity");
 #endif
 
 #if REGRESSION_LEVEL_2

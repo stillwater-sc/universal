@@ -40,8 +40,11 @@
 //   // Shows: additions=0, multiplications=1, error from mult = 0
 
 #include <cmath>
+#include <cstdint>
 #include <limits>
+#include <string>
 #include <type_traits>
+#include <typeinfo>
 #include <ostream>
 #include <iomanip>
 
@@ -184,19 +187,33 @@ public:
 		return add_error_;
 	}
 
-	/// Relative error
+	/// Relative error.
+	/// A shadow of zero used to report 0.0 unconditionally -- "perfectly accurate" --
+	/// even when the value was not zero at all, which is exactly the case a caller
+	/// needs told about: a difference that cancels in the shadow but not in the LNS
+	/// encoding has lost every significant bit (#1546).
 	double relative_error() const noexcept {
-		if (std::abs(shadow_) < std::numeric_limits<double>::min()) return 0.0;
+		// Only an exactly zero shadow has no relative error to speak of. A subnormal
+		// one is small, not meaningless: dividing by it gives a huge relative error,
+		// which is the right answer, and valid_bits() floors an overflow at zero bits.
+		if (shadow_ == ShadowType(0)) {
+			return (error() == 0.0) ? 0.0 : std::numeric_limits<double>::infinity();
+		}
 		return error() / std::abs(static_cast<double>(shadow_));
 	}
 
 	/// Valid bits remaining, capped at type precision
 	double valid_bits() const noexcept {
-		// Use nbits as precision proxy for LNS types
-		constexpr double type_precision = static_cast<double>(
-			error_tracking_traits<LNSType>::nbits > 0 ? error_tracking_traits<LNSType>::nbits : 53);
+		// The cap is the fractional bits of the logarithm, which is what an LNS
+		// encoding actually resolves. It used to be nbits, the width of the whole
+		// encoding: an lns<32,8> claimed 32 bits where it resolves about 8 (#1546).
+		constexpr unsigned resolved = error_tracking_traits<LNSType>::rbits > 0
+			? error_tracking_traits<LNSType>::rbits
+			: error_tracking_traits<LNSType>::nbits;
+		constexpr double type_precision = static_cast<double>(resolved > 0 ? resolved : 53);
 		double rel_err = relative_error();
 		if (rel_err <= 0.0) return type_precision;
+		if (!std::isfinite(rel_err)) return 0.0;
 		return std::min(type_precision, std::max(0.0, -std::log2(rel_err)));
 	}
 

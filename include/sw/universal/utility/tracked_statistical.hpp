@@ -63,11 +63,19 @@ enum class ErrorModel {
 // ULP utilities
 // ============================================================================
 
+namespace detail {
+
 /// Get the ULP (Unit in Last Place) of a floating-point value
 /// ULP is the spacing between adjacent floating-point values at this magnitude
+///
+/// This lives in detail because the library already has a sw::universal::ulp, in
+/// native/ieee754_numeric.hpp. Two overloads of the same name in the same namespace,
+/// neither more specialised than the other, made every unqualified ulp() call
+/// ambiguous as soon as both headers were visible -- which any number system header
+/// brings about -- and that took error() down with it (#1545).
 template<typename T>
-inline T ulp(T x) {
-	static_assert(std::is_floating_point_v<T>, "ulp requires floating-point type");
+inline T ulp_spacing(T x) {
+	static_assert(std::is_floating_point_v<T>, "ulp_spacing requires floating-point type");
 
 	if (!std::isfinite(x)) return std::numeric_limits<T>::quiet_NaN();
 	if (x == T(0)) return std::numeric_limits<T>::denorm_min();
@@ -81,6 +89,8 @@ inline T ulp(T x) {
 	return std::ldexp(std::numeric_limits<T>::epsilon(), exp - 1);
 }
 
+} // namespace detail
+
 /// Get the number of ULPs between two values
 template<typename T>
 inline double ulp_distance(T a, T b) {
@@ -91,7 +101,7 @@ inline double ulp_distance(T a, T b) {
 	}
 
 	T diff = std::abs(a - b);
-	T u = ulp(std::max(std::abs(a), std::abs(b)));
+	T u = detail::ulp_spacing(std::max(std::abs(a), std::abs(b)));
 
 	if (u == T(0)) return 0.0;
 	return static_cast<double>(diff / u);
@@ -184,23 +194,31 @@ public:
 	// Error metrics
 	// ------------------------------------------------------------------------
 
-	/// Get absolute error estimate
+	/// Get absolute error estimate.
+	/// A non-finite value has no ULP to scale by, so the error is unbounded rather
+	/// than the NaN that ulp(inf) used to produce (#1546).
 	double error() const noexcept {
-		return ulp_error_ * static_cast<double>(ulp(value_));
+		if (!std::isfinite(value_)) return std::numeric_limits<double>::infinity();
+		return ulp_error_ * static_cast<double>(detail::ulp_spacing(value_));
 	}
 
 	/// Get relative error estimate
 	double relative_error() const noexcept {
-		if (value_ == T(0)) return 0.0;
+		if (!std::isfinite(value_)) return std::numeric_limits<double>::infinity();
+		if (value_ == T(0)) return (ulp_error_ <= 0.0) ? 0.0 : std::numeric_limits<double>::infinity();
 		return error() / std::abs(static_cast<double>(value_));
 	}
 
-	/// Estimate valid bits of precision
+	/// Estimate valid bits of precision, clamped to [0, the type's mantissa]
 	double valid_bits() const noexcept {
-		if (ulp_error_ <= 0.0) return static_cast<double>(mantissa_bits<T>());
-		// Each ULP of error costs ~1 bit
+		constexpr double type_precision = static_cast<double>(mantissa_bits<T>());
+		if (!std::isfinite(value_)) return 0.0;
+		if (ulp_error_ <= 0.0) return type_precision;
+		// Each ULP of error costs ~1 bit. An error BELOW one ULP costs a fraction of a
+		// bit, it does not buy precision the type never had, so the result is capped:
+		// before the cap, a single operation reported 53 valid bits of a double (#1546).
 		double lost_bits = std::log2(ulp_error_);
-		return std::max(0.0, static_cast<double>(mantissa_bits<T>()) - lost_bits);
+		return std::min(type_precision, std::max(0.0, type_precision - lost_bits));
 	}
 
 	/// Check if value is still considered exact (no operations performed)
@@ -256,15 +274,22 @@ public:
 		T result = value_ - rhs.value_;
 
 		// Check for potential cancellation
+		constexpr double MAX_MAGNIFICATION = 1000.0;
 		double op_cost = ADD_COST;
 		if (std::abs(result) < std::abs(value_) * T(0.01) &&
 		    std::abs(result) < std::abs(rhs.value_) * T(0.01)) {
 			// Near-cancellation: error is magnified
 			// The relative error of the result can be much larger
 			T larger = std::max(std::abs(value_), std::abs(rhs.value_));
-			if (result != T(0)) {
+			if (result == T(0)) {
+				// Everything cancelled. This is the WORST case, not a case to skip: the
+				// guard used to be "result != 0", which charged total cancellation the
+				// flat ADD_COST while partial cancellation paid up to 1000x (#1546).
+				op_cost = ADD_COST * MAX_MAGNIFICATION;
+			}
+			else {
 				double magnification = static_cast<double>(larger / std::abs(result));
-				op_cost = ADD_COST * std::min(magnification, 1000.0);  // Cap magnification
+				op_cost = ADD_COST * std::min(magnification, MAX_MAGNIFICATION);  // Cap magnification
 			}
 		}
 
@@ -284,6 +309,12 @@ public:
 
 	TrackedStatistical operator/(const TrackedStatistical& rhs) const {
 		T result = value_ / rhs.value_;
+		if (rhs.value_ == T(0)) {
+			// Nothing is known about the result: say so, rather than carrying an
+			// ordinary half-ULP estimate alongside an infinity (#1546).
+			return TrackedStatistical(result, std::numeric_limits<double>::infinity(),
+			                          ops_ + rhs.ops_ + 1);
+		}
 		double new_error = combine_errors(ulp_error_, rhs.ulp_error_, DIV_COST);
 		return TrackedStatistical(result, new_error, ops_ + rhs.ops_ + 1);
 	}

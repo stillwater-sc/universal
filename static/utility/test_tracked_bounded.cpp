@@ -16,25 +16,15 @@
 //   - a divisor straddling zero yields the unbounded interval instead of a wrong one
 //   - RoundingGuard restores the caller's rounding mode, whatever happened inside
 //
-// WHAT THIS SUITE CANNOT CHECK TODAY, AND WHY: the enclosure of a result that ROUNDS.
-// The header switches the rounding mode with fesetround but never declares
-// "#pragma STDC FENV_ACCESS ON" for GCC or Clang, so an optimizing compiler may fold the
-// arithmetic under whatever mode it likes. Measured on this tree at -O2:
-//
-//   Clang   1/3 -> [0.33333333333333337034, 0.33333333333333337034]  (a single point,
-//           the UPWARD-rounded value -- it excludes the true 1/3 entirely)
-//   GCC     1/3 -> a correct enclosure, but 1.0 + 1e-17 collapses to a point
-//   both    correct at -O0
-//
-// So on a Release build the rigorous-bounds guarantee does not hold, and any assertion
-// of it would be red on Clang and green on GCC. The checks below are the ones that hold
-// whatever the optimizer does: ordering, exactness where nothing rounds, widths that
-// come from the OPERANDS, operation counts, the unbounded-divisor case, and the
-// restoration of the caller's rounding mode. This is #1544; when it is fixed, the
-// enclosure of rounded results belongs back in this file.
-//
-// Two further checks pin behaviour that is wrong (#1546, #1547); each says so, so that a
-// fix is noticed here rather than silently changing what callers see.
+// THE ENCLOSURE OF A ROUNDED RESULT IS THE POINT OF THE CLASS, and it is checked here.
+// It was not always checkable. While the bounds were computed by switching the FPU
+// rounding mode with fesetround, without a "#pragma STDC FENV_ACCESS ON" that GCC and
+// Clang honour, an optimizing compiler folded the arithmetic under whatever mode it
+// liked: at -O2 Clang returned 1/3 as the single point 0.33333333333333337034, the
+// upward-rounded value, which excludes the true 1/3 altogether, and GCC collapsed
+// 1.0 + 1e-17 to a point. #1544 replaced that with error-free transformations, which no
+// optimizer can undo, so the checks below hold identically on GCC and Clang at -O0 and
+// -O2 -- and would have caught the old behaviour on both.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -187,20 +177,41 @@ namespace {
 	int VerifyEnclosure(bool reportTestCases) {
 		int fails = 0;
 
-		// The enclosure of a result that ROUNDS cannot be asserted here at all -- see the
-		// note at the top of this file. What survives optimization is the structure: the
-		// bounds stay ordered, the midpoint stays between them, and the operations are
-		// counted.
+		// 1/3 is not representable, so the interval must STRADDLE the true value: the
+		// lower bound is the round-to-nearest double, which lies below 1/3, and the
+		// upper bound is the next double up. One ulp wide, and enclosing.
 		Bounded third = Bounded(1.0) / Bounded(3.0);
-		fails += expect_true(third.lo() <= third.hi(), "the quotient's bounds are ordered",
+		fails += expect_exact(third.lo(), 1.0 / 3.0, "the lower bound is the rounded quotient",
 			reportTestCases);
+		fails += expect_exact(third.hi(), std::nextafter(1.0 / 3.0, 1.0),
+			"the upper bound is one ulp above it", reportTestCases);
+		fails += expect_true(third.width() > 0.0, "an inexact quotient widens", reportTestCases);
+		fails += expect_true(!third.is_exact(), "an inexact quotient is not exact", reportTestCases);
 		fails += expect_true(third.lo() <= third.value() && third.value() <= third.hi(),
 			"the midpoint lies inside the interval", reportTestCases);
+
+		// the enclosure survives a chain: every step keeps the true value bracketed
 		{
 			auto chain = third / Bounded(3.0) / Bounded(3.0);
-			fails += expect_true(chain.lo() <= chain.hi(), "the chained bounds are ordered",
-				reportTestCases);
+			const double reference = (1.0 / 3.0) / 3.0 / 3.0;
+			fails += expect_true(chain.lo() <= reference && reference <= chain.hi(),
+				"the chained quotient is enclosed", reportTestCases);
+			// each division scales the value down, so compare RELATIVE widths: the
+			// uncertainty grows even as the absolute width shrinks with the magnitude
+			fails += expect_true(chain.relative_error() > third.relative_error(),
+				"the chain keeps widening, relative to its value", reportTestCases);
 			fails += expect_count(chain.operations(), 3, "chain operations", reportTestCases);
+		}
+
+		// an addition whose result rounds widens by exactly one ulp and brackets the
+		// true sum -- the case the fesetround implementation collapsed at -O2
+		{
+			Bounded a = 1.0, b = 1e-17;
+			auto rounded = a + b;
+			fails += expect_exact(rounded.lo(), 1.0, "1 + 1e-17 rounds down to 1.0", reportTestCases);
+			fails += expect_exact(rounded.hi(), std::nextafter(1.0, 2.0), "and up to the next double",
+				reportTestCases);
+			fails += expect_true(rounded.width() > 0.0, "an inexact sum widens", reportTestCases);
 		}
 
 		// An interval whose width comes from its OPERANDS, not from rounding, does
@@ -233,6 +244,22 @@ namespace {
 			auto r = sqrt(Bounded(4.0, 9.0));
 			fails += expect_exact(r.lo(), 2.0, "sqrt([4,9]) lo", reportTestCases);
 			fails += expect_exact(r.hi(), 3.0, "sqrt([4,9]) hi", reportTestCases);
+		}
+
+		// An irrational root must be BRACKETED, and which side the rounded root falls on
+		// depends on the argument: for 2 the double root sits above the true one, for 3
+		// below. Squaring the bounds settles it without needing a finer reference --
+		// lo*lo must not exceed x and hi*hi must not fall short, computed exactly with
+		// fma. A missing step on either side is caught here.
+		for (double x : { 2.0, 3.0, 5.0, 7.0, 10.0, 0.5 }) {
+			auto r = sqrt(Bounded(x));
+			const double lowSquaredError  = std::fma(-r.lo(), r.lo(), x);   // x - lo^2
+			const double highSquaredError = std::fma(-r.hi(), r.hi(), x);   // x - hi^2
+			fails += expect_true(lowSquaredError >= 0.0, "the lower root does not overshoot",
+				reportTestCases);
+			fails += expect_true(highSquaredError <= 0.0, "the upper root does not undershoot",
+				reportTestCases);
+			fails += expect_true(r.width() > 0.0, "an irrational root widens", reportTestCases);
 		}
 
 		return fails;
@@ -427,11 +454,12 @@ namespace {
 		return fails;
 	}
 
-	// ---- the rounding mode is left as it was found --------------------------------
+	// ---- the rounding mode is never touched ----------------------------------------
 	//
-	// RoundingGuard changes the global FP rounding mode. If it ever failed to restore
-	// it, every later floating-point computation in the process would be quietly wrong,
-	// which is the kind of damage that shows up far from its cause.
+	// The header no longer switches the global FP rounding mode (#1544). This check
+	// stays as a guard: if that approach were reintroduced and the mode ever leaked,
+	// every later floating-point computation in the process would be quietly wrong --
+	// the kind of damage that shows up far from its cause.
 
 	int VerifyRoundingModeIsRestored(bool reportTestCases) {
 		int fails = 0;
@@ -449,50 +477,147 @@ namespace {
 		sink += (Bounded(1.0) / Bounded(0.0)).lo();
 		(void)sink;
 
-		fails += expect_true(std::fegetround() == before, "the rounding mode is restored", reportTestCases);
+		fails += expect_true(std::fegetround() == before, "the rounding mode is unchanged",
+			reportTestCases);
 
-		// and it is restored from a non-default mode too
+		// and a caller's non-default mode survives a chain untouched
 		if (std::fesetround(FE_UPWARD) == 0) {
 			Bounded c = Bounded(1.0) / Bounded(3.0);
-			(void)c;
-			fails += expect_true(std::fegetround() == FE_UPWARD,
-				"a non-default rounding mode is restored", reportTestCases);
+			const bool preserved = (std::fegetround() == FE_UPWARD);
+			// the enclosure does not depend on the mode either
+			const bool encloses = (c.lo() <= 1.0 / 3.0 && 1.0 / 3.0 <= c.hi());
 			std::fesetround(before);
+			fails += expect_true(preserved, "a non-default rounding mode is left alone", reportTestCases);
+			fails += expect_true(encloses, "and the enclosure holds under it", reportTestCases);
 		}
 
 		return fails;
 	}
 
-	// ---- behaviour that is pinned although it looks wrong --------------------------
-	//
-	// Both checks below assert what the header does TODAY. They are here so that a fix
-	// shows up as a failing test rather than as a silent change in what callers see.
+	// ---- the metrics, including the cases that used to lie ---------------------------
 
-	int VerifyKnownDefects(bool reportTestCases) {
+	int VerifyErrorMetrics(bool reportTestCases) {
 		int fails = 0;
 
-		// An exact zero reports ZERO valid bits, while an exact 1.0 reports 53.
-		// relative_error() returns infinity when the midpoint is zero (there is no
-		// relative error to speak of), and valid_bits() maps a non-finite relative
-		// error to 0. A zero known exactly is not a value about which nothing is known.
+		// An exactly known value is at full precision whatever it holds, zero included.
+		// relative_error() used to divide by the midpoint first and return infinity at
+		// zero, so an exact zero reported ZERO valid bits while an exact 1.0 reported
+		// 53 (#1546). A zero known exactly is not a value about which nothing is known.
 		{
 			Bounded z = 0.0;
 			fails += expect_true(z.is_exact(), "exact zero is exact", reportTestCases);
 			fails += expect_exact(z.error(), 0.0, "exact zero has no error", reportTestCases);
-			fails += expect_exact(z.valid_bits(), 0.0,
-				"exact zero reports no valid bits (known defect #1546)", reportTestCases);
-			fails += expect_exact(Bounded(1.0).valid_bits(), 53.0,
-				"exact one reports full precision", reportTestCases);
+			fails += expect_exact(z.relative_error(), 0.0, "and no relative error", reportTestCases);
+			fails += expect_exact(z.valid_bits(), 53.0, "exact zero is at full precision",
+				reportTestCases);
+			fails += expect_exact(Bounded(1.0).valid_bits(), 53.0, "so is an exact one",
+				reportTestCases);
 		}
 
-		// operator== compares BOUNDS while operator< and operator> compare MIDPOINTS,
-		// so two intervals can be neither less, nor greater, nor equal.
+		// An interval spanning zero has no meaningful relative error, and nothing left
+		// to report in bits.
+		{
+			Bounded spanning(-1.0, 1.0);
+			fails += expect_true(!std::isfinite(spanning.relative_error()),
+				"an interval around zero has no relative error", reportTestCases);
+			fails += expect_exact(spanning.valid_bits(), 0.0, "and no valid bits", reportTestCases);
+		}
+
+		// valid_bits never goes negative, however wide the interval
+		{
+			Bounded huge(1.0, 1000.0);
+			fails += expect_true(huge.valid_bits() >= 0.0, "valid_bits is never negative",
+				reportTestCases);
+			fails += expect_true(huge.valid_bits() < 1.0, "a very wide interval has almost none",
+				reportTestCases);
+		}
+
+		// a narrower interval leaves more bits than a wider one around the same value
+		{
+			Bounded tight(0.9999, 1.0001), loose(0.9, 1.1);
+			fails += expect_true(tight.valid_bits() > loose.valid_bits(),
+				"a tighter interval leaves more valid bits", reportTestCases);
+		}
+
+		return fails;
+	}
+
+	// ---- intervals are partially ordered, and the operators agree with that ----------
+	//
+	// The comparison operators used to answer on midpoints while operator== answered on
+	// bounds, so [0,2] and [1,1] were neither less, nor greater, nor equal -- an
+	// ordering no algorithm could rely on (#1547). They now all answer on the bounds.
+
+	int VerifyPartialOrder(bool reportTestCases) {
+		int fails = 0;
+
+		// disjoint intervals are ordered, and the ordering agrees with definitely_less
+		{
+			Bounded a(1.0, 2.0), b(3.0, 4.0);
+			fails += expect_true(a < b, "[1,2] < [3,4]", reportTestCases);
+			fails += expect_true(b > a, "[3,4] > [1,2]", reportTestCases);
+			fails += expect_true(a <= b && b >= a, "and the inclusive forms agree", reportTestCases);
+			fails += expect_true(a.definitely_less(b) == (a < b),
+				"operator< agrees with definitely_less", reportTestCases);
+			fails += expect_true(!(a == b) && (a != b), "they are not the same interval",
+				reportTestCases);
+		}
+
+		// Overlapping intervals are INCOMPARABLE even when their midpoints are ordered.
+		// This is the case a midpoint comparison gets wrong: [0,10] has the lower
+		// midpoint, but it reaches above everything in [6,7], so no order holds.
+		{
+			Bounded spread(0.0, 10.0), narrow(6.0, 7.0);
+			fails += expect_true(spread.overlaps(narrow), "[0,10] overlaps [6,7]", reportTestCases);
+			fails += expect_true(!(spread < narrow),
+				"[0,10] is not less than [6,7], whatever the midpoints say", reportTestCases);
+			fails += expect_true(!(narrow > spread), "nor is [6,7] greater", reportTestCases);
+			fails += expect_true(!(spread <= narrow) && !(narrow >= spread),
+				"and neither inclusive form holds either", reportTestCases);
+		}
+
+		// overlapping intervals are INCOMPARABLE: no order holds, in either direction
 		{
 			Bounded wide(0.0, 2.0), point(1.0, 1.0);
-			fails += expect_true(!(wide < point), "[0,2] is not less than [1,1]", reportTestCases);
-			fails += expect_true(!(wide > point), "[0,2] is not greater than [1,1]", reportTestCases);
-			fails += expect_true(!(wide == point),
-				"[0,2] is not equal to [1,1] either (known defect #1547)", reportTestCases);
+			fails += expect_true(!(wide < point) && !(wide > point),
+				"[0,2] and [1,1] are not ordered", reportTestCases);
+			fails += expect_true(!(point < wide) && !(point > wide),
+				"nor the other way round", reportTestCases);
+			fails += expect_true(!(wide == point), "and they are not equal", reportTestCases);
+			fails += expect_true(wide.overlaps(point), "because they overlap", reportTestCases);
+		}
+
+		// the same interval compares equal, and the inclusive operators follow
+		{
+			Bounded a(1.0, 2.0), copy(1.0, 2.0);
+			fails += expect_true(a == copy, "equal bounds compare equal", reportTestCases);
+			fails += expect_true(a <= copy && a >= copy, "and satisfy both inclusive forms",
+				reportTestCases);
+			fails += expect_true(!(a < copy) && !(a > copy), "but neither strict form",
+				reportTestCases);
+		}
+
+		// a consistency law that the midpoint comparison broke: two intervals that are
+		// equal are never also strictly ordered, and two that are strictly ordered are
+		// never equal
+		{
+			const Bounded samples[] = { Bounded(0.0, 2.0), Bounded(1.0, 1.0), Bounded(1.0, 2.0),
+			                            Bounded(3.0, 4.0), Bounded(-1.0, 0.5), Bounded(0.0, 10.0),
+			                            Bounded(6.0, 7.0) };
+			for (const Bounded& x : samples) {
+				for (const Bounded& y : samples) {
+					const bool lt = x < y, gt = x > y, eq = x == y;
+					if ((eq && (lt || gt)) || (lt && gt)) {
+						++fails;
+						if (reportTestCases) std::cout << "    FAIL inconsistent ordering\n";
+					}
+					// an order in either direction rules out an overlap
+					if ((lt || gt) && x.overlaps(y)) {
+						++fails;
+						if (reportTestCases) std::cout << "    FAIL ordered a pair that overlaps\n";
+					}
+				}
+			}
 		}
 
 		return fails;
@@ -567,8 +692,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyOperationCounts(reportTestCases), test_tag, "operation counts");
 	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperations(reportTestCases), test_tag, "unary operations");
 	nrOfFailedTestCases += ReportTestResult(VerifyPredicatesAndSetOperations(reportTestCases), test_tag, "predicates and set operations");
-	nrOfFailedTestCases += ReportTestResult(VerifyRoundingModeIsRestored(reportTestCases), test_tag, "rounding mode restored");
-	nrOfFailedTestCases += ReportTestResult(VerifyKnownDefects(reportTestCases), test_tag, "pinned known defects");
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundingModeIsRestored(reportTestCases), test_tag, "rounding mode untouched");
+	nrOfFailedTestCases += ReportTestResult(VerifyErrorMetrics(reportTestCases), test_tag, "error metrics");
+	nrOfFailedTestCases += ReportTestResult(VerifyPartialOrder(reportTestCases), test_tag, "partial order");
 #endif
 
 #if REGRESSION_LEVEL_2

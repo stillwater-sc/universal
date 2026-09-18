@@ -19,8 +19,8 @@
 //     and never narrows through arithmetic
 //   - both wrappers count one operation per operation and sum the operand counts
 //
-// One check below pins behaviour that is wrong (#1547); it says so, so that a fix is
-// noticed here rather than silently changing what callers see.
+// A degenerate interval is checked to be exact in both senses -- is_exact() and a zero
+// error -- which #1547 corrected.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -181,19 +181,17 @@ namespace {
 				"the cfloat gap is the float gap", reportTestCases);
 		}
 
-		// an explicit override really changes the machinery: the bounded tracker reports
-		// bounds where the exact tracker reports a residual. What those bounds are for a
-		// result that ROUNDS is up to the optimizer -- see the note at the top of
-		// test_tracked_bounded.cpp, and #1544 -- so this checks the wiring, on operands whose own
-		// width settles the answer.
+		// an explicit override really changes the machinery: the bounded tracker brackets
+		// the true value where the exact tracker reports a residual
 		{
-			Tracked<double, ErrorStrategy::Bounded> a(1.0, 2.0), b(10.0, 20.0);
-			auto sum = a + b;
-			fails += expect_true(sum.lo() <= 11.0 && 22.0 <= sum.hi(),
-				"the bounded override encloses the sum", reportTestCases);
-			fails += expect_exact(sum.error(), sum.radius(), "the bounded override reports a radius",
+			Tracked<double, ErrorStrategy::Bounded> a = 1.0, b = 3.0;
+			auto q = a / b;
+			fails += expect_true(q.lo() <= 1.0 / 3.0 && 1.0 / 3.0 <= q.hi(),
+				"the bounded override encloses the quotient", reportTestCases);
+			fails += expect_true(q.width() > 0.0, "and widens for an inexact one", reportTestCases);
+			fails += expect_exact(q.error(), q.radius(), "the bounded override reports a radius",
 				reportTestCases);
-			fails += expect_count(sum.operations(), 1, "the bounded override counts the operation",
+			fails += expect_count(q.operations(), 1, "the bounded override counts the operation",
 				reportTestCases);
 		}
 
@@ -301,22 +299,31 @@ namespace {
 		return fails;
 	}
 
-	// ---- behaviour that is pinned although it is arguably wrong ---------------------------
+	// ---- a degenerate interval is exact, and says so -----------------------------------
 
-	int VerifyKnownDefects(bool reportTestCases) {
+	int VerifyDegenerateInterval(bool reportTestCases) {
 		int fails = 0;
 
-		// A degenerate interval [v,v] is exact -- is_exact() says so -- yet error()
-		// reports the smallest subnormal rather than zero, because interval::width()
-		// rounds its result outward unconditionally and nextafter(0) is denorm_min.
-		// Harmless in magnitude, but it means "exact" and "zero error" disagree, and a
-		// caller testing error() == 0 to detect an exact value never sees one.
+		// interval::width() rounds outward so it never understates the spread, but a
+		// degenerate interval has no spread to round: it used to come back as the
+		// smallest subnormal, so is_exact() and a zero error disagreed and a caller
+		// testing error() == 0 never saw an exact value (#1547).
 		Tracked<Interval> point(1.0, 1.0);
 		fails += expect_true(point.is_exact(), "a degenerate interval is exact", reportTestCases);
-		fails += expect_exact(point.error(), std::numeric_limits<double>::denorm_min(),
-			"but its error is one subnormal, not zero (known defect #1547)", reportTestCases);
-		fails += expect_exact(point.valid_bits(), 53.0,
-			"valid_bits takes the is_exact path and reports full precision", reportTestCases);
+		fails += expect_exact(point.error(), 0.0, "and its error is exactly zero", reportTestCases);
+		fails += expect_exact(point.relative_error(), 0.0, "as is its relative error", reportTestCases);
+		fails += expect_exact(point.valid_bits(), 53.0, "leaving full precision", reportTestCases);
+
+		// a proper interval still reports a width that does not understate the spread
+		Tracked<Interval> spread(0.99, 1.01);
+		fails += expect_true(spread.error() >= 1.01 - 0.99, "a proper width is not understated",
+			reportTestCases);
+		fails += expect_true(!spread.is_exact(), "and is not exact", reportTestCases);
+
+		// arithmetic on exact operands stays exact
+		auto sum = point + Tracked<Interval>(2.0, 2.0);
+		fails += expect_exact(sum.error(), 0.0, "exact plus exact stays exact", reportTestCases);
+		fails += expect_true(sum.is_exact(), "and reports so", reportTestCases);
 
 		return fails;
 	}
@@ -389,7 +396,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDelegation(reportTestCases), test_tag, "delegation");
 	nrOfFailedTestCases += ReportTestResult(VerifyTrackedAreal(reportTestCases), test_tag, "TrackedAreal");
 	nrOfFailedTestCases += ReportTestResult(VerifyTrackedInterval(reportTestCases), test_tag, "TrackedInterval");
-	nrOfFailedTestCases += ReportTestResult(VerifyKnownDefects(reportTestCases), test_tag, "pinned known defects");
+	nrOfFailedTestCases += ReportTestResult(VerifyDegenerateInterval(reportTestCases), test_tag, "degenerate interval");
 #endif
 
 #if REGRESSION_LEVEL_2
