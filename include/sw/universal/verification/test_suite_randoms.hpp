@@ -11,6 +11,7 @@
 #include <random>
 #include <limits>
 
+#include <universal/number/shared/specific_value_encoding.hpp>   // SpecificValue: the saturating reference clamp
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -136,6 +137,19 @@ namespace sw { namespace universal {
 		case RandomsOp::OPCODE_ASSIGN:
 			std::cerr << "executeBinary does not support unary operators\n";
 			break;
+		}
+		// A saturating type clamps an overflow of finite operands to maxpos/maxneg. Converting
+		// double's result would not: an overflow to inf converts to inf, which is right for an
+		// inf operand but not for a product or quotient that merely exceeds the range. So the
+		// reference clamps the same way the type does (#1557).
+		if constexpr (requires { TestType::isSaturating; }) {
+			if constexpr (TestType::isSaturating) {
+				const double maxpos = double(TestType(SpecificValue::maxpos));
+				if (std::isfinite(da) && std::isfinite(db) && !std::isnan(reference) && std::fabs(reference) > maxpos) {
+					testref = TestType(reference > 0 ? SpecificValue::maxpos : SpecificValue::maxneg);
+					return;
+				}
+			}
 		}
 		testref = reference;
 	}

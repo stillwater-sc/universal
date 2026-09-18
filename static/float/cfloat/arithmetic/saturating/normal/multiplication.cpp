@@ -39,7 +39,7 @@ void ReportIeee754InfinityArithmetic()
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -63,7 +63,7 @@ try {
 	constexpr bool hasMaxExpValues = false;
 	constexpr bool isSaturating    = true;
 
-	std::string test_suite         = "validation of classic cfloat saturating multiplication with just normals, no subnormals or max-exponent values";
+	std::string test_suite         = "classic cfloat saturating multiplication validation with just normals, no subnormals or max-exponent values";
 	std::string test_tag           = "cfloat_fft multiplication";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
@@ -73,7 +73,7 @@ try {
 	// shorthand alias types
 	using c16  = cfloat< 16,  5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 	using c32  = cfloat< 32,  8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
-	using c48  = cfloat< 48,  8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
+	using c48 [[maybe_unused]] = cfloat< 48,  8, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;   // manual testing only: see the randoms below
 	using c64  = cfloat< 64, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 	using c80  = cfloat< 80, 11, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
 	using c96  = cfloat< 96, 15, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating>;
@@ -170,10 +170,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<8, 5, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 8, 5,uint8_t, fft>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<8, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 8, 6,uint8_t, fft>", "multiplication");
 
-	nrRandoms = 0;
+	// randoms, against a double reference: exact for c16, c32 and c64, whose results round once;
+	// c48 is left out, since its 39-bit fraction rounds twice (to double, then to c48) and
+	// about 1 in 10,000 cases then disagree with the correctly rounded result
+	nrRandoms = 1000;
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c16).name(), "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c32).name(), "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c48).name(), "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c64).name(), "multiplication");
 	nrRandoms = 0; // TBD > double precision requires a vector of 64bit words to construct the random bits
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c80).name(), "multiplication");
