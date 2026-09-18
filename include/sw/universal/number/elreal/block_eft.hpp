@@ -27,6 +27,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 
+#include <vector>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -233,6 +234,19 @@ block_two_sum_rn(const block<FpType>& a, const block<FpType>& b) {
     assert(a.exp == b.exp
            && "block_two_sum_rn precondition: inputs must share exp");
     return block<FpType>{ a.v + b.v, a.exp };
+}
+
+// keep_product_block: add an EFT output block to a product pool -- normalised, and
+// only if non-zero. A block whose host value is subnormal is an EXACT part of the
+// product, not a value below the host's precision: a block's scale lives in its wide
+// exponent, and normalise() moves it there exactly. The producers used to drop such
+// blocks, which on half discarded genuine bits of every product whose residual came out
+// below half's smallest normal (#1396; see singleMultHelper in online_multiply.hpp).
+template <typename FpType>
+inline void keep_product_block(std::vector<block<FpType>>& pool, block<FpType> b) {
+    if (b.is_zero_block()) return;
+    b.normalise();
+    pool.push_back(b);
 }
 
 // block_two_mult(a, b): exact decomposition of a * b into (high, low).

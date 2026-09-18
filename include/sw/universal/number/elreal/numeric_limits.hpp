@@ -31,9 +31,14 @@ public:
 
     // value range follows the host FpType (values materialise to host blocks); the
     // EXPONENT is effectively unbounded (integer<256>), hence is_bounded = false.
-    static ElrealType min()    { return ElrealType(std::numeric_limits<FpType>::min()); }
-    static ElrealType max()    { return ElrealType(std::numeric_limits<FpType>::max()); }
-    static ElrealType lowest() { return ElrealType(std::numeric_limits<FpType>::lowest()); }
+    //
+    // Each host value is passed through a double, which holds every host's extremes
+    // exactly. elreal is constructible from the native floating-point types only, so
+    // building it straight from a Universal host's limits -- half, bfloat16 -- did not
+    // compile: nothing had ever instantiated these for such a host (#1463).
+    static ElrealType min()    { return ElrealType(static_cast<double>(std::numeric_limits<FpType>::min())); }
+    static ElrealType max()    { return ElrealType(static_cast<double>(std::numeric_limits<FpType>::max())); }
+    static ElrealType lowest() { return ElrealType(static_cast<double>(std::numeric_limits<FpType>::lowest())); }
     // Smallest increment from 1.0 at the nominal default precision, i.e. 2^-digits.
     //
     // Built as a block carrying its scale in the WIDE exponent rather than as
@@ -53,9 +58,9 @@ public:
     // return the minimum positive NORMALISED value, i.e. min().
     static ElrealType denorm_min()  { return min(); }
     // non-finite states (route through operator=(double), which classifies them).
-    static ElrealType infinity()      { return ElrealType(std::numeric_limits<FpType>::infinity()); }
-    static ElrealType quiet_NaN()     { return ElrealType(std::numeric_limits<FpType>::quiet_NaN()); }
-    static ElrealType signaling_NaN() { return ElrealType(std::numeric_limits<FpType>::quiet_NaN()); }
+    static ElrealType infinity()      { return ElrealType(std::numeric_limits<double>::infinity()); }
+    static ElrealType quiet_NaN()     { return ElrealType(std::numeric_limits<double>::quiet_NaN()); }
+    static ElrealType signaling_NaN() { return ElrealType(std::numeric_limits<double>::quiet_NaN()); }
 
     // precision-dependent: reported against the nominal default precision (blocks).
     static constexpr int  digits        = static_cast<int>(sw::universal::kElrealDefaultPrecision)

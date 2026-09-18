@@ -316,7 +316,11 @@ constexpr inline void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nb
 			tgt.setbits(raw);
 //			std::cout << "raw bits (all)   " << to_binary(raw) << '\n';
 			if constexpr (isSaturating) {
-				if (tgt.isnan()) {
+				// The source is finite here -- NaN, inf and zero returned above -- so an
+				// infinite result is as much an overflow artifact as a NaN one. Rounding at
+				// the all-ones exponent can land on either encoding depending on the
+				// fraction bits: a saturating cfloat<8,4> gave 16*20 = 240 but 16*28 = inf.
+				if (tgt.isnan() || tgt.isinf()) {
 					if (src.sign()) {
 						tgt.maxneg();	// map back to maxneg
 					}
@@ -387,7 +391,7 @@ constexpr inline void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nb
 
 			// saturation / overflow-to-inf handling (matches the bfbits < 65 path)
 			if constexpr (isSaturating) {
-				if (tgt.isnan()) {
+				if (tgt.isnan() || tgt.isinf()) {
 					if (src.sign()) {
 						tgt.maxneg();
 					}
@@ -4059,21 +4063,54 @@ constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturat
 	// Place the fraction at scale -1 so |fraction| lands in [0.5, 1) (std::frexp).
 	// A few extreme low-range configs (es <= 2, where the minimum normal exponent
 	// is >= 0) cannot represent any value below 1.0 as a normal, so [0.5,1) is not
-	// achievable; those fall back to the [1,2) fraction (scale 0). Either way the
-	// round-trip ldexp(frexp(x,&e),e) == x holds, since ldexp rebuilds the
-	// exponent from scale().
+	// achievable; those fall back to the [1,2) fraction (scale 0).
+	//
+	// The fraction is x scaled by an exact power of two, through ldexp. It used to be
+	// x with its exponent field rewritten, which is right only for a normal x: a
+	// subnormal's scale is in the position of its leading fraction bit, and the rewrite
+	// put a hidden bit in front of it -- frexp(0.625 * 2^-6) on a cfloat<8,4> with
+	// subnormals gave 0.8125. The round trip ldexp(frexp(x, &e), e) == x still held,
+	// because ldexp made the mirror-image error; fixing ldexp exposed it (#1396). The
+	// fraction is normal and holds every significant bit of x, so the scaling is exact.
 	constexpr int targetScale = (std::numeric_limits<Cfloat>::min_exponent <= 0) ? -1 : 0;
 	*exp = x.scale() - targetScale;       // scale() is floor(log2|x|); +1 for the [0.5,1) case
-	Cfloat fraction(x);
-	fraction.setexponent(targetScale);
-	return fraction;
+	return ldexp(x, -*exp);
 }
 
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ldexp(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& x, int exp) {
-	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> result(x);
-	int xexp = x.scale();
-	result.setexponent(xexp + exp);  // TODO: this does not work for subnormals
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
+	if (x.isnan() || x.isinf() || x.iszero()) return x;
+
+	// Fast path: a normal value that stays strictly inside the normal range only needs
+	// its exponent field rewritten, which is exact. This is what ldexp used to do in
+	// EVERY case, and it is wrong outside it: a subnormal carries its scale in the
+	// position of its leading fraction bit, not in the exponent field, so rewriting the
+	// field reinterpreted the fraction under a hidden bit. ldexp(2^-24, 24) on half
+	// returned 1.00098 rather than 1, and ldexp(2^-24, 1) returned 2^-24 unchanged --
+	// every one of half's subnormals came back wrong. The top of the range is excluded
+	// as well: MAX_EXP is the all-ones exponent field, which is inf/NaN when the format
+	// reserves it.
+	const long long target = static_cast<long long>(x.scale()) + exp;
+	if (x.isnormal() && target >= Cfloat::MIN_EXP_NORMAL && target < Cfloat::MAX_EXP) {
+		Cfloat result(x);
+		result.setexponent(static_cast<int>(target));
+		return result;
+	}
+
+	// General path: through the canonical 1.fff form, which normalize() produces for
+	// subnormal inputs too, and back through convert(), which rounds ONCE into the target
+	// and handles underflow to a subnormal or zero, overflow, and saturation. Far outside
+	// the range the result is zero or infinite whatever the exact shift, so the scale is
+	// clamped there to keep it an int.
+	blocktriple<Cfloat::fbits, BlockTripleOperator::REP, bt> t;
+	x.normalize(t);
+	constexpr long long lowest  = static_cast<long long>(Cfloat::MIN_EXP_SUBNORMAL) - 2;
+	constexpr long long highest = static_cast<long long>(Cfloat::MAX_EXP) + 2;
+	const long long clamped = target < lowest ? lowest : (target > highest ? highest : target);
+	t.setscale(static_cast<int>(clamped));
+	Cfloat result;
+	convert(t, result);
 	return result;
 }
 

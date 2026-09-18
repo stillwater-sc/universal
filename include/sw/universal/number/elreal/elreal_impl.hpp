@@ -167,12 +167,21 @@ public:
 
     // SpecificValue: materialise a named encoding. elreal now carries a non-finite
     // classification, so infpos/infneg/qnan/snan map to the corresponding states.
+    //
+    // The extremes are the HOST's, which is what numeric_limits<elreal<FpType>> reports
+    // too. They used to be double's magnitudes whatever the host: 1.0e308 cast to a float
+    // host is inf, which from_native rejects as a non-normalised block -- elreal<float>
+    // (maxpos) aborted -- and 1.0e-307 underflowed the cast, so minpos came back zero
+    // (#1463). Every host's extremes are exact in a double, so the round trip through
+    // operator=(double) is lossless.
     elreal(const SpecificValue code) : _value{}, _depth(elreal_default_precision()), _cls(elreal_class::finite) {
+        const double hostMax = static_cast<double>(std::numeric_limits<FpType>::max());
+        const double hostMin = static_cast<double>(std::numeric_limits<FpType>::min());
         switch (code) {
-            case SpecificValue::maxpos:  *this =  1.0e308;  break;
-            case SpecificValue::maxneg:  *this = -1.0e308;  break;
-            case SpecificValue::minpos:  *this =  1.0e-307; break;
-            case SpecificValue::minneg:  *this = -1.0e-307; break;
+            case SpecificValue::maxpos:  *this =  hostMax;  break;
+            case SpecificValue::maxneg:  *this = -hostMax;  break;
+            case SpecificValue::minpos:  *this =  hostMin;  break;
+            case SpecificValue::minneg:  *this = -hostMin;  break;
             case SpecificValue::infpos:  _cls = elreal_class::pinf; break;
             case SpecificValue::infneg:  _cls = elreal_class::ninf; break;
             case SpecificValue::qnan:
