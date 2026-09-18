@@ -154,8 +154,10 @@ inline ZBCL<FpType> twoDivZBCL(block<FpType> x, block<FpType> y) {
 //     (s,e) = twoDiv(rem.head(), g)      -- one quotient block, exact residual
 //     rem   = rem.tail() + e             -- carry
 //
-// The remainder stays small (1 block on a double host, up to ~6 on float), and is
-// capped so a pathological carry cannot grow it without bound.
+// The remainder stays small -- a few blocks on a double host, a dozen or so on half --
+// because each step consumes its top block while the new residual lands at most about
+// a block below it. It is kept WHOLE: it used to be truncated to 8 blocks, which on
+// half silently dropped bits whenever the remainder grew past that (#1558).
 //
 // PENDING BUFFER. The raw quotient blocks are not always 0-overlap: on a double host
 // they come out with gaps of k+1 and need nothing, but on float roughly 2 in 60 land
@@ -176,14 +178,24 @@ struct singleDivState {
     bool           exhausted{false}; // no further raw quotient blocks
 };
 
-// Blocks of lookahead kept before a quotient block is handed out, and the cap on the
-// running remainder. Both are small constants: their only job is to bound the work per
-// emitted block, and the structures they bound are O(1) in practice.
+// Blocks of lookahead kept before a quotient block is handed out: small, since its only
+// job is to let a late carry reach a block that has not been handed out yet.
 inline constexpr std::size_t kSingleDivLookahead = 3;
-inline constexpr std::size_t kSingleDivCarryCap  = 8;
 // Zero dividend blocks read past an empty remainder before the dividend is taken to have
 // ended (see singleDiv_step).
 inline constexpr std::size_t kSingleDivZeroRun   = 4;
+
+// singleDiv_whole(z): all of a finite stream, materialised. The running remainder and the
+// pending buffer are exact sums and must stay exact: truncating them to a fixed number of
+// blocks -- 8, as they once were -- drops bits of the quotient without a trace. On half
+// the remainder reaches 13 blocks inside e_zbcl, and the 8-block cap held every e_zbcl<half>
+// at 267 digits (#1558). Both structures stay O(1) in practice, so this costs nothing.
+template <typename FpType>
+inline ZBCL<FpType> singleDiv_whole(ZBCL<FpType> z) {
+    std::vector<block<FpType>> blocks;
+    for (; !z.is_empty(); z = z.tail()) blocks.push_back(z.head());
+    return zbcl_from_blocks<FpType>(std::move(blocks));
+}
 
 template <typename FpType>
 inline std::optional<block<FpType>> singleDiv_step(singleDivState<FpType>& st) {
@@ -191,8 +203,7 @@ inline std::optional<block<FpType>> singleDiv_step(singleDivState<FpType>& st) {
     for (;;) {
         if (!st.exhausted) {
             if (!st.cur.is_empty()) {
-                st.rem = zbcl_from_blocks<FpType>(
-                    add(st.rem, Z::singleton(st.cur.head())).take(kSingleDivCarryCap));
+                st.rem = singleDiv_whole(add(st.rem, Z::singleton(st.cur.head())));
                 st.cur = st.cur.tail();
             }
             if (st.rem.is_empty()) {
@@ -232,10 +243,8 @@ inline std::optional<block<FpType>> singleDiv_step(singleDivState<FpType>& st) {
             x.bias_for_eft();
             auto se = block_two_div_rem(x, st.gN);      // (s, e): x/g = s + e/g
             if (!se.first.is_normalised()) { st.exhausted = true; continue; }
-            st.rem = zbcl_from_blocks<FpType>(
-                add(st.rem.tail(), Z::singleton(se.second)).take(kSingleDivCarryCap));
-            st.pending = zbcl_from_blocks<FpType>(
-                add(st.pending, Z::singleton(se.first)).take(kSingleDivCarryCap));
+            st.rem = singleDiv_whole(add(st.rem.tail(), Z::singleton(se.second)));
+            st.pending = singleDiv_whole(add(st.pending, Z::singleton(se.first)));
             if (st.pending.take(kSingleDivLookahead + 1).size() > kSingleDivLookahead) {
                 block<FpType> out = st.pending.head();
                 st.pending = st.pending.tail();
