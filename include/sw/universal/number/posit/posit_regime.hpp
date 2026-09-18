@@ -145,8 +145,6 @@ private:
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend std::ostream& operator<< (std::ostream& ostr, const positRegime<nnbits, ees, bbt>& r);
-	template<unsigned nnbits, unsigned ees, typename bbt>
-	friend std::istream& operator>> (std::istream& istr, positRegime<nnbits, ees, bbt>& r);
 
 	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const positRegime<nnbits, ees, bbt>& lhs, const positRegime<nnbits, ees, bbt>& rhs);

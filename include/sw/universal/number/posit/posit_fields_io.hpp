@@ -46,12 +46,6 @@ inline std::ostream& operator<<(std::ostream& ostr, const positRegime<nbits, es,
 }
 
 template<unsigned nbits, unsigned es, typename bt>
-inline std::istream& operator>> (std::istream& istr, const positRegime<nbits, es, bt>& r) {
-	istr >> r._block;
-	return istr;
-}
-
-template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_string(const positRegime<nbits, es, bt>& r, bool dashExtent = true, bool nibbleMarker = false) {
 	std::stringstream s;
 	blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bb = r.bits();
@@ -92,12 +86,6 @@ inline std::ostream& operator<<(std::ostream& ostr, const positExponent<nbits, e
 }
 
 template<unsigned nbits, unsigned es, typename bt>
-inline std::istream& operator>> (std::istream& istr, const positExponent<nbits, es, bt>& e) {
-	istr >> e._Bits;
-	return istr;
-}
-
-template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_string(const positExponent<nbits, es, bt>& e, bool dashExtent = true, bool nibbleMarker = false) {
 	using UnsignedExponent = blockbinary<es, bt, BinaryNumberType::Unsigned>;
 	std::stringstream s;
@@ -132,7 +120,10 @@ inline std::ostream& operator<<(std::ostream& ostr, const positFraction<nfbits, 
 	if constexpr (nfbits > 0) {
 		int upperbound = int(nfbits) - 1;
 		for (int i = upperbound; i >= 0; --i) {
-			if (f._nrBits > ++nrOfFractionBitsProcessed) {
+			// post-increment, as to_string() below does: the pre-increment this used to
+			// have evaluated `1 > 1` for the last valid bit and printed '-' in its place,
+			// so the stream operator and to_string disagreed at every width (#1412)
+			if (f._nrBits > nrOfFractionBitsProcessed++) {
 				ostr << (f._block.test(unsigned(i)) ? "1" : "0");
 			}
 			else {
@@ -142,12 +133,6 @@ inline std::ostream& operator<<(std::ostream& ostr, const positFraction<nfbits, 
 	}
 	if (nrOfFractionBitsProcessed == 0) ostr << "~"; // for proper alignment in tables
 	return ostr;
-}
-
-template<unsigned nfbits, typename bbt>
-inline std::istream& operator>> (std::istream& istr, const positFraction<nfbits, bbt>& f) {
-	istr >> f._block;
-	return istr;
 }
 
 template<unsigned nfbits, typename bbt>

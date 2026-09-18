@@ -923,9 +923,17 @@ protected:
 	ereal& convert_signed(SignedInt v) noexcept {
 		if (0 == v) {
 			setzero();
+			return *this;
 		}
-		else {
-			// TBD
+		// The magnitude is taken in unsigned arithmetic, so the most negative value of
+		// the type -- whose negation does not fit it -- converts like any other.
+		const bool negative = v < 0;
+		const std::uint64_t magnitude = negative
+			? std::uint64_t(0) - static_cast<std::uint64_t>(v)
+			: static_cast<std::uint64_t>(v);
+		convert_unsigned(magnitude);
+		if (negative) {
+			for (auto& limb : _limb) limb = -limb;
 		}
 		return *this;
 	}
@@ -933,13 +941,42 @@ protected:
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
 	ereal& convert_unsigned(UnsignedInt v) noexcept {
-		if (0 == v) {
-			setzero();
+		// Both of these used to be `// TBD` for any non-zero value, so every ereal built
+		// or assigned from a non-zero integer was silently zero -- ereal(5), ereal(-7),
+		// `e = 42` all compared equal to 0 (#1460).
+		//
+		// operator=(char) routes here, and whether plain char is signed is up to the
+		// implementation. Send a signed type to the signed path, or a negative char
+		// would be read as a value near 2^64.
+		if constexpr (std::is_signed_v<UnsignedInt>) {
+			return convert_signed(v);
 		}
 		else {
-			// TBD
+			if (0 == v) {
+				setzero();
+				return *this;
+			}
+			const std::uint64_t u = static_cast<std::uint64_t>(v);
+			clear();
+			constexpr std::uint64_t exactInDouble = std::uint64_t(1) << 53;
+			if (u < exactInDouble) {
+				_limb[0] = static_cast<double>(u);     // every integer below 2^53 is exact
+				return *this;
+			}
+			// Above 2^53 a double cannot hold every integer, so split at 32 bits. Each half
+			// is exact in a double, and the scaled high half occupies bits the low half
+			// cannot reach, so the two form an expansion whose sum is exactly u; adding
+			// them through the ordinary path leaves it renormalized.
+			const double hi = static_cast<double>(u >> 32) * 4294967296.0;   // * 2^32, exact
+			const double lo = static_cast<double>(u & 0xFFFF'FFFFull);
+			_limb[0] = hi;
+			if (lo != 0.0) {
+				ereal tail;
+				tail._limb[0] = lo;
+				*this += tail;
+			}
+			return *this;
 		}
-		return *this;
 	}
 
 	template<typename Real,
@@ -1179,17 +1216,18 @@ inline ereal<maxlimbs> pown(const ereal<maxlimbs>& x, int n) {
 	}
 	if (x.isone()) return Real(1.0);
 
-	// Handle negative exponents: x^(-n) = 1 / x^n
-	if (n < 0) {
-		Real result = pown(x, -n);
-		return Real(1.0) / result;
-	}
+	// The magnitude of the exponent is taken in unsigned arithmetic. Negating n first,
+	// as this used to, is undefined for INT_MIN, whose negation does not fit an int
+	// (#1466). x^(-n) = 1 / x^n is applied once, at the end.
+	const bool negativeExponent = n < 0;
+	unsigned int exp = negativeExponent
+		? 0u - static_cast<unsigned int>(n)
+		: static_cast<unsigned int>(n);
 
 	// Positive integer power using repeated squaring
 	// This algorithm is O(log n) and maintains full precision
 	Real result(1.0);
 	Real base = x;
-	unsigned int exp = static_cast<unsigned int>(n);
 
 	while (exp > 0) {
 		if (exp & 1) {
@@ -1199,7 +1237,7 @@ inline ereal<maxlimbs> pown(const ereal<maxlimbs>& x, int n) {
 		exp >>= 1;
 	}
 
-	return result;
+	return negativeExponent ? Real(1.0) / result : result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
