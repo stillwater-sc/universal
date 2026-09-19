@@ -214,6 +214,20 @@ namespace {
 		const T a = std::ldexp(T(1.5), emax - 30), b = std::ldexp(T(1.25), 20);
 		const auto product = expansion_product(std::vector<T>{ a }, std::vector<T>{ b });
 		fails += expect(!product.empty() && std::isfinite(product[0]) && sum_of(product) == to_dyadic(a) * to_dyadic(b), n + ": a product near the top is finite and exact", reportTestCases);
+		// two_prod with a factor near the top of the range. For limbs wider than double it is
+		// Dekker's product, whose split multiplies by 2^s + 1 and would overflow on such a
+		// factor unless it is moved first; {max} * {2^-100} runs unscaled, so this is reached.
+		for (const T big : { max, std::ldexp(T(1.75), emax - 10) }) {
+			for (const T small : { std::ldexp(T(1), -100), std::ldexp(T(1.5) + std::numeric_limits<T>::epsilon(), -60) }) {
+				T x, y;
+				two_prod(big, small, x, y);
+				fails += expect(std::isfinite(x) && to_dyadic(x) + to_dyadic(y) == to_dyadic(big) * to_dyadic(small), n + ": two_prod with a factor near the top is error-free", reportTestCases);
+				two_prod(small, big, x, y);
+				fails += expect(std::isfinite(x) && to_dyadic(x) + to_dyadic(y) == to_dyadic(big) * to_dyadic(small), n + ": two_prod with the large factor second", reportTestCases);
+				const auto prod = expansion_product(std::vector<T>{ big }, std::vector<T>{ small });
+				fails += expect(sum_of(prod) == to_dyadic(big) * to_dyadic(small), n + ": {near max} * {small} is exact", reportTestCases);
+			}
+		}
 		// Scaling an operand down must not lose its smallest components. {max, denorm_min} is
 		// a valid expansion spanning the whole range; shifted down, its tail falls below the
 		// smallest subnormal. When the leading limbs then cancel, the tail is all that is left:

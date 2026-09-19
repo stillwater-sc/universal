@@ -183,23 +183,79 @@ inline void fast_two_sum(std::type_identity_t<FpType> a, std::type_identity_t<Fp
  * Given: two floating-point numbers a, b
  * Computes: x, y such that a * b = x + y exactly
  *
- * Modern implementation uses FMA (Fused Multiply-Add) for exact error computation:
+ * With a correctly rounded FMA the error term is one operation:
  *   x = a * b
  *   y = fma(a, b, -x)  // Computes (a*b - x) with no intermediate rounding
  *
- * Cost: 2 floating-point operations (with FMA support)
+ * That is what float and double use: every platform the library targets has an FMA
+ * instruction for them (CI's MinGW toolchain passes -mfma for exactly this reason).
  *
- * Without FMA, this requires Dekker's splitting algorithm (17 operations).
- * Since we assume IEEE-754 with FMA, we use the fast version.
+ * No platform has one for a type wider than double. x87 extended has no FMA at all, and
+ * binary128 is software everywhere, so std::fma on long double is a library routine --
+ * and not always a correct one: mingw-w64's fmal is not correctly rounded, which made
+ * two_prod on x87 limbs inexact on MinGW while the same code passed on glibc (#1569).
+ * Wider types therefore use Dekker's product with Veltkamp splitting instead, which is
+ * exact with ordinary operations and needs nothing from libm.
  */
+namespace detail_eft {
+
+    // Veltkamp's split: a == hi + lo, each half holding at most ceil(p/2) significant bits,
+    // so that the partial products below are exact
+    template<typename FpType>
+    inline void veltkamp_split(FpType a, FpType& hi, FpType& lo) {
+        constexpr int s = (std::numeric_limits<FpType>::digits + 1) / 2;
+        const FpType C = std::ldexp(FpType(1), s) + FpType(1);
+        volatile FpType c = C * a;
+        volatile FpType t = c - a;
+        hi = c - t;
+        lo = a - hi;
+    }
+
+    template<typename FpType>
+    inline void dekker_two_prod(FpType a, FpType b, FpType& x, FpType& y) {
+        constexpr int s = (std::numeric_limits<FpType>::digits + 1) / 2;
+        constexpr int k = s + 2;
+        // largest exponent the split can take: C * a must stay finite
+        constexpr int big = std::numeric_limits<FpType>::max_exponent - k;
+        if (a == FpType(0) || b == FpType(0) || !std::isfinite(a) || !std::isfinite(b)) {
+            x = a * b;
+            y = x - x;          // 0, or NaN for an infinite product, as fma(a, b, -x) gives
+            return;
+        }
+        // A factor too large to split is moved down by 2^k and the other up by 2^k: the
+        // product, and so x and y, are unchanged. If both are that large, the product
+        // overflows whatever is done.
+        if (std::ilogb(a) > big || std::ilogb(b) > big) {
+            if (std::ilogb(a) > big && std::ilogb(b) > big - k) { x = a * b; y = x - x; return; }
+            if (std::ilogb(b) > big && std::ilogb(a) > big - k) { x = a * b; y = x - x; return; }
+            if (std::ilogb(a) > big) { a = std::ldexp(a, -k); b = std::ldexp(b, k); }
+            else                     { b = std::ldexp(b, -k); a = std::ldexp(a, k); }
+        }
+        volatile FpType vx = a * b;
+        x = vx;
+        FpType ah, al, bh, bl;
+        veltkamp_split(a, ah, al);
+        veltkamp_split(b, bh, bl);
+        volatile FpType e1 = ah * bh - x;
+        volatile FpType e2 = e1 + ah * bl;
+        volatile FpType e3 = e2 + al * bh;
+        volatile FpType vy = e3 + al * bl;
+        y = vy;
+    }
+
+}  // namespace detail_eft
+
 template<typename FpType = double>
 inline void two_prod(std::type_identity_t<FpType> a, std::type_identity_t<FpType> b, FpType& x, FpType& y) {
     require_expansion_limb<FpType>();
-    volatile FpType vx = a * b;
-    x = vx;
-    // Use FMA if available for exact error computation
-    volatile FpType vy = std::fma(a, b, -vx);
-    y = vy;
+    if constexpr (std::numeric_limits<FpType>::digits > std::numeric_limits<double>::digits) {
+        detail_eft::dekker_two_prod<FpType>(a, b, x, y);
+    } else {
+        volatile FpType vx = a * b;
+        x = vx;
+        volatile FpType vy = std::fma(a, b, -vx);
+        y = vy;
+    }
 }
 
 // ============================================================================
