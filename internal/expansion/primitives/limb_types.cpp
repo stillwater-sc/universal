@@ -36,29 +36,9 @@ namespace {
 	using namespace sw::universal;
 	using namespace sw::universal::expansion_ops;
 
-	// The exact dyadic value of any binary floating-point value: the significand is taken
-	// 32 bits at a time, each step exact (a power-of-two scaling and a truncation of a value
-	// already known to have its low bits clear), so this holds for float, double, x87 and
-	// binary128 alike. dyadic::from_double would round a long double to 53 bits.
+	// the exact value of a limb of any type: dyadic::from_double would round a long double
 	template<typename T>
-	dyadic to_dyadic(T v) {
-		if (v == T(0)) return dyadic();
-		const bool negative = v < T(0);
-		int e = 0;
-		T m = std::frexp(negative ? -v : v, &e);                 // v == m * 2^e, m in [0.5, 1)
-		dyadic::bigint M(0);
-		int scale = e;
-		while (m != T(0)) {
-			m = std::ldexp(m, 32);
-			const T chunk = std::floor(m);
-			m -= chunk;
-			M <<= 32;
-			M += dyadic::bigint(static_cast<long long>(chunk));
-			scale -= 32;
-		}
-		if (negative) M = -M;
-		return dyadic(M, scale);
-	}
+	dyadic to_dyadic(T v) { return dyadic::from_fp(v); }
 	template<typename T>
 	dyadic sum_of(const std::vector<T>& e) {
 		dyadic acc;

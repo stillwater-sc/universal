@@ -9,11 +9,13 @@
 namespace sw { namespace universal {
 
 // core ereal types
-// NOTE: maxLimbs must be <= 19 for algorithmic correctness
-// (Shewchuk's expansion arithmetic requires normal doubles; larger values cause underflow)
-template<unsigned maxLimbs> class ereal;
-template<unsigned maxLimbs> ereal<maxLimbs> abs(const ereal<maxLimbs>&);
-template<unsigned maxLimbs> ereal<maxLimbs> fabs(const ereal<maxLimbs>&);
+// NOTE: maxLimbs must be <= max_safe_limbs of the limb type -- 19 for the default double
+// (Shewchuk's expansion arithmetic requires normal limbs; larger values cause underflow).
+// The defaults (8 limbs of double) are given on the definition in ereal_impl.hpp.
+template<unsigned maxLimbs, typename FpType> class ereal;
+template<unsigned maxLimbs, typename FpType> ereal<maxLimbs, FpType> abs(const ereal<maxLimbs, FpType>&);
+// fabs is still defined in the math library for double limbs only (#1567)
+template<unsigned maxLimbs> ereal<maxLimbs, double> fabs(const ereal<maxLimbs, double>&);
 
 }} // namespace sw::universal
 

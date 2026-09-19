@@ -20,6 +20,8 @@
 
 #include <cmath>
 #include <cstdint>
+#include <limits>
+#include <type_traits>
 
 namespace sw { namespace universal {
 
@@ -46,6 +48,32 @@ struct dyadic {
 		return dyadic(bigint(M), e - 53);
 	}
 
+	// Exact construction from any binary floating-point type -- float, double, x87
+	// extended, binary128. from_double would round a long double to 53 bits. The
+	// significand is taken 32 bits at a time: each step scales by 2^32 and takes the
+	// integer part of a value whose lower bits are already clear, so every step is exact
+	// in T itself (#1355). inf/nan are out of scope, as for from_double.
+	template<typename T>
+	static dyadic from_fp(T v) {
+		static_assert(std::is_floating_point_v<T> && std::numeric_limits<T>::radix == 2,
+		              "dyadic::from_fp needs a binary floating-point type");
+		if (v == T(0)) return dyadic();
+		const bool negative = v < T(0);
+		int e = 0;
+		T m = std::frexp(negative ? -v : v, &e);   // v == m * 2^e, m in [0.5, 1)
+		bigint M(0);
+		int s = e;
+		while (m != T(0)) {
+			m = std::ldexp(m, 32);
+			const T chunk = std::floor(m);
+			m -= chunk;
+			M <<= 32;
+			M += bigint(static_cast<long long>(chunk));
+			s -= 32;
+		}
+		if (negative) M = -M;
+		return dyadic(M, s);
+	}
 	bool iszero() const { return numerator.iszero(); }
 };
 
