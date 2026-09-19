@@ -1041,10 +1041,23 @@ protected:
 			// non-overlapping and in decreasing order. Bits below the limb type's range are
 			// lost, and a value above it is an infinity, as any narrowing conversion would give.
 			if (!std::isfinite(rhs) || rhs == Real(0)) { _limb[0] = static_cast<FpType>(rhs); return *this; }
+			// Overflow is decided before any cast: converting a finite value the limb type
+			// cannot represent is undefined behaviour by the letter of [conv.double] (#1570).
+			// The threshold is max + ulp(max)/2, not max: a value between the two rounds DOWN
+			// to max and is kept exactly, as {max, remainder}. At the threshold itself the tie
+			// goes to the even neighbour, 2^max_exponent, which is infinity. Only the first
+			// piece can overflow; every remainder after it is below half an ulp of it.
+			if constexpr (std::numeric_limits<Real>::max_exponent > std::numeric_limits<FpType>::max_exponent) {
+				const Real limit = static_cast<Real>(std::numeric_limits<FpType>::max())
+				                 + std::ldexp(Real(1), std::numeric_limits<FpType>::max_exponent - std::numeric_limits<FpType>::digits - 1);
+				if (std::fabs(rhs) >= limit) {
+					_limb[0] = (rhs < Real(0)) ? -std::numeric_limits<FpType>::infinity() : std::numeric_limits<FpType>::infinity();
+					return *this;
+				}
+			}
 			Real rest = rhs;
 			for (unsigned i = 0; i < maxlimbs && rest != Real(0); ++i) {
 				const FpType piece = static_cast<FpType>(rest);
-				if (!std::isfinite(piece)) { clear(); _limb[0] = piece; return *this; }   // overflow
 				if (piece == FpType(0)) break;                                             // below range
 				if (i == 0) _limb[0] = piece; else _limb.push_back(piece);
 				rest -= static_cast<Real>(piece);

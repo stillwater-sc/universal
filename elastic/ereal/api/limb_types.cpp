@@ -119,6 +119,21 @@ namespace {
 				fails += expect(value_of(R(ld)) == dyadic::from_fp(ld), name + ": long double 1/3 converts exactly", reportTestCases);
 			}
 		}
+		// Near the top of a narrower limb type's range: a value between max and
+		// max + ulp(max)/2 rounds down to max and is kept exactly as {max, remainder}; from
+		// max + ulp(max)/2 on, it overflows to a signed infinity (#1570).
+		if constexpr (std::numeric_limits<F>::max_exponent < std::numeric_limits<double>::max_exponent) {
+			const double top = static_cast<double>(std::numeric_limits<F>::max());
+			const double half_ulp = std::ldexp(1.0, std::numeric_limits<F>::max_exponent - std::numeric_limits<F>::digits - 1);
+			const double just_above = top + half_ulp / 2;
+			const R kept(just_above);
+			fails += expect(kept[0] == std::numeric_limits<F>::max() && value_of(kept) == dyadic::from_fp(just_above),
+			                name + ": max + ulp/4 is kept exactly, led by max", reportTestCases);
+			const R over(-(top + half_ulp));
+			fails += expect(over.isinf() && over.signbit() && over.limbs().size() == 1, name + ": -(max + ulp/2) is -inf", reportTestCases);
+			const R far(1.0e300);
+			fails += expect(far.isinf() && !far.signbit(), name + ": 1e300 is +inf", reportTestCases);
+		}
 		// back to double: the nearest double to the value
 		const R third = R(1.0) / R(3.0);
 		fails += expect(double(third) == 1.0 / 3.0, name + ": (1/3) converts back to the nearest double", reportTestCases);
