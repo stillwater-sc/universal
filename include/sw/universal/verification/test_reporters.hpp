@@ -10,6 +10,7 @@
 #include <typeinfo>
 #include <limits>
 #include <complex>
+#include <string>
 #include <universal/native/integers.hpp>
 #include <universal/native/ieee754.hpp>
 #include <math/complex/manipulators.hpp>

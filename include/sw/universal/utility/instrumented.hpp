@@ -38,6 +38,7 @@
 #include <atomic>
 #include <cmath>
 #include <type_traits>
+#include <string>
 
 #include "occurrence.hpp"
 

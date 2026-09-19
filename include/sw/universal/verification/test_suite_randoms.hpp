@@ -10,6 +10,7 @@
 #include <typeinfo>
 #include <random>
 #include <limits>
+#include <string>
 
 #include <universal/number/shared/specific_value_encoding.hpp>   // SpecificValue: the saturating reference clamp
 #include <universal/verification/test_status.hpp>

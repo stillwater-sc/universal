@@ -8,6 +8,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
 #include <iomanip>
+#include <string>
 
 #include <universal/utility/color_print.hpp>
 

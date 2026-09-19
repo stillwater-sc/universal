@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
+#include <string>
 #include <universal/number/shared/decimal_encoding.hpp>
 
 namespace sw { namespace universal {

@@ -7,6 +7,7 @@
 #include <universal/internal/blockbinary/manipulators.hpp>   // to_binary/to_hex on blockbinary (#1334)
 #include <iostream>
 #include <iomanip>
+#include <string>
 #include <universal/native/integers.hpp> // for to_binary(int)
 #include <universal/internal/blockbinary/blockbinary.hpp>
 

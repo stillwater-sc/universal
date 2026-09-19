@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <string>
+
 #ifndef UNIVERSAL_NUMBER_POSIT_EXCEPTIONS_HPP
 #define UNIVERSAL_NUMBER_POSIT_EXCEPTIONS_HPP
 #include <universal/common/exceptions.hpp>

@@ -5,6 +5,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>    // std::abs
+#include <cstdio>   // std::fprintf for the convergence diagnostic: no <iostream> in a math header (#1389)
+#include <limits>   // std::numeric_limits
 
 namespace sw::math::polynomial {
 
@@ -68,7 +71,7 @@ namespace sw::math::polynomial {
         }
 
         if (!converged) {
-           std::cerr << "polyroot: failed to converge\n";
+           std::fprintf(stderr, "polyroot: failed to converge\n");
             return Scalar(sw::universal::SpecificValue::snan);
         }
 

@@ -10,6 +10,8 @@
 #include <typeinfo>
 #include <random>
 #include <limits>
+#include <iomanip>
+#include <string>
 
 #include <universal/utility/architecture.hpp>         // UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP
 #include <universal/verification/test_reporters.hpp>  // error/success reporting

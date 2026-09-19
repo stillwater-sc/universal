@@ -14,6 +14,7 @@
 #include <typeinfo>
 #include <random>
 #include <limits>
+#include <string>
 
 namespace sw { namespace universal {
 

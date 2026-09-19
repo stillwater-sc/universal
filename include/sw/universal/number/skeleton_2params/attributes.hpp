@@ -6,6 +6,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath> // for std:pow()
+#include <iomanip>
+#include <sstream>
+#include <string>
 
 namespace sw { namespace universal {
 

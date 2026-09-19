@@ -6,6 +6,9 @@ name: ASCII Guard
 # break tooling. All C/C++ source, CMake, and build/automation scripts must
 # contain only 7-bit ASCII bytes. Documentation (*.md) and binary assets are
 # exempt. See CLAUDE.md 'No Unicode Characters' and tools/scripts/check-ascii.sh.
+#
+# The same job also runs tools/scripts/check-std-includes.py: every header under
+# include/sw must include the standard headers it uses (#1389).
 
 on:
   pull_request:
@@ -28,3 +31,7 @@ jobs:
           persist-credentials: false
       - name: Scan source and build files for non-ASCII bytes
         run: ./tools/scripts/check-ascii.sh
+      # Same job, so it gates the way check-ascii does: a header that uses a standard
+      # facility must include its header, not inherit it from the include graph (#1389).
+      - name: Check that headers include the standard headers they use
+        run: python3 ./tools/scripts/check-std-includes.py

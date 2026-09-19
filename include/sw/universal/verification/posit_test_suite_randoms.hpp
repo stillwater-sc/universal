@@ -10,6 +10,7 @@
 #include <typeinfo>
 #include <random>
 #include <limits>
+#include <string>
 
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp>
