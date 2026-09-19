@@ -843,6 +843,20 @@ namespace expansion_range {
     }
 
     // a leading component that overflowed on the way back up is the whole answer
+    // Split e into the components that scaling by 2^-s leaves exact (hi) and those it would
+    // not (lo): a component whose low bits would fall below the smallest subnormal. Only the
+    // hi part may go through a scaled computation; the lo part is added back unscaled.
+    // Dropping it -- as the range management did at first -- lost exact bits:
+    // {max, denorm_min} + {-max} came out 0 rather than denorm_min. A component failing the
+    // test has every component below it failing too, so lo is always a suffix of e, and both
+    // parts keep e's decreasing order.
+    template<typename FpType = double>
+    inline void split_for_scaling(const std::vector<FpType>& e, int s, std::vector<FpType>& hi, std::vector<FpType>& lo) {
+        for (FpType c : e) {
+            if (std::ldexp(std::ldexp(c, -s), s) == c) hi.push_back(c); else lo.push_back(c);
+        }
+    }
+
     template<typename FpType = double>
     inline std::vector<FpType> canonical_overflow(std::vector<FpType> r) {
         if (!r.empty() && std::isinf(r[0])) return std::vector<FpType>{ r[0] };
@@ -905,7 +919,19 @@ inline std::vector<FpType> expansion_product(const std::vector<FpType>& e, const
     const int excess = combined - limit;
     const int se = excess / 2;
     const int sf = excess - se;
-    return canonical_overflow(scaled(expansion_product_in_range(scaled(e, -se), scaled(f, -sf)), excess));
+    // e * f = ehi * fhi, scaled, plus the cross terms with the parts scaling would not keep;
+    // those involve a tiny factor, so they run unscaled and cannot overflow
+    std::vector<FpType> ehi, elo, fhi, flo;
+    split_for_scaling(e, se, ehi, elo);
+    split_for_scaling(f, sf, fhi, flo);
+    std::vector<FpType> result = canonical_overflow(scaled(expansion_product_in_range(scaled(ehi, -se), scaled(fhi, -sf)), excess));
+    if (elo.empty() && flo.empty()) return result;
+    if (!result.empty() && std::isinf(result[0])) return result;
+    if (!elo.empty())                 result = linear_expansion_sum(result, expansion_product_in_range(elo, f));
+    if (!flo.empty() && !ehi.empty()) result = linear_expansion_sum(result, expansion_product_in_range(ehi, flo));
+    result = renormalize_expansion(result);
+    if (result.empty()) result.push_back(FpType(0));  // canonical zero
+    return result;
 }
 
 /*
@@ -924,7 +950,14 @@ inline std::vector<FpType> expansion_sum_normalized(const std::vector<FpType>& e
     constexpr int limit = expansion_range_limits<FpType>::sum_limit;   // 1020 for double
     if (top <= limit) return renormalize_expansion(linear_expansion_sum(e, f));
     const int shift = top - limit;
-    return canonical_overflow(scaled(renormalize_expansion(linear_expansion_sum(scaled(e, -shift), scaled(f, -shift))), shift));
+    // only the components the shift keeps exact are summed scaled; the rest are added back
+    std::vector<FpType> ehi, elo, fhi, flo;
+    split_for_scaling(e, shift, ehi, elo);
+    split_for_scaling(f, shift, fhi, flo);
+    std::vector<FpType> result = canonical_overflow(scaled(renormalize_expansion(linear_expansion_sum(scaled(ehi, -shift), scaled(fhi, -shift))), shift));
+    if (elo.empty() && flo.empty()) return result;
+    if (!result.empty() && std::isinf(result[0])) return result;
+    return renormalize_expansion(linear_expansion_sum(result, linear_expansion_sum(elo, flo)));
 }
 
 /*

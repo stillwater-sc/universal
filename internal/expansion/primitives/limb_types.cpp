@@ -214,6 +214,16 @@ namespace {
 		const T a = std::ldexp(T(1.5), emax - 30), b = std::ldexp(T(1.25), 20);
 		const auto product = expansion_product(std::vector<T>{ a }, std::vector<T>{ b });
 		fails += expect(!product.empty() && std::isfinite(product[0]) && sum_of(product) == to_dyadic(a) * to_dyadic(b), n + ": a product near the top is finite and exact", reportTestCases);
+		// Scaling an operand down must not lose its smallest components. {max, denorm_min} is
+		// a valid expansion spanning the whole range; shifted down, its tail falls below the
+		// smallest subnormal. When the leading limbs then cancel, the tail is all that is left:
+		// {max, denorm_min} + {-max} was 0, and {max, denorm_min} * {1} lost the denorm_min.
+		const T tiny = std::numeric_limits<T>::denorm_min();
+		const std::vector<T> wide{ max, tiny };
+		const auto cancelled = expansion_sum_normalized(wide, std::vector<T>{ -max });
+		fails += expect(sum_of(cancelled) == to_dyadic(tiny), n + ": {max, denorm_min} + {-max} keeps denorm_min", reportTestCases);
+		const auto kept = expansion_product(wide, std::vector<T>{ T(1) });
+		fails += expect(sum_of(kept) == to_dyadic(max) + to_dyadic(tiny), n + ": {max, denorm_min} * {1} keeps denorm_min", reportTestCases);
 		return fails;
 	}
 
