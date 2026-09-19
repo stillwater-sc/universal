@@ -13,6 +13,9 @@
 //     division, so a dividend whose prefix divided exactly lost everything after it:
 //     x^83 / 83 kept 79 digits where x^83 / 81 kept 278 -- the 138-digit wall pi met next
 //
+// A fourth held e_zbcl<half> at 267 digits at every depth (#1558): single-block division
+// truncated its running remainder to 8 blocks, and on half the remainder grows past that.
+//
 // Each is checked directly below, and so is the convergence it was holding back. The
 // double-host half of #1397 -- sqrt2 scoring 319 against a 320-digit reference -- was not
 // the generator at all, but the reference's own rounding; those constants now carry 340
@@ -145,6 +148,32 @@ namespace {
 		return fails;
 	}
 
+	// ---- ...and keeps the whole running remainder ----------------------------------
+	//
+	// A single-block division carries a running remainder from one quotient block to the
+	// next. It was truncated to 8 blocks, and on half it grows past that: dividing the
+	// ninth term of the e series by 10 lost everything below 2^-883, and every e_zbcl<half>
+	// stopped at 267 digits (#1558). Each quotient, taken far enough, must give its dividend
+	// back to the full 320-digit cap.
+
+	int VerifyDivisionKeepsTheWholeRemainder(bool reportTestCases) {
+		using F = half;
+		int fails = 0;
+		const int floor_exp = detail::series_stop_exp<F>(100);
+		auto terms = detail::e_term_stream(from_native<F>(1.0), 1.0, floor_exp);   // 1/n!, each finite
+		for (int n = 1; n <= 40 && !terms.is_empty(); ++n, terms = terms.tail()) {
+			const ZBCL<F> dividend = terms.head();                                     // 1/(n-1)!
+			const auto quotient = first_blocks(div_online(dividend, from_native<F>(double(n))), 160);
+			const dyadic back = zbcl_to_dyadic(quotient) * dyadic::from_double(double(n));
+			const int digits = agreed_decimal_digits(back, zbcl_to_dyadic(dividend), 320);
+			if (digits < 320) {
+				++fails;
+				if (reportTestCases) std::cout << "    FAIL (1/" << (n - 1) << "!) / " << n << " gives its dividend back to " << digits << " digits\n";
+			}
+		}
+		return fails;
+	}
+
 	// ---- the constants the issues reported now converge -------------------------------
 
 	int VerifyHalfConstantsConverge(bool reportTestCases) {
@@ -153,6 +182,8 @@ namespace {
 		// k * log10(2) = 3.3 digits per block on half
 		fails += expect_digits(agreed_decimal_digits(pi_zbcl<half>(32),    s_pi),    110, "pi on half, depth 32", reportTestCases);
 		fails += expect_digits(agreed_decimal_digits(sqrt2_zbcl<half>(32), s_sqrt2),  90, "sqrt2 on half, depth 32", reportTestCases);
+		// e used to stop at 267 digits at every depth from 96 on (#1558)
+		fails += expect_digits(agreed_decimal_digits(e_zbcl<half>(96), s_e), 320, "e on half, depth 96", reportTestCases);
 		// and deeper evaluation keeps buying digits rather than stalling
 		fails += expect_true(agreed_decimal_digits(sqrt2_zbcl<half>(48), s_sqrt2) >
 		                     agreed_decimal_digits(sqrt2_zbcl<half>(32), s_sqrt2), "sqrt2 keeps refining", reportTestCases);
@@ -223,6 +254,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDivisionEndsAtAZeroTail<half>("half", reportTestCases), test_tag, "division ends at a zero tail, half");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivisionEndsAtAZeroTail<float>("float", reportTestCases), test_tag, "division ends at a zero tail, float");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivisionEndsAtAZeroTail<double>("double", reportTestCases), test_tag, "division ends at a zero tail, double");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivisionKeepsTheWholeRemainder(reportTestCases), test_tag, "division keeps the whole remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyHalfConstantsConverge(reportTestCases), test_tag, "half constants converge");
 	nrOfFailedTestCases += ReportTestResult(VerifyPerfectValueReachesTheCap(reportTestCases), test_tag, "perfect value reaches the cap");
 #endif
