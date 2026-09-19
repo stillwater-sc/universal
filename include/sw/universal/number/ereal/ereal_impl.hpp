@@ -58,20 +58,24 @@ namespace sw { namespace universal {
  * =====================================================================
  *
  * The ereal type uses Shewchuk's expansion arithmetic (two_sum/two_product algorithms)
- * which requires all components and error terms to be representable as NORMAL IEEE-754
- * double-precision values. These algorithms break down when components underflow to
+ * which requires all components and error terms to be representable as NORMAL values of
+ * the limb type FpType. These algorithms break down when components underflow to
  * subnormal values or zero.
  *
- * Each limb adds approximately 53 bits of precision (one double's mantissa).
- * After n limbs, the smallest representable correction term is approximately 2^(-53n).
- * This must remain >= DBL_MIN (2^-1022) to maintain the non-overlapping property.
+ * Each limb adds p = numeric_limits<FpType>::digits bits of precision. After n limbs, the
+ * smallest representable correction term is approximately 2^(-p*n). This must remain
+ * >= the smallest normal, 2^emin, to maintain the non-overlapping property:
  *
- * Mathematical limit:
- *   2^(-53n) >= 2^(-1022)
- *   -53n >= -1022
- *   n <= 19.28
+ *   n <= |emin| / p          digits ~= n * p * log10(2)
  *
- * Therefore: maxlimbs MUST be <= 19 for algorithmically correct operations.
+ *   limb        p     emin     max limbs   ~digits
+ *   float      24     -126         5          36
+ *   double     53    -1022        19         303
+ *   x87        64   -16382       255        4913
+ *   binary128 113   -16382       144        4898
+ *
+ * Therefore maxlimbs MUST be <= max_safe_limbs for algorithmically correct operations
+ * (19 for the default double limbs).
  *
  * Violating this constraint causes:
  *   - two_sum/two_product to produce incorrect error terms (lost to underflow)
@@ -83,25 +87,40 @@ namespace sw { namespace universal {
  */
 
 // ereal is a multi-component arbitrary-precision arithmetic type
-// Default to 8 limbs (approximately 127 decimal digits of precision)
-template<unsigned maxlimbs = 8>
+// Default to 8 limbs (approximately 127 decimal digits of precision) of type double.
+//
+// FpType is the limb: any p-bit IEEE-754 binary type (#1355) -- float, double, and long
+// double where it is x87 extended or binary128. IBM double-double, the default long
+// double on ppc64le, is refused: it is itself an expansion (see is_expansion_limb_v).
+// The wider limbs are not faster: binary128 is software on every CPU that has it, and
+// x87 has no FMA. What they buy is reach -- about 4900 digits against double's 303.
+template<unsigned maxlimbs = 8, typename FpType = double>
 class ereal {
 public:
 	static constexpr unsigned maxNrLimbs = maxlimbs;
+	using limb_type = FpType;
 
-	// IEEE-754 double precision constants for constructing special values
-	static constexpr int EXP_BIAS = 1023;
-	static constexpr int MAX_EXP = 1024;
-	static constexpr int MIN_EXP_NORMAL = -1022;
-	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - static_cast<int>(53 * maxlimbs);
+	// the limb type's own constants, from which the representable range follows
+	static constexpr int EXP_BIAS = std::numeric_limits<FpType>::max_exponent - 1;       // 1023 for double
+	static constexpr int MAX_EXP = std::numeric_limits<FpType>::max_exponent;             // 1024
+	static constexpr int MIN_EXP_NORMAL = std::numeric_limits<FpType>::min_exponent - 1;  // -1022
+	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - static_cast<int>(std::numeric_limits<FpType>::digits * maxlimbs);
+
+	// the most limbs whose last correction term stays normal: see the note above
+	static constexpr unsigned max_safe_limbs =
+		static_cast<unsigned>((-(std::numeric_limits<FpType>::min_exponent - 1)) / std::numeric_limits<FpType>::digits);
+
+	// decimal digits a limb carries, and the largest power of ten the limb type holds
+	static constexpr unsigned digits10_per_limb = static_cast<unsigned>(std::numeric_limits<FpType>::digits10) + 1u;  // 16 for double
+	static constexpr int      max_exponent10    = std::numeric_limits<FpType>::max_exponent10;                        // 308 for double
 
 	static constexpr bool bTraceDecimalConversion = false;
 	static constexpr bool bTraceDecimalRounding   = false;
 
 	// Newton-reciprocal iteration count for division, scaled to maxlimbs.
-	// expansion_reciprocal converges quadratically: from a 53-bit seed it carries
-	// ~53*2^k bits after k iterations. To reach the full ~53*maxlimbs bits we need
-	// 2^k >= maxlimbs, i.e. k = ceil(log2(maxlimbs)); +1 guard iteration absorbs
+	// expansion_reciprocal converges quadratically: from a one-limb, p-bit seed it carries
+	// ~p*2^k bits after k iterations. To reach the full ~p*maxlimbs bits we need
+	// 2^k >= maxlimbs, i.e. k = ceil(log2(maxlimbs)) whatever p is; +1 guard iteration absorbs
 	// rounding in the intermediate products. A fixed iterations=3 (the historical
 	// default) capped division -- and therefore every transcendental built on it --
 	// at ~130 digits regardless of maxlimbs (issue #1002 deeper root cause). Floored
@@ -114,16 +133,22 @@ public:
 		return iters < 3 ? 3 : iters;
 	}
 
-	// Enforce algorithmic validity: two_sum/two_product require normal doubles
-	// Maximum safe configuration is maxlimbs = 19 (approximately 303 decimal digits)
-	static_assert(maxlimbs <= 19,
-		"ereal<maxlimbs>: maxlimbs must be <= 19 to maintain algorithmic correctness. "
-		"Larger values cause the last limb to underflow below DBL_MIN, violating the "
-		"non-overlapping property required by Shewchuk's expansion arithmetic. "
-		"This results in incorrect two_sum/two_product operations and silent arithmetic errors.");
+	// Enforce algorithmic validity. The limb must be a type the error-free transformations
+	// are exact on, and the last limb's correction term must stay normal: for double
+	// limbs that is maxlimbs <= 19 (approximately 303 decimal digits).
+	static_assert(is_expansion_limb_v<FpType>,
+		"ereal<maxlimbs, FpType>: FpType must be a p-bit IEEE-754 binary type (float, double, "
+		"x87 extended or binary128 long double). IBM extended double-double -- the default "
+		"long double on ppc64le -- is itself a two-component expansion and cannot serve as a "
+		"limb; build with -mabi=ieeelongdouble for a binary128 long double there.");
+	static_assert(maxlimbs <= max_safe_limbs,
+		"ereal<maxlimbs, FpType>: maxlimbs must be <= max_safe_limbs = -(min_exponent - 1) / digits "
+		"of the limb type (5 for float, 19 for double, 255 for x87, 144 for binary128). More limbs "
+		"push the last one below the smallest normal, violating the non-overlapping property "
+		"Shewchuk's expansion arithmetic requires, and two_sum/two_product silently lose bits.");
 
 	// Partial-constexpr surface (issue #750): ereal carries a
-	// std::vector<double> _limb member, so any non-empty digit storage
+	// std::vector<FpType> _limb member, so any non-empty digit storage
 	// escapes constant evaluation under C++20's transient-allocation
 	// rule.  Default ctor uses is_constant_evaluated() dispatch: at
 	// compile time, _limb stays empty (each selector below is empty-
@@ -241,8 +266,8 @@ public:
 #endif 
 
 	// Component access
-	constexpr double  operator[](size_t i) const noexcept { return _limb[i]; }
-	constexpr double& operator[](size_t i) { return _limb[i]; }
+	constexpr FpType  operator[](size_t i) const noexcept { return _limb[i]; }
+	constexpr FpType& operator[](size_t i) { return _limb[i]; }
 
 	// prefix operators
 	ereal operator-() const {
@@ -285,7 +310,7 @@ public:
 	}
 	ereal& operator+=(double rhs) {
 		using namespace expansion_ops;
-		ereal<maxlimbs> rhs_expansion(rhs);
+		ereal<maxlimbs, FpType> rhs_expansion(rhs);
 		if (apply_ieee754_add_special_values(rhs_expansion)) return *this;
 		_limb = expansion_sum_normalized(_limb, rhs_expansion._limb);
 		return *this;
@@ -295,13 +320,13 @@ public:
 		// Subtraction is a + (-b). Apply the special-value rules to the
 		// effective sign-flipped RHS so e.g. (+Inf) - (-Inf) = +Inf + +Inf,
 		// not (+Inf) + (-Inf) = NaN.
-		ereal<maxlimbs> neg_rhs_e = -rhs;
+		ereal<maxlimbs, FpType> neg_rhs_e = -rhs;
 		if (apply_ieee754_add_special_values(neg_rhs_e)) return *this;
 		_limb = expansion_sum_normalized(_limb, neg_rhs_e._limb);
 		return *this;
 	}
 	ereal& operator-=(double rhs) {
-		return operator-=(ereal<maxlimbs>(rhs));
+		return operator-=(ereal<maxlimbs, FpType>(rhs));
 	}
 	ereal& operator*=(const ereal& rhs) {
 		using namespace expansion_ops;
@@ -317,7 +342,7 @@ public:
 		// applied uniformly (matches operator-=(double)). The free operator*
 		// overloads already construct an ereal for the scalar, so this keeps
 		// in-place `*= scalar` consistent with `x = x * scalar`.
-		return operator*=(ereal<maxlimbs>(rhs));
+		return operator*=(ereal<maxlimbs, FpType>(rhs));
 	}
 	ereal& operator/=(const ereal& rhs) {
 		using namespace expansion_ops;
@@ -332,7 +357,7 @@ public:
 	ereal& operator/=(double rhs) {
 		// Delegate to the ereal overload so the IEEE 754 special-value table and
 		// divide-by-zero handling apply uniformly (matches operator*=(double)).
-		return operator/=(ereal<maxlimbs>(rhs));
+		return operator/=(ereal<maxlimbs, FpType>(rhs));
 	}
 
 	// modifiers
@@ -342,43 +367,46 @@ public:
 	//  The std::bad_alloc exception would trigger std::terminate.`
 	void clear()                   { _limb.clear(); _limb.push_back(0.0); }
 	void setzero()                 { clear(); }
-	void setnan()                  { clear(); _limb[0] = std::numeric_limits<double>::quiet_NaN(); }
-	void setinf(bool sign = false) { clear(); _limb[0] = (sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity()); }
+	void setnan()                  { clear(); _limb[0] = std::numeric_limits<FpType>::quiet_NaN(); }
+	void setinf(bool sign = false) { clear(); _limb[0] = (sign ? -std::numeric_limits<FpType>::infinity() : std::numeric_limits<FpType>::infinity()); }
 
 	// Special value setters for numeric_limits support
 	ereal& maxpos() {
 		clear();
-		// Maximum positive value: DBL_MAX plus additional components following 2^-53 scaling
-		_limb[0] = 1.7976931348623157e+308;  // DBL_MAX = 2^1024 - 2^971
-		if (maxlimbs >= 2) _limb.push_back(9.9792015476735972e+291);  // ~= 2^971
-		if (maxlimbs >= 3) _limb.push_back(5.5395696628011126e+275);  // ~= 2^918
-		if (maxlimbs >= 4) _limb.push_back(3.0750789988826854e+259);  // ~= 2^865
-		// For maxlimbs > 4, additional components would need to be computed
-		// Each component follows: limb[i] ~= limb[i-1] * 2^-53
+		// Maximum positive value: the limb type's max plus up to three further components,
+		// each the previous one scaled by 2^-(p+1), so that each sits just below half an ulp
+		// of the one before and the whole is a non-overlapping expansion.
+		//
+		// For double these were decimal literals, 1.7976931348623157e+308 then
+		// 9.9792015476735972e+291, 5.5395696628011126e+275 and 3.0750789988826854e+259. The
+		// literals only approximated DBL_MAX * 2^-54k, and the fourth came out as
+		// 0x1.00000093c6e94p+862 -- more than half an ulp of the third, an overlapping
+		// component in the one value that is supposed to be the largest expansion (#1564).
+		constexpr int p = std::numeric_limits<FpType>::digits;
+		const FpType top = std::numeric_limits<FpType>::max();
+		_limb[0] = top;
+		for (unsigned i = 1; i < maxlimbs && i < 4; ++i) _limb.push_back(std::ldexp(top, -(p + 1) * static_cast<int>(i)));
 		return *this;
 	}
 
 	ereal& minpos() {
 		clear();
 		// Minimum positive normalized value
-		_limb[0] = std::numeric_limits<double>::min();  // DBL_MIN = 2^-1022
+		_limb[0] = std::numeric_limits<FpType>::min();  // the smallest normal: DBL_MIN for double
 		return *this;
 	}
 
 	ereal& minneg() {
 		clear();
 		// Minimum negative normalized value (closest to zero from below)
-		_limb[0] = -std::numeric_limits<double>::min();  // -DBL_MIN = -2^-1022
+		_limb[0] = -std::numeric_limits<FpType>::min();
 		return *this;
 	}
 
 	ereal& maxneg() {
-		clear();
 		// Maximum negative value: negative of maxpos components
-		_limb[0] = -1.7976931348623157e+308;  // -DBL_MAX
-		if (maxlimbs >= 2) _limb.push_back(-9.9792015476735972e+291);
-		if (maxlimbs >= 3) _limb.push_back(-5.5395696628011126e+275);
-		if (maxlimbs >= 4) _limb.push_back(-3.0750789988826854e+259);
+		maxpos();
+		for (auto& v : _limb) v = -v;
 		return *this;
 	}
 
@@ -388,7 +416,7 @@ public:
 	bool parse(const std::string& str) {
 		if (str.empty()) return false;
 
-		ereal<maxlimbs> result;
+		ereal<maxlimbs, FpType> result;
 		result.setzero();
 
 		size_t pos = 0;
@@ -429,7 +457,7 @@ public:
 		// Significant digits are accumulated into `result` as an integer via
 		// Horner (result = result*10 + digit); the decimal point and any explicit
 		// exponent are applied afterward as a power of ten. Accumulation stops
-		// after MAX_SIG_DIGITS significant digits because (a) ereal<maxlimbs>
+		// after MAX_SIG_DIGITS significant digits because (a) ereal<maxlimbs, FpType>
 		// cannot represent more than ~maxlimbs*16 decimal digits anyway, and
 		// (b) `result`'s leading component must stay below DBL_MAX, so the integer
 		// can hold at most ~307 digits. Past the cap, integer digits scale the
@@ -439,8 +467,10 @@ public:
 		bool sig_started = false;   // seen the first nonzero significant digit
 		unsigned numSig = 0;        // significant digits accumulated into result
 		int dropped_integer = 0;    // integer digits dropped past the cap (scale up)
-		const unsigned MAX_SIG_DIGITS = (maxlimbs * 16u + 16u < 307u) ? (maxlimbs * 16u + 16u) : 307u;
-		ereal<maxlimbs> ten(10.0);
+		// (16 digits per double limb, and double's 10^307 ceiling)
+		constexpr unsigned sigCap = static_cast<unsigned>(max_exponent10 - 1);
+		const unsigned MAX_SIG_DIGITS = (maxlimbs * digits10_per_limb + digits10_per_limb < sigCap) ? (maxlimbs * digits10_per_limb + digits10_per_limb) : sigCap;
+		ereal<maxlimbs, FpType> ten(10.0);
 
 		while (pos < str.length()) {
 			char c = str[pos];
@@ -458,7 +488,7 @@ public:
 				else if (numSig < MAX_SIG_DIGITS) {
 					// result = result * 10 + digit
 					result = result * ten;
-					result = result + ereal<maxlimbs>(static_cast<double>(digit));
+					result = result + ereal<maxlimbs, FpType>(static_cast<double>(digit));
 					++numSig;
 					if (decimal_point_seen) ++decimal_position;
 				}
@@ -536,7 +566,7 @@ public:
 			if (exponent > 0) {
 				int e = exponent;
 				while (e > 0 && !result.isinf() && !result.isnan()) {
-					int step = (e > 308) ? 308 : e;
+					int step = (e > max_exponent10) ? max_exponent10 : e;
 					result = result * pown(ten, step);
 					e -= step;
 				}
@@ -547,7 +577,7 @@ public:
 			}
 			else if (exponent < 0) {
 				int e = -exponent;
-				while (e > 308 && !result.iszero()) { result = result / pown(ten, 308); e -= 308; }
+				while (e > max_exponent10 && !result.iszero()) { result = result / pown(ten, max_exponent10); e -= max_exponent10; }
 				if (e > 0 && !result.iszero()) result = result / pown(ten, e);
 			}
 		}
@@ -558,7 +588,7 @@ public:
 		}
 
 		// Limit to the type's component budget. Components past maxlimbs lie below
-		// ereal<maxlimbs>'s representable precision and would be subnormal, which
+		// ereal<maxlimbs, FpType>'s representable precision and would be subnormal, which
 		// violates the normal-double invariant that Shewchuk's two_sum/two_product
 		// require. The expansion is in canonical decreasing-magnitude order, so the
 		// leading maxlimbs components carry the full representable value (#1006).
@@ -630,8 +660,8 @@ public:
 				int integerDigits = (fixed ? (powerOfTenScale + 1) : 1);
 				int nrDigits = integerDigits + static_cast<int>(precision);
 
-				// Adaptive buffer size: maxlimbs * 16 approximates available decimal digits
-				int minBuffer = static_cast<int>(maxlimbs) * 16;
+				// Adaptive buffer size: the decimal digits the limbs carry
+				int minBuffer = static_cast<int>(maxlimbs * digits10_per_limb);
 				int nrDigitsForFixedFormat = nrDigits;
 				if (fixed)
 					nrDigitsForFixedFormat = std::max(minBuffer, nrDigits);
@@ -647,7 +677,7 @@ public:
 				// must be rounded up to 1 to print correctly
 				// Use full ereal magnitude (not just _limb[0]) for correct multi-limb rounding
 				{
-				double fullMagnitude = std::fabs(static_cast<double>(*this));
+				FpType fullMagnitude = std::fabs(convert_to_ieee754<FpType>());
 				if (fixed && (precision == 0) && (fullMagnitude < 1.0)) {
 					s += (fullMagnitude >= 0.5) ? '1' : '0';
 				}
@@ -747,11 +777,11 @@ public:
 	bool                       signbit()     const noexcept { return !_limb.empty() && std::signbit(_limb[0]); }
 	constexpr int              sign()        const noexcept { return (isneg() ? -1 : 1); }
 	int64_t                    scale()       const noexcept { return _limb.empty() ? 0 : sw::universal::scale(_limb[0]); }
-	constexpr double           significant() const noexcept { return _limb.empty() ? 0.0 : _limb[0]; }
-	constexpr const std::vector<double>& limbs()       const noexcept { return _limb; }
+	constexpr FpType           significant() const noexcept { return _limb.empty() ? FpType(0) : _limb[0]; }
+	constexpr const std::vector<FpType>& limbs()       const noexcept { return _limb; }
 
 protected:
-	std::vector<double> _limb;     // components of the real value
+	std::vector<FpType> _limb;     // components of the real value
 
 	// HELPER methods
 
@@ -962,21 +992,32 @@ protected:
 			}
 			const std::uint64_t u = static_cast<std::uint64_t>(v);
 			clear();
-			constexpr std::uint64_t exactInDouble = std::uint64_t(1) << 53;
-			if (u < exactInDouble) {
-				_limb[0] = static_cast<double>(u);     // every integer below 2^53 is exact
+			constexpr int p = std::numeric_limits<FpType>::digits;
+			if constexpr (p >= 64) {
+				_limb[0] = static_cast<FpType>(u);     // every 64-bit integer is exact in such a limb
 				return *this;
 			}
-			// Above 2^53 a double cannot hold every integer, so split at 32 bits. Each half
-			// is exact in a double, and the scaled high half occupies bits the low half
-			// cannot reach, so the two form an expansion whose sum is exactly u; adding
-			// them through the ordinary path leaves it renormalized.
-			const double hi = static_cast<double>(u >> 32) * 4294967296.0;   // * 2^32, exact
-			const double lo = static_cast<double>(u & 0xFFFF'FFFFull);
-			_limb[0] = hi;
-			if (lo != 0.0) {
+			else {
+				if (u < (std::uint64_t(1) << p)) {
+					_limb[0] = static_cast<FpType>(u); // every integer below 2^p is exact in a limb
+					return *this;
+				}
+			}
+			// Otherwise a limb cannot hold every integer, so split it into chunks a limb does
+			// hold exactly: 32 bits for double (hi and lo halves), 16 for float. Each scaled
+			// chunk occupies bits the ones below it cannot reach, so the chunks form an
+			// expansion whose sum is exactly u; adding them through the ordinary path leaves
+			// it renormalized.
+			constexpr int chunk = (p >= 32) ? 32 : 16;
+			constexpr std::uint64_t mask = (std::uint64_t(1) << chunk) - 1u;
+			bool leading = true;
+			for (int shift = 64 - chunk; shift >= 0; shift -= chunk) {
+				const std::uint64_t c = (u >> shift) & mask;
+				if (c == 0) continue;
+				const FpType part = std::ldexp(static_cast<FpType>(c), shift);   // exact
+				if (leading) { _limb[0] = part; leading = false; continue; }
 				ereal tail;
-				tail._limb[0] = lo;
+				tail._limb[0] = part;
 				*this += tail;
 			}
 			return *this;
@@ -987,7 +1028,41 @@ protected:
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	ereal& convert_ieee754(Real rhs) noexcept {
 		clear();
-		_limb[0] = rhs;
+		constexpr bool fits = std::numeric_limits<Real>::digits <= std::numeric_limits<FpType>::digits
+		                   && std::numeric_limits<Real>::max_exponent <= std::numeric_limits<FpType>::max_exponent
+		                   && std::numeric_limits<Real>::min_exponent >= std::numeric_limits<FpType>::min_exponent;
+		if constexpr (fits) {
+			_limb[0] = static_cast<FpType>(rhs);   // exact: the limb type holds every value of Real
+		}
+		else {
+			// A value wider than one limb -- a double into float limbs, or an x87 long double
+			// into double limbs -- is split into an expansion: each limb is the rounded
+			// remainder, and the remainder after it is exact in Real. The pieces come out
+			// non-overlapping and in decreasing order. Bits below the limb type's range are
+			// lost, and a value above it is an infinity, as any narrowing conversion would give.
+			if (!std::isfinite(rhs) || rhs == Real(0)) { _limb[0] = static_cast<FpType>(rhs); return *this; }
+			// Overflow is decided before any cast: converting a finite value the limb type
+			// cannot represent is undefined behaviour by the letter of [conv.double] (#1570).
+			// The threshold is max + ulp(max)/2, not max: a value between the two rounds DOWN
+			// to max and is kept exactly, as {max, remainder}. At the threshold itself the tie
+			// goes to the even neighbour, 2^max_exponent, which is infinity. Only the first
+			// piece can overflow; every remainder after it is below half an ulp of it.
+			if constexpr (std::numeric_limits<Real>::max_exponent > std::numeric_limits<FpType>::max_exponent) {
+				const Real limit = static_cast<Real>(std::numeric_limits<FpType>::max())
+				                 + std::ldexp(Real(1), std::numeric_limits<FpType>::max_exponent - std::numeric_limits<FpType>::digits - 1);
+				if (std::fabs(rhs) >= limit) {
+					_limb[0] = (rhs < Real(0)) ? -std::numeric_limits<FpType>::infinity() : std::numeric_limits<FpType>::infinity();
+					return *this;
+				}
+			}
+			Real rest = rhs;
+			for (unsigned i = 0; i < maxlimbs && rest != Real(0); ++i) {
+				const FpType piece = static_cast<FpType>(rest);
+				if (piece == FpType(0)) break;                                             // below range
+				if (i == 0) _limb[0] = piece; else _limb.push_back(piece);
+				rest -= static_cast<Real>(piece);
+			}
+		}
 		return *this;
 	}
 
@@ -1027,15 +1102,24 @@ protected:
 		e = static_cast<int>(_log2 * e); // estimate the power of ten exponent
 
 		// r = abs(*this) - use the free function abs() which is defined earlier in the file
-		ereal<maxlimbs> r = sw::universal::abs(*this);
-		const ereal<maxlimbs> _ten(10.0);
-		const ereal<maxlimbs> _one(1.0);
+		ereal<maxlimbs, FpType> r = sw::universal::abs(*this);
+		const ereal<maxlimbs, FpType> _ten(10.0);
+		const ereal<maxlimbs, FpType> _one(1.0);
+
+		// exact power-of-two scaling of every limb; used near the ends of the range, where
+		// 10^|e| would overflow the limb type (e beyond 300 for double limbs)
+		constexpr int p = std::numeric_limits<FpType>::digits;
+		constexpr int nearRangeEnd = max_exponent10 - 8;
+		auto scaled = [](ereal<maxlimbs, FpType> x, int k) {
+			for (auto& v : x._limb) v = std::ldexp(v, k);
+			return x;
+		};
 
 		if (e < 0) {
-			if (e < -300) {
-				r = ldexp(r, 53);
+			if (e < -nearRangeEnd) {
+				r = scaled(r, p);
 				r *= pown(_ten, -e);
-				r = ldexp(r, -53);
+				r = scaled(r, -p);
 			}
 			else {
 				r *= pown(_ten, -e);
@@ -1043,10 +1127,10 @@ protected:
 		}
 		else {
 			if (e > 0) {
-				if (e > 300) {
-					r = ldexp(r, -53);
+				if (e > nearRangeEnd) {
+					r = scaled(r, -p);
 					r /= pown(_ten, e);
-					r = ldexp(r, 53);
+					r = scaled(r, p);
 				}
 				else {
 					r /= pown(_ten, e);
@@ -1193,23 +1277,23 @@ protected:
 private:
 
 	// find the most significant bit set
-	template<unsigned nnlimbs>
-	friend signed findMsb(const ereal<nnlimbs>& v);
+	template<unsigned nnlimbs, typename FFpType>
+	friend signed findMsb(const ereal<nnlimbs, FFpType>& v);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////    ereal functions   /////////////////////////////////
 
-template<unsigned nlimbs>
-inline ereal<nlimbs> abs(const ereal<nlimbs>& a) {
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> abs(const ereal<nlimbs, FpType>& a) {
 	return (a < 0 ? -a : a);
 }
 
 // pown returns x raised to the integer power n
 // Adaptive-precision repeated squaring (no double conversion)
-template<unsigned maxlimbs>
-inline ereal<maxlimbs> pown(const ereal<maxlimbs>& x, int n) {
-	using Real = ereal<maxlimbs>;
+template<unsigned maxlimbs, typename FpType>
+inline ereal<maxlimbs, FpType> pown(const ereal<maxlimbs, FpType>& x, int n) {
+	using Real = ereal<maxlimbs, FpType>;
 
 	// Special cases
 	if (n == 0) return Real(1.0);
@@ -1248,8 +1332,8 @@ inline ereal<maxlimbs> pown(const ereal<maxlimbs>& x, int n) {
 /// string parsing
 
 // read a ereal ASCII format and make a binary ereal out of it
-template<unsigned nlimbs>
-bool parse(const std::string& txt, ereal<nlimbs>& value) {
+template<unsigned nlimbs, typename FpType>
+bool parse(const std::string& txt, ereal<nlimbs, FpType>& value) {
 	return value.parse(txt);
 }
 
@@ -1257,58 +1341,58 @@ bool parse(const std::string& txt, ereal<nlimbs>& value) {
 // ereal - ereal binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-template<unsigned nlimbs>
-inline bool operator==(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator==(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
 	using namespace expansion_ops;
 	return compare_adaptive(lhs.limbs(), rhs.limbs()) == 0;
 }
-template<unsigned nlimbs>
-inline bool operator!=(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator!=(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
 	return !operator==(lhs, rhs);
 }
-template<unsigned nlimbs>
-inline bool operator< (const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator< (const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
 	using namespace expansion_ops;
 	return compare_adaptive(lhs.limbs(), rhs.limbs()) < 0;
 }
-template<unsigned nlimbs>
-inline bool operator> (const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator> (const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
 	return operator< (rhs, lhs);
 }
-template<unsigned nlimbs>
-inline bool operator<=(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator<=(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-template<unsigned nlimbs>
-inline bool operator>=(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator>=(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // ereal - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
-template<unsigned nlimbs>
-inline bool operator==(const ereal<nlimbs>& lhs, double rhs) {
-	return operator==(lhs, ereal<nlimbs>(rhs));
+template<unsigned nlimbs, typename FpType>
+inline bool operator==(const ereal<nlimbs, FpType>& lhs, double rhs) {
+	return operator==(lhs, ereal<nlimbs, FpType>(rhs));
 }
-template<unsigned nlimbs>
-inline bool operator!=(const ereal<nlimbs>& lhs, double rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator!=(const ereal<nlimbs, FpType>& lhs, double rhs) {
 	return !operator==(lhs, rhs);
 }
-template<unsigned nlimbs>
-inline bool operator< (const ereal<nlimbs>& lhs, double rhs) {
-	return operator<(lhs, ereal<nlimbs>(rhs));
+template<unsigned nlimbs, typename FpType>
+inline bool operator< (const ereal<nlimbs, FpType>& lhs, double rhs) {
+	return operator<(lhs, ereal<nlimbs, FpType>(rhs));
 }
-template<unsigned nlimbs>
-inline bool operator> (const ereal<nlimbs>& lhs, double rhs) {
-	return operator< (ereal<nlimbs>(rhs), lhs);
+template<unsigned nlimbs, typename FpType>
+inline bool operator> (const ereal<nlimbs, FpType>& lhs, double rhs) {
+	return operator< (ereal<nlimbs, FpType>(rhs), lhs);
 }
-template<unsigned nlimbs>
-inline bool operator<=(const ereal<nlimbs>& lhs, double rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator<=(const ereal<nlimbs, FpType>& lhs, double rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-template<unsigned nlimbs>
-inline bool operator>=(const ereal<nlimbs>& lhs, double rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator>=(const ereal<nlimbs, FpType>& lhs, double rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -1316,28 +1400,28 @@ inline bool operator>=(const ereal<nlimbs>& lhs, double rhs) {
 // literal - ereal binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-template<unsigned nlimbs>
-inline bool operator==(double lhs, const ereal<nlimbs>& rhs) {
-	return operator==(ereal<nlimbs>(lhs), rhs);
+template<unsigned nlimbs, typename FpType>
+inline bool operator==(double lhs, const ereal<nlimbs, FpType>& rhs) {
+	return operator==(ereal<nlimbs, FpType>(lhs), rhs);
 }
-template<unsigned nlimbs>
-inline bool operator!=(double lhs, const ereal<nlimbs>& rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator!=(double lhs, const ereal<nlimbs, FpType>& rhs) {
 	return !operator==(lhs, rhs);
 }
-template<unsigned nlimbs>
-inline bool operator< (double lhs, const ereal<nlimbs>& rhs) {
-	return operator<(ereal<nlimbs>(lhs), rhs);
+template<unsigned nlimbs, typename FpType>
+inline bool operator< (double lhs, const ereal<nlimbs, FpType>& rhs) {
+	return operator<(ereal<nlimbs, FpType>(lhs), rhs);
 }
-template<unsigned nlimbs>
-inline bool operator> (double lhs, const ereal<nlimbs>& rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator> (double lhs, const ereal<nlimbs, FpType>& rhs) {
 	return operator< (rhs, lhs);
 }
-template<unsigned nlimbs>
-inline bool operator<=(double lhs, const ereal<nlimbs>& rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator<=(double lhs, const ereal<nlimbs, FpType>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-template<unsigned nlimbs>
-inline bool operator>=(double lhs, const ereal<nlimbs>& rhs) {
+template<unsigned nlimbs, typename FpType>
+inline bool operator>=(double lhs, const ereal<nlimbs, FpType>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -1346,30 +1430,30 @@ inline bool operator>=(double lhs, const ereal<nlimbs>& rhs) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // ereal - ereal binary arithmetic operators
 // BINARY ADDITION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator+(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
-	ereal<nlimbs> sum = lhs;
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator+(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
+	ereal<nlimbs, FpType> sum = lhs;
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator-(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
-	ereal<nlimbs> diff = lhs;
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator-(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
+	ereal<nlimbs, FpType> diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator*(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
-	ereal<nlimbs> mul = lhs;
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator*(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
+	ereal<nlimbs, FpType> mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator/(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rhs) {
-	ereal<nlimbs> ratio = lhs;
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator/(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
+	ereal<nlimbs, FpType> ratio = lhs;
 	ratio /= rhs;
 	return ratio;
 }
@@ -1377,47 +1461,47 @@ inline ereal<nlimbs> operator/(const ereal<nlimbs>& lhs, const ereal<nlimbs>& rh
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // ereal - literal binary arithmetic operators
 // BINARY ADDITION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator+(const ereal<nlimbs>& lhs, double rhs) {
-	return operator+(lhs, ereal<nlimbs>(rhs));
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator+(const ereal<nlimbs, FpType>& lhs, double rhs) {
+	return operator+(lhs, ereal<nlimbs, FpType>(rhs));
 }
 // BINARY SUBTRACTION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator-(const ereal<nlimbs>& lhs, double rhs) {
-	return operator-(lhs, ereal<nlimbs>(rhs));
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator-(const ereal<nlimbs, FpType>& lhs, double rhs) {
+	return operator-(lhs, ereal<nlimbs, FpType>(rhs));
 }
 // BINARY MULTIPLICATION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator*(const ereal<nlimbs>& lhs, double rhs) {
-	return operator*(lhs, ereal<nlimbs>(rhs));
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator*(const ereal<nlimbs, FpType>& lhs, double rhs) {
+	return operator*(lhs, ereal<nlimbs, FpType>(rhs));
 }
 // BINARY DIVISION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator/(const ereal<nlimbs>& lhs, double rhs) {
-	return operator/(lhs, ereal<nlimbs>(rhs));
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator/(const ereal<nlimbs, FpType>& lhs, double rhs) {
+	return operator/(lhs, ereal<nlimbs, FpType>(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - ereal binary arithmetic operators
 // BINARY ADDITION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator+(double lhs, const ereal<nlimbs>& rhs) {
-	return operator+(ereal<nlimbs>(lhs), rhs);
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator+(double lhs, const ereal<nlimbs, FpType>& rhs) {
+	return operator+(ereal<nlimbs, FpType>(lhs), rhs);
 }
 // BINARY SUBTRACTION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator-(double lhs, const ereal<nlimbs>& rhs) {
-	return operator-(ereal<nlimbs>(lhs), rhs);
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator-(double lhs, const ereal<nlimbs, FpType>& rhs) {
+	return operator-(ereal<nlimbs, FpType>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator*(double lhs, const ereal<nlimbs>& rhs) {
-	return operator*(ereal<nlimbs>(lhs), rhs);
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator*(double lhs, const ereal<nlimbs, FpType>& rhs) {
+	return operator*(ereal<nlimbs, FpType>(lhs), rhs);
 }
 // BINARY DIVISION
-template<unsigned nlimbs>
-inline ereal<nlimbs> operator/(double lhs, const ereal<nlimbs>& rhs) {
-	return operator/(ereal<nlimbs>(lhs), rhs);
+template<unsigned nlimbs, typename FpType>
+inline ereal<nlimbs, FpType> operator/(double lhs, const ereal<nlimbs, FpType>& rhs) {
+	return operator/(ereal<nlimbs, FpType>(lhs), rhs);
 }
 
 }} // namespace sw::universal
