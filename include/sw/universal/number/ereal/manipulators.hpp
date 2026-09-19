@@ -30,9 +30,14 @@
 namespace sw { namespace universal {
 
 // Generate a type tag
-template<unsigned nlimbs>
-std::string type_tag(const ereal<nlimbs>& = {}) {
-	return std::string("ereal<") + std::to_string(nlimbs) + std::string(">");
+// ereal<8> for the default double limbs, as always; the limb type is named otherwise:
+// ereal<5, float>, ereal<24, long double>
+template<unsigned nlimbs, typename FpType>
+std::string type_tag(const ereal<nlimbs, FpType>& = {}) {
+	std::string limb;
+	if constexpr (std::is_same_v<FpType, float>) limb = ", float";
+	else if constexpr (std::is_same_v<FpType, long double>) limb = ", long double";
+	return std::string("ereal<") + std::to_string(nlimbs) + limb + std::string(">");
 }
 
 // Generate a string representing the ereal components: sign, exponent, faction and value
