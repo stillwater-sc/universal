@@ -21,6 +21,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
+#include <limits>
 #include <cstddef>
 #include <vector>
 #include <universal/number/ereal/ereal.hpp>
@@ -52,40 +53,43 @@ struct PriestNormalResult {
 // or { None } if the expansion is in Priest normal form. Does not throw.
 // Exposed directly so tests can feed crafted (non-normal) limb vectors that
 // ereal's own operations would never produce.
-inline PriestNormalResult check_priest_normal(const std::vector<double>& L) noexcept {
+// The limb type is deduced (double by default, so a braced list still means double limbs);
+// the overlap bound is half an ulp of the limb type, 2^(ilogb(z_k) - digits).
+template<typename FpType = double>
+inline PriestNormalResult check_priest_normal(const std::vector<FpType>& L) noexcept {
 	using R = PriestNormalResult;
 	R r;
 
 	// Canonical zero: a single 0.0 limb is normal by definition.
-	if (L.size() == 1 && L[0] == 0.0) return r;
+	if (L.size() == 1 && L[0] == FpType(0)) return r;
 
 	for (std::size_t i = 0; i < L.size(); ++i) {
 		// A non-finite limb is not a valid normal-form component; flag it before
 		// the ilogb below, where std::ilogb(inf/nan) returns INT_MIN/INT_MAX and
 		// the subsequent "- 53" would be signed-integer overflow (UB).
 		if (!std::isfinite(L[i])) { r.violation = R::Violation::NonFinite; r.index = i; return r; }
-		if (L[i] == 0.0) { r.violation = R::Violation::InteriorZero; r.index = i; return r; }
+		if (L[i] == FpType(0)) { r.violation = R::Violation::InteriorZero; r.index = i; return r; }
 	}
 	for (std::size_t i = 0; i + 1 < L.size(); ++i) {
-		const double cur  = std::abs(L[i]);
-		const double next = std::abs(L[i + 1]);
+		const FpType cur  = std::abs(L[i]);
+		const FpType next = std::abs(L[i + 1]);
 		if (next > cur) { r.violation = R::Violation::NonDecreasing; r.index = i; return r; }
-		// ulp(z_k)/2 == 2^(ilogb(z_k) - 53) for a normal double z_k.
-		const double half_ulp = std::ldexp(1.0, std::ilogb(L[i]) - 53);
+		// ulp(z_k)/2 == 2^(ilogb(z_k) - p) for a normal z_k, p = digits of the limb (53 for double).
+		const FpType half_ulp = std::ldexp(FpType(1), std::ilogb(L[i]) - std::numeric_limits<FpType>::digits);
 		if (next > half_ulp) { r.violation = R::Violation::Overlap; r.index = i; return r; }
 	}
 	return r;
 }
 
 // Check Priest's normal form on an ereal expansion.
-template<unsigned maxlimbs>
-PriestNormalResult check_priest_normal(const ereal<maxlimbs>& v) noexcept {
+template<unsigned maxlimbs, typename FpType>
+PriestNormalResult check_priest_normal(const ereal<maxlimbs, FpType>& v) noexcept {
 	return check_priest_normal(v.limbs());
 }
 
 // Convenience predicate.
-template<unsigned maxlimbs>
-bool is_priest_normal(const ereal<maxlimbs>& v) noexcept {
+template<unsigned maxlimbs, typename FpType>
+bool is_priest_normal(const ereal<maxlimbs, FpType>& v) noexcept {
 	return check_priest_normal(v.limbs()).ok();
 }
 
@@ -94,11 +98,11 @@ bool is_priest_normal(const ereal<maxlimbs>& v) noexcept {
 // (#954 D2): the widest configuration ereal<19> is the value-canonical ground
 // truth for any narrower one, so a narrow result lifted to wide must equal the
 // same operation computed at wide precision.
-template<unsigned WIDE, unsigned NARROW>
-ereal<WIDE> widen(const ereal<NARROW>& v) {
+template<unsigned WIDE, unsigned NARROW, typename FpType>
+ereal<WIDE, FpType> widen(const ereal<NARROW, FpType>& v) {
 	static_assert(WIDE >= NARROW, "widen<WIDE, NARROW>: target configuration must be at least as wide as the source");
-	ereal<WIDE> w(0.0);
-	for (double limb : v.limbs()) w += limb;
+	ereal<WIDE, FpType> w(0.0);
+	for (FpType limb : v.limbs()) w += ereal<WIDE, FpType>(limb);
 	return w;
 }
 

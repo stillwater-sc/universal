@@ -265,6 +265,19 @@ public:
 	explicit operator long double()      const noexcept { return convert_to_ieee754<long double>(); }
 #endif 
 
+	// An ereal always converts from and to its own limb type. For float and double the
+	// overloads above do that; for a long double limb they exist only where
+	// LONG_DOUBLE_SUPPORT is set, and it is not on MSVC or on a GCC whose long double is
+	// double -- where long double is still a valid limb, and ereal<n, long double>(x)
+	// would otherwise be ambiguous between the float and double overloads. These
+	// templates cover that case; where the non-template overloads exist they win.
+	template<typename Limb, std::enable_if_t<std::is_same_v<Limb, FpType> && !std::is_same_v<Limb, float> && !std::is_same_v<Limb, double>, int> = 0>
+	ereal(Limb iv) noexcept { convert_ieee754(iv); }
+	template<typename Limb, std::enable_if_t<std::is_same_v<Limb, FpType> && !std::is_same_v<Limb, float> && !std::is_same_v<Limb, double>, int> = 0>
+	ereal& operator=(Limb rhs) noexcept { return convert_ieee754(rhs); }
+	template<typename Limb, std::enable_if_t<std::is_same_v<Limb, FpType> && !std::is_same_v<Limb, float> && !std::is_same_v<Limb, double>, int> = 0>
+	explicit operator Limb() const noexcept { return convert_to_ieee754<Limb>(); }
+
 	// Component access
 	constexpr FpType  operator[](size_t i) const noexcept { return _limb[i]; }
 	constexpr FpType& operator[](size_t i) { return _limb[i]; }
