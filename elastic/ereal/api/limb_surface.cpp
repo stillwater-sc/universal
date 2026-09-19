@@ -52,9 +52,12 @@ namespace {
 		fails += expect(L::max_exponent == LF::max_exponent && L::min_exponent == LF::min_exponent, name + ": exponent range is the limb type's", reportTestCases);
 		fails += expect(L::max() == R(SpecificValue::maxpos) && L::max()[0] == LF::max(), name + ": max() is maxpos, led by the limb type's max", reportTestCases);
 		fails += expect(L::lowest() == -L::max(), name + ": lowest() is -max()", reportTestCases);
-		fails += expect(value_of(L::epsilon()) == dyadic::from_fp(LF::epsilon()) * dyadic::from_fp(LF::epsilon()) * dyadic::from_fp(F(0.5)),
-		                name + ": epsilon() is eps^2 / 2 of the limb type", reportTestCases);
-		fails += expect(value_of(L::denorm_min()) == dyadic::from_fp(LF::denorm_min()), name + ": denorm_min() is the limb type's", reportTestCases);
+		// epsilon is 2^(1 - digits) of the whole expansion, so it agrees with digits
+		fails += expect(value_of(L::epsilon()) == dyadic::from_fp(std::ldexp(F(1), 1 - L::digits)),
+		                name + ": epsilon() is 2^(1 - digits)", reportTestCases);
+		// has_denorm is denorm_absent, so C++20 requires denorm_min() == min()
+		fails += expect(L::has_denorm == std::denorm_absent && value_of(L::denorm_min()) == value_of((L::min)()),
+		                name + ": denorm_min() is min() when subnormals are absent", reportTestCases);
 		fails += expect(L::infinity().isinf() && L::quiet_NaN().isnan(), name + ": infinity() and quiet_NaN()", reportTestCases);
 		return fails;
 	}
@@ -69,10 +72,13 @@ namespace {
 		fails += expect(type_tag(ereal<5, float>()) == "ereal<5, float>", "type_tag names a float limb", reportTestCases);
 		return fails;
 	}
+	// 8 limbs, not 24: long double is a valid limb on MSVC and Apple ARM64 too, where it
+	// IS double, and there max_safe_limbs is 19 -- ereal<24, long double> would fail the
+	// class's static_assert at compile time on those platforms (#1574).
 	template<typename LD>
 	int VerifyLongDoubleTag(bool reportTestCases) {
 		static_assert(is_ereal<ereal<8, LD>>);
-		return expect(type_tag(ereal<24, LD>()) == "ereal<24, long double>", "type_tag names a long double limb", reportTestCases);
+		return expect(type_tag(ereal<8, LD>()) == "ereal<8, long double>", "type_tag names a long double limb", reportTestCases);
 	}
 
 	// ---- streams ---------------------------------------------------------------------------

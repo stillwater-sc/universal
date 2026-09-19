@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>    // std::ldexp, for epsilon()
 #include <limits>
 // ereal_impl.hpp, not the ereal.hpp umbrella: the umbrella includes core.hpp, which
 // includes this header, so naming it here would be a cycle that #pragma once merely
@@ -29,15 +30,21 @@ public:
 		//return ErealType(sw::universal::SpecificValue::maxneg);
 		return (-(max)());
 	} 
-	static constexpr ErealType epsilon() { // return smallest effective increment from 1.0
-		constexpr FpType epsilon{ std::numeric_limits< FpType >::epsilon() };
-		return ErealType((epsilon * epsilon) * FpType(0.5));
+	static ErealType epsilon() { // return smallest effective increment from 1.0
+		// 2^(1 - digits), with digits = maxLimbs * the limb type's digits: the whole
+		// expansion's precision, so that epsilon() and digits agree. It used to be
+		// (eps*eps)/2 of the limb type -- 2^(1-2p), the value for TWO limbs, whatever
+		// maxLimbs said: 2^-105 for every ereal<n> (#1574).
+		return ErealType(std::ldexp(FpType(1), 1 - digits));
 	}
 	static constexpr ErealType round_error() { // return largest rounding error
 		return ErealType(FpType(1) / FpType(radix));
 	}
-	static constexpr ErealType denorm_min() {  // return minimum denormalized value
-		return ErealType(std::numeric_limits<FpType>::denorm_min());
+	static ErealType denorm_min() {  // return minimum denormalized value
+		// has_denorm is denorm_absent -- an expansion's components are all normal -- and
+		// the C++20 contract then requires denorm_min() to return min(), not the limb
+		// type's subnormal (and not zero). elreal's numeric_limits does the same (#1574).
+		return (min)();
 	}
 	static constexpr ErealType infinity() { // return positive infinity
 		return ErealType(sw::universal::SpecificValue::infpos);
