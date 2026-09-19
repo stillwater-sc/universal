@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <sstream>
 #include <bitset>
+#include <string>
 
 // universal type dependencies
 #include <universal/internal/uint128/uint128.hpp>

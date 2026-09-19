@@ -21,6 +21,8 @@
 #include <string>
 #include <string_view>
 #include <fstream>
+#include <iomanip>
+#include <sstream>
 
 #include <universal/utility/generateClosurePlots.hpp>
 

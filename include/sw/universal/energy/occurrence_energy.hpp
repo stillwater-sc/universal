@@ -30,6 +30,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cstdint>
+#include <string>
 
 #include "../utility/occurrence.hpp"
 #include "energy.hpp"

@@ -24,6 +24,7 @@
 
 #include <string>
 #include <iomanip>
+#include <sstream>
 #include <universal/number/support/decimal.hpp>
 
 // Include both algorithms

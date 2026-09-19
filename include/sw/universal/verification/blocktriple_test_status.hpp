@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <iomanip>
+#include <string>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 
 namespace sw { namespace universal {

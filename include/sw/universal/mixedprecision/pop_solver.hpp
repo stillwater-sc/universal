@@ -31,6 +31,7 @@
 #include <vector>
 #include <iomanip>
 #include <cmath>
+#include <string>
 
 namespace sw { namespace universal {
 

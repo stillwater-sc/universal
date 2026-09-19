@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project.
+#include <string>
+
 #include <universal/common/exceptions.hpp>
 
 namespace sw { namespace universal {

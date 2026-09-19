@@ -9,6 +9,7 @@
 #include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
 #include <limits>
 #include <tuple>
+#include <string>
 
 #include <universal/utility/color_print.hpp>
 

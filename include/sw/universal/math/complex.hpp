@@ -29,6 +29,7 @@
 #include <complex>    // for std::complex<double> interop
 #include <sstream>
 #include <type_traits>
+#include <string>
 
 // Core implementation
 #include <universal/math/complex/complex_traits.hpp>

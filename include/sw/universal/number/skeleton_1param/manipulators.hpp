@@ -7,6 +7,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iomanip>
 #include <typeinfo>  // for typeid()
+#include <sstream>
+#include <string>
 
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>

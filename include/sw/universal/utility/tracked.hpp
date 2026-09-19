@@ -40,6 +40,7 @@
 #include <type_traits>
 #include <ostream>
 #include <iomanip>
+#include <string>
 
 #include "error_tracking_traits.hpp"
 #include "tracked_exact.hpp"

@@ -11,6 +11,8 @@
 #include <random>
 #include <limits>
 #include <chrono>
+#include <sstream>
+#include <string>
 #include <universal/native/ieee754.hpp>
 #include <universal/utility/scientific.hpp>
 

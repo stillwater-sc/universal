@@ -11,6 +11,8 @@
 #include <limits>
 #include <tuple>
 #include <algorithm> // std::max
+#include <sstream>
+#include <string>
 
 #include <universal/common/exceptions.hpp>
 #include <universal/number/support/decimal.hpp>

@@ -35,7 +35,7 @@ namespace sw { namespace universal {
 //			std::cout << " x: " << x << " y: " << y << " diff " << diff << '\n';
 			if (++iterations > rbits) break;
 		}
-		if (iterations > rbits) std::cerr << "sqrt(" << double(f) << ") failed to converge\n";
+		if (iterations > rbits) std::fprintf(stderr, "sqrt(%g) failed to converge\n", double(f));
 		return x;
 	}
 #else

@@ -10,6 +10,8 @@
 #include <typeinfo>
 #include <random>
 #include <limits>
+#include <iomanip>
+#include <string>
 
 namespace sw { namespace universal {
 

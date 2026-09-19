@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstddef>  // for unsigned
+#include <string>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 

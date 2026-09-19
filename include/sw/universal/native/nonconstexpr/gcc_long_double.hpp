@@ -10,6 +10,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <type_traits>
 #include <cfloat>   // LDBL_MANT_DIG: the long double format, which is not the architecture (#1399)
+#include <sstream>
 
 #if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
 /* GNU GCC/G++. --------------------------------------------- */

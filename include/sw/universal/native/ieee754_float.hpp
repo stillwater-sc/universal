@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <sstream>
 #include <iomanip>
+#include <string>
 #include <universal/utility/color_print.hpp>
 
 namespace sw { namespace universal {
