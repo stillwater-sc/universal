@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <cstddef>  // SIZE_MAX
 #include <limits>   // std::numeric_limits
+#include <type_traits>  // std::is_floating_point_v, std::type_identity_t
 
 namespace sw::universal {
 
@@ -37,7 +38,7 @@ namespace sw::universal {
  * Key Properties:
  * 1. Nonoverlapping: Adding e[i] + e[i+1] produces no rounding error
  * 2. Decreasing magnitude: |e[0]| >= |e[1]| >= ... >= |e[n-1]|
- * 3. Precision gain: Each component adds approximately 53 bits of precision
+ * 3. Precision gain: Each component adds about digits bits of precision (53 for double)
  *
  * This file implements Shewchuk's adaptive precision algorithms, which differ from
  * Priest's fixed-precision algorithms (used in floatcascade) by allowing dynamic
@@ -53,7 +54,65 @@ namespace sw::universal {
  * - Efficient geometric predicates (orientation test, incircle test)
  */
 
+// ============================================================================
+// EXPANSION LIMB TYPES
+// ============================================================================
+/*
+ * The algorithms below work on any binary floating-point type whose arithmetic is a
+ * correctly rounded p-bit IEEE-754 format: float, double, x87 extended, binary128.
+ * Their error-free transformations rest on that -- the roundoff of a sum or product
+ * must itself be a representable value -- and nothing else in the file assumes double.
+ *
+ * is_iec559 alone is NOT enough to say so. IBM extended double-double, the default
+ * long double on ppc64le, is a pair of doubles: it has no fixed precision, its roundoff
+ * is not in general representable, and two_sum is not error-free on it. Yet libstdc++
+ * reports is_iec559 == true for it (measured under QEMU, #1563). What does separate it
+ * is a property IEEE-754 requires of every binary format: emin = 1 - emax, which in
+ * numeric_limits terms is min_exponent == 3 - max_exponent. It holds for float
+ * (-125), double (-1021), x87 and binary128 (-16381); double-double has min_exponent
+ * -968 against max_exponent 1024.
+ */
+// the test on a type's numeric_limits, separated out so it can be checked against the
+// parameters of a type the host does not have (IBM double-double on x86, say)
+constexpr bool expansion_limb_properties(bool is_floating_point, bool is_iec559, int radix,
+                                         int min_exponent, int max_exponent) {
+    return is_floating_point && is_iec559 && radix == 2 && min_exponent == 3 - max_exponent;
+}
+
+template<typename T>
+inline constexpr bool is_expansion_limb_v = expansion_limb_properties(
+    std::is_floating_point_v<T>, std::numeric_limits<T>::is_iec559, std::numeric_limits<T>::radix,
+    std::numeric_limits<T>::min_exponent, std::numeric_limits<T>::max_exponent);
+
+// the check every error-free transformation below makes, with the reason in the message
+template<typename FpType>
+constexpr void require_expansion_limb() {
+    static_assert(is_expansion_limb_v<FpType>,
+        "expansion limbs must be a p-bit IEEE-754 binary type (float, double, x87 extended, "
+        "binary128): the error-free transformations need the roundoff of every sum and product "
+        "to be representable. IBM extended double-double -- the default long double on "
+        "ppc64le -- is itself a two-component expansion and cannot serve as a limb; build "
+        "with -mabi=ieeelongdouble for a binary128 long double there.");
+}
+
+// Where a leading component sits too close to the top of the limb type's range for an
+// operation to run unscaled (#1553). Expressed relative to max_exponent, so that for
+// double they are the values the range management was written with: 1000 and 1020,
+// and -1100 as the exponent that stands in for zero.
+template<typename FpType>
+struct expansion_range_limits {
+    static constexpr int product_limit = std::numeric_limits<FpType>::max_exponent - 24;
+    static constexpr int sum_limit     = std::numeric_limits<FpType>::max_exponent - 4;
+    static constexpr int zero_exponent = std::numeric_limits<FpType>::min_exponent
+                                       - std::numeric_limits<FpType>::digits - 26;
+};
+
 namespace expansion_ops {
+
+// Every function here is a template on the limb type, deduced from its arguments. The
+// default, double, is what keeps the calls written before the templating working: a
+// braced list such as is_nonoverlapping({1.0, 1e-17}) deduces nothing, and falls back
+// to the double overload it always meant (#1563).
 
 // ============================================================================
 // ERROR-FREE TRANSFORMATIONS (EFT)
@@ -80,14 +139,16 @@ namespace expansion_ops {
  * break the error-free guarantee. Modern compilers may reorder or fuse operations
  * in ways that violate the required rounding behavior.
  */
-inline void two_sum(double a, double b, double& x, double& y) {
-    volatile double vx = a + b;
+template<typename FpType = double>
+inline void two_sum(std::type_identity_t<FpType> a, std::type_identity_t<FpType> b, FpType& x, FpType& y) {
+    require_expansion_limb<FpType>();
+    volatile FpType vx = a + b;
     x = vx;
-    volatile double b_virtual = vx - a;
-    volatile double a_virtual = vx - b_virtual;
-    volatile double b_roundoff = b - b_virtual;
-    volatile double a_roundoff = a - a_virtual;
-    volatile double vy = a_roundoff + b_roundoff;
+    volatile FpType b_virtual = vx - a;
+    volatile FpType a_virtual = vx - b_virtual;
+    volatile FpType b_roundoff = b - b_virtual;
+    volatile FpType a_roundoff = a - a_virtual;
+    volatile FpType vy = a_roundoff + b_roundoff;
     y = vy;
 }
 
@@ -105,10 +166,12 @@ inline void two_sum(double a, double b, double& x, double& y) {
  * magnitude ordering during expansion construction, allowing us to always
  * use this faster version.
  */
-inline void fast_two_sum(double a, double b, double& x, double& y) {
-    volatile double vx = a + b;
+template<typename FpType = double>
+inline void fast_two_sum(std::type_identity_t<FpType> a, std::type_identity_t<FpType> b, FpType& x, FpType& y) {
+    require_expansion_limb<FpType>();
+    volatile FpType vx = a + b;
     x = vx;
-    volatile double vy = b - (vx - a);
+    volatile FpType vy = b - (vx - a);
     y = vy;
 }
 
@@ -129,11 +192,13 @@ inline void fast_two_sum(double a, double b, double& x, double& y) {
  * Without FMA, this requires Dekker's splitting algorithm (17 operations).
  * Since we assume IEEE-754 with FMA, we use the fast version.
  */
-inline void two_prod(double a, double b, double& x, double& y) {
-    volatile double vx = a * b;
+template<typename FpType = double>
+inline void two_prod(std::type_identity_t<FpType> a, std::type_identity_t<FpType> b, FpType& x, FpType& y) {
+    require_expansion_limb<FpType>();
+    volatile FpType vx = a * b;
     x = vx;
     // Use FMA if available for exact error computation
-    volatile double vy = std::fma(a, b, -vx);
+    volatile FpType vy = std::fma(a, b, -vx);
     y = vy;
 }
 
@@ -167,16 +232,17 @@ inline void two_prod(double a, double b, double& x, double& y) {
  *           h[2] = 0.0, carry q = 4.0
  *   Result: h = [4.0, 0.0, 0.5e-15] -> after removing zeros: [4.0, 0.5e-15]
  */
-inline std::vector<double> grow_expansion(const std::vector<double>& e, double b) {
+template<typename FpType = double>
+inline std::vector<FpType> grow_expansion(const std::vector<FpType>& e, std::type_identity_t<FpType> b) {
     size_t m = e.size();
-    std::vector<double> h(m + 1);
+    std::vector<FpType> h(m + 1);
 
-    double q = b;
+    FpType q = b;
 
     // Process from least significant (end) to most significant (beginning)
     // Using TWO-SUM since we don't know the relative magnitude of b vs e[i]
     for (size_t i = m; i-- > 0; ) {
-        double q_new, h_i;
+        FpType q_new, h_i;
         two_sum(q, e[i], q_new, h_i);
         h[i + 1] = h_i;  // Store error component
         q = q_new;       // Carry sum forward
@@ -220,7 +286,8 @@ inline std::vector<double> grow_expansion(const std::vector<double>& e, double b
  *   Then process remaining components
  *   Result: [5.0, small corrections...]
  */
-inline std::vector<double> fast_expansion_sum(const std::vector<double>& e, const std::vector<double>& f) {
+template<typename FpType = double>
+inline std::vector<FpType> fast_expansion_sum(const std::vector<FpType>& e, const std::vector<FpType>& f) {
     size_t m = e.size();
     size_t n = f.size();
 
@@ -228,19 +295,19 @@ inline std::vector<double> fast_expansion_sum(const std::vector<double>& e, cons
     if (m == 0) return f;
     if (n == 0) return e;
 
-    std::vector<double> h;
+    std::vector<FpType> h;
     h.reserve(m + n);
 
     size_t i = 0, j = 0;
-    double q = 0.0;
+    FpType q = FpType(0);
 
     // Merge process: walk through both expansions from least to most significant
     // Note: Our expansions are stored in DECREASING order [most sig ... least sig]
     // So we walk backwards through the arrays
 
     // Pick the smaller component to start
-    double e_curr = (m > 0) ? e[m - 1] : 0.0;
-    double f_curr = (n > 0) ? f[n - 1] : 0.0;
+    FpType e_curr = (m > 0) ? e[m - 1] : FpType(0);
+    FpType f_curr = (n > 0) ? f[n - 1] : FpType(0);
 
     // Start with the absolutely smaller component
     if (std::abs(e_curr) < std::abs(f_curr) || (m == 0)) {
@@ -257,7 +324,7 @@ inline std::vector<double> fast_expansion_sum(const std::vector<double>& e, cons
 
     // Merge remaining components
     while (i != SIZE_MAX || j != SIZE_MAX) {
-        double next_component;
+        FpType next_component;
 
         if (i == SIZE_MAX) {
             // Only f remains
@@ -278,23 +345,23 @@ inline std::vector<double> fast_expansion_sum(const std::vector<double>& e, cons
             }
         }
 
-        double q_new, h_i;
+        FpType q_new, h_i;
         two_sum(q, next_component, q_new, h_i);  // Use TWO-SUM for correctness
 
-        if (h_i != 0.0) {
+        if (h_i != FpType(0)) {
             h.push_back(h_i);
         }
         q = q_new;
     }
 
-    if (q != 0.0) {
+    if (q != FpType(0)) {
         h.push_back(q);
     }
 
     // Ensure we always have at least one component (even if zero)
     // This maintains the ereal invariant: limb vector is never empty
     if (h.empty()) {
-        h.push_back(0.0);
+        h.push_back(FpType(0));
     }
 
     // Reverse to get decreasing magnitude order
@@ -325,7 +392,8 @@ inline std::vector<double> fast_expansion_sum(const std::vector<double>& e, cons
  * - Robustness is more important than speed
  * - Floating-point environment doesn't guarantee round-to-even
  */
-inline std::vector<double> linear_expansion_sum(const std::vector<double>& e, const std::vector<double>& f) {
+template<typename FpType = double>
+inline std::vector<FpType> linear_expansion_sum(const std::vector<FpType>& e, const std::vector<FpType>& f) {
     size_t m = e.size();
     size_t n = f.size();
 
@@ -333,18 +401,18 @@ inline std::vector<double> linear_expansion_sum(const std::vector<double>& e, co
     if (m == 0) return f;
     if (n == 0) return e;
 
-    std::vector<double> h;
+    std::vector<FpType> h;
     h.reserve(m + n);
 
     // Initialize indices to point to least significant (last) components
     size_t i = m - 1;
     size_t j = n - 1;
-    double q = 0.0;
+    FpType q = FpType(0);
 
     // Similar merge process to FAST-EXPANSION-SUM but using TWO-SUM
     // Per Shewchuk Figure 7: Start with component having smaller magnitude
-    double e_curr = e[i];
-    double f_curr = f[j];
+    FpType e_curr = e[i];
+    FpType f_curr = f[j];
 
     // Start with the absolutely smaller component (consume it)
     if (std::abs(e_curr) < std::abs(f_curr)) {
@@ -359,7 +427,7 @@ inline std::vector<double> linear_expansion_sum(const std::vector<double>& e, co
 
     // Merge remaining components using TWO-SUM (not FAST-TWO-SUM)
     while (i != SIZE_MAX || j != SIZE_MAX) {
-        double next_component;
+        FpType next_component;
 
         if (i == SIZE_MAX) {
             next_component = f[j];
@@ -377,23 +445,23 @@ inline std::vector<double> linear_expansion_sum(const std::vector<double>& e, co
             }
         }
 
-        double q_new, h_i;
+        FpType q_new, h_i;
         two_sum(q, next_component, q_new, h_i);  // Using TWO-SUM (6 ops) not FAST (3 ops)
 
-        if (h_i != 0.0) {
+        if (h_i != FpType(0)) {
             h.push_back(h_i);
         }
         q = q_new;
     }
 
-    if (q != 0.0) {
+    if (q != FpType(0)) {
         h.push_back(q);
     }
 
     // Ensure we always have at least one component (even if zero)
     // This maintains the ereal invariant: limb vector is never empty
     if (h.empty()) {
-        h.push_back(0.0);
+        h.push_back(FpType(0));
     }
 
     // Reverse to get decreasing magnitude order
@@ -442,13 +510,14 @@ namespace detail_priest {
 
     // sweepUpRec: cumulative twoSum from the back; emits residuals as we go
     // and the final carry as the leading element of the (reversed) result.
-    inline std::vector<double>
-    sweepUpRec(const std::vector<double>& as, size_t pos, double b) {
+    template<typename FpType = double>
+    inline std::vector<FpType>
+    sweepUpRec(const std::vector<FpType>& as, size_t pos, FpType b) {
         if (pos == as.size()) return { b };
-        double s, e;
+        FpType s, e;
         two_sum(as[pos], b, s, e);
-        std::vector<double> rest = sweepUpRec(as, pos + 1, s);
-        std::vector<double> result;
+        std::vector<FpType> rest = sweepUpRec(as, pos + 1, s);
+        std::vector<FpType> result;
         result.reserve(rest.size() + 1);
         result.push_back(e);
         result.insert(result.end(), rest.begin(), rest.end());
@@ -457,66 +526,74 @@ namespace detail_priest {
 
     // sweepUp: build a "loose" non-overlapping form by sweeping from least to
     // most significant. Returns the result in decreasing magnitude order.
-    inline std::vector<double> sweepUp(const std::vector<double>& as) {
+    template<typename FpType = double>
+    inline std::vector<FpType> sweepUp(const std::vector<FpType>& as) {
         if (as.empty()) return {};
         // Walk the input back-to-front by passing a position index; the
         // recursion produces the residual-first sequence, which we reverse
         // at the end to get decreasing magnitude order.
-        std::vector<double> reversed_input(as.rbegin(), as.rend());
-        double ra = reversed_input.front();
-        std::vector<double> result = sweepUpRec(reversed_input, 1, ra);
+        std::vector<FpType> reversed_input(as.rbegin(), as.rend());
+        FpType ra = reversed_input.front();
+        std::vector<FpType> result = sweepUpRec(reversed_input, 1, ra);
         std::reverse(result.begin(), result.end());
         return result;
     }
 
-    inline std::vector<double> sweepDown(const std::vector<double>& as);
+    template<typename FpType = double>
+    inline std::vector<FpType> sweepDown(const std::vector<FpType>& as);
 
-    inline std::vector<double>
-    sweepDownRec(const std::vector<double>& as, size_t pos, double b) {
+    template<typename FpType = double>
+
+    inline std::vector<FpType>
+    sweepDownRec(const std::vector<FpType>& as, size_t pos, FpType b) {
         if (pos == as.size()) return { b };
-        double s, e;
+        FpType s, e;
         two_sum(as[pos], b, s, e);
-        std::vector<double> tail;
-        if (e == 0.0) {
+        std::vector<FpType> tail;
+        if (e == FpType(0)) {
             // Re-enter sweepDown on the remaining tail (effectively dropping
             // the zero residual).
-            std::vector<double> remaining(as.begin() + pos + 1, as.end());
+            std::vector<FpType> remaining(as.begin() + pos + 1, as.end());
             tail = sweepDown(remaining);
         } else {
             tail = sweepDownRec(as, pos + 1, e);
         }
-        std::vector<double> result;
+        std::vector<FpType> result;
         result.reserve(tail.size() + 1);
         result.push_back(s);
         result.insert(result.end(), tail.begin(), tail.end());
         return result;
     }
 
-    inline std::vector<double> sweepDown(const std::vector<double>& as) {
+    template<typename FpType>
+    inline std::vector<FpType> sweepDown(const std::vector<FpType>& as) {
         if (as.empty()) return {};
         return sweepDownRec(as, 1, as.front());
     }
 
-    inline std::vector<double> remove_zeros(const std::vector<double>& xs) {
-        std::vector<double> out;
+    template<typename FpType = double>
+    inline std::vector<FpType> remove_zeros(const std::vector<FpType>& xs) {
+        std::vector<FpType> out;
         out.reserve(xs.size());
-        for (double v : xs) {
-            if (v != 0.0) out.push_back(v);
+        for (FpType v : xs) {
+            if (v != FpType(0)) out.push_back(v);
         }
         return out;
     }
 
-    inline std::vector<double>
-    priest_renormalize(std::vector<double> as) {
+    template<typename FpType = double>
+
+    inline std::vector<FpType>
+    priest_renormalize(std::vector<FpType> as) {
         if (as.empty()) return {};
-        std::vector<double> up = sweepUp(as);
+        std::vector<FpType> up = sweepUp(as);
         if (up.empty()) return {};
-        double f = up.front();
-        std::vector<double> fs(up.begin() + 1, up.end());
-        std::vector<double> recursed = priest_renormalize(std::move(fs));
-        std::vector<double> cleaned = remove_zeros(recursed);
-        std::vector<double> down = sweepDown(cleaned);
-        std::vector<double> result;
+        FpType f = up.front();
+        std::vector<FpType> fs(up.begin() + 1, up.end());
+        std::vector<FpType> recursed = priest_renormalize(std::move(fs));
+        std::vector<FpType> cleaned = remove_zeros(recursed);
+        std::vector<FpType> down = sweepDown(cleaned);
+        std::vector<FpType> result;
         result.reserve(down.size() + 1);
         result.push_back(f);
         result.insert(result.end(), down.begin(), down.end());
@@ -525,12 +602,13 @@ namespace detail_priest {
 
 } // namespace detail_priest
 
-inline std::vector<double> renormalize_expansion(const std::vector<double>& e) {
+template<typename FpType = double>
+inline std::vector<FpType> renormalize_expansion(const std::vector<FpType>& e) {
     if (e.empty()) return {};
-    if (e.size() == 1) return std::vector<double>{ e[0] }; // Single-component input is trivially canonical.
-    std::vector<double> result = detail_priest::priest_renormalize(e);
+    if (e.size() == 1) return std::vector<FpType>{ e[0] }; // Single-component input is trivially canonical.
+    std::vector<FpType> result = detail_priest::priest_renormalize(e);
     // Strip trailing zeros (matches the historical contract of this function).
-    while (!result.empty() && result.back() == 0.0) {
+    while (!result.empty() && result.back() == FpType(0)) {
         result.pop_back();
     }
     return result;
@@ -561,31 +639,32 @@ inline std::vector<double> renormalize_expansion(const std::vector<double>& e) {
  * Note: Output may have up to 2m components (one product + one error per input)
  * Use COMPRESS-EXPANSION afterward if you need to reduce component count
  */
-inline std::vector<double> scale_expansion(const std::vector<double>& e, double b) {
-    if (e.empty()) return std::vector<double>();
-    if (b == 0.0) return std::vector<double>{0.0};
-    if (b == 1.0) return e;
-    if (b == -1.0) {
-        std::vector<double> result = e;
+template<typename FpType = double>
+inline std::vector<FpType> scale_expansion(const std::vector<FpType>& e, std::type_identity_t<FpType> b) {
+    if (e.empty()) return std::vector<FpType>();
+    if (b == FpType(0)) return std::vector<FpType>{FpType(0)};
+    if (b == FpType(1)) return e;
+    if (b == FpType(-1)) {
+        std::vector<FpType> result = e;
         for (auto& v : result) v = -v;
         return result;
     }
 
     size_t m = e.size();
-    std::vector<double> products;
+    std::vector<FpType> products;
     products.reserve(2 * m);
 
     // Multiply each component by b, collecting products and errors
     for (size_t i = 0; i < m; ++i) {
-        double product, error;
+        FpType product, error;
         two_prod(b, e[i], product, error);
 
-        if (product != 0.0) products.push_back(product);
-        if (error != 0.0) products.push_back(error);
+        if (product != FpType(0)) products.push_back(product);
+        if (error != FpType(0)) products.push_back(error);
     }
 
     // Sort by decreasing magnitude (most significant first)
-    std::sort(products.begin(), products.end(), [](double a, double b) {
+    std::sort(products.begin(), products.end(), [](FpType a, FpType b) {
         return std::abs(a) > std::abs(b);
     });
 
@@ -623,24 +702,25 @@ inline std::vector<double> scale_expansion(const std::vector<double>& e, double 
  *
  * Cost: O(m) scan + potential reallocation
  */
-inline std::vector<double> compress_expansion(const std::vector<double>& e, double epsilon = 0.0) {
+template<typename FpType = double>
+inline std::vector<FpType> compress_expansion(const std::vector<FpType>& e, std::type_identity_t<FpType> epsilon = FpType(0)) {
     if (e.empty()) return e;
 
     // Find largest magnitude for relative threshold
-    double max_magnitude = 0.0;
+    FpType max_magnitude = FpType(0);
     for (const auto& component : e) {
-        double mag = std::abs(component);
+        FpType mag = std::abs(component);
         if (mag > max_magnitude) max_magnitude = mag;
     }
 
-    if (max_magnitude == 0.0) {
+    if (max_magnitude == FpType(0)) {
         // All zeros
-        return std::vector<double>{0.0};
+        return std::vector<FpType>{FpType(0)};
     }
 
-    double threshold = epsilon * max_magnitude;
+    FpType threshold = epsilon * max_magnitude;
 
-    std::vector<double> compressed;
+    std::vector<FpType> compressed;
     compressed.reserve(e.size());
 
     for (const auto& component : e) {
@@ -674,10 +754,11 @@ inline std::vector<double> compress_expansion(const std::vector<double>& e, doub
  *
  * Use case: When you have a target precision (e.g., reduce to 4 components)
  */
-inline std::vector<double> compress_to_n(const std::vector<double>& e, size_t max_components) {
+template<typename FpType = double>
+inline std::vector<FpType> compress_to_n(const std::vector<FpType>& e, size_t max_components) {
     if (e.size() <= max_components) return e;
 
-    std::vector<double> compressed(e.begin(), e.begin() + max_components);
+    std::vector<FpType> compressed(e.begin(), e.begin() + max_components);
     return compressed;
 }
 
@@ -706,10 +787,11 @@ inline std::vector<double> compress_to_n(const std::vector<double>& e, size_t ma
  * This makes geometric predicates incredibly efficient - most of the time
  * the sign can be determined from just the first 1-2 components.
  */
-inline int sign_adaptive(const std::vector<double>& e) {
+template<typename FpType = double>
+inline int sign_adaptive(const std::vector<FpType>& e) {
     for (const auto& component : e) {
-        if (component > 0.0) return 1;
-        if (component < 0.0) return -1;
+        if (component > FpType(0)) return 1;
+        if (component < FpType(0)) return -1;
     }
     return 0;  // All components are zero
 }
@@ -733,8 +815,8 @@ inline int sign_adaptive(const std::vector<double>& e) {
  * Note: Result may have up to 2*m*n components before compression
  */
 /*
- * RANGE MANAGEMENT AT THE TOP OF DOUBLE'S RANGE (#1553)
- * ======================================================
+ * RANGE MANAGEMENT AT THE TOP OF THE LIMB TYPE'S RANGE (#1553)
+ * ==============================================================
  *
  * The error-free transformations underneath these operations compute a rounded
  * result and then its roundoff. When the rounded LEADING term overflows, the roundoff
@@ -753,21 +835,24 @@ inline int sign_adaptive(const std::vector<double>& e) {
 namespace expansion_range {
 
     // scale every component by 2^s: exact unless a component leaves the normal range
-    inline std::vector<double> scaled(const std::vector<double>& e, int s) {
-        std::vector<double> r(e.size());
+    template<typename FpType = double>
+    inline std::vector<FpType> scaled(const std::vector<FpType>& e, int s) {
+        std::vector<FpType> r(e.size());
         for (std::size_t i = 0; i < e.size(); ++i) r[i] = std::ldexp(e[i], s);
         return r;
     }
 
     // a leading component that overflowed on the way back up is the whole answer
-    inline std::vector<double> canonical_overflow(std::vector<double> r) {
-        if (!r.empty() && std::isinf(r[0])) return std::vector<double>{ r[0] };
+    template<typename FpType = double>
+    inline std::vector<FpType> canonical_overflow(std::vector<FpType> r) {
+        if (!r.empty() && std::isinf(r[0])) return std::vector<FpType>{ r[0] };
         return r;
     }
 
     // exponent of an expansion's leading component, or a floor for zero / non-finite
-    inline int leading_exponent(const std::vector<double>& e) {
-        if (e.empty() || e[0] == 0.0 || !std::isfinite(e[0])) return -1100;
+    template<typename FpType = double>
+    inline int leading_exponent(const std::vector<FpType>& e) {
+        if (e.empty() || e[0] == FpType(0) || !std::isfinite(e[0])) return expansion_range_limits<FpType>::zero_exponent;
         return std::ilogb(e[0]);
     }
 
@@ -775,21 +860,22 @@ namespace expansion_range {
 
 // expansion_product without range management: the caller guarantees the product of the
 // leading components cannot overflow
-inline std::vector<double> expansion_product_in_range(const std::vector<double>& e, const std::vector<double>& f) {
-    if (e.empty() || f.empty()) return std::vector<double>{0.0};
+template<typename FpType = double>
+inline std::vector<FpType> expansion_product_in_range(const std::vector<FpType>& e, const std::vector<FpType>& f) {
+    if (e.empty() || f.empty()) return std::vector<FpType>{FpType(0)};
 
     // Handle zero cases
-    if ((e.size() == 1 && e[0] == 0.0) || (f.size() == 1 && f[0] == 0.0)) {
-        return std::vector<double>{0.0};
+    if ((e.size() == 1 && e[0] == FpType(0)) || (f.size() == 1 && f[0] == FpType(0))) {
+        return std::vector<FpType>{FpType(0)};
     }
 
     // Start with zero
-    std::vector<double> result{0.0};
+    std::vector<FpType> result{FpType(0)};
 
     // For each component in e, scale f and accumulate
     for (const auto& e_component : e) {
-        if (e_component != 0.0) {
-            std::vector<double> scaled = scale_expansion(f, e_component);
+        if (e_component != FpType(0)) {
+            std::vector<FpType> scaled = scale_expansion(f, e_component);
             result = linear_expansion_sum(result, scaled);
         }
     }
@@ -801,11 +887,12 @@ inline std::vector<double> expansion_product_in_range(const std::vector<double>&
     // violates the non-overlapping invariant (issue #981). renormalize_expansion
     // is exactly value-preserving.
     result = renormalize_expansion(result);
-    if (result.empty()) result.push_back(0.0);  // canonical zero
+    if (result.empty()) result.push_back(FpType(0));  // canonical zero
     return result;
 }
 
-inline std::vector<double> expansion_product(const std::vector<double>& e, const std::vector<double>& f) {
+template<typename FpType = double>
+inline std::vector<FpType> expansion_product(const std::vector<FpType>& e, const std::vector<FpType>& f) {
     using namespace expansion_range;
     // Leading components at 2^a and 2^b multiply to at most 2^(a+b+2). Below a combined
     // exponent of 1000 nothing can overflow, and the product runs unscaled, exactly as it
@@ -813,8 +900,9 @@ inline std::vector<double> expansion_product(const std::vector<double>& e, const
     // so neither has its smallest components pushed toward the subnormal range -- and put
     // back on the result.
     const int combined = leading_exponent(e) + leading_exponent(f);
-    if (combined <= 1000) return expansion_product_in_range(e, f);
-    const int excess = combined - 1000;
+    constexpr int limit = expansion_range_limits<FpType>::product_limit;   // 1000 for double
+    if (combined <= limit) return expansion_product_in_range(e, f);
+    const int excess = combined - limit;
     const int se = excess / 2;
     const int sf = excess - se;
     return canonical_overflow(scaled(expansion_product_in_range(scaled(e, -se), scaled(f, -sf)), excess));
@@ -829,11 +917,13 @@ inline std::vector<double> expansion_product(const std::vector<double>& e, const
  * two values below 2^1021 cannot sum past 2^1022, so a shift of at most three bits
  * is all the headroom a sum ever needs (#1553).
  */
-inline std::vector<double> expansion_sum_normalized(const std::vector<double>& e, const std::vector<double>& f) {
+template<typename FpType = double>
+inline std::vector<FpType> expansion_sum_normalized(const std::vector<FpType>& e, const std::vector<FpType>& f) {
     using namespace expansion_range;
     const int top = std::max(leading_exponent(e), leading_exponent(f));
-    if (top <= 1020) return renormalize_expansion(linear_expansion_sum(e, f));
-    const int shift = top - 1020;
+    constexpr int limit = expansion_range_limits<FpType>::sum_limit;   // 1020 for double
+    if (top <= limit) return renormalize_expansion(linear_expansion_sum(e, f));
+    const int shift = top - limit;
     return canonical_overflow(scaled(renormalize_expansion(linear_expansion_sum(scaled(e, -shift), scaled(f, -shift))), shift));
 }
 
@@ -853,21 +943,22 @@ inline std::vector<double> expansion_sum_normalized(const std::vector<double>& e
  *
  * Note: More iterations = higher precision but more cost
  */
-inline std::vector<double> expansion_reciprocal(const std::vector<double>& e, int iterations = 3) {
-    if (e.empty() || (e.size() == 1 && e[0] == 0.0)) {
+template<typename FpType = double>
+inline std::vector<FpType> expansion_reciprocal(const std::vector<FpType>& e, int iterations = 3) {
+    if (e.empty() || (e.size() == 1 && e[0] == FpType(0))) {
         // Division by zero - return inf (or could throw)
-        return std::vector<double>{std::numeric_limits<double>::infinity()};
+        return std::vector<FpType>{std::numeric_limits<FpType>::infinity()};
     }
 
     // Initial approximation: 1 / first component
-    double r0 = 1.0 / e[0];
-    std::vector<double> result{r0};
+    FpType r0 = FpType(1) / e[0];
+    std::vector<FpType> result{r0};
 
     // Newton iteration: r_{n+1} = r_n * (2 - e * r_n)
-    std::vector<double> two{2.0};
+    std::vector<FpType> two{FpType(2)};
     for (int i = 0; i < iterations; ++i) {
-        std::vector<double> product = expansion_product(e, result);  // e * r_n
-        std::vector<double> diff = linear_expansion_sum(two, scale_expansion(product, -1.0));  // 2 - e * r_n
+        std::vector<FpType> product = expansion_product(e, result);  // e * r_n
+        std::vector<FpType> diff = linear_expansion_sum(two, scale_expansion(product, FpType(-1)));  // 2 - e * r_n
         result = expansion_product(result, diff);  // r_n * (2 - e * r_n)
     }
 
@@ -904,37 +995,38 @@ inline std::vector<double> expansion_reciprocal(const std::vector<double>& e, in
  * Output:
  *   h - expansion representing e / f
  */
-inline std::vector<double> expansion_quotient(const std::vector<double>& e, const std::vector<double>& f, int iterations = 3) {
+template<typename FpType = double>
+inline std::vector<FpType> expansion_quotient(const std::vector<FpType>& e, const std::vector<FpType>& f, int iterations = 3) {
     // Divide-by-zero / non-finite divisor: fall back to the direct reciprocal,
     // which yields the IEEE special value (Inf/NaN) the callers expect.
-    if (f.empty() || f[0] == 0.0 || !std::isfinite(f[0])) {
-        std::vector<double> reciprocal = expansion_reciprocal(f, iterations);
+    if (f.empty() || f[0] == FpType(0) || !std::isfinite(f[0])) {
+        std::vector<FpType> reciprocal = expansion_reciprocal(f, iterations);
         return expansion_product(e, reciprocal);
     }
     // f = f' * 2^k with f' in [0.5, 1): k = ilogb(f[0]) + 1.
     int k = std::ilogb(f[0]) + 1;
-    std::vector<double> fscaled(f.size());
+    std::vector<FpType> fscaled(f.size());
     for (std::size_t i = 0; i < f.size(); ++i) fscaled[i] = std::ldexp(f[i], -k);
-    std::vector<double> reciprocal = expansion_reciprocal(fscaled, iterations);
+    std::vector<FpType> reciprocal = expansion_reciprocal(fscaled, iterations);
     // The reciprocal of f' lies in (1, 2], so the product below can be up to twice the
     // dividend. For a dividend near the top of double's range that product overflowed
     // even when the true quotient is nowhere near the limit: DBL_MAX / 2 and DBL_MAX / 1e10
     // both came back NaN in every limb (#1553). A large dividend is scaled down first --
     // only as far as needed, so its smallest components are not pushed into the subnormal
     // range -- and the scaling is undone by the same exact ldexp that undoes 2^k.
-    const int headroom = (!e.empty() && e[0] != 0.0 && std::isfinite(e[0]))
-                       ? std::max(0, std::ilogb(e[0]) - 1000) : 0;
-    std::vector<double> escaled(e.size());
+    const int headroom = (!e.empty() && e[0] != FpType(0) && std::isfinite(e[0]))
+                       ? std::max(0, std::ilogb(e[0]) - expansion_range_limits<FpType>::product_limit) : 0;
+    std::vector<FpType> escaled(e.size());
     for (std::size_t i = 0; i < e.size(); ++i) escaled[i] = std::ldexp(e[i], -headroom);
-    std::vector<double> quotient = expansion_product(escaled, reciprocal);
+    std::vector<FpType> quotient = expansion_product(escaled, reciprocal);
     for (auto& v : quotient) v = std::ldexp(v, headroom - k);  // exact: * 2^(headroom - k)
     // a leading component that overflowed on the way back is a genuine overflow
-    if (!quotient.empty() && std::isinf(quotient[0])) return std::vector<double>{ quotient[0] };
+    if (!quotient.empty() && std::isinf(quotient[0])) return std::vector<FpType>{ quotient[0] };
     // ldexp can underflow the smallest components to 0; renormalize to strip
     // those zeros and restore Priest canonical (non-overlapping, no interior
     // zero) form.
     quotient = renormalize_expansion(quotient);
-    if (quotient.empty()) quotient.push_back(0.0);  // canonical zero
+    if (quotient.empty()) quotient.push_back(FpType(0));  // canonical zero
     return quotient;
 }
 
@@ -956,29 +1048,30 @@ inline std::vector<double> expansion_quotient(const std::vector<double>& e, cons
  *   "Which side of a line is point P on?"
  *   Answer: sign(orient2d(A, B, P))
  */
-inline int compare_adaptive(const std::vector<double>& e, const std::vector<double>& f) {
+template<typename FpType = double>
+inline int compare_adaptive(const std::vector<FpType>& e, const std::vector<FpType>& f) {
     // Strategy: Walk through both expansions in decreasing magnitude order
     // comparing corresponding components until we find a difference
 
     size_t i = 0, j = 0;
 
     while (i < e.size() || j < f.size()) {
-        double e_val = (i < e.size()) ? e[i] : 0.0;
-        double f_val = (j < f.size()) ? f[j] : 0.0;
+        FpType e_val = (i < e.size()) ? e[i] : FpType(0);
+        FpType f_val = (j < f.size()) ? f[j] : FpType(0);
 
         // Compare absolute magnitudes to decide which to examine
-        double e_mag = std::abs(e_val);
-        double f_mag = std::abs(f_val);
+        FpType e_mag = std::abs(e_val);
+        FpType f_mag = std::abs(f_val);
 
         if (e_mag > f_mag) {
             // e has larger magnitude component
-            if (e_val > 0.0) return 1;   // e > f
-            if (e_val < 0.0) return -1;  // e < f
+            if (e_val > FpType(0)) return 1;   // e > f
+            if (e_val < FpType(0)) return -1;  // e < f
             ++i;
         } else if (f_mag > e_mag) {
             // f has larger magnitude component
-            if (f_val > 0.0) return -1;  // e < f
-            if (f_val < 0.0) return 1;   // e > f
+            if (f_val > FpType(0)) return -1;  // e < f
+            if (f_val < FpType(0)) return 1;   // e > f
             ++j;
         } else {
             // Same magnitude - compare values directly
@@ -1000,17 +1093,18 @@ inline int compare_adaptive(const std::vector<double>& e, const std::vector<doub
 /*
  * ESTIMATE: Quick approximation of expansion value
  * =================================================
- * Returns a double-precision approximation of the expansion's value by
+ * Returns a limb-precision (FpType) approximation of the expansion's value by
  * summing the first few components.
  *
  * This is NOT exact - it loses the precision of the tail components.
  * Use for quick estimates, not for exact computation.
  */
-inline double estimate(const std::vector<double>& e) {
-    if (e.empty()) return 0.0;
+template<typename FpType = double>
+inline FpType estimate(const std::vector<FpType>& e) {
+    if (e.empty()) return FpType(0);
 
     // Sum first few components for a reasonable estimate
-    double sum = 0.0;
+    FpType sum = FpType(0);
     size_t limit = std::min(e.size(), size_t(4));
 
     // Sum from least to most significant for better accuracy
@@ -1029,7 +1123,8 @@ inline double estimate(const std::vector<double>& e) {
  */
 
 // Check if expansion is in decreasing magnitude order
-inline bool is_decreasing_magnitude(const std::vector<double>& e) {
+template<typename FpType = double>
+inline bool is_decreasing_magnitude(const std::vector<FpType>& e) {
     for (size_t i = 1; i < e.size(); ++i) {
         if (std::abs(e[i-1]) < std::abs(e[i])) {
             return false;
@@ -1042,23 +1137,24 @@ inline bool is_decreasing_magnitude(const std::vector<double>& e) {
 //
 // Nonoverlapping (Shewchuk / Priest): each component's significant bits lie
 // strictly below the previous component's least significant bit, i.e. for a
-// decreasing-magnitude expansion |e[i]| <= ulp(e[i-1])/2 == 2^(ilogb(e[i-1]) - 53)
-// for a normal double e[i-1]. (Equivalent to the verified check_priest_normal
+// decreasing-magnitude expansion |e[i]| <= ulp(e[i-1])/2 == 2^(ilogb(e[i-1]) - p)
+// for a normal e[i-1], with p = numeric_limits<FpType>::digits (53 for double). (Equivalent to the verified check_priest_normal
 // gap test in verification/ereal_test_support.hpp.)
 //
 // NOTE: a prior implementation used a fast_two_sum error heuristic that was
 // inverted -- it flagged genuinely non-overlapping pairs (the small component
 // passes through fast_two_sum unchanged as the error term) as overlapping, and
 // declared exactly-combining overlapping pairs non-overlapping (issue #999).
-inline bool is_nonoverlapping(const std::vector<double>& e) {
+template<typename FpType = double>
+inline bool is_nonoverlapping(const std::vector<FpType>& e) {
     for (size_t i = 1; i < e.size(); ++i) {
-        double prev = e[i - 1];
-        double cur  = e[i];
-        if (cur == 0.0) continue;                       // a zero component never overlaps
+        FpType prev = e[i - 1];
+        FpType cur  = e[i];
+        if (cur == FpType(0)) continue;                       // a zero component never overlaps
         if (!std::isfinite(prev) || !std::isfinite(cur)) return false;
-        if (prev == 0.0) return false;                  // nonzero below a zero: not canonical
+        if (prev == FpType(0)) return false;                  // nonzero below a zero: not canonical
         // |cur| <= ulp(prev)/2 ; ilogb(prev) is well-defined here (prev finite, nonzero)
-        if (std::abs(cur) > std::ldexp(1.0, std::ilogb(prev) - 53)) return false;
+        if (std::abs(cur) > std::ldexp(FpType(1), std::ilogb(prev) - std::numeric_limits<FpType>::digits)) return false;
     }
     return true;
 }
@@ -1067,21 +1163,23 @@ inline bool is_nonoverlapping(const std::vector<double>& e) {
 //
 // Strongly nonoverlapping == nonoverlapping AND, for any adjacent pair whose
 // exponents are exactly one ulp apart (the smaller sits right at the previous
-// component's half-ulp boundary, ilogb(cur) == ilogb(prev) - 53), the smaller
+// component's half-ulp boundary, ilogb(cur) == ilogb(prev) - p), the smaller
 // component must be a power of two. A full bit of separation
 // (ilogb(cur) <= ilogb(prev) - 54) imposes no extra constraint.
-inline bool is_strongly_nonoverlapping(const std::vector<double>& e) {
+template<typename FpType = double>
+inline bool is_strongly_nonoverlapping(const std::vector<FpType>& e) {
     for (size_t i = 1; i < e.size(); ++i) {
-        double prev = e[i - 1];
-        double cur  = e[i];
-        if (cur == 0.0) continue;
+        FpType prev = e[i - 1];
+        FpType cur  = e[i];
+        if (cur == FpType(0)) continue;
         if (!std::isfinite(prev) || !std::isfinite(cur)) return false;
-        if (prev == 0.0) return false;
+        if (prev == FpType(0)) return false;
         int eprev = std::ilogb(prev);
         int ecur  = std::ilogb(cur);
-        if (ecur > eprev - 53) return false;            // overlapping
-        if (ecur == eprev - 53) {                       // adjacent: smaller must be a power of two
-            if (std::abs(cur) != std::ldexp(1.0, ecur)) return false;
+        constexpr int p = std::numeric_limits<FpType>::digits;   // 53 for double
+        if (ecur > eprev - p) return false;             // overlapping
+        if (ecur == eprev - p) {                        // adjacent: smaller must be a power of two
+            if (std::abs(cur) != std::ldexp(FpType(1), ecur)) return false;
         }
     }
     return true;
