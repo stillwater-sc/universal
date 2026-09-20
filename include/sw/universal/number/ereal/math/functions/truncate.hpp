@@ -10,34 +10,34 @@ namespace sw { namespace universal {
 
 	// trunc: truncate value by rounding toward zero
 	// Phase 2: uses Phase 1 floor/ceil based on sign
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> trunc(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> trunc(const ereal<maxlimbs, FpType>& x) {
 		// Truncate toward zero: floor for positive, ceil for negative
-		return (x >= ereal<maxlimbs>(0.0)) ? floor(x) : ceil(x);
+		return (x >= ereal<maxlimbs, FpType>(0.0)) ? floor(x) : ceil(x);
 	}
 
 	// round: round to nearest integer, halfway cases away from zero
 	// Phase 2: uses Phase 1 floor/ceil with arithmetic
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> round(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> round(const ereal<maxlimbs, FpType>& x) {
 		// Round to nearest: add 0.5 then floor (for positive)
 		// Symmetric handling for negative values
-		if (x >= ereal<maxlimbs>(0.0)) {
-			return floor(x + ereal<maxlimbs>(0.5));
+		if (x >= ereal<maxlimbs, FpType>(0.0)) {
+			return floor(x + ereal<maxlimbs, FpType>(0.5));
 		} else {
-			return ceil(x - ereal<maxlimbs>(0.5));
+			return ceil(x - ereal<maxlimbs, FpType>(0.5));
 		}
 	}
 
 	// floor: return largest integer value not greater than x
 	// Phase 1: component-wise floor using expansion arithmetic
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> floor(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> floor(const ereal<maxlimbs, FpType>& x) {
 		const auto& limbs = x.limbs();
-		if (limbs.empty() || x.iszero()) return ereal<maxlimbs>(0.0);
+		if (limbs.empty() || x.iszero()) return ereal<maxlimbs, FpType>(0.0);
 
 		// Create result expansion by flooring components
-		std::vector<double> result_limbs(limbs.size(), 0.0);
+		std::vector<FpType> result_limbs(limbs.size(), FpType(0));   // the limb type: a double buffer would round an x87 or binary128 limb (#1576)
 
 		// Floor first (most significant) component
 		result_limbs[0] = std::floor(limbs[0]);
@@ -55,11 +55,11 @@ namespace sw { namespace universal {
 		// else: first component had fractional part, remaining already zeroed
 
 		// Construct result from limbs
-		ereal<maxlimbs> result;
+		ereal<maxlimbs, FpType> result;
 		result = result_limbs[0];
 		for (size_t i = 1; i < result_limbs.size(); ++i) {
-			if (result_limbs[i] != 0.0) {
-				result += ereal<maxlimbs>(result_limbs[i]);
+			if (result_limbs[i] != FpType(0)) {
+				result += ereal<maxlimbs, FpType>(result_limbs[i]);
 			}
 		}
 
@@ -68,13 +68,13 @@ namespace sw { namespace universal {
 
 	// ceil: return smallest integer value not less than x
 	// Phase 1: component-wise ceil using expansion arithmetic
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> ceil(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> ceil(const ereal<maxlimbs, FpType>& x) {
 		const auto& limbs = x.limbs();
-		if (limbs.empty() || x.iszero()) return ereal<maxlimbs>(0.0);
+		if (limbs.empty() || x.iszero()) return ereal<maxlimbs, FpType>(0.0);
 
 		// Create result expansion by ceiling components
-		std::vector<double> result_limbs(limbs.size(), 0.0);
+		std::vector<FpType> result_limbs(limbs.size(), FpType(0));   // the limb type: a double buffer would round an x87 or binary128 limb (#1576)
 
 		// Ceil first (most significant) component
 		result_limbs[0] = std::ceil(limbs[0]);
@@ -92,11 +92,11 @@ namespace sw { namespace universal {
 		// else: first component had fractional part, remaining already zeroed
 
 		// Construct result from limbs
-		ereal<maxlimbs> result;
+		ereal<maxlimbs, FpType> result;
 		result = result_limbs[0];
 		for (size_t i = 1; i < result_limbs.size(); ++i) {
-			if (result_limbs[i] != 0.0) {
-				result += ereal<maxlimbs>(result_limbs[i]);
+			if (result_limbs[i] != FpType(0)) {
+				result += ereal<maxlimbs, FpType>(result_limbs[i]);
 			}
 		}
 
@@ -105,26 +105,26 @@ namespace sw { namespace universal {
 
 	// rint: round to the nearest integer, halfway cases to even (IEEE default).
 	// ereal has no dynamic rounding mode, so rint always uses round-to-nearest-even.
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> rint(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> rint(const ereal<maxlimbs, FpType>& x) {
 		if (x.isnan() || x.isinf() || x.iszero()) return x;
 
-		ereal<maxlimbs> f    = floor(x);   // largest integer <= x
-		ereal<maxlimbs> diff = x - f;      // fractional part in [0, 1)
-		ereal<maxlimbs> half(0.5);
+		ereal<maxlimbs, FpType> f    = floor(x);   // largest integer <= x
+		ereal<maxlimbs, FpType> diff = x - f;      // fractional part in [0, 1)
+		ereal<maxlimbs, FpType> half(0.5);
 		if (diff < half) return f;
-		if (diff > half) return f + ereal<maxlimbs>(1.0);
+		if (diff > half) return f + ereal<maxlimbs, FpType>(1.0);
 
 		// exactly halfway: pick the even neighbor. f is even iff f/2 is an integer.
-		ereal<maxlimbs> hf = f * half;
+		ereal<maxlimbs, FpType> hf = f * half;
 		if (floor(hf) == hf) return f;
-		return f + ereal<maxlimbs>(1.0);
+		return f + ereal<maxlimbs, FpType>(1.0);
 	}
 
 	// nearbyint: identical to rint for ereal. (std distinguishes them only by the
 	// FE_INEXACT flag, which ereal does not model.)
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> nearbyint(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> nearbyint(const ereal<maxlimbs, FpType>& x) {
 		return rint(x);
 	}
 

@@ -45,9 +45,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to remove double contamination and add adaptive convergence
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> exp(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> exp(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// ============================================================================
 		// STEP 1: Handle special cases
@@ -89,20 +89,16 @@ namespace sw { namespace universal {
 		Real term = reduced_x;  // First term: x^1/1!
 
 		// Adaptive convergence threshold
-		int precision_digits = static_cast<int>(53.0 * maxlimbs / 3.322);
-		int max_iterations = precision_digits * 2;  // Generous safety margin
-
-		double threshold = 1.0;
-		for (int i = 0; i < precision_digits; ++i) {
-			threshold *= 0.1;
-		}
+		// how far the series must run for this configuration, and the convergence test:
+		// both in the limb type's own terms (#1567)
+		const int precision_bits = series_precision_bits<maxlimbs, FpType>();
+		int max_iterations = precision_bits;
 
 		for (int n = 1; n < max_iterations; ++n) {
 			result = result + term;
 
 			// Check convergence
-			double term_mag = std::abs(double(term));
-			if (term_mag < threshold) break;
+			if (series_converged(term, result, precision_bits)) break;
 
 			// Compute next term: term_{n+1} = term_n * x / (n+1)
 			// Critical: Must avoid double conversion of (n+1)
@@ -128,26 +124,26 @@ namespace sw { namespace universal {
 
 	// exp2: base-2 exponential function 2^x
 	// Implements: 2^x = exp(x * ln(2))
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> exp2(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> exp2(const ereal<maxlimbs, FpType>& x) {
 		// 2^x = exp(x * ln 2), with ln 2 at full ereal precision (#1002).
-		return exp(x * ereal_ln2<maxlimbs>());
+		return exp(x * ereal_ln2<maxlimbs, FpType>());
 	}
 
 	// exp10: base-10 exponential function 10^x
 	// Implements: 10^x = exp(x * ln(10))
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> exp10(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> exp10(const ereal<maxlimbs, FpType>& x) {
 		// 10^x = exp(x * ln 10), with ln 10 at full ereal precision (#1002).
-		return exp(x * ereal_ln10<maxlimbs>());
+		return exp(x * ereal_ln10<maxlimbs, FpType>());
 	}
 
 	// expm1: compute e^x - 1 accurately for small x
 	// Phase 4a: implement using Taylor series (avoids cancellation for small x)
 	// For small x: expm1(x) = x + x^2/2! + x^3/3! + x^4/4! + ...
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> expm1(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> expm1(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// For small x, use Taylor series directly
 		// This avoids catastrophic cancellation in exp(x) - 1
@@ -159,16 +155,19 @@ namespace sw { namespace universal {
 			Real result = x;
 			Real term = x;
 
-			double epsilon = 1.0e-17;
+			// the series runs to this configuration's precision, and so does its bound: a
+			// fixed 100 terms is not enough at every width. For |x| just under 0.1 the
+			// alternating log1p series is only ~330 bits down after 100 terms, short of the
+			// 1060 an ereal<19> holds (#1576). Convergence breaks out long before this bound.
+			const int precision_bits = series_precision_bits<maxlimbs, FpType>();
 
-			for (int n = 2; n < 100; ++n) {
+			for (int n = 2; n < precision_bits; ++n) {
 				// Compute next term: term_n = term_{n-1} * x / n
 				// NOTE: Use double literal to avoid ereal(int) constructor bug
 				term = term * x / Real(double(n));
 				result = result + term;
 
-				double term_mag = std::abs(double(term));
-				if (term_mag < epsilon) break;
+				if (series_converged(term, result, precision_bits)) break;
 			}
 
 			return result;

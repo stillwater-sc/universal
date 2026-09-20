@@ -47,9 +47,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to remove double contamination and add adaptive convergence
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> log(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> log(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// ============================================================================
 		// STEP 1: Handle special cases
@@ -74,7 +74,7 @@ namespace sw { namespace universal {
 		Real mantissa = frexp(x, &exponent);
 
 		// ln(2) at full ereal precision (#1002)
-		Real ln2 = ereal_ln2<maxlimbs>();
+		Real ln2 = ereal_ln2<maxlimbs, FpType>();
 
 		// ============================================================================
 		// STEP 3: Compute log(mantissa) using artanh-based series
@@ -96,13 +96,10 @@ namespace sw { namespace universal {
 		Real result = term;
 
 		// Adaptive convergence threshold
-		int precision_digits = static_cast<int>(53.0 * maxlimbs / 3.322);
-		int max_iterations = precision_digits * 2;
-
-		double threshold = 1.0;
-		for (int i = 0; i < precision_digits; ++i) {
-			threshold *= 0.1;
-		}
+		// how far the series must run for this configuration, and the convergence test:
+		// both in the limb type's own terms (#1567)
+		const int precision_bits = series_precision_bits<maxlimbs, FpType>();
+		int max_iterations = precision_bits;
 
 		for (int n = 1; n < max_iterations; ++n) {
 			// Next term: u^(2n+1) / (2n+1)
@@ -114,8 +111,7 @@ namespace sw { namespace universal {
 			result = result + series_term;
 
 			// Check convergence
-			double term_mag = std::abs(double(series_term));
-			if (term_mag < threshold) break;
+			if (series_converged(series_term, result, precision_bits)) break;
 		}
 
 		// Multiply by 2 for the artanh series
@@ -136,26 +132,26 @@ namespace sw { namespace universal {
 
 	// log2: binary logarithm (base 2)
 	// Phase 4a: implement using log(x) / log(2)
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> log2(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> log2(const ereal<maxlimbs, FpType>& x) {
 		// log2(x) = ln(x) / ln(2), ln 2 at full ereal precision (#1002)
-		return log(x) / ereal_ln2<maxlimbs>();
+		return log(x) / ereal_ln2<maxlimbs, FpType>();
 	}
 
 	// log10: common logarithm (base 10)
 	// Phase 4a: implement using log(x) / log(10)
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> log10(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> log10(const ereal<maxlimbs, FpType>& x) {
 		// log10(x) = ln(x) / ln(10), ln 10 at full ereal precision (#1002)
-		return log(x) / ereal_ln10<maxlimbs>();
+		return log(x) / ereal_ln10<maxlimbs, FpType>();
 	}
 
 	// log1p: compute log(1 + x) accurately for small x
 	// Phase 4a: implement using Taylor series (avoids cancellation for small x)
 	// For small x: log(1+x) = x - x^2/2 + x^3/3 - x^4/4 + ...
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> log1p(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> log1p(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// For small x, use Taylor series directly
 		// This avoids catastrophic cancellation in log(1+x)
@@ -168,16 +164,22 @@ namespace sw { namespace universal {
 			Real term = x;
 			Real neg_x = -x;
 
-			double epsilon = 1.0e-17;
+			// the series runs to this configuration's precision, and so does its bound: a
+			// fixed 100 terms is not enough at every width. For |x| just under 0.1 the
+			// alternating log1p series is only ~330 bits down after 100 terms, short of the
+			// 1060 an ereal<19> holds (#1576). Convergence breaks out long before this bound.
+			const int precision_bits = series_precision_bits<maxlimbs, FpType>();
 
-			for (int n = 2; n < 100; ++n) {
-				// Alternating series: term_n = -term_{n-1} * x / n
+			for (int n = 2; n < precision_bits; ++n) {
+				// Alternating series: term_n = (-1)^(n+1) x^n / n, so the ratio between
+				// terms is -x * (n-1) / n. The (n-1) was missing, which made every term
+				// from the third on too small by a factor of (n-1): log1p(0.09) returned
+				// 0.0860688 rather than 0.0861777 -- wrong in the third digit (#1576).
 				// NOTE: Use double literal to avoid ereal(int) constructor bug
-				term = term * neg_x / Real(double(n));
+				term = term * neg_x * Real(double(n - 1)) / Real(double(n));
 				result = result + term;
 
-				double term_mag = std::abs(double(term));
-				if (term_mag < epsilon) break;
+				if (series_converged(term, result, precision_bits)) break;
 			}
 
 			return result;

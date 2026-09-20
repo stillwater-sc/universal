@@ -12,11 +12,11 @@ namespace sw { namespace universal {
 	// Phase 3: Full adaptive-precision Newton-Raphson iteration
 	//   Strategy: Use Newton-Raphson: x' = (x + a/x) / 2
 	//   Starting with x = sqrt(high component), iterate to requested precision
-	//   For ereal<maxlimbs>: iterations = 3 + log2(maxlimbs + 1)
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> sqrt(const ereal<maxlimbs>& a) {
+	//   For ereal<maxlimbs, FpType>: iterations = 3 + log2(maxlimbs + 1)
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> sqrt(const ereal<maxlimbs, FpType>& a) {
 		// Handle special cases
-		if (a.iszero()) return ereal<maxlimbs>(0.0);
+		if (a.iszero()) return ereal<maxlimbs, FpType>(0.0);
 		if (a.isneg()) {
 			// TODO: Return NaN when ereal supports it
 			// For now, return input (error case)
@@ -26,7 +26,7 @@ namespace sw { namespace universal {
 		// Initial approximation from high component
 		// This gives ~53 bits of precision to start
 		const auto& limbs = a.limbs();
-		ereal<maxlimbs> x = std::sqrt(limbs[0]);
+		ereal<maxlimbs, FpType> x = std::sqrt(limbs[0]);
 
 		// Determine number of iterations based on desired precision
 		// Each iteration doubles correct digits (quadratic convergence)
