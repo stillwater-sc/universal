@@ -31,6 +31,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include <universal/number/areal/areal.hpp>
@@ -191,15 +192,21 @@ namespace {
 		using Cfloat = cfloat<16, 5, std::uint16_t, true, false, false>;
 		fails += expect_true(info_print(Cfloat(0.0f)).find(" zero") != std::string::npos,
 			"cfloat: zero reports zero", reportTestCases);
-		fails += expect_true(info_print(Cfloat(NAN)).find(" nan") != std::string::npos,
+		fails += expect_true(
+			info_print(Cfloat(std::numeric_limits<float>::quiet_NaN())).find(" nan") != std::string::npos,
 			"cfloat: nan reports nan", reportTestCases);
-		fails += expect_true(info_print(Cfloat(INFINITY)).find(" inf") != std::string::npos,
+		fails += expect_true(
+			info_print(Cfloat(std::numeric_limits<float>::infinity())).find(" inf") != std::string::npos,
 			"cfloat: inf reports inf", reportTestCases);
 
 		fails += expect_true(info_print(0.0).find(" zero") != std::string::npos,
 			"double: zero reports zero", reportTestCases);
-		fails += expect_true(info_print(1.0 / 0.0).find(" inf") != std::string::npos,
+		// std::numeric_limits, not 1.0/0.0: MSVC rejects a literal division by zero at
+		// compile time outright (error C2124), where gcc and clang fold it to inf
+		fails += expect_true(info_print(std::numeric_limits<double>::infinity()).find(" inf") != std::string::npos,
 			"double: inf reports inf", reportTestCases);
+		fails += expect_true(info_print(std::numeric_limits<double>::quiet_NaN()).find(" nan") != std::string::npos,
+			"double: nan reports nan", reportTestCases);
 
 		fails += expect_true(info_print(integer<16>(0)).find(" zero") != std::string::npos,
 			"integer: zero reports zero", reportTestCases);
