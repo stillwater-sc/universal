@@ -30,6 +30,11 @@ namespace {
 
 	using namespace sw::universal;
 
+	int expect(bool ok, const std::string& what, bool reportTestCases) {
+		if (ok) return 0;
+		if (reportTestCases) std::cout << "    FAIL " << what << '\n';
+		return 1;
+	}
 	int expect_digits(int got, int wanted, const std::string& what, bool reportTestCases) {
 		if (got >= wanted) return 0;
 		if (reportTestCases) std::cout << "    FAIL " << what << ": " << got << " digits, wanted at least " << wanted << '\n';
@@ -86,6 +91,43 @@ namespace {
 		return fails;
 	}
 
+	// ---- the paths a fixed-precision literal or a double buffer used to cap --------------
+	//
+	// Each of these was capped by something that did not scale with the configuration, and
+	// each is checked here against the value the type should carry (#1576).
+
+	template<unsigned N, typename F>
+	int VerifyNoFixedPrecisionPaths(const std::string& name, bool reportTestCases) {
+		using R = ereal<N, F>;
+		int fails = 0;
+		const int wanted = configuration_digits<N, F>() - 2 * static_cast<int>(std::numeric_limits<F>::digits * 0.30103) - 2;
+		const R one(1.0);
+
+		// atan for |x| > 0.5 went through atan(1/2), which was a 64-digit literal
+		for (double v : { 0.75, 0.9 }) {
+			const R x(v);
+			fails += expect_digits(agreed_decimal_digits(tan(atan(x)), x, 4 * wanted), wanted,
+			                       name + ": tan(atan(" + std::to_string(v) + ")) is x, past 64 digits", reportTestCases);
+		}
+		// atan2's quadrant adjustment used double literals for pi and pi/2
+		fails += expect_digits(agreed_decimal_digits(atan2(one, -one), ereal_3pi_4<N, F>(), 4 * wanted), wanted,
+		                       name + ": atan2(1, -1) is 3pi/4", reportTestCases);
+		fails += expect_digits(agreed_decimal_digits(atan2(one, R(0.0)), ereal_pi_2<N, F>(), 4 * wanted), wanted,
+		                       name + ": atan2(1, 0) is pi/2", reportTestCases);
+		// log1p's series ran a fixed 100 terms, short of what a wide configuration holds
+		const R small(0.09);
+		fails += expect_digits(agreed_decimal_digits(log1p(small), log(one + small), 4 * wanted), wanted,
+		                       name + ": log1p(0.09) agrees with log(1.09)", reportTestCases);
+		fails += expect_digits(agreed_decimal_digits(expm1(small), exp(small) - one, 4 * wanted), wanted,
+		                       name + ": expm1(0.09) agrees with exp(0.09) - 1", reportTestCases);
+		// floor/ceil kept their scratch limbs in a double, which rounds a wider limb
+		const R big = R(std::ldexp(1.0, std::numeric_limits<F>::digits - 1)) + one + R(0.5);   // 2^(p-1) + 1.5
+		const R expected = R(std::ldexp(1.0, std::numeric_limits<F>::digits - 1)) + one;
+		fails += expect(floor(big) == expected, name + ": floor keeps a limb the limb type can hold", reportTestCases);
+		fails += expect(ceil(big) == expected + one, name + ": ceil keeps a limb the limb type can hold", reportTestCases);
+		return fails;
+	}
+
 }  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -115,6 +157,7 @@ int VerifyLongDoubleMath(bool reportTestCases, const std::string& test_tag, bool
 	if (!deep) {
 		n += ReportTestResult(VerifyConstants<8, LD>("ereal<8, long double>", reportTestCases), test_tag, "long double constants");
 		n += ReportTestResult(VerifyMathlib<8, LD>("ereal<8, long double>", reportTestCases), test_tag, "long double mathlib");
+		n += ReportTestResult(VerifyNoFixedPrecisionPaths<8, LD>("ereal<8, long double>", reportTestCases), test_tag, "long double fixed-precision paths");
 	}
 	else if constexpr (ereal<8, LD>::max_safe_limbs >= 24) {
 		// 24 limbs of x87 carry ~460 digits: past the ~313 the stored constants and the
@@ -151,6 +194,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMathlib<5, float>("ereal<5, float>", reportTestCases), test_tag, "float mathlib");
 	nrOfFailedTestCases += ReportTestResult(VerifyMathlib<8, double>("ereal<8>", reportTestCases), test_tag, "double mathlib");
 	nrOfFailedTestCases += ReportTestResult(VerifyMathlib<19, double>("ereal<19>", reportTestCases), test_tag, "double mathlib, 19 limbs");
+	nrOfFailedTestCases += ReportTestResult(VerifyNoFixedPrecisionPaths<5, float>("ereal<5, float>", reportTestCases), test_tag, "float fixed-precision paths");
+	nrOfFailedTestCases += ReportTestResult(VerifyNoFixedPrecisionPaths<8, double>("ereal<8>", reportTestCases), test_tag, "double fixed-precision paths");
+	nrOfFailedTestCases += ReportTestResult(VerifyNoFixedPrecisionPaths<19, double>("ereal<19>", reportTestCases), test_tag, "double fixed-precision paths, 19 limbs");
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -426,6 +426,38 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Initial adaptive-precision implementation with proper algorithm selection
 	//
+	namespace ereal_detail {
+
+		// The atan Taylor series, atan(x) = x - x^3/3 + x^5/5 - ..., for |x| <= 0.5, where it
+		// converges directly. Extracted so that atan's argument reduction can build atan(1/2)
+		// from it: that value was a 64-digit literal, which capped the |x| > 0.5 branch there
+		// once the series itself became exact (#1576).
+		template<unsigned maxlimbs, typename FpType>
+		inline ereal<maxlimbs, FpType> atan_taylor(const ereal<maxlimbs, FpType>& x) {
+			using Real = ereal<maxlimbs, FpType>;
+			const Real one(1.0);
+			const Real x_squared = x * x;
+			Real term = x;
+			Real result = term;
+			const int precision_bits = series_precision_bits<maxlimbs, FpType>();
+			for (int n = 1; n < precision_bits; ++n) {
+				term = term * (-x_squared);
+				Real denominator;
+				if (n < 1000000) {
+					denominator = Real(static_cast<double>(2 * n + 1));   // exact in a double
+				} else {
+					denominator = Real(2.0) * Real(static_cast<double>(n)) + one;
+				}
+				const Real series_term = term / denominator;
+				result = result + series_term;
+				// on exponents, not through a double, which reads any term below ~1e-308 as zero
+				if (series_converged(series_term, result, precision_bits)) break;
+			}
+			return result;
+		}
+
+	}  // namespace ereal_detail
+
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> atan(const ereal<maxlimbs, FpType>& x) {
 		using Real = ereal<maxlimbs, FpType>;
@@ -485,10 +517,6 @@ namespace sw { namespace universal {
 		Real reduced_x = abs_x;
 
 		if (abs_x > half) {
-			// atan(1/2) to 100+ digits (precomputed offline using Machin-like formula)
-			Real atan_half;
-			atan_half = ereal_detail::parse_constant<maxlimbs, FpType>("0.46364760900080611621425623146121440202853705428612026381093308");  // atan(1/2), full precision (#1002)
-
 			// Addition formula: atan(a) + atan(b) = atan((a+b)/(1-ab))
 			// Rearranged: atan(x) = atan(1/2) + atan((x-1/2)/(1+x/2))
 			Real two(2.0);
@@ -509,57 +537,17 @@ namespace sw { namespace universal {
 		// For |x| < 0.5: Converges with relative error eps after n ~= -log(eps)/(2*log(|x|)) terms
 		// Example: |x| = 0.4, eps = 10^-100 requires n ~= 55 terms
 		//
-		Real x_squared = reduced_x * reduced_x;
-		Real term = reduced_x;           // First term: x
-		Real result = term;
-
-		// Adaptive convergence: Stop when |term| < ulp(result)
-		// This ensures we've reached the precision limit of the representation
-		// For ereal<>: ~127 decimal digits, so we need ~53*maxlimbs binary digits precision
-		//
-		// Estimate working precision in bits: 53 * maxlimbs
-		// Convert to decimal: bits / log2(10) ~= bits / 3.322
-		//
-		// IMPORTANT: For double-precision comparison, we use a threshold that works
-		// with the double() conversion. A more sophisticated approach would compute
-		// ulp(result) directly, but for now we use a conservative threshold.
-		//
-		// how far the series must run for this configuration, and the convergence test:
-		// both in the limb type's own terms (#1567)
-		const int precision_bits = series_precision_bits<maxlimbs, FpType>();
-		int max_iterations = precision_bits;
-
-		for (int n = 1; n < max_iterations; ++n) {
-			// Compute next term: term = term*(-x^2)
-			term = term * (-x_squared);
-
-			// Denominator: For small n (< 10^15), double has exact integer representation
-			// For larger n where we need the precision, we build the denominator incrementally
-			// to avoid loss of precision in the conversion
-			Real denominator;
-			if (n < 1000000) {
-				// For reasonable iteration counts, double can represent 2n+1 exactly
-				denominator = Real(static_cast<double>(2 * n + 1));
-			} else {
-				// For extreme precision (should rarely reach here), build incrementally
-				Real two_n = Real(2.0) * Real(static_cast<double>(n));
-				denominator = two_n + one;
-			}
-
-			Real series_term = term / denominator;
-			result = result + series_term;
-
-			// Convergence check: the term can no longer move the sum. On exponents, not
-			// through a double, which would read every term below ~1e-308 as zero (#1567).
-			if (series_converged(series_term, result, precision_bits)) break;
-		}
+		// the series, shared with atan(1/2) above
+		Real result = ereal_detail::atan_taylor(reduced_x);
 
 		// ============================================================================
 		// STEP 6: Add back argument reduction offset if needed
 		// ============================================================================
 		if (atan_half_needed) {
-			Real atan_half;
-			atan_half = ereal_detail::parse_constant<maxlimbs, FpType>("0.46364760900080611621425623146121440202853705428612026381093308");  // atan(1/2), full precision (#1002)
+			// atan(1/2) to this configuration's precision, from the same series. It was a
+			// 64-digit literal, which capped every |x| > 0.5 result at ~64 digits once the
+			// series itself became exact (#1576).
+			static const Real atan_half = ereal_detail::atan_taylor(Real(0.5));
 			result = atan_half + result;
 		}
 
@@ -572,8 +560,10 @@ namespace sw { namespace universal {
 	inline ereal<maxlimbs, FpType> atan2(const ereal<maxlimbs, FpType>& y, const ereal<maxlimbs, FpType>& x) {
 		using Real = ereal<maxlimbs, FpType>;
 
-		Real pi(3.141592653589793238462643383279502884);
-		Real pi_2(1.5707963267948966);
+		// the stored constants, not double literals: atan itself carries the configuration's
+		// full precision now, and a 16-digit quadrant adjustment would undo it (#1576)
+		const Real pi = ereal_pi<maxlimbs, FpType>();
+		const Real pi_2 = ereal_pi_2<maxlimbs, FpType>();
 
 		// Special cases
 		if (x.iszero() && y.iszero()) {

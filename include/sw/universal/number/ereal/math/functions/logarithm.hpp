@@ -164,14 +164,19 @@ namespace sw { namespace universal {
 			Real term = x;
 			Real neg_x = -x;
 
-			// the series runs to this configuration's precision, and the 100-term bound
-			// that follows is generous for |x| < 0.1 at any width
+			// the series runs to this configuration's precision, and so does its bound: a
+			// fixed 100 terms is not enough at every width. For |x| just under 0.1 the
+			// alternating log1p series is only ~330 bits down after 100 terms, short of the
+			// 1060 an ereal<19> holds (#1576). Convergence breaks out long before this bound.
 			const int precision_bits = series_precision_bits<maxlimbs, FpType>();
 
-			for (int n = 2; n < 100; ++n) {
-				// Alternating series: term_n = -term_{n-1} * x / n
+			for (int n = 2; n < precision_bits; ++n) {
+				// Alternating series: term_n = (-1)^(n+1) x^n / n, so the ratio between
+				// terms is -x * (n-1) / n. The (n-1) was missing, which made every term
+				// from the third on too small by a factor of (n-1): log1p(0.09) returned
+				// 0.0860688 rather than 0.0861777 -- wrong in the third digit (#1576).
 				// NOTE: Use double literal to avoid ereal(int) constructor bug
-				term = term * neg_x / Real(double(n));
+				term = term * neg_x * Real(double(n - 1)) / Real(double(n));
 				result = result + term;
 
 				if (series_converged(term, result, precision_bits)) break;

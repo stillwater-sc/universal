@@ -155,11 +155,13 @@ namespace sw { namespace universal {
 			Real result = x;
 			Real term = x;
 
-			// the series runs to this configuration's precision, and the 100-term bound
-			// that follows is generous for |x| < 0.1 at any width
+			// the series runs to this configuration's precision, and so does its bound: a
+			// fixed 100 terms is not enough at every width. For |x| just under 0.1 the
+			// alternating log1p series is only ~330 bits down after 100 terms, short of the
+			// 1060 an ereal<19> holds (#1576). Convergence breaks out long before this bound.
 			const int precision_bits = series_precision_bits<maxlimbs, FpType>();
 
-			for (int n = 2; n < 100; ++n) {
+			for (int n = 2; n < precision_bits; ++n) {
 				// Compute next term: term_n = term_{n-1} * x / n
 				// NOTE: Use double literal to avoid ereal(int) constructor bug
 				term = term * x / Real(double(n));

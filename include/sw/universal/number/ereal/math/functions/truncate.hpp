@@ -37,7 +37,7 @@ namespace sw { namespace universal {
 		if (limbs.empty() || x.iszero()) return ereal<maxlimbs, FpType>(0.0);
 
 		// Create result expansion by flooring components
-		std::vector<double> result_limbs(limbs.size(), 0.0);
+		std::vector<FpType> result_limbs(limbs.size(), FpType(0));   // the limb type: a double buffer would round an x87 or binary128 limb (#1576)
 
 		// Floor first (most significant) component
 		result_limbs[0] = std::floor(limbs[0]);
@@ -58,7 +58,7 @@ namespace sw { namespace universal {
 		ereal<maxlimbs, FpType> result;
 		result = result_limbs[0];
 		for (size_t i = 1; i < result_limbs.size(); ++i) {
-			if (result_limbs[i] != 0.0) {
+			if (result_limbs[i] != FpType(0)) {
 				result += ereal<maxlimbs, FpType>(result_limbs[i]);
 			}
 		}
@@ -74,7 +74,7 @@ namespace sw { namespace universal {
 		if (limbs.empty() || x.iszero()) return ereal<maxlimbs, FpType>(0.0);
 
 		// Create result expansion by ceiling components
-		std::vector<double> result_limbs(limbs.size(), 0.0);
+		std::vector<FpType> result_limbs(limbs.size(), FpType(0));   // the limb type: a double buffer would round an x87 or binary128 limb (#1576)
 
 		// Ceil first (most significant) component
 		result_limbs[0] = std::ceil(limbs[0]);
@@ -95,7 +95,7 @@ namespace sw { namespace universal {
 		ereal<maxlimbs, FpType> result;
 		result = result_limbs[0];
 		for (size_t i = 1; i < result_limbs.size(); ++i) {
-			if (result_limbs[i] != 0.0) {
+			if (result_limbs[i] != FpType(0)) {
 				result += ereal<maxlimbs, FpType>(result_limbs[i]);
 			}
 		}
