@@ -17,9 +17,9 @@ namespace sw { namespace universal {
 	//   - 1^y = 1 for any y
 	//   - x^1 = x for any x
 	//   - x^2, x^3, ... use direct multiplication for small integer powers
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> pow(const ereal<maxlimbs>& x, const ereal<maxlimbs>& y) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> pow(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// Special case: y = 0 => x^0 = 1 (for any x, including 0)
 		if (y.iszero()) return Real(1.0);
@@ -101,16 +101,16 @@ namespace sw { namespace universal {
 
 	// pow: power function x^y (mixed type: ereal^double)
 	// Phase 4b: Forward to main pow implementation
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> pow(const ereal<maxlimbs>& x, double y) {
-		return pow(x, ereal<maxlimbs>(y));
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> pow(const ereal<maxlimbs, FpType>& x, double y) {
+		return pow(x, ereal<maxlimbs, FpType>(y));
 	}
 
 	// pow: power function x^y (mixed type: double^ereal)
 	// Phase 4b: Forward to main pow implementation
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> pow(double x, const ereal<maxlimbs>& y) {
-		return pow(ereal<maxlimbs>(x), y);
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> pow(double x, const ereal<maxlimbs, FpType>& y) {
+		return pow(ereal<maxlimbs, FpType>(x), y);
 	}
 
 }} // namespace sw::universal

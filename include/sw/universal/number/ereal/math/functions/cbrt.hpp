@@ -14,19 +14,19 @@ namespace sw { namespace universal {
 	//   Algorithm: (1) Extract sign, (2) Use frexp to get r * 2^e,
 	//             (3) Adjust exponent divisible by 3, (4) Newton iteration on r,
 	//             (5) Scale result by 2^(e/3), (6) Restore sign
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> cbrt(const ereal<maxlimbs>& a) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> cbrt(const ereal<maxlimbs, FpType>& a) {
 		// Handle special cases
-		if (a.iszero()) return ereal<maxlimbs>(0.0);
+		if (a.iszero()) return ereal<maxlimbs, FpType>(0.0);
 		if (a.isnan() || a.isinf()) return a;
 
 		// Extract and save sign (cbrt preserves sign)
 		bool negative = a.isneg();
-		ereal<maxlimbs> abs_a = negative ? -a : a;
+		ereal<maxlimbs, FpType> abs_a = negative ? -a : a;
 
 		// Use frexp to get: abs_a = r * 2^e where 0.5 <= r < 1
 		int e;
-		ereal<maxlimbs> r = frexp(abs_a, &e);
+		ereal<maxlimbs, FpType> r = frexp(abs_a, &e);
 
 		// Adjust exponent to be divisible by 3
 		// This keeps r in range [0.125, 1.0) and ensures 2^(e/3) is exact
@@ -38,7 +38,7 @@ namespace sw { namespace universal {
 		// At this point: 0.125 <= r < 1.0 and e is divisible by 3
 		// Initial approximation for cbrt(r) from high component
 		const auto& r_limbs = r.limbs();
-		ereal<maxlimbs> x = std::cbrt(r_limbs[0]);
+		ereal<maxlimbs, FpType> x = std::cbrt(r_limbs[0]);
 
 		// Determine iterations for adaptive precision
 		int iterations = 3 + static_cast<int>(std::log2(maxlimbs + 1));
@@ -46,8 +46,8 @@ namespace sw { namespace universal {
 		// Newton-Raphson for cbrt: x' = (2x + r/x^2) / 3
 		// This converges to cbrt(r)
 		for (int i = 0; i < iterations; ++i) {
-			ereal<maxlimbs> x_squared = x * x;
-			x = (ereal<maxlimbs>(2.0) * x + r / x_squared) / ereal<maxlimbs>(3.0);
+			ereal<maxlimbs, FpType> x_squared = x * x;
+			x = (ereal<maxlimbs, FpType>(2.0) * x + r / x_squared) / ereal<maxlimbs, FpType>(3.0);
 		}
 
 		// Scale by 2^(e/3) to get cbrt(abs_a)

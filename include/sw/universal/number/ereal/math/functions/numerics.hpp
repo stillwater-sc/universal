@@ -51,6 +51,27 @@ namespace sw { namespace universal {
 		return ldexp(x, -(*exp));
 	}
 
+	// series_precision_bits: the bits a configuration carries, plus a guard limb, which is
+	// how far a series has to run.
+	template<unsigned maxlimbs, typename FpType>
+	inline constexpr int series_precision_bits() {
+		return static_cast<int>(maxlimbs + 1) * std::numeric_limits<FpType>::digits;
+	}
+
+	// series_converged: a term can no longer move the running sum once it sits `bits`
+	// below it.
+	//
+	// The test is on EXPONENTS. These series used to convert each term to a double and
+	// compare it against 10^-digits, which reads ANY term below ~1e-308 as exactly zero:
+	// on a limb type whose range goes further -- x87 and binary128 reach 1e-4932 -- every
+	// series stopped at ~308 digits no matter how many limbs it was given (#1567).
+	template<unsigned maxlimbs, typename FpType>
+	inline bool series_converged(const ereal<maxlimbs, FpType>& term, const ereal<maxlimbs, FpType>& sum, int bits) {
+		if (term.iszero()) return true;
+		if (sum.iszero()) return false;                  // nothing to be small against yet
+		return ilogb(term) < ilogb(sum) - bits;
+	}
+
 	// copysign: copy sign from one value to another
 	// Phase 1: uses ereal's sign() method and unary minus operator
 	template<unsigned maxlimbs, typename FpType>

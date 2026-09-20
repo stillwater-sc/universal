@@ -38,9 +38,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to remove double contamination and add adaptive convergence
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> sin(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> sin(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// ============================================================================
 		// STEP 1: Handle special cases
@@ -52,7 +52,7 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// pi to 200 digits (OEIS A000796)
 		Real pi;
-		pi = ereal_pi<maxlimbs>();  // full ereal precision (#1002)
+		pi = ereal_pi<maxlimbs, FpType>();  // full ereal precision (#1002)
 
 		Real two(2.0);
 		Real two_pi = pi * two;
@@ -101,13 +101,10 @@ namespace sw { namespace universal {
 		Real result = term;
 
 		// Adaptive convergence threshold
-		int precision_digits = static_cast<int>(53.0 * maxlimbs / 3.322);
-		int max_iterations = precision_digits * 2;
-
-		double threshold = 1.0;
-		for (int i = 0; i < precision_digits; ++i) {
-			threshold *= 0.1;
-		}
+		// how far the series must run for this configuration, and the convergence test:
+		// both in the limb type's own terms (#1567)
+		const int precision_bits = series_precision_bits<maxlimbs, FpType>();
+		int max_iterations = precision_bits;
 
 		for (int n = 1; n < max_iterations; ++n) {
 			// Next term: term_n = -term_{n-1} * x^2 / ((2n)(2n+1))
@@ -120,8 +117,7 @@ namespace sw { namespace universal {
 			result = result + term;
 
 			// Check convergence
-			double term_mag = std::abs(double(term));
-			if (term_mag < threshold) break;
+			if (series_converged(term, result, precision_bits)) break;
 		}
 
 		return result;
@@ -157,9 +153,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to remove double contamination and add adaptive convergence
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> cos(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> cos(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// ============================================================================
 		// STEP 1: Handle special cases
@@ -171,7 +167,7 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// pi to 200 digits (OEIS A000796)
 		Real pi;
-		pi = ereal_pi<maxlimbs>();  // full ereal precision (#1002)
+		pi = ereal_pi<maxlimbs, FpType>();  // full ereal precision (#1002)
 
 		Real two(2.0);
 		Real two_pi = pi * two;
@@ -220,13 +216,10 @@ namespace sw { namespace universal {
 		Real result = term;
 
 		// Adaptive convergence threshold
-		int precision_digits = static_cast<int>(53.0 * maxlimbs / 3.322);
-		int max_iterations = precision_digits * 2;
-
-		double threshold = 1.0;
-		for (int i = 0; i < precision_digits; ++i) {
-			threshold *= 0.1;
-		}
+		// how far the series must run for this configuration, and the convergence test:
+		// both in the limb type's own terms (#1567)
+		const int precision_bits = series_precision_bits<maxlimbs, FpType>();
+		int max_iterations = precision_bits;
 
 		for (int n = 1; n < max_iterations; ++n) {
 			// Next term: term_n = -term_{n-1} * x^2 / ((2n-1)(2n))
@@ -239,8 +232,7 @@ namespace sw { namespace universal {
 			result = result + term;
 
 			// Check convergence
-			double term_mag = std::abs(double(term));
-			if (term_mag < threshold) break;
+			if (series_converged(term, result, precision_bits)) break;
 		}
 
 		return result;
@@ -249,9 +241,9 @@ namespace sw { namespace universal {
 	// tan: tangent function
 	// Phase 6: Implementation using sin/cos
 	// tan(x) = sin(x) / cos(x)
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> tan(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> tan(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// Special case
 		if (x.iszero()) return Real(0.0);
@@ -290,9 +282,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to remove double contamination and add adaptive convergence
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> asin(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> asin(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// ============================================================================
 		// STEP 1: Domain check and special cases
@@ -307,7 +299,7 @@ namespace sw { namespace universal {
 
 		// High-precision pi/2 constant (100+ digits)
 		Real pi_2;
-		pi_2 = ereal_pi_2<maxlimbs>();  // full ereal precision (#1002)
+		pi_2 = ereal_pi_2<maxlimbs, FpType>();  // full ereal precision (#1002)
 
 		if (x == one) return pi_2;
 		if (x == -one) return -pi_2;
@@ -336,13 +328,10 @@ namespace sw { namespace universal {
 		Real result = term;
 
 		// Adaptive convergence threshold
-		int precision_digits = static_cast<int>(53.0 * maxlimbs / 3.322);
-		int max_iterations = precision_digits * 2;
-
-		double threshold_conv = 1.0;
-		for (int i = 0; i < precision_digits; ++i) {
-			threshold_conv *= 0.1;
-		}
+		// how far the series must run for this configuration, and the convergence test:
+		// both in the limb type's own terms (#1567)
+		const int precision_bits = series_precision_bits<maxlimbs, FpType>();
+		int max_iterations = precision_bits;
 
 		for (int n = 1; n < max_iterations; ++n) {
 			// Correct recursion: term_n = term_{n-1} * x^2 * (2n-1)^2 / [2n(2n+1)]
@@ -357,8 +346,7 @@ namespace sw { namespace universal {
 			result = result + term;
 
 			// Check convergence
-			double term_mag = std::abs(double(term));
-			if (term_mag < threshold_conv) break;
+			if (series_converged(term, result, precision_bits)) break;
 		}
 
 		return result;
@@ -379,9 +367,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to use high-precision pi/2 constant
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> acos(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> acos(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// Domain check: |x| must be <= 1
 		Real abs_x = abs(x);
@@ -392,7 +380,7 @@ namespace sw { namespace universal {
 
 		// High-precision pi/2 constant (100+ digits)
 		Real pi_2;
-		pi_2 = ereal_pi_2<maxlimbs>();  // full ereal precision (#1002)
+		pi_2 = ereal_pi_2<maxlimbs, FpType>();  // full ereal precision (#1002)
 
 		// acos(x) = pi/2 - asin(x)
 		return pi_2 - asin(x);
@@ -438,9 +426,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Initial adaptive-precision implementation with proper algorithm selection
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> atan(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> atan(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// ============================================================================
 		// STEP 1: Handle special cases
@@ -477,7 +465,7 @@ namespace sw { namespace universal {
 		if (abs_x > one) {
 			// High-precision pi/2 constant (100+ digits)
 			Real pi_2;
-			pi_2 = ereal_pi_2<maxlimbs>();  // full ereal precision (#1002)
+			pi_2 = ereal_pi_2<maxlimbs, FpType>();  // full ereal precision (#1002)
 
 			Real reciprocal_atan = atan(one / abs_x);
 			Real result = pi_2 - reciprocal_atan;
@@ -499,7 +487,7 @@ namespace sw { namespace universal {
 		if (abs_x > half) {
 			// atan(1/2) to 100+ digits (precomputed offline using Machin-like formula)
 			Real atan_half;
-			atan_half = ereal_detail::parse_constant<maxlimbs>("0.46364760900080611621425623146121440202853705428612026381093308");  // atan(1/2), full precision (#1002)
+			atan_half = ereal_detail::parse_constant<maxlimbs, FpType>("0.46364760900080611621425623146121440202853705428612026381093308");  // atan(1/2), full precision (#1002)
 
 			// Addition formula: atan(a) + atan(b) = atan((a+b)/(1-ab))
 			// Rearranged: atan(x) = atan(1/2) + atan((x-1/2)/(1+x/2))
@@ -536,16 +524,10 @@ namespace sw { namespace universal {
 		// with the double() conversion. A more sophisticated approach would compute
 		// ulp(result) directly, but for now we use a conservative threshold.
 		//
-		int precision_digits = static_cast<int>(53.0 * maxlimbs / 3.322);
-		int max_iterations = precision_digits * 2;  // Generous safety margin
-
-		// Use a fixed threshold appropriate for the working precision
-		// For ereal<> (4 limbs), this gives ~64 decimal digits
-		// We use double() for comparison since ereal comparison may have issues
-		double threshold = 1.0;
-		for (int i = 0; i < precision_digits; ++i) {
-			threshold *= 0.1;
-		}
+		// how far the series must run for this configuration, and the convergence test:
+		// both in the limb type's own terms (#1567)
+		const int precision_bits = series_precision_bits<maxlimbs, FpType>();
+		int max_iterations = precision_bits;
 
 		for (int n = 1; n < max_iterations; ++n) {
 			// Compute next term: term = term*(-x^2)
@@ -567,13 +549,9 @@ namespace sw { namespace universal {
 			Real series_term = term / denominator;
 			result = result + series_term;
 
-			// Convergence check: Stop when term magnitude drops below threshold
-			// We use std::abs(double(series_term)) for robustness
-			double term_magnitude = std::abs(double(series_term));
-			if (term_magnitude < threshold) {
-				// Series has converged to working precision
-				break;
-			}
+			// Convergence check: the term can no longer move the sum. On exponents, not
+			// through a double, which would read every term below ~1e-308 as zero (#1567).
+			if (series_converged(series_term, result, precision_bits)) break;
 		}
 
 		// ============================================================================
@@ -581,7 +559,7 @@ namespace sw { namespace universal {
 		// ============================================================================
 		if (atan_half_needed) {
 			Real atan_half;
-			atan_half = ereal_detail::parse_constant<maxlimbs>("0.46364760900080611621425623146121440202853705428612026381093308");  // atan(1/2), full precision (#1002)
+			atan_half = ereal_detail::parse_constant<maxlimbs, FpType>("0.46364760900080611621425623146121440202853705428612026381093308");  // atan(1/2), full precision (#1002)
 			result = atan_half + result;
 		}
 
@@ -590,9 +568,9 @@ namespace sw { namespace universal {
 
 	// atan2: arctangent of y/x using signs to determine quadrant
 	// Phase 6: Implementation using atan with quadrant logic
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> atan2(const ereal<maxlimbs>& y, const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> atan2(const ereal<maxlimbs, FpType>& y, const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		Real pi(3.141592653589793238462643383279502884);
 		Real pi_2(1.5707963267948966);

@@ -31,28 +31,28 @@
 namespace sw { namespace universal {
 
 // Mark ereal as a Universal number type for complex compatibility
-template<unsigned maxlimbs>
-struct is_universal_number<ereal<maxlimbs>> : std::true_type {};
+template<unsigned maxlimbs, typename FpType>
+struct is_universal_number<ereal<maxlimbs, FpType>> : std::true_type {};
 
 ////////////////////////////////////////////////////////////////////
 // Functions for sw::universal::complex<ereal> (portable)
 
 // Real component of a complex ereal
-template<unsigned maxlimbs>
-ereal<maxlimbs> real(complex<ereal<maxlimbs>> x) {
+template<unsigned maxlimbs, typename FpType>
+ereal<maxlimbs, FpType> real(complex<ereal<maxlimbs, FpType>> x) {
 	return x.real();
 }
 
 // Imaginary component of a complex ereal
-template<unsigned maxlimbs>
-ereal<maxlimbs> imag(complex<ereal<maxlimbs>> x) {
+template<unsigned maxlimbs, typename FpType>
+ereal<maxlimbs, FpType> imag(complex<ereal<maxlimbs, FpType>> x) {
 	return x.imag();
 }
 
 // Conjugate of a complex ereal
-template<unsigned maxlimbs>
-complex<ereal<maxlimbs>> conj(complex<ereal<maxlimbs>> x) {
-	return complex<ereal<maxlimbs>>(x.real(), -x.imag());
+template<unsigned maxlimbs, typename FpType>
+complex<ereal<maxlimbs, FpType>> conj(complex<ereal<maxlimbs, FpType>> x) {
+	return complex<ereal<maxlimbs, FpType>>(x.real(), -x.imag());
 }
 
 }} // namespace sw::universal

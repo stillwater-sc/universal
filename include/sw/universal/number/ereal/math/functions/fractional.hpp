@@ -12,16 +12,16 @@ namespace sw { namespace universal {
 	// Phase 2: uses expansion quotient and trunc
 	// fmod(x, y) = x - n*y where n = trunc(x/y)
 	// Result has same sign as x, |result| < |y|
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> fmod(const ereal<maxlimbs>& x, const ereal<maxlimbs>& y) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> fmod(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
 		if (y.iszero()) {
 			// fmod(x, 0) is undefined - raise domain error
 			throw ereal_divide_by_zero();
 		}
 
 		// n = trunc(x / y) - truncate toward zero
-		ereal<maxlimbs> quotient = x / y;  // Uses expansion_quotient
-		ereal<maxlimbs> n = trunc(quotient);  // Uses Phase 2 trunc
+		ereal<maxlimbs, FpType> quotient = x / y;  // Uses expansion_quotient
+		ereal<maxlimbs, FpType> n = trunc(quotient);  // Uses Phase 2 trunc
 
 		// result = x - n * y
 		return x - (n * y);
@@ -32,9 +32,9 @@ namespace sw { namespace universal {
 	// remainder(x, y) = x - n*y where n = round_to_nearest_even(x/y)
 	// Result in range [-|y|/2, |y|/2], chooses closest n
 	// On exact halfway cases (frac = 0.5), rounds to even integer
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> remainder(const ereal<maxlimbs>& x, const ereal<maxlimbs>& y) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> remainder(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		if (y.iszero()) {
 			// remainder(x, 0) is undefined - raise domain error
@@ -89,17 +89,17 @@ namespace sw { namespace universal {
 
 	// modf: split x into integer and fractional parts. Returns the fractional
 	// part (same sign as x) and stores the integer part (toward zero) in *iptr.
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> modf(const ereal<maxlimbs>& x, ereal<maxlimbs>* iptr) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> modf(const ereal<maxlimbs, FpType>& x, ereal<maxlimbs, FpType>* iptr) {
 		if (x.isnan()) {
 			if (iptr != nullptr) *iptr = x;
 			return x;
 		}
 		if (x.isinf()) {
 			if (iptr != nullptr) *iptr = x;
-			return x.isneg() ? -ereal<maxlimbs>(0.0) : ereal<maxlimbs>(0.0);
+			return x.isneg() ? -ereal<maxlimbs, FpType>(0.0) : ereal<maxlimbs, FpType>(0.0);
 		}
-		ereal<maxlimbs> ipart = trunc(x);
+		ereal<maxlimbs, FpType> ipart = trunc(x);
 		if (iptr != nullptr) *iptr = ipart;
 		return x - ipart;   // fractional part; subtraction carries x's sign
 	}

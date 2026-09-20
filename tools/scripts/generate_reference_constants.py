@@ -53,6 +53,7 @@ truths and carry no license. Universal's MIT license applies to this
 script.
 """
 
+import math
 import sys
 
 try:
@@ -150,7 +151,68 @@ def emit_long() -> None:
     print("}}  // namespace sw::universal")
 
 
+# ereal stores its base constants as non-overlapping double-component expansions and
+# sums them (ereal_constants.hpp): each component is an exact dyadic, so the same table
+# serves every limb type -- float, double, x87, binary128 -- and the sum is exact into
+# whatever the target ereal can hold. The table's LENGTH is what bounds the precision:
+# 19 components carry ~313 digits, which capped every transcendental there (#1567).
+EREAL_LIMB_DIGITS = 1300          # what the emitted tables carry
+
+
+def ereal_components(value, digits: int):
+    """Decompose an mpf into (mantissa, exponent) pairs whose sum is the value.
+
+    Each pair is a double mantissa in [1, 2) and an integer binary exponent, so the
+    table is NOT bounded by double's exponent range: a plain double-component table
+    stops below 2^-1074 after ~19 entries, which is the 313-digit ceiling the stored
+    constants had (#1567). Reconstruction is ldexp(FpType(m), e), exact for every limb
+    type, and a limb type that cannot reach an entry simply stops there -- which is what
+    double limbs do at entry 19, reproducing the old table exactly.
+    """
+    mp.mp.dps = digits + 60
+    rest = +value
+    out = []
+    while True:
+        if rest == 0:
+            break
+        e = int(mp.floor(mp.log(abs(rest), 2)))          # binary exponent of the remainder
+        m = float(rest / mp.mpf(2) ** e)                  # mantissa in [1, 2), rounded to a double
+        if m == 0.0 or not math.isfinite(m):
+            break
+        if abs(m) >= 2.0:                                 # rounding pushed it up a binade
+            m, e = m / 2.0, e + 1
+        out.append((m, e))
+        rest = rest - mp.mpf(m) * mp.mpf(2) ** e
+        if abs(rest) < abs(value) * mp.mpf(10) ** (-digits):
+            break
+    return out
+
+
+def emit_ereal_limbs() -> None:
+    """The component tables for ereal_constants.hpp. Run with --ereal-limbs."""
+    mp.mp.dps = EREAL_LIMB_DIGITS + 60
+    table = [("pi", mp.pi, "pi (Archimedes' constant)"),
+             ("ln2", mp.log(2), "ln(2) (natural log of 2)"),
+             ("ln10", mp.log(10), "ln(10) (natural log of 10)")]
+    print(f"// component tables emitted by generate_reference_constants.py --ereal-limbs")
+    print(f"// each carries ~{EREAL_LIMB_DIGITS} decimal digits")
+    print()
+    for name, value, comment in table:
+        comps = ereal_components(value, EREAL_LIMB_DIGITS)
+        print(f"\t// {comment}")
+        print(f"\t// {len(comps)} components, value-accurate to ~{EREAL_LIMB_DIGITS} decimal digits")
+        print(f"\tstatic constexpr scaled_limb ereal_{name}_limbs[] = {{")
+        for i in range(0, len(comps), 2):
+            row = ", ".join("{ %r, %d }" % (m, e) for m, e in comps[i:i + 2])
+            print(f"\t\t{row},")
+        print("\t};")
+        print()
+
+
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] == "--ereal-limbs":
+        emit_ereal_limbs()
+        return
     if len(sys.argv) > 1 and sys.argv[1] == "--long":
         emit_long()
         return
