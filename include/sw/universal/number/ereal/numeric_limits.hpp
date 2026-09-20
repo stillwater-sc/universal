@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>    // std::ldexp, for epsilon()
 #include <limits>
 // ereal_impl.hpp, not the ereal.hpp umbrella: the umbrella includes core.hpp, which
 // includes this header, so naming it here would be a cycle that #pragma once merely
@@ -12,13 +13,15 @@
 #include <universal/number/ereal/ereal_impl.hpp>
 namespace std {
 
-template<unsigned maxLimbs>
-class numeric_limits< sw::universal::ereal<maxLimbs> > {
+// Every limit follows the limb type (#1565): for the default double limbs they are the
+// values they always were.
+template<unsigned maxLimbs, typename FpType>
+class numeric_limits< sw::universal::ereal<maxLimbs, FpType> > {
 public:
-	using ErealType = sw::universal::ereal<maxLimbs>;
+	using ErealType = sw::universal::ereal<maxLimbs, FpType>;
 	static constexpr bool is_specialized = true;
 	static constexpr ErealType min() { // return minimum value
-		return ErealType(radix * (numeric_limits< double >::min() / numeric_limits< double >::epsilon()));
+		return ErealType(FpType(radix) * (numeric_limits< FpType >::min() / numeric_limits< FpType >::epsilon()));
 	} 
 	static constexpr ErealType max() { // return maximum value
 		return ErealType(sw::universal::SpecificValue::maxpos);
@@ -27,15 +30,21 @@ public:
 		//return ErealType(sw::universal::SpecificValue::maxneg);
 		return (-(max)());
 	} 
-	static constexpr ErealType epsilon() { // return smallest effective increment from 1.0
-		constexpr double epsilon{ std::numeric_limits< double >::epsilon() };
-		return (epsilon * epsilon) * 0.5;
+	static ErealType epsilon() { // return smallest effective increment from 1.0
+		// 2^(1 - digits), with digits = maxLimbs * the limb type's digits: the whole
+		// expansion's precision, so that epsilon() and digits agree. It used to be
+		// (eps*eps)/2 of the limb type -- 2^(1-2p), the value for TWO limbs, whatever
+		// maxLimbs said: 2^-105 for every ereal<n> (#1574).
+		return ErealType(std::ldexp(FpType(1), 1 - digits));
 	}
 	static constexpr ErealType round_error() { // return largest rounding error
-		return ErealType(1.0 / radix);
+		return ErealType(FpType(1) / FpType(radix));
 	}
-	static constexpr ErealType denorm_min() {  // return minimum denormalized value
-		return ErealType(std::numeric_limits<double>::denorm_min());
+	static ErealType denorm_min() {  // return minimum denormalized value
+		// has_denorm is denorm_absent -- an expansion's components are all normal -- and
+		// the C++20 contract then requires denorm_min() to return min(), not the limb
+		// type's subnormal (and not zero). elreal's numeric_limits does the same (#1574).
+		return (min)();
 	}
 	static constexpr ErealType infinity() { // return positive infinity
 		return ErealType(sw::universal::SpecificValue::infpos);
@@ -47,10 +56,10 @@ public:
 		return ErealType(sw::universal::SpecificValue::snan);
 	}
 
-	// Each limb provides approximately one double's worth of precision
-	// digits: number of bits of precision (each double has ~53 mantissa bits)
-	// For conservative estimate, use maxLimbs * double::digits
-	static constexpr int  digits                   = maxLimbs * std::numeric_limits<double>::digits;
+	// Each limb provides one limb type's worth of precision
+	// digits: number of bits of precision (53 per double limb, 64 per x87 limb, ...)
+	// For conservative estimate, use maxLimbs * FpType::digits
+	static constexpr int  digits                   = static_cast<int>(maxLimbs) * std::numeric_limits<FpType>::digits;
 	// digits10: number of decimal digits that can be represented without change
 	// log10(2^digits) = digits * log10(2) ~= digits * 0.30103
 	static constexpr int  digits10                 = static_cast<int>(digits * 0.30103);

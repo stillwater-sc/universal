@@ -23,8 +23,8 @@
 namespace sw { namespace universal {
 
 // generate an ereal format ASCII format
-template<unsigned nlimbs>
-inline std::ostream& operator<<(std::ostream& ostr, const ereal<nlimbs>& rhs) {
+template<unsigned nlimbs, typename FpType>
+inline std::ostream& operator<<(std::ostream& ostr, const ereal<nlimbs, FpType>& rhs) {
 	std::ios_base::fmtflags fmt = ostr.flags();
 	std::streamsize precision = ostr.precision();
 	std::streamsize width = ostr.width();
@@ -40,8 +40,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const ereal<nlimbs>& rhs) {
 }
 
 // read an ASCII ereal format
-template<unsigned nlimbs>
-inline std::istream& operator>>(std::istream& istr, ereal<nlimbs>& p) {
+template<unsigned nlimbs, typename FpType>
+inline std::istream& operator>>(std::istream& istr, ereal<nlimbs, FpType>& p) {
 	std::string txt;
 	if (!(istr >> txt)) {
 		// extraction failed (already-bad stream or EOF); failbit set by >>.

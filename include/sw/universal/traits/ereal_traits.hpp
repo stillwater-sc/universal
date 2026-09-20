@@ -16,8 +16,8 @@ namespace sw { namespace universal {
 	{
 	};
 
-	template<unsigned maxLimbs>
-	struct is_ereal_trait< sw::universal::ereal<maxLimbs> >
+	template<unsigned maxLimbs, typename FpType>
+	struct is_ereal_trait< sw::universal::ereal<maxLimbs, FpType> >
 		: true_type
 	{
 	};

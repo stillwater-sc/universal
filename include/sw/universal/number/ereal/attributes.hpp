@@ -14,14 +14,16 @@ namespace sw { namespace universal {
 
 // functions to provide details about properties of an ereal configuration
 
-	template<unsigned nlimbs>
-	inline int sign(const ereal<nlimbs>& v) { return v.sign(); }
+	template<unsigned nlimbs, typename FpType>
+	inline int sign(const ereal<nlimbs, FpType>& v) { return v.sign(); }
 
-	template<unsigned nlimbs>
-	inline int64_t scale(const ereal<nlimbs>& v) { return v.scale(); }
+	template<unsigned nlimbs, typename FpType>
+	inline int64_t scale(const ereal<nlimbs, FpType>& v) { return v.scale(); }
 	
-	template<unsigned nlimbs, typename Real,
+	// Real stays the second template argument, so significant<nlimbs, float>(v) keeps
+	// working; the limb type after it is deduced from the argument
+	template<unsigned nlimbs, typename Real, typename FpType,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
-	inline Real significant(const ereal<nlimbs>& v) { return static_cast<Real>(v.significant()); }
+	inline Real significant(const ereal<nlimbs, FpType>& v) { return static_cast<Real>(v.significant()); }
 
 }}  // namespace sw::universal
