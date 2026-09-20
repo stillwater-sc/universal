@@ -286,6 +286,95 @@ ereal<38> z = x * 0.0001;  // Now z is small
 
 ---
 
+## The Limb Budget: How Many Limbs a *Result* Gets
+
+The derivation above bounds how many limbs a value may **store**. It says nothing about
+how many limbs an arithmetic **result** comes back with, and until #1572 nothing did.
+
+The expansion algorithms return whatever limb count the operands produce. The only thing
+that ever pruned a result was underflow: a component below the limb type's smallest normal
+becomes zero, and renormalization drops it. With `double` limbs that accident looks like a
+cap -- `ereal<8>`'s `1/3` settles at 16 limbs and stays there. A wide-exponent limb has no
+such floor. On x87, whose exponent reaches `2^-16382`, every quotient grew until it spanned
+the whole range:
+
+| type | `1/3` | limbs | Newton sqrt(2), 8 steps |
+|---|---|---|---|
+| `ereal<8>` | 260 digits | 16 (`maxlimbs` is 8) | 0.03 s |
+| `ereal<8, long double>` (x87) | | **250** | **41 s** |
+| `ereal<24, long double>` (x87) | | **250** | **71 s** |
+
+250 is not a coincidence: 250 * 64 bits is x87's exponent range. Every `long double`
+quotient reached it whatever `maxlimbs` said, so a single division cost seconds and the
+wider limb was unusable in practice -- the opposite of what parameterizing the limb was
+for.
+
+### The rule
+
+```cpp
+static constexpr unsigned limb_budget =
+    (2 * maxlimbs < max_safe_limbs) ? 2 * maxlimbs : max_safe_limbs;
+```
+
+Truncating is always safe: an expansion in Priest normal form has descending,
+non-overlapping components, so a prefix is the leading-order value and what is dropped
+lies below the precision retained. `parse()` has truncated to `maxlimbs` on exactly this
+reasoning since #1006.
+
+**Why `2 * maxlimbs` and not `maxlimbs`.** The tail is not waste, it is the guard digits an
+iterative algorithm needs, and the existing suites were tuned against results that carry
+them -- `ereal<8>`'s `1/3` at 16 limbs is twice the 8 that were asked for. Capping at
+`maxlimbs` would have cut that from 260 digits to ~130 and moved accuracy numbers
+throughout the library. At `2 * maxlimbs` no measured `double` digit count changes at all.
+
+**Why the clamp.** A limb past `max_safe_limbs` is subnormal, which is not a valid
+expansion component -- that is what the rest of this document derives.
+
+### Where it is applied
+
+Capping only the *result* is not enough: the Newton reciprocal squares its iterate's limb
+count every step, so a division still built the 250-limb intermediate and still cost
+seconds before the result was trimmed. The budget is passed into `expansion_reciprocal`,
+which truncates the iterate each step. Newton is self-correcting -- each step recomputes
+the residual `2 - e*r` from scratch rather than accumulating it -- so an iterate truncated
+to *b* limbs still converges to *b* limbs of accuracy.
+
+The intermediates `e*r_n` and `2 - e*r_n` are deliberately **not** truncated. Their low
+components cancel exactly against 2, which is what lets the residual collapse to a couple
+of limbs; truncating them leaves a spurious residual at the truncation level, and the next
+step then multiplies two full-length expansions instead of a long one by a short one. That
+made `double` division about 2.7x *slower*.
+
+| | before | after |
+|---|---|---|
+| `ereal<8, long double>` Newton sqrt(2), 8 steps | 40.9 s | 0.065 s |
+| `ereal<24, long double>` Newton sqrt(2), 8 steps | 70.9 s | 3.7 s |
+| `ereal<8>` / `ereal<19>` (double) | unchanged | unchanged |
+
+### What it costs
+
+Results that used to exceed `max_safe_limbs` lose the digits those extra limbs were
+carrying. Measured:
+
+| | before | after |
+|---|---|---|
+| `ereal<24, long double>` sqrt(2) | 1235 digits (250 limbs) | 953 digits (48 limbs) |
+| `ereal<19>` sqrt(2) | 323 digits (20 limbs) | 314 digits (19 limbs) |
+| `ereal<5, float>` sqrt(2) | 45 digits (6 limbs) | 38 digits (5 limbs) |
+| `ereal<8>` `1/3` | 260 digits (16 limbs) | 260 digits (16 limbs) |
+
+The 20th `double` limb and the 6th `float` limb are past `max_safe_limbs`: those digits
+were never ones the type was entitled to.
+
+A consequence worth stating plainly: **multiplication is error-free only while its result
+fits the budget.** An exact product of two *n*-limb expansions can need more components
+than `max_safe_limbs` allows in the first place, so exactness is a property of results that
+fit, not of the operation. Past the budget the guarantee is the truncation contract --
+what was dropped lies below the last limb that was kept -- which
+`elastic/ereal/arithmetic/exact_value_oracle.cpp` checks against an exact dyadic oracle.
+
+---
+
 ## Implementation Constraints {#implementation-constraints}
 
 ### Static Assertion in Code

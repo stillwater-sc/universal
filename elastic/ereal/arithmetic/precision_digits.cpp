@@ -125,28 +125,31 @@ namespace {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-// The long double cases are SLOW, and not because of the oracle: ereal does not cap an
-// arithmetic result at maxlimbs. With double limbs a cap emerges by accident, since
-// components below 2^-1022 underflow away and a result settles at ~20 limbs. x87 and
-// binary128 reach 2^-16382, so nothing prunes them: every quotient grows to ~250 limbs
-// whatever maxlimbs says, and a single division costs seconds. So they run at levels 2
-// and 3 rather than in CI's level 1. Capping results is #1572.
+// These used to be slow, and not because of the oracle: ereal did not cap an arithmetic
+// result. With double limbs a cap emerged by accident, since components below 2^-1022
+// underflow away and a result settles at ~20 limbs. x87 and binary128 reach 2^-16382, so
+// nothing pruned them: every quotient grew to ~250 limbs whatever maxlimbs said, and a
+// single division cost seconds, which is why these ran at levels 2 and 3 rather than in
+// CI's level 1. Arithmetic is bounded at the limb budget now (#1572) -- the whole set runs
+// in about six seconds -- so they are level 1 with everything else.
 template<typename LD>
 int VerifyLongDoubleDigits(bool reportTestCases, const std::string& test_tag, bool deep) {
 	using namespace sw::universal;
 	int n = 0;
 	if (!deep) {
-		// ~37 s: eight Newton steps at 8 limbs, past the 340-digit reference's reach
+		// eleven Newton steps at 8 limbs, past the 340-digit reference's reach
 		n += ReportTestResult(VerifySqrt2<8, LD>("ereal<8, long double>", 300, kLongReferenceCap, reportTestCases), test_tag, "long double sqrt(2)");
 	}
 	else {
 		n += ReportTestResult(VerifyIdentities<8, LD>("ereal<8, long double>", reportTestCases), test_tag, "long double identities");
-		// ~125 s, and 1235 digits: what the wider limb is for. Only where the limb type
+		// what the wider limb is for. The budget is 2 * maxlimbs, so 24 long double limbs
+		// carry 48 * 64 bits and reach ~950 digits; uncapped this ran to 250 limbs and 1235
+		// digits, at 125 s for the one call (#1572). Only where the limb type
 		// admits 24 of them: long double is a valid limb on MSVC and Apple ARM64 too,
 		// where it IS double and max_safe_limbs is 19, and ereal<24, long double> would
 		// fail the class's static_assert at compile time there (#1574).
 		if constexpr (ereal<8, LD>::max_safe_limbs >= 24) {
-			n += ReportTestResult(VerifySqrt2<24, LD>("ereal<24, long double>", 1100, kLongReferenceCap, reportTestCases), test_tag, "long double sqrt(2), 24 limbs");
+			n += ReportTestResult(VerifySqrt2<24, LD>("ereal<24, long double>", 900, kLongReferenceCap, reportTestCases), test_tag, "long double sqrt(2), 24 limbs");
 		}
 	}
 	return n;
@@ -178,14 +181,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyIdentities<19, double>("ereal<19>", reportTestCases), test_tag, "double identities, 19 limbs");
 	// double limbs stop at 19 limbs, about 303 digits
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt2<19, double>("ereal<19>", 280, 320, reportTestCases), test_tag, "double sqrt(2)");
+	// bounded arithmetic brought these back from levels 2 and 3 (#1572)
+	if constexpr (is_expansion_limb_v<long double>) {
+		nrOfFailedTestCases += VerifyLongDoubleDigits<long double>(reportTestCases, test_tag, false);
+		nrOfFailedTestCases += VerifyLongDoubleDigits<long double>(reportTestCases, test_tag, true);
+	}
 #endif
 
 #if REGRESSION_LEVEL_2
-	if constexpr (is_expansion_limb_v<long double>) nrOfFailedTestCases += VerifyLongDoubleDigits<long double>(reportTestCases, test_tag, false);
 #endif
 
 #if REGRESSION_LEVEL_3
-	if constexpr (is_expansion_limb_v<long double>) nrOfFailedTestCases += VerifyLongDoubleDigits<long double>(reportTestCases, test_tag, true);
 #endif
 
 #if REGRESSION_LEVEL_4

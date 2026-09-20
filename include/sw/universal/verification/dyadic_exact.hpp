@@ -61,6 +61,10 @@ struct dyadic {
 		static_assert(std::is_floating_point_v<T> && std::numeric_limits<T>::radix == 2,
 		              "dyadic::from_fp needs a binary floating-point type");
 		if (v == T(0)) return dyadic();
+		// A dyadic rational cannot represent these, and without the guard the significand
+		// loop below never terminates: frexp(inf) is inf, floor(inf) is inf, and inf - inf
+		// is a NaN that is never equal to zero, so the loop spins (#1572).
+		if (!std::isfinite(v)) throw std::invalid_argument("dyadic::from_fp: value must be finite");
 		const bool negative = v < T(0);
 		int e = 0;
 		T m = std::frexp(negative ? -v : v, &e);   // v == m * 2^e, m in [0.5, 1)
@@ -112,6 +116,15 @@ inline bool operator==(const dyadic& a, const dyadic& b) {
 	return na == nb;
 }
 inline bool operator!=(const dyadic& a, const dyadic& b) { return !(a == b); }
+
+// Exact magnitude comparison: |a| < |b|. States the truncation contract of a
+// precision-bounded result -- what it dropped must lie below the last limb it
+// kept (#1572).
+inline bool less_in_magnitude(const dyadic& a, const dyadic& b) {
+	dyadic::bigint na, nb; int common;
+	dyadic_align(a, b, na, nb, common);
+	return abs(na) < abs(nb);
+}
 
 
 // ============================================================================

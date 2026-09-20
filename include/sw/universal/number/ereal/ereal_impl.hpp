@@ -147,6 +147,40 @@ public:
 		"push the last one below the smallest normal, violating the non-overlapping property "
 		"Shewchuk's expansion arithmetic requires, and two_sum/two_product silently lose bits.");
 
+	// The limb budget an arithmetic result is allowed to occupy.
+	//
+	// Nothing used to bound this. The expansion algorithms return whatever limb count the
+	// operands produce, and the only thing that ever pruned it was underflow: a component
+	// below the limb type's smallest normal becomes zero and renormalization drops it. With
+	// double limbs that accident looks like a cap -- 1/3 settles at 16 limbs. With a
+	// wide-exponent limb there is nothing to prune, and a quotient grows until it spans the
+	// whole exponent range: every x87 long double division reached 250 limbs (250 * 64 bits
+	// is x87's exponent range) whatever maxlimbs said, and cost seconds (#1572).
+	//
+	// `parse()` has always truncated to maxlimbs for the stated reason (#1006): components
+	// past maxlimbs lie below ereal<maxlimbs>'s representable precision. Arithmetic now
+	// truncates too, but to twice maxlimbs rather than to maxlimbs itself.
+	//
+	// Why 2x and not maxlimbs. An expansion's limbs are non-overlapping and descending, so
+	// dropping the tail only discards low-order bits -- truncating is always safe. But the
+	// tail is not worthless: it is the guard digits an iterative algorithm needs, and the
+	// existing double suites were tuned against results that carried them (1/3 at 16 limbs
+	// is twice the 8 an ereal<8> asks for). Capping at maxlimbs would have cut ereal<8>'s
+	// 1/3 from 260 digits to ~130 and moved accuracy numbers throughout the suites. 2x
+	// keeps every double result the library has today -- no measured digit count changes --
+	// while bounding the wide limb to something proportional to what the caller asked for.
+	//
+	// Clamped to max_safe_limbs because a limb past that one is subnormal, which is not a
+	// valid expansion component at all.
+	static constexpr unsigned limb_budget =
+		(2 * maxlimbs < max_safe_limbs) ? 2 * maxlimbs : max_safe_limbs;
+
+	// Truncate a result to the limb budget. Safe for any expansion in Priest normal form:
+	// the limbs descend and do not overlap, so the prefix is the leading-order value.
+	static void enforce_limb_budget(std::vector<FpType>& limbs) {
+		if (limbs.size() > limb_budget) limbs.resize(limb_budget);
+	}
+
 	// Partial-constexpr surface (issue #750): ereal carries a
 	// std::vector<FpType> _limb member, so any non-empty digit storage
 	// escapes constant evaluation under C++20's transient-allocation
@@ -319,6 +353,7 @@ public:
 		using namespace expansion_ops;
 		if (apply_ieee754_add_special_values(rhs)) return *this;
 		_limb = expansion_sum_normalized(_limb, rhs._limb);
+		enforce_limb_budget(_limb);
 		return *this;
 	}
 	ereal& operator+=(double rhs) {
@@ -326,6 +361,7 @@ public:
 		ereal<maxlimbs, FpType> rhs_expansion(rhs);
 		if (apply_ieee754_add_special_values(rhs_expansion)) return *this;
 		_limb = expansion_sum_normalized(_limb, rhs_expansion._limb);
+		enforce_limb_budget(_limb);
 		return *this;
 	}
 	ereal& operator-=(const ereal& rhs) {
@@ -336,6 +372,7 @@ public:
 		ereal<maxlimbs, FpType> neg_rhs_e = -rhs;
 		if (apply_ieee754_add_special_values(neg_rhs_e)) return *this;
 		_limb = expansion_sum_normalized(_limb, neg_rhs_e._limb);
+		enforce_limb_budget(_limb);
 		return *this;
 	}
 	ereal& operator-=(double rhs) {
@@ -348,6 +385,7 @@ public:
 		// = NaN and collapses any zero operand to +0 (issue #966).
 		if (apply_ieee754_mul_special_values(rhs)) return *this;
 		_limb = expansion_product(_limb, rhs._limb);
+		enforce_limb_budget(_limb);
 		return *this;
 	}
 	ereal& operator*=(double rhs) {
@@ -364,7 +402,10 @@ public:
 		// and a * Inf renormalises to NaN, and any zero operand collapses to +0
 		// (issue #968).
 		if (apply_ieee754_div_special_values(rhs)) return *this;
-		_limb = expansion_quotient(_limb, rhs._limb, reciprocal_iterations());
+		// the budget also bounds the Newton reciprocal's working precision: capping only the
+		// result still paid for a 250-limb intermediate (#1572)
+		_limb = expansion_quotient(_limb, rhs._limb, reciprocal_iterations(), limb_budget);
+		enforce_limb_budget(_limb);
 		return *this;
 	}
 	ereal& operator/=(double rhs) {
