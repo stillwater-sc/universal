@@ -6,6 +6,12 @@
 // also printed "TBD" for the fraction and the uncertainty bit in place of the value.
 // This suite instantiates the whole manipulator surface.
 //
+// Instantiating is not checking, though: info_print went on returning the literal "TBD"
+// through the surface list below, because the assertion was that the text is non-empty --
+// and "TBD" is not empty (#1556). The surface check now also rejects a placeholder and
+// requires that a renderer say something different about a different value, which a
+// constant cannot do, and info_print has a check of its own.
+//
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
@@ -28,6 +34,10 @@ namespace {
 		if (actual) return 0;
 		if (reportTestCases) std::cout << "    FAIL " << what << '\n';
 		return 1;
+	}
+
+	bool is_placeholder(const std::string& text) {
+		return text.find("TBD") != std::string::npos || text.find("tbd") != std::string::npos;
 	}
 
 
@@ -95,25 +105,85 @@ namespace {
 	}
 
 	// ---- every manipulator is instantiated ------------------------------------------
+	//
+	// Instantiating them proves only that they compile. Asserting they are non-empty is
+	// how info_print went on returning the literal "TBD" through this very list: "TBD" is
+	// not empty (#1556). So each one must also not be a placeholder, and must say
+	// something different about a different value -- which a constant cannot do.
 
 	int VerifyManipulatorSurface(bool reportTestCases) {
 		int fails = 0;
 
 		const Areal v(1.5f);
-		struct Named { std::string text; const char* what; };
+		const Areal w(2.5f);
+		struct Named { std::string text; std::string other; const char* what; };
 		const Named rendered[] = {
-			{ type_tag(v),         "type_tag" },
-			{ to_binary(v),        "to_binary" },
-			{ to_hex(v),           "to_hex" },
-			{ hex_print(v),        "hex_print" },
-			{ to_string(v),        "to_string" },
-			{ components(v),       "components" },
-			{ pretty_print(v),     "pretty_print" },
-			{ info_print(v),       "info_print" },
-			{ color_print(v),      "color_print" },
+			{ type_tag(v),     type_tag(w),     "type_tag" },
+			{ to_binary(v),    to_binary(w),    "to_binary" },
+			{ to_hex(v),       to_hex(w),       "to_hex" },
+			{ hex_print(v),    hex_print(w),    "hex_print" },
+			{ to_string(v),    to_string(w),    "to_string" },
+			{ components(v),   components(w),   "components" },
+			{ pretty_print(v), pretty_print(w), "pretty_print" },
+			{ info_print(v),   info_print(w),   "info_print" },
+			{ color_print(v),  color_print(w),  "color_print" },
 		};
 		for (const Named& r : rendered) {
 			fails += expect_true(!r.text.empty(), r.what, reportTestCases);
+			fails += expect_true(!is_placeholder(r.text), r.what, reportTestCases);
+			// type_tag is a property of the type, not of the value, so it is the one
+			// renderer that is allowed to say the same thing about both
+			if (std::string(r.what) != "type_tag") {
+				fails += expect_true(r.text != r.other, r.what, reportTestCases);
+			}
+		}
+
+		return fails;
+	}
+
+	// ---- info_print reports the encoding and the interval ---------------------------
+	//
+	// It returned the literal "TBD" and ignored both of its arguments (#1556).
+
+	int VerifyInfoPrint(bool reportTestCases) {
+		int fails = 0;
+
+		const std::string text = info_print(Areal(1.5f));
+		fails += expect_true(text.rfind("raw: ", 0) == 0, "info_print leads with the raw encoding", reportTestCases);
+		fails += expect_true(text.find(to_binary(Areal(1.5f))) != std::string::npos,
+			"the raw field is the encoding", reportTestCases);
+		fails += expect_true(text.find(" : value ") != std::string::npos, "info_print reports a value", reportTestCases);
+		fails += expect_true(text.find("[1.5]") != std::string::npos,
+			"an exact value is the bracketed value", reportTestCases);
+		fails += expect_true(text.find(" u0") != std::string::npos,
+			"an exact value reports an unset uncertainty bit", reportTestCases);
+
+		// the uncertainty bit is what an areal is for, so it has to reach the rendering
+		{
+			Areal third(1.0f / 3.0f);
+			fails += expect_true(third.ubit(), "1/3 is uncertain in areal<8,2>", reportTestCases);
+			const std::string t = info_print(third);
+			fails += expect_true(t.find(" u1") != std::string::npos,
+				"an uncertain value reports a set uncertainty bit", reportTestCases);
+			const std::size_t valueField = t.find(" : value ");
+			fails += expect_true(valueField != std::string::npos && t[valueField + 9] == '(',
+				"an uncertain value renders as an open interval", reportTestCases);
+		}
+
+		// a negative value is distinguishable from its magnitude
+		fails += expect_true(info_print(Areal(-1.5f)) != info_print(Areal(1.5f)),
+			"the sign reaches the rendering", reportTestCases);
+
+		// printPrecision is the second argument and must not be ignored. Comparing only
+		// the lengths would hold trivially when the two renderings are identical, which is
+		// what ignoring the argument produces, so they have to actually differ.
+		{
+			Areal third(1.0f / 3.0f);
+			const std::string terse   = info_print(third, 3);
+			const std::string verbose = info_print(third, 17);
+			fails += expect_true(terse != verbose, "printPrecision changes the rendering", reportTestCases);
+			fails += expect_true(terse.size() <= verbose.size(),
+				"a wider printPrecision does not shorten the rendering", reportTestCases);
 		}
 
 		return fails;
@@ -147,6 +217,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyComponents(reportTestCases), test_tag, "components");
 	nrOfFailedTestCases += ReportTestResult(VerifyManipulatorSurface(reportTestCases), test_tag, "manipulator surface");
 	nrOfFailedTestCases += ReportTestResult(VerifyToString(reportTestCases), test_tag, "to_string");
+	nrOfFailedTestCases += ReportTestResult(VerifyInfoPrint(reportTestCases), test_tag, "info_print");
 #endif
 
 #if REGRESSION_LEVEL_2

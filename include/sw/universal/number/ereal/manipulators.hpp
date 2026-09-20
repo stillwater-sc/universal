@@ -73,6 +73,17 @@ template<typename ErealType,
          std::enable_if_t<is_ereal<ErealType>, bool> = true>
 inline std::string to_binary(const ErealType& v, bool nibbleMarker = false) {
 	std::stringstream s;
+	// An ereal may hold NO limbs at all: renormalize_expansion prunes components that
+	// cancel, and expansion_sum_normalized returns its result without the canonical-zero
+	// push that expansion_product does, so the empty vector reaches _limb. ereal's own
+	// to_string guards it in as many words ("renormalize_expansion can prune all
+	// components to empty"), as do iszero, isinf, isnan, sign, scale and significant --
+	// this was the one accessor that did not, and size() - 1 on an empty vector is an
+	// unsigned wrap into an out-of-bounds read. info_print is its first caller (#1556).
+	if (v.limbs().empty()) {
+		s << to_binary(typename ErealType::limb_type(0), nibbleMarker);
+		return s.str();
+	}
 	// present first and last limb in binary
 	std::size_t firstLimb = 0;
 	std::size_t lastLimb  = v.limbs().size() - 1;
@@ -128,11 +139,28 @@ inline std::string pretty_print(const ErealType& r) {
 	return s.str();
 }
 
+// Report the state, the limb layout and the value of an ereal.
+//
+// It returned the literal "tbd" and ignored both of its arguments (#1556). The shape is
+// posit's -- "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- but an ereal is a
+// multi-component expansion: there is no fixed sign/exponent/fraction bit layout to
+// decode, so the fields are the ones that do vary, the limb count and the binary scale,
+// and "raw" is the leading and trailing limb that to_binary() already reports.
+//
+// Unlike the other manipulator layers this one already depends on iostream.hpp -- as dd
+// and qd do, for to_triple() -- so the value field can be streamed directly.
 template<typename ErealType,
 	std::enable_if_t< is_ereal<ErealType>, bool> = true
 >
 inline std::string info_print(const ErealType& p, int printPrecision = 17) {
-	return std::string("tbd");
+	std::stringstream s;
+	s << "raw: " << to_binary(p) << ' ' << ((p.sign() == -1) ? "s1" : "s0");
+	if (p.isnan())       s << " nan";
+	else if (p.isinf())  s << " inf";
+	else if (p.iszero()) s << " zero";
+	else s << " limbs " << p.limbs().size() << " scale " << p.scale();
+	s << " : value " << std::setprecision(printPrecision) << p;
+	return s.str();
 }
 
 // generate a binary, color-coded representation of the ereal

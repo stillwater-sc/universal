@@ -56,24 +56,40 @@ namespace {
 	}
 
 	// ---- every manipulator is instantiated, which is the point of this suite --------
+	//
+	// Instantiating is not checking. A non-empty assertion is how info_print went on
+	// returning the literal "TBD" through the equivalent list in the areal suite: "TBD" is
+	// not empty (#1556). bfloat16 has no info_print at all -- it is one of the two dozen
+	// number systems that do not -- but the same weak assertion guards everything here,
+	// so it gets the same two strengthenings: not a placeholder, and different values
+	// must render differently.
 
 	int VerifyManipulatorSurface(bool reportTestCases) {
 		int fails = 0;
 
 		const bfloat16 v(1.5f);
-		struct Named { std::string text; const char* what; };
+		const bfloat16 w(2.5f);
+		struct Named { std::string text; std::string other; const char* what; };
 		const Named rendered[] = {
-			{ type_tag(v),            "type_tag" },
-			{ type_field(v),          "type_field" },
-			{ to_binary(v, false),    "to_binary" },
-			{ to_binary(v, true),     "to_binary, marked" },
-			{ to_hex(v),              "to_hex" },
-			{ hex_print(v),           "hex_print" },
-			{ to_triple(v),           "to_triple" },
-			{ color_print(v),         "color_print" },
+			{ type_tag(v),         type_tag(w),         "type_tag" },
+			{ type_field(v),       type_field(w),       "type_field" },
+			{ to_binary(v, false), to_binary(w, false), "to_binary" },
+			{ to_binary(v, true),  to_binary(w, true),  "to_binary, marked" },
+			{ to_hex(v),           to_hex(w),           "to_hex" },
+			{ hex_print(v),        hex_print(w),        "hex_print" },
+			{ to_triple(v),        to_triple(w),        "to_triple" },
+			{ color_print(v),      color_print(w),      "color_print" },
 		};
 		for (const Named& r : rendered) {
 			fails += expect_true(!r.text.empty(), r.what, reportTestCases);
+			fails += expect_true(r.text.find("TBD") == std::string::npos
+			                  && r.text.find("tbd") == std::string::npos, r.what, reportTestCases);
+			// type_tag and type_field are properties of the type, not of the value, so they
+			// are the two renderers allowed to say the same thing about both
+			const std::string what(r.what);
+			if (what != "type_tag" && what != "type_field") {
+				fails += expect_true(r.text != r.other, r.what, reportTestCases);
+			}
 		}
 
 		// the nibble marker reaches the renderers that take one

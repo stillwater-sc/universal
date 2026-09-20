@@ -515,11 +515,60 @@ inline std::string pretty_print(const CfloatType& r) {
 	return s.str();
 }
 
+// Report the raw encoding, the decoded fields and the value of a cfloat.
+//
+// It returned the literal "TBD" and ignored both of its arguments (#1556). The shape is
+// posit's -- "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- built from the
+// same decode() pretty_print() uses and the same normalize() components() uses, rather
+// than by streaming the cfloat: this layer must not depend on iostream.hpp (#1334).
+//
+// Going through blocktriple::to_string() is what operator<< does (cfloat/iostream.hpp),
+// so the value field reads the same and stays exact for configurations whose range does
+// not fit a double.
 template<typename CfloatType,
 	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
 >
 inline std::string info_print(const CfloatType& p, int printPrecision = 17) {
-	return std::string("TBD");
+	constexpr unsigned es     = CfloatType::es;
+	constexpr unsigned cfbits = CfloatType::fbits;
+	constexpr unsigned fhbits = CfloatType::fhbits;
+	using bt = typename CfloatType::BlockType;
+	bool sign{ false };
+	blockbinary<es, bt> e;
+	blockbinary<fhbits, bt> f;
+	decode(p, sign, e, f);
+
+	std::stringstream s;
+	s << "raw: " << to_binary(p) << ' ' << (sign ? "s1 e" : "s0 e");
+	for (int i = int(es) - 1; i >= 0; --i) s << (e.test(static_cast<std::size_t>(i)) ? '1' : '0');
+	s << " f";
+	for (int i = int(cfbits) - 1; i >= 0; --i) s << (f.test(static_cast<std::size_t>(i)) ? '1' : '0');
+
+	// the encoding class, the way components() reports it: a cfloat's exponent field
+	// alone does not say which of these it is without hasSubnormals/hasMaxExpValues
+	if (p.isnan())         s << " nan";
+	else if (p.isinf())    s << " inf";
+	else if (p.iszero())   s << " zero";
+	else if (p.isdenormal()) s << " subnormal scale " << p.scale();
+	else                   s << " normal scale " << p.scale();
+
+	s << " : value ";
+	if (p.isnan()) {
+		s << "nan";
+	}
+	else if (p.isinf()) {
+		s << (p.sign() ? "-inf" : "inf");
+	}
+	else if constexpr (cfbits == 0) {
+		// degenerate cfloat with no fraction bits: operator<< falls back to double, so do the same
+		s << std::setprecision(printPrecision) << double(p);
+	}
+	else {
+		blocktriple<cfbits, BlockTripleOperator::REP, bt> a;
+		p.normalize(a);
+		s << a.to_string(printPrecision, 0, false, false, false, false, false, false, ' ');
+	}
+	return s.str();
 }
 
 // generate a binary, color-coded representation of the cfloat

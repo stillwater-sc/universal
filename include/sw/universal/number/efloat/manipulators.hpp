@@ -25,8 +25,12 @@
 namespace sw { namespace universal {
 
 // to_binary formatter for efloat to support test reporters
+//
+// nibbleMarker is accepted for signature parity with every other type's to_binary and is
+// unused: an efloat's limbs are rendered as hex words, which carry their own grouping.
+// info_print() is its first caller (#1556), which is what surfaced the -Wextra warning.
 template<unsigned nlimbs>
-inline std::string to_binary(const efloat<nlimbs>& number, bool nibbleMarker = false) {
+inline std::string to_binary(const efloat<nlimbs>& number, [[maybe_unused]] bool nibbleMarker = false) {
 	std::stringstream ss;
 	if (number.isnan()) {
 		ss << "nan";
@@ -53,14 +57,25 @@ std::string type_tag(const efloat<nlimbs>& = {}) {
 }
 
 // Generate a string representing the efloat components: sign, exponent, faction and value
+//
+// This never compiled: it called v.exponent(), which efloat does not have -- only
+// scale() -- and, like components(areal) before #1453, nothing in the tree instantiated
+// it, so the body was never checked. It also reported the sign backwards: sign() returns
+// int(-1) or int(+1), never 0, so `v.sign() ? "-" : "+"` rendered every value negative.
+// Repaired alongside #1556, which needed a components() it could trust.
 template<typename EfloatType,
 	std::enable_if_t< is_efloat<EfloatType>, bool> = true
 >
 inline std::string components(const EfloatType& v) {
 	std::stringstream s;
-	s << (v.sign() ? "(-, " : "(+, ");
-	s << v.exponent() << ", ";
-	s << "tbd)";
+	s << ((v.sign() == -1) ? "(-, " : "(+, ");
+	s << v.scale() << ", ";
+	auto limbs = v.bits();
+	for (std::size_t i = limbs.size(); i > 0; --i) {
+		s << std::setw(8) << std::setfill('0') << std::hex << limbs[i - 1] << std::dec << std::setfill(' ');
+		if (i > 1) s << '\'';
+	}
+	s << ')';
 	return s.str();
 }
 
@@ -130,11 +145,27 @@ inline std::string pretty_print(const EfloatType& r) {
 	return s.str();
 }
 
+// Report the state, the limb layout and the value of an efloat.
+//
+// It returned the literal "TBD" and ignored both of its arguments (#1556). The shape is
+// posit's -- "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- but an efloat is
+// adaptive-precision: there is no fixed sign/exponent/fraction bit layout to decode, so
+// the fields are the ones that do vary, the limb count and the binary scale.
+//
+// to_string() comes from the core, so the value field is what operator<< renders without
+// this layer depending on iostream.hpp (#1334).
 template<typename EfloatType,
 	std::enable_if_t< is_efloat<EfloatType>, bool> = true
 >
 inline std::string info_print(const EfloatType& p, int printPrecision = 17) {
-	return std::string("TBD");
+	std::stringstream s;
+	s << "raw: " << to_binary(p) << ' ' << ((p.sign() == -1) ? "s1" : "s0");
+	if (p.isnan())       s << " nan";
+	else if (p.isinf())  s << " inf";
+	else if (p.iszero()) s << " zero";
+	else s << " limbs " << p.bits().size() << " scale " << p.scale();
+	s << " : value " << to_string(p, printPrecision, 0, false, false, false, false, false, false, ' ');
+	return s.str();
 }
 
 // generate a binary, color-coded representation of the efloat

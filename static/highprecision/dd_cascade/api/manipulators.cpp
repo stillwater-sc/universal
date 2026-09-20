@@ -41,9 +41,16 @@ inline int VerifyToHex(bool reportTestCases) {
 }
 
 // the rest must produce text too; each call is a compile-and-run check, not a format check
+//
+// "produced text" alone is not enough of a check: info_print returned the literal "TBD"
+// in nine other number systems and passed exactly this assertion in the areal suite,
+// because "TBD" is not empty (#1556). dd_cascade's is a real delegate to pretty_print, so
+// this is a guard against a regression rather than a fix -- it must not be a placeholder,
+// and it must say something different about a different value.
 inline int VerifyEveryManipulatorRuns(bool reportTestCases) {
 	int nrOfFailedTests = 0;
 	dd_cascade v = dd_cascade(1.0) / dd_cascade(3.0);
+	dd_cascade w = dd_cascade(1.0) / dd_cascade(7.0);
 	const std::string produced[] = {
 		type_tag(v), to_pair(v), to_triple(v), to_binary(v), to_binary(v, true), to_native(v),
 		to_components(v), color_print(v), pretty_print(v), info_print(v),
@@ -52,6 +59,26 @@ inline int VerifyEveryManipulatorRuns(bool reportTestCases) {
 		if (s.empty()) {
 			++nrOfFailedTests;
 			if (reportTestCases) std::cerr << "FAIL: a manipulator produced an empty string\n";
+		}
+		if (s.find("TBD") != std::string::npos || s.find("tbd") != std::string::npos) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: a manipulator produced a placeholder: " << s << '\n';
+		}
+	}
+	// the value-dependent renderers must read the value: type_tag is the one that is a
+	// property of the type rather than of the value
+	const std::string ofV[] = {
+		to_pair(v), to_triple(v), to_binary(v), to_native(v),
+		to_components(v), color_print(v), pretty_print(v), info_print(v),
+	};
+	const std::string ofW[] = {
+		to_pair(w), to_triple(w), to_binary(w), to_native(w),
+		to_components(w), color_print(w), pretty_print(w), info_print(w),
+	};
+	for (unsigned i = 0; i < sizeof(ofV) / sizeof(ofV[0]); ++i) {
+		if (ofV[i] == ofW[i]) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: a manipulator rendered 1/3 and 1/7 identically: " << ofV[i] << '\n';
 		}
 	}
 	return nrOfFailedTests;

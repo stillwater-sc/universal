@@ -230,11 +230,52 @@ std::string to_binary(const takum_log<nbits, rbits, bt>& number, bool nibbleMark
 		return s.str();
 	}
 
+	// Report the raw encoding, the decoded fields and the value of a takum.
+	//
+	// It returned the literal "TBD" and ignored both of its arguments (#1556). The shape is
+	// posit's -- "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- built from the
+	// magnitude bits the way pretty_print() walks them and from the characteristic and
+	// scale components() already reports, rather than by streaming the takum: this layer
+	// must not depend on iostream.hpp (#1334).
+	//
+	// This covers takum and takum_log both, through is_any_takum: the field walk goes
+	// through the shared codec geometry, and to_binary() has the per-type overload.
 	template<typename TakumType,
 		std::enable_if_t< is_any_takum<TakumType>, bool> = true
 	>
 	inline std::string info_print(const TakumType& p, int printPrecision = 17) {
-		return std::string("TBD");
+		constexpr unsigned nbits = TakumType::nbits;
+		constexpr unsigned rbits = TakumType::rbits;
+		std::stringstream s;
+		s << "raw: " << to_binary(p) << ' ' << (p.sign() ? "s1" : "s0");
+		if (p.isnar()) {
+			s << " NaR : value nar";
+			return s.str();
+		}
+		if (p.iszero()) {
+			s << " zero : value 0";
+			return s.str();
+		}
+
+		uint64_t mag = p.magnitude_bits();
+		// direction bit
+		s << " D" << (((mag >> (nbits - 2)) & 1) ? '1' : '0');
+		// regime field
+		unsigned regime = static_cast<unsigned>((mag >> (nbits - TakumType::overhead)) & TakumType::r_mask);
+		s << " r";
+		for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) s << ((regime >> i) & 1 ? '1' : '0');
+		// characteristic and mantissa fields, at the widths the codec gives this encoding
+		auto g = TakumType::Codec::layout_of(p.dr_field());
+		int bit = static_cast<int>(nbits) - static_cast<int>(TakumType::overhead) - 1;
+		s << " c";
+		for (unsigned i = 0; i < g.c_stored_bits && bit >= 0; ++i, --bit) s << ((mag >> bit) & 1 ? '1' : '0');
+		s << " m";
+		for (unsigned i = 0; i < g.p && bit >= 0; ++i, --bit) s << ((mag >> bit) & 1 ? '1' : '0');
+
+		s << " characteristic " << p.characteristic()
+		  << " scale " << p.scale()
+		  << " : value " << std::setprecision(printPrecision) << double(p);
+		return s.str();
 	}
 
 	template<typename TakumType,

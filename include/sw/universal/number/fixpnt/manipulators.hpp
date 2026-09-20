@@ -57,9 +57,41 @@ inline std::string to_hex(const fixpnt<nbits, rbits, arithmetic, bt>& v, bool ni
 }
 
 
+// Report the raw encoding, the decoded fields and the value of a fixpnt.
+//
+// It returned the literal "TBD" and ignored its argument (#1556). The shape is posit's --
+// "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- with the bits split at the
+// radix point the way pretty_print() splits them.
+//
+// The bits are walked here rather than borrowed from to_binary(), and the value is
+// double(v) rather than convert_to_decimal_string(): both of those live in iostream.hpp,
+// and this layer does not depend on the stream layer (#1334). A fixpnt wider than a
+// double's significand therefore reports a rounded value field, which is why the exact
+// encoding is on the same line.
+//
+// printPrecision was added here so all of the number systems present one info_print
+// signature; fixpnt and integer alone among the ten had none (#1556).
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-inline std::string info_print(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
-	return std::string("TBD");
+inline std::string info_print(const fixpnt<nbits, rbits, arithmetic, bt>& v, int printPrecision = 17) {
+	std::stringstream s;
+	s << "raw: 0b";
+	if constexpr (nbits > rbits) {
+		for (int i = static_cast<int>(nbits) - 1; i >= static_cast<int>(rbits); --i) {
+			s << (v.at(static_cast<unsigned>(i)) ? '1' : '0');
+		}
+	}
+	else {
+		s << '0';
+	}
+	s << '.';
+	for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+		s << (v.at(static_cast<unsigned>(i)) ? '1' : '0');
+	}
+	s << ' ' << (v.sign() ? "s1" : "s0")
+	  << " i" << (nbits - rbits) << " r" << rbits
+	  << (arithmetic ? " modulo" : " saturating")
+	  << " : value " << std::setprecision(printPrecision) << double(v);
+	return s.str();
 }
 
 
