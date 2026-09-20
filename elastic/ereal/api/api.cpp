@@ -10,9 +10,8 @@
 // Configure the ereal template environment
 // : enable/disable arithmetic exceptions
 #define EFLOAT_THROW_ARITHMETIC_EXCEPTION 0
-// : enable trace conversion
-#define TRACE_CONVERSION 0
 #include <universal/number/ereal/ereal.hpp>
+#include <math/polynomial/horners.hpp>
 #include <universal/verification/test_suite.hpp>
 
 int main()
@@ -52,60 +51,72 @@ try {
 		std::cout << "d : " << to_triple(d) << " : " << d.significant() << " : " << double(c) << '\n';
 	}
 
+	std::cout << "+---------    ereal exceptions\n";
+	{
+		constexpr unsigned nlimbs = 4;
+		using TestType            = ereal<nlimbs>;
+		TestType a{1.0};
+		TestType b{0.0};
+#if EFLOAT_THROW_ARITHMETIC_EXCEPTION
+		try {
+			TestType c = a / b;
+		} catch (const ereal_divide_by_zero& err) {
+			std::cerr << "Caught an ereal_divide_by_zero exception: " << err.what() << '\n';
+		} catch (const ereal_invalid_argument& err) {
+			std::cerr << "Caught an ereal_invalid_argument exception: " << err.what() << '\n';
+		} catch (const ereal_overflow& err) {
+			std::cerr << "Caught an ereal_overflow exception: " << err.what() << '\n';
+		} catch (const ereal_underflow& err) {
+			std::cerr << "Caught an ereal_underflow exception: " << err.what() << '\n';
+		} catch (... const std::exception& err) {
+			std::cerr << "Caught an unexpected exception: " << err.what() << '\n';
+		}
+
+#else
+		{
+			TestType c = a / b;
+			std::cerr << "a / b = " << c << " : " << to_triple(c) << " : " << c << '\n';
+		}
+#endif
+	}
+
 	// manipulators
 	std::cout << "+---------    ereal manipulators\n";
 	{
 		constexpr unsigned nlimbs = 4;
-		using TestType = ereal<nlimbs>;
+		using FpType              = double;
+		using TestType = ereal<nlimbs, FpType>;
 
-		float_decoder d;
-		d.parts.sign = false;
-		d.parts.exponent = ieee754_parameter<float>::bias + 64;
-		d.parts.fraction = 0x7F'FF00u;   // these are just the 23 fraction bits, no hidden bit
-		std::cout << "fraction bits  : " << to_binary(d.parts.fraction, true) << '\n';
-		float f = d.f;
-		std::cout << "floating point : " << to_binary(f, true) << " : " << f << '\n';
+		float       f;
+		setFields(f, false, ieee754_parameter<float>::bias + 64, 0x7F'FF00u);
+		std::cout << "floating point : " << color_print(f, true) << " : " << f << '\n';
+		std::cout << "float triple   : " << to_triple(f, true) << " : " << f << '\n';
 
 		TestType a{ f };
-		std::cout << "ereal triple  : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
+		std::cout << "ereal triple   : " << to_triple(a) << " : " << a << '\n';
 		std::cout << "sign           : " << sign(a) << '\n';
 		std::cout << "scale          : 2^" << scale(a) << '\n';
-		std::cout << "significant    : " << significant<nlimbs, float>(a) << "f\n";
-		std::cout << "significant    : " << significant<nlimbs, double>(a) << '\n';
+		std::cout << "significant    : " << significant<nlimbs, FpType>(a) << '\n';
 	}
 
 	// interacting with subnormals
 	std::cout << "+---------    ereal has no subnormals\n";
 	{
 		constexpr unsigned nlimbs = 4;
-		using TestType = ereal<nlimbs>;
+		using FpType              = float;
+		using TestType = ereal<nlimbs, FpType>;
 
 		// create a subnormal
 		float v;
 		setFields(v, false, 0u, 0x00'0001u); // smallest subnormal single precision float
-//		bool s{ false };
-//		uint32_t e{ 0 };
-//		uint32_t f{ 0 };
-//		uint32_t bits{ 0 };
-//		extractFields(v, s, e, f, bits);
 		std::cout << "subnormal      : " << to_binary(v) << " : " << v << '\n';
 		
 		TestType a{ v };
 
-		std::cout << "ereal triple  : " << to_triple(a) << " : " << a.significant() << " : " << float(a) << '\n';
+		std::cout << "ereal triple  : " << to_triple(a) << " : " << double(a) << '\n';
 		std::cout << "sign           : " << sign(a) << '\n';
 		std::cout << "scale          : 2^" << scale(a) << '\n';
-		std::cout << "significant    : " << significant<nlimbs, float>(a) << "f\n";
-
-		double dv;
-		setFields(dv, true, 0ull, 0x1ull);
-		std::cout << "floating point : " << to_binary(dv, true) << " : " << dv << '\n';
-		a = dv;
-
-		std::cout << "ereal triple  : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
-		std::cout << "sign           : " << sign(a) << '\n';
-		std::cout << "scale          : 2^" << scale(a) << '\n';
-		std::cout << "significant    : " << significant<nlimbs, double>(a) << "f\n";
+		std::cout << "significant    : " << significant<nlimbs, float, FpType>(a) << "f\n";
 	}
 
 	// explicit configuration
@@ -118,19 +129,16 @@ try {
 
 		double d;
 		d = std::numeric_limits<double>::infinity();
-//		std::cout << d << '\n';
 		e = d;
 		std::cout << "+infinity       : " << e << '\n';
 		e = -d;
 		std::cout << "-infinity       : " << e << '\n';
 
 		d = std::numeric_limits<double>::signaling_NaN();
-//		std::cout << d << " : " << '\n';
 		e = d;
 		std::cout << "signaling NaN   : " << e << '\n';
 
 		d = std::numeric_limits<double>::quiet_NaN();
-//		std::cout << d << " : " << '\n';
 		e = d;
 		std::cout << "quiet NaN       : " << e << '\n';
 	}
@@ -146,10 +154,8 @@ try {
 		
 	}
 
-	std::cout << "+------------ numeric limits of a Cfloat ----------+\n";
+	std::cout << "+------------ numeric limits of an ereal ----------+\n";
 	{
-		// using ereal = sw::universal::ereal<32, 8, uint32_t, true, false, false>;
-
 		std::cout << "ereal(INFINITY): " << ereal(INFINITY) << "\n";
 		std::cout << "ereal(-INFINITY): " << ereal(-INFINITY) << "\n";
 
@@ -176,15 +182,20 @@ try {
 
 	std::cout << "+------------ Horner's Rule ----------+\n";
 	{
-//		std::vector<ereal> polynomial = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+		using EReal                   = ereal<4, float>;
+		std::vector<EReal> polynomial = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
 
-//		std::cout << "polynomial(1.0) = " << polyeval(polynomial, 5, ereal(1.0f)) << '\n';
+		EReal a = sw::math::polynomial::polyeval(polynomial, 5, EReal(0.005f));
+		std::cout << "polynomial(1.0) = " << a << '\n';
+		for (const auto& limb : a.limbs()) {
+			std::cout << "limb = " << color_print(limb) << " : " << limb << '\n';
+		}
 	}
 
 	std::cout << "Basic ereal<16> operations test\n";
 	std::cout << "================================\n\n";
 	{
-	    using Real = ereal<16>;
+	    using Real = ereal<16, double>;
 
 	    std::cout << "Creating x = 1.0...\n";
 	    Real x(1.0);
