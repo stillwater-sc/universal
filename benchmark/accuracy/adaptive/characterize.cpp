@@ -74,11 +74,13 @@ namespace {
 	// rel error implied by d matching decimal digits (a reporting estimate)
 	double rel_error(int digits) { return (digits <= 0) ? 1.0 : std::pow(10.0, -digits); }
 
-	// build the exact dyadic value of an ereal from its (non-overlapping) limbs
-	template<unsigned N>
-	dyadic ereal_to_dyadic(const ereal<N>& x) {
+	// build the exact dyadic value of an ereal from its (non-overlapping) limbs.
+	// from_fp, not from_double: a long double limb would be rounded to 53 bits by the
+	// latter, which is precisely the precision the wide limb exists to carry (#1568).
+	template<unsigned N, typename FpType>
+	dyadic ereal_to_dyadic(const ereal<N, FpType>& x) {
 		dyadic acc;  // 0
-		for (double limb : x.limbs()) acc = acc + dyadic::from_double(limb);
+		for (FpType limb : x.limbs()) acc = acc + dyadic::from_fp(limb);
 		return acc;
 	}
 
@@ -192,26 +194,34 @@ namespace {
 	// ereal arithmetic operators are inline and visible in this TU, so a plain
 	// fixed-input result can be folded/hoisted out of the timing loop -- read a
 	// limb through a volatile sink each rep to keep the work observable.
-	template<unsigned N>
-	double sink_limb(const ereal<N>& r) {
-		return r.limbs().empty() ? 0.0 : r.limbs()[0];
+	template<unsigned N, typename FpType>
+	double sink_limb(const ereal<N, FpType>& r) {
+		return r.limbs().empty() ? 0.0 : static_cast<double>(r.limbs()[0]);
 	}
 
-	template<unsigned N>
-	void run_ereal_N(int reps) {
-		for (const auto& c : cases()) {
-			ereal<N> x(c.arg), r;
-			volatile double sink = 0.0;
-			double t = time_ns([&] { r = apply(c.op, x); sink = sink_limb(r); }, reps);
-			(void)sink;
-			int digits = agreed_decimal_digits(ereal_to_dyadic(r), c.ref);
-			emit({ "ereal", "double", c.name, static_cast<long>(N), t, digits });
+	template<unsigned N, typename FpType>
+	void run_ereal_N(const char* fptype, int reps) {
+		// A limb list is shared across limb types, but max_safe_limbs is not: 5 for float,
+		// 19 for double, 255 for x87, 144 for binary128. Skip the entries this limb type
+		// cannot hold rather than failing to compile (#1568).
+		if constexpr (N <= ereal<1, FpType>::max_safe_limbs) {
+			for (const auto& c : cases()) {
+				ereal<N, FpType> x(c.arg), r;
+				volatile double sink = 0.0;
+				double t = time_ns([&] { r = apply(c.op, x); sink = sink_limb(r); }, reps);
+				(void)sink;
+				int digits = agreed_decimal_digits(ereal_to_dyadic(r), c.ref);
+				emit({ "ereal", fptype, c.name, static_cast<long>(N), t, digits });
+			}
+		}
+		else {
+			(void)fptype; (void)reps;
 		}
 	}
 
-	template<unsigned... Ns>
-	void run_ereal(int reps) {
-		(run_ereal_N<Ns>(reps), ...);   // fixed compile-time limb list
+	template<typename FpType, unsigned... Ns>
+	void run_ereal(const char* fptype, int reps) {
+		(run_ereal_N<Ns, FpType>(fptype, reps), ...);   // fixed compile-time limb list
 	}
 
 	// arithmetic: accuracy is exact for a single op, so report time only (digits=-1).
@@ -236,21 +246,51 @@ namespace {
 		}
 	}
 
-	template<unsigned N>
-	void run_arithmetic_ereal_N(int reps) {
-		const double A = 1.4142135623730951, B = 2.7182818284590452;
-		ereal<N> a(A), b(B), r;
-		volatile double sink = 0.0;
-		auto timeOp = [&](auto fn) { return time_ns([&] { r = fn(); sink = sink_limb(r); }, reps); };
-		emit({ "ereal", "double", "add", static_cast<long>(N), timeOp([&] { return a + b; }), -1 });
-		emit({ "ereal", "double", "mul", static_cast<long>(N), timeOp([&] { return a * b; }), -1 });
-		emit({ "ereal", "double", "div", static_cast<long>(N), timeOp([&] { return a / b; }), -1 });
-		(void)sink;
+	template<unsigned N, typename FpType>
+	void run_arithmetic_ereal_N(const char* fptype, int reps) {
+		if constexpr (N <= ereal<1, FpType>::max_safe_limbs) {
+			const double A = 1.4142135623730951, B = 2.7182818284590452;
+			ereal<N, FpType> a(A), b(B), r;
+			volatile double sink = 0.0;
+			auto timeOp = [&](auto fn) { return time_ns([&] { r = fn(); sink = sink_limb(r); }, reps); };
+			emit({ "ereal", fptype, "add", static_cast<long>(N), timeOp([&] { return a + b; }), -1 });
+			emit({ "ereal", fptype, "mul", static_cast<long>(N), timeOp([&] { return a * b; }), -1 });
+			emit({ "ereal", fptype, "div", static_cast<long>(N), timeOp([&] { return a / b; }), -1 });
+			(void)sink;
+		}
+		else {
+			(void)fptype; (void)reps;
+		}
 	}
 
-	template<unsigned... Ns>
-	void run_arithmetic_ereal(int reps) {
-		(run_arithmetic_ereal_N<Ns>(reps), ...);
+	template<typename FpType, unsigned... Ns>
+	void run_arithmetic_ereal(const char* fptype, int reps) {
+		(run_arithmetic_ereal_N<Ns, FpType>(fptype, reps), ...);
+	}
+
+	// The long double rows go through a template so that LD is a template parameter.
+	// `if constexpr` only leaves its discarded branch uninstantiated inside a template:
+	// in a plain function the branch is still instantiated, and naming
+	// ereal<1, long double>::max_safe_limbs there completes the class and trips its
+	// static_assert. That is exactly what happens on ppc64le, where the default
+	// long double is IBM double-double and not a valid limb -- the ppc64le cross build
+	// caught it (#1568).
+	template<typename LD>
+	void report_long_double_limbs() {
+		if constexpr (is_expansion_limb_v<LD>) {
+			std::cout << " long double=" << ereal<1, LD>::max_safe_limbs;
+		}
+	}
+
+	template<typename LD>
+	void run_long_double_limbs(int reps) {
+		if constexpr (is_expansion_limb_v<LD>) {
+			run_ereal<LD, 2, 4, 8, 12, 16>("long double", reps);
+			run_arithmetic_ereal<LD, 2, 4, 8, 12, 16>("long double", reps);
+		}
+		else {
+			(void)reps;
+		}
 	}
 
 	// ---------------------------------------------------------------- summary
@@ -373,21 +413,44 @@ int main(int argc, char** argv) try {
 
 	std::cout << "# adaptive-precision accuracy-vs-compute-time characterization (issue #1040)\n";
 	std::cout << "# elreal depth sweep 2.." << maxDepth << " over hosts {double, float, bfloat16},"
-	          << " ereal limb list {2,4,8,12,16}, reps=" << reps << "\n";
+	          << " ereal limb list {2,4,8,12,16} over limb types {float, double";
+	if constexpr (is_expansion_limb_v<long double>) std::cout << ", long double";
+	std::cout << "}, reps=" << reps << "\n";
+	std::cout << "# long double here: digits=" << std::numeric_limits<long double>::digits
+	          << (is_expansion_limb_v<long double> ? "" : " -- not a valid limb on this host") << "\n";
+	// a limb list entry past a limb type's max_safe_limbs is skipped, not an error
+	std::cout << "# max_safe_limbs: float=" << ereal<1, float>::max_safe_limbs
+	          << " double=" << ereal<1, double>::max_safe_limbs;
+	report_long_double_limbs<long double>();
+	std::cout << "\n";
 	std::cout << "type,FpType,function,depth,time_ns,correct_digits,correct_bits,rel_error\n";
 
-	// elreal is templated on its host block type, and the accuracy/time curve moves
-	// with it: a narrower host carries fewer significand bits per block, so it needs
-	// more blocks for the same accuracy. ereal's limbs are always double, so only
-	// the elreal side sweeps.
+	// Both types are templated on the arithmetic they are built from, and the
+	// accuracy/time curve moves with it: a narrower one carries fewer significand bits
+	// per block or limb, so it needs more of them for the same accuracy.
 	run_elreal<double>("double", maxDepth, reps);
 	run_elreal<float>("float", maxDepth, reps);
 	run_elreal<bfloat16>("bfloat16", maxDepth, reps);
-	run_ereal<2, 4, 8, 12, 16>(reps);
+	run_ereal<float,  2, 4, 8, 12, 16>("float", reps);
+	run_ereal<double, 2, 4, 8, 12, 16>("double", reps);
 	run_arithmetic<double>("double", maxDepth, reps);
 	run_arithmetic<float>("float", maxDepth, reps);
 	run_arithmetic<bfloat16>("bfloat16", maxDepth, reps);
-	run_arithmetic_ereal<2, 4, 8, 12, 16>(reps);
+	run_arithmetic_ereal<float,  2, 4, 8, 12, 16>("float", reps);
+	run_arithmetic_ereal<double, 2, 4, 8, 12, 16>("double", reps);
+	// long double is x87 extended on x86-64 and MinGW, binary128 on aarch64 and
+	// riscv64, and the default IBM double-double on ppc64le -- which is itself a
+	// two-component expansion and is not a valid limb, so the trait rejects it and
+	// these rows are simply absent there.
+	//
+	// EXPECT binary128 TO BE SLOW. On aarch64 and riscv64 it has no hardware and every
+	// operation is a libgcc soft-float call, so it is slower than double by a large
+	// factor -- typically 10x or more -- for about twice the significand. x87 is
+	// hardware, but its 80-bit loads and stores are not free either. The wider limb is
+	// for reach, not for speed: it is what takes ereal past double's ~303-digit
+	// ceiling (#1355), and this sweep is here to keep that trade honest rather than
+	// to advertise the wide limb as faster.
+	run_long_double_limbs<long double>(reps);
 
 	summary();
 	return EXIT_SUCCESS;

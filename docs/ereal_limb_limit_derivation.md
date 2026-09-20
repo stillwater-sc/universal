@@ -8,9 +8,70 @@
 
 ## Executive Summary
 
-The `ereal` type is limited to a maximum of **19 limbs** (not 38 as might be expected) due to a subtle but critical constraint in Shewchuk's expansion arithmetic: error terms from two-sum operations on the smallest limb must remain representable as normal IEEE-754 doubles.
+`ereal<maxlimbs, FpType>` is limited in how many limbs it may have, by a subtle but critical
+constraint in Shewchuk's expansion arithmetic: error terms from two-sum operations on the
+smallest limb must remain representable as **normal** values of the limb type.
 
-**Key Finding**: The constraint applies to **all possible starting magnitudes** (including values near 1.0), not just the maximum representable double. This reduces the theoretical limit from ~38 limbs to 19 limbs.
+**Key Finding**: The constraint applies to **all possible starting magnitudes** (including
+values near 1.0), not just the largest representable one. For `double` limbs that reduces
+the theoretical limit from ~38 limbs to 19.
+
+### The general bound
+
+The derivation below is written for `double`, because `double` is the default limb and the
+concrete numbers make it readable. The result is not specific to `double`. Each limb is
+`digits` bits below the one above it, so starting from a magnitude near 1.0 the *n*-th limb
+sits at `2^(-digits * n)`, and it must stay at or above the smallest normal
+`2^(min_exponent - 1)`:
+
+```cpp
+static constexpr unsigned max_safe_limbs =
+    static_cast<unsigned>(-(std::numeric_limits<FpType>::min_exponent - 1)
+                          / std::numeric_limits<FpType>::digits);
+```
+
+| limb type | `digits` | `min_exponent` | `max_safe_limbs` | ~decimal digits | where |
+|---|---|---|---|---|---|
+| `float` | 24 | -125 | **5** | ~36 | everywhere |
+| `double` | 53 | -1021 | **19** | ~303 | everywhere |
+| `long double` = x87 extended | 64 | -16381 | **255** | ~4913 | x86-64, MinGW |
+| `long double` = binary128 | 113 | -16381 | **144** | ~4898 | aarch64, riscv64, ppc64le with `-mabi=ieeelongdouble` |
+| `long double` = IBM double-double | 106 | -968 | -- | -- | **rejected**, see below |
+| `long double` = `double` | 53 | -1021 | **19** | ~303 | MSVC, Apple ARM64 |
+
+(Measured on the real toolchains under QEMU and wine, not inferred from the standard.)
+
+### Which types may be limbs at all
+
+`is_expansion_limb_v<FpType>` requires a binary, IEC-559 floating-point type whose exponent
+range is symmetric in the IEEE sense, `min_exponent == 3 - max_exponent`. That last clause
+is what does the work. libstdc++ reports `is_iec559 == true` for **IBM extended
+double-double** -- the default `long double` on ppc64le -- so an `is_iec559` check alone
+does *not* reject it. Its exponent range gives it away: `min_exponent` is -968 against a
+`max_exponent` of 1024, where IEEE-754 requires `min_exponent == 3 - max_exponent`, i.e.
+-1021.
+
+IBM double-double must be rejected, and not on a technicality: it is *itself* a
+two-component unevaluated sum, so using it as a limb would nest an expansion inside an
+expansion. Its components are not at a fixed relative scale, so "the limbs are
+non-overlapping and descending" -- the invariant every algorithm here depends on -- is not
+something the outer expansion can establish.
+
+**On ppc64le this means `ereal<n, long double>` does not compile**, with a `static_assert`
+that says why. That is deliberate. Building the whole toolchain with
+`-mabi=ieeelongdouble` makes `long double` binary128 there, and it then works and is
+error-free (measured); but that is a whole-program ABI choice affecting every library on
+the system, not something a header can opt into, so `ereal` does not try to detect or
+accommodate it. Use `ereal<n, double>` on ppc64le, or build the toolchain for binary128.
+
+### A wider limb is for reach, not speed
+
+binary128 on aarch64 and riscv64 has no hardware: every operation is a libgcc soft-float
+call, and it is slower than `double` by a large factor -- typically 10x or more -- for
+about twice the significand. x87 is hardware, but its 80-bit loads and stores are not free
+either. The wide limb is what takes `ereal` past `double`'s ~303-digit ceiling; it is not
+a faster way to get 100 digits. `benchmark/accuracy/adaptive/characterize.cpp` sweeps
+accuracy against time across limb types so the trade stays visible.
 
 ---
 
@@ -401,15 +462,24 @@ what was dropped lies below the last limb that was kept -- which
 
 ### Static Assertion in Code
 
-From `ereal_impl.hpp:78-82`:
+From `ereal_impl.hpp`. There are two, and the first is the one people hit:
 
 ```cpp
-static_assert(maxlimbs <= 19,
-    "ereal<maxlimbs>: maxlimbs must be <= 19 to maintain algorithmic correctness. "
-    "Larger values cause the last limb to underflow below DBL_MIN, violating the "
-    "non-overlapping property required by Shewchuk's expansion arithmetic. "
-    "This results in incorrect two_sum/two_product operations and silent arithmetic errors.");
+static_assert(is_expansion_limb_v<FpType>,
+    "ereal<maxlimbs, FpType>: FpType must be a p-bit IEEE-754 binary type (float, double, "
+    "x87 extended or binary128 long double). IBM extended double-double -- the default "
+    "long double on ppc64le -- is itself a two-component expansion and cannot serve as a "
+    "limb; build with -mabi=ieeelongdouble for a binary128 long double there.");
+
+static_assert(maxlimbs <= max_safe_limbs,
+    "ereal<maxlimbs, FpType>: maxlimbs must be <= max_safe_limbs = -(min_exponent - 1) / digits "
+    "of the limb type (5 for float, 19 for double, 255 for x87, 144 for binary128). More limbs "
+    "push the last one below the smallest normal, violating the non-overlapping property "
+    "Shewchuk's expansion arithmetic requires, and two_sum/two_product silently lose bits.");
 ```
+
+Note that the bound is `max_safe_limbs`, derived from the limb type, rather than the
+literal 19 it was when `double` was the only limb.
 
 ### Precision vs Limb Count
 

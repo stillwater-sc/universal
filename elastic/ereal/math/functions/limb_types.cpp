@@ -128,6 +128,32 @@ namespace {
 		return fails;
 	}
 
+	// ---- special values must not depend on the limb type ---------------------------------
+	//
+	// log(0) returned the literal -1.0e308, which is not infinity and is not representable
+	// in a float limb at all: with float limbs it overflowed to -inf and with double limbs
+	// it did not, so isinf(log(0)) depended on the limb type. Narrow limbs are worth having
+	// precisely because they make this kind of thing fall over where it can be seen (#1568).
+
+	template<unsigned N, typename F>
+	int VerifySpecialValueMath(const std::string& name, bool reportTestCases) {
+		using R = ereal<N, F>;
+		int fails = 0;
+		const R zero(0.0), one(1.0);
+
+		const R l = log(zero);
+		fails += expect(isinf(l), name + ": log(0) is infinite", reportTestCases);
+		fails += expect(l.sign() < 0, name + ": log(0) is negative", reportTestCases);
+		// and the same for the logarithms built on it
+		fails += expect(isinf(log2(zero)) && log2(zero).sign() < 0, name + ": log2(0) is -inf", reportTestCases);
+		fails += expect(isinf(log10(zero)) && log10(zero).sign() < 0, name + ": log10(0) is -inf", reportTestCases);
+		// log1p(-1) == log(0)
+		fails += expect(isinf(log1p(-one)) && log1p(-one).sign() < 0, name + ": log1p(-1) is -inf", reportTestCases);
+		// a negative argument is NaN, whatever the limb type
+		fails += expect(isnan(log(-one)), name + ": log(-1) is NaN", reportTestCases);
+		return fails;
+	}
+
 }  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -197,6 +223,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNoFixedPrecisionPaths<5, float>("ereal<5, float>", reportTestCases), test_tag, "float fixed-precision paths");
 	nrOfFailedTestCases += ReportTestResult(VerifyNoFixedPrecisionPaths<8, double>("ereal<8>", reportTestCases), test_tag, "double fixed-precision paths");
 	nrOfFailedTestCases += ReportTestResult(VerifyNoFixedPrecisionPaths<19, double>("ereal<19>", reportTestCases), test_tag, "double fixed-precision paths, 19 limbs");
+	nrOfFailedTestCases += ReportTestResult(VerifySpecialValueMath<5, float>("ereal<5, float>", reportTestCases), test_tag, "float special values");
+	nrOfFailedTestCases += ReportTestResult(VerifySpecialValueMath<8, double>("ereal<8>", reportTestCases), test_tag, "double special values");
+	if constexpr (is_expansion_limb_v<long double>) {
+		nrOfFailedTestCases += ReportTestResult(VerifySpecialValueMath<8, long double>("ereal<8, long double>", reportTestCases), test_tag, "long double special values");
+	}
 #endif
 
 #if REGRESSION_LEVEL_2
