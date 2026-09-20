@@ -47,6 +47,28 @@
 
 namespace sw { namespace universal {
 
+/// Is std::fma correctly rounded for T on this build?
+///
+/// UNIVERSAL_TRUSTED_FMA answers the question for the PLATFORM, and that is not the whole
+/// answer: on MinGW, -mfma gives a hardware FMA3 instruction for float and double, but
+/// `fmal` stays the CRT's software routine and is not correctly rounded either way.
+/// Measured over 100000 full-precision products, long double gets a wrong residual 8464
+/// times with -mfma and 8464 times without it, while glibc gets none (#1578).
+///
+/// This matters more here than it does in an expansion: two of the three uses below read
+/// only the SIGN of the residual, and a wrong residual near zero carries the wrong sign.
+/// Containment is a guarantee, not a statistical property, so it is not enough that a
+/// sign flip is rare under random sampling.
+template<typename T>
+constexpr bool fma_is_trusted() noexcept {
+#if defined(__MINGW32__)
+	return UNIVERSAL_TRUSTED_FMA != 0
+	    && std::numeric_limits<T>::digits <= std::numeric_limits<double>::digits;
+#else
+	return true;
+#endif
+}
+
 // ============================================================================
 // Directed rounding
 // ============================================================================
@@ -125,17 +147,16 @@ template<typename T>
 inline bool product_roundoff(T a, T b, T p, T& roundoff) noexcept {
 	if (a == T(0) || b == T(0)) { roundoff = T(0); return true; }
 	if (std::abs(p) < std::numeric_limits<T>::min()) return false;
-#if UNIVERSAL_TRUSTED_FMA == 0
-	// Without a correctly rounded fma the roundoff is not exact, so its sign cannot be
-	// trusted and the bound is widened -- the same conservative answer this function
-	// already gives for a subnormal product. Containment is the guarantee; tightness is
-	// not (#1578).
-	(void)p;
-	return false;
-#else
-	roundoff = std::fma(a, b, -p);
-	return std::isfinite(roundoff);
-#endif
+	// Without a correctly rounded fma the roundoff is not exact, so it cannot be trusted
+	// and the bound is widened -- the same conservative answer this function already gives
+	// for a subnormal product. Containment is the guarantee; tightness is not (#1578).
+	if constexpr (!fma_is_trusted<T>()) {
+		return false;
+	}
+	else {
+		roundoff = std::fma(a, b, -p);
+		return std::isfinite(roundoff);
+	}
 }
 
 template<typename T>
@@ -166,15 +187,12 @@ template<typename T>
 inline quotient_position locate_quotient(T a, T b, T q) noexcept {
 	if (a == T(0)) return quotient_position::exact;
 	if (std::abs(q) < std::numeric_limits<T>::min()) return quotient_position::unknown;
-#if UNIVERSAL_TRUSTED_FMA == 0
 	// an inexact residual can carry the wrong sign, and the sign is the whole answer (#1578)
-	return quotient_position::unknown;
-#else
+	if constexpr (!fma_is_trusted<T>()) return quotient_position::unknown;
 	T r = std::fma(-q, b, a);
 	if (!std::isfinite(r)) return quotient_position::unknown;
 	if (r == T(0)) return quotient_position::exact;
 	return ((r > T(0)) == (b > T(0))) ? quotient_position::above : quotient_position::below;
-#endif
 }
 
 template<typename T>
@@ -201,26 +219,22 @@ template<typename T>
 inline T sqrt_down(T x) noexcept {
 	T r = std::sqrt(x);
 	if (!std::isfinite(r) || r == T(0)) return r;
-#if UNIVERSAL_TRUSTED_FMA == 0
-	return next_down(r);          // cannot prove r is the correct side, so widen (#1578)
-#else
+	// cannot prove which side r is on, so widen (#1578)
+	if constexpr (!fma_is_trusted<T>()) return next_down(r);
 	T e = std::fma(-r, r, x);
 	if (!std::isfinite(e)) return next_down(r);
 	return (e < T(0)) ? next_down(r) : r;
-#endif
 }
 
 template<typename T>
 inline T sqrt_up(T x) noexcept {
 	T r = std::sqrt(x);
 	if (!std::isfinite(r) || r == T(0)) return r;
-#if UNIVERSAL_TRUSTED_FMA == 0
-	return next_up(r);            // cannot prove r is the correct side, so widen (#1578)
-#else
+	// cannot prove which side r is on, so widen (#1578)
+	if constexpr (!fma_is_trusted<T>()) return next_up(r);
 	T e = std::fma(-r, r, x);
 	if (!std::isfinite(e)) return next_up(r);
 	return (e > T(0)) ? next_up(r) : r;
-#endif
 }
 
 } // namespace detail
