@@ -40,6 +40,7 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/elreal_reference_digits.hpp>  // dyadic, zbcl_to_dyadic, agreed_decimal_digits
 #include <math/constants/reference_constants.hpp>              // s_pi, s_e, s_ln2, s_sqrt2, s_sin_half, ...
+#include <math/constants/long_reference_constants.hpp>         // s_long_sqrt2, s_long_e, s_long_ln2, kLongReferenceCap
 
 namespace {
 
@@ -72,7 +73,13 @@ namespace {
 	int correct_bits(int digits) { return static_cast<int>(std::lround(digits * kLog2of10)); }
 
 	// rel error implied by d matching decimal digits (a reporting estimate)
-	double rel_error(int digits) { return (digits <= 0) ? 1.0 : std::pow(10.0, -digits); }
+	// 10^-digits as text, not as a double. Once a wide limb reaches past 308 digits the
+	// computed value underflows and every row prints "0.0e+00", which reads as an exact
+	// result rather than a very accurate one (#1568).
+	std::string rel_error(int digits) {
+		if (digits <= 0) return "1.0e+00";
+		return "1.0e-" + std::to_string(digits);
+	}
 
 	// build the exact dyadic value of an ereal from its (non-overlapping) limbs.
 	// from_fp, not from_double: a long double limb would be rounded to 53 bits by the
@@ -87,24 +94,35 @@ namespace {
 	// ------------------------------------------------------------------- cases
 	enum class Op { Sqrt, Exp, Log, Sin, Cos, Tan, Sinh, Cosh, Tanh };
 
+	// A measured digit count is only as long as the reference it was measured against.
+	// The ~340-digit constants are read at 320, and a configuration that carries more than
+	// that scores exactly 320 -- which is a LOWER BOUND, not a plateau. With double limbs
+	// that never mattered, since 19 limbs cap out near 303 digits; with a wide limb it does:
+	// x87 at 12 and at 16 limbs both report 320 and the series looks saturated when it is
+	// only reference-limited. So each case carries its own cap, the long 5000-digit
+	// references are used wherever they exist, and a row that reaches its cap is flagged
+	// (#1568).
 	struct Case {
 		Op               op;
 		const char*      name;
 		double           arg;
-		std::string_view ref;   // ~320-digit reference for f(arg)
+		std::string_view ref;
+		int              cap;   // what this reference can certify
 	};
 
 	const std::vector<Case>& cases() {
 		static const std::vector<Case> c = {
-			{ Op::Sqrt, "sqrt@2",  2.0, s_sqrt2   },
-			{ Op::Exp,  "exp@1",   1.0, s_e       },
-			{ Op::Log,  "log@2",   2.0, s_ln2     },
-			{ Op::Sin,  "sin@0.5", 0.5, s_sin_half },
-			{ Op::Cos,  "cos@0.5", 0.5, s_cos_half },
-			{ Op::Tan,  "tan@0.5", 0.5, s_tan_half },
-			{ Op::Sinh, "sinh@0.5",0.5, s_sinh_half },
-			{ Op::Cosh, "cosh@0.5",0.5, s_cosh_half },
-			{ Op::Tanh, "tanh@0.5",0.5, s_tanh_half },
+			{ Op::Sqrt, "sqrt@2",  2.0, s_long_sqrt2, kLongReferenceCap },
+			{ Op::Exp,  "exp@1",   1.0, s_long_e,     kLongReferenceCap },
+			{ Op::Log,  "log@2",   2.0, s_long_ln2,   kLongReferenceCap },
+			// the trigonometric and hyperbolic values have no 5000-digit reference, so
+			// these stay capped at 320 and their rows say so
+			{ Op::Sin,  "sin@0.5", 0.5, s_sin_half,  320 },
+			{ Op::Cos,  "cos@0.5", 0.5, s_cos_half,  320 },
+			{ Op::Tan,  "tan@0.5", 0.5, s_tan_half,  320 },
+			{ Op::Sinh, "sinh@0.5",0.5, s_sinh_half, 320 },
+			{ Op::Cosh, "cosh@0.5",0.5, s_cosh_half, 320 },
+			{ Op::Tanh, "tanh@0.5",0.5, s_tanh_half, 320 },
 		};
 		return c;
 	}
@@ -128,11 +146,12 @@ namespace {
 	// ------------------------------------------------------------------- rows
 	struct Row {
 		std::string type;    // "elreal" | "ereal"
-		std::string fptype;  // elreal host block type; always "double" for ereal
+		std::string fptype;  // the block type (elreal) or limb type (ereal)
 		std::string func;
 		long        knob;    // elreal depth or ereal N
 		double      time_ns;
 		int         digits;  // -1 if not measured
+		bool        capped = false;  // digits == the reference's cap, so it is a LOWER bound
 	};
 
 	std::vector<Row> g_rows;
@@ -142,7 +161,8 @@ namespace {
 		          << std::llround(r.time_ns) << ',' << r.digits << ','
 		          << (r.digits < 0 ? 0 : correct_bits(r.digits)) << ',';
 		if (r.digits < 0) std::cout << "n/a";
-		else              std::cout << std::scientific << std::setprecision(1) << rel_error(r.digits) << std::defaultfloat;
+		else              std::cout << rel_error(r.digits);
+		std::cout << ',' << (r.capped ? "capped" : "exact");
 		std::cout << '\n';
 		g_rows.push_back(r);
 	}
@@ -184,8 +204,8 @@ namespace {
 					(void)sink;
 					elreal<FpType> r = apply(c.op, x);
 					(void)r.template approx<double>(static_cast<std::size_t>(d));       // force before reading the stream
-					int digits = agreed_decimal_digits(zbcl_to_dyadic(r.stream()), c.ref);
-					emit({ "elreal", host, c.name, d, t, digits });
+					int digits = agreed_decimal_digits(zbcl_to_dyadic(r.stream()), c.ref, c.cap);
+					emit({ "elreal", host, c.name, d, t, digits, digits >= c.cap });
 				}
 			}
 		}
@@ -210,8 +230,8 @@ namespace {
 				volatile double sink = 0.0;
 				double t = time_ns([&] { r = apply(c.op, x); sink = sink_limb(r); }, reps);
 				(void)sink;
-				int digits = agreed_decimal_digits(ereal_to_dyadic(r), c.ref);
-				emit({ "ereal", fptype, c.name, static_cast<long>(N), t, digits });
+				int digits = agreed_decimal_digits(ereal_to_dyadic(r), c.ref, c.cap);
+				emit({ "ereal", fptype, c.name, static_cast<long>(N), t, digits, digits >= c.cap });
 			}
 		}
 		else {
@@ -328,12 +348,21 @@ namespace {
 				// back to them as a property of the type. elreal does exactly this --
 				// since v4.9.0 its accuracy is linear in the knob and unbounded, so it
 				// has no saturation point at any depth (#1177).
+				// A plateau made of CAPPED rows is not a plateau: those rows report the
+				// reference's limit, not the type's accuracy. x87 limbs at N=12 and N=16
+				// both scored 320 against a 340-digit reference and the series looked
+				// saturated when nothing of the sort had been shown. If the best result
+				// is reference-limited, no saturation claim can be made from this sweep
+				// (#1568).
+				bool maxIsCapped = false;
+				for (auto* r : rs) if (r->digits == maxDig && r->capped) maxIsCapped = true;
+
 				long satKnob = rs.back()->knob;
 				bool saturated = false;
 				for (auto* r : rs) {
 					if (r->digits >= (maxDig * 95) / 100) {
 						satKnob = r->knob;
-						saturated = (r != rs.back()) && (rs.size() > 1);
+						saturated = (r != rs.back()) && (rs.size() > 1) && !maxIsCapped;
 						break;
 					}
 				}
@@ -353,11 +382,19 @@ namespace {
 				if (saturated) {
 					std::cout << " saturates ~" << unit << satKnob << " (" << maxDig << " digits)";
 				}
+				else if (maxIsCapped) {
+					std::cout << " reference-limited at " << unit << satKnob
+					          << " (>=" << maxDig << " digits; the reference cannot certify more)";
+				}
 				else {
 					std::cout << " NO saturation through " << unit << rs.back()->knob
 					          << " (" << maxDig << " digits, still climbing)";
 				}
-				if (saturated || !kneeIsSweepLimit) {
+				if (maxIsCapped) {
+					// the knee is computed from digit counts, so it inherits the doubt
+					std::cout << "; no knee -- accuracy is reference-limited, not measured";
+				}
+				else if (saturated || !kneeIsSweepLimit) {
 					std::cout << "; knee at " << unit << knee->knob
 					          << " (" << knee->digits << " digits, " << std::llround(knee->time_ns) << " ns)";
 				}
@@ -423,7 +460,9 @@ int main(int argc, char** argv) try {
 	          << " double=" << ereal<1, double>::max_safe_limbs;
 	report_long_double_limbs<long double>();
 	std::cout << "\n";
-	std::cout << "type,FpType,function,depth,time_ns,correct_digits,correct_bits,rel_error\n";
+	// `bound`: "exact" means the measurement is the accuracy; "capped" means the row hit
+	// the reference's own limit and the digit count is a LOWER bound (#1568)
+	std::cout << "type,FpType,function,depth,time_ns,correct_digits,correct_bits,rel_error,bound\n";
 
 	// Both types are templated on the arithmetic they are built from, and the
 	// accuracy/time curve moves with it: a narrower one carries fewer significand bits
