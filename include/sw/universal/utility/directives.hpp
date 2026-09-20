@@ -55,6 +55,39 @@
 #endif
 #endif // LONG_DOUBLE_SUPPORT
 
+// ========== UNIVERSAL_TRUSTED_FMA detection ==========
+// Is std::fma correctly rounded on this build?
+//
+// The error-free transformations this library is built on -- two_prod in ereal's expansions,
+// floatcascade's dd/qd, elreal's blocks, the interval tracker -- all compute the roundoff of
+// a product as  fma(a, b, -a*b).  That identity holds only if fma is CORRECTLY ROUNDED, i.e.
+// computes a*b + c with a single rounding. If it is merely "accurate", the error term is
+// wrong and every algorithm above it silently loses its exactness guarantee.
+//
+// mingw-w64's software fma is not correctly rounded. Measured against Dekker's product over
+// 200000 random pairs in [0.5, 2), 15763 of them -- 7.9% -- come back with a wrong roundoff:
+//
+//     dekker = -5.24664541231088145084e-17
+//     fma    = -5.24664574318312647205e-17     wrong from the 9th digit
+//
+// -mfma makes gcc emit the hardware FMA3 instruction instead of calling that routine, and the
+// disagreements go to zero. cmake/toolchains/x86_64-w64-mingw32.cmake passes it for exactly
+// this reason, so the configurations this project builds and tests are correct.
+//
+// A build that does NOT use that toolchain file is not, and it fails silently: no error, no
+// warning, just wrong low-order bits. That is what this macro is for -- the affected sites
+// fall back to Dekker's product, which needs nothing from libm and is exact with ordinary
+// operations. Correctness stops depending on a build flag (#1578).
+//
+// -mfma defines __FMA__, so its presence is how a build says it has the instruction.
+#ifndef UNIVERSAL_TRUSTED_FMA
+#if defined(__MINGW32__) && !defined(__FMA__)
+#define UNIVERSAL_TRUSTED_FMA 0
+#else
+#define UNIVERSAL_TRUSTED_FMA 1
+#endif
+#endif // UNIVERSAL_TRUSTED_FMA
+
 // ========== Compiler Configuration Messages ==========
 // Macro for consistent compile-time messages across compilers
 // Usage: UNIVERSAL_COMPILER_MESSAGE("Fast specialization of posit<8,0>")
