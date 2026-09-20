@@ -11,17 +11,17 @@ namespace sw { namespace universal {
 	// nextafter: return next representable value after x in direction of y
 
 	//   Note: For adaptive precision, "next" may involve adding a small limb
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> nextafter(const ereal<maxlimbs>& x, const ereal<maxlimbs>& y) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> nextafter(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
 		if (x == y) return y;
 	
 		if (x.isnan() || y.isnan()) {
 			// if either is NaN, return NaN
-			return ereal<maxlimbs>(std::numeric_limits<double>::quiet_NaN());
+			return ereal<maxlimbs, FpType>(std::numeric_limits<double>::quiet_NaN());
 	    }
 		
 		// find the smallest limb, and move in the direction of y
-	    ereal<maxlimbs> n{x};
+	    ereal<maxlimbs, FpType> n{x};
 	    assert(n.limbs().size() > 0);
 	    size_t          last = n.limbs().size() - 1;
 	    if (x < y) {
@@ -35,12 +35,12 @@ namespace sw { namespace universal {
 	}
 
 	// nexttoward: return next representable value after x in direction of y (long double)
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> nexttoward(const ereal<maxlimbs>& x, long double y) {
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> nexttoward(const ereal<maxlimbs, FpType>& x, long double y) {
 #if LONG_DOUBLE_SUPPORT
-	    ereal<maxlimbs> target(y);
+	    ereal<maxlimbs, FpType> target(y);
 #else
-	    ereal<maxlimbs> target(static_cast<double>(y));
+	    ereal<maxlimbs, FpType> target(static_cast<double>(y));
 #endif
 		return nextafter(x, target);
 	}

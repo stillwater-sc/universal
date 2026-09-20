@@ -11,8 +11,8 @@ namespace sw { namespace universal {
 	// fpclassify: categorize floating-point value
 	// Phase 1: uses ereal's native classification methods
 	// Note: ereal has no subnormal representation (expansion arithmetic)
-	template<unsigned maxlimbs>
-	inline int fpclassify(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline int fpclassify(const ereal<maxlimbs, FpType>& x) {
 		if (x.isnan()) return FP_NAN;
 		if (x.isinf()) return FP_INFINITE;
 		if (x.iszero()) return FP_ZERO;
@@ -22,37 +22,37 @@ namespace sw { namespace universal {
 
 	// isnan: test for NaN
 	// Phase 1: uses ereal's native isnan() method
-	template<unsigned maxlimbs>
-	inline bool isnan(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline bool isnan(const ereal<maxlimbs, FpType>& x) {
 		return x.isnan();
 	}
 
 	// isinf: test for infinity
 	// Phase 1: uses ereal's native isinf() method
-	template<unsigned maxlimbs>
-	inline bool isinf(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline bool isinf(const ereal<maxlimbs, FpType>& x) {
 		return x.isinf();
 	}
 
 	// isfinite: test for finite value
 	// Phase 1: finite = not infinite and not NaN
-	template<unsigned maxlimbs>
-	inline bool isfinite(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline bool isfinite(const ereal<maxlimbs, FpType>& x) {
 		return !x.isinf() && !x.isnan();
 	}
 
 	// isnormal: test for normal value
 	// Phase 1: for ereal, any non-zero finite value is "normal"
 	// Note: expansion arithmetic has no subnormal representation
-	template<unsigned maxlimbs>
-	inline bool isnormal(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline bool isnormal(const ereal<maxlimbs, FpType>& x) {
 		return !x.iszero() && !x.isinf() && !x.isnan();
 	}
 
 	// signbit: test sign bit
 	// Phase 1: uses ereal's native isneg() method
-	template<unsigned maxlimbs>
-	inline bool signbit(const ereal<maxlimbs>& x) {
+	template<unsigned maxlimbs, typename FpType>
+	inline bool signbit(const ereal<maxlimbs, FpType>& x) {
 		return x.isneg();
 	}
 

@@ -29,9 +29,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to use reference exp() implementation
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> sinh(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> sinh(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// Special cases
 		if (x.iszero()) return Real(0.0);
@@ -65,9 +65,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to use reference exp() implementation
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> cosh(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> cosh(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// cosh(0) = 1
 		if (x.iszero()) return Real(1.0);
@@ -105,9 +105,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to use reference exp() implementation
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> tanh(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> tanh(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// Special cases
 		if (x.iszero()) return Real(0.0);
@@ -142,9 +142,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to use reference log() implementation
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> asinh(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> asinh(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// Special case
 		if (x.iszero()) return Real(0.0);
@@ -178,9 +178,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to use reference log() implementation
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> acosh(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> acosh(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// Domain check: x must be >= 1
 		Real one(1.0);
@@ -219,9 +219,9 @@ namespace sw { namespace universal {
 	// --------
 	// 2025-01: Refactored to use reference log() implementation
 	//
-	template<unsigned maxlimbs>
-	inline ereal<maxlimbs> atanh(const ereal<maxlimbs>& x) {
-		using Real = ereal<maxlimbs>;
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> atanh(const ereal<maxlimbs, FpType>& x) {
+		using Real = ereal<maxlimbs, FpType>;
 
 		// Special case
 		if (x.iszero()) return Real(0.0);
