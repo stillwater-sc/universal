@@ -345,11 +345,27 @@ of limbs; truncating them leaves a spurious residual at the truncation level, an
 step then multiplies two full-length expansions instead of a long one by a short one. That
 made `double` division about 2.7x *slower*.
 
-| | before | after |
-|---|---|---|
-| `ereal<8, long double>` Newton sqrt(2), 8 steps | 40.9 s | 0.065 s |
-| `ereal<24, long double>` Newton sqrt(2), 8 steps | 70.9 s | 3.7 s |
-| `ereal<8>` / `ereal<19>` (double) | unchanged | unchanged |
+The bound also **tightens as the iteration proceeds**. Newton doubles its correct digits
+each step, so from a one-limb seed the iterate after step *i* is accurate to `2^(i+1)`
+limbs; everything past that is noise, and it is that noise which multiplies `e` on the next
+step. Without this, a full-width divisor made every step pay a full budget-by-budget
+product: one `ereal<24, long double>` division cost 0.46 s, against 18 ms for a full-width
+*multiply*. Truncating each step to the precision it has reached leaves only the last step
+at full width, and makes the total work proportional to the budget rather than to
+iterations * budget.
+
+The `+ 2` guard limbs in that bound are not defensive padding. The doubling is the
+asymptotic rate and rounding within a step eats into it, so trimming to exactly `2^(i+1)`
+cost the last two digits -- `ereal<8>`'s Newton sqrt(2) went from 257 digits to 255.
+
+| Newton sqrt(2), 8 steps | uncapped | result capped only | with the per-step bound |
+|---|---|---|---|
+| `ereal<8>` (double) | 0.0072 s | 0.0067 s | **0.0036 s** |
+| `ereal<19>` (double) | 0.0100 s | 0.0101 s | **0.0063 s** |
+| `ereal<8, long double>` (x87) | 40.9 s | 0.065 s | **0.012 s** |
+| `ereal<24, long double>` (x87) | 70.9 s | 3.65 s | **0.35 s** |
+
+`double` ends up about twice as fast as it was before any of this, not merely unregressed.
 
 ### What it costs
 
