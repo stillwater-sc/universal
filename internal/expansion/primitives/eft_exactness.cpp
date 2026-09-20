@@ -19,9 +19,13 @@
 // expansion_ops.hpp, where it is applied to a magnitude-sorted expansion. The
 // fuzz below only feeds |a| >= |b| pairs and additionally checks that the
 // identity breaks when the precondition is violated (so the precondition is
-// load-bearing, not incidental). two_prod uses std::fma, so VerifyTwoProd also
-// serves as a platform check that fma is correctly rounded (it is the gap that
-// would silently break every product).
+// load-bearing, not incidental). two_prod uses std::fma where the platform's fma
+// is correctly rounded, so VerifyTwoProd doubles as a check that it is -- that is
+// the gap that would silently break every product, and mingw-w64 without -mfma
+// falls into it (5333 of 50000 products wrong). Such a build takes Dekker's
+// product instead, which VerifyDekkerTwoProd exercises directly so that the
+// fallback is covered on every platform rather than only the one that needs it
+// (#1578).
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -63,6 +67,14 @@ namespace {
 	// x + y == a * b  exactly, and x == fl(a*b)
 	bool two_prod_is_exact(double a, double b) {
 		double x, y; two_prod(a, b, x, y);
+		if (x != a * b) return false;
+		return dyadic::from_double(a) * dyadic::from_double(b)
+		    == dyadic::from_double(x) + dyadic::from_double(y);
+	}
+
+	// the same identity for Dekker's product, called directly
+	bool dekker_is_exact(double a, double b) {
+		double x, y; expansion_ops::detail_eft::dekker_two_prod<double>(a, b, x, y);
 		if (x != a * b) return false;
 		return dyadic::from_double(a) * dyadic::from_double(b)
 		    == dyadic::from_double(x) + dyadic::from_double(y);
@@ -155,6 +167,43 @@ namespace {
 		return fails;
 	}
 
+	// Dekker's product, exercised directly on double.
+	//
+	// two_prod only selects it for a limb wider than double, or on a build whose fma is not
+	// correctly rounded -- mingw-w64 without -mfma (#1578). No CI platform is in either
+	// case for double, so without this the double fallback is code that ships and is never
+	// run, free to rot until the one configuration that needs it finds out. The identity is
+	// the same one two_prod must satisfy, against the same independent oracle.
+	int VerifyDekkerTwoProd(bool reportTestCases, unsigned nrIterations) {
+		int fails = 0;
+		auto probe = [&](double a, double b, const char* tag) {
+			if (!dekker_is_exact(a, b)) { if (reportTestCases) std::cout << "    FAIL dekker_two_prod " << tag << " a=" << a << " b=" << b << '\n'; ++fails; }
+		};
+		probe(1.5, 1.5, "1.5*1.5");
+		probe(3.0, 7.0, "3*7");
+		probe(-2.0, 0.5, "-2*0.5");
+		probe(std::ldexp(1.0, 200), std::ldexp(1.0, -100), "pow2 spread");
+		probe(0.0, 1.0, "zero operand");
+		std::mt19937_64 rng(0xDEC6E12ull);
+		for (unsigned i = 0; i < nrIterations; ++i) {
+			double a = rdbl(rng, -450, 450), b = rdbl(rng, -450, 450);
+			if (!dekker_is_exact(a, b)) { if (reportTestCases) std::cout << "    FAIL dekker_two_prod fuzz a=" << a << " b=" << b << " (iter " << i << ")\n"; ++fails; }
+		}
+		// and it must agree with two_prod bit for bit wherever both are exact, since the
+		// two are alternatives for the same operation
+		for (unsigned i = 0; i < nrIterations; ++i) {
+			double a = rdbl(rng, -450, 450), b = rdbl(rng, -450, 450);
+			double x1, y1, x2, y2;
+			two_prod(a, b, x1, y1);
+			expansion_ops::detail_eft::dekker_two_prod<double>(a, b, x2, y2);
+			if (x1 != x2 || y1 != y2) {
+				if (reportTestCases) std::cout << "    FAIL two_prod vs dekker disagree a=" << a << " b=" << b << " (iter " << i << ")\n";
+				++fails;
+			}
+		}
+		return fails;
+	}
+
 }  // anonymous namespace
 
 // Regression testing guards
@@ -194,6 +243,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyTwoSum(reportTestCases, 50000),     "two_sum",      test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyFastTwoSum(reportTestCases, 50000), "fast_two_sum", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyTwoProd(reportTestCases, 50000),    "two_prod",     test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDekkerTwoProd(reportTestCases, 50000), "dekker_two_prod", test_tag);
 #	endif
 #	if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyTwoSum(reportTestCases, 200000),     "two_sum x2",      test_tag);

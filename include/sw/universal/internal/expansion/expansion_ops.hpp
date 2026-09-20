@@ -17,6 +17,7 @@
 // - Strongly nonoverlapping: Even stricter - adjacent components differ by at least mantissa length
 // - Adaptive: Algorithms that do only as much work as necessary to guarantee correct result
 
+#include <universal/utility/directives.hpp>   // UNIVERSAL_TRUSTED_FMA
 #include <vector>
 #include <cmath>
 #include <algorithm>
@@ -187,8 +188,11 @@ inline void fast_two_sum(std::type_identity_t<FpType> a, std::type_identity_t<Fp
  *   x = a * b
  *   y = fma(a, b, -x)  // Computes (a*b - x) with no intermediate rounding
  *
- * That is what float and double use: every platform the library targets has an FMA
- * instruction for them (CI's MinGW toolchain passes -mfma for exactly this reason).
+ * That is what float and double use WHERE THE FMA CAN BE TRUSTED. Most targets have the
+ * instruction; mingw-w64 without -mfma does not, and calls a software routine that is not
+ * correctly rounded, so the identity above stops being error-free (#1578). That build takes
+ * the Dekker path too -- see UNIVERSAL_TRUSTED_FMA in utility/directives.hpp. CI's MinGW
+ * toolchain passes -mfma, so it keeps the one-operation form.
  *
  * No platform has one for a type wider than double. x87 extended has no FMA at all, and
  * binary128 is software everywhere, so std::fma on long double is a library routine --
@@ -248,7 +252,12 @@ namespace detail_eft {
 template<typename FpType = double>
 inline void two_prod(std::type_identity_t<FpType> a, std::type_identity_t<FpType> b, FpType& x, FpType& y) {
     require_expansion_limb<FpType>();
-    if constexpr (std::numeric_limits<FpType>::digits > std::numeric_limits<double>::digits) {
+    // Dekker for a type wider than double, which has no FMA anywhere, and for a build whose
+    // fma is not correctly rounded -- mingw-w64 without -mfma. The identity
+    // y == fma(a, b, -x) is only an error-free transformation when fma rounds once, and
+    // there it does not: 7.9% of random products come back with a wrong roundoff (#1578).
+    if constexpr (std::numeric_limits<FpType>::digits > std::numeric_limits<double>::digits
+                  || UNIVERSAL_TRUSTED_FMA == 0) {
         detail_eft::dekker_two_prod<FpType>(a, b, x, y);
     } else {
         volatile FpType vx = a * b;

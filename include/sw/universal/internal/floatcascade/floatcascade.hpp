@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>   // UNIVERSAL_TRUSTED_FMA (#1578)
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -458,8 +459,13 @@ namespace expansion_ops {
     // (from error_free_ops.hpp) and gives the exact a_hi/a_lo/b_hi/b_lo
     // decomposition that lets us recover the rounding error via
     //   y = ((a_hi*b_hi - p) + a_hi*b_lo + a_lo*b_hi) + a_lo*b_lo.
+    //
+    // That same split-based path is taken at RUNTIME on a build whose fma is not
+    // correctly rounded. y == fma(a, b, -x) is an error-free transformation only if fma
+    // rounds once; mingw-w64's software fma does not, and gets 7.9% of random products'
+    // roundoffs wrong, which silently costs the cascade its exactness (#1578).
     constexpr inline void two_prod(double a, double b, double& x, double& y) {
-        if (std::is_constant_evaluated()) {
+        if (std::is_constant_evaluated() || UNIVERSAL_TRUSTED_FMA == 0) {
             double p = a * b;
             x = p;
             if (sw::universal::is_finite_cx(p)) {
@@ -2255,11 +2261,13 @@ template<>
 inline floatcascade<4> sqr(const floatcascade<4>& a) {
     using namespace expansion_ops;
 
-    // local two_sqr: p = a*a exactly, error in r (uses FMA)
+    // local two_sqr: p = a*a exactly, error in r. Routed through the two_prod above rather
+    // than calling std::fma directly, so it inherits the split fallback on a build whose
+    // fma is not correctly rounded (#1578).
     auto two_sqr_local = [](double a, double& r) -> double {
-        volatile double p = a * a;
-        r = std::fma(a, a, -static_cast<double>(p));
-        return static_cast<double>(p);
+        double p{};
+        two_prod(a, a, p, r);
+        return p;
     };
     // local quick_two_sum: assumes |a| >= |b|
     auto qts = [](double a, double b, double& r) -> double {
