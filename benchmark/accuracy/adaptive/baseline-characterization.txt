@@ -1,364 +1,468 @@
 # adaptive-precision accuracy-vs-compute-time characterization (issue #1040)
-# elreal depth sweep 2..8 over hosts {double, float, bfloat16}, ereal limb list {2,4,8,12,16}, reps=5
-type,FpType,function,depth,time_ns,correct_digits,correct_bits,rel_error
-elreal,double,sqrt@2,2,707989,32,106,1.0e-32
-elreal,double,sqrt@2,3,249400,49,163,1.0e-49
-elreal,double,sqrt@2,4,632292,66,219,1.0e-66
-elreal,double,sqrt@2,5,1005731,83,276,1.0e-83
-elreal,double,sqrt@2,6,1492493,98,326,1.0e-98
-elreal,double,sqrt@2,7,2238254,115,382,1.0e-115
-elreal,double,sqrt@2,8,4060171,131,435,1.0e-131
-elreal,double,exp@1,2,885284,32,106,1.0e-32
-elreal,double,exp@1,3,1638275,49,163,1.0e-49
-elreal,double,exp@1,4,2649587,65,216,1.0e-65
-elreal,double,exp@1,5,3933276,81,269,1.0e-81
-elreal,double,exp@1,6,5536474,98,326,1.0e-98
-elreal,double,exp@1,7,7920402,114,379,1.0e-114
-elreal,double,exp@1,8,11175910,130,432,1.0e-130
-elreal,double,log@2,2,27766790,32,106,1.0e-32
-elreal,double,log@2,3,60069042,48,159,1.0e-48
-elreal,double,log@2,4,107745738,64,213,1.0e-64
-elreal,double,log@2,5,157986348,81,269,1.0e-81
-elreal,double,log@2,6,218302981,97,322,1.0e-97
-elreal,double,log@2,7,285713921,113,375,1.0e-113
-elreal,double,log@2,8,373892947,130,432,1.0e-130
-elreal,double,sin@0.5,2,26258317,35,116,1.0e-35
-elreal,double,sin@0.5,3,59559205,49,163,1.0e-49
-elreal,double,sin@0.5,4,105759244,66,219,1.0e-66
-elreal,double,sin@0.5,5,154962372,81,269,1.0e-81
-elreal,double,sin@0.5,6,214528483,98,326,1.0e-98
-elreal,double,sin@0.5,7,286458173,113,375,1.0e-113
-elreal,double,sin@0.5,8,371653846,130,432,1.0e-130
-elreal,double,cos@0.5,2,26286495,34,113,1.0e-34
-elreal,double,cos@0.5,3,59290543,50,166,1.0e-50
-elreal,double,cos@0.5,4,106005840,67,223,1.0e-67
-elreal,double,cos@0.5,5,154558929,83,276,1.0e-83
-elreal,double,cos@0.5,6,214128665,98,326,1.0e-98
-elreal,double,cos@0.5,7,286837783,114,379,1.0e-114
-elreal,double,cos@0.5,8,371555508,131,435,1.0e-131
-elreal,double,tan@0.5,2,26289280,31,103,1.0e-31
-elreal,double,tan@0.5,3,59569617,49,163,1.0e-49
-elreal,double,tan@0.5,4,106658316,65,216,1.0e-65
-elreal,double,tan@0.5,5,155625066,81,269,1.0e-81
-elreal,double,tan@0.5,6,215707375,98,326,1.0e-98
-elreal,double,tan@0.5,7,288766372,113,375,1.0e-113
-elreal,double,tan@0.5,8,374333165,129,429,1.0e-129
-elreal,double,sinh@0.5,2,1830525,32,106,1.0e-32
-elreal,double,sinh@0.5,3,3430835,48,159,1.0e-48
-elreal,double,sinh@0.5,4,5293687,65,216,1.0e-65
-elreal,double,sinh@0.5,5,7317239,82,272,1.0e-82
-elreal,double,sinh@0.5,6,9918984,98,326,1.0e-98
-elreal,double,sinh@0.5,7,13129489,114,379,1.0e-114
-elreal,double,sinh@0.5,8,15711990,131,435,1.0e-131
-elreal,double,cosh@0.5,2,1742209,33,110,1.0e-33
-elreal,double,cosh@0.5,3,3294192,50,166,1.0e-50
-elreal,double,cosh@0.5,4,5141924,66,219,1.0e-66
-elreal,double,cosh@0.5,5,7347916,82,272,1.0e-82
-elreal,double,cosh@0.5,6,9914065,98,326,1.0e-98
-elreal,double,cosh@0.5,7,13012553,114,379,1.0e-114
-elreal,double,cosh@0.5,8,15727768,130,432,1.0e-130
-elreal,double,tanh@0.5,2,900557,33,110,1.0e-33
-elreal,double,tanh@0.5,3,1732006,47,156,1.0e-47
-elreal,double,tanh@0.5,4,2826931,65,216,1.0e-65
-elreal,double,tanh@0.5,5,4280855,80,266,1.0e-80
-elreal,double,tanh@0.5,6,6001908,97,322,1.0e-97
-elreal,double,tanh@0.5,7,8397387,113,375,1.0e-113
-elreal,double,tanh@0.5,8,11816951,129,429,1.0e-129
-elreal,float,sqrt@2,2,105092,15,50,1.0e-15
-elreal,float,sqrt@2,3,244937,23,76,1.0e-23
-elreal,float,sqrt@2,4,604077,31,103,1.0e-31
-elreal,float,sqrt@2,5,930024,38,126,1.0e-38
-elreal,float,sqrt@2,6,1413241,46,153,1.0e-46
-elreal,float,sqrt@2,7,1967247,53,176,1.0e-53
-elreal,float,sqrt@2,8,3712471,61,203,1.0e-61
-elreal,float,exp@1,2,509003,14,47,1.0e-14
-elreal,float,exp@1,3,887722,23,76,1.0e-23
-elreal,float,exp@1,4,1482196,31,103,1.0e-31
-elreal,float,exp@1,5,2203038,38,126,1.0e-38
-elreal,float,exp@1,6,3130396,46,153,1.0e-46
-elreal,float,exp@1,7,4460021,53,176,1.0e-53
-elreal,float,exp@1,8,7094806,60,199,1.0e-60
-elreal,float,log@2,2,13126124,15,50,1.0e-15
-elreal,float,log@2,3,29680346,22,73,1.0e-22
-elreal,float,log@2,4,51134459,30,100,1.0e-30
-elreal,float,log@2,5,77683606,37,123,1.0e-37
-elreal,float,log@2,6,107838567,45,149,1.0e-45
-elreal,float,log@2,7,135142044,52,173,1.0e-52
-elreal,float,log@2,8,170926806,60,199,1.0e-60
-elreal,float,sin@0.5,2,12088451,18,60,1.0e-18
-elreal,float,sin@0.5,3,26943145,24,80,1.0e-24
-elreal,float,sin@0.5,4,47332944,31,103,1.0e-31
-elreal,float,sin@0.5,5,68671971,38,126,1.0e-38
-elreal,float,sin@0.5,6,93788211,45,149,1.0e-45
-elreal,float,sin@0.5,7,127463852,54,179,1.0e-54
-elreal,float,sin@0.5,8,165379464,60,199,1.0e-60
-elreal,float,cos@0.5,2,12065059,16,53,1.0e-16
-elreal,float,cos@0.5,3,27012936,24,80,1.0e-24
-elreal,float,cos@0.5,4,47268797,33,110,1.0e-33
-elreal,float,cos@0.5,5,68266668,38,126,1.0e-38
-elreal,float,cos@0.5,6,93474624,45,149,1.0e-45
-elreal,float,cos@0.5,7,127098501,53,176,1.0e-53
-elreal,float,cos@0.5,8,164746634,60,199,1.0e-60
-elreal,float,tan@0.5,2,12127299,15,50,1.0e-15
-elreal,float,tan@0.5,3,27428772,22,73,1.0e-22
-elreal,float,tan@0.5,4,47596497,30,100,1.0e-30
-elreal,float,tan@0.5,5,68552043,37,123,1.0e-37
-elreal,float,tan@0.5,6,94883080,45,149,1.0e-45
-elreal,float,tan@0.5,7,128199131,53,176,1.0e-53
-elreal,float,tan@0.5,8,167043625,60,199,1.0e-60
-elreal,float,sinh@0.5,2,1077518,14,47,1.0e-14
-elreal,float,sinh@0.5,3,1764713,23,76,1.0e-23
-elreal,float,sinh@0.5,4,2809840,31,103,1.0e-31
-elreal,float,sinh@0.5,5,3714240,38,126,1.0e-38
-elreal,float,sinh@0.5,6,5114468,45,149,1.0e-45
-elreal,float,sinh@0.5,7,6432026,55,183,1.0e-55
-elreal,float,sinh@0.5,8,8411075,61,203,1.0e-61
-elreal,float,cosh@0.5,2,1065546,16,53,1.0e-16
-elreal,float,cosh@0.5,3,1753449,23,76,1.0e-23
-elreal,float,cosh@0.5,4,2785724,33,110,1.0e-33
-elreal,float,cosh@0.5,5,3714215,39,130,1.0e-39
-elreal,float,cosh@0.5,6,5125702,46,153,1.0e-46
-elreal,float,cosh@0.5,7,6408152,53,176,1.0e-53
-elreal,float,cosh@0.5,8,8402944,60,199,1.0e-60
-elreal,float,tanh@0.5,2,540088,15,50,1.0e-15
-elreal,float,tanh@0.5,3,956211,22,73,1.0e-22
-elreal,float,tanh@0.5,4,1656011,30,100,1.0e-30
-elreal,float,tanh@0.5,5,2370360,37,123,1.0e-37
-elreal,float,tanh@0.5,6,3465239,46,153,1.0e-46
-elreal,float,tanh@0.5,7,5109889,53,176,1.0e-53
-elreal,float,tanh@0.5,8,7916632,60,199,1.0e-60
-elreal,bfloat16,sqrt@2,2,90696,6,20,1.0e-06
-elreal,bfloat16,sqrt@2,3,246565,8,27,1.0e-08
-elreal,bfloat16,sqrt@2,4,620252,9,30,1.0e-09
-elreal,bfloat16,sqrt@2,5,789870,12,40,1.0e-12
-elreal,bfloat16,sqrt@2,6,1283740,15,50,1.0e-15
-elreal,bfloat16,sqrt@2,7,1795552,15,50,1.0e-15
-elreal,bfloat16,sqrt@2,8,2527094,17,56,1.0e-17
-elreal,bfloat16,exp@1,2,220897,5,17,1.0e-05
-elreal,bfloat16,exp@1,3,376521,8,27,1.0e-08
-elreal,bfloat16,exp@1,4,493588,10,33,1.0e-10
-elreal,bfloat16,exp@1,5,726240,13,43,1.0e-13
-elreal,bfloat16,exp@1,6,1262706,15,50,1.0e-15
-elreal,bfloat16,exp@1,7,1890466,16,53,1.0e-16
-elreal,bfloat16,exp@1,8,3589249,19,63,1.0e-19
-elreal,bfloat16,log@2,2,3253390,4,13,1.0e-04
-elreal,bfloat16,log@2,3,6432355,8,27,1.0e-08
-elreal,bfloat16,log@2,4,10110894,10,33,1.0e-10
-elreal,bfloat16,log@2,5,15648039,13,43,1.0e-13
-elreal,bfloat16,log@2,6,20965334,16,53,1.0e-16
-elreal,bfloat16,log@2,7,26938498,19,63,1.0e-19
-elreal,bfloat16,log@2,8,31876857,21,70,1.0e-21
-elreal,bfloat16,sin@0.5,2,3399607,6,20,1.0e-06
-elreal,bfloat16,sin@0.5,3,6932058,9,30,1.0e-09
-elreal,bfloat16,sin@0.5,4,8904569,10,33,1.0e-10
-elreal,bfloat16,sin@0.5,5,15069939,12,40,1.0e-12
-elreal,bfloat16,sin@0.5,6,20854930,14,47,1.0e-14
-elreal,bfloat16,sin@0.5,7,27303899,17,56,1.0e-17
-elreal,bfloat16,sin@0.5,8,34422487,19,63,1.0e-19
-elreal,bfloat16,cos@0.5,2,3400855,6,20,1.0e-06
-elreal,bfloat16,cos@0.5,3,7183419,9,30,1.0e-09
-elreal,bfloat16,cos@0.5,4,9017558,12,40,1.0e-12
-elreal,bfloat16,cos@0.5,5,15084346,12,40,1.0e-12
-elreal,bfloat16,cos@0.5,6,20574770,14,47,1.0e-14
-elreal,bfloat16,cos@0.5,7,26896537,17,56,1.0e-17
-elreal,bfloat16,cos@0.5,8,34197584,21,70,1.0e-21
-elreal,bfloat16,tan@0.5,2,3418021,4,13,1.0e-04
-elreal,bfloat16,tan@0.5,3,6981972,7,23,1.0e-07
-elreal,bfloat16,tan@0.5,4,9093550,10,33,1.0e-10
-elreal,bfloat16,tan@0.5,5,15387879,12,40,1.0e-12
-elreal,bfloat16,tan@0.5,6,22024435,14,47,1.0e-14
-elreal,bfloat16,tan@0.5,7,28673161,17,56,1.0e-17
-elreal,bfloat16,tan@0.5,8,35707861,19,63,1.0e-19
-elreal,bfloat16,sinh@0.5,2,448512,4,13,1.0e-04
-elreal,bfloat16,sinh@0.5,3,735344,7,23,1.0e-07
-elreal,bfloat16,sinh@0.5,4,830819,10,33,1.0e-10
-elreal,bfloat16,sinh@0.5,5,1028180,12,40,1.0e-12
-elreal,bfloat16,sinh@0.5,6,1645985,15,50,1.0e-15
-elreal,bfloat16,sinh@0.5,7,2192235,16,53,1.0e-16
-elreal,bfloat16,sinh@0.5,8,2718441,19,63,1.0e-19
-elreal,bfloat16,cosh@0.5,2,444845,5,17,1.0e-05
-elreal,bfloat16,cosh@0.5,3,719186,9,30,1.0e-09
-elreal,bfloat16,cosh@0.5,4,830316,10,33,1.0e-10
-elreal,bfloat16,cosh@0.5,5,1015479,13,43,1.0e-13
-elreal,bfloat16,cosh@0.5,6,1618983,15,50,1.0e-15
-elreal,bfloat16,cosh@0.5,7,2148134,17,56,1.0e-17
-elreal,bfloat16,cosh@0.5,8,2663144,20,66,1.0e-20
-elreal,bfloat16,tanh@0.5,2,240867,5,17,1.0e-05
-elreal,bfloat16,tanh@0.5,3,445033,8,27,1.0e-08
-elreal,bfloat16,tanh@0.5,4,646927,10,33,1.0e-10
-elreal,bfloat16,tanh@0.5,5,988644,12,40,1.0e-12
-elreal,bfloat16,tanh@0.5,6,1632070,15,50,1.0e-15
-elreal,bfloat16,tanh@0.5,7,2462248,16,53,1.0e-16
-elreal,bfloat16,tanh@0.5,8,4698345,18,60,1.0e-18
-ereal,double,sqrt@2,2,2264028,128,425,1.0e-128
-ereal,double,exp@1,2,2405914,30,100,1.0e-30
-ereal,double,log@2,2,8178773,32,106,1.0e-32
-ereal,double,sin@0.5,2,1315685,35,116,1.0e-35
-ereal,double,cos@0.5,2,1188509,34,113,1.0e-34
-ereal,double,tan@0.5,2,3402427,34,113,1.0e-34
-ereal,double,sinh@0.5,2,4375125,32,106,1.0e-32
-ereal,double,cosh@0.5,2,4395135,31,103,1.0e-31
-ereal,double,tanh@0.5,2,3244991,31,103,1.0e-31
-ereal,double,sqrt@2,4,2936190,128,425,1.0e-128
-ereal,double,exp@1,4,4186492,63,209,1.0e-63
-ereal,double,log@2,4,16027859,64,213,1.0e-64
-ereal,double,sin@0.5,4,2363562,69,229,1.0e-69
-ereal,double,cos@0.5,4,2208934,67,223,1.0e-67
-ereal,double,tan@0.5,4,5509989,67,223,1.0e-67
-ereal,double,sinh@0.5,4,8263964,65,216,1.0e-65
-ereal,double,cosh@0.5,4,8117525,63,209,1.0e-63
-ereal,double,tanh@0.5,4,5166478,63,209,1.0e-63
-ereal,double,sqrt@2,8,5109851,257,854,1.0e-257
-ereal,double,exp@1,8,10921065,127,422,1.0e-127
-ereal,double,log@2,8,34201269,128,425,1.0e-128
-ereal,double,sin@0.5,8,5903592,131,435,1.0e-131
-ereal,double,cos@0.5,8,5812421,134,445,1.0e-134
-ereal,double,tan@0.5,8,12838784,131,435,1.0e-131
-ereal,double,sinh@0.5,8,21485145,127,422,1.0e-127
-ereal,double,cosh@0.5,8,21771624,129,429,1.0e-129
-ereal,double,tanh@0.5,8,11923973,127,422,1.0e-127
-ereal,double,sqrt@2,12,6102030,319,1060,1.0e-319
-ereal,double,exp@1,12,15802871,192,638,1.0e-192
-ereal,double,log@2,12,47126202,191,634,1.0e-191
-ereal,double,sin@0.5,12,8584928,199,661,1.0e-199
-ereal,double,cos@0.5,12,8305401,197,654,1.0e-197
-ereal,double,tan@0.5,12,18229931,197,654,1.0e-197
-ereal,double,sinh@0.5,12,30875370,194,644,1.0e-194
-ereal,double,cosh@0.5,12,31123661,192,638,1.0e-192
-ereal,double,tanh@0.5,12,16753811,192,638,1.0e-192
-ereal,double,sqrt@2,16,7175294,319,1060,1.0e-319
-ereal,double,exp@1,16,17679796,256,850,1.0e-256
-ereal,double,log@2,16,52882565,255,847,1.0e-255
-ereal,double,sin@0.5,16,9816084,261,867,1.0e-261
-ereal,double,cos@0.5,16,9529246,263,874,1.0e-263
-ereal,double,tan@0.5,16,20723536,261,867,1.0e-261
-ereal,double,sinh@0.5,16,34987498,256,850,1.0e-256
-ereal,double,cosh@0.5,16,34975758,258,857,1.0e-258
-ereal,double,tanh@0.5,16,18752452,256,850,1.0e-256
-elreal,double,add,2,775,-1,0,n/a
-elreal,double,mul,2,611,-1,0,n/a
-elreal,double,div,2,21878,-1,0,n/a
-elreal,double,add,3,750,-1,0,n/a
-elreal,double,mul,3,588,-1,0,n/a
-elreal,double,div,3,26085,-1,0,n/a
-elreal,double,add,4,726,-1,0,n/a
-elreal,double,mul,4,601,-1,0,n/a
-elreal,double,div,4,30363,-1,0,n/a
-elreal,double,add,5,743,-1,0,n/a
-elreal,double,mul,5,595,-1,0,n/a
-elreal,double,div,5,34295,-1,0,n/a
-elreal,double,add,6,736,-1,0,n/a
-elreal,double,mul,6,609,-1,0,n/a
-elreal,double,div,6,40803,-1,0,n/a
-elreal,double,add,7,741,-1,0,n/a
-elreal,double,mul,7,591,-1,0,n/a
-elreal,double,div,7,46900,-1,0,n/a
-elreal,double,add,8,742,-1,0,n/a
-elreal,double,mul,8,590,-1,0,n/a
-elreal,double,div,8,53839,-1,0,n/a
-elreal,float,add,2,756,-1,0,n/a
-elreal,float,mul,2,587,-1,0,n/a
-elreal,float,div,2,25831,-1,0,n/a
-elreal,float,add,3,795,-1,0,n/a
-elreal,float,mul,3,564,-1,0,n/a
-elreal,float,div,3,33722,-1,0,n/a
-elreal,float,add,4,810,-1,0,n/a
-elreal,float,mul,4,590,-1,0,n/a
-elreal,float,div,4,37484,-1,0,n/a
-elreal,float,add,5,755,-1,0,n/a
-elreal,float,mul,5,580,-1,0,n/a
-elreal,float,div,5,41708,-1,0,n/a
-elreal,float,add,6,757,-1,0,n/a
-elreal,float,mul,6,592,-1,0,n/a
-elreal,float,div,6,47538,-1,0,n/a
-elreal,float,add,7,766,-1,0,n/a
-elreal,float,mul,7,583,-1,0,n/a
-elreal,float,div,7,56152,-1,0,n/a
-elreal,float,add,8,736,-1,0,n/a
-elreal,float,mul,8,586,-1,0,n/a
-elreal,float,div,8,67221,-1,0,n/a
-elreal,bfloat16,add,2,781,-1,0,n/a
-elreal,bfloat16,mul,2,580,-1,0,n/a
-elreal,bfloat16,div,2,15018,-1,0,n/a
-elreal,bfloat16,add,3,748,-1,0,n/a
-elreal,bfloat16,mul,3,570,-1,0,n/a
-elreal,bfloat16,div,3,23281,-1,0,n/a
-elreal,bfloat16,add,4,747,-1,0,n/a
-elreal,bfloat16,mul,4,567,-1,0,n/a
-elreal,bfloat16,div,4,30026,-1,0,n/a
-elreal,bfloat16,add,5,761,-1,0,n/a
-elreal,bfloat16,mul,5,604,-1,0,n/a
-elreal,bfloat16,div,5,39006,-1,0,n/a
-elreal,bfloat16,add,6,753,-1,0,n/a
-elreal,bfloat16,mul,6,606,-1,0,n/a
-elreal,bfloat16,div,6,47808,-1,0,n/a
-elreal,bfloat16,add,7,760,-1,0,n/a
-elreal,bfloat16,mul,7,611,-1,0,n/a
-elreal,bfloat16,div,7,54387,-1,0,n/a
-elreal,bfloat16,add,8,751,-1,0,n/a
-elreal,bfloat16,mul,8,596,-1,0,n/a
-elreal,bfloat16,div,8,63490,-1,0,n/a
-ereal,double,add,2,250,-1,0,n/a
-ereal,double,mul,2,395,-1,0,n/a
-ereal,double,div,2,50799,-1,0,n/a
-ereal,double,add,4,214,-1,0,n/a
-ereal,double,mul,4,407,-1,0,n/a
-ereal,double,div,4,48419,-1,0,n/a
-ereal,double,add,8,221,-1,0,n/a
-ereal,double,mul,8,398,-1,0,n/a
-ereal,double,div,8,123243,-1,0,n/a
-ereal,double,add,12,204,-1,0,n/a
-ereal,double,mul,12,395,-1,0,n/a
-ereal,double,div,12,155894,-1,0,n/a
-ereal,double,add,16,230,-1,0,n/a
-ereal,double,mul,16,396,-1,0,n/a
-ereal,double,div,16,155071,-1,0,n/a
+# elreal depth sweep 2..8 over hosts {double, float, bfloat16}, ereal limb list {2,4,8,12,16} over limb types {float, double, long double}, reps=5
+# long double here: digits=64
+# max_safe_limbs: float=5 double=19 long double=255
+type,FpType,function,depth,time_ns,correct_digits,correct_bits,rel_error,bound
+elreal,double,sqrt@2,2,148031,32,106,1.0e-32,exact
+elreal,double,sqrt@2,3,207620,49,163,1.0e-49,exact
+elreal,double,sqrt@2,4,554542,66,219,1.0e-66,exact
+elreal,double,sqrt@2,5,887077,83,276,1.0e-83,exact
+elreal,double,sqrt@2,6,1330591,98,326,1.0e-98,exact
+elreal,double,sqrt@2,7,2032077,115,382,1.0e-115,exact
+elreal,double,sqrt@2,8,3725252,131,435,1.0e-131,exact
+elreal,double,exp@1,2,860793,32,106,1.0e-32,exact
+elreal,double,exp@1,3,1641241,49,163,1.0e-49,exact
+elreal,double,exp@1,4,2647274,65,216,1.0e-65,exact
+elreal,double,exp@1,5,3870176,81,269,1.0e-81,exact
+elreal,double,exp@1,6,5393331,98,326,1.0e-98,exact
+elreal,double,exp@1,7,7660503,114,379,1.0e-114,exact
+elreal,double,exp@1,8,10785510,130,432,1.0e-130,exact
+elreal,double,log@2,2,2240,32,106,1.0e-32,exact
+elreal,double,log@2,3,2653,48,159,1.0e-48,exact
+elreal,double,log@2,4,3641,64,213,1.0e-64,exact
+elreal,double,log@2,5,3998,81,269,1.0e-81,exact
+elreal,double,log@2,6,5257,97,322,1.0e-97,exact
+elreal,double,log@2,7,6029,113,375,1.0e-113,exact
+elreal,double,log@2,8,7437,130,432,1.0e-130,exact
+elreal,double,sin@0.5,2,1023824,35,116,1.0e-35,exact
+elreal,double,sin@0.5,3,1640796,49,163,1.0e-49,exact
+elreal,double,sin@0.5,4,2215144,66,219,1.0e-66,exact
+elreal,double,sin@0.5,5,3093979,81,269,1.0e-81,exact
+elreal,double,sin@0.5,6,3832339,98,326,1.0e-98,exact
+elreal,double,sin@0.5,7,4792966,113,375,1.0e-113,exact
+elreal,double,sin@0.5,8,5630813,130,432,1.0e-130,exact
+elreal,double,cos@0.5,2,1026478,34,113,1.0e-34,exact
+elreal,double,cos@0.5,3,1586910,50,166,1.0e-50,exact
+elreal,double,cos@0.5,4,2257520,67,223,1.0e-67,exact
+elreal,double,cos@0.5,5,3274655,83,276,1.0e-83,exact
+elreal,double,cos@0.5,6,3860085,98,326,1.0e-98,exact
+elreal,double,cos@0.5,7,5083669,114,379,1.0e-114,exact
+elreal,double,cos@0.5,8,5851067,131,435,1.0e-131,exact
+elreal,double,tan@0.5,2,1040657,31,103,1.0e-31,exact
+elreal,double,tan@0.5,3,1715720,49,163,1.0e-49,exact
+elreal,double,tan@0.5,4,2707512,65,216,1.0e-65,exact
+elreal,double,tan@0.5,5,3877448,81,269,1.0e-81,exact
+elreal,double,tan@0.5,6,5236835,98,326,1.0e-98,exact
+elreal,double,tan@0.5,7,7146041,113,375,1.0e-113,exact
+elreal,double,tan@0.5,8,8876419,129,429,1.0e-129,exact
+elreal,double,sinh@0.5,2,1695528,32,106,1.0e-32,exact
+elreal,double,sinh@0.5,3,3179744,48,159,1.0e-48,exact
+elreal,double,sinh@0.5,4,5014321,65,216,1.0e-65,exact
+elreal,double,sinh@0.5,5,7192357,82,272,1.0e-82,exact
+elreal,double,sinh@0.5,6,9722063,98,326,1.0e-98,exact
+elreal,double,sinh@0.5,7,12702140,114,379,1.0e-114,exact
+elreal,double,sinh@0.5,8,15500461,131,435,1.0e-131,exact
+elreal,double,cosh@0.5,2,1728231,33,110,1.0e-33,exact
+elreal,double,cosh@0.5,3,3198179,50,166,1.0e-50,exact
+elreal,double,cosh@0.5,4,5007311,66,219,1.0e-66,exact
+elreal,double,cosh@0.5,5,7216122,82,272,1.0e-82,exact
+elreal,double,cosh@0.5,6,9742633,98,326,1.0e-98,exact
+elreal,double,cosh@0.5,7,12939413,114,379,1.0e-114,exact
+elreal,double,cosh@0.5,8,15447845,130,432,1.0e-130,exact
+elreal,double,tanh@0.5,2,880124,33,110,1.0e-33,exact
+elreal,double,tanh@0.5,3,1694280,47,156,1.0e-47,exact
+elreal,double,tanh@0.5,4,2745247,65,216,1.0e-65,exact
+elreal,double,tanh@0.5,5,4192810,80,266,1.0e-80,exact
+elreal,double,tanh@0.5,6,5863735,97,322,1.0e-97,exact
+elreal,double,tanh@0.5,7,8052628,113,375,1.0e-113,exact
+elreal,double,tanh@0.5,8,11155069,129,429,1.0e-129,exact
+elreal,float,sqrt@2,2,86446,15,50,1.0e-15,exact
+elreal,float,sqrt@2,3,198210,23,76,1.0e-23,exact
+elreal,float,sqrt@2,4,513011,31,103,1.0e-31,exact
+elreal,float,sqrt@2,5,823738,38,126,1.0e-38,exact
+elreal,float,sqrt@2,6,1249166,46,153,1.0e-46,exact
+elreal,float,sqrt@2,7,1771357,53,176,1.0e-53,exact
+elreal,float,sqrt@2,8,3393477,61,203,1.0e-61,exact
+elreal,float,exp@1,2,506271,14,47,1.0e-14,exact
+elreal,float,exp@1,3,868329,23,76,1.0e-23,exact
+elreal,float,exp@1,4,1467279,31,103,1.0e-31,exact
+elreal,float,exp@1,5,2025599,38,126,1.0e-38,exact
+elreal,float,exp@1,6,2928115,46,153,1.0e-46,exact
+elreal,float,exp@1,7,4041586,53,176,1.0e-53,exact
+elreal,float,exp@1,8,6282972,60,199,1.0e-60,exact
+elreal,float,log@2,2,2158,15,50,1.0e-15,exact
+elreal,float,log@2,3,2771,22,73,1.0e-22,exact
+elreal,float,log@2,4,3426,30,100,1.0e-30,exact
+elreal,float,log@2,5,4187,37,123,1.0e-37,exact
+elreal,float,log@2,6,5304,45,149,1.0e-45,exact
+elreal,float,log@2,7,6171,52,173,1.0e-52,exact
+elreal,float,log@2,8,7568,60,199,1.0e-60,exact
+elreal,float,sin@0.5,2,658925,18,60,1.0e-18,exact
+elreal,float,sin@0.5,3,974346,24,80,1.0e-24,exact
+elreal,float,sin@0.5,4,1315628,31,103,1.0e-31,exact
+elreal,float,sin@0.5,5,1762126,38,126,1.0e-38,exact
+elreal,float,sin@0.5,6,2218653,45,149,1.0e-45,exact
+elreal,float,sin@0.5,7,2611482,54,179,1.0e-54,exact
+elreal,float,sin@0.5,8,3239671,60,199,1.0e-60,exact
+elreal,float,cos@0.5,2,641767,16,53,1.0e-16,exact
+elreal,float,cos@0.5,3,939579,24,80,1.0e-24,exact
+elreal,float,cos@0.5,4,1307683,33,110,1.0e-33,exact
+elreal,float,cos@0.5,5,1806918,38,126,1.0e-38,exact
+elreal,float,cos@0.5,6,2270344,45,149,1.0e-45,exact
+elreal,float,cos@0.5,7,2749416,53,176,1.0e-53,exact
+elreal,float,cos@0.5,8,3175067,60,199,1.0e-60,exact
+elreal,float,tan@0.5,2,675586,15,50,1.0e-15,exact
+elreal,float,tan@0.5,3,1056868,22,73,1.0e-22,exact
+elreal,float,tan@0.5,4,1573538,30,100,1.0e-30,exact
+elreal,float,tan@0.5,5,2316835,37,123,1.0e-37,exact
+elreal,float,tan@0.5,6,3121988,45,149,1.0e-45,exact
+elreal,float,tan@0.5,7,4098936,53,176,1.0e-53,exact
+elreal,float,tan@0.5,8,5290568,60,199,1.0e-60,exact
+elreal,float,sinh@0.5,2,1061093,14,47,1.0e-14,exact
+elreal,float,sinh@0.5,3,1728980,23,76,1.0e-23,exact
+elreal,float,sinh@0.5,4,2759852,31,103,1.0e-31,exact
+elreal,float,sinh@0.5,5,3665271,38,126,1.0e-38,exact
+elreal,float,sinh@0.5,6,5112069,45,149,1.0e-45,exact
+elreal,float,sinh@0.5,7,6307073,55,183,1.0e-55,exact
+elreal,float,sinh@0.5,8,8241449,61,203,1.0e-61,exact
+elreal,float,cosh@0.5,2,1052283,16,53,1.0e-16,exact
+elreal,float,cosh@0.5,3,1723099,23,76,1.0e-23,exact
+elreal,float,cosh@0.5,4,2743107,33,110,1.0e-33,exact
+elreal,float,cosh@0.5,5,3641306,39,130,1.0e-39,exact
+elreal,float,cosh@0.5,6,5020120,46,153,1.0e-46,exact
+elreal,float,cosh@0.5,7,6278005,53,176,1.0e-53,exact
+elreal,float,cosh@0.5,8,8252545,60,199,1.0e-60,exact
+elreal,float,tanh@0.5,2,530381,15,50,1.0e-15,exact
+elreal,float,tanh@0.5,3,940403,22,73,1.0e-22,exact
+elreal,float,tanh@0.5,4,1572423,30,100,1.0e-30,exact
+elreal,float,tanh@0.5,5,2255675,37,123,1.0e-37,exact
+elreal,float,tanh@0.5,6,3251418,46,153,1.0e-46,exact
+elreal,float,tanh@0.5,7,4616597,53,176,1.0e-53,exact
+elreal,float,tanh@0.5,8,7246151,60,199,1.0e-60,exact
+elreal,bfloat16,sqrt@2,2,72056,6,20,1.0e-6,exact
+elreal,bfloat16,sqrt@2,3,212433,8,27,1.0e-8,exact
+elreal,bfloat16,sqrt@2,4,533363,9,30,1.0e-9,exact
+elreal,bfloat16,sqrt@2,5,693396,12,40,1.0e-12,exact
+elreal,bfloat16,sqrt@2,6,1150323,15,50,1.0e-15,exact
+elreal,bfloat16,sqrt@2,7,1653184,15,50,1.0e-15,exact
+elreal,bfloat16,sqrt@2,8,2258650,17,56,1.0e-17,exact
+elreal,bfloat16,exp@1,2,213630,5,17,1.0e-5,exact
+elreal,bfloat16,exp@1,3,359704,8,27,1.0e-8,exact
+elreal,bfloat16,exp@1,4,460252,10,33,1.0e-10,exact
+elreal,bfloat16,exp@1,5,661660,13,43,1.0e-13,exact
+elreal,bfloat16,exp@1,6,1166966,15,50,1.0e-15,exact
+elreal,bfloat16,exp@1,7,1749152,16,53,1.0e-16,exact
+elreal,bfloat16,exp@1,8,3158307,19,63,1.0e-19,exact
+elreal,bfloat16,log@2,2,2224,4,13,1.0e-4,exact
+elreal,bfloat16,log@2,3,2520,8,27,1.0e-8,exact
+elreal,bfloat16,log@2,4,3176,10,33,1.0e-10,exact
+elreal,bfloat16,log@2,5,3871,13,43,1.0e-13,exact
+elreal,bfloat16,log@2,6,4869,16,53,1.0e-16,exact
+elreal,bfloat16,log@2,7,5879,19,63,1.0e-19,exact
+elreal,bfloat16,log@2,8,7047,21,70,1.0e-21,exact
+elreal,bfloat16,sin@0.5,2,292269,6,20,1.0e-6,exact
+elreal,bfloat16,sin@0.5,3,409436,9,30,1.0e-9,exact
+elreal,bfloat16,sin@0.5,4,457814,10,33,1.0e-10,exact
+elreal,bfloat16,sin@0.5,5,629838,12,40,1.0e-12,exact
+elreal,bfloat16,sin@0.5,6,747872,14,47,1.0e-14,exact
+elreal,bfloat16,sin@0.5,7,954868,17,56,1.0e-17,exact
+elreal,bfloat16,sin@0.5,8,1142048,19,63,1.0e-19,exact
+elreal,bfloat16,cos@0.5,2,293056,6,20,1.0e-6,exact
+elreal,bfloat16,cos@0.5,3,388667,9,30,1.0e-9,exact
+elreal,bfloat16,cos@0.5,4,486820,12,40,1.0e-12,exact
+elreal,bfloat16,cos@0.5,5,646975,12,40,1.0e-12,exact
+elreal,bfloat16,cos@0.5,6,737512,14,47,1.0e-14,exact
+elreal,bfloat16,cos@0.5,7,945062,17,56,1.0e-17,exact
+elreal,bfloat16,cos@0.5,8,1138109,21,70,1.0e-21,exact
+elreal,bfloat16,tan@0.5,2,302264,4,13,1.0e-4,exact
+elreal,bfloat16,tan@0.5,3,449157,7,23,1.0e-7,exact
+elreal,bfloat16,tan@0.5,4,609125,10,33,1.0e-10,exact
+elreal,bfloat16,tan@0.5,5,893377,12,40,1.0e-12,exact
+elreal,bfloat16,tan@0.5,6,1118089,14,47,1.0e-14,exact
+elreal,bfloat16,tan@0.5,7,1579332,17,56,1.0e-17,exact
+elreal,bfloat16,tan@0.5,8,1994919,19,63,1.0e-19,exact
+elreal,bfloat16,sinh@0.5,2,432685,4,13,1.0e-4,exact
+elreal,bfloat16,sinh@0.5,3,708428,7,23,1.0e-7,exact
+elreal,bfloat16,sinh@0.5,4,804818,10,33,1.0e-10,exact
+elreal,bfloat16,sinh@0.5,5,989320,12,40,1.0e-12,exact
+elreal,bfloat16,sinh@0.5,6,1593457,15,50,1.0e-15,exact
+elreal,bfloat16,sinh@0.5,7,2157730,16,53,1.0e-16,exact
+elreal,bfloat16,sinh@0.5,8,2676524,19,63,1.0e-19,exact
+elreal,bfloat16,cosh@0.5,2,431275,5,17,1.0e-5,exact
+elreal,bfloat16,cosh@0.5,3,695278,9,30,1.0e-9,exact
+elreal,bfloat16,cosh@0.5,4,799675,10,33,1.0e-10,exact
+elreal,bfloat16,cosh@0.5,5,992744,13,43,1.0e-13,exact
+elreal,bfloat16,cosh@0.5,6,1588429,15,50,1.0e-15,exact
+elreal,bfloat16,cosh@0.5,7,2112344,17,56,1.0e-17,exact
+elreal,bfloat16,cosh@0.5,8,2628131,20,66,1.0e-20,exact
+elreal,bfloat16,tanh@0.5,2,230019,5,17,1.0e-5,exact
+elreal,bfloat16,tanh@0.5,3,417218,8,27,1.0e-8,exact
+elreal,bfloat16,tanh@0.5,4,592303,10,33,1.0e-10,exact
+elreal,bfloat16,tanh@0.5,5,905354,12,40,1.0e-12,exact
+elreal,bfloat16,tanh@0.5,6,1524015,15,50,1.0e-15,exact
+elreal,bfloat16,tanh@0.5,7,2189688,16,53,1.0e-16,exact
+elreal,bfloat16,tanh@0.5,8,3960215,18,60,1.0e-18,exact
+ereal,float,sqrt@2,2,84315,30,100,1.0e-30,exact
+ereal,float,exp@1,2,197764,22,73,1.0e-22,exact
+ereal,float,log@2,2,397970,15,50,1.0e-15,exact
+ereal,float,sin@0.5,2,123233,25,83,1.0e-25,exact
+ereal,float,cos@0.5,2,126076,27,90,1.0e-27,exact
+ereal,float,tan@0.5,2,274863,25,83,1.0e-25,exact
+ereal,float,sinh@0.5,2,395300,22,73,1.0e-22,exact
+ereal,float,cosh@0.5,2,385782,24,80,1.0e-24,exact
+ereal,float,tanh@0.5,2,228533,22,73,1.0e-22,exact
+ereal,float,sqrt@2,4,124220,38,126,1.0e-38,exact
+ereal,float,exp@1,4,301986,36,120,1.0e-36,exact
+ereal,float,log@2,4,606461,32,106,1.0e-32,exact
+ereal,float,sin@0.5,4,189159,37,123,1.0e-37,exact
+ereal,float,cos@0.5,4,179936,37,123,1.0e-37,exact
+ereal,float,tan@0.5,4,402146,37,123,1.0e-37,exact
+ereal,float,sinh@0.5,4,607442,36,120,1.0e-36,exact
+ereal,float,cosh@0.5,4,607960,36,120,1.0e-36,exact
+ereal,float,tanh@0.5,4,335556,36,120,1.0e-36,exact
+ereal,double,sqrt@2,2,175843,66,219,1.0e-66,exact
+ereal,double,exp@1,2,476024,48,159,1.0e-48,exact
+ereal,double,log@2,2,1187641,49,163,1.0e-49,exact
+ereal,double,sin@0.5,2,300744,53,176,1.0e-53,exact
+ereal,double,cos@0.5,2,282564,52,173,1.0e-52,exact
+ereal,double,tan@0.5,2,651239,52,173,1.0e-52,exact
+ereal,double,sinh@0.5,2,949339,50,166,1.0e-50,exact
+ereal,double,cosh@0.5,2,935856,48,159,1.0e-48,exact
+ereal,double,tanh@0.5,2,541676,48,159,1.0e-48,exact
+ereal,double,sqrt@2,4,767914,128,425,1.0e-128,exact
+ereal,double,exp@1,4,2903278,81,269,1.0e-81,exact
+ereal,double,log@2,4,8987817,81,269,1.0e-81,exact
+ereal,double,sin@0.5,4,1683848,85,282,1.0e-85,exact
+ereal,double,cos@0.5,4,1711714,87,289,1.0e-87,exact
+ereal,double,tan@0.5,4,3605881,85,282,1.0e-85,exact
+ereal,double,sinh@0.5,4,5650412,81,269,1.0e-81,exact
+ereal,double,cosh@0.5,4,5596932,83,276,1.0e-83,exact
+ereal,double,tanh@0.5,4,3082335,81,269,1.0e-81,exact
+ereal,double,sqrt@2,8,2687961,257,854,1.0e-257,exact
+ereal,double,exp@1,8,11283044,145,482,1.0e-145,exact
+ereal,double,log@2,8,35873357,145,482,1.0e-145,exact
+ereal,double,sin@0.5,8,6140481,149,495,1.0e-149,exact
+ereal,double,cos@0.5,8,6054004,151,502,1.0e-151,exact
+ereal,double,tan@0.5,8,12903851,149,495,1.0e-149,exact
+ereal,double,sinh@0.5,8,22230144,144,478,1.0e-144,exact
+ereal,double,cosh@0.5,8,22102460,147,488,1.0e-147,exact
+ereal,double,tanh@0.5,8,12137889,145,482,1.0e-145,exact
+ereal,double,sqrt@2,12,3821493,314,1043,1.0e-314,exact
+ereal,double,exp@1,12,16522524,208,691,1.0e-208,exact
+ereal,double,log@2,12,49626711,208,691,1.0e-208,exact
+ereal,double,sin@0.5,12,9104485,213,708,1.0e-213,exact
+ereal,double,cos@0.5,12,8950686,215,714,1.0e-215,exact
+ereal,double,tan@0.5,12,18929656,213,708,1.0e-213,exact
+ereal,double,sinh@0.5,12,32683931,208,691,1.0e-208,exact
+ereal,double,cosh@0.5,12,32723195,211,701,1.0e-211,exact
+ereal,double,tanh@0.5,12,17484921,208,691,1.0e-208,exact
+ereal,double,sqrt@2,16,4604658,314,1043,1.0e-314,exact
+ereal,double,exp@1,16,18382798,273,907,1.0e-273,exact
+ereal,double,log@2,16,54333608,272,904,1.0e-272,exact
+ereal,double,sin@0.5,16,10241427,280,930,1.0e-280,exact
+ereal,double,cos@0.5,16,9919939,278,923,1.0e-278,exact
+ereal,double,tan@0.5,16,21131034,278,923,1.0e-278,exact
+ereal,double,sinh@0.5,16,36130486,275,914,1.0e-275,exact
+ereal,double,cosh@0.5,16,36254593,273,907,1.0e-273,exact
+ereal,double,tanh@0.5,16,19187845,273,907,1.0e-273,exact
+elreal,double,add,2,756,-1,0,n/a,exact
+elreal,double,mul,2,628,-1,0,n/a,exact
+elreal,double,div,2,21921,-1,0,n/a,exact
+elreal,double,add,3,712,-1,0,n/a,exact
+elreal,double,mul,3,584,-1,0,n/a,exact
+elreal,double,div,3,26039,-1,0,n/a,exact
+elreal,double,add,4,704,-1,0,n/a,exact
+elreal,double,mul,4,584,-1,0,n/a,exact
+elreal,double,div,4,29863,-1,0,n/a,exact
+elreal,double,add,5,699,-1,0,n/a,exact
+elreal,double,mul,5,577,-1,0,n/a,exact
+elreal,double,div,5,33731,-1,0,n/a,exact
+elreal,double,add,6,707,-1,0,n/a,exact
+elreal,double,mul,6,596,-1,0,n/a,exact
+elreal,double,div,6,40280,-1,0,n/a,exact
+elreal,double,add,7,737,-1,0,n/a,exact
+elreal,double,mul,7,591,-1,0,n/a,exact
+elreal,double,div,7,46219,-1,0,n/a,exact
+elreal,double,add,8,703,-1,0,n/a,exact
+elreal,double,mul,8,582,-1,0,n/a,exact
+elreal,double,div,8,52889,-1,0,n/a,exact
+elreal,float,add,2,737,-1,0,n/a,exact
+elreal,float,mul,2,598,-1,0,n/a,exact
+elreal,float,div,2,25899,-1,0,n/a,exact
+elreal,float,add,3,713,-1,0,n/a,exact
+elreal,float,mul,3,584,-1,0,n/a,exact
+elreal,float,div,3,33388,-1,0,n/a,exact
+elreal,float,add,4,758,-1,0,n/a,exact
+elreal,float,mul,4,621,-1,0,n/a,exact
+elreal,float,div,4,37061,-1,0,n/a,exact
+elreal,float,add,5,706,-1,0,n/a,exact
+elreal,float,mul,5,579,-1,0,n/a,exact
+elreal,float,div,5,41511,-1,0,n/a,exact
+elreal,float,add,6,722,-1,0,n/a,exact
+elreal,float,mul,6,596,-1,0,n/a,exact
+elreal,float,div,6,46947,-1,0,n/a,exact
+elreal,float,add,7,718,-1,0,n/a,exact
+elreal,float,mul,7,586,-1,0,n/a,exact
+elreal,float,div,7,55590,-1,0,n/a,exact
+elreal,float,add,8,715,-1,0,n/a,exact
+elreal,float,mul,8,607,-1,0,n/a,exact
+elreal,float,div,8,68223,-1,0,n/a,exact
+elreal,bfloat16,add,2,828,-1,0,n/a,exact
+elreal,bfloat16,mul,2,618,-1,0,n/a,exact
+elreal,bfloat16,div,2,15162,-1,0,n/a,exact
+elreal,bfloat16,add,3,730,-1,0,n/a,exact
+elreal,bfloat16,mul,3,573,-1,0,n/a,exact
+elreal,bfloat16,div,3,23227,-1,0,n/a,exact
+elreal,bfloat16,add,4,771,-1,0,n/a,exact
+elreal,bfloat16,mul,4,606,-1,0,n/a,exact
+elreal,bfloat16,div,4,29983,-1,0,n/a,exact
+elreal,bfloat16,add,5,726,-1,0,n/a,exact
+elreal,bfloat16,mul,5,596,-1,0,n/a,exact
+elreal,bfloat16,div,5,38934,-1,0,n/a,exact
+elreal,bfloat16,add,6,730,-1,0,n/a,exact
+elreal,bfloat16,mul,6,604,-1,0,n/a,exact
+elreal,bfloat16,div,6,47840,-1,0,n/a,exact
+elreal,bfloat16,add,7,749,-1,0,n/a,exact
+elreal,bfloat16,mul,7,592,-1,0,n/a,exact
+elreal,bfloat16,div,7,53563,-1,0,n/a,exact
+elreal,bfloat16,add,8,760,-1,0,n/a,exact
+elreal,bfloat16,mul,8,573,-1,0,n/a,exact
+elreal,bfloat16,div,8,62361,-1,0,n/a,exact
+ereal,float,add,2,333,-1,0,n/a,exact
+ereal,float,mul,2,1794,-1,0,n/a,exact
+ereal,float,div,2,20068,-1,0,n/a,exact
+ereal,float,add,4,367,-1,0,n/a,exact
+ereal,float,mul,4,3012,-1,0,n/a,exact
+ereal,float,div,4,24843,-1,0,n/a,exact
+ereal,double,add,2,229,-1,0,n/a,exact
+ereal,double,mul,2,435,-1,0,n/a,exact
+ereal,double,div,2,12772,-1,0,n/a,exact
+ereal,double,add,4,217,-1,0,n/a,exact
+ereal,double,mul,4,428,-1,0,n/a,exact
+ereal,double,div,4,28808,-1,0,n/a,exact
+ereal,double,add,8,262,-1,0,n/a,exact
+ereal,double,mul,8,483,-1,0,n/a,exact
+ereal,double,div,8,80705,-1,0,n/a,exact
+ereal,double,add,12,236,-1,0,n/a,exact
+ereal,double,mul,12,447,-1,0,n/a,exact
+ereal,double,div,12,123711,-1,0,n/a,exact
+ereal,double,add,16,235,-1,0,n/a,exact
+ereal,double,mul,16,421,-1,0,n/a,exact
+ereal,double,div,16,123110,-1,0,n/a,exact
+ereal,long double,sqrt@2,2,274168,78,259,1.0e-78,exact
+ereal,long double,exp@1,2,907620,57,189,1.0e-57,exact
+ereal,long double,log@2,2,2372251,59,196,1.0e-59,exact
+ereal,long double,sin@0.5,2,571627,65,216,1.0e-65,exact
+ereal,long double,cos@0.5,2,531615,63,209,1.0e-63,exact
+ereal,long double,tan@0.5,2,1199451,63,209,1.0e-63,exact
+ereal,long double,sinh@0.5,2,1797203,58,193,1.0e-58,exact
+ereal,long double,cosh@0.5,2,1794663,58,193,1.0e-58,exact
+ereal,long double,tanh@0.5,2,988385,58,193,1.0e-58,exact
+ereal,long double,sqrt@2,4,1266168,154,512,1.0e-154,exact
+ereal,long double,exp@1,4,5618481,97,322,1.0e-97,exact
+ereal,long double,log@2,4,18427305,97,322,1.0e-97,exact
+ereal,long double,sin@0.5,4,3235471,101,336,1.0e-101,exact
+ereal,long double,cos@0.5,4,3244195,104,345,1.0e-104,exact
+ereal,long double,tan@0.5,4,6901217,101,336,1.0e-101,exact
+ereal,long double,sinh@0.5,4,10923372,97,322,1.0e-97,exact
+ereal,long double,cosh@0.5,4,10953878,100,332,1.0e-100,exact
+ereal,long double,tanh@0.5,4,5934181,97,322,1.0e-97,exact
+ereal,long double,sqrt@2,8,8975429,309,1026,1.0e-309,exact
+ereal,long double,exp@1,8,59547521,174,578,1.0e-174,exact
+ereal,long double,log@2,8,239326441,175,581,1.0e-175,exact
+ereal,long double,sin@0.5,8,35102059,180,598,1.0e-180,exact
+ereal,long double,cos@0.5,8,34405717,178,591,1.0e-178,exact
+ereal,long double,tan@0.5,8,72102773,178,591,1.0e-178,exact
+ereal,long double,sinh@0.5,8,117730486,176,585,1.0e-176,exact
+ereal,long double,cosh@0.5,8,117671342,174,578,1.0e-174,exact
+ereal,long double,tanh@0.5,8,62155549,174,578,1.0e-174,exact
+ereal,long double,sqrt@2,12,36353519,477,1585,1.0e-477,exact
+ereal,long double,exp@1,12,269521142,251,834,1.0e-251,exact
+ereal,long double,log@2,12,1169064863,251,834,1.0e-251,exact
+ereal,long double,sin@0.5,12,161894164,256,850,1.0e-256,exact
+ereal,long double,cos@0.5,12,163379461,258,857,1.0e-258,exact
+ereal,long double,tan@0.5,12,334578563,256,850,1.0e-256,exact
+ereal,long double,sinh@0.5,12,536375536,251,834,1.0e-251,exact
+ereal,long double,cosh@0.5,12,537441451,254,844,1.0e-254,exact
+ereal,long double,tanh@0.5,12,280212078,251,834,1.0e-251,exact
+ereal,long double,sqrt@2,16,74166516,617,2050,1.0e-617,exact
+ereal,long double,exp@1,16,795160871,327,1086,1.0e-327,exact
+ereal,long double,log@2,16,3662688464,329,1093,1.0e-329,exact
+ereal,long double,sin@0.5,16,475247806,320,1063,1.0e-320,capped
+ereal,long double,cos@0.5,16,466293672,320,1063,1.0e-320,capped
+ereal,long double,tan@0.5,16,957656803,320,1063,1.0e-320,capped
+ereal,long double,sinh@0.5,16,1581754415,320,1063,1.0e-320,capped
+ereal,long double,cosh@0.5,16,1581305049,320,1063,1.0e-320,capped
+ereal,long double,tanh@0.5,16,813305234,320,1063,1.0e-320,capped
+ereal,long double,add,2,99,-1,0,n/a,exact
+ereal,long double,mul,2,591,-1,0,n/a,exact
+ereal,long double,div,2,20415,-1,0,n/a,exact
+ereal,long double,add,4,108,-1,0,n/a,exact
+ereal,long double,mul,4,572,-1,0,n/a,exact
+ereal,long double,div,4,47612,-1,0,n/a,exact
+ereal,long double,add,8,97,-1,0,n/a,exact
+ereal,long double,mul,8,562,-1,0,n/a,exact
+ereal,long double,div,8,136271,-1,0,n/a,exact
+ereal,long double,add,12,113,-1,0,n/a,exact
+ereal,long double,mul,12,562,-1,0,n/a,exact
+ereal,long double,div,12,328610,-1,0,n/a,exact
+ereal,long double,add,16,97,-1,0,n/a,exact
+ereal,long double,mul,16,555,-1,0,n/a,exact
+ereal,long double,div,16,414160,-1,0,n/a,exact
 
 == per-function summary (accuracy saturation + accuracy/time knee) ==
-  elreal<double>    sqrt@2    NO saturation through depth 8 (131 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (131 digits, 4060171 ns)
-  elreal<double>    exp@1     NO saturation through depth 8 (130 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (130 digits, 11175910 ns)
-  elreal<double>    log@2     NO saturation through depth 8 (130 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (130 digits, 373892947 ns)
-  elreal<double>    sin@0.5   NO saturation through depth 8 (130 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (130 digits, 371653846 ns)
-  elreal<double>    cos@0.5   NO saturation through depth 8 (131 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (131 digits, 371555508 ns)
-  elreal<double>    tan@0.5   NO saturation through depth 8 (129 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (129 digits, 374333165 ns)
-  elreal<double>    sinh@0.5  NO saturation through depth 8 (131 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (131 digits, 15711990 ns)
-  elreal<double>    cosh@0.5  NO saturation through depth 8 (130 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (130 digits, 15727768 ns)
-  elreal<double>    tanh@0.5  NO saturation through depth 8 (129 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (129 digits, 11816951 ns)
-  elreal<float>     sqrt@2    NO saturation through depth 8 (61 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (61 digits, 3712471 ns)
-  elreal<float>     exp@1     NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 7094806 ns)
-  elreal<float>     log@2     NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 170926806 ns)
-  elreal<float>     sin@0.5   NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 165379464 ns)
-  elreal<float>     cos@0.5   NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 164746634 ns)
-  elreal<float>     tan@0.5   NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 167043625 ns)
-  elreal<float>     sinh@0.5  NO saturation through depth 8 (61 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (61 digits, 8411075 ns)
-  elreal<float>     cosh@0.5  NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 8402944 ns)
-  elreal<float>     tanh@0.5  NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 7916632 ns)
-  elreal<bfloat16>  sqrt@2    NO saturation through depth 8 (17 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (17 digits, 2527094 ns)
-  elreal<bfloat16>  exp@1     NO saturation through depth 8 (19 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (19 digits, 3589249 ns)
-  elreal<bfloat16>  log@2     saturates ~depth 7 (21 digits); knee at depth 8 (21 digits, 31876857 ns)
-  elreal<bfloat16>  sin@0.5   NO saturation through depth 8 (19 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (19 digits, 34422487 ns)
-  elreal<bfloat16>  cos@0.5   NO saturation through depth 8 (21 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (21 digits, 34197584 ns)
-  elreal<bfloat16>  tan@0.5   NO saturation through depth 8 (19 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (19 digits, 35707861 ns)
-  elreal<bfloat16>  sinh@0.5  NO saturation through depth 8 (19 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (19 digits, 2718441 ns)
-  elreal<bfloat16>  cosh@0.5  NO saturation through depth 8 (20 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (20 digits, 2663144 ns)
-  elreal<bfloat16>  tanh@0.5  NO saturation through depth 8 (18 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (18 digits, 4698345 ns)
-  ereal<double>     sqrt@2    saturates ~N=12 (319 digits); knee at N=12 (319 digits, 6102030 ns)
-  ereal<double>     exp@1     NO saturation through N=16 (256 digits, still climbing); no knee -- accuracy/time still improving at N=16 (256 digits, 17679796 ns)
-  ereal<double>     log@2     NO saturation through N=16 (255 digits, still climbing); no knee -- accuracy/time still improving at N=16 (255 digits, 52882565 ns)
-  ereal<double>     sin@0.5   NO saturation through N=16 (261 digits, still climbing); no knee -- accuracy/time still improving at N=16 (261 digits, 9816084 ns)
-  ereal<double>     cos@0.5   NO saturation through N=16 (263 digits, still climbing); no knee -- accuracy/time still improving at N=16 (263 digits, 9529246 ns)
-  ereal<double>     tan@0.5   NO saturation through N=16 (261 digits, still climbing); no knee -- accuracy/time still improving at N=16 (261 digits, 20723536 ns)
-  ereal<double>     sinh@0.5  NO saturation through N=16 (256 digits, still climbing); no knee -- accuracy/time still improving at N=16 (256 digits, 34987498 ns)
-  ereal<double>     cosh@0.5  NO saturation through N=16 (258 digits, still climbing); no knee -- accuracy/time still improving at N=16 (258 digits, 34975758 ns)
-  ereal<double>     tanh@0.5  NO saturation through N=16 (256 digits, still climbing); no knee -- accuracy/time still improving at N=16 (256 digits, 18752452 ns)
+  elreal<double>    sqrt@2    NO saturation through depth 8 (131 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (131 digits, 3725252 ns)
+  elreal<double>    exp@1     NO saturation through depth 8 (130 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (130 digits, 10785510 ns)
+  elreal<double>    log@2     NO saturation through depth 8 (130 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (130 digits, 7437 ns)
+  elreal<double>    sin@0.5   NO saturation through depth 8 (130 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (130 digits, 5630813 ns)
+  elreal<double>    cos@0.5   NO saturation through depth 8 (131 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (131 digits, 5851067 ns)
+  elreal<double>    tan@0.5   NO saturation through depth 8 (129 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (129 digits, 8876419 ns)
+  elreal<double>    sinh@0.5  NO saturation through depth 8 (131 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (131 digits, 15500461 ns)
+  elreal<double>    cosh@0.5  NO saturation through depth 8 (130 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (130 digits, 15447845 ns)
+  elreal<double>    tanh@0.5  NO saturation through depth 8 (129 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (129 digits, 11155069 ns)
+  elreal<float>     sqrt@2    NO saturation through depth 8 (61 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (61 digits, 3393477 ns)
+  elreal<float>     exp@1     NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 6282972 ns)
+  elreal<float>     log@2     NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 7568 ns)
+  elreal<float>     sin@0.5   NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 3239671 ns)
+  elreal<float>     cos@0.5   NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 3175067 ns)
+  elreal<float>     tan@0.5   NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 5290568 ns)
+  elreal<float>     sinh@0.5  NO saturation through depth 8 (61 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (61 digits, 8241449 ns)
+  elreal<float>     cosh@0.5  NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 8252545 ns)
+  elreal<float>     tanh@0.5  NO saturation through depth 8 (60 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (60 digits, 7246151 ns)
+  elreal<bfloat16>  sqrt@2    NO saturation through depth 8 (17 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (17 digits, 2258650 ns)
+  elreal<bfloat16>  exp@1     NO saturation through depth 8 (19 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (19 digits, 3158307 ns)
+  elreal<bfloat16>  log@2     saturates ~depth 7 (21 digits); knee at depth 8 (21 digits, 7047 ns)
+  elreal<bfloat16>  sin@0.5   NO saturation through depth 8 (19 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (19 digits, 1142048 ns)
+  elreal<bfloat16>  cos@0.5   NO saturation through depth 8 (21 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (21 digits, 1138109 ns)
+  elreal<bfloat16>  tan@0.5   NO saturation through depth 8 (19 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (19 digits, 1994919 ns)
+  elreal<bfloat16>  sinh@0.5  NO saturation through depth 8 (19 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (19 digits, 2676524 ns)
+  elreal<bfloat16>  cosh@0.5  NO saturation through depth 8 (20 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (20 digits, 2628131 ns)
+  elreal<bfloat16>  tanh@0.5  NO saturation through depth 8 (18 digits, still climbing); no knee -- accuracy/time still improving at depth 8 (18 digits, 3960215 ns)
+  ereal<float>      sqrt@2    NO saturation through N=4 (38 digits, still climbing); no knee -- accuracy/time still improving at N=4 (38 digits, 124220 ns)
+  ereal<float>      exp@1     NO saturation through N=4 (36 digits, still climbing); no knee -- accuracy/time still improving at N=4 (36 digits, 301986 ns)
+  ereal<float>      log@2     NO saturation through N=4 (32 digits, still climbing); no knee -- accuracy/time still improving at N=4 (32 digits, 606461 ns)
+  ereal<float>      sin@0.5   NO saturation through N=4 (37 digits, still climbing); no knee -- accuracy/time still improving at N=4 (37 digits, 189159 ns)
+  ereal<float>      cos@0.5   NO saturation through N=4 (37 digits, still climbing); no knee -- accuracy/time still improving at N=4 (37 digits, 179936 ns)
+  ereal<float>      tan@0.5   NO saturation through N=4 (37 digits, still climbing); no knee -- accuracy/time still improving at N=4 (37 digits, 402146 ns)
+  ereal<float>      sinh@0.5  NO saturation through N=4 (36 digits, still climbing); no knee -- accuracy/time still improving at N=4 (36 digits, 607442 ns)
+  ereal<float>      cosh@0.5  NO saturation through N=4 (36 digits, still climbing); no knee -- accuracy/time still improving at N=4 (36 digits, 607960 ns)
+  ereal<float>      tanh@0.5  NO saturation through N=4 (36 digits, still climbing); no knee -- accuracy/time still improving at N=4 (36 digits, 335556 ns)
+  ereal<double>     sqrt@2    saturates ~N=12 (314 digits); knee at N=12 (314 digits, 3821493 ns)
+  ereal<double>     exp@1     NO saturation through N=16 (273 digits, still climbing); no knee -- accuracy/time still improving at N=16 (273 digits, 18382798 ns)
+  ereal<double>     log@2     NO saturation through N=16 (272 digits, still climbing); no knee -- accuracy/time still improving at N=16 (272 digits, 54333608 ns)
+  ereal<double>     sin@0.5   NO saturation through N=16 (280 digits, still climbing); no knee -- accuracy/time still improving at N=16 (280 digits, 10241427 ns)
+  ereal<double>     cos@0.5   NO saturation through N=16 (278 digits, still climbing); no knee -- accuracy/time still improving at N=16 (278 digits, 9919939 ns)
+  ereal<double>     tan@0.5   NO saturation through N=16 (278 digits, still climbing); no knee -- accuracy/time still improving at N=16 (278 digits, 21131034 ns)
+  ereal<double>     sinh@0.5  NO saturation through N=16 (275 digits, still climbing); no knee -- accuracy/time still improving at N=16 (275 digits, 36130486 ns)
+  ereal<double>     cosh@0.5  NO saturation through N=16 (273 digits, still climbing); no knee -- accuracy/time still improving at N=16 (273 digits, 36254593 ns)
+  ereal<double>     tanh@0.5  NO saturation through N=16 (273 digits, still climbing); no knee -- accuracy/time still improving at N=16 (273 digits, 19187845 ns)
+  ereal<long double> sqrt@2    NO saturation through N=16 (617 digits, still climbing); no knee -- accuracy/time still improving at N=16 (617 digits, 74166516 ns)
+  ereal<long double> exp@1     NO saturation through N=16 (327 digits, still climbing); no knee -- accuracy/time still improving at N=16 (327 digits, 795160871 ns)
+  ereal<long double> log@2     NO saturation through N=16 (329 digits, still climbing); no knee -- accuracy/time still improving at N=16 (329 digits, 3662688464 ns)
+  ereal<long double> sin@0.5   reference-limited at N=16 (>=320 digits; the reference cannot certify more); no knee -- accuracy is reference-limited, not measured
+  ereal<long double> cos@0.5   reference-limited at N=16 (>=320 digits; the reference cannot certify more); no knee -- accuracy is reference-limited, not measured
+  ereal<long double> tan@0.5   reference-limited at N=16 (>=320 digits; the reference cannot certify more); no knee -- accuracy is reference-limited, not measured
+  ereal<long double> sinh@0.5  reference-limited at N=16 (>=320 digits; the reference cannot certify more); no knee -- accuracy is reference-limited, not measured
+  ereal<long double> cosh@0.5  reference-limited at N=16 (>=320 digits; the reference cannot certify more); no knee -- accuracy is reference-limited, not measured
+  ereal<long double> tanh@0.5  reference-limited at N=16 (>=320 digits; the reference cannot certify more); no knee -- accuracy is reference-limited, not measured
 
 == elreal vs ereal: cheapest config reaching >=30 digits ==
-  sqrt@2    elreal<double> depth 3 @ 249400 ns  vs  ereal N=2 @ 2264028 ns  -> elreal cheaper
-  exp@1     elreal<double> depth 2 @ 885284 ns  vs  ereal N=2 @ 2405914 ns  -> elreal cheaper
-  log@2     elreal<double> depth 2 @ 27766790 ns  vs  ereal N=2 @ 8178773 ns  -> ereal cheaper
-  sin@0.5   elreal<double> depth 2 @ 26258317 ns  vs  ereal N=2 @ 1315685 ns  -> ereal cheaper
-  cos@0.5   elreal<double> depth 2 @ 26286495 ns  vs  ereal N=2 @ 1188509 ns  -> ereal cheaper
-  tan@0.5   elreal<double> depth 2 @ 26289280 ns  vs  ereal N=2 @ 3402427 ns  -> ereal cheaper
-  sinh@0.5  elreal<double> depth 2 @ 1830525 ns  vs  ereal N=2 @ 4375125 ns  -> elreal cheaper
-  cosh@0.5  elreal<double> depth 2 @ 1742209 ns  vs  ereal N=2 @ 4395135 ns  -> elreal cheaper
-  tanh@0.5  elreal<double> depth 2 @ 900557 ns  vs  ereal N=2 @ 3244991 ns  -> elreal cheaper
+  sqrt@2    elreal<double> depth 2 @ 148031 ns  vs  ereal N=2 @ 175843 ns  -> elreal cheaper
+  exp@1     elreal<double> depth 2 @ 860793 ns  vs  ereal N=2 @ 476024 ns  -> ereal cheaper
+  log@2     elreal<double> depth 2 @ 2240 ns  vs  ereal N=2 @ 1187641 ns  -> elreal cheaper
+  sin@0.5   elreal<double> depth 2 @ 1023824 ns  vs  ereal N=2 @ 300744 ns  -> ereal cheaper
+  cos@0.5   elreal<double> depth 2 @ 1026478 ns  vs  ereal N=2 @ 282564 ns  -> ereal cheaper
+  tan@0.5   elreal<double> depth 2 @ 1040657 ns  vs  ereal N=2 @ 651239 ns  -> ereal cheaper
+  sinh@0.5  elreal<double> depth 2 @ 1695528 ns  vs  ereal N=2 @ 949339 ns  -> ereal cheaper
+  cosh@0.5  elreal<double> depth 2 @ 1728231 ns  vs  ereal N=2 @ 935856 ns  -> ereal cheaper
+  tanh@0.5  elreal<double> depth 2 @ 880124 ns  vs  ereal N=2 @ 541676 ns  -> ereal cheaper

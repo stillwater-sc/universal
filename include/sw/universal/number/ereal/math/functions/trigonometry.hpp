@@ -254,7 +254,7 @@ namespace sw { namespace universal {
 
 		// Check for division by zero (cos(x) = 0 at pi/2, 3pi/2, etc.)
 		if (cos_x.iszero()) {
-			return Real(std::numeric_limits<double>::quiet_NaN());
+			return std::numeric_limits<Real>::quiet_NaN();
 		}
 
 		return sin_x / cos_x;
@@ -292,7 +292,7 @@ namespace sw { namespace universal {
 		Real abs_x = abs(x);
 		Real one(1.0);
 		if (abs_x > one) {
-			return Real(std::numeric_limits<double>::quiet_NaN());
+			return std::numeric_limits<Real>::quiet_NaN();
 		}
 
 		if (x.iszero()) return Real(0.0);
@@ -375,7 +375,7 @@ namespace sw { namespace universal {
 		Real abs_x = abs(x);
 		Real one(1.0);
 		if (abs_x > one) {
-			return Real(std::numeric_limits<double>::quiet_NaN());
+			return std::numeric_limits<Real>::quiet_NaN();
 		}
 
 		// High-precision pi/2 constant (100+ digits)
@@ -567,7 +567,7 @@ namespace sw { namespace universal {
 
 		// Special cases
 		if (x.iszero() && y.iszero()) {
-			return Real(std::numeric_limits<double>::quiet_NaN());
+			return std::numeric_limits<Real>::quiet_NaN();
 		}
 
 		if (x.iszero()) {

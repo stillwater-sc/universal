@@ -1353,7 +1353,7 @@ inline ereal<maxlimbs, FpType> pown(const ereal<maxlimbs, FpType>& x, int n) {
 	if (n == 0) return Real(1.0);
 	if (n == 1) return x;
 	if (x.iszero()) {
-		if (n < 0) return Real(std::numeric_limits<double>::quiet_NaN());
+		if (n < 0) return std::numeric_limits<Real>::quiet_NaN();
 		return Real(0.0);
 	}
 	if (x.isone()) return Real(1.0);

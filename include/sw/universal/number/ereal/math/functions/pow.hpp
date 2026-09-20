@@ -28,7 +28,7 @@ namespace sw { namespace universal {
 		if (x.iszero()) {
 			if (y.isneg()) {
 				// 0^(-y) = 1/0^y = undefined, return NaN
-				return Real(std::numeric_limits<double>::quiet_NaN());
+				return std::numeric_limits<Real>::quiet_NaN();
 			}
 			// 0^y = 0 for y > 0
 			return Real(0.0);
@@ -93,7 +93,7 @@ namespace sw { namespace universal {
 		// Only valid for x > 0
 		if (x.isneg()) {
 			// Negative base with non-integer exponent is complex
-			return Real(std::numeric_limits<double>::quiet_NaN());
+			return std::numeric_limits<Real>::quiet_NaN();
 		}
 
 		return exp(y * log(x));

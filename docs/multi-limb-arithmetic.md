@@ -13,6 +13,25 @@ Multi-limb arithmetic in Universal is built around several core components locat
 
 These components work together to provide a flexible, efficient foundation for implementing various number systems.
 
+### A note on the word "limb"
+
+"Limb" is used in two different senses in this library, and they are not the same thing:
+
+- **Here**, a limb is a *block of bits* in an integer-like container -- `blockbinary`,
+  `blockfraction`, `blocksignificand`. The limbs of one value are contiguous pieces of a
+  single fixed-point or significand field, and the block type (`uint8_t` ... `uint64_t`) is
+  a storage and performance choice.
+- **In `ereal` and the expansion arithmetic it is built on**, a limb is a *whole
+  floating-point number*. A value is the exact unevaluated sum of its limbs, which are
+  non-overlapping and descending in magnitude (Shewchuk/Priest expansions). The limb type
+  is `float`, `double`, or a `long double` that is x87 extended or binary128, and it
+  determines both the precision per limb and, through the exponent range, how many limbs
+  the type may have at all.
+
+The second sense is derived in
+[ereal_limb_limit_derivation.md](ereal_limb_limit_derivation.md), which also covers how
+many limbs an arithmetic *result* is allowed to occupy.
+
 ## Core Components
 
 ### 1. `blockbinary<nbits, BlockType, NumberType>`

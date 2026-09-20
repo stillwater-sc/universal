@@ -40,6 +40,7 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/elreal_reference_digits.hpp>  // dyadic, zbcl_to_dyadic, agreed_decimal_digits
 #include <math/constants/reference_constants.hpp>              // s_pi, s_e, s_ln2, s_sqrt2, s_sin_half, ...
+#include <math/constants/long_reference_constants.hpp>         // s_long_sqrt2, s_long_e, s_long_ln2, kLongReferenceCap
 
 namespace {
 
@@ -72,37 +73,56 @@ namespace {
 	int correct_bits(int digits) { return static_cast<int>(std::lround(digits * kLog2of10)); }
 
 	// rel error implied by d matching decimal digits (a reporting estimate)
-	double rel_error(int digits) { return (digits <= 0) ? 1.0 : std::pow(10.0, -digits); }
+	// 10^-digits as text, not as a double. Once a wide limb reaches past 308 digits the
+	// computed value underflows and every row prints "0.0e+00", which reads as an exact
+	// result rather than a very accurate one (#1568).
+	std::string rel_error(int digits) {
+		if (digits <= 0) return "1.0e+00";
+		return "1.0e-" + std::to_string(digits);
+	}
 
-	// build the exact dyadic value of an ereal from its (non-overlapping) limbs
-	template<unsigned N>
-	dyadic ereal_to_dyadic(const ereal<N>& x) {
+	// build the exact dyadic value of an ereal from its (non-overlapping) limbs.
+	// from_fp, not from_double: a long double limb would be rounded to 53 bits by the
+	// latter, which is precisely the precision the wide limb exists to carry (#1568).
+	template<unsigned N, typename FpType>
+	dyadic ereal_to_dyadic(const ereal<N, FpType>& x) {
 		dyadic acc;  // 0
-		for (double limb : x.limbs()) acc = acc + dyadic::from_double(limb);
+		for (FpType limb : x.limbs()) acc = acc + dyadic::from_fp(limb);
 		return acc;
 	}
 
 	// ------------------------------------------------------------------- cases
 	enum class Op { Sqrt, Exp, Log, Sin, Cos, Tan, Sinh, Cosh, Tanh };
 
+	// A measured digit count is only as long as the reference it was measured against.
+	// The ~340-digit constants are read at 320, and a configuration that carries more than
+	// that scores exactly 320 -- which is a LOWER BOUND, not a plateau. With double limbs
+	// that never mattered, since 19 limbs cap out near 303 digits; with a wide limb it does:
+	// x87 at 12 and at 16 limbs both report 320 and the series looks saturated when it is
+	// only reference-limited. So each case carries its own cap, the long 5000-digit
+	// references are used wherever they exist, and a row that reaches its cap is flagged
+	// (#1568).
 	struct Case {
 		Op               op;
 		const char*      name;
 		double           arg;
-		std::string_view ref;   // ~320-digit reference for f(arg)
+		std::string_view ref;
+		int              cap;   // what this reference can certify
 	};
 
 	const std::vector<Case>& cases() {
 		static const std::vector<Case> c = {
-			{ Op::Sqrt, "sqrt@2",  2.0, s_sqrt2   },
-			{ Op::Exp,  "exp@1",   1.0, s_e       },
-			{ Op::Log,  "log@2",   2.0, s_ln2     },
-			{ Op::Sin,  "sin@0.5", 0.5, s_sin_half },
-			{ Op::Cos,  "cos@0.5", 0.5, s_cos_half },
-			{ Op::Tan,  "tan@0.5", 0.5, s_tan_half },
-			{ Op::Sinh, "sinh@0.5",0.5, s_sinh_half },
-			{ Op::Cosh, "cosh@0.5",0.5, s_cosh_half },
-			{ Op::Tanh, "tanh@0.5",0.5, s_tanh_half },
+			{ Op::Sqrt, "sqrt@2",  2.0, s_long_sqrt2, kLongReferenceCap },
+			{ Op::Exp,  "exp@1",   1.0, s_long_e,     kLongReferenceCap },
+			{ Op::Log,  "log@2",   2.0, s_long_ln2,   kLongReferenceCap },
+			// the trigonometric and hyperbolic values have no 5000-digit reference, so
+			// these stay capped at 320 and their rows say so
+			{ Op::Sin,  "sin@0.5", 0.5, s_sin_half,  320 },
+			{ Op::Cos,  "cos@0.5", 0.5, s_cos_half,  320 },
+			{ Op::Tan,  "tan@0.5", 0.5, s_tan_half,  320 },
+			{ Op::Sinh, "sinh@0.5",0.5, s_sinh_half, 320 },
+			{ Op::Cosh, "cosh@0.5",0.5, s_cosh_half, 320 },
+			{ Op::Tanh, "tanh@0.5",0.5, s_tanh_half, 320 },
 		};
 		return c;
 	}
@@ -126,11 +146,12 @@ namespace {
 	// ------------------------------------------------------------------- rows
 	struct Row {
 		std::string type;    // "elreal" | "ereal"
-		std::string fptype;  // elreal host block type; always "double" for ereal
+		std::string fptype;  // the block type (elreal) or limb type (ereal)
 		std::string func;
 		long        knob;    // elreal depth or ereal N
 		double      time_ns;
 		int         digits;  // -1 if not measured
+		bool        capped = false;  // digits == the reference's cap, so it is a LOWER bound
 	};
 
 	std::vector<Row> g_rows;
@@ -140,7 +161,8 @@ namespace {
 		          << std::llround(r.time_ns) << ',' << r.digits << ','
 		          << (r.digits < 0 ? 0 : correct_bits(r.digits)) << ',';
 		if (r.digits < 0) std::cout << "n/a";
-		else              std::cout << std::scientific << std::setprecision(1) << rel_error(r.digits) << std::defaultfloat;
+		else              std::cout << rel_error(r.digits);
+		std::cout << ',' << (r.capped ? "capped" : "exact");
 		std::cout << '\n';
 		g_rows.push_back(r);
 	}
@@ -182,8 +204,8 @@ namespace {
 					(void)sink;
 					elreal<FpType> r = apply(c.op, x);
 					(void)r.template approx<double>(static_cast<std::size_t>(d));       // force before reading the stream
-					int digits = agreed_decimal_digits(zbcl_to_dyadic(r.stream()), c.ref);
-					emit({ "elreal", host, c.name, d, t, digits });
+					int digits = agreed_decimal_digits(zbcl_to_dyadic(r.stream()), c.ref, c.cap);
+					emit({ "elreal", host, c.name, d, t, digits, digits >= c.cap });
 				}
 			}
 		}
@@ -192,26 +214,34 @@ namespace {
 	// ereal arithmetic operators are inline and visible in this TU, so a plain
 	// fixed-input result can be folded/hoisted out of the timing loop -- read a
 	// limb through a volatile sink each rep to keep the work observable.
-	template<unsigned N>
-	double sink_limb(const ereal<N>& r) {
-		return r.limbs().empty() ? 0.0 : r.limbs()[0];
+	template<unsigned N, typename FpType>
+	double sink_limb(const ereal<N, FpType>& r) {
+		return r.limbs().empty() ? 0.0 : static_cast<double>(r.limbs()[0]);
 	}
 
-	template<unsigned N>
-	void run_ereal_N(int reps) {
-		for (const auto& c : cases()) {
-			ereal<N> x(c.arg), r;
-			volatile double sink = 0.0;
-			double t = time_ns([&] { r = apply(c.op, x); sink = sink_limb(r); }, reps);
-			(void)sink;
-			int digits = agreed_decimal_digits(ereal_to_dyadic(r), c.ref);
-			emit({ "ereal", "double", c.name, static_cast<long>(N), t, digits });
+	template<unsigned N, typename FpType>
+	void run_ereal_N(const char* fptype, int reps) {
+		// A limb list is shared across limb types, but max_safe_limbs is not: 5 for float,
+		// 19 for double, 255 for x87, 144 for binary128. Skip the entries this limb type
+		// cannot hold rather than failing to compile (#1568).
+		if constexpr (N <= ereal<1, FpType>::max_safe_limbs) {
+			for (const auto& c : cases()) {
+				ereal<N, FpType> x(c.arg), r;
+				volatile double sink = 0.0;
+				double t = time_ns([&] { r = apply(c.op, x); sink = sink_limb(r); }, reps);
+				(void)sink;
+				int digits = agreed_decimal_digits(ereal_to_dyadic(r), c.ref, c.cap);
+				emit({ "ereal", fptype, c.name, static_cast<long>(N), t, digits, digits >= c.cap });
+			}
+		}
+		else {
+			(void)fptype; (void)reps;
 		}
 	}
 
-	template<unsigned... Ns>
-	void run_ereal(int reps) {
-		(run_ereal_N<Ns>(reps), ...);   // fixed compile-time limb list
+	template<typename FpType, unsigned... Ns>
+	void run_ereal(const char* fptype, int reps) {
+		(run_ereal_N<Ns, FpType>(fptype, reps), ...);   // fixed compile-time limb list
 	}
 
 	// arithmetic: accuracy is exact for a single op, so report time only (digits=-1).
@@ -236,21 +266,51 @@ namespace {
 		}
 	}
 
-	template<unsigned N>
-	void run_arithmetic_ereal_N(int reps) {
-		const double A = 1.4142135623730951, B = 2.7182818284590452;
-		ereal<N> a(A), b(B), r;
-		volatile double sink = 0.0;
-		auto timeOp = [&](auto fn) { return time_ns([&] { r = fn(); sink = sink_limb(r); }, reps); };
-		emit({ "ereal", "double", "add", static_cast<long>(N), timeOp([&] { return a + b; }), -1 });
-		emit({ "ereal", "double", "mul", static_cast<long>(N), timeOp([&] { return a * b; }), -1 });
-		emit({ "ereal", "double", "div", static_cast<long>(N), timeOp([&] { return a / b; }), -1 });
-		(void)sink;
+	template<unsigned N, typename FpType>
+	void run_arithmetic_ereal_N(const char* fptype, int reps) {
+		if constexpr (N <= ereal<1, FpType>::max_safe_limbs) {
+			const double A = 1.4142135623730951, B = 2.7182818284590452;
+			ereal<N, FpType> a(A), b(B), r;
+			volatile double sink = 0.0;
+			auto timeOp = [&](auto fn) { return time_ns([&] { r = fn(); sink = sink_limb(r); }, reps); };
+			emit({ "ereal", fptype, "add", static_cast<long>(N), timeOp([&] { return a + b; }), -1 });
+			emit({ "ereal", fptype, "mul", static_cast<long>(N), timeOp([&] { return a * b; }), -1 });
+			emit({ "ereal", fptype, "div", static_cast<long>(N), timeOp([&] { return a / b; }), -1 });
+			(void)sink;
+		}
+		else {
+			(void)fptype; (void)reps;
+		}
 	}
 
-	template<unsigned... Ns>
-	void run_arithmetic_ereal(int reps) {
-		(run_arithmetic_ereal_N<Ns>(reps), ...);
+	template<typename FpType, unsigned... Ns>
+	void run_arithmetic_ereal(const char* fptype, int reps) {
+		(run_arithmetic_ereal_N<Ns, FpType>(fptype, reps), ...);
+	}
+
+	// The long double rows go through a template so that LD is a template parameter.
+	// `if constexpr` only leaves its discarded branch uninstantiated inside a template:
+	// in a plain function the branch is still instantiated, and naming
+	// ereal<1, long double>::max_safe_limbs there completes the class and trips its
+	// static_assert. That is exactly what happens on ppc64le, where the default
+	// long double is IBM double-double and not a valid limb -- the ppc64le cross build
+	// caught it (#1568).
+	template<typename LD>
+	void report_long_double_limbs() {
+		if constexpr (is_expansion_limb_v<LD>) {
+			std::cout << " long double=" << ereal<1, LD>::max_safe_limbs;
+		}
+	}
+
+	template<typename LD>
+	void run_long_double_limbs(int reps) {
+		if constexpr (is_expansion_limb_v<LD>) {
+			run_ereal<LD, 2, 4, 8, 12, 16>("long double", reps);
+			run_arithmetic_ereal<LD, 2, 4, 8, 12, 16>("long double", reps);
+		}
+		else {
+			(void)reps;
+		}
 	}
 
 	// ---------------------------------------------------------------- summary
@@ -288,12 +348,21 @@ namespace {
 				// back to them as a property of the type. elreal does exactly this --
 				// since v4.9.0 its accuracy is linear in the knob and unbounded, so it
 				// has no saturation point at any depth (#1177).
+				// A plateau made of CAPPED rows is not a plateau: those rows report the
+				// reference's limit, not the type's accuracy. x87 limbs at N=12 and N=16
+				// both scored 320 against a 340-digit reference and the series looked
+				// saturated when nothing of the sort had been shown. If the best result
+				// is reference-limited, no saturation claim can be made from this sweep
+				// (#1568).
+				bool maxIsCapped = false;
+				for (auto* r : rs) if (r->digits == maxDig && r->capped) maxIsCapped = true;
+
 				long satKnob = rs.back()->knob;
 				bool saturated = false;
 				for (auto* r : rs) {
 					if (r->digits >= (maxDig * 95) / 100) {
 						satKnob = r->knob;
-						saturated = (r != rs.back()) && (rs.size() > 1);
+						saturated = (r != rs.back()) && (rs.size() > 1) && !maxIsCapped;
 						break;
 					}
 				}
@@ -313,11 +382,19 @@ namespace {
 				if (saturated) {
 					std::cout << " saturates ~" << unit << satKnob << " (" << maxDig << " digits)";
 				}
+				else if (maxIsCapped) {
+					std::cout << " reference-limited at " << unit << satKnob
+					          << " (>=" << maxDig << " digits; the reference cannot certify more)";
+				}
 				else {
 					std::cout << " NO saturation through " << unit << rs.back()->knob
 					          << " (" << maxDig << " digits, still climbing)";
 				}
-				if (saturated || !kneeIsSweepLimit) {
+				if (maxIsCapped) {
+					// the knee is computed from digit counts, so it inherits the doubt
+					std::cout << "; no knee -- accuracy is reference-limited, not measured";
+				}
+				else if (saturated || !kneeIsSweepLimit) {
 					std::cout << "; knee at " << unit << knee->knob
 					          << " (" << knee->digits << " digits, " << std::llround(knee->time_ns) << " ns)";
 				}
@@ -373,21 +450,46 @@ int main(int argc, char** argv) try {
 
 	std::cout << "# adaptive-precision accuracy-vs-compute-time characterization (issue #1040)\n";
 	std::cout << "# elreal depth sweep 2.." << maxDepth << " over hosts {double, float, bfloat16},"
-	          << " ereal limb list {2,4,8,12,16}, reps=" << reps << "\n";
-	std::cout << "type,FpType,function,depth,time_ns,correct_digits,correct_bits,rel_error\n";
+	          << " ereal limb list {2,4,8,12,16} over limb types {float, double";
+	if constexpr (is_expansion_limb_v<long double>) std::cout << ", long double";
+	std::cout << "}, reps=" << reps << "\n";
+	std::cout << "# long double here: digits=" << std::numeric_limits<long double>::digits
+	          << (is_expansion_limb_v<long double> ? "" : " -- not a valid limb on this host") << "\n";
+	// a limb list entry past a limb type's max_safe_limbs is skipped, not an error
+	std::cout << "# max_safe_limbs: float=" << ereal<1, float>::max_safe_limbs
+	          << " double=" << ereal<1, double>::max_safe_limbs;
+	report_long_double_limbs<long double>();
+	std::cout << "\n";
+	// `bound`: "exact" means the measurement is the accuracy; "capped" means the row hit
+	// the reference's own limit and the digit count is a LOWER bound (#1568)
+	std::cout << "type,FpType,function,depth,time_ns,correct_digits,correct_bits,rel_error,bound\n";
 
-	// elreal is templated on its host block type, and the accuracy/time curve moves
-	// with it: a narrower host carries fewer significand bits per block, so it needs
-	// more blocks for the same accuracy. ereal's limbs are always double, so only
-	// the elreal side sweeps.
+	// Both types are templated on the arithmetic they are built from, and the
+	// accuracy/time curve moves with it: a narrower one carries fewer significand bits
+	// per block or limb, so it needs more of them for the same accuracy.
 	run_elreal<double>("double", maxDepth, reps);
 	run_elreal<float>("float", maxDepth, reps);
 	run_elreal<bfloat16>("bfloat16", maxDepth, reps);
-	run_ereal<2, 4, 8, 12, 16>(reps);
+	run_ereal<float,  2, 4, 8, 12, 16>("float", reps);
+	run_ereal<double, 2, 4, 8, 12, 16>("double", reps);
 	run_arithmetic<double>("double", maxDepth, reps);
 	run_arithmetic<float>("float", maxDepth, reps);
 	run_arithmetic<bfloat16>("bfloat16", maxDepth, reps);
-	run_arithmetic_ereal<2, 4, 8, 12, 16>(reps);
+	run_arithmetic_ereal<float,  2, 4, 8, 12, 16>("float", reps);
+	run_arithmetic_ereal<double, 2, 4, 8, 12, 16>("double", reps);
+	// long double is x87 extended on x86-64 and MinGW, binary128 on aarch64 and
+	// riscv64, and the default IBM double-double on ppc64le -- which is itself a
+	// two-component expansion and is not a valid limb, so the trait rejects it and
+	// these rows are simply absent there.
+	//
+	// EXPECT binary128 TO BE SLOW. On aarch64 and riscv64 it has no hardware and every
+	// operation is a libgcc soft-float call, so it is slower than double by a large
+	// factor -- typically 10x or more -- for about twice the significand. x87 is
+	// hardware, but its 80-bit loads and stores are not free either. The wider limb is
+	// for reach, not for speed: it is what takes ereal past double's ~303-digit
+	// ceiling (#1355), and this sweep is here to keep that trade honest rather than
+	// to advertise the wide limb as faster.
+	run_long_double_limbs<long double>(reps);
 
 	summary();
 	return EXIT_SUCCESS;

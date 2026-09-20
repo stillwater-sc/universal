@@ -55,12 +55,15 @@ namespace sw { namespace universal {
 		// STEP 1: Handle special cases
 		// ============================================================================
 		if (x.iszero()) {
-			// log(0) = -inf (return large negative value)
-			return Real(-1.0e308);
+			// log(0) = -inf, as std::log does. This used to return the literal -1.0e308,
+			// which is not infinity -- isinf(log(0)) was false -- and which is not even
+			// representable in a narrow limb: with float limbs it overflowed to -inf, so
+			// the answer depended on the limb type (#1568).
+			return -std::numeric_limits<Real>::infinity();
 		}
 		if (x.isneg()) {
 			// log(negative) = NaN
-			return Real(std::numeric_limits<double>::quiet_NaN());
+			return std::numeric_limits<Real>::quiet_NaN();
 		}
 		if (x.isone()) return Real(0.0);
 

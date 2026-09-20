@@ -185,7 +185,7 @@ namespace sw { namespace universal {
 		// Domain check: x must be >= 1
 		Real one(1.0);
 		if (x < one) {
-			return Real(std::numeric_limits<double>::quiet_NaN());
+			return std::numeric_limits<Real>::quiet_NaN();
 		}
 
 		// Special case: acosh(1) = 0
@@ -230,7 +230,7 @@ namespace sw { namespace universal {
 		Real one(1.0);
 		Real abs_x = abs(x);
 		if (abs_x >= one) {
-			return Real(std::numeric_limits<double>::quiet_NaN());
+			return std::numeric_limits<Real>::quiet_NaN();
 		}
 
 		// atanh(x) = 0.5 * log((1 + x) / (1 - x))
