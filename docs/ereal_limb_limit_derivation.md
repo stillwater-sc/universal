@@ -350,9 +350,15 @@ each step, so from a one-limb seed the iterate after step *i* is accurate to `2^
 limbs; everything past that is noise, and it is that noise which multiplies `e` on the next
 step. Without this, a full-width divisor made every step pay a full budget-by-budget
 product: one `ereal<24, long double>` division cost 0.46 s, against 18 ms for a full-width
-*multiply*. Truncating each step to the precision it has reached leaves only the last step
-at full width, and makes the total work proportional to the budget rather than to
-iterations * budget.
+*multiply*.
+
+Truncating each step to the precision it has reached makes the widths grow geometrically
+and saturate at the budget. `step_budget` reaches `budget` once `2^(i+1) + 2 >= budget`, so
+the **last step or two** run at full width -- how many depends on how far `2^iterations`
+overshoots the budget, which is why it is one step for `ereal<24>` (widths 4, 6, 10, 18,
+34, 48 over six iterations) and can be two when `maxlimbs` is not near a power of two. The
+total is a geometric sum: about twice the final width, rather than `iterations * budget`.
+For `ereal<24, long double>` that is 120 limb-widths of work instead of 288.
 
 The `+ 2` guard limbs in that bound are not defensive padding. The doubling is the
 asymptotic rate and rounding within a step eats into it, so trimming to exactly `2^(i+1)`

@@ -1076,8 +1076,12 @@ inline std::vector<FpType> expansion_reciprocal(const std::vector<FpType>& e, in
     // step, so from a one-limb seed the iterate after step i is accurate to 2^(i+1) limbs
     // and the limbs past that are noise. Carrying them is not just wasteful, it is the
     // whole cost: each step multiplies e by the iterate, so a full-width iterate makes
-    // every step pay a full budget-by-budget product. Truncating to the precision the step
-    // has actually reached leaves only the last step at full width.
+    // every step pay a full budget-by-budget product.
+    //
+    // The step widths therefore grow geometrically and saturate at the budget: the early
+    // steps are cheap and only the last step or two run at full width (how many depends on
+    // how far 2^iterations overshoots the budget). The total is a geometric sum, roughly
+    // twice the final width rather than iterations times it.
     std::vector<FpType> two{FpType(2)};
     for (int i = 0; i < iterations; ++i) {
         std::vector<FpType> product = expansion_product(e, result);  // e * r_n
