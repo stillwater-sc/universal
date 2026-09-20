@@ -98,18 +98,69 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
+	// Render the sign, exponent and fraction fields of a native IEEE-754 value.
+	//
+	// pretty_print and info_print both returned the literal "TBD" and ignored their
+	// arguments. The issue that found the same stub in nine Universal number systems
+	// surveyed only include/sw/universal/number/, so it did not count these two -- but
+	// ReportFormats<Scalar> (verification/test_formats.hpp) is generic over native types
+	// as well, and reached them (#1556).
+	//
+	// The field split is the colon-separated one cfloat's pretty_print uses, so a native
+	// double and the cfloat<64,11> that mirrors it read the same way side by side.
 	template<typename RealType,
 		std::enable_if_t< ::std::is_floating_point<RealType>::value, bool> = true
-	>	
+	>
 	std::string pretty_print(const RealType f) noexcept {
-		return std::string("TBD");
+		bool sign{ false };
+		uint64_t rawExponent{ 0 }, rawFraction{ 0 }, bits{ 0 };
+		extractFields(f, sign, rawExponent, rawFraction, bits);
+
+		std::stringstream s;
+		s << (sign ? '1' : '0') << ':';
+		for (int i = ieee754_parameter<RealType>::ebits - 1; i >= 0; --i) {
+			s << ((rawExponent >> i) & 1 ? '1' : '0');
+		}
+		s << ':';
+		for (int i = ieee754_parameter<RealType>::fbits - 1; i >= 0; --i) {
+			s << ((rawFraction >> i) & 1 ? '1' : '0');
+		}
+		return s.str();
 	}
 
+	// Report the raw encoding, the decoded fields and the value of a native IEEE-754 value,
+	// in the shape posit's info_print uses: "raw: <bits> <fields> : value <v>".
 	template<typename RealType,
 		std::enable_if_t< ::std::is_floating_point<RealType>::value, bool> = true
-	>	
+	>
 	std::string info_print(const RealType f, int printPrecision = 17) noexcept {
-		return std::string("TBD");
+		bool sign{ false };
+		uint64_t rawExponent{ 0 }, rawFraction{ 0 }, bits{ 0 };
+		extractFields(f, sign, rawExponent, rawFraction, bits);
+
+		std::stringstream s;
+		s << "raw: " << pretty_print(f) << ' ' << (sign ? "s1 e" : "s0 e");
+		for (int i = ieee754_parameter<RealType>::ebits - 1; i >= 0; --i) {
+			s << ((rawExponent >> i) & 1 ? '1' : '0');
+		}
+		s << " f";
+		for (int i = ieee754_parameter<RealType>::fbits - 1; i >= 0; --i) {
+			s << ((rawFraction >> i) & 1 ? '1' : '0');
+		}
+
+		if (rawExponent == ieee754_parameter<RealType>::eallset) {
+			s << (rawFraction == 0 ? " inf" : " nan");
+		}
+		else if (rawExponent == 0) {
+			if (rawFraction == 0) s << " zero";
+			else s << " subnormal scale " << (1 - static_cast<int>(ieee754_parameter<RealType>::bias));
+		}
+		else {
+			s << " normal scale " << (static_cast<int>(rawExponent) - ieee754_parameter<RealType>::bias);
+		}
+
+		s << " : value " << std::setprecision(printPrecision) << f;
+		return s.str();
 	}
 
 

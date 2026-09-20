@@ -179,11 +179,49 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
+	// Report the raw encoding, the decoded fields and the value of an lns.
+	//
+	// It returned the literal "TBD" and ignored both of its arguments (#1556). The shape is
+	// posit's -- "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- built from the
+	// bit pattern rather than by streaming the lns: this layer must not depend on
+	// iostream.hpp (#1334).
+	//
+	// An lns stores a fixed-point log2 exponent, not a significand, so the fields are the
+	// integer and fractional halves of that exponent, and the log2 exponent they encode is
+	// reported alongside the value it selects -- assembled the way components() does.
 	template<typename LnsType,
 		std::enable_if_t< is_lns<LnsType>, bool> = true
 	>
 	inline std::string info_print(const LnsType& l, int printPrecision = 17) {
-		return std::string("TBD");
+		constexpr unsigned nbits = LnsType::nbits;
+		constexpr unsigned rbits = LnsType::rbits;
+		std::stringstream s;
+		s << "raw: " << to_binary(l) << ' ' << (l.sign() ? "s1 i" : "s0 i");
+		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(rbits); --i) {
+			s << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
+		}
+		s << " f";
+		for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+			s << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
+		}
+		if (l.iszero()) {
+			s << " zero : value 0";
+			return s.str();
+		}
+		if (l.isinf()) {
+			s << " inf : value " << (l.sign() ? "-inf" : "inf");
+			return s.str();
+		}
+
+		// the log2 exponent is the integer part plus the fractional bits, as components() assembles it
+		auto   fracBits  = l.fraction();
+		double fracValue = 0.0;
+		for (unsigned i = 0; i < rbits; ++i) {
+			if (fracBits.at(i)) fracValue += std::ldexp(1.0, -static_cast<int>(rbits - i));
+		}
+		s << " log2 " << std::setprecision(printPrecision) << (l.scale() + fracValue)
+		  << " : value " << double(l);
+		return s.str();
 	}
 
 	template<typename LnsType,

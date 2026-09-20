@@ -128,11 +128,28 @@ inline std::string pretty_print(const ErealType& r) {
 	return s.str();
 }
 
+// Report the state, the limb layout and the value of an ereal.
+//
+// It returned the literal "tbd" and ignored both of its arguments (#1556). The shape is
+// posit's -- "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- but an ereal is a
+// multi-component expansion: there is no fixed sign/exponent/fraction bit layout to
+// decode, so the fields are the ones that do vary, the limb count and the binary scale,
+// and "raw" is the leading and trailing limb that to_binary() already reports.
+//
+// Unlike the other manipulator layers this one already depends on iostream.hpp -- as dd
+// and qd do, for to_triple() -- so the value field can be streamed directly.
 template<typename ErealType,
 	std::enable_if_t< is_ereal<ErealType>, bool> = true
 >
 inline std::string info_print(const ErealType& p, int printPrecision = 17) {
-	return std::string("tbd");
+	std::stringstream s;
+	s << "raw: " << to_binary(p) << ' ' << ((p.sign() == -1) ? "s1" : "s0");
+	if (p.isnan())       s << " nan";
+	else if (p.isinf())  s << " inf";
+	else if (p.iszero()) s << " zero";
+	else s << " limbs " << p.limbs().size() << " scale " << p.scale();
+	s << " : value " << std::setprecision(printPrecision) << p;
+	return s.str();
 }
 
 // generate a binary, color-coded representation of the ereal

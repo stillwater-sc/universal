@@ -168,9 +168,26 @@ inline std::string to_triple(const integer<nbits, BlockType, NumberType>& number
 	return str.str();
 }
 
+// Report the raw encoding, the decoded fields and the value of an integer.
+//
+// It returned the literal "TBD" and ignored its argument (#1556). The shape is posit's --
+// "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- with the encoding from
+// to_binary() and the value from convert_to_decimal_string(), both of which live in this
+// header. The decimal string is exact at any width, so an integer wider than a double
+// still reports its value rather than a rounding of it.
+//
+// printPrecision is accepted so all of the number systems present one info_print
+// signature (#1556). An integer is exact, so there is no precision to honour and the
+// parameter is unused: the decimal string is the whole value, always.
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
-inline std::string info_print(const integer<nbits, BlockType, NumberType>& number) {
-	return std::string("TBD");
+inline std::string info_print(const integer<nbits, BlockType, NumberType>& number,
+		[[maybe_unused]] int printPrecision = 17) {
+	std::stringstream s;
+	s << "raw: " << to_binary(number)
+	  << ' ' << integer_number_type_tag(NumberType)
+	  << (number.iszero() ? " zero" : (number.isneg() ? " negative" : " positive"))
+	  << " : value " << convert_to_decimal_string(number);
+	return s.str();
 }
 
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>

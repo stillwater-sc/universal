@@ -124,9 +124,41 @@ std::string pretty_print(const areal<nbits, es, bt>& r) {
 	return ss.str();
 }
 
+// Report the raw encoding, the decoded fields and the value of an areal.
+//
+// It returned the literal "TBD" and ignored both of its arguments (#1556). The shape is
+// posit's -- "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- built from the
+// same decode() the other builders in this header use, rather than by streaming the
+// areal: this layer must not depend on iostream.hpp (#1334).
+//
+// The value is the interval to_string() renders: [v] when the encoding is exact and
+// (v, next) when the uncertainty bit is set, since the ubit is what an areal is for.
 template<unsigned nbits, unsigned es, typename bt>
 std::string info_print(const areal<nbits, es, bt>& p, int printPrecision = 17) {
-	return "TBD";
+	constexpr unsigned fbits = areal<nbits, es, bt>::fbits;
+	bool s{ false };
+	blockbinary<es, bt> e;
+	blockbinary<fbits, bt> f;
+	bool u{ false };
+	decode(p, s, e, f, u);
+
+	std::stringstream str;
+	str << "raw: " << to_binary(p) << ' ' << (s ? "s1 e" : "s0 e");
+	for (int i = int(es) - 1; i >= 0; --i)    str << (e.test(static_cast<size_t>(i)) ? '1' : '0');
+	str << " f";
+	for (int i = int(fbits) - 1; i >= 0; --i) str << (f.test(static_cast<size_t>(i)) ? '1' : '0');
+	str << " u" << (u ? '1' : '0') << " : value " << std::setprecision(printPrecision);
+
+	const double d = double(p);
+	if (u && !p.isnan()) {
+		areal<nbits, es, bt> next(p);
+		++next;
+		str << '(' << d << ", " << double(next) << ')';
+	}
+	else {
+		str << '[' << d << ']';
+	}
+	return str.str();
 }
 
 template<unsigned nbits, unsigned es, typename bt>

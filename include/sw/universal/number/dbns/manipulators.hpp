@@ -146,11 +146,39 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
+	// Report the raw encoding, the decoded fields and the value of a dbns.
+	//
+	// It returned the literal "TBD" and ignored both of its arguments (#1556). The shape is
+	// posit's -- "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- built from the
+	// bit pattern rather than by streaming the dbns: this layer must not depend on
+	// iostream.hpp (#1334), and operator<< is `ostr << double(r)`, so the value field is
+	// the same text.
+	//
+	// The two base exponents are what a double-base encoding is, so they are reported
+	// with their bases: the value is (-1)^s * base0^e0 * base1^e1. This deliberately does
+	// not go through fraction(), which is hard-coded to return 0 for every dbns value
+	// (dbns_impl.hpp) and which components() reports as if it meant something.
 	template<typename DbnsType,
 		std::enable_if_t< is_dbns<DbnsType>, bool> = true
 	>
 	inline std::string info_print(const DbnsType& l, int printPrecision = 17) {
-		return std::string("TBD");
+		std::stringstream s;
+		s << "raw: " << to_binary(l) << ' ' << (l.sign() ? "s1" : "s0");
+		if (l.isnan()) {
+			s << " nan : value nan";
+			return s.str();
+		}
+		if (l.iszero()) {
+			s << " zero : value 0";
+			return s.str();
+		}
+		// deliberately not scale(): it computes e0 + e1*log2(3), which drops the sign of
+		// the base-0.5 exponent, so it reports 2 for a value of 1.5 whose scale is 0.
+		// Reported separately rather than propagated here.
+		s << " e0(" << DbnsType::base0 << ")=" << l.extractExponent(0)
+		  << " e1(" << DbnsType::base1 << ")=" << l.extractExponent(1)
+		  << " : value " << std::setprecision(printPrecision) << double(l);
+		return s.str();
 	}
 
 	template<typename DbnsType,
