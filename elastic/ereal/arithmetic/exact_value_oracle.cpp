@@ -85,12 +85,22 @@ namespace {
 		std::mt19937_64 rng(0x0EAC70ACEULL + maxlimbs);
 		int nrOfFailedTestCases = 0;
 
-		auto exact_ok = [&](const char* op, const dyadic& got, const dyadic& want, unsigned i) {
-			if (got != want) {
-				if (reportTestCases) std::cout << "    FAIL exact " << op << " ereal<" << maxlimbs
-					<< "> (iter " << i << ")\n";
-				++nrOfFailedTestCases;
-			}
+		// An operation is error-free while its result fits the type's limb budget. Past
+		// that the result is truncated -- arithmetic is bounded at 2*maxlimbs limbs so a
+		// wide-exponent limb cannot grow an expansion without bound (#1572) -- and the
+		// contract becomes the truncation contract: what was dropped lies below the last
+		// limb that was kept. An exact product of two maxlimbs-limb expansions can need
+		// more components than max_safe_limbs allows to begin with, so exactness is a
+		// property of results that fit, not of the operation.
+		auto exact_ok = [&](const char* op, const ereal<maxlimbs>& result, const dyadic& want, unsigned i) {
+			const dyadic got = exact_value(result);
+			if (got == want) return;
+			if (result.limbs().size() >= ereal<maxlimbs>::limb_budget
+			    && less_in_magnitude(want - got, dyadic::from_fp(result.limbs().back()))) return;
+			if (reportTestCases) std::cout << "    FAIL exact " << op << " ereal<" << maxlimbs
+				<< "> (iter " << i << ") limbs=" << result.limbs().size()
+				<< " budget=" << ereal<maxlimbs>::limb_budget << "\n";
+			++nrOfFailedTestCases;
 		};
 
 		for (unsigned i = 0; i < nrIterations; ++i) {
@@ -99,9 +109,9 @@ namespace {
 			dyadic da = exact_value(a), db = exact_value(b);
 
 			// the keystone: error-free operations reproduce the exact value
-			exact_ok("a+b", exact_value(a + b), da + db, i);
-			exact_ok("a-b", exact_value(a - b), da - db, i);
-			exact_ok("a*b", exact_value(a * b), da * db, i);
+			exact_ok("a+b", a + b, da + db, i);
+			exact_ok("a-b", a - b, da - db, i);
+			exact_ok("a*b", a * b, da * db, i);
 
 			// division: not exact -> relative-error bound on the projected value
 			if (!b.iszero()) {

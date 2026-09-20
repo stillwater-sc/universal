@@ -1017,6 +1017,17 @@ inline std::vector<FpType> expansion_sum_normalized(const std::vector<FpType>& e
 }
 
 /*
+ * Truncate an expansion to a limb budget. Safe for any expansion in Priest normal form:
+ * the components descend in magnitude and do not overlap, so a prefix is the leading-order
+ * value, and what is dropped lies below the retained precision. A budget of 0 means no
+ * bound. (#1572)
+ */
+template<typename FpType = double>
+inline void truncate_expansion(std::vector<FpType>& e, std::size_t budget) {
+    if (budget != 0 && e.size() > budget) e.resize(budget);
+}
+
+/*
  * EXPANSION-RECIPROCAL: Compute reciprocal of an expansion
  * =========================================================
  *
@@ -1033,7 +1044,7 @@ inline std::vector<FpType> expansion_sum_normalized(const std::vector<FpType>& e
  * Note: More iterations = higher precision but more cost
  */
 template<typename FpType = double>
-inline std::vector<FpType> expansion_reciprocal(const std::vector<FpType>& e, int iterations = 3) {
+inline std::vector<FpType> expansion_reciprocal(const std::vector<FpType>& e, int iterations = 3, std::size_t budget = 0) {
     if (e.empty() || (e.size() == 1 && e[0] == FpType(0))) {
         // Division by zero - return inf (or could throw)
         return std::vector<FpType>{std::numeric_limits<FpType>::infinity()};
@@ -1044,11 +1055,45 @@ inline std::vector<FpType> expansion_reciprocal(const std::vector<FpType>& e, in
     std::vector<FpType> result{r0};
 
     // Newton iteration: r_{n+1} = r_n * (2 - e * r_n)
+    //
+    // Each iteration squares the iterate's limb count, and nothing in the loop prunes it.
+    // With double limbs the growth stops by accident -- the trailing components fall below
+    // the smallest normal and renormalization drops them -- but a wide-exponent limb has no
+    // such floor, so the iterate grew until it spanned the whole exponent range: 250 limbs
+    // for x87, whatever precision the caller actually wanted, at seconds per division
+    // (#1572).
+    //
+    // `budget` bounds the working precision. Truncating an expansion in Priest normal form
+    // discards only low-order bits, and Newton's iteration is self-correcting: an iterate
+    // truncated to b limbs still converges to b limbs of accuracy, because each step
+    // recomputes the residual (2 - e*r) from scratch rather than accumulating it. The
+    // truncation is applied to the intermediates as well as the iterate, since e * r_n is
+    // where the quadratic blowup actually lands.
+    //
+    // budget == 0 means unbounded, which is what the non-ereal callers get.
+    //
+    // The bound tightens as the iteration proceeds. Newton doubles the correct digits each
+    // step, so from a one-limb seed the iterate after step i is accurate to 2^(i+1) limbs
+    // and the limbs past that are noise. Carrying them is not just wasteful, it is the
+    // whole cost: each step multiplies e by the iterate, so a full-width iterate makes
+    // every step pay a full budget-by-budget product.
+    //
+    // The step widths therefore grow geometrically and saturate at the budget: the early
+    // steps are cheap and only the last step or two run at full width (how many depends on
+    // how far 2^iterations overshoots the budget). The total is a geometric sum, roughly
+    // twice the final width rather than iterations times it.
     std::vector<FpType> two{FpType(2)};
     for (int i = 0; i < iterations; ++i) {
         std::vector<FpType> product = expansion_product(e, result);  // e * r_n
         std::vector<FpType> diff = linear_expansion_sum(two, scale_expansion(product, FpType(-1)));  // 2 - e * r_n
         result = expansion_product(result, diff);  // r_n * (2 - e * r_n)
+        // 2^(i+1) plus two guard limbs: the doubling is the asymptotic rate, and rounding
+        // within a step eats into it, so trimming to exactly 2^(i+1) cost the last couple
+        // of digits (ereal<8>'s Newton sqrt(2) went from 257 digits to 255).
+        // Saturating rather than overflowing for a large iteration count.
+        const std::size_t reached = (i < 30) ? ((std::size_t{1} << (i + 1)) + 2) : budget;
+        const std::size_t step_budget = (budget == 0) ? 0 : ((reached < budget) ? reached : budget);
+        truncate_expansion(result, step_budget);
     }
 
     return result;
@@ -1085,18 +1130,18 @@ inline std::vector<FpType> expansion_reciprocal(const std::vector<FpType>& e, in
  *   h - expansion representing e / f
  */
 template<typename FpType = double>
-inline std::vector<FpType> expansion_quotient(const std::vector<FpType>& e, const std::vector<FpType>& f, int iterations = 3) {
+inline std::vector<FpType> expansion_quotient(const std::vector<FpType>& e, const std::vector<FpType>& f, int iterations = 3, std::size_t budget = 0) {
     // Divide-by-zero / non-finite divisor: fall back to the direct reciprocal,
     // which yields the IEEE special value (Inf/NaN) the callers expect.
     if (f.empty() || f[0] == FpType(0) || !std::isfinite(f[0])) {
-        std::vector<FpType> reciprocal = expansion_reciprocal(f, iterations);
+        std::vector<FpType> reciprocal = expansion_reciprocal(f, iterations, budget);
         return expansion_product(e, reciprocal);
     }
     // f = f' * 2^k with f' in [0.5, 1): k = ilogb(f[0]) + 1.
     int k = std::ilogb(f[0]) + 1;
     std::vector<FpType> fscaled(f.size());
     for (std::size_t i = 0; i < f.size(); ++i) fscaled[i] = std::ldexp(f[i], -k);
-    std::vector<FpType> reciprocal = expansion_reciprocal(fscaled, iterations);
+    std::vector<FpType> reciprocal = expansion_reciprocal(fscaled, iterations, budget);
     // The reciprocal of f' lies in (1, 2], so the product below can be up to twice the
     // dividend. For a dividend near the top of double's range that product overflowed
     // even when the true quotient is nowhere near the limit: DBL_MAX / 2 and DBL_MAX / 1e10
@@ -1108,6 +1153,7 @@ inline std::vector<FpType> expansion_quotient(const std::vector<FpType>& e, cons
     std::vector<FpType> escaled(e.size());
     for (std::size_t i = 0; i < e.size(); ++i) escaled[i] = std::ldexp(e[i], -headroom);
     std::vector<FpType> quotient = expansion_product(escaled, reciprocal);
+    truncate_expansion(quotient, budget);
     for (auto& v : quotient) v = std::ldexp(v, headroom - k);  // exact: * 2^(headroom - k)
     // a leading component that overflowed on the way back is a genuine overflow
     if (!quotient.empty() && std::isinf(quotient[0])) return std::vector<FpType>{ quotient[0] };
