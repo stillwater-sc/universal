@@ -1071,12 +1071,25 @@ inline std::vector<FpType> expansion_reciprocal(const std::vector<FpType>& e, in
     // where the quadratic blowup actually lands.
     //
     // budget == 0 means unbounded, which is what the non-ereal callers get.
+    //
+    // The bound tightens as the iteration proceeds. Newton doubles the correct digits each
+    // step, so from a one-limb seed the iterate after step i is accurate to 2^(i+1) limbs
+    // and the limbs past that are noise. Carrying them is not just wasteful, it is the
+    // whole cost: each step multiplies e by the iterate, so a full-width iterate makes
+    // every step pay a full budget-by-budget product. Truncating to the precision the step
+    // has actually reached leaves only the last step at full width.
     std::vector<FpType> two{FpType(2)};
     for (int i = 0; i < iterations; ++i) {
         std::vector<FpType> product = expansion_product(e, result);  // e * r_n
         std::vector<FpType> diff = linear_expansion_sum(two, scale_expansion(product, FpType(-1)));  // 2 - e * r_n
         result = expansion_product(result, diff);  // r_n * (2 - e * r_n)
-        truncate_expansion(result, budget);
+        // 2^(i+1) plus two guard limbs: the doubling is the asymptotic rate, and rounding
+        // within a step eats into it, so trimming to exactly 2^(i+1) cost the last couple
+        // of digits (ereal<8>'s Newton sqrt(2) went from 257 digits to 255).
+        // Saturating rather than overflowing for a large iteration count.
+        const std::size_t reached = (i < 30) ? ((std::size_t{1} << (i + 1)) + 2) : budget;
+        const std::size_t step_budget = (budget == 0) ? 0 : ((reached < budget) ? reached : budget);
+        truncate_expansion(result, step_budget);
     }
 
     return result;
