@@ -26,7 +26,7 @@
 #include <string_view>
 
 #include <universal/number/elreal/elreal.hpp>
-#include <universal/verification/dyadic_exact.hpp>
+#include <universal/verification/dyadic_exact.hpp>   // dyadic, and the agreed_decimal_digits comparators it carries (#1566)
 
 namespace sw { namespace universal {
 
@@ -55,114 +55,10 @@ inline dyadic zbcl_to_dyadic(const ZBCL<FpType>& z, std::size_t maxBlocks = 512)
 	return acc;
 }
 
-// Number of leading significant decimal digits to which the exact value V agrees
-// with the positive decimal reference string `ref` (e.g. "3.14159..."). Returns
-// `cap` if they agree to at least `cap` digits (or are exactly equal).
-//
-//   relative error  = |V - ref| / |ref|
-//   with  V == Vn/Vd  and  ref == N / 10^frac, the error numerator (cross-
-//   multiplied) is  |Vn*10^frac - N*Vd|  over denominator  Vd*N, so the value
-//   agrees to >= d digits iff  |Vn*10^frac - N*Vd| * 10^d  <=  Vd*N.
-inline int agreed_decimal_digits(const dyadic& V, std::string_view ref, int cap = 320) {
-	using bigint = dyadic::bigint;
-
-	// Parse the positive reference into numerator N and fractional-digit count.
-	// Reject malformed input rather than silently skipping it: for a verification
-	// oracle an unsupported reference (a typo like "3e10", a sign, whitespace)
-	// must fail fast, not be reinterpreted as a different number.
-	std::string digits;
-	int frac = -1;                        // -1 until the '.' is seen
-	for (char c : ref) {
-		if (c == '.') {
-			if (frac >= 0) throw std::invalid_argument("decimal reference: multiple '.'");
-			frac = 0;
-			continue;
-		}
-		if (c >= '0' && c <= '9') {
-			digits.push_back(c);
-			if (frac >= 0) ++frac;
-			continue;
-		}
-		throw std::invalid_argument("decimal reference: unsupported character");
-	}
-	if (digits.empty()) throw std::invalid_argument("decimal reference: no digits");
-	if (frac < 0) frac = 0;               // integer-only reference
-
-	// Strip leading zeros BEFORE handing the digit string to einteger::parse.
-	// That parser follows C literal conventions, so a leading '0' followed by
-	// octal digits is read as OCTAL: the reference "0.75" yields the digit
-	// string "075", which parses as 61 rather than 75, and the oracle then
-	// reports 0 agreeing digits for a value that is exactly equal. Stripping
-	// the zeros does not change the value, because `frac` -- not the digit
-	// count -- carries the scale (ref == N / 10^frac). ("0.5" survived only by
-	// coincidence: octal 5 == decimal 5, as it does for every single digit.)
-	std::size_t firstSignificant = digits.find_first_not_of('0');
-	digits = (firstSignificant == std::string::npos) ? "0" : digits.substr(firstSignificant);
-
-	bigint N; N.assign(digits);           // ref == N / 10^frac
-	// A relative-agreement measure needs a non-zero reference: with N == 0 the
-	// denominator below is 0 and every comparison against it is meaningless.
-	// Matches the dyadic/dyadic overload, which rejects a zero reference too.
-	if (N.iszero()) throw std::invalid_argument("decimal reference: zero reference value");
-
-	// V == Vn / Vd  (Vd a power of two, or 1).
-	bigint Vn = V.numerator, Vd(1);
-	if (V.scale >= 0) Vn <<= V.scale; else Vd <<= (-V.scale);
-
-	bigint tenFrac; tenFrac.assign("1" + std::string(static_cast<std::size_t>(frac), '0'));
-	bigint diff = Vn * tenFrac - N * Vd;  // error numerator (signed)
-	if (diff.sign()) diff.setsign(false); // |error numerator|
-	bigint denom = Vd * N;                // positive
-
-	if (diff.iszero()) return cap;        // exact to the cap
-
-	// largest d with diff * 10^d <= denom
-	bigint cur = diff, ten; ten.assign("10");
-	for (int d = 1; d <= cap; ++d) {
-		cur = cur * ten;
-		if (denom < cur) return d - 1;    // diff*10^d > denom: agreement lost at digit d
-	}
-	return cap;
-}
-
 // Convenience overload: agreement of a ZBCL directly against a reference string.
 template <typename FpType>
 inline int agreed_decimal_digits(const ZBCL<FpType>& z, std::string_view ref, int cap = 320) {
 	return agreed_decimal_digits(zbcl_to_dyadic(z), ref, cap);
-}
-
-// Number of leading significant decimal digits to which exact value A agrees with
-// exact value B (relative to B). For identity residual checks where neither side
-// has a closed-form decimal reference -- e.g. exp(a+b) == exp(a)*exp(b) or the
-// sin(a+b) expansion (#1049): build both sides as exact dyadics and compare them
-// directly, with no shared code path through elreal arithmetic.
-//
-//   relative error = |A - B| / |B|
-//   with  A == An/Ad,  B == Bn/Bd  (denominators powers of two or 1), the cross-
-//   multiplied error numerator is  |An*Bd - Bn*Ad|  over denominator  |Ad*Bn|, so
-//   A agrees with B to >= d digits iff  |An*Bd - Bn*Ad| * 10^d  <=  |Ad*Bn|.
-inline int agreed_decimal_digits(const dyadic& A, const dyadic& B, int cap = 320) {
-	using bigint = dyadic::bigint;
-
-	bigint An = A.numerator, Ad(1);
-	if (A.scale >= 0) An <<= A.scale; else Ad <<= (-A.scale);
-	bigint Bn = B.numerator, Bd(1);
-	if (B.scale >= 0) Bn <<= B.scale; else Bd <<= (-B.scale);
-
-	bigint diff = An * Bd - Bn * Ad;      // error numerator (signed)
-	if (diff.sign()) diff.setsign(false); // |error numerator|
-	bigint denom = Ad * Bn;               // |B| numerator (Ad > 0)
-	if (denom.sign()) denom.setsign(false);
-	if (denom.iszero()) throw std::invalid_argument("agreed_decimal_digits: zero reference value");
-
-	if (diff.iszero()) return cap;        // exact to the cap
-
-	bigint cur = diff, ten; ten.assign("10");
-	for (int d = 1; d <= cap; ++d) {
-		cur = cur * ten;
-		if (denom < cur) return d - 1;    // diff*10^d > denom: agreement lost at digit d
-	}
-	return cap;
 }
 
 // Convenience overload: relative agreement of two ZBCL values directly.
