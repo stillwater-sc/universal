@@ -96,14 +96,21 @@ namespace {
 		return fails;
 	}
 
-	// printPrecision is the second argument, and it must reach the value field. Asking for
-	// more digits of a value that has them may only lengthen the rendering.
+	// printPrecision is the second argument, and it must reach the value field.
+	//
+	// The length comparison alone is not enough of a check: it holds trivially when the two
+	// renderings are IDENTICAL, which is exactly what an implementation that ignores
+	// printPrecision produces. So the strings must actually differ -- every caller below
+	// passes a value with more digits than 3 to spend -- and the length comparison stays as
+	// the additional invariant that more digits never render shorter.
 	template<typename Scalar>
 	int VerifyPrintPrecisionIsRead(const char* name, const Scalar& v, bool reportTestCases) {
 		const std::string label(name);
 		const std::string terse   = info_print(v, 3);
 		const std::string verbose = info_print(v, 17);
-		int fails = expect_true(terse.size() <= verbose.size(),
+		int fails = expect_true(terse != verbose,
+			label + ": printPrecision changes the rendering", reportTestCases);
+		fails += expect_true(terse.size() <= verbose.size(),
 			label + ": a wider printPrecision does not shorten the rendering", reportTestCases);
 		if (fails && reportTestCases) {
 			std::cout << "         " << label << " @3  -> " << terse << '\n';

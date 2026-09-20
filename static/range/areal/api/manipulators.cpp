@@ -174,10 +174,15 @@ namespace {
 		fails += expect_true(info_print(Areal(-1.5f)) != info_print(Areal(1.5f)),
 			"the sign reaches the rendering", reportTestCases);
 
-		// printPrecision is the second argument and must not be ignored
+		// printPrecision is the second argument and must not be ignored. Comparing only
+		// the lengths would hold trivially when the two renderings are identical, which is
+		// what ignoring the argument produces, so they have to actually differ.
 		{
 			Areal third(1.0f / 3.0f);
-			fails += expect_true(info_print(third, 3).size() <= info_print(third, 17).size(),
+			const std::string terse   = info_print(third, 3);
+			const std::string verbose = info_print(third, 17);
+			fails += expect_true(terse != verbose, "printPrecision changes the rendering", reportTestCases);
+			fails += expect_true(terse.size() <= verbose.size(),
 				"a wider printPrecision does not shorten the rendering", reportTestCases);
 		}
 

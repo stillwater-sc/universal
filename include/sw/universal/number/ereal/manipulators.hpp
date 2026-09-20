@@ -73,6 +73,17 @@ template<typename ErealType,
          std::enable_if_t<is_ereal<ErealType>, bool> = true>
 inline std::string to_binary(const ErealType& v, bool nibbleMarker = false) {
 	std::stringstream s;
+	// An ereal may hold NO limbs at all: renormalize_expansion prunes components that
+	// cancel, and expansion_sum_normalized returns its result without the canonical-zero
+	// push that expansion_product does, so the empty vector reaches _limb. ereal's own
+	// to_string guards it in as many words ("renormalize_expansion can prune all
+	// components to empty"), as do iszero, isinf, isnan, sign, scale and significant --
+	// this was the one accessor that did not, and size() - 1 on an empty vector is an
+	// unsigned wrap into an out-of-bounds read. info_print is its first caller (#1556).
+	if (v.limbs().empty()) {
+		s << to_binary(typename ErealType::limb_type(0), nibbleMarker);
+		return s.str();
+	}
 	// present first and last limb in binary
 	std::size_t firstLimb = 0;
 	std::size_t lastLimb  = v.limbs().size() - 1;
