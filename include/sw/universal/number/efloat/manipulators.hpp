@@ -102,46 +102,83 @@ inline std::string to_triple(const EfloatType& v) {
 	return s.str();
 }
 
-// generate a binary string for efloat
+// Generate a hex string for an efloat: sign, binary scale, and the significand words.
+//
+// It returned the literal "tbd" over a commented-out body that indexed a nibble(n) and an
+// nbits that an efloat does not have (#1582). An efloat is adaptive-precision, so there
+// is no fixed nibble count to walk: the significand is a vector of 32-bit words, and the
+// hex form is those words, most significant first, the way to_binary() already renders
+// them.
+//
+// Unlike dd and qd, which delegate to their limbs' native hex (dd/manipulators.hpp), an
+// efloat's limbs are uint32_t magnitude words rather than floating-point values, so there
+// is no native rendering to hand them to.
 template<typename EfloatType,
 	std::enable_if_t< is_efloat<EfloatType>, bool> = true
 >
 inline std::string to_hex(const EfloatType& v, bool nibbleMarker = false, bool hexPrefix = true) {
-	std::stringstream s;
-	/*
 	constexpr char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 	};
-	if (hexPrefix) s << "0x" << std::hex;
-	int nrNibbles = int(1ull + ((nbits - 1ull) >> 2ull));
-	for (int n = nrNibbles - 1; n >= 0; --n) {
-		uint8_t nibble = v.nibble(unsigned(n));
-		s << hexChar[nibble];
-		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
+	std::stringstream s;
+	if (v.isnan()) return std::string("nan");
+	if (v.isinf()) return std::string(v.sign() == -1 ? "-inf" : "+inf");
+	if (hexPrefix) s << "0x";
+	s << (v.sign() == -1 ? '1' : '0') << '.' << v.scale() << '.';
+	if (v.iszero()) {
+		s << '0';
+		return s.str();
 	}
-	*/
-	s << "tbd";
+	const auto limbs = v.bits();
+	for (std::size_t w = limbs.size(); w > 0; --w) {
+		const uint32_t word = limbs[w - 1];
+		for (int n = 7; n >= 0; --n) {
+			s << hexChar[(word >> (n * 4)) & 0xFu];
+			if (nibbleMarker && n > 0 && (n % 2) == 0) s << '\'';
+		}
+		if (w > 1) s << '\'';
+	}
 	return s.str();
 }
 
-// generate a efloat format ASCII hex format nbits.esxNN...NNa
+// Generate an efloat format ASCII hex format, the analogue of cfloat's nbits.esxNN...NNc.
+//
+// It returned the literal "tbd" (#1582). An efloat has no nbits or es to name, so the
+// configuration field is the limb count -- the one dimension that actually varies -- and
+// the type is tagged 'e' as cfloat tags 'c' and areal tags 'r'.
 template<typename EfloatType,
 	std::enable_if_t< is_efloat<EfloatType>, bool> = true
 >
 inline std::string hex_print(const EfloatType& c) {
 	std::stringstream s;
-	// s << nbits << '.' << es << 'x' << to_hex(c) << 'c';
-	s << "tbd";
+	s << c.bits().size() << 'x' << to_hex(c) << 'e';
 	return s.str();
 }
 
+// Render an efloat's fields separated: sign : scale : significand words in binary.
+//
+// It returned the literal "tbd" (#1582). The colon-separated shape is cfloat's
+// pretty_print, so an efloat lines up with the fixed-size types when they are printed
+// together.
 template<typename EfloatType,
 	std::enable_if_t< is_efloat<EfloatType>, bool> = true
 >
 inline std::string pretty_print(const EfloatType& r) {
 	std::stringstream s;
-	s << "tbd";
+	if (r.isnan()) return std::string("nan");
+	if (r.isinf()) return std::string(r.sign() == -1 ? "-inf" : "+inf");
+	s << (r.sign() == -1 ? '1' : '0') << ':' << r.scale() << ':';
+	if (r.iszero()) {
+		s << '0';
+		return s.str();
+	}
+	const auto limbs = r.bits();
+	for (std::size_t w = limbs.size(); w > 0; --w) {
+		const uint32_t word = limbs[w - 1];
+		for (int b = 31; b >= 0; --b) s << ((word >> b) & 1u ? '1' : '0');
+		if (w > 1) s << '\'';
+	}
 	return s.str();
 }
 
@@ -168,13 +205,46 @@ inline std::string info_print(const EfloatType& p, int printPrecision = 17) {
 	return s.str();
 }
 
-// generate a binary, color-coded representation of the efloat
+// Generate a binary, color-coded representation of the efloat.
+//
+// It returned the literal "tbd" (#1582). The colour assignment is the one every other
+// type uses -- red sign, cyan exponent, magenta significand, yellow separators -- so an
+// efloat reads the same as a cfloat or a posit in a terminal.
 template<typename EfloatType,
 	std::enable_if_t< is_efloat<EfloatType>, bool> = true
 >
 inline std::string color_print(const EfloatType& r, bool nibbleMarker = false) {
 	std::stringstream s;
-	s << "tbd";
+
+	Color red(ColorCode::FG_RED);
+	Color yellow(ColorCode::FG_YELLOW);
+	Color cyan(ColorCode::FG_CYAN);
+	Color magenta(ColorCode::FG_MAGENTA);
+	Color def(ColorCode::FG_DEFAULT);
+
+	if (r.isnan()) { s << red << "nan" << def; return s.str(); }
+	if (r.isinf()) { s << red << (r.sign() == -1 ? "-inf" : "+inf") << def; return s.str(); }
+
+	// sign
+	s << red << (r.sign() == -1 ? '1' : '0');
+	// exponent
+	s << yellow << '.' << cyan << r.scale();
+	s << yellow << '.';
+	if (r.iszero()) {
+		s << magenta << '0' << def;
+		return s.str();
+	}
+	// significand words, most significant first
+	const auto limbs = r.bits();
+	for (std::size_t w = limbs.size(); w > 0; --w) {
+		const uint32_t word = limbs[w - 1];
+		for (int b = 31; b >= 0; --b) {
+			s << magenta << ((word >> b) & 1u ? '1' : '0');
+			if (nibbleMarker && b > 0 && (b % 4) == 0) s << yellow << '\'';
+		}
+		if (w > 1) s << yellow << '\'';
+	}
+	s << def;
 	return s.str();
 }
 
