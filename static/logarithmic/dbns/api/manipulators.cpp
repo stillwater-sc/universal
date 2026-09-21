@@ -19,7 +19,10 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <cstdint>
 #include <string>
+#include <type_traits>
+#include <utility>
 
 #include <universal/number/dbns/dbns.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -120,6 +123,37 @@ namespace {
 		return fails;
 	}
 
+	// A wide second-base exponent field overflows an int.
+	//
+	// dbns<34,1,uint64_t> gives the second base 32 exponent bits, so e1 reaches
+	// 4294967295 and the scale is near 6.81e9 -- past INT_MAX. scale() returned int, and
+	// a float-to-int conversion out of range is undefined behaviour: it answered
+	// -2147483648. Both exponents come back from extractExponent as uint32_t, so the
+	// scale is bounded by about +/-6.81e9 and int64_t holds it with room to spare (#1582).
+	int VerifyWideExponentField(bool reportTestCases) {
+		using Wide = dbns<34, 1, std::uint64_t>;
+		int fails = 0;
+
+		static_assert(Wide::sbbits == 32, "dbns<34,1> gives the second base a 32-bit exponent field");
+		static_assert(std::is_same_v<decltype(std::declval<Wide>().scale()), int64_t>,
+			"scale() must be wide enough for the scale a 32-bit exponent field can encode");
+
+		Wide a;
+		a.setbits(0x0000'0000'FFFF'FFFFull);   // every second-base exponent bit set
+		fails += expect_true(a.extractExponent(1) == 4294967295u,
+			"the second base exponent reaches its maximum", reportTestCases);
+
+		const double log2v = -static_cast<double>(a.extractExponent(0))
+		                   + static_cast<double>(a.extractExponent(1)) * Wide::log2of3;
+		fails += expect_true(log2v > 2147483647.0, "that scale is past INT_MAX", reportTestCases);
+		fails += expect_true(a.scale() > 2147483647LL,
+			"scale() reports it rather than wrapping negative", reportTestCases);
+		fails += expect_true(a.scale() == static_cast<int64_t>(log2v),
+			"scale() agrees with the log-domain value", reportTestCases);
+
+		return fails;
+	}
+
 }  // anonymous namespace
 
 #ifndef REGRESSION_LEVEL_OVERRIDE
@@ -162,6 +196,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNoPhantomFraction(reportTestCases), test_tag, "no phantom fraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyScaleAgainstLog2<dbns<8, 3>>("dbns<8,3>", reportTestCases),
 		test_tag, "scale vs floor(log2) dbns<8,3>");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideExponentField(reportTestCases),
+		test_tag, "wide exponent field");
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -581,7 +581,15 @@ public:
 	//
 	// The exponents are combined in the log domain rather than by converting to double,
 	// because a dbns configuration can range far outside what a double can hold.
-	constexpr int  scale()  const noexcept {
+	//
+	// int64_t, not int: the second-base exponent field can be 32 bits wide, so
+	// dbns<34,1,uint64_t> reaches e1 = 4294967295 and a scale near 6.81e9. That overflows
+	// an int, and a float-to-int conversion out of range is undefined behaviour -- it
+	// returned -2147483648 in practice. Both exponents come back from extractExponent as
+	// uint32_t, so the result is bounded by about +/-6.81e9 and int64_t covers the whole
+	// range with room to spare. takum and efloat already return int64_t from scale() for
+	// the same reason.
+	constexpr int64_t scale()  const noexcept {
 		if (iszero() || isnan()) return 0;   // no binary scale to report
 		const double e0 = static_cast<double>(extractExponent(0));
 		const double e1 = static_cast<double>(extractExponent(1));
@@ -590,7 +598,7 @@ public:
 		// every negative scale -- it reported 0 for values in (0.5, 1). std::floor is not
 		// constexpr before C++23, so the adjustment is done by hand to keep scale()
 		// usable in a constant expression.
-		int s = static_cast<int>(log2v);
+		int64_t s = static_cast<int64_t>(log2v);
 		if (log2v < 0.0 && static_cast<double>(s) != log2v) --s;
 		return s;
 	}
