@@ -589,7 +589,7 @@ public:
 	// uint32_t, so the result is bounded by about +/-6.81e9 and int64_t covers the whole
 	// range with room to spare. takum and efloat already return int64_t from scale() for
 	// the same reason.
-	constexpr int64_t scale()  const noexcept {
+	constexpr int64_t scale() const noexcept {
 		if (iszero() || isnan()) return 0;   // no binary scale to report
 		const double e0 = static_cast<double>(extractExponent(0));
 		const double e1 = static_cast<double>(extractExponent(1));
