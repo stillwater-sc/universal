@@ -96,46 +96,72 @@ inline std::string to_binary(const ErealType& v, bool nibbleMarker = false) {
 	return s.str();
 }
 
-         // generate a hex string for ereal
+// Generate a hex string for an ereal: the hex of each limb, most significant first.
+//
+// It returned the literal "tbd" over a commented-out body that indexed a nibble(n) and an
+// nbits that an ereal does not have (#1582). An ereal is a multi-component expansion, so
+// it is rendered the way dd, qd and dd_cascade render theirs: delegate to the limbs' own
+// native rendering and join them (dd/manipulators.hpp, dd_cascade/manipulators.hpp). The
+// limbs ARE floating-point values, so unlike efloat there is a native to_hex to hand
+// them to.
 template<typename ErealType,
 	std::enable_if_t< is_ereal<ErealType>, bool> = true
 >
 inline std::string to_hex(const ErealType& v, bool nibbleMarker = false, bool hexPrefix = true) {
 	std::stringstream s;
-	/*
-	constexpr char hexChar[16] = {
-		'0', '1', '2', '3', '4', '5', '6', '7',
-		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
-	};
-	if (hexPrefix) s << "0x" << std::hex;
-	int nrNibbles = int(1ull + ((nbits - 1ull) >> 2ull));
-	for (int n = nrNibbles - 1; n >= 0; --n) {
-		uint8_t nibble = v.nibble(unsigned(n));
-		s << hexChar[nibble];
-		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
+	s << "ereal[";
+	const auto& limbs = v.limbs();
+	if (limbs.empty()) {
+		// an ereal with no limbs is semantically zero: renormalize_expansion prunes
+		// components that cancel, and nothing canonicalises the empty result (#1556)
+		s << to_hex(typename ErealType::limb_type(0), nibbleMarker, hexPrefix);
 	}
-	*/
-	s << "tbd";
+	else {
+		for (std::size_t i = 0; i < limbs.size(); ++i) {
+			if (i > 0) s << ", ";
+			s << to_hex(limbs[i], nibbleMarker, hexPrefix);
+		}
+	}
+	s << ']';
 	return s.str();
 }
 
-// generate a ereal format ASCII hex format nbits.esxNN...NNa
+// Generate an ereal format ASCII hex format, the analogue of cfloat's nbits.esxNN...NNc.
+//
+// It returned the literal "tbd" (#1582). An ereal has no nbits or es to name, so the
+// configuration field is the limb count. The type letter is uppercase 'R' because areal
+// has already taken lowercase 'r'.
 template<typename ErealType,
 	std::enable_if_t< is_ereal<ErealType>, bool> = true
 >
 inline std::string hex_print(const ErealType& c) {
 	std::stringstream s;
-	// s << nbits << '.' << es << 'x' << to_hex(c) << 'c';
-	s << "tbd";
+	s << c.limbs().size() << 'x' << to_hex(c) << 'R';
 	return s.str();
 }
 
+// Render each limb's fields separated, the way the fixed-size types render theirs.
+//
+// It returned the literal "tbd" (#1582). pretty_print(native) gives each limb the
+// sign:exponent:fraction form cfloat uses, so an ereal reads as the expansion of
+// IEEE-754 values that it is.
 template<typename ErealType,
 	std::enable_if_t< is_ereal<ErealType>, bool> = true
 >
 inline std::string pretty_print(const ErealType& r) {
 	std::stringstream s;
-	s << "tbd";
+	s << "ereal[";
+	const auto& limbs = r.limbs();
+	if (limbs.empty()) {
+		s << pretty_print(typename ErealType::limb_type(0));
+	}
+	else {
+		for (std::size_t i = 0; i < limbs.size(); ++i) {
+			if (i > 0) s << ", ";
+			s << pretty_print(limbs[i]);
+		}
+	}
+	s << ']';
 	return s.str();
 }
 
@@ -163,13 +189,29 @@ inline std::string info_print(const ErealType& p, int printPrecision = 17) {
 	return s.str();
 }
 
-// generate a binary, color-coded representation of the ereal
+// Generate a binary, color-coded representation of the ereal.
+//
+// It returned the literal "tbd" (#1582). dd does exactly this -- color_print<double>(high)
+// then color_print<double>(low), comma-joined (dd/manipulators.hpp) -- and the ereal api
+// walk-through already colour-prints an expansion by hand, one limb at a time
+// (elastic/ereal/api/api.cpp). This is that, for a limb count known only at run time.
 template<typename ErealType,
 	std::enable_if_t< is_ereal<ErealType>, bool> = true
 >
 inline std::string color_print(const ErealType& r, bool nibbleMarker = false) {
 	std::stringstream s;
-	s << "tbd";
+	s << "ereal[";
+	const auto& limbs = r.limbs();
+	if (limbs.empty()) {
+		s << color_print(typename ErealType::limb_type(0), nibbleMarker);
+	}
+	else {
+		for (std::size_t i = 0; i < limbs.size(); ++i) {
+			if (i > 0) s << ", ";
+			s << color_print(limbs[i], nibbleMarker);
+		}
+	}
+	s << ']';
 	return s.str();
 }
 

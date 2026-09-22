@@ -9,7 +9,7 @@
 // minimum set of include files to reflect source code dependencies
 // Configure the ereal template environment
 // : enable/disable arithmetic exceptions
-#define EFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#define EREAL_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/ereal/ereal.hpp>
 #include <math/polynomial/horners.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -57,7 +57,7 @@ try {
 		using TestType            = ereal<nlimbs>;
 		TestType a{1.0};
 		TestType b{0.0};
-#if EFLOAT_THROW_ARITHMETIC_EXCEPTION
+#if EREAL_THROW_ARITHMETIC_EXCEPTION
 		try {
 			TestType c = a / b;
 		} catch (const ereal_divide_by_zero& err) {
@@ -68,7 +68,7 @@ try {
 			std::cerr << "Caught an ereal_overflow exception: " << err.what() << '\n';
 		} catch (const ereal_underflow& err) {
 			std::cerr << "Caught an ereal_underflow exception: " << err.what() << '\n';
-		} catch (... const std::exception& err) {
+		} catch (const std::exception& err) {
 			std::cerr << "Caught an unexpected exception: " << err.what() << '\n';
 		}
 

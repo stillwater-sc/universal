@@ -565,17 +565,48 @@ public:
 	constexpr bool sign()   const noexcept { 
 		return (SIGN_BIT_MASK & _block[MSU]) != 0;
 	}
-	constexpr int  scale()  const noexcept {
-		using std::log2;
-		// Scale needs to work for all potential bases
-		// we shouldn't go through double conversion as doubles do not
-		// have enough dynamic range for dbns configs, so
-		// we should go through the exponent calculation directly
-		uint32_t e0 = extractExponent(0);
-		uint32_t e1 = extractExponent(1);
-		return static_cast<int>(e0 + e1 * log2of3);
+	// The binary scale of the value: floor(log2(|v|)).
+	//
+	// A dbns encodes (-1)^s * base0^e0 * base1^e1 with base0 = 0.5 and base1 = 3, so its
+	// log2 is -e0 + e1*log2(3). This returned +e0 + e1*log2(3): the base-0.5 exponent
+	// contributes NEGATIVELY and the sign was dropped, so every value with a non-zero e0
+	// reported the wrong scale -- 2 for 1.5, whose scale is 0, and +1 for 0.5, whose
+	// scale is -1 (#1582).
+	//
+	// operator< below already had it right: it documents the value as (-1)^s * 0.5^a * 3^b
+	// and orders on M(x) = -a + b*log2of3. convert_ieee754 says the same thing in as many
+	// words -- "in our representation we have 0.5^a * 3^b, which would be equivalent to a
+	// being negative" -- and only accepts a <= 0, storing its magnitude. This function was
+	// the one place that disagreed.
+	//
+	// The exponents are combined in the log domain rather than by converting to double,
+	// because a dbns configuration can range far outside what a double can hold.
+	//
+	// int64_t, not int: the second-base exponent field can be 32 bits wide, so
+	// dbns<34,1,uint64_t> reaches e1 = 4294967295 and a scale near 6.81e9. That overflows
+	// an int, and a float-to-int conversion out of range is undefined behaviour -- it
+	// returned -2147483648 in practice. Both exponents come back from extractExponent as
+	// uint32_t, so the result is bounded by about +/-6.81e9 and int64_t covers the whole
+	// range with room to spare. takum and efloat already return int64_t from scale() for
+	// the same reason.
+	constexpr int64_t scale() const noexcept {
+		if (iszero() || isnan()) return 0;   // no binary scale to report
+		const double e0 = static_cast<double>(extractExponent(0));
+		const double e1 = static_cast<double>(extractExponent(1));
+		const double log2v = -e0 + e1 * log2of3;
+		// floor, not truncation: a static_cast rounds toward zero, which is wrong for
+		// every negative scale -- it reported 0 for values in (0.5, 1). std::floor is not
+		// constexpr before C++23, so the adjustment is done by hand to keep scale()
+		// usable in a constant expression.
+		int64_t s = static_cast<int64_t>(log2v);
+		if (log2v < 0.0 && static_cast<double>(s) != log2v) --s;
+		return s;
 	}
-	// fraction returns 0
+	// A dbns has no fraction field: the value is entirely carried by the two base
+	// exponents. This accessor exists so generic code that probes for .fraction() on an
+	// arbitrary number type still compiles, and always answers 0. It is deliberately NOT
+	// reported by components() or to_triple(), which used to print this constant as
+	// though it meant something (#1582).
 	constexpr uint64_t fraction() const noexcept { return 0; }
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op

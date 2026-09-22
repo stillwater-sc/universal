@@ -74,12 +74,16 @@ namespace sw { namespace universal {
 		return inside;
 	}
 
+	// (sign, scale, base exponents) -- the third field used to be fraction(), which is
+	// hard-coded to return 0 for every dbns value, so this reported a constant 0 as though
+	// it were a decoded field (#1582). A dbns has no fraction: what it actually carries is
+	// the pair of base exponents, so that is what is reported.
 	template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-	std::string to_triple(const dbns<nbits, fbbits, bt, xtra...>& v, bool nibbleMarker = false) {
+	std::string to_triple(const dbns<nbits, fbbits, bt, xtra...>& v, [[maybe_unused]] bool nibbleMarker = false) {
 		std::stringstream s;
 		s << (v.sign() ? "(-, " : "(+, ");
 		s << v.scale() << ", ";
-		s << v.fraction() << ')';
+		s << "e0=" << v.extractExponent(0) << " e1=" << v.extractExponent(1) << ')';
 		return s.str();
 	}
 
@@ -87,14 +91,17 @@ namespace sw { namespace universal {
 	std::string components(const dbns<nbits, fbbits, bt, xtra...>& v) {
 		std::stringstream s;
 		if (v.iszero()) {
-			s << " zero b" << std::setw(nbits) << v.fraction();
+			s << " zero " << to_binary(v);
 			return s.str();
 		}
 		else if (v.isinf()) {
-			s << " infinite b" << std::setw(nbits) << v.fraction();
+			s << " infinite " << to_binary(v);
 			return s.str();
 		}
-		s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
+		s << "(" << (v.sign() ? "-" : "+")
+		  << "," << v.scale()
+		  << ",e0=" << v.extractExponent(0)
+		  << ",e1=" << v.extractExponent(1) << ")";
 		return s.str();
 	}
 
@@ -172,11 +179,12 @@ namespace sw { namespace universal {
 			s << " zero : value 0";
 			return s.str();
 		}
-		// deliberately not scale(): it computes e0 + e1*log2(3), which drops the sign of
-		// the base-0.5 exponent, so it reports 2 for a value of 1.5 whose scale is 0.
-		// Reported separately rather than propagated here.
+		// scale() is reported again now that it is correct: #1556 left it out because it
+		// computed e0 + e1*log2(3), dropping the sign of the base-0.5 exponent, and
+		// answered 2 for a value of 1.5 whose scale is 0 (fixed in #1582).
 		s << " e0(" << DbnsType::base0 << ")=" << l.extractExponent(0)
 		  << " e1(" << DbnsType::base1 << ")=" << l.extractExponent(1)
+		  << " scale " << l.scale()
 		  << " : value " << std::setprecision(printPrecision) << double(l);
 		return s.str();
 	}
