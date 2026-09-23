@@ -254,7 +254,7 @@ runs, not a format gate).
 |---|---|
 | `static/utility/test_info_print_surface.cpp` | all ten `info_print` implementations against the anti-placeholder contract, special encodings, `printPrecision` |
 | `static/utility/test_report_formats.cpp` | `ReportFormats` instantiated over 12 number systems + natives; `ReportFormatSurface` reports the gap |
-| `static/logarithmic/dbns/api/manipulators.cpp` | `scale()` vs an exhaustive `floor(log2(|v|))` oracle; the wide-exponent overflow; no phantom fraction |
+| `static/logarithmic/dbns/api/manipulators.cpp` | `scale()` vs an exhaustive `floor(log2(abs(v)))` oracle; the wide-exponent overflow; no phantom fraction |
 | `elastic/efloat/api/manipulators.cpp` | efloat's four repaired renderers |
 | `elastic/ereal/api/manipulators.cpp` | ereal's four repaired renderers |
 | `static/range/areal/api/manipulators.cpp` | tightened: rejects placeholders, requires value-dependence |
