@@ -50,8 +50,11 @@ Examples:
 
 ## Index of Sessions
 
-Newest first. Every document in this directory is listed; the titles, Status and Focus
-lines are taken from each document's own header.
+Newest first, and every document in this directory is listed. Titles come from each
+document's H1. Status and Focus come from its `**Status:**` and `**Focus:**` header lines
+where it has them -- 20 of the 46 do. The remaining 26 predate that convention, so their
+Focus is the opening prose of the document's own Overview, Summary or Objective section.
+Either way the wording is the document's, not a paraphrase.
 
 ### 2026
 
