@@ -77,30 +77,85 @@ namespace sw { namespace universal {
 	*/
 
 
-#if CFLOAT_NATIVE_SQRT
-	// sqrt for arbitrary cfloat
+	// sqrt for arbitrary cfloat, refined to the format's own precision.
+	//
+	// This used to be `cfloat(std::sqrt((double)a))` -- in BOTH branches of the
+	// CFLOAT_NATIVE_SQRT switch, the first of them marked "// TBD" and identical to the
+	// second, with the macro defaulting to 0 in three separate headers. So the result
+	// carried 53 bits of significand whatever the format asked for: 53 of 112 for quad,
+	// 53 of 236 for octo, silently. Arguments outside a double's exponent range were
+	// worse than imprecise -- (double)a overflowed to infinity before std::sqrt was ever
+	// called, so sqrt(maxpos) returned inf (#1589).
+	//
+	// Newton-Raphson on x = (x + a/x)/2 doubles the correct bits each step, so a 53-bit
+	// seed reaches 112 bits in two steps and 236 in three. The iteration runs in the
+	// cfloat's own arithmetic, so the precision is the format's, not the host's.
+	//
+	// The seed is std::sqrt(double(a)) whenever a is inside a double's range, which is
+	// the common case and worth the 53 bits it buys. Outside that range the seed is the
+	// power of two 2^floor(scale/2), which is within a factor of sqrt(2) of the answer
+	// and costs a few more iterations rather than a wrong result.
 	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 	inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sqrt(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a) {
+		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw cfloat_negative_sqrt_arg();
 #else
-		if (a.isneg()) std::cerr << "cfloat argument to sqrt is negative: " << a << std::endl;
+		if (a.isneg()) {
+			std::cerr << "cfloat argument to sqrt is negative: " << a << std::endl;
+			Cfloat nan; nan.setnan(NAN_TYPE_QUIET);
+			return nan;
+		}
 #endif
-		if (a.iszero()) return a;
-		return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::sqrt((double)a));  // TBD
+		if (a.isnan() || a.iszero() || a.isinf()) return a;   // sqrt(+inf) is +inf
+
+		constexpr unsigned fbits = Cfloat::fbits;
+		if constexpr (fbits <= 52 && !CFLOAT_NATIVE_SQRT) {
+			// a double carries this format's whole fraction, so the host answer is already
+			// the best this format can hold. CFLOAT_NATIVE_SQRT forces the iteration anyway,
+			// which is how the two paths are compared against each other in test.
+			return Cfloat(std::sqrt(double(a)));
+		}
+		else {
+			// seed
+			Cfloat x;
+			const double d = double(a);
+			if (d > 0.0 && std::isfinite(d)) {
+				x = std::sqrt(d);
+			}
+			else {
+				// a is outside a double's range: 2^floor(scale/2) is within sqrt(2) of the
+				// root. The shift is arithmetic, so it floors for a negative scale too.
+				x = 1.0;
+				if (!x.setexponent(a.scale() >> 1)) return Cfloat(std::sqrt(d)); // unrepresentable, nothing better to offer
+			}
+			if (x.iszero() || x.isnan() || x.isinf()) return Cfloat(std::sqrt(d));
+
+			// Newton-Raphson. The bound is the worst case from a 1-bit seed; convergence
+			// breaks out long before that for the usual 53-bit one.
+			//
+			// previous and twoAgo are initialized explicitly. A cfloat is trivially
+			// constructible, so `Cfloat previous;` leaves stack garbage, and clang does
+			// not zero it: the oscillation guard below then compared the new iterate
+			// against whatever the slot happened to hold -- often a leftover from an
+			// earlier sqrt call -- matched, and returned the seed. That produced a
+			// 53-bit answer on clang while gcc happened to give the right one.
+			const Cfloat half(0.5);
+			Cfloat previous(0), twoAgo(0);
+			for (unsigned i = 0; i < 64u; ++i) {
+				twoAgo = previous;
+				previous = x;
+				x = (x + a / x) * half;
+				// the iterate is monotone once it is above the root, so a repeat means the
+				// format cannot hold a closer value; a match two steps back is the 1-ulp
+				// oscillation that ends a correctly converged Newton. twoAgo is only a real
+				// iterate from the second pass on, so the oscillation test waits for it.
+				if (x == previous) break;
+				if (i > 0 && x == twoAgo) { if (previous < x) x = previous; break; }
+			}
+			return x;
+		}
 	}
-#else
-	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-	inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sqrt(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a) {
-#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw cfloat_negative_sqrt_arg();
-#else
-		if (a.isneg()) std::cerr << "cfloat argument to sqrt is negative: " << a << std::endl;
-#endif
-		if (a.iszero()) return a;
-		return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::sqrt((double)a));
-	}
-#endif
 
 	// reciprocal sqrt
 	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
