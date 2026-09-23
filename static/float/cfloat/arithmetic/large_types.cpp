@@ -303,6 +303,20 @@ int VerifySubnormalProducts(bool reportTestCases) {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
+// Without this block the REGRESSION_LEVEL_n macros are undefined unless CMake supplies
+// them, so a standalone compile preprocesses the entire test body away and reports PASS
+// having run nothing. Every other suite in the tree carries this default (#1587).
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
+
 int main()
 try {
     using namespace sw::universal;
