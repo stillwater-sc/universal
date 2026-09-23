@@ -109,7 +109,7 @@ using fp64     = duble;
 using xtndd    = cfloat< 80, 11, uint64_t, true, false, false>;
 using fp80     = xtndd;
 // IEEE-754 quad (128bit) precision floating-point
-using quad     = cfloat<128, 15, uint32_t, true, false, false>;
+using quad     = cfloat<128, 15, uint64_t, true, false, false>;
 using fp128    = quad;
 // IEEE-754 octo (256bit) precision floating-point
 using octo     = cfloat<256, 19, uint64_t, true, false, false>;

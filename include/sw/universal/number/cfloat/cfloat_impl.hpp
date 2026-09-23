@@ -2256,7 +2256,16 @@ public:
 			else {
 				if (isdenormal()) { // it is a subnormal encoding in this target cfloat
 					if constexpr (hasSubnormals) {
-						if constexpr (BlockTripleConfiguration::rbits < (64 - fbits)) {
+						// fbits < 64 is NOT redundant: fbits is unsigned, so for a wide
+						// cfloat (fbits = 112 for cfloat<128,15>) the expression 64 - fbits
+						// wraps to 4294967248 and rbits < that is trivially true. Without
+						// this guard the 64-bit fast path was taken for a 112-bit fraction,
+						// shifting a uint64_t by up to 112 -- undefined behaviour, and in
+						// practice a shift modulo 64 of a fraction_ull() that is already 0
+						// by its own fbits < 65 guard. minpos + minpos returned ZERO for
+						// every cfloat with fbits >= 64: xtndd, quad, octo (#1587).
+						// The three sibling branches here already carry the same guard.
+						if constexpr (fbits < 64 && BlockTripleConfiguration::rbits < (64 - fbits)) {
 							uint64_t raw = fraction_ull();
 							int shift = MIN_EXP_NORMAL - scale;
 							raw <<= shift; // shift but do NOT add a hidden bit as the MSB of the subnormal is shifted in the hidden bit position
