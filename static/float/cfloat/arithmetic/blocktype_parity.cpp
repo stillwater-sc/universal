@@ -149,6 +149,9 @@ namespace {
 					+ "\n         can " + to_binary(Can(ca * cb)), reportTestCases);
 				report(fails, agree(Ref(ra / rb), Can(ca / cb)), tag + ": div",
 					to_binary(ra) + " / " + to_binary(rb), reportTestCases);
+				// fma is the strongest check here: it builds a cfloat of nbits + fbits + 2
+				// with the SAME BlockType and does a real multiply and add in it, so it
+				// exercises limb arithmetic at a width wider than the format under test.
 				report(fails, agree(Ref(fma(ra, rb, ra)), Can(fma(ca, cb, ca))), tag + ": fma",
 					to_binary(ra) + " fma " + to_binary(rb), reportTestCases);
 			}
@@ -194,12 +197,11 @@ namespace {
 			report(fails, agree(rs, cs), tag + ": subnormal accumulation", "", reportTestCases);
 		}
 
-		// 6. sqrt, which iterates and so compounds any limb-level difference
-		for (double d : { 2.0, 3.0, 0.5, 1.0e10, 1.0e-10, 1.0 }) {
-			Ref r(d); Can c(d);
-			report(fails, agree(Ref(sqrt(r)), Can(sqrt(c))), tag + ": sqrt",
-				"sqrt(" + std::to_string(d) + ")", reportTestCases);
-		}
+		// sqrt is deliberately NOT checked here. Both branches of cfloat's sqrt --
+		// CFLOAT_NATIVE_SQRT on and off -- are `cfloat(std::sqrt((double)a))`, so it
+		// narrows the value to a double, calls the host, and converts back. It exercises
+		// no limb arithmetic at all, and the double conversion it does exercise is
+		// already covered below. Reported separately.
 
 		// 7. conversion in both directions
 		for (long long v : { 0ll, 1ll, -1ll, 42ll, -42ll, 65535ll, 65536ll,
