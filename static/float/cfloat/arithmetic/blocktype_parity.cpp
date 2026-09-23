@@ -10,18 +10,19 @@
 // oracle. A divergence is unambiguously a bug in the wider path -- the limb arithmetic,
 // its carry propagation, or the handling of a partially filled most significant limb.
 //
-// Why it exists (#1587): the large cfloat aliases all use uint64_t limbs except quad,
-// which is uint32_t:
-//
-//     duble = cfloat< 64, 11, uint64_t, ...>
-//     xtndd = cfloat< 80, 11, uint64_t, ...>
-//     quad  = cfloat<128, 15, uint32_t, ...>   <-- the outlier
-//     octo  = cfloat<256, 19, uint64_t, ...>
-//
-// quad was reportedly moved to uint64_t and reverted because a regression test failed,
-// which would mean a limb-width-dependent defect. Nothing in the suite could have caught
-// one: large_types.cpp, the test named for large multi-block configurations, hardcodes
+// Why it exists (#1587): quad was the last large cfloat on 32-bit limbs, and it moves to
+// uint64_t in this same PR, joining duble, xtndd and octo. It had reportedly been moved
+// once before and reverted because a regression test failed, which would mean a
+// limb-width-dependent defect. Nothing in the suite could have caught one:
+// large_types.cpp, the test named for large multi-block configurations, hardcodes
 // uint32_t for every configuration it covers.
+//
+// A caution about what this suite can and cannot see. It compares two limb widths
+// against each other, so it finds anything that depends on the limb width -- and is
+// blind to anything the two widths share. The subnormal-addition defect fixed in this
+// PR is exactly that: fbits is the same for both widths, both took the same wrong
+// branch, and both returned the same wrong answer, so the parity assertion passed.
+// UBSan is what named it. Parity is necessary here, not sufficient.
 //
 // The configurations below deliberately include widths that are NOT a multiple of the
 // limb width -- 80 and 160 bits -- because that leaves the most significant limb
