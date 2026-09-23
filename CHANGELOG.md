@@ -143,6 +143,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* **`info_print` returned the literal string `"TBD"` in nine number systems ([#1556](https://github.com/stillwater-sc/universal/issues/1556) / PR [#1581](https://github.com/stillwater-sc/universal/pull/1581))** -- `areal`, `cfloat`, `dbns`, `efloat`, `ereal`, `fixpnt`, `integer`, `lns` and `takum` each had a body that ignored both of its arguments and returned a placeholder (`"tbd"` for `ereal`). It compiled, which is why nothing flagged it. Each now reports a real decode in the shape posit's `info_print` established, `raw: <encoding> <fields> : value <v>`, built from the accessors that type's own `components()`/`pretty_print()` already use:
+
+    ```text
+    posit<16,1>  : raw: 16368 NE s0 r1110----------- e0 f10000000000 : value 1.5
+    areal<16,5>  : raw: b0011111000000000 s0 e01111 f100000000 u0 : value [1.5]
+    dbns<8,3>    : raw: 0b0.001.0001 s0 e0(0.5)=1 e1(3)=1 scale 0 : value 1.5
+    integer<16>  : raw: 0b1111111111110110 IntegerNumber negative : value -10
+    lns<8,3>     : raw: 0b0.0000.101 s0 i0000 f101 log2 0.625 : value 1.542210825407941
+    ereal<8>     : raw: 0b0.01111111111.1000...000 s0 limbs 1 scale 0 : value 1.5
+    ```
+
+    The **native IEEE-754** `pretty_print` and `info_print` were the same stub. The issue counted nine because its survey covered only `include/sw/universal/number/`, but `ReportFormats<Scalar>` is generic over the native types and reached them too, so they are fixed as the tenth. None of the ten renders by streaming the value: every manipulator layer but `ereal`'s is forbidden to depend on `iostream.hpp` ([#1334](https://github.com/stillwater-sc/universal/issues/1334)), which is precisely why posit's `info_print` lives in *its* `iostream.hpp` rather than beside the other string producers. Each takes the value from whatever exact-enough converter is reachable in its own layer -- `blocktriple::to_string` for `cfloat`, `convert_to_decimal_string` for `integer`, the core's `to_string` for `efloat`. `fixpnt` and `integer` alone took no `printPrecision`; they take one now, so the number systems present a single signature.
+
+    **The test lesson is the defect's own.** The manipulator surface suites from [#1551](https://github.com/stillwater-sc/universal/pull/1551) asserted only that a renderer produced a *non-empty* string -- and `"TBD"` is not empty, which is exactly how `areal`'s suite listed `info_print` and passed. The assertion that works is that **different values must render differently**: no constant can satisfy it, and it needs no per-type knowledge of what any renderer should emit. `static/utility/test_info_print_surface.cpp` pins all ten that way; reverting any one implementation to its stub fails and names the type. Three latent defects were repaired alongside: `components(efloat)` called a `v.exponent()` that does not exist *and* read `sign()` (which returns `int(-1)`/`int(+1)`, never `0`) as a `bool`, so it rendered every value negative -- never compiled, never instantiated, the [#1453](https://github.com/stillwater-sc/universal/issues/1453) pattern; `to_binary(ereal)` computed `limbs().size() - 1` without guarding the empty expansion that `renormalize_expansion` can produce; and `to_binary(efloat)` did not consume its `nibbleMarker`.
+
+* **`dbns::scale()` reported the wrong scale for 224 of 256 encodings ([#1582](https://github.com/stillwater-sc/universal/issues/1582) / PR [#1584](https://github.com/stillwater-sc/universal/pull/1584))** -- it computed `e0 + e1*log2(3)`. A dbns encodes `(-1)^s * base0^e0 * base1^e1` with `base0 = 0.5`, so the base-0.5 exponent contributes **negatively** and the scale is `-e0 + e1*log2(3)`:
+
+    | value | e0 | e1 | was | correct |
+    |---|---|---|---|---|
+    | 1.5 | 1 | 1 | 2 | **0** |
+    | 0.5 | 1 | 0 | 1 | **-1** |
+    | 0.25 | 2 | 0 | 2 | **-2** |
+    | 4.5 | 1 | 2 | 4 | **2** |
+    | 0 | 7 | 0 | 7 | **0** |
+
+    **The type already knew better everywhere else.** `operator<` documents the value as `(-1)^s * 0.5^a * 3^b` and orders on `M(x) = -a + b*log2of3`; `convert_ieee754` says "in our representation we have `0.5^a * 3^b`, which would be equivalent to `a` being negative" and only accepts `a <= 0`, storing its magnitude. `scale()` was the one place that disagreed. Two further defects in the same function: zero returned `7`, and the `static_cast` truncated toward zero where a scale must **floor**, so every value in `(0.5, 1)` reported `0` instead of `-1`. The floor is done by hand because `std::floor` is not `constexpr` before C++23. The return type widened to `int64_t`: `dbns<34,1,uint64_t>` gives the second base a 32-bit exponent field, so `e1` reaches `4294967295` and the scale lands near `6.81e9` -- past `INT_MAX`, and an out-of-range float-to-int conversion is undefined behaviour that answered `-2147483648` in practice. Both exponents come back from `extractExponent` as `uint32_t`, so the result is bounded by about `+/-6.81e9` whatever the configuration and `int64_t` covers it with room to spare, matching `takum::scale()` and `efloat::scale()`. Pinned by an exhaustive sweep of every `dbns<8,3>` encoding against an independent `floor(log2(|v|))` oracle. `components(dbns)` and `to_triple(dbns)` also stopped printing `fraction()`, which is hard-coded to return `0` for every value -- a constant dressed as a decoded field; they report the two base exponents, which is what the encoding actually carries.
+
+* **The efloat and ereal manipulator layers were mostly placeholders ([#1582](https://github.com/stillwater-sc/universal/issues/1582) / PR [#1584](https://github.com/stillwater-sc/universal/pull/1584))** -- `to_hex`, `hex_print`, `pretty_print` and `color_print` each returned `"tbd"` in both headers, eight functions; `to_hex` and `hex_print` over commented-out bodies that indexed a `nibble(n)` and an `nbits` neither type has. The design needed no invention: `dd`, `qd` and `dd_cascade` already render a multi-component value by **delegating to each limb's native rendering and joining them**. The two elastic types split on what their limbs *are* -- an `ereal`'s limbs are floating-point values, so it delegates exactly as `dd` does; an `efloat`'s are `uint32_t` magnitude words with a separate exponent, so there is nothing to delegate to and it renders the words itself, the way its working `to_binary` already did.
+
+    ```text
+    efloat<4>(1.5)  to_hex  0x0.0.C0000000        pretty_print  0:0:11000000000000000000000000000000
+    ereal<8>(1.5)   to_hex  ereal[0x3FF8000000000000]
+    ereal<8>(1/3)   to_hex  ereal[0x3FD5555555555555, 0x3C75555555555555, ... ]
+    ```
+
+* **`ReportFormats` did not compile for 34 of the 39 number systems ([#1582](https://github.com/stillwater-sc/universal/issues/1582) / PR [#1584](https://github.com/stillwater-sc/universal/pull/1584))** -- it called `type_tag`, `type_field`, `to_binary`, `to_hex`, `to_triple`, `info_print`, `pretty_print` and `color_print` unconditionally, so it only compiled for a type providing all eight. Exactly five do: `cfloat`, `dbns`, `fixpnt`, `integer`, `lns`. Even **posit** is missing `type_field` and `to_hex` -- both hard errors -- and `type_field` alone is absent from thirty of them. The issue framed this as a missing-`info_print` problem; it is not, and filling the surface would mean well over a hundred new functions. Each renderer is **detected** instead (`if constexpr (requires { ... })`), so `ReportFormats` works for every type today and a renderer added later needs no change here; `ReportFormatSurface` names what a type offers, making the gap legible rather than a build error. The *template* was never instantiated anywhere, which is how this survived -- but `test_suite.hpp` includes the header, so it is compiled by every test in the tree.
+
 * **`erational` and `edecimal` could not be used from two translation units ([#1424](https://github.com/stillwater-sc/universal/issues/1424) / PR [#1430](https://github.com/stillwater-sc/universal/pull/1430))** -- non-template free functions **defined** in headers without `inline`. Each including translation unit emits its own strong definition, so one TU is fine and two collide:
 
     ```text
