@@ -347,57 +347,27 @@ try {
 
     std::cout << "\nTesting cfloat<80,11> (IEEE extended precision equivalent)\n";
     using Cfloat80 = cfloat<80, 11, uint32_t, true, false, false>;
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyLargeIntegerConversion<Cfloat80>(reportTestCases),
-        "cfloat<80,11>", "signed integer conversion");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyLargeUnsignedConversion<Cfloat80>(reportTestCases),
-        "cfloat<80,11>", "unsigned integer conversion");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyLargeArithmetic<Cfloat80>(reportTestCases),
-        "cfloat<80,11>", "arithmetic");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyMullerStep<Cfloat80>(reportTestCases),
-        "cfloat<80,11>", "Muller step");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifySubnormalProducts<Cfloat80>(reportTestCases),
-        "cfloat<80,11>", "subnormal products");
+    nrOfFailedTestCases += ReportTestResult( VerifyLargeIntegerConversion<Cfloat80>(reportTestCases),  "cfloat<80,11>", "signed integer conversion");
+    nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedConversion<Cfloat80>(reportTestCases), "cfloat<80,11>", "unsigned integer conversion");
+    nrOfFailedTestCases += ReportTestResult( VerifyLargeArithmetic<Cfloat80>(reportTestCases),         "cfloat<80,11>", "arithmetic");
+    nrOfFailedTestCases += ReportTestResult( VerifyMullerStep<Cfloat80>(reportTestCases),              "cfloat<80,11>", "Muller step");
+    nrOfFailedTestCases += ReportTestResult( VerifySubnormalProducts<Cfloat80>(reportTestCases),       "cfloat<80,11>", "subnormal products");
 
     std::cout << "\nTesting cfloat<128,15> (IEEE quad precision equivalent)\n";
     using Cfloat128 = cfloat<128, 15, uint32_t, true, false, false>;
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyLargeIntegerConversion<Cfloat128>(reportTestCases),
-        "cfloat<128,15>", "signed integer conversion");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyLargeUnsignedConversion<Cfloat128>(reportTestCases),
-        "cfloat<128,15>", "unsigned integer conversion");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyLargeArithmetic<Cfloat128>(reportTestCases),
-        "cfloat<128,15>", "arithmetic");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyMullerStep<Cfloat128>(reportTestCases),
-        "cfloat<128,15>", "Muller step");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifySubnormalProducts<Cfloat128>(reportTestCases),
-        "cfloat<128,15>", "subnormal products");
+    nrOfFailedTestCases += ReportTestResult( VerifyLargeIntegerConversion<Cfloat128>(reportTestCases),  "cfloat<128,15>", "signed integer conversion");
+    nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedConversion<Cfloat128>(reportTestCases), "cfloat<128,15>", "unsigned integer conversion");
+    nrOfFailedTestCases += ReportTestResult( VerifyLargeArithmetic<Cfloat128>(reportTestCases),         "cfloat<128,15>", "arithmetic");
+    nrOfFailedTestCases += ReportTestResult( VerifyMullerStep<Cfloat128>(reportTestCases),              "cfloat<128,15>", "Muller step");
+    nrOfFailedTestCases += ReportTestResult( VerifySubnormalProducts<Cfloat128>(reportTestCases),       "cfloat<128,15>", "subnormal products");
 
     std::cout << "\nTesting cfloat<256,19> (octuple precision)\n";
     using Cfloat256 = cfloat<256, 19, uint32_t, true, false, false>;
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyLargeIntegerConversion<Cfloat256>(reportTestCases),
-        "cfloat<256,19>", "signed integer conversion");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyLargeUnsignedConversion<Cfloat256>(reportTestCases),
-        "cfloat<256,19>", "unsigned integer conversion");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyLargeArithmetic<Cfloat256>(reportTestCases),
-        "cfloat<256,19>", "arithmetic");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyMullerStep<Cfloat256>(reportTestCases),
-        "cfloat<256,19>", "Muller step");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifySubnormalProducts<Cfloat256>(reportTestCases),
-        "cfloat<256,19>", "subnormal products");
+    nrOfFailedTestCases += ReportTestResult( VerifyLargeIntegerConversion<Cfloat256>(reportTestCases),  "cfloat<256,19>", "signed integer conversion");
+    nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedConversion<Cfloat256>(reportTestCases), "cfloat<256,19>", "unsigned integer conversion");
+    nrOfFailedTestCases += ReportTestResult( VerifyLargeArithmetic<Cfloat256>(reportTestCases),         "cfloat<256,19>", "arithmetic");
+    nrOfFailedTestCases += ReportTestResult( VerifyMullerStep<Cfloat256>(reportTestCases),              "cfloat<256,19>", "Muller step");
+    nrOfFailedTestCases += ReportTestResult( VerifySubnormalProducts<Cfloat256>(reportTestCases),       "cfloat<256,19>", "subnormal products");
 
 #endif
 
@@ -405,12 +375,8 @@ try {
     // Additional large configurations
     std::cout << "\nTesting cfloat<160,15>\n";
     using Cfloat160 = cfloat<160, 15, uint32_t, true, false, false>;
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyLargeIntegerConversion<Cfloat160>(reportTestCases),
-        "cfloat<160,15>", "integer conversion");
-    nrOfFailedTestCases += ReportTestResult(
-        VerifyMullerStep<Cfloat160>(reportTestCases),
-        "cfloat<160,15>", "Muller step");
+    nrOfFailedTestCases += ReportTestResult( VerifyLargeIntegerConversion<Cfloat160>(reportTestCases), "cfloat<160,15>", "integer conversion");
+    nrOfFailedTestCases += ReportTestResult( VerifyMullerStep<Cfloat160>(reportTestCases),             "cfloat<160,15>", "Muller step");
 #endif
 
 #if REGRESSION_LEVEL_3
