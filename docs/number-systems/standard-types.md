@@ -72,10 +72,12 @@ e4m3 a;   // OCP OFP8 E4M3 -- NaN on overflow
 e5m2 b;   // OCP OFP8 E5M2 -- wider range, less precision
 ```
 
-**`xtndd` is not the x87 80-bit format.** x87 extended precision is 15 exponent bits and
-64 fraction bits; `xtndd` is 11 and 68. It is an 80-bit format with `double`'s dynamic
-range and extra precision, which is a reasonable thing to want, but it will not
-bit-reproduce an x87 `long double`.
+**`xtndd` is not the x87 80-bit format.** x87 extended precision has 15 exponent bits;
+`xtndd` has 11, which gives it `double`'s dynamic range in an 80-bit container -- its extra
+bits all buy precision and none buy range, so it overflows to `inf` everywhere above
+1.8e308 that a real x87 `long double` is perfectly happy. Tracked in
+[#1599](https://github.com/stillwater-sc/universal/issues/1599). Until it is settled, do
+not reach for `fp80` expecting to model x87.
 
 ## Using them
 

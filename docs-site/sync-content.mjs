@@ -63,6 +63,9 @@ const FILE_MAP = {
   'number-systems/qd_cascade.md': 'number-systems/qd-cascade.md',
   'number-systems/complex.md': 'number-systems/complex.md',
   'number-systems/bisection.md': 'number-systems/bisection.md',
+  'number-systems/faithful.md': 'number-systems/faithful.md',
+  'number-systems/positional.md': 'number-systems/positional.md',
+  'number-systems/unum.md': 'number-systems/unum.md',
   // -- Adaptive (elastic) precision --------------------------------
   'number-systems/einteger.md': 'number-systems/einteger.md',
   'number-systems/edecimal.md': 'number-systems/edecimal.md',

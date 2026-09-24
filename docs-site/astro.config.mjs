@@ -41,6 +41,7 @@ export default defineConfig({
                 { label: 'fixpnt', link: '/number-systems/fixpnt/' },
                 { label: 'dfixpnt', link: '/number-systems/dfixpnt/' },
                 { label: 'rational', link: '/number-systems/rational/' },
+                { label: 'positional', link: '/number-systems/positional/' },
               ],
             },
             {
@@ -98,8 +99,10 @@ export default defineConfig({
               items: [
                 { label: 'interval', link: '/number-systems/interval/' },
                 { label: 'sorn', link: '/number-systems/sorn/' },
+                { label: 'unum (Type I)', link: '/number-systems/unum/' },
                 { label: 'unum2', link: '/number-systems/unum2/' },
                 { label: 'bisection', link: '/number-systems/bisection/' },
+                { label: 'faithful', link: '/number-systems/faithful/' },
               ],
             },
             {
