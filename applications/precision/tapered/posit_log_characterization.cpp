@@ -52,6 +52,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/qd/qd.hpp>
@@ -194,7 +195,26 @@ namespace {
 		}
 	}
 
+	struct Row { std::string tag; std::string where; Score s; };
+	std::vector<Row> measured;
+
+	// Look up a measured row. The conclusions quote specific rows, and quoting a row that
+	// was not measured would be worse than quoting no number at all.
+	const Score* rowFor(const std::string& tag, const std::string& whereStartsWith) {
+		for (const Row& r : measured) {
+			if (r.tag == tag && r.where.rfind(whereStartsWith, 0) == 0) return &r.s;
+		}
+		return nullptr;
+	}
+
+	std::string countIn(const std::string& tag, const std::string& where, unsigned Score::*field) {
+		const Score* s = rowFor(tag, where);
+		if (!s) return std::string("[not measured]");
+		return std::to_string(s->*field) + " of " + std::to_string(s->wrong);
+	}
+
 	void report(const std::string& tag, const std::string& where, const Score& s) {
+		measured.push_back(Row{ tag, where, s });
 		std::cout << "  " << std::left << std::setw(14) << tag
 		          << std::setw(22) << where
 		          << " checked " << std::setw(7) << s.checked
@@ -330,29 +350,74 @@ try {
 	around<56, 0>("posit<56,0>", E, "x near e", 200);
 	around<64, 2>("posit<64,2>", E, "x near e", 200);
 
+	// ---- the conclusions, derived from the rows that were just measured --------------
+	//
+	// These printed fixed numbers, and a fixed statement that std::log is never at fault.
+	// None of it came from a Score. On a toolchain whose std::log is not correctly
+	// rounded the table would show a nonzero libm count while this section went on
+	// asserting the opposite -- in a program whose whole purpose is to measure rather
+	// than assert, and which runs on eleven platforms in CI.
+	unsigned totWrong = 0, totArg = 0, totLibm = 0, totRound = 0;
+	for (const auto& r : measured) {
+		totWrong += r.s.wrong; totArg += r.s.lostInArgument;
+		totLibm  += r.s.lostInLibm; totRound += r.s.lostInRounding;
+	}
+
 	std::cout << "\n4. What this says\n\n";
 	std::cout << "   Measured here: posit<8,2> through posit<16,2> over every encoding, and\n";
 	std::cout << "   posit<32,2>, posit<56,0..3> and posit<64,2> over the demanding\n";
-	std::cout << "   neighbourhoods. Everything below is about those, not about every posit.\n\n";
-	std::cout << "   std::log is never the culprit. The libm column is zero in every row:\n";
-	std::cout << "   where the shim is wrong, the host returned the nearest double.\n\n";
-	std::cout << "   The failures split into two different mechanisms, and which one you get\n";
-	std::cout << "   depends on the configuration rather than on a single rule:\n\n";
-	std::cout << "     Double rounding. The argument survives the conversion and the host is\n";
-	std::cout << "     correct, but rounding that double to the posit is not the same as\n";
-	std::cout << "     rounding the true result to the posit. posit<56,2> near e loses all\n";
-	std::cout << "     100 of its failures here, and they are 1 ulp.\n\n";
-	std::cout << "     Argument loss. double(x) is simply not x, so the shim computes the\n";
-	std::cout << "     logarithm of a different number. posit<64,2> loses 396 of 398 this\n";
-	std::cout << "     way near e and 398 of 398 near 1.0, and the errors are unbounded\n";
-	std::cout << "     rather than 1 ulp. posit<56,0> is the extreme case: the value just\n";
-	std::cout << "     above 1.0 is indistinguishable from 1.0 as a double, so the shim\n";
-	std::cout << "     returns zero.\n\n";
-	std::cout << "   Headroom is suggestive but is NOT the rule. posit<56,0> and posit<56,1>\n";
-	std::cout << "   both carry 52 fraction bits at e, and one is wrong 198 times in 400\n";
-	std::cout << "   while the other is wrong none. Whether a result lands near a posit\n";
-	std::cout << "   rounding boundary depends on how that configuration's grid sits against\n";
-	std::cout << "   the double's, and every (nbits, es) pair has its own answer.\n\n";
+	std::cout << "   neighbourhoods -- " << measured.size() << " rows, " << totWrong
+	          << " incorrectly rounded results in all.\n";
+	std::cout << "   Everything below is about those, not about every posit.\n\n";
+
+	if (totWrong == 0) {
+		std::cout << "   Nothing was mis-rounded in this run, which is not what the earlier\n";
+		std::cout << "   measurements showed -- check the oracle before believing it.\n";
+	}
+	else {
+		std::cout << "   Where the information went, across every row measured:\n";
+		std::cout << "     argument  " << totArg   << "   (double(x) is not x)\n";
+		std::cout << "     libm      " << totLibm  << "   (std::log did not return the nearest double)\n";
+		std::cout << "     rounding  " << totRound << "   (rounding that double to the posit lost it)\n\n";
+
+		if (totLibm == 0) {
+			std::cout << "   std::log is not the culprit anywhere in this run: every failure is\n";
+			std::cout << "   the conversion on one side or the other, not the host function.\n\n";
+		}
+		else {
+			std::cout << "   NOTE: " << totLibm << " failures are the host std::log itself on this\n";
+			std::cout << "   toolchain, which the runs this program was written against did not\n";
+			std::cout << "   show. The two conversion mechanisms below are not the whole story here.\n\n";
+		}
+
+		std::cout << "   The failures split into two different mechanisms, and which one you\n";
+		std::cout << "   get depends on the configuration rather than on a single rule:\n\n";
+		std::cout << "     Double rounding. The argument survives and the host is correct, but\n";
+		std::cout << "     rounding that double to the posit is not the same as rounding the\n";
+		std::cout << "     true result to the posit. posit<56,2> near e loses "
+		          << countIn("posit<56,2>", "x near e", &Score::lostInRounding) << " failures\n";
+		std::cout << "     this way, and they are 1 ulp.\n\n";
+		std::cout << "     Argument loss. double(x) is simply not x, so the shim computes the\n";
+		std::cout << "     logarithm of a different number. posit<64,2> loses "
+		          << countIn("posit<64,2>", "x near e", &Score::lostInArgument) << " this way\n";
+		std::cout << "     near e and " << countIn("posit<64,2>", "x near 1", &Score::lostInArgument)
+		          << " near 1.0, and those errors are unbounded rather than\n";
+		std::cout << "     1 ulp. posit<56,0> is the extreme case: the value just above 1.0 is\n";
+		std::cout << "     indistinguishable from 1.0 as a double, so the shim returns zero.\n\n";
+
+		const Score* a = rowFor("posit<56,0>", "x near e");
+		const Score* b = rowFor("posit<56,1>", "x near e");
+		if (a && b) {
+			std::cout << "   Headroom is suggestive but is NOT the rule. posit<56,0> and\n";
+			std::cout << "   posit<56,1> both carry 52 fraction bits at e, and they record "
+			          << a->wrong << "\n";
+			std::cout << "   and " << b->wrong << " wrong results out of " << a->checked
+			          << ". Whether a result lands near a posit\n";
+			std::cout << "   rounding boundary depends on how that configuration's grid sits\n";
+			std::cout << "   against the double's, and every (nbits, es) pair has its own answer.\n\n";
+		}
+	}
+
 	std::cout << "   That last point is the one worth carrying back to the issue. It is an\n";
 	std::cout << "   argument from measurement for what the thread argued from experience:\n";
 	std::cout << "   a correctly rounded library for a PARAMETERIZED format has no single\n";
