@@ -128,14 +128,92 @@ The full list of 56 is in the release notes, grouped by scope. These are the one
 * **`to_hex(dd_cascade)` recursed until the stack overflowed** ([#1464](https://github.com/stillwater-sc/universal/pull/1464)) -- a regression from [#1429](https://github.com/stillwater-sc/universal/pull/1429).
 
 
-## Earlier, unstamped entries (v4.6.0 - v4.10.1)
+## Earlier releases (v4.5.0 - v4.10.1)
 
-These entries accumulated under `[Unreleased]` across several releases without ever being
-stamped. They describe work that shipped in v4.6.0 through v4.10.1, not in v5.0.0; the
-authoritative per-release record for them is the [releases page](https://github.com/stillwater-sc/universal/releases).
+These entries accumulated under `[Unreleased]` across many releases without ever being
+stamped. Each is now attributed to the release that shipped it, by resolving the pull
+request it cites to the earliest tag containing that commit. Where an entry cites several
+pull requests, it is filed under the release that delivered the capability rather than the
+one carrying the last follow-up; 13 entries that cite no pull request were placed by
+locating the commit that introduced the file or behaviour they describe. Attribution was
+cross-checked against the release tag messages -- v4.8.9's three headline items, for
+instance, are the three entries filed under it here. The generated notes on the
+[releases page](https://github.com/stillwater-sc/universal/releases) remain the
+authoritative per-release record.
 
-### Added
+### [4.10.1](https://github.com/stillwater-sc/universal/compare/v4.10.0...v4.10.1) (2026-08-23)
 
+#### Changed
+
+* **elreal's transcendental constants are memoized ([#1383](https://github.com/stillwater-sc/universal/issues/1383) / PR [#1384](https://github.com/stillwater-sc/universal/pull/1384))** -- `pi` and `ln2` were recomputed from scratch on every call, and that -- not the series each one wraps -- was essentially the entire cost of `sin`, `cos`, `tan` and `log`. At depth 8 on a `double` host, `pi_zbcl(8)` alone cost 371.90 ms against `sin(0.5,8)`'s total of 371.82 ms, while `exp` (9.57 ms) and `sqrt` (4.04 ms) need no constant, which is exactly why they were two orders of magnitude cheaper. Cached per `(FpType, depth)`, `thread_local`: `sin`/`cos` ~372 ms to ~5.8 ms, `tan` to ~9.1 ms, `log` to ~0.01 ms, `exp` and `sqrt` unchanged. The first call at a given depth still pays for the constant. **Keyed on the exact depth**, and that constraint is the part worth recording: caching the deepest value and truncating it for shallower requests is cheaper, and is what the issue proposed before measuring, but these constants are *not* prefix-stable -- a deeper evaluation refines the last block rather than merely extending it, so `pi_zbcl(2)` would return one value or another depending on whether some unrelated earlier call had asked for more. Values are unchanged. The regression counts allocations rather than wall clock, and is mutation-tested against **both** wrong designs.
+
+
+### [4.10.0](https://github.com/stillwater-sc/universal/compare/v4.9.4...v4.10.0) (2026-08-22)
+
+#### Changed
+
+* **elreal's default precision is 32 blocks, chosen from measurement ([#1177](https://github.com/stillwater-sc/universal/issues/1177) / PR [#1382](https://github.com/stillwater-sc/universal/pull/1382))** -- `kElrealDefaultPrecision` goes 8 to 32, about 510 decimal digits on a `double` host. **The premise the issue was filed under had changed**: it asks to read the tool's saturation knob, "where accuracy stops improving", and set defaults from it -- but elreal no longer has one. The caps that existed when it was filed were all removed above, and accuracy is now linear and unbounded (16.4 digits per block on a `double` host against a predicted 15.95, with no plateau at any depth swept), so the choice of default is a policy question rather than a measurement. Cost is roughly linear in the knob: on the facade at -O2, 8 to 32 blocks takes `a/b` from 0.114 to 0.576 ms and `a*b` from 0.240 to 1.004 ms. This governs the **class facade only** -- an elreal's own pull depth for boundary operations and facade arithmetic; the free ZBCL math functions carry their own depth arguments and are unaffected. Scope `elreal_precision_guard` to choose a different trade. Guidance is in `docs/design/elreal-ereal-precision-defaults.md`, with the sweep it was built from committed alongside it.
+
+#### Fixed
+
+* **`numeric_limits<elreal>::epsilon()` returned exactly zero ([#1177](https://github.com/stillwater-sc/universal/issues/1177) / PR [#1382](https://github.com/stillwater-sc/universal/pull/1382))** -- it was `ElrealType(std::ldexp(1.0, -digits))`, computing its value *through a host double*, so it underflowed for any default precision from 21 blocks up on a `double` host. The old default of 8 sat just under that line, which is why it went unnoticed until the default moved. Representing a value that far below the host's range is the entire point of the type; epsilon is now built as a block carrying its scale in the wide exponent. `double(epsilon())` is still 0, which is correct -- `2^-1696` is not a `double`. The regression pins it *structurally* (exactly one block at exponent `-digits`) so it catches a host-computed epsilon at any default, not only one deep enough to underflow.
+
+* **The characterization tool reported the operator's own sweep limit as a result ([#1177](https://github.com/stillwater-sc/universal/issues/1177) / PR [#1382](https://github.com/stillwater-sc/universal/pull/1382))** -- it picked "first knob within 95% of the best digits" as the saturation point, and for a series still climbing the best *is* the last row, so it always fired at `maxDepth`. Every elreal function claimed to saturate at whatever depth you happened to sweep to, and so did most of ereal's. The knee had the same flaw. Both are now reported only when a plateau was actually observed, and the alternative is stated: `NO saturation through depth K (D digits, still climbing)`.
+
+### [4.9.4](https://github.com/stillwater-sc/universal/compare/v4.9.3...v4.9.4) (2026-08-22)
+
+#### Fixed
+
+* **`einteger`'s parse radix depended on the leading-zero count ([#1370](https://github.com/stillwater-sc/universal/issues/1370) / PR [#1381](https://github.com/stillwater-sc/universal/pull/1381))** -- the octal pattern required the *second* character to be `[1-7]`, so one leading zero selected octal and two or more fell through to decimal: `"0777"` was 511 but `"00777"` was 777, and `"075"` was 61 while `"0075"` was 75. Zero-padding a value silently changed what it meant, and the same gap made the radix depend on the digits (`"0747"` was 487, `"0749"` was 749). A leading zero now commits the string to octal however many zeros there are, and decimal no longer accepts one, so a leading-zero string containing an 8 or 9 is malformed rather than quietly re-read in another radix. **Octal support itself is unchanged and was never in question** -- the issue as filed proposed dropping it on the grounds that nothing used it, which was wrong; `elastic/einteger/conversion/string_parse.cpp` has a section for it.
+
+### [4.9.3](https://github.com/stillwater-sc/universal/compare/v4.9.2...v4.9.3) (2026-08-22)
+
+#### Added
+
+* **A thousand-digit demonstration on both `float` and `double` hosts (PR [#1376](https://github.com/stillwater-sc/universal/pull/1376))** -- `applications/precision/elreal/thousand_digit_sqrt.cpp`: the Newton iteration for `sqrt(2)`, applied repeatedly over a generic `Real`, with no elreal in the kernel. On a native `double` it stalls at 16 digits however many iterations it is given; on elreal it converges past 1150 digits on both hosts (1177 on `float`, 1158 on `double`), verified against a 1200-digit reference computed in exact integer arithmetic outside this library. `float` needs ~2.2x the blocks for the same digits, its limb carrying 24 bits to `double`'s 53 -- the only difference the host makes to the answer, which is the point. Ramping `precision()` alongside the iterate rather than paying the final precision from the first step costs 4s and 25s instead of 25s and 206s. Registered `compile_all("false")`: built so it cannot rot, not run by ctest.
+
+* **The faithful long division, alongside the Newton reciprocal ([#1061](https://github.com/stillwater-sc/universal/issues/1061), [#1068](https://github.com/stillwater-sc/universal/issues/1068) / PR [#1380](https://github.com/stillwater-sc/universal/pull/1380))** -- `div_online(a, b, depth, DenseDivision::FaithfulLongDivision)` restores McCleeary 4.2.6 for a dense divisor, bounded: `divideHelper_bounded` truncates each level's operands to the budget that can still reach the output frontier, which is identical to the unbounded recursion at 4-6x less cost. The two policies agree on **value** (263/528/793/1056 digits against 264/529/795/1059 at depths 16/32/48/64), so this is not a fast-vs-accurate trade. Which is cheaper depends on the divisor's **width**, not on depth alone: long division runs 3.8x slower than Newton for a 2-block divisor and 0.92x for a 24-block one. Newton stays the default because a narrow divisor is the common case. The alternative earns its place less on speed than on being an independent check on the Newton path -- comparing the two is how [#1373](https://github.com/stillwater-sc/universal/issues/1373) was found.
+
+#### Changed
+
+* **Division by a single block is linear rather than quadratic (PR [#1377](https://github.com/stillwater-sc/universal/pull/1377))** -- `singleDiv` followed `FCL.hs` literally: divide each dividend block independently to a full stream, then `infSum` the D of them. Correct, but term `i` must be carried down to the output frontier, so D quotient blocks cost `D^2/2` block divisions. Dividing an N-digit number by a one-digit divisor is a linear operation, and what makes the schoolbook carry work here is that the residual of `f_i/g` lands at the scale of `f_{i+1}`, so a single running remainder suffices. Block divisions are now 1.00 per emitted block on a `double` host against the old `D/2`, and the wall clock goes from x6.34 per doubling of D to x2.02 -- 79x faster at D=20 and 1183x at D=160. Still a lazy producer: one quotient block per pull, verified to 400 blocks. The raw quotient blocks are not always 0-overlap on `float`, and renormalising the finished expansion would have been self-defeating (`priestRenorm` is itself superlinear, measured x5.9 per doubling), so blocks are folded through a small canonical buffer and emitted with a lookahead -- O(1) per block, output canonical. The high-precision suites sat squarely on this path and run **1.70x** faster: the LEVEL_4 transcendental suite 3m33.6s to 2m06.0s, constants 51.6s to 30.1s.
+
+#### Fixed
+
+* **elreal's division was capped three independent ways** -- each cap looked like the type's limit until the one beneath it was removed:
+  - **A host-derived depth constant** ([#1371](https://github.com/stillwater-sc/universal/issues/1371) / PR [#1374](https://github.com/stillwater-sc/universal/pull/1374)) -- `div_online`'s dense path pinned its Newton reciprocal to `(-min_exponent - 2*k) / k`, so every division by a multi-block value stopped at 17 blocks (~271 digits) on `double` and 3 (~22 digits) on `float`, however deep the caller pulled. Same mistaken premise the ceiling work removed elsewhere; this one survived the sweep because it is a target *depth* rather than a guard. `div_online` now takes the depth as a parameter, `operator/=` passes `precision()` plus a guard, and the Payne-Hanek reduction passes the `reddepth` it had already computed and then ignored.
+  - **A term dropped when the accumulator cancelled to zero** ([#1373](https://github.com/stillwater-sc/universal/issues/1373) / PR [#1375](https://github.com/stillwater-sc/universal/pull/1375)) -- `infsumRec_step`'s null-sum branch advanced the input cursor past `bs` as well as `as`, so whenever a term summed the accumulator to exactly zero the *following* term was silently discarded. The branch was written as defensive dead code ("McCleeary's pattern match assumes this cannot occur"). It is not dead: zero blocks are legitimate ZBCL blocks, and the streaming multiply emits an all-zero term whenever an operand block is zero. The consequence was that two expansions holding the **exact same value** gave different products, and Newton's reciprocal walked straight into it -- the cancellation in `2 - b*r` emits a growing run of zero blocks as it converges, so past a certain depth the correction term was discarded whole and the iteration fixed-pointed. That, not the depth constant, is what capped dense division at ~513 digits on `double` and ~62 on `float`. Fixed, a `float` host reaches 1147 digits through division where it previously managed 62.
+  - **Quadratic cost for a single-block divisor** (PR [#1377](https://github.com/stillwater-sc/universal/pull/1377)) -- see **Changed**.
+
+* **The lazy producers owned themselves ([#1378](https://github.com/stillwater-sc/universal/issues/1378) / PR [#1379](https://github.com/stillwater-sc/universal/pull/1379))** -- `add()` and `infsum()` built their tail thunk as a `std::function` holding a `shared_ptr` to the control block that owned it, so releasing the returned ZBCL could never bring the count to zero and every call stranded its state for the life of the process. Measured as live allocations per stream created and immediately dropped: `add` 4, `div_online` 72, `mul_online` 243 -- 80,000 dropped `mul_online` streams took a process from 3.5 MB to 2.3 GB. Every elreal operation goes through `add()` and every multiply and divide through `infsum()`, so a long-running computation leaked in proportion to the block operations it performed. Both now use a free function whose thunk captures only the state; RSS is flat at 3668 kB across 160,000 streams. Laziness is unchanged, and so is speed -- this is a memory fix.
+
+* **The sin/cos round-trip gate, and the measuring stick itself ([#1076](https://github.com/stillwater-sc/universal/issues/1076) / PR [#1369](https://github.com/stillwater-sc/universal/pull/1369))** -- `sin(asin(x))==x` and `cos(acos(x))==x` were gated off in the LEVEL_4 suite for capping at ~234 digits against a 300-digit bar. They now reach 321 at depth 20 and scale linearly (16.0 digits per unit of depth against a theoretical 15.95), closing the last unmet acceptance criterion of [#931](https://github.com/stillwater-sc/universal/issues/931) Phase 7. **Nothing in sin/cos changed**: the fix was the operand-normalisation rule above, bisected to the commit. Three earlier passes had concluded the loss was a conditioning defect in the Maclaurin recurrence, reasoning that a plateau at 19 blocks *had* to be `double`'s physical floor -- naming the symptom as its own cause. The floor was the bug. Separately, this found a defect in the oracle: `agreed_decimal_digits()` handed its digit string to `einteger::parse`, which reads a leading zero as octal, so `"0.75"` became 61 and the oracle reported 0 agreeing digits for values that were exactly equal. It went unnoticed because the only fractional reference in use was `"0.5"`, which is correct purely by coincidence -- octal and decimal agree on every single digit.
+
+### [4.9.2](https://github.com/stillwater-sc/universal/compare/v4.9.1...v4.9.2) (2026-08-21)
+
+#### Added
+
+* **A `BEHAVIOUR-CHANGE` commit trailer, collected into the release notes (PR [#1368](https://github.com/stillwater-sc/universal/pull/1368))** -- both v4.9.0 and v4.9.1 needed their notes edited by hand after publication for the same reason: git-cliff builds the page from commit subjects, and a subject cannot say "this changes what your code returns". A commit can now carry the fact itself, and `cliff.toml` collects those into a **Behaviour changes** section above the type groups. `BEHAVIOR-CHANGE` is accepted too, so neither spelling is a silent no-op. Verified against real output rather than assumed: regenerating the v4.9.0..v4.9.1 range, which carries no trailers, gives byte-identical output to what shipped. Documented in `CLAUDE.md` including when *not* to use it.
+
+
+### [4.9.1](https://github.com/stillwater-sc/universal/compare/v4.9.0...v4.9.1) (2026-08-21)
+
+#### Added
+
+#### Fixed
+
+* **The [#1364](https://github.com/stillwater-sc/universal/issues/1364) sparse-expansion caveat was wrong (PR [#1367](https://github.com/stillwater-sc/universal/pull/1367))** -- the caveat, which shipped in the v4.9.0 release notes, asked whether `agreed_decimal_digits` credits how far an expansion *reaches* rather than what it *carries*, on the evidence that a `bfloat16` `e` had all 52 gaps wider than `k` while its agreeing digits exceeded `blocks*k*log10(2)`. Both halves are wrong. Wide gaps are not a narrow-host phenomenon -- a depth-32 `e` has 35 of 35 gaps above `k` on `double` -- so there was no anomaly to explain; and `blocks*k` is not a bound on agreement, because an expansion is a signed **sum** rather than a concatenation of bit fields, so a low component can borrow from a higher one. Checked outside the library instead, by rebuilding the expansions in exact rational arithmetic against a 3000-digit reference: `bfloat16` claimed 78 digits and delivered 78, `half` 122 and 122, `float` 263 and 263. The published v4.9.0 notes were corrected.
+
+
+### [4.9.0](https://github.com/stillwater-sc/universal/compare/v4.8.9...v4.9.0) (2026-08-20)
+
+#### Added
+
+* **elreal Phase 9 evaluation completed (Epic [#923](https://github.com/stillwater-sc/universal/issues/923), [#933](https://github.com/stillwater-sc/universal/issues/933))** -- the four follow-ups the MVP left open, each measured rather than argued:
+  - **Exact geometric predicates** ([#1186](https://github.com/stillwater-sc/universal/issues/1186) / PR [#1354](https://github.com/stillwater-sc/universal/pull/1354)) -- `orient2d` and `incircle` over a generic `Real`, scored against the same determinant in exact dyadic rationals. `double` returns the wrong sign on 5474 of 16384 grid points and 105 of the exactly-cocircular cases; `qd` and `elreal` are exact on both. `qd` being exact is the honest result rather than a failed experiment: Shewchuk puts `orient2d` at ~2x working precision and `incircle` at ~4x, and `qd` supplies 4x. The difference is in kind -- `qd` is exact because someone did the error analysis and it happened to fit, `elreal` because it has no budget to exceed. Two traps are now guarded: `operator*` is depth-bounded (raise it with `elreal_precision_guard`), and the sign must come from the comparison operators rather than `sign()` or the raw block stream, which was wrong on 61 of the 128 exactly-collinear points -- precisely the inputs a predicate exists to detect.
+  - **Cancellation-stressed accumulation** ([#1187](https://github.com/stillwater-sc/universal/issues/1187) / PR [#1353](https://github.com/stillwater-sc/universal/pull/1353)) -- sums whose terms dwarf their own total, scored against the exact dyadic value of the same terms so the only thing compared is the accumulator. On an ill-conditioned dot product `double` returns nothing at any size while `qd` plateaus near 90 digits (four limbs at 100-bit spacing reach about `2^-300`: the ceiling is the limb count, not the bit count) and `elreal` stays exact past a thousand bits. The naive-Taylor workload records what exactness cannot do: the exact sum of `exp(-40)`'s rounded terms agrees with `exp(-40)` to *zero* digits, so accumulating them exactly rebuilds nothing, and the benchmark says so in its own output rather than leaving a reader the flattering reading.
+  - **Precision-to-latency decision matrix** ([#1188](https://github.com/stillwater-sc/universal/issues/1188) / PR [#1356](https://github.com/stillwater-sc/universal/pull/1356)) -- the issue conflates two matrices and only one is blocked. The *design* matrix (what a narrow block shape would reach once its series stops degrading) needs an extended-precision host that does not exist yet; the *decision* matrix (which type a caller should reach for today) needed only the measurement. It sharpens the MVP's conclusion from "not yet a good trade" to **dominated**: narrow hosts are genuinely faster inside elreal (~9x at 16 digits), but the range where they win is one where `dd` and `qd` already deliver the answer and beat them on throughput by 16-67x. A cheap narrow-width EFT datapath does not pay for itself through block count alone.
+  - **Characterization swept over host `FpType`** ([#1176](https://github.com/stillwater-sc/universal/issues/1176) / PR [#1357](https://github.com/stillwater-sc/universal/pull/1357)) -- `characterize.cpp` hardcoded `elreal<double>`, so its CSV carried an `FpType` column that was always `double` and reported one host's curve as the whole picture. Now templated over `{double, float, bfloat16}`, with `summary()` grouping by `(type, host)` rather than pooling three hosts into a saturation point belonging to none of them.
 * **`elreal` refines without a host ceiling, on every host ([#1051](https://github.com/stillwater-sc/universal/issues/1051), [#1363](https://github.com/stillwater-sc/universal/issues/1363) / PRs [#1361](https://github.com/stillwater-sc/universal/pull/1361), [#1362](https://github.com/stillwater-sc/universal/pull/1362), [#1366](https://github.com/stillwater-sc/universal/pull/1366))** -- every host was capped by its *exponent range*, not by its precision: `float` stopped at 37 decimal digits, `bfloat16` at 33, `half` at 20, and `double` at 307 -- which is `1022 * log10(2)`, its own subnormal wall. All four now grow linearly with depth and stop only where the caller stops pulling. The fix is one rule applied at every error-free transform: **normalise the OPERANDS, not the results**. An EFT run at the operands' natural scale has already lost bits to the subnormal range by the time it returns, and normalising its outputs cannot put them back; `block::normalise()` rescales `v` into `[1,2)` and folds the scale it was carrying into the wide `integer<256>` exponent added in [#1061](https://github.com/stillwater-sc/universal/issues/1061), exactly, leaving the value invariant. The three `min_exponent + 2k` refinement floors are gone with it.
 
   | host | k | before | after | blocks | digits/block |
@@ -146,29 +224,83 @@ authoritative per-release record for them is the [releases page](https://github.
   | `half` | 11 | 20 (hard cap) | 122+ | ~34 | 3.6 |
 
   Three findings are worth carrying forward. `twoSumRN` gains a **nonadjacent shortcut** -- operands already `k+1` apart need no arithmetic, since their exact sum is the pair -- and the threshold is `k+1` rather than `k` for the same non-overlapping-vs-nonadjacent reason as the Shewchuk COMPRESS step in [#1340](https://github.com/stillwater-sc/universal/issues/1340); it is also what took the suite from 1469s to 17s. `half` additionally needed `block::eft_scale_bias()`, which spends its 16 unused binades *above* 1.0 to buy the `2k` of room an addition residual needs beneath a normalised operand (`half` has 14 for `k=11`); every other host computes 0 and the code compiles out. And the bias must **not** be applied to multiplication, where a product's exponent is the sum of its operands' -- biasing both doubles it and overflows a narrow host, which review caught and the suite did not, because `inf`/`nan` blocks fail `is_normalised()` and get silently dropped downstream. `double` is no longer bit-identical to v4.8: the old bits were a value cut off at the host's exponent wall, so this is a change in reach, not in what the retained digits say.
-* **elreal Phase 9 evaluation completed (Epic [#923](https://github.com/stillwater-sc/universal/issues/923), [#933](https://github.com/stillwater-sc/universal/issues/933))** -- the four follow-ups the MVP left open, each measured rather than argued:
-  - **Exact geometric predicates** ([#1186](https://github.com/stillwater-sc/universal/issues/1186) / PR [#1354](https://github.com/stillwater-sc/universal/pull/1354)) -- `orient2d` and `incircle` over a generic `Real`, scored against the same determinant in exact dyadic rationals. `double` returns the wrong sign on 5474 of 16384 grid points and 105 of the exactly-cocircular cases; `qd` and `elreal` are exact on both. `qd` being exact is the honest result rather than a failed experiment: Shewchuk puts `orient2d` at ~2x working precision and `incircle` at ~4x, and `qd` supplies 4x. The difference is in kind -- `qd` is exact because someone did the error analysis and it happened to fit, `elreal` because it has no budget to exceed. Two traps are now guarded: `operator*` is depth-bounded (raise it with `elreal_precision_guard`), and the sign must come from the comparison operators rather than `sign()` or the raw block stream, which was wrong on 61 of the 128 exactly-collinear points -- precisely the inputs a predicate exists to detect.
-  - **Cancellation-stressed accumulation** ([#1187](https://github.com/stillwater-sc/universal/issues/1187) / PR [#1353](https://github.com/stillwater-sc/universal/pull/1353)) -- sums whose terms dwarf their own total, scored against the exact dyadic value of the same terms so the only thing compared is the accumulator. On an ill-conditioned dot product `double` returns nothing at any size while `qd` plateaus near 90 digits (four limbs at 100-bit spacing reach about `2^-300`: the ceiling is the limb count, not the bit count) and `elreal` stays exact past a thousand bits. The naive-Taylor workload records what exactness cannot do: the exact sum of `exp(-40)`'s rounded terms agrees with `exp(-40)` to *zero* digits, so accumulating them exactly rebuilds nothing, and the benchmark says so in its own output rather than leaving a reader the flattering reading.
-  - **Precision-to-latency decision matrix** ([#1188](https://github.com/stillwater-sc/universal/issues/1188) / PR [#1356](https://github.com/stillwater-sc/universal/pull/1356)) -- the issue conflates two matrices and only one is blocked. The *design* matrix (what a narrow block shape would reach once its series stops degrading) needs an extended-precision host that does not exist yet; the *decision* matrix (which type a caller should reach for today) needed only the measurement. It sharpens the MVP's conclusion from "not yet a good trade" to **dominated**: narrow hosts are genuinely faster inside elreal (~9x at 16 digits), but the range where they win is one where `dd` and `qd` already deliver the answer and beat them on throughput by 16-67x. A cheap narrow-width EFT datapath does not pay for itself through block count alone.
-  - **Characterization swept over host `FpType`** ([#1176](https://github.com/stillwater-sc/universal/issues/1176) / PR [#1357](https://github.com/stillwater-sc/universal/pull/1357)) -- `characterize.cpp` hardcoded `elreal<double>`, so its CSV carried an `FpType` column that was always `double` and reported one host's curve as the whole picture. Now templated over `{double, float, bfloat16}`, with `summary()` grouping by `(type, host)` rather than pooling three hosts into a saturation point belonging to none of them.
-* **A thousand-digit demonstration on both `float` and `double` hosts (PR [#1376](https://github.com/stillwater-sc/universal/pull/1376))** -- `applications/precision/elreal/thousand_digit_sqrt.cpp`: the Newton iteration for `sqrt(2)`, applied repeatedly over a generic `Real`, with no elreal in the kernel. On a native `double` it stalls at 16 digits however many iterations it is given; on elreal it converges past 1150 digits on both hosts (1177 on `float`, 1158 on `double`), verified against a 1200-digit reference computed in exact integer arithmetic outside this library. `float` needs ~2.2x the blocks for the same digits, its limb carrying 24 bits to `double`'s 53 -- the only difference the host makes to the answer, which is the point. Ramping `precision()` alongside the iterate rather than paying the final precision from the first step costs 4s and 25s instead of 25s and 206s. Registered `compile_all("false")`: built so it cannot rot, not run by ctest.
-* **The faithful long division, alongside the Newton reciprocal ([#1061](https://github.com/stillwater-sc/universal/issues/1061), [#1068](https://github.com/stillwater-sc/universal/issues/1068) / PR [#1380](https://github.com/stillwater-sc/universal/pull/1380))** -- `div_online(a, b, depth, DenseDivision::FaithfulLongDivision)` restores McCleeary 4.2.6 for a dense divisor, bounded: `divideHelper_bounded` truncates each level's operands to the budget that can still reach the output frontier, which is identical to the unbounded recursion at 4-6x less cost. The two policies agree on **value** (263/528/793/1056 digits against 264/529/795/1059 at depths 16/32/48/64), so this is not a fast-vs-accurate trade. Which is cheaper depends on the divisor's **width**, not on depth alone: long division runs 3.8x slower than Newton for a 2-block divisor and 0.92x for a 24-block one. Newton stays the default because a narrow divisor is the common case. The alternative earns its place less on speed than on being an independent check on the Newton path -- comparing the two is how [#1373](https://github.com/stillwater-sc/universal/issues/1373) was found.
-* **`takum_log` encoding tables (Epic [#1297](https://github.com/stillwater-sc/universal/issues/1297) CLOSED / PR [#1348](https://github.com/stillwater-sc/universal/pull/1348))** -- the last unchecked task on the logarithmic takum epic. `table.hpp`'s generator is templated on the takum type, with `GenerateTakumTable` kept as a wrapper so every existing caller is untouched. The last column differs by design: a linear takum's value is `(1 + f) * 2^c`, so base-2 scale is its natural companion column, while a logarithmic takum's value is `sqrt(e)^l` and `l` -- what the encoding actually carries -- is printed instead. `education/tables/takum_logs.cpp` emits the same seven configurations as `takums.cpp`, so read side by side the two files are the clearest statement of what the epic argued: identical bit layout, identical sign/direction/regime/characteristic columns, entirely different values.
-* **A `BEHAVIOUR-CHANGE` commit trailer, collected into the release notes (PR [#1368](https://github.com/stillwater-sc/universal/pull/1368))** -- both v4.9.0 and v4.9.1 needed their notes edited by hand after publication for the same reason: git-cliff builds the page from commit subjects, and a subject cannot say "this changes what your code returns". A commit can now carry the fact itself, and `cliff.toml` collects those into a **Behaviour changes** section above the type groups. `BEHAVIOR-CHANGE` is accepted too, so neither spelling is a silent no-op. Verified against real output rather than assumed: regenerating the v4.9.0..v4.9.1 range, which carries no trailers, gives byte-identical output to what shipped. Documented in `CLAUDE.md` including when *not* to use it.
 
-* **Multi-component performance and equivalence benchmarks ([#1315](https://github.com/stillwater-sc/universal/issues/1315) / PR [#1316](https://github.com/stillwater-sc/universal/pull/1316))** -- a four-program suite under `benchmark/performance/arithmetic/highprecision/` comparing the direct multi-component types (`dd`, `qd`) against the cascade types (`dd_cascade`, `td_cascade`, `qd_cascade`) on per-operation timing (`scalar`), real kernels (`kernels`), the mathematical library (`mathlib`), and bit-level agreement plus self-consistency identities (`equivalence`). The harness calibrates its own operation counts and generates **full-width** operands, which matters: comparing these types on single-double values proves nothing, since the products are exactly representable. The suite reported six defects (#1317, #1319, #1322, #1326, #1327, #1318); the work they prompted found three more (#1324, #1330, #1332). All nine are closed below.
+
+#### Fixed
+
+* **`el_api_math` timed out under UBSan on `main` (PR [#1365](https://github.com/stillwater-sc/universal/pull/1365))** -- not a sanitizer diagnostic: 889 of 890 tests passed with zero runtime errors, and the failure was ctest's 300s per-test limit. The test checks named constants against `double` literals -- about 17 significant digits is the whole question -- but called each generator at its own default depth, which was cheap only while the refinement floors stopped the series early. With the floors gone it went from 34s to 114s at -O0, and instrumentation cleared 300s. The ten `elreal_*` accessors now take an optional depth (0 means the generator's default, so no caller changes), and the api test passes depth 3.
+
+* **`bfloat16::scale()` understated every subnormal by up to 6 binades (PR [#1359](https://github.com/stillwater-sc/universal/pull/1359))** -- it read the biased exponent field and subtracted the bias, which is right for normals and wrong for all 254 subnormals: their field is zero, so it answered -127 where the true scale runs to -133. bfloat16's own suites never asked a subnormal for its scale; it surfaced from elreal, where `block::scale_of_v()` calls it and the 0-overlap accounting is built on the result. The new regression is exhaustive rather than sampled -- all 65536 encodings against `std::ilogb` of the exactly-equal `double` -- and fails if the sweep sees no subnormal at all, since a run that never reached one would pass vacuously.
+
+* **`bfloat16`'s `two_prod` computed in `double` (PR [#1358](https://github.com/stillwater-sc/universal/pull/1358))** -- `block_eft.hpp` opens with a binding rule from Epic [#923](https://github.com/stillwater-sc/universal/issues/923): use the host `FpType`'s arithmetic directly, do not promote to a wider type and snap back. The residual dispatch tested `2p > 53`, a proxy for "a `double` cannot hold the exact product", which is not a statement about whether the type *has* an fma -- so `bfloat16` (p=7) fell to a `double` intermediate despite having had a correctly-rounded fma since [#1232](https://github.com/stillwater-sc/universal/issues/1232). The dispatch now tests for the fma itself via a concept resolved with ADL. This is a purity fix, not a convergence fix, and the distinction matters: it is what makes a block-shape study of narrow hosts measure narrow-host arithmetic rather than `double` arithmetic wearing a narrow result type.
+
+### [4.8.9](https://github.com/stillwater-sc/universal/compare/v4.8.8...v4.8.9) (2026-08-19)
+
+#### Added
+
+* **`takum_log` encoding tables (Epic [#1297](https://github.com/stillwater-sc/universal/issues/1297) CLOSED / PR [#1348](https://github.com/stillwater-sc/universal/pull/1348))** -- the last unchecked task on the logarithmic takum epic. `table.hpp`'s generator is templated on the takum type, with `GenerateTakumTable` kept as a wrapper so every existing caller is untouched. The last column differs by design: a linear takum's value is `(1 + f) * 2^c`, so base-2 scale is its natural companion column, while a logarithmic takum's value is `sqrt(e)^l` and `l` -- what the encoding actually carries -- is printed instead. `education/tables/takum_logs.cpp` emits the same seven configurations as `takums.cpp`, so read side by side the two files are the clearest statement of what the epic argued: identical bit layout, identical sign/direction/regime/characteristic columns, entirely different values.
+
+#### Fixed
+
+* **IEEE NaN was classified by exact payload rather than by exponent and mantissa ([#1303](https://github.com/stillwater-sc/universal/issues/1303) / PR [#1346](https://github.com/stillwater-sc/universal/pull/1346))** -- converting a signaling NaN into a narrower `cfloat` produced **infinity**. The classification compared the source fraction for equality against three specific payloads, so every other payload -- including the canonical signalling `0x1` -- missed all three, fell through to the numeric path and was projected to infinity; 2040 of binary16's 2046 NaN encodings decoded to the wrong class of value. `std::nan("")` is one of the three, which is why existing coverage never saw it. The same block had been copy-pasted six times across four types (`cfloat`, `lns`, `dbns`, `blocktriple`) and all six now use IEEE-754's rule. The consequential one is `blocktriple`, which is what the arithmetic paths run on, so a NaN operand entering an add or multiply had stopped propagating. Also fixed: `blocktriple`'s special-value branches never cleared `_zero`, so a converted NaN reported `isnan()` **and** `iszero()` at once, and `iszero()` is what the arithmetic shortcuts consult. MSVC needed a decision rather than a fix -- its `signaling_NaN()` has the quiet bit set, so it is a quiet NaN by IEEE whatever the name says, and it joins RISC-V, ARM and POWER in `UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP`.
+
+* **`microfloat` E4M3 conversion diverged from the OCP OFP8 specification ([#1302](https://github.com/stillwater-sc/universal/issues/1302) / PR [#1351](https://github.com/stillwater-sc/universal/pull/1351))** -- the encoding was already exact (all 256 patterns decode to the specification's value), but conversion from a wider type was wrong in four places: `500.0` gave 448 rather than NaN, `+/-inf` gave maxpos, `-NaN` lost its sign, and `e5m2`'s `58000.0` gave infinity rather than 57344. All four come from one block -- `from_float()` pre-clamped against maxpos *before* rounding, short-circuiting the post-rounding overflow check underneath it, which was already correct. What to do about an overflow was written out three times and the copies did not agree; it is now one `setoverflow()` policy, and the case that used to return **zero** (a format with neither infinity nor NaN) now clamps, so an overflow no longer silently becomes the most benign value in the format. `e4m3` now means `e4m3fn` -- NaN on overflow, per OCP, matching `float8_e4m3fn` in ml_dtypes, JAX and PyTorch -- while `mxfp8` and the NVFP4 block scale are pinned to `e4m3_saturating` and are unchanged bit-for-bit, since block quantization must clip rather than poison a block with a NaN.
+
+### [4.8.8](https://github.com/stillwater-sc/universal/compare/v4.8.7...v4.8.8) (2026-08-18)
+
+#### Added
+
 * **Oracle-grade regression suites for the multi-component types** -- three suites whose verdict is decided in exact integer arithmetic, scored against a reference *wider than the format under test* or, where no exact reference exists, against a residual that is itself exact (`dyadic_exact.hpp`, einteger-backed) so no floating-point sits between an implementation and its score:
   - **trigonometry** (`static/highprecision/qd_cascade/math/trigonometry_oracle.cpp`) -- `sin`, `cos`, `tan`, `asin`, `acos`, `atan` against references carried as six doubles (~318 bits), generated by mpmath at 200 digits (`tools/generators/cascade_trig_gen.py`). Each argument is charged the guard bits its own conditioning costs, `log2|x f'(x)/f(x)|`: `sin(3.141592653589793)` is 1.2e-16 while the argument is not, so no implementation holds relative accuracy there. Charging the condition number lets the suite demand full precision everywhere else instead of exempting the hard arguments by hand, and it covers the argument reduction, whose error grows with `|x|` at the same rate.
   - **sqrt across the dynamic range** (`static/highprecision/qd_cascade/math/sqrt_range_oracle.cpp`) -- walks the exponent range end to end for all five types. `sqrt` is irrational and has no exact reference, so the check is the residual `|r*r - a| <= 2^-budget * a`, which is exact because dyadic rationals are closed under multiplication.
   - **decimal parsing** (`static/utility/test_decimal_to_binary_oracle.cpp`) -- re-derives each parse with exact integer arithmetic, independent of the code under test, and scores each format against its own significand. Building it caught the oracle's own bug first: a trailing component below `2^-1022` goes subnormal, so `1e-300` in a `dd` carries ~78 bits, not 106.
 
   The suites these replace compared trigonometry against `std::sin` at a `1e-10` tolerance, and chained `sqrt` from 2.0 and 0.5 without ever approaching either end of the range -- structurally incapable of seeing the defects below, which is how three of them survived for years. Each new suite was mutation-tested against the implementation it was written for (90/97/101 failures for trigonometry, 14/29 for sqrt, 77/714 for the parse width dispatch).
+
+#### Changed
+
+* **`add_cascades<4>` merges its operands instead of sorting them ([#1340](https://github.com/stillwater-sc/universal/issues/1340) / PR [#1341](https://github.com/stillwater-sc/universal/pull/1341))** -- both operands arrive as non-overlapping expansions in decreasing magnitude, so the bubble sort's 28 comparisons were redundant work on data that arrives sorted; one `two_sum` chain over the merged sequence is Shewchuk's `fast_expansion_sum`. Results are **bit-identical** over 40,000 random full-width operations. Addition, i7-12700K -O3: gcc 13.3 69.6 -> 51.0 nsec/op, clang 18.1 80.1 -> 85.6 (tracked as [#1342](https://github.com/stillwater-sc/universal/issues/1342)). The compression pass stays, and the assessment that motivated the change was wrong about why it was there: the 2N -> N step needs a *nonadjacent* expansion, not merely a non-overlapping one, and feeding it the raw chain output costs a factor of three on the composite identities. Review caught that the merge, unlike the sort, requires ordered operands -- reachable through the raw-limb constructor -- so each operand is now tested (six comparisons) and put in order by a five-comparator network when it fails.
+
+
+#### Fixed
+
+* **Multi-component cascade parity ([#1315](https://github.com/stillwater-sc/universal/issues/1315) and the work it prompted, all nine defects CLOSED)** -- `qd_cascade` came in 6-8x slower than `qd` and 13-15 decimal digits less accurate; it leaves at 1.1-1.9x with matching or better accuracy. Five of the eight fixes were the same move -- where the cascade improvises, adopt the direct family's proven schedule and express it with the framework's hardened primitives:
+  - **addition dropped a limb** ([#1317](https://github.com/stillwater-sc/universal/issues/1317) / PR [#1321](https://github.com/stillwater-sc/universal/pull/1321)) -- `add_cascades<4>` produced an exact but *overlapping* expansion, so renormalization could not keep the fourth component: 25 in 200 random full-precision additions lost it entirely. Shewchuk COMPRESS applied at N=4 only -- N=2 and N=3 were fine, and an early over-broad fix that "found" `td_cascade` broken was scoring a 159-bit format against a 212-bit threshold. **Score each width against its own ulp.**
+  - **multiplication** ([#1322](https://github.com/stillwater-sc/universal/issues/1322) / PR [#1323](https://github.com/stillwater-sc/universal/pull/1323), [#1324](https://github.com/stillwater-sc/universal/issues/1324) / PR [#1325](https://github.com/stillwater-sc/universal/pull/1325)) -- the cascade sorted its partial products by magnitude, which it does not need to do: `a[i]*b[j]` contributes at order `eps^(i+j)`, so the products emerge in decreasing significance by construction. Adopting the `qd_mul` schedule at N=4 and N=3 took `qd_cascade` multiply from 8x `qd` to 1.3x with matching accuracy. Fixing multiply alone made division 23% slower (its initial quotient estimate is a one-component cascade, and the old sorted multiply skipped zero products), so `multiply_cascade_by_double` landed in the same change.
+  - **division was a quotient digit short** ([#1326](https://github.com/stillwater-sc/universal/issues/1326) / PR [#1328](https://github.com/stillwater-sc/universal/pull/1328)) -- `qd`'s long division computes N+1 quotient digits and closes with an (N+1)-term renormalization; the cascade computed N, at all three widths.
+  - **generic templates carried the old design** ([#1330](https://github.com/stillwater-sc/universal/issues/1330) / PR [#1330](https://github.com/stillwater-sc/universal/pull/1330)) -- `add_cascades<N>`/`multiply_cascades<N>` for any N outside {2,3,4} still had the sorted formulation and knew nothing of the quotient-digit fix. Nothing instantiated them, so this was never a live defect, but the first `floatcascade<5>` would have inherited every bug this effort fixed, silently and with no indication anything was wrong. They now `static_assert`, because there is no generic form of the corrected algorithms to fall back on: the multiplication schedule is derived for one specific N, the division needs N+1 quotient digits, and whether the addition needs compression is a measured property rather than a derived one.
+  - **sqrt reformulated with the trade measured** ([#1331](https://github.com/stillwater-sc/universal/issues/1331) / PR [#1333](https://github.com/stillwater-sc/universal/pull/1333)) -- three formulations (Newton-division, Newton-reciprocal, Karp) behind `UNIVERSAL_*_CASCADE_SQRT_ALGORITHM`, defaulting to the most accurate; the faster ones must be asked for. The accuracy cost was measured rather than assumed, and it differed by width -- `td_cascade` improved outright on both axes.
+  - **trigonometry capped at double-double accuracy** ([#1318](https://github.com/stillwater-sc/universal/issues/1318) / PR [#1338](https://github.com/stillwater-sc/universal/pull/1338)) -- three independent causes, all inherited from the double-double code these files were copied from. `qd_eps` held the *double-double* unit roundoff (2^-104 rather than 2^-209), truncating every Taylor series that used it as a threshold, so `qd` sin/cos delivered 43 of the 63 digits the format carries; `exp` had already hit this and worked around it with a local constant of its own, which is the tell. The cascades reduced modulo pi/16 against a four-entry double-double table, which a 15-entry inverse-factorial table cannot carry past double-double accuracy at any width -- both now use the `qd` pi/1024 schedule from a shared 256-entry table, where one table serves all three widths because dropping the trailing limbs of a correctly rounded expansion leaves a correctly rounded expansion. And the cascade `atan2` took a single Newton step, right for a double-double and one third of what a quad-double needs, so `atan`, `asin` and `acos` were capped at 106 bits regardless of type. `sin^2 + cos^2 - 1` in ulps: `td_cascade` 4.277e+15 -> 1.141, `qd` 1.494e+23 -> 1.34, `qd_cascade` 3.852e+31 -> 0.3555.
+  - **sqrt unbounded at both ends of the range** ([#1332](https://github.com/stillwater-sc/universal/issues/1332) / PR [#1339](https://github.com/stillwater-sc/universal/pull/1339)) -- `sqrt(maxpos)` returned inf or NaN in `dd` and `qd`; both algorithms square a value of the argument's own magnitude. Both now scale into `[0.5, 2)` first, as the cascades have since #1331. Scoring the whole range showed the defect was wider than the reported overflow -- the same squares go subnormal at the bottom -- so `dd`'s worst case went from 52 to 105 bits of its 106, `qd`'s from 60 to 214 of its 212, and `qd`'s 28 non-finite results went to none. `qd::sqrt(0)` also returned NaN, having never guarded zero at all.
+  - **`x / inf` returned NaN** ([#1327](https://github.com/stillwater-sc/universal/issues/1327) / PR [#1337](https://github.com/stillwater-sc/universal/pull/1337)) -- in every multi-component type, direct and cascade alike, where IEEE says zero.
+
+### [4.8.7](https://github.com/stillwater-sc/universal/compare/v4.8.6...v4.8.7) (2026-08-17)
+
+#### Changed
+
+* **Decimal string parsing is 12-58x faster ([#1319](https://github.com/stillwater-sc/universal/issues/1319) / PR [#1336](https://github.com/stillwater-sc/universal/pull/1336))** -- four algorithmic costs in shared conversion machinery, none of them inherent: a full-width bigint multiply per digit (nine digits now fold into one multiply), `5^|E|` by repeated multiplication (now binary exponentiation, ~8 multiplies for E=300 rather than 300), quotient and remainder from two separate long divisions (one `idiv` returns both), and every parse running at 2048 bits regardless of need. The working width is now chosen from the scanned digit count and decimal exponent among 256/512/1024/2048, and the normalized result -- only ever `target+2` bits -- is copied back into the caller's width, so no call site changed. The negative-exponent shift was also tightened from `headroom + 3*|E|` to `headroom + ceil(|E|*log2(5)) + 2`, which drops `1e-300` a whole width class. Parsing into `dd`: `"1.5"` 40.4 -> 2.7 usec, a 62-digit literal 431.1 -> 36.8, `1.7976931348623157e308` 759.7 -> 13.0.
+
+### [4.8.3](https://github.com/stillwater-sc/universal/compare/v4.8.2...v4.8.3) (2026-08-15)
+
+#### Added
+
+* **Multi-component performance and equivalence benchmarks ([#1315](https://github.com/stillwater-sc/universal/issues/1315) / PR [#1316](https://github.com/stillwater-sc/universal/pull/1316))** -- a four-program suite under `benchmark/performance/arithmetic/highprecision/` comparing the direct multi-component types (`dd`, `qd`) against the cascade types (`dd_cascade`, `td_cascade`, `qd_cascade`) on per-operation timing (`scalar`), real kernels (`kernels`), the mathematical library (`mathlib`), and bit-level agreement plus self-consistency identities (`equivalence`). The harness calibrates its own operation counts and generates **full-width** operands, which matters: comparing these types on single-double values proves nothing, since the products are exactly representable. The suite reported six defects (#1317, #1319, #1322, #1326, #1327, #1318); the work they prompted found three more (#1324, #1330, #1332). All nine are closed below.
+
+### [4.7.4](https://github.com/stillwater-sc/universal/compare/v4.7.3...v4.7.4) (2026-07-20)
+
+#### Added
+
 * **Oracle mathlib parity for `ereal` and `efloat` (Epic [#582] CLOSED)** -- an audit found both adaptive-precision Oracle types already carried genuinely high-precision transcendentals (Taylor/Newton in native arithmetic, verified to ~293 digits at `ereal<19>`, its architectural ceiling; `efloat` is unbounded) -- the `ereal/mathlib.hpp` header's "Phase-0 double stub" claim was simply stale. Five sub-issues closed the remaining gaps:
   - **ereal mathlib docs corrected** ([#1163](https://github.com/stillwater-sc/universal/issues/1163) / PR [#1168](https://github.com/stillwater-sc/universal/pull/1168)) -- dropped the false "all functions delegate to std:: via double" language and the stale Phase 1-4 TODO; the wording cites the mpmath constant literals as ground truth rather than presenting `efloat` as an authoritative oracle (per review).
   - **efloat `frexp`/`ldexp`** ([#1164](https://github.com/stillwater-sc/universal/issues/1164) / PR [#1169](https://github.com/stillwater-sc/universal/pull/1169)) -- new `efloat/math/numerics.hpp`; both only shift the binary exponent, so they are exact at any precision (`ldexp(frexp(x)) == x` holds even for a beyond-double `1 + 2^-300`).
   - **ereal `fdim`/`modf`/`rint`/`nearbyint`** ([#1165](https://github.com/stillwater-sc/universal/issues/1165) / PR [#1170](https://github.com/stillwater-sc/universal/pull/1170)) -- `rint`/`nearbyint` round half-to-**even** (IEEE default, distinct from ereal's existing half-away `round`); ereal has no dynamic rounding mode or FE_INEXACT flag, so `nearbyint == rint`.
   - **`fma`/`scalbn`/`logb`/`ilogb` on both types** ([#1166](https://github.com/stillwater-sc/universal/issues/1166) / PR [#1171](https://github.com/stillwater-sc/universal/pull/1171)) -- `scalbn` is an exact exponent shift; `logb`/`ilogb` come from `scale()` (efloat) or the leading component's `std::ilogb` with a +/-1 binade correction (ereal); `fma = x*y + z` is exact (no intermediate rounding), verified against an independently built `(2^30+1)(2^30-1) = 2^60-1` that rounds to `2^60` in `double`.
   - **`complex<ereal>` binding** ([#1167](https://github.com/stillwater-sc/universal/issues/1167) / PR [#1172](https://github.com/stillwater-sc/universal/pull/1172)) -- mirrors the efloat binding below: specializes `is_universal_number<ereal>` and re-exposes `real`/`imag`/`conj` for the portable `sw::universal::complex<T>`; complex arithmetic + `norm`/`abs`/`arg` are full precision (shared-library complex transcendentals pivot through `double` for every user-defined type -- a documented cross-cutting limitation).
+
+### [4.7.3](https://github.com/stillwater-sc/universal/compare/v4.7.2...v4.7.3) (2026-07-19)
+
+#### Added
+
 * **efloat Oracle-grade finalization (Epic [#1101] CLOSED)** -- the follow-ups that turned `efloat` into a complete arbitrary-precision oracle:
   - **decimal `operator<<` / `to_string`** ([#1150](https://github.com/stillwater-sc/universal/issues/1150) / PR [#1155](https://github.com/stillwater-sc/universal/pull/1155)) -- replaces the `"TBD"` stub with a correctly-rounded arbitrary-precision formatter (ported from `ereal`), extracting digits via efloat's own arithmetic. Review caught two porting bugs: `append_exponent` broke for 4-digit exponents (efloat can print `1e1000`) and the fixed-format path never rounded; both fixed.
   - **hyperbolic library** ([#1114](https://github.com/stillwater-sc/universal/issues/1114) / PR [#1156](https://github.com/stillwater-sc/universal/pull/1156)) -- native `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh` in `efloat/math/hyperbolic.hpp` on efloat's own `exp`/`expm1`/`log1p`/`sqrt`, using the cancellation-free `expm1`/`log1p` forms near 0; special values match `<cmath>` and the test asserts the `InvalidOperation`/`DivisionByZero` side-effect flags. 512-bit oracle identities (`cosh^2-sinh^2==1`, inverse round-trips) agree to `< 2^-200`.
@@ -176,14 +308,18 @@ authoritative per-release record for them is the [releases page](https://github.
   - **`hypot` in its own header** ([#1121](https://github.com/stillwater-sc/universal/issues/1121) / PR [#1158](https://github.com/stillwater-sc/universal/pull/1158)) -- relocated the existing native scale-by-max `hypot` from `sqrt.hpp` into `efloat/math/hypot.hpp` (repo one-function-per-header convention) with a dedicated overflow/underflow-prevention test.
   - **`nextafter`/`nexttoward` in their own header** ([#1120](https://github.com/stillwater-sc/universal/issues/1120) / PR [#1159](https://github.com/stillwater-sc/universal/pull/1159)) -- relocated to `efloat/math/next.hpp`.
 
+
 * **efloat trigonometry library ([#1115](https://github.com/stillwater-sc/universal/issues/1115) / PR [#1137](https://github.com/stillwater-sc/universal/pull/1137))** -- native arbitrary-precision `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2` in `efloat/math/trigonometry.hpp` (not double-delegating shims). sin/cos reduce the argument to `[-pi, pi]` via `r = x - round(x/2pi)*2pi` then a Taylor series with the precision-aware `term.scale() < sum.scale() - get_precision()` terminator; `atan` uses `pi/4` for `|x|==1`, reciprocal reduction for `|x|>1`, and the `atan(1/2)` addition formula for `0.5<|x|<=1`; `atan2` is full-quadrant and uses the efloat pi constants rather than double literals. A review pass hardened infinity handling: `atan(-inf)` and several `atan2` branches were mis-signed because `isneg()` is false for `-inf` (state is Infinite, not Normal) -- switched to `sign() == -1` and added `atan2(+/-inf, +/-inf)` diagonal-direction handling. Completes the efloat mathematical library (Epic [#1092]) and unblocks the demonstration suite.
+
 * **efloat 1000-digit constants: pi, e, phi ([#1139](https://github.com/stillwater-sc/universal/issues/1139) / PR [#1142](https://github.com/stillwater-sc/universal/pull/1142))** -- `efloat_pi<nlimbs>()`, `efloat_e<nlimbs>()`, `efloat_phi<nlimbs>()` in `efloat/math/constants/efloat_constants.hpp`, seeded from ~1000-digit literals (generated by `tools/generators/efloat_constants_gen.py` via mpmath). A ~3300-bit `efloat<128>` reproduces each to ~1000 decimal digits -- ~3x the ~315-digit ceiling of the multi-component `ereal`/`elreal` constants, making `efloat` the library's highest-precision constant basis. Construction calls `decimal_to_binary::convert<16384>` directly (the reduction shift needs a wide budget), leaving the shared d2b default unchanged; values are validated by independent oracles (phi via `phi^2-phi-1==0`, e vs the native series, pi vs Machin's formula). `trigonometry.hpp` now consumes `efloat_pi` instead of its inline ~62-digit literal.
+
 * **efloat adaptive-precision demonstration suite ([#1096](https://github.com/stillwater-sc/universal/issues/1096)-[#1100](https://github.com/stillwater-sc/universal/issues/1100), PRs [#1145](https://github.com/stillwater-sc/universal/pull/1145)-[#1149](https://github.com/stillwater-sc/universal/pull/1149))** -- five self-contained programs in the new `applications/precision/adaptive/` directory, each running the SAME templated kernel on `double` and `efloat` to show where fixed precision breaks down:
   - **`catastrophic_cancellation`** (#1096) -- `(1-cos x)/x^2` for small `x`: `double` cancels to 0, `efloat<8>` returns 1/2 from the same unstable formula; a table across `x = 1e-2..1e-14` shows `double`'s relative error climbing to 100%.
   - **`ill_conditioned_systems`** (#1097) -- Gaussian elimination on the Hilbert matrix: at n=12 `double`'s relative error is ~17% (past 3000% by n=14) while `efloat<16>` (512-bit) is exact to ~1e-139.
   - **`high_precision_fractals`** (#1098) -- deep-zoom Mandelbrot: at `dx ~ 0.34` ulp the `double` x-coordinates collapse into vertical bands (~75% of pixels wrong vs the `efloat` oracle); writes both renders as PPM. Includes a README.
   - **`mathematical_identities`** (#1099) -- the BBP series for pi checked against the `efloat_pi()` oracle: `double` stalls at ~15 digits while `efloat` gains ~1.2 digits/term to ~152.
   - **`polynomial_roots`** (#1100) -- Wilkinson's polynomial `(x-1)...(x-20)`: rounding the enormous coefficients (several exceed 2^53) to `double` moves the roots off the integers by up to ~1.3e-2 (worst for the middle roots), while `efloat`'s exact coefficients keep every root at its integer. Includes a README.
+
 * **efloat master mathematical library completion (Epic [#1101] and Issue [#1092])** -- The arbitrary-precision `efloat` template class now has a complete, standard-conforming, and high-performance mathematical library covering 9 major sub-issues, delivering full IEEE-754 compatibility, and hardening the core `efloat` representation with key bug fixes:
   - **Logarithm Suite ([#1108](https://github.com/stillwater-sc/universal/issues/1108) / PR [#1123](https://github.com/stillwater-sc/universal/pull/1123))** -- Implemented `log`, `log2`, `log10`, and `log1p` (with Taylor series small-input protection and dynamic precision-based loop termination) inside `math/logarithm.hpp`.
   - **Classification Suite ([#1109](https://github.com/stillwater-sc/universal/issues/1109) / PR [#1124](https://github.com/stillwater-sc/universal/pull/1124))** -- Implemented standard `<cmath>` classification helpers `fpclassify`, `iszero`, `isfinite`, `isinf`, `isnan`, `isnormal`, `isdenorm`, and `signbit` inside `math/classify.hpp`.
@@ -198,14 +334,66 @@ authoritative per-release record for them is the [releases page](https://github.
     - **`operator<` zero comparison bug** -- Added explicit `iszero()` checks at the beginning of `operator<` to prevent positive sub-unit normal values (scale $< 0$) from being misclassified as less than zero.
     - **Bounds-safe `compare_limbs`** -- Overhauled `compare_limbs` to dynamically loop to the maximum of the two sizes and read `0u` for missing elements, preventing all out-of-bounds reads and segmentation faults.
     - **`operator*=` sign clobbering** -- Fixed the power-of-2 bypass in multiplication where the sign was clobbered during copy-assignment.
+
 * **elreal class facade -- plug-in arithmetic number system + lazy state-machine API (Epic [#1079] CLOSED)** -- `elreal` (McCleeary LFPERA lazy exact-real over the `ZBCL<FpType>` block co-list) previously had only free functions; it now has a `class elreal<FpType=double>` with the standard Universal facade, so it drops into templated/plug-in kernels like every other number system while keeping its lazy incremental-precision edge.  Five phases:
   - **Phase 1 -- facade scaffold** ([#1080](https://github.com/stillwater-sc/universal/pull/1080)) -- `elreal_impl.hpp` (native ctors, conversions, fully-lazy `+ - * /` storing unforced streams, unary `-`, free operators, depth-bounded `== < ...`, `abs`/`fabs`), `traits/elreal_traits.hpp`, `elreal_fwd.hpp` + umbrella + aliases `elreal64`/`elreal32`.  Design decisions: runtime `_depth` member + `.precision()` + thread-local default with an RAII `elreal_precision_guard`; evaluation forced only at a boundary (conversion / compare / I/O); comparison is depth-bounded (exact ordering when the difference's leading limb is nonzero -- exact equality of distinct irrationals is undecidable)
   - **Phase 2 -- lazy API hardening** ([#1081](https://github.com/stillwater-sc/universal/pull/1081)) -- counter-instrumented memoisation regression (pull depth `d` then `d+1`, assert the tail is reused not recomputed); precision-honest `approx<T>` summed *in* `T`
   - **Phase 3 -- traits / limits / manipulators** ([#1082](https://github.com/stillwater-sc/universal/pull/1082)) -- `numeric_limits` (precision-parametrised against the nominal default), `attributes.hpp` (`sign` / `scale` returning `int64_t` to avoid narrowing the unbounded `integer<256>` exponent / `significand`), `manipulators.hpp` (`type_tag` / `to_components` / `to_binary` / `to_triple` emitting the significand in `[1,2)` / `operator<<` / `operator>>`).  CodeRabbit fixes: `to_triple` significand, `denorm_min()==min()` under `denorm_absent`
   - **Phase 4 -- math facade** ([#1083](https://github.com/stillwater-sc/universal/pull/1083)) -- `mathlib.hpp` lifts the ZBCL-level `math/*.hpp` to class `elreal`: unary `sqrt`/`exp`/`log`/`sin`/`cos`/`tan`/`asin`/`acos`/`atan`/`sinh`/`cosh`/`tanh` (refine to the operand's `precision()`), binary `pow`/`hypot`, and `elreal_pi`/`e`/`ln2`/`ln10`/`log2_10`/`sqrt2`/`sqrt3`/`sqrt5`/`phi`/`euler_gamma` constants
   - **Phase 5 -- non-finite state + conversion/logic/arithmetic suites** ([#1084](https://github.com/stillwater-sc/universal/pull/1084)) -- per the settled policy decision, class `elreal` gained a dedicated IEEE-style non-finite classification (`elreal_class {finite, pinf, ninf, qnan}` + `_cls` member; this revised the Phase 3 finite-only `numeric_limits`).  `operator=(double)` classifies `NaN`/`+-Inf`; the tag propagates by IEEE-754 rules through arithmetic (`inf+finite=inf`, `inf-inf=nan`, `inf*0=nan`, `x/0=+-inf`, `0/0=nan`, `finite/inf=0`, NaN propagates), comparison (new `elreal_order_of`: NaN unordered, `-inf < finite < +inf`), conversion, unary minus, and `abs`.  `numeric_limits` `has_infinity`/`has_quiet_NaN` now true; free `isnan`/`isinf`/`isfinite`/`signbit`; manipulators render `nan`/`+-inf`.  Class-level `conversion/`, `logic/`, `arithmetic/` suites + `el_conversion`/`el_logic` CMake targets ([#1079](https://github.com/stillwater-sc/universal/issues/1079))
+
+#### Changed
+
+* **elreal math-constant performance -- online `e`, faster `euler_gamma` ([#1061] Phase 3b)** -- the two remaining eager constant generators in the elreal math layer (surfaced while profiling the Phase 4 math facade: `e` ~16 s, `euler_gamma` ~11 s at depth 16).
+  - **`e_zbcl` made online** ([#1087](https://github.com/stillwater-sc/universal/pull/1087)) -- `e = sum 1/n!` has the same shape as the already-online exp/atan series, so it now uses the streaming form (a lazy term co-list `term_n = term_{n-1}/n` via exact integer div, each term significance-windowed with `take_while_above`, folded by `infsum`).  **16165 ms -> 83 ms at depth 16 (~195x)**, value-identical to the 320-digit reference.  The same PR dropped `euler_gamma`'s redundant Pass-1 peak-finding recurrence in favour of the analytic Stirling peak `2n*log2(e) - log2(2*pi*n)`, and re-enabled the `elreal_e()` check in the Phase 4 math test now that e is fast
+  - **`euler_gamma_zbcl` Abel reduction** ([#1088](https://github.com/stillwater-sc/universal/pull/1088)) -- Brent-McMillan B1's `A(n) = sum_k w_k H_k` (a full per-term `ZBCL x ZBCL` multiply + per-term harmonic maintenance) was replaced by Abel summation `sum_k w_k H_k == sum_{k>=0} tail_k/(k+1)` with `tail_k = sum_{j>k} w_j = B - B_k`: all-positive accumulation, no harmonic numbers, per-term cost now a single-block scalar division instead of a full multiply.  **depth 8: 4408 -> 1890 ms (~2.3x); depth 16: 10986 -> 3578 ms (~3.1x)**, validated to 305 digits vs the 320-digit reference (`REGRESSION_LEVEL_4`) on gcc + clang.  Adds `docs/design/elreal-euler-gamma.md` (algorithm, derivation, the convergent-vs-naive cancellation analysis, and the deferred binary-splitting alternative).  Brent-McMillan remains inherently O(n) products; the asymptotic `O(M(D) log^2 D)` binary-splitting rewrite (einteger P/Q/B/T) is tracked as a separate effort ([#1061](https://github.com/stillwater-sc/universal/issues/1061))
+
+#### Fixed
+
+* **efloat `long double` conversion yielded 0** ([#1160](https://github.com/stillwater-sc/universal/issues/1160) / PR [#1161](https://github.com/stillwater-sc/universal/pull/1161)) -- `convert_ieee754` only built mantissa limbs for `sizeof(Real)` of 4 or 8; the `else` branch was a no-op `static_assert(true)`, so a 16-byte `long double` (x86-64) pushed no limbs and normalized to 0, and `operator long double()` capped at double precision. Both directions rewritten portably (no 80-bit-x87 bit-twiddling, so it also handles IEEE binary128): `frexp` the value into `m * 2^e` with `m` in `[0.5,1)`, decompose `m` into an exact sum of doubles through the working `double` path, then apply `e` with `setexponent()`. Round-trip-exact across precision (`1 + 2^-60` survives) and the extended exponent range (`2^16000`). The `nexttoward` `long double -> double` workaround was then removed (PR [#1162](https://github.com/stillwater-sc/universal/pull/1162)).
+
+* **efloat `nextafter` step was precision-independent and skipped the power-of-two neighbor** (part of PR [#1159](https://github.com/stillwater-sc/universal/pull/1159)) -- the ULP was computed from `bits().size()*32` (the limbs *currently occupied* by the mantissa -- just one for a value like `1.0`), giving a fixed `2^-31` step for `efloat<8>` and `efloat<16>` alike. Now uses `get_precision()`, so the step is `2^(scale - precision + 1)` (`2^-255`/`2^-511`/`2^-1023` at 256/512/1024-bit). A review pass added the power-of-two boundary case: stepping toward zero from an exact `2^k` crosses into the lower binade whose spacing is half as large; the neighbor is now computed at one extra limb of precision so its trailing bit is not rounded off, and every step round-trips in both directions.
+
+* **efloat `abs()`/`fabs()` were a no-op stub** -- the free function `abs(efloat)` returned its argument unchanged (`return a;`), so `abs(-x) == -x` and every caller expecting a magnitude got a signed value. Fixed to clear the sign on a copy (correct for negative normals, `-inf -> +inf`, `-0 -> +0`, NaN stays NaN); added the `<cmath>` spelling `fabs`. Side benefit: `log1p`'s small-argument guard `abs(x) < 0.375` was effectively the signed test `x < 0.375` under the stub, routing moderately-negative arguments into a slow Taylor path -- it now gates by magnitude as intended ([#1138](https://github.com/stillwater-sc/universal/pull/1138))
+
+* **efloat `sqrt()`/`cbrt()` accuracy frozen at ~97 digits** -- both ran a fixed 7 Newton iterations from a ~1-bit exponent-only seed (chosen to preserve efloat's unbounded exponent range), so accuracy was capped at ~323 bits regardless of `get_precision()`. Made the iteration count precision-adaptive (`~ceil(log2(P))` doublings plus guard, with a convergence break), keeping the wide-range seed; `sqrt(2)^2 - 2` and `cbrt(2)^3 - 2` now converge to the type's full precision (exact at `efloat<128>`) ([#1140](https://github.com/stillwater-sc/universal/issues/1140), [#1143](https://github.com/stillwater-sc/universal/pull/1143))
+
+* **efloat `parse()` silently returned ~0 above the 2040-bit d2b cap** -- `parse()` capped the target at `default_big_bits - 8` and called `convert<2048>`, but convert's reduction left-shifts the digit-integer by `~(target + 3*neg_E)` bits, which overflows the budget whenever the target approaches 2048 (even a short literal like `pi` returned `~0` at `set_precision(2040)`). Templated `parse` on `BigBits` (default unchanged, so `parse(s,x)` is backward compatible and `parse<16384>(s,x)` reaches ~1000-digit precision), and size the target overflow-safely from the scanned literal's effective exponent and digit count -- budgeting both negative *and* large positive exponents so an out-of-budget literal is rejected rather than returning garbage ([#1141](https://github.com/stillwater-sc/universal/issues/1141), [#1144](https://github.com/stillwater-sc/universal/pull/1144))
+
+* **bfloat16 float conversion truncated instead of rounding to nearest-even** -- `bfloat16::convert_ieee754` kept the top 16 bits of the source IEEE-754 float via a bare `bits >> 16`, discarding the low 16 bits with no rounding.  That is round-toward-zero (truncation); Google TPUs and Intel round the `float -> bfloat16` conversion to nearest, ties-to-even (RNE).  Fixed with the standard magic rounding bias `bits += 0x7FFF + lsb_of_retained_field` before the shift (more-than-half rounds up, less-than-half stays, exact-half ties to the even significand; carry into the exponent and round-to-inf at the range limit both fall out correctly), plus a NaN guard so a float NaN whose payload lives only in the low 16 bits does not collapse to `+/-inf`.  `numeric_limits<bfloat16>::round_style` updated `round_toward_zero -> round_to_nearest`.  For the reported case `0.2691408770292272` now yields `0.26953125` (was `0.267578125`).  New `static/float/bfloat16/conversion/round_to_nearest_even.cpp` covers the issue case, up/down rounding, tie-to-even boundaries, and inf/nan/zero preservation ([#1133](https://github.com/stillwater-sc/universal/issues/1133), [#1134](https://github.com/stillwater-sc/universal/pull/1134))
+
+* **elreal `zbcl_from_blocks` leaked a subnormal trailing limb on narrow hosts** -- on a narrow host (`bfloat16` k=7, `fp16` k=11) a deep `ZBCL` expansion can bottom out at the denormal floor and leave a trailing subnormal limb whose exponent gap to its head is below `k`.  `zbcl_from_blocks` only stripped trailing zero blocks, so the subnormal limb was carried into the ZBCL; forcing the tail that holds it tripped the 0-overlap debug assert in `ZBCL::tail()`.  A subnormal block cannot satisfy the k-gap 0-overlap invariant (`block::is_normalised`: "0-overlap accounting assumes the leading bit is set").  Fix drops trailing non-normalised blocks in `zbcl_from_blocks` (subsumes the prior zero-block drop; value-preserving because the list is `priestRenorm`'d, descending exponent), centralising the same guard the streaming producers `mul_scalar`/`online_divide`/`online_multiply` already applied.  Latent, pre-existing fragility masked while bfloat16 conversion truncated; exposed by the RNE fix above, which changed the deep `sqrt` expansion so the denormal-floor configuration is reached (`el_math_sqrt` aborted under Debug/ASan with `FpType=bfloat16`).  Validated: all 42 elreal regression tests pass on gcc and clang ([#1135](https://github.com/stillwater-sc/universal/issues/1135), [#1136](https://github.com/stillwater-sc/universal/pull/1136))
+
+* **docs-site build broke on Starlight v0.39+ sidebar schema** -- the dependabot bump of `@astrojs/starlight` (`^0.38 -> ^0.41`, crossing the v0.39.0 breaking change) and `astro` (`^6.4 -> ^7.0`) failed the Documentation CI build: Starlight v0.39.0 removed autogenerated sidebar *groups* that combine a `label` with a top-level `autogenerate` object.  Rewrote each such entry in `docs-site/astro.config.mjs` as `{ label, items: [{ autogenerate }] }` (backward-compatible with the older Starlight), unblocking the security bump ([#1132](https://github.com/stillwater-sc/universal/pull/1132))
+
+### [4.7.1](https://github.com/stillwater-sc/universal/compare/v4.7.0...v4.7.1) (2026-05-27)
+
+#### Added
+
 * **bfloat16 exponent-manipulation functions** -- `ldexp`, `frexp`, `scalbn`, `logb` (returns `bfloat16`) and `ilogb` (returns `int`) added to `bfloat16/math/functions/exponent.hpp`, completing the `<cmath>` exponent family that `cfloat<>` already exposed.  They marshal through `float` rather than `double`: a bfloat16 is the high 16 bits of an IEEE float32 and shares its 8-bit exponent field, so `bfloat16 -> float` is exact, covers bfloat16's entire exponent range, and is cheaper than widening to double (per PR #1015 review).  New `static/float/bfloat16/math/exponent.cpp` verifies the functions by their mathematical properties (frexp/ldexp roundtrip, `|fraction|` in `[0.5,1)`, `scalbn == ldexp`, `ilogb == frexp_exp-1`) plus IEEE special cases (`+/-0`, `+/-inf`, `NaN`).  Unblocks adding bfloat16 to the elreal Phase 4 FpType sweep ([#941](https://github.com/stillwater-sc/universal/issues/941), [#1015](https://github.com/stillwater-sc/universal/pull/1015), [#1017](https://github.com/stillwater-sc/universal/pull/1017))
+
 * **ereal parse-cost benchmark** -- `benchmark/performance/arithmetic/ereal/parse.cpp` tracks `ereal<2|8|19>::parse` cost across 32..440-digit strings with a catastrophic-regression guard (fails only if a 320-digit parse exceeds 2 s, vs the >120 s blowup it guards against and the ~5 ms actual cost), and counts any `parse()` failures on valid input.  Closes the remaining acceptance item from parse-complexity issue #913 ([#1013](https://github.com/stillwater-sc/universal/issues/1013), [#1016](https://github.com/stillwater-sc/universal/pull/1016))
+
+#### Changed
+
+* **CI build time restored (~20 min -> ~8 min) -- ccache eviction** -- the cmake CI `ccache` was keyed per-`matrix.artifact` with no `save` gating, so every PR run saved a ~500 MB cache; under GitHub's 10 GB per-repo LRU limit a burst of CI evicted the warm caches, dropping the hit rate to ~1% and turning cached ~1 min builds into ~9 min cold rebuilds.  Fix: `save: only on pushes to main` (PR runs restore but no longer create caches) plus `max-size: 1G`, on both ccache blocks.  Diagnosed from the build-step duration (55 s -> 566 s) and ccache hit/miss stats; not a code regression (CI_LITE does not even build ereal) ([#1009](https://github.com/stillwater-sc/universal/issues/1009), [#1010](https://github.com/stillwater-sc/universal/pull/1010))
+
+* **ereal mathlib regression tests tiered by level** -- the property-fuzz ran a heavy fixed count (x100/x50) only at L1, the sanity tier that CI's Debug-instrumented jobs (ASan/UBSan/coverage, ~40x slower at `-O0`) run -- so those jobs took ~1 h.  The fuzz count now scales with the regression level (L1 smoke x15-20, up to x2000 at L4), keeping CI fast while preserving (and extending) stress-tier coverage; hand-curated correctness tests unchanged ([#1007](https://github.com/stillwater-sc/universal/issues/1007), [#1008](https://github.com/stillwater-sc/universal/pull/1008))
+
+#### Fixed
+
+* **ereal transcendentals capped far below full precision** -- `ereal<maxlimbs>` mathlib functions delivered at most ~16 (then ~130) decimal digits regardless of `maxlimbs`, not the ~15.95 digits/limb the type implies.  Three stacked causes, all fixed: (1) base constants pi/ln2/ln10 were truncated `double` literals -- now stored as precomputed 19-limb non-overlapping expansions and reconstructed by exact summation (the dd/qd approach), bypassing the lossy parse; (2) `expansion_reciprocal` hardcoded `iterations = 3`, capping all division (hence every transcendental) at ~130 digits -- now scales as `ceil(log2(maxlimbs)) + 1`; (3) see the parse fix below.  All 20 transcendentals now scale cleanly to ~304 digits at `ereal<19>` (verified vs MPFR).  Generator saved at `tools/generators/ereal_reference_gen.py` ([#1002](https://github.com/stillwater-sc/universal/issues/1002), [#1005](https://github.com/stillwater-sc/universal/issues/1005), [#1004](https://github.com/stillwater-sc/universal/pull/1004))
+
+* **ereal::parse precision cliff + NaN; division of large/small magnitudes** -- `parse()` built the mantissa as a giant integer and multiplied by the subnormal-range `10^(-e)`, capping long-string precision near 16 digits and returning `NaN` for inputs needing `|exponent| >= 309`.  Root primitive fix in `expansion_quotient`: scale the divisor to near-unit magnitude (exact `ldexp`) before the Newton reciprocal, then apply the exact `2^-k` -- so division keeps full precision whenever the quotient is normal-range (forming `1/10^300 ~ 1e-300` directly is impossible: its components fall below DBL_MIN).  `parse()` now divides by the normal-range `10^e`, caps significant digits at `<= 307`, applies `|exponent|` in `<= 10^308` chunks (overflow -> inf, underflow -> 0, never NaN), and caps the result to `maxlimbs` components.  Parse precision now scales with input length to ~306 digits; also resolves the O(N^3) parse-complexity blowup #913 (320-digit parse: >120 s timeout -> ~0.2-5.5 ms) ([#1006](https://github.com/stillwater-sc/universal/issues/1006), [#1011](https://github.com/stillwater-sc/universal/pull/1011), [#913](https://github.com/stillwater-sc/universal/issues/913))
+
+* **expansion `is_nonoverlapping` predicate inverted** -- `expansion_ops::is_nonoverlapping` used a `fast_two_sum` error heuristic with the condition backwards: it reported genuinely non-overlapping expansions as overlapping (the small component passes through `fast_two_sum` unchanged as the error term) and exactly-combining overlapping pairs as non-overlapping.  Reimplemented both `is_nonoverlapping` and `is_strongly_nonoverlapping` with the Shewchuk/Priest exponent-gap test `|e[i]| <= 2^(ilogb(e[i-1]) - 53)` (matching the verified `check_priest_normal` oracle).  No production call sites; blast radius limited to the public predicate ([#999](https://github.com/stillwater-sc/universal/issues/999), [#1012](https://github.com/stillwater-sc/universal/pull/1012))
+
+* **qd_pi_3 constant held pi/2** -- `qd_pi_3` in `qd_constants.hpp` carried pi/2's leading component (`1.5707...`) with only 2 of 4 components -- a partial edit.  Replaced with the correct 4-component quad-double expansion of pi/3 (`1.0471975511965979, ...`).  The qd constants test was also strengthened: it previously only printed the table and returned `EXIT_SUCCESS` unconditionally, so it now asserts every constant against its reference and the `3*qd_pi_3 == qd_pi` invariant, honoring the failure count ([#914](https://github.com/stillwater-sc/universal/issues/914), [#1014](https://github.com/stillwater-sc/universal/pull/1014))
+
+### [4.7.0](https://github.com/stillwater-sc/universal/compare/v4.6.16...v4.7.0) (2026-05-18)
+
+#### Added
+
 * **Epic [#835] CLOSED -- decimal string parsing API across all number systems** -- the elastic family (`einteger`, `edecimal`, `erational`, `efloat`, `ereal`) now has a working `parse()` API that accepts decimal, scientific notation, and -- where applicable -- hex / binary / octal / p/q forms, plus `nan` / `inf` / `infinity` token routing.  `operator>>` consistently sets `failbit` on parse failure and guards against extraction failure across every type.  Foundations were laid earlier ([#838](https://github.com/stillwater-sc/universal/issues/838) `scan_decimal_float`, [#841](https://github.com/stillwater-sc/universal/issues/841) `decimal_to_binary::convert` with mantissa + binary_scale + guard/sticky, [#848](https://github.com/stillwater-sc/universal/issues/848)/[#851](https://github.com/stillwater-sc/universal/issues/851) distillation algorithm).  Per-number-system PRs landed in sequence:
   - **dfloat** (BID + DPD) -- [#852](https://github.com/stillwater-sc/universal/issues/852) / [#860](https://github.com/stillwater-sc/universal/pull/860)
   - **hfloat** -- [#849](https://github.com/stillwater-sc/universal/issues/849) / [#859](https://github.com/stillwater-sc/universal/pull/859)
@@ -214,13 +402,29 @@ authoritative per-release record for them is the [releases page](https://github.
   - **erational** (p/q + decimal + scientific + GCD simplification) -- [#855](https://github.com/stillwater-sc/universal/issues/855) / [#866](https://github.com/stillwater-sc/universal/pull/866).  Each side of `/` parses independently as a decimal/scientific literal, so mixed forms like `3.14/2` and `1e2/2e1` work; `q == 0` across all flavors is rejected; latent bug fixed in passing (the integer path didn't reset `denominator`, so reusing an erational with a non-default denominator kept stale state)
   - **efloat** (decimal + scientific + nan/inf) -- [#856](https://github.com/stillwater-sc/universal/issues/856) / [#867](https://github.com/stillwater-sc/universal/pull/867).  Routes through `decimal_to_binary::convert` and distills the normalized mantissa into efloat's multi-limb representation MSB-first; new `setinf` / `setnan` / `setexponent` / `setlimb` public modifiers; 3.14 cross-checks against IEEE-754 double's bit pattern after RTNE reduction to 53 bits
   - **ereal** (test coverage + trailing-garbage rejection) -- [#857](https://github.com/stillwater-sc/universal/issues/857) / [#868](https://github.com/stillwater-sc/universal/pull/868).  Items 1+2 of #857 already shipped in Phase E ([#858](https://github.com/stillwater-sc/universal/issues/858)); this PR adds the comprehensive test suite the issue's acceptance criteria asked for and tightens the parser to reject `1e` (no exponent digits) and `1e3.5` (trailing garbage)
+
 * **Side-effect fixes uncovered while writing the parse-API tests** -- the parse-roundtrip tests stressed paths that hadn't been exercised before, surfacing two unrelated multi-limb bugs in the underlying elastic-integer arithmetic:
   - **einteger Knuth Algorithm D step D4 borrow propagation** -- the multi-precision subtract used `uint64_t diff`/`borrow`, so the canonical underflow indicator `diff >> bitsInBlock` returned `0x00000000FFFFFFFF` instead of `-1` and `p_hi - 0x...FFFFFFFF` wrapped to a huge unsigned value that corrupted the next limb.  Quotient came out off-by-`BASE` for the user-reported `(M << 100) / 5^15` pattern.  Fix switches diff/borrow to `int64_t` so the arithmetic right shift gives the proper -1/0 underflow indicator; same routine also picks up block-width-correct low-bits mask and replaces two hardcoded `32`s with `bitsInBlock` so the multi-limb path works for uint8 and uint16 blocks ([#842](https://github.com/stillwater-sc/universal/issues/842), [#861](https://github.com/stillwater-sc/universal/pull/861))
   - **einteger `operator>>=` spurious-limb leak + `shift == nbits` boundary** -- the block-shift copy loop's inline `_block[i+blockShift] = 0` zeroed only positions `[blockShift, MSU]`, leaving positions in the gap `(MSU - blockShift, blockShift)` untouched when `blockShift > (MSU+1)/2` (e.g. 15-limb uint8 shifted by 64 bits); the original byte value leaked through.  Separately, the early-exit `if (shift > nbits())` missed the boundary case `shift == nbits()` and the routine fell through to a code path where the original limbs survived unchanged.  Fix splits the copy/zero passes uniformly and tightens the early-exit to `>=` ([#862](https://github.com/stillwater-sc/universal/issues/862), [#864](https://github.com/stillwater-sc/universal/pull/864))
+
+### [4.6.16](https://github.com/stillwater-sc/universal/compare/v4.6.15...v4.6.16) (2026-05-13)
+
+#### Added
+
 * **zfpblock full constexpr completion -- codec and array container** -- two sibling PRs close the last branch of the constexpr Epic by promoting the entire ZFP stack to constant-evaluable.  Builds on the accessor subset in PR [#814](https://github.com/stillwater-sc/universal/pull/814); together the three PRs deliver end-to-end compile-time compress/decompress for both single-block and multi-block ZFP containers
   - **zfp codec** -- 564-line transform pipeline (`encode_block` / `decode_block` and every helper they call) promoted to constexpr.  Four non-constexpr stdlib calls each gated by `std::is_constant_evaluated()`: `__builtin_ctzll` / `_BitScanForward64` -> C++20 `std::countr_zero`; `std::frexp` -> new `cx_frexp_exp<Real>(v)` (IEEE 754 bit-cast extraction, handles binary32 + binary64 normal and subnormal); `std::ldexp` -> new `cx_ldexp<Real>(x, exp)` (bounded power-of-two multiplication loop, bit-identical to stdlib in the codec's exponent range); `std::memset(..., 0, ...)` -> explicit zero loops.  `zfp_bitstream` gains a `const uint8_t*` reader-mode constructor that eliminates the `const_cast<uint8_t*>(buffer)` previously used by `decode_block` (forbidden in constant evaluation when the storage originated as const-qualified).  `zfpblock::compress` / `decompress` and the four mode convenience wrappers are now `constexpr` end-to-end.  CodeRabbit fixes: `write_bits()` is now a true no-op in reader mode (early-returns before any state mutation including `_bits`); restored a corrupted comment ("TN (a]er ..." -> "TN (filter) ..."). The PR also added `zfpblock` to the conventional-commits scope allowlist alongside `mxblock`/`nvblock` ([#815](https://github.com/stillwater-sc/universal/issues/815), [#830](https://github.com/stillwater-sc/universal/pull/830))
   - **zfparray multi-block container** -- `zfparray<Real, Dim>` (the std::vector-backed multi-block array) promoted to constexpr.  No `std::is_constant_evaluated()` branching is required: every helper the container calls is constexpr after the codec promotion.  Three classes of cleanup: (1) `std::memset`/`std::memcpy` replaced with element-wise loops throughout (cache init, store copy, padded-block init); (2) `_store` (the `std::vector<uint8_t>` compressed buffer) marked `mutable`, eliminating every `const_cast<zfparray*>(this)->flush()` in the const lazy-cache-load methods (`operator()`, `decompress`, `clear_cache`, `load_block`) -- the cache is an internal implementation detail, so const methods are entitled to evict-and-flush.  `flush()` and `write_back_cache()` become const members.  Strictly safer and a long-standing const-correctness improvement; (3) in-class member initializers let the default ctor reduce to `= default` and drop the explicit `_cache` memsets.  Supported usage: constexpr lambdas constructing/using/destroying the array within a single constant expression (C++20 transient-allocation rule); static-storage `constexpr zfparray` instances remain unsupported.  New `static/block/zfpblock/array/array_constexpr.cpp` exercises: default-ctor accessors, sized ctor, construct-from-source compress/decompress roundtrip, set/flush/get through the write-back cache, and cross-block access with cache eviction ([#816](https://github.com/stillwater-sc/universal/issues/816), [#831](https://github.com/stillwater-sc/universal/pull/831))
+
 * **LNS Phase F filed -- Arnold/Vouzis cotransformation algorithm** -- new follow-on issue [#829](https://github.com/stillwater-sc/universal/issues/829) capturing the requirements for the high-accuracy LNS add/sub algorithm family from Vouzis/Collange/Arnold's "Novel Cotransformation for LNS Subtraction" (J. Signal Processing Systems 58:29-40, 2010) and its precursors (Coleman 1995, Arnold 2002, Vouzis 2007, Arnold/Bailey/Cowles/Winkel 1998).  Distinguishes from the existing Phase C `ArnoldBaileyAddSub` (which is a piecewise-linear secant fit at integer-d knots delivering ~2.5% relative error): the cotransformation family uses algebraic identities (`sb_sub(d) = d_l + sb_sub(d_h) + sb_add((sb_sub(d_l) - d_l) - sb_sub(d_h))`) plus two small auxiliary LUTs `F3(d_l) = sb_sub(-d_l)` and `F4(d_h) = sb_sub(d_h)` to move the `sb_sub` singularity at `d=0` away from the evaluation point, enabling faithful rounding without `DirectEvaluation`'s two transcendentals/op.  Cross-linked to parent Epic [#777](https://github.com/stillwater-sc/universal/issues/777) and sibling Phase E (CORDIC, [#783](https://github.com/stillwater-sc/universal/issues/783), deferred).  Issue ships with full memory-tuning formula, guard-bit tables, and reference list -- ready to implement when a software-accuracy consumer asks for it
+
+#### Changed
+
+* **Epic [#723] CLOSED -- constexpr support across Universal number systems** -- the umbrella Epic tracking full constexpr promotion across the library is complete: all 32 sub-issues (5 Tier-1 primary types, 22 Tier-2 additional fixed-size types, 5 Tier-3 elastic types) are closed.  Final close-out: sub-Epic [#745](https://github.com/stillwater-sc/universal/issues/745) (zfpblock umbrella) closed after PRs [#814](https://github.com/stillwater-sc/universal/pull/814) (accessor subset), [#830](https://github.com/stillwater-sc/universal/pull/830) (codec), and [#831](https://github.com/stillwater-sc/universal/pull/831) (zfparray container) landed.  Universal now fulfills the "plug-in" promise: any expression in any fixed-size Universal type can be evaluated at compile time, drop-in parity with `int`/`float`/`double` in any constexpr context.  Cross-cutting prerequisites all complete: `blockbinary` arithmetic (#716), `blocksignificand`/`blocktriple` arithmetic (#718/#719), `blockdecimal` arithmetic (#729/#730), `floatcascade` (#728/#739/#742), `twoSum`/`twoProd` (#727/#738), `sw::math::constexpr_math` providing `cm::log2`/`cm::exp2` (Epic #763, replacing the original #423)
+
+### [4.6.15](https://github.com/stillwater-sc/universal/compare/v4.6.14...v4.6.15) (2026-05-11)
+
+#### Added
+
 * **Elastic-type partial constexpr cascade** -- five sibling PRs promote the user-facing surface of every heap-backed elastic number system to constexpr where C++20's transient-allocation rule permits.  All five use the same `std::is_constant_evaluated()` dispatch playbook (originally landed in #820 unum and #821 valid): at constant evaluation the digit storage stays empty (recognized as canonical zero by the type's `iszero()`); at runtime, `push_back(0)` restores the historical "one-element" representation that arithmetic and comparison code relies on.  Each PR adds a `static_assert` smoke test plus a CodeRabbit-prompted runtime pin guarding the runtime-invariant against regressions
   - **edecimal** -- default ctor + selectors (`iszero`, `sign`, `isneg`, `ispos`) + sign-only modifiers + defaulted copy/move/assign marked constexpr.  Drive-by fix: `is_edecimal<T>` referenced misspelled `is_edecimalal_trait` (latent compile-error for any user of the variable template). New `elastic/decimal/api/constexpr.cpp` ([#746](https://github.com/stillwater-sc/universal/issues/746), [#824](https://github.com/stillwater-sc/universal/pull/824))
   - **efloat** -- default ctor + all 12 state/sign selectors + `clear`/`setzero` + unary minus + compound arithmetic stubs (`+=` `-=` `*=` `/=`) + free comparison operators + binary arithmetic free functions marked constexpr.  Drive-by fix: `setzero()` previously delegated to `clear()` which left `_state = Normal`, contradicting its name -- now restores `_state = Zero`. Matching friend `operator==` declaration updated to `constexpr` (compiler-required) ([#747](https://github.com/stillwater-sc/universal/issues/747), [#825](https://github.com/stillwater-sc/universal/pull/825))
@@ -230,82 +434,79 @@ authoritative per-release record for them is the [releases page](https://github.
     - `operator<` had `for (unsigned b = ll - 1; ...)` UINT_MAX underflow on zero-limb operands ([#748](https://github.com/stillwater-sc/universal/issues/748), [#826](https://github.com/stillwater-sc/universal/pull/826))
   - **erational** -- composite type built on `edecimal`; constexpr surface intersects edecimal's surface.  Default ctor + selectors (`iszero`, `isneg`, `ispos`, `isinf`, `isnan`, `sign`, `top`, `bottom`) + sign-only modifiers + move ctor + move assignment marked constexpr.  Documented behavioral subtlety: at constant evaluation BOTH numerator and denominator are empty edecimals, so `isnan()` (defined as `num.iszero() && denom.iszero()`) returns true on a default-constructed `constexpr erational` -- the runtime path's `setzero()` sets `denominator = 1` but that requires `push_back` which cannot persist in a constexpr variable.  CodeRabbit-prompted fix: removed `noexcept` from default ctor (runtime branch can throw `bad_alloc`) ([#749](https://github.com/stillwater-sc/universal/issues/749), [#827](https://github.com/stillwater-sc/universal/pull/827))
   - **ereal** -- multi-component real implementing Shewchuk's expansion arithmetic over `std::vector<double>`.  Smallest constexpr surface of the cascade because (a) expansion_ops is not yet constexpr, blocking arithmetic and comparison; (b) `isnan`/`isinf`/`signbit`/`scale` use non-constexpr stdlib helpers (`std::fpclassify`, `std::signbit`).  Promoted: default ctor + 7 selectors (`iszero`, `isone`, `ispos`, `isneg`, `sign`, `significant`, `limbs`) with empty-`_limb` guards + defaulted copy/move/assign.  Drive-by hardening: added empty-`_limb` guards to all non-constexpr selectors (`isinf`, `isnan`, `signbit`, `scale`) protecting against zero-capacity moved-from vectors.  CodeRabbit-prompted runtime pin: assert default-constructed ereal has `limbs().size() == 1 && limbs()[0] == 0.0` to catch regressions in the `is_constant_evaluated()` dispatch ([#750](https://github.com/stillwater-sc/universal/issues/750), [#828](https://github.com/stillwater-sc/universal/pull/828))
+
+### [4.6.14](https://github.com/stillwater-sc/universal/compare/v4.6.13...v4.6.14) (2026-05-05)
+
+#### Added
+
 * **e8m0 full constexpr support** -- 8-bit OCP exponent-only scaling factor promoted to fully constexpr across construction, assignment, arithmetic (`*=`, `/=`), comparison, and `to_float`/`from_float` conversion. `to_float` now constructs IEEE 754 bit patterns directly (encoding 0 emits subnormal `0x00400000` for 2^-127); `from_float` uses bit-extraction with round-up at `frac >= 3474676` (~`(sqrt(2)-1)*2^23`). Foundation for the OCP MX block format chain (mxblock #812). Infinity check reordered before non-positive clamp so `-inf` encodes to maxpos rather than 0; `operator>=` rewritten as `operator> || operator==` for NaN-safety ([#731](https://github.com/stillwater-sc/universal/issues/731), [#810](https://github.com/stillwater-sc/universal/pull/810))
+
 * **microfloat full constexpr support** -- 8-bit float family (e2m1, e3m2, e4m3, e5m2, et al.) promoted to fully constexpr across construction, assignment, arithmetic, comparison, and conversion. `extract_float_fields` + `cx_ldexp` helpers replace `std::frexp/ldexp/isnan/isinf/signbit/fabs/copysign`. Asserts IEEE 754 binary32 layout via `static_assert(sizeof(float) == sizeof(uint32_t) && std::numeric_limits<float>::is_iec559, ...)`. Mixed-type comparisons short-circuit on float NaN before narrowing (preserves IEEE semantics for `hasNaN=false` types). Signed zero preserved via `_bits = s ? sign_mask : 0x00u`. Foundation for nvblock and the per-element store in mxblock ([#733](https://github.com/stillwater-sc/universal/issues/733), [#811](https://github.com/stillwater-sc/universal/pull/811))
+
 * **mxfloat (mxblock) full constexpr support** -- OCP Microscaling block floating-point format promoted to fully constexpr across `quantize/dequantize/operator[]/dot`. Private helpers `cx_fabs` (sign-flip), `cx_floor_log2` (IEEE 754 bit-extraction; subnormals via leading-zero scan), `cx_ldexp` (bounded power-of-2 multiplication loop) replace `std::fabs/floor/log2/ldexp/round` at constant evaluation. Runtime path retains stdlib calls via `std::is_constant_evaluated()` dispatch. NaN-scale propagation, all-zero amax fast path, e8m0 bias clamping all preserved ([#734](https://github.com/stillwater-sc/universal/issues/734), [#812](https://github.com/stillwater-sc/universal/pull/812))
+
 * **nvblock (NVIDIA NVFP4) full constexpr support** -- two-level scaled block format with e4m3 fractional `block_scale` and external FP32 `tensor_scale` promoted to fully constexpr across `quantize/dequantize/operator[]/dot/setscalebits/clear`. Cleaner constexpr promotion than mxblock because no `log2/floor/ldexp` is needed: e4m3 stores the actual ratio `amax/elem_max`, not a power-of-2 exponent. `std::fabs` replaced inline with `(x < 0) ? -x : x`; `compute_elem_max` materialized via `ElementType(SpecificValue::maxpos).to_float()` (constexpr after #811) ([#735](https://github.com/stillwater-sc/universal/issues/735), [#813](https://github.com/stillwater-sc/universal/pull/813))
+
 * **zfpblock partial constexpr support** -- accessor subset of the ZFP block container promoted to fully constexpr: `compressed_bits/compressed_bytes/compression_ratio/data/mode/param/block_size/dim` plus the static `compute_limits` helper. Locks in the empty-state contract (value-initialized block has `_nbits == 0`, `compressed_ratio() == 0.0`). The 564-line ZFP transform codec (`encode_block`/`decode_block`) and the `std::vector`-backed `zfparray` are deferred to follow-up sub-issues #815 and #816 ([#745](https://github.com/stillwater-sc/universal/issues/745) (partial), [#814](https://github.com/stillwater-sc/universal/pull/814))
+
+### [4.6.13](https://github.com/stillwater-sc/universal/compare/v4.6.12...v4.6.13) (2026-05-04)
+
+#### Added
+
 * **hfloat full constexpr support** -- IBM System/360 hexadecimal floating-point type promoted to fully constexpr across construction, assignment, arithmetic, comparison, and conversion. Sibling of dfloat #805 / dfixpnt #803 / qd #800. Includes new `static/float/hfloat/api/constexpr.cpp` test with HFP-specific invariants (no NaN, no inf, infpos saturates to maxpos). Self-contained promotion (no internal building-block dependencies) ([#732](https://github.com/stillwater-sc/universal/issues/732), [#806](https://github.com/stillwater-sc/universal/pull/806))
+
 * **Local sanitizer workflow doc** -- `docs/build/local-sanitizer.md` documenting the `-DUNIVERSAL_ENABLE_UBSAN=ON` / `-DUNIVERSAL_ENABLE_ASAN=ON` build pattern, mirroring the CI sanitizers job. Captures stack-trace options, ctest invocation, and how to read UBSan failures
-* **ucalc MCP server** -- zero-dependency Model Context Protocol server exposing 17 ucalc tools for AI agent integration via JSON-RPC over stdio ([#638](https://github.com/stillwater-sc/universal/issues/638), [#683](https://github.com/stillwater-sc/universal/pull/683))
-* **ucalc documentation section** -- elevated ucalc from a tutorial page to a dedicated docs section with four focused documents: overview, worked examples, step-by-step arithmetic visualization, and MCP server guide
-* **cfloat integer conversion test suite** -- `VerifyInteger2CfloatConversion` and `VerifyCfloat2IntegerConversion` in `cfloat_test_suite.hpp` with exhaustive coverage for 8/10/12/16-bit cfloats ([#684](https://github.com/stillwater-sc/universal/issues/684), [#685](https://github.com/stillwater-sc/universal/pull/685))
 
-### Fixed
+#### Fixed
 
-* **elreal's division was capped three independent ways** -- each cap looked like the type's limit until the one beneath it was removed:
-  - **A host-derived depth constant** ([#1371](https://github.com/stillwater-sc/universal/issues/1371) / PR [#1374](https://github.com/stillwater-sc/universal/pull/1374)) -- `div_online`'s dense path pinned its Newton reciprocal to `(-min_exponent - 2*k) / k`, so every division by a multi-block value stopped at 17 blocks (~271 digits) on `double` and 3 (~22 digits) on `float`, however deep the caller pulled. Same mistaken premise the ceiling work removed elsewhere; this one survived the sweep because it is a target *depth* rather than a guard. `div_online` now takes the depth as a parameter, `operator/=` passes `precision()` plus a guard, and the Payne-Hanek reduction passes the `reddepth` it had already computed and then ignored.
-  - **A term dropped when the accumulator cancelled to zero** ([#1373](https://github.com/stillwater-sc/universal/issues/1373) / PR [#1375](https://github.com/stillwater-sc/universal/pull/1375)) -- `infsumRec_step`'s null-sum branch advanced the input cursor past `bs` as well as `as`, so whenever a term summed the accumulator to exactly zero the *following* term was silently discarded. The branch was written as defensive dead code ("McCleeary's pattern match assumes this cannot occur"). It is not dead: zero blocks are legitimate ZBCL blocks, and the streaming multiply emits an all-zero term whenever an operand block is zero. The consequence was that two expansions holding the **exact same value** gave different products, and Newton's reciprocal walked straight into it -- the cancellation in `2 - b*r` emits a growing run of zero blocks as it converges, so past a certain depth the correction term was discarded whole and the iteration fixed-pointed. That, not the depth constant, is what capped dense division at ~513 digits on `double` and ~62 on `float`. Fixed, a `float` host reaches 1147 digits through division where it previously managed 62.
-  - **Quadratic cost for a single-block divisor** (PR [#1377](https://github.com/stillwater-sc/universal/pull/1377)) -- see **Changed**.
-* **The lazy producers owned themselves ([#1378](https://github.com/stillwater-sc/universal/issues/1378) / PR [#1379](https://github.com/stillwater-sc/universal/pull/1379))** -- `add()` and `infsum()` built their tail thunk as a `std::function` holding a `shared_ptr` to the control block that owned it, so releasing the returned ZBCL could never bring the count to zero and every call stranded its state for the life of the process. Measured as live allocations per stream created and immediately dropped: `add` 4, `div_online` 72, `mul_online` 243 -- 80,000 dropped `mul_online` streams took a process from 3.5 MB to 2.3 GB. Every elreal operation goes through `add()` and every multiply and divide through `infsum()`, so a long-running computation leaked in proportion to the block operations it performed. Both now use a free function whose thunk captures only the state; RSS is flat at 3668 kB across 160,000 streams. Laziness is unchanged, and so is speed -- this is a memory fix.
-* **The sin/cos round-trip gate, and the measuring stick itself ([#1076](https://github.com/stillwater-sc/universal/issues/1076) / PR [#1369](https://github.com/stillwater-sc/universal/pull/1369))** -- `sin(asin(x))==x` and `cos(acos(x))==x` were gated off in the LEVEL_4 suite for capping at ~234 digits against a 300-digit bar. They now reach 321 at depth 20 and scale linearly (16.0 digits per unit of depth against a theoretical 15.95), closing the last unmet acceptance criterion of [#931](https://github.com/stillwater-sc/universal/issues/931) Phase 7. **Nothing in sin/cos changed**: the fix was the operand-normalisation rule above, bisected to the commit. Three earlier passes had concluded the loss was a conditioning defect in the Maclaurin recurrence, reasoning that a plateau at 19 blocks *had* to be `double`'s physical floor -- naming the symptom as its own cause. The floor was the bug. Separately, this found a defect in the oracle: `agreed_decimal_digits()` handed its digit string to `einteger::parse`, which reads a leading zero as octal, so `"0.75"` became 61 and the oracle reported 0 agreeing digits for values that were exactly equal. It went unnoticed because the only fractional reference in use was `"0.5"`, which is correct purely by coincidence -- octal and decimal agree on every single digit.
-* **`einteger`'s parse radix depended on the leading-zero count ([#1370](https://github.com/stillwater-sc/universal/issues/1370) / PR [#1381](https://github.com/stillwater-sc/universal/pull/1381))** -- the octal pattern required the *second* character to be `[1-7]`, so one leading zero selected octal and two or more fell through to decimal: `"0777"` was 511 but `"00777"` was 777, and `"075"` was 61 while `"0075"` was 75. Zero-padding a value silently changed what it meant, and the same gap made the radix depend on the digits (`"0747"` was 487, `"0749"` was 749). A leading zero now commits the string to octal however many zeros there are, and decimal no longer accepts one, so a leading-zero string containing an 8 or 9 is malformed rather than quietly re-read in another radix. **Octal support itself is unchanged and was never in question** -- the issue as filed proposed dropping it on the grounds that nothing used it, which was wrong; `elastic/einteger/conversion/string_parse.cpp` has a section for it.
-* **`numeric_limits<elreal>::epsilon()` returned exactly zero ([#1177](https://github.com/stillwater-sc/universal/issues/1177) / PR [#1382](https://github.com/stillwater-sc/universal/pull/1382))** -- it was `ElrealType(std::ldexp(1.0, -digits))`, computing its value *through a host double*, so it underflowed for any default precision from 21 blocks up on a `double` host. The old default of 8 sat just under that line, which is why it went unnoticed until the default moved. Representing a value that far below the host's range is the entire point of the type; epsilon is now built as a block carrying its scale in the wide exponent. `double(epsilon())` is still 0, which is correct -- `2^-1696` is not a `double`. The regression pins it *structurally* (exactly one block at exponent `-digits`) so it catches a host-computed epsilon at any default, not only one deep enough to underflow.
-* **The characterization tool reported the operator's own sweep limit as a result ([#1177](https://github.com/stillwater-sc/universal/issues/1177) / PR [#1382](https://github.com/stillwater-sc/universal/pull/1382))** -- it picked "first knob within 95% of the best digits" as the saturation point, and for a series still climbing the best *is* the last row, so it always fired at `maxDepth`. Every elreal function claimed to saturate at whatever depth you happened to sweep to, and so did most of ereal's. The knee had the same flaw. Both are now reported only when a plateau was actually observed, and the alternative is stated: `NO saturation through depth K (D digits, still climbing)`.
-* **`el_api_math` timed out under UBSan on `main` (PR [#1365](https://github.com/stillwater-sc/universal/pull/1365))** -- not a sanitizer diagnostic: 889 of 890 tests passed with zero runtime errors, and the failure was ctest's 300s per-test limit. The test checks named constants against `double` literals -- about 17 significant digits is the whole question -- but called each generator at its own default depth, which was cheap only while the refinement floors stopped the series early. With the floors gone it went from 34s to 114s at -O0, and instrumentation cleared 300s. The ten `elreal_*` accessors now take an optional depth (0 means the generator's default, so no caller changes), and the api test passes depth 3.
-* **IEEE NaN was classified by exact payload rather than by exponent and mantissa ([#1303](https://github.com/stillwater-sc/universal/issues/1303) / PR [#1346](https://github.com/stillwater-sc/universal/pull/1346))** -- converting a signaling NaN into a narrower `cfloat` produced **infinity**. The classification compared the source fraction for equality against three specific payloads, so every other payload -- including the canonical signalling `0x1` -- missed all three, fell through to the numeric path and was projected to infinity; 2040 of binary16's 2046 NaN encodings decoded to the wrong class of value. `std::nan("")` is one of the three, which is why existing coverage never saw it. The same block had been copy-pasted six times across four types (`cfloat`, `lns`, `dbns`, `blocktriple`) and all six now use IEEE-754's rule. The consequential one is `blocktriple`, which is what the arithmetic paths run on, so a NaN operand entering an add or multiply had stopped propagating. Also fixed: `blocktriple`'s special-value branches never cleared `_zero`, so a converted NaN reported `isnan()` **and** `iszero()` at once, and `iszero()` is what the arithmetic shortcuts consult. MSVC needed a decision rather than a fix -- its `signaling_NaN()` has the quiet bit set, so it is a quiet NaN by IEEE whatever the name says, and it joins RISC-V, ARM and POWER in `UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP`.
-* **`microfloat` E4M3 conversion diverged from the OCP OFP8 specification ([#1302](https://github.com/stillwater-sc/universal/issues/1302) / PR [#1351](https://github.com/stillwater-sc/universal/pull/1351))** -- the encoding was already exact (all 256 patterns decode to the specification's value), but conversion from a wider type was wrong in four places: `500.0` gave 448 rather than NaN, `+/-inf` gave maxpos, `-NaN` lost its sign, and `e5m2`'s `58000.0` gave infinity rather than 57344. All four come from one block -- `from_float()` pre-clamped against maxpos *before* rounding, short-circuiting the post-rounding overflow check underneath it, which was already correct. What to do about an overflow was written out three times and the copies did not agree; it is now one `setoverflow()` policy, and the case that used to return **zero** (a format with neither infinity nor NaN) now clamps, so an overflow no longer silently becomes the most benign value in the format. `e4m3` now means `e4m3fn` -- NaN on overflow, per OCP, matching `float8_e4m3fn` in ml_dtypes, JAX and PyTorch -- while `mxfp8` and the NVFP4 block scale are pinned to `e4m3_saturating` and are unchanged bit-for-bit, since block quantization must clip rather than poison a block with a NaN.
-* **`bfloat16::scale()` understated every subnormal by up to 6 binades (PR [#1359](https://github.com/stillwater-sc/universal/pull/1359))** -- it read the biased exponent field and subtracted the bias, which is right for normals and wrong for all 254 subnormals: their field is zero, so it answered -127 where the true scale runs to -133. bfloat16's own suites never asked a subnormal for its scale; it surfaced from elreal, where `block::scale_of_v()` calls it and the 0-overlap accounting is built on the result. The new regression is exhaustive rather than sampled -- all 65536 encodings against `std::ilogb` of the exactly-equal `double` -- and fails if the sweep sees no subnormal at all, since a run that never reached one would pass vacuously.
-* **`bfloat16`'s `two_prod` computed in `double` (PR [#1358](https://github.com/stillwater-sc/universal/pull/1358))** -- `block_eft.hpp` opens with a binding rule from Epic [#923](https://github.com/stillwater-sc/universal/issues/923): use the host `FpType`'s arithmetic directly, do not promote to a wider type and snap back. The residual dispatch tested `2p > 53`, a proxy for "a `double` cannot hold the exact product", which is not a statement about whether the type *has* an fma -- so `bfloat16` (p=7) fell to a `double` intermediate despite having had a correctly-rounded fma since [#1232](https://github.com/stillwater-sc/universal/issues/1232). The dispatch now tests for the fma itself via a concept resolved with ADL. This is a purity fix, not a convergence fix, and the distinction matters: it is what makes a block-shape study of narrow hosts measure narrow-host arithmetic rather than `double` arithmetic wearing a narrow result type.
-* **The [#1364](https://github.com/stillwater-sc/universal/issues/1364) sparse-expansion caveat was wrong (PR [#1367](https://github.com/stillwater-sc/universal/pull/1367))** -- the caveat, which shipped in the v4.9.0 release notes, asked whether `agreed_decimal_digits` credits how far an expansion *reaches* rather than what it *carries*, on the evidence that a `bfloat16` `e` had all 52 gaps wider than `k` while its agreeing digits exceeded `blocks*k*log10(2)`. Both halves are wrong. Wide gaps are not a narrow-host phenomenon -- a depth-32 `e` has 35 of 35 gaps above `k` on `double` -- so there was no anomaly to explain; and `blocks*k` is not a bound on agreement, because an expansion is a signed **sum** rather than a concatenation of bit fields, so a low component can borrow from a higher one. Checked outside the library instead, by rebuilding the expansions in exact rational arithmetic against a 3000-digit reference: `bfloat16` claimed 78 digits and delivered 78, `half` 122 and 122, `float` 263 and 263. The published v4.9.0 notes were corrected.
-
-* **Multi-component cascade parity ([#1315](https://github.com/stillwater-sc/universal/issues/1315) and the work it prompted, all nine defects CLOSED)** -- `qd_cascade` came in 6-8x slower than `qd` and 13-15 decimal digits less accurate; it leaves at 1.1-1.9x with matching or better accuracy. Five of the eight fixes were the same move -- where the cascade improvises, adopt the direct family's proven schedule and express it with the framework's hardened primitives:
-  - **addition dropped a limb** ([#1317](https://github.com/stillwater-sc/universal/issues/1317) / PR [#1321](https://github.com/stillwater-sc/universal/pull/1321)) -- `add_cascades<4>` produced an exact but *overlapping* expansion, so renormalization could not keep the fourth component: 25 in 200 random full-precision additions lost it entirely. Shewchuk COMPRESS applied at N=4 only -- N=2 and N=3 were fine, and an early over-broad fix that "found" `td_cascade` broken was scoring a 159-bit format against a 212-bit threshold. **Score each width against its own ulp.**
-  - **multiplication** ([#1322](https://github.com/stillwater-sc/universal/issues/1322) / PR [#1323](https://github.com/stillwater-sc/universal/pull/1323), [#1324](https://github.com/stillwater-sc/universal/issues/1324) / PR [#1325](https://github.com/stillwater-sc/universal/pull/1325)) -- the cascade sorted its partial products by magnitude, which it does not need to do: `a[i]*b[j]` contributes at order `eps^(i+j)`, so the products emerge in decreasing significance by construction. Adopting the `qd_mul` schedule at N=4 and N=3 took `qd_cascade` multiply from 8x `qd` to 1.3x with matching accuracy. Fixing multiply alone made division 23% slower (its initial quotient estimate is a one-component cascade, and the old sorted multiply skipped zero products), so `multiply_cascade_by_double` landed in the same change.
-  - **division was a quotient digit short** ([#1326](https://github.com/stillwater-sc/universal/issues/1326) / PR [#1328](https://github.com/stillwater-sc/universal/pull/1328)) -- `qd`'s long division computes N+1 quotient digits and closes with an (N+1)-term renormalization; the cascade computed N, at all three widths.
-  - **generic templates carried the old design** ([#1330](https://github.com/stillwater-sc/universal/issues/1330) / PR [#1330](https://github.com/stillwater-sc/universal/pull/1330)) -- `add_cascades<N>`/`multiply_cascades<N>` for any N outside {2,3,4} still had the sorted formulation and knew nothing of the quotient-digit fix. Nothing instantiated them, so this was never a live defect, but the first `floatcascade<5>` would have inherited every bug this effort fixed, silently and with no indication anything was wrong. They now `static_assert`, because there is no generic form of the corrected algorithms to fall back on: the multiplication schedule is derived for one specific N, the division needs N+1 quotient digits, and whether the addition needs compression is a measured property rather than a derived one.
-  - **sqrt reformulated with the trade measured** ([#1331](https://github.com/stillwater-sc/universal/issues/1331) / PR [#1333](https://github.com/stillwater-sc/universal/pull/1333)) -- three formulations (Newton-division, Newton-reciprocal, Karp) behind `UNIVERSAL_*_CASCADE_SQRT_ALGORITHM`, defaulting to the most accurate; the faster ones must be asked for. The accuracy cost was measured rather than assumed, and it differed by width -- `td_cascade` improved outright on both axes.
-  - **trigonometry capped at double-double accuracy** ([#1318](https://github.com/stillwater-sc/universal/issues/1318) / PR [#1338](https://github.com/stillwater-sc/universal/pull/1338)) -- three independent causes, all inherited from the double-double code these files were copied from. `qd_eps` held the *double-double* unit roundoff (2^-104 rather than 2^-209), truncating every Taylor series that used it as a threshold, so `qd` sin/cos delivered 43 of the 63 digits the format carries; `exp` had already hit this and worked around it with a local constant of its own, which is the tell. The cascades reduced modulo pi/16 against a four-entry double-double table, which a 15-entry inverse-factorial table cannot carry past double-double accuracy at any width -- both now use the `qd` pi/1024 schedule from a shared 256-entry table, where one table serves all three widths because dropping the trailing limbs of a correctly rounded expansion leaves a correctly rounded expansion. And the cascade `atan2` took a single Newton step, right for a double-double and one third of what a quad-double needs, so `atan`, `asin` and `acos` were capped at 106 bits regardless of type. `sin^2 + cos^2 - 1` in ulps: `td_cascade` 4.277e+15 -> 1.141, `qd` 1.494e+23 -> 1.34, `qd_cascade` 3.852e+31 -> 0.3555.
-  - **sqrt unbounded at both ends of the range** ([#1332](https://github.com/stillwater-sc/universal/issues/1332) / PR [#1339](https://github.com/stillwater-sc/universal/pull/1339)) -- `sqrt(maxpos)` returned inf or NaN in `dd` and `qd`; both algorithms square a value of the argument's own magnitude. Both now scale into `[0.5, 2)` first, as the cascades have since #1331. Scoring the whole range showed the defect was wider than the reported overflow -- the same squares go subnormal at the bottom -- so `dd`'s worst case went from 52 to 105 bits of its 106, `qd`'s from 60 to 214 of its 212, and `qd`'s 28 non-finite results went to none. `qd::sqrt(0)` also returned NaN, having never guarded zero at all.
-  - **`x / inf` returned NaN** ([#1327](https://github.com/stillwater-sc/universal/issues/1327) / PR [#1337](https://github.com/stillwater-sc/universal/pull/1337)) -- in every multi-component type, direct and cascade alike, where IEEE says zero.
-* **efloat `long double` conversion yielded 0** ([#1160](https://github.com/stillwater-sc/universal/issues/1160) / PR [#1161](https://github.com/stillwater-sc/universal/pull/1161)) -- `convert_ieee754` only built mantissa limbs for `sizeof(Real)` of 4 or 8; the `else` branch was a no-op `static_assert(true)`, so a 16-byte `long double` (x86-64) pushed no limbs and normalized to 0, and `operator long double()` capped at double precision. Both directions rewritten portably (no 80-bit-x87 bit-twiddling, so it also handles IEEE binary128): `frexp` the value into `m * 2^e` with `m` in `[0.5,1)`, decompose `m` into an exact sum of doubles through the working `double` path, then apply `e` with `setexponent()`. Round-trip-exact across precision (`1 + 2^-60` survives) and the extended exponent range (`2^16000`). The `nexttoward` `long double -> double` workaround was then removed (PR [#1162](https://github.com/stillwater-sc/universal/pull/1162)).
-* **efloat `nextafter` step was precision-independent and skipped the power-of-two neighbor** (part of PR [#1159](https://github.com/stillwater-sc/universal/pull/1159)) -- the ULP was computed from `bits().size()*32` (the limbs *currently occupied* by the mantissa -- just one for a value like `1.0`), giving a fixed `2^-31` step for `efloat<8>` and `efloat<16>` alike. Now uses `get_precision()`, so the step is `2^(scale - precision + 1)` (`2^-255`/`2^-511`/`2^-1023` at 256/512/1024-bit). A review pass added the power-of-two boundary case: stepping toward zero from an exact `2^k` crosses into the lower binade whose spacing is half as large; the neighbor is now computed at one extra limb of precision so its trailing bit is not rounded off, and every step round-trips in both directions.
-* **efloat `abs()`/`fabs()` were a no-op stub** -- the free function `abs(efloat)` returned its argument unchanged (`return a;`), so `abs(-x) == -x` and every caller expecting a magnitude got a signed value. Fixed to clear the sign on a copy (correct for negative normals, `-inf -> +inf`, `-0 -> +0`, NaN stays NaN); added the `<cmath>` spelling `fabs`. Side benefit: `log1p`'s small-argument guard `abs(x) < 0.375` was effectively the signed test `x < 0.375` under the stub, routing moderately-negative arguments into a slow Taylor path -- it now gates by magnitude as intended ([#1138](https://github.com/stillwater-sc/universal/pull/1138))
-* **efloat `sqrt()`/`cbrt()` accuracy frozen at ~97 digits** -- both ran a fixed 7 Newton iterations from a ~1-bit exponent-only seed (chosen to preserve efloat's unbounded exponent range), so accuracy was capped at ~323 bits regardless of `get_precision()`. Made the iteration count precision-adaptive (`~ceil(log2(P))` doublings plus guard, with a convergence break), keeping the wide-range seed; `sqrt(2)^2 - 2` and `cbrt(2)^3 - 2` now converge to the type's full precision (exact at `efloat<128>`) ([#1140](https://github.com/stillwater-sc/universal/issues/1140), [#1143](https://github.com/stillwater-sc/universal/pull/1143))
-* **efloat `parse()` silently returned ~0 above the 2040-bit d2b cap** -- `parse()` capped the target at `default_big_bits - 8` and called `convert<2048>`, but convert's reduction left-shifts the digit-integer by `~(target + 3*neg_E)` bits, which overflows the budget whenever the target approaches 2048 (even a short literal like `pi` returned `~0` at `set_precision(2040)`). Templated `parse` on `BigBits` (default unchanged, so `parse(s,x)` is backward compatible and `parse<16384>(s,x)` reaches ~1000-digit precision), and size the target overflow-safely from the scanned literal's effective exponent and digit count -- budgeting both negative *and* large positive exponents so an out-of-budget literal is rejected rather than returning garbage ([#1141](https://github.com/stillwater-sc/universal/issues/1141), [#1144](https://github.com/stillwater-sc/universal/pull/1144))
-* **bfloat16 float conversion truncated instead of rounding to nearest-even** -- `bfloat16::convert_ieee754` kept the top 16 bits of the source IEEE-754 float via a bare `bits >> 16`, discarding the low 16 bits with no rounding.  That is round-toward-zero (truncation); Google TPUs and Intel round the `float -> bfloat16` conversion to nearest, ties-to-even (RNE).  Fixed with the standard magic rounding bias `bits += 0x7FFF + lsb_of_retained_field` before the shift (more-than-half rounds up, less-than-half stays, exact-half ties to the even significand; carry into the exponent and round-to-inf at the range limit both fall out correctly), plus a NaN guard so a float NaN whose payload lives only in the low 16 bits does not collapse to `+/-inf`.  `numeric_limits<bfloat16>::round_style` updated `round_toward_zero -> round_to_nearest`.  For the reported case `0.2691408770292272` now yields `0.26953125` (was `0.267578125`).  New `static/float/bfloat16/conversion/round_to_nearest_even.cpp` covers the issue case, up/down rounding, tie-to-even boundaries, and inf/nan/zero preservation ([#1133](https://github.com/stillwater-sc/universal/issues/1133), [#1134](https://github.com/stillwater-sc/universal/pull/1134))
-* **elreal `zbcl_from_blocks` leaked a subnormal trailing limb on narrow hosts** -- on a narrow host (`bfloat16` k=7, `fp16` k=11) a deep `ZBCL` expansion can bottom out at the denormal floor and leave a trailing subnormal limb whose exponent gap to its head is below `k`.  `zbcl_from_blocks` only stripped trailing zero blocks, so the subnormal limb was carried into the ZBCL; forcing the tail that holds it tripped the 0-overlap debug assert in `ZBCL::tail()`.  A subnormal block cannot satisfy the k-gap 0-overlap invariant (`block::is_normalised`: "0-overlap accounting assumes the leading bit is set").  Fix drops trailing non-normalised blocks in `zbcl_from_blocks` (subsumes the prior zero-block drop; value-preserving because the list is `priestRenorm`'d, descending exponent), centralising the same guard the streaming producers `mul_scalar`/`online_divide`/`online_multiply` already applied.  Latent, pre-existing fragility masked while bfloat16 conversion truncated; exposed by the RNE fix above, which changed the deep `sqrt` expansion so the denormal-floor configuration is reached (`el_math_sqrt` aborted under Debug/ASan with `FpType=bfloat16`).  Validated: all 42 elreal regression tests pass on gcc and clang ([#1135](https://github.com/stillwater-sc/universal/issues/1135), [#1136](https://github.com/stillwater-sc/universal/pull/1136))
-* **docs-site build broke on Starlight v0.39+ sidebar schema** -- the dependabot bump of `@astrojs/starlight` (`^0.38 -> ^0.41`, crossing the v0.39.0 breaking change) and `astro` (`^6.4 -> ^7.0`) failed the Documentation CI build: Starlight v0.39.0 removed autogenerated sidebar *groups* that combine a `label` with a top-level `autogenerate` object.  Rewrote each such entry in `docs-site/astro.config.mjs` as `{ label, items: [{ autogenerate }] }` (backward-compatible with the older Starlight), unblocking the security bump ([#1132](https://github.com/stillwater-sc/universal/pull/1132))
-* **ereal transcendentals capped far below full precision** -- `ereal<maxlimbs>` mathlib functions delivered at most ~16 (then ~130) decimal digits regardless of `maxlimbs`, not the ~15.95 digits/limb the type implies.  Three stacked causes, all fixed: (1) base constants pi/ln2/ln10 were truncated `double` literals -- now stored as precomputed 19-limb non-overlapping expansions and reconstructed by exact summation (the dd/qd approach), bypassing the lossy parse; (2) `expansion_reciprocal` hardcoded `iterations = 3`, capping all division (hence every transcendental) at ~130 digits -- now scales as `ceil(log2(maxlimbs)) + 1`; (3) see the parse fix below.  All 20 transcendentals now scale cleanly to ~304 digits at `ereal<19>` (verified vs MPFR).  Generator saved at `tools/generators/ereal_reference_gen.py` ([#1002](https://github.com/stillwater-sc/universal/issues/1002), [#1005](https://github.com/stillwater-sc/universal/issues/1005), [#1004](https://github.com/stillwater-sc/universal/pull/1004))
-* **ereal::parse precision cliff + NaN; division of large/small magnitudes** -- `parse()` built the mantissa as a giant integer and multiplied by the subnormal-range `10^(-e)`, capping long-string precision near 16 digits and returning `NaN` for inputs needing `|exponent| >= 309`.  Root primitive fix in `expansion_quotient`: scale the divisor to near-unit magnitude (exact `ldexp`) before the Newton reciprocal, then apply the exact `2^-k` -- so division keeps full precision whenever the quotient is normal-range (forming `1/10^300 ~ 1e-300` directly is impossible: its components fall below DBL_MIN).  `parse()` now divides by the normal-range `10^e`, caps significant digits at `<= 307`, applies `|exponent|` in `<= 10^308` chunks (overflow -> inf, underflow -> 0, never NaN), and caps the result to `maxlimbs` components.  Parse precision now scales with input length to ~306 digits; also resolves the O(N^3) parse-complexity blowup #913 (320-digit parse: >120 s timeout -> ~0.2-5.5 ms) ([#1006](https://github.com/stillwater-sc/universal/issues/1006), [#1011](https://github.com/stillwater-sc/universal/pull/1011), [#913](https://github.com/stillwater-sc/universal/issues/913))
-* **expansion `is_nonoverlapping` predicate inverted** -- `expansion_ops::is_nonoverlapping` used a `fast_two_sum` error heuristic with the condition backwards: it reported genuinely non-overlapping expansions as overlapping (the small component passes through `fast_two_sum` unchanged as the error term) and exactly-combining overlapping pairs as non-overlapping.  Reimplemented both `is_nonoverlapping` and `is_strongly_nonoverlapping` with the Shewchuk/Priest exponent-gap test `|e[i]| <= 2^(ilogb(e[i-1]) - 53)` (matching the verified `check_priest_normal` oracle).  No production call sites; blast radius limited to the public predicate ([#999](https://github.com/stillwater-sc/universal/issues/999), [#1012](https://github.com/stillwater-sc/universal/pull/1012))
-* **qd_pi_3 constant held pi/2** -- `qd_pi_3` in `qd_constants.hpp` carried pi/2's leading component (`1.5707...`) with only 2 of 4 components -- a partial edit.  Replaced with the correct 4-component quad-double expansion of pi/3 (`1.0471975511965979, ...`).  The qd constants test was also strengthened: it previously only printed the table and returned `EXIT_SUCCESS` unconditionally, so it now asserts every constant against its reference and the `3*qd_pi_3 == qd_pi` invariant, honoring the failure count ([#914](https://github.com/stillwater-sc/universal/issues/914), [#1014](https://github.com/stillwater-sc/universal/pull/1014))
 * **dfixpnt wide-instantiation overflow** -- two pre-existing UB bugs (surfaced by PR #803's constexpr promotion):
   - `to_int64()` LSD-first accumulator overflowed `long long` for `idigits >= 19` (10^19 > LLONG_MAX); rewrote as MSD-first Horner over `unsigned long long` with per-step overflow detection, clamps to `[LLONG_MIN, LLONG_MAX]` matching `blockdecimal::to_long_long`
   - `operator=(double)` materialized `scaled` (potentially > UINT64_MAX) into `uint64_t` -- UB per C++20 [conv.fpint]; replaced with FP-domain digit extraction (q_floor via 2^53 boundary), bounded by `static_assert(ndigits <= 308)` ([#804](https://github.com/stillwater-sc/universal/issues/804), [#807](https://github.com/stillwater-sc/universal/pull/807))
+
+### [4.6.8](https://github.com/stillwater-sc/universal/compare/v4.6.7...v4.6.8) (2026-03-31)
+
+#### Added
+
+* **cfloat integer conversion test suite** -- `VerifyInteger2CfloatConversion` and `VerifyCfloat2IntegerConversion` in `cfloat_test_suite.hpp` with exhaustive coverage for 8/10/12/16-bit cfloats ([#684](https://github.com/stillwater-sc/universal/issues/684), [#685](https://github.com/stillwater-sc/universal/pull/685))
+
+
+#### Fixed
+
 * **cfloat integer-to-cfloat rounding** -- three bugs in `convert_unsigned/signed_integer` and `round<>`: sticky bit mask off-by-one, rounding overflow leaving stale fraction bits, missing exponent overflow guard ([#684](https://github.com/stillwater-sc/universal/issues/684), [#685](https://github.com/stillwater-sc/universal/pull/685))
+
 * **cfloat fmod overflow** -- `cfloatmod()` rewrote to use iterative power-of-two reduction instead of division, eliminating overflow for narrow types and precision loss from double narrowing for wide types ([#685](https://github.com/stillwater-sc/universal/pull/685))
+
 * **ucalc regression build** -- missing `dbns.hpp` include in `regression.cpp` caused incomplete type errors for `dbns<8,4>` and `dbns<16,8>`
+
+### [4.6.7](https://github.com/stillwater-sc/universal/compare/v4.6.6...v4.6.7) (2026-03-30)
+
+#### Added
+
+* **ucalc MCP server** -- zero-dependency Model Context Protocol server exposing 17 ucalc tools for AI agent integration via JSON-RPC over stdio ([#638](https://github.com/stillwater-sc/universal/issues/638), [#683](https://github.com/stillwater-sc/universal/pull/683))
+
+* **ucalc documentation section** -- elevated ucalc from a tutorial page to a dedicated docs section with four focused documents: overview, worked examples, step-by-step arithmetic visualization, and MCP server guide
+
+#### Changed
+
+* **Command-line tools documentation** -- consolidated type-specific inspection tools (quarter, half, single, double, quad, fixpnt, posit, etc.) into ucalc; docs now reference ucalc for type inspection
+
+* **Contributors** -- added Aditya Kuchekar (10 PRs: cfloat, fixpnt, lns, dd, blockbinary fixes, cross-type conversion); expanded Theodore Omtzigt attribution with full number system inventory
+
+
+#### Fixed
+
 * **MCP server security** -- sanitize tool arguments (reject semicolons/newlines), escape error messages in JSON-RPC responses, add Windows binary mode for stdio framing
 
-### Changed
 
-* **elreal's default precision is 32 blocks, chosen from measurement ([#1177](https://github.com/stillwater-sc/universal/issues/1177) / PR [#1382](https://github.com/stillwater-sc/universal/pull/1382))** -- `kElrealDefaultPrecision` goes 8 to 32, about 510 decimal digits on a `double` host. **The premise the issue was filed under had changed**: it asks to read the tool's saturation knob, "where accuracy stops improving", and set defaults from it -- but elreal no longer has one. The caps that existed when it was filed were all removed above, and accuracy is now linear and unbounded (16.4 digits per block on a `double` host against a predicted 15.95, with no plateau at any depth swept), so the choice of default is a policy question rather than a measurement. Cost is roughly linear in the knob: on the facade at -O2, 8 to 32 blocks takes `a/b` from 0.114 to 0.576 ms and `a*b` from 0.240 to 1.004 ms. This governs the **class facade only** -- an elreal's own pull depth for boundary operations and facade arithmetic; the free ZBCL math functions carry their own depth arguments and are unaffected. Scope `elreal_precision_guard` to choose a different trade. Guidance is in `docs/design/elreal-ereal-precision-defaults.md`, with the sweep it was built from committed alongside it.
-* **Division by a single block is linear rather than quadratic (PR [#1377](https://github.com/stillwater-sc/universal/pull/1377))** -- `singleDiv` followed `FCL.hs` literally: divide each dividend block independently to a full stream, then `infSum` the D of them. Correct, but term `i` must be carried down to the output frontier, so D quotient blocks cost `D^2/2` block divisions. Dividing an N-digit number by a one-digit divisor is a linear operation, and what makes the schoolbook carry work here is that the residual of `f_i/g` lands at the scale of `f_{i+1}`, so a single running remainder suffices. Block divisions are now 1.00 per emitted block on a `double` host against the old `D/2`, and the wall clock goes from x6.34 per doubling of D to x2.02 -- 79x faster at D=20 and 1183x at D=160. Still a lazy producer: one quotient block per pull, verified to 400 blocks. The raw quotient blocks are not always 0-overlap on `float`, and renormalising the finished expansion would have been self-defeating (`priestRenorm` is itself superlinear, measured x5.9 per doubling), so blocks are folded through a small canonical buffer and emitted with a lookahead -- O(1) per block, output canonical. The high-precision suites sat squarely on this path and run **1.70x** faster: the LEVEL_4 transcendental suite 3m33.6s to 2m06.0s, constants 51.6s to 30.1s.
-* **elreal's transcendental constants are memoized ([#1383](https://github.com/stillwater-sc/universal/issues/1383) / PR [#1384](https://github.com/stillwater-sc/universal/pull/1384))** -- `pi` and `ln2` were recomputed from scratch on every call, and that -- not the series each one wraps -- was essentially the entire cost of `sin`, `cos`, `tan` and `log`. At depth 8 on a `double` host, `pi_zbcl(8)` alone cost 371.90 ms against `sin(0.5,8)`'s total of 371.82 ms, while `exp` (9.57 ms) and `sqrt` (4.04 ms) need no constant, which is exactly why they were two orders of magnitude cheaper. Cached per `(FpType, depth)`, `thread_local`: `sin`/`cos` ~372 ms to ~5.8 ms, `tan` to ~9.1 ms, `log` to ~0.01 ms, `exp` and `sqrt` unchanged. The first call at a given depth still pays for the constant. **Keyed on the exact depth**, and that constraint is the part worth recording: caching the deepest value and truncating it for shallower requests is cheaper, and is what the issue proposed before measuring, but these constants are *not* prefix-stable -- a deeper evaluation refines the last block rather than merely extending it, so `pi_zbcl(2)` would return one value or another depending on whether some unrelated earlier call had asked for more. Values are unchanged. The regression counts allocations rather than wall clock, and is mutation-tested against **both** wrong designs.
+### [4.6.5](https://github.com/stillwater-sc/universal/compare/v4.6.4...v4.6.5) (2026-03-28)
 
-* **Decimal string parsing is 12-58x faster ([#1319](https://github.com/stillwater-sc/universal/issues/1319) / PR [#1336](https://github.com/stillwater-sc/universal/pull/1336))** -- four algorithmic costs in shared conversion machinery, none of them inherent: a full-width bigint multiply per digit (nine digits now fold into one multiply), `5^|E|` by repeated multiplication (now binary exponentiation, ~8 multiplies for E=300 rather than 300), quotient and remainder from two separate long divisions (one `idiv` returns both), and every parse running at 2048 bits regardless of need. The working width is now chosen from the scanned digit count and decimal exponent among 256/512/1024/2048, and the normalized result -- only ever `target+2` bits -- is copied back into the caller's width, so no call site changed. The negative-exponent shift was also tightened from `headroom + 3*|E|` to `headroom + ceil(|E|*log2(5)) + 2`, which drops `1e-300` a whole width class. Parsing into `dd`: `"1.5"` 40.4 -> 2.7 usec, a 62-digit literal 431.1 -> 36.8, `1.7976931348623157e308` 759.7 -> 13.0.
-* **`add_cascades<4>` merges its operands instead of sorting them ([#1340](https://github.com/stillwater-sc/universal/issues/1340) / PR [#1341](https://github.com/stillwater-sc/universal/pull/1341))** -- both operands arrive as non-overlapping expansions in decreasing magnitude, so the bubble sort's 28 comparisons were redundant work on data that arrives sorted; one `two_sum` chain over the merged sequence is Shewchuk's `fast_expansion_sum`. Results are **bit-identical** over 40,000 random full-width operations. Addition, i7-12700K -O3: gcc 13.3 69.6 -> 51.0 nsec/op, clang 18.1 80.1 -> 85.6 (tracked as [#1342](https://github.com/stillwater-sc/universal/issues/1342)). The compression pass stays, and the assessment that motivated the change was wrong about why it was there: the 2N -> N step needs a *nonadjacent* expansion, not merely a non-overlapping one, and feeding it the raw chain output costs a factor of three on the composite identities. Review caught that the merge, unlike the sort, requires ordered operands -- reachable through the raw-limb constructor -- so each operand is now tested (six comparisons) and put in order by a five-comparator network when it fails.
+#### Changed
 
-* **elreal math-constant performance -- online `e`, faster `euler_gamma` ([#1061] Phase 3b)** -- the two remaining eager constant generators in the elreal math layer (surfaced while profiling the Phase 4 math facade: `e` ~16 s, `euler_gamma` ~11 s at depth 16).
-  - **`e_zbcl` made online** ([#1087](https://github.com/stillwater-sc/universal/pull/1087)) -- `e = sum 1/n!` has the same shape as the already-online exp/atan series, so it now uses the streaming form (a lazy term co-list `term_n = term_{n-1}/n` via exact integer div, each term significance-windowed with `take_while_above`, folded by `infsum`).  **16165 ms -> 83 ms at depth 16 (~195x)**, value-identical to the 320-digit reference.  The same PR dropped `euler_gamma`'s redundant Pass-1 peak-finding recurrence in favour of the analytic Stirling peak `2n*log2(e) - log2(2*pi*n)`, and re-enabled the `elreal_e()` check in the Phase 4 math test now that e is fast
-  - **`euler_gamma_zbcl` Abel reduction** ([#1088](https://github.com/stillwater-sc/universal/pull/1088)) -- Brent-McMillan B1's `A(n) = sum_k w_k H_k` (a full per-term `ZBCL x ZBCL` multiply + per-term harmonic maintenance) was replaced by Abel summation `sum_k w_k H_k == sum_{k>=0} tail_k/(k+1)` with `tail_k = sum_{j>k} w_j = B - B_k`: all-positive accumulation, no harmonic numbers, per-term cost now a single-block scalar division instead of a full multiply.  **depth 8: 4408 -> 1890 ms (~2.3x); depth 16: 10986 -> 3578 ms (~3.1x)**, validated to 305 digits vs the 320-digit reference (`REGRESSION_LEVEL_4`) on gcc + clang.  Adds `docs/design/elreal-euler-gamma.md` (algorithm, derivation, the convergent-vs-naive cancellation analysis, and the deferred binary-splitting alternative).  Brent-McMillan remains inherently O(n) products; the asymptotic `O(M(D) log^2 D)` binary-splitting rewrite (einteger P/Q/B/T) is tracked as a separate effort ([#1061](https://github.com/stillwater-sc/universal/issues/1061))
-* **CI build time restored (~20 min -> ~8 min) -- ccache eviction** -- the cmake CI `ccache` was keyed per-`matrix.artifact` with no `save` gating, so every PR run saved a ~500 MB cache; under GitHub's 10 GB per-repo LRU limit a burst of CI evicted the warm caches, dropping the hit rate to ~1% and turning cached ~1 min builds into ~9 min cold rebuilds.  Fix: `save: only on pushes to main` (PR runs restore but no longer create caches) plus `max-size: 1G`, on both ccache blocks.  Diagnosed from the build-step duration (55 s -> 566 s) and ccache hit/miss stats; not a code regression (CI_LITE does not even build ereal) ([#1009](https://github.com/stillwater-sc/universal/issues/1009), [#1010](https://github.com/stillwater-sc/universal/pull/1010))
-* **ereal mathlib regression tests tiered by level** -- the property-fuzz ran a heavy fixed count (x100/x50) only at L1, the sanity tier that CI's Debug-instrumented jobs (ASan/UBSan/coverage, ~40x slower at `-O0`) run -- so those jobs took ~1 h.  The fuzz count now scales with the regression level (L1 smoke x15-20, up to x2000 at L4), keeping CI fast while preserving (and extending) stress-tier coverage; hand-curated correctness tests unchanged ([#1007](https://github.com/stillwater-sc/universal/issues/1007), [#1008](https://github.com/stillwater-sc/universal/pull/1008))
-* **Epic [#723] CLOSED -- constexpr support across Universal number systems** -- the umbrella Epic tracking full constexpr promotion across the library is complete: all 32 sub-issues (5 Tier-1 primary types, 22 Tier-2 additional fixed-size types, 5 Tier-3 elastic types) are closed.  Final close-out: sub-Epic [#745](https://github.com/stillwater-sc/universal/issues/745) (zfpblock umbrella) closed after PRs [#814](https://github.com/stillwater-sc/universal/pull/814) (accessor subset), [#830](https://github.com/stillwater-sc/universal/pull/830) (codec), and [#831](https://github.com/stillwater-sc/universal/pull/831) (zfparray container) landed.  Universal now fulfills the "plug-in" promise: any expression in any fixed-size Universal type can be evaluated at compile time, drop-in parity with `int`/`float`/`double` in any constexpr context.  Cross-cutting prerequisites all complete: `blockbinary` arithmetic (#716), `blocksignificand`/`blocktriple` arithmetic (#718/#719), `blockdecimal` arithmetic (#729/#730), `floatcascade` (#728/#739/#742), `twoSum`/`twoProd` (#727/#738), `sw::math::constexpr_math` providing `cm::log2`/`cm::exp2` (Epic #763, replacing the original #423)
 * **ucalc Epics closed** -- completed Epic [#619](https://github.com/stillwater-sc/universal/issues/619) (ucalc compute engine roadmap) and Epic [#595](https://github.com/stillwater-sc/universal/issues/595) (CLI utilities improvement)
-* **Command-line tools documentation** -- consolidated type-specific inspection tools (quarter, half, single, double, quad, fixpnt, posit, etc.) into ucalc; docs now reference ucalc for type inspection
-* **Contributors** -- added Aditya Kuchekar (10 PRs: cfloat, fixpnt, lns, dd, blockbinary fixes, cross-type conversion); expanded Theodore Omtzigt attribution with full number system inventory
+
+### [4.6.0](https://github.com/stillwater-sc/universal/compare/v4.5.0...v4.6.0) (2026-03-16)
+
+#### Changed
 
 * **unum Type I number system** (Epic [#192](https://github.com/stillwater-sc/universal/issues/192)) -- complete 8-phase implementation:
   - Core type with `blockbinary` storage and variable-width encoding ([#564](https://github.com/stillwater-sc/universal/issues/564), [#572](https://github.com/stillwater-sc/universal/pull/572))
@@ -316,16 +517,28 @@ authoritative per-release record for them is the [releases page](https://github.
   - Math library: sqrt, exp, log, trig, hyperbolic, pow, floor/ceil/trunc ([#569](https://github.com/stillwater-sc/universal/issues/569), [#577](https://github.com/stillwater-sc/universal/pull/577))
   - `ubound` interval arithmetic with `next_exact`/`prev_exact` lattice navigation ([#570](https://github.com/stillwater-sc/universal/issues/570), [#578](https://github.com/stillwater-sc/universal/pull/578))
   - Exhaustive validation for `unum<2,2>` and `unum<2,3>` with subnormal fix ([#571](https://github.com/stillwater-sc/universal/issues/571), [#579](https://github.com/stillwater-sc/universal/pull/579))
+
 * **cfloat `parse()`** -- string-to-cfloat conversion supporting hex format and decimal ([#339](https://github.com/stillwater-sc/universal/issues/339), [#563](https://github.com/stillwater-sc/universal/pull/563))
+
 * **posit `parse()`** -- string-to-posit conversion supporting hex format and decimal ([#562](https://github.com/stillwater-sc/universal/pull/562))
 
-### Fixed
+
+#### Fixed
+
+* **posit `convert_to_bitblock` removal** -- replaced last bitblock dependency with `setbits()` ([#562](https://github.com/stillwater-sc/universal/pull/562))
+
+
+### [4.5.0](https://github.com/stillwater-sc/universal/compare/v4.4.6...v4.5.0) (2026-03-14)
+
+#### Fixed
 
 * **posit NaR display** -- `to_binary()`, `to_triple()`, and `color_print()` now correctly render NaR ([#559](https://github.com/stillwater-sc/universal/issues/559), [#561](https://github.com/stillwater-sc/universal/pull/561))
+
 * **posit `extract_fields()`** -- handle NaR bit pattern (two's complement wrap of minimum signed) ([#559](https://github.com/stillwater-sc/universal/issues/559))
+
 * **posit `color_print()`** -- remove bit inversion for negative posits (inversion != two's complement) ([#561](https://github.com/stillwater-sc/universal/pull/561))
+
 * **posit nibbleMarker bleeding** -- exponent/fraction `to_string()` no longer emits spurious markers for empty fields ([#561](https://github.com/stillwater-sc/universal/pull/561))
-* **posit `convert_to_bitblock` removal** -- replaced last bitblock dependency with `setbits()` ([#562](https://github.com/stillwater-sc/universal/pull/562))
 
 ## [3.105.2](https://github.com/stillwater-sc/universal/compare/v3.105.1...v3.105.2) (2026-02-27)
 
@@ -405,11 +618,17 @@ authoritative per-release record for them is the [releases page](https://github.
 
 * adopt conventional commits with release-please and git-cliff ([#519](https://github.com/stillwater-sc/universal/issues/519)) ([d9e925f](https://github.com/stillwater-sc/universal/commit/d9e925f552dd0a4b33769432e21b783e1f3add61))
 
-## [Unreleased]
+## Development log (2025-10-26 - 2026-02-26)
+
+A dated engineering log kept during the v3.88 - v3.104 series, left under `[Unreleased]`
+when the v4 line opened. Everything here shipped; each dated entry is annotated with the
+release that carried it, resolved by taking the first tag dated on or after the entry.
+The structure is as it was written and is deliberately left alone -- the headings below
+do not nest consistently, and re-parenting them would risk changing what they claim.
 
 ### Added
 
-#### 2026-02-26 - decimal128 support for dfloat
+#### 2026-02-26 - decimal128 support for dfloat (shipped in v3.102)
 
 - **dfloat decimal128** (`dfloat<34, 12>`): full IEEE 754-2008 decimal128 support (34 significant digits, 128 bits)
   - Conditional `significand_t` type alias: `uint64_t` for ndigits <= 19, `__uint128_t` for ndigits <= 38 (guarded by `__SIZEOF_INT128__`)
@@ -425,7 +644,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - New regression test `static/float/dfloat/standard/decimal128.cpp`: field widths, special values, integer round-trip, decimal exactness, arithmetic, BID/DPD agreement, comparisons
   - All existing decimal32/decimal64 tests unaffected — 18/18 tests pass on both gcc and clang
 
-#### 2026-02-26 - dfloat (IEEE 754-2008 Decimal FP) and hfloat (IBM System/360 Hex FP)
+#### 2026-02-26 - dfloat (IEEE 754-2008 Decimal FP) and hfloat (IBM System/360 Hex FP) (shipped in v3.102)
 
 - **dfloat: IEEE 754-2008 decimal floating-point** (`dfloat<ndigits, es, Encoding, bt>`):
   - Complete implementation with both BID (Binary Integer Decimal) and DPD (Densely Packed Decimal) encodings via `DecimalEncoding` enum template parameter
@@ -448,7 +667,7 @@ authoritative per-release record for them is the [releases page](https://github.
 
 ### Fixed
 
-#### 2026-02-26 - Issue Triage, Clang/Android Binary128, and Posit CLI Precision
+#### 2026-02-26 - Issue Triage, Clang/Android Binary128, and Posit CLI Precision (shipped in v3.102)
 
 - **Clang long double for 128-bit binary128 targets** (issue #485): `clang_long_double.hpp` `#else` branch (non-POWER, non-X86) assumed `long double == double` (Apple ARM). On Android aarch64, `long double` is 128-bit IEEE binary128 (`__LDBL_MANT_DIG__ == 113`), hitting `static_assert(sizeof(long double) == 8)`. Added `__LDBL_MANT_DIG__` discrimination to `clang_long_double.hpp`, `ieee754_clang.hpp`, and `extract_fp_components.hpp` with full binary128 support (15-bit exponent, 112-bit fraction)
 - **Android NDK CI target**: new `cmake/toolchains/aarch64-linux-android.cmake` toolchain file and `cmake.yml` matrix entry for compile-only Android ARM64 cross-compilation
@@ -469,7 +688,7 @@ authoritative per-release record for them is the [releases page](https://github.
 - **Issue #281** — Posit representation precision: partially fixed (max_digits10), but `to_string()` converts through `long double`, limiting precision for values that map to the same `long double`. High-precision decimal conversion needed for full resolution
 - **Issues #228, #224** — Fast posit<64,*> for Bayesian AI: benchmarked with uint64_t limbs. Bit manipulation is fast (~4 GPOPS), but arithmetic is ~1 MPOPS due to generic decode-compute-encode pipeline. Fast specializations still needed for 100 MPOPS target
 
-#### 2026-02-23 - MSVC and uint64_t Limb Cross-Platform Fixes
+#### 2026-02-23 - MSVC and uint64_t Limb Cross-Platform Fixes (shipped in v3.99)
 
 - **nibble() UB in all block types for uint64_t limbs**: `0x0Fu` is 32-bit; shifting by >= 32 is UB. Cast to `bt` before shifting. Applied to `blockbinary`, `blockdecimal`, `blockfraction`, `blocksignificand`
 - **MSVC intrinsic output via reference-derived pointers** in `carry.hpp`: `_addcarry_u64` / `_subborrow_u64` / `_umul128` miscompile when output pointer is derived from a reference parameter. Write to local first, then assign back
@@ -480,7 +699,7 @@ authoritative per-release record for them is the [releases page](https://github.
 
 ### Added
 
-#### 2026-02-13 - ARM64 and MinGW Cross-Compilation CI with Bug Fixes
+#### 2026-02-13 - ARM64 and MinGW Cross-Compilation CI with Bug Fixes (shipped in v3.98)
 
 - **Two new cross-compilation CI targets** added to `cmake.yml` matrix:
   - **ARM64 Linux** — `aarch64-linux-gnu-g++` cross-compiler with QEMU user-mode emulation
@@ -501,14 +720,14 @@ authoritative per-release record for them is the [releases page](https://github.
 
 ### Fixed
 
-#### 2026-02-13 - Fix blockbinary operator[] vs test() misuse in posit components
+#### 2026-02-13 - Fix blockbinary operator[] vs test() misuse in posit components (shipped in v3.98)
 
 - **`positFraction.hpp` stack-buffer-overflow** (ASan CI failure): `blockbinary::operator[]` is a **block/limb** index accessor, but was used with **bit** indices in three locations — `operator<<`, `get_fixed_point()`, and `denormalize()`. For `posit<16,1,uint8_t>` with `fbits=12`, accessing `_block[11]` tried to read block 11 of a 2-block array. Fixed all three to use `_block.test(i)` for proper bit-level access.
 - **`posit_impl.hpp` reciprocal sign extraction**: `_block[nbits-1]` used block index instead of bit index to read the sign bit. For `posit<16,1,uint8_t>`, `_block[15]` accessed block 15 of a 2-block array. Fixed to `_block.test(nbits-1)`.
 
 - **All 390 CI_LITE tests pass** on MinGW+Wine after fixes
 
-#### 2026-02-13 - Rewrite Atomic Fused Operators to blocktriple and Extract Quire from posit.hpp
+#### 2026-02-13 - Rewrite Atomic Fused Operators to blocktriple and Extract Quire from posit.hpp (shipped in v3.98)
 
 - **Atomic fused operators rewritten to use blocktriple<> exclusively** — zero dependency on `internal::value<>`, `bitblock<>`, `module_multiply`, or `module_add`
   - `fma(a, b, c)`: MUL → ADD → convert pattern (single rounding)
@@ -527,7 +746,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - All fma/fam/fmma tests pass exhaustively on both gcc and clang
   - Full BUILD_ALL builds clean on both compilers
 
-#### 2026-02-12 - Port Quire, FDP, and Fused BLAS to New Posit
+#### 2026-02-12 - Port Quire, FDP, and Fused BLAS to New Posit (shipped in v3.98)
 
 - **Quire and FDP ported to new 3-param posit** (`posit<nbits, es, bt>`)
   - `include/sw/universal/number/posit/quire.hpp` — new file, adapted from posit1 with bt-templated posit-facing methods and `posit_to_value()`/`convert(value<>, posit<>)` bridge functions
@@ -548,7 +767,7 @@ authoritative per-release record for them is the [releases page](https://github.
 
 - **934/934 tests pass** on both gcc and clang after all changes
 
-#### 2026-02-10 - posit2 Conversion, Assignment, and Logic Test Suites
+#### 2026-02-10 - posit2 Conversion, Assignment, and Logic Test Suites (shipped in v3.96)
 
 - **posit2 conversion/assignment/logic test suites** — ported from original posit, all passing
   - `static/posit2/conversion/conversion.cpp` — `VerifyIntegerConversion` + `VerifyConversion` envelope tests for 3–9 bit posits with es 0–3 (29 configs)
@@ -561,7 +780,7 @@ authoritative per-release record for them is the [releases page](https://github.
 
 - **Bug fix: literal comparison operators** — replaced direct `_block` member access in `POSIT_ENABLE_LITERALS` operator definitions with delegation to posit-posit comparison operators, fixing private access errors from template parameter mismatches in friend declarations
 
-#### 2026-02-10 - Complete posit2 Arithmetic Operations
+#### 2026-02-10 - Complete posit2 Arithmetic Operations (shipped in v3.96)
 
 - **posit2 arithmetic** — All four arithmetic operations now functional via blocktriple pipeline
   - `operator-=`: implemented as negate-and-add (matching cfloat pattern)
@@ -593,7 +812,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Replaced `blas/mixed_precision.hpp` include (which transitively pulled in `posit/posit.hpp`) with local `MixedPrecisionStats` struct
   - Softmax `exp()` computed via `double` cast for portability across number types
 
-#### 2026-02-09 - LaTeX Scaffolding for arXiv Systems Paper
+#### 2026-02-09 - LaTeX Scaffolding for arXiv Systems Paper (shipped in v3.95)
 
 - **`papers/systems-paper/paper/`** — LaTeX paper scaffolding for arXiv cs.MS submission
   - `main.tex` — Plain `article` class (12pt, single-column), 7 sections + appendix
@@ -610,7 +829,7 @@ authoritative per-release record for them is the [releases page](https://github.
       Bailey (high-precision)
   - `Makefile` — pdflatex + bibtex triple-pass build recipe
 
-#### 2026-02-09 - Paper Artifact Tree & Mixed-Precision Solver Case Studies
+#### 2026-02-09 - Paper Artifact Tree & Mixed-Precision Solver Case Studies (shipped in v3.95)
 
 - **`papers/` directory** — Self-contained artifact tree for two planned papers
   - `papers/systems-paper/` — arXiv systems paper code artifacts
@@ -639,7 +858,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Number system comparison at s=4 across IEEE, posit, cfloat, dd
   - Key finding: IDR(s) succeeds where CG cannot; bfloat16 diverges on non-symmetric problems
 
-#### 2026-02-09 - Block Format Benchmarks & CI Cache Fix (Phases 4b, 5)
+#### 2026-02-09 - Block Format Benchmarks & CI Cache Fix (Phases 4b, 5) (shipped in v3.95)
 
 - **Phase 4b: zfparray** — Multi-block compressed array container
   - `zfparray<Real, Dim>` wraps `zfpblock` codec into a random-access compressed array
@@ -667,7 +886,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Added `SCCACHE_GHA_ENABLED=true` to env; cache location now `ghac` (GitHub Actions Cache)
   - Result: 386/386 hits (100%), average compile 6.1s → 0.2s (30x faster)
 
-#### 2026-02-08 - Block Floating-Point Formats: Phases 1-4a Complete
+#### 2026-02-08 - Block Floating-Point Formats: Phases 1-4a Complete (shipped in v3.94)
 
 - **Phase 1: microfloat & e8m0** — Sub-byte floating-point elements for OCP Microscaling
   - `microfloat<nbits, es, ...>` template with aliases: `e2m1`, `e2m3`, `e3m2`, `e4m3`, `e5m2`
@@ -696,7 +915,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Fixed OOM kills on GitHub Actions runners caused by unbounded `--parallel`
   - Portable `zfp_ctzll()` wrapper for MSVC compatibility (`_BitScanForward64` vs `__builtin_ctzll`)
 
-#### 2026-02-07 - Large Type Integer Conversion Fixes (cfloat/areal >64 bits)
+#### 2026-02-07 - Large Type Integer Conversion Fixes (cfloat/areal >64 bits) (shipped in v3.94)
 - **Bug Fixes**: Fixed integer and float conversion for large cfloat and areal configurations (80, 128, 256 bits)
   - `cfloat_impl.hpp`: Fixed `convert_signed_integer()` and `convert_unsigned_integer()` to place fraction bits at TOP of fraction field for large types
   - `cfloat_impl.hpp`: Fixed `setfraction()` to work correctly when fbits >= 64
@@ -718,7 +937,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - `newton.cpp` - Ubit as convergence indicator
 - **BLAS Fix**: Fixed `abs()` calls in BLAS to use ADL pattern (`using std::abs;`) for compatibility with both native and Universal types
 
-#### 2026-02-06 - Areal Test Suite Specialization
+#### 2026-02-06 - Areal Test Suite Specialization (shipped in v3.94)
 - **Areal Verification Functions**: Specialized verification functions in `areal_test_suite.hpp` to properly handle ubit (uncertainty bit) semantics
   - Modified `VerifyAddition`, `VerifySubtraction`, `VerifyMultiplication`, `VerifyDivision` to iterate only over exact values (ubit=0 inputs)
   - Fixed NaN comparison to accept any NaN encoding when both computed and reference are NaN
@@ -737,7 +956,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - **Test algorithms**: Taylor series (sin, cos, exp, ln1p, atan), harmonic series, Newton-Raphson sqrt, Machin's formula for π, Euler's number e, golden ratio
   - **Metrics**: Uncertainty rate, maximum error vs reference, interval containment
 
-#### 2026-02-03 - Mixed-Precision Algorithm Design SDK
+#### 2026-02-03 - Mixed-Precision Algorithm Design SDK (shipped in v3.94)
 - **NEW FEATURE**: Complete SDK for energy-aware mixed-precision algorithm design
   - **Motivation**: Enable systematic precision selection based on accuracy requirements and energy constraints
   - **Scope**: 12 new header files, 3 benchmark programs, ~4,500 lines of code
@@ -775,7 +994,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - RAPL: Linux only (requires powercap sysfs), graceful stubs for macOS/Windows
   - Energy models: Cross-platform, header-only, no dependencies
 
-#### 2026-01-11 - Universal Complex Type Library (WIP)
+#### 2026-01-11 - Universal Complex Type Library (WIP) (shipped in v3.91)
 - **NEW FEATURE**: Standalone `sw::universal::complex<T>` implementation to support complex arithmetic with non-native floating-point types
   - **Motivation**: Apple Clang strictly enforces ISO C++ 26.2/2 which restricts `std::complex<T>` to `float`, `double`, and `long double` only. This broke complex arithmetic with Universal's custom types (posit, cfloat, fixpnt, lns, etc.) on macOS.
   - **Solution**: Complete standalone complex type that works with all Universal number systems
@@ -805,7 +1024,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Backward compatibility via dual overloads
 - **Status**: Work-in-progress, core functionality implemented
 
-#### 2025-12-13 - Apple Clang Regression Fixes (#490)
+#### 2025-12-13 - Apple Clang Regression Fixes (#490) (shipped in v3.91)
 - **blocksignificand.hpp**: Removed unused include causing compilation issues
 - **bfloat16/manipulators.hpp**: Fixed UTF-8 encoding issue
 - **mixedprecision/roots/CMakeLists.txt**: Updated build configuration for Apple Clang compatibility
@@ -813,7 +1032,7 @@ authoritative per-release record for them is the [releases page](https://github.
 
 ### Fixed
 
-#### 2025-12-13 - GCC Compiler Warning Fixes
+#### 2025-12-13 - GCC Compiler Warning Fixes (shipped in v3.91)
 - **Invalid UTF-8 in Comment**: Fixed corrupted UTF-8 characters (should be minus signs) in bfloat16 manipulators comment. (bfloat16/manipulators.hpp:74)
 - **Self-Assignment Warning**: Changed `v = v;` to `(void)v;` to suppress unused parameter warning without triggering `-Wself-assign-overloaded`. (cfloat/manipulators.hpp:34)
 - **Uninitialized Variables**: Fixed `FixedPoint eps;` declarations that were read before initialization by using value-initialization `FixedPoint eps{};`. (fixpnt/numeric_limits.hpp:32-44)
@@ -824,7 +1043,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - `blockbinary::flip()` (blockbinary.hpp:563)
   - `areal::set()` (areal_impl.hpp:786)
 
-#### 2025-11-04 - Ereal Mathlib PR Review Fixes
+#### 2025-11-04 - Ereal Mathlib PR Review Fixes (shipped in v3.90)
 - **IEEE Remainder Function**: Fixed incorrect rounding in `remainder()` that used round-away-from-zero instead of IEEE round-to-nearest-even. Both `fmod()` and `remainder()` now throw `ereal_divide_by_zero` exception on division by zero. (fractional.hpp:30-88)
 - **Power Function Integer Exponents**: Removed artificial `|y| <= 10` limitation that caused integer exponents outside [-10, 10] to fall through to exp/log path and produce NaN for negative bases. Now handles all integer exponents within int range using repeated squaring. (pow.hpp:43-93)
 - **Absolute Value Function**: Replaced stub implementation that returned input unchanged with proper conditional logic `(a < 0 ? -a : a)`. Critical fix affecting all mathematical functions using absolute values. (ereal_impl.hpp:464)
@@ -837,20 +1056,20 @@ authoritative per-release record for them is the [releases page](https://github.
 
 ### Added
 
-#### 2025-11-04 - Ereal Mathlib Test Enhancements
+#### 2025-11-04 - Ereal Mathlib Test Enhancements (shipped in v3.90)
 - **Comprehensive Remainder Tests**: Added 7 test cases for `remainder()` covering IEEE round-to-nearest-even tie-breaking, positive/negative operands, and division-by-zero exceptions. Added `VerifyDivisionByZeroExceptions()` function. (fractional.cpp:46-231, REGRESSION_LEVEL_2)
 - **Large Integer Exponent Tests**: Added `VerifyPowLargeIntegerAndNegativeBases()` with 8 test cases covering large positive/negative exponents, negative bases with even/odd exponents, and exponents beyond old [-10, 10] limit. (pow.cpp:114-231, 359-406, REGRESSION_LEVEL_1/2/4)
 
 ### Changed
 
-#### 2025-11-04 - Build Configuration
+#### 2025-11-04 - Build Configuration (shipped in v3.90)
 - **Progressive Precision Test**: Marked `er_api_progressive_precision` test as expected to fail (`WILL_FAIL TRUE`) as work-in-progress. Test correctly identifies that many functions (log, log2, log10, asinh, acosh, atanh, pow) don't yet achieve expected precision scaling at higher maxlimbs. Serves as development target while allowing CI to pass. (elastic/ereal/CMakeLists.txt:12-14)
   - **CI Impact**: Test pass rate improved from 99% (829/830) to 100% (830/830)
   - **Technical Debt**: Logarithmic and inverse hyperbolic functions need higher-precision algorithms
 
 ### Added
 
-#### 2025-11-03 - ereal Mathlib: Complete Infrastructure Implementation (Phase 0)
+#### 2025-11-03 - ereal Mathlib: Complete Infrastructure Implementation (Phase 0) (shipped in v3.90)
 - **NEW FEATURE**: Implemented complete mathlib infrastructure for ereal adaptive-precision number system
   - **Scope**: First comprehensive mathlib for an elastic/adaptive-precision number system in Universal
   - **Total Implementation**: 30 new files, ~6,000 lines of code, 50+ math functions
@@ -960,7 +1179,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - **Benefit**: Foundation for high-precision numerical computing with adaptive precision
   - **Timeline**: Complete implementation in ~4 hours (infrastructure + tests)
 
-#### 2025-11-03 - ereal Mathlib: Phase 1 Simple Functions Implementation
+#### 2025-11-03 - ereal Mathlib: Phase 1 Simple Functions Implementation (shipped in v3.90)
 - **ENHANCEMENT**: Implemented Phase 1 mathlib functions with full adaptive precision (replacing Phase 0 stubs)
   - **Scope**: Simple functions that can be implemented without complex transcendental algorithms
   - **Functions**: 4 categories, 12 functions upgraded from double-precision stubs to full adaptive precision
@@ -1057,7 +1276,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - **Session Log**: `docs/sessions/session_2025-11-03_ereal_mathlib_phase1.md` (complete session documentation)
   - **CHANGELOG**: This entry documents all changes and rationale
 
-#### 2025-11-03 - ereal Mathlib: Phase 2 Medium-Complexity Functions Implementation
+#### 2025-11-03 - ereal Mathlib: Phase 2 Medium-Complexity Functions Implementation (shipped in v3.90)
 - **ENHANCEMENT**: Implemented Phase 2 mathlib functions (medium-complexity) with full adaptive precision
   - **Scope**: Functions requiring expansion operations beyond simple comparisons
   - **Functions**: 3 categories, 6 functions upgraded from double-precision stubs to full adaptive precision
@@ -1172,7 +1391,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - **Session Log**: Will document Phase 2 implementation process
   - **CHANGELOG**: This entry documents all Phase 2 changes
 
-#### 2025-11-03 - ereal Mathlib: Phase 3 Root Functions (sqrt, cbrt, hypot)
+#### 2025-11-03 - ereal Mathlib: Phase 3 Root Functions (sqrt, cbrt, hypot) (shipped in v3.90)
 - **ENHANCEMENT**: Implemented Phase 3 mathlib functions (high-complexity roots) with full adaptive precision
   - **Scope**: Newton-Raphson iterative root functions with adaptive iteration count
   - **Functions**: 3 root functions upgraded from double-precision stubs to full adaptive precision
@@ -1330,7 +1549,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - **Plan**: `docs/plans/ereal_mathlib_phase3_plan.md` (comprehensive 25KB implementation plan)
   - **CHANGELOG**: This entry documents all Phase 3 changes and implementation details
 
-#### 2025-11-03 - ereal Mathlib: Phase 4-6 Transcendental Functions + Extended Precision Testing
+#### 2025-11-03 - ereal Mathlib: Phase 4-6 Transcendental Functions + Extended Precision Testing (shipped in v3.90)
 - **MAJOR ENHANCEMENT**: Completed all transcendental functions (Phase 4-6) with Taylor series algorithms
   - **Scope**: exp, log, pow, hyperbolic (sinh/cosh/tanh), trigonometric (sin/cos/tan), inverse functions
   - **Total**: 20 transcendental functions implemented with full adaptive precision
@@ -1502,7 +1721,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - **Test Files**: Each .cpp file contains detailed comments on algorithms and convergence
   - **Inline Comments**: Implementation files document special cases and precision considerations
 
-#### 2025-11-02 - Cascade Math Functions: cbrt Stubs and sqrt Overflow Fixes
+#### 2025-11-02 - Cascade Math Functions: cbrt Stubs and sqrt Overflow Fixes (shipped in v3.90)
 - **CRITICAL FIX**: Replaced cbrt stub implementations with specialized Newton iteration algorithm
   - **Root Cause**: td_cascade and qd_cascade cbrt implementations were stubs using only high component
     - `td_cascade/math/functions/cbrt.hpp:14` - `return td_cascade(std::cbrt(a[0]))` discarded all lower components
@@ -1576,7 +1795,7 @@ authoritative per-release record for them is the [releases page](https://github.
     - **Lesson**: Comments ≠ Code - the fix was documented but not implemented for potentially years
   - **Key Insight**: Sometimes the simpler textbook algorithm (Newton) beats the clever trick (Karp)
 
-#### 2025-11-01 - floatcascade Renormalization Algorithm Fix (Two-Phase Implementation)
+#### 2025-11-01 - floatcascade Renormalization Algorithm Fix (Two-Phase Implementation) (shipped in v3.90)
 - **CRITICAL FIX**: Implemented research-driven two-phase renormalization algorithm for `floatcascade<N>`
   - **Root Cause Analysis**: Identified non-overlapping property violation (3.24x) causing 60-70% precision loss
     - Single-pass renormalize() violated Priest's invariant: `|component[i+1]| ≤ ulp(component[i])/2`
@@ -1621,7 +1840,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Establishes pattern for future multi-component arithmetic improvements
   - Validates floatcascade architecture for high-precision numerical computing
 
-#### 2025-10-30 - Phase 6 & 7: Decimal Conversion Wrappers for td_cascade and qd_cascade
+#### 2025-10-30 - Phase 6 & 7: Decimal Conversion Wrappers for td_cascade and qd_cascade (shipped in v3.90)
 - **Completed decimal conversion infrastructure refactoring** across all cascade types (dd, td, qd):
   - **Phase 6**: Added `to_string()` and `parse()` wrappers to `td_cascade` and `qd_cascade`
     - Both delegate to `floatcascade<N>` base class (N=3 for td, N=4 for qd)
@@ -1645,7 +1864,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - `qd_cascade`: Uses `floatcascade<4>`
   - No code duplication - single implementation in base class
 
-#### 2025-10-29 - Phase 1-5: Decimal Conversion Refactoring to floatcascade Base Class
+#### 2025-10-29 - Phase 1-5: Decimal Conversion Refactoring to floatcascade Base Class (shipped in v3.90)
 - **Major refactoring**: Moved decimal conversion infrastructure from `dd_cascade` to `floatcascade<N>` base class
   - **Phase 1-2**: Moved `to_digits()` and `to_string()` to `floatcascade<N>`
   - **Phase 3**: Moved `parse()` to `floatcascade<N>` with full precision parsing
@@ -1666,7 +1885,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Tests string → parse → to_string → parse cycle with tolerance checking
   - All tests passing with errors well within acceptable bounds
 
-#### 2025-10-28 - Diagonal Partitioning Demonstration for multiply_cascades
+#### 2025-10-28 - Diagonal Partitioning Demonstration for multiply_cascades (shipped in v3.88)
 - Created comprehensive demonstration test in `internal/floatcascade/api/`:
   - **`multiply_cascades_diagonal_partition_demo.cpp`** - Educational demonstration of the corrected diagonal partitioning algorithm
     - **N×N Product Matrix Visualization**: Shows how N² products are organized by diagonal (k=i+j)
@@ -1686,7 +1905,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Summary of key algorithm insights and corner cases handled
 - All demonstrations PASS ✓ for N=3 (triple-double) and N=4 (quad-double)
 
-#### 2025-10-26 - Phase 4: Comparative Advantage Examples (ereal Applications)
+#### 2025-10-26 - Phase 4: Comparative Advantage Examples (ereal Applications) (shipped in v3.88)
 - Created user-facing API examples in `elastic/ereal/api/` demonstrating adaptive precision advantages:
   - **`catastrophic_cancellation.cpp`** - Shows (1e20 + 1) - 1e20 = 1 (perfect with ereal, 0 with double)
     - Demonstrates preservation of small components in extreme-scale arithmetic
@@ -1713,7 +1932,7 @@ authoritative per-release record for them is the [releases page](https://github.
 - **Philosophy**: Show "aha moment" examples demonstrating when and why to use adaptive precision
 - **All examples**: Fast-running (<1 second), self-contained, with clear explanatory output
 
-#### 2025-10-26 - Phase 3: Architectural Refactoring & Enhanced Constant Generation
+#### 2025-10-26 - Phase 3: Architectural Refactoring & Enhanced Constant Generation (shipped in v3.88)
 - **Architectural improvement**: Moved constant generation from `internal/expansion/constants/` to `elastic/ereal/math/constants/`
   - **Rationale**: Constant generation is a user-facing application, not a primitive test
   - Clear separation: `internal/expansion/` for algorithm validation, `elastic/ereal/` for user examples
@@ -1733,7 +1952,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Derived constants: π/2, π/4, 1/π, 2/π
 - Created `elastic/ereal/math/constants/README.md` documenting the approach
 
-#### 2025-10-26 - Phase 2: Expansion Growth & Compression Analysis
+#### 2025-10-26 - Phase 2: Expansion Growth & Compression Analysis (shipped in v3.88)
 - Created `internal/expansion/growth/component_counting.cpp` - Track expansion growth patterns:
   - **No-growth cases**: 2+3=1 component, 2^11=1 component (exact operations stay compact)
   - **Expected growth**: 1+1e-15=2 components, 1e20+1=2 components (precision capture)
@@ -1754,7 +1973,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Sum of 100 integers = 1 component (excellent compaction!)
 - **Phase 2 Complete** ✅
 
-#### 2025-10-26 - Expansion Operations: Comprehensive Identity-Based Tests
+#### 2025-10-26 - Expansion Operations: Comprehensive Identity-Based Tests (shipped in v3.88)
 - Created `internal/expansion/arithmetic/subtraction.cpp` - Subtraction-specific corner case tests:
   - **Exact cancellation**: a - a = [0]
   - **Zero identity**: a - [0] = a
@@ -1794,7 +2013,7 @@ authoritative per-release record for them is the [releases page](https://github.
 - **All tests passing**: No oracle needed, only exact mathematical identities ✅
 - **Test coverage**: Now have unit tests for all four basic expansion operations at primitive level
 
-#### 2025-10-26 - Phase 1 Identity Tests: Exact Mathematical Property Verification
+#### 2025-10-26 - Phase 1 Identity Tests: Exact Mathematical Property Verification (shipped in v3.88)
 - Created `elastic/ereal/arithmetic/identities.cpp` - Identity-based tests requiring no oracle:
   - **Additive identity recovery**: (a+b)-a = b tested component-wise
   - **Multiplicative identity**: a×(1/a) = 1 within Newton precision
@@ -1812,7 +2031,7 @@ authoritative per-release record for them is the [releases page](https://github.
 - **Key Finding**: Expansions are not unique representations - different computation paths produce different component structures representing the same value
 - **All identity tests passing** ✅
 
-#### 2025-10-26 - Integration: ereal Number System with expansion_ops (Milestone 3)
+#### 2025-10-26 - Integration: ereal Number System with expansion_ops (Milestone 3) (shipped in v3.88)
 - Extended `expansion_ops.hpp` with multiplication and division algorithms:
   - `expansion_product()` - Full ereal×ereal multiplication using component-wise scaling
   - `expansion_reciprocal()` - Newton iteration for computing 1/x
@@ -1836,7 +2055,7 @@ authoritative per-release record for them is the [releases page](https://github.
 - **All tests passing**: 4/4 arithmetic test suites + API tests ✅
 - **Result**: ereal now provides complete multi-component adaptive precision arithmetic using Shewchuk's algorithms
 
-#### 2025-10-26 - Expansion Operations: Scalar Operations & Compression (Milestone 2)
+#### 2025-10-26 - Expansion Operations: Scalar Operations & Compression (Milestone 2) (shipped in v3.88)
 - Extended `expansion_ops.hpp` with scalar multiplication and compression:
   - `scale_expansion()` - Scalar multiplication with error-free transformations
   - `compress_expansion()` - Remove insignificant components based on threshold
@@ -1851,7 +2070,7 @@ authoritative per-release record for them is the [releases page](https://github.
 - All tests passing: compression (5/5), addition (5/5), multiplication (6/6)
 - Performance benchmarks show expected algorithmic complexity
 
-#### 2025-10-26 - Expansion Operations Infrastructure (Milestone 1)
+#### 2025-10-26 - Expansion Operations Infrastructure (Milestone 1) (shipped in v3.88)
 - Added Shewchuk's adaptive precision floating-point expansion algorithms
 - Created `include/sw/universal/internal/expansion/expansion_ops.hpp` with core algorithms:
   - `two_sum()` - Error-free transformation for addition (Knuth/Dekker)
@@ -1875,7 +2094,7 @@ authoritative per-release record for them is the [releases page](https://github.
 
 ### Fixed
 
-#### 2025-10-30 - Code Hygiene: Unused Variable Warnings
+#### 2025-10-30 - Code Hygiene: Unused Variable Warnings (shipped in v3.90)
 - **Fixed unused variable in `scale_expansion_nonoverlap_bug.cpp`**:
   - Location: `internal/expansion/api/scale_expansion_nonoverlap_bug.cpp:148`
   - Variable `input_ok` was computed but never used
@@ -1888,7 +2107,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Now properly reports the scaled component value
 - **Verification**: All cascade code compiles with no warnings
 
-#### 2025-10-28 - Carry Discard Bug in multiply_cascades Accumulation Loop
+#### 2025-10-28 - Carry Discard Bug in multiply_cascades Accumulation Loop (shipped in v3.88)
 - **Bug**: `multiply_cascades()` in `floatcascade.hpp` silently discarded non-zero carry after accumulation
   - Location: `include/sw/universal/internal/floatcascade/floatcascade.hpp:836-851`
   - After propagating expansion terms through result[0..N-1], carry could remain non-zero
@@ -1904,7 +2123,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - ✅ Diagonal partition demo: All corner cases pass
   - ✅ No silent data loss in component accumulation
 
-#### 2025-10-28 - Missing Headers in multiply_cascades_diagonal_partition_demo.cpp
+#### 2025-10-28 - Missing Headers in multiply_cascades_diagonal_partition_demo.cpp (shipped in v3.88)
 - **Bug**: Demo file missing required headers
   - Missing `#include <array>` for `std::array<double, N*N>` usage (lines 71-72)
   - Namespace resolution unclear for `expansion_ops::two_prod()`, `expansion_ops::two_sum()`, etc.
@@ -1918,7 +2137,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - ✅ All demonstrations run correctly
   - ✅ Cleaner, more readable code with unqualified calls
 
-#### 2025-10-28 - Error Reporting Issues in elastic/ereal/api/dot_product.cpp
+#### 2025-10-28 - Error Reporting Issues in elastic/ereal/api/dot_product.cpp (shipped in v3.88)
 - **Bug 1**: Calling `-log10(0)` when relative error is zero produces `-inf` output
   - Location: Line 213-214 (double precision branch)
   - When `rel_error_double == 0`, would print "Lost ~-inf digits" (confusing)
@@ -1942,7 +2161,7 @@ authoritative per-release record for them is the [releases page](https://github.
 
 ### Changed
 
-#### 2025-10-28 - Strengthened ereal Dot Product Demonstrations
+#### 2025-10-28 - Strengthened ereal Dot Product Demonstrations (shipped in v3.88)
 - **Test 1**: Replaced ineffective order-dependence test with true near-cancellation case
   - **Old**: `[1e20, 1]·[1, 1e20]` vs `[1, 1e20]·[1e20, 1]` → identical products in both orders (didn't demonstrate order dependence!)
   - **New**: `[-1e16, 1e16, 1]·[1,1,1]` with reordered variant `[1, -1e16, 1e16]·[1,1,1]`
@@ -1964,7 +2183,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Test 1: Order-dependence with 100% error
   - Test 3: Sub-ULP cancellation with catastrophic condition numbers
 
-#### 2025-10-28 - CRITICAL: multiply_cascades Algorithm Broken for N≥3
+#### 2025-10-28 - CRITICAL: multiply_cascades Algorithm Broken for N≥3 (shipped in v3.88)
 - **Bug**: `multiply_cascades()` in `floatcascade.hpp` had incorrect diagonal partitioning
   - Location: `include/sw/universal/internal/floatcascade/floatcascade.hpp:733-783`
   - Only handled diagonals 0-2 explicitly with ad-hoc accumulation
@@ -2001,7 +2220,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Extreme magnitude ranges (1e100 to 1e-100)
 - **Key learning**: Never use ad-hoc accumulation for multi-component arithmetic; always follow proven algorithms with proper error tracking and component extraction.
 
-#### 2025-10-28 - CRITICAL: scale_expansion Violates Non-Overlapping Invariant
+#### 2025-10-28 - CRITICAL: scale_expansion Violates Non-Overlapping Invariant (shipped in v3.88)
 - **Bug**: `scale_expansion()` in `expansion_ops.hpp` returned sorted products without renormalization
   - Location: `include/sw/universal/internal/expansion/expansion_ops.hpp:408-504`
   - Multiplied each component by scalar using two_prod, collected products/errors
@@ -2042,7 +2261,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Any future algorithms using scale_expansion
 - **Key learning**: **Never return magnitude-sorted components as valid expansions**. Shewchuk invariants require explicit renormalization using error-free transformations.
 
-#### 2025-10-26 - CRITICAL: ereal Unary Negation Operator Broken (Phase 4)
+#### 2025-10-26 - CRITICAL: ereal Unary Negation Operator Broken (Phase 4) (shipped in v3.88)
 - **Bug**: `ereal::operator-()` returned a copy instead of negating the value
   - Location: `include/sw/universal/number/ereal/ereal_impl.hpp:89-92`
   - Code was: `ereal negated(*this); return negated;` (just returned copy!)
@@ -2068,7 +2287,7 @@ authoritative per-release record for them is the [releases page](https://github.
 - **Severity**: **CRITICAL** - This bug made ereal unusable for any algorithm with subtraction or negative values
 - **Key Learning**: Need comprehensive operator tests, not just end-to-end algorithm tests
 
-#### 2025-10-26 - Compiler Warnings Cleanup (Phase 4)
+#### 2025-10-26 - Compiler Warnings Cleanup (Phase 4) (shipped in v3.88)
 - Fixed unused variable warnings to enable clean builds:
   - **`internal/expansion/growth/compression_analysis.cpp:134`**
     - Removed unused `original_val` variable in conservative compression test
@@ -2077,7 +2296,7 @@ authoritative per-release record for them is the [releases page](https://github.
     - Ensures `sign_adaptive()` calls aren't optimized away during timing measurements
 - **Result**: Clean build with zero warnings for all expansion and ereal tests
 
-#### 2025-10-26 - Critical Bug in Compression Error Measurement (Phase 2)
+#### 2025-10-26 - Critical Bug in Compression Error Measurement (Phase 2) (shipped in v3.88)
 - **Bug**: Compression tests collapsed both full and compressed expansions to `double` before comparing
   - `double full_val = sum_expansion(full);` loses precision beyond double!
   - `double compressed_val = sum_expansion(compressed);` also loses that precision
@@ -2099,7 +2318,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Each component pair adds ~32 digits of precision
 - **Key Learning**: Never collapse adaptive-precision values to fixed precision before measuring differences
 
-#### 2025-10-26 - Critical Bug in linear_expansion_sum Found by Phase 1 Identity Tests
+#### 2025-10-26 - Critical Bug in linear_expansion_sum Found by Phase 1 Identity Tests (shipped in v3.88)
 - **Bug**: `linear_expansion_sum()` had incorrect index initialization and component selection logic
   - Indices initialized to `i=0, j=0` instead of pointing to least significant components `i=m-1, j=n-1`
   - When comparing magnitudes, picked **wrong component** (f_curr when e_curr was smaller)
@@ -2122,7 +2341,7 @@ authoritative per-release record for them is the [releases page](https://github.
   - Phase 1 identity tests with component-wise verification caught it immediately
   - Highlights importance of testing exact mathematical properties, not just approximate results
 
-#### 2025-10-26 - Critical Bug in fast_expansion_sum (Milestone 2)
+#### 2025-10-26 - Critical Bug in fast_expansion_sum (Milestone 2) (shipped in v3.88)
 - **Bug**: `fast_expansion_sum()` was calling `fast_two_sum(next_component, q, ...)` with arguments in wrong order
   - FAST-TWO-SUM requires |a| >= |b| as precondition
   - Algorithm was passing smaller component first, violating the invariant
@@ -2169,7 +2388,7 @@ Key differences from Priest's fixed-precision algorithms (used in `floatcascade`
 - ⏳ Milestone 5: Conversion & interoperability with dd/td/qd_cascade
 - ⏳ Milestone 6: Optimization & production hardening
 
-## [3.87] - Current Development Branch
+## [3.87] (2025-10-26)
 
 ### Existing Features
 - Fixed multi-component floating-point: `dd_cascade`, `td_cascade`, `qd_cascade`
