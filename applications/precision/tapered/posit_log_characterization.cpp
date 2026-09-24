@@ -135,6 +135,11 @@ namespace {
 		unsigned checked{ 0 };
 		unsigned correct{ 0 };
 		unsigned wrong{ 0 };
+		// Where the information was lost, measured rather than inferred. The shim is
+		// posit(std::log(double(x))), so there are exactly three places it can go:
+		unsigned lostInArgument{ 0 };   // double(x) is not x -- it took the log of another number
+		unsigned lostInLibm{ 0 };       // std::log did not return the nearest double
+		unsigned lostInRounding{ 0 };   // both were right; rounding that double to the posit lost it
 		int      maxUlp{ 0 };
 		bool     maxUlpIsExact{ true };
 		double   worstArgument{ 0.0 };
@@ -168,6 +173,19 @@ namespace {
 		++s.checked;
 		if (got == want) { ++s.correct; return; }
 		++s.wrong;
+		// classify: argument, libm, or the second rounding
+		const Oracle argExact = exactly(x);
+		const double argAsDouble = double(x);
+		if (Oracle(argAsDouble) != argExact) {
+			++s.lostInArgument;
+		}
+		else {
+			// the argument survived, so compare the intermediate against the nearest
+			// double to the true logarithm of that same argument
+			const double intermediate = std::log(argAsDouble);
+			if (intermediate != double(exact)) ++s.lostInLibm;
+			else                               ++s.lostInRounding;
+		}
 		bool exactCount = true;
 		const int u = ulpsApart(want, got, exactCount);
 		// an unbounded distance always outranks a measured one
@@ -182,8 +200,12 @@ namespace {
 		          << " checked " << std::setw(7) << s.checked
 		          << " correctly rounded " << std::setw(7) << s.correct
 		          << " wrong " << std::setw(7) << s.wrong;
-		if (s.wrong) std::cout << "  worst " << (s.maxUlpIsExact ? "" : "> ") << s.maxUlp
-		                       << " ulp at " << s.worstArgument;
+		if (s.wrong) {
+			std::cout << "  worst " << (s.maxUlpIsExact ? "" : "> ") << s.maxUlp
+			          << " ulp   lost in: arg " << s.lostInArgument
+			          << " libm " << s.lostInLibm
+			          << " rounding " << s.lostInRounding;
+		}
 		std::cout << '\n';
 	}
 
@@ -283,14 +305,16 @@ try {
 	around<56, 2>("posit<56,2>", 1.0, "x near 1", 200);
 	around<64, 2>("posit<64,2>", 1.0, "x near 1", 200);
 
-	std::cout << "\n3. The mechanism is DOUBLE ROUNDING, and what matters is headroom.\n";
-	std::cout << "   The shim rounds twice: the real result to a double, then that double to\n";
-	std::cout << "   the posit. Rounding twice is not rounding once. Whenever the double has\n";
-	std::cout << "   few spare bits over the posit's fraction, a value near a posit rounding\n";
-	std::cout << "   boundary is resolved by bits the double no longer has.\n";
-	std::cout << "   fbits = nbits - 3 - es at 1.0; a double carries 53 significant bits.\n\n";
-	std::cout << "   The width below is at 1.0; a posit's regime is variable length, so the\n";
-	std::cout << "   width actually in use at e is reported alongside each measurement.\n\n";
+	std::cout << "\n3. WHERE the information is lost, classified rather than inferred.\n";
+	std::cout << "   The shim is posit(std::log(double(x))), so there are exactly three\n";
+	std::cout << "   places it can go, and each failure above is attributed to one of them:\n";
+	std::cout << "     arg      -- double(x) is not x, so it took the log of another number\n";
+	std::cout << "     libm     -- std::log did not return the nearest double\n";
+	std::cout << "     rounding -- both were right; rounding that double to the posit lost it\n\n";
+	std::cout << "   fbits = nbits - 3 - es at 1.0. fbits counts EXPLICIT fraction bits, so\n";
+	std::cout << "   the comparable budget is a double's 52 explicit bits, not its 53.\n";
+	std::cout << "   A posit's regime is variable length, so the width in use at e is\n";
+	std::cout << "   reported alongside each measurement.\n\n";
 	std::cout << "                 fbits  spare bits over a double\n";
 	fractionBudget<32, 2>("posit<32,2>");
 	fractionBudget<56, 3>("posit<56,3>");
@@ -309,29 +333,34 @@ try {
 	std::cout << "\n4. What this says\n\n";
 	std::cout << "   Measured here: posit<8,2> through posit<16,2> over every encoding, and\n";
 	std::cout << "   posit<32,2>, posit<56,0..3> and posit<64,2> over the demanding\n";
-	std::cout << "   neighbourhoods. Claims below are about those, not about every posit.\n\n";
-	std::cout << "   The shim is correctly rounded where the double has room to spare over\n";
-	std::cout << "   the format's fraction, and mis-rounds as that headroom runs out.\n\n";
-	std::cout << "   Where the format still fits a double -- the posit<56,3>, posit<56,2>\n";
-	std::cout << "   and posit<56,0> rows AT e, which use 50 to 52 fraction bits there --\n";
-	std::cout << "   the mechanism is double rounding rather than a shortcoming of the\n";
-	std::cout << "   polynomial, and those rows measured 1 ulp. The failures appear where\n";
-	std::cout << "   the format is most precise.\n\n";
-	std::cout << "   Where it does not fit at all the errors are not 1 ulp but unbounded:\n";
-	std::cout << "   posit<64,2> measured more than 16 ulp, and posit<56,0> returns zero for\n";
-	std::cout << "   the value immediately above 1.0, which a double cannot tell from 1.0.\n";
-	std::cout << "   That is a different failure from double rounding, not a larger one.\n\n";
-	std::cout << "   The error rate is also NOT a clean function of the fraction width.\n";
-	std::cout << "   posit<56,0> and posit<56,1> both carry 52 fraction bits at e, and one\n";
-	std::cout << "   is wrong 198 times in 400 while the other is wrong none. Whether a\n";
-	std::cout << "   result lands near a posit rounding boundary depends on how that\n";
-	std::cout << "   configuration's grid sits against the double's, and every (nbits, es)\n";
-	std::cout << "   pair has its own answer -- the same reason the thread gives for why a\n";
-	std::cout << "   correctly rounded library for a PARAMETERIZED format is hard.\n\n";
-	std::cout << "   So for the small and mid configurations a native log would recover\n";
-	std::cout << "   nothing; for the wide ones it would, and that is exactly the regime in\n";
-	std::cout << "   which no oracle exists to synthesize the coefficients. That is the shape\n";
-	std::cout << "   of #244, measured rather than argued.\n";
+	std::cout << "   neighbourhoods. Everything below is about those, not about every posit.\n\n";
+	std::cout << "   std::log is never the culprit. The libm column is zero in every row:\n";
+	std::cout << "   where the shim is wrong, the host returned the nearest double.\n\n";
+	std::cout << "   The failures split into two different mechanisms, and which one you get\n";
+	std::cout << "   depends on the configuration rather than on a single rule:\n\n";
+	std::cout << "     Double rounding. The argument survives the conversion and the host is\n";
+	std::cout << "     correct, but rounding that double to the posit is not the same as\n";
+	std::cout << "     rounding the true result to the posit. posit<56,2> near e loses all\n";
+	std::cout << "     100 of its failures here, and they are 1 ulp.\n\n";
+	std::cout << "     Argument loss. double(x) is simply not x, so the shim computes the\n";
+	std::cout << "     logarithm of a different number. posit<64,2> loses 396 of 398 this\n";
+	std::cout << "     way near e and 398 of 398 near 1.0, and the errors are unbounded\n";
+	std::cout << "     rather than 1 ulp. posit<56,0> is the extreme case: the value just\n";
+	std::cout << "     above 1.0 is indistinguishable from 1.0 as a double, so the shim\n";
+	std::cout << "     returns zero.\n\n";
+	std::cout << "   Headroom is suggestive but is NOT the rule. posit<56,0> and posit<56,1>\n";
+	std::cout << "   both carry 52 fraction bits at e, and one is wrong 198 times in 400\n";
+	std::cout << "   while the other is wrong none. Whether a result lands near a posit\n";
+	std::cout << "   rounding boundary depends on how that configuration's grid sits against\n";
+	std::cout << "   the double's, and every (nbits, es) pair has its own answer.\n\n";
+	std::cout << "   That last point is the one worth carrying back to the issue. It is an\n";
+	std::cout << "   argument from measurement for what the thread argued from experience:\n";
+	std::cout << "   a correctly rounded library for a PARAMETERIZED format has no single\n";
+	std::cout << "   rule to derive, which is why the per-configuration methods do not\n";
+	std::cout << "   generalize. And the regime where a native log would actually help --\n";
+	std::cout << "   the wide posits, lost in the argument -- is exactly the regime where no\n";
+	std::cout << "   oracle exists to synthesize the coefficients. That is the shape of\n";
+	std::cout << "   #244, measured rather than argued.\n";
 
 	return EXIT_SUCCESS;
 }
