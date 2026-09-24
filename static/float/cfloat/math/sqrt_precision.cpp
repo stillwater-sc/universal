@@ -123,9 +123,22 @@ namespace {
 		int fails = 0;
 		C zero(0.0), inf(SpecificValue::infpos), nan(SpecificValue::qnan);
 
-		fails += expect_true(sqrt(zero).iszero(),  tag + ": sqrt(0) is 0", reportTestCases);
+		fails += expect_true(sqrt(zero).iszero(),  tag + ": sqrt(+0) is +0", reportTestCases);
 		fails += expect_true(sqrt(inf).isinf(),    tag + ": sqrt(+inf) is +inf", reportTestCases);
 		fails += expect_true(sqrt(nan).isnan(),    tag + ": sqrt(nan) is nan", reportTestCases);
+		{
+			// isneg() is true for -0, so an implementation that tests the sign before the
+			// zero returns NaN here. IEEE 754 requires -0, with the sign preserved.
+			C negZero(0.0); negZero.setsign(true);
+			C r = sqrt(negZero);
+			fails += expect_true(r.iszero(), tag + ": sqrt(-0) is zero", reportTestCases);
+			fails += expect_true(r.sign(),   tag + ": sqrt(-0) keeps the sign", reportTestCases);
+			// -inf must NOT follow -0 through that door: sqrt(-inf) is NaN
+			C negInf(SpecificValue::infneg);
+			fails += expect_true(sqrt(negInf).isnan(), tag + ": sqrt(-inf) is nan", reportTestCases);
+			C negative(-4.0);
+			fails += expect_true(sqrt(negative).isnan(), tag + ": sqrt(-4) is nan", reportTestCases);
+		}
 		fails += expect_true(sqrt(C(1.0)) == C(1.0), tag + ": sqrt(1) is exactly 1", reportTestCases);
 		fails += expect_true(sqrt(C(4.0)) == C(2.0), tag + ": sqrt(4) is exactly 2", reportTestCases);
 		fails += expect_true(sqrt(C(0.25)) == C(0.5), tag + ": sqrt(0.25) is exactly 0.5", reportTestCases);
@@ -178,6 +191,12 @@ try {
 	using QuadW = cfloat<192, 17, std::uint64_t, true, false, false>;
 	using Octo  = cfloat<256, 19, std::uint64_t, true, false, false>;
 	using OctoW = cfloat<320, 20, std::uint64_t, true, false, false>;
+	// fbits = 48, so a guard that keys on the fraction width alone routes this to the
+	// host -- but es = 15 puts its maxpos past DBL_MAX and its minpos below DBL_MIN, so
+	// the host answers inf and zero. Whether the host can answer is a property of the
+	// VALUE, not of the fraction width.
+	using NarrowWide  = cfloat<64, 15, std::uint64_t, true, false, false>;
+	using NarrowWideW = cfloat<128, 17, std::uint64_t, true, false, false>;
 	using Xtndd  = cfloat<80, 11, std::uint64_t, true, false, false>;
 	using XtnddW = cfloat<144, 13, std::uint64_t, true, false, false>;
 
@@ -211,6 +230,11 @@ try {
 		test_tag, "quad carries 112 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifyOutsideDoubleRange<Quad, QuadW>("quad", reportTestCases),
 		test_tag, "quad outside double's range");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyOutsideDoubleRange<NarrowWide, NarrowWideW>("cfloat<64,15>", reportTestCases),
+		test_tag, "narrow fraction, wide exponent");
+	nrOfFailedTestCases += ReportTestResult(VerifySpecialValues<NarrowWide>("cfloat<64,15>", reportTestCases),
+		test_tag, "narrow fraction special values");
 #endif
 
 #if REGRESSION_LEVEL_2

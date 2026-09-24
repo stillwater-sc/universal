@@ -98,63 +98,78 @@ namespace sw { namespace universal {
 	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 	inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sqrt(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a) {
 		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
+		// Order matters. isneg() is true for -0 (the sign bit is set), so testing it first
+		// sent -0 down the negative branch, which printed an error and returned NaN;
+		// IEEE 754 requires sqrt(-0) to be -0. NaN and zero are therefore settled before
+		// the sign test, and -inf is left to it because sqrt(-inf) IS NaN (#1589).
+		if (a.isnan())  return a;                     // sqrt(nan) is nan
+		if (a.iszero()) return a;                     // sqrt(+-0) is +-0, sign preserved
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw cfloat_negative_sqrt_arg();
 #else
-		if (a.isneg()) {
+		if (a.isneg()) {                              // catches -inf as well
 			std::cerr << "cfloat argument to sqrt is negative: " << a << std::endl;
 			Cfloat nan; nan.setnan(NAN_TYPE_QUIET);
 			return nan;
 		}
 #endif
-		if (a.isnan() || a.iszero() || a.isinf()) return a;   // sqrt(+inf) is +inf
+		if (a.isinf()) return a;                      // sqrt(+inf) is +inf
 
 		constexpr unsigned fbits = Cfloat::fbits;
+
+		// Whether the host can answer is a property of the VALUE, not of the format's
+		// fraction width. A narrow fraction says nothing about the exponent range:
+		// cfloat<64,15> has fbits = 48 and would take a fbits-only fast path, but its
+		// maxpos is inf as a double and its minpos is 0, so that path reproduced exactly
+		// the defect this function was rewritten to fix. The host result is used only
+		// when the format cannot hold more than a double AND this particular value is
+		// one a double can carry; everything else iterates.
+		const double d = double(a);
+		const bool hostUsable = (d > 0.0 && std::isfinite(d));
+
 		if constexpr (fbits <= 52 && !CFLOAT_NATIVE_SQRT) {
-			// a double carries this format's whole fraction, so the host answer is already
-			// the best this format can hold. CFLOAT_NATIVE_SQRT forces the iteration anyway,
-			// which is how the two paths are compared against each other in test.
-			return Cfloat(std::sqrt(double(a)));
+			// a double carries this format's whole fraction, so where it is in range its
+			// answer is already the best the format can hold. CFLOAT_NATIVE_SQRT forces
+			// the iteration anyway, which is how the two paths are compared in test.
+			if (hostUsable) return Cfloat(std::sqrt(d));
+		}
+
+		// seed
+		Cfloat x;
+		if (hostUsable) {
+			x = std::sqrt(d);
 		}
 		else {
-			// seed
-			Cfloat x;
-			const double d = double(a);
-			if (d > 0.0 && std::isfinite(d)) {
-				x = std::sqrt(d);
-			}
-			else {
-				// a is outside a double's range: 2^floor(scale/2) is within sqrt(2) of the
-				// root. The shift is arithmetic, so it floors for a negative scale too.
-				x = 1.0;
-				if (!x.setexponent(a.scale() >> 1)) return Cfloat(std::sqrt(d)); // unrepresentable, nothing better to offer
-			}
-			if (x.iszero() || x.isnan() || x.isinf()) return Cfloat(std::sqrt(d));
-
-			// Newton-Raphson. The bound is the worst case from a 1-bit seed; convergence
-			// breaks out long before that for the usual 53-bit one.
-			//
-			// previous and twoAgo are initialized explicitly. A cfloat is trivially
-			// constructible, so `Cfloat previous;` leaves stack garbage, and clang does
-			// not zero it: the oscillation guard below then compared the new iterate
-			// against whatever the slot happened to hold -- often a leftover from an
-			// earlier sqrt call -- matched, and returned the seed. That produced a
-			// 53-bit answer on clang while gcc happened to give the right one.
-			const Cfloat half(0.5);
-			Cfloat previous(0), twoAgo(0);
-			for (unsigned i = 0; i < 64u; ++i) {
-				twoAgo = previous;
-				previous = x;
-				x = (x + a / x) * half;
-				// the iterate is monotone once it is above the root, so a repeat means the
-				// format cannot hold a closer value; a match two steps back is the 1-ulp
-				// oscillation that ends a correctly converged Newton. twoAgo is only a real
-				// iterate from the second pass on, so the oscillation test waits for it.
-				if (x == previous) break;
-				if (i > 0 && x == twoAgo) { if (previous < x) x = previous; break; }
-			}
-			return x;
+			// a is outside a double's range: 2^floor(scale/2) is within sqrt(2) of the
+			// root. The shift is arithmetic, so it floors for a negative scale too.
+			x = 1.0;
+			if (!x.setexponent(a.scale() >> 1)) { x = 1.0; }   // unrepresentable: start at 1
 		}
+		if (x.iszero() || x.isnan() || x.isinf()) x = 1.0;
+
+		// Newton-Raphson. The bound is the worst case from a 1-bit seed; convergence
+		// breaks out long before that for the usual 53-bit one.
+		//
+		// previous and twoAgo are initialized explicitly. A cfloat is trivially
+		// constructible, so `Cfloat previous;` leaves stack garbage, and clang does not
+		// zero it: the oscillation guard below then compared the new iterate against
+		// whatever the slot happened to hold -- often a leftover from an earlier sqrt
+		// call -- matched, and returned the seed. That produced a 53-bit answer on clang
+		// while gcc happened to give the right one.
+		const Cfloat half(0.5);
+		Cfloat previous(0), twoAgo(0);
+		for (unsigned i = 0; i < 64u; ++i) {
+			twoAgo = previous;
+			previous = x;
+			x = (x + a / x) * half;
+			// the iterate is monotone once it is above the root, so a repeat means the
+			// format cannot hold a closer value; a match two steps back is the 1-ulp
+			// oscillation that ends a correctly converged Newton. twoAgo is only a real
+			// iterate from the second pass on, so the oscillation test waits for it.
+			if (x == previous) break;
+			if (i > 0 && x == twoAgo) { if (previous < x) x = previous; break; }
+		}
+		return x;
 	}
 
 	// reciprocal sqrt
