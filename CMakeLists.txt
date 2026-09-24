@@ -22,8 +22,8 @@ endif(POLICY CMP0048)
 # > git tag -a v4.0.0 -m "feat!: description"
 # > git push origin v4.0.0
 # CI will pick it up and generate a release
-set(UNIVERSAL_FALLBACK_VERSION_MAJOR 4)
-set(UNIVERSAL_FALLBACK_VERSION_MINOR 8)
+set(UNIVERSAL_FALLBACK_VERSION_MAJOR 5)
+set(UNIVERSAL_FALLBACK_VERSION_MINOR 0)
 set(UNIVERSAL_FALLBACK_VERSION_PATCH 0)
 if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   find_package(Git QUIET)
