@@ -11,7 +11,7 @@ Nothing yet.
 
 ## [5.0.0](https://github.com/stillwater-sc/universal/compare/v4.10.1...v5.0.0) (2026-09-24)
 
-127 commits, PRs [#1385](https://github.com/stillwater-sc/universal/pull/1385)-[#1593](https://github.com/stillwater-sc/universal/pull/1593). The major bump is earned by breadth rather than by one redesign: **56 behaviour changes across 18 scopes**, most of them cases where a type returned a wrong answer quietly rather than failing loudly. Apart from the removals below, code that compiles against v4.10.1 compiles against v5.0.0 -- but code that depends on what these types *returned* should read the full behaviour-change list in the [release notes](https://github.com/stillwater-sc/universal/releases/tag/v5.0.0) before upgrading.
+128 commits, PRs [#1385](https://github.com/stillwater-sc/universal/pull/1385)-[#1594](https://github.com/stillwater-sc/universal/pull/1594). The major bump is earned by breadth rather than by one redesign: **56 behaviour changes across 18 scopes**, most of them cases where a type returned a wrong answer quietly rather than failing loudly. Apart from the removals below, code that compiles against v4.10.1 compiles against v5.0.0 -- but code that depends on what these types *returned* should read the full behaviour-change list in the [release notes](https://github.com/stillwater-sc/universal/releases/tag/v5.0.0) before upgrading.
 
 ### Removed
 
