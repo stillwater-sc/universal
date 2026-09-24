@@ -41,12 +41,14 @@ export default defineConfig({
                 { label: 'fixpnt', link: '/number-systems/fixpnt/' },
                 { label: 'dfixpnt', link: '/number-systems/dfixpnt/' },
                 { label: 'rational', link: '/number-systems/rational/' },
+                { label: 'positional', link: '/number-systems/positional/' },
               ],
             },
             {
               label: 'Configurable Floating-Point',
               collapsed: true,
               items: [
+                { label: 'Standard IEEE types', link: '/number-systems/standard-types/' },
                 { label: 'cfloat', link: '/number-systems/cfloat/' },
                 { label: 'bfloat16', link: '/number-systems/bfloat16/' },
                 { label: 'areal', link: '/number-systems/areal/' },
@@ -70,8 +72,6 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { label: 'posit', link: '/number-systems/posit/' },
-                { label: 'posit1 (legacy)', link: '/number-systems/posit1/' },
-                { label: 'posito', link: '/number-systems/posito/' },
                 { label: 'quire', link: '/number-systems/quire/' },
                 { label: 'takum', link: '/number-systems/takum/' },
               ],
@@ -97,10 +97,12 @@ export default defineConfig({
               label: 'Interval & Uncertainty',
               collapsed: true,
               items: [
-                { label: 'valid', link: '/number-systems/valid/' },
                 { label: 'interval', link: '/number-systems/interval/' },
                 { label: 'sorn', link: '/number-systems/sorn/' },
+                { label: 'unum (Type I)', link: '/number-systems/unum/' },
                 { label: 'unum2', link: '/number-systems/unum2/' },
+                { label: 'bisection', link: '/number-systems/bisection/' },
+                { label: 'faithful', link: '/number-systems/faithful/' },
               ],
             },
             {
@@ -112,6 +114,18 @@ export default defineConfig({
                 { label: 'dd_cascade', link: '/number-systems/dd-cascade/' },
                 { label: 'td_cascade', link: '/number-systems/td-cascade/' },
                 { label: 'qd_cascade', link: '/number-systems/qd-cascade/' },
+              ],
+            },
+            {
+              label: 'Adaptive (Elastic) Precision',
+              collapsed: true,
+              items: [
+                { label: 'einteger', link: '/number-systems/einteger/' },
+                { label: 'edecimal', link: '/number-systems/edecimal/' },
+                { label: 'erational', link: '/number-systems/erational/' },
+                { label: 'efloat', link: '/number-systems/efloat/' },
+                { label: 'ereal', link: '/number-systems/ereal/' },
+                { label: 'elreal', link: '/number-systems/elreal/' },
               ],
             },
             { label: 'Complex', link: '/number-systems/complex/' },

@@ -25,11 +25,11 @@ The Universal Numbers Library implements this concept as the **generalized quire
 
 using Real = sw::universal::cfloat<32, 8, uint32_t, true, false, false>;
 
-std::vector<Real> x = { 1e8f, -1e8f, 0.5f, 0.25f };
-std::vector<Real> y = { 1.0f,  1.0f, 1.0f, 1.0f  };
+std::vector<Real> x = { 1e8f, 0.5f, 0.25f, -1e8f };
+std::vector<Real> y = { 1.0f, 1.0f, 1.0f,  1.0f  };
 
-// Naive accumulation: 0.0 (WRONG — residual lost to cancellation)
-// Fused dot product:  0.75 (CORRECT — exact via quire)
+// Naive accumulation: 0.0 (WRONG - both small terms are lost under the 1e8)
+// Fused dot product:  0.75 (CORRECT - exact via quire)
 Real result = sw::universal::fdp(x, y);
 ```
 

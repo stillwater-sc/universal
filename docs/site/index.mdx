@@ -23,9 +23,13 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 ## Key Features
 
 <CardGrid>
-  <Card title="30+ Number Systems" icon="open-book">
+  <Card title="35+ Number Systems" icon="open-book">
     Integers, fixed-point, classic floats, posits, logarithmic, interval,
-    multi-precision, AI quantization formats, and more.
+    adaptive-precision, AI quantization formats, and more.
+  </Card>
+  <Card title="IEEE-754 Out of the Box" icon="approve-check">
+    `half`, `single`, `duble`, `quad`, `octo` -- or `fp16`, `fp32`, `fp64`,
+    `fp128`, `fp256`. The standard formats, already spelled for you.
   </Card>
   <Card title="Header-Only" icon="puzzle">
     No external dependencies. Just `#include` and go. Pure C++20 templates.
@@ -52,14 +56,14 @@ Real MyKernel(const Real& a, const Real& b) {
 int main() {
     using namespace sw::universal;
 
-    // half-precision IEEE-754
+    // half-precision IEEE-754 -- a predefined alias, same as fp16
     half ha = sqrt(2);
     half hb = 3.14159265358979;
     half hc = MyKernel(ha, hb);
     std::cout << "Result: " << hc << '\n';
     std::cout << "Bits  : " << to_binary(hc) << " : " << color_print(hc) << '\n';
 
-    // single-precision IEEE-754
+    // single-precision IEEE-754 -- a predefined alias, same as fp32
     single fa = sqrt(2);
     single fb = 3.14159265358979;
     single fc = MyKernel(fa, fb);
@@ -78,18 +82,43 @@ g++ -std=c++20 -I universal/include/sw -o kernel kernel.cpp
 The library requires **C++20** and is header-only with no external dependencies.
 The include path points to `include/sw/` because headers use `#include <universal/...>` paths.
 
+## The Standard IEEE-754 Formats
+
+`cfloat` can express any floating-point format, but most developers want one of the six
+the hardware already implements -- and spelling those out by hand is where the mistakes
+happen. They are predefined, under both their word names and their `fpNN` names:
+
+| type | alias | bits | matches |
+|---|---|---|---|
+| `quarter` | `fp8` | 8 | IEEE interchange rule at 8 bits |
+| `half` | `fp16` | 16 | IEEE-754 binary16 |
+| `single` | `fp32` | 32 | IEEE-754 binary32 |
+| `duble` | `fp64` | 64 | IEEE-754 binary64 |
+| `quad` | `fp128` | 128 | IEEE-754 binary128 |
+| `octo` | `fp256` | 256 | IEEE-754 binary256 |
+
+```cpp
+single x = 1.0f;   // exactly binary32 -- no template parameters to get wrong
+quad   z = 1.0;    // exactly binary128, on hardware that has never heard of it
+```
+
+See [Standard IEEE types](/universal/number-systems/standard-types/) for the field widths,
+the two names that need a caveat, and how to choose between these and the faster
+extended-precision types.
+
 ## Number Systems at a Glance
 
 ### Static (Fixed-Size) Types
 
 | Category | Types |
 |----------|-------|
-| **Integer & Fixed-Point** | `integer`, `fixpnt`, `dfixpnt`, `rational` |
+| **Integer & Fixed-Point** | `integer`, `fixpnt`, `dfixpnt`, `rational`, `positional` |
+| **Standard IEEE-754** | `quarter`/`fp8`, `half`/`fp16`, `single`/`fp32`, `duble`/`fp64`, `quad`/`fp128`, `octo`/`fp256` |
 | **Configurable Float** | `cfloat`, `bfloat16`, `areal`, `dfloat`, `hfloat` |
 | **AI Quantization** | `microfloat`, `e8m0`, `mxfloat`, `nvblock` |
-| **Unum Family** | `unum1`, `unum2`, `posit`, `takum` |
+| **Unum Family** | `unum` (Type I), `unum2` (Type II), `posit` (Type III), `takum` |
 | **Logarithmic** | `lns`, `dbns` |
-| **Interval** | `valid`, `interval`, `sorn` |
+| **Interval & Uncertainty** | `interval`, `sorn`, `bisection`, `faithful` |
 | **Extended Precision** | `dd`, `qd`, `dd_cascade`, `td_cascade`, `qd_cascade` |
 | **Kulisch Super-Accumulator** | `quire` for `half`, `float`, `double`, `cfloat`, `posit`, `fixpnt`, `lns`, `dbns`, `integer` |
 
@@ -101,7 +130,8 @@ The include path points to `include/sw/` because headers use `#include <universa
 | **Adaptive Decimal** | `edecimal` |
 | **Adaptive Rational** | `erational` |
 | **Adaptive Float** | `efloat` |
-| **Adaptive Real** | `ereal` |
+| **Adaptive Real** | `ereal` -- expansion-based, precision set at compile time |
+| **Lazy Unbounded Real** | `elreal` -- refines on demand, no precision ceiling |
 
 ## Citation
 
