@@ -349,6 +349,10 @@ try {
 	around<56, 1>("posit<56,1>", E, "x near e", 200);
 	around<56, 0>("posit<56,0>", E, "x near e", 200);
 	around<64, 2>("posit<64,2>", E, "x near e", 200);
+	// the text below says posit<56,0> returns zero just above 1.0; measure it here rather
+	// than assert it, since that configuration is otherwise only sampled near e
+	std::cout << '\n';
+	around<56, 0>("posit<56,0>", 1.0, "x near 1", 200);
 
 	// ---- the conclusions, derived from the rows that were just measured --------------
 	//
@@ -402,8 +406,21 @@ try {
 		          << countIn("posit<64,2>", "x near e", &Score::lostInArgument) << " this way\n";
 		std::cout << "     near e and " << countIn("posit<64,2>", "x near 1", &Score::lostInArgument)
 		          << " near 1.0, and those errors are unbounded rather than\n";
-		std::cout << "     1 ulp. posit<56,0> is the extreme case: the value just above 1.0 is\n";
-		std::cout << "     indistinguishable from 1.0 as a double, so the shim returns zero.\n\n";
+		{
+			// the extreme case, checked rather than asserted
+			using P560 = posit<56, 0>;
+			P560 justAboveOne(1.0); ++justAboveOne;
+			const bool collapses = (double(justAboveOne) == 1.0);
+			const bool shimZero  = (log(justAboveOne) == P560(0));
+			const Score* nearOne = rowFor("posit<56,0>", "x near 1");
+			std::cout << "     1 ulp. posit<56,0> is the extreme case: the value just above 1.0\n";
+			std::cout << "     is " << (collapses ? "indistinguishable from 1.0 as a double" : "STILL DISTINCT as a double")
+			          << ", and the shim\n";
+			std::cout << "     returns " << (shimZero ? "zero" : "a nonzero value") << " for it";
+			if (nearOne) std::cout << "; that neighbourhood records " << nearOne->wrong
+			                       << " wrong of " << nearOne->checked;
+			std::cout << ".\n\n";
+		}
 
 		const Score* a = rowFor("posit<56,0>", "x near e");
 		const Score* b = rowFor("posit<56,1>", "x near e");
