@@ -156,11 +156,34 @@ precision. Choose them when you need a *standard* format -- an interchange file,
 reference answer, a conformance test -- and choose `dd`/`qd` when you need the digits and
 do not care about the encoding.
 
-## Known issue
+## Decimal digits
 
-`std::numeric_limits<T>::digits10` and `max_digits10` are computed from an approximation
-(`digits / 3.3`) rather than the standard formulas, so `single` reports `digits10 == 7`
-where native `float` reports `6`, and `duble` reports `16` where `double` reports `15`.
-The formats themselves are correct; only these two traits are off. Tracked in
-[#1597](https://github.com/stillwater-sc/universal/issues/1597). Use `digits` (the
-significand bit count) if you need an exact figure today.
+`digits10` and `max_digits10` answer two different questions, and mixing them up is the
+usual source of a round-trip bug:
+
+| trait | question it answers |
+|---|---|
+| `digits` | significand bits, including the implicit leading bit |
+| `digits10` | decimal digits that survive a round trip **into** the format |
+| `max_digits10` | decimal digits needed to round trip **out of** and back in without loss |
+
+| type | `digits` | `digits10` | `max_digits10` |
+|---|---|---|---|
+| `half` | 11 | 3 | 5 |
+| `single` | 24 | 6 | 9 |
+| `duble` | 53 | 15 | 17 |
+| `quad` | 113 | 33 | 36 |
+| `octo` | 237 | 71 | 73 |
+
+These match what native `float` and `double` report for the same formats, which is the
+property you want when substituting `single` for `float`. If you are printing a value and
+expect to read it back unchanged, use `max_digits10` -- `digits10` is the smaller number
+and will silently lose the last place.
+
+```cpp
+std::cout << std::setprecision(std::numeric_limits<single>::max_digits10) << x;
+```
+
+They were computed from a `digits / 3.3` approximation until
+[#1597](https://github.com/stillwater-sc/universal/issues/1597), which reported 7 digits
+for a binary32 where the standard says 6.
