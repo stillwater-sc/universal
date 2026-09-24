@@ -61,11 +61,17 @@ public:
 		_nrBits = (fbits < nrOfFractionBits ? fbits : nrOfFractionBits);
 	}
 	// get a fixed point number by making the hidden bit explicit: useful for multiply units
+	//
+	// This called blockbinary::set(unsigned, bool), which does not exist: blockbinary
+	// offers set(), set(unsigned) and setbit(unsigned, bool). Its only caller is
+	// significant(posit), which has no callers of its own, so the body was never
+	// instantiated and never compiled (#1592).
 	UnsignedSignificant get_fixed_point() const {
 		UnsignedSignificant fixed_point_number;
-		fixed_point_number.set(fbits, true); // make hidden bit explicit
+		fixed_point_number.clear();
+		fixed_point_number.setbit(fbits, true); // make hidden bit explicit
 		for (unsigned int i = 0; i < fbits; i++) {
-			fixed_point_number.set(i, _block.test(i));
+			fixed_point_number.setbit(i, _block.test(i));
 		}
 		return fixed_point_number;
 	}
