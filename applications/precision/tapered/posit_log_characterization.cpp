@@ -109,7 +109,16 @@ namespace {
 		P best{ double(v) };
 		if (best.isnar()) return best;
 		Oracle bestErr = abs(v - exactly(best));
-		for (int step = 0; step < 8; ++step) {
+		// No short cap. double(v) can land far from the true nearest posit: for
+		// posit<64,2>, v = 1 + 2^-54 converts to exactly 1.0, and the nearest posit is 32
+		// encodings away. A walk that stopped after a few steps would hand back a "want"
+		// that is not the correctly rounded value, and then misjudge the shim against it.
+		// |v - p| is unimodal in the posit ordering, so the first local minimum is the
+		// global one and the loop terminates on its own; the bound is a safety net and
+		// the program says so if it is ever reached.
+		constexpr int WALK_GUARD = 1 << 16;
+		int step = 0;
+		for (; step < WALK_GUARD; ++step) {
 			P up = best;   ++up;
 			P down = best; --down;
 			const Oracle errUp   = up.isnar()   ? bestErr : abs(v - exactly(up));
@@ -118,6 +127,7 @@ namespace {
 			else if (errDown < bestErr)                   { best = down; bestErr = errDown; }
 			else break;
 		}
+		if (step == WALK_GUARD) std::cerr << "roundToNearest: walk hit its guard\n";
 		return best;
 	}
 
@@ -225,7 +235,11 @@ namespace {
 	template<unsigned nbits, unsigned es>
 	void fractionBudget(const std::string& tag) {
 		constexpr int fbits = int(nbits) - 3 - int(es);
-		constexpr int spare = 53 - fbits;
+		// fbits counts EXPLICIT fraction bits; a double's 53 counts the whole significand,
+		// so the comparable budget is its 52 explicit bits. Off by one here would put
+		// posit<56,0> at zero spare when the value above 1.0 is 1 + 2^-53, which a double
+		// cannot hold at all.
+		constexpr int spare = 52 - fbits;
 		std::cout << "  " << std::left << std::setw(14) << tag
 		          << std::setw(7) << fbits
 		          << std::setw(5) << spare
