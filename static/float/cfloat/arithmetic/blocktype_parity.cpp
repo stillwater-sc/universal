@@ -198,11 +198,24 @@ namespace {
 			report(fails, agree(rs, cs), tag + ": subnormal accumulation", "", reportTestCases);
 		}
 
-		// sqrt is deliberately NOT checked here. Both branches of cfloat's sqrt --
-		// CFLOAT_NATIVE_SQRT on and off -- are `cfloat(std::sqrt((double)a))`, so it
-		// narrows the value to a double, calls the host, and converts back. It exercises
-		// no limb arithmetic at all, and the double conversion it does exercise is
-		// already covered below. Reported separately.
+		// sqrt, now that it earns a place here. It used to be
+		// `cfloat(std::sqrt((double)a))` and exercised no limb arithmetic at all, so it
+		// was excluded; since #1589 it is a Newton iteration in the cfloat's own
+		// arithmetic, which makes it one of the heavier limb-level exercises in the suite
+		// -- every step is a division and an addition at full width. Kept to a short list
+		// of arguments rather than the pattern pairs, because each call iterates.
+		for (double d : { 2.0, 3.0, 0.5, 1.0e10, 1.0e-10, 1.0 }) {
+			Ref r(d); Can c(d);
+			report(fails, agree(Ref(sqrt(r)), Can(sqrt(c))), tag + ": sqrt",
+				"sqrt(" + std::to_string(d) + ")\n         ref " + to_binary(Ref(sqrt(r)))
+				+ "\n         can " + to_binary(Can(sqrt(c))), reportTestCases);
+		}
+		{   // and at the top of the range, where the seed cannot come from a double
+			Ref rm(SpecificValue::maxpos); Can cm(SpecificValue::maxpos);
+			report(fails, agree(Ref(sqrt(rm)), Can(sqrt(cm))), tag + ": sqrt(maxpos)",
+				"ref " + to_binary(Ref(sqrt(rm))) + "\n         can " + to_binary(Can(sqrt(cm))),
+				reportTestCases);
+		}
 
 		// 7. conversion in both directions
 		for (long long v : { 0ll, 1ll, -1ll, 42ll, -42ll, 65535ll, 65536ll,
