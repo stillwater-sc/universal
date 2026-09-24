@@ -147,9 +147,11 @@ inline int scale(const posit<nbits, es, bt>& p) {
 }
 
 // calculate the significant of a posit
-template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
+// fbits defaults to the posit's own fraction width, so this is callable as
+// significant(p). It was a bare non-deducible parameter, which meant every caller had to
+// spell out all four arguments -- presumably why it had none (#1592).
+template<unsigned nbits, unsigned es, typename bt, unsigned fbits = nbits - 3u - es>
 inline blockbinary<fbits+1, bt, BinaryNumberType::Unsigned> significant(const posit<nbits, es, bt>& p) {
-	//constexpr unsigned fbits = nbits - 3 - es;
 	bool		     	 _sign;
 	positRegime<nbits, es, bt>    _regime;
 	positExponent<nbits, es, bt>  _exponent;
@@ -159,9 +161,8 @@ inline blockbinary<fbits+1, bt, BinaryNumberType::Unsigned> significant(const po
 }
 
 // get the fraction bits of a posit
-template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
+template<unsigned nbits, unsigned es, typename bt, unsigned fbits = nbits - 3u - es>
 inline blockbinary<fbits, bt> extract_fraction(const posit<nbits, es, bt>& p) {
-	//constexpr unsigned fbits = nbits - 3 - es;
 	bool		     	 _sign;
 	positRegime<nbits, es, bt>    _regime;
 	positExponent<nbits, es, bt>  _exponent;
