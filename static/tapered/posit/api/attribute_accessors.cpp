@@ -48,7 +48,9 @@ namespace {
 	// significand * 2^(scale - fbits).
 	template<unsigned nbits, unsigned es>
 	double reconstruct(const posit<nbits, es>& p) {
-		constexpr unsigned fbits = nbits - 3u - es;
+		// the type's own clamped fbits: nbits - 3 - es is unsigned and wraps for the
+		// configurations that have no fraction bits at all
+		constexpr unsigned fbits = posit<nbits, es>::fbits;
 		const auto sig = significant(p);
 		const int  sc  = scale(p);
 		double significand = 0.0;
@@ -75,16 +77,30 @@ namespace {
 		const int  xs  = exponent_scale(v);
 		const bool sgn = sign(v);
 
-		fails += expect_true(sig.nbits == (nbits - 3u - es) + 1u,
+		constexpr unsigned fbits = P::fbits;
+		fails += expect_true(sig.nbits == fbits + 1u,
 			tag + ": significant is fbits+1 wide", reportTestCases);
-		fails += expect_true(frac.nbits == (nbits - 3u - es),
+		fails += expect_true(frac.nbits == fbits,
 			tag + ": extract_fraction is fbits wide", reportTestCases);
 		fails += expect_true(sc == rs + xs,
 			tag + ": scale is the regime scale plus the exponent scale", reportTestCases);
 		fails += expect_true(sgn == false, tag + ": 1.5 is positive", reportTestCases);
 		// the hidden bit is explicit in significant(), so the top bit is set for a normal
-		fails += expect_true(sig.test(nbits - 3u - es),
+		fails += expect_true(sig.test(fbits),
 			tag + ": significant carries an explicit hidden bit", reportTestCases);
+
+		// zero has no significand. get_fixed_point() makes the hidden bit explicit, which
+		// is right for a normal and wrong for zero: significant(0) reported a significand
+		// of 1 and reconstructed to minpos. The earlier version of this suite skipped zero
+		// and so did not see it.
+		{
+			const P z(0.0);
+			auto zsig = significant(z);
+			bool anySet = false;
+			for (unsigned i = 0; i <= fbits; ++i) if (zsig.test(i)) anySet = true;
+			fails += expect_true(!anySet, tag + ": significant(0) has no bits set", reportTestCases);
+			fails += expect_true(reconstruct(z) == 0.0, tag + ": zero reconstructs to zero", reportTestCases);
+		}
 
 		return fails;
 	}
@@ -98,7 +114,7 @@ namespace {
 
 		for (unsigned long long raw = 0; raw < (1ull << nbits); ++raw) {
 			P p; p.setbits(raw);
-			if (p.isnar() || p.iszero()) continue;
+			if (p.isnar()) continue;   // zero is included: it used to rebuild as minpos
 			const double rebuilt = reconstruct(p);
 			if (rebuilt != double(p)) {
 				++fails;
@@ -168,6 +184,13 @@ try {
 		test_tag, "accessors instantiate, posit<16,1>");
 	nrOfFailedTestCases += ReportTestResult(VerifyAccessorsInstantiate<64, 3>("posit<64,3>", reportTestCases),
 		test_tag, "accessors instantiate, posit<64,3>");
+	// no fraction bits at all -- nbits - 3 - es is negative here and wraps as unsigned
+	nrOfFailedTestCases += ReportTestResult(VerifyAccessorsInstantiate<2, 0>("posit<2,0>", reportTestCases),
+		test_tag, "accessors instantiate, posit<2,0> (no fraction bits)");
+	nrOfFailedTestCases += ReportTestResult(VerifyAccessorsInstantiate<3, 0>("posit<3,0>", reportTestCases),
+		test_tag, "accessors instantiate, posit<3,0> (no fraction bits)");
+	nrOfFailedTestCases += ReportTestResult(VerifyAccessorsInstantiate<4, 1>("posit<4,1>", reportTestCases),
+		test_tag, "accessors instantiate, posit<4,1> (no fraction bits)");
 	nrOfFailedTestCases += ReportTestResult(VerifyDecomposition<12, 2>("posit<12,2>", reportTestCases),
 		test_tag, "decomposition rebuilds the value, posit<12,2>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDecomposition<14, 1>("posit<14,1>", reportTestCases),
