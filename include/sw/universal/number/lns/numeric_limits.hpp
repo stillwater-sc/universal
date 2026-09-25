@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <universal/utility/decimal_digits.hpp>   // exact digit/exponent counts (#1597, #1601, #1602, #1603, #1604)
+
 namespace std {
 
 template <unsigned nbits, unsigned rbits, typename bt, auto... xtra>
@@ -43,18 +45,24 @@ public:
 		return LNS(NAN);
 	}
 
-	static constexpr int digits       = -LNS::min_exponent + rbits;
-	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
-	static constexpr int max_digits10 = digits10;
+	// An lns stores a fixed-point exponent, so precision is uniform in log space and
+	// there is no IEEE significand to count. Adjacent values differ by a factor
+	// 2^(2^-rbits), which is an equivalent significand width of rbits + 0.5 at every
+	// configuration, so rbits + 1 is the honest round-up. The previous form derived
+	// digits from the EXPONENT RANGE: lns<32,8> reported 4194312 significand bits in a
+	// 32-bit type (#1602).
+	static constexpr int digits       = static_cast<int>(rbits) + 1;
+	static constexpr int digits10     = sw::universal::decimal_digits10(digits);
+	static constexpr int max_digits10 = sw::universal::decimal_max_digits10(digits);
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
 	static constexpr int min_exponent = LNS::min_exponent;
-	static constexpr int min_exponent10 = static_cast<int>(min_exponent / 3.3f);
+	static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(min_exponent);
 	static constexpr int max_exponent = LNS::max_exponent;
-	static constexpr int max_exponent10 = static_cast<int>(max_exponent / 3.3f);
+	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
 	static constexpr bool has_infinity = false;
 	static constexpr bool has_quiet_NaN = false;
 	static constexpr bool has_signaling_NaN = false;

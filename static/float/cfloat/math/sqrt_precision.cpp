@@ -189,16 +189,23 @@ try {
 	// just enough to square 2^262143.
 	using Quad  = cfloat<128, 15, std::uint64_t, true, false, false>;
 	using QuadW = cfloat<192, 17, std::uint64_t, true, false, false>;
+#if MANUAL_TESTING || REGRESSION_LEVEL_2 || REGRESSION_LEVEL_3
+	// used in manual mode and at levels 2 and 3; clang warns -Wunused-local-typedef
+	// when a build enables none of them, which the level-1-only CI config does
 	using Octo  = cfloat<256, 19, std::uint64_t, true, false, false>;
 	using OctoW = cfloat<320, 20, std::uint64_t, true, false, false>;
+#endif
 	// fbits = 48, so a guard that keys on the fraction width alone routes this to the
 	// host -- but es = 15 puts its maxpos past DBL_MAX and its minpos below DBL_MIN, so
 	// the host answers inf and zero. Whether the host can answer is a property of the
 	// VALUE, not of the fraction width.
 	using NarrowWide  = cfloat<64, 15, std::uint64_t, true, false, false>;
 	using NarrowWideW = cfloat<128, 17, std::uint64_t, true, false, false>;
+#if REGRESSION_LEVEL_2
+	// only exercised at level 2; clang warns -Wunused-local-typedef when it is not
 	using Xtndd  = cfloat<80, 11, std::uint64_t, true, false, false>;
 	using XtnddW = cfloat<144, 13, std::uint64_t, true, false, false>;
+#endif
 
 	std::string test_suite  = "cfloat sqrt precision (#1589)";
 	std::string test_tag    = "sqrt precision";
@@ -218,7 +225,7 @@ try {
 		          << ", scale " << sqrt(mp).scale() << " (argument scale " << mp.scale() << ")\n";
 	}
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 #else
 
 #if REGRESSION_LEVEL_1

@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <universal/utility/decimal_digits.hpp>   // exact digit/exponent counts (#1597, #1601, #1602, #1603, #1604)
+
 namespace std {
 
 template <unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
@@ -43,18 +45,20 @@ public:
 		return DBNS(NAN);
 	}
 
-	static constexpr int digits       = -DBNS::min_exponent + fbbits;
-	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
-	static constexpr int max_digits10 = digits10;
+	// Same reasoning as lns: the fractional bits of the stored exponent set the
+	// resolution, and the exponent range does not (#1602).
+	static constexpr int digits       = static_cast<int>(fbbits) + 1;
+	static constexpr int digits10     = sw::universal::decimal_digits10(digits);
+	static constexpr int max_digits10 = sw::universal::decimal_max_digits10(digits);
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
 	static constexpr int min_exponent = DBNS::min_exponent;
-	static constexpr int min_exponent10 = static_cast<int>(min_exponent / 3.3f);
+	static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(min_exponent);
 	static constexpr int max_exponent = DBNS::max_exponent;
-	static constexpr int max_exponent10 = static_cast<int>(max_exponent / 3.3f);
+	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
 	static constexpr bool has_infinity = false;
 	static constexpr bool has_quiet_NaN = false;
 	static constexpr bool has_signaling_NaN = false;

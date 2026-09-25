@@ -11,6 +11,12 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/unum/unum.hpp>
+#include <universal/number/bfloat16/bfloat16.hpp>
+#include <universal/number/lns/lns.hpp>
+#include <universal/number/dbns/dbns.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/rational/rational.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // #1597 fixed cfloat; #1601 extends it to the number systems whose `digits` is already a
@@ -123,6 +129,83 @@ namespace {
 		return nrFailed;
 	}
 
+	// The decimal exponent range, against the only independent oracle available: the
+	// native types whose formats cfloat single and duble reproduce exactly. Checking all
+	// four traits at once, because min_exponent10 is the one an approximation gets wrong
+	// by relying on a cast to round a negative quotient the right way (#1604).
+	int VerifyExponentRangeAgainstNative(bool reportTestCases) {
+		using namespace sw::universal;
+		int nrFailed = 0;
+		if (std::numeric_limits<single>::min_exponent10 != std::numeric_limits<float>::min_exponent10
+		 || std::numeric_limits<single>::max_exponent10 != std::numeric_limits<float>::max_exponent10) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "single exponent10 range disagrees with native float\n";
+		}
+		if (std::numeric_limits<duble>::min_exponent10 != std::numeric_limits<double>::min_exponent10
+		 || std::numeric_limits<duble>::max_exponent10 != std::numeric_limits<double>::max_exponent10) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "duble exponent10 range disagrees with native double\n";
+		}
+		// hand-computed: ceil((e-1)*log10(2)) and floor(e*log10(2))
+		if (decimal_min_exponent10(-125) != -37 || decimal_max_exponent10(128) != 38) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "exponent10 helpers wrong at binary32's range\n";
+		}
+		if (decimal_min_exponent10(-1021) != -307 || decimal_max_exponent10(1024) != 308) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "exponent10 helpers wrong at binary64's range\n";
+		}
+		if (decimal_min_exponent10(-16381) != -4931 || decimal_max_exponent10(16384) != 4932) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "exponent10 helpers wrong at binary128's range\n";
+		}
+		// The branches no numeric_limits specialization reaches. Every number system here
+		// has min_exponent <= 1 and max_exponent >= 0, so a suite built only from real
+		// types exercises one branch of each helper and the other can be inverted without
+		// anything noticing -- which is exactly what had happened.
+		struct EdgeCase { int in; int want; bool isMax; };
+		const EdgeCase edges[] = {
+			{   -1,   -1, true  },   // floor(-1 * log10 2)   = floor(-0.301)
+			{   -4,   -2, true  },   // floor(-4 * log10 2)   = floor(-1.204)
+			{ -125,  -38, true  },   // floor(-125 * log10 2) = floor(-37.63)
+			{    2,    1, false },   // ceil(1 * log10 2)     = ceil(0.301)
+			{   11,    4, false },   // ceil(10 * log10 2)    = ceil(3.010)
+			{  100,   30, false },   // ceil(99 * log10 2)    = ceil(29.80)
+		};
+		for (const auto& e : edges) {
+			const int got = e.isMax ? decimal_max_exponent10(e.in) : decimal_min_exponent10(e.in);
+			if (got != e.want) {
+				++nrFailed;
+				if (reportTestCases) std::cerr << (e.isMax ? "decimal_max_exponent10(" : "decimal_min_exponent10(")
+					<< e.in << ") = " << got << " != " << e.want << '\n';
+			}
+		}
+		return nrFailed;
+	}
+
+	// A fixpnt whose integer field is empty tops out BELOW 1 -- fixpnt<8,7> at 127/128 --
+	// so the largest representable power of ten is 10^-1. Taking the binary scale above the
+	// maximum and converting it directly reports 0, which claims 1.0 is representable when
+	// it is not. Reference values are floor(log10(exact maximum)), computed by hand.
+	int VerifyFixpntMaxExponent10(bool reportTestCases) {
+		using namespace sw::universal;
+		int nrFailed = 0;
+		struct Case { int got; int want; const char* tag; };
+		const Case cases[] = {
+			{ std::numeric_limits<fixpnt<8, 7>>::max_exponent10,   -1, "fixpnt<8,7> max 127/128"     },
+			{ std::numeric_limits<fixpnt<16, 15>>::max_exponent10, -1, "fixpnt<16,15> max ~0.999969" },
+			{ std::numeric_limits<fixpnt<8, 0>>::max_exponent10,    2, "fixpnt<8,0> max 127"         },
+			{ std::numeric_limits<fixpnt<32, 16>>::max_exponent10,  4, "fixpnt<32,16> max 32768"     },
+		};
+		for (const auto& c : cases) {
+			if (c.got != c.want) {
+				++nrFailed;
+				if (reportTestCases) std::cerr << c.tag << " max_exponent10 " << c.got << " != " << c.want << '\n';
+			}
+		}
+		return nrFailed;
+	}
+
 } // anonymous namespace
 
 int main()
@@ -209,6 +292,44 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyIntegerDigits<integer<128>>("integer<128>", 127, 38, reportTestCases),
 		test_tag, "integer<128>");
+
+	// bfloat16: digits counts the implicit bit, as float's 24 does for 23 fraction bits (#1603)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<bfloat16>("bfloat16", 8, 2, 4, reportTestCases),
+		test_tag, "bfloat16 (digits includes the implicit bit)");
+
+	// lns / dbns: digits is the stored exponent's resolution, rbits + 1, not the
+	// exponent RANGE -- lns<32,8> used to report 4194312 significand bits (#1602)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<lns<8, 3>>("lns<8,3>", 4, 0, 3, reportTestCases),
+		test_tag, "lns<8,3>");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<lns<16, 5>>("lns<16,5>", 6, 1, 3, reportTestCases),
+		test_tag, "lns<16,5>");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<lns<32, 8>>("lns<32,8>", 9, 2, 4, reportTestCases),
+		test_tag, "lns<32,8>");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<dbns<8, 3>>("dbns<8,3>", 4, 0, 3, reportTestCases),
+		test_tag, "dbns<8,3>");
+
+	// fixpnt declares is_exact false, so it takes the floating-point pair (#1601)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<fixpnt<32, 16>>("fixpnt<32,16>", 31, 9, 11, reportTestCases),
+		test_tag, "fixpnt<32,16>");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFixpntMaxExponent10(reportTestCases),
+		test_tag, "fixpnt max_exponent10 below 1");
+
+	// rational declares is_exact and is_integer, so it takes the integer pair (#1601)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyIntegerDigits<rational<32>>("rational<32>", 32, 9, reportTestCases),
+		test_tag, "rational<32>");
+
+	// the decimal exponent range (#1604)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyExponentRangeAgainstNative(reportTestCases),
+		test_tag, "decimal exponent range");
 #endif
 
 #if REGRESSION_LEVEL_3
