@@ -97,6 +97,17 @@ namespace {
 	int VerifyHelperBoundaries(bool reportTestCases) {
 		using namespace sw::universal;
 		int nrFailed = 0;
+		// digits below 2 are degenerate: a format with one significand bit carries no
+		// decimal digit, and the helpers return 0 rather than a negative count.
+		if (decimal_digits10(1) != 0 || decimal_digits10(0) != 0 || decimal_digits10(-1) != 0) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "decimal_digits10 below 2 is not 0\n";
+		}
+		if (decimal_max_digits10(0) != 0 || decimal_max_digits10(-1) != 0) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "decimal_max_digits10 below 1 is not 0\n";
+		}
+
 		struct Case { int digits; int d10; int md10; };
 		// hand-computed from floor((d-1)*log10(2)) and ceil(d*log10(2))+1
 		constexpr Case cases[] = {
@@ -110,6 +121,16 @@ namespace {
 			{ 424, 127, 129 },   // ereal<8, double>
 			{1007, 302, 305 },   // ereal<19, double>
 			{1696, 510, 512 },   // elreal<double> at the default 32 blocks
+			// The boundary where a narrower single-multiply ratio stopped being exact.
+			// cfloat<325162, 15> instantiates, so these widths are reachable, and the
+			// earlier approximation returned max_digits10 = 97880 at 325147 and
+			// digits10 = 97878 at 325148 -- both one too small.
+			{325146, 97878, 97880 },
+			{325147, 97878, 97881 },
+			{325148, 97879, 97881 },
+			// The far end of the domain, where the product would overflow if it were
+			// formed in one multiplication rather than two halves.
+			{2147483647, 646456992, 646456994 },
 		};
 		for (const auto& c : cases) {
 			if (decimal_digits10(c.digits) != c.d10) {
