@@ -276,8 +276,16 @@ jobs:
           # the repo at 9.94GB of a 10GB ceiling, and GitHub was evicting whole caches by
           # LRU. That was triage against a limit that no longer applies: the repository
           # cache limit is now 20GB. Projected steady state with everything saving is
-          # 9 CI_LITE x ~0.84GB + 2 full-CI x ~1.6GB + ~0.74GB of sccache/codeql/node,
-          # about 11.5GB -- comfortably inside 20GB, with the prune bounding generations.
+          # 9 CI_LITE x ~0.84GB + 2 full-CI x ~1.6GB + ~0.4GB of sccache/node, about
+          # 11.2GB -- comfortably inside 20GB, with the prune bounding generations.
+          #
+          # The eviction ceiling was never the operative limit. The spend budget is: on
+          # 2026-09-22 it was reached and the cache went READ ONLY, so every save since
+          # failed with "Cache reservation failed: You have reached your configured
+          # budget". Restores kept working, so hits froze at whatever the 2026-09-22
+          # generation held -- 296 objects -- while the denominator grew with each new
+          # test, decaying 62% to 57% and pushing the fast tier from ~6 to ~16 minutes.
+          # Watch the budget, not just the 20GB.
           #
           # So the seven platforms that #1408 left cold get their caches back: both
           # macOS, ARM64 native, POWER64, RISC-V, Android and MinGW.
