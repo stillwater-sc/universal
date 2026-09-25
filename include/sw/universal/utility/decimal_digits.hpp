@@ -103,13 +103,23 @@ constexpr int decimal_max_digits10(int digits) noexcept {
 // is folded out with ceil(-x * c) == -floor(x * c) rather than left to a cast.
 // Checked against every native format: float -37/38, double -307/308, binary16 -4/4,
 // binary128 -4931/4932.
+// Both fold the sign out with split_floor(), which takes a non-negative argument, and both
+// have to round the OPPOSITE way once folded. k * log10(2) is irrational for every k != 0,
+// so it is never an integer and the +1 below is unconditional:
+//     ceil(x)  == floor(x) + 1      for positive non-integral x
+//     floor(x) == -(floor(-x) + 1)  for negative non-integral x
+// Getting this backwards is invisible to any test built from real types, because every
+// number system here has min_exponent <= 1 and max_exponent >= 0, so only one branch of
+// each helper is ever reached by a numeric_limits specialization.
 constexpr int decimal_min_exponent10(int min_exponent) noexcept {
-	if (min_exponent > 1) return static_cast<int>(detail::split_floor(static_cast<std::int64_t>(min_exponent) - 1).quotient);
+	// ceil((min_exponent - 1) * log10(2))
+	if (min_exponent > 1) return static_cast<int>(detail::split_floor(static_cast<std::int64_t>(min_exponent) - 1).quotient) + 1;
 	return -static_cast<int>(detail::split_floor(1 - static_cast<std::int64_t>(min_exponent)).quotient);
 }
 
 constexpr int decimal_max_exponent10(int max_exponent) noexcept {
-	if (max_exponent < 0) return -static_cast<int>(detail::split_floor(-static_cast<std::int64_t>(max_exponent)).quotient);
+	// floor(max_exponent * log10(2))
+	if (max_exponent < 0) return -(static_cast<int>(detail::split_floor(-static_cast<std::int64_t>(max_exponent)).quotient) + 1);
 	return static_cast<int>(detail::split_floor(static_cast<std::int64_t>(max_exponent)).quotient);
 }
 

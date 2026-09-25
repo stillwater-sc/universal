@@ -159,6 +159,27 @@ namespace {
 			++nrFailed;
 			if (reportTestCases) std::cerr << "exponent10 helpers wrong at binary128's range\n";
 		}
+		// The branches no numeric_limits specialization reaches. Every number system here
+		// has min_exponent <= 1 and max_exponent >= 0, so a suite built only from real
+		// types exercises one branch of each helper and the other can be inverted without
+		// anything noticing -- which is exactly what had happened.
+		struct EdgeCase { int in; int want; bool isMax; };
+		const EdgeCase edges[] = {
+			{   -1,   -1, true  },   // floor(-1 * log10 2)   = floor(-0.301)
+			{   -4,   -2, true  },   // floor(-4 * log10 2)   = floor(-1.204)
+			{ -125,  -38, true  },   // floor(-125 * log10 2) = floor(-37.63)
+			{    2,    1, false },   // ceil(1 * log10 2)     = ceil(0.301)
+			{   11,    4, false },   // ceil(10 * log10 2)    = ceil(3.010)
+			{  100,   30, false },   // ceil(99 * log10 2)    = ceil(29.80)
+		};
+		for (const auto& e : edges) {
+			const int got = e.isMax ? decimal_max_exponent10(e.in) : decimal_min_exponent10(e.in);
+			if (got != e.want) {
+				++nrFailed;
+				if (reportTestCases) std::cerr << (e.isMax ? "decimal_max_exponent10(" : "decimal_min_exponent10(")
+					<< e.in << ") = " << got << " != " << e.want << '\n';
+			}
+		}
 		return nrFailed;
 	}
 
