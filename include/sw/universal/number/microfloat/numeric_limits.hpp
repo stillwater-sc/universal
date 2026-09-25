@@ -64,7 +64,10 @@ public:
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
-	static constexpr int min_exponent   = 1 - bias;
+	// numeric_limits::min_exponent is the minimum n with radix^(n-1) normalized, so it is
+	// one MORE than the scale of the smallest normal, not equal to it (#1608).
+	// smallest normal is 2^(1 - bias), so min_exponent - 1 = 1 - bias.
+	static constexpr int min_exponent   = 2 - bias;
 	static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(min_exponent);
 	static constexpr int max_exponent   = static_cast<int>((1u << es) - 1u) - bias;
 	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
