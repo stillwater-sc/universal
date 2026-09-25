@@ -74,8 +74,7 @@ e5m2 b;   // OCP OFP8 E5M2 -- wider range, less precision
 
 **`xtndd` matches x87's range but carries one bit more precision.** As of
 [#1599](https://github.com/stillwater-sc/universal/issues/1599) it is `cfloat<80,15>`, so its
-exponent range `[-16381, 16384]`, decimal range `[-4931, 4932]` and maxpos `1.1897e4932` are
-native x87's exactly. It previously had `es = 11`, which gave it `double`'s range in an
+exponent range `[-16381, 16384]` and its decimal range `[-4931, 4932]` are native x87's. It previously had `es = 11`, which gave it `double`'s range in an
 80-bit container and overflowed to `inf` everywhere above 1.8e308 that a real x87
 `long double` is fine.
 
@@ -83,8 +82,14 @@ It is still not *bit*-compatible, and the reason is structural rather than an ov
 stores an **explicit** integer bit, spending one of its 80 bits on the significand's leading
 1, so it carries 64 bits of precision. `cfloat` uses an implicit leading bit, so the same 80
 bits give 64 fraction bits *plus* the implicit one -- 65 bits, one more than x87. Closing
-that would need explicit-integer-bit support in `cfloat`. So `xtndd` will agree with an x87
-`long double` on range and on which values overflow, and can differ in the last bit.
+that would need explicit-integer-bit support in `cfloat`.
+
+That extra bit also moves the maximum. x87's maxpos is `(2 - 2^-63) * 2^16383` and `xtndd`'s
+is `(2 - 2^-64) * 2^16383`, so **`xtndd`'s is the larger**, and there is a narrow band at the
+top of the range where an x87 `long double` overflows and `xtndd` does not -- converting
+`xtndd`'s maxpos to a native `long double` gives `inf`. So the two agree on exponent range
+and on the decimal range `numeric_limits` reports, and differ in the last bit and at the
+overflow boundary.
 
 ## Using them
 

@@ -177,12 +177,20 @@ namespace {
 			if (reportTestCases) std::cerr << "xtndd decimal range [" << L::min_exponent10 << ","
 				<< L::max_exponent10 << "] != x87's [-4931,4932]\n";
 		}
-		// the defect itself: maxpos must be far past double's, not equal to it
-		if (!(double(L::max()) > 1.0e308) || double(L::max()) != double(L::max())) {
-			// double(maxpos) overflows to inf for a real x87 range, which is the point
+		// maxpos must sit at x87's top binade. Asserting instead that double(maxpos) is inf
+		// does NOT discriminate the defect: cfloat<80,11> carries 68 fraction bits, so its
+		// maxpos (2 - 2^-68) * 2^1023 also exceeds double's (2 - 2^-52) * 2^1023 and also
+		// converts to inf. The scale is what separates the two shapes -- 16383 against 1023.
+		{
+			const xtndd mx(SpecificValue::maxpos);
+			if (scale(mx) != 16383) {
+				++nrFailed;
+				if (reportTestCases) std::cerr << "xtndd maxpos scale " << scale(mx) << " != 16383 (x87's top binade)\n";
+			}
+			// and it must be past what a double can hold, which follows from the scale
 			if (!std::isinf(double(L::max()))) {
 				++nrFailed;
-				if (reportTestCases) std::cerr << "xtndd maxpos does not exceed double's range\n";
+				if (reportTestCases) std::cerr << "xtndd maxpos is inside double's range\n";
 			}
 		}
 		// on a host where long double is x87, the range must agree exactly
