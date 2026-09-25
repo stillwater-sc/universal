@@ -203,8 +203,12 @@ try {
 	using NarrowWideW = cfloat<128, 17, std::uint64_t, true, false, false>;
 #if REGRESSION_LEVEL_2
 	// only exercised at level 2; clang warns -Wunused-local-typedef when it is not
-	using Xtndd  = cfloat<80, 11, std::uint64_t, true, false, false>;
-	using XtnddW = cfloat<144, 13, std::uint64_t, true, false, false>;
+	// xtndd is the x87 80-bit format, es = 15, since #1599. The oracle needs es = 17 for
+	// the same reason QuadW does: squaring maxpos reaches scale 32768, and an es = 13
+	// oracle tops out at 4096, so it would answer inf at exactly the argument this
+	// suite exists to cover.
+	using Xtndd  = cfloat<80, 15, std::uint64_t, true, false, false>;
+	using XtnddW = cfloat<144, 17, std::uint64_t, true, false, false>;
 #endif
 
 	std::string test_suite  = "cfloat sqrt precision (#1589)";
@@ -246,7 +250,7 @@ try {
 
 #if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyPrecision<Xtndd, XtnddW>("xtndd", reportTestCases),
-		test_tag, "xtndd carries 68 bits");
+		test_tag, "xtndd carries 64 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifyOutsideDoubleRange<Xtndd, XtnddW>("xtndd", reportTestCases),
 		test_tag, "xtndd outside double's range");
 	nrOfFailedTestCases += ReportTestResult(VerifyPrecision<Octo, OctoW>("octo", reportTestCases),
