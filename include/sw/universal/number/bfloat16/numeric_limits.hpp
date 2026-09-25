@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/bfloat16/bfloat16_fwd.hpp>
+#include <universal/utility/decimal_digits.hpp>   // exact digit/exponent counts (#1597, #1601, #1602, #1603, #1604)
 namespace std {
 
 template<>
@@ -45,18 +46,18 @@ public:
 		return Bfloat(sw::universal::SpecificValue::snan);
 	}
 
-	static constexpr int digits       = 7;
-	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
-	static constexpr int max_digits10 = 4;  // std::ceil(digits * std::log10(2) + 1)
+	static constexpr int digits       = 8;   // 7 fraction bits + the implicit leading bit (#1603)
+	static constexpr int digits10     = sw::universal::decimal_digits10(digits);
+	static constexpr int max_digits10 = sw::universal::decimal_max_digits10(digits);
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
 	static constexpr int min_exponent   = -int(1 << 7);
-	static constexpr int min_exponent10 = static_cast<int>(min_exponent / 3.3f);
+	static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(min_exponent);
 	static constexpr int max_exponent   = int(1 << 7);
-	static constexpr int max_exponent10 = static_cast<int>(max_exponent / 3.3f);
+	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
 	static constexpr bool has_infinity  = true;
 	static constexpr bool has_quiet_NaN = true;
 	static constexpr bool has_signaling_NaN = true;

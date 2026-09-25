@@ -11,6 +11,12 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/unum/unum.hpp>
+#include <universal/number/bfloat16/bfloat16.hpp>
+#include <universal/number/lns/lns.hpp>
+#include <universal/number/dbns/dbns.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/rational/rational.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // #1597 fixed cfloat; #1601 extends it to the number systems whose `digits` is already a
@@ -123,6 +129,39 @@ namespace {
 		return nrFailed;
 	}
 
+	// The decimal exponent range, against the only independent oracle available: the
+	// native types whose formats cfloat single and duble reproduce exactly. Checking all
+	// four traits at once, because min_exponent10 is the one an approximation gets wrong
+	// by relying on a cast to round a negative quotient the right way (#1604).
+	int VerifyExponentRangeAgainstNative(bool reportTestCases) {
+		using namespace sw::universal;
+		int nrFailed = 0;
+		if (std::numeric_limits<single>::min_exponent10 != std::numeric_limits<float>::min_exponent10
+		 || std::numeric_limits<single>::max_exponent10 != std::numeric_limits<float>::max_exponent10) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "single exponent10 range disagrees with native float\n";
+		}
+		if (std::numeric_limits<duble>::min_exponent10 != std::numeric_limits<double>::min_exponent10
+		 || std::numeric_limits<duble>::max_exponent10 != std::numeric_limits<double>::max_exponent10) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "duble exponent10 range disagrees with native double\n";
+		}
+		// hand-computed: ceil((e-1)*log10(2)) and floor(e*log10(2))
+		if (decimal_min_exponent10(-125) != -37 || decimal_max_exponent10(128) != 38) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "exponent10 helpers wrong at binary32's range\n";
+		}
+		if (decimal_min_exponent10(-1021) != -307 || decimal_max_exponent10(1024) != 308) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "exponent10 helpers wrong at binary64's range\n";
+		}
+		if (decimal_min_exponent10(-16381) != -4931 || decimal_max_exponent10(16384) != 4932) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "exponent10 helpers wrong at binary128's range\n";
+		}
+		return nrFailed;
+	}
+
 } // anonymous namespace
 
 int main()
@@ -209,6 +248,41 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyIntegerDigits<integer<128>>("integer<128>", 127, 38, reportTestCases),
 		test_tag, "integer<128>");
+
+	// bfloat16: digits counts the implicit bit, as float's 24 does for 23 fraction bits (#1603)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<bfloat16>("bfloat16", 8, 2, 4, reportTestCases),
+		test_tag, "bfloat16 (digits includes the implicit bit)");
+
+	// lns / dbns: digits is the stored exponent's resolution, rbits + 1, not the
+	// exponent RANGE -- lns<32,8> used to report 4194312 significand bits (#1602)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<lns<8, 3>>("lns<8,3>", 4, 0, 3, reportTestCases),
+		test_tag, "lns<8,3>");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<lns<16, 5>>("lns<16,5>", 6, 1, 3, reportTestCases),
+		test_tag, "lns<16,5>");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<lns<32, 8>>("lns<32,8>", 9, 2, 4, reportTestCases),
+		test_tag, "lns<32,8>");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<dbns<8, 3>>("dbns<8,3>", 4, 0, 3, reportTestCases),
+		test_tag, "dbns<8,3>");
+
+	// fixpnt declares is_exact false, so it takes the floating-point pair (#1601)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFloatDigits<fixpnt<32, 16>>("fixpnt<32,16>", 31, 9, 11, reportTestCases),
+		test_tag, "fixpnt<32,16>");
+
+	// rational declares is_exact and is_integer, so it takes the integer pair (#1601)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyIntegerDigits<rational<32>>("rational<32>", 32, 9, reportTestCases),
+		test_tag, "rational<32>");
+
+	// the decimal exponent range (#1604)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyExponentRangeAgainstNative(reportTestCases),
+		test_tag, "decimal exponent range");
 #endif
 
 #if REGRESSION_LEVEL_3

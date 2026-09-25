@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <universal/utility/decimal_digits.hpp>   // exact digit/exponent counts (#1597, #1601, #1602, #1603, #1604)
+
 namespace std {
 
 using namespace sw::universal;
@@ -43,8 +45,12 @@ public:
 	}
 
 	static constexpr int digits       = nbits;
-	static constexpr int digits10     = 1000*nbits/3333;
-	static constexpr int max_digits10 = digits10+1;
+	// is_exact and is_integer are both true for a rational: it is an exact ratio of
+	// integers, so it takes the integer pair and max_digits10 is 0, as the native
+	// integers report (#1601). The base8/base10/base16 specializations below express
+	// digits in base-N digits rather than bits and are left alone.
+	static constexpr int digits10     = sw::universal::decimal_digits10_integer(digits);
+	static constexpr int max_digits10 = 0;
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = true;
 	static constexpr bool is_exact    = true;

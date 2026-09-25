@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/fixpnt/fixpnt_impl.hpp>   // the class, not the umbrella: including
+#include <universal/utility/decimal_digits.hpp>   // exact digit/exponent counts (#1597, #1601, #1602, #1603, #1604)
                                                    // fixpnt.hpp here is circular and dragged the
                                                    // whole text layer into the core (#1334)
 
@@ -59,17 +60,22 @@ public:
 	}
 
 	static constexpr int digits       = nbits - 1;
-	static constexpr int digits10     = int((digits) / 3.3);
-	static constexpr int max_digits10 = int((digits) / 3.3);
+	// is_exact is false for fixpnt, so it takes the floating-point pair rather than the
+	// integer one (#1601).
+	static constexpr int digits10     = sw::universal::decimal_digits10(digits);
+	static constexpr int max_digits10 = sw::universal::decimal_max_digits10(digits);
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
 	static constexpr int min_exponent   = -int(rbits);
-	static constexpr int min_exponent10 = -int((rbits) / 3.3);
+	// A fixpnt's smallest magnitude is 2^-rbits and its largest ~2^(nbits-1-rbits), so
+	// the decimal exponent range comes from those widths rather than from a stored
+	// exponent field (#1604).
+	static constexpr int min_exponent10 = -sw::universal::decimal_max_exponent10(static_cast<int>(rbits));
 	static constexpr int max_exponent   = nbits - 1 - rbits;
-	static constexpr int max_exponent10 = int((nbits - 1 - rbits) / 3.3);
+	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(static_cast<int>(nbits) - 1 - static_cast<int>(rbits));
 	static constexpr bool has_infinity  = false;
 	static constexpr bool has_quiet_NaN = false;
 	static constexpr bool has_signaling_NaN = false;

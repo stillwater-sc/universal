@@ -65,9 +65,9 @@ public:
 	static constexpr int radix        = 2;
 
 	static constexpr int min_exponent   = 1 - bias;
-	static constexpr int min_exponent10 = static_cast<int>(min_exponent / 3.3f);
+	static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(min_exponent);
 	static constexpr int max_exponent   = static_cast<int>((1u << es) - 1u) - bias;
-	static constexpr int max_exponent10 = static_cast<int>(max_exponent / 3.3f);
+	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
 	static constexpr bool has_infinity  = hasInf;
 	static constexpr bool has_quiet_NaN = hasNaN;
 	static constexpr bool has_signaling_NaN = hasNaN;

@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <universal/utility/decimal_digits.hpp>   // exact digit/exponent counts (#1597, #1601, #1602, #1603, #1604)
+
 namespace std {
 
 template<typename NumberType, unsigned capacity, typename LimbType>
@@ -52,8 +54,12 @@ public:
 	}
 
 	static constexpr int digits       = Traits::qbits;
-	static constexpr int digits10     = int((digits) / 3.3);
-	static constexpr int max_digits10 = int((digits) / 3.3);
+	// is_exact is true for a quire -- holding an exact sum is its entire purpose -- so it
+	// takes the integer pair, and max_digits10 is 0 as it is for the native integers
+	// (#1601). Note Traits::qbits resolves to 0 for some instantiations, which is a
+	// separate defect; the helpers return 0 for a 0 width rather than a negative count.
+	static constexpr int digits10     = sw::universal::decimal_digits10_integer(digits);
+	static constexpr int max_digits10 = 0;
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
 	static constexpr bool is_exact    = true;

@@ -57,11 +57,11 @@ public:
 	// C++ specification: min_exponent is one more than the smallest negative power 
 	// of the radix that is a valid normalized number
 	static constexpr int min_exponent              = Cfloat::MIN_EXP_NORMAL + 1;
-	static constexpr int min_exponent10            = static_cast<int>(min_exponent / 3.3f);
+	static constexpr int min_exponent10            = sw::universal::decimal_min_exponent10(min_exponent);
 	// C++ specification: max_exponent is one more than the largest integer power 
     // of the radix that is a valid finite floating-point number
 	static constexpr int max_exponent              = Cfloat::MAX_EXP;
-	static constexpr int max_exponent10            = static_cast<int>(max_exponent / 3.3f);
+	static constexpr int max_exponent10            = sw::universal::decimal_max_exponent10(max_exponent);
 	static constexpr bool has_infinity             = true;
 	static constexpr bool has_quiet_NaN            = true;
 	static constexpr bool has_signaling_NaN        = true;

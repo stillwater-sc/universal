@@ -92,4 +92,25 @@ constexpr int decimal_max_digits10(int digits) noexcept {
 	return static_cast<int>(s.quotient + (s.remainder != 0 ? 1 : 0)) + 1;
 }
 
+// decimal exponent range, the other pair numeric_limits derives from log10(2) (#1604).
+// These were also computed as exponent/3.3, which additionally relies on
+// static_cast<int> truncating a negative quotient toward zero to stand in for ceil.
+//
+//   min_exponent10 = ceil((min_exponent - 1) * log10(2))   -- most negative n with 10^n normal
+//   max_exponent10 = floor(max_exponent * log10(2))        -- largest n with 10^n representable
+//
+// min_exponent is negative, and split_floor() takes a non-negative argument, so the sign
+// is folded out with ceil(-x * c) == -floor(x * c) rather than left to a cast.
+// Checked against every native format: float -37/38, double -307/308, binary16 -4/4,
+// binary128 -4931/4932.
+constexpr int decimal_min_exponent10(int min_exponent) noexcept {
+	if (min_exponent > 1) return static_cast<int>(detail::split_floor(static_cast<std::int64_t>(min_exponent) - 1).quotient);
+	return -static_cast<int>(detail::split_floor(1 - static_cast<std::int64_t>(min_exponent)).quotient);
+}
+
+constexpr int decimal_max_exponent10(int max_exponent) noexcept {
+	if (max_exponent < 0) return -static_cast<int>(detail::split_floor(-static_cast<std::int64_t>(max_exponent)).quotient);
+	return static_cast<int>(detail::split_floor(static_cast<std::int64_t>(max_exponent)).quotient);
+}
+
 }} // namespace sw::universal
