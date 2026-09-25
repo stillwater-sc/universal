@@ -71,6 +71,19 @@ constexpr int decimal_digits10(int digits) noexcept {
 	return static_cast<int>(detail::split_floor(static_cast<std::int64_t>(digits) - 1).quotient);
 }
 
+// decimal digits an INTEGER format of `digits` value bits can represent without change:
+// floor(digits * log10(2)). This is the floating-point formula without the -1, because an
+// integer format has no rounding step for a decimal literal to survive. Matches native
+// integers: int32 has 31 value bits and reports 9, int64 has 63 and reports 18.
+//
+// numeric_limits<T>::max_digits10 is 0 for integer types, as the native integers report --
+// there is no round trip through a decimal string to size. Use 0 directly rather than
+// deriving it from this.
+constexpr int decimal_digits10_integer(int digits) noexcept {
+	if (digits < 1) return 0;
+	return static_cast<int>(detail::split_floor(static_cast<std::int64_t>(digits)).quotient);
+}
+
 // decimal digits needed to round trip OUT of and back into that format without loss:
 // ceil(digits * log10(2)) + 1.
 constexpr int decimal_max_digits10(int digits) noexcept {

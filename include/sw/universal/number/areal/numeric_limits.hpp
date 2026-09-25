@@ -11,6 +11,7 @@
 // every core-only translation unit and keeping all five I/O-family headers in the graph.
 // numeric_limits needs the complete type and nothing else.
 #include <universal/number/areal/areal_impl.hpp>
+#include <universal/utility/decimal_digits.hpp>   // exact digits10 / max_digits10 (#1597, #1601)
 namespace std {
 
 template <unsigned nbits, unsigned es, typename bt> 
@@ -48,8 +49,8 @@ public:
 	}
 
 	static constexpr int digits       = nbits - 1 - es + 1;
-	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
-	static constexpr int max_digits10 = digits10;
+	static constexpr int digits10     = sw::universal::decimal_digits10(digits);
+	static constexpr int max_digits10 = sw::universal::decimal_max_digits10(digits);
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
 	static constexpr bool is_exact    = false;

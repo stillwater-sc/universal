@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
+#include <universal/utility/decimal_digits.hpp>   // exact digits10 / max_digits10 (#1597, #1601)
 // TODO: is this the proper way to go about this type? 
 // For big integers, the return types will not yield standard types
 namespace std {
@@ -61,8 +62,8 @@ public:
 	}
 
 	static constexpr int digits       = nbits - 1;
-	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
-	static constexpr int max_digits10 = digits10;
+	static constexpr int digits10     = sw::universal::decimal_digits10_integer(digits);
+	static constexpr int max_digits10 = 0;   // integer types have no decimal round trip to size
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = true;
 	static constexpr bool is_exact    = true;
