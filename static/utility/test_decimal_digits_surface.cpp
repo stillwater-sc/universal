@@ -162,6 +162,29 @@ namespace {
 		return nrFailed;
 	}
 
+	// A fixpnt whose integer field is empty tops out BELOW 1 -- fixpnt<8,7> at 127/128 --
+	// so the largest representable power of ten is 10^-1. Taking the binary scale above the
+	// maximum and converting it directly reports 0, which claims 1.0 is representable when
+	// it is not. Reference values are floor(log10(exact maximum)), computed by hand.
+	int VerifyFixpntMaxExponent10(bool reportTestCases) {
+		using namespace sw::universal;
+		int nrFailed = 0;
+		struct Case { int got; int want; const char* tag; };
+		const Case cases[] = {
+			{ std::numeric_limits<fixpnt<8, 7>>::max_exponent10,   -1, "fixpnt<8,7> max 127/128"     },
+			{ std::numeric_limits<fixpnt<16, 15>>::max_exponent10, -1, "fixpnt<16,15> max ~0.999969" },
+			{ std::numeric_limits<fixpnt<8, 0>>::max_exponent10,    2, "fixpnt<8,0> max 127"         },
+			{ std::numeric_limits<fixpnt<32, 16>>::max_exponent10,  4, "fixpnt<32,16> max 32768"     },
+		};
+		for (const auto& c : cases) {
+			if (c.got != c.want) {
+				++nrFailed;
+				if (reportTestCases) std::cerr << c.tag << " max_exponent10 " << c.got << " != " << c.want << '\n';
+			}
+		}
+		return nrFailed;
+	}
+
 } // anonymous namespace
 
 int main()
@@ -273,6 +296,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyFloatDigits<fixpnt<32, 16>>("fixpnt<32,16>", 31, 9, 11, reportTestCases),
 		test_tag, "fixpnt<32,16>");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFixpntMaxExponent10(reportTestCases),
+		test_tag, "fixpnt max_exponent10 below 1");
 
 	// rational declares is_exact and is_integer, so it takes the integer pair (#1601)
 	nrOfFailedTestCases += ReportTestResult(

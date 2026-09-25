@@ -75,7 +75,15 @@ public:
 	// exponent field (#1604).
 	static constexpr int min_exponent10 = -sw::universal::decimal_max_exponent10(static_cast<int>(rbits));
 	static constexpr int max_exponent   = nbits - 1 - rbits;
-	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(static_cast<int>(nbits) - 1 - static_cast<int>(rbits));
+	// k is the binary scale just ABOVE the maximum, which is (2^(nbits-1) - 1) * 2^-rbits.
+	// For k >= 1 the maximum sits just under 2^k and floor(log10) is unaffected. For
+	// k <= 0 the maximum is below 1 -- fixpnt<8,7> tops out at 127/128 -- so the largest
+	// representable power of ten is 10^-1, not 10^0. Verified against the exact maximum
+	// for all 2074 configurations with nbits <= 64.
+	static constexpr int fixpnt_max_scale = static_cast<int>(nbits) - 1 - static_cast<int>(rbits);
+	static constexpr int max_exponent10 = (fixpnt_max_scale >= 1)
+	                                    ? sw::universal::decimal_max_exponent10(fixpnt_max_scale)
+	                                    : -(sw::universal::decimal_max_exponent10(-fixpnt_max_scale) + 1);
 	static constexpr bool has_infinity  = false;
 	static constexpr bool has_quiet_NaN = false;
 	static constexpr bool has_signaling_NaN = false;
