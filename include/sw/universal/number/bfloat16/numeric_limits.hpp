@@ -54,7 +54,12 @@ public:
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
-	static constexpr int min_exponent   = -int(1 << 7);
+	// numeric_limits::min_exponent is the minimum n with radix^(n-1) normalized, so it is
+	// one MORE than the scale of the smallest normal, not equal to it (#1608).
+	// bfloat16's smallest normal is 2^-126, the same as float's, so this is -125 as
+	// numeric_limits<float> reports. It was -128, the negated exponent bias, which is a
+	// different quantity.
+	static constexpr int min_exponent   = -125;
 	static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(min_exponent);
 	static constexpr int max_exponent   = int(1 << 7);
 	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);

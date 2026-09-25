@@ -206,6 +206,84 @@ namespace {
 		return nrFailed;
 	}
 
+	// #1608: min_exponent is the minimum n with radix^(n-1) normalized, so it is one MORE
+	// than the scale of the smallest normal. Three types had it equal to that scale, or
+	// to the negated bias. Each reference is the standard's definition restated against
+	// the type's own min(), not a recomputation of the formula under test.
+	int VerifyMinExponentAgainstSmallestNormal(bool reportTestCases) {
+		using namespace sw::universal;
+		int nrFailed = 0;
+		struct Case { int minExp; int minExp10; int wantExp; int wantExp10; const char* tag; };
+		const Case cases[] = {
+			// bfloat16's smallest normal is 2^-126, the same as float's
+			{ std::numeric_limits<bfloat16>::min_exponent, std::numeric_limits<bfloat16>::min_exponent10,
+			  -125, -37, "bfloat16" },
+			// e4m3 bias 7, smallest normal 2^-6
+			{ std::numeric_limits<e4m3>::min_exponent, std::numeric_limits<e4m3>::min_exponent10,
+			  -5, -1, "e4m3" },
+			// posit<16,2> minpos at scale -56
+			{ std::numeric_limits<posit<16, 2>>::min_exponent, std::numeric_limits<posit<16, 2>>::min_exponent10,
+			  -55, -16, "posit<16,2>" },
+		};
+		for (const auto& c : cases) {
+			if (c.minExp != c.wantExp) {
+				++nrFailed;
+				if (reportTestCases) std::cerr << c.tag << " min_exponent " << c.minExp << " != " << c.wantExp << '\n';
+			}
+			if (c.minExp10 != c.wantExp10) {
+				++nrFailed;
+				if (reportTestCases) std::cerr << c.tag << " min_exponent10 " << c.minExp10 << " != " << c.wantExp10 << '\n';
+			}
+		}
+		// bfloat16 shares float's exponent field, so it must share both traits
+		if (std::numeric_limits<bfloat16>::min_exponent != std::numeric_limits<float>::min_exponent
+		 || std::numeric_limits<bfloat16>::min_exponent10 != std::numeric_limits<float>::min_exponent10) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "bfloat16 exponent traits disagree with native float\n";
+		}
+		return nrFailed;
+	}
+
+	// #1602: an lns exponent range is 2^(nbits-1-rbits) and outgrows int. Narrowing it
+	// silently WRAPPED -- lns<48,10> reported min_exponent 0 and max_exponent -1, which
+	// claim a smallest normal of 2^-1. Saturating is the most the int-typed trait can say.
+	int VerifyLnsExponentSaturates(bool reportTestCases) {
+		using namespace sw::universal;
+		int nrFailed = 0;
+		constexpr int intMin = -2147483647 - 1;
+		constexpr int intMax = 2147483647;
+
+		// configurations that fit report the exact value
+		if (std::numeric_limits<lns<8, 3>>::min_exponent != -8
+		 || std::numeric_limits<lns<32, 8>>::min_exponent != -4194304) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "lns narrow configurations no longer report their exact exponent\n";
+		}
+		// configurations that do not fit saturate rather than wrap
+		if (std::numeric_limits<lns<48, 10>>::min_exponent != intMin
+		 || std::numeric_limits<lns<48, 10>>::max_exponent != intMax) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "lns<48,10> exponent does not saturate\n";
+		}
+		if (std::numeric_limits<lns<64, 11>>::min_exponent != intMin
+		 || std::numeric_limits<lns<64, 11>>::max_exponent != intMax) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "lns<64,11> exponent does not saturate\n";
+		}
+		// the specific wrapped values that prompted this, as a guard against regressing
+		if (std::numeric_limits<lns<48, 10>>::min_exponent == 0
+		 || std::numeric_limits<lns<48, 10>>::max_exponent == -1) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "lns<48,10> exponent wrapped to the 0/-1 pair again\n";
+		}
+		// the true value stays available on the type itself
+		if (lns<48, 10>::min_exponent != -68719476736LL) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "lns<48,10>::min_exponent (int64) is not the true exponent\n";
+		}
+		return nrFailed;
+	}
+
 } // anonymous namespace
 
 int main()
@@ -330,6 +408,16 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyExponentRangeAgainstNative(reportTestCases),
 		test_tag, "decimal exponent range");
+
+	// min_exponent against each type's own smallest normal (#1608)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyMinExponentAgainstSmallestNormal(reportTestCases),
+		test_tag, "min_exponent vs smallest normal");
+
+	// an exponent range that outgrows int saturates rather than wrapping (#1602)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyLnsExponentSaturates(reportTestCases),
+		test_tag, "lns exponent saturation");
 #endif
 
 #if REGRESSION_LEVEL_3

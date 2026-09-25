@@ -55,9 +55,9 @@ public:
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
-	static constexpr int min_exponent = DBNS::min_exponent;
+	static constexpr int min_exponent = sw::universal::saturate_exponent_to_int(DBNS::min_exponent);
 	static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(min_exponent);
-	static constexpr int max_exponent = DBNS::max_exponent;
+	static constexpr int max_exponent = sw::universal::saturate_exponent_to_int(DBNS::max_exponent);
 	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
 	static constexpr bool has_infinity = false;
 	static constexpr bool has_quiet_NaN = false;

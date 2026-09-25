@@ -52,7 +52,10 @@ namespace std {
 		static constexpr bool is_exact = false;
 		static constexpr int radix = 2;
 
-		static constexpr int min_exponent = static_cast<int>(2 - int(nbits)) * (1 << es);
+		// numeric_limits::min_exponent is the minimum n with radix^(n-1) normalized, so it
+		// is one MORE than minpos's scale, not equal to it. minpos for posit<nbits, es>
+		// sits at scale (2 - nbits) * 2^es (#1608).
+		static constexpr int min_exponent = static_cast<int>(2 - int(nbits)) * (1 << es) + 1;
 		static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(min_exponent);
 		static constexpr int max_exponent = (nbits - 2) * (1 << es);
 		static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);

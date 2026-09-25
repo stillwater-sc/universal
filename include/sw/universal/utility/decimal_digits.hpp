@@ -123,4 +123,21 @@ constexpr int decimal_max_exponent10(int max_exponent) noexcept {
 	return static_cast<int>(detail::split_floor(static_cast<std::int64_t>(max_exponent)).quotient);
 }
 
+// numeric_limits types min_exponent and max_exponent as int, but a logarithmic format's
+// exponent range is 2^(nbits-1-rbits) and outgrows that quickly: lns<48,10> needs 2^37.
+// A silent narrowing wraps -- lns<48,10> and lns<64,11> were reporting min_exponent 0 and
+// max_exponent -1, which claim a smallest normal of 2^-1 (#1602).
+//
+// Saturating is the most the standard traits can express. It is honest about the
+// direction and the fact that the range is enormous, where a wrapped value is not, but it
+// is still a bound rather than the true exponent. A caller that needs the real figure
+// should read the type's own int64_t member (LNS::min_exponent) instead of the trait.
+constexpr int saturate_exponent_to_int(std::int64_t e) noexcept {
+	constexpr std::int64_t hi = static_cast<std::int64_t>((~0u) >> 1);           //  INT_MAX
+	constexpr std::int64_t lo = -hi - 1;                                          //  INT_MIN
+	if (e > hi) return static_cast<int>(hi);
+	if (e < lo) return static_cast<int>(lo);
+	return static_cast<int>(e);
+}
+
 }} // namespace sw::universal
