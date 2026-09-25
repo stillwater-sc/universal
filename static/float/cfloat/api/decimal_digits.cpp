@@ -164,13 +164,17 @@ try {
 #if MANUAL_TESTING
 
 	nrOfFailedTestCases += VerifyDecimalDigits<single>("single", 24, 6, 9, reportTestCases);
+	nrOfFailedTestCases += VerifyAgreementWithNative(reportTestCases);
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += VerifyHelperBoundaries(reportTestCases);
+#endif
 	std::cout << "single  digits10=" << std::numeric_limits<single>::digits10
 	          << " max_digits10=" << std::numeric_limits<single>::max_digits10 << '\n';
 	std::cout << "float   digits10=" << std::numeric_limits<float>::digits10
 	          << " max_digits10=" << std::numeric_limits<float>::max_digits10 << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #else
 

@@ -138,9 +138,12 @@ try {
 
 #if MANUAL_TESTING
 
+	// one of each shape, so manual mode exercises both formulas and the native check
 	nrOfFailedTestCases += VerifyFloatDigits<areal<32, 8>>("areal<32,8>", 24, 6, 9, reportTestCases);
+	nrOfFailedTestCases += VerifyIntegerDigits<integer<32>>("integer<32>", 31, 9, reportTestCases);
+	nrOfFailedTestCases += VerifyAgreementWithNative(reportTestCases);
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #else
 
