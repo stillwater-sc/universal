@@ -281,6 +281,32 @@ namespace {
 			++nrFailed;
 			if (reportTestCases) std::cerr << "lns<48,10>::min_exponent (int64) is not the true exponent\n";
 		}
+		// The decimal traits must be derived from the WIDE exponent, not from the
+		// saturated binary one. lns<35,1> has a binary exponent of -2^32, which does not
+		// fit an int, and a decimal exponent of -1292913986, which does. Deriving the
+		// decimal from the clamped binary value reports -646456993 -- off by a factor of
+		// two, and needlessly, since the right answer was representable.
+		if (std::numeric_limits<lns<35, 1>>::min_exponent10 != -1292913986) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "lns<35,1> min_exponent10 "
+				<< std::numeric_limits<lns<35, 1>>::min_exponent10 << " != -1292913986 "
+				<< "(derived from the saturated binary exponent rather than the wide one)\n";
+		}
+		// and where the decimal genuinely does not fit either, it saturates rather than
+		// reporting the halved value
+		if (std::numeric_limits<lns<48, 10>>::min_exponent10 != intMin) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "lns<48,10> min_exponent10 does not saturate\n";
+		}
+		// the helpers themselves, on wide input
+		if (decimal_min_exponent10(-4294967296LL) != -1292913986) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "decimal_min_exponent10 wrong on a wide exponent\n";
+		}
+		if (decimal_max_exponent10(4294967296LL) != 1292913986) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "decimal_max_exponent10 wrong on a wide exponent\n";
+		}
 		return nrFailed;
 	}
 

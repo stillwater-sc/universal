@@ -92,6 +92,23 @@ constexpr int decimal_max_digits10(int digits) noexcept {
 	return static_cast<int>(s.quotient + (s.remainder != 0 ? 1 : 0)) + 1;
 }
 
+// numeric_limits types min_exponent and max_exponent as int, but a logarithmic format's
+// exponent range is 2^(nbits-1-rbits) and outgrows that quickly: lns<48,10> needs 2^37.
+// A silent narrowing wraps -- lns<48,10> and lns<64,11> were reporting min_exponent 0 and
+// max_exponent -1, which claim a smallest normal of 2^-1 (#1602).
+//
+// Saturating is the most the standard traits can express. It is honest about the
+// direction and the fact that the range is enormous, where a wrapped value is not, but it
+// is still a bound rather than the true exponent. A caller that needs the real figure
+// should read the type's own int64_t member (LNS::min_exponent) instead of the trait.
+constexpr int saturate_exponent_to_int(std::int64_t e) noexcept {
+	constexpr std::int64_t hi = static_cast<std::int64_t>((~0u) >> 1);           //  INT_MAX
+	constexpr std::int64_t lo = -hi - 1;                                          //  INT_MIN
+	if (e > hi) return static_cast<int>(hi);
+	if (e < lo) return static_cast<int>(lo);
+	return static_cast<int>(e);
+}
+
 // decimal exponent range, the other pair numeric_limits derives from log10(2) (#1604).
 // These were also computed as exponent/3.3, which additionally relies on
 // static_cast<int> truncating a negative quotient toward zero to stand in for ceil.
@@ -111,33 +128,39 @@ constexpr int decimal_max_digits10(int digits) noexcept {
 // Getting this backwards is invisible to any test built from real types, because every
 // number system here has min_exponent <= 1 and max_exponent >= 0, so only one branch of
 // each helper is ever reached by a numeric_limits specialization.
-constexpr int decimal_min_exponent10(int min_exponent) noexcept {
-	// ceil((min_exponent - 1) * log10(2))
-	if (min_exponent > 1) return static_cast<int>(detail::split_floor(static_cast<std::int64_t>(min_exponent) - 1).quotient) + 1;
-	return -static_cast<int>(detail::split_floor(1 - static_cast<std::int64_t>(min_exponent)).quotient);
-}
-
-constexpr int decimal_max_exponent10(int max_exponent) noexcept {
-	// floor(max_exponent * log10(2))
-	if (max_exponent < 0) return -(static_cast<int>(detail::split_floor(-static_cast<std::int64_t>(max_exponent)).quotient) + 1);
-	return static_cast<int>(detail::split_floor(static_cast<std::int64_t>(max_exponent)).quotient);
-}
-
-// numeric_limits types min_exponent and max_exponent as int, but a logarithmic format's
-// exponent range is 2^(nbits-1-rbits) and outgrows that quickly: lns<48,10> needs 2^37.
-// A silent narrowing wraps -- lns<48,10> and lns<64,11> were reporting min_exponent 0 and
-// max_exponent -1, which claim a smallest normal of 2^-1 (#1602).
+// Both take the exponent WIDE. A logarithmic format's binary exponent can exceed int (see
+// saturate_exponent_to_int below) while its decimal exponent still fits: lns<35,1> has a
+// binary exponent of -2^32 and a decimal one of -1292913986, which is inside int. Deriving
+// the decimal from an already-saturated binary value throws that away and reports
+// -646456993, off by a factor of two (#1609 review). So the conversion happens first and
+// only the decimal RESULT is clamped.
 //
-// Saturating is the most the standard traits can express. It is honest about the
-// direction and the fact that the range is enormous, where a wrapped value is not, but it
-// is still a bound rather than the true exponent. A caller that needs the real figure
-// should read the type's own int64_t member (LNS::min_exponent) instead of the trait.
-constexpr int saturate_exponent_to_int(std::int64_t e) noexcept {
-	constexpr std::int64_t hi = static_cast<std::int64_t>((~0u) >> 1);           //  INT_MAX
-	constexpr std::int64_t lo = -hi - 1;                                          //  INT_MIN
-	if (e > hi) return static_cast<int>(hi);
-	if (e < lo) return static_cast<int>(lo);
-	return static_cast<int>(e);
+// Beyond `decimal_reach` the decimal result cannot fit an int whatever it is, and
+// split_floor's own product would overflow, so those saturate without computing.
+// INT_MAX / log10(2) is 7133786261; the threshold sits just above it and its product with
+// log10_2_hi stays inside int64_t.
+namespace detail {
+	constexpr std::int64_t decimal_reach = 7200000000LL;
+}
+
+constexpr int decimal_min_exponent10(std::int64_t min_exponent) noexcept {
+	// ceil((min_exponent - 1) * log10(2)), clamped to int
+	if (min_exponent < -detail::decimal_reach) return -2147483647 - 1;
+	if (min_exponent >  detail::decimal_reach) return 2147483647;
+	const std::int64_t r = (min_exponent > 1)
+	    ? detail::split_floor(min_exponent - 1).quotient + 1
+	    : -detail::split_floor(1 - min_exponent).quotient;
+	return saturate_exponent_to_int(r);
+}
+
+constexpr int decimal_max_exponent10(std::int64_t max_exponent) noexcept {
+	// floor(max_exponent * log10(2)), clamped to int
+	if (max_exponent < -detail::decimal_reach) return -2147483647 - 1;
+	if (max_exponent >  detail::decimal_reach) return 2147483647;
+	const std::int64_t r = (max_exponent < 0)
+	    ? -(detail::split_floor(-max_exponent).quotient + 1)
+	    : detail::split_floor(max_exponent).quotient;
+	return saturate_exponent_to_int(r);
 }
 
 }} // namespace sw::universal

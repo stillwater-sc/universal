@@ -56,9 +56,13 @@ public:
 	static constexpr int radix        = 2;
 
 	static constexpr int min_exponent = sw::universal::saturate_exponent_to_int(DBNS::min_exponent);
-	static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(min_exponent);
+	// from the WIDE exponent, not from the saturated int above: the binary bound can
+	// exceed int while the decimal one still fits (#1609 review).
+	static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(DBNS::min_exponent);
 	static constexpr int max_exponent = sw::universal::saturate_exponent_to_int(DBNS::max_exponent);
-	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
+	// from the WIDE exponent, not from the saturated int above: the binary bound can
+	// exceed int while the decimal one still fits (#1609 review).
+	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(DBNS::max_exponent);
 	static constexpr bool has_infinity = false;
 	static constexpr bool has_quiet_NaN = false;
 	static constexpr bool has_signaling_NaN = false;
