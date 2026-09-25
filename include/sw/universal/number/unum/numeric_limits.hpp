@@ -11,6 +11,7 @@
 // defined there, and the umbrella includes core.hpp, which includes this header -- a cycle
 // that #pragma once would merely mask (the trap areal hit, #1452)
 #include <universal/number/unum/unum_impl.hpp>
+#include <universal/utility/decimal_digits.hpp>   // exact digits10 / max_digits10 (#1597, #1601)
 
 namespace std {
 
@@ -61,8 +62,8 @@ public:
 
 	// max fraction bits + 1 hidden bit
 	static constexpr int digits       = static_cast<int>((1u << fsizesize));
-	static constexpr int digits10     = static_cast<int>(digits / 3.3);
-	static constexpr int max_digits10 = digits10;
+	static constexpr int digits10     = sw::universal::decimal_digits10(digits);
+	static constexpr int max_digits10 = sw::universal::decimal_max_digits10(digits);
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
 	static constexpr bool is_exact    = false;
