@@ -61,7 +61,7 @@ Either way the wording is the document's, not a paraphrase.
 #### September
 
 - **2026-09-24 to 2026-09-25**: [The numeric_limits Arc, and the Paths Not Taken](./2026-09-25_numeric_limits_arc_and_the_paths_not_taken.md)
-  - Status: v5.0.0 and v5.1.0 released. Issues #1597, #1599, #1601, #1602, #1603, #1604, #1608 closed across 10 PRs.
+  - Status: cut v5.0.0 and v5.1.0. Issues #1597, #1599, #1601, #1602, #1603, #1604, #1608 closed across 10 PRs.
   - Focus: `numeric_limits` digit and exponent traits computed rather than approximated, across every number system; the CHANGELOG's five-release `[Unreleased]` backlog attributed; the type inventory documented; CodeQL removed and the CI slowdown traced to a spend budget rather than the eviction limit.
 
 - **2026-09-22**: [The Manipulator Placeholders, and What Hid Them](./2026-09-22_manipulator_placeholders_info_print_and_dbns_scale.md)
