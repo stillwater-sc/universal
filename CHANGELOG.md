@@ -9,6 +9,129 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Nothing yet.
 
+## [5.1.0](https://github.com/stillwater-sc/universal/compare/v5.0.0...v5.1.0) (2026-09-25)
+
+Nine commits, all of them `numeric_limits`. Seven issues closed -- [#1597](https://github.com/stillwater-sc/universal/issues/1597),
+[#1599](https://github.com/stillwater-sc/universal/issues/1599), [#1601](https://github.com/stillwater-sc/universal/issues/1601), [#1602](https://github.com/stillwater-sc/universal/issues/1602),
+[#1603](https://github.com/stillwater-sc/universal/issues/1603), [#1604](https://github.com/stillwater-sc/universal/issues/1604), [#1608](https://github.com/stillwater-sc/universal/issues/1608) -- and after them
+there is no `/ 3.3` left in any `numeric_limits` header in the tree.
+
+A minor bump rather than a patch, deliberately. There is no new functionality, so
+conventional-commit tooling would compute 5.0.1, but a patch release says "take this without
+reading" and these change values a caller reads: `single`'s `digits10`, `duble`'s
+`min_exponent10`, `bfloat16`'s `digits`, and `xtndd`'s entire dynamic range.
+
+### Fixed
+
+* **The decimal digit traits were computed from an approximation ([#1597](https://github.com/stillwater-sc/universal/issues/1597),
+  [#1601](https://github.com/stillwater-sc/universal/issues/1601), [#1603](https://github.com/stillwater-sc/universal/issues/1603), [#1604](https://github.com/stillwater-sc/universal/issues/1604) / PRs
+  [#1600](https://github.com/stillwater-sc/universal/pull/1600), [#1605](https://github.com/stillwater-sc/universal/pull/1605), [#1607](https://github.com/stillwater-sc/universal/pull/1607))** -- `digits10` and
+  `max_digits10` were `digits / 3.3f` in twelve `numeric_limits` specializations. `3.3` stands
+  in for `1/log10(2) = 3.3219`, and `max_digits10` is not `digits10 + 1` in general, so both
+  drifted at widths that matter:
+
+  | type | `digits10` was / now | `max_digits10` was / now |
+  |---|---|---|
+  | `single` (binary32) | **7 / 6** | **8 / 9** |
+  | `duble` (binary64) | **16 / 15** | 17 / 17 |
+  | `quad` (binary128) | **34 / 33** | **35 / 36** |
+  | `areal<32,8>` | **7 / 6** | **7 / 9** |
+  | `posit<64,2>` | **18 / 17** | **19 / 20** |
+  | `integer<64>` | **19 / 18** | **19 / 0** |
+
+  The aliases exist so a caller can reach for a known IEEE format instead of hand-articulating
+  a `cfloat<>`, and a drop-in that disagrees with the type it mirrors defeats that:
+  `numeric_limits<single>::digits10` said 7 where native `float` says 6. Over-reporting
+  `digits10` is the unsafe direction, since it is the round-trip-**into** guarantee -- code
+  sizing a buffer or a `setprecision` from it claimed a digit the format cannot hold.
+  Under-reporting `max_digits10` breaks round-tripping **out**, which is the classic float
+  nine-digit case.
+
+  Three shapes needed three formulas, and `is_exact` decides which: a binary float takes
+  `floor((digits-1) * log10(2))` because a decimal literal must survive a rounding step; an
+  integer takes `floor(digits * log10(2))` with no `-1` and `max_digits10 == 0`, as the native
+  integers report; and `fixpnt`, whose maximum can sit below 1, needs its own handling --
+  `fixpnt<8,7>` tops out at 127/128, so the largest representable power of ten is `10^-1`, not
+  `10^0`.
+
+  `log10(2)` is carried as the rational `301029995663981195 / 10^18`, with the product formed
+  in two halves so no intermediate leaves `int64_t`. A narrower `30102999566 / 10^11` was tried
+  first and rejected: it is exact only to 325146 significand bits, and `cfloat<325162,15>`
+  instantiates -- 40KB per value, but it compiles -- so that bound was reachable and returned a
+  `max_digits10` one too small.
+
+* **`min_exponent` was off by one to three, and wrapped where it outgrew `int`
+  ([#1602](https://github.com/stillwater-sc/universal/issues/1602), [#1608](https://github.com/stillwater-sc/universal/issues/1608) / PR [#1609](https://github.com/stillwater-sc/universal/pull/1609))** --
+  `numeric_limits::min_exponent` is the minimum `n` with `radix^(n-1)` normalized, so it is one
+  *more* than the smallest normal's scale. Three types had it equal to that scale, or to the
+  negated bias: `bfloat16` reported -128 where native `float` with the same exponent field
+  reports -125, `e4m3` -6 for a smallest normal of `2^-6`, `posit<16,2>` -56 for a minpos at
+  scale -56.
+
+  `lns` and `dbns` had a different defect in the same trait. Their exponent range is
+  `2^(nbits-1-rbits)` and outgrows `int`, and the narrowing was silent: `lns<48,10>` reported
+  `min_exponent` **0** and `max_exponent` **-1**, claiming a smallest normal of `2^-1` for a
+  type whose real one is `2^-68719476736`. It saturates now, and the header points callers who
+  need the true figure at the type's own `int64_t` member.
+
+  Ordering matters here in a way that is easy to miss. A logarithmic format's *binary* exponent
+  can exceed `int` while its *decimal* exponent still fits -- `lns<35,1>` has a binary exponent
+  of `-2^32` and a decimal one of `-1292913986` -- so the conversion happens first and only the
+  decimal result is clamped. Deriving the decimal from an already-saturated binary value
+  reported `-646456993`, off by a factor of two and needlessly.
+
+* **`lns` and `dbns` reported their exponent range as their precision
+  ([#1602](https://github.com/stillwater-sc/universal/issues/1602) / PR [#1607](https://github.com/stillwater-sc/universal/pull/1607))** -- `digits` was
+  `-min_exponent + rbits`, which is a range, not a significand width. **`lns<32,8>` claimed
+  4,194,312 significand bits and 1,271,003 decimal digits in a 32-bit type.** An lns stores a
+  fixed-point exponent and its precision is uniform in log space, so there is no IEEE
+  significand to count; adjacent values differ by a factor `2^(2^-rbits)`, an equivalent
+  significand width of `rbits + 0.5` at every configuration measured, making `rbits + 1` the
+  honest round-up. It reports 9 digits and 2 decimal digits now.
+
+* **`xtndd` and `fp80` had `double`'s range in an 80-bit container
+  ([#1599](https://github.com/stillwater-sc/universal/issues/1599) / PR [#1610](https://github.com/stillwater-sc/universal/pull/1610))** -- `es = 11` is double's exponent
+  field, so maxpos was `1.798e308` and everything above it overflowed to `inf` where a real x87
+  `long double` is finite across another ~4600 orders of magnitude. Sixteen bits of the encoding
+  bought precision and none bought range. At `es = 15` the exponent range `[-16381, 16384]`,
+  the decimal range `[-4931, 4932]` and the top binade 16383 are x87's.
+
+  It is still not *bit*-compatible, and that part is structural: x87 stores an **explicit**
+  integer bit, spending one of its 80 bits on the significand's leading 1, so it carries 64 bits
+  of precision, where `cfloat`'s implicit leading bit gives the same 80 bits 65. The extra bit
+  also moves the maximum -- x87's is `(2 - 2^-63) * 2^16383` and `xtndd`'s is
+  `(2 - 2^-64) * 2^16383`, so `xtndd`'s is the larger and there is a narrow band where an x87
+  `long double` overflows and `xtndd` does not.
+
+### Changed
+
+* **CodeQL removed ([PR #1606](https://github.com/stillwater-sc/universal/pull/1606))** -- no finding since 2026-05-02. Its entire
+  output was 37 alerts, all from 2026-03 and 2026-05, every one resolved: 34 fixed, 3 dismissed,
+  0 open. Against that it cost ~35 minutes per run, 4-8 runs a day on pushes to main, and
+  **6.39GB of Actions cache across 31 unpruned per-commit TRAP entries -- 62% of everything the
+  repository had stored**. `cache-prune.yml` could not see them: it groups generations by
+  stripping a trailing ISO-8601 timestamp, and CodeQL keys end in a commit SHA, so every entry
+  looked unique and none was ever superseded. Deleting them took stored usage from 10.29GB to
+  3.80GB.
+
+### Documentation
+
+* **Every number system is documented ([PR #1598](https://github.com/stillwater-sc/universal/pull/1598))** -- an inventory of the 37
+  types against what the site publishes found three kinds of drift. The IEEE-754 aliases existed
+  only in `cfloat.hpp`, so the formats most likely to be hardware-backed were the ones a reader
+  had to reverse-engineer from six template parameters -- and the landing page used `half` and
+  `single` in its quick example without saying they were predefined. The whole adaptive family
+  sat in a landing-page table with no page behind any entry, and `elreal` was not mentioned at
+  all. And `posit1`, `posito` and `valid`, archived in
+  [#1243](https://github.com/stillwater-sc/universal/issues/1243)/[#1244](https://github.com/stillwater-sc/universal/issues/1244), still had pages, with `valid` still
+  marketed. Ten pages added, three removed, 38 of 38 types now covered.
+
+* **The CHANGELOG's `[Unreleased]` section was five releases deep
+  ([PR #1595](https://github.com/stillwater-sc/universal/pull/1595))** -- it held 94 bullets, of which 12 belonged to v5.0.0; the rest
+  cited PRs from #559 to #1384, shipped across v4.6.0 through v4.10.1. Each is now filed under
+  the release that shipped it, resolved by mapping its pull request to the earliest tag
+  containing that commit and cross-checked against the release tag messages.
+
 ## [5.0.0](https://github.com/stillwater-sc/universal/compare/v4.10.1...v5.0.0) (2026-09-24)
 
 128 commits, PRs [#1385](https://github.com/stillwater-sc/universal/pull/1385)-[#1594](https://github.com/stillwater-sc/universal/pull/1594). The major bump is earned by breadth rather than by one redesign: **56 behaviour changes across 18 scopes**, most of them cases where a type returned a wrong answer quietly rather than failing loudly. Apart from the removals below, code that compiles against v4.10.1 compiles against v5.0.0 -- but code that depends on what these types *returned* should read the full behaviour-change list in the [release notes](https://github.com/stillwater-sc/universal/releases/tag/v5.0.0) before upgrading.
