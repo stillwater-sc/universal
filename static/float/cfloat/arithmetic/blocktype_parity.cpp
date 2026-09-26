@@ -294,8 +294,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFormat<128, 15>("cfloat<128,15>", reportTestCases),
 		test_tag, "cfloat<128,15> (quad)");
 	// a width that is NOT a multiple of 64, so the most significant limb is partial
-	nrOfFailedTestCases += ReportTestResult(VerifyFormat<80, 11>("cfloat<80,11>", reportTestCases),
-		test_tag, "cfloat<80,11> (xtndd, partial MSU)");
+	nrOfFailedTestCases += ReportTestResult(VerifyFormat<80, 15>("cfloat<80,15>", reportTestCases),
+		test_tag, "cfloat<80,15> (xtndd, partial MSU)");
 #endif
 
 #if REGRESSION_LEVEL_2

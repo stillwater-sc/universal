@@ -40,7 +40,7 @@ point.
 | `half` | `fp16` | 16 | 5 | 10 | -13 .. 16 | 6.550e+04 | 9.766e-04 |
 | `single` | `fp32` | 32 | 8 | 23 | -125 .. 128 | 3.403e+38 | 1.192e-07 |
 | `duble` | `fp64` | 64 | 11 | 52 | -1021 .. 1024 | 1.798e+308 | 2.220e-16 |
-| `xtndd` | `fp80` | 80 | 11 | 68 | -1021 .. 1024 | 1.798e+308 | 3.388e-21 |
+| `xtndd` | `fp80` | 80 | 15 | 64 | -16381 .. 16384 | 1.190e+4932 | 5.421e-20 |
 | `quad` | `fp128` | 128 | 15 | 112 | -16381 .. 16384 | 1.190e+4932 | 1.926e-34 |
 | `octo` | `fp256` | 256 | 19 | 236 | -262141 .. 262144 | 3.648e+78841 | 9.056e-72 |
 
@@ -72,12 +72,24 @@ e4m3 a;   // OCP OFP8 E4M3 -- NaN on overflow
 e5m2 b;   // OCP OFP8 E5M2 -- wider range, less precision
 ```
 
-**`xtndd` is not the x87 80-bit format.** x87 extended precision has 15 exponent bits;
-`xtndd` has 11, which gives it `double`'s dynamic range in an 80-bit container -- its extra
-bits all buy precision and none buy range, so it overflows to `inf` everywhere above
-1.8e308 that a real x87 `long double` is perfectly happy. Tracked in
-[#1599](https://github.com/stillwater-sc/universal/issues/1599). Until it is settled, do
-not reach for `fp80` expecting to model x87.
+**`xtndd` matches x87's range but carries one bit more precision.** As of
+[#1599](https://github.com/stillwater-sc/universal/issues/1599) it is `cfloat<80,15>`, so its
+exponent range `[-16381, 16384]` and its decimal range `[-4931, 4932]` are native x87's. It previously had `es = 11`, which gave it `double`'s range in an
+80-bit container and overflowed to `inf` everywhere above 1.8e308 that a real x87
+`long double` is fine.
+
+It is still not *bit*-compatible, and the reason is structural rather than an oversight: x87
+stores an **explicit** integer bit, spending one of its 80 bits on the significand's leading
+1, so it carries 64 bits of precision. `cfloat` uses an implicit leading bit, so the same 80
+bits give 64 fraction bits *plus* the implicit one -- 65 bits, one more than x87. Closing
+that would need explicit-integer-bit support in `cfloat`.
+
+That extra bit also moves the maximum. x87's maxpos is `(2 - 2^-63) * 2^16383` and `xtndd`'s
+is `(2 - 2^-64) * 2^16383`, so **`xtndd`'s is the larger**, and there is a narrow band at the
+top of the range where an x87 `long double` overflows and `xtndd` does not -- converting
+`xtndd`'s maxpos to a native `long double` gives `inf`. So the two agree on exponent range
+and on the decimal range `numeric_limits` reports, and differ in the last bit and at the
+overflow boundary.
 
 ## Using them
 

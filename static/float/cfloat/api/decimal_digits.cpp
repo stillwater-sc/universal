@@ -16,6 +16,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <cmath>   // std::isinf, in the xtndd range check
 
 // numeric_limits<T>::digits10 and max_digits10 were computed as digits/3.3, which is off
 // by one at widths that matter: single reported 7 where native float reports 6, and duble
@@ -148,6 +149,71 @@ namespace {
 	}
 #endif
 
+#if REGRESSION_LEVEL_2
+	// #1599: xtndd is the x87 80-bit format, so es must be 15. At es = 11 it had double's
+	// exponent range in an 80-bit container and overflowed to inf everywhere above 1.8e308
+	// that a real x87 long double is finite. The reference values are x87's, and on a host
+	// whose long double IS x87 they are additionally required to match it.
+	int VerifyXtnddIsX87(bool reportTestCases) {
+		using namespace sw::universal;
+		using L = std::numeric_limits<xtndd>;
+		int nrFailed = 0;
+
+		if (xtndd::es != 15) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "xtndd es " << xtndd::es << " != 15 (not the x87 shape)\n";
+		}
+		if (xtndd::fbits != 64) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "xtndd fbits " << xtndd::fbits << " != 64\n";
+		}
+		if (L::min_exponent != -16381 || L::max_exponent != 16384) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "xtndd exponent range [" << L::min_exponent << ","
+				<< L::max_exponent << "] != x87's [-16381,16384]\n";
+		}
+		if (L::min_exponent10 != -4931 || L::max_exponent10 != 4932) {
+			++nrFailed;
+			if (reportTestCases) std::cerr << "xtndd decimal range [" << L::min_exponent10 << ","
+				<< L::max_exponent10 << "] != x87's [-4931,4932]\n";
+		}
+		// maxpos must sit at x87's top binade. Asserting instead that double(maxpos) is inf
+		// does NOT discriminate the defect: cfloat<80,11> carries 68 fraction bits, so its
+		// maxpos (2 - 2^-68) * 2^1023 also exceeds double's (2 - 2^-52) * 2^1023 and also
+		// converts to inf. The scale is what separates the two shapes -- 16383 against 1023.
+		{
+			const xtndd mx(SpecificValue::maxpos);
+			if (scale(mx) != 16383) {
+				++nrFailed;
+				if (reportTestCases) std::cerr << "xtndd maxpos scale " << scale(mx) << " != 16383 (x87's top binade)\n";
+			}
+			// and it must be past what a double can hold, which follows from the scale
+			if (!std::isinf(double(L::max()))) {
+				++nrFailed;
+				if (reportTestCases) std::cerr << "xtndd maxpos is inside double's range\n";
+			}
+		}
+		// on a host where long double is x87, the range must agree exactly
+		if (std::numeric_limits<long double>::digits == 64
+		 && std::numeric_limits<long double>::max_exponent == 16384) {
+			if (L::min_exponent != std::numeric_limits<long double>::min_exponent
+			 || L::max_exponent != std::numeric_limits<long double>::max_exponent
+			 || L::min_exponent10 != std::numeric_limits<long double>::min_exponent10
+			 || L::max_exponent10 != std::numeric_limits<long double>::max_exponent10) {
+				++nrFailed;
+				if (reportTestCases) std::cerr << "xtndd range disagrees with this host's x87 long double\n";
+			}
+			// and it carries exactly one bit MORE, because cfloat's leading bit is implicit
+			// where x87's is explicit
+			if (L::digits != std::numeric_limits<long double>::digits + 1) {
+				++nrFailed;
+				if (reportTestCases) std::cerr << "xtndd digits " << L::digits << " != x87 digits + 1\n";
+			}
+		}
+		return nrFailed;
+	}
+#endif
+
 } // anonymous namespace
 
 int main()
@@ -212,6 +278,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyDecimalDigits<cfloat<40, 9, std::uint32_t, true, false, false>>("cfloat<40,9>", 31, 9, 11, reportTestCases),
 		test_tag, "cfloat<40,9> (non-standard width)");
+
+	// xtndd is the x87 shape, not an 80-bit container holding double's range (#1599)
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyXtnddIsX87(reportTestCases),
+		test_tag, "xtndd is the x87 80-bit format");
 #endif
 
 #if REGRESSION_LEVEL_3
