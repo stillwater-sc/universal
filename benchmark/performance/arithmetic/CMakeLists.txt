@@ -11,6 +11,7 @@ file (GLOB INTEGER_SRC  "./integer/*.cpp")
 file (GLOB LNS_SRC      "./lns/*.cpp")
 file (GLOB NATIVE_SRC   "./native/*.cpp")
 file (GLOB POSIT_SRC    "./posit/*.cpp")
+file (GLOB TAKUM_SRC    "./takum/*.cpp")
 file (GLOB UNUM_SRC     "./unum/*.cpp")
 
 compile_all("true" "benchmark_areal"   "Benchmarks/Performance/Arithmetic/areal"    "${AREAL_SRC}")
@@ -26,4 +27,11 @@ compile_all("true" "benchmark_integer" "Benchmarks/Performance/Arithmetic/intege
 compile_all("true" "benchmark_lns"     "Benchmarks/Performance/Arithmetic/lns"      "${LNS_SRC}")
 compile_all("true" "benchmark_native"  "Benchmarks/Performance/Arithmetic/native"   "${NATIVE_SRC}")
 compile_all("true" "benchmark_posit"   "Benchmarks/Performance/Arithmetic/posit"    "${POSIT_SRC}")
+compile_all("true" "benchmark_takum"   "Benchmarks/Performance/Arithmetic/takum"    "${TAKUM_SRC}")
 compile_all("true" "benchmark_unum"    "Benchmarks/Performance/Arithmetic/unum"     "${UNUM_SRC}")
+
+# the same takum16 benchmark against the opt-in fast specialization
+add_executable(benchmark_takum_takum16_fast ./takum/takum16.cpp)
+target_compile_definitions(benchmark_takum_takum16_fast PRIVATE TAKUM_FAST_TAKUM_16=1)
+set_target_properties(benchmark_takum_takum16_fast PROPERTIES FOLDER "Benchmarks/Performance/Arithmetic/takum")
+add_test(NAME benchmark_takum_takum16_fast COMMAND benchmark_takum_takum16_fast)
