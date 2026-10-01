@@ -23,6 +23,8 @@
 #include <universal/number/takum/exceptions.hpp>
 #include <universal/number/takum/takum_fwd.hpp>
 #include <universal/number/takum/takum_impl.hpp>
+// opt-in fast specializations (TAKUM_FAST_TAKUM_16, ...); must precede any use of them
+#include <universal/number/takum/specializations.hpp>
 #include <universal/number/takum/takum_log_impl.hpp>
 #include <universal/number/takum/takum_traits.hpp>
 #include <universal/number/takum/numeric_limits.hpp>
