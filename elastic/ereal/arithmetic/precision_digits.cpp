@@ -21,6 +21,7 @@
 //     5000-digit reference, which is the point of the wider limbs
 #include <universal/utility/directives.hpp>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/ereal_reference_digits.hpp>
@@ -137,8 +138,13 @@ int VerifyLongDoubleDigits(bool reportTestCases, const std::string& test_tag, bo
 	using namespace sw::universal;
 	int n = 0;
 	if (!deep) {
-		// eleven Newton steps at 8 limbs, past the 340-digit reference's reach
-		n += ReportTestResult(VerifySqrt2<8, LD>("ereal<8, long double>", 300, kLongReferenceCap, reportTestCases), test_tag, "long double sqrt(2)");
+		// eleven Newton steps at 8 limbs. What they can reach is the limb budget's bits, so
+		// the target follows the limb type rather than assuming x87: 16 * 64 bits is ~308
+		// digits there, but on MSVC and Apple ARM64 long double IS double and 16 * 53 bits
+		// is ~255 (#1617). The 8-digit margin leaves room for rounding in the last limb.
+		using R8 = ereal<8, LD>;
+		constexpr int wanted = static_cast<int>(R8::limb_budget * std::numeric_limits<LD>::digits * 0.30103) - 8;
+		n += ReportTestResult(VerifySqrt2<8, LD>("ereal<8, long double>", wanted, kLongReferenceCap, reportTestCases), test_tag, "long double sqrt(2)");
 	}
 	else {
 		n += ReportTestResult(VerifyIdentities<8, LD>("ereal<8, long double>", reportTestCases), test_tag, "long double identities");
