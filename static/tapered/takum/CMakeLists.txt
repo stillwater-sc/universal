@@ -9,3 +9,5 @@ compile_all("true" "tkm" "Number Systems/static/floating-point/tapered/takum/con
 compile_all("true" "tkm" "Number Systems/static/floating-point/tapered/takum/logic" "${LOGIC_SRC}")
 compile_all("true" "tkm" "Number Systems/static/floating-point/tapered/takum/arithmetic" "${ARITHMETIC_SRC}")
 compile_all("true" "tkm" "Number Systems/static/floating-point/tapered/takum/math" "${MATH_SRC}")
+
+add_subdirectory("specialized")
