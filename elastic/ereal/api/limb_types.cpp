@@ -216,19 +216,30 @@ namespace {
 
 	// ---- reach: long double limbs go past double's 303 digits ----------------------------
 
+	// Only where the limb type admits N of them: long double is a valid limb on MSVC and
+	// Apple ARM64 too, where it IS double and max_safe_limbs is 19, and ereal<24, long double>
+	// would fail the class's static_assert at compile time there (#1574). The guard depends
+	// on N, so the discarded branch is never instantiated.
 	template<unsigned N>
 	int VerifyReach(bool reportTestCases) {
-		using R = ereal<N, long double>;
-		int fails = 0;
-		const R third = R(1.0) / R(3.0);
-		const int bits = agreed_bits(value_of(third) * dyadic::from_fp(3.0), dyadic::from_fp(1.0));
-		const int digits = static_cast<int>(bits * 0.30103);
-		// double limbs stop at 19 limbs, about 1007 bits (303 digits)
-		fails += expect(digits > 303, "ereal<" + std::to_string(N) + ", long double>: 1/3 to " + std::to_string(digits) + " digits, past double's 303", reportTestCases);
-		const R x = R(2.0);
-		const R r = x / R(7.0);
-		fails += expect(agreed_bits(value_of(r) * dyadic::from_fp(7.0), dyadic::from_fp(2.0)) > 1007, "ereal<" + std::to_string(N) + ", long double>: 2/7 beyond 1007 bits", reportTestCases);
-		return fails;
+		if constexpr (ereal<8, long double>::max_safe_limbs < N) {
+			if (reportTestCases) std::cout << "ereal<" << N << ", long double>: skipped, long double admits only "
+			                               << ereal<8, long double>::max_safe_limbs << " limbs on this host\n";
+			return 0;
+		}
+		else {
+			using R = ereal<N, long double>;
+			int fails = 0;
+			const R third = R(1.0) / R(3.0);
+			const int bits = agreed_bits(value_of(third) * dyadic::from_fp(3.0), dyadic::from_fp(1.0));
+			const int digits = static_cast<int>(bits * 0.30103);
+			// double limbs stop at 19 limbs, about 1007 bits (303 digits)
+			fails += expect(digits > 303, "ereal<" + std::to_string(N) + ", long double>: 1/3 to " + std::to_string(digits) + " digits, past double's 303", reportTestCases);
+			const R x = R(2.0);
+			const R r = x / R(7.0);
+			fails += expect(agreed_bits(value_of(r) * dyadic::from_fp(7.0), dyadic::from_fp(2.0)) > 1007, "ereal<" + std::to_string(N) + ", long double>: 2/7 beyond 1007 bits", reportTestCases);
+			return fails;
+		}
 	}
 
 }  // anonymous namespace
