@@ -1,11 +1,11 @@
 // fma.cpp: functional tests for the takum fused multiply-add fma(a,b,c)
 //
 // takum (linear takum encoding, epic #592) had no fma (#1195, sub-issue of the
-// universal fma epic #1189). fma widens the operands to double, forms a*b + c with
-// std::fma, and rounds the result once into takum via the value constructor. A
-// takum's significand precision is well under double's 53 bits for practical
-// configurations, so the double intermediate carries the correctly-rounded a*b + c
-// and the double -> takum rounding is the single rounding that determines the result.
+// universal fma epic #1189). fma evaluates a*b + c exactly in integers and rounds
+// once into takum, at every width.  It used to go through std::fma below 57 bits,
+// which rounds twice -- to double, then to takum -- and gets midpoint-plus-tiny
+// cases wrong at any width (#1616); those are constructed and checked against an
+// exact reference in arithmetic/wide_arithmetic.cpp.
 // takum's non-real state (NaR) absorbs the IEEE specials.
 //
 // This suite validates against an INDEPENDENT reference that forms a*b + c in long

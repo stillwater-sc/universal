@@ -272,6 +272,66 @@ int report_coverage(const char* what, unsigned nbits, unsigned rbits,
 // ---------------------------------------------------------------------------
 // a OP b, correctly rounded
 // ---------------------------------------------------------------------------
+
+// Is a OP b correctly rounded?  Counts the case in `exercised` when the exact
+// reference reached it and returns false only for a wrong rounding.
+template<typename T>
+bool CheckCorrectlyRounded(Op op, const T& a, const T& b, tally& t, long& exercised, bool reportTestCases) {
+	const fields fa = decode(a);
+	const fields fb = decode(b);
+
+	T got;
+	switch (op) {
+	case Op::add: got = a + b; break;
+	case Op::sub: got = a - b; break;
+	case Op::mul: got = a * b; break;
+	default:      got = a / b; break;
+	}
+	if (got.isnar() || saturated(got)) return true;
+
+	// Assemble the exact result as num/den, everything scaled by 2^base.
+	// den is 1 except for division, where the quotient is not dyadic and
+	// the comparison is cross-multiplied by the divisor's significand.
+	const fields fg = decode(got);
+	BigInt num(0), den(1);
+	std::int64_t base = 0;
+
+	if (op == Op::add || op == Op::sub) {
+		base = std::min(std::min(fa.e, fb.e), fg.e) - neighbour_margin(T::maxCharBits);
+		if (!fits(fa.e, base) || !fits(fb.e, base)) { ++t.skipped; return true; }
+		const BigInt A = scaled(fa.S, fa.e, fa.sign, base);
+		const BigInt B = scaled(fb.S, fb.e, (op == Op::sub) ? !fb.sign : fb.sign, base);
+		num = A + B;
+	}
+	else if (op == Op::mul) {
+		const std::int64_t ep = fa.e + fb.e;
+		base = std::min(ep, fg.e) - neighbour_margin(T::maxCharBits);
+		if (!fits(ep, base)) { ++t.skipped; return true; }
+		BigInt P(fa.S);
+		P = P * BigInt(fb.S);
+		P <<= static_cast<int>(ep - base);
+		num = (fa.sign != fb.sign) ? -P : P;
+	}
+	else {
+		const std::int64_t eq = fa.e - fb.e;
+		base = std::min(eq, fg.e) - neighbour_margin(T::maxCharBits);
+		if (!fits(eq, base)) { ++t.skipped; return true; }
+		num = scaled(fa.S, eq, fa.sign != fb.sign, base);
+		den = BigInt(fb.S);
+	}
+
+	const long skipsBefore = t.skipped;
+	const bool ok = nearest(got, num, den, base, t);
+	if (t.skipped != skipsBefore) return true;
+	++exercised;
+	if (!ok && reportTestCases) {
+		std::cout << "FAIL not correctly rounded: op=" << int(op)
+		          << " a=" << to_binary(a) << " b=" << to_binary(b)
+		          << " got=" << to_binary(got) << '\n';
+	}
+	return ok;
+}
+
 template<unsigned nbits, unsigned rbits>
 int VerifyCorrectlyRounded(Op op, unsigned samples, bool reportTestCases) {
 	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
@@ -284,65 +344,10 @@ int VerifyCorrectlyRounded(Op op, unsigned samples, bool reportTestCases) {
 	for (std::uint64_t i = 0; i <= LAST && i + stride > i; i += stride) {
 		T a; a.setbits(i);
 		if (a.isnar() || a.iszero()) continue;
-		const fields fa = decode(a);
-
 		for (std::uint64_t j = 0; j <= LAST && j + stride > j; j += stride) {
 			T b; b.setbits(j);
 			if (b.isnar() || b.iszero()) continue;
-			const fields fb = decode(b);
-
-			T got;
-			switch (op) {
-			case Op::add: got = a + b; break;
-			case Op::sub: got = a - b; break;
-			case Op::mul: got = a * b; break;
-			default:      got = a / b; break;
-			}
-			if (got.isnar() || saturated(got)) continue;
-
-			// Assemble the exact result as num/den, everything scaled by 2^base.
-			// den is 1 except for division, where the quotient is not dyadic and
-			// the comparison is cross-multiplied by the divisor's significand.
-			const fields fg = decode(got);
-			BigInt num(0), den(1);
-			std::int64_t base = 0;
-
-			if (op == Op::add || op == Op::sub) {
-				base = std::min(std::min(fa.e, fb.e), fg.e) - neighbour_margin(T::maxCharBits);
-				if (!fits(fa.e, base) || !fits(fb.e, base)) { ++t.skipped; continue; }
-				const BigInt A = scaled(fa.S, fa.e, fa.sign, base);
-				const BigInt B = scaled(fb.S, fb.e, (op == Op::sub) ? !fb.sign : fb.sign, base);
-				num = A + B;
-			}
-			else if (op == Op::mul) {
-				const std::int64_t ep = fa.e + fb.e;
-				base = std::min(ep, fg.e) - neighbour_margin(T::maxCharBits);
-				if (!fits(ep, base)) { ++t.skipped; continue; }
-				BigInt P(fa.S);
-				P = P * BigInt(fb.S);
-				P <<= static_cast<int>(ep - base);
-				num = (fa.sign != fb.sign) ? -P : P;
-			}
-			else {
-				const std::int64_t eq = fa.e - fb.e;
-				base = std::min(eq, fg.e) - neighbour_margin(T::maxCharBits);
-				if (!fits(eq, base)) { ++t.skipped; continue; }
-				num = scaled(fa.S, eq, fa.sign != fb.sign, base);
-				den = BigInt(fb.S);
-			}
-
-			const long skipsBefore = t.skipped;
-			const bool ok = nearest(got, num, den, base, t);
-			if (t.skipped != skipsBefore) continue;
-			++exercised;
-			if (!ok) {
-				++nrOfFailedTests;
-				if (reportTestCases) {
-					std::cout << "FAIL not correctly rounded: op=" << int(op)
-					          << " a=" << to_binary(a) << " b=" << to_binary(b)
-					          << " got=" << to_binary(got) << '\n';
-				}
-			}
+			if (!CheckCorrectlyRounded(op, a, b, t, exercised, reportTestCases)) ++nrOfFailedTests;
 		}
 	}
 	nrOfFailedTests += report_coverage("correctly rounded", nbits, rbits, exercised, t, reportTestCases);
@@ -356,6 +361,39 @@ int VerifyCorrectlyRounded(Op op, unsigned samples, bool reportTestCases) {
 // it, which is exactly what a double intermediate destroyed here: it rounded both
 // factors first and then computed an exact product of the wrong numbers.
 // ---------------------------------------------------------------------------
+// Is fma(a, b, c) correctly rounded?  Same contract as CheckCorrectlyRounded().
+template<typename T>
+bool CheckFmaCorrectlyRounded(const T& a, const T& b, const T& c, tally& t, long& exercised, bool reportTestCases) {
+	const fields fa = decode(a);
+	const fields fb = decode(b);
+	const fields fc = decode(c);
+
+	T got = sw::universal::fma(a, b, c);
+	if (got.isnar() || saturated(got)) return true;
+
+	const fields fg = decode(got);
+	const std::int64_t ep = fa.e + fb.e;
+	const std::int64_t base = std::min(std::min(ep, fc.e), fg.e) - neighbour_margin(T::maxCharBits);
+	if (!fits(ep, base) || !fits(fc.e, base)) { ++t.skipped; return true; }
+
+	BigInt P(fa.S);
+	P = P * BigInt(fb.S);
+	P <<= static_cast<int>(ep - base);
+	if (fa.sign != fb.sign) P = -P;
+	const BigInt num = P + scaled(fc.S, fc.e, fc.sign, base);
+
+	const long skipsBefore = t.skipped;
+	const bool ok = nearest(got, num, BigInt(1), base, t);
+	if (t.skipped != skipsBefore) return true;
+	++exercised;
+	if (!ok && reportTestCases) {
+		std::cout << "FAIL fma not correctly rounded: a=" << to_binary(a)
+		          << " b=" << to_binary(b) << " c=" << to_binary(c)
+		          << " got=" << to_binary(got) << '\n';
+	}
+	return ok;
+}
+
 template<unsigned nbits, unsigned rbits>
 int VerifyFmaCorrectlyRounded(unsigned samples, bool reportTestCases) {
 	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
@@ -370,45 +408,109 @@ int VerifyFmaCorrectlyRounded(unsigned samples, bool reportTestCases) {
 	for (std::uint64_t i = 0; i <= LAST && i + stride > i; i += stride) {
 		T a; a.setbits(i);
 		if (a.isnar() || a.iszero()) continue;
-		const fields fa = decode(a);
-
 		for (std::uint64_t j = 0; j <= LAST && j + stride > j; j += stride) {
 			T b; b.setbits(j);
 			if (b.isnar() || b.iszero()) continue;
 			T c; c.setbits(i + j + skew);
 			if (c.isnar() || c.iszero()) continue;
-			const fields fb = decode(b);
-			const fields fc = decode(c);
-
-			T got = sw::universal::fma(a, b, c);
-			if (got.isnar() || saturated(got)) continue;
-
-			const fields fg = decode(got);
-			const std::int64_t ep = fa.e + fb.e;
-			const std::int64_t base = std::min(std::min(ep, fc.e), fg.e) - neighbour_margin(T::maxCharBits);
-			if (!fits(ep, base) || !fits(fc.e, base)) { ++t.skipped; continue; }
-
-			BigInt P(fa.S);
-			P = P * BigInt(fb.S);
-			P <<= static_cast<int>(ep - base);
-			if (fa.sign != fb.sign) P = -P;
-			const BigInt num = P + scaled(fc.S, fc.e, fc.sign, base);
-
-			const long skipsBefore = t.skipped;
-			const bool ok = nearest(got, num, BigInt(1), base, t);
-			if (t.skipped != skipsBefore) continue;
-			++exercised;
-			if (!ok) {
-				++nrOfFailedTests;
-				if (reportTestCases) {
-					std::cout << "FAIL fma not correctly rounded: a=" << to_binary(a)
-					          << " b=" << to_binary(b) << " c=" << to_binary(c)
-					          << " got=" << to_binary(got) << '\n';
-				}
-			}
+			if (!CheckFmaCorrectlyRounded(a, b, c, t, exercised, reportTestCases)) ++nrOfFailedTests;
 		}
 	}
 	nrOfFailedTests += report_coverage("correctly rounded fma", nbits, rbits, exercised, t, reportTestCases);
+	return nrOfFailedTests;
+}
+
+// ---------------------------------------------------------------------------
+// Double rounding (#1616)
+//
+// Random operands almost never expose it -- 0 in 10^8 pairs per operator for
+// takum<32,3> -- so the sweeps above cannot see it.  These construct the cases.
+//
+// Products: for operands 1 + i/2^p and 1 + j/2^p in [1,2) the exact product is
+// 1 + (i+j)/2^p + ij/2^(2p).  Choosing ij == 2^(p-1) +/- 1 (mod 2^p) puts it one
+// 2^-2p unit off a midpoint, which a double's 53 bits cannot hold once 2p > 53:
+// the double lands ON the midpoint and the second rounding breaks the tie by
+// evenness.  Half of them break it the wrong way.
+//
+// fma: a product that is exactly a midpoint plus a tiny addend.  std::fma drops
+// the addend entirely, at every width, and the tie goes to even regardless of
+// which side the addend was on.
+// ---------------------------------------------------------------------------
+template<unsigned nbits, unsigned rbits>
+int VerifyNearMidpointProducts(unsigned count, bool reportTestCases) {
+	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
+	int nrOfFailedTests = 0;
+	long exercised = 0;
+	tally t;
+	const T one(1.0);
+	const unsigned p = T::Codec::decode(one.magnitude_bits()).p;
+	const std::uint64_t mask = (1ull << p) - 1ull;
+	auto inverse = [&](std::uint64_t x) {         // x odd: Newton's iteration mod 2^p
+		std::uint64_t y = x;
+		for (int k = 0; k < 6; ++k) y *= 2ull - x * y;
+		return y & mask;
+	};
+	std::uint64_t state = 0x9E3779B97F4A7C15ull;
+	for (unsigned n = 0; n < count; ++n) {
+		state = state * 6364136223846793005ull + 1442695040888963407ull;
+		const std::uint64_t i = ((state >> 11) & mask) | 1ull;
+		const std::uint64_t target = (1ull << (p - 1)) + ((n & 1u) ? 1ull : mask);   // 2^(p-1) +/- 1
+		const std::uint64_t j = (target * inverse(i)) & mask;
+		T a, b;
+		a.setbits(one.raw_bits() + i);
+		b.setbits(one.raw_bits() + j);
+		if (!CheckCorrectlyRounded(Op::mul, a, b, t, exercised, reportTestCases)) ++nrOfFailedTests;
+	}
+	// the three products quoted in the issue
+	if constexpr (nbits == 32 && rbits == 3) {
+		const std::uint64_t quoted[3][2] = { { 0x44000001, 0x40000001 }, { 0x43fffffe, 0x40000001 }, { 0x46aaaaab, 0x40000003 } };
+		for (const auto& q : quoted) {
+			T a, b; a.setbits(q[0]); b.setbits(q[1]);
+			if (!CheckCorrectlyRounded(Op::mul, a, b, t, exercised, reportTestCases)) ++nrOfFailedTests;
+		}
+	}
+	nrOfFailedTests += report_coverage("near-midpoint products", nbits, rbits, exercised, t, reportTestCases);
+	return nrOfFailedTests;
+}
+
+template<unsigned nbits, unsigned rbits>
+int VerifyFmaMidpointPlusTiny(unsigned count, bool reportTestCases) {
+	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
+	int nrOfFailedTests = 0;
+	long exercised = 0;
+	tally t;
+	const T one(1.0);
+	const T tiny[2] = { T(sw::universal::SpecificValue::minpos), T(sw::universal::SpecificValue::minneg) };
+	// Operands 1 + k/2^q in [1,2) with q = ceil((p+1)/2) fraction bits, so a product
+	// has at most 2q+2 <= 53 bits: exact in a double, which makes the midpoint
+	// filter below exact, and fine enough to reach the result's midpoints.
+	const unsigned p = T::Codec::decode(one.magnitude_bits()).p;
+	const unsigned q = (p + 2u) / 2u;
+	const std::uint64_t step  = 1ull << (p - q);
+	const std::uint64_t nr    = 1ull << q;
+	const std::uint64_t rowSkip = (nr > 128ull) ? nr / 128ull + 1ull : 1ull;   // ~128 rows, odd stride so ka*kb can be odd
+	unsigned found = 0;
+	for (std::uint64_t ka = 0; ka < nr && found < count; ka += rowSkip) {
+		for (std::uint64_t kb = 0; kb < nr && found < count; ++kb) {
+			T a, b;
+			a.setbits(one.raw_bits() + ka * step);
+			b.setbits(one.raw_bits() + kb * step);
+			// keep only products that sit exactly on a midpoint of the result's layout
+			const double prod = double(a) * double(b);
+			const T lo(prod);
+			if (double(lo) == prod) continue;
+			T nb = lo; if (double(lo) < prod) ++nb; else --nb;
+			if (0.5 * (double(lo) + double(nb)) != prod) continue;
+			++found;
+			for (const T& c : tiny)
+				if (!CheckFmaCorrectlyRounded(a, b, c, t, exercised, reportTestCases)) ++nrOfFailedTests;
+		}
+	}
+	if (found == 0) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cout << "FAIL fma midpoint + tiny found no midpoint products\n";
+	}
+	nrOfFailedTests += report_coverage("fma midpoint + tiny", nbits, rbits, exercised, t, reportTestCases);
 	return nrOfFailedTests;
 }
 
@@ -568,6 +670,15 @@ try {
 		VerifyCorrectlyRounded<64, 3>(Op::add, rounding_samples, reportTestCases), "takum<64,3>", "correctly rounded add");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCorrectlyRounded<64, 3>(Op::mul, rounding_samples, reportTestCases), "takum<64,3>", "correctly rounded mul");
+	// #1616: double rounding, constructed rather than sampled
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyNearMidpointProducts<32, 3>(4000, reportTestCases), "takum<32,3>", "near-midpoint products");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyNearMidpointProducts<40, 3>(4000, reportTestCases), "takum<40,3>", "near-midpoint products");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFmaMidpointPlusTiny<16, 3>(2000, reportTestCases), "takum<16,3>", "fma midpoint + tiny");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFmaMidpointPlusTiny<32, 3>(2000, reportTestCases), "takum<32,3>", "fma midpoint + tiny");
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -577,9 +688,10 @@ try {
 		VerifyCorrectlyRounded<64, 3>(Op::div, rounding_samples, reportTestCases), "takum<64,3>", "correctly rounded div");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCommutative<64, 3>(commutative_samples, reportTestCases), "takum<64,3>", "commutativity");
-	// The narrow configurations keep the double path, where the operands are exact
-	// doubles and one rounding decides the result.  Verified against the SAME exact
-	// reference, so the boundary the gate draws is measured rather than asserted.
+	// takum<32,3> is on the exact path since #1616; takum<16,3> below keeps the
+	// double path, where the double rounding is provably innocuous.  Verified
+	// against the SAME exact reference, so the boundary the gate draws is measured
+	// rather than asserted.
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCorrectlyRounded<32, 3>(Op::add, rounding_samples, reportTestCases), "takum<32,3>", "correctly rounded add");
 	nrOfFailedTestCases += ReportTestResult(
@@ -600,7 +712,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// takum<58,3> is the narrowest configuration on the wide path (nbits > 54 + rbits)
+	// takum<58,3> was the narrowest configuration on the wide path before #1616
+	// moved the gate to nbits > 26 + rbits; it still exercises a p > 53 layout
 	// and takum<64,1> the widest significand the format allows at 64 bits, p = 61,
 	// which is what fixes the round-to-odd width at 63.
 	nrOfFailedTestCases += ReportTestResult(
