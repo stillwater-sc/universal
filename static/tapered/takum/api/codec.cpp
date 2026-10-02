@@ -284,7 +284,12 @@ int VerifyEncodeCarry(bool reportTestCases) {
 			auto even_up   = Codec::encode_rounded(c, 3.0 * half);      // 1.5 -> 2
 			auto want_down = Codec::encode_exact(c, 0ull);
 			auto want_up   = Codec::encode_exact(c, 2ull);
-			if (!even_down.ok() || even_down.magnitude != want_down.magnitude) fail("tie-to-even down", dr, c);
+			if (c == Codec::min_characteristic()) {
+				// In the lowest binade M = 0 is the zero pattern, and takum never rounds
+				// a nonzero value to zero: the tie saturates to minpos instead (#1615).
+				if (!even_down.underflowed() || even_down.magnitude != 1ull) fail("tie below minpos saturates to minpos", dr, c);
+			}
+			else if (!even_down.ok() || even_down.magnitude != want_down.magnitude) fail("tie-to-even down", dr, c);
 			if (!even_up.ok()   || even_up.magnitude   != want_up.magnitude)   fail("tie-to-even up", dr, c);
 		}
 	}

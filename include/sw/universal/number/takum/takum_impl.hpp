@@ -323,12 +323,12 @@ public:
 
 	// Round a fully evaluated exact result into this takum.  A zero V is the
 	// genuine zero the codec cannot express; saturation follows conversion from a
-	// native float and lands on maxpos / maxneg / zero.
+	// native float and lands on maxpos / maxneg / minpos / minneg.
 	CONSTEXPRESSION takum& assign_wide(const takum_wide::wide_value& r) noexcept {
 		if (takum_wide::iszero(r.V)) { setzero(); return *this; }
 		auto enc = takum_wide::encode<Codec>(r);
 		if (enc.overflowed()) { if (r.sign) maxneg(); else maxpos(); return *this; }
-		if (enc.underflowed()) { setzero(); return *this; }
+		if (enc.underflowed()) { if (r.sign) minneg(); else minpos(); return *this; }
 		// The codec never sets the sign bit (I4); two's-complement negate here.
 		setbits(r.sign ? (((~enc.magnitude) + 1ull) & nbits_mask()) : enc.magnitude);
 		return *this;
@@ -635,7 +635,7 @@ protected:
 			if (s) maxneg(); else maxpos();
 			return *this;
 		}
-		if (enc.underflowed()) { setzero(); return *this; }
+		if (enc.underflowed()) { if (s) minneg(); else minpos(); return *this; }
 
 		// The codec never sets the sign bit (I4); two's-complement negate here.
 		uint64_t raw = s ? (((~enc.magnitude) + 1ull) & nbits_mask()) : enc.magnitude;

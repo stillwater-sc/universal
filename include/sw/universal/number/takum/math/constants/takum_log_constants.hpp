@@ -101,14 +101,14 @@ inline constexpr takum_log_constant tkml_ln10     = {    1,  3080905514902219463
 // Every constant here is positive, so the sign bit is never set; negate the
 // result for -pi and friends.  A constant outside a narrow configuration's range
 // saturates the way conversion from a native float does -- maxpos on overflow,
-// zero on underflow -- rather than trapping.
+// minpos on underflow -- rather than trapping.
 template<typename TakumLog>
 inline TakumLog takum_log_constant_cast(const takum_log_constant& k) noexcept {
 	using Codec = typename TakumLog::Codec;
 	TakumLog result;
 	auto enc = Codec::encode_fraction(k.c, k.N, takum_log_constant_qbits);
 	if (enc.overflowed())  { result.maxpos();  return result; }
-	if (enc.underflowed()) { result.setzero(); return result; }
+	if (enc.underflowed()) { result.minpos();  return result; }
 	result.setbits(enc.magnitude);
 	return result;
 }

@@ -15,7 +15,8 @@
 //   monotonicity             encoding is order preserving, so a larger real must
 //                            never produce a smaller encoding
 //   saturation direction     a value past maxpos saturates UP and one below
-//                            minpos goes to zero -- and those two must not swap,
+//                            minpos saturates to minpos, never to zero (#1615)
+//                            -- and those two must not swap,
 //                            which is precisely the failure that made exp()
 //                            return zero for exp(maxpos) in #1305
 //   integers are not exact   an integer k is sqrt(e)^l only for irrational l, so
@@ -137,11 +138,12 @@ int VerifySaturation(bool reportTestCases) {
 	if (under_neg.iszero()) fail("a value below maxneg must not become zero");
 	if (!under_neg.sign())  fail("a value below maxneg must stay negative");
 
-	// below the bottom goes to zero, not to maxpos
+	// below the bottom saturates to minpos: neither zero nor maxpos (#1615)
+	TL minneg(sw::universal::SpecificValue::minneg);
 	TL tiny(dmin / 16.0);
-	if (!tiny.iszero())     fail("a value below minpos must underflow to zero");
+	if (tiny.raw_bits() != minpos.raw_bits())     fail("a value below minpos must saturate to minpos");
 	TL tiny_neg(-dmin / 16.0);
-	if (!tiny_neg.iszero()) fail("a negative value below minpos must underflow to zero");
+	if (tiny_neg.raw_bits() != minneg.raw_bits()) fail("a negative value above minneg must saturate to minneg");
 
 	// specials
 	TL zero(0.0);

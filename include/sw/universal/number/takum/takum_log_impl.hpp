@@ -471,7 +471,7 @@ protected:
 
 		auto enc = Codec::encode_fraction(c, N, q);
 		if (enc.overflowed())  { if (negative) maxneg(); else maxpos(); return *this; }
-		if (enc.underflowed()) { setzero(); return *this; }
+		if (enc.underflowed()) { if (negative) minneg(); else minpos(); return *this; }
 		// the codec never sets the sign bit (I4); apply it here
 		setbits(negative ? (((~enc.magnitude) + 1ull) & nbits_mask()) : enc.magnitude);
 		return *this;
@@ -509,7 +509,7 @@ protected:
 		const auto s = takum_log_arith::to_integer_fraction(r.l);
 		const auto enc = Codec::encode_fraction(s.c, s.N, takum_log_arith::qbits);
 		if (enc.overflowed())  { if (r.sign) maxneg(); else maxpos(); return *this; }
-		if (enc.underflowed()) { setzero(); return *this; }
+		if (enc.underflowed()) { if (r.sign) minneg(); else minpos(); return *this; }
 		setbits(r.sign ? (((~enc.magnitude) + 1ull) & nbits_mask()) : enc.magnitude);
 		return *this;
 	}
@@ -572,7 +572,7 @@ protected:
 			if (s) maxneg(); else maxpos();
 			return *this;
 		}
-		if (enc.underflowed()) { setzero(); return *this; }
+		if (enc.underflowed()) { if (s) minneg(); else minpos(); return *this; }
 
 		// The codec never sets the sign bit (I4); two's-complement negate here.
 		setbits(s ? (((~enc.magnitude) + 1ull) & nbits_mask()) : enc.magnitude);

@@ -105,6 +105,7 @@ inline CONSTEXPRESSION std::uint16_t encode(double v) noexcept {
 	unsigned s = tbl.enc_shift[E];
 	std::uint64_t mag = tbl.enc_base[E] + ((f + (1ull << (s - 1)) - 1ull + ((f >> s) & 1ull)) >> s);
 	if (mag > 0x7FFFu) mag = 0x7FFFu;
+	mag |= (mag == 0) & ((u << 1) != 0);          // nonzero never rounds to zero: minpos (#1615)
 	std::uint64_t sgn = u >> 63;                  // branch-free two's-complement negate
 	return static_cast<std::uint16_t>((mag ^ (0 - sgn)) + sgn);
 }

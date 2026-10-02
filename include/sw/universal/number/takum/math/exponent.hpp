@@ -63,7 +63,7 @@ takum_log<nbits, rbits, bt> exp(const takum_log<nbits, rbits, bt>& x) {
 	const double cmin = static_cast<double>(Codec::min_characteristic());
 	if (std::isnan(l2))     { result.setnar(); return result; }
 	if (l2 >= cmax + 1.0)   { result.maxpos();  return result; }   // includes +inf
-	if (l2 <  cmin)         { result.setzero(); return result; }   // includes -inf
+	if (l2 <  cmin)         { result.minpos();  return result; }   // includes -inf; e^x is never zero
 
 	int64_t c = static_cast<int64_t>(l2);
 	if (l2 < 0.0 && static_cast<double>(c) != l2) --c;
@@ -72,7 +72,7 @@ takum_log<nbits, rbits, bt> exp(const takum_log<nbits, rbits, bt>& x) {
 	if (m >= 1.0) { m = 0.0; ++c; }
 	auto enc = Codec::encode_rounded(c, m);
 	if (enc.overflowed())  { result.maxpos();  return result; }
-	if (enc.underflowed()) { result.setzero(); return result; }
+	if (enc.underflowed()) { result.minpos();  return result; }
 	result.setbits(enc.magnitude);                  // e^x is always positive
 	return result;
 }

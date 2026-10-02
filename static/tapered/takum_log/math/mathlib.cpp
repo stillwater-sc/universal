@@ -400,10 +400,12 @@ int VerifySpecialValues(bool reportTestCases) {
 				          << " (isnar=" << big_exp.isnar() << ")\n";
 			}
 		}
-		if (!small_exp.iszero()) {
+		// e^x is never zero, so the bottom saturates to minpos (#1615)
+		const TL minpos(sw::universal::SpecificValue::minpos);
+		if (small_exp.raw_bits() != minpos.raw_bits()) {
 			++nrOfFailedTests;
 			if (reportTestCases) {
-				std::cout << "FAIL exp(maxneg) must underflow to zero, got " << double(small_exp) << '\n';
+				std::cout << "FAIL exp(maxneg) must saturate to minpos, got " << double(small_exp) << '\n';
 			}
 		}
 	}
