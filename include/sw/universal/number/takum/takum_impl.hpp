@@ -121,16 +121,22 @@ public:
 	// Maximum characteristic bits available for this nbits
 	static constexpr unsigned maxCharBits = Codec::maxCharBits;
 
-	// Does the significand outrun a double?  A takum significand is 1 + p bits and
-	// p reaches maxCharBits, so this is true exactly when nbits > 54 + rbits: 57
-	// for the specified rbits = 3, which puts takum<64,3> and its 60-bit
-	// significand on the wrong side of a double's 53.  Those configurations
-	// evaluate their arithmetic exactly in integers (takum_wide_arithmetic.hpp)
-	// rather than through a double that would quantize both operands before the
-	// operation ever happened -- issue #1300.  Everything narrower keeps the
-	// double path, where the operands ARE exact doubles and one rounding decides
-	// the result.
-	static constexpr bool wide_significand = (maxCharBits + 1u) > 53u;
+	// Can a double evaluate the arithmetic with a single effective rounding?  A takum
+	// significand is s = 1 + p bits and p reaches maxCharBits.  Narrow configurations
+	// evaluate + - * / and fma in a double and convert back, which rounds TWICE: once
+	// to 53 bits, once to the takum.  That is harmless only when 53 >= 2s + 2
+	// (Figueroa, "When is double rounding innocuous?", 1995), i.e. s <= 25, i.e.
+	// nbits <= 26 + rbits -- 29 for the specified rbits = 3.  Above it the first
+	// rounding can move an exact result onto a takum midpoint and the second then
+	// breaks the tie the wrong way: takum<32,3> 0x44000001 * 0x40000001 came back as
+	// 0x44000002, where the correctly rounded product is 0x44000003 (#1616).
+	//
+	// So everything wider -- including takum<64,3>, whose 60-bit significand does not
+	// even fit a double (#1300) -- evaluates exactly in integers
+	// (takum_wide_arithmetic.hpp) and rounds once, in the codec.  Narrower
+	// configurations keep the double path: their operands are exact doubles and the
+	// double rounding provably lands where a single rounding would.
+	static constexpr bool wide_significand = 2u * (maxCharBits + 1u) + 2u > 53u;
 
 	// Codec geometry, re-exported so that the public surface of takum<> is
 	// unchanged by the codec extraction (manipulators, numeric_limits and the
@@ -313,8 +319,9 @@ public:
 	// Exact-arithmetic surface, public so that fma() -- which is a free function
 	// and cannot reach a private member -- shares this decode and this rounding
 	// tail rather than reimplementing either.  Both are well defined at every
-	// width; it is simply that configurations with wide_significand == false never
-	// reach them.
+	// width: the operators reach them only when wide_significand is true, but
+	// fma() takes them at every width, since no width makes std::fma's double
+	// rounding safe (#1616).
 
 	// Decode to  value = (-1)^sign * S * 2^e.  Pre: neither zero nor NaR.
 	constexpr takum_wide::operand to_wide_operand() const noexcept {

@@ -6,24 +6,22 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// For configurations with nbits <= 54 + rbits, fma widens the operands to
-// double, forms a*b + c with std::fma (one IEEE rounding to double), and rounds
-// the result once into takum via the value constructor. A takum's significand is
-// 1 + p bits with p reaching nbits - 2 - rbits, so up to and including that
-// threshold -- 57 bits for the specified rbits = 3, where the significand is
-// exactly 53 -- it still fits a double, and double(x) is the exact represented
-// value, the product is exact in double, and the subsequent double -> takum
-// rounding is the single rounding that determines the result. takum's non-real
-// state (NaR) absorbs the IEEE specials: inf*0 -> NaN -> NaR, and any inf / NaN
-// operand -> NaR.
-//
-// ABOVE that threshold the reasoning fails, and it fails before the fma
-// begins: takum<64,3> carries a 60-bit significand, so double(a) is already a
-// rounded operand and std::fma then delivers an exact product of the wrong
-// numbers. Those configurations take the exact integer path instead
+// fma rounds once, at every width, by evaluating exactly in integers
 // (takum_wide_arithmetic.hpp): the significand product is exact in 128 bits, c is
-// aligned into the same window, and the single rounding happens once at the end
-// in the codec -- which is what fma is FOR. Issue #1300.
+// aligned into the same window, and the single rounding happens at the end in the
+// codec -- which is what fma is FOR.
+//
+// It used to do that only above nbits = 54 + rbits, where a double cannot even
+// hold the operands (takum<64,3>'s significand is 60 bits, #1300), and to evaluate
+// narrower widths with std::fma.  That rounds twice -- once to double, once to
+// takum -- and unlike + - * / no width makes it safe: the exact a*b + c can sit a
+// hair off a takum midpoint by less than a double ulp, so std::fma lands exactly
+// ON the midpoint and the second rounding breaks the tie by evenness instead of by
+// the discarded remainder.  takum<16,3> fma(a, b, minpos) was wrong for 2822 of
+// the 5648 operand pairs in [1,2) whose product is a midpoint (#1616).
+//
+// takum's non-real state (NaR) absorbs the IEEE specials: a NaR operand gives NaR,
+// and a zero product leaves c unchanged.
 //
 // Sub-issue of #1189 (universal fma, linear takum epic #592). Relates to #1195.
 
@@ -35,20 +33,15 @@ template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> fma(const takum<nbits, rbits, bt>& a, const takum<nbits, rbits, bt>& b,
                             const takum<nbits, rbits, bt>& c) {
 	using Takum = takum<nbits, rbits, bt>;
-	if constexpr (Takum::wide_significand) {
-		Takum result;
-		if (a.isnar() || b.isnar() || c.isnar()) { result.setnar(); return result; }
-		// takum has no signed zero, so a vanishing product is simply absent from
-		// the sum and there is no -0 + 0 sign convention to preserve.
-		if (a.iszero() || b.iszero()) return c;
-		auto product = takum_wide::multiply(a.to_wide_operand(), b.to_wide_operand());
-		if (c.iszero()) return result.assign_wide(product);
-		return result.assign_wide(
-			takum_wide::sum(product, takum_wide::widen(c.to_wide_operand()), false));
-	}
-	else {
-		return Takum(std::fma(double(a), double(b), double(c)));
-	}
+	Takum result;
+	if (a.isnar() || b.isnar() || c.isnar()) { result.setnar(); return result; }
+	// takum has no signed zero, so a vanishing product is simply absent from
+	// the sum and there is no -0 + 0 sign convention to preserve.
+	if (a.iszero() || b.iszero()) return c;
+	auto product = takum_wide::multiply(a.to_wide_operand(), b.to_wide_operand());
+	if (c.iszero()) return result.assign_wide(product);
+	return result.assign_wide(
+		takum_wide::sum(product, takum_wide::widen(c.to_wide_operand()), false));
 }
 
 // ---------------------------------------------------------------------------
