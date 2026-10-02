@@ -6,17 +6,18 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <cmath>
+#include <universal/number/takum/math/saturate.hpp>
 
 namespace sw { namespace universal {
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> sinh(const takum<nbits, rbits, bt>& x) {
-	return takum<nbits, rbits, bt>(std::sinh(double(x)));
+	return saturate_from_double<takum<nbits, rbits, bt>>(std::sinh(double(x)), !x.iszero());
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> cosh(const takum<nbits, rbits, bt>& x) {
-	return takum<nbits, rbits, bt>(std::cosh(double(x)));
+	return saturate_from_double<takum<nbits, rbits, bt>>(std::cosh(double(x)), true);
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
@@ -45,12 +46,12 @@ takum<nbits, rbits, bt> atanh(const takum<nbits, rbits, bt>& x) {
 // ---------------------------------------------------------------------------
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> sinh(const takum_log<nbits, rbits, bt>& x) {
-	return takum_log<nbits, rbits, bt>(std::sinh(double(x)));
+	return saturate_from_double<takum_log<nbits, rbits, bt>>(std::sinh(double(x)), !x.iszero());
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> cosh(const takum_log<nbits, rbits, bt>& x) {
-	return takum_log<nbits, rbits, bt>(std::cosh(double(x)));
+	return saturate_from_double<takum_log<nbits, rbits, bt>>(std::cosh(double(x)), true);
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
