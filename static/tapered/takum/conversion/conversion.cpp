@@ -4,6 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cmath>
+#include <limits>
 #include <universal/number/takum/takum.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -137,6 +139,48 @@ int VerifySpecificValues(bool reportTestCases) {
 	return nrOfFailedTestCases;
 }
 
+// Saturation at the bottom of the range (#1615).  Takum never rounds a nonzero value
+// to zero: Hunhold's Algorithm 1 ends with "if T = 0 and x != 0 then T <- T + sign(x)",
+// and the linear takum adopts the same rounding.  Every x in (0, minpos) lands on
+// minpos and every x in (-minpos, 0) on minneg -- including the stretch of the lowest
+// binade that rounds onto its M = 0 grid point, which is the zero pattern.  The
+// arithmetic cases cover both the double path (narrow) and takum_wide (64 bits).
+template<unsigned nbits>
+int VerifySaturationBelowMinpos(bool reportTestCases) {
+	using namespace sw::universal;
+	using Takum = takum<nbits>;
+	int nrOfFailedTestCases = 0;
+	auto expect = [&](bool ok, const char* what, double x) {
+		if (ok) return;
+		++nrOfFailedTestCases;
+		if (reportTestCases) std::cerr << "FAIL: takum<" << nbits << "> " << what << " at " << x << '\n';
+	};
+
+	Takum minpos(SpecificValue::minpos), minneg(SpecificValue::minneg);
+	const double mp = double(minpos);
+	const int cmin = static_cast<int>(Takum::min_characteristic());
+	const double below[] = {
+		0.99 * mp, 0.7 * mp, 0.5 * mp,
+		std::ldexp(1.0, cmin),                     // the lowest binade's M = 0 grid point
+		std::ldexp(1.0 + 1.0 / 32.0, cmin),        // the minpos tie for takum<16>
+		std::ldexp(1.0, cmin - 1), 1e-300, std::numeric_limits<double>::denorm_min()
+	};
+	for (double x : below) {
+		if (!(x > 0.0 && x <= mp)) continue;       // above minpos at this width
+		expect(Takum(x).raw_bits()  == minpos.raw_bits(), "value below minpos must saturate to minpos", x);
+		expect(Takum(-x).raw_bits() == minneg.raw_bits(), "value above minneg must saturate to minneg", -x);
+	}
+	expect(Takum(0.0).iszero() && Takum(-0.0).iszero(), "zero must stay zero", 0.0);
+
+	// arithmetic results below minpos saturate too; an exact zero stays zero
+	const Takum half(0.5);
+	expect((minpos * half).raw_bits() == minpos.raw_bits(), "minpos * 0.5 must saturate to minpos", mp);
+	expect((minneg * half).raw_bits() == minneg.raw_bits(), "minneg * 0.5 must saturate to minneg", -mp);
+	expect((minpos / Takum(4.0)).raw_bits() == minpos.raw_bits(), "minpos / 4 must saturate to minpos", mp);
+	expect((minpos - minpos).iszero(), "minpos - minpos must be exactly zero", mp);
+	return nrOfFailedTestCases;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -178,6 +222,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMonotonicity<6>(reportTestCases), "takum<6> monotonicity", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundtrip<8>(reportTestCases), "takum<8> roundtrip", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMonotonicity<8>(reportTestCases), "takum<8> monotonicity", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySaturationBelowMinpos<8>(reportTestCases), "takum<8> saturation below minpos", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySaturationBelowMinpos<16>(reportTestCases), "takum<16> saturation below minpos", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySaturationBelowMinpos<32>(reportTestCases), "takum<32> saturation below minpos", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySaturationBelowMinpos<64>(reportTestCases), "takum<64> saturation below minpos", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

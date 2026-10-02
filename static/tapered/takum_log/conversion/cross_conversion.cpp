@@ -166,12 +166,13 @@ int VerifyRoundTripThroughWider(const char* tag, bool reportTestCases, uint64_t 
 		Source x; x.setbits(b);
 		if (x.iszero() || x.isnar()) continue;
 		Wide   w    = sw::universal::takum_convert<Wide>(x);
-		if (w.iszero() || w.isnar()) continue;          // underflowed the intermediate
+		if (w.isnar()) continue;
 		// A wider takum_log is not a superset of a narrower takum: its base is
-		// sqrt(e) rather than 2, so takum_log<64,3> spans about +/-2.4e55 while
-		// takum<16,3> already spans +/-5.8e76.  Values past that saturate, and a
-		// round trip through a saturated intermediate says nothing about accuracy.
-		if (w.magnitude_bits() == wide_saturation) continue;
+		// sqrt(e) rather than 2, so takum_log<64,3> spans about 2.4e-55 to 2.4e55 while
+		// takum<16,3> already spans 5.8e-77 to 5.8e76.  Values past either end saturate,
+		// to maxpos at the top and minpos at the bottom (#1615), and a round trip through
+		// a saturated intermediate says nothing about accuracy.
+		if (w.magnitude_bits() == wide_saturation || w.magnitude_bits() == 1u) continue;
 		Source back = sw::universal::takum_convert<Source>(w);
 		++exercised;
 		if (back.raw_bits() != x.raw_bits()) {

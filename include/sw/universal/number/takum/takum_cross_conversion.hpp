@@ -143,7 +143,7 @@ inline TargetTakum takum_convert(const takum_log<nbits, rbits, bt>& x) {
 
 	auto enc = Codec::encode_fraction(Ei, s.N, takum_xc::qbits);
 	if (enc.overflowed())  { if (x.sign()) result.maxneg(); else result.maxpos(); return result; }
-	if (enc.underflowed()) { result.setzero(); return result; }
+	if (enc.underflowed()) { if (x.sign()) result.minneg(); else result.minpos(); return result; }
 	uint64_t raw = x.sign() ? (((~enc.magnitude) + 1ull) & Codec::nbits_mask()) : enc.magnitude;
 	result.setbits(raw);
 	return result;
@@ -169,7 +169,7 @@ inline TargetTakumLog takum_convert(const takum<nbits, rbits, bt>& x) {
 	auto s = takum_xc::to_integer_fraction(l);
 	auto enc = Codec::encode_fraction(s.c, s.N, takum_xc::qbits);
 	if (enc.overflowed())  { if (x.sign()) result.maxneg(); else result.maxpos(); return result; }
-	if (enc.underflowed()) { result.setzero(); return result; }
+	if (enc.underflowed()) { if (x.sign()) result.minneg(); else result.minpos(); return result; }
 	uint64_t raw = x.sign() ? (((~enc.magnitude) + 1ull) & Codec::nbits_mask()) : enc.magnitude;
 	result.setbits(raw);
 	return result;

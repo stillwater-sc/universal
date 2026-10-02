@@ -73,7 +73,7 @@ constexpr double to_double(const takum_log_value& l) noexcept {
 
 // Build a takum_log whose magnitude is sqrt(e)^l, with the requested sign.
 // Saturation follows the type's own conventions: overflow to maxpos/maxneg,
-// underflow to zero, exactly as conversion from a native float does.
+// underflow to minpos/minneg, exactly as conversion from a native float does.
 template<typename TakumLog>
 inline TakumLog from_log_value(const takum_log_value& l, bool negative) noexcept {
 	using Codec = typename TakumLog::Codec;
@@ -83,7 +83,10 @@ inline TakumLog from_log_value(const takum_log_value& l, bool negative) noexcept
 		if (negative) result.maxneg(); else result.maxpos();
 		return result;
 	}
-	if (enc.underflowed()) { result.setzero(); return result; }
+	if (enc.underflowed()) {
+		if (negative) result.minneg(); else result.minpos();
+		return result;
+	}
 	// the codec never sets the sign bit (I4); negate in two's complement here
 	uint64_t raw = negative ? (((~enc.magnitude) + 1ull) & Codec::nbits_mask()) : enc.magnitude;
 	result.setbits(raw);

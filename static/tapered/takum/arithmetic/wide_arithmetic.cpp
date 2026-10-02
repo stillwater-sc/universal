@@ -214,6 +214,9 @@ bool nearest(const T& got, const BigInt& num, const BigInt& den, std::int64_t ba
 	for (int k = -1; k <= 1; k += 2) {
 		T nb;
 		if (!neighbour<T>(g + k, nb)) continue;
+		// Zero is never a candidate: the exact value is nonzero, and takum saturates
+		// to minpos rather than round a nonzero value to zero (#1615).
+		if (nb.iszero()) continue;
 		const BigInt d = distance(nb, ok);
 		if (!ok) { ++t.skipped; return true; }
 		if (d < mine) return false;

@@ -61,7 +61,7 @@ namespace sw { namespace universal {
 enum class takum_encode_status : uint8_t {
 	ok,         // magnitude is a valid encoding of the requested (c, m)
 	overflow,   // |value| exceeded the format's largest magnitude -> caller sets maxpos
-	underflow   // |value| fell below the format's smallest magnitude -> caller sets zero
+	underflow   // nonzero |value| fell below the format's smallest magnitude -> caller sets minpos
 };
 
 // Stateless codec shared by takum<> (linear) and takum_log<> (logarithmic).
@@ -245,7 +245,7 @@ struct takum_codec {
 	// Post: I4 (sign bit clear), I5 (round-trips with decode()).
 	static constexpr encoded encode_exact(int64_t c, uint64_t M_bits) noexcept {
 		if (c > max_characteristic()) return encoded{ magnitude_mask(), takum_encode_status::overflow };
-		if (c < min_characteristic()) return encoded{ 0ull, takum_encode_status::underflow };
+		if (c < min_characteristic()) return underflow_to_minpos();
 
 		unsigned dr = find_dr(c);
 		field_layout g = layout_of(dr);
@@ -278,7 +278,7 @@ struct takum_codec {
 	// carries only 53 significant bits.  See the note at the top of this file.
 	static constexpr encoded encode_rounded(int64_t c, double m_real) noexcept {
 		if (c > max_characteristic()) return encoded{ magnitude_mask(), takum_encode_status::overflow };
-		if (c < min_characteristic()) return encoded{ 0ull, takum_encode_status::underflow };
+		if (c < min_characteristic()) return underflow_to_minpos();
 
 		unsigned dr = find_dr(c);
 		field_layout g = layout_of(dr);
@@ -322,7 +322,7 @@ struct takum_codec {
 					C_stored = 0;
 				}
 			}
-			return encoded{ pack(dr, C_stored, 0ull, g), takum_encode_status::ok };
+			return rounded(pack(dr, C_stored, 0ull, g));
 		}
 
 		// Trailing field, round-to-nearest-even.  Reached only when g.p > 0, hence
@@ -343,7 +343,7 @@ struct takum_codec {
 			}
 		}
 
-		return encoded{ pack(dr, C_stored, M_bits, g), takum_encode_status::ok };
+		return rounded(pack(dr, C_stored, M_bits, g));
 	}
 
 	// Assemble a magnitude from a characteristic and an EXACT binary fraction N/2^q,
@@ -364,7 +364,7 @@ struct takum_codec {
 	//       of c + N/2^q.
 	static constexpr encoded encode_fraction(int64_t c, uint64_t N, unsigned q) noexcept {
 		if (c > max_characteristic()) return encoded{ magnitude_mask(), takum_encode_status::overflow };
-		if (c < min_characteristic()) return encoded{ 0ull, takum_encode_status::underflow };
+		if (c < min_characteristic()) return underflow_to_minpos();
 
 		unsigned dr = find_dr(c);
 		field_layout g = layout_of(dr);
@@ -403,7 +403,7 @@ struct takum_codec {
 					C_stored = 0;
 				}
 			}
-			return encoded{ pack(dr, C_stored, 0ull, g), takum_encode_status::ok };
+			return rounded(pack(dr, C_stored, 0ull, g));
 		}
 
 		// Rescale N/2^q onto the layout's p bits.  Widening is exact; narrowing is the
@@ -427,12 +427,12 @@ struct takum_codec {
 					++dr;
 					g = layout_of(dr);
 					C_stored = 0;
-					return encoded{ pack(dr, 0ull, 0ull, g), takum_encode_status::ok };
+					return rounded(pack(dr, 0ull, 0ull, g));
 				}
 			}
 		}
 
-		return encoded{ pack(dr, C_stored, M_bits, g), takum_encode_status::ok };
+		return rounded(pack(dr, C_stored, M_bits, g));
 	}
 
 private:
@@ -440,6 +440,21 @@ private:
 	// object.  Deleting the default constructor makes that intent a compile error
 	// rather than a comment.
 	takum_codec() = delete;
+
+	// Saturation at the bottom of the range.  Takum never rounds a nonzero value to
+	// zero: Hunhold's Algorithm 1 ends with "if T = 0 and x != 0 then T <- T + sign(x)",
+	// and Sec. 4.7 carries that rounding over to the linear takum unchanged.  Below
+	// min_characteristic() that is minpos outright.  Inside the lowest binade the
+	// grid point 2^c with M = 0 IS the zero pattern, so a value rounding onto it
+	// belongs on minpos as well (#1615).  Both report underflow, so a caller sets
+	// minpos or minneg exactly as it sets maxpos or maxneg on overflow.
+	static constexpr encoded underflow_to_minpos() noexcept {
+		return encoded{ 1ull, takum_encode_status::underflow };
+	}
+	// Status of a magnitude produced by rounding a nonzero value.
+	static constexpr encoded rounded(uint64_t magnitude) noexcept {
+		return (magnitude == 0) ? underflow_to_minpos() : encoded{ magnitude, takum_encode_status::ok };
+	}
 
 	// Lay the three fields out in a magnitude word.  Post: I4.
 	static constexpr uint64_t pack(unsigned dr, uint64_t C_stored, uint64_t M_bits,
