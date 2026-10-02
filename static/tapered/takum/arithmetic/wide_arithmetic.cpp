@@ -48,9 +48,14 @@
 #include <universal/utility/directives.hpp>
 
 #include <iostream>
+#include <cmath>
 #include <cstdint>
+#include <cstring>
+#include <limits>
+#include <vector>
 #include <universal/number/takum/takum.hpp>
 #include <universal/number/takum/math/fma.hpp>
+#include <universal/number/takum/math/sqrt.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -518,6 +523,201 @@ int VerifyFmaMidpointPlusTiny(unsigned count, bool reportTestCases) {
 }
 
 // ---------------------------------------------------------------------------
+// sqrt and rsqrt, correctly rounded (#1622)
+//
+// r is the nearest takum to sqrt(v) exactly when v lies between the squares of
+// the midpoints on either side of r, and the nearest to 1/sqrt(v) when 1/v does.
+// Squaring keeps everything in integers: with lo and hi the neighbours of r,
+// (lo + r)^2 < 4v < (r + hi)^2 for sqrt, and (lo + r)^2 v < 4 < (r + hi)^2 v for
+// rsqrt.  An equality is a tie; those are counted, not judged.
+// ---------------------------------------------------------------------------
+enum class Root { sqrt, rsqrt };
+
+// sign of  (x + y)^2 * K  -  R * 2^k,  where x, y are takums and the whole left side
+// is scaled by 2^(2b) with b their common base.  Returns -1, 0 or 1, or 2 when the
+// spans do not fit the reference.
+template<typename T>
+int CompareMidpointSquare(const T& x, const T& y, std::uint64_t K, std::int64_t kK,
+                          std::uint64_t R, std::int64_t kR) {
+	const fields fx = decode(x), fy = decode(y);
+	const std::int64_t b = std::min(fx.e, fy.e);
+	if (!fits(fx.e, b) || !fits(fy.e, b)) return 2;
+	const BigInt twoMid = scaled(fx.S, fx.e, false, b) + scaled(fy.S, fy.e, false, b);
+	BigInt L = twoMid * twoMid;
+	L = L * BigInt(K);
+	BigInt Rv(R);
+	const std::int64_t k = 2 * b + kK - kR;              // L * 2^k  vs  Rv
+	if (k > SPAN_LIMIT || -k > SPAN_LIMIT) return 2;
+	if (k >= 0) L <<= static_cast<int>(k); else Rv <<= static_cast<int>(-k);
+	return (L < Rv) ? -1 : ((Rv < L) ? 1 : 0);
+}
+
+// Is the root of v correctly rounded?  v positive.
+template<typename T>
+bool CheckRootCorrectlyRounded(Root op, const T& v, tally& t, long& exercised, bool reportTestCases) {
+	const T r = (op == Root::sqrt) ? sqrt(v) : rsqrt(v);
+	if (r.isnar() || saturated(r)) { ++t.skipped; return true; }
+	T lo, hi;
+	const std::int64_t g = signed_bits(r);
+	if (!neighbour<T>(g - 1, lo) || !neighbour<T>(g + 1, hi) || lo.iszero()) { ++t.skipped; return true; }
+	const fields fv = decode(v);
+	// sqrt:  (lo + r)^2 * 1  vs  Sv * 2^(ev + 2),  and likewise for (r + hi)
+	// rsqrt: (lo + r)^2 * Sv * 2^ev  vs  4
+	int below = 0, above = 0;
+	if (op == Root::sqrt) {
+		below = CompareMidpointSquare(lo, r, 1ull, 0, fv.S, fv.e + 2);
+		above = CompareMidpointSquare(r, hi, 1ull, 0, fv.S, fv.e + 2);
+	}
+	else {
+		below = CompareMidpointSquare(lo, r, fv.S, fv.e, 4ull, 0);
+		above = CompareMidpointSquare(r, hi, fv.S, fv.e, 4ull, 0);
+	}
+	if (below == 2 || above == 2) { ++t.skipped; return true; }
+	++exercised;
+	if (below == 0 || above == 0) { ++t.ties; return true; }
+	const bool ok = (below < 0) && (above > 0);
+	if (!ok && reportTestCases) {
+		std::cout << "FAIL " << ((op == Root::sqrt) ? "sqrt" : "rsqrt") << " not correctly rounded: v="
+		          << to_binary(v) << " got=" << to_binary(r) << '\n';
+	}
+	return ok;
+}
+
+// Sweep the positive encodings, then aim at the hard cases: v next to the square
+// of a midpoint (sqrt) or to its reciprocal square (rsqrt), where the root sits a
+// hair from a tie.  That is where the double-rounded std::sqrt went wrong, and it
+// is invisible to sampling at the widths that matter.
+template<unsigned nbits, unsigned rbits>
+int VerifyRootCorrectlyRounded(Root op, unsigned samples, const std::vector<std::uint64_t>& quoted, bool reportTestCases) {
+	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
+	int nrOfFailedTests = 0;
+	long exercised = 0;
+	tally t;
+	auto check = [&](const T& v) {
+		if (v.isnar() || v.iszero() || v.sign()) return;
+		if (!CheckRootCorrectlyRounded(op, v, t, exercised, reportTestCases)) ++nrOfFailedTests;
+	};
+	const std::uint64_t LAST = static_cast<std::uint64_t>(max_positive_encoding(nbits));
+	const std::uint64_t stride = sample_stride(LAST, samples);
+	for (std::uint64_t i = 1; i <= LAST && i + stride > i; i += stride) { T v; v.setbits(i); check(v); }
+
+	const T one(1.0), two(2.0);
+	const std::uint64_t span = two.raw_bits() - one.raw_bits();
+	const std::uint64_t step = (span > samples) ? (span / samples) | 1ull : 1ull;
+	for (std::uint64_t i = one.raw_bits(); i < two.raw_bits(); i += step) {
+		T r, rn; r.setbits(i); rn.setbits(i + 1);
+		const double mid = 0.5 * (double(r) + double(rn));
+		const T v0((op == Root::sqrt) ? mid * mid : 1.0 / (mid * mid));
+		for (int k = -1; k <= 1; ++k) { T v; v.setbits(v0.raw_bits() + static_cast<std::uint64_t>(k)); check(v); }
+	}
+	for (std::uint64_t q : quoted) { T v; v.setbits(q); check(v); }
+	nrOfFailedTests += report_coverage((op == Root::sqrt) ? "correctly rounded sqrt" : "correctly rounded rsqrt",
+	                                   nbits, rbits, exercised, t, reportTestCases);
+	return nrOfFailedTests;
+}
+
+// ---------------------------------------------------------------------------
+// Conversion to an IEEE type, correctly rounded (#1622)
+//
+// The result must be at least as close to the exact takum value as both of its
+// IEEE neighbours, ties going to an even significand.  Every quantity involved is
+// dyadic, so the comparison is exact.
+// ---------------------------------------------------------------------------
+template<typename Real>
+bool even_significand(Real y) {
+	if constexpr (sizeof(Real) == 4) { std::uint32_t u; std::memcpy(&u, &y, 4); return (u & 1u) == 0u; }
+	else                             { std::uint64_t u; std::memcpy(&u, &y, 8); return (u & 1u) == 0u; }
+}
+
+template<typename Real, typename T>
+bool CheckIeeeCorrectlyRounded(const T& x, tally& t, long& exercised, bool reportTestCases) {
+	const Real got = Real(x);
+	const fields fx = decode(x);
+	if (std::isinf(got)) {
+		// correct exactly when |x| >= max + ulp/2 = (2^(D+1) - 1) * 2^(emax - D)
+		constexpr std::int64_t D = std::numeric_limits<Real>::digits;
+		constexpr std::int64_t emax = std::numeric_limits<Real>::max_exponent - 1;
+		const std::int64_t b = std::min(fx.e, emax - D);
+		if (!fits(fx.e, b) || !fits(emax - D, b)) { ++t.skipped; return true; }
+		++exercised;
+		const BigInt limit = scaled((1ull << (D + 1)) - 1ull, emax - D, false, b);
+		const bool ok = !(scaled(fx.S, fx.e, false, b) < limit);
+		if (!ok && reportTestCases) std::cout << "FAIL conversion overflowed below the limit: x=" << to_binary(x) << '\n';
+		return ok;
+	}
+	// |y| as F * 2^g with F an integer
+	auto split = [](Real y, std::uint64_t& F, std::int64_t& g) {
+		int ex = 0;
+		const Real fr = std::frexp(y, &ex);
+		F = static_cast<std::uint64_t>(std::ldexp(fr, std::numeric_limits<Real>::digits));
+		g = static_cast<std::int64_t>(ex) - std::numeric_limits<Real>::digits;
+	};
+	const Real a = std::fabs(got);
+	const Real cand[3] = { a, std::nextafter(a, std::numeric_limits<Real>::infinity()),
+	                       (a > Real(0)) ? std::nextafter(a, Real(0)) : a };
+	std::uint64_t F[3] = {}; std::int64_t g[3] = {};
+	std::int64_t base = fx.e;
+	for (int i = 0; i < 3; ++i) {
+		if (cand[i] == Real(0) || std::isinf(cand[i])) continue;
+		split(cand[i], F[i], g[i]);
+		base = std::min(base, g[i]);
+	}
+	if (!fits(fx.e, base)) { ++t.skipped; return true; }
+	const BigInt X = scaled(fx.S, fx.e, false, base);
+	auto dist = [&](int i) -> BigInt {
+		if (cand[i] == Real(0)) return X;
+		if (!fits(g[i], base)) return BigInt(-1);
+		return babs(X - scaled(F[i], g[i], false, base));
+	};
+	const BigInt mine = dist(0);
+	if (mine < 0) { ++t.skipped; return true; }
+	++exercised;
+	for (int i = 1; i < 3; ++i) {
+		if (cand[i] == cand[0] || std::isinf(cand[i])) continue;
+		const BigInt d = dist(i);
+		if (d < 0) continue;
+		if (d < mine) {
+			if (reportTestCases) std::cout << "FAIL conversion not correctly rounded: x=" << to_binary(x)
+			                               << " got=" << got << '\n';
+			return false;
+		}
+		if (d == mine) { ++t.ties; if (!even_significand(a)) return false; }
+	}
+	return true;
+}
+
+template<typename Real, unsigned nbits, unsigned rbits>
+int VerifyIeeeCorrectlyRounded(unsigned samples, bool reportTestCases) {
+	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
+	int nrOfFailedTests = 0;
+	long exercised = 0;
+	tally t;
+	const std::uint64_t LAST = static_cast<std::uint64_t>(max_positive_encoding(nbits));
+	const std::uint64_t stride = sample_stride(LAST, samples);
+	for (std::uint64_t i = 1; i <= LAST && i + stride > i; i += stride) {
+		T x; x.setbits(i);
+		if (!CheckIeeeCorrectlyRounded<Real>(x, t, exercised, reportTestCases)) ++nrOfFailedTests;
+		// and the negative: the conversion must be symmetric
+		T nx = -x;
+		if (Real(nx) != -Real(x)) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cout << "FAIL conversion not symmetric at " << to_binary(x) << '\n';
+		}
+	}
+	// the band just below the smallest subnormal, where float(2^c) used to round to
+	// zero before the significand was ever applied
+	const int dmin = std::numeric_limits<Real>::min_exponent - std::numeric_limits<Real>::digits;   // 2^dmin
+	for (double f = 0.5; f < 1.0; f += 1.0 / 64.0) {
+		const T x(std::ldexp(1.0 + f, dmin - 1));
+		if (x.iszero()) continue;
+		if (!CheckIeeeCorrectlyRounded<Real>(x, t, exercised, reportTestCases)) ++nrOfFailedTests;
+	}
+	nrOfFailedTests += report_coverage(sizeof(Real) == 4 ? "correctly rounded to float" : "correctly rounded to double",
+	                                   nbits, rbits, exercised, t, reportTestCases);
+	return nrOfFailedTests;
+}
+
+// ---------------------------------------------------------------------------
 // Exact identities
 //
 // These need no reference at all and they are what issue #1300 opened on: one
@@ -682,6 +882,27 @@ try {
 		VerifyFmaMidpointPlusTiny<16, 3>(2000, reportTestCases), "takum<16,3>", "fma midpoint + tiny");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyFmaMidpointPlusTiny<32, 3>(2000, reportTestCases), "takum<32,3>", "fma midpoint + tiny");
+	// #1622: sqrt, rsqrt and conversion to IEEE, each rounded once
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyRootCorrectlyRounded<32, 3>(Root::sqrt, 4000, { 0x40000003ull }, reportTestCases), "takum<32,3>", "correctly rounded sqrt");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyRootCorrectlyRounded<48, 3>(Root::sqrt, 4000, { 0x4000a0f04669ull }, reportTestCases), "takum<48,3>", "correctly rounded sqrt");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyRootCorrectlyRounded<64, 3>(Root::sqrt, 4000, {}, reportTestCases), "takum<64,3>", "correctly rounded sqrt");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyRootCorrectlyRounded<16, 3>(Root::rsqrt, 4000, {}, reportTestCases), "takum<16,3>", "correctly rounded rsqrt");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyRootCorrectlyRounded<32, 3>(Root::rsqrt, 4000, {}, reportTestCases), "takum<32,3>", "correctly rounded rsqrt");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyRootCorrectlyRounded<64, 3>(Root::rsqrt, 4000, {}, reportTestCases), "takum<64,3>", "correctly rounded rsqrt");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyIeeeCorrectlyRounded<float, 16, 3>(4096, reportTestCases), "takum<16,3>", "correctly rounded to float");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyIeeeCorrectlyRounded<float, 32, 3>(4096, reportTestCases), "takum<32,3>", "correctly rounded to float");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyIeeeCorrectlyRounded<float, 64, 3>(4096, reportTestCases), "takum<64,3>", "correctly rounded to float");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyIeeeCorrectlyRounded<double, 64, 3>(4096, reportTestCases), "takum<64,3>", "correctly rounded to double");
 #endif
 
 #if REGRESSION_LEVEL_2

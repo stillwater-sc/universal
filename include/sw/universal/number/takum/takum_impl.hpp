@@ -664,35 +664,73 @@ protected:
 		return UnsignedInt(to_ieee754<double>());
 	}
 
-	/// Decode a linear takum to an IEEE-754 floating-point value.
-	/// Constexpr-promoted: std::exp2 is replaced with the library's
-	/// sw::math::constexpr_math::exp2 (exact at integer arguments via direct
-	/// bit construction in detail::pow2).
+	/// Decode a linear takum to an IEEE-754 floating-point value, correctly rounded.
+	///
+	/// |value| = S * 2^e with the integer significand S = 2^p + M, so the conversion
+	/// is one integer rounding of S to the precision the target holds AT THIS
+	/// MAGNITUDE -- digits for a normal result, fewer for a subnormal one -- followed
+	/// by an exact scaling.  The earlier form, (1 + M/2^p) * float(2^c), rounded up
+	/// to three times: M/2^p to the target, 1 + f again, and the product once more
+	/// when it was subnormal.  takum<32,3> -> float was wrong for 2.9% of encodings,
+	/// every takum value in (2^-150, 2^-149) became 0.0f instead of 2^-149, and
+	/// takum<64,3> -> double was double-rounded the same way (#1622).
+	///
+	/// Constexpr-promoted: powers of two come from constexpr_math::detail::pow2,
+	/// which sets the exponent field directly -- exact, O(1), and unlike exp2 it
+	/// does not evaluate a Taylor series for an integer argument.
 	template<typename TargetFloat>
 	CONSTEXPRESSION TargetFloat to_ieee754() const noexcept {
 		if (iszero()) return TargetFloat(0);
 		if (isnar()) return std::numeric_limits<TargetFloat>::quiet_NaN();
 
 		static_assert(nbits <= 64, "takum > 64 bits not yet supported");
+		using Limits = std::numeric_limits<TargetFloat>;
+		constexpr int64_t digits = Limits::digits;
+		constexpr int64_t emin   = Limits::min_exponent - 1;   // 2^emin is the smallest normal
+		constexpr int64_t emax   = Limits::max_exponent - 1;   // 2^emax is the largest binade
 
-		bool s = sign();
+		const bool s = sign();
+		const auto d = Codec::decode(magnitude_bits());
+		if (d.c > emax) return s ? -Limits::infinity() : Limits::infinity();
 
-		// Shared codec: magnitude -> (c, m).  Only the value map below is
-		// specific to the linear takum.
-		auto d = Codec::decode(magnitude_bits());
-		TargetFloat f = d.template fraction<TargetFloat>();
+		uint64_t S = (1ull << d.p) | d.M_bits;
+		int64_t  e = d.c - static_cast<int64_t>(d.p);
 
-		// LINEAR value map: |value| = (1 + f) * 2^c.
-		// 2^c (c integer) via constexpr_math::exp2.  cm::exp2 is exact at
-		// integer arguments because detail::pow2 sets the IEEE 754 exponent
-		// field directly.  Route long double through double for portability;
-		// callers that need extreme exponent range get the runtime std::exp2
-		// path since CONSTEXPRESSION drops constexpr on those toolchains.
-		double scale_d = sw::math::constexpr_math::exp2(static_cast<double>(d.c));
-		TargetFloat value = (TargetFloat(1) + f) * static_cast<TargetFloat>(scale_d);
-		if (s) value = -value;
+		// Round S to the bits the target holds at 2^c, to nearest even.  A carry that
+		// reaches 2^keep is still exact, except in the top binade, where it is the
+		// correctly rounded overflow to infinity -- returned here, because narrowing
+		// a double above FLT_MAX is an implementation-defined choice between FLT_MAX
+		// and infinity, and only infinity is correctly rounded.
+		const int64_t keep = (d.c >= emin) ? digits : digits - (emin - d.c);
+		const int64_t drop = static_cast<int64_t>(d.p) + 1 - keep;
+		if (drop > 0) {
+			if (drop >= 64) {
+				S = 0;                                         // below half the smallest subnormal
+			}
+			else {
+				const uint64_t rem  = S & ((1ull << drop) - 1ull);
+				const uint64_t half = 1ull << (drop - 1);
+				S >>= drop;
+				if (rem > half || (rem == half && (S & 1ull))) ++S;
+				e += drop;
+				// keep < p + 1 <= 62 on this branch, so the shift is in range
+				if (d.c == emax && (S >> keep) != 0ull) return s ? -Limits::infinity() : Limits::infinity();
+			}
+		}
+		if (S == 0) return s ? -TargetFloat(0) : TargetFloat(0);
 
-		return value;
+		// S now fits the target exactly, so only the scaling remains, and it is exact:
+		// every step moves monotonically toward the final value, which the rounding
+		// above made representable.  float scales in double, whose range covers every
+		// step; the result converts to float without rounding.
+		using Work = std::conditional_t<(sizeof(TargetFloat) < sizeof(double)), double, TargetFloat>;
+		Work value = static_cast<Work>(S);
+		using sw::math::constexpr_math::detail::pow2;
+		while (e >  960) { value *= static_cast<Work>(pow2( 960)); e -= 960; }
+		while (e < -960) { value *= static_cast<Work>(pow2(-960)); e += 960; }
+		value *= static_cast<Work>(pow2(static_cast<int>(e)));
+		const TargetFloat result = static_cast<TargetFloat>(value);
+		return s ? -result : result;
 	}
 
 private:
@@ -798,10 +836,24 @@ constexpr takum<nbits, rbits, bt> abs(const takum<nbits, rbits, bt>& v) noexcept
 	return v;
 }
 
-// sqrt via double fallback (satisfies the forward declaration in takum_fwd.hpp)
+// sqrt (satisfies the forward declaration in takum_fwd.hpp).  It follows the
+// arithmetic operators: narrow configurations evaluate in a double, where the
+// double rounding is innocuous for the same reason it is for + - * / (Figueroa:
+// 53 >= 2s + 2 covers sqrt as well), and everything wider takes an exact integer
+// root.  std::sqrt above that gate was not correctly rounded: takum<32,3>
+// sqrt(0x40000003) gave 0x40000002, and at 52 bits 1.6% of results were off (#1622).
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> sqrt(const takum<nbits, rbits, bt>& v) {
-	return takum<nbits, rbits, bt>(std::sqrt(double(v)));
+	using Takum = takum<nbits, rbits, bt>;
+	if constexpr (Takum::wide_significand) {
+		Takum result;
+		if (v.isnar() || v.sign()) { result.setnar(); return result; }   // sqrt of a negative is NaR
+		if (v.iszero()) return v;
+		return result.assign_wide(takum_wide::sqrt(v.to_wide_operand()));
+	}
+	else {
+		return Takum(std::sqrt(double(v)));
+	}
 }
 
 }}  // namespace sw::universal

@@ -30,8 +30,12 @@
 //                sticky remainder
 //     add / sub  both terms aligned into a 128-bit window, with a sticky bit for
 //                whatever falls below it
+//     sqrt       a 64-bit integer root of the significand shifted into 128 bits,
+//                plus a sticky remainder
+//     rsqrt      the integer root of 2^M / S, both remainders folded into one
+//                sticky bit
 //
-// and all three then take the SAME tail: normalize, round to odd at qbits, and
+// and all of them then take the SAME tail: normalize, round to odd at qbits, and
 // hand the result to takum_codec::encode_fraction(), which performs the one
 // rounding the target layout actually calls for.
 //
@@ -158,6 +162,25 @@ constexpr u128 mul64(uint64_t a, uint64_t b) noexcept {
 	return u128{ hi, lo };
 }
 
+// floor(sqrt(R)), digit by digit, two radicand bits per root bit.  inexact is set
+// when R is not a perfect square.  The root is below 2^64 for any R < 2^128; the
+// running remainder never exceeds twice the partial root, so after the shift by
+// two it stays below 2^67 and the trial 4 * root + 1 below 2^65.
+constexpr uint64_t isqrt128(const u128& R, bool& inexact) noexcept {
+	u128     rem{ 0ull, 0ull };
+	uint64_t root = 0ull;
+	for (int i = 63; i >= 0; --i) {
+		rem = shift_left(rem, 2u);
+		rem.lo |= (bit_at(R, static_cast<unsigned>(2 * i + 1)) ? 2ull : 0ull)
+		        | (bit_at(R, static_cast<unsigned>(2 * i))     ? 1ull : 0ull);
+		const u128 trial = add(shift_left(make_u128(root), 2u), make_u128(1ull));
+		root <<= 1;
+		if (!less(rem, trial)) { rem = sub(rem, trial); root |= 1ull; }
+	}
+	inexact = !iszero(rem);
+	return root;
+}
+
 // ---------------------------------------------------------------------------
 // Values
 // ---------------------------------------------------------------------------
@@ -219,6 +242,51 @@ constexpr wide_value divide(const operand& a, const operand& b) noexcept {
 		if (rem >= b.S) { rem -= b.S; q.lo |= 1ull; }
 	}
 	return wide_value{ q, a.e - b.e - 64, a.sign != b.sign, rem != 0ull };
+}
+
+// sqrt(S * 2^e) developed to a 64-bit root with a sticky remainder.
+// Pre: the operand is positive; the caller turns sqrt of a negative into NaR.
+//
+// The radicand is shifted into the top of 128 bits by 64 or 65, whichever leaves
+// the exponent even so that it halves exactly.  S < 2^62 keeps it below 2^127, and
+// S >= 2^p makes the root at least 2^((p + 64) / 2): never fewer than p + 2 bits
+// for p <= 61, which is what round-to-odd at qbits needs to stand in for the
+// discarded remainder.
+constexpr wide_value sqrt(const operand& a) noexcept {
+	const unsigned sh = ((a.e & 1) == 0) ? 64u : 65u;
+	bool inexact = false;
+	const uint64_t root = isqrt128(shift_left(make_u128(a.S), sh), inexact);
+	return wide_value{ make_u128(root), (a.e - static_cast<int64_t>(sh)) / 2, false, inexact };
+}
+
+// 1 / sqrt(S * 2^e) = sqrt(2^M / S) * 2^(-(M + e) / 2), with M chosen so that M + e
+// is even and Q = floor(2^M / S) has 126 or 127 bits.  Its 63-bit root carries
+// p + 2 bits with room to spare.
+//
+// Two truncations, one sticky bit.  With 2^M / S = Q + f, f in [0,1):
+// root <= sqrt(Q) <= sqrt(Q + f) < root + 1, because Q + f < Q + 1 <= (root + 1)^2;
+// and sqrt(Q + f) == root only when f == 0 and Q == root^2.  So the true value lies
+// strictly inside (root, root + 1) exactly when either remainder is nonzero, which
+// is all round-to-odd asks.
+// Pre: the operand is positive.
+constexpr wide_value rsqrt(const operand& a) noexcept {
+	unsigned p = 0;                                     // S in [2^p, 2^(p+1))
+	while ((a.S >> (p + 1)) != 0ull) ++p;
+	int64_t M = static_cast<int64_t>(p) + 126;
+	if (((M + a.e) & 1) != 0) ++M;                      // Q <= 2^(M-p) <= 2^127
+	// 2^M / S by restoring division, one numerator bit at a time: the numerator is
+	// a single one followed by M zeros, too wide to hold.  The remainder stays below
+	// S < 2^62, so doubling it cannot overflow.
+	u128     Q{ 0ull, 0ull };
+	uint64_t rem = 0ull;
+	for (int64_t i = M; i >= 0; --i) {
+		rem = (rem << 1) | ((i == M) ? 1ull : 0ull);
+		Q = shift_left(Q, 1u);
+		if (rem >= a.S) { rem -= a.S; Q.lo |= 1ull; }
+	}
+	bool inexact = false;
+	const uint64_t root = isqrt128(Q, inexact);
+	return wide_value{ make_u128(root), -(M + a.e) / 2, false, inexact || rem != 0ull };
 }
 
 // Align two exact terms into a 128-bit window and combine them.  Handles addition,
