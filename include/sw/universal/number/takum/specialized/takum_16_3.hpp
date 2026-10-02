@@ -57,6 +57,7 @@
 #endif
 
 #include <cstdint>
+#include <limits>
 #include <type_traits>
 #include <universal/utility/directives.hpp>
 
@@ -153,9 +154,18 @@ inline CONSTEXPRESSION double takum16_fast_t::to_ieee754<double>() const noexcep
 }
 // takum16 -> double is exact, so one double -> float rounding is the correctly
 // rounded float, subnormals included -- what the generic path computes (#1622).
+// Except past float's range, which takum16 reaches (maxpos is ~2^255): narrowing
+// a double above FLT_MAX is an implementation-defined choice between FLT_MAX and
+// infinity, and only infinity is correctly rounded, so it is returned explicitly,
+// as the generic path does.  The threshold is FLT_MAX plus half an ulp, where the
+// tie also rounds to infinity (FLT_MAX's significand is odd).
 template<> template<>
 inline CONSTEXPRESSION float takum16_fast_t::to_ieee754<float>() const noexcept {
-	return static_cast<float>(takum16_fast::decode(static_cast<std::uint16_t>(raw_bits())));
+	const double d = takum16_fast::decode(static_cast<std::uint16_t>(raw_bits()));
+	constexpr double overflow = 0x1.ffffffp127;
+	if (d >=  overflow) return  std::numeric_limits<float>::infinity();
+	if (d <= -overflow) return -std::numeric_limits<float>::infinity();
+	return static_cast<float>(d);
 }
 
 // Compound arithmetic: the generic operators minus their NaR and zero branches,

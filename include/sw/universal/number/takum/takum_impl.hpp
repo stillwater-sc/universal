@@ -699,7 +699,8 @@ protected:
 		// Round S to the bits the target holds at 2^c, to nearest even.  A carry that
 		// reaches 2^keep is still exact, except in the top binade, where it is the
 		// correctly rounded overflow to infinity -- returned here, because narrowing
-		// an out-of-range double to float is undefined rather than infinite.
+		// a double above FLT_MAX is an implementation-defined choice between FLT_MAX
+		// and infinity, and only infinity is correctly rounded.
 		const int64_t keep = (d.c >= emin) ? digits : digits - (emin - d.c);
 		const int64_t drop = static_cast<int64_t>(d.p) + 1 - keep;
 		if (drop > 0) {
