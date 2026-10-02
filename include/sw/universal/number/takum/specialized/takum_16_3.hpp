@@ -151,15 +151,11 @@ template<> template<>
 inline CONSTEXPRESSION double takum16_fast_t::to_ieee754<double>() const noexcept {
 	return takum16_fast::decode(static_cast<std::uint16_t>(raw_bits()));
 }
-// The generic path computes (1 + f) * float(2^c).  That is the correctly rounded
-// float except below 2^-149, where float(2^c) has already rounded to zero: those
-// come back as a signed zero rather than the smallest subnormal.
+// takum16 -> double is exact, so one double -> float rounding is the correctly
+// rounded float, subnormals included -- what the generic path computes (#1622).
 template<> template<>
 inline CONSTEXPRESSION float takum16_fast_t::to_ieee754<float>() const noexcept {
-	std::uint16_t raw = static_cast<std::uint16_t>(raw_bits());
-	double d = takum16_fast::decode(raw);
-	if (d < 0x1p-149 && d > -0x1p-149) return (raw & 0x8000u) ? -0.0f : 0.0f;
-	return static_cast<float>(d);
+	return static_cast<float>(takum16_fast::decode(static_cast<std::uint16_t>(raw_bits())));
 }
 
 // Compound arithmetic: the generic operators minus their NaR and zero branches,

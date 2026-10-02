@@ -10,11 +10,17 @@
 
 namespace sw { namespace universal {
 
-// Reciprocal square root.
+// Reciprocal square root, rounded once from the exact value at every width.
+// 1 / sqrt(a) rounded twice -- the root, then the quotient -- and no width makes
+// that safe the way Figueroa's bound does for a single operation (#1622).
+// Zero keeps the old route so that 1/0 behaves exactly as division does.
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum<nbits, rbits, bt> rsqrt(const takum<nbits, rbits, bt>& a) {
-	takum<nbits, rbits, bt> v = sqrt(a);
-	return takum<nbits, rbits, bt>(1.0) / v;
+	using Takum = takum<nbits, rbits, bt>;
+	Takum result;
+	if (a.isnar() || a.sign()) { result.setnar(); return result; }
+	if (a.iszero()) return Takum(1.0) / a;
+	return result.assign_wide(takum_wide::rsqrt(a.to_wide_operand()));
 }
 
 // ---------------------------------------------------------------------------
