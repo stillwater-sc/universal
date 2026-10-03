@@ -6,29 +6,42 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <cmath>
+#include <universal/number/takum/math/wide_range.hpp>
 #include <universal/number/takum/math/takum_log_domain.hpp>
 
 namespace sw { namespace universal {
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> log(const takum<nbits, rbits, bt>& x) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::log(x)) return *far;
+	}
     return takum<nbits, rbits, bt>(std::log(double(x)));
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> log2(const takum<nbits, rbits, bt>& x) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::log2(x)) return *far;
+	}
     return takum<nbits, rbits, bt>(std::log2(double(x)));
 }
 
 // Decimal (base-10) logarithm
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> log10(const takum<nbits, rbits, bt>& x) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::log10(x)) return *far;
+	}
     return takum<nbits, rbits, bt>(std::log10(double(x)));
 }
 
 // log(1 + x), more accurate near zero
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> log1p(const takum<nbits, rbits, bt>& x) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::log1p(x)) return *far;
+	}
     return takum<nbits, rbits, bt>(std::log1p(double(x)));
 }
 
@@ -75,6 +88,9 @@ takum_log<nbits, rbits, bt> log10(const takum_log<nbits, rbits, bt>& x) {
 // linear domain, which is the operation this representation is worst at.
 template<unsigned nbits, unsigned rbits, typename bt>
 takum_log<nbits, rbits, bt> log1p(const takum_log<nbits, rbits, bt>& x) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::log1p(x)) return *far;
+	}
 	return takum_log<nbits, rbits, bt>(std::log1p(double(x)));
 }
 

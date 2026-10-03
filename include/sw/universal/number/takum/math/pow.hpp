@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <cmath>
+#include <universal/number/takum/math/wide_range.hpp>
 #include <universal/number/takum/math/saturate.hpp>
 #include <cstdint>
 #include <universal/number/takum/math/takum_log_domain.hpp>
@@ -14,6 +15,9 @@ namespace sw { namespace universal {
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> pow(const takum<nbits, rbits, bt>& x, const takum<nbits, rbits, bt>& y) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::pow(x, y)) return *far;
+	}
 	// a zero base gives a genuine 0 or a genuine pole (0^-y), never a range limit
 	if (x.iszero()) return takum<nbits, rbits, bt>(std::pow(double(x), double(y)));
 	return saturate_from_double<takum<nbits, rbits, bt>>(std::pow(double(x), double(y)), true);
@@ -21,12 +25,18 @@ takum<nbits, rbits, bt> pow(const takum<nbits, rbits, bt>& x, const takum<nbits,
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> pow(const takum<nbits, rbits, bt>& x, int y) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::pow(x, double(y))) return *far;
+	}
 	if (x.iszero()) return takum<nbits, rbits, bt>(std::pow(double(x), double(y)));
 	return saturate_from_double<takum<nbits, rbits, bt>>(std::pow(double(x), double(y)), true);
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> pow(const takum<nbits, rbits, bt>& x, double y) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::pow(x, y)) return *far;
+	}
 	if (x.iszero()) return takum<nbits, rbits, bt>(std::pow(double(x), y));
 	return saturate_from_double<takum<nbits, rbits, bt>>(std::pow(double(x), y), true);
 }
@@ -61,10 +71,16 @@ inline takum_log<nbits, rbits, bt> pow(const takum_log<nbits, rbits, bt>& x, int
 	// guard the two products before forming them
 	const uint64_t den = (l.q > 0) ? (1ull << l.q) : 1ull;
 	if (ua != 0 && (l.N > (~0ull) / ua)) {
+		if constexpr (!TL::range_fits_double) {   // #1626
+			if (auto far = takum_wide_range::pow(x, double(n))) return *far;
+		}
 		return saturate_from_double<TL>(std::pow(double(x), double(n)), true);    // fraction product would wrap
 	}
 	const int64_t  cmag = (l.c < 0) ? -l.c : l.c;
 	if (cmag != 0 && a > (INT64_MAX - 1) / cmag) {
+		if constexpr (!TL::range_fits_double) {   // #1626
+			if (auto far = takum_wide_range::pow(x, double(n))) return *far;
+		}
 		return saturate_from_double<TL>(std::pow(double(x), double(n)), true);    // characteristic product would wrap
 	}
 	uint64_t Nn   = l.N * ua;
@@ -79,6 +95,9 @@ inline takum_log<nbits, rbits, bt> pow(const takum_log<nbits, rbits, bt>& x, int
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> pow(const takum_log<nbits, rbits, bt>& x,
                                        const takum_log<nbits, rbits, bt>& y) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::pow(x, y)) return *far;
+	}
 	// a zero base gives a genuine 0 or a genuine pole (0^-y), never a range limit
 	if (x.iszero()) return takum_log<nbits, rbits, bt>(std::pow(double(x), double(y)));
 	return saturate_from_double<takum_log<nbits, rbits, bt>>(std::pow(double(x), double(y)), true);
@@ -86,6 +105,9 @@ inline takum_log<nbits, rbits, bt> pow(const takum_log<nbits, rbits, bt>& x,
 
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> pow(const takum_log<nbits, rbits, bt>& x, double y) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::pow(x, y)) return *far;
+	}
 	if (x.iszero()) return takum_log<nbits, rbits, bt>(std::pow(double(x), y));
 	return saturate_from_double<takum_log<nbits, rbits, bt>>(std::pow(double(x), y), true);
 }
