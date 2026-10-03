@@ -878,6 +878,9 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	set(UNIVERSAL_BUILD_NUMBER_LNS ON)
 	set(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE ON)
 
+    # representative range types (valid)
+    set(UNIVERSAL_BUILD_NUMBER_VALIDS ON)
+
 	# MX block formats (new, want portability coverage)
 	set(UNIVERSAL_BUILD_NUMBER_MICROFLOATS ON)
 	set(UNIVERSAL_BUILD_NUMBER_E8M0 ON)
