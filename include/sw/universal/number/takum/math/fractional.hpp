@@ -6,22 +6,32 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <cmath>
+#include <universal/number/takum/math/wide_range.hpp>
 
 namespace sw { namespace universal {
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> fmod(const takum<nbits, rbits, bt>& x, const takum<nbits, rbits, bt>& y) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::fmod_exact(x, y, false)) return *far;
+	}
 	return takum<nbits, rbits, bt>(std::fmod(double(x), double(y)));
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> remainder(const takum<nbits, rbits, bt>& x, const takum<nbits, rbits, bt>& y) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::fmod_exact(x, y, true)) return *far;
+	}
 	return takum<nbits, rbits, bt>(std::remainder(double(x), double(y)));
 }
 
 // Fractional part: x - trunc(x)
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> frac(const takum<nbits, rbits, bt>& x) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::frac(x)) return *far;
+	}
 	return takum<nbits, rbits, bt>(double(x) - std::trunc(double(x)));
 }
 
@@ -32,17 +42,26 @@ takum<nbits, rbits, bt> frac(const takum<nbits, rbits, bt>& x) {
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> fmod(const takum_log<nbits, rbits, bt>& x,
                                         const takum_log<nbits, rbits, bt>& y) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::fmod_exact(x, y, false)) return *far;
+	}
 	return takum_log<nbits, rbits, bt>(std::fmod(double(x), double(y)));
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> remainder(const takum_log<nbits, rbits, bt>& x,
                                              const takum_log<nbits, rbits, bt>& y) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::fmod_exact(x, y, true)) return *far;
+	}
 	return takum_log<nbits, rbits, bt>(std::remainder(double(x), double(y)));
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> frac(const takum_log<nbits, rbits, bt>& x) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::frac(x)) return *far;
+	}
 	double v = double(x);
 	return takum_log<nbits, rbits, bt>(v - std::trunc(v));
 }
