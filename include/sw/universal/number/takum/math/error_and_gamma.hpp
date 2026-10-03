@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <cmath>
+#include <universal/number/takum/math/saturate.hpp>
 
 namespace sw { namespace universal {
 
@@ -18,7 +19,7 @@ takum<nbits, rbits, bt> erf(const takum<nbits, rbits, bt>& x) {
 // Complementary error function: erfc(x) = 1 - erf(x)
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> erfc(const takum<nbits, rbits, bt>& x) {
-	return takum<nbits, rbits, bt>(std::erfc(double(x)));
+	return saturate_from_double<takum<nbits, rbits, bt>>(std::erfc(double(x)), true);
 }
 
 // ---------------------------------------------------------------------------
@@ -31,7 +32,7 @@ inline takum_log<nbits, rbits, bt> erf(const takum_log<nbits, rbits, bt>& x) {
 
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> erfc(const takum_log<nbits, rbits, bt>& x) {
-	return takum_log<nbits, rbits, bt>(std::erfc(double(x)));
+	return saturate_from_double<takum_log<nbits, rbits, bt>>(std::erfc(double(x)), true);
 }
 
 }} // namespace sw::universal

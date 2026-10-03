@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <cmath>
+#include <universal/number/takum/math/saturate.hpp>
 #include <cstdint>
 #include <universal/number/takum/math/takum_log_domain.hpp>
 
@@ -13,17 +14,21 @@ namespace sw { namespace universal {
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> pow(const takum<nbits, rbits, bt>& x, const takum<nbits, rbits, bt>& y) {
-	return takum<nbits, rbits, bt>(std::pow(double(x), double(y)));
+	// a zero base gives a genuine 0 or a genuine pole (0^-y), never a range limit
+	if (x.iszero()) return takum<nbits, rbits, bt>(std::pow(double(x), double(y)));
+	return saturate_from_double<takum<nbits, rbits, bt>>(std::pow(double(x), double(y)), true);
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> pow(const takum<nbits, rbits, bt>& x, int y) {
-	return takum<nbits, rbits, bt>(std::pow(double(x), double(y)));
+	if (x.iszero()) return takum<nbits, rbits, bt>(std::pow(double(x), double(y)));
+	return saturate_from_double<takum<nbits, rbits, bt>>(std::pow(double(x), double(y)), true);
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> pow(const takum<nbits, rbits, bt>& x, double y) {
-	return takum<nbits, rbits, bt>(std::pow(double(x), y));
+	if (x.iszero()) return takum<nbits, rbits, bt>(std::pow(double(x), y));
+	return saturate_from_double<takum<nbits, rbits, bt>>(std::pow(double(x), y), true);
 }
 
 // ---------------------------------------------------------------------------
@@ -56,11 +61,11 @@ inline takum_log<nbits, rbits, bt> pow(const takum_log<nbits, rbits, bt>& x, int
 	// guard the two products before forming them
 	const uint64_t den = (l.q > 0) ? (1ull << l.q) : 1ull;
 	if (ua != 0 && (l.N > (~0ull) / ua)) {
-		return TL(std::pow(double(x), double(n)));    // fraction product would wrap
+		return saturate_from_double<TL>(std::pow(double(x), double(n)), true);    // fraction product would wrap
 	}
 	const int64_t  cmag = (l.c < 0) ? -l.c : l.c;
 	if (cmag != 0 && a > (INT64_MAX - 1) / cmag) {
-		return TL(std::pow(double(x), double(n)));    // characteristic product would wrap
+		return saturate_from_double<TL>(std::pow(double(x), double(n)), true);    // characteristic product would wrap
 	}
 	uint64_t Nn   = l.N * ua;
 	int64_t  cn   = l.c * a;
@@ -74,12 +79,15 @@ inline takum_log<nbits, rbits, bt> pow(const takum_log<nbits, rbits, bt>& x, int
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> pow(const takum_log<nbits, rbits, bt>& x,
                                        const takum_log<nbits, rbits, bt>& y) {
-	return takum_log<nbits, rbits, bt>(std::pow(double(x), double(y)));
+	// a zero base gives a genuine 0 or a genuine pole (0^-y), never a range limit
+	if (x.iszero()) return takum_log<nbits, rbits, bt>(std::pow(double(x), double(y)));
+	return saturate_from_double<takum_log<nbits, rbits, bt>>(std::pow(double(x), double(y)), true);
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> pow(const takum_log<nbits, rbits, bt>& x, double y) {
-	return takum_log<nbits, rbits, bt>(std::pow(double(x), y));
+	if (x.iszero()) return takum_log<nbits, rbits, bt>(std::pow(double(x), y));
+	return saturate_from_double<takum_log<nbits, rbits, bt>>(std::pow(double(x), y), true);
 }
 
 // Exact integer power via repeated squaring; no double round-trip.

@@ -7,30 +7,31 @@
 #pragma once
 #include <cstdint>       // std::int64_t
 #include <cmath>
+#include <universal/number/takum/math/saturate.hpp>
 #include <universal/number/takum/math/takum_log_domain.hpp>
 
 namespace sw { namespace universal {
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> exp(const takum<nbits, rbits, bt>& x) {
-    return takum<nbits, rbits, bt>(std::exp(double(x)));
+    return saturate_from_double<takum<nbits, rbits, bt>>(std::exp(double(x)), true);
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> exp2(const takum<nbits, rbits, bt>& x) {
-    return takum<nbits, rbits, bt>(std::exp2(double(x)));
+    return saturate_from_double<takum<nbits, rbits, bt>>(std::exp2(double(x)), true);
 }
 
 // Base-10 exponential: 10^x
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> exp10(const takum<nbits, rbits, bt>& x) {
-    return takum<nbits, rbits, bt>(std::pow(10.0, double(x)));
+    return saturate_from_double<takum<nbits, rbits, bt>>(std::pow(10.0, double(x)), true);
 }
 
 // exp(x) - 1, more accurate near zero
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> expm1(const takum<nbits, rbits, bt>& x) {
-    return takum<nbits, rbits, bt>(std::expm1(double(x)));
+    return saturate_from_double<takum<nbits, rbits, bt>>(std::expm1(double(x)), !x.iszero());
 }
 
 // ---------------------------------------------------------------------------
@@ -84,7 +85,7 @@ takum_log<nbits, rbits, bt> exp2(const takum_log<nbits, rbits, bt>& x) {
 	TL result;
 	if (x.isnar()) { result.setnar(); return result; }
 	if (x.iszero()) return TL(1.0);
-	return TL(std::exp2(double(x)));
+	return saturate_from_double<TL>(std::exp2(double(x)), true);
 }
 
 // 10^x
@@ -94,13 +95,13 @@ takum_log<nbits, rbits, bt> exp10(const takum_log<nbits, rbits, bt>& x) {
 	TL result;
 	if (x.isnar()) { result.setnar(); return result; }
 	if (x.iszero()) return TL(1.0);
-	return TL(std::pow(10.0, double(x)));
+	return saturate_from_double<TL>(std::pow(10.0, double(x)), true);
 }
 
 // exp(x) - 1: the subtraction is a linear-domain operation, so no shortcut.
 template<unsigned nbits, unsigned rbits, typename bt>
 takum_log<nbits, rbits, bt> expm1(const takum_log<nbits, rbits, bt>& x) {
-	return takum_log<nbits, rbits, bt>(std::expm1(double(x)));
+	return saturate_from_double<takum_log<nbits, rbits, bt>>(std::expm1(double(x)), !x.iszero());
 }
 
 }} // namespace sw::universal
