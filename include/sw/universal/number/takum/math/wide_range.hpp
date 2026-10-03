@@ -43,6 +43,7 @@
 //     not dyadic, so there is no exact integer remainder to take.  The linear takum
 //     gets one (fmod_exact below).
 
+#include <algorithm>   // std::max, std::min
 #include <cmath>
 #include <cstdint>
 #include <limits>
