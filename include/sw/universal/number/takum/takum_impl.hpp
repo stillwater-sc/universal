@@ -138,6 +138,35 @@ public:
 	// double rounding provably lands where a single rounding would.
 	static constexpr bool wide_significand = 2u * (maxCharBits + 1u) + 2u > 53u;
 
+	// Does the range fit where the double path needs it?  The double path is only
+	// sound while every operand, and every product, quotient and sum of two of them,
+	// is a normal double.  A characteristic within +/-510 keeps all of those inside
+	// 2^+/-1022.  Every rbits <= 3 configuration qualifies (|c| <= 255) and decides
+	// this at compile time; rbits = 4 and 5 reach 2^16 and 2^32, where double(x) is
+	// infinity or zero and takum<24,4> returned NaR for 2^2000 * 1 (#1626).
+	static constexpr int64_t double_safe_characteristic = 510;
+	static constexpr bool range_fits_double =
+		(Codec::max_characteristic() <= double_safe_characteristic) &&
+		(Codec::min_characteristic() >= -double_safe_characteristic);
+
+	// Is this value inside the range the double path handles?  Zero is.
+	constexpr bool in_double_safe_range() const noexcept {
+		if (iszero()) return true;
+		const int64_t c = Codec::characteristic_of(magnitude_bits());
+		return c >= -double_safe_characteristic && c <= double_safe_characteristic;
+	}
+
+	// Which path an operation takes.  wide_significand: always exact, a double cannot
+	// round the result once.  Otherwise the double path, unless the format reaches
+	// past double's range and this operand pair actually does -- decided per call,
+	// so values that a double holds keep its speed (the integer path costs 4-20x on
+	// a narrow rbits = 4 layout) and only far ones pay for exactness.
+	constexpr bool takes_exact_path(const takum& rhs) const noexcept {
+		if constexpr (wide_significand) return true;
+		else if constexpr (range_fits_double) return false;
+		else return !(in_double_safe_range() && rhs.in_double_safe_range());
+	}
+
 	// Codec geometry, re-exported so that the public surface of takum<> is
 	// unchanged by the codec extraction (manipulators, numeric_limits and the
 	// api/constexpr.cpp static_asserts all reach for these).
@@ -254,14 +283,14 @@ public:
 
 	// in-place arithmetic.  Narrow configurations evaluate in a double, where both
 	// operands are exact and the conversion back is the single rounding that
-	// decides the result; wide ones (see wide_significand) evaluate exactly in
+	// decides the result; the rest (see takes_exact_path) evaluate exactly in
 	// integers instead.  CONSTEXPRESSION because the underlying convert_ieee754 /
 	// to_ieee754 path becomes constexpr only when sw::bit_cast is constexpr
 	// (BIT_CAST_IS_CONSTEXPR=true) and the constexpr_math::exp2 helper is
 	// constant-evaluable; the integer path is constexpr throughout.
 	CONSTEXPRESSION takum& operator+=(const takum& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
-		if constexpr (wide_significand) {
+		if (takes_exact_path(rhs)) {
 			return wide_sum(rhs, false);
 		}
 		else {
@@ -272,7 +301,7 @@ public:
 	CONSTEXPRESSION takum& operator+=(double rhs) { return *this += takum(rhs); }
 	CONSTEXPRESSION takum& operator-=(const takum& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
-		if constexpr (wide_significand) {
+		if (takes_exact_path(rhs)) {
 			return wide_sum(rhs, true);
 		}
 		else {
@@ -283,7 +312,7 @@ public:
 	CONSTEXPRESSION takum& operator-=(double rhs) { return *this -= takum(rhs); }
 	CONSTEXPRESSION takum& operator*=(const takum& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
-		if constexpr (wide_significand) {
+		if (takes_exact_path(rhs)) {
 			if (iszero() || rhs.iszero()) { setzero(); return *this; }
 			return assign_wide(takum_wide::multiply(to_wide_operand(), rhs.to_wide_operand()));
 		}
@@ -305,7 +334,7 @@ public:
 			return *this;
 #endif
 		}
-		if constexpr (wide_significand) {
+		if (takes_exact_path(rhs)) {
 			if (iszero()) { setzero(); return *this; }
 			return assign_wide(takum_wide::divide(to_wide_operand(), rhs.to_wide_operand()));
 		}
@@ -319,7 +348,7 @@ public:
 	// Exact-arithmetic surface, public so that fma() -- which is a free function
 	// and cannot reach a private member -- shares this decode and this rounding
 	// tail rather than reimplementing either.  Both are well defined at every
-	// width: the operators reach them only when wide_significand is true, but
+	// width: the operators reach them when takes_exact_path() says so, but
 	// fma() takes them at every width, since no width makes std::fma's double
 	// rounding safe (#1616).
 
@@ -842,10 +871,11 @@ constexpr takum<nbits, rbits, bt> abs(const takum<nbits, rbits, bt>& v) noexcept
 // 53 >= 2s + 2 covers sqrt as well), and everything wider takes an exact integer
 // root.  std::sqrt above that gate was not correctly rounded: takum<32,3>
 // sqrt(0x40000003) gave 0x40000002, and at 52 bits 1.6% of results were off (#1622).
+// A value outside the range a double holds takes the integer root too (#1626).
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> sqrt(const takum<nbits, rbits, bt>& v) {
 	using Takum = takum<nbits, rbits, bt>;
-	if constexpr (Takum::wide_significand) {
+	if (v.takes_exact_path(v)) {
 		Takum result;
 		if (v.isnar() || v.sign()) { result.setnar(); return result; }   // sqrt of a negative is NaR
 		if (v.iszero()) return v;
