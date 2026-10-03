@@ -97,6 +97,16 @@ int main() {
 	const WideValid approachingZero(WidePosit(0), WidePosit(1), true, false);
 	check((WideValid(1) / approachingZero).isnar(), "division approaching zero", 0, 0);
 
+	const WidePosit maxpos(sw::universal::SpecificValue::maxpos);
+	const WidePosit maxneg(sw::universal::SpecificValue::maxneg);
+	const WidePosit minpos(sw::universal::SpecificValue::minpos);
+	const WideValid reachesMax(WidePosit(1), maxpos);
+	const WideValid reachesMin(maxneg, WidePosit(-1));
+	check((reachesMax + WideValid(1)).isnar(), "addition past maxpos", 0, 0);
+	check((reachesMin - WideValid(1)).isnar(), "subtraction past maxneg", 0, 0);
+	check((reachesMax * WideValid(2)).isnar(), "multiplication past maxpos", 0, 0);
+	check((reachesMax / WideValid(minpos)).isnar(), "division past maxpos", 0, 0);
+
 	using MultiLimbValid              = valid<80, 2, std::uint32_t>;
 	const MultiLimbValid multiLimbSum = MultiLimbValid(2) + MultiLimbValid(3);
 	check(multiLimbSum.isexact() && multiLimbSum.lb() == typename MultiLimbValid::posit_type(5),

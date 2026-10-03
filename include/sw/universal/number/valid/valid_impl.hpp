@@ -1,10 +1,8 @@
 #pragma once
 
 #include <algorithm>
-#include <cmath>
-#include <cstdint>
-#include <limits>
 #include <type_traits>
+#include <utility>
 
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
@@ -55,6 +53,15 @@ class valid {
 	template<typename Lower, typename Upper,
 	         std::enable_if_t<std::is_arithmetic_v<Lower> && std::is_arithmetic_v<Upper>, int> = 0>
 	valid(Lower lower, Upper upper) noexcept {
+		if constexpr (std::is_integral_v<Lower> && std::is_integral_v<Upper>) {
+			if (std::cmp_greater(lower, upper)) {
+				setnar();
+				return;
+			}
+		} else if (static_cast<long double>(lower) > static_cast<long double>(upper)) {
+			setnar();
+			return;
+		}
 		const enclosure l = enclose_native(lower);
 		const enclosure u = enclose_native(upper);
 		assign(l.lower, u.upper, !l.exact, !u.exact);
@@ -127,6 +134,10 @@ class valid {
 		                                   multiply_candidate(_lb, rhs._ub, _lubit || rhs._uubit),
 		                                   multiply_candidate(_ub, rhs._lb, _uubit || rhs._lubit),
 		                                   multiply_candidate(_ub, rhs._ub, _uubit || rhs._uubit)};
+		for (const auto& candidate : candidates) {
+			if (candidate.value.lower.isnar() || candidate.value.upper.isnar())
+				return setnar();
+		}
 
 		posit_type lower     = candidates[0].value.lower;
 		posit_type upper     = candidates[0].value.upper;
@@ -135,7 +146,6 @@ class valid {
 
 		for (unsigned i = 1; i < 4; ++i) {
 			const bool candidateLowerOpen = !candidates[i].value.exact || candidates[i].inputOpen;
-			const bool candidateUpperOpen = candidateLowerOpen;
 			if (candidates[i].value.lower < lower) {
 				lower     = candidates[i].value.lower;
 				lowerOpen = candidateLowerOpen;
@@ -144,9 +154,9 @@ class valid {
 			}
 			if (candidates[i].value.upper > upper) {
 				upper     = candidates[i].value.upper;
-				upperOpen = candidateUpperOpen;
+				upperOpen = candidateLowerOpen;
 			} else if (candidates[i].value.upper == upper) {
-				upperOpen = upperOpen && candidateUpperOpen;
+				upperOpen = upperOpen && candidateLowerOpen;
 			}
 		}
 		assign(lower, upper, lowerOpen, upperOpen);
@@ -168,6 +178,10 @@ class valid {
 		quotient_candidate candidates[4] = {
 		    divide_candidate(_lb, rhs._lb, _lubit || rhs._lubit), divide_candidate(_lb, rhs._ub, _lubit || rhs._uubit),
 		    divide_candidate(_ub, rhs._lb, _uubit || rhs._lubit), divide_candidate(_ub, rhs._ub, _uubit || rhs._uubit)};
+		for (const auto& candidate : candidates) {
+			if (candidate.value.lower.isnar() || candidate.value.upper.isnar())
+				return setnar();
+		}
 
 		posit_type lower     = candidates[0].value.lower;
 		posit_type upper     = candidates[0].value.upper;
@@ -241,13 +255,13 @@ class valid {
 	static constexpr posit_type next_up(posit_type value) noexcept {
 		posit_type candidate(value);
 		++candidate;
-		return candidate.isnar() ? value : candidate;
+		return candidate;
 	}
 
 	static constexpr posit_type next_down(posit_type value) noexcept {
 		posit_type candidate(value);
 		--candidate;
-		return candidate.isnar() ? value : candidate;
+		return candidate;
 	}
 
 	template<typename Real>

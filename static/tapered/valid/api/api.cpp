@@ -45,6 +45,14 @@ int main() {
 
 	const Valid invalid(Posit(2), Posit(1));
 	check(invalid.isnar(), "reversed bounds form NaR");
+	const Valid reversedNative(0.101, 0.1);
+	check(reversedNative.isnar(), "reversed native bounds form NaR before conversion");
+	const Valid reversedMixed(-1, 1u);
+	check(!reversedMixed.isnar(), "mixed-sign integral bounds preserve ordering");
+	const Valid reversedMixedInvalid(1u, -1);
+	check(reversedMixedInvalid.isnar(), "reversed mixed-sign integral bounds form NaR");
+	const Valid nativeOverflow(1.0, 1.0e300);
+	check(nativeOverflow.isnar(), "native overflow forms NaR");
 
 	std::ostringstream text;
 	text << range;

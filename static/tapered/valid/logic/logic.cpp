@@ -31,10 +31,12 @@ int main() {
 
 	check(a == same, "structural equality");
 	check(a != differentlyOpen, "openness participates in equality");
-	check(a < b && b > a, "disjoint interval ordering");
+	check(a < b, "disjoint interval less-than ordering");
+	check(b > a, "disjoint interval greater-than ordering");
 	check(!(a < touching), "closed touching intervals are not strictly ordered");
 	check(a < touchingOpen, "an excluded touching point is strictly ordered");
-	check(a <= same && a >= same, "non-strict equality");
+	check(a <= same, "non-strict less-than equality");
+	check(a >= same, "non-strict greater-than equality");
 
 	if (failures == 0)
 		std::cout << "valid logic: PASS\n";
