@@ -96,6 +96,34 @@ public:
 	// the format's own quantum.  Issue #1300.
 	static constexpr bool wide_significand = (maxCharBits + 1u) > 53u;
 
+	// Does the range fit a double?  Addition and subtraction on the double path
+	// convert both operands, which is only sound while they and their sum are normal
+	// doubles.  sqrt(e)^l is 2^(0.72 l), so a characteristic within +/-510 stays
+	// inside 2^+/-370.  Every rbits <= 3 configuration qualifies and decides this at
+	// compile time; rbits = 4 and 5 do not, and takum_log<24,4> returned NaR for
+	// big + big and 0 for tiny + tiny (#1626).  Multiplication, division and sqrt
+	// are exact in the log domain and never needed a double.
+	static constexpr int64_t double_safe_characteristic = 510;
+	static constexpr bool range_fits_double =
+		(Codec::max_characteristic() <= double_safe_characteristic) &&
+		(Codec::min_characteristic() >= -double_safe_characteristic);
+
+	constexpr bool in_double_safe_range() const noexcept {
+		if (iszero()) return true;
+		const int64_t c = Codec::characteristic_of(magnitude_bits());
+		return c >= -double_safe_characteristic && c <= double_safe_characteristic;
+	}
+
+	// Addition and subtraction take the extended-precision path when a double cannot
+	// carry the fraction (wide_significand), or when the format reaches past double's
+	// range and this operand pair does -- decided per call, since the extended path
+	// costs ~20x on a narrow rbits = 4 layout and values a double holds do not need it.
+	constexpr bool takes_extended_path(const takum_log& rhs) const noexcept {
+		if constexpr (wide_significand) return true;
+		else if constexpr (range_fits_double) return false;
+		else return !(in_double_safe_range() && rhs.in_double_safe_range());
+	}
+
 	// The base of the value map.  std::numeric_limits<>::radix is a
 	// static constexpr int and cannot express sqrt(e), so the value base is
 	// exposed here instead; numeric_limits keeps the integer representation
@@ -228,7 +256,7 @@ public:
 	// argument -- see takum_log_arithmetic.hpp.  Issue #1300.
 	CONSTEXPRESSION takum_log& operator+=(const takum_log& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
-		if constexpr (wide_significand) {
+		if (takes_extended_path(rhs)) {
 			return wide_sum(rhs, false);
 		}
 		else {
@@ -238,7 +266,7 @@ public:
 	CONSTEXPRESSION takum_log& operator+=(double rhs) { return *this += takum_log(rhs); }
 	CONSTEXPRESSION takum_log& operator-=(const takum_log& rhs) {
 		if (isnar() || rhs.isnar()) { setnar(); return *this; }
-		if constexpr (wide_significand) {
+		if (takes_extended_path(rhs)) {
 			return wide_sum(rhs, true);
 		}
 		else {

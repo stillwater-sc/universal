@@ -41,6 +41,7 @@
 // about 2^-62 -- roughly 40 bits of margin.  It is only its SPEED that made it
 // unusable as the implementation.
 #include <universal/utility/directives.hpp>
+#include <cmath>
 
 #include <iostream>
 #include <cstdint>
@@ -139,7 +140,18 @@ int VerifyCorrectlyRounded(bool subtract, unsigned samples, bool reportTestCases
 			if (b.isnar() || b.iszero()) continue;
 
 			TL got = subtract ? (a - b) : (a + b);
-			if (got.isnar() || got.iszero()) continue;
+			// Two finite operands never sum to NaR, and since #1620 a sum is zero only
+			// when the operands cancel exactly.  Anything else is the double path's
+			// failure mode outside its range -- NaR for big + big, zero for tiny + tiny
+			// (#1626) -- and must be counted, not set aside.
+			const bool cancel = subtract ? (a.raw_bits() == b.raw_bits()) : (a.raw_bits() == (-b).raw_bits());
+			if (got.isnar() || (got.iszero() && !cancel)) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cout << "FAIL " << (subtract ? "subtraction" : "addition") << " gave "
+				                               << (got.isnar() ? "NaR" : "0") << " at " << i << ',' << j << '\n';
+				continue;
+			}
+			if (got.iszero()) continue;
 			const std::uint64_t gm = got.magnitude_bits();
 			if (gm == span || gm == 1ull) continue;   // saturation is a range decision
 
@@ -172,15 +184,21 @@ int VerifyCorrectlyRounded(bool subtract, unsigned samples, bool reportTestCases
 			bool refNeg;
 			dd_cascade want;
 			if (!cancels) {
-				dd_cascade va = exp(la * dd_cascade(0.5));
-				dd_cascade vb = exp(lb * dd_cascade(0.5));
+				// Pull out the common factor sqrt(e)^shift, shift an integer, before
+				// exponentiating: e^(l/2) overflows dd_cascade beyond l ~ 1420, which
+				// rbits = 4 and 5 reach easily (#1626).  Subtracting an integer is
+				// exact, so this is still the naive algebra -- add the values outright
+				// -- just evaluated at a scale where they exist.
+				const dd_cascade shift(std::floor(double(lBig)));
+				dd_cascade va = exp((la - shift) * dd_cascade(0.5));
+				dd_cascade vb = exp((lb - shift) * dd_cascade(0.5));
 				if (sa) va = dd_cascade(0.0) - va;
 				if (sb) vb = dd_cascade(0.0) - vb;
 				dd_cascade sum = va + vb;
 				if (sum == dd_cascade(0.0)) continue;
 				refNeg = (sum < dd_cascade(0.0));
 				if (refNeg) sum = dd_cascade(0.0) - sum;
-				want = log(sum) * dd_cascade(2.0);
+				want = shift + log(sum) * dd_cascade(2.0);
 				++naiveRef;
 			}
 			else {
@@ -370,6 +388,14 @@ try {
 		VerifyExactIdentities<64, 3>(identity_samples, reportTestCases), "takum_log<64,3>", "exact identities");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCorrectlyRounded<64, 3>(false, rounding_samples, reportTestCases), "takum_log<64,3>", "correctly rounded add");
+	// #1626: rbits = 4 and 5 reach far past double's range, so these sums take the
+	// extended path for range alone; on the double path they gave NaR and zero.
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCorrectlyRounded<24, 4>(false, rounding_samples, reportTestCases), "takum_log<24,4>", "correctly rounded add");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCorrectlyRounded<24, 4>(true, rounding_samples, reportTestCases), "takum_log<24,4>", "correctly rounded sub");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCorrectlyRounded<32, 5>(false, rounding_samples, reportTestCases), "takum_log<32,5>", "correctly rounded add");
 #endif
 
 #if REGRESSION_LEVEL_2

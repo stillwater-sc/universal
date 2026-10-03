@@ -617,6 +617,67 @@ int VerifyRootCorrectlyRounded(Root op, unsigned samples, const std::vector<std:
 }
 
 // ---------------------------------------------------------------------------
+// Far outside double's range (#1626)
+//
+// rbits = 4 and 5 reach 2^+/-65535 and 2^+/-2^32, where double(x) is infinity or
+// zero.  Narrow configurations such as takum<24,4> used to evaluate on the double
+// path anyway and returned NaR for 2^2000 * 1.  The exact reference works on
+// relative spans, so operands are drawn from clusters two binades wide around a
+// far characteristic -- every comparison then fits, and none is skipped:
+//   a, b near 2^center        a + b, a - b
+//   a near 2^center, b in [1,4)   a * b, a / b
+//   a near 2^center, b near 2^-center   a * b (lands near 1)
+//   v near 2^center           sqrt(v), rsqrt(v)
+// ---------------------------------------------------------------------------
+template<unsigned nbits, unsigned rbits>
+int VerifyFarRange(std::int64_t center, unsigned samples, bool reportTestCases) {
+	using T = sw::universal::takum<nbits, rbits, std::uint64_t>;
+	int nrOfFailedTests = 0;
+	long exercised = 0, rootsExercised = 0;
+	tally t, rt;
+	auto at = [](std::int64_t c) { T x; x.setbits(T::Codec::encode_exact(c, 0ull).magnitude); return x; };
+	auto cluster = [&](std::int64_t c) {
+		std::vector<T> v;
+		const std::uint64_t lo = at(c).raw_bits(), hi = at(c + 2).raw_bits();
+		const std::uint64_t step = ((hi - lo) / samples) | 1ull;
+		for (std::uint64_t i = lo; i < hi; i += step) { T x; x.setbits(i); v.push_back(x); v.push_back(-x); }
+		return v;
+	};
+	const std::vector<T> far = cluster(center), mirror = cluster(-center), near1 = cluster(0);
+	// Every operand and result here is finite and nonzero, so NaR or zero is wrong
+	// outright -- the double path's failure mode, which CheckCorrectlyRounded would
+	// set aside as saturation rather than count.
+	auto finite = [&](const T& r, const char* what, const T& a) {
+		if (!r.isnar() && !r.iszero()) return true;
+		++nrOfFailedTests;
+		if (reportTestCases) std::cout << "FAIL far-range " << what << " gave " << (r.isnar() ? "NaR" : "0")
+		                               << " at a=" << to_binary(a) << '\n';
+		return false;
+	};
+	auto check = [&](Op op, const T& a, const T& b) {
+		const T r = (op == Op::add) ? a + b : (op == Op::sub) ? a - b : (op == Op::mul) ? a * b : a / b;
+		if (op == Op::sub && a.raw_bits() == b.raw_bits()) return;      // a - a is a genuine zero
+		if (op == Op::add && a.raw_bits() == (-b).raw_bits()) return;   // so is a + (-a)
+		if (!finite(r, "arithmetic", a)) return;
+		if (!CheckCorrectlyRounded(op, a, b, t, exercised, reportTestCases)) ++nrOfFailedTests;
+	};
+	for (const T& a : far) {
+		for (const T& b : far)    { check(Op::add, a, b); check(Op::sub, a, b); }
+		for (const T& b : near1)  { check(Op::mul, a, b); check(Op::div, a, b); }
+		for (const T& b : mirror) { check(Op::mul, a, b); }
+		if (!a.sign()) {
+			if (finite(sqrt(a), "sqrt", a) &&
+			    !CheckRootCorrectlyRounded(Root::sqrt,  a, rt, rootsExercised, reportTestCases)) ++nrOfFailedTests;
+			if (finite(rsqrt(a), "rsqrt", a) &&
+			    !CheckRootCorrectlyRounded(Root::rsqrt, a, rt, rootsExercised, reportTestCases)) ++nrOfFailedTests;
+		}
+	}
+	nrOfFailedTests += report_coverage("far-range arithmetic", nbits, rbits, exercised, t, reportTestCases);
+	nrOfFailedTests += report_coverage("far-range roots", nbits, rbits, rootsExercised, rt, reportTestCases);
+	return nrOfFailedTests;
+}
+
+// ---------------------------------------------------------------------------
 // Conversion to an IEEE type, correctly rounded (#1622)
 //
 // The result must be at least as close to the exact takum value as both of its
@@ -882,6 +943,14 @@ try {
 		VerifyFmaMidpointPlusTiny<16, 3>(2000, reportTestCases), "takum<16,3>", "fma midpoint + tiny");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyFmaMidpointPlusTiny<32, 3>(2000, reportTestCases), "takum<32,3>", "fma midpoint + tiny");
+	// #1626: far outside double's range, on the formats that reach there.  takum<24,4>
+	// sits below the precision gate and only takes the exact path for its range.
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFarRange<24, 4>(2000, 24, reportTestCases), "takum<24,4>", "far range 2^2000");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFarRange<24, 4>(20000, 24, reportTestCases), "takum<24,4>", "far range 2^20000");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyFarRange<32, 5>(3000, 24, reportTestCases), "takum<32,5>", "far range 2^3000");
 	// #1622: sqrt, rsqrt and conversion to IEEE, each rounded once
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyRootCorrectlyRounded<32, 3>(Root::sqrt, 4000, { 0x40000003ull }, reportTestCases), "takum<32,3>", "correctly rounded sqrt");
