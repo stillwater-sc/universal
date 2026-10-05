@@ -27,14 +27,15 @@ Constraints, checked at compile time:
 - `2 <= rs < nbits - 1`
 - `nbits > 1 + rs + es`: at least one fraction bit at every magnitude
 - `nbits <= 64`
+- `es < 31`, so the scale fits an `int`
 
 Standard configurations, Gustafson's `rS = 6, eS = 5`:
 
-| alias | type | fraction bits | dynamic range |
-|---|---|---|---|
-| `bposit16` | `bposit<16, 6, 5, uint16_t>` | 4 .. 8 | 2^-192 .. 2^192 |
-| `bposit32` | `bposit<32, 6, 5, uint32_t>` | 20 .. 24 | 2^-192 .. 2^192 |
-| `bposit64` | `bposit<64, 6, 5, uint64_t>` | 52 .. 56 | 2^-192 .. 2^192 |
+| alias | type | fraction bits | scale range | minpos .. maxpos |
+|---|---|---|---|---|
+| `bposit16` | `bposit<16, 6, 5, uint16_t>` | 4 .. 8 | [-192, 191] | 1.69e-58 .. 6.08e57 |
+| `bposit32` | `bposit<32, 6, 5, uint32_t>` | 20 .. 24 | [-192, 191] | 1.59e-58 .. 6.28e57 |
+| `bposit64` | `bposit<64, 6, 5, uint64_t>` | 52 .. 56 | [-192, 191] | 1.59e-58 .. 6.28e57 |
 
 ## Encoding
 
@@ -135,7 +136,7 @@ Bounding the taper guarantees fraction bits, but it does **not** make the roundo
 - TwoSum fails for 2872 of the 4096 pairs among the 64 smallest values. For example, (1 + 1/16) 2^-192 + (1 + 1/8) 2^-192 leaves (1/16) 2^-192, below minpos = (17/16) 2^-192.
 - TwoProduct's error is unrepresentable for about 0.2% of random pairs at ordinary magnitudes, and about 12% across the full range.
 
-Exact accumulation in bposit therefore comes from the **quire**, which always works. Compensated summation does not always work. bposit provides no exact `twosum` / `twoprod`.
+Exact accumulation in bposit will therefore come from a **quire**, which always works; compensated summation does not. The generic `quire` does not support bposit yet: a bposit quire, sized from `(rs, es)` (800 bits for `<n, 6, 5>`), is on the epic #1250 roadmap. bposit provides no exact `twosum` / `twoprod`.
 
 ## Reference encoding: `bposit<8, 4, 0>`
 

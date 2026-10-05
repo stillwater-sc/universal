@@ -413,9 +413,15 @@ private:
 			const bool neg = v < 0.0l;
 			int exp = 0;
 			const long double m = std::frexp(neg ? -v : v, &exp);  // m in [0.5, 1)
-			const std::uint64_t sig = static_cast<std::uint64_t>(std::ldexp(m, 64));   // exact: 64-bit significand
+			// The top 64 significand bits.  Exact for x87's 64-bit significand; a binary128
+			// long double (AArch64 Linux, RISC-V) has 113, and the bits below these must
+			// reach the rounding as a sticky bit, or a value just above a tie rounds as the tie.
+			const long double scaled = std::ldexp(m, 64);          // in [2^63, 2^64)
+			const long double whole  = std::floor(scaled);
+			const std::uint64_t sig  = static_cast<std::uint64_t>(whole);
+			const bool sticky        = (scaled != whole);
 			const std::uint64_t frac = sig & ~(1ull << 63);
-			setbits(encode(neg, exp - 1, frac, 63u, false));
+			setbits(encode(neg, exp - 1, frac, 63u, sticky));
 			return *this;
 		}
 	}
