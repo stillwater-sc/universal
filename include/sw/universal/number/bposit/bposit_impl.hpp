@@ -59,7 +59,12 @@ public:
 	static_assert(_rs >= 2, "bposit: the maximum regime size rs must be at least 2");
 	static_assert(_rs < _nbits - 1, "bposit: a b-posit requires rs < nbits - 1");
 	static_assert(_nbits > 1 + _rs + _es, "bposit: nbits must exceed 1 + rs + es, so every encoding keeps a fraction bit");
-	static_assert(_es < 31, "bposit: es must leave the scale inside int");
+	// The scale is an int, and blocktriple forms sums of two scales for a product.  Bound
+	// rs 2^es -- the magnitude of minscale -- to 2^28, computed in 64 bits so that the
+	// check cannot itself wrap: rs << es in 32-bit unsigned would, at es near 31, and turn
+	// the range inside out.  The standard <n, 6, 5> needs 192.
+	static_assert(_es < 32 && (static_cast<std::uint64_t>(_rs) << _es) <= (std::uint64_t(1) << 28),
+	              "bposit: rs * 2^es must be at most 2^28, so every scale fits an int");
 
 	static constexpr unsigned nbits    = _nbits;
 	static constexpr unsigned rs       = _rs;                         // maximum regime size
@@ -68,8 +73,8 @@ public:
 	static constexpr unsigned ebits    = es;
 	static constexpr unsigned fbits    = nbits - 3 - es;              // most fraction bits (2-bit regime)
 	static constexpr unsigned fbitsmin = nbits - 1 - rs - es;         // fraction bits at every magnitude
-	static constexpr int      maxscale = static_cast<int>(rs << es) - 1;
-	static constexpr int      minscale = -static_cast<int>(rs << es);
+	static constexpr int      maxscale = static_cast<int>(static_cast<std::uint64_t>(rs) << es) - 1;
+	static constexpr int      minscale = -static_cast<int>(static_cast<std::uint64_t>(rs) << es);
 
 	using BlockType   = bt;
 	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>;

@@ -27,7 +27,7 @@ Constraints, checked at compile time:
 - `2 <= rs < nbits - 1`
 - `nbits > 1 + rs + es`: at least one fraction bit at every magnitude
 - `nbits <= 64`
-- `es < 31`, so the scale fits an `int`
+- `rs * 2^es <= 2^28`, so every scale, and the sum of two scales in a product, fits an `int`
 
 Standard configurations, Gustafson's `rS = 6, eS = 5`:
 
