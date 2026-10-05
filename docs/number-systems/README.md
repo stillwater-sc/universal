@@ -37,6 +37,7 @@ This directory contains comprehensive documentation for each number system in th
 | Type | Bits | Description | Best For |
 |------|------|-------------|----------|
 | [posit](posit.md) | N | Tapered-precision floating-point (current v2) | General numeric, more precision than IEEE |
+| [bposit](bposit.md) | N | Bounded posit (Gustafson's b-posit): capped regime, guaranteed fraction bits | Hardware-friendly posits, fixed 2^-192 .. 2^192 range |
 | [posit1](posit1.md) | N | Original posit implementation (legacy v1) | Backward compatibility |
 | [posito](posito.md) | N | Experimental posit variant | Differential testing, research |
 | [takum](takum.md) | N | Bounded-range tapered float | General computing, predictable range |
