@@ -25,6 +25,7 @@
 // Forward declarations for all number types that have quire_traits specializations.
 // These ensure the traits header can be included independently of the number type headers.
 #include <universal/number/posit/posit_fwd.hpp>
+#include <universal/number/bposit/bposit_fwd.hpp>
 #include <universal/number/cfloat/cfloat_fwd.hpp>
 #include <universal/number/fixpnt/fixpnt_fwd.hpp>
 #include <universal/number/lns/lns_fwd.hpp>
@@ -71,6 +72,41 @@ struct quire_traits<posit<nbits, es, bt>> {
 
 	// total quire bits (excluding sign) with default capacity
 	static constexpr unsigned qbits       = range + capacity;
+};
+
+// ============================================================================
+// bposit<nbits, rs, es, bt>: the bounded posit (Gustafson's b-posit)
+//
+// Same layout rule as cfloat: the smallest product BIT lands on bit 0, and maxpos^2
+// fits below the upper end.  A b-posit's smallest value still carries F_min fraction
+// bits, so the smallest product bit is not minpos^2's scale but
+//   2 * (minscale - F_min) = -2 * (rs 2^es + F_min)
+// -- sizing from the smallest value instead would drop 2 F_min bits of exact dot
+// products of tiny operands, the trap #1202 fixed for cfloat.
+//   radix_point = 2 (rs 2^es + F_min)       smallest product bit at bit 0
+//   upper_range = 2 rs 2^es                 maxpos^2 < 2^(2 maxscale + 2)
+//   range       = 4 rs 2^es + 2 F_min
+//
+// So the exact quire depends on n even when rs and es are fixed.  For the standard
+// <n, 6, 5>: range = 768 + 2 (n - 12) -- 776 for n = 16 (800 with a 23-bit carry guard
+// and the sign, the "800 bits" quoted for b-posits), 808 for n = 32, 872 for n = 64.
+// A fixed 800-bit quire would be exact only up to n = 16.
+//
+// half_range is the larger half, so quire::operator+= accepts every product scale,
+// [-2 rs 2^es, 2 rs 2^es - 1].
+// ============================================================================
+template<unsigned nbits, unsigned rs, unsigned es, typename bt>
+struct quire_traits<bposit<nbits, rs, es, bt>> {
+	static constexpr unsigned regime_scale  = rs << es;                 // -minscale, and maxscale + 1
+	static constexpr unsigned fbits         = nbits - 3u - es;          // most fraction bits
+	static constexpr unsigned fbitsmin      = nbits - 1u - rs - es;     // fraction bits at the extremes
+	static constexpr unsigned radix_point   = 2u * (regime_scale + fbitsmin);
+	static constexpr unsigned upper_range   = 2u * regime_scale;
+	static constexpr unsigned range         = radix_point + upper_range;
+	static constexpr unsigned half_range    = (radix_point > upper_range) ? radix_point : upper_range;
+	static constexpr unsigned capacity      = 30u;
+	static constexpr unsigned product_fbits = 2u * (fbits + 1u);
+	static constexpr unsigned qbits         = range + capacity;
 };
 
 // ============================================================================

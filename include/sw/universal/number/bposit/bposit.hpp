@@ -35,3 +35,7 @@
 #include <universal/number/bposit/manipulators.hpp>
 #include <universal/number/bposit/iostream.hpp>
 #include <universal/number/bposit/attributes.hpp>
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// fused dot product through the generalized quire
+#include <universal/number/bposit/fdp.hpp>
