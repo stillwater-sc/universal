@@ -4,7 +4,7 @@
 
 A posit's tapered precision is its strength: it spends bits on dynamic range only when a value needs them. At the extremes, though, the regime keeps growing until it has consumed every bit, so near maxpos and minpos a standard posit has **no fraction bits at all**. Its precision falls to zero. The variable-length regime also makes decode and encode hardware depend on the precision.
 
-`bposit` is John Gustafson's **bounded posit (b-posit)**. It caps the regime at a maximum size `rS`. Every value then keeps a guaranteed number of fraction bits, the decoder's critical path is nearly the same at every precision, and the quire has a fixed size. The price is a bounded dynamic range.
+`bposit` is John Gustafson's **bounded posit (b-posit)**. It caps the regime at a maximum size `rS`. Every value then keeps a guaranteed number of fraction bits, the decoder's critical path is nearly the same at every precision, and the quire is bounded: for fixed `rS` and `eS` it grows by only two bits per bit of precision. The price is a bounded dynamic range.
 
 Sources:
 
@@ -136,7 +136,32 @@ Bounding the taper guarantees fraction bits, but it does **not** make the roundo
 - TwoSum fails for 2872 of the 4096 pairs among the 64 smallest values. For example, (1 + 1/16) 2^-192 + (1 + 1/8) 2^-192 leaves (1/16) 2^-192, below minpos = (17/16) 2^-192.
 - TwoProduct's error is unrepresentable for about 0.2% of random pairs at ordinary magnitudes, and about 12% across the full range.
 
-Exact accumulation in bposit will therefore come from a **quire**, which always works; compensated summation does not. The generic `quire` does not support bposit yet: a bposit quire, sized from `(rs, es)` (800 bits for `<n, 6, 5>`), is on the epic #1250 roadmap. bposit provides no exact `twosum` / `twoprod`.
+Exact accumulation in bposit therefore comes from the **quire** (below), which always works; compensated summation does not. bposit provides no exact `twosum` / `twoprod`.
+
+## Quire: exact dot products
+
+`quire<bposit<...>>` is the generalized quire, sized by `quire_traits<bposit<nbits, rs, es, bt>>`. Every product of two bposits lands in it exactly; `fdp(x, y)` accumulates `quire_mul(x[i], y[i])` and rounds the sum once with `quire_resolve`, through bposit's own encoder, so the result saturates to +/-minpos or +/-maxpos like any other bposit result, never to 0 or NaR.
+
+The layout puts the smallest product **bit** at bit 0 and maxpos^2 below the top:
+
+| | formula | `<16,6,5>` | `<32,6,5>` | `<64,6,5>` |
+|---|---|---|---|---|
+| smallest product bit | `2^-(2 (rs 2^es + F_min))` | 2^-392 | 2^-424 | 2^-488 |
+| radix point | `2 (rs 2^es + F_min)` | 392 | 424 | 488 |
+| upper range | `2 rs 2^es` | 384 | 384 | 384 |
+| range | `4 rs 2^es + 2 F_min` | 776 | 808 | 872 |
+| with the default 30 carry bits | `range + 30` | 806 | 838 | 902 |
+
+**The quire size depends on n.** A b-posit's smallest values still carry `F_min` fraction bits, so products of tiny values reach `2 F_min` bits below minpos^2. Sizing from minpos^2 alone, as the often-quoted "800 bits for any n > 12" does, matches the exact size only at n = 16 (776 bits, plus a 23-bit carry guard and the sign). Anchoring the quire at minpos^2 drops the lowest 2 F_min bits of products of tiny values: 8 at n = 16, 104 at n = 64. This is the trap #1202 fixed for cfloat. The ranges above were confirmed by brute force over all products of the small configurations, and `static/tapered/bposit/arithmetic/fdp.cpp` checks a dot product whose exact value lives only in those low bits.
+
+```cpp
+std::vector<bposit32> x = ..., y = ...;
+bposit32 d = fdp(x, y);                       // exact sum of products, rounded once
+
+quire<bposit32> q;                            // or accumulate by hand
+for (std::size_t i = 0; i < x.size(); ++i) q += quire_mul(x[i], y[i]);
+bposit32 s = quire_resolve(q);
+```
 
 ## Reference encoding: `bposit<8, 4, 0>`
 

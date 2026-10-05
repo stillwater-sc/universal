@@ -48,7 +48,7 @@ This directory contains comprehensive documentation for each number system in th
 |------|------|-------------|----------|
 | [quire](quire.md) | Wide | Generalized super-accumulator for exact dot products | Reproducible linear algebra, BLAS |
 
-The quire is a number-system-agnostic accumulator that provides exact dot products for `cfloat`, `posit`, `fixpnt`, `lns`, `dbns`, `integer`, native `float`, and native `double`.
+The quire is a number-system-agnostic accumulator that provides exact dot products for `cfloat`, `posit`, `bposit`, `fixpnt`, `lns`, `dbns`, `integer`, native `float`, and native `double`.
 
 ### Interval and Uncertainty Arithmetic
 
@@ -111,7 +111,7 @@ The quire is a number-system-agnostic accumulator that provides exact dot produc
 | **Embedded (no FPU)** | fixpnt, integer |
 | **Scientific HPC** | dd, qd, posit, cfloat |
 | **Verified / Validated Computing** | interval, valid, areal, sorn |
-| **Reproducible Linear Algebra** | any type + quire (cfloat, posit, fixpnt, lns, float, double) |
+| **Reproducible Linear Algebra** | any type + quire (cfloat, posit, bposit, fixpnt, lns, float, double) |
 | **Cryptography / Big Numbers** | integer |
 | **Data Compression** | zfpblock |
 | **Custom Hardware Design** | cfloat, posit, takum, lns |
