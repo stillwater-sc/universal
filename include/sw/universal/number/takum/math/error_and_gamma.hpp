@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <cmath>
+#include <universal/number/takum/math/wide_range.hpp>
 #include <universal/number/takum/math/saturate.hpp>
 
 namespace sw { namespace universal {
@@ -13,12 +14,18 @@ namespace sw { namespace universal {
 // Error function: erf(x) = (2/sqrt(pi)) * integral_0^x e^(-t^2) dt
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> erf(const takum<nbits, rbits, bt>& x) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::erf(x)) return *far;
+	}
 	return takum<nbits, rbits, bt>(std::erf(double(x)));
 }
 
 // Complementary error function: erfc(x) = 1 - erf(x)
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> erfc(const takum<nbits, rbits, bt>& x) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::erfc(x)) return *far;
+	}
 	return saturate_from_double<takum<nbits, rbits, bt>>(std::erfc(double(x)), true);
 }
 
@@ -27,11 +34,17 @@ takum<nbits, rbits, bt> erfc(const takum<nbits, rbits, bt>& x) {
 // ---------------------------------------------------------------------------
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> erf(const takum_log<nbits, rbits, bt>& x) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::erf(x)) return *far;
+	}
 	return takum_log<nbits, rbits, bt>(std::erf(double(x)));
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> erfc(const takum_log<nbits, rbits, bt>& x) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::erfc(x)) return *far;
+	}
 	return saturate_from_double<takum_log<nbits, rbits, bt>>(std::erfc(double(x)), true);
 }
 

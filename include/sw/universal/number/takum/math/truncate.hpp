@@ -6,30 +6,43 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <cmath>
+#include <universal/number/takum/math/wide_range.hpp>
 
 namespace sw { namespace universal {
 
 // Round toward zero
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> trunc(const takum<nbits, rbits, bt>& x) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::integral(x, takum_wide_range::integral_mode::trunc)) return *far;
+	}
 	return takum<nbits, rbits, bt>(std::trunc(double(x)));
 }
 
 // Round to nearest, halfway cases away from zero
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> round(const takum<nbits, rbits, bt>& x) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::integral(x, takum_wide_range::integral_mode::round)) return *far;
+	}
 	return takum<nbits, rbits, bt>(std::round(double(x)));
 }
 
 // Round downward (floor)
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> floor(const takum<nbits, rbits, bt>& x) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::integral(x, takum_wide_range::integral_mode::floor)) return *far;
+	}
 	return takum<nbits, rbits, bt>(std::floor(double(x)));
 }
 
 // Round upward (ceil)
 template<unsigned nbits, unsigned rbits, typename bt>
 takum<nbits, rbits, bt> ceil(const takum<nbits, rbits, bt>& x) {
+	if constexpr (!takum<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::integral(x, takum_wide_range::integral_mode::ceil)) return *far;
+	}
 	return takum<nbits, rbits, bt>(std::ceil(double(x)));
 }
 
@@ -39,21 +52,33 @@ takum<nbits, rbits, bt> ceil(const takum<nbits, rbits, bt>& x) {
 // ---------------------------------------------------------------------------
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> trunc(const takum_log<nbits, rbits, bt>& x) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::integral(x, takum_wide_range::integral_mode::trunc)) return *far;
+	}
 	return takum_log<nbits, rbits, bt>(std::trunc(double(x)));
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> round(const takum_log<nbits, rbits, bt>& x) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::integral(x, takum_wide_range::integral_mode::round)) return *far;
+	}
 	return takum_log<nbits, rbits, bt>(std::round(double(x)));
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> floor(const takum_log<nbits, rbits, bt>& x) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::integral(x, takum_wide_range::integral_mode::floor)) return *far;
+	}
 	return takum_log<nbits, rbits, bt>(std::floor(double(x)));
 }
 
 template<unsigned nbits, unsigned rbits, typename bt>
 inline takum_log<nbits, rbits, bt> ceil(const takum_log<nbits, rbits, bt>& x) {
+	if constexpr (!takum_log<nbits, rbits, bt>::range_fits_double) {   // #1626
+		if (auto far = takum_wide_range::integral(x, takum_wide_range::integral_mode::ceil)) return *far;
+	}
 	return takum_log<nbits, rbits, bt>(std::ceil(double(x)));
 }
 
