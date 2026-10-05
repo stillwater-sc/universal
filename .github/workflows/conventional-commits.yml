@@ -58,6 +58,7 @@ jobs:
             unum1
             unum2
             posit
+            bposit
             takum
             takum_log
             bisection
