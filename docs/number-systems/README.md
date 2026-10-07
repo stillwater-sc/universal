@@ -38,6 +38,7 @@ This directory contains comprehensive documentation for each number system in th
 |------|------|-------------|----------|
 | [posit](posit.md) | N | Tapered-precision floating-point (current v2) | General numeric, more precision than IEEE |
 | [bposit](bposit.md) | N | Bounded posit (Gustafson's b-posit): capped regime, guaranteed fraction bits | Hardware-friendly posits; the standard `<n, 6, 5>` spans scales [-192, 191], about 1.6e-58 .. 6.3e57, for every n > 12 |
+| [poxel](poxel.md) | N | Posit lattice plus an uncertainty bit: every real converts to a unique exact or open tile | Uncertainty tracking with tapered precision |
 | [posit1](posit1.md) | N | Original posit implementation (legacy v1) | Backward compatibility |
 | [posito](posito.md) | N | Experimental posit variant | Differential testing, research |
 | [takum](takum.md) | N | Bounded-range tapered float | General computing, predictable range |
@@ -110,7 +111,7 @@ The quire is a number-system-agnostic accumulator that provides exact dot produc
 | **Financial / Accounting** | dfixpnt, dfloat, rational, fixpnt |
 | **Embedded (no FPU)** | fixpnt, integer |
 | **Scientific HPC** | dd, qd, posit, cfloat |
-| **Verified / Validated Computing** | interval, valid, areal, sorn |
+| **Verified / Validated Computing** | interval, valid, areal, poxel, sorn |
 | **Reproducible Linear Algebra** | any type + quire (cfloat, posit, bposit, fixpnt, lns, float, double) |
 | **Cryptography / Big Numbers** | integer |
 | **Data Compression** | zfpblock |
