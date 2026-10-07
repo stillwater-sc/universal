@@ -67,6 +67,7 @@ int main()
 try {
 	using namespace sw::universal;
 	using areal32 = areal<32, 8, std::uint32_t>;
+	using poxel32 = poxel<32, 2, std::uint32_t>;   // equal storage: 32 bits, ubit included
 	using areal64 = areal<64, 11, std::uint64_t>;
 	using poxel64 = poxel<64, 2, std::uint64_t>;
 	using P32 = posit<32, 2>;
@@ -75,13 +76,13 @@ try {
 	const double gd = griewank(x0, x0, [](double v) { return std::cos(v); });
 	const P32    gp = griewank(P32(x0), P32(x0), [](const P32& v) { return P32(std::cos(double(v))); });   // cos correctly rounded to posit<32,2>
 	const auto   sa = griewank(areal32(x0), areal32(x0), tile_cos<areal32>);
-	const auto   sp = griewank(poxel33(x0), poxel33(x0), tile_cos<poxel33>);
+	const auto   sp = griewank(poxel32(x0), poxel32(x0), tile_cos<poxel32>);
 	auto enclose = [](auto tag) {
 		using I = tile_interval<decltype(tag)>;
 		return griewank(I(x0), I(x0), [](const I& v) { return cos(v); });
 	};
 	const auto ia  = enclose(areal32{});
-	const auto ip  = enclose(poxel33{});
+	const auto ip  = enclose(poxel32{});
 	const auto ia6 = enclose(areal64{});
 	const auto ip6 = enclose(poxel64{});
 
@@ -91,9 +92,9 @@ try {
 	std::cout << std::setw(30) << "double" << " : " << gd << '\n';
 	std::cout << std::setw(30) << "posit<32,2>" << " : " << double(gp) << '\n';
 	std::cout << std::setw(30) << "areal<32,8> tile" << " : " << double(sa) << "  ubit = " << ubit_of(sa) << '\n';
-	std::cout << std::setw(30) << "poxel<33,2> tile" << " : " << to_interval(sp) << "  ubit = " << ubit_of(sp) << '\n';
+	std::cout << std::setw(30) << "poxel<32,2> tile" << " : " << to_interval(sp) << "  ubit = " << ubit_of(sp) << '\n';
 	std::cout << std::setw(30) << "tile_interval<areal<32,8>>" << " : " << ia.str(6) << "  sign: " << to_string(ia.sign()) << '\n';
-	std::cout << std::setw(30) << "tile_interval<poxel<33,2>>" << " : " << ip.str(6) << "  sign: " << to_string(ip.sign()) << '\n';
+	std::cout << std::setw(30) << "tile_interval<poxel<32,2>>" << " : " << ip.str(6) << "  sign: " << to_string(ip.sign()) << '\n';
 	std::cout << std::setw(30) << "tile_interval<areal<64,11>>" << " : " << ia6.str(6) << "  sign: " << to_string(ia6.sign()) << '\n';
 	std::cout << std::setw(30) << "tile_interval<poxel<64,2>>" << " : " << ip6.str(6) << "  sign: " << to_string(ip6.sign()) << '\n';
 

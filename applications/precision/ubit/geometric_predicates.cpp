@@ -80,21 +80,22 @@ int main()
 try {
 	using namespace sw::universal;
 	using areal32 = areal<32, 8, std::uint32_t>;
+	using poxel32 = poxel<32, 2, std::uint32_t>;   // equal storage: 32 bits, ubit included
 	using areal64 = areal<64, 11, std::uint64_t>;
 	using poxel64 = poxel<64, 2, std::uint64_t>;
 
 	const auto df = dets<float>();
 	const auto dd = dets<double>();
 	const auto dp = dets<posit<32, 2>>();
-	const auto sp = dets<poxel33>();
+	const auto sp = dets<poxel32>();
 	const auto ia = dets<tile_interval<areal32>>();
-	const auto ip = dets<tile_interval<poxel33>>();
+	const auto ip = dets<tile_interval<poxel32>>();
 	const auto ia6 = dets<tile_interval<areal64>>();
 	const auto ip6 = dets<tile_interval<poxel64>>();
 
 	std::cout << "sign of det(M^k), M = [1.61803398875 1; 1 0.61803398875]: exactly positive for every k\n\n";
-	std::cout << std::setw(4) << "k" << std::setw(11) << "float" << std::setw(11) << "double" << std::setw(11) << "posit32" << std::setw(16) << "poxel33 tile"
-	          << std::setw(13) << "TI areal32" << std::setw(13) << "TI poxel33" << std::setw(13) << "TI areal64" << std::setw(13) << "TI poxel64" << '\n';
+	std::cout << std::setw(4) << "k" << std::setw(11) << "float" << std::setw(11) << "double" << std::setw(11) << "posit32" << std::setw(16) << "poxel32 tile"
+	          << std::setw(13) << "TI areal32" << std::setw(13) << "TI poxel32" << std::setw(13) << "TI areal64" << std::setw(13) << "TI poxel64" << '\n';
 	for (std::size_t j = 0; j < 6; ++j) {
 		std::cout << std::setw(4) << ks[j] << std::setw(11) << sign_of(df[j]) << std::setw(11) << sign_of(dd[j]) << std::setw(11) << sign_of(double(dp[j]))
 		          << std::setw(12) << sign_of(double(sp[j])) << (sp[j].ubit() ? " u=1" : " u=0")
@@ -103,7 +104,7 @@ try {
 	std::cout << "\ndouble det(M^k):";
 	for (std::size_t j = 0; j < 6; ++j) std::cout << ' ' << dd[j];
 	std::cout << "\ntile_interval<poxel<64,2>> det(M):   " << ip6[0].str(6) << '\n';
-	std::cout << "tile_interval<poxel<33,2>> det(M^50): " << ip[5].str(6) << '\n';
+	std::cout << "tile_interval<poxel<32,2>> det(M^50): " << ip[5].str(6) << '\n';
 
 	bool never_wrong = true;
 	for (std::size_t j = 0; j < 6; ++j) {

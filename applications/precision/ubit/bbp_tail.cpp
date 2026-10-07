@@ -20,9 +20,13 @@
 //   - a single 16-bit ubit tile flags the result as inexact
 //   - a 16-bit tile_interval encloses 16^-15 in the open tile (0, minpos), so S is
 //     strictly positive; T to j = 25 plus an enclosure of its remainder,
-//     [0, 16^-26 * 4/329 * 16/15], bounds the whole series.  poxel<17,2>, whose minpos is
-//     1.4e-17, thereby PROVES 0 < S < 1e-16; areal<16,5> proves S > 0, but its smallest
-//     tile ends at 1.2e-7, so it cannot bound S below 1e-16 -- and says so
+//     [0, 16^-26 * 4/329 * 16/15], bounds the whole series.
+//
+// All formats are compared at equal storage, ubit included: 16 bits.  With standard
+// parameters, areal<16,5> and poxel<16,2> both PROVE S > 0, which half cannot; neither can
+// bound S below 1e-16, because their smallest tiles end at 1.2e-7 and 2.2e-16 -- and they
+// say so.  The same 16 bits spent as poxel<16,3> reach 2^-104, enclose S in
+// (6.4e-22, 1.3e-21), and PROVE 0 < S < 1e-16: dynamic range, not an extra bit, decides it.
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <iomanip>
@@ -95,9 +99,12 @@ try {
 	const half   sh = partial_sum<half>();
 	const posit<16, 2> sp = partial_sum<posit<16, 2>>();
 	const areal16 ta = partial_sum<areal16>();
-	const poxel17 tp = partial_sum<poxel17>();
+	using poxel16 = poxel<16, 2, std::uint16_t>;   // equal storage: 16 bits, ubit included
+	using poxel16e3 = poxel<16, 3, std::uint16_t>; // the same 16 bits with es = 3: more dynamic range
+	const poxel16 tp = partial_sum<poxel16>();
 	const auto ia = series<areal16>();
-	const auto ip = series<poxel17>();
+	const auto ip = series<poxel16>();
+	const auto ip3 = series<poxel16e3>();
 
 	std::cout << "BBP tail: S = sum_{k>=15} 16^-k (4/(8k+1) - 2/(8k+4) - 1/(8k+5) - 1/(8k+6)); is S in (0, 1e-16)?\n\n";
 	std::cout << std::setprecision(6);
@@ -106,9 +113,11 @@ try {
 	std::cout << std::setw(30) << "half" << " : " << double(sh) << '\n';
 	std::cout << std::setw(30) << "posit<16,2>" << " : " << double(sp) << '\n';
 	std::cout << std::setw(30) << "areal<16,5> tile" << " : " << double(ta) << "  ubit = " << ubit_of(ta) << '\n';
-	std::cout << std::setw(30) << "poxel<17,2> tile" << " : " << to_interval(tp) << "  ubit = " << ubit_of(tp) << '\n';
+	std::cout << std::setw(30) << "poxel<16,2> tile" << " : " << to_interval(tp) << "  ubit = " << ubit_of(tp) << '\n';
 	std::cout << std::setw(30) << "tile_interval<areal<16,5>>" << " : " << ia.str(6) << "  sign: " << to_string(ia.sign()) << '\n';
-	std::cout << std::setw(30) << "tile_interval<poxel<17,2>>" << " : " << ip.str(6) << "  sign: " << to_string(ip.sign()) << '\n';
+	std::cout << std::setw(30) << "tile_interval<poxel<16,2>>" << " : " << ip.str(6) << "  sign: " << to_string(ip.sign()) << '\n';
+	std::cout << "\nthe same 16 bits, es = 3 instead of the standard 2:\n";
+	std::cout << std::setw(30) << "tile_interval<poxel<16,3>>" << " : " << ip3.str(6) << "  sign: " << to_string(ip3.sign()) << '\n';
 
 	auto decided = [](const auto& i) { return i.sign() == tile_verdict::positive && i.template upper<double>() <= 1.0e-16; };
 
@@ -117,9 +126,10 @@ try {
 	check(!(double(sh) > 0.0), "half flushes the tail to zero: it cannot establish S > 0");
 	check(double(sp) > 1.0e-18, "posit<16,2> rounds S up to minpos: too large by four orders of magnitude, without warning");
 	check(ubit_of(ta) && ubit_of(tp), "both 16-bit single tiles flag the sum as inexact");
-	check(ia.contains(sd) && ip.contains(sd), "both 16-bit tile intervals contain S");
-	check(decided(ip), "tile_interval<poxel<17,2>> proves 0 < S < 1e-16");
-	check(ia.sign() == tile_verdict::positive && !decided(ia), "tile_interval<areal<16,5>> proves S > 0, and honestly cannot bound S below its smallest tile, which ends at 1.2e-7");
+	check(ia.contains(sd) && ip.contains(sd) && ip3.contains(sd), "every 16-bit tile interval contains S");
+	check(ia.sign() == tile_verdict::positive && ip.sign() == tile_verdict::positive, "areal<16,5> and poxel<16,2> tile intervals prove S > 0");
+	check(!decided(ia) && !decided(ip), "neither bounds S below 1e-16: their smallest tiles end at 1.2e-7 and 2.2e-16, and they say so");
+	check(decided(ip3) && ip3.lower<double>() > 0.0, "tile_interval<poxel<16,3>>, the same 16 bits with more range, proves 0 < S < 1e-16");
 
 	std::cout << (fails == 0 ? "PASS\n" : "FAIL\n");
 	return (fails == 0 ? EXIT_SUCCESS : EXIT_FAILURE);

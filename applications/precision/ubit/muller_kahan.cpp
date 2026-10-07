@@ -56,20 +56,21 @@ int main()
 try {
 	using namespace sw::universal;
 	using areal32 = areal<32, 8, std::uint32_t>;
+	using poxel32 = poxel<32, 2, std::uint32_t>;   // equal storage: 32 bits, ubit included
 	using IA = tile_interval<areal32>;
-	using IP = tile_interval<poxel33>;
+	using IP = tile_interval<poxel32>;
 
 	const auto xf = iterate<float>();
 	const auto xd = iterate<double>();
 	const auto xp = iterate<posit<32, 2>>();
 	const auto sa = iterate<areal32>();
-	const auto sp = iterate<poxel33>();
+	const auto sp = iterate<poxel32>();
 	const auto ia = iterate<IA>();
 	const auto ip = iterate<IP>();
 
 	std::cout << "Muller-Kahan: x_{n+1} = 111 - (1130 - 3000/x_{n-1}) / x_n, x_0 = 11/2, x_1 = 61/11\n\n";
 	std::cout << std::setw(3) << "n" << std::setw(12) << "exact" << std::setw(12) << "float" << std::setw(12) << "double" << std::setw(12) << "posit32"
-	          << std::setw(16) << "poxel33 tile" << "   tile_interval<poxel33>\n";
+	          << std::setw(16) << "poxel32 tile" << "   tile_interval<poxel32>\n";
 	for (std::size_t n = 0; n <= N; n += (n < 4 ? 1 : 2)) {
 		std::cout << std::setw(3) << n << std::setprecision(7) << std::setw(12) << exact(n) << std::setw(12) << xf[n] << std::setw(12) << xd[n] << std::setw(12) << double(xp[n])
 		          << std::setw(13) << double(sp[n]) << (ubit_of(sp[n]) ? " u=1" : " u=0") << "   " << ip[n].str(6) << '\n';

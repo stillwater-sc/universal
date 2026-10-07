@@ -76,6 +76,7 @@ int main()
 try {
 	using namespace sw::universal;
 	using areal32 = areal<32, 8, std::uint32_t>;
+	using poxel32 = poxel<32, 2, std::uint32_t>;   // equal storage: 32 bits, ubit included
 	using areal64 = areal<64, 11, std::uint64_t>;
 	using poxel64 = poxel<64, 2, std::uint64_t>;
 
@@ -89,11 +90,11 @@ try {
 
 	std::cout << "\nsingle tile (sticky ubit):\n";
 	const auto sa = single<areal32>("areal<32,8>");
-	const auto sp = single<poxel33>("poxel<33,2>");
+	const auto sp = single<poxel32>("poxel<32,2>");
 
 	std::cout << "\ntile interval (enclosure):\n";
 	const auto ia  = enclosed<areal32>("tile_interval<areal<32,8>>");
-	const auto ip  = enclosed<poxel33>("tile_interval<poxel<33,2>>");
+	const auto ip  = enclosed<poxel32>("tile_interval<poxel<32,2>>");
 	const auto ia6 = enclosed<areal64>("tile_interval<areal<64,11>>");
 	const auto ip6 = enclosed<poxel64>("tile_interval<poxel<64,2>>");
 
