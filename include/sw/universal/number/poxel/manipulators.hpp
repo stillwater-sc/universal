@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <algorithm>
 #include <cstdint>
 #include <iomanip>
 #include <limits>
@@ -73,10 +74,14 @@ std::string lattice_text(std::int64_t P, int precision) {
 	return s.str();
 }
 
-// "1.5" for an exact tile, "(1.5, 1.625)" for an open one, "nar"
+// "1.5" for an exact tile, "(1.5, 1.625)" for an open one, "nar".  precision is in
+// significant decimal digits; 0 picks enough to keep neighbouring lattice points apart
 template<unsigned nbits, unsigned es, typename bt>
-std::string to_interval(const poxel<nbits, es, bt>& v, int precision = 17) {
+std::string to_interval(const poxel<nbits, es, bt>& v, int precision = 0) {
 	using X = poxel<nbits, es, bt>;
+	// default: at least double's round-trip 17 digits, more when the lattice is finer
+	// (max_digits10 of fbits + 1 significand bits), so neighbouring lattice points never merge
+	if (precision <= 0) precision = std::max(17, 2 + static_cast<int>(((X::fbits + 1u) * 30103u) / 100000u));
 	if (v.isnar()) return "nar";
 	const std::int64_t P = v.lattice();
 	const std::string lo = lattice_text<nbits, es, bt>(P, precision);
