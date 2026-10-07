@@ -89,7 +89,7 @@ I g = I(1) - cos(x) * cos(x) - (x * x + x * x) / I(4000);
 g.sign();   // positive: g is in (9.5e-17, 1.01e-16); double reports -5e-20
 ```
 
-The five #1637 applications in `applications/precision/ubit` compare rounding formats, single tiles and tile intervals on Rump's polynomial, the Muller-Kahan recurrence, the sign of det(M^k), the BBP tail and the Griewank structure. They are described in that directory's README.
+The five #1637 applications in `applications/precision/ubit` compare rounding formats, single tiles and tile intervals on Rump's polynomial, the Muller-Kahan recurrence, the sign of det(M^k), the BBP tail and the Griewank structure. The tutorial [A real with uncertainty bit](../tutorials/a-real-with-uncertainty.md) walks through them with the measured results.
 
 ## API
 
