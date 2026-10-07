@@ -98,6 +98,7 @@ public:
 		_nan = false;
 	}
 	static tile_interval entire() noexcept { tile_interval r; r._lo = -kmax; r._hi = kmax; return r; }
+	static tile_interval nan() noexcept { tile_interval r; r.setnan(); return r; }
 	static tile_interval from_keys(std::int64_t lo, std::int64_t hi) noexcept { tile_interval r; r._lo = lo; r._hi = hi; return r; }
 
 	// tiles and keys of the two ends
@@ -287,12 +288,13 @@ tile_interval<Tile> hull(const tile_interval<Tile>& a, const tile_interval<Tile>
 	return tile_interval<Tile>::from_keys(std::min(a.lo_key(), b.lo_key()), std::max(a.hi_key(), b.hi_key()));
 }
 
-// the intersection with [lo, hi] given as keys (used to clamp to a known range)
+// the intersection of two enclosures of the same value (used to clamp to a known range);
+// disjoint enclosures mean one of them is wrong, which is reported as nan
 template<typename Tile>
 tile_interval<Tile> intersect(const tile_interval<Tile>& a, const tile_interval<Tile>& b) noexcept {
 	if (a.isnan() || b.isnan()) return a;
 	const std::int64_t lo = std::max(a.lo_key(), b.lo_key()), hi = std::min(a.hi_key(), b.hi_key());
-	if (lo > hi) return a;   // disjoint cannot happen for two enclosures of one value; keep a
+	if (lo > hi) return tile_interval<Tile>::nan();
 	return tile_interval<Tile>::from_keys(lo, hi);
 }
 

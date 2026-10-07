@@ -174,6 +174,7 @@ int VerifyStrictness(const std::string& tag, bool report) {
 	expect((tiny * I(0)).sign() == tile_verdict::zero, "(0, minpos) * 0 is exactly zero");
 	expect((I(1) - I(1)).sign() == tile_verdict::zero, "1 - 1 is exactly zero");
 	expect((-tiny - tiny).sign() == tile_verdict::negative, "-(0, minpos) - (0, minpos) is strictly negative");
+	expect(intersect(I(1), I(2)).isnan() && !intersect(I(1), hull(I(1), I(2))).isnan(), "disjoint enclosures intersect to nan");
 	return fails;
 }
 

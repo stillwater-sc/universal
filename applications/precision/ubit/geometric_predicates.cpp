@@ -118,7 +118,8 @@ try {
 	check(never_wrong, "no tile interval ever asserts a wrong sign: positive, or undecidable");
 	check(ip6[0].sign() == tile_verdict::positive && ia6[0].sign() == tile_verdict::positive, "both 64-bit tile intervals prove det(M) > 0");
 	check(ip[0].sign() == tile_verdict::undecidable && ia[0].sign() == tile_verdict::undecidable, "32-bit tile intervals honestly cannot resolve 2.35e-13 next to entries near 1");
-	check(ip[5].contains(0.0) && ip6[5].sign() == tile_verdict::undecidable, "at k = 50 every tile interval is undecidable: the value is 1e-631");
+	check(ia[5].sign() == tile_verdict::undecidable && ip[5].sign() == tile_verdict::undecidable && ia6[5].sign() == tile_verdict::undecidable && ip6[5].sign() == tile_verdict::undecidable,
+	      "at k = 50 every tile interval is undecidable: the value is 1e-631");
 
 	std::cout << (fails == 0 ? "PASS\n" : "FAIL\n");
 	return (fails == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
