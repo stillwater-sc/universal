@@ -47,6 +47,12 @@ try {
 		f += expect(is_poxel<poxel9> && !is_poxel<double>, "is_poxel trait", reportTestCases);
 		f += expect(to_binary(X9(1.0)) == "0b0.10.00.000|0", "to_binary of 1.0", reportTestCases);
 		f += expect(to_interval(X9(0.1)) == "(0.09375, 0.1015625)", "to_interval of 0.1", reportTestCases);
+		// a lattice too fine for long double prints exactly, in hexfloat
+		using W = poxel<64, 0, std::uint64_t>;
+		W w(1);
+		++w;
+		f += expect(to_interval(w) == "(0x1.000000000000000p+0, 0x1.000000000000001p+0)", "to_interval of a 60-fraction-bit tile is exact", reportTestCases);
+		f += expect(to_interval(X9(SpecificValue::infpos)) == "(16777216, inf)" && to_interval(X9(SpecificValue::infneg)) == "(-inf, -16777216)", "to_interval of the end tiles", reportTestCases);
 		nrOfFailedTestCases += ReportTestResult(f, "poxel", "type tag and text");
 	}
 	{
@@ -73,6 +79,9 @@ try {
 		bool threw = false;
 		try { poxel17 x = poxel17(1) / poxel17(0); (void)x; } catch (const poxel_divide_by_zero&) { threw = true; }
 		f += expect(threw, "division by zero throws", reportTestCases);
+		threw = false;
+		try { poxel17 x = poxel17(1) / poxel17(SpecificValue::minpos).operator--(); (void)x; } catch (const poxel_divide_by_zero&) { threw = true; }
+		f += expect(threw, "division by the (0, minpos) tile throws like division by zero", reportTestCases);
 		threw = false;
 		try { poxel17 x = poxel17(SpecificValue::nar) + poxel17(1); (void)x; } catch (const poxel_operand_is_nar&) { threw = true; }
 		f += expect(threw, "a NaR operand throws", reportTestCases);

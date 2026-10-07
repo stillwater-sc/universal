@@ -178,7 +178,7 @@ public:
 	}
 	constexpr poxel& operator/=(const poxel& rhs) {
 #if POXEL_THROW_ARITHMETIC_EXCEPTION
-		if (rhs.iszero()) throw poxel_divide_by_zero{};
+		if (rhs.lower_is_zero()) throw poxel_divide_by_zero{};     // exact zero and the (0, minpos) tile alike
 		if (rhs.isnar())  throw poxel_divide_by_nar{};
 		if (isnar())      throw poxel_numerator_is_nar{};
 #else
@@ -235,6 +235,10 @@ public:
 		std::uint64_t frac;       // fraction field, nf bits
 		unsigned      nf;         // fraction width
 	};
+	// the real value of lattice point P (NaN for the NaR index)
+	template<typename Real>
+	static Real lattice_point(std::int64_t P) noexcept { return lattice_value<Real>(P); }
+
 	static constexpr fields decode_lattice(std::int64_t P) noexcept {
 		fields d{};
 		d.negative = P < 0;

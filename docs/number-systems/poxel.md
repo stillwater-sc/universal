@@ -67,7 +67,7 @@ poxel9 r     = third * poxel9(3);     // (0.9375, 1),       ubit set -- 1 itself
 
 The ubit is therefore an honest "this is not exact" signal, but a single tile is not an enclosure. For guaranteed containment, carry a **pair** of tiles (a tile interval); see #1637.
 
-Special cases: NaR propagates. Division by exact zero gives NaR, and so does division by the `(0, minpos)` tile, whose representative is zero. With `POXEL_THROW_ARITHMETIC_EXCEPTION` set to 1, these raise `poxel_operand_is_nar`, `poxel_divide_by_zero`, and related exceptions instead.
+Special cases: NaR propagates. Division by exact zero gives NaR, and so does division by the `(0, minpos)` tile, whose representative is zero. With `POXEL_THROW_ARITHMETIC_EXCEPTION` set to 1, both divisions raise `poxel_divide_by_zero`, and a NaR operand raises `poxel_operand_is_nar` or a related exception.
 
 ## API
 
@@ -81,7 +81,7 @@ b.ubit();             // true
 b.lower<double>();    // the tile's lower endpoint
 b.upper<double>();    // its upper endpoint (equal to lower for a point)
 double(b);            // the lower endpoint
-to_interval(b);       // "(lo, hi)" or the exact value
+to_interval(b);       // "(lo, hi)" or the exact value; exact hexfloat if long double is too narrow
 to_binary(b);         // posit fields, then "|u"
 ++b;                  // the next tile up
 ```
