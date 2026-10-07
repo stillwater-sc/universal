@@ -55,7 +55,7 @@ poxel9 y(0.125); // 0.125, exact
 
 ## Arithmetic: a flag, not an enclosure
 
-Following `areal` (#1631), arithmetic uses **sticky-flag semantics**. The operation runs on the operands' stored lower endpoints, and the exact result is placed in its tile. The ubit is set if that result is inexact **or** either operand carried the ubit.
+Following `areal` (#1631), arithmetic uses **sticky-flag semantics**. The operation runs on the operands' stored lower endpoints, and the exact result is placed in its tile. The ubit is set if that result is inexact **or** either operand carried the ubit. Subtraction is addition of the negated tile: negating the open tile `(L, next)` gives `(-next, -L)`, so `a - b` uses the upper end of an open `b`.
 
 - With exact operands, the result tile **contains** the exact result. The tests check this exhaustively.
 - Once an operand is uncertain, the ubit stays set. The tile, however, is not guaranteed to contain the true result of the uncertain computation:
@@ -65,9 +65,31 @@ poxel9 third = poxel9(1) / poxel9(3); // (0.3125, 0.34375), ubit set
 poxel9 r     = third * poxel9(3);     // (0.9375, 1),       ubit set -- 1 itself is outside
 ```
 
-The ubit is therefore an honest "this is not exact" signal, but a single tile is not an enclosure. For guaranteed containment, carry a **pair** of tiles (a tile interval); see #1637.
+The ubit is therefore an honest "this is not exact" signal, but a single tile is not an enclosure. For guaranteed containment, carry a **pair** of tiles: a `tile_interval`, below.
 
 Special cases: NaR propagates. Division by exact zero gives NaR, and so does division by the `(0, minpos)` tile, whose representative is zero. With `POXEL_THROW_ARITHMETIC_EXCEPTION` set to 1, both divisions raise `poxel_divide_by_zero`, and a NaR operand raises `poxel_operand_is_nar` or a related exception.
+
+## Enclosures: tile_interval
+
+`tile_interval<Tile>` (`universal/utility/tile_interval.hpp`) is the run of tiles `[lo, hi]`, in the spirit of Gustafson's valid. It works with `poxel` and with `areal` (tiles of up to 64 bits), and it is guaranteed to **contain** every result.
+
+It relies on one property of the tile type: an operation on two *exact* tiles returns the tile that contains the exact result. For `poxel` this is tested exhaustively, and the `tile_interval` tests check it for `areal`. Every interval operation is therefore evaluated on exact endpoints only. The one containing tile then gives both directed roundings: its lower end bounds the result from below, and its upper end bounds it from above.
+
+- Ends that are open stay open. For example, `(0, minpos) + (0, minpos)` is strictly positive.
+- `sign()` returns `positive`, `negative`, `zero` or `undecidable`, and never a wrong answer.
+- `cos` is enclosed by the Taylor partial sums S_30 <= cos t <= S_28, evaluated in tile-interval arithmetic.
+
+```cpp
+#include <universal/number/poxel/poxel.hpp>
+#include <universal/utility/tile_interval.hpp>
+using I = tile_interval<poxel<64, 2, std::uint64_t>>;
+
+I x(1.0e-8);
+I g = I(1) - cos(x) * cos(x) - (x * x + x * x) / I(4000);
+g.sign();   // positive: g is in (9.5e-17, 1.01e-16); double reports -5e-20
+```
+
+The five #1637 applications in `applications/precision/ubit` compare rounding formats, single tiles and tile intervals on Rump's polynomial, the Muller-Kahan recurrence, the sign of det(M^k), the BBP tail and the Griewank structure. They are described in that directory's README.
 
 ## API
 
@@ -94,3 +116,4 @@ to_binary(b);         // posit fields, then "|u"
 - `logic`: exhaustive tile order, NaR lowest
 - `arithmetic`: exhaustive `+ - * /` for `<8,0>`, `<9,2>` and `<10,1>`, covering containment and the sticky flag
 - `api`: the constexpr encoder, special tiles, `numeric_limits`, and exceptions
+- `tile_interval`: exhaustive enclosure and tightness over every pair of tiles of `poxel<8,0>`, `poxel<9,2>` and `areal<8,2>`; multi-tile operands; open ends; `cos` against `std::cos`
