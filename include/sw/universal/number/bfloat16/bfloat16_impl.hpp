@@ -354,37 +354,27 @@ public:
 			return *this;
 		}
 		if (nrDots != 2) {
-			std::fprintf(stderr, "number of segment delimiters in string is %u and needs to be 2 for a cfloat<>\n", nrDots);
+			std::fprintf(stderr, "number of segment delimiters in string is %u and needs to be 2 for a bfloat16\n", nrDots);
 			return *this;
 		}
 
-		// assign the bits
-		int field{ 0 };  // three fields: sign, exponent, mantissa: fields are separated by a '.'
-		int nrExponentBits{ -1 };
-		unsigned bit = nrBits;
-		for (unsigned i = 0; i < bits.size(); ++i) {
-			char c = bits[i];
-			if (c == '.') {
-				++field;
-				if (field == 2) { // just finished parsing exponent field: we can now check the number of exponent bits
-					if (nrExponentBits != es) {
-						std::fprintf(stderr, "provided binary string representation does not contain %u exponent bits. Found %d. Reset to 0\n", static_cast<unsigned>(es), nrExponentBits);
-						clear();
-						return *this;
-					}
-				}
-			}
-			else {
-				setbit(--bit, c == '1');
-			}
-			if (field == 1) { // exponent field
-				++nrExponentBits;
-			}
-		}
-		if (field != 2) {
-			std::fprintf(stderr, "provided binary string did not contain three fields separated by '.': Reset to 0\n");
-			clear();
+		// the three fields must have the widths of the encoding: 1 sign bit, es exponent
+		// bits and fbits fraction bits. nrDots == 2, so both delimiters exist.
+		const std::size_t firstDot = bits.find('.');
+		const std::size_t secondDot = bits.find('.', firstDot + 1);
+		const unsigned signBits = static_cast<unsigned>(firstDot);
+		const unsigned exponentBits = static_cast<unsigned>(secondDot - firstDot - 1);
+		const unsigned fractionBits = static_cast<unsigned>(bits.size() - secondDot - 1);
+		if (signBits != 1u || exponentBits != es || fractionBits != fbits) {
+			std::fprintf(stderr, "provided binary string has field widths %u.%u.%u and needs to be 1.%u.%u for a %s: Reset to 0\n",
+				signBits, exponentBits, fractionBits, static_cast<unsigned>(es), static_cast<unsigned>(fbits), "bfloat16");
 			return *this;
+		}
+
+		// assign the bits, now that the string is known to be well formed
+		unsigned bit = nrBits;
+		for (char c : bits) {
+			if (c != '.') setbit(--bit, c == '1');
 		}
 		return *this;
 	}
