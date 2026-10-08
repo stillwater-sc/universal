@@ -181,10 +181,12 @@ The same directory has earlier demonstrations with `areal` single tiles:
 
 ## Running the applications
 
+From the repository root:
+
 ```bash
-cmake -DUNIVERSAL_BUILD_APPLICATIONS=ON -DUNIVERSAL_BUILD_NUMBER_POXELS=ON ..
-make -C applications/precision/ubit
-ctest -R ubit_
+cmake -S . -B build -DUNIVERSAL_BUILD_APPLICATIONS=ON -DUNIVERSAL_BUILD_NUMBER_POXELS=ON
+cmake --build build --target ubit_rump_polynomial ubit_muller_kahan ubit_geometric_predicates ubit_bbp_tail ubit_griewank_sign
+ctest --test-dir build -R "ubit_(rump_polynomial|muller_kahan|geometric_predicates|bbp_tail|griewank_sign)"
 ```
 
 Each application prints its comparison table and ends with its assertions and PASS or FAIL.
