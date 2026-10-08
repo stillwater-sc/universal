@@ -1559,10 +1559,11 @@ public:
 
 
 	/// <summary>
-	/// assign the value of the string representation to the cfloat
+	/// assign an encoding given as a binary string
 	/// </summary>
-	/// <param name="str">decimal scientific notation of a real number to be assigned</param>
-	/// <returns>reference to this cfloat</returns>
+	/// <param name="str">"0b", then the sign, exponent and fraction bits with the three fields separated by '.';
+	/// ' may separate digits. The bit count must match the type.</param>
+	/// <returns>reference to this cfloat; on a malformed string it is left at zero and the reason is printed to stderr</returns>
 	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
 	CONSTEXPRESSION cfloat& assign(const std::string& str) noexcept {
 		clear();

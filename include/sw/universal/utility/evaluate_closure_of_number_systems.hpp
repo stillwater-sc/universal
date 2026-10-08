@@ -47,7 +47,7 @@ struct storeResults{
     operationResults division;
 };
 
-///<summary>
+/// <summary>
 /// helper function for processASystem()
 /// formats and prints the results
 /// </summary>
@@ -81,7 +81,7 @@ void printResults(const storeResults& results) {
 
 
 
-///<summary>
+/// <summary>
 /// helper function for getDataFromBufferStream()
 /// coverts calculated from buildClosurePlot() to a percentage wrt the totalOps
 /// </summary>
@@ -102,7 +102,7 @@ std::string toPercentageString(float value, float totalOps) {
 }
 
 
-///<summary>
+/// <summary>
 /// helper function for processASystem()
 /// processes the data from buildClosurePlot() line by line
 /// </summary>
