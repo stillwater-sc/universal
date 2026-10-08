@@ -130,9 +130,10 @@
  /**
   * Handles the logic for building a closure plot for a number system
   * @param system the string representation of the system
-  * @param results the statistics struct the contains aggregated results of the operations
+  * @param stats the statistics struct that accumulates the results of the operations
   * @param outFile the .txt ostream
-  * @param csv_outFile the .csv ostream
+  * @param csvFile the .csv ostream
+  * @param operation the operation to evaluate
   * 
   * @return 0 
   * 
@@ -354,8 +355,8 @@
  }
  /**
   * Appends the aggregated to the running master file
+  * @param ostr the stream to write the aggregated data to
   * @param numberSystem the string representation of the system
-  * @param masterFile the output file of the aggregated data
   * @param results the vector that contains the aggregated data
   * 
   */

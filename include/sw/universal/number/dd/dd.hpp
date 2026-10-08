@@ -64,7 +64,7 @@
 #include <universal/number/dd/iostream.hpp>
 #include <universal/number/dd/attributes.hpp>
 
-/// the report builders stay at the umbrella: they pull <sstream>/<iomanip> by design
+// the report builders stay at the umbrella: they pull <sstream>/<iomanip> by design
 #include <universal/traits/arithmetic_traits.hpp>
 #include <universal/common/number_traits_reports.hpp>
 

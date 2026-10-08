@@ -22,11 +22,10 @@
 namespace sw { namespace universal {
 
 /// <summary>
-/// generate a full binary representation table for a given bfloat configuration
+/// generate a full binary representation table for a given cfloat configuration
 /// </summary>
-/// <typeparam name="bt">type of the storage block used to represent the bfloat</typeparam>
+/// <typeparam name="TestType">the cfloat configuration to tabulate</typeparam>
 /// <param name="ostr">ostream reference to write to</param>
-/// <param name="uncertainty">if true output certain and uncertain values, otherwise only certain values</param>
 /// <param name="csvFormat">if true present as a comma separated value format, text otherwise</param>
 template<typename TestType>
 void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{

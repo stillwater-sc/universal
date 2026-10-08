@@ -86,9 +86,9 @@ If we go to a quire, we wouldn't round, if we reassign it to a source precision,
 
 /// <summary>
 /// a block-based floating-point significand
-/// for add/sub  in 2's complement of the form  ##h.fffff
-/// for mul      in sign-magnitude form expanded to 0'00001.fffff
-/// for div      in sign-magnitude form expanded to 00000'00001'fffff
+/// for add/sub  in 2's complement of the form  `##h.fffff`
+/// for mul      in sign-magnitude form expanded to `0'00001.fffff`
+/// for div      in sign-magnitude form expanded to `00000'00001'fffff`
 ///
 /// The bits behave like a binary integer; blocktriple supplies the radix point
 /// and encoding interpretation for the current arithmetic path.
@@ -204,7 +204,6 @@ public:
 	/// <summary>
 	/// increment the value by one
 	/// </summary>
-	/// <returns></returns>
 	constexpr void increment() noexcept {
 		if constexpr (bitsInBlock == 64) {
 			// uint64_t limbs: use carry-detection intrinsics

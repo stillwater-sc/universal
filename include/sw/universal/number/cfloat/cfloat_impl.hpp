@@ -1561,7 +1561,7 @@ public:
 	/// <summary>
 	/// assign the value of the string representation to the cfloat
 	/// </summary>
-	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
+	/// <param name="str">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
 	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
 	CONSTEXPRESSION cfloat& assign(const std::string& str) noexcept {
@@ -3208,8 +3208,9 @@ protected:
 	/// srcbits is the number of bits of significant in the source representation
 	/// </summary>
 	/// <typeparam name="StorageType"></typeparam>
-	/// <param name="raw"></param>
-	/// <returns></returns>
+	/// <param name="raw">the source bits</param>
+	/// <param name="exponent">the exponent, incremented when rounding carries into the next binade</param>
+	/// <returns>the rounded bits</returns>
 	template<unsigned srcbits, typename StorageType>
 	constexpr uint64_t round(StorageType raw, int& exponent) noexcept {
 		if constexpr (fhbits < srcbits) {

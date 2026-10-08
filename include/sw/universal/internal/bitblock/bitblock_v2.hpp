@@ -534,7 +534,7 @@ namespace sw { namespace universal {
 		   @brief Constructs a string of 1's and 0's representing the
 		   value passed.
 
-		   @param bit contains the value to display.
+		   @param bits contains the value to display.
 
 		   @return string representing the value.
 		 */

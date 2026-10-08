@@ -1121,7 +1121,6 @@ public:
 	/// <summary>
 	/// clear the content of this areal to zero
 	/// </summary>
-	/// <returns>void</returns>
 	inline constexpr void clear() noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(0);
@@ -1130,13 +1129,11 @@ public:
 	/// <summary>
 	/// set the number to +0
 	/// </summary>
-	/// <returns>void</returns>
 	inline constexpr void setzero() noexcept { clear(); }
 	/// <summary>
 	/// set the sign bit of the areal
 	/// </summary>
 	/// <param name="sign">true for negative, false for positive</param>
-	/// <returns>void</returns>
 	inline constexpr void setsign(bool sign = true) noexcept {
 		if (sign) {
 			_block[MSU] |= SIGN_BIT_MASK;
@@ -1149,7 +1146,6 @@ public:
 	/// set the number to +inf
 	/// </summary>
 	/// <param name="sign">boolean to make it + or - infinity, default is -inf</param>
-	/// <returns>void</returns> 
 	inline constexpr void setinf(bool sign = true) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return;
@@ -1177,8 +1173,7 @@ public:
 	/// <summary>
 	/// set the number to a quiet NaN (+nan) or a signalling NaN (-nan, default)
 	/// </summary>
-	/// <param name="sign">boolean to make it + or - infinity, default is -inf</param>
-	/// <returns>void</returns> 
+	/// <param name="NaNType">NAN_TYPE_QUIET or NAN_TYPE_SIGNALLING (the default)</param>
 	inline constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return;
@@ -1283,7 +1278,6 @@ public:
 	/// </summary>
 	/// <param name="i">bit index to set</param>
 	/// <param name="v">boolean value to set the bit to. Default is true.</param>
-	/// <returns>void</returns>
 	inline constexpr void set(unsigned i, bool v = true) noexcept {
 		if (i >= nbits) return;
 		unsigned blockIndex = i / bitsInBlock;
@@ -1310,7 +1304,6 @@ public:
 	/// reset a specific bit in the encoding to false. If bit index is out of bounds, no modification takes place.
 	/// </summary>
 	/// <param name="i">bit index to reset</param>
-	/// <returns>void</returns>
 	inline constexpr void reset(unsigned i) noexcept {
 		if (i < nbits) {
 			// in bounds: i < nbits => index <= nrBlocks-1. The pragma silences a GCC
@@ -1937,8 +1930,9 @@ protected:
 	/// srcbits is the number of bits of significant in the source representation
 	/// </summary>
 	/// <typeparam name="StorageType"></typeparam>
-	/// <param name="raw"></param>
-	/// <returns></returns>
+	/// <param name="raw">the source bits</param>
+	/// <param name="exponent">the exponent, incremented when rounding carries into the next binade</param>
+	/// <returns>the rounded bits</returns>
 	template<unsigned srcbits, typename StorageType>
 	constexpr uint64_t round(StorageType raw, int& exponent) noexcept {
 		if constexpr (fhbits < srcbits) {

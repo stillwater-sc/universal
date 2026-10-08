@@ -569,7 +569,7 @@ protected:
 	/// <summary>
 	/// assign the value of the string representation to the cfloat
 	/// </summary>
-	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
+	/// <param name="str">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
 	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
 	CONSTEXPRESSION lns& assign(const std::string& str) noexcept {

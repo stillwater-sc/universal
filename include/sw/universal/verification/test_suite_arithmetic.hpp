@@ -126,7 +126,6 @@ int VerifyAddition(bool reportTestCases) {
 /// Uses doubles to create a reference to compare to.
 /// </summary>
 /// <typeparam name="TestType">the number system type to verify</typeparam>
-/// <param name="tag">string representation of the type</param>
 /// <param name="reportTestCases">if yes, report on individual test failures</param>
 /// <returns></returns>
 template<typename TestType>

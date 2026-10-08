@@ -421,7 +421,6 @@ public:
 	/// </summary>
 	/// <param name="lhs">ephemeral blocktriple that may get modified</param>
 	/// <param name="rhs">ephemeral blocktriple that may get modified</param>
-	/// <param name="result">unrounded sum</param>
 	constexpr void add(blocktriple& lhs, blocktriple& rhs) {
 		int lhs_scale = lhs.scale();
 		int rhs_scale = rhs.scale();
@@ -499,10 +498,9 @@ public:
 	/// To avoid fraction bit copies, the input arguments
 	/// must be prepared by the calling environment, and 
 	/// this function only manipulates the bits.	
-	/// /// </summary>
+	/// </summary>
 	/// <param name="lhs">ephemeral blocktriple that may get modified</param>
 	/// <param name="rhs">ephemeral blocktriple that may get modified</param>
-	/// <param name="result">unrounded sum</param>
 	constexpr void mul(blocktriple& lhs, blocktriple& rhs) {
 		int lhs_scale = lhs.scale();
 		int rhs_scale = rhs.scale();

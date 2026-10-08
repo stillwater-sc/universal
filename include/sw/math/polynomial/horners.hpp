@@ -15,7 +15,7 @@ namespace sw::math::polynomial {
     /// polyeval evaluates a given n-th degree polynomial at x using Horner's rule.
     /// The polynomial is given by the array of (n+1) coefficients.
     /// </summary>
-    /// <param name="c">polynomial coefficients</param>
+    /// <param name="coefficients">polynomial coefficients</param>
     /// <param name="n">portion of the polynomial to evaluate</param>
     /// <param name="x">value to evaluate</param>
     /// <returns>polynomial at x</returns>
