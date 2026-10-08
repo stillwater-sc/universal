@@ -68,7 +68,7 @@ inline std::string to_binary(bfloat16 bf, bool bNibbleMarker = false) {
 	std::stringstream s;
 	unsigned short bits = bf.bits();
 	unsigned short mask = 0x8000u;
-	s << (bits & mask ? "0b1." : "0x0.");
+	s << (bits & mask ? "0b1." : "0b0.");
 	mask >>= 1;
 	// exponent bits
 	for (unsigned i = 0; i < 8; ++i) {
