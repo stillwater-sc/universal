@@ -178,6 +178,47 @@ int VerifyStrictness(const std::string& tag, bool report) {
 	return fails;
 }
 
+// sqrt encloses: for every sample x of a tile interval, sqrt(x) lies in the result.  Checked
+// without rounding as L^2 <= x <= U^2 (strict at open ends): for these lattices L^2 and U^2
+// are exact in double.  For a single exact tile the result is the single tile containing the
+// root, and the single-tile tile_sqrt agrees with it.
+template<typename Tile>
+int VerifySqrt(const std::string& tag, bool report) {
+	using I = sw::universal::tile_interval<Tile>;
+	using T = sw::universal::tile_traits<Tile>;
+	int fails = 0;
+	auto fail = [&](const std::string& what) { ++fails; if (report && fails < 10) std::cerr << "FAIL " << tag << ": " << what << '\n'; };
+	for (std::int64_t i = -I::kmax; i <= I::kmax; ++i) {
+		for (std::int64_t w : { 0, 1, 4 }) {
+			if (i + w > I::kmax) continue;
+			const I x = I::from_keys(i, i + w);
+			const I r = sqrt(x);
+			const std::string where = "sqrt(" + x.str() + ") = " + r.str();
+			if (i + w < 0) { if (!r.isnan()) fail(where + " must be nan"); continue; }
+			if (r.isnan()) { fail(where + " is nan"); continue; }
+			const double L = r.template lower<double>(), U = r.template upper<double>();
+			for (std::int64_t k = std::max<std::int64_t>(i, 0); k <= i + w; ++k) {
+				for (double v : samples(I::from_keys(k, k))) {
+					if (v < 0.0) continue;
+					const bool above = r.lower_open() ? (L * L < v) : (L * L <= v);
+					const bool below = std::isinf(U) || (r.upper_open() ? (v < U * U) : (v <= U * U));
+					if (!(above && below)) { fail(where + " misses sqrt(" + std::to_string(v) + ")"); break; }
+				}
+			}
+			if (w == 0 && i >= 0) {
+				if (x.isexact() && r.lo_key() != r.hi_key()) fail(where + " is not a single tile for an exact input");
+				const std::int64_t s = std::clamp(T::key(sw::universal::tile_sqrt(T::tile(i))), -I::kmax, I::kmax);
+				if (x.isexact() && s != r.lo_key()) fail("tile_sqrt disagrees with " + where);
+			}
+		}
+	}
+	// open ends stay open, exact squares are exact, negative tiles have no square root
+	if (!sqrt(I::from_keys(1, 1)).lower_open()) fail("sqrt((0, minpos)) must stay open at 0");
+	if (!sqrt(I(4)).isexact() || sqrt(I(4)).template lower<double>() != 2.0) fail("sqrt(4) must be exactly 2");
+	if (!T::isnan(sw::universal::tile_sqrt(Tile(-1)))) fail("tile_sqrt(-1) must be nan");
+	return fails;
+}
+
 }  // anonymous namespace
 
 int main()
@@ -195,6 +236,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyStrictness<areal<8, 2, std::uint8_t>>("areal<8,2>", reportTestCases), "tile_interval<areal<8,2>>", "open ends");
 	nrOfFailedTestCases += ReportTestResult(VerifyHulls<poxel<9, 2, std::uint16_t>>("poxel<9,2>", reportTestCases), "tile_interval<poxel<9,2>>", "multi-tile enclosure");
 	nrOfFailedTestCases += ReportTestResult(VerifyHulls<areal<9, 3, std::uint16_t>>("areal<9,3>", reportTestCases), "tile_interval<areal<9,3>>", "multi-tile enclosure");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<poxel<8, 0, std::uint8_t>>("poxel<8,0>", reportTestCases), "tile_interval<poxel<8,0>>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<poxel<9, 2, std::uint16_t>>("poxel<9,2>", reportTestCases), "tile_interval<poxel<9,2>>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<areal<8, 2, std::uint8_t>>("areal<8,2>", reportTestCases), "tile_interval<areal<8,2>>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<areal<9, 3, std::uint16_t>>("areal<9,3>", reportTestCases), "tile_interval<areal<9,3>>", "sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyCos<poxel<17, 2, std::uint32_t>>("poxel17", 1.0e-2, reportTestCases), "tile_interval<poxel17>", "cos");
 	nrOfFailedTestCases += ReportTestResult(VerifyCos<poxel<33, 2, std::uint64_t>>("poxel33", 1.0e-6, reportTestCases), "tile_interval<poxel33>", "cos");
 	// 58 fraction bits near 1: fine enough that a too-short Taylor bound (~4e-15 at |t| = 2) shows
