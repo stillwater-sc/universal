@@ -100,6 +100,7 @@ export default defineConfig({
                 { label: 'interval', link: '/number-systems/interval/' },
                 { label: 'sorn', link: '/number-systems/sorn/' },
                 { label: 'unum (Type I)', link: '/number-systems/unum/' },
+                { label: 'poxel', link: '/number-systems/poxel/' },
                 { label: 'unum2', link: '/number-systems/unum2/' },
                 { label: 'bisection', link: '/number-systems/bisection/' },
                 { label: 'faithful', link: '/number-systems/faithful/' },

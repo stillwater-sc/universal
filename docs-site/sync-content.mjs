@@ -38,6 +38,7 @@ const FILE_MAP = {
   'number-systems/standard-types.md': 'number-systems/standard-types.md',
   'number-systems/bfloat16.md': 'number-systems/bfloat16.md',
   'number-systems/areal.md': 'number-systems/areal.md',
+  'number-systems/poxel.md': 'number-systems/poxel.md',
   'number-systems/dfloat.md': 'number-systems/dfloat.md',
   'number-systems/hfloat.md': 'number-systems/hfloat.md',
   'number-systems/microfloat.md': 'number-systems/microfloat.md',
