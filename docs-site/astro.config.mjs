@@ -72,6 +72,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { label: 'posit', link: '/number-systems/posit/' },
+                { label: 'bposit', link: '/number-systems/bposit/' },
                 { label: 'quire', link: '/number-systems/quire/' },
                 { label: 'takum', link: '/number-systems/takum/' },
               ],
@@ -98,6 +99,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { label: 'interval', link: '/number-systems/interval/' },
+                { label: 'valid', link: '/number-systems/valid/' },
                 { label: 'sorn', link: '/number-systems/sorn/' },
                 { label: 'unum (Type I)', link: '/number-systems/unum/' },
                 { label: 'poxel', link: '/number-systems/poxel/' },
