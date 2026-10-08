@@ -21,11 +21,11 @@
 ///  BEHAVIORAL COMPILATION SWITCHES
 ///
 /// These live HERE, not only in the umbrella, because core.hpp is a public entry point:
-/// quire_impl.hpp tests them in #if directives, so a translation unit that includes only
+/// quire_impl.hpp tests them in `#if` directives, so a translation unit that includes only
 /// core.hpp would otherwise leave them undefined. That still evaluates to 0 -- the
 /// intended default -- but it is a diagnostic under -Wundef and it makes the core's
 /// configuration depend on an include the caller was told they do not need (#1334).
-/// The umbrella's own #if !defined guards make this a no-op when both are included.
+/// The umbrella's own `#if !defined` guards make this a no-op when both are included.
 
 // enable/disable the ability to use literals in binary logic and arithmetic operators
 #if !defined(QUIRE_ENABLE_LITERALS)

@@ -716,10 +716,10 @@ protected:
 	}
 
 	/// <summary>
-	/// assign the value of the string representation to the cfloat
+	/// string assignment is not implemented yet: the dbns is cleared to zero and the string is ignored
 	/// </summary>
-	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
-	/// <returns>reference to this cfloat</returns>
+	/// <param name="str">ignored</param>
+	/// <returns>reference to this dbns, now zero</returns>
 	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
 	CONSTEXPRESSION dbns& assign(const std::string& str) noexcept {
 		clear();

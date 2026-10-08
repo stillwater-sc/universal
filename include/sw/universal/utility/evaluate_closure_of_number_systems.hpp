@@ -47,13 +47,12 @@ struct storeResults{
     operationResults division;
 };
 
-///<summary>
+/// <summary>
 /// helper function for processASystem()
 /// formats and prints the results
-/// /</summary>
+/// </summary>
 ///
-///<param> name="results" a struct that stores all of the statistics of the closure plot for a number system </param>
-/// <returns> void </returns>
+/// <param name="results">a struct that stores all of the statistics of the closure plot for a number system</param>
 /// 
 void printResults(const storeResults& results) {
     constexpr unsigned DATA_WIDTH = 15;
@@ -82,13 +81,13 @@ void printResults(const storeResults& results) {
 
 
 
-///<summary>
+/// <summary>
 /// helper function for getDataFromBufferStream()
 /// coverts calculated from buildClosurePlot() to a percentage wrt the totalOps
-/// /</summary>
+/// </summary>
 ///
-///<param> name="value" the current value to be converted to a percentage </param>
-///<param> name="totalOps" the total amount of operations performed for the current arithmetic operation </param>
+/// <param name="value">the current value to be converted to a percentage</param>
+/// <param name="totalOps">the total amount of operations performed for the current arithmetic operation</param>
 /// <returns> string , the string representation of the percentage </returns>
 /// 
 std::string toPercentageString(float value, float totalOps) {
@@ -103,14 +102,14 @@ std::string toPercentageString(float value, float totalOps) {
 }
 
 
-///<summary>
+/// <summary>
 /// helper function for processASystem()
 /// processes the data from buildClosurePlot() line by line
-/// /</summary>
+/// </summary>
 ///
-///<param> name="results" a struct that stores all of the statistics of the closure plot for a number system </param>
-///<param> name="bufferStream" the stream that holds the data from stdout from buildClosurePlot() </param>
-///<param> name="oldBuf" the old stdout stream buffer </param>
+/// <param name="results">a struct that stores all of the statistics of the closure plot for a number system</param>
+/// <param name="bufferStream">the stream that holds the data from stdout from buildClosurePlot()</param>
+/// <param name="oldBuf">the old stdout stream buffer</param>
 ///
 /// <returns> int 0 if successful, 1 if errir wuth parsing data from the bufferStream </returns>
 /// 
@@ -176,9 +175,9 @@ int getDataFromBufferStream(storeResults& results, std::ostringstream& bufferStr
 /// 2. puts the data to a buffer and converts processes it into structs
 /// 3. prints the processed data to stdout
 /// </summary>
-/// <template> name="NumberType" a generic number system compatible with this libray  </template>
-/// <param> name="sys_name" the string represntation of the Number System </param>
-/// <return> 0 on success, 1 on failure </return>
+/// <typeparam name="NumberType">a generic number system compatible with this libray</typeparam>
+/// <param name="sys_name">the string represntation of the Number System</param>
+/// <returns>0 on success, 1 on failure</returns>
 template<typename NumberType>
 int processASystem(std::string sys_name){
 

@@ -154,7 +154,6 @@ public:
 	/// <summary>
 	/// increment the value by one
 	/// </summary>
-	/// <returns></returns>
 	constexpr void increment() noexcept {
 		if constexpr (bitsInBlock == 64) {
 			// uint64_t limbs: use carry-detection intrinsics

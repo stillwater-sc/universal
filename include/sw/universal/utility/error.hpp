@@ -64,7 +64,9 @@ ReturnType LogRelativeError(const ArgumentType& actual, const ArgumentType& refe
 /// <typeparam name="ArgumentType">type representation of the value and reference</typeparam>
 /// <typeparam name="ReturnType">type representation of relative error. defaults to double</typeparam>
 /// <param name="logRelativeError">measured or computed error value: needs to be in log-base10</param>
-/// <returns>relative error between actual and reference values</returns>
+/// <param name="maxpos">largest positive value of the number system</param>
+/// <param name="minpos">smallest positive value of the number system</param>
+/// <returns>|logRelativeError| as a fraction of the system's log10 range, log10(maxpos) - log10(minpos)</returns>
 template<typename ArgumentType, typename ReturnType = double>
 ReturnType MinMaxLogNormalization(const ArgumentType& logRelativeError, const ArgumentType& maxpos, const ArgumentType& minpos){ 
     using std::log10, std::abs;

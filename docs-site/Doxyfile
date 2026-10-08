@@ -12,7 +12,10 @@ OUTPUT_DIRECTORY       = public
 HTML_OUTPUT            = api
 GENERATE_LATEX         = NO
 
-INPUT                  = ../include/sw/universal ../include/sw/blas ../include/sw/math ../include/sw/numeric
+INPUT                  = ../include/sw/universal ../include/sw/math
+# the regression-test harness: its per-type suites reuse function names and
+# signatures that differ only in template parameters, which Doxygen merges
+EXCLUDE                = ../include/sw/universal/verification
 RECURSIVE              = YES
 FILE_PATTERNS          = *.hpp *.h
 

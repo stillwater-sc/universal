@@ -65,7 +65,6 @@ namespace sw { namespace universal {
 		/// </summary>
 		/// <typeparam name="TestType">the test configuration</typeparam>
 		/// <typeparam name="SrcType">the source type to convert from</typeparam>
-		/// <param name="tag">string to indicate what is being tested</param>
 		/// <param name="reportTestCases">if true print results of each test case. Default is false.</param>
 		/// <returns>number of failed test cases</returns>
 	template<typename TestType, typename SrcType>
