@@ -36,6 +36,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iomanip>
+#include <iterator>
 #include <limits>
 #include <ostream>
 #include <string>
