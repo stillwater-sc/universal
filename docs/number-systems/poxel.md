@@ -78,6 +78,7 @@ It relies on one property of the tile type: an operation on two *exact* tiles re
 - Ends that are open stay open. For example, `(0, minpos) + (0, minpos)` is strictly positive.
 - `sign()` returns `positive`, `negative`, `zero` or `undecidable`, and never a wrong answer.
 - `cos` is enclosed by the Taylor partial sums S_30 <= cos t <= S_28, evaluated in tile-interval arithmetic.
+- `sqrt` is enclosed by bisection over the lattice, verified with the same exact-operand property: the tile of t * t contains t^2 exactly. `tile_sqrt` is its single-tile, sticky-flag counterpart.
 
 ```cpp
 #include <universal/number/poxel/poxel.hpp>
@@ -89,7 +90,7 @@ I g = I(1) - cos(x) * cos(x) - (x * x + x * x) / I(4000);
 g.sign();   // positive: g is in (9.5e-17, 1.01e-16); double reports -5e-20
 ```
 
-The five #1637 applications in `applications/precision/ubit` compare rounding formats, single tiles and tile intervals on Rump's polynomial, the Muller-Kahan recurrence, the sign of det(M^k), the BBP tail and the Griewank structure. The tutorial [A real with uncertainty bit](../tutorials/a-real-with-uncertainty.md) walks through them with the measured results.
+The applications in `applications/precision/ubit` compare rounding formats, single tiles and tile intervals on Rump's polynomial, the Muller-Kahan recurrence, the sign of det(M^k), the BBP tail and the Griewank structure (#1637), and on the roots of 3x^2 + 100x + 2, the dependency problem (#1646). The tutorial [A real with uncertainty bit](../tutorials/a-real-with-uncertainty.md) walks through them with the measured results.
 
 ## API
 

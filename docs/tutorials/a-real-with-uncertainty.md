@@ -9,7 +9,7 @@ Universal has two ubit number systems:
 | [`areal<nbits, es>`](../number-systems/areal.md) | a float, sign-magnitude | the open interval to the next float |
 | [`poxel<nbits, es>`](../number-systems/poxel.md) | a posit, two's complement | the open interval to the next posit |
 
-This tutorial shows what the ubit promises and what it does not. It separates a **flag** (one tile) from an **enclosure** (a pair of tiles, `tile_interval`). It then measures both on five classic problems where IEEE-754 gives a confident wrong answer.
+This tutorial shows what the ubit promises and what it does not. It separates a **flag** (one tile) from an **enclosure** (a pair of tiles, `tile_interval`). It then measures both on six classic problems where IEEE-754 gives a confident wrong answer, or a correct-looking one that loses most of its digits.
 
 ---
 
@@ -50,6 +50,7 @@ It relies on the property above: an operation on two *exact* tiles returns the t
 - **Open ends stay open.** `(0, minpos) + (0, minpos)` is strictly positive.
 - **`sign()`** returns `positive`, `negative`, `zero` or `undecidable`, and never a wrong answer.
 - **`cos`** is enclosed by the Taylor partial sums S_30 <= cos t <= S_28, evaluated in tile-interval arithmetic.
+- **`sqrt`** is enclosed by bisection over the lattice: the tile of t * t contains t^2 exactly, so it orders t^2 against v without rounding.
 
 ```cpp
 #include <universal/number/poxel/poxel.hpp>
@@ -65,7 +66,7 @@ When the format lacks the precision, the honest answer is **undecidable**, and t
 
 ---
 
-## Five problems, measured
+## Six problems, measured
 
 The applications in [`applications/precision/ubit`](https://github.com/stillwater-sc/universal/tree/main/applications/precision/ubit) compare rounding formats (float, double, posit), single tiles and tile intervals, and assert the outcome. Formats are compared at **equal storage**, with the ubit counted in the width. Every expected value was checked against exact arithmetic first (#1637).
 
@@ -146,6 +147,51 @@ The posit lattice carries 58 fraction bits near 1 at 64 bits, a spacing of 3.5e-
 
 ---
 
+### 6. The roots of 3x^2 + 100x + 2: the dependency problem
+
+x = (-b +- sqrt(b^2 - 4ac)) / (2a) at a = 3, b = 100, c = 2 (*The End of Error*, pp. 181-184). The roots are **r1 = -0.0200120144216363534...** and **r2 = -33.3133213189116969...**.
+
+Two things make the small root hard:
+- **Cancellation:** -b + sqrt(b^2 - 4ac) subtracts two numbers near 100 to get about -0.12.
+- **The dependency problem:** a and b each occur twice. Interval arithmetic treats every occurrence as an independent variable, so an enclosure can be wider than the true range of the expression. When the operands are exact points the occurrences are the same number and nothing is lost. When they are ULP-wide, the repeated occurrences begin to cost.
+
+Below, "as written" means the formula in its usual form, (-b +- sqrt(b^2 - 4ac)) / (2a). "Rearranged" means the algebraically equal r1 = 2c / (-b - sqrt(b^2 - 4ac)), which adds two numbers near -100 instead of cancelling them.
+
+Rounding formats, paired by width, relative error:
+
+| width | format | r1 as written | r1 rearranged | r2 |
+|---|---|---|---|---|
+| 16 | half | 4.1e-2 | 3.8e-4 | 2.5e-5 |
+| 16 | posit<16,2> | 1.1 (more than 100%) | 3.8e-4 | 9.6e-4 |
+| 32 | float | 5.6e-6 | 4.0e-8 | 3.5e-8 |
+| 32 | posit<32,2> | 2.3e-6 | 5.4e-9 | 8.2e-9 |
+| 64 | double | 1.3e-14 | < 1e-15 | < 1e-15 |
+
+At 32 bits the posit is two to seven times more accurate than float on every root. At 16 bits half beats posit<16,2> on r1 as written and on r2. That is tapered precision at work. The first step, b^2 = 10000, sits where posit<16,2>'s regime has used 5 bits, leaving 8 fraction bits (a spacing of 32) against half's 10 (a spacing of 8). posit<16,2> stores b^2 as 9984 and the discriminant as 9952, so -b + sqrt(d) comes out as -0.25 instead of -0.120. The rearranged r1 carries the same discriminant error, but -b - sqrt(d) adds instead of cancelling, so the error is not amplified. There both formats land at 3.8e-4.
+
+There is no posit<64,2> row. By default the library computes posit sqrt through double, so a 64-bit posit would only show double's error.
+
+Tile intervals, counted in tiles (a lattice point or the open interval beside it, so n tiles span about n/2 ulps). The tightest possible enclosure of an irrational root is 1 tile. For ULP-wide a, b, c (the open tile just above 3, 100 and 2), it is the range spanned by the eight corner polynomials:
+
+| format | r1 as written | r1 rearranged | tightest | ULP-wide: r1 as written | r1 rearranged | tightest |
+|---|---|---|---|---|---|---|
+| areal<16,5> | 10581 | 3 | 1 | 20821 | 7 | 7 |
+| poxel<16,2> | 16385 | 7 | 1 | 17067 | 9 | 5 |
+| areal<32,8> | 1365 | 3 | 1 | 5465 | 7 | 5 |
+| poxel<32,2> | 1365 | 3 | 1 | 9559 | 9 | 5 |
+| areal<64,11> | 1365 | 3 | 1 | 5465 | 9 | 5 |
+| poxel<64,2> | 1367 | 3 | 1 | 9559 | 9 | 5 |
+
+- **Cancellation dominates the formula as written.** Even with exact operands it is more than 100 times wider than the rearranged form. At 16 bits, poxel's r1 as written contains 0, so not even its sign is decided.
+- **Dependency adds to it.** At 32 and 64 bits, ULP-wide operands make r1 as written four to seven times wider again. At 16 bits, where cancellation already dominates, the factor is 1.04 for poxel and 2 for areal. Even the rearranged form, where a and b still occur more than once inside sqrt(b^2 - 4ac), comes out 2 to 4 tiles wider than the tightest enclosure at 32 and 64 bits.
+- **Reformulating fixes most of it.** The rearranged form lands within a few tiles of the best possible enclosure.
+
+Every enclosure is verified exactly, with no reference decimals. Its endpoints and the coefficients are dyadic rationals, so the signs of q(x) = a x^2 + b x + c and q'(x) = 2a x + b at an endpoint are computed exactly in `einteger` arithmetic. Since the vertex -b/(2a) separates the roots, x >= r1 holds exactly when q'(x) > 0 and q(x) >= 0. The same test, run as a bisection over the tiles, gives the tightest enclosure.
+
+This uses the enclosing `sqrt` of `tile_interval`, which needs no extra precision. The tile of t * t contains t^2 exactly, so comparing its key with v orders t^2 against v without rounding. A bisection over the lattice then finds the tile that contains sqrt(v).
+
+---
+
 ## What the ubit can and cannot do
 
 | capability | IEEE float | one ubit tile (flag) | tile_interval (enclosure) |
@@ -160,6 +206,7 @@ The posit lattice carries 58 fraction bits near 1 at 64 bits, a spacing of 3.5e-
 
 - **A flag is not an enclosure.** A set ubit means "inexact", not "the truth is in this tile". Guarantees need a pair of tiles.
 - **"Undecidable" is a correct answer.** Rump needs more than 120 bits. A 32- or 64-bit enclosure that says "I cannot tell" is right, and every rounding format is wrong.
+- **Repeated operands cost, and reformulation recovers it.** In the quadratic formula a and b occur twice. With exact operands that is free; with ULP-wide ones the enclosure widens, and a single-occurrence form recovers most of the loss.
 - **Compare at equal storage, ubit included.** A one-bit mismatch (a 17-bit poxel against a 16-bit areal) flipped the BBP conclusion.
 - **How rounding fails depends on the compiler.** Fused multiply-add changed both the digits of Rump's double result and the way double fails det(M^k). The enclosures did not change.
 - **A tight enclosure needs a sound formulation.** Summing the BBP terms one at a time near minpos widens the upper bound at every step; factoring out 16^-15 keeps it tight.

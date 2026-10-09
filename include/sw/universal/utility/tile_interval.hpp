@@ -35,7 +35,7 @@ namespace sw { namespace universal {
 template<unsigned nbits, unsigned es, typename bt> class areal;
 template<unsigned nbits, unsigned es, typename bt> class poxel;
 
-template<typename Tile> struct tile_traits;   // key(), tile(), isnan(), kmax
+template<typename Tile> struct tile_traits;   // key(), tile(), isnan(), nan(), kmax
 
 // poxel: the tile order is the two's-complement order of the pattern
 template<unsigned nbits, unsigned es, typename bt>
@@ -44,6 +44,7 @@ struct tile_traits<poxel<nbits, es, bt>> {
 	static constexpr std::int64_t kmax = static_cast<std::int64_t>((std::uint64_t(1) << (nbits - 1)) - 1u);
 	static bool isnan(const Tile& t) noexcept { return t.isnar(); }
 	static std::int64_t key(const Tile& t) noexcept { return Tile::signed_value(t.raw()); }
+	static Tile nan() noexcept { Tile t; t.setbits(std::uint64_t(1) << (nbits - 1)); return t; }   // NaR
 	static Tile tile(std::int64_t k) noexcept { Tile t; t.setbits(static_cast<std::uint64_t>(k)); return t; }
 };
 
@@ -56,6 +57,7 @@ struct tile_traits<areal<nbits, es, bt>> {
 	static constexpr std::uint64_t sign_bit = std::uint64_t(1) << (nbits - 1);
 	static constexpr std::int64_t kmax = static_cast<std::int64_t>(sign_bit - 3u);
 	static bool isnan(const Tile& t) noexcept { return t.isnan(); }
+	static Tile nan() noexcept { Tile t; t.setnan(); return t; }
 	static std::int64_t key(const Tile& t) noexcept {
 		std::uint64_t mag = 0;
 		for (unsigned i = nbits - 1; i-- > 0;) mag = (mag << 1) | (t.at(i) ? 1u : 0u);
@@ -296,6 +298,63 @@ tile_interval<Tile> intersect(const tile_interval<Tile>& a, const tile_interval<
 	const std::int64_t lo = std::max(a.lo_key(), b.lo_key()), hi = std::min(a.hi_key(), b.hi_key());
 	if (lo > hi) return tile_interval<Tile>::nan();
 	return tile_interval<Tile>::from_keys(lo, hi);
+}
+
+// The key of the tile that contains sqrt(v), for the lattice point v with even key kv >= 0.
+// The search runs over lattice points t and compares the tile of t * t with v.  For exact
+// operands that tile contains t^2 exactly, so its key orders t^2 against v without rounding:
+// the largest t with key(t * t) <= kv satisfies t^2 <= v < next(t)^2.  sqrt(v) is then t
+// itself when t * t is exactly v, and lies in the open tile above t otherwise.
+template<typename Tile>
+std::int64_t sqrt_key(std::int64_t kv) noexcept {
+	using T = tile_traits<Tile>;
+	if (kv <= 0) return 0;
+	auto square = [](std::int64_t t) { const Tile x = T::tile(t); return std::clamp(T::key(x * x), -T::kmax, T::kmax); };
+	std::int64_t lo = 0, hi = (T::kmax - 1) / 2;   // half-keys: lattice point t = 2h
+	while (lo < hi) {                                // largest h with square(2h) <= kv
+		const std::int64_t mid = lo + (hi - lo + 1) / 2;
+		if (square(2 * mid) <= kv) lo = mid; else hi = mid - 1;
+	}
+	const std::int64_t t = 2 * lo;
+	return (square(t) == kv) ? t : t + 1;
+}
+
+// sqrt with guaranteed bounds.  sqrt is monotone, so each end of the result is the tile that
+// contains the root of the corresponding end.  An open end stays open: a strict bound that
+// lands on a lattice point moves inward to the open tile beside it.  The domain is the
+// non-negative part of x (an interval reaching below zero is restricted to [0, hi]); an
+// interval entirely below zero has no square root and gives nan.
+template<typename Tile>
+tile_interval<Tile> sqrt(const tile_interval<Tile>& x) noexcept {
+	using I = tile_interval<Tile>;
+	if (x.isnan() || x.hi_key() < 0) return I::nan();
+	std::int64_t lo = 0;
+	if (x.lo_key() > 0) {
+		const bool open = (x.lo_key() & 1) != 0;
+		const std::int64_t k = sqrt_key<Tile>(open ? x.lo_key() - 1 : x.lo_key());
+		lo = (open && (k & 1) == 0) ? k + 1 : k;
+	}
+	std::int64_t hi = I::kmax;
+	if (x.hi_key() < I::kmax) {
+		const bool open = (x.hi_key() & 1) != 0;
+		const std::int64_t k = sqrt_key<Tile>(open ? x.hi_key() + 1 : x.hi_key());
+		hi = (open && (k & 1) == 0) ? k - 1 : k;
+	}
+	return I::from_keys(lo, std::max(lo, hi));
+}
+
+// sqrt of a single tile, with the sticky-flag semantics of tile arithmetic: computed on the
+// stored (lower) value, the result is the tile that contains its root; an open input keeps
+// the result open.  A negative tile or nan gives nan.
+template<typename Tile>
+Tile tile_sqrt(const Tile& t) noexcept {
+	using T = tile_traits<Tile>;
+	if (T::isnan(t)) return t;
+	const std::int64_t k = std::clamp(T::key(t), -T::kmax, T::kmax);
+	if (k < 0) return T::nan();
+	const bool open = (k & 1) != 0;
+	const std::int64_t r = sqrt_key<Tile>(open ? k - 1 : k);
+	return T::tile((open && (r & 1) == 0) ? r + 1 : r);
 }
 
 // cos with guaranteed bounds, from the Taylor partial sums S_m(t) = sum_{j<=m/2} (-1)^j t^2j/(2j)!:
