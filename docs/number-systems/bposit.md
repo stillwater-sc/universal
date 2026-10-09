@@ -100,6 +100,51 @@ These follow the posit standard:
 
 With `rS = 6, eS = 5` the range is the same for every `nbits > 12`. Extra bits buy only precision. For comparison, a standard `posit<32, 2>` spans about 1e-36 .. 1e36, but falls to zero fraction bits at the ends.
 
+## Choosing a b-posit for DSP and FFT pipelines
+
+The b-posit paper (arXiv 2603.01615) singles out signal processing as a workload where a smaller `eS` suffices: the unused dynamic range is traded for guaranteed fraction bits. The precision profile shows how much. It plots the decimals of accuracy, -log10(ulp / (2|x|)), against magnitude across the whole encoding (#1636, `universal/utility/precision_profile.hpp`).
+
+The DSP questions read straight off the curves:
+- **The signal band.** Samples are normalized to [-1, 1), so the precision just below 1.0 sets the quantization noise floor, at about 6.02 dB of SQNR per bit.
+- **FFT growth.** An N-point FFT grows magnitudes by up to log2(N) bits, so the type needs range above 1.0. Without it, the pipeline must rescale at every stage.
+- **The floor.** Small coefficients and tail energy, around 2^-15 (-90 dBFS), should not fall off a cliff.
+
+Measured by `applications/mixed-precision/dsp/precision_profiles.cpp`. "Floor" is the fewest fraction bits anywhere in the type's range.
+
+| 16-bit type | range (log2) | decimals in [0.5, 1) | at 2^-15 | at 2^10 (N = 1024) | floor (bits) |
+|---|---|---|---|---|---|
+| `int16` | 0 .. 15 | 0 | 0 | 3.31 | 0 |
+| Q15, `fixpnt<16,15>` | -15 .. 0 | **4.52** | 0.30 | 0 | 0 |
+| fp16, `cfloat<16,5>` | -24 .. 16 | 3.31 | 3.01 | 3.31 | 0 (subnormals) |
+| `lns<16,10>` | -16 .. 16 | 3.47 | 3.47 | 3.47 | 10.5 |
+| `bposit<16,6,5>` | -192 .. 192 | 2.71 | 2.71 | 2.71 | 4 |
+| `bposit<16,5,2>` | -20 .. 20 | 3.61 | 2.71 | 3.01 | **8** |
+
+| 32-bit type | range (log2) | decimals in [0.5, 1) | at 2^-15 | at 2^10 | floor (bits) |
+|---|---|---|---|---|---|
+| `int32` | 0 .. 31 | 0 | 0 | 3.31 | 0 |
+| Q31, `fixpnt<32,31>` | -31 .. 0 | **9.33** | 5.12 | 0 | 0 |
+| `float` | -149 .. 128 | 7.22 | 7.22 | 7.22 | 0 (subnormals) |
+| `lns<32,23>` | -128 .. 128 | 7.38 | 7.38 | 7.38 | 23.5 |
+| `bposit<32,6,5>` | -192 .. 192 | 7.53 | 7.53 | 7.53 | 20 |
+| `bposit<32,5,2>` | -20 .. 20 | 8.43 | 7.53 | 7.83 | **24** |
+
+What the curves say:
+- **Fixed-point** is the most precise inside the signal band, but it has no headroom: Q15 has 0 decimals at 1.0, so every FFT stage must rescale. Below the band it falls off a cliff: one bit left at 2^-15.
+- **The standard `bposit<16,6,5>`** spends its bits on a 2^+-192 range that a DSP pipeline never uses. It trails fp16 in the signal band.
+- **A DSP-sized `bposit<16,5,2>`** covers 2^+-20, enough for small coefficients and for 4096-point FFT growth. It beats fp16 in the signal band (3.61 against 3.31 decimals) and never drops below 8 fraction bits. At 32 bits, `bposit<32,5,2>` beats float in the band (8.43 against 7.22) with a 24-bit floor.
+- **The range must still fit the signal.** `bposit<16,3,1>` keeps 3.91 decimals in the band but spans only 2^+-6, leaving 0 decimals at 2^-15 and at 2^10.
+- **An lns sized to the same range** (`lns<16,10>`) is flat at 3.47 decimals, between fp16 and the DSP-sized b-posit.
+
+To plot the profiles:
+
+```bash
+dsp_precision_profiles out/
+python3 tools/notebooks/plot_precision_profiles.py out/Q15.csv out/fp16.csv out/lns_16_10_.csv out/bposit_16_6_5_.csv out/bposit_16_5_2_.csv --dsp -o profiles16.png
+```
+
+`--dsp` shades the signal band, marks FFT growth for N = 256, 1024 and 4096, and adds an SQNR axis.
+
 ## numeric_limits
 
 | member | value |
