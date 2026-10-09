@@ -42,9 +42,11 @@ jobs:
           cache-dependency-path: docs-site/package-lock.json
 
       - name: Install Doxygen
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends doxygen
+        timeout-minutes: 12
+        run: bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" --no-install-recommends doxygen
 
       - name: Install dependencies
+        timeout-minutes: 10
         run: npm ci
 
       - name: Generate C++ API reference (Doxygen)
