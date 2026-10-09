@@ -53,7 +53,7 @@ jobs:
 
       - name: Install Clang
         if: matrix.compiler == 'clang'
-        timeout-minutes: 12
+        timeout-minutes: 15
         run: |
           bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" clang
 

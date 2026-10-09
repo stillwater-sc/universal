@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install Clang
-        timeout-minutes: 12
+        timeout-minutes: 15
         run: |
           bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" clang
 

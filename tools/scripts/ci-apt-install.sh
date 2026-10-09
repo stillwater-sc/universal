@@ -18,12 +18,18 @@
 #   CI_APT_ATTEMPTS  attempts before giving up            (default 2)
 #   CI_APT_LIMIT     seconds allowed per attempt          (default 300)
 #
-# Pair it with a step-level timeout-minutes as a backstop.
+# apt waits up to 60 s for a dpkg lock held by another process instead of failing at once
+# (DPkg::Lock::Timeout). Lock files are never deleted: removing a lock that a live process
+# holds corrupts the package database.
+#
+# Worst case: two attempts and one repair, about 12.5 minutes. Pair it with a step-level
+# timeout-minutes of 15 as a backstop.
 
 set -euo pipefail
 
 attempts="${CI_APT_ATTEMPTS:-2}"
 limit="${CI_APT_LIMIT:-300}"
+repair_limit=120
 install_opts=()
 packages=()
 for arg in "$@"; do
@@ -41,17 +47,23 @@ fi
 for ((attempt = 1; attempt <= attempts; ++attempt)); do
 	start=$SECONDS
 	if sudo timeout --kill-after=10 "$limit" bash -c \
-		'apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y "$@"' \
+		'apt-get -o DPkg::Lock::Timeout=60 update && DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=60 install -y "$@"' \
 		_ "${install_opts[@]+"${install_opts[@]}"}" "${packages[@]}"; then
 		echo "apt: installed ${packages[*]} in $((SECONDS - start)) s (attempt $attempt)"
 		exit 0
 	fi
 	echo "::warning::apt attempt $attempt of $attempts failed or exceeded ${limit} s after $((SECONDS - start)) s"
-	# a killed apt can leave a lock or half-configured packages behind
+	[ "$attempt" -lt "$attempts" ] || break
+	# A killed attempt can leave its own apt or dpkg children running, and packages
+	# half-configured. Stop the children; the next attempt then waits for any lock that
+	# is still held (DPkg::Lock::Timeout) rather than deleting it.
 	sudo killall -q apt-get dpkg 2>/dev/null || true
-	sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
-	sudo dpkg --configure -a || true
-	sleep 10
+	sleep 5
+	# finish any interrupted configuration, under its own time limit
+	if ! sudo timeout --kill-after=10 "$repair_limit" dpkg --configure -a; then
+		echo "::error::dpkg --configure -a failed or exceeded ${repair_limit} s: the runner's package state is broken, re-run the job"
+		exit 1
+	fi
 done
 echo "::error::apt could not install ${packages[*]} in $attempts attempts of ${limit} s: the runner environment looks unhealthy, re-run the job"
 exit 1
