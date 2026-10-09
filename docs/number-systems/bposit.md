@@ -132,7 +132,7 @@ Measured by `applications/mixed-precision/dsp/precision_profiles.cpp`. "Floor" i
 What the curves say:
 - **Fixed-point** is the most precise inside the signal band, but it has no headroom: Q15 has 0 decimals at 1.0, so every FFT stage must rescale. Below the band it falls off a cliff: one bit left at 2^-15.
 - **The standard `bposit<16,6,5>`** spends its bits on a 2^+-192 range that a DSP pipeline never uses. It trails fp16 in the signal band.
-- **A DSP-sized `bposit<16,5,2>`** covers 2^+-20, enough for small coefficients and for 4096-point FFT growth. It beats fp16 in the signal band (3.61 against 3.31 decimals) and never drops below 8 fraction bits. At 32 bits, `bposit<32,5,2>` beats float in the band (8.43 against 7.22) with a 24-bit floor.
+- **A b-posit sized to the region of interest** [2^-15, 2^12] does much better. The tightest fit, `bposit<16,4,2>`, spans 2^+-16 and puts 92% of its encodings in the region, against 21% for `bposit<16,6,5>`. It keeps at least 3.01 decimals across the region and never drops below 9 fraction bits. Its precision is tapered: it is one bit ahead of fp16 from 2^-4 to 2^4 (3.61 against 3.31 decimals in [0.5, 1)), level with it out to 2^+-8, and one bit behind beyond that. `bposit<16,5,2>` gives four more binades of headroom (to 2^20) for one bit of floor. At 32 bits, `bposit<32,4,2>` beats float across the whole region (8.43 against 7.22 decimals in [0.5, 1)) with a 25-bit floor.
 - **The range must still fit the signal.** `bposit<16,3,1>` keeps 3.91 decimals in the band but spans only 2^+-6, leaving 0 decimals at 2^-15 and at 2^10.
 - **An lns sized to the same range** (`lns<16,10>`) is flat at 3.47 decimals, between fp16 and the DSP-sized b-posit.
 
@@ -143,7 +143,7 @@ dsp_precision_profiles out/
 python3 tools/notebooks/plot_precision_profiles.py out/Q15.csv out/fp16.csv out/lns_16_10_.csv out/bposit_16_6_5_.csv out/bposit_16_5_2_.csv --dsp -o profiles16.png
 ```
 
-`--dsp` shades the signal band, marks FFT growth for N = 256, 1024 and 4096, and adds an SQNR axis.
+`--dsp` shades the signal band, marks FFT growth for N = 256, 1024 and 4096, and adds an SQNR axis. The tutorial [Decimals of accuracy](../tutorials/decimals-of-accuracy.md) tells the whole story, from the full-range picture to the fitted b-posit, with the command for every figure.
 
 ## numeric_limits
 

@@ -21,6 +21,9 @@
 // has the same width.  The lns formats are sized to a DSP-scale range: lns<16,10> spans 2^+-16
 // and lns<32,23> spans 2^+-128 (an lns<n, n-1> would have no integer exponent bits at all).
 //
+// The last table fits the b-posit's range, 2^+-(rs 2^es), to the region of interest
+// [2^-15, 2^12]: the standard bposit<16,6,5> spends most of its encodings far outside it.
+//
 // Usage: dsp_precision_profiles [output directory]
 // prints the tables; with a directory, also writes one CSV per type for
 // tools/notebooks/plot_precision_profiles.py.
@@ -28,6 +31,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -57,6 +61,35 @@ double min_decimals_over(const precision_profile& p, int log2Lo, int log2Hi) {
 	double m = 1.0e9;
 	for (int k = log2Lo; k <= log2Hi; ++k) m = std::min(m, decimals_at(p, std::ldexp(1.0, k)));
 	return m;
+}
+
+// the region of interest: small coefficients at -90 dBFS up to 4096-point FFT growth
+constexpr int roi_lo = -15, roi_hi = 12;
+
+// the share of a type's positive encodings that fall in the region of interest (exhaustive
+// profiles only: a sampled profile does not hold one point per encoding)
+double share_in_roi(const precision_profile& p) {
+	if (!p.exhaustive || p.points.empty()) return -1.0;
+	std::size_t in = 0;
+	for (const precision_point& q : p.points) if (q.magnitude >= std::ldexp(1.0, roi_lo) && q.magnitude <= std::ldexp(1.0, roi_hi)) ++in;
+	return double(in) / double(p.points.size());
+}
+
+// how well each b-posit configuration fits the region of interest
+void range_fit(const std::vector<precision_profile>& candidates) {
+	std::cout << std::setw(16) << "type" << std::setw(16) << "range (log2)" << std::setw(18) << "encodings in ROI" << std::setw(14) << "[0.5, 1)"
+	          << std::setw(16) << "worst in ROI" << std::setw(14) << "floor (bits)" << '\n';
+	std::cout << std::string(94, '-') << '\n';
+	for (const precision_profile& p : candidates) {
+		std::stringstream range, share;
+		range << std::fixed << std::setprecision(0) << std::round(std::log2(p.minpos)) + 0.0 << " .. " << std::round(std::log2(p.maxpos)) + 0.0;
+		const double f = share_in_roi(p);
+		if (f < 0.0) share << "(sampled)"; else share << std::fixed << std::setprecision(1) << 100.0 * f << " %";
+		std::cout << std::setw(16) << p.label << std::setw(16) << range.str() << std::setw(18) << share.str() << std::fixed << std::setprecision(2)
+		          << std::setw(14) << decimals_at(p, 0.5) << std::setw(16) << min_decimals_over(p, roi_lo, roi_hi)
+		          << std::setw(14) << std::setprecision(1) << min_fraction_bits(p) << '\n';
+	}
+	std::cout << std::defaultfloat;
 }
 
 // the numbers a DSP designer reads off the curves
@@ -102,6 +135,20 @@ try {
 		precision_profile_of<bposit<32, 5, 2, std::uint32_t>>("bposit<32,5,2>"),
 	};
 	const precision_profile narrow = precision_profile_of<bposit<16, 3, 1, std::uint16_t>>("bposit<16,3,1>");
+	// fitting the b-posit's range to the region of interest: rs and es set the range, 2^+-(rs 2^es)
+	const std::vector<precision_profile> fit16{
+		set16[4],
+		precision_profile_of<bposit<16, 6, 3, std::uint16_t>>("bposit<16,6,3>"),
+		precision_profile_of<bposit<16, 6, 2, std::uint16_t>>("bposit<16,6,2>"),
+		set16[5],
+		precision_profile_of<bposit<16, 4, 2, std::uint16_t>>("bposit<16,4,2>"),
+		narrow,
+	};
+	const std::vector<precision_profile> fit32{
+		set32[4],
+		set32[5],
+		precision_profile_of<bposit<32, 4, 2, std::uint32_t>>("bposit<32,4,2>"),
+	};
 
 	std::cout << "Decimals of accuracy, -log10(ulp / (2|x|)), at magnitude 2^k\n\n16-bit types\n";
 	print_precision_table(std::cout, set16, -24, 16, 2, 16);
@@ -116,16 +163,23 @@ try {
 	          << std::setprecision(0) << std::log2(narrow.minpos) << " .. 2^" << std::log2(narrow.maxpos)
 	          << ": 0 decimals at 2^-15 and at 2^10.\n" << std::defaultfloat;
 
+	std::cout << "\nFitting the b-posit range to the region of interest [2^" << roi_lo << ", 2^" << roi_hi << "]\n";
+	range_fit(fit16);
+	std::cout << '\n';
+	range_fit(fit32);
+
 	if (!outdir.empty()) {
-		for (const auto* set : { &set16, &set32 }) {
+		std::set<std::string> written;
+		for (const auto* set : { &set16, &set32, &fit16, &fit32 }) {
 			for (const precision_profile& p : *set) {
 				std::string name = p.label;
 				for (char& c : name) if (c == '<' || c == '>' || c == ',') c = '_';
+				if (!written.insert(name).second) continue;
 				const std::string path = outdir + "/" + name + ".csv";
 				if (!write_precision_csv(p, path)) { std::cerr << "cannot write " << path << '\n'; return EXIT_FAILURE; }
 			}
 		}
-		std::cout << "\nwrote " << set16.size() + set32.size() << " CSV files to " << outdir << '\n';
+		std::cout << "\nwrote " << written.size() << " CSV files to " << outdir << '\n';
 	}
 
 	const auto& [i16, q15, fp16, lns16, bp16std, bp16dsp] = std::tie(set16[0], set16[1], set16[2], set16[3], set16[4], set16[5]);
@@ -145,6 +199,11 @@ try {
 	check(decimals_at(bp16std, 0.5) < decimals_at(fp16, 0.5),
 	      "the standard bposit<16,6,5> spends its bits on a 2^+-192 range and trails fp16 in the signal band");
 	check(decimals_at(narrow, std::ldexp(1.0, -15)) == 0.0 && decimals_at(narrow, 1024.0) == 0.0, "bposit<16,3,1> is too narrow for a DSP pipeline");
+	const precision_profile& bp16fit = fit16[4];
+	check(share_in_roi(bp16std) < 0.25 && share_in_roi(bp16fit) > 0.90,
+	      "bposit<16,6,5> places under a quarter of its encodings in the region of interest; bposit<16,4,2> places over 90%");
+	check(min_decimals_over(bp16fit, roi_lo, roi_hi) >= 3.0 && min_fraction_bits(bp16fit) >= 9.0 - 1e-9 && min_fraction_bits(bp16fit) > min_fraction_bits(bp16dsp),
+	      "bposit<16,4,2>, the tightest fit, keeps 3 decimals across the region and a 9-bit floor, one more than bposit<16,5,2>");
 
 	std::cout << (fails == 0 ? "PASS\n" : "FAIL\n");
 	return (fails == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
