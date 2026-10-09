@@ -10,7 +10,9 @@
 //     r1 = (-100 + sqrt(9976)) / 6 = -0.020012014421636353441812506440...
 //     r2 = (-100 - sqrt(9976)) / 6 = -33.313321318911696979891520826893...
 // Two things make it hard:
-//   - cancellation: -b + sqrt(b^2 - 4ac) subtracts two numbers near 100 to get about -0.12
+//   - cancellation: -b + sqrt(b^2 - 4ac) subtracts two numbers near 100 to get about -0.12.
+//     The rearranged form r1 = 2c / (-b - sqrt(b^2 - 4ac)) is algebraically equal and adds
+//     instead; "as written" below means the formula in its usual form.
 //   - the dependency problem: a and b occur twice.  Interval arithmetic treats each
 //     occurrence as an independent variable, so the bound can be wider than the true range.
 //     With exact (point) operands the occurrences are the same number and nothing is lost;
@@ -142,9 +144,9 @@ std::int64_t root_tile(const quadratic& p, int which) {
 	return 2 * lo + 1;
 }
 
-template<typename Real> Real textbook_r1(const Real& a, const Real& b, const Real& c, Real (*sq)(const Real&)) { return (-b + sq(b * b - Real(4) * a * c)) / (Real(2) * a); }
-template<typename Real> Real textbook_r2(const Real& a, const Real& b, const Real& c, Real (*sq)(const Real&)) { return (-b - sq(b * b - Real(4) * a * c)) / (Real(2) * a); }
-template<typename Real> Real stable_r1(const Real& a, const Real& b, const Real& c, Real (*sq)(const Real&)) { return (Real(2) * c) / (-b - sq(b * b - Real(4) * a * c)); }
+template<typename Real> Real as_written_r1(const Real& a, const Real& b, const Real& c, Real (*sq)(const Real&)) { return (-b + sq(b * b - Real(4) * a * c)) / (Real(2) * a); }
+template<typename Real> Real as_written_r2(const Real& a, const Real& b, const Real& c, Real (*sq)(const Real&)) { return (-b - sq(b * b - Real(4) * a * c)) / (Real(2) * a); }
+template<typename Real> Real rearranged_r1(const Real& a, const Real& b, const Real& c, Real (*sq)(const Real&)) { return (Real(2) * c) / (-b - sq(b * b - Real(4) * a * c)); }
 
 int fails = 0;
 void check(bool ok, const std::string& what) {
@@ -163,14 +165,14 @@ std::string relerr(double x, double ref) {
 template<typename Real>
 void rounded(const char* name, Real (*sq)(const Real&)) {
 	const Real a(3), b(100), c(2);
-	const double t1 = double(textbook_r1(a, b, c, sq)), s1 = double(stable_r1(a, b, c, sq)), t2 = double(textbook_r2(a, b, c, sq));
-	std::cout << std::setw(14) << name << "   r1 textbook " << std::setw(9) << relerr(t1, r1_ref) << "   r1 stable " << std::setw(9) << relerr(s1, r1_ref)
+	const double t1 = double(as_written_r1(a, b, c, sq)), s1 = double(rearranged_r1(a, b, c, sq)), t2 = double(as_written_r2(a, b, c, sq));
+	std::cout << std::setw(14) << name << "   r1 as written " << std::setw(9) << relerr(t1, r1_ref) << "   r1 rearranged " << std::setw(9) << relerr(s1, r1_ref)
 	          << "   r2 " << std::setw(9) << relerr(t2, r2_ref) << '\n';
 }
 
 template<typename Tile>
 struct report {
-	tile_interval<Tile> t1, s1, t2;      // textbook r1, stable r1, textbook r2
+	tile_interval<Tile> t1, s1, t2;      // r1 as written, r1 rearranged, r2 as written
 	std::int64_t best1, best2;           // the tiles that contain r1 and r2
 	tile_interval<Tile> u1, us1, u2;     // the same three with ULP-wide a, b, c
 	std::int64_t ubest1_lo, ubest1_hi, ubest2_lo, ubest2_hi;
@@ -190,18 +192,18 @@ report<Tile> enclose(const char* name, int digits) {
 	const quadratic exact{ exact_value(Tile(3)), exact_value(Tile(100)), exact_value(Tile(2)) };
 
 	// exact operands
-	r.t1 = textbook_r1(I(3), I(100), I(2), sqf);
-	r.s1 = stable_r1(I(3), I(100), I(2), sqf);
-	r.t2 = textbook_r2(I(3), I(100), I(2), sqf);
+	r.t1 = as_written_r1(I(3), I(100), I(2), sqf);
+	r.s1 = rearranged_r1(I(3), I(100), I(2), sqf);
+	r.t2 = as_written_r2(I(3), I(100), I(2), sqf);
 	r.best1 = root_tile<Tile>(exact, 1);
 	r.best2 = root_tile<Tile>(exact, 2);
 
 	// ULP-wide operands: the open tile just above each coefficient
 	auto above = [](int v) { const std::int64_t k = T::key(Tile(v)); return I::from_keys(k + 1, k + 1); };
 	const I A = above(3), B = above(100), C = above(2);
-	r.u1 = textbook_r1(A, B, C, sqf);
-	r.us1 = stable_r1(A, B, C, sqf);
-	r.u2 = textbook_r2(A, B, C, sqf);
+	r.u1 = as_written_r1(A, B, C, sqf);
+	r.us1 = rearranged_r1(A, B, C, sqf);
+	r.u2 = as_written_r2(A, B, C, sqf);
 	// the corner polynomials, from the lattice points that bound each coefficient
 	std::array<dyadic, 2> as{ exact_value(T::tile(T::key(Tile(3)))), exact_value(T::tile(T::key(Tile(3)) + 2)) };
 	std::array<dyadic, 2> bs{ exact_value(T::tile(T::key(Tile(100)))), exact_value(T::tile(T::key(Tile(100)) + 2)) };
@@ -223,12 +225,12 @@ report<Tile> enclose(const char* name, int digits) {
 	r.all_contain = contains_root(r.t1, exact, 1) && contains_root(r.s1, exact, 1) && contains_root(r.t2, exact, 2) && corners_contained && tight_inside;
 
 	std::cout << name << '\n';
-	std::cout << "    exact a, b, c       r1 textbook " << std::setw(46) << std::left << r.t1.str(digits) << std::right << std::setw(8) << tiles(r.t1) << " tiles\n";
-	std::cout << "                        r1 stable   " << std::setw(46) << std::left << r.s1.str(digits) << std::right << std::setw(8) << tiles(r.s1) << " tiles\n";
-	std::cout << "                        r2          " << std::setw(46) << std::left << r.t2.str(digits) << std::right << std::setw(8) << tiles(r.t2) << " tiles   (tightest: 1 tile each)\n";
-	std::cout << "    ULP-wide a, b, c    r1 textbook " << std::setw(46) << std::left << r.u1.str(digits) << std::right << std::setw(8) << tiles(r.u1) << " tiles\n";
-	std::cout << "                        r1 stable   " << std::setw(46) << std::left << r.us1.str(digits) << std::right << std::setw(8) << tiles(r.us1) << " tiles   (tightest: " << tiles(r.ubest1_lo, r.ubest1_hi) << ")\n";
-	std::cout << "                        r2          " << std::setw(46) << std::left << r.u2.str(digits) << std::right << std::setw(8) << tiles(r.u2) << " tiles   (tightest: " << tiles(r.ubest2_lo, r.ubest2_hi) << ")\n";
+	std::cout << "    exact a, b, c       r1 as written  " << std::setw(46) << std::left << r.t1.str(digits) << std::right << std::setw(8) << tiles(r.t1) << " tiles\n";
+	std::cout << "                        r1 rearranged  " << std::setw(46) << std::left << r.s1.str(digits) << std::right << std::setw(8) << tiles(r.s1) << " tiles\n";
+	std::cout << "                        r2             " << std::setw(46) << std::left << r.t2.str(digits) << std::right << std::setw(8) << tiles(r.t2) << " tiles   (tightest: 1 tile each)\n";
+	std::cout << "    ULP-wide a, b, c    r1 as written  " << std::setw(46) << std::left << r.u1.str(digits) << std::right << std::setw(8) << tiles(r.u1) << " tiles\n";
+	std::cout << "                        r1 rearranged  " << std::setw(46) << std::left << r.us1.str(digits) << std::right << std::setw(8) << tiles(r.us1) << " tiles   (tightest: " << tiles(r.ubest1_lo, r.ubest1_hi) << ")\n";
+	std::cout << "                        r2             " << std::setw(46) << std::left << r.u2.str(digits) << std::right << std::setw(8) << tiles(r.u2) << " tiles   (tightest: " << tiles(r.ubest2_lo, r.ubest2_hi) << ")\n";
 	return r;
 }
 
@@ -236,7 +238,7 @@ template<typename Tile>
 void single_tile(const char* name) {
 	Tile (*sq)(const Tile&) = sw::universal::tile_sqrt<Tile>;
 	const Tile a(3), b(100), c(2);
-	const Tile t1 = textbook_r1(a, b, c, sq), t2 = textbook_r2(a, b, c, sq);
+	const Tile t1 = as_written_r1(a, b, c, sq), t2 = as_written_r2(a, b, c, sq);
 	auto ubit = [](const Tile& t) { return (tile_traits<Tile>::key(t) & 1) != 0; };
 	std::cout << std::setw(14) << name << "   r1 " << std::setw(24) << std::setprecision(10) << double(t1) << (ubit(t1) ? " u=1" : " u=0")
 	          << "   r2 " << std::setw(16) << double(t2) << (ubit(t2) ? " u=1" : " u=0") << '\n';
@@ -257,14 +259,26 @@ try {
 	std::cout << "roots of 3x^2 + 100x + 2 = 0 by the quadratic formula\n";
 	std::cout << "  r1 = -0.020012014421636353441812506440...   r2 = -33.313321318911696979891520826893...\n\n";
 
-	std::cout << "rounding formats: relative error, textbook formula vs the stable r1 = 2c / (-b - sqrt(b^2 - 4ac))\n";
+	std::cout << "rounding formats, paired by width: relative error of r1 as written (-b + sqrt(b^2 - 4ac)) / (2a),\n";
+	std::cout << "of r1 rearranged as 2c / (-b - sqrt(b^2 - 4ac)), and of r2\n";
+	std::cout << "  16 bits\n";
 	rounded<half>("half", [](const half& v) { return sqrt(v); });
 	rounded<posit<16, 2>>("posit<16,2>", [](const posit<16, 2>& v) { return sqrt(v); });
+	std::cout << "  32 bits\n";
 	rounded<float>("float", [](const float& v) { return std::sqrt(v); });
 	rounded<posit<32, 2>>("posit<32,2>", [](const posit<32, 2>& v) { return sqrt(v); });
+	std::cout << "  64 bits\n";
 	rounded<double>("double", [](const double& v) { return std::sqrt(v); });
+	std::cout << "                 (no posit<64,2> peer: the library's posit sqrt is computed through double by default)\n";
+	{
+		// why posit<16,2> loses at 16 bits: b^2 = 10000 sits where its regime has used 5 bits
+		const posit<16, 2> b(100), bb = b * b;
+		const half hb(100), hbb = hb * hb;
+		std::cout << "  near 1e4 posit<16,2> keeps 8 fraction bits to half's 10: b^2 = 10000 is stored as "
+		          << double(bb) << " (half: " << double(hbb) << ")\n";
+	}
 
-	std::cout << "\nsingle tiles (sticky ubit), textbook formula:\n";
+	std::cout << "\nsingle tiles (sticky ubit), formula as written:\n";
 	single_tile<areal32>("areal<32,8>");
 	single_tile<poxel32>("poxel<32,2>");
 
@@ -278,32 +292,32 @@ try {
 
 	{
 		const areal32 a(3), b(100), c(2);
-		const areal32 t1 = textbook_r1(a, b, c, &tile_sqrt<areal32>);
+		const areal32 t1 = as_written_r1(a, b, c, &tile_sqrt<areal32>);
 		const poxel32 x(3), y(100), z(2);
-		const poxel32 u1 = textbook_r1(x, y, z, &tile_sqrt<poxel32>);
+		const poxel32 u1 = as_written_r1(x, y, z, &tile_sqrt<poxel32>);
 		std::cout << "\nassertions:\n";
 		check(t1.at(0) && u1.ubit(), "both single tiles flag r1 as inexact: sqrt(9976) is irrational");
 	}
 	check(a16.all_contain && p16.all_contain && a32.all_contain && p32.all_contain && a64.all_contain && p64.all_contain,
 	      "every enclosure contains its root -- for exact a, b, c and for every corner of the ULP-wide a, b, c (checked exactly)");
-	auto stable_no_wider = [](const auto& r) { return tiles(r.s1) <= tiles(r.t1) && tiles(r.us1) <= tiles(r.u1); };
-	check(stable_no_wider(a16) && stable_no_wider(p16) && stable_no_wider(a32) && stable_no_wider(p32) && stable_no_wider(a64) && stable_no_wider(p64),
-	      "the stable r1 is never wider than the textbook r1");
-	auto stable_tight = [](const auto& r) { return tiles(r.s1) <= 3; };
-	check(stable_tight(a32) && stable_tight(p32) && stable_tight(a64) && stable_tight(p64),
-	      "with exact a, b, c the stable r1 spans at most 3 tiles at 32 and 64 bits; the tightest is 1");
+	auto rearranged_no_wider = [](const auto& r) { return tiles(r.s1) <= tiles(r.t1) && tiles(r.us1) <= tiles(r.u1); };
+	check(rearranged_no_wider(a16) && rearranged_no_wider(p16) && rearranged_no_wider(a32) && rearranged_no_wider(p32) && rearranged_no_wider(a64) && rearranged_no_wider(p64),
+	      "the rearranged r1 is never wider than r1 as written");
+	auto rearranged_tight = [](const auto& r) { return tiles(r.s1) <= 3; };
+	check(rearranged_tight(a32) && rearranged_tight(p32) && rearranged_tight(a64) && rearranged_tight(p64),
+	      "with exact a, b, c the rearranged r1 spans at most 3 tiles at 32 and 64 bits; the tightest is 1");
 	auto cancellation_costs = [](const auto& r) { return tiles(r.t1) > 100 * tiles(r.s1); };
 	check(cancellation_costs(a32) && cancellation_costs(p32) && cancellation_costs(a64) && cancellation_costs(p64),
-	      "cancellation: the textbook r1 is more than 100 times wider than the stable r1, even for exact a, b, c");
+	      "cancellation: r1 as written is more than 100 times wider than the rearranged r1, even for exact a, b, c");
 	auto widens = [](const auto& r) { return tiles(r.u1) > tiles(r.t1); };
 	check(widens(a16) && widens(p16) && widens(a32) && widens(p32) && widens(a64) && widens(p64),
-	      "dependency: ULP-wide a, b, c widen the textbook r1, where a and b occur twice, beyond the exact-operand case");
+	      "dependency: ULP-wide a, b, c widen r1 as written, where a and b occur twice, beyond the exact-operand case");
 	auto dependency_costs = [](const auto& r) { return tiles(r.us1) > tiles(r.ubest1_lo, r.ubest1_hi); };
 	check(dependency_costs(a32) && dependency_costs(p32) && dependency_costs(a64) && dependency_costs(p64),
-	      "dependency: at 32 and 64 bits even the stable r1 is wider than the tightest enclosure of the root's range");
+	      "dependency: at 32 and 64 bits even the rearranged r1 is wider than the tightest enclosure of the root's range");
 	check(p16.t1.sign() == tile_verdict::undecidable && a16.t1.sign() == tile_verdict::negative,
-	      "at 16 bits the textbook r1 of poxel<16,2> cannot decide its sign; areal<16,5>'s is negative but 10000+ tiles wide");
-	check(p16.s1.sign() == tile_verdict::negative && a16.s1.sign() == tile_verdict::negative, "the stable r1 at 16 bits is provably negative");
+	      "at 16 bits r1 as written of poxel<16,2> cannot decide its sign; areal<16,5>'s is negative but 10000+ tiles wide");
+	check(p16.s1.sign() == tile_verdict::negative && a16.s1.sign() == tile_verdict::negative, "the rearranged r1 at 16 bits is provably negative");
 
 	std::cout << (fails == 0 ? "PASS\n" : "FAIL\n");
 	return (fails == 0 ? EXIT_SUCCESS : EXIT_FAILURE);

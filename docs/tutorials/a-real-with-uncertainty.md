@@ -155,19 +155,25 @@ Two things make the small root hard:
 - **Cancellation:** -b + sqrt(b^2 - 4ac) subtracts two numbers near 100 to get about -0.12.
 - **The dependency problem:** a and b each occur twice. Interval arithmetic treats every occurrence as an independent variable, so an enclosure can be wider than the true range of the expression. When the operands are exact points the occurrences are the same number and nothing is lost. When they are ULP-wide, the repeated occurrences begin to cost.
 
-Rounding formats, relative error of the textbook r1 against the stable form r1 = 2c / (-b - sqrt(b^2 - 4ac)):
+Below, "as written" means the formula in its usual form, (-b +- sqrt(b^2 - 4ac)) / (2a). "Rearranged" means the algebraically equal r1 = 2c / (-b - sqrt(b^2 - 4ac)), which adds two numbers near -100 instead of cancelling them.
 
-| format | textbook r1 | stable r1 | r2 |
-|---|---|---|---|
-| half | 4.1e-2 | 3.8e-4 | 2.5e-5 |
-| posit<16,2> | 1.1 (more than 100%) | 3.8e-4 | 9.6e-4 |
-| float | 5.6e-6 | 4.0e-8 | 3.5e-8 |
-| posit<32,2> | 2.3e-6 | 5.4e-9 | 8.2e-9 |
-| double | 1.3e-14 | < 1e-15 | < 1e-15 |
+Rounding formats, paired by width, relative error:
+
+| width | format | r1 as written | r1 rearranged | r2 |
+|---|---|---|---|---|
+| 16 | half | 4.1e-2 | 3.8e-4 | 2.5e-5 |
+| 16 | posit<16,2> | 1.1 (more than 100%) | 3.8e-4 | 9.6e-4 |
+| 32 | float | 5.6e-6 | 4.0e-8 | 3.5e-8 |
+| 32 | posit<32,2> | 2.3e-6 | 5.4e-9 | 8.2e-9 |
+| 64 | double | 1.3e-14 | < 1e-15 | < 1e-15 |
+
+At 32 bits the posit is two to seven times more accurate than float on every root. At 16 bits half beats posit<16,2> on r1 as written and on r2. That is tapered precision at work. The first step, b^2 = 10000, sits where posit<16,2>'s regime has used 5 bits, leaving 8 fraction bits (a spacing of 32) against half's 10 (a spacing of 8). posit<16,2> stores b^2 as 9984 and the discriminant as 9952, so -b + sqrt(d) comes out as -0.25 instead of -0.120. The rearranged r1 carries the same discriminant error, but -b - sqrt(d) adds instead of cancelling, so the error is not amplified. There both formats land at 3.8e-4.
+
+There is no posit<64,2> row. By default the library computes posit sqrt through double, so a 64-bit posit would only show double's error.
 
 Tile intervals, counted in tiles (a lattice point or the open interval beside it, so n tiles span about n/2 ulps). The tightest possible enclosure of an irrational root is 1 tile. For ULP-wide a, b, c (the open tile just above 3, 100 and 2), it is the range spanned by the eight corner polynomials:
 
-| format | r1 textbook | r1 stable | tightest | ULP-wide: r1 textbook | r1 stable | tightest |
+| format | r1 as written | r1 rearranged | tightest | ULP-wide: r1 as written | r1 rearranged | tightest |
 |---|---|---|---|---|---|---|
 | areal<16,5> | 10581 | 3 | 1 | 20821 | 7 | 7 |
 | poxel<16,2> | 16385 | 7 | 1 | 17067 | 9 | 5 |
@@ -176,9 +182,9 @@ Tile intervals, counted in tiles (a lattice point or the open interval beside it
 | areal<64,11> | 1365 | 3 | 1 | 5465 | 9 | 5 |
 | poxel<64,2> | 1367 | 3 | 1 | 9559 | 9 | 5 |
 
-- **Cancellation dominates the textbook form.** Even with exact operands it is more than 100 times wider than the stable form. At 16 bits, poxel's textbook r1 contains 0, so not even its sign is decided.
-- **Dependency adds to it.** At 32 and 64 bits, ULP-wide operands make the textbook r1 four to seven times wider again. At 16 bits, where cancellation already dominates, the factor is 1.04 for poxel and 2 for areal. Even the stable form, where a and b still occur more than once inside sqrt(b^2 - 4ac), comes out 2 to 4 tiles wider than the tightest enclosure at 32 and 64 bits.
-- **Reformulating fixes most of it.** The stable form lands within a few tiles of the best possible enclosure.
+- **Cancellation dominates the formula as written.** Even with exact operands it is more than 100 times wider than the rearranged form. At 16 bits, poxel's r1 as written contains 0, so not even its sign is decided.
+- **Dependency adds to it.** At 32 and 64 bits, ULP-wide operands make r1 as written four to seven times wider again. At 16 bits, where cancellation already dominates, the factor is 1.04 for poxel and 2 for areal. Even the rearranged form, where a and b still occur more than once inside sqrt(b^2 - 4ac), comes out 2 to 4 tiles wider than the tightest enclosure at 32 and 64 bits.
+- **Reformulating fixes most of it.** The rearranged form lands within a few tiles of the best possible enclosure.
 
 Every enclosure is verified exactly, with no reference decimals. Its endpoints and the coefficients are dyadic rationals, so the signs of q(x) = a x^2 + b x + c and q'(x) = 2a x + b at an endpoint are computed exactly in `einteger` arithmetic. Since the vertex -b/(2a) separates the roots, x >= r1 holds exactly when q'(x) > 0 and q(x) >= 0. The same test, run as a bisection over the tiles, gives the tightest enclosure.
 
