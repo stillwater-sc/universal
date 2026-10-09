@@ -89,6 +89,7 @@ const FILE_MAP = {
   'tutorials/posit-refinement.md': 'tutorials/posit-refinement.md',
   'tutorials/arbitrary-precision.md': 'tutorials/arbitrary-precision.md',
   'tutorials/a-real-with-uncertainty.md': 'tutorials/a-real-with-uncertainty.md',
+  'tutorials/decimals-of-accuracy.md': 'tutorials/decimals-of-accuracy.md',
   'tutorials/multi-component.md': 'tutorials/multi-component.md',
   'tutorials/ucalc-repl.md': 'tutorials/ucalc-repl.md',
 
