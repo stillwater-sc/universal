@@ -472,6 +472,11 @@ public:
 				}
 				remove_leading_zeros();
 				r.setblock(0, static_cast<BlockType>(remainder));
+				// truncated division: the quotient's sign is a.sign ^ b.sign, the remainder's is a's
+				// (#1659: this early return used to skip both, leaving the quotient non-negative)
+				_sign = !iszero() && (a.sign() ^ b.sign());
+				r.remove_leading_zeros();
+				r._sign = a.sign() && !r.iszero();
 				return;
 			}
 
@@ -566,7 +571,10 @@ public:
 			r.setblock(n - 1, static_cast<BlockType>(normalized_a.block(n - 1) >> shift));
 		}
 		remove_leading_zeros();
-		_sign = a.sign() ^ b.sign();
+		_sign = !iszero() && (a.sign() ^ b.sign());   // no negative zero: 1 / -2 is 0
+		// truncated division: a nonzero remainder takes the dividend's sign (#1659)
+		r.remove_leading_zeros();
+		r._sign = a.sign() && !r.iszero();
 	}
 
 	// modifiers (vector::clear is constexpr in C++20; on the empty

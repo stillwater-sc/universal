@@ -21,6 +21,37 @@
 
 namespace sw { namespace universal {
 
+	// signed operands (#1659): VerifyElasticDivision builds its operands with setbits(), which
+	// only makes non-negative values.  Magnitudes straddle the 8-, 16- and 32-bit limb
+	// boundaries, so single- and multi-limb dividends and divisors meet in every combination,
+	// and both the quotient and the remainder follow C++'s truncated division.
+	template<typename BlockType>
+	int VerifySignedDivision(bool reportTestCases) {
+		using Integer = einteger<BlockType>;
+		const std::int64_t magnitudes[] = {
+			1, 2, 3, 7, 127, 255, 256, 257, 4097, 65535, 65536, 65537, 1000003,
+			(std::int64_t(1) << 31) - 1, std::int64_t(1) << 31, std::int64_t(1) << 32, (std::int64_t(1) << 32) + 1,
+			(std::int64_t(1) << 40) + 12345, (std::int64_t(1) << 62) - 1
+		};
+		int nrOfFailedTests = 0;
+		for (std::int64_t ma : magnitudes) for (int sa : { 1, -1 }) {
+			for (std::int64_t mb : magnitudes) for (int sb : { 1, -1 }) {
+				const std::int64_t a = sa * ma, b = sb * mb;
+				Integer ia(a), ib(b), iq, ir;
+				iq.reduce(ia, ib, ir);
+				const Integer qref(a / b), rref(a % b);
+				if (iq != qref || ir != rref || iq.isneg() != (a / b < 0) || ir.isneg() != (a % b < 0)) {
+					nrOfFailedTests++;
+					if (reportTestCases && nrOfFailedTests < 10) {
+						std::cerr << "FAIL: " << a << " / " << b << " = " << iq << " rem " << ir
+						          << " (expected " << (a / b) << " rem " << (a % b) << ")\n";
+					}
+				}
+			}
+		}
+		return nrOfFailedTests;
+	}
+
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
 	int VerifyElasticDivision(bool reportTestCases) {
@@ -339,6 +370,9 @@ try {
 	//The single limb configurations are scanned exhaustively.
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifySignedDivision<uint8_t>(reportTestCases), "einteger<uint8_t>", "signed division (#1659)");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedDivision<uint16_t>(reportTestCases), "einteger<uint16_t>", "signed division (#1659)");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedDivision<uint32_t>(reportTestCases), "einteger<uint32_t>", "signed division (#1659)");
 	nrOfFailedTestCases += DirectedTests();
 	nrOfFailedTestCases += ReportTestResult(RegressionIssue842<uint8_t>(),  "issue 842 (uint8_t)",  test_tag);
 	nrOfFailedTestCases += ReportTestResult(RegressionIssue842<uint16_t>(), "issue 842 (uint16_t)", test_tag);
