@@ -319,7 +319,7 @@ inline std::vector<std::string> split_types(const TypeRegistry& reg, std::string
 		types.push_back(w);
 	}
 	if (types.empty()) return {};
-	text = text.substr(0, at);
+	text.resize(at);
 	return types;
 }
 
