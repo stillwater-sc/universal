@@ -95,6 +95,7 @@
 #include "type_dispatch.hpp"
 #include "expression.hpp"
 #include "registry.hpp"
+#include "uncertainty.hpp"
 #include "output_format.hpp"
 #include "steps_ieee.hpp"
 #include "steps_posit.hpp"
@@ -165,7 +166,7 @@ static void print_help(OutputFormat fmt) {
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
 		          << "\"suggest\",\"rewrites\",\"ast\",\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
 		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"cond\",\"errordist\",\"stochastic\","
-		          << "\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"ubox\",\"decide\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -206,6 +207,9 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  heatmap          Precision (sig bits) vs magnitude bar chart\n";
 	std::cout << "  numberline [lo, hi]  ASCII visualization of representable value density\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
+	std::cout << "  ubox [trace] <expr> [in <types>]\n";
+	std::cout << "                 Uncertainty box in tile interval types: tiles, decimals, sign\n";
+	std::cout << "  decide <pred> [in <types>]  Is 'sign <expr>' or '<expr> op <expr>' decidable?\n";
 	std::cout << "  color [on|off] Toggle ANSI color-coded bit fields in show\n";
 	std::cout << "  vars           List defined variables\n";
 	std::cout << "  help           Show this help\n";
@@ -487,6 +491,197 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cerr << "Error: " << ex.what() << "\n";
 			}
 			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
+	// ubox [trace] <expr> [in <types>]: the uncertainty box of an expression in tile
+	// interval types, next to what the rounded types compute
+	if (line.substr(0, 5) == "ubox " || line.substr(0, 5) == "ubox\t") {
+		std::string rest = trim(line.substr(5));
+		bool tracing = false;
+		if (rest.substr(0, 6) == "trace " || rest.substr(0, 6) == "trace\t") { tracing = true; rest = trim(rest.substr(6)); }
+		std::vector<std::string> types = split_types(state.registry, rest);
+		if (types.empty()) types = default_box_types();
+		const std::string expr = trim(rest);
+		std::vector<BoxReport> boxes;
+		std::vector<std::vector<TraceStep>> traces;
+		for (const std::string& alias : types) {
+			const TypeOps& ops = state.registry.get(alias);
+			BoxReport b;
+			b.type = alias;
+			std::vector<TraceStep> steps;
+			if (ops.family != "tile interval") {
+				b.error = "not a tile interval type (use areal32i, poxel32i, ...)";
+			} else {
+				try {
+					ExpressionEvaluator eval = evaluator_for(ops, *state.evaluator);
+					eval.enable_trace(tracing);
+					b = box_report(alias, eval.evaluate(expr));
+					steps = eval.trace_steps();
+				} catch (const std::exception& ex) {
+					b.error = ex.what();
+				}
+			}
+			boxes.push_back(std::move(b));
+			traces.push_back(std::move(steps));
+		}
+		std::string reference, note;
+		std::vector<RoundedReport> rounded;
+		if (!tracing) rounded = rounded_reports(state.registry, *state.evaluator, expr, reference, note);
+		auto decimals_text = [](const BoxReport& b) {
+			if (b.exact) return std::string("exact");
+			std::ostringstream ss;
+			ss << std::fixed << std::setprecision(1) << b.decimals;
+			return ss.str();
+		};
+		auto growth = [](const TraceStep& t) {
+			const std::uint64_t in = std::max<std::uint64_t>({ t.operand_a_tiles, t.operand_b_tiles, 1u });
+			return static_cast<double>(t.result_tiles) / static_cast<double>(in);
+		};
+
+		if (fmt == OutputFormat::json) {
+			std::cout << "{\"expression\":\"" << json_escape(expr) << "\",\"boxes\":[";
+			for (std::size_t i = 0; i < boxes.size(); ++i) {
+				const BoxReport& b = boxes[i];
+				if (i) std::cout << ",";
+				std::cout << "{\"type\":\"" << json_escape(b.type) << "\"";
+				if (!b.error.empty()) {
+					std::cout << ",\"error\":\"" << json_escape(b.error) << "\"}";
+					continue;
+				}
+				std::cout << ",\"box\":\"" << json_escape(b.box) << "\""
+				          << ",\"tiles\":" << b.tiles
+				          << ",\"sign\":\"" << b.sign << "\""
+				          << ",\"exact\":" << (b.exact ? "true" : "false")
+				          << ",\"decimals\":" << json_number(b.decimals)
+				          << ",\"rel_width\":" << json_number(b.rel_width);
+				if (tracing) {
+					std::cout << ",\"steps\":[";
+					for (std::size_t k = 0; k < traces[i].size(); ++k) {
+						const TraceStep& t = traces[i][k];
+						if (k) std::cout << ",";
+						std::cout << "{\"op\":\"" << t.operation << "\""
+						          << ",\"description\":\"" << json_escape(t.description) << "\""
+						          << ",\"result\":\"" << json_escape(t.result_rep) << "\""
+						          << ",\"tiles_a\":" << t.operand_a_tiles
+						          << ",\"tiles_b\":" << t.operand_b_tiles
+						          << ",\"tiles\":" << t.result_tiles << "}";
+					}
+					std::cout << "]";
+				}
+				std::cout << "}";
+			}
+			std::cout << "]";
+			if (!tracing) {
+				std::cout << ",\"reference\":\"" << json_escape(reference) << "\",\"rounded\":[";
+				for (std::size_t i = 0; i < rounded.size(); ++i) {
+					const RoundedReport& r = rounded[i];
+					if (i) std::cout << ",";
+					std::cout << "{\"type\":\"" << json_escape(r.type) << "\"";
+					if (!r.error.empty()) std::cout << ",\"error\":\"" << json_escape(r.error) << "\"}";
+					else std::cout << ",\"value\":\"" << json_escape(r.value) << "\",\"rel_error\":" << json_number(r.rel_error) << "}";
+				}
+				std::cout << "]";
+				if (!note.empty()) std::cout << ",\"note\":\"" << json_escape(note) << "\"";
+			}
+			std::cout << "}\n";
+		} else if (fmt == OutputFormat::csv) {
+			std::cout << "type,box,tiles,sign,decimals,rel_width,error\n";
+			for (const BoxReport& b : boxes) {
+				std::cout << csv_quote(b.type) << "," << csv_quote(b.box) << "," << b.tiles << ","
+				          << b.sign << "," << (b.error.empty() ? decimals_text(b) : std::string()) << ","
+				          << std::setprecision(6) << b.rel_width << "," << csv_quote(b.error) << "\n";
+			}
+		} else {
+			std::cout << "ubox: " << expr << "\n";
+			std::cout << "  " << std::left << std::setw(11) << "type" << std::right << std::setw(21) << "tiles"
+			          << std::setw(10) << "decimals" << "  " << std::left << std::setw(12) << "sign" << "box\n";
+			for (std::size_t i = 0; i < boxes.size(); ++i) {
+				const BoxReport& b = boxes[i];
+				std::cout << "  " << std::left << std::setw(11) << b.type;
+				if (!b.error.empty()) { std::cout << "error: " << b.error << "\n"; continue; }
+				std::cout << std::right << std::setw(21) << b.tiles << std::setw(10) << decimals_text(b) << "  "
+				          << std::left << std::setw(12) << b.sign << b.box << "\n";
+				if (tracing && !traces[i].empty()) {
+					std::size_t widest = 0;
+					for (std::size_t k = 1; k < traces[i].size(); ++k)
+						if (growth(traces[i][k]) > growth(traces[i][widest])) widest = k;
+					for (std::size_t k = 0; k < traces[i].size(); ++k) {
+						const TraceStep& t = traces[i][k];
+						std::ostringstream in;
+						in << t.operand_a_tiles;
+						if (t.operand_b_tiles != 0 || t.operation == "add" || t.operation == "sub" || t.operation == "mul" || t.operation == "div") in << " , " << t.operand_b_tiles;
+						std::cout << "      " << std::right << std::setw(3) << t.step_number << "  " << std::left << std::setw(7) << t.operation
+						          << std::right << std::setw(24) << in.str() << " -> " << std::left << std::setw(21) << t.result_tiles
+						          << t.result_rep << (k == widest && growth(t) > 1.0 ? "   <- widest growth" : "") << "\n";
+					}
+				}
+			}
+			if (!tracing) {
+				if (!note.empty()) {
+					std::cout << "  rounded types: " << note << "\n";
+				} else {
+					std::cout << "  rounded types, against the qd reference " << reference << ":\n";
+					for (const RoundedReport& r : rounded) {
+						std::cout << "  " << std::left << std::setw(11) << r.type;
+						if (!r.error.empty()) { std::cout << "error: " << r.error << "\n"; continue; }
+						std::ostringstream e;
+						e << std::scientific << std::setprecision(1) << r.rel_error;
+						std::cout << std::left << std::setw(28) << r.value << "relative error " << e.str() << "\n";
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	// decide <predicate> [in <types>]: is a question about the result answerable in each type?
+	if (line.substr(0, 7) == "decide " || line.substr(0, 7) == "decide\t") {
+		std::string rest = trim(line.substr(7));
+		std::vector<std::string> types = split_types(state.registry, rest);
+		if (types.empty()) types = default_box_types();
+		Predicate p;
+		std::string error;
+		if (!parse_predicate(rest, p, error)) {
+			if (fmt == OutputFormat::json) std::cout << "{\"error\":\"" << json_escape(error) << "\"}\n";
+			else std::cerr << "Error: " << error << "\n";
+			state.last_error = EXIT_PARSE_ERROR;
+			return true;
+		}
+		std::vector<Decision> ds;
+		for (const std::string& alias : types) ds.push_back(decide_in(state.registry.get(alias), alias, *state.evaluator, p));
+		const Decision* first = narrowest_decided(ds);
+		if (fmt == OutputFormat::json) {
+			std::cout << "{\"predicate\":\"" << json_escape(trim(rest)) << "\",\"verdicts\":[";
+			for (std::size_t i = 0; i < ds.size(); ++i) {
+				const Decision& d = ds[i];
+				if (i) std::cout << ",";
+				std::cout << "{\"type\":\"" << json_escape(d.type) << "\",\"answer\":\"" << json_escape(d.answer) << "\"";
+				if (!d.error.empty()) std::cout << ",\"error\":\"" << json_escape(d.error) << "\"";
+				else {
+					std::cout << ",\"lhs\":\"" << json_escape(d.lhs_box) << "\"";
+					if (p.rel != Relation::sign) std::cout << ",\"rhs\":\"" << json_escape(d.rhs_box) << "\"";
+				}
+				std::cout << "}";
+			}
+			std::cout << "],\"narrowest\":" << (first ? "\"" + json_escape(first->type) + "\"" : std::string("null")) << "}\n";
+		} else if (fmt == OutputFormat::csv) {
+			std::cout << "type,answer,lhs,rhs,error\n";
+			for (const Decision& d : ds)
+				std::cout << csv_quote(d.type) << "," << csv_quote(d.answer) << "," << csv_quote(d.lhs_box) << ","
+				          << csv_quote(d.rhs_box) << "," << csv_quote(d.error) << "\n";
+		} else {
+			std::cout << "decide: " << trim(rest) << "\n";
+			for (const Decision& d : ds) {
+				std::cout << "  " << std::left << std::setw(11) << d.type << std::setw(13) << d.answer;
+				if (!d.error.empty()) std::cout << d.error;
+				else if (p.rel == Relation::sign) std::cout << d.lhs_box;
+				else std::cout << d.lhs_box << "  " << p.op << "  " << d.rhs_box;
+				std::cout << "\n";
+			}
+			if (first) std::cout << "  narrowest type that decides it: " << first->type << "\n";
+			else std::cout << "  undecidable in every type listed\n";
 		}
 		return true;
 	}

@@ -29,6 +29,9 @@
 #include <stdexcept>
 #include <cmath>
 #include <cstdlib>
+#include <cstdint>
+#include <algorithm>
+#include <utility>
 #include <cctype>
 
 #include "type_dispatch.hpp"
@@ -455,6 +458,10 @@ struct TraceStep {
 	double result;               // result in the active type (as double)
 	std::string result_rep;      // native_rep of the result
 	std::string result_binary;   // binary_rep of the result
+	// tile interval types: the width of each box, to see where uncertainty grows
+	std::uint64_t operand_a_tiles = 0;
+	std::uint64_t operand_b_tiles = 0;   // 0 for unary
+	std::uint64_t result_tiles = 0;
 };
 
 // Parser and evaluator
@@ -477,8 +484,14 @@ public:
 		if (current().type != TokenType::End) {
 			throw std::runtime_error("unexpected token: '" + current().text + "'");
 		}
+		if (is_assignment(input)) record_definition(input);
 		return result;
 	}
+
+	// Every definition, in the order it was made.  Commands that evaluate in several types
+	// replay these, so a definition means the same thing in each type's own lattice:
+	// b = 100~ is the open tile above 100 in every type, not one type's tile.
+	const std::vector<std::pair<std::string, std::string>>& definitions() const { return definitions_; }
 
 	// Build an AST from an expression string (does not evaluate)
 	std::shared_ptr<ASTNode> build_ast(const std::string& input) {
@@ -499,6 +512,12 @@ public:
 
 	const std::map<std::string, Value>& variables() const { return variables_; }
 
+	// copy another evaluator's variables and definitions
+	void inherit(const ExpressionEvaluator& other) {
+		variables_ = other.variables_;
+		definitions_ = other.definitions_;
+	}
+
 	bool has_variable(const std::string& name) const {
 		return variables_.find(name) != variables_.end();
 	}
@@ -515,6 +534,17 @@ public:
 	}
 
 private:
+	void record_definition(const std::string& input) {
+		const std::size_t eq = input.find('=');
+		std::size_t b = 0;
+		while (b < eq && std::isspace(static_cast<unsigned char>(input[b]))) ++b;
+		std::size_t e = b;
+		while (e < eq && (std::isalnum(static_cast<unsigned char>(input[e])) || input[e] == '_')) ++e;
+		// the whole history, in order: replaying it reproduces the session's values, also for
+		// a definition that depends on an earlier value of a later-redefined name
+		definitions_.emplace_back(input.substr(b, e - b), input.substr(eq + 1));
+	}
+
 	// Record a trace step for a binary operation
 	void record_binary(const std::string& op, const std::string& sym,
 	                   const Value& a, const Value& b, const Value& result) {
@@ -532,6 +562,9 @@ private:
 		step.result = result.num;
 		step.result_rep = result.native_rep;
 		step.result_binary = result.binary_rep;
+		step.operand_a_tiles = a.tile_count;
+		step.operand_b_tiles = b.tile_count;
+		step.result_tiles = result.tile_count;
 		trace_steps_.push_back(std::move(step));
 	}
 
@@ -553,6 +586,8 @@ private:
 		step.result = result.num;
 		step.result_rep = result.native_rep;
 		step.result_binary = result.binary_rep;
+		step.operand_a_tiles = a.tile_count;
+		step.result_tiles = result.tile_count;
 		trace_steps_.push_back(std::move(step));
 	}
 
@@ -743,7 +778,7 @@ private:
 			if (name == "acos") { r = ops_->fn_acos(args[0]); record_unary("acos", args[0], r); return r; }
 			if (name == "atan") { r = ops_->fn_atan(args[0]); record_unary("atan", args[0], r); return r; }
 			if (name == "above") {
-				if (!ops_->above) throw std::runtime_error("x~ and above(x) need a tile type, such as poxel32 or poxel32i");
+				if (!ops_->above) throw std::runtime_error("x~ and above(x) need a tile type: switch with 'type poxel32i' first (ubox and decide replay each definition in every type they evaluate)");
 				r = ops_->above(args[0]); record_unary("above", args[0], r); return r;
 			}
 		}
@@ -762,6 +797,7 @@ private:
 	std::vector<Token> tokens_;
 	size_t pos_;
 	std::map<std::string, Value> variables_;
+	std::vector<std::pair<std::string, std::string>> definitions_;   // name, defining text
 	bool tracing_ = false;
 	std::vector<TraceStep> trace_steps_;
 

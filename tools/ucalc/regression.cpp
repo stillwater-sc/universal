@@ -68,6 +68,7 @@
 #include "expression.hpp"
 #include "registry.hpp"
 #include "output_format.hpp"
+#include "uncertainty.hpp"
 
 namespace {
 
@@ -753,6 +754,218 @@ try {
 		};
 		for (const row& r : exact)    run(r, "a = 3; b = 100; c = 2", "exact");
 		for (const row& r : ulp_wide) run(r, "a = 3~; b = 100~; c = 2~", "ULP-wide");
+	}
+
+	// ================================================================
+	// Uncertainty box and decidability: ubox, decide (#1654 Phase 2)
+	// ================================================================
+	{
+		// definitions are replayed in each type: b = 100~ is the open tile above 100 in the
+		// type's own lattice, so the ULP-wide quadratic reproduces #1649 in every type
+		ExpressionEvaluator session(reg.get("poxel32i"));
+		session.evaluate("a = 3~");
+		session.evaluate("b = 100~");
+		session.evaluate("c = 2~");
+		session.evaluate("a = 3~");                                       // a redefinition is history too
+		if (session.definitions().size() != 4 || session.definitions().back().first != "a") {
+			std::cerr << "FAIL: definitions should hold all four, in order, got " << session.definitions().size() << "\n";
+			++nrOfFailedTests;
+		}
+		// the replay reproduces the session's values: b depends on the earlier a, and x on itself
+		{
+			ExpressionEvaluator history(reg.get("double"));
+			for (const char* d : { "a = 1", "b = a + 1", "a = 5", "x = 1", "x = x + 1" }) history.evaluate(d);
+			ExpressionEvaluator replayed = evaluator_for(reg.get("poxel32i"), history);
+			const Value b = replayed.evaluate("b + 0"), a = replayed.evaluate("a + 0"), x = replayed.evaluate("x + 0");
+			if (b.native_rep != "2" || a.native_rep != "5" || x.native_rep != "2") {
+				std::cerr << "FAIL: replayed history gives a = " << a.native_rep << ", b = " << b.native_rep << ", x = " << x.native_rep
+				          << " (the session holds 5, 2, 2)\n";
+				++nrOfFailedTests;
+			}
+		}
+		const std::string r1 = "(-b + sqrt(b*b - 4*a*c)) / (2*a)";
+		const struct { const char* type; std::uint64_t tiles; const char* sign; } ulp_wide[] = {
+			{ "areal16i", 20821, "undecidable" }, { "poxel16i", 17067, "undecidable" },
+			{ "areal32i", 5465, "negative" },     { "poxel32i", 9559, "negative" },
+			{ "areal64i", 5465, "negative" },     { "poxel64i", 9559, "negative" },
+		};
+		for (const auto& row : ulp_wide) {
+			ExpressionEvaluator eval = evaluator_for(reg.get(row.type), session);
+			const BoxReport b = box_report(row.type, eval.evaluate(r1));
+			if (b.tiles != row.tiles || b.sign != row.sign) {
+				std::cerr << "FAIL: replayed ULP-wide r1 in " << row.type << ": " << b.tiles << " tiles, " << b.sign
+				          << " (expected " << row.tiles << ", " << row.sign << ")\n";
+				++nrOfFailedTests;
+			}
+		}
+
+		// decimals of accuracy of a box: -log10(width / 2|midpoint|)
+		{
+			ExpressionEvaluator eval(reg.get("poxel32i"));
+			const BoxReport exact = box_report("poxel32i", eval.evaluate("3"));
+			const BoxReport third = box_report("poxel32i", eval.evaluate("1/3"));
+			const BoxReport wide  = box_report("poxel32i", eval.evaluate("[1, 3]"));
+			const BoxReport zero  = box_report("poxel32i", eval.evaluate("[-1, 1]"));
+			if (!exact.exact || !std::isinf(exact.decimals)) {
+				std::cerr << "FAIL: an exact box should report exact, infinite decimals\n";
+				++nrOfFailedTests;
+			}
+			if (third.decimals < 8.0 || third.decimals > 9.5) {
+				std::cerr << "FAIL: poxel32i 1/3 decimals " << third.decimals << " (expected ~8.8: one 27-bit tile)\n";
+				++nrOfFailedTests;
+			}
+			if (std::fabs(wide.rel_width - 1.0) > 1e-12 || std::fabs(wide.decimals - std::log10(2.0)) > 1e-12) {
+				std::cerr << "FAIL: [1, 3] has relative width 1 and log10(2) decimals: " << wide.rel_width << ", " << wide.decimals << "\n";
+				++nrOfFailedTests;
+			}
+			if (!std::isinf(zero.rel_width) || zero.decimals != 0.0) {
+				std::cerr << "FAIL: a box straddling zero has no relative accuracy\n";
+				++nrOfFailedTests;
+			}
+		}
+
+		// predicates
+		{
+			Predicate p;
+			std::string err;
+			const struct { const char* text; bool ok; const char* op; const char* lhs; const char* rhs; } parses[] = {
+				{ "sign x - 1", true, "sign", "x - 1", "" },
+				{ "a <= b", true, "<=", "a", "b" },
+				{ "f([1, 2]) != (x > y)", true, "!=", "f([1, 2])", "(x > y)" },   // only one at the top level
+				{ "a < b < c", false, "", "", "" },
+				{ "pow(a, 2) >= [0, 1]", true, ">=", "pow(a, 2)", "[0, 1]" },
+				{ "a = b", false, "", "", "" },
+				{ "a <", false, "", "", "" },
+				{ "a + b", false, "", "", "" },
+			};
+			for (const auto& c : parses) {
+				p = Predicate{};
+				err.clear();
+				const bool ok = parse_predicate(c.text, p, err);
+				if (ok != c.ok || (ok && (p.op != c.op || p.lhs != c.lhs || p.rhs != c.rhs))) {
+					std::cerr << "FAIL: parse_predicate(\"" << c.text << "\") ok=" << ok << " op=" << p.op << " lhs=" << p.lhs << " rhs=" << p.rhs << "\n";
+					++nrOfFailedTests;
+				}
+			}
+
+			// verdicts over sets, exhaustive over small boxes in poxel8i: brute force over
+			// sample points of each set must agree with every decided verdict
+			const TypeOps& ops = reg.get("poxel8i");
+			const char* boxes[] = { "1", "2", "[1, 2]", "1~", "[0.5, 1]", "[1, 1~]", "2~", "[-1, 1]", "0" };
+			const Relation rels[] = { Relation::lt, Relation::le, Relation::gt, Relation::ge, Relation::eq, Relation::ne };
+			int bad = 0;
+			for (const char* x : boxes) for (const char* y : boxes) {
+				ExpressionEvaluator eval(ops);
+				const Value a = eval.evaluate(x), b = eval.evaluate(y);
+				const Ends ea = ends_of(a), eb = ends_of(b);
+				// points: each closed end, and points just inside each end
+				auto points = [](const Ends& e) {
+					std::vector<long double> pts;
+					const long double w = e.hi - e.lo;
+					if (!e.lo_open) pts.push_back(e.lo);
+					if (!e.hi_open) pts.push_back(e.hi);
+					if (w > 0) { pts.push_back(e.lo + w / 1024); pts.push_back(e.hi - w / 1024); pts.push_back(e.lo + w / 2); }
+					return pts;
+				};
+				for (Relation rel : rels) {
+					const Verdict v = compare(rel, ea, eb);
+					bool any_true = false, any_false = false;
+					// equality between continuous sets: possible exactly when they share a point
+					auto inside = [](long double q, const Ends& e) {
+						return (e.lo_open ? q > e.lo : q >= e.lo) && (e.hi_open ? q < e.hi : q <= e.hi);
+					};
+					if (rel == Relation::eq || rel == Relation::ne) {
+						bool meet = false;
+						for (long double u : points(ea)) meet = meet || inside(u, eb);
+						for (long double w : points(eb)) meet = meet || inside(w, ea);
+						const bool one_point = ea.lo == ea.hi && eb.lo == eb.hi && ea.lo == eb.lo && meet;
+						const bool can_equal = meet, can_differ = !one_point;
+						any_true  = (rel == Relation::eq) ? can_equal : can_differ;
+						any_false = (rel == Relation::eq) ? can_differ : can_equal;
+					}
+					else for (long double u : points(ea)) for (long double w : points(eb)) {
+						bool t = false;
+						switch (rel) {
+						case Relation::lt: t = u < w; break;
+						case Relation::le: t = u <= w; break;
+						case Relation::gt: t = u > w; break;
+						case Relation::ge: t = u >= w; break;
+						case Relation::eq: t = u == w; break;
+						default:           t = u != w; break;
+						}
+						(t ? any_true : any_false) = true;
+					}
+					const bool wrong = (v == Verdict::yes && any_false) || (v == Verdict::no && any_true)
+					                || (v == Verdict::undecidable && !(any_true && any_false));
+					if (wrong && bad++ < 5) std::cerr << "FAIL: verdict " << to_string(v) << " for " << x << " op#" << static_cast<int>(rel) << " " << y << "\n";
+				}
+			}
+			nrOfFailedTests += bad;
+		}
+
+		// decide in each type, and the narrowest type that decides
+		{
+			Predicate p;
+			std::string err;
+			parse_predicate("sign " + r1, p, err);
+			std::vector<Decision> ds;
+			for (const std::string& t : default_box_types()) ds.push_back(decide_in(reg.get(t), t, session, p));
+			const Decision* first = narrowest_decided(ds);
+			if (first == nullptr || first->type != "areal32i" || first->answer != "negative") {
+				std::cerr << "FAIL: the ULP-wide r1 sign should be decided first by areal32i: " << (first ? first->type : "none") << "\n";
+				++nrOfFailedTests;
+			}
+			const Decision rounded = decide_in(reg.get("double"), "double", session, p);
+			if (rounded.error.empty()) {
+				std::cerr << "FAIL: decide in a rounded type should be refused\n";
+				++nrOfFailedTests;
+			}
+		}
+
+		// the trace records box widths: the dependency problem is the -b + sqrt(d) step
+		{
+			ExpressionEvaluator eval = evaluator_for(reg.get("poxel16i"), session);
+			eval.enable_trace(true);
+			eval.evaluate(r1);
+			std::uint64_t widest = 0;
+			std::string op;
+			for (const TraceStep& t : eval.trace_steps()) {
+				if (t.result_tiles > widest) { widest = t.result_tiles; op = t.operation; }
+			}
+			if (op != "add" || widest < 10000) {
+				std::cerr << "FAIL: the widest trace step of r1 should be the cancelling add, got " << op << " (" << widest << " tiles)\n";
+				++nrOfFailedTests;
+			}
+		}
+
+		// the rounded types next to the boxes: #1649's errors, from exact inputs
+		{
+			ExpressionEvaluator exact_inputs(reg.get("double"));
+			exact_inputs.evaluate("a = 3");
+			exact_inputs.evaluate("b = 100");
+			exact_inputs.evaluate("c = 2");
+			std::string reference, note;
+			const auto rr = rounded_reports(reg, exact_inputs, r1, reference, note);
+			const struct { const char* type; double lo, hi; } expect[] = {
+				{ "fp16", 0.03, 0.05 }, { "posit16", 1.0, 1.2 }, { "float", 5e-6, 6e-6 }, { "posit32", 2e-6, 2.5e-6 }, { "double", 1e-14, 2e-14 },
+			};
+			if (rr.size() != 5 || !note.empty()) {
+				std::cerr << "FAIL: rounded reports: " << rr.size() << " rows, note '" << note << "'\n";
+				++nrOfFailedTests;
+			}
+			for (std::size_t i = 0; i < rr.size() && i < 5; ++i) {
+				if (rr[i].type != expect[i].type || rr[i].rel_error < expect[i].lo || rr[i].rel_error > expect[i].hi) {
+					std::cerr << "FAIL: rounded " << rr[i].type << " relative error " << rr[i].rel_error << "\n";
+					++nrOfFailedTests;
+				}
+			}
+			// tile syntax in the inputs: no single true value
+			std::string ref2, note2;
+			if (!rounded_reports(reg, session, r1, ref2, note2).empty() || note2.empty()) {
+				std::cerr << "FAIL: rounded reports should decline ULP-wide inputs\n";
+				++nrOfFailedTests;
+			}
+		}
 	}
 
 	// ================================================================

@@ -48,6 +48,16 @@ add_test(NAME ucalc_flag_json
     COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc --json "show 3.14")
 add_test(NAME ucalc_flag_csv
     COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc --csv "types")
+# Uncertainty box and decidability (#1654)
+add_test(NAME ucalc_ubox
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc "type poxel32i; a = 3~; b = 100; ubox (b - sqrt(b*b - 4*a)) / a")
+add_test(NAME ucalc_ubox_trace_json
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc --json "ubox trace 1/3 - 0.333 in poxel16i areal32i")
+add_test(NAME ucalc_decide
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc "decide sign 1/3 - 0.333")
+add_test(NAME ucalc_decide_bad_predicate
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc "decide 1 = 2")
+set_tests_properties(ucalc_decide_bad_predicate PROPERTIES WILL_FAIL TRUE)
 add_test(NAME ucalc_flag_help
     COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc --help)
 add_test(NAME ucalc_flag_version
