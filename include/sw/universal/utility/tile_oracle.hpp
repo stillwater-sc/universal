@@ -343,10 +343,13 @@ template<unsigned nbits, unsigned es, typename bt>
 dyadic exact_value(const areal<nbits, es, bt>& t) {
 	using A = areal<nbits, es, bt>;
 	constexpr unsigned fbits = A::fbits;
-	std::uint64_t f = 0, E = 0;
-	for (unsigned i = 0; i < fbits; ++i) if (t.at(1 + i)) f |= (std::uint64_t(1) << i);
+	std::uint64_t E = 0;
 	for (unsigned i = 0; i < es; ++i) if (t.at(1 + fbits + i)) E |= (std::uint64_t(1) << i);
-	Big m(static_cast<unsigned long long>(E == 0 ? f : ((std::uint64_t(1) << fbits) | f)));
+	Big m(E == 0 ? 0 : 1);                                // the hidden bit, then the fraction, MSB first:
+	for (unsigned i = fbits; i-- > 0;) {                  // any width, not only fbits < 64
+		m <<= 1;
+		if (t.at(1 + i)) m += 1;
+	}
 	if (t.at(nbits - 1)) m = -m;
 	const int scale = (E == 0 ? 1 : static_cast<int>(E)) - A::EXP_BIAS - static_cast<int>(fbits);
 	return trim({ m, scale });

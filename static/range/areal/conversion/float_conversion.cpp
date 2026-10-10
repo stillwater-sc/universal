@@ -18,6 +18,7 @@
 #include <universal/number/areal/table.hpp> // only used for value table generation
 #include <cmath>
 #include <limits>
+#include "subnormal_sources.hpp"
 
 // An areal whose fraction field is one bit shorter than the source's aligns the two without
 // a shift, which puts the source's last fraction bit on the ubit position: that bit must set
@@ -109,8 +110,22 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	// subnormal floats are mis-scaled before the ubit is reached (#1656): normal sources only
-	nrOfFailedTestCases += ReportTestResult(VerifyLastSourceBit< areal<32, 8>, float >(reportTestCases, false), test_tag, "areal<32,8> last source bit (#1655)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<36, 8>, float >("areal<36,8>", reportTestCases, 500), test_tag, "areal<36,8> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<64, 11>, float >("areal<64,11>", reportTestCases, 500), test_tag, "areal<64,11> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<80, 15>, float >("areal<80,15>", reportTestCases, 500), test_tag, "areal<80,15> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<128, 15>, float >("areal<128,15>", reportTestCases, 500), test_tag, "areal<128,15> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<32, 8>, float >("areal<32,8>", reportTestCases, 500), test_tag, "areal<32,8> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<16, 5>, float >("areal<16,5>", reportTestCases, 500), test_tag, "areal<16,5> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<64, 11>, float >("areal<64,11>", reportTestCases, 9973ull), test_tag, "areal<64,11> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<80, 15>, float >("areal<80,15>", reportTestCases, 9973ull), test_tag, "areal<80,15> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<128, 15>, float >("areal<128,15>", reportTestCases, 9973ull), test_tag, "areal<128,15> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<32, 8>, float >("areal<32,8>", reportTestCases, 9973ull), test_tag, "areal<32,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<16, 5>, float >("areal<16,5>", reportTestCases, 9973ull), test_tag, "areal<16,5> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<24, 8>, float >("areal<24,8>", reportTestCases, 9973ull), test_tag, "areal<24,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<36, 8>, float >("areal<36,8>", reportTestCases, 9973ull), test_tag, "areal<36,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<32, 9>, float >("areal<32,9>", reportTestCases, 9973ull), test_tag, "areal<32,9> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<40, 10>, float >("areal<40,10>", reportTestCases, 9973ull), test_tag, "areal<40,10> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyLastSourceBit< areal<32, 8>, float >(reportTestCases), test_tag, "areal<32,8> last source bit (#1655)");
 
 
 	// es = 1
@@ -177,12 +192,57 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<36, 8>, float >("areal<36,8>", reportTestCases, 5000), test_tag, "areal<36,8> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<64, 11>, float >("areal<64,11>", reportTestCases, 5000), test_tag, "areal<64,11> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<80, 15>, float >("areal<80,15>", reportTestCases, 5000), test_tag, "areal<80,15> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<128, 15>, float >("areal<128,15>", reportTestCases, 5000), test_tag, "areal<128,15> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<32, 8>, float >("areal<32,8>", reportTestCases, 5000), test_tag, "areal<32,8> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<16, 5>, float >("areal<16,5>", reportTestCases, 5000), test_tag, "areal<16,5> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<64, 11>, float >("areal<64,11>", reportTestCases, 997ull), test_tag, "areal<64,11> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<80, 15>, float >("areal<80,15>", reportTestCases, 997ull), test_tag, "areal<80,15> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<128, 15>, float >("areal<128,15>", reportTestCases, 997ull), test_tag, "areal<128,15> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<32, 8>, float >("areal<32,8>", reportTestCases, 997ull), test_tag, "areal<32,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<16, 5>, float >("areal<16,5>", reportTestCases, 997ull), test_tag, "areal<16,5> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<24, 8>, float >("areal<24,8>", reportTestCases, 997ull), test_tag, "areal<24,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<36, 8>, float >("areal<36,8>", reportTestCases, 997ull), test_tag, "areal<36,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<32, 9>, float >("areal<32,9>", reportTestCases, 997ull), test_tag, "areal<32,9> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<40, 10>, float >("areal<40,10>", reportTestCases, 997ull), test_tag, "areal<40,10> from subnormal floats (#1656)");
 #endif
 
 #if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<36, 8>, float >("areal<36,8>", reportTestCases, 50000), test_tag, "areal<36,8> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<64, 11>, float >("areal<64,11>", reportTestCases, 50000), test_tag, "areal<64,11> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<80, 15>, float >("areal<80,15>", reportTestCases, 50000), test_tag, "areal<80,15> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<128, 15>, float >("areal<128,15>", reportTestCases, 50000), test_tag, "areal<128,15> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<32, 8>, float >("areal<32,8>", reportTestCases, 50000), test_tag, "areal<32,8> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<16, 5>, float >("areal<16,5>", reportTestCases, 50000), test_tag, "areal<16,5> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<64, 11>, float >("areal<64,11>", reportTestCases, 31ull), test_tag, "areal<64,11> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<80, 15>, float >("areal<80,15>", reportTestCases, 31ull), test_tag, "areal<80,15> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<128, 15>, float >("areal<128,15>", reportTestCases, 31ull), test_tag, "areal<128,15> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<32, 8>, float >("areal<32,8>", reportTestCases, 31ull), test_tag, "areal<32,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<16, 5>, float >("areal<16,5>", reportTestCases, 31ull), test_tag, "areal<16,5> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<24, 8>, float >("areal<24,8>", reportTestCases, 31ull), test_tag, "areal<24,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<36, 8>, float >("areal<36,8>", reportTestCases, 31ull), test_tag, "areal<36,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<32, 9>, float >("areal<32,9>", reportTestCases, 31ull), test_tag, "areal<32,9> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<40, 10>, float >("areal<40,10>", reportTestCases, 31ull), test_tag, "areal<40,10> from subnormal floats (#1656)");
 #endif
 
 #if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<36, 8>, float >("areal<36,8>", reportTestCases, 500000), test_tag, "areal<36,8> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<64, 11>, float >("areal<64,11>", reportTestCases, 500000), test_tag, "areal<64,11> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<80, 15>, float >("areal<80,15>", reportTestCases, 500000), test_tag, "areal<80,15> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<128, 15>, float >("areal<128,15>", reportTestCases, 500000), test_tag, "areal<128,15> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<32, 8>, float >("areal<32,8>", reportTestCases, 500000), test_tag, "areal<32,8> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalSources< areal<16, 5>, float >("areal<16,5>", reportTestCases, 500000), test_tag, "areal<16,5> from normal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<64, 11>, float >("areal<64,11>", reportTestCases, 1ull), test_tag, "areal<64,11> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<80, 15>, float >("areal<80,15>", reportTestCases, 1ull), test_tag, "areal<80,15> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<128, 15>, float >("areal<128,15>", reportTestCases, 1ull), test_tag, "areal<128,15> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<32, 8>, float >("areal<32,8>", reportTestCases, 1ull), test_tag, "areal<32,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<16, 5>, float >("areal<16,5>", reportTestCases, 1ull), test_tag, "areal<16,5> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<24, 8>, float >("areal<24,8>", reportTestCases, 1ull), test_tag, "areal<24,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<36, 8>, float >("areal<36,8>", reportTestCases, 1ull), test_tag, "areal<36,8> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<32, 9>, float >("areal<32,9>", reportTestCases, 1ull), test_tag, "areal<32,9> from subnormal floats (#1656)");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSources< areal<40, 10>, float >("areal<40,10>", reportTestCases, 1ull), test_tag, "areal<40,10> from subnormal floats (#1656)");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
