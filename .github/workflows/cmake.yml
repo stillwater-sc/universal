@@ -72,9 +72,9 @@ jobs:
 
       - name: Install Clang
         if: matrix.compiler == 'clang'
+        timeout-minutes: 15
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang
+          bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" clang
 
       - name: Install and configure ccache
         uses: hendrikmuhs/ccache-action@v1.2.22
@@ -223,39 +223,38 @@ jobs:
 
       - name: Install Clang
         if: matrix.compiler == 'clang'
+        timeout-minutes: 15
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang
+          bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" clang
 
       - name: Install RISC-V cross-compiler and QEMU
         if: matrix.cross == 'riscv64'
+        timeout-minutes: 15
         run: |
-          sudo apt-get update
-          sudo apt-get install -y g++-riscv64-linux-gnu qemu-user-static
+          bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" g++-riscv64-linux-gnu qemu-user-static
           # Set sysroot so QEMU can find the RISC-V dynamic linker and libs,
           # whether invoked via CMAKE_CROSSCOMPILING_EMULATOR or binfmt_misc
           echo "QEMU_LD_PREFIX=/usr/riscv64-linux-gnu" >> $GITHUB_ENV
 
       - name: Install POWER cross-compiler and QEMU
         if: matrix.cross == 'ppc64le'
+        timeout-minutes: 15
         run: |
-          sudo apt-get update
-          sudo apt-get install -y g++-powerpc64le-linux-gnu qemu-user-static
+          bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" g++-powerpc64le-linux-gnu qemu-user-static
           echo "QEMU_LD_PREFIX=/usr/powerpc64le-linux-gnu" >> $GITHUB_ENV
 
       - name: Install ARM64 cross-compiler and QEMU
         if: matrix.cross == 'aarch64'
+        timeout-minutes: 15
         run: |
-          sudo apt-get update
-          sudo apt-get install -y g++-aarch64-linux-gnu qemu-user-static
+          bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" g++-aarch64-linux-gnu qemu-user-static
           echo "QEMU_LD_PREFIX=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
 
       - name: Install MinGW-w64 cross-compiler and Wine
         if: matrix.cross == 'mingw'
+        timeout-minutes: 15
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y g++-mingw-w64-x86-64 wine wine64
+          bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" --i386 g++-mingw-w64-x86-64 wine wine64
 
       # ccache for Linux and macOS
       - name: Install and configure ccache

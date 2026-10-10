@@ -34,9 +34,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install Dependencies
+        timeout-minutes: 15
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-tidy-18 clang-18 jq
+          bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" clang-tidy-18 clang-18 jq
           # Create symlinks for easier access
           sudo ln -sf /usr/bin/clang-tidy-18 /usr/bin/clang-tidy
           sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
