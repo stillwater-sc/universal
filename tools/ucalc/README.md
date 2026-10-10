@@ -540,7 +540,8 @@ decide: sign (-b + sqrt(b*b - 4*a*c)) / (2*a)
   narrowest type that decides it: areal32i
 ```
 
-Both commands take `--json` and `--csv`.
+Both commands take `--json` and `--csv`. All four uncertainty commands (`ubox`, `decide`,
+`roots`, `rootbox`) are also MCP tools; see `docs/ucalc/mcp-server.md`.
 
 ## Script Examples
 
@@ -552,6 +553,7 @@ The `scripts/` directory contains ready-to-use example scripts:
 - `03_numerical_constants.ucalc` -- Constants at every precision level
 - `04_catastrophic_cancellation.ucalc` -- Quadratic formula failure
 - `05_fp8_deep_learning.ucalc` -- FP8 format exploration
+- `13_quadratic_uncertainty.ucalc` -- The roots of 3x^2 + 100x + 2 in tile intervals: roots, ubox, decide, rootbox (#1649)
 
 **AI-agent-facing** (JSON/CSV output):
 - `06_agent_type_selection.ucalc` -- Weight quantization format comparison

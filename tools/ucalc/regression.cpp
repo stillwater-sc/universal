@@ -1274,6 +1274,36 @@ try {
 	}
 
 	// ================================================================
+	// Acceptance (#1654): decide sign for exact inputs at every width, as quadratic_roots.cpp
+	// asserts it -- poxel<16,2> cannot decide r1 as written, areal<16,5> can, and the stable
+	// form is decided at 16 bits in both.  The other acceptance items are checked above:
+	// containment of every box against the oracle (Phases 3 and 4), the tile counts (Phases 1
+	// and 4), the ULP-wide tightest boxes (Phase 3), and the rounded side by side (Phase 2).
+	// ================================================================
+	{
+		ExpressionEvaluator exact_in(reg.get("poxel32i"));
+		for (const char* d : { "a = 3", "b = 100", "c = 2" }) exact_in.evaluate(d);
+		const struct { const char* type; const char* written; const char* stable; } want[] = {
+			{ "areal16i", "negative", "negative" }, { "poxel16i", "undecidable", "negative" },
+			{ "areal32i", "negative", "negative" }, { "poxel32i", "negative", "negative" },
+			{ "areal64i", "negative", "negative" }, { "poxel64i", "negative", "negative" },
+		};
+		Predicate written, stable;
+		std::string err;
+		parse_predicate("sign (-b + sqrt(b*b - 4*a*c)) / (2*a)", written, err);
+		parse_predicate("sign (2*c) / (-b - sqrt(b*b - 4*a*c))", stable, err);
+		for (const auto& w : want) {
+			const Decision dw = decide_in(reg.get(w.type), w.type, exact_in, written);
+			const Decision ds = decide_in(reg.get(w.type), w.type, exact_in, stable);
+			if (dw.answer != w.written || ds.answer != w.stable) {
+				std::cerr << "FAIL: acceptance, decide sign in " << w.type << ": as written " << dw.answer << ", stable " << ds.answer
+				          << " (expected " << w.written << ", " << w.stable << ")\n";
+				++nrOfFailedTests;
+			}
+		}
+	}
+
+	// ================================================================
 	// Report
 	// ================================================================
 	if (nrOfFailedTests > 0) {

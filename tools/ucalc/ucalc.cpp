@@ -4956,19 +4956,32 @@ try {
 
 				std::string cmd = tool_to_command(tool_name, arguments);
 				if (cmd.empty()) {
-					write_message(jsonrpc_error(id_str, -32601, "unknown tool: " + tool_name));
+					const auto tools = ucalc_tools();
+					const bool known = std::any_of(tools.begin(), tools.end(), [&tool_name](const McpTool& t) { return t.name == tool_name; });
+					if (known) write_message(jsonrpc_error(id_str, -32602, "invalid arguments for " + tool_name
+					                                       + ": a missing required argument, a ';' or line break in an argument, a types list that is not plain names, or a definition that is not 'name = expr'"));
+					else write_message(jsonrpc_error(id_str, -32601, "unknown tool: " + tool_name));
 					continue;
 				}
 
-				// Execute the command and capture output
+				// Execute the command and capture output.  A call is all or nothing: when any of its
+				// commands fails -- a definition among several, say -- the session's variables,
+				// definitions and active type are restored, so a failed call changes nothing.
+				const ExpressionEvaluator saved_session = *state.evaluator;
+				const std::string saved_type = state.active_type;
 				std::ostringstream capture;
 				auto old_buf = std::cout.rdbuf(capture.rdbuf());
 				state.last_error = EXIT_OK;
 				auto cmds = split_commands(cmd);
 				for (const auto& c : cmds) {
 					process_command(c, state);
+					if (state.last_error != EXIT_OK) break;
 				}
 				std::cout.rdbuf(old_buf);
+				if (state.last_error != EXIT_OK) {
+					*state.evaluator = saved_session;
+					state.active_type = saved_type;
+				}
 
 				std::string output = capture.str();
 				write_message(jsonrpc_result(id_str,

@@ -20,6 +20,7 @@
 #include <sstream>
 #include <cstdio>
 #include <map>
+#include <cctype>
 
 namespace sw { namespace ucalc {
 
@@ -191,7 +192,43 @@ inline std::vector<McpTool> ucalc_tools() {
 		 "{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"string\"}},\"required\":[\"type\"]}"},
 		{"ucalc.rewrites",  "List numerical rewrite patterns",
 		 "{\"type\":\"object\",\"properties\":{}}"},
+		// the uncertainty box and decidability (#1654): definitions are 'name = expr' assignments
+		// separated by ';', evaluated in a tile type, so 'a = 3~; b = 100~' gives ULP-wide inputs
+		{"ucalc.ubox",      "Uncertainty box of an expression in tile interval types (areal/poxel): tiles, tightest box, overestimation, decimals, sign",
+		 "{\"type\":\"object\",\"properties\":{\"expression\":{\"type\":\"string\"},\"types\":{\"type\":\"string\",\"description\":\"space-separated, e.g. poxel16i poxel32i\"},\"definitions\":{\"type\":\"string\",\"description\":\"assignments separated by ';', e.g. a = 3~; b = 100~\"},\"trace\":{\"type\":\"string\",\"description\":\"'true' for per-operation tile counts\"}},\"required\":[\"expression\"]}"},
+		{"ucalc.decide",    "Is a question about a result decidable in each tile type? 'sign <expr>' or '<expr> op <expr>' (op: < <= > >= == !=); yes / no / undecidable, and the narrowest deciding type",
+		 "{\"type\":\"object\",\"properties\":{\"predicate\":{\"type\":\"string\"},\"types\":{\"type\":\"string\"},\"definitions\":{\"type\":\"string\"}},\"required\":[\"predicate\"]}"},
+		{"ucalc.roots",     "Roots of a x^2 + b x + c in tile interval types: discriminant verdict, each root as written and stable, tightest box, containment, and the narrowest width deciding each question",
+		 "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"},\"c\":{\"type\":\"string\"},\"types\":{\"type\":\"string\"},\"digits\":{\"type\":\"string\"},\"definitions\":{\"type\":\"string\",\"description\":\"assignments separated by ';', for names the coefficients use\"}},\"required\":[\"a\",\"b\",\"c\"]}"},
+		{"ucalc.rootbox",   "Roots of f(x) in [lo, hi] by bisection over the tiles on the sign of f: root / exact root / undecided / unexplored boxes",
+		 "{\"type\":\"object\",\"properties\":{\"expression\":{\"type\":\"string\"},\"variable\":{\"type\":\"string\",\"description\":\"default x\"},\"lo\":{\"type\":\"string\"},\"hi\":{\"type\":\"string\"},\"types\":{\"type\":\"string\"},\"definitions\":{\"type\":\"string\"}},\"required\":[\"expression\",\"lo\",\"hi\"]}"},
 	};
+}
+
+// A types argument names registered types only: letters, digits, underscores and spaces.
+inline bool plain_words(const std::string& s) {
+	for (char c : s) {
+		if (!(std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == ' ')) return false;
+	}
+	return true;
+}
+
+// The definitions argument: 'name = expr' assignments separated by ';'.  Each piece must be an
+// assignment, so the separator cannot smuggle in another command.  Returns the commands, or
+// false when a piece is not an assignment.
+inline bool definition_commands(const std::string& defs, std::string& out) {
+	out.clear();
+	std::string piece;
+	std::istringstream in(defs);
+	while (std::getline(in, piece, ';')) {
+		const auto b = piece.find_first_not_of(" \t");
+		if (b == std::string::npos) continue;
+		piece = piece.substr(b);
+		if (piece.find('\n') != std::string::npos || piece.find('\r') != std::string::npos) return false;
+		if (!ExpressionEvaluator::is_assignment(piece)) return false;
+		out += piece + "; ";
+	}
+	return true;
 }
 
 // Build the tools/list response
@@ -224,10 +261,42 @@ inline std::string tool_to_command(const std::string& tool_name, const std::stri
 	std::string fmt = json_get_string(args_json, "format");
 	std::string data = json_get_string(args_json, "data");
 
+	const std::string predicate = json_get_string(args_json, "predicate");
+	const std::string types = json_get_string(args_json, "types");
+	const std::string defs = json_get_string(args_json, "definitions");
+	const std::string a = json_get_string(args_json, "a"), b = json_get_string(args_json, "b"), c = json_get_string(args_json, "c");
+	const std::string digits = json_get_string(args_json, "digits");
+	const std::string variable = json_get_string(args_json, "variable");
+	const std::string lo = json_get_string(args_json, "lo"), hi = json_get_string(args_json, "hi");
+	const std::string trace = json_get_string(args_json, "trace");
+
 	// Block command injection via separator characters
 	if (contains_injection(type_arg) || contains_injection(expr)
-	    || contains_injection(fmt) || contains_injection(data)) {
+	    || contains_injection(fmt) || contains_injection(data)
+	    || contains_injection(predicate) || contains_injection(a) || contains_injection(b) || contains_injection(c)
+	    || contains_injection(digits) || contains_injection(variable) || contains_injection(lo) || contains_injection(hi)
+	    || !plain_words(types) || !plain_words(digits) || !plain_words(variable)) {
 		return "";
+	}
+
+	// the uncertainty tools: their definitions are evaluated in a tile type (x~ needs one)
+	if (tool_name == "ucalc.ubox" || tool_name == "ucalc.decide" || tool_name == "ucalc.roots" || tool_name == "ucalc.rootbox") {
+		// the required arguments, as the schemas declare them
+		if ((tool_name == "ucalc.ubox" && expr.empty()) || (tool_name == "ucalc.decide" && predicate.empty())
+		    || (tool_name == "ucalc.roots" && (a.empty() || b.empty() || c.empty()))
+		    || (tool_name == "ucalc.rootbox" && (expr.empty() || lo.empty() || hi.empty()))) {
+			return "";
+		}
+		std::string prefix;
+		if (!defs.empty()) {
+			if (!definition_commands(defs, prefix)) return "";
+			prefix = "type " + (type_arg.empty() ? std::string("poxel32i") : type_arg) + "; " + prefix;
+		}
+		const std::string in_types = types.empty() ? std::string() : " in " + types;
+		if (tool_name == "ucalc.ubox") return prefix + "ubox " + (trace == "true" ? "trace " : "") + expr + in_types;
+		if (tool_name == "ucalc.decide") return prefix + "decide " + predicate + in_types;
+		if (tool_name == "ucalc.roots") return prefix + "roots " + a + ", " + b + ", " + c + in_types + (digits.empty() ? "" : " digits " + digits);
+		return prefix + "rootbox " + expr + " for " + (variable.empty() ? std::string("x") : variable) + " in [" + lo + ", " + hi + "]" + (types.empty() ? "" : " " + types);
 	}
 
 	std::string cmd;
