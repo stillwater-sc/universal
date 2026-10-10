@@ -199,7 +199,7 @@ inline std::vector<McpTool> ucalc_tools() {
 		{"ucalc.decide",    "Is a question about a result decidable in each tile type? 'sign <expr>' or '<expr> op <expr>' (op: < <= > >= == !=); yes / no / undecidable, and the narrowest deciding type",
 		 "{\"type\":\"object\",\"properties\":{\"predicate\":{\"type\":\"string\"},\"types\":{\"type\":\"string\"},\"definitions\":{\"type\":\"string\"}},\"required\":[\"predicate\"]}"},
 		{"ucalc.roots",     "Roots of a x^2 + b x + c in tile interval types: discriminant verdict, each root as written and stable, tightest box, containment, and the narrowest width deciding each question",
-		 "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"},\"c\":{\"type\":\"string\"},\"types\":{\"type\":\"string\"},\"digits\":{\"type\":\"string\"}},\"required\":[\"a\",\"b\",\"c\"]}"},
+		 "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"},\"c\":{\"type\":\"string\"},\"types\":{\"type\":\"string\"},\"digits\":{\"type\":\"string\"},\"definitions\":{\"type\":\"string\",\"description\":\"assignments separated by ';', for names the coefficients use\"}},\"required\":[\"a\",\"b\",\"c\"]}"},
 		{"ucalc.rootbox",   "Roots of f(x) in [lo, hi] by bisection over the tiles on the sign of f: root / exact root / undecided / unexplored boxes",
 		 "{\"type\":\"object\",\"properties\":{\"expression\":{\"type\":\"string\"},\"variable\":{\"type\":\"string\",\"description\":\"default x\"},\"lo\":{\"type\":\"string\"},\"hi\":{\"type\":\"string\"},\"types\":{\"type\":\"string\"},\"definitions\":{\"type\":\"string\"}},\"required\":[\"expression\",\"lo\",\"hi\"]}"},
 	};
@@ -281,6 +281,12 @@ inline std::string tool_to_command(const std::string& tool_name, const std::stri
 
 	// the uncertainty tools: their definitions are evaluated in a tile type (x~ needs one)
 	if (tool_name == "ucalc.ubox" || tool_name == "ucalc.decide" || tool_name == "ucalc.roots" || tool_name == "ucalc.rootbox") {
+		// the required arguments, as the schemas declare them
+		if ((tool_name == "ucalc.ubox" && expr.empty()) || (tool_name == "ucalc.decide" && predicate.empty())
+		    || (tool_name == "ucalc.roots" && (a.empty() || b.empty() || c.empty()))
+		    || (tool_name == "ucalc.rootbox" && (expr.empty() || lo.empty() || hi.empty()))) {
+			return "";
+		}
 		std::string prefix;
 		if (!defs.empty()) {
 			if (!definition_commands(defs, prefix)) return "";
