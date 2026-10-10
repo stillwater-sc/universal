@@ -443,7 +443,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 				if (result.tile_kind != 0) {
 					std::cout << ",\"tiles\":" << result.tile_count
 					          << ",\"sign\":\"" << result.tile_sign << "\""
-					          << ",\"ubit\":" << (result.ubit ? "true" : "false");
+					          << ",\"ubit\":" << (result.ubit ? "true" : "false")
+					          << ",\"encloses\":" << (result.tile_encloses ? "true" : "false");
 				}
 				std::cout << "}\n";
 			} else if (fmt == OutputFormat::csv) {

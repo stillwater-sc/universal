@@ -236,8 +236,9 @@ std::int64_t bound_key(long double b, bool open, bool lower) {
 	return k;
 }
 
+// `encloses`: the tile is known to contain the true value (see Value::tile_encloses)
 template<typename Tile>
-Value make_tile_value(const Tile& t) {
+Value make_tile_value(const Tile& t, bool encloses) {
 	using sw::universal::to_binary;
 	using sw::universal::type_tag;
 	using T = tile_traits<Tile>;
@@ -254,10 +255,12 @@ Value make_tile_value(const Tile& t) {
 	val.tile_count = count(box);
 	val.tile_sign = to_string(box.sign());
 	set_bounds(val, box);
+	val.tile_encloses = encloses && !T::isnan(t);
 	std::ostringstream comp;
-	if (T::isnan(t))   comp << "nan";
-	else if (val.ubit) comp << "open tile (ubit = 1): inexact; a flag, not an enclosure";
-	else               comp << "exact tile (ubit = 0)";
+	if (T::isnan(t))             comp << "nan";
+	else if (!val.ubit)          comp << "exact tile (ubit = 0)";
+	else if (val.tile_encloses)  comp << "open tile (ubit = 1): contains the value";
+	else                         comp << "open tile (ubit = 1): inexact; a flag, not an enclosure";
 	val.components_rep = comp.str();
 	if constexpr (is_areal<Tile>::value) val.color_rep = sw::universal::color_print(t);
 	return val;
@@ -279,6 +282,7 @@ Value make_box_value(const tile_interval<Tile>& x) {
 	val.tile_count = count(x);
 	val.tile_sign = to_string(x.sign());
 	set_bounds(val, x);
+	val.tile_encloses = !x.isnan();
 	std::ostringstream comp;
 	if (x.isnan()) comp << "nan";
 	else comp << "enclosure: lower end " << (x.lower_open() ? "open" : "closed") << ", upper end " << (x.upper_open() ? "open" : "closed");
@@ -286,16 +290,13 @@ Value make_box_value(const tile_interval<Tile>& x) {
 	return val;
 }
 
+// a Value of another type, as a run of this type's tiles
 template<typename Tile>
-tile_interval<Tile> box_of(const Value& v) {
-	if (v.native.has_value()) {
-		if (const auto* p = std::any_cast<tile_interval<Tile>>(&v.native)) return *p;
-		if (const auto* t = std::any_cast<Tile>(&v.native)) return tile_interval<Tile>(*t);
-	}
+tile_interval<Tile> foreign_box(const Value& v) {
 	using I = tile_interval<Tile>;
 	// a plain double (a sweep point, say) is exactly its value: the tile that holds it
 	if (!v.native.has_value()) return I(Tile(v.num));
-	// another tile type: enclose its bounds, not its midpoint
+	// another tile type: its bounds, not its midpoint
 	if (v.tile_kind != 0) {
 		if (std::isnan(v.tile_lower) || std::isnan(v.tile_upper)) return I::nan();
 		const std::int64_t lo = bound_key<Tile>(v.tile_lower, v.tile_lower_open, true);
@@ -306,13 +307,45 @@ tile_interval<Tile> box_of(const Value& v) {
 	return bracket<Tile>(v.num);
 }
 
+// a Value as an enclosure in this tile interval type.  A single tile that is not known to
+// contain its value -- the result of sticky-flag arithmetic on an open operand -- encloses
+// nothing, so it becomes the entire line rather than a box that may exclude the truth
 template<typename Tile>
-Tile tile_of(const Value& v) {
+tile_interval<Tile> box_of(const Value& v) {
+	using I = tile_interval<Tile>;
 	if (v.native.has_value()) {
-		if (const auto* t = std::any_cast<Tile>(&v.native)) return *t;
-		if (const auto* p = std::any_cast<tile_interval<Tile>>(&v.native)) return single(*p);
+		if (const auto* p = std::any_cast<I>(&v.native)) return *p;
+		if (const auto* t = std::any_cast<Tile>(&v.native)) return v.tile_encloses || tile_traits<Tile>::isnan(*t) ? I(*t) : I::entire();
 	}
-	return single(box_of<Tile>(v));
+	if (v.tile_kind != 0 && !v.tile_encloses) {
+		return std::isnan(v.tile_lower) ? I::nan() : I::entire();
+	}
+	return foreign_box<Tile>(v);
+}
+
+// a Value as a single tile of this type, and whether that tile contains the value
+template<typename Tile>
+struct held {
+	Tile t;
+	bool encloses;
+};
+
+template<typename Tile>
+bool exact(const Tile& t) {
+	using T = tile_traits<Tile>;
+	return !T::isnan(t) && (T::key(t) & 1) == 0;
+}
+
+template<typename Tile>
+held<Tile> held_of(const Value& v) {
+	using I = tile_interval<Tile>;
+	if (v.native.has_value()) {
+		if (const auto* t = std::any_cast<Tile>(&v.native)) return { *t, v.tile_encloses };
+		if (const auto* p = std::any_cast<I>(&v.native)) return { single(*p), !p->isnan() && p->lo_key() == p->hi_key() };
+	}
+	const I box = foreign_box<Tile>(v);
+	const bool one = !box.isnan() && box.lo_key() == box.hi_key();
+	return { single(box), one && (v.tile_kind == 0 || v.tile_encloses) };
 }
 
 // x^n for an integer n: squaring for the even steps, which an interval needs to stay
@@ -365,52 +398,73 @@ TypeOps register_tile_type(const std::string& name) {
 	ops.nbits = static_cast<int>(Tile::nbits);
 	ops.family = "tile";
 
-	auto mk = [](const Tile& t) { return make_tile_value(t); };
-	auto x  = [](const Value& v) { return tile_of<Tile>(v); };
-	// a value obtained through double: the tile that holds it, marked inexact
+	// Every result says whether it contains the true value.  The library's contract: exact
+	// operands give the tile that contains the exact result; an open operand enters through
+	// its lower end, and the result is only a flag.  Negation is exact on any tile.
+	auto mk = [](const Tile& t, bool encloses) { return make_tile_value(t, encloses); };
+	auto x  = [](const Value& v) { return held_of<Tile>(v); };
+	auto from_exact = [](const held<Tile>& a, const held<Tile>& b) {
+		return a.encloses && b.encloses && exact(a.t) && exact(b.t);
+	};
+	// a value obtained through double: the tile that holds it, marked inexact, no enclosure
 	auto via_double = [](double d) {
 		const Tile t(d);
-		if (T::isnan(t)) return make_tile_value(t);
-		return make_tile_value(T::tile(above_key<Tile>(std::clamp(T::key(t), -T::kmax, T::kmax))));
+		if (T::isnan(t)) return make_tile_value(t, false);
+		return make_tile_value(T::tile(above_key<Tile>(std::clamp(T::key(t), -T::kmax, T::kmax))), false);
+	};
+	auto from_box = [](const I& box) { return make_tile_value(single(box), !box.isnan() && box.lo_key() == box.hi_key()); };
+
+	ops.from_double  = [mk](double v) { return mk(Tile(v), true); };
+	ops.from_literal = [from_box](const std::string& text) { return from_box(literal_box<Tile>(text)); };
+	ops.constant     = [from_box](const std::string& cname) { return from_box(constant_box<Tile>(cname)); };
+	// x~ declares the value to lie in the open tile above an exact x
+	ops.above        = [mk, x](const Value& a) {
+		const held<Tile> h = x(a);
+		if (!exact(h.t)) return mk(h.t, h.encloses);
+		return mk(T::tile(above_key<Tile>(T::key(h.t))), true);
 	};
 
-	ops.from_double  = [mk](double v) { return mk(Tile(v)); };
-	ops.from_literal = [mk](const std::string& text) { return mk(single(literal_box<Tile>(text))); };
-	ops.constant     = [mk](const std::string& cname) { return mk(single(constant_box<Tile>(cname))); };
-	ops.above        = [mk, x](const Value& a) { const Tile t = x(a); return T::isnan(t) ? mk(t) : mk(T::tile(above_key<Tile>(T::key(t)))); };
+	ops.add    = [mk, x, from_exact](const Value& a, const Value& b) { const auto p = x(a), q = x(b); return mk(p.t + q.t, from_exact(p, q)); };
+	ops.sub    = [mk, x, from_exact](const Value& a, const Value& b) { const auto p = x(a), q = x(b); return mk(p.t - q.t, from_exact(p, q)); };
+	ops.mul    = [mk, x, from_exact](const Value& a, const Value& b) { const auto p = x(a), q = x(b); return mk(p.t * q.t, from_exact(p, q)); };
+	ops.div    = [mk, x, from_exact](const Value& a, const Value& b) { const auto p = x(a), q = x(b); return mk(p.t / q.t, from_exact(p, q)); };
+	ops.negate = [mk, x](const Value& a) { const auto p = x(a); return mk(-p.t, p.encloses); };
 
-	ops.add    = [mk, x](const Value& a, const Value& b) { return mk(x(a) + x(b)); };
-	ops.sub    = [mk, x](const Value& a, const Value& b) { return mk(x(a) - x(b)); };
-	ops.mul    = [mk, x](const Value& a, const Value& b) { return mk(x(a) * x(b)); };
-	ops.div    = [mk, x](const Value& a, const Value& b) { return mk(x(a) / x(b)); };
-	ops.negate = [mk, x](const Value& a) { return mk(-x(a)); };
-
-	ops.fn_sqrt = [mk, x](const Value& a) { return mk(sw::universal::tile_sqrt(x(a))); };
-	ops.fn_abs  = [mk, x](const Value& a) { const Tile t = x(a); return mk(T::key(t) < 0 ? Tile(-t) : t); };
-	ops.fn_log  = [via_double, x](const Value& a) { return via_double(std::log(double(x(a)))); };
-	ops.fn_exp  = [via_double, x](const Value& a) { return via_double(std::exp(double(x(a)))); };
-	ops.fn_sin  = [via_double, x](const Value& a) { return via_double(std::sin(double(x(a)))); };
-	ops.fn_cos  = [via_double, x](const Value& a) { return via_double(std::cos(double(x(a)))); };
-	ops.fn_tan  = [via_double, x](const Value& a) { return via_double(std::tan(double(x(a)))); };
-	ops.fn_asin = [via_double, x](const Value& a) { return via_double(std::asin(double(x(a)))); };
-	ops.fn_acos = [via_double, x](const Value& a) { return via_double(std::acos(double(x(a)))); };
-	ops.fn_atan = [via_double, x](const Value& a) { return via_double(std::atan(double(x(a)))); };
+	ops.fn_sqrt = [mk, x](const Value& a) { const auto p = x(a); return mk(sw::universal::tile_sqrt(p.t), p.encloses && exact(p.t)); };
+	ops.fn_abs  = [mk, x](const Value& a) { const auto p = x(a); return mk(T::key(p.t) < 0 ? Tile(-p.t) : p.t, p.encloses); };
+	ops.fn_log  = [via_double, x](const Value& a) { return via_double(std::log(double(x(a).t))); };
+	ops.fn_exp  = [via_double, x](const Value& a) { return via_double(std::exp(double(x(a).t))); };
+	ops.fn_sin  = [via_double, x](const Value& a) { return via_double(std::sin(double(x(a).t))); };
+	ops.fn_cos  = [via_double, x](const Value& a) { return via_double(std::cos(double(x(a).t))); };
+	ops.fn_tan  = [via_double, x](const Value& a) { return via_double(std::tan(double(x(a).t))); };
+	ops.fn_asin = [via_double, x](const Value& a) { return via_double(std::asin(double(x(a).t))); };
+	ops.fn_acos = [via_double, x](const Value& a) { return via_double(std::acos(double(x(a).t))); };
+	ops.fn_atan = [via_double, x](const Value& a) { return via_double(std::atan(double(x(a).t))); };
 	ops.fn_pow  = [mk, x, via_double](const Value& a, const Value& b) {
+		const auto base = x(a), e = x(b);
 		long long n = 0;
-		if (integer_exponent(I(x(b)), n)) {
-			auto mul = [](const Tile& p, const Tile& q) { return Tile(p * q); };
-			return mk(pow_int(x(a), n, Tile(1), mul, [mul](const Tile& p) { return mul(p, p); }));
+		if (integer_exponent(I(e.t), n)) {
+			// the result encloses while every multiplication sees exact operands
+			bool encloses = base.encloses && e.encloses;
+			auto mul = [&encloses](const Tile& p, const Tile& q) { encloses = encloses && exact(p) && exact(q); return Tile(p * q); };
+			Tile r = pow_int(base.t, n < 0 ? -n : n, Tile(1), mul, [mul](const Tile& p) { return mul(p, p); });
+			if (n < 0) {                                    // 1 / x^|n|, again exact only from an exact tile
+				encloses = encloses && exact(r);
+				r = Tile(1) / r;
+			}
+			return mk(r, encloses);
 		}
-		return via_double(std::pow(double(x(a)), double(x(b))));
+		return via_double(std::pow(double(base.t), double(e.t)));
 	};
 
-	ops.maxpos  = [mk]() { return mk(std::numeric_limits<Tile>::max()); };
-	ops.minpos  = [mk]() { return mk(std::numeric_limits<Tile>::min()); };
-	ops.maxneg  = [mk]() { return mk(std::numeric_limits<Tile>::lowest()); };
-	ops.minneg  = [mk]() { return mk(Tile(-std::numeric_limits<Tile>::min())); };
-	ops.epsilon = [mk]() { return mk(std::numeric_limits<Tile>::epsilon()); };
-	ops.next    = [mk, x](const Value& a) { Tile t = x(a); return mk(++t); };
-	ops.prev    = [mk, x](const Value& a) { Tile t = x(a); return mk(--t); };
+	ops.maxpos  = [mk]() { return mk(std::numeric_limits<Tile>::max(), true); };
+	ops.minpos  = [mk]() { return mk(std::numeric_limits<Tile>::min(), true); };
+	ops.maxneg  = [mk]() { return mk(std::numeric_limits<Tile>::lowest(), true); };
+	ops.minneg  = [mk]() { return mk(Tile(-std::numeric_limits<Tile>::min()), true); };
+	ops.epsilon = [mk]() { return mk(std::numeric_limits<Tile>::epsilon(), true); };
+	// the neighbouring tile, as a value of its own
+	ops.next    = [mk, x](const Value& a) { Tile t = x(a).t; return mk(++t, true); };
+	ops.prev    = [mk, x](const Value& a) { Tile t = x(a).t; return mk(--t, true); };
 	return ops;
 }
 

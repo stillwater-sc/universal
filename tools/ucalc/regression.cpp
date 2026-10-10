@@ -665,6 +665,37 @@ try {
 			}
 		}
 
+		// a single tile from arithmetic on an open operand is a flag, not an enclosure: an
+		// interval type must not promote it to a box that excludes the truth
+		{
+			ExpressionEvaluator eval(reg.get("poxel16"));
+			Value r = eval.evaluate("r = (1/3) * 3");                   // (0.99951, 1): excludes 1
+			Value l = eval.evaluate("0.1");
+			Value s = eval.evaluate("sqrt(4)");
+			Value q = eval.evaluate("3~ * 2");
+			if (r.tile_encloses || !l.tile_encloses || !s.tile_encloses || q.tile_encloses) {
+				std::cerr << "FAIL: single-tile enclosure flags: (1/3)*3 " << r.tile_encloses << ", 0.1 " << l.tile_encloses
+				          << ", sqrt(4) " << s.tile_encloses << ", 3~ * 2 " << q.tile_encloses << " (expected 0 1 1 0)\n";
+				++nrOfFailedTests;
+			}
+			// powers of an exact tile enclose (1/3 is the tile holding one third); of an open one, not
+			Value p2 = eval.evaluate("pow(3, 2)");
+			Value pn = eval.evaluate("pow(3, -1)");
+			Value po = eval.evaluate("pow(0.1, 2)");
+			if (!p2.tile_encloses || !pn.tile_encloses || po.tile_encloses) {
+				std::cerr << "FAIL: single-tile pow enclosure: 3^2 " << p2.tile_encloses << ", 3^-1 " << pn.tile_encloses
+				          << ", 0.1^2 " << po.tile_encloses << " (expected 1 1 0)\n";
+				++nrOfFailedTests;
+			}
+			eval.set_type(reg.get("poxel32i"));
+			Value rr = eval.evaluate("r + 0");
+			const auto* box = std::any_cast<tile_interval<poxel<32, 2, uint8_t>>>(&rr.native);
+			if (box == nullptr || !box->contains(1.0)) {
+				std::cerr << "FAIL: a non-enclosing poxel16 tile read in poxel32i must still contain the truth: " << rr.native_rep << "\n";
+				++nrOfFailedTests;
+			}
+		}
+
 		// single tiles: sticky-flag arithmetic, the ubit says inexact
 		check_contains(reg, "poxel16", "100^2", "(9984, 10048)", "poxel16 100^2 is not on the lattice");
 		{

@@ -341,8 +341,14 @@ open tile that contains one tenth even in `poxel64`, whose lattice is finer than
 Named constants are bracketed from their quad-double values.
 
 `show` reports what is known about the set: its tile count and the **sign verdict**
-(negative, zero, positive, or undecidable). The JSON output carries `tiles`, `sign`
-and `ubit`.
+(negative, zero, positive, or undecidable). The JSON output carries `tiles`, `sign`,
+`ubit` and `encloses`.
+
+A single tile knows whether it contains its value: literals, `x~` and arithmetic on
+exact tiles do; arithmetic with an open operand and functions computed through double
+do not. Variables keep their value across a `type` switch, and a tile interval type
+reads a single tile that does not enclose its value as the entire line, never as a box
+that might exclude the truth. Recompute such a value in the interval type instead.
 
 ```
 poxel16> (1/3)*3                 # a single tile: 1 is outside, the ubit only says inexact

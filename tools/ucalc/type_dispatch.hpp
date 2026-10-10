@@ -44,6 +44,9 @@ struct Value {
 	long double tile_upper = 0;     // cannot hold the lattice: how another tile type reads it
 	bool tile_lower_open = false;
 	bool tile_upper_open = false;
+	bool tile_encloses = false;     // the set is known to contain the true value: always for a
+	                                // tile interval, for a single tile only when no open operand
+	                                // went through its sticky-flag arithmetic
 
 	Value() : num(0.0) {}
 	explicit Value(double v) : num(v) {}
