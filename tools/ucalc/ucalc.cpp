@@ -743,7 +743,8 @@ static bool process_command(const std::string& input, ReplState& state) {
 		try {
 			const ExpressionEvaluator qs = quadratic_session(state.registry, *state.evaluator, coef[0], coef[1], coef[2]);
 			ExpressionEvaluator probe = evaluator_for(state.registry.get("poxel64i"), qs);
-			forms = quadratic_forms(probe.evaluate("_qb_").tile_sign == "negative");
+			const Value b_value = probe.evaluate("_qb_");
+			forms = quadratic_forms(b_value.tile_sign == "negative", b_value.tile_sign == "zero");
 			for (const std::string& t : types) reports.push_back(quadratic_in(state.registry.get(t), t, qs, forms, true));
 			sweep = precision_sweep(state.registry, qs, forms, digits);
 		} catch (const std::exception& ex) {

@@ -1187,6 +1187,13 @@ try {
 			const QuadraticReport r = quadratic_in(reg.get("poxel32i"), "poxel32i", neg, quadratic_forms(true), true);
 			const ExpressionEvaluator cpx = quadratic_session(reg, none, "1", "0", "1");
 			const QuadraticReport rc = quadratic_in(reg.get("poxel32i"), "poxel32i", cpx, quadratic_forms(false), true);
+			// b = 0 and c = 0: the stable form must not divide 0 by 0
+			const ExpressionEvaluator zero = quadratic_session(reg, none, "1", "0", "0");
+			const QuadraticReport rz = quadratic_in(reg.get("poxel32i"), "poxel32i", zero, quadratic_forms(false, true), true);
+			if (rz.rows.size() != 3 || rz.rows[1].box.box != "0" || !rz.rows[1].box.exact || rz.discriminant != std::string("a double root")) {
+				std::cerr << "FAIL: roots 1 0 0: stable r1 " << (rz.rows.size() > 1 ? rz.rows[1].box.box : std::string("-")) << "\n";
+				++nrOfFailedTests;
+			}
 			const ExpressionEvaluator dbl = quadratic_session(reg, none, "1", "2", "1");
 			const QuadraticReport rd = quadratic_in(reg.get("areal32i"), "areal32i", dbl, quadratic_forms(false), true);
 			const bool ok = r.rows.size() == 3 && r.rows[0].box.tiles == 1365 && r.rows[1].box.tiles == 3 && r.rows[0].box.sign == "positive" && r.rows[0].contains
@@ -1242,6 +1249,11 @@ try {
 			ok = ok && dbl.exhausted && unexplored;
 			const RootboxReport sq2 = rootbox("(x - 1)^2", "[0, 3]", "poxel32i");
 			ok = ok && sq2.boxes.size() == 1 && sq2.boxes[0].status == "exact root";
+			// the entire 64-bit line: the first midpoint must not overflow (keys reach +-(2^63 - 1))
+			for (const std::string type : { "poxel64i", "areal64i" }) {
+				const RootboxReport wide = rootbox("x - 0.5", "[-1e400, 1e400]", type);
+				ok = ok && wide.error.empty() && wide.boxes.size() == 1 && wide.boxes[0].status == "exact root" && wide.boxes[0].box == "0.5";
+			}
 			if (!ok) {
 				std::cerr << "FAIL: rootbox special cases (pole, exact root, none, no real value, double root)\n";
 				++nrOfFailedTests;

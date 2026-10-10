@@ -39,14 +39,17 @@ struct QuadraticForm {
 // The formula as written, (-b +- sqrt(b^2 - 4ac)) / (2a), cancels in the root where -b and
 // the square root have opposite signs.  The stable form takes q = -(b + sign(b) sqrt(d)) / 2:
 // the roots are q / a, the formula as written itself, and c / q (Vieta), which replaces the
-// cancelling one.  r1 is the root of smaller magnitude, r2 the other, as in #1649.
-inline std::vector<QuadraticForm> quadratic_forms(bool b_negative) {
+// cancelling one.  r1 is the root of smaller magnitude, r2 the other, as in #1649.  With
+// b = 0 nothing cancels, and c / q would be 0 / 0 when c = 0 too: the stable row is then the
+// formula as written.
+inline std::vector<QuadraticForm> quadratic_forms(bool b_negative, bool b_zero = false) {
 	const std::string a = "_qa_", b = "_qb_", c = "_qc_";
 	const std::string d = "sqrt(" + b + "*" + b + " - 4*" + a + "*" + c + ")";
 	const std::string plus = "(-" + b + " + " + d + ") / (2*" + a + ")";
 	const std::string minus = "(-" + b + " - " + d + ") / (2*" + a + ")";
 	if (!b_negative) {
-		return { { "r1", "as written", plus }, { "r1", "stable", "(2*" + c + ") / (-" + b + " - " + d + ")" }, { "r2", "as written", minus } };
+		const std::string stable = b_zero ? plus : "(2*" + c + ") / (-" + b + " - " + d + ")";
+		return { { "r1", "as written", plus }, { "r1", "stable", stable }, { "r2", "as written", minus } };
 	}
 	return { { "r1", "as written", minus }, { "r1", "stable", "(2*" + c + ") / (-" + b + " + " + d + ")" }, { "r2", "as written", plus } };
 }
@@ -235,7 +238,9 @@ inline RootboxReport rootbox_in(const TypeOps& ops, const std::string& alias, co
 				kept.push_back({ p.lo, p.hi, false, true });
 				continue;
 			}
-			const std::int64_t mid = p.lo + (p.hi - p.lo) / 2;
+			// in unsigned arithmetic: a 64-bit type's keys reach +-(2^63 - 1), and hi - lo overflows
+			const std::uint64_t span = static_cast<std::uint64_t>(p.hi) - static_cast<std::uint64_t>(p.lo);
+			const std::int64_t mid = static_cast<std::int64_t>(static_cast<std::uint64_t>(p.lo) + span / 2);
 			stack.push_back({ mid + 1, p.hi, false, false });
 			stack.push_back({ p.lo, mid, false, false });
 		}
