@@ -15,7 +15,16 @@ This tutorial shows what the ubit promises and what it does not. It separates a 
 
 ## Tiles
 
-The lattice points and the open intervals between them are called **tiles**. Together they cover the real line without gaps or overlap, so every real number converts to exactly one tile, and no conversion ever rounds:
+The lattice points and the open intervals between them are called **tiles**. Together they cover the real line without gaps or overlap.
+
+![The tiles of a 5-bit poxel on the non-negative real line: exact points with ubit 0, open intervals with ubit 1, real numbers landing in their tiles, and a tile_interval as a run of tiles](../img/tutorials/tiles-real-line.svg)
+
+The figure uses `poxel<5,0>`, small enough to draw every tile, and it is spaced by encoding, not to scale.
+1. **The tiling.** The eight lattice points are the exact tiles: their encodings end in ubit 0. The eight open intervals between them end in ubit 1, and stop short of the points they lie between, because an open interval excludes its ends. The last one, `(4, inf)`, holds everything above maxpos.
+2. **Conversion.** Every real number lands in exactly one tile: 0.1 in `(0, 1/4)`, 1/3 in `(1/4, 1/2)`, 3 in `(2, 4)`, 100 in `(4, inf)`. 0.5 is a lattice point, so it is exact. Nothing is rounded to a neighbour.
+3. **Enclosure.** A `tile_interval`, introduced below, is a contiguous run of tiles. The hull of 0.6 and 1.4 is five tiles, the open set `(1/2, 3/2)`.
+
+In code, every real number converts to exactly one tile, and no conversion ever rounds:
 
 ```cpp
 #include <universal/number/poxel/poxel.hpp>
