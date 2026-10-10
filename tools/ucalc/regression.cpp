@@ -1069,16 +1069,25 @@ try {
 			ExpressionEvaluator open_in(reg.get("poxel32i"));
 			open_in.evaluate("a = 3~");
 			open_in.evaluate("t = 0.1~");                              // 0.1 is no lattice point: the open tile that holds it
+			open_in.evaluate("h = [1, 2~]");                           // a hull keeps the open end it takes from 2~
 			for (const std::string& type : { std::string("poxel16i"), std::string("areal32i"), std::string("poxel64i") }) {
 				for (const std::string& e : { std::string("a + 0"), std::string("2 * a"), std::string("t + 0"), std::string("-t") }) {
 					const auto [v, t] = both(open_in, type, e);
-					if (!t.proven || t.outer_tiles != 1 || v.tile_count != 1) {
+					if (!t.proven || t.outer_tiles != v.tile_count || v.tile_count != 1) {
 						std::cerr << "FAIL: open input " << e << " in " << type << ": tightest " << t.inner_tiles << "-" << t.outer_tiles
 						          << ", computed " << v.tile_count << " (" << t.note << ")\n";
 						++nrOfFailedTests;
 					}
 					inside(type, v, t);
 				}
+			}
+			for (const std::string& type : { std::string("poxel16i"), std::string("areal32i") }) {
+				const auto [v, t] = both(open_in, type, "h + 0");
+				if (!t.proven || t.outer_tiles != v.tile_count) {
+					std::cerr << "FAIL: [1, 2~] + 0 in " << type << ": tightest " << t.inner_tiles << "-" << t.outer_tiles << ", computed " << v.tile_count << "\n";
+					++nrOfFailedTests;
+				}
+				inside(type, v, t);
 			}
 			// maxpos~ is (maxpos, inf): no bounded input; sqrt of a negative set has no real value
 			ExpressionEvaluator edge(reg.get("poxel32i")), negative(reg.get("poxel32i"));

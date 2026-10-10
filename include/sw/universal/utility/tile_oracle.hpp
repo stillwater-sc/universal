@@ -263,8 +263,18 @@ inline interval hull(const interval& a, const interval& b) {
 	interval r = closed(a);
 	r.lo_inf = a.lo_inf || b.lo_inf;
 	r.hi_inf = a.hi_inf || b.hi_inf;
-	if (!r.lo_inf) r.lo = compare(a.lo, b.lo) <= 0 ? a.lo : b.lo;
-	if (!r.hi_inf) r.hi = compare(a.hi, b.hi) >= 0 ? a.hi : b.hi;
+	// each end comes from the set that reaches further, and keeps that set's openness; where
+	// both reach the same point, the end is open only if both exclude it
+	if (!r.lo_inf) {
+		const int cmp = compare(a.lo, b.lo);
+		r.lo = cmp <= 0 ? a.lo : b.lo;
+		r.lo_open = cmp < 0 ? a.lo_open : (cmp > 0 ? b.lo_open : (a.lo_open && b.lo_open));
+	}
+	if (!r.hi_inf) {
+		const int cmp = compare(a.hi, b.hi);
+		r.hi = cmp >= 0 ? a.hi : b.hi;
+		r.hi_open = cmp > 0 ? a.hi_open : (cmp < 0 ? b.hi_open : (a.hi_open && b.hi_open));
+	}
 	return r;
 }
 
