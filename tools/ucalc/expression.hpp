@@ -488,9 +488,9 @@ public:
 		return result;
 	}
 
-	// The text that defined each variable, in definition order.  Commands that evaluate
-	// in several types replay these, so a definition means the same thing in each type's
-	// own lattice: b = 100~ is the open tile above 100 in every type, not one type's tile.
+	// Every definition, in the order it was made.  Commands that evaluate in several types
+	// replay these, so a definition means the same thing in each type's own lattice:
+	// b = 100~ is the open tile above 100 in every type, not one type's tile.
 	const std::vector<std::pair<std::string, std::string>>& definitions() const { return definitions_; }
 
 	// Build an AST from an expression string (does not evaluate)
@@ -540,9 +540,9 @@ private:
 		while (b < eq && std::isspace(static_cast<unsigned char>(input[b]))) ++b;
 		std::size_t e = b;
 		while (e < eq && (std::isalnum(static_cast<unsigned char>(input[e])) || input[e] == '_')) ++e;
-		const std::string name = input.substr(b, e - b);
-		std::erase_if(definitions_, [&name](const auto& d) { return d.first == name; });
-		definitions_.emplace_back(name, input.substr(eq + 1));
+		// the whole history, in order: replaying it reproduces the session's values, also for
+		// a definition that depends on an earlier value of a later-redefined name
+		definitions_.emplace_back(input.substr(b, e - b), input.substr(eq + 1));
 	}
 
 	// Record a trace step for a binary operation

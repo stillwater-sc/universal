@@ -766,10 +766,22 @@ try {
 		session.evaluate("a = 3~");
 		session.evaluate("b = 100~");
 		session.evaluate("c = 2~");
-		session.evaluate("a = 3~");                                       // a redefinition replaces, keeping one entry
-		if (session.definitions().size() != 3 || session.definitions().back().first != "a") {
-			std::cerr << "FAIL: definitions should hold b, c, a in order, got " << session.definitions().size() << "\n";
+		session.evaluate("a = 3~");                                       // a redefinition is history too
+		if (session.definitions().size() != 4 || session.definitions().back().first != "a") {
+			std::cerr << "FAIL: definitions should hold all four, in order, got " << session.definitions().size() << "\n";
 			++nrOfFailedTests;
+		}
+		// the replay reproduces the session's values: b depends on the earlier a, and x on itself
+		{
+			ExpressionEvaluator history(reg.get("double"));
+			for (const char* d : { "a = 1", "b = a + 1", "a = 5", "x = 1", "x = x + 1" }) history.evaluate(d);
+			ExpressionEvaluator replayed = evaluator_for(reg.get("poxel32i"), history);
+			const Value b = replayed.evaluate("b + 0"), a = replayed.evaluate("a + 0"), x = replayed.evaluate("x + 0");
+			if (b.native_rep != "2" || a.native_rep != "5" || x.native_rep != "2") {
+				std::cerr << "FAIL: replayed history gives a = " << a.native_rep << ", b = " << b.native_rep << ", x = " << x.native_rep
+				          << " (the session holds 5, 2, 2)\n";
+				++nrOfFailedTests;
+			}
 		}
 		const std::string r1 = "(-b + sqrt(b*b - 4*a*c)) / (2*a)";
 		const struct { const char* type; std::uint64_t tiles; const char* sign; } ulp_wide[] = {
