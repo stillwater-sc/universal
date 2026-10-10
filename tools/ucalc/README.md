@@ -30,6 +30,10 @@ agents, supporting structured JSON/CSV output for automated workflows.
   different numbers -- `(1+f)*2^c` against `sqrt(e)^(c+m)` -- so the same input
   prints different encodings under each. `diverge <expr> takum32 takum_log32
   <tol> for <var> in [a, b]` finds where they first disagree.
+- Includes the **ubit tile types** `areal` (float lattice) and `poxel` (posit lattice),
+  as single tiles (`areal32`, `poxel32`, ...) and as guaranteed enclosures
+  (`areal32i`, `poxel32i`, ...), for asking what is *known* about a result rather
+  than what was rounded. See [Tile Types](#tile-types-uncertainty-and-decidability).
 - Parses **infix arithmetic** with standard operator precedence, parentheses,
   variables, constants, and math functions.
 - Provides **20+ analysis commands** organized in three categories:
@@ -49,6 +53,7 @@ tools/ucalc/
   output_format.hpp   -- JSON escape, CSV quoting, output format utilities
   data_loader.hpp     -- CSV file reader and vector literal parser
   registry.hpp        -- Default type registry (shared with regression tests)
+  tiles.hpp           -- areal/poxel tiles and tile intervals: exact literals, set-valued Values
   ucalc.cpp           -- REPL loop, 20+ commands, CLI flag parsing
   CMakeLists.txt      -- Build config with optional readline detection
   scripts/            -- Example scripts for humans and AI agents
@@ -112,6 +117,8 @@ ucalc --quiet -t posit32 "sin(0.1)"   # value-only for shell scripts
 | Constants | `pi, e, phi, ln2, ln10, sqrt2, sqrt3, sqrt5` (quad-double precision) |
 | Variables | `x = 1/3` (then use `x` in expressions) |
 | Semicolons | `type posit32; 1/3 + 1/3 + 1/3` |
+| Boxes (tile interval types) | `[a, b]` or `hull(a, b)`: every value from a to b |
+| ULP-wide input (tile types) | `x~` or `above(x)`: the open tile just above an exact `x` |
 
 ### Type Inspection Commands
 
@@ -315,6 +322,57 @@ posit8:   100.0% 0clip 0flush
 ```
 
 Shows what fraction of values are representable, clipped (overflow), or flushed (underflow).
+
+## Tile Types: Uncertainty and Decidability
+
+A tile is an exact lattice point, or the open interval to the next lattice point; the
+ubit tells the two apart. ucalc has two families of tile types (#1654):
+
+| Family | Types | Semantics |
+|--------|-------|-----------|
+| Single tile | `areal8/16/32/64`, `poxel8/16/32/64` | The library's sticky-flag arithmetic: the ubit says "inexact", but once an operand is open the tile need not contain the true result. |
+| Tile interval | `areal8i/16i/32i/64i`, `poxel8i/16i/32i/64i` | A run of tiles that is **guaranteed** to contain the true result. Functions without an enclosing implementation (`log`, `exp`, `tan`, the inverse trig functions, `pow` with a non-integer exponent) return the entire line rather than a rounded point. |
+
+`areal<n,es>` uses es = 5, 8, 11 at 16, 32, 64 bits (and es = 2 at 8 bits); `poxel<n,2>`
+follows the Posit Standard.
+
+Literals are read from their decimal text, not through a double, so `0.1` is the one
+open tile that contains one tenth even in `poxel64`, whose lattice is finer than double's.
+Named constants are bracketed from their quad-double values.
+
+`show` reports what is known about the set: its tile count and the **sign verdict**
+(negative, zero, positive, or undecidable). The JSON output carries `tiles`, `sign`,
+`ubit` and `encloses`.
+
+A single tile knows whether it contains its value: literals, `x~` and arithmetic on
+exact tiles do; arithmetic with an open operand and functions computed through double
+do not. Variables keep their value across a `type` switch, and a tile interval type
+reads a single tile that does not enclose its value as the entire line, never as a box
+that might exclude the truth. Recompute such a value in the interval type instead.
+
+```
+poxel16> (1/3)*3                 # a single tile: 1 is outside, the ubit only says inexact
+(0.99951, 1)
+poxel16i> (1/3)*3                # a tile interval: contains 1
+(0.99951, 1.001)
+```
+
+The reference problem is the quadratic 3x^2 + 100x + 2 = 0 from
+`applications/precision/ubit/quadratic_roots.cpp` (#1649). At 16 bits the root as
+written cannot decide its own sign, and the rearranged formula can:
+
+```
+poxel16i> a = 3; b = 100; c = 2
+poxel16i> show (-b + sqrt(b*b - 4*a*c)) / (2*a)
+  value:      (-0.083374, 0.041687)
+  tiles:      16385, sign undecidable
+poxel16i> show (2*c) / (-b - sqrt(b*b - 4*a*c))
+  value:      (-0.020081, -0.019958)
+  tiles:      7, sign negative
+```
+
+With ULP-wide coefficients, `a = 3~; b = 100~; c = 2~`, the same expressions show how
+input uncertainty widens each box.
 
 ## Script Examples
 

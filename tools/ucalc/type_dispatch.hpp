@@ -18,6 +18,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <type_traits>
+#include <cstdint>
 
 namespace sw { namespace ucalc {
 
@@ -34,6 +35,18 @@ struct Value {
 	std::string color_rep;    // color_print() output (ANSI-colored bit fields)
 	std::string components_rep; // components() output
 	std::string type_name;    // type_tag() output
+	// ubit tile types (tiles.hpp): what is known about the true value
+	int tile_kind = 0;              // 0: not a tile, 1: a single tile, 2: a tile interval
+	bool ubit = false;              // inexact: an open tile, or a box wider than one point
+	std::uint64_t tile_count = 0;   // tiles in the set (the entire 64-bit line is 2^64 - 1)
+	std::string tile_sign;          // negative, zero, positive or undecidable
+	long double tile_lower = 0;     // the bounds of the set, rounded outward where long double
+	long double tile_upper = 0;     // cannot hold the lattice: how another tile type reads it
+	bool tile_lower_open = false;
+	bool tile_upper_open = false;
+	bool tile_encloses = false;     // the set is known to contain the true value: always for a
+	                                // tile interval, for a single tile only when no open operand
+	                                // went through its sticky-flag arithmetic
 
 	Value() : num(0.0) {}
 	explicit Value(double v) : num(v) {}
@@ -75,6 +88,7 @@ struct TypeOps {
 	std::string type_tag;
 	int max_digits10;       // native precision: std::numeric_limits<T>::max_digits10
 	int nbits;              // total bit width of the type
+	std::string family;     // "" for rounded types, "tile" or "tile interval" for the ubit types
 
 	std::function<Value(double)>             from_double;
 	std::function<Value(const Value&, const Value&)> add;
@@ -98,6 +112,11 @@ struct TypeOps {
 	// High-precision constant lookup: returns a Value for a named constant
 	// using the type's own high-precision definition when available
 	std::function<Value(const std::string&)> constant;
+
+	// Optional hooks for the ubit tile types (null for rounded types)
+	std::function<Value(const std::string&)> from_literal;           // decimal text, read exactly
+	std::function<Value(const Value&, const Value&)> hull;           // [a, b]: the box holding both
+	std::function<Value(const Value&)>       above;                  // x~: the open tile just above x
 
 	// Type properties for range/precision display
 	std::function<Value()>                  maxpos;    // largest positive

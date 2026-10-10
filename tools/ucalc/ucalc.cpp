@@ -56,6 +56,8 @@
 #define DD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
 #define TD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
 #define QD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
+#define AREAL_THROW_ARITHMETIC_EXCEPTION 0
+#define POXEL_THROW_ARITHMETIC_EXCEPTION 0
 
 #include <universal/utility/directives.hpp>
 #include <universal/native/ieee754.hpp>
@@ -80,6 +82,10 @@
 #include <universal/number/dd_cascade/dd_cascade.hpp>
 #include <universal/number/td_cascade/td_cascade.hpp>
 #include <universal/number/qd_cascade/qd_cascade.hpp>
+
+// ubit tile types (areal, poxel) and their tile intervals
+#include <universal/number/areal/areal.hpp>
+#include <universal/number/poxel/poxel.hpp>
 
 // Block format types for quantize/block commands
 #include <universal/number/mxfloat/mxfloat.hpp>
@@ -211,6 +217,9 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  Constants:     phi, e, pi, ln2, ln10, sqrt2, sqrt3, sqrt5 (quad-double precision)\n";
 	std::cout << "  Variables:     x = 1/3  (then use x in expressions)\n";
 	std::cout << "  Semicolons:    type posit32; 1/3 + 1/3 + 1/3\n";
+	std::cout << "  Tile types:    areal32, poxel32, ... (one tile), areal32i, poxel32i, ... (enclosures)\n";
+	std::cout << "                 [a, b]  the box from a to b      hull(a, b)  same, as a function\n";
+	std::cout << "                 x~      the open tile just above an exact x, e.g. b = 100~\n";
 	std::cout << "\n";
 	std::cout << "CLI flags:\n";
 	std::cout << "  --json         JSON output for all commands\n";
@@ -311,6 +320,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << "{\"alias\":\"" << json_escape(alias) << "\""
 				          << ",\"type_tag\":\"" << json_escape(ops->type_tag) << "\""
 				          << ",\"nbits\":" << ops->nbits
+				          << ",\"family\":\"" << json_escape(ops->family) << "\""
 				          << ",\"active\":" << (alias == state.active_type ? "true" : "false")
 				          << "}";
 			}
@@ -326,8 +336,16 @@ static bool process_command(const std::string& input, ReplState& state) {
 			}
 		} else {
 			std::cout << "Available types:\n";
+			std::string family;
 			for (const auto& alias : state.registry.aliases()) {
 				const TypeOps* ops = state.registry.find(alias);
+				if (ops->family != family) {
+					family = ops->family;
+					if (family == "tile")
+						std::cout << "\nTile types (ubit: an exact point or the open interval to the next; sticky flag, not an enclosure):\n";
+					else if (family == "tile interval")
+						std::cout << "\nTile interval types (a guaranteed enclosure: a run of tiles; [a, b] and x~ literals):\n";
+				}
 				std::string marker = (alias == state.active_type) ? " *" : "";
 				std::cout << "  " << std::left << std::setw(12) << alias
 				          << ops->type_tag << marker << "\n";
@@ -421,8 +439,14 @@ static bool process_command(const std::string& input, ReplState& state) {
 				          << ",\"value\":\"" << json_escape(result.native_rep) << "\""
 				          << ",\"decimal\":" << json_number(result.num)
 				          << ",\"binary\":\"" << json_escape(result.binary_rep) << "\""
-				          << ",\"components\":\"" << json_escape(result.components_rep) << "\""
-				          << "}\n";
+				          << ",\"components\":\"" << json_escape(result.components_rep) << "\"";
+				if (result.tile_kind != 0) {
+					std::cout << ",\"tiles\":" << result.tile_count
+					          << ",\"sign\":\"" << result.tile_sign << "\""
+					          << ",\"ubit\":" << (result.ubit ? "true" : "false")
+					          << ",\"encloses\":" << (result.tile_encloses ? "true" : "false");
+				}
+				std::cout << "}\n";
 			} else if (fmt == OutputFormat::csv) {
 				std::cout << "expression,type,value,decimal,binary,components\n";
 				std::cout << csv_quote(expr) << ","
@@ -435,8 +459,12 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << result.native_rep << "\n";
 			} else {
 				std::cout << "  value:      " << result.native_rep << "\n";
+				// A tile value is a set: report what is known about it, not a midpoint
+				if (result.tile_kind != 0) {
+					std::cout << "  tiles:      " << result.tile_count << ", sign " << result.tile_sign << "\n";
+				}
 				// Show full decimal when native_rep loses distinguishing digits
-				{
+				else {
 					std::ostringstream dss;
 					dss << std::setprecision(17) << result.num;
 					std::string decimal = dss.str();

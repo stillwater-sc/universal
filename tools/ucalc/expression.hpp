@@ -28,6 +28,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cmath>
+#include <cstdlib>
 #include <cctype>
 
 #include "type_dispatch.hpp"
@@ -343,7 +344,7 @@ inline std::optional<ASTMatch> find_pattern(
 // Token types
 enum class TokenType {
 	Number, Ident, Plus, Minus, Star, Slash, Caret,
-	LParen, RParen, Comma, Equals, End
+	LParen, RParen, LBracket, RBracket, Tilde, Comma, Equals, End
 };
 
 struct Token {
@@ -382,6 +383,9 @@ public:
 				case '^': tokens.emplace_back(TokenType::Caret, "^"); break;
 				case '(': tokens.emplace_back(TokenType::LParen, "("); break;
 				case ')': tokens.emplace_back(TokenType::RParen, ")"); break;
+				case '[': tokens.emplace_back(TokenType::LBracket, "["); break;
+				case ']': tokens.emplace_back(TokenType::RBracket, "]"); break;
+				case '~': tokens.emplace_back(TokenType::Tilde, "~"); break;
 				case ',': tokens.emplace_back(TokenType::Comma, ","); break;
 				case '=': tokens.emplace_back(TokenType::Equals, "="); break;
 				default:
@@ -422,7 +426,9 @@ private:
 			while (pos_ < input_.size() && std::isdigit(input_[pos_])) ++pos_;
 		}
 		std::string text = input_.substr(start, pos_ - start);
-		double val = std::stod(text);
+		// strtod, not stod: a literal beyond the double range reads as inf or 0 instead of
+		// failing, and the tile types read the text itself, where 1e400 is (maxpos, inf)
+		double val = std::strtod(text.c_str(), nullptr);
 		return Token(TokenType::Number, text, val);
 	}
 
@@ -655,16 +661,38 @@ private:
 				}
 			}
 			expect(TokenType::RParen, "')'");
-			return call_function(fname, args);
+			return apply_tilde(call_function(fname, args));
 		}
-		return parse_primary();
+		return apply_tilde(parse_primary());
+	}
+
+	// x~: the open tile just above an exact x (tile types only)
+	Value apply_tilde(Value v) {
+		while (current().type == TokenType::Tilde) {
+			advance();
+			v = call_function("above", { v });
+		}
+		return v;
 	}
 
 	Value parse_primary() {
 		if (current().type == TokenType::Number) {
 			double val = current().number_value;
+			std::string text = current().text;
 			advance();
+			// types that read decimal text exactly (the tile types) skip the double
+			if (ops_->from_literal) return ops_->from_literal(text);
 			return ops_->from_double(val);
+		}
+
+		// [a, b]: the box from a to b (tile interval types)
+		if (current().type == TokenType::LBracket) {
+			advance();
+			Value lo = parse_expr();
+			expect(TokenType::Comma, "','");
+			Value hi = parse_expr();
+			expect(TokenType::RBracket, "']'");
+			return call_function("hull", { lo, hi });
 		}
 
 		if (current().type == TokenType::Ident) {
@@ -714,9 +742,17 @@ private:
 			if (name == "asin") { r = ops_->fn_asin(args[0]); record_unary("asin", args[0], r); return r; }
 			if (name == "acos") { r = ops_->fn_acos(args[0]); record_unary("acos", args[0], r); return r; }
 			if (name == "atan") { r = ops_->fn_atan(args[0]); record_unary("atan", args[0], r); return r; }
+			if (name == "above") {
+				if (!ops_->above) throw std::runtime_error("x~ and above(x) need a tile type, such as poxel32 or poxel32i");
+				r = ops_->above(args[0]); record_unary("above", args[0], r); return r;
+			}
 		}
 		if (args.size() == 2) {
 			if (name == "pow")  { r = ops_->fn_pow(args[0], args[1]); record_binary("pow", ",", args[0], args[1], r); return r; }
+			if (name == "hull") {
+				if (!ops_->hull) throw std::runtime_error("[a, b] and hull(a, b) need a tile interval type, such as poxel32i");
+				r = ops_->hull(args[0], args[1]); record_binary("hull", ",", args[0], args[1], r); return r;
+			}
 		}
 		throw std::runtime_error("unknown function or wrong arity: " + name +
 		                         "(" + std::to_string(args.size()) + " args)");
@@ -798,9 +834,18 @@ private:
 				}
 			}
 			expect(TokenType::RParen, "')'");
-			return ASTNode::make_function(fname, std::move(args));
+			return ast_tilde(ASTNode::make_function(fname, std::move(args)));
 		}
-		return ast_primary();
+		return ast_tilde(ast_primary());
+	}
+
+	std::shared_ptr<ASTNode> ast_tilde(std::shared_ptr<ASTNode> node) {
+		while (current().type == TokenType::Tilde) {
+			advance();
+			std::vector<std::shared_ptr<ASTNode>> args{ std::move(node) };
+			node = ASTNode::make_function("above", std::move(args));
+		}
+		return node;
 	}
 
 	std::shared_ptr<ASTNode> ast_primary() {
@@ -825,6 +870,15 @@ private:
 			auto node = ast_expr();
 			expect(TokenType::RParen, "')'");
 			return node;
+		}
+		if (current().type == TokenType::LBracket) {
+			advance();
+			std::vector<std::shared_ptr<ASTNode>> args;
+			args.push_back(ast_expr());
+			expect(TokenType::Comma, "','");
+			args.push_back(ast_expr());
+			expect(TokenType::RBracket, "']'");
+			return ASTNode::make_function("hull", std::move(args));
 		}
 		throw std::runtime_error("expected number, variable, or '(', got '" + current().text + "'");
 	}

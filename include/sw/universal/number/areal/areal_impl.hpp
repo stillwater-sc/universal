@@ -495,7 +495,7 @@ public:
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 				// -exponent because we are right shifting and exponent in this range is negative
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				if (shiftRight > 0) {		// do we need to round?
+				if (shiftRight >= 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
 					raw >>= shiftRight + adjustment;
 				}
@@ -519,7 +519,7 @@ public:
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 				// -exponent because we are right shifting and exponent in this range is negative
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				if (shiftRight > 0) {		// do we need to round?
+				if (shiftRight >= 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
 					raw >>= shiftRight + adjustment;
 				}
@@ -537,7 +537,7 @@ public:
 			biasedExponent = static_cast<uint32_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
 
 			// fraction processing
-			if (shiftRight > 0) {		// do we need to round?
+			if (shiftRight >= 0) {		// do we need to round?
 				// we have 23 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
 				// ...  lsb | sticky      ubit
@@ -711,7 +711,7 @@ public:
 			std::cout << "bias shift      : " << subnormal_reciprocal_shift[es] << std::endl;
 			std::cout << "adjustment      : " << adjustment << std::endl;
 #endif
-			if (shiftRight > 0) {		// do we need to round?
+			if (shiftRight >= 0) {		// do we need to round?
 				ubit = (mask & raw) != 0;
 				raw >>= (static_cast<std::int64_t>(shiftRight) + adjustment);
 			}
@@ -735,7 +735,7 @@ public:
 			else {
 				mask = 0x000F'FFFF'FFFF'FFFFull >> fbits;
 			}
-			if (shiftRight > 0) {		// do we need to round?
+			if (shiftRight >= 0) {		// do we need to round?
 				// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
 				// ...  lsb | sticky      ubit
