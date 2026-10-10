@@ -19,6 +19,7 @@
 #include <sstream>
 
 #include "tiles.hpp"
+#include "oracle.hpp"
 
 namespace sw { namespace ucalc {
 
@@ -232,14 +233,14 @@ inline TypeRegistry build_default_registry() {
 	reg.add("poxel16",  register_tile_type<poxel<16, 2, uint8_t>>("poxel16"));
 	reg.add("poxel32",  register_tile_type<poxel<32, 2, uint8_t>>("poxel32"));
 	reg.add("poxel64",  register_tile_type<poxel<64, 2, uint8_t>>("poxel64"));
-	reg.add("areal8i",  register_tile_interval_type<areal<8, 2, uint8_t>>("areal8i"));
-	reg.add("areal16i", register_tile_interval_type<areal<16, 5, uint8_t>>("areal16i"));
-	reg.add("areal32i", register_tile_interval_type<areal<32, 8, uint8_t>>("areal32i"));
-	reg.add("areal64i", register_tile_interval_type<areal<64, 11, uint8_t>>("areal64i"));
-	reg.add("poxel8i",  register_tile_interval_type<poxel<8, 2, uint8_t>>("poxel8i"));
-	reg.add("poxel16i", register_tile_interval_type<poxel<16, 2, uint8_t>>("poxel16i"));
-	reg.add("poxel32i", register_tile_interval_type<poxel<32, 2, uint8_t>>("poxel32i"));
-	reg.add("poxel64i", register_tile_interval_type<poxel<64, 2, uint8_t>>("poxel64i"));
+	reg.add("areal8i", with_oracle<areal<8, 2, uint8_t>>(register_tile_interval_type<areal<8, 2, uint8_t>>("areal8i")));
+	reg.add("areal16i", with_oracle<areal<16, 5, uint8_t>>(register_tile_interval_type<areal<16, 5, uint8_t>>("areal16i")));
+	reg.add("areal32i", with_oracle<areal<32, 8, uint8_t>>(register_tile_interval_type<areal<32, 8, uint8_t>>("areal32i")));
+	reg.add("areal64i", with_oracle<areal<64, 11, uint8_t>>(register_tile_interval_type<areal<64, 11, uint8_t>>("areal64i")));
+	reg.add("poxel8i", with_oracle<poxel<8, 2, uint8_t>>(register_tile_interval_type<poxel<8, 2, uint8_t>>("poxel8i")));
+	reg.add("poxel16i", with_oracle<poxel<16, 2, uint8_t>>(register_tile_interval_type<poxel<16, 2, uint8_t>>("poxel16i")));
+	reg.add("poxel32i", with_oracle<poxel<32, 2, uint8_t>>(register_tile_interval_type<poxel<32, 2, uint8_t>>("poxel32i")));
+	reg.add("poxel64i", with_oracle<poxel<64, 2, uint8_t>>(register_tile_interval_type<poxel<64, 2, uint8_t>>("poxel64i")));
 
 	return reg;
 }

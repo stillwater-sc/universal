@@ -969,6 +969,113 @@ try {
 	}
 
 	// ================================================================
+	// The tightest box: the oracle (#1654 Phase 3)
+	// ================================================================
+	{
+		const std::string r1w = "(-b + sqrt(b*b - 4*a*c)) / (2*a)";
+		const std::string r1r = "(2*c) / (-b - sqrt(b*b - 4*a*c))";
+		const std::string r2  = "(-b - sqrt(b*b - 4*a*c)) / (2*a)";
+		// the computed box and the oracle's, for one type
+		auto both = [&](const ExpressionEvaluator& session, const std::string& type, const std::string& expr) {
+			const TypeOps& ops = reg.get(type);
+			ExpressionEvaluator eval = evaluator_for(ops, session);
+			const Value v = eval.evaluate(expr);
+			return std::make_pair(v, ops.tightest(session, expr));
+		};
+		// soundness: the tightest box lies inside every valid enclosure, so inside the computed box
+		auto inside = [&](const std::string& type, const Value& v, const TightestReport& t) {
+			using sw::universal::tile_interval;
+			std::int64_t lo = 0, hi = 0;
+			bool found = false;
+			auto keys = [&](auto tag) {
+				using Tile = decltype(tag);
+				if (const auto* p = std::any_cast<tile_interval<Tile>>(&v.native)) { lo = p->lo_key(); hi = p->hi_key(); found = true; }
+			};
+			keys(areal<16, 5, uint8_t>{}); keys(areal<32, 8, uint8_t>{}); keys(areal<64, 11, uint8_t>{});
+			keys(poxel<16, 2, uint8_t>{}); keys(poxel<32, 2, uint8_t>{}); keys(poxel<64, 2, uint8_t>{});
+			if (!found || t.lo_key < lo || t.hi_key > hi) {
+				std::cerr << "FAIL: tightest box " << t.text << " is not inside the computed " << v.native_rep << " in " << type << "\n";
+				++nrOfFailedTests;
+			}
+		};
+
+		// exact inputs: one tile, located; the as-written formula is 1365 tiles at 32 bits
+		ExpressionEvaluator exact(reg.get("poxel32i"));
+		for (const char* d : { "a = 3", "b = 100", "c = 2" }) exact.evaluate(d);
+		for (const std::string& type : default_box_types()) {
+			for (const std::string& e : { r1w, r1r, r2 }) {
+				const auto [v, t] = both(exact, type, e);
+				if (!t.available || !t.proven || t.inner_tiles != 1 || t.outer_tiles != 1) {
+					std::cerr << "FAIL: exact-input tightest box in " << type << " for " << e << ": " << t.inner_tiles << "-" << t.outer_tiles << " " << t.note << "\n";
+					++nrOfFailedTests;
+				}
+				inside(type, v, t);
+			}
+		}
+
+		// ULP-wide inputs: the tightest box depends on the function, not on how it is written,
+		// so both forms of r1 must agree -- and match #1649's corner polynomials
+		ExpressionEvaluator wide(reg.get("poxel32i"));
+		for (const char* d : { "a = 3~", "b = 100~", "c = 2~" }) wide.evaluate(d);
+		const struct { const char* type; std::uint64_t r1, r2; } tightest[] = {
+			{ "areal16i", 7, 3 }, { "poxel16i", 5, 3 }, { "areal32i", 5, 5 },
+			{ "poxel32i", 5, 3 }, { "areal64i", 5, 5 }, { "poxel64i", 5, 3 },
+		};
+		for (const auto& row : tightest) {
+			const auto [vw, tw] = both(wide, row.type, r1w);
+			const auto [vr, tr] = both(wide, row.type, r1r);
+			const auto [v2, t2] = both(wide, row.type, r2);
+			const bool ok = tw.proven && tr.proven && t2.proven && tw.outer_tiles == row.r1 && tr.outer_tiles == row.r1
+			             && t2.outer_tiles == row.r2 && tw.lo_key == tr.lo_key && tw.hi_key == tr.hi_key;
+			if (!ok) {
+				std::cerr << "FAIL: ULP-wide tightest in " << row.type << ": r1 as written " << tw.inner_tiles << "-" << tw.outer_tiles
+				          << ", rearranged " << tr.inner_tiles << "-" << tr.outer_tiles << ", r2 " << t2.inner_tiles << "-" << t2.outer_tiles
+				          << " (expected " << row.r1 << ", " << row.r1 << ", " << row.r2 << ", all proven)\n";
+				++nrOfFailedTests;
+			}
+			inside(row.type, vw, tw);
+			inside(row.type, vr, tr);
+			inside(row.type, v2, t2);
+		}
+
+		// not monotone: x*x over [-1, 3] has its minimum 0 at a point the bisection reaches
+		// (the midpoint of [-1, 3] is 1, then 0): proven [0, 9], although x*x computes [-3, 9]
+		ExpressionEvaluator sq(reg.get("poxel32i"));
+		sq.evaluate("x = [-1, 3]");
+		{
+			const auto [v, t] = both(sq, "poxel16i", "x*x");
+			const auto [p, tp] = both(sq, "poxel16i", "x^2");
+			if (!t.proven || t.text != "[0, 9]" || p.tile_count != t.outer_tiles || v.tile_count <= t.outer_tiles) {
+				std::cerr << "FAIL: x*x over [-1, 3]: tightest " << t.text << " (" << t.note << "), x^2 " << p.native_rep << ", x*x " << v.native_rep << "\n";
+				++nrOfFailedTests;
+			}
+			inside("poxel16i", v, t);
+			inside("poxel16i", p, tp);
+		}
+		// over [-1, 2] no dyadic midpoint is 0: bracketed to within the one tile at 0
+		sq.evaluate("x = [-1, 2]");
+		{
+			const auto [v, t] = both(sq, "poxel16i", "x^2");
+			if (!t.available || t.proven || t.outer_tiles - t.inner_tiles != 1) {
+				std::cerr << "FAIL: x^2 over [-1, 2] should be bracketed to one tile: " << t.inner_tiles << "-" << t.outer_tiles << "\n";
+				++nrOfFailedTests;
+			}
+			inside("poxel16i", v, t);
+		}
+
+		// no exact enclosure for log; (1/3) * 3 is one tile, unresolved among the three around 1
+		ExpressionEvaluator plain(reg.get("poxel32i"));
+		{
+			const TightestReport tl = reg.get("poxel32i").tightest(plain, "log(2)");
+			const TightestReport tt = reg.get("poxel32i").tightest(plain, "(1/3) * 3");
+			if (tl.available || tl.note.empty() || !tt.available || tt.proven || tt.outer_tiles != 1) {
+				std::cerr << "FAIL: log(2) should have no tightest box, (1/3)*3 one unresolved tile\n";
+				++nrOfFailedTests;
+			}
+		}
+	}
+
+	// ================================================================
 	// Report
 	// ================================================================
 	if (nrOfFailedTests > 0) {

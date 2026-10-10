@@ -63,6 +63,23 @@ struct Value {
 		: num(v), native_rep(nat), binary_rep(bin), components_rep(comp), type_name(tag) {}
 };
 
+// The tightest box a tile interval type can state for an expression (oracle.hpp).  For point
+// inputs it is one tile; for set inputs it is bracketed: inner_tiles <= tightest <= outer_tiles.
+struct TightestReport {
+	bool available = false;         // false: no exact enclosure exists for the expression (see note)
+	bool proven = false;            // inner == outer, or the point's tile located
+	std::uint64_t inner_tiles = 0;
+	std::uint64_t outer_tiles = 0;
+	int inputs = 0;                 // uncertain inputs
+	int subdivisions = 0;           // interval evaluations the search used
+	std::string text;               // the outer box
+	std::int64_t lo_key = 0;        // its tile keys, in the type's tile order
+	std::int64_t hi_key = 0;
+	std::string note;
+};
+
+class ExpressionEvaluator;
+
 // Extract native type T from a Value, falling back to double conversion
 template<typename T>
 T extract(const Value& v) {
@@ -117,6 +134,8 @@ struct TypeOps {
 	std::function<Value(const std::string&)> from_literal;           // decimal text, read exactly
 	std::function<Value(const Value&, const Value&)> hull;           // [a, b]: the box holding both
 	std::function<Value(const Value&)>       above;                  // x~: the open tile just above x
+	// the tightest box this tile interval type can state for an expression over a session's inputs
+	std::function<TightestReport(const ExpressionEvaluator&, const std::string&)> tightest;
 
 	// Type properties for range/precision display
 	std::function<Value()>                  maxpos;    // largest positive
