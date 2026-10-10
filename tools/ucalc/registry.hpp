@@ -18,6 +18,8 @@
 #include <limits>
 #include <sstream>
 
+#include "tiles.hpp"
+
 namespace sw { namespace ucalc {
 
 // --- Native float helpers -----------------------------------------
@@ -216,6 +218,28 @@ inline TypeRegistry build_default_registry() {
 	reg.add("td_cascade", register_type<td_cascade>("td_cascade"));
 	reg.add("qd",         register_type<qd>("qd"));
 	reg.add("qd_cascade", register_type<qd_cascade>("qd_cascade"));
+
+	// ubit tile types: a lattice point or the open interval to the next one.
+	// areal is the float lattice, poxel the posit lattice (es = 2, as the Posit Standard).
+	// The plain names are single tiles with sticky-flag arithmetic: the ubit says "inexact",
+	// but the tile is not an enclosure.  The 'i' names are tile intervals: guaranteed
+	// enclosures, the types to use for uncertainty and decidability questions.
+	reg.add("areal8",   register_tile_type<areal<8, 2, uint8_t>>("areal8"));
+	reg.add("areal16",  register_tile_type<areal<16, 5, uint8_t>>("areal16"));
+	reg.add("areal32",  register_tile_type<areal<32, 8, uint8_t>>("areal32"));
+	reg.add("areal64",  register_tile_type<areal<64, 11, uint8_t>>("areal64"));
+	reg.add("poxel8",   register_tile_type<poxel<8, 2, uint8_t>>("poxel8"));
+	reg.add("poxel16",  register_tile_type<poxel<16, 2, uint8_t>>("poxel16"));
+	reg.add("poxel32",  register_tile_type<poxel<32, 2, uint8_t>>("poxel32"));
+	reg.add("poxel64",  register_tile_type<poxel<64, 2, uint8_t>>("poxel64"));
+	reg.add("areal8i",  register_tile_interval_type<areal<8, 2, uint8_t>>("areal8i"));
+	reg.add("areal16i", register_tile_interval_type<areal<16, 5, uint8_t>>("areal16i"));
+	reg.add("areal32i", register_tile_interval_type<areal<32, 8, uint8_t>>("areal32i"));
+	reg.add("areal64i", register_tile_interval_type<areal<64, 11, uint8_t>>("areal64i"));
+	reg.add("poxel8i",  register_tile_interval_type<poxel<8, 2, uint8_t>>("poxel8i"));
+	reg.add("poxel16i", register_tile_interval_type<poxel<16, 2, uint8_t>>("poxel16i"));
+	reg.add("poxel32i", register_tile_interval_type<poxel<32, 2, uint8_t>>("poxel32i"));
+	reg.add("poxel64i", register_tile_interval_type<poxel<64, 2, uint8_t>>("poxel64i"));
 
 	return reg;
 }

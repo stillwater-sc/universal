@@ -13,6 +13,8 @@
 #include <string>
 #include <cmath>
 #include <cstdlib>
+#include <cstdint>
+#include <random>
 
 // Suppress exceptions -- regression catches errors via output
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
@@ -31,6 +33,8 @@
 #define DD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
 #define TD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
 #define QD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
+#define AREAL_THROW_ARITHMETIC_EXCEPTION 0
+#define POXEL_THROW_ARITHMETIC_EXCEPTION 0
 
 #include <universal/utility/directives.hpp>
 #include <universal/native/ieee754.hpp>
@@ -55,6 +59,10 @@
 // qd_cascade must be included BEFORE type_dispatch.hpp for ADL to find
 // its type_tag -- the header order here matches ucalc.cpp
 #include <universal/number/qd_cascade/qd_cascade.hpp>
+
+// ubit tile types (areal, poxel) and their tile intervals
+#include <universal/number/areal/areal.hpp>
+#include <universal/number/poxel/poxel.hpp>
 
 #include "type_dispatch.hpp"
 #include "expression.hpp"
@@ -151,6 +159,102 @@ void check_throws(TypeRegistry& reg, const std::string& type,
 		++nrOfFailedTests;
 	} catch (...) {
 		// expected
+	}
+}
+
+// the exact decimal text of a finite double: M * 2^e as M * 5^-e / 10^-e for e < 0
+std::string exact_decimal(double v) {
+	if (v == 0.0) return "0";
+	int e2 = 0;
+	const double f = std::frexp(std::fabs(v), &e2);              // f in [0.5, 1)
+	std::uint64_t m = static_cast<std::uint64_t>(std::ldexp(f, 53));
+	int e = e2 - 53;
+	while (m != 0 && (m & 1u) == 0) { m >>= 1; ++e; }
+	std::string digits = std::to_string(m);                       // little arithmetic on decimal strings
+	auto times = [&digits](unsigned k) {
+		unsigned carry = 0;
+		for (auto it = digits.rbegin(); it != digits.rend(); ++it) {
+			const unsigned d = static_cast<unsigned>(*it - '0') * k + carry;
+			*it = static_cast<char>('0' + d % 10u);
+			carry = d / 10u;
+		}
+		while (carry != 0) { digits.insert(digits.begin(), static_cast<char>('0' + carry % 10u)); carry /= 10u; }
+	};
+	std::string text;
+	if (e >= 0) {
+		for (int i = 0; i < e; ++i) times(2);
+		text = digits;
+	}
+	else {
+		for (int i = 0; i < -e; ++i) times(5);
+		const std::size_t point = static_cast<std::size_t>(-e);
+		if (digits.size() <= point) digits.insert(0, point - digits.size() + 1, '0');
+		text = digits.substr(0, digits.size() - point) + "." + digits.substr(digits.size() - point);
+	}
+	return (v < 0 ? "-" : "") + text;
+}
+
+// every lattice point and every open tile of a small tile type, read back from exact decimal
+// text: the point itself, the midpoint of each open tile, and a double just past each point
+template<typename Tile>
+void check_literal_tiles(const std::string& name) {
+	using T = tile_traits<Tile>;
+	using I = tile_interval<Tile>;
+	int failures = 0;
+	auto expect = [&](const std::string& text, std::int64_t k) {
+		const I box = tiles::literal_box<Tile>(text);
+		if (box.isnan() || box.lo_key() != k || box.hi_key() != k) {
+			if (failures++ < 5) std::cerr << "FAIL: " << name << " literal " << text << " -> " << tiles::box_text(box) << ", expected tile key " << k << "\n";
+		}
+	};
+	for (std::int64_t k = -T::kmax + 1; k < T::kmax; ++k) {
+		const double lo = I::from_keys(k, k).template lower<double>(), hi = I::from_keys(k, k).template upper<double>();
+		if ((k & 1) == 0) {
+			expect(exact_decimal(lo), k);
+			const double past = std::nextafter(lo, std::numeric_limits<double>::infinity());
+			expect(exact_decimal(past), k + 1);
+		}
+		else {
+			expect(exact_decimal((lo + hi) / 2), k);
+		}
+	}
+	nrOfFailedTests += failures;
+}
+
+// sampled doubles in wide types: the literal of a double's exact text must give the tile
+// that the type's own conversion from double gives
+template<typename Tile>
+void check_literal_doubles(const std::string& name) {
+	using I = tile_interval<Tile>;
+	std::mt19937_64 rng(1654);
+	std::uniform_real_distribution<double> frac(-1.0, 1.0);
+	std::uniform_int_distribution<int> scale(-60, 60);
+	int failures = 0;
+	for (int i = 0; i < 2000; ++i) {
+		const double d = std::ldexp(frac(rng), scale(rng));
+		const I box = tiles::literal_box<Tile>(exact_decimal(d));
+		const I ref(Tile{ d });
+		if (box.isnan() || box.lo_key() != ref.lo_key() || box.hi_key() != ref.hi_key()) {
+			if (failures++ < 5) std::cerr << "FAIL: " << name << " literal " << exact_decimal(d) << " -> " << tiles::box_text(box) << ", expected " << tiles::box_text(ref) << "\n";
+		}
+	}
+	nrOfFailedTests += failures;
+}
+
+// the number of tiles and the sign verdict of an expression in a tile interval type
+void check_box(TypeRegistry& reg, const std::string& type, const std::string& expr,
+               std::uint64_t tiles, const std::string& sign, const std::string& label) {
+	try {
+		Value v = eval_in(reg, type, expr);
+		if (v.tile_kind != 2 || v.tile_count != tiles || v.tile_sign != sign) {
+			std::cerr << "FAIL: " << label << ": " << type << "> " << expr << " = " << v.native_rep
+			          << " (" << v.tile_count << " tiles, sign " << v.tile_sign << "; expected "
+			          << tiles << " tiles, sign " << sign << ")\n";
+			++nrOfFailedTests;
+		}
+	} catch (const std::exception& ex) {
+		std::cerr << "FAIL: " << label << ": " << type << "> " << expr << " threw: " << ex.what() << "\n";
+		++nrOfFailedTests;
 	}
 }
 
@@ -492,6 +596,102 @@ try {
 			          << lin.type_name << "\n";
 			++nrOfFailedTests;
 		}
+	}
+
+	// ================================================================
+	// Tile types: areal and poxel, single tiles and tile intervals (#1654)
+	// ================================================================
+	{
+		// literals are read from their decimal text, into the tile that contains them
+		check_literal_tiles<areal<8, 2, uint8_t>>("areal8");
+		check_literal_tiles<areal<16, 5, uint8_t>>("areal16");
+		check_literal_tiles<poxel<8, 2, uint8_t>>("poxel8");
+		check_literal_tiles<poxel<16, 2, uint8_t>>("poxel16");
+		check_literal_doubles<poxel<32, 2, uint8_t>>("poxel32");
+		check_literal_doubles<poxel<64, 2, uint8_t>>("poxel64");
+		check_literal_doubles<areal<64, 11, uint8_t>>("areal64");
+
+		// one tenth is one open tile even where the lattice is finer than double's
+		check_box(reg, "poxel64i", "0.1", 1, "positive", "poxel64i 0.1");
+		check_box(reg, "poxel64i", "-0.1", 1, "negative", "poxel64i -0.1");
+		check_box(reg, "poxel64i", "pi", 1, "positive", "poxel64i pi");
+		check_box(reg, "areal64i", "0.1", 1, "positive", "areal64i 0.1");
+		check_contains(reg, "poxel64i", "0x10", "16", "poxel64i hex literal is exact");
+		check_box(reg, "poxel64i", "0x10", 1, "positive", "poxel64i hex literal is one tile");
+		check_contains(reg, "poxel32i", "1e400", "inf)", "poxel32i 1e400 is (maxpos, inf)");
+		check_contains(reg, "poxel32i", "1e-400", "(0, ", "poxel32i 1e-400 is (0, minpos)");
+
+		// interval syntax: [a, b], hull(a, b), x~
+		check_contains(reg, "poxel32i", "[1, 2] * [-3, 4]", "[-6, 8]", "box product");
+		check_contains(reg, "poxel32i", "[-2, 3]^2", "[0, 9]", "box square is non-negative");
+		check_contains(reg, "poxel32i", "hull(1, 2)", "[1, 2]", "hull function");
+		check_contains(reg, "poxel32i", "abs([-2, 1])", "[0, 2]", "box abs");
+		check_box(reg, "poxel32i", "3~", 1, "positive", "3~ is one open tile");
+		check_contains(reg, "poxel32i", "3~", "(3, ", "3~ lies above 3");
+		check_contains(reg, "poxel32i", "1/[-1, 1]", "(-inf, inf)", "division by a box holding zero");
+		check_contains(reg, "poxel32i", "exp(1)", "(-inf, inf)", "no enclosing exp: the entire line");
+		check_box(reg, "poxel64i", "1/[-1, 1]", ~std::uint64_t(0), "undecidable", "entire 64-bit line counts 2^64 - 1 tiles");
+		check_throws(reg, "posit32", "[1, 2]", "interval literal in a rounded type");
+		check_throws(reg, "posit32", "3~", "tilde in a rounded type");
+		check_throws(reg, "poxel32", "[1, 2]", "interval literal in a single-tile type");
+
+		// single tiles: sticky-flag arithmetic, the ubit says inexact
+		check_contains(reg, "poxel16", "100^2", "(9984, 10048)", "poxel16 100^2 is not on the lattice");
+		{
+			Value v = eval_in(reg, "poxel32", "(1/3) * 3");
+			if (v.tile_kind != 1 || !v.ubit) {
+				std::cerr << "FAIL: poxel32 (1/3)*3 should be an open tile: " << v.native_rep << "\n";
+				++nrOfFailedTests;
+			}
+			Value w = eval_in(reg, "poxel32", "sqrt(4)");
+			if (w.tile_kind != 1 || w.ubit || w.native_rep != "2") {
+				std::cerr << "FAIL: poxel32 sqrt(4) should be the exact tile 2: " << w.native_rep << "\n";
+				++nrOfFailedTests;
+			}
+		}
+
+		// the reference problem: 3x^2 + 100x + 2 = 0, as measured by
+		// applications/precision/ubit/quadratic_roots.cpp (#1649)
+		struct row { const char* type; std::uint64_t written, rearranged, r2; const char* written_sign; };
+		const std::string r1w = "(-b + sqrt(b*b - 4*a*c)) / (2*a)";
+		const std::string r1r = "(2*c) / (-b - sqrt(b*b - 4*a*c))";
+		const std::string r2  = "(-b - sqrt(b*b - 4*a*c)) / (2*a)";
+		const row exact[] = {
+			{ "poxel16i", 16385, 7, 3, "undecidable" },
+			{ "areal16i", 10581, 3, 3, "negative" },
+			{ "areal32i", 1365, 3, 1, "negative" },
+			{ "poxel32i", 1365, 3, 3, "negative" },
+			{ "areal64i", 1365, 3, 1, "negative" },
+			{ "poxel64i", 1367, 3, 3, "negative" },
+		};
+		const row ulp_wide[] = {
+			{ "poxel16i", 17067, 9, 7, "undecidable" },
+			{ "areal16i", 20821, 7, 5, "undecidable" },
+			{ "areal32i", 5465, 7, 5, "negative" },
+			{ "poxel32i", 9559, 9, 7, "negative" },
+			{ "areal64i", 5465, 9, 7, "negative" },
+			{ "poxel64i", 9559, 9, 7, "negative" },
+		};
+		auto run = [&](const row& r, const std::string& inputs, const std::string& label) {
+			const TypeOps& ops = reg.get(r.type);
+			ExpressionEvaluator eval(ops);
+			std::stringstream statements(inputs);
+			for (std::string statement; std::getline(statements, statement, ';');) eval.evaluate(statement);
+			auto expect = [&](const std::string& expr, std::uint64_t tiles, const std::string& sign, const std::string& what) {
+				Value v = eval.evaluate(expr);
+				if (v.tile_count != tiles || v.tile_sign != sign) {
+					std::cerr << "FAIL: quadratic " << label << " " << what << ": " << r.type << " = " << v.native_rep
+					          << " (" << v.tile_count << " tiles, sign " << v.tile_sign << "; expected "
+					          << tiles << " tiles, sign " << sign << ")\n";
+					++nrOfFailedTests;
+				}
+			};
+			expect(r1w, r.written, r.written_sign, "r1 as written");
+			expect(r1r, r.rearranged, "negative", "r1 rearranged");
+			expect(r2, r.r2, "negative", "r2");
+		};
+		for (const row& r : exact)    run(r, "a = 3; b = 100; c = 2", "exact");
+		for (const row& r : ulp_wide) run(r, "a = 3~; b = 100~; c = 2~", "ULP-wide");
 	}
 
 	// ================================================================
