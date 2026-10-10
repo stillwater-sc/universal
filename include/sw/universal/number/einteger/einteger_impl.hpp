@@ -212,7 +212,7 @@ public:
 	// unary arithmetic operators
 	einteger operator-() const {
 		einteger negated(*this);
-		negated.setsign(!_sign);
+		negated.setsign(!_sign && !iszero());   // zero has no sign: -0 would compare unequal to 0
 		return negated;
 	}
 	einteger operator++(int) {
@@ -282,6 +282,14 @@ public:
 			einteger negated(rhs);
 			negated.setsign(false);
 			return *this += negated;
+		}
+		if (sign()) {   // -|a| - b with b >= 0 is -(|a| + b) (#1660: the magnitude path below assumes a >= 0)
+			einteger magnitude(*this);
+			magnitude.setsign(false);
+			magnitude += rhs;
+			magnitude.setsign(!magnitude.iszero());
+			*this = magnitude;
+			return *this;
 		}
 		auto lhsSize = _block.size();
 		if (lhsSize == 0) {
