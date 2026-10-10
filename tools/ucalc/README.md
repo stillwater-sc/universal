@@ -55,6 +55,7 @@ tools/ucalc/
   registry.hpp        -- Default type registry (shared with regression tests)
   tiles.hpp           -- areal/poxel tiles and tile intervals: exact literals, set-valued Values
   uncertainty.hpp     -- ubox and decide: box metrics, predicates, verdicts over sets
+  oracle.hpp          -- the tightest box: exact dyadic evaluation, interval derivatives, branch and bound
   ucalc.cpp           -- REPL loop, 20+ commands, CLI flag parsing
   CMakeLists.txt      -- Build config with optional readline detection
   scripts/            -- Example scripts for humans and AI agents
@@ -406,6 +407,55 @@ Variable definitions are **replayed in each type**: `b = 100~` is the open tile 
 in every type's own lattice, not one type's tile carried into the others. Tile syntax
 needs a tile type, so define such inputs after `type poxel32i`. Inputs written with tile
 syntax have no single true value, and the rounded comparison is then left out.
+
+### The tightest box: how much of the box is the formula's fault
+
+Next to each box, `ubox` reports the **tightest** box the type could state, and the
+**overestimation** factor: computed tiles over tightest tiles. The tightest box is
+computed independently of the tile arithmetic, by the oracle in
+`include/sw/universal/utility/tile_oracle.hpp`. It evaluates the expression in exact dyadic
+intervals: `+ - *` are exact, and `/` and `sqrt` round outward and detect exact results.
+
+- **Point inputs.** The value is one real number, so the tightest box is one tile. The
+  oracle raises its working precision until the value's interval lies in one tile. A
+  non-dyadic route to a lattice point, such as `(1/3)*3`, never separates from it. The
+  count is still one tile, and a note says where it is unresolved.
+- **Set inputs** (`x~`, `[a, b]`). The tightest box is the tile hull of the image of the
+  inputs. An open input, such as `x~`, excludes its ends, so an extreme approached there is
+  not a value the computation takes. Each value carries an interval gradient, so
+  monotonicity is *proven* piece by piece, not assumed:
+  - On a piece where every partial derivative has one sign, the image runs between two
+    corners, which are evaluated exactly.
+  - Any other piece is enclosed by the mean-value form, and either dropped or bisected
+    along the input contributing most.
+  - The corners and the piece centres are values the computation takes, which gives an
+    inner bound; the pieces give an outer one. When the two meet the tightest box is
+    proven, and otherwise it is reported as a range.
+
+With ULP-wide coefficients, both forms of the root have the same tightest box (it belongs
+to the function, not the formula). The excess is the dependency problem:
+
+```
+poxel32i> a = 3~
+poxel32i> b = 100~
+poxel32i> c = 2~
+poxel32i> ubox (-b + sqrt(b*b - 4*a*c)) / (2*a)
+  type                       tiles              tightest        over  decimals  sign        box
+  areal16i                   20821                     7       2974x       0.0  undecidable (-0.0625, 0.020844)
+  poxel16i                   17067                     5       3413x       0.0  undecidable (-0.10419, 0.041687)
+  areal32i                    5465                     5       1093x       3.6  negative    (-0.0200169906, -0.0200068094)
+  ...
+poxel32i> ubox (2*c) / (-b - sqrt(b*b - 4*a*c))
+  areal16i                       7                     7          1x       2.5  negative    (-0.020081, -0.019958)
+  poxel16i                       9                     5        1.8x       2.4  negative    (-0.020081, -0.019928)
+  areal32i                       7                     5        1.4x       6.4  negative    (-0.0200120211, -0.0200120062)
+  ...
+```
+
+With `--json` each box also carries `tightest` (`inner_tiles`, `outer_tiles`, `proven`, the
+box) and splits the computed width into `input_tiles`, which the inputs force, and
+`formula_tiles`, which the formula adds. The oracle has no exact enclosure for `log`, `exp`
+or the trigonometric functions, and reports the tightest box as unavailable for them.
 
 `ubox trace` lists every operation with the tiles in and out, and marks where the box
 grows the most. For the quadratic it is the cancellation `-b + sqrt(d)`:

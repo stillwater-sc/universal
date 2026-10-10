@@ -64,8 +64,31 @@ struct BoxReport {
 	double rel_width = 0.0;       // (upper - lower) / |midpoint|; inf when unbounded or straddling zero
 	double decimals = 0.0;        // -log10(rel_width / 2): the guaranteed decimals of the midpoint
 	bool encloses = false;        // the set is known to contain the true value
+	TightestReport tightest;      // the best box the type could state (oracle.hpp), when computed
 	std::string error;
 };
+
+// computed tiles over tightest tiles: one number when the tightest box is proven, else the
+// range [computed / outer, computed / inner]
+inline std::string overestimation_text(const BoxReport& b) {
+	const TightestReport& t = b.tightest;
+	if (!t.available || t.outer_tiles == 0 || t.inner_tiles == 0) return "-";
+	auto ratio = [&b](std::uint64_t n) {
+		std::ostringstream ss;
+		const double r = static_cast<double>(b.tiles) / static_cast<double>(n);
+		if (r >= 100) ss << std::fixed << std::setprecision(0) << r;
+		else ss << std::setprecision(r < 10 ? 2 : 3) << r;
+		return ss.str();
+	};
+	const std::string lo = ratio(t.outer_tiles), hi = ratio(t.inner_tiles);
+	return (lo == hi ? lo : lo + "-" + hi) + "x";
+}
+
+inline std::string tightest_text(const TightestReport& t) {
+	if (!t.available) return "-";
+	if (t.inner_tiles == t.outer_tiles) return std::to_string(t.outer_tiles);
+	return std::to_string(t.inner_tiles) + "-" + std::to_string(t.outer_tiles);
+}
 
 // Decimals of accuracy as in docs/tutorials/decimals-of-accuracy.md: a rounded x carries
 // -log10(ulp / 2|x|).  A box [l, u] guarantees its midpoint m a relative error of at most

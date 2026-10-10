@@ -519,6 +519,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 					eval.enable_trace(tracing);
 					b = box_report(alias, eval.evaluate(expr));
 					steps = eval.trace_steps();
+					if (!tracing && ops.tightest) b.tightest = ops.tightest(*state.evaluator, expr);
 				} catch (const std::exception& ex) {
 					b.error = ex.what();
 				}
@@ -556,6 +557,21 @@ static bool process_command(const std::string& input, ReplState& state) {
 				          << ",\"exact\":" << (b.exact ? "true" : "false")
 				          << ",\"decimals\":" << json_number(b.decimals)
 				          << ",\"rel_width\":" << json_number(b.rel_width);
+				if (!tracing) {
+					const TightestReport& t = b.tightest;
+					std::cout << ",\"tightest\":{\"available\":" << (t.available ? "true" : "false");
+					if (t.available) {
+						std::cout << ",\"proven\":" << (t.proven ? "true" : "false")
+						          << ",\"inner_tiles\":" << t.inner_tiles << ",\"outer_tiles\":" << t.outer_tiles
+						          << ",\"box\":\"" << json_escape(t.text) << "\""
+						          << ",\"inputs\":" << t.inputs << ",\"subdivisions\":" << t.subdivisions
+						          // the box's width, split: what the inputs force, and what the formula adds
+						          << ",\"input_tiles\":" << t.outer_tiles
+						          << ",\"formula_tiles\":" << (b.tiles > t.outer_tiles ? b.tiles - t.outer_tiles : 0);
+					}
+					if (!t.note.empty()) std::cout << ",\"note\":\"" << json_escape(t.note) << "\"";
+					std::cout << "},\"overestimation\":\"" << overestimation_text(b) << "\"";
+				}
 				if (tracing) {
 					std::cout << ",\"steps\":[";
 					for (std::size_t k = 0; k < traces[i].size(); ++k) {
@@ -587,22 +603,25 @@ static bool process_command(const std::string& input, ReplState& state) {
 			}
 			std::cout << "}\n";
 		} else if (fmt == OutputFormat::csv) {
-			std::cout << "type,box,tiles,sign,decimals,rel_width,error\n";
+			std::cout << "type,box,tiles,tightest,overestimation,sign,decimals,rel_width,error\n";
 			for (const BoxReport& b : boxes) {
 				std::cout << csv_quote(b.type) << "," << csv_quote(b.box) << "," << b.tiles << ","
+				          << csv_quote(tightest_text(b.tightest)) << "," << csv_quote(overestimation_text(b)) << ","
 				          << b.sign << "," << (b.error.empty() ? decimals_text(b) : std::string()) << ","
 				          << std::setprecision(6) << b.rel_width << "," << csv_quote(b.error) << "\n";
 			}
 		} else {
 			std::cout << "ubox: " << expr << "\n";
-			std::cout << "  " << std::left << std::setw(11) << "type" << std::right << std::setw(21) << "tiles"
-			          << std::setw(10) << "decimals" << "  " << std::left << std::setw(12) << "sign" << "box\n";
+			std::cout << "  " << std::left << std::setw(11) << "type" << std::right << std::setw(21) << "tiles";
+			if (!tracing) std::cout << std::setw(22) << "tightest" << std::setw(12) << "over";
+			std::cout << std::setw(10) << "decimals" << "  " << std::left << std::setw(12) << "sign" << "box\n";
 			for (std::size_t i = 0; i < boxes.size(); ++i) {
 				const BoxReport& b = boxes[i];
 				std::cout << "  " << std::left << std::setw(11) << b.type;
 				if (!b.error.empty()) { std::cout << "error: " << b.error << "\n"; continue; }
-				std::cout << std::right << std::setw(21) << b.tiles << std::setw(10) << decimals_text(b) << "  "
-				          << std::left << std::setw(12) << b.sign << b.box << "\n";
+				std::cout << std::right << std::setw(21) << b.tiles;
+				if (!tracing) std::cout << std::setw(22) << tightest_text(b.tightest) << std::setw(12) << overestimation_text(b);
+				std::cout << std::setw(10) << decimals_text(b) << "  " << std::left << std::setw(12) << b.sign << b.box << "\n";
 				if (tracing && !traces[i].empty()) {
 					std::size_t widest = 0;
 					for (std::size_t k = 1; k < traces[i].size(); ++k)
@@ -619,6 +638,15 @@ static bool process_command(const std::string& input, ReplState& state) {
 				}
 			}
 			if (!tracing) {
+				// the oracle's notes, one line per distinct note with the types it applies to
+				std::vector<std::pair<std::string, std::string>> notes;   // note, types
+				for (const BoxReport& b : boxes) {
+					if (b.tightest.note.empty()) continue;
+					auto it = std::find_if(notes.begin(), notes.end(), [&b](const auto& n) { return n.first == b.tightest.note; });
+					if (it == notes.end()) notes.emplace_back(b.tightest.note, b.type);
+					else it->second += ", " + b.type;
+				}
+				for (const auto& [text, which] : notes) std::cout << "  tightest (" << which << "): " << text << "\n";
 				if (!note.empty()) {
 					std::cout << "  rounded types: " << note << "\n";
 				} else {
