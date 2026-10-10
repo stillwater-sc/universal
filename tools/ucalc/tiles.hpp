@@ -202,6 +202,40 @@ double midpoint(const tile_interval<Tile>& x) {
 ///////////////////////////////////////////////////////////////////////////
 // Values
 
+// record the bounds of a set in the Value, for another tile type to enclose.  They are exact
+// where long double holds the lattice (x86); elsewhere each is moved one long double outward
+template<typename Tile>
+void set_bounds(Value& val, const tile_interval<Tile>& x) {
+	using L = std::numeric_limits<long double>;
+	if (x.isnan()) {
+		val.tile_lower = val.tile_upper = L::quiet_NaN();
+		return;
+	}
+	long double lo = x.template lower<long double>(), hi = x.template upper<long double>();
+	constexpr bool exact = Tile::fbits + 1u <= static_cast<unsigned>(L::digits);
+	if constexpr (!exact) {
+		lo = std::nextafter(lo, -L::infinity());
+		hi = std::nextafter(hi, L::infinity());
+	}
+	if (lo == L::infinity()) lo = L::max();       // a finite end beyond the long double range
+	if (hi == -L::infinity()) hi = -L::max();
+	val.tile_lower = lo;
+	val.tile_upper = hi;
+	val.tile_lower_open = exact && x.lower_open();
+	val.tile_upper_open = exact && x.upper_open();
+}
+
+// the tile key at one end of a foreign set: the tile holding the bound, moved inward off a
+// lattice point the set excludes
+template<typename Tile>
+std::int64_t bound_key(long double b, bool open, bool lower) {
+	using T = tile_traits<Tile>;
+	if (std::isinf(b)) return b > 0 ? T::kmax : -T::kmax;
+	std::int64_t k = std::clamp(T::key(Tile(b)), -T::kmax, T::kmax);
+	if (open && (k & 1) == 0) k = lower ? k + 1 : k - 1;
+	return k;
+}
+
 template<typename Tile>
 Value make_tile_value(const Tile& t) {
 	using sw::universal::to_binary;
@@ -219,6 +253,7 @@ Value make_tile_value(const Tile& t) {
 	val.ubit = !T::isnan(t) && (T::key(t) & 1) != 0;
 	val.tile_count = count(box);
 	val.tile_sign = to_string(box.sign());
+	set_bounds(val, box);
 	std::ostringstream comp;
 	if (T::isnan(t))   comp << "nan";
 	else if (val.ubit) comp << "open tile (ubit = 1): inexact; a flag, not an enclosure";
@@ -243,6 +278,7 @@ Value make_box_value(const tile_interval<Tile>& x) {
 	val.ubit = !x.isnan() && !x.isexact();
 	val.tile_count = count(x);
 	val.tile_sign = to_string(x.sign());
+	set_bounds(val, x);
 	std::ostringstream comp;
 	if (x.isnan()) comp << "nan";
 	else comp << "enclosure: lower end " << (x.lower_open() ? "open" : "closed") << ", upper end " << (x.upper_open() ? "open" : "closed");
@@ -256,6 +292,17 @@ tile_interval<Tile> box_of(const Value& v) {
 		if (const auto* p = std::any_cast<tile_interval<Tile>>(&v.native)) return *p;
 		if (const auto* t = std::any_cast<Tile>(&v.native)) return tile_interval<Tile>(*t);
 	}
+	using I = tile_interval<Tile>;
+	// a plain double (a sweep point, say) is exactly its value: the tile that holds it
+	if (!v.native.has_value()) return I(Tile(v.num));
+	// another tile type: enclose its bounds, not its midpoint
+	if (v.tile_kind != 0) {
+		if (std::isnan(v.tile_lower) || std::isnan(v.tile_upper)) return I::nan();
+		const std::int64_t lo = bound_key<Tile>(v.tile_lower, v.tile_lower_open, true);
+		const std::int64_t hi = bound_key<Tile>(v.tile_upper, v.tile_upper_open, false);
+		return I::from_keys(lo, std::max(lo, hi));
+	}
+	// another rounded type: num is within an ulp of the value
 	return bracket<Tile>(v.num);
 }
 
@@ -265,7 +312,7 @@ Tile tile_of(const Value& v) {
 		if (const auto* t = std::any_cast<Tile>(&v.native)) return *t;
 		if (const auto* p = std::any_cast<tile_interval<Tile>>(&v.native)) return single(*p);
 	}
-	return single(bracket<Tile>(v.num));
+	return single(box_of<Tile>(v));
 }
 
 // x^n for an integer n: squaring for the even steps, which an interval needs to stay

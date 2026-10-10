@@ -635,6 +635,36 @@ try {
 		check_throws(reg, "posit32", "3~", "tilde in a rounded type");
 		check_throws(reg, "poxel32", "[1, 2]", "interval literal in a single-tile type");
 
+		// values that cross types: a variable keeps its Value across a type switch
+		{
+			ExpressionEvaluator eval(reg.get("poxel16"));
+			eval.evaluate("x = 0.1");                                   // the poxel16 tile (0.099976, 0.10004)
+			eval.set_variable("h", Value(0.5));                         // a plain double, as sweep makes them
+			eval.set_type(reg.get("poxel32i"));
+			Value x = eval.evaluate("x + 0");             // an operation converts the variable
+			const auto* box = std::any_cast<tile_interval<poxel<32, 2, uint8_t>>>(&x.native);
+			// the same open interval, which poxel32's finer lattice holds exactly
+			if (box == nullptr || box->lower<double>() != 0.0999755859375 || box->upper<double>() != 0.10003662109375
+			    || !box->lower_open() || !box->upper_open() || !box->contains(0.1)) {
+				std::cerr << "FAIL: a poxel16 tile read in poxel32i must be enclosed by its bounds: " << x.native_rep << "\n";
+				++nrOfFailedTests;
+			}
+			Value h = eval.evaluate("h + 0");
+			if (h.native_rep != "0.5" || h.tile_count != 1) {
+				std::cerr << "FAIL: a plain double 0.5 in poxel32i should be the exact tile: " << h.native_rep << "\n";
+				++nrOfFailedTests;
+			}
+			eval.set_type(reg.get("dd"));
+			eval.evaluate("t = 1/3");
+			eval.set_type(reg.get("poxel32i"));
+			Value t = eval.evaluate("t + 0");
+			const auto* tb = std::any_cast<tile_interval<poxel<32, 2, uint8_t>>>(&t.native);
+			if (tb == nullptr || !tb->contains(1.0 / 3.0) || t.tile_count > 3) {
+				std::cerr << "FAIL: a dd value in poxel32i should be bracketed: " << t.native_rep << "\n";
+				++nrOfFailedTests;
+			}
+		}
+
 		// single tiles: sticky-flag arithmetic, the ubit says inexact
 		check_contains(reg, "poxel16", "100^2", "(9984, 10048)", "poxel16 100^2 is not on the lattice");
 		{

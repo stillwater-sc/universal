@@ -40,6 +40,10 @@ struct Value {
 	bool ubit = false;              // inexact: an open tile, or a box wider than one point
 	std::uint64_t tile_count = 0;   // tiles in the set (the entire 64-bit line is 2^64 - 1)
 	std::string tile_sign;          // negative, zero, positive or undecidable
+	long double tile_lower = 0;     // the bounds of the set, rounded outward where long double
+	long double tile_upper = 0;     // cannot hold the lattice: how another tile type reads it
+	bool tile_lower_open = false;
+	bool tile_upper_open = false;
 
 	Value() : num(0.0) {}
 	explicit Value(double v) : num(v) {}
