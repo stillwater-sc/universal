@@ -1063,6 +1063,36 @@ try {
 			inside("poxel16i", v, t);
 		}
 
+		// open inputs exclude their ends: the identity on 3~ is the one open tile above 3, as the
+		// tile type computes it -- not the three tiles of its closure [3, next(3)]
+		{
+			ExpressionEvaluator open_in(reg.get("poxel32i"));
+			open_in.evaluate("a = 3~");
+			open_in.evaluate("t = 0.1~");                              // 0.1 is no lattice point: the open tile that holds it
+			for (const std::string& type : { std::string("poxel16i"), std::string("areal32i"), std::string("poxel64i") }) {
+				for (const std::string& e : { std::string("a + 0"), std::string("2 * a"), std::string("t + 0"), std::string("-t") }) {
+					const auto [v, t] = both(open_in, type, e);
+					if (!t.proven || t.outer_tiles != 1 || v.tile_count != 1) {
+						std::cerr << "FAIL: open input " << e << " in " << type << ": tightest " << t.inner_tiles << "-" << t.outer_tiles
+						          << ", computed " << v.tile_count << " (" << t.note << ")\n";
+						++nrOfFailedTests;
+					}
+					inside(type, v, t);
+				}
+			}
+			// maxpos~ is (maxpos, inf): no bounded input; sqrt of a negative set has no real value
+			ExpressionEvaluator edge(reg.get("poxel32i")), negative(reg.get("poxel32i"));
+			edge.evaluate("m = 1e400");
+			edge.evaluate("big = m~");
+			negative.evaluate("neg = [-2, -1]");
+			const TightestReport tb = reg.get("poxel32i").tightest(edge, "big + 0");
+			const TightestReport tn = reg.get("poxel32i").tightest(negative, "sqrt(neg)");
+			if (tb.available || tn.available || tn.note.find("not a real number") == std::string::npos || tn.subdivisions > 1) {
+				std::cerr << "FAIL: maxpos~ should be unbounded (" << tb.note << "), sqrt of a negative set no real number (" << tn.note << ")\n";
+				++nrOfFailedTests;
+			}
+		}
+
 		// no exact enclosure for log; (1/3) * 3 is one tile, unresolved among the three around 1
 		ExpressionEvaluator plain(reg.get("poxel32i"));
 		{

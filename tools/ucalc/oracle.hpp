@@ -19,9 +19,9 @@
 //                  route to a lattice point -- (1/3) * 3 -- never separates from it; the count
 //                  is still one tile, and the report says its place is unresolved.
 //
-//   set inputs     The tightest box is the tile hull of the image of the inputs' closure (an
-//                  open input such as x~ is taken with its ends, as #1649's corner polynomials
-//                  are).  Each value carries an interval gradient over the inputs (forward
+//   set inputs     The tightest box is the tile hull of the image of the inputs.  An open input
+//                  such as x~ excludes its ends: an extreme approached there, and not attained,
+//                  is not a value the computation takes.  Each value carries an interval gradient over the inputs (forward
 //                  automatic differentiation), so monotonicity is PROVEN, not assumed:
 //                  - a piece of the input box on which every partial derivative has one sign
 //                    maps onto the interval between two corners, whose values the oracle
@@ -140,13 +140,19 @@ TypeOps oracle_ops(int P) {
 		if (orc::sign(margin) < 0) margin = orc::neg(margin);
 		return mk({ orc::interval{ orc::sub(v, margin), orc::add(v, margin) }, {} });
 	};
-	// x~: the open tile above x, when x is a lattice point of Tile; otherwise x itself
+	// x~, as the tile interval types read it (tiles.hpp above_key): a lattice point becomes the
+	// open tile above it -- (maxpos, inf) above maxpos -- and any other value the open tile that
+	// holds it.  A set is left as it is.
 	ops.above = [mk](const Value& a) {
 		const dual x = of(a);
 		if (!orc::is_point(x.v)) return mk(x);
 		const std::int64_t k = orc::locate<Tile>(x.v.lo);
-		if ((k & 1) != 0 || k >= T::kmax - 1) return mk(x);
-		orc::interval r{ x.v.lo, orc::lattice_point<Tile>(k + 2) };
+		const std::int64_t open = (k & 1) != 0 ? k : std::min(k + 1, T::kmax);
+		orc::interval r;
+		r.lo_inf = open == -T::kmax;
+		r.hi_inf = open == T::kmax;
+		if (!r.lo_inf) r.lo = orc::lattice_point<Tile>(open - 1);
+		if (!r.hi_inf) r.hi = orc::lattice_point<Tile>(open + 1);
 		r.lo_open = r.hi_open = true;
 		return mk({ r, {} });
 	};
@@ -279,14 +285,15 @@ TightestReport tightest_box(const ExpressionEvaluator& session, const std::strin
 		// each input's set, in this type's lattice, closed
 		const TypeOps ops = od::oracle_ops<Tile>(256);
 		const std::size_t K = inputs.size();
-		std::vector<orc::interval> sets;
+		std::vector<orc::interval> sets;   // closed, for the arithmetic
+		std::vector<orc::interval> given;  // with their open ends, for which extremes are attained
 		{
 			ExpressionEvaluator eval(ops);
 			eval.inherit(session);
 			std::size_t next = 0;
 			for (std::size_t i = 0; i < defs.size(); ++i) {
 				const Value v = eval.evaluate(defs[i].first + " =" + defs[i].second);
-				if (next < K && inputs[next] == i) { sets.push_back(orc::closed(od::of(v).v)); ++next; }
+				if (next < K && inputs[next] == i) { given.push_back(od::of(v).v); sets.push_back(orc::closed(given.back())); ++next; }
 			}
 		}
 		for (const auto& s : sets) {
@@ -328,6 +335,7 @@ TightestReport tightest_box(const ExpressionEvaluator& session, const std::strin
 			const Piece piece = queue[head++];
 			const od::dual f = od::evaluate(ops, session, expr, seeded(piece));
 			++evaluations;
+			if (f.v.nan) continue;   // no real value on this piece (sqrt of a negative set, say)
 			// the centre: a value the computation takes, and the anchor of the mean-value form
 			std::vector<orc::dyadic> c;
 			for (const auto& x : piece) c.push_back(od::midpoint(x));
@@ -362,12 +370,25 @@ TightestReport tightest_box(const ExpressionEvaluator& session, const std::strin
 			}
 			if (monotone) {   // the image of the piece runs between two corners: evaluate them exactly
 				std::vector<orc::dyadic> lo, hi;
+				bool lo_attained = true, hi_attained = true;   // false: approached at an end the input excludes
 				for (std::size_t d = 0; d < K; ++d) {
-					lo.push_back(dir[d] >= 0 ? piece[d].lo : piece[d].hi);
-					hi.push_back(dir[d] >= 0 ? piece[d].hi : piece[d].lo);
+					const bool up = dir[d] >= 0;
+					lo.push_back(up ? piece[d].lo : piece[d].hi);
+					hi.push_back(up ? piece[d].hi : piece[d].lo);
+					if (dir[d] == 0) continue;               // constant in this input: any value of it will do
+					const bool at_lo_end = orc::compare(piece[d].lo, sets[d].lo) == 0 && given[d].lo_open;
+					const bool at_hi_end = orc::compare(piece[d].hi, sets[d].hi) == 0 && given[d].hi_open;
+					if (up ? at_lo_end : at_hi_end) lo_attained = false;
+					if (up ? at_hi_end : at_lo_end) hi_attained = false;
 				}
-				certify(point_box(at_point(lo)));
-				certify(point_box(at_point(hi)));
+				// an extreme the inputs only approach is not a value the computation takes: when it is
+				// a lattice point, the values near it lie in the open tile on the inside
+				auto inward = [](I b, bool attained, int step) {
+					if (attained || b.isnan() || b.lo_key() != b.hi_key() || (b.lo_key() & 1) != 0) return b;
+					return I::from_keys(b.lo_key() + step, b.lo_key() + step);
+				};
+				certify(inward(point_box(at_point(lo)), lo_attained, +1));
+				certify(inward(point_box(at_point(hi)), hi_attained, -1));
 				continue;
 			}
 			all_monotone = false;
@@ -403,6 +424,7 @@ TightestReport tightest_box(const ExpressionEvaluator& session, const std::strin
 		}
 		if (unbounded) { rep.note = "no exact enclosure: a function the oracle cannot bound (log, exp, trigonometric), or a division by a set holding zero"; return rep; }
 
+		if (outer_lo > outer_hi) { rep.note = "the value is not a real number anywhere on the inputs"; return rep; }
 		rep.available = true;
 		rep.subdivisions = evaluations;
 		rep.outer_tiles = static_cast<std::uint64_t>(outer_hi) - static_cast<std::uint64_t>(outer_lo) + 1u;

@@ -421,8 +421,9 @@ intervals: `+ - *` are exact, and `/` and `sqrt` round outward and detect exact 
   non-dyadic route to a lattice point, such as `(1/3)*3`, never separates from it. The
   count is still one tile, and a note says where it is unresolved.
 - **Set inputs** (`x~`, `[a, b]`). The tightest box is the tile hull of the image of the
-  inputs, taken with their ends as #1649's corner polynomials are. Each value carries an
-  interval gradient, so monotonicity is *proven* piece by piece, not assumed:
+  inputs. An open input, such as `x~`, excludes its ends, so an extreme approached there is
+  not a value the computation takes. Each value carries an interval gradient, so
+  monotonicity is *proven* piece by piece, not assumed:
   - On a piece where every partial derivative has one sign, the image runs between two
     corners, which are evaluated exactly.
   - Any other piece is enclosed by the mean-value form, and either dropped or bisected
