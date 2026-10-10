@@ -255,6 +255,7 @@ Value make_tile_value(const Tile& t, bool encloses) {
 	val.tile_count = count(box);
 	val.tile_sign = to_string(box.sign());
 	set_bounds(val, box);
+	if (!box.isnan()) { val.tile_lo_key = box.lo_key(); val.tile_hi_key = box.hi_key(); }
 	val.tile_encloses = encloses && !T::isnan(t);
 	std::ostringstream comp;
 	if (T::isnan(t))             comp << "nan";
@@ -282,6 +283,7 @@ Value make_box_value(const tile_interval<Tile>& x) {
 	val.tile_count = count(x);
 	val.tile_sign = to_string(x.sign());
 	set_bounds(val, x);
+	if (!x.isnan()) { val.tile_lo_key = x.lo_key(); val.tile_hi_key = x.hi_key(); }
 	val.tile_encloses = !x.isnan();
 	std::ostringstream comp;
 	if (x.isnan()) comp << "nan";
@@ -487,6 +489,7 @@ TypeOps register_tile_interval_type(const std::string& name) {
 	auto entire = [mk](const Value& a) { const I v = box_of<Tile>(a); return mk(v.isnan() ? v : I::entire()); };
 
 	ops.from_double  = [mk](double v) { return mk(I(Tile(v))); };
+	ops.from_keys    = [mk](std::int64_t lo, std::int64_t hi) { return mk(I::from_keys(std::max(lo, -I::kmax), std::min(hi, I::kmax))); };
 	ops.from_literal = [mk](const std::string& text) { return mk(literal_box<Tile>(text)); };
 	ops.constant     = [mk](const std::string& cname) { return mk(constant_box<Tile>(cname)); };
 	ops.hull         = [mk, x](const Value& a, const Value& b) { return mk(sw::universal::hull(x(a), x(b))); };
