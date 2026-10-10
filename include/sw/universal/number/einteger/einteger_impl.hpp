@@ -493,17 +493,23 @@ public:
 			// a requirement for the relationship: (qHat - 2) <= q <= qHat
 
 			int shift = nlz(b.block(n - 1));
+			// the bits a limb carries into the next one up.  With shift == 0 (the divisor is
+			// already normalized) that is nothing; v >> bitsInBlock would be undefined for a
+			// full-width limb, and on x86 returns v itself (#1661)
+			auto carried = [shift](BlockType v) -> BlockType {
+				return shift == 0 ? BlockType(0) : static_cast<BlockType>(v >> (bitsInBlock - shift));
+			};
 			einteger normalized_a;
-			normalized_a.setblock(m, static_cast<BlockType>((a.block(m - 1) >> (bitsInBlock - shift))));
+			normalized_a.setblock(m, carried(a.block(m - 1)));
 			for (unsigned i = m - 1; i > 0; --i) {
-				normalized_a.setblock(i, static_cast<BlockType>((a.block(i) << shift) | (a.block(i - 1) >> (bitsInBlock - shift))));
+				normalized_a.setblock(i, static_cast<BlockType>((a.block(i) << shift) | carried(a.block(i - 1))));
 			}
 			normalized_a.setblock(0, static_cast<BlockType>(a.block(0) << shift));
 			// normalize b
 			einteger normalized_b;
 			unsigned n_minus_1 = n - 1;
 			for (unsigned i = n_minus_1; i > 0; --i) {
-				normalized_b.setblock(i, static_cast<BlockType>((b.block(i) << shift) | (b.block(i - 1) >> (bitsInBlock - shift))));
+				normalized_b.setblock(i, static_cast<BlockType>((b.block(i) << shift) | carried(b.block(i - 1))));
 			}
 			normalized_b.setblock(0, static_cast<BlockType>(b.block(0) << shift));
 
@@ -518,10 +524,13 @@ public:
 				std::uint64_t qhat = dividend / divisor;
 				std::uint64_t rhat = dividend - qhat * divisor;
 
+				// Knuth D3: correct qhat at most twice, and stop testing once rhat >= BASE --
+				// the test's BASE * rhat would then overflow 64 bits and decrement qhat too far,
+				// past what the single add-back in D6 repairs (#1661)
 				while (qhat >= BASE || qhat * v_nminus2 > BASE * rhat + normalized_a.block(j + n - 2)) {
 					--qhat;
 					rhat += divisor;
-					if (rhat < BASE) continue;
+					if (rhat >= BASE) break;
 				}
 				// Knuth Algorithm D, step D4 (multi-precision subtraction
 				// with borrow propagation). `diff` MUST be signed so that

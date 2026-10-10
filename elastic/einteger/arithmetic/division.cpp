@@ -21,6 +21,56 @@
 
 namespace sw { namespace universal {
 
+	// multi-limb operands (#1661): Knuth's algorithm D with its q-hat correction and its
+	// normalization, which the exhaustive enumeration above rarely reaches.  No outside reference
+	// is needed: the division identity a == q * b + r with |r| < |b|, sign(q) = sign(a) ^ sign(b)
+	// and sign(r) = sign(a), on multiplication and addition that are verified on their own.
+	template<typename BlockType>
+	int VerifyMultiLimbDivision(bool reportTestCases, int cases) {
+		using Integer = einteger<BlockType>;
+		std::uint64_t state = 0x1661u;
+		auto next = [&state]() {                                    // splitmix64
+			std::uint64_t z = (state += 0x9E3779B97F4A7C15ull);
+			z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+			z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+			return z ^ (z >> 31);
+		};
+		// a random magnitude of `words` 32-bit words, its top bit set when `normalized`
+		auto make = [&](int words, bool normalized) {
+			Integer v(0);
+			for (int w = 0; w < words; ++w) {
+				std::uint64_t word = next() & 0xFFFF'FFFFull;
+				if (w == 0 && normalized) word |= 0x8000'0000ull;
+				if (w == 0 && word == 0) word = 1;
+				v <<= 32;
+				v += static_cast<long long>(word);
+			}
+			return v;
+		};
+		auto magnitude = [](const Integer& x) { return x.isneg() ? Integer(-x) : x; };
+		int nrOfFailedTests = 0;
+		for (int c = 0; c < cases; ++c) {
+			const int bw = 1 + static_cast<int>(next() % 4);
+			const int aw = bw + static_cast<int>(next() % 5);
+			Integer a = make(aw, false), b = make(bw, (c % 4) == 0);
+			if (next() & 1) a = -a;
+			if (next() & 1) b = -b;
+			Integer q, r;
+			q.reduce(a, b, r);
+			Integer back = q;
+			back *= b;
+			back += r;
+			const bool ok = back == a && magnitude(r) < magnitude(b)
+			             && (r.iszero() || r.isneg() == a.isneg())
+			             && (q.iszero() || q.isneg() == (a.isneg() != b.isneg()));
+			if (!ok) {
+				nrOfFailedTests++;
+				if (reportTestCases && nrOfFailedTests < 5) std::cerr << "FAIL: " << a << " / " << b << " = " << q << " rem " << r << "\n";
+			}
+		}
+		return nrOfFailedTests;
+	}
+
 	// signed operands (#1659): VerifyElasticDivision builds its operands with setbits(), which
 	// only makes non-negative values.  Magnitudes straddle the 8-, 16- and 32-bit limb
 	// boundaries, so single- and multi-limb dividends and divisors meet in every combination,
@@ -371,6 +421,9 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifySignedDivision<uint8_t>(reportTestCases), "einteger<uint8_t>", "signed division (#1659)");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimbDivision<uint8_t>(reportTestCases, 2000), "einteger<uint8_t>", "multi-limb division (#1661)");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimbDivision<uint16_t>(reportTestCases, 2000), "einteger<uint16_t>", "multi-limb division (#1661)");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimbDivision<uint32_t>(reportTestCases, 2000), "einteger<uint32_t>", "multi-limb division (#1661)");
 	nrOfFailedTestCases += ReportTestResult(VerifySignedDivision<uint16_t>(reportTestCases), "einteger<uint16_t>", "signed division (#1659)");
 	nrOfFailedTestCases += ReportTestResult(VerifySignedDivision<uint32_t>(reportTestCases), "einteger<uint32_t>", "signed division (#1659)");
 	nrOfFailedTestCases += DirectedTests();
