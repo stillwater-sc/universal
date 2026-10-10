@@ -68,7 +68,7 @@ framework (Claude Desktop, VS Code extensions, or any MCP-compatible client).
 
 ## Available Tools
 
-The MCP server exposes 17 tools:
+The MCP server exposes 21 tools:
 
 | Tool | Description |
 |------|-------------|
@@ -89,6 +89,24 @@ The MCP server exposes 17 tools:
 | `ucalc.steps` | Step-by-step arithmetic visualization |
 | `ucalc.heatmap` | Precision vs magnitude heatmap |
 | `ucalc.rewrites` | List numerical rewrite patterns |
+| `ucalc.ubox` | Uncertainty box in tile interval types: tiles, tightest box, overestimation, decimals, sign |
+| `ucalc.decide` | Whether `sign <expr>` or `<expr> op <expr>` is decidable in each tile type, and the narrowest that decides |
+| `ucalc.roots` | Roots of a x^2 + b x + c: discriminant verdict, each root as written and stable, containment, precision sweep |
+| `ucalc.rootbox` | Root boxes of f(x) in [lo, hi] by bisection on the sign of f |
+
+The four uncertainty tools take an optional `definitions` argument: `name = expr`
+assignments separated by `;`, such as `"a = 3~; b = 100~; c = 2~"`. They are evaluated in a
+tile type, so `x~`, the open tile above `x`, is available, and they persist for later calls.
+Every piece must be an assignment; anything else rejects the call. `types` is a
+space-separated list of type names. Start the server with `--json` to get structured
+results:
+
+```json
+{"name": "ucalc.decide",
+ "arguments": {"predicate": "sign (-b + sqrt(b*b - 4*a*c)) / (2*a)",
+               "definitions": "a = 3~; b = 100~; c = 2~",
+               "types": "poxel16i poxel32i"}}
+```
 
 Each tool has a JSON schema describing its parameters, so AI assistants
 can discover and call tools without prior knowledge of the ucalc command
