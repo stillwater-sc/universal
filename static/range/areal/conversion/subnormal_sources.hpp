@@ -75,10 +75,11 @@ int VerifySubnormalSources(const std::string& name, bool reportTestCases, std::u
 // to be wrong (#1656), and past maxpos, where the value lands in (maxpos, inf).
 template<typename Areal, typename Real>
 int VerifyNormalSources(const std::string& name, bool reportTestCases, int count) {
+	constexpr int fb = std::numeric_limits<Real>::digits - 1;          // the source's fraction bits, all random
 	std::mt19937_64 rng(1656);
 	int nrOfFailedTests = 0;
 	for (int i = 0; i < count; ++i) {
-		const Real v = std::ldexp(Real(1) + Real(rng() >> 11) * std::ldexp(Real(1), -53), static_cast<int>(rng() % 160) - 80);
+		const Real v = std::ldexp(Real(1) + Real(rng() >> (64 - fb)) * std::ldexp(Real(1), -fb), static_cast<int>(rng() % 160) - 80);
 		for (const Real s : { v, Real(-v) }) {
 			const Areal a(s);
 			if (!tile_holds(a, s)) {
