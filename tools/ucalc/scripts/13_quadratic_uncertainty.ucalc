@@ -1,0 +1,33 @@
+# 13_quadratic_uncertainty.ucalc -- Human script
+# The roots of 3x^2 + 100x + 2 = 0 (The End of Error, pp. 181-184; #1649, #1654):
+# what the areal and poxel tile intervals know about each root, and which questions
+# about it each width can decide.  Reproduces applications/precision/ubit/quadratic_roots.cpp.
+
+# 1. The whole problem at once: the discriminant's verdict, each root as written and in
+#    the stable form, the tightest box, and the narrowest width that decides each question
+roots 3 100 2
+
+# 2. Rounded types give no sign of their error; the tile boxes do.  At 16 bits, r1 as
+#    written cannot decide its own sign in poxel16i.
+type poxel32i
+a = 3
+b = 100
+c = 2
+ubox (-b + sqrt(b*b - 4*a*c)) / (2*a)
+ubox (2*c) / (-b - sqrt(b*b - 4*a*c))
+
+# 3. Where the box grows: the cancellation -b + sqrt(d)
+ubox trace (-b + sqrt(b*b - 4*a*c)) / (2*a) in poxel16i
+
+# 4. ULP-wide coefficients: the open tile just above each, in every type's own lattice.
+#    Both forms of r1 have the same tightest box; the excess is the formula's.
+a = 3~
+b = 100~
+c = 2~
+ubox (-b + sqrt(b*b - 4*a*c)) / (2*a)
+ubox (2*c) / (-b - sqrt(b*b - 4*a*c))
+decide sign (-b + sqrt(b*b - 4*a*c)) / (2*a)
+decide (2*c) / (-b - sqrt(b*b - 4*a*c)) < -0.02
+
+# 5. Without a formula: bisection on the sign of the polynomial
+rootbox 3*x^2 + 100*x + 2 for x in [-40, 0] poxel32i

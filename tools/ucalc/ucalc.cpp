@@ -4956,7 +4956,11 @@ try {
 
 				std::string cmd = tool_to_command(tool_name, arguments);
 				if (cmd.empty()) {
-					write_message(jsonrpc_error(id_str, -32601, "unknown tool: " + tool_name));
+					const auto tools = ucalc_tools();
+					const bool known = std::any_of(tools.begin(), tools.end(), [&tool_name](const McpTool& t) { return t.name == tool_name; });
+					if (known) write_message(jsonrpc_error(id_str, -32602, "invalid arguments for " + tool_name
+					                                       + ": a ';' or line break in an argument, a types list that is not plain names, or a definition that is not 'name = expr'"));
+					else write_message(jsonrpc_error(id_str, -32601, "unknown tool: " + tool_name));
 					continue;
 				}
 

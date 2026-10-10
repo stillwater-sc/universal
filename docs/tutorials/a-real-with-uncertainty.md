@@ -190,6 +190,80 @@ Every enclosure is verified exactly, with no reference decimals. Its endpoints a
 
 This uses the enclosing `sqrt` of `tile_interval`, which needs no extra precision. The tile of t * t contains t^2 exactly, so comparing its key with v orders t^2 against v without rounding. A bisection over the lattice then finds the tile that contains sqrt(v).
 
+#### The same problem in ucalc
+
+`ucalc` (`tools/ucalc`) asks these questions interactively. The tile types are `areal16`
+... `poxel64` (single tiles) and `areal16i` ... `poxel64i` (tile intervals); `x~` is the open
+tile above `x`. `roots` does the whole problem:
+
+```
+$ ucalc "roots 3 100 2"
+roots of a x^2 + b x + c with a = 3, b = 100, c = 2
+  discriminant b^2 - 4ac
+    areal16i   two real roots   (9968, 9984)
+    ...
+    exact: two real roots
+  r1, the root the formula as written takes by cancellation
+    type       form               tiles  tightest      over  decimals  sign        contains  box
+    areal16i   as written         10581         1    10581x       0.0  negative    yes       (-0.041687, 0)
+               stable                 3         1        3x       2.8  negative    yes       (-0.02005, -0.019989)
+    poxel16i   as written         16385         1    16385x       0.0  undecidable yes       (-0.083374, 0.041687)
+               stable                 7         1        7x       2.5  negative    yes       (-0.020081, -0.019958)
+    ...
+  precision sweep: the narrowest width that decides each question (bits; - = no width does)
+    question                               areal   poxel
+    number of real roots                      16       8
+    sign of r1 as written                     16      32
+    sign of r1 stable                         16       8
+    sign of r2 as written                      8       8
+    6 digits of r1 as written                 64      64
+    6 digits of r1 stable                     32      32
+    6 digits of r2 as written                 32      32
+```
+
+- **tightest** is the best box the type could state. An exact oracle computes it
+  independently of the tile arithmetic, in exact dyadic arithmetic. **contains** checks,
+  exactly, that the root's tile lies inside the computed box.
+- **The sweep** turns the table above into answers. A poxel needs 32 bits to decide the
+  sign of r1 as written, and 8 bits for the stable form.
+
+With ULP-wide coefficients, `ubox` compares each formula with the tightest box. That box
+belongs to the function, not the formula, so both forms of r1 have the same one:
+
+```
+poxel32i> a = 3~
+poxel32i> b = 100~
+poxel32i> c = 2~
+poxel32i> ubox (-b + sqrt(b*b - 4*a*c)) / (2*a)
+  type                       tiles              tightest        over  decimals  sign        box
+  areal16i                   20821                     7       2974x       0.0  undecidable (-0.0625, 0.020844)
+  poxel16i                   17067                     5       3413x       0.0  undecidable (-0.10419, 0.041687)
+  areal32i                    5465                     5       1093x       3.6  negative    (-0.0200169906, -0.0200068094)
+  ...
+poxel32i> decide sign (-b + sqrt(b*b - 4*a*c)) / (2*a)
+  ...
+  narrowest type that decides it: areal32i
+```
+
+The oracle does not assume the corner argument of the table above; it proves it.
+- Every value carries an interval derivative, so monotonicity in each coefficient is
+  checked over the input box before the two corners are evaluated exactly.
+- Where monotonicity cannot be shown, the oracle subdivides and brackets the box from both
+  sides.
+
+For this problem, every tightest box in the table is proven and agrees with the corner
+polynomials. `rootbox` finds the roots without the formula, by bisecting on the sign of
+the polynomial:
+
+```
+$ ucalc "rootbox 3*x^2 + 100*x + 2 for x in [-40, 0] poxel32i"
+    poxel32i   root                   7  (-33.31332302, -33.31331921)
+               ...
+               root                   1  (-0.02001201455, -0.02001201408)
+```
+
+`tools/ucalc/scripts/13_quadratic_uncertainty.ucalc` runs all of these in order.
+
 ---
 
 ## What the ubit can and cannot do
@@ -207,6 +281,7 @@ This uses the enclosing `sqrt` of `tile_interval`, which needs no extra precisio
 - **A flag is not an enclosure.** A set ubit means "inexact", not "the truth is in this tile". Guarantees need a pair of tiles.
 - **"Undecidable" is a correct answer.** Rump needs more than 120 bits. A 32- or 64-bit enclosure that says "I cannot tell" is right, and every rounding format is wrong.
 - **Repeated operands cost, and reformulation recovers it.** In the quadratic formula a and b occur twice. With exact operands that is free; with ULP-wide ones the enclosure widens, and a single-occurrence form recovers most of the loss.
+- **What is decidable depends on the formulation as much as the width.** The sign of the small root needs a 32-bit poxel in the formula as written, and an 8-bit one in the stable form.
 - **Compare at equal storage, ubit included.** A one-bit mismatch (a 17-bit poxel against a 16-bit areal) flipped the BBP conclusion.
 - **How rounding fails depends on the compiler.** Fused multiply-add changed both the digits of Rump's double result and the way double fails det(M^k). The enclosures did not change.
 - **A tight enclosure needs a sound formulation.** Summing the BBP terms one at a time near minpos widens the upper bound at every step; factoring out 16^-15 keeps it tight.
@@ -237,6 +312,14 @@ ctest --test-dir build -R "ubit_(rump_polynomial|muller_kahan|geometric_predicat
 ```
 
 Each application prints its comparison table and ends with its assertions and PASS or FAIL.
+
+To explore interactively, build ucalc and run the quadratic script:
+
+```bash
+cmake -S . -B build -DUNIVERSAL_BUILD_TOOLS_UCALC=ON
+cmake --build build --target ucalc
+build/tools/ucalc/ucalc -f tools/ucalc/scripts/13_quadratic_uncertainty.ucalc
+```
 
 ---
 
