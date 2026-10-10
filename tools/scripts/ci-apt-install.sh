@@ -68,14 +68,17 @@ for ((attempt = 1; attempt <= attempts; ++attempt)); do
 		exit 0
 	fi
 	echo "::warning::apt attempt $attempt of $attempts failed or exceeded ${limit} s after $((SECONDS - start)) s"
-	[ "$attempt" -lt "$attempts" ] || break
-	# A killed attempt can leave its own apt or dpkg children running, and packages
-	# half-configured. Stop what is left of this attempt's process group, and nothing else;
-	# the next attempt waits for any lock still held elsewhere (DPkg::Lock::Timeout).
+	# A killed attempt can leave its own apt or dpkg children running: timeout --foreground
+	# signals only its direct child. Stop what is left of this attempt's process group, and
+	# nothing else, after every failed attempt -- the last one too, so a failing job does not
+	# leave apt holding the locks. The next attempt waits for any lock still held elsewhere
+	# (DPkg::Lock::Timeout).
 	pgid="$(cat "$pgid_dir/pgid" 2>/dev/null || true)"
 	if [ -n "$pgid" ]; then
 		sudo kill -KILL -- "-$pgid" 2>/dev/null || true
 	fi
+	[ "$attempt" -lt "$attempts" ] || break
+	# packages may be half-configured: let the killed processes go, then repair
 	sleep 5
 	# finish any interrupted configuration, under its own time limit
 	if ! sudo timeout --kill-after=10 "$repair_limit" dpkg --configure -a; then
