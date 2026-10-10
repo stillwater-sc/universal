@@ -54,6 +54,7 @@ tools/ucalc/
   data_loader.hpp     -- CSV file reader and vector literal parser
   registry.hpp        -- Default type registry (shared with regression tests)
   tiles.hpp           -- areal/poxel tiles and tile intervals: exact literals, set-valued Values
+  uncertainty.hpp     -- ubox and decide: box metrics, predicates, verdicts over sets
   ucalc.cpp           -- REPL loop, 20+ commands, CLI flag parsing
   CMakeLists.txt      -- Build config with optional readline detection
   scripts/            -- Example scripts for humans and AI agents
@@ -373,6 +374,69 @@ poxel16i> show (2*c) / (-b - sqrt(b*b - 4*a*c))
 
 With ULP-wide coefficients, `a = 3~; b = 100~; c = 2~`, the same expressions show how
 input uncertainty widens each box.
+
+### The uncertainty box: `ubox`
+
+`ubox [trace] <expr> [in <types>]` evaluates an expression in tile interval types
+(by default the 16-, 32- and 64-bit areal and poxel pairs) and summarizes each box:
+its width in tiles, the **decimals of accuracy** its midpoint is guaranteed to have
+(`-log10(width / 2|midpoint|)`, the measure of `docs/tutorials/decimals-of-accuracy.md`),
+and its sign verdict. Below the boxes it shows what the rounded types of the same
+widths compute, and their relative error against a quad-double reference, of which they
+give no sign:
+
+```
+ubox: (-b + sqrt(b*b - 4*a*c)) / (2*a)
+  type                       tiles  decimals  sign        box
+  areal16i                   10581       0.0  negative    (-0.041687, 0)
+  poxel16i                   16385       0.0  undecidable (-0.083374, 0.041687)
+  areal32i                    1365       4.2  negative    (-0.0200144462, -0.0200119019)
+  poxel32i                    1365       5.1  negative    (-0.0200122199, -0.02001190186)
+  areal64i                    1365      12.9  negative    (-0.020012014421638469, -0.02001201442163373)
+  poxel64i                    1367      14.7  negative    (-0.02001201442163639643, -0.02001201442163632227)
+  rounded types, against the qd reference -2.00120144216363534418...e-02:
+  fp16       -2.08282e-02                relative error 4.1e-02
+  posit16    -4.16565e-02                relative error 1.1e+00
+  float      -0.0200119019               relative error 5.6e-06
+  posit32    -2.0012060879e-02           relative error 2.3e-06
+  double     -0.020012014421636099       relative error 1.3e-14
+```
+
+Variable definitions are **replayed in each type**: `b = 100~` is the open tile above 100
+in every type's own lattice, not one type's tile carried into the others. Tile syntax
+needs a tile type, so define such inputs after `type poxel32i`. Inputs written with tile
+syntax have no single true value, and the rounded comparison is then left out.
+
+`ubox trace` lists every operation with the tiles in and out, and marks where the box
+grows the most. For the quadratic it is the cancellation `-b + sqrt(d)`:
+
+```
+  poxel16i                   17067       0.0  undecidable (-0.10419, 0.041687)
+        6  sqrt                          3 -> 11                   (99.5, 100.25)
+        7  add                      1 , 11 -> 27135                (-0.625, 0.25)   <- widest growth
+```
+
+### Decidability: `decide`
+
+`decide <predicate> [in <types>]` answers a question about the result in each type:
+**yes**, **no**, or **undecidable** when the box admits both answers. The predicate is
+`sign <expr>`, or `<expr> op <expr>` with `op` one of `<  <=  >  >=  ==  !=`, decided
+over every pair of points of the two boxes. It reports the narrowest type that decides it:
+
+```
+poxel32i> a = 3~
+poxel32i> b = 100~
+poxel32i> c = 2~
+poxel32i> decide sign (-b + sqrt(b*b - 4*a*c)) / (2*a)
+decide: sign (-b + sqrt(b*b - 4*a*c)) / (2*a)
+  areal16i   undecidable  (-0.0625, 0.020844)
+  poxel16i   undecidable  (-0.10419, 0.041687)
+  areal32i   negative     (-0.0200169906, -0.0200068094)
+  ...
+  narrowest type that decides it: areal32i
+```
+
+Both commands take `--json` and `--csv`.
 
 ## Script Examples
 
