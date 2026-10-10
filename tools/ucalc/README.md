@@ -56,6 +56,7 @@ tools/ucalc/
   tiles.hpp           -- areal/poxel tiles and tile intervals: exact literals, set-valued Values
   uncertainty.hpp     -- ubox and decide: box metrics, predicates, verdicts over sets
   oracle.hpp          -- the tightest box: exact dyadic evaluation, interval derivatives, branch and bound
+  roots.hpp           -- roots (the quadratic, forms, precision sweep) and rootbox (sign bisection)
   ucalc.cpp           -- REPL loop, 20+ commands, CLI flag parsing
   CMakeLists.txt      -- Build config with optional readline detection
   scripts/            -- Example scripts for humans and AI agents
@@ -456,6 +457,59 @@ With `--json` each box also carries `tightest` (`inner_tiles`, `outer_tiles`, `p
 box) and splits the computed width into `input_tiles`, which the inputs force, and
 `formula_tiles`, which the formula adds. The oracle has no exact enclosure for `log`, `exp`
 or the trigonometric functions, and reports the tightest box as unavailable for them.
+
+### Root finding: `roots` and `rootbox`
+
+`roots a b c [in <types>] [digits k]` solves `a x^2 + b x + c = 0` in the tile interval
+types. The coefficients are expressions, so `roots 3~ 100~ 2~` takes ULP-wide inputs.
+- **The discriminant's verdict** per type: two real roots, a double root, complex roots,
+  or undecidable. The oracle's exact verdict is shown below the table.
+- **Each root in two forms.** One is *as written*, `(-b +- sqrt(b^2 - 4ac)) / (2a)`. The
+  other is *stable*: with `q = -(b + sign(b) sqrt(d)) / 2`, the roots are `q / a` and
+  `c / q` (Vieta). r1 is the root the formula as written takes by cancellation. Each row
+  has the box's tiles, the tightest box, the overestimation, decimals, the sign verdict,
+  and **contains**, which checks exactly that the oracle's tile of the root lies inside the
+  computed box.
+- **A precision sweep.** For each question, the narrowest areal and poxel width
+  (8/16/32/64 bits) that decides it: the number of real roots, the sign of each root in
+  each form, and `k` digits of each (default 6).
+
+```
+  precision sweep: the narrowest width that decides each question (bits; - = no width does)
+    question                               areal   poxel
+    number of real roots                      16       8
+    sign of r1 as written                     16      32
+    sign of r1 stable                         16       8
+    sign of r2 as written                      8       8
+    6 digits of r1 as written                 64      64
+    6 digits of r1 stable                     32      32
+    6 digits of r2 as written                 32      32
+```
+
+For `roots 3 100 2`, a poxel needs 32 bits to decide the sign of r1 as written, but 8 bits
+for the stable form.
+
+`rootbox <expr> for <var> in [lo, hi] [types...]` finds the roots of `f` without a
+formula. It bisects the domain over the tiles on the sign verdict of `f`: a piece where `f`
+has one sign holds no root and is dropped, and any other piece is split. Each remaining
+box has a status:
+- **root**: `f` changes sign across the box and is bounded on it, so it holds a root.
+- **exact root**: `f` is exactly 0 at a lattice point.
+- **undecided**: the tile arithmetic cannot settle it, for example a pole, or the same
+  sign at both ends.
+- **unexplored**: the evaluation budget ran out before the search reached it. Such a box
+  is never reported as a root.
+
+```
+rootbox: x^2 - 2 for x in [0, 2]
+    type       status             tiles  box
+    poxel16i   root                   1  (1.4141, 1.415)
+    poxel64i   root                   1  (1.414213562373095048, 1.414213562373095052)
+```
+
+Like every box here, the result depends on how `f` is written. `x^2 - 2*x + 1`, where `x`
+occurs twice, cannot be resolved near its double root. `(x - 1)^2` gives the exact root
+at once.
 
 `ubox trace` lists every operation with the tiles in and out, and marks where the box
 grows the most. For the quadratic it is the cancellation `-b + sqrt(d)`:

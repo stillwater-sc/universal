@@ -69,6 +69,7 @@
 #include "registry.hpp"
 #include "output_format.hpp"
 #include "uncertainty.hpp"
+#include "roots.hpp"
 
 namespace {
 
@@ -1109,6 +1110,152 @@ try {
 			const TightestReport tt = reg.get("poxel32i").tightest(plain, "(1/3) * 3");
 			if (tl.available || tl.note.empty() || !tt.available || tt.proven || tt.outer_tiles != 1) {
 				std::cerr << "FAIL: log(2) should have no tightest box, (1/3)*3 one unresolved tile\n";
+				++nrOfFailedTests;
+			}
+		}
+	}
+
+	// ================================================================
+	// Root finding: roots and rootbox (#1654 Phase 4)
+	// ================================================================
+	{
+		ExpressionEvaluator none(reg.get("double"));
+		// the coefficients: "a b c" or "a, b, c", each an expression
+		{
+			std::vector<std::string> c;
+			if (!split_coefficients("3 100 2", c) || c[1] != "100" || !split_coefficients("3, 100~, [1, 2]", c) || c[2] != "[1, 2]"
+			    || split_coefficients("1 2", c) || !split_coefficients("(1 + 2) 4 5", c) || c[0] != "(1 + 2)") {
+				std::cerr << "FAIL: split_coefficients\n";
+				++nrOfFailedTests;
+			}
+		}
+		struct expect { const char* type; std::uint64_t written, stable, r2; const char* written_sign; std::uint64_t tight_r1, tight_r2; };
+		auto check_quadratic = [&](const std::string& a, const std::string& b, const std::string& c, const expect* rows, std::size_t n, const char* label) {
+			const ExpressionEvaluator qs = quadratic_session(reg, none, a, b, c);
+			const auto forms = quadratic_forms(false);
+			for (std::size_t i = 0; i < n; ++i) {
+				const QuadraticReport r = quadratic_in(reg.get(rows[i].type), rows[i].type, qs, forms, true);
+				const bool ok = r.error.empty() && r.discriminant == std::string("two real roots") && r.exact_discriminant == std::string("two real roots")
+				             && r.rows.size() == 3
+				             && r.rows[0].box.tiles == rows[i].written && r.rows[1].box.tiles == rows[i].stable && r.rows[2].box.tiles == rows[i].r2
+				             && r.rows[0].box.sign == rows[i].written_sign && r.rows[1].box.sign == "negative" && r.rows[2].box.sign == "negative"
+				             && r.rows[0].contains && r.rows[1].contains && r.rows[2].contains
+				             && r.rows[0].box.tightest.outer_tiles == rows[i].tight_r1 && r.rows[1].box.tightest.outer_tiles == rows[i].tight_r1
+				             && r.rows[2].box.tightest.outer_tiles == rows[i].tight_r2;
+				if (!ok) {
+					std::cerr << "FAIL: roots " << label << " in " << rows[i].type << ": " << r.error;
+					for (const auto& row : r.rows) std::cerr << " [" << row.form.root << " " << row.form.form << " " << row.box.tiles << " tiles, tightest "
+					                                          << row.box.tightest.outer_tiles << ", " << row.box.sign << ", contains " << row.contains << "]";
+					std::cerr << "\n";
+					++nrOfFailedTests;
+				}
+			}
+		};
+		// the reference problem, as quadratic_roots.cpp measures it (#1649); every box contains the
+		// oracle's exact tile of its root
+		const expect exact_rows[] = {
+			{ "areal16i", 10581, 3, 3, "negative", 1, 1 }, { "poxel16i", 16385, 7, 3, "undecidable", 1, 1 },
+			{ "areal32i", 1365, 3, 1, "negative", 1, 1 },  { "poxel32i", 1365, 3, 3, "negative", 1, 1 },
+			{ "areal64i", 1365, 3, 1, "negative", 1, 1 },  { "poxel64i", 1367, 3, 3, "negative", 1, 1 },
+		};
+		check_quadratic("3", "100", "2", exact_rows, 6, "3 100 2");
+		const expect wide_rows[] = {
+			{ "areal16i", 20821, 7, 5, "undecidable", 7, 3 }, { "poxel16i", 17067, 9, 7, "undecidable", 5, 3 },
+			{ "areal32i", 5465, 7, 5, "negative", 5, 5 },     { "poxel32i", 9559, 9, 7, "negative", 5, 3 },
+			{ "areal64i", 5465, 9, 7, "negative", 5, 5 },     { "poxel64i", 9559, 9, 7, "negative", 5, 3 },
+		};
+		check_quadratic("3~", "100~", "2~", wide_rows, 6, "3~ 100~ 2~");
+
+		// the precision sweep for the reference problem: the narrowest width (areal, poxel) per question
+		{
+			const ExpressionEvaluator qs = quadratic_session(reg, none, "3", "100", "2");
+			const auto sweep = precision_sweep(reg, qs, quadratic_forms(false), 6.0);
+			const int want[][2] = { { 16, 8 }, { 16, 32 }, { 16, 8 }, { 8, 8 }, { 64, 64 }, { 32, 32 }, { 32, 32 } };
+			bool ok = sweep.size() == 7;
+			for (std::size_t i = 0; ok && i < 7; ++i) ok = sweep[i].narrowest[0].second == want[i][0] && sweep[i].narrowest[1].second == want[i][1];
+			if (!ok) {
+				std::cerr << "FAIL: precision sweep:";
+				for (const auto& q : sweep) std::cerr << " [" << q.question << " " << q.narrowest[0].second << "/" << q.narrowest[1].second << "]";
+				std::cerr << "\n";
+				++nrOfFailedTests;
+			}
+		}
+
+		// b < 0 swaps the cancelling root; complex and double roots
+		{
+			const ExpressionEvaluator neg = quadratic_session(reg, none, "3", "-100", "2");
+			const QuadraticReport r = quadratic_in(reg.get("poxel32i"), "poxel32i", neg, quadratic_forms(true), true);
+			const ExpressionEvaluator cpx = quadratic_session(reg, none, "1", "0", "1");
+			const QuadraticReport rc = quadratic_in(reg.get("poxel32i"), "poxel32i", cpx, quadratic_forms(false), true);
+			const ExpressionEvaluator dbl = quadratic_session(reg, none, "1", "2", "1");
+			const QuadraticReport rd = quadratic_in(reg.get("areal32i"), "areal32i", dbl, quadratic_forms(false), true);
+			const bool ok = r.rows.size() == 3 && r.rows[0].box.tiles == 1365 && r.rows[1].box.tiles == 3 && r.rows[0].box.sign == "positive" && r.rows[0].contains
+			             && rc.discriminant == std::string("complex roots") && rc.exact_discriminant == std::string("complex roots")
+			             && rd.discriminant == std::string("a double root") && rd.rows.size() == 3 && rd.rows[0].box.exact && rd.rows[0].box.box == "-1";
+			if (!ok) {
+				std::cerr << "FAIL: roots with b < 0, complex roots or a double root\n";
+				++nrOfFailedTests;
+			}
+		}
+
+		// rootbox: bisection on the sign of f
+		auto rootbox = [&](const std::string& expr, const std::string& domain, const std::string& type) {
+			return rootbox_in(reg.get(type), type, none, expr, "x", domain);
+		};
+		{
+			// sqrt(2): one tile, and it holds sqrt(2)
+			for (const std::string type : { "poxel16i", "poxel64i" }) {
+				const RootboxReport r = rootbox("x^2 - 2", "[0, 2]", type);
+				const auto& ops = reg.get(type);
+				const Value b = r.boxes.empty() ? Value() : ops.from_keys(r.boxes[0].lo_key, r.boxes[0].hi_key);
+				const long double s2 = 1.41421356237309504880168872420969808L;
+				if (r.boxes.size() != 1 || r.boxes[0].status != "root" || r.boxes[0].tiles != 1 || !(b.tile_lower < s2 && s2 < b.tile_upper)) {
+					std::cerr << "FAIL: rootbox x^2 - 2 in " << type << ": " << (r.boxes.empty() ? std::string("none") : r.boxes[0].box + " " + r.boxes[0].status) << "\n";
+					++nrOfFailedTests;
+				}
+			}
+			// the quadratic as a polynomial: a proven root box at each root
+			const RootboxReport q = rootbox("3*x^2 + 100*x + 2", "[-40, 0]", "poxel32i");
+			int found1 = 0, found2 = 0;
+			for (const RootBox& b : q.boxes) {
+				if (b.status != "root") continue;
+				const Value v = reg.get("poxel32i").from_keys(b.lo_key, b.hi_key);
+				if (v.tile_lower < -0.0200120144216363534L && -0.0200120144216363534L < v.tile_upper) ++found1;
+				if (v.tile_lower < -33.3133213189116970L && -33.3133213189116970L < v.tile_upper) ++found2;
+			}
+			if (found1 != 1 || found2 != 1) {
+				std::cerr << "FAIL: rootbox of 3x^2 + 100x + 2 should prove one box at each root: " << found1 << ", " << found2 << "\n";
+				++nrOfFailedTests;
+			}
+			// a pole is not a root; an exact root; no root; a domain where f has no real value
+			const RootboxReport pole = rootbox("1/x", "[-1, 1]", "poxel32i");
+			const RootboxReport half = rootbox("x - 0.5", "[0, 1]", "poxel32i");
+			const RootboxReport none_ = rootbox("x^2 + 1", "[-2, 2]", "poxel32i");
+			const RootboxReport sq = rootbox("sqrt(x) - 1", "[-4, 4]", "poxel32i");
+			bool ok = !pole.boxes.empty() && half.boxes.size() == 1 && half.boxes[0].status == "exact root" && half.boxes[0].box == "0.5"
+			       && none_.boxes.empty() && sq.boxes.size() == 1 && sq.boxes[0].status == "exact root" && sq.boxes[0].box == "1";
+			for (const RootBox& b : pole.boxes) ok = ok && b.status == "undecided";
+			// a double root written with dependency exhausts the budget: the rest is unexplored, never a claimed root
+			const RootboxReport dbl = rootbox("x^2 - 2*x + 1", "[0, 3]", "poxel32i");
+			bool unexplored = false;
+			for (const RootBox& b : dbl.boxes) { unexplored = unexplored || b.status == "unexplored"; ok = ok && b.status != "root"; }
+			ok = ok && dbl.exhausted && unexplored;
+			const RootboxReport sq2 = rootbox("(x - 1)^2", "[0, 3]", "poxel32i");
+			ok = ok && sq2.boxes.size() == 1 && sq2.boxes[0].status == "exact root";
+			if (!ok) {
+				std::cerr << "FAIL: rootbox special cases (pole, exact root, none, no real value, double root)\n";
+				++nrOfFailedTests;
+			}
+		}
+		{
+			std::string expr, var, domain, error;
+			std::vector<std::string> types;
+			const bool good = parse_rootbox(reg, "y - 1 for y in [0, 2] poxel16i", expr, var, domain, types, error)
+			               && var == "y" && domain == "[0, 2]" && types.size() == 1;
+			const bool no_for = parse_rootbox(reg, "x^2 - 2 in [0, 2]", expr, var, domain, types, error);
+			const bool bad_type = parse_rootbox(reg, "x for x in [0, 1] notatype", expr, var, domain, types, error);
+			if (!good || no_for || bad_type) {
+				std::cerr << "FAIL: parse_rootbox\n";
 				++nrOfFailedTests;
 			}
 		}

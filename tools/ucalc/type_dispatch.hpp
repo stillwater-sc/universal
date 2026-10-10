@@ -44,6 +44,8 @@ struct Value {
 	long double tile_upper = 0;     // cannot hold the lattice: how another tile type reads it
 	bool tile_lower_open = false;
 	bool tile_upper_open = false;
+	std::int64_t tile_lo_key = 0;   // the set's first and last tile, in the type's tile order
+	std::int64_t tile_hi_key = 0;
 	bool tile_encloses = false;     // the set is known to contain the true value: always for a
 	                                // tile interval, for a single tile only when no open operand
 	                                // went through its sticky-flag arithmetic
@@ -136,6 +138,8 @@ struct TypeOps {
 	std::function<Value(const Value&)>       above;                  // x~: the open tile just above x
 	// the tightest box this tile interval type can state for an expression over a session's inputs
 	std::function<TightestReport(const ExpressionEvaluator&, const std::string&)> tightest;
+	// the run of tiles [lo, hi] by their keys, for a tile interval type (rootbox bisects with it)
+	std::function<Value(std::int64_t, std::int64_t)> from_keys;
 
 	// Type properties for range/precision display
 	std::function<Value()>                  maxpos;    // largest positive

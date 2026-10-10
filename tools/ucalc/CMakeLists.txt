@@ -55,6 +55,15 @@ add_test(NAME ucalc_ubox_trace_json
     COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc --json "ubox trace 1/3 - 0.333 in poxel16i areal32i")
 add_test(NAME ucalc_decide
     COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc "decide sign 1/3 - 0.333")
+add_test(NAME ucalc_roots
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc "roots 3 100 2 in poxel16i poxel32i")
+add_test(NAME ucalc_roots_json
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc --json "roots 3~ 100~ 2~ in areal32i")
+add_test(NAME ucalc_rootbox
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc "rootbox x^2 - 2 for x in [0, 2] poxel32i")
+add_test(NAME ucalc_roots_bad_arity
+    COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc "roots 1 2")
+set_tests_properties(ucalc_roots_bad_arity PROPERTIES WILL_FAIL TRUE)
 add_test(NAME ucalc_decide_bad_predicate
     COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/ucalc "decide 1 = 2")
 set_tests_properties(ucalc_decide_bad_predicate PROPERTIES WILL_FAIL TRUE)
