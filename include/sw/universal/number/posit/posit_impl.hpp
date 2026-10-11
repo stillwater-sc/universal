@@ -1248,29 +1248,29 @@ private:
 		positExponent<nbits, es, bt> _exponent;
 		positFraction<fbits, bt>     _fraction;
 		decode(_block, _sign, _regime, _exponent, _fraction);
-		// Round once, from the bits (#1678).  The value is (-1)^s 1.f 2^scale.  Keep the hidden
-		// bit and the top p - 1 fraction bits, where p is Real's precision at this scale (fewer
+		// Round once, from the bits (#1678).  The value is (-1)^s 1.f 2^binade.  Keep the hidden
+		// bit and the top p - 1 fraction bits, where p is Real's precision at this binade (fewer
 		// when the result is subnormal), round to nearest-even on the next bit and a sticky bit
 		// of all the bits below it, and scale the integer: it is exact in Real, so ldexp does
 		// not round again.  Accumulating the fraction in long double instead rounds at every
 		// bit beyond its significand, again on adding the hidden bit, and again on narrowing.
 		using Limits = std::numeric_limits<Real>;
 		const int nf    = static_cast<int>(fbits);
-		const int scale = _regime.scale() + _exponent.scale();
+		const int binade = _regime.scale() + _exponent.scale();
 		const auto f    = _fraction.bits();
 		auto fbit = [&](int i) { return i >= 0 && i < nf && f.test(static_cast<unsigned>(i)); };   // bit nf - 1 is worth 1/2
 		auto any_below = [&](int i) { for (int j = i - 1; j >= 0; --j) if (f.test(static_cast<unsigned>(j))) return true; return false; };
-		constexpr int emin = Limits::min_exponent - 1;               // scale of the smallest normal
-		const int p = Limits::digits - ((scale < emin) ? (emin - scale) : 0);
+		constexpr int emin = Limits::min_exponent - 1;               // binade of the smallest normal
+		const int p = Limits::digits - ((binade < emin) ? (emin - binade) : 0);
 		if (p < 0) return _sign ? -Real(0) : Real(0);                 // below half the smallest subnormal
 		Real m(0);
-		int exponent = scale + 1;                                     // p == 0: the grid is 2^(scale + 1)
+		int exponent = binade + 1;                                    // p == 0: the grid is 2^(binade + 1)
 		bool round = (p == 0), sticky = (p == 0) && any_below(nf);    // p == 0: the hidden bit rounds
 		if (p > 0) {
 			const int kept = (p - 1 < nf) ? p - 1 : nf;                 // fraction bits kept
 			m = Real(1);
 			for (int k = 1; k <= kept; ++k) m = m * Real(2) + (fbit(nf - k) ? Real(1) : Real(0));
-			exponent = scale - kept;
+			exponent = binade - kept;
 			if (kept < nf) {
 				round  = fbit(nf - kept - 1);
 				sticky = any_below(nf - kept - 1);
