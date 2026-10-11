@@ -6,7 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// Phase 1 (#1653): evaluated in double and rounded once, NOT correctly rounded; see shim.hpp.
+// Evaluated in double and rounded once, NOT yet correctly rounded (see shim.hpp): quad-double
+// has no accurate erf, erfc or gamma function yet.  The next phase of #1653 adds them.
 //
 // erfc is positive everywhere, so it saturates to minpos instead of underflowing.
 // tgamma has poles at 0 and the negative integers (NaR), is nonzero elsewhere, and

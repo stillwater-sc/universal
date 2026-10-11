@@ -1,12 +1,13 @@
-// mathlib.cpp: the elementary functions of the bounded posit, phase 1 (#1653)
+// mathlib.cpp: the elementary functions of the bounded posit (#1653)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// Phase 1 evaluates every function in double and rounds once.  This suite pins what that
-// guarantees:
+// This suite pins the library's contract at every function, including the ones still
+// evaluated in double (erf, erfc, tgamma, lgamma); correct_rounding.cpp checks the correctly
+// rounded ones for exact equality with an independent oracle.  Here:
 //
 //   - the exact functions (truncations, remainders, fabs, copysign, nextafter, min/max,
 //     classification) are exact, for every encoding of the 16-bit configurations;
@@ -18,7 +19,7 @@
 // The reference is long double, rounded once into the bposit.  Where long double is
 // double (MSVC, Apple arm64) the one-encoding check still holds but compares two double
 // evaluations.  The count of results that differ from the reference by one encoding is
-// reported: phase 2, correctly rounded, takes it to zero.
+// reported; for the correctly rounded functions it is zero by construction.
 #include <universal/utility/directives.hpp>
 #include <string>
 #include <vector>

@@ -216,21 +216,33 @@ bposit32 s = quire_resolve(q);
 |---|---|---|
 | `classify.hpp` | `fpclassify`, `isfinite`, `isinf`, `isnan`, `isnormal`, `signbit` | exact |
 | `next.hpp`, `minmax.hpp` | `nextafter`, `nexttoward`, `min`, `max`; `fabs`, `copysign` in `mathlib.hpp` | exact |
-| `truncate.hpp`, `fractional.hpp` | `floor`, `ceil`, `trunc`, `round`, `fmod`, `remainder`, `frac` | exact when the argument converts exactly to double |
-| `sqrt.hpp`, `hypot.hpp` | `sqrt`, `cbrt`, `hypot` (two and three arguments) | through double |
-| `exponent.hpp`, `logarithm.hpp`, `pow.hpp` | `exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p`, `pow` | through double |
-| `trigonometry.hpp`, `hyperbolic.hpp` | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh` | through double |
-| `error_and_gamma.hpp` | `erf`, `erfc`, `tgamma`, `lgamma` | through double |
+| `truncate.hpp`, `fractional.hpp` | `floor`, `ceil`, `trunc`, `round`, `fmod`, `remainder`, `frac` | exact, or correctly rounded |
+| `sqrt.hpp`, `hypot.hpp` | `sqrt`, `cbrt`, `hypot` (two and three arguments) | correctly rounded |
+| `exponent.hpp`, `logarithm.hpp`, `pow.hpp` | `exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p`, `pow` | correctly rounded |
+| `trigonometry.hpp`, `hyperbolic.hpp` | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh` | correctly rounded |
+| `error_and_gamma.hpp` | `erf`, `erfc`, `tgamma`, `lgamma` | through double, not yet correctly rounded |
 | `complex.hpp` | `sw::universal::complex<bposit>`: arithmetic, `abs`, `arg`, `norm`, `exp`, `log`, `sqrt`, `pow`, trigonometric | through `std::complex<double>` |
 
-**These functions are not yet correctly rounded.** They are phase 1 of #1653: each one is evaluated in double and rounded once into the b-posit. The posit standard requires every function to be correctly rounded for every input, because bitwise reproducibility depends on it, and phase 2 will make them so. Until then a result can be one encoding off when the true value lies within libm's error of a rounding boundary. The argument converts to double exactly for every 16- and 32-bit configuration, and `bposit<64, 6, 5>` loses its low bits.
+### Correct rounding
 
-Measured against a long double reference, the double route is already correctly rounded for every encoding of `bposit<16,4,2>`, `<16,5,2>` and `<16,6,5>` through every unary function, and for every sample at 32 bits (`static/tapered/bposit/math/mathlib.cpp`). Not being correctly rounded is the guarantee, though, and that measurement is not.
+The posit standard requires every function to be correctly rounded for every input, because bitwise reproducibility depends on it: the result is the true value rounded once, to nearest with ties to the even encoding. The b-posit math library meets that with Ziv's strategy (`math/correctly_rounded.hpp`):
 
-The posit standard's two promises hold through the double step:
+1. **Fast path.** The function is evaluated in double through libm, whose result is within a few ulps of the true value (`BPOSIT_MATH_LIBM_ULPS`, default 4; glibc documents 1 to 2 for these functions). If both ends of that interval round to the same b-posit, so does the true value. This decides nearly every input of a 16- or 32-bit b-posit, at about twice the cost of a plain libm call.
+2. **Quad-double.** Otherwise the function is evaluated in `qd`, about 212 bits, from the exact argument, with an error far below 2^-170, and the same test is applied.
+3. **Exact midpoints.** If even that interval straddles a rounding boundary, the true value is on it, and it rounds to the even neighbor. `pow` reaches these at ordinary arguments: `exp10(4) = 10000` is a midpoint of `bposit<16,6,5>`. `atan2(y, x)` with a tiny `y / x` is the one case where a transcendental value comes closer to a midpoint than 2^-170 without being on it, and it is resolved exactly.
 
-- **A finite result never becomes NaR.** `exp(maxpos)`, `sinh(maxpos)`, `pow(2, maxpos)` and `tgamma(maxpos)` overflow double, and saturate to maxpos.
-- **A nonzero result never becomes 0.** `exp(maxneg)`, `erfc(maxpos)` and `pow(2, maxneg)` underflow double, and saturate to minpos, with the result's sign: `tgamma(-200.5)` is `-minpos`.
+The quad-double kernels avoid the cancellations of the textbook formulas: log near 1 goes through log1p of the exact `x - 1`, `asin` and `acos` through `atan2` of exact differences, and `sin`, `cos` and `tan` reduce their argument exactly with Payne and Hanek's method, from 1280 bits of 2/pi, so `sin(maxpos)` is correctly rounded too. The truncations, `fmod` and `remainder` are computed exactly in integers from the encodings.
+
+The fast path needs the argument to convert to double exactly (`fbits + 1 <= 53`), which holds for every 16- and 32-bit configuration. `bposit<64, 6, 5>` takes the quad-double path every time, at some 5 to 15 microseconds per call. The quad-double engine needs the range inside double's: `|scale| <= 600`, which covers every standard and DSP-fitted configuration; a configuration beyond it falls back to the evaluation in double, which is not correctly rounded.
+
+`static/tapered/bposit/math/correct_rounding.cpp` checks every result for equality with an oracle that shares no code with the library: long double libm first, and `ereal<8>` with exact midpoint comparisons when that is ambiguous. Every encoding of `bposit<16,4,2>`, `<16,5,2>` and `<16,6,5>` is checked through 22 functions, by both the default path and the quad-double engine alone, and the 32- and 64-bit configurations and the two-argument functions are sampled.
+
+`erf`, `erfc`, `tgamma` and `lgamma` are still evaluated in double, because quad-double has no accurate implementation of them yet; they follow in the next phase of #1653. `complex<bposit>` evaluates its functions through `std::complex<double>`, one rounding per component.
+
+### The posit standard's promises
+
+- **A finite result never becomes NaR.** `exp(maxpos)`, `sinh(maxpos)`, `pow(2, maxpos)` and `tgamma(maxpos)` saturate to maxpos.
+- **A nonzero result never becomes 0.** `exp(maxneg)`, `erfc(maxpos)` and `pow(2, maxneg)` saturate to minpos, with the result's sign: `tgamma(-200.5)` is `-minpos`.
 
 Poles and domain errors are NaR: `log(0)`, `log(-1)`, `sqrt(-1)`, `atanh(1)`, `tgamma(0)`, `tgamma(-1)`, `pow(0, -1)`, and `fmod(x, 0)`. NaR in any argument gives NaR, for `min` and `max` too. There is no infinity, so `isinf` is always false.
 

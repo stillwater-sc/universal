@@ -7,11 +7,13 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // Every function is found by ADL on bposit<nbits, rs, es, bt>, so generic code that
-// calls sin(x) or sqrt(x) on its value type works for b-posits.  Phase 1 evaluates the
-// functions in double and rounds once: exact for classification, nextafter, min/max,
-// fabs and copysign, and for the truncations and remainders whenever the argument
-// converts exactly to double, but NOT correctly rounded for the transcendental
-// functions.  math/shim.hpp states the guarantee and what it covers.
+// calls sin(x) or sqrt(x) on its value type works for b-posits.
+//
+// The elementary functions are correctly rounded, as the posit standard requires: the
+// truncations and remainders exactly in integers, the rest by Ziv's strategy, libm in double
+// first and quad-double where that cannot decide (math/correctly_rounded.hpp).  erf, erfc,
+// tgamma and lgamma are still evaluated in double (math/shim.hpp), and so are the complex
+// functions; #1653 tracks the rest.
 #include <universal/number/bposit/math/shim.hpp>
 #include <universal/number/bposit/math/classify.hpp>
 #include <universal/number/bposit/math/complex.hpp>
