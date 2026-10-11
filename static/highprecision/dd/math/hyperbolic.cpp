@@ -1,17 +1,18 @@
-// hyperbolic.cpp: test suite runner for hyperbolic functions for double-double (dd) floating-point
+// hyperbolic.cpp: test suite runner for sinh, cosh, tanh, asinh, acosh and atanh of dd
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Against references far more precise than the type: see test_suite_multidouble_special.hpp (#1667).
 #include <universal/utility/directives.hpp>
-#include <numbers>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
-
+#include <universal/verification/test_suite_multidouble_special.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -21,58 +22,42 @@
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
+	namespace mv = sw::universal::multidouble_verification;
 
-	std::string test_suite  = "double-double mathlib hyperbolic function validation";
+	std::string test_suite  = "dd mathlib sinh, cosh, tanh, asinh, acosh and atanh validation";
 	std::string test_tag    = "hyperbolic";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	auto defaultPrecision = std::cout.precision();
-
-	std::cout << "ALL HYPERBOLIC FUNCTIONS ARE SHIMS TO DOUBLE\n";
-
-	{
-		std::cout << "double reference\n";
-		double x = std::numbers::pi * 0.25;
-		std::cout << "sinh( " << x << " ) = " << sinh(x) << '\n';
-		std::cout << "cosh( " << x << " ) = " << cosh(x) << '\n';
-		std::cout << "tanh( " << x << " ) = " << tanh(x) << '\n';
-
-		std::cout << "asinh( " << x << " ) = " << asinh(x) << '\n';
-		std::cout << "acosh( " << x << " ) = " << acosh(x) << '\n';
-		std::cout << "atanh( " << x << " ) = " << atanh(x) << '\n';
-	}
-
-	{
-		std::cout << "double-double reference\n";
-		dd x = dd_pi_4;
-		std::cout << "sinh( " << x << " ) = " << sinh(x) << '\n';
-		std::cout << "cosh( " << x << " ) = " << cosh(x) << '\n';
-		std::cout << "tanh( " << x << " ) = " << tanh(x) << '\n';
-
-		std::cout << "asinh( " << x << " ) = " << asinh(x) << '\n';
-		std::cout << "acosh( " << x << " ) = " << acosh(x) << '\n';
-		std::cout << "atanh( " << x << " ) = " << atanh(x) << '\n';
-	}
-
-	std::cout << std::setprecision(defaultPrecision);
-
+	std::cout << "asinh(1e-30) = " << asinh(dd(1.0e-30)) << '\n';
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyHyperbolic<dd>("dd", reportTestCases), "dd hyperbolic", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -9,14 +9,12 @@
 #include <universal/number/qd_cascade/math/functions/numerics.hpp>
 
 // Phase 1: Low-complexity stub functions (completed)
-#include <universal/number/qd_cascade/math/functions/error_and_gamma.hpp>
 #include <universal/number/qd_cascade/math/functions/fractional.hpp>
 #include <universal/number/qd_cascade/math/functions/minmax.hpp>
 #include <universal/number/qd_cascade/math/functions/truncate.hpp>
 
 // Phase 2: Medium-complexity functions (completed)
 #include <universal/number/qd_cascade/math/functions/cbrt.hpp>
-#include <universal/number/qd_cascade/math/functions/hyperbolic.hpp>
 #include <universal/number/qd_cascade/math/functions/exponent.hpp>
 #include <universal/number/qd_cascade/math/functions/logarithm.hpp>
 #include <universal/number/qd_cascade/math/functions/pow.hpp>
@@ -26,6 +24,9 @@
 // hypot after sqrt: its shared implementation calls sqrt
 #include <universal/number/qd_cascade/math/functions/hypot.hpp>
 #include <universal/number/qd_cascade/math/functions/trigonometry.hpp>
+// last: the shared implementations call exp, log, sqrt and sin
+#include <universal/number/qd_cascade/math/functions/hyperbolic.hpp>
+#include <universal/number/qd_cascade/math/functions/error_and_gamma.hpp>
 // Note: classify (fpclassify, isinf, isnan, isfinite, isnormal) in attributes.hpp
 // Note: next (nextafter, ulp) in attributes.hpp or numerics.hpp
 

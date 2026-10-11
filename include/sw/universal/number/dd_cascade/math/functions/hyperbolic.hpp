@@ -1,41 +1,27 @@
 #pragma once
-// hyperbolic.hpp: hyperbolic function support for double-double floating-point
+// hyperbolic.hpp: hyperbolic functions of double-double cascade floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Evaluated in the type itself (#1667): they used to go through double, worth 53 bits.  See
+// number/shared/multidouble_special.hpp for the forms that keep relative accuracy near 0 and 1.
+#include <universal/number/shared/multidouble_special.hpp>
 
 namespace sw { namespace universal {
 
-	// hyperbolic sine of an angle of x radians
-	inline dd_cascade sinh(const dd_cascade& x) {
-		return dd_cascade( std::sinh(double(x)));
-	}
+	inline dd_cascade sinh(const dd_cascade& x) { return multidouble::sinh(x); }
 
-	// hyperbolic cosine of an angle of x radians
-	inline dd_cascade cosh(const dd_cascade& x) {
-		return dd_cascade( std::cosh(double(x)));
-	}
+	inline dd_cascade cosh(const dd_cascade& x) { return multidouble::cosh(x); }
 
-	// hyperbolic tangent of an angle of x radians
-	inline dd_cascade tanh(const dd_cascade& x) {
-		return dd_cascade( std::tanh(double(x)));
-	}
+	inline dd_cascade tanh(const dd_cascade& x) { return multidouble::tanh(x); }
 
-	// hyperbolic cotangent of an angle of x radians
-	inline dd_cascade atanh(const dd_cascade& x) {
-		return dd_cascade( std::atanh(double(x)));
-	}
+	inline dd_cascade asinh(const dd_cascade& x) { return multidouble::asinh(x); }
 
-	// hyperbolic cosecant of an angle of x radians
-	inline dd_cascade acosh(const dd_cascade& x) {
-		return dd_cascade( std::acosh(double(x)));
-	}
+	inline dd_cascade acosh(const dd_cascade& x) { return multidouble::acosh(x); }
 
-	// hyperbolic secant of an angle of x radians
-	inline dd_cascade asinh(const dd_cascade& x) {
-		return dd_cascade( std::asinh(double(x)));
-	}
+	inline dd_cascade atanh(const dd_cascade& x) { return multidouble::atanh(x); }
 
 }} // namespace sw::universal

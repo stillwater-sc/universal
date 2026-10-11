@@ -42,6 +42,14 @@ namespace sw { namespace universal {
 		   approximately doubles the number of digits per iteration.
 		 */
 
+        // A huge or tiny a puts exp(-x) in the Newton steps below near the bottom of double's range,
+        // where its low limbs are lost: log(1e300) kept 89 bits.  Take the binary exponent out first;
+        // beyond 2^500 k ln 2 dominates the result, so nothing cancels (#1667).
+        {
+            const int k = std::ilogb(a[0]);
+            if (k > 500 || k < -500) return log(ldexp(a, -k)) + multidouble::constant<qd>(multidouble::constants::ln2) * qd(static_cast<double>(k));
+        }
+
         qd x = std::log(a[0]);   // Initial approximation
 
         x = x + a * exp(-x) - 1.0;

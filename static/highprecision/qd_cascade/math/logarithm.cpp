@@ -8,6 +8,7 @@
 #include <universal/number/qd_cascade/qd_cascade.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_multidouble_exact.hpp>
+#include <universal/verification/test_suite_multidouble_special.hpp>
 
 namespace sw { namespace universal { namespace detail {
 
@@ -164,6 +165,8 @@ try {
 #if REGRESSION_LEVEL_1
 	// log1p keeps its relative accuracy near 0, where 1 + a drops the low limbs of a (#1667)
 	nrOfFailedTestCases += ReportTestResult(sw::universal::multidouble_verification::VerifyLog1pSmall<qd_cascade>("qd_cascade", 200, reportTestCases), "qd_cascade log1p near 0", "log1p");
+	// log at the ends of the exponent range (#1667)
+	nrOfFailedTestCases += ReportTestResult(sw::universal::multidouble_verification::VerifyLogRange<qd_cascade>("qd_cascade", reportTestCases), "qd_cascade log range", "log");
 	using namespace detail;
 	// qd_cascade log() is verified against known constants (qdc_ln2, qdc_ln10, qdc_e)
 	// which are accurate to full 4-component precision. Threshold 1e-62 is near

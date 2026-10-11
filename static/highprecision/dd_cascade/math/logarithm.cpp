@@ -8,6 +8,7 @@
 #include <universal/number/dd_cascade/dd_cascade.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_multidouble_exact.hpp>
+#include <universal/verification/test_suite_multidouble_special.hpp>
 
 namespace sw { namespace universal { namespace detail {
 
@@ -165,6 +166,8 @@ try {
 #if REGRESSION_LEVEL_1
 	// log1p keeps its relative accuracy near 0, where 1 + a drops the low limbs of a (#1667)
 	nrOfFailedTestCases += ReportTestResult(sw::universal::multidouble_verification::VerifyLog1pSmall<dd_cascade>("dd_cascade", 200, reportTestCases), "dd_cascade log1p near 0", "log1p");
+	// log at the ends of the exponent range (#1667)
+	nrOfFailedTestCases += ReportTestResult(sw::universal::multidouble_verification::VerifyLogRange<dd_cascade>("dd_cascade", reportTestCases), "dd_cascade log range", "log");
 	using namespace detail;
 	// dd_cascade has ~104 bits precision -> threshold ~1e-28
 	nrOfFailedTestCases += ReportTestResult(VerifyLogFunction<dd_cascade>(reportTestCases, 1.0e-28), "dd_cascade", "log()");
