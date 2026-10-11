@@ -14,11 +14,17 @@ Tracking issue: #1631. Applications: #1637.
 
 | Parameter | Meaning |
 |---|---|
-| `nbits` | total bits, including the ubit; at most 64 |
+| `nbits` | total bits, including the ubit; any width |
 | `es` | exponent size of the underlying posit lattice |
 | `bt` | storage block type, default `std::uint8_t` |
 
-Constraints, checked at compile time: `nbits <= 64`, `nbits >= es + 4`, `es < 16`.
+Constraints, checked at compile time: `nbits >= es + 4`, `es < 16`.
+
+Up to 64 bits the encoder and decoder work in native 64-bit integers. Wider poxels, such as `poxel<129, 2>` over the `posit<128, 2>` lattice, use `integer<nbits + 2>` for patterns, lattice indices and fractions. The algorithms are the same, so every configuration up to 64 bits gives the same results as before (#1676).
+
+Endpoint conversion is rounded to nearest at every width. Above 64 bits, a `Real` with fewer than 64 digits (`double`) gets the top 64 bits of the significand, with every lower bit folded into a sticky bit, and rounds once. A `Real` with 64 or more digits (x87 or quad `long double`) keeps the top 64 bits exactly and adds the next 64, with the sticky bit in their lowest bit, so 128 bits reach its single rounding.
+
+A configuration wider than 64 bits has wider keys. `lattice()`, `key()` and `tile_interval`'s keys are `integer<nbits + 2>`, not `std::int64_t`, and `raw()` returns only the low 64 bits.
 
 | alias | type | lattice | fraction bits at 1.0 | minpos .. maxpos |
 |---|---|---|---|---|
@@ -86,7 +92,7 @@ Special cases: NaR propagates. Division by exact zero gives NaR, and so does div
 
 ## Enclosures: tile_interval
 
-`tile_interval<Tile>` (`universal/utility/tile_interval.hpp`) is the run of tiles `[lo, hi]`, in the spirit of Gustafson's valid. It works with `poxel` and with `areal` (tiles of up to 64 bits), and it is guaranteed to **contain** every result.
+`tile_interval<Tile>` (`universal/utility/tile_interval.hpp`) is the run of tiles `[lo, hi]`, in the spirit of Gustafson's valid. It works with `poxel` of any width and with `areal` of up to 64 bits, and it is guaranteed to **contain** every result.
 
 It relies on one property of the tile type: an operation on two *exact* tiles returns the tile that contains the exact result. For `poxel` this is tested exhaustively, and the `tile_interval` tests check it for `areal`. Every interval operation is therefore evaluated on exact endpoints only. The one containing tile then gives both directed roundings: its lower end bounds the result from below, and its upper end bounds it from above.
 
@@ -133,4 +139,11 @@ to_binary(b);         // posit fields, then "|u"
 - `logic`: exhaustive tile order, NaR lowest; sampled pairs and neighbouring tiles for `poxel17` and `poxel33`
 - `arithmetic`: exhaustive `+ - * /` for `<8,0>`, `<9,2>` and `<10,1>`, covering containment and the sticky flag. Sampled exact operands for `poxel17` and `poxel33` are checked against an exact `ereal` reference, and the result of the same operation in `posit<nbits - 1, es>` must be one end of the poxel's tile.
 - `api`: the constexpr encoder, special tiles, `numeric_limits`, and exceptions
+- `wide`: `poxel<65,2>`, `poxel<129,2>` and `poxel<257,2>`, sampled.
+  - Each lattice value, as `double` and as `long double`, is the nearest to the exact value.
+  - Tiles are ordered and negation mirrors them. Both are checked exactly.
+  - `double` and `long double` land in their containing tile.
+  - Conversion to and from posit round-trips.
+  - Exact-operand `+ - * /` matches the exact dyadic oracle (`tile_oracle.hpp`), and the same operation in posit lands on one end of the tile.
+  - Tile order holds, and `tile_interval` encloses its results.
 - `tile_interval`: exhaustive enclosure and tightness over every pair of tiles of `poxel<8,0>`, `poxel<9,2>` and `areal<8,2>`; multi-tile operands; open ends; `cos` against `std::cos`

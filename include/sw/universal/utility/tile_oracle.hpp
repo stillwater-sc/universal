@@ -329,10 +329,14 @@ inline interval from_decimal(std::string_view text, int P, bool& ok) {
 template<unsigned nbits, unsigned es, typename bt>
 dyadic exact_value(const poxel<nbits, es, bt>& t) {
 	using X = poxel<nbits, es, bt>;
-	const std::int64_t L = t.lattice();
+	const auto L = t.lattice();
 	if (L == 0) return {};
 	const auto d = X::decode_lattice(L);                   // (-1)^neg (2^nf + frac) 2^(scale - nf)
-	Big m(static_cast<unsigned long long>((1ull << d.nf) | d.frac));
+	Big m(1);                                             // the hidden bit, then the fraction, MSB first:
+	for (unsigned i = d.nf; i-- > 0;) {                   // any width, not only nf < 64
+		m <<= 1;
+		if (X::bit(d.frac, i)) m += 1;
+	}
 	if (d.negative) m = -m;
 	return trim({ m, d.scale - static_cast<int>(d.nf) });
 }
@@ -357,21 +361,23 @@ dyadic exact_value(const areal<nbits, es, bt>& t) {
 
 // the exact value of the lattice point with (even) tile key k
 template<typename Tile>
-dyadic lattice_point(std::int64_t k) { return exact_value(tile_traits<Tile>::tile(k)); }
+dyadic lattice_point(const typename tile_traits<Tile>::key_type& k) { return exact_value(tile_traits<Tile>::tile(k)); }
 
 // the key of the tile that contains x: an even key when x is a lattice point
 template<typename Tile>
-std::int64_t locate(const dyadic& x) {
-	const std::int64_t K = tile_traits<Tile>::kmax;
-	const std::int64_t top = (K - 1) / 2;                  // half-key of maxpos
-	if (compare(x, lattice_point<Tile>(2 * top)) > 0) return K;
-	if (compare(x, lattice_point<Tile>(-2 * top)) < 0) return -K;
-	std::int64_t lo = -top, hi = top;                      // largest h with point(2h) <= x
+typename tile_traits<Tile>::key_type locate(const dyadic& x) {
+	using key_type = typename tile_traits<Tile>::key_type;
+	const key_type one(1), two(2);
+	const key_type K = tile_traits<Tile>::kmax;
+	const key_type top = (K - one) / two;                  // half-key of maxpos
+	if (compare(x, lattice_point<Tile>(two * top)) > 0) return K;
+	if (compare(x, lattice_point<Tile>(-(two * top))) < 0) return -K;
+	key_type lo = -top, hi = top;                          // largest h with point(2h) <= x
 	while (lo < hi) {
-		const std::int64_t mid = lo + (hi - lo + 1) / 2;
-		if (compare(lattice_point<Tile>(2 * mid), x) <= 0) lo = mid; else hi = mid - 1;
+		const key_type mid = lo + (hi - lo + one) / two;
+		if (compare(lattice_point<Tile>(two * mid), x) <= 0) lo = mid; else hi = mid - one;
 	}
-	return compare(lattice_point<Tile>(2 * lo), x) == 0 ? 2 * lo : 2 * lo + 1;
+	return compare(lattice_point<Tile>(two * lo), x) == 0 ? two * lo : two * lo + one;
 }
 
 // the run of tiles that holds every point of x
@@ -379,8 +385,8 @@ template<typename Tile>
 tile_interval<Tile> box(const interval& x) {
 	using I = tile_interval<Tile>;
 	if (x.nan) return I::nan();
-	const std::int64_t lo = x.lo_inf ? -I::kmax : locate<Tile>(x.lo);
-	const std::int64_t hi = x.hi_inf ? I::kmax : locate<Tile>(x.hi);
+	const typename I::key_type lo = x.lo_inf ? -I::kmax : locate<Tile>(x.lo);
+	const typename I::key_type hi = x.hi_inf ? I::kmax : locate<Tile>(x.hi);
 	return I::from_keys(lo, std::max(lo, hi));
 }
 
