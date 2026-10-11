@@ -1,16 +1,18 @@
-// error_and_gamma.cpp: test suite runner for error and gamma functions for double-double cascade (dd_cascade) floating-point
+// error_and_gamma.cpp: test suite runner for erf, erfc, lgamma and tgamma of dd_cascade
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Against references far more precise than the type: see test_suite_multidouble_special.hpp (#1667).
 #include <universal/utility/directives.hpp>
-#include <numbers>
 #include <universal/number/dd_cascade/dd_cascade.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_multidouble_special.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -20,39 +22,43 @@
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
+	namespace mv = sw::universal::multidouble_verification;
 
-	std::string test_suite  = "dd_cascade mathlib error/gamma function validation";
+	std::string test_suite  = "dd_cascade mathlib erf, erfc, lgamma and tgamma validation";
 	std::string test_tag    = "error/gamma";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	dd_cascade x(-3.0), increment(0.5);
-	for (int i = 0; i < 14; i++) {
-		std::cout << " erf( " << x << ") = " << erf(x) << '\n';
-		x += increment;
-	}
-	x = -3.0;
-	for (int i = 0; i < 14; i++) {
-		std::cout << " erfc( " << x << ") = " << erfc(x) << '\n';
-		x += increment;
-	}
-
+	std::cout << "tgamma(0.5)^2 = " << tgamma(dd_cascade(0.5)) * tgamma(dd_cascade(0.5)) << " (pi)\n";
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyErrorAndGamma<dd_cascade>("dd_cascade", reportTestCases), "dd_cascade erf/erfc/lgamma/tgamma", test_tag);
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyErrorAndGammaSpecialValues<dd_cascade>("dd_cascade", reportTestCases), "dd_cascade special values", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -9,10 +9,8 @@
 #include <universal/number/dd/math/functions/numerics.hpp>
 
 #include <universal/number/dd/math/functions/classify.hpp>
-#include <universal/number/dd/math/functions/error_and_gamma.hpp>
 #include <universal/number/dd/math/functions/exponent.hpp>
 #include <universal/number/dd/math/functions/fractional.hpp>
-#include <universal/number/dd/math/functions/hyperbolic.hpp>
 #include <universal/number/dd/math/functions/logarithm.hpp>
 #include <universal/number/dd/math/functions/minmax.hpp>
 #include <universal/number/dd/math/functions/next.hpp>
@@ -24,3 +22,6 @@
 #include <universal/number/dd/math/functions/truncate.hpp>
 
 #include <universal/number/dd/math/functions/cbrt.hpp>
+// last: the shared implementations call exp, log, sqrt and sin
+#include <universal/number/dd/math/functions/hyperbolic.hpp>
+#include <universal/number/dd/math/functions/error_and_gamma.hpp>

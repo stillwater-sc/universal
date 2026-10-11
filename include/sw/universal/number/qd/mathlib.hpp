@@ -9,10 +9,8 @@
 #include <universal/number/qd/math/functions/numerics.hpp>
 
 #include <universal/number/qd/math/functions/classify.hpp>
-#include <universal/number/qd/math/functions/error_and_gamma.hpp>
 #include <universal/number/qd/math/functions/exponent.hpp>
 #include <universal/number/qd/math/functions/fractional.hpp>
-#include <universal/number/qd/math/functions/hyperbolic.hpp>
 #include <universal/number/qd/math/functions/logarithm.hpp>
 #include <universal/number/qd/math/functions/minmax.hpp>
 #include <universal/number/qd/math/functions/next.hpp>
@@ -22,3 +20,6 @@
 #include <universal/number/qd/math/functions/hypot.hpp>
 #include <universal/number/qd/math/functions/trigonometry.hpp>
 #include <universal/number/qd/math/functions/truncate.hpp>
+// last: the shared implementations call exp, log, sqrt and sin
+#include <universal/number/qd/math/functions/hyperbolic.hpp>
+#include <universal/number/qd/math/functions/error_and_gamma.hpp>

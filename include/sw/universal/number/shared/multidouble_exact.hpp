@@ -27,12 +27,23 @@
 #include <cstdint>
 #include <limits>
 #include <universal/numerics/error_free_ops.hpp>
+#include <universal/number/shared/multidouble_special_constants.hpp>
 
 namespace sw { namespace universal { namespace multidouble {
 
 	// the number of limbs of a multi-double type
 	template<typename Real>
 	constexpr int limbs = std::numeric_limits<Real>::digits / 53;
+
+	// a four-limb constant, rounded to Real's precision
+	template<typename Real>
+	Real constant(const double (&c)[4]) {
+		Real r(c[3]);
+		r += Real(c[2]);
+		r += Real(c[1]);
+		r += Real(c[0]);
+		return r;
+	}
 
 	// An exact sum of doubles: Shewchuk's GROW-EXPANSION with zero elimination keeps the
 	// components nonoverlapping, ordered from the smallest magnitude up, so the last one carries
