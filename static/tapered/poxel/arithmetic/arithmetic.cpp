@@ -15,10 +15,19 @@
 // The reference value is formed in a double: for these lattices a sum, difference or
 // product is exact there, and a quotient that is not a lattice value lies far more than a
 // double ulp from every lattice value, so the containment check is exact.
+//
+// Sampled at 16 and 32 bits (poxel17, poxel33), exact operands only, where a double is no
+// longer exact: the reference is ereal, in which the sums and products of the endpoints
+// are exact, and a quotient is checked through lo * b < a < hi * b.  The same operation in
+// posit<nbits - 1, es>, which rounds to nearest, must land on one end of the poxel's tile.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <cstdint>
+#include <random>
 #include <string>
 #include <universal/number/poxel/poxel.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace {
@@ -76,6 +85,64 @@ int VerifyIdentities(bool report) {
 	return fails;
 }
 
+// exact operands drawn at random from the whole lattice
+template<unsigned nbits, unsigned es, typename bt>
+int VerifySampled(unsigned samples, bool report) {
+	using X = sw::universal::poxel<nbits, es, bt>;
+	using P = sw::universal::posit<nbits - 1, es, bt>;
+	using E = sw::universal::ereal<8>;                       // exact for these sums and products
+	std::mt19937_64 rng(0x1631u + nbits);
+	int fails = 0;
+	auto exact_tile = [&]() {
+		X x;
+		do { x.setbits(rng() << 1); } while (x.isnar());      // ubit clear: a lattice point
+		return x;
+	};
+	for (unsigned i = 0; i < samples; ++i) {
+		const X a = exact_tile(), b = exact_tile();
+		const double x = double(a), y = double(b);
+		for (Op op : { Op::add, Op::sub, Op::mul, Op::div }) {
+			const std::string where = std::to_string(x) + (op == Op::add ? " + " : op == Op::sub ? " - " : op == Op::mul ? " * " : " / ") + std::to_string(y);
+			auto fail = [&](const std::string& what) { ++fails; if (report && fails < 10) std::cerr << "FAIL " << sw::universal::type_tag(X{}) << ' ' << where << ": " << what << '\n'; };
+			X r;
+			P pr(0);
+			switch (op) {
+			case Op::add: r = a + b; pr = P(a) + P(b); break;
+			case Op::sub: r = a - b; pr = P(a) - P(b); break;
+			case Op::mul: r = a * b; pr = P(a) * P(b); break;
+			case Op::div: r = a / b; pr = P(a) / P(b); break;
+			}
+			if (op == Op::div && b.iszero()) { if (!r.isnar()) fail("division by zero must be NaR"); continue; }
+			if (r.isnar()) { fail("NaR from finite operands"); continue; }
+			const double lo = r.template lower<double>(), hi = r.template upper<double>();
+			// the exact result v against the tile: sign of v - e for an endpoint e
+			auto cmp = [&](double e) -> int {
+				E d;
+				if (op == Op::div) {                                    // v - e has the sign of (x - e y) / y
+					d = E(x) - E(e) * E(y);
+					if (y < 0.0) d = -d;
+				}
+				else {
+					const E v = (op == Op::add) ? E(x) + E(y) : (op == Op::sub) ? E(x) - E(y) : E(x) * E(y);
+					d = v - E(e);
+				}
+				return d.iszero() ? 0 : (d < E(0.0) ? -1 : 1);
+			};
+			if (r.isexact()) {
+				if (cmp(lo) != 0) fail("marked exact but is not the exact result");
+			}
+			else {
+				if (!(std::isinf(lo) || cmp(lo) > 0) || !(std::isinf(hi) || cmp(hi) < 0)) fail("the exact result is not strictly inside the open tile");
+			}
+			// posit rounds to nearest: one of the tile's two ends
+			X up(r);
+			if (!r.isexact()) ++up;                                    // the point tile that ends it
+			if (!(pr == P(r)) && !(pr == P(up))) fail("posit's rounding is not an end of the tile");
+		}
+	}
+	return fails;
+}
+
 }  // anonymous namespace
 
 #define MANUAL_TESTING 0
@@ -108,9 +175,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<9, 2>(reportTestCases), "poxel<9,2>", "exhaustive + - * /");
 	nrOfFailedTestCases += ReportTestResult(VerifyIdentities<poxel17>(reportTestCases), "poxel17", "identities");
 	nrOfFailedTestCases += ReportTestResult(VerifyIdentities<poxel33>(reportTestCases), "poxel33", "identities");
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<17, 2, std::uint32_t>(20000, reportTestCases), "poxel17", "sampled + - * /");
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<33, 2, std::uint64_t>(20000, reportTestCases), "poxel33", "sampled + - * /");
 #endif
 #if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<10, 1>(reportTestCases), "poxel<10,1>", "exhaustive + - * /");
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<17, 2, std::uint32_t>(100000, reportTestCases), "poxel17", "sampled + - * /");
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<33, 2, std::uint64_t>(100000, reportTestCases), "poxel33", "sampled + - * /");
 #endif
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
