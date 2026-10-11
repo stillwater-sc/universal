@@ -1,23 +1,18 @@
 #pragma once
-// shim.hpp: rounding a double result into a b-posit, phase 1 of the math library (#1653) for the bounded posit
+// shim.hpp: rounding a double result into a b-posit, saturating as the posit standard requires
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// Phase 1 evaluates every function in double and rounds the result once into the
-// bposit.  The conversion of the argument is exact whenever the bposit's significand
-// fits a double (fbits + 1 <= 53) and its range does too (|scale| < 1022), which holds
-// for every 16- and 32-bit configuration in use, including the standard <n, 6, 5> and
-// the DSP-fitted <16, 4, 2> and <32, 4, 2>.  bposit<64, 6, 5> loses its low bits.
-//
-// The functions are NOT correctly rounded.  The posit standard requires every function
-// to be correctly rounded for every input, because anything less gives up bitwise
-// reproducibility.  libm's double result is within about an ulp of the true value, so
-// the bposit result is correct except when the true value lies that close to a rounding
-// boundary of the bposit; then it can be one encoding off.  Phase 2 of #1653 replaces
-// these with correctly rounded implementations.
+// Phase 1 evaluated every function in double and rounded the result once.  The elementary
+// functions are now correctly rounded (correctly_rounded.hpp), and this evaluation remains
+// for erf, erfc, tgamma and lgamma, and for configurations whose range is beyond the
+// quad-double engine.  It is NOT correctly rounded: libm's double result is within about an
+// ulp of the true value, so the result is correct except when the true value lies that close
+// to a rounding boundary of the bposit, and then it can be one encoding off.  The argument
+// converts to double exactly when the significand fits (fbits + 1 <= 53) and the range does.
 //
 // Two promises of the posit standard survive the double step here:
 // - a finite true result never becomes NaR, so a double overflow saturates to maxpos;
