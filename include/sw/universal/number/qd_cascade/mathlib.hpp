@@ -11,7 +11,6 @@
 // Phase 1: Low-complexity stub functions (completed)
 #include <universal/number/qd_cascade/math/functions/error_and_gamma.hpp>
 #include <universal/number/qd_cascade/math/functions/fractional.hpp>
-#include <universal/number/qd_cascade/math/functions/hypot.hpp>
 #include <universal/number/qd_cascade/math/functions/minmax.hpp>
 #include <universal/number/qd_cascade/math/functions/truncate.hpp>
 
@@ -24,6 +23,8 @@
 
 // Phase 3: High-complexity functions (completed)
 #include <universal/number/qd_cascade/math/functions/sqrt.hpp>
+// hypot after sqrt: its shared implementation calls sqrt
+#include <universal/number/qd_cascade/math/functions/hypot.hpp>
 #include <universal/number/qd_cascade/math/functions/trigonometry.hpp>
 // Note: classify (fpclassify, isinf, isnan, isfinite, isnormal) in attributes.hpp
 // Note: next (nextafter, ulp) in attributes.hpp or numerics.hpp

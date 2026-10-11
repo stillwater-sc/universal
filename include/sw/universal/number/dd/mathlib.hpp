@@ -13,12 +13,13 @@
 #include <universal/number/dd/math/functions/exponent.hpp>
 #include <universal/number/dd/math/functions/fractional.hpp>
 #include <universal/number/dd/math/functions/hyperbolic.hpp>
-#include <universal/number/dd/math/functions/hypot.hpp>
 #include <universal/number/dd/math/functions/logarithm.hpp>
 #include <universal/number/dd/math/functions/minmax.hpp>
 #include <universal/number/dd/math/functions/next.hpp>
 #include <universal/number/dd/math/functions/pow.hpp>
 #include <universal/number/dd/math/functions/sqrt.hpp>
+// hypot after sqrt: its shared implementation calls sqrt
+#include <universal/number/dd/math/functions/hypot.hpp>
 #include <universal/number/dd/math/functions/trigonometry.hpp>
 #include <universal/number/dd/math/functions/truncate.hpp>
 

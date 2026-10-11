@@ -1,5 +1,5 @@
 #pragma once
-// minmax.hpp: minmax support for quad-double floating-point
+// minmax.hpp: minmax support for quad-double cascade floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -8,12 +8,9 @@
 
 namespace sw { namespace universal {
 
-	inline qd_cascade min(const qd_cascade& x, const qd_cascade& y) {
-	return qd_cascade(std::min(double(x), double(y)));
-	}
+	// the operand itself, every limb of it: these used to return a double rounding (#1667)
+	inline qd_cascade min(const qd_cascade& x, const qd_cascade& y) { return (y < x) ? y : x; }
 
-	inline qd_cascade max(const qd_cascade& x, const qd_cascade& y) {
-	    return qd_cascade(std::max(double(x), double(y)));
-	}
+	inline qd_cascade max(const qd_cascade& x, const qd_cascade& y) { return (x < y) ? y : x; }
 
 }} // namespace sw::universal

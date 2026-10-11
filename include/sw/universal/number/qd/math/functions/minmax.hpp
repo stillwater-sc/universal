@@ -8,17 +8,9 @@
 
 namespace sw { namespace universal {
 
-#if !QUADDOUBLE_NATIVE_MINMAX
+	// the operand itself, every limb of it: the former QUADDOUBLE_NATIVE_MINMAX=0 path returned a
+	// double rounding (#1667), so there is only this one now
 
-	inline qd min(const qd& x, const qd& y) {
-		return qd(std::min(double(x), double(y)));
-	}
-
-	inline qd max(const qd& x, const qd& y) {
-		return qd(std::max(double(x), double(y)));
-	}
-
-#else 
 	////////////////////////    logic functions   /////////////////////////////////
 
 	inline qd max(const qd& a, const qd& b) { return (a > b) ? a : b; }
@@ -29,6 +21,5 @@ namespace sw { namespace universal {
 
 	inline qd min(const qd& a, const qd& b, const qd& c) { return (a < b) ? ((a < c) ? a : c) : ((b < c) ? b : c); }
 
-#endif
 
 }} // namespace sw::universal
