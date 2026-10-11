@@ -399,6 +399,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16_42>(true, reportTestCases), "bposit<16,4,2>", "exhaustive, qd only");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16>(false, reportTestCases), "bposit<16,6,5>", "exhaustive");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16>(true, reportTestCases), "bposit<16,6,5>", "exhaustive, qd only");
+	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16_52>(false, reportTestCases), "bposit<16,5,2>", "exhaustive");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16_52>(true, reportTestCases), "bposit<16,5,2>", "exhaustive, qd only");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinary<bposit16>(20000, false, reportTestCases), "bposit<16,6,5>", "pow atan2 hypot");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowTies<bposit16>(reportTestCases), "bposit<16,6,5>", "pow ties");
