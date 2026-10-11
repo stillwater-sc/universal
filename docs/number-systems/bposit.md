@@ -220,7 +220,7 @@ bposit32 s = quire_resolve(q);
 | `sqrt.hpp`, `hypot.hpp` | `sqrt`, `cbrt`, `hypot` (two and three arguments) | correctly rounded |
 | `exponent.hpp`, `logarithm.hpp`, `pow.hpp` | `exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p`, `pow` | correctly rounded |
 | `trigonometry.hpp`, `hyperbolic.hpp` | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh` | correctly rounded |
-| `error_and_gamma.hpp` | `erf`, `erfc`, `tgamma`, `lgamma` | through double, not yet correctly rounded |
+| `error_and_gamma.hpp` | `erf`, `erfc`, `tgamma`, `lgamma` | correctly rounded |
 | `complex.hpp` | `sw::universal::complex<bposit>`: arithmetic, `abs`, `arg`, `norm`, `exp`, `log`, `sqrt`, `pow`, trigonometric | through `std::complex<double>` |
 
 ### Correct rounding
@@ -235,9 +235,11 @@ The quad-double kernels avoid the cancellations of the textbook formulas: log ne
 
 The fast path needs the argument to convert to double exactly (`fbits + 1 <= 53`), which holds for every 16- and 32-bit configuration. `bposit<64, 6, 5>` takes the quad-double path every time, at some 5 to 15 microseconds per call. The quad-double engine needs the range inside double's: `|scale| <= 600`, which covers every standard and DSP-fitted configuration; a configuration beyond it falls back to the evaluation in double, which is not correctly rounded.
 
-`static/tapered/bposit/math/correct_rounding.cpp` checks every result for equality with an oracle that shares no code with the library: long double libm first, and `ereal<8>` with exact midpoint comparisons when that is ambiguous. Every encoding of `bposit<16,4,2>`, `<16,5,2>` and `<16,6,5>` is checked through 22 functions, by both the default path and the quad-double engine alone, and the 32- and 64-bit configurations and the two-argument functions are sampled.
+`static/tapered/bposit/math/correct_rounding.cpp` checks every result for equality with an oracle that shares no code with the library: long double libm first, and `ereal<8>` with exact midpoint comparisons when that is ambiguous. Every encoding of `bposit<16,4,2>`, `<16,5,2>` and `<16,6,5>` is checked through 26 functions, by both the default path and the quad-double engine alone, and the 32- and 64-bit configurations and the two-argument functions are sampled.
 
-`erf`, `erfc`, `tgamma` and `lgamma` are still evaluated in double, because quad-double has no accurate implementation of them yet; they follow in the next phase of #1653. `complex<bposit>` evaluates its functions through `std::complex<double>`, one rounding per component.
+`erf`, `erfc`, `tgamma` and `lgamma` use quad-double's error and gamma functions. libm's erfc and tgamma get wider bounds, 8 and 16 ulps, and lgamma's is counted in ulps of `max(|lgamma|, 1)`, since libm's lgamma is only accurate in absolute terms near its zeros. One limit remains there: near the negative zeros of lgamma (x near -2.457, -2.747, ...) the reflection formula is accurate to about 2^-200 absolute, which decides every 16- and 32-bit input, but a 64-bit argument within about 2^-30 of such a zero may round incorrectly.
+
+`complex<bposit>` evaluates its functions through `std::complex<double>`, one rounding per component.
 
 ### The posit standard's promises
 

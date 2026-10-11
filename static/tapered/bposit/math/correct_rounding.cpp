@@ -19,7 +19,8 @@
 // function is run both ways: the default engine, and the quad-double engine alone
 // (engine::qd_only), so the quad-double kernels are verified on every input and not only
 // on the few the fast path leaves them.  16-bit configurations are exhaustive, 32-bit ones
-// sampled.  bposit<64,6,5> never takes the fast path, and is sampled.
+// sampled.  bposit<64,6,5> never takes the fast path, and is sampled.  Of the 26 functions,
+// erf, erfc and the gamma functions use the oracle's own series (ereal's are double stubs).
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <cstdint>
@@ -46,6 +47,94 @@ inline bool tiny(const Oracle& v) { return abs(v) < Oracle(std::ldexp(1.0, -40))
 inline Oracle odd_series(const Oracle& v, double c3, double c5, double c7) {
 	const Oracle v2 = v * v;
 	return v * (Oracle(1.0) + v2 * (Oracle(c3) + v2 * (Oracle(c5) + v2 * Oracle(c7))));
+}
+
+// erf, erfc and the gamma functions of ereal are evaluated in double, so the oracle carries
+// its own, at ereal<8>'s 400-odd bits: the positive-term series of erf, erfc = 1 - erf (which
+// keeps 180 bits even where erfc reaches minpos), and Stirling's series for lgamma after a
+// shift to 100, with exact Bernoulli numbers (B_2 .. B_60, from sympy).
+const Oracle& oracle_pi() {
+	static const Oracle p = sw::universal::ereal_pi<8, double>();
+	return p;
+}
+
+Oracle oracle_erf_positive(const Oracle& a) {
+	// beyond 30, erf is 1 - O(e^-900): 1 for any b-posit, and ereal's exp(-a^2) is lost there
+	if (a > Oracle(30.0)) return Oracle(1.0);
+	const Oracle t = a * a * Oracle(2.0);
+	Oracle term(1.0), sum(1.0);
+	for (int n = 1; n < 4000; ++n) {
+		term = term * t / Oracle(2.0 * n + 1.0);
+		sum = sum + term;
+		if (term < sum * Oracle(std::ldexp(1.0, -440))) break;
+	}
+	return Oracle(2.0) * a * exp(-(a * a)) * sum / sqrt(oracle_pi());
+}
+Oracle oracle_erf(const Oracle& v)  { return v < Oracle(0.0) ? -oracle_erf_positive(-v) : oracle_erf_positive(v); }
+Oracle oracle_erfc(const Oracle& v) { return v < Oracle(0.0) ? Oracle(1.0) + oracle_erf_positive(-v) : Oracle(1.0) - oracle_erf_positive(v); }
+
+struct fraction { const char* num; const char* den; };
+constexpr fraction bernoulli[30] = {     // B_2k, k = 1 .. 30
+	{ "1", "6" },
+	{ "-1", "30" },
+	{ "1", "42" },
+	{ "-1", "30" },
+	{ "5", "66" },
+	{ "-691", "2730" },
+	{ "7", "6" },
+	{ "-3617", "510" },
+	{ "43867", "798" },
+	{ "-174611", "330" },
+	{ "854513", "138" },
+	{ "-236364091", "2730" },
+	{ "8553103", "6" },
+	{ "-23749461029", "870" },
+	{ "8615841276005", "14322" },
+	{ "-7709321041217", "510" },
+	{ "2577687858367", "6" },
+	{ "-26315271553053477373", "1919190" },
+	{ "2929993913841559", "6" },
+	{ "-261082718496449122051", "13530" },
+	{ "1520097643918070802691", "1806" },
+	{ "-27833269579301024235023", "690" },
+	{ "596451111593912163277961", "282" },
+	{ "-5609403368997817686249127547", "46410" },
+	{ "495057205241079648212477525", "66" },
+	{ "-801165718135489957347924991853", "1590" },
+	{ "29149963634884862421418123812691", "798" },
+	{ "-2479392929313226753685415739663229", "870" },
+	{ "84483613348880041862046775994036021", "354" },
+	{ "-1215233140483755572040304994079820246041491", "56786730" },
+};
+
+Oracle oracle_lgamma_positive(const Oracle& x) {
+	Oracle y = x, product(1.0);
+	while (y < Oracle(100.0)) { product = product * y; y = y + Oracle(1.0); }
+	Oracle r = (y - Oracle(0.5)) * log(y) - y + log(Oracle(2.0) * oracle_pi()) * Oracle(0.5);
+	const Oracle y2 = y * y;
+	Oracle p = y;                                             // y^(2k - 1)
+	for (int k = 1; k <= 30; ++k) {
+		Oracle b, d;
+		b.parse(bernoulli[k - 1].num);
+		d.parse(bernoulli[k - 1].den);
+		r = r + b / (d * Oracle(2.0 * k * (2.0 * k - 1.0)) * p);
+		p = p * y2;
+	}
+	return r - log(product);
+}
+// reflection for x < 0, with sin(pi x) from the exact fractional part (ereal's sin is wrong for
+// negative arguments beyond 2 pi, #1668)
+Oracle oracle_lgamma(const Oracle& x) {
+	if (x > Oracle(0.0)) return oracle_lgamma_positive(x);
+	Oracle f = x - floor(x);
+	if (f > Oracle(0.5)) f = Oracle(1.0) - f;
+	return log(oracle_pi() / sin(oracle_pi() * f)) - oracle_lgamma_positive(Oracle(1.0) - x);
+}
+Oracle oracle_tgamma(const Oracle& x) {
+	const Oracle g = exp(oracle_lgamma(x));
+	if (x > Oracle(0.0)) return g;
+	const double fl = double(floor(x));
+	return (std::fmod(fl, 2.0) != 0.0) ? -g : g;
 }
 
 // the exact value of a b-posit in ereal
@@ -106,7 +195,7 @@ B saturate(long double r, Range range, bool negative) {
 // The correctly rounded reference.  The long double stage needs the argument exactly in a
 // long double, which holds unless long double is double and the b-posit is 64 bits.
 template<typename B>
-B reference(long double r, Range range, bool negative, const std::function<Oracle()>& high, bool snap_ties = false) {
+B reference(long double r, Range range, bool negative, const std::function<Oracle()>& high, bool snap_ties = false, double ld_floor = 0.0) {
 	if (r != r || std::isinf(r) || r == 0.0l) return saturate<B>(r, range, negative);
 	// far outside the range the rounding is saturation, whatever the last bits: this also
 	// spares ereal arguments its double-based exponent cannot hold
@@ -115,7 +204,7 @@ B reference(long double r, Range range, bool negative, const std::function<Oracl
 	if (std::fabs(r) > 4 * maxpos || std::fabs(r) < minpos / 4) return B(r);
 	const int ld_digits = std::numeric_limits<long double>::digits;
 	if (ld_digits >= static_cast<int>(B::fbits) + 1 + 8) {
-		const long double err = std::ldexp(64.0l, std::ilogb(r) - (ld_digits - 1));
+		const long double err = std::ldexp(64.0l, std::ilogb(std::fmax(std::fabs(r), static_cast<long double>(ld_floor))) - (ld_digits - 1));
 		const B lo(r - err), hi(r + err);
 		if (lo == hi) return lo;
 	}
@@ -149,6 +238,8 @@ struct Unary {
 	Oracle (*hi)(const Oracle&);
 	Range range;
 	bool snap_ties = false;     // the function has exact results at midpoints
+	double ld_floor = 0.0;      // libm's error is absolute below this magnitude (lgamma)
+	bool gamma_poles = false;   // NaR at 0 and the negative integers
 };
 
 template<typename B>
@@ -200,6 +291,14 @@ std::vector<Unary<B>> functions() {
 		              const Oracle t = Oracle(1.0) - Oracle(2.0) / (exp(a * Oracle(2.0)) + Oracle(1.0));
 		              return v < Oracle(0.0) ? -t : t; }, Range::any, false },   Unary<B>{ "asinh", [](const B& x) { return bm::asinh<engine::libm_then_qd>(x); }, [](const B& x) { return bm::asinh<engine::qd_only>(x); },
 		          [](long double v) { return std::asinh(v); }, [](const Oracle& v) { return tiny(v) ? odd_series(v, -1.0 / 6, 3.0 / 40, -15.0 / 336) : asinh(v); }, Range::any, false },
+		Unary<B>{ "erf", [](const B& x) { return bm::erf<engine::libm_then_qd>(x); }, [](const B& x) { return bm::erf<engine::qd_only>(x); },
+		          [](long double v) { return std::erf(v); }, oracle_erf, Range::any, false },
+		Unary<B>{ "erfc", [](const B& x) { return bm::erfc<engine::libm_then_qd>(x); }, [](const B& x) { return bm::erfc<engine::qd_only>(x); },
+		          [](long double v) { return std::erfc(v); }, oracle_erfc, Range::nonzero, false },
+		Unary<B>{ "tgamma", [](const B& x) { return bm::tgamma<engine::libm_then_qd>(x); }, [](const B& x) { return bm::tgamma<engine::qd_only>(x); },
+		          [](long double v) { return std::tgamma(v); }, oracle_tgamma, Range::nonzero, true, 0.0, true },
+		Unary<B>{ "lgamma", [](const B& x) { return bm::lgamma<engine::libm_then_qd>(x); }, [](const B& x) { return bm::lgamma<engine::qd_only>(x); },
+		          [](long double v) { return std::lgamma(v); }, oracle_lgamma, Range::finite, false, 1.0, true },
 		BPOSIT_CR_ENTRY(acosh, Range::any),  Unary<B>{ "atanh", [](const B& x) { return bm::atanh<engine::libm_then_qd>(x); }, [](const B& x) { return bm::atanh<engine::qd_only>(x); },
 		          [](long double v) { return std::atanh(v); }, [](const Oracle& v) { return tiny(v) ? odd_series(v, 1.0 / 3, 1.0 / 5, 1.0 / 7) : atanh(v); }, Range::any, false },
 	};
@@ -210,11 +309,11 @@ std::vector<Unary<B>> functions() {
 template<typename B>
 void check(const Unary<B>& u, const B& x, bool qd_only, bool report, Tally& t) {
 	B want;
-	if (x.isnar()) want = B(SpecificValue::nar);
+	if (x.isnar() || (u.gamma_poles && sw::universal::bposit_math::gamma_pole(x))) want = B(SpecificValue::nar);
 	else {
 		const long double v = long_double_exact<B>() ? static_cast<long double>(x) : std::numeric_limits<long double>::quiet_NaN();
 		const long double r = long_double_exact<B>() ? u.ld(v) : std::numeric_limits<long double>::quiet_NaN();
-		if (long_double_exact<B>()) want = reference<B>(r, u.range, false, [&]() { return u.hi(exact(x)); }, u.snap_ties);
+		if (long_double_exact<B>()) want = reference<B>(r, u.range, std::signbit(r), [&]() { return u.hi(exact(x)); }, u.snap_ties, u.ld_floor);
 		else {
 			// no exact long double: domain from the double approximation, value from ereal
 			const long double approx = u.ld(static_cast<long double>(x));
@@ -387,15 +486,20 @@ try {
 	return EXIT_SUCCESS;
 #else
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16_42>(false, reportTestCases), "bposit<16,4,2>", "exhaustive");
-	nrOfFailedTestCases += ReportTestResult(VerifySampled<bposit16_42>(2000, true, reportTestCases), "bposit<16,4,2>", "sampled, qd only");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary<bposit16_42>(5000, true, reportTestCases), "bposit<16,4,2>", "pow atan2 hypot, qd only");
-	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit16_42>(5000, reportTestCases), "bposit<16,4,2>", "exact functions");
+	// light enough for the sanitizer and coverage builds, which run unoptimized: the 64-bit
+	// samples need the ereal oracle every time, which is slow there, so they are at level 2
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<bposit16_42>(3000, false, reportTestCases), "bposit<16,4,2>", "sampled");
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<bposit16_42>(400, true, reportTestCases), "bposit<16,4,2>", "sampled, qd only");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinary<bposit16_42>(1000, true, reportTestCases), "bposit<16,4,2>", "pow atan2 hypot, qd only");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit16_42>(1000, reportTestCases), "bposit<16,4,2>", "exact functions");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowTies<bposit16_42>(reportTestCases), "bposit<16,4,2>", "pow ties");
-	nrOfFailedTestCases += ReportTestResult(VerifySampled<bposit64>(50, true, reportTestCases), "bposit<64,6,5>", "sampled, qd only");
-	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit64>(2000, reportTestCases), "bposit<64,6,5>", "exact functions");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit64>(300, reportTestCases), "bposit<64,6,5>", "exact functions");
 #endif
 #if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16_42>(false, reportTestCases), "bposit<16,4,2>", "exhaustive");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinary<bposit16_42>(5000, true, reportTestCases), "bposit<16,4,2>", "pow atan2 hypot, qd only");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit16_42>(5000, reportTestCases), "bposit<16,4,2>", "exact functions");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit64>(2000, reportTestCases), "bposit<64,6,5>", "exact functions");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16_42>(true, reportTestCases), "bposit<16,4,2>", "exhaustive, qd only");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16>(false, reportTestCases), "bposit<16,6,5>", "exhaustive");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16>(true, reportTestCases), "bposit<16,6,5>", "exhaustive, qd only");

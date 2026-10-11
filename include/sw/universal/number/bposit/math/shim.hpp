@@ -8,8 +8,8 @@
 //
 // Phase 1 evaluated every function in double and rounded the result once.  The elementary
 // functions are now correctly rounded (correctly_rounded.hpp), and this evaluation remains
-// for erf, erfc, tgamma and lgamma, and for configurations whose range is beyond the
-// quad-double engine.  It is NOT correctly rounded: libm's double result is within about an
+// only for configurations whose range is beyond the quad-double engine, |scale| > 600.  It
+// is NOT correctly rounded: libm's double result is within about an
 // ulp of the true value, so the result is correct except when the true value lies that close
 // to a rounding boundary of the bposit, and then it can be one encoding off.  The argument
 // converts to double exactly when the significand fits (fbits + 1 <= 53) and the range does.

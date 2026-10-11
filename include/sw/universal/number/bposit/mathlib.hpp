@@ -11,9 +11,8 @@
 //
 // The elementary functions are correctly rounded, as the posit standard requires: the
 // truncations and remainders exactly in integers, the rest by Ziv's strategy, libm in double
-// first and quad-double where that cannot decide (math/correctly_rounded.hpp).  erf, erfc,
-// tgamma and lgamma are still evaluated in double (math/shim.hpp), and so are the complex
-// functions; #1653 tracks the rest.
+// first and quad-double where that cannot decide (math/correctly_rounded.hpp).  The complex
+// functions are evaluated through std::complex<double>, one rounding per component.
 #include <universal/number/bposit/math/shim.hpp>
 #include <universal/number/bposit/math/classify.hpp>
 #include <universal/number/bposit/math/complex.hpp>

@@ -208,12 +208,14 @@ B snap(const qd& y) {
 	return (lo.raw() & 1u) == 0 ? lo : hi;
 }
 
-// the correctly rounded value of a quad-double result with a relative error below 2^-170
+// The correctly rounded value of a quad-double result with a relative error below 2^-170, or,
+// with a magnitude floor, an error below 2^-170 max(|y|, floor): lgamma's reflection formula
+// is only accurate in absolute terms near the negative zeros of lgamma.
 template<typename B>
-B from_qd(const qd& y) {
+B from_qd(const qd& y, double magnitude_floor = 0.0) {
 	if (y[0] != y[0]) return B(SpecificValue::nar);
 	if (y[0] == 0.0) return B(0);
-	if (auto r = decide<B>(y, qd(std::ldexp(std::fabs(y[0]), qd_error_exponent)))) return *r;
+	if (auto r = decide<B>(y, qd(std::ldexp(std::fmax(std::fabs(y[0]), magnitude_floor), qd_error_exponent)))) return *r;
 	return snap<B>(y);
 }
 
@@ -222,10 +224,14 @@ B from_qd(const qd& y) {
 // into the next binade, which still leaves the interval wider than libm's error by margin.
 // The b-posit's conversion from double is correctly rounded, so the two ends are rounded
 // exactly as round_to would, at a fraction of the cost.
+//
+// A function whose libm is less accurate passes its own bound in ulps.  One whose libm error is
+// absolute near its zeros (lgamma) passes a magnitude floor: the error is then counted in ulps
+// of max(|y|, floor).
 template<typename B>
-std::optional<B> from_libm(double y) {
+std::optional<B> from_libm(double y, double ulps = BPOSIT_MATH_LIBM_ULPS, double magnitude_floor = 0.0) {
 	if (!(std::fabs(y) >= std::numeric_limits<double>::min()) || std::isinf(y)) return std::nullopt;   // 0, subnormal, inf, NaN
-	const double err = std::ldexp(static_cast<double>(BPOSIT_MATH_LIBM_ULPS), std::ilogb(y) - 52);
+	const double err = std::ldexp(ulps, std::ilogb(std::fmax(std::fabs(y), magnitude_floor)) - 52);
 	const B lo(y - err), hi(y + err);
 	if (lo == hi) return lo;
 	return std::nullopt;
