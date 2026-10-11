@@ -8,9 +8,7 @@
 // Beyond 64 bits the poxel codec works in integer<nbits + 2> instead of native words (#1676).
 // Sampled, for poxel<65,2>, poxel<129,2> and poxel<257,2>:
 //   - lattice: every lattice point's value, as double and as long double, is the nearest one
-//     to the exact value (posit's own conversions of these widths are not the reference: they
-//     round twice, or truncate, near a midpoint); tiles are ordered, exactly; negation mirrors
-//     a tile
+//     to the exact value; tiles are ordered, exactly; negation mirrors a tile
 //   - conversion: a double or long double lands in the one tile that contains it, exactly
 //   - posit interop: a posit converts to the exact tile at its value and back
 //   - arithmetic: exact operands give the tile the exact dyadic oracle finds for the exact
