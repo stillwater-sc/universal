@@ -151,7 +151,8 @@ public:
 	// posit<nbits - 1, es> is the lattice itself, so its patterns are the bits above the ubit.
 	// From a posit: the exact tile at its value, never rounded (NaR to NaR).  To a posit: the
 	// tile's lower endpoint, as for the native types; that sends (-inf, -maxpos) to NaR, as
-	// posit(-inf) does.  posit(x) == posit(double(x)) for every tile.
+	// posit(-inf) does.  Where double holds the lattice exactly (fraction <= 52 bits, every
+	// configuration up to poxel<58, 2>), that is posit(double(x)).
 	template<typename pbt>
 	poxel(const posit<lbits, es, pbt>& p) noexcept : _block{} { *this = p; }
 	template<typename pbt>

@@ -58,7 +58,7 @@ poxel9 y(0.125); // 0.125, exact
 The posit is the poxel's lattice, so the posit's bit pattern is the poxel's bits above the ubit. Conversion between them is a shift and never rounds:
 
 - A `posit<nbits - 1, es>` converts implicitly to the exact tile at its value. NaR converts to NaR.
-- A poxel converts explicitly to the posit at its tile's **lower endpoint**, the same choice as for native types. As a result, `posit(x) == posit(double(x))` for every tile. The `(-inf, -maxpos)` tile becomes NaR, as `posit(-inf)` does, and `(0, minpos)` becomes 0.
+- A poxel converts explicitly to the posit at its tile's **lower endpoint**, the same choice as for native types. Where `double` holds every lattice value exactly (fractions of at most 52 bits, which covers every configuration up to `poxel<58, 2>`), this equals `posit(double(x))`. The `(-inf, -maxpos)` tile becomes NaR, as `posit(-inf)` does, and `(0, minpos)` becomes 0.
 - A point tile round-trips. An open tile comes back as the point tile below it.
 
 ```cpp

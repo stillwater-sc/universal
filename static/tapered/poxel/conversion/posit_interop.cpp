@@ -9,6 +9,7 @@
 // share no code with the bit-level interop:
 //   - every posit converts to the exact tile holding its value (NaR to NaR)
 //   - every tile converts to the posit of its lower endpoint: posit(x) == posit(double(x)),
+//     a valid reference here because double holds these lattices exactly (fraction <= 52 bits),
 //     so (-inf, -maxpos) and NaR go to NaR
 //   - a point tile round-trips; an open tile comes back as the point tile below it
 // Exhaustive for small configurations, sampled over poxel33 / posit<32,2>.
@@ -116,7 +117,7 @@ try {
 #if MANUAL_TESTING
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<8, 0>(true), "poxel<8,0>", test_tag);
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;
+	return EXIT_SUCCESS; // ignore failures
 #else
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<8, 0>(reportTestCases),  "poxel<8,0>",  test_tag);

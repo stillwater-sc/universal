@@ -88,7 +88,7 @@ try {
 #if MANUAL_TESTING
 	nrOfFailedTestCases += ReportTestResult(VerifyOrder<8, 0>(true), "poxel<8,0>", "tile order");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;
+	return EXIT_SUCCESS; // ignore failures
 #else
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyOrder<8, 0>(reportTestCases),  "poxel<8,0>",  "tile order");
