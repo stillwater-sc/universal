@@ -13,11 +13,12 @@
 #include <universal/number/qd/math/functions/exponent.hpp>
 #include <universal/number/qd/math/functions/fractional.hpp>
 #include <universal/number/qd/math/functions/hyperbolic.hpp>
-#include <universal/number/qd/math/functions/hypot.hpp>
 #include <universal/number/qd/math/functions/logarithm.hpp>
 #include <universal/number/qd/math/functions/minmax.hpp>
 #include <universal/number/qd/math/functions/next.hpp>
 #include <universal/number/qd/math/functions/pow.hpp>
 #include <universal/number/qd/math/functions/sqrt.hpp>
+// hypot after sqrt: its shared implementation calls sqrt
+#include <universal/number/qd/math/functions/hypot.hpp>
 #include <universal/number/qd/math/functions/trigonometry.hpp>
 #include <universal/number/qd/math/functions/truncate.hpp>

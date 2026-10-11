@@ -14,12 +14,13 @@
 #include <universal/number/dd_cascade/math/functions/exponent.hpp>
 #include <universal/number/dd_cascade/math/functions/fractional.hpp>
 #include <universal/number/dd_cascade/math/functions/hyperbolic.hpp>
-#include <universal/number/dd_cascade/math/functions/hypot.hpp>
 #include <universal/number/dd_cascade/math/functions/logarithm.hpp>
 #include <universal/number/dd_cascade/math/functions/minmax.hpp>
 #include <universal/number/dd_cascade/math/functions/next.hpp>
 #include <universal/number/dd_cascade/math/functions/pow.hpp>
 #include <universal/number/dd_cascade/math/functions/sqrt.hpp>
+// hypot after sqrt: its shared implementation calls sqrt
+#include <universal/number/dd_cascade/math/functions/hypot.hpp>
 #include <universal/number/dd_cascade/math/functions/trigonometry.hpp>
 #include <universal/number/dd_cascade/math/functions/truncate.hpp>
 

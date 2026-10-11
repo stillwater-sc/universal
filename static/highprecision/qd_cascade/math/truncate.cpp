@@ -1,16 +1,18 @@
-// truncate.cpp: test suite runner for truncate functions for quad-double cascade (qd_cascade) floating-point
+// truncate.cpp: test suite runner for floor, ceil, trunc and round of qd_cascade
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Against references independent of the code under test: see test_suite_multidouble_exact.hpp (#1667).
 #include <universal/utility/directives.hpp>
-#include <numbers>
 #include <universal/number/qd_cascade/qd_cascade.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_multidouble_exact.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -20,39 +22,44 @@
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
+	namespace mv = sw::universal::multidouble_verification;
 
-	std::string test_suite  = "qd_cascade mathlib truncate function validation";
-	std::string test_tag    = "trunc/round/floor/ceil";
-	bool reportTestCases    = false;
+	std::string test_suite  = "qd_cascade mathlib floor, ceil, trunc and round validation";
+	std::string test_tag    = "truncation";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	auto defaultPrecision = std::cout.precision();
-
-	qd_cascade x{ 1.75 };
-
-	std::cout << "trunc( " << x << ") = " << trunc(x) << '\n';
-	std::cout << "round( " << x << ") = " << round(x) << '\n';
-	std::cout << "floor( " << x << ") = " << floor(x) << '\n';
-	std::cout << "ceil( " << x << ") = " << ceil(x) << '\n';
-
-	std::cout << std::setprecision(defaultPrecision);
+	std::cout << "trunc(2^80 + 3.5) - 2^80 = " << double(trunc(qd_cascade(std::ldexp(1.0, 80)) + qd_cascade(3.5)) - qd_cascade(std::ldexp(1.0, 80))) << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyTruncation<qd_cascade>("qd_cascade", 300, reportTestCases), "qd_cascade Truncation", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyTruncation<qd_cascade>("qd_cascade", 3000, reportTestCases), "qd_cascade Truncation", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

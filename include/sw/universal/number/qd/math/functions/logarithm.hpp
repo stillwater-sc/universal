@@ -8,6 +8,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
 
+#include <universal/number/shared/multidouble_exact.hpp>
+
 namespace sw { namespace universal {
 
 	inline qd log(const qd& a) {
@@ -115,9 +117,11 @@ namespace sw { namespace universal {
 		if ((a >= 2.0) || (a <= -0.5))			//	a >= 2.0 - no loss of significant bits - use log()
 			return log(1.0 + a);
 
-		// at this point, -1.0 < a < 2.0
-		// return _log1p(a);
-		return log(1.0 + a);   // TODO: evaluate loss of precision
+		// near 0, 1 + a would drop every limb of a below 1's last bit: log1p(1e-70) was 0 (#1667)
+		if (std::fabs(a[0]) < 0.25) return multidouble::log1p_small(a);
+
+		// at this point, -1.0 < a < 2.0 and |a| >= 1/4: 1 + a loses no relative accuracy
+		return log(1.0 + a);
 	}
 
 }} // namespace sw::universal

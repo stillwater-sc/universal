@@ -1,27 +1,18 @@
-// hypot.cpp: test suite runner for hypot functions for double-double (dd) floating-point
+// hypot.cpp: test suite runner for hypot of dd
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Against references independent of the code under test: see test_suite_multidouble_exact.hpp (#1667).
 #include <universal/utility/directives.hpp>
-#include <numbers>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_multidouble_exact.hpp>
 
-namespace sw {
-	namespace universal {
-
-		template<typename Real>
-		void ReportTriangle(const Real& x, const Real y, int precision = 16) {  // default precision is for double
-			using std::hypot;
-			auto defaultPrecision = std::cout.precision();
-			std::cout << "hypot( " << x << ", " << y << ") = " << std::setprecision(precision) << hypot(x, y) << std::setprecision(defaultPrecision) << '\n';
-		}
-	}
-}
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -31,42 +22,44 @@ namespace sw {
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
+	namespace mv = sw::universal::multidouble_verification;
 
-	std::string test_suite  = "double-double mathlib hypothenuse function validation";
+	std::string test_suite  = "dd mathlib hypot validation";
 	std::string test_tag    = "hypot";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	auto defaultPrecision = std::cout.precision();
-
-	dd x{ 3.0 }, y{ 4.0 };
-
-	ReportTriangle(x, y);
-
-	// skinny triangle
-	x = 1.0e-5; y = 1.0e5;
-
-	// TBD: shim converts to double which can't capture the skinny triangle details
-	ReportTriangle(x, y, 32);
-
-	std::cout << std::setprecision(defaultPrecision);
+	std::cout << "hypot(3e300, 4e300) = " << hypot(dd(3.0e300), dd(4.0e300)) << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyHypotMinMax<dd>("dd", 200, reportTestCases), "dd HypotMinMax", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyHypotMinMax<dd>("dd", 2000, reportTestCases), "dd HypotMinMax", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

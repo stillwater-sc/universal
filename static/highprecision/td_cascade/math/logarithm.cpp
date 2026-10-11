@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/td_cascade/td_cascade.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_multidouble_exact.hpp>
 
 namespace sw { namespace universal { namespace detail {
 
@@ -163,6 +164,8 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	// log1p keeps its relative accuracy near 0, where 1 + a drops the low limbs of a (#1667)
+	nrOfFailedTestCases += ReportTestResult(sw::universal::multidouble_verification::VerifyLog1pSmall<td_cascade>("td_cascade", 200, reportTestCases), "td_cascade log1p near 0", "log1p");
 	using namespace detail;
 	// td_cascade has ~156 bits precision -> threshold ~1e-42
 	nrOfFailedTestCases += ReportTestResult(VerifyLogFunction<td_cascade>(reportTestCases, 1.0e-42), "td_cascade", "log()");
