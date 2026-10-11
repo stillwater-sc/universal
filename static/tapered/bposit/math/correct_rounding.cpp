@@ -486,15 +486,20 @@ try {
 	return EXIT_SUCCESS;
 #else
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16_42>(false, reportTestCases), "bposit<16,4,2>", "exhaustive");
-	nrOfFailedTestCases += ReportTestResult(VerifySampled<bposit16_42>(2000, true, reportTestCases), "bposit<16,4,2>", "sampled, qd only");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinary<bposit16_42>(5000, true, reportTestCases), "bposit<16,4,2>", "pow atan2 hypot, qd only");
-	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit16_42>(5000, reportTestCases), "bposit<16,4,2>", "exact functions");
+	// light enough for the sanitizer and coverage builds, which run unoptimized: the 64-bit
+	// samples need the ereal oracle every time, which is slow there, so they are at level 2
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<bposit16_42>(3000, false, reportTestCases), "bposit<16,4,2>", "sampled");
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<bposit16_42>(400, true, reportTestCases), "bposit<16,4,2>", "sampled, qd only");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinary<bposit16_42>(1000, true, reportTestCases), "bposit<16,4,2>", "pow atan2 hypot, qd only");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit16_42>(1000, reportTestCases), "bposit<16,4,2>", "exact functions");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowTies<bposit16_42>(reportTestCases), "bposit<16,4,2>", "pow ties");
-	nrOfFailedTestCases += ReportTestResult(VerifySampled<bposit64>(50, true, reportTestCases), "bposit<64,6,5>", "sampled, qd only");
-	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit64>(2000, reportTestCases), "bposit<64,6,5>", "exact functions");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit64>(300, reportTestCases), "bposit<64,6,5>", "exact functions");
 #endif
 #if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16_42>(false, reportTestCases), "bposit<16,4,2>", "exhaustive");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinary<bposit16_42>(5000, true, reportTestCases), "bposit<16,4,2>", "pow atan2 hypot, qd only");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit16_42>(5000, reportTestCases), "bposit<16,4,2>", "exact functions");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactFunctions<bposit64>(2000, reportTestCases), "bposit<64,6,5>", "exact functions");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16_42>(true, reportTestCases), "bposit<16,4,2>", "exhaustive, qd only");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16>(false, reportTestCases), "bposit<16,6,5>", "exhaustive");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16>(true, reportTestCases), "bposit<16,6,5>", "exhaustive, qd only");
