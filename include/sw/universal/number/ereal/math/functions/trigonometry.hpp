@@ -8,6 +8,33 @@
 
 namespace sw { namespace universal {
 
+	namespace ereal_detail {
+
+		// a - 2 pi n for a >= 0, in [-pi, pi].  sin and cos reduce |x| and apply their symmetry:
+		// they used to subtract the period count of |x| from x itself, which for a negative x
+		// beyond 2 pi moved it further out, and the series then diverged: sin(-219.35) was
+		// -4.4e78 and sin(-5549.5) NaN (#1668).
+		template<unsigned maxlimbs, typename FpType>
+		inline ereal<maxlimbs, FpType> reduce_two_pi(const ereal<maxlimbs, FpType>& a, const ereal<maxlimbs, FpType>& pi) {
+			using Real = ereal<maxlimbs, FpType>;
+			const Real two_pi = pi * Real(2.0);
+			Real r = a;
+			if (a > two_pi) {
+				// the period count, exact in a double below 1e15
+				const Real periods_real = a / two_pi;
+				const double periods_approx = double(periods_real);
+				const Real periods = (periods_approx < 1.0e15) ? Real(std::floor(periods_approx)) : floor(periods_real);
+				r = a - two_pi * periods;
+			}
+			// a period count rounded across an integer leaves r just outside [0, 2 pi)
+			const Real neg_pi = -pi;
+			while (r > pi) r = r - two_pi;
+			while (r < neg_pi) r = r + two_pi;
+			return r;
+		}
+
+	}  // namespace ereal_detail
+
 	// sin: sine function - REFERENCE IMPLEMENTATION
 	//
 	// This implementation demonstrates best practices for adaptive-precision sine:
@@ -54,41 +81,11 @@ namespace sw { namespace universal {
 		Real pi;
 		pi = ereal_pi<maxlimbs, FpType>();  // full ereal precision (#1002)
 
-		Real two(2.0);
-		Real two_pi = pi * two;
-
 		// ============================================================================
-		// STEP 3: Angle reduction - reduce to [-pi, pi]
+		// STEP 3: Angle reduction of |x| to [-pi, pi]; sin is odd
 		// ============================================================================
-		Real reduced_x = x;
-		Real x_abs = abs(x);
-
-		if (x_abs > two_pi) {
-			// Compute number of periods: n = floor(x / 2pi)
-			// Must avoid double contamination in division
-			Real periods_real = x_abs / two_pi;
-
-			// Extract integer part using successive subtraction
-			// For adaptive precision, we can safely convert to double if < 10^15
-			double periods_approx = double(periods_real);
-			Real periods;
-
-			if (periods_approx < 1.0e15) {
-				// Safe to use double for period count
-				periods = Real(std::floor(periods_approx));
-			} else {
-				// For huge arguments, use integer extraction (rare case)
-				periods = floor(periods_real);
-			}
-
-			// Reduce: x - 2pi*n
-			reduced_x = x - two_pi * periods;
-		}
-
-		// Further reduce to [-pi, pi]
-		if (reduced_x > pi) reduced_x = reduced_x - two_pi;
-		Real neg_pi = -pi;
-		if (reduced_x < neg_pi) reduced_x = reduced_x + two_pi;
+		const bool negative = x.isneg();
+		const Real reduced_x = ereal_detail::reduce_two_pi(negative ? -x : x, pi);
 
 		// ============================================================================
 		// STEP 4: Taylor series with adaptive convergence
@@ -120,7 +117,7 @@ namespace sw { namespace universal {
 			if (series_converged(term, result, precision_bits)) break;
 		}
 
-		return result;
+		return negative ? -result : result;
 	}
 
 	// cos: cosine function - REFERENCE IMPLEMENTATION
@@ -169,41 +166,10 @@ namespace sw { namespace universal {
 		Real pi;
 		pi = ereal_pi<maxlimbs, FpType>();  // full ereal precision (#1002)
 
-		Real two(2.0);
-		Real two_pi = pi * two;
-
 		// ============================================================================
-		// STEP 3: Angle reduction - reduce to [-pi, pi]
+		// STEP 3: Angle reduction of |x| to [-pi, pi]; cos is even
 		// ============================================================================
-		Real reduced_x = x;
-		Real x_abs = abs(x);
-
-		if (x_abs > two_pi) {
-			// Compute number of periods: n = floor(x / 2pi)
-			// Must avoid double contamination in division
-			Real periods_real = x_abs / two_pi;
-
-			// Extract integer part using successive subtraction
-			// For adaptive precision, we can safely convert to double if < 10^15
-			double periods_approx = double(periods_real);
-			Real periods;
-
-			if (periods_approx < 1.0e15) {
-				// Safe to use double for period count
-				periods = Real(std::floor(periods_approx));
-			} else {
-				// For huge arguments, use integer extraction (rare case)
-				periods = floor(periods_real);
-			}
-
-			// Reduce: x - 2pi*n
-			reduced_x = x - two_pi * periods;
-		}
-
-		// Further reduce to [-pi, pi]
-		if (reduced_x > pi) reduced_x = reduced_x - two_pi;
-		Real neg_pi = -pi;
-		if (reduced_x < neg_pi) reduced_x = reduced_x + two_pi;
+		const Real reduced_x = ereal_detail::reduce_two_pi(abs(x), pi);
 
 		// ============================================================================
 		// STEP 4: Taylor series with adaptive convergence

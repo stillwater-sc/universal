@@ -41,6 +41,13 @@ namespace sw { namespace universal {
 	// [3] MPFR library: https://www.mpfr.org/algorithms.pdf
 	//     - Production implementation details
 	//
+	// RANGE:
+	// ------
+	// The limbs share the exponent range of FpType.  A result near the bottom of that range
+	// keeps only the limbs above FpType's smallest subnormal: with double limbs exp(-700),
+	// about 2^-1010, holds 64 bits, not ereal<8>'s 424, and exp(-x^2) for x beyond 27 is 0.
+	// That is the representation's limit, not the series'.
+	//
 	// HISTORY:
 	// --------
 	// 2025-01: Refactored to remove double contamination and add adaptive convergence

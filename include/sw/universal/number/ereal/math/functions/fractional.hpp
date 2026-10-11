@@ -19,12 +19,25 @@ namespace sw { namespace universal {
 			throw ereal_divide_by_zero();
 		}
 
+		using Real = ereal<maxlimbs, FpType>;
 		// n = trunc(x / y) - truncate toward zero
-		ereal<maxlimbs, FpType> quotient = x / y;  // Uses expansion_quotient
-		ereal<maxlimbs, FpType> n = trunc(quotient);  // Uses Phase 2 trunc
+		Real quotient = x / y;  // Uses expansion_quotient
+		Real n = trunc(quotient);  // Uses Phase 2 trunc
 
-		// result = x - n * y
-		return x - (n * y);
+		// The quotient is rounded, and at an exact multiple it can land just below the integer,
+		// which trunc then takes one short: fmod(0.41943359375, 5.1200389862060547e-05), 8192 y
+		// exactly, returned y (#1668).  The remainder is exact, so correct n until it is in range:
+		// the sign of x, or zero, and below |y| in magnitude.
+		const Real ay = abs(y);
+		const Real step((x.isneg() == y.isneg()) ? 1.0 : -1.0);    // moves n away from zero
+		Real r = x - (n * y);
+		for (int i = 0; i < 4; ++i) {
+			if (!r.iszero() && r.isneg() != x.isneg()) n = n - step;
+			else if (abs(r) >= ay)                     n = n + step;
+			else break;
+			r = x - (n * y);
+		}
+		return r;
 	}
 
 	// remainder: IEEE remainder of x/y
@@ -83,8 +96,20 @@ namespace sw { namespace universal {
 			}
 		}
 
-		// Return x - n * y
-		return x - (n * y);
+		// The quotient is rounded, so floor and the half comparison can misjudge an exact multiple
+		// or an exact half (#1668).  The remainder is exact: correct n until |r| <= |y| / 2, with
+		// an even n when |r| is exactly |y| / 2.
+		const Real ay = abs(y);
+		Real r = x - (n * y);
+		for (int i = 0; i < 4; ++i) {
+			const Real twice = abs(r) * Real(2.0);
+			const bool odd = floor(n / Real(2.0)) * Real(2.0) != n;
+			if (twice < ay || (twice == ay && !odd)) break;
+			// r and y of the same sign: a larger n reduces r
+			n = n + Real((r.isneg() == y.isneg()) ? 1.0 : -1.0);
+			r = x - (n * y);
+		}
+		return r;
 	}
 
 	// modf: split x into integer and fractional parts. Returns the fractional

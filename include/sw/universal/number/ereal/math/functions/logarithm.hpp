@@ -25,13 +25,13 @@ namespace sw { namespace universal {
 	//
 	// SERIES SELECTION:
 	// -----------------
-	// For the mantissa m in [0.5, 1), we use the artanh-based series:
+	// For the mantissa m, moved into [sqrt(1/2), sqrt(2)), we use the artanh-based series:
 	//   u = (m-1)/(m+1)  ->  m = (1+u)/(1-u)
 	//   log(m) = log((1+u)/(1-u)) = 2*artanh(u) = 2(u + u^3/3 + u^5/5 + u^7/7 + ...)
 	//
 	// This converges much faster than the naive log(1+z) series because:
-	//   - For m in [0.5, 1), we have u in [-1/3, 0)
-	//   - Series error ~= u^(2n+1) drops rapidly since |u| <= 1/3
+	//   - For m in [sqrt(1/2), sqrt(2)), we have |u| < 0.172
+	//   - Series error ~= u^(2n+1) drops rapidly since |u| < 0.172
 	//   - Achieves ~53 bits in ~10 terms (vs. ~50 terms for log(1+z))
 	//
 	// REFERENCES:
@@ -75,6 +75,13 @@ namespace sw { namespace universal {
 		//
 		int exponent;
 		Real mantissa = frexp(x, &exponent);
+		// Center the mantissa on 1: [0.5, 1) -> [sqrt(1/2), sqrt(2)).  Close to 1 the result is
+		// then the series alone, with no e ln 2 to cancel against: x = 1 + 1e-30 used to come
+		// out as -ln 2 + 1e-30 + ln 2, losing 100 bits (#1668).  |u| also drops from 1/3 to 0.172.
+		if (mantissa < Real(0.70710678118654752)) {
+			mantissa = mantissa * Real(2.0);
+			--exponent;
+		}
 
 		// ln(2) at full ereal precision (#1002)
 		Real ln2 = ereal_ln2<maxlimbs, FpType>();
@@ -86,9 +93,9 @@ namespace sw { namespace universal {
 		// Then: log(m) = log((1+u)/(1-u)) = 2*artanh(u)
 		//              = 2(u + u^3/3 + u^5/5 + u^7/7 + ...)
 		//
-		// For m in [0.5, 1): u in [-1/3, 0), so |u| <= 1/3
-		// Convergence: error after n terms ~= (1/3)^(2n+1)/(2n+1)
-		// Example: n=10 gives error ~= 10^(-6), n=20 gives error ~= 10^(-11)
+		// For m in [sqrt(1/2), sqrt(2)): |u| < 0.172
+		// Convergence: error after n terms ~= 0.172^(2n+1)/(2n+1)
+		// Example: n=10 gives error ~= 10^(-17), n=20 gives error ~= 10^(-33)
 		//
 		Real one(1.0);
 		Real u = (mantissa - one) / (mantissa + one);

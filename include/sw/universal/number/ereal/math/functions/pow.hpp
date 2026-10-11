@@ -42,9 +42,10 @@ namespace sw { namespace universal {
 
 		// Check if y is an integer that fits in int range for optimized calculation
 		// This handles all integer exponents (including large ones and negative bases)
+		// y itself must be the integer, not only its leading limb: 3 + 1e-30 is not (#1668)
 		double y_val = double(y);
 		double y_int;
-		if (std::modf(y_val, &y_int) == 0.0 && y_int >= INT_MIN && y_int <= INT_MAX) {
+		if (std::modf(y_val, &y_int) == 0.0 && y_int >= INT_MIN && y_int <= INT_MAX && y == Real(y_int)) {
 			// y is an integer that fits in int range, use repeated squaring
 			// This correctly handles negative bases with integer exponents
 			int n = static_cast<int>(y_int);
