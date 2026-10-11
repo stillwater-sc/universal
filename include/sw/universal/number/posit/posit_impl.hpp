@@ -1248,24 +1248,37 @@ private:
 		positExponent<nbits, es, bt> _exponent;
 		positFraction<fbits, bt>     _fraction;
 		decode(_block, _sign, _regime, _exponent, _fraction);
-		// positRegime/positExponent/positFraction::value() all return long double,
-		// so keep the whole product in that width and narrow ONCE, explicitly, on
-		// return. Assigning each factor to Real instead (as this used to) forced
-		// four implicit long double -> Real conversions, which MSVC reports as
-		// C4244 narrowing warnings at every instantiation site.
-		//
-		// Keeping the factors in long double and narrowing once, on return, avoids
-		// premature range loss: where the regime or exponent factor alone would
-		// under/overflow Real even though the complete product is representable, the
-		// early-narrowing form produced 0 or inf, whereas this form yields the correct
-		// value (e.g. 448 posit<32,5>/<64,5> -> float encodings that previously flushed
-		// to zero now return the right subnormal). Where range is not a factor the
-		// result is unchanged: regime and exponent are exact powers of two, so rounding
-		// the fraction early then scaling equals scaling first and rounding once.
-		const long double sign     = _sign ? -1.0l : 1.0l;
-		const long double scale    = _regime.value() * _exponent.value();
-		const long double fraction = 1.0l + _fraction.value();
-		return static_cast<Real>(sign * scale * fraction);
+		// Round once, from the bits (#1678).  The value is (-1)^s 1.f 2^scale.  Keep the hidden
+		// bit and the top p - 1 fraction bits, where p is Real's precision at this scale (fewer
+		// when the result is subnormal), round to nearest-even on the next bit and a sticky bit
+		// of all the bits below it, and scale the integer: it is exact in Real, so ldexp does
+		// not round again.  Accumulating the fraction in long double instead rounds at every
+		// bit beyond its significand, again on adding the hidden bit, and again on narrowing.
+		using Limits = std::numeric_limits<Real>;
+		const int nf    = static_cast<int>(fbits);
+		const int scale = _regime.scale() + _exponent.scale();
+		const auto f    = _fraction.bits();
+		auto fbit = [&](int i) { return i >= 0 && i < nf && f.test(static_cast<unsigned>(i)); };   // bit nf - 1 is worth 1/2
+		auto any_below = [&](int i) { for (int j = i - 1; j >= 0; --j) if (f.test(static_cast<unsigned>(j))) return true; return false; };
+		constexpr int emin = Limits::min_exponent - 1;               // scale of the smallest normal
+		const int p = Limits::digits - ((scale < emin) ? (emin - scale) : 0);
+		if (p < 0) return _sign ? -Real(0) : Real(0);                 // below half the smallest subnormal
+		Real m(0);
+		int exponent = scale + 1;                                     // p == 0: the grid is 2^(scale + 1)
+		bool round = (p == 0), sticky = (p == 0) && any_below(nf);    // p == 0: the hidden bit rounds
+		if (p > 0) {
+			const int kept = (p - 1 < nf) ? p - 1 : nf;                 // fraction bits kept
+			m = Real(1);
+			for (int k = 1; k <= kept; ++k) m = m * Real(2) + (fbit(nf - k) ? Real(1) : Real(0));
+			exponent = scale - kept;
+			if (kept < nf) {
+				round  = fbit(nf - kept - 1);
+				sticky = any_below(nf - kept - 1);
+			}
+		}
+		if (round && (sticky || std::fmod(m, Real(2)) != Real(0))) m += Real(1);
+		const Real v = std::ldexp(m, exponent);
+		return _sign ? -v : v;
 	}
 	
 	// Encode a positive value (sign=0) into the posit bit pattern as a uint64_t.
