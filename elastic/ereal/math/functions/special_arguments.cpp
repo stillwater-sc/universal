@@ -160,6 +160,21 @@ namespace {
 		return fails;
 	}
 
+	// a single limb removes only ~100 bits per reduction pass: DBL_MAX takes 10 of them,
+	// and must still come out reduced
+	int VerifyTrigHugeNarrow(bool reportTestCases) {
+		using Narrow = ereal<1>;
+		int fails = 0;
+		for (double v : { 1.0e300, -std::numeric_limits<double>::max() }) {
+			const double s = double(sin(Narrow(v))), c = double(cos(Narrow(v)));
+			if (!(std::fabs(s) <= 1.0) || !(std::fabs(c) <= 1.0)) {
+				++fails;
+				if (reportTestCases) std::cout << "    FAIL ereal<1> sin/cos(" << v << ") = " << s << ", " << c << '\n';
+			}
+		}
+		return fails;
+	}
+
 	// fmod and remainder at exact multiples and exact halves of y, in all four sign combinations
 	template<typename Real>
 	int VerifyFmodRemainderExact(bool reportTestCases) {
@@ -260,6 +275,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyTrigNegative<Real>(reportTestCases), "trig at negative x", "trigonometry");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainderExact<Real>(reportTestCases), "fmod/remainder exact", "fractional");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowNearInteger<Real>(reportTestCases), "pow near integer", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyTrigHugeNarrow(reportTestCases), "trig at DBL_MAX, ereal<1>", "trigonometry");
 #endif
 
 #if REGRESSION_LEVEL_2

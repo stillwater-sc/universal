@@ -22,16 +22,20 @@ namespace sw { namespace universal {
 			// r - 2 pi n with n the nearest integer to r / (2 pi).  One pass leaves r within a
 			// rounding of [-pi, pi]; for a huge a, whose quotient carries fewer integer bits than
 			// a has, each pass removes the working precision's worth of magnitude instead.  The
-			// passes are bounded, so no finite argument can hold sin or cos in a long loop.  Beyond
-			// about 2^(precision - 60) the result is only as good as the stored pi allows.
+			// passes are bounded, so no finite argument can hold sin or cos in a long loop: 64
+			// passes of at least 16 bits cover any limb exponent range up to double's, and an
+			// ereal<1> at DBL_MAX takes 10 (ereal<8> 2).  Beyond about 2^(precision - 60) the result is
+			// only as good as the stored pi allows.
 			Real r = a;
-			for (int pass = 0; pass < 16 && (r > pi || r < neg_pi); ++pass) {
+			for (int pass = 0; pass < 64 && (r > pi || r < neg_pi); ++pass) {
 				const Real q = r / two_pi;
 				const double qd = double(q);
 				// the period count, exact in a double below 1e15
 				const Real n = (std::fabs(qd) < 1.0e15) ? Real(std::floor(qd + 0.5)) : floor(q + Real(0.5));
 				r = r - two_pi * n;
 			}
+			// never hand the series an unreduced argument: report what could not be reduced
+			if (r > pi || r < neg_pi) return std::numeric_limits<Real>::quiet_NaN();
 			return r;
 		}
 
