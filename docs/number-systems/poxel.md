@@ -22,7 +22,7 @@ Constraints, checked at compile time: `nbits >= es + 4`, `es < 16`.
 
 Up to 64 bits the encoder and decoder work in native 64-bit integers. Wider poxels, such as `poxel<129, 2>` over the `posit<128, 2>` lattice, use `integer<nbits + 2>` for patterns, lattice indices and fractions. The algorithms are the same, so every configuration up to 64 bits gives the same results as before (#1676).
 
-Endpoint conversion is rounded to nearest at every width. Above 64 bits, `lower<double>()` and `lower<long double>()` round the lattice value correctly; the significand is first cut to 64 bits with a sticky bit.
+Endpoint conversion is rounded to nearest at every width. Above 64 bits, a `Real` with fewer than 64 digits (`double`) gets the top 64 bits of the significand, with every lower bit folded into a sticky bit, and rounds once. A `Real` with 64 or more digits (x87 or quad `long double`) keeps the top 64 bits exactly and adds the next 64, with the sticky bit in their lowest bit, so 128 bits reach its single rounding.
 
 A configuration wider than 64 bits has wider keys. `lattice()`, `key()` and `tile_interval`'s keys are `integer<nbits + 2>`, not `std::int64_t`, and `raw()` returns only the low 64 bits.
 
@@ -92,7 +92,7 @@ Special cases: NaR propagates. Division by exact zero gives NaR, and so does div
 
 ## Enclosures: tile_interval
 
-`tile_interval<Tile>` (`universal/utility/tile_interval.hpp`) is the run of tiles `[lo, hi]`, in the spirit of Gustafson's valid. It works with `poxel` and with `areal` (tiles of up to 64 bits), and it is guaranteed to **contain** every result.
+`tile_interval<Tile>` (`universal/utility/tile_interval.hpp`) is the run of tiles `[lo, hi]`, in the spirit of Gustafson's valid. It works with `poxel` of any width and with `areal` of up to 64 bits, and it is guaranteed to **contain** every result.
 
 It relies on one property of the tile type: an operation on two *exact* tiles returns the tile that contains the exact result. For `poxel` this is tested exhaustively, and the `tile_interval` tests check it for `areal`. Every interval operation is therefore evaluated on exact endpoints only. The one containing tile then gives both directed roundings: its lower end bounds the result from below, and its upper end bounds it from above.
 
