@@ -53,6 +53,21 @@ poxel9 x(0.1);   // (0.09375, 0.1015625), ubit set
 poxel9 y(0.125); // 0.125, exact
 ```
 
+### To and from `posit<nbits - 1, es>`
+
+The posit is the poxel's lattice, so the posit's bit pattern is the poxel's bits above the ubit. Conversion between them is a shift and never rounds:
+
+- A `posit<nbits - 1, es>` converts implicitly to the exact tile at its value. NaR converts to NaR.
+- A poxel converts explicitly to the posit at its tile's **lower endpoint**, the same choice as for native types. As a result, `posit(x) == posit(double(x))` for every tile. The `(-inf, -maxpos)` tile becomes NaR, as `posit(-inf)` does, and `(0, minpos)` becomes 0.
+- A point tile round-trips. An open tile comes back as the point tile below it.
+
+```cpp
+posit<8, 2> p(0.125);
+poxel9 x = p;                     // exact tile 0.125
+poxel9 t(0.1);                    // (0.09375, 0.1015625)
+posit<8, 2> q(t);                 // 0.09375, the lower endpoint
+```
+
 ## Arithmetic: a flag, not an enclosure
 
 Following `areal` (#1631), arithmetic uses **sticky-flag semantics**. The operation runs on the operands' stored lower endpoints, and the exact result is placed in its tile. The ubit is set if that result is inexact **or** either operand carried the ubit. Subtraction is addition of the negated tile: negating the open tile `(L, next)` gives `(-next, -L)`, so `a - b` uses the upper end of an open `b`.
@@ -114,7 +129,8 @@ to_binary(b);         // posit fields, then "|u"
 `static/tapered/poxel`, enabled with `-DUNIVERSAL_BUILD_NUMBER_POXELS=ON`:
 
 - `conversion`: every tile of five small configurations against the independent `posit` lattice (endpoints, order, negation); conversion of every lattice value, its neighbours and the midpoints between them; the end tiles
-- `logic`: exhaustive tile order, NaR lowest
-- `arithmetic`: exhaustive `+ - * /` for `<8,0>`, `<9,2>` and `<10,1>`, covering containment and the sticky flag
+- `posit_interop`: posit-to-poxel and poxel-to-posit conversion of every pattern up to `poxel<17,2>`, sampled for `poxel33`. Checked against the conversion through `double`.
+- `logic`: exhaustive tile order, NaR lowest; sampled pairs and neighbouring tiles for `poxel17` and `poxel33`
+- `arithmetic`: exhaustive `+ - * /` for `<8,0>`, `<9,2>` and `<10,1>`, covering containment and the sticky flag. Sampled exact operands for `poxel17` and `poxel33` are checked against an exact `ereal` reference, and the result of the same operation in `posit<nbits - 1, es>` must be one end of the poxel's tile.
 - `api`: the constexpr encoder, special tiles, `numeric_limits`, and exceptions
 - `tile_interval`: exhaustive enclosure and tightness over every pair of tiles of `poxel<8,0>`, `poxel<9,2>` and `areal<8,2>`; multi-tile operands; open ends; `cos` against `std::cos`

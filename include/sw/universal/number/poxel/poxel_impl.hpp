@@ -46,6 +46,7 @@
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/number/posit/core.hpp>
 #include <universal/number/poxel/exceptions.hpp>
 
 namespace sw { namespace universal {
@@ -146,6 +147,17 @@ public:
 		if (P == lattice_maxpos) return std::numeric_limits<Real>::infinity();  // the (maxpos, inf) tile
 		return lattice_value<Real>(next_lattice(P));
 	}
+
+	// posit<nbits - 1, es> is the lattice itself, so its patterns are the bits above the ubit.
+	// From a posit: the exact tile at its value, never rounded (NaR to NaR).  To a posit: the
+	// tile's lower endpoint, as for the native types; that sends (-inf, -maxpos) to NaR, as
+	// posit(-inf) does.  posit(x) == posit(double(x)) for every tile.
+	template<typename pbt>
+	poxel(const posit<lbits, es, pbt>& p) noexcept : _block{} { *this = p; }
+	template<typename pbt>
+	poxel& operator=(const posit<lbits, es, pbt>& p) noexcept { setbits(static_cast<std::uint64_t>(p.encoding()) << 1); return *this; }
+	template<typename pbt>
+	explicit operator posit<lbits, es, pbt>() const noexcept { posit<lbits, es, pbt> p; p.setbits(raw() >> 1); return p; }
 
 	// arithmetic: sticky-flag semantics (see the file comment)
 	constexpr poxel operator-() const noexcept {
