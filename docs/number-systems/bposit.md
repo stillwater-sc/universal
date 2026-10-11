@@ -208,6 +208,32 @@ for (std::size_t i = 0; i < x.size(); ++i) q += quire_mul(x[i], y[i]);
 bposit32 s = quire_resolve(q);
 ```
 
+## Math library
+
+`bposit.hpp` includes `bposit/mathlib.hpp`, so `sin(x)`, `sqrt(x)` and the rest are found by ADL on any `bposit<nbits, rs, es, bt>`, and generic code (an FFT that builds its twiddles with `cos` and `sin` in `T`, a window function, an NCO) compiles for b-posits.
+
+| header | functions | rounding |
+|---|---|---|
+| `classify.hpp` | `fpclassify`, `isfinite`, `isinf`, `isnan`, `isnormal`, `signbit` | exact |
+| `next.hpp`, `minmax.hpp` | `nextafter`, `nexttoward`, `min`, `max`; `fabs`, `copysign` in `mathlib.hpp` | exact |
+| `truncate.hpp`, `fractional.hpp` | `floor`, `ceil`, `trunc`, `round`, `fmod`, `remainder`, `frac` | exact when the argument converts exactly to double |
+| `sqrt.hpp`, `hypot.hpp` | `sqrt`, `cbrt`, `hypot` (two and three arguments) | through double |
+| `exponent.hpp`, `logarithm.hpp`, `pow.hpp` | `exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p`, `pow` | through double |
+| `trigonometry.hpp`, `hyperbolic.hpp` | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh` | through double |
+| `error_and_gamma.hpp` | `erf`, `erfc`, `tgamma`, `lgamma` | through double |
+| `complex.hpp` | `sw::universal::complex<bposit>`: arithmetic, `abs`, `arg`, `norm`, `exp`, `log`, `sqrt`, `pow`, trigonometric | through `std::complex<double>` |
+
+**These functions are not yet correctly rounded.** They are phase 1 of #1653: each one is evaluated in double and rounded once into the b-posit. The posit standard requires every function to be correctly rounded for every input, because bitwise reproducibility depends on it, and phase 2 will make them so. Until then a result can be one encoding off when the true value lies within libm's error of a rounding boundary. The argument converts to double exactly for every 16- and 32-bit configuration, and `bposit<64, 6, 5>` loses its low bits.
+
+Measured against a long double reference, the double route is already correctly rounded for every encoding of `bposit<16,4,2>`, `<16,5,2>` and `<16,6,5>` through every unary function, and for every sample at 32 bits (`static/tapered/bposit/math/mathlib.cpp`). Not being correctly rounded is the guarantee, though, and that measurement is not.
+
+The posit standard's two promises hold through the double step:
+
+- **A finite result never becomes NaR.** `exp(maxpos)`, `sinh(maxpos)`, `pow(2, maxpos)` and `tgamma(maxpos)` overflow double, and saturate to maxpos.
+- **A nonzero result never becomes 0.** `exp(maxneg)`, `erfc(maxpos)` and `pow(2, maxneg)` underflow double, and saturate to minpos, with the result's sign: `tgamma(-200.5)` is `-minpos`.
+
+Poles and domain errors are NaR: `log(0)`, `log(-1)`, `sqrt(-1)`, `atanh(1)`, `tgamma(0)`, `tgamma(-1)`, `pow(0, -1)`, and `fmod(x, 0)`. NaR in any argument gives NaR, for `min` and `max` too. There is no infinity, so `isinf` is always false.
+
 ## Reference encoding: `bposit<8, 4, 0>`
 
 All 128 non-negative encodings. A negative value is the two's complement of the matching positive one, and `0x80` is NaR. The fraction field is never empty. Patterns 0x01 .. 0x07 (r = -4) and 0x78 .. 0x7F (r = 3) use the capped 4-bit regime, which has no terminating bit.
@@ -355,4 +381,9 @@ std::cout << c << ' ' << to_binary(c) << '\n';
 
 using Small = bposit<8, 4, 0>;
 Small tiny(1.0e-9);                       // saturates to minpos, 9/128: never zero
+
+bposit<16, 4, 2> t(0.5);
+auto s = sin(t), e = exp(t);              // the math library, found by ADL
+complex<bposit<16, 4, 2>> z(t, t);
+auto w = exp(z) * z;                      // complex arithmetic and functions
 ```
