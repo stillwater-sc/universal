@@ -235,6 +235,7 @@ using sw::universal::qd;
 double agreement(const qd& got, const double (&ref)[6], double floor) {
 	const qd r(ref[0], ref[1], ref[2], ref[3]);
 	const qd diff = got - r;
+	if (diff.isnan() || diff.isinf()) return 0.0;                     // a NaN or inf result fails
 	if (diff.iszero()) return 300.0;
 	const double scale = std::fmax(std::fabs(ref[0]), floor);
 	return -std::log2(std::fabs(diff[0]) / scale);
@@ -279,6 +280,13 @@ int VerifySpecialValues(bool report) {
 		const qd g = tgamma(qd(static_cast<double>(n)));
 		const qd d = g - factorial;
 		expect(std::fabs(d[0]) <= std::ldexp(factorial[0], -195), "tgamma(n) = (n - 1)!");
+	}
+	// close to a large negative integer Gamma(1 - x) overflows double, but Gamma(x) does not
+	// underflow: Gamma(-171 + 2^-20) = pi / (sin(pi 2^-20) Gamma(172 - 2^-20)) = -8.449e-304
+	{
+		const qd x = qd(-171.0) + qd(std::ldexp(1.0, -20));
+		const double ref[6] = { -0x1.28aacdd8c4b60p-1007, -0x0.000000000188dp-1022, 0x0.0p+0, 0x0.0p+0, 0.0, 0.0 };              // mpmath
+		expect(agreement(tgamma(x), ref, 0.0) >= 190.0, "tgamma(-171 + 2^-20) = -8.449e-304 to 190 bits");
 	}
 	// erf(-x) = -erf(x), erf + erfc = 1
 	for (double x : { 0.1, 0.7, 1.3, 2.9, 3.1, 5.0, 7.5 }) {

@@ -161,8 +161,14 @@ inline qd tgamma(const qd& x) {
 	}
 	// reflection: Gamma(x) = pi / (sin(pi x) Gamma(1 - x))
 	const qd one_minus = qd(1.0) - x;
-	if (one_minus[0] > 171.7) return qd(0.0);               // underflows double
-	return qd_pi / (qd_special::sin_pi(x) * exp(qd_special::lgamma_positive(one_minus)));
+	const qd s = qd_special::sin_pi(x);
+	if (one_minus[0] > 171.0) {
+		// Gamma(1 - x) overflows double, while Gamma(x) itself need not underflow: close to a
+		// negative integer sin(pi x) is small too.  Form the quotient in logarithms instead.
+		const qd magnitude = exp(log(qd_pi / (s[0] < 0.0 ? -s : s)) - qd_special::lgamma_positive(one_minus));
+		return s[0] < 0.0 ? -magnitude : magnitude;
+	}
+	return qd_pi / (s * exp(qd_special::lgamma_positive(one_minus)));
 }
 
 }} // namespace sw::universal
