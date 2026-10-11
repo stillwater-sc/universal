@@ -19,8 +19,8 @@ public:
 	static constexpr Poxel max()           { return Poxel(sw::universal::SpecificValue::maxpos); }
 	static constexpr Poxel lowest()        { return Poxel(sw::universal::SpecificValue::maxneg); }
 	// the lattice gap above 1.0, as an exact tile: 2^-fbits
-	static constexpr Poxel epsilon()       { Poxel p; p.setbits(Poxel::encode(false, -static_cast<int>(Poxel::fbits), 0ull, 0u, false)); return p; }
-	static constexpr Poxel round_error()   { Poxel p; p.setbits(Poxel::encode(false, -1, 0ull, 0u, false)); return p; }
+	static constexpr Poxel epsilon()       { Poxel p; p.setpattern(Poxel::encode(false, -static_cast<int>(Poxel::fbits), typename Poxel::word_type(0), 0u, false)); return p; }
+	static constexpr Poxel round_error()   { Poxel p; p.setpattern(Poxel::encode(false, -1, typename Poxel::word_type(0), 0u, false)); return p; }
 	static constexpr Poxel denorm_min()    { return Poxel(sw::universal::SpecificValue::minpos); }
 	// the open tile (maxpos, inf) stands in for infinity
 	static constexpr Poxel infinity()      { return Poxel(sw::universal::SpecificValue::infpos); }

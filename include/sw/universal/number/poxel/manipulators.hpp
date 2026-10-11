@@ -30,16 +30,16 @@ template<unsigned nbits, unsigned es, typename bt>
 std::string to_binary(const poxel<nbits, es, bt>& v, bool = false) {
 	using X = poxel<nbits, es, bt>;
 	std::stringstream s;
-	const std::int64_t P = v.lattice();
+	const auto P = v.lattice();
 	s << "0b" << (P < 0 ? '1' : '0') << '.';
 	if (P == 0 || P == X::lattice_nar) {
 		for (unsigned i = X::lbits - 1; i-- > 0;) s << '0';
 	}
 	else {
 		const auto d = X::decode_lattice(P);
-		const std::uint64_t a = static_cast<std::uint64_t>(P < 0 ? -P : P);
+		const auto a = static_cast<typename X::word_type>(P < 0 ? -P : P);
 		unsigned bit = X::lbits - 1;
-		auto emit = [&](unsigned count) { for (unsigned i = 0; i < count; ++i) { --bit; s << (((a >> bit) & 1ull) ? '1' : '0'); } };
+		auto emit = [&](unsigned count) { for (unsigned i = 0; i < count; ++i) { --bit; s << (X::bit(a, bit) ? '1' : '0'); } };
 		emit(d.rlen); s << '.';
 		emit(d.ebits); s << '.';
 		emit(d.nf);
@@ -54,7 +54,7 @@ std::string to_binary(const poxel<nbits, es, bt>& v, bool = false) {
 // beyond its exponent range) print the exact hexfloat assembled from the posit fields,
 // so neighbouring lattice points never print alike.
 template<unsigned nbits, unsigned es, typename bt>
-std::string lattice_text(std::int64_t P, int precision) {
+std::string lattice_text(const typename poxel<nbits, es, bt>::index_type& P, int precision) {
 	using X = poxel<nbits, es, bt>;
 	using L = std::numeric_limits<long double>;
 	constexpr bool decimal_is_exact = (X::fbits + 1 <= static_cast<unsigned>(L::digits)) && (X::maxscale < L::max_exponent - 1) && (X::minscale - static_cast<int>(X::fbits) > L::min_exponent - L::digits);
@@ -68,7 +68,18 @@ std::string lattice_text(std::int64_t P, int precision) {
 		const auto d = X::decode_lattice(P);
 		const unsigned pad = (4u - d.nf % 4u) % 4u;                 // align the fraction to whole hex digits
 		s << (d.negative ? "-" : "") << "0x1";
-		if (d.nf > 0) s << '.' << std::hex << std::setw(static_cast<int>((d.nf + pad) / 4u)) << std::setfill('0') << (d.frac << pad) << std::dec;
+		if (d.nf > 0) {                                             // hex digits of frac << pad, MSB first
+			const unsigned width = d.nf + pad;
+			s << '.';
+			for (unsigned i = width; i > 0; i -= 4u) {
+				unsigned nibble = 0;
+				for (unsigned b = 0; b < 4u; ++b) {
+					const unsigned pos = i - 1u - b;                    // bit of frac << pad
+					if (pos >= pad && X::bit(d.frac, pos - pad)) nibble |= (8u >> b);
+				}
+				s << "0123456789abcdef"[nibble];
+			}
+		}
 		s << 'p' << std::showpos << d.scale;
 	}
 	return s.str();
@@ -83,10 +94,10 @@ std::string to_interval(const poxel<nbits, es, bt>& v, int precision = 0) {
 	// (max_digits10 of fbits + 1 significand bits), so neighbouring lattice points never merge
 	if (precision <= 0) precision = std::max(17, 2 + static_cast<int>(((X::fbits + 1u) * 30103u) / 100000u));
 	if (v.isnar()) return "nar";
-	const std::int64_t P = v.lattice();
+	const auto P = v.lattice();
 	const std::string lo = lattice_text<nbits, es, bt>(P, precision);
 	if (v.isexact()) return lo;
-	const std::string hi = (P == X::lattice_maxpos) ? std::string("inf") : lattice_text<nbits, es, bt>(P + 1, precision);
+	const std::string hi = (P == X::lattice_maxpos) ? std::string("inf") : lattice_text<nbits, es, bt>(P + typename X::index_type(1), precision);
 	return "(" + lo + ", " + hi + ")";
 }
 
