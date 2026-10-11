@@ -5,9 +5,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// This suite pins the library's contract at every function, including the ones still
-// evaluated in double (erf, erfc, tgamma, lgamma); correct_rounding.cpp checks the correctly
-// rounded ones for exact equality with an independent oracle.  Here:
+// This suite pins the library's contract at every function; correct_rounding.cpp checks
+// that each is correctly rounded, for exact equality with an independent oracle.  Here:
 //
 //   - the exact functions (truncations, remainders, fabs, copysign, nextafter, min/max,
 //     classification) are exact, for every encoding of the 16-bit configurations;
