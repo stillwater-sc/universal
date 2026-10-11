@@ -21,6 +21,7 @@
 // arguments, libm in double for the shape, and exact dyadic values for fmod and remainder.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <limits>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -146,6 +147,15 @@ namespace {
 			fails += expect_near("sin", -v, sin(mx), std::sin(-v), 1.0e-15, reportTestCases);
 			fails += expect_near("cos", -v, cos(mx), std::cos(-v), 1.0e-15, reportTestCases);
 			fails += expect_near("tan", -v, tan(mx), std::tan(-v), 1.0e-14, reportTestCases);
+		}
+		// huge arguments, beyond what the stored pi resolves: the reduction must still finish,
+		// in a bounded number of passes, with a value in [-1, 1]
+		for (double v : { 1.0e300, -1.0e300, std::numeric_limits<double>::max() }) {
+			const double s = double(sin(Real(v))), c = double(cos(Real(v)));
+			if (!(std::fabs(s) <= 1.0) || !(std::fabs(c) <= 1.0)) {
+				++fails;
+				if (reportTestCases) std::cout << "    FAIL sin/cos(" << v << ") = " << s << ", " << c << '\n';
+			}
 		}
 		return fails;
 	}

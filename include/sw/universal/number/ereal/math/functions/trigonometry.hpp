@@ -18,18 +18,20 @@ namespace sw { namespace universal {
 		inline ereal<maxlimbs, FpType> reduce_two_pi(const ereal<maxlimbs, FpType>& a, const ereal<maxlimbs, FpType>& pi) {
 			using Real = ereal<maxlimbs, FpType>;
 			const Real two_pi = pi * Real(2.0);
-			Real r = a;
-			if (a > two_pi) {
-				// the period count, exact in a double below 1e15
-				const Real periods_real = a / two_pi;
-				const double periods_approx = double(periods_real);
-				const Real periods = (periods_approx < 1.0e15) ? Real(std::floor(periods_approx)) : floor(periods_real);
-				r = a - two_pi * periods;
-			}
-			// a period count rounded across an integer leaves r just outside [0, 2 pi)
 			const Real neg_pi = -pi;
-			while (r > pi) r = r - two_pi;
-			while (r < neg_pi) r = r + two_pi;
+			// r - 2 pi n with n the nearest integer to r / (2 pi).  One pass leaves r within a
+			// rounding of [-pi, pi]; for a huge a, whose quotient carries fewer integer bits than
+			// a has, each pass removes the working precision's worth of magnitude instead.  The
+			// passes are bounded, so no finite argument can hold sin or cos in a long loop.  Beyond
+			// about 2^(precision - 60) the result is only as good as the stored pi allows.
+			Real r = a;
+			for (int pass = 0; pass < 16 && (r > pi || r < neg_pi); ++pass) {
+				const Real q = r / two_pi;
+				const double qd = double(q);
+				// the period count, exact in a double below 1e15
+				const Real n = (std::fabs(qd) < 1.0e15) ? Real(std::floor(qd + 0.5)) : floor(q + Real(0.5));
+				r = r - two_pi * n;
+			}
 			return r;
 		}
 
