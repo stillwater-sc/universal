@@ -817,7 +817,13 @@ public:
 	// path always has _limb.size() >= 1 so the guards are pure
 	// constexpr-evaluation safety)
 	constexpr bool iszero()  const noexcept { return _limb.empty() || _limb[0] == 0.0; }
-	constexpr bool isone()   const noexcept { return !_limb.empty() && _limb[0] == 1.0; }
+	// exactly one: a leading limb of 1.0 with a nonzero tail, such as 1 + 1e-20, is not.  Testing
+	// the leading limb alone sent log(1 + 1e-20) to 0 and pow(1 + 1e-20, y) to 1 (#1668).
+	constexpr bool isone()   const noexcept {
+		if (_limb.empty() || _limb[0] != 1.0) return false;
+		for (std::size_t i = 1; i < _limb.size(); ++i) if (_limb[i] != 0.0) return false;
+		return true;
+	}
 	constexpr bool ispos()   const noexcept { return !_limb.empty() && _limb[0] > 0.0; }
 	constexpr bool isneg()   const noexcept { return !_limb.empty() && _limb[0] < 0.0; }
 	// isinf, isnan use sw::universal::isinf/isnan which call std::fpclassify

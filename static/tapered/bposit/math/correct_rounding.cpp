@@ -41,14 +41,6 @@ using Oracle = sw::universal::ereal<8>;
 // what an infinity or a zero from the long double reference means
 enum class Range { any, finite, nonzero };
 
-// Below 2^-40 the oracle uses a few Taylor terms, truncated at a relative 2^-160: ereal's
-// asinh, atanh and kin are written as logarithms that cancel there (asinh(1e-50) comes back 0).
-inline bool tiny(const Oracle& v) { return abs(v) < Oracle(std::ldexp(1.0, -40)); }
-inline Oracle odd_series(const Oracle& v, double c3, double c5, double c7) {
-	const Oracle v2 = v * v;
-	return v * (Oracle(1.0) + v2 * (Oracle(c3) + v2 * (Oracle(c5) + v2 * Oracle(c7))));
-}
-
 // erf, erfc and the gamma functions of ereal are evaluated in double, so the oracle carries
 // its own, at ereal<8>'s 400-odd bits: the positive-term series of erf, erfc = 1 - erf (which
 // keeps 180 bits even where erfc reaches minpos), and Stirling's series for lgamma after a
@@ -122,8 +114,8 @@ Oracle oracle_lgamma_positive(const Oracle& x) {
 	}
 	return r - log(product);
 }
-// reflection for x < 0, with sin(pi x) from the exact fractional part (ereal's sin is wrong for
-// negative arguments beyond 2 pi, #1668)
+// reflection for x < 0, with sin(pi x) from the exact fractional part, which spares the oracle
+// a reduction of pi x by 2 pi
 Oracle oracle_lgamma(const Oracle& x) {
 	if (x > Oracle(0.0)) return oracle_lgamma_positive(x);
 	Oracle f = x - floor(x);
@@ -264,33 +256,14 @@ std::vector<Unary<B>> functions() {
 		BPOSIT_CR_ENTRY(exp, Range::nonzero), BPOSIT_CR_EXACT(exp2, Range::nonzero),
 		Unary<B>{ "exp10", [](const B& x) { return bm::exp10<engine::libm_then_qd>(x); }, [](const B& x) { return bm::exp10<engine::qd_only>(x); },
 		          [](long double v) { return std::pow(10.0l, v); }, [](const Oracle& v) { return exp10(v); }, Range::nonzero, true },
-		Unary<B>{ "expm1", [](const B& x) { return bm::expm1<engine::libm_then_qd>(x); }, [](const B& x) { return bm::expm1<engine::qd_only>(x); },
-		          [](long double v) { return std::expm1(v); }, [](const Oracle& v) { return tiny(v) ? v * (Oracle(1.0) + v * (Oracle(0.5) + v * (Oracle(1.0 / 6) + v * Oracle(1.0 / 24)))) : expm1(v); }, Range::finite, false },
+		BPOSIT_CR_ENTRY(expm1, Range::finite),
 		BPOSIT_CR_ENTRY(log, Range::any),    BPOSIT_CR_ENTRY(log2, Range::any),
-		BPOSIT_CR_ENTRY(log10, Range::any),  Unary<B>{ "log1p", [](const B& x) { return bm::log1p<engine::libm_then_qd>(x); }, [](const B& x) { return bm::log1p<engine::qd_only>(x); },
-		          [](long double v) { return std::log1p(v); }, [](const Oracle& v) { return tiny(v) ? v * (Oracle(1.0) - v * (Oracle(0.5) - v * (Oracle(1.0 / 3) - v * Oracle(0.25)))) : log1p(v); }, Range::any, false },
-		// ereal's sin, cos and tan go wrong for negative arguments beyond 2 pi, so the
-		// oracle evaluates them at |x| and applies the symmetry
-		Unary<B>{ "sin", [](const B& x) { return bm::sin<engine::libm_then_qd>(x); }, [](const B& x) { return bm::sin<engine::qd_only>(x); },
-		          [](long double v) { return std::sin(v); }, [](const Oracle& v) { return v < Oracle(0.0) ? -sin(-v) : sin(v); }, Range::any },
-		Unary<B>{ "cos", [](const B& x) { return bm::cos<engine::libm_then_qd>(x); }, [](const B& x) { return bm::cos<engine::qd_only>(x); },
-		          [](long double v) { return std::cos(v); }, [](const Oracle& v) { return v < Oracle(0.0) ? cos(-v) : cos(v); }, Range::any },
-		Unary<B>{ "tan", [](const B& x) { return bm::tan<engine::libm_then_qd>(x); }, [](const B& x) { return bm::tan<engine::qd_only>(x); },
-		          [](long double v) { return std::tan(v); }, [](const Oracle& v) { return v < Oracle(0.0) ? -tan(-v) : tan(v); }, Range::finite },
-		Unary<B>{ "asin", [](const B& x) { return bm::asin<engine::libm_then_qd>(x); }, [](const B& x) { return bm::asin<engine::qd_only>(x); },
-		          [](long double v) { return std::asin(v); }, [](const Oracle& v) { return tiny(v) ? odd_series(v, 1.0 / 6, 3.0 / 40, 15.0 / 336) : asin(v); }, Range::any, false },
-		BPOSIT_CR_ENTRY(acos, Range::any),   Unary<B>{ "atan", [](const B& x) { return bm::atan<engine::libm_then_qd>(x); }, [](const B& x) { return bm::atan<engine::qd_only>(x); },
-		          [](long double v) { return std::atan(v); }, [](const Oracle& v) { return tiny(v) ? odd_series(v, -1.0 / 3, 1.0 / 5, -1.0 / 7) : atan(v); }, Range::any, false },
-		Unary<B>{ "sinh", [](const B& x) { return bm::sinh<engine::libm_then_qd>(x); }, [](const B& x) { return bm::sinh<engine::qd_only>(x); },
-		          [](long double v) { return std::sinh(v); }, [](const Oracle& v) { return tiny(v) ? odd_series(v, 1.0 / 6, 1.0 / 120, 1.0 / 5040) : sinh(v); }, Range::finite, false }, BPOSIT_CR_ENTRY(cosh, Range::finite),
-		// ereal's tanh collapses for large arguments: 1 - 2 / (e^2|x| + 1) instead
-		Unary<B>{ "tanh", [](const B& x) { return bm::tanh<engine::libm_then_qd>(x); }, [](const B& x) { return bm::tanh<engine::qd_only>(x); },
-		          [](long double v) { return std::tanh(v); },
-		          [](const Oracle& v) {
-		              const Oracle a = v < Oracle(0.0) ? -v : v;
-		              const Oracle t = Oracle(1.0) - Oracle(2.0) / (exp(a * Oracle(2.0)) + Oracle(1.0));
-		              return v < Oracle(0.0) ? -t : t; }, Range::any, false },   Unary<B>{ "asinh", [](const B& x) { return bm::asinh<engine::libm_then_qd>(x); }, [](const B& x) { return bm::asinh<engine::qd_only>(x); },
-		          [](long double v) { return std::asinh(v); }, [](const Oracle& v) { return tiny(v) ? odd_series(v, -1.0 / 6, 3.0 / 40, -15.0 / 336) : asinh(v); }, Range::any, false },
+		BPOSIT_CR_ENTRY(log10, Range::any),  BPOSIT_CR_ENTRY(log1p, Range::any),
+		BPOSIT_CR_ENTRY(sin, Range::any),    BPOSIT_CR_ENTRY(cos, Range::any),
+		BPOSIT_CR_ENTRY(tan, Range::finite), BPOSIT_CR_ENTRY(asin, Range::any),
+		BPOSIT_CR_ENTRY(acos, Range::any),   BPOSIT_CR_ENTRY(atan, Range::any),
+		BPOSIT_CR_ENTRY(sinh, Range::finite), BPOSIT_CR_ENTRY(cosh, Range::finite),
+		BPOSIT_CR_ENTRY(tanh, Range::any),   BPOSIT_CR_ENTRY(asinh, Range::any),
 		Unary<B>{ "erf", [](const B& x) { return bm::erf<engine::libm_then_qd>(x); }, [](const B& x) { return bm::erf<engine::qd_only>(x); },
 		          [](long double v) { return std::erf(v); }, oracle_erf, Range::any, false },
 		Unary<B>{ "erfc", [](const B& x) { return bm::erfc<engine::libm_then_qd>(x); }, [](const B& x) { return bm::erfc<engine::qd_only>(x); },
@@ -299,8 +272,7 @@ std::vector<Unary<B>> functions() {
 		          [](long double v) { return std::tgamma(v); }, oracle_tgamma, Range::nonzero, true, 0.0, true },
 		Unary<B>{ "lgamma", [](const B& x) { return bm::lgamma<engine::libm_then_qd>(x); }, [](const B& x) { return bm::lgamma<engine::qd_only>(x); },
 		          [](long double v) { return std::lgamma(v); }, oracle_lgamma, Range::finite, false, 1.0, true },
-		BPOSIT_CR_ENTRY(acosh, Range::any),  Unary<B>{ "atanh", [](const B& x) { return bm::atanh<engine::libm_then_qd>(x); }, [](const B& x) { return bm::atanh<engine::qd_only>(x); },
-		          [](long double v) { return std::atanh(v); }, [](const Oracle& v) { return tiny(v) ? odd_series(v, 1.0 / 3, 1.0 / 5, 1.0 / 7) : atanh(v); }, Range::any, false },
+		BPOSIT_CR_ENTRY(acosh, Range::any),  BPOSIT_CR_ENTRY(atanh, Range::any),
 	};
 #undef BPOSIT_CR_ENTRY
 #undef BPOSIT_CR_EXACT
@@ -418,7 +390,7 @@ int VerifyExactFunctions(unsigned count, bool report) {
 		judge("round", x, round(x), round_oracle<B>(round(ex)), report, t);
 		judge("frac",  x, frac(x),  round_oracle<B>(ex - trunc(ex)), report, t);
 		// fmod and remainder are exact in long double when it holds the operands, and rounding
-		// that once is the reference (ereal's fmod truncates its quotient one short at exact multiples)
+		// that once is the reference
 		if (!y.iszero() && long_double_exact<B>()) {
 			const long double a = static_cast<long double>(x), b = static_cast<long double>(y);
 			judge("fmod", x, fmod(x, y), B(std::fmod(a, b)), report, t);
@@ -477,8 +449,8 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	using bposit16_42 = bposit<16, 4, 2, std::uint16_t>;
-	using bposit16_52 = bposit<16, 5, 2, std::uint16_t>;
-	using bposit32_42 = bposit<32, 4, 2, std::uint32_t>;
+	using bposit16_52 [[maybe_unused]] = bposit<16, 5, 2, std::uint16_t>;
+	using bposit32_42 [[maybe_unused]] = bposit<32, 4, 2, std::uint32_t>;
 
 #if MANUAL_TESTING
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<bposit16_42>(true, true), "bposit<16,4,2>", "qd only");
