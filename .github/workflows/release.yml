@@ -131,10 +131,10 @@ jobs:
           # run can restore only its own ref's caches or the default branch's. Every release
           # runs on a new tag ref, so it could never read an earlier release's cache: v5.6.1
           # built with zero CACHED steps (~2 min from scratch) while each release stranded
-          # ~0.4GB of unreadable buildkit entries. Those pushed the repo past its 10GB cache
-          # ceiling, the export then failed with "failed to reserve cache" AFTER both images
-          # were pushed, and LRU eviction at the ceiling also threatens the ccache entries
-          # cmake.yml restores.
+          # ~0.4GB of unreadable buildkit entries. Worse, a failed cache export fails the
+          # build: when the repo's cache spend budget is reached the cache goes read only
+          # (see the ccache note in cmake.yml), and v5.6.1's export died with "failed to
+          # reserve cache" AFTER both images had been pushed, turning the release red.
 
       - name: Docker Hub Description
         uses: peter-evans/dockerhub-description@v5
