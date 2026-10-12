@@ -182,11 +182,22 @@ try {
 
 	std::cout << "+-----------------  type tag, is_poxel trait, to_binary, to_interval\n";
 	{
-		int f = 0;
+		int     f = 0;
+		poxel17 p17{1};
+		std::cout << type_tag(p17) << " : " << (is_poxel<poxel17> ? "is a poxel" : "is not a poxel") << '\n';
+		std::cout << type_tag(p17) << " : " << to_binary(p17) << " : " << to_interval(p17) << '\n';
+
+		X9 x9{1};
+		std::cout << type_tag(x9) << " : " << to_binary(x9) << " : " << to_interval(x9) << '\n';
+		x9 = 0.1;
+		std::cout << type_tag(x9) << " : " << to_binary(x9) << " : " << to_interval(x9) << '\n';
+
+		// do the checks like a test suite, not just print to stdout
 		f += expect(type_tag(poxel17{}) == "poxel< 17, 2, uint32_t>", "type_tag", reportTestCases);
 		f += expect(is_poxel<poxel9> && !is_poxel<double>, "is_poxel trait", reportTestCases);
 		f += expect(to_binary(X9(1.0)) == "0b0.10.00.000|0", "to_binary of 1.0", reportTestCases);
 		f += expect(to_interval(X9(0.1)) == "(0.09375, 0.1015625)", "to_interval of 0.1", reportTestCases);
+
 		// a 60-fraction-bit lattice: decimal where long double holds it (x86 80-bit), exact
 		// hexfloat where it does not (long double == double); either way the two ends of
 		// the tile above 1.0 must print differently
@@ -194,11 +205,21 @@ try {
 		W w(1);
 		++w;
 		const std::string wide = to_interval(w);
+		std::cout << type_tag(w) << " : " << wide << '\n';
+
+		// The lattice gap above 1.0 is 2^-60, which is exactly representable in long double
 		const bool hex = (wide == "(0x1.000000000000000p+0, 0x1.000000000000001p+0)");
 		const bool dec = (wide == "(1, 1.0000000000000000009)");
 		f += expect(hex || dec, "to_interval of a 60-fraction-bit tile keeps both lattice points apart", reportTestCases);
 		if (!(hex || dec) && reportTestCases) std::cerr << "  got " << wide << '\n';
+
+		x9 = X9(SpecificValue::infpos);
+		std::cout << type_tag(x9) << " : " << to_binary(x9) << " : " << to_interval(x9) << '\n'; 
+		x9 = X9(SpecificValue::infneg);
+		std::cout << type_tag(x9) << " : " << to_binary(x9) << " : " << to_interval(x9) << '\n';
+
 		f += expect(to_interval(X9(SpecificValue::infpos)) == "(16777216, inf)" && to_interval(X9(SpecificValue::infneg)) == "(-inf, -16777216)", "to_interval of the end tiles", reportTestCases);
+		
 		nrOfFailedTestCases += ReportTestResult(f, "poxel", "type tag and text");
 	}
 
