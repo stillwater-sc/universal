@@ -6,7 +6,7 @@ print_header()
 
 ####
 # Set minimum version of CMake. 
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.22...4.2)
 
 ####
 ## Enable project() command to manage VERSION variables
