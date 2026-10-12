@@ -1,16 +1,18 @@
-// minmax.cpp: test suite runner for minmax functions for double-double (dd) floating-point
+// minmax.cpp: test suite runner for min and max of dd
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Against references independent of the code under test: see test_suite_multidouble_exact.hpp (#1667).
 #include <universal/utility/directives.hpp>
-#include <numbers>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_multidouble_exact.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -20,33 +22,44 @@
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
+	namespace mv = sw::universal::multidouble_verification;
 
-	std::string test_suite  = "double-double mathlib minmax function validation";
+	std::string test_suite  = "dd mathlib min and max validation";
 	std::string test_tag    = "min/max";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	dd x{ 3.0 }, y{ 4.0 };
-
-	std::cout << "min( " << x << ", " << y << ") = " << min(x, y) << '\n';
-	std::cout << "max( " << x << ", " << y << ") = " << max(x, y) << '\n';
+	std::cout << "max(1 + 1e-25, 1) - 1 = " << (max(dd(1.0) + dd(1.0e-25), dd(1.0)) - dd(1.0)) << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyHypotMinMax<dd>("dd", 200, reportTestCases), "dd HypotMinMax", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyHypotMinMax<dd>("dd", 2000, reportTestCases), "dd HypotMinMax", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

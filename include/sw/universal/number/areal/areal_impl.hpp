@@ -445,8 +445,26 @@ public:
 			return *this;
 		}
 		
+		// An areal wider than 32 bits does not fit the bit assembly below. Its own branch placed
+		// source bit i at areal bit i + 1 for i < 23, after the fraction had already been aligned,
+		// so every conversion was wrong: areal<64,11>(1.5f) was 1 (#1656). Take the exact,
+		// width-independent path instead: a float is a long double exactly, on every platform.
+		if constexpr (nbits > 32) {
+			return assign_extended(static_cast<long double>(rhs));
+		}
+		else {
 		// this is not a special number
 		int exponent = int(raw_exp) - 127;  // unbias the exponent
+		// A subnormal float is 0.f 2^-126: no hidden bit, and an exponent field that does not give
+		// its scale.  Normalize it as operator=(double) does: its scale is that of its leading 1,
+		// and raw then carries that 1 at the hidden-bit position 23 (#1656).
+		const bool subnormal_source = (raw_exp == 0);
+		if (subnormal_source) {
+			int msb = 22;
+			while ((raw & (1u << msb)) == 0) --msb;   // rhs != 0, so a bit is set
+			exponent = msb - 149;                     // 2^msb 2^-23 2^-126
+			raw <<= (23 - msb);
+		}
 
 #if TRACE_CONVERSION
 		std::cout << '\n';
@@ -482,7 +500,7 @@ public:
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
 			// trick though is that it might be a normal number in IEEE single precision representation
-			if (exponent > -127) {
+			if (!subnormal_source) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 23);
 				// mask for sticky bit - guard against shift overflow
@@ -495,7 +513,7 @@ public:
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 				// -exponent because we are right shifting and exponent in this range is negative
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				if (shiftRight > 0) {		// do we need to round?
+				if (shiftRight >= 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
 					raw >>= shiftRight + adjustment;
 				}
@@ -519,7 +537,7 @@ public:
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 				// -exponent because we are right shifting and exponent in this range is negative
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				if (shiftRight > 0) {		// do we need to round?
+				if (shiftRight >= 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
 					raw >>= shiftRight + adjustment;
 				}
@@ -535,9 +553,10 @@ public:
 		else {
 			// this number is a normal/max-exponent value number in this representation, we can leave the hidden bit hidden
 			biasedExponent = static_cast<uint32_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
+			raw &= 0x007F'FFFFu;   // a normalized subnormal source carries its hidden bit: keep the fraction only
 
 			// fraction processing
-			if (shiftRight > 0) {		// do we need to round?
+			if (shiftRight >= 0) {		// do we need to round?
 				// we have 23 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
 				// ...  lsb | sticky      ubit
@@ -560,45 +579,23 @@ public:
 		std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
 		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
 #endif
-		// construct the target areal
-		if constexpr (nbits <= 32) {
-			// fast path for small areals that fit in 32 bits
-			uint32_t bits = (s ? 1u : 0u);
-			bits <<= es;
-			bits |= biasedExponent;
-			bits <<= nbits - 1u - es;
-			bits |= raw;
-			bits &= 0xFFFF'FFFEu;
-			bits |= (ubit ? 0x1u : 0x0u);
-			if constexpr (1 == nrBlocks) {
-				_block[MSU] = bt(bits);
-			}
-			else {
-				copyBits(bits);
-			}
+		// construct the target areal: nbits <= 32 here, wider areals took assign_extended above
+		uint32_t bits = (s ? 1u : 0u);
+		bits <<= es;
+		bits |= biasedExponent;
+		bits <<= nbits - 1u - es;
+		bits |= raw;
+		bits &= 0xFFFF'FFFEu;
+		bits |= (ubit ? 0x1u : 0x0u);
+		if constexpr (1 == nrBlocks) {
+			_block[MSU] = bt(bits);
 		}
 		else {
-			// large areal: set bits individually to avoid shift overflow
-			clear();
-			// set fraction bits (raw is already aligned, max 23 bits from float)
-			for (unsigned i = 0; i < 23 && i < fbits; ++i) {
-				if (raw & (1u << i)) {
-					set(i + 1); // +1 for ubit position
-				}
-			}
-			// set exponent bits
-			for (unsigned i = 0; i < es; ++i) {
-				if (biasedExponent & (1u << i)) {
-					set(fbits + 1 + i); // +1 for ubit
-				}
-			}
-			// set sign bit
-			if (s) set(nbits - 1);
-			// set ubit
-			if (ubit) set(0);
+			copyBits(bits);
 		}
 		saturate_reserved();
 		return *this;
+		}
 	}
 	CONSTEXPRESSION areal& operator=(double rhs) {
 		clear();
@@ -626,6 +623,14 @@ public:
 			set(nbits - 1ull, s);
 			return *this;
 		}
+		// An areal wider than 64 bits does not fit the bit assembly below. Its own branch placed the
+		// fraction as if it were unshifted after it had been aligned, so every conversion was wrong:
+		// areal<72,11>(1.5) was not 1.5 (#1656). Take the exact, width-independent path instead: a
+		// double is a long double exactly, on every platform.
+		if constexpr (nbits > 64) {
+			return assign_extended(static_cast<long double>(rhs));
+		}
+		else {
 		// Handle subnormal doubles specially: they need normalization first
 		// Subnormal double: value = 0.fraction * 2^-1022
 		// We must find the effective exponent based on the leading 1 bit position
@@ -711,7 +716,7 @@ public:
 			std::cout << "bias shift      : " << subnormal_reciprocal_shift[es] << std::endl;
 			std::cout << "adjustment      : " << adjustment << std::endl;
 #endif
-			if (shiftRight > 0) {		// do we need to round?
+			if (shiftRight >= 0) {		// do we need to round?
 				ubit = (mask & raw) != 0;
 				raw >>= (static_cast<std::int64_t>(shiftRight) + adjustment);
 			}
@@ -726,6 +731,7 @@ public:
 		else {
 			// this number is a normal/max-exponent value number in this representation, we can leave the hidden bit hidden
 			biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
+			raw &= 0x000F'FFFF'FFFF'FFFFull;   // a normalized subnormal source carries its hidden bit: keep the fraction only
 
 			// fraction processing
 			// mask for sticky bit - guard against shift overflow for large fbits
@@ -735,7 +741,7 @@ public:
 			else {
 				mask = 0x000F'FFFF'FFFF'FFFFull >> fbits;
 			}
-			if (shiftRight > 0) {		// do we need to round?
+			if (shiftRight >= 0) {		// do we need to round?
 				// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
 				// ...  lsb | sticky      ubit
@@ -763,51 +769,23 @@ public:
 		std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
 		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
 #endif
-		// construct the target areal
-		if constexpr (nbits <= 64) {
-			// fast path for areals that fit in 64 bits
-			uint64_t bits = (s ? 1ull : 0ull);
-			bits <<= es;
-			bits |= biasedExponent;
-			bits <<= nbits - 1ull - es;
-			bits |= raw;
-			bits &= 0xFFFF'FFFF'FFFF'FFFEull;
-			bits |= (ubit ? 0x1ull : 0x0ull);
-			if constexpr (nrBlocks == 1) {
-				_block[MSU] = bt(bits);
-			}
-			else {
-				copyBits(bits);
-			}
+		// construct the target areal: nbits <= 64 here, wider areals took assign_extended above
+		uint64_t bits = (s ? 1ull : 0ull);
+		bits <<= es;
+		bits |= biasedExponent;
+		bits <<= nbits - 1ull - es;
+		bits |= raw;
+		bits &= 0xFFFF'FFFF'FFFF'FFFEull;
+		bits |= (ubit ? 0x1ull : 0x0ull);
+		if constexpr (nrBlocks == 1) {
+			_block[MSU] = bt(bits);
 		}
 		else {
-			// large areal (> 64 bits): set bits individually to avoid shift overflow
-			clear();
-			// For large types, raw contains the 52 double fraction bits (unshifted).
-			// These need to be placed at the TOP of the areal fraction field.
-			// Double bit i (0=LSB, 51=MSB) goes to areal position (fbits - 51 + i).
-			// This aligns the double's MSB with the areal fraction MSB.
-			for (unsigned i = 0; i < 52 && i < fbits; ++i) {
-				if (raw & (1ull << i)) {
-					// Position in areal: fbits - 51 + i
-					// For fbits >= 52, this correctly places bits at the top
-					unsigned pos = (fbits >= 52) ? (fbits - 51 + i) : (i + 1);
-					set(pos);
-				}
-			}
-			// set exponent bits
-			for (unsigned i = 0; i < es; ++i) {
-				if (biasedExponent & (1ull << i)) {
-					set(fbits + 1 + i); // +1 for ubit
-				}
-			}
-			// set sign bit
-			if (s) set(nbits - 1);
-			// set ubit
-			if (ubit) set(0);
+			copyBits(bits);
 		}
 		saturate_reserved();
 		return *this;
+		}
 	}
 	CONSTEXPRESSION areal& operator=(long double rhs) {
 		// Narrowing to double rounds: a finite value past DBL_MAX became inf, one below double's range

@@ -47,7 +47,8 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Install lcov
-        run: sudo apt-get update && sudo apt-get install -y lcov
+        timeout-minutes: 15
+        run: bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" lcov
 
       - name: Configure with coverage flags
         run: |

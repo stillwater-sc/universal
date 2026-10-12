@@ -8,12 +8,9 @@
 
 namespace sw { namespace universal {
 
-	inline dd min(dd x, dd y) {
-		return dd(std::min(double(x), double(y)));
-	}
+	// the operand itself, every limb of it: these used to return a double rounding (#1667)
+	inline dd min(const dd& x, const dd& y) { return (y < x) ? y : x; }
 
-	inline dd max(dd x, dd y) {
-		return dd(std::max(double(x), double(y)));
-	}
+	inline dd max(const dd& x, const dd& y) { return (x < y) ? y : x; }
 
 }} // namespace sw::universal

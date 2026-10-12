@@ -31,6 +31,7 @@
 #include <universal/number/qd/qd.hpp>
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/takum/takum.hpp>
+#include <universal/number/bposit/bposit.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace {
@@ -97,6 +98,7 @@ try {
 	fails += VerifyDotFma<qd>("qd", reportTestCases);
 	fails += VerifyDotFma<areal<20, 6>>("areal<20,6>", reportTestCases);
 	fails += VerifyDotFma<takum<32, 5>>("takum<32,5>", reportTestCases);
+	fails += VerifyDotFma<bposit32>("bposit32", reportTestCases);
 
 	nrOfFailedTestCases += ReportTestResult(fails, "generic ADL dot_fma across all types", "fma");
 

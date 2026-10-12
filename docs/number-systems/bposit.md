@@ -208,6 +208,50 @@ for (std::size_t i = 0; i < x.size(); ++i) q += quire_mul(x[i], y[i]);
 bposit32 s = quire_resolve(q);
 ```
 
+### Fused multiply-add
+
+`fma(a, b, c)` is the shortest quire sum: `a*b` and `c` accumulated exactly, rounded once. It follows the `std::fma` contract, so `has_fma_v<bposit<...>>` is true and the ADL two-step `using std::fma; fma(a, b, c)` in a generic kernel finds it. A NaR operand gives NaR; a result that cancels to exactly zero is zero; a nonzero result below minpos or above maxpos saturates like any other bposit result. `static/tapered/bposit/arithmetic/fma.cpp` checks it against the exact value over every `(a, b)` pair of the 6- and 8-bit configurations, including `c = -(a*b rounded)`, where the result is the product's rounding error and is often below minpos.
+
+## Math library
+
+`bposit.hpp` includes `bposit/mathlib.hpp`, so `sin(x)`, `sqrt(x)` and the rest are found by ADL on any `bposit<nbits, rs, es, bt>`, and generic code (an FFT that builds its twiddles with `cos` and `sin` in `T`, a window function, an NCO) compiles for b-posits.
+
+| header | functions | rounding |
+|---|---|---|
+| `classify.hpp` | `fpclassify`, `isfinite`, `isinf`, `isnan`, `isnormal`, `signbit` | exact |
+| `next.hpp`, `minmax.hpp` | `nextafter`, `nexttoward`, `min`, `max`; `fabs`, `copysign` in `mathlib.hpp` | exact |
+| `truncate.hpp`, `fractional.hpp` | `floor`, `ceil`, `trunc`, `round`, `fmod`, `remainder`, `frac` | exact, or correctly rounded |
+| `sqrt.hpp`, `hypot.hpp` | `sqrt`, `cbrt`, `hypot` (two and three arguments) | correctly rounded |
+| `exponent.hpp`, `logarithm.hpp`, `pow.hpp` | `exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p`, `pow` | correctly rounded |
+| `trigonometry.hpp`, `hyperbolic.hpp` | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh` | correctly rounded |
+| `error_and_gamma.hpp` | `erf`, `erfc`, `tgamma`, `lgamma` | correctly rounded |
+| `complex.hpp` | `sw::universal::complex<bposit>`: arithmetic, `abs`, `arg`, `norm`, `exp`, `log`, `sqrt`, `pow`, trigonometric | through `std::complex<double>` |
+
+### Correct rounding
+
+The posit standard requires every function to be correctly rounded for every input, because bitwise reproducibility depends on it: the result is the true value rounded once, to nearest with ties to the even encoding. The b-posit math library meets that with Ziv's strategy (`math/correctly_rounded.hpp`):
+
+1. **Fast path.** The function is evaluated in double through libm, whose result is within a few ulps of the true value (`BPOSIT_MATH_LIBM_ULPS`, default 4; glibc documents 1 to 2 for these functions). If both ends of that interval round to the same b-posit, so does the true value. This decides nearly every input of a 16- or 32-bit b-posit, at about twice the cost of a plain libm call.
+2. **Quad-double.** Otherwise the function is evaluated in `qd`, about 212 bits, from the exact argument, with an error far below 2^-170, and the same test is applied.
+3. **Exact midpoints.** If even that interval straddles a rounding boundary, the true value is on it, and it rounds to the even neighbor. `pow` reaches these at ordinary arguments: `exp10(4) = 10000` is a midpoint of `bposit<16,6,5>`. `atan2(y, x)` with a tiny `y / x` is the one case where a transcendental value comes closer to a midpoint than 2^-170 without being on it, and it is resolved exactly.
+
+The quad-double kernels avoid the cancellations of the textbook formulas: log near 1 goes through log1p of the exact `x - 1`, `asin` and `acos` through `atan2` of exact differences, and `sin`, `cos` and `tan` reduce their argument exactly with Payne and Hanek's method, from 1280 bits of 2/pi, so `sin(maxpos)` is correctly rounded too. The truncations, `fmod` and `remainder` are computed exactly in integers from the encodings.
+
+The fast path needs the argument to convert to double exactly (`fbits + 1 <= 53`), which holds for every 16- and 32-bit configuration. `bposit<64, 6, 5>` takes the quad-double path every time, at some 5 to 15 microseconds per call. The quad-double engine needs the range inside double's: `|scale| <= 600`, which covers every standard and DSP-fitted configuration; a configuration beyond it falls back to the evaluation in double, which is not correctly rounded.
+
+`static/tapered/bposit/math/correct_rounding.cpp` checks every result for equality with an oracle that shares no code with the library: long double libm first, and `ereal<8>` with exact midpoint comparisons when that is ambiguous. Every encoding of `bposit<16,4,2>`, `<16,5,2>` and `<16,6,5>` is checked through 26 functions, by both the default path and the quad-double engine alone, and the 32- and 64-bit configurations and the two-argument functions are sampled.
+
+`erf`, `erfc`, `tgamma` and `lgamma` use quad-double's error and gamma functions. libm's erfc and tgamma get wider bounds, 8 and 16 ulps, and lgamma's is counted in ulps of `max(|lgamma|, 1)`, since libm's lgamma is only accurate in absolute terms near its zeros. One limit remains there: near the negative zeros of lgamma (x near -2.457, -2.747, ...) the reflection formula is accurate to about 2^-200 absolute, which decides every 16- and 32-bit input, but a 64-bit argument within about 2^-30 of such a zero may round incorrectly.
+
+`complex<bposit>` evaluates its functions through `std::complex<double>`, one rounding per component.
+
+### The posit standard's promises
+
+- **A finite result never becomes NaR.** `exp(maxpos)`, `sinh(maxpos)`, `pow(2, maxpos)` and `tgamma(maxpos)` saturate to maxpos.
+- **A nonzero result never becomes 0.** `exp(maxneg)`, `erfc(maxpos)` and `pow(2, maxneg)` saturate to minpos, with the result's sign: `tgamma(-200.5)` is `-minpos`.
+
+Poles and domain errors are NaR: `log(0)`, `log(-1)`, `sqrt(-1)`, `atanh(1)`, `tgamma(0)`, `tgamma(-1)`, `pow(0, -1)`, and `fmod(x, 0)`. NaR in any argument gives NaR, for `min` and `max` too. There is no infinity, so `isinf` is always false.
+
 ## Reference encoding: `bposit<8, 4, 0>`
 
 All 128 non-negative encodings. A negative value is the two's complement of the matching positive one, and `0x80` is NaR. The fraction field is never empty. Patterns 0x01 .. 0x07 (r = -4) and 0x78 .. 0x7F (r = 3) use the capped 4-bit regime, which has no terminating bit.
@@ -355,4 +399,9 @@ std::cout << c << ' ' << to_binary(c) << '\n';
 
 using Small = bposit<8, 4, 0>;
 Small tiny(1.0e-9);                       // saturates to minpos, 9/128: never zero
+
+bposit<16, 4, 2> t(0.5);
+auto s = sin(t), e = exp(t);              // the math library, found by ADL
+complex<bposit<16, 4, 2>> z(t, t);
+auto w = exp(z) * z;                      // complex arithmetic and functions
 ```

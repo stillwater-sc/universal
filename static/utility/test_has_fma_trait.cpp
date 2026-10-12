@@ -28,6 +28,7 @@
 #include <universal/number/qd/qd.hpp>
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/takum/takum.hpp>
+#include <universal/number/bposit/bposit.hpp>
 #include <universal/traits/fma_traits.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -57,6 +58,7 @@ namespace {
 	static_assert(has_fma_v<qd>,                                             "qd fma");
 	static_assert(has_fma_v<areal<16, 5>>,                                   "areal fma");
 	static_assert(has_fma_v<takum<32, 5>>,                                   "takum fma");
+	static_assert(has_fma_v<bposit32>,                                       "bposit fma");
 
 	// false: no type-preserving fma
 	static_assert(!has_fma_v<DoubleConvertibleNoFma>, "double-convertible type has no type-preserving fma");
@@ -89,6 +91,7 @@ namespace {
 		fails += expect<double>(has_fma_v<double>, true, "double", reportTestCases);
 		fails += expect<posit<32, 2>>(has_fma_v<posit<32, 2>>, true, "posit<32,2>", reportTestCases);
 		fails += expect<takum<32, 5>>(has_fma_v<takum<32, 5>>, true, "takum<32,5>", reportTestCases);
+		fails += expect<bposit32>(has_fma_v<bposit32>, true, "bposit32", reportTestCases);
 		fails += expect<DoubleConvertibleNoFma>(has_fma_v<DoubleConvertibleNoFma>, false,
 			"DoubleConvertibleNoFma", reportTestCases);
 #if defined(__cpp_concepts) && __cpp_concepts >= 201907L

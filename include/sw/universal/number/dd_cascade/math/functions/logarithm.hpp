@@ -10,6 +10,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
 
+#include <universal/number/shared/multidouble_exact.hpp>
+
 namespace sw { namespace universal {
 
 	/// <summary>
@@ -47,6 +49,14 @@ namespace sw { namespace universal {
 		   approximately doubles the number of digits per iteration:
 		   16 digits (double) -> 32 digits -> full dd precision (~104 bits).
 	   */
+
+		// A huge or tiny a puts exp(-x) in the Newton steps below near the bottom of double's range,
+		// where its low limbs are lost: log(1e300) kept 89 bits.  Take the binary exponent out first;
+		// beyond 2^500 k ln 2 dominates the result, so nothing cancels (#1667).
+		{
+			const int k = std::ilogb(a[0]);
+			if (k > 500 || k < -500) return log(ldexp(a, -k)) + multidouble::constant<dd_cascade>(multidouble::constants::ln2) * dd_cascade(static_cast<double>(k));
+		}
 
 		dd_cascade x = std::log(a.high());  // Initial approximation (~16 digits)
 		x = x + a * exp(-x) - 1.0;          // First Newton step (~32 digits)
@@ -117,9 +127,11 @@ namespace sw { namespace universal {
 		if ((a >= 2.0) || (a <= -0.5))			//	a >= 2.0 - no loss of significant bits - use log()
 			return log(1.0 + a);
 
-		// at this point, -1.0 < a < 2.0
-		// return _log1p(a);
-		return log(1.0 + a);   // TODO: evaluate loss of precision
+		// near 0, 1 + a would drop every limb of a below 1's last bit: log1p(1e-70) was 0 (#1667)
+		if (std::fabs(a[0]) < 0.25) return multidouble::log1p_small(a);
+
+		// at this point, -1.0 < a < 2.0 and |a| >= 1/4: 1 + a loses no relative accuracy
+		return log(1.0 + a);
 	}
 
 }} // namespace sw::universal

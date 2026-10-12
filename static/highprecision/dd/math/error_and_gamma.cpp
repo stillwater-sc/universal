@@ -1,36 +1,18 @@
-// error_and_gamma.cpp: test suite runner for error and gamma functions for double-double (dd) floating-point
+// error_and_gamma.cpp: test suite runner for erf, erfc, lgamma and tgamma of dd
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Against references far more precise than the type: see test_suite_multidouble_special.hpp (#1667).
 #include <universal/utility/directives.hpp>
-#include <numbers>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
-
-// generate specific test case
-template<typename Ty>
-void GenerateTestCase(Ty fa) {
-	unsigned precision = 25;
-	unsigned width = 30;
-	Ty fref;
-	sw::universal::dd a, ref, v;
-	a = fa;
-	fref = std::erf(fa);
-	ref = fref;
-	v = sw::universal::erf(a);
-	auto oldPrec = std::cout.precision();
-	std::cout << std::setprecision(precision);
-	std::cout << " -> erf(" << fa << ") = " << std::setw(width) << fref << std::endl;
-	std::cout << " -> erf( " << a << ") = " << v << '\n' << to_binary(v) << '\n';
-	std::cout << to_binary(ref) << "\n -> reference\n";
-	std::cout << (ref == v ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(oldPrec);
-}
+#include <universal/verification/test_suite_multidouble_special.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -40,43 +22,43 @@ void GenerateTestCase(Ty fa) {
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
+	namespace mv = sw::universal::multidouble_verification;
 
-	std::string test_suite  = "double-double mathlib error/gamma function validation";
+	std::string test_suite  = "dd mathlib erf, erfc, lgamma and tgamma validation";
 	std::string test_tag    = "error/gamma";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	GenerateTestCase(1.0);
-
-	dd x(-3.0), increment(0.5);
-	for (int i = 0; i < 14; i++) {
-		std::cout << " erf( " << x << ") = " << erf(x) << '\n';
-		x += increment;
-	}
-	x = -3.0;
-	for (int i = 0; i < 14; i++) {
-		std::cout << " erfc( " << x << ") = " << erfc(x) << '\n';
-		x += increment;
-	}
-
-	//nrOfFailedTestCases += ReportTestResult(VerifyLogFunction<dd>("Manual Testing", reportTestCases), "dd", test_tag);
-
+	std::cout << "tgamma(0.5)^2 = " << tgamma(dd(0.5)) * tgamma(dd(0.5)) << " (pi)\n";
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyErrorAndGamma<dd>("dd", reportTestCases), "dd erf/erfc/lgamma/tgamma", test_tag);
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyErrorAndGammaSpecialValues<dd>("dd", reportTestCases), "dd special values", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -10,20 +10,22 @@
 #include <universal/number/dd_cascade/math/functions/numerics.hpp>
 
 #include <universal/number/dd_cascade/math/functions/classify.hpp>
-#include <universal/number/dd_cascade/math/functions/error_and_gamma.hpp>
 #include <universal/number/dd_cascade/math/functions/exponent.hpp>
 #include <universal/number/dd_cascade/math/functions/fractional.hpp>
-#include <universal/number/dd_cascade/math/functions/hyperbolic.hpp>
-#include <universal/number/dd_cascade/math/functions/hypot.hpp>
 #include <universal/number/dd_cascade/math/functions/logarithm.hpp>
 #include <universal/number/dd_cascade/math/functions/minmax.hpp>
 #include <universal/number/dd_cascade/math/functions/next.hpp>
 #include <universal/number/dd_cascade/math/functions/pow.hpp>
 #include <universal/number/dd_cascade/math/functions/sqrt.hpp>
+// hypot after sqrt: its shared implementation calls sqrt
+#include <universal/number/dd_cascade/math/functions/hypot.hpp>
 #include <universal/number/dd_cascade/math/functions/trigonometry.hpp>
 #include <universal/number/dd_cascade/math/functions/truncate.hpp>
 
 #include <universal/number/dd_cascade/math/functions/cbrt.hpp>
+// last: the shared implementations call exp, log, sqrt and sin
+#include <universal/number/dd_cascade/math/functions/hyperbolic.hpp>
+#include <universal/number/dd_cascade/math/functions/error_and_gamma.hpp>
 
 namespace sw { namespace universal {
 

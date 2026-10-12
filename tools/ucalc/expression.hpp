@@ -28,6 +28,10 @@
 #include <sstream>
 #include <stdexcept>
 #include <cmath>
+#include <cstdlib>
+#include <cstdint>
+#include <algorithm>
+#include <utility>
 #include <cctype>
 
 #include "type_dispatch.hpp"
@@ -343,7 +347,7 @@ inline std::optional<ASTMatch> find_pattern(
 // Token types
 enum class TokenType {
 	Number, Ident, Plus, Minus, Star, Slash, Caret,
-	LParen, RParen, Comma, Equals, End
+	LParen, RParen, LBracket, RBracket, Tilde, Comma, Equals, End
 };
 
 struct Token {
@@ -382,6 +386,9 @@ public:
 				case '^': tokens.emplace_back(TokenType::Caret, "^"); break;
 				case '(': tokens.emplace_back(TokenType::LParen, "("); break;
 				case ')': tokens.emplace_back(TokenType::RParen, ")"); break;
+				case '[': tokens.emplace_back(TokenType::LBracket, "["); break;
+				case ']': tokens.emplace_back(TokenType::RBracket, "]"); break;
+				case '~': tokens.emplace_back(TokenType::Tilde, "~"); break;
 				case ',': tokens.emplace_back(TokenType::Comma, ","); break;
 				case '=': tokens.emplace_back(TokenType::Equals, "="); break;
 				default:
@@ -422,7 +429,9 @@ private:
 			while (pos_ < input_.size() && std::isdigit(input_[pos_])) ++pos_;
 		}
 		std::string text = input_.substr(start, pos_ - start);
-		double val = std::stod(text);
+		// strtod, not stod: a literal beyond the double range reads as inf or 0 instead of
+		// failing, and the tile types read the text itself, where 1e400 is (maxpos, inf)
+		double val = std::strtod(text.c_str(), nullptr);
 		return Token(TokenType::Number, text, val);
 	}
 
@@ -449,6 +458,10 @@ struct TraceStep {
 	double result;               // result in the active type (as double)
 	std::string result_rep;      // native_rep of the result
 	std::string result_binary;   // binary_rep of the result
+	// tile interval types: the width of each box, to see where uncertainty grows
+	std::uint64_t operand_a_tiles = 0;
+	std::uint64_t operand_b_tiles = 0;   // 0 for unary
+	std::uint64_t result_tiles = 0;
 };
 
 // Parser and evaluator
@@ -471,8 +484,14 @@ public:
 		if (current().type != TokenType::End) {
 			throw std::runtime_error("unexpected token: '" + current().text + "'");
 		}
+		if (is_assignment(input)) record_definition(input);
 		return result;
 	}
+
+	// Every definition, in the order it was made.  Commands that evaluate in several types
+	// replay these, so a definition means the same thing in each type's own lattice:
+	// b = 100~ is the open tile above 100 in every type, not one type's tile.
+	const std::vector<std::pair<std::string, std::string>>& definitions() const { return definitions_; }
 
 	// Build an AST from an expression string (does not evaluate)
 	std::shared_ptr<ASTNode> build_ast(const std::string& input) {
@@ -493,6 +512,12 @@ public:
 
 	const std::map<std::string, Value>& variables() const { return variables_; }
 
+	// copy another evaluator's variables and definitions
+	void inherit(const ExpressionEvaluator& other) {
+		variables_ = other.variables_;
+		definitions_ = other.definitions_;
+	}
+
 	bool has_variable(const std::string& name) const {
 		return variables_.find(name) != variables_.end();
 	}
@@ -509,6 +534,17 @@ public:
 	}
 
 private:
+	void record_definition(const std::string& input) {
+		const std::size_t eq = input.find('=');
+		std::size_t b = 0;
+		while (b < eq && std::isspace(static_cast<unsigned char>(input[b]))) ++b;
+		std::size_t e = b;
+		while (e < eq && (std::isalnum(static_cast<unsigned char>(input[e])) || input[e] == '_')) ++e;
+		// the whole history, in order: replaying it reproduces the session's values, also for
+		// a definition that depends on an earlier value of a later-redefined name
+		definitions_.emplace_back(input.substr(b, e - b), input.substr(eq + 1));
+	}
+
 	// Record a trace step for a binary operation
 	void record_binary(const std::string& op, const std::string& sym,
 	                   const Value& a, const Value& b, const Value& result) {
@@ -526,6 +562,9 @@ private:
 		step.result = result.num;
 		step.result_rep = result.native_rep;
 		step.result_binary = result.binary_rep;
+		step.operand_a_tiles = a.tile_count;
+		step.operand_b_tiles = b.tile_count;
+		step.result_tiles = result.tile_count;
 		trace_steps_.push_back(std::move(step));
 	}
 
@@ -547,6 +586,8 @@ private:
 		step.result = result.num;
 		step.result_rep = result.native_rep;
 		step.result_binary = result.binary_rep;
+		step.operand_a_tiles = a.tile_count;
+		step.result_tiles = result.tile_count;
 		trace_steps_.push_back(std::move(step));
 	}
 
@@ -655,16 +696,38 @@ private:
 				}
 			}
 			expect(TokenType::RParen, "')'");
-			return call_function(fname, args);
+			return apply_tilde(call_function(fname, args));
 		}
-		return parse_primary();
+		return apply_tilde(parse_primary());
+	}
+
+	// x~: the open tile just above an exact x (tile types only)
+	Value apply_tilde(Value v) {
+		while (current().type == TokenType::Tilde) {
+			advance();
+			v = call_function("above", { v });
+		}
+		return v;
 	}
 
 	Value parse_primary() {
 		if (current().type == TokenType::Number) {
 			double val = current().number_value;
+			std::string text = current().text;
 			advance();
+			// types that read decimal text exactly (the tile types) skip the double
+			if (ops_->from_literal) return ops_->from_literal(text);
 			return ops_->from_double(val);
+		}
+
+		// [a, b]: the box from a to b (tile interval types)
+		if (current().type == TokenType::LBracket) {
+			advance();
+			Value lo = parse_expr();
+			expect(TokenType::Comma, "','");
+			Value hi = parse_expr();
+			expect(TokenType::RBracket, "']'");
+			return call_function("hull", { lo, hi });
 		}
 
 		if (current().type == TokenType::Ident) {
@@ -714,9 +777,17 @@ private:
 			if (name == "asin") { r = ops_->fn_asin(args[0]); record_unary("asin", args[0], r); return r; }
 			if (name == "acos") { r = ops_->fn_acos(args[0]); record_unary("acos", args[0], r); return r; }
 			if (name == "atan") { r = ops_->fn_atan(args[0]); record_unary("atan", args[0], r); return r; }
+			if (name == "above") {
+				if (!ops_->above) throw std::runtime_error("x~ and above(x) need a tile type: switch with 'type poxel32i' first (ubox and decide replay each definition in every type they evaluate)");
+				r = ops_->above(args[0]); record_unary("above", args[0], r); return r;
+			}
 		}
 		if (args.size() == 2) {
 			if (name == "pow")  { r = ops_->fn_pow(args[0], args[1]); record_binary("pow", ",", args[0], args[1], r); return r; }
+			if (name == "hull") {
+				if (!ops_->hull) throw std::runtime_error("[a, b] and hull(a, b) need a tile interval type, such as poxel32i");
+				r = ops_->hull(args[0], args[1]); record_binary("hull", ",", args[0], args[1], r); return r;
+			}
 		}
 		throw std::runtime_error("unknown function or wrong arity: " + name +
 		                         "(" + std::to_string(args.size()) + " args)");
@@ -726,6 +797,7 @@ private:
 	std::vector<Token> tokens_;
 	size_t pos_;
 	std::map<std::string, Value> variables_;
+	std::vector<std::pair<std::string, std::string>> definitions_;   // name, defining text
 	bool tracing_ = false;
 	std::vector<TraceStep> trace_steps_;
 
@@ -798,9 +870,18 @@ private:
 				}
 			}
 			expect(TokenType::RParen, "')'");
-			return ASTNode::make_function(fname, std::move(args));
+			return ast_tilde(ASTNode::make_function(fname, std::move(args)));
 		}
-		return ast_primary();
+		return ast_tilde(ast_primary());
+	}
+
+	std::shared_ptr<ASTNode> ast_tilde(std::shared_ptr<ASTNode> node) {
+		while (current().type == TokenType::Tilde) {
+			advance();
+			std::vector<std::shared_ptr<ASTNode>> args{ std::move(node) };
+			node = ASTNode::make_function("above", std::move(args));
+		}
+		return node;
 	}
 
 	std::shared_ptr<ASTNode> ast_primary() {
@@ -825,6 +906,15 @@ private:
 			auto node = ast_expr();
 			expect(TokenType::RParen, "')'");
 			return node;
+		}
+		if (current().type == TokenType::LBracket) {
+			advance();
+			std::vector<std::shared_ptr<ASTNode>> args;
+			args.push_back(ast_expr());
+			expect(TokenType::Comma, "','");
+			args.push_back(ast_expr());
+			expect(TokenType::RBracket, "']'");
+			return ASTNode::make_function("hull", std::move(args));
 		}
 		throw std::runtime_error("expected number, variable, or '(', got '" + current().text + "'");
 	}

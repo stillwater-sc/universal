@@ -9,6 +9,8 @@
 #include <numbers>
 #include <universal/number/dd/dd.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_multidouble_exact.hpp>
+#include <universal/verification/test_suite_multidouble_special.hpp>
 
 namespace sw {
 	namespace universal {
@@ -315,6 +317,10 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	// log1p keeps its relative accuracy near 0, where 1 + a drops the low limbs of a (#1667)
+	nrOfFailedTestCases += ReportTestResult(sw::universal::multidouble_verification::VerifyLog1pSmall<dd>("dd", 200, reportTestCases), "dd log1p near 0", "log1p");
+	// log at the ends of the exponent range (#1667)
+	nrOfFailedTestCases += ReportTestResult(sw::universal::multidouble_verification::VerifyLogRange<dd>("dd", reportTestCases), "dd log range", "log");
 	std::cout << "NOTE: double-double log functions are LESS accurate than stdlib double: \ncurrently log() is accurate to just 14 digits, double-double should have 32 digits of accuracy\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyLogFunction<dd>(reportTestCases, 1.0e-14), "double-double", "log()");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog2Function<dd>(reportTestCases, 1.0e-14), "double-double", "log2()");

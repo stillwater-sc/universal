@@ -1,16 +1,18 @@
-// hypot.cpp: test suite runner for hypot functions for quad-double (qd) floating-point
+// hypot.cpp: test suite runner for hypot of qd
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Against references independent of the code under test: see test_suite_multidouble_exact.hpp (#1667).
 #include <universal/utility/directives.hpp>
-#include <numbers>
 #include <universal/number/qd/qd.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_multidouble_exact.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -20,35 +22,44 @@
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
+	namespace mv = sw::universal::multidouble_verification;
 
-	std::string test_suite  = "quad-double mathlib hypothenuse function validation";
+	std::string test_suite  = "qd mathlib hypot validation";
 	std::string test_tag    = "hypot";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	std::cout << "HYPOT FUNCTION IS A SHIM TO DOUBLE\n";
-
-	qd x{ 3.0 }, y{ 4.0 };
-
-	std::cout << "hypot( " << x << ", " << y << ") = " << hypot(x, y) << '\n';
-
+	std::cout << "hypot(3e300, 4e300) = " << hypot(qd(3.0e300), qd(4.0e300)) << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyHypotMinMax<qd>("qd", 200, reportTestCases), "qd HypotMinMax", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyHypotMinMax<qd>("qd", 2000, reportTestCases), "qd HypotMinMax", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

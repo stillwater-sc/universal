@@ -36,64 +36,35 @@
 #include <string>
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/einteger/einteger.hpp>
 #include <universal/number/poxel/poxel.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/utility/tile_interval.hpp>
+#include <universal/utility/tile_oracle.hpp>   // exact dyadics, lattice values, and the general tile oracle
 
 namespace {
 
-using Big = sw::universal::einteger<std::uint32_t>;   // exact integers for the sign tests
+namespace orc = sw::universal::oracle;
+using orc::dyadic;
+using orc::exact_value;
 using sw::universal::tile_interval;
 using sw::universal::tile_traits;
 
 constexpr double r1_ref = -0.020012014421636353441812506440166613377;   // to double precision
 constexpr double r2_ref = -33.313321318911696979891520826893166720;
 
-// an exact dyadic rational m 2^e
-struct dyadic { Big m; int e; };
-
-dyadic from_double(double v) {
-	int e = 0;
-	const double f = std::frexp(v, &e);                                   // v = f 2^e, |f| in [0.5, 1)
-	const long long m = static_cast<long long>(std::ldexp(f, 53));        // exact: 53 bits
-	return { Big(m), e - 53 };
-}
-template<unsigned nbits, unsigned es, typename bt>
-dyadic exact_value(const sw::universal::areal<nbits, es, bt>& t) { return from_double(double(t)); }   // <= 52 fraction bits: exact
-template<unsigned nbits, unsigned es, typename bt>
-dyadic exact_value(const sw::universal::poxel<nbits, es, bt>& t) {
-	using P = sw::universal::poxel<nbits, es, bt>;
-	const std::int64_t L = t.lattice();
-	if (L == 0) return { Big(0), 0 };
-	const auto d = P::decode_lattice(L);                                  // (-1)^neg (2^nf + frac) 2^(scale - nf)
-	const unsigned long long m = (1ull << d.nf) | d.frac;
-	Big em(m);
-	if (d.negative) em = -em;
-	return { em, d.scale - static_cast<int>(d.nf) };
-}
-
 // sum of terms m_i 2^{e_i}, exactly; returns its sign
 int sign_of(std::initializer_list<dyadic> terms) {
-	int emin = 0;
-	bool first = true;
-	for (const dyadic& t : terms) if (!t.m.iszero()) { emin = first ? t.e : std::min(emin, t.e); first = false; }
-	Big s(0);
-	for (const dyadic& t : terms) {
-		if (t.m.iszero()) continue;
-		Big v = t.m;
-		v <<= (t.e - emin);
-		s += v;
-	}
-	return s.iszero() ? 0 : (s.isneg() ? -1 : 1);
+	dyadic s;
+	for (const dyadic& t : terms) s = orc::add(s, t);
+	return orc::sign(s);
 }
-dyadic mul(const dyadic& x, const dyadic& y) { Big m = x.m; m *= y.m; return { m, x.e + y.e }; }
+using orc::mul;
 
 // q(x) = a x^2 + b x + c and q'(x) = 2a x + b, signs only
 struct quadratic {
 	dyadic a, b, c;
 	int q(const dyadic& x) const { return sign_of({ mul(a, mul(x, x)), mul(b, x), c }); }
-	int dq(const dyadic& x) const { return sign_of({ mul({ Big(2), 0 }, mul(a, x)), b }); }
+	int dq(const dyadic& x) const { return sign_of({ mul(orc::make_dyadic(2), mul(a, x)), b }); }
 	bool at_or_above_r1(const dyadic& x) const { return dq(x) > 0 && q(x) >= 0; }
 	bool at_or_below_r2(const dyadic& x) const { return dq(x) < 0 && q(x) >= 0; }
 };
@@ -234,6 +205,22 @@ report<Tile> enclose(const char* name, int digits) {
 	return r;
 }
 
+// the general tile oracle (tile_oracle.hpp), which knows nothing of polynomials: evaluate the
+// formula in exact dyadic intervals at a rising precision until each root lies in one tile
+template<typename Tile>
+bool oracle_agrees(std::int64_t best1, std::int64_t best2) {
+	const orc::interval a = orc::point(exact_value(Tile(3))), b = orc::point(exact_value(Tile(100))), c = orc::point(exact_value(Tile(2)));
+	for (int P = 64; P <= 1024; P *= 2) {
+		const orc::interval four_ac = orc::mul(orc::point(orc::make_dyadic(4)), orc::mul(a, c));
+		const orc::interval s = orc::sqrt(orc::sub(orc::mul(b, b), four_ac), P);
+		const orc::interval two_a = orc::mul(orc::point(orc::make_dyadic(2)), a);
+		const tile_interval<Tile> x1 = orc::box<Tile>(orc::div(orc::add(orc::neg(b), s), two_a, P));
+		const tile_interval<Tile> x2 = orc::box<Tile>(orc::div(orc::sub(orc::neg(b), s), two_a, P));
+		if (x1.lo_key() == x1.hi_key() && x2.lo_key() == x2.hi_key()) return x1.lo_key() == best1 && x2.lo_key() == best2;
+	}
+	return false;
+}
+
 template<typename Tile>
 void single_tile(const char* name) {
 	Tile (*sq)(const Tile&) = sw::universal::tile_sqrt<Tile>;
@@ -318,6 +305,9 @@ try {
 	check(p16.t1.sign() == tile_verdict::undecidable && a16.t1.sign() == tile_verdict::negative,
 	      "at 16 bits r1 as written of poxel<16,2> cannot decide its sign; areal<16,5>'s is negative but 10000+ tiles wide");
 	check(p16.s1.sign() == tile_verdict::negative && a16.s1.sign() == tile_verdict::negative, "the rearranged r1 at 16 bits is provably negative");
+	check(oracle_agrees<areal16>(a16.best1, a16.best2) && oracle_agrees<poxel16>(p16.best1, p16.best2) && oracle_agrees<areal32>(a32.best1, a32.best2)
+	      && oracle_agrees<poxel32>(p32.best1, p32.best2) && oracle_agrees<areal64>(a64.best1, a64.best2) && oracle_agrees<poxel64>(p64.best1, p64.best2),
+	      "the general tile oracle, evaluating the formula exactly, places r1 and r2 in the tiles the polynomial sign test finds");
 
 	std::cout << (fails == 0 ? "PASS\n" : "FAIL\n");
 	return (fails == 0 ? EXIT_SUCCESS : EXIT_FAILURE);

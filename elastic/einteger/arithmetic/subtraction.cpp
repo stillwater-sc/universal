@@ -18,7 +18,47 @@
 namespace sw { namespace universal {
 
 	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
-	template<size_t nbits, typename BlockType>
+		// signed operands (#1660): VerifyElasticSubtraction builds its operands with setbits(), which
+	// only makes non-negative values, and a negative minuend minus a positive subtrahend was wrong
+	// (-5 - 1 = 4).  Every sign combination of + - += -= ++ --, with magnitudes straddling the 8-,
+	// 16- and 32-bit limb boundaries, against int64_t.
+	template<typename BlockType>
+	int VerifySignedAddSubtract(bool reportTestCases) {
+		using Integer = einteger<BlockType>;
+		const std::int64_t magnitudes[] = {
+			0, 1, 2, 7, 255, 256, 257, 65535, 65536, 65537,
+			(std::int64_t(1) << 31) - 1, std::int64_t(1) << 31, std::int64_t(1) << 32, (std::int64_t(1) << 32) + 1,
+			(std::int64_t(1) << 40) + 12345, (std::int64_t(1) << 60) - 1
+		};
+		int nrOfFailedTests = 0;
+		auto check = [&](const Integer& got, std::int64_t expected, const char* op, std::int64_t a, std::int64_t b) {
+			if (got != Integer(expected) || got.isneg() != (expected < 0)) {
+				nrOfFailedTests++;
+				if (reportTestCases && nrOfFailedTests < 10) std::cerr << "FAIL: " << a << " " << op << " " << b << " = " << got << " (expected " << expected << ")\n";
+			}
+		};
+		for (std::int64_t ma : magnitudes) for (int sa : { 1, -1 }) {
+			const std::int64_t a = sa * ma;
+			Integer dec(a), inc(a);
+			--dec;
+			++inc;
+			check(dec, a - 1, "--", a, 0);
+			check(inc, a + 1, "++", a, 0);
+			for (std::int64_t mb : magnitudes) for (int sb : { 1, -1 }) {
+				const std::int64_t b = sb * mb;
+				check(Integer(a) - Integer(b), a - b, "-", a, b);
+				check(Integer(a) + Integer(b), a + b, "+", a, b);
+				Integer d(a), t(a);
+				d -= Integer(b);
+				t += Integer(b);
+				check(d, a - b, "-=", a, b);
+				check(t, a + b, "+=", a, b);
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+template<size_t nbits, typename BlockType>
 	int VerifyElasticSubtraction(bool reportTestCases) {
 		using Integer = einteger<BlockType>;
 		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
@@ -126,6 +166,9 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifySignedAddSubtract<uint8_t>(reportTestCases), "einteger<uint8_t>", "signed add/subtract (#1660)");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedAddSubtract<uint16_t>(reportTestCases), "einteger<uint16_t>", "signed add/subtract (#1660)");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedAddSubtract<uint32_t>(reportTestCases), "einteger<uint32_t>", "signed add/subtract (#1660)");
 	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<8, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<10, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<8, uint16_t>(reportTestCases), "einteger<uint16_t> 1word", test_tag);

@@ -56,6 +56,8 @@
 #define DD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
 #define TD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
 #define QD_CASCADE_THROW_ARITHMETIC_EXCEPTION 0
+#define AREAL_THROW_ARITHMETIC_EXCEPTION 0
+#define POXEL_THROW_ARITHMETIC_EXCEPTION 0
 
 #include <universal/utility/directives.hpp>
 #include <universal/native/ieee754.hpp>
@@ -81,6 +83,10 @@
 #include <universal/number/td_cascade/td_cascade.hpp>
 #include <universal/number/qd_cascade/qd_cascade.hpp>
 
+// ubit tile types (areal, poxel) and their tile intervals
+#include <universal/number/areal/areal.hpp>
+#include <universal/number/poxel/poxel.hpp>
+
 // Block format types for quantize/block commands
 #include <universal/number/mxfloat/mxfloat.hpp>
 #include <universal/number/nvblock/nvblock.hpp>
@@ -89,6 +95,8 @@
 #include "type_dispatch.hpp"
 #include "expression.hpp"
 #include "registry.hpp"
+#include "uncertainty.hpp"
+#include "roots.hpp"
 #include "output_format.hpp"
 #include "steps_ieee.hpp"
 #include "steps_posit.hpp"
@@ -159,7 +167,7 @@ static void print_help(OutputFormat fmt) {
 		          << "\"bits\",\"range\",\"precision\",\"ulp\",\"sweep\","
 		          << "\"suggest\",\"rewrites\",\"ast\",\"testvec\",\"oracle\",\"steps\",\"trace\",\"cancel\",\"audit\",\"diverge\",\"quantize\",\"block\","
 		          << "\"dot\",\"clip\",\"increment\",\"decrement\",\"cond\",\"errordist\",\"stochastic\","
-		          << "\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
+		          << "\"histogram\",\"heatmap\",\"numberline\",\"faithful\",\"ubox\",\"decide\",\"roots\",\"rootbox\",\"color\",\"vars\",\"help\",\"quit\"]}\n";
 		return;
 	}
 	std::cout << "ucalc -- Universal Mixed-Precision REPL Calculator\n\n";
@@ -200,6 +208,12 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  heatmap          Precision (sig bits) vs magnitude bar chart\n";
 	std::cout << "  numberline [lo, hi]  ASCII visualization of representable value density\n";
 	std::cout << "  faithful <expr> Check if result is faithfully rounded\n";
+	std::cout << "  ubox [trace] <expr> [in <types>]\n";
+	std::cout << "                 Uncertainty box in tile interval types: tiles, decimals, sign\n";
+	std::cout << "  decide <pred> [in <types>]  Is 'sign <expr>' or '<expr> op <expr>' decidable?\n";
+	std::cout << "  roots a b c [in <types>] [digits k]\n";
+	std::cout << "                 The quadratic's roots: forms, tightest boxes, sweep over precision\n";
+	std::cout << "  rootbox <expr> for <var> in [lo, hi] [types]  Root boxes by bisection on the sign\n";
 	std::cout << "  color [on|off] Toggle ANSI color-coded bit fields in show\n";
 	std::cout << "  vars           List defined variables\n";
 	std::cout << "  help           Show this help\n";
@@ -211,6 +225,9 @@ static void print_help(OutputFormat fmt) {
 	std::cout << "  Constants:     phi, e, pi, ln2, ln10, sqrt2, sqrt3, sqrt5 (quad-double precision)\n";
 	std::cout << "  Variables:     x = 1/3  (then use x in expressions)\n";
 	std::cout << "  Semicolons:    type posit32; 1/3 + 1/3 + 1/3\n";
+	std::cout << "  Tile types:    areal32, poxel32, ... (one tile), areal32i, poxel32i, ... (enclosures)\n";
+	std::cout << "                 [a, b]  the box from a to b      hull(a, b)  same, as a function\n";
+	std::cout << "                 x~      the open tile just above an exact x, e.g. b = 100~\n";
 	std::cout << "\n";
 	std::cout << "CLI flags:\n";
 	std::cout << "  --json         JSON output for all commands\n";
@@ -311,6 +328,7 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << "{\"alias\":\"" << json_escape(alias) << "\""
 				          << ",\"type_tag\":\"" << json_escape(ops->type_tag) << "\""
 				          << ",\"nbits\":" << ops->nbits
+				          << ",\"family\":\"" << json_escape(ops->family) << "\""
 				          << ",\"active\":" << (alias == state.active_type ? "true" : "false")
 				          << "}";
 			}
@@ -326,8 +344,16 @@ static bool process_command(const std::string& input, ReplState& state) {
 			}
 		} else {
 			std::cout << "Available types:\n";
+			std::string family;
 			for (const auto& alias : state.registry.aliases()) {
 				const TypeOps* ops = state.registry.find(alias);
+				if (ops->family != family) {
+					family = ops->family;
+					if (family == "tile")
+						std::cout << "\nTile types (ubit: an exact point or the open interval to the next; sticky flag, not an enclosure):\n";
+					else if (family == "tile interval")
+						std::cout << "\nTile interval types (a guaranteed enclosure: a run of tiles; [a, b] and x~ literals):\n";
+				}
 				std::string marker = (alias == state.active_type) ? " *" : "";
 				std::cout << "  " << std::left << std::setw(12) << alias
 				          << ops->type_tag << marker << "\n";
@@ -421,8 +447,14 @@ static bool process_command(const std::string& input, ReplState& state) {
 				          << ",\"value\":\"" << json_escape(result.native_rep) << "\""
 				          << ",\"decimal\":" << json_number(result.num)
 				          << ",\"binary\":\"" << json_escape(result.binary_rep) << "\""
-				          << ",\"components\":\"" << json_escape(result.components_rep) << "\""
-				          << "}\n";
+				          << ",\"components\":\"" << json_escape(result.components_rep) << "\"";
+				if (result.tile_kind != 0) {
+					std::cout << ",\"tiles\":" << result.tile_count
+					          << ",\"sign\":\"" << result.tile_sign << "\""
+					          << ",\"ubit\":" << (result.ubit ? "true" : "false")
+					          << ",\"encloses\":" << (result.tile_encloses ? "true" : "false");
+				}
+				std::cout << "}\n";
 			} else if (fmt == OutputFormat::csv) {
 				std::cout << "expression,type,value,decimal,binary,components\n";
 				std::cout << csv_quote(expr) << ","
@@ -435,8 +467,12 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cout << result.native_rep << "\n";
 			} else {
 				std::cout << "  value:      " << result.native_rep << "\n";
+				// A tile value is a set: report what is known about it, not a midpoint
+				if (result.tile_kind != 0) {
+					std::cout << "  tiles:      " << result.tile_count << ", sign " << result.tile_sign << "\n";
+				}
 				// Show full decimal when native_rep loses distinguishing digits
-				{
+				else {
 					std::ostringstream dss;
 					dss << std::setprecision(17) << result.num;
 					std::string decimal = dss.str();
@@ -459,6 +495,402 @@ static bool process_command(const std::string& input, ReplState& state) {
 				std::cerr << "Error: " << ex.what() << "\n";
 			}
 			state.last_error = EXIT_PARSE_ERROR;
+		}
+		return true;
+	}
+
+	// ubox [trace] <expr> [in <types>]: the uncertainty box of an expression in tile
+	// interval types, next to what the rounded types compute
+	if (line.substr(0, 5) == "ubox " || line.substr(0, 5) == "ubox\t") {
+		std::string rest = trim(line.substr(5));
+		bool tracing = false;
+		if (rest.substr(0, 6) == "trace " || rest.substr(0, 6) == "trace\t") { tracing = true; rest = trim(rest.substr(6)); }
+		std::vector<std::string> types = split_types(state.registry, rest);
+		if (types.empty()) types = default_box_types();
+		const std::string expr = trim(rest);
+		std::vector<BoxReport> boxes;
+		std::vector<std::vector<TraceStep>> traces;
+		for (const std::string& alias : types) {
+			const TypeOps& ops = state.registry.get(alias);
+			BoxReport b;
+			b.type = alias;
+			std::vector<TraceStep> steps;
+			if (ops.family != "tile interval") {
+				b.error = "not a tile interval type (use areal32i, poxel32i, ...)";
+			} else {
+				try {
+					ExpressionEvaluator eval = evaluator_for(ops, *state.evaluator);
+					eval.enable_trace(tracing);
+					b = box_report(alias, eval.evaluate(expr));
+					steps = eval.trace_steps();
+					if (!tracing && ops.tightest) b.tightest = ops.tightest(*state.evaluator, expr);
+				} catch (const std::exception& ex) {
+					b.error = ex.what();
+				}
+			}
+			boxes.push_back(std::move(b));
+			traces.push_back(std::move(steps));
+		}
+		std::string reference, note;
+		std::vector<RoundedReport> rounded;
+		if (!tracing) rounded = rounded_reports(state.registry, *state.evaluator, expr, reference, note);
+		auto decimals_text = [](const BoxReport& b) {
+			if (b.exact) return std::string("exact");
+			std::ostringstream ss;
+			ss << std::fixed << std::setprecision(1) << b.decimals;
+			return ss.str();
+		};
+		auto growth = [](const TraceStep& t) {
+			const std::uint64_t in = std::max<std::uint64_t>({ t.operand_a_tiles, t.operand_b_tiles, 1u });
+			return static_cast<double>(t.result_tiles) / static_cast<double>(in);
+		};
+
+		if (fmt == OutputFormat::json) {
+			std::cout << "{\"expression\":\"" << json_escape(expr) << "\",\"boxes\":[";
+			for (std::size_t i = 0; i < boxes.size(); ++i) {
+				const BoxReport& b = boxes[i];
+				if (i) std::cout << ",";
+				std::cout << "{\"type\":\"" << json_escape(b.type) << "\"";
+				if (!b.error.empty()) {
+					std::cout << ",\"error\":\"" << json_escape(b.error) << "\"}";
+					continue;
+				}
+				std::cout << ",\"box\":\"" << json_escape(b.box) << "\""
+				          << ",\"tiles\":" << b.tiles
+				          << ",\"sign\":\"" << b.sign << "\""
+				          << ",\"exact\":" << (b.exact ? "true" : "false")
+				          << ",\"decimals\":" << json_number(b.decimals)
+				          << ",\"rel_width\":" << json_number(b.rel_width);
+				if (!tracing) {
+					const TightestReport& t = b.tightest;
+					std::cout << ",\"tightest\":{\"available\":" << (t.available ? "true" : "false");
+					if (t.available) {
+						std::cout << ",\"proven\":" << (t.proven ? "true" : "false")
+						          << ",\"inner_tiles\":" << t.inner_tiles << ",\"outer_tiles\":" << t.outer_tiles
+						          << ",\"box\":\"" << json_escape(t.text) << "\""
+						          << ",\"inputs\":" << t.inputs << ",\"subdivisions\":" << t.subdivisions
+						          // the box's width, split: what the inputs force, and what the formula adds
+						          << ",\"input_tiles\":" << t.outer_tiles
+						          << ",\"formula_tiles\":" << (b.tiles > t.outer_tiles ? b.tiles - t.outer_tiles : 0);
+					}
+					if (!t.note.empty()) std::cout << ",\"note\":\"" << json_escape(t.note) << "\"";
+					std::cout << "},\"overestimation\":\"" << overestimation_text(b) << "\"";
+				}
+				if (tracing) {
+					std::cout << ",\"steps\":[";
+					for (std::size_t k = 0; k < traces[i].size(); ++k) {
+						const TraceStep& t = traces[i][k];
+						if (k) std::cout << ",";
+						std::cout << "{\"op\":\"" << t.operation << "\""
+						          << ",\"description\":\"" << json_escape(t.description) << "\""
+						          << ",\"result\":\"" << json_escape(t.result_rep) << "\""
+						          << ",\"tiles_a\":" << t.operand_a_tiles
+						          << ",\"tiles_b\":" << t.operand_b_tiles
+						          << ",\"tiles\":" << t.result_tiles << "}";
+					}
+					std::cout << "]";
+				}
+				std::cout << "}";
+			}
+			std::cout << "]";
+			if (!tracing) {
+				std::cout << ",\"reference\":\"" << json_escape(reference) << "\",\"rounded\":[";
+				for (std::size_t i = 0; i < rounded.size(); ++i) {
+					const RoundedReport& r = rounded[i];
+					if (i) std::cout << ",";
+					std::cout << "{\"type\":\"" << json_escape(r.type) << "\"";
+					if (!r.error.empty()) std::cout << ",\"error\":\"" << json_escape(r.error) << "\"}";
+					else std::cout << ",\"value\":\"" << json_escape(r.value) << "\",\"rel_error\":" << json_number(r.rel_error) << "}";
+				}
+				std::cout << "]";
+				if (!note.empty()) std::cout << ",\"note\":\"" << json_escape(note) << "\"";
+			}
+			std::cout << "}\n";
+		} else if (fmt == OutputFormat::csv) {
+			std::cout << "type,box,tiles,tightest,overestimation,sign,decimals,rel_width,error\n";
+			for (const BoxReport& b : boxes) {
+				std::cout << csv_quote(b.type) << "," << csv_quote(b.box) << "," << b.tiles << ","
+				          << csv_quote(tightest_text(b.tightest)) << "," << csv_quote(overestimation_text(b)) << ","
+				          << b.sign << "," << (b.error.empty() ? decimals_text(b) : std::string()) << ","
+				          << std::setprecision(6) << b.rel_width << "," << csv_quote(b.error) << "\n";
+			}
+		} else {
+			std::cout << "ubox: " << expr << "\n";
+			std::cout << "  " << std::left << std::setw(11) << "type" << std::right << std::setw(21) << "tiles";
+			if (!tracing) std::cout << std::setw(22) << "tightest" << std::setw(12) << "over";
+			std::cout << std::setw(10) << "decimals" << "  " << std::left << std::setw(12) << "sign" << "box\n";
+			for (std::size_t i = 0; i < boxes.size(); ++i) {
+				const BoxReport& b = boxes[i];
+				std::cout << "  " << std::left << std::setw(11) << b.type;
+				if (!b.error.empty()) { std::cout << "error: " << b.error << "\n"; continue; }
+				std::cout << std::right << std::setw(21) << b.tiles;
+				if (!tracing) std::cout << std::setw(22) << tightest_text(b.tightest) << std::setw(12) << overestimation_text(b);
+				std::cout << std::setw(10) << decimals_text(b) << "  " << std::left << std::setw(12) << b.sign << b.box << "\n";
+				if (tracing && !traces[i].empty()) {
+					std::size_t widest = 0;
+					for (std::size_t k = 1; k < traces[i].size(); ++k)
+						if (growth(traces[i][k]) > growth(traces[i][widest])) widest = k;
+					for (std::size_t k = 0; k < traces[i].size(); ++k) {
+						const TraceStep& t = traces[i][k];
+						std::ostringstream in;
+						in << t.operand_a_tiles;
+						if (t.operand_b_tiles != 0 || t.operation == "add" || t.operation == "sub" || t.operation == "mul" || t.operation == "div") in << " , " << t.operand_b_tiles;
+						std::cout << "      " << std::right << std::setw(3) << t.step_number << "  " << std::left << std::setw(7) << t.operation
+						          << std::right << std::setw(24) << in.str() << " -> " << std::left << std::setw(21) << t.result_tiles
+						          << t.result_rep << (k == widest && growth(t) > 1.0 ? "   <- widest growth" : "") << "\n";
+					}
+				}
+			}
+			if (!tracing) {
+				// the oracle's notes, one line per distinct note with the types it applies to
+				std::vector<std::pair<std::string, std::string>> notes;   // note, types
+				for (const BoxReport& b : boxes) {
+					if (b.tightest.note.empty()) continue;
+					auto it = std::find_if(notes.begin(), notes.end(), [&b](const auto& n) { return n.first == b.tightest.note; });
+					if (it == notes.end()) notes.emplace_back(b.tightest.note, b.type);
+					else it->second += ", " + b.type;
+				}
+				for (const auto& [text, which] : notes) std::cout << "  tightest (" << which << "): " << text << "\n";
+				if (!note.empty()) {
+					std::cout << "  rounded types: " << note << "\n";
+				} else {
+					std::cout << "  rounded types, against the qd reference " << reference << ":\n";
+					for (const RoundedReport& r : rounded) {
+						std::cout << "  " << std::left << std::setw(11) << r.type;
+						if (!r.error.empty()) { std::cout << "error: " << r.error << "\n"; continue; }
+						std::ostringstream e;
+						e << std::scientific << std::setprecision(1) << r.rel_error;
+						std::cout << std::left << std::setw(28) << r.value << "relative error " << e.str() << "\n";
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	// decide <predicate> [in <types>]: is a question about the result answerable in each type?
+	if (line.substr(0, 7) == "decide " || line.substr(0, 7) == "decide\t") {
+		std::string rest = trim(line.substr(7));
+		std::vector<std::string> types = split_types(state.registry, rest);
+		if (types.empty()) types = default_box_types();
+		Predicate p;
+		std::string error;
+		if (!parse_predicate(rest, p, error)) {
+			if (fmt == OutputFormat::json) std::cout << "{\"error\":\"" << json_escape(error) << "\"}\n";
+			else std::cerr << "Error: " << error << "\n";
+			state.last_error = EXIT_PARSE_ERROR;
+			return true;
+		}
+		std::vector<Decision> ds;
+		for (const std::string& alias : types) ds.push_back(decide_in(state.registry.get(alias), alias, *state.evaluator, p));
+		const Decision* first = narrowest_decided(ds);
+		if (fmt == OutputFormat::json) {
+			std::cout << "{\"predicate\":\"" << json_escape(trim(rest)) << "\",\"verdicts\":[";
+			for (std::size_t i = 0; i < ds.size(); ++i) {
+				const Decision& d = ds[i];
+				if (i) std::cout << ",";
+				std::cout << "{\"type\":\"" << json_escape(d.type) << "\",\"answer\":\"" << json_escape(d.answer) << "\"";
+				if (!d.error.empty()) std::cout << ",\"error\":\"" << json_escape(d.error) << "\"";
+				else {
+					std::cout << ",\"lhs\":\"" << json_escape(d.lhs_box) << "\"";
+					if (p.rel != Relation::sign) std::cout << ",\"rhs\":\"" << json_escape(d.rhs_box) << "\"";
+				}
+				std::cout << "}";
+			}
+			std::cout << "],\"narrowest\":" << (first ? "\"" + json_escape(first->type) + "\"" : std::string("null")) << "}\n";
+		} else if (fmt == OutputFormat::csv) {
+			std::cout << "type,answer,lhs,rhs,error\n";
+			for (const Decision& d : ds)
+				std::cout << csv_quote(d.type) << "," << csv_quote(d.answer) << "," << csv_quote(d.lhs_box) << ","
+				          << csv_quote(d.rhs_box) << "," << csv_quote(d.error) << "\n";
+		} else {
+			std::cout << "decide: " << trim(rest) << "\n";
+			for (const Decision& d : ds) {
+				std::cout << "  " << std::left << std::setw(11) << d.type << std::setw(13) << d.answer;
+				if (!d.error.empty()) std::cout << d.error;
+				else if (p.rel == Relation::sign) std::cout << d.lhs_box;
+				else std::cout << d.lhs_box << "  " << p.op << "  " << d.rhs_box;
+				std::cout << "\n";
+			}
+			if (first) std::cout << "  narrowest type that decides it: " << first->type << "\n";
+			else std::cout << "  undecidable in every type listed\n";
+		}
+		return true;
+	}
+
+	// roots a b c [in <types>] [digits k]: the quadratic a x^2 + b x + c in tile interval types
+	if (line.substr(0, 6) == "roots " || line.substr(0, 6) == "roots\t") {
+		std::string rest = trim(line.substr(6));
+		double digits = 6.0;
+		{
+			const std::size_t at = rest.rfind(" digits ");
+			if (at != std::string::npos) {
+				try { digits = std::stod(rest.substr(at + 8)); rest = trim(rest.substr(0, at)); } catch (...) {}
+			}
+		}
+		std::vector<std::string> types = split_types(state.registry, rest);
+		if (types.empty()) types = default_box_types();
+		std::vector<std::string> coef;
+		if (!split_coefficients(rest, coef)) {
+			if (fmt == OutputFormat::json) std::cout << "{\"error\":\"usage: roots a b c [in <types>] [digits k]\"}\n";
+			else std::cerr << "Usage: roots a b c [in <types>] [digits k]   (a, b, c are expressions: 3, 100~, [1, 2])\n";
+			state.last_error = EXIT_PARSE_ERROR;
+			return true;
+		}
+		std::vector<QuadraticReport> reports;
+		std::vector<QuadraticForm> forms;
+		std::vector<SweepRow> sweep;
+		try {
+			const ExpressionEvaluator qs = quadratic_session(state.registry, *state.evaluator, coef[0], coef[1], coef[2]);
+			ExpressionEvaluator probe = evaluator_for(state.registry.get("poxel64i"), qs);
+			const Value b_value = probe.evaluate("_qb_");
+			forms = quadratic_forms(b_value.tile_sign == "negative", b_value.tile_sign == "zero");
+			for (const std::string& t : types) reports.push_back(quadratic_in(state.registry.get(t), t, qs, forms, true));
+			sweep = precision_sweep(state.registry, qs, forms, digits);
+		} catch (const std::exception& ex) {
+			if (fmt == OutputFormat::json) std::cout << "{\"error\":\"" << json_escape(ex.what()) << "\"}\n";
+			else std::cerr << "Error: " << ex.what() << "\n";
+			state.last_error = EXIT_PARSE_ERROR;
+			return true;
+		}
+		auto decimals_text = [](const BoxReport& b) {
+			if (b.exact) return std::string("exact");
+			std::ostringstream ss;
+			ss << std::fixed << std::setprecision(1) << b.decimals;
+			return ss.str();
+		};
+		if (fmt == OutputFormat::json) {
+			std::cout << "{\"a\":\"" << json_escape(coef[0]) << "\",\"b\":\"" << json_escape(coef[1]) << "\",\"c\":\"" << json_escape(coef[2]) << "\",\"types\":[";
+			for (std::size_t i = 0; i < reports.size(); ++i) {
+				const QuadraticReport& r = reports[i];
+				if (i) std::cout << ",";
+				std::cout << "{\"type\":\"" << r.type << "\"";
+				if (!r.error.empty()) { std::cout << ",\"error\":\"" << json_escape(r.error) << "\"}"; continue; }
+				std::cout << ",\"discriminant\":{\"box\":\"" << json_escape(r.discriminant_box) << "\",\"verdict\":\"" << r.discriminant << "\""
+				          << ",\"exact\":\"" << r.exact_discriminant << "\"},\"roots\":[";
+				for (std::size_t k = 0; k < r.rows.size(); ++k) {
+					const RootRow& row = r.rows[k];
+					if (k) std::cout << ",";
+					std::cout << "{\"root\":\"" << row.form.root << "\",\"form\":\"" << row.form.form << "\",\"expr\":\"" << json_escape(row.form.expr) << "\""
+					          << ",\"box\":\"" << json_escape(row.box.box) << "\",\"tiles\":" << row.box.tiles
+					          << ",\"tightest\":\"" << tightest_text(row.box.tightest) << "\",\"overestimation\":\"" << overestimation_text(row.box) << "\""
+					          << ",\"decimals\":" << json_number(row.box.decimals) << ",\"sign\":\"" << row.box.sign << "\""
+					          << ",\"contains_root\":" << (row.contains ? "true" : "false") << "}";
+				}
+				std::cout << "]}";
+			}
+			std::cout << "],\"sweep\":[";
+			for (std::size_t i = 0; i < sweep.size(); ++i) {
+				if (i) std::cout << ",";
+				std::cout << "{\"question\":\"" << json_escape(sweep[i].question) << "\"";
+				for (const auto& [family, bits] : sweep[i].narrowest) std::cout << ",\"" << family << "\":" << bits;
+				std::cout << "}";
+			}
+			std::cout << "]}\n";
+		} else if (fmt == OutputFormat::csv) {
+			std::cout << "type,root,form,box,tiles,tightest,overestimation,decimals,sign,contains_root,discriminant\n";
+			for (const QuadraticReport& r : reports)
+				for (const RootRow& row : r.rows)
+					std::cout << r.type << "," << row.form.root << "," << csv_quote(row.form.form) << "," << csv_quote(row.box.box) << ","
+					          << row.box.tiles << "," << csv_quote(tightest_text(row.box.tightest)) << "," << csv_quote(overestimation_text(row.box)) << ","
+					          << decimals_text(row.box) << "," << row.box.sign << "," << (row.contains ? "yes" : "no") << "," << csv_quote(r.discriminant) << "\n";
+		} else {
+			std::cout << "roots of a x^2 + b x + c with a = " << coef[0] << ", b = " << coef[1] << ", c = " << coef[2] << "\n";
+			std::cout << "  discriminant b^2 - 4ac\n";
+			for (const QuadraticReport& r : reports) {
+				std::cout << "    " << std::left << std::setw(11) << r.type;
+				if (!r.error.empty()) { std::cout << "error: " << r.error << "\n"; continue; }
+				std::cout << std::setw(17) << r.discriminant << r.discriminant_box << "\n";
+			}
+			for (const QuadraticReport& r : reports) {
+				if (!r.exact_discriminant.empty()) { std::cout << "    exact: " << r.exact_discriminant << "\n"; break; }
+			}
+			std::string last_root;
+			for (const QuadraticForm& f : forms) {
+				if (f.root == last_root) continue;
+				last_root = f.root;
+				std::cout << "  " << f.root << (f.root == "r1" ? ", the root the formula as written takes by cancellation\n" : "\n");
+				std::cout << "    " << std::left << std::setw(11) << "type" << std::setw(12) << "form" << std::right << std::setw(12) << "tiles"
+				          << std::setw(10) << "tightest" << std::setw(10) << "over" << std::setw(10) << "decimals" << "  "
+				          << std::left << std::setw(12) << "sign" << std::setw(10) << "contains" << "box\n";
+				for (const QuadraticReport& r : reports) {
+					if (!r.error.empty()) continue;
+					bool first = true;
+					for (const RootRow& row : r.rows) {
+						if (row.form.root != f.root) continue;
+						std::cout << "    " << std::left << std::setw(11) << (first ? r.type : std::string()) << std::setw(12) << row.form.form
+						          << std::right << std::setw(12) << row.box.tiles << std::setw(10) << tightest_text(row.box.tightest)
+						          << std::setw(10) << overestimation_text(row.box) << std::setw(10) << decimals_text(row.box) << "  "
+						          << std::left << std::setw(12) << row.box.sign << std::setw(10) << (row.contains ? "yes" : (row.box.tightest.available ? "NO" : "-"))
+						          << row.box.box << "\n";
+						first = false;
+					}
+				}
+			}
+			std::cout << "  precision sweep: the narrowest width that decides each question (bits; - = no width does)\n";
+			std::cout << "    " << std::left << std::setw(36) << "question";
+			if (!sweep.empty()) for (const auto& [family, bits] : sweep.front().narrowest) std::cout << std::right << std::setw(8) << family;
+			std::cout << "\n";
+			for (const SweepRow& q : sweep) {
+				std::cout << "    " << std::left << std::setw(36) << q.question;
+				for (const auto& [family, bits] : q.narrowest) std::cout << std::right << std::setw(8) << (bits ? std::to_string(bits) : std::string("-"));
+				std::cout << "\n";
+			}
+		}
+		return true;
+	}
+
+	// rootbox <expr> for <var> in [lo, hi] [types]: the roots of f, by bisection on its sign
+	if (line.substr(0, 8) == "rootbox " || line.substr(0, 8) == "rootbox\t") {
+		std::string expr, var, domain, error;
+		std::vector<std::string> types;
+		if (!parse_rootbox(state.registry, trim(line.substr(8)), expr, var, domain, types, error)) {
+			if (fmt == OutputFormat::json) std::cout << "{\"error\":\"" << json_escape(error) << "\"}\n";
+			else std::cerr << "Error: " << error << "\n";
+			state.last_error = EXIT_PARSE_ERROR;
+			return true;
+		}
+		if (types.empty()) types = default_box_types();
+		expr = trim(expr);
+		std::vector<RootboxReport> reports;
+		for (const std::string& t : types) reports.push_back(rootbox_in(state.registry.get(t), t, *state.evaluator, expr, var, domain));
+		if (fmt == OutputFormat::json) {
+			std::cout << "{\"expression\":\"" << json_escape(expr) << "\",\"variable\":\"" << json_escape(var) << "\",\"domain\":\"" << json_escape(domain) << "\",\"types\":[";
+			for (std::size_t i = 0; i < reports.size(); ++i) {
+				const RootboxReport& r = reports[i];
+				if (i) std::cout << ",";
+				std::cout << "{\"type\":\"" << r.type << "\"";
+				if (!r.error.empty()) { std::cout << ",\"error\":\"" << json_escape(r.error) << "\"}"; continue; }
+				std::cout << ",\"evaluations\":" << r.evaluations << ",\"exhausted\":" << (r.exhausted ? "true" : "false") << ",\"boxes\":[";
+				for (std::size_t k = 0; k < r.boxes.size(); ++k) {
+					const RootBox& b = r.boxes[k];
+					if (k) std::cout << ",";
+					std::cout << "{\"box\":\"" << json_escape(b.box) << "\",\"tiles\":" << b.tiles << ",\"status\":\"" << b.status << "\",\"detail\":\"" << json_escape(b.detail) << "\"}";
+				}
+				std::cout << "]}";
+			}
+			std::cout << "]}\n";
+		} else if (fmt == OutputFormat::csv) {
+			std::cout << "type,box,tiles,status,detail\n";
+			for (const RootboxReport& r : reports)
+				for (const RootBox& b : r.boxes)
+					std::cout << r.type << "," << csv_quote(b.box) << "," << b.tiles << "," << csv_quote(b.status) << "," << csv_quote(b.detail) << "\n";
+		} else {
+			std::cout << "rootbox: " << expr << " for " << var << " in " << domain << "\n";
+			std::cout << "    " << std::left << std::setw(11) << "type" << std::setw(12) << "status" << std::right << std::setw(12) << "tiles" << "  box\n";
+			for (const RootboxReport& r : reports) {
+				std::cout << "    " << std::left << std::setw(11) << r.type;
+				if (!r.error.empty()) { std::cout << "error: " << r.error << "\n"; continue; }
+				if (r.boxes.empty()) std::cout << "no root in the domain\n";
+				bool first = true;
+				for (const RootBox& b : r.boxes) {
+					if (!first) std::cout << "    " << std::setw(11) << "";
+					std::cout << std::left << std::setw(12) << b.status << std::right << std::setw(12) << b.tiles << "  " << b.box;
+					if (b.status == "undecided" || b.status == "unexplored") std::cout << "   (" << b.detail << ")";
+					std::cout << "\n";
+					first = false;
+				}
+			}
 		}
 		return true;
 	}
@@ -4524,19 +4956,32 @@ try {
 
 				std::string cmd = tool_to_command(tool_name, arguments);
 				if (cmd.empty()) {
-					write_message(jsonrpc_error(id_str, -32601, "unknown tool: " + tool_name));
+					const auto tools = ucalc_tools();
+					const bool known = std::any_of(tools.begin(), tools.end(), [&tool_name](const McpTool& t) { return t.name == tool_name; });
+					if (known) write_message(jsonrpc_error(id_str, -32602, "invalid arguments for " + tool_name
+					                                       + ": a missing required argument, a ';' or line break in an argument, a types list that is not plain names, or a definition that is not 'name = expr'"));
+					else write_message(jsonrpc_error(id_str, -32601, "unknown tool: " + tool_name));
 					continue;
 				}
 
-				// Execute the command and capture output
+				// Execute the command and capture output.  A call is all or nothing: when any of its
+				// commands fails -- a definition among several, say -- the session's variables,
+				// definitions and active type are restored, so a failed call changes nothing.
+				const ExpressionEvaluator saved_session = *state.evaluator;
+				const std::string saved_type = state.active_type;
 				std::ostringstream capture;
 				auto old_buf = std::cout.rdbuf(capture.rdbuf());
 				state.last_error = EXIT_OK;
 				auto cmds = split_commands(cmd);
 				for (const auto& c : cmds) {
 					process_command(c, state);
+					if (state.last_error != EXIT_OK) break;
 				}
 				std::cout.rdbuf(old_buf);
+				if (state.last_error != EXIT_OK) {
+					*state.evaluator = saved_session;
+					state.active_type = saved_type;
+				}
 
 				std::string output = capture.str();
 				write_message(jsonrpc_result(id_str,

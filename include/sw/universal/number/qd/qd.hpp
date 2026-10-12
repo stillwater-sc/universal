@@ -37,12 +37,9 @@
 #if !defined(QUADDOUBLE_NATIVE_TRIGONOMETRY)
 #define QUADDOUBLE_NATIVE_TRIGONOMETRY 1
 #endif
-#if !defined(QUADDOUBLE_NATIVE_HYPERBOLIC)
-#define QUADDOUBLE_NATIVE_HYPERBOLIC 1
-#endif
-#if !defined(QUADDOUBLE_NATIVE_MINMAX)
-#define QUADDOUBLE_NATIVE_MINMAX 1
-#endif
+// QUADDOUBLE_NATIVE_HYPERBOLIC and QUADDOUBLE_NATIVE_MINMAX are gone: setting them to 0 selected
+// implementations that went through double.  The hyperbolic functions are now the shared,
+// full-precision ones of number/shared/multidouble_special.hpp, and min/max return the operand (#1667).
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

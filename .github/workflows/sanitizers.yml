@@ -48,9 +48,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install Clang
+        timeout-minutes: 15
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang
+          bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" clang
 
       - name: Configure CMake
         run: |

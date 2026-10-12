@@ -1,16 +1,18 @@
-// fractional.cpp: test suite runner for fractional functions for double-double cascade (dd_cascade) floating-point
+// fractional.cpp: test suite runner for fmod and remainder of dd_cascade
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Against references independent of the code under test: see test_suite_multidouble_exact.hpp (#1667).
 #include <universal/utility/directives.hpp>
-#include <numbers>
 #include <universal/number/dd_cascade/dd_cascade.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_multidouble_exact.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -20,38 +22,47 @@
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
-	using std::fmod;
+	namespace mv = sw::universal::multidouble_verification;
 
-	std::string test_suite  = "dd_cascade mathlib fractional function validation";
+	std::string test_suite  = "dd_cascade mathlib fmod and remainder validation";
 	std::string test_tag    = "fmod/remainder";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	double a{ 1.5 }, b{ 1.25 };
-	dd_cascade da(a), db(b);
-
-	std::cout << "fmod( " << a << ", " << b << ") = " << fmod(a, b) << '\n';
-	std::cout << "fmod( " << da << ", " << db << ") = " << fmod(da, db) << '\n';
-
-	std::cout << "remainder( " << a << ", " << b << ") = " << remainder(a, b) << '\n';
-	std::cout << "remainder( " << da << ", " << db << ") = " << remainder(da, db) << '\n';
+	std::cout << "fmod(0.41943359375, 5.1200389862060547e-05) = " << fmod(dd_cascade(0.41943359375), dd_cascade(5.1200389862060547e-05)) << '\n';
+	std::cout << "remainder(2.5, 1) = " << remainder(dd_cascade(2.5), dd_cascade(1.0)) << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyRemainderDoubles<dd_cascade>("dd_cascade", 2000, reportTestCases), "dd_cascade RemainderDoubles", test_tag);
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyRemainderLimbs<dd_cascade>("dd_cascade", 300, reportTestCases), "dd_cascade RemainderLimbs", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyRemainderDoubles<dd_cascade>("dd_cascade", 20000, reportTestCases), "dd_cascade RemainderDoubles", test_tag);
+	nrOfFailedTestCases += ReportTestResult(mv::VerifyRemainderLimbs<dd_cascade>("dd_cascade", 3000, reportTestCases), "dd_cascade RemainderLimbs", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

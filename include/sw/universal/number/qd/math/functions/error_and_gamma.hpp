@@ -1,21 +1,27 @@
 #pragma once
-// error_and_gamma.hpp: error/gamma function support for quad-double (qd) floating-point
+// error_and_gamma.hpp: error and gamma functions of quad-double floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Evaluated in the type itself (#1667): erf and erfc used to go through double, and tgamma and
+// lgamma were missing.  See number/shared/multidouble_special.hpp for the algorithms.
+#include <universal/number/shared/multidouble_special.hpp>
 
 namespace sw { namespace universal {
 
-	// Compute the error function erf(x) = 2 over sqrt(PI) times Integral from 0 to x of e ^ (-t)^2 dt
-	inline qd erf(qd x) {
-		return qd(std::erf(x[0]));
-	}
+	// erf(x) = 2 / sqrt(pi) times the integral from 0 to x of e^(-t^2) dt
+	inline qd erf(const qd& x) { return multidouble::erf(x); }
 
-	// Compute the complementary error function: 1 - erf(x)
-	inline qd erfc(qd x) {
-		return qd(std::erfc(x[0]));
-	}
+	// erfc(x) = 1 - erf(x), relative-accurate where it is small
+	inline qd erfc(const qd& x) { return multidouble::erfc(x); }
+
+	// the logarithm of |Gamma(x)|; +inf at the poles
+	inline qd lgamma(const qd& x) { return multidouble::lgamma(x); }
+
+	// the gamma function; NaN at the poles
+	inline qd tgamma(const qd& x) { return multidouble::tgamma(x); }
 
 }} // namespace sw::universal

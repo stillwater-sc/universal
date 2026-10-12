@@ -30,6 +30,10 @@ agents, supporting structured JSON/CSV output for automated workflows.
   different numbers -- `(1+f)*2^c` against `sqrt(e)^(c+m)` -- so the same input
   prints different encodings under each. `diverge <expr> takum32 takum_log32
   <tol> for <var> in [a, b]` finds where they first disagree.
+- Includes the **ubit tile types** `areal` (float lattice) and `poxel` (posit lattice),
+  as single tiles (`areal32`, `poxel32`, ...) and as guaranteed enclosures
+  (`areal32i`, `poxel32i`, ...), for asking what is *known* about a result rather
+  than what was rounded. See [Tile Types](#tile-types-uncertainty-and-decidability).
 - Parses **infix arithmetic** with standard operator precedence, parentheses,
   variables, constants, and math functions.
 - Provides **20+ analysis commands** organized in three categories:
@@ -49,6 +53,10 @@ tools/ucalc/
   output_format.hpp   -- JSON escape, CSV quoting, output format utilities
   data_loader.hpp     -- CSV file reader and vector literal parser
   registry.hpp        -- Default type registry (shared with regression tests)
+  tiles.hpp           -- areal/poxel tiles and tile intervals: exact literals, set-valued Values
+  uncertainty.hpp     -- ubox and decide: box metrics, predicates, verdicts over sets
+  oracle.hpp          -- the tightest box: exact dyadic evaluation, interval derivatives, branch and bound
+  roots.hpp           -- roots (the quadratic, forms, precision sweep) and rootbox (sign bisection)
   ucalc.cpp           -- REPL loop, 20+ commands, CLI flag parsing
   CMakeLists.txt      -- Build config with optional readline detection
   scripts/            -- Example scripts for humans and AI agents
@@ -112,6 +120,8 @@ ucalc --quiet -t posit32 "sin(0.1)"   # value-only for shell scripts
 | Constants | `pi, e, phi, ln2, ln10, sqrt2, sqrt3, sqrt5` (quad-double precision) |
 | Variables | `x = 1/3` (then use `x` in expressions) |
 | Semicolons | `type posit32; 1/3 + 1/3 + 1/3` |
+| Boxes (tile interval types) | `[a, b]` or `hull(a, b)`: every value from a to b |
+| ULP-wide input (tile types) | `x~` or `above(x)`: the open tile just above an exact `x` |
 
 ### Type Inspection Commands
 
@@ -316,6 +326,223 @@ posit8:   100.0% 0clip 0flush
 
 Shows what fraction of values are representable, clipped (overflow), or flushed (underflow).
 
+## Tile Types: Uncertainty and Decidability
+
+A tile is an exact lattice point, or the open interval to the next lattice point; the
+ubit tells the two apart. ucalc has two families of tile types (#1654):
+
+| Family | Types | Semantics |
+|--------|-------|-----------|
+| Single tile | `areal8/16/32/64`, `poxel8/16/32/64` | The library's sticky-flag arithmetic: the ubit says "inexact", but once an operand is open the tile need not contain the true result. |
+| Tile interval | `areal8i/16i/32i/64i`, `poxel8i/16i/32i/64i` | A run of tiles that is **guaranteed** to contain the true result. Functions without an enclosing implementation (`log`, `exp`, `tan`, the inverse trig functions, `pow` with a non-integer exponent) return the entire line rather than a rounded point. |
+
+`areal<n,es>` uses es = 5, 8, 11 at 16, 32, 64 bits (and es = 2 at 8 bits); `poxel<n,2>`
+follows the Posit Standard.
+
+Literals are read from their decimal text, not through a double, so `0.1` is the one
+open tile that contains one tenth even in `poxel64`, whose lattice is finer than double's.
+Named constants are bracketed from their quad-double values.
+
+`show` reports what is known about the set: its tile count and the **sign verdict**
+(negative, zero, positive, or undecidable). The JSON output carries `tiles`, `sign`,
+`ubit` and `encloses`.
+
+A single tile knows whether it contains its value: literals, `x~` and arithmetic on
+exact tiles do; arithmetic with an open operand and functions computed through double
+do not. Variables keep their value across a `type` switch, and a tile interval type
+reads a single tile that does not enclose its value as the entire line, never as a box
+that might exclude the truth. Recompute such a value in the interval type instead.
+
+```
+poxel16> (1/3)*3                 # a single tile: 1 is outside, the ubit only says inexact
+(0.99951, 1)
+poxel16i> (1/3)*3                # a tile interval: contains 1
+(0.99951, 1.001)
+```
+
+The reference problem is the quadratic 3x^2 + 100x + 2 = 0 from
+`applications/precision/ubit/quadratic_roots.cpp` (#1649). At 16 bits the root as
+written cannot decide its own sign, and the rearranged formula can:
+
+```
+poxel16i> a = 3; b = 100; c = 2
+poxel16i> show (-b + sqrt(b*b - 4*a*c)) / (2*a)
+  value:      (-0.083374, 0.041687)
+  tiles:      16385, sign undecidable
+poxel16i> show (2*c) / (-b - sqrt(b*b - 4*a*c))
+  value:      (-0.020081, -0.019958)
+  tiles:      7, sign negative
+```
+
+With ULP-wide coefficients, `a = 3~; b = 100~; c = 2~`, the same expressions show how
+input uncertainty widens each box.
+
+### The uncertainty box: `ubox`
+
+`ubox [trace] <expr> [in <types>]` evaluates an expression in tile interval types
+(by default the 16-, 32- and 64-bit areal and poxel pairs) and summarizes each box:
+its width in tiles, the **decimals of accuracy** its midpoint is guaranteed to have
+(`-log10(width / 2|midpoint|)`, the measure of `docs/tutorials/decimals-of-accuracy.md`),
+and its sign verdict. Below the boxes it shows what the rounded types of the same
+widths compute, and their relative error against a quad-double reference, of which they
+give no sign:
+
+```
+ubox: (-b + sqrt(b*b - 4*a*c)) / (2*a)
+  type                       tiles  decimals  sign        box
+  areal16i                   10581       0.0  negative    (-0.041687, 0)
+  poxel16i                   16385       0.0  undecidable (-0.083374, 0.041687)
+  areal32i                    1365       4.2  negative    (-0.0200144462, -0.0200119019)
+  poxel32i                    1365       5.1  negative    (-0.0200122199, -0.02001190186)
+  areal64i                    1365      12.9  negative    (-0.020012014421638469, -0.02001201442163373)
+  poxel64i                    1367      14.7  negative    (-0.02001201442163639643, -0.02001201442163632227)
+  rounded types, against the qd reference -2.00120144216363534418...e-02:
+  fp16       -2.08282e-02                relative error 4.1e-02
+  posit16    -4.16565e-02                relative error 1.1e+00
+  float      -0.0200119019               relative error 5.6e-06
+  posit32    -2.0012060879e-02           relative error 2.3e-06
+  double     -0.020012014421636099       relative error 1.3e-14
+```
+
+Variable definitions are **replayed in each type**: `b = 100~` is the open tile above 100
+in every type's own lattice, not one type's tile carried into the others. Tile syntax
+needs a tile type, so define such inputs after `type poxel32i`. Inputs written with tile
+syntax have no single true value, and the rounded comparison is then left out.
+
+### The tightest box: how much of the box is the formula's fault
+
+Next to each box, `ubox` reports the **tightest** box the type could state, and the
+**overestimation** factor: computed tiles over tightest tiles. The tightest box is
+computed independently of the tile arithmetic, by the oracle in
+`include/sw/universal/utility/tile_oracle.hpp`. It evaluates the expression in exact dyadic
+intervals: `+ - *` are exact, and `/` and `sqrt` round outward and detect exact results.
+
+- **Point inputs.** The value is one real number, so the tightest box is one tile. The
+  oracle raises its working precision until the value's interval lies in one tile. A
+  non-dyadic route to a lattice point, such as `(1/3)*3`, never separates from it. The
+  count is still one tile, and a note says where it is unresolved.
+- **Set inputs** (`x~`, `[a, b]`). The tightest box is the tile hull of the image of the
+  inputs. An open input, such as `x~`, excludes its ends, so an extreme approached there is
+  not a value the computation takes. Each value carries an interval gradient, so
+  monotonicity is *proven* piece by piece, not assumed:
+  - On a piece where every partial derivative has one sign, the image runs between two
+    corners, which are evaluated exactly.
+  - Any other piece is enclosed by the mean-value form, and either dropped or bisected
+    along the input contributing most.
+  - The corners and the piece centres are values the computation takes, which gives an
+    inner bound; the pieces give an outer one. When the two meet the tightest box is
+    proven, and otherwise it is reported as a range.
+
+With ULP-wide coefficients, both forms of the root have the same tightest box (it belongs
+to the function, not the formula). The excess is the dependency problem:
+
+```
+poxel32i> a = 3~
+poxel32i> b = 100~
+poxel32i> c = 2~
+poxel32i> ubox (-b + sqrt(b*b - 4*a*c)) / (2*a)
+  type                       tiles              tightest        over  decimals  sign        box
+  areal16i                   20821                     7       2974x       0.0  undecidable (-0.0625, 0.020844)
+  poxel16i                   17067                     5       3413x       0.0  undecidable (-0.10419, 0.041687)
+  areal32i                    5465                     5       1093x       3.6  negative    (-0.0200169906, -0.0200068094)
+  ...
+poxel32i> ubox (2*c) / (-b - sqrt(b*b - 4*a*c))
+  areal16i                       7                     7          1x       2.5  negative    (-0.020081, -0.019958)
+  poxel16i                       9                     5        1.8x       2.4  negative    (-0.020081, -0.019928)
+  areal32i                       7                     5        1.4x       6.4  negative    (-0.0200120211, -0.0200120062)
+  ...
+```
+
+With `--json` each box also carries `tightest` (`inner_tiles`, `outer_tiles`, `proven`, the
+box) and splits the computed width into `input_tiles`, which the inputs force, and
+`formula_tiles`, which the formula adds. The oracle has no exact enclosure for `log`, `exp`
+or the trigonometric functions, and reports the tightest box as unavailable for them.
+
+### Root finding: `roots` and `rootbox`
+
+`roots a b c [in <types>] [digits k]` solves `a x^2 + b x + c = 0` in the tile interval
+types. The coefficients are expressions, so `roots 3~ 100~ 2~` takes ULP-wide inputs.
+- **The discriminant's verdict** per type: two real roots, a double root, complex roots,
+  or undecidable. The oracle's exact verdict is shown below the table.
+- **Each root in two forms.** One is *as written*, `(-b +- sqrt(b^2 - 4ac)) / (2a)`. The
+  other is *stable*: with `q = -(b + sign(b) sqrt(d)) / 2`, the roots are `q / a` and
+  `c / q` (Vieta). r1 is the root the formula as written takes by cancellation. Each row
+  has the box's tiles, the tightest box, the overestimation, decimals, the sign verdict,
+  and **contains**, which checks exactly that the oracle's tile of the root lies inside the
+  computed box.
+- **A precision sweep.** For each question, the narrowest areal and poxel width
+  (8/16/32/64 bits) that decides it: the number of real roots, the sign of each root in
+  each form, and `k` digits of each (default 6).
+
+```
+  precision sweep: the narrowest width that decides each question (bits; - = no width does)
+    question                               areal   poxel
+    number of real roots                      16       8
+    sign of r1 as written                     16      32
+    sign of r1 stable                         16       8
+    sign of r2 as written                      8       8
+    6 digits of r1 as written                 64      64
+    6 digits of r1 stable                     32      32
+    6 digits of r2 as written                 32      32
+```
+
+For `roots 3 100 2`, a poxel needs 32 bits to decide the sign of r1 as written, but 8 bits
+for the stable form.
+
+`rootbox <expr> for <var> in [lo, hi] [types...]` finds the roots of `f` without a
+formula. It bisects the domain over the tiles on the sign verdict of `f`: a piece where `f`
+has one sign holds no root and is dropped, and any other piece is split. Each remaining
+box has a status:
+- **root**: `f` changes sign across the box and is bounded on it, so it holds a root.
+- **exact root**: `f` is exactly 0 at a lattice point.
+- **undecided**: the tile arithmetic cannot settle it, for example a pole, or the same
+  sign at both ends.
+- **unexplored**: the evaluation budget ran out before the search reached it. Such a box
+  is never reported as a root.
+
+```
+rootbox: x^2 - 2 for x in [0, 2]
+    type       status             tiles  box
+    poxel16i   root                   1  (1.4141, 1.415)
+    poxel64i   root                   1  (1.414213562373095048, 1.414213562373095052)
+```
+
+Like every box here, the result depends on how `f` is written. `x^2 - 2*x + 1`, where `x`
+occurs twice, cannot be resolved near its double root. `(x - 1)^2` gives the exact root
+at once.
+
+`ubox trace` lists every operation with the tiles in and out, and marks where the box
+grows the most. For the quadratic it is the cancellation `-b + sqrt(d)`:
+
+```
+  poxel16i                   17067       0.0  undecidable (-0.10419, 0.041687)
+        6  sqrt                          3 -> 11                   (99.5, 100.25)
+        7  add                      1 , 11 -> 27135                (-0.625, 0.25)   <- widest growth
+```
+
+### Decidability: `decide`
+
+`decide <predicate> [in <types>]` answers a question about the result in each type:
+**yes**, **no**, or **undecidable** when the box admits both answers. The predicate is
+`sign <expr>`, or `<expr> op <expr>` with `op` one of `<  <=  >  >=  ==  !=`, decided
+over every pair of points of the two boxes. It reports the narrowest type that decides it:
+
+```
+poxel32i> a = 3~
+poxel32i> b = 100~
+poxel32i> c = 2~
+poxel32i> decide sign (-b + sqrt(b*b - 4*a*c)) / (2*a)
+decide: sign (-b + sqrt(b*b - 4*a*c)) / (2*a)
+  areal16i   undecidable  (-0.0625, 0.020844)
+  poxel16i   undecidable  (-0.10419, 0.041687)
+  areal32i   negative     (-0.0200169906, -0.0200068094)
+  ...
+  narrowest type that decides it: areal32i
+```
+
+Both commands take `--json` and `--csv`. All four uncertainty commands (`ubox`, `decide`,
+`roots`, `rootbox`) are also MCP tools; see `docs/ucalc/mcp-server.md`.
+
 ## Script Examples
 
 The `scripts/` directory contains ready-to-use example scripts:
@@ -326,6 +553,7 @@ The `scripts/` directory contains ready-to-use example scripts:
 - `03_numerical_constants.ucalc` -- Constants at every precision level
 - `04_catastrophic_cancellation.ucalc` -- Quadratic formula failure
 - `05_fp8_deep_learning.ucalc` -- FP8 format exploration
+- `13_quadratic_uncertainty.ucalc` -- The roots of 3x^2 + 100x + 2 in tile intervals: roots, ubox, decide, rootbox (#1649)
 
 **AI-agent-facing** (JSON/CSV output):
 - `06_agent_type_selection.ucalc` -- Weight quantization format comparison
