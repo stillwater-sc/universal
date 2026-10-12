@@ -197,11 +197,10 @@ These tools are invaluable for understanding how values are represented.
 
 ### Adding a New Number System
 
-Use the skeleton templates as starting points:
-- `include/universal/number/skeleton_1param/` - for single-parameter types
-- `include/universal/number/skeleton_2params/` - for two-parameter types
-
-These contain all constituent pieces needed for a Universal-style number system.
+Use the `new-number-type` skill (`.claude/skills/new-number-type/SKILL.md`). It carries the
+file layout, the CMake wiring and the header layering every type uses: an I/O-free `core.hpp`,
+`manipulators.hpp`, `iostream.hpp`, and the umbrella `T.hpp`. Model a new type on a recent,
+fully layered one: `bfloat16` (smallest) or `bposit` (tapered, with quire and mathlib).
 
 ### Regression Testing
 
