@@ -147,7 +147,13 @@ B round_oracle(const Oracle& v, bool snap_ties = false) {
 	const bool negative = v < Oracle(0.0);
 	const Oracle a = negative ? -v : v;
 	const B maxpos(SpecificValue::maxpos), minpos(SpecificValue::minpos);
+	// starting guess; the midpoint walk below corrects it.  ereal converts to long double only
+	// where long double is its own format (not MSVC, where it is double)
+#if LONG_DOUBLE_SUPPORT
 	B c(static_cast<long double>(a));
+#else
+	B c(static_cast<double>(a));
+#endif
 	if (c.isnar() || c.iszero()) c = minpos;
 	// For the functions with exact results (snap_ties), a value within 2^-300 of a midpoint is
 	// taken to be on it: ereal<8>'s functions carry some 400 bits, and such a function only
@@ -201,6 +207,15 @@ B reference(long double r, Range range, bool negative, const std::function<Oracl
 		if (lo == hi) return lo;
 	}
 	return round_oracle<B>(high(), snap_ties);
+}
+
+// MSVC's tgamma returns +0 when the result of a negative argument underflows, losing the
+// sign the reference needs.  For a negative non-integer x, gamma(x) < 0 exactly when
+// floor(x) is odd.
+long double ld_tgamma(long double v) {
+	const long double r = std::tgamma(v);
+	if (r != 0.0l || !(v < 0.0l)) return r;
+	return (std::fmod(std::floor(v), 2.0l) != 0.0l) ? -0.0l : 0.0l;
 }
 
 template<typename B>
@@ -269,7 +284,7 @@ std::vector<Unary<B>> functions() {
 		Unary<B>{ "erfc", [](const B& x) { return bm::erfc<engine::libm_then_qd>(x); }, [](const B& x) { return bm::erfc<engine::qd_only>(x); },
 		          [](long double v) { return std::erfc(v); }, oracle_erfc, Range::nonzero, false },
 		Unary<B>{ "tgamma", [](const B& x) { return bm::tgamma<engine::libm_then_qd>(x); }, [](const B& x) { return bm::tgamma<engine::qd_only>(x); },
-		          [](long double v) { return std::tgamma(v); }, oracle_tgamma, Range::nonzero, true, 0.0, true },
+		          ld_tgamma, oracle_tgamma, Range::nonzero, true, 0.0, true },
 		Unary<B>{ "lgamma", [](const B& x) { return bm::lgamma<engine::libm_then_qd>(x); }, [](const B& x) { return bm::lgamma<engine::qd_only>(x); },
 		          [](long double v) { return std::lgamma(v); }, oracle_lgamma, Range::finite, false, 1.0, true },
 		BPOSIT_CR_ENTRY(acosh, Range::any),  BPOSIT_CR_ENTRY(atanh, Range::any),

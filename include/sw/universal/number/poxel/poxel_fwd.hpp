@@ -12,9 +12,10 @@ namespace sw { namespace universal {
 // poxel<nbits, es, bt>: the lattice of a posit<nbits - 1, es> plus a trailing ubit
 template<unsigned nbits, unsigned es, typename bt> class poxel;
 
-// tiles over the standard posit lattices: posit<8,2>, <16,2>, <32,2>, <64,2>
+// poxels of the standard posit lattices: posit<8,2>, <16,2>, <32,2>, <64,2>
 using poxel9  = poxel< 9, 2, std::uint16_t>;
 using poxel17 = poxel<17, 2, std::uint32_t>;
 using poxel33 = poxel<33, 2, std::uint64_t>;
+using poxel65 = poxel<65, 2, std::uint64_t>;
 
 }} // namespace sw::universal
