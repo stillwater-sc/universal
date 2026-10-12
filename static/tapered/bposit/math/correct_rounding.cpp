@@ -147,7 +147,13 @@ B round_oracle(const Oracle& v, bool snap_ties = false) {
 	const bool negative = v < Oracle(0.0);
 	const Oracle a = negative ? -v : v;
 	const B maxpos(SpecificValue::maxpos), minpos(SpecificValue::minpos);
+	// starting guess; the midpoint walk below corrects it.  ereal converts to long double only
+	// where long double is its own format (not MSVC, where it is double)
+#if LONG_DOUBLE_SUPPORT
 	B c(static_cast<long double>(a));
+#else
+	B c(static_cast<double>(a));
+#endif
 	if (c.isnar() || c.iszero()) c = minpos;
 	// For the functions with exact results (snap_ties), a value within 2^-300 of a midpoint is
 	// taken to be on it: ereal<8>'s functions carry some 400 bits, and such a function only
