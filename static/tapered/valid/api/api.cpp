@@ -19,29 +19,30 @@ void check(bool condition, const char* message) {
 
 int main() {
 	using namespace sw::universal;
-	using Posit = posit<8, 1>;
+	using Posit = posit<7, 1>;
+	using Poxel = poxel<8, 1>;
 	using Valid = valid<8, 1>;
 
 	const Valid zero;
 	check(zero.isexact(), "default construction is exact");
 	check(zero.iszero(), "default construction is zero");
-	check(zero.lb() == Posit(0) && zero.ub() == Posit(0), "zero bounds");
+	check(zero.lb() == Poxel(Posit(0)) && zero.ub() == Poxel(Posit(0)), "zero bounds");
 
 	const Valid one(Posit(1));
 	check(one.isexact(), "posit construction is exact");
-	check(one.lb() == Posit(1) && one.ub() == Posit(1), "point bounds");
+	check(one.lb() == Poxel(Posit(1)) && one.ub() == Poxel(Posit(1)), "point bounds");
 
 	const Valid inexact(0.1);
 	check(inexact.isinterval(), "inexact native construction creates an interval");
 	check(inexact.lower_open() && inexact.upper_open(), "rounded native bounds are open");
-	check(static_cast<long double>(inexact.lb()) < 0.1L, "native lower enclosure");
-	check(static_cast<long double>(inexact.ub()) > 0.1L, "native upper enclosure");
+	check(inexact.lower<long double>() < 0.1L, "native lower enclosure");
+	check(inexact.upper<long double>() > 0.1L, "native upper enclosure");
 
 	const Valid range(Posit(1), Posit(2), true, false);
-	check(range.lb() == Posit(1) && range.ub() == Posit(2), "explicit bounds");
+	check(range.lower<double>() == 1.0 && range.upper<double>() == 2.0, "explicit bounds");
 	check(range.lubit() && !range.uubit(), "explicit openness");
-	check((one + 2).isexact() && (2 + one).lb() == Posit(3), "native addition operators");
-	check((one * 3).isexact() && (3 * one).lb() == Posit(3), "native multiplication operators");
+	check((one + 2).isexact() && (2 + one).lb() == Poxel(Posit(3)), "native addition operators");
+	check((one * 3).isexact() && (3 * one).lb() == Poxel(Posit(3)), "native multiplication operators");
 
 	const Valid invalid(Posit(2), Posit(1));
 	check(invalid.isnar(), "reversed bounds form NaR");
@@ -52,7 +53,7 @@ int main() {
 	const Valid reversedMixedInvalid(1u, -1);
 	check(reversedMixedInvalid.isnar(), "reversed mixed-sign integral bounds form NaR");
 	const Valid nativeOverflow(1.0, 1.0e300);
-	check(nativeOverflow.isnar(), "native overflow forms NaR");
+	check(!nativeOverflow.isnar() && nativeOverflow.upper_open(), "native overflow has an unbounded upper poxel");
 
 	std::ostringstream text;
 	text << range;
