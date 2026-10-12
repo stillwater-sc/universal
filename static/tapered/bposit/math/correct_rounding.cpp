@@ -209,6 +209,15 @@ B reference(long double r, Range range, bool negative, const std::function<Oracl
 	return round_oracle<B>(high(), snap_ties);
 }
 
+// MSVC's tgamma returns +0 when the result of a negative argument underflows, losing the
+// sign the reference needs.  For a negative non-integer x, gamma(x) < 0 exactly when
+// floor(x) is odd.
+long double ld_tgamma(long double v) {
+	const long double r = std::tgamma(v);
+	if (r != 0.0l || !(v < 0.0l)) return r;
+	return (std::fmod(std::floor(v), 2.0l) != 0.0l) ? -0.0l : 0.0l;
+}
+
 template<typename B>
 bool long_double_exact() { return std::numeric_limits<long double>::digits >= static_cast<int>(B::fbits) + 1; }
 
@@ -275,7 +284,7 @@ std::vector<Unary<B>> functions() {
 		Unary<B>{ "erfc", [](const B& x) { return bm::erfc<engine::libm_then_qd>(x); }, [](const B& x) { return bm::erfc<engine::qd_only>(x); },
 		          [](long double v) { return std::erfc(v); }, oracle_erfc, Range::nonzero, false },
 		Unary<B>{ "tgamma", [](const B& x) { return bm::tgamma<engine::libm_then_qd>(x); }, [](const B& x) { return bm::tgamma<engine::qd_only>(x); },
-		          [](long double v) { return std::tgamma(v); }, oracle_tgamma, Range::nonzero, true, 0.0, true },
+		          ld_tgamma, oracle_tgamma, Range::nonzero, true, 0.0, true },
 		Unary<B>{ "lgamma", [](const B& x) { return bm::lgamma<engine::libm_then_qd>(x); }, [](const B& x) { return bm::lgamma<engine::qd_only>(x); },
 		          [](long double v) { return std::lgamma(v); }, oracle_lgamma, Range::finite, false, 1.0, true },
 		BPOSIT_CR_ENTRY(acosh, Range::any),  BPOSIT_CR_ENTRY(atanh, Range::any),
