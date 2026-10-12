@@ -1,5 +1,5 @@
 #pragma once
-// fdp.hpp: fused dot product for the bounded posit, through the generalized quire
+// fdp.hpp: fused dot product and fused multiply-add for the bounded posit, through the generalized quire
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -11,7 +11,8 @@
 // accumulator from (nbits, rs, es) so that every product of two bposits lands in it
 // exactly; quire_mul forms the unrounded product, and quire_resolve rounds the sum once,
 // through bposit's own encoder -- so a tiny or huge result saturates to +/-minpos or
-// +/-maxpos as the type does, rather than to zero.
+// +/-maxpos as the type does, rather than to zero.  fma(a, b, c) is the shortest such
+// sum: a*b and c accumulated exactly, rounded once.
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -54,6 +55,25 @@ bposit<nbits, rs, es, bt> quire_resolve(const quire<bposit<nbits, rs, es, bt>, c
 	const bool sticky = (below >= 0) && q.anyAfter(static_cast<unsigned>(below));
 	result.setbits(B::encode(q.sign(), s, frac, qf, sticky));
 	return result;
+}
+
+// fused multiply-add: a*b + c, rounded once
+// The quire holds a*b and c exactly (every product scale, and every value's last fraction
+// bit, lies inside it), so the only rounding is quire_resolve's.  This is the std::fma
+// contract; the ADL two-step `using std::fma; fma(a, b, c)` finds it.
+template<unsigned nbits, unsigned rs, unsigned es, typename bt>
+bposit<nbits, rs, es, bt> fma(const bposit<nbits, rs, es, bt>& a, const bposit<nbits, rs, es, bt>& b,
+                              const bposit<nbits, rs, es, bt>& c) {
+	using B = bposit<nbits, rs, es, bt>;
+	if (a.isnar() || b.isnar() || c.isnar()) { B nar; nar.setnar(); return nar; }
+	quire<B> q;
+	q += quire_mul(a, b);
+	if (!c.iszero()) {
+		blocktriple<B::fbits, BlockTripleOperator::REP, bt> addend;   // in bposit's own limbs
+		c.normalize(addend);
+		q += addend;
+	}
+	return quire_resolve(q);
 }
 
 // the accumulator width, sign excluded
