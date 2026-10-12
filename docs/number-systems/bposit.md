@@ -208,6 +208,10 @@ for (std::size_t i = 0; i < x.size(); ++i) q += quire_mul(x[i], y[i]);
 bposit32 s = quire_resolve(q);
 ```
 
+### Fused multiply-add
+
+`fma(a, b, c)` is the shortest quire sum: `a*b` and `c` accumulated exactly, rounded once. It follows the `std::fma` contract, so `has_fma_v<bposit<...>>` is true and the ADL two-step `using std::fma; fma(a, b, c)` in a generic kernel finds it. A NaR operand gives NaR; a result that cancels to exactly zero is zero; a nonzero result below minpos or above maxpos saturates like any other bposit result. `static/tapered/bposit/arithmetic/fma.cpp` checks it against the exact value over every `(a, b)` pair of the 6- and 8-bit configurations, including `c = -(a*b rounded)`, where the result is the product's rounding error and is often below minpos.
+
 ## Math library
 
 `bposit.hpp` includes `bposit/mathlib.hpp`, so `sin(x)`, `sqrt(x)` and the rest are found by ADL on any `bposit<nbits, rs, es, bt>`, and generic code (an FFT that builds its twiddles with `cos` and `sin` in `T`, a window function, an NCO) compiles for b-posits.
