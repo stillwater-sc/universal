@@ -60,7 +60,7 @@ endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
 	VERSION "${UNIVERSAL_VERSION_MAJOR}.${UNIVERSAL_VERSION_MINOR}.${UNIVERSAL_VERSION_PATCH}" 
-	LANGUAGES C CXX ASM
+	LANGUAGES C CXX
 	HOMEPAGE_URL "https://github.com/stillwater-sc/universal")
 
 # universal is a header-only library
