@@ -22,9 +22,17 @@ Create all required files, CMake wiring, and test structure for a new number typ
    - What category? (integer, fixed-point, float, tapered, logarithmic, block format)
    - What internal building blocks does it use? (blockbinary, blocksignificand, blocktriple, etc.)
 
-2. Read the matching skeleton template to use as the structural reference:
-   - 1-param: `include/sw/universal/number/skeleton_1param/`
-   - 2-param: `include/sw/universal/number/skeleton_2params/`
+2. Read a recent, fully layered type as the structural reference:
+   - `include/sw/universal/number/bfloat16/` -- the smallest complete example
+   - `include/sw/universal/number/bposit/` -- a tapered type with quire (`fdp.hpp`) and mathlib
+
+   Every number system uses the same header layering (#1334), and a new one must start with it:
+   - `core.hpp` -- `exceptions.hpp`, `T_fwd.hpp`, `T_impl.hpp`, the traits and `numeric_limits.hpp`. No `<iostream>`, `<sstream>`, `<iomanip>`, `<ostream>` or `<istream>` anywhere in its include graph; `to_string`/`parse` that back `assign(string)` may stay, but report errors with `fprintf(stderr, ...)`.
+   - `manipulators.hpp` -- the string producers: `to_binary`, `to_hex`, `color_print`, `components`, `parse` via streams.
+   - `iostream.hpp` -- `operator<<` and `operator>>`.
+   - `T.hpp` -- the umbrella: core, manipulators, iostream, attributes, then `fdp.hpp` and `mathlib.hpp` where they exist.
+   - The `T_THROW_ARITHMETIC_EXCEPTION` / `T_ENABLE_LITERALS` defaults live in `T_impl.hpp` after `#pragma once`, not in the umbrella, so `core.hpp` alone defines them (#1436).
+   - Check it: a translation unit that includes only `core.hpp` must compile, link and run, and `tools/scripts/measure-include-cost.sh` must report 0 I/O-family headers for it.
 
 3. Read an existing similar type for behavioral reference (e.g., posit for tapered, cfloat for float, fixpnt for fixed-point).
 

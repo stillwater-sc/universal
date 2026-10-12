@@ -50,7 +50,7 @@ int main() {
 }
 ```
 
-The library contains fast implementations of special IEEE-754 formats that do not have universal hardware implementations across x86, ARM, POWER, RISC-V, and GPUs. Special formats such as quarter precision, `quarter`, half-precision, `half`, and quad precision, `quad`, are provided, as well as vendor-specific extensions, such as NVIDIA `TensorFloat`, Google's Brain Float, `bfloat16`, or TI DSP fixed-points, `fixpnt`. In addition to these often-used specializations, *Universal* supports static and elastic integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and adaptive-precision integers, rationals, and floats. There are example number system skeletons to get you started quickly if you desire to add your own.
+The library contains fast implementations of special IEEE-754 formats that do not have universal hardware implementations across x86, ARM, POWER, RISC-V, and GPUs. Special formats such as quarter precision, `quarter`, half-precision, `half`, and quad precision, `quad`, are provided, as well as vendor-specific extensions, such as NVIDIA `TensorFloat`, Google's Brain Float, `bfloat16`, or TI DSP fixed-points, `fixpnt`. In addition to these often-used specializations, *Universal* supports static and elastic integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and adaptive-precision integers, rationals, and floats.
 
 ## Communication channels
 
@@ -474,7 +474,7 @@ The `docs` directory contains the descriptions of the [command line tools](docs/
 
 Each number system comes with a complete regression suite to verify the functionality of assignment, conversion, arithmetic, logic, exceptions, number traits, and special cases. These regression suites are run for each PR or push to the version branch. *Universal* uses standard GitHub Actions for this, so add your branch to the workflow cmake yaml to trigger CI for your own branch.
 
-The easiest way to get started is to pick up and copy the directory structure under `ROOT/include/universal/number/skeleton_1param` or `ROOT/include/universal/number/skeleton_2params`. They are configured to get you all the constituent pieces of a number system *Universal*-style.
+To add a number system of your own, model it on a recent, fully layered type such as `ROOT/include/sw/universal/number/bfloat16` or `ROOT/include/sw/universal/number/bposit`: an I/O-free `core.hpp`, `manipulators.hpp` and `iostream.hpp` for text, and the umbrella header that includes them all.
 
 # Installation and usage
 
