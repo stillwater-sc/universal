@@ -737,6 +737,14 @@ public:
 		}
 
 		if (iszero()) {
+			if (rhs.iszero()) {
+				// IEEE 754-2019 6.3: an exact zero sum of opposite-signed zeros is +0 under
+				// round to nearest; the sum of two same-signed zeros keeps that sign
+				bool negative = sign() && rhs.sign();
+				setzero();
+				setsign(negative);
+				return *this;
+			}
 			*this = rhs;
 			return *this;
 		}
