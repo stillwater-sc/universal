@@ -185,13 +185,14 @@ try {
 	std::ofstream f(path);
 	f << page.str();
 	f.close();
+	const bool page_written = f.good() && page.str().size() > 10000;
 
 	std::cout << "the uncertainty box of r1 for 3x^2 + 100x + 2 = 0, step by step\n\n";
 	for (const auto& t : traces) summary(t);
-	std::cout << "\nwrote " << path << '\n';
+	std::cout << (page_written ? "\nwrote " : "\nfailed to write ") << path << '\n';
 
 	std::cout << "\nassertions:\n";
-	check(f.good() && page.str().size() > 10000, "the HTML page was written");
+	check(page_written, "the HTML page was written");
 	std::size_t svgs = 0;
 	for (std::size_t p = page.str().find("<svg"); p != std::string::npos; p = page.str().find("<svg", p + 1)) ++svgs;
 	check(svgs == 4 * (1 + 10), "the page has a chart and ten step strips per trace");
