@@ -198,6 +198,10 @@ def co_addsub(x, y, subtract, exp=mp.exp, log=mp.log):
     """psi(phi(x) +- phi(y)) for x >= y >= 0 through the a/b/c sequences, never forming
     phi(x) or phi(y).  Returns (psi of the result, list of all a, b, c values seen).
     exp and log select the working precision: mpmath by default, math for double."""
+    if subtract and x == y:
+        # exact cancellation is decided before the sequences: at levels 6 and 7 the a_j
+        # underflow to 0 in double, and the stop test c_j < a_j would never fire
+        return 0 * x, []
     l = int(x)
     f = x - l
     m = int(y)
@@ -374,6 +378,8 @@ section('C13', 'near cancellation: c_0 = 1 - b_0 in double, and the expm1 form t
 def co_sub_stable(x, y):
     """double subtraction that carries d_j = 1 - b_j through expm1 when b_0 is near 1:
     the operands share a level (m = l), or y sits just below x's level (m = l - 1)"""
+    if x == y:
+        return 0.0
     l = int(x)
     f = x - l
     m = int(y)
@@ -411,6 +417,7 @@ for label, gen in (
         ('same level, x - y = 2^-12', lambda: (lambda x: (x, x - 2.0 ** -12))(rng.uniform(1.01, 4.99))),
         ('same level, x - y = 2^-28', lambda: (lambda x: (x, x - 2.0 ** -28))(rng.uniform(1.01, 4.99))),
         ('same level, x - y = 2^-40', lambda: (lambda x: (x, x - 2.0 ** -40))(rng.uniform(1.01, 4.99))),
+        ('across levels 0/1, 2^-28 each side', lambda: (1.0 + 2.0 ** -28, 1.0 - 2.0 ** -28)),
         ('across a level, 2^-28 each side',
          lambda: (lambda n: (n + 2.0 ** -28, n - 2.0 ** -28))(rng.choice((2, 3, 4))))):
     naive = stable = 0.0
@@ -423,6 +430,10 @@ for label, gen in (
         stable = max(stable, float(abs(mp.mpf(zs) - ref)) * 2 ** 28)
     print('  %-31s %10.3g %14.3g' % (label, naive, stable))
     check('expm1 form within 1e-3 ulp of fbits 28: ' + label, stable < 1e-3)
+for x in (2.5, 5.25, 6.5, 7.75):
+    check('x - x is exactly 0 in double at psi %s' % x,
+          co_addsub(x, x, True, math.exp, math.log)[0] == 0 and co_sub_stable(x, x) == 0)
+print('  x - x is exactly 0 at every level (levels 6 and 7 included)')
 print('  -> one ulp apart (second row), the naive form is already several ulps off; the expm1')
 print('     form stays near 2^-47 whatever the separation')
 

@@ -314,7 +314,13 @@ rounding:
   `d = -expm1((g - 1) - expm1(f))`.
 
 With this form, the error stays near 2^-47 whatever the separation [C13]. This is the
-form #1693 and #1695 implement.
+form #1693 and #1695 implement. The level-1 minus level-0 case needs no special form:
+its result lands in level 0, where error is absolute, and C13 measures it at 6e-9 ulp.
+
+**`x - x` must be decided before the sequences.** It is exactly 0. But at levels 6 and
+7, every a_j underflows to 0 in double, so the stop test `c_j < a_j` never fires, and
+the sequences return x itself instead of 0. The kernel tests for equal operands first
+[C13].
 
 ### Multiplication and division one level down
 
