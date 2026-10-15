@@ -2,7 +2,7 @@
 
 #include <sstream>
 #include <string>
-#include <universal/number/posit/manipulators.hpp>
+#include <universal/number/poxel/manipulators.hpp>
 #include <universal/number/valid/core.hpp>
 
 namespace sw {
