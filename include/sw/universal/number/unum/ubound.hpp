@@ -27,51 +27,10 @@
 #include <cmath>
 #include <limits>
 
+#include <universal/number/unum/lattice.hpp>
 #include <universal/number/unum/unum_impl.hpp>
 
 namespace sw { namespace universal {
-
-// the lattice of exact values of unum<esizesize, fsizesize>, as doubles
-template<unsigned esizesize, unsigned fsizesize>
-struct unum_lattice {
-	static constexpr int maxfs = (1 << fsizesize) - 1;           // fraction bits at the finest fsize
-	static constexpr int esmax = (1 << esizesize) - 1;           // largest esize field value
-	static constexpr int emax  = 1 << esmax;                     // largest binade
-	static constexpr int emin  = 2 - (1 << esmax);               // smallest normal binade
-	// every lattice point is a double, and sums and products of two stay finite and normal
-	static constexpr bool fits_double = (maxfs <= 52) && (emax <= 256) && (emin - maxfs >= -512);
-
-	static double maxpos() noexcept { return std::ldexp(2.0 - std::ldexp(1.0, -maxfs), emax); }
-
-	// the spacing of the lattice at a >= 0 (the spacing just above a at a binade boundary)
-	static double spacing(double a) noexcept {
-		const int e = (a == 0.0) ? emin : std::max(std::ilogb(a), emin);
-		return std::ldexp(1.0, e - maxfs);
-	}
-	// the largest lattice point <= a, and the smallest >= a; a is finite and |a| <= maxpos
-	static double floor(double a) noexcept {
-		if (a < 0.0) return -ceil(-a);
-		const double g = spacing(a);
-		return std::floor(a / g) * g;
-	}
-	static double ceil(double a) noexcept {
-		if (a < 0.0) return -floor(-a);
-		const double g = spacing(a);
-		return std::ceil(a / g) * g;
-	}
-	// the neighbours of a lattice point v
-	static double next(double v) noexcept {
-		if (v < 0.0) return -prev(-v);
-		return v + spacing(v);
-	}
-	static double prev(double v) noexcept {
-		if (v <= 0.0) return -next(-v);
-		// at the bottom of a binade above emin the spacing below is half the spacing above
-		const int e = std::ilogb(v);
-		const bool binade_bottom = (e > emin) && (std::ldexp(1.0, e) == v);
-		return v - (binade_bottom ? std::ldexp(1.0, e - 1 - maxfs) : spacing(v));
-	}
-};
 
 // next_exact / prev_exact: the neighbouring exact unum values on the lattice.  They
 // saturate at +-maxpos, which has no exact neighbour beyond it.
@@ -97,56 +56,12 @@ unum<esizesize, fsizesize, bt> prev_exact(const unum<esizesize, fsizesize, bt>& 
 
 namespace ubound_detail {
 
-// a double result d and the sign of the exact value's offset from it: T = d + delta, with
-// sign(delta) = dir.  Each comes from an error-free transform, so dir is exact.
-struct directed { double d; int dir; };
-
-inline int sgn(double x) noexcept { return (x > 0.0) - (x < 0.0); }
-
-// Knuth TwoSum: a + b = s + e exactly
-inline directed add(double a, double b) noexcept {
-	const double s = a + b;
-	const double bb = s - a;
-	const double e = (a - (s - bb)) + (b - bb);
-	return { s, sgn(e) };
-}
-
-// Veltkamp split and Dekker TwoProduct: a * b = p + e exactly (no fma needed)
-inline void split(double a, double& hi, double& lo) noexcept {
-	const double c = 134217729.0 * a;   // 2^27 + 1
-	hi = c - (c - a);
-	lo = a - hi;
-}
-inline void two_prod(double a, double b, double& p, double& e) noexcept {
-	p = a * b;
-	double ah, al, bh, bl;
-	split(a, ah, al);
-	split(b, bh, bl);
-	e = ((ah * bh - p) + ah * bl + al * bh) + al * bl;
-}
-inline directed mul(double a, double b) noexcept {
-	double p, e;
-	two_prod(a, b, p, e);
-	return { p, sgn(e) };
-}
-
-// a / b: the residual a - q b has the sign of (T - q) * b, and a - p is exact (Sterbenz)
-inline directed div(double a, double b) noexcept {
-	const double q = a / b;
-	double p, e;
-	two_prod(q, b, p, e);
-	const double r = (a - p) - e;
-	return { q, sgn(r) * sgn(b) };
-}
-
-// sqrt(x): the residual x - s^2 has the sign of T - s
-inline directed sqrt(double x) noexcept {
-	const double s = std::sqrt(x);
-	double p, e;
-	two_prod(s, s, p, e);
-	const double r = (x - p) - e;
-	return { s, sgn(r) };
-}
+// the directed results come from unum_eft (lattice.hpp), shared with the scalar unum
+using unum_eft::directed;
+using unum_eft::add;
+using unum_eft::mul;
+using unum_eft::div;
+using unum_eft::sqrt;
 
 // an end of an interval: a lattice point v, excluded when open, or an infinity (inf = -1, +1)
 struct end { double v; int inf; bool open; };

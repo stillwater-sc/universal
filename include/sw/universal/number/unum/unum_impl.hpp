@@ -27,6 +27,17 @@
 //   ubit = 1: open interval (value, next_unum(value))
 //   NaN encoding: all bits set to 1 (quiet NaN)
 //
+// A scalar unum names one tile of the lattice of exact values (lattice.hpp): a lattice
+// point, or the open tile between two neighbours.  Assignment and + - * / give the tile
+// that holds the exact result: each end of the result is computed in double, an error-free
+// transform gives the sign of its rounding error, and the two ends are mapped to the tiles
+// just inside them.  When both ends land in one tile that tile is the result; when they do
+// not -- an inexact operand whose result spans several tiles -- the result is NaN, and a
+// ubound is the type that holds such an interval (#1701).  Beyond maxpos the tile is
+// (maxpos, inf); its negative mirror shares the NaN encoding, so a result below -maxpos is
+// NaN.  This holds for configurations whose lattice fits in double (esizesize <= 3 and
+// fsizesize <= 5); wider ones convert through double and truncate.
+//
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
@@ -61,6 +72,7 @@
 #include <universal/native/extract_fields.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <math/constexpr_math/exp2.hpp>
+#include <universal/number/unum/lattice.hpp>   // the exact-value lattice and directed results
 
 namespace sw { namespace universal {
 
@@ -144,6 +156,11 @@ public:
 	// storage type
 	using StorageType = blockbinary<maxbits, bt>;
 
+	// the lattice of exact values, and the tiles and interval ends built on it
+	using Lattice = unum_lattice<esizesize, fsizesize>;
+	using Tiles   = unum_tiles<esizesize, fsizesize>;
+	using bound   = typename Tiles::bound;
+
 	constexpr unum() noexcept : _bits{} {}
 
 	constexpr unum(const unum&) = default;
@@ -169,8 +186,28 @@ public:
 	CONSTEXPRESSION unum& operator=(signed char rhs)        { return *this = static_cast<long long>(rhs); }
 	CONSTEXPRESSION unum& operator=(short rhs)              { return *this = static_cast<long long>(rhs); }
 	CONSTEXPRESSION unum& operator=(int rhs)                { return *this = static_cast<long long>(rhs); }
-	CONSTEXPRESSION unum& operator=(long long rhs)          { return *this = static_cast<double>(rhs); }
-	CONSTEXPRESSION unum& operator=(unsigned long long rhs) { return *this = static_cast<double>(rhs); }
+	// a 64-bit integer may not be a double: the comparison with the double it rounds to gives
+	// the direction of that rounding, exactly
+	CONSTEXPRESSION unum& operator=(long long rhs) {
+		const double d = static_cast<double>(rhs);
+		if constexpr (Lattice::fits_double) {
+			int dir = -1;                                        // rhs < 2^63 when d rounds up to it
+			if (d < 9223372036854775808.0) { const long long back = static_cast<long long>(d); dir = (rhs > back) - (rhs < back); }
+			assign_directed(d, dir);
+			return *this;
+		}
+		return *this = d;
+	}
+	CONSTEXPRESSION unum& operator=(unsigned long long rhs) {
+		const double d = static_cast<double>(rhs);
+		if constexpr (Lattice::fits_double) {
+			int dir = -1;                                        // rhs < 2^64 when d rounds up to it
+			if (d < 18446744073709551616.0) { const unsigned long long back = static_cast<unsigned long long>(d); dir = (rhs > back) - (rhs < back); }
+			assign_directed(d, dir);
+			return *this;
+		}
+		return *this = d;
+	}
 	CONSTEXPRESSION unum& operator=(float rhs)              { return *this = static_cast<double>(rhs); }
 	CONSTEXPRESSION unum& operator=(double rhs) {
 		_bits.clear();
@@ -181,6 +218,11 @@ public:
 		if (rhs == std::numeric_limits<double>::infinity() ||
 		    rhs == -std::numeric_limits<double>::infinity()) {
 			setnan(); return *this;
+		}
+		// a double is exact: its tile is the lattice point, or the open tile around it
+		if constexpr (Lattice::fits_double) {
+			assign_directed(rhs, 0);
+			return *this;
 		}
 
 		// std::signbit / std::abs replaced with sign-flip (loses signed zero
@@ -296,45 +338,24 @@ public:
 			}
 		}
 
-		// pack the fields into storage (LSB to MSB):
-		// [ubit(1)] [fsize_field(fsizesize)] [esize_field(esizesize)]
-		// [fraction(best_fs)] [exponent(best_es+1)] [sign(1)]
-		unsigned pos = 0;
-
-		// ubit
-		_bits.setbit(pos, !is_exact);
-		++pos;
-
-		// fsize field (fsizesize bits, LSB first)
-		for (unsigned i = 0; i < fsizesize; ++i) {
-			_bits.setbit(pos + i, (best_fs >> i) & 1u);
-		}
-		pos += fsizesize;
-
-		// esize field (esizesize bits, LSB first)
-		for (unsigned i = 0; i < esizesize; ++i) {
-			_bits.setbit(pos + i, (best_es >> i) & 1u);
-		}
-		pos += esizesize;
-
-		// fraction (best_fs bits, LSB first)
-		for (unsigned i = 0; i < best_fs; ++i) {
-			_bits.setbit(pos + i, (best_frac >> i) & 1u);
-		}
-		pos += best_fs;
-
-		// exponent (best_es+1 bits, LSB first)
-		for (unsigned i = 0; i < best_es + 1u; ++i) {
-			_bits.setbit(pos + i, (static_cast<unsigned>(biased_exp) >> i) & 1u);
-		}
-		pos += best_es + 1u;
-
-		// sign
-		_bits.setbit(pos, s);
-
+		pack(best_es, best_fs, static_cast<std::uint64_t>(biased_exp), best_frac, s, !is_exact);
 		return *this;
 	}
-	CONSTEXPRESSION unum& operator=(long double rhs)        { return *this = static_cast<double>(rhs); }
+	// a long double may be wider than double: compare it with the double it rounds to
+	CONSTEXPRESSION unum& operator=(long double rhs) {
+		if constexpr (Lattice::fits_double) {
+			if (rhs != rhs) { setnan(); return *this; }
+			constexpr long double big = static_cast<long double>(std::numeric_limits<double>::max());
+			if (rhs == std::numeric_limits<long double>::infinity() || rhs == -std::numeric_limits<long double>::infinity()) { setnan(); return *this; }
+			if (rhs > big)  { assign_directed(std::numeric_limits<double>::max(), +1); return *this; }
+			if (rhs < -big) { assign_directed(-std::numeric_limits<double>::max(), -1); return *this; }
+			const double d = static_cast<double>(rhs);
+			const long double back = static_cast<long double>(d);
+			assign_directed(d, (rhs > back) - (rhs < back));
+			return *this;
+		}
+		return *this = static_cast<double>(rhs);
+	}
 
 	// arithmetic operators
 	// Negation is pure bit math (flip the variable-position sign bit),
@@ -349,18 +370,28 @@ public:
 	}
 	// Compound arithmetic: CONSTEXPRESSION because the round-trip via
 	// to_double() + double op + operator=(double) is now constexpr-clean.
+	// The tile that holds every x op y for x and y in the operand tiles, or NaN when no
+	// single tile does (see the header comment).
 	CONSTEXPRESSION unum& operator+=(const unum& rhs) {
 		if (isnan() || rhs.isnan()) { setnan(); return *this; }
+		if constexpr (Lattice::fits_double) { *this = enclosed_sum(*this, rhs, false); return *this; }
 		*this = to_double() + rhs.to_double();
 		return *this;
 	}
 	CONSTEXPRESSION unum& operator-=(const unum& rhs) {
 		if (isnan() || rhs.isnan()) { setnan(); return *this; }
+		if constexpr (Lattice::fits_double) { *this = enclosed_sum(*this, rhs, true); return *this; }
 		*this = to_double() - rhs.to_double();
 		return *this;
 	}
 	CONSTEXPRESSION unum& operator*=(const unum& rhs) {
 		if (isnan() || rhs.isnan()) { setnan(); return *this; }
+		if constexpr (Lattice::fits_double) {
+			// an exact zero times any tile, (maxpos, inf) included, is exactly zero
+			if (is_exact_zero() || rhs.is_exact_zero()) { setzero(); return *this; }
+			*this = enclosed_product(*this, rhs, false);
+			return *this;
+		}
 		*this = to_double() * rhs.to_double();
 		return *this;
 	}
@@ -377,6 +408,11 @@ public:
 			setnan();
 			return *this;
 #endif
+		}
+		if constexpr (Lattice::fits_double) {
+			if (is_exact_zero()) { setzero(); return *this; }
+			*this = enclosed_product(*this, rhs, true);
+			return *this;
 		}
 		*this = to_double() / rhs.to_double();
 		return *this;
@@ -533,8 +569,126 @@ public:
 	explicit constexpr operator float() const noexcept { return to_float(); }
 	explicit constexpr operator long double() const noexcept { return to_long_double(); }
 
+	// The tile of this unum as an interval, by its two ends: [v, v] when exact, the open
+	// tile beside v away from zero when inexact, with an infinite upper end above maxpos.
+	// Requires a lattice that fits in double, and a unum that is not NaN.
+	CONSTEXPRESSION void tile_bounds(bound& lo, bound& hi) const noexcept {
+		const double v = to_double();
+		if (!ubit()) { lo = hi = bound{ v, 0, false, 0 }; return; }
+		if (sign()) {
+			hi = bound{ v, 0, true, 0 };
+			lo = (v <= -Lattice::maxpos()) ? bound{ 0.0, 0, true, -1 } : bound{ Lattice::prev(v), 0, true, 0 };
+			return;
+		}
+		lo = bound{ v, 0, true, 0 };
+		hi = (v >= Lattice::maxpos()) ? bound{ 0.0, 0, true, +1 } : bound{ Lattice::next(v), 0, true, 0 };
+	}
+	// the tile that lies just inside both ends of an interval, or NaN when the interval
+	// spans more than one tile
+	static CONSTEXPRESSION unum enclose(const bound& lo, const bound& hi) noexcept {
+		unum r;
+		typename Tiles::tile a{ 0.0, false, false }, b{ 0.0, false, false };
+		if (Tiles::lower_tile(lo, a) && Tiles::upper_tile(hi, b) && a == b) r.assign_tile(a);
+		else r.setnan();
+		return r;
+	}
+
 private:
 	StorageType _bits;
+
+	constexpr bool is_exact_zero() const noexcept { return !ubit() && to_double() == 0.0; }
+
+	// pack the fields into storage (LSB to MSB):
+	// [ubit(1)] [fsize_field(fsizesize)] [esize_field(esizesize)]
+	// [fraction(fs)] [exponent(es+1)] [sign(1)]
+	constexpr void pack(unsigned es, unsigned fs, std::uint64_t biased_exp, std::uint64_t frac, bool s, bool ubit) noexcept {
+		unsigned pos = 0;
+		_bits.setbit(pos, ubit);
+		++pos;
+		for (unsigned i = 0; i < fsizesize; ++i) _bits.setbit(pos + i, (fs >> i) & 1u);
+		pos += fsizesize;
+		for (unsigned i = 0; i < esizesize; ++i) _bits.setbit(pos + i, (es >> i) & 1u);
+		pos += esizesize;
+		for (unsigned i = 0; i < fs; ++i) _bits.setbit(pos + i, (frac >> i) & 1u);
+		pos += fs;
+		for (unsigned i = 0; i < es + 1u; ++i) _bits.setbit(pos + i, (biased_exp >> i) & 1u);
+		pos += es + 1u;
+		_bits.setbit(pos, s);
+	}
+
+	// encode a tile: an exact lattice point in its shortest form (the smallest esize whose
+	// normal range holds it, the fewest fraction bits), an open tile at the finest fsize,
+	// where its width is the lattice spacing
+	CONSTEXPRESSION void assign_tile(const typename Tiles::tile& tl) noexcept {
+		_bits.clear();
+		const double m = tl.t < 0.0 ? -tl.t : tl.t;
+		if (m == 0.0 && !tl.ubit) return;                        // exact zero: all bits clear
+		unsigned es = static_cast<unsigned>(Lattice::esmax), fs = static_cast<unsigned>(Lattice::maxfs);
+		std::uint64_t biased = 0, frac = 0;
+		if (m == 0.0 || Lattice::ilogb(m) < Lattice::emin) {
+			// subnormal, at the largest esize: 0.frac * 2^emin
+			frac = static_cast<std::uint64_t>(m / Lattice::pow2(Lattice::emin - Lattice::maxfs));
+			if (!tl.ubit) { while ((frac & 1u) == 0) { frac >>= 1; --fs; } }
+		}
+		else {
+			const int e = Lattice::ilogb(m);
+			for (unsigned k = 0; k <= static_cast<unsigned>(Lattice::esmax); ++k) {
+				const int bias = (1 << k) - 1;
+				if (e + bias >= 1 && e + bias <= (1 << (k + 1)) - 1) { es = k; break; }
+			}
+			biased = static_cast<std::uint64_t>(e + (1 << es) - 1);
+			frac = static_cast<std::uint64_t>((m / Lattice::pow2(e) - 1.0) * Lattice::pow2(Lattice::maxfs));
+			if (!tl.ubit) { while (fs > 0 && (frac & 1u) == 0) { frac >>= 1; --fs; } }
+		}
+		pack(es, fs, biased, frac, tl.neg, tl.ubit);
+	}
+	// the tile that holds the exact value d + delta, sign(delta) = dir
+	CONSTEXPRESSION void assign_directed(double d, int dir) noexcept { assign_tile(Tiles::tile_of(d, dir)); }
+
+	static constexpr bound negate(const bound& b) noexcept { return bound{ -b.d, -b.dir, b.open, -b.inf }; }
+
+	// x + y, or x - y as x + (-y): the lower ends add, and so do the upper ends; a sum is open
+	// when either end is.  Only one end of a sum can be infinite.
+	static CONSTEXPRESSION unum enclosed_sum(const unum& x, const unum& y, bool subtract) noexcept {
+		bound xl{}, xh{}, yl{}, yh{};
+		x.tile_bounds(xl, xh);
+		y.tile_bounds(yl, yh);
+		if (subtract) { const bound t = yl; yl = negate(yh); yh = negate(t); }
+		auto sum = [](const bound& a, const bound& b) {
+			if (a.inf != 0 || b.inf != 0) return bound{ 0.0, 0, true, a.inf != 0 ? a.inf : b.inf };
+			const unum_eft::directed r = unum_eft::add(a.d, b.d);
+			return bound{ r.d, r.dir, a.open || b.open, 0 };
+		};
+		return enclose(sum(xl, yl), sum(xh, yh));
+	}
+
+	// x * y and x / y for operands that are not an exact zero.  Then neither tile reaches
+	// across zero: the result has the sign of the product of the signs, and its magnitude
+	// lies between the products (quotients) of the operands' magnitude ends.  A magnitude
+	// end of 0 is open (the tile beside zero), so 0 * inf and 0 / 0 cannot occur.
+	static CONSTEXPRESSION unum enclosed_product(const unum& x, const unum& y, bool divide) noexcept {
+		bound xl{}, xh{}, yl{}, yh{};
+		x.tile_bounds(xl, xh);
+		y.tile_bounds(yl, yh);
+		const bound xm = x.sign() ? negate(xh) : xl, xM = x.sign() ? negate(xl) : xh;
+		const bound ym = y.sign() ? negate(yh) : yl, yM = y.sign() ? negate(yl) : yh;
+		const bound unbounded{ 0.0, 0, true, +1 };
+		auto scaled = [divide](const bound& a, const bound& b) {
+			const unum_eft::directed r = divide ? unum_eft::div(a.d, b.d) : unum_eft::mul(a.d, b.d);
+			return bound{ r.d, r.dir, a.open || b.open, 0 };
+		};
+		bound lo{}, hi{};
+		if (!divide) {
+			lo = scaled(xm, ym);
+			hi = (xM.inf != 0 || yM.inf != 0) ? unbounded : scaled(xM, yM);
+		}
+		else {
+			lo = (yM.inf != 0) ? bound{ 0.0, 0, true, 0 } : scaled(xm, yM);      // finite / inf -> 0, not attained
+			hi = (xM.inf != 0 || ym.d == 0.0) ? unbounded : scaled(xM, ym);       // over an open zero -> inf
+		}
+		if (x.sign() != y.sign()) { const bound t = lo; lo = negate(hi); hi = negate(t); }
+		return enclose(lo, hi);
+	}
 
 	// friend declarations
 	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
