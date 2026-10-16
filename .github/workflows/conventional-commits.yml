@@ -62,6 +62,8 @@ jobs:
             poxel
             takum
             takum_log
+            lindex
+            slindex
             bisection
             quire
             valid
