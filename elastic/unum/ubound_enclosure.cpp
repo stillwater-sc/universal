@@ -606,7 +606,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLatticeModel<2, 3>(reportTestCases), "unum<2,3>", "lattice model");
 	nrOfFailedTestCases += ReportTestResult(VerifyLatticeModel<3, 2>(reportTestCases), "unum<3,2>", "lattice model");
 	nrOfFailedTestCases += ReportTestResult(VerifyUnumTiles<2, 2>(reportTestCases), "ubound<2,2>", "inexact unum tiles");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnumTiles<3, 4>(reportTestCases), "ubound<3,4>", "inexact unum tiles");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnumTiles<2, 3>(reportTestCases), "ubound<2,3>", "inexact unum tiles");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<2, 2>(reportTestCases), "ubound<2,2>", "exhaustive + - * / sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyUnbounded(reportTestCases), "ubound<2,2>", "unbounded and overflow");
 	nrOfFailedTestCases += ReportTestResult(VerifyIssueCases(reportTestCases), "ubound<3,4>", "issue cases");
@@ -615,6 +615,9 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
+	// every one of unum<3,4>'s 8.3M lattice points: 73s of an instrumented Debug build, so
+	// not at the sanity level, which <2,2> and <2,3> cover
+	nrOfFailedTestCases += ReportTestResult(VerifyUnumTiles<3, 4>(reportTestCases), "ubound<3,4>", "inexact unum tiles");
 	nrOfFailedTestCases += ReportTestResult(VerifyRandom<2, 3>(20000, reportTestCases), "ubound<2,3>", "random + - * / sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyPointOps<3, 5>(20000, reportTestCases), "ubound<3,5>", "point ops, exact oracle");
 #endif

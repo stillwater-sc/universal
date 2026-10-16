@@ -36,6 +36,7 @@ on:
 
 permissions:
   contents: read
+  actions: write   # each job deletes its own superseded ccache generation before saving
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -106,8 +107,21 @@ jobs:
           ${{ matrix.cc && format('-DCMAKE_C_COMPILER={0}', matrix.cc) || '' }}
           ${{ matrix.cxx && format('-DCMAKE_CXX_COMPILER={0}', matrix.cxx) || '' }}
 
+      # One compile per vCPU: the hosted runners have 4 (3 on arm64 macOS, set in the
+      # matrix). --parallel 2 dated from the 2-vCPU runners and halved every cold build.
       - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel 2
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel ${{ matrix.build_jobs || 4 }}
+
+      # Keep one ccache generation per artifact. ccache-action saves a NEW timestamped key
+      # in its post step, and until the Prune workflow runs the old and new generations of
+      # every artifact coexist. That doubling took the cache past its budget mid-run, so
+      # the jobs that finish late -- the slow ones -- failed to save and stayed cold.
+      # Deleting the generation this job restored lets the save replace it instead.
+      - name: Drop the superseded ccache generation
+        if: github.ref == 'refs/heads/main' && runner.os != 'Windows'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/scripts/ci-drop-ccache-generation.sh ${{ matrix.artifact }}
 
       - name: Test
         working-directory: ${{github.workspace}}/build
@@ -155,11 +169,14 @@ jobs:
           # Full CI build on Linux (primary platforms)
           - os: ubuntu-latest
             name: Linux x64 (GCC)
-            artifact: linux-x64-gcc
+            # -full, not bare: ccache-action restores by key PREFIX and takes the newest
+            # match, so "linux-x64-gcc" also matched linux-x64-gcc-fast and the full job
+            # restored the fast tier's cache (474 of its 912 objects, ~25-50% hits)
+            artifact: linux-x64-gcc-full
             cmake_flags: -DUNIVERSAL_BUILD_CI=ON
           - os: ubuntu-latest
             name: Linux x64 (Clang)
-            artifact: linux-x64-clang
+            artifact: linux-x64-clang-full
             compiler: clang
             cc: clang
             cxx: clang++
@@ -173,6 +190,7 @@ jobs:
           - os: macos-latest
             name: macOS ARM64 (Apple Clang)
             artifact: macos-arm64
+            build_jobs: 3
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
           - os: macos-15-intel
             name: macOS x64 (Apple Clang)
@@ -325,8 +343,21 @@ jobs:
           ${{ matrix.cc && format('-DCMAKE_C_COMPILER={0}', matrix.cc) || '' }}
           ${{ matrix.cxx && format('-DCMAKE_CXX_COMPILER={0}', matrix.cxx) || '' }}
 
+      # One compile per vCPU: the hosted runners have 4 (3 on arm64 macOS, set in the
+      # matrix). --parallel 2 dated from the 2-vCPU runners and halved every cold build.
       - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel 2
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel ${{ matrix.build_jobs || 4 }}
+
+      # Keep one ccache generation per artifact. ccache-action saves a NEW timestamped key
+      # in its post step, and until the Prune workflow runs the old and new generations of
+      # every artifact coexist. That doubling took the cache past its budget mid-run, so
+      # the jobs that finish late -- the slow ones -- failed to save and stayed cold.
+      # Deleting the generation this job restored lets the save replace it instead.
+      - name: Drop the superseded ccache generation
+        if: github.ref == 'refs/heads/main' && runner.os != 'Windows'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/scripts/ci-drop-ccache-generation.sh ${{ matrix.artifact }}
 
       - name: Test
         if: matrix.cross != 'android'

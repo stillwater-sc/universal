@@ -738,9 +738,10 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-# propagate the git information to any executables that might want to use it
-add_definitions("-DGIT_COMMIT_HASH=${GIT_COMMIT_HASH}")
-add_definitions("-DGIT_BRANCH=${GIT_BRANCH}")
+# The git information goes into the version string, not onto the compile line. As
+# -DGIT_COMMIT_HASH / -DGIT_BRANCH on every translation unit it changed every compiler
+# command on every commit, which no source read, and which cost ccache its direct-mode
+# hits on every CI run.
 
 set(PROJECT_VERSION "${PROJECT_VERSION}.${GIT_COMMIT_HASH}")
 
