@@ -255,11 +255,21 @@ int VerifyNativeRoundOut(const std::string& tag) {
 	check("max*2 - max", accumulator_value(sum({ {mx, Real(2)}, {-mx, one} }), to_real), mx);
 	check("max*2", accumulator_value(sum({ {mx, Real(2)} }), to_real), std::numeric_limits<Real>::infinity());
 
-	// a NaN or infinite operand makes the quire NaR
-	Quire n = sum({ {one, one}, {std::numeric_limits<Real>::infinity(), one} });
-	if (!std::isnan(accumulator_value(n, to_real))) {
-		std::cerr << "FAIL: " << tag << " infinite operand does not give NaN\n";
-		++nrOfFailedTestCases;
+	// a NaN or infinite operand makes the quire NaR, also when the other
+	// operand is zero (0 * inf is NaN in IEEE-754)
+	const Real inf = std::numeric_limits<Real>::infinity();
+	const Real nan = std::numeric_limits<Real>::quiet_NaN();
+	const std::pair<const char*, Quire> nar_cases[] = {
+		{ "1*1 + inf*1", sum({ {one, one}, {inf, one} }) },
+		{ "1*1 + 0*inf", sum({ {one, one}, {Real(0), inf} }) },
+		{ "1*1 + -inf*0", sum({ {one, one}, {-inf, Real(0)} }) },
+		{ "1*1 + 0*NaN", sum({ {one, one}, {Real(0), nan} }) },
+	};
+	for (const auto& [what, q] : nar_cases) {
+		if (!std::isnan(accumulator_value(q, to_real))) {
+			std::cerr << "FAIL: " << tag << ' ' << what << " does not give NaN\n";
+			++nrOfFailedTestCases;
+		}
 	}
 
 	// merge: the cancelling sum split over two partials

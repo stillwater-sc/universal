@@ -39,11 +39,13 @@ quire_mul(float lhs, float rhs) {
 	constexpr unsigned fbits = 23;
 	blocktriple<fbits, BlockTripleOperator::MUL, uint32_t> a, b, product;
 
-	if (lhs == 0.0f || rhs == 0.0f) return product;
+	// non-finite first: 0 * inf is NaN in IEEE-754, so a zero operand must not
+	// hide an infinite or NaN one
 	if (std::isnan(lhs) || std::isnan(rhs) || std::isinf(lhs) || std::isinf(rhs)) {
 		product.setnan();
 		return product;
 	}
+	if (lhs == 0.0f || rhs == 0.0f) return product;
 
 	// Decompose lhs
 	{
@@ -82,11 +84,13 @@ quire_mul(double lhs, double rhs) {
 	constexpr unsigned fbits = 52;
 	blocktriple<fbits, BlockTripleOperator::MUL, uint32_t> a, b, product;
 
-	if (lhs == 0.0 || rhs == 0.0) return product;
+	// non-finite first: 0 * inf is NaN in IEEE-754, so a zero operand must not
+	// hide an infinite or NaN one
 	if (std::isnan(lhs) || std::isnan(rhs) || std::isinf(lhs) || std::isinf(rhs)) {
 		product.setnan();
 		return product;
 	}
+	if (lhs == 0.0 || rhs == 0.0) return product;
 
 	// Decompose lhs
 	{
