@@ -156,18 +156,21 @@ int CheckBinary(const ubound<ess, fss>& x, const ubound<ess, fss>& y, Op o, bool
 		if (reportTestCases) std::cerr << "FAIL: " << x << " / " << y << " should be NaN, got " << r << '\n';
 		return 1;
 	}
-	struct C { double v; bool open; };
-	const C xs[2] = { { x.template lower<double>(), x.lower_open() }, { x.template upper<double>(), x.upper_open() } };
-	const C ys[2] = { { y.template lower<double>(), y.lower_open() }, { y.template upper<double>(), y.upper_open() } };
+	// an end and the side the set lies on from it (+1 above a lower end, -1 below an upper end)
+	struct C { double v; bool open; int side; };
+	const C xs[2] = { { x.template lower<double>(), x.lower_open(), +1 }, { x.template upper<double>(), x.upper_open(), -1 } };
+	const C ys[2] = { { y.template lower<double>(), y.lower_open(), +1 }, { y.template upper<double>(), y.upper_open(), -1 } };
 	bool first = true;
 	Q lo{ 0, 1 }, hi{ 0, 1 };
 	bool lo_att = false, hi_att = false;
+	bool lo_inf = false, hi_inf = false;   // the set reaches -inf / +inf
 	auto take = [&](const Q& t, bool att) {
 		if (first) { lo = hi = t; lo_att = hi_att = att; first = false; return; }
 		const int cl = cmp(t, lo), ch = cmp(t, hi);
 		if (cl < 0) { lo = t; lo_att = att; } else if (cl == 0) lo_att = lo_att || att;
 		if (ch > 0) { hi = t; hi_att = att; } else if (ch == 0) hi_att = hi_att || att;
 	};
+	auto take_inf = [&](int sign) { if (sign < 0) lo_inf = true; else hi_inf = true; };
 	if (o == Op::add || o == Op::sub) {
 		// add and sub are monotone in each operand: the infimum pairs the low ends
 		const C& yl = (o == Op::add) ? ys[0] : ys[1];
@@ -179,10 +182,21 @@ int CheckBinary(const ubound<ess, fss>& x, const ubound<ess, fss>& y, Op o, bool
 	else {
 		for (const C& a : xs) for (const C& b : ys) {
 			const bool att = (!a.open || (b.v == 0.0 && !b.open)) && (!b.open || (a.v == 0.0 && !a.open));
+			if (o == Op::div && b.v == 0.0) {
+				// b is an open zero: near it the divisor has the sign of its side.  a / b then
+				// grows without bound with sign sgn(a) * side; a closed zero numerator stays 0;
+				// an open zero numerator gives every magnitude, from 0 (not attained) to inf.
+				const int sa = (a.v > 0) - (a.v < 0);
+				if (sa != 0) take_inf(sa * b.side);
+				else if (!a.open) take({ 0, 1 }, true);
+				else { take({ 0, 1 }, false); take_inf(a.side * b.side); }
+				continue;
+			}
 			take(o == Op::mul ? Q{ a.v * b.v, 1 } : make_div(a.v, b.v), att);
 		}
 	}
-	const End el = lower_end<L>(lo, lo_att), eh = upper_end<L>(hi, hi_att);
+	const End el = lo_inf ? End{ 0, true, -1 } : lower_end<L>(lo, lo_att);
+	const End eh = hi_inf ? End{ 0, true, +1 } : upper_end<L>(hi, hi_att);
 	const bool ok = !r.isnan()
 		&& same(el, r.template lower<double>(), r.lower_open(), r.lower_unbounded(), -1)
 		&& same(eh, r.template upper<double>(), r.upper_open(), r.upper_unbounded(), +1);
@@ -225,12 +239,6 @@ int CheckSqrt(const ubound<ess, fss>& x, bool reportTestCases) {
 	return ok ? 0 : 1;
 }
 
-// a divisor with an open end at zero gives an unbounded enclosure, checked in VerifyUnbounded
-template<typename B>
-bool touches_zero(const B& y) {
-	return (y.template lower<double>() == 0.0 && y.lower_open()) || (y.template upper<double>() == 0.0 && y.upper_open());
-}
-
 // all pairs of finite tiles, every operation, and sqrt of every tile
 template<unsigned ess, unsigned fss>
 int VerifyExhaustive(bool reportTestCases) {
@@ -240,7 +248,6 @@ int VerifyExhaustive(bool reportTestCases) {
 		nrOfFailedTestCases += CheckSqrt(x, reportTestCases);
 		for (const auto& y : tiles) {
 			for (Op o : { Op::add, Op::sub, Op::mul, Op::div }) {
-				if (o == Op::div && touches_zero(y)) continue;   // divisor (0, minpos): see VerifyUnbounded
 				nrOfFailedTestCases += CheckBinary(x, y, o, reportTestCases && nrOfFailedTestCases < 10);
 			}
 		}
@@ -259,7 +266,6 @@ int VerifyRandom(unsigned samples, bool reportTestCases) {
 	for (unsigned s = 0; s < samples; ++s) {
 		const auto x = random_interval(), y = random_interval();
 		for (Op o : { Op::add, Op::sub, Op::mul, Op::div }) {
-			if (o == Op::div && touches_zero(y)) continue;
 			nrOfFailedTestCases += CheckBinary(x, y, o, reportTestCases && nrOfFailedTestCases < 10);
 		}
 		nrOfFailedTestCases += CheckSqrt(x, reportTestCases && nrOfFailedTestCases < 10);
@@ -478,12 +484,28 @@ int VerifyUnbounded(bool reportTestCases) {
 	r = B(m) + B(0.0);
 	expect(r.isexact() && r.template upper<double>() == m, "[maxpos] + [0]", r);
 	r = one / above;
-	// the supremum 1/maxpos is not attained, and not a lattice point: the next one up, open
-	expect(r.contains(1.0 / (4 * m)) && r.template upper<double>() == L::ceil(1.0 / m) && r.upper_open(), "[1] / (maxpos, inf)", r);
-	// a divisor with an open end at zero: an enclosure, unbounded on that side
-	const B near_zero(L::next(0.0) / 2.0);   // (0, minpos)
-	r = one / near_zero;
-	expect(!r.isnan() && r.upper_unbounded() && r.contains(4.0 / L::next(0.0)), "[1] / (0, minpos)", r);
+	// 1/y -> 0 as y grows, never reaching it; the supremum 1/maxpos is not attained and not
+	// a lattice point: the next one up, open
+	expect(r.template lower<double>() == 0.0 && r.lower_open() && r.template upper<double>() == L::ceil(1.0 / m) && r.upper_open(), "[1] / (maxpos, inf)", r);
+	r = zero / above;
+	expect(r.isexact() && r.template lower<double>() == 0.0, "[0] / (maxpos, inf)", r);
+	r = above / above;
+	expect(r.template lower<double>() == 0.0 && r.lower_open() && r.upper_unbounded(), "(maxpos, inf) / (maxpos, inf)", r);
+	// a divisor with an open end at zero: unbounded on the side it approaches from
+	const B pos_zero(L::next(0.0) / 2.0);    // (0, minpos)
+	const B neg_zero(-L::next(0.0) / 2.0);   // (-minpos, 0)
+	r = one / pos_zero;                      // 1 / minpos = 512 is past maxpos = 480
+	expect(r.template lower<double>() == m && r.lower_open() && r.upper_unbounded(), "[1] / (0, minpos)", r);
+	r = one / neg_zero;
+	expect(r.lower_unbounded() && r.template upper<double>() == -m && r.upper_open(), "[1] / (-minpos, 0)", r);
+	r = hull(B(1.0), B(2.0)) / hull(pos_zero, one);   // [1, 2] / (0, 1] = [1, inf)
+	expect(r.template lower<double>() == 1.0 && !r.lower_open() && r.upper_unbounded(), "[1, 2] / (0, 1]", r);
+	r = above / pos_zero;
+	expect(r.template lower<double>() == m && r.lower_open() && r.upper_unbounded(), "(maxpos, inf) / (0, minpos)", r);
+	r = pos_zero * above;                    // every positive magnitude
+	expect(r.template lower<double>() == 0.0 && r.lower_open() && r.upper_unbounded(), "(0, minpos) * (maxpos, inf)", r);
+	r = neg_zero * above;
+	expect(r.lower_unbounded() && r.template upper<double>() == 0.0 && r.upper_open(), "(-minpos, 0) * (maxpos, inf)", r);
 	r = one / B(zero);
 	expect(r.isnan(), "[1] / [0]", r);
 	B nan;

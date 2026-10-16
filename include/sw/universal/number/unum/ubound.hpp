@@ -370,16 +370,23 @@ private:
 
 	// the bound of x (op) y from below (lower = true) or above.  For two finite ends it is
 	// the exact result rounded outward; it is open when that corner is not attained (an
-	// open end whose partner is not a closed zero).  Infinite ends follow the limits, and
-	// an indeterminate form gives the widest bound.
-	static end combine(const end& x, const end& y, op o, bool lower) {
+	// open end whose partner is not a closed zero).  Corners at an infinity or an open zero
+	// take their limit.  The side of an end says where the set lies from it: +1 for a lower
+	// end (the set is above it), -1 for an upper end.  So an open zero at a lower end is
+	// approached from above, and one at an upper end from below.
+	static end combine(const end& x, const end& y, op o, bool lower, int xside = 0, int yside = 0) {
 		const end widest = lower ? end{ 0.0, -1, true } : end{ 0.0, +1, true };
-		if (x.inf == 0 && y.inf == 0) {
+		const end closed_zero{ 0.0, 0, false };
+		const end open_zero{ 0.0, 0, true };
+		// products or quotients of every magnitude, of sign s: from 0 (not attained) to s inf
+		auto spread = [&](int s) { return (s > 0) == lower ? open_zero : end{ 0.0, s, true }; };
+		auto is_zero = [](const end& e) { return e.inf == 0 && e.v == 0.0; };
+		if (x.inf == 0 && y.inf == 0 && !(o == op::div && y.v == 0.0)) {
 			directed r{ 0.0, 0 };
 			switch (o) {
 			case op::add: r = ubound_detail::add(x.v, y.v); break;
 			case op::mul: r = ubound_detail::mul(x.v, y.v); break;
-			case op::div: if (y.v == 0.0) return widest; r = ubound_detail::div(x.v, y.v); break;
+			case op::div: r = ubound_detail::div(x.v, y.v); break;
 			}
 			end b = lower ? round_lower(r) : round_upper(r);
 			bool strict = false;
@@ -394,26 +401,31 @@ private:
 			if (strict && b.inf == 0) b.open = true;
 			return b;
 		}
-		int s = 0;
 		switch (o) {
 		case op::add:
 			if (x.inf != 0 && y.inf != 0 && x.inf != y.inf) return widest;   // inf - inf
-			s = (x.inf != 0) ? x.inf : y.inf;
-			break;
+			return { 0.0, (x.inf != 0) ? x.inf : y.inf, true };
 		case op::mul:
-			if (signum(x) == 0 || signum(y) == 0) return { 0.0, 0, false }; // zero times an unbounded end
-			s = signum(x) * signum(y);
-			break;
+			// an infinite end times a zero end: exactly 0 for a closed zero, every magnitude
+			// of one sign for an open one
+			if (is_zero(x)) return x.open ? spread(xside * y.inf) : closed_zero;
+			if (is_zero(y)) return y.open ? spread(yside * x.inf) : closed_zero;
+			return { 0.0, signum(x) * signum(y), true };
 		case op::div:
 			if (y.inf != 0) {
-				if (x.inf != 0) return widest;                               // inf / inf
-				return { 0.0, 0, false };                                    // finite / inf
+				if (x.inf != 0) return spread(x.inf * y.inf);                // inf / inf
+				return (is_zero(x) && !x.open) ? closed_zero : open_zero;    // finite / inf -> 0, not attained
 			}
-			if (y.v == 0.0) return widest;
-			s = signum(x) * signum(y);
-			break;
+			if (y.v == 0.0) {
+				// an open zero divisor (a closed one was rejected): the quotient grows without
+				// bound, on the side of sgn(x) times the side the divisor approaches from
+				if (x.inf != 0) return { 0.0, x.inf * yside, true };
+				if (!is_zero(x)) return { 0.0, signum(x) * yside, true };
+				return x.open ? spread(xside * yside) : closed_zero;         // 0+ / 0+, or exactly 0
+			}
+			return { 0.0, x.inf * signum(y), true };                         // inf / finite
 		}
-		return { 0.0, s, true };
+		return widest;
 	}
 
 	// order bounds: the smaller lower bound, the larger upper bound (a closed end reaches
@@ -434,9 +446,11 @@ private:
 	// * and /: the hull of the four corner bounds
 	void corners(const ubound& rhs, op o) {
 		const end a[2] = { lo_end(), hi_end() }, b[2] = { rhs.lo_end(), rhs.hi_end() };
+		const int side[2] = { +1, -1 };   // a lower end has the set above it, an upper end below
 		end lo{ 0.0, +1, true }, hi{ 0.0, -1, true };
-		for (const end& x : a) for (const end& y : b) {
-			const end l = combine(x, y, o, true), u = combine(x, y, o, false);
+		for (int i = 0; i < 2; ++i) for (int j = 0; j < 2; ++j) {
+			const end l = combine(a[i], b[j], o, true, side[i], side[j]);
+			const end u = combine(a[i], b[j], o, false, side[i], side[j]);
 			if (lower_before(l, lo)) lo = l;
 			if (upper_after(u, hi)) hi = u;
 		}
