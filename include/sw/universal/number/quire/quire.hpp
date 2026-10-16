@@ -75,3 +75,6 @@
 #include <universal/number/quire/manipulators.hpp>
 #include <universal/number/quire/iostream.hpp>
 #include <universal/number/quire/attributes.hpp>
+// quire_mul / quire_resolve and the accumulator_* protocol for quire<float>
+// and quire<double> (mtl5#582)
+#include <universal/native/fdp.hpp>
