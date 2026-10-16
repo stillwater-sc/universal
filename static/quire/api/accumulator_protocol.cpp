@@ -183,6 +183,12 @@ int VerifyRoundOut() {
 	check("2^200 to float", accumulator_value(sum({ {p2(100), p2(100)} }), to_float),
 	      std::numeric_limits<float>::infinity());
 	check("2^200 to double", accumulator_value(sum({ {p2(100), p2(100)} }), to_double), std::ldexp(1.0, 200));
+	// a 64-bit significand (x87 long double): 2 - 2^-64 is 64 ones and a guard
+	// bit, so rounding up carries out of the 64-bit integer to 2
+	if constexpr (std::numeric_limits<long double>::digits == 64) {
+		Quire c = sum({ {Scalar(2), one}, {-p2(-32), p2(-32)} });
+		check("2 - 2^-64 to long double", quire_round_to<long double>(c), 2.0L);
+	}
 	// zero
 	Quire z;
 	accumulator_clear(z);

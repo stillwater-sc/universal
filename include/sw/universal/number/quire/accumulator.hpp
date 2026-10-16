@@ -113,14 +113,25 @@ Real quire_round_to(const quire<NumberType, capacity, LimbType>& q) {
 	const int s = q.scale();                      // weight of the leading one
 	// lowest kept weight: digits bits below the leading one, but no finer than
 	// the target's subnormal spacing
-	const int lsb = (s - digits + 1 > emin - digits + 1) ? s - digits + 1 : emin - digits + 1;
+	int lsb = (s - digits + 1 > emin - digits + 1) ? s - digits + 1 : emin - digits + 1;
 
 	std::uint64_t m = 0;
 	for (int e = s; e >= lsb; --e) m = (m << 1) | (bit(e) ? 1u : 0u);
 	const bool guard = bit(lsb - 1);
 	bool sticky = false;
 	for (int e = lsb - 2; e >= -radix && !sticky; --e) sticky = bit(e);
-	if (guard && (sticky || (m & 1u))) ++m;      // may carry to 2^digits: still exact
+	if (guard && (sticky || (m & 1u))) {
+		// a carry out of all-ones is 2^digits: for float and double that still
+		// fits in m and converts exactly, but with a 64-bit significand (x87
+		// long double) it would wrap, so renormalize to 2^(digits-1) * 2^(lsb+1)
+		if (m == std::numeric_limits<std::uint64_t>::max()) {
+			m = std::uint64_t(1) << 63;
+			++lsb;
+		}
+		else {
+			++m;
+		}
+	}
 
 	Real r = std::ldexp(static_cast<Real>(m), lsb);  // exact, or overflows to inf
 	return q.sign() ? -r : r;
