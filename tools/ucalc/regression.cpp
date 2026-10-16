@@ -1166,11 +1166,13 @@ try {
 		};
 		check_quadratic("3~", "100~", "2~", wide_rows, 6, "3~ 100~ 2~");
 
-		// the precision sweep for the reference problem: the narrowest width (areal, poxel) per question
+		// the precision sweep for the reference problem: the narrowest width (areal, poxel) per question.
+		// The stable r1 = -2c / (b + sqrt(D)) is decided by areal8: its denominator reaches inf there,
+		// and a finite over an unbounded end is an open 0, so the box is (-0.562, 0), not (-0.562, 0].
 		{
 			const ExpressionEvaluator qs = quadratic_session(reg, none, "3", "100", "2");
 			const auto sweep = precision_sweep(reg, qs, quadratic_forms(false), 6.0);
-			const int want[][2] = { { 16, 8 }, { 16, 32 }, { 16, 8 }, { 8, 8 }, { 64, 64 }, { 32, 32 }, { 32, 32 } };
+			const int want[][2] = { { 16, 8 }, { 16, 32 }, { 8, 8 }, { 8, 8 }, { 64, 64 }, { 32, 32 }, { 32, 32 } };
 			bool ok = sweep.size() == 7;
 			for (std::size_t i = 0; ok && i < 7; ++i) ok = sweep[i].narrowest[0].second == want[i][0] && sweep[i].narrowest[1].second == want[i][1];
 			if (!ok) {
@@ -1234,14 +1236,15 @@ try {
 				std::cerr << "FAIL: rootbox of 3x^2 + 100x + 2 should prove one box at each root: " << found1 << ", " << found2 << "\n";
 				++nrOfFailedTests;
 			}
-			// a pole is not a root; an exact root; no root; a domain where f has no real value
+			// a pole is not a root: 1/x on the open tiles beside 0 is unbounded but of one sign,
+			// (1/minpos, inf) and (-inf, -1/minpos), so no box is left; an exact root; no root; a
+			// domain where f has no real value
 			const RootboxReport pole = rootbox("1/x", "[-1, 1]", "poxel32i");
 			const RootboxReport half = rootbox("x - 0.5", "[0, 1]", "poxel32i");
 			const RootboxReport none_ = rootbox("x^2 + 1", "[-2, 2]", "poxel32i");
 			const RootboxReport sq = rootbox("sqrt(x) - 1", "[-4, 4]", "poxel32i");
-			bool ok = !pole.boxes.empty() && half.boxes.size() == 1 && half.boxes[0].status == "exact root" && half.boxes[0].box == "0.5"
+			bool ok = pole.boxes.empty() && half.boxes.size() == 1 && half.boxes[0].status == "exact root" && half.boxes[0].box == "0.5"
 			       && none_.boxes.empty() && sq.boxes.size() == 1 && sq.boxes[0].status == "exact root" && sq.boxes[0].box == "1";
-			for (const RootBox& b : pole.boxes) ok = ok && b.status == "undecided";
 			// a double root written with dependency exhausts the budget: the rest is unexplored, never a claimed root
 			const RootboxReport dbl = rootbox("x^2 - 2*x + 1", "[0, 3]", "poxel32i");
 			bool unexplored = false;
