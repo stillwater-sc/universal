@@ -46,8 +46,9 @@
 // ADL-visible quire_mul and quire_resolve, which every Universal number type
 // with a quire provides in its fdp.hpp (posit, bposit, cfloat, fixpnt, lns,
 // dbns). The element type must be exactly NT. Native float and double quires
-// are excluded: their quire_mul takes built-in types, so argument-dependent
-// lookup can't find it from here.
+// are excluded here: their quire_mul takes built-in types, so argument-
+// dependent lookup can't find it from here. native/fdp.hpp, which
+// quire/quire.hpp includes, gives them overloads of their own.
 //
 // Relates to stillwater-sc/mtl5#582
 

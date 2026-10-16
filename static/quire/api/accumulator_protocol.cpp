@@ -107,8 +107,9 @@ int VerifyAccumulatorProtocol(double big, bool cancels, const std::string& tag) 
 	return nrOfFailedTestCases;
 }
 
-// The functions accept only the quire's own element type and exclude the
-// native quires, so they can't claim an unrelated accumulator.
+// The functions accept only the quire's own element type, so they can't claim
+// an unrelated accumulator. The native quires get the protocol from
+// native/fdp.hpp, under the same rule.
 int VerifyProtocolConstraints() {
 	using namespace sw::universal;
 	using P16 = posit<16, 1>;
@@ -117,8 +118,13 @@ int VerifyProtocolConstraints() {
 	static_assert(!adl_accumulator<quire<P16>, P32>);
 	static_assert(!adl_accumulator<quire<P16>, double>);
 	static_assert(!adl_accumulator<double, P16>);
-	static_assert(!adl_accumulator<quire<float>, float>);
-	static_assert(!adl_accumulator<quire<double>, double>);
+	static_assert(adl_accumulator<quire<float>, float>);
+	static_assert(adl_accumulator<quire<double>, double>);
+	static_assert(has_merge<quire<float>> && has_merge<quire<double>>);
+	static_assert(!adl_accumulator<quire<float>, double>);
+	static_assert(!adl_accumulator<quire<double>, float>);
+	static_assert(!adl_accumulator<quire<double>, P16>);
+	static_assert(!adl_accumulator<quire<P16>, float>);
 	return 0;
 }
 
@@ -196,6 +202,73 @@ int VerifyRoundOut() {
 	return nrOfFailedTestCases;
 }
 
+// quire<float> and quire<double>: the products are exact, subnormals
+// included, and the round-out reads the whole quire.
+template<typename Real>
+int VerifyNativeRoundOut(const std::string& tag) {
+	using sw::universal::quire;
+	using Quire = quire<Real>;
+	int nrOfFailedTestCases = 0;
+	constexpr int digits = std::numeric_limits<Real>::digits;   // 24 or 53
+	constexpr std::type_identity<Real> to_real{};
+
+	auto sum = [](std::initializer_list<std::pair<Real, Real>> terms) {
+		Quire q;
+		accumulator_clear(q);
+		for (const auto& [a, b] : terms) accumulator_add_product(q, a, b);
+		return q;
+	};
+	auto check = [&](const char* what, Real got, Real expected) {
+		if (!(got == expected) || std::signbit(got) != std::signbit(expected)) {
+			std::cerr << "FAIL: " << tag << ' ' << what << ": got " << std::hexfloat << got
+			          << ", expected " << expected << std::defaultfloat << '\n';
+			++nrOfFailedTestCases;
+		}
+	};
+	auto p2 = [](int e) { return std::ldexp(Real(1), e); };
+	const Real one(1);
+
+	// (1 + u)(1 - u) = 1 - u^2 with u = 2^-(digits-1): the element arithmetic
+	// rounds the product to 1, the quire keeps it and the final -1 leaves -u^2
+	const Real u = p2(1 - digits);
+	check("(1+u)(1-u) - 1", accumulator_value(sum({ {one + u, one - u}, {-one, one} }), to_real), -u * u);
+	if ((one + u) * (one - u) - one != Real(0)) {
+		std::cerr << "FAIL: " << tag << " fixture does not cancel in element arithmetic\n";
+		++nrOfFailedTestCases;
+	}
+	// a tie goes to even; a bit far below the tie breaks it
+	const Real half_ulp = p2(-digits);
+	check("1 + half ulp", accumulator_value(sum({ {one, one}, {half_ulp, one} }), to_real), one);
+	check("1 + half ulp + tiny",
+	      accumulator_value(sum({ {one, one}, {half_ulp, one}, {p2(-60), p2(-60)} }), to_real), one + u);
+	// quire_resolve rounds as accumulator_value does, not truncating like convert_to
+	const Quire t = sum({ {one, one}, {half_ulp, one}, {p2(-60), p2(-60)} });
+	check("quire_resolve", quire_resolve(t), one + u);
+
+	// subnormal operands and a product below the smallest subnormal
+	const Real dmin = std::numeric_limits<Real>::denorm_min();
+	check("denorm_min * 3", accumulator_value(sum({ {dmin, Real(3)} }), to_real), Real(3) * dmin);
+	check("denorm_min^2", accumulator_value(sum({ {dmin, dmin} }), to_real), Real(0));
+	check("denorm_min/2 + denorm_min^2", accumulator_value(sum({ {dmin, dmin}, {dmin, Real(0.5)} }), to_real), dmin);
+	// the top of the range: max * 2 - max * 1 is max, though max * 2 overflows
+	const Real mx = std::numeric_limits<Real>::max();
+	check("max*2 - max", accumulator_value(sum({ {mx, Real(2)}, {-mx, one} }), to_real), mx);
+	check("max*2", accumulator_value(sum({ {mx, Real(2)} }), to_real), std::numeric_limits<Real>::infinity());
+
+	// a NaN or infinite operand makes the quire NaR
+	Quire n = sum({ {one, one}, {std::numeric_limits<Real>::infinity(), one} });
+	if (!std::isnan(accumulator_value(n, to_real))) {
+		std::cerr << "FAIL: " << tag << " infinite operand does not give NaN\n";
+		++nrOfFailedTestCases;
+	}
+
+	// merge: the cancelling sum split over two partials
+	Quire lo = sum({ {one + u, one - u} }), hi = sum({ {-one, one} });
+	accumulator_merge(lo, hi);
+	check("merge", accumulator_value(lo, to_real), -u * u);
+	return nrOfFailedTestCases;
+}
+
 } // namespace client
 
 int main()
@@ -218,6 +291,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAccumulatorProtocol<fixpnt<16, 8, Modulo, uint16_t>>(64.0, false, "fixpnt<16,8>"), "quire<fixpnt<16,8>>", "accumulator protocol");
 	nrOfFailedTestCases += ReportTestResult(VerifyAccumulatorProtocol<lns<16, 8, uint16_t>>(1024.0, true, "lns<16,8>"), "quire<lns<16,8>>", "accumulator protocol");
 	nrOfFailedTestCases += ReportTestResult(VerifyAccumulatorProtocol<dbns<8, 4, uint8_t>>(16.0, true, "dbns<8,4>"), "quire<dbns<8,4>>", "accumulator protocol");
+	nrOfFailedTestCases += ReportTestResult(VerifyAccumulatorProtocol<float>(33554432.0, true, "float"), "quire<float>", "accumulator protocol");
+	nrOfFailedTestCases += ReportTestResult(VerifyAccumulatorProtocol<double>(18014398509481984.0, true, "double"), "quire<double>", "accumulator protocol");
+	nrOfFailedTestCases += ReportTestResult(client::VerifyNativeRoundOut<float>("float"), "quire<float>", "exact products, round-out");
+	nrOfFailedTestCases += ReportTestResult(client::VerifyNativeRoundOut<double>("double"), "quire<double>", "exact products, round-out");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
