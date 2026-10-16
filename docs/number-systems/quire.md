@@ -139,8 +139,8 @@ convert(q.to_value(), result);
 |---|---|
 | `accumulator_clear(q)` | `q = 0` |
 | `accumulator_assign(q, v)` | `q = v`, exactly |
-| `accumulator_add_product(q, a, b)` | `q += a * b`, exactly |
-| `accumulator_value(q, std::type_identity<R>{})` | rounds `q` to `R`, once |
+| `accumulator_add_product(q, a, b)` | `q += a * b` (exact product for posit, bposit, cfloat, fixpnt) |
+| `accumulator_value(q, std::type_identity<R>{})` | rounds `q` to `R`, to nearest even |
 | `accumulator_merge(q, other)` | `q += other`, exactly |
 
 [MTL5](https://github.com/stillwater-sc/mtl5)'s `accumulator_traits` finds them by
@@ -152,6 +152,10 @@ using P = posit<32, 2>;
 P d = mtl::dot<quire<P>, P>(x, y);                              // exact dot, one rounding
 mtl::sparse::factorization::sparse_lu_solve<quire<P>>(A, x, b);  // factor and solve
 ```
+
+The product is exact for posit, bposit, cfloat and fixpnt. The `quire_mul` of lns and dbns forms the product through `double` and rounds it, so with those types each term carries one product rounding. The accumulation of the products is exact either way.
+
+`accumulator_value` rounds once when `R` is the element type, `float` or `double`. For `float` and `double` it rounds from the full quire, unlike `convert_to<R>()`, which keeps only the leading 53 bits. Any other `R` is reached through the correctly rounded `double`, so it may round twice.
 
 The element type must be exactly `T`. `accumulator_merge` combines the partial quires of a
 split reduction exactly, so a parallel or distributed result doesn't depend on how the terms
