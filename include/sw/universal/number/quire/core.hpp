@@ -50,3 +50,4 @@
 #include <universal/number/quire/exceptions.hpp>
 #include <universal/number/quire/quire_fwd.hpp>
 #include <universal/number/quire/quire_impl.hpp>
+#include <universal/number/quire/accumulator.hpp>  // accumulator_* protocol (mtl5#582)
