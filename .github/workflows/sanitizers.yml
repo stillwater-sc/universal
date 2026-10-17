@@ -89,7 +89,7 @@ jobs:
         with:
           key: ${{ matrix.artifact }}
           max-size: "3G"
-          save: ${{ !matrix.restore_only && (github.ref == 'refs/heads/main' || github.head_ref == 'ci/restore-20min-cycle') }}   # TEMPORARY: measure a warm PR run; revert before merge
+          save: ${{ !matrix.restore_only && (github.ref == 'refs/heads/main') }}
 
       - name: Configure CMake
         run: |

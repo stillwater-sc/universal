@@ -59,7 +59,7 @@ jobs:
         with:
           key: coverage-gcc-debug
           max-size: "3G"
-          save: ${{ github.ref == 'refs/heads/main' || github.head_ref == 'ci/restore-20min-cycle' }}   # TEMPORARY: measure a warm PR run; revert before merge
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Configure with coverage flags
         run: |
