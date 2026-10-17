@@ -92,6 +92,7 @@ export default defineConfig({
                   ],
                 },
                 { label: 'dbns', link: '/number-systems/dbns/' },
+                { label: 'lindex', link: '/number-systems/lindex/' },
               ],
             },
             {

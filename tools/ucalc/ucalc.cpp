@@ -74,6 +74,7 @@
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/takum/takum.hpp>
+#include <universal/number/lindex/lindex.hpp>
 #include <universal/number/dfixpnt/dfixpnt.hpp>
 #include <universal/number/rational/rational.hpp>
 #include <universal/number/hfloat/hfloat.hpp>

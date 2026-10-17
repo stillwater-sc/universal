@@ -30,6 +30,11 @@ agents, supporting structured JSON/CSV output for automated workflows.
   different numbers -- `(1+f)*2^c` against `sqrt(e)^(c+m)` -- so the same input
   prints different encodings under each. `diverge <expr> takum32 takum_log32
   <tol> for <var> in [a, b]` finds where they first disagree.
+
+  Level-index, `lindex8`..`lindex32`, has no overflow at all: it stores the
+  generalized logarithm, so `exp(exp(exp(exp(exp(1)))))` is `phi(6)`, and exp and
+  log of a value >= 1 are exact steps of one level. Values past double print as
+  `phi(psi)`.
 - Includes the **ubit tile types** `areal` (float lattice) and `poxel` (posit lattice),
   as single tiles (`areal32`, `poxel32`, ...) and as guaranteed enclosures
   (`areal32i`, `poxel32i`, ...), for asking what is *known* about a result rather

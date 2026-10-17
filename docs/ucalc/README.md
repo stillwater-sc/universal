@@ -128,6 +128,7 @@ ucalc registers 42 types spanning the major number system families:
 | Double-base | dbns8, dbns16 |
 | Posit | posit8, posit16, posit32, posit64 |
 | Takum | takum8, takum16, takum32, takum64 |
+| Level-index | lindex8, lindex16, lindex32 |
 | Decimal float | decimal32, decimal64 |
 | Hexadecimal float | hfloat32, hfloat64 |
 | Rational | rational8, rational16, rational32 |
