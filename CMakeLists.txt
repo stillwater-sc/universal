@@ -1128,7 +1128,7 @@ if(UNIVERSAL_BUILD_NUMBER_DBNS)
 add_subdirectory("static/logarithmic/dbns")
 endif(UNIVERSAL_BUILD_NUMBER_DBNS)
 
-# level-index (#1349): the shared kernel first; the lindex type follows in #1694
+# level-index (#1349): the shared kernel (#1693) and the lindex type (#1694)
 if(UNIVERSAL_BUILD_NUMBER_LINDEX)
 add_subdirectory("static/logarithmic/lindex")
 endif(UNIVERSAL_BUILD_NUMBER_LINDEX)
