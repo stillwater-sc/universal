@@ -216,7 +216,7 @@ used here.
   resolves almost every case. The near-ties that remain need a retry at higher
   precision, a Ziv-style loop, which #1695 decides once faithful rounding is measured.
 
-### Decided and measured: correctly rounded arithmetic (#1695)
+### Decided and measured: correctly rounded arithmetic (#1695, #1696)
 
 `lindex` + - * / are **correctly rounded**, with one retry rather than a loop:
 
@@ -229,9 +229,18 @@ used here.
   `lindex<32,3>` pairs, the retry ran for 342334 results, about 1 in 1200, and changed 13 of
   them. Those are the results whose double error, near 2^-49, crossed the midpoint. The
   oracle has twelve of them, and without the retry the arithmetic test fails.
-- `lindex<64,3>` works in dd_cascade, whose error is near 2^-100, and has no retry. A result
-  within about 2^-90 of a midpoint could still round the wrong way. No sampled vector comes
-  close.
+- `lindex<64,3>` works in dd_cascade, whose error is near 2^-100. A result within 2^-90 of a
+  midpoint is evaluated once more, in qd_cascade, whose error is near 2^-200.
+
+  #1695 shipped without that last stage, on the reasoning that a random result almost
+  never comes within 2^-90 of a midpoint. That holds for random results but not for
+  structured ones. Take operands one ulp from 1/2, from 1, or from a level boundary: their
+  results have exact rational leading terms, such as e^(2^-60) = 1 + 2^-60 + 2^-121, and
+  so sit within about 2^-122 of a midpoint. Without the qd_cascade stage, 3 of 196 such
+  `lindex<64,3>` pairs misround in arithmetic, for example
+  (1/2 - 2^-60) * (1 + 2^-60) came out as 1/2. Two such results of the math library
+  (#1696) misround as well: sqrt(1 - 2^-60), and sqrt of the encoding one ulp above level 2.
+  Those pairs are now oracle vectors, and the stage was added in #1696.
 
 `static/logarithmic/lindex/arithmetic/arithmetic.cpp` checks every one of the 65536
 signed pairs of `lindex<8,3>` per operation, and sampled pairs of `lindex<12,3>`, `<16,3>`,
@@ -239,6 +248,13 @@ signed pairs of `lindex<8,3>` per operation, and sampled pairs of `lindex<12,3>`
 `tools/generators/lindex_arithmetic_gen.py`. That generator evaluates each result in the psi
 domain at 600 bits by the plain sequences of [C9], through the level-down identities. Wherever
 mpmath can form the operand values, it cross-checks against direct evaluation, to 2^-200.
+
+The math library (#1696) rounds the same way, through the same retry. exp and log of a value
+>= 1 are exact steps of one level. sqrt, cbrt, pow, exp2, exp10, log2, log10, expm1, log1p
+and hypot are compositions of level-index operations on unrounded psi points, rounded once.
+`static/logarithmic/lindex/math/correct_rounding.cpp` checks every `lindex<8,3>` encoding
+per function, every pair for pow and hypot, and sampled `<16,3>`, `<32,3>` and `<64,3>`, for
+equality with `tools/generators/lindex_math_gen.py`.
 
 ## numeric_limits
 
