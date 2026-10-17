@@ -74,9 +74,28 @@ layout that still carries the ubit.
 
 Core type, conversions, comparison, arithmetic, `parse()`, `numeric_limits`, the math
 library, and `ubound` interval arithmetic with `next_exact`/`prev_exact` lattice
-navigation. Arithmetic goes through a `double` intermediate with ubit propagation rather
-than operating on the variable-width encoding directly. `unum<2,2>` and `unum<2,3>` are
-validated exhaustively.
+navigation. Arithmetic goes through a `double` intermediate rather than operating on the
+variable-width encoding directly. `unum<2,2>` and `unum<2,3>` are validated exhaustively.
+
+A scalar unum names one tile: an exact value, or the open interval beside it. Assignment,
+`+ - * /` and `sqrt` give the tile that holds the exact result. Each end is computed in
+`double`, and an error-free transform gives the sign of that rounding, so `1 + 2^-100` is
+the open tile above 1, not an exact 1. With an inexact operand the result is the single
+tile that holds every possible value, or NaN when no single tile does. A `ubound` is the
+type for an interval that spans several tiles:
+
+```cpp
+using U = unum<3, 4>;
+U third = U(1) / U(3);   // inexact: the open tile around 1/3
+third + third;           // (2/3 fits one tile) the open tile around 2/3
+third * U(3);            // spans three tiles: NaN
+ubound<3, 4>(third) * ubound<3, 4>(U(3));   // the enclosure as an interval
+```
+
+Above `maxpos` the result is the tile `(maxpos, inf)`. Its negative mirror shares the
+NaN encoding, so a result below `-maxpos` is NaN. All of this holds for configurations
+whose lattice fits in `double` (`esizesize <= 3`, `fsizesize <= 5`); wider ones still
+round through `double`.
 
 ## Related
 
