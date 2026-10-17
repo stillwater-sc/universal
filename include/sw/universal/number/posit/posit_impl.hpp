@@ -957,7 +957,7 @@ public:
 	}
 
 	// make conversions to native types explicit
-	explicit operator int()         const noexcept { return static_cast<int>(to_native<float>()); }
+	explicit operator int()         const noexcept { return static_cast<int>(to_native<double>()); }
 	explicit operator long()        const noexcept { return static_cast<long>(to_native<double>()); }
 	explicit operator long long()   const noexcept { return static_cast<long long>(to_native<long double>()); }
 	explicit operator float()       const noexcept { return to_native<float>(); }
