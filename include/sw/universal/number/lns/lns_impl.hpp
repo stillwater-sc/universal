@@ -538,7 +538,7 @@ public:
 			"lns configuration exceeds binary64 range: double(*this) would overflow");
 		if (iszero()) { tgt.setzero(); return; }
 		if (isnan())  { tgt.setnan();  return; }
-		if (isinf())  { tgt.setinf();  return; }
+		if (isinf())  { tgt.setinf(sign());  return; }
 		double v = double(*this);
 		tgt.setnormal();
 		tgt.setsign(v < 0);
