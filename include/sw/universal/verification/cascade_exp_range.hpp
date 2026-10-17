@@ -12,9 +12,9 @@
 // exp against the mpmath vectors of tools/generators/cascade_exp_range_gen.py:
 //
 //   past DBL_MAX     +inf
-//   below DBL_MIN    the leading limb is the correctly rounded subnormal (or 0), within one
-//                    subnormal ulp: scaling a multi-limb value into the subnormal range
-//                    rounds the leading limb alone
+//   below DBL_MIN    exactly 0 where e^x rounds to 0; otherwise a positive subnormal within
+//                    one subnormal ulp of the correctly rounded one, since scaling a
+//                    multi-limb value into the subnormal range rounds the leading limb alone
 //   in between       the relative error is below rel_tol, the type's own precision; near the
 //                    bottom of the range the trailing limbs are themselves subnormal, so the
 //                    error there is also allowed a few units of 2^-1074
@@ -40,7 +40,10 @@ int VerifyExpRange(const std::string& tag, double rel_tol, bool reportTestCases)
 			ok = std::isinf(hi) && hi > 0.0;
 		}
 		else if (v.limbs[0] == 0.0) {
-			ok = std::fabs(hi - v.rounded) <= denorm_min;
+			// zero exactly where e^x rounds to zero, positive where it does not: the underflow
+			// boundary is the point of the check, so the ulp allowance never spans it
+			if (v.rounded == 0.0) ok = (hi == 0.0);
+			else ok = (hi > 0.0) && std::fabs(hi - v.rounded) <= denorm_min;
 		}
 		else {
 			Cascade exact = Cascade(v.limbs[0]) + Cascade(v.limbs[1]) + Cascade(v.limbs[2]) + Cascade(v.limbs[3]);
