@@ -8,7 +8,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cerrno>
-#include <cstdio>     // std::fprintf: the domain errors stay off <iostream> (#1334)
 #include <limits>
 
 #include <universal/number/shared/multidouble_exact.hpp>
@@ -27,8 +26,8 @@ namespace sw { namespace universal {
 
 		if (a.isone()) return dd_cascade(0.0);
 
+		// a domain error is reported as std::log reports it: EDOM and a NaN, with no message
 		if (a.signbit())	{
-			std::fprintf(stderr, "log: non-positive argument\n");
 			errno = EDOM;
 		    return dd_cascade(SpecificValue::qnan);
 		}
@@ -78,7 +77,6 @@ namespace sw { namespace universal {
 		if (a.isone()) return dd_cascade(0.0);
 
 		if (a.signbit()) {
-			std::fprintf(stderr, "log2: non-positive argument\n");
 			errno = EDOM;
 		    return dd_cascade(SpecificValue::qnan);
 		}
@@ -99,7 +97,6 @@ namespace sw { namespace universal {
 		if (a.isone()) return dd_cascade(0.0);
 
 		if (a.signbit()) {
-			std::fprintf(stderr, "log10: non-positive argument\n");
 			errno = EDOM;
 		    return dd_cascade(SpecificValue::qnan);
 		}
@@ -120,7 +117,6 @@ namespace sw { namespace universal {
 		if (a == -1.0) return dd_cascade(SpecificValue::infneg);
 
 		if (a < -1.0) {
-			std::fprintf(stderr, "log1p: non-positive argument\n");
 			errno = EDOM;
 		    return dd_cascade(SpecificValue::qnan);
 		}
