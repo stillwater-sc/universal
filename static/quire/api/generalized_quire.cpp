@@ -273,7 +273,7 @@ int TestNonFiniteHandling() {
 
 	// An inf blocktriple on a fresh quire also sets the NaR state.
 	blocktriple<23, BlockTripleOperator::REP, uint32_t> inf_val;
-	inf_val.setinf();
+	inf_val.setinf(false);   // either infinity sets the NaR state
 	quire<Scalar> qi;
 	qi += inf_val;
 	if (!qi.isnan() || !std::isnan(qi.convert_to<double>())) {

@@ -2160,7 +2160,7 @@ public:
 			tgt.setnan();
 		}
 		else if (isinf()) {
-			tgt.setinf();
+			tgt.setinf(sign());
 		}
 		else if (iszero()) {
 			tgt.setzero();
@@ -2221,7 +2221,7 @@ public:
 			tgt.setnan();
 		}
 		else if (isinf()) {
-			tgt.setinf();
+			tgt.setinf(sign());
 		}
 		else if (iszero()) {
 			tgt.setzero();
@@ -2316,7 +2316,7 @@ public:
 			tgt.setnan();
 		}
 		else if (isinf()) {
-			tgt.setinf();
+			tgt.setinf(sign());
 		}
 		else if (iszero()) {
 			tgt.setzero();
@@ -2379,7 +2379,7 @@ public:
 			tgt.setnan();
 		}
 		else if (isinf()) {
-			tgt.setinf();
+			tgt.setinf(sign());
 		}
 		else if (iszero()) {
 			tgt.setzero();
