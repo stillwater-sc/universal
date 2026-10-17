@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // logarithm.hpp: logarithm functions for double-double (dd) floating-point
 //
 // base algorithm strategy courtesy Scibuilder, Jack Poulson
@@ -8,6 +7,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cerrno>
+#include <cstdio>     // std::fprintf: the domain errors stay off <iostream> (#1334)
 #include <limits>
 
 #include <universal/number/shared/multidouble_exact.hpp>
@@ -27,7 +28,7 @@ namespace sw { namespace universal {
 		if (a.isone()) return dd_cascade(0.0);
 
 		if (a.signbit())	{
-			std::cerr << "log: non-positive argument\n";
+			std::fprintf(stderr, "log: non-positive argument\n");
 			errno = EDOM;
 		    return dd_cascade(SpecificValue::qnan);
 		}
@@ -77,7 +78,7 @@ namespace sw { namespace universal {
 		if (a.isone()) return dd_cascade(0.0);
 
 		if (a.signbit()) {
-			std::cerr << "log2: non-positive argument\n";
+			std::fprintf(stderr, "log2: non-positive argument\n");
 			errno = EDOM;
 		    return dd_cascade(SpecificValue::qnan);
 		}
@@ -98,7 +99,7 @@ namespace sw { namespace universal {
 		if (a.isone()) return dd_cascade(0.0);
 
 		if (a.signbit()) {
-			std::cerr << "log10: non-positive argument\n";
+			std::fprintf(stderr, "log10: non-positive argument\n");
 			errno = EDOM;
 		    return dd_cascade(SpecificValue::qnan);
 		}
@@ -119,7 +120,7 @@ namespace sw { namespace universal {
 		if (a == -1.0) return dd_cascade(SpecificValue::infneg);
 
 		if (a < -1.0) {
-			std::cerr << "log1p: non-positive argument\n";
+			std::fprintf(stderr, "log1p: non-positive argument\n");
 			errno = EDOM;
 		    return dd_cascade(SpecificValue::qnan);
 		}
