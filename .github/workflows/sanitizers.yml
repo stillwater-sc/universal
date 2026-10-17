@@ -45,7 +45,7 @@ jobs:
     if: |
       github.event_name != 'pull_request' ||
       github.event.pull_request.draft == false
-    name: "${{ matrix.sanitizer }}"
+    name: "${{ matrix.sanitizer }}${{ matrix.shard && format(' ({0})', matrix.shard) || '' }}"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -55,7 +55,20 @@ jobs:
             artifact: sanitizer-asan-clang-debug
             cmake_flags: -DUNIVERSAL_ENABLE_ASAN=ON
             env_vars: ASAN_OPTIONS=detect_leaks=0:halt_on_error=1
+          # UBSan at -O0 is the slowest suite: 85 minutes of test time, 24 at -j 4. It runs
+          # as two shards that interleave the test numbers (ctest -I start,,2), which
+          # spreads the heavy ereal/elreal tests across both. Both build from the same
+          # cache; only the first saves it, so the two never race for one key.
           - sanitizer: UBSan
+            shard: 1/2
+            ctest_select: -I 1,,2
+            artifact: sanitizer-ubsan-clang-debug
+            cmake_flags: -DUNIVERSAL_ENABLE_UBSAN=ON
+            env_vars: UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
+          - sanitizer: UBSan
+            shard: 2/2
+            ctest_select: -I 2,,2
+            restore_only: true
             artifact: sanitizer-ubsan-clang-debug
             cmake_flags: -DUNIVERSAL_ENABLE_UBSAN=ON
             env_vars: UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
@@ -76,7 +89,7 @@ jobs:
         with:
           key: ${{ matrix.artifact }}
           max-size: "3G"
-          save: ${{ github.ref == 'refs/heads/main' || github.head_ref == 'ci/restore-20min-cycle' }}   # TEMPORARY: measure a warm PR run; revert before merge
+          save: ${{ !matrix.restore_only && (github.ref == 'refs/heads/main' || github.head_ref == 'ci/restore-20min-cycle') }}   # TEMPORARY: measure a warm PR run; revert before merge
 
       - name: Configure CMake
         run: |
@@ -90,12 +103,13 @@ jobs:
             ${{ matrix.cmake_flags }}
 
       - name: Build
+        if: github.event_name != 'push' || !matrix.restore_only
         run: cmake --build ${{github.workspace}}/build -j $(nproc)
 
       # Keep one ccache generation per artifact: delete the one this job restored, so
       # the save in the post step replaces it instead of stacking a second copy on top.
       - name: Drop the superseded ccache generation
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && !matrix.restore_only
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash tools/scripts/ci-drop-ccache-generation.sh ${{ matrix.artifact }}
@@ -114,7 +128,7 @@ jobs:
         # -O0; 600s leaves room for it to share the machine with three others.
         run: |
           echo "runner: $(nproc) CPUs, $(free -g | awk '/Mem:/ {print $2}') GB"
-          ctest -j $(nproc) --timeout 600 --output-on-failure
+          ctest -j $(nproc) --timeout 600 --output-on-failure ${{ matrix.ctest_select }}
 
       - name: Rerun failed tests
         if: failure() && github.event_name != 'push'
@@ -122,13 +136,13 @@ jobs:
         env:
           ASAN_OPTIONS: ${{ matrix.sanitizer == 'ASan' && 'detect_leaks=0:halt_on_error=1' || '' }}
           UBSAN_OPTIONS: ${{ matrix.sanitizer == 'UBSan' && 'print_stacktrace=1:halt_on_error=1' || '' }}
-        run: ctest -j $(nproc) --timeout 600 --rerun-failed --output-on-failure
+        run: ctest -j $(nproc) --timeout 600 --rerun-failed --output-on-failure ${{ matrix.ctest_select }}
 
       - name: Upload test logs
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: test-logs-${{ matrix.sanitizer }}
+          name: test-logs-${{ matrix.sanitizer }}${{ matrix.shard && format('-{0}', strategy.job-index) || '' }}
           path: |
             ${{github.workspace}}/build/Testing
             ${{github.workspace}}/build/CMakeCache.txt
