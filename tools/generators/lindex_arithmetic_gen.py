@@ -224,7 +224,26 @@ def sampled_pairs(nbits, lbits, rng):
         out.append((signed(a, sa, nbits), signed(b, sb, nbits)))
     if (nbits, lbits) == (32, 3):
         out += RETRY_32
+    if nbits == 64:
+        out += structured_pairs(nbits, lbits)
     return out
+
+
+def structured_pairs(nbits, lbits):
+    """Operands one or two ulps from 1/2, 1 and the level boundaries, against each other.
+
+    Their results have exact rational leading terms -- e^(2^-60) = 1 + 2^-60 + 2^-121 -- that
+    put them within 2^-120 of a midpoint, closer than dd_cascade resolves; they are the
+    reason for the qd_cascade stage of the rounding retry (#1696).
+    """
+    fbits = nbits - 1 - lbits
+    S = 1 << fbits
+    top = (1 << (nbits - 1)) - 1
+    anchors = [1, 2, S // 2 - 1, S // 2 + 1]
+    for l in range(1, 4):
+        anchors += [l * S - 2, l * S - 1, l * S + 1, l * S + 2]
+    anchors = sorted(set(m for m in anchors if 0 < m <= top))
+    return [(a, b) for a in anchors for b in anchors]
 
 
 def main():

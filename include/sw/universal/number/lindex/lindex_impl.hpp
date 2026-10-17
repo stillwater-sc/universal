@@ -54,10 +54,11 @@
 // Working precision follows the design doc: double for nbits <= 32, dd_cascade above.  Every
 // result is rounded once, to nearest even on the psi grid, and saturates at maxpos.  The
 // double path is accurate to about 2^-49 in psi; a result that lands within 2^-40 of a
-// midpoint is evaluated again in dd_cascade, whose error is near 2^-100.  At nbits = 32 the
-// retry runs for about 1 result in 1200 and changes about 3 in 10^8, so nbits <= 32 is
-// correctly rounded, and wider formats are correctly rounded unless a result lies within
-// about 2^-90 of a midpoint.
+// midpoint is evaluated again in dd_cascade, whose error is near 2^-100, and one within 2^-90
+// once more in qd_cascade, near 2^-200 (round_psi).  At nbits = 32 the dd_cascade stage runs
+// for about 1 result in 1200 and changes about 3 in 10^8.  The qd_cascade stage is for the
+// structured results of operands one ulp from 1/2, 1 or a level boundary, which land within
+// about 2^-122 of a midpoint at fbits 60.
 #include <cstdint>
 #include <cmath>
 #include <cstring>
@@ -80,6 +81,13 @@
 #include <universal/number/dd_cascade/math/functions/exponent.hpp>
 #include <universal/number/dd_cascade/math/functions/logarithm.hpp>
 #include <universal/number/dd_cascade/math/functions/truncate.hpp>
+// the last stage of the rounding retry, for results within 2^-90 of a midpoint
+#include <universal/number/qd_cascade/core.hpp>
+#include <universal/number/qd_cascade/math/constants/qd_cascade_constants.hpp>
+#include <universal/number/qd_cascade/math/functions/numerics.hpp>
+#include <universal/number/qd_cascade/math/functions/exponent.hpp>
+#include <universal/number/qd_cascade/math/functions/logarithm.hpp>
+#include <universal/number/qd_cascade/math/functions/truncate.hpp>
 #include <universal/number/shared/level_index_kernel.hpp>
 
 namespace sw { namespace universal {
@@ -349,10 +357,22 @@ protected:
 	static std::int64_t integer_of(const dd_cascade& v) noexcept {
 		return static_cast<std::int64_t>(v.high()) + static_cast<std::int64_t>(v.low());
 	}
+	static std::int64_t integer_of(const qd_cascade& v) noexcept {
+		return static_cast<std::int64_t>(v[0]) + static_cast<std::int64_t>(v[1]) + static_cast<std::int64_t>(v[2]) + static_cast<std::int64_t>(v[3]);
+	}
+	// the half-width of the band around a midpoint, in psi, inside which W cannot decide the
+	// rounding: well outside W's error in every operation (about 2^-49 for double, 2^-100 for
+	// dd_cascade); qd_cascade, near 2^-200, is the last stage and decides
+	template<typename W>
+	static constexpr int tie_band_bits() noexcept {
+		if constexpr (std::is_same_v<W, double>) return 40;
+		else if constexpr (std::is_same_v<W, dd_cascade>) return 90;
+		else return 0;
+	}
 
 	// The magnitude encoding of the psi point { level, index }, rounded to nearest even and
-	// saturated.  near_tie reports a remainder within 2^-40 (in psi) of the midpoint, where
-	// a double evaluation cannot decide the rounding.
+	// saturated.  near_tie reports a remainder within tie_band_bits<W>() of the midpoint,
+	// where W cannot decide the rounding.
 	template<typename W>
 	static std::uint64_t round_point(int level, W index, bool& near_tie) noexcept {
 		using std::floor;
@@ -366,7 +386,7 @@ protected:
 		std::uint64_t q = static_cast<std::uint64_t>(integer_of(fl));
 		W off = rem - W(0.5);
 		if (off < W(0)) off = -off;
-		near_tie = off < W(std::ldexp(1.0, static_cast<int>(fbits) - 40));
+		if constexpr (tie_band_bits<W>() > 0) near_tie = off < W(std::ldexp(1.0, static_cast<int>(fbits) - tie_band_bits<W>()));
 		if (rem > W(0.5) || (rem == W(0.5) && (q & 1ull))) ++q;   // q may carry into the next level
 		const std::uint64_t mag = (static_cast<std::uint64_t>(level) << fbits) + q;
 		return (mag > maxpos_bits) ? maxpos_bits : mag;
@@ -435,8 +455,15 @@ protected:
 	}
 #endif
 
-	////////////////////// arithmetic (#1695)
+public:
+	////////////////////// the psi domain (#1695, #1696)
+	// The building blocks of the arithmetic and of the math library (math/*.hpp): psi points
+	// of unrounded results, the level-index operations on them, and the one rounding.  A
+	// function composes these in a working type W and rounds once through round_psi().  Not
+	// part of the value API.
 	enum class Op { add, sub, mul, div };
+
+	static constexpr std::uint64_t one_bits = 1ull << fbits;   // the encoding of 1.0, psi = 1
 
 	// the index of a magnitude, exact in W for fbits <= 53 (double) or <= 60 (dd_cascade):
 	// two 30-bit halves keep each product exact
@@ -446,6 +473,11 @@ protected:
 		const W hi = W(static_cast<double>(r >> 30)) * W(std::ldexp(1.0, 30 - static_cast<int>(fbits)));
 		const W lo = W(static_cast<double>(r & ((1ull << 30) - 1ull))) * W(std::ldexp(1.0, -static_cast<int>(fbits)));
 		return hi + lo;
+	}
+	// the psi point of a magnitude encoding, exact
+	template<typename W>
+	static level_index::point<W> point_of(std::uint64_t mag) noexcept {
+		return { static_cast<int>(mag >> fbits), index_in<W>(mag) };
 	}
 
 	// a result before rounding: a psi point, or a magnitude that is already exact
@@ -461,12 +493,111 @@ protected:
 	static outcome<W> up_a_level(const level_index::point<W>& p) noexcept { return { false, 0ull, { p.level + 1, p.index } }; }
 	template<typename W>
 	static outcome<W> exact_magnitude(std::uint64_t mag) noexcept { return { true, mag > maxpos_bits ? maxpos_bits : mag, { 0, W(0) } }; }
+	// psi + 1 and psi - 1: exact on a point, and on an exact magnitude up to saturation
+	template<typename W>
+	static outcome<W> up_a_level(const outcome<W>& r) noexcept {
+		return r.exact ? exact_magnitude<W>(r.mag > maxpos_bits - one_bits ? maxpos_bits : r.mag + one_bits) : up_a_level(r.p);
+	}
+	template<typename W>
+	static outcome<W> down_a_level(const outcome<W>& r) noexcept {
+		return r.exact ? exact_magnitude<W>(r.mag - one_bits) : from_point(level_index::point<W>{ r.p.level - 1, r.p.index });
+	}
 
 	template<typename W>
 	static bool point_less(const level_index::point<W>& a, const level_index::point<W>& b) noexcept {
 		return (a.level < b.level) || (a.level == b.level && a.index < b.index);
 	}
+	template<typename W>
+	static bool is_zero_point(const level_index::point<W>& a) noexcept { return a.level == 0 && a.index == W(0); }
 
+	// psi(phi(a) + phi(b)) and psi(|phi(a) - phi(b)|) for points in any order
+	template<typename W>
+	static outcome<W> add_points(const level_index::point<W>& a, const level_index::point<W>& b) noexcept {
+		return from_point(point_less(a, b) ? level_index::add(b, a) : level_index::add(a, b));
+	}
+	template<typename W>
+	static outcome<W> sub_points(const level_index::point<W>& a, const level_index::point<W>& b) noexcept {
+		return from_point(point_less(a, b) ? level_index::sub(b, a) : level_index::sub(a, b));
+	}
+
+	// psi(phi(A) * phi(B)) for points A, B >= 0, in W throughout
+	template<typename W>
+	static outcome<W> mul_points(level_index::point<W> A, level_index::point<W> B) noexcept {
+		namespace li = level_index;
+		using std::log;
+		if (point_less(A, B)) { const li::point<W> t = A; A = B; B = t; }
+		if (is_zero_point(B)) return from_point(li::point<W>{ 0, W(0) });
+		if (A.level == 0) return from_point(li::psi(W(A.index * B.index)));      // both below 1
+		if (B.level == 0) {
+			// X * g, g < 1: ln(Xg) = phi(x - 1) - ln(1/g)
+			const li::point<W> p{ A.level - 1, A.index };
+			const li::point<W> q = li::psi(W(-log(B.index)));
+			if (point_less(q, p)) return up_a_level(li::sub(p, q));
+			// the product is at most 1, so X <= 1/g is finite
+			return from_point(li::psi(W(li::phi(A) * B.index)));
+		}
+		return up_a_level(add_points(li::point<W>{ A.level - 1, A.index }, li::point<W>{ B.level - 1, B.index }).p);
+	}
+
+	// psi(phi(A) / phi(B)) for points A >= 0, B > 0, in W throughout
+	template<typename W>
+	static outcome<W> div_points(const level_index::point<W>& A, const level_index::point<W>& B) noexcept {
+		namespace li = level_index;
+		using std::exp;
+		using std::log;
+		if (is_zero_point(A)) return from_point(li::point<W>{ 0, W(0) });
+		if (A.level == B.level && A.index == B.index) return from_point(li::point<W>{ 1, W(0) });   // X / X = 1
+		if (A.level == 0 && B.level == 0) return from_point(li::psi(W(A.index / B.index)));
+		if (B.level == 0) {
+			// X / g: ln(X/g) = phi(x - 1) + ln(1/g)
+			return up_a_level(add_points(li::point<W>{ A.level - 1, A.index }, li::psi(W(-log(B.index)))).p);
+		}
+		if (A.level == 0) {
+			// g / Y = g e^-L with L = phi(y - 1) >= 0; L past W is inf, and e^-inf = 0
+			const W L = li::phi(li::point<W>{ B.level - 1, B.index });
+			return from_point(li::psi(W(A.index * exp(-L))));
+		}
+		const li::point<W> p{ A.level - 1, A.index }, q{ B.level - 1, B.index };
+		if (point_less(B, A)) return up_a_level(li::sub(p, q));
+		// X / Y = e^-D with D = phi(y - 1) - phi(x - 1) > 0: the quotient is at level 0
+		const W D = li::phi(li::sub(q, p));
+		return from_point(li::psi(W(exp(-D))));
+	}
+
+	// the magnitude of a outcome, rounded to nearest even
+	template<typename W>
+	static std::uint64_t round_outcome(const outcome<W>& r, bool& near_tie) noexcept {
+		near_tie = false;
+		return r.exact ? r.mag : round_point<W>(r.p.level, r.p.index, near_tie);
+	}
+
+	// The lindex of the outcome compute(W{}) returns, rounded once.  compute is a generic
+	// callable evaluated in ArithmeticWorking; a result that lands inside W's band around a
+	// midpoint is evaluated again one stage wider: double, then dd_cascade, then qd_cascade.
+	// Random results almost never need the third stage, but structured ones do: e^(2^-60) / 2
+	// = 1/2 + 2^-61 + 2^-122 puts sqrt of the encoding one ulp above level 2 of lindex<64,3>
+	// within 2^-122 of a midpoint, which dd_cascade cannot see.
+	template<typename Compute>
+	static lindex round_psi(Compute&& compute, bool negative) noexcept {
+		bool near_tie = false;
+		std::uint64_t mag = round_outcome(compute(ArithmeticWorking{}), near_tie);
+		if constexpr (std::is_same_v<ArithmeticWorking, double>) {
+			if (near_tie) mag = round_outcome(compute(dd_cascade{}), near_tie);
+		}
+		if (near_tie) mag = round_outcome(compute(qd_cascade{}), near_tie);
+		lindex r;
+		r.set_magnitude(mag, negative);
+		return r;
+	}
+
+	// the lindex nearest the Working value +-X, X > 0 finite
+	static lindex from_value(const Working& X, bool negative) noexcept {
+		lindex r;
+		r.convert_magnitude(X, negative);
+		return r;
+	}
+
+protected:
 	// a * b * 2^-fbits for level-0 magnitudes a, b < 2^fbits, rounded to nearest even
 	static std::uint64_t fixed_multiply(std::uint64_t a, std::uint64_t b) noexcept {
 		// the 128-bit product in two 64-bit halves, without a native 128-bit type (MSVC)
@@ -493,89 +624,31 @@ protected:
 		return q;
 	}
 
-	// |X| * |Y| for magnitudes a >= b > 0
-	template<typename W>
-	static outcome<W> multiply(std::uint64_t a, std::uint64_t b) noexcept {
-		namespace li = level_index;
-		using std::log;
-		const int la = static_cast<int>(a >> fbits), lb = static_cast<int>(b >> fbits);
-		const W fa = index_in<W>(a), fb = index_in<W>(b);
-		if (la == 0) return exact_magnitude<W>(fixed_multiply(a, b));      // both below 1
-		if (lb == 0) {
-			// X * g, g = fb < 1: ln(Xg) = phi(x - 1) - ln(1/g), with ln(1/g) <= fbits ln 2
-			const li::point<W> p{ la - 1, fa };
-			const li::point<W> q = li::psi(W(-log(fb)));
-			if (point_less(q, p)) return up_a_level(li::sub(p, q));
-			// the product is at most 1, and X <= 1/g <= 2^fbits is finite
-			return from_point(li::psi(W(li::phi(li::point<W>{ la, fa }) * fb)));
-		}
-		return up_a_level(li::add(li::point<W>{ la - 1, fa }, li::point<W>{ lb - 1, fb }));
-	}
-
-	// |X| / |Y| for magnitudes a, b > 0
-	template<typename W>
-	static outcome<W> divide(std::uint64_t a, std::uint64_t b) noexcept {
-		namespace li = level_index;
-		using std::exp;
-		using std::log;
-		if (a == b) return exact_magnitude<W>(1ull << fbits);                // X / X = 1
-		const int la = static_cast<int>(a >> fbits), lb = static_cast<int>(b >> fbits);
-		const W fa = index_in<W>(a), fb = index_in<W>(b);
-		if (la == 0 && lb == 0) {
-			if (a < b) return exact_magnitude<W>(fixed_divide(a, b));        // below 1
-			return from_point(li::psi(W(fa / fb)));                          // above 1
-		}
-		if (lb == 0) {
-			// X / g: ln(X/g) = phi(x - 1) + ln(1/g)
-			const li::point<W> p{ la - 1, fa };
-			const li::point<W> q = li::psi(W(-log(fb)));
-			return up_a_level(point_less(p, q) ? li::add(q, p) : li::add(p, q));
-		}
-		if (la == 0) {
-			// g / Y = g e^-L with L = phi(y - 1) >= 0; L past W is inf, and e^-inf = 0
-			const W L = li::phi(li::point<W>{ lb - 1, fb });
-			return from_point(li::psi(W(fa * exp(-L))));
-		}
-		const li::point<W> p{ la - 1, fa }, q{ lb - 1, fb };
-		if (a > b) return up_a_level(li::sub(p, q));
-		// X / Y = e^-D with D = phi(y - 1) - phi(x - 1) > 0: the quotient is at level 0
-		const W D = li::phi(li::sub(q, p));
-		return from_point(li::psi(W(exp(-D))));
-	}
-
+	// |X| op |Y| for nonzero magnitude encodings (a > b for sub, a >= b for add).  Two
+	// level-0 operands multiply, and divide to a quotient below 1, exactly in integers.
 	template<typename W>
 	static outcome<W> compute(Op op, std::uint64_t a, std::uint64_t b) noexcept {
 		namespace li = level_index;
+		const bool both_level0 = (a < one_bits) && (b < one_bits);
 		switch (op) {
 		case Op::add:
-			return from_point(li::add(li::point<W>{ static_cast<int>(a >> fbits), index_in<W>(a) },
-			                          li::point<W>{ static_cast<int>(b >> fbits), index_in<W>(b) }));
+			return from_point(li::add(point_of<W>(a), point_of<W>(b)));
 		case Op::sub:
-			return from_point(li::sub(li::point<W>{ static_cast<int>(a >> fbits), index_in<W>(a) },
-			                          li::point<W>{ static_cast<int>(b >> fbits), index_in<W>(b) }));
+			return from_point(li::sub(point_of<W>(a), point_of<W>(b)));
 		case Op::mul:
-			return (a >= b) ? multiply<W>(a, b) : multiply<W>(b, a);
+			if (both_level0) return exact_magnitude<W>(fixed_multiply(a, b));
+			return mul_points(point_of<W>(a), point_of<W>(b));
 		case Op::div:
 		default:
-			return divide<W>(a, b);
+			if (a == b) return exact_magnitude<W>(one_bits);                      // X / X = 1
+			if (both_level0 && a < b) return exact_magnitude<W>(fixed_divide(a, b));
+			return div_points(point_of<W>(a), point_of<W>(b));
 		}
 	}
 
-	template<typename W>
-	static std::uint64_t round_outcome(const outcome<W>& r, bool& near_tie) noexcept {
-		near_tie = false;
-		return r.exact ? r.mag : round_point<W>(r.p.level, r.p.index, near_tie);
-	}
-
-	// The magnitude of a op b for nonzero magnitudes (a > b for sub, a >= b for add), with
-	// one retry in dd_cascade when the double evaluation lands too close to a midpoint
+	// The magnitude of a op b, with one retry in dd_cascade near a midpoint
 	static std::uint64_t evaluate(Op op, std::uint64_t a, std::uint64_t b) noexcept {
-		bool near_tie = false;
-		std::uint64_t mag = round_outcome(compute<ArithmeticWorking>(op, a, b), near_tie);
-		if constexpr (!std::is_same_v<ArithmeticWorking, dd_cascade>) {
-			if (near_tie) mag = round_outcome(compute<dd_cascade>(op, a, b), near_tie);
-		}
-		return mag;
+		return round_psi([&](auto w) { return compute<decltype(w)>(op, a, b); }, false).raw_bits();
 	}
 
 	// x + y, or x - y when subtract

@@ -39,3 +39,7 @@
 #include <universal/number/lindex/iostream.hpp>
 // layer 3: value attributes
 #include <universal/number/lindex/attributes.hpp>
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// math functions
+#include <universal/number/lindex/mathlib.hpp>
