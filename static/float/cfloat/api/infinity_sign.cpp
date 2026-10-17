@@ -43,9 +43,12 @@ int VerifyCfloatInfinity(bool reportTestCases) {
 	check(text(pinf) == "inf", "+inf prints as '" + text(pinf) + "'");
 	check(text(ninf) == "-inf", "-inf prints as '" + text(ninf) + "'");
 	check(text(pinf, true) == "+inf", "+inf with showpos prints as '" + text(pinf, true) + "'");
-	// the overflow of a finite value is the same +inf
-	const Cfloat big(1.0e300);
-	if (big.isinf()) check(text(big) == "inf", "1e300 prints as '" + text(big) + "'");
+	// the overflow of a finite value is the same +inf; every configuration below is
+	// non-saturating, so maxpos * 4 overflows (a saturating one would clamp to maxpos)
+	static_assert(!Cfloat::isSaturating, "this check needs a non-saturating configuration");
+	const Cfloat big = Cfloat(SpecificValue::maxpos) * Cfloat(4.0);
+	check(big.isinf() && !big.sign(), "positive overflow produces +inf");
+	check(text(big) == "inf", "positive overflow prints as '" + text(big) + "'");
 	// every normalize variant keeps the sign
 	for (const Cfloat& v : { pinf, ninf }) {
 		blocktriple<fbits, BlockTripleOperator::REP, typename Cfloat::BlockType> r;
