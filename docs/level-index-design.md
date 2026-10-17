@@ -216,6 +216,30 @@ used here.
   resolves almost every case. The near-ties that remain need a retry at higher
   precision, a Ziv-style loop, which #1695 decides once faithful rounding is measured.
 
+### Decided and measured: correctly rounded arithmetic (#1695)
+
+`lindex` + - * / are **correctly rounded**, with one retry rather than a loop:
+
+- A product of two level-0 operands is an exact fixed-point rational, and so is a level-0
+  quotient below 1. Both are computed in integers and rounded exactly. The product is the
+  only result that can sit exactly on a midpoint: a level-0 quotient a / b with
+  a < b < 2^fbits would need 2^(fbits + 1) to divide b.
+- Everything else runs in the working type of the table below. When a double result lands
+  within 2^-40 of a midpoint, it is evaluated again in dd_cascade. Over 4e8 random
+  `lindex<32,3>` pairs, the retry ran for 342334 results, about 1 in 1200, and changed 13 of
+  them. Those are the results whose double error, near 2^-49, crossed the midpoint. The
+  oracle has twelve of them, and without the retry the arithmetic test fails.
+- `lindex<64,3>` works in dd_cascade, whose error is near 2^-100, and has no retry. A result
+  within about 2^-90 of a midpoint could still round the wrong way. No sampled vector comes
+  close.
+
+`static/logarithmic/lindex/arithmetic/arithmetic.cpp` checks every one of the 65536
+signed pairs of `lindex<8,3>` per operation, and sampled pairs of `lindex<12,3>`, `<16,3>`,
+`<32,3>`, `<64,3>` and `<16,2>`, for equality of encodings against
+`tools/generators/lindex_arithmetic_gen.py`. That generator evaluates each result in the psi
+domain at 600 bits by the plain sequences of [C9], through the level-down identities. Wherever
+mpmath can form the operand values, it cross-checks against direct evaluation, to 2^-200.
+
 ## numeric_limits
 
 **Decision 3.** Every member is defined from the extreme encodings, as takum_log does,

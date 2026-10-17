@@ -1,9 +1,11 @@
 file (GLOB API_SRCS "./api/*.cpp")
 file (GLOB CONVERSION_SRCS "./conversion/*.cpp")
 file (GLOB LOGIC_SRCS "./logic/*.cpp")
+file (GLOB ARITHMETIC_SRCS "./arithmetic/*.cpp")
 file (GLOB KERNEL_SRCS "./kernel/*.cpp")
 
 compile_all("true" "lindex" "Number Systems/static/floating-point/logarithmic/lindex/api" "${API_SRCS}")
 compile_all("true" "lindex" "Number Systems/static/floating-point/logarithmic/lindex/conversion" "${CONVERSION_SRCS}")
 compile_all("true" "lindex" "Number Systems/static/floating-point/logarithmic/lindex/logic" "${LOGIC_SRCS}")
+compile_all("true" "lindex" "Number Systems/static/floating-point/logarithmic/lindex/arithmetic" "${ARITHMETIC_SRCS}")
 compile_all("true" "lindex" "Number Systems/static/floating-point/logarithmic/lindex/kernel" "${KERNEL_SRCS}")
