@@ -375,14 +375,15 @@ one, y = 0, and x - x. Errors are in psi-ulps, the largest by the level of x:
 | 6, 7 | 0 | 0 | 0 | 0 |
 
 Every result is faithful and every one is correctly rounded, and x - x is exactly 0 at
-every level. The test asserts 2^-16 psi-ulp for double and 2^-40 for dd_cascade, about 50
+every level. The rounding is judged in dd_cascade: at fbits 60, psi * 2^60 reaches 2^63,
+past what a double can hold exactly. The test asserts 2^-16 psi-ulp for double and 2^-40 for dd_cascade, about 50
 times the worst measured. This answers the two conditions above:
 
 - **Levels 6 and 7 are exact in both W.** One psi-ulp there spans a factor that no
   operand can move, so every sum and difference is x plus a quantity below the format's
   resolution. The kernel returns x itself, which the oracle confirms.
 - **double does not carry fbits 60.** The same pairs give up to 260 psi-ulps in addition
-  and 9e18 in subtraction (the input index alone loses 7 bits), and 132 of 592 results are
+  and 9e18 in subtraction (the input index alone loses 7 bits), and 542 of 592 results are
   not even faithful. So `lindex<64,3>` needs dd_cascade, as the table above prescribes.
 
 phi and psi themselves, on native values: psi(X) is accurate to 1.5e-16 absolute in double

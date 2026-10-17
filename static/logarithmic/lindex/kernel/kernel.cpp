@@ -59,13 +59,6 @@ dd_cascade error_of(const li::point<W>& z, const double exact[3]) {
 // the error in psi-ulps of a format with fbits index bits
 double in_ulps(const dd_cascade& e, int fbits) { return std::abs(double(e)) * std::ldexp(1.0, fbits); }
 
-// round psi * 2^fbits to the nearest integer, ties away: only used to compare the kernel's
-// rounding with the exact one, where the two can disagree only within the error bound
-template<typename W>
-double scaled(const li::point<W>& z, int fbits) {
-	return std::floor(double((dd_cascade(static_cast<double>(z.level)) + dd_cascade(z.index)) * dd_cascade(std::ldexp(1.0, fbits))) + 0.5);
-}
-
 struct Stats {
 	double worst[2][LEVELS] = {};   // [add, sub][level of x]
 	int not_faithful = 0;           // rounded result is neither neighbour of the exact psi
@@ -86,12 +79,17 @@ Stats measure(const lv::ArithmeticVector (&vectors)[N], int fbits) {
 			const double err = in_ulps(error_of(z, exact), fbits);
 			s.worst[op][level] = std::max(s.worst[op][level], err);
 			if (op == 1 && v.x == v.y && !(z.level == 0 && z.index == W(0))) ++s.nonzero_cancel;
-			// the exact psi, scaled to the grid, and the two encodings that bracket it
-			const dd_cascade E = (dd_cascade(exact[0]) + dd_cascade(exact[1]) + dd_cascade(exact[2])) * dd_cascade(std::ldexp(1.0, fbits));
-			const double below = std::floor(double(E)), nearest = std::floor(double(E) + 0.5);
-			const double got = scaled(z, fbits);
-			if (got != below && got != below + 1.0) ++s.not_faithful;
-			if (got != nearest) ++s.not_nearest;
+			// Round the kernel's psi to the encoding grid and compare it with the exact psi.
+			// psi * 2^fbits reaches 2^63 at fbits 60, past double's 53 bits, so this stays in
+			// dd_cascade, where such an integer and its residual are exact.  r is the exact
+			// psi minus the chosen encoding, in psi-ulps: faithful when |r| < 1, correctly
+			// rounded when |r| <= 1/2 (an exact tie may go either way).
+			const dd_cascade scale(std::ldexp(1.0, fbits));
+			const dd_cascade E = (dd_cascade(exact[0]) + dd_cascade(exact[1]) + dd_cascade(exact[2])) * scale;
+			const dd_cascade G = floor((dd_cascade(static_cast<double>(z.level)) + dd_cascade(z.index)) * scale + dd_cascade(0.5));
+			const double r = std::abs(double(E - G));
+			if (!(r < 1.0)) ++s.not_faithful;
+			if (!(r <= 0.5)) ++s.not_nearest;
 			++s.count;
 		}
 	}
