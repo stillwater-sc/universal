@@ -54,8 +54,22 @@ unum<esizesize, fsizesize, bt> abs(const unum<esizesize, fsizesize, bt>& v) {
 // square root
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 unum<esizesize, fsizesize, bt> sqrt(const unum<esizesize, fsizesize, bt>& v) {
-	unum<esizesize, fsizesize, bt> result;
+	using Unum = unum<esizesize, fsizesize, bt>;
+	Unum result;
 	if (v.isnan() || v.isneg()) { result.setnan(); return result; }
+	if constexpr (Unum::Lattice::fits_double) {
+		// the root of each end of the tile, directed: the tile that holds sqrt of every value
+		// in v's tile, or NaN when those roots span more than one tile
+		using bound = typename Unum::bound;
+		bound lo{}, hi{};
+		v.tile_bounds(lo, hi);
+		auto root = [](const bound& b) {
+			if (b.inf != 0) return b;
+			const unum_eft::directed r = unum_eft::sqrt(b.d);
+			return bound{ r.d, r.dir, b.open, 0 };
+		};
+		return Unum::enclose(root(lo), root(hi));
+	}
 	result = std::sqrt(v.to_double());
 	return result;
 }
