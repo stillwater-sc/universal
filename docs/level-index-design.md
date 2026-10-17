@@ -356,6 +356,41 @@ the correct limit, but #1693 must confirm it against psi-domain encodings at tho
 levels. #1693 also measures the per-level accuracy of phi and psi themselves in each
 W.
 
+### Measured: the kernel against the oracle (#1693)
+
+`static/logarithmic/lindex/kernel/kernel.cpp` runs the kernel
+(`number/shared/level_index_kernel.hpp`) over 592 pairs per format from
+`tools/generators/level_index_gen.py`. The pairs cover every level, near cancellation
+(1, 2, 3, 32 and 2^(fbits/2) ulps apart), operands straddling a level boundary, operands on
+one, y = 0, and x - x. Errors are in psi-ulps, the largest by the level of x:
+
+| level of x | double, fbits 28: add | sub | dd_cascade, fbits 60: add | sub |
+|---|---|---|---|---|
+| 0 | 6.4e-9 | 0 | 4.7e-15 | 0 |
+| 1 | 4.4e-8 | 6.3e-8 | 1.6e-14 | 2.0e-14 |
+| 2 | 5.1e-8 | 4.2e-8 | 3.0e-14 | 2.4e-14 |
+| 3 | 5.3e-8 | 5.1e-8 | 2.6e-14 | 2.0e-14 |
+| 4 | 4.2e-8 | 3.0e-7 | 2.4e-14 | 1.9e-14 |
+| 5 | 3.8e-8 | 1.8e-8 | 2.8e-14 | 2.6e-14 |
+| 6, 7 | 0 | 0 | 0 | 0 |
+
+Every result is faithful and every one is correctly rounded, and x - x is exactly 0 at
+every level. The test asserts 2^-16 psi-ulp for double and 2^-40 for dd_cascade, about 50
+times the worst measured. This answers the two conditions above:
+
+- **Levels 6 and 7 are exact in both W.** One psi-ulp there spans a factor that no
+  operand can move, so every sum and difference is x plus a quantity below the format's
+  resolution. The kernel returns x itself, which the oracle confirms.
+- **double does not carry fbits 60.** The same pairs give up to 260 psi-ulps in addition
+  and 9e18 in subtraction (the input index alone loses 7 bits), and 132 of 592 results are
+  not even faithful. So `lindex<64,3>` needs dd_cascade, as the table above prescribes.
+
+phi and psi themselves, on native values: psi(X) is accurate to 1.5e-16 absolute in double
+and 2.7e-32 in dd_cascade at every level. phi(x) has relative error 2.4e-15 at level 3 and
+1.2e-13 at level 4 in double (8.8e-30 in dd_cascade), because each level multiplies an
+index error by phi'(x) / phi(x). This matters only for conversion to a native value, which
+#1694 rounds once at the end; the arithmetic never forms phi.
+
 `sw::math::constexpr_math` (#763) is not chosen. The arithmetic is runtime, and
 nothing here needs to evaluate a transcendental at compile time. Constants such as the
 level boundaries can come from the oracle as literals.
