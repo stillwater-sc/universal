@@ -46,9 +46,11 @@ namespace sw { namespace universal {
 		const double k = 512.0;
 		const double inv_k = 1.0 / k;
 
-		if (a.high() <= -709.0) return dd_cascade(0.0);
+		// e^x rounds to 0 below ln(2^-1075) = -745.13, half the smallest subnormal (#1709)
+		if (a.high() <= -745.2) return dd_cascade(0.0);
 
-		if (a.high() >=  709.0) return dd_cascade(SpecificValue::infpos);
+		// e^x overflows above ln(DBL_MAX) = 709.78; below it the 2^m scaling stays finite (#1709)
+		if (a.high() >= 709.8) return dd_cascade(SpecificValue::infpos);
 
 		if (a.iszero()) return dd_cascade(1.0);
 
