@@ -76,6 +76,10 @@ try {
 	GenerateLindexTable<8, 4>(ostr, csv);
 
 	ostr.close();
+	if (!ostr) {
+		std::cerr << "Error: could not write " << filename << '\n';
+		return EXIT_FAILURE;
+	}
 	std::cout << "Created value tables for lindex<nbits, lbits> in " << filename << '\n';
 
 #endif

@@ -9,9 +9,13 @@ function, or a repeated exponential, has to be rescaled by hand or it becomes in
 Level-index (LI) arithmetic, introduced by Clenshaw and Olver (1984), removes overflow. It
 represents a value by its **generalized logarithm**, a level that counts how many times
 you can take a logarithm before the value drops below 1, plus an index that holds the
-remainder. Lozier and Olver (1990) prove that the result is closed under + - * /: no
-sum, difference, product or quotient of representable values leaves the range. The range
-of an 8-bit `lindex` already reaches phi(8), a tower of exponentials past any notation.
+remainder. Lozier and Olver (1990) prove that the result is closed at the top under + - * /,
+division by zero excepted: no sum, difference, product or quotient of representable values
+overflows. In a finite format that holds for the default `lbits = 3`; with `lbits = 2`
+products past the last level saturate at maxpos. LI is not closed at the bottom: level 0 is
+plain fixed point, and values below its grid underflow to 0 (see [Limitations](#limitations)).
+The largest value of an 8-bit `lindex<8,3>` is already phi(7.9375), a tower of exponentials
+past any notation.
 
 Tracking issue: #1349. Design and verification: [docs/level-index-design.md](../level-index-design.md).
 

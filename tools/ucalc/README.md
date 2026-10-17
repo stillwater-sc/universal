@@ -31,10 +31,11 @@ agents, supporting structured JSON/CSV output for automated workflows.
   prints different encodings under each. `diverge <expr> takum32 takum_log32
   <tol> for <var> in [a, b]` finds where they first disagree.
 
-  Level-index, `lindex8`..`lindex32`, has no overflow at all: it stores the
-  generalized logarithm, so `exp(exp(exp(exp(exp(1)))))` is `phi(6)`, and exp and
-  log of a value >= 1 are exact steps of one level. Values past double print as
-  `phi(psi)`.
+  Level-index, `lindex8`..`lindex32`, does not overflow under + - * /: it stores
+  the generalized logarithm, so its range runs to nearly phi(8), and
+  `exp(exp(exp(exp(exp(1)))))` is `phi(6)`. exp and log of a value >= 1 are exact
+  steps of one level, and only exp from the top level saturates, at maxpos.
+  Values past double print as `phi(psi)`; values below 2^-fbits underflow to 0.
 - Includes the **ubit tile types** `areal` (float lattice) and `poxel` (posit lattice),
   as single tiles (`areal32`, `poxel32`, ...) and as guaranteed enclosures
   (`areal32i`, `poxel32i`, ...), for asking what is *known* about a result rather
