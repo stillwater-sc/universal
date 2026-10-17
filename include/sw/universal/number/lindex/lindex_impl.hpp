@@ -36,6 +36,7 @@
 // hundreds of ulps.  The arithmetic of #1695 picks its own working type per width.
 #include <cstdint>
 #include <cmath>
+#include <cstring>
 #include <limits>
 #include <type_traits>
 
@@ -359,8 +360,26 @@ protected:
 	// Working rounded to Real once
 	template<typename Real>
 	static Real narrow(const Working& v) noexcept {
-		if constexpr (sizeof(Real) > sizeof(double)) return static_cast<Real>(v.high()) + static_cast<Real>(v.low());
-		else return static_cast<Real>(v.high());
+		if constexpr (sizeof(Real) > sizeof(double)) {
+			return static_cast<Real>(v.high()) + static_cast<Real>(v.low());
+		}
+		else if constexpr (std::numeric_limits<Real>::digits + 2 <= std::numeric_limits<double>::digits) {
+			// high() is v rounded to double, and rounding that again can land on a midpoint of
+			// Real that v itself is not on.  Round to odd instead: when low() is not 0 and high()
+			// is even, step to the other double around v, the one toward low().  An odd double
+			// is never a midpoint of a type at least 2 bits narrower, so the cast rounds once.
+			double d = v.high();
+			if (v.low() != 0.0 && std::isfinite(d)) {
+				std::uint64_t bits = 0;
+				std::memcpy(&bits, &d, sizeof(d));
+				if ((bits & 1ull) == 0ull) d = std::nextafter(d, v.low() > 0.0 ? std::numeric_limits<double>::infinity()
+				                                                              : -std::numeric_limits<double>::infinity());
+			}
+			return static_cast<Real>(d);
+		}
+		else {
+			return static_cast<Real>(v.high());
+		}
 	}
 
 	template<typename Real>

@@ -170,6 +170,8 @@ def encodings(nbits, lbits, rng):
             mags.update(rng.randint(0, top) for _ in range(250))
             # levels 0..4, where the value is finite, get extra weight
             mags.update(rng.randint(0, (5 << fbits) - 1) for _ in range(250))
+        if fbits > 53:
+            mags.update(float_midpoints(nbits, lbits))
         mags = sorted(mags)
     out = []
     for m in mags:
@@ -177,6 +179,31 @@ def encodings(nbits, lbits, rng):
         if m != 0 and m % 3 == 0:                                 # a third of them negated too
             out.append((m, True))
     return out
+
+
+def float_midpoints(nbits, lbits):
+    """Encodings whose value lies within 2^-60 of a midpoint between two floats.
+
+    The double nearest such a value is the midpoint itself, so converting the double to
+    float would round twice; a correct conversion must look past it to the low limb.
+    Only an index wider than a double resolves values that close.  A separate generator
+    keeps the rest of the sample as it was.
+    """
+    fbits = nbits - 1 - lbits
+    rng = random.Random(16941)
+    mags = set()
+    for _ in range(40):
+        level = rng.randint(1, 3)
+        lo, hi = phi(level), phi(level + 1)
+        with mp.workprec(24):
+            f = +(lo + (hi - lo) * mp.mpf(rng.random()))
+        ulp = mp.mpf(2) ** (mp.floor(mp.log(f, 2)) - 23)
+        mid = f + ulp / 2
+        enc = round_half_even(psi(mid) * mp.mpf(2) ** fbits)
+        mags.update((enc - 1, enc, enc + 1))
+    # the case the review of #1708 found: exp(68719474689 * 2^-60) is just above 1 + 2^-24
+    mags.add(0x1000000ffffff801)
+    return mags
 
 
 def emit_to_native(nbits, lbits, rng):
