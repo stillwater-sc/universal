@@ -87,6 +87,17 @@ std::string info_print(const lindex<nbits, lbits, bt>& v, int printPrecision = 1
 	return s.str();
 }
 
+// the fields of an encoding, as one line: sign, level and index of |value|, psi, value
+template<unsigned nbits, unsigned lbits, typename bt>
+std::string components(const lindex<nbits, lbits, bt>& v) {
+	std::stringstream s;
+	s << type_tag(v) << ": ";
+	if (v.isnar()) { s << "NaR"; return s.str(); }
+	s << (v.sign() ? "-" : "+") << " level " << v.level() << " index " << std::setprecision(10) << v.index()
+	  << " psi " << v.psi() << " value " << to_value_string(v, 10);
+	return s.str();
+}
+
 // sign in red, level in yellow, index in magenta
 template<unsigned nbits, unsigned lbits, typename bt>
 std::string color_print(const lindex<nbits, lbits, bt>& v, bool nibbleMarker = false) {

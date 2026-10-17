@@ -48,6 +48,7 @@
 #include <universal/number/dbns/dbns.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/takum/takum.hpp>
+#include <universal/number/lindex/lindex.hpp>
 #include <universal/number/dfixpnt/dfixpnt.hpp>
 #include <universal/number/rational/rational.hpp>
 #include <universal/number/hfloat/hfloat.hpp>
@@ -555,6 +556,42 @@ try {
 		eval.evaluate("2 + 3");
 		if (!eval.trace_steps().empty()) {
 			std::cerr << "FAIL: trace should be empty when not enabled\n";
+			++nrOfFailedTests;
+		}
+	}
+
+	// ================================================================
+	// Level-index (#1349)
+	// ================================================================
+	{
+		check_value(reg, "lindex32", "1 + 1",     2.0, 1e-7,  "lindex32 add");
+		check_value(reg, "lindex32", "2 * 3",     6.0, 1e-6,  "lindex32 mul");
+		check_value(reg, "lindex32", "1 / 4",     0.25, 0.0,  "lindex32 div");   // level 0 is exact fixed point
+		check_value(reg, "lindex32", "sqrt(4)",   2.0, 1e-7,  "lindex32 sqrt");
+		check_value(reg, "lindex16", "1 + 1",     2.0, 1e-3,  "lindex16 add");
+		check_value(reg, "lindex8",  "1 + 1",     2.0, 0.2,   "lindex8 add");
+		// e is psi = 2, an encoding, and exp and log are exact steps of one level
+		check_value(reg, "lindex32", "exp(1)",    2.71828182845904524, 0.0, "lindex32 exp(1) is e");
+		check_value(reg, "lindex32", "log(exp(1))", 1.0, 0.0, "lindex32 log(e) is 1");
+		check_value(reg, "lindex32", "exp(0)",    1.0, 0.0,   "lindex32 exp(0)");
+		check_value(reg, "lindex32", "log(1)",    0.0, 0.0,   "lindex32 log(1)");
+		// past double the value prints in the level-index map itself, not as inf: e^e^e^e^e is
+		// psi = 6, about 10^(10^1656520)
+		check_contains(reg, "lindex32", "exp(exp(exp(exp(exp(1)))))", "phi(6)", "lindex32 prints phi(6)");
+		{
+			const Value m = reg.get("lindex16").maxpos();
+			if (m.native_rep.find("phi(7.99") == std::string::npos) {
+				std::cerr << "FAIL: lindex16 maxpos prints " << m.native_rep << ", expected phi(7.99...)\n";
+				++nrOfFailedTests;
+			}
+		}
+		// below minpos = 2^-28 a value underflows to 0: level 0 is plain fixed point
+		check_value(reg, "lindex32", "1 / 1000000000000", 0.0, 0.0, "lindex32 underflow");
+		// the same value lands on different bits than the takum encodings of the same width
+		Value li = eval_in(reg, "lindex32", "3.0");
+		Value tk = eval_in(reg, "takum32",  "3.0");
+		if (li.binary_rep == tk.binary_rep || li.type_name == tk.type_name) {
+			std::cerr << "FAIL: lindex32 and takum32 alias each other: " << li.binary_rep << " " << li.type_name << "\n";
 			++nrOfFailedTests;
 		}
 	}

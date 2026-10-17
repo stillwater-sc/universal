@@ -196,6 +196,14 @@ inline TypeRegistry build_default_registry() {
 	reg.add("takum_log32", register_type<takum_log<32, 3, uint32_t>>("takum_log32"));
 	reg.add("takum_log64", register_type<takum_log<64, 3, uint64_t>>("takum_log64"));
 
+	// Level-index (#1349): psi(X) = level + index with phi(x) = e^phi(x - 1), so the range
+	// runs to phi(8), far past any notation, and exp and log of a value >= 1 are exact steps
+	// of one level.  Values past double print as phi(psi).  Level 0 is plain fixed point, so
+	// small values underflow at 2^-fbits.
+	reg.add("lindex8",  register_type<lindex<8, 3, uint8_t>>("lindex8"));
+	reg.add("lindex16", register_type<lindex<16, 3, uint16_t>>("lindex16"));
+	reg.add("lindex32", register_type<lindex<32, 3, uint32_t>>("lindex32"));
+
 	// Decimal fixed-point (BCD encoding, Modulo arithmetic)
 	reg.add("dfixpnt8_4",  register_type<dfixpnt<8, 4>>("dfixpnt8_4"));
 	reg.add("dfixpnt16_8", register_type<dfixpnt<16, 8>>("dfixpnt16_8"));
