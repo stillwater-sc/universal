@@ -8,10 +8,6 @@
 #include <cerrno>
 #include <cmath>
 
-#ifndef DD_CASCADE_NATIVE_SQRT
-#define DD_CASCADE_NATIVE_SQRT 1
-#endif
-
 // square root formulations; see the comment on sqrt() below for the trade
 #define UNIVERSAL_DD_CASCADE_SQRT_NEWTON_DIVISION   0
 #define UNIVERSAL_DD_CASCADE_SQRT_NEWTON_RECIPROCAL 1
@@ -24,8 +20,6 @@ namespace sw { namespace universal {
 
     // forward declaration
 inline dd_cascade nroot(const dd_cascade&, int);
-
-#if DD_CASCADE_NATIVE_SQRT
 
     // Computes the square root of the double-double number dd.
     //   NOTE: dd must be a non-negative number
@@ -107,21 +101,6 @@ inline dd_cascade sqrt(const dd_cascade& a) {
 
 #endif
     }
-
-#else
-
-	// sqrt shim for double-double
-	inline dd_cascade sqrt(dd_cascade a) {
-#if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw dd_cascade_negative_sqrt_arg();
-#else  // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) { errno = EDOM; return dd_cascade(SpecificValue::qnan); }
-#endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.iszero()) return a;
-		return dd_cascade(std::sqrt(double(a)));
-	}
-
-#endif // ! DD_CASCADE_NATIVE_SQRT
 
     // Note: sqrt(double) helper removed to avoid namespace pollution
     // Use explicit construction instead: sqrt(dd_cascade(d))

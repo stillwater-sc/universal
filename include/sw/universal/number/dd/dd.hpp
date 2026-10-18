@@ -39,12 +39,8 @@
 #endif
 #endif
 
-////////////////////////////////////////////////////////////////////////////////////////
-// enable native sqrt implementation
-// 
-#if !defined(DOUBLEDOUBLE_NATIVE_SQRT)
-#define DOUBLEDOUBLE_NATIVE_SQRT 1
-#endif
+// DOUBLEDOUBLE_NATIVE_SQRT is gone: setting it to 0 selected a sqrt that went through double.
+// sqrt is always the native, full-precision one (#1724).
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

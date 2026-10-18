@@ -16,59 +16,6 @@ namespace sw { namespace universal {
 	// value representing an angle expressed in radians
 	// One radian is equivalent to 180/PI degrees
 
-#if !QUADDOUBLE_NATIVE_TRIGONOMETRY
-	// sine of an angle of x radians
-	inline qd sin(const qd& x) {
-		return qd(std::sin(double(x)));
-	}
-
-	// cosine of an angle of x radians	
-	inline qd cos(const qd& x) {
-		return qd(std::cos(double(x)));
-	}
-
-	// tangent of an angle of x radians
-	inline qd tan(const qd& x) {
-		return qd(std::tan(double(x)));
-	}
-
-	// cotangent of an angle of x radians
-	inline qd atan(const qd& x) {
-		return qd(std::atan(double(x)));
-	}
-
-	// Arc tangent with two parameters
-	inline qd atan2(qd y, const qd& x) {
-		return qd(std::atan2(double(y), double(x)));
-	}
-
-	// cosecant of an angle of x radians
-	inline qd acos(const qd& x) {
-		return qd(std::acos(double(x)));
-	}
-
-	// secant of an angle of x radians
-	inline qd asin(const qd& x) {
-		return qd(std::asin(double(x)));
-	}
-
-	// cotangent an angle of x radians
-	inline qd cot(const qd& x) {
-		return qd(std::tan(std::numbers::pi*2 - double(x)));
-	}
-
-	// secant of an angle of x radians
-	inline qd sec(const qd& x) {
-		return qd(1.0 / std::cos(double(x)));
-	}
-
-	// cosecant of an angle of x radians
-	inline qd csc(const qd& x) {
-		return qd(1.0 / std::sin(double(x)));
-	}
-
-#else
-
 /// <summary>
 /// Compute sin(a) and cos(a) using a Taylor series approximation. Assumes |a| <= pi/2048
 /// </summary>
@@ -526,8 +473,5 @@ inline qd acos(const qd& a) {
 
     return atan2(sqrt(1.0 - sqr(a)), a);
 }
-
-
-#endif
 
 }} // namespace sw::universal
