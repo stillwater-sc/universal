@@ -49,12 +49,8 @@
 #define QUIRE_THROW_ARITHMETIC_EXCEPTION CFLOAT_THROW_ARITHMETIC_EXCEPTION
 #endif
 
-////////////////////////////////////////////////////////////////////////////////////////
-// enable native sqrt implementation
-// 
-#if !defined(CFLOAT_NATIVE_SQRT)
-#define CFLOAT_NATIVE_SQRT 0
-#endif
+// CFLOAT_NATIVE_SQRT is gone: sqrt is correctly rounded at every width, and the configuration
+// alone picks the path (#1725).
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

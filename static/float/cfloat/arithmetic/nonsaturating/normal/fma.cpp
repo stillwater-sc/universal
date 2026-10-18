@@ -9,7 +9,6 @@
 //#define ALGORITHM_VERBOSE_OUTPUT 1
 //#define ALGORITHM_TRACE_SQRT 1
 #include <universal/number/algorithm/newtons_iteration.hpp>
-// #define CFLOAT_NATIVE_SQRT 1
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_randoms.hpp>
