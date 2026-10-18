@@ -30,10 +30,6 @@ namespace sw { namespace universal {
 		dd_cascade_negative_nroot_arg() : dd_cascade_arithmetic_exception("negative nroot argument") {}
 	};
 
-	// a finite argument to sin, cos or sincos too large for the argument reduction
-	struct dd_cascade_trig_argument_too_large : public dd_cascade_arithmetic_exception {
-		dd_cascade_trig_argument_too_large() : dd_cascade_arithmetic_exception("trigonometric argument too large to reduce") {}
-	};
 
 	///////////////////////////////////////////////////////////////
 	// internal implementation exceptions

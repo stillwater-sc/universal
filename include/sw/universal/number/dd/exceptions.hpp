@@ -53,10 +53,6 @@ struct dd_negative_nroot_arg : public dd_arithmetic_exception {
 	dd_negative_nroot_arg() : dd_arithmetic_exception("negative nroot argument") {}
 };
 
-// a finite argument to sin, cos or sincos too large for the argument reduction
-struct dd_trig_argument_too_large : public dd_arithmetic_exception {
-	dd_trig_argument_too_large() : dd_arithmetic_exception("trigonometric argument too large to reduce") {}
-};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// REAL INTERNAL OPERATION EXCEPTIONS

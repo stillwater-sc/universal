@@ -8,10 +8,10 @@
 //
 // dd, qd, dd_cascade, td_cascade and qd_cascade report an invalid argument the way the std::
 // functions do: errno = EDOM and a quiet NaN, with no message.  The cases with a defined value
-// follow std as well: atan2(+-0, +-0) and npwr(0, 0) = 1.  A finite argument too large for the
-// trigonometric argument reduction returns a NaN with errno = ERANGE, or throws under the type's
-// *_THROW_ARITHMETIC_EXCEPTION.  These checks hold for every one of the five types, which share
-// the function names; they need the non-throwing configuration, except VerifyTrigReductionThrows.
+// follow std as well: atan2(+-0, +-0) and npwr(0, 0) = 1, and a finite argument of any size to
+// the trigonometric functions reduces exactly (#1723).  These checks hold for every one of the
+// five types, which share the function names; they need the non-throwing configuration, except
+// VerifyMathThrows.
 #include <cerrno>
 #include <cmath>
 #include <iostream>
@@ -69,12 +69,26 @@ namespace sw { namespace universal { namespace multidouble_verification {
 		nan_with([&] { return cos(nan); }, 0, "cos(nan)");
 		nan_with([&] { Real s, c; sincos(nan, s, c); check(isquiet(c), "sincos(nan) cos"); return s; }, 0, "sincos(nan)");
 
-		// a finite argument too large to reduce: ERANGE and a quiet NaN.  sincos (and tan
-		// through it) indexed its table with std::abs(INT_MIN) here and crashed.
-		nan_with([&] { return sin(big); },  ERANGE, "sin(1e300)");
-		nan_with([&] { return cos(-big); }, ERANGE, "cos(-1e300)");
-		nan_with([&] { return tan(big); },  ERANGE, "tan(1e300)");
-		nan_with([&] { Real s, c; sincos(big, s, c); check(isquiet(c), "sincos(1e300) cos"); return s; }, ERANGE, "sincos(1e300)");
+		// a finite argument of any size reduces exactly (#1723).  sincos (and tan through it)
+		// once indexed its table with std::abs(INT_MIN) here and crashed, and the reduction by
+		// a stored 2pi then gave NaN with ERANGE.  libm reduces exactly too, so the leading limb
+		// agrees with std:: to double precision; verification/multidouble_trig.hpp checks the
+		// full precision.
+		auto close_to = [&](const Real& r, double want, const std::string& what) {
+			check(!r.isnan() && std::fabs(double(r) - want) <= 4.0e-16 * std::fabs(want),
+			      what + " = " + std::to_string(double(r)) + ", std gives " + std::to_string(want));
+		};
+		errno = 0;
+		close_to(sin(big), std::sin(1.0e300), "sin(1e300)");
+		close_to(cos(-big), std::cos(-1.0e300), "cos(-1e300)");
+		close_to(tan(big), std::tan(1.0e300), "tan(1e300)");
+		{
+			Real s, c;
+			sincos(big, s, c);
+			close_to(s, std::sin(1.0e300), "sincos(1e300) sin");
+			close_to(c, std::cos(1.0e300), "sincos(1e300) cos");
+		}
+		check(errno == 0, "trigonometry of 1e300 set errno " + std::to_string(errno));
 
 		// the cases std defines: atan2 of a zero is signed as y, and pi for a negative x
 		auto signed_value = [&](const Real& r, double want, const std::string& what) {
@@ -102,26 +116,26 @@ namespace sw { namespace universal { namespace multidouble_verification {
 		return fails;
 	}
 
-	// under the type's *_THROW_ARITHMETIC_EXCEPTION a finite argument too large to reduce throws
-	// TooLarge, and a negative sqrt argument throws NegativeSqrt; inf is still a NaN, as std
-	template<typename Real, typename TooLarge, typename NegativeSqrt>
-	int VerifyTrigReductionThrows(const std::string& tag, bool reportTestCases) {
+	// under the type's *_THROW_ARITHMETIC_EXCEPTION a negative sqrt argument throws NegativeSqrt.
+	// The trigonometric functions throw nothing: inf is a NaN with EDOM, as std, and every finite
+	// argument reduces (#1723).
+	template<typename Real, typename NegativeSqrt>
+	int VerifyMathThrows(const std::string& tag, bool reportTestCases) {
 		int fails = 0;
-		auto expect_throw = [&](auto f, const std::string& what) {
-			bool thrown = false;
-			try { f(); } catch (const TooLarge&) { thrown = true; }
-			if (!thrown) { ++fails; if (reportTestCases) std::cerr << "FAIL: " << tag << ' ' << what << " did not throw\n"; }
+		auto fail = [&](const std::string& what) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL: " << tag << ' ' << what << '\n';
 		};
-		const Real big(1.0e300), inf(SpecificValue::infpos);
-		expect_throw([&] { return sin(big); }, "sin(1e300)");
-		expect_throw([&] { return cos(big); }, "cos(1e300)");
-		expect_throw([&] { Real s, c; sincos(big, s, c); }, "sincos(1e300)");
-		expect_throw([&] { return tan(big); }, "tan(1e300)");
 		bool thrown = false;
 		try { (void)sqrt(Real(-1.0)); } catch (const NegativeSqrt&) { thrown = true; }
-		if (!thrown) { ++fails; if (reportTestCases) std::cerr << "FAIL: " << tag << " sqrt(-1) did not throw\n"; }
+		if (!thrown) fail("sqrt(-1) did not throw");
+		const Real big(1.0e300), inf(SpecificValue::infpos);
 		errno = 0;
-		if (!(sin(inf).isnan() && errno == EDOM)) { ++fails; if (reportTestCases) std::cerr << "FAIL: " << tag << " sin(inf) is not NaN with EDOM\n"; }
+		if (!(sin(inf).isnan() && errno == EDOM)) fail("sin(inf) is not NaN with EDOM");
+		try {
+			if (!(std::fabs(double(sin(big)) - std::sin(1.0e300)) <= 4.0e-16)) fail("sin(1e300) did not reduce");
+		}
+		catch (...) { fail("sin(1e300) threw"); }
 		return fails;
 	}
 

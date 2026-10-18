@@ -53,10 +53,6 @@ struct qd_negative_nroot_arg : public qd_arithmetic_exception {
 	qd_negative_nroot_arg() : qd_arithmetic_exception("negative nroot argument") {}
 };
 
-// a finite argument to sin, cos or sincos too large for the argument reduction
-struct qd_trig_argument_too_large : public qd_arithmetic_exception {
-	qd_trig_argument_too_large() : qd_arithmetic_exception("trigonometric argument too large to reduce") {}
-};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// REAL INTERNAL OPERATION EXCEPTIONS

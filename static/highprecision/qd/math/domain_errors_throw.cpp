@@ -1,13 +1,13 @@
-// domain_errors_throw.cpp: qd trigonometric argument reduction under QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION (#1717)
+// domain_errors_throw.cpp: qd math exceptions under QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION (#1717)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// A finite argument too large for the argument reduction of sin, cos, sincos and tan throws
-// qd_trig_argument_too_large in the throwing configuration; inf is still a NaN with EDOM, as
-// std::sin.  The check is in verification/multidouble_math_errors.hpp.
+// A negative sqrt argument throws; the trigonometric functions throw nothing: inf is a NaN
+// with EDOM, as std::sin, and every finite argument reduces (#1723).  The check is in
+// verification/multidouble_math_errors.hpp.
 #include <universal/utility/directives.hpp>
 #define QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/qd/qd.hpp>
@@ -44,14 +44,14 @@ try {
 
 #if MANUAL_TESTING
 
-	nrOfFailedTestCases += ReportTestResult((VerifyTrigReductionThrows<qd, qd_trig_argument_too_large, qd_negative_sqrt_arg>(test_tag, reportTestCases)), "qd", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyMathThrows<qd, qd_negative_sqrt_arg>(test_tag, reportTestCases)), "qd", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult((VerifyTrigReductionThrows<qd, qd_trig_argument_too_large, qd_negative_sqrt_arg>(test_tag, reportTestCases)), "qd", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyMathThrows<qd, qd_negative_sqrt_arg>(test_tag, reportTestCases)), "qd", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

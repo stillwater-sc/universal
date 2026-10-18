@@ -33,10 +33,6 @@ struct td_cascade_negative_nroot_arg : public td_cascade_arithmetic_exception {
 	td_cascade_negative_nroot_arg() : td_cascade_arithmetic_exception("negative nroot argument") {}
 };
 
-// a finite argument to sin, cos or sincos too large for the argument reduction
-struct td_cascade_trig_argument_too_large : public td_cascade_arithmetic_exception {
-	td_cascade_trig_argument_too_large() : td_cascade_arithmetic_exception("trigonometric argument too large to reduce") {}
-};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// INTERNAL IMPLEMENTATION EXCEPTIONS

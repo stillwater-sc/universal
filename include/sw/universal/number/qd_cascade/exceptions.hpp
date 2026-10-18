@@ -30,10 +30,6 @@ namespace sw { namespace universal {
 		qd_cascade_negative_nroot_arg() : qd_cascade_arithmetic_exception("negative nroot argument") {}
 	};
 
-	// a finite argument to sin, cos or sincos too large for the argument reduction
-	struct qd_cascade_trig_argument_too_large : public qd_cascade_arithmetic_exception {
-		qd_cascade_trig_argument_too_large() : qd_cascade_arithmetic_exception("trigonometric argument too large to reduce") {}
-	};
 
 	///////////////////////////////////////////////////////////////
 	// internal implementation exceptions
