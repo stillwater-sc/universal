@@ -312,6 +312,53 @@ try {
 		}
 	}
 
+	// Test 9: Zero-valued cohort encodings
+	std::cout << "+---------    Zero-valued cohort encoding tests\n";
+	{
+		using TinyBID = dfloat<3, 2, DecimalEncoding::BID, uint16_t>;
+		using TinyDPD = dfloat<3, 2, DecimalEncoding::DPD, uint16_t>;
+		auto check_zero_encodings = [&](auto tag) {
+			using Tiny = decltype(tag);
+			for (uint64_t bits = 0; bits < (uint64_t(1) << Tiny::nbits); ++bits) {
+				Tiny value;
+				value.setbits(bits);
+				bool sign;
+				int exponent;
+				typename Tiny::significand_t significand;
+				value.unpack(sign, exponent, significand);
+				const bool expected = !value.isinf() && !value.isnan() && significand.iszero();
+				if (value.iszero() != expected) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) std::cerr << "FAIL: zero classification for bits " << bits << '\n';
+				}
+				if (expected) {
+					Tiny two(2);
+#if DFLOAT_THROW_ARITHMETIC_EXCEPTION
+					// the divide-by-zero path throws in this configuration
+					bool threw = false;
+					try {
+						(void)(two / value);
+					}
+					catch (const sw::universal::dfloat_divide_by_zero&) {
+						threw = true;
+					}
+					if (!threw) {
+						++nrOfFailedTestCases;
+						if (reportTestCases) std::cerr << "FAIL: division by encoded zero " << bits << " did not throw\n";
+					}
+#else
+					if (!(two / value).isinf()) {
+						++nrOfFailedTestCases;
+						if (reportTestCases) std::cerr << "FAIL: division by encoded zero " << bits << '\n';
+					}
+#endif
+				}
+			}
+		};
+		check_zero_encodings(TinyBID{});
+		check_zero_encodings(TinyDPD{});
+	}
+
 #endif
 
 #if REGRESSION_LEVEL_2
