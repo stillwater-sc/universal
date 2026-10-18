@@ -34,18 +34,34 @@ constexpr efloat<nlimbs> log(const efloat<nlimbs>& x) {
 	}
 	if (x.isinf()) return x;
 
-	// High-precision ln(2)
-	efloat<nlimbs> ln2;
-	parse("0.69314718055994530941723212145817656807550013436025525412068", ln2);
+	// Newton on exp(y) - x = 0, y <- y + x exp(-y) - 1, finishing at the working precision: the
+	// result's precision plus guard bits, with ln 2 computed at that precision (#1712).  The seed
+	// carries ~53 bits: x = m 2^e with m in [1, 2), y0 = log(double(m)) + e ln 2.  Each step
+	// doubles the correct bits, so the steps run at doubling precisions, 128, 256, ..., and only
+	// the last at the working precision; that loop stops once the next correction, ~delta^2 / 2,
+	// is below the working precision -- as many steps as the precision needs, not a fixed count.
+	const unsigned precision = efloat_detail::result_precision(x);
+	const unsigned working   = precision + efloat_detail::exp_log_guard_bits;
+	efloat<nlimbs> m(x);
+	m.setexponent(0);
+	efloat<nlimbs> y = efloat<nlimbs>(std::log(double(m))) + efloat<nlimbs>(x.scale()) * efloat_detail::ln2<nlimbs>(working);
+	const efloat<nlimbs> one(1.0);
 
-	// Initial guess: y0 = 0.3 + scale * ln2 (accurate and completely avoids double overflows!)
-	efloat<nlimbs> y = efloat<nlimbs>(0.3) + efloat<nlimbs>(x.scale()) * ln2;
-	efloat<nlimbs> one(1.0);
-
-	// Newton iterations (7 iterations converge up to 2048 bits!)
-	for (int i = 0; i < 7; ++i) {
-		y = y - one + x / exp(y);
+	for (unsigned bits = 128; bits < working; bits *= 2) {
+		efloat<nlimbs> xb(x);
+		xb.set_precision(bits);
+		y.set_precision(bits);
+		y += xb / exp(y) - one;
 	}
+	efloat<nlimbs> xw(x);
+	xw.set_precision(working);
+	y.set_precision(working);
+	for (int i = 0; i < 64; ++i) {
+		const efloat<nlimbs> delta = xw / exp(y) - one;
+		y += delta;
+		if (delta.iszero() || 2 * delta.scale() < y.scale() - static_cast<int64_t>(working)) break;
+	}
+	y.set_precision(precision);
 	return y;
 }
 
@@ -72,9 +88,14 @@ constexpr efloat<nlimbs> log2(const efloat<nlimbs>& x) {
 	}
 	if (x.isinf()) return x;
 
-	efloat<nlimbs> ln2;
-	parse("0.69314718055994530941723212145817656807550013436025525412068", ln2);
-	return log(x) / ln2;
+	// log2(x) = log(x) / ln 2, both at the working precision, rounded once (#1712)
+	const unsigned precision = efloat_detail::result_precision(x);
+	const unsigned working   = precision + efloat_detail::exp_log_guard_bits;
+	efloat<nlimbs> xw(x);
+	xw.set_precision(working);
+	efloat<nlimbs> result = log(xw) / efloat_detail::ln2<nlimbs>(working);
+	result.set_precision(precision);
+	return result;
 }
 
 // Logarithm base 10 function for efloat
@@ -100,9 +121,14 @@ constexpr efloat<nlimbs> log10(const efloat<nlimbs>& x) {
 	}
 	if (x.isinf()) return x;
 
-	efloat<nlimbs> ln10;
-	parse("2.3025850929940456840179914546843642076011014886287729760333", ln10);
-	return log(x) / ln10;
+	// log10(x) = log(x) / ln 10, both at the working precision, rounded once (#1712)
+	const unsigned precision = efloat_detail::result_precision(x);
+	const unsigned working   = precision + efloat_detail::exp_log_guard_bits;
+	efloat<nlimbs> xw(x);
+	xw.set_precision(working);
+	efloat<nlimbs> result = log(xw) / efloat_detail::ln10<nlimbs>(working);
+	result.set_precision(precision);
+	return result;
 }
 
 // Natural logarithm of 1 + x function for efloat
@@ -139,16 +165,22 @@ constexpr efloat<nlimbs> log1p(const efloat<nlimbs>& x) {
 		return x;
 	}
 
+	// both paths are carried at the working precision and rounded once at the end (#1712)
+	const unsigned precision = efloat_detail::result_precision(x);
+	efloat<nlimbs> xw(x);
+	xw.set_precision(precision + efloat_detail::exp_log_guard_bits);
+
 	// Precision-safe range check completely in efloat space (avoids double underflows)
 	if (abs(x) < efloat<nlimbs>(0.375)) {
-		// Taylor series for log(1 + x) prevents cancellation as x -> 0
+		// Taylor series for log(1 + x) prevents cancellation as x -> 0; at |x| < 0.375 it gains
+		// at least 1.4 bits per term, so it runs until the terms fall below the precision
 		efloat<nlimbs> sum(0.0);
-		efloat<nlimbs> term(x);
-		efloat<nlimbs> x_pow(x);
+		efloat<nlimbs> term(xw);
+		efloat<nlimbs> x_pow(xw);
 
 		sum += term;
-		for (unsigned n = 2; n < 200; ++n) {
-			x_pow = x_pow * x;
+		for (unsigned n = 2; ; ++n) {
+			x_pow = x_pow * xw;
 			term = x_pow / efloat<nlimbs>(n);
 			
 			// Dynamic precision-safe termination: stops when next term cannot affect the sum
@@ -161,9 +193,12 @@ constexpr efloat<nlimbs> log1p(const efloat<nlimbs>& x) {
 				sum += term;
 			}
 		}
+		sum.set_precision(precision);
 		return sum;
 	} else {
-		return log(efloat<nlimbs>(1.0) + x);
+		efloat<nlimbs> result = log(efloat<nlimbs>(1.0) + xw);
+		result.set_precision(precision);
+		return result;
 	}
 }
 
