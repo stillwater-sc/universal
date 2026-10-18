@@ -23,9 +23,6 @@
 #define DFLOAT_EXCEPT noexcept
 #endif
 #endif
-#if !defined(DFLOAT_NATIVE_SQRT)
-#define DFLOAT_NATIVE_SQRT 0
-#endif
 
 #include <universal/internal/blockbinary/to_decimal.hpp>   // to_decimal on the significand: str()
                                                            // and the wide double path need it, and
@@ -982,6 +979,60 @@ public:
 			// DPD: decode declets from trailing bits
 			significand = dpd_decode_trailing_wide(msd);
 		}
+	}
+
+	// The correctly rounded square root of a finite value > 0 (#1725; the special values are
+	// settled by sqrt() in math/functions/sqrt.hpp).  The value is S 10^q; scaled by 10^t with
+	// t >= 0 and q - t even, sqrt(S 10^(q - t)) = sqrt(S 10^t) 10^((q - t)/2), and t is chosen so
+	// that S 10^t has at least 2 ndigits + 1 digits: its floor root F then has ndigits + 1
+	// or more, a guard digit for the rounding.  F comes from the restoring integer square root,
+	// exact, and the remainder S 10^t - F^2 is the sticky part, so round_and_pack rounds the
+	// true root once, to nearest, ties to even.  S 10^t has at most 2 ndigits + 2 digits,
+	// within the 8 ndigits + 15 value bits of wide_significand_t.  An exact root is given the
+	// preferred exponent floor(q/2) of IEEE 754-2008.
+	constexpr dfloat square_root() const noexcept {
+		bool s{ false };
+		int q{ 0 };
+		significand_t S;
+		unpack(s, q, S);
+		if (S.iszero()) return *this;                            // a zero-valued encoding (a DPD non-canonical declet)
+		const wide_significand_t ten(10);
+		wide_significand_t M;
+		M.assign(S);
+		int digits = 0;
+		{
+			wide_significand_t tmp(M);
+			while (!tmp.iszero()) { tmp /= ten; ++digits; }
+		}
+		int t = 0;
+		while (digits + t < static_cast<int>(2 * ndigits + 1) || ((q - t) & 1)) { M *= ten; ++t; }
+		// restoring square root: two bits of M per step
+		wide_significand_t F(0), bit(0), rem(M);
+		int top = static_cast<int>(2 * sig_bits) - 2;            // the sign bit stays clear
+		while (top >= 0 && !rem.test(static_cast<unsigned>(top))) --top;
+		bit.setbit(static_cast<unsigned>(top) & ~1u);
+		while (!bit.iszero()) {
+			const wide_significand_t trial = F + bit;
+			if (rem >= trial) {
+				rem -= trial;
+				F >>= 1;
+				F += bit;
+			}
+			else {
+				F >>= 1;
+			}
+			bit >>= 2;
+		}
+		int e = (q - t) / 2;
+		if (rem.iszero()) {
+			// an exact root takes the preferred exponent of IEEE 754-2008, floor(q/2): the
+			// trailing zeros the scaling introduced come off, so sqrt(144) is 12, not 12.00000
+			const int preferred = (q >= 0) ? q / 2 : -((1 - q) / 2);
+			while (e < preferred && (F % ten).iszero()) { F /= ten; ++e; }
+		}
+		dfloat r;
+		r.normalize_wide_and_pack(false, e, F, !rem.iszero());
+		return r;
 	}
 
 protected:

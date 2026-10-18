@@ -1,39 +1,40 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt function for decimal floating-point dfloat
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cerrno>
 
 namespace sw { namespace universal {
 
-#if DFLOAT_NATIVE_SQRT
-// native sqrt for dfloat
+// sqrt for dfloat, correctly rounded (#1725).
+//
+// This used to be dfloat(std::sqrt(double(a))) in both branches of a DFLOAT_NATIVE_SQRT switch,
+// one of them marked "TBD": the decimal value converted to binary, its binary root, and that
+// converted back to decimal.  A double holds about 15.9 decimal digits, so decimal64 and
+// decimal128 roots were wrong in their trailing digits, and even decimal32 was rounded twice.
+// The root is now the exact integer root of the scaled decimal significand, rounded once to
+// ndigits, ties to even (dfloat::square_root).  The switch is gone.
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename bt>
 inline dfloat<ndigits, es, Encoding, bt> sqrt(const dfloat<ndigits, es, Encoding, bt>& a) {
+	using Dfloat = dfloat<ndigits, es, Encoding, bt>;
+	if (a.isnan()) return a;
+	if (a.iszero()) return a;                         // sqrt(+-0) is +-0
+	if (a.isneg()) {                                  // -inf included: sqrt(-inf) is NaN
 #if DFLOAT_THROW_ARITHMETIC_EXCEPTION
-	if (a.isneg()) throw dfloat_negative_sqrt_arg();
+		throw dfloat_negative_sqrt_arg();
 #else
-	if (a.isneg()) std::cerr << "dfloat argument to sqrt is negative: " << a << std::endl;
+		errno = EDOM;                                 // as std::sqrt: EDOM and a quiet NaN, with no message
+		Dfloat nan;
+		nan.setnan(NAN_TYPE_QUIET);
+		return nan;
 #endif
-	if (a.iszero()) return a;
-	return dfloat<ndigits, es, Encoding, bt>(std::sqrt(double(a)));  // TBD
+	}
+	if (a.isinf()) return a;                          // sqrt(+inf) is +inf
+	return a.square_root();
 }
-#else
-// sqrt delegating through double
-template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename bt>
-inline dfloat<ndigits, es, Encoding, bt> sqrt(const dfloat<ndigits, es, Encoding, bt>& a) {
-#if DFLOAT_THROW_ARITHMETIC_EXCEPTION
-	if (a.isneg()) throw dfloat_negative_sqrt_arg();
-#else
-	if (a.isneg()) std::cerr << "dfloat argument to sqrt is negative: " << a << std::endl;
-#endif
-	if (a.iszero()) return a;
-	return dfloat<ndigits, es, Encoding, bt>(std::sqrt(double(a)));
-}
-#endif
 
 // reciprocal sqrt
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename bt>
