@@ -1,11 +1,11 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // logarithm.hpp: logarithm functions for quad-double (qd) floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cerrno>
 #include <limits>
 
 #include <universal/number/shared/multidouble_exact.hpp>
@@ -20,7 +20,6 @@ namespace sw { namespace universal {
 		if (a.isone()) return 0.0;
 
         if (a[0] <= 0.0) {
-            std::cerr << "log: non-positive argument\n";
 			errno = EDOM;
             return qd(SpecificValue::qnan);
         }
@@ -72,7 +71,6 @@ namespace sw { namespace universal {
 		if (a.isone()) return 0.0;
 
 		if (a.sign()) {
-			std::cerr << "log2: non-positive argument\n";
 			errno = EDOM;
 			return qd(SpecificValue::qnan);
 		}
@@ -93,7 +91,6 @@ namespace sw { namespace universal {
 		if (a.isone()) return 0.0;
 
 		if (a.sign()) {
-			std::cerr << "log10: non-positive argument\n";
 			errno = EDOM;
 			return qd(SpecificValue::qnan);
 		}
@@ -115,7 +112,6 @@ namespace sw { namespace universal {
 		if (a == -1.0) return qd(SpecificValue::infneg);
 
 		if (a < -1.0) {
-			std::cerr << "log1p: non-positive argument\n";
 			errno = EDOM;
 			return qd(SpecificValue::qnan);
 		}

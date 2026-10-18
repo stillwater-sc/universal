@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // pow.hpp: pow functions for double-double (dd) floating-point
 //
 // algorithms courtesy Scibuilders, Jack Poulson
@@ -26,19 +25,9 @@ namespace sw { namespace universal {
     }
 
     // Computes the n-th power of a double-double number. 
-    //   NOTE:  0^0 causes an error.
+    //   NOTE:  0^0 is 1, as std::pow
     inline dd_cascade npwr(const dd_cascade& a, int n) {
-        if (n == 0) {
-#if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-            if (a.iszero()) throw dd_invalid_argument();
-#else // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
-            if (a.iszero()) {
-                std::cerr << "(npwr): Invalid argument\n";
-			    return dd_cascade(SpecificValue::snan);
-            }
-#endif // ! DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-            return 1.0;
-        }
+        if (n == 0) return 1.0;   // 0^0 included, as std::pow(0, 0) = 1
 
         dd_cascade r = a;
         dd_cascade s = 1.0;

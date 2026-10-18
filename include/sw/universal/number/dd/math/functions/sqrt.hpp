@@ -1,12 +1,12 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for double-double (dd) floats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/native/ieee754.hpp>
+#include <cerrno>
+#include <cmath>
 
 #ifndef DOUBLEDOUBLE_NATIVE_SQRT
 #define DOUBLEDOUBLE_NATIVE_SQRT 1
@@ -34,7 +34,7 @@ namespace sw { namespace universal {
 #if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
         if (a.isneg()) throw dd_negative_sqrt_arg();
 #else
-        if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
+        if (a.isneg()) { errno = EDOM; return dd(SpecificValue::qnan); }
 #endif
 
         if (a.isnan() || a.isinf()) return a;
@@ -63,7 +63,7 @@ namespace sw { namespace universal {
 #if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw dd_negative_sqrt_arg();
 #else  // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
+		if (a.isneg()) { errno = EDOM; return dd(SpecificValue::qnan); }
 #endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
 		if (a.iszero()) return a;
 		return dd(std::sqrt(double(a)));
@@ -106,12 +106,13 @@ namespace sw { namespace universal {
 
 #else  // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
         if (n <= 0) {
-            std::cerr << "double-double nroot argument is negative: " << n << std::endl;
+            errno = EDOM;
+            return dd(SpecificValue::qnan);
         }
 
         if (n % 2 == 0 && a.isneg()) {
-            std::cerr << "double-double nroot argument is negative: " << n << std::endl;
-            return dd(SpecificValue::snan);
+            errno = EDOM;
+            return dd(SpecificValue::qnan);
         }
 
 #endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION

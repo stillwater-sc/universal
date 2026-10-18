@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // pow.hpp: pow functions for quad-double (qd) floating-point
 //
 // algorithms courtesy Scibuilders, Jack Poulson
@@ -26,19 +25,9 @@ namespace sw { namespace universal {
     }
 
     // Computes the n-th power of a quad-double number. 
-    //   NOTE:  0^0 causes an error.
+    //   NOTE:  0^0 is 1, as std::pow
     inline qd npwr(const qd& a, int n) {
-        if (n == 0) {
-#if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
-            if (a.iszero()) throw qd_invalid_argument();
-#else // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
-            if (a.iszero()) {
-                std::cerr << "(npwr): Invalid argument\n";
-                return qd(SpecificValue::snan);
-            }
-#endif // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
-            return 1.0;
-        }
+        if (n == 0) return 1.0;   // 0^0 included, as std::pow(0, 0) = 1
 
         qd r = a;
         qd s = 1.0;

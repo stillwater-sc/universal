@@ -1,12 +1,12 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for triple-double (td) cascade floats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/native/ieee754.hpp>
+#include <cerrno>
+#include <cmath>
 
 #ifndef TD_CASCADE_NATIVE_SQRT
 #define TD_CASCADE_NATIVE_SQRT 1
@@ -61,7 +61,7 @@ inline td_cascade sqrt(const td_cascade& a) {
         if (a.isneg()) throw td_cascade_negative_sqrt_arg();
 #else
         if (a.isneg()) {
-            std::cerr << "triple-double argument to sqrt is negative: " << a << std::endl;
+            errno = EDOM;
             return td_cascade(SpecificValue::qnan);
         }
 #endif
@@ -97,7 +97,7 @@ inline td_cascade sqrt(const td_cascade& a) {
 #if TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw td_cascade_negative_sqrt_arg();
 #else  // ! TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) std::cerr << "triple-double argument to sqrt is negative: " << a << std::endl;
+		if (a.isneg()) { errno = EDOM; return td_cascade(SpecificValue::qnan); }
 #endif // ! TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
 		if (a.iszero()) return a;
 		return td_cascade(std::sqrt(double(a)));
@@ -138,12 +138,13 @@ inline td_cascade sqrt(const td_cascade& a) {
 
 #else  // ! TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
         if (n <= 0) {
-            std::cerr << "triple-double nroot argument is negative: " << n << std::endl;
+            errno = EDOM;
+            return td_cascade(SpecificValue::qnan);
         }
 
         if (n % 2 == 0 && a.isneg()) {
-            std::cerr << "triple-double nroot argument is negative: " << n << std::endl;
-            return td_cascade(SpecificValue::snan);
+            errno = EDOM;
+            return td_cascade(SpecificValue::qnan);
         }
 
 #endif // ! TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
