@@ -27,6 +27,43 @@ inline efloat<nlimbs> efloat_pi_4() {
 	return efloat_pi<nlimbs>() * efloat<nlimbs>(0.25);
 }
 
+namespace efloat_detail {
+
+	// atan(1/m) = sum_k (-1)^k / ((2k + 1) m^(2k + 1)) for an integer m >= 2, at `bits` bits
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> atan_reciprocal(unsigned m, unsigned bits) {
+		efloat<nlimbs> one(1.0);
+		one.set_precision(bits);
+		const efloat<nlimbs> m2(static_cast<double>(m) * static_cast<double>(m));
+		efloat<nlimbs> power = one / efloat<nlimbs>(static_cast<double>(m));   // 1 / m^(2k + 1)
+		efloat<nlimbs> sum = power;
+		for (unsigned k = 1; ; ++k) {
+			power = power / m2;
+			const efloat<nlimbs> term = power / efloat<nlimbs>(static_cast<double>(2 * k + 1));
+			if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(bits) - 2) break;
+			if (k % 2) sum -= term; else sum += term;
+		}
+		return sum;
+	}
+
+	// atan(1/2) at `bits` bits, computed rather than parsed (the 64-digit literal it replaces
+	// was right to ~210 bits, #1712): atan(1/2) = atan(1/3) + atan(1/7), since
+	// (1/3 + 1/7) / (1 - 1/21) = 1/2.  Cached per thread like ln 2.
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> atan_half(unsigned bits) {
+		thread_local efloat<nlimbs> cached;
+		thread_local unsigned cached_bits = 0;
+		if (cached_bits < bits) {
+			cached = atan_reciprocal<nlimbs>(3, bits + 32) + atan_reciprocal<nlimbs>(7, bits + 32);
+			cached_bits = bits;
+		}
+		efloat<nlimbs> value(cached);
+		value.set_precision(bits);
+		return value;
+	}
+
+}  // namespace efloat_detail
+
 // ----------------------------------------------------------------------------
 // sin: sine, computed by argument reduction to [-pi, pi] + Taylor series
 //   sin(x) = x - x^3/3! + x^5/5! - ...   term_n = -term_{n-1} * x^2 / ((2n)(2n+1))
@@ -168,9 +205,7 @@ constexpr efloat<nlimbs> atan(const efloat<nlimbs>& x) {
 			if (!series.iszero() && t.scale() < series.scale() - static_cast<int64_t>(series.get_precision())) break;
 		}
 		if (used_addition) {
-			efloat<nlimbs> atan_half;
-			parse("0.46364760900080611621425623146121440202853705428612026381093309", atan_half);
-			result = atan_half + series;
+			result = efloat_detail::atan_half<nlimbs>(series.get_precision()) + series;
 		}
 		else {
 			result = series;
