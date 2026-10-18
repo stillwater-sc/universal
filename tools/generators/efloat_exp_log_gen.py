@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# efloat_exp_log_gen.py: reference values for efloat's exponential, logarithmic and related
-# functions at high precision (#1712).
+# efloat_exp_log_gen.py: reference values for efloat's exponential, logarithmic, trigonometric
+# and related functions at high precision (#1712).
 #
 # Copyright (C) 2017 Stillwater Supercomputing, Inc.
 # SPDX-License-Identifier: MIT
@@ -38,6 +38,12 @@ FUNCTIONS = {
     "atanh": (1, mpmath.atanh),
     "atan":  (1, mpmath.atan),
     "pow":   (2, mpmath.power),
+    "sin":   (1, mpmath.sin),
+    "cos":   (1, mpmath.cos),
+    "tan":   (1, mpmath.tan),
+    "asin":  (1, mpmath.asin),
+    "acos":  (1, mpmath.acos),
+    "atan2": (2, mpmath.atan2),
 }
 
 # arguments are doubles: every one is exactly representable, in Python and in C++
@@ -56,6 +62,10 @@ CASES = [
     ("asinh", 2.5), ("acosh", 3.0), ("atanh", 0.3),
     ("atan", 0.75), ("atan", 0.6), ("atan", 3.0),
     ("pow", 2.5, 0.3333), ("pow", 10.0, -7.25), ("pow", 1.0625, 200.5),
+    # the trigonometric functions reduce with pi, which must be carried at the working precision
+    ("sin", 10.0), ("sin", 0.5), ("sin", 1e6), ("cos", 10.0), ("cos", 3.0), ("tan", 1.25),
+    ("asin", 0.5), ("asin", 0.9), ("acos", 0.3), ("acos", -0.95),
+    ("atan2", 1.0, -2.0), ("atan2", -3.0, -0.5),
 ]
 
 

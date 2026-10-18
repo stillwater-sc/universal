@@ -2,8 +2,9 @@
 //
 // Guards issue #1712: exp, exp2, exp10, log, log2 and log10 reduced their arguments with ln 2 and
 // ln 10 parsed from 59-digit literals (~196 bits), so they agreed with mpmath to ~2^-200 whatever
-// precision was asked for; and exp's Taylor series, log's Newton iteration and log1p's series ran
-// a fixed number of steps.  Every function here must now be accurate to nearly the full
+// precision was asked for; exp's Taylor series, log's Newton iteration and log1p's series ran a
+// fixed number of steps; and the trigonometric functions took pi at the type's width, not the
+// value's, and atan(1/2) from a 64-digit literal.  Every function here must now be accurate to nearly the full
 // precision of its result, against mpmath references (tools/generators/efloat_exp_log_gen.py).
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -40,6 +41,12 @@ efloat<nlimbs> evaluate(const char* function, const efloat<nlimbs>& x, const efl
 	if (f == "atanh") return atanh(x);
 	if (f == "atan")  return atan(x);
 	if (f == "pow")   return pow(x, y);
+	if (f == "sin")   return sin(x);
+	if (f == "cos")   return cos(x);
+	if (f == "tan")   return tan(x);
+	if (f == "asin")  return asin(x);
+	if (f == "acos")  return acos(x);
+	if (f == "atan2") return atan2(x, y);
 	efloat<nlimbs> nan;
 	nan.setnan();
 	return nan;
@@ -77,15 +84,15 @@ int VerifyAtPrecision(bool reportTestCases, int64_t slack) {
 		if (!ok) ++fails;
 		if (reportTestCases && !ok) {
 			std::cerr << (ok ? "     " : "FAIL ") << "efloat<" << nlimbs << "> " << v.function << '(' << v.x;
-			if (std::strcmp(v.function, "pow") == 0) std::cerr << ", " << v.y;
+			if (std::strcmp(v.function, "pow") == 0 || std::strcmp(v.function, "atan2") == 0) std::cerr << ", " << v.y;
 			std::cerr << "): " << bits << " of " << precision << " bits, result precision " << got.get_precision() << '\n';
 		}
 	}
 	return fails;
 }
 
-// ln 2 and ln 10 are computed at the working precision: exp(log(x)) and log(exp(x)) close at
-// every width, including widths past nlimbs that set_precision() asks for
+// ln 2, ln 10, pi and atan(1/2) are computed at the working precision: the functions are accurate
+// at every width, including widths past nlimbs * 32 that set_precision() asks for
 template<unsigned nlimbs>
 int VerifySetPrecision(bool reportTestCases, unsigned bits, int64_t slack) {
 	int fails = 0;
@@ -104,9 +111,25 @@ int VerifySetPrecision(bool reportTestCases, unsigned bits, int64_t slack) {
 	efloat<nlimbs> lhs = exp(big - k * ln2), rhs = exp(big);
 	rhs.setexponent(rhs.scale() - 1443);
 	const int64_t b = agreement_bits(lhs, rhs);
+	// sin(10) reduces by 2 pi once and atan(0.75) adds atan(1/2): pi and atan(1/2) at the
+	// widened precision, not at nlimbs * 32 bits
+	int64_t c = 100000, d = 100000;
+	for (const auto& v : efloat_exp_log_verification::function_vectors) {
+		const bool is_sin = std::strcmp(v.function, "sin") == 0 && v.x == 10.0;
+		const bool is_atan = std::strcmp(v.function, "atan") == 0 && v.x == 0.75;
+		if (!is_sin && !is_atan) continue;
+		efloat<nlimbs> arg(v.x), reference;
+		arg.set_precision(bits);
+		reference.set_precision(bits + 64);
+		parse<16384>(std::string(v.value), reference);
+		if (is_sin) c = agreement_bits(sin(arg), reference);
+		else d = agreement_bits(atan(arg), reference);
+	}
+	if (c < static_cast<int64_t>(bits) - slack) ++fails;
+	if (d < static_cast<int64_t>(bits) - slack) ++fails;
 	if (a < static_cast<int64_t>(bits) - slack) ++fails;
 	if (b < static_cast<int64_t>(bits) - slack - 12) ++fails;        // k ln 2 carries log2(1443) bits more error
-	if (reportTestCases && fails) std::cerr << "FAIL: set_precision(" << bits << "): exp(log 2) " << a << " bits, reduction " << b << " bits\n";
+	if (reportTestCases && fails) std::cerr << "FAIL: set_precision(" << bits << "): exp(log 2) " << a << " bits, reduction " << b << " bits, sin(10) " << c << " bits, atan(0.75) " << d << " bits\n";
 	return fails;
 }
 
