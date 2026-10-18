@@ -1351,20 +1351,113 @@ inline efloat<nlimbs> fabs(const efloat<nlimbs>& a) {
 ////////////////////////////////////////////////////////////////////////////////
 /// string parsing
 
+namespace efloat_parse_detail {
+
+// bits converted below the target. Rounding to the target looks at them, and when parse()
+// has dropped digits from a long literal they also absorb what was dropped.
+constexpr unsigned guard_bits = 64u;
+
+enum class parse_outcome { done, undecided, refused };
+
+// Convert `d` to target_bits + guard_bits bits, in a result W bits wide, round it to
+// target_bits by round-to-nearest-even, and store it in value.
+//
+// `inexact` says nonzero digits were dropped from the end of the text behind `d`. The value
+// then lies strictly above d's magnitude, by less than one unit in the last guard bit, so the
+// guard bits are the truncated value's bits or one unit more. The rounding is the same either
+// way unless they read 0111...1, where one more unit makes them the midpoint 1000...0: that
+// case is `undecided`, and parse() looks at more digits. `refused` is a literal whose exact
+// conversion needs more working bits than the converter has.
+template<unsigned W, unsigned nlimbs>
+parse_outcome round_into(const sw::universal::string_parse::decimal_float_scan& d, unsigned target_bits,
+                         bool inexact, efloat<nlimbs>& value) {
+	using Big = sw::universal::decimal_to_binary::big_integer<W>;
+	const unsigned work = target_bits + guard_bits;
+	// past the widest width the converter estimates the mantissa from the magnitude: not a
+	// value at this precision
+	if (sw::universal::decimal_to_binary::detail::required_working_bits(d, work)
+	    > sw::universal::decimal_to_binary::widest_working_bits) {
+		return parse_outcome::refused;
+	}
+	auto r = sw::universal::decimal_to_binary::convert<W>(d, work);
+	if (!r.valid) return parse_outcome::refused;
+	if (r.is_zero) {
+		value.setzero();
+		if (r.negative) value.setsign(true);
+		return parse_outcome::done;
+	}
+
+	Big mantissa = r.mantissa;
+	const bool half = mantissa.at(guard_bits - 1u);
+	bool below_half_all_ones = true;
+	bool below = r.guard_bit || r.sticky_bit;
+	for (unsigned b = 0; b + 1u < guard_bits; ++b) {
+		const bool bit = mantissa.at(b);
+		below = below || bit;
+		below_half_all_ones = below_half_all_ones && bit;
+	}
+	if (inexact) {
+		if (!half && below_half_all_ones) return parse_outcome::undecided;
+		below = true;
+	}
+	mantissa >>= static_cast<int>(guard_bits);
+
+	std::int64_t binary_scale = r.binary_scale;
+	if (half && (below || mantissa.at(0))) {
+		mantissa += Big(1);
+		if (mantissa.at(target_bits)) {   // the carry escaped the top
+			mantissa >>= 1;
+			++binary_scale;
+		}
+	}
+
+	value.setsign(r.negative);
+	value.setexponent(binary_scale);
+
+	// Pack the mantissa MSB-first into uint32 limbs: _limb[0] bit 31 = MSB,
+	// _limb[0] bit 0 = mantissa bit (target_bits - 32), _limb[1] bit 31 =
+	// mantissa bit (target_bits - 33), and so on.  Any leftover bits below
+	// the last full chunk go into the top of the next limb.
+	const unsigned full_limbs = target_bits / 32u;
+	const unsigned leftover   = target_bits % 32u;
+
+	for (unsigned i = 0; i < full_limbs; ++i) {
+		std::uint32_t v = 0;
+		const unsigned base = target_bits - 32u * (i + 1u);
+		for (unsigned b = 0; b < 32u; ++b) {
+			if (mantissa.at(base + b)) v |= (1u << b);
+		}
+		value.setlimb(i, v);
+	}
+	if (leftover > 0u) {
+		std::uint32_t v = 0;
+		for (unsigned b = 0; b < leftover; ++b) {
+			// mantissa.at(b) (a low mantissa bit) goes into the (32 - leftover + b)
+			// position of _limb[full_limbs] so the surviving bits stay packed
+			// against the top of the limb (MSB-first per-limb convention).
+			if (mantissa.at(b)) v |= (1u << (32u - leftover + b));
+		}
+		value.setlimb(full_limbs, v);
+	}
+	return parse_outcome::done;
+}
+
+}  // namespace efloat_parse_detail
+
 // read an ASCII decimal literal and make a binary efloat out of it.
 // Supports:
 //   - "nan", "inf", "infinity" (case-insensitive, optional sign)
 //   - decimal / scientific literals routed through decimal_to_binary::convert
 //     ("1.5", "-3.14e2", "1e-100", "0x" is not accepted)
 //
-// The d2b target precision is bounded by the working budget BigBits (default
-// decimal_to_binary::default_big_bits): convert<BigBits>'s reduction shifts the
-// digit-integer left by ~(target + 3*neg_E) bits, which must fit in BigBits, so
-// target is sized overflow-safely below that (a request beyond the ceiling is
-// correctly rounded to the ceiling rather than returning garbage -- issue
-// #1141). To parse to very high precision (e.g. a 1000-digit constant), pass a
-// larger budget: parse<16384>(text, value). The default (2048) comfortably
-// covers any literal a user types at ordinary precision.
+// The literal is correctly rounded to the value's precision, however many digits it has:
+// digits beyond those that can affect the rounding are dropped and kept as a sticky bit, and
+// the converter widens its intermediates as the remaining digits and the exponent need (#1713).
+// BigBits is the narrowest result width tried first; it no longer limits the precision.
+//
+// Returns false, and leaves a zero, for text that is not a number. A well-formed literal the
+// converter cannot reach -- a decimal exponent beyond about +/-13000 at ordinary precision --
+// returns false and leaves a NaN.
 template<unsigned BigBits, unsigned nlimbs>
 bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	// clear() leaves the Normal state with NO limbs, which is the state the digit loop
@@ -1410,112 +1503,78 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	}
 
 	// Decimal / scientific literal.
-	//
-	// convert<BigBits>'s intermediate must fit in BigBits, and it grows two ways
-	// depending on the effective base-10 exponent E (= exp10 - #fractional-digits):
-	//   - E < 0 (sub-unit places): left-shifts the digit-integer by roughly
-	//     (target_bits + 3*neg_E) bits, so target cannot approach BigBits.
-	//   - E > 0 (large magnitude): multiplies by 5^E, growing the digit-integer
-	//     by ~E*log2(5) < 3*E bits, independent of target.
-	// Both are bounded by ~3 bits per "decimal place away from the unit". If even
-	// the digit-integer plus that growth cannot fit in BigBits, the literal is too
-	// large/small for this budget and we report failure (rather than returning the
-	// garbage a silent overflow would produce -- issue #1141). Otherwise target is
-	// sized to leave headroom; a request beyond the safe ceiling is correctly
-	// rounded to that ceiling. Callers needing more precision or a wider magnitude
-	// pass a larger BigBits, e.g. parse<16384>(...).
 	auto scan = sw::universal::string_parse::scan_decimal_float(s);
 	if (!scan.valid) {
 		value.setzero();   // malformed digits
 		return false;
 	}
 
-	const std::int64_t  E        = static_cast<std::int64_t>(scan.exp10)
-	                             - static_cast<std::int64_t>(scan.frac_part.size());
-	const std::uint64_t neg_E    = (E < 0) ? static_cast<std::uint64_t>(-E) : 0ull;
-	const std::uint64_t pos_E    = (E > 0) ? static_cast<std::uint64_t>( E) : 0ull;
-	const std::uint64_t mag      = (neg_E > pos_E) ? neg_E : pos_E;        // one is 0
-	const std::uint64_t sig      = scan.int_part.size() + scan.frac_part.size();
-	const std::uint64_t sig_bits = sig * 34ull / 10ull + 8ull;            // ~3.33 bits/digit + guard
+	// The target is the value's precision, with no ceiling taken from BigBits: the converter
+	// widens its intermediates as the literal needs, and the result is chosen wide enough to
+	// hold target + guard bits below. Only a precision past the widest working width is capped.
+	using namespace efloat_parse_detail;
+	constexpr unsigned widest = sw::universal::decimal_to_binary::widest_working_bits;
+	unsigned target_bits = std::max(1u, value.get_precision());
+	if (target_bits + guard_bits + 2u > widest) target_bits = widest - guard_bits - 2u;
+	const unsigned work = target_bits + guard_bits;
 
-	// If the digit-integer plus its 5^|E| growth cannot fit, this budget is too
-	// small for the literal's magnitude -- fail rather than overflow to garbage.
-	if (sig_bits + 3ull * mag + 64ull > BigBits) {
-		value.setzero();   // beyond the working budget (#1141)
+	auto attempt = [&](const sw::universal::string_parse::decimal_float_scan& d, bool inexact) {
+		if (work + 2u <= BigBits) return round_into<BigBits>(d, target_bits, inexact, value);
+		if constexpr (BigBits < 8192u) {
+			if (work + 2u <= 8192u) return round_into<8192u>(d, target_bits, inexact, value);
+		}
+		if constexpr (BigBits < widest) {
+			return round_into<widest>(d, target_bits, inexact, value);
+		}
+		else {
+			return round_into<BigBits>(d, target_bits, inexact, value);
+		}
+	};
+
+	// A literal longer than the target needs only its leading digits. Past the first
+	// `keep` significant digits the rest move the value by less than one unit in the last
+	// guard bit, so they are dropped and stand in as a sticky bit (#1713). Without this the
+	// converter's intermediates grow with the length of the literal, and a long reference
+	// constant used to fail, or come back with fewer bits than a short one.
+	std::string digits;
+	digits.reserve(scan.int_part.size() + scan.frac_part.size());
+	digits.append(scan.int_part.data(), scan.int_part.size());
+	digits.append(scan.frac_part.data(), scan.frac_part.size());
+	const std::size_t leading = std::min(digits.find_first_not_of('0'), digits.size());
+	const std::size_t significant = digits.size() - leading;
+
+	// a dropped digit moves the value by less than 10^-(keep-1) of it, and one unit in the
+	// last guard bit is more than 2^-work of it: keep >= 1 + work * log10(2)
+	std::size_t keep = static_cast<std::size_t>(work) * 30103u / 100000u + 2u;
+	parse_outcome outcome = parse_outcome::refused;
+	for (;;) {
+		if (keep >= significant) {
+			outcome = attempt(scan, false);
+			break;
+		}
+		const bool inexact = digits.find_first_not_of('0', leading + keep) != std::string::npos;
+		// the decimal exponent of the last digit kept
+		const std::int64_t last = static_cast<std::int64_t>(scan.int_part.size())
+		                        - static_cast<std::int64_t>(leading + keep)
+		                        + static_cast<std::int64_t>(scan.exp10);
+		std::string text;
+		text.reserve(keep + 24u);
+		if (scan.negative) text.push_back('-');
+		text.append(digits, leading, keep);
+		text.push_back('e');
+		text.append(std::to_string(last));
+		auto truncated = sw::universal::string_parse::scan_decimal_float(text);
+		if (!truncated.valid) break;   // the exponent is out of the scanner's range
+		outcome = attempt(truncated, inexact);
+		if (outcome != parse_outcome::undecided) break;
+		keep *= 2u;   // the dropped digits sit on a rounding boundary: look at more of them
+	}
+
+	if (outcome != parse_outcome::done) {
+		// a well-formed literal this converter cannot reach, such as 1e100000: say so with a
+		// NaN rather than a zero that looks like a value
+		value.setnan(true);
 		return false;
-	}
-
-	// Overflow-safe target. For E<0 the shift is target-relative, so cap target
-	// below BigBits - (3*neg_E + sig_bits). For E>=0 the growth is target-
-	// independent (already checked to fit), so target may go up to BigBits - 64.
-	unsigned safe_ceiling;
-	if (E < 0) {
-		const std::uint64_t overhead = 3ull * neg_E + sig_bits + 64ull;
-		safe_ceiling = (BigBits > overhead) ? static_cast<unsigned>(BigBits - overhead) : 1u;
-	}
-	else {
-		safe_ceiling = (BigBits > 64u) ? (BigBits - 64u) : 1u;
-	}
-
-	unsigned want_bits   = value.get_precision();
-	unsigned target_bits = (want_bits == 0u) ? 1u
-	                     : (want_bits < safe_ceiling ? want_bits : safe_ceiling);
-	if (target_bits == 0u) target_bits = 1u;
-
-	auto r = sw::universal::decimal_to_binary::convert<BigBits>(scan, target_bits);
-	if (!r.valid) {
-		value.setzero();   // the converter refused it
-		return false;
-	}
-
-	if (r.is_zero) {
-		value.setzero();
-		if (r.negative) value.setsign(true);
-		return true;
-	}
-
-	// Round-to-nearest-even using d2b's guard/sticky.  If a carry escapes
-	// the top of the mantissa (now occupies bit `target_bits`), shift right
-	// by 1 and bump the binary scale.
-	auto mantissa = r.mantissa;
-	std::int64_t binary_scale = r.binary_scale;
-	bool round_up = r.guard_bit && (r.sticky_bit || mantissa.at(0));
-	if (round_up) {
-		using Big = sw::universal::decimal_to_binary::big_integer<BigBits>;
-		mantissa += Big(1);
-		if (mantissa.at(target_bits)) {
-			mantissa >>= 1;
-			++binary_scale;
-		}
-	}
-
-	value.setsign(r.negative);
-	value.setexponent(binary_scale);
-
-	// Pack the mantissa MSB-first into uint32 limbs: _limb[0] bit 31 = MSB,
-	// _limb[0] bit 0 = mantissa bit (target_bits - 32), _limb[1] bit 31 =
-	// mantissa bit (target_bits - 33), and so on.  Any leftover bits below
-	// the last full chunk go into the top of the next limb.
-	const unsigned full_limbs = target_bits / 32u;
-	const unsigned leftover   = target_bits % 32u;
-
-	for (unsigned i = 0; i < full_limbs; ++i) {
-		std::uint32_t v = 0;
-		const unsigned base = target_bits - 32u * (i + 1u);
-		for (unsigned b = 0; b < 32u; ++b) {
-			if (mantissa.at(base + b)) v |= (1u << b);
-		}
-		value.setlimb(i, v);
-	}
-	if (leftover > 0u) {
-		std::uint32_t v = 0;
-		for (unsigned b = 0; b < leftover; ++b) {
-			// mantissa.at(b) (a low mantissa bit) goes into the (32 - leftover + b)
-			// position of _limb[full_limbs] so the surviving bits stay packed
-			// against the top of the limb (MSB-first per-limb convention).
-			if (mantissa.at(b)) v |= (1u << (32u - leftover + b));
-		}
-		value.setlimb(full_limbs, v);
 	}
 	return true;
 }
