@@ -226,8 +226,8 @@ constexpr efloat<nlimbs> tan(const efloat<nlimbs>& x) {
 	const efloat<nlimbs> c = efloat_detail::cos_kernel(r);
 	efloat<nlimbs> result;
 	if (quadrant & 1u) {
-		if (s.iszero()) {                    // an odd multiple of pi/2: pole
-			efloat<nlimbs> inf; inf.setinf(false);
+		if (s.iszero()) {                    // r too small to resolve at the widest reduction: a pole,
+			efloat<nlimbs> inf; inf.setinf(quadrant == 3u);   // +inf at pi/2, -inf at -pi/2 (quadrant 3)
 			if (!std::is_constant_evaluated()) efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
 			return inf;
 		}
