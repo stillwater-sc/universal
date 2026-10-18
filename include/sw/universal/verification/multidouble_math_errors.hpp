@@ -132,8 +132,10 @@ namespace sw { namespace universal { namespace multidouble_verification {
 		const Real big(1.0e300), inf(SpecificValue::infpos);
 		errno = 0;
 		if (!(sin(inf).isnan() && errno == EDOM)) fail("sin(inf) is not NaN with EDOM");
+		errno = 0;
 		try {
 			if (!(std::fabs(double(sin(big)) - std::sin(1.0e300)) <= 4.0e-16)) fail("sin(1e300) did not reduce");
+			if (errno != 0) fail("sin(1e300) set errno " + std::to_string(errno));
 		}
 		catch (...) { fail("sin(1e300) threw"); }
 		return fails;
