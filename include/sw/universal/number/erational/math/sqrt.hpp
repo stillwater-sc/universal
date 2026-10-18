@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cerrno>
+#include <cstdint>
 #include <universal/number/edecimal/math/sqrt.hpp>   // the exact integer square root
 #include <universal/number/erational/numeric_limits.hpp>
 
@@ -13,20 +14,27 @@ namespace sw { namespace universal {
 
 	namespace erational_sqrt_detail {
 
-		// the number of bits of n > 0: the b with 2^(b-1) <= n < 2^b
+		// 2^k by binary exponentiation: O(log k) multiplications
+		inline edecimal pow2(unsigned k) {
+			edecimal result(1), base(2);
+			while (k != 0) {
+				if (k & 1u) result *= base;
+				k >>= 1;
+				if (k != 0) base *= base;
+			}
+			return result;
+		}
+
+		// the number of bits of n > 0: the b with 2^(b-1) <= n < 2^b.  A d-digit n is at least
+		// 10^(d-1) >= 2^floor((d-1) 3.3219), as 3.3219 < log2(10), so the search starts there
+		// and needs at most four doublings instead of one per bit.
 		inline unsigned bit_length(const edecimal& n) {
-			unsigned b = 0;
-			edecimal p(1);
+			const std::uint64_t d = n.size();
+			unsigned b = static_cast<unsigned>(((d > 0 ? d - 1 : 0) * 33219ull) / 10000ull);
+			edecimal p = pow2(b);                     // p = 2^b <= n
 			const edecimal two(2);
 			while (!(n < p)) { p *= two; ++b; }
 			return b;
-		}
-
-		inline edecimal pow2(unsigned k) {
-			edecimal p(1);
-			const edecimal two(2);
-			for (unsigned i = 0; i < k; ++i) p *= two;
-			return p;
 		}
 
 	}  // namespace erational_sqrt_detail
