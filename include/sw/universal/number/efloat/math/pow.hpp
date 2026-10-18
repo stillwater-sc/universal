@@ -13,6 +13,25 @@
 
 namespace sw { namespace universal {
 
+namespace efloat_detail {
+
+	// exp(y log x) for x > 0, with log x and the product carried at the working precision and
+	// rounded once to the result's (#1712): an error e in log x becomes an error y e in the
+	// exponent, so at the result's precision x^y would lose log2|y log x| bits
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> exp_of_product_log(const efloat<nlimbs>& y, const efloat<nlimbs>& x) {
+		const unsigned precision = std::max(result_precision(x), y.get_precision());
+		const unsigned working   = precision + exp_log_guard_bits;
+		efloat<nlimbs> xw(x), yw(y);
+		xw.set_precision(working);
+		yw.set_precision(working);
+		efloat<nlimbs> result = exp(yw * log(xw));
+		result.set_precision(precision);
+		return result;
+	}
+
+}  // namespace efloat_detail
+
 // Fast integer power using binary exponentiation, fully safe from INT_MIN overflow
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> integer_power(efloat<nlimbs> base, int exponent) {
@@ -94,7 +113,7 @@ constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 		// Compute using abs(x)
 		efloat<nlimbs> abs_x(x);
 		abs_x.setsign(false);
-		efloat<nlimbs> res = exp(y * log(abs_x));
+		efloat<nlimbs> res = efloat_detail::exp_of_product_log(y, abs_x);
 		if (is_odd) {
 			res.setsign(true);
 		}
@@ -102,7 +121,7 @@ constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 	}
 
 	// Normal positive base: x^y = exp(y * log(x))
-	return exp(y * log(x));
+	return efloat_detail::exp_of_product_log(y, x);
 }
 
 }} // namespace sw::universal
