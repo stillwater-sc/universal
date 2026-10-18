@@ -6,8 +6,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // An invalid argument gives errno = EDOM and a quiet NaN, with no message: the math headers
-// carry no stream.  atan2 of zeros and npwr(0, 0) follow std, and a finite argument too large
-// for the trigonometric argument reduction gives ERANGE and a NaN (sincos crashed there).
+// carry no stream.  atan2 of zeros and npwr(0, 0) follow std, and a finite argument of any size
+// to the trigonometric functions reduces exactly (#1723; sincos crashed there).
 // The checks are in verification/multidouble_math_errors.hpp, shared by the five types.
 #include <universal/utility/directives.hpp>
 #include <universal/number/dd_cascade/dd_cascade.hpp>
