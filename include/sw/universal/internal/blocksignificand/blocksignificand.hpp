@@ -300,6 +300,8 @@ public:
 	constexpr void div(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		constexpr unsigned L  = nrLimbs;                 // 32-bit limbs of one operand
 		constexpr unsigned UL = 2u * L + 1u;             // limbs of A * 2^R, R < nbits
+		// read everything from the operands before clear(): either may be *this
+		const unsigned R = static_cast<unsigned>(lhs.radix());
 		std::uint32_t a[L]{}, b[L]{};
 		lhs.to_limbs(a);
 		rhs.to_limbs(b);
@@ -310,7 +312,6 @@ public:
 		if (n == 0) return;   // division by zero is the caller's to handle
 
 		// u = A * 2^R
-		const unsigned R = static_cast<unsigned>(lhs.radix());
 		std::uint32_t u[UL]{};
 		const unsigned limbShift = R / 32u, bitShift = R % 32u;
 		for (unsigned i = 0; i < L; ++i) {

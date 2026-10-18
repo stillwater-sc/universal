@@ -5,7 +5,8 @@
 // time (limb::divide), which reads and writes the significand through 32-bit limbs whatever the
 // block type. cfloat<32,8> and cfloat<64,11> with subnormals, without max-exponent values and
 // non-saturating are IEEE-754 single and double, so the native quotient is an exact oracle for
-// every block width: 8, 16, 32 and 64 bits.
+// every block width: 8, 16, 32 and 64 bits. It also checks blocksignificand::div with the
+// receiver as an operand.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -62,6 +63,36 @@ int VerifySingleAndDouble(const std::string& tag, int n, bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// blocksignificand::div with the receiver as one of its operands, x.div(x, y) or y.div(x, y),
+// must give the quotient of the unaliased call: everything is read from the operands before the
+// receiver is cleared (#1746 review)
+template<unsigned nbits, typename BlockType>
+int VerifyAliasedDivision(int n, bool reportTestCases) {
+	using Significand = blocksignificand<nbits, BlockType>;
+	std::mt19937_64 rng(1746);
+	constexpr int radix = static_cast<int>(nbits) - 2;   // two integer bits, as a blocktriple<DIV> has
+	int nrOfFailedTests = 0;
+	for (int i = 0; i < n; ++i) {
+		Significand a, b;
+		for (unsigned k = 0; k < nbits - 2; ++k) { a.setbit(k, (rng() & 1u) != 0); b.setbit(k, (rng() & 1u) != 0); }
+		a.setbit(nbits - 3); b.setbit(nbits - 3);   // normalized: the hidden bit set
+		a.setradix(radix); b.setradix(radix);
+		Significand reference;
+		reference.div(a, b);
+		Significand x(a), y(b);
+		x.div(x, b);
+		y.div(a, y);
+		for (unsigned k = 0; k < Significand::nrBlocks; ++k) {
+			if (x.block(k) != reference.block(k) || y.block(k) != reference.block(k)) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests < 5) std::cerr << "FAIL: aliased blocksignificand<" << nbits << "> division differs\n";
+				break;
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
 }  // namespace
 
 #define MANUAL_TESTING 0
@@ -103,6 +134,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySingleAndDouble<std::uint16_t>("uint16_t", 20000, reportTestCases), "cfloat uint16_t", "single and double");
 	nrOfFailedTestCases += ReportTestResult(VerifySingleAndDouble<std::uint32_t>("uint32_t", 20000, reportTestCases), "cfloat uint32_t", "single and double");
 	nrOfFailedTestCases += ReportTestResult(VerifySingleAndDouble<std::uint64_t>("uint64_t", 20000, reportTestCases), "cfloat uint64_t", "single and double");
+	nrOfFailedTestCases += ReportTestResult(VerifyAliasedDivision< 77, std::uint32_t>(1000, reportTestCases), "blocksignificand<77,uint32_t>", "aliased division");
+	nrOfFailedTestCases += ReportTestResult(VerifyAliasedDivision<162, std::uint8_t >(1000, reportTestCases), "blocksignificand<162,uint8_t>", "aliased division");
 	// exhaustive small configurations with a 16-bit block, against the double oracle
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<10, 3, std::uint16_t, true, false, false> >(reportTestCases), "cfloat<10,3,uint16_t,t,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<10, 4, std::uint16_t, false, false, false> >(reportTestCases), "cfloat<10,4,uint16_t,f,f,f>", "division");
