@@ -8,10 +8,6 @@
 #include <cerrno>
 #include <cmath>
 
-#ifndef TD_CASCADE_NATIVE_SQRT
-#define TD_CASCADE_NATIVE_SQRT 1
-#endif
-
 // square root formulations; see the comment on sqrt() below for the trade
 #define UNIVERSAL_TD_CASCADE_SQRT_NEWTON_DIVISION   0
 #define UNIVERSAL_TD_CASCADE_SQRT_NEWTON_RECIPROCAL 1
@@ -20,8 +16,6 @@
 #endif
 
 namespace sw { namespace universal {
-
-#if TD_CASCADE_NATIVE_SQRT
 
     // Computes the square root of the triple-double number td.
     //   NOTE: td must be a non-negative number
@@ -89,21 +83,6 @@ inline td_cascade sqrt(const td_cascade& a) {
 
 #endif
     }
-
-#else
-
-	// sqrt shim for triple-double
-	inline td_cascade sqrt(td_cascade a) {
-#if TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw td_cascade_negative_sqrt_arg();
-#else  // ! TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) { errno = EDOM; return td_cascade(SpecificValue::qnan); }
-#endif // ! TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.iszero()) return a;
-		return td_cascade(std::sqrt(double(a)));
-	}
-
-#endif // ! TD_CASCADE_NATIVE_SQRT
 
     // Note: sqrt(double) helper removed to avoid namespace pollution
     // Use explicit construction instead: sqrt(td_cascade(d))

@@ -10,20 +10,14 @@
 #include <cerrno>
 #include <cmath>
 
-#ifndef QUADDOUBLE_NATIVE_SQRT
-#define QUADDOUBLE_NATIVE_SQRT 0
-#endif
-
 namespace sw { namespace universal {
-
-#if QUADDOUBLE_NATIVE_SQRT
 
     /// <summary>
     /// sqrt returns the square root of its input, returns NaN if argument is negative
     /// </summary>
     /// <param name="a">input</param>
     /// <returns>sqrt(a) or NaN</returns>
-    qd sqrt(const qd& a) {
+    inline qd sqrt(const qd& a) {
         /* Strategy:
 
            Perform the following Newton iteration:
@@ -72,21 +66,6 @@ namespace sw { namespace universal {
         r *= b;
         return ldexp(r, k);
 }
-
-#else
-
-	// sqrt shim for quad-double
-	inline qd sqrt(const qd& a) {
-#if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw qd_negative_sqrt_arg();
-#else  // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) { errno = EDOM; return qd(SpecificValue::qnan); }
-#endif // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.iszero()) return a;
-		return qd(std::sqrt(double(a)));
-	}
-
-#endif // ! QUADDOUBLE_NATIVE_SQRT
 
 	// reciprocal sqrt
 	inline qd rsqrt(const qd& a) {

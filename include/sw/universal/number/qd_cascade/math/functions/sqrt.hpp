@@ -8,10 +8,6 @@
 #include <cerrno>
 #include <cmath>
 
-#ifndef QD_CASCADE_NATIVE_SQRT
-#define QD_CASCADE_NATIVE_SQRT 1
-#endif
-
 // square root formulations; see the comment on sqrt() below for the trade
 #define UNIVERSAL_QD_CASCADE_SQRT_NEWTON_DIVISION   0
 #define UNIVERSAL_QD_CASCADE_SQRT_NEWTON_RECIPROCAL 1
@@ -20,8 +16,6 @@
 #endif
 
 namespace sw { namespace universal {
-
-#if QD_CASCADE_NATIVE_SQRT
 
     // Computes the square root of the quad-double number qd.
     //   NOTE: qd must be a non-negative number
@@ -90,21 +84,6 @@ inline qd_cascade sqrt(const qd_cascade& a) {
 
 #endif
     }
-
-#else
-
-	// sqrt shim for quad-double
-	inline qd_cascade sqrt(qd_cascade a) {
-#if QD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw qd_cascade_negative_sqrt_arg();
-#else  // ! QD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) { errno = EDOM; return qd_cascade(SpecificValue::qnan); }
-#endif // ! QD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.iszero()) return a;
-		return qd_cascade(std::sqrt(double(a)));
-	}
-
-#endif // ! QD_CASCADE_NATIVE_SQRT
 
     // Note: sqrt(double) helper removed to avoid namespace pollution
     // Use explicit construction instead: sqrt(qd_cascade(d))

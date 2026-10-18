@@ -31,15 +31,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // configure the library implementation
-#if !defined(QUADDOUBLE_NATIVE_SQRT)
-#define QUADDOUBLE_NATIVE_SQRT 1
-#endif
-#if !defined(QUADDOUBLE_NATIVE_TRIGONOMETRY)
-#define QUADDOUBLE_NATIVE_TRIGONOMETRY 1
-#endif
-// QUADDOUBLE_NATIVE_HYPERBOLIC and QUADDOUBLE_NATIVE_MINMAX are gone: setting them to 0 selected
-// implementations that went through double.  The hyperbolic functions are now the shared,
-// full-precision ones of number/shared/multidouble_special.hpp, and min/max return the operand (#1667).
+// QUADDOUBLE_NATIVE_SQRT, QUADDOUBLE_NATIVE_TRIGONOMETRY, QUADDOUBLE_NATIVE_HYPERBOLIC and
+// QUADDOUBLE_NATIVE_MINMAX are gone: setting them to 0 selected implementations that went
+// through double.  sqrt and the trigonometric functions are always the native, full-precision
+// ones (#1724), the hyperbolic functions the shared ones of number/shared/multidouble_special.hpp,
+// and min/max return the operand (#1667).
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

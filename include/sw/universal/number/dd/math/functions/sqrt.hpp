@@ -8,13 +8,7 @@
 #include <cerrno>
 #include <cmath>
 
-#ifndef DOUBLEDOUBLE_NATIVE_SQRT
-#define DOUBLEDOUBLE_NATIVE_SQRT 1
-#endif
-
 namespace sw { namespace universal {
-
-#if DOUBLEDOUBLE_NATIVE_SQRT
 
     // Computes the square root of the double-double number dd.
     //   NOTE: dd must be a non-negative number
@@ -55,21 +49,6 @@ namespace sw { namespace universal {
         double bx = b.high() * x;
         return ldexp(add(bx, (b - sqr(dd(bx))).high() * (x * 0.5)), k);
     }
-
-#else
-
-	// sqrt shim for double-double
-	inline dd sqrt(dd a) {
-#if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw dd_negative_sqrt_arg();
-#else  // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) { errno = EDOM; return dd(SpecificValue::qnan); }
-#endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.iszero()) return a;
-		return dd(std::sqrt(double(a)));
-	}
-
-#endif // ! DOUBLEDOUBLE_NATIVE_SQRT
 
     // Computes the square root of a double in double-double precision. 
     inline dd sqrt(double d) {
