@@ -13,10 +13,9 @@ namespace sw { namespace universal {
 // forward references
 template<unsigned nlimbs> class efloat;
 
-// parse a decimal/scientific literal into an efloat. BigBits is the d2b working
-// budget: the default handles typical literals; pass a larger value (e.g.
-// parse<16384>) to represent very high precision -- the safe target precision
-// scales with BigBits (see the definition and issue #1141).
+// parse a decimal/scientific literal into an efloat, correctly rounded to the value's
+// precision whatever the literal's length (#1713). BigBits is the narrowest result width
+// tried first; it does not limit the precision (see the definition).
 template<unsigned BigBits = sw::universal::decimal_to_binary::default_big_bits, unsigned nlimbs>
 bool parse(const std::string& number, efloat<nlimbs>& v);
 
