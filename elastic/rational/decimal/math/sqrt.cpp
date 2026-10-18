@@ -58,6 +58,16 @@ int VerifySpecialValues(bool reportTestCases) {
 	check(sqrt(erational(0)).iszero(), "sqrt(0) is not 0");
 	check(sqrt(erational(9, 4)) == erational(3, 2), "sqrt(9/4) is not 3/2");
 	check(sqrt(erational(1)) == erational(1), "sqrt(1) is not 1");
+	// an unreduced argument: the constructor keeps 8/18, whose root 2/3 is exact
+	{
+		const erational r = sqrt(erational(8, 18), 2);
+		check(r.top() == edecimal(2) && r.bottom() == edecimal(3), "sqrt(8/18) is not 2/3");
+		erational y;
+		y.setnumerator(edecimal(200));
+		y.setdenominator(edecimal(50));                          // 4, unreduced
+		const erational ry = sqrt(y);
+		check(ry.top() == edecimal(2) && ry.bottom() == edecimal(1), "sqrt(200/50) is not 2");
+	}
 	// the default precision is 106 bits: the root of 2 has a 106-bit numerator over 2^105
 	const erational r2 = sqrt(erational(2));
 	check(r2.bottom() == from_string("40564819207303340847894502572032"), "sqrt(2) is not at 106 bits");

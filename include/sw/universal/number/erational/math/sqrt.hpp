@@ -75,7 +75,15 @@ namespace sw { namespace universal {
 #endif
 		}
 		if (bits == 0) bits = 1;
-		const edecimal p = x.top(), q = x.bottom();   // reduced and positive
+		// x need not be reduced: erational(8, 18) keeps 8/18, whose root 2/3 is exact.  Reduce
+		// local copies, by Euclid, so the result does not depend on how x was constructed.
+		edecimal p = x.top(), q = x.bottom();
+		{
+			edecimal a = p, b = q;
+			while (!b.iszero()) { edecimal t = a % b; a = b; b = t; }
+			p /= a;
+			q /= a;
+		}
 		const edecimal rp = sqrt(p), rq = sqrt(q);
 		erational r;
 		if (rp * rp == p && rq * rq == q) {             // a rational root: exact, and already reduced
