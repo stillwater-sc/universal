@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // pow.hpp: pow functions for triple-double cascade (td_cascade) floating-point
 //
 // algorithms adapted from quad-double implementation by Scibuilders, Jack Poulson
@@ -26,19 +25,9 @@ namespace sw { namespace universal {
     }
 
     // Computes the n-th power of a triple-double number.
-    //   NOTE:  0^0 causes an error.
+    //   NOTE:  0^0 is 1, as std::pow
     inline td_cascade npwr(const td_cascade& a, int n) {
-        if (n == 0) {
-#if TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-            if (a.iszero()) throw td_cascade_invalid_argument();
-#else // ! TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-            if (a.iszero()) {
-                std::cerr << "(npwr): Invalid argument\n";
-                return td_cascade(SpecificValue::snan);
-            }
-#endif // ! TD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-            return 1.0;
-        }
+        if (n == 0) return 1.0;   // 0^0 included, as std::pow(0, 0) = 1
 
         td_cascade r = a;
         td_cascade s = 1.0;

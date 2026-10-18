@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // trigonometry.hpp: trigonometry function support for quad-double (qd) floating-point
 // 
 // algorithms and constants courtesy of Scibuilders, Jack Poulson
@@ -8,6 +7,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cerrno>
+#include <cmath>
 #include <universal/number/qd/math/constants/sincos_tables.hpp>
 
 namespace sw { namespace universal {
@@ -143,6 +144,18 @@ inline qd cos_taylor(const qd& a) {
     return s;
 }
 
+    // The argument of sin, cos or sincos is finite but too large to reduce: the remainder
+    // modulo a 2*pi held to this precision is not within [-pi, pi], so every digit of the
+    // result would be noise.  Reported as a NaN with errno = ERANGE, or thrown.
+    inline qd qd_trig_reduction_failed() {
+#if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
+        throw qd_trig_argument_too_large();
+#else
+        errno = ERANGE;
+        return qd(SpecificValue::qnan);
+#endif
+    }
+
 inline qd sin(const qd& a) {
 
     /* Strategy.  To compute sin(x), we choose integers a, b so that
@@ -156,28 +169,25 @@ inline qd sin(const qd& a) {
 
     if (a.iszero()) return 0.0;
 
+    if (a.isnan()) return qd(SpecificValue::qnan);
+    if (a.isinf()) { errno = EDOM; return qd(SpecificValue::qnan); }
+
     // approximately reduce modulo 2*pi
     qd z = nint(a / qd_2pi);
     qd r = a - qd_2pi * z;
 
     // approximately reduce modulo pi/2 and then modulo pi/1024
     double q = std::floor(r[0] / qd_pi_2[0] + 0.5);
+    // |q| > 2 means the reduction modulo 2*pi left more than pi: the argument is too
+    // large for this precision.  Test before the casts to int, which overflow for such q.
+    if (!(std::fabs(q) <= 2.0)) return qd_trig_reduction_failed();
     qd t = r - qd_pi_2 * q;
     int j = static_cast<int>(q);
     q = std::floor(t[0] / qd_pi1024[0] + 0.5);
+    if (!(std::fabs(q) <= 256.0)) return qd_trig_reduction_failed();   // guards the table index
     t -= qd_pi1024 * q;
     int k = static_cast<int>(q);
     int abs_k = std::abs(k);
-
-    if (j < -2 || j > 2) {
-        std::cerr << "(sin): Cannot reduce modulo pi/2\n";
-        return qd(SpecificValue::snan);
-    }
-
-    if (abs_k > 256) {
-        std::cerr << "(sin): Cannot reduce modulo pi/1024\n";
-        return qd(SpecificValue::snan);
-    }
 
     if (k == 0) {
         switch (j) {
@@ -236,28 +246,25 @@ inline qd sin(const qd& a) {
 inline qd cos(const qd& a) {
     if (a.iszero()) return 1.0;
 
+    if (a.isnan()) return qd(SpecificValue::qnan);
+    if (a.isinf()) { errno = EDOM; return qd(SpecificValue::qnan); }
+
     // approximately reduce modulo 2*pi
     qd z = nint(a / qd_2pi);
     qd r = a - qd_2pi * z;
 
     // approximately reduce modulo pi/2 and then modulo pi/1024
     double q = std::floor(r[0] / qd_pi_2[0] + 0.5);
+    // |q| > 2 means the reduction modulo 2*pi left more than pi: the argument is too
+    // large for this precision.  Test before the casts to int, which overflow for such q.
+    if (!(std::fabs(q) <= 2.0)) return qd_trig_reduction_failed();
     qd t = r - qd_pi_2 * q;
     int j = static_cast<int>(q);
     q = std::floor(t[0] / qd_pi1024[0] + 0.5);
+    if (!(std::fabs(q) <= 256.0)) return qd_trig_reduction_failed();   // guards the table index
     t -= qd_pi1024 * q;
     int k = static_cast<int>(q);
     int abs_k = std::abs(k);
-
-    if (j < -2 || j > 2) {
-        std::cerr << "(cos): Cannot reduce modulo pi/2\n";
-        return qd(SpecificValue::snan);
-    }
-
-    if (abs_k > 256) {
-        std::cerr << "(cos): Cannot reduce modulo pi/1024\n";
-        return qd(SpecificValue::snan);
-    }
 
     if (k == 0) {
         switch (j) {
@@ -322,30 +329,25 @@ inline void sincos(const qd& a, qd& sin_a, qd& cos_a) {
         return;
     }
 
+    if (a.isnan()) { sin_a = cos_a = qd(SpecificValue::qnan); return; }
+    if (a.isinf()) { errno = EDOM; sin_a = cos_a = qd(SpecificValue::qnan); return; }
+
     // approximately reduce by 2*pi
     qd z = nint(a / qd_2pi);
     qd t = a - qd_2pi * z;
 
     // approximately reduce by pi/2 and then by pi/1024.
     double q = std::floor(t[0] / qd_pi_2[0] + 0.5);
+    // |q| > 2 means the reduction modulo 2*pi left more than pi: the argument is too
+    // large for this precision.  Test before the casts to int, which overflow for such q.
+    if (!(std::fabs(q) <= 2.0)) { sin_a = cos_a = qd_trig_reduction_failed(); return; }
     t -= qd_pi_2 * q;
     int j = static_cast<int>(q);
     q = std::floor(t[0] / qd_pi1024[0] + 0.5);
+    if (!(std::fabs(q) <= 256.0)) { sin_a = cos_a = qd_trig_reduction_failed(); return; }   // guards the table index
     t -= qd_pi1024 * q;
     int k = static_cast<int>(q);
     int abs_k = std::abs(k);
-
-    if (j < -2 || j > 2) {
-        std::cerr << "(sincos): Cannot reduce modulo pi/2\n";
-        cos_a = sin_a = qd(SpecificValue::snan);
-        return;
-    }
-
-    if (abs_k > 256) {
-        std::cerr << "(sincos): Cannot reduce modulo pi/1024\n";
-        cos_a = sin_a = qd(SpecificValue::snan);
-        return;
-    }
 
     qd sin_t, cos_t;
     sincos_taylor(t, sin_t, cos_t);
@@ -436,15 +438,15 @@ inline qd atan2(const qd& y, const qd& x) {
     if (x.iszero()) {
 
         if (y.iszero()) {
-            // Both x and y is zero
-            std::cerr << "(atan2): Both arguments zero\n";
-            return qd(SpecificValue::snan);
+            // both zero: std::atan2 gives +-0 for x = +0 and +-pi for x = -0, signed as y
+            if (std::signbit(x[0])) return std::signbit(y[0]) ? -qd_pi : qd_pi;
+            return y;
         }
 
         return (y.ispos()) ? qd_pi_2 : -qd_pi_2;
     }
     else if (y.iszero()) {
-        return (x.ispos()) ? qd(0.0) : qd_pi;
+        return (x.ispos()) ? y : (std::signbit(y[0]) ? -qd_pi : qd_pi);   // signed as y, as std::atan2
     }
 
     if (x == y) {
@@ -499,8 +501,8 @@ inline qd asin(const qd& a) {
     qd abs_a = abs(a);
 
     if (abs_a > 1.0) {
-        std::cerr << "(asin): Argument out of domain\n";
-        return qd(SpecificValue::snan);
+        errno = EDOM;
+        return qd(SpecificValue::qnan);
     }
 
     if (abs_a.isone()) {
@@ -514,8 +516,8 @@ inline qd acos(const qd& a) {
     qd abs_a = abs(a);
 
     if (abs_a > 1.0) {
-        std::cerr << "(acos): Argument out of domain\n";
-        return qd(SpecificValue::snan);
+        errno = EDOM;
+        return qd(SpecificValue::qnan);
     }
 
     if (abs_a.isone()) {
