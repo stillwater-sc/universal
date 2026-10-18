@@ -299,9 +299,16 @@ public:
 	// 10 to 25 times slower from half to octuple precision (#1742).
 	constexpr void div(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
 		constexpr unsigned L  = nrLimbs;                 // 32-bit limbs of one operand
-		constexpr unsigned UL = 2u * L + 1u;             // limbs of A * 2^R, R < nbits
+		constexpr unsigned UL = 2u * L + 1u;             // limbs of A * 2^R, 0 <= R < nbits
 		// read everything from the operands before clear(): either may be *this
-		const unsigned R = static_cast<unsigned>(lhs.radix());
+		const int radix = lhs.radix();
+		if (radix < 0 || radix >= static_cast<int>(nbits)) {
+			// no quotient bits at this radix: every radix a blocktriple uses is in range, and
+			// one outside it -- set directly, or never set -- must not index past u[]
+			clear();
+			return;
+		}
+		const unsigned R = static_cast<unsigned>(radix);
 		std::uint32_t a[L]{}, b[L]{};
 		lhs.to_limbs(a);
 		rhs.to_limbs(b);

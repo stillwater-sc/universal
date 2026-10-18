@@ -6,7 +6,7 @@
 // block type. cfloat<32,8> and cfloat<64,11> with subnormals, without max-exponent values and
 // non-saturating are IEEE-754 single and double, so the native quotient is an exact oracle for
 // every block width: 8, 16, 32 and 64 bits. It also checks blocksignificand::div with the
-// receiver as an operand.
+// receiver as an operand, and at radices with no quotient bits.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -93,6 +93,28 @@ int VerifyAliasedDivision(int n, bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// a radix outside [0, nbits) has no quotient bits: div must leave a zero, and touch nothing past
+// its scratch arrays, which the sanitizer builds check (#1746 review)
+template<unsigned nbits, typename BlockType>
+int VerifyOutOfRangeRadix(bool reportTestCases) {
+	using Significand = blocksignificand<nbits, BlockType>;
+	constexpr int limbs = static_cast<int>((nbits + 31u) / 32u);
+	int nrOfFailedTests = 0;
+	for (int radix : { -1, -64, static_cast<int>(nbits), 32 * (limbs + 1), 32 * (limbs + 1) + 31, 4 * static_cast<int>(nbits) }) {
+		Significand a, b, c;
+		a.setbit(nbits - 3); a.setbit(0);
+		b.setbit(nbits - 4);
+		a.setradix(radix); b.setradix(radix);
+		c.setbit(1);   // a stale bit, which the division must clear
+		c.div(a, b);
+		if (!c.iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: blocksignificand<" << nbits << "> division at radix " << radix << " is not zero\n";
+		}
+	}
+	return nrOfFailedTests;
+}
+
 }  // namespace
 
 #define MANUAL_TESTING 0
@@ -136,6 +158,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySingleAndDouble<std::uint64_t>("uint64_t", 20000, reportTestCases), "cfloat uint64_t", "single and double");
 	nrOfFailedTestCases += ReportTestResult(VerifyAliasedDivision< 77, std::uint32_t>(1000, reportTestCases), "blocksignificand<77,uint32_t>", "aliased division");
 	nrOfFailedTestCases += ReportTestResult(VerifyAliasedDivision<162, std::uint8_t >(1000, reportTestCases), "blocksignificand<162,uint8_t>", "aliased division");
+	nrOfFailedTestCases += ReportTestResult(VerifyOutOfRangeRadix< 40, std::uint32_t>(reportTestCases), "blocksignificand<40,uint32_t>", "out-of-range radix");
+	nrOfFailedTestCases += ReportTestResult(VerifyOutOfRangeRadix< 77, std::uint8_t >(reportTestCases), "blocksignificand<77,uint8_t>", "out-of-range radix");
 	// exhaustive small configurations with a 16-bit block, against the double oracle
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<10, 3, std::uint16_t, true, false, false> >(reportTestCases), "cfloat<10,3,uint16_t,t,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<10, 4, std::uint16_t, false, false, false> >(reportTestCases), "cfloat<10,4,uint16_t,f,f,f>", "division");
