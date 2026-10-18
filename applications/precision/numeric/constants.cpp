@@ -11,7 +11,6 @@
 #endif
 
 // select the number systems we would like to compare
-#define FIXPNT_NATIVE_SQRT 1
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
