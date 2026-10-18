@@ -333,10 +333,25 @@ try {
 				}
 				if (expected) {
 					Tiny two(2);
+#if DFLOAT_THROW_ARITHMETIC_EXCEPTION
+					// the divide-by-zero path throws in this configuration
+					bool threw = false;
+					try {
+						(void)(two / value);
+					}
+					catch (const sw::universal::dfloat_divide_by_zero&) {
+						threw = true;
+					}
+					if (!threw) {
+						++nrOfFailedTestCases;
+						if (reportTestCases) std::cerr << "FAIL: division by encoded zero " << bits << " did not throw\n";
+					}
+#else
 					if (!(two / value).isinf()) {
 						++nrOfFailedTestCases;
 						if (reportTestCases) std::cerr << "FAIL: division by encoded zero " << bits << '\n';
 					}
+#endif
 				}
 			}
 		};
