@@ -15,6 +15,7 @@
 #include <universal/internal/blocksignificand/blocksignificand_fwd.hpp>
 #include <universal/internal/blocktype/carry.hpp>
 #include <universal/internal/blocktype/limb_division.hpp>
+#include <universal/internal/blocktype/limb_multiplication.hpp>
 
 /*
    The fraction bits in a floating-point representation benefit from different
@@ -275,18 +276,20 @@ public:
 		blocksignificand<nbits, bt> b(twosComplementFree(rhs));
 		add(lhs, b);
 	}
+	// The product lhs * rhs, modulo 2^nbits: the low nbits of the full product, which is what
+	// the shift-and-add loop it replaced produced, since every add nulled the bits above nbits.
+	// A blocktriple<MUL> sizes its significand to hold the whole product of two aligned
+	// operands, so nothing is lost in practice.
+	//
+	// Schoolbook multiplication a 32-bit word at a time (limb::multiply_low). The loop it
+	// replaced did a full-width add and shift for every bit of one operand (#1743).
 	constexpr void mul(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
-		blocksignificand<nbits, bt> base(lhs);
-		blocksignificand<nbits, bt> multiplicand(rhs);
+		std::uint32_t a[nrLimbs]{}, b[nrLimbs]{}, p[nrLimbs]{};
+		lhs.to_limbs(a);
+		rhs.to_limbs(b);
+		limb::multiply_low(a, nrLimbs, b, nrLimbs, p, nrLimbs);
 		clear();
-		for (unsigned i = 0; i < nbits; ++i) {
-			if (base.at(i)) {
-				add(*this, multiplicand);
-			}
-			multiplicand <<= 1;
-		}
-		// since we used operator+=, which enforces the nulling of leading bits
-		// we don't need to null here
+		from_limbs(p);
 	}
 	// The quotient lhs / rhs, at the operands' radix point R, truncated, with bit 0 set when
 	// anything was truncated. The operands are aligned significands of the same radix (a
