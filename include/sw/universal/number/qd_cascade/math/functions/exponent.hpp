@@ -72,9 +72,11 @@ namespace sw { namespace universal {
         constexpr double k = double(1ull << 16);
         constexpr double inv_k = 1.0 / k;
 
-        if (x[0] <= -709.0) return qd_cascade(0.0);
+        // e^x rounds to 0 below ln(2^-1075) = -745.13, half the smallest subnormal (#1709)
+        if (x[0] <= -745.2) return qd_cascade(0.0);
 
-        if (x[0] >= 709.0) return qd_cascade(SpecificValue::infpos);
+        // e^x overflows above ln(DBL_MAX) = 709.78; below it the 2^m scaling stays finite (#1709)
+        if (x[0] >= 709.8) return qd_cascade(SpecificValue::infpos);
 
         if (x.iszero()) return qd_cascade(1.0);
 
