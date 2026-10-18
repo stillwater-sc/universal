@@ -1,5 +1,6 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
+#include <cerrno>
+#include <iostream>   // std::cout in BabylonianMethod below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for logarithmic floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -8,10 +9,6 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/ieee754.hpp>
 //#include <universal/number/lns/math/sqrt_tables.hpp>
-
-#ifndef LNS_NATIVE_SQRT
-#define LNS_NATIVE_SQRT 0
-#endif
 
 namespace sw { namespace universal {
 
@@ -77,30 +74,49 @@ namespace sw { namespace universal {
 	*/
 
 
-#if LNS_NATIVE_SQRT
-	// sqrt for arbitrary lns
+	// sqrt for lns, correctly rounded (#1725).
+	//
+	// An lns value is 2^(E 2^-rbits) for a two's complement fixed-point exponent E, and lns
+	// rounds in the exponent domain: converting a real v stores log2(v) rounded to the nearest
+	// multiple of 2^-rbits, ties to even.  The root is 2^(E/2 2^-rbits), so the correctly
+	// rounded root under that rule is E/2 rounded to an integer, ties to even, computed here
+	// exactly by an arithmetic shift: an odd E is an exact tie.  Halving moves E towards zero,
+	// so the result can neither overflow nor reach the zero encoding (the most negative E).
+	//
+	// This used to be lns(std::sqrt(double(a))) in both branches of an LNS_NATIVE_SQRT switch,
+	// one of them marked "TBD": the root of a value through double, its log2 through double, and
+	// a second rounding into the exponent.  That capped the precision at a double's and decided
+	// every tie by the noise in std::log2.
 	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 	inline lns<nbits, rbits, bt, xtra...> sqrt(const lns<nbits, rbits, bt, xtra...>& a) {
-#if LNS_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw lns_negative_sqrt_arg();
-#else
-		if (a.isneg()) std::cerr << "lns argument to sqrt is negative: " << a << std::endl;
-#endif
+		using Lns = lns<nbits, rbits, bt, xtra...>;
+		if (a.isnan()) return a;                      // the NaN encoding carries the sign bit: test it first
 		if (a.iszero()) return a;
-		return lns<nbits, rbits, bt, xtra...>(std::sqrt((double)a));  // TBD
-	}
-#else
-	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-	inline lns<nbits, rbits, bt, xtra...> sqrt(const lns<nbits, rbits, bt, xtra...>& a) {
+		if (a.isneg()) {
 #if LNS_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw lns_negative_sqrt_arg();
+			throw lns_negative_sqrt_arg();
 #else
-		if (a.isneg()) std::cerr << "lns argument to sqrt is negative: " << a << std::endl;
+			errno = EDOM;                             // as std::sqrt: EDOM and a NaN, with no message
+			Lns nan;
+			nan.setnan();
+			return nan;
 #endif
-		if (a.iszero()) return a;
-		return lns<nbits, rbits, bt, xtra...>(std::sqrt((double)a));
+		}
+		constexpr unsigned ebits = nbits - 1u;        // the exponent field, bits [0, ebits)
+		Lns r(a);
+		const bool odd = a.at(0);
+		for (unsigned i = 0; i + 1u < ebits; ++i) r.setbit(i, a.at(i + 1u));   // arithmetic shift right
+		r.setbit(ebits - 1u, a.at(ebits - 1u));      // the exponent's sign bit stays
+		if (odd && r.at(0)) {                         // a tie onto an odd exponent: round up to even
+			for (unsigned i = 0; i < ebits; ++i) {    // two's complement increment
+				const bool bit = r.at(i);
+				r.setbit(i, !bit);
+				if (!bit) break;
+			}
+		}
+		r.setsign(false);
+		return r;
 	}
-#endif
 
 	// reciprocal sqrt
 	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
