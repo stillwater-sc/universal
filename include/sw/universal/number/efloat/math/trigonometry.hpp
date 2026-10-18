@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <universal/number/efloat/math/constants/efloat_constants.hpp>
 #include <universal/number/efloat/math/exponent.hpp>   // result_precision, exp_log_guard_bits
+#include <universal/number/efloat/math/truncate.hpp>   // round, floor
+#include <universal/number/efloat/math/sqrt.hpp>       // sqrt
 
 namespace sw { namespace universal {
 
@@ -89,11 +91,74 @@ namespace efloat_detail {
 		return value;
 	}
 
+	// x = k pi/2 + r with |r| <= pi/4, r accurate to `bits` bits relative to itself, and
+	// quadrant = k mod 4 (#1712).  x - k pi/2 cancels the scale(x) - scale(r) leading bits, and
+	// x can lie as close to a multiple of pi/2 as its own precision allows, so the reduction is
+	// retried with x and pi/2 widened by the cancellation until r keeps `bits` + 32 correct bits.
+	// A P-bit x cannot lie much closer to k pi/2 than 2^-2(P + scale(x)), so the retries stop at
+	// three times that width.
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> reduce_half_pi(const efloat<nlimbs>& x, unsigned bits, unsigned& quadrant) {
+		const unsigned magnitude = static_cast<unsigned>(std::max<int64_t>(0, x.scale()));
+		const unsigned limit     = 3 * (bits + magnitude) + 2 * exp_log_guard_bits;
+		unsigned working         = bits + exp_log_guard_bits + magnitude;
+		while (true) {
+			efloat<nlimbs> xw(x);
+			xw.set_precision(working);
+			const efloat<nlimbs> half_pi = pi_scaled<nlimbs>(working, -1);
+			const efloat<nlimbs> k = round(xw / half_pi);
+			const efloat<nlimbs> r = xw - k * half_pi;
+			const int64_t lost = r.iszero() ? static_cast<int64_t>(working) : std::max<int64_t>(0, x.scale() - r.scale());
+			const unsigned needed = bits + 32 + static_cast<unsigned>(lost);
+			if (k.iszero() || working >= needed || working >= limit) {
+				const efloat<nlimbs> four(4.0);
+				const efloat<nlimbs> k_mod_4 = k - floor(k / four) * four;   // k is an integer: exact
+				quadrant = static_cast<unsigned>(double(k_mod_4)) & 3u;
+				return r;
+			}
+			working = std::min(limit, needed + exp_log_guard_bits);
+		}
+	}
+
+	// sin(r) and cos(r) for |r| <= pi/4 by their Taylor series, at r's precision, until the
+	// terms fall below it
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> sin_kernel(const efloat<nlimbs>& r) {
+		efloat<nlimbs> neg_r2 = r * r; neg_r2.setsign(true);   // -r^2 (r^2 >= 0)
+		efloat<nlimbs> term = r;
+		efloat<nlimbs> sum  = r;
+		for (unsigned n = 1; ; ++n) {
+			efloat<nlimbs> denom = efloat<nlimbs>(static_cast<double>(2 * n)) * efloat<nlimbs>(static_cast<double>(2 * n + 1));
+			term = term * neg_r2 / denom;
+			if (term.iszero()) break;
+			sum += term;
+			if (!sum.iszero() && term.scale() < sum.scale() - static_cast<int64_t>(sum.get_precision())) break;
+		}
+		return sum;
+	}
+
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> cos_kernel(const efloat<nlimbs>& r) {
+		efloat<nlimbs> neg_r2 = r * r; neg_r2.setsign(true);   // -r^2
+		efloat<nlimbs> term(1.0);
+		efloat<nlimbs> sum(1.0);
+		sum.set_precision(r.get_precision());
+		for (unsigned n = 1; ; ++n) {
+			efloat<nlimbs> denom = efloat<nlimbs>(static_cast<double>(2 * n - 1)) * efloat<nlimbs>(static_cast<double>(2 * n));
+			term = term * neg_r2 / denom;
+			if (term.iszero()) break;
+			sum += term;
+			if (!sum.iszero() && term.scale() < sum.scale() - static_cast<int64_t>(sum.get_precision())) break;
+		}
+		return sum;
+	}
+
 }  // namespace efloat_detail
 
 // The trigonometric functions compute at their result's precision plus guard bits, with pi at
-// that precision, and round once at the end (#1712); sin and cos carry scale(x) more bits for
-// the cancellation in x - k 2 pi.
+// that precision, and round once at the end (#1712).  sin, cos and tan reduce by pi/2 to
+// |r| <= pi/4, widening the reduction by its cancellation, so a result near a zero of the
+// function keeps its full relative precision.
 
 // ----------------------------------------------------------------------------
 // sin: sine, computed by argument reduction to [-pi, pi] + Taylor series
@@ -110,28 +175,12 @@ constexpr efloat<nlimbs> sin(const efloat<nlimbs>& x) {
 	}
 
 	const unsigned precision = efloat_detail::result_precision(x);
-	const unsigned working   = precision + efloat_detail::exp_log_guard_bits + static_cast<unsigned>(std::max<int64_t>(0, x.scale()));
-	efloat<nlimbs> xw(x);
-	xw.set_precision(working);
-	const efloat<nlimbs> two_pi = efloat_detail::pi_scaled<nlimbs>(working, 1);
-
-	// reduce to [-pi, pi]:  r = x - round(x / 2pi) * 2pi
-	efloat<nlimbs> k = round(xw / two_pi);
-	efloat<nlimbs> r = xw - k * two_pi;
-
-	// Taylor series
-	efloat<nlimbs> neg_r2 = r * r; neg_r2.setsign(true);   // -r^2 (r^2 >= 0)
-	efloat<nlimbs> term = r;
-	efloat<nlimbs> sum  = r;
-	for (unsigned n = 1; ; ++n) {
-		efloat<nlimbs> denom = efloat<nlimbs>(static_cast<double>(2 * n)) * efloat<nlimbs>(static_cast<double>(2 * n + 1));
-		term = term * neg_r2 / denom;
-		if (term.iszero()) break;
-		sum += term;
-		if (!sum.iszero() && term.scale() < sum.scale() - static_cast<int64_t>(sum.get_precision())) break;
-	}
-	sum.set_precision(precision);
-	return sum;
+	unsigned quadrant = 0;
+	const efloat<nlimbs> r = efloat_detail::reduce_half_pi(x, precision, quadrant);
+	efloat<nlimbs> result = (quadrant & 1u) ? efloat_detail::cos_kernel(r) : efloat_detail::sin_kernel(r);
+	if (quadrant >= 2) result = efloat<nlimbs>(0.0) - result;
+	result.set_precision(precision);
+	return result;
 }
 
 // ----------------------------------------------------------------------------
@@ -149,26 +198,12 @@ constexpr efloat<nlimbs> cos(const efloat<nlimbs>& x) {
 	}
 
 	const unsigned precision = efloat_detail::result_precision(x);
-	const unsigned working   = precision + efloat_detail::exp_log_guard_bits + static_cast<unsigned>(std::max<int64_t>(0, x.scale()));
-	efloat<nlimbs> xw(x);
-	xw.set_precision(working);
-	const efloat<nlimbs> two_pi = efloat_detail::pi_scaled<nlimbs>(working, 1);
-
-	efloat<nlimbs> k = round(xw / two_pi);
-	efloat<nlimbs> r = xw - k * two_pi;
-
-	efloat<nlimbs> neg_r2 = r * r; neg_r2.setsign(true);   // -r^2
-	efloat<nlimbs> term(1.0);
-	efloat<nlimbs> sum(1.0);
-	for (unsigned n = 1; ; ++n) {
-		efloat<nlimbs> denom = efloat<nlimbs>(static_cast<double>(2 * n - 1)) * efloat<nlimbs>(static_cast<double>(2 * n));
-		term = term * neg_r2 / denom;
-		if (term.iszero()) break;
-		sum += term;
-		if (!sum.iszero() && term.scale() < sum.scale() - static_cast<int64_t>(sum.get_precision())) break;
-	}
-	sum.set_precision(precision);
-	return sum;
+	unsigned quadrant = 0;
+	const efloat<nlimbs> r = efloat_detail::reduce_half_pi(x, precision, quadrant);
+	efloat<nlimbs> result = (quadrant & 1u) ? efloat_detail::sin_kernel(r) : efloat_detail::cos_kernel(r);
+	if (quadrant == 1 || quadrant == 2) result = efloat<nlimbs>(0.0) - result;
+	result.set_precision(precision);
+	return result;
 }
 
 // ----------------------------------------------------------------------------
@@ -183,18 +218,24 @@ constexpr efloat<nlimbs> tan(const efloat<nlimbs>& x) {
 		if (!std::is_constant_evaluated()) efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
 		return nan;
 	}
-	// sin and cos of x widened by the guard bits, so the quotient is rounded once
+	// tan(k pi/2 + r) = tan(r) for even k, -1 / tan(r) for odd k: one reduction, one rounding
 	const unsigned precision = efloat_detail::result_precision(x);
-	efloat<nlimbs> xw(x);
-	xw.set_precision(precision + efloat_detail::exp_log_guard_bits);
-	efloat<nlimbs> s = sin(xw);
-	efloat<nlimbs> c = cos(xw);
-	if (c.iszero()) {                        // odd multiple of pi/2: pole
-		efloat<nlimbs> inf; inf.setinf(s.isneg());
-		if (!std::is_constant_evaluated()) efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
-		return inf;
+	unsigned quadrant = 0;
+	const efloat<nlimbs> r = efloat_detail::reduce_half_pi(x, precision, quadrant);
+	const efloat<nlimbs> s = efloat_detail::sin_kernel(r);
+	const efloat<nlimbs> c = efloat_detail::cos_kernel(r);
+	efloat<nlimbs> result;
+	if (quadrant & 1u) {
+		if (s.iszero()) {                    // an odd multiple of pi/2: pole
+			efloat<nlimbs> inf; inf.setinf(false);
+			if (!std::is_constant_evaluated()) efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
+			return inf;
+		}
+		result = efloat<nlimbs>(0.0) - c / s;
 	}
-	efloat<nlimbs> result = s / c;
+	else {
+		result = s / c;
+	}
 	result.set_precision(precision);
 	return result;
 }
@@ -294,7 +335,7 @@ constexpr efloat<nlimbs> asin(const efloat<nlimbs>& x) {
 	}
 	else if (ax > efloat<nlimbs>(0.8)) {
 		// asin(x) = pi/2 - asin(sqrt(1 - x^2))   (on |x|)
-		efloat<nlimbs> t = sqrt(one - ax * ax);
+		efloat<nlimbs> t = sqrt((one - ax) * (one + ax));   // 1 - ax is exact; ax * ax would round first
 		result = efloat_detail::pi_scaled<nlimbs>(working, -1) - asin(t);
 	}
 	else {
@@ -333,7 +374,19 @@ constexpr efloat<nlimbs> acos(const efloat<nlimbs>& x) {
 	const unsigned working   = precision + efloat_detail::exp_log_guard_bits;
 	efloat<nlimbs> xw(x);
 	xw.set_precision(working);
-	efloat<nlimbs> result = efloat_detail::pi_scaled<nlimbs>(working, -1) - asin(xw);
+	// pi/2 - asin(x) cancels as x -> 1, where acos(x) -> 0: there acos(x) = 2 asin(sqrt((1 - x) / 2)),
+	// and near -1 acos(x) = pi - 2 asin(sqrt((1 + x) / 2)); 1 -/+ x is exact for |x| >= 1/2
+	const efloat<nlimbs> one(1.0), half(0.5), two(2.0);
+	efloat<nlimbs> result;
+	if (xw > half) {
+		result = asin(sqrt((one - xw) * half)) * two;
+	}
+	else if (xw < -half) {
+		result = efloat_detail::pi<nlimbs>(working) - asin(sqrt((one + xw) * half)) * two;
+	}
+	else {
+		result = efloat_detail::pi_scaled<nlimbs>(working, -1) - asin(xw);
+	}
 	result.set_precision(precision);
 	return result;
 }

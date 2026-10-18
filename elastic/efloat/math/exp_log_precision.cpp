@@ -133,6 +133,71 @@ int VerifySetPrecision(bool reportTestCases, unsigned bits, int64_t slack) {
 	return fails;
 }
 
+// Results near the zeros of sin, cos and tan, and acos and asin near 1, where a reduction or a
+// subtraction cancels.  The arguments are pi and pi/2 rounded to the full precision, and 1 - e
+// for a full-mantissa e; the references are delta = pi - pi_P from the 1000-digit pi literal,
+// sin(delta) = delta - delta^3/6, and the series of acos(1 - e) in e, all exact far below the
+// precision checked, and none computed by the functions under test.
+template<unsigned nlimbs>
+int VerifyNearZeros(bool reportTestCases, int64_t slack) {
+	const unsigned P = nlimbs * 32;
+	const int64_t precision = static_cast<int64_t>(P);
+	int fails = 0;
+	auto check = [&](const char* what, const efloat<nlimbs>& got, efloat<nlimbs> reference) {
+		reference.set_precision(P);
+		const int64_t bits = agreement_bits(got, reference);
+		if (bits < precision - slack) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL efloat<" << nlimbs << "> " << what << ": " << bits << " of " << P << " bits\n";
+		}
+	};
+	efloat<nlimbs> pi_p, pi_h;
+	pi_p.set_precision(P);
+	pi_h.set_precision(3 * P);
+	parse<16384>(EFLOAT_PI_DIGITS, pi_p);
+	parse<16384>(EFLOAT_PI_DIGITS, pi_h);
+	const efloat<nlimbs> delta = pi_h - pi_p;                      // exact
+	check("sin(pi rounded)", sin(pi_p), delta - delta * delta * delta / efloat<nlimbs>(6.0));
+	efloat<nlimbs> half_pi_p(pi_p), half_delta(delta);
+	half_pi_p.setexponent(half_pi_p.scale() - 1);
+	half_delta.setexponent(half_delta.scale() - 1);
+	check("cos(pi/2 rounded)", cos(half_pi_p), half_delta);       // sin(d) = d to 2^-3P
+	check("tan(pi/2 rounded)", tan(half_pi_p), efloat<nlimbs>(1.0) / half_delta);
+	check("sin(-pi rounded)", sin(efloat<nlimbs>(0.0) - pi_p), efloat<nlimbs>(0.0) - delta + delta * delta * delta / efloat<nlimbs>(6.0));
+
+	efloat<nlimbs> half_pi_h(pi_h);
+	half_pi_h.setexponent(half_pi_h.scale() - 1);
+	for (int shift : { 100, 300, static_cast<int>(P / 2 + 50) }) {
+		efloat<nlimbs> e(1.0);
+		e.set_precision(P);
+		e = e / efloat<nlimbs>(3.0);
+		e.setexponent(e.scale() - shift);
+		efloat<nlimbs> x = efloat<nlimbs>(1.0) - e;
+		x.set_precision(P);
+		e = efloat<nlimbs>(1.0) - x;                               // the exact distance of the rounded x
+		e.set_precision(3 * P);
+		efloat<nlimbs> two_e(e);
+		two_e.setexponent(two_e.scale() + 1);
+		// acos(1 - e) = sqrt(2e) sum_n c_n e^n, c_n = (2n)! / (2^(3n) (n!)^2 (2n + 1)), summed
+		// until the terms fall below 2^-3P: c_(n+1) / c_n = (2n + 1)^2 / (4 (n + 1) (2n + 3))
+		efloat<nlimbs> series(1.0), c(1.0), power(1.0);
+		series.set_precision(3 * P);
+		for (unsigned n = 0; n < 10000; ++n) {
+			c = c * efloat<nlimbs>(static_cast<double>((2 * n + 1) * (2 * n + 1))) / efloat<nlimbs>(static_cast<double>(4 * (n + 1) * (2 * n + 3)));
+			power = power * e;
+			const efloat<nlimbs> term = c * power;
+			if (term.iszero() || term.scale() < -static_cast<int64_t>(3 * P)) break;
+			series += term;
+		}
+		const efloat<nlimbs> acos_ref = sqrt(two_e) * series;
+		const std::string tag = "(1 - 2^-" + std::to_string(shift) + "/3)";
+		check(("acos" + tag).c_str(), acos(x), acos_ref);
+		check(("asin" + tag).c_str(), asin(x), half_pi_h - acos_ref);
+		check(("acos(-" + tag.substr(1)).c_str(), acos(efloat<nlimbs>(0.0) - x), pi_h - acos_ref);
+	}
+	return fails;
+}
+
 }  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -174,6 +239,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAtPrecision<10>(reportTestCases, 4), "efloat<10>", "320 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifyAtPrecision<20>(reportTestCases, 4), "efloat<20>", "640 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifySetPrecision<4>(reportTestCases, 600, 4), "efloat<4>", "set_precision(600)");
+	nrOfFailedTestCases += ReportTestResult(VerifyNearZeros<10>(reportTestCases, 4), "efloat<10>", "near zeros");
+	nrOfFailedTestCases += ReportTestResult(VerifyNearZeros<20>(reportTestCases, 4), "efloat<20>", "near zeros");
 #endif
 
 #if REGRESSION_LEVEL_2
