@@ -765,12 +765,11 @@ public:
 	}
 
 	constexpr bool iszero() const noexcept {
-		// zero when all bits except sign are 0
-		// Check all bits except the sign bit (nbits-1)
-		for (unsigned i = 0; i < nbits - 1; ++i) {
-			if (_encoding.at(i)) return false;
-		}
-		return true;
+		bool s;
+		int exponent;
+		significand_t significand;
+		unpack(s, exponent, significand);
+		return !isinf() && !isnan() && significand.iszero();
 	}
 
 	constexpr bool isone() const noexcept {
@@ -928,7 +927,6 @@ public:
 	// Unpack the dfloat into sign, unbiased exponent, and significand integer
 	constexpr void unpack(bool& s, int& exponent, significand_t& significand) const noexcept {
 		s = sign();
-		if (iszero()) { exponent = 0; significand = 0; return; }
 		if (isinf() || isnan()) { exponent = 0; significand = 0; return; }
 
 		// Extract combination field (5 bits)
@@ -979,6 +977,7 @@ public:
 			// DPD: decode declets from trailing bits
 			significand = dpd_decode_trailing_wide(msd);
 		}
+		if (significand.iszero()) exponent = 0;
 	}
 
 	// The correctly rounded square root of a finite value > 0 (#1725; the special values are
