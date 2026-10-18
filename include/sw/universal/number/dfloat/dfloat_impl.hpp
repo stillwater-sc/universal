@@ -1621,20 +1621,54 @@ bool parse(const std::string& number, dfloat<ndigits, es, Encoding, BlockType>& 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // dfloat - dfloat binary logic operators
 
-// equal: precondition is that the storage is properly nulled in all arithmetic paths
+// three-way comparison of the values of two non-NaN dfloats: -1, 0 or +1 (#1734).  A decimal
+// value has a cohort of encodings S 10^q that differ only in q (250e-2 and 25e-1), and IEEE 754 compares values, never representations, so the significands are
+// aligned to a common exponent before they are compared.  Every encoding with a zero
+// significand is zero, whatever its exponent, and +0 == -0.  The alignment is done in
+// wide_significand_t: a significand has at most ndigits + 1 digits (a non-canonical BID
+// significand is taken at its value, as the arithmetic takes it), so the scaled one has at
+// most 2 ndigits + 1, within the 8 ndigits + 15 value bits.
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
-constexpr bool operator==(const dfloat<ndigits, es, Encoding, BlockType>& lhs, const dfloat<ndigits, es, Encoding, BlockType>& rhs) {
+constexpr int dfloat_compare_values(const dfloat<ndigits, es, Encoding, BlockType>& lhs, const dfloat<ndigits, es, Encoding, BlockType>& rhs) {
 	using Dfloat = dfloat<ndigits, es, Encoding, BlockType>;
-	// NaN != anything (including itself)
-	if (lhs.isnan() || rhs.isnan()) return false;
-	// both zero (ignoring sign)
-	if (lhs.iszero() && rhs.iszero()) return true;
-	// compare unpacked values
+	using Wide = typename Dfloat::wide_significand_t;
+	// the infinities
+	if (lhs.isinf() || rhs.isinf()) {
+		const int l = lhs.isinf() ? (lhs.sign() ? -1 : 1) : 0;
+		const int r = rhs.isinf() ? (rhs.sign() ? -1 : 1) : 0;
+		if (lhs.isinf() && rhs.isinf()) return (l > r) - (l < r);
+		return lhs.isinf() ? l : -r;
+	}
 	bool ls, rs; int le, re;
 	typename Dfloat::significand_t lsig, rsig;
 	lhs.unpack(ls, le, lsig);
 	rhs.unpack(rs, re, rsig);
-	return (ls == rs) && (le == re) && (lsig == rsig);
+	const bool lzero = lsig.iszero(), rzero = rsig.iszero();
+	if (lzero && rzero) return 0;
+	if (lzero) return rs ? 1 : -1;
+	if (rzero) return ls ? -1 : 1;
+	if (ls != rs) return ls ? -1 : 1;
+	const int sign = ls ? -1 : 1;
+	// the position of the leading digit orders the magnitudes, unless it is the same
+	const int l_scale = le + static_cast<int>(Dfloat::count_digits_s(lsig)) - 1;
+	const int r_scale = re + static_cast<int>(Dfloat::count_digits_s(rsig)) - 1;
+	if (l_scale != r_scale) return (l_scale > r_scale) ? sign : -sign;
+	// same leading digit position: the exponents differ by at most ndigits
+	Wide l, r;
+	l.assign(lsig);
+	r.assign(rsig);
+	const Wide ten(10);
+	for (int i = le; i > re; --i) l *= ten;
+	for (int i = re; i > le; --i) r *= ten;
+	if (l == r) return 0;
+	return (l > r) ? sign : -sign;
+}
+
+// equal: the values are equal, so the members of a cohort compare equal (#1734); NaN equals nothing
+template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
+constexpr bool operator==(const dfloat<ndigits, es, Encoding, BlockType>& lhs, const dfloat<ndigits, es, Encoding, BlockType>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
+	return dfloat_compare_values(lhs, rhs) == 0;
 }
 
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
@@ -1644,57 +1678,9 @@ constexpr bool operator!=(const dfloat<ndigits, es, Encoding, BlockType>& lhs, c
 
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
 constexpr bool operator< (const dfloat<ndigits, es, Encoding, BlockType>& lhs, const dfloat<ndigits, es, Encoding, BlockType>& rhs) {
-	using Dfloat = dfloat<ndigits, es, Encoding, BlockType>;
 	// NaN is unordered
 	if (lhs.isnan() || rhs.isnan()) return false;
-	// handle infinities
-	if (lhs.isinf() && rhs.isinf()) {
-		return lhs.sign() && !rhs.sign(); // -inf < +inf
-	}
-	if (lhs.isinf()) return lhs.sign();  // -inf < anything
-	if (rhs.isinf()) return !rhs.sign(); // anything < +inf
-
-	// handle zeros
-	if (lhs.iszero() && rhs.iszero()) return false;
-	if (lhs.iszero()) return !rhs.sign(); // 0 < positive
-	if (rhs.iszero()) return lhs.sign();  // negative < 0
-
-	// both nonzero, non-special
-	bool ls = lhs.sign(), rs = rhs.sign();
-	if (ls != rs) return ls; // negative < positive
-
-	// same sign: compare magnitudes
-	bool ls_ign; int le; typename Dfloat::significand_t lsig;
-	bool rs_ign; int re; typename Dfloat::significand_t rsig;
-	lhs.unpack(ls_ign, le, lsig);
-	rhs.unpack(rs_ign, re, rsig);
-
-	// normalize to same scale for comparison
-	int l_scale = le + static_cast<int>(Dfloat::count_digits_s(lsig)) - 1;
-	int r_scale = re + static_cast<int>(Dfloat::count_digits_s(rsig)) - 1;
-
-	if (l_scale != r_scale) {
-		// higher scale means larger magnitude
-		return ls ? (l_scale > r_scale) : (l_scale < r_scale);
-	}
-
-	// same overall scale: compare significands at same exponent
-	// Align to same exponent by adjusting significands
-	typename Dfloat::significand_t ten(10);
-	if (le < re) {
-		int diff = re - le;
-		if (diff < static_cast<int>(ndigits)) {
-			for (int i = 0; i < diff; ++i) rsig *= ten;
-		}
-	}
-	else if (re < le) {
-		int diff = le - re;
-		if (diff < static_cast<int>(ndigits)) {
-			for (int i = 0; i < diff; ++i) lsig *= ten;
-		}
-	}
-
-	return ls ? (lsig > rsig) : (lsig < rsig);
+	return dfloat_compare_values(lhs, rhs) < 0;
 }
 
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
