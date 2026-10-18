@@ -63,6 +63,38 @@ int VerifyParseVectors(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// efloat<>'s default precision, 32768 bits, is past the converter's widest working width: a
+// literal is rounded to the most it can reach, never refused (#1713 review)
+int VerifyDefaultPrecision(bool reportTestCases) {
+	using namespace sw::universal::efloat_parse_verification;
+	int nrOfFailedTests = 0;
+	efloat<> a;
+	if (!parse(std::string("3.25"), a) || a.isnan() || double(a) != 3.25) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: efloat<> parse(3.25) = " << double(a) << '\n';
+	}
+	// 0.1 * 10 - 1 is ~2^-(bits reached)
+	efloat<> tenth;
+	tenth.assign("0.1");
+	efloat<> d = tenth * efloat<>(10) - efloat<>(1);
+	if (tenth.isnan() || (!d.iszero() && d.scale() > -30000)) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: efloat<> assign(0.1): 0.1*10-1 scale " << d.scale() << " (want <= -30000)\n";
+	}
+	// a 2500-digit literal reaches more than 2048 bits: rounded to 2048, it is the reference
+	for (const auto& v : parse_vectors) {
+		if (v.precision != 2048u || std::string(v.label) != "1/sqrt(2), 2500 digits") continue;
+		efloat<> x;
+		const bool ok = parse(std::string(v.literal), x);
+		x.set_precision(2048u);
+		if (!ok || x.isnan() || x.scale() != v.scale || mantissa_hex(x, 2048u) != v.mantissa) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: efloat<> parse of " << v.label << " (ok " << ok << ")\n";
+		}
+	}
+	return nrOfFailedTests;
+}
+
 // a well-formed literal past the converter's reach is reported, and leaves a NaN, not a zero
 int VerifyUnreachable(bool reportTestCases) {
 	int nrOfFailedTests = 0;
@@ -117,6 +149,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyParseVectors<64>(reportTestCases), "efloat<64>", "608 and 2048 bits");
+	nrOfFailedTestCases += ReportTestResult(VerifyDefaultPrecision(reportTestCases), "efloat<>", "default precision");
 	nrOfFailedTestCases += ReportTestResult(VerifyUnreachable(reportTestCases), "efloat<10>", "unreachable literal");
 #endif
 

@@ -1454,6 +1454,8 @@ parse_outcome round_into(const sw::universal::string_parse::decimal_float_scan& 
 // digits beyond those that can affect the rounding are dropped and kept as a sticky bit, and
 // the converter widens its intermediates as the remaining digits and the exponent need (#1713).
 // BigBits is the narrowest result width tried first; it no longer limits the precision.
+// The one limit is the converter's widest working width, 32768 bits: past about 16000 bits
+// (efloat<>'s default precision is 32768) a literal is correctly rounded to the most it can reach.
 //
 // Returns false, and leaves a zero, for text that is not a number. A well-formed literal the
 // converter cannot reach -- a decimal exponent beyond about +/-13000 at ordinary precision --
@@ -1511,23 +1513,39 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 
 	// The target is the value's precision, with no ceiling taken from BigBits: the converter
 	// widens its intermediates as the literal needs, and the result is chosen wide enough to
-	// hold target + guard bits below. Only a precision past the widest working width is capped.
+	// hold target + guard bits.
 	using namespace efloat_parse_detail;
 	constexpr unsigned widest = sw::universal::decimal_to_binary::widest_working_bits;
 	unsigned target_bits = std::max(1u, value.get_precision());
 	if (target_bits + guard_bits + 2u > widest) target_bits = widest - guard_bits - 2u;
-	const unsigned work = target_bits + guard_bits;
 
-	auto attempt = [&](const sw::universal::string_parse::decimal_float_scan& d, bool inexact) {
-		if (work + 2u <= BigBits) return round_into<BigBits>(d, target_bits, inexact, value);
+	// The converter's intermediates grow with the target, the digits and the exponent, and the
+	// widest working width bounds them. Near that width -- efloat<>'s default 32768 bits is past
+	// it -- the target is lowered to the most the literal can reach: about 32700 bits for a short
+	// literal, and about 16000 for a long one, whose kept digits need as many bits again.
+	// reachable() returns the largest target up to t that fits, or 0 if not even one bit does.
+	auto reachable = [&](const sw::universal::string_parse::decimal_float_scan& d, unsigned t) -> unsigned {
+		using sw::universal::decimal_to_binary::detail::required_working_bits;
+		if (required_working_bits(d, 1u + guard_bits) > widest) return 0u;
+		for (;;) {
+			const std::uint64_t need = required_working_bits(d, t + guard_bits);
+			if (need <= widest) return t;
+			const std::uint64_t excess = need - widest;   // need rises at most one bit per target bit
+			t = (excess < t) ? static_cast<unsigned>(t - excess) : 1u;
+		}
+	};
+
+	auto attempt = [&](const sw::universal::string_parse::decimal_float_scan& d, unsigned t, bool inexact) {
+		const unsigned w = t + guard_bits;
+		if (w + 2u <= BigBits) return round_into<BigBits>(d, t, inexact, value);
 		if constexpr (BigBits < 8192u) {
-			if (work + 2u <= 8192u) return round_into<8192u>(d, target_bits, inexact, value);
+			if (w + 2u <= 8192u) return round_into<8192u>(d, t, inexact, value);
 		}
 		if constexpr (BigBits < widest) {
-			return round_into<widest>(d, target_bits, inexact, value);
+			return round_into<widest>(d, t, inexact, value);
 		}
 		else {
-			return round_into<BigBits>(d, target_bits, inexact, value);
+			return round_into<BigBits>(d, t, inexact, value);
 		}
 	};
 
@@ -1544,12 +1562,16 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	const std::size_t significant = digits.size() - leading;
 
 	// a dropped digit moves the value by less than 10^-(keep-1) of it, and one unit in the
-	// last guard bit is more than 2^-work of it: keep >= 1 + work * log10(2)
-	std::size_t keep = static_cast<std::size_t>(work) * 30103u / 100000u + 2u;
+	// last guard bit is more than 2^-(target + guard_bits) of it: keep >= 1 + (target + guard_bits) * log10(2)
+	auto keep_for = [](unsigned t) { return static_cast<std::size_t>(t + guard_bits) * 30103u / 100000u + 2u; };
+	std::size_t widen = 1u;   // doubles each time the dropped digits sit on a rounding boundary
 	parse_outcome outcome = parse_outcome::refused;
 	for (;;) {
+		const std::size_t keep = keep_for(target_bits) * widen;
 		if (keep >= significant) {
-			outcome = attempt(scan, false);
+			// every digit is converted, so the rounding is exact at whatever target fits
+			const unsigned t = reachable(scan, target_bits);
+			if (t != 0u) outcome = attempt(scan, t, false);
 			break;
 		}
 		const bool inexact = digits.find_first_not_of('0', leading + keep) != std::string::npos;
@@ -1565,9 +1587,16 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 		text.append(std::to_string(last));
 		auto truncated = sw::universal::string_parse::scan_decimal_float(text);
 		if (!truncated.valid) break;   // the exponent is out of the scanner's range
-		outcome = attempt(truncated, inexact);
+		const unsigned t = reachable(truncated, target_bits);
+		if (t < target_bits) {
+			// the kept digits were sized for more bits than fit: fewer bits need fewer digits
+			if (target_bits == 1u) break;
+			target_bits = (t != 0u) ? t : target_bits / 2u;
+			continue;
+		}
+		outcome = attempt(truncated, t, inexact);
 		if (outcome != parse_outcome::undecided) break;
-		keep *= 2u;   // the dropped digits sit on a rounding boundary: look at more of them
+		widen *= 2u;   // the dropped digits sit on a rounding boundary: look at more of them
 	}
 
 	if (outcome != parse_outcome::done) {
