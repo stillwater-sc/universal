@@ -11,10 +11,10 @@
 // quarter of them; wider formats ended a Newton iteration without proving the last ulp.
 //
 // None of the oracles here uses cfloat arithmetic:
-//   - fbits <= 51: r is the correctly rounded root of a exactly when a lies between the
-//     squares of the midpoints to r's neighbours.  A midpoint then has at most 53 bits, a
-//     double, and its square is exact in double-double.  Both sides are first scaled by a
-//     power of four, exactly, so a subnormal square cannot underflow.
+//   - fbits <= 52: r is the correctly rounded root of a exactly when a lies between the
+//     squares of the midpoints to r's neighbours.  Each value is decomposed by frexp into a
+//     54-bit integer times a power of two, and the squares are compared in integer<320>,
+//     exactly, whatever the exponent range of the format.
 //   - fp64: IEEE 754 requires std::sqrt to be correctly rounded.
 //   - cfloat<128,15>: encodings from mpmath (tools/generators/cfloat_sqrt_gen.py).
 #include <universal/utility/directives.hpp>
@@ -24,7 +24,7 @@
 #include <string>
 
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/dd/dd.hpp>
+#include <universal/number/integer/integer.hpp>
 #include <universal/verification/cfloat_sqrt_vectors.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -32,22 +32,51 @@ namespace {
 
 using namespace sw::universal;
 
-// r == sqrt(a) correctly rounded, for a finite a > 0, judged in double-double
+// a positive cfloat value as N 2^q with N a 54-bit integer, from frexp: the mantissa holds at
+// most 53 bits, so it and N are exact whatever the exponent range of the format
+using Big = integer<320, std::uint32_t>;
+struct Dyadic { Big N; int q; };
+
+template<typename Cfloat>
+Dyadic decompose(const Cfloat& v) {
+	int e{ 0 };
+	const Cfloat m = frexp(v, &e);                       // m in [0.5, 1), or [1, 2) for es <= 2
+	const double md = std::ldexp(double(m), 53);         // an integer below 2^54, exact
+	return { Big(static_cast<unsigned long long>(md)), e - 53 };
+}
+
+// sign of x^2 - y for dyadics x = Nx 2^qx and y = Ny 2^qy, exactly
+inline int compare_square(const Dyadic& x, const Dyadic& y) {
+	Big xx = x.N * x.N, yy = y.N;
+	const int d = 2 * x.q - y.q;                         // |d| is small: x^2 is close to y
+	if (d >= 0) xx <<= d; else yy <<= -d;
+	return (xx > yy) ? 1 : ((xx < yy) ? -1 : 0);
+}
+
+// the midpoint of two adjacent positive values, exactly
+inline Dyadic midpoint(const Dyadic& u, const Dyadic& v) {
+	const int q = (u.q < v.q) ? u.q : v.q;
+	Big s = u.N;
+	s <<= (u.q - q);
+	Big t = v.N;
+	t <<= (v.q - q);
+	return { s + t, q - 1 };
+}
+
+// r == sqrt(a) correctly rounded, for a finite a > 0, judged in exact integer arithmetic:
+// a must lie between the squares of the midpoints to r's neighbours
 template<typename Cfloat>
 bool is_correctly_rounded(const Cfloat& a, const Cfloat& r) {
-	static_assert(Cfloat::fbits <= 51, "a midpoint must fit a double");
+	static_assert(Cfloat::fbits <= 52, "a mantissa must fit a double");
 	if (!r.isnormal() && !r.isdenormal()) return false;
-	const double ad = double(a), rd = double(r);
 	Cfloat down(r), up(r);
 	--down;
 	++up;
-	const int s = std::ilogb(rd);                       // scale r near 1 and a near 1, exactly
-	const dd A(std::ldexp(ad, -2 * s));
-	const double lo = std::ldexp(0.5 * (double(down) + rd), -s);   // exact: 53 bits at most
-	if (A < dd(lo) * dd(lo)) return false;
+	const Dyadic A = decompose(a), R = decompose(r);
+	const Dyadic lo = down.iszero() ? Dyadic{ R.N, R.q - 1 } : midpoint(decompose(down), R);
+	if (compare_square(lo, A) > 0) return false;
 	if (up.isinf() || up.isnan()) return true;          // r is maxpos
-	const double hi = std::ldexp(0.5 * (rd + double(up)), -s);
-	return !(A > dd(hi) * dd(hi));
+	return compare_square(midpoint(R, decompose(up)), A) >= 0;
 }
 
 // every positive encoding of a narrow format, or a random sample of a wider one
@@ -176,6 +205,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult((VerifyAgainstMidpoints<cfloat<48, 8, std::uint32_t, true, false, false>>(reportTestCases, 20000)), "cfloat<48,8>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyAgainstMidpoints<cfloat<60, 8, std::uint32_t, true, false, false>>(reportTestCases, 20000)), "cfloat<60,8>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyAgainstMidpoints<cfloat<56, 5, std::uint8_t, true, false, false>>(reportTestCases, 20000)), "cfloat<56,5>", test_tag);
+	// fbits 52 with a narrow exponent: subnormal roots, so no host shortcut (es < 7)
+	nrOfFailedTestCases += ReportTestResult((VerifyAgainstMidpoints<cfloat<56, 3, std::uint8_t, true, false, false>>(reportTestCases, 20000)), "cfloat<56,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyAgainstMidpoints<cfloat<60, 7, std::uint32_t, true, false, false>>(reportTestCases, 20000)), "cfloat<60,7>", test_tag);
+	// es == 20, the widest exponent: most values are outside a double's range, Newton path
+	nrOfFailedTestCases += ReportTestResult((VerifyAgainstMidpoints<cfloat<40, 20, std::uint32_t, true, false, false>>(reportTestCases, 20000)), "cfloat<40,20>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyAgainstMidpoints<cfloat<64, 20, std::uint32_t, true, false, false>>(reportTestCases, 5000)), "cfloat<64,20>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyFp64(reportTestCases, 20000), "fp64", test_tag);
 	// wider than a double: Newton and the correction step
 	nrOfFailedTestCases += ReportTestResult(VerifyQuad(reportTestCases), "cfloat<128,15>", test_tag);

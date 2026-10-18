@@ -75,17 +75,6 @@ namespace sw { namespace universal {
 	*/
 
 
-	// the exponent field of the format that holds the exact squares of the midpoints between
-	// neighbouring values of a cfloat<nbits, es>: wide enough that a square of the smallest
-	// subnormal's neighbourhood stays normal, and two more bits of headroom at the top
-	template<unsigned es, unsigned fbits>
-	constexpr unsigned sqrt_midpoint_es() {
-		constexpr long bias = (1l << (es - 1u)) - 1l;
-		unsigned esW = es + 1u;
-		while (((1l << (esW - 1u)) - 1l) < bias + static_cast<long>(fbits) + 4l) ++esW;
-		return esW;
-	}
-
 	// sign of m*m - A, exactly, for doubles near 1 with m*m within a factor of two of A:
 	// two_prod gives m*m = p + e exactly (Dekker's split unless a trusted fms is configured),
 	// p - A is exact by Sterbenz, and rounding (p - A) + e cannot change its sign
@@ -127,33 +116,41 @@ namespace sw { namespace universal {
 
 	// x is within a few ulps of sqrt(a), for a finite a > 0.  Return the correctly rounded root:
 	// x is that root exactly when a lies between the squares of the midpoints to x's
-	// neighbours, and otherwise the root is a neighbour, so step until it holds.  The midpoints
-	// have at most fbits + 2 significant bits, so their squares are exact in a cfloat with
-	// 2 fbits + 4 fraction bits and a wider exponent: the comparison cannot misround, at any
-	// width of the format.  Ties go to even; a tie needs a midpoint whose square has no more
-	// bits than the format, which only the subnormals of a narrow exponent can produce.
+	// neighbours, and otherwise the root is a neighbour, so step until it holds.  The test runs
+	// in a cfloat of the same exponent width and 2 fbits + 4 fraction bits, where it is exact:
+	//   - a converts exactly (the wider fraction refines the subnormals too);
+	//   - a midpoint x +- ulp/2 is formed as x + (neighbour - x)/2, which cannot overflow at
+	//     maxpos, and has at most fbits + 2 significant bits;
+	//   - both sides are scaled by 2^-2k and 2^-k for k = scale(x), exactly (ldexp), so the
+	//     squares sit near 1 and stay normal whatever the exponent range -- es == 20 needs no
+	//     wider exponent, which the cfloat limit of es < 21 would not allow;
+	//   - a square of fbits + 2 bits has at most 2 fbits + 4.
+	// Ties go to even; a tie needs a midpoint whose square has no more bits than the format,
+	// which only the subnormals of a narrow exponent can produce.
 	template<typename Cfloat>
 	Cfloat sqrt_correctly_rounded(const Cfloat& a, Cfloat x) {
 		constexpr unsigned fbits = Cfloat::fbits;
-		constexpr unsigned esW = sqrt_midpoint_es<Cfloat::es, fbits>();
+		constexpr unsigned es = Cfloat::es;
 		constexpr unsigned fbitsW = 2u * fbits + 4u;
-		using Wide = cfloat<1u + esW + fbitsW, esW, typename Cfloat::BlockType, true, true, false>;
+		using Wide = cfloat<1u + es + fbitsW, es, typename Cfloat::BlockType, true, true, false>;
 		const Wide A(a), half(0.5);
 		for (int step = 0; step < 16; ++step) {
+			const int k = x.scale();
 			const Wide X(x);
+			const Wide As = ldexp(A, -2 * k);                 // exact
 			Cfloat down(x);
 			--down;                                           // x > 0, so down >= 0
-			const Wide lo = (Wide(down) + X) * half;          // exact
+			const Wide lo = ldexp(X + (Wide(down) - X) * half, -k);   // exact
 			const Wide lo2 = lo * lo;                         // exact
-			if (A < lo2) { x = down; continue; }
-			if (A == lo2 && x.at(0)) return down;             // tie: the even neighbour
+			if (As < lo2) { x = down; continue; }
+			if (As == lo2 && x.at(0)) return down;            // tie: the even neighbour
 			Cfloat up(x);
 			++up;
 			if (up.isinf() || up.isnan()) return x;           // x is maxpos
-			const Wide hi = (X + Wide(up)) * half;            // exact
+			const Wide hi = ldexp(X + (Wide(up) - X) * half, -k);     // exact
 			const Wide hi2 = hi * hi;                         // exact
-			if (A > hi2) { x = up; continue; }
-			if (A == hi2 && x.at(0)) return up;               // tie: the even neighbour
+			if (As > hi2) { x = up; continue; }
+			if (As == hi2 && x.at(0)) return up;              // tie: the even neighbour
 			return x;
 		}
 		return x;
@@ -211,9 +208,11 @@ namespace sw { namespace universal {
 			// the double root is within an ulp of the format's root: correct it, in doubles
 			if (hostUsable) return sqrt_correctly_rounded_in_double(a, Cfloat(std::sqrt(d)));
 		}
-		else if constexpr (fbits == 52 && es >= 3) {
+		else if constexpr (fbits == 52 && (es >= 7 || (es >= 3 && !hasSubnormals))) {
 			// the format's significand is a double's: std::sqrt's correctly rounded root is
-			// rounded once, and the root of a value of this exponent range is a normal of it
+			// rounded once, provided the root is a normal of the format.  sqrt(minpos) >=
+			// minnormal needs MIN_EXP_NORMAL <= -52, es >= 7, when there are subnormals;
+			// below that a subnormal root would be rounded a second time.
 			if (hostUsable) return Cfloat(std::sqrt(d));
 		}
 

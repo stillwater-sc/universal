@@ -145,8 +145,9 @@ int VerifyCfloatSpecialValueConversions(bool reportTestCases) {
 // Widening into a target of 64 or more fraction bits takes the converting constructor's
 // bit-by-bit path, which VerifyExhaustiveCfloatConversion cannot reach (its double oracle
 // caps the target at 52 bits).  That path copied a subnormal source without normalizing it,
-// so every subnormal came out wrong (#1725).  Widening is exact: the target must hold the
-// source's value, which a double holds exactly here, and convert back to the same encoding.
+// so every subnormal came out wrong (#1725).  Widening is exact: the target must equal the
+// target built from the source's double value (exact here), compared at the target's full
+// precision, and must convert back to the same encoding.
 template<typename Source, typename Target>
 int VerifyWideningToWideTarget(bool reportTestCases) {
 	constexpr unsigned srcFbits = Source::nbits - Source::es - 1u;
@@ -159,7 +160,8 @@ int VerifyWideningToWideTarget(bool reportTestCases) {
 		if (src.isnan() || src.isinf()) continue;
 		const Target tgt(src);
 		const Source back(tgt);
-		if (double(tgt) != double(src) || !(back == src)) {
+		const Target expected(static_cast<double>(src));      // exact: src fits a double
+		if (!(tgt == expected) || !(back == src)) {
 			if (reportTestCases && nrOfFailedTests < 4) {
 				std::cout << "FAIL: src " << to_binary(src) << " = " << double(src)
 				          << "  ->  tgt " << double(tgt) << "  ->  back " << to_binary(back) << '\n';
