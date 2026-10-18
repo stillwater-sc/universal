@@ -76,7 +76,8 @@ int VerifySqrt(bool reportTestCases, unsigned long long samples = 0) {
 	return checked > 0 ? fails : 1;
 }
 
-// the special values: sqrt(0) = 0, sqrt(NaN) = NaN, and a negative argument is EDOM and a NaN
+// the special values: sqrt(0) = 0, sqrt(NaN) = NaN, and a negative argument is EDOM and a NaN,
+// or lns_negative_sqrt_arg under LNS_THROW_ARITHMETIC_EXCEPTION
 template<typename Lns>
 int VerifySpecialValues(bool reportTestCases) {
 	int fails = 0;
@@ -87,9 +88,15 @@ int VerifySpecialValues(bool reportTestCases) {
 	nan.setnan();
 	check(sqrt(zero).iszero(), "sqrt(0) is not 0");
 	check(sqrt(nan).isnan(), "sqrt(NaN) is not NaN");
+#if LNS_THROW_ARITHMETIC_EXCEPTION
+	bool thrown = false;
+	try { (void)sqrt(Lns(-4.0)); } catch (const lns_negative_sqrt_arg&) { thrown = true; }
+	check(thrown, "sqrt(-4) did not throw lns_negative_sqrt_arg");
+#else
 	errno = 0;
 	const Lns r = sqrt(Lns(-4.0));
 	check(r.isnan() && errno == EDOM, "sqrt(-4) is not NaN with EDOM");
+#endif
 	check(std::fabs(double(sqrt(Lns(16.0))) - 4.0) < 1.0e-6, "sqrt(16) is not 4");
 	return fails;
 }
