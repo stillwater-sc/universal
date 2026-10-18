@@ -33,9 +33,6 @@
 #define CFLOAT_EXCEPT noexcept
 #endif
 #endif
-#if !defined(CFLOAT_NATIVE_SQRT)
-#define CFLOAT_NATIVE_SQRT 0
-#endif
 
 #include <iosfwd>        // std::ostream/std::istream in the friend declarations. UNCONDITIONAL:
                          // the declarations exist whether or not tracing is on, so this must not
@@ -547,8 +544,22 @@ public:
 					value.setbits(tgtRaw);
 				}
 				else {
-					// Wide path: bit-by-bit copy with alignment
-					int offset = static_cast<int>(fbits + addRbits) - static_cast<int>(srcFbits);
+					// Wide path: bit-by-bit copy with alignment.  A subnormal source is normalized
+					// on the way: its leading 1 lands on the hidden-bit position and the scale
+					// drops by the same shift, as in the fast path above.  Copying it unshifted
+					// with scale MIN_EXP_NORMAL left the blocktriple unnormalized, and convert()
+					// read the leading 1 as the hidden bit: every subnormal converted into a
+					// format of 64 or more fraction bits came out wrong (#1725).
+					const bool hidden = rhs.isnormal() || rhs.ismaxexpvalue();   // both carry a hidden bit
+					int shift = 0;
+					if (!hidden) {
+						using SrcCfloat = cfloat<nnbits, ees, bbt, ssub, ssup, ssat>;
+						int lead = static_cast<int>(srcFbits) - 1;
+						while (lead >= 0 && !rhs.at(static_cast<unsigned>(lead))) --lead;
+						shift = static_cast<int>(srcFbits) - lead;              // lead >= 0: rhs is nonzero
+						srcScale = SrcCfloat::MIN_EXP_NORMAL - shift;
+					}
+					int offset = static_cast<int>(fbits + addRbits) - static_cast<int>(srcFbits) + shift;
 					// Initialize radix via setbits, then overwrite significand
 					value.setbits(0);
 					bool sticky = false;
@@ -564,26 +575,7 @@ public:
 						}
 					}
 					if (sticky) value.setbit(0, true);
-					if (rhs.isnormal() || rhs.ismaxexpvalue()) {
-						// Normal and max-exponent values both have a hidden bit
-						value.setbit(static_cast<unsigned>(fbits + addRbits), true);
-					}
-					else {
-						// Normalize subnormal for wide path.
-						// The bit-copy loop above placed source bit i at target position
-						// i + offset = i + (fbits + addRbits - srcFbits).  The blocktriple
-						// scale represents the exponent such that:
-						//   value = 2^scale * significant * 2^(-fbits-addRbits)
-						// For the subnormal with leading 1 at source bit i, the significant
-						// integer has its leading 1 at position i + fbits + addRbits - srcFbits,
-						// giving value = 2^scale * 2^(i - srcFbits) * 1.xxx.
-						// The true subnormal value is 2^MIN_EXP_NORMAL * 2^(i - srcFbits) * 1.xxx,
-						// so scale = MIN_EXP_NORMAL with no further adjustment.
-						using SrcCfloat = cfloat<nnbits, ees, bbt, ssub, ssup, ssat>;
-						srcScale = SrcCfloat::MIN_EXP_NORMAL;
-						// (No srcScale -= shift: the offset alignment already accounts for
-						//  the bit position; subtracting shift would apply it twice.)
-					}
+					if (hidden) value.setbit(static_cast<unsigned>(fbits + addRbits), true);
 					value.setnormal(); // clear _zero flag set by setbits(0)
 					value.setsign(srcSign);
 					value.setscale(srcScale);
