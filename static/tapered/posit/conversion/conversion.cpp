@@ -5,8 +5,29 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cstdint>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
+
+namespace {
+
+template<typename TestType>
+int VerifyIntConversion(bool reportTestCases) {
+	int nrOfFailedTestCases = 0;
+	// These integers are exact in posit<64,2>, including those beyond float's precision.
+	for (int input : { 0, 1, -1, 16777215, -16777215, 16777216, -16777216,
+	                  16777217, -16777217, 16777219, -16777219, 2147483520, -2147483520 }) {
+		TestType p(input);
+		int result = static_cast<int>(p);
+		if (result != input) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL int(" << input << ") = " << result << '\n';
+		}
+	}
+	return nrOfFailedTestCases;
+}
+
+} // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -46,6 +67,9 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyIntConversion<posit<64, 2, std::uint8_t>>(reportTestCases), "posit<64,2,uint8_t>", "int conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntConversion<posit<64, 2, std::uint32_t>>(reportTestCases), "posit<64,2,uint32_t>", "int conversion");
+
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<posit<3, 0>>(reportTestCases), "posit<3,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<posit<4, 0>>(reportTestCases), "posit<4,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<posit<5, 0>>(reportTestCases), "posit<5,0>", test_tag);
