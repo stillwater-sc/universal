@@ -302,7 +302,9 @@ public:
 		_zero = false;
 		_sign = sign;   // if true, signalling NaN, otherwise quiet
 	}
-	constexpr void setinf(bool sign = true)            noexcept {
+	// no default for the sign: it defaulted to negative, and every caller that omitted it
+	// turned +inf into -inf (#1719)
+	constexpr void setinf(bool sign)                   noexcept {
 		clear();
 		_inf = true;
 		_zero = false;

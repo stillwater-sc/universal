@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // trigonometry.hpp: trigonometry function support for quad-double floating-point
 // 
 // algorithms and constants courtesy of Scibuilders, Jack Poulson
@@ -8,6 +7,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cerrno>
+#include <cmath>
+#include <universal/number/shared/multidouble_reduce_pio2.hpp>
 
 #include <universal/internal/floatcascade/sincos_tables.hpp>
 
@@ -89,6 +91,15 @@ namespace sw { namespace universal {
     }
 
 
+    // a = (j + 4n) pi/2 + t with |t| <= pi/4, to the full precision of the type.  An argument
+    // within pi/4 is its own reduction; any other is reduced exactly, by Payne and Hanek's
+    // method (number/shared/multidouble_reduce_pio2.hpp), so no finite argument loses digits.
+    inline int qd_cascade_reduce_pio2(const qd_cascade& a, qd_cascade& t) {
+        if (std::fabs(a[0]) <= 0.78539816339744828) { t = a; return 0; }
+        const double limbs[4] = { a[0], a[1], a[2], a[3] };
+        return multidouble_reduction::reduce_pio2(limbs, qdc_pi_2, t);
+    }
+
     inline qd_cascade sin(const qd_cascade& a) {
 
         /* Strategy.  To compute sin(x), we choose integers a, b so that
@@ -102,29 +113,17 @@ namespace sw { namespace universal {
 
         if (a.iszero()) return 0.0;
 
-        // approximately reduce modulo 2*pi
-	    qd_cascade z = nint(a / qdc_2pi);
-	    qd_cascade r = a - qdc_2pi * z;
+        if (a.isnan()) return qd_cascade(SpecificValue::qnan);
+        if (a.isinf()) { errno = EDOM; return qd_cascade(SpecificValue::qnan); }
 
-        // approximately reduce modulo pi/2 and then modulo pi/1024.
-	    qd_cascade t;
-        double q = std::floor(r[0] / qdc_pi_2[0] + 0.5);
-        t = r - qdc_pi_2 * q;
-        int j = static_cast<int>(q);
-        q = std::floor(t[0] / qdc_pi1024[0] + 0.5);
+        // reduce exactly modulo pi/2: a = (j + 4n) pi/2 + t with |t| <= pi/4 (#1723)
+        qd_cascade t, r;
+        int j = qd_cascade_reduce_pio2(a, t);
+        double q = std::floor(t[0] / qdc_pi1024[0] + 0.5);
+        if (!(std::fabs(q) <= 256.0)) return qd_cascade(SpecificValue::qnan);   // unreachable: |t| <= pi/4
         t -= qdc_pi1024 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
-
-        if (j < -2 || j > 2) {
-            std::cerr << "sin: Cannot reduce modulo pi/2\n";
-		    return qd_cascade(SpecificValue::snan);
-        }
-
-        if (abs_k > 256) {
-            std::cerr << "(sin): Cannot reduce modulo pi/1024\n";
-		    return qd_cascade(SpecificValue::snan);
-        }
 
         if (k == 0) {
             switch (j) {
@@ -183,29 +182,17 @@ namespace sw { namespace universal {
 
         if (a.iszero()) return 1.0;
 
-        // approximately reduce modulo 2*pi
-	    qd_cascade z = nint(a / qdc_2pi);
-	    qd_cascade r = a - z * qdc_2pi;
+        if (a.isnan()) return qd_cascade(SpecificValue::qnan);
+        if (a.isinf()) { errno = EDOM; return qd_cascade(SpecificValue::qnan); }
 
-        // approximately reduce modulo pi/2 and then modulo pi/1024
-	    qd_cascade t;
-        double q = std::floor(r[0] / qdc_pi_2[0] + 0.5);
-        t = r - qdc_pi_2 * q;
-        int j = static_cast<int>(q);
-        q = std::floor(t[0] / qdc_pi1024[0] + 0.5);
+        // reduce exactly modulo pi/2: a = (j + 4n) pi/2 + t with |t| <= pi/4 (#1723)
+        qd_cascade t, r;
+        int j = qd_cascade_reduce_pio2(a, t);
+        double q = std::floor(t[0] / qdc_pi1024[0] + 0.5);
+        if (!(std::fabs(q) <= 256.0)) return qd_cascade(SpecificValue::qnan);   // unreachable: |t| <= pi/4
         t -= qdc_pi1024 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
-
-        if (j < -2 || j > 2) {
-            std::cerr << "cos: Cannot reduce modulo pi/2\n";
-            return qd_cascade(SpecificValue::snan);
-        }
-
-        if (abs_k > 256) {
-            std::cerr << "cos: Cannot reduce modulo pi/1024\n";
-            return qd_cascade(SpecificValue::snan);
-        }
 
         if (k == 0) {
             switch (j) {
@@ -269,32 +256,18 @@ namespace sw { namespace universal {
             return;
         }
 
-        // approximately reduce modulo 2*pi
-	    qd_cascade z = nint(a / qdc_2pi);
-	    qd_cascade r = a - qdc_2pi * z;
+        if (a.isnan()) { sin_a = cos_a = qd_cascade(SpecificValue::qnan); return; }
+        if (a.isinf()) { errno = EDOM; sin_a = cos_a = qd_cascade(SpecificValue::qnan); return; }
 
-        // approximately reduce modulo pi/2 and then modulo pi/1024
-	    qd_cascade t;
-        double q = std::floor(r[0] / qdc_pi_2[0] + 0.5);
-        t = r - qdc_pi_2 * q;
-        int j = static_cast<int>(q);
+        // reduce exactly modulo pi/2: a = (j + 4n) pi/2 + t with |t| <= pi/4 (#1723)
+        qd_cascade t;
+        int j = qd_cascade_reduce_pio2(a, t);
         int abs_j = std::abs(j);
-        q = std::floor(t[0] / qdc_pi1024[0] + 0.5);
+        double q = std::floor(t[0] / qdc_pi1024[0] + 0.5);
+        if (!(std::fabs(q) <= 256.0)) { sin_a = cos_a = qd_cascade(SpecificValue::qnan); return; }   // unreachable: |t| <= pi/4
         t -= qdc_pi1024 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
-
-        if (abs_j > 2) {
-            std::cerr << "sincos: Cannot reduce modulo pi/2\n";
-		    cos_a = sin_a = qd_cascade(SpecificValue::snan);
-            return;
-        }
-
-        if (abs_k > 256) {
-            std::cerr << "sincos: Cannot reduce modulo pi/1024\n";
-		    cos_a = sin_a = qd_cascade(SpecificValue::snan);
-            return;
-        }
 
         qd_cascade sin_t, cos_t;
 	    qd_cascade s, c;
@@ -359,15 +332,15 @@ namespace sw { namespace universal {
         if (x.iszero()) {
 
             if (y.iszero()) {
-                /* Both x and y is zero. */
-                std::cerr << "atan2: Both arguments zero\n";
-			    return qd_cascade(SpecificValue::snan);
+                // both zero: std::atan2 gives +-0 for x = +0 and +-pi for x = -0, signed as y
+                if (std::signbit(x[0])) return std::signbit(y[0]) ? -qdc_pi : qdc_pi;
+                return y;
             }
 
             return (y.ispos()) ? qdc_pi_2 : -qdc_pi_2;
         }
         else if (y.iszero()) {
-            return (x.ispos()) ? qd_cascade(0.0) : qdc_pi;
+            return (x.ispos()) ? y : (std::signbit(y[0]) ? -qdc_pi : qdc_pi);   // signed as y, as std::atan2
         }
 
         if (x == y) {
@@ -425,8 +398,8 @@ namespace sw { namespace universal {
 	    qd_cascade abs_a = abs(a);
 
         if (abs_a > 1.0) {
-            std::cerr << "asin: Argument out of domain\n";
-            return qd_cascade(SpecificValue::snan);
+            errno = EDOM;
+            return qd_cascade(SpecificValue::qnan);
         }
 
         if (abs_a.isone()) {
@@ -440,8 +413,8 @@ namespace sw { namespace universal {
 	    qd_cascade abs_a = abs(a);
 
         if (abs_a > 1.0) {
-            std::cerr << "acos: Argument out of domain\n";
-            return qd_cascade(SpecificValue::snan);
+            errno = EDOM;
+            return qd_cascade(SpecificValue::qnan);
         }
 
         if (abs_a.isone()) {

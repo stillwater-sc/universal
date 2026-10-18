@@ -1,16 +1,12 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for double-double (dd) floats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/native/ieee754.hpp>
-
-#ifndef DD_CASCADE_NATIVE_SQRT
-#define DD_CASCADE_NATIVE_SQRT 1
-#endif
+#include <cerrno>
+#include <cmath>
 
 // square root formulations; see the comment on sqrt() below for the trade
 #define UNIVERSAL_DD_CASCADE_SQRT_NEWTON_DIVISION   0
@@ -24,8 +20,6 @@ namespace sw { namespace universal {
 
     // forward declaration
 inline dd_cascade nroot(const dd_cascade&, int);
-
-#if DD_CASCADE_NATIVE_SQRT
 
     // Computes the square root of the double-double number dd.
     //   NOTE: dd must be a non-negative number
@@ -71,7 +65,7 @@ inline dd_cascade sqrt(const dd_cascade& a) {
         if (a.isneg()) throw dd_cascade_negative_sqrt_arg();
 #else
         if (a.isneg()) {
-            std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
+            errno = EDOM;
             return dd_cascade(SpecificValue::qnan);
         }
 #endif
@@ -108,21 +102,6 @@ inline dd_cascade sqrt(const dd_cascade& a) {
 #endif
     }
 
-#else
-
-	// sqrt shim for double-double
-	inline dd_cascade sqrt(dd_cascade a) {
-#if DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw dd_cascade_negative_sqrt_arg();
-#else  // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) std::cerr << "double-double argument to sqrt is negative: " << a << std::endl;
-#endif // ! DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.iszero()) return a;
-		return dd_cascade(std::sqrt(double(a)));
-	}
-
-#endif // ! DD_CASCADE_NATIVE_SQRT
-
     // Note: sqrt(double) helper removed to avoid namespace pollution
     // Use explicit construction instead: sqrt(dd_cascade(d))
 
@@ -156,12 +135,13 @@ inline dd_cascade sqrt(const dd_cascade& a) {
 
 #else  // ! DD_CASCADE_THROW_ARITHMETIC_EXCEPTION
         if (n <= 0) {
-            std::cerr << "double-double nroot argument is negative: " << n << std::endl;
+            errno = EDOM;
+            return dd_cascade(SpecificValue::qnan);
         }
 
         if (n % 2 == 0 && a.isneg()) {
-            std::cerr << "double-double nroot argument is negative: " << n << std::endl;
-            return dd_cascade(SpecificValue::snan);
+            errno = EDOM;
+            return dd_cascade(SpecificValue::qnan);
         }
 
 #endif // ! DD_CASCADE_THROW_ARITHMETIC_EXCEPTION

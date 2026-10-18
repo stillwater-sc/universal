@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // trigonometry.hpp: trigonometry function support for quad-double (qd) floating-point
 // 
 // algorithms and constants courtesy of Scibuilders, Jack Poulson
@@ -8,65 +7,15 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cerrno>
+#include <cmath>
+#include <universal/number/shared/multidouble_reduce_pio2.hpp>
 #include <universal/number/qd/math/constants/sincos_tables.hpp>
 
 namespace sw { namespace universal {
 
 	// value representing an angle expressed in radians
 	// One radian is equivalent to 180/PI degrees
-
-#if !QUADDOUBLE_NATIVE_TRIGONOMETRY
-	// sine of an angle of x radians
-	inline qd sin(const qd& x) {
-		return qd(std::sin(double(x)));
-	}
-
-	// cosine of an angle of x radians	
-	inline qd cos(const qd& x) {
-		return qd(std::cos(double(x)));
-	}
-
-	// tangent of an angle of x radians
-	inline qd tan(const qd& x) {
-		return qd(std::tan(double(x)));
-	}
-
-	// cotangent of an angle of x radians
-	inline qd atan(const qd& x) {
-		return qd(std::atan(double(x)));
-	}
-
-	// Arc tangent with two parameters
-	inline qd atan2(qd y, const qd& x) {
-		return qd(std::atan2(double(y), double(x)));
-	}
-
-	// cosecant of an angle of x radians
-	inline qd acos(const qd& x) {
-		return qd(std::acos(double(x)));
-	}
-
-	// secant of an angle of x radians
-	inline qd asin(const qd& x) {
-		return qd(std::asin(double(x)));
-	}
-
-	// cotangent an angle of x radians
-	inline qd cot(const qd& x) {
-		return qd(std::tan(std::numbers::pi*2 - double(x)));
-	}
-
-	// secant of an angle of x radians
-	inline qd sec(const qd& x) {
-		return qd(1.0 / std::cos(double(x)));
-	}
-
-	// cosecant of an angle of x radians
-	inline qd csc(const qd& x) {
-		return qd(1.0 / std::sin(double(x)));
-	}
-
-#else
 
 /// <summary>
 /// Compute sin(a) and cos(a) using a Taylor series approximation. Assumes |a| <= pi/2048
@@ -143,6 +92,15 @@ inline qd cos_taylor(const qd& a) {
     return s;
 }
 
+    // a = (j + 4n) pi/2 + t with |t| <= pi/4, to the full precision of the type.  An argument
+    // within pi/4 is its own reduction; any other is reduced exactly, by Payne and Hanek's
+    // method (number/shared/multidouble_reduce_pio2.hpp), so no finite argument loses digits.
+    inline int qd_reduce_pio2(const qd& a, qd& t) {
+        if (std::fabs(a[0]) <= 0.78539816339744828) { t = a; return 0; }
+        const double limbs[4] = { a[0], a[1], a[2], a[3] };
+        return multidouble_reduction::reduce_pio2(limbs, qd_pi_2, t);
+    }
+
 inline qd sin(const qd& a) {
 
     /* Strategy.  To compute sin(x), we choose integers a, b so that
@@ -156,28 +114,17 @@ inline qd sin(const qd& a) {
 
     if (a.iszero()) return 0.0;
 
-    // approximately reduce modulo 2*pi
-    qd z = nint(a / qd_2pi);
-    qd r = a - qd_2pi * z;
+    if (a.isnan()) return qd(SpecificValue::qnan);
+    if (a.isinf()) { errno = EDOM; return qd(SpecificValue::qnan); }
 
-    // approximately reduce modulo pi/2 and then modulo pi/1024
-    double q = std::floor(r[0] / qd_pi_2[0] + 0.5);
-    qd t = r - qd_pi_2 * q;
-    int j = static_cast<int>(q);
-    q = std::floor(t[0] / qd_pi1024[0] + 0.5);
+    // reduce exactly modulo pi/2: a = (j + 4n) pi/2 + t with |t| <= pi/4 (#1723)
+    qd t, r;
+    int j = qd_reduce_pio2(a, t);
+    double q = std::floor(t[0] / qd_pi1024[0] + 0.5);
+    if (!(std::fabs(q) <= 256.0)) return qd(SpecificValue::qnan);   // unreachable: |t| <= pi/4
     t -= qd_pi1024 * q;
     int k = static_cast<int>(q);
     int abs_k = std::abs(k);
-
-    if (j < -2 || j > 2) {
-        std::cerr << "(sin): Cannot reduce modulo pi/2\n";
-        return qd(SpecificValue::snan);
-    }
-
-    if (abs_k > 256) {
-        std::cerr << "(sin): Cannot reduce modulo pi/1024\n";
-        return qd(SpecificValue::snan);
-    }
 
     if (k == 0) {
         switch (j) {
@@ -236,28 +183,17 @@ inline qd sin(const qd& a) {
 inline qd cos(const qd& a) {
     if (a.iszero()) return 1.0;
 
-    // approximately reduce modulo 2*pi
-    qd z = nint(a / qd_2pi);
-    qd r = a - qd_2pi * z;
+    if (a.isnan()) return qd(SpecificValue::qnan);
+    if (a.isinf()) { errno = EDOM; return qd(SpecificValue::qnan); }
 
-    // approximately reduce modulo pi/2 and then modulo pi/1024
-    double q = std::floor(r[0] / qd_pi_2[0] + 0.5);
-    qd t = r - qd_pi_2 * q;
-    int j = static_cast<int>(q);
-    q = std::floor(t[0] / qd_pi1024[0] + 0.5);
+    // reduce exactly modulo pi/2: a = (j + 4n) pi/2 + t with |t| <= pi/4 (#1723)
+    qd t, r;
+    int j = qd_reduce_pio2(a, t);
+    double q = std::floor(t[0] / qd_pi1024[0] + 0.5);
+    if (!(std::fabs(q) <= 256.0)) return qd(SpecificValue::qnan);   // unreachable: |t| <= pi/4
     t -= qd_pi1024 * q;
     int k = static_cast<int>(q);
     int abs_k = std::abs(k);
-
-    if (j < -2 || j > 2) {
-        std::cerr << "(cos): Cannot reduce modulo pi/2\n";
-        return qd(SpecificValue::snan);
-    }
-
-    if (abs_k > 256) {
-        std::cerr << "(cos): Cannot reduce modulo pi/1024\n";
-        return qd(SpecificValue::snan);
-    }
 
     if (k == 0) {
         switch (j) {
@@ -322,30 +258,17 @@ inline void sincos(const qd& a, qd& sin_a, qd& cos_a) {
         return;
     }
 
-    // approximately reduce by 2*pi
-    qd z = nint(a / qd_2pi);
-    qd t = a - qd_2pi * z;
+    if (a.isnan()) { sin_a = cos_a = qd(SpecificValue::qnan); return; }
+    if (a.isinf()) { errno = EDOM; sin_a = cos_a = qd(SpecificValue::qnan); return; }
 
-    // approximately reduce by pi/2 and then by pi/1024.
-    double q = std::floor(t[0] / qd_pi_2[0] + 0.5);
-    t -= qd_pi_2 * q;
-    int j = static_cast<int>(q);
-    q = std::floor(t[0] / qd_pi1024[0] + 0.5);
+    // reduce exactly modulo pi/2: a = (j + 4n) pi/2 + t with |t| <= pi/4 (#1723)
+    qd t;
+    int j = qd_reduce_pio2(a, t);
+    double q = std::floor(t[0] / qd_pi1024[0] + 0.5);
+    if (!(std::fabs(q) <= 256.0)) { sin_a = cos_a = qd(SpecificValue::qnan); return; }   // unreachable: |t| <= pi/4
     t -= qd_pi1024 * q;
     int k = static_cast<int>(q);
     int abs_k = std::abs(k);
-
-    if (j < -2 || j > 2) {
-        std::cerr << "(sincos): Cannot reduce modulo pi/2\n";
-        cos_a = sin_a = qd(SpecificValue::snan);
-        return;
-    }
-
-    if (abs_k > 256) {
-        std::cerr << "(sincos): Cannot reduce modulo pi/1024\n";
-        cos_a = sin_a = qd(SpecificValue::snan);
-        return;
-    }
 
     qd sin_t, cos_t;
     sincos_taylor(t, sin_t, cos_t);
@@ -436,15 +359,15 @@ inline qd atan2(const qd& y, const qd& x) {
     if (x.iszero()) {
 
         if (y.iszero()) {
-            // Both x and y is zero
-            std::cerr << "(atan2): Both arguments zero\n";
-            return qd(SpecificValue::snan);
+            // both zero: std::atan2 gives +-0 for x = +0 and +-pi for x = -0, signed as y
+            if (std::signbit(x[0])) return std::signbit(y[0]) ? -qd_pi : qd_pi;
+            return y;
         }
 
         return (y.ispos()) ? qd_pi_2 : -qd_pi_2;
     }
     else if (y.iszero()) {
-        return (x.ispos()) ? qd(0.0) : qd_pi;
+        return (x.ispos()) ? y : (std::signbit(y[0]) ? -qd_pi : qd_pi);   // signed as y, as std::atan2
     }
 
     if (x == y) {
@@ -499,8 +422,8 @@ inline qd asin(const qd& a) {
     qd abs_a = abs(a);
 
     if (abs_a > 1.0) {
-        std::cerr << "(asin): Argument out of domain\n";
-        return qd(SpecificValue::snan);
+        errno = EDOM;
+        return qd(SpecificValue::qnan);
     }
 
     if (abs_a.isone()) {
@@ -514,8 +437,8 @@ inline qd acos(const qd& a) {
     qd abs_a = abs(a);
 
     if (abs_a > 1.0) {
-        std::cerr << "(acos): Argument out of domain\n";
-        return qd(SpecificValue::snan);
+        errno = EDOM;
+        return qd(SpecificValue::qnan);
     }
 
     if (abs_a.isone()) {
@@ -524,8 +447,5 @@ inline qd acos(const qd& a) {
 
     return atan2(sqrt(1.0 - sqr(a)), a);
 }
-
-
-#endif
 
 }} // namespace sw::universal

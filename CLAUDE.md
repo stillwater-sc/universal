@@ -306,7 +306,7 @@ CI is tiered based on PR draft status:
 |----------|----------|----------|-------------|
 | Fast tier (gcc + clang CI_LITE, ~8 min) | Runs | Runs | Runs |
 | Full tier (11 platforms, ~15 min) | **Skipped** | Runs | Runs |
-| Sanitizers (ASan + UBSan, ~33 min) | **Skipped** | Runs | Weekly cron |
+| Sanitizers (ASan + UBSan) | **Skipped** | Runs | Build only (warms ccache); tests weekly cron |
 | Coverage (~29 min) | **Skipped** | Runs | Runs |
 | Clang-Tidy (~7 min) | **Skipped** | Runs | Runs |
 

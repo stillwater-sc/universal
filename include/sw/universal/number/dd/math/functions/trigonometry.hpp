@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // trigonometry.hpp: trigonometry function support for double-double floating-point
 // 
 // algorithms and constants courtesy of Scibuilders, Jack Poulson
@@ -8,6 +7,9 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cerrno>
+#include <cmath>
+#include <universal/number/shared/multidouble_reduce_pio2.hpp>
 
 namespace sw { namespace universal {
 
@@ -84,6 +86,15 @@ namespace sw { namespace universal {
     }
 
 
+    // a = (j + 4n) pi/2 + t with |t| <= pi/4, to the full precision of the type.  An argument
+    // within pi/4 is its own reduction; any other is reduced exactly, by Payne and Hanek's
+    // method (number/shared/multidouble_reduce_pio2.hpp), so no finite argument loses digits.
+    inline int dd_reduce_pio2(const dd& a, dd& t) {
+        if (std::fabs(a[0]) <= 0.78539816339744828) { t = a; return 0; }
+        const double limbs[2] = { a[0], a[1] };
+        return multidouble_reduction::reduce_pio2(limbs, dd_pi_2, t);
+    }
+
     inline dd sin(const dd& a) {
 
         /* Strategy.  To compute sin(x), we choose integers a, b so that
@@ -99,29 +110,17 @@ namespace sw { namespace universal {
 
         if (a.iszero()) return 0.0;
 
-        // approximately reduce modulo 2*pi
-        dd z = nint(a / dd_2pi);
-        dd r = a - dd_2pi * z;
+        if (a.isnan()) return dd(SpecificValue::qnan);
+        if (a.isinf()) { errno = EDOM; return dd(SpecificValue::qnan); }
 
-        // approximately reduce modulo pi/2 and then modulo pi/16.
-        dd t;
-        double q = std::floor(r.high() / dd_pi_2.high() + 0.5);
-        t = r - dd_pi_2 * q;
-        int j = static_cast<int>(q);
-        q = std::floor(t.high() / _pi16.high() + 0.5);
+        // reduce exactly modulo pi/2: a = (j + 4n) pi/2 + t with |t| <= pi/4 (#1723)
+        dd t, r;
+        int j = dd_reduce_pio2(a, t);
+        double q = std::floor(t.high() / _pi16.high() + 0.5);
+        if (!(std::fabs(q) <= 4.0)) return dd(SpecificValue::qnan);   // unreachable: |t| <= pi/4
         t -= _pi16 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
-
-        if (j < -2 || j > 2) {
-            std::cerr << "sin: Cannot reduce modulo pi/2\n";
-            return dd(SpecificValue::snan);
-        }
-
-        if (abs_k > 4) {
-            std::cerr << "(dd::sin): Cannot reduce modulo pi/16\n";
-            return dd(SpecificValue::snan);
-        }
 
         if (k == 0) {
             switch (j) {
@@ -180,29 +179,17 @@ namespace sw { namespace universal {
 
         if (a.iszero()) return 1.0;
 
-        // approximately reduce modulo 2*pi
-        dd z = nint(a / dd_2pi);
-        dd r = a - z * dd_2pi;
+        if (a.isnan()) return dd(SpecificValue::qnan);
+        if (a.isinf()) { errno = EDOM; return dd(SpecificValue::qnan); }
 
-        // approximately reduce modulo pi/2 and then modulo pi/16
-        dd t;
-        double q = std::floor(r.high() / dd_pi_2.high() + 0.5);
-        t = r - dd_pi_2 * q;
-        int j = static_cast<int>(q);
-        q = std::floor(t.high() / _pi16.high() + 0.5);
+        // reduce exactly modulo pi/2: a = (j + 4n) pi/2 + t with |t| <= pi/4 (#1723)
+        dd t, r;
+        int j = dd_reduce_pio2(a, t);
+        double q = std::floor(t.high() / _pi16.high() + 0.5);
+        if (!(std::fabs(q) <= 4.0)) return dd(SpecificValue::qnan);   // unreachable: |t| <= pi/4
         t -= _pi16 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
-
-        if (j < -2 || j > 2) {
-            std::cerr << "cos: Cannot reduce modulo pi/2\n";
-            return dd(SpecificValue::snan);
-        }
-
-        if (abs_k > 4) {
-            std::cerr << "cos: Cannot reduce modulo pi / 16\n";
-            return dd(SpecificValue::snan);
-        }
 
         if (k == 0) {
             switch (j) {
@@ -266,32 +253,18 @@ namespace sw { namespace universal {
             return;
         }
 
-        // approximately reduce modulo 2*pi
-        dd z = nint(a / dd_2pi);
-        dd r = a - dd_2pi * z;
+        if (a.isnan()) { sin_a = cos_a = dd(SpecificValue::qnan); return; }
+        if (a.isinf()) { errno = EDOM; sin_a = cos_a = dd(SpecificValue::qnan); return; }
 
-        // approximately reduce module pi/2 and pi/16
+        // reduce exactly modulo pi/2: a = (j + 4n) pi/2 + t with |t| <= pi/4 (#1723)
         dd t;
-        double q = std::floor(r.high() / dd_pi_2.high() + 0.5);
-        t = r - dd_pi_2 * q;
-        int j = static_cast<int>(q);
+        int j = dd_reduce_pio2(a, t);
         int abs_j = std::abs(j);
-        q = std::floor(t.high() / _pi16.high() + 0.5);
+        double q = std::floor(t.high() / _pi16.high() + 0.5);
+        if (!(std::fabs(q) <= 4.0)) { sin_a = cos_a = dd(SpecificValue::qnan); return; }   // unreachable: |t| <= pi/4
         t -= _pi16 * q;
         int k = static_cast<int>(q);
         int abs_k = std::abs(k);
-
-        if (abs_j > 2) {
-            std::cerr << "sincos: Cannot reduce modulo pi/2\n";
-            cos_a = sin_a = dd(SpecificValue::snan);
-            return;
-        }
-
-        if (abs_k > 4) {
-            std::cerr << "sincos: Cannot reduce modulo pi/16\n";
-            cos_a = sin_a = dd(SpecificValue::snan);
-            return;
-        }
 
         dd sin_t, cos_t;
         dd s, c;
@@ -356,15 +329,15 @@ namespace sw { namespace universal {
         if (x.iszero()) {
 
             if (y.iszero()) {
-                /* Both x and y is zero. */
-                std::cerr << "atan2: Both arguments zero\n";
-                return dd(SpecificValue::snan);
+                // both zero: std::atan2 gives +-0 for x = +0 and +-pi for x = -0, signed as y
+                if (std::signbit(x.high())) return std::signbit(y.high()) ? -dd_pi : dd_pi;
+                return y;
             }
 
             return (y.ispos()) ? dd_pi_2 : -dd_pi_2;
         }
         else if (y.iszero()) {
-            return (x.ispos()) ? dd(0.0) : dd_pi;
+            return (x.ispos()) ? y : (std::signbit(y.high()) ? -dd_pi : dd_pi);   // signed as y, as std::atan2
         }
 
         if (x == y) {
@@ -411,8 +384,8 @@ namespace sw { namespace universal {
         dd abs_a = abs(a);
 
         if (abs_a > 1.0) {
-            std::cerr << "asin: Argument out of domain\n";
-            return dd(SpecificValue::snan);
+            errno = EDOM;
+            return dd(SpecificValue::qnan);
         }
 
         if (abs_a.isone()) {
@@ -426,8 +399,8 @@ namespace sw { namespace universal {
         dd abs_a = abs(a);
 
         if (abs_a > 1.0) {
-            std::cerr << "acos: Argument out of domain\n";
-            return dd(SpecificValue::snan);
+            errno = EDOM;
+            return dd(SpecificValue::qnan);
         }
 
         if (abs_a.isone()) {

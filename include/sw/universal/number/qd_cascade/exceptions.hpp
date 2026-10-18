@@ -30,6 +30,7 @@ namespace sw { namespace universal {
 		qd_cascade_negative_nroot_arg() : qd_cascade_arithmetic_exception("negative nroot argument") {}
 	};
 
+
 	///////////////////////////////////////////////////////////////
 	// internal implementation exceptions
 

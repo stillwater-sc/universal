@@ -129,6 +129,50 @@ convert(q.to_value(), result);
 // result = 1000000.0 exactly
 ```
 
+### As the Accumulator of a Linear-Algebra Library
+
+`quire/accumulator.hpp`, included with the quire, defines five free functions for
+`quire<T, capacity, LimbType>`. They cover every number type whose `fdp.hpp` provides
+`quire_mul` and `quire_resolve`: posit, bposit, cfloat, fixpnt, lns and dbns. The native
+`quire<float>` and `quire<double>` get the same five functions from `native/fdp.hpp`,
+which `quire/quire.hpp` includes.
+
+| Function | Effect |
+|---|---|
+| `accumulator_clear(q)` | `q = 0` |
+| `accumulator_assign(q, v)` | `q = v`, exactly |
+| `accumulator_add_product(q, a, b)` | `q += a * b` (exact product for posit, bposit, cfloat, fixpnt, float, double) |
+| `accumulator_value(q, std::type_identity<R>{})` | rounds `q` to `R`, to nearest even |
+| `accumulator_merge(q, other)` | `q += other`, exactly |
+
+[MTL5](https://github.com/stillwater-sc/mtl5)'s `accumulator_traits` finds them by
+argument-dependent lookup, so a quire is a valid accumulator for any MTL5 operation that
+takes one. Neither library includes the other, and no bridge header is needed:
+
+```cpp
+using P = posit<32, 2>;
+P d = mtl::dot<quire<P>, P>(x, y);                              // exact dot, one rounding
+mtl::sparse::factorization::sparse_lu_solve<quire<P>>(A, x, b);  // factor and solve
+
+double e = mtl::dot<quire<double>, double>(u, v);               // exact IEEE dot, one rounding
+```
+
+The product is exact for posit, bposit, cfloat, fixpnt, float and double (for float and
+double, subnormal operands included). The `quire_mul` of lns and dbns forms the product through `double` and rounds it, so with those types each term carries one product rounding. The accumulation of the products is exact either way.
+
+`accumulator_value` rounds once when `R` is the element type, `float` or `double`. For `float` and `double` it rounds from the full quire, unlike `convert_to<R>()`, which keeps only the leading 53 bits. Any other `R` is reached through the correctly rounded `double`, so it may round twice.
+
+The element type must be exactly `T`. `accumulator_merge` combines the partial quires of a
+split reduction exactly, so a parallel or distributed result doesn't depend on how the terms
+were divided. With MTL5's thread pool, a `quire<double>` dot product gives the same bits at
+any thread count, where a `double` or `long double` accumulator regroups the sum.
+
+For `quire<float>` and `quire<double>`, an infinite or NaN operand makes the quire NaR, and
+it rounds out as a quiet NaN. `quire_resolve` on these quires now rounds the same way as
+`accumulator_value`, once and to nearest even; it used to truncate through `convert_to`.
+A `quire<double>` is about 4226 bits (528 bytes), so each partial of a threaded reduction
+carries one.
+
 ## Problems It Solves
 
 | Problem | How quire Solves It |

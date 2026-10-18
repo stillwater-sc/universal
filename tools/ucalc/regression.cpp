@@ -48,6 +48,7 @@
 #include <universal/number/dbns/dbns.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/takum/takum.hpp>
+#include <universal/number/lindex/lindex.hpp>
 #include <universal/number/dfixpnt/dfixpnt.hpp>
 #include <universal/number/rational/rational.hpp>
 #include <universal/number/hfloat/hfloat.hpp>
@@ -555,6 +556,42 @@ try {
 		eval.evaluate("2 + 3");
 		if (!eval.trace_steps().empty()) {
 			std::cerr << "FAIL: trace should be empty when not enabled\n";
+			++nrOfFailedTests;
+		}
+	}
+
+	// ================================================================
+	// Level-index (#1349)
+	// ================================================================
+	{
+		check_value(reg, "lindex32", "1 + 1",     2.0, 1e-7,  "lindex32 add");
+		check_value(reg, "lindex32", "2 * 3",     6.0, 1e-6,  "lindex32 mul");
+		check_value(reg, "lindex32", "1 / 4",     0.25, 0.0,  "lindex32 div");   // level 0 is exact fixed point
+		check_value(reg, "lindex32", "sqrt(4)",   2.0, 1e-7,  "lindex32 sqrt");
+		check_value(reg, "lindex16", "1 + 1",     2.0, 1e-3,  "lindex16 add");
+		check_value(reg, "lindex8",  "1 + 1",     2.0, 0.2,   "lindex8 add");
+		// e is psi = 2, an encoding, and exp and log are exact steps of one level
+		check_value(reg, "lindex32", "exp(1)",    2.71828182845904524, 0.0, "lindex32 exp(1) is e");
+		check_value(reg, "lindex32", "log(exp(1))", 1.0, 0.0, "lindex32 log(e) is 1");
+		check_value(reg, "lindex32", "exp(0)",    1.0, 0.0,   "lindex32 exp(0)");
+		check_value(reg, "lindex32", "log(1)",    0.0, 0.0,   "lindex32 log(1)");
+		// past double the value prints in the level-index map itself, not as inf: e^e^e^e^e is
+		// psi = 6, about 10^(10^1656520)
+		check_contains(reg, "lindex32", "exp(exp(exp(exp(exp(1)))))", "phi(6)", "lindex32 prints phi(6)");
+		{
+			const Value m = reg.get("lindex16").maxpos();
+			if (m.native_rep.find("phi(7.99") == std::string::npos) {
+				std::cerr << "FAIL: lindex16 maxpos prints " << m.native_rep << ", expected phi(7.99...)\n";
+				++nrOfFailedTests;
+			}
+		}
+		// below minpos = 2^-28 a value underflows to 0: level 0 is plain fixed point
+		check_value(reg, "lindex32", "1 / 1000000000000", 0.0, 0.0, "lindex32 underflow");
+		// the same value lands on different bits than the takum encodings of the same width
+		Value li = eval_in(reg, "lindex32", "3.0");
+		Value tk = eval_in(reg, "takum32",  "3.0");
+		if (li.binary_rep == tk.binary_rep || li.type_name == tk.type_name) {
+			std::cerr << "FAIL: lindex32 and takum32 alias each other: " << li.binary_rep << " " << li.type_name << "\n";
 			++nrOfFailedTests;
 		}
 	}
@@ -1166,11 +1203,13 @@ try {
 		};
 		check_quadratic("3~", "100~", "2~", wide_rows, 6, "3~ 100~ 2~");
 
-		// the precision sweep for the reference problem: the narrowest width (areal, poxel) per question
+		// the precision sweep for the reference problem: the narrowest width (areal, poxel) per question.
+		// The stable r1 = -2c / (b + sqrt(D)) is decided by areal8: its denominator reaches inf there,
+		// and a finite over an unbounded end is an open 0, so the box is (-0.562, 0), not (-0.562, 0].
 		{
 			const ExpressionEvaluator qs = quadratic_session(reg, none, "3", "100", "2");
 			const auto sweep = precision_sweep(reg, qs, quadratic_forms(false), 6.0);
-			const int want[][2] = { { 16, 8 }, { 16, 32 }, { 16, 8 }, { 8, 8 }, { 64, 64 }, { 32, 32 }, { 32, 32 } };
+			const int want[][2] = { { 16, 8 }, { 16, 32 }, { 8, 8 }, { 8, 8 }, { 64, 64 }, { 32, 32 }, { 32, 32 } };
 			bool ok = sweep.size() == 7;
 			for (std::size_t i = 0; ok && i < 7; ++i) ok = sweep[i].narrowest[0].second == want[i][0] && sweep[i].narrowest[1].second == want[i][1];
 			if (!ok) {
@@ -1234,14 +1273,15 @@ try {
 				std::cerr << "FAIL: rootbox of 3x^2 + 100x + 2 should prove one box at each root: " << found1 << ", " << found2 << "\n";
 				++nrOfFailedTests;
 			}
-			// a pole is not a root; an exact root; no root; a domain where f has no real value
+			// a pole is not a root: 1/x on the open tiles beside 0 is unbounded but of one sign,
+			// (1/minpos, inf) and (-inf, -1/minpos), so no box is left; an exact root; no root; a
+			// domain where f has no real value
 			const RootboxReport pole = rootbox("1/x", "[-1, 1]", "poxel32i");
 			const RootboxReport half = rootbox("x - 0.5", "[0, 1]", "poxel32i");
 			const RootboxReport none_ = rootbox("x^2 + 1", "[-2, 2]", "poxel32i");
 			const RootboxReport sq = rootbox("sqrt(x) - 1", "[-4, 4]", "poxel32i");
-			bool ok = !pole.boxes.empty() && half.boxes.size() == 1 && half.boxes[0].status == "exact root" && half.boxes[0].box == "0.5"
+			bool ok = pole.boxes.empty() && half.boxes.size() == 1 && half.boxes[0].status == "exact root" && half.boxes[0].box == "0.5"
 			       && none_.boxes.empty() && sq.boxes.size() == 1 && sq.boxes[0].status == "exact root" && sq.boxes[0].box == "1";
-			for (const RootBox& b : pole.boxes) ok = ok && b.status == "undecided";
 			// a double root written with dependency exhausts the budget: the rest is unexplored, never a claimed root
 			const RootboxReport dbl = rootbox("x^2 - 2*x + 1", "[0, 3]", "poxel32i");
 			bool unexplored = false;

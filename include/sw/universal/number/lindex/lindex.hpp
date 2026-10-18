@@ -1,0 +1,45 @@
+// lindex.hpp: level-index arithmetic type standard header
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#pragma once
+////////////////////////////////////////////////////////////////////////////////////////
+///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
+#include <universal/utility/architecture.hpp>
+#include <universal/utility/bit_cast.hpp>
+#include <universal/utility/directives.hpp>
+
+////////////////////////////////////////////////////////////////////////////////////////
+/// required std libraries
+#include <iostream>
+#include <iomanip>
+
+////////////////////////////////////////////////////////////////////////////////////////
+///  BEHAVIORAL COMPILATION SWITCHES
+// LINDEX_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to
+// the application to enable by defining it before this include. Its default lives in
+// lindex_impl.hpp, so that core.hpp alone defines it as well (#1436).
+
+///////////////////////////////////////////////////////////////////////////////////////
+// bring in the trait functions
+#include <universal/traits/number_traits.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
+#include <universal/common/number_traits_reports.hpp>
+
+////////////////////////////////////////////////////////////////////////////////////////
+/// INCLUDE FILES that make up the library
+// layer 1: the core (#1334). Include core.hpp directly in a translation unit that only
+// computes -- it pulls no <iostream>/<sstream>/<iomanip>.
+#include <universal/number/lindex/core.hpp>
+// layer 2a: the string producers
+#include <universal/number/lindex/manipulators.hpp>
+// layer 2b: the <iostream> half -- operator<< / operator>>
+#include <universal/number/lindex/iostream.hpp>
+// layer 3: value attributes
+#include <universal/number/lindex/attributes.hpp>
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// math functions
+#include <universal/number/lindex/mathlib.hpp>

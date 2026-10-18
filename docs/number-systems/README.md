@@ -64,6 +64,7 @@ The quire is a number-system-agnostic accumulator that provides exact dot produc
 |------|------|-------------|----------|
 | [lns](lns.md) | N | Single-base logarithmic (base 2) | DSP, multiply-heavy workloads, low-power HW |
 | [dbns](dbns.md) | N | Double-base logarithmic (base 0.5 and 3) | Research, mixed-radix applications |
+| [lindex](lindex.md) | N | Level-index: the generalized logarithm, closed under + - * / and overflow-free | Values far past any floating-point range, repeated exponentials |
 
 ### Extended Precision (Multi-Component)
 

@@ -48,3 +48,9 @@ A single ubit tile (`areal`, `poxel`) is a **flag**: it reports that a result is
 | `quadratic_roots.cpp` (#1646) | bound both roots of 3x^2 + 100x + 2 by the quadratic formula, where a and b occur twice (the dependency problem) | r1 as written loses most of its digits to cancellation: 4% off in half and more than 100% in posit<16,2> (whose b^2 = 10000 rounds to 9984), 5.6e-6 in float and 2.3e-6 in posit<32,2> | every enclosure verified exactly; r1 as written is 1365+ tiles wide, against 3 for the rearranged 2c / (-b - sqrt(d)) and 1 for the tightest; at 32 and 64 bits ULP-wide operands widen it 4 to 7 times more |
 
 The expected outcomes were checked against exact arithmetic before the applications were written (#1637).
+
+## Watching the box: `ubox_trace.cpp` (#196)
+
+`ubox_trace.cpp` records the tile interval of every intermediate step of r1 for 3x^2 + 100x + 2 = 0 (the same expressions as `quadratic_roots.cpp`) in areal and poxel at 16 and 32 bits, for the formula as written and rearranged, with exact operands and with operands known only to within one tile. It writes a self-contained HTML page (`ubox_trace.html`, or the path given as its argument): a chart of each box's relative width per step, and a row per step that draws every type's box on one number line around the exact value. The page shows the box of `-b + sqrt(d)` jumping by three orders of magnitude in the formula as written (at 32 bits, from 1 tile for `sqrt(d)` to 2047 and 4095 tiles), and the rearranged form keeping it to 3 tiles.
+
+The recorder and the page writer are `universal/utility/ubox_trace.hpp`. Any enclosure type with `lower<Real>()`, `upper<Real>()`, `lower_open()`, `upper_open()`, `isnan()` and `isexact()` can be recorded; `tile_interval<Tile>` also reports its width in tiles.

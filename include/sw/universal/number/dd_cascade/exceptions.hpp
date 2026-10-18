@@ -30,6 +30,7 @@ namespace sw { namespace universal {
 		dd_cascade_negative_nroot_arg() : dd_cascade_arithmetic_exception("negative nroot argument") {}
 	};
 
+
 	///////////////////////////////////////////////////////////////
 	// internal implementation exceptions
 

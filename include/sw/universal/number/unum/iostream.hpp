@@ -53,7 +53,8 @@ inline std::istream& operator>>(std::istream& istr, unum<esizesize, fsizesize, b
 	return istr;
 }
 
-// ubound: [lower, upper], or [x] for a point
+// ubound: [lower, upper] with ( or ) for an open end and inf for an unbounded one, or [x]
+// for a point
 template<unsigned esizesize, unsigned fsizesize, typename bt>
 std::ostream& operator<<(std::ostream& ostr, const ubound<esizesize, fsizesize, bt>& ub) {
 	if (ub.isnan()) {
@@ -63,7 +64,11 @@ std::ostream& operator<<(std::ostream& ostr, const ubound<esizesize, fsizesize, 
 		ostr << '[' << ub.lower() << ']';
 	}
 	else {
-		ostr << '[' << ub.lower() << ", " << ub.upper() << ']';
+		ostr << (ub.lower_open() ? '(' : '[');
+		if (ub.lower_unbounded()) ostr << "-inf"; else ostr << ub.lower();
+		ostr << ", ";
+		if (ub.upper_unbounded()) ostr << "inf"; else ostr << ub.upper();
+		ostr << (ub.upper_open() ? ')' : ']');
 	}
 	return ostr;
 }

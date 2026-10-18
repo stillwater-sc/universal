@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for quad-double (qd) floats
 //
 // algorithm courtesy of Scibuilders, Jack Poulson
@@ -8,22 +7,17 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/native/ieee754.hpp>
-
-#ifndef QUADDOUBLE_NATIVE_SQRT
-#define QUADDOUBLE_NATIVE_SQRT 0
-#endif
+#include <cerrno>
+#include <cmath>
 
 namespace sw { namespace universal {
-
-#if QUADDOUBLE_NATIVE_SQRT
 
     /// <summary>
     /// sqrt returns the square root of its input, returns NaN if argument is negative
     /// </summary>
     /// <param name="a">input</param>
     /// <returns>sqrt(a) or NaN</returns>
-    qd sqrt(const qd& a) {
+    inline qd sqrt(const qd& a) {
         /* Strategy:
 
            Perform the following Newton iteration:
@@ -41,8 +35,8 @@ namespace sw { namespace universal {
         if (a.isneg()) throw qd_negative_sqrt_arg();
 #else
         if (a.isneg()) {
-            std::cerr << "quad-double argument to sqrt is negative\n";
-            return qd(SpecificValue::snan);
+            errno = EDOM;
+            return qd(SpecificValue::qnan);
         }
 #endif
 
@@ -72,21 +66,6 @@ namespace sw { namespace universal {
         r *= b;
         return ldexp(r, k);
 }
-
-#else
-
-	// sqrt shim for quad-double
-	inline qd sqrt(const qd& a) {
-#if QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw qd_negative_sqrt_arg();
-#else  // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) std::cerr << "quad-double argument to sqrt is negative: " << a << std::endl;
-#endif // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
-		if (a.iszero()) return a;
-		return qd(std::sqrt(double(a)));
-	}
-
-#endif // ! QUADDOUBLE_NATIVE_SQRT
 
 	// reciprocal sqrt
 	inline qd rsqrt(const qd& a) {
@@ -123,13 +102,13 @@ namespace sw { namespace universal {
 
 #else  // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION
         if (n <= 0) {
-            std::cerr << "quad-double nroot argument is negative\n";
-            return qd(SpecificValue::snan);
+            errno = EDOM;
+            return qd(SpecificValue::qnan);
         }
 
         if (n % 2 == 0 && a.isneg()) {
-            std::cerr << "quad-double nroot argument is negative\n";
-            return qd(SpecificValue::snan);
+            errno = EDOM;
+            return qd(SpecificValue::qnan);
         }
 
 #endif // ! QUADDOUBLE_THROW_ARITHMETIC_EXCEPTION

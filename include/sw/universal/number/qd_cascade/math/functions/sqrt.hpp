@@ -1,16 +1,12 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for quad-double (qd) cascade floats
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/native/ieee754.hpp>
-
-#ifndef QD_CASCADE_NATIVE_SQRT
-#define QD_CASCADE_NATIVE_SQRT 1
-#endif
+#include <cerrno>
+#include <cmath>
 
 // square root formulations; see the comment on sqrt() below for the trade
 #define UNIVERSAL_QD_CASCADE_SQRT_NEWTON_DIVISION   0
@@ -20,8 +16,6 @@
 #endif
 
 namespace sw { namespace universal {
-
-#if QD_CASCADE_NATIVE_SQRT
 
     // Computes the square root of the quad-double number qd.
     //   NOTE: qd must be a non-negative number
@@ -60,7 +54,7 @@ inline qd_cascade sqrt(const qd_cascade& a) {
         if (a.isneg()) throw qd_cascade_negative_sqrt_arg();
 #else
         if (a.isneg()) {
-            std::cerr << "quad-double argument to sqrt is negative: " << a << std::endl;
+            errno = EDOM;
             return qd_cascade(SpecificValue::qnan);
         }
 #endif
@@ -90,21 +84,6 @@ inline qd_cascade sqrt(const qd_cascade& a) {
 
 #endif
     }
-
-#else
-
-	// sqrt shim for quad-double
-	inline qd_cascade sqrt(qd_cascade a) {
-#if QD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) throw qd_cascade_negative_sqrt_arg();
-#else  // ! QD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.isneg()) std::cerr << "quad-double argument to sqrt is negative: " << a << std::endl;
-#endif // ! QD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-		if (a.iszero()) return a;
-		return qd_cascade(std::sqrt(double(a)));
-	}
-
-#endif // ! QD_CASCADE_NATIVE_SQRT
 
     // Note: sqrt(double) helper removed to avoid namespace pollution
     // Use explicit construction instead: sqrt(qd_cascade(d))
@@ -139,12 +118,13 @@ inline qd_cascade sqrt(const qd_cascade& a) {
 
 #else  // ! QD_CASCADE_THROW_ARITHMETIC_EXCEPTION
         if (n <= 0) {
-            std::cerr << "quad-double nroot argument is negative: " << n << std::endl;
+            errno = EDOM;
+            return qd_cascade(SpecificValue::qnan);
         }
 
         if (n % 2 == 0 && a.isneg()) {
-            std::cerr << "quad-double nroot argument is negative: " << n << std::endl;
-            return qd_cascade(SpecificValue::snan);
+            errno = EDOM;
+            return qd_cascade(SpecificValue::qnan);
         }
 
 #endif // ! QD_CASCADE_THROW_ARITHMETIC_EXCEPTION

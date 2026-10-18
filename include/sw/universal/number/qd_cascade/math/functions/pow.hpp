@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // pow.hpp: pow functions for quad-double cascade (qd_cascade) floating-point
 //
 // algorithms courtesy Scibuilders, Jack Poulson
@@ -26,19 +25,9 @@ namespace sw { namespace universal {
     }
 
     // Computes the n-th power of a quad-double number.
-    //   NOTE:  0^0 causes an error.
+    //   NOTE:  0^0 is 1, as std::pow
     inline qd_cascade npwr(const qd_cascade& a, int n) {
-        if (n == 0) {
-#if QD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-            if (a.iszero()) throw qd_cascade_invalid_argument();
-#else // ! QD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-            if (a.iszero()) {
-                std::cerr << "(npwr): Invalid argument\n";
-                return qd_cascade(SpecificValue::snan);
-            }
-#endif // ! QD_CASCADE_THROW_ARITHMETIC_EXCEPTION
-            return 1.0;
-        }
+        if (n == 0) return 1.0;   // 0^0 included, as std::pow(0, 0) = 1
 
         qd_cascade r = a;
         qd_cascade s = 1.0;

@@ -166,13 +166,7 @@ public:
 	tile_interval& operator-=(const tile_interval& rhs) noexcept { return *this += -rhs; }
 	tile_interval& operator*=(const tile_interval& rhs) noexcept {
 		if (_nan || rhs._nan) { setnan(); return *this; }
-		const end a[2] = { lo_end(), hi_end() }, b[2] = { rhs.lo_end(), rhs.hi_end() };
-		key_type lo = kmax, hi = -kmax;
-		for (const end& x : a) for (const end& y : b) {
-			lo = std::min(lo, combine(x, y, op::mul, true));
-			hi = std::max(hi, combine(x, y, op::mul, false));
-		}
-		_lo = lo; _hi = hi;
+		corners(rhs, op::mul);
 		return *this;
 	}
 	tile_interval& operator/=(const tile_interval& rhs) noexcept {
@@ -182,13 +176,7 @@ public:
 			*this = entire();
 			return *this;
 		}
-		const end a[2] = { lo_end(), hi_end() }, b[2] = { rhs.lo_end(), rhs.hi_end() };
-		key_type lo = kmax, hi = -kmax;
-		for (const end& x : a) for (const end& y : b) {
-			lo = std::min(lo, combine(x, y, op::div, true));
-			hi = std::max(hi, combine(x, y, op::div, false));
-		}
-		_lo = lo; _hi = hi;
+		corners(rhs, op::div);
 		return *this;
 	}
 
@@ -232,17 +220,26 @@ private:
 	// the key of the tile that bounds x (op) y from below (lower = true) or above: for two
 	// finite ends, the tile that contains the exact result; for an infinite result, the end
 	// tile on that side; for an indeterminate form, the widest bound.  A bound is strict when
-	// the corner is not attained -- an open end whose partner does not annihilate it -- and a
+	// the corner is not attained -- an open end whose partner is not a closed zero -- and a
 	// strict bound that lands on a lattice point moves inward to the open tile beside it.
-	static key_type combine(const end& x, const end& y, op o, bool lower) noexcept {
+	// Corners at an infinity or an open zero take their limit.  The side of an end says where
+	// the set lies from it: +1 for a lower end (the set is above it), -1 for an upper end.  So
+	// an open zero at a lower end is approached from above, and one at an upper end from below.
+	static key_type combine(const end& x, const end& y, op o, bool lower, int xside = 0, int yside = 0) noexcept {
 		const key_type widest = lower ? -kmax : kmax;
-		if (x.inf == 0 && y.inf == 0) {
+		const key_type open_zero = lower ? 1 : -1;            // 0 as a bound that is not attained
+		auto unbounded = [](int s) { return s > 0 ? kmax : -kmax; };
+		// products or quotients of every magnitude, of sign s: from 0 (not attained) to s inf
+		auto spread = [&](int s) { return (s > 0) == lower ? open_zero : unbounded(s); };
+		auto is_zero = [](const end& e) { return e.inf == 0 && e.k == 0; };
+		auto closed_zero = [&](const end& e) { return is_zero(e) && !e.open; };
+		if (x.inf == 0 && y.inf == 0 && !(o == op::div && y.k == 0)) {
 			const Tile a = T::tile(x.k), b = T::tile(y.k);
 			Tile r;
 			switch (o) {
 			case op::add: r = a + b; break;
 			case op::mul: r = a * b; break;
-			case op::div: if (y.k == 0) return widest; r = a / b; break;
+			case op::div: r = a / b; break;
 			}
 			if (T::isnan(r)) return widest;
 			const key_type k = clampkey(T::key(r));
@@ -250,31 +247,50 @@ private:
 			switch (o) {
 			case op::add: strict = x.open || y.open; break;
 			case op::mul:
-			case op::div: strict = (x.open && y.k != 0) || (y.open && x.k != 0); break;
+			case op::div:
+				// an open end is reached only through a partner that is a closed zero
+				strict = (x.open && !closed_zero(y)) || (y.open && !closed_zero(x));
+				break;
 			}
 			if (strict && !key_is_odd(k)) return lower ? k + 1 : k - 1;
 			return k;
 		}
-		int s = 0;
 		switch (o) {
 		case op::add:
 			if (x.inf != 0 && y.inf != 0 && x.inf != y.inf) return widest;   // inf - inf
-			s = (x.inf != 0) ? x.inf : y.inf;
-			break;
+			return unbounded((x.inf != 0) ? x.inf : y.inf);
 		case op::mul:
-			if (signum(x) == 0 || signum(y) == 0) return 0;                  // an exact zero times an unbounded end
-			s = signum(x) * signum(y);
-			break;
+			// an infinite end times a zero end: exactly 0 for a closed zero, every magnitude
+			// of one sign for an open one
+			if (is_zero(x)) return x.open ? spread(xside * y.inf) : 0;
+			if (is_zero(y)) return y.open ? spread(yside * x.inf) : 0;
+			return unbounded(signum(x) * signum(y));
 		case op::div:
 			if (y.inf != 0) {
-				if (x.inf != 0) return widest;                               // inf / inf
-				return 0;                                                    // finite / inf
+				if (x.inf != 0) return spread(x.inf * y.inf);               // inf / inf
+				return closed_zero(x) ? 0 : open_zero;                      // finite / inf -> 0, not attained
 			}
-			if (y.k == 0) return widest;
-			s = signum(x) * signum(y);
-			break;
+			if (y.k == 0) {
+				// an open zero divisor (one containing 0 was rejected): the quotient grows
+				// without bound, on the side of sgn(x) times the side the divisor approaches from
+				if (!is_zero(x)) return unbounded(signum(x) * yside);
+				return x.open ? spread(xside * yside) : 0;                  // 0+ / 0+, or exactly 0
+			}
+			return unbounded(x.inf * signum(y));                            // inf / finite
 		}
-		return s > 0 ? kmax : -kmax;
+		return widest;
+	}
+
+	// * and /: the hull of the four corner bounds
+	void corners(const tile_interval& rhs, op o) noexcept {
+		const end a[2] = { lo_end(), hi_end() }, b[2] = { rhs.lo_end(), rhs.hi_end() };
+		const int side[2] = { +1, -1 };   // a lower end has the set above it, an upper end below
+		key_type lo = kmax, hi = -kmax;
+		for (int i = 0; i < 2; ++i) for (int j = 0; j < 2; ++j) {
+			lo = std::min(lo, combine(a[i], b[j], o, true, side[i], side[j]));
+			hi = std::max(hi, combine(a[i], b[j], o, false, side[i], side[j]));
+		}
+		_lo = lo; _hi = hi;
 	}
 };
 

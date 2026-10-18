@@ -216,6 +216,7 @@ option(UNIVERSAL_BUILD_NUMBER_VALIDS               "Set to ON to build static va
 option(UNIVERSAL_BUILD_NUMBER_BVALIDS              "Set to ON to build static bounded valid tests"       OFF)
 option(UNIVERSAL_BUILD_NUMBER_LNS                  "Set to ON to build static lns tests"                 OFF)
 option(UNIVERSAL_BUILD_NUMBER_DBNS                 "Set to ON to build static dbns tests"                OFF)
+option(UNIVERSAL_BUILD_NUMBER_LINDEX               "Set to ON to build static level-index tests"         OFF)
 option(UNIVERSAL_BUILD_NUMBER_BISECTION            "Set to ON to build static bisection tests"           OFF)
 option(UNIVERSAL_BUILD_NUMBER_QUIRES               "Set to ON to build static quire tests"               OFF)
 option(UNIVERSAL_BUILD_NUMBER_SORNS                "Set to ON to build static SORN tests"                OFF)
@@ -738,9 +739,10 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-# propagate the git information to any executables that might want to use it
-add_definitions("-DGIT_COMMIT_HASH=${GIT_COMMIT_HASH}")
-add_definitions("-DGIT_BRANCH=${GIT_BRANCH}")
+# The git information goes into the version string, not onto the compile line. As
+# -DGIT_COMMIT_HASH / -DGIT_BRANCH on every translation unit it changed every compiler
+# command on every commit, which no source read, and which cost ccache its direct-mode
+# hits on every CI run.
 
 set(PROJECT_VERSION "${PROJECT_VERSION}.${GIT_COMMIT_HASH}")
 
@@ -881,6 +883,7 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	set(UNIVERSAL_BUILD_NUMBER_POSITS ON)
 	set(UNIVERSAL_BUILD_NUMBER_BPOSITS ON)
 	set(UNIVERSAL_BUILD_NUMBER_LNS ON)
+	set(UNIVERSAL_BUILD_NUMBER_LINDEX ON)
 	set(UNIVERSAL_BUILD_NUMBER_DOUBLE_DOUBLE ON)
 
 	# representative range types (valid)
@@ -985,6 +988,7 @@ if(UNIVERSAL_BUILD_NUMBER_STATICS)
 	set(UNIVERSAL_BUILD_NUMBER_BVALIDS OFF)
 	set(UNIVERSAL_BUILD_NUMBER_TAKUMS ON)
 	set(UNIVERSAL_BUILD_NUMBER_LNS ON)
+	set(UNIVERSAL_BUILD_NUMBER_LINDEX ON)
 	set(UNIVERSAL_BUILD_NUMBER_DBNS ON)
 	set(UNIVERSAL_BUILD_NUMBER_BISECTION ON)
 	set(UNIVERSAL_BUILD_NUMBER_QUIRES ON)
@@ -1123,6 +1127,11 @@ endif(UNIVERSAL_BUILD_NUMBER_LNS)
 if(UNIVERSAL_BUILD_NUMBER_DBNS)
 add_subdirectory("static/logarithmic/dbns")
 endif(UNIVERSAL_BUILD_NUMBER_DBNS)
+
+# level-index (#1349): the shared kernel (#1693) and the lindex type (#1694)
+if(UNIVERSAL_BUILD_NUMBER_LINDEX)
+add_subdirectory("static/logarithmic/lindex")
+endif(UNIVERSAL_BUILD_NUMBER_LINDEX)
 
 if(UNIVERSAL_BUILD_NUMBER_BISECTION)
 add_subdirectory("static/bisection")

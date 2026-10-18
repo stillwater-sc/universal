@@ -55,6 +55,7 @@ const FILE_MAP = {
   'number-systems/lns-addsub-algorithms.md': 'number-systems/lns-addsub-algorithms.md',
   'number-systems/lns-tolerance-traits.md': 'number-systems/lns-tolerance-traits.md',
   'number-systems/dbns.md': 'number-systems/dbns.md',
+  'number-systems/lindex.md': 'number-systems/lindex.md',
   'number-systems/interval.md': 'number-systems/interval.md',
   'number-systems/valid.md': 'number-systems/valid.md',
   'number-systems/sorn.md': 'number-systems/sorn.md',

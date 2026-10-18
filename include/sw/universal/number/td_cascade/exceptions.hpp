@@ -23,6 +23,17 @@ struct td_cascade_divide_by_zero : public td_cascade_arithmetic_exception {
 	td_cascade_divide_by_zero() : td_cascade_arithmetic_exception("division by zero") {}
 };
 
+// negative sqrt argument
+struct td_cascade_negative_sqrt_arg : public td_cascade_arithmetic_exception {
+	td_cascade_negative_sqrt_arg() : td_cascade_arithmetic_exception("negative sqrt argument") {}
+};
+
+// negative nroot argument
+struct td_cascade_negative_nroot_arg : public td_cascade_arithmetic_exception {
+	td_cascade_negative_nroot_arg() : td_cascade_arithmetic_exception("negative nroot argument") {}
+};
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// INTERNAL IMPLEMENTATION EXCEPTIONS
 
