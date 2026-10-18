@@ -1,0 +1,114 @@
+// mpmath_gap.cpp: efloat's cost per operation at 128, 608 and 2048 bits, for comparison with mpmath (issue #1714)
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// mpmath's mpf is the same structure as efloat -- a sign, a big-integer mantissa and an
+// exponent -- yet on its pure-Python backend it evaluated exp ~90x and log ~900x faster than
+// compiled efloat at 600 bits. mpmath_gap.py next to this file prints the same table for
+// mpmath; run both on one machine and compare.
+//
+// Each figure is a mean over repeated calls whose results all reach a volatile sink.
+//
+// The one guard is a ratio, so that it holds at any optimization level and on any runner:
+// division may cost at most 15 multiplies at 608 bits. Long division a word at a time costs
+// ~3; the bit-serial division it replaced cost ~40.
+
+#include <universal/utility/directives.hpp>
+#include <chrono>
+#include <cstdio>
+#include <iostream>
+#include <string>
+#include <universal/number/efloat/efloat.hpp>
+
+namespace sw { namespace universal {
+
+	// mean microseconds per call of f over reps calls
+	template<typename F>
+	double microseconds(F&& f, int reps) {
+		auto t0 = std::chrono::steady_clock::now();
+		for (int i = 0; i < reps; ++i) f();
+		auto t1 = std::chrono::steady_clock::now();
+		return std::chrono::duration<double, std::micro>(t1 - t0).count() / reps;
+	}
+
+	struct Timings {
+		double add, mul, div, div7, exp, log, sin, sqrt;
+	};
+
+	// reps scales the repetition counts down for the expensive operations at high precision
+	template<unsigned nlimbs>
+	Timings measure(int reps) {
+		using Real = efloat<nlimbs>;
+		Real a, b;
+		parse<16384>("0.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274", a);
+		parse<16384>("1.4142135623730950488016887242096980785696718753769480731766797379907324784621070388503875343276415727", b);
+		const Real seven(7);
+		const Real x = Real(1) + a;
+		Real s = a;
+		volatile double sink = 0.0;
+
+		// The first call at a precision computes ln 2 and pi and caches them, as mpmath caches
+		// its constants: call each function once before timing, so few repetitions still
+		// measure the steady state.
+		sink = sink + double(exp(a)) + double(log(x)) + double(sin(a));
+
+		// add and multiply run dependent chains that stay in range; the rest take the arguments
+		// mpmath_gap.py uses, and each result feeds the sink, so no call can be hoisted
+		Timings t{};
+		t.add  = microseconds([&] { s = s + b; }, 100 * reps);              sink = sink + double(s); s = a;
+		t.mul  = microseconds([&] { s = s * a; s = s * b; }, 50 * reps) / 2; sink = sink + double(s);
+		t.div  = microseconds([&] { s = b / a; sink = sink + double(s); }, 10 * reps);
+		t.div7 = microseconds([&] { s = a / seven; sink = sink + double(s); }, 10 * reps);
+		t.exp  = microseconds([&] { s = exp(a); sink = sink + double(s); }, reps);
+		t.log  = microseconds([&] { s = log(x); sink = sink + double(s); }, reps);
+		t.sin  = microseconds([&] { s = sin(a); sink = sink + double(s); }, reps);
+		t.sqrt = microseconds([&] { s = sqrt(b); sink = sink + double(s); }, 2 * reps);
+		(void)sink;
+		return t;
+	}
+
+	void report(unsigned bits, const Timings& t) {
+		std::printf("%6u %9.2f %9.2f %9.2f %9.2f %10.1f %10.1f %10.1f %9.1f\n",
+		            bits, t.add, t.mul, t.div, t.div7, t.exp, t.log, t.sin, t.sqrt);
+	}
+
+}} // namespace sw::universal
+
+int main()
+try {
+	using namespace sw::universal;
+
+	std::cout << "efloat cost per operation in microseconds (#1714; compare mpmath_gap.py)\n";
+	std::printf("%6s %9s %9s %9s %9s %10s %10s %10s %9s\n",
+	            "bits", "a+b", "a*b", "b/a", "a/7", "exp", "log", "sin", "sqrt");
+	report(128,  measure<4>(200));
+	const Timings t608 = measure<19>(50);
+	report(608, t608);
+	report(2048, measure<64>(5));
+
+	int failures = 0;
+	const double ratio = t608.div / t608.mul;
+	std::printf("\ndivision / multiplication at 608 bits: %.1f (guard: below 15)\n", ratio);
+	if (!(ratio < 15.0)) {
+		std::cout << "  *** REGRESSION: division costs " << ratio << " multiplies -- a bit-serial division may have returned (#1714) ***\n";
+		++failures;
+	}
+
+	std::cout << "\n" << (failures == 0 ? "PASS" : "FAIL") << " efloat operation costs within bounds\n";
+	return (failures > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+catch (char const* msg) {
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
+}
