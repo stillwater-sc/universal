@@ -64,6 +64,8 @@ CASES = [
     ("pow", 2.5, 0.3333), ("pow", 10.0, -7.25), ("pow", 1.0625, 200.5),
     # the trigonometric functions reduce with pi, which must be carried at the working precision
     ("sin", 10.0), ("sin", 0.5), ("sin", 1e6), ("cos", 10.0), ("cos", 3.0), ("tan", 1.25),
+    # the versine kernel (#1756): r below its halving target, r at pi/4, and a cos quadrant
+    ("sin", 1e-10), ("cos", 1e-10), ("tan", 3e-7), ("sin", 0.78125), ("cos", -0.78125), ("sin", 1.5), ("tan", -2.75),
     ("asin", 0.5), ("asin", 0.9), ("acos", 0.3), ("acos", -0.95),
     ("atan2", 1.0, -2.0), ("atan2", -3.0, -0.5),
 ]

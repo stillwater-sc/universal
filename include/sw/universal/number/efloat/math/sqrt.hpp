@@ -5,9 +5,41 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
+#include <algorithm>
 #include <cmath>
 
 namespace sw { namespace universal {
+
+namespace efloat_detail {
+
+	// sqrt(a) for a finite a > 0 at `bits` bits (#1756): a double seed, accurate to ~52 bits,
+	// then Newton's iteration x <- (x + a/x)/2, each step at twice the precision of the last,
+	// since each doubles the correct bits, and one final step at the full precision.  a is
+	// scaled to [1, 4) first, so the seed holds for any exponent.
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> sqrt_newton(const efloat<nlimbs>& a, unsigned bits) {
+		const int64_t e    = a.scale();
+		const int64_t half = e / 2 - ((e < 0 && e % 2 != 0) ? 1 : 0);   // floor(e / 2), without e - 1 overflowing
+		efloat<nlimbs> m(a);
+		m.setexponent(e - 2 * half);                            // m in [1, 4)
+		efloat<nlimbs> x(std::sqrt(double(m)));
+		efloat<nlimbs> mw(m);
+		unsigned p = 48;
+		while (true) {
+			p = std::min(2 * p, bits);
+			x.set_precision(p);
+			mw = m;
+			mw.set_precision(p);
+			x += mw / x;
+			x.setexponent(x.scale() - 1);
+			if (p >= bits) break;
+		}
+		x += mw / x;   // the final step at the full precision
+		x.setexponent(x.scale() - 1 + half);
+		return x;
+	}
+
+}  // namespace efloat_detail
 
 // Standard square root function for efloat using Newton's method
 template<unsigned nlimbs>
@@ -23,37 +55,11 @@ constexpr efloat<nlimbs> sqrt(const efloat<nlimbs>& a) {
 	}
 	if (a.isinf() || a.isnan()) return a;
 
-	// Initial guess: x0 = 1.0 * 2^(scale / 2) to support infinite exponent ranges
-	efloat<nlimbs> x;
-	x.clear();
-	x.setexponent(a.scale() / 2);
-	x.setlimb(0, 0x80000000); // set implicit leading bit
 	// the result's precision is a's own (#1757); Newton runs with guard bits past it and the
-	// result rounds once, or the last bits are the iteration's rounding noise
+	// result rounds once, or the last bits are the iteration's rounding noise.  The iteration
+	// count follows the precision (#1140), by doubling it from a double seed (#1756).
 	const unsigned result_prec = a.get_precision();
-	const unsigned prec = result_prec + 64u;
-	x.set_precision(prec);
-	efloat<nlimbs> aw(a);
-	aw.set_precision(prec);
-
-	efloat<nlimbs> half(0.5);
-
-	// Newton's iteration x <- (x + a/x)/2 doubles the number of correct bits
-	// each step. The exponent-only seed above is accurate to ~1 bit (it keeps
-	// efloat's unbounded exponent range but carries no mantissa information), so
-	// the iteration count must scale with the working precision: ~ceil(log2(P))
-	// doublings plus a few guard steps. A fixed 7 iterations previously capped
-	// accuracy at ~97 digits regardless of get_precision() (issue #1140). The
-	// convergence break stops as soon as the update falls below the working
-	// precision, so high-precision operands do not pay for the guard steps.
-	int max_iters = 6;
-	for (unsigned p = prec; p > 1u; p >>= 1) ++max_iters;   // ceil(log2(prec)) + 6
-	for (int i = 0; i < max_iters; ++i) {
-		efloat<nlimbs> prev(x);
-		x = half * (x + aw / x);
-		efloat<nlimbs> d(x - prev); d.setsign(false);
-		if (d.iszero() || (!x.iszero() && d.scale() < x.scale() - static_cast<int64_t>(prec))) break;
-	}
+	efloat<nlimbs> x = efloat_detail::sqrt_newton(a, result_prec + 64u);
 	x.set_precision(result_prec);
 	if (!a.carries_precision()) x.clear_precision();   // as its arithmetic would (#1757)
 	return x;

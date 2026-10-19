@@ -120,37 +120,69 @@ namespace efloat_detail {
 		}
 	}
 
-	// sin(r) and cos(r) for |r| <= pi/4 by their Taylor series, at r's precision, until the
-	// terms fall below it
+	// The versine v = 1 - cos(r) for |r| <= pi/4, at r's precision (#1756).  sin and cos both
+	// follow from it: cos r = 1 - v, |sin r| = sqrt(v (2 - v)), neither of which cancels, since
+	// v <= 1 - cos(pi/4) < 0.3 and v keeps its relative precision as r -> 0.
+	//
+	// r is halved h times first, and the series for v(r / 2^h) doubled back h times by
+	// v(2y) = 2 v(y) (2 - v(y)): each doubling costs one multiplication and saves the series
+	// terms, and it keeps the relative error of v, so the working precision carries h guard
+	// bits.  h ~ 0.4 sqrt(precision) + 5 balances the two; an r already below 2^-h is not halved
+	// that far.  The series v(y) = y^2/2! - y^4/4! + ... runs its term and y^2 at a precision
+	// that falls with the terms, as in exp, with exact integer divisors (#1757).
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> sin_kernel(const efloat<nlimbs>& r) {
-		efloat<nlimbs> neg_r2 = r * r; neg_r2.setsign(true);   // -r^2 (r^2 >= 0)
-		efloat<nlimbs> term = r;
-		efloat<nlimbs> sum  = r;
-		for (unsigned n = 1; ; ++n) {
-			efloat<nlimbs> denom = efloat<nlimbs>(static_cast<double>(2 * n)) * efloat<nlimbs>(static_cast<double>(2 * n + 1));
-			term = term * neg_r2 / denom;
-			if (term.iszero()) break;
-			sum += term;
-			if (!sum.iszero() && term.scale() < sum.scale() - static_cast<int64_t>(sum.get_precision())) break;
+	inline efloat<nlimbs> versine(const efloat<nlimbs>& r) {
+		const unsigned precision = r.get_precision();
+		const int64_t  target    = static_cast<int64_t>(0.4 * std::sqrt(static_cast<double>(precision))) + 5;
+		const int64_t  h_signed  = target + r.scale();   // halvings that bring y below 2^-target
+		const unsigned h         = (h_signed > 0) ? static_cast<unsigned>(h_signed) : 0u;
+		const unsigned working   = precision + h;
+
+		efloat<nlimbs> y(r);
+		y.setsign(false);
+		y.set_precision(working);
+		y.setexponent(y.scale() - static_cast<int64_t>(h));
+
+		efloat<nlimbs> neg_y2 = y * y;
+		efloat<nlimbs> term(neg_y2);
+		term.setexponent(term.scale() - 1);              // y^2 / 2!
+		neg_y2.setsign(true);
+		efloat<nlimbs> v(term);
+		efloat<nlimbs> y2_taper = neg_y2;
+		unsigned taper = working;
+		for (unsigned n = 2; ; ++n) {
+			const int64_t below = v.scale() - term.scale();   // bits the term sits below the sum
+			const unsigned need = (below + 64 < static_cast<int64_t>(working)) ? static_cast<unsigned>(static_cast<int64_t>(working) - below) : 64u;
+			if (need + 32u <= taper) {
+				taper = need;
+				term.set_precision(taper);
+				y2_taper = neg_y2;
+				y2_taper.set_precision(taper);
+			}
+			term *= y2_taper;
+			term /= uint64_t(2 * n - 1) * uint64_t(2 * n);
+			if (term.iszero() || term.scale() < v.scale() - static_cast<int64_t>(working)) break;
+			v += term;
 		}
-		return sum;
+		for (unsigned i = 0; i < h; ++i) {
+			v *= 2 - v;
+			v.setexponent(v.scale() + 1);
+		}
+		return v;
+	}
+
+	// sin(r) and cos(r) for |r| <= pi/4 from the versine
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> sin_from_versine(const efloat<nlimbs>& v, const efloat<nlimbs>& r) {
+		if (v.iszero()) return r;   // r below the precision's resolution of v: sin r = r
+		efloat<nlimbs> s = sqrt_newton(v * (2 - v), v.get_precision());
+		if (r.sign() == -1) s.setsign(true);
+		return s;
 	}
 
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> cos_kernel(const efloat<nlimbs>& r) {
-		efloat<nlimbs> neg_r2 = r * r; neg_r2.setsign(true);   // -r^2
-		efloat<nlimbs> term(1.0);
-		efloat<nlimbs> sum(1.0);
-		sum.set_precision(r.get_precision());
-		for (unsigned n = 1; ; ++n) {
-			efloat<nlimbs> denom = efloat<nlimbs>(static_cast<double>(2 * n - 1)) * efloat<nlimbs>(static_cast<double>(2 * n));
-			term = term * neg_r2 / denom;
-			if (term.iszero()) break;
-			sum += term;
-			if (!sum.iszero() && term.scale() < sum.scale() - static_cast<int64_t>(sum.get_precision())) break;
-		}
-		return sum;
+	inline efloat<nlimbs> cos_from_versine(const efloat<nlimbs>& v) {
+		return 1 - v;
 	}
 
 }  // namespace efloat_detail
@@ -177,7 +209,8 @@ constexpr efloat<nlimbs> sin(const efloat<nlimbs>& x) {
 	const unsigned precision = efloat_detail::result_precision(x);
 	unsigned quadrant = 0;
 	const efloat<nlimbs> r = efloat_detail::reduce_half_pi(x, precision, quadrant);
-	efloat<nlimbs> result = (quadrant & 1u) ? efloat_detail::cos_kernel(r) : efloat_detail::sin_kernel(r);
+	const efloat<nlimbs> v = efloat_detail::versine(r);
+	efloat<nlimbs> result = (quadrant & 1u) ? efloat_detail::cos_from_versine(v) : efloat_detail::sin_from_versine(v, r);
 	if (quadrant >= 2) result = efloat<nlimbs>(0.0) - result;
 	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
@@ -200,7 +233,8 @@ constexpr efloat<nlimbs> cos(const efloat<nlimbs>& x) {
 	const unsigned precision = efloat_detail::result_precision(x);
 	unsigned quadrant = 0;
 	const efloat<nlimbs> r = efloat_detail::reduce_half_pi(x, precision, quadrant);
-	efloat<nlimbs> result = (quadrant & 1u) ? efloat_detail::sin_kernel(r) : efloat_detail::cos_kernel(r);
+	const efloat<nlimbs> v = efloat_detail::versine(r);
+	efloat<nlimbs> result = (quadrant & 1u) ? efloat_detail::sin_from_versine(v, r) : efloat_detail::cos_from_versine(v);
 	if (quadrant == 1 || quadrant == 2) result = efloat<nlimbs>(0.0) - result;
 	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
@@ -222,8 +256,9 @@ constexpr efloat<nlimbs> tan(const efloat<nlimbs>& x) {
 	const unsigned precision = efloat_detail::result_precision(x);
 	unsigned quadrant = 0;
 	const efloat<nlimbs> r = efloat_detail::reduce_half_pi(x, precision, quadrant);
-	const efloat<nlimbs> s = efloat_detail::sin_kernel(r);
-	const efloat<nlimbs> c = efloat_detail::cos_kernel(r);
+	const efloat<nlimbs> v = efloat_detail::versine(r);
+	const efloat<nlimbs> s = efloat_detail::sin_from_versine(v, r);
+	const efloat<nlimbs> c = efloat_detail::cos_from_versine(v);
 	efloat<nlimbs> result;
 	if (quadrant & 1u) {
 		if (s.iszero()) {                    // r too small to resolve at the widest reduction: a pole,
