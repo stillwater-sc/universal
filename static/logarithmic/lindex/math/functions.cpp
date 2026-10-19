@@ -151,6 +151,8 @@ int VerifyDomains(bool report) {
 	t.judge(fmod(one, zero).isnar() && fmod(past, two).isnar() && fmod(two, past) == two && remainder(past, past).iszero() == false, "fmod domain", report);
 	t.judge(cos(zero) == one && sin(zero).iszero() && cosh(zero) == one && erfc(zero) == one && tanh(past) == one && erf(-past) == -one, "special values", report);
 	t.judge(sin(nar).isnar() && atanh(nar).isnar() && lgamma(nar).isnar() && erf(nar).isnar() && fmod(nar, one).isnar() && atan2(one, nar).isnar() && remainder(one, nar).isnar(), "NaR propagates", report);
+	const L quarter(0.25), half(0.5), three_quarters(0.75);
+	t.judge(remainder(quarter, half) == quarter && remainder(-quarter, half) == -quarter && remainder(three_quarters, half) == -quarter && remainder(half, one) == half, "remainder ties go to n = 0, exactly", report);
 	t.judge(atan2(zero, -one) == atan2(zero, -two) && atan2(zero, one).iszero() && atan2(one, zero) == -atan2(-one, zero), "atan2 on the axes", report);
 	return t.fails;
 }

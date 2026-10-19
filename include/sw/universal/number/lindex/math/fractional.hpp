@@ -17,6 +17,8 @@
 //   |X| >= |Y|, X past the range  NaR: X - nY needs X to more bits than phi(5) has digits
 //
 // and NaR for Y = 0.  The result of two level-0 operands is exact.
+#include <algorithm>
+#include <cstdint>
 #include <universal/number/lindex/math/value_domain.hpp>
 
 namespace sw { namespace universal {
@@ -85,8 +87,17 @@ lindex<nbits, lbits, bt> remainder(const lindex<nbits, lbits, bt>& x, const lind
 	const bool negative = x.isneg();
 	if (a < b) {
 		// n is 0 or +-1: |X| against |Y| / 2, the tie to n = 0
-		const level_index::point<qd_cascade> half = L::template div_points<qd_cascade>(L::template point_of<qd_cascade>(b), lindex_math::psi_of_two()).p;
-		if (!L::template point_less<qd_cascade>(half, L::template point_of<qd_cascade>(a))) return x;
+		bool past_half = false;
+		if (b <= L::one_bits) {
+			// |X| = a 2^-fbits and |Y| = b 2^-fbits exactly: an exact tie is decided exactly
+			past_half = 2ull * a > b;
+		}
+		else {
+			// |Y| / 2 is transcendental past level 0, so it cannot tie with |X|
+			const level_index::point<qd_cascade> half = L::template div_points<qd_cascade>(L::template point_of<qd_cascade>(b), lindex_math::psi_of_two()).p;
+			past_half = L::template point_less<qd_cascade>(half, L::template point_of<qd_cascade>(a));
+		}
+		if (!past_half) return x;
 		const L d = abs(y) - abs(x);   // X - sign(X) |Y| = -sign(X) (|Y| - |X|)
 		return negative ? d : -d;
 	}

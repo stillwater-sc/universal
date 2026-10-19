@@ -26,6 +26,8 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <type_traits>
+#include <vector>
 #include <universal/number/lindex/math/constants.hpp>
 // the working types' functions, dd_cascade and qd_cascade at full precision: their umbrellas,
 // since the math library needs abs from attributes.hpp; the lindex math library is not part of
