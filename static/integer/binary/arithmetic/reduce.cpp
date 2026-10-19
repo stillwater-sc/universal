@@ -108,11 +108,14 @@ int VerifyAliasing(bool reportTestCases) {
 		Integer q, r;
 		Reduce(a, b, q, r);
 		Integer x(a), y(b);
-		x.reduce(x, b, y);   // quotient over the dividend, remainder over the divisor
+		x.reduce(x, y, y);   // quotient over the dividend, remainder over the divisor
 		Integer s(a), t;
 		t.clear();
 		t.reduce(s, b, s);   // remainder over the dividend
-		if (x != q || y != r || t != q || s != r) {
+		Integer u(b), w;
+		w.clear();
+		u.reduce(a, u, w);   // quotient over the divisor
+		if (x != q || y != r || t != q || s != r || u != q || w != r) {
 			++nrOfFailedTests;
 			if (reportTestCases && nrOfFailedTests < 5) std::cerr << "FAIL: integer<" << nbits << "> aliased reduce\n";
 		}
