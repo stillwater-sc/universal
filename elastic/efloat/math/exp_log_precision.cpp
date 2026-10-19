@@ -198,6 +198,30 @@ int VerifyNearZeros(bool reportTestCases, int64_t slack) {
 	return fails;
 }
 
+// log(2^e) = e ln 2 for exponents past the type's default precision (#1754 review): an efloat
+// made from an integer has the type's default precision, so the table path rounded e to 32 bits
+// in efloat<1>, and Newton on main was off by 65 units at e = 2^32 + 1 and returned inf at
+// e = -(2^32 + 1). Each result must equal e ln 2 computed at 256 bits and rounded to 32.
+int VerifyLargeExponents(bool reportTestCases) {
+	int fails = 0;
+	for (int64_t e : { int64_t(4294967297), int64_t(4294967299), -int64_t(4294967297), (int64_t(1) << 40) + 3,
+	                   (int64_t(1) << 52) + 1, (int64_t(1) << 62) - 1 }) {
+		efloat<1> x(1.0);
+		x.setexponent(e);
+		const efloat<1> y = log(x);
+		efloat<8> ex;
+		ex.set_precision(256);
+		ex = e;
+		efloat<8> reference = ex * efloat_detail::ln2<8>(256);
+		reference.set_precision(32);
+		if (!(double(y) == double(reference))) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL: log(2^" << e << ") = " << double(y) << ", expected " << double(reference) << '\n';
+		}
+	}
+	return fails;
+}
+
 }  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -240,6 +264,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAtPrecision<20>(reportTestCases, 4), "efloat<20>", "640 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifySetPrecision<4>(reportTestCases, 600, 4), "efloat<4>", "set_precision(600)");
 	nrOfFailedTestCases += ReportTestResult(VerifyNearZeros<10>(reportTestCases, 4), "efloat<10>", "near zeros");
+	nrOfFailedTestCases += ReportTestResult(VerifyLargeExponents(reportTestCases), "efloat<1>", "log(2^e), e past 2^32");
 	nrOfFailedTestCases += ReportTestResult(VerifyNearZeros<20>(reportTestCases, 4), "efloat<20>", "near zeros");
 #endif
 

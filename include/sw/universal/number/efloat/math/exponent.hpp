@@ -123,8 +123,25 @@ constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
 	sum.set_precision(working);
 	efloat<nlimbs> term(sum);
 
+	// Each term lies further below the sum than the last, so it needs that many fewer bits: the
+	// running term and r are carried at a precision that falls with the terms (#1714). Both are
+	// cut, because a product takes the wider of its operands' precisions.
+	efloat<nlimbs> r_taper = r;
+	unsigned taper = working;
 	for (unsigned n = 1; ; ++n) {
-		term = term * r / efloat<nlimbs>(n);
+		const int64_t below = sum.scale() - term.scale();   // bits the term sits below the sum
+		const unsigned need = (below + 64 < static_cast<int64_t>(working)) ? static_cast<unsigned>(static_cast<int64_t>(working) - below) : 64u;
+		if (need + 32u <= taper) {
+			taper = need;
+			term.set_precision(taper);
+			r_taper = r;
+			r_taper.set_precision(taper);
+		}
+		// a literal carries the type's full precision, and a quotient takes the wider: the
+		// divisor is cut too, or the division would undo the taper
+		efloat<nlimbs> divisor(n);
+		divisor.set_precision(taper);
+		term = term * r_taper / divisor;
 		if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(working)) break;
 		sum += term;
 	}
