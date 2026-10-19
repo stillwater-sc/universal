@@ -137,7 +137,11 @@ constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
 			r_taper = r;
 			r_taper.set_precision(taper);
 		}
-		term = term * r_taper / efloat<nlimbs>(n);
+		// a literal carries the type's full precision, and a quotient takes the wider: the
+		// divisor is cut too, or the division would undo the taper
+		efloat<nlimbs> divisor(n);
+		divisor.set_precision(taper);
+		term = term * r_taper / divisor;
 		if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(working)) break;
 		sum += term;
 	}
