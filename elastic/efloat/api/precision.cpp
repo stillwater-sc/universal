@@ -140,6 +140,23 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: compound ops with literals widened x's precision to " << y.get_precision() << "\n";
 				++nrOfFailedTestCases;
 			}
+			// a function of literals carries no precision either, as their arithmetic would not
+			using E = efloat<100>;
+			const E functions_of_literals[] = {
+				sqrt(E(2)), cbrt(E(2)), exp(E(1)), log(E(3)), sin(E(1)), atan(E(2)), sinh(E(1)),
+				pow(E(2), E(0.5)), atan2(E(1), E(2)), log1p(E(0.25)), expm1(E(0.125))
+			};
+			for (const auto& f : functions_of_literals) {
+				const E r = x * f;
+				if (f.carries_precision() || f.get_precision() != 3200 || r.get_precision() != 640) {
+					if (reportTestCases) std::cout << "    FAIL: a function of literals carries " << f.get_precision() << " bits (" << (f.carries_precision() ? "explicit" : "none") << "), x * it has " << r.get_precision() << "\n";
+					++nrOfFailedTestCases;
+				}
+			}
+			if (!sqrt(x).carries_precision() || !pow(E(2), x).carries_precision()) {
+				if (reportTestCases) std::cout << "    FAIL: a function of a value with a precision dropped it\n";
+				++nrOfFailedTestCases;
+			}
 			// a function of x runs at x's precision too
 			const efloat<100> e = exp(x), s = sqrt(x), h = sinh(x);
 			if (e.get_precision() != 640 || s.get_precision() != 640 || h.get_precision() != 640) {

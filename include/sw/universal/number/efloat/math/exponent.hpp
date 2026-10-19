@@ -24,6 +24,14 @@ namespace efloat_detail {
 		return x.get_precision();
 	}
 
+	// round a function's result once to its precision; a function of arguments that carry no
+	// precision carries none either, as their arithmetic would (#1757)
+	template<unsigned nlimbs>
+	inline void round_result(efloat<nlimbs>& result, unsigned precision, bool carries) {
+		result.set_precision(precision);
+		if (!carries) result.clear_precision();
+	}
+
 	// atanh(1/m) = sum_k 1 / ((2k + 1) m^(2k + 1)) for an integer m >= 2, at `bits` bits.
 	// The terms fall by m^2 each, so the series converges by 2 log2(m) bits per term.
 	template<unsigned nlimbs>
@@ -148,7 +156,7 @@ constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
 	if (k != 0) {
 		sum.setexponent(sum.scale() + k);
 	}
-	sum.set_precision(precision);
+	efloat_detail::round_result(sum, precision, x.carries_precision());
 	return sum;
 }
 
@@ -165,7 +173,7 @@ constexpr efloat<nlimbs> exp2(const efloat<nlimbs>& x) {
 	// 2^x = exp(x ln 2), with ln 2 and the product carried at the working precision (#1712)
 	const unsigned precision = efloat_detail::result_precision(x);
 	efloat<nlimbs> result = exp(x * efloat_detail::ln2<nlimbs>(precision + efloat_detail::exp_log_guard_bits));
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -182,7 +190,7 @@ constexpr efloat<nlimbs> exp10(const efloat<nlimbs>& x) {
 	// 10^x = exp(x ln 10), with ln 10 and the product carried at the working precision (#1712)
 	const unsigned precision = efloat_detail::result_precision(x);
 	efloat<nlimbs> result = exp(x * efloat_detail::ln10<nlimbs>(precision + efloat_detail::exp_log_guard_bits));
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -205,7 +213,7 @@ constexpr efloat<nlimbs> expm1(const efloat<nlimbs>& x) {
 	abs_x.setsign(false);
 	if (abs_x >= efloat<nlimbs>(0.375)) {
 		efloat<nlimbs> result = exp(xw) - efloat<nlimbs>(1.0);
-		result.set_precision(precision);
+		efloat_detail::round_result(result, precision, x.carries_precision());
 		return result;
 	}
 
@@ -225,7 +233,7 @@ constexpr efloat<nlimbs> expm1(const efloat<nlimbs>& x) {
 			break;
 		}
 	}
-	sum.set_precision(precision);
+	efloat_detail::round_result(sum, precision, x.carries_precision());
 	return sum;
 }
 

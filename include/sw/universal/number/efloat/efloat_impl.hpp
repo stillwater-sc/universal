@@ -289,6 +289,10 @@ public:
 	// set, else nlimbs * 32 bits.  get_precision() reports that effective precision.
 	unsigned get_precision() const noexcept { return precision_limbs() * 32; }
 	void set_precision(unsigned bits) noexcept { _precision_limbs = std::max(1u, (bits + 31) / 32); normalize(); }
+	// whether the value carries a precision of its own, and dropping it: the value rounds to
+	// the default precision and then carries none, as one constructed from a native value
+	bool carries_precision() const noexcept { return _precision_limbs != 0; }
+	void clear_precision() noexcept { _precision_limbs = 0; normalize(); }
 
 	// prefix operators
 	constexpr efloat operator-() const noexcept {

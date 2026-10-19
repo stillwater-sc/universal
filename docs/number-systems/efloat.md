@@ -55,7 +55,9 @@ auto z = exp(x);                   // so is the math library
 
 When neither operand carries a precision, as in `efloat<100>(1) / efloat<100>(3)`, the result
 rounds at the default precision: `set_default_precision()` if set, else the type's
-`nlimbs * 32` bits. `get_precision()` reports the precision a value rounds at. An integer
+`nlimbs * 32` bits, and carries none either; so does `sqrt`, `exp`, `sin` and the rest of the
+exp/log, trigonometric and hyperbolic families of such a value. `get_precision()` reports the
+precision a value rounds at, and `carries_precision()` whether it has one of its own. An integer
 operand of a mixed operation converts exactly, all 64 bits, rather than through `double`.
 
 `+`, `-`, `*` and `/` are correctly rounded at the result's precision. The exp/log,

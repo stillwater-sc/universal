@@ -55,6 +55,7 @@ constexpr efloat<nlimbs> sqrt(const efloat<nlimbs>& a) {
 		if (d.iszero() || (!x.iszero() && d.scale() < x.scale() - static_cast<int64_t>(prec))) break;
 	}
 	x.set_precision(result_prec);
+	if (!a.carries_precision()) x.clear_precision();   // as its arithmetic would (#1757)
 	return x;
 }
 
@@ -98,6 +99,7 @@ constexpr efloat<nlimbs> cbrt(const efloat<nlimbs>& a) {
 	}
 
 	y.set_precision(result_prec);
+	if (!a.carries_precision()) y.clear_precision();
 	if (is_neg) {
 		y.setsign(true);
 	}

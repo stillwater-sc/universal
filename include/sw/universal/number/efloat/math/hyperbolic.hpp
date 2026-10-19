@@ -39,8 +39,8 @@ namespace efloat_detail {
 		return w;
 	}
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> round_to(efloat<nlimbs> v, unsigned precision) {
-		v.set_precision(precision);
+	inline efloat<nlimbs> round_to(efloat<nlimbs> v, unsigned precision, const efloat<nlimbs>& x) {
+		round_result(v, precision, x.carries_precision());
 		return v;
 	}
 }
@@ -66,11 +66,11 @@ constexpr efloat<nlimbs> sinh(const efloat<nlimbs>& x) {
 	if (abs_x < half) {
 		// sinh(x) = u(u+2) / (2(u+1)),  u = e^x - 1 = expm1(x); accurate as x -> 0
 		efloat<nlimbs> u = expm1(xw);
-		return efloat_detail::round_to(u * (u + two) / (two * (u + one)), precision);
+		return efloat_detail::round_to(u * (u + two) / (two * (u + one)), precision, x);
 	}
 	// |x| >= 0.5: no cancellation, and exp's inf/zero handling gives the right
 	// overflow behavior (sinh(+huge)=+inf, sinh(-huge)=-inf).
-	return efloat_detail::round_to((exp(xw) - exp(-xw)) * half, precision);
+	return efloat_detail::round_to((exp(xw) - exp(-xw)) * half, precision, x);
 }
 
 // cosh: hyperbolic cosine (even). cosh(+/-0)=1, cosh(+/-inf)=+inf.
@@ -92,7 +92,7 @@ constexpr efloat<nlimbs> cosh(const efloat<nlimbs>& x) {
 	abs_x.setsign(false);            // cosh is even
 	efloat<nlimbs> ex = exp(abs_x);  // >= 1 (or +inf for huge x)
 	// cosh(x) = (e^|x| + e^-|x|)/2; a sum of positives, so never cancels.
-	return efloat_detail::round_to((ex + one / ex) * half, precision);
+	return efloat_detail::round_to((ex + one / ex) * half, precision, x);
 }
 
 // tanh: hyperbolic tangent (odd). tanh(+/-0)=+/-0, tanh(+/-inf)=+/-1.
@@ -114,7 +114,7 @@ constexpr efloat<nlimbs> tanh(const efloat<nlimbs>& x) {
 	efloat<nlimbs> t = w.isinf() ? one : (w / (w + two));  // saturates to 1 for huge |x|
 	if (x.sign() == -1)
 		t.setsign(true);
-	return efloat_detail::round_to(t, precision);
+	return efloat_detail::round_to(t, precision, x);
 }
 
 // asinh: inverse hyperbolic sine (odd). asinh(+/-0)=+/-0, asinh(+/-inf)=+/-inf.
@@ -141,7 +141,7 @@ constexpr efloat<nlimbs> asinh(const efloat<nlimbs>& x) {
 	efloat<nlimbs> r  = log1p(a + a2 / (one + s));
 	if (x.sign() == -1)
 		r.setsign(true);
-	return efloat_detail::round_to(r, precision);
+	return efloat_detail::round_to(r, precision, x);
 }
 
 // acosh: inverse hyperbolic cosine. Domain x >= 1. acosh(1)=+0, acosh(+inf)=+inf.
@@ -174,7 +174,7 @@ constexpr efloat<nlimbs> acosh(const efloat<nlimbs>& x) {
 	const unsigned precision = efloat_detail::result_precision(x);
 	const efloat<nlimbs> xw = efloat_detail::hyperbolic_working(x, precision);
 	efloat<nlimbs> xm1 = xw - one;
-	return efloat_detail::round_to(log1p(xm1 + sqrt(xm1 * (xw + one))), precision);
+	return efloat_detail::round_to(log1p(xm1 + sqrt(xm1 * (xw + one))), precision, x);
 }
 
 // atanh: inverse hyperbolic tangent. Domain |x| < 1. atanh(+/-0)=+/-0,
@@ -214,7 +214,7 @@ constexpr efloat<nlimbs> atanh(const efloat<nlimbs>& x) {
 	// and sign-correct for negative x.
 	const unsigned precision = efloat_detail::result_precision(x);
 	const efloat<nlimbs> xw = efloat_detail::hyperbolic_working(x, precision);
-	return efloat_detail::round_to(half * log1p((two * xw) / (one - xw)), precision);
+	return efloat_detail::round_to(half * log1p((two * xw) / (one - xw)), precision, x);
 }
 
 }  // namespace universal

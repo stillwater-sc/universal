@@ -26,7 +26,7 @@ namespace efloat_detail {
 		xw.set_precision(working);
 		yw.set_precision(working);
 		efloat<nlimbs> result = exp(yw * log(xw));
-		result.set_precision(precision);
+		round_result(result, precision, x.carries_precision() || y.carries_precision());
 		return result;
 	}
 

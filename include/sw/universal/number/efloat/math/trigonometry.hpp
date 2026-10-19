@@ -179,7 +179,7 @@ constexpr efloat<nlimbs> sin(const efloat<nlimbs>& x) {
 	const efloat<nlimbs> r = efloat_detail::reduce_half_pi(x, precision, quadrant);
 	efloat<nlimbs> result = (quadrant & 1u) ? efloat_detail::cos_kernel(r) : efloat_detail::sin_kernel(r);
 	if (quadrant >= 2) result = efloat<nlimbs>(0.0) - result;
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -202,7 +202,7 @@ constexpr efloat<nlimbs> cos(const efloat<nlimbs>& x) {
 	const efloat<nlimbs> r = efloat_detail::reduce_half_pi(x, precision, quadrant);
 	efloat<nlimbs> result = (quadrant & 1u) ? efloat_detail::sin_kernel(r) : efloat_detail::cos_kernel(r);
 	if (quadrant == 1 || quadrant == 2) result = efloat<nlimbs>(0.0) - result;
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -236,7 +236,7 @@ constexpr efloat<nlimbs> tan(const efloat<nlimbs>& x) {
 	else {
 		result = s / c;
 	}
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -301,7 +301,7 @@ constexpr efloat<nlimbs> atan(const efloat<nlimbs>& x) {
 		}
 	}
 	if (negative) result = efloat<nlimbs>(0.0) - result;
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -354,7 +354,7 @@ constexpr efloat<nlimbs> asin(const efloat<nlimbs>& x) {
 		result = sum;
 	}
 	if (negative) result = efloat<nlimbs>(0.0) - result;
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -387,7 +387,7 @@ constexpr efloat<nlimbs> acos(const efloat<nlimbs>& x) {
 	else {
 		result = efloat_detail::pi_scaled<nlimbs>(working, -1) - asin(xw);
 	}
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -444,7 +444,7 @@ constexpr efloat<nlimbs> atan2(const efloat<nlimbs>& y, const efloat<nlimbs>& x)
 		if (y_neg) angle = angle - piw;                 // QIII: result in (-pi, -pi/2)
 		else       angle = angle + piw;                 // QII:  result in ( pi/2, pi)
 	}
-	angle.set_precision(precision);
+	efloat_detail::round_result(angle, precision, x.carries_precision() || y.carries_precision());
 	return angle;
 }
 

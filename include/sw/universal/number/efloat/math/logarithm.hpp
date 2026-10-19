@@ -190,7 +190,7 @@ constexpr efloat<nlimbs> log(const efloat<nlimbs>& x) {
 	efloat<nlimbs> y = (working <= efloat_detail::log_series_max_bits)
 	                 ? efloat_detail::log_table_series(x, working)
 	                 : efloat_detail::log_newton(x, working);
-	y.set_precision(precision);
+	efloat_detail::round_result(y, precision, x.carries_precision());
 	return y;
 }
 
@@ -223,7 +223,7 @@ constexpr efloat<nlimbs> log2(const efloat<nlimbs>& x) {
 	efloat<nlimbs> xw(x);
 	xw.set_precision(working);
 	efloat<nlimbs> result = log(xw) / efloat_detail::ln2<nlimbs>(working);
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -256,7 +256,7 @@ constexpr efloat<nlimbs> log10(const efloat<nlimbs>& x) {
 	efloat<nlimbs> xw(x);
 	xw.set_precision(working);
 	efloat<nlimbs> result = log(xw) / efloat_detail::ln10<nlimbs>(working);
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -322,11 +322,11 @@ constexpr efloat<nlimbs> log1p(const efloat<nlimbs>& x) {
 				sum += term;
 			}
 		}
-		sum.set_precision(precision);
+		efloat_detail::round_result(sum, precision, x.carries_precision());
 		return sum;
 	} else {
 		efloat<nlimbs> result = log(efloat<nlimbs>(1.0) + xw);
-		result.set_precision(precision);
+		efloat_detail::round_result(result, precision, x.carries_precision());
 		return result;
 	}
 }
