@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/internal/blocktype/carry.hpp>
+#include <universal/internal/blocktype/limb_division.hpp>   // limb::divide, behind longdivision (#1744)
 
 #include <universal/internal/bit_manipulation.hpp>
 
@@ -1119,25 +1120,23 @@ constexpr quorem<N, B, T> longdivision(const blockbinary<N, B, T>& dividend, con
 		result.rem = dividend; // a % b = a when a / b = 0
 		return result;         // a / b = 0 when b > a
 	}
-	// initialize the long division
-	BlockBinary accumulator = a;
-	// prepare the subtractand
-	BlockBinary subtractand = b;
-	int msb_b = b.msb();
-	int msb_a = a.msb();
-	int shift = msb_a - msb_b;
-	subtractand <<= shift;
-	// long division
-	for (int i = shift; i >= 0; --i) {
-		if (subtractand <= accumulator) {
-			accumulator -= subtractand;
-			result.quo.setbit(static_cast<unsigned>(i));
-		}
-		else {
-			result.quo.setbit(static_cast<unsigned>(i), false);
-		}
-		subtractand >>= 1;
-	}
+	// Long division of the magnitudes a 32-bit word at a time (limb::divide, Knuth's Algorithm
+	// D). It replaced a shift-and-subtract loop that did a full-width compare, subtract and
+	// shift for every quotient bit (#1744). The quotient of the magnitudes is below 2^N (maxneg
+	// / -1 gives 2^(N-1), which wraps to maxneg as it always has), so N bits hold all of it.
+	constexpr unsigned L = (N + 1u + 31u) / 32u;
+	std::uint32_t u[L]{}, v[L]{}, ql[L + 1]{}, rl[L]{}, un[L + 1]{}, vn[L]{};
+	limb::gather<B>([&a](unsigned i) { return a.block(i); }, BlockBinary::nrBlocks, u, L);
+	limb::gather<B>([&b](unsigned i) { return b.block(i); }, BlockBinary::nrBlocks, v, L);
+	std::size_t m = L;
+	while (m > 1 && u[m - 1] == 0) --m;
+	std::size_t n = L;
+	while (n > 1 && v[n - 1] == 0) --n;
+	limb::divide(u, m, v, n, ql, rl, un, vn);
+	BlockBinary accumulator;
+	accumulator.clear();
+	limb::scatter<B>(rl, L, [&accumulator](unsigned i, B x) { accumulator.setblock(i, x); }, BlockBinary::nrBlocks);
+	limb::scatter<B>(ql, L, [&result](unsigned i, B x) { result.quo.setblock(i, x); }, blockbinary<N, B, T>::nrBlocks);
 	if (result_negative) {  // take 2's complement
 		result.quo.flip();
 		result.quo += 1;

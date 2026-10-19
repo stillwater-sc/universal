@@ -32,30 +32,38 @@ inline constexpr unsigned leading_zeros(std::uint32_t x) noexcept {
 }
 
 // q = floor(u / v), with u and v unsigned integers of m and n 32-bit limbs, least significant
-// limb first. Returns whether the remainder u - q v is nonzero.
+// limb first, and r = u - q v when r is not null. Returns whether the remainder is nonzero.
 //
 //   q   : m - n + 1 limbs when m >= n (written in full); untouched when m < n, where q = 0
+//   r   : n limbs, or null when only the remainder's being nonzero is wanted
 //   un  : scratch, m + 1 limbs
 //   vn  : scratch, n limbs
 //
 // Preconditions: n >= 1 and v[n-1] != 0 (strip the divisor's leading zero limbs first).
 inline constexpr bool divide(const std::uint32_t* u, std::size_t m, const std::uint32_t* v, std::size_t n,
-                             std::uint32_t* q, std::uint32_t* un, std::uint32_t* vn) noexcept {
+                             std::uint32_t* q, std::uint32_t* r, std::uint32_t* un, std::uint32_t* vn) noexcept {
 	constexpr std::uint64_t base = std::uint64_t(1) << 32;
 	if (m < n) {
-		for (std::size_t i = 0; i < m; ++i) if (u[i] != 0) return true;
-		return false;
+		// the quotient is 0 and the remainder is u itself
+		bool nonzero = false;
+		for (std::size_t i = 0; i < n; ++i) {
+			const std::uint32_t limb = (i < m) ? u[i] : 0u;
+			if (r != nullptr) r[i] = limb;
+			nonzero = nonzero || (limb != 0);
+		}
+		return nonzero;
 	}
 
 	if (n == 1) {
 		// a single-limb divisor: one 64-by-32 division per limb
-		std::uint64_t r = 0;
+		std::uint64_t rem = 0;
 		for (std::size_t j = m; j-- > 0;) {
-			const std::uint64_t cur = (r << 32) | u[j];
+			const std::uint64_t cur = (rem << 32) | u[j];
 			q[j] = static_cast<std::uint32_t>(cur / v[0]);
-			r = cur % v[0];
+			rem = cur % v[0];
 		}
-		return r != 0;
+		if (r != nullptr) r[0] = static_cast<std::uint32_t>(rem);
+		return rem != 0;
 	}
 
 	// normalize: shift so the divisor's top bit is set, which bounds the digit estimate's error
@@ -105,8 +113,49 @@ inline constexpr bool divide(const std::uint32_t* u, std::size_t m, const std::u
 		}
 		q[j] = static_cast<std::uint32_t>(qhat);
 	}
+	// the remainder is un[0 .. n), shifted left by s: shift it back
+	if (r != nullptr) {
+		for (std::size_t i = 0; i + 1 < n; ++i) {
+			r[i] = static_cast<std::uint32_t>((std::uint64_t(un[i]) >> s) | (s == 0 ? 0u : (std::uint64_t(un[i + 1]) << (32u - s))));
+		}
+		r[n - 1] = static_cast<std::uint32_t>(std::uint64_t(un[n - 1]) >> s);
+	}
 	for (std::size_t i = 0; i < n; ++i) if (un[i] != 0) return true;
 	return false;
+}
+
+// the same, when only whether the remainder is nonzero is wanted
+inline constexpr bool divide(const std::uint32_t* u, std::size_t m, const std::uint32_t* v, std::size_t n,
+                             std::uint32_t* q, std::uint32_t* un, std::uint32_t* vn) noexcept {
+	return divide(u, m, v, n, q, nullptr, un, vn);
+}
+
+// Gather the blocks of a multi-block number into 32-bit limbs, least significant first, and
+// scatter limbs back into blocks. block(i) returns block i (BlockType of 8, 16, 32 or 64 bits);
+// set(i, b) stores block i. Bits beyond nrLimbs * 32 are not read or written.
+template<typename BlockType, typename Get>
+constexpr void gather(Get&& block, unsigned nrBlocks, std::uint32_t* limbs, unsigned nrLimbs) noexcept {
+	constexpr unsigned bitsInBlock = sizeof(BlockType) * 8u;
+	for (unsigned i = 0; i < nrLimbs; ++i) limbs[i] = 0;
+	for (unsigned i = 0; i < nrBlocks; ++i) {
+		const std::uint64_t word = static_cast<std::uint64_t>(block(i));
+		for (unsigned k = 0; k < bitsInBlock; k += 32u) {
+			const unsigned bit = i * bitsInBlock + k;
+			if (bit / 32u < nrLimbs) limbs[bit / 32u] |= static_cast<std::uint32_t>((word >> k) << (bit % 32u));
+		}
+	}
+}
+template<typename BlockType, typename Set>
+constexpr void scatter(const std::uint32_t* limbs, unsigned nrLimbs, Set&& set, unsigned nrBlocks) noexcept {
+	constexpr unsigned bitsInBlock = sizeof(BlockType) * 8u;
+	for (unsigned i = 0; i < nrBlocks; ++i) {
+		std::uint64_t word = 0;
+		for (unsigned k = 0; k < bitsInBlock; k += 32u) {
+			const unsigned bit = i * bitsInBlock + k;
+			if (bit / 32u < nrLimbs) word |= std::uint64_t(limbs[bit / 32u] >> (bit % 32u)) << k;
+		}
+		set(i, static_cast<BlockType>(word));
+	}
 }
 
 }}}  // namespace sw::universal::limb
