@@ -256,6 +256,20 @@ and hypot are compositions of level-index operations on unrounded psi points, ro
 per function, every pair for pow and hypot, and sampled `<16,3>`, `<32,3>` and `<64,3>`, for
 equality with `tools/generators/lindex_math_gen.py`.
 
+The rest of the math library (#1715) splits by how its error grows with X. Functions whose
+result is bounded or follows X closely evaluate on the value in the working type and round
+through the same staged retry: asin, acos, atan, atan2, tanh, atanh, erf, erfc, and lgamma of
+X > 0 below 2^1000. Past the working type they use psi-domain identities: sinh and cosh one
+level down, asinh and acosh as ln X + ln 2, lgamma as X (ln X - 1), tgamma as the exact step up
+from lgamma. sin, cos, tan, fmod, remainder and the reflection of the gamma functions depend
+on X mod 2 pi or X mod Y, so they need X to an absolute 2^-fbits: up to 1100 bits at the top of
+the double range. They form X = phi(x) in efloat, evaluate twice 32 bits apart, and widen
+until both round to the same encoding with four times their difference to spare (Ziv). Past
+the double range they are NaR by design. `static/logarithmic/lindex/math/functions.cpp`
+checks every `lindex<8,3>` encoding per function and every pair for atan2, fmod and remainder
+(every fifth at level 1), and sampled `<16,3>`, `<32,3>` and `<64,3>`, against
+`tools/generators/lindex_math2_gen.py`.
+
 ## numeric_limits
 
 **Decision 3.** Every member is defined from the extreme encodings, as takum_log does,
