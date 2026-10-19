@@ -17,11 +17,19 @@ namespace efloat_detail {
 	// terms, and the result is rounded once to the caller's precision at the end.
 	inline constexpr unsigned exp_log_guard_bits = 64u;
 
-	// The precision of the result of a function of x: x's own, or that of the literals the
-	// function combines it with, whichever is larger -- what the arithmetic would give.
+	// The precision of the result of a function of x: x's own, what the arithmetic would give.
+	// The literals a function combines x with carry no precision and do not widen it (#1757).
 	template<unsigned nlimbs>
 	inline unsigned result_precision(const efloat<nlimbs>& x) {
-		return std::max(x.get_precision(), efloat<nlimbs>(1.0).get_precision());
+		return x.get_precision();
+	}
+
+	// round a function's result once to its precision; a function of arguments that carry no
+	// precision carries none either, as their arithmetic would (#1757)
+	template<unsigned nlimbs>
+	inline void round_result(efloat<nlimbs>& result, unsigned precision, bool carries) {
+		result.set_precision(precision);
+		if (!carries) result.clear_precision();
 	}
 
 	// atanh(1/m) = sum_k 1 / ((2k + 1) m^(2k + 1)) for an integer m >= 2, at `bits` bits.
@@ -137,11 +145,8 @@ constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
 			r_taper = r;
 			r_taper.set_precision(taper);
 		}
-		// a literal carries the type's full precision, and a quotient takes the wider: the
-		// divisor is cut too, or the division would undo the taper
-		efloat<nlimbs> divisor(n);
-		divisor.set_precision(taper);
-		term = term * r_taper / divisor;
+		// n carries no precision, so the quotient stays at the taper (#1757)
+		term = term * r_taper / n;
 		if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(working)) break;
 		sum += term;
 	}
@@ -151,7 +156,7 @@ constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
 	if (k != 0) {
 		sum.setexponent(sum.scale() + k);
 	}
-	sum.set_precision(precision);
+	efloat_detail::round_result(sum, precision, x.carries_precision());
 	return sum;
 }
 
@@ -168,7 +173,7 @@ constexpr efloat<nlimbs> exp2(const efloat<nlimbs>& x) {
 	// 2^x = exp(x ln 2), with ln 2 and the product carried at the working precision (#1712)
 	const unsigned precision = efloat_detail::result_precision(x);
 	efloat<nlimbs> result = exp(x * efloat_detail::ln2<nlimbs>(precision + efloat_detail::exp_log_guard_bits));
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -185,7 +190,7 @@ constexpr efloat<nlimbs> exp10(const efloat<nlimbs>& x) {
 	// 10^x = exp(x ln 10), with ln 10 and the product carried at the working precision (#1712)
 	const unsigned precision = efloat_detail::result_precision(x);
 	efloat<nlimbs> result = exp(x * efloat_detail::ln10<nlimbs>(precision + efloat_detail::exp_log_guard_bits));
-	result.set_precision(precision);
+	efloat_detail::round_result(result, precision, x.carries_precision());
 	return result;
 }
 
@@ -208,7 +213,7 @@ constexpr efloat<nlimbs> expm1(const efloat<nlimbs>& x) {
 	abs_x.setsign(false);
 	if (abs_x >= efloat<nlimbs>(0.375)) {
 		efloat<nlimbs> result = exp(xw) - efloat<nlimbs>(1.0);
-		result.set_precision(precision);
+		efloat_detail::round_result(result, precision, x.carries_precision());
 		return result;
 	}
 
@@ -228,7 +233,7 @@ constexpr efloat<nlimbs> expm1(const efloat<nlimbs>& x) {
 			break;
 		}
 	}
-	sum.set_precision(precision);
+	efloat_detail::round_result(sum, precision, x.carries_precision());
 	return sum;
 }
 

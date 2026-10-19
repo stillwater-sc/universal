@@ -150,7 +150,7 @@ public:
 		: _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{} {
 		if (!std::is_constant_evaluated()) {
 			_limb.push_back(0);
-			_precision_limbs = (efloat_default_precision_bits > 0) ? std::max(1u, (efloat_default_precision_bits + 31) / 32) : nlimbs;
+			_precision_limbs = default_precision_limbs();
 		}
 	}
 
@@ -170,23 +170,23 @@ public:
 		else if (zero) _state = FloatingPointState::Zero;
 		else _state = FloatingPointState::Normal;
 		if (!std::is_constant_evaluated()) {
-			_precision_limbs = (efloat_default_precision_bits > 0) ? std::max(1u, (efloat_default_precision_bits + 31) / 32) : nlimbs;
+			_precision_limbs = default_precision_limbs();
 		}
 	}
 
 	// initializers for native types
-	efloat(signed char iv)                      noexcept { *this = iv; }
-	efloat(short iv)                            noexcept { *this = iv; }
-	efloat(int iv)                              noexcept { *this = iv; }
-	efloat(long iv)                             noexcept { *this = iv; }
-	efloat(long long iv)                        noexcept { *this = iv; }
-	efloat(char iv)                             noexcept { *this = iv; }
-	efloat(unsigned short iv)                   noexcept { *this = iv; }
-	efloat(unsigned int iv)                     noexcept { *this = iv; }
-	efloat(unsigned long iv)                    noexcept { *this = iv; }
-	efloat(unsigned long long iv)               noexcept { *this = iv; }
-	efloat(float iv)                            noexcept { *this = iv; }
-	efloat(double iv)                           noexcept { *this = iv; }
+	efloat(signed char iv)                      noexcept : _precision_limbs{ 0 } { *this = iv; }
+	efloat(short iv)                            noexcept : _precision_limbs{ 0 } { *this = iv; }
+	efloat(int iv)                              noexcept : _precision_limbs{ 0 } { *this = iv; }
+	efloat(long iv)                             noexcept : _precision_limbs{ 0 } { *this = iv; }
+	efloat(long long iv)                        noexcept : _precision_limbs{ 0 } { *this = iv; }
+	efloat(char iv)                             noexcept : _precision_limbs{ 0 } { *this = iv; }
+	efloat(unsigned short iv)                   noexcept : _precision_limbs{ 0 } { *this = iv; }
+	efloat(unsigned int iv)                     noexcept : _precision_limbs{ 0 } { *this = iv; }
+	efloat(unsigned long iv)                    noexcept : _precision_limbs{ 0 } { *this = iv; }
+	efloat(unsigned long long iv)               noexcept : _precision_limbs{ 0 } { *this = iv; }
+	efloat(float iv)                            noexcept : _precision_limbs{ 0 } { *this = iv; }
+	efloat(double iv)                           noexcept : _precision_limbs{ 0 } { *this = iv; }
 
 	// assignment operators for native types
 	efloat& operator=(signed char rhs)          noexcept { return convert_signed(rhs); }
@@ -207,7 +207,7 @@ public:
 	explicit operator double()            const noexcept { return convert_to_ieee754<double>(); }
 
 #if LONG_DOUBLE_SUPPORT
-	efloat(long double iv)                      noexcept { *this = iv; }
+	efloat(long double iv)                      noexcept : _precision_limbs{ 0 } { *this = iv; }
 
 	// convert_ieee754 only builds limbs for sizeof(Real) of 4 or 8, so a wide
 	// long double (sizeof 16 on x86-64) produced 0. Decompose instead: frexp the
@@ -232,6 +232,10 @@ public:
 			int e = 0;
 			long double m = std::frexp(rhs, &e);
 			clear();
+			// without a precision of its own the value is exact (#1757): sum at 4 limbs, which
+			// hold any long double significand, and keep carrying none
+			const bool carries = _precision_limbs != 0;
+			if (!carries) _precision_limbs = 4u;
 			long double r = m;
 			for (int i = 0; i < 8 && r != 0.0L; ++i) {
 				double hi = static_cast<double>(r);
@@ -239,6 +243,7 @@ public:
 				*this += efloat(hi);
 				r -= static_cast<long double>(hi);
 			}
+			if (!carries) _precision_limbs = 0u;
 			if (!iszero()) setexponent(scale() + e);
 			return *this;
 		}
@@ -280,8 +285,19 @@ public:
 #endif
 
 	// instance precision management
-	unsigned get_precision() const noexcept { return _precision_limbs * 32; }
+	//
+	// A default-constructed efloat, a copy, and the result of an operation carry a precision.  A
+	// value constructed from a native integer or float carries none (#1757): it is exact, and an
+	// operation runs at its other operand's precision, so x * efloat(3) and x * 3 both stay at
+	// x's precision rather than widening to the type's.  When neither operand carries one, the
+	// result has none either, and rounds at the default precision: set_default_precision() if
+	// set, else nlimbs * 32 bits.  get_precision() reports that effective precision.
+	unsigned get_precision() const noexcept { return precision_limbs() * 32; }
 	void set_precision(unsigned bits) noexcept { _precision_limbs = std::max(1u, (bits + 31) / 32); normalize(); }
+	// whether the value carries a precision of its own, and dropping it: the value rounds to
+	// the default precision and then carries none, as one constructed from a native value
+	bool carries_precision() const noexcept { return _precision_limbs != 0; }
+	void clear_precision() noexcept { _precision_limbs = 0; normalize(); }
 
 	// prefix operators
 	constexpr efloat operator-() const noexcept {
@@ -293,6 +309,7 @@ public:
 
 	// arithmetic operators
 	constexpr efloat& operator+=(const efloat& rhs) noexcept {
+		const unsigned precision = merged_precision(_precision_limbs, rhs._precision_limbs);
 		// handle special cases
 		if (isnan() || rhs.isnan()) {
 			setnan();
@@ -313,33 +330,44 @@ public:
 		}
 		if (iszero()) {
 			*this = rhs;
+			_precision_limbs = precision;
+			normalize();
 			return *this;
 		}
+		_precision_limbs = precision;
 		if (rhs.iszero()) {
+			normalize();
 			return *this;
 		}
 
 		// Make copies for manipulation
-		_precision_limbs = std::max(_precision_limbs, rhs._precision_limbs);
-		unsigned target_prec = _precision_limbs;
+		unsigned target_prec = precision_limbs();
 
 		std::vector<uint32_t> a_limbs = _limb;
 		std::vector<uint32_t> b_limbs = rhs._limb;
 		int64_t a_exp = _exponent;
 		int64_t b_exp = rhs._exponent;
 		
-		// Align exponents
+		// Align exponents.  The shifted operand keeps two limbs past the precision, and bits that
+		// fall below those are folded into a sticky bit at the bottom, so the sum and the
+		// difference round correctly (#1757): they were truncated at the precision before.
+		bool sticky = false;
+		bool shifted_a = false;
 		if (a_exp < b_exp) {
-			grow_for_shift(a_limbs, b_exp - a_exp, target_prec);
-			shift_right(a_limbs, b_exp - a_exp);
+			shifted_a = true;
+			sticky = shift_right_sticky(a_limbs, static_cast<uint64_t>(b_exp - a_exp), std::max<size_t>(b_limbs.size(), target_prec + 2u));
 			a_exp = b_exp;
 		} else if (b_exp < a_exp) {
-			grow_for_shift(b_limbs, a_exp - b_exp, target_prec);
-			shift_right(b_limbs, a_exp - b_exp);
+			sticky = shift_right_sticky(b_limbs, static_cast<uint64_t>(a_exp - b_exp), std::max<size_t>(a_limbs.size(), target_prec + 2u));
 		}
 
 		// Align sizes before any operation
 		align_sizes(a_limbs, b_limbs);
+		if (sticky) {
+			// the bit lies below every bit of both operands, at least 64 bits below the rounding point
+			a_limbs.push_back(0u); b_limbs.push_back(0u);
+			(shifted_a ? a_limbs : b_limbs).back() |= 1u;
+		}
 
 		if (_sign == rhs._sign) {
 			size_t old_size = a_limbs.size();
@@ -374,6 +402,11 @@ public:
 	constexpr efloat& operator+=(double rhs) noexcept {
 		return *this += efloat(rhs);
 	}
+	// an integer operand converts exactly (all 64 bits), not through double
+	template<typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+	constexpr efloat& operator+=(Integer rhs) noexcept {
+		return *this += efloat(rhs);
+	}
 	constexpr efloat& operator-=(const efloat& rhs) noexcept {
 		*this += -rhs;
 		return *this;
@@ -381,8 +414,13 @@ public:
 	constexpr efloat& operator-=(double rhs) noexcept {
 		return *this -= efloat(rhs);
 	}
+	// an integer operand converts exactly (all 64 bits), not through double
+	template<typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+	constexpr efloat& operator-=(Integer rhs) noexcept {
+		return *this -= efloat(rhs);
+	}
 	constexpr efloat& operator*=(const efloat& rhs) noexcept {
-		_precision_limbs = std::max(_precision_limbs, rhs._precision_limbs);
+		_precision_limbs = merged_precision(_precision_limbs, rhs._precision_limbs);
 		if (isnan() || rhs.isnan()) {
 			setnan();
 			return *this;
@@ -417,9 +455,11 @@ public:
 		}
 
 		// Optimization: if either operand is a power of 2, bypass long multiplication
+		// (the merged precision can be below an operand's that carried none: round to it)
 		if (rhs._limb.size() == 1 && rhs._limb[0] == 0x80000000) {
 			_exponent += rhs._exponent;
 			_sign = (_sign != rhs._sign);
+			normalize();
 			return *this;
 		}
 		if (_limb.size() == 1 && _limb[0] == 0x80000000) {
@@ -430,6 +470,7 @@ public:
 			_precision_limbs = target_prec;
 			_exponent += old_exp;
 			_sign = (original_sign != rhs._sign);
+			normalize();
 			return *this;
 		}
 
@@ -446,8 +487,13 @@ public:
 		constexpr efloat& operator*=(double rhs) noexcept {
 		return *this *= efloat(rhs);
 		}
+	// an integer operand converts exactly (all 64 bits), not through double
+	template<typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+	constexpr efloat& operator*=(Integer rhs) noexcept {
+		return *this *= efloat(rhs);
+	}
 		constexpr efloat& operator/=(const efloat& rhs) noexcept {
-		_precision_limbs = std::max(_precision_limbs, rhs._precision_limbs);
+		_precision_limbs = merged_precision(_precision_limbs, rhs._precision_limbs);
 		if (isnan() || rhs.isnan()) {
 			setnan();
 			return *this;
@@ -490,15 +536,26 @@ public:
 		if (rhs._limb.size() == 1 && rhs._limb[0] == 0x80000000) {
 			_exponent -= rhs._exponent;
 			_sign = (_sign != rhs._sign);
+			normalize();
 			return *this;
 		}
 
 		std::vector<uint32_t> quotient;
 		bool remainder_non_zero = false;
 		const bool result_sign = (_sign != rhs._sign);
-		divide_limbs(quotient, _limb, rhs._limb, _precision_limbs + 1, remainder_non_zero); // generate _precision_limbs + 1 limbs
+		const unsigned target_prec = precision_limbs();
+		divide_limbs(quotient, _limb, rhs._limb, target_prec + 1, remainder_non_zero); // generate target_prec + 1 limbs
 
-		if (round_limbs(quotient, _precision_limbs, efloat_rounding_mode, result_sign, remainder_non_zero)) {
+		// a significand below the divisor's leaves the first quotient bit 0: bring the leading bit
+		// to the top before rounding, or the quotient rounds one bit short (#1757).  The bit that
+		// enters at the bottom lies below the guard bit, where only the sticky remainder counts.
+		if (!quotient.empty() && (quotient[0] & 0x80000000u) == 0u) {
+			for (size_t i = 0; i + 1 < quotient.size(); ++i) quotient[i] = (quotient[i] << 1) | (quotient[i + 1] >> 31);
+			quotient.back() <<= 1;
+			--_exponent;
+		}
+
+		if (round_limbs(quotient, target_prec, efloat_rounding_mode, result_sign, remainder_non_zero)) {
 			quotient.insert(quotient.begin(), 1u);
 			_exponent += 32;
 		}
@@ -511,6 +568,11 @@ public:
 		return *this;
 		}
 	constexpr efloat& operator/=(double rhs) noexcept {
+		return *this /= efloat(rhs);
+	}
+	// an integer operand converts exactly (all 64 bits), not through double
+	template<typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+	constexpr efloat& operator/=(Integer rhs) noexcept {
 		return *this /= efloat(rhs);
 	}
 
@@ -650,8 +712,8 @@ public:
 		}
 
 		// Enforce precision limit and round
-		if (_limb.size() > _precision_limbs) {
-			if (round_limbs(_limb, _precision_limbs, efloat_rounding_mode, _sign)) {
+		if (_limb.size() > precision_limbs()) {
+			if (round_limbs(_limb, precision_limbs(), efloat_rounding_mode, _sign)) {
 				_limb.insert(_limb.begin(), 1u);
 				_exponent += 32;
 			}
@@ -675,9 +737,33 @@ protected:
 	bool                  _sign;     // sign of the number: -1 if true, +1 if false, zero is positive
 	int64_t               _exponent; // exponent of the number
 	std::vector<uint32_t> _limb;     // limbs of the representation
-	unsigned              _precision_limbs = nlimbs;
+	unsigned              _precision_limbs = nlimbs;   // 0: carries none, see get_precision()
 
 	// HELPER methods
+
+	// the default precision in limbs: set_default_precision() if set, else the type's nlimbs
+	static constexpr unsigned default_precision_limbs() noexcept {
+		if (std::is_constant_evaluated()) return nlimbs;
+		return (efloat_default_precision_bits > 0) ? std::max(1u, (efloat_default_precision_bits + 31) / 32) : nlimbs;
+	}
+	// the precision this value rounds at, in limbs
+	constexpr unsigned precision_limbs() const noexcept {
+		return (_precision_limbs != 0) ? _precision_limbs : default_precision_limbs();
+	}
+	// A native value is exact (#1757): without a precision of its own it is not rounded at the
+	// default, which can be narrower than its 64 bits, but by the operation that uses it.
+	constexpr void normalize_native() {
+		if (_precision_limbs != 0) { normalize(); return; }
+		_precision_limbs = 2u;   // 64 bits hold every native integer and float significand
+		normalize();
+		_precision_limbs = 0u;
+	}
+	// the precision of a result: the wider of the operands' that carry one, else none
+	static constexpr unsigned merged_precision(unsigned a, unsigned b) noexcept {
+		if (a == 0) return b;
+		if (b == 0) return a;
+		return (a > b) ? a : b;
+	}
 
 	static constexpr void shift_right(std::vector<uint32_t>& limbs, unsigned k) noexcept {
 		if (k == 0) return;
@@ -706,14 +792,25 @@ protected:
 		}
 	}
 
-	static constexpr void grow_for_shift(std::vector<uint32_t>& limbs, unsigned k, unsigned max_limbs) noexcept {
-		const unsigned required_limbs = (k + 31) / 32;
-		if (limbs.size() < max_limbs && required_limbs > 0) {
-			unsigned growth = std::min(required_limbs, max_limbs - static_cast<unsigned>(limbs.size()));
-			if (growth > 0) {
-				limbs.resize(limbs.size() + growth, 0u); // appends zeros at the LSB side
-			}
+	// shift limbs right by k bits, growing them to hold the shifted bits up to `window` limbs;
+	// returns whether nonzero bits fell off below the window
+	static constexpr bool shift_right_sticky(std::vector<uint32_t>& limbs, uint64_t k, size_t window) noexcept {
+		const uint64_t needed = limbs.size() + (k + 31) / 32;
+		const size_t size = static_cast<size_t>(std::max<uint64_t>(limbs.size(), std::min<uint64_t>(needed, window)));
+		limbs.resize(size, 0u);   // appends zeros at the LSB side
+		const uint64_t total_bits = uint64_t(size) * 32u;
+		bool lost = false;
+		if (k >= total_bits) {
+			for (uint32_t l : limbs) lost = lost || (l != 0u);
+			limbs.assign(size, 0u);
+			return lost;
 		}
+		const size_t drop_limbs = static_cast<size_t>(k / 32);
+		const unsigned drop_bits = static_cast<unsigned>(k % 32);
+		for (size_t i = 0; i < drop_limbs; ++i) lost = lost || (limbs[size - 1 - i] != 0u);
+		if (drop_bits != 0u) lost = lost || ((limbs[size - 1 - drop_limbs] & ((1u << drop_bits) - 1u)) != 0u);
+		shift_right(limbs, static_cast<unsigned>(k));
+		return lost;
 	}
 
 	static constexpr void align_sizes(std::vector<uint32_t>& a, std::vector<uint32_t>& b) noexcept {
@@ -977,7 +1074,7 @@ protected:
 			_limb = { low };
 			_exponent = 31;
 		}
-		normalize();
+		normalize_native();
 		return *this;
 	}
 
@@ -1002,7 +1099,7 @@ protected:
 			_limb = { low };
 			_exponent = 31;
 		}
-		normalize();
+		normalize_native();
 		return *this;
 	}
 
@@ -1084,7 +1181,7 @@ protected:
 		else {
 			static_assert(true);
 		}
-		normalize(); // Ensure canonical, minimal representation (truncating trailing zeros)
+		normalize_native(); // canonical, minimal representation; exact without a precision (#1757)
 		return *this;
 	}
 
@@ -1886,9 +1983,15 @@ constexpr efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, const efloat<nlimb
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // efloat - literal binary arithmetic operators
+// A native operand carries no precision (#1757): the result has the efloat operand's.  An
+// integer operand converts exactly, all 64 bits, rather than through double.
 // BINARY ADDITION
 template<unsigned nlimbs>
 inline efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, double rhs) {
+	return operator+(lhs, efloat<nlimbs>(rhs));
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, Integer rhs) {
 	return operator+(lhs, efloat<nlimbs>(rhs));
 }
 // BINARY SUBTRACTION
@@ -1896,14 +1999,26 @@ template<unsigned nlimbs>
 inline efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, double rhs) {
 	return operator-(lhs, efloat<nlimbs>(rhs));
 }
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, Integer rhs) {
+	return operator-(lhs, efloat<nlimbs>(rhs));
+}
 // BINARY MULTIPLICATION
 template<unsigned nlimbs>
 inline efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, double rhs) {
 	return operator*(lhs, efloat<nlimbs>(rhs));
 }
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, Integer rhs) {
+	return operator*(lhs, efloat<nlimbs>(rhs));
+}
 // BINARY DIVISION
 template<unsigned nlimbs>
 inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, double rhs) {
+	return operator/(lhs, efloat<nlimbs>(rhs));
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, Integer rhs) {
 	return operator/(lhs, efloat<nlimbs>(rhs));
 }
 
@@ -1914,9 +2029,17 @@ template<unsigned nlimbs>
 inline efloat<nlimbs> operator+(double lhs, const efloat<nlimbs>& rhs) {
 	return operator+(efloat<nlimbs>(lhs), rhs);
 }
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline efloat<nlimbs> operator+(Integer lhs, const efloat<nlimbs>& rhs) {
+	return operator+(efloat<nlimbs>(lhs), rhs);
+}
 // BINARY SUBTRACTION
 template<unsigned nlimbs>
 inline efloat<nlimbs> operator-(double lhs, const efloat<nlimbs>& rhs) {
+	return operator-(efloat<nlimbs>(lhs), rhs);
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline efloat<nlimbs> operator-(Integer lhs, const efloat<nlimbs>& rhs) {
 	return operator-(efloat<nlimbs>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
@@ -1924,9 +2047,17 @@ template<unsigned nlimbs>
 inline efloat<nlimbs> operator*(double lhs, const efloat<nlimbs>& rhs) {
 	return operator*(efloat<nlimbs>(lhs), rhs);
 }
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline efloat<nlimbs> operator*(Integer lhs, const efloat<nlimbs>& rhs) {
+	return operator*(efloat<nlimbs>(lhs), rhs);
+}
 // BINARY DIVISION
 template<unsigned nlimbs>
 inline efloat<nlimbs> operator/(double lhs, const efloat<nlimbs>& rhs) {
+	return operator/(efloat<nlimbs>(lhs), rhs);
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline efloat<nlimbs> operator/(Integer lhs, const efloat<nlimbs>& rhs) {
 	return operator/(efloat<nlimbs>(lhs), rhs);
 }
 
