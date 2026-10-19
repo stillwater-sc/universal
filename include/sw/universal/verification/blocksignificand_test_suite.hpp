@@ -174,53 +174,51 @@ int VerifyBlockSignificandMultiplication(bool reportTestCases) {
 }
 
 // enumerate all division cases for an blocksignificand<nbits,BlockType> configuration
-// TODO: fix test failures in VerifyblocksignificandDivision<blocksignificandConfiguration>
 template<typename blocksignificandConfiguration>
 int VerifyBlockSignificandDivision(bool reportTestCases) {
+	// blocksignificand::div is a FIXED-POINT quotient: for operands A and B read at the
+	// dividend's radix R, it is Q = floor(A * 2^R / B), with bit 0 set when the division was
+	// inexact (a sticky bit for the rounding that follows), kept modulo 2^nbits, and zero when
+	// B is zero. Every pair of nbits-bit operands is checked against that, computed exactly in
+	// 64-bit integers (nbits <= 16 here, so A * 2^R < 2^32). It used to be compared with signed
+	// integer division of the raw bits, a different operation, and failed every configuration
+	// (#1745).
 	constexpr unsigned nbits = blocksignificandConfiguration::nbits;
 	using BlockType = typename blocksignificandConfiguration::BlockType;
+	static_assert(nbits <= 16, "the exact reference holds A * 2^R in 64 bits");
 
-	constexpr unsigned NR_VALUES = (1u << nbits);
+	constexpr std::uint64_t NR_VALUES = (std::uint64_t(1) << nbits);
+	constexpr std::uint64_t mask = NR_VALUES - 1u;
 	using namespace sw::universal;
 
-	//	cout << endl;
-	//	cout << "blocksignificand<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
-
 	int nrOfFailedTests = 0;
-
+	// the radix of a blocktriple<DIV>'s significand: two integer bits above it
+	constexpr unsigned radix = nbits - 2u;
 	blocksignificand<nbits, BlockType> a, b, c;
-	// nbits = 2 * fhbits
-	constexpr unsigned fhbits = (nbits >> 1);
-	constexpr unsigned fbits = fhbits - 1;
-	a.setradix(2 * fbits);
-	b.setradix(2 * fbits);
-	c.setradix(2 * fbits);
-	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
-	constexpr unsigned nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
-	for (unsigned i = 0; i < NR_VALUES; i++) {
+	for (std::uint64_t i = 0; i < NR_VALUES; ++i) {
 		a.setbits(i);
-		aref.setbits(i);
-		for (unsigned j = 0; j < NR_VALUES; j++) {
+		a.setradix(static_cast<int>(radix));
+		for (std::uint64_t j = 0; j < NR_VALUES; ++j) {
 			b.setbits(j);
-			bref.setbits(j);
-			cref = aref / bref;
+			b.setradix(static_cast<int>(radix));
 			c.div(a, b);
-			for (unsigned k = 0; k < nrBlocks; ++k) {
-				refResult.setblock(k, c.block(k));
+			std::uint64_t expected = 0;
+			if (j != 0) {
+				const std::uint64_t numerator = i << radix;
+				const std::uint64_t q = numerator / j;
+				expected = (q | ((numerator % j) != 0 ? 1u : 0u)) & mask;
 			}
-
-			if (refResult != cref) {
-				nrOfFailedTests++;
-				if (reportTestCases)	ReportBinaryArithmeticErrorBSCustom("FAIL", "+", a, b, c, refResult);
+			std::uint64_t result = 0;
+			for (unsigned k = 0; k < nbits; ++k) if (c.at(k)) result |= (std::uint64_t(1) << k);
+			if (result != expected) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests < 10) {
+					std::cerr << "FAIL: blocksignificand<" << nbits << "> " << i << " / " << j << " at radix " << radix
+					          << " = " << result << ", expected " << expected << '\n';
+				}
 			}
-			else {
-				// if (reportTestCases) ReportBinaryArithmeticSuccessBSCustom("PASS", "+", a, b, c, cref);
-			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
-		//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
 	}
-	//	cout << endl;
 	return nrOfFailedTests;
 }
 
