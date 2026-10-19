@@ -232,6 +232,10 @@ public:
 			int e = 0;
 			long double m = std::frexp(rhs, &e);
 			clear();
+			// without a precision of its own the value is exact (#1757): sum at 4 limbs, which
+			// hold any long double significand, and keep carrying none
+			const bool carries = _precision_limbs != 0;
+			if (!carries) _precision_limbs = 4u;
 			long double r = m;
 			for (int i = 0; i < 8 && r != 0.0L; ++i) {
 				double hi = static_cast<double>(r);
@@ -239,6 +243,7 @@ public:
 				*this += efloat(hi);
 				r -= static_cast<long double>(hi);
 			}
+			if (!carries) _precision_limbs = 0u;
 			if (!iszero()) setexponent(scale() + e);
 			return *this;
 		}
@@ -745,6 +750,14 @@ protected:
 	constexpr unsigned precision_limbs() const noexcept {
 		return (_precision_limbs != 0) ? _precision_limbs : default_precision_limbs();
 	}
+	// A native value is exact (#1757): without a precision of its own it is not rounded at the
+	// default, which can be narrower than its 64 bits, but by the operation that uses it.
+	constexpr void normalize_native() {
+		if (_precision_limbs != 0) { normalize(); return; }
+		_precision_limbs = 2u;   // 64 bits hold every native integer and float significand
+		normalize();
+		_precision_limbs = 0u;
+	}
 	// the precision of a result: the wider of the operands' that carry one, else none
 	static constexpr unsigned merged_precision(unsigned a, unsigned b) noexcept {
 		if (a == 0) return b;
@@ -1061,7 +1074,7 @@ protected:
 			_limb = { low };
 			_exponent = 31;
 		}
-		normalize();
+		normalize_native();
 		return *this;
 	}
 
@@ -1086,7 +1099,7 @@ protected:
 			_limb = { low };
 			_exponent = 31;
 		}
-		normalize();
+		normalize_native();
 		return *this;
 	}
 
@@ -1168,7 +1181,7 @@ protected:
 		else {
 			static_assert(true);
 		}
-		normalize(); // Ensure canonical, minimal representation (truncating trailing zeros)
+		normalize_native(); // canonical, minimal representation; exact without a precision (#1757)
 		return *this;
 	}
 

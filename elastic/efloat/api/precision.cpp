@@ -199,6 +199,26 @@ namespace {
 			}
 		}
 		{
+			// a native value is exact even where the default is narrower than its 64 bits: it is
+			// rounded by the operation that uses it, not at construction
+			using E1 = efloat<1>;   // a 32-bit default
+			const unsigned long long top = 18446744073709551615ull;
+			const E1 d1 = E1(top) - E1(top - 1ull);
+			const E1 d2 = top - E1(18446744073709551616.0);   // 2^64
+			const E1 d3 = E1(0x123456789ll) - E1(0x123456788ll);
+			if (d1 != E1(1) || d2 != E1(-1) || d3 != E1(1)) {
+				if (reportTestCases) std::cout << "    FAIL: a 64-bit native value was rounded to the 32-bit default before the subtraction\n";
+				++nrOfFailedTestCases;
+			}
+			set_default_precision(32);
+			const efloat<4> d4 = efloat<4>(top) - efloat<4>(top - 1ull);
+			set_default_precision(0);
+			if (d4 != efloat<4>(1)) {
+				if (reportTestCases) std::cout << "    FAIL: a 64-bit native value was rounded to set_default_precision(32) before the subtraction\n";
+				++nrOfFailedTestCases;
+			}
+		}
+		{
 			// an integer operand converts exactly, not through double
 			efloat<4> one(1.0);
 			one.set_precision(128);
