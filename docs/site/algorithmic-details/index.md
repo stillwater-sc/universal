@@ -17,6 +17,11 @@ the trade-off space rather than the API-level usage.
   -- Priest's error-free transformations, Bailey/Hida's hand-crafted
   fixed-precision `dd` / `qd`, Shewchuk's adaptive expansions, and how
   Universal's `floatcascade<N>` building block ties them together.
+- [Multi-limb arithmetic](../algorithmic-details/multi-limb-arithmetic/)
+  -- how the fixed-size types store integers and significands in blocks, the
+  32-bit-limb kernels that add, multiply (schoolbook) and divide (Knuth's
+  Algorithm D) them under `blocktriple`, `integer` and `blockbinary`, how
+  those changes were verified bit-identical, and what they gained.
 
 ## Companion sections
 

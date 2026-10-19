@@ -184,9 +184,15 @@ Block 2: [bits 64-95]
 ```
 
 ### Operation-Specific Optimizations
-- Addition: Uses 2's complement `blocksignificand` for efficient alignment
-- Multiplication: Uses 1's complement `blocksignificand` for simpler partial products
-- Division: Uses specialized algorithms in `blocksignificand` for quotient/remainder
+- Addition: block-wise add with carry on 2's complement `blocksignificand`s, after aligning the
+  smaller operand and folding the bits shifted out into a sticky bit
+- Multiplication: schoolbook multiplication on 32-bit limbs of the 1's complement magnitudes
+  (`limb::multiply_low`)
+- Division: Knuth's Algorithm D on 32-bit limbs (`limb::divide`), for `blocksignificand`'s
+  fixed-point quotient and for `integer` and `blockbinary`
+
+The algorithms, their contracts and how they were verified are described in
+[Multi-limb arithmetic](algorithmic-details/multi-limb-arithmetic.md) in Algorithmic Details.
 
 ## Error Handling
 
