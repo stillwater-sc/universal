@@ -99,8 +99,10 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandDivision< blocksignificand<16, uint8_t> >(reportTestCases), "blocksignificand<16,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandDivision< blocksignificand<16, uint16_t> >(reportTestCases), "blocksignificand<16,uint16_t>", "division");
+	// exhaustive: 2^28 operand pairs, ~3 s each. 16 bits would be 2^32 pairs, ~45 s each, and a
+	// standalone build runs every level
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandDivision< blocksignificand<14, uint8_t> >(reportTestCases), "blocksignificand<14,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificandDivision< blocksignificand<14, uint16_t> >(reportTestCases), "blocksignificand<14,uint16_t>", "division");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
