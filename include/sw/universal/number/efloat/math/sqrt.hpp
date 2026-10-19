@@ -19,7 +19,7 @@ namespace efloat_detail {
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> sqrt_newton(const efloat<nlimbs>& a, unsigned bits) {
 		const int64_t e    = a.scale();
-		const int64_t half = (e >= 0) ? e / 2 : (e - 1) / 2;   // floor(e / 2)
+		const int64_t half = e / 2 - ((e < 0 && e % 2 != 0) ? 1 : 0);   // floor(e / 2), without e - 1 overflowing
 		efloat<nlimbs> m(a);
 		m.setexponent(e - 2 * half);                            // m in [1, 4)
 		efloat<nlimbs> x(std::sqrt(double(m)));

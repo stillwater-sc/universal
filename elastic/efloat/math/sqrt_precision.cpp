@@ -86,6 +86,25 @@ namespace {
 		return failures;
 	}
 
+	// sqrt scales its argument by 2^-2 floor(e / 2) to [1, 4): odd and negative exponents, and
+	// ones far past int32, must take the floor, not the truncation (#1756)
+	int VerifySqrtExponents(bool reportTestCases) {
+		using namespace sw::universal;
+		int fails = 0;
+		for (long long e : { -9LL, -8LL, -7LL, -1LL, 0LL, 1LL, 7LL, 8LL, -4000000001LL, 4000000001LL }) {
+			efloat<4> a(3);
+			a.setexponent(e);
+			const efloat<4> r = sqrt(a);
+			efloat<4> d = r * r - a;
+			d.setsign(false);
+			if (!(d.iszero() || d.scale() < a.scale() - 120)) {
+				++fails;
+				if (reportTestCases) std::cout << "    FAIL: sqrt(1.5 * 2^" << e << ")^2 is off by 2^" << d.scale() << "\n";
+			}
+		}
+		return fails;
+	}
+
 }  // anonymous namespace
 
 #define MANUAL_TESTING 0
@@ -112,6 +131,7 @@ int main() try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyEfloatSqrtPrecision(reportTestCases), "efloat", "sqrt precision");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrtExponents(reportTestCases), "efloat", "sqrt odd and wide exponents");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
