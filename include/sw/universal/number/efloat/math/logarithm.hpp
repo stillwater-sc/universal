@@ -148,7 +148,14 @@ namespace efloat_detail {
 			series.setexponent(series.scale() + 1);   // 2 atanh
 		}
 		efloat<nlimbs> y = series + log_table<nlimbs>(j, working);
-		if (e != 0) y += efloat<nlimbs>(e) * ln2<nlimbs>(working);
+		if (e != 0) {
+			// e at the working precision: an efloat made from an integer has the type's default
+			// precision, too narrow for an exponent past 2^(nlimbs x 32)
+			efloat<nlimbs> exponent;
+			exponent.set_precision(working);
+			exponent = e;
+			y += exponent * ln2<nlimbs>(working);
+		}
 		return y;
 	}
 
