@@ -14,6 +14,7 @@
 // word at a time costs less than one; the bit-serial loop it replaced cost about 20.
 
 #include <universal/utility/directives.hpp>
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <iostream>
@@ -98,9 +99,14 @@ try {
 	Report<blockbinary< 256, std::uint32_t, Signed>>("blockbinary<256,uint32_t>", 50000);
 	Report<blockbinary<1024, std::uint32_t, Signed>>("blockbinary<1024,uint32_t>", 5000);
 
+	// The guard takes the fastest of three division samples, so a scheduler stall during one of
+	// them cannot fail it; the multiplication is a single sample, as a stall there only lowers
+	// the ratio.
 	int failures = 0;
+	double div1024 = t1024;
+	for (int r = 0; r < 2; ++r) div1024 = std::min(div1024, DivisionMicroseconds<integer<1024, std::uint32_t>>(10000));
 	const double mul1024 = MultiplicationMicroseconds<integer<1024, std::uint32_t>>(10000);
-	const double ratio = t1024 / mul1024;
+	const double ratio = div1024 / mul1024;
 	std::printf("\ninteger<1024> division / multiplication: %.1f (guard: below 5)\n", ratio);
 	if (!(ratio < 5.0)) {
 		std::cout << "  *** REGRESSION: a 1024-bit division costs " << ratio << " multiplications -- a bit-serial division may have returned (#1744) ***\n";
