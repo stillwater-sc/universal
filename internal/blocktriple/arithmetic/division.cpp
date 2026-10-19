@@ -8,6 +8,8 @@
 #include <universal/utility/bit_cast.hpp>
 #include <iostream>
 #include <iomanip>
+#include <cmath>
+#include <cstdint>
 
 // temporary
 //#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
@@ -22,115 +24,60 @@
 #include <universal/verification/test_reporters.hpp>
 #include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
 
-// enumerate all division cases for an blocktriple<nbits,BlockType> configuration
-// TODO: fix test failures in VerifyMultiplication<BlockTripleConfiguration>
+// Enumerate all division cases of a blocktriple<fbits, DIV> configuration against an exact
+// reference (#1745).
+//
+// The operands are prepared as cfloat::normalizeDivision prepares them: the significand 1.f
+// shifted up by divshift, at the DIV radix R = divbits. div() then produces the UNROUNDED
+// quotient: T = floor(A * 2^R / B) for the integer significands A and B, with bit 0 set when
+// the division was inexact, at scale sa - sb (shifted left once, scale lowered, when the
+// quotient is below 1; the value is the same). So the expected VALUE is
+// (T | inexact) * 2^(sa - sb - R), and with at most 3 fbits + 6 significant bits it is exact
+// in a double for fbits <= 12, as is the blocktriple's own conversion.
+//
+// This used to compare against the PRODUCT of the operands, with operands that skipped the
+// divshift alignment, and it ran in MANUAL_TESTING mode, so 327680 failures never reached CI.
 template<typename BlockTripleConfiguration>
 int VerifyDivision(bool reportTestCases) {
 	using namespace sw::universal;
-	
-	constexpr size_t fbits = BlockTripleConfiguration::fbits;  // just the number of fraction bits
-	using BlockType = typename BlockTripleConfiguration::BlockType;
+
+	constexpr unsigned fbits = BlockTripleConfiguration::fbits;  // just the number of fraction bits
 	constexpr sw::universal::BlockTripleOperator op = BlockTripleConfiguration::op;
+	static_assert(op == BlockTripleOperator::DIV, "VerifyDivision requires a blocktriple with the DIV operator designation");
+	static_assert(fbits <= 12, "the exact reference holds the quotient in 64 bits and a double");
 
-	if constexpr (op != BlockTripleOperator::DIV) {
-		std::cerr << "VerifyDivision requires a blocktriple with the DIV operator designation\n";
-		return 1;
-	}
-	constexpr size_t divbits = BlockTripleConfiguration::divbits;
-	std::cout << '\n';
-	std::cout << "blocktriple<" <<fbits << ',' << op << ',' << typeid(BlockType).name() << '>' << '\n';
-	std::cout << "Fraction        bits : " << fbits << '\n';
-	std::cout << "Division        bits : " << divbits << '\n';
-
-	/*
-		blocktriple<fbits> has fbits fraction bits in the form h.<fbits>
-		Digit-recurrence produces one bit at each iteration and moves the radix point.
-		
-		we generate 2*fhbits result bits with radix at 2*fbits
-		which we'll need to round using round-nearest-tie-to-even : lsb|guard|round|sticky.
-
-		h.fffff / h.fffff in long division: h5.f4 f3 f2 f1 f0
-		    dividend 0h.fffff 00000
-			divider	 0h.fffff 00000  h5 . 
-                        hffff f0000  f4
-                         hfff ff000  f3
-				          hff fff00  f2  
-				           hf ffff0  f1  
-				            h fffff  f0
-			           +---------------+
-			  oh.fffff'fffff     o == overflow, h == hidden, . is result radix point
-
-		To prepare for the iterative substraction, we are normalizing the input operand to
-		the result fixed-point of size 2*fhbits.
-		That is:
-		input argument ## ####h.fffff  : normalized to the 2*fhbit format but radix is at fbits
-		output result  oh.fffff'fffff  : size is 2*fhbit, radix is at 2*fbits
-
-		we might also want to generate unrounded result
-		we are going to test the unrounded result.
-
-		test is going to enumerate input argument 1.00000 through 1.11111 as we only work with normalized formats
-	 */
-
-	// for the test we are going to enumerate the fbits state space
-	constexpr size_t NR_VALUES = (size_t(1) << fbits);
+	constexpr unsigned divshift = BlockTripleConfiguration::divshift;
+	constexpr int      R        = BlockTripleConfiguration::radix;
+	constexpr std::uint64_t NR_VALUES = (std::uint64_t(1) << fbits);
+	constexpr std::uint64_t hiddenBit = NR_VALUES;
 
 	int nrOfFailedTests = 0;
-
-	blocktriple<fbits, BlockTripleOperator::DIV, BlockType> a, b, c;
-	constexpr size_t hiddenBit = (size_t(1) << fbits);
-	a.setnormal();
-	b.setnormal();
-	c.setnormal();  // we are only enumerating normal values, special handling is not tested here
-
-	// test design
-	// a * b, both fbits fraction bits
-	// (+, scale, 01.00000) * (+, 0, 01.00000)
-	// (+, scale, 01.00000) * (+, 0, 01.00001)
+	BlockTripleConfiguration a, b, c;
 	for (int scale = -2; scale < 3; ++scale) {
-		for (size_t i = 0; i < NR_VALUES; i++) {
-			for (size_t j = 0; j < NR_VALUES; j++) {
-				// set the a input test value
-				a.setbits(i + hiddenBit);  // mix in the hidden bit in the blockfraction
-				a.setscale(scale);
-				a.setradix(fbits);
-				// set the b input test value
-				b.setbits(j + hiddenBit);
-				b.setscale(0);
-				b.setradix(fbits);
+		for (std::uint64_t i = 0; i < NR_VALUES; ++i) {
+			for (std::uint64_t j = 0; j < NR_VALUES; ++j) {
+				const bool sa = ((i + j) & 1u) != 0;   // mix the signs
+				const bool sb = ((i ^ j) & 2u) != 0;
+				a.setnormal(); a.setsign(sa); a.setscale(scale); a.setbits((i + hiddenBit) << divshift);
+				b.setnormal(); b.setsign(sb); b.setscale(0);     b.setbits((j + hiddenBit) << divshift);
 
-				c.div(a, b); // generate the unrounded div value under test
+				c.div(a, b);   // the unrounded quotient under test
 
-//				std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << '\n';
-//				std::cout << a << " * " << b << " = " << c << '\n';
-								
-				double aref = double(a);
-				double bref = double(b);
-				double cref = aref * bref; // calculate the reference test value
-
-				// map the result into the unrounded representation
-				blocktriple<2*fbits + 1, BlockTripleOperator::REP> reference;
-				reference = cref;
-				double btref = double(reference);  // map the double result to the unrounded blocktriple representation
-
-				if (btref != double(c)) {
-//					std::cout << "test case   : " << a << " * " << b << " = " << c << '\n';
-//					std::cout << "conversion  : " << aref << " * " << bref << " = " << cref << " vs " << btref << '\n';
-//					std::cout << "blocktriple : " << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " : " << c << '\n';
-
+				const std::uint64_t A = i + hiddenBit, B = j + hiddenBit;
+				const std::uint64_t numerator = A << R;
+				const std::uint64_t T = (numerator / B) | ((numerator % B) != 0 ? 1u : 0u);
+				const double expected = (sa != sb ? -1.0 : 1.0) * std::ldexp(static_cast<double>(T), scale - R);
+				const double result = double(c);
+				if (result != expected) {
 					++nrOfFailedTests;
-					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, double(c), btref);
-//					std::cout << "---------------------\n";
+					if (reportTestCases && nrOfFailedTests < 10) {
+						std::cerr << "FAIL: " << to_triple(a) << " / " << to_triple(b) << " = " << to_triple(c)
+						          << " : " << result << ", expected " << expected << '\n';
+					}
 				}
-				else {
-					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, reference);
-				}
-//				if (nrOfFailedTests > 24) return nrOfFailedTests;
 			}
-			//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
 		}
 	}
-//	std::cout << '\n';
 	return nrOfFailedTests;
 }
 
@@ -178,10 +125,8 @@ void TestCase(ArgumentType lhs, ArgumentType rhs) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
-// TODO: this regression test is not correct yet
-// 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
