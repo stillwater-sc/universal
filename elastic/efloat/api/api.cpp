@@ -194,6 +194,24 @@ try {
 
 	}
 
+	// runtime precision: a value rounds at its own precision, and a native operand takes its
+	// partner's rather than widening the result to the type's nlimbs * 32 bits (#1757)
+	std::cout << "+------------ runtime precision of an efloat ----------+\n";
+	{
+		using TestType = efloat<100>;   // 3200 bits
+		TestType x(1);
+		x /= 3;
+		x.set_precision(640);
+		TestType y = x * 3 / TestType(7) + 0.5;   // literals carry no precision: 640 bits
+		TestType z = exp(x);                       // as does the math library
+		TestType w = TestType(1) / TestType(3);    // literals alone: the type's 3200 bits
+		std::cout << "x                : " << x.get_precision() << " bits\n";
+		std::cout << "x * 3 / 7 + 0.5  : " << y.get_precision() << " bits\n";
+		std::cout << "exp(x)           : " << z.get_precision() << " bits\n";
+		std::cout << "1 / 3 (literals) : " << w.get_precision() << " bits\n";
+		if (y.get_precision() != 640 || z.get_precision() != 640 || w.get_precision() != 3200) ++nrOfFailedTestCases;
+	}
+
 	std::cout << "+------------ Horner's Rule ----------+\n";
 	{
 //		std::vector<efloat> polynomial = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };

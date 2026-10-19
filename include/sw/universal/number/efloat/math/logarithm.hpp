@@ -138,10 +138,7 @@ namespace efloat_detail {
 					v2_taper.set_precision(taper);
 				}
 				power *= v2_taper;
-				// the divisor at the taper too: a literal carries the type's full precision
-				efloat<nlimbs> divisor(static_cast<double>(2 * k + 1));
-				divisor.set_precision(taper);
-				const efloat<nlimbs> term = power / divisor;
+				const efloat<nlimbs> term = power / (2 * k + 1);   // stays at the taper (#1757)
 				if (term.iszero() || term.scale() < series.scale() - static_cast<int64_t>(working) - 2) break;
 				series += term;
 			}

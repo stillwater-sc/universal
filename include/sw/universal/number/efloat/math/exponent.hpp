@@ -17,11 +17,11 @@ namespace efloat_detail {
 	// terms, and the result is rounded once to the caller's precision at the end.
 	inline constexpr unsigned exp_log_guard_bits = 64u;
 
-	// The precision of the result of a function of x: x's own, or that of the literals the
-	// function combines it with, whichever is larger -- what the arithmetic would give.
+	// The precision of the result of a function of x: x's own, what the arithmetic would give.
+	// The literals a function combines x with carry no precision and do not widen it (#1757).
 	template<unsigned nlimbs>
 	inline unsigned result_precision(const efloat<nlimbs>& x) {
-		return std::max(x.get_precision(), efloat<nlimbs>(1.0).get_precision());
+		return x.get_precision();
 	}
 
 	// atanh(1/m) = sum_k 1 / ((2k + 1) m^(2k + 1)) for an integer m >= 2, at `bits` bits.
@@ -137,11 +137,8 @@ constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
 			r_taper = r;
 			r_taper.set_precision(taper);
 		}
-		// a literal carries the type's full precision, and a quotient takes the wider: the
-		// divisor is cut too, or the division would undo the taper
-		efloat<nlimbs> divisor(n);
-		divisor.set_precision(taper);
-		term = term * r_taper / divisor;
+		// n carries no precision, so the quotient stays at the taper (#1757)
+		term = term * r_taper / n;
 		if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(working)) break;
 		sum += term;
 	}

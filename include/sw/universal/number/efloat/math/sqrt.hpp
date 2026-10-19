@@ -28,6 +28,13 @@ constexpr efloat<nlimbs> sqrt(const efloat<nlimbs>& a) {
 	x.clear();
 	x.setexponent(a.scale() / 2);
 	x.setlimb(0, 0x80000000); // set implicit leading bit
+	// the result's precision is a's own (#1757); Newton runs with guard bits past it and the
+	// result rounds once, or the last bits are the iteration's rounding noise
+	const unsigned result_prec = a.get_precision();
+	const unsigned prec = result_prec + 64u;
+	x.set_precision(prec);
+	efloat<nlimbs> aw(a);
+	aw.set_precision(prec);
 
 	efloat<nlimbs> half(0.5);
 
@@ -39,17 +46,15 @@ constexpr efloat<nlimbs> sqrt(const efloat<nlimbs>& a) {
 	// accuracy at ~97 digits regardless of get_precision() (issue #1140). The
 	// convergence break stops as soon as the update falls below the working
 	// precision, so high-precision operands do not pay for the guard steps.
-	// The working precision is the max feeding the arithmetic: the operand's
-	// precision or the seed/default precision (~nlimbs*32), whichever is larger.
-	const unsigned prec = (a.get_precision() > nlimbs * 32u) ? a.get_precision() : nlimbs * 32u;
 	int max_iters = 6;
 	for (unsigned p = prec; p > 1u; p >>= 1) ++max_iters;   // ceil(log2(prec)) + 6
 	for (int i = 0; i < max_iters; ++i) {
 		efloat<nlimbs> prev(x);
-		x = half * (x + a / x);
+		x = half * (x + aw / x);
 		efloat<nlimbs> d(x - prev); d.setsign(false);
 		if (d.iszero() || (!x.iszero() && d.scale() < x.scale() - static_cast<int64_t>(prec))) break;
 	}
+	x.set_precision(result_prec);
 	return x;
 }
 
@@ -68,15 +73,21 @@ constexpr efloat<nlimbs> cbrt(const efloat<nlimbs>& a) {
 	y.clear();
 	y.setexponent(abs_a.scale() / 3);
 	y.setlimb(0, 0x80000000);
+	const unsigned result_prec = abs_a.get_precision();   // the result's precision: a's own (#1757)
+	const unsigned prec = result_prec + 64u;             // guard bits, as sqrt
+	y.set_precision(prec);
+	abs_a.set_precision(prec);
 
-	efloat<nlimbs> one_third = efloat<nlimbs>(1.0) / efloat<nlimbs>(3.0);
+	// 1/3 at that precision: a 1/3 at fewer bits moves the fixed point of the iteration
+	efloat<nlimbs> one_third(1.0);
+	one_third.set_precision(prec);
+	one_third /= 3;
 	efloat<nlimbs> two(2.0);
 
 	// Newton iterations for y^3 - abs_a = 0: y_next = 1/3 * (2 * y + abs_a / y^2).
 	// Precision-adaptive iteration count with a convergence break, for the same
 	// reason as sqrt above (issue #1140): the ~1-bit exponent-only seed needs
 	// ~ceil(log2(precision)) doublings to reach full precision.
-	const unsigned prec = (abs_a.get_precision() > nlimbs * 32u) ? abs_a.get_precision() : nlimbs * 32u;
 	int max_iters = 6;
 	for (unsigned p = prec; p > 1u; p >>= 1) ++max_iters;
 	for (int i = 0; i < max_iters; ++i) {
@@ -86,6 +97,7 @@ constexpr efloat<nlimbs> cbrt(const efloat<nlimbs>& a) {
 		if (d.iszero() || (!y.iszero() && d.scale() < y.scale() - static_cast<int64_t>(prec))) break;
 	}
 
+	y.set_precision(result_prec);
 	if (is_neg) {
 		y.setsign(true);
 	}

@@ -117,6 +117,83 @@ namespace {
 		}
 
 		// ---------------------------------------------------------------------
+		// 3b. Native values carry no precision (#1757)
+		// ---------------------------------------------------------------------
+		if (reportTestCases) std::cout << "  Native operands do not widen the result...\n";
+		{
+			efloat<100> x(1.0);
+			x /= 3;
+			x.set_precision(640);   // the caller asks for 640 of the type's 3200 bits
+			const efloat<100> results[] = {
+				x * efloat<100>(3), x / efloat<100>(7), x + efloat<100>(0.1), x - efloat<100>(2.5),
+				x * 3, x / 7, x + 0.1, x - 2.5, 3 * x, 7.0 / x, 2 + x, 0.5 - x
+			};
+			for (const auto& r : results) {
+				if (r.get_precision() != 640) {
+					if (reportTestCases) std::cout << "    FAIL: x op literal widened x's 640 bits to " << r.get_precision() << "\n";
+					++nrOfFailedTestCases;
+				}
+			}
+			efloat<100> y(x);
+			y *= 3; y /= 7; y += 1; y -= 0.25;
+			if (y.get_precision() != 640) {
+				if (reportTestCases) std::cout << "    FAIL: compound ops with literals widened x's precision to " << y.get_precision() << "\n";
+				++nrOfFailedTestCases;
+			}
+			// a function of x runs at x's precision too
+			const efloat<100> e = exp(x), s = sqrt(x), h = sinh(x);
+			if (e.get_precision() != 640 || s.get_precision() != 640 || h.get_precision() != 640) {
+				if (reportTestCases) std::cout << "    FAIL: exp/sqrt/sinh of a 640-bit x returned " << e.get_precision() << "/" << s.get_precision() << "/" << h.get_precision() << " bits\n";
+				++nrOfFailedTestCases;
+			}
+		}
+		{
+			// literals alone still compute at the type's precision, or at the default when set
+			const efloat<4> third = efloat<4>(1) / efloat<4>(3);
+			if (third.get_precision() != 128 || third.bits().size() != 4) {
+				if (reportTestCases) std::cout << "    FAIL: 1/3 of two literals is not at the type's 128 bits: " << third.get_precision() << "\n";
+				++nrOfFailedTestCases;
+			}
+			set_default_precision(64);
+			const efloat<4> third64 = efloat<4>(1) / efloat<4>(3);
+			if (third64.get_precision() != 64 || third64.bits().size() != 2) {
+				if (reportTestCases) std::cout << "    FAIL: 1/3 of two literals ignored the default precision: " << third64.get_precision() << "\n";
+				++nrOfFailedTestCases;
+			}
+			set_default_precision(0);
+		}
+		{
+			// a value without precision rounds to its partner's, including through the
+			// power-of-two and zero shortcuts
+			efloat<4> one(1.0);
+			one.set_precision(32);
+			const efloat<4> tenth = efloat<4>(1) / efloat<4>(10);   // 128 bits, carries none
+			efloat<4> expected(tenth);
+			expected.set_precision(32);
+			const efloat<4> p1 = tenth * one, p2 = one * tenth, p3 = tenth / one;
+			efloat<4> zero;
+			zero.set_precision(32);
+			const efloat<4> p4 = zero + tenth, p5 = tenth + zero;
+			for (const auto& r : { p1, p2, p3, p4, p5 }) {
+				if (r != expected || r.get_precision() != 32 || r.bits().size() != 1) {
+					if (reportTestCases) std::cout << "    FAIL: a precision-free value did not round to its 32-bit partner: " << r.get_precision() << " bits, " << r.bits().size() << " limbs\n";
+					++nrOfFailedTestCases;
+				}
+			}
+		}
+		{
+			// an integer operand converts exactly, not through double
+			efloat<4> one(1.0);
+			one.set_precision(128);
+			const long long big = 4611686018427387905LL;   // 2^62 + 1: not a double
+			const efloat<4> product = one * big;
+			if (product != efloat<4>(big) || efloat<4>(double(big)) == efloat<4>(big)) {
+				if (reportTestCases) std::cout << "    FAIL: x * (2^62 + 1) did not keep the integer exactly\n";
+				++nrOfFailedTestCases;
+			}
+		}
+
+		// ---------------------------------------------------------------------
 		// 4. Re-rounding on Downscaling
 		// ---------------------------------------------------------------------
 		if (reportTestCases) std::cout << "  Re-rounding on Downscaling...\n";
