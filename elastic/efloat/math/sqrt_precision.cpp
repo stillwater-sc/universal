@@ -5,13 +5,31 @@
 // get_precision(). The iteration count is now precision-adaptive, so accuracy
 // must scale with the working precision.
 //
+// Correct rounding (#1763): sqrt now forms the exact integer root and its remainder and rounds
+// once.  Each result r at precision P is checked against a with exact squares only: in every
+// rounding mode r and its neighbour at P bits must bracket sqrt(a) as the mode requires, and
+// Inexact must be raised exactly when r^2 != a.  The radicands include roots just above a P-bit
+// value or a midpoint, by about 2^-2P (a = (R^2 + 7) / 2^k with R^2 = -7 mod 2^k, by Hensel's
+// lifting), which only the remainder's sticky bit rounds right.  Before, Newton's iteration rounded from 64
+// guard bits: sqrt(4 - 2^-62) at 64 bits came out 2 rather than 2 - 2^-63, and an exact root
+// such as sqrt(9) raised Inexact.
+//
+// REGRESSION_LEVEL convention (intensity progression):
+//   LEVEL 1 -- the basic values, the exponents, 400 rounded roots per precision
+//   LEVEL 2 -- 4,000 rounded roots per precision
+//   LEVEL 3 -- 40,000
+//   LEVEL 4 -- 400,000
+//
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <cstdint>
 #include <limits>
+#include <random>
+#include <vector>
 #include <universal/number/efloat/efloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -105,6 +123,170 @@ namespace {
 		return fails;
 	}
 
+	using Wide = sw::universal::efloat<64>;
+
+	// x^2 exactly: at a precision that holds every bit of it
+	Wide exact_square(const Wide& x) {
+		Wide w(x);
+		w.set_precision(static_cast<unsigned>(64 * x.bits().size() + 64));
+		return w * w;
+	}
+
+	// a at precision P with n random limbs: runs of ones and zeros, all ones, a perfect square,
+	// or a perfect square one unit in its last place away
+	Wide random_radicand(std::mt19937_64& rng, unsigned p, unsigned shape) {
+		using namespace sw::universal;
+		Wide a(1);
+		if (shape == 3 || shape == 4) {   // x^2 with x of at most P/2 bits, then +-1 unit for shape 4
+			const unsigned half = std::max(1u, p / 2);
+			Wide x(1);
+			x.set_precision(32 * half);
+			for (unsigned i = 0; i < half; ++i) x.setlimb(i, static_cast<uint32_t>(rng()) | (i == 0 ? 0x8000'0000u : 0u));
+			x.setexponent(static_cast<int64_t>(rng() % 41) - 20);
+			a = exact_square(x);
+			a.set_precision(32 * p);
+			if (shape == 4) {
+				Wide unit(1);
+				unit.setexponent(a.scale() - static_cast<int64_t>(a.get_precision()) + 1);
+				if (rng() & 1u) a += unit; else a -= unit;
+			}
+			return a;
+		}
+		a.set_precision(32 * p);
+		const unsigned n = 1 + static_cast<unsigned>(rng() % p);
+		for (unsigned i = 0; i < n; ++i) {
+			const uint64_t r = rng();
+			uint32_t w = (shape == 1) ? 0xFFFF'FFFFu : (shape == 2 && (r & 3u) != 0u) ? ((r & 4u) ? 0xFFFF'FFFFu : 0u) : static_cast<uint32_t>(r >> 8);
+			if (i == 0) w |= 0x8000'0000u;
+			a.setlimb(i, w);
+		}
+		a.setexponent(static_cast<int64_t>(rng() % 401) - 200);
+		a.set_precision(32 * p);   // normalizes: setlimb can leave zero limbs at the bottom
+		return a;
+	}
+
+	// R with R^2 = -7 (mod 2^j), bit j - 1 set: Hensel's lifting a bit at a time, from R = 1, a root
+	// mod 8 since every odd square is 1 mod 8; R + 2^(j-1) is a root as well, which sets the top bit
+	std::vector<uint64_t> root_of_minus_seven(unsigned j) {
+		using namespace sw::universal::efloat_mpn;
+		const size_t L = (j + 63) / 64;
+		std::vector<limb_t> x(L, 0u), sq(2 * L), work(scratch_limbs(L));
+		x[0] = 1u;
+		auto bit = [](const std::vector<limb_t>& v, unsigned k) { return (v[k / 64] >> (k % 64)) & 1u; };
+		for (unsigned k = 3; k + 1 < j; ++k) {
+			mul_n(sq.data(), x.data(), x.data(), L, work.data(), true);
+			add_1(sq.data(), 2 * L, 7u);                      // x^2 + 7 = 0 (mod 2^k); lift to 2^(k+1)
+			if (bit(sq, k)) x[(k - 1) / 64] += limb_t(1) << ((k - 1) % 64);
+		}
+		x[(j - 1) / 64] |= limb_t(1) << ((j - 1) % 64);
+		return x;
+	}
+
+	// a, P bits, whose square root lies just above a P-bit value (midpoint false) or a midpoint
+	// between two (midpoint true), by about 2^-2P: a = (R^2 + 7) / 2^k with R of P or P + 1 bits.
+	// The root's bits past the guard bit are all zero down to far below the integer root's last
+	// one, so only the remainder, the sticky bit, rounds it the right way.
+	Wide just_above(std::mt19937_64& rng, unsigned p, bool midpoint) {
+		using namespace sw::universal::efloat_mpn;
+		const unsigned P = 32 * p;
+		const unsigned j = midpoint ? P + 3 : P + 1;   // R's bits are j - 1, and R^2 + 7 = 0 mod 2^j
+		std::vector<limb_t> r = root_of_minus_seven(j);
+		const size_t L = r.size();
+		std::vector<limb_t> sq(2 * L), work(scratch_limbs(L));
+		mul_n(sq.data(), r.data(), r.data(), L, work.data(), true);
+		add_1(sq.data(), 2 * L, 7u);
+		size_t bits = 128 * L;
+		while (((sq[(bits - 1) / 64] >> ((bits - 1) % 64)) & 1u) == 0u) --bits;
+		// K = (R^2 + 7) / 2^(bits - P): its top P bits, the rest zero
+		Wide a(1);
+		a.set_precision(P);
+		for (unsigned i = 0; i < p; ++i) {
+			const size_t lo = bits - 32 * (i + 1);   // the bit at the bottom of limb i
+			const uint64_t w = (sq[lo / 64] >> (lo % 64)) | ((lo % 64 > 32 && lo / 64 + 1 < 2 * L) ? sq[lo / 64 + 1] << (64 - lo % 64) : 0u);
+			a.setlimb(i, static_cast<uint32_t>(w));
+		}
+		a.setexponent(2 * (static_cast<int64_t>(rng() % 41) - 20) + static_cast<int64_t>(bits % 2 == 0 ? 1 : 0));
+		a.set_precision(P);
+		return a;
+	}
+
+	int VerifyCorrectlyRoundedSqrt(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		int failures = 0;
+		std::mt19937_64 rng(1763);
+		const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+		                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+		const unsigned precisions[] = { 1, 2, 3, 5, 16, 40 };   // in limbs
+		const RoundingMode saved = efloat_rounding_mode;
+		for (unsigned p : precisions) {
+			const unsigned samples = (p >= 16) ? 1 + nrSamples / 10 : nrSamples;
+			for (unsigned i = 0; i < samples; ++i) {
+				const unsigned shape = i % 7;
+				Wide a = (shape >= 5) ? just_above(rng, p, shape == 6) : random_radicand(rng, p, shape);
+				if (i % 9 == 0 && shape < 5) a.clear_precision();   // the type's 2048 bits
+				const RoundingMode mode = modes[i % 4];
+				efloat_rounding_mode = mode;
+				clear_efloat_exceptions();
+				const Wide r = sqrt(a);
+				const bool inexact = has_efloat_exception(ExceptionFlag::Inexact);
+				efloat_rounding_mode = RoundingMode::RoundToNearest;
+
+				// r's neighbours at its precision: up by u, down by u, or u/2 below a power of 2
+				const unsigned P = a.get_precision();
+				Wide u(1), below(1);
+				u.setexponent(r.scale() - static_cast<int64_t>(P) + 1);
+				below.setexponent(u.scale() - ((r.bits().size() == 1 && r.bits()[0] == 0x8000'0000u) ? 1 : 0));
+				Wide up(r), down(r);
+				up.set_precision(P + 64);
+				down.set_precision(P + 64);
+				up += u;
+				down -= below;
+				const Wide r2 = exact_square(r);
+				bool ok = (r.get_precision() == P) && (r.carries_precision() == a.carries_precision()) && (inexact == !(r2 == a));
+				switch (mode) {
+				case RoundingMode::RoundToNearest: {   // within half the gap on either side
+					Wide hi(r), lo(r);
+					hi.set_precision(P + 64);
+					lo.set_precision(P + 64);
+					Wide hu(u), hb(below);
+					hu.setexponent(hu.scale() - 1);
+					hb.setexponent(hb.scale() - 1);
+					hi += hu;
+					lo -= hb;
+					ok = ok && !(a < exact_square(lo)) && !(exact_square(hi) < a);
+					break;
+				}
+				case RoundingMode::RoundToZero:
+				case RoundingMode::RoundTowardNegative:   // r <= sqrt(a) < r + u
+					ok = ok && !(a < r2) && (a < exact_square(up));
+					break;
+				case RoundingMode::RoundTowardPositive:   // r - below < sqrt(a) <= r
+					ok = ok && !(r2 < a) && (exact_square(down) < a);
+					break;
+				}
+				if (!ok) {
+					++failures;
+					if (reportTestCases && failures <= 3) std::cout << "    FAIL: sqrt at " << P << " bits (shape " << shape << ", mode " << (i % 4) << ") is not correctly rounded\n";
+				}
+			}
+		}
+		efloat_rounding_mode = saved;
+		// the case main misrounded: sqrt(4 - 2^-62) at 64 bits is 2 - 2^-63, all ones
+		{
+			efloat<2> a(1);
+			a.set_precision(64);
+			a.setlimb(0, 0xFFFF'FFFFu);
+			a.setlimb(1, 0xFFFF'FFFFu);
+			a.setexponent(1);
+			const efloat<2> r = sqrt(a);
+			if (!(r.scale() == 0 && r.bits() == std::vector<uint32_t>{ 0xFFFF'FFFFu, 0xFFFF'FFFFu })) {
+				++failures;
+				if (reportTestCases) std::cout << "    FAIL: sqrt(4 - 2^-62) at 64 bits is not 2 - 2^-63\n";
+			}
+		}
+		return failures;
+	}
+
 }  // anonymous namespace
 
 #define MANUAL_TESTING 0
@@ -129,13 +311,35 @@ int main() try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+#if MANUAL_TESTING
+
+	nrOfFailedTestCases += ReportTestResult(VerifyCorrectlyRoundedSqrt(reportTestCases, 40), "efloat", "correctly rounded sqrt");
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore failures
+
+#else
+
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyEfloatSqrtPrecision(reportTestCases), "efloat", "sqrt precision");
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtExponents(reportTestCases), "efloat", "sqrt odd and wide exponents");
+	nrOfFailedTestCases += ReportTestResult(VerifyCorrectlyRoundedSqrt(reportTestCases, 400), "efloat", "correctly rounded sqrt");
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyCorrectlyRoundedSqrt(reportTestCases, 4000), "efloat", "correctly rounded sqrt");
+#endif
+
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyCorrectlyRoundedSqrt(reportTestCases, 40000), "efloat", "correctly rounded sqrt");
+#endif
+
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyCorrectlyRoundedSqrt(reportTestCases, 400000), "efloat", "correctly rounded sqrt");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (const std::exception& e) {
 	std::cerr << "Caught exception: " << e.what() << std::endl;

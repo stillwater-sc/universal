@@ -56,7 +56,7 @@ Compile-time configuration flags are used to select the exception mode.
 The exception types are defined, but you have the option to throw them
 */
 #include <universal/number/efloat/exceptions.hpp>
-#include <universal/number/efloat/efloat_mpn.hpp>   // 64-bit limb products (#1762)
+#include <universal/number/efloat/efloat_mpn.hpp>   // 64-bit limb products (#1762), quotients and square roots (#1763)
 #include <universal/behavior/rounding.hpp>
 #include <universal/behavior/status_flags.hpp>
 

@@ -1,5 +1,5 @@
 #pragma once
-// efloat_mpn.hpp: products and quotients of natural numbers on 64-bit limbs, the kernel of efloat
+// efloat_mpn.hpp: products, quotients and square roots of natural numbers on 64-bit limbs, the kernel of efloat
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -10,9 +10,11 @@
 // operands into 64-bit limbs, least significant first, and multiplies those here: a 64 x 64 -> 128
 // bit partial product does the work of four 32 x 32 -> 64 bit ones, and above a threshold
 // Karatsuba replaces the schoolbook product (#1762).  Its division divides the same way, a 64-bit
-// quotient limb per step and divide-and-conquer above a threshold (#1763).  The names follow
-// GMP's mpn layer: every operand is a pointer and a limb count, least significant limb first, and
-// nothing allocates; the caller provides the scratch space.
+// quotient limb per step and divide-and-conquer above a threshold, and its square root is
+// Zimmermann's, on the division and the squaring (#1763).  The names follow GMP's mpn layer:
+// every operand is a pointer and a limb count, least significant limb first, and nothing
+// allocates; the caller provides the scratch space.
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <universal/internal/blocktype/carry.hpp>   // mul128, uint128_t
@@ -495,6 +497,99 @@ inline limb_t div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, st
 		dcpi1_div_qr_n(q + off, np + off, dp, dn, v, s);
 	}
 	return qh;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Square root with remainder (#1763): Zimmermann's Karatsuba square root (INRIA RR-3805, 1999),
+// as GMP's mpn_sqrtrem.  With N = a3 b^3 + a2 b^2 + a1 b + a0, (s', r') = sqrtrem(a3 b + a2),
+// (q, u) = divrem(r' b + a1, 2 s'), s = s' b + q and r = u b + a0 - q^2, then one correction
+// when r < 0: the square root costs one division and one square of half its length per level,
+// and both S = floor(sqrt(N)) and the remainder are exact.
+
+// floor(sqrt(a)) for a >= 2^62, r = a - s^2: a double estimate, corrected
+inline limb_t sqrtrem1(limb_t a, limb_t& r) noexcept {
+	limb_t s = static_cast<limb_t>(std::sqrt(static_cast<double>(a)));
+	if (s > 0xFFFF'FFFFu) s = 0xFFFF'FFFFu;   // the double rounded up to 2^32
+	while (s * s > a) --s;
+	while (s < 0xFFFF'FFFFu && (s + 1) * (s + 1) <= a) ++s;
+	r = a - s * s;
+	return s;
+}
+
+// sp[0] = floor(sqrt(np[0, 2))) for np[1] >= 2^62; the remainder, at most 2 sp[0], is rp[0]
+// and the returned bit above it.  rp may be np.  The same step as dc_sqrtrem on 32-bit halves.
+inline limb_t sqrtrem2(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
+	const limb_t n0 = np[0];
+	limb_t r1;
+	const limb_t s1 = sqrtrem1(np[1], r1);   // s1 in [2^31, 2^32), r1 <= 2 s1
+	limb_t k = 0;
+	while (r1 >= s1) { r1 -= s1; ++k; }      // k s1 2^32 / (2 s1) = k 2^31 exactly
+	const limb_t t = (r1 << 32) | (n0 >> 32);
+	const limb_t d = 2 * s1;
+	const limb_t q = t / d + (k << 31);      // at most 2^32
+	const limb_t u = t % d;                  // below 2^33
+	// r = u 2^32 + (n0 mod 2^32) - q^2 as a low limb and a signed top
+	limb_t  rlo = (u << 32) | (n0 & 0xFFFF'FFFFu);
+	int64_t rhi = static_cast<int64_t>(u >> 32);
+	if (q == (limb_t(1) << 32)) {
+		rhi -= 1;
+	}
+	else {
+		const limb_t qq = q * q;
+		rhi -= (rlo < qq) ? 1 : 0;
+		rlo -= qq;
+	}
+	// s = s1 2^32 + q, which reaches 2^64 only when the correction below takes it back
+	limb_t slo = (s1 << 32) + q;
+	limb_t shi = (slo < (s1 << 32)) ? 1u : 0u;
+	if (rhi < 0) {   // r += 2 s - 1, s -= 1, as r += s, --s, r += s
+		rlo += slo;
+		rhi += static_cast<int64_t>(shi + ((rlo < slo) ? 1u : 0u));
+		shi -= (slo == 0u) ? 1u : 0u;
+		--slo;
+		rlo += slo;
+		rhi += static_cast<int64_t>(shi + ((rlo < slo) ? 1u : 0u));
+	}
+	sp[0] = slo;
+	rp[0] = rlo;
+	return static_cast<limb_t>(rhi);
+}
+
+// the scratch limbs sqrtrem needs for a root of n limbs
+constexpr std::size_t sqrt_scratch_limbs(std::size_t n) noexcept { return n + 2 + div_scratch_limbs(n); }
+
+// sp[0, n) = floor(sqrt(np[0, 2n))) for n >= 2 and np[2n - 1] >= 2^62; the remainder replaces
+// np[0, n), with the returned limb, 0 or 1, above it.  s holds sqrt_scratch_limbs(n) limbs.
+inline limb_t dc_sqrtrem(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexcept {
+	const std::size_t l = n / 2;
+	const std::size_t h = n - l;
+	// (s', r') for the top 2h limbs: s' in sp[l, n), r' in np[2l, 2l + h) and q
+	limb_t q = (h == 1) ? sqrtrem2(sp + l, np + 2 * l, np + 2 * l) : dc_sqrtrem(sp + l, np + 2 * l, h, s);
+	if (q != 0u) sub_n(np + 2 * l, np + 2 * l, sp + l, h);   // r' - s' < s': divide by s', then halve
+	limb_t* qp = s;   // l + 1 limbs
+	qp[l] = div_qr(qp, np + l, n, sp + l, h, s + l + 1);
+	q += qp[l];
+	limb_t c = qp[0] & 1u;   // (r' b + a1) / s' = 2 q + c: the remainder by 2 s' gains c s'
+	for (std::size_t i = 0; i + 1 < l; ++i) sp[i] = (qp[i] >> 1) | (qp[i + 1] << 63);
+	sp[l - 1] = (qp[l - 1] >> 1) | (q << 63);
+	q >>= 1;
+	if (c != 0u) c = add_n(np + l, np + l, sp + l, h);
+	mul_n(np + n, sp, sp, l, s, true);   // q^2 above the remainder, where a3 and a2 were
+	const limb_t b = q + sub_n(np, np, np + n, 2 * l);
+	int64_t cc = static_cast<int64_t>(c) - static_cast<int64_t>((l == h) ? b : sub_1(np + 2 * l, 1, b));
+	if (cc < 0) {   // r < 0: r += 2 s - 1, s -= 1
+		q = add_1(sp + l, h, q);
+		cc += static_cast<int64_t>(addmul_1(np, sp, n, 2u) + 2 * q);
+		cc -= static_cast<int64_t>(sub_1(np, n, 1u));
+		sub_1(sp, n, 1u);
+	}
+	return static_cast<limb_t>(cc);
+}
+
+// sp[0, n) = floor(sqrt(np[0, 2n))) for np[2n - 1] >= 2^62; the remainder replaces np[0, n),
+// with the returned limb, 0 or 1, above it.  s holds sqrt_scratch_limbs(n) limbs.
+inline limb_t sqrtrem(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexcept {
+	return (n == 1) ? sqrtrem2(sp, np, np) : dc_sqrtrem(sp, np, n, s);
 }
 
 }}}  // namespace sw::universal::efloat_mpn
