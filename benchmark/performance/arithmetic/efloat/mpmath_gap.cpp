@@ -1,4 +1,4 @@
-// mpmath_gap.cpp: efloat's cost per operation at 128, 608 and 2048 bits, for comparison with mpmath (issue #1714)
+// mpmath_gap.cpp: efloat's cost per operation at 128, 512, 2048 and 8192 bits, for comparison with mpmath and gmpy2 (#1714, #1763)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -8,12 +8,17 @@
 // mpmath's mpf is the same structure as efloat -- a sign, a big-integer mantissa and an
 // exponent -- yet on its pure-Python backend it evaluated exp ~90x and log ~900x faster than
 // compiled efloat at 600 bits. mpmath_gap.py next to this file prints the same table for
-// mpmath; run both on one machine and compare.
+// mpmath, and for gmpy2 (MPFR) when it is installed; run both on one machine and compare.
+//
+// The precisions step by 4x: 2, 8, 32 and 128 64-bit limbs, so a change of multiplication
+// algorithm shows in the growth from row to row, and 8192 bits is where Karatsuba, Toom-3
+// and binary splitting pay off (#1763). #1714-#1760 measured at 608 bits (efloat<19>), just
+// past mpmath's exp switch at 600 bits.
 //
 // Each figure is a mean over repeated calls whose results all reach a volatile sink.
 //
 // The one guard is a ratio, so that it holds at any optimization level and on any runner:
-// division may cost at most 15 multiplies at 608 bits. Long division a word at a time costs
+// division may cost at most 15 multiplies at 512 bits. Long division a word at a time costs
 // ~3; the bit-serial division it replaced cost ~40.
 
 #include <universal/utility/directives.hpp>
@@ -71,7 +76,7 @@ namespace sw { namespace universal {
 	}
 
 	void report(unsigned bits, const Timings& t) {
-		std::printf("%6u %9.2f %9.2f %9.2f %9.2f %10.1f %10.1f %10.1f %9.1f\n",
+		std::printf("%6u %9.2f %9.2f %9.2f %9.2f %10.2f %10.2f %10.2f %9.2f\n",
 		            bits, t.add, t.mul, t.div, t.div7, t.exp, t.log, t.sin, t.sqrt);
 	}
 
@@ -85,13 +90,14 @@ try {
 	std::printf("%6s %9s %9s %9s %9s %10s %10s %10s %9s\n",
 	            "bits", "a+b", "a*b", "b/a", "a/7", "exp", "log", "sin", "sqrt");
 	report(128,  measure<4>(200));
-	const Timings t608 = measure<19>(50);
-	report(608, t608);
+	const Timings t512 = measure<16>(50);
+	report(512, t512);
 	report(2048, measure<64>(5));
+	report(8192, measure<256>(4));
 
 	int failures = 0;
-	const double ratio = t608.div / t608.mul;
-	std::printf("\ndivision / multiplication at 608 bits: %.1f (guard: below 15)\n", ratio);
+	const double ratio = t512.div / t512.mul;
+	std::printf("\ndivision / multiplication at 512 bits: %.1f (guard: below 15)\n", ratio);
 	if (!(ratio < 15.0)) {
 		std::cout << "  *** REGRESSION: division costs " << ratio << " multiplies -- a bit-serial division may have returned (#1714) ***\n";
 		++failures;
