@@ -8,6 +8,8 @@
 #pragma once
 #include <cmath>
 #include <algorithm>
+#include <cstdint>
+#include <vector>
 #include <universal/number/efloat/math/constants/efloat_constants.hpp>
 #include <universal/number/efloat/math/exponent.hpp>   // result_precision, exp_log_guard_bits
 #include <universal/number/efloat/math/truncate.hpp>   // round, floor
@@ -102,6 +104,14 @@ namespace efloat_detail {
 		const unsigned magnitude = static_cast<unsigned>(std::max<int64_t>(0, x.scale()));
 		const unsigned limit     = 3 * (bits + magnitude) + 2 * exp_log_guard_bits;
 		unsigned working         = bits + exp_log_guard_bits + magnitude;
+		// |x| clearly below pi/4 (0.78539816...): k = 0 and r = x at the working precision, without
+		// the division by pi/2 that would only confirm it (#1761)
+		if (x.scale() < 0 && std::fabs(double(x)) < 0.7853) {
+			efloat<nlimbs> r(x);
+			r.set_precision(working);
+			quadrant = 0;
+			return r;
+		}
 		while (true) {
 			efloat<nlimbs> xw(x);
 			xw.set_precision(working);
@@ -125,57 +135,88 @@ namespace efloat_detail {
 	// v <= 1 - cos(pi/4) < 0.3 and v keeps its relative precision as r -> 0.
 	//
 	// r is halved h times first, and the series for v(r / 2^h) doubled back h times by
-	// v(2y) = 2 v(y) (2 - v(y)): each doubling costs one multiplication and saves the series
-	// terms, and it keeps the relative error of v, so the working precision carries h guard
-	// bits.  h ~ 0.4 sqrt(precision) + 5 balances the two; an r already below 2^-h is not halved
-	// that far.  The series v(y) = y^2/2! - y^4/4! + ... runs its term and y^2 at a precision
-	// that falls with the terms, as in exp, with exact integer divisors (#1757).
+	// v(2y) = 2 (2 v(y) - v(y)^2): each doubling costs one squaring, and it keeps the relative
+	// error of v, so the working precision carries h guard bits.
+	//
+	// The series v(y) = y^2/2! - y^4/4! + ... is summed by rectangular splitting (#1761): the
+	// terms are dealt round-robin into u partial sums S_i, each term without its factor y^2i, so
+	// that only every u-th term needs a full multiplication (by y^2u) and the others a division
+	// by a small integer; v = S_0 + S_1 y^2 + ... + S_{u-1} y^2(u-1) at the end.  The running term
+	// and y^2u fall in precision with the terms, as in exp, with exact integer divisors (#1757).
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> versine(const efloat<nlimbs>& r) {
+	inline efloat<nlimbs> versine_with(const efloat<nlimbs>& r, unsigned halvings, unsigned u) {
 		const unsigned precision = r.get_precision();
-		const int64_t  target    = static_cast<int64_t>(0.4 * std::sqrt(static_cast<double>(precision))) + 5;
-		const int64_t  h_signed  = target + r.scale();   // halvings that bring y below 2^-target
+		const int64_t  h_signed  = static_cast<int64_t>(halvings) + r.scale();   // halvings that bring y below 2^-halvings
 		const unsigned h         = (h_signed > 0) ? static_cast<unsigned>(h_signed) : 0u;
 		const unsigned working   = precision + h;
+		if (u < 1u) u = 1u;
 
 		efloat<nlimbs> y(r);
 		y.setsign(false);
 		y.set_precision(working);
 		y.setexponent(y.scale() - static_cast<int64_t>(h));
 
-		efloat<nlimbs> neg_y2 = y * y;
-		efloat<nlimbs> term(neg_y2);
-		term.setexponent(term.scale() - 1);              // y^2 / 2!
-		neg_y2.setsign(true);
-		efloat<nlimbs> v(term);
-		efloat<nlimbs> y2_taper = neg_y2;
+		// powers[i] = y^2i for i = 1..u
+		std::vector<efloat<nlimbs>> powers(u + 1);
+		powers[1] = y * y;
+		for (unsigned i = 2; i <= u; ++i) powers[i] = powers[i - 1] * powers[1];
+		std::vector<efloat<nlimbs>> sums(u);
+		for (auto& sum : sums) { sum.setzero(); sum.set_precision(working); }
+
+		// the term t_n = (-1)^(n+1) y^2n / (2n)! for n = 1 + i + u j sits in S_i as a = |t_n| / y^2i
+		efloat<nlimbs> a(powers[1]);
+		efloat<nlimbs> step = powers[u];   // y^2u, tapered with a
 		unsigned taper = working;
-		for (unsigned n = 2; ; ++n) {
-			const int64_t below = v.scale() - term.scale();   // bits the term sits below the sum
+		int64_t  top   = 0;                // scale of S_0 once its first term is in
+		bool summed = false;
+		for (uint64_t n = 1; !summed; ) {
+			for (unsigned i = 0; i < u; ++i, ++n) {
+				a /= (2 * n - 1) * (2 * n);
+				if (n == 1) top = a.scale();
+				if (a.iszero() || a.scale() < top - static_cast<int64_t>(working)) { summed = true; break; }
+				if (n & 1u) sums[i] += a; else sums[i] -= a;
+			}
+			if (summed) break;
+			const int64_t below = top - a.scale();   // bits the term sits below the sum
 			const unsigned need = (below + 64 < static_cast<int64_t>(working)) ? static_cast<unsigned>(static_cast<int64_t>(working) - below) : 64u;
 			if (need + 32u <= taper) {
 				taper = need;
-				term.set_precision(taper);
-				y2_taper = neg_y2;
-				y2_taper.set_precision(taper);
+				a.set_precision(taper);
+				step = powers[u];
+				step.set_precision(taper);
 			}
-			term *= y2_taper;
-			term /= uint64_t(2 * n - 1) * uint64_t(2 * n);
-			if (term.iszero() || term.scale() < v.scale() - static_cast<int64_t>(working)) break;
-			v += term;
+			a *= step;
 		}
+		efloat<nlimbs> v = sums[0];
+		for (unsigned i = 1; i < u; ++i) v += sums[i] * powers[i];
 		for (unsigned i = 0; i < h; ++i) {
-			v *= 2 - v;
+			const efloat<nlimbs> square = v * v;
+			v.setexponent(v.scale() + 1);
+			v -= square;
 			v.setexponent(v.scale() + 1);
 		}
 		return v;
+	}
+
+	// h ~ 0.25 sqrt(precision) + 6 halvings and u ~ 0.21 precision^0.35 partial sums, at least 2:
+	// (h, u) = (11, 2) at 512 bits, (17, 3) at 2048 and (28, 5) at 8192, measured near the optimum,
+	// which is flat (#1761)
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> versine(const efloat<nlimbs>& r) {
+		const double   precision = static_cast<double>(r.get_precision());
+		const unsigned halvings  = static_cast<unsigned>(0.25 * std::sqrt(precision)) + 6u;
+		const unsigned u         = std::max(2u, static_cast<unsigned>(std::lround(0.21 * std::pow(precision, 0.35))));
+		return versine_with(r, halvings, u);
 	}
 
 	// sin(r) and cos(r) for |r| <= pi/4 from the versine
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> sin_from_versine(const efloat<nlimbs>& v, const efloat<nlimbs>& r) {
 		if (v.iszero()) return r;   // r below the precision's resolution of v: sin r = r
-		efloat<nlimbs> s = sqrt_newton(v * (2 - v), v.get_precision());
+		efloat<nlimbs> w(v);        // v (2 - v) = 2v - v^2, by a squaring
+		w.setexponent(w.scale() + 1);
+		w -= v * v;
+		efloat<nlimbs> s = sqrt_newton(w, v.get_precision(), false);   // v carries the h guard bits
 		if (r.sign() == -1) s.setsign(true);
 		return s;
 	}
