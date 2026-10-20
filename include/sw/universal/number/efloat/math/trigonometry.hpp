@@ -216,7 +216,7 @@ namespace efloat_detail {
 		efloat<nlimbs> w(v);        // v (2 - v) = 2v - v^2, by a squaring
 		w.setexponent(w.scale() + 1);
 		w -= v * v;
-		efloat<nlimbs> s = sqrt_newton(w, v.get_precision(), false);   // v carries the h guard bits
+		efloat<nlimbs> s = sqrt_to(w, v.get_precision());   // v carries the h guard bits
 		if (r.sign() == -1) s.setsign(true);
 		return s;
 	}

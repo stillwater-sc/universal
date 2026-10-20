@@ -1,4 +1,4 @@
-// limb_kernels.cpp: efloat's multiplication, addition and division kernels against exact references (#1762, #1763)
+// limb_kernels.cpp: efloat's multiplication, addition, division and square root kernels against exact references (#1762, #1763)
 //
 //   x * y    at a precision wide enough to hold the whole product, so the result is exact: its
 //            limbs must be the schoolbook product's, normalized, and no Inexact flag is raised.
@@ -20,14 +20,18 @@
 //   x / y    must be the exact quotient, from a bit-serial reference, rounded once to the target
 //            in every rounding mode: dividends and divisors longer than the quotient, exact
 //            quotients, and exact quotients but for a dividend limb that only the sticky bit sees.
+//   sqrtrem  efloat_mpn's square root must leave S^2 + R = N with R <= 2 S, the square by the
+//            schoolbook multiply: the one- and two-limb base cases, the recursion's odd splits,
+//            perfect squares and their neighbours, all-ones radicands, and top limbs within
+//            1024 of a perfect square, where the base case's double estimate can be one low.
 //
 // REGRESSION_LEVEL convention (intensity progression):
 //   LEVEL 1 -- 300 random products and the threshold lengths, 2,000 sums per precision,
 //              300 limb quotients and the threshold lengths, 300 rounded quotients per precision
-//              (a twentieth of that at 40 and 60 limbs)
-//   LEVEL 2 -- 3,000, 20,000, 3,000 and 3,000
-//   LEVEL 3 -- 30,000, 200,000, 30,000 and 30,000
-//   LEVEL 4 -- 300,000, 2,000,000, 300,000 and 300,000
+//              (a twentieth of that at 40 and 60 limbs), 300 limb square roots and the lengths
+//   LEVEL 2 -- 3,000, 20,000, 3,000, 3,000 and 3,000
+//   LEVEL 3 -- 30,000, 200,000, 30,000, 30,000 and 30,000
+//   LEVEL 4 -- 300,000, 2,000,000, 300,000, 300,000 and 300,000
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -254,6 +258,60 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
+	// S^2 + R = N with R <= 2 S for efloat_mpn::sqrtrem: the square by the schoolbook multiply
+	int VerifySquareRoot(bool reportTestCases, std::mt19937_64& rng, size_t n) {
+		using namespace sw::universal::efloat_mpn;
+		const unsigned style = static_cast<unsigned>(rng() % 6);
+		std::vector<limb_t> a(2 * n);
+		for (auto& x : a) {
+			const uint64_t r = rng();
+			x = (style == 1) ? ~limb_t(0) : (style == 2 && (r & 3u) != 0u) ? ((r & 4u) ? ~limb_t(0) : 0u) : rng();
+		}
+		if (style == 3) {   // a perfect square, or one away from it
+			std::vector<limb_t> b(n), work(scratch_limbs(n));
+			for (auto& x : b) x = rng();
+			b[n - 1] |= limb_t(1) << 63;
+			mul_n(a.data(), b.data(), b.data(), n, work.data(), true);
+			if (rng() & 1u) { if (rng() & 1u) add_1(a.data(), 2 * n, 1u); else sub_1(a.data(), 2 * n, 1u); }
+		}
+		if (style == 4) {   // the top limb at or near a perfect square, where the base case's double estimate can be one low
+			const limb_t root = (limb_t(1) << 31) | (rng() & 0x7FFF'FFFFu);
+			a[2 * n - 1] = root * root + (rng() % 2048) - 1024;
+		}
+		if (a[2 * n - 1] < (limb_t(1) << 62)) a[2 * n - 1] |= limb_t(1) << 62;   // normalized
+		std::vector<limb_t> r = a, sq(n), scratch(sqrt_scratch_limbs(n));
+		const limb_t carry = sqrtrem(sq.data(), r.data(), n, scratch.data());
+
+		std::vector<limb_t> check(2 * n + 1, 0u), twice(n + 1, 0u);
+		mul_basecase(check.data(), sq.data(), n, sq.data(), n);
+		check[2 * n] = add_1(check.data() + n, n, add_n(check.data(), check.data(), r.data(), n));
+		check[2 * n] += add_1(check.data() + n, n, carry);
+		bool ok = (check[2 * n] == 0u);
+		for (size_t i = 0; ok && i < 2 * n; ++i) ok = (check[i] == a[i]);
+		// R <= 2 S: compare carry B^n + r with 2 S
+		twice[n] = add_n(twice.data(), sq.data(), sq.data(), n);
+		std::vector<limb_t> rem(n + 1);
+		for (size_t i = 0; i < n; ++i) rem[i] = r[i];
+		rem[n] = carry;
+		ok = ok && geq_n(twice.data(), rem.data(), n + 1) && carry <= 1u;
+		if (!ok && reportTestCases) std::cout << "    FAIL: " << n << " limb square root: S^2 + R != N or R > 2S\n";
+		return ok ? 0 : 1;
+	}
+
+	int VerifySquareRootKernel(bool reportTestCases, unsigned nrSamples) {
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(17632);
+		// one and two limbs (the base cases), the recursion's odd splits, and the division's
+		// divide-and-conquer threshold in the half-length divisions
+		for (size_t n : { size_t(1), size_t(2), size_t(3), size_t(4), size_t(5), size_t(7), size_t(31), size_t(32), size_t(33), size_t(64), size_t(65), size_t(129) }) {
+			for (int k = 0; k < 5; ++k) nrOfFailedTestCases += VerifySquareRoot(reportTestCases && nrOfFailedTestCases < 4, rng, n);
+		}
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			nrOfFailedTestCases += VerifySquareRoot(reportTestCases && nrOfFailedTestCases < 4, rng, 1 + rng() % 150);
+		}
+		return nrOfFailedTestCases;
+	}
+
 	// floor(A 2^k / B) as MSB-first limbs without leading zero limbs, a bit at a time; returns
 	// whether a remainder is left.  A and B are the MSB-first limb vectors as integers.
 	bool reference_quotient(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b, size_t k, std::vector<uint32_t>& q) {
@@ -395,7 +453,7 @@ namespace {
 int main() try {
 	using namespace sw::universal;
 
-	std::string test_suite          = "efloat multiplication, addition and division kernels";
+	std::string test_suite          = "efloat multiplication, addition, division and square root kernels";
 	std::string test_tag            = "limb kernels";
 	bool        reportTestCases     = true;
 	int         nrOfFailedTestCases = 0;
@@ -408,6 +466,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 100), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 100), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 100), "efloat", "rounded quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 100), "efloat", "limb square roots");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 
@@ -418,6 +477,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300), "efloat", "rounded quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300), "efloat", "limb square roots");
 #	endif
 
 #	if REGRESSION_LEVEL_2
@@ -425,6 +485,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 20000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 3000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 3000), "efloat", "rounded quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 3000), "efloat", "limb square roots");
 #	endif
 
 #	if REGRESSION_LEVEL_3
@@ -432,6 +493,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 200000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 30000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 30000), "efloat", "rounded quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 30000), "efloat", "limb square roots");
 #	endif
 
 #	if REGRESSION_LEVEL_4
@@ -439,6 +501,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300000), "efloat", "rounded quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300000), "efloat", "limb square roots");
 #	endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
