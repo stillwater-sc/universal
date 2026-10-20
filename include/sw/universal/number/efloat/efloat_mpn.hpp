@@ -1,5 +1,5 @@
 #pragma once
-// efloat_mpn.hpp: products of natural numbers on 64-bit limbs, the multiplication kernel of efloat
+// efloat_mpn.hpp: products and quotients of natural numbers on 64-bit limbs, the kernel of efloat
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -9,9 +9,10 @@
 // efloat stores its significand as 32-bit limbs, most significant first.  Its multiply packs both
 // operands into 64-bit limbs, least significant first, and multiplies those here: a 64 x 64 -> 128
 // bit partial product does the work of four 32 x 32 -> 64 bit ones, and above a threshold
-// Karatsuba replaces the schoolbook product (#1762).  The names follow GMP's mpn layer: every
-// operand is a pointer and a limb count, least significant limb first, and nothing allocates;
-// the caller provides the scratch space.
+// Karatsuba replaces the schoolbook product (#1762).  Its division divides the same way, a 64-bit
+// quotient limb per step and divide-and-conquer above a threshold (#1763).  The names follow
+// GMP's mpn layer: every operand is a pointer and a limb count, least significant limb first, and
+// nothing allocates; the caller provides the scratch space.
 #include <cstddef>
 #include <cstdint>
 #include <universal/internal/blocktype/carry.hpp>   // mul128, uint128_t
@@ -223,6 +224,277 @@ inline void mul(limb_t* r, const limb_t* a, std::size_t m, const limb_t* b, std:
 			carry = (r[off + n + i] < carry) ? 1u : 0u;
 		}
 	}
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Division (#1763).  The divisor is normalized, its top bit set.  Each quotient limb comes from
+// a precomputed reciprocal, as Moller and Granlund describe (Improved division by invariant
+// integers, IEEE Trans. Computers, 2011): a 3-by-2 limb estimate that is never more than one too
+// small, then one multiply-subtract of the divisor.  Above a threshold, the divide-and-conquer
+// division of Burnikel and Ziegler (as GMP's dcpi1_div_qr) splits the quotient in halves and
+// pays for each half with one product, so the division costs a few multiplications.
+
+// operands whose quotient and divisor both have at least this many limbs divide by divide-and-conquer
+inline constexpr std::size_t dc_div_threshold = 16;
+
+// the high and low limbs of a * b
+inline void umul(limb_t a, limb_t b, limb_t& hi, limb_t& lo) noexcept {
+#if defined(__SIZEOF_INT128__)
+	const uint128_t t = static_cast<uint128_t>(a) * b;
+	lo = static_cast<limb_t>(t);
+	hi = static_cast<limb_t>(t >> 64);
+#else
+	mul128(a, b, lo, hi);
+#endif
+}
+
+// floor((u1 B + u0) / d) for a normalized d and u1 < d, the quotient fits one limb
+inline limb_t udiv_2by1(limb_t u1, limb_t u0, limb_t d) noexcept {
+#if defined(__SIZEOF_INT128__)
+	return static_cast<limb_t>(((static_cast<uint128_t>(u1) << 64) | u0) / d);
+#else
+	// Knuth D on 32-bit digits (Hacker's Delight, divlu): two quotient digits
+	constexpr limb_t b32 = limb_t(1) << 32;
+	const limb_t dh = d >> 32, dl = d & 0xFFFF'FFFFu;
+	const limb_t uh = u0 >> 32, ul = u0 & 0xFFFF'FFFFu;
+	limb_t q1 = u1 / dh, r = u1 - q1 * dh;
+	while (q1 >= b32 || q1 * dl > ((r << 32) | uh)) { --q1; r += dh; if (r >= b32) break; }
+	const limb_t u21 = (u1 << 32) + uh - q1 * d;
+	limb_t q0 = u21 / dh;
+	r = u21 - q0 * dh;
+	while (q0 >= b32 || q0 * dl > ((r << 32) | ul)) { --q0; r += dh; if (r >= b32) break; }
+	return (q1 << 32) | q0;
+#endif
+}
+
+// the reciprocal of a normalized d: floor((B^2 - 1) / d) - B
+inline limb_t invert_limb(limb_t d) noexcept { return udiv_2by1(~d, ~limb_t(0), d); }
+
+// the reciprocal of the normalized two-limb divisor d1 B + d0: floor((B^3 - 1) / (d1 B + d0)) - B
+inline limb_t invert_pi1(limb_t d1, limb_t d0) noexcept {
+	limb_t v = invert_limb(d1);
+	limb_t p = d1 * v + d0;
+	if (p < d0) {
+		--v;
+		const limb_t mask = (p >= d1) ? ~limb_t(0) : 0u;
+		p -= d1;
+		v += mask;
+		p -= mask & d1;
+	}
+	limb_t t1, t0;
+	umul(d0, v, t1, t0);
+	p += t1;
+	if (p < t1) {
+		--v;
+		if (p >= d1 && (p > d1 || t0 >= d0)) --v;
+	}
+	return v;
+}
+
+// q = floor((n1 B + n0) / d), r = the remainder, for n1 < d and v = invert_limb(d)
+inline void udiv_qr_2by1(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d, limb_t v) noexcept {
+	limb_t qh, ql;
+	umul(n1, v, qh, ql);
+	ql += n0;
+	qh += n1 + 1u + ((ql < n0) ? 1u : 0u);
+	r = n0 - qh * d;
+	if (r > ql) { --qh; r += d; }
+	if (r >= d) { ++qh; r -= d; }
+	q = qh;
+}
+
+// q = floor((n2 B^2 + n1 B + n0) / (d1 B + d0)) and the two-limb remainder r1 B + r0, for
+// n2 B + n1 < d1 B + d0 and v = invert_pi1(d1, d0)
+inline void udiv_qr_3by2(limb_t& q, limb_t& r1, limb_t& r0, limb_t n2, limb_t n1, limb_t n0, limb_t d1, limb_t d0, limb_t v) noexcept {
+	limb_t q0;
+	umul(n2, v, q, q0);
+	q0 += n1;
+	q  += n2 + ((q0 < n1) ? 1u : 0u);
+	r1 = n1 - d1 * q;
+	// (r1, r0) = (r1, n0) - (d1, d0) - d0 q
+	limb_t borrow = (n0 < d0) ? 1u : 0u;
+	r0 = n0 - d0;
+	r1 = r1 - d1 - borrow;
+	limb_t t1, t0;
+	umul(d0, q, t1, t0);
+	borrow = (r0 < t0) ? 1u : 0u;
+	r0 -= t0;
+	r1 = r1 - t1 - borrow;
+	++q;
+	const limb_t mask = (r1 >= q0) ? ~limb_t(0) : 0u;
+	q += mask;
+	const limb_t a0 = mask & d0;
+	r0 += a0;
+	r1 += (mask & d1) + ((r0 < a0) ? 1u : 0u);
+	if (r1 >= d1 && (r1 > d1 || r0 >= d0)) {
+		++q;
+		borrow = (r0 < d0) ? 1u : 0u;
+		r0 -= d0;
+		r1 = r1 - d1 - borrow;
+	}
+}
+
+// r[0, n) -= a[0, n) * b, returns the borrow out of the top
+inline limb_t submul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+	limb_t carry = 0;
+	for (std::size_t i = 0; i < n; ++i) {
+#if defined(__SIZEOF_INT128__)
+		const uint128_t t  = static_cast<uint128_t>(a[i]) * b + carry;
+		const limb_t    lo = static_cast<limb_t>(t);
+		const limb_t    hi = static_cast<limb_t>(t >> 64);
+#else
+		limb_t hi, lo;
+		umul(a[i], b, hi, lo);
+		lo += carry;
+		hi += (lo < carry) ? 1u : 0u;
+#endif
+		const limb_t ri = r[i];
+		r[i]  = ri - lo;
+		carry = hi + ((ri < lo) ? 1u : 0u);
+	}
+	return carry;
+}
+
+// r[0, n) -= c, returns the borrow out of the top
+inline limb_t sub_1(limb_t* r, std::size_t n, limb_t c) noexcept {
+	for (std::size_t i = 0; i < n && c != 0; ++i) {
+		const limb_t ri = r[i];
+		r[i] = ri - c;
+		c = (ri < c) ? 1u : 0u;
+	}
+	return c;
+}
+
+// whether a[0, n) >= b[0, n)
+inline bool geq_n(const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+	for (std::size_t i = n; i-- > 0;) {
+		if (a[i] != b[i]) return a[i] > b[i];
+	}
+	return true;
+}
+
+// q[0, nn - 1) = the low limbs of floor(np[0, nn) / d), the remainder replaces np[0]; returns
+// the quotient's top limb, 0 or 1.  d normalized, v = invert_limb(d).
+inline limb_t divrem_1(limb_t* q, limb_t* np, std::size_t nn, limb_t d, limb_t v) noexcept {
+	limb_t r  = np[nn - 1];
+	limb_t qh = 0;
+	if (r >= d) { r -= d; qh = 1; }
+	for (std::size_t i = nn - 1; i-- > 0;) udiv_qr_2by1(q[i], r, r, np[i], d, v);
+	np[0] = r;
+	return qh;
+}
+
+// Schoolbook division: q[0, nn - dn) = the low limbs of floor(np[0, nn) / dp[0, dn)), the
+// remainder replaces np[0, dn); returns the quotient's top limb, 0 or 1.  dn >= 2, dp normalized,
+// v = invert_pi1 of its top two limbs.
+inline limb_t sbpi1_div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t v) noexcept {
+	const std::size_t qn = nn - dn;
+	limb_t* top = np + qn;
+	limb_t  qh  = 0;
+	if (geq_n(top, dp, dn)) { sub_n(top, top, dp, dn); qh = 1; }
+	const limb_t d1 = dp[dn - 1], d0 = dp[dn - 2];
+	limb_t n1 = np[nn - 1];
+	for (std::size_t j = qn; j-- > 0;) {
+		// divide np[j, j + dn] by dp; n1 is np[j + dn], already reduced below d
+		limb_t* w = np + j;
+		limb_t qj;
+		if (n1 == d1 && w[dn - 1] == d0) {
+			// the top two limbs equal the divisor's, so the quotient limb is B - 1: the borrow
+			// out of w[0, dn) cancels n1
+			qj = ~limb_t(0);
+			submul_1(w, dp, dn, qj);
+			n1 = w[dn - 1];
+		}
+		else {
+			limb_t n0;
+			udiv_qr_3by2(qj, n1, n0, n1, w[dn - 1], w[dn - 2], d1, d0, v);
+			const limb_t cy  = submul_1(w, dp, dn - 2, qj);
+			const limb_t cy1 = (n0 < cy) ? 1u : 0u;
+			n0 -= cy;
+			const limb_t cy2 = (n1 < cy1) ? 1u : 0u;
+			n1 -= cy1;
+			w[dn - 2] = n0;
+			if (cy2 != 0u) {   // the estimate was one too large: add the divisor back
+				n1 += d1 + add_n(w, w, dp, dn - 1);
+				--qj;
+			}
+		}
+		q[j] = qj;
+	}
+	np[dn - 1] = n1;
+	return qh;
+}
+
+// the scratch limbs div_qr needs for a divisor of dn limbs
+constexpr std::size_t div_scratch_limbs(std::size_t dn) noexcept { return dn + scratch_limbs(dn); }
+
+// sbpi1_div_qr for np[0, 2n) and dp[0, n) by divide-and-conquer: the high half of the quotient
+// from the top 3n/2 limbs and the high half of the divisor, corrected by the product of that
+// half with the low half of the divisor, then the low half the same way.  tp holds
+// div_scratch_limbs(n) limbs.
+inline limb_t dcpi1_div_qr_n(limb_t* q, limb_t* np, const limb_t* dp, std::size_t n, limb_t v, limb_t* tp) noexcept {
+	const std::size_t lo = n / 2;
+	const std::size_t hi = n - lo;
+	limb_t qh = (hi < dc_div_threshold) ? sbpi1_div_qr(q + lo, np + 2 * lo, 2 * hi, dp + lo, hi, v)
+	                                    : dcpi1_div_qr_n(q + lo, np + 2 * lo, dp + lo, hi, v, tp);
+	mul(tp, q + lo, hi, dp, lo, tp + n);
+	limb_t cy = sub_n(np + lo, np + lo, tp, n);
+	if (qh != 0u) cy += sub_n(np + n, np + n, dp, lo);
+	while (cy != 0u) {   // the estimate was too large: at most twice
+		qh -= sub_1(q + lo, hi, 1u);
+		cy -= add_n(np + lo, np + lo, dp, n);
+	}
+	const limb_t ql = (lo < dc_div_threshold) ? sbpi1_div_qr(q, np + hi, 2 * lo, dp + hi, lo, v)
+	                                          : dcpi1_div_qr_n(q, np + hi, dp + hi, lo, v, tp);
+	mul(tp, dp, hi, q, lo, tp + n);
+	cy = sub_n(np, np, tp, n);
+	if (ql != 0u) cy += sub_n(np + lo, np + lo, dp, hi);
+	while (cy != 0u) {
+		sub_1(q, lo, 1u);
+		cy -= add_n(np, np, dp, n);
+	}
+	return qh;
+}
+
+// A quotient shorter than the divisor, qn = nn - dn < dn: divide the top 2 qn limbs of np by the
+// top qn limbs of dp, then subtract the quotient times the divisor's remaining limbs and correct.
+inline limb_t dcpi1_div_qr_short(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t v, limb_t* tp) noexcept {
+	const std::size_t qn = nn - dn;
+	const std::size_t in = dn - qn;
+	limb_t qh = dcpi1_div_qr_n(q, np + in, dp + in, qn, v, tp);
+	mul(tp, q, qn, dp, in, tp + dn);   // dn limbs
+	limb_t cy = sub_n(np, np, tp, dn);
+	if (qh != 0u) cy += sub_n(np + qn, np + qn, dp, in);
+	while (cy != 0u) {
+		qh -= sub_1(q, qn, 1u);
+		cy -= add_n(np, np, dp, dn);
+	}
+	return qh;
+}
+
+// q[0, nn - dn) = the low limbs of floor(np[0, nn) / dp[0, dn)), the remainder replaces
+// np[0, dn); returns the quotient's top limb, 0 or 1.  nn >= dn >= 1, dp normalized (its top bit
+// set) and overlapping neither np nor q, s holds div_scratch_limbs(dn) limbs.
+inline limb_t div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t* s) noexcept {
+	if (dn == 1) return divrem_1(q, np, nn, dp[0], invert_limb(dp[0]));
+	const limb_t      v  = invert_pi1(dp[dn - 1], dp[dn - 2]);
+	const std::size_t qn = nn - dn;
+	if (dn < dc_div_threshold || qn < dc_div_threshold) return sbpi1_div_qr(q, np, nn, dp, dn, v);
+	if (qn < dn) return dcpi1_div_qr_short(q, np, nn, dp, dn, v, s);
+	// a long quotient: a first block of qn mod dn limbs (or dn), then blocks of dn limbs, each
+	// dividing the 2 dn limbs below the remainder of the last
+	const std::size_t first = (qn % dn == 0) ? dn : qn % dn;
+	std::size_t off = qn - first;
+	limb_t qh;
+	if (first == dn)                   qh = dcpi1_div_qr_n(q + off, np + off, dp, dn, v, s);
+	else if (first < dc_div_threshold) qh = sbpi1_div_qr(q + off, np + off, dn + first, dp, dn, v);
+	else                               qh = dcpi1_div_qr_short(q + off, np + off, dn + first, dp, dn, v, s);
+	while (off > 0) {
+		off -= dn;
+		dcpi1_div_qr_n(q + off, np + off, dp, dn, v, s);
+	}
+	return qh;
 }
 
 }}}  // namespace sw::universal::efloat_mpn
