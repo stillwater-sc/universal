@@ -460,31 +460,7 @@ public:
 			return *this;
 		}
 
-		std::vector<uint32_t> quotient;
-		bool remainder_non_zero = false;
-		const bool result_sign = (_sign != rhs._sign);
-		const unsigned target_prec = precision_limbs();
-		divide_limbs(quotient, _limb, rhs._limb, target_prec + 1, remainder_non_zero); // generate target_prec + 1 limbs
-
-		// a significand below the divisor's leaves the first quotient bit 0: bring the leading bit
-		// to the top before rounding, or the quotient rounds one bit short (#1757).  The bit that
-		// enters at the bottom lies below the guard bit, where only the sticky remainder counts.
-		if (!quotient.empty() && (quotient[0] & 0x80000000u) == 0u) {
-			for (size_t i = 0; i + 1 < quotient.size(); ++i) quotient[i] = (quotient[i] << 1) | (quotient[i + 1] >> 31);
-			quotient.back() <<= 1;
-			--_exponent;
-		}
-
-		if (round_limbs(quotient, target_prec, efloat_rounding_mode, result_sign, remainder_non_zero)) {
-			quotient.insert(quotient.begin(), 1u);
-			_exponent += 32;
-		}
-
-		_limb = std::move(quotient);
-		_exponent = _exponent - rhs._exponent;
-		_sign = result_sign;
-
-		normalize();
+		divide_magnitude(rhs._limb.data(), rhs._limb.size(), rhs._exponent, rhs._sign);
 		return *this;
 		}
 	constexpr efloat& operator/=(double rhs) noexcept {
@@ -493,8 +469,9 @@ public:
 	// an integer operand converts exactly (all 64 bits), not through double
 	template<typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 	constexpr efloat& operator/=(Integer rhs) noexcept {
-		// a divisor of one limb, such as the (2n-1)(2n) of a series term, divides in place (#1761);
-		// powers of 2, zero and the special values take the general path
+		// a divisor of one limb, such as the (2n-1)(2n) of a series term, divides in place (#1761),
+		// a wider one without a temporary efloat; powers of 2, zero and the special values take
+		// the general path
 		if (_state == FloatingPointState::Normal) {
 			bool     negative  = false;
 			uint64_t magnitude = 0;
@@ -505,8 +482,14 @@ public:
 			else {
 				magnitude = static_cast<uint64_t>(rhs);
 			}
-			if (magnitude <= 0xFFFF'FFFFull && (magnitude & (magnitude - 1u)) != 0u) {
-				divide_by_limb(static_cast<uint32_t>(magnitude), negative);
+			if ((magnitude & (magnitude - 1u)) != 0u) {
+				if (magnitude <= 0xFFFF'FFFFull) {
+					divide_by_limb(static_cast<uint32_t>(magnitude), negative);
+				}
+				else {
+					const native_limbs b = integer_limbs(rhs);
+					divide_magnitude(b.limb, b.n, b.exponent, b.sign);
+				}
 				return *this;
 			}
 		}
@@ -1026,8 +1009,8 @@ protected:
 	// once in the current mode (#1761): the quotient as operator/= forms it, without building
 	// an efloat for d or a general long division.  The significand A (na limbs, read as a
 	// fraction) is divided a limb at a time by d, normalized to dn = d 2^s by feeding A 2^s, with
-	// Moller and Granlund's reciprocal (as divide_limbs).  The quotient A/d has 2 to 33 leading
-	// zero bits (d >= 3), so target + 3 quotient limbs leave the guard limb exact after the
+	// Moller and Granlund's reciprocal (as efloat_mpn::divrem_1).  The quotient A/d has 2 to 33
+	// leading zero bits (d >= 3), so target + 3 quotient limbs leave the guard limb exact after the
 	// leading bit is moved to the top; the remainder is the sticky bit.  A correctly rounded
 	// quotient is unique, so the result is the one the general path returns.
 	constexpr void divide_by_limb(uint32_t d, bool negative) {
@@ -1109,141 +1092,82 @@ protected:
 		return false;
 	}
 
-	// The quotient of two significands, a / b, as max_limbs limbs MSB first, the first bit
-	// weighing 2^0 (so a quotient below 1 leaves it clear), truncated; remainder_non_zero says
-	// whether anything was cut off. a and b are MSB-first limb vectors whose first limbs are
-	// aligned: both stand for fractions of the same scale, whatever their lengths.
-	//
-	// Long division a word at a time, Knuth's Algorithm D (TAOCP 4.3.1, as Hacker's Delight
-	// divmnu): one 64-by-32-bit estimate of each 32-bit quotient digit, corrected at most twice,
-	// then one multiply-subtract of the divisor. It replaced a bit-serial loop that compared,
-	// subtracted and shifted the whole dividend for every quotient bit, 32 times the work (#1714).
-	// Zero limbs at the bottom of b are dropped first, so a divisor such as 7, padded out to the
-	// dividend's length, divides in O(n).
-	static constexpr void divide_limbs(std::vector<uint32_t>& quotient, const std::vector<uint32_t>& a, const std::vector<uint32_t>& b, unsigned max_limbs, bool& remainder_non_zero) {
-		constexpr uint64_t base = uint64_t(1) << 32;
-		quotient.assign(max_limbs, 0u);
-		remainder_non_zero = false;
+	// *this = *this / b for finite nonzero operands, rounded once in the current mode: the
+	// significands as integers A and B (trailing zero limbs dropped, so a divisor such as 7, padded
+	// out to the dividend's length, costs one limb), Q = floor(A 2^shift / B) with as many bits as
+	// the precision plus a limb, and the remainder for the sticky bit.  Both are exact: efloat_mpn
+	// divides on 64-bit limbs, schoolbook with a 3-by-2 reciprocal below its threshold and
+	// divide-and-conquer above it, which costs a few multiplications (#1763).  Before, Knuth's
+	// Algorithm D ran on 32-bit limbs, a quotient digit at a time.
+	void divide_magnitude(const uint32_t* b, size_t nb, int64_t eb, bool b_sign) {
+		using efloat_mpn::limb_t;
+		const uint32_t* a  = _limb.data();
+		size_t          na = _limb.size();
+		while (na > 1 && a[na - 1] == 0u) --na;
+		while (nb > 1 && b[nb - 1] == 0u) --nb;
+		const size_t max_limbs = precision_limbs() + 1;   // 32-bit quotient limbs, the first bit weighing 2^0
 
-		size_t na = a.size();
-		while (na > 1 && a[na - 1] == 0) --na;
-		size_t nb = b.size();
-		while (nb > 1 && b[nb - 1] == 0) --nb;
-		size_t lead_b = 0;   // leading zero limbs of b, which a normalized operand does not have
-		while (lead_b < nb && b[lead_b] == 0) ++lead_b;
-		if (lead_b == nb) return;   // division by zero is the caller's to handle
+		// the bits of an MSB-first limb vector as an integer, 64 at a time from bit p; p may be
+		// negative, and the bits below 0 and above the top are zero
+		auto bits_at = [](const uint32_t* v, size_t n, int64_t p) -> limb_t {
+			auto limb32 = [v, n](int64_t j) -> limb_t {
+				return (j >= 0 && j < static_cast<int64_t>(n)) ? limb_t(v[n - 1 - static_cast<size_t>(j)]) : 0u;
+			};
+			if (p <= -64) return 0u;
+			if (p < 0) {
+				const limb_t w = limb32(0) | (limb32(1) << 32);
+				return w << static_cast<unsigned>(-p);
+			}
+			const int64_t  j = p / 32;
+			const unsigned r = static_cast<unsigned>(p % 32);
+			const limb_t   w = limb32(j) | (limb32(j + 1) << 32);
+			return (r == 0u) ? w : ((w >> r) | (limb32(j + 2) << (64u - r)));
+		};
 
-		// Q = floor(A * 2^shift / B) with A, B the limbs as integers:
-		// a / b = (A / B) * 2^(32 (nb - na)), and the first quotient bit weighs 2^(32 max_limbs - 1)
-		const int64_t shift = 32 * (int64_t(max_limbs) + int64_t(nb) - int64_t(na)) - 1;
+		// the divisor B, normalized to dn limbs with its top bit set; a / b = (A / B) 2^(32 (nb - na))
+		size_t lead = 0;
+		while (lead + 1 < nb && b[lead] == 0u) ++lead;
+		const int64_t bits_b = 32 * static_cast<int64_t>(nb - lead) - clz(b[lead]);
+		const size_t  dn     = static_cast<size_t>((bits_b + 63) / 64);
+		const int64_t sb     = 64 * static_cast<int64_t>(dn) - bits_b;
+		// the dividend N = A 2^(shift + sb): Q = floor(N / (B 2^sb)) has its first bit at 2^(32 max_limbs - 1)
+		const int64_t shift  = 32 * (static_cast<int64_t>(max_limbs) + static_cast<int64_t>(nb) - static_cast<int64_t>(na)) - 1;
+		const int64_t total  = shift + sb;
+		const int64_t bits_n = 32 * static_cast<int64_t>(na) + total;   // N < 2^bits_n
+		size_t nn = (bits_n > 0) ? static_cast<size_t>((bits_n + 63) / 64) : 0u;
+		if (nn < dn) nn = dn;
+		const size_t qn = nn - dn + 1;          // with the top limb div_qr returns
+		const size_t ql = (max_limbs + 1) / 2;  // the 64-bit limbs the quotient's bits fill
 
-		// the divisor, LSB first, without its leading zero limbs, normalized so its top bit is set
-		const size_t n = nb - lead_b;
-		std::vector<uint32_t> v(n);
-		for (size_t i = 0; i < n; ++i) v[i] = b[nb - 1 - i];
-		const unsigned s = static_cast<unsigned>(clz(v[n - 1]));
-
-		// the dividend N = A * 2^(shift + s), LSB first; bits shifted out below are sticky
-		const int64_t total = shift + int64_t(s);
-		std::vector<uint32_t> u;
-		if (total >= 0) {
-			const size_t limb_shift = static_cast<size_t>(total / 32);
-			const unsigned bit_shift = static_cast<unsigned>(total % 32);
-			u.assign(limb_shift + na + 1, 0u);
-			for (size_t i = 0; i < na; ++i) {
-				const uint64_t x = uint64_t(a[na - 1 - i]) << bit_shift;
-				u[limb_shift + i] |= static_cast<uint32_t>(x);
-				u[limb_shift + i + 1] |= static_cast<uint32_t>(x >> 32);
+		scratch_buffer<limb_t, 1024> buffer;
+		const size_t qlen = std::max(qn, ql);
+		limb_t* d    = buffer.get(dn + nn + qlen + efloat_mpn::div_scratch_limbs(dn));
+		limb_t* num  = d + dn;
+		limb_t* q    = num + nn;
+		limb_t* work = q + qlen;
+		for (size_t k = 0; k < dn; ++k) d[k] = bits_at(b, nb, 64 * static_cast<int64_t>(k) - sb);
+		for (size_t k = 0; k < nn; ++k) num[k] = bits_at(a, na, 64 * static_cast<int64_t>(k) - total);
+		bool sticky = false;
+		if (total < 0) {   // more dividend bits than the quotient can use: those below are sticky
+			for (int64_t p = 0; !sticky && p < -total; p += 64) {
+				limb_t w = bits_at(a, na, p);
+				if (-total - p < 64) w &= (limb_t(1) << static_cast<unsigned>(-total - p)) - 1u;
+				sticky = (w != 0u);
 			}
 		}
-		else {
-			// more dividend limbs than the quotient can use: shift A right
-			const uint64_t rs = static_cast<uint64_t>(-total);
-			const size_t limb_drop = static_cast<size_t>(rs / 32);
-			const unsigned bit_drop = static_cast<unsigned>(rs % 32);
-			if (limb_drop >= na) { remainder_non_zero = true; return; }   // a / b is below the last quotient bit
-			const size_t len = na - limb_drop;
-			u.assign(len + 1, 0u);
-			for (size_t i = 0; i < limb_drop; ++i) remainder_non_zero = remainder_non_zero || (a[na - 1 - i] != 0);
-			if (bit_drop != 0u) remainder_non_zero = remainder_non_zero || ((a[na - 1 - limb_drop] & ((1u << bit_drop) - 1u)) != 0u);
-			for (size_t i = 0; i < len; ++i) {
-				uint64_t x = uint64_t(a[na - 1 - limb_drop - i]) >> bit_drop;
-				if (bit_drop != 0u && limb_drop + i + 1 < na) x |= uint64_t(a[na - 2 - limb_drop - i]) << (32u - bit_drop);
-				u[i] = static_cast<uint32_t>(x);
-			}
-		}
-		if (s != 0u) {
-			for (size_t i = n - 1; i > 0; --i) v[i] = static_cast<uint32_t>((uint64_t(v[i]) << s) | (uint64_t(v[i - 1]) >> (32u - s)));
-			v[0] <<= s;
-		}
-		const size_t m = u.size();
-		if (m < n + 1) u.resize(n + 1, 0u);   // a dividend shorter than the divisor: quotient 0
-		const size_t mu = u.size();
-		std::vector<uint32_t> q(mu - n, 0u);
+		for (size_t k = 0; k < qlen; ++k) q[k] = 0u;
+		q[nn - dn] = efloat_mpn::div_qr(q, num, nn, d, dn, work);
+		for (size_t k = 0; !sticky && k < dn; ++k) sticky = (num[k] != 0u);
 
-		if (n == 1) {
-			// A single-limb divisor, as the small integers that divide the series terms (#1761).
-			// The divisor is normalized, so each 64-by-32 step divides by a precomputed reciprocal,
-			// Moller and Granlund's div_2by1 (Improved division by invariant integers, 2011,
-			// Algorithm 4): two multiplications instead of a hardware division, which costs ~30
-			// cycles. The quotient and remainder are exact, as before.
-			const uint32_t d   = v[0];
-			const uint32_t inv = static_cast<uint32_t>(~uint64_t(0) / d - (uint64_t(1) << 32));
-			uint32_t r = 0;
-			for (size_t j = mu; j-- > 0;) {
-				// r < d, so floor((r 2^32 + u[j]) / d) fits one limb
-				const uint64_t prod = uint64_t(inv) * r + ((uint64_t(r) << 32) | u[j]);
-				uint32_t qj = static_cast<uint32_t>(prod >> 32) + 1u;
-				uint32_t rj = u[j] - qj * d;
-				if (rj > static_cast<uint32_t>(prod)) { --qj; rj += d; }
-				if (rj >= d) { ++qj; rj -= d; }
-				if (j < q.size()) q[j] = qj;
-				r = rj;
-			}
-			remainder_non_zero = remainder_non_zero || (r != 0);
-		}
-		else {
-			for (size_t j = mu - n; j-- > 0;) {
-				const uint64_t top = (uint64_t(u[j + n]) << 32) | u[j + n - 1];
-				uint64_t qhat = top / v[n - 1];
-				uint64_t rhat = top % v[n - 1];
-				while (qhat >= base || qhat * v[n - 2] > ((rhat << 32) | u[j + n - 2])) {
-					--qhat;
-					rhat += v[n - 1];
-					if (rhat >= base) break;
-				}
-				// u[j .. j+n] -= qhat * v
-				int64_t borrow = 0;
-				uint64_t carry = 0;
-				for (size_t i = 0; i < n; ++i) {
-					const uint64_t p = qhat * v[i] + carry;
-					carry = p >> 32;
-					const int64_t t = int64_t(u[i + j]) - borrow - int64_t(p & 0xFFFF'FFFFull);
-					u[i + j] = static_cast<uint32_t>(t);
-					borrow = (t < 0) ? 1 : 0;
-				}
-				const int64_t t = int64_t(u[j + n]) - borrow - int64_t(carry);
-				u[j + n] = static_cast<uint32_t>(t);
-				if (t < 0) {
-					// qhat was one too large: add the divisor back
-					--qhat;
-					uint64_t c = 0;
-					for (size_t i = 0; i < n; ++i) {
-						const uint64_t sum = uint64_t(u[i + j]) + v[i] + c;
-						u[i + j] = static_cast<uint32_t>(sum);
-						c = sum >> 32;
-					}
-					u[j + n] = static_cast<uint32_t>(uint64_t(u[j + n]) + c);
-				}
-				q[j] = static_cast<uint32_t>(qhat);
-			}
-			for (size_t i = 0; i < n && !remainder_non_zero; ++i) remainder_non_zero = (u[i] != 0);
-		}
-
-		// the quotient fits max_limbs limbs, since a / b < 2; return them MSB first
-		for (size_t i = 0; i < max_limbs && i < q.size(); ++i) quotient[max_limbs - 1 - i] = q[i];
+		_sign = (_sign != b_sign);
+		// the quotient's 32-bit limbs, most significant first, then a limb that only the sticky
+		// bit sets: it lies below the guard bit whether or not the leading bit needs a shift
+		assign_rounded([q, max_limbs](size_t i) -> uint32_t {
+			if (i >= max_limbs) return 1u;
+			const size_t k = max_limbs - 1 - i;
+			return static_cast<uint32_t>(q[k / 2] >> (32u * (k & 1u)));
+		}, max_limbs + (sticky ? 1u : 0u), _exponent - eb);
 	}
-
 
 	// convert arithmetic types into an elastic floating-point
 	template<typename SignedInt,

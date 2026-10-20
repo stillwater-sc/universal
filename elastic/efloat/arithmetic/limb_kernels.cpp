@@ -1,4 +1,4 @@
-// limb_kernels.cpp: efloat's multiplication and addition kernels against exact references (#1762)
+// limb_kernels.cpp: efloat's multiplication, addition and division kernels against exact references (#1762, #1763)
 //
 //   x * y    at a precision wide enough to hold the whole product, so the result is exact: its
 //            limbs must be the schoolbook product's, normalized, and no Inexact flag is raised.
@@ -13,12 +13,21 @@
 //            operand the longer, and near-cancellations, including one by an operand that carries
 //            no precision and is longer than the target across a one-bit gap (#1767: it lost its
 //            last bits to the sticky bit, and 2 - (2 - 2^-127) came out 2^-126 - 2^-158).
+//   div_qr   efloat_mpn's division on 64-bit limbs must leave N = Q D + R with R < D, the product
+//            by the schoolbook multiply: one- and two-limb divisors, the divide-and-conquer
+//            threshold and its doublings, quotients shorter and longer than the divisor, and
+//            dividends whose top limbs equal the divisor's.
+//   x / y    must be the exact quotient, from a bit-serial reference, rounded once to the target
+//            in every rounding mode: dividends and divisors longer than the quotient, exact
+//            quotients, and exact quotients but for a dividend limb that only the sticky bit sees.
 //
 // REGRESSION_LEVEL convention (intensity progression):
-//   LEVEL 1 -- 300 random products and the threshold lengths, 2,000 sums per precision
-//   LEVEL 2 -- 3,000 and 20,000
-//   LEVEL 3 -- 30,000 and 200,000
-//   LEVEL 4 -- 300,000 and 2,000,000
+//   LEVEL 1 -- 300 random products and the threshold lengths, 2,000 sums per precision,
+//              300 limb quotients and the threshold lengths, 300 rounded quotients per precision
+//              (a twentieth of that at 40 and 60 limbs)
+//   LEVEL 2 -- 3,000, 20,000, 3,000 and 3,000
+//   LEVEL 3 -- 30,000, 200,000, 30,000 and 30,000
+//   LEVEL 4 -- 300,000, 2,000,000, 300,000 and 300,000
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -192,6 +201,183 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
+	// N = Q D + R with R < D for efloat_mpn::div_qr: the product by the schoolbook multiply,
+	// which shares nothing with the division
+	int VerifyQuotient(bool reportTestCases, std::mt19937_64& rng, size_t dn, size_t qn) {
+		using namespace sw::universal::efloat_mpn;
+		auto random64 = [&rng](size_t n, unsigned style) {
+			std::vector<limb_t> v(n);
+			for (auto& x : v) {
+				const uint64_t r = rng();
+				x = (style == 1) ? ~limb_t(0) : (style == 2 && (r & 3u) != 0u) ? ((r & 4u) ? ~limb_t(0) : 0u) : rng();
+			}
+			return v;
+		};
+		const size_t nn = dn + qn;
+		std::vector<limb_t> d = random64(dn, static_cast<unsigned>(rng() % 3));
+		d[dn - 1] |= limb_t(1) << 63;
+		std::vector<limb_t> n = random64(nn, static_cast<unsigned>(rng() % 3));
+		if (rng() % 4 == 0) {   // the dividend's top limbs equal the divisor's: the estimate B - 1
+			for (size_t i = 0; i < dn; ++i) n[qn + i] = d[i];
+			if (qn > 0 && (rng() & 1u)) n[nn - 2] = d[dn - 1];
+		}
+		std::vector<limb_t> r = n, q(qn + 1), scratch(div_scratch_limbs(dn));
+		q[qn] = div_qr(q.data(), r.data(), nn, d.data(), dn, scratch.data());
+
+		std::vector<limb_t> check(qn + 1 + dn);
+		mul_basecase(check.data(), q.data(), qn + 1, d.data(), dn);
+		const limb_t carry = add_1(check.data() + dn, qn + 1, add_n(check.data(), check.data(), r.data(), dn));
+		bool ok = (carry == 0u) && (check[nn] == 0u) && !geq_n(r.data(), d.data(), dn);
+		for (size_t i = 0; ok && i < nn; ++i) ok = (check[i] == n[i]);
+		if (!ok && reportTestCases) std::cout << "    FAIL: " << qn << " by " << dn << " limb division: N != Q D + R or R >= D\n";
+		return ok ? 0 : 1;
+	}
+
+	int VerifyQuotientKernel(bool reportTestCases, unsigned nrSamples) {
+		using sw::universal::efloat_mpn::dc_div_threshold;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(1763);
+		// one-limb and two-limb divisors, the divide-and-conquer threshold and its doublings,
+		// quotients shorter than, as long as, and several blocks longer than the divisor
+		const size_t t = dc_div_threshold;
+		const size_t lengths[] = { 1, 2, 3, t - 1, t, t + 1, 2 * t - 1, 2 * t, 2 * t + 1, 4 * t, 4 * t + 3, 128, 129 };
+		for (size_t dn : lengths) {
+			for (size_t qn : { size_t(0), size_t(1), t - 1, t, dn - 1, dn, dn + 1, 2 * dn, 3 * dn + t + 2 }) {
+				nrOfFailedTestCases += VerifyQuotient(reportTestCases && nrOfFailedTestCases < 4, rng, dn, qn);
+			}
+		}
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			const size_t dn = 1 + rng() % 200;
+			const size_t qn = (i % 4 == 0) ? rng() % 8 : rng() % 300;
+			nrOfFailedTestCases += VerifyQuotient(reportTestCases && nrOfFailedTestCases < 4, rng, dn, qn);
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// floor(A 2^k / B) as MSB-first limbs without leading zero limbs, a bit at a time; returns
+	// whether a remainder is left.  A and B are the MSB-first limb vectors as integers.
+	bool reference_quotient(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b, size_t k, std::vector<uint32_t>& q) {
+		const size_t nb = b.size();
+		std::vector<uint32_t> d(b.rbegin(), b.rend()), r(nb + 1, 0u);   // least significant first
+		const size_t total = 32 * a.size() + k;
+		std::vector<uint32_t> bits((total + 31) / 32, 0u);   // the quotient, least significant first
+		for (size_t t = total; t-- > 0;) {
+			uint32_t in = 0;
+			if (t >= k) {
+				const size_t j = t - k;   // bit j of A
+				in = (a[a.size() - 1 - j / 32] >> (j % 32)) & 1u;
+			}
+			for (size_t i = nb + 1; i-- > 1;) r[i] = (r[i] << 1) | (r[i - 1] >> 31);
+			r[0] = (r[0] << 1) | in;
+			bool geq = (r[nb] != 0u);
+			if (!geq) {
+				geq = true;
+				for (size_t i = nb; i-- > 0;) {
+					if (r[i] != d[i]) { geq = (r[i] > d[i]); break; }
+				}
+			}
+			if (geq) {
+				int64_t borrow = 0;
+				for (size_t i = 0; i <= nb; ++i) {
+					const int64_t v = int64_t(r[i]) - (i < nb ? int64_t(d[i]) : 0) - borrow;
+					r[i]   = static_cast<uint32_t>(v);
+					borrow = (v < 0) ? 1 : 0;
+				}
+				bits[t / 32] |= 1u << (t % 32);
+			}
+		}
+		q.assign(bits.rbegin(), bits.rend());
+		while (q.size() > 1 && q[0] == 0u) q.erase(q.begin());
+		for (uint32_t w : r) if (w != 0u) return true;
+		return false;
+	}
+
+	// x / y must be the exact quotient rounded once to the target in every rounding mode: the
+	// reference quotient with enough bits and a sticky limb, rounded by set_precision.  Operands
+	// of 1 to p limbs, dividends and divisors that carry no precision and are longer than the
+	// quotient (their extra bits reach the result only through the sticky bit), exact quotients
+	// (x y) / y, and exact quotients but for one limb of the dividend below the quotient's reach.
+	int VerifyRoundedQuotients(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(17631);
+		const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+		                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+		const unsigned precisions[] = { 1, 2, 5, 16, 40, 60 };   // in limbs: 60 reaches divide-and-conquer, 64 is Real's cap
+		const RoundingMode saved = efloat_rounding_mode;
+		for (unsigned p : precisions) {
+			const unsigned samples = (p >= 40) ? 1 + nrSamples / 20 : nrSamples;
+			for (unsigned i = 0; i < samples; ++i) {
+				const unsigned target = 32 * p;
+				// 0, 1: within the precision, 2: a long dividend, 3: a long divisor, 4: exact, 5: exact but
+				// for a limb below the quotient's last bit, which only the sticky bit can see
+				const unsigned shape  = i % 6;
+				// a long operand must still fit Real's 64 limbs, or clear_precision() rounds it
+				const size_t cap = Real::maxNrLimbs;
+				size_t nx = 1 + rng() % p, ny = 1 + rng() % p;
+				if (shape == 2 && p + 3 <= cap) {   // more dividend bits than the quotient can use
+					ny = 1 + rng() % std::min<size_t>(p, cap - p - 2);   // y is rounded to p limbs
+					nx = p + ny + 1 + rng() % (cap - p - ny);
+				}
+				if (shape == 3) ny = p + 1 + rng() % std::min<size_t>(8, cap - p);
+				std::vector<uint32_t> a = random_limbs(rng, nx), b = random_limbs(rng, ny);
+				const int64_t ex = static_cast<int64_t>(rng() % 201) - 100, ey = static_cast<int64_t>(rng() % 201) - 100;
+				const bool    sx = (rng() & 1u) != 0u, sy = (rng() & 1u) != 0u;
+				Real x = make(a, ex, sx, 32 * static_cast<unsigned>(nx)), y = make(b, ey, sy, 32 * static_cast<unsigned>(ny));
+				int64_t eax = ex;
+				bool    nax = sx;   // the dividend's exponent and sign
+				if (shape >= 4) {   // x = (an operand) * y, exact at a precision that holds it
+					const size_t room = std::min<size_t>(p, Real::maxNrLimbs - ny);   // x must fit Real, which holds 64 limbs
+					std::vector<uint32_t> c = random_limbs(rng, 1 + rng() % room);
+					const Real cx = make(c, ex, sx, 32 * static_cast<unsigned>(c.size() + ny));
+					Real yy = y;
+					yy.set_precision(32 * static_cast<unsigned>(c.size() + ny));
+					x   = cx * yy;
+					a   = x.bits();
+					eax = x.scale();
+					nax = (x.sign() == -1);
+					if (shape == 5 && p + ny + 4 <= cap) {
+						a.resize(p + ny + 2 + rng() % 3, 0u);   // past the quotient's last bit, then nonzero
+						a.back() = static_cast<uint32_t>(rng()) | 1u;
+						nx = a.size();
+						x  = make(a, eax, nax, 32 * static_cast<unsigned>(nx));
+					}
+					nx  = a.size();
+				}
+				if (shape == 2 || shape >= 4) { x.clear_precision(); y.set_precision(target); }   // x keeps every bit
+				else if (shape == 3) { y.clear_precision(); x.set_precision(target); }
+				else { x.set_precision(target); y.set_precision(target); }
+
+				// the quotient with at least target + 2 limbs of bits, the leading one weighing
+				// 2^(ex - ey + 32 (ny - nx) - k + L - 1) for L bits
+				const size_t k = 32 * (p + 2 + ((ny > nx) ? ny - nx : 0));
+				std::vector<uint32_t> q;
+				const bool sticky = reference_quotient(a, b, k, q);
+				const int64_t length = 32 * static_cast<int64_t>(q.size()) - static_cast<int64_t>(sw::universal::clz(q[0]));
+				const int64_t eq = eax - ey + 32 * (static_cast<int64_t>(ny) - static_cast<int64_t>(nx)) - static_cast<int64_t>(k) + length - 1;
+				const unsigned sh = static_cast<unsigned>(sw::universal::clz(q[0]));
+				if (sh != 0u) {
+					for (size_t j = 0; j + 1 < q.size(); ++j) q[j] = (q[j] << sh) | (q[j + 1] >> (32u - sh));
+					q.back() <<= sh;
+				}
+				if (sticky) q.push_back(1u);
+				Real reference = make(q, eq, nax != sy, 32 * static_cast<unsigned>(q.size()));
+				efloat_rounding_mode = modes[i % 4];
+				reference.set_precision(target);   // rounds once, in the current mode
+				const Real quotient = x / y;
+				Real compound = x;
+				compound /= y;
+				const bool ok = identical(quotient, reference) && identical(compound, reference);
+				efloat_rounding_mode = saved;
+				if (!ok) {
+					++nrOfFailedTestCases;
+					if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: " << nx << " by " << ny << " limb x / y (shape " << shape << ") at " << target << " bits is not the rounded exact quotient\n";
+				}
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
 }  // anonymous namespace
 
 #define MANUAL_TESTING 0
@@ -209,7 +395,7 @@ namespace {
 int main() try {
 	using namespace sw::universal;
 
-	std::string test_suite          = "efloat multiplication and addition kernels";
+	std::string test_suite          = "efloat multiplication, addition and division kernels";
 	std::string test_tag            = "limb kernels";
 	bool        reportTestCases     = true;
 	int         nrOfFailedTestCases = 0;
@@ -220,6 +406,8 @@ int main() try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 30), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 100), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 100), "efloat", "limb quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 100), "efloat", "rounded quotients");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 
@@ -228,21 +416,29 @@ int main() try {
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 300), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300), "efloat", "limb quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300), "efloat", "rounded quotients");
 #	endif
 
 #	if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 3000), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 20000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 3000), "efloat", "limb quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 3000), "efloat", "rounded quotients");
 #	endif
 
 #	if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 30000), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 200000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 30000), "efloat", "limb quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 30000), "efloat", "rounded quotients");
 #	endif
 
 #	if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 300000), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300000), "efloat", "limb quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300000), "efloat", "rounded quotients");
 #	endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
