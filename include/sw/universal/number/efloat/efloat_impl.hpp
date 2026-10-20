@@ -303,8 +303,7 @@ public:
 
 	// prefix operators
 	constexpr efloat operator-() const noexcept {
-		if (iszero()) return *this;
-		efloat negated(*this);
+		efloat negated(*this);   // -(+0) = -0, as IEEE-754 negation (#1768)
 		negated.setsign(!_sign);
 		return negated;
 	}
@@ -365,14 +364,16 @@ public:
 					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
 				}
 			} else {
+				const bool negative = (_sign != rhs._sign);   // before the assignment replaces it (#1768)
 				*this = rhs;
-				_sign = (_sign != rhs._sign);
+				_sign = negative;
 			}
 			return *this;
 		}
 		if (iszero() || rhs.iszero()) {
+			const bool negative = (_sign != rhs._sign);   // before setzero() clears it (#1768)
 			setzero();
-			_sign = (_sign != rhs._sign);
+			_sign = negative;
 			return *this;
 		}
 
@@ -433,7 +434,8 @@ public:
 			return *this;
 		}
 		if (iszero()) {
-			return *this; // 0 / finite = 0
+			_sign = (_sign != rhs._sign);   // 0 / finite = 0, signed as a quotient (#1768)
+			return *this;
 		}
 		if (isinf()) {
 			if (rhs.isinf()) {
@@ -447,8 +449,9 @@ public:
 			return *this;
 		}
 		if (rhs.isinf()) {
+			const bool negative = (_sign != rhs._sign);   // before setzero() clears it (#1768)
 			setzero(); // finite / inf = 0
-			_sign = (_sign != rhs._sign);
+			_sign = negative;
 			return *this;
 		}
 
@@ -665,7 +668,7 @@ protected:
 	// building a negated copy of it (#1761)
 	constexpr efloat& add(const efloat& rhs, bool negate_rhs) noexcept {
 		const unsigned precision = merged_precision(_precision_limbs, rhs._precision_limbs);
-		const bool rhs_sign = (rhs._sign != (negate_rhs && !rhs.iszero()));   // -0 is 0, as operator-()
+		const bool rhs_sign = (rhs._sign != negate_rhs);
 		// handle special cases
 		if (isnan() || rhs.isnan()) {
 			setnan();
@@ -686,8 +689,10 @@ protected:
 			return *this;
 		}
 		if (iszero()) {
+			// IEEE-754 6.3: a sum of two zeros of opposite signs is +0, -0 rounding toward -inf (#1768)
+			const bool negative = rhs.iszero() ? exact_zero_sum_sign(_sign, rhs_sign) : rhs_sign;
 			*this = rhs;
-			_sign = rhs_sign;
+			_sign = negative;
 			_precision_limbs = precision;
 			normalize();
 			return *this;
@@ -796,6 +801,15 @@ protected:
 		}
 		_sign = sign;
 		assign_rounded([f](size_t i) { return f[i]; }, len + 1, ex + 32);
+		if (iszero()) _sign = exact_zero_sum_sign(false, true);   // x - x: +0, -0 rounding toward -inf (#1768)
+	}
+
+	// the sign of an exact zero sum of addends of the signs a and b (IEEE-754 6.3): their common
+	// sign if they agree, else +0, or -0 rounding toward -inf
+	static constexpr bool exact_zero_sum_sign(bool a, bool b) noexcept {
+		if (a == b) return a;
+		if (std::is_constant_evaluated()) return false;   // constant evaluation rounds to nearest
+		return efloat_rounding_mode == RoundingMode::RoundTowardNegative;
 	}
 
 	// *this * B for finite nonzero *this and B = (b[0, nb), eb, b_sign), normalized, at the
@@ -2205,7 +2219,6 @@ inline efloat<nlimbs> operator*(double lhs, const efloat<nlimbs>& rhs) {
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 inline efloat<nlimbs> operator*(Integer lhs, const efloat<nlimbs>& rhs) {
-	if (lhs == 0 || rhs.iszero()) return operator*(efloat<nlimbs>(lhs), rhs);   // the sign of a zero product is not symmetric
 	efloat<nlimbs> product(rhs);   // * commutes, and is correctly rounded either way round
 	product *= lhs;
 	return product;
