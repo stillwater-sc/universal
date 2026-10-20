@@ -165,39 +165,56 @@ namespace {
 		return a;
 	}
 
-	// R with R^2 = -7 (mod 2^j), bit j - 1 set: Hensel's lifting a bit at a time, from R = 1, a root
-	// mod 8 since every odd square is 1 mod 8; R + 2^(j-1) is a root as well, which sets the top bit
-	std::vector<uint64_t> root_of_minus_seven(unsigned j) {
+	// y with y^2 = -7 (mod 2^m), m >= 3: Hensel's lifting a bit at a time from y = 1, a root mod 8
+	// since every odd square is 1 mod 8.  Each step takes y^2 + 7 = 0 (mod 2^k) to mod 2^(k+1).
+	std::vector<uint64_t> root_of_minus_seven(unsigned m) {
 		using namespace sw::universal::efloat_mpn;
-		const size_t L = (j + 63) / 64;
-		std::vector<limb_t> x(L, 0u), sq(2 * L), work(scratch_limbs(L));
-		x[0] = 1u;
-		auto bit = [](const std::vector<limb_t>& v, unsigned k) { return (v[k / 64] >> (k % 64)) & 1u; };
-		for (unsigned k = 3; k + 1 < j; ++k) {
-			mul_n(sq.data(), x.data(), x.data(), L, work.data(), true);
-			add_1(sq.data(), 2 * L, 7u);                      // x^2 + 7 = 0 (mod 2^k); lift to 2^(k+1)
-			if (bit(sq, k)) x[(k - 1) / 64] += limb_t(1) << ((k - 1) % 64);
+		const size_t L = (m + 63) / 64;
+		std::vector<limb_t> y(L, 0u), sq(2 * L), work(scratch_limbs(L));
+		y[0] = 1u;
+		for (unsigned k = 3; k < m; ++k) {
+			mul_n(sq.data(), y.data(), y.data(), L, work.data(), true);
+			add_1(sq.data(), 2 * L, 7u);
+			if ((sq[k / 64] >> (k % 64)) & 1u) y[(k - 1) / 64] += limb_t(1) << ((k - 1) % 64);
 		}
-		x[(j - 1) / 64] |= limb_t(1) << ((j - 1) % 64);
-		return x;
+		return y;
 	}
 
 	// a, P bits, whose square root lies just above a P-bit value (midpoint false) or a midpoint
-	// between two (midpoint true), by about 2^-2P: a = (R^2 + 7) / 2^k with R of P or P + 1 bits.
-	// The root's bits past the guard bit are all zero down to far below the integer root's last
-	// one, so only the remainder, the sticky bit, rounds it the right way.
+	// between two (midpoint true), by about 2^-2P: a = (R^2 + 7) / 2^(bits - P) for R of
+	// Rb = P or P + 1 bits and `bits` the length of R^2 + 7.  R is a root of -7 mod 2^(Rb + 1):
+	// with y one, so are y mod 2^Rb and 2^Rb minus it, which sum to 2^Rb, so one has its top bit
+	// set.  bits - P <= 2 Rb - P <= Rb + 1, so the division is exact.  The root's bits past the
+	// guard bit are then zero down to far below the integer root's last one, and only the
+	// remainder, the sticky bit, rounds it the right way.
 	Wide just_above(std::mt19937_64& rng, unsigned p, bool midpoint) {
 		using namespace sw::universal::efloat_mpn;
-		const unsigned P = 32 * p;
-		const unsigned j = midpoint ? P + 3 : P + 1;   // R's bits are j - 1, and R^2 + 7 = 0 mod 2^j
-		std::vector<limb_t> r = root_of_minus_seven(j);
+		const unsigned P  = 32 * p;
+		const unsigned rb = midpoint ? P + 1 : P;
+		std::vector<limb_t> r = root_of_minus_seven(rb + 1);
 		const size_t L = r.size();
+		auto top_bit = [rb](const std::vector<limb_t>& v) { return ((v[(rb - 1) / 64] >> ((rb - 1) % 64)) & 1u) != 0u; };
+		// y mod 2^Rb, then 2^Rb minus it when that one has the top bit
+		for (size_t k = 0; k < L; ++k) {
+			const size_t lo = 64 * k;
+			if (lo >= rb) r[k] = 0u;
+			else if (rb - lo < 64) r[k] &= (limb_t(1) << (rb - lo)) - 1u;
+		}
+		if (!top_bit(r)) {
+			std::vector<limb_t> twoRb(L, 0u);
+			twoRb[rb / 64] = limb_t(1) << (rb % 64);   // Rb < 64 L: L limbs hold Rb + 1 bits
+			sub_n(r.data(), twoRb.data(), r.data(), L);
+		}
 		std::vector<limb_t> sq(2 * L), work(scratch_limbs(L));
 		mul_n(sq.data(), r.data(), r.data(), L, work.data(), true);
 		add_1(sq.data(), 2 * L, 7u);
 		size_t bits = 128 * L;
 		while (((sq[(bits - 1) / 64] >> ((bits - 1) % 64)) & 1u) == 0u) --bits;
-		// K = (R^2 + 7) / 2^(bits - P): its top P bits, the rest zero
+		const size_t shift = bits - P;
+		bool exact = top_bit(r);
+		for (size_t b = 0; exact && b < shift; ++b) exact = ((sq[b / 64] >> (b % 64)) & 1u) == 0u;
+		if (!exact) return Wide(0);   // the construction failed: the caller's check reports it
+		// K = (R^2 + 7) / 2^shift, its P bits as P / 32 limbs
 		Wide a(1);
 		a.set_precision(P);
 		for (unsigned i = 0; i < p; ++i) {
@@ -205,7 +222,8 @@ namespace {
 			const uint64_t w = (sq[lo / 64] >> (lo % 64)) | ((lo % 64 > 32 && lo / 64 + 1 < 2 * L) ? sq[lo / 64 + 1] << (64 - lo % 64) : 0u);
 			a.setlimb(i, static_cast<uint32_t>(w));
 		}
-		a.setexponent(2 * (static_cast<int64_t>(rng() % 41) - 20) + static_cast<int64_t>(bits % 2 == 0 ? 1 : 0));
+		// a = K 2^shift times a power of 4: the leading bit at bits - 1, plus an even offset
+		a.setexponent(static_cast<int64_t>(bits) - 1 + 2 * (static_cast<int64_t>(rng() % 41) - 20) - 2 * (static_cast<int64_t>(bits) / 2));
 		a.set_precision(P);
 		return a;
 	}
@@ -223,6 +241,11 @@ namespace {
 			for (unsigned i = 0; i < samples; ++i) {
 				const unsigned shape = i % 7;
 				Wide a = (shape >= 5) ? just_above(rng, p, shape == 6) : random_radicand(rng, p, shape);
+				if (a.iszero()) {
+					++failures;
+					if (reportTestCases) std::cout << "    FAIL: the radicand just above a " << (shape == 6 ? "midpoint" : "value") << " at " << 32 * p << " bits is not exact\n";
+					continue;
+				}
 				if (i % 9 == 0 && shape < 5) a.clear_precision();   // the type's 2048 bits
 				const RoundingMode mode = modes[i % 4];
 				efloat_rounding_mode = mode;
