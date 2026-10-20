@@ -1,4 +1,4 @@
-// integer_divisor.cpp: efloat's in-place paths agree bit for bit with the general ones (#1761)
+// integer_divisor.cpp: efloat's in-place paths agree bit for bit with the general ones (#1761, #1762)
 //
 //   x / n    a divisor of one limb divides x in place, a limb at a time by a reciprocal; the
 //            result must equal x / efloat(n), the general long division, in sign, scale, limbs
@@ -7,9 +7,11 @@
 //            inexact, so the sticky bit is exercised.
 //   x * x    squares with half the limb products; it must equal x * y for a copy y of x.
 //   x += x, x -= x, x *= x   the operand is the destination.
+//   x + k, x - k, x * k, k + x, k * x and the compound forms take an integer k in place, without
+//            an efloat for it (#1762); each must equal the same operation on efloat(k).
 //
 // REGRESSION_LEVEL convention (intensity progression):
-//   LEVEL 1 -- 2,000 random dividends per precision
+//   LEVEL 1 -- 2,000 random dividends per precision (and integer operands)
 //   LEVEL 2 -- 20,000
 //   LEVEL 3 -- 200,000
 //   LEVEL 4 -- 2,000,000
@@ -20,6 +22,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cstdint>
+#include <limits>
 #include <random>
 #include <vector>
 #include <universal/number/efloat/efloat.hpp>
@@ -141,6 +144,55 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
+	int64_t random_integer(std::mt19937_64& rng, unsigned i) {
+		switch (i % 8) {
+		case 0:  return 0;
+		case 1:  return (i & 8u) ? 1 : -1;
+		case 2:  return (i & 8u) ? std::numeric_limits<int64_t>::min() : std::numeric_limits<int64_t>::max();
+		case 3:  return static_cast<int64_t>(uint64_t(1) << (rng() % 63)) * ((i & 8u) ? -1 : 1);   // powers of 2
+		case 4:  return static_cast<int64_t>(rng() % 1000) - 500;
+		default: return static_cast<int64_t>(rng() >> (rng() % 64)) * ((rng() & 1u) ? -1 : 1);
+		}
+	}
+
+	int VerifyIntegerOperands(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(17620);
+		const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+		                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+		const unsigned precisions[] = { 1, 2, 5, 16, 64 };   // in limbs
+		const RoundingMode saved = efloat_rounding_mode;
+		for (unsigned p : precisions) {
+			int failures = 0;
+			for (unsigned i = 0; i < nrSamples; ++i) {
+				const int64_t  k = random_integer(rng, i);
+				const uint64_t u = (i % 5 == 0) ? std::numeric_limits<uint64_t>::max() : (rng() >> (rng() % 64));
+				const Real     K(k), U(u);
+				Real x = random_value(rng, p, 1 + static_cast<unsigned>(rng() % (p + 3)));
+				if (i % 7 == 0) {   // near k: x - k cancels
+					x = K + Real(static_cast<int>(i % 5) - 2);
+					x.set_precision(32 * p);
+				}
+				if (i % 13 == 0) x.clear_precision();
+				efloat_rounding_mode = modes[i % 4];
+				bool ok = identical(x + k, x + K) && identical(x - k, x - K) && identical(x * k, x * K)
+				       && identical(k + x, K + x) && identical(k * x, K * x)
+				       && identical(x + u, x + U) && identical(x - u, x - U) && identical(x * u, x * U);
+				Real c = x;  c += k;  ok = ok && identical(c, x + K);
+				c = x;       c -= k;  ok = ok && identical(c, x - K);
+				c = x;       c *= k;  ok = ok && identical(c, x * K);
+				efloat_rounding_mode = saved;
+				if (!ok) {
+					++failures;
+					if (reportTestCases && failures <= 3) std::cout << "    FAIL: an integer operand " << k << " or " << u << " at " << 32 * p << " bits differs from efloat(k)\n";
+				}
+			}
+			nrOfFailedTestCases += failures;
+		}
+		return nrOfFailedTestCases;
+	}
+
 }  // anonymous namespace
 
 #define MANUAL_TESTING 0
@@ -169,6 +221,7 @@ int main() try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivisor(reportTestCases, 200), "efloat", "x / n");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareAndAliasing(reportTestCases, 100), "efloat", "x * x and aliasing");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerOperands(reportTestCases, 100), "efloat", "integer operands");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 
@@ -177,11 +230,13 @@ int main() try {
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivisor(reportTestCases, 2000), "efloat", "x / n");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareAndAliasing(reportTestCases, 500), "efloat", "x * x and aliasing");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerOperands(reportTestCases, 2000), "efloat", "integer operands");
 #	endif
 
 #	if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivisor(reportTestCases, 20000), "efloat", "x / n");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareAndAliasing(reportTestCases, 5000), "efloat", "x * x and aliasing");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerOperands(reportTestCases, 20000), "efloat", "integer operands");
 #	endif
 
 #	if REGRESSION_LEVEL_3

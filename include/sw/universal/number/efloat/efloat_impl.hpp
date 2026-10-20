@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <algorithm>  // std::max, std::min, std::reverse, std::find_if
+#include <algorithm>  // std::max, std::min, std::find_if
 #include <cctype>     // std::isspace, std::tolower, in parse()
 #include <cmath>      // std::fpclassify, std::frexp, std::ldexp (long double conversions)
 #include <cstddef>    // std::size_t
@@ -56,6 +56,7 @@ Compile-time configuration flags are used to select the exception mode.
 The exception types are defined, but you have the option to throw them
 */
 #include <universal/number/efloat/exceptions.hpp>
+#include <universal/number/efloat/efloat_mpn.hpp>   // 64-bit limb products (#1762)
 #include <universal/behavior/rounding.hpp>
 #include <universal/behavior/status_flags.hpp>
 
@@ -317,6 +318,11 @@ public:
 	// an integer operand converts exactly (all 64 bits), not through double
 	template<typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 	constexpr efloat& operator+=(Integer rhs) noexcept {
+		if (_state == FloatingPointState::Normal && rhs != 0) {   // in place, no efloat for rhs (#1762)
+			const native_limbs b = integer_limbs(rhs);
+			add_magnitude(b.limb, b.n, b.exponent, b.sign);
+			return *this;
+		}
 		return *this += efloat(rhs);
 	}
 	constexpr efloat& operator-=(const efloat& rhs) noexcept {
@@ -328,6 +334,11 @@ public:
 	// an integer operand converts exactly (all 64 bits), not through double
 	template<typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 	constexpr efloat& operator-=(Integer rhs) noexcept {
+		if (_state == FloatingPointState::Normal && rhs != 0) {
+			const native_limbs b = integer_limbs(rhs);
+			add_magnitude(b.limb, b.n, b.exponent, !b.sign);
+			return *this;
+		}
 		return *this -= efloat(rhs);
 	}
 	constexpr efloat& operator*=(const efloat& rhs) noexcept {
@@ -385,14 +396,7 @@ public:
 			return *this;
 		}
 
-		std::vector<uint32_t> product;
-		multiply_limbs(product, _limb, rhs._limb);
-
-		_limb = std::move(product);
-		_exponent = _exponent + rhs._exponent + 1;
-		_sign = (_sign != rhs._sign);
-
-		normalize();
+		multiply_magnitude(rhs._limb.data(), rhs._limb.size(), rhs._exponent, rhs._sign);
 		return *this;
 		}
 		constexpr efloat& operator*=(double rhs) noexcept {
@@ -401,6 +405,11 @@ public:
 	// an integer operand converts exactly (all 64 bits), not through double
 	template<typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 	constexpr efloat& operator*=(Integer rhs) noexcept {
+		if (_state == FloatingPointState::Normal && rhs != 0) {
+			const native_limbs b = integer_limbs(rhs);
+			multiply_magnitude(b.limb, b.n, b.exponent, b.sign);
+			return *this;
+		}
 		return *this *= efloat(rhs);
 	}
 		constexpr efloat& operator/=(const efloat& rhs) noexcept {
@@ -706,65 +715,259 @@ protected:
 			return *this;
 		}
 
-		// Make copies for manipulation
-		unsigned target_prec = precision_limbs();
-
-		// this's limbs are reused in place, unless rhs is this (x += x)
-		std::vector<uint32_t> a_limbs = (&rhs == this) ? _limb : std::move(_limb);
-		std::vector<uint32_t> b_limbs = rhs._limb;
-		int64_t a_exp = _exponent;
-		int64_t b_exp = rhs._exponent;
-		
-		// Align exponents.  The shifted operand keeps two limbs past the precision, and bits that
-		// fall below those are folded into a sticky bit at the bottom, so the sum and the
-		// difference round correctly (#1757): they were truncated at the precision before.
-		bool sticky = false;
-		bool shifted_a = false;
-		if (a_exp < b_exp) {
-			shifted_a = true;
-			sticky = shift_right_sticky(a_limbs, static_cast<uint64_t>(b_exp - a_exp), std::max<size_t>(b_limbs.size(), target_prec + 2u));
-			a_exp = b_exp;
-		} else if (b_exp < a_exp) {
-			sticky = shift_right_sticky(b_limbs, static_cast<uint64_t>(a_exp - b_exp), std::max<size_t>(a_limbs.size(), target_prec + 2u));
-		}
-
-		// Align sizes before any operation
-		align_sizes(a_limbs, b_limbs);
-		if (sticky) {
-			// the bit lies below every bit of both operands, at least 64 bits below the rounding point
-			a_limbs.push_back(0u); b_limbs.push_back(0u);
-			(shifted_a ? a_limbs : b_limbs).back() |= 1u;
-		}
-
-		if (_sign == rhs_sign) {
-			size_t old_size = a_limbs.size();
-			add_limbs(a_limbs, b_limbs);
-			if (a_limbs.size() > old_size) {
-				a_exp += 32 * (a_limbs.size() - old_size);
-			}
-			_limb = std::move(a_limbs);
-		} else {
-			// Signs differ, perform subtraction
-			int cmp = compare_limbs(a_limbs, b_limbs);
-			if (cmp == 0) {
-				setzero();
-				return *this;
-			}
-			if (cmp > 0) {
-				subtract_limbs(a_limbs, b_limbs);
-				_limb = std::move(a_limbs);
-				// sign is already correct
-			} else { // cmp < 0
-				subtract_limbs(b_limbs, a_limbs);
-				_limb = std::move(b_limbs);
-				_sign = rhs_sign;
-			}
-		}
-
-		_exponent = a_exp;
-		normalize();
-
+		add_magnitude(rhs._limb.data(), rhs._limb.size(), rhs._exponent, rhs_sign);
 		return *this;
+	}
+
+	// *this + B for a finite nonzero *this and B = (b[0, nb), eb, b_sign), normalized, at the
+	// precision already merged into *this; b may be *this's own limbs.  The operand with the
+	// smaller exponent, Y, is aligned to the other, X: it keeps two limbs past the precision, or
+	// X's length if longer, and bits that fall below those are folded into a sticky bit at the
+	// bottom, so the sum and the difference round correctly (#1757); with a gap of a bit or none
+	// it keeps all of its bits.  The aligned sum is formed
+	// in scratch space and rounded into _limb once, without copying either operand (#1762).
+	void add_magnitude(const uint32_t* b, size_t nb, int64_t eb, bool b_sign) {
+		const size_t    target = precision_limbs();
+		const uint32_t* a      = _limb.data();
+		const size_t    na     = _limb.size();
+		const bool      a_is_x = (_exponent >= eb);
+		const uint32_t* x      = a_is_x ? a : b;
+		const uint32_t* y      = a_is_x ? b : a;
+		const size_t    nx     = a_is_x ? na : nb;
+		const size_t    ny     = a_is_x ? nb : na;
+		const int64_t   ex     = a_is_x ? _exponent : eb;
+		const bool      x_sign = a_is_x ? _sign : b_sign;
+		const uint64_t  d      = static_cast<uint64_t>(a_is_x ? _exponent - eb : eb - _exponent);
+
+		// Y keeps ly limbs of X's frame; its bits below them are lost to the sticky bit.  A gap of
+		// two bits or more cancels at most one leading bit, so the sticky bit stays far below the
+		// rounding point; a gap of one bit can cancel any number of them, so Y then keeps every
+		// bit, as it does with no gap at all (a Y longer than the precision, which carries none,
+		// lost its last bits here before)
+		const uint64_t window = (d <= 1) ? uint64_t(ny) + 1u : std::max<uint64_t>(nx, uint64_t(target) + 2u);
+		const size_t   ly     = static_cast<size_t>(std::max<uint64_t>(ny, std::min<uint64_t>(ny + (d + 31) / 32, window)));
+		const size_t   lx     = std::max(nx, ly);
+		bool lost = false;
+		if (d >= 32ull * ly) {
+			lost = true;   // all of Y, which is nonzero
+		}
+		else {
+			const uint64_t first = 32ull * ly - d;   // Y's first lost bit, counted from its top
+			const size_t   li    = static_cast<size_t>(first / 32);
+			if (li < ny) {
+				lost = (y[li] & (0xFFFF'FFFFu >> (first % 32))) != 0u;
+				for (size_t k = li + 1; !lost && k < ny; ++k) lost = (y[k] != 0u);
+			}
+		}
+		const size_t len = lx + (lost ? 1u : 0u);   // the frame, plus a carry limb in front
+
+		// frame limb i, for dl <= i < iend, holds the low db bits of y[i - dl - 1] and the top
+		// 32 - db bits of y[i - dl]; the frame limbs from iend on hold none of Y's bits
+		const size_t   dl   = static_cast<size_t>(std::min<uint64_t>(d / 32, ly));
+		const unsigned db   = static_cast<unsigned>(d % 32);
+		const size_t   iend = std::min(ly, dl + ny + 1);
+		auto y_at = [&](size_t i) -> uint32_t {
+			const size_t   j    = i - dl;
+			const uint64_t pair = (uint64_t((j >= 1u) ? y[j - 1u] : 0u) << 32) | ((j < ny) ? y[j] : 0u);
+			return static_cast<uint32_t>(pair >> db);
+		};
+
+		scratch32 buffer;
+		uint32_t* f  = buffer.get(len + 1);
+		uint32_t* fr = f + 1;   // the frame; f[0] takes a carry out of it
+		for (size_t i = 0; i < nx; ++i) fr[i] = x[i];
+		for (size_t i = nx; i < len; ++i) fr[i] = 0u;
+		if (_sign == b_sign) {
+			if (lost) fr[len - 1] = 1u;   // X is zero below its own limbs
+			uint64_t carry = 0;
+			for (size_t i = iend; i-- > dl;) {
+				const uint64_t sum = uint64_t(fr[i]) + y_at(i) + carry;
+				fr[i] = static_cast<uint32_t>(sum);
+				carry = sum >> 32;
+			}
+			for (size_t i = dl; carry != 0u && i-- > 0;) carry = (++fr[i] == 0u) ? 1u : 0u;
+			f[0] = static_cast<uint32_t>(carry);
+			assign_rounded([f](size_t i) { return f[i]; }, len + 1, ex + 32);
+			return;
+		}
+		// X - Y; a borrow out of the top means Y was the larger: negate the difference
+		uint64_t borrow = 0;
+		if (lost) { fr[len - 1] = 0xFFFF'FFFFu; borrow = 1; }
+		for (size_t i = lx; borrow != 0u && i-- > iend;) borrow = (fr[i]-- == 0u) ? 1u : 0u;
+		for (size_t i = iend; i-- > dl;) {
+			const uint64_t diff = (uint64_t(1) << 32) + fr[i] - y_at(i) - borrow;
+			fr[i]  = static_cast<uint32_t>(diff);
+			borrow = (diff >> 32) ? 0u : 1u;
+		}
+		for (size_t i = dl; borrow != 0u && i-- > 0;) borrow = (fr[i]-- == 0u) ? 1u : 0u;
+		f[0] = 0u;
+		bool sign = x_sign;
+		if (borrow != 0u) {
+			uint64_t c = 1;
+			for (size_t i = len; i-- > 0;) {
+				const uint64_t v = uint64_t(static_cast<uint32_t>(~fr[i])) + c;
+				fr[i] = static_cast<uint32_t>(v);
+				c     = v >> 32;
+			}
+			sign = !x_sign;
+		}
+		_sign = sign;
+		assign_rounded([f](size_t i) { return f[i]; }, len + 1, ex + 32);
+	}
+
+	// *this * B for finite nonzero *this and B = (b[0, nb), eb, b_sign), normalized, at the
+	// precision already merged into *this; b may be *this's own limbs, and when it is, *this is
+	// squared.  The significands are packed into 64-bit limbs, least significant first, an odd
+	// count padded with a zero limb at the bottom, multiplied by efloat_mpn (schoolbook below
+	// its Karatsuba threshold), and the exact product is rounded into _limb once (#1762).
+	void multiply_magnitude(const uint32_t* b, size_t nb, int64_t eb, bool b_sign) {
+		using efloat_mpn::limb_t;
+		const uint32_t* a      = _limb.data();
+		const size_t    na     = _limb.size();
+		const bool      square = (a == b && na == nb);
+		const size_t    ma     = (na + 1) / 2;
+		const size_t    mb     = (nb + 1) / 2;
+		const size_t    mt     = ma + mb;
+		scratch64 buffer;
+		limb_t* pa   = buffer.get(ma + mb + mt + efloat_mpn::scratch_limbs(std::max(ma, mb)));
+		limb_t* pb   = pa + ma;
+		limb_t* prod = pb + mb;
+		limb_t* work = prod + mt;
+		auto pack = [](limb_t* p, const uint32_t* v, size_t n) {
+			const size_t m = (n + 1) / 2;
+			for (size_t j = 0; j < m; ++j) {
+				const size_t hi = 2 * m - 2 - 2 * j;   // index of the high half in the padded vector
+				const uint32_t h = v[hi];
+				const uint32_t l = (hi + 1 < n) ? v[hi + 1] : 0u;
+				p[j] = (limb_t(h) << 32) | l;
+			}
+		};
+		pack(pa, a, na);
+		if (square) {
+			efloat_mpn::mul_n(prod, pa, pa, ma, work, true);
+		}
+		else {
+			pack(pb, b, nb);
+			efloat_mpn::mul(prod, pa, ma, pb, mb, work);
+		}
+		const int64_t top = _exponent + eb + 1;
+		_sign = (_sign != b_sign);
+		// the product's 32-bit limbs, most significant first: its first na + nb hold a * b, and
+		// any padding limbs after them are zero
+		assign_rounded([prod, mt](size_t i) {
+			const limb_t w = prod[mt - 1 - i / 2];
+			return (i & 1u) ? static_cast<uint32_t>(w) : static_cast<uint32_t>(w >> 32);
+		}, na + nb, top);
+	}
+
+	// Rounds the frame s(0), ..., s(len - 1), 32-bit limbs most significant first whose first bit
+	// weighs 2^top, to the precision in the current mode and with *this's sign, and stores it as
+	// normalize() would leave it: the leading bit at the top of _limb[0], at most precision_limbs()
+	// limbs, no trailing zero limbs.  One pass, and _limb never grows past the precision.
+	template<typename LimbAt>
+	void assign_rounded(LimbAt s, size_t len, int64_t top) {
+		size_t i0 = 0;
+		while (i0 < len && s(i0) == 0u) ++i0;
+		if (i0 == len) {
+			setzero();
+			return;
+		}
+		const unsigned sh       = static_cast<unsigned>(clz(s(i0)));
+		const size_t   n        = len - i0;
+		const int64_t  exponent = top - 32 * static_cast<int64_t>(i0) - sh;
+		if (sh == 0u) {
+			store_rounded([&](size_t k) { return s(i0 + k); }, n, exponent);
+		}
+		else {
+			store_rounded([&](size_t k) -> uint32_t {   // limb k of the frame shifted to its leading bit
+				uint32_t v = s(i0 + k) << sh;
+				if (i0 + k + 1 < len) v |= s(i0 + k + 1) >> (32u - sh);
+				return v;
+			}, n, exponent);
+		}
+	}
+	// assign_rounded for a frame q(0), ..., q(n - 1) whose leading bit is the top bit of q(0)
+	template<typename LimbAt>
+	void store_rounded(LimbAt q, size_t n, int64_t exponent) {
+		const size_t target = precision_limbs();
+		size_t keep = n;
+		bool   up   = false;
+		if (n > target) {
+			keep = target;
+			const uint32_t g      = q(target);
+			const bool     guard  = (g & 0x8000'0000u) != 0u;
+			bool           sticky = (g & 0x7FFF'FFFFu) != 0u;
+			for (size_t k = target + 1; !sticky && k < n; ++k) sticky = (q(k) != 0u);
+			if (guard || sticky) efloat_exception_flags.set(ExceptionFlag::Inexact);
+			up = rounds_up(efloat_rounding_mode, _sign, (q(target - 1) & 1u) != 0u, guard, sticky);
+		}
+		_limb.resize(keep);
+		for (size_t k = 0; k < keep; ++k) _limb[k] = q(k);
+		if (up) {
+			size_t k = keep;
+			while (k > 0 && ++_limb[k - 1] == 0u) --k;
+			if (k == 0) {   // carried out of the top: the value is a power of 2
+				_limb.assign(1, 0x8000'0000u);
+				++exponent;
+			}
+		}
+		while (_limb.size() > 1 && _limb.back() == 0u) _limb.pop_back();
+		_exponent = exponent;
+		_state    = FloatingPointState::Normal;
+	}
+
+	// whether a value whose last kept bit is lsb, and whose discarded bits are guard (the first)
+	// and sticky (any other), rounds away from zero in mode
+	static constexpr bool rounds_up(RoundingMode mode, bool sign, bool lsb, bool guard, bool sticky) noexcept {
+		switch (mode) {
+		case RoundingMode::RoundToNearest:      return guard && (sticky || lsb);
+		case RoundingMode::RoundToZero:         return false;
+		case RoundingMode::RoundTowardPositive: return !sign && (guard || sticky);
+		case RoundingMode::RoundTowardNegative: return sign && (guard || sticky);
+		}
+		return false;
+	}
+
+	// scratch space on the stack, or on the heap when an operation needs more
+	template<typename T, size_t N>
+	struct scratch_buffer {
+		T              local[N];
+		std::vector<T> heap;
+		T* get(size_t n) {
+			if (n <= N) return local;
+			heap.resize(n);
+			return heap.data();
+		}
+	};
+	using scratch32 = scratch_buffer<uint32_t, 512>;
+	using scratch64 = scratch_buffer<std::uint64_t, 768>;
+
+	// a nonzero native integer as one or two normalized limbs, as efloat(v) would hold it
+	struct native_limbs {
+		uint32_t limb[2];
+		size_t   n;
+		int64_t  exponent;
+		bool     sign;
+	};
+	template<typename Integer>
+	static constexpr native_limbs integer_limbs(Integer v) noexcept {
+		native_limbs r{};
+		uint64_t magnitude = 0;
+		if constexpr (std::is_signed_v<Integer>) {
+			r.sign    = (v < 0);
+			magnitude = r.sign ? (0ull - static_cast<uint64_t>(static_cast<int64_t>(v))) : static_cast<uint64_t>(v);
+		}
+		else {
+			magnitude = static_cast<uint64_t>(v);
+		}
+		const uint32_t high = static_cast<uint32_t>(magnitude >> 32);
+		const int      lz   = (high != 0u) ? clz(high) : 32 + clz(static_cast<uint32_t>(magnitude));
+		magnitude <<= lz;
+		r.limb[0]  = static_cast<uint32_t>(magnitude >> 32);
+		r.limb[1]  = static_cast<uint32_t>(magnitude);
+		r.n        = (r.limb[1] != 0u) ? 2u : 1u;
+		r.exponent = 63 - lz;
+		return r;
 	}
 
 
@@ -817,116 +1020,6 @@ protected:
 				carry = next_carry;
 			}
 		}
-	}
-
-	// shift limbs right by k bits, growing them to hold the shifted bits up to `window` limbs;
-	// returns whether nonzero bits fell off below the window
-	static constexpr bool shift_right_sticky(std::vector<uint32_t>& limbs, uint64_t k, size_t window) noexcept {
-		const uint64_t needed = limbs.size() + (k + 31) / 32;
-		const size_t size = static_cast<size_t>(std::max<uint64_t>(limbs.size(), std::min<uint64_t>(needed, window)));
-		limbs.resize(size, 0u);   // appends zeros at the LSB side
-		const uint64_t total_bits = uint64_t(size) * 32u;
-		bool lost = false;
-		if (k >= total_bits) {
-			for (uint32_t l : limbs) lost = lost || (l != 0u);
-			limbs.assign(size, 0u);
-			return lost;
-		}
-		const size_t drop_limbs = static_cast<size_t>(k / 32);
-		const unsigned drop_bits = static_cast<unsigned>(k % 32);
-		for (size_t i = 0; i < drop_limbs; ++i) lost = lost || (limbs[size - 1 - i] != 0u);
-		if (drop_bits != 0u) lost = lost || ((limbs[size - 1 - drop_limbs] & ((1u << drop_bits) - 1u)) != 0u);
-		shift_right(limbs, static_cast<unsigned>(k));
-		return lost;
-	}
-
-	static constexpr void align_sizes(std::vector<uint32_t>& a, std::vector<uint32_t>& b) noexcept {
-		size_t max_limbs = std::max(a.size(), b.size());
-		a.resize(max_limbs, 0u); // appends zeros at the LSB side
-		b.resize(max_limbs, 0u);
-	}
-
-	static constexpr void add_limbs(std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
-		uint64_t carry = 0;
-		for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i) {
-			uint64_t sum = uint64_t(a[i]) + uint64_t(b[i]) + carry;
-			a[i] = static_cast<uint32_t>(sum);
-			carry = sum >> 32;
-		}
-		if (carry) {
-			a.insert(a.begin(), 1u); // insert carry-out at index 0 (MSB side)
-		}
-	}
-
-	static constexpr void subtract_limbs(std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
-		uint64_t borrow = 0;
-		for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i) {
-			uint64_t diff = (uint64_t(1) << 32) + uint64_t(a[i]) - uint64_t(b[i]) - borrow;
-			a[i] = static_cast<uint32_t>(diff);
-			borrow = (diff >> 32) ? 0 : 1;
-		}
-	}
-
-	static constexpr void multiply_limbs(std::vector<uint32_t>& product, const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
-		if (&a == &b) {
-			square_limbs(product, a);
-			return;
-		}
-		std::vector<uint32_t> rev_a = a;
-		std::vector<uint32_t> rev_b = b;
-		std::reverse(rev_a.begin(), rev_a.end()); // converts to LSB-first
-		std::reverse(rev_b.begin(), rev_b.end());
-
-		size_t m = a.size();
-		size_t n = b.size();
-		std::vector<uint32_t> rev_product(m + n, 0u);
-
-		for (size_t i = 0; i < m; ++i) {
-			uint64_t carry = 0;
-			for (size_t j = 0; j < n; ++j) {
-				uint64_t sum = uint64_t(rev_product[i + j]) + uint64_t(rev_a[i]) * uint64_t(rev_b[j]) + carry;
-				rev_product[i + j] = static_cast<uint32_t>(sum);
-				carry = sum >> 32;
-			}
-			rev_product[i + n] = static_cast<uint32_t>(carry);
-		}
-
-		product.assign(rev_product.rbegin(), rev_product.rend()); // converts back to MSB-first
-	}
-
-	// a * a, exactly, as multiply_limbs: each cross product a_i a_j (i < j) is formed once and the
-	// sum doubled, then the squares a_i^2 are added, about half the limb products (#1761).  x *= x
-	// takes this path.
-	static constexpr void square_limbs(std::vector<uint32_t>& product, const std::vector<uint32_t>& a) {
-		const size_t n = a.size();
-		std::vector<uint32_t> r(a.rbegin(), a.rend());   // LSB first
-		std::vector<uint32_t> p(2 * n, 0u);
-		for (size_t i = 0; i + 1 < n; ++i) {
-			uint64_t carry = 0;
-			for (size_t j = i + 1; j < n; ++j) {
-				const uint64_t sum = uint64_t(p[i + j]) + uint64_t(r[i]) * uint64_t(r[j]) + carry;
-				p[i + j] = static_cast<uint32_t>(sum);
-				carry = sum >> 32;
-			}
-			p[i + n] = static_cast<uint32_t>(carry);
-		}
-		// double the cross products: the sum is below a^2 / 2, so the top bit shifts out empty
-		uint32_t top = 0;
-		for (size_t k = 0; k < 2 * n; ++k) {
-			const uint32_t next = p[k] >> 31;
-			p[k] = (p[k] << 1) | top;
-			top = next;
-		}
-		uint64_t carry = 0;
-		for (size_t i = 0; i < n; ++i) {
-			const uint64_t sq = uint64_t(r[i]) * uint64_t(r[i]);
-			uint64_t sum = uint64_t(p[2 * i]) + (sq & 0xFFFF'FFFFull) + carry;
-			p[2 * i] = static_cast<uint32_t>(sum);
-			sum = uint64_t(p[2 * i + 1]) + (sq >> 32) + (sum >> 32);
-			p[2 * i + 1] = static_cast<uint32_t>(sum);
-			carry = sum >> 32;
-		}
-		product.assign(p.rbegin(), p.rend());   // MSB first
 	}
 
 	// *this /= d for a finite nonzero *this and a d of one limb that is not a power of 2, rounded
@@ -997,28 +1090,7 @@ protected:
 			}
 		}
 
-		bool round_up = false;
-		switch (mode) {
-		case RoundingMode::RoundToNearest:
-			if (guard) {
-				if (sticky || lsb) {
-					round_up = true;
-				}
-			}
-			break;
-		case RoundingMode::RoundToZero:
-			break;
-		case RoundingMode::RoundTowardPositive:
-			if (!sign && (guard || sticky)) {
-				round_up = true;
-			}
-			break;
-		case RoundingMode::RoundTowardNegative:
-			if (sign && (guard || sticky)) {
-				round_up = true;
-			}
-			break;
-		}
+		const bool round_up = rounds_up(mode, sign, lsb, guard, sticky);
 
 		limbs.resize(target_size);
 
@@ -1614,6 +1686,8 @@ private:
 	// efloat - efloat logic comparisons
 	template<unsigned nnlimbs>
 	friend constexpr bool operator==(const efloat<nnlimbs>& lhs, const efloat<nnlimbs>& rhs) noexcept;
+	template<unsigned nnlimbs>
+	friend constexpr bool operator< (const efloat<nnlimbs>& lhs, const efloat<nnlimbs>& rhs) noexcept;
 
 	// efloat - literal logic comparisons
 	template<unsigned nnlimbs>
@@ -1953,9 +2027,9 @@ constexpr bool operator==(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) 
 	// normal numbers
 	if (lhs.sign() != rhs.sign()) return false;
 	if (lhs.scale() != rhs.scale()) return false;
-	if (lhs.bits().size() != rhs.bits().size()) return false;
+	if (lhs._limb.size() != rhs._limb.size()) return false;
 
-	return efloat<nlimbs>::compare_limbs(lhs.bits(), rhs.bits()) == 0;
+	return efloat<nlimbs>::compare_limbs(lhs._limb, rhs._limb) == 0;
 }
 template<unsigned nlimbs>
 constexpr bool operator!=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
@@ -1992,7 +2066,7 @@ constexpr bool operator< (const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) 
 			abs_cmp = 1;
 		} else {
 			// exponents are equal, compare limbs
-			abs_cmp = efloat<nlimbs>::compare_limbs(lhs.bits(), rhs.bits());
+			abs_cmp = efloat<nlimbs>::compare_limbs(lhs._limb, rhs._limb);
 		}
 	}
 
@@ -2106,6 +2180,28 @@ constexpr efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, const efloat<nlimb
 	ratio /= rhs;
 	return ratio;
 }
+// a temporary left operand is reused, its limbs and all, rather than copied (#1762)
+template<unsigned nlimbs>
+constexpr efloat<nlimbs> operator+(efloat<nlimbs>&& lhs, const efloat<nlimbs>& rhs) noexcept {
+	lhs += rhs;
+	return std::move(lhs);
+}
+template<unsigned nlimbs>
+constexpr efloat<nlimbs> operator-(efloat<nlimbs>&& lhs, const efloat<nlimbs>& rhs) noexcept {
+	lhs -= rhs;
+	return std::move(lhs);
+}
+template<unsigned nlimbs>
+constexpr efloat<nlimbs> operator*(efloat<nlimbs>&& lhs, const efloat<nlimbs>& rhs) noexcept {
+	if (&lhs == &rhs) lhs *= lhs;
+	else lhs *= rhs;
+	return std::move(lhs);
+}
+template<unsigned nlimbs>
+constexpr efloat<nlimbs> operator/(efloat<nlimbs>&& lhs, const efloat<nlimbs>& rhs) noexcept {
+	lhs /= rhs;
+	return std::move(lhs);
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // efloat - literal binary arithmetic operators
@@ -2118,7 +2214,9 @@ inline efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, double rhs) {
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 inline efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, Integer rhs) {
-	return operator+(lhs, efloat<nlimbs>(rhs));
+	efloat<nlimbs> sum(lhs);
+	sum += rhs;   // in place, without an efloat for rhs (#1762)
+	return sum;
 }
 // BINARY SUBTRACTION
 template<unsigned nlimbs>
@@ -2127,7 +2225,9 @@ inline efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, double rhs) {
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 inline efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, Integer rhs) {
-	return operator-(lhs, efloat<nlimbs>(rhs));
+	efloat<nlimbs> difference(lhs);
+	difference -= rhs;   // in place, without an efloat for rhs (#1762)
+	return difference;
 }
 // BINARY MULTIPLICATION
 template<unsigned nlimbs>
@@ -2136,7 +2236,9 @@ inline efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, double rhs) {
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 inline efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, Integer rhs) {
-	return operator*(lhs, efloat<nlimbs>(rhs));
+	efloat<nlimbs> product(lhs);
+	product *= rhs;   // in place, without an efloat for rhs (#1762)
+	return product;
 }
 // BINARY DIVISION
 template<unsigned nlimbs>
@@ -2159,7 +2261,9 @@ inline efloat<nlimbs> operator+(double lhs, const efloat<nlimbs>& rhs) {
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 inline efloat<nlimbs> operator+(Integer lhs, const efloat<nlimbs>& rhs) {
-	return operator+(efloat<nlimbs>(lhs), rhs);
+	efloat<nlimbs> sum(rhs);   // + commutes, and is correctly rounded either way round
+	sum += lhs;
+	return sum;
 }
 // BINARY SUBTRACTION
 template<unsigned nlimbs>
@@ -2177,7 +2281,10 @@ inline efloat<nlimbs> operator*(double lhs, const efloat<nlimbs>& rhs) {
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 inline efloat<nlimbs> operator*(Integer lhs, const efloat<nlimbs>& rhs) {
-	return operator*(efloat<nlimbs>(lhs), rhs);
+	if (lhs == 0 || rhs.iszero()) return operator*(efloat<nlimbs>(lhs), rhs);   // the sign of a zero product is not symmetric
+	efloat<nlimbs> product(rhs);   // * commutes, and is correctly rounded either way round
+	product *= lhs;
+	return product;
 }
 // BINARY DIVISION
 template<unsigned nlimbs>
