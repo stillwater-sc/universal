@@ -20,6 +20,9 @@ namespace efloat_detail {
 	// terms, and the result is rounded once to the caller's precision at the end.
 	inline constexpr unsigned exp_log_guard_bits = 64u;
 
+	// exp_working(x, P) is within 2^(scale - P - exp_log_guard_bits + exp_error_bits) of exp x
+	inline constexpr unsigned exp_error_bits = 16u;
+
 	// The precision of the result of a function of x: x's own, what the arithmetic would give.
 	// The literals a function combines x with carry no precision and do not widen it (#1757).
 	template<unsigned nlimbs>
@@ -54,6 +57,41 @@ namespace efloat_detail {
 			if (bit(p) != first) return true;
 		}
 		return false;
+	}
+
+	// Ziv's strategy (#1763): evaluate(target) returns a function's value unrounded, within
+	// 2^(scale - target - exp_log_guard_bits + error_bits) of the exact result. A value too near a
+	// rounding boundary to round from is evaluated again at twice the target, and the first one
+	// that can be rounded is. The functions that use it are transcendental at every argument they
+	// pass here, so the exact result never lies on a boundary.
+	template<unsigned nlimbs, typename Evaluate>
+	inline efloat<nlimbs> round_ziv(Evaluate evaluate, unsigned precision, unsigned error_bits, bool carries) {
+		unsigned target = precision;
+		efloat<nlimbs> y = evaluate(target);
+		for (int retry = 0; retry < 8 && !y.iszero() && !y.isinf() && !y.isnan() &&
+		                    !can_round(y, precision, target + exp_log_guard_bits - error_bits); ++retry) {
+			target *= 2;
+			y = evaluate(target);
+		}
+		round_result(y, precision, carries);
+		return y;
+	}
+
+	// The rounding of value + c, for a value of at most `precision` bits and a correction c of the
+	// sign `direction` with |c| < 2^-(precision + 4) |value|: every rounding boundary next to value
+	// lies at least 2^-(precision + 1) |value| from it, so value + c rounds as value moved 2^-(precision
+	// + 32) of itself toward c does. sin, tan and exp of a tiny x, whose leading term is exact and
+	// whose next one lies below any working precision, round this way.
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> round_near(efloat<nlimbs> value, int direction, unsigned precision, bool carries) {
+		const int64_t s = value.scale();
+		value.set_precision(precision + 64);
+		efloat<nlimbs> tick(1.0);
+		tick.set_precision(precision + 64);
+		tick.setexponent(s - static_cast<int64_t>(precision) - 32);
+		if (direction > 0) value += tick; else value -= tick;   // exact: both fit in precision + 64 bits
+		round_result(value, precision, carries);
+		return value;
 	}
 
 	// atanh(1/m) = sum_k 1 / ((2k + 1) m^(2k + 1)) for an integer m >= 2, at `bits` bits.
@@ -109,6 +147,61 @@ namespace efloat_detail {
 
 }  // namespace efloat_detail
 
+namespace efloat_detail {
+
+	// exp(x) for a finite x, |x| < 2^17, unrounded, at `precision` bits plus guard bits.
+	//
+	// Range reduction: x = k ln 2 + r with |r| <= ln 2 / 2, at the working precision: the result's
+	// precision plus guard bits, with ln 2 computed at that precision (#1712).  r is then halved
+	// h times, and the series for exp(r / 2^h) squared h times: each halving saves the series
+	// about W / (h + 1.5)^2 terms for one squaring, and each squaring doubles the relative error,
+	// so the working precision carries h more guard bits.
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> exp_working(const efloat<nlimbs>& x, unsigned precision) {
+		const unsigned halvings  = static_cast<unsigned>(std::sqrt(static_cast<double>(precision)));
+		const unsigned working   = precision + efloat_detail::exp_log_guard_bits + halvings;
+		const efloat<nlimbs> ln2 = efloat_detail::ln2<nlimbs>(working);
+
+		double x_dbl = double(x);
+		int64_t k = static_cast<int64_t>(std::round(x_dbl / 0.6931471805599453));
+		efloat<nlimbs> r = x - efloat<nlimbs>(k) * ln2;
+		if (!r.iszero()) r.setexponent(r.scale() - static_cast<int64_t>(halvings));
+
+		// Taylor series for exp(r / 2^h), until the terms fall below the working precision
+		efloat<nlimbs> sum(1.0);
+		sum.set_precision(working);
+		efloat<nlimbs> term(sum);
+
+		// Each term lies further below the sum than the last, so it needs that many fewer bits: the
+		// running term and r are carried at a precision that falls with the terms (#1714). Both are
+		// cut, because a product takes the wider of its operands' precisions.
+		efloat<nlimbs> r_taper = r;
+		unsigned taper = working;
+		for (unsigned n = 1; ; ++n) {
+			const int64_t below = sum.scale() - term.scale();   // bits the term sits below the sum
+			const unsigned need = (below + 64 < static_cast<int64_t>(working)) ? static_cast<unsigned>(static_cast<int64_t>(working) - below) : 64u;
+			if (need + 32u <= taper) {
+				taper = need;
+				term.set_precision(taper);
+				r_taper = r;
+				r_taper.set_precision(taper);
+			}
+			// n carries no precision, so the quotient stays at the taper (#1757)
+			term = term * r_taper / n;
+			if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(working)) break;
+			sum += term;
+		}
+		for (unsigned i = 0; i < halvings; ++i) sum = sum * sum;
+
+		// Multiply by 2^k using exponent scaling
+		if (k != 0) {
+			sum.setexponent(sum.scale() + k);
+		}
+		return sum;
+	}
+
+}  // namespace efloat_detail
+
 // Natural exponentiation function for efloat using range-reduced Taylor series
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
@@ -135,53 +228,13 @@ constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
 		}
 	}
 
-	// Range reduction: x = k ln 2 + r with |r| <= ln 2 / 2, at the working precision: the result's
-	// precision plus guard bits, with ln 2 computed at that precision (#1712).  r is then halved
-	// h times, and the series for exp(r / 2^h) squared h times: each halving saves the series
-	// about W / (h + 1.5)^2 terms for one squaring, and each squaring doubles the relative error,
-	// so the working precision carries h more guard bits.
 	const unsigned precision = efloat_detail::result_precision(x);
-	const unsigned halvings  = static_cast<unsigned>(std::sqrt(static_cast<double>(precision)));
-	const unsigned working   = precision + efloat_detail::exp_log_guard_bits + halvings;
-	const efloat<nlimbs> ln2 = efloat_detail::ln2<nlimbs>(working);
-
-	double x_dbl = double(x);
-	int64_t k = static_cast<int64_t>(std::round(x_dbl / 0.6931471805599453));
-	efloat<nlimbs> r = x - efloat<nlimbs>(k) * ln2;
-	if (!r.iszero()) r.setexponent(r.scale() - static_cast<int64_t>(halvings));
-
-	// Taylor series for exp(r / 2^h), until the terms fall below the working precision
-	efloat<nlimbs> sum(1.0);
-	sum.set_precision(working);
-	efloat<nlimbs> term(sum);
-
-	// Each term lies further below the sum than the last, so it needs that many fewer bits: the
-	// running term and r are carried at a precision that falls with the terms (#1714). Both are
-	// cut, because a product takes the wider of its operands' precisions.
-	efloat<nlimbs> r_taper = r;
-	unsigned taper = working;
-	for (unsigned n = 1; ; ++n) {
-		const int64_t below = sum.scale() - term.scale();   // bits the term sits below the sum
-		const unsigned need = (below + 64 < static_cast<int64_t>(working)) ? static_cast<unsigned>(static_cast<int64_t>(working) - below) : 64u;
-		if (need + 32u <= taper) {
-			taper = need;
-			term.set_precision(taper);
-			r_taper = r;
-			r_taper.set_precision(taper);
-		}
-		// n carries no precision, so the quotient stays at the taper (#1757)
-		term = term * r_taper / n;
-		if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(working)) break;
-		sum += term;
+	// exp(x) = 1 + x + ... is within 2^-(P + 4) of 1 for |x| < 2^-(P + 4), on x's side of it
+	if (x.scale() < -static_cast<int64_t>(precision) - 5) {
+		return efloat_detail::round_near(efloat<nlimbs>(1.0), x.sign(), precision, x.carries_precision());
 	}
-	for (unsigned i = 0; i < halvings; ++i) sum = sum * sum;
-
-	// Multiply by 2^k using exponent scaling
-	if (k != 0) {
-		sum.setexponent(sum.scale() + k);
-	}
-	efloat_detail::round_result(sum, precision, x.carries_precision());
-	return sum;
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::exp_working(x, target); },
+	                                        precision, efloat_detail::exp_error_bits, x.carries_precision());
 }
 
 // exp2(x): exponential base 2

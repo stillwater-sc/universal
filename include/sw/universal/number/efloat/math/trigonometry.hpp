@@ -96,7 +96,8 @@ namespace efloat_detail {
 	// x = k pi/2 + r with |r| <= pi/4, r accurate to `bits` bits relative to itself, and
 	// quadrant = k mod 4 (#1712).  x - k pi/2 cancels the scale(x) - scale(r) leading bits, and
 	// x can lie as close to a multiple of pi/2 as its own precision allows, so the reduction is
-	// retried with x and pi/2 widened by the cancellation until r keeps `bits` + 32 correct bits.
+	// retried with x and pi/2 widened by the cancellation until r keeps `bits` + guard correct bits,
+	// as many as the rest of the evaluation carries, so that Ziv's test can rely on them (#1763).
 	// A P-bit x cannot lie much closer to k pi/2 than 2^-2(P + scale(x)), so the retries stop at
 	// three times that width.
 	template<unsigned nlimbs>
@@ -119,7 +120,7 @@ namespace efloat_detail {
 			const efloat<nlimbs> k = round(xw / half_pi);
 			const efloat<nlimbs> r = xw - k * half_pi;
 			const int64_t lost = r.iszero() ? static_cast<int64_t>(working) : std::max<int64_t>(0, x.scale() - r.scale());
-			const unsigned needed = bits + 32 + static_cast<unsigned>(lost);
+			const unsigned needed = bits + exp_log_guard_bits + static_cast<unsigned>(lost);
 			if (k.iszero() || working >= needed || working >= limit) {
 				const efloat<nlimbs> four(4.0);
 				const efloat<nlimbs> k_mod_4 = k - floor(k / four) * four;   // k is an integer: exact
@@ -226,6 +227,48 @@ namespace efloat_detail {
 		return 1 - v;
 	}
 
+	// trig_working(x, P) is within 2^(scale - P - exp_log_guard_bits + trig_error_bits) of the
+	// function's value: measured within 2^-(P + 64 - 15), the reduction, the versine's doublings,
+	// the root and tan's quotient included; the bound leaves 17 bits of margin.
+	inline constexpr unsigned trig_error_bits = 32u;
+
+	enum class trig_function { sine, cosine, tangent };
+
+	// sin, cos or tan of a finite x != 0, unrounded, at `bits` bits plus guard bits: x reduced by
+	// pi/2 to |r| <= pi/4, then the versine of r. tan at a pole the reduction cannot resolve is
+	// returned as an infinity, +inf at pi/2 and -inf at -pi/2 (quadrant 3).
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> trig_working(const efloat<nlimbs>& x, unsigned bits, trig_function f) {
+		unsigned quadrant = 0;
+		const efloat<nlimbs> r = reduce_half_pi(x, bits, quadrant);
+		const efloat<nlimbs> v = versine(r);
+		efloat<nlimbs> result;
+		if (f == trig_function::sine) {
+			result = (quadrant & 1u) ? cos_from_versine(v) : sin_from_versine(v, r);
+			if (quadrant >= 2) result = efloat<nlimbs>(0.0) - result;
+		}
+		else if (f == trig_function::cosine) {
+			result = (quadrant & 1u) ? sin_from_versine(v, r) : cos_from_versine(v);
+			if (quadrant == 1 || quadrant == 2) result = efloat<nlimbs>(0.0) - result;
+		}
+		else {
+			// tan(k pi/2 + r) = tan(r) for even k, -1 / tan(r) for odd k
+			const efloat<nlimbs> s = sin_from_versine(v, r);
+			const efloat<nlimbs> c = cos_from_versine(v);
+			if (quadrant & 1u) {
+				if (s.iszero()) {
+					result.setinf(quadrant == 3u);
+					return result;
+				}
+				result = efloat<nlimbs>(0.0) - c / s;
+			}
+			else {
+				result = s / c;
+			}
+		}
+		return result;
+	}
+
 }  // namespace efloat_detail
 
 // The trigonometric functions compute at their result's precision plus guard bits, with pi at
@@ -246,15 +289,13 @@ constexpr efloat<nlimbs> sin(const efloat<nlimbs>& x) {
 		if (!std::is_constant_evaluated()) efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
 		return nan;
 	}
-
 	const unsigned precision = efloat_detail::result_precision(x);
-	unsigned quadrant = 0;
-	const efloat<nlimbs> r = efloat_detail::reduce_half_pi(x, precision, quadrant);
-	const efloat<nlimbs> v = efloat_detail::versine(r);
-	efloat<nlimbs> result = (quadrant & 1u) ? efloat_detail::cos_from_versine(v) : efloat_detail::sin_from_versine(v, r);
-	if (quadrant >= 2) result = efloat<nlimbs>(0.0) - result;
-	efloat_detail::round_result(result, precision, x.carries_precision());
-	return result;
+	// sin x = x - x^3/6 + ..., within x^2/6 < 2^-(P + 6) of x below |x| < 2^-(P + 6)/2, toward 0
+	if (2 * x.scale() < -static_cast<int64_t>(precision) - 6) {
+		return efloat_detail::round_near(x, -x.sign(), precision, x.carries_precision());
+	}
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::trig_working(x, target, efloat_detail::trig_function::sine); },
+	                                        precision, efloat_detail::trig_error_bits, x.carries_precision());
 }
 
 // ----------------------------------------------------------------------------
@@ -270,15 +311,13 @@ constexpr efloat<nlimbs> cos(const efloat<nlimbs>& x) {
 		if (!std::is_constant_evaluated()) efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
 		return nan;
 	}
-
 	const unsigned precision = efloat_detail::result_precision(x);
-	unsigned quadrant = 0;
-	const efloat<nlimbs> r = efloat_detail::reduce_half_pi(x, precision, quadrant);
-	const efloat<nlimbs> v = efloat_detail::versine(r);
-	efloat<nlimbs> result = (quadrant & 1u) ? efloat_detail::sin_from_versine(v, r) : efloat_detail::cos_from_versine(v);
-	if (quadrant == 1 || quadrant == 2) result = efloat<nlimbs>(0.0) - result;
-	efloat_detail::round_result(result, precision, x.carries_precision());
-	return result;
+	// cos x = 1 - x^2/2 + ..., within x^2/2 < 2^-(P + 5) of 1 below |x| < 2^-(P + 6)/2, below it
+	if (2 * x.scale() < -static_cast<int64_t>(precision) - 6) {
+		return efloat_detail::round_near(efloat<nlimbs>(1.0), -1, precision, x.carries_precision());
+	}
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::trig_working(x, target, efloat_detail::trig_function::cosine); },
+	                                        precision, efloat_detail::trig_error_bits, x.carries_precision());
 }
 
 // ----------------------------------------------------------------------------
@@ -293,26 +332,15 @@ constexpr efloat<nlimbs> tan(const efloat<nlimbs>& x) {
 		if (!std::is_constant_evaluated()) efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
 		return nan;
 	}
-	// tan(k pi/2 + r) = tan(r) for even k, -1 / tan(r) for odd k: one reduction, one rounding
 	const unsigned precision = efloat_detail::result_precision(x);
-	unsigned quadrant = 0;
-	const efloat<nlimbs> r = efloat_detail::reduce_half_pi(x, precision, quadrant);
-	const efloat<nlimbs> v = efloat_detail::versine(r);
-	const efloat<nlimbs> s = efloat_detail::sin_from_versine(v, r);
-	const efloat<nlimbs> c = efloat_detail::cos_from_versine(v);
-	efloat<nlimbs> result;
-	if (quadrant & 1u) {
-		if (s.iszero()) {                    // r too small to resolve at the widest reduction: a pole,
-			efloat<nlimbs> inf; inf.setinf(quadrant == 3u);   // +inf at pi/2, -inf at -pi/2 (quadrant 3)
-			if (!std::is_constant_evaluated()) efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
-			return inf;
-		}
-		result = efloat<nlimbs>(0.0) - c / s;
+	// tan x = x + x^3/3 + ..., within x^2/3 (1 + x^2) < 2^-(P + 5) of x below |x| < 2^-(P + 6)/2,
+	// away from 0
+	if (2 * x.scale() < -static_cast<int64_t>(precision) - 6) {
+		return efloat_detail::round_near(x, x.sign(), precision, x.carries_precision());
 	}
-	else {
-		result = s / c;
-	}
-	efloat_detail::round_result(result, precision, x.carries_precision());
+	efloat<nlimbs> result = efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::trig_working(x, target, efloat_detail::trig_function::tangent); },
+	                                                         precision, efloat_detail::trig_error_bits, x.carries_precision());
+	if (result.isinf() && !std::is_constant_evaluated()) efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
 	return result;
 }
 

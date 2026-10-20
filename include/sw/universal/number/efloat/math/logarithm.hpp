@@ -243,18 +243,11 @@ constexpr efloat<nlimbs> log(const efloat<nlimbs>& x) {
 
 	// computed at the working precision -- the result's precision plus guard bits -- and rounded
 	// once (#1712)
+	// Ziv's strategy (#1763): log x is transcendental for x != 1, and log(1 - d) = -d - d^2/2 - ...
+	// for a short d is the common near miss
 	const unsigned precision = efloat_detail::result_precision(x);
-	unsigned working = precision + efloat_detail::exp_log_guard_bits;
-	efloat<nlimbs> y = efloat_detail::log_working(x, working);
-	// Ziv's strategy (#1763): a result too near a rounding boundary to round from is recomputed at
-	// twice the working precision. log x is transcendental for x != 1, so it never lies on one;
-	// log(1 - d) = -d - d^2/2 - d^3/3 ... for a short d is the common near miss.
-	for (int retry = 0; retry < 8 && !y.iszero() && !efloat_detail::can_round(y, precision, working - efloat_detail::log_error_bits); ++retry) {
-		working *= 2;
-		y = efloat_detail::log_working(x, working);
-	}
-	efloat_detail::round_result(y, precision, x.carries_precision());
-	return y;
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::log_working(x, target + efloat_detail::exp_log_guard_bits); },
+	                                        precision, efloat_detail::log_error_bits, x.carries_precision());
 }
 
 // Logarithm base 2 function for efloat
