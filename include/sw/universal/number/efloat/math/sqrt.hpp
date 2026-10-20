@@ -14,10 +14,11 @@ namespace efloat_detail {
 
 	// sqrt(a) for a finite a > 0 at `bits` bits (#1756): a double seed, accurate to ~52 bits,
 	// then Newton's iteration x <- (x + a/x)/2, each step at twice the precision of the last,
-	// since each doubles the correct bits, and one final step at the full precision.  a is
-	// scaled to [1, 4) first, so the seed holds for any exponent.
+	// since each doubles the correct bits, and one final step at the full precision that polishes
+	// the last bits; a caller whose `bits` already carry guard bits, as sin's (#1761), can skip
+	// it with polish = false.  a is scaled to [1, 4) first, so the seed holds for any exponent.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> sqrt_newton(const efloat<nlimbs>& a, unsigned bits) {
+	inline efloat<nlimbs> sqrt_newton(const efloat<nlimbs>& a, unsigned bits, bool polish = true) {
 		const int64_t e    = a.scale();
 		const int64_t half = e / 2 - ((e < 0 && e % 2 != 0) ? 1 : 0);   // floor(e / 2), without e - 1 overflowing
 		efloat<nlimbs> m(a);
@@ -34,8 +35,11 @@ namespace efloat_detail {
 			x.setexponent(x.scale() - 1);
 			if (p >= bits) break;
 		}
-		x += mw / x;   // the final step at the full precision
-		x.setexponent(x.scale() - 1 + half);
+		if (polish) {
+			x += mw / x;   // the final step at the full precision
+			x.setexponent(x.scale() - 1);
+		}
+		x.setexponent(x.scale() + half);
 		return x;
 	}
 

@@ -14,6 +14,7 @@
 #include <limits>     // std::numeric_limits
 #include <string>
 #include <type_traits>
+#include <utility>    // std::move
 #include <vector>
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -308,97 +309,8 @@ public:
 	}
 
 	// arithmetic operators
-	constexpr efloat& operator+=(const efloat& rhs) noexcept {
-		const unsigned precision = merged_precision(_precision_limbs, rhs._precision_limbs);
-		// handle special cases
-		if (isnan() || rhs.isnan()) {
-			setnan();
-			return *this;
-		}
-		if (isinf()) {
-			if (rhs.isinf() && _sign != rhs._sign) {
-				setnan();
-				if (!std::is_constant_evaluated()) {
-					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
-				}
-			}
-			return *this;
-		}
-		if (rhs.isinf()) {
-			*this = rhs;
-			return *this;
-		}
-		if (iszero()) {
-			*this = rhs;
-			_precision_limbs = precision;
-			normalize();
-			return *this;
-		}
-		_precision_limbs = precision;
-		if (rhs.iszero()) {
-			normalize();
-			return *this;
-		}
+	constexpr efloat& operator+=(const efloat& rhs) noexcept { return add(rhs, false); }
 
-		// Make copies for manipulation
-		unsigned target_prec = precision_limbs();
-
-		std::vector<uint32_t> a_limbs = _limb;
-		std::vector<uint32_t> b_limbs = rhs._limb;
-		int64_t a_exp = _exponent;
-		int64_t b_exp = rhs._exponent;
-		
-		// Align exponents.  The shifted operand keeps two limbs past the precision, and bits that
-		// fall below those are folded into a sticky bit at the bottom, so the sum and the
-		// difference round correctly (#1757): they were truncated at the precision before.
-		bool sticky = false;
-		bool shifted_a = false;
-		if (a_exp < b_exp) {
-			shifted_a = true;
-			sticky = shift_right_sticky(a_limbs, static_cast<uint64_t>(b_exp - a_exp), std::max<size_t>(b_limbs.size(), target_prec + 2u));
-			a_exp = b_exp;
-		} else if (b_exp < a_exp) {
-			sticky = shift_right_sticky(b_limbs, static_cast<uint64_t>(a_exp - b_exp), std::max<size_t>(a_limbs.size(), target_prec + 2u));
-		}
-
-		// Align sizes before any operation
-		align_sizes(a_limbs, b_limbs);
-		if (sticky) {
-			// the bit lies below every bit of both operands, at least 64 bits below the rounding point
-			a_limbs.push_back(0u); b_limbs.push_back(0u);
-			(shifted_a ? a_limbs : b_limbs).back() |= 1u;
-		}
-
-		if (_sign == rhs._sign) {
-			size_t old_size = a_limbs.size();
-			add_limbs(a_limbs, b_limbs);
-			if (a_limbs.size() > old_size) {
-				a_exp += 32 * (a_limbs.size() - old_size);
-			}
-			_limb = a_limbs;
-		} else {
-			// Signs differ, perform subtraction
-			int cmp = compare_limbs(a_limbs, b_limbs);
-			if (cmp == 0) {
-				setzero();
-				return *this;
-			}
-			if (cmp > 0) {
-				subtract_limbs(a_limbs, b_limbs);
-				_limb = a_limbs;
-				// sign is already correct
-			} else { // cmp < 0
-				subtract_limbs(b_limbs, a_limbs);
-				_limb = b_limbs;
-				_sign = rhs._sign;
-			}
-		}
-
-		_exponent = a_exp;
-		normalize();
-
-		return *this;
-	}
 	constexpr efloat& operator+=(double rhs) noexcept {
 		return *this += efloat(rhs);
 	}
@@ -408,8 +320,7 @@ public:
 		return *this += efloat(rhs);
 	}
 	constexpr efloat& operator-=(const efloat& rhs) noexcept {
-		*this += -rhs;
-		return *this;
+		return add(rhs, true);
 	}
 	constexpr efloat& operator-=(double rhs) noexcept {
 		return *this -= efloat(rhs);
@@ -477,7 +388,7 @@ public:
 		std::vector<uint32_t> product;
 		multiply_limbs(product, _limb, rhs._limb);
 
-		_limb = product;
+		_limb = std::move(product);
 		_exponent = _exponent + rhs._exponent + 1;
 		_sign = (_sign != rhs._sign);
 
@@ -560,7 +471,7 @@ public:
 			_exponent += 32;
 		}
 
-		_limb = quotient;
+		_limb = std::move(quotient);
 		_exponent = _exponent - rhs._exponent;
 		_sign = result_sign;
 
@@ -573,6 +484,23 @@ public:
 	// an integer operand converts exactly (all 64 bits), not through double
 	template<typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 	constexpr efloat& operator/=(Integer rhs) noexcept {
+		// a divisor of one limb, such as the (2n-1)(2n) of a series term, divides in place (#1761);
+		// powers of 2, zero and the special values take the general path
+		if (_state == FloatingPointState::Normal) {
+			bool     negative  = false;
+			uint64_t magnitude = 0;
+			if constexpr (std::is_signed_v<Integer>) {
+				negative  = (rhs < 0);
+				magnitude = negative ? (0ull - static_cast<uint64_t>(static_cast<int64_t>(rhs))) : static_cast<uint64_t>(rhs);
+			}
+			else {
+				magnitude = static_cast<uint64_t>(rhs);
+			}
+			if (magnitude <= 0xFFFF'FFFFull && (magnitude & (magnitude - 1u)) != 0u) {
+				divide_by_limb(static_cast<uint32_t>(magnitude), negative);
+				return *this;
+			}
+		}
 		return *this /= efloat(rhs);
 	}
 
@@ -741,6 +669,105 @@ protected:
 
 	// HELPER methods
 
+	// *this + rhs, or *this - rhs with negate_rhs: subtraction flips rhs's sign here instead of
+	// building a negated copy of it (#1761)
+	constexpr efloat& add(const efloat& rhs, bool negate_rhs) noexcept {
+		const unsigned precision = merged_precision(_precision_limbs, rhs._precision_limbs);
+		const bool rhs_sign = (rhs._sign != (negate_rhs && !rhs.iszero()));   // -0 is 0, as operator-()
+		// handle special cases
+		if (isnan() || rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+		if (isinf()) {
+			if (rhs.isinf() && _sign != rhs_sign) {
+				setnan();
+				if (!std::is_constant_evaluated()) {
+					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
+				}
+			}
+			return *this;
+		}
+		if (rhs.isinf()) {
+			*this = rhs;
+			_sign = rhs_sign;
+			return *this;
+		}
+		if (iszero()) {
+			*this = rhs;
+			_sign = rhs_sign;
+			_precision_limbs = precision;
+			normalize();
+			return *this;
+		}
+		_precision_limbs = precision;
+		if (rhs.iszero()) {
+			normalize();
+			return *this;
+		}
+
+		// Make copies for manipulation
+		unsigned target_prec = precision_limbs();
+
+		// this's limbs are reused in place, unless rhs is this (x += x)
+		std::vector<uint32_t> a_limbs = (&rhs == this) ? _limb : std::move(_limb);
+		std::vector<uint32_t> b_limbs = rhs._limb;
+		int64_t a_exp = _exponent;
+		int64_t b_exp = rhs._exponent;
+		
+		// Align exponents.  The shifted operand keeps two limbs past the precision, and bits that
+		// fall below those are folded into a sticky bit at the bottom, so the sum and the
+		// difference round correctly (#1757): they were truncated at the precision before.
+		bool sticky = false;
+		bool shifted_a = false;
+		if (a_exp < b_exp) {
+			shifted_a = true;
+			sticky = shift_right_sticky(a_limbs, static_cast<uint64_t>(b_exp - a_exp), std::max<size_t>(b_limbs.size(), target_prec + 2u));
+			a_exp = b_exp;
+		} else if (b_exp < a_exp) {
+			sticky = shift_right_sticky(b_limbs, static_cast<uint64_t>(a_exp - b_exp), std::max<size_t>(a_limbs.size(), target_prec + 2u));
+		}
+
+		// Align sizes before any operation
+		align_sizes(a_limbs, b_limbs);
+		if (sticky) {
+			// the bit lies below every bit of both operands, at least 64 bits below the rounding point
+			a_limbs.push_back(0u); b_limbs.push_back(0u);
+			(shifted_a ? a_limbs : b_limbs).back() |= 1u;
+		}
+
+		if (_sign == rhs_sign) {
+			size_t old_size = a_limbs.size();
+			add_limbs(a_limbs, b_limbs);
+			if (a_limbs.size() > old_size) {
+				a_exp += 32 * (a_limbs.size() - old_size);
+			}
+			_limb = std::move(a_limbs);
+		} else {
+			// Signs differ, perform subtraction
+			int cmp = compare_limbs(a_limbs, b_limbs);
+			if (cmp == 0) {
+				setzero();
+				return *this;
+			}
+			if (cmp > 0) {
+				subtract_limbs(a_limbs, b_limbs);
+				_limb = std::move(a_limbs);
+				// sign is already correct
+			} else { // cmp < 0
+				subtract_limbs(b_limbs, a_limbs);
+				_limb = std::move(b_limbs);
+				_sign = rhs_sign;
+			}
+		}
+
+		_exponent = a_exp;
+		normalize();
+
+		return *this;
+	}
+
+
 	// the default precision in limbs: set_default_precision() if set, else the type's nlimbs
 	static constexpr unsigned default_precision_limbs() noexcept {
 		if (std::is_constant_evaluated()) return nlimbs;
@@ -841,6 +868,10 @@ protected:
 	}
 
 	static constexpr void multiply_limbs(std::vector<uint32_t>& product, const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) {
+		if (&a == &b) {
+			square_limbs(product, a);
+			return;
+		}
 		std::vector<uint32_t> rev_a = a;
 		std::vector<uint32_t> rev_b = b;
 		std::reverse(rev_a.begin(), rev_a.end()); // converts to LSB-first
@@ -860,8 +891,91 @@ protected:
 			rev_product[i + n] = static_cast<uint32_t>(carry);
 		}
 
-		std::reverse(rev_product.begin(), rev_product.end()); // converts back to MSB-first
-		product = rev_product;
+		product.assign(rev_product.rbegin(), rev_product.rend()); // converts back to MSB-first
+	}
+
+	// a * a, exactly, as multiply_limbs: each cross product a_i a_j (i < j) is formed once and the
+	// sum doubled, then the squares a_i^2 are added, about half the limb products (#1761).  x *= x
+	// takes this path.
+	static constexpr void square_limbs(std::vector<uint32_t>& product, const std::vector<uint32_t>& a) {
+		const size_t n = a.size();
+		std::vector<uint32_t> r(a.rbegin(), a.rend());   // LSB first
+		std::vector<uint32_t> p(2 * n, 0u);
+		for (size_t i = 0; i + 1 < n; ++i) {
+			uint64_t carry = 0;
+			for (size_t j = i + 1; j < n; ++j) {
+				const uint64_t sum = uint64_t(p[i + j]) + uint64_t(r[i]) * uint64_t(r[j]) + carry;
+				p[i + j] = static_cast<uint32_t>(sum);
+				carry = sum >> 32;
+			}
+			p[i + n] = static_cast<uint32_t>(carry);
+		}
+		// double the cross products: the sum is below a^2 / 2, so the top bit shifts out empty
+		uint32_t top = 0;
+		for (size_t k = 0; k < 2 * n; ++k) {
+			const uint32_t next = p[k] >> 31;
+			p[k] = (p[k] << 1) | top;
+			top = next;
+		}
+		uint64_t carry = 0;
+		for (size_t i = 0; i < n; ++i) {
+			const uint64_t sq = uint64_t(r[i]) * uint64_t(r[i]);
+			uint64_t sum = uint64_t(p[2 * i]) + (sq & 0xFFFF'FFFFull) + carry;
+			p[2 * i] = static_cast<uint32_t>(sum);
+			sum = uint64_t(p[2 * i + 1]) + (sq >> 32) + (sum >> 32);
+			p[2 * i + 1] = static_cast<uint32_t>(sum);
+			carry = sum >> 32;
+		}
+		product.assign(p.rbegin(), p.rend());   // MSB first
+	}
+
+	// *this /= d for a finite nonzero *this and a d of one limb that is not a power of 2, rounded
+	// once in the current mode (#1761): the quotient as operator/= forms it, without building
+	// an efloat for d or a general long division.  The significand A (na limbs, read as a
+	// fraction) is divided a limb at a time by d, normalized to dn = d 2^s by feeding A 2^s, with
+	// Moller and Granlund's reciprocal (as divide_limbs).  The quotient A/d has 2 to 33 leading
+	// zero bits (d >= 3), so target + 3 quotient limbs leave the guard limb exact after the
+	// leading bit is moved to the top; the remainder is the sticky bit.  A correctly rounded
+	// quotient is unique, so the result is the one the general path returns.
+	constexpr void divide_by_limb(uint32_t d, bool negative) {
+		const unsigned target = precision_limbs();
+		const size_t   na     = _limb.size();
+		const size_t   len    = std::max<size_t>(na, size_t(target) + 3u);
+		const unsigned s      = static_cast<unsigned>(clz(d));
+		const uint32_t dn     = d << s;
+		const uint32_t inv    = static_cast<uint32_t>(~uint64_t(0) / dn - (uint64_t(1) << 32));
+		std::vector<uint32_t> q(len, 0u);
+		auto digit = [&](size_t j) -> uint32_t { return (j < na) ? _limb[j] : 0u; };
+		uint32_t r = (s != 0u) ? (digit(0) >> (32u - s)) : 0u;   // below dn: the top quotient digit is 0
+		for (size_t j = 0; j < len; ++j) {
+			const uint32_t u = (s != 0u) ? ((digit(j) << s) | (digit(j + 1) >> (32u - s))) : digit(j);
+			const uint64_t prod = uint64_t(inv) * r + ((uint64_t(r) << 32) | u);
+			uint32_t qj = static_cast<uint32_t>(prod >> 32) + 1u;
+			uint32_t rj = u - qj * dn;
+			if (rj > static_cast<uint32_t>(prod)) { --qj; rj += dn; }
+			if (rj >= dn) { ++qj; rj -= dn; }
+			q[j] = qj;
+			r = rj;
+		}
+		// bring the leading bit to the top: the bits that enter at the bottom lie below the guard
+		// limb, where only the sticky remainder counts
+		size_t lead = 0;
+		while (q[lead] == 0u) ++lead;
+		const unsigned bits = static_cast<unsigned>(clz(q[lead]));
+		for (size_t j = 0; j < len; ++j) {
+			const size_t from = j + lead;
+			uint64_t v = (from < len) ? (uint64_t(q[from]) << bits) : 0u;
+			if (bits != 0u && from + 1 < len) v |= uint64_t(q[from + 1]) >> (32u - bits);
+			q[j] = static_cast<uint32_t>(v);
+		}
+		_exponent -= static_cast<int64_t>(32 * lead + bits);
+		_sign = (_sign != negative);
+		if (round_limbs(q, target, efloat_rounding_mode, _sign, r != 0u)) {
+			q.insert(q.begin(), 1u);
+			_exponent += 32;
+		}
+		_limb = std::move(q);
+		normalize();
 	}
 
 	static constexpr bool round_limbs(std::vector<uint32_t>& limbs, size_t target_size, RoundingMode mode, bool sign, bool sticky_remainder = false) noexcept {
@@ -996,12 +1110,23 @@ protected:
 		std::vector<uint32_t> q(mu - n, 0u);
 
 		if (n == 1) {
-			// a single-limb divisor: one 64-by-32 division per limb
-			uint64_t r = 0;
+			// A single-limb divisor, as the small integers that divide the series terms (#1761).
+			// The divisor is normalized, so each 64-by-32 step divides by a precomputed reciprocal,
+			// Moller and Granlund's div_2by1 (Improved division by invariant integers, 2011,
+			// Algorithm 4): two multiplications instead of a hardware division, which costs ~30
+			// cycles. The quotient and remainder are exact, as before.
+			const uint32_t d   = v[0];
+			const uint32_t inv = static_cast<uint32_t>(~uint64_t(0) / d - (uint64_t(1) << 32));
+			uint32_t r = 0;
 			for (size_t j = mu; j-- > 0;) {
-				const uint64_t cur = (r << 32) | u[j];
-				if (j < q.size()) q[j] = static_cast<uint32_t>(cur / v[0]);
-				r = cur % v[0];
+				// r < d, so floor((r 2^32 + u[j]) / d) fits one limb
+				const uint64_t prod = uint64_t(inv) * r + ((uint64_t(r) << 32) | u[j]);
+				uint32_t qj = static_cast<uint32_t>(prod >> 32) + 1u;
+				uint32_t rj = u[j] - qj * d;
+				if (rj > static_cast<uint32_t>(prod)) { --qj; rj += d; }
+				if (rj >= d) { ++qj; rj -= d; }
+				if (j < q.size()) q[j] = qj;
+				r = rj;
 			}
 			remainder_non_zero = remainder_non_zero || (r != 0);
 		}
@@ -1970,7 +2095,8 @@ constexpr efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, const efloat<nlimb
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	efloat<nlimbs> mul = lhs;
-	mul *= rhs;
+	if (&lhs == &rhs) mul *= mul;   // x * x squares (#1761)
+	else mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
@@ -2019,7 +2145,9 @@ inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, double rhs) {
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
 inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, Integer rhs) {
-	return operator/(lhs, efloat<nlimbs>(rhs));
+	efloat<nlimbs> quotient(lhs);
+	quotient /= rhs;   // a one-limb divisor divides in place (#1761)
+	return quotient;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
