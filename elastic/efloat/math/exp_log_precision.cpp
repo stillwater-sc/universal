@@ -313,6 +313,78 @@ int VerifyNearRoundingBoundaries(bool reportTestCases, unsigned count) {
 	return fails;
 }
 
+// exp, sin, cos and tan of a short t = +-r 2^-k (r < 2^24) and of a full-width tiny t, rounded in
+// all four modes (#1763). Their series are then a short or exact leading part plus a tail far
+// below it: sin t = t - t^3/6 + ... lies within ~2^-2k of a rounding boundary, past what the
+// working precision's guard bits resolve, and for |t| < 2^-(P/2) the tail lies below any working
+// precision, so only the tiny-argument rounding gets the directed modes right. The references
+// are the series summed at 6P bits, which resolve the tail for every t generated here.
+template<unsigned nlimbs>
+int VerifyFunctionsNearRoundingBoundaries(bool reportTestCases, unsigned count) {
+	const unsigned P = nlimbs * 32;
+	const unsigned R = 6 * P;
+	const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+	                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+	const char* names[] = { "nearest", "toward zero", "toward +inf", "toward -inf" };
+	const char* functions[] = { "exp", "sin", "cos", "tan" };
+	const RoundingMode saved = efloat_rounding_mode;
+	ArgumentStream g{ 0x8CB92BA72F3D8DD7ull ^ P };
+	int fails = 0;
+	for (unsigned i = 0; i < count; ++i) {
+		efloat<nlimbs> t;
+		if (i % 2 == 0) {   // short: r 2^-k, k in [P/4, P)
+			const unsigned rbits = 1 + g.next() % 24;
+			t = efloat<nlimbs>(static_cast<double>((g.next() & ((1u << rbits) - 1u)) | 1u));
+			t.set_precision(P);
+			t.setexponent(-static_cast<int64_t>(P / 4 + g.next() % (3 * P / 4)));
+		}
+		else {              // full width, scale in [-2P, -P/4)
+			t = efloat<nlimbs>(1.0);
+			t.set_precision(P);
+			for (unsigned j = 0; j < nlimbs; ++j) t.setlimb(j, g.next() | (j == 0 ? 0x80000000u : 0u));
+			t.set_precision(P);
+			t.setexponent(-static_cast<int64_t>(P / 4 + g.next() % (7 * P / 4)));
+		}
+		if (g.next() & 1u) t = efloat<nlimbs>(0.0) - t;
+		t.set_precision(P);
+
+		// the series at R bits: exp = sum t^n / n!, sin and cos its odd and even terms
+		efloat<nlimbs> tr(t), term(1.0);
+		tr.set_precision(R);
+		term.set_precision(R);
+		efloat<nlimbs> exp_ref(1.0), sin_ref(0.0), cos_ref(1.0);
+		exp_ref.set_precision(R);
+		sin_ref.set_precision(R);
+		cos_ref.set_precision(R);
+		for (unsigned n = 1; n < 1000; ++n) {
+			term = term * tr / efloat<nlimbs>(static_cast<double>(n));
+			if (term.iszero() || term.scale() < tr.scale() - static_cast<int64_t>(R)) break;   // below every series' R bits
+			exp_ref += term;
+			const bool negative = ((n / 2) % 2) == 1;   // the signs of sin and cos: + - - + + - ...
+			if (n % 2) { if (negative) sin_ref -= term; else sin_ref += term; }
+			else       { if (negative) cos_ref -= term; else cos_ref += term; }
+		}
+		const efloat<nlimbs> tan_ref = sin_ref / cos_ref;
+		const efloat<nlimbs>* references[] = { &exp_ref, &sin_ref, &cos_ref, &tan_ref };
+
+		for (unsigned f = 0; f < 4; ++f) {
+			for (unsigned m = 0; m < 4; ++m) {
+				efloat_rounding_mode = modes[m];
+				efloat<nlimbs> expected(*references[f]);
+				expected.set_precision(P);
+				const efloat<nlimbs> got = (f == 0) ? exp(t) : (f == 1) ? sin(t) : (f == 2) ? cos(t) : tan(t);
+				efloat_rounding_mode = saved;
+				if (!(got == expected) || got.get_precision() != P) {
+					++fails;
+					if (reportTestCases) std::cerr << "FAIL efloat<" << nlimbs << "> " << functions[f] << "(t), t of scale " << t.scale() << ", rounded " << names[m] << '\n';
+				}
+			}
+		}
+	}
+	efloat_rounding_mode = saved;
+	return fails;
+}
+
 // log(2^e) = e ln 2 for exponents past the type's default precision (#1754 review): an efloat
 // made from an integer has the type's default precision, so the table path rounded e to 32 bits
 // in efloat<1>, and Newton on main was off by 65 units at e = 2^32 + 1 and returned inf at
@@ -385,11 +457,15 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAgmAgainstSeries<48>(reportTestCases, 20), "efloat<48>", "log AGM vs series");
 	nrOfFailedTestCases += ReportTestResult(VerifyNearRoundingBoundaries<4>(reportTestCases, 3000), "efloat<4>", "log near rounding boundaries");
 	nrOfFailedTestCases += ReportTestResult(VerifyNearRoundingBoundaries<8>(reportTestCases, 1000), "efloat<8>", "log near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<1>(reportTestCases, 1000), "efloat<1>", "exp/sin/cos/tan near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<4>(reportTestCases, 500), "efloat<4>", "exp/sin/cos/tan near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<16>(reportTestCases, 60), "efloat<16>", "exp/sin/cos/tan near rounding boundaries");
 #endif
 
 #if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyAtPrecision<64>(reportTestCases, 4), "efloat<64>", "2048 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifyNearRoundingBoundaries<64>(reportTestCases, 40), "efloat<64>", "log near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<64>(reportTestCases, 20), "efloat<64>", "exp/sin/cos/tan near rounding boundaries");
 #endif
 
 #if REGRESSION_LEVEL_3
