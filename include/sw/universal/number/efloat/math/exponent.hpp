@@ -7,6 +7,9 @@
 #pragma once
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 namespace sw { namespace universal {
 
@@ -30,6 +33,27 @@ namespace efloat_detail {
 	inline void round_result(efloat<nlimbs>& result, unsigned precision, bool carries) {
 		result.set_precision(precision);
 		if (!carries) result.clear_precision();
+	}
+
+	// Ziv's test (#1763): y, within 2^(scale(y) - correct) of the exact result, rounds to the same
+	// `precision` bits as the result in every mode when y's bits from position precision + 1 to
+	// correct - 2, counting its leading bit as 0, are neither all 0 nor all 1. The rounding
+	// boundaries -- the precision-bit values and the midpoints between them -- are the values
+	// whose bits past position precision are all 0, so y then lies more than 2^(scale(y) - correct)
+	// from the nearest one, and so does the exact result from y's side of it.
+	template<unsigned nlimbs>
+	inline bool can_round(const efloat<nlimbs>& y, unsigned precision, unsigned correct) {
+		if (correct < precision + 4) return false;
+		const std::vector<uint32_t> limbs = y.bits();   // most significant first, leading bit at 31
+		auto bit = [&limbs](unsigned p) -> uint32_t {
+			const std::size_t i = p / 32;
+			return (i < limbs.size()) ? (limbs[i] >> (31 - p % 32)) & 1u : 0u;
+		};
+		const uint32_t first = bit(precision + 1);
+		for (unsigned p = precision + 2; p <= correct - 2; ++p) {
+			if (bit(p) != first) return true;
+		}
+		return false;
 	}
 
 	// atanh(1/m) = sum_k 1 / ((2k + 1) m^(2k + 1)) for an integer m >= 2, at `bits` bits.
