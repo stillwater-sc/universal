@@ -18,7 +18,9 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
+#include <stdexcept>
 #include <universal/number/efloat/efloat.hpp>
 #include <mpfr.h>
 
