@@ -723,7 +723,8 @@ protected:
 	// precision already merged into *this; b may be *this's own limbs.  The operand with the
 	// smaller exponent, Y, is aligned to the other, X: it keeps two limbs past the precision, or
 	// X's length if longer, and bits that fall below those are folded into a sticky bit at the
-	// bottom, so the sum and the difference round correctly (#1757).  The aligned sum is formed
+	// bottom, so the sum and the difference round correctly (#1757); with a gap of a bit or none
+	// it keeps all of its bits.  The aligned sum is formed
 	// in scratch space and rounded into _limb once, without copying either operand (#1762).
 	void add_magnitude(const uint32_t* b, size_t nb, int64_t eb, bool b_sign) {
 		const size_t    target = precision_limbs();
@@ -738,8 +739,12 @@ protected:
 		const bool      x_sign = a_is_x ? _sign : b_sign;
 		const uint64_t  d      = static_cast<uint64_t>(a_is_x ? _exponent - eb : eb - _exponent);
 
-		// Y keeps ly limbs of X's frame; its bits below them are lost to the sticky bit
-		const uint64_t window = std::max<uint64_t>(nx, uint64_t(target) + 2u);
+		// Y keeps ly limbs of X's frame; its bits below them are lost to the sticky bit.  A gap of
+		// two bits or more cancels at most one leading bit, so the sticky bit stays far below the
+		// rounding point; a gap of one bit can cancel any number of them, so Y then keeps every
+		// bit, as it does with no gap at all (a Y longer than the precision, which carries none,
+		// lost its last bits here before)
+		const uint64_t window = (d <= 1) ? uint64_t(ny) + 1u : std::max<uint64_t>(nx, uint64_t(target) + 2u);
 		const size_t   ly     = static_cast<size_t>(std::max<uint64_t>(ny, std::min<uint64_t>(ny + (d + 31) / 32, window)));
 		const size_t   lx     = std::max(nx, ly);
 		bool lost = false;

@@ -10,7 +10,9 @@
 //            past the precision and fold whatever falls below them into a sticky bit.  The
 //            result must be the exact sum, formed at a precision that holds all of it, rounded
 //            once to the target, in every rounding mode: exponent gaps of 0 to 40 limbs, either
-//            operand the longer, and near-cancellations.
+//            operand the longer, and near-cancellations, including one by an operand that carries
+//            no precision and is longer than the target across a one-bit gap (#1767: it lost its
+//            last bits to the sticky bit, and 2 - (2 - 2^-127) came out 2^-126 - 2^-158).
 //
 // REGRESSION_LEVEL convention (intensity progression):
 //   LEVEL 1 -- 300 random products and the threshold lengths, 2,000 sums per precision
@@ -150,13 +152,26 @@ namespace {
 			for (unsigned i = 0; i < nrSamples; ++i) {
 				const unsigned target = 32 * p;
 				const size_t   nx     = 1 + rng() % p;
-				const size_t   ny     = 1 + rng() % p;
+				size_t         ny     = 1 + rng() % p;
 				const int64_t  ex     = static_cast<int64_t>(rng() % 41) - 20;
-				const int64_t  gap    = (i % 4 == 0) ? static_cast<int64_t>(rng() % 3) : static_cast<int64_t>(rng() % (32 * 40));
+				int64_t        gap    = (i % 4 == 0) ? static_cast<int64_t>(rng() % 3) : static_cast<int64_t>(rng() % (32 * 40));
 				const bool     sx     = (rng() & 1u) != 0u;
 				const bool     sy     = (i % 3 == 0) ? !sx : ((rng() & 1u) != 0u);   // a third subtract
-				const Real x = make(random_limbs(rng, nx), ex, sx, target);
-				const Real y = make(random_limbs(rng, ny), ex - gap, sy, target);
+				Real x = make(random_limbs(rng, nx), ex, sx, target);
+				Real y = make(random_limbs(rng, ny), ex - gap, sy, target);
+				if (i % 5 == 0) {
+					// a Y that carries no precision and is longer than the target, a gap of 0 to 2
+					// bits, and x = 2^ex against y = 2^ex - 2^-k: the difference cancels nearly all
+					// of y's bits
+					const size_t     wide_ny = p + 1 + rng() % 4;
+					std::vector<uint32_t> ones(wide_ny, 0xFFFF'FFFFu);
+					if (rng() & 1u) ones.back() = static_cast<uint32_t>(rng()) | 1u;
+					gap = static_cast<int64_t>(rng() % 3);
+					x = make(std::vector<uint32_t>{ 0x8000'0000u }, ex, sx, target);
+					y = make((rng() & 1u) ? ones : random_limbs(rng, wide_ny), ex - gap, !sx, 32 * static_cast<unsigned>(wide_ny));
+					y.clear_precision();
+					ny = wide_ny;
+				}
 				// the exact sum: at this precision neither operand loses a bit to the alignment
 				const unsigned wide = static_cast<unsigned>(32 * (nx + ny + gap / 32 + 4));
 				Real X = x, Y = y;
