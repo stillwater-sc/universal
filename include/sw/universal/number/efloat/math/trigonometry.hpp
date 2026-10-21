@@ -569,8 +569,9 @@ constexpr efloat<nlimbs> atan2(const efloat<nlimbs>& y, const efloat<nlimbs>& x)
 	// a zero y, or a finite y against an infinite x: +/- pi for x < 0, -0 included, else +/- 0
 	if (y.iszero() || (x.isinf() && !y.isinf())) {
 		if (x_neg) return efloat_detail::round_pi<nlimbs>(1, 0, y_neg, precision, carries);   // +/- pi
-		efloat<nlimbs> zero(0.0);                       // +/- 0
+		efloat<nlimbs> zero(0.0);                       // +/- 0, at the result's precision
 		zero.setsign(y_neg);
+		efloat_detail::round_result(zero, precision, carries);
 		return zero;
 	}
 	if (y.isinf() || x.iszero()) {
