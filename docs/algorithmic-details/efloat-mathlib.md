@@ -20,11 +20,15 @@ the history and the measurements, which the code does not.
 
 ## 1. The contract
 
-Every function below, except the five in section 9, is **correctly rounded** (with the
-bounded-retry caveat of section 2, item 3): the result is the exact mathematical value rounded
-once to the result's precision, in whichever of the four
-IEEE rounding modes `efloat_rounding_mode` selects (nearest-even, toward zero, toward +inf,
-toward -inf). Signed zeros, infinities, NaN and the exception flags follow C and IEEE 754.
+Every function below, except the five in section 9, is designed to be **correctly rounded**:
+the result is the exact mathematical value rounded once to the result's precision, in whichever
+of the four IEEE rounding modes `efloat_rounding_mode` selects (nearest-even, toward zero,
+toward +inf, toward -inf). What backs that is not a proof. The arithmetic, `sqrt` and the
+conversions round exact results, so they are correct by construction. The other functions
+rest on two things that are measured, not proven: the error bound of each unrounded evaluation
+(section 2) and a retry limit that has not been shown to suffice (section 2, item 3). What
+is established is agreement with MPFR on every case checked, 32-8192 bits, in all four modes
+(section 6). Signed zeros, infinities, NaN and the exception flags follow C and IEEE 754.
 
 **The result's precision** (#1757, PR #1758). A value constructed from a native `int`, `float`
 or `double` carries no precision of its own. An operation takes the wider precision of the
@@ -52,8 +56,13 @@ All of the math library uses one scheme, in `math/exponent.hpp`.
    boundary lies within the error, and `y` rounds to the same value as the exact result in
    every mode.
 3. **Ziv's strategy.** `round_ziv(evaluate, precision, error_bits)` evaluates, tests, and if the
-   test fails, evaluates again at twice the target. Every result it is given is transcendental
-   at that argument, so it never lies on a boundary, and an unbounded loop would terminate.
+   test fails, evaluates again at twice the target. What it is given is a finite approximation;
+   the premise is about the exact result, which must differ from every rounding boundary, so
+   that some precision separates the two and an unbounded loop would terminate. The boundaries
+   are binary fractions. Every caller returns the arguments whose exact result is a binary
+   fraction before reaching `round_ziv` (item 4): `exp2` at an integer, `log2` of a power of 2,
+   `pow` at an exact power, and so on. What remains is irrational (transcendental, or algebraic
+   like `exp2(1/2) = sqrt(2)`) or rational but not a binary fraction, so never a boundary.
    The loop is bounded, though: after **eight retries**, at 256 times the target, it rounds the
    last value whether or not the test passed. So the guarantee is correct rounding unless the
    exact result lies within about `2^-(256 P)` of a rounding boundary, relative to its size;
