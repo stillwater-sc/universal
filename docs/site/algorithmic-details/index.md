@@ -22,6 +22,11 @@ the trade-off space rather than the API-level usage.
   32-bit-limb kernels that add, multiply (schoolbook) and divide (Knuth's
   Algorithm D) them under `blocktriple`, `integer` and `blockbinary`, how
   those changes were verified bit-identical, and what they gained.
+- [efloat: correctly rounded arithmetic and math library](../algorithmic-details/efloat-mathlib/)
+  -- how `efloat` rounds every function correctly at any precision (Ziv's
+  strategy over stated error bounds), the algorithm behind each function, the
+  alternatives tried and dropped, how it is verified against MPFR, measured
+  accuracy and speed, and the open work.
 
 ## Companion sections
 

@@ -107,6 +107,7 @@ const FILE_MAP = {
   'algorithmic-details/lns-log-add-sub.md': 'algorithmic-details/lns-log-add-sub.md',
   'algorithmic-details/multi-component-arithmetic.md': 'algorithmic-details/multi-component-arithmetic.md',
   'algorithmic-details/multi-limb-arithmetic.md': 'algorithmic-details/multi-limb-arithmetic.md',
+  'algorithmic-details/efloat-mathlib.md': 'algorithmic-details/efloat-mathlib.md',
 
   // -- Design -----------------------------------------------------
   'multi-limb-arithmetic.md': 'design/multi-limb.md',

@@ -8,6 +8,12 @@
 // The math functions compute; none of them formats text, so the core is all they
 // need (#1334). math/complex.hpp still reaches <complex>, which is libstdc++'s
 // <sstream>, so the mathlib as a whole is not I/O-free.
+//
+// The functions are correctly rounded at any precision, in all four rounding modes, except
+// cbrt, hypot, fma, fmod and remainder (#1783). docs/algorithmic-details/efloat-mathlib.md
+// records how: the algorithms and error bounds, their history, the alternatives dropped, the
+// MPFR checks (benchmark/accuracy/efloat/mpfr_check.cpp) and the speed against MPFR
+// (benchmark/performance/arithmetic/efloat/mpfr/mpfr_gap.cpp).
 #include <universal/number/efloat/core.hpp>
 
 #include <universal/number/efloat/math/sqrt.hpp>
