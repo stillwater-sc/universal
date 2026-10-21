@@ -47,6 +47,13 @@ namespace efloat_detail {
 	// boundaries once its target passes the power's width
 	inline unsigned pow_exact_bits(unsigned precision) { return 16u * precision + 1024u; }
 
+	// x^n's exponent lies within n (|scale(x)| + 1) of 0: an exact power is computed only while that
+	// stays inside exp's range, where the int64_t exponent cannot overflow
+	template<unsigned nlimbs>
+	inline bool power_in_range(const efloat<nlimbs>& x, uint64_t n) {
+		return static_cast<double>(n) * (std::fabs(static_cast<double>(x.scale())) + 1.0) < exp_range_limit;
+	}
+
 	// |x|^y for a finite x != 0 and a finite y != 0 when it may lie on a rounding boundary of
 	// `precision` bits, exactly: x = 2^e and an integer e y; an integer y = n > 0 with
 	// n (significant_bits(x) - 1) <= precision, below which x^n has more than precision + 1
@@ -74,7 +81,7 @@ namespace efloat_detail {
 		if (k == 0) {
 			if (y.scale() >= 62) return false;
 			const uint64_t n = static_cast<uint64_t>(double(y));
-			if (static_cast<double>(n) * (significant_bits(ax) - 1) > precision) return false;
+			if (static_cast<double>(n) * (significant_bits(ax) - 1) > precision || !power_in_range(ax, n)) return false;
 			result = exact_power(ax, n);
 			return true;
 		}
@@ -97,13 +104,13 @@ namespace efloat_detail {
 		m.setexponent(y.scale() + k);   // the odd integer m
 		if (m.scale() >= 62) return false;
 		const uint64_t n = static_cast<uint64_t>(double(m));
-		if (static_cast<double>(n) * significant_bits(root) > pow_exact_bits(precision)) return false;
+		if (static_cast<double>(n) * significant_bits(root) > pow_exact_bits(precision) || !power_in_range(root, n)) return false;
 		result = exact_power(root, n);
 		return true;
 	}
 
 	// |x|^y = exp(y log |x|) for a finite x != 0, |x| != 1, and a finite y != 0, unrounded, at
-	// `target` bits plus guard bits, or, with |y log x| >= 2^17, inf or 0, with `range` set to
+	// `target` bits plus guard bits, or, beyond exp's range, inf or 0, with `range` set to
 	// +1 or -1. log x carries the scale(y log x) bits the product moves above its absolute error.
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> pow_working(const efloat<nlimbs>& x, const efloat<nlimbs>& y, unsigned target, int& range) {
@@ -115,7 +122,7 @@ namespace efloat_detail {
 		t.set_precision(working);
 		t *= log_working(ax, working);
 		range = 0;
-		if (t.scale() >= 17) {
+		if (exp_beyond_range(t, log2_e)) {
 			range = t.sign();
 			efloat<nlimbs> limit(0.0);
 			if (range > 0) limit.setinf(false);
@@ -227,10 +234,10 @@ constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 		efloat_detail::round_result(result, precision, carries);
 		return result;
 	}
-	// out of exp's range where |y log x| >= 2^17, as exp is: from the scales, and closer to the
+	// out of exp's range where |y log2 x| >= 2^62, as exp is: from the scales, and closer to the
 	// limit by the evaluation's range check
-	const int64_t magnitude = y.scale() + efloat_detail::log_magnitude(ax);   // |y log x| >= 2^magnitude
-	if (magnitude >= 17) {
+	const int64_t magnitude = y.scale() + efloat_detail::log_magnitude(ax);   // 2^magnitude <= |y log x| < 2^(magnitude + 4)
+	if (magnitude >= 63) {
 		efloat<nlimbs> limit = efloat_detail::exp_out_of_range<nlimbs>(y_neg != (ax < efloat<nlimbs>(1.0)), precision, carries);
 		limit.setsign(negative);
 		return limit;
@@ -240,8 +247,9 @@ constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 		const int direction = (y_neg == (ax < efloat<nlimbs>(1.0))) ? 1 : -1;
 		return efloat_detail::round_near(efloat<nlimbs>(negative ? -1.0 : 1.0), negative ? -direction : direction, precision, carries);
 	}
-	// an integer y by binary powering
-	if (y_integer && y.scale() < 53) {
+	// an integer y by binary powering, where the power's exponent, below 2^61 log2 e, cannot pass
+	// exp's range; closer to it, the evaluation's range check decides
+	if (y_integer && y.scale() < 53 && magnitude < 57) {
 		const uint64_t n = static_cast<uint64_t>(std::fabs(double(y)));
 		return efloat_detail::round_ziv<nlimbs>([&](unsigned target) {
 			efloat<nlimbs> v = efloat_detail::integer_power_working(ax, n, y_neg, target);

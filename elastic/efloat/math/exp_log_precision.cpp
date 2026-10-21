@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <random>
 #include <string>
 #include <universal/number/efloat/efloat.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -623,7 +624,7 @@ int VerifyExactValues(bool reportTestCases) {
 			efloat_rounding_mode = saved;
 		}
 		{
-			// exact powers past exp's range of 2^17 are still returned, as the exponent holds them
+			// exact powers far past 2^17 are returned outright, as the exponent holds them
 			R_t big(3.0);
 			big.set_precision(P);
 			big.setexponent(200001);   // 3 2^200000
@@ -693,6 +694,197 @@ int VerifyLargeExponents(bool reportTestCases) {
 	return fails;
 }
 
+// exp(x) for |x| < 2^62 as exp(x / 2^j)^(2^j), |x / 2^j| < 1, at x's precision: the squarings
+// lose j bits, and the k ln 2 reduction exp uses for a large argument plays no part
+template<unsigned nlimbs>
+efloat<nlimbs> exp_by_squaring(const efloat<nlimbs>& x) {
+	const int64_t j = std::max<int64_t>(0, x.scale() + 1);
+	efloat<nlimbs> t(x);
+	t.setexponent(t.scale() - j);
+	efloat<nlimbs> e = exp(t);
+	for (int64_t i = 0; i < j; ++i) e *= e;
+	return e;
+}
+
+// exp's range reaches |k| < 2^62, k = round(x / ln 2), where the int64_t exponent holds 2^k; it
+// stopped at |x| < 2^17, and returned inf or 0 past it for values the exponent holds. exp, exp2,
+// exp10, expm1, sinh, cosh and pow of arguments from 2^17 to 2^61 must be correctly rounded in
+// every mode, against exp_by_squaring at 768 bits, or exactly, 2^(k +- 1/2) = 2^k sqrt(2);
+// past the range they must return inf or 0 and raise Overflow or Underflow.
+int VerifyBeyondDoubleRange(bool reportTestCases) {
+	using R_t = efloat<24>;
+	constexpr unsigned P = 128, W = 24 * 32;
+	const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+	                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+	const char* names[] = { "nearest", "toward zero", "toward +inf", "toward -inf" };
+	const RoundingMode saved = efloat_rounding_mode;
+	int fails = 0;
+	auto check = [&](const char* what, const R_t& x, const R_t& got, const R_t& expected, unsigned m) {
+		const bool ok = (got == expected) && got.sign() == expected.sign() && got.get_precision() == P;
+		if (!ok) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL " << what << " at x = " << double(x) << ", rounded " << names[m] << ": got scale " << got.scale() << ", expected scale " << expected.scale() << '\n';
+		}
+	};
+	// a W-bit reference rounded to P bits in mode m
+	auto rounded = [&](R_t v, unsigned m) {
+		efloat_rounding_mode = modes[m];
+		v.set_precision(P);
+		efloat_rounding_mode = RoundingMode::RoundToNearest;
+		return v;
+	};
+	auto at = [](R_t v, unsigned bits) { v.set_precision(bits); return v; };
+	std::mt19937_64 rng(1774);
+	auto random_value = [&rng](int64_t scale) {   // a P-bit value of the given scale
+		R_t v(1.0);
+		for (unsigned j = 0; j < P / 32; ++j) v.setlimb(j, static_cast<uint32_t>(rng()) | (j == 0 ? 0x80000000u : 0u));
+		v.set_precision(P);
+		v.setexponent(scale);
+		return v;
+	};
+	const R_t ln10_W = efloat_detail::ln10<24>(W);
+	const R_t log_2_5 = log(at(R_t(2.5), W));
+	const R_t log_1_5 = log(at(R_t(1.5), W));
+	for (int64_t s : { 17, 18, 24, 33, 47, 52, 53, 57, 60 }) {
+		for (int sample = 0; sample < 2; ++sample) {
+			const R_t a = random_value(s);
+			const R_t e = exp_by_squaring(at(a, W));   // e^a, 2^(s + 1) bits above 1
+			R_t half_e(e);
+			half_e.setexponent(half_e.scale() - 1);
+			const R_t neg_a = -a;
+			const R_t e_neg = 1 / e;
+			R_t neg_half_e(-half_e);
+			// 10^b and 2.5^c with b = a / 4 and c = a / 2: log2 of each about scale(a)
+			R_t b(a), c(a);
+			b.setexponent(b.scale() - 2);
+			c.setexponent(c.scale() - 1);
+			const R_t e10 = exp_by_squaring(at(b, W) * ln10_W);
+			const R_t e25 = exp_by_squaring(at(c, W) * log_2_5);
+			// exp_working, unrounded, within the bound Ziv's test assumes: k ln 2 must not spend its guard bits
+			const R_t difference = efloat_detail::exp_working(a, P) - e;
+			if (!difference.iszero() && difference.scale() >= e.scale() - static_cast<int64_t>(P + efloat_detail::exp_log_guard_bits - efloat_detail::exp_error_bits)) {
+				++fails;
+				if (reportTestCases) std::cerr << "FAIL exp_working error bound at scale " << s << '\n';
+			}
+			for (unsigned m = 0; m < 4; ++m) {
+				efloat_rounding_mode = modes[m];
+				const R_t got_exp = exp(a), got_exp_neg = exp(neg_a), got_expm1 = expm1(a);
+				const R_t got_sinh = sinh(a), got_sinh_neg = sinh(neg_a), got_cosh = cosh(neg_a);
+				const R_t got_exp10 = exp10(b), got_pow = pow(at(R_t(2.5), P), c);
+				efloat_rounding_mode = RoundingMode::RoundToNearest;
+				check("exp", a, got_exp, rounded(e, m), m);
+				check("exp", neg_a, got_exp_neg, rounded(e_neg, m), m);
+				check("expm1", a, got_expm1, rounded(e, m), m);   // e^a - 1 rounds as e^a: 1 lies 2^(2^17) below
+				check("sinh", a, got_sinh, rounded(half_e, m), m);
+				check("sinh", neg_a, got_sinh_neg, rounded(neg_half_e, m), m);
+				check("cosh", neg_a, got_cosh, rounded(half_e, m), m);
+				check("exp10", b, got_exp10, rounded(e10, m), m);
+				check("pow(2.5, y)", c, got_pow, rounded(e25, m), m);
+			}
+		}
+	}
+	// an integer power by binary powering, 1.5^n with n up to 2^40, and 2^(k +- 1/2) = 2^k sqrt(2) exactly
+	for (int64_t k : { int64_t(1) << 17, (int64_t(1) << 20) + 1, (int64_t(1) << 40) + 3, (int64_t(1) << 52) + 5, (int64_t(1) << 61) - 1, (int64_t(1) << 62) - (int64_t(1) << 20) }) {
+		R_t n;
+		n.set_precision(P);
+		n = std::min<int64_t>(k, (int64_t(1) << 40) + 3);
+		const R_t e15 = exp_by_squaring(at(n, W) * log_1_5);
+		R_t x_plus(n), x_minus;
+		x_plus = k;
+		x_plus.set_precision(P);
+		x_minus = -x_plus;
+		x_plus  += 0.5;
+		x_minus -= 0.5;   // -(k + 1/2)
+		for (unsigned m = 0; m < 4; ++m) {
+			R_t root2 = rounded(sqrt(at(R_t(2.0), W)), m);
+			R_t up(root2), down(root2);
+			up.setexponent(k);
+			down.setexponent(-k - 1);
+			efloat_rounding_mode = modes[m];
+			const R_t got_up = exp2(x_plus), got_down = exp2(x_minus), got_pow = pow(at(R_t(1.5), P), n);
+			efloat_rounding_mode = RoundingMode::RoundToNearest;
+			check("exp2(k + 1/2)", x_plus, got_up, up, m);
+			check("exp2(-(k + 1/2))", x_minus, got_down, down, m);
+			check("pow(1.5, n)", n, got_pow, rounded(e15, m), m);
+		}
+	}
+	// just inside the range, |x| a little below 2^62 ln 2, where k nears 2^62 and is corrected
+	// from the double estimate: x = 2^62 ln 2 - 2^40 and 2^62 ln 2 (1 - 2^-50), both signs
+	{
+		R_t limit = efloat_detail::ln2<24>(P);
+		limit.setexponent(limit.scale() + 62);
+		R_t tick(1.0);
+		tick.setexponent(40);
+		R_t tock(limit);
+		tock.setexponent(tock.scale() - 50);
+		R_t up(1.0);
+		up.setexponent(-static_cast<int64_t>(P) - 32);
+		const R_t minus_one_up = at(R_t(-1.0), W) + up;
+		for (const R_t& a : { R_t(limit - tick), R_t(limit - tock) }) {
+			for (const R_t& x : { a, R_t(-a) }) {
+				const R_t e = exp_by_squaring(at(x, W));
+				for (unsigned m = 0; m < 4; ++m) {
+					efloat_rounding_mode = modes[m];
+					const R_t got = exp(x), got_m1 = expm1(x);
+					efloat_rounding_mode = RoundingMode::RoundToNearest;
+					check("exp near 2^62 ln 2", x, got, rounded(e, m), m);
+					// -1 + e^x lies above -1 by far less than a unit in P bits, as -1 + 2^-(P + 32) does
+					check("expm1 near 2^62 ln 2", x, got_m1, rounded(x.sign() == 1 ? e : minus_one_up, m), m);
+				}
+			}
+		}
+	}
+	// an integer power whose log nears the range, x = 3 2^(2^20): x^(2^40 + 1) is held, the
+	// exponent of x^(2^43 + 1) passes 2^62
+	R_t huge(3.0);
+	huge.set_precision(P);
+	huge.setexponent((int64_t(1) << 20) + 1);
+	const R_t log_huge = log(at(huge, W));
+	{
+		R_t n;
+		n.set_precision(P);
+		n = (int64_t(1) << 40) + 1;
+		const R_t reference = exp_by_squaring(at(n, W) * log_huge);
+		for (unsigned m = 0; m < 4; ++m) {
+			efloat_rounding_mode = modes[m];
+			const R_t got = pow(huge, n);
+			efloat_rounding_mode = RoundingMode::RoundToNearest;
+			check("pow(3 2^(2^20), 2^40 + 1)", n, got, rounded(reference, m), m);
+		}
+	}
+	R_t n43;
+	n43.set_precision(P);
+	n43 = (int64_t(1) << 43) + 1;
+	// past the range: inf or 0, with Overflow or Underflow
+	R_t big(1.0);
+	big.set_precision(P);
+	big.setexponent(62);   // 2^62: exp's k is 2^62 log2 e
+	auto beyond = [&](const char* what, const R_t& got, bool overflow, bool negative) {
+		const bool flagged = has_efloat_exception(overflow ? ExceptionFlag::Overflow : ExceptionFlag::Underflow);
+		const bool ok = flagged && (overflow ? got.isinf() : got.iszero()) && (got.sign() == -1) == negative && got.get_precision() == P;
+		clear_efloat_exceptions();
+		if (!ok) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL " << what << " past exp's range\n";
+		}
+	};
+	clear_efloat_exceptions();
+	beyond("exp(2^62)", exp(big), true, false);
+	beyond("exp(-2^62)", exp(-big), false, false);
+	beyond("exp2(2^62 + 1/2)", exp2(big + 0.5), true, false);
+	beyond("exp10(2^61)", exp10(at(big, P) / 2), true, false);
+	beyond("expm1(2^62)", expm1(big), true, false);
+	beyond("sinh(-2^62)", sinh(-big), true, true);
+	beyond("cosh(-2^62)", cosh(-big), true, false);
+	beyond("pow(2.5, 2^62)", pow(at(R_t(2.5), P), big), true, false);
+	beyond("pow(2.5, -2^62)", pow(at(R_t(2.5), P), -big), false, false);
+	beyond("pow(-2.5, 2^62 + 1)", pow(at(R_t(-2.5), P), big + 1), true, true);
+	beyond("pow(3 2^(2^20), 2^43 + 1)", pow(huge, n43), true, false);
+	beyond("pow(3 2^(2^20), -(2^43 + 1))", pow(huge, -n43), false, false);
+	efloat_rounding_mode = saved;
+	return fails;
+}
+
 }  // anonymous namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -749,6 +941,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainingFunctionsNearRoundingBoundaries<16>(reportTestCases, 40), "efloat<16>", "remaining functions near rounding boundaries");
 	nrOfFailedTestCases += ReportTestResult(VerifyExactValues<1>(reportTestCases), "efloat<1>", "exact values");
 	nrOfFailedTestCases += ReportTestResult(VerifyExactValues<4>(reportTestCases), "efloat<4>", "exact values");
+	nrOfFailedTestCases += ReportTestResult(VerifyBeyondDoubleRange(reportTestCases), "efloat<24>", "exp family from 2^17 to 2^62");
 #endif
 
 #if REGRESSION_LEVEL_2
