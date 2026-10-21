@@ -104,15 +104,9 @@ inline std::string to_triple(const EfloatType& v) {
 
 // Generate a hex string for an efloat: sign, binary scale, and the significand words.
 //
-// It returned the literal "tbd" over a commented-out body that indexed a nibble(n) and an
-// nbits that an efloat does not have (#1582). An efloat is adaptive-precision, so there
-// is no fixed nibble count to walk: the significand is a vector of 32-bit words, and the
-// hex form is those words, most significant first, the way to_binary() already renders
-// them.
-//
-// Unlike dd and qd, which delegate to their limbs' native hex (dd/manipulators.hpp), an
-// efloat's limbs are uint32_t magnitude words rather than floating-point values, so there
-// is no native rendering to hand them to.
+// An efloat is adaptive-precision, so there is no fixed nibble count to walk: the significand 
+// is a vector of 32-bit words, and the hex form is those words, most significant first, 
+// the way to_binary() already renders them.
 template<typename EfloatType,
 	std::enable_if_t< is_efloat<EfloatType>, bool> = true
 >
@@ -144,8 +138,8 @@ inline std::string to_hex(const EfloatType& v, bool nibbleMarker = false, bool h
 
 // Generate an efloat format ASCII hex format, the analogue of cfloat's nbits.esxNN...NNc.
 //
-// It returned the literal "tbd" (#1582). An efloat has no nbits or es to name, so the
-// configuration field is the limb count -- the one dimension that actually varies -- and
+// An efloat has no nbits or es to name, so the configuration field 
+// is the limb count -- the one dimension that actually varies -- and
 // the type is tagged 'e' as cfloat tags 'c' and areal tags 'r'.
 template<typename EfloatType,
 	std::enable_if_t< is_efloat<EfloatType>, bool> = true
@@ -158,9 +152,8 @@ inline std::string hex_print(const EfloatType& c) {
 
 // Render an efloat's fields separated: sign : scale : significand words in binary.
 //
-// It returned the literal "tbd" (#1582). The colon-separated shape is cfloat's
-// pretty_print, so an efloat lines up with the fixed-size types when they are printed
-// together.
+// The colon-separated shape is cfloat's pretty_print, so an efloat 
+// lines up with the fixed-size types when they are printed together.
 template<typename EfloatType,
 	std::enable_if_t< is_efloat<EfloatType>, bool> = true
 >
@@ -184,8 +177,7 @@ inline std::string pretty_print(const EfloatType& r) {
 
 // Report the state, the limb layout and the value of an efloat.
 //
-// It returned the literal "TBD" and ignored both of its arguments (#1556). The shape is
-// posit's -- "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- but an efloat is
+// The shape is posit's -- "raw: <bits> <fields> : value <v>" (posit/iostream.hpp) -- but an efloat is
 // adaptive-precision: there is no fixed sign/exponent/fraction bit layout to decode, so
 // the fields are the ones that do vary, the limb count and the binary scale.
 //
@@ -207,7 +199,7 @@ inline std::string info_print(const EfloatType& p, int printPrecision = 17) {
 
 // Generate a binary, color-coded representation of the efloat.
 //
-// It returned the literal "tbd" (#1582). The colour assignment is the one every other
+// The colour assignment is the one every other
 // type uses -- red sign, cyan exponent, magenta significand, yellow separators -- so an
 // efloat reads the same as a cfloat or a posit in a terminal.
 template<typename EfloatType,

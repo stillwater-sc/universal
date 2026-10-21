@@ -127,7 +127,7 @@ enum class FloatingPointState {
 template<unsigned nlimbs = 1024>
 class efloat {
 public:
-	static constexpr unsigned maxNrLimbs = nlimbs;
+	static constexpr unsigned maxNrLimbs = nlimbs;  // limbs are 32-bit words, so 1024 limbs is 32k bits of precision
 
 	// Partial-constexpr surface (issue #747): efloat carries a
 	// std::vector<uint32_t> _limb member, so any non-empty digit storage
@@ -261,7 +261,7 @@ public:
 			case FloatingPointState::QuietNaN:
 			case FloatingPointState::SignalingNaN: return std::numeric_limits<long double>::quiet_NaN();
 			case FloatingPointState::Infinite:     return _sign ? -std::numeric_limits<long double>::infinity()
-			                                                     :  std::numeric_limits<long double>::infinity();
+			                                                    :  std::numeric_limits<long double>::infinity();
 			case FloatingPointState::Normal:
 			default:
 				break;
