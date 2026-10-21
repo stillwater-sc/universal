@@ -784,7 +784,7 @@ int VerifyBeyondDoubleRange(bool reportTestCases) {
 		}
 	}
 	// an integer power by binary powering, 1.5^n with n up to 2^40, and 2^(k +- 1/2) = 2^k sqrt(2) exactly
-	for (int64_t k : { int64_t(1) << 17, (int64_t(1) << 20) + 1, (int64_t(1) << 40) + 3, (int64_t(1) << 52) + 5, (int64_t(1) << 61) - 1 }) {
+	for (int64_t k : { int64_t(1) << 17, (int64_t(1) << 20) + 1, (int64_t(1) << 40) + 3, (int64_t(1) << 52) + 5, (int64_t(1) << 61) - 1, (int64_t(1) << 62) - (int64_t(1) << 20) }) {
 		R_t n;
 		n.set_precision(P);
 		n = std::min<int64_t>(k, (int64_t(1) << 40) + 3);
@@ -806,6 +806,28 @@ int VerifyBeyondDoubleRange(bool reportTestCases) {
 			check("exp2(k + 1/2)", x_plus, got_up, up, m);
 			check("exp2(-(k + 1/2))", x_minus, got_down, down, m);
 			check("pow(1.5, n)", n, got_pow, rounded(e15, m), m);
+		}
+	}
+	// just inside the range, |x| a little below 2^62 ln 2, where k nears 2^62 and is corrected
+	// from the double estimate: x = 2^62 ln 2 - 2^40 and 2^62 ln 2 (1 - 2^-50), both signs
+	{
+		R_t limit = efloat_detail::ln2<24>(P);
+		limit.setexponent(limit.scale() + 62);
+		R_t tick(1.0);
+		tick.setexponent(40);
+		R_t tock(limit);
+		tock.setexponent(tock.scale() - 50);
+		for (const R_t& a : { R_t(limit - tick), R_t(limit - tock) }) {
+			for (const R_t& x : { a, R_t(-a) }) {
+				const R_t e = exp_by_squaring(at(x, W));
+				for (unsigned m = 0; m < 4; ++m) {
+					efloat_rounding_mode = modes[m];
+					const R_t got = exp(x), got_m1 = expm1(x);
+					efloat_rounding_mode = RoundingMode::RoundToNearest;
+					check("exp near 2^62 ln 2", x, got, rounded(e, m), m);
+					if (x.sign() == 1) check("expm1 near 2^62 ln 2", x, got_m1, rounded(e, m), m);
+				}
+			}
 		}
 	}
 	// an integer power whose log nears the range, x = 3 2^(2^20): x^(2^40 + 1) is held, the
