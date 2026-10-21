@@ -817,6 +817,9 @@ int VerifyBeyondDoubleRange(bool reportTestCases) {
 		tick.setexponent(40);
 		R_t tock(limit);
 		tock.setexponent(tock.scale() - 50);
+		R_t up(1.0);
+		up.setexponent(-static_cast<int64_t>(P) - 32);
+		const R_t minus_one_up = at(R_t(-1.0), W) + up;
 		for (const R_t& a : { R_t(limit - tick), R_t(limit - tock) }) {
 			for (const R_t& x : { a, R_t(-a) }) {
 				const R_t e = exp_by_squaring(at(x, W));
@@ -825,7 +828,8 @@ int VerifyBeyondDoubleRange(bool reportTestCases) {
 					const R_t got = exp(x), got_m1 = expm1(x);
 					efloat_rounding_mode = RoundingMode::RoundToNearest;
 					check("exp near 2^62 ln 2", x, got, rounded(e, m), m);
-					if (x.sign() == 1) check("expm1 near 2^62 ln 2", x, got_m1, rounded(e, m), m);
+					// -1 + e^x lies above -1 by far less than a unit in P bits, as -1 + 2^-(P + 32) does
+					check("expm1 near 2^62 ln 2", x, got_m1, rounded(x.sign() == 1 ? e : minus_one_up, m), m);
 				}
 			}
 		}
