@@ -344,77 +344,152 @@ constexpr efloat<nlimbs> tan(const efloat<nlimbs>& x) {
 	return result;
 }
 
+namespace efloat_detail {
+
+	// atan of a finite x at `working` bits, unrounded. |x| > 1 is reflected to pi/2 - atan(1/|x|),
+	// and then halved h ~ sqrt(W / 10) times by atan(a) = 2 atan(a / (1 + sqrt(1 + a^2))) -- each
+	// a root and a quotient -- to |a| < 2^-h, where the series a - a^3/3 + a^5/5 - ... gains 2h
+	// bits per term. The running power and a^2 fall in precision with the terms, as in exp.
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> atan_working(const efloat<nlimbs>& x, unsigned working) {
+		efloat<nlimbs> a(x);
+		a.setsign(false);
+		a.set_precision(working);
+		efloat<nlimbs> result;
+		if (a == efloat<nlimbs>(1.0)) {
+			result = pi_scaled<nlimbs>(working, -2);
+		}
+		else {
+			const bool reflect = a > efloat<nlimbs>(1.0);
+			if (reflect) a = 1 / a;
+			const unsigned halvings = static_cast<unsigned>(std::sqrt(static_cast<double>(working) / 10.0)) + 1u;
+			unsigned h = 0;
+			while (h < halvings && a.scale() >= -static_cast<int64_t>(halvings)) {
+				a /= sqrt_to(a * a + 1, working) + 1;
+				++h;
+			}
+			const efloat<nlimbs> a2 = a * a;
+			efloat<nlimbs> power = a;
+			efloat<nlimbs> series = a;
+			efloat<nlimbs> a2_taper = a2;
+			unsigned taper = working;
+			for (unsigned k = 1; ; ++k) {
+				const int64_t below = series.scale() - power.scale();   // bits the power sits below the sum
+				const unsigned need = (below + 64 < static_cast<int64_t>(working)) ? static_cast<unsigned>(static_cast<int64_t>(working) - below) : 64u;
+				if (need + 32u <= taper) {
+					taper = need;
+					power.set_precision(taper);
+					a2_taper = a2;
+					a2_taper.set_precision(taper);
+				}
+				power *= a2_taper;
+				const efloat<nlimbs> term = power / (2 * k + 1);   // stays at the taper (#1757)
+				if (term.iszero() || term.scale() < series.scale() - static_cast<int64_t>(working) - 2) break;
+				if (k & 1u) series -= term; else series += term;
+			}
+			series.setexponent(series.scale() + static_cast<int64_t>(h));
+			result = reflect ? pi_scaled<nlimbs>(working, -1) - series : series;
+		}
+		if (x.sign() == -1) result.setsign(true);
+		return result;
+	}
+
+	// asin x = atan(x / sqrt((1 - x)(1 + x))) for a finite 0 < |x| < 1 at `working` bits, unrounded;
+	// 1 - |x| is exact for |x| >= 1/2, so the root keeps its relative precision as |x| -> 1
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> asin_working(const efloat<nlimbs>& x, unsigned working) {
+		efloat<nlimbs> a(x);
+		a.setsign(false);
+		a.set_precision(working);
+		const efloat<nlimbs> root = sqrt_to((1 - a) * (a + 1), working);
+		efloat<nlimbs> result = atan_working(a / root, working);
+		if (x.sign() == -1) result.setsign(true);
+		return result;
+	}
+
+	// acos x = 2 atan(sqrt((1 - x) / (1 + x))) for a finite -1 < x < 1 at `working` bits, unrounded:
+	// 1 - x is exact near 1, where acos x -> 0, and 1 + x near -1, where it nears pi
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> acos_working(const efloat<nlimbs>& x, unsigned working) {
+		efloat<nlimbs> xw(x);
+		xw.set_precision(working);
+		efloat<nlimbs> result = atan_working(sqrt_to((1 - xw) / (xw + 1), working), working);
+		result.setexponent(result.scale() + 1);
+		return result;
+	}
+
+	// atan2(y, x) for finite nonzero x and y at `working` bits, unrounded: atan |y / x|, reflected
+	// to pi - atan |y / x| for x < 0, with y's sign
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> atan2_working(const efloat<nlimbs>& y, const efloat<nlimbs>& x, unsigned working) {
+		efloat<nlimbs> q(y);
+		q.set_precision(working);
+		q /= x;
+		q.setsign(false);
+		efloat<nlimbs> result = atan_working(q, working);
+		if (x.sign() == -1) result = pi<nlimbs>(working) - result;
+		result.setsign(y.sign() == -1);
+		return result;
+	}
+
+	// atan through the reflection, the halvings and the series; asin, acos and atan2 add a root and
+	// a quotient before it
+	inline constexpr unsigned inverse_trig_error_bits = 24u;
+
+	// a function whose evaluate(working) is within 2^(scale - working + inverse_trig_error_bits) of
+	// it, rounded to `precision` bits by Ziv's strategy
+	template<unsigned nlimbs, typename Evaluate>
+	inline efloat<nlimbs> round_inverse_trig(Evaluate evaluate, unsigned precision, bool carries) {
+		return round_ziv<nlimbs>([&evaluate](unsigned target) { return evaluate(target + exp_log_guard_bits); },
+		                         precision, inverse_trig_error_bits, carries);
+	}
+
+	// m pi 2^e with the sign `negative`, rounded to `precision` bits: the values atan2 and asin take
+	// at their special arguments
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> round_pi(unsigned m, int e, bool negative, unsigned precision, bool carries) {
+		return round_inverse_trig<nlimbs>([m, e, negative](unsigned working) {
+			efloat<nlimbs> v = pi_scaled<nlimbs>(working, e);
+			if (m != 1u) v *= m;
+			v.setsign(negative);
+			return v;
+		}, precision, carries);
+	}
+
+	// a tiny x, 2 scale(x) < -(P + 6): f(x) = x + c x^3 + ... lies within 2^-(P + 4) |x| of x
+	template<unsigned nlimbs>
+	inline bool inverse_trig_tiny(const efloat<nlimbs>& x, unsigned precision) {
+		return 2 * x.scale() < -static_cast<int64_t>(precision) - 6;
+	}
+
+}  // namespace efloat_detail
+
+// The inverse functions are correctly rounded (#1763): each evaluates at its result's precision
+// plus guard bits, unrounded, and rounds by Ziv's strategy. Their values are transcendental at
+// every argument that reaches it -- acos(1) = 0 is the one exact value, and is returned as such --
+// and a tiny argument rounds as itself nudged toward the next term of its series.
+
 // ----------------------------------------------------------------------------
 // atan: inverse tangent
-//   |x| == 1        -> +/- pi/4
-//   |x| >  1        -> sign * (pi/2 - atan(1/|x|))
-//   |x| >  1/2      -> atan(1/2) + atan((|x|-1/2)/(1+|x|/2))   (addition formula)
-//   else Taylor:  atan(x) = x - x^3/3 + x^5/5 - ...
 // ----------------------------------------------------------------------------
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> atan(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
 	if (x.iszero()) return x;
 	const unsigned precision = efloat_detail::result_precision(x);
-	const unsigned working   = precision + efloat_detail::exp_log_guard_bits;
 	if (x.isinf()) {                         // atan(+/-inf) = +/- pi/2
-		efloat<nlimbs> h = efloat_detail::pi_scaled<nlimbs>(precision, -1);
-		h.setsign(x.sign() == -1);           // isneg() is false for inf (state != Normal)
-		return h;
+		return efloat_detail::round_pi<nlimbs>(1, -1, x.sign() == -1, precision, x.carries_precision());
 	}
-
-	bool negative = x.isneg();
-	efloat<nlimbs> ax(x); ax.setsign(false);  // |x|  (abs() free fn is a stub -- do it manually)
-	ax.set_precision(working);
-	efloat<nlimbs> one(1.0);
-
-	efloat<nlimbs> result;
-	if (ax == one) {
-		result = efloat_detail::pi_scaled<nlimbs>(working, -2);
+	// atan x = x - x^3/3 + ..., toward 0
+	if (efloat_detail::inverse_trig_tiny(x, precision)) {
+		return efloat_detail::round_near(x, -x.sign(), precision, x.carries_precision());
 	}
-	else if (ax > one) {
-		result = efloat_detail::pi_scaled<nlimbs>(working, -1) - atan(one / ax);
-	}
-	else {
-		efloat<nlimbs> half(0.5);
-		efloat<nlimbs> reduced = ax;
-		bool used_addition = false;
-		if (ax > half) {
-			// atan(x) = atan(1/2) + atan((x - 1/2)/(1 + x/2)),  reduced arg < ~0.32
-			efloat<nlimbs> num = ax - half;
-			efloat<nlimbs> den = one + ax * half;
-			reduced = num / den;
-			used_addition = true;
-		}
-		// Taylor series for |reduced| < ~0.5
-		efloat<nlimbs> neg_r2 = reduced * reduced; neg_r2.setsign(true);  // -reduced^2
-		efloat<nlimbs> power = reduced;    // reduced^(2n+1)
-		efloat<nlimbs> series = reduced;
-		for (unsigned n = 1; ; ++n) {
-			power = power * neg_r2;                                        // alternates sign
-			efloat<nlimbs> t = power / efloat<nlimbs>(static_cast<double>(2 * n + 1));
-			if (t.iszero()) break;
-			series += t;
-			if (!series.iszero() && t.scale() < series.scale() - static_cast<int64_t>(series.get_precision())) break;
-		}
-		if (used_addition) {
-			result = efloat_detail::atan_half<nlimbs>(series.get_precision()) + series;
-		}
-		else {
-			result = series;
-		}
-	}
-	if (negative) result = efloat<nlimbs>(0.0) - result;
-	efloat_detail::round_result(result, precision, x.carries_precision());
-	return result;
+	return efloat_detail::round_inverse_trig<nlimbs>([&x](unsigned working) { return efloat_detail::atan_working(x, working); },
+	                                                 precision, x.carries_precision());
 }
 
 // ----------------------------------------------------------------------------
-// asin: inverse sine
-//   |x| > 1 -> NaN;  x == +/-1 -> +/- pi/2
-//   |x| > 0.8 -> sign * (pi/2 - asin(sqrt(1 - x^2)))   (reduce toward 0)
-//   else Taylor:  asin(x) = x + (1/2)x^3/3 + (1*3/2*4)x^5/5 + ...
-//                 term_n = term_{n-1} * x^2 * (2n-1)^2 / ((2n)(2n+1))
+// asin: inverse sine; |x| > 1 -> NaN, x == +/-1 -> +/- pi/2
 // ----------------------------------------------------------------------------
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> asin(const efloat<nlimbs>& x) {
@@ -422,77 +497,48 @@ constexpr efloat<nlimbs> asin(const efloat<nlimbs>& x) {
 	if (x.iszero()) return x;
 
 	const unsigned precision = efloat_detail::result_precision(x);
-	const unsigned working   = precision + efloat_detail::exp_log_guard_bits;
-	bool negative = x.isneg();
 	efloat<nlimbs> ax(x); ax.setsign(false);  // |x|
-	ax.set_precision(working);
-	efloat<nlimbs> one(1.0);
-
-	if (ax > one) {                           // domain error
+	const efloat<nlimbs> one(1.0);
+	if (x.isinf() || ax > one) {              // domain error
 		efloat<nlimbs> nan; nan.setnan();
 		if (!std::is_constant_evaluated()) efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
 		return nan;
 	}
-	efloat<nlimbs> result;
 	if (ax == one) {
-		result = efloat_detail::pi_scaled<nlimbs>(working, -1);
+		return efloat_detail::round_pi<nlimbs>(1, -1, x.sign() == -1, precision, x.carries_precision());
 	}
-	else if (ax > efloat<nlimbs>(0.8)) {
-		// asin(x) = pi/2 - asin(sqrt(1 - x^2))   (on |x|)
-		efloat<nlimbs> t = sqrt((one - ax) * (one + ax));   // 1 - ax is exact; ax * ax would round first
-		result = efloat_detail::pi_scaled<nlimbs>(working, -1) - asin(t);
+	// asin x = x + x^3/6 + ..., away from 0
+	if (efloat_detail::inverse_trig_tiny(x, precision)) {
+		return efloat_detail::round_near(x, x.sign(), precision, x.carries_precision());
 	}
-	else {
-		efloat<nlimbs> x2 = ax * ax;
-		efloat<nlimbs> term = ax;             // (2n-1)!!/(2n)!! * x^(2n+1) accumulator, term_0 = x
-		efloat<nlimbs> sum  = ax;
-		for (unsigned n = 1; ; ++n) {
-			efloat<nlimbs> odd = efloat<nlimbs>(static_cast<double>(2 * n - 1));
-			efloat<nlimbs> num = odd * odd;   // (2n-1)^2
-			efloat<nlimbs> den = efloat<nlimbs>(static_cast<double>(2 * n)) * efloat<nlimbs>(static_cast<double>(2 * n + 1));
-			term = term * x2 * num / den;
-			if (term.iszero()) break;
-			sum += term;
-			if (!sum.iszero() && term.scale() < sum.scale() - static_cast<int64_t>(sum.get_precision())) break;
-		}
-		result = sum;
-	}
-	if (negative) result = efloat<nlimbs>(0.0) - result;
-	efloat_detail::round_result(result, precision, x.carries_precision());
-	return result;
+	return efloat_detail::round_inverse_trig<nlimbs>([&x](unsigned working) { return efloat_detail::asin_working(x, working); },
+	                                                 precision, x.carries_precision());
 }
 
 // ----------------------------------------------------------------------------
-// acos: acos(x) = pi/2 - asin(x);  |x| > 1 -> NaN
+// acos: inverse cosine; |x| > 1 -> NaN, acos(1) = +0, acos(-1) = pi
 // ----------------------------------------------------------------------------
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> acos(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
 	efloat<nlimbs> ax(x); ax.setsign(false);
-	if (ax > efloat<nlimbs>(1.0)) {           // domain error
+	const efloat<nlimbs> one(1.0);
+	if (x.isinf() || ax > one) {              // domain error
 		efloat<nlimbs> nan; nan.setnan();
 		if (!std::is_constant_evaluated()) efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
 		return nan;
 	}
 	const unsigned precision = efloat_detail::result_precision(x);
-	const unsigned working   = precision + efloat_detail::exp_log_guard_bits;
-	efloat<nlimbs> xw(x);
-	xw.set_precision(working);
-	// pi/2 - asin(x) cancels as x -> 1, where acos(x) -> 0: there acos(x) = 2 asin(sqrt((1 - x) / 2)),
-	// and near -1 acos(x) = pi - 2 asin(sqrt((1 + x) / 2)); 1 -/+ x is exact for |x| >= 1/2
-	const efloat<nlimbs> one(1.0), half(0.5), two(2.0);
-	efloat<nlimbs> result;
-	if (xw > half) {
-		result = asin(sqrt((one - xw) * half)) * two;
+	if (x == one) {                           // +0 in every rounding mode
+		efloat<nlimbs> zero(0.0);
+		efloat_detail::round_result(zero, precision, x.carries_precision());
+		return zero;
 	}
-	else if (xw < -half) {
-		result = efloat_detail::pi<nlimbs>(working) - asin(sqrt((one + xw) * half)) * two;
+	if (x == -one) {
+		return efloat_detail::round_pi<nlimbs>(1, 0, false, precision, x.carries_precision());
 	}
-	else {
-		result = efloat_detail::pi_scaled<nlimbs>(working, -1) - asin(xw);
-	}
-	efloat_detail::round_result(result, precision, x.carries_precision());
-	return result;
+	return efloat_detail::round_inverse_trig<nlimbs>([&x](unsigned working) { return efloat_detail::acos_working(x, working); },
+	                                                 precision, x.carries_precision());
 }
 
 // ----------------------------------------------------------------------------
@@ -504,10 +550,8 @@ constexpr efloat<nlimbs> atan2(const efloat<nlimbs>& y, const efloat<nlimbs>& x)
 		efloat<nlimbs> nan; nan.setnan();
 		return nan;
 	}
-	const unsigned precision = std::max(efloat_detail::result_precision(x), y.get_precision());
-	const unsigned working   = precision + efloat_detail::exp_log_guard_bits;
-	efloat<nlimbs> pi   = efloat_detail::pi<nlimbs>(precision);
-	efloat<nlimbs> pi_2 = efloat_detail::pi_scaled<nlimbs>(precision, -1);
+	const unsigned precision = efloat_detail::result_precision(x, y);
+	const bool     carries   = x.carries_precision() || y.carries_precision();
 
 	// Sign checks below use sign() == -1, not isneg(): isneg() is false for an
 	// infinity (its state is Infinite, not Normal), and atan2 arguments may be
@@ -520,36 +564,32 @@ constexpr efloat<nlimbs> atan2(const efloat<nlimbs>& y, const efloat<nlimbs>& x)
 	// both infinite: y/x is indeterminate, but atan2 is defined on the
 	// diagonal directions -> +/- pi/4 (x > 0) or +/- 3pi/4 (x < 0).
 	if (y.isinf() && x.isinf()) {
-		const efloat<nlimbs> pi_4 = efloat_detail::pi_scaled<nlimbs>(precision, -2);
-		efloat<nlimbs> angle = x_neg ? (pi - pi_4) : pi_4;
-
-		angle.setsign(y_neg);
-		return angle;
+		return efloat_detail::round_pi<nlimbs>(x_neg ? 3u : 1u, -2, y_neg, precision, carries);
 	}
-
-	if (x.iszero()) {
+	if (y.isinf() || x.iszero()) {
 		if (y.iszero()) return efloat<nlimbs>(0.0);    // atan2(0,0): convention 0
-		efloat<nlimbs> h(pi_2); h.setsign(y_neg);      // +/- pi/2
-		return h;
+		return efloat_detail::round_pi<nlimbs>(1, -1, y_neg, precision, carries);   // +/- pi/2
 	}
-	if (y.iszero()) {
-		if (x_neg) return pi;                          // atan2(+0, -x) = pi
-		return efloat<nlimbs>(0.0);                     // atan2(+0, +x) = 0
+	if (y.iszero() || x.isinf()) {
+		if (x_neg) return efloat_detail::round_pi<nlimbs>(1, 0, y_neg, precision, carries);   // +/- pi
+		efloat<nlimbs> zero(0.0);                       // +/- 0
+		zero.setsign(y_neg);
+		return zero;
 	}
 
-	// the quotient, its arctangent and the quadrant correction at the working precision
-	efloat<nlimbs> yw(y), xw(x);
-	yw.set_precision(working);
-	xw.set_precision(working);
-	efloat<nlimbs> angle = atan(yw / xw);
-	if (x_neg) {
-		// quadrant II / III correction
-		const efloat<nlimbs> piw = efloat_detail::pi<nlimbs>(working);
-		if (y_neg) angle = angle - piw;                 // QIII: result in (-pi, -pi/2)
-		else       angle = angle + piw;                 // QII:  result in ( pi/2, pi)
+	// atan(y/x) = q - q^3/3 + ... for x > 0 and a tiny q = y/x: when q is exact, it rounds as q
+	// nudged toward 0; an inexact q is not a binary fraction, and Ziv's strategy separates it
+	if (!x_neg && 2 * (y.scale() - x.scale() + 1) < -static_cast<int64_t>(precision) - 6) {
+		efloat<nlimbs> q(y);
+		q.set_precision(precision + 64);
+		q /= x;
+		efloat<nlimbs> back(q);
+		back.set_precision(2 * (precision + 64));
+		back *= x;
+		if (back == y) return efloat_detail::round_near(q, -q.sign(), precision, carries);
 	}
-	efloat_detail::round_result(angle, precision, x.carries_precision() || y.carries_precision());
-	return angle;
+	return efloat_detail::round_inverse_trig<nlimbs>([&y, &x](unsigned working) { return efloat_detail::atan2_working(y, x, working); },
+	                                                 precision, carries);
 }
 
 }} // namespace sw::universal

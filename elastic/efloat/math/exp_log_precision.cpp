@@ -12,6 +12,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -385,6 +386,252 @@ int VerifyFunctionsNearRoundingBoundaries(bool reportTestCases, unsigned count) 
 	return fails;
 }
 
+// The remaining functions near their rounding boundaries (#1763), in all four modes: expm1, sinh,
+// cosh, tanh, asinh, atanh, atan, asin, log1p, exp2, exp10 and atan2(t, 1), atan2(t, 3) of a short
+// or full-width tiny t, as above, and log2, log10, 1 / x and x^3 of x = 1 + t for a short t, where
+// 1 + t is exact. Each is a short or exact leading part plus a tail far below it. The references
+// are power series in t summed at 6P bits, apart from the library's ln 2, ln 10 and division.
+template<unsigned nlimbs>
+int VerifyRemainingFunctionsNearRoundingBoundaries(bool reportTestCases, unsigned count) {
+	using R_t = efloat<nlimbs>;
+	constexpr unsigned P = nlimbs * 32;
+	constexpr unsigned R = 6 * P;
+	const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+	                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+	const char* names[] = { "nearest", "toward zero", "toward +inf", "toward -inf" };
+	const char* functions[] = { "expm1", "sinh", "cosh", "tanh", "asinh", "atanh", "atan", "asin", "log1p",
+	                            "exp2", "exp10", "atan2(t, 1)", "atan2(t, 3)", "log2(1 + t)", "log10(1 + t)",
+	                            "pow(1 + t, -1)", "pow(1 + t, 3)" };
+	constexpr unsigned F = 17;
+	const RoundingMode saved = efloat_rounding_mode;
+	ArgumentStream g{ 0x5851F42D4C957F2Dull ^ P };
+	int fails = 0;
+	for (unsigned i = 0; i < count; ++i) {
+		const bool shortarg = (i % 2) == 0;
+		R_t t;
+		if (shortarg) {     // r 2^-k, r odd of rbits <= min(24, P/4) bits, k in [P/4 + rbits, P): below 2^-(P/4), and 1 + t is exact at P bits
+			const unsigned rbits = 1 + g.next() % std::min(24u, P / 4);
+			const unsigned k     = P / 4 + rbits + g.next() % (3 * P / 4 - rbits);
+			t = R_t(static_cast<double>((g.next() & ((1u << rbits) - 1u)) | 1u));
+			t.set_precision(P);
+			t.setexponent(t.scale() - static_cast<int64_t>(k));
+		}
+		else {              // full width, scale in [-2P, -P/4)
+			t = R_t(1.0);
+			t.set_precision(P);
+			for (unsigned j = 0; j < nlimbs; ++j) t.setlimb(j, g.next() | (j == 0 ? 0x80000000u : 0u));
+			t.set_precision(P);
+			t.setexponent(-static_cast<int64_t>(P / 4 + g.next() % (7 * P / 4)));
+		}
+		if (g.next() & 1u) t = -t;
+		t.set_precision(P);
+
+		// power series in u at R bits, with coefficients c(n) for n = 1, 2, ...
+		auto series = [](const R_t& u, auto coefficient) {
+			R_t ur(u), power(1.0), sum(0.0);
+			ur.set_precision(R);
+			power.set_precision(R);
+			sum.set_precision(R);
+			for (unsigned n = 1; n < 2000; ++n) {
+				power *= ur;
+				if (power.scale() < ur.scale() - static_cast<int64_t>(R) - 8) break;   // below R bits of every result
+				const R_t term = coefficient(n, power);
+				if (!term.iszero()) sum += term;
+			}
+			return sum;
+		};
+		auto odd = [](unsigned n) { return (n % 2) == 1; };
+		// exp(u) - 1 = sum u^n / n!: the factorial falls with the power, so the terms are carried
+		auto expm1_series = [&](const R_t& u) {
+			R_t term(1.0);
+			term.set_precision(R);
+			return series(u, [&term](unsigned n, const R_t& power) { term /= n; return power * term; });
+		};
+		const R_t em1   = expm1_series(t);
+		R_t sinh_ref(0.0), cosh_ref(1.0);
+		{
+			R_t term(1.0);
+			term.set_precision(R);
+			sinh_ref = series(t, [&](unsigned n, const R_t& power) { term /= n; return odd(n) ? power * term : R_t(0.0); });
+			term = R_t(1.0);
+			term.set_precision(R);
+			cosh_ref = series(t, [&](unsigned n, const R_t& power) { term /= n; return odd(n) ? R_t(0.0) : power * term; }) + 1;
+		}
+		const R_t tanh_ref = sinh_ref / cosh_ref;
+		// asin u = sum a_k u^(2k + 1) / (2k + 1), a_k = (2k - 1)!! / (2k)!!; asinh alternates it
+		R_t a(1.0);
+		a.set_precision(R);
+		const R_t asin_ref = series(t, [&](unsigned n, const R_t& power) {
+			if (!odd(n)) return R_t(0.0);
+			if (n > 1) { a *= n - 2; a /= n - 1; }
+			return power * a / n;
+		});
+		a = R_t(1.0);
+		a.set_precision(R);
+		const R_t asinh_ref = series(t, [&](unsigned n, const R_t& power) {
+			if (!odd(n)) return R_t(0.0);
+			if (n > 1) { a *= n - 2; a /= n - 1; }
+			const R_t term = power * a / n;
+			return ((n / 2) % 2) ? -term : term;
+		});
+		const R_t atanh_ref = series(t, [&](unsigned n, const R_t& power) { return odd(n) ? power / n : R_t(0.0); });
+		auto atan_series = [&](const R_t& u) {
+			return series(u, [&](unsigned n, const R_t& power) {
+				if (!odd(n)) return R_t(0.0);
+				const R_t term = power / n;
+				return ((n / 2) % 2) ? -term : term;
+			});
+		};
+		const R_t atan_ref  = atan_series(t);
+		const R_t log1p_ref = series(t, [&](unsigned n, const R_t& power) { const R_t term = power / n; return odd(n) ? term : -term; });
+		R_t tr(t);
+		tr.set_precision(R);
+		const R_t exp2_ref  = expm1_series(tr * efloat_detail::ln2<nlimbs>(R)) + 1;
+		const R_t exp10_ref = expm1_series(tr * efloat_detail::ln10<nlimbs>(R)) + 1;
+		const R_t atan3_ref = atan_series(tr / 3);
+		const R_t log2_ref  = log1p_ref / efloat_detail::ln2<nlimbs>(R);
+		const R_t log10_ref = log1p_ref / efloat_detail::ln10<nlimbs>(R);
+		const R_t x1        = tr + 1;   // exact
+		const R_t recip_ref = 1 / x1;
+		const R_t cube_ref  = x1 * x1 * x1;
+		const R_t* references[F] = { &em1, &sinh_ref, &cosh_ref, &tanh_ref, &asinh_ref, &atanh_ref, &atan_ref, &asin_ref,
+		                             &log1p_ref, &exp2_ref, &exp10_ref, &atan_ref, &atan3_ref, &log2_ref, &log10_ref,
+		                             &recip_ref, &cube_ref };
+
+		R_t x(t);
+		x += 1;   // 1 + t at P bits, exact for a short t
+		R_t one(1.0), three(3.0);
+		one.set_precision(P);
+		three.set_precision(P);
+		for (unsigned f = 0; f < F; ++f) {
+			if (f >= 13 && !shortarg) continue;
+			for (unsigned m = 0; m < 4; ++m) {
+				efloat_rounding_mode = modes[m];
+				R_t expected(*references[f]);
+				expected.set_precision(P);
+				R_t got;
+				switch (f) {
+				case 0: got = expm1(t); break;
+				case 1: got = sinh(t); break;
+				case 2: got = cosh(t); break;
+				case 3: got = tanh(t); break;
+				case 4: got = asinh(t); break;
+				case 5: got = atanh(t); break;
+				case 6: got = atan(t); break;
+				case 7: got = asin(t); break;
+				case 8: got = log1p(t); break;
+				case 9: got = exp2(t); break;
+				case 10: got = exp10(t); break;
+				case 11: got = atan2(t, one); break;
+				case 12: got = atan2(t, three); break;
+				case 13: got = log2(x); break;
+				case 14: got = log10(x); break;
+				case 15: got = pow(x, -1); break;
+				default: got = pow(x, 3); break;
+				}
+				efloat_rounding_mode = saved;
+				if (!(got == expected) || got.get_precision() != P) {
+					++fails;
+					if (reportTestCases) std::cerr << "FAIL efloat<" << nlimbs << "> " << functions[f] << ", t of scale " << t.scale() << (shortarg ? " (short)" : "") << ", rounded " << names[m] << '\n';
+				}
+			}
+		}
+	}
+	efloat_rounding_mode = saved;
+	return fails;
+}
+
+// The exact values the remaining functions take (#1763), in all four modes: 2^k, 10^k, log2(2^k),
+// log10(10^k), x^n and x^(m/2) of perfect squares, which may lie on rounding boundaries, and the
+// zeros acosh(1) and acos(1), which are +0 in every mode. Each is compared with the value formed
+// exactly and rounded once. Then the shortcuts for arguments too small for any working precision.
+template<unsigned nlimbs>
+int VerifyExactValues(bool reportTestCases) {
+	using R_t = efloat<nlimbs>;
+	constexpr unsigned P = nlimbs * 32;
+	const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+	                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+	const char* names[] = { "nearest", "toward zero", "toward +inf", "toward -inf" };
+	const RoundingMode saved = efloat_rounding_mode;
+	auto at_P = [](double v) { R_t r(v); r.set_precision(P); return r; };
+	// v rounded to P bits in the current mode
+	auto rounded = [](R_t v) { v.set_precision(P); return v; };
+	int fails = 0;
+	auto check = [&](const char* what, int k, const R_t& got, const R_t& expected, unsigned m) {
+		const bool ok = (got == expected) && got.sign() == expected.sign() && got.get_precision() == P;
+		if (!ok) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL efloat<" << nlimbs << "> " << what << ", k = " << k << ", rounded " << names[m] << '\n';
+		}
+	};
+	for (unsigned m = 0; m < 4; ++m) {
+		for (int k = -60; k <= 60; ++k) {
+			R_t p2(1.0);
+			p2.set_precision(P);
+			p2.setexponent(k);
+			R_t p10(1.0);
+			p10.set_precision(16 * P);
+			for (int j = 0; j < k; ++j) p10 *= 10;   // exact: 10^60 has 140 significant bits
+			efloat_rounding_mode = modes[m];
+			check("exp2(k)", k, exp2(at_P(k)), rounded(p2), m);
+			if (k >= 0) check("exp10(k)", k, exp10(at_P(k)), rounded(p10), m);
+			check("log2(2^k)", k, log2(p2), rounded(at_P(k)), m);
+			// 10^k = 5^k 2^k is a P-bit value while 5^k has at most P bits
+			if (k >= 0 && 2.33 * k < P) check("log10(10^k)", k, log10(rounded(p10)), rounded(at_P(k)), m);
+			efloat_rounding_mode = saved;
+		}
+		for (int k = 1; k <= 30; ++k) {
+			// 3^k, 7^k and s^3 for s = 2k + 1, as pow(3, k), pow(7, k) and pow(s^2, 3/2): exact, and
+			// wider than P bits for the larger k
+			R_t p3(1.0), p7(1.0);
+			p3.set_precision(4 * P + 128);
+			p7.set_precision(4 * P + 128);
+			for (int j = 0; j < k; ++j) { p3 *= 3; p7 *= 7; }
+			const double s = 2.0 * k + 1.0;
+			R_t s3(s);
+			s3.set_precision(P);
+			s3 = s3 * s3 * s3;
+			efloat_rounding_mode = modes[m];
+			check("pow(3, k)", k, pow(at_P(3.0), k), rounded(p3), m);
+			check("pow(-7, k)", k, pow(at_P(-7.0), at_P(k)), rounded((k % 2) ? -p7 : p7), m);
+			check("pow(s^2, 3/2)", k, pow(at_P(s * s), at_P(1.5)), rounded(s3), m);
+			check("acosh(1)", k, acosh(at_P(1.0)), at_P(0.0), m);
+			check("acos(1)", k, acos(at_P(1.0)), at_P(0.0), m);
+			efloat_rounding_mode = saved;
+		}
+		// arguments so small that the next term lies below any working precision: atan2(t, 1) =
+		// t - t^3/3 for t = 2^-(300P + k), and 3^y = 1 + y ln 3 for y = +-2^-(2P + k). Each must round
+		// as its leading term moved toward the next by less than a unit in its last place.
+		auto nudged = [](R_t v, int direction) {
+			const int64_t s = v.scale();
+			v.set_precision(P + 64);
+			R_t tick(1.0);
+			tick.set_precision(P + 64);
+			tick.setexponent(s - static_cast<int64_t>(P) - 32);
+			if (direction > 0) v += tick; else v -= tick;
+			v.set_precision(P);
+			return v;
+		};
+		for (int k = 0; k < 4; ++k) {
+			R_t t(1.0);
+			t.set_precision(P);
+			t.setexponent(-300 * static_cast<int64_t>(P) - k);
+			R_t y(1.0);
+			y.set_precision(P);
+			y.setexponent(-2 * static_cast<int64_t>(P) - k);
+			const R_t neg_y = -y;
+			efloat_rounding_mode = modes[m];
+			check("atan2(2^-300P, 1)", k, atan2(t, at_P(1.0)), nudged(t, -1), m);
+			check("pow(3, 2^-2P)", k, pow(at_P(3.0), y), nudged(at_P(1.0), 1), m);
+			check("pow(3, -2^-2P)", k, pow(at_P(3.0), neg_y), nudged(at_P(1.0), -1), m);
+			check("pow(1/3, 2^-2P)", k, pow(at_P(1.0) / 3, y), nudged(at_P(1.0), -1), m);
+			efloat_rounding_mode = saved;
+		}
+	}
+	efloat_rounding_mode = saved;
+	return fails;
+}
+
 // log(2^e) = e ln 2 for exponents past the type's default precision (#1754 review): an efloat
 // made from an integer has the type's default precision, so the table path rounded e to 32 bits
 // in efloat<1>, and Newton on main was off by 65 units at e = 2^32 + 1 and returned inf at
@@ -460,12 +707,18 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<1>(reportTestCases, 1000), "efloat<1>", "exp/sin/cos/tan near rounding boundaries");
 	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<4>(reportTestCases, 500), "efloat<4>", "exp/sin/cos/tan near rounding boundaries");
 	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<16>(reportTestCases, 60), "efloat<16>", "exp/sin/cos/tan near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainingFunctionsNearRoundingBoundaries<1>(reportTestCases, 400), "efloat<1>", "remaining functions near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainingFunctionsNearRoundingBoundaries<4>(reportTestCases, 150), "efloat<4>", "remaining functions near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainingFunctionsNearRoundingBoundaries<16>(reportTestCases, 40), "efloat<16>", "remaining functions near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactValues<1>(reportTestCases), "efloat<1>", "exact values");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactValues<4>(reportTestCases), "efloat<4>", "exact values");
 #endif
 
 #if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyAtPrecision<64>(reportTestCases, 4), "efloat<64>", "2048 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifyNearRoundingBoundaries<64>(reportTestCases, 40), "efloat<64>", "log near rounding boundaries");
 	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<64>(reportTestCases, 20), "efloat<64>", "exp/sin/cos/tan near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainingFunctionsNearRoundingBoundaries<64>(reportTestCases, 6), "efloat<64>", "remaining functions near rounding boundaries");
 #endif
 
 #if REGRESSION_LEVEL_3

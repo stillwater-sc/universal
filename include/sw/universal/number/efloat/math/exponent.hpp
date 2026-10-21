@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -28,6 +29,15 @@ namespace efloat_detail {
 	template<unsigned nlimbs>
 	inline unsigned result_precision(const efloat<nlimbs>& x) {
 		return x.get_precision();
+	}
+
+	// The precision of a function of x and y: the wider of the precisions they carry, as their
+	// arithmetic would give; an argument that carries none does not widen it (#1757)
+	template<unsigned nlimbs>
+	inline unsigned result_precision(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
+		if (!y.carries_precision()) return x.get_precision();
+		if (!x.carries_precision()) return y.get_precision();
+		return std::max(x.get_precision(), y.get_precision());
 	}
 
 	// round a function's result once to its precision; a function of arguments that carry no
@@ -94,6 +104,49 @@ namespace efloat_detail {
 		return value;
 	}
 
+	// The number of significant bits of a finite x != 0: from its leading bit to its last 1 bit
+	template<unsigned nlimbs>
+	inline unsigned significant_bits(const efloat<nlimbs>& x) {
+		const std::vector<uint32_t> limbs = x.bits();   // most significant first, leading bit at 31
+		for (std::size_t i = limbs.size(); i-- > 0; ) {
+			if (limbs[i] != 0u) return static_cast<unsigned>(32 * i + 32 - static_cast<std::size_t>(std::countr_zero(limbs[i])));
+		}
+		return 0;
+	}
+
+	// whether a finite x is an integer
+	template<unsigned nlimbs>
+	inline bool is_integer(const efloat<nlimbs>& x) {
+		return x.iszero() || (x.scale() >= 0 && static_cast<int64_t>(significant_bits(x)) <= x.scale() + 1);
+	}
+
+	// x^n for a finite x != 0 and n >= 1, exactly: carried at the n significant_bits(x) bits the
+	// power needs, so that no partial product rounds
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> exact_power(const efloat<nlimbs>& x, uint64_t n) {
+		const unsigned bits = static_cast<unsigned>(n * significant_bits(x)) + 32u;
+		efloat<nlimbs> base(x);
+		base.set_precision(bits);
+		efloat<nlimbs> power(1.0);
+		power.set_precision(bits);
+		for (;;) {
+			if (n & 1u) power *= base;
+			n >>= 1;
+			if (n == 0) break;
+			base *= base;
+		}
+		return power;
+	}
+
+	// exp of an argument of magnitude 2^17 or more: 0 below and inf above, inexact
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> exp_out_of_range(bool negative) {
+		efloat<nlimbs> result(0.0);
+		if (!negative) result.setinf(false);
+		efloat_exception_flags.set((negative ? ExceptionFlag::Underflow : ExceptionFlag::Overflow) | ExceptionFlag::Inexact);
+		return result;
+	}
+
 	// atanh(1/m) = sum_k 1 / ((2k + 1) m^(2k + 1)) for an integer m >= 2, at `bits` bits.
 	// The terms fall by m^2 each, so the series converges by 2 log2(m) bits per term.
 	template<unsigned nlimbs>
@@ -155,7 +208,8 @@ namespace efloat_detail {
 	// precision plus guard bits, with ln 2 computed at that precision (#1712).  r is then halved
 	// h times, and the series for exp(r / 2^h) squared h times: each halving saves the series
 	// about W / (h + 1.5)^2 terms for one squaring, and each squaring doubles the relative error,
-	// so the working precision carries h more guard bits.
+	// so the working precision carries h more guard bits. An r already below 2^-h is halved only
+	// by what brings it there, as the versine is (#1763).
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> exp_working(const efloat<nlimbs>& x, unsigned precision) {
 		const unsigned halvings  = static_cast<unsigned>(std::sqrt(static_cast<double>(precision)));
@@ -165,7 +219,9 @@ namespace efloat_detail {
 		double x_dbl = double(x);
 		int64_t k = static_cast<int64_t>(std::round(x_dbl / 0.6931471805599453));
 		efloat<nlimbs> r = x - efloat<nlimbs>(k) * ln2;
-		if (!r.iszero()) r.setexponent(r.scale() - static_cast<int64_t>(halvings));
+		const int64_t  h_signed = r.iszero() ? 0 : static_cast<int64_t>(halvings) + r.scale() + 1;
+		const unsigned h        = (h_signed > 0) ? static_cast<unsigned>(std::min<int64_t>(h_signed, halvings)) : 0u;
+		if (!r.iszero()) r.setexponent(r.scale() - static_cast<int64_t>(h));
 
 		// Taylor series for exp(r / 2^h), until the terms fall below the working precision
 		efloat<nlimbs> sum(1.0);
@@ -191,7 +247,7 @@ namespace efloat_detail {
 			if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(working)) break;
 			sum += term;
 		}
-		for (unsigned i = 0; i < halvings; ++i) sum = sum * sum;
+		for (unsigned i = 0; i < h; ++i) sum = sum * sum;
 
 		// Multiply by 2^k using exponent scaling
 		if (k != 0) {
@@ -199,6 +255,62 @@ namespace efloat_detail {
 		}
 		return sum;
 	}
+
+	// 2^x = exp(x ln 2) and 10^x = exp(x ln 10) for a finite x, |x ln b| < 2^17, unrounded, at
+	// `precision` bits plus guard bits: the product carries scale(x) + 3 more bits than exp's
+	// working precision, so that its absolute error stays below 2^-(precision + guard bits)
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> exp_base_working(const efloat<nlimbs>& x, unsigned precision, bool ten) {
+		const unsigned working = precision + exp_log_guard_bits + static_cast<unsigned>(std::max<int64_t>(0, x.scale() + 3));
+		efloat<nlimbs> t(x);
+		t.set_precision(working);
+		t *= ten ? ln10<nlimbs>(working) : ln2<nlimbs>(working);
+		return exp_working(t, precision);
+	}
+
+	// exp(x) - 1 for a finite x, |x| < 2^17, unrounded, at `precision` bits plus guard bits. For
+	// |x| >= 1/2, exp x - 1 cancels at most 2 bits. Below, the series for u = exp(r) - 1 is summed
+	// without its leading 1, for r = x / 2^h, and doubled back h times by exp(2r) - 1 = u (u + 2),
+	// so that u keeps its relative precision as x -> 0, as the versine does for cos (#1756).
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> expm1_working(const efloat<nlimbs>& x, unsigned precision) {
+		if (x.scale() >= -1) {
+			efloat<nlimbs> e = exp_working(x, precision + 2);
+			e -= 1;
+			return e;
+		}
+		const unsigned halvings = static_cast<unsigned>(std::sqrt(static_cast<double>(precision)));
+		const int64_t  h_signed = static_cast<int64_t>(halvings) + x.scale();   // halvings that bring r below 2^-halvings
+		const unsigned h        = (h_signed > 0) ? static_cast<unsigned>(h_signed) : 0u;
+		const unsigned working  = precision + exp_log_guard_bits + h;
+		efloat<nlimbs> r(x);
+		r.set_precision(working);
+		r.setexponent(r.scale() - static_cast<int64_t>(h));
+
+		// u = r + r^2/2! + ..., the running term and r tapered with the terms, as in exp_working
+		efloat<nlimbs> sum(r);
+		efloat<nlimbs> term(r);
+		efloat<nlimbs> r_taper = r;
+		unsigned taper = working;
+		for (unsigned n = 2; ; ++n) {
+			const int64_t below = sum.scale() - term.scale();   // bits the term sits below the sum
+			const unsigned need = (below + 64 < static_cast<int64_t>(working)) ? static_cast<unsigned>(static_cast<int64_t>(working) - below) : 64u;
+			if (need + 32u <= taper) {
+				taper = need;
+				term.set_precision(taper);
+				r_taper = r;
+				r_taper.set_precision(taper);
+			}
+			term = term * r_taper / n;
+			if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(working)) break;
+			sum += term;
+		}
+		for (unsigned i = 0; i < h; ++i) sum *= sum + 2;
+		return sum;
+	}
+
+	// the derived exponentials carry their argument's rounding and a subtraction past exp's error
+	inline constexpr unsigned exp_derived_error_bits = exp_error_bits + 4u;
 
 }  // namespace efloat_detail
 
@@ -212,21 +324,7 @@ constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
 	}
 
 	// Protect against extremely large inputs that would overflow double/int64_t during range reduction
-	if (x.scale() >= 17) {
-		if (x.isneg()) {
-			if (!std::is_constant_evaluated()) {
-				efloat_exception_flags.set(ExceptionFlag::Underflow | ExceptionFlag::Inexact);
-			}
-			return efloat<nlimbs>(0.0);
-		} else {
-			efloat<nlimbs> inf;
-			inf.setinf(false);
-			if (!std::is_constant_evaluated()) {
-				efloat_exception_flags.set(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
-			}
-			return inf;
-		}
-	}
+	if (x.scale() >= 17) return efloat_detail::exp_out_of_range<nlimbs>(x.sign() == -1);
 
 	const unsigned precision = efloat_detail::result_precision(x);
 	// exp(x) = 1 + x + ... is within 2^-(P + 4) of 1 for |x| < 2^-(P + 4), on x's side of it
@@ -237,7 +335,8 @@ constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
 	                                        precision, efloat_detail::exp_error_bits, x.carries_precision());
 }
 
-// exp2(x): exponential base 2
+// exp2(x): exponential base 2, correctly rounded (#1763): exact at an integer x, and by Ziv's
+// strategy elsewhere, where 2^x is irrational
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> exp2(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
@@ -246,15 +345,29 @@ constexpr efloat<nlimbs> exp2(const efloat<nlimbs>& x) {
 		if (x.sign() == -1) return efloat<nlimbs>(0.0);
 		return x;
 	}
+	// out of exp's range where |x ln 2| >= 2^17
+	if (x.scale() >= 18 || std::fabs(double(x)) * 0.6931471805599453 >= 131072.0) {
+		return efloat_detail::exp_out_of_range<nlimbs>(x.sign() == -1);
+	}
 
-	// 2^x = exp(x ln 2), with ln 2 and the product carried at the working precision (#1712)
 	const unsigned precision = efloat_detail::result_precision(x);
-	efloat<nlimbs> result = exp(x * efloat_detail::ln2<nlimbs>(precision + efloat_detail::exp_log_guard_bits));
-	efloat_detail::round_result(result, precision, x.carries_precision());
-	return result;
+	if (efloat_detail::is_integer(x)) {
+		efloat<nlimbs> power(1.0);
+		power.setexponent(static_cast<int64_t>(double(x)));   // |x| < 2^18: exact in a double
+		efloat_detail::round_result(power, precision, x.carries_precision());
+		return power;
+	}
+	// 2^x = 1 + x ln 2 + ..., within 2^-(P + 4) of 1 for |x| < 2^-(P + 4), on x's side of it
+	if (x.scale() < -static_cast<int64_t>(precision) - 5) {
+		return efloat_detail::round_near(efloat<nlimbs>(1.0), x.sign(), precision, x.carries_precision());
+	}
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::exp_base_working(x, target, false); },
+	                                        precision, efloat_detail::exp_derived_error_bits, x.carries_precision());
 }
 
-// exp10(x): exponential base 10
+// exp10(x): exponential base 10, correctly rounded (#1763): exact at an integer x >= 0, and by
+// Ziv's strategy elsewhere, where 10^x is irrational or, at a negative integer, not a binary
+// fraction
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> exp10(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
@@ -263,15 +376,26 @@ constexpr efloat<nlimbs> exp10(const efloat<nlimbs>& x) {
 		if (x.sign() == -1) return efloat<nlimbs>(0.0);
 		return x;
 	}
+	// out of exp's range where |x ln 10| >= 2^17
+	if (x.scale() >= 17 || std::fabs(double(x)) * 2.302585092994046 >= 131072.0) {
+		return efloat_detail::exp_out_of_range<nlimbs>(x.sign() == -1);
+	}
 
-	// 10^x = exp(x ln 10), with ln 10 and the product carried at the working precision (#1712)
 	const unsigned precision = efloat_detail::result_precision(x);
-	efloat<nlimbs> result = exp(x * efloat_detail::ln10<nlimbs>(precision + efloat_detail::exp_log_guard_bits));
-	efloat_detail::round_result(result, precision, x.carries_precision());
-	return result;
+	if (x.sign() == 1 && efloat_detail::is_integer(x)) {
+		efloat<nlimbs> power = efloat_detail::exact_power(efloat<nlimbs>(10.0), static_cast<uint64_t>(double(x)));
+		efloat_detail::round_result(power, precision, x.carries_precision());
+		return power;
+	}
+	// 10^x = 1 + x ln 10 + ..., within 2^-(P + 4) of 1 for |x| < 2^-(P + 6), on x's side of it
+	if (x.scale() < -static_cast<int64_t>(precision) - 7) {
+		return efloat_detail::round_near(efloat<nlimbs>(1.0), x.sign(), precision, x.carries_precision());
+	}
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::exp_base_working(x, target, true); },
+	                                        precision, efloat_detail::exp_derived_error_bits, x.carries_precision());
 }
 
-// expm1(x): exp(x) - 1 with Taylor series for small inputs to avoid cancellation
+// expm1(x): exp(x) - 1, correctly rounded (#1763), with exp carried at the bits that cancel
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> expm1(const efloat<nlimbs>& x) {
 	if (x.isnan() || x.iszero()) return x;
@@ -280,38 +404,19 @@ constexpr efloat<nlimbs> expm1(const efloat<nlimbs>& x) {
 		return x;
 	}
 
-	// both paths are carried at the working precision and rounded once at the end (#1712)
 	const unsigned precision = efloat_detail::result_precision(x);
-	efloat<nlimbs> xw(x);
-	xw.set_precision(precision + efloat_detail::exp_log_guard_bits);
-
-	// For inputs with magnitude >= 0.375, use std formula exp(x) - 1.0
-	efloat<nlimbs> abs_x(x);
-	abs_x.setsign(false);
-	if (abs_x >= efloat<nlimbs>(0.375)) {
-		efloat<nlimbs> result = exp(xw) - efloat<nlimbs>(1.0);
-		efloat_detail::round_result(result, precision, x.carries_precision());
-		return result;
+	const bool carries = x.carries_precision();
+	// exp(x) - 1 = x + x^2/2 + ..., within 2^-(P + 4) of x for |x| < 2^-(P + 4), above it
+	if (x.scale() < -static_cast<int64_t>(precision) - 4) {
+		return efloat_detail::round_near(x, 1, precision, carries);
 	}
-
-	// Taylor series for small x: x + x^2/2! + x^3/3! + ...
-	efloat<nlimbs> sum = xw;
-	efloat<nlimbs> term = xw;
-	efloat<nlimbs> k(1.0);
-	efloat<nlimbs> one(1.0);
-
-	while (true) {
-		k = k + one;
-		term = (term * xw) / k;
-		if (term.iszero()) break;
-		sum = sum + term;
-
-		if (term.scale() < sum.scale() - sum.get_precision()) {
-			break;
-		}
+	// -1 + e^x, within 2^-(P + 6) of -1 for x < -(P + 6) ln 2, above it
+	if (x.sign() == -1 && (x.scale() >= 17 || double(x) < -static_cast<double>(precision + 6) * 0.6931471805599453)) {
+		return efloat_detail::round_near(efloat<nlimbs>(-1.0), 1, precision, carries);
 	}
-	efloat_detail::round_result(sum, precision, x.carries_precision());
-	return sum;
+	if (x.scale() >= 17) return efloat_detail::exp_out_of_range<nlimbs>(false);
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::expm1_working(x, target); },
+	                                        precision, efloat_detail::exp_derived_error_bits, carries);
 }
 
 }} // namespace sw::universal
