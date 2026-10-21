@@ -253,7 +253,8 @@ try {
 
 		// a Stirling-style factorial: log n! = n log n - n + log(2 pi n)/2 + sum B_2k / (2k (2k-1) n^(2k-1)),
 		// exp'ed, against the product 1 2 ... n; the series also gives the factorial of a non-integer,
-		// Gamma(n + 1), where there is no product to take
+		// Gamma(n + 1), where there is no product to take. tgamma and lgamma sum the same series,
+		// with as many terms as the precision needs, and round the result correctly.
 		{
 			auto log_factorial = [&pi](const TestType& n) {
 				const double num[] = { 1, -1, 1, -1, 1, -691, 1, -3617 };
@@ -273,8 +274,12 @@ try {
 			std::cout << "100000! by Stirling                  : " << f << '\n';
 			std::cout << "100000! as a product                 : " << product << '\n';
 			std::cout << "100000.5! = Gamma(100001.5)          : " << exp(log_factorial(TestType(100000.5))) << '\n';
+			std::cout << "  tgamma(100001.5)                   : " << tgamma(TestType(100001.5)) << '\n';
 			std::cout << "  the same in double                 : " << std::tgamma(100001.5) << '\n';
+			std::cout << "lgamma(100001.5)                     : " << lgamma(TestType(100001.5)) << '\n';
 			if (!agree(f, product)) ++nrOfFailedTestCases;
+			if (!agree(tgamma(TestType(100001.0)), product)) ++nrOfFailedTestCases;
+			if (!agree(tgamma(TestType(100001.5)), exp(log_factorial(TestType(100000.5))))) ++nrOfFailedTestCases;
 		}
 		std::cout.precision(old_precision);
 	}
