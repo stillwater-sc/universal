@@ -214,6 +214,43 @@ namespace efloat_detail {
 		return log_agm(x, working);
 	}
 
+	// log2 x = log x / ln 2 and log10 x = log x / ln 10 for a finite x > 0, unrounded, at `target`
+	// bits plus guard bits
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> log_base_working(const efloat<nlimbs>& x, unsigned target, bool ten) {
+		const unsigned working = target + exp_log_guard_bits;
+		efloat<nlimbs> y = log_working(x, working);
+		y /= ten ? ln10<nlimbs>(working) : ln2<nlimbs>(working);
+		return y;
+	}
+
+	// log(1 + x) for a finite x > -1, x != 0, unrounded, at `target` bits plus guard bits: 1 + x
+	// is formed exactly for |x| < 1, at the working precision plus the 1 - scale(x) bits it spans
+	// below 1, and rounded only for an x so large that its log does not cancel
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> log1p_working(const efloat<nlimbs>& x, unsigned target) {
+		const unsigned working = target + exp_log_guard_bits + static_cast<unsigned>(std::max<int64_t>(0, 1 - x.scale()));
+		efloat<nlimbs> u(x);
+		u.set_precision(working);
+		u += 1;
+		return log_working(u, working);
+	}
+
+	// whether a finite x > 0 is 10^j for an integer j >= 0, and j: 10^j = 5^j 2^j has more than
+	// 2.32 j significant bits, so j is at most significant_bits(x) / 2.32
+	template<unsigned nlimbs>
+	inline bool is_power_of_ten(const efloat<nlimbs>& x, int64_t& j) {
+		efloat<nlimbs> m(x);
+		m.setexponent(0);
+		j = std::llround(std::log10(double(m)) + static_cast<double>(x.scale()) * 0.30102999566398120);
+		if (j < 0 || static_cast<double>(j) * 2.32 > static_cast<double>(significant_bits(x)) + 1.0) return false;
+		if (j == 0) return x == efloat<nlimbs>(1.0);
+		return exact_power(efloat<nlimbs>(10.0), static_cast<uint64_t>(j)) == x;
+	}
+
+	// log2, log10 and log1p carry a division or the rounding of 1 + x past log's error
+	inline constexpr unsigned log_derived_error_bits = log_error_bits + 4u;
+
 }  // namespace efloat_detail
 
 // Natural logarithm function for efloat: a table and a series (#1714), the arithmetic-geometric
@@ -273,14 +310,18 @@ constexpr efloat<nlimbs> log2(const efloat<nlimbs>& x) {
 	}
 	if (x.isinf()) return x;
 
-	// log2(x) = log(x) / ln 2, both at the working precision, rounded once (#1712)
+	// correctly rounded (#1763): exact at a power of 2, and by Ziv's strategy elsewhere, where
+	// log2 x is irrational
 	const unsigned precision = efloat_detail::result_precision(x);
-	const unsigned working   = precision + efloat_detail::exp_log_guard_bits;
-	efloat<nlimbs> xw(x);
-	xw.set_precision(working);
-	efloat<nlimbs> result = log(xw) / efloat_detail::ln2<nlimbs>(working);
-	efloat_detail::round_result(result, precision, x.carries_precision());
-	return result;
+	if (efloat_detail::significant_bits(x) == 1) {
+		efloat<nlimbs> result;
+		result.set_precision(64);
+		result = x.scale();
+		efloat_detail::round_result(result, precision, x.carries_precision());
+		return result;
+	}
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::log_base_working(x, target, false); },
+	                                        precision, efloat_detail::log_derived_error_bits, x.carries_precision());
 }
 
 // Logarithm base 10 function for efloat
@@ -306,14 +347,19 @@ constexpr efloat<nlimbs> log10(const efloat<nlimbs>& x) {
 	}
 	if (x.isinf()) return x;
 
-	// log10(x) = log(x) / ln 10, both at the working precision, rounded once (#1712)
+	// correctly rounded (#1763): exact at a power of 10, and by Ziv's strategy elsewhere, where
+	// log10 x is irrational
 	const unsigned precision = efloat_detail::result_precision(x);
-	const unsigned working   = precision + efloat_detail::exp_log_guard_bits;
-	efloat<nlimbs> xw(x);
-	xw.set_precision(working);
-	efloat<nlimbs> result = log(xw) / efloat_detail::ln10<nlimbs>(working);
-	efloat_detail::round_result(result, precision, x.carries_precision());
-	return result;
+	int64_t j = 0;
+	if (efloat_detail::is_power_of_ten(x, j)) {
+		efloat<nlimbs> result;
+		result.set_precision(64);
+		result = j;
+		efloat_detail::round_result(result, precision, x.carries_precision());
+		return result;
+	}
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::log_base_working(x, target, true); },
+	                                        precision, efloat_detail::log_derived_error_bits, x.carries_precision());
 }
 
 // Natural logarithm of 1 + x function for efloat
@@ -350,41 +396,14 @@ constexpr efloat<nlimbs> log1p(const efloat<nlimbs>& x) {
 		return x;
 	}
 
-	// both paths are carried at the working precision and rounded once at the end (#1712)
+	// correctly rounded (#1763): log1p x is transcendental for x != 0
 	const unsigned precision = efloat_detail::result_precision(x);
-	efloat<nlimbs> xw(x);
-	xw.set_precision(precision + efloat_detail::exp_log_guard_bits);
-
-	// Precision-safe range check completely in efloat space (avoids double underflows)
-	if (abs(x) < efloat<nlimbs>(0.375)) {
-		// Taylor series for log(1 + x) prevents cancellation as x -> 0; at |x| < 0.375 it gains
-		// at least 1.4 bits per term, so it runs until the terms fall below the precision
-		efloat<nlimbs> sum(0.0);
-		efloat<nlimbs> term(xw);
-		efloat<nlimbs> x_pow(xw);
-
-		sum += term;
-		for (unsigned n = 2; ; ++n) {
-			x_pow = x_pow * xw;
-			term = x_pow / efloat<nlimbs>(n);
-			
-			// Dynamic precision-safe termination: stops when next term cannot affect the sum
-			if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(sum.get_precision())) {
-				break;
-			}
-			if (n % 2 == 0) {
-				sum -= term;
-			} else {
-				sum += term;
-			}
-		}
-		efloat_detail::round_result(sum, precision, x.carries_precision());
-		return sum;
-	} else {
-		efloat<nlimbs> result = log(efloat<nlimbs>(1.0) + xw);
-		efloat_detail::round_result(result, precision, x.carries_precision());
-		return result;
+	// log(1 + x) = x - x^2/2 + ..., within 2^-(P + 4) of x for |x| < 2^-(P + 4), below it
+	if (x.scale() < -static_cast<int64_t>(precision) - 5) {
+		return efloat_detail::round_near(x, -1, precision, x.carries_precision());
 	}
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::log1p_working(x, target); },
+	                                        precision, efloat_detail::log_derived_error_bits, x.carries_precision());
 }
 
 }} // namespace sw::universal
