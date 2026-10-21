@@ -1374,10 +1374,12 @@ protected:
 			if (is_subnormal) {
 				int64_t sub_shift = E_min - exp;
 				if (sub_shift >= static_cast<int64_t>(K)) {
+					// below half the smallest subnormal, except at sub_shift == K, where the
+					// leading bit is the guard bit of the smallest subnormal 2^(E_min - K + 1)
 					sig = 0;
 					eff_shift = 64;
-					sticky = sticky_limbs || (raw_sig != 0);
-					guard = false;
+					guard = (sub_shift == static_cast<int64_t>(K)) && (raw_sig >> 63) != 0;
+					sticky = sticky_limbs || (guard ? (raw_sig << 1) != 0 : raw_sig != 0);
 					lsb = false;
 				} else {
 					eff_shift = shift_amt + static_cast<unsigned>(sub_shift);
@@ -1415,18 +1417,22 @@ protected:
 
 			if (round_up) {
 				if (eff_shift >= 64) {
-					// Round up from full underflow to smallest subnormal
+					// Round up from full underflow to the smallest subnormal 2^(E_min - K + 1)
 					sig = (1ULL << 63);
-					exp = E_min;
+					exp = E_min - static_cast<int64_t>(K) + 1;
+					eff_shift = 63;
 					is_subnormal = true;
 				} else {
 					uint64_t prev_sig = sig;
 					sig += (1ULL << eff_shift);
 					if (sig < prev_sig) {
 						if (is_subnormal) {
+							// the carry doubles the subnormal: one binade up, one bit less shift,
+							// and a normal number once that binade reaches E_min
 							sig = (1ULL << 63);
-							exp = E_min;
-							is_subnormal = false;
+							exp++;
+							eff_shift--;
+							is_subnormal = (exp < E_min);
 						} else {
 							sig = (1ULL << 63);
 							exp++;
@@ -1512,10 +1518,12 @@ protected:
 			if (is_subnormal) {
 				int64_t sub_shift = E_min - exp;
 				if (sub_shift >= static_cast<int64_t>(K)) {
+					// below half the smallest subnormal, except at sub_shift == K, where the
+					// leading bit is the guard bit of the smallest subnormal 2^(E_min - K + 1)
 					sig = 0;
 					eff_shift = 64;
-					sticky = sticky_limbs || (raw_sig != 0);
-					guard = false;
+					guard = (sub_shift == static_cast<int64_t>(K)) && (raw_sig >> 63) != 0;
+					sticky = sticky_limbs || (guard ? (raw_sig << 1) != 0 : raw_sig != 0);
 					lsb = false;
 				} else {
 					eff_shift = shift_amt + static_cast<unsigned>(sub_shift);
@@ -1553,18 +1561,22 @@ protected:
 
 			if (round_up) {
 				if (eff_shift >= 64) {
-					// Round up from full underflow to smallest subnormal
+					// Round up from full underflow to the smallest subnormal 2^(E_min - K + 1)
 					sig = (1ULL << 63);
-					exp = E_min;
+					exp = E_min - static_cast<int64_t>(K) + 1;
+					eff_shift = 63;
 					is_subnormal = true;
 				} else {
 					uint64_t prev_sig = sig;
 					sig += (1ULL << eff_shift);
 					if (sig < prev_sig) {
 						if (is_subnormal) {
+							// the carry doubles the subnormal: one binade up, one bit less shift,
+							// and a normal number once that binade reaches E_min
 							sig = (1ULL << 63);
-							exp = E_min;
-							is_subnormal = false;
+							exp++;
+							eff_shift--;
+							is_subnormal = (exp < E_min);
 						} else {
 							sig = (1ULL << 63);
 							exp++;
