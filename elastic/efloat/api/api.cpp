@@ -10,8 +10,6 @@
 // Configure the efloat template environment
 // : enable/disable arithmetic exceptions
 #define EFLOAT_THROW_ARITHMETIC_EXCEPTION 0
-// : enable trace conversion
-#define TRACE_CONVERSION 0
 #include <universal/number/efloat/efloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -26,30 +24,26 @@ try {
 	{
 		constexpr unsigned nlimbs = 4;
 		using TestType = efloat<nlimbs>;
-		//ReportTrivialityOfType<TestType>();
+		
 		bool isTrivial = bool(std::is_trivial<TestType>());
 		std::string testType = sw::universal::type_tag(TestType());
-		std::cout << (isTrivial ? testType + std::string(" is trivial") : testType + std::string(" is not trivial")) << '\n';
-	}
+		std::cout << (isTrivial ? testType + std::string(" is trivial") 
+								: testType + std::string(" is not trivial")) << '\n';
 
-	{ 
-		double a{1.0};
-		for (int i = 0; i < 3; ++i) {
-			int exponentOfA{ 0 };
-			double normalizedFraction = std::frexp(a, &exponentOfA);
-			double normalizedSignificand = std::scalbn(normalizedFraction, 1);
-			std::cout << "double a      : " << to_binary(a, true) << " : " << a << '\n';
-			std::cout << "  sign        : " << sign(a) << '\n';
-			std::cout << "  scale       : " << exponent(a) << '\n';
-			std::cout << "  fraction    : " << fraction(a) << '\n';
-			std::cout << "  significand : " << normalizedSignificand << '\n';
-			bool s{ false };
-			uint64_t rawExponentBits{ 0 }, lowerBits{ 0 }, upperBits{ 0 };
-			extractFields(a, s, rawExponentBits, lowerBits, upperBits);
-			std::cout << "  ieee parts  : " << (s ? "1" : "0") << " : " << rawExponentBits
-			          << " : " << lowerBits << '\n';
-			a += 0.5;
-		}
+
+		bool isTriviallyConstructible = bool(std::is_trivially_constructible<TestType>());
+		std::cout << (isTriviallyConstructible ? testType + std::string(" is trivially constructible")
+		                                       : testType + std::string(" is not trivially constructible")) << '\n';
+
+
+		bool isTriviallyCopyable = bool(std::is_trivially_copyable<TestType>());
+		std::cout << (isTriviallyCopyable ? testType + std::string(" is trivially copyable")
+		                                  : testType + std::string(" is not trivially copyable")) << '\n';
+
+		bool isTriviallyCopyAssignable = bool(std::is_trivially_copy_assignable<TestType>());
+		std::cout << (isTriviallyCopyAssignable ? testType + std::string(" is trivially copy-assignable")
+		                                        : testType + std::string(" is not trivially copy-assignable")) << '\n';
+
 	}
 
 	// construction, initialization, and copy construction
@@ -58,18 +52,24 @@ try {
 		constexpr unsigned nlimbs = 4;
 		using TestType = efloat<nlimbs>;
 
-		TestType a{ 1.5f }, b(2.5);
+		TestType a{1.5f}, b(2.5);
+		TestType an_eps(pow(2.0, -64));
+
 #if LONG_DOUBLE_SUPPORT
 		TestType c{ 4.5l };
 #else
 		TestType c{ 4.5 };
 #endif
+
+		a += an_eps;
+		b += an_eps;
+		c += an_eps;
 		TestType d(c);
 
-		std::cout << "a : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
-		std::cout << "b : " << to_triple(b) << " : " << b.significant() << " : " << double(b) << '\n';
-		std::cout << "c : " << to_triple(c) << " : " << c.significant() << " : " << double(c) << '\n';
-		std::cout << "d : " << to_triple(d) << " : " << d.significant() << " : " << double(c) << '\n';
+		std::cout << "a : " << to_triple(a) << " : " << a.significant() << " : " << a << '\n';
+		std::cout << "b : " << to_triple(b) << " : " << b.significant() << " : " << b << '\n';
+		std::cout << "c : " << to_triple(c) << " : " << c.significant() << " : " << c << '\n';
+		std::cout << "d : " << to_triple(d) << " : " << d.significant() << " : " << c << '\n';
 	}
 
 	// manipulators
@@ -78,20 +78,15 @@ try {
 		constexpr unsigned nlimbs = 4;
 		using TestType = efloat<nlimbs>;
 
-		float_decoder d;
-		d.parts.sign = false;
-		d.parts.exponent = ieee754_parameter<float>::bias + 64;
-		d.parts.fraction = 0x7F'FF00u;   // these are just the 23 fraction bits, no hidden bit
-		std::cout << "fraction bits  : " << to_binary(d.parts.fraction, true) << '\n';
-		float f = d.f;
-		std::cout << "floating point : " << to_binary(f, true) << " : " << f << '\n';
-
-		TestType a{ f };
-		std::cout << "efloat triple  : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
+		TestType a{ 1.5f };
+		std::cout << "efloat triple  : " << to_triple(a) << " : " << a.significant() << " : " << a << '\n';
 		std::cout << "sign           : " << sign(a) << '\n';
 		std::cout << "scale          : 2^" << scale(a) << '\n';
 		std::cout << "significant    : " << significant<nlimbs, float>(a) << "f\n";
 		std::cout << "significant    : " << significant<nlimbs, double>(a) << '\n';
+
+		std::cout << "efloat bits    : " << to_binary(a) << '\n';
+		std::cout << "efloat bits    : " << color_print(a, true) << '\n';
 	}
 
 	// interacting with subnormals
@@ -103,29 +98,24 @@ try {
 		// create a subnormal
 		float v;
 		setFields(v, false, 0u, 0x00'0001u); // smallest subnormal single precision float
-//		bool s{ false };
-//		uint32_t e{ 0 };
-//		uint32_t f{ 0 };
-//		uint32_t bits{ 0 };
-//		extractFields(v, s, e, f, bits);
-		std::cout << "subnormal      : " << to_binary(v) << " : " << v << '\n';
+		std::cout << "subnormal float  : " << to_binary(v, true) << " : " << v << '\n';
 		
 		TestType a{ v };
 
-		std::cout << "efloat triple  : " << to_triple(a) << " : " << a.significant() << " : " << float(a) << '\n';
-		std::cout << "sign           : " << sign(a) << '\n';
-		std::cout << "scale          : 2^" << scale(a) << '\n';
-		std::cout << "significant    : " << significant<nlimbs, float>(a) << "f\n";
+		std::cout << "efloat triple    : " << to_triple(a) << " : " << a.significant() << " : " << float(a) << '\n';
+		std::cout << "sign             : " << sign(a) << '\n';
+		std::cout << "scale            : 2^" << scale(a) << '\n';
+		std::cout << "significant      : " << significant<nlimbs, float>(a) << "f\n";
 
 		double dv;
-		setFields(dv, true, 0ull, 0x1ull);
-		std::cout << "floating point : " << to_binary(dv, true) << " : " << dv << '\n';
+		setFields(dv, true, 0ull, 0x1ull);  // smallest subnormal double precision float
+		std::cout << "subnormal double : " << to_binary(dv, true) << " : " << dv << '\n';
 		a = dv;
 
-		std::cout << "efloat triple  : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
-		std::cout << "sign           : " << sign(a) << '\n';
-		std::cout << "scale          : 2^" << scale(a) << '\n';
-		std::cout << "significant    : " << significant<nlimbs, double>(a) << "f\n";
+		std::cout << "efloat triple    : " << to_triple(a) << " : " << a.significant() << " : " << double(a) << '\n';
+		std::cout << "sign             : " << sign(a) << '\n';
+		std::cout << "scale            : 2^" << scale(a) << '\n';
+		std::cout << "significant      : " << significant<nlimbs, double>(a) << "f\n";
 	}
 
 	// explicit configuration
@@ -138,33 +128,45 @@ try {
 
 		double d;
 		d = std::numeric_limits<double>::infinity();
-//		std::cout << d << '\n';
 		e = d;
 		std::cout << "+infinity       : " << e << '\n';
 		e = -d;
 		std::cout << "-infinity       : " << e << '\n';
 
 		d = std::numeric_limits<double>::signaling_NaN();
-//		std::cout << d << " : " << '\n';
 		e = d;
 		std::cout << "signaling NaN   : " << e << '\n';
 
 		d = std::numeric_limits<double>::quiet_NaN();
-//		std::cout << d << " : " << '\n';
 		e = d;
 		std::cout << "quiet NaN       : " << e << '\n';
 	}
 
 	// explicit configuration
 	std::cout << "+---------    explicit configuration of a efloat\n";
+	auto old_precision = std::cout.precision();
 	{
-		
+		using TestType = efloat<10>;  // 320 bits of precision
+
+		double two64 = pow(2.0, 64);
+		TestType a(two64);
+		TestType b(1ull);
+		TestType c(1.0 / static_cast<double>(two64));
+
+		TestType d = a + b + c;
+
+		std::cout << std::setprecision(40);
+		std::cout << "a + b + c : " << to_binary(d) << " : " << d << '\n';
+
 	}
 
 	std::cout << "+---------    human-readable output for large efloats   --------+\n";
 	{
-		
+		using TestType = efloat<10>;  // 320 bits of precision
+		TestType a(pow(2.0, 300));
+		std::cout << "a : " << to_binary(a) << " : " << std::setprecision(100) << a << '\n';
 	}
+	std::cout.precision(old_precision);
 
 	std::cout << "+------------ numeric limits of a Cfloat ----------+\n";
 	{
