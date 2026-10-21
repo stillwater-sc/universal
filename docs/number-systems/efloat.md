@@ -60,16 +60,27 @@ exp/log, trigonometric and hyperbolic families of such a value. `get_precision()
 precision a value rounds at, and `carries_precision()` whether it has one of its own. An integer
 operand of a mixed operation converts exactly, all 64 bits, rather than through `double`.
 
-`+`, `-`, `*` and `/` are correctly rounded at the result's precision. The exp/log,
-trigonometric and hyperbolic families, `sqrt` and `cbrt` compute with guard bits past it
-and round once.
+`+`, `-`, `*`, `/` and `sqrt` are correctly rounded at the result's precision, in all four
+rounding modes (`efloat_rounding_mode`), and so is conversion to `float` and `double`,
+subnormals included.
 
 ### Mathematical library
 
-The mathematical library is oracle-grade: `sqrt` and `cbrt` use an adaptive Newton
-iteration whose step count follows the requested precision rather than a fixed budget, and
-the trigonometric family, `exp`/`log`, and the constants `pi`, `e` and `phi` are all
-carried past a thousand digits.
+The mathematical library is correctly rounded at any precision, in all four rounding modes:
+`exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p`, `sin`, `cos`, `tan`, `asin`,
+`acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `pow`, `tgamma`,
+`lgamma`, `erf` and `erfc`. Each evaluates with guard bits past the result's precision and
+rounds by Ziv's strategy, evaluating again at a wider precision in the rare case its value lies
+too close to a rounding boundary; exact results, such as `exp2(3)` or `pow(9, 0.5)`, are formed
+exactly. Results hold out to `2^(2^62)`, far past the range of `double`: `tgamma(100001.5)` is
+about `8.93e+456575`. None of these functions go through `double`.
+
+`cbrt`, `hypot`, `fma`, `fmod` and `remainder` compute at the result's precision but are not
+yet correctly rounded (#1783).
+
+The algorithms, their history, the measured accuracy and speed against MPFR, and the open
+work are described in [efloat: correctly rounded arithmetic and math
+library](../algorithmic-details/efloat-mathlib.md).
 
 ### Known limitations
 
