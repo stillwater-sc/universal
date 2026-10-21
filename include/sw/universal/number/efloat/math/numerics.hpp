@@ -7,6 +7,9 @@
 #pragma once
 #include <cmath>    // FP_ILOGB0, FP_ILOGBNAN
 #include <climits>  // INT_MAX
+#include <algorithm>
+#include <initializer_list>
+#include <universal/number/efloat/math/exponent.hpp>   // exact_product, exact_sum, round_result
 
 namespace sw {
 namespace universal {
@@ -81,12 +84,24 @@ inline int ilogb(const efloat<nlimbs>& x) {
 	return static_cast<int>(x.scale());
 }
 
-// fma(x, y, z) = x*y + z. efloat's product carries no intermediate rounding at the
-// working precision, so this is at least as accurate as a hardware fused
-// multiply-add. 0*inf yields NaN through efloat's own multiply, matching IEEE.
+// fma(x, y, z) = x y + z, correctly rounded in the current mode at the wider of the precisions
+// x, y and z carry (#1783): the product is exact, and the sum rounds once. Before, x * y rounded
+// to the operands' precision before z was added, and the result rounded twice. The special
+// values come from efloat's own multiply and add, as IEEE's do: 0 inf is NaN.
 template<unsigned nlimbs>
-constexpr efloat<nlimbs> fma(const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z) {
-	return x * y + z;
+inline efloat<nlimbs> fma(const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z) {
+	if (x.isnan() || y.isnan() || z.isnan() || x.isinf() || y.isinf() || z.isinf()) return x * y + z;
+	const bool carries = x.carries_precision() || y.carries_precision() || z.carries_precision();
+	unsigned precision = x.get_precision();
+	if (carries) {
+		precision = 0;
+		for (const efloat<nlimbs>* v : { &x, &y, &z }) {
+			if (v->carries_precision()) precision = std::max(precision, v->get_precision());
+		}
+	}
+	efloat<nlimbs> result = efloat_detail::exact_sum(efloat_detail::exact_product(x, y), z, precision + 2);
+	efloat_detail::round_result(result, precision, carries);
+	return result;
 }
 
 }  // namespace universal

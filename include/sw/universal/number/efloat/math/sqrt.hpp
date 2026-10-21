@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include <universal/number/efloat/math/exponent.hpp>   // can_round, exact_power, round_result
 
 namespace sw { namespace universal {
 
@@ -115,50 +116,86 @@ constexpr efloat<nlimbs> sqrt(const efloat<nlimbs>& a) {
 	return x;
 }
 
-// cbrt: cube root function for efloat using Newton's method
-template<unsigned nlimbs>
-constexpr efloat<nlimbs> cbrt(const efloat<nlimbs>& a) {
-	if (a.iszero() || a.isinf() || a.isnan()) return a;
+namespace efloat_detail {
 
-	// standard cbrt(-x) == -cbrt(x)
-	bool is_neg = (a.sign() == -1);
+	// cbrt_working(a, target) is within 2^(scale - target - exp_log_guard_bits + cbrt_error_bits) of
+	// the cube root of a finite a > 0: measured within 2^(scale - target - 64 - 32) of it, at 32 to
+	// 8192 bits in all four modes (#1783)
+	inline constexpr unsigned cbrt_error_bits = 8u;
+
+	// the cube root of a finite a > 0 at target + exp_log_guard_bits bits, unrounded: a = m 8^k with
+	// m in [1, 8), a double root of m as the seed, and Newton's iteration y <- y - (y - m / y^2) / 3
+	// at a precision that doubles with each step, as its error squares, to 16 bits past the working
+	// precision, which the limbs round up to 32 (#1783). A further step there gains nothing measurable.
+	// Before, every step ran at the full precision from a one-bit seed, and the root was rounded
+	// without a check, which misrounded.
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> cbrt_working(const efloat<nlimbs>& a, unsigned target) {
+		const unsigned working = target + exp_log_guard_bits;
+		const unsigned final_bits = working + 16u;
+		const int64_t e = a.scale();
+		const int64_t k = e / 3 - ((e < 0 && e % 3 != 0) ? 1 : 0);   // floor(e / 3)
+		efloat<nlimbs> m(a);
+		m.setexponent(e - 3 * k);                                     // m in [1, 8)
+		efloat<nlimbs> y(std::cbrt(double(m)));
+		unsigned bits = 48u;
+		for (;;) {
+			bits = std::min(2u * bits, final_bits);
+			efloat<nlimbs> mw(m);
+			mw.set_precision(bits);
+			y.set_precision(bits);
+			efloat<nlimbs> t = mw / (y * y);
+			t -= y;
+			t /= 3;
+			y += t;
+			if (bits == final_bits) break;
+		}
+		y.setexponent(y.scale() + k);
+		return y;
+	}
+
+	// whether y, within a few units of the last of its working bits of the cube root of a > 0, has a
+	// root with at most `precision` + 32 bits: y rounded there to nearest, cubed exactly, is a. Only
+	// such a root can lie on a rounding boundary of `precision` bits.
+	template<unsigned nlimbs>
+	inline bool exact_cube_root(const efloat<nlimbs>& a, const efloat<nlimbs>& y, unsigned precision, efloat<nlimbs>& root) {
+		const RoundingMode mode = efloat_rounding_mode;
+		efloat_rounding_mode = RoundingMode::RoundToNearest;
+		root = y;
+		root.set_precision(precision + 32u);
+		efloat_rounding_mode = mode;
+		return exact_power(root, 3) == a;
+	}
+
+}  // namespace efloat_detail
+
+// cbrt(a), correctly rounded to a's precision in the current mode (#1783): an exact root is found
+// and rounded once; every other one is irrational, so never on a boundary, and rounds by Ziv's
+// strategy. cbrt(-a) = -cbrt(a),
+// rounded as the negative value it is.
+template<unsigned nlimbs>
+inline efloat<nlimbs> cbrt(const efloat<nlimbs>& a) {
+	if (a.iszero() || a.isinf() || a.isnan()) return a;
+	const unsigned precision = a.get_precision();
+	const bool carries = a.carries_precision();
+	const bool negative = (a.sign() == -1);
 	efloat<nlimbs> abs_a(a);
 	abs_a.setsign(false);
 
-	// Initial guess: y0 = 1.0 * 2^(scale / 3)
-	efloat<nlimbs> y;
-	y.clear();
-	y.setexponent(abs_a.scale() / 3);
-	y.setlimb(0, 0x80000000);
-	const unsigned result_prec = abs_a.get_precision();   // the result's precision: a's own (#1757)
-	const unsigned prec = result_prec + 64u;             // guard bits for the iteration
-	y.set_precision(prec);
-	abs_a.set_precision(prec);
-
-	// 1/3 at that precision: a 1/3 at fewer bits moves the fixed point of the iteration
-	efloat<nlimbs> one_third(1.0);
-	one_third.set_precision(prec);
-	one_third /= 3;
-	efloat<nlimbs> two(2.0);
-
-	// Newton iterations for y^3 - abs_a = 0: y_next = 1/3 * (2 * y + abs_a / y^2).
-	// Precision-adaptive iteration count with a convergence break, for the same
-	// reason as sqrt above (issue #1140): the ~1-bit exponent-only seed needs
-	// ~ceil(log2(precision)) doublings to reach full precision.
-	int max_iters = 6;
-	for (unsigned p = prec; p > 1u; p >>= 1) ++max_iters;
-	for (int i = 0; i < max_iters; ++i) {
-		efloat<nlimbs> prev(y);
-		y = one_third * (two * y + abs_a / (y * y));
-		efloat<nlimbs> d(y - prev); d.setsign(false);
-		if (d.iszero() || (!y.iszero() && d.scale() < y.scale() - static_cast<int64_t>(prec))) break;
+	// Ziv's strategy. An exact root fails its test, as every boundary does, so the first failure
+	// checks for one: Newton lands on an exact root, and without the check the eight retries would
+	// cost ~130x the root (#1783). The check costs a cube, so it runs only then.
+	unsigned target = precision;
+	efloat<nlimbs> y = efloat_detail::cbrt_working(abs_a, target);
+	for (int retry = 0; retry < 8 &&
+	                    !efloat_detail::can_round(y, precision, target + efloat_detail::exp_log_guard_bits - efloat_detail::cbrt_error_bits); ++retry) {
+		efloat<nlimbs> root;
+		if (retry == 0 && efloat_detail::exact_cube_root(abs_a, y, precision, root)) { y = root; break; }
+		target *= 2;
+		y = efloat_detail::cbrt_working(abs_a, target);
 	}
-
-	y.set_precision(result_prec);
-	if (!a.carries_precision()) y.clear_precision();
-	if (is_neg) {
-		y.setsign(true);
-	}
+	if (negative) y = -y;
+	efloat_detail::round_result(y, precision, carries);
 	return y;
 }
 
