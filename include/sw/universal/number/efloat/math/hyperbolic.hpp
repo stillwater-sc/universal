@@ -132,8 +132,8 @@ namespace efloat_detail {
 
 	// sinh or cosh overflow at |x| >= 2^17, where exp does
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> hyperbolic_overflow(bool negative) {
-		efloat<nlimbs> inf = exp_out_of_range<nlimbs>(false);
+	inline efloat<nlimbs> hyperbolic_overflow(const efloat<nlimbs>& x, bool negative) {
+		efloat<nlimbs> inf = exp_out_of_range<nlimbs>(false, result_precision(x), x.carries_precision());
 		inf.setinf(negative);
 		return inf;
 	}
@@ -151,7 +151,7 @@ constexpr efloat<nlimbs> sinh(const efloat<nlimbs>& x) {
 		inf.setinf(x.sign() == -1);
 		return inf;
 	}
-	if (x.scale() >= 17) return efloat_detail::hyperbolic_overflow<nlimbs>(x.sign() == -1);
+	if (x.scale() >= 17) return efloat_detail::hyperbolic_overflow<nlimbs>(x, x.sign() == -1);
 	// sinh x = x + x^3/6 + ..., away from 0
 	if (efloat_detail::hyperbolic_tiny(x)) {
 		return efloat_detail::round_near(x, x.sign(), efloat_detail::result_precision(x), x.carries_precision());
@@ -171,7 +171,7 @@ constexpr efloat<nlimbs> cosh(const efloat<nlimbs>& x) {
 		inf.setinf(false);
 		return inf;
 	}
-	if (x.scale() >= 17) return efloat_detail::hyperbolic_overflow<nlimbs>(false);
+	if (x.scale() >= 17) return efloat_detail::hyperbolic_overflow<nlimbs>(x, false);
 	// cosh x = 1 + x^2/2 + ..., above 1
 	if (efloat_detail::hyperbolic_tiny(x)) {
 		return efloat_detail::round_near(efloat<nlimbs>(1.0), 1, efloat_detail::result_precision(x), x.carries_precision());

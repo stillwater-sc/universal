@@ -63,9 +63,9 @@ namespace efloat_detail {
 			ey.set_precision(ybits + 64);
 			ey = ax.scale();
 			ey *= y;
-			if (!is_integer(ey)) return false;
+			if (!is_integer(ey) || ey.scale() >= 62) return false;
 			result = efloat<nlimbs>(1.0);
-			result.setexponent(static_cast<int64_t>(double(ey)));   // |e y| < 2^53: within exp's range
+			result.setexponent(integer_value(ey));
 			return true;
 		}
 		if (y.sign() == -1) return false;
@@ -164,20 +164,25 @@ constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, int y) {
 // not a binary fraction, and rounds by Ziv's strategy. The special values follow IEEE-754.
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
+	const unsigned precision = efloat_detail::result_precision(x, y);
+	const bool     carries   = x.carries_precision() || y.carries_precision();
+	// the special values below carry the result's precision, as the computed ones do
+	auto special = [precision, carries](efloat<nlimbs> v) {
+		efloat_detail::round_result(v, precision, carries);
+		return v;
+	};
 	// pow(x, +/-0) is 1 for any x (including NaN)
 	if (y.iszero()) {
-		return efloat<nlimbs>(1.0);
+		return special(efloat<nlimbs>(1.0));
 	}
 	// pow(1, y) is 1 for any y (including NaN)
 	if (x == 1.0) {
-		return efloat<nlimbs>(1.0);
+		return special(efloat<nlimbs>(1.0));
 	}
 	if (x.isnan() || y.isnan()) {
 		efloat<nlimbs> nan; nan.setnan();
-		return nan;
+		return special(nan);
 	}
-	const unsigned precision = efloat_detail::result_precision(x, y);
-	const bool     carries   = x.carries_precision() || y.carries_precision();
 	const bool     y_neg     = (y.sign() == -1);
 	const bool     y_integer = !y.isinf() && efloat_detail::is_integer(y);
 	// whether y is an odd integer: its last significant bit is its units bit
@@ -186,10 +191,10 @@ constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 	ax.setsign(false);
 
 	if (y.isinf()) {   // pow(-1, +/-inf) = 1; |x| > 1 grows to +inf at +inf, |x| < 1 at -inf
-		if (ax == 1.0) return efloat<nlimbs>(1.0);
+		if (ax == 1.0) return special(efloat<nlimbs>(1.0));
 		efloat<nlimbs> limit(0.0);
 		if ((ax > efloat<nlimbs>(1.0)) != y_neg) limit.setinf(false);
-		return limit;
+		return special(limit);
 	}
 	// a zero or infinite x: +/-0 or +/-inf, signed as x for an odd integer y
 	if (x.iszero() || x.isinf()) {
@@ -200,7 +205,7 @@ constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 		if (x.iszero() && y_neg && !std::is_constant_evaluated()) {
 			efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
 		}
-		return limit;
+		return special(limit);
 	}
 	// a negative x has a real power only at an integer y, negative at an odd one
 	if (x.sign() == -1 && !y_integer) {
@@ -208,26 +213,27 @@ constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 		if (!std::is_constant_evaluated()) {
 			efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
 		}
-		return nan;
+		return special(nan);
 	}
 	const bool negative = (x.sign() == -1) && y_odd;
 	if (ax == 1.0) {   // (-1)^y for an integer y
-		return efloat<nlimbs>(negative ? -1.0 : 1.0);
+		return special(efloat<nlimbs>(negative ? -1.0 : 1.0));
 	}
 
-	// out of exp's range where |y log x| >= 2^17, as exp is: from the scales, and closer to the
-	// limit by the evaluation's range check
-	const int64_t magnitude = y.scale() + efloat_detail::log_magnitude(ax);   // |y log x| >= 2^magnitude
-	if (magnitude >= 17) {
-		efloat<nlimbs> limit = efloat_detail::exp_out_of_range<nlimbs>(y_neg != (ax < efloat<nlimbs>(1.0)));
-		limit.setsign(negative);
-		return limit;
-	}
+	// an exact power is returned wherever the exponent holds it, also past exp's range
 	efloat<nlimbs> result;
 	if (efloat_detail::exact_pow(ax, y, precision, result)) {
 		if (negative) result.setsign(true);
 		efloat_detail::round_result(result, precision, carries);
 		return result;
+	}
+	// out of exp's range where |y log x| >= 2^17, as exp is: from the scales, and closer to the
+	// limit by the evaluation's range check
+	const int64_t magnitude = y.scale() + efloat_detail::log_magnitude(ax);   // |y log x| >= 2^magnitude
+	if (magnitude >= 17) {
+		efloat<nlimbs> limit = efloat_detail::exp_out_of_range<nlimbs>(y_neg != (ax < efloat<nlimbs>(1.0)), precision, carries);
+		limit.setsign(negative);
+		return limit;
 	}
 	// x^y = 1 + y log x + ..., within 2^-(P + 4) of 1 for |y log x| < 2^-(P + 5), on its side of it
 	if (magnitude + 4 < -static_cast<int64_t>(precision) - 5) {

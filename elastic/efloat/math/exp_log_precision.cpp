@@ -13,6 +13,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -608,6 +609,31 @@ int VerifyExactValues(bool reportTestCases) {
 			check("atan2(-0, +0)", 0, atan2(nz, pz), nz, m);
 			check("atan2(+0, -0)", 0, atan2(pz, nz), rounded(pi_wide), m);
 			check("atan2(-0, -0)", 0, atan2(nz, nz), rounded(-pi_wide), m);
+			R_t inf;
+			inf.setinf(false);
+			inf.set_precision(P);
+			const R_t ninf = -inf;
+			check("atan2(+0, 1)", 0, atan2(pz, at_P(1.0)), pz, m);
+			check("atan2(-0, 1)", 0, atan2(nz, at_P(1.0)), nz, m);
+			check("atan2(-0, -1)", 0, atan2(nz, at_P(-1.0)), rounded(-pi_wide), m);
+			check("atan2(+0, +inf)", 0, atan2(pz, inf), pz, m);
+			check("atan2(-1, +inf)", 0, atan2(at_P(-1.0), inf), nz, m);
+			check("atan2(-0, -inf)", 0, atan2(nz, ninf), rounded(-pi_wide), m);
+			check("atan2(1, -inf)", 0, atan2(at_P(1.0), ninf), rounded(pi_wide), m);
+			efloat_rounding_mode = saved;
+		}
+		{
+			// exact powers past exp's range of 2^17 are still returned, as the exponent holds them
+			R_t big(3.0);
+			big.set_precision(P);
+			big.setexponent(200001);   // 3 2^200000
+			R_t p2(1.0);
+			p2.set_precision(P);
+			p2.setexponent(int64_t(1) << 20);
+			efloat_rounding_mode = modes[m];
+			check("exp2(2^20)", 20, exp2(at_P(std::ldexp(1.0, 20))), p2, m);
+			check("pow(3 2^200000, 1)", 1, pow(big, 1), big, m);
+			check("pow(2^(2^20), 1/2)", 1, pow(p2, at_P(0.5)), [&] { R_t r(1.0); r.set_precision(P); r.setexponent(int64_t(1) << 19); return r; }(), m);
 			efloat_rounding_mode = saved;
 		}
 		// arguments so small that the next term lies below any working precision: atan2(t, 1) =

@@ -120,6 +120,20 @@ namespace efloat_detail {
 		return x.iszero() || (x.scale() >= 0 && static_cast<int64_t>(significant_bits(x)) <= x.scale() + 1);
 	}
 
+	// a finite integer x, |x| < 2^62, as an int64_t: its significand's bits down to the units bit
+	template<unsigned nlimbs>
+	inline int64_t integer_value(const efloat<nlimbs>& x) {
+		if (x.iszero()) return 0;
+		const std::vector<uint32_t> limbs = x.bits();   // most significant first, leading bit at 31
+		uint64_t v = 0;
+		for (int64_t p = 0; p <= x.scale(); ++p) {
+			const std::size_t i = static_cast<std::size_t>(p / 32);
+			const uint32_t b = (i < limbs.size()) ? (limbs[i] >> (31 - p % 32)) & 1u : 0u;
+			v = (v << 1) | b;
+		}
+		return (x.sign() == -1) ? -static_cast<int64_t>(v) : static_cast<int64_t>(v);
+	}
+
 	// x^n for a finite x != 0 and n >= 1, exactly: carried at the n significant_bits(x) bits the
 	// power needs, so that no partial product rounds
 	template<unsigned nlimbs>
@@ -138,11 +152,13 @@ namespace efloat_detail {
 		return power;
 	}
 
-	// exp of an argument of magnitude 2^17 or more: 0 below and inf above, inexact
+	// exp of an argument of magnitude 2^17 or more, the range exp_working reduces: 0 below and inf
+	// above, inexact, at the result's precision
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> exp_out_of_range(bool negative) {
+	inline efloat<nlimbs> exp_out_of_range(bool negative, unsigned precision, bool carries) {
 		efloat<nlimbs> result(0.0);
 		if (!negative) result.setinf(false);
+		round_result(result, precision, carries);
 		efloat_exception_flags.set((negative ? ExceptionFlag::Underflow : ExceptionFlag::Overflow) | ExceptionFlag::Inexact);
 		return result;
 	}
@@ -324,7 +340,7 @@ constexpr efloat<nlimbs> exp(const efloat<nlimbs>& x) {
 	}
 
 	// Protect against extremely large inputs that would overflow double/int64_t during range reduction
-	if (x.scale() >= 17) return efloat_detail::exp_out_of_range<nlimbs>(x.sign() == -1);
+	if (x.scale() >= 17) return efloat_detail::exp_out_of_range<nlimbs>(x.sign() == -1, efloat_detail::result_precision(x), x.carries_precision());
 
 	const unsigned precision = efloat_detail::result_precision(x);
 	// exp(x) = 1 + x + ... is within 2^-(P + 4) of 1 for |x| < 2^-(P + 4), on x's side of it
@@ -345,17 +361,17 @@ constexpr efloat<nlimbs> exp2(const efloat<nlimbs>& x) {
 		if (x.sign() == -1) return efloat<nlimbs>(0.0);
 		return x;
 	}
-	// out of exp's range where |x ln 2| >= 2^17
-	if (x.scale() >= 18 || std::fabs(double(x)) * 0.6931471805599453 >= 131072.0) {
-		return efloat_detail::exp_out_of_range<nlimbs>(x.sign() == -1);
-	}
-
 	const unsigned precision = efloat_detail::result_precision(x);
-	if (efloat_detail::is_integer(x)) {
+	// 2^k for an integer k is exact wherever the exponent holds it, also past exp's range
+	if (efloat_detail::is_integer(x) && x.scale() < 62) {
 		efloat<nlimbs> power(1.0);
-		power.setexponent(static_cast<int64_t>(double(x)));   // |x| < 2^18: exact in a double
+		power.setexponent(efloat_detail::integer_value(x));
 		efloat_detail::round_result(power, precision, x.carries_precision());
 		return power;
+	}
+	// out of exp's range where |x ln 2| >= 2^17
+	if (x.scale() >= 18 || std::fabs(double(x)) * 0.6931471805599453 >= 131072.0) {
+		return efloat_detail::exp_out_of_range<nlimbs>(x.sign() == -1, precision, x.carries_precision());
 	}
 	// 2^x = 1 + x ln 2 + ..., within 2^-(P + 4) of 1 for |x| < 2^-(P + 4), on x's side of it
 	if (x.scale() < -static_cast<int64_t>(precision) - 5) {
@@ -378,7 +394,7 @@ constexpr efloat<nlimbs> exp10(const efloat<nlimbs>& x) {
 	}
 	// out of exp's range where |x ln 10| >= 2^17
 	if (x.scale() >= 17 || std::fabs(double(x)) * 2.302585092994046 >= 131072.0) {
-		return efloat_detail::exp_out_of_range<nlimbs>(x.sign() == -1);
+		return efloat_detail::exp_out_of_range<nlimbs>(x.sign() == -1, efloat_detail::result_precision(x), x.carries_precision());
 	}
 
 	const unsigned precision = efloat_detail::result_precision(x);
@@ -416,7 +432,7 @@ constexpr efloat<nlimbs> expm1(const efloat<nlimbs>& x) {
 	if (x.sign() == -1 && (x.scale() >= 17 || double(x) < -static_cast<double>(precision + 6) * 0.6931471805599453)) {
 		return efloat_detail::round_near(efloat<nlimbs>(-1.0), 1, precision, carries);
 	}
-	if (x.scale() >= 17) return efloat_detail::exp_out_of_range<nlimbs>(false);
+	if (x.scale() >= 17) return efloat_detail::exp_out_of_range<nlimbs>(false, precision, carries);
 	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::expm1_working(x, target); },
 	                                        precision, efloat_detail::exp_derived_error_bits, carries);
 }
