@@ -13,18 +13,201 @@
 
 namespace sw { namespace universal {
 
-// erf: Error function
+namespace efloat_detail {
+
+	// Guard bits erf and erfc carry past exp_log_guard_bits: their series add up to ~2 x^2 + W / 4
+	// rounded terms, and exp(-x^2) and 2 / sqrt(pi) are rounded once each
+	inline constexpr unsigned erf_guard_bits = 32u;
+
+	// erf_working(x, P) and erfc_working(x, P) are within 2^(scale - P - exp_log_guard_bits +
+	// erf_error_bits) of the function's value
+	inline constexpr unsigned erf_error_bits = 0u;
+
+	// 2 / sqrt(pi) at `bits` bits, cached like pi
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> two_over_sqrt_pi(unsigned bits) {
+		thread_local efloat<nlimbs> cached;
+		thread_local unsigned cached_bits = 0;
+		if (cached_bits < bits) {
+			efloat<nlimbs> two(2.0);
+			two.set_precision(bits + 32u);
+			cached = two / sqrt_to(pi<nlimbs>(bits + 32u), bits + 32u);
+			cached_bits = bits;
+		}
+		efloat<nlimbs> value(cached);
+		value.set_precision(bits);
+		return value;
+	}
+
+	// x^2 for a finite x, exactly: carried at twice its significant bits
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> exact_square(const efloat<nlimbs>& x) {
+		efloat<nlimbs> a(x);
+		if (a.sign() == -1) a = -a;
+		a.set_precision(2u * significant_bits(x) + 32u);
+		return a * a;
+	}
+
+	// erf |x| at `W` bits for a finite x != 0 with x^2 = `x2` well inside exp's range, by the series
+	// of positive terms (Abramowitz and Stegun 7.1.6, the way MPFR's mpfr_erf_0 sums it)
+	//
+	//   erf x = 2 / sqrt(pi) exp(-x^2) sum_{n>=0} t_n,   t_0 = x,  t_n = t_(n-1) 2 x^2 / (2n + 1),
+	//
+	// which has no cancellation, unlike the alternating Taylor series. Past n > 2 x^2 the terms fall
+	// by more than half each, so the tail beyond a term is below that term.
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> erf_series(const efloat<nlimbs>& x, const efloat<nlimbs>& x2, unsigned W) {
+		efloat<nlimbs> t(x);
+		if (t.sign() == -1) t = -t;
+		t.set_precision(W);
+		efloat<nlimbs> two_x2(x2);
+		two_x2.set_precision(W);
+		two_x2.setexponent(two_x2.scale() + 1);
+		const double n_falling = 2.0 * double(x2);
+		efloat<nlimbs> sum(t);
+		// Once the terms fall, term n lies (scale(sum) - scale(t)) bits below the sum and needs only
+		// that many fewer bits: t and 2 x^2 are carried at a precision that falls with the terms, as
+		// log's series does
+		efloat<nlimbs> two_x2_taper(two_x2);
+		unsigned taper = W;
+		for (unsigned n = 1; ; ++n) {
+			const int64_t below = sum.scale() - t.scale();
+			if (below > 0) {
+				const unsigned need = (below + 64 < static_cast<int64_t>(W)) ? static_cast<unsigned>(static_cast<int64_t>(W) - below) : 64u;
+				if (need + 32u <= taper) {
+					taper = need;
+					t.set_precision(taper);
+					two_x2_taper = two_x2;
+					two_x2_taper.set_precision(taper);
+				}
+			}
+			t *= two_x2_taper;
+			t /= 2 * n + 1;
+			sum += t;
+			if (t.iszero() || (static_cast<double>(n) > n_falling && t.scale() < sum.scale() - static_cast<int64_t>(W) - 2)) break;
+		}
+		efloat<nlimbs> m(x2);
+		m = -m;   // exact
+		efloat<nlimbs> y = exp_working(m, W - exp_log_guard_bits) * sum;
+		y *= two_over_sqrt_pi<nlimbs>(W);
+		y.set_precision(W);
+		return y;
+	}
+
+	// whether erfc's asymptotic series reaches W bits at x: its smallest term, near n = x^2, lies
+	// about x^2 log2(e) bits below its first
+	inline bool erfc_asymptotic_reaches(double x2, unsigned W) {
+		return x2 * log2_e >= static_cast<double>(W) + 8.0;
+	}
+
+	// erfc x for x > 0 at `W` bits by the asymptotic series (DLMF 7.12.1)
+	//
+	//   erfc x = exp(-x^2) / (x sqrt(pi)) sum_{n>=0} (-1)^n (2n - 1)!! / (2 x^2)^n,
+	//
+	// whose remainder for a real x is smaller than the first omitted term and of its sign (DLMF
+	// 7.12(i)); the terms fall to 2^-(W + 2) before they grow again, past n = x^2, where
+	// erfc_asymptotic_reaches
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> erfc_asymptotic(const efloat<nlimbs>& x, const efloat<nlimbs>& x2, unsigned W) {
+		efloat<nlimbs> one(1.0);
+		one.set_precision(W);
+		efloat<nlimbs> u = one / x2;   // 1 / (2 x^2)
+		u.setexponent(u.scale() - 1);
+		efloat<nlimbs> term(one), sum(one);
+		const double smallest = double(x2);
+		for (unsigned n = 1; ; ++n) {
+			term *= u;
+			term *= -static_cast<int>(2 * n - 1);
+			if (term.iszero() || term.scale() < -static_cast<int64_t>(W) - 2 || static_cast<double>(n) > smallest) break;
+			sum += term;
+		}
+		efloat<nlimbs> m(x2);
+		m = -m;   // exact
+		efloat<nlimbs> xw(x);
+		xw.set_precision(W);
+		efloat<nlimbs> y = exp_working(m, W - exp_log_guard_bits) * sum;
+		y *= two_over_sqrt_pi<nlimbs>(W);
+		y /= xw;
+		y.setexponent(y.scale() - 1);   // 2 / sqrt(pi) / 2
+		return y;
+	}
+
+	// erf x, unrounded, for a finite x != 0 at which it does not round as +/-1: erf x is odd
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> erf_working(const efloat<nlimbs>& x, unsigned target) {
+		const unsigned W = target + exp_log_guard_bits + erf_guard_bits;
+		efloat<nlimbs> y = erf_series(x, exact_square(x), W);
+		if (x.sign() == -1) y = -y;
+		return y;
+	}
+
+	// erfc x, unrounded, for a finite x whose erfc lies in exp's range: 1 + erf |x| below 0; the
+	// asymptotic series where it reaches the working precision; elsewhere 1 - erf x, at the working
+	// precision plus the bits it cancels, at most log2(1 / erfc x) < x^2 log2(e) + log2(sqrt(pi)
+	// (x + sqrt(x^2 + 2)) / 2) (Abramowitz and Stegun 7.1.13)
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> erfc_working(const efloat<nlimbs>& x, unsigned target) {
+		const unsigned W = target + exp_log_guard_bits + erf_guard_bits;
+		efloat<nlimbs> one(1.0);
+		const efloat<nlimbs> x2 = exact_square(x);
+		if (x.sign() == -1) {
+			one.set_precision(W);
+			return one + erf_series(x, x2, W);
+		}
+		const double x2d = double(x2);
+		if (erfc_asymptotic_reaches(x2d, W)) return erfc_asymptotic(x, x2, W);
+		const double xd = double(x);
+		const double lost = x2d * log2_e + std::log2(0.8862269254527580 * (xd + std::sqrt(x2d + 2.0)));
+		const unsigned cancel = (lost > 0.0) ? static_cast<unsigned>(std::ceil(lost)) + 2u : 2u;
+		one.set_precision(W + cancel);
+		efloat<nlimbs> y = one - erf_series(x, x2, W + cancel);
+		y.set_precision(W);
+		return y;
+	}
+
+	// whether erfc |x| < 2^-(P + 5), below which erf x rounds as +/-1 and erfc of a negative x as
+	// 2: erfc |x| < exp(-x^2) for |x| >= 1
+	template<unsigned nlimbs>
+	inline bool erfc_negligible(const efloat<nlimbs>& x, unsigned precision) {
+		if (x.scale() >= 31) return true;
+		const double ax = std::fabs(double(x));
+		return ax >= 1.0 && ax * ax * log2_e >= static_cast<double>(precision) + 6.0;
+	}
+
+}  // namespace efloat_detail
+
+// erf: the error function, correctly rounded (#1763): odd, exact at 0 and +/-inf, by Ziv's
+// strategy elsewhere, where it is transcendental
 template<unsigned nlimbs>
 inline efloat<nlimbs> erf(const efloat<nlimbs>& x) {
-	if (x.isnan()) return x;
-	return efloat<nlimbs>(std::erf(double(x)));
+	if (x.isnan() || x.iszero()) return x;   // erf(+/-0) = +/-0
+	const unsigned precision = efloat_detail::result_precision(x);
+	const efloat<nlimbs> one(x.sign() == -1 ? -1.0 : 1.0);
+	if (x.isinf()) return one;
+	// erf x = +/-(1 - erfc |x|), within 2^-(P + 5) of +/-1 and on 0's side of it
+	if (efloat_detail::erfc_negligible(x, precision)) return efloat_detail::round_near(one, -x.sign(), precision, x.carries_precision());
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::erf_working(x, target); },
+	                                        precision, efloat_detail::erf_error_bits, x.carries_precision());
 }
 
-// erfc: Complementary error function
+// erfc: the complementary error function 1 - erf x, correctly rounded (#1763): exact at 0 and
+// +/-inf, 0 where exp's range ends, and by Ziv's strategy elsewhere
 template<unsigned nlimbs>
 inline efloat<nlimbs> erfc(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
-	return efloat<nlimbs>(std::erfc(double(x)));
+	const unsigned precision = efloat_detail::result_precision(x);
+	if (x.iszero()) return efloat<nlimbs>(1.0);
+	if (x.isinf()) return efloat<nlimbs>(x.sign() == -1 ? 2.0 : 0.0);
+	if (x.sign() == -1) {
+		// erfc x = 2 - erfc |x|, within 2^-(P + 5) of 2 and below it
+		if (efloat_detail::erfc_negligible(x, precision)) return efloat_detail::round_near(efloat<nlimbs>(2.0), -1, precision, x.carries_precision());
+	}
+	else if (x.scale() >= 31 || efloat_detail::exp_beyond_range(efloat_detail::exact_square(x), efloat_detail::log2_e)) {
+		// erfc x < exp(-x^2) is 0 past exp's range
+		return efloat_detail::exp_out_of_range<nlimbs>(true, precision, x.carries_precision());
+	}
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::erfc_working(x, target); },
+	                                        precision, efloat_detail::erf_error_bits, x.carries_precision());
 }
 
 namespace efloat_detail {

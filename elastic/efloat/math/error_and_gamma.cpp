@@ -2,6 +2,9 @@
 //
 // Categories tested:
 //   - erf, erfc, tgamma, lgamma
+//   - erf and erfc correctly rounded in every mode (#1763), against the alternating Maclaurin series
+//     carried with the bits it cancels, an evaluation independent of the positive-term series and
+//     the asymptotic series they use
 //   - tgamma and lgamma correctly rounded in every mode (#1763): at the integers against the exact
 //     factorial, at the half-integers against (2n)! sqrt(pi) / (4^n n!), near the zeros of lgamma
 //     at 1 and 2, across the reflection formula, and far beyond the range of double
@@ -118,6 +121,136 @@ namespace {
 	template<unsigned nlimbs>
 	bool same(const sw::universal::efloat<nlimbs>& a, const sw::universal::efloat<nlimbs>& b) {
 		return a == b && a.get_precision() == b.get_precision() && a.sign() == b.sign();
+	}
+
+	// erf x = 2 / sqrt(pi) sum_n (-1)^n x^(2n+1) / (n! (2n + 1)) at `bits` bits past the
+	// x^2 log2(e) bits its terms, up to ~e^(x^2), cancel
+	template<unsigned nlimbs>
+	sw::universal::efloat<nlimbs> reference_erf(const sw::universal::efloat<nlimbs>& x, unsigned bits) {
+		using namespace sw::universal;
+		using E = efloat<nlimbs>;
+		const double x2d = double(x) * double(x);
+		const unsigned W = bits + static_cast<unsigned>(x2d * 1.4426950408889634) + 32u;
+		E xw(x);
+		xw.set_precision(W);
+		const E m = -(xw * xw);
+		E power = xw;   // (-1)^n x^(2n+1) / n!
+		E sum = xw;
+		for (int n = 1; ; ++n) {
+			power *= m;
+			power /= n;
+			const E term = power / (2 * n + 1);
+			sum += term;
+			if (n > x2d && term.scale() < -static_cast<int64_t>(W) - 4) break;
+		}
+		E two(2.0);
+		two.set_precision(W);
+		return sum * two / sqrt(efloat_detail::pi<nlimbs>(W));
+	}
+
+	// erf and erfc at P bits in every mode against the reference rounded to P bits; erfc x as
+	// 1 - erf x with the reference carried past the bits that cancel
+	template<unsigned nlimbs>
+	int VerifyErfRounding(bool reportTestCases, unsigned P, double xmax, int count) {
+		using namespace sw::universal;
+		using E = efloat<nlimbs>;
+		int failures = 0;
+		const RoundingMode saved = efloat_rounding_mode;
+		std::mt19937_64 rng(1779);
+		for (int i = 0; i < count; ++i) {
+			E x(xmax * (static_cast<double>(rng() % 20001) - 10000.0) / 10000.0);
+			x.set_precision(P);
+			E third(1.0);
+			third.set_precision(P);
+			x += third / 3 * E(std::ldexp(1.0, -20));   // a full-width x
+			if (x.iszero()) continue;
+			efloat_rounding_mode = RoundingMode::RoundToNearest;
+			const double x2d = double(x) * double(x);
+			// carried past erfc |x| ~ 2^-(x^2 log2 e), the gap that separates erf x from +/-1
+			const E ref_erf = reference_erf(x, P + 128u + static_cast<unsigned>(x2d * 1.4426950408889634));
+			const E one(1.0);
+			const E ref_erfc = one - ref_erf;
+			// the unrounded values keep the error bound Ziv's test relies on
+			const int64_t guard = static_cast<int64_t>(P + efloat_detail::exp_log_guard_bits) - efloat_detail::erf_error_bits;
+			const E y = efloat_detail::erfc_working(x, P), dy = y - ref_erfc;
+			bool bounded = dy.iszero() || dy.scale() <= y.scale() - guard;
+			if (!efloat_detail::erfc_negligible(x, P)) {
+				const E z = efloat_detail::erf_working(x, P), dz = z - ref_erf;
+				bounded = bounded && (dz.iszero() || dz.scale() <= z.scale() - guard);
+			}
+			if (!bounded) {
+				if (reportTestCases && failures < 8) std::cout << "    FAIL: erf/erfc_working(" << double(x) << ") outside its error bound\n";
+				++failures;
+			}
+			for (RoundingMode mode : all_modes) {
+				efloat_rounding_mode = mode;
+				if (!same(erf(x), rounded(ref_erf, P)) || !same(erfc(x), rounded(ref_erfc, P))) {
+					if (reportTestCases && failures < 8) std::cout << "    FAIL: erf/erfc(" << double(x) << ") at " << P << " bits, mode " << int(mode) << '\n';
+					++failures;
+				}
+			}
+		}
+		efloat_rounding_mode = saved;
+		return failures;
+	}
+
+	// erf and erfc at their special values, at the switches where erf rounds as +/-1 and erfc of
+	// a negative x as 2, at a tiny x, and where erfc leaves exp's range
+	int VerifyErfSpecialValues(bool reportTestCases) {
+		using namespace sw::universal;
+		using E = efloat<4>;
+		int failures = 0;
+		auto check = [&](bool ok, const char* what) {
+			if (!ok) {
+				if (reportTestCases) std::cout << "    FAIL: " << what << '\n';
+				++failures;
+			}
+		};
+		E pinf; pinf.setinf(false);
+		E ninf; ninf.setinf(true);
+		E nzero(0.0); nzero = -nzero;
+		check(erf(E(0.0)).iszero() && erf(E(0.0)).sign() == 1 && erf(nzero).iszero() && erf(nzero).sign() == -1, "erf(+/-0) = +/-0");
+		check(erf(pinf) == E(1.0) && erf(ninf) == E(-1.0), "erf(+/-inf) = +/-1");
+		check(erfc(E(0.0)) == E(1.0) && erfc(nzero) == E(1.0), "erfc(+/-0) = 1");
+		check(erfc(pinf).iszero() && erfc(pinf).sign() == 1 && erfc(ninf) == E(2.0), "erfc(+inf) = +0, erfc(-inf) = 2");
+		check(erf(E(std::nan(""))).isnan() && erfc(E(std::nan(""))).isnan(), "erf, erfc of nan");
+
+		// erf(12) = 1 - 1.4e-64 at 128 bits: 1 to nearest, the predecessor of 1 toward 0
+		const RoundingMode saved = efloat_rounding_mode;
+		E x(12.0);
+		x.set_precision(128);
+		E below_one(1.0);
+		below_one.set_precision(128);
+		below_one = nextafter(below_one, E(0.0));
+		E below_two(2.0);
+		below_two.set_precision(128);
+		below_two = nextafter(below_two, E(0.0));
+		efloat_rounding_mode = RoundingMode::RoundToNearest;
+		check(erf(x) == E(1.0) && erf(-x) == E(-1.0) && erfc(-x) == E(2.0), "erf(+/-12) = +/-1, erfc(-12) = 2 to nearest");
+		efloat_rounding_mode = RoundingMode::RoundToZero;
+		check(erf(x) == below_one && erf(-x) == -below_one && erfc(-x) == below_two, "erf(+/-12), erfc(-12) toward 0");
+		efloat_rounding_mode = saved;
+
+		// erf x = 2 x / sqrt(pi) (1 - x^2 / 3 + ...) at x = 2^-200
+		E tiny(1.0);
+		tiny.set_precision(128);
+		tiny.setexponent(-200);
+		E lead = tiny * 2 / sqrt(efloat_detail::pi<4>(256));
+		lead.set_precision(128);
+		check(erf(tiny) == lead && erf(-tiny) == -lead && erfc(tiny) == E(1.0), "erf(2^-200) = 2^-199 / sqrt(pi)");
+
+		// erfc(x) ~ exp(-x^2) / (x sqrt(pi)) (1 - 1 / (2 x^2)) far past double, and 0 past exp's range
+		E big(1000.5);
+		big.set_precision(128);
+		const E lead_big = exp(-(big * big)) / (big * sqrt(efloat_detail::pi<4>(128))) * (1 - 1 / (2 * big * big) + 3 / (4 * big * big * big * big));
+		const E ratio = erfc(big) / lead_big - 1;
+		check(!erfc(big).iszero() && (ratio.iszero() || ratio.scale() < -55), "erfc(1000.5) ~ 2^-1444231");
+		E huge(1.0);
+		huge.setexponent(32);
+		clear_efloat_exceptions();
+		E z = erfc(huge);
+		check(z.iszero() && z.sign() == 1 && has_efloat_exception(ExceptionFlag::Underflow), "erfc(2^32) = +0, underflow");
+		return failures;
 	}
 
 	// special values, poles and their exception flags
@@ -406,6 +539,9 @@ int main() try {
 
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyEfloatErrorAndGamma(reportTestCases), "efloat", "error_and_gamma foundational");
+	nrOfFailedTestCases += ReportTestResult(VerifyErfSpecialValues(reportTestCases), "efloat", "erf special values");
+	nrOfFailedTestCases += ReportTestResult(VerifyErfRounding<4>(reportTestCases, 128, 4.0, 120), "efloat<4>", "erf, erfc for |x| < 4");
+	nrOfFailedTestCases += ReportTestResult(VerifyErfRounding<4>(reportTestCases, 128, 16.0, 40), "efloat<4>", "erf, erfc for |x| < 16");
 	nrOfFailedTestCases += ReportTestResult(VerifyGammaSpecialValues(reportTestCases), "efloat", "gamma special values");
 	nrOfFailedTestCases += ReportTestResult(VerifyGammaFactorials<4>(reportTestCases, 128, 120), "efloat<4>", "gamma at the integers");
 	nrOfFailedTestCases += ReportTestResult(VerifyGammaHalfIntegers<4>(reportTestCases, 128, 40), "efloat<4>", "gamma at the half-integers");
@@ -416,6 +552,7 @@ int main() try {
 #	endif
 
 #	if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyErfRounding<16>(reportTestCases, 512, 32.0, 40), "efloat<16>", "erf, erfc for |x| < 32");
 	nrOfFailedTestCases += ReportTestResult(VerifyGammaFactorials<16>(reportTestCases, 512, 400), "efloat<16>", "gamma at the integers");
 	nrOfFailedTestCases += ReportTestResult(VerifyGammaHalfIntegers<16>(reportTestCases, 512, 100), "efloat<16>", "gamma at the half-integers");
 	nrOfFailedTestCases += ReportTestResult(VerifyGammaNearZeros<16>(reportTestCases, 512), "efloat<16>", "lgamma near 1 and 2");
