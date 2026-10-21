@@ -13,15 +13,15 @@ class numeric_limits<sw::universal::valid<nbits, es, bt>> {
 
   public:
 	static constexpr bool               is_specialized = true;
-	static constexpr Valid              min() noexcept { return Valid(Posit(sw::universal::SpecificValue::minpos)); }
-	static constexpr Valid              max() noexcept { return Valid(Posit(sw::universal::SpecificValue::maxpos)); }
-	static constexpr Valid              lowest() noexcept { return Valid(Posit(sw::universal::SpecificValue::maxneg)); }
-	static constexpr Valid              epsilon() noexcept { return Valid(std::numeric_limits<Posit>::epsilon()); }
-	static constexpr Valid              round_error() noexcept { return Valid(Posit(0.5)); }
-	static constexpr Valid              denorm_min() noexcept { return min(); }
-	static constexpr Valid              infinity() noexcept { return max(); }
-	static constexpr Valid              quiet_NaN() noexcept { return Valid(Posit(sw::universal::SpecificValue::nar)); }
-	static constexpr Valid              signaling_NaN() noexcept { return quiet_NaN(); }
+	static Valid                        min() noexcept { return Valid(Posit(sw::universal::SpecificValue::minpos)); }
+	static Valid                        max() noexcept { return Valid(Posit(sw::universal::SpecificValue::maxpos)); }
+	static Valid                        lowest() noexcept { return Valid(Posit(sw::universal::SpecificValue::maxneg)); }
+	static Valid                        epsilon() noexcept { return Valid(std::numeric_limits<Posit>::epsilon()); }
+	static Valid                        round_error() noexcept { return Valid(Posit(0.5)); }
+	static Valid                        denorm_min() noexcept { return min(); }
+	static Valid                        infinity() noexcept { return max(); }
+	static Valid                        quiet_NaN() noexcept { return Valid(Posit(sw::universal::SpecificValue::nar)); }
+	static Valid                        signaling_NaN() noexcept { return quiet_NaN(); }
 	static constexpr int                digits            = std::numeric_limits<Posit>::digits;
 	static constexpr int                digits10          = sw::universal::decimal_digits10(digits);
 	static constexpr int                max_digits10      = sw::universal::decimal_max_digits10(digits);

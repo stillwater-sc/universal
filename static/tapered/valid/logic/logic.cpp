@@ -19,7 +19,7 @@ void check(bool condition, const char* message) {
 int main() {
 	using sw::universal::posit;
 	using sw::universal::valid;
-	using Posit = posit<8, 1>;
+	using Posit = posit<7, 1>;
 	using Valid = valid<8, 1>;
 
 	const Valid a(Posit(1), Posit(2));

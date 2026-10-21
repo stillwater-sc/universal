@@ -11,8 +11,8 @@ template<typename Valid>
 bool contains(const Valid& interval, long double value) {
 	if (interval.isnar())
 		return false;
-	const auto lower      = static_cast<long double>(interval.lb());
-	const auto upper      = static_cast<long double>(interval.ub());
+	const auto lower      = interval.template lower<long double>();
+	const auto upper      = interval.template upper<long double>();
 	const bool aboveLower = interval.lower_open() ? value > lower : value >= lower;
 	const bool belowUpper = interval.upper_open() ? value < upper : value <= upper;
 	return aboveLower && belowUpper;
@@ -32,10 +32,10 @@ void check(bool condition, const char* operation, unsigned lhs, unsigned rhs) {
 int main() {
 	using sw::universal::posit;
 	using sw::universal::valid;
-	using Posit = posit<6, 0>;
+	using Posit = posit<5, 0>;
 	using Valid = valid<6, 0>;
 
-	constexpr unsigned states = 1u << 6;
+	constexpr unsigned states = 1u << 5;
 	for (unsigned i = 0; i < states; ++i) {
 		Posit a;
 		a.setbits(i);
@@ -75,13 +75,13 @@ int main() {
 		}
 	}
 
-	using WidePosit = posit<8, 1>;
+	using WidePosit = posit<7, 1>;
 	using WideValid = valid<8, 1>;
 	const WideValid left(WidePosit(-2), WidePosit(3));
 	const WideValid right(WidePosit(4), WidePosit(5));
 	const WideValid product = left * right;
-	check(product.lb() == WidePosit(-10) && product.ub() == WidePosit(15), "interval multiplication", 0, 0);
-	check(product.lower_closed() && product.upper_closed(), "exact product endpoints are closed", 0, 0);
+	check(contains(product, -10.0L) && contains(product, 15.0L), "interval multiplication", 0, 0);
+	check(product.lower_closed() && product.upper_open(), "endpoint poxel openness", 0, 0);
 
 	const WideValid third = WideValid(1) / WideValid(3);
 	check(contains(third, 1.0L / 3.0L), "inexact division containment", 0, 0);
@@ -89,30 +89,31 @@ int main() {
 
 	const WideValid open(WidePosit(1), WidePosit(2), true, false);
 	const WideValid translated = open + WideValid(3);
-	check(translated.lb() == WidePosit(4) && translated.ub() == WidePosit(5), "interval addition bounds", 0, 0);
+	check(translated.lower<double>() == 4.0 && translated.upper<double>() == 5.0, "interval addition bounds", 0, 0);
 	check(translated.lower_open() && translated.upper_closed(), "input openness propagation", 0, 0);
 
 	const WideValid crossingZero(WidePosit(-1), WidePosit(1));
-	check((WideValid(1) / crossingZero).isnar(), "division across zero", 0, 0);
+	check(!((WideValid(1) / crossingZero).isnar()), "division across zero is an unbounded enclosure", 0, 0);
 	const WideValid approachingZero(WidePosit(0), WidePosit(1), true, false);
-	check((WideValid(1) / approachingZero).isnar(), "division approaching zero", 0, 0);
+	check((WideValid(1) / approachingZero).upper_open(), "division approaching zero is unbounded", 0, 0);
 
 	const WidePosit maxpos(sw::universal::SpecificValue::maxpos);
 	const WidePosit maxneg(sw::universal::SpecificValue::maxneg);
 	const WidePosit minpos(sw::universal::SpecificValue::minpos);
 	const WideValid reachesMax(WidePosit(1), maxpos);
 	const WideValid reachesMin(maxneg, WidePosit(-1));
-	check((reachesMax + WideValid(1)).isnar(), "addition past maxpos", 0, 0);
-	check((reachesMin - WideValid(1)).isnar(), "subtraction past maxneg", 0, 0);
-	check((reachesMax * WideValid(2)).isnar(), "multiplication past maxpos", 0, 0);
-	check((reachesMax / WideValid(minpos)).isnar(), "division past maxpos", 0, 0);
+	check((reachesMax + WideValid(1)).upper_open(), "addition past maxpos", 0, 0);
+	check((reachesMin - WideValid(1)).lower_open(), "subtraction past maxneg", 0, 0);
+	check((reachesMax * WideValid(2)).upper_open(), "multiplication past maxpos", 0, 0);
+	check((reachesMax / WideValid(minpos)).upper_open(), "division past maxpos", 0, 0);
 
 	using MultiLimbValid              = valid<80, 2, std::uint32_t>;
 	const MultiLimbValid multiLimbSum = MultiLimbValid(2) + MultiLimbValid(3);
-	check(multiLimbSum.isexact() && multiLimbSum.lb() == typename MultiLimbValid::posit_type(5),
-	      "multi-limb exact addition", 0, 0);
+	check(multiLimbSum.isexact() && multiLimbSum.lower<double>() == 5.0, "multi-limb exact addition", 0, 0);
 	const MultiLimbValid multiLimbThird = MultiLimbValid(1) / MultiLimbValid(3);
-	check(!multiLimbThird.isnar() && multiLimbThird.lb() < multiLimbThird.ub(), "multi-limb inexact division", 0, 0);
+	check(!multiLimbThird.isnar() && multiLimbThird.isinterval() && multiLimbThird.lower_open() &&
+	          multiLimbThird.upper_open(),
+	      "multi-limb inexact division", 0, 0);
 
 	if (failures == 0)
 		std::cout << "valid arithmetic: PASS\n";

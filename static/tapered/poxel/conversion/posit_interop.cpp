@@ -91,6 +91,31 @@ int VerifySampled(unsigned samples, bool report) {
 	return fails;
 }
 
+int VerifyWide(bool report) {
+	using X = sw::universal::poxel<80, 2, std::uint32_t>;
+	using P = sw::universal::posit<79, 2, std::uint8_t>;
+	using sw::universal::SpecificValue;
+	int fails = 0;
+	auto check = [&](bool ok, const char* what) {
+		if (!ok) {
+			++fails;
+			if (report) std::cerr << "FAIL poxel<80,2> " << what << '\n';
+		}
+	};
+	for (const P& p : { P(0), P(1), P(-1), P(3), P(SpecificValue::minpos),
+	                    P(SpecificValue::maxpos), P(SpecificValue::nar) }) {
+		const X exact(p);
+		check(exact.isnar() == p.isnar(), "NaR conversion");
+		if (p.isnar()) continue;
+		check(exact.isexact(), "posit becomes exact tile");
+		check(static_cast<P>(exact) == p, "exact round trip with different block types");
+		X open(exact);
+		open.setubit();
+		check(static_cast<P>(open) == p, "open tile converts to its lower posit");
+	}
+	return fails;
+}
+
 }  // anonymous namespace
 
 #define MANUAL_TESTING 0
@@ -126,6 +151,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySampled<33, 2, std::uint64_t>(20000, reportTestCases), "poxel33", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<12, 3>(reportTestCases), "poxel<12,3>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<17, 2>(reportTestCases), "poxel<17,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWide(reportTestCases), "poxel<80,2>", test_tag);
 #endif
 #if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifySampled<33, 2, std::uint64_t>(1000000, reportTestCases), "poxel33", test_tag);
