@@ -153,8 +153,10 @@ namespace sw { namespace universal {
 		else if (is(f, "fmod") || is(f, "remainder")) {
 			// halfway cases, x = (k + 1/2) y, or quotients wider than the precision, up to 2^(2^40)
 			if (special && rng() % 3 == 0) {
-				// a 24-bit y, so that (k + 1/2) y, at most 35 bits, is exact
-				b = make<nlimbs>(static_cast<double>((rng() & 0xFFFFFFu) | 1u), P);
+				// a 16- or 24-bit y, so that (k + 1/2) y, with k + 1/2 = (2k + 1) / 2 of at most 11 bits,
+				// fits P bits and is exact
+				const uint64_t mask = (P >= 64) ? 0xFFFFFFu : 0xFFFFu;
+				b = make<nlimbs>(static_cast<double>((rng() & mask) | 1u), P);
 				b.setexponent(b.scale() + static_cast<int64_t>(rng() % 41) - 20);
 				a = b * make<nlimbs>(static_cast<double>(rng() % 1000) + 0.5, P);
 			}
