@@ -15,16 +15,17 @@ the history and the measurements, which the code does not.
 - Accuracy against MPFR: `benchmark/accuracy/efloat/mpfr_check.cpp`
 - Speed against MPFR: `benchmark/performance/arithmetic/efloat/mpfr/mpfr_gap.cpp`
 - Speed against mpmath and gmpy2: `benchmark/performance/arithmetic/efloat/mpmath_gap.{cpp,py}`
-- Tracking: Epic #1763 (beat MPFR at 128-8192 bits), #1782 (this page), #1783 (the functions
-  not yet correctly rounded)
+- Tracking: Epic #1763 (beat MPFR at 128-8192 bits), #1782 (this page), #1783 (cbrt, hypot,
+  fma, fmod and remainder made correctly rounded)
 
 ## 1. The contract
 
-Every function below, except the five in section 9, is designed to be **correctly rounded**:
+Every function below is designed to be **correctly rounded**:
 the result is the exact mathematical value rounded once to the result's precision, in whichever
 of the four IEEE rounding modes `efloat_rounding_mode` selects (nearest-even, toward zero,
-toward +inf, toward -inf). What backs that is not a proof. The arithmetic, `sqrt` and the
-conversions round exact results, so they are correct by construction. The other functions
+toward +inf, toward -inf). What backs that is not a proof. The arithmetic, `sqrt`, `hypot`,
+`fma` and the conversions round exact results, and `fmod` and `remainder` return them, so they
+are correct by construction. The other functions
 rest on two things that are measured, not proven: the error bound of each unrounded evaluation
 (section 2) and a retry limit that has not been shown to suffice (section 2, item 3). What
 is established is agreement with MPFR on every case checked, 32-8192 bits, in all four modes
@@ -151,6 +152,10 @@ round the exact result once into the destination (`assign_rounded`), with no all
 | `pow(x, n)` | binary powering with `bit_width(n)` extra bits | 8 | pow.hpp |
 | `tgamma`, `lgamma` | Stirling series after shifting `x` up past `0.3 W`; reflection below 0; exact `(n-1)!` | 22 | error_and_gamma.hpp |
 | `erf`, `erfc` | positive-term series `2/sqrt(pi) e^{-x^2} sum t_n`; asymptotic series for large `x`; `1 - erf` with the cancelled bits added | 0 (32 guard bits) | error_and_gamma.hpp |
+| `cbrt` | Newton from a double seed, precision doubling each step; exact cubes found and rounded once | 8 | sqrt.hpp |
+| `hypot` | exact squares, exact sum (or a proxy that rounds alike), one exact root | exact | hypot.hpp |
+| `fma` | exact product, exact sum (or a proxy), one rounding | exact | numerics.hpp |
+| `fmod`, `remainder` | exact integer remainder, `2^d mod y` by binary powering | exact | fractional.hpp |
 
 "Error bits" is the function's `*_error_bits`: its unrounded value lies within
 `2^(scale - target - 64 + error_bits)` of the exact result.
@@ -255,7 +260,44 @@ rounded products.
 - Before: `std::erf(double(x))`; `erfc` was 0 from `x = 27.2` on, and all four modes returned
   the same value.
 
-### 4.8 Constants
+### 4.8 cbrt, hypot, fma, fmod, remainder (#1783)
+
+Until #1783 these five were computed at the result's precision but rounded more than once, and
+`mpfr_check` found 889 to 2,063 wrong results each in 3,234 cases.
+
+- **Exact sums.** `hypot` and `fma` add two exact values: `x^2 + y^2`, or the exact product
+  `x y` (`exact_product`: `a + b` bits for operands of `a` and `b`) plus `z`. `exact_sum` in
+  `exponent.hpp` adds them at the width that holds the sum exactly, except when the smaller
+  lies wholly below the last bit `2^L` of the larger carried at `pad` bits. Then it adds a
+  proxy of the same sign, `2^(L-2)`, instead. The true and the proxied sums lie strictly
+  between the larger and its neighbour `2^(L-1)` away, so they round alike to any precision up
+  to `pad - 2` bits, and their square roots alike up to `(pad - 4) / 2`. That keeps the width
+  bounded whatever the exponent gap. `fma` passes `pad = P + 2` and rounds the sum once;
+  `hypot` passes `2P + 4` and takes the exact root (`sqrt_to`, which rounds once).
+- **hypot** scales both arguments by `2^-k`, `k = scale(max)`, so the squares stay inside the
+  exponent range, and multiplies the root back. When the arguments are more than
+  `max(bits(max), P + 2) + 8` binades apart, the result is `max` plus a positive amount below
+  its last bit, and a proxy sum gives it directly.
+- **cbrt.** `a = m 8^k`, `m` in `[1, 8)`; Newton's iteration `y <- y + (m / y^2 - y) / 3` from
+  `std::cbrt` of `double(m)`, at a precision that doubles with each step to 16 bits past the
+  working precision, then once more there. Measured within `2^-(target + 64 + 12)`, declared
+  `cbrt_error_bits = 8`; the regression test checks that bound directly. Ziv's strategy rounds
+  it. A boundary is a binary fraction, so only an exact root can be one. Before Ziv, the first
+  evaluation is rounded to nearest at `P + 32` bits and cubed: if that gives `a` exactly, the
+  root is exact and rounds once. Before #1783, Newton ran at full precision from a one-bit
+  seed and rounded unchecked: 6-33x MPFR's time and wrong in a quarter of the cases.
+- **fmod** is exact: its result always fits the wider operand precision. With `2^lo` the
+  smaller of the operands' last bits, `X = |x| 2^-lo = mx 2^d` and `Y = |y| 2^-lo` are
+  integers, and `X mod Y = (mx mod Y)(2^d mod Y) mod Y`. `2^d mod Y` takes `log2 d` squarings
+  modulo `Y`, so a quotient of `2^(2^40)` costs about 40 modular squarings, not `2^40`
+  subtraction steps. Each `mod` is an exact division, truncated and corrected by one `Y`.
+- **remainder** takes `|x| mod 2|y|`: whether that is at least `|y|` is the quotient's parity,
+  which breaks the tie when the remainder is exactly `|y| / 2`.
+- Special values as IEEE 754: `fmod(x, inf) = x` (before, NaN), `fma(inf, 0, z)` NaN, zero
+  results signed as `x` for `fmod` and `remainder` and by the rounding mode for `fma`'s exact
+  cancellation.
+
+### 4.9 Constants
 
 The library computes its own constants at the working precision and caches the widest value
 per thread: `ln2 = 2 atanh(1/3)`, `ln10 = 3 ln2 + 2 atanh(1/9)`, `pi` by Machin's formula,
@@ -289,7 +331,9 @@ Four kinds of check, each catching what the others miss.
 
 ## 6. Measured accuracy
 
-`mpfr_check`, full run (scale 1, up to 8192 bits), main at 2076edb7, MPFR 4.2.2:
+`mpfr_check`, full run (scale 1, up to 8192 bits), MPFR 4.2.2, after #1783. On main at 2076edb7,
+before it, the same run found `cbrt` 889 wrong, `hypot` 1656, `fma` 926, `fmod` 1546 and
+`remainder` 2063, and 0 everywhere else.
 
 Per function: 1000 cases at each of 32, 64 and 128 bits, 200 at 512, 30 at 2048 and 4 at
 8192, a quarter in each rounding mode. A case is wrong unless value, sign and precision all
@@ -303,11 +347,11 @@ range.
 | `mul` | 3234 | 0 | |
 | `div` | 3234 | 0 | |
 | `sqrt` | 3234 | 0 | |
-| `cbrt` | 3234 | 889 | not yet correctly rounded (#1783) |
-| `hypot` | 3234 | 1656 | not yet correctly rounded (#1783) |
-| `fma` | 3234 | 926 | not yet correctly rounded (#1783) |
-| `fmod` | 3234 | 1546 | not yet correctly rounded (#1783) |
-| `remainder` | 3234 | 2063 | not yet correctly rounded (#1783) |
+| `cbrt` | 3234 | 0 | |
+| `hypot` | 3234 | 0 | |
+| `fma` | 3234 | 0 | |
+| `fmod` | 3234 | 0 | |
+| `remainder` | 3234 | 0 | |
 | `exp` | 3234 | 0 | |
 | `exp2` | 3234 | 0 | |
 | `exp10` | 3234 | 0 | |
@@ -362,9 +406,9 @@ efloat / MPFR in microseconds, then the ratio.
 | `log(x)` | 1.226 / 1.122 | 1.1x | 3.809 / 3.250 | 1.2x | 34.84 / 14.79 | 2.4x | 280.2 / 123.8 | 2.3x |
 | `sin(a)` | 2.011 / 0.735 | 2.7x | 4.689 / 2.126 | 2.2x | 28.25 / 14.18 | 2.0x | 297.3 / 193.5 | 1.5x |
 | `sqrt(b)` | 0.128 / 0.059 | 2.2x | 0.265 / 0.135 | 2.0x | 0.983 / 0.435 | 2.3x | 6.363 / 3.081 | 2.1x |
-| `fma(a,b,a)` | 0.045 / 0.029 | 1.5x | 0.087 / 0.050 | 1.8x | 0.551 / 0.327 | 1.7x | 4.902 / 3.146 | 1.6x |
-| `hypot(a,b)` | 0.388 / 0.170 | 2.3x | 0.719 / 0.327 | 2.2x | 3.081 / 1.012 | 3.0x | 24.09 / 8.032 | 3.0x |
-| `cbrt(b)` | 1.720 / 0.287 | 6.0x | 4.012 / 0.468 | 8.6x | 25.03 / 1.303 | 19.2x | 248.6 / 7.500 | 33.1x |
+| `fma(a,b,a)` | 0.119 / 0.029 | 4.1x | 0.165 / 0.049 | 3.4x | 0.654 / 0.328 | 2.0x | 5.292 / 3.150 | 1.7x |
+| `hypot(a,b)` | 0.361 / 0.170 | 2.1x | 0.667 / 0.321 | 2.1x | 2.566 / 1.018 | 2.5x | 17.61 / 8.018 | 2.2x |
+| `cbrt(b)` | 0.734 / 0.294 | 2.5x | 1.200 / 0.452 | 2.7x | 3.984 / 1.305 | 3.1x | 24.59 / 7.499 | 3.3x |
 | `exp2(a)` | 2.124 / 1.024 | 2.1x | 5.495 / 2.696 | 2.0x | 39.80 / 17.20 | 2.3x | 575.7 / 190.9 | 3.0x |
 | `exp10(a)` | 2.230 / 2.313 | 1.0x | 5.738 / 6.076 | 0.9x | 41.66 / 31.30 | 1.3x | 593.9 / 313.4 | 1.9x |
 | `expm1(a)` | 1.935 / 0.815 | 2.4x | 5.311 / 2.398 | 2.2x | 38.51 / 15.58 | 2.5x | 569.0 / 178.3 | 3.2x |
@@ -394,10 +438,14 @@ Read the ratio column as the work left on Epic #1763.
 
 - **Ahead or level with MPFR:** `log10` (0.6x at 128 and 512 bits), `exp10` up to 512 bits,
   `erf` and `erfc` at 2048 and 8192 bits, the inverse trigonometric functions at 512 bits.
+- **cbrt, hypot, fma** (remeasured after #1783): `cbrt` 2.5-3.3x (was 6-33x), `hypot`
+  2.1-2.5x, `fma` 1.7-4.1x. `fma` is slower than before at small precisions (0.12 us at 128 bits
+  against 0.045): it now forms the exact product and sum, where it used to round twice and was
+  wrong in 29% of the cases.
 - **The primitives set the floor:** `a*b`, `b/a` and `sqrt` run 1.5-2.3x MPFR, and every
   function built on them inherits that. exp-based functions are 2-3x, trig 1.5-3x, log-based
   1.1-2.4x.
-- **Largest gaps:** `cbrt` (6-33x: Newton in efloat operations, #1783), `lgamma(1.414...)` at
+- **Largest gaps:** `lgamma(1.414...)` at
   8192 bits (18x; on #1779's random arguments it was 2.1-7.5x, and the cost #1779 identified
   is the second, wider pass that cancellation near the zeros at 1 and 2 forces; this argument
   has not been profiled), `tgamma` (4-6x), and the inverse trig family at 8192 bits (3x).
@@ -430,17 +478,14 @@ precision (filling `ln2`, `pi`, the log table, the Bernoulli numbers) is real bu
 | #1778 | 2026-10-21 | correctly rounded conversion to float/double below the smallest normal |
 | #1779 | 2026-10-21 | tgamma, lgamma at any precision (were through `double`) |
 | #1781 | 2026-10-21 | erf, erfc at any precision (were through `double`) |
+| #1783 | 2026-10-21 | cbrt, hypot, fma correctly rounded; fmod, remainder exact |
 
 ## 9. Open work
 
-**Not correctly rounded yet** (#1783; `mpfr_check` lists them as `known`):
-
-| function | now | fix |
-|---|---|---|
-| `cbrt` | Newton with 64 guard bits, rounded unchecked | exact integer cube root with remainder, as `sqrt` |
-| `hypot` | `sqrt` of a rounded `x^2 + y^2` | exact squares and sum, one correctly rounded `sqrt` |
-| `fma` | `x * y + z`, product rounded first | exact product, one rounding of the sum |
-| `fmod`, `remainder` | `x - trunc(x/y) y` with a rounded quotient | exact, by long division of the significands |
+**Library gaps.** efloat has no `std::numeric_limits` specialization (the include in
+`efloat.hpp` is commented out), so `std::numeric_limits<efloat<N>>::infinity()` is not an
+infinity; set one with `setinf()`. An exact integer cube root with remainder, like `sqrtrem`,
+would make `cbrt` cheaper than Newton under Ziv.
 
 **Speed** (Epic #1763): short (high-half) products and MPFR's can-round on them; Toom-3; short
 division (`divhigh`); fixed-point series kernels; a cheap first Ziv try at

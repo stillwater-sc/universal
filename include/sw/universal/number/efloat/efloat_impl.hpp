@@ -590,6 +590,8 @@ public:
 		return v;
 	}
 	std::vector<uint32_t> bits() const { return _limb; }
+	// the same limbs, most significant first, without the copy bits() makes (#1783)
+	const std::vector<uint32_t>& limb_vector() const noexcept { return _limb; }
 
 	constexpr void normalize() {
 		if (_state != FloatingPointState::Normal) {

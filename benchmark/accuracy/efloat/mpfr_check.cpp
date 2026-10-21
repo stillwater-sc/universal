@@ -56,9 +56,9 @@ namespace sw { namespace universal {
 
 	const Function functions[] = {
 		{ "add", 2, false, nullptr },   { "sub", 2, false, nullptr },   { "mul", 2, false, nullptr },
-		{ "div", 2, false, nullptr },   { "sqrt", 1, false, nullptr },  { "cbrt", 1, false, "#1783" },
-		{ "hypot", 2, false, "#1783" }, { "fma", 3, false, "#1783" },   { "fmod", 2, false, "#1783" },
-		{ "remainder", 2, false, "#1783" },
+		{ "div", 2, false, nullptr },   { "sqrt", 1, false, nullptr },  { "cbrt", 1, false, nullptr },
+		{ "hypot", 2, false, nullptr }, { "fma", 3, false, nullptr },   { "fmod", 2, false, nullptr },
+		{ "remainder", 2, false, nullptr },
 		{ "exp", 1, false, nullptr },   { "exp2", 1, false, nullptr },  { "exp10", 1, false, nullptr },
 		{ "expm1", 1, false, nullptr }, { "log", 1, false, nullptr },   { "log2", 1, false, nullptr },
 		{ "log10", 1, false, nullptr }, { "log1p", 1, false, nullptr },
@@ -141,14 +141,19 @@ namespace sw { namespace universal {
 			if (special) { Real s = make<nlimbs>(static_cast<double>(1 + rng() % 100000), P); a = s * s; if (is(f, "cbrt")) a = a * s; if (rng() & 1) a = a + random_arg<nlimbs>(P, 3, 0) * a; }
 		}
 		else if (is(f, "hypot")) {
-			if (special) { a = make<nlimbs>(static_cast<double>(3 * (1 + rng() % 100)), P); b = a * make<nlimbs>(4.0 / 3.0, P); }
+			// Pythagorean triples, or y around the gap past which hypot rounds as |x| nudged up
+			if (special && (rng() & 1)) { a = make<nlimbs>(static_cast<double>(3 * (1 + rng() % 100)), P); b = a * make<nlimbs>(4.0 / 3.0, P); }
+			else if (special) b.setexponent(a.scale() - static_cast<int64_t>(P / 2 + rng() % (2 * P + 32)));
 		}
 		else if (is(f, "fma")) {
-			// c cancels most of a b
-			if (special) { c = -(a * b); c = c + random_arg<nlimbs>(P, 3, 0) * c; }
+			// c cancels most of a b, or lies around the gap past which it only nudges a b
+			if (special && (rng() & 1)) { c = -(a * b); c = c + random_arg<nlimbs>(P, 3, 0) * c; }
+			else if (special) c.setexponent(a.scale() + b.scale() - static_cast<int64_t>(P + rng() % (3 * P)));
 		}
 		else if (is(f, "fmod") || is(f, "remainder")) {
-			if (special) { a.setexponent(a.scale() + static_cast<int64_t>(rng() % (2 * P))); }
+			// halfway cases, x = (k + 1/2) y, or quotients wider than the precision, up to 2^(2^40)
+			if (special && rng() % 3 == 0) { a = b * make<nlimbs>(static_cast<double>(rng() % 1000) + 0.5, P); }
+			else if (special) a.setexponent(a.scale() + static_cast<int64_t>((rng() & 1) ? rng() % (2 * P) : rng() % (1ull << (rng() % 41))));
 		}
 		else if (is(f, "exp2") || is(f, "exp10")) {
 			if (special) a = make<nlimbs>(static_cast<double>(static_cast<int>(rng() % 80) - 40), P);

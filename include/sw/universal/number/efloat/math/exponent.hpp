@@ -58,7 +58,7 @@ namespace efloat_detail {
 	template<unsigned nlimbs>
 	inline bool can_round(const efloat<nlimbs>& y, unsigned precision, unsigned correct) {
 		if (correct < precision + 4) return false;
-		const std::vector<uint32_t> limbs = y.bits();   // most significant first, leading bit at 31
+		const std::vector<uint32_t>& limbs = y.limb_vector();   // most significant first, leading bit at 31
 		auto bit = [&limbs](unsigned p) -> uint32_t {
 			const std::size_t i = p / 32;
 			return (i < limbs.size()) ? (limbs[i] >> (31 - p % 32)) & 1u : 0u;
@@ -111,7 +111,7 @@ namespace efloat_detail {
 	// The number of significant bits of a finite x != 0: from its leading bit to its last 1 bit
 	template<unsigned nlimbs>
 	inline unsigned significant_bits(const efloat<nlimbs>& x) {
-		const std::vector<uint32_t> limbs = x.bits();   // most significant first, leading bit at 31
+		const std::vector<uint32_t>& limbs = x.limb_vector();   // most significant first, leading bit at 31
 		for (std::size_t i = limbs.size(); i-- > 0; ) {
 			if (limbs[i] != 0u) return static_cast<unsigned>(32 * i + 32 - static_cast<std::size_t>(std::countr_zero(limbs[i])));
 		}
@@ -128,7 +128,7 @@ namespace efloat_detail {
 	template<unsigned nlimbs>
 	inline int64_t integer_value(const efloat<nlimbs>& x) {
 		if (x.iszero()) return 0;
-		const std::vector<uint32_t> limbs = x.bits();   // most significant first, leading bit at 31
+		const std::vector<uint32_t>& limbs = x.limb_vector();   // most significant first, leading bit at 31
 		uint64_t v = 0;
 		for (int64_t p = 0; p <= x.scale(); ++p) {
 			const std::size_t i = static_cast<std::size_t>(p / 32);
@@ -154,6 +154,60 @@ namespace efloat_detail {
 			base *= base;
 		}
 		return power;
+	}
+
+	// the weight of a finite x != 0's last 1 bit: x is an integer multiple of 2^lowest_bit(x)
+	template<unsigned nlimbs>
+	inline int64_t lowest_bit(const efloat<nlimbs>& x) {
+		return x.scale() - static_cast<int64_t>(significant_bits(x)) + 1;
+	}
+
+	// x carried at `bits` bits or wider, unchanged: widening only appends zeros
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> widened(const efloat<nlimbs>& x, unsigned bits) {
+		efloat<nlimbs> w(x);
+		w.set_precision(std::max(bits, x.get_precision()));
+		return w;
+	}
+
+	// x y exactly, for finite x and y (#1783): the product of a and b significant bits has a + b
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> exact_product(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
+		if (x.iszero() || y.iszero()) return x * y;
+		const unsigned bits = significant_bits(x) + significant_bits(y);
+		return widened(x, bits) * widened(y, bits);
+	}
+
+	// a + b for finite a and b, exactly, or rounding as a + b does (#1783). When the smaller one
+	// lies wholly below the last bit 2^L of the larger carried at `pad` bits, the sum is the larger
+	// plus a proxy of the smaller's sign and magnitude 2^(L - 2). Both a + b and the proxied sum
+	// then lie strictly between the larger and its neighbour 2^(L - 1) away, so they round alike to
+	// any precision whose rounding boundaries are multiples of 2^(L - 1): every precision up to
+	// pad - 2 bits, and, for a square root, every precision up to (pad - 4) / 2.
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> exact_sum(const efloat<nlimbs>& a, const efloat<nlimbs>& b, unsigned pad) {
+		if (a.iszero() || b.iszero()) {
+			const unsigned bits = std::max(a.get_precision(), b.get_precision());
+			return widened(a, bits) + widened(b, bits);   // a zero adds exactly, with IEEE's zero signs
+		}
+		const bool a_larger = a.scale() >= b.scale();
+		const efloat<nlimbs>& big   = a_larger ? a : b;
+		const efloat<nlimbs>& small = a_larger ? b : a;
+		const int64_t big_bits = std::max<int64_t>(significant_bits(big), pad);
+		const int64_t last = big.scale() - big_bits + 1;   // L
+		if (small.scale() < last - 2) {
+			// |small| < 2^(scale(small) + 1) <= 2^(L - 2): replaced by the proxy
+			const unsigned bits = static_cast<unsigned>(big.scale() - (last - 2) + 2);
+			efloat<nlimbs> proxy(1);
+			proxy.set_precision(bits);
+			proxy.setexponent(last - 2);
+			if (small.sign() == -1) proxy = -proxy;
+			return widened(big, bits) + proxy;
+		}
+		// the sum is a multiple of 2^lo below 2^(scale(big) + 2)
+		const int64_t lo = std::min(lowest_bit(a), lowest_bit(b));
+		const unsigned bits = static_cast<unsigned>(big.scale() + 2 - lo);
+		return widened(a, bits) + widened(b, bits);
 	}
 
 	// exp's range: exp x = 2^k exp(r), k = round(x / ln 2), for |k| < 2^62, where the result's

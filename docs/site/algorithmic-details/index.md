@@ -24,8 +24,8 @@ the trade-off space rather than the API-level usage.
   those changes were verified bit-identical, and what they gained.
 - [efloat: correctly rounded arithmetic and math library](../algorithmic-details/efloat-mathlib/)
   -- how `efloat` rounds its arithmetic and math library correctly at any
-  precision (Ziv's strategy over stated error bounds; `cbrt`, `hypot`, `fma`,
-  `fmod` and `remainder` not yet), the algorithm behind each function, the
+  precision (Ziv's strategy over stated error bounds), the algorithm behind
+  each function, the
   alternatives tried and dropped, how it is verified against MPFR, measured
   accuracy and speed, and the open work.
 
