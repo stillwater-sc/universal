@@ -365,9 +365,9 @@ constexpr efloat<nlimbs> exp2(const efloat<nlimbs>& x) {
 	                                        precision, efloat_detail::exp_derived_error_bits, x.carries_precision());
 }
 
-// exp10(x): exponential base 10, correctly rounded (#1763): exact at an integer x >= 0, and by
-// Ziv's strategy elsewhere, where 10^x is irrational or, at a negative integer, not a binary
-// fraction
+// exp10(x): exponential base 10, correctly rounded (#1763): exact at an integer x >= 0 whose power
+// may lie on a rounding boundary, and by Ziv's strategy elsewhere, where 10^x is irrational, wider
+// than a boundary or, at a negative integer, not a binary fraction
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> exp10(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
@@ -382,7 +382,9 @@ constexpr efloat<nlimbs> exp10(const efloat<nlimbs>& x) {
 	}
 
 	const unsigned precision = efloat_detail::result_precision(x);
-	if (x.sign() == 1 && efloat_detail::is_integer(x)) {
+	// 10^n = 5^n 2^n lies on a rounding boundary only while 5^n has at most P + 1 significant
+	// bits; a wider one is left to Ziv's strategy
+	if (x.sign() == 1 && efloat_detail::is_integer(x) && double(x) * 2.321928094887362 <= static_cast<double>(precision) + 1.0) {
 		efloat<nlimbs> power = efloat_detail::exact_power(efloat<nlimbs>(10.0), static_cast<uint64_t>(double(x)));
 		efloat_detail::round_result(power, precision, x.carries_precision());
 		return power;

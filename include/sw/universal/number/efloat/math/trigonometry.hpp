@@ -566,15 +566,15 @@ constexpr efloat<nlimbs> atan2(const efloat<nlimbs>& y, const efloat<nlimbs>& x)
 	if (y.isinf() && x.isinf()) {
 		return efloat_detail::round_pi<nlimbs>(x_neg ? 3u : 1u, -2, y_neg, precision, carries);
 	}
-	if (y.isinf() || x.iszero()) {
-		if (y.iszero()) return efloat<nlimbs>(0.0);    // atan2(0,0): convention 0
-		return efloat_detail::round_pi<nlimbs>(1, -1, y_neg, precision, carries);   // +/- pi/2
-	}
-	if (y.iszero() || x.isinf()) {
+	// a zero y, or a finite y against an infinite x: +/- pi for x < 0, -0 included, else +/- 0
+	if (y.iszero() || (x.isinf() && !y.isinf())) {
 		if (x_neg) return efloat_detail::round_pi<nlimbs>(1, 0, y_neg, precision, carries);   // +/- pi
 		efloat<nlimbs> zero(0.0);                       // +/- 0
 		zero.setsign(y_neg);
 		return zero;
+	}
+	if (y.isinf() || x.iszero()) {
+		return efloat_detail::round_pi<nlimbs>(1, -1, y_neg, precision, carries);   // +/- pi/2
 	}
 
 	// atan(y/x) = q - q^3/3 + ... for x > 0 and a tiny q = y/x: when q is exact, it rounds as q

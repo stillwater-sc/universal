@@ -543,7 +543,7 @@ int VerifyRemainingFunctionsNearRoundingBoundaries(bool reportTestCases, unsigne
 
 // The exact values the remaining functions take (#1763), in all four modes: 2^k, 10^k, log2(2^k),
 // log10(10^k), x^n and x^(m/2) of perfect squares, which may lie on rounding boundaries, and the
-// zeros acosh(1) and acos(1), which are +0 in every mode. Each is compared with the value formed
+// zeros acosh(1) and acos(1), which are +0 in every mode, and atan2 of signed zeros. Each is compared with the value formed
 // exactly and rounded once. Then the shortcuts for arguments too small for any working precision.
 template<unsigned nlimbs>
 int VerifyExactValues(bool reportTestCases) {
@@ -597,6 +597,17 @@ int VerifyExactValues(bool reportTestCases) {
 			check("pow(s^2, 3/2)", k, pow(at_P(s * s), at_P(1.5)), rounded(s3), m);
 			check("acosh(1)", k, acosh(at_P(1.0)), at_P(0.0), m);
 			check("acos(1)", k, acos(at_P(1.0)), at_P(0.0), m);
+			efloat_rounding_mode = saved;
+		}
+		{
+			// atan2 of signed zeros, as IEEE-754: +/-0 against +0, +/-pi against -0
+			const R_t pz = at_P(0.0), nz = -pz;
+			R_t pi_wide = efloat_detail::pi<nlimbs>(8 * P);
+			efloat_rounding_mode = modes[m];
+			check("atan2(+0, +0)", 0, atan2(pz, pz), pz, m);
+			check("atan2(-0, +0)", 0, atan2(nz, pz), nz, m);
+			check("atan2(+0, -0)", 0, atan2(pz, nz), rounded(pi_wide), m);
+			check("atan2(-0, -0)", 0, atan2(nz, nz), rounded(-pi_wide), m);
 			efloat_rounding_mode = saved;
 		}
 		// arguments so small that the next term lies below any working precision: atan2(t, 1) =
