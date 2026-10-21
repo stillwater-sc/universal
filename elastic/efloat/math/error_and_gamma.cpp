@@ -214,6 +214,14 @@ namespace {
 		check(erfc(E(0.0)) == E(1.0) && erfc(nzero) == E(1.0), "erfc(+/-0) = 1");
 		check(erfc(pinf).iszero() && erfc(pinf).sign() == 1 && erfc(ninf) == E(2.0), "erfc(+inf) = +0, erfc(-inf) = 2");
 		check(erf(E(std::nan(""))).isnan() && erfc(E(std::nan(""))).isnan(), "erf, erfc of nan");
+		// the exact results carry the argument's precision, as every other result does
+		E z512(0.0), pinf512(pinf), ninf512(ninf);
+		z512.set_precision(512);
+		pinf512.set_precision(512);
+		ninf512.set_precision(512);
+		check(erfc(z512).get_precision() == 512 && erfc(pinf512).get_precision() == 512 && erfc(ninf512).get_precision() == 512 &&
+		      erf(pinf512).get_precision() == 512 && erf(ninf512).get_precision() == 512 && erf(z512).get_precision() == 512,
+		      "erf, erfc special values at the argument's precision");
 
 		// erf(12) = 1 - 1.4e-64 at 128 bits: 1 to nearest, the predecessor of 1 toward 0
 		const RoundingMode saved = efloat_rounding_mode;

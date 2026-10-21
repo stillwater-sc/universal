@@ -182,8 +182,11 @@ template<unsigned nlimbs>
 inline efloat<nlimbs> erf(const efloat<nlimbs>& x) {
 	if (x.isnan() || x.iszero()) return x;   // erf(+/-0) = +/-0
 	const unsigned precision = efloat_detail::result_precision(x);
-	const efloat<nlimbs> one(x.sign() == -1 ? -1.0 : 1.0);
-	if (x.isinf()) return one;
+	efloat<nlimbs> one(x.sign() == -1 ? -1.0 : 1.0);
+	if (x.isinf()) {
+		efloat_detail::round_result(one, precision, x.carries_precision());
+		return one;
+	}
 	// erf x = +/-(1 - erfc |x|), within 2^-(P + 5) of +/-1 and on 0's side of it
 	if (efloat_detail::erfc_negligible(x, precision)) return efloat_detail::round_near(one, -x.sign(), precision, x.carries_precision());
 	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::erf_working(x, target); },
@@ -196,8 +199,12 @@ template<unsigned nlimbs>
 inline efloat<nlimbs> erfc(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
 	const unsigned precision = efloat_detail::result_precision(x);
-	if (x.iszero()) return efloat<nlimbs>(1.0);
-	if (x.isinf()) return efloat<nlimbs>(x.sign() == -1 ? 2.0 : 0.0);
+	if (x.iszero() || x.isinf()) {
+		// erfc(+/-0) = 1, erfc(+inf) = +0, erfc(-inf) = 2, exactly, at the result's precision
+		efloat<nlimbs> result(x.iszero() ? 1.0 : (x.sign() == -1 ? 2.0 : 0.0));
+		efloat_detail::round_result(result, precision, x.carries_precision());
+		return result;
+	}
 	if (x.sign() == -1) {
 		// erfc x = 2 - erfc |x|, within 2^-(P + 5) of 2 and below it
 		if (efloat_detail::erfc_negligible(x, precision)) return efloat_detail::round_near(efloat<nlimbs>(2.0), -1, precision, x.carries_precision());
