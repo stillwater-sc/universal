@@ -5,9 +5,13 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
+#include <algorithm>
+#include <bit>
 #include <cmath>
 #include <vector>
 #include <universal/number/efloat/math/exponent.hpp>
+#include <universal/number/efloat/math/sqrt.hpp>           // sqrt_to
+#include <universal/number/efloat/math/trigonometry.hpp>   // pi
 
 namespace sw { namespace universal {
 
@@ -17,8 +21,13 @@ namespace efloat_detail {
 	inline constexpr unsigned log_table_shift = 9;
 	inline constexpr unsigned log_table_first = 362;   // 362 / 512 < sqrt(1/2)
 	inline constexpr unsigned log_table_last  = 724;   // 724 / 512 > sqrt(2)
-	// Past this working precision the table and series lose to Newton on exp.
-	inline constexpr unsigned log_series_max_bits = 8192;
+	// The AGM replaces the table and series once the working precision passes this many times
+	// max(10, k), for an x within 2^-k of 1: the series gains ~2 max(10, k) bits per term, so its
+	// cost grows as W M(W) / k and the AGM's as log(W) M(W). The constant is measured (#1763).
+	inline constexpr unsigned log_agm_bits_per_series_bit = 144;
+	// log_working(x, W) is within 2^(scale - W + log_error_bits) of log x: measured, the table and
+	// series are within 2^-(W - 3) of it and the AGM, with its own guard bits, 2^-(W + 20).
+	inline constexpr unsigned log_error_bits = 16;
 
 	// log(j / 512) = 2 atanh(u / w), u = j - 512, w = j + 512, at `bits` bits. Every term update
 	// multiplies by u^2 and divides by w^2 and by 2k + 1 -- small integers, one limb each, so each
@@ -62,34 +71,6 @@ namespace efloat_detail {
 		efloat<nlimbs> value(cached[i]);
 		value.set_precision(bits);
 		return value;
-	}
-
-	// log(x) for a finite x > 0 at `working` bits by Newton on exp(y) - x = 0, y <- y + x exp(-y) - 1
-	// (#1712): the seed carries ~53 bits, x = m 2^e with m in [1, 2), y0 = log(double(m)) + e ln 2;
-	// each step doubles the correct bits, so the steps run at doubling precisions, 128, 256, ...,
-	// and only the last at the working precision, stopping once the next correction, ~delta^2 / 2,
-	// is below it.
-	template<unsigned nlimbs>
-	inline efloat<nlimbs> log_newton(const efloat<nlimbs>& x, unsigned working) {
-		efloat<nlimbs> m(x);
-		m.setexponent(0);
-		efloat<nlimbs> y = efloat<nlimbs>(std::log(double(m))) + efloat<nlimbs>(x.scale()) * ln2<nlimbs>(working);
-		const efloat<nlimbs> one(1.0);
-		for (unsigned bits = 128; bits < working; bits *= 2) {
-			efloat<nlimbs> xb(x);
-			xb.set_precision(bits);
-			y.set_precision(bits);
-			y += xb / exp(y) - one;
-		}
-		efloat<nlimbs> xw(x);
-		xw.set_precision(working);
-		y.set_precision(working);
-		for (int i = 0; i < 64; ++i) {
-			const efloat<nlimbs> delta = xw / exp(y) - one;
-			y += delta;
-			if (delta.iszero() || 2 * delta.scale() < y.scale() - static_cast<int64_t>(working)) break;
-		}
-		return y;
 	}
 
 	// log(x) for a finite x > 0 at `working` bits by a table and a series (#1714), the way mpmath
@@ -156,10 +137,87 @@ namespace efloat_detail {
 		return y;
 	}
 
+	// Guard bits the AGM carries past its working precision: its ~log2(W) iterations each round
+	// a product, a root and a mean, and log s ~ W/2 ln 2 is scaled up by pi and m ln 2.
+	inline constexpr unsigned log_agm_guard_bits = 16;
+
+	// floor(log2 |log x|), or up to two less, for a finite x > 0, x != 1: in [1/2, 2), from
+	// d = x - 1, which is exact there, with |d| / 2 < |log x| < 2 |d|; elsewhere |log x| > ln 2 / 2
+	// and a double estimate from m 2^e, m in [1, 2), is good to one in its last place.
+	template<unsigned nlimbs>
+	inline int64_t log_magnitude(const efloat<nlimbs>& x) {
+		const int64_t e = x.scale();
+		if (e == 0 || e == -1) {
+			const efloat<nlimbs> d = x - efloat<nlimbs>(1.0);
+			return d.scale() - 1;
+		}
+		efloat<nlimbs> m(x);
+		m.setexponent(0);
+		const double estimate = std::log(double(m)) + static_cast<double>(e) * 0.6931471805599453;
+		return std::ilogb(estimate) - 1;
+	}
+
+	// log(x) for a finite x > 0, x != 1, at `working` bits by the arithmetic-geometric mean, the
+	// way MPFR evaluates it (Brent 1976; Brent and Zimmermann, Modern Computer Arithmetic 4.8.2):
+	//
+	//   s = x 2^m > 2^(W/2),  log s = pi / (2 AGM(1, 4/s)) + O(log(s) / s^2) = pi s / (2 AGM(s, 4)),
+	//   log x = log s - m ln 2.
+	//
+	// The AGM converges quadratically once its means agree, after ~log2(W) steps of a product, an
+	// exact root (sqrt_to) and a halving; the last step stops at the half-way agreement, since the
+	// arithmetic mean then differs from the limit by (a - b)^2 / (16 a). log s ~ W/2 ln 2 cancels
+	// against m ln 2 down to log x, so W carries those cancelled bits, `cancel`, as well.
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> log_agm(const efloat<nlimbs>& x, unsigned working) {
+		// log s < W ln 2 / 2 + 2^12 for any W this runs at, so its bits above log x are fewer than
+		// bit_width(working + 2^12) - log_magnitude(x), plus one for the cancelled bits W carries
+		const int64_t top    = std::bit_width(working + 4096u);
+		const unsigned cancel = static_cast<unsigned>(std::max<int64_t>(0, top - log_magnitude(x) + 1));
+		// a multiple of 64, so that nearby precisions share the cached pi and ln 2
+		const unsigned W = (working + cancel + log_agm_guard_bits + 63u) & ~63u;
+		const int64_t m = static_cast<int64_t>(W / 2 + 8) - x.scale();
+		efloat<nlimbs> s(x);
+		s.set_precision(W);
+		s.setexponent(s.scale() + m);
+		efloat<nlimbs> a(s);
+		efloat<nlimbs> b(4.0);
+		b.set_precision(W);
+		for (;;) {
+			const efloat<nlimbs> diff = a - b;
+			if (diff.iszero() || diff.scale() <= a.scale() - static_cast<int64_t>(W / 2)) break;
+			const efloat<nlimbs> product = a * b;
+			a += b;
+			a.setexponent(a.scale() - 1);
+			b = sqrt_to(product, W);
+		}
+		a += b;   // 2 AGM(s, 4)
+		efloat<nlimbs> y = (pi<nlimbs>(W) * s) / a;
+		efloat<nlimbs> exponent;
+		exponent.set_precision(W);
+		exponent = m;
+		y -= exponent * ln2<nlimbs>(W);
+		return y;
+	}
+
+	// log(x) for a finite x > 0 at `working` bits: the AGM at high precision, unless x lies so
+	// close to 1 that the series converges in fewer steps than the AGM would take
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> log_working(const efloat<nlimbs>& x, unsigned working) {
+		constexpr int64_t table_bits = 10;   // the table leaves |v| < 2^-10
+		if (static_cast<int64_t>(working) <= log_agm_bits_per_series_bit * table_bits || x == efloat<nlimbs>(1.0)) {
+			return log_table_series(x, working);   // log 1 = 0 exactly
+		}
+		const int64_t near_one = std::max<int64_t>(table_bits, -log_magnitude(x) - 1);   // x within 2^-near_one of 1
+		if (static_cast<int64_t>(working) <= log_agm_bits_per_series_bit * near_one) {
+			return log_table_series(x, working);
+		}
+		return log_agm(x, working);
+	}
+
 }  // namespace efloat_detail
 
-// Natural logarithm function for efloat: a table and a series up to log_series_max_bits, Newton
-// on exp beyond (#1714)
+// Natural logarithm function for efloat: a table and a series (#1714), the arithmetic-geometric
+// mean at high precision (#1763)
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> log(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
@@ -185,13 +243,11 @@ constexpr efloat<nlimbs> log(const efloat<nlimbs>& x) {
 
 	// computed at the working precision -- the result's precision plus guard bits -- and rounded
 	// once (#1712)
+	// Ziv's strategy (#1763): log x is transcendental for x != 1, and log(1 - d) = -d - d^2/2 - ...
+	// for a short d is the common near miss
 	const unsigned precision = efloat_detail::result_precision(x);
-	const unsigned working   = precision + efloat_detail::exp_log_guard_bits;
-	efloat<nlimbs> y = (working <= efloat_detail::log_series_max_bits)
-	                 ? efloat_detail::log_table_series(x, working)
-	                 : efloat_detail::log_newton(x, working);
-	efloat_detail::round_result(y, precision, x.carries_precision());
-	return y;
+	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::log_working(x, target + efloat_detail::exp_log_guard_bits); },
+	                                        precision, efloat_detail::log_error_bits, x.carries_precision());
 }
 
 // Logarithm base 2 function for efloat

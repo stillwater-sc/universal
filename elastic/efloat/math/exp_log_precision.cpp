@@ -12,6 +12,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cstdint>
 #include <cstring>
 #include <string>
 #include <universal/number/efloat/efloat.hpp>
@@ -198,6 +199,192 @@ int VerifyNearZeros(bool reportTestCases, int64_t slack) {
 	return fails;
 }
 
+// A deterministic stream of 32-bit values for the arguments below
+struct ArgumentStream {
+	uint64_t state;
+	uint32_t next() {
+		state = state * 6364136223846793005ull + 1442695040888963407ull;
+		return static_cast<uint32_t>(state >> 32);
+	}
+};
+
+// The AGM (#1763) against the table and series: two independent evaluations of log at the same
+// working precision W = nlimbs * 32 + 64, which must agree to within 2^-(W - log_error_bits)
+// relative to the result. The arguments are full-precision significands with small and large
+// exponents, x within 2^-k of 1 on both sides of the precision where log() switches to the AGM
+// and out to k = P/2 (the AGM then carries the ~k bits log s and m ln 2 cancel), and powers of 2.
+template<unsigned nlimbs>
+int VerifyAgmAgainstSeries(bool reportTestCases, unsigned count) {
+	const unsigned P = nlimbs * 32;
+	const unsigned W = P + 64;
+	ArgumentStream g{ 0x9E3779B97F4A7C15ull ^ W };
+	int fails = 0;
+	for (unsigned i = 0; i < count; ++i) {
+		efloat<nlimbs> x(1.0);
+		x.set_precision(P);
+		for (unsigned j = 0; j < nlimbs; ++j) x.setlimb(j, g.next() | (j == 0 ? 0x80000000u : 0u));
+		const unsigned style = i % 5;
+		if (style == 0) {
+			x.setexponent(static_cast<int64_t>(g.next() % 64) - 32);
+		}
+		else if (style == 1) {
+			x.setexponent(static_cast<int64_t>(g.next() % 20001) - 10000);
+		}
+		else if (style == 2 || style == 3) {
+			// past where log() itself would take the AGM, out to x within 2^-(P/2) of 1, where the
+			// AGM carries ~P/2 cancelled bits
+			const unsigned k = 1 + g.next() % ((i % 2) ? W / efloat_detail::log_agm_bits_per_series_bit + 16 : P / 2);
+			x.setexponent(-static_cast<int64_t>(k));
+			efloat<nlimbs> one(1.0);
+			one.set_precision(P);
+			x = (style == 2) ? one + x : one - x;
+			x.set_precision(P);
+		}
+		else {
+			x = efloat<nlimbs>(1.0);
+			x.set_precision(P);
+			x.setexponent(static_cast<int64_t>(g.next() % 4000) - 2000 + 1);   // never 2^0
+		}
+		const efloat<nlimbs> agm    = efloat_detail::log_agm(x, W);
+		const efloat<nlimbs> series = efloat_detail::log_table_series(x, W);
+		const int64_t bits = agreement_bits(agm, series);
+		if (bits < static_cast<int64_t>(W - efloat_detail::log_error_bits)) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL efloat<" << nlimbs << "> log AGM vs series, style " << style << ": " << bits << " of " << W << " bits\n";
+		}
+		// the AGM's estimate of the bits it cancels: floor(log2 |log x|), or up to two less
+		const int64_t magnitude = efloat_detail::log_magnitude(x);
+		if (magnitude > series.scale() || magnitude < series.scale() - 2) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL efloat<" << nlimbs << "> log_magnitude " << magnitude << " for a log of scale " << series.scale() << '\n';
+		}
+	}
+	return fails;
+}
+
+// log(1 + t) for a short t = +-r 2^-k, r < 2^24, rounded in all four modes. log(1 + t) =
+// t - t^2/2 + t^3/3 - ... is then a short value plus a tail far below it, so it lies within
+// ~2^-2k of a rounding boundary, past what the working precision's guard bits resolve: only a
+// retry at a wider precision rounds it correctly (#1763). The reference sums the series at 4P bits.
+template<unsigned nlimbs>
+int VerifyNearRoundingBoundaries(bool reportTestCases, unsigned count) {
+	const unsigned P = nlimbs * 32;
+	const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+	                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+	const char* names[] = { "nearest", "toward zero", "toward +inf", "toward -inf" };
+	const RoundingMode saved = efloat_rounding_mode;
+	ArgumentStream g{ 0xD1B54A32D192ED03ull ^ P };
+	int fails = 0;
+	for (unsigned i = 0; i < count; ++i) {
+		const bool below = (i % 2) == 0;
+		const unsigned rbits = 1 + g.next() % 24;
+		const double r = static_cast<double>((g.next() & ((1u << rbits) - 1u)) | 1u);
+		const unsigned k = P / 2 + g.next() % (P / 2);   // 1 +- r 2^-k is exact at P bits
+		efloat<nlimbs> t(r);
+		t.set_precision(4 * P);
+		t.setexponent(t.scale() - static_cast<int64_t>(k));
+		if (below) t = efloat<nlimbs>(0.0) - t;
+		efloat<nlimbs> x(1.0);
+		x.set_precision(P);
+		x = x + t;
+		x.set_precision(P);
+
+		efloat<nlimbs> reference(t), power(t);
+		reference.set_precision(4 * P);
+		for (unsigned n = 2; n < 64; ++n) {
+			power = power * t;
+			const efloat<nlimbs> term = power / efloat<nlimbs>(static_cast<double>(n));
+			if (term.iszero() || term.scale() < reference.scale() - static_cast<int64_t>(4 * P)) break;
+			if (n % 2 == 0) reference -= term; else reference += term;
+		}
+		for (unsigned m = 0; m < 4; ++m) {
+			efloat_rounding_mode = modes[m];
+			efloat<nlimbs> expected(reference);
+			expected.set_precision(P);
+			const efloat<nlimbs> got = log(x);
+			efloat_rounding_mode = saved;
+			if (!(got == expected) || got.get_precision() != P) {
+				++fails;
+				if (reportTestCases) std::cerr << "FAIL efloat<" << nlimbs << "> log(1 " << (below ? "- " : "+ ") << r << " 2^-" << k << ") rounded " << names[m] << '\n';
+			}
+		}
+	}
+	efloat_rounding_mode = saved;
+	return fails;
+}
+
+// exp, sin, cos and tan of a short t = +-r 2^-k (r < 2^24) and of a full-width tiny t, rounded in
+// all four modes (#1763). Their series are then a short or exact leading part plus a tail far
+// below it: sin t = t - t^3/6 + ... lies within ~2^-2k of a rounding boundary, past what the
+// working precision's guard bits resolve, and for |t| < 2^-(P/2) the tail lies below any working
+// precision, so only the tiny-argument rounding gets the directed modes right. The references
+// are the series summed at 6P bits, which resolve the tail for every t generated here.
+template<unsigned nlimbs>
+int VerifyFunctionsNearRoundingBoundaries(bool reportTestCases, unsigned count) {
+	const unsigned P = nlimbs * 32;
+	const unsigned R = 6 * P;
+	const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+	                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+	const char* names[] = { "nearest", "toward zero", "toward +inf", "toward -inf" };
+	const char* functions[] = { "exp", "sin", "cos", "tan" };
+	const RoundingMode saved = efloat_rounding_mode;
+	ArgumentStream g{ 0x8CB92BA72F3D8DD7ull ^ P };
+	int fails = 0;
+	for (unsigned i = 0; i < count; ++i) {
+		efloat<nlimbs> t;
+		if (i % 2 == 0) {   // short: r 2^-k, k in [P/4, P)
+			const unsigned rbits = 1 + g.next() % 24;
+			t = efloat<nlimbs>(static_cast<double>((g.next() & ((1u << rbits) - 1u)) | 1u));
+			t.set_precision(P);
+			t.setexponent(-static_cast<int64_t>(P / 4 + g.next() % (3 * P / 4)));
+		}
+		else {              // full width, scale in [-2P, -P/4)
+			t = efloat<nlimbs>(1.0);
+			t.set_precision(P);
+			for (unsigned j = 0; j < nlimbs; ++j) t.setlimb(j, g.next() | (j == 0 ? 0x80000000u : 0u));
+			t.set_precision(P);
+			t.setexponent(-static_cast<int64_t>(P / 4 + g.next() % (7 * P / 4)));
+		}
+		if (g.next() & 1u) t = efloat<nlimbs>(0.0) - t;
+		t.set_precision(P);
+
+		// the series at R bits: exp = sum t^n / n!, sin and cos its odd and even terms
+		efloat<nlimbs> tr(t), term(1.0);
+		tr.set_precision(R);
+		term.set_precision(R);
+		efloat<nlimbs> exp_ref(1.0), sin_ref(0.0), cos_ref(1.0);
+		exp_ref.set_precision(R);
+		sin_ref.set_precision(R);
+		cos_ref.set_precision(R);
+		for (unsigned n = 1; n < 1000; ++n) {
+			term = term * tr / efloat<nlimbs>(static_cast<double>(n));
+			if (term.iszero() || term.scale() < tr.scale() - static_cast<int64_t>(R)) break;   // below every series' R bits
+			exp_ref += term;
+			const bool negative = ((n / 2) % 2) == 1;   // the signs of sin and cos: + - - + + - ...
+			if (n % 2) { if (negative) sin_ref -= term; else sin_ref += term; }
+			else       { if (negative) cos_ref -= term; else cos_ref += term; }
+		}
+		const efloat<nlimbs> tan_ref = sin_ref / cos_ref;
+		const efloat<nlimbs>* references[] = { &exp_ref, &sin_ref, &cos_ref, &tan_ref };
+
+		for (unsigned f = 0; f < 4; ++f) {
+			for (unsigned m = 0; m < 4; ++m) {
+				efloat_rounding_mode = modes[m];
+				efloat<nlimbs> expected(*references[f]);
+				expected.set_precision(P);
+				const efloat<nlimbs> got = (f == 0) ? exp(t) : (f == 1) ? sin(t) : (f == 2) ? cos(t) : tan(t);
+				efloat_rounding_mode = saved;
+				if (!(got == expected) || got.get_precision() != P) {
+					++fails;
+					if (reportTestCases) std::cerr << "FAIL efloat<" << nlimbs << "> " << functions[f] << "(t), t of scale " << t.scale() << ", rounded " << names[m] << '\n';
+				}
+			}
+		}
+	}
+	efloat_rounding_mode = saved;
+	return fails;
+}
+
 // log(2^e) = e ln 2 for exponents past the type's default precision (#1754 review): an efloat
 // made from an integer has the type's default precision, so the table path rounded e to 32 bits
 // in efloat<1>, and Newton on main was off by 65 units at e = 2^32 + 1 and returned inf at
@@ -266,13 +453,23 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNearZeros<10>(reportTestCases, 4), "efloat<10>", "near zeros");
 	nrOfFailedTestCases += ReportTestResult(VerifyLargeExponents(reportTestCases), "efloat<1>", "log(2^e), e past 2^32");
 	nrOfFailedTestCases += ReportTestResult(VerifyNearZeros<20>(reportTestCases, 4), "efloat<20>", "near zeros");
+	nrOfFailedTestCases += ReportTestResult(VerifyAgmAgainstSeries<4>(reportTestCases, 100), "efloat<4>", "log AGM vs series");
+	nrOfFailedTestCases += ReportTestResult(VerifyAgmAgainstSeries<48>(reportTestCases, 20), "efloat<48>", "log AGM vs series");
+	nrOfFailedTestCases += ReportTestResult(VerifyNearRoundingBoundaries<4>(reportTestCases, 3000), "efloat<4>", "log near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyNearRoundingBoundaries<8>(reportTestCases, 1000), "efloat<8>", "log near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<1>(reportTestCases, 1000), "efloat<1>", "exp/sin/cos/tan near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<4>(reportTestCases, 500), "efloat<4>", "exp/sin/cos/tan near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<16>(reportTestCases, 60), "efloat<16>", "exp/sin/cos/tan near rounding boundaries");
 #endif
 
 #if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyAtPrecision<64>(reportTestCases, 4), "efloat<64>", "2048 bits");
+	nrOfFailedTestCases += ReportTestResult(VerifyNearRoundingBoundaries<64>(reportTestCases, 40), "efloat<64>", "log near rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyFunctionsNearRoundingBoundaries<64>(reportTestCases, 20), "efloat<64>", "exp/sin/cos/tan near rounding boundaries");
 #endif
 
 #if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyAgmAgainstSeries<128>(reportTestCases, 20), "efloat<128>", "log AGM vs series");
 #endif
 
 #if REGRESSION_LEVEL_4
