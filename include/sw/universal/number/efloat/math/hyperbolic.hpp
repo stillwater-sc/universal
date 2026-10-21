@@ -37,7 +37,7 @@ namespace efloat_detail {
 	// the hyperbolic functions combine up to three exp/log evaluations, a root and a quotient
 	inline constexpr unsigned hyperbolic_error_bits = 24u;
 
-	// sinh, cosh or tanh of a finite x != 0, |x| < 2^17, unrounded, at `target` bits plus guard bits
+	// sinh, cosh or tanh of a finite x != 0 in exp's range, unrounded, at `target` bits plus guard bits
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> sinh_working(const efloat<nlimbs>& x, unsigned target) {
 		efloat<nlimbs> a(x);
@@ -130,7 +130,7 @@ namespace efloat_detail {
 		return 2 * x.scale() < -static_cast<int64_t>(result_precision(x)) - 6;
 	}
 
-	// sinh or cosh overflow at |x| >= 2^17, where exp does
+	// sinh or cosh overflow beyond exp's range, where exp does
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> hyperbolic_overflow(const efloat<nlimbs>& x, bool negative) {
 		efloat<nlimbs> inf = exp_out_of_range<nlimbs>(false, result_precision(x), x.carries_precision());
@@ -151,7 +151,7 @@ constexpr efloat<nlimbs> sinh(const efloat<nlimbs>& x) {
 		inf.setinf(x.sign() == -1);
 		return inf;
 	}
-	if (x.scale() >= 17) return efloat_detail::hyperbolic_overflow<nlimbs>(x, x.sign() == -1);
+	if (efloat_detail::exp_beyond_range(x, efloat_detail::log2_e)) return efloat_detail::hyperbolic_overflow<nlimbs>(x, x.sign() == -1);
 	// sinh x = x + x^3/6 + ..., away from 0
 	if (efloat_detail::hyperbolic_tiny(x)) {
 		return efloat_detail::round_near(x, x.sign(), efloat_detail::result_precision(x), x.carries_precision());
@@ -171,7 +171,7 @@ constexpr efloat<nlimbs> cosh(const efloat<nlimbs>& x) {
 		inf.setinf(false);
 		return inf;
 	}
-	if (x.scale() >= 17) return efloat_detail::hyperbolic_overflow<nlimbs>(x, false);
+	if (efloat_detail::exp_beyond_range(x, efloat_detail::log2_e)) return efloat_detail::hyperbolic_overflow<nlimbs>(x, false);
 	// cosh x = 1 + x^2/2 + ..., above 1
 	if (efloat_detail::hyperbolic_tiny(x)) {
 		return efloat_detail::round_near(efloat<nlimbs>(1.0), 1, efloat_detail::result_precision(x), x.carries_precision());
@@ -195,7 +195,7 @@ constexpr efloat<nlimbs> tanh(const efloat<nlimbs>& x) {
 		return efloat_detail::round_near(x, -x.sign(), precision, x.carries_precision());
 	}
 	// tanh |x| = 1 - 2 e^-2|x| + ..., within 2^-(P + 6) of 1 for |x| > (P + 7) ln 2 / 2, below it
-	if (x.scale() >= 17 || std::fabs(double(x)) > static_cast<double>(precision + 7) * 0.34657359027997264) {
+	if (x.scale() >= 63 || std::fabs(double(x)) > static_cast<double>(precision + 7) * 0.34657359027997264) {
 		return efloat_detail::round_near(efloat<nlimbs>(x.sign() == -1 ? -1.0 : 1.0), -x.sign(), precision, x.carries_precision());
 	}
 	return efloat_detail::round_hyperbolic(x, [](const efloat<nlimbs>& v, unsigned t) { return efloat_detail::tanh_working(v, t); });

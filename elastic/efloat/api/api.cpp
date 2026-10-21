@@ -214,6 +214,71 @@ try {
 		if (y.get_precision() != 640 || z.get_precision() != 640 || w.get_precision() != 3200) ++nrOfFailedTestCases;
 	}
 
+	// exponent range: an efloat's exponent is an int64_t, so exp, pow and their kin return values
+	// far past double's 2^1024, out to 2^(2^62). Each value below underflows or overflows a
+	// double, and is checked against a second evaluation that takes another route to it.
+	std::cout << "+------------ exp and pow far beyond the range of double ----------+\n";
+	{
+		using TestType = efloat<8>;   // 256 bits
+		const TestType pi = efloat_pi<8>();
+		auto agree = [](const TestType& a, const TestType& b) {
+			return !a.iszero() && !a.isinf() && (abs(a - b) / abs(a)).scale() < -220;
+		};
+		std::cout << std::setprecision(30);
+
+		// the likelihood of a million standard normal observations whose squares sum to n:
+		// log L = -n/2 (log(2 pi) + 1), and L = (2 pi)^(-n/2) e^(-n/2)
+		{
+			const TestType n(1.0e6);
+			const TestType logL = -n / 2 * (log(2 * pi) + 1);
+			const TestType L    = exp(logL);
+			const TestType L2   = pow(2 * pi, -n / 2) * exp(-n / 2);
+			std::cout << "log-likelihood of 1e6 normal samples : " << logL << '\n';
+			std::cout << "likelihood exp(log L)                : " << L << '\n';
+			std::cout << "  the same in double                 : " << std::exp(double(logL)) << '\n';
+			if (!agree(L, L2)) ++nrOfFailedTestCases;
+		}
+
+		// a large-deviation tail: the Chernoff bound on 3/4 or more heads in 1e7 fair coin flips,
+		// exp(-n D(3/4 || 1/2)), with D the relative entropy, and as (2/3)^(3n/4) 2^(n/4)
+		{
+			const TestType n(1.0e7), a(0.75);
+			const TestType D      = a * log(a / 0.5) + (1 - a) * log((1 - a) / 0.5);
+			const TestType bound  = exp(-n * D);
+			const TestType bound2 = pow(TestType(2) / 3, a * n) * pow(TestType(2), (1 - a) * n);
+			std::cout << "P(heads >= 3n/4), n = 1e7, at most   : " << bound << '\n';
+			std::cout << "  the same in double                 : " << std::exp(-double(n * D)) << '\n';
+			if (!agree(bound, bound2)) ++nrOfFailedTestCases;
+		}
+
+		// a Stirling-style factorial: log n! = n log n - n + log(2 pi n)/2 + sum B_2k / (2k (2k-1) n^(2k-1)),
+		// exp'ed, against the product 1 2 ... n; the series also gives the factorial of a non-integer,
+		// Gamma(n + 1), where there is no product to take
+		{
+			auto log_factorial = [&pi](const TestType& n) {
+				const double num[] = { 1, -1, 1, -1, 1, -691, 1, -3617 };
+				const double den[] = { 12, 360, 1260, 1680, 1188, 360360, 156, 122400 };
+				TestType s = n * log(n) - n + log(2 * pi * n) / 2;
+				TestType p = 1 / n;
+				const TestType n2 = n * n;
+				for (int k = 0; k < 8; ++k) {
+					s += p * num[k] / den[k];
+					p /= n2;
+				}
+				return s;
+			};
+			const TestType f = exp(log_factorial(TestType(100000.0)));
+			TestType product(1);
+			for (int i = 2; i <= 100000; ++i) product *= i;
+			std::cout << "100000! by Stirling                  : " << f << '\n';
+			std::cout << "100000! as a product                 : " << product << '\n';
+			std::cout << "100000.5! = Gamma(100001.5)          : " << exp(log_factorial(TestType(100000.5))) << '\n';
+			std::cout << "  the same in double                 : " << std::tgamma(100001.5) << '\n';
+			if (!agree(f, product)) ++nrOfFailedTestCases;
+		}
+		std::cout.precision(old_precision);
+	}
+
 	std::cout << "+------------ Horner's Rule ----------+\n";
 	{
 //		std::vector<efloat> polynomial = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
