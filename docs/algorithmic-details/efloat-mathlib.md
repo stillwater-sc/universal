@@ -20,8 +20,9 @@ the history and the measurements, which the code does not.
 
 ## 1. The contract
 
-Every function below, except the five in section 9, is **correctly rounded**: the result is
-the exact mathematical value rounded once to the result's precision, in whichever of the four
+Every function below, except the five in section 9, is **correctly rounded** (with the
+bounded-retry caveat of section 2, item 3): the result is the exact mathematical value rounded
+once to the result's precision, in whichever of the four
 IEEE rounding modes `efloat_rounding_mode` selects (nearest-even, toward zero, toward +inf,
 toward -inf). Signed zeros, infinities, NaN and the exception flags follow C and IEEE 754.
 
@@ -51,8 +52,18 @@ All of the math library uses one scheme, in `math/exponent.hpp`.
    boundary lies within the error, and `y` rounds to the same value as the exact result in
    every mode.
 3. **Ziv's strategy.** `round_ziv(evaluate, precision, error_bits)` evaluates, tests, and if the
-   test fails, evaluates again at twice the target. It terminates because every result it is
-   given is transcendental at that argument, so it never lies on a boundary.
+   test fails, evaluates again at twice the target. Every result it is given is transcendental
+   at that argument, so it never lies on a boundary, and an unbounded loop would terminate.
+   The loop is bounded, though: after **eight retries**, at 256 times the target, it rounds the
+   last value whether or not the test passed. So the guarantee is correct rounding unless the
+   exact result lies within about `2^-(256 P)` of a rounding boundary, relative to its size;
+   past that, the result is the last evaluation rounded once, which is faithful but not proven
+   correct. There is no proof that eight suffice for any function here. The evidence is that
+   every MPFR check has agreed, and the heuristic of the table-maker's-dilemma literature
+   (Lefevre and Muller's searches of the hardest cases for double precision): a P-bit
+   argument's result is expected to come no closer to a boundary than about `2^-(2P + c)`,
+   for a small c, which a few doublings already resolve. The retry count is not reported,
+   so a run cannot tell whether it reached the limit.
 4. **Exact results are formed, not approximated.** A boundary is a binary fraction, so only an
    exact result can sit on one: `exp2(k)`, `log10(10^k)`, `pow(x, n)` with a narrow enough
    result, `sqrt` of a square, `acos(1) = +0`, `tgamma(n) = (n-1)!` and so on are computed
@@ -120,10 +131,10 @@ round the exact result once into the destination (`assign_rounded`), with no all
 
 | function | algorithm | error bits | file |
 |---|---|---|---|
-| `exp` | `x = k ln2 + r`, `r` halved up to `sqrt(P)` times, Taylor series at a precision that falls with the terms, squared back; `|k| < 2^62` | 16 | exponent.hpp |
+| `exp` | `x = k ln2 + r`, `r` halved up to `sqrt(P)` times, Taylor series at a precision that falls with the terms, squared back; `abs(k) < 2^62` | 16 | exponent.hpp |
 | `exp2`, `exp10`, `expm1` | through `exp`; `expm1` sums without the leading 1 and doubles back with `u(u+2)`; exact `2^k`, `10^k` | 20 | exponent.hpp |
-| `log` | below the switch: table of `log(j/512)` plus `2 atanh(v)`, `|v| < 2^-10`; above it: AGM, `log s = pi s / (2 AGM(s, 4))` | 16 | logarithm.hpp |
-| `log2`, `log10`, `log1p` | through `log`; `log1p` sums its own series for small `|x|` | 20 | logarithm.hpp |
+| `log` | below the switch: table of `log(j/512)` plus `2 atanh(v)`, `abs(v) < 2^-10`; above it: AGM, `log s = pi s / (2 AGM(s, 4))` | 16 | logarithm.hpp |
+| `log2`, `log10`, `log1p` | through `log`; `log1p` sums its own series for small `abs(x)` | 20 | logarithm.hpp |
 | `sin`, `cos`, `tan` | reduce by `pi/2` at widened precision; versine `v = 1 - cos r` from a halved argument, series by rectangular splitting, doubled back | 32 | trigonometry.hpp |
 | `asin`, `acos`, `atan`, `atan2` | one `atan` kernel: reflection, argument halving, series | 24 | trigonometry.hpp |
 | `sinh` ... `atanh` | `expm1` and `log1p` forms that do not cancel | 24 | hyperbolic.hpp |
