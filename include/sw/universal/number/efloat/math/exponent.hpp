@@ -73,8 +73,11 @@ namespace efloat_detail {
 	// Ziv's strategy (#1763): evaluate(target) returns a function's value unrounded, within
 	// 2^(scale - target - exp_log_guard_bits + error_bits) of the exact result. A value too near a
 	// rounding boundary to round from is evaluated again at twice the target, and the first one
-	// that can be rounded is. The functions that use it are transcendental at every argument they
-	// pass here, so the exact result never lies on a boundary.
+	// that can be rounded is. The premise is about the exact result: it must differ from every
+	// rounding boundary, a binary fraction. Each caller returns the arguments whose result is a
+	// binary fraction before it gets here (exp2 at an integer, log2 of a power of 2, pow at an exact
+	// power, ...); what reaches round_ziv is irrational, transcendental or algebraic (exp2(1/2) is
+	// sqrt(2)), or rational but not a binary fraction, so never on a boundary.
 	template<unsigned nlimbs, typename Evaluate>
 	inline efloat<nlimbs> round_ziv(Evaluate evaluate, unsigned precision, unsigned error_bits, bool carries) {
 		unsigned target = precision;
