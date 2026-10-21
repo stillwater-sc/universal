@@ -152,7 +152,12 @@ namespace sw { namespace universal {
 		}
 		else if (is(f, "fmod") || is(f, "remainder")) {
 			// halfway cases, x = (k + 1/2) y, or quotients wider than the precision, up to 2^(2^40)
-			if (special && rng() % 3 == 0) { a = b * make<nlimbs>(static_cast<double>(rng() % 1000) + 0.5, P); }
+			if (special && rng() % 3 == 0) {
+				// a 24-bit y, so that (k + 1/2) y, at most 35 bits, is exact
+				b = make<nlimbs>(static_cast<double>((rng() & 0xFFFFFFu) | 1u), P);
+				b.setexponent(b.scale() + static_cast<int64_t>(rng() % 41) - 20);
+				a = b * make<nlimbs>(static_cast<double>(rng() % 1000) + 0.5, P);
+			}
 			else if (special) a.setexponent(a.scale() + static_cast<int64_t>((rng() & 1) ? rng() % (2 * P) : rng() % (1ull << (rng() % 41))));
 		}
 		else if (is(f, "exp2") || is(f, "exp10")) {
