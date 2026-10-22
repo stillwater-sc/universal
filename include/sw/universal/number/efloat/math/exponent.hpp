@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 namespace sw { namespace universal {
@@ -289,18 +290,215 @@ namespace efloat_detail {
 
 namespace efloat_detail {
 
+	// The fixed-point series kernel of exp (#1788). A value v in [0, 2^64) is held as the natural
+	// number V = floor(v 2^F) in n + 1 limbs of 64 bits, least significant first, with F = 64 n
+	// fraction bits, so the binary point sits on a limb boundary and every product shifts by
+	// whole limbs. Nothing inside the series normalizes, merges precisions or rounds: each
+	// operation truncates, and the truncations are counted in the guard bits (exp_fixed).
+	namespace exp_fixed {
+
+		using efloat_mpn::limb_t;
+
+		// R[0, n) |= w 2^pos for a 32-bit w; the bits that fall below 2^0 are dropped
+		inline void put_bits(limb_t* R, std::size_t n, uint32_t w, int64_t pos) noexcept {
+			uint64_t v = w;
+			if (pos < 0) {
+				if (pos <= -32) return;
+				v >>= -pos;
+				pos = 0;
+			}
+			const std::size_t limb = static_cast<std::size_t>(pos / 64);
+			const unsigned    off  = static_cast<unsigned>(pos % 64);
+			if (limb < n) R[limb] |= v << off;
+			if (off > 32 && limb + 1 < n) R[limb + 1] |= v >> (64u - off);
+		}
+
+		// R[0, n) = floor(|v| 2^shift), for a finite v with |v| 2^shift < 2^(64 n)
+		template<unsigned nlimbs>
+		inline void to_fixed(const efloat<nlimbs>& v, int64_t shift, limb_t* R, std::size_t n) noexcept {
+			for (std::size_t i = 0; i < n; ++i) R[i] = 0;
+			if (v.iszero()) return;
+			const std::vector<uint32_t>& w = v.limb_vector();   // most significant first, leading bit at 31
+			const int64_t e = v.scale();
+			for (std::size_t t = 0; t < w.size(); ++t) {
+				const int64_t pos = shift + e - 32 * static_cast<int64_t>(t) - 31;   // where w[t]'s last bit lands
+				if (pos <= -32) break;
+				put_bits(R, n, w[t], pos);
+			}
+		}
+
+		// A[0, len) 2^(scale - 64 len + 1) as an efloat, exactly: the top bit of A[len - 1] weighs
+		// 2^scale. The exponent is set raw, so a value past the range overflows when it is rounded.
+		template<unsigned nlimbs>
+		inline efloat<nlimbs> from_fixed(const limb_t* A, std::size_t len, int64_t scale) {
+			std::vector<uint32_t> w(2 * len);
+			for (std::size_t i = 0; i < len; ++i) {
+				w[2 * (len - 1 - i)]     = static_cast<uint32_t>(A[i] >> 32);
+				w[2 * (len - 1 - i) + 1] = static_cast<uint32_t>(A[i]);
+			}
+			efloat<nlimbs> v(false, 0, w);
+			v.set_precision(static_cast<unsigned>(64 * len));   // exact: normalizes, does not round
+			v.setexponent(v.scale() + scale);
+			return v;
+		}
+
+		// q[0, n) = floor(a[0, n) / d) for any d > 0: the quotient of a 2^l by d 2^l, d 2^l
+		// normalized, one 2-by-1 step per limb with Moller and Granlund's reciprocal
+		inline void div_1(limb_t* q, const limb_t* a, std::size_t n, limb_t d) noexcept {
+			const unsigned l  = static_cast<unsigned>(std::countl_zero(d));
+			const limb_t   dn = d << l;
+			const limb_t   v  = efloat_mpn::invert_limb(dn);
+			limb_t r = (l != 0u) ? a[n - 1] >> (64u - l) : 0u;   // below dn
+			for (std::size_t i = n; i-- > 0;) {
+				const limb_t n0 = (l != 0u) ? ((a[i] << l) | ((i > 0) ? a[i - 1] >> (64u - l) : 0u)) : a[i];
+				efloat_mpn::udiv_qr_2by1(q[i], r, r, n0, dn, v);
+			}
+		}
+
+		// r[0, n) = a + b or a - b (a >= b), n limbs
+		inline void add_or_sub(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, bool subtract) noexcept {
+			if (subtract) efloat_mpn::sub_n(r, a, b, n); else efloat_mpn::add_n(r, a, b, n);
+		}
+
+		// log2(k!), from a table below 4096 and Stirling's series above, where it is within 2^-40
+		inline double log2_factorial(unsigned k) noexcept {
+			static const std::vector<double> table = [] {
+				std::vector<double> t(4096);
+				t[0] = 0.0;
+				for (std::size_t i = 1; i < t.size(); ++i) t[i] = t[i - 1] + std::log2(static_cast<double>(i));
+				return t;
+			}();
+			if (k < table.size()) return table[k];
+			const double x = static_cast<double>(k);
+			return (x * std::log(x) - x + 0.5 * std::log(2.0 * 3.141592653589793 * x) + 1.0 / (12.0 * x)) / 0.6931471805599453;
+		}
+
+		// the number of terms N for which s^N / N! < 2^-(F + 4), for s < 2^-a, a >= 1: the tail past
+		// it, below twice its first term, is then below 2^-(F + 3). N a + log2(N!) grows with N, so
+		// the least N past F + 4 is found by bisection.
+		inline unsigned series_terms(int64_t a, unsigned F) noexcept {
+			const double need = static_cast<double>(F) + 4.0;
+			auto enough = [a, need](unsigned N) { return static_cast<double>(N) * static_cast<double>(a) + log2_factorial(N) > need; };
+			unsigned lo = 1, hi = static_cast<unsigned>(need / static_cast<double>(a)) + 1u;   // enough(hi)
+			while (lo < hi) {
+				const unsigned mid = lo + (hi - lo) / 2;
+				if (enough(mid)) hi = mid; else lo = mid + 1;
+			}
+			return lo;
+		}
+
+		// the block length m of the rectangular splitting: about sqrt(N), and short enough that the
+		// divisor of a block, a product of m integers up to N + m, fits in a limb
+		inline unsigned block_length(unsigned N) noexcept {
+			unsigned m = static_cast<unsigned>(std::ceil(std::sqrt(static_cast<double>(N))));
+			if (m < 1u) m = 1u;
+			while (m > 1u && static_cast<double>(m) * std::log2(static_cast<double>(N + m)) >= 63.0) --m;
+			return m;
+		}
+
+		// The halving target T, s = |r| / 2^h below 2^-T. Each halving costs a squaring at the end
+		// and saves the series terms; T = 0.4 sqrt(F) was measured best (to within the noise of a
+		// flat optimum) from 64 to 8192 bits: at 128 bits T = 6, at 8192 bits T = 34-37, where a
+		// cost model with a scalar step at a tenth of a product chose 34 and 46 and ran 1.8x and
+		// 1.05x slower (#1788).
+		inline unsigned halving_target(unsigned F) noexcept {
+			const unsigned T = static_cast<unsigned>(0.4 * std::sqrt(static_cast<double>(F)) + 0.5);
+			return (T < 2u) ? 2u : T;
+		}
+
+		// scratch space, kept per thread so that exp allocates once
+		inline limb_t* scratch(std::size_t limbs) {
+			thread_local std::vector<limb_t> space;
+			if (space.size() < limbs) space.resize(limbs);
+			return space.data();
+		}
+
+		// E[0, n + 1) = exp(+-R 2^-F) 2^F, truncated at each step, by Smith's rectangular splitting:
+		// with T_k = s^k / k! = A_i P_j / D_ij for k = i m + j, A_i = s^(i m) / (i m)!, P_j = s^j and
+		// D_ij = (i m + 1) ... (i m + j), the series is a Horner scheme in P_m / D_im over blocks
+		// B_i = sum_j P_j / D_ij, and each block is formed over the common denominator D_i(m-1)
+		// with one-limb multipliers and one division. Only the m powers and the N / m Horner steps
+		// are full products. For a negative argument the terms alternate; every partial value is
+		// positive, as the series of exp(-s), s < 1, is with decreasing terms.
+		inline void series(limb_t* E, const limb_t* R, std::size_t n, bool negative, unsigned N, unsigned m) {
+			const std::size_t w  = n + 1;           // a value below 2^64
+			const unsigned    nb = (N + m - 1) / m; // blocks
+			limb_t* P   = scratch((m + 1) * w + 2 * (2 * w + 2) + 2 * (w + 1) + efloat_mpn::scratch_limbs(w));
+			limb_t* tmp = P + (m + 1) * w;          // a product, 2 w limbs
+			limb_t* acc = tmp + (2 * w + 2);        // the Horner value, w limbs
+			limb_t* pos = acc + (2 * w + 2);        // a block's numerator terms of either sign, w + 1 limbs
+			limb_t* neg = pos + (w + 1);
+			limb_t* s   = neg + (w + 1);
+			// P_j = s^j, j = 1 .. m, n limbs each (the w-th is 0): P_j = P_(j/2)^2 or P_(j-1) s
+			for (std::size_t i = 0; i < w; ++i) P[w + i] = (i < n) ? R[i] : 0u;
+			for (unsigned j = 2; j <= m; ++j) {
+				if (j % 2 == 0) efloat_mpn::mul_n(tmp, P + (j / 2) * w, P + (j / 2) * w, n, s, true);
+				else            efloat_mpn::mul(tmp, P + (j - 1) * w, n, R, n, s);
+				for (std::size_t i = 0; i < n; ++i) P[j * w + i] = tmp[n + i];
+				P[j * w + n] = 0;
+			}
+			for (unsigned b = nb; b-- > 0;) {
+				const limb_t base = static_cast<limb_t>(b) * m;
+				// numerator sum_j P_j c_j, c_j = (base + j + 1) ... (base + m - 1), over L = c_0
+				for (std::size_t i = 0; i <= w; ++i) { pos[i] = 0; neg[i] = 0; }
+				limb_t c = 1;
+				for (unsigned j = m; j-- > 0;) {
+					limb_t* into = (negative && (j % 2 == 1)) ? neg : pos;
+					if (j == 0) {
+						const limb_t t = into[n] + c;   // P_0 = 1 = 2^F
+						into[n + 1] += (t < c) ? 1u : 0u;
+						into[n] = t;
+					}
+					else {
+						const limb_t carry = efloat_mpn::addmul_1(into, P + j * w, n, c);
+						efloat_mpn::add_1(into + n, 2, carry);
+						c *= base + j;
+					}
+				}
+				efloat_mpn::sub_n(pos, pos, neg, w + 1);   // the block is positive
+				div_1(tmp, pos, w + 1, c);                  // B_b, below 2
+				if (b + 1 == nb) {
+					for (std::size_t i = 0; i < w; ++i) acc[i] = tmp[i];
+					continue;
+				}
+				// acc = B_b +- acc P_m / D_bm, D_bm = c (base + m)
+				for (std::size_t i = 0; i < w; ++i) pos[i] = tmp[i];
+				efloat_mpn::mul(tmp, acc, w, P + m * w, n, s);   // w + n limbs
+				div_1(neg, tmp + n, w, c * (base + m));
+				add_or_sub(acc, pos, neg, w, negative && (m % 2 == 1));
+			}
+			for (std::size_t i = 0; i < w; ++i) E[i] = acc[i];
+		}
+
+		// E[0, n + 1) = E^2, truncated to F fraction bits
+		inline void square(limb_t* E, std::size_t n) {
+			const std::size_t w = n + 1;
+			limb_t* tmp = scratch(2 * w + efloat_mpn::scratch_limbs(w));
+			efloat_mpn::mul_n(tmp, E, E, w, tmp + 2 * w, true);
+			for (std::size_t i = 0; i < w; ++i) E[i] = tmp[n + i];
+		}
+
+	}  // namespace exp_fixed
+
 	// exp(x) for a finite x in exp's range, unrounded, at `precision` bits plus guard bits.
 	//
 	// Range reduction: x = k ln 2 + r with |r| <= ln 2 / 2, at the working precision: the result's
-	// precision plus guard bits, with ln 2 computed at that precision (#1712).  r is then halved
-	// h times, and the series for exp(r / 2^h) squared h times: each halving saves the series
-	// about W / (h + 1.5)^2 terms for one squaring, and each squaring doubles the relative error,
-	// so the working precision carries h more guard bits. An r already below 2^-h is halved only
-	// by what brings it there, as the versine is (#1763).
+	// precision plus guard bits, with ln 2 computed at that precision (#1712). r is then halved
+	// h times, to s = |r| / 2^h below 2^-T, and exp(+-s) is summed in fixed point by rectangular
+	// splitting and squared h times (exp_fixed, #1788). T comes from a cost estimate
+	// (halving_target): more halvings cost squarings and save terms.
+	//
+	// Error: the fixed-point values carry F >= precision + 64 + T + 16 fraction bits. R = s 2^F is
+	// truncated (2^-F), each power, block and Horner step truncates (2^-F each, about N + 3 N / m
+	// + m of them, under 2^10 at 8192 bits), and the tail lies below 2^-(F + 3); each squaring
+	// doubles the relative error and adds 2^-F. So exp(+-s)^(2^h) is within 2^(h + 11 - F) <=
+	// 2^-(precision + 64 + 5) of its value, far inside exp_error_bits; r's own rounding at the
+	// working precision adds 2^-(working + 1).
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> exp_working(const efloat<nlimbs>& x, unsigned precision) {
-		const unsigned halvings  = static_cast<unsigned>(std::sqrt(static_cast<double>(precision)));
-		const unsigned working   = precision + efloat_detail::exp_log_guard_bits + halvings;
+		using exp_fixed::limb_t;
+		const unsigned T       = exp_fixed::halving_target(precision + 64u + 16u);
+		const unsigned working = precision + efloat_detail::exp_log_guard_bits + T;
 
 		// ln 2 carries 64 more bits, so that r = x - k ln 2 keeps the working precision's absolute
 		// error at any |k| < 2^62, and one width serves every k from the cache. x / ln 2 in double
@@ -314,41 +512,30 @@ namespace efloat_detail {
 			r = x - efloat<nlimbs>(k) * ln2;
 		}
 		r.set_precision(working);
-		const int64_t  h_signed = r.iszero() ? 0 : static_cast<int64_t>(halvings) + r.scale() + 1;
-		const unsigned h        = (h_signed > 0) ? static_cast<unsigned>(std::min<int64_t>(h_signed, halvings)) : 0u;
-		if (!r.iszero()) r.setexponent(r.scale() - static_cast<int64_t>(h));
 
-		// Taylor series for exp(r / 2^h), until the terms fall below the working precision
-		efloat<nlimbs> sum(1.0);
-		sum.set_precision(working);
-		efloat<nlimbs> term(sum);
-
-		// Each term lies further below the sum than the last, so it needs that many fewer bits: the
-		// running term and r are carried at a precision that falls with the terms (#1714). Both are
-		// cut, because a product takes the wider of its operands' precisions.
-		efloat<nlimbs> r_taper = r;
-		unsigned taper = working;
-		for (unsigned n = 1; ; ++n) {
-			const int64_t below = sum.scale() - term.scale();   // bits the term sits below the sum
-			const unsigned need = (below + 64 < static_cast<int64_t>(working)) ? static_cast<unsigned>(static_cast<int64_t>(working) - below) : 64u;
-			if (need + 32u <= taper) {
-				taper = need;
-				term.set_precision(taper);
-				r_taper = r;
-				r_taper.set_precision(taper);
-			}
-			// n carries no precision, so the quotient stays at the taper (#1757)
-			term = term * r_taper / n;
-			if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(working)) break;
-			sum += term;
+		const std::size_t n = (precision + 64u + T + 16u + 63u) / 64u;   // fraction limbs
+		const unsigned    F = static_cast<unsigned>(64 * n);
+		const int64_t  h_signed = r.iszero() ? 0 : static_cast<int64_t>(T) + r.scale() + 1;
+		const unsigned h        = (h_signed > 0) ? static_cast<unsigned>(h_signed) : 0u;
+		std::vector<limb_t> E(n + 1);
+		exp_fixed::to_fixed(r, static_cast<int64_t>(F) - static_cast<int64_t>(h), E.data(), n);   // R, then exp(+-s)
+		std::size_t top = n;
+		while (top > 0 && E[top - 1] == 0u) --top;
+		if (top == 0) {
+			E.assign(n + 1, 0u);   // s below 2^-F: exp(s) is 1 to within the guard bits
+			E[n] = 1;
 		}
-		for (unsigned i = 0; i < h; ++i) sum = sum * sum;
-
-		// Multiply by 2^k using exponent scaling
-		if (k != 0) {
-			sum.setexponent(sum.scale() + k);
+		else {
+			const int64_t a = static_cast<int64_t>(F) - (64 * static_cast<int64_t>(top) - std::countl_zero(E[top - 1]));   // s < 2^-a
+			const unsigned N = exp_fixed::series_terms(a, F);
+			std::vector<limb_t> R(E.begin(), E.begin() + static_cast<std::ptrdiff_t>(n));
+			exp_fixed::series(E.data(), R.data(), n, r.sign() == -1, N, exp_fixed::block_length(N));
+			for (unsigned i = 0; i < h; ++i) exp_fixed::square(E.data(), n);
 		}
-		return sum;
+		// exp(r) 2^k = E 2^(k - F): the top bit of E[n] weighs 2^(64 n + 63 - F) = 2^63 of it
+		efloat<nlimbs> result = exp_fixed::from_fixed<nlimbs>(E.data(), n + 1, 63 + k);
+		result.set_precision(working);
+		return result;
 	}
 
 	// 2^x = exp(x ln 2) and 10^x = exp(x ln 10) for a finite x in exp's range, unrounded, at
