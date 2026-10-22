@@ -387,16 +387,19 @@ namespace efloat_detail {
 
 		// The series sum_k (+-1)^k s^k / (d(1) d(2) ... d(k)): d(t) = t for exp, and
 		// d(t) = (2t + 1)(2t + 2) for the versine's v / y^2 = (1/2) sum_k (-1)^k z^k 2 / (2k + 2)!
-		// in z = y^2 (#1790)
-		enum class divisors { exponential, versine };
+		// in z = y^2 (#1790). The arctangent's divisors do not chain: its series
+		// atan(y) / y = sum_k (-1)^k z^k / (2k + 1) has its own engine, arctangent_series (#1792).
+		enum class divisors { exponential, versine, arctangent };
 
 		inline constexpr limb_t divisor(divisors kind, limb_t t) noexcept {
-			return (kind == divisors::exponential) ? t : (2 * t + 1) * (2 * t + 2);
+			return (kind == divisors::exponential) ? t : (kind == divisors::versine) ? (2 * t + 1) * (2 * t + 2) : 2 * t + 1;
 		}
 
-		// log2(d(1) ... d(N))
+		// log2 of the divisor of the N-th term: d(1) ... d(N), or 2N + 1 for the arctangent
 		inline double log2_divisors(divisors kind, unsigned N) noexcept {
-			return (kind == divisors::exponential) ? log2_factorial(N) : log2_factorial(2 * N + 2) - 1.0;
+			if (kind == divisors::exponential) return log2_factorial(N);
+			if (kind == divisors::versine) return log2_factorial(2 * N + 2) - 1.0;
+			return std::log2(2.0 * static_cast<double>(N) + 1.0);
 		}
 
 		// the number of terms N for which s^N / (d(1) ... d(N)) < 2^-(F + 4), for s < 2^-a, a >= 1:
@@ -518,6 +521,93 @@ namespace efloat_detail {
 				add_or_sub(acc, pos, neg, kw, negative && (m % 2 == 1));
 			}
 			for (std::size_t i = 0; i < w; ++i) E[i] = acc[i];
+		}
+
+		// S[0, n + 1) = sum_k (-1)^k z^k / (2k + 1) 2^F, z = Z 2^-F < 2^-a, truncated at each step:
+		// atan(y) / y for z = y^2 (#1792). The divisors do not chain from term to term as exp's do,
+		// so a block of the rectangular splitting is B_i = sum_j (-1)^j P_j / (2(i m + j) + 1),
+		// P_j = z^j, and the Horner step multiplies by (-1)^m P_m alone. A block is summed in
+		// groups whose divisors' product L fits in a limb: each term adds or subtracts P_j L / d_j,
+		// one multiplication by a limb, and the group divides by L once. The terms alternate and
+		// decrease, so every partial sum of a group, of a block and of the Horner scheme has the
+		// sign of its first term and is held as a natural number.
+		//
+		// Tapering, as in series: block b enters scaled by z^(b m) < 2^-(b m a), so it is formed on
+		// the top n - q_b limbs, 64 q_b <= b m a - 8, and its truncation stays below 2^-(F + 8).
+		inline void arctangent_series(limb_t* S, const limb_t* Z, std::size_t n, unsigned N, unsigned m, int64_t a) {
+			const std::size_t w  = n + 1;
+			const unsigned    nb = (N + m - 1) / m; // blocks
+			limb_t* P   = scratch((m + 1) * w + (2 * w + 2) + 3 * (w + 2) + efloat_mpn::scratch_limbs(w));
+			limb_t* tmp = P + (m + 1) * w;          // a product or a quotient, 2 w + 2 limbs
+			limb_t* acc = tmp + (2 * w + 2);        // the Horner value, w + 2 limbs
+			limb_t* blk = acc + (w + 2);            // a block's sum
+			limb_t* grp = blk + (w + 2);            // a group's numerator
+			limb_t* s   = grp + (w + 2);
+			// P_j = z^j, j = 1 .. m, n limbs each (the w-th is 0)
+			for (std::size_t i = 0; i < w; ++i) P[w + i] = (i < n) ? Z[i] : 0u;
+			for (unsigned j = 2; j <= m; ++j) {
+				if (j % 2 == 0) efloat_mpn::mul_n(tmp, P + (j / 2) * w, P + (j / 2) * w, n, s, true);
+				else            efloat_mpn::mul(tmp, P + (j - 1) * w, n, Z, n, s);
+				for (std::size_t i = 0; i < n; ++i) P[j * w + i] = tmp[n + i];
+				P[j * w + n] = 0;
+			}
+			constexpr limb_t limit = limb_t(1) << 63;
+			std::size_t acc_q = 0;                  // the limbs the Horner value has dropped
+			for (unsigned b = nb; b-- > 0;) {
+				const limb_t base = static_cast<limb_t>(b) * m;
+				std::size_t q = 0;
+				if (a > 0 && b > 0) {
+					const double G = static_cast<double>(base) * static_cast<double>(a);
+					if (G >= 72.0) q = std::min(n - 1, static_cast<std::size_t>((G - 8.0) / 64.0));
+				}
+				const std::size_t k  = n - q;         // fraction limbs of this block
+				const std::size_t kw = k + 1;
+				for (std::size_t i = 0; i <= kw; ++i) blk[i] = 0;
+				for (unsigned j = 0; j < m;) {
+					// the group j .. e - 1, L = d(j) ... d(e - 1) <= 2^63
+					limb_t L = 2 * (base + j) + 1;
+					unsigned e = j + 1;
+					while (e < m) {
+						const limb_t d = 2 * (base + e) + 1;
+						if (L > limit / d) break;
+						L *= d;
+						++e;
+					}
+					for (std::size_t i = 0; i <= kw; ++i) grp[i] = 0;
+					for (unsigned t = j; t < e; ++t) {
+						const limb_t c = L / (2 * (base + t) + 1);
+						if (t == 0) {
+							grp[k] = c;                   // P_0 = 1 = 2^F, the group's first term
+						}
+						else if ((t - j) % 2 == 0) {
+							const limb_t carry = efloat_mpn::addmul_1(grp, P + t * w + q, k, c);
+							efloat_mpn::add_1(grp + k, 2, carry);
+						}
+						else {
+							const limb_t borrow = efloat_mpn::submul_1(grp, P + t * w + q, k, c);
+							efloat_mpn::sub_1(grp + k, 2, borrow);
+						}
+					}
+					div_1(tmp, grp, kw, L);           // the group, below 2
+					add_or_sub(blk, blk, tmp, kw, j % 2 == 1);
+					j = e;
+				}
+				if (b + 1 == nb) {
+					for (std::size_t i = 0; i < kw; ++i) acc[i] = blk[i];
+					acc_q = q;
+					continue;
+				}
+				// the Horner value at this block's width: acc_q - q more limbs at the bottom, zero
+				const std::size_t up = acc_q - q;
+				if (up > 0) {
+					for (std::size_t i = kw; i-- > 0;) acc[i] = (i >= up) ? acc[i - up] : 0u;
+				}
+				acc_q = q;
+				// acc = B_b +- acc P_m
+				efloat_mpn::mul(tmp, acc, kw, P + m * w + q, k, s);   // kw + k limbs
+				add_or_sub(acc, blk, tmp + k, kw, m % 2 == 1);
+			}
+			for (std::size_t i = 0; i < w; ++i) S[i] = acc[i];
 		}
 
 		// E[0, n + 1) = E^2, truncated to F fraction bits
