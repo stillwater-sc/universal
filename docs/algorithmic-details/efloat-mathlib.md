@@ -479,13 +479,12 @@ precision (filling `ln2`, `pi`, the log table, the Bernoulli numbers) is real bu
 | #1779 | 2026-10-21 | tgamma, lgamma at any precision (were through `double`) |
 | #1781 | 2026-10-21 | erf, erfc at any precision (were through `double`) |
 | #1783 | 2026-10-21 | cbrt, hypot, fma correctly rounded; fmod, remainder exact |
+| #1786 | 2026-10-21 | `std::numeric_limits<efloat>`; the range is the math library's, scale in `[1 - 2^62, 2^62 - 1]` |
 
 ## 9. Open work
 
-**Library gaps.** efloat has no `std::numeric_limits` specialization (the include in
-`efloat.hpp` is commented out), so `std::numeric_limits<efloat<N>>::infinity()` is not an
-infinity; set one with `setinf()`. An exact integer cube root with remainder, like `sqrtrem`,
-would make `cbrt` cheaper than Newton under Ziv.
+**Library gaps.** An exact integer cube root with remainder, like `sqrtrem`, would make `cbrt`
+cheaper than Newton under Ziv.
 
 **Speed** (Epic #1763): short (high-half) products and MPFR's can-round on them; Toom-3; short
 division (`divhigh`); fixed-point series kernels; a cheap first Ziv try at

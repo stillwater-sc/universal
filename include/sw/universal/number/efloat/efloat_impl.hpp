@@ -543,7 +543,7 @@ public:
 
 	// selectors
 	constexpr bool iszero() const noexcept { return _state == FloatingPointState::Zero; }
-	constexpr bool isone()  const noexcept { return (_state == FloatingPointState::Normal && !_sign && _exponent == 0 && _limb.size() == 1 && _limb[0] == 0x8000'000); }
+	constexpr bool isone()  const noexcept { return (_state == FloatingPointState::Normal && !_sign && _exponent == 0 && _limb.size() == 1 && _limb[0] == 0x8000'0000u); }
 	constexpr bool isodd()  const noexcept { return false; }
 	constexpr bool iseven() const noexcept { return !isodd(); }
 	constexpr bool ispos()  const noexcept { return (_state == FloatingPointState::Normal && !_sign); }

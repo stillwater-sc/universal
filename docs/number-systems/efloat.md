@@ -32,8 +32,15 @@ class efloat;
 | Property | Value |
 |---|---|
 | Significand | `nlimbs` limbs, set at compile time |
-| Exponent | independent, wide |
+| Exponent | `int64_t`; a finite value's scale lies in `[1 - 2^62, 2^62 - 1]` |
 | Precision ceiling | memory, not a host exponent range |
+
+`std::numeric_limits<efloat<nlimbs>>` describes the type at its widest precision (#1786):
+`digits` is `nlimbs * 32` and `epsilon()` is `2^(1 - digits)`; `min()` and `max()` sit at the
+ends of the scale range above, and `infinity()`, `quiet_NaN()` and `signaling_NaN()` are the
+special values. The range does not fit in an `int`, so `min_exponent` and `max_exponent`
+saturate at `-INT_MAX` and `INT_MAX`. The limits that are powers of two carry no precision of
+their own, so `x + epsilon()` stays at `x`'s precision.
 
 ### Precision
 
