@@ -156,7 +156,7 @@ int VerifyEfloatNext(bool reportTestCases) {
 	}
 
 	// ---------------------------------------------------------------------
-	// 5. zero: step away from zero is a tiny value on the correct side
+	// 5. zero: step away from zero is the smallest normal on the correct side
 	// ---------------------------------------------------------------------
 	if (reportTestCases)
 		std::cout << "  Verifying step from zero...\n";
@@ -164,7 +164,8 @@ int VerifyEfloatNext(bool reportTestCases) {
 		E zero(0.0);
 		E zu = nextafter(zero, E(1.0));
 		E zd = nextafter(zero, E(-1.0));
-		if (!(zu > zero) || zu.scale() != -1074) {
+		// the smallest normal, efloat having no subnormals (#1786); it was 2^-1074
+		if (!(zu > zero) || zu.scale() != E::min_scale || zd != -zu) {
 			if (reportTestCases)
 				std::cout << "    FAIL: nextafter(0,+) scale=" << zu.scale() << "\n";
 			++failures;

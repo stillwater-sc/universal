@@ -37,7 +37,6 @@
 // layer 1: the arithmetic core (#1334). Include core.hpp directly in a translation
 // unit that only computes -- it pulls no <iostream>/<sstream>/<iomanip>.
 #include <universal/number/efloat/core.hpp>
-//#include <universal/number/efloat/numeric_limits.hpp>
 
 // The core reads IEEE-754 fields through native/ieee754_core.hpp and
 // native/manipulators_core.hpp. The full native support -- to_binary/to_hex/

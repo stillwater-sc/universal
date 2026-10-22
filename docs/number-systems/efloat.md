@@ -32,8 +32,23 @@ class efloat;
 | Property | Value |
 |---|---|
 | Significand | `nlimbs` limbs, set at compile time |
-| Exponent | independent, wide |
+| Exponent | `int64_t`; a finite value's scale lies in `[1 - 2^62, 2^62 - 1]` |
 | Precision ceiling | memory, not a host exponent range |
+
+`std::numeric_limits<efloat<nlimbs>>` describes the type at its widest precision (#1786):
+`digits` is `nlimbs * 32` and `epsilon()` is `2^(1 - digits)`; `min()` and `max()` sit at the
+ends of the scale range above, and `infinity()`, `quiet_NaN()` and `signaling_NaN()` are the
+special values. The range does not fit in an `int`, so `min_exponent` and `max_exponent`
+saturate at `-INT_MAX` and `INT_MAX`. The limits that are powers of two carry no precision of
+their own, so `x + epsilon()` stays at `x`'s precision.
+
+The arithmetic keeps to that range. A result past `max()` overflows, and one below `min()`
+underflows, as IEEE-754 prescribes in each rounding mode, with no subnormals. Overflow goes to
+inf, or to the largest value at the result's precision when the mode rounds toward zero from
+it. Underflow goes to 0, or to `min()` when the mode rounds away from zero, and under round to
+nearest when the result lies above `min() / 2`. Both raise their exception flags. `fma` forms
+its product exactly even when the product alone would leave the range, so
+`fma(max(), 2, -max())` is `max()`.
 
 ### Precision
 

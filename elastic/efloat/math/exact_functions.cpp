@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <random>
 #include <universal/number/efloat/efloat.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -28,21 +29,6 @@ namespace {
 	using sw::universal::RoundingMode;
 	constexpr RoundingMode all_modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
 	                                       RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
-
-	// +inf and NaN, set directly: efloat has no std::numeric_limits specialization
-	template<unsigned nlimbs>
-	sw::universal::efloat<nlimbs> infinity() {
-		sw::universal::efloat<nlimbs> v(0);   // a value that carries no precision
-		v.setinf(false);
-		return v;
-	}
-
-	template<unsigned nlimbs>
-	sw::universal::efloat<nlimbs> quiet_nan() {
-		sw::universal::efloat<nlimbs> v(0);
-		v.setnan();
-		return v;
-	}
 
 	template<unsigned nlimbs>
 	bool same(const sw::universal::efloat<nlimbs>& a, const sw::universal::efloat<nlimbs>& b) {
@@ -88,7 +74,7 @@ namespace {
 		using E = efloat<nlimbs>;
 		const RoundingMode saved = efloat_rounding_mode;
 		efloat_rounding_mode = RoundingMode::RoundToNearest;
-		const E inf = infinity<nlimbs>();
+		const E inf = std::numeric_limits<E>::infinity();
 		const E pred = nextafter(r, -inf), succ = nextafter(r, inf);
 		bool ok = false;
 		switch (mode) {
@@ -383,8 +369,8 @@ namespace {
 				++failures;
 			}
 		};
-		const E inf = infinity<4>();
-		const E nan = quiet_nan<4>();
+		const E inf = std::numeric_limits<E>::infinity();
+		const E nan = std::numeric_limits<E>::quiet_NaN();
 		E one(1), zero(0), two(2), three(3);
 		for (E* v : { &one, &zero, &two, &three }) v->set_precision(96);
 		E third(one);
