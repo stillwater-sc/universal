@@ -42,6 +42,14 @@ special values. The range does not fit in an `int`, so `min_exponent` and `max_e
 saturate at `-INT_MAX` and `INT_MAX`. The limits that are powers of two carry no precision of
 their own, so `x + epsilon()` stays at `x`'s precision.
 
+The arithmetic keeps to that range. A result past `max()` overflows, and one below `min()`
+underflows, as IEEE-754 prescribes in each rounding mode, with no subnormals. Overflow goes to
+inf, or to the largest value at the result's precision when the mode rounds toward zero from
+it. Underflow goes to 0, or to `min()` when the mode rounds away from zero, and under round to
+nearest when the result lies above `min() / 2`. Both raise their exception flags. `fma` forms
+its product exactly even when the product alone would leave the range, so
+`fma(max(), 2, -max())` is `max()`.
+
 ### Precision
 
 Every efloat value rounds at a precision, which can differ from the type's `nlimbs * 32`

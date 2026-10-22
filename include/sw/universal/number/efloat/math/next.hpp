@@ -31,11 +31,10 @@ constexpr efloat<nlimbs> nextafter(const efloat<nlimbs>& x, const efloat<nlimbs>
 		return y;
 
 	if (x.iszero()) {
-		// Step away from zero. An arbitrary-precision type has no fixed smallest
-		// subnormal, so use the double smallest-subnormal exponent (2^-1074) as a
-		// sensible minimum floor.
+		// Step away from zero to the smallest normal, 2^min_scale: efloat has no subnormals
+		// (#1786). It was 2^-1074, double's smallest subnormal, before the range was bounded.
 		efloat<nlimbs> ulp(1.0);
-		ulp.setexponent(-1074);
+		ulp.setexponent(efloat<nlimbs>::min_scale);
 		return (y.sign() == -1) ? -ulp : ulp;
 	}
 
@@ -56,12 +55,17 @@ constexpr efloat<nlimbs> nextafter(const efloat<nlimbs>& x, const efloat<nlimbs>
 		efloat<nlimbs> ulp(1.0);
 		ulp.setexponent(k - P + 1);
 		newmag = absx + ulp;
+		// past the largest value at P bits: inf in every mode, where rounding toward zero
+		// would have kept |x| (#1786)
+		if (!(newmag > absx)) newmag.setinf(false);
 	} else {
 		// toward zero: if |x| is an exact power of two, the neighbor lies in the
 		// lower binade a half-ULP away; otherwise it is one ULP of this binade.
 		efloat<nlimbs> pow2(1.0);
 		pow2.setexponent(k);
-		if (absx == pow2) {
+		if (absx == pow2 && k == efloat<nlimbs>::min_scale) {
+			newmag.setzero();   // below the smallest normal lies zero, whatever the mode (#1786)
+		} else if (absx == pow2) {
 			efloat<nlimbs> half(1.0);
 			half.setexponent(k - P);
 			newmag = absx;

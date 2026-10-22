@@ -128,6 +128,11 @@ template<unsigned nlimbs = 1024>
 class efloat {
 public:
 	static constexpr unsigned maxNrLimbs = nlimbs;  // limbs are 32-bit words, so 1024 limbs is 32k bits of precision
+	// the exponent range (#1786): a finite value's scale lies in [min_scale, max_scale]. The
+	// int64_t exponent then holds the sum of two of them, so a product cannot overflow it, and a
+	// result outside the range overflows or underflows (enforce_range). exp's range is the same.
+	static constexpr int64_t max_scale = (int64_t(1) << 62) - 1;
+	static constexpr int64_t min_scale = -max_scale;
 
 	// Partial-constexpr surface (issue #747): efloat carries a
 	// std::vector<uint32_t> _limb member, so any non-empty digit storage
@@ -593,7 +598,16 @@ public:
 	// the same limbs, most significant first, without the copy bits() makes (#1783)
 	const std::vector<uint32_t>& limb_vector() const noexcept { return _limb; }
 
+	// the leading bit at the top of _limb[0], no trailing zero limbs, rounded to the precision,
+	// and inside the exponent range (enforce_range)
 	constexpr void normalize() {
+		normalize_significand();
+		if (!in_range(_exponent)) [[unlikely]] enforce_range();
+	}
+
+	// normalize() without the range check, which stays outside this recursion: inside it, it
+	// cost exp 8% at 128 bits (#1786)
+	constexpr void normalize_significand() {
 		if (_state != FloatingPointState::Normal) {
 			return;
 		}
@@ -642,8 +656,52 @@ public:
 				_limb.insert(_limb.begin(), 1u);
 				_exponent += 32;
 			}
-			normalize(); // Recursive call to normalize the rounded/carried result
+			normalize_significand(); // Recursive call to normalize the rounded/carried result
 		}
+	}
+
+	// whether e lies in [min_scale, max_scale], in one unsigned comparison: e + max_scale wraps
+	// past 2 max_scale on both sides
+	static constexpr bool in_range(int64_t e) noexcept {
+		return static_cast<uint64_t>(e) + static_cast<uint64_t>(max_scale) <= 2u * static_cast<uint64_t>(max_scale);
+	}
+
+	// A finite value outside [min_scale, max_scale] overflows or underflows in the current mode, as
+	// IEEE-754 does without subnormals (#1786). It has already been rounded to its precision, so
+	// overflow is decided after rounding. Overflow is inf, or the largest value at the precision
+	// when the mode rounds toward zero from it; underflow is 0, or min() when the mode rounds away
+	// from zero, and to nearest when the value lies above min() / 2, the midpoint rounding to 0.
+	// The check is inline at each call site and this, the rare path, is out of line.
+#if defined(__GNUC__) || defined(__clang__)
+	__attribute__((noinline, cold))
+#endif
+	constexpr void enforce_range() noexcept {
+		if (_state != FloatingPointState::Normal || in_range(_exponent)) return;
+		const RoundingMode mode = efloat_rounding_mode;
+		const bool upward = (mode == RoundingMode::RoundTowardPositive && !_sign) || (mode == RoundingMode::RoundTowardNegative && _sign);
+		if (_exponent > max_scale) {
+			if (mode == RoundingMode::RoundToNearest || upward) {
+				setinf(_sign);
+			}
+			else {
+				_limb.assign(precision_limbs(), 0xFFFF'FFFFu);
+				_exponent = max_scale;
+			}
+			efloat_exception_flags.set(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
+			return;
+		}
+		const bool power_of_2 = (_limb.size() == 1 && _limb[0] == 0x8000'0000u);
+		const bool to_min = upward || (mode == RoundingMode::RoundToNearest && _exponent == min_scale - 1 && !power_of_2);
+		if (to_min) {
+			_limb.assign(1, 0x8000'0000u);
+			_exponent = min_scale;
+		}
+		else {
+			const bool negative = _sign;
+			setzero();
+			_sign = negative;
+		}
+		efloat_exception_flags.set(ExceptionFlag::Underflow | ExceptionFlag::Inexact);
 	}
 
 	static constexpr int compare_limbs(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b) noexcept {
@@ -913,6 +971,7 @@ protected:
 		while (_limb.size() > 1 && _limb.back() == 0u) _limb.pop_back();
 		_exponent = exponent;
 		_state    = FloatingPointState::Normal;
+		if (!in_range(exponent)) [[unlikely]] enforce_range();
 	}
 
 	// whether a value whose last kept bit is lsb, and whose discarded bits are guard (the first)

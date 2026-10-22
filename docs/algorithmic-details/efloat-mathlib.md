@@ -274,6 +274,14 @@ Until #1783 these five were computed at the result's precision but rounded more 
   to `pad - 2` bits, and their square roots alike up to `(pad - 4) / 2`. That keeps the width
   bounded whatever the exponent gap. `fma` passes `pad = P + 2` and rounds the sum once;
   `hypot` passes `2P + 4` and takes the exact root (`sqrt_to`, which rounds once).
+- **fma at the range's ends** (#1786). When `scale(x) + scale(y)` leaves `[min_scale,
+  max_scale)`, the exact product would overflow or underflow, though `x y + z` may not. Both
+  terms are then scaled by `2^-t`, where `t` is the larger term's scale. A term more than
+  `2^62` binades below the larger one is raised to `2^(min_scale + 2)`. It still lies far below
+  the larger term's last bit, so `exact_sum` proxies it and the rounding is unchanged. The sum
+  rounds at `P`, and multiplying by `2^t` brings it back, overflowing or underflowing as a product
+  would. For a finite `x y` and an infinite `z`, `fma` returns `z`; computing `x * y` first could
+  overflow and give `inf - inf`.
 - **hypot** scales both arguments by `2^-k`, `k = scale(max)`, so the squares stay inside the
   exponent range, and multiplies the root back. When the arguments are more than
   `max(bits(max), P + 2) + 8` binades apart, the result is `max` plus a positive amount below
@@ -479,7 +487,7 @@ precision (filling `ln2`, `pi`, the log table, the Bernoulli numbers) is real bu
 | #1779 | 2026-10-21 | tgamma, lgamma at any precision (were through `double`) |
 | #1781 | 2026-10-21 | erf, erfc at any precision (were through `double`) |
 | #1783 | 2026-10-21 | cbrt, hypot, fma correctly rounded; fmod, remainder exact |
-| #1786 | 2026-10-21 | `std::numeric_limits<efloat>`; the range is the math library's, scale in `[1 - 2^62, 2^62 - 1]` |
+| #1786 | 2026-10-21 | `std::numeric_limits<efloat>`; arithmetic overflows and underflows at the math library's range, scale in `[1 - 2^62, 2^62 - 1]` |
 
 ## 9. Open work
 

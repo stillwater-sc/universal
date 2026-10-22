@@ -12,20 +12,12 @@
 // includes this header (the cycle areal hit, #1452)
 #include <universal/number/efloat/efloat_impl.hpp>
 
-namespace sw { namespace universal { namespace efloat_detail {
-
-	// efloat's exponent range: a finite value's scale lies in [1 - 2^62, 2^62 - 1]. The int64_t
-	// exponent then holds the sum of two of them, so a product cannot overflow it; exp and pow
-	// return 0 or inf where the result's scale would leave the range (exp_range_limit, #1777).
-	inline constexpr int64_t max_scale = (int64_t(1) << 62) - 1;
-	inline constexpr int64_t min_scale = -max_scale;
-
-}}}  // namespace sw::universal::efloat_detail
-
 namespace std {
 
 // The limits of efloat<nlimbs> at its widest precision, nlimbs * 32 bits (#1786). A value may
-// carry a narrower precision p (set_precision); its own epsilon is then 2^(1 - p).
+// carry a narrower precision p (set_precision); its own epsilon is then 2^(1 - p). min() and
+// max() are the ends of the exponent range, [Efloat::min_scale, Efloat::max_scale], past which
+// arithmetic overflows to inf and underflows to 0 (efloat::enforce_range).
 //
 // The values that are powers of two carry no precision of their own (#1757): they are exact,
 // so x + epsilon() stays at x's precision rather than widening to the type's. max() and
@@ -41,10 +33,10 @@ class numeric_limits< sw::universal::efloat<nlimbs> > {
 public:
 	static constexpr bool is_specialized = true;
 	static Efloat min() {      // smallest positive normal value
-		return power_of_2(sw::universal::efloat_detail::min_scale);
+		return power_of_2(Efloat::min_scale);
 	}
 	static Efloat max() {      // largest finite value: digits ones times 2^(max_scale - digits + 1)
-		Efloat v(false, sw::universal::efloat_detail::max_scale, std::vector<uint32_t>(nlimbs, 0xFFFF'FFFFu));
+		Efloat v(false, Efloat::max_scale, std::vector<uint32_t>(nlimbs, 0xFFFF'FFFFu));
 		v.set_precision(static_cast<unsigned>(digits));
 		return v;
 	}
