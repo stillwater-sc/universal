@@ -16,8 +16,11 @@ namespace std {
 
 // The limits of efloat<nlimbs> at its widest precision, nlimbs * 32 bits (#1786). A value may
 // carry a narrower precision p (set_precision); its own epsilon is then 2^(1 - p). min() and
-// max() are the ends of the exponent range, [Efloat::min_scale, Efloat::max_scale], past which
-// arithmetic overflows to inf and underflows to 0 (efloat::enforce_range).
+// max() are the ends of the exponent range, [Efloat::min_scale, Efloat::max_scale]. Past them
+// arithmetic overflows and underflows as the rounding mode directs (efloat::enforce_range):
+// overflow gives inf, or the largest value at the result's precision where the mode rounds
+// toward zero; underflow gives 0, or min() where the mode rounds away from zero, and to
+// nearest above min() / 2.
 //
 // The values that are powers of two carry no precision of their own (#1757): they are exact,
 // so x + epsilon() stays at x's precision rather than widening to the type's. max() and
