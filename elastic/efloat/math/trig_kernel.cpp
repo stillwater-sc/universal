@@ -12,7 +12,9 @@
 //   - trig_working(x, P), for sin, cos and tan, within its declared bound
 //     2^(scale - P - exp_log_guard_bits + trig_error_bits), for x inside and outside pi/4, near
 //     k pi/2, and either side of 2^40, where the reduction stops taking k from double; reduced
-//     for the reference by pi/2 carried at 3P + 256 bits.
+//     for the reference by pi/2 carried at 3P + 256 bits;
+//   - sin, cos and tan of tiny x either side of the cut below which they round from x or 1
+//     directly, correctly rounded in all four modes.
 //
 // REGRESSION_LEVEL convention (intensity progression):
 //   LEVEL 1 -- 10 precisions from 24 to 2048 bits, random arguments and the edges.
@@ -180,6 +182,47 @@ namespace {
 		return fails;
 	}
 
+	// sin, cos and tan of tiny x either side of the cut below which they round from x or 1
+	// directly (round_near): 2 scale(x) < -P - 3 for sin and < -P - 4 for cos and tan (#1790).
+	// Each result must be the reference rounded once to the result's precision, in every mode.
+	int VerifyTinyCuts(bool reportTestCases) {
+		using namespace sw::universal;
+		int fails = 0;
+		std::mt19937_64 rng(17902);
+		const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+		                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+		const RoundingMode saved = efloat_rounding_mode;
+		for (unsigned P : { 32u, 64u, 128u, 256u, 512u }) {
+			for (int f = 0; f < 3; ++f) {
+				const int64_t cut = -static_cast<int64_t>(P) - ((f == 0) ? 3 : 4);   // 2 scale(x) < cut rounds directly
+				for (int64_t s2 = cut - 2; s2 <= cut + 6; ++s2) {   // round directly below the cut, by Ziv above it
+					for (int c = 0; c < 8; ++c) {
+						E x = random_value(rng, P, (s2 >= 0) ? s2 / 2 : -((1 - s2) / 2));
+						if (c == 0) { x = E(1); x.set_precision(P); x.setexponent((s2 >= 0) ? s2 / 2 : -((1 - s2) / 2)); }   // a power of 2
+						const E ref = reference_trig(x, 3 * P + 256, trig_function(f));
+						for (RoundingMode m : modes) {
+							efloat_rounding_mode = m;
+							const E y = (f == 0) ? sin(x) : (f == 1) ? cos(x) : tan(x);
+							E expected(ref);
+							expected.set_precision(y.get_precision());   // rounded once, in mode m
+							efloat_rounding_mode = saved;
+							if (!(y == expected)) {
+								++fails;
+								if (reportTestCases) {
+									static const char* name[] = { "sin", "cos", "tan" };
+									std::cerr << "FAIL: " << name[f] << " at P = " << P << ", 2 scale(x) = " << 2 * x.scale()
+									          << " (cut " << cut << "), mode " << static_cast<int>(m) << '\n';
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		efloat_rounding_mode = saved;
+		return fails;
+	}
+
 }  // anonymous namespace
 
 #define MANUAL_TESTING 0
@@ -216,6 +259,7 @@ int main() try {
 
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyTrigKernel(precisions, 16, reportTestCases), "efloat", "error bounds, 24 to 2048 bits");
+	nrOfFailedTestCases += ReportTestResult(VerifyTinyCuts(reportTestCases), "efloat", "tiny x either side of the round_near cuts");
 #	endif
 #	if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyTrigKernel(precisions, 64, reportTestCases), "efloat", "error bounds, 4x cases");
