@@ -300,6 +300,9 @@ public:
 	// result has none either, and rounds at the default precision: set_default_precision() if
 	// set, else nlimbs * 32 bits.  get_precision() reports that effective precision.
 	unsigned get_precision() const noexcept { return precision_limbs() * 32; }
+	// precision is held in whole 32-bit limbs: set_precision(24) keeps 32 bits and
+	// set_precision(100) keeps 128, so a reference to compare against must round at
+	// get_precision(), not at the bits requested
 	void set_precision(unsigned bits) noexcept { _precision_limbs = std::max(1u, (bits + 31) / 32); normalize(); }
 	// whether the value carries a precision of its own, and dropping it: the value rounds to
 	// the default precision and then carries none, as one constructed from a native value

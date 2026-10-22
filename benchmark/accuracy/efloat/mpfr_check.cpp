@@ -366,6 +366,8 @@ namespace sw { namespace universal {
 
 	struct Tally { long cases = 0, wrong = 0; double seconds = 0.0; };
 
+	// P must be a multiple of 32: efloat holds precision in whole 32-bit limbs, so at P = 24 it
+	// would round at 32 bits against an MPFR reference rounded at 24, and report false misroundings
 	template<unsigned nlimbs>
 	Tally run(const Function& f, unsigned P, long count) {
 		using Real = efloat<nlimbs>;
