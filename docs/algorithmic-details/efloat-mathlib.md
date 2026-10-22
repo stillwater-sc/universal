@@ -623,11 +623,11 @@ row both ways before reading it as a cost.
 | #1778 | 2026-10-21 | correctly rounded conversion to float/double below the smallest normal |
 | #1779 | 2026-10-21 | tgamma, lgamma at any precision (were through `double`) |
 | #1781 | 2026-10-21 | erf, erfc at any precision (were through `double`) |
-| #1783 | 2026-10-21 | cbrt, hypot, fma correctly rounded; fmod, remainder exact |
-| #1786 | 2026-10-21 | `std::numeric_limits<efloat>`; arithmetic overflows and underflows at the math library's range, scale in `[1 - 2^62, 2^62 - 1]` |
-| #1788 | 2026-10-21 | exp series in fixed point by rectangular splitting: exp family 2.3-3.3x MPFR to 0.7-1.7x |
-| #1790 | 2026-10-22 | sin/cos/tan versine on the fixed-point engine; tapered blocks (exp at 8192 bits 1.6x to 1.1x) |
-| #1792 | 2026-10-22 | atan/asin/acos/atan2 series in fixed point, fewer halvings: 0.9-3.1x MPFR to 0.4-1.1x |
+| #1785 | 2026-10-21 | cbrt, hypot, fma correctly rounded; fmod, remainder exact |
+| #1787 | 2026-10-22 | `std::numeric_limits<efloat>`; arithmetic overflows and underflows at the math library's range, scale in `[1 - 2^62, 2^62 - 1]` |
+| #1789 | 2026-10-22 | exp series in fixed point by rectangular splitting: exp family 2.3-3.3x MPFR to 0.7-1.7x |
+| #1791 | 2026-10-22 | sin/cos/tan versine on the fixed-point engine; tapered blocks (exp at 8192 bits 1.6x to 1.1x) |
+| #1794 | 2026-10-22 | atan/asin/acos/atan2 series in fixed point, fewer halvings: 0.9-3.1x MPFR to 0.4-1.1x |
 
 ## 9. Open work
 
