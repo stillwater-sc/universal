@@ -483,7 +483,8 @@ Read the ratio column as the work left on Epic #1763.
     `tanh` at 0.7-0.9x, `exp10` at 0.3-0.6x up to 2048 bits and 1.0x at 8192, `pow(b, a)` at
     0.9-1.0x up to 512 bits;
   - `erf` and `erfc` from 512 bits up;
-  - `log10` (0.6x at 128 and 512 bits), and the inverse trigonometric functions at 512 bits.
+  - `log10` (0.6x at 128 and 512 bits), and `asin`, `acos`, `atan2` at 512 bits (0.9-1.0x;
+    `atan` is 1.1x there).
 - **exp family** (#1788): 1.1-1.2x at 2048 bits and 1.6x at 8192, against 2.3-3.3x before.
   `erf`, `erfc` gained 10-25% and `tgamma` 1-7% through their exp calls. `tgamma`'s time is
   mostly `lgamma`'s series, so it stays at 3-6x.
@@ -492,7 +493,8 @@ Read the ratio column as the work left on Epic #1763.
   against 0.045): it now forms the exact product and sum, where it used to round twice and was
   wrong in 29% of the cases.
 - **The primitives set the floor:** `a*b`, `b/a` and `sqrt` run 1.5-2.3x MPFR, and every
-  function built on them inherits that. trig 1.5-3x, log-based 1.1-2.4x.
+  function built on them inherits that. `sin`, `cos`, `tan` run 1.5-3.3x (`cos` at 128 bits is
+  the worst), the inverse trig functions 0.9-3.1x, log-based 1.1-2.4x.
 - **Largest gaps:** `lgamma(1.414...)` at
   8192 bits (18x; on #1779's random arguments it was 2.1-7.5x, and the cost #1779 identified
   is the second, wider pass that cancellation near the zeros at 1 and 2 forces; this argument
