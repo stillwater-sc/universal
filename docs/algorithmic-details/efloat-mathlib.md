@@ -566,6 +566,10 @@ Read the ratio column as the work left on Epic #1763.
 **Benchmark hygiene.** Single runs of the mpmath comparison vary by 15-50%; compare branches
 with best-of-5 runs on an idle machine. Warm the caches first. The first-call cost of a new
 precision (filling `ln2`, `pi`, the log table, the Bernoulli numbers) is real but separate.
+A change to one function can move unrelated rows by a few percent through code layout, since
+`mpfr_gap` is one translation unit: #1790 moved untouched rows by up to 4% at 128 bits under
+g++, and neither an isolated translation unit nor clang showed the move. Check a surprising
+row both ways before reading it as a cost.
 
 ## 8. History
 

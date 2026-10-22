@@ -18,6 +18,11 @@
 // is timed, so the caches of ln 2, pi and the log and Bernoulli tables are warm, as they are in an
 // application that calls a function more than once. Results reach a volatile sink.
 //
+// All rows share one translation unit, so a change to one function can move another row by a
+// few percent through code layout alone (#1790: +-4% at 128 bits under g++ on rows the change
+// did not touch). Before reading such a move as a cost, time the row in a translation unit of
+// its own, or under clang.
+//
 // MPFR is a dependency of this benchmark only, never of the library: the CMakeLists.txt next to
 // this file builds it when it finds mpfr.h, libmpfr and libgmp (Debian/Ubuntu: libmpfr-dev).
 // Both libraries round to nearest here; the figures are timings only. mpfr_check, in
