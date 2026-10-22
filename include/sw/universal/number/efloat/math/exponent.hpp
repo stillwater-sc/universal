@@ -290,12 +290,13 @@ namespace efloat_detail {
 
 namespace efloat_detail {
 
-	// The fixed-point series kernel of exp (#1788). A value v in [0, 2^64) is held as the natural
+	// The fixed-point series kernel of exp (#1788) and of sin/cos's versine (#1790). A value v in
+	// [0, 2^64) is held as the natural
 	// number V = floor(v 2^F) in n + 1 limbs of 64 bits, least significant first, with F = 64 n
 	// fraction bits, so the binary point sits on a limb boundary and every product shifts by
 	// whole limbs. Nothing inside the series normalizes, merges precisions or rounds: each
-	// operation truncates, and the truncations are counted in the guard bits (exp_fixed).
-	namespace exp_fixed {
+	// operation truncates, and the truncations are counted in the guard bits (fixed_series).
+	namespace fixed_series {
 
 		using efloat_mpn::limb_t;
 
@@ -355,6 +356,17 @@ namespace efloat_detail {
 			}
 		}
 
+		// out[0, outn) = floor(a[0, len) / 2^shift), the limbs past a's end zero
+		inline void shift_right(limb_t* out, std::size_t outn, const limb_t* a, std::size_t len, uint64_t shift) noexcept {
+			const std::size_t q = static_cast<std::size_t>(shift / 64u);
+			const unsigned    b = static_cast<unsigned>(shift % 64u);
+			for (std::size_t i = 0; i < outn; ++i) {
+				const limb_t lo = (i + q < len) ? a[i + q] : 0u;
+				const limb_t hi = (i + q + 1 < len) ? a[i + q + 1] : 0u;
+				out[i] = (b == 0u) ? lo : ((lo >> b) | (hi << (64u - b)));
+			}
+		}
+
 		// r[0, n) = a + b or a - b (a >= b), n limbs
 		inline void add_or_sub(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, bool subtract) noexcept {
 			if (subtract) efloat_mpn::sub_n(r, a, b, n); else efloat_mpn::add_n(r, a, b, n);
@@ -373,12 +385,26 @@ namespace efloat_detail {
 			return (x * std::log(x) - x + 0.5 * std::log(2.0 * 3.141592653589793 * x) + 1.0 / (12.0 * x)) / 0.6931471805599453;
 		}
 
-		// the number of terms N for which s^N / N! < 2^-(F + 4), for s < 2^-a, a >= 1: the tail past
-		// it, below twice its first term, is then below 2^-(F + 3). N a + log2(N!) grows with N, so
-		// the least N past F + 4 is found by bisection.
-		inline unsigned series_terms(int64_t a, unsigned F) noexcept {
+		// The series sum_k (+-1)^k s^k / (d(1) d(2) ... d(k)): d(t) = t for exp, and
+		// d(t) = (2t + 1)(2t + 2) for the versine's v / y^2 = (1/2) sum_k (-1)^k z^k 2 / (2k + 2)!
+		// in z = y^2 (#1790)
+		enum class divisors { exponential, versine };
+
+		inline constexpr limb_t divisor(divisors kind, limb_t t) noexcept {
+			return (kind == divisors::exponential) ? t : (2 * t + 1) * (2 * t + 2);
+		}
+
+		// log2(d(1) ... d(N))
+		inline double log2_divisors(divisors kind, unsigned N) noexcept {
+			return (kind == divisors::exponential) ? log2_factorial(N) : log2_factorial(2 * N + 2) - 1.0;
+		}
+
+		// the number of terms N for which s^N / (d(1) ... d(N)) < 2^-(F + 4), for s < 2^-a, a >= 1:
+		// the tail past it, below twice its first term, is then below 2^-(F + 3). N a + log2 of the
+		// divisors grows with N, so the least N past F + 4 is found by bisection.
+		inline unsigned series_terms(int64_t a, unsigned F, divisors kind = divisors::exponential) noexcept {
 			const double need = static_cast<double>(F) + 4.0;
-			auto enough = [a, need](unsigned N) { return static_cast<double>(N) * static_cast<double>(a) + log2_factorial(N) > need; };
+			auto enough = [a, need, kind](unsigned N) { return static_cast<double>(N) * static_cast<double>(a) + log2_divisors(kind, N) > need; };
 			unsigned lo = 1, hi = static_cast<unsigned>(need / static_cast<double>(a)) + 1u;   // enough(hi)
 			while (lo < hi) {
 				const unsigned mid = lo + (hi - lo) / 2;
@@ -388,21 +414,22 @@ namespace efloat_detail {
 		}
 
 		// the block length m of the rectangular splitting: about sqrt(N), and short enough that the
-		// divisor of a block, a product of m integers up to N + m, fits in a limb
-		inline unsigned block_length(unsigned N) noexcept {
+		// divisor of a block, a product of m divisors up to d(N + m), fits in a limb
+		inline unsigned block_length(unsigned N, divisors kind = divisors::exponential) noexcept {
 			unsigned m = static_cast<unsigned>(std::ceil(std::sqrt(static_cast<double>(N))));
 			if (m < 1u) m = 1u;
-			while (m > 1u && static_cast<double>(m) * std::log2(static_cast<double>(N + m)) >= 63.0) --m;
+			while (m > 1u && static_cast<double>(m) * std::log2(static_cast<double>(divisor(kind, N + m))) >= 63.0) --m;
 			return m;
 		}
 
 		// The halving target T, s = |r| / 2^h below 2^-T. Each halving costs a squaring at the end
-		// and saves the series terms; T = 0.4 sqrt(F) was measured best (to within the noise of a
-		// flat optimum) from 64 to 8192 bits: at 128 bits T = 6, at 8192 bits T = 34-37, where a
-		// cost model with a scalar step at a tenth of a product chose 34 and 46 and ran 1.8x and
-		// 1.05x slower (#1788).
+		// and saves the series terms. T = 0.25 sqrt(F) was measured best, to within the noise of
+		// a flat optimum, from 128 to 8192 bits with the tapered series (#1790): T = 4 at 128
+		// bits, 23 at 8192. Without tapering the optimum was 0.4 sqrt(F) (#1788), and a cost model
+		// with a scalar step at a tenth of a product chose 34 and 46 there and ran 1.8x and 1.05x
+		// slower.
 		inline unsigned halving_target(unsigned F) noexcept {
-			const unsigned T = static_cast<unsigned>(0.4 * std::sqrt(static_cast<double>(F)) + 0.5);
+			const unsigned T = static_cast<unsigned>(0.25 * std::sqrt(static_cast<double>(F)) + 0.5);
 			return (T < 2u) ? 2u : T;
 		}
 
@@ -413,14 +440,22 @@ namespace efloat_detail {
 			return space.data();
 		}
 
-		// E[0, n + 1) = exp(+-R 2^-F) 2^F, truncated at each step, by Smith's rectangular splitting:
-		// with T_k = s^k / k! = A_i P_j / D_ij for k = i m + j, A_i = s^(i m) / (i m)!, P_j = s^j and
-		// D_ij = (i m + 1) ... (i m + j), the series is a Horner scheme in P_m / D_im over blocks
+		// E[0, n + 1) = sum_k (+-1)^k s^k / (d(1) ... d(k)) 2^F, s = R 2^-F, truncated at each step,
+		// by Smith's rectangular splitting; for exp it is exp(+-s). With T_k = s^k / (d(1) ... d(k))
+		// = A_i P_j / D_ij for k = i m + j, A_i = T_(i m), P_j = s^j and D_ij = d(i m + 1) ...
+		// d(i m + j), the series is a Horner scheme in P_m / D_im over blocks
 		// B_i = sum_j P_j / D_ij, and each block is formed over the common denominator D_i(m-1)
 		// with one-limb multipliers and one division. Only the m powers and the N / m Horner steps
 		// are full products. For a negative argument the terms alternate; every partial value is
-		// positive, as the series of exp(-s), s < 1, is with decreasing terms.
-		inline void series(limb_t* E, const limb_t* R, std::size_t n, bool negative, unsigned N, unsigned m) {
+		// positive, as the series of exp(-s), s < 1, and of the versine are with decreasing terms.
+		//
+		// Tapering (#1790): block b enters the sum scaled by A_b = T_(b m) < 2^-G_b, G_b = b m a +
+		// log2(d(1) ... d(b m)) for s < 2^-a, so it needs only F - G_b fraction bits: it is formed
+		// on the top n - q_b limbs, 64 q_b <= G_b - 8, and its truncation, 2^-(F - 64 q_b) scaled
+		// by A_b, stays below 2^-(F + 8). The Horner value moves down a block by gaining the limbs
+		// the next block keeps. a = 0 turns tapering off.
+		inline void series(limb_t* E, const limb_t* R, std::size_t n, bool negative, unsigned N, unsigned m,
+		                   divisors kind = divisors::exponential, int64_t a = 0) {
 			const std::size_t w  = n + 1;           // a value below 2^64
 			const unsigned    nb = (N + m - 1) / m; // blocks
 			limb_t* P   = scratch((m + 1) * w + 2 * (2 * w + 2) + 2 * (w + 1) + efloat_mpn::scratch_limbs(w));
@@ -437,35 +472,50 @@ namespace efloat_detail {
 				for (std::size_t i = 0; i < n; ++i) P[j * w + i] = tmp[n + i];
 				P[j * w + n] = 0;
 			}
+			std::size_t acc_q = 0;                  // the limbs the Horner value has dropped
 			for (unsigned b = nb; b-- > 0;) {
 				const limb_t base = static_cast<limb_t>(b) * m;
-				// numerator sum_j P_j c_j, c_j = (base + j + 1) ... (base + m - 1), over L = c_0
-				for (std::size_t i = 0; i <= w; ++i) { pos[i] = 0; neg[i] = 0; }
+				std::size_t q = 0;
+				if (a > 0 && b > 0) {
+					const double G = static_cast<double>(base) * static_cast<double>(a) + log2_divisors(kind, static_cast<unsigned>(base));
+					if (G >= 72.0) q = std::min(n - 1, static_cast<std::size_t>((G - 8.0) / 64.0));
+				}
+				const std::size_t k  = n - q;         // fraction limbs of this block
+				const std::size_t kw = k + 1;
+				// numerator sum_j P_j c_j, c_j = d(base + j + 1) ... d(base + m - 1), over L = c_0
+				for (std::size_t i = 0; i <= kw; ++i) { pos[i] = 0; neg[i] = 0; }
 				limb_t c = 1;
 				for (unsigned j = m; j-- > 0;) {
 					limb_t* into = (negative && (j % 2 == 1)) ? neg : pos;
 					if (j == 0) {
-						const limb_t t = into[n] + c;   // P_0 = 1 = 2^F
-						into[n + 1] += (t < c) ? 1u : 0u;
-						into[n] = t;
+						const limb_t t = into[k] + c;   // P_0 = 1 = 2^F
+						into[k + 1] += (t < c) ? 1u : 0u;
+						into[k] = t;
 					}
 					else {
-						const limb_t carry = efloat_mpn::addmul_1(into, P + j * w, n, c);
-						efloat_mpn::add_1(into + n, 2, carry);
-						c *= base + j;
+						const limb_t carry = efloat_mpn::addmul_1(into, P + j * w + q, k, c);
+						efloat_mpn::add_1(into + k, 2, carry);
+						c *= divisor(kind, base + j);
 					}
 				}
-				efloat_mpn::sub_n(pos, pos, neg, w + 1);   // the block is positive
-				div_1(tmp, pos, w + 1, c);                  // B_b, below 2
+				efloat_mpn::sub_n(pos, pos, neg, kw + 1);   // the block is positive
+				div_1(tmp, pos, kw + 1, c);                  // B_b, below 2
 				if (b + 1 == nb) {
-					for (std::size_t i = 0; i < w; ++i) acc[i] = tmp[i];
+					for (std::size_t i = 0; i < kw; ++i) acc[i] = tmp[i];
+					acc_q = q;
 					continue;
 				}
-				// acc = B_b +- acc P_m / D_bm, D_bm = c (base + m)
-				for (std::size_t i = 0; i < w; ++i) pos[i] = tmp[i];
-				efloat_mpn::mul(tmp, acc, w, P + m * w, n, s);   // w + n limbs
-				div_1(neg, tmp + n, w, c * (base + m));
-				add_or_sub(acc, pos, neg, w, negative && (m % 2 == 1));
+				// the Horner value at this block's width: acc_q - q more limbs at the bottom, zero
+				const std::size_t up = acc_q - q;
+				if (up > 0) {
+					for (std::size_t i = kw; i-- > 0;) acc[i] = (i >= up) ? acc[i - up] : 0u;
+				}
+				acc_q = q;
+				// acc = B_b +- acc P_m / D_bm, D_bm = c d(base + m)
+				for (std::size_t i = 0; i < kw; ++i) pos[i] = tmp[i];
+				efloat_mpn::mul(tmp, acc, kw, P + m * w + q, k, s);   // kw + k limbs
+				div_1(neg, tmp + k, kw, c * divisor(kind, base + m));
+				add_or_sub(acc, pos, neg, kw, negative && (m % 2 == 1));
 			}
 			for (std::size_t i = 0; i < w; ++i) E[i] = acc[i];
 		}
@@ -478,26 +528,27 @@ namespace efloat_detail {
 			for (std::size_t i = 0; i < w; ++i) E[i] = tmp[n + i];
 		}
 
-	}  // namespace exp_fixed
+	}  // namespace fixed_series
 
 	// exp(x) for a finite x in exp's range, unrounded, at `precision` bits plus guard bits.
 	//
 	// Range reduction: x = k ln 2 + r with |r| <= ln 2 / 2, at the working precision: the result's
 	// precision plus guard bits, with ln 2 computed at that precision (#1712). r is then halved
 	// h times, to s = |r| / 2^h below 2^-T, and exp(+-s) is summed in fixed point by rectangular
-	// splitting and squared h times (exp_fixed, #1788). T comes from a cost estimate
+	// splitting and squared h times (fixed_series, #1788). T = 0.25 sqrt(F) was measured best
 	// (halving_target): more halvings cost squarings and save terms.
 	//
 	// Error: the fixed-point values carry F >= precision + 64 + T + 16 fraction bits. R = s 2^F is
-	// truncated (2^-F), each power, block and Horner step truncates (2^-F each, about N + 3 N / m
-	// + m of them, under 2^10 at 8192 bits), and the tail lies below 2^-(F + 3); each squaring
+	// truncated (2^-F), each power, block and Horner step truncates (2^-F each, 2^-(F + 8) for a
+	// tapered block's dropped limbs, #1790; about N + 3 N / m + m of them, under 2^10 at 8192
+	// bits), and the tail lies below 2^-(F + 3); each squaring
 	// doubles the relative error and adds 2^-F. So exp(+-s)^(2^h) is within 2^(h + 11 - F) <=
 	// 2^-(precision + 64 + 5) of its value, far inside exp_error_bits; r's own rounding at the
 	// working precision adds 2^-(working + 1).
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> exp_working(const efloat<nlimbs>& x, unsigned precision) {
-		using exp_fixed::limb_t;
-		const unsigned T       = exp_fixed::halving_target(precision + 64u + 16u);
+		using fixed_series::limb_t;
+		const unsigned T       = fixed_series::halving_target(precision + 64u + 16u);
 		const unsigned working = precision + efloat_detail::exp_log_guard_bits + T;
 
 		// ln 2 carries 64 more bits, so that r = x - k ln 2 keeps the working precision's absolute
@@ -518,7 +569,7 @@ namespace efloat_detail {
 		const int64_t  h_signed = r.iszero() ? 0 : static_cast<int64_t>(T) + r.scale() + 1;
 		const unsigned h        = (h_signed > 0) ? static_cast<unsigned>(h_signed) : 0u;
 		std::vector<limb_t> E(n + 1);
-		exp_fixed::to_fixed(r, static_cast<int64_t>(F) - static_cast<int64_t>(h), E.data(), n);   // R, then exp(+-s)
+		fixed_series::to_fixed(r, static_cast<int64_t>(F) - static_cast<int64_t>(h), E.data(), n);   // R, then exp(+-s)
 		std::size_t top = n;
 		while (top > 0 && E[top - 1] == 0u) --top;
 		if (top == 0) {
@@ -527,13 +578,13 @@ namespace efloat_detail {
 		}
 		else {
 			const int64_t a = static_cast<int64_t>(F) - (64 * static_cast<int64_t>(top) - std::countl_zero(E[top - 1]));   // s < 2^-a
-			const unsigned N = exp_fixed::series_terms(a, F);
+			const unsigned N = fixed_series::series_terms(a, F);
 			std::vector<limb_t> R(E.begin(), E.begin() + static_cast<std::ptrdiff_t>(n));
-			exp_fixed::series(E.data(), R.data(), n, r.sign() == -1, N, exp_fixed::block_length(N));
-			for (unsigned i = 0; i < h; ++i) exp_fixed::square(E.data(), n);
+			fixed_series::series(E.data(), R.data(), n, r.sign() == -1, N, fixed_series::block_length(N), fixed_series::divisors::exponential, a);
+			for (unsigned i = 0; i < h; ++i) fixed_series::square(E.data(), n);
 		}
 		// exp(r) 2^k = E 2^(k - F): the top bit of E[n] weighs 2^(64 n + 63 - F) = 2^63 of it
-		efloat<nlimbs> result = exp_fixed::from_fixed<nlimbs>(E.data(), n + 1, 63 + k);
+		efloat<nlimbs> result = fixed_series::from_fixed<nlimbs>(E.data(), n + 1, 63 + k);
 		result.set_precision(working);
 		return result;
 	}

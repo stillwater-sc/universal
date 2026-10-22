@@ -179,8 +179,10 @@ namespace sw { namespace universal {
 			if (special) a = make<nlimbs>(static_cast<double>(rng() % 100), P);
 		}
 		else if (is(f, "sin") || is(f, "cos") || is(f, "tan")) {
-			// next to a multiple of pi/2
-			if (special) { Real hp = efloat_pi<nlimbs>(); hp.set_precision(P); hp.setexponent(hp.scale() - 1); a = make<nlimbs>(static_cast<double>(1 + rng() % 20), P) * hp; a.set_precision(P); }
+			// next to a multiple of pi/2, or tiny with 2 scale(x) within a few bits of -P, either
+			// side of the cut below which the result rounds from x or 1 directly (#1790)
+			if (special && (rng() & 1)) { Real hp = efloat_pi<nlimbs>(); hp.set_precision(P); hp.setexponent(hp.scale() - 1); a = make<nlimbs>(static_cast<double>(1 + rng() % 20), P) * hp; a.set_precision(P); }
+			else if (special) a.setexponent((-static_cast<int64_t>(a.get_precision()) - 8 + static_cast<int64_t>(rng() % 13)) / 2);
 		}
 		else if (is(f, "acosh")) {
 			a.setsign(false);
