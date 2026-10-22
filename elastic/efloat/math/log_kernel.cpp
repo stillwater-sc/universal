@@ -9,7 +9,8 @@
 // rounded results do not test the bound. This test does, against a reference that shares none
 // of the kernel's code -- four exact square roots and the plain series
 //     log m = 32 atanh((r - 1) / (r + 1)),   r = m^(1/16),
-// in efloat arithmetic at 2P + 256 bits, with ln 2 = 2 atanh(1/3) summed alike:
+// or, next to 1, 2 atanh((x - 1) / (x + 1)) directly, in efloat arithmetic at 2P + 256 bits
+// (P + 256 above 8192), with ln 2 = 2 atanh(1/3) summed alike:
 //   - log_working at P + exp_log_guard_bits bits within the declared
 //     2^(scale - working + log_error_bits);
 //   - x random over many binades, next to 1 down to 1 +- 2^-P, at the table's grid points and
@@ -55,15 +56,22 @@ namespace {
 		return sum;
 	}
 
-	// log x for a finite x > 0 at `bits`: x = 2^e m, m in [1/2, 1), log m from m^(1/16)
+	// log x for a finite x > 0 at `bits`: next to 1, 2 atanh((x - 1)/(x + 1)) directly, since
+	// x - 1 is exact and the result keeps its relative precision however small; else x = 2^e m,
+	// m in [1/2, 1), log m from m^(1/16)
 	E reference_log(const E& x, unsigned bits) {
+		E one(1);
+		one.set_precision(bits);
+		E xw(x);
+		xw.set_precision(bits);
+		const E d = xw - one;
+		if (d.iszero()) return d;
+		if (d.scale() < -8) return reference_two_atanh(d / (xw + one), bits);
 		E m(x);
 		m.set_precision(bits);
 		const int64_t e = x.scale() + 1;
 		m.setexponent(-1);
 		for (int i = 0; i < 4; ++i) m = sqrt(m);   // exact square roots, rounded at `bits`
-		E one(1);
-		one.set_precision(bits);
 		E y = reference_two_atanh((m - one) / (m + one), bits);
 		y.setexponent(y.scale() + 4);   // times 16
 		if (e != 0) {
