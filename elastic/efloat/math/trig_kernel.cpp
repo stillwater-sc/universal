@@ -151,6 +151,21 @@ namespace {
 				const E x = random_value(rng, P, e);
 				for (int f = 0; f < 3; ++f) if (!trig_within_bound(x, P, trig_function(f), reportTestCases)) ++fails;
 			}
+			// next to a half-integer multiple of pi/2, where k from double may be the neighbour of the
+			// nearest integer and |r| lies just past pi/4: either side, small k and k near 2^39
+			for (double k : { 0.5, 1.5, 2.5, -3.5, 1000.5, 549755813887.5 }) {
+				E hp = sw::universal::efloat_detail::pi<300>(P + 64);
+				hp.setexponent(hp.scale() - 1);
+				for (int side : { -1, 1 }) {
+					E x = E(k) * hp;
+					x.set_precision(P);
+					E nudge = x;
+					nudge.setexponent(x.scale() - 50);   // 2^-50 off the half-integer, relative: as close as double resolves x 2/pi
+					x = (side > 0) ? x + nudge : x - nudge;
+					x.set_precision(P);
+					for (int f = 0; f < 3; ++f) if (!trig_within_bound(x, P, trig_function(f), reportTestCases)) ++fails;
+				}
+			}
 			// past 2^40, where the reduction divides by pi/2 instead of taking k from double
 			for (int64_t e : { 39, 40, 45 }) {
 				const E x = random_value(rng, P, e);
