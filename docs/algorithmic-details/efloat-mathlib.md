@@ -141,7 +141,7 @@ round the exact result once into the destination (`assign_rounded`), with no all
 
 | function | algorithm | error bits | file |
 |---|---|---|---|
-| `exp` | `x = k ln2 + r`, `r` halved up to `sqrt(P)` times, Taylor series at a precision that falls with the terms, squared back; `abs(k) < 2^62` | 16 | exponent.hpp |
+| `exp` | `x = k ln2 + r`, `r` halved below `2^-T`, `T = 0.4 sqrt(F)`; series in fixed point by rectangular splitting, squared back; `abs(k) < 2^62` | 16 | exponent.hpp |
 | `exp2`, `exp10`, `expm1` | through `exp`; `expm1` sums without the leading 1 and doubles back with `u(u+2)`; exact `2^k`, `10^k` | 20 | exponent.hpp |
 | `log` | below the switch: table of `log(j/512)` plus `2 atanh(v)`, `abs(v) < 2^-10`; above it: AGM, `log s = pi s / (2 AGM(s, 4))` | 16 | logarithm.hpp |
 | `log2`, `log10`, `log1p` | through `log`; `log1p` sums its own series for small `abs(x)` | 20 | logarithm.hpp |
@@ -166,14 +166,48 @@ round the exact result once into the destination (`assign_rounded`), with no all
   passes `2^52`; `ln2` at the working precision plus 64 bits, so `k ln2` keeps its accuracy for
   any `|k| < 2^62` (#1777). Before #1777 the range stopped at `|x| < 2^17`. Per-`k` widths of
   `ln2` were rejected: they re-grew the cache and cost 9-12% at 8192 bits.
-- **Series.** `r` is halved until it is below `2^-h`, `h <= sqrt(P)` (adaptive since #1774),
-  the Taylor terms are carried at a precision that falls with their size (#1754), with exact
-  small-integer divisors (#1758), and the sum is squared back `h` times.
+- **Series** (#1788). `r` is halved `h` times, to `s = |r| / 2^h` below `2^-T`, and `exp(+-s)`
+  is summed in fixed point (`exp_fixed` in `exponent.hpp`).
+  - **Fixed point.** Every value is a natural number `V = floor(v 2^F)` in `n + 1` 64-bit limbs,
+    with `F = 64 n` fraction bits and `F >= P + 64 + T + 16`. The binary point sits on a limb
+    boundary, so a product drops whole limbs. Inside the series nothing normalizes, merges
+    precisions or rounds; each step truncates.
+  - **Rectangular splitting** (Smith 1989), with blocks of `m ~ sqrt(N)` terms. With
+    `T_k = A_i P_j / D_ij` for `k = i m + j`, where `P_j = s^j` and `D_ij = (i m + 1) ...
+    (i m + j)`, the series is a Horner scheme in `P_m / D_im` over the blocks
+    `B_i = sum_j P_j / D_ij`. Each block is formed over its common denominator with one-limb
+    multipliers (`addmul_1`) and one one-limb division. Only the `m` powers and the `N / m`
+    Horner steps are full products. `m` is capped so that a block's divisor fits in a limb.
+  - **Negative arguments.** The terms alternate. Every partial value stays positive, so the
+    kernel needs no signed arithmetic and no final reciprocal.
+  - **Squaring back.** The `h` squarings are fixed-point squares, `n + 1` limbs each.
+- **Error.** There are about `N + 3N/m + m` truncations of `2^-F` each, under `2^10` of them at
+  8192 bits. The tail of the series lies below `2^-(F + 3)`, and the `h` squarings multiply
+  the relative error by `2^h`. That leaves `2^(h + 11 - F) <= 2^-(P + 69)`, inside
+  `exp_error_bits`. Measured against MPFR from 24 to 8192 bits, the worst case lies 33-73 bits
+  inside the declared bound. `elastic/efloat/math/exp_kernel.cpp` checks the bound against a
+  plain efloat Taylor series at `2P + 256` bits. 11 of 12 mutations of the kernel fail that
+  test. The twelfth halves one time fewer, which changes only the speed, because the term count
+  comes from the actual `s`.
+- **The halving target.** `T = 0.4 sqrt(F)` is the measured optimum, to within the noise of a
+  flat curve, from 64 to 8192 bits: at 128 bits `T` is 6, and at 8192 bits it is 34-37. A cost
+  model that priced a scalar step at a tenth of a product chose 34 at 128 bits and 46 at 8192,
+  which ran 1.8x and 1.05x slower: it underrated what a squaring of a few limbs costs.
 - **History.** Before #1739: `ln2` was a 59-digit literal (results stopped at about 2^-200) and
   the series stopped at 100 terms (about 680 bits). At 608 bits `exp` took 957 us against
   mpmath's 11 (#1714); #1741 brought that to 20 us and #1754 to 15.6 us.
-- **Open.** Rectangular or binary splitting (MPFR's `exp_2`/`exp_3`), fixed-point series
-  kernels with no normalize-and-round per term.
+- **History.** Before #1788 the series ran in efloat arithmetic: one rounded multiply,
+  divide and add per term, after up to `sqrt(P)` halvings. That was 2.3-3.3x MPFR. The fixed-point
+  kernel runs at 0.7-0.9x MPFR up to 512 bits, 1.1x at 2048 bits and 1.5-1.75x at 8192 bits,
+  over arguments with `|r|` from 0 to `ln2 / 2` of either sign.
+- **Work per call** (`|r| ~ 1/4`): at 128 bits, `N = 28` terms in blocks of `m = 6`, 9 full
+  products and 5 squarings on 5 limbs. At 8192 bits, 198 terms with `m = 8` (capped so the
+  divisor fits in a limb), 31 products and 35 squarings on 131 limbs.
+- **Open.** Binary splitting (MPFR's `exp_3`) for the widest precisions. At 8192 bits the 66
+  full products are most of the time, and efloat's 8192-bit product is itself 2.2x MPFR's, so
+  Toom-3 would help there first. A two-limb block divisor would allow `m ~ sqrt(N) = 14`. The same kernel would also serve the series of `sin`/`cos` and
+  `atanh`, and `expm1` below 1/2 still sums in efloat arithmetic. A cheaper first Ziv try is
+  not needed for exp, which is already below MPFR's time at small precisions.
 
 ### 4.2 log family
 
@@ -400,59 +434,65 @@ efloat returns +0 with Underflow.
 ## 7. Measured speed
 
 `mpfr_gap`, best of three, warm caches, microseconds per call, round to nearest.
-Measured 2026-10-21 on main at 2076edb7, Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`,
+Measured 2026-10-21 with #1788 (the exp kernel) on top of main at 4def52f7, Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`,
 MPFR 4.2.2, GMP 6.3.0; `a = 0.718...`, `b = 1.414...`, `x = 1 + a`. Each cell is
 efloat / MPFR in microseconds, then the ratio.
 
 | operation | 128 bits | | 512 bits | | 2048 bits | | 8192 bits | |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `a+b` | 0.028 / 0.013 | 2.2x | 0.035 / 0.020 | 1.7x | 0.075 / 0.048 | 1.6x | 0.236 / 0.167 | 1.4x |
-| `a*b` | 0.027 / 0.018 | 1.5x | 0.064 / 0.043 | 1.5x | 0.503 / 0.266 | 1.9x | 4.741 / 2.157 | 2.2x |
-| `b/a` | 0.051 / 0.029 | 1.8x | 0.134 / 0.081 | 1.7x | 0.900 / 0.482 | 1.9x | 8.340 / 4.299 | 1.9x |
-| `a/7` | 0.042 / 0.024 | 1.7x | 0.077 / 0.040 | 1.9x | 0.223 / 0.104 | 2.1x | 0.811 / 0.371 | 2.2x |
-| `exp(a)` | 1.916 / 0.719 | 2.7x | 5.061 / 2.199 | 2.3x | 38.51 / 15.75 | 2.4x | 567.3 / 175.1 | 3.2x |
-| `log(x)` | 1.226 / 1.122 | 1.1x | 3.809 / 3.250 | 1.2x | 34.84 / 14.79 | 2.4x | 280.2 / 123.8 | 2.3x |
-| `sin(a)` | 2.011 / 0.735 | 2.7x | 4.689 / 2.126 | 2.2x | 28.25 / 14.18 | 2.0x | 297.3 / 193.5 | 1.5x |
-| `sqrt(b)` | 0.128 / 0.059 | 2.2x | 0.265 / 0.135 | 2.0x | 0.983 / 0.435 | 2.3x | 6.363 / 3.081 | 2.1x |
-| `fma(a,b,a)` | 0.119 / 0.029 | 4.1x | 0.165 / 0.049 | 3.4x | 0.654 / 0.328 | 2.0x | 5.292 / 3.150 | 1.7x |
-| `hypot(a,b)` | 0.361 / 0.170 | 2.1x | 0.667 / 0.321 | 2.1x | 2.566 / 1.018 | 2.5x | 17.61 / 8.018 | 2.2x |
-| `cbrt(b)` | 0.734 / 0.294 | 2.5x | 1.200 / 0.452 | 2.7x | 3.984 / 1.305 | 3.1x | 24.59 / 7.499 | 3.3x |
-| `exp2(a)` | 2.124 / 1.024 | 2.1x | 5.495 / 2.696 | 2.0x | 39.80 / 17.20 | 2.3x | 575.7 / 190.9 | 3.0x |
-| `exp10(a)` | 2.230 / 2.313 | 1.0x | 5.738 / 6.076 | 0.9x | 41.66 / 31.30 | 1.3x | 593.9 / 313.4 | 1.9x |
-| `expm1(a)` | 1.935 / 0.815 | 2.4x | 5.311 / 2.398 | 2.2x | 38.51 / 15.58 | 2.5x | 569.0 / 178.3 | 3.2x |
-| `log2(x)` | 1.342 / 1.270 | 1.1x | 4.122 / 3.513 | 1.2x | 35.85 / 15.33 | 2.3x | 289.4 / 130.8 | 2.2x |
-| `log10(x)` | 1.411 / 2.441 | 0.6x | 4.183 / 6.962 | 0.6x | 35.96 / 30.34 | 1.2x | 290.5 / 254.3 | 1.1x |
-| `log1p(a)` | 1.366 / 1.208 | 1.1x | 4.068 / 3.343 | 1.2x | 35.06 / 14.86 | 2.4x | 279.6 / 124.2 | 2.3x |
-| `cos(a)` | 1.803 / 0.527 | 3.4x | 4.329 / 1.726 | 2.5x | 26.51 / 13.00 | 2.0x | 286.0 / 188.4 | 1.5x |
-| `tan(a)` | 2.175 / 0.994 | 2.2x | 5.032 / 2.368 | 2.1x | 29.47 / 15.31 | 1.9x | 306.0 / 201.6 | 1.5x |
-| `asin(a)` | 4.325 / 2.845 | 1.5x | 11.52 / 11.06 | 1.0x | 75.81 / 43.59 | 1.7x | 1049 / 337.6 | 3.1x |
-| `acos(a)` | 3.757 / 2.850 | 1.3x | 10.69 / 11.10 | 1.0x | 71.66 / 43.26 | 1.7x | 1010 / 338.5 | 3.0x |
-| `atan(a)` | 3.614 / 2.358 | 1.5x | 10.31 / 8.988 | 1.1x | 71.56 / 41.69 | 1.7x | 1009 / 331.1 | 3.0x |
-| `atan2(a,b)` | 3.437 / 2.360 | 1.5x | 9.961 / 11.04 | 0.9x | 69.84 / 44.70 | 1.6x | 1004 / 324.1 | 3.1x |
-| `sinh(a)` | 2.140 / 0.856 | 2.5x | 5.511 / 2.485 | 2.2x | 39.73 / 16.22 | 2.4x | 579.1 / 184.2 | 3.1x |
-| `cosh(a)` | 2.117 / 0.851 | 2.5x | 5.457 / 2.486 | 2.2x | 39.68 / 16.08 | 2.5x | 579.1 / 181.3 | 3.2x |
-| `tanh(a)` | 2.132 / 0.942 | 2.3x | 5.529 / 2.563 | 2.2x | 40.17 / 16.54 | 2.4x | 597.6 / 185.0 | 3.2x |
-| `asinh(a)` | 1.759 / 1.354 | 1.3x | 4.646 / 3.696 | 1.3x | 38.51 / 15.52 | 2.5x | 313.4 / 128.8 | 2.4x |
-| `acosh(b)` | 1.627 / 1.381 | 1.2x | 4.301 / 3.732 | 1.2x | 37.44 / 15.52 | 2.4x | 299.8 / 128.8 | 2.3x |
-| `atanh(a)` | 1.585 / 1.379 | 1.1x | 4.676 / 3.568 | 1.3x | 36.14 / 15.38 | 2.4x | 291.1 / 128.7 | 2.3x |
-| `pow(b,a)` | 3.493 / 2.211 | 1.6x | 9.245 / 6.055 | 1.5x | 76.20 / 31.66 | 2.4x | 882.6 / 313.8 | 2.8x |
-| `pow(b,7)` | 0.424 / 0.105 | 4.0x | 0.614 / 0.196 | 3.1x | 2.430 / 1.259 | 1.9x | 18.29 / 11.00 | 1.7x |
-| `tgamma(b)` | 31.08 / 7.188 | 4.3x | 118.0 / 33.34 | 3.5x | 1817 / 363.0 | 5.0x | 47401 / 7360 | 6.4x |
-| `lgamma(b)` | 40.08 / 7.474 | 5.4x | 224.4 / 34.09 | 6.6x | 4499 / 757.7 | 5.9x | 133510 / 7238 | 18.4x |
-| `erf(a)` | 6.382 / 2.922 | 2.2x | 20.32 / 16.08 | 1.3x | 180.7 / 171.3 | 1.1x | 3127 / 3030 | 1.0x |
-| `erfc(a)` | 6.562 / 3.234 | 2.0x | 20.93 / 16.55 | 1.3x | 181.9 / 172.7 | 1.1x | 3138 / 3018 | 1.0x |
+| `a+b` | 0.028 / 0.013 | 2.1x | 0.035 / 0.020 | 1.8x | 0.074 / 0.048 | 1.5x | 0.232 / 0.167 | 1.4x |
+| `a*b` | 0.026 / 0.018 | 1.5x | 0.062 / 0.042 | 1.5x | 0.485 / 0.266 | 1.8x | 4.727 / 2.159 | 2.2x |
+| `b/a` | 0.053 / 0.028 | 1.9x | 0.139 / 0.079 | 1.8x | 0.885 / 0.481 | 1.8x | 8.314 / 4.305 | 1.9x |
+| `a/7` | 0.043 / 0.024 | 1.8x | 0.076 / 0.040 | 1.9x | 0.220 / 0.104 | 2.1x | 0.811 / 0.371 | 2.2x |
+| `exp(a)` | 0.592 / 0.730 | 0.8x | 1.878 / 2.152 | 0.9x | 17.24 / 15.71 | 1.1x | 285.6 / 175.1 | 1.6x |
+| `log(x)` | 1.194 / 1.118 | 1.1x | 3.738 / 3.178 | 1.2x | 34.72 / 14.74 | 2.4x | 277.4 / 123.5 | 2.2x |
+| `sin(a)` | 1.983 / 0.734 | 2.7x | 4.593 / 2.078 | 2.2x | 27.48 / 14.13 | 1.9x | 295.9 / 193.5 | 1.5x |
+| `sqrt(b)` | 0.129 / 0.059 | 2.2x | 0.271 / 0.133 | 2.0x | 0.993 / 0.435 | 2.3x | 6.379 / 3.067 | 2.1x |
+| `fma(a,b,a)` | 0.120 / 0.029 | 4.1x | 0.166 / 0.049 | 3.4x | 0.657 / 0.328 | 2.0x | 5.295 / 3.166 | 1.7x |
+| `hypot(a,b)` | 0.363 / 0.170 | 2.1x | 0.657 / 0.321 | 2.0x | 2.525 / 1.014 | 2.5x | 17.65 / 8.102 | 2.2x |
+| `cbrt(b)` | 0.735 / 0.288 | 2.6x | 1.203 / 0.466 | 2.6x | 3.940 / 1.303 | 3.0x | 24.77 / 7.537 | 3.3x |
+| `exp2(a)` | 0.738 / 1.018 | 0.7x | 2.173 / 2.648 | 0.8x | 19.03 / 17.18 | 1.1x | 301.3 / 191.0 | 1.6x |
+| `exp10(a)` | 0.759 / 2.307 | 0.3x | 2.260 / 5.987 | 0.4x | 19.39 / 31.00 | 0.6x | 305.4 / 314.1 | 1.0x |
+| `expm1(a)` | 0.619 / 0.815 | 0.8x | 1.896 / 2.359 | 0.8x | 17.27 / 15.56 | 1.1x | 285.5 / 178.3 | 1.6x |
+| `log2(x)` | 1.299 / 1.274 | 1.0x | 3.952 / 3.445 | 1.1x | 35.44 / 15.35 | 2.3x | 285.4 / 129.0 | 2.2x |
+| `log10(x)` | 1.368 / 2.438 | 0.6x | 3.979 / 6.820 | 0.6x | 35.62 / 30.42 | 1.2x | 285.2 / 253.5 | 1.1x |
+| `log1p(a)` | 1.333 / 1.203 | 1.1x | 3.913 / 3.280 | 1.2x | 34.48 / 14.85 | 2.3x | 279.8 / 126.3 | 2.2x |
+| `cos(a)` | 1.745 / 0.526 | 3.3x | 4.164 / 1.680 | 2.5x | 25.80 / 13.02 | 2.0x | 284.7 / 188.2 | 1.5x |
+| `tan(a)` | 2.140 / 1.010 | 2.1x | 4.893 / 2.331 | 2.1x | 28.69 / 15.33 | 1.9x | 308.5 / 201.7 | 1.5x |
+| `asin(a)` | 4.267 / 2.830 | 1.5x | 11.19 / 10.90 | 1.0x | 74.78 / 43.59 | 1.7x | 1049 / 344.0 | 3.0x |
+| `acos(a)` | 3.724 / 2.882 | 1.3x | 10.28 / 10.83 | 0.9x | 70.45 / 43.17 | 1.6x | 1011 / 344.0 | 2.9x |
+| `atan(a)` | 3.648 / 2.357 | 1.5x | 10.03 / 8.824 | 1.1x | 70.44 / 41.67 | 1.7x | 1007 / 332.7 | 3.0x |
+| `atan2(a,b)` | 3.489 / 2.359 | 1.5x | 9.645 / 10.82 | 0.9x | 68.60 / 44.40 | 1.5x | 995.7 / 323.5 | 3.1x |
+| `sinh(a)` | 0.797 / 0.849 | 0.9x | 2.190 / 2.445 | 0.9x | 18.50 / 16.02 | 1.2x | 296.1 / 182.8 | 1.6x |
+| `cosh(a)` | 0.772 / 0.849 | 0.9x | 2.185 / 2.441 | 0.9x | 18.47 / 16.04 | 1.2x | 295.8 / 181.8 | 1.6x |
+| `tanh(a)` | 0.771 / 0.943 | 0.8x | 2.223 / 2.508 | 0.9x | 18.81 / 16.48 | 1.1x | 299.4 / 185.6 | 1.6x |
+| `asinh(a)` | 1.717 / 1.353 | 1.3x | 4.525 / 3.623 | 1.2x | 38.18 / 15.49 | 2.5x | 305.2 / 129.1 | 2.4x |
+| `acosh(b)` | 1.602 / 1.385 | 1.2x | 4.167 / 3.663 | 1.1x | 37.32 / 15.54 | 2.4x | 297.6 / 128.7 | 2.3x |
+| `atanh(a)` | 1.582 / 1.379 | 1.1x | 4.545 / 3.495 | 1.3x | 35.84 / 15.37 | 2.3x | 288.0 / 129.1 | 2.2x |
+| `pow(b,a)` | 2.079 / 2.204 | 0.9x | 5.843 / 5.948 | 1.0x | 54.26 / 31.62 | 1.7x | 583.4 / 313.8 | 1.9x |
+| `pow(b,7)` | 0.368 / 0.103 | 3.6x | 0.562 / 0.189 | 3.0x | 2.335 / 1.262 | 1.8x | 18.11 / 11.00 | 1.6x |
+| `tgamma(b)` | 29.23 / 7.245 | 4.0x | 108.7 / 32.71 | 3.3x | 1745 / 361.6 | 4.8x | 47037 / 7355 | 6.4x |
+| `lgamma(b)` | 39.69 / 7.535 | 5.3x | 214.3 / 33.56 | 6.4x | 4394 / 758.3 | 5.8x | 133818 / 7236 | 18.5x |
+| `erf(a)` | 4.799 / 2.930 | 1.6x | 15.66 / 15.78 | 1.0x | 151.8 / 171.1 | 0.9x | 2835 / 2990 | 0.9x |
+| `erfc(a)` | 4.933 / 3.188 | 1.5x | 16.32 / 16.22 | 1.0x | 152.9 / 172.7 | 0.9x | 2838 / 3004 | 0.9x |
 
 Read the ratio column as the work left on Epic #1763.
 
-- **Ahead or level with MPFR:** `log10` (0.6x at 128 and 512 bits), `exp10` up to 512 bits,
-  `erf` and `erfc` at 2048 and 8192 bits, the inverse trigonometric functions at 512 bits.
+- **Ahead or level with MPFR:**
+  - since #1788, the exp family up to 512 bits: `exp`, `exp2`, `expm1`, `sinh`, `cosh` and
+    `tanh` at 0.7-0.9x, `exp10` at 0.3-0.6x up to 2048 bits and 1.0x at 8192, `pow(b, a)` at
+    0.9-1.0x up to 512 bits;
+  - `erf` and `erfc` from 512 bits up;
+  - `log10` (0.6x at 128 and 512 bits), and the inverse trigonometric functions at 512 bits.
+- **exp family** (#1788): 1.1-1.2x at 2048 bits and 1.6x at 8192, against 2.3-3.3x before.
+  `erf`, `erfc` gained 10-25% and `tgamma` 1-7% through their exp calls. `tgamma`'s time is
+  mostly `lgamma`'s series, so it stays at 3-6x.
 - **cbrt, hypot, fma** (remeasured after #1783): `cbrt` 2.5-3.3x (was 6-33x), `hypot`
   2.1-2.5x, `fma` 1.7-4.1x. `fma` is slower than before at small precisions (0.12 us at 128 bits
   against 0.045): it now forms the exact product and sum, where it used to round twice and was
   wrong in 29% of the cases.
 - **The primitives set the floor:** `a*b`, `b/a` and `sqrt` run 1.5-2.3x MPFR, and every
-  function built on them inherits that. exp-based functions are 2-3x, trig 1.5-3x, log-based
-  1.1-2.4x.
+  function built on them inherits that. trig 1.5-3x, log-based 1.1-2.4x.
 - **Largest gaps:** `lgamma(1.414...)` at
   8192 bits (18x; on #1779's random arguments it was 2.1-7.5x, and the cost #1779 identified
   is the second, wider pass that cancellation near the zeros at 1 and 2 forces; this argument
@@ -488,6 +528,7 @@ precision (filling `ln2`, `pi`, the log table, the Bernoulli numbers) is real bu
 | #1781 | 2026-10-21 | erf, erfc at any precision (were through `double`) |
 | #1783 | 2026-10-21 | cbrt, hypot, fma correctly rounded; fmod, remainder exact |
 | #1786 | 2026-10-21 | `std::numeric_limits<efloat>`; arithmetic overflows and underflows at the math library's range, scale in `[1 - 2^62, 2^62 - 1]` |
+| #1788 | 2026-10-21 | exp series in fixed point by rectangular splitting: exp family 2.3-3.3x MPFR to 0.7-1.7x |
 
 ## 9. Open work
 
@@ -495,8 +536,9 @@ precision (filling `ln2`, `pi`, the log table, the Bernoulli numbers) is real bu
 cheaper than Newton under Ziv.
 
 **Speed** (Epic #1763): short (high-half) products and MPFR's can-round on them; Toom-3; short
-division (`divhigh`); fixed-point series kernels; a cheap first Ziv try at
-`p + log2(p)` guard bits instead of 64; rectangular or binary splitting for exp and sin/cos;
+division (`divhigh`); the fixed-point series kernel of exp (#1788) carried over to sin/cos,
+atanh and expm1; a cheap first Ziv try at `p + log2(p)` guard bits instead of 64; binary
+splitting for exp and sin/cos;
 binary-splitting constants; Sasaki-Kanada AGM start; up-front cancellation estimate for lgamma;
 heap-free, least-significant-first storage; Payne-Hanek reduction for huge trig arguments;
 ratio guards in CI beyond the existing division-to-multiply one.
