@@ -238,6 +238,24 @@ namespace efloat_detail {
 		return (T < 2u) ? 2u : T;
 	}
 
+	// The halving target of atan: y below 2^-T. T = 0.08 sqrt(W) for the working precision W, at
+	// least 2, was measured best, to within the noise of a flat optimum, from 128 to 8192 bits
+	// (#1792): T = 2 up to 512 bits, 4 at 2048, 7 at 8192. A halving costs a root and a quotient,
+	// four or five products, where a term of the series costs one multiplication by a limb, so far
+	// fewer halvings pay than for exp or the versine; the term-by-term efloat series this replaced
+	// halved to 2^-29 at 8192 bits and ran 3x slower. The block length of the rectangular
+	// splitting, 0.7 sqrt(N), was measured with it: 1.0 sqrt(N) ran 2-6% slower from 512 to 8192
+	// bits, 2 sqrt(N) 30% slower at 8192.
+	inline unsigned arctangent_target(unsigned W) noexcept {
+		const unsigned T = static_cast<unsigned>(0.08 * std::sqrt(static_cast<double>(W)) + 0.5);
+		return (T < 2u) ? 2u : T;
+	}
+
+	inline unsigned arctangent_block_length(unsigned N) noexcept {
+		const unsigned m = static_cast<unsigned>(0.7 * std::sqrt(static_cast<double>(N)) + 0.5);
+		return (m < 1u) ? 1u : m;
+	}
+
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> versine(const efloat<nlimbs>& r) {
 		return versine_with(r, versine_target(r.get_precision() + 24u));
@@ -381,12 +399,20 @@ constexpr efloat<nlimbs> tan(const efloat<nlimbs>& x) {
 
 namespace efloat_detail {
 
-	// atan of a finite x at `working` bits, unrounded. |x| > 1 is reflected to pi/2 - atan(1/|x|),
-	// and then halved h ~ sqrt(W / 10) times by atan(a) = 2 atan(a / (1 + sqrt(1 + a^2))) -- each
-	// a root and a quotient -- to |a| < 2^-h, where the series a - a^3/3 + a^5/5 - ... gains 2h
-	// bits per term. The running power and a^2 fall in precision with the terms, as in exp.
+	// atan of a finite x at `working` bits, unrounded, halving its argument below 2^-T. |x| > 1 is
+	// reflected to pi/2 - atan(1/|x|), and then halved h times by atan(a) = 2 atan(a / (1 + sqrt(1 +
+	// a^2))) -- each a root and a quotient -- to y = |a| / 2^h below 2^-T. With z = y^2,
+	//     atan(y) = y S(z),   S(z) = sum_k (-1)^k z^k / (2k + 1) = 1 - z/3 + z^2/5 - ...,
+	// and S lies in (0.9, 1], so summed in fixed point with F fraction bits it keeps its relative
+	// precision whatever the size of y (fixed_series::arctangent_series, #1792).
+	//
+	// Error: each halving rounds three times at the working precision, so h of them leave a
+	// relative error below 3 h 2^-working. The series truncates about N + 2 N / g + m + 2 N / m
+	// times for groups of g terms, z once: below 2^-(working + 13) for F >= working + 24. The
+	// product y S rounds once more.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> atan_working(const efloat<nlimbs>& x, unsigned working) {
+	inline efloat<nlimbs> atan_working_with(const efloat<nlimbs>& x, unsigned working, unsigned T) {
+		using fixed_series::limb_t;
 		efloat<nlimbs> a(x);
 		a.setsign(false);
 		a.set_precision(working);
@@ -397,36 +423,39 @@ namespace efloat_detail {
 		else {
 			const bool reflect = a > efloat<nlimbs>(1.0);
 			if (reflect) a = 1 / a;
-			const unsigned halvings = static_cast<unsigned>(std::sqrt(static_cast<double>(working) / 10.0)) + 1u;
 			unsigned h = 0;
-			while (h < halvings && a.scale() >= -static_cast<int64_t>(halvings)) {
+			while (!a.iszero() && a.scale() >= -static_cast<int64_t>(T)) {
 				a /= sqrt_to(a * a + 1, working) + 1;
 				++h;
 			}
-			const efloat<nlimbs> a2 = a * a;
-			efloat<nlimbs> power = a;
+			efloat<nlimbs> z = a;
+			z.set_precision(working + 2u);
+			z *= z;
+			const std::size_t n = (working + 24u + 63u) / 64u;   // fraction limbs
+			const unsigned    F = static_cast<unsigned>(64 * n);
+			std::vector<limb_t> buffer(2 * n + 1);
+			limb_t* Z  = buffer.data();          // z 2^F, n limbs
+			limb_t* Sv = Z + n;                  // S(z) 2^F, n + 1 limbs
+			fixed_series::to_fixed(z, static_cast<int64_t>(F), Z, n);
+			const std::size_t top = [&] { std::size_t t = n; while (t > 0 && Z[t - 1] == 0u) --t; return t; }();
 			efloat<nlimbs> series = a;
-			efloat<nlimbs> a2_taper = a2;
-			unsigned taper = working;
-			for (unsigned k = 1; ; ++k) {
-				const int64_t below = series.scale() - power.scale();   // bits the power sits below the sum
-				const unsigned need = (below + 64 < static_cast<int64_t>(working)) ? static_cast<unsigned>(static_cast<int64_t>(working) - below) : 64u;
-				if (need + 32u <= taper) {
-					taper = need;
-					power.set_precision(taper);
-					a2_taper = a2;
-					a2_taper.set_precision(taper);
-				}
-				power *= a2_taper;
-				const efloat<nlimbs> term = power / (2 * k + 1);   // stays at the taper (#1757)
-				if (term.iszero() || term.scale() < series.scale() - static_cast<int64_t>(working) - 2) break;
-				if (k & 1u) series -= term; else series += term;
+			if (top != 0) {   // else z is below 2^-F and S = 1
+				const int64_t  az = static_cast<int64_t>(F) - (64 * static_cast<int64_t>(top) - std::countl_zero(Z[top - 1]));   // z < 2^-az
+				const unsigned N  = fixed_series::series_terms(az, F, fixed_series::divisors::arctangent);
+				fixed_series::arctangent_series(Sv, Z, n, N, arctangent_block_length(N), az);
+				// S = Sv 2^-F: the top bit of Sv[n] weighs 2^(64 n + 63 - F) = 2^63
+				series *= fixed_series::from_fixed<nlimbs>(Sv, n + 1, 63);
 			}
 			series.setexponent(series.scale() + static_cast<int64_t>(h));
 			result = reflect ? pi_scaled<nlimbs>(working, -1) - series : series;
 		}
 		if (x.sign() == -1) result.setsign(true);
 		return result;
+	}
+
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> atan_working(const efloat<nlimbs>& x, unsigned working) {
+		return atan_working_with(x, working, arctangent_target(working));
 	}
 
 	// asin x = atan(x / sqrt((1 - x)(1 + x))) for a finite 0 < |x| < 1 at `working` bits, unrounded;
