@@ -1,7 +1,7 @@
 // exp_kernel.cpp: regression tests for efloat's fixed-point exp kernel (#1788)
 //
 // exp_working(x, P) sums the series for exp in fixed point by rectangular splitting and squares
-// it back (math/exponent.hpp, exp_fixed). Ziv's strategy retries an evaluation it cannot round,
+// it back (math/exponent.hpp, fixed_series). Ziv's strategy retries an evaluation it cannot round,
 // so a kernel whose error broke its bound could still give correctly rounded results, only
 // slower: the rounded results do not test the bound. This test does. It compares exp_working
 // with a reference that shares none of the kernel's code -- the plain Taylor series in efloat

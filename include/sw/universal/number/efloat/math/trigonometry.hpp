@@ -113,6 +113,31 @@ namespace efloat_detail {
 			quadrant = 0;
 			return r;
 		}
+		// below 2^40, k = round(x 2/pi) from double, within 2^-12 of x 2/pi: k is the nearest integer
+		// or, next to a half-integer, its neighbour, which leaves |r| at most 2^-12 pi/2 past pi/4, as
+		// harmless to the versine. It replaces a division at the working precision, a fifth of sin
+		// at 128 bits (#1790). r = x - k pi/2 is still formed, and widened, at full precision.
+		if (x.scale() < 40) {
+			const int64_t kk = static_cast<int64_t>(std::llround(double(x) * 0.6366197723675814));
+			if (kk == 0) {
+				efloat<nlimbs> r(x);
+				r.set_precision(working);
+				quadrant = 0;
+				return r;
+			}
+			quadrant = static_cast<unsigned>(((kk % 4) + 4) % 4);
+			while (true) {
+				efloat<nlimbs> xw(x);
+				xw.set_precision(working);
+				efloat<nlimbs> r = pi_scaled<nlimbs>(working, -1);
+				r *= kk;
+				r = xw - r;
+				const int64_t lost = r.iszero() ? static_cast<int64_t>(working) : std::max<int64_t>(0, x.scale() - r.scale());
+				const unsigned needed = bits + exp_log_guard_bits + static_cast<unsigned>(lost);
+				if (working >= needed || working >= limit) return r;
+				working = std::min(limit, needed + exp_log_guard_bits);
+			}
+		}
 		while (true) {
 			efloat<nlimbs> xw(x);
 			xw.set_precision(working);
@@ -135,79 +160,87 @@ namespace efloat_detail {
 	// follow from it: cos r = 1 - v, |sin r| = sqrt(v (2 - v)), neither of which cancels, since
 	// v <= 1 - cos(pi/4) < 0.3 and v keeps its relative precision as r -> 0.
 	//
-	// r is halved h times first, and the series for v(r / 2^h) doubled back h times by
-	// v(2y) = 2 (2 v(y) - v(y)^2): each doubling costs one squaring, and it keeps the relative
-	// error of v, so the working precision carries h guard bits.
+	// In fixed point (#1790), on the series engine exp uses (fixed_series, #1788). r is halved h
+	// times, to y = |r| / 2^h below 2^-T, and with z = y^2
+	//     v(y) = y^2 W(z) / 2,   W(z) = 2 sum_k (-1)^k z^k / (2k + 2)! = 1 - z/12 + z^2/360 - ...,
+	// so W lies in (0.9, 1] whatever the size of y: summed in fixed point with F fraction bits it
+	// keeps its relative precision, and so does v = y^2 W / 2 formed from a z scaled to its own
+	// leading bit. v is then doubled back h times by v(2y) = 4 v - 2 v^2 on V = v 2^(F + E), whose
+	// scale E falls by 2 a doubling: V' = V - V^2 / 2^(F + E + 1), one square and a subtraction.
 	//
-	// The series v(y) = y^2/2! - y^4/4! + ... is summed by rectangular splitting (#1761): the
-	// terms are dealt round-robin into u partial sums S_i, each term without its factor y^2i, so
-	// that only every u-th term needs a full multiplication (by y^2u) and the others a division
-	// by a small integer; v = S_0 + S_1 y^2 + ... + S_{u-1} y^2(u-1) at the end.  The running term
-	// and y^2u fall in precision with the terms, as in exp, with exact integer divisors (#1757).
+	// Error: a doubling multiplies the relative error by (1 - v) / (1 - v / 2) < 1 and adds a
+	// truncation of 2^-(F - 1), so it does not grow with h. The series truncates about
+	// N + 3 N / m + m times, z and the product y^2 W once each: the relative error of v stays below
+	// (N + 3 N / m + m + h + 4) 2^-(F - 1) < 2^-(working + 13) for F >= working + 24. The value is
+	// returned at the working precision, r's plus h bits, as the efloat kernel it replaces was.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> versine_with(const efloat<nlimbs>& r, unsigned halvings, unsigned u) {
+	inline efloat<nlimbs> versine_with(const efloat<nlimbs>& r, unsigned T) {
+		using fixed_series::limb_t;
 		const unsigned precision = r.get_precision();
-		const int64_t  h_signed  = static_cast<int64_t>(halvings) + r.scale();   // halvings that bring y below 2^-halvings
+		const int64_t  h_signed  = r.iszero() ? 0 : static_cast<int64_t>(T) + r.scale() + 1;   // halvings that bring y below 2^-T
 		const unsigned h         = (h_signed > 0) ? static_cast<unsigned>(h_signed) : 0u;
 		const unsigned working   = precision + h;
-		if (u < 1u) u = 1u;
+		efloat<nlimbs> v(0);
+		v.set_precision(working);
+		if (r.iszero()) return v;
 
 		efloat<nlimbs> y(r);
 		y.setsign(false);
-		y.set_precision(working);
+		y.set_precision(working + 2u);
 		y.setexponent(y.scale() - static_cast<int64_t>(h));
+		const efloat<nlimbs> z = y * y;   // y^2 at working + 2 bits
 
-		// powers[i] = y^2i for i = 1..u
-		std::vector<efloat<nlimbs>> powers(u + 1);
-		powers[1] = y * y;
-		for (unsigned i = 2; i <= u; ++i) powers[i] = powers[i - 1] * powers[1];
-		std::vector<efloat<nlimbs>> sums(u);
-		for (auto& sum : sums) { sum.setzero(); sum.set_precision(working); }
-
-		// the term t_n = (-1)^(n+1) y^2n / (2n)! for n = 1 + i + u j sits in S_i as a = |t_n| / y^2i
-		efloat<nlimbs> a(powers[1]);
-		efloat<nlimbs> step = powers[u];   // y^2u, tapered with a
-		unsigned taper = working;
-		int64_t  top   = 0;                // scale of S_0 once its first term is in
-		bool summed = false;
-		for (uint64_t n = 1; !summed; ) {
-			for (unsigned i = 0; i < u; ++i, ++n) {
-				a /= (2 * n - 1) * (2 * n);
-				if (n == 1) top = a.scale();
-				if (a.iszero() || a.scale() < top - static_cast<int64_t>(working)) { summed = true; break; }
-				if (n & 1u) sums[i] += a; else sums[i] -= a;
-			}
-			if (summed) break;
-			const int64_t below = top - a.scale();   // bits the term sits below the sum
-			const unsigned need = (below + 64 < static_cast<int64_t>(working)) ? static_cast<unsigned>(static_cast<int64_t>(working) - below) : 64u;
-			if (need + 32u <= taper) {
-				taper = need;
-				a.set_precision(taper);
-				step = powers[u];
-				step.set_precision(taper);
-			}
-			a *= step;
+		const std::size_t n = (working + 24u + 63u) / 64u;   // fraction limbs
+		const unsigned    F = static_cast<unsigned>(64 * n);
+		std::vector<limb_t> buffer(6 * n + 4);
+		limb_t* Z = buffer.data();          // z 2^F, n limbs: the series argument
+		limb_t* W = Z + n;                  // W(z) 2^F, n + 1 limbs
+		limb_t* V = W + (n + 1);            // v 2^(F + E), n limbs, then the products
+		limb_t* P = V + n;                  // a product, 2 n + 1 limbs, then a shifted one, n limbs
+		fixed_series::to_fixed(z, static_cast<int64_t>(F), Z, n);
+		const std::size_t top = [&] { std::size_t t = n; while (t > 0 && Z[t - 1] == 0u) --t; return t; }();
+		if (top == 0) {
+			for (std::size_t i = 0; i <= n; ++i) W[i] = 0;   // z below 2^-F: W = 1
+			W[n] = 1;
 		}
-		efloat<nlimbs> v = sums[0];
-		for (unsigned i = 1; i < u; ++i) v += sums[i] * powers[i];
-		for (unsigned i = 0; i < h; ++i) {
-			const efloat<nlimbs> square = v * v;
-			v.setexponent(v.scale() + 1);
-			v -= square;
-			v.setexponent(v.scale() + 1);
+		else {
+			const int64_t  a = static_cast<int64_t>(F) - (64 * static_cast<int64_t>(top) - std::countl_zero(Z[top - 1]));   // z < 2^-a
+			const unsigned N = fixed_series::series_terms(a, F, fixed_series::divisors::versine);
+			fixed_series::series(W, Z, n, true, N, fixed_series::block_length(N, fixed_series::divisors::versine), fixed_series::divisors::versine, a);
 		}
+		// v = z W / 2 with z = Zs 2^-(F + E), Zs in [2^(F-1), 2^F): V = Zs W / 2^(F + 1)
+		int64_t E = -z.scale() - 1;
+		fixed_series::to_fixed(z, static_cast<int64_t>(F) + E, Z, n);
+		limb_t* s = fixed_series::scratch(efloat_mpn::scratch_limbs(n + 1));   // after the series, which uses it
+		efloat_mpn::mul(P, W, n + 1, Z, n, s);
+		fixed_series::shift_right(V, n, P, 2 * n + 1, F + 1u);
+		for (unsigned i = 0; i < h; ++i) {   // V' = V - V^2 / 2^(F + E + 1), E' = E - 2; E stays >= 0
+			efloat_mpn::mul_n(P, V, V, n, s, true);
+			const uint64_t shift = static_cast<uint64_t>(F) + static_cast<uint64_t>(E) + 1u;
+			if (shift < 128u * n) {
+				fixed_series::shift_right(P + 2 * n, n, P, 2 * n, shift);   // below 2^(F - E - 1)
+				efloat_mpn::sub_n(V, V, P + 2 * n, n);
+			}
+			E -= 2;
+		}
+		// v = V 2^-(F + E): the top bit of V[n - 1] weighs 2^(64 n - 1 - F - E) = 2^(-1 - E)
+		v = fixed_series::from_fixed<nlimbs>(V, n, -1 - E);
+		v.set_precision(working);
 		return v;
 	}
 
-	// h ~ 0.25 sqrt(precision) + 6 halvings and u ~ 0.21 precision^0.35 partial sums, at least 2:
-	// (h, u) = (11, 2) at 512 bits, (17, 3) at 2048 and (28, 5) at 8192, measured near the optimum,
-	// which is flat (#1761)
+	// The halving target of the versine: y below 2^-T. T = 0.22 sqrt(F) was measured best, to within
+	// the noise of a flat optimum, from 128 to 8192 bits (#1790): T = 3 at 128 bits, 10 at 2048,
+	// 20 at 8192. A doubling costs one square, and each halving gains the series in z = y^2 two
+	// bits a term, so the optimum lies below exp's.
+	inline unsigned versine_target(unsigned F) noexcept {
+		const unsigned T = static_cast<unsigned>(0.22 * std::sqrt(static_cast<double>(F)) + 0.5);
+		return (T < 2u) ? 2u : T;
+	}
+
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> versine(const efloat<nlimbs>& r) {
-		const double   precision = static_cast<double>(r.get_precision());
-		const unsigned halvings  = static_cast<unsigned>(0.25 * std::sqrt(precision)) + 6u;
-		const unsigned u         = std::max(2u, static_cast<unsigned>(std::lround(0.21 * std::pow(precision, 0.35))));
-		return versine_with(r, halvings, u);
+		return versine_with(r, versine_target(r.get_precision() + 24u));
 	}
 
 	// sin(r) and cos(r) for |r| <= pi/4 from the versine
@@ -290,8 +323,9 @@ constexpr efloat<nlimbs> sin(const efloat<nlimbs>& x) {
 		return nan;
 	}
 	const unsigned precision = efloat_detail::result_precision(x);
-	// sin x = x - x^3/6 + ..., within x^2/6 < 2^-(P + 6) of x below |x| < 2^-(P + 6)/2, toward 0
-	if (2 * x.scale() < -static_cast<int64_t>(precision) - 6) {
+	// sin x = x - x^3/6 + ..., within |x| x^2/6 of x, toward 0: with 2 scale(x) <= -P - 4, x^2 <
+	// 2^-(P + 2) and x^2/6 < 2^-(P + 4), as round_near needs (#1790; the cut was 2 bits lower)
+	if (2 * x.scale() < -static_cast<int64_t>(precision) - 3) {
 		return efloat_detail::round_near(x, -x.sign(), precision, x.carries_precision());
 	}
 	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::trig_working(x, target, efloat_detail::trig_function::sine); },
@@ -312,8 +346,9 @@ constexpr efloat<nlimbs> cos(const efloat<nlimbs>& x) {
 		return nan;
 	}
 	const unsigned precision = efloat_detail::result_precision(x);
-	// cos x = 1 - x^2/2 + ..., within x^2/2 < 2^-(P + 5) of 1 below |x| < 2^-(P + 6)/2, below it
-	if (2 * x.scale() < -static_cast<int64_t>(precision) - 6) {
+	// cos x = 1 - x^2/2 + ..., within x^2/2 of 1, below it: with 2 scale(x) <= -P - 5, x^2 <
+	// 2^-(P + 3) and x^2/2 < 2^-(P + 4) (#1790; the cut was a bit lower)
+	if (2 * x.scale() < -static_cast<int64_t>(precision) - 4) {
 		return efloat_detail::round_near(efloat<nlimbs>(1.0), -1, precision, x.carries_precision());
 	}
 	return efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::trig_working(x, target, efloat_detail::trig_function::cosine); },
@@ -333,9 +368,9 @@ constexpr efloat<nlimbs> tan(const efloat<nlimbs>& x) {
 		return nan;
 	}
 	const unsigned precision = efloat_detail::result_precision(x);
-	// tan x = x + x^3/3 + ..., within x^2/3 (1 + x^2) < 2^-(P + 5) of x below |x| < 2^-(P + 6)/2,
-	// away from 0
-	if (2 * x.scale() < -static_cast<int64_t>(precision) - 6) {
+	// tan x = x + x^3/3 + ..., within |x| x^2/3 (1 + x^2) of x, away from 0: with 2 scale(x) <=
+	// -P - 5, x^2 < 2^-(P + 3) and x^2/3 (1 + x^2) < 2^-(P + 4) (#1790; the cut was a bit lower)
+	if (2 * x.scale() < -static_cast<int64_t>(precision) - 4) {
 		return efloat_detail::round_near(x, x.sign(), precision, x.carries_precision());
 	}
 	efloat<nlimbs> result = efloat_detail::round_ziv<nlimbs>([&x](unsigned target) { return efloat_detail::trig_working(x, target, efloat_detail::trig_function::tangent); },
