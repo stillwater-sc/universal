@@ -383,7 +383,8 @@ namespace {
 				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: Toom-3 " << (square ? "square" : "product") << " of " << n << " limbs, pattern " << pattern << '\n';
 			}
 		};
-		const std::size_t lengths[] = { 239, 240, 241, 242, 243, 351, 352, 353, 354, 480, 481, 482, 720, 721, 722, 1025 };
+		// 1056 and 1060: squares whose thirds, of 352 limbs or more, square by Toom-3 again
+		const std::size_t lengths[] = { 239, 240, 241, 242, 243, 351, 352, 353, 354, 480, 481, 482, 720, 721, 722, 1025, 1056, 1060 };
 		for (std::size_t n : lengths) {
 			for (int pattern = 0; pattern < 6; ++pattern) {
 				check(n, pattern, false);
