@@ -614,6 +614,60 @@ inline limb_t div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, st
 	return qh;
 }
 
+// Approximate quotients (#1810), as GMP's divappr: the quotient alone, from below by at most
+// divappr_error units of its last limb above the exact floor(np / dp). dcpi1_divappr_n forms
+// the high half of the quotient exactly, as dcpi1_div_qr_n does, and the low half on the
+// divisor's top lo limbs, without the product of that half by the divisor's other limbs or the
+// correction it decides. Dividing by the truncated divisor can only raise a quotient, by at most
+// 2, as the exact code's correction loop shows; the low half's own recursion adds its error, so
+// each level of the recursion adds 2. A low half that reaches B^lo is clamped to B^lo - 1, the
+// largest the exact one can be. np is overwritten.
+inline limb_t dcpi1_divappr_n(limb_t* q, limb_t* np, const limb_t* dp, std::size_t n, limb_t v, limb_t* tp) noexcept {
+	const std::size_t lo = n / 2;
+	const std::size_t hi = n - lo;
+	limb_t qh = (hi < dc_div_threshold) ? sbpi1_div_qr(q + lo, np + 2 * lo, 2 * hi, dp + lo, hi, v)
+	                                    : dcpi1_div_qr_n(q + lo, np + 2 * lo, dp + lo, hi, v, tp);
+	mul(tp, q + lo, hi, dp, lo, tp + n);
+	limb_t cy = sub_n(np + lo, np + lo, tp, n);
+	if (qh != 0u) cy += sub_n(np + n, np + n, dp, lo);
+	while (cy != 0u) {
+		qh -= sub_1(q + lo, hi, 1u);
+		cy -= add_n(np + lo, np + lo, dp, n);
+	}
+	const limb_t ql = (lo < dc_div_threshold) ? sbpi1_div_qr(q, np + hi, 2 * lo, dp + hi, lo, v)
+	                                          : dcpi1_divappr_n(q, np + hi, dp + hi, lo, v, tp);
+	if (ql != 0u) {
+		for (std::size_t i = 0; i < lo; ++i) q[i] = ~limb_t(0);
+	}
+	return qh;
+}
+
+// the bound on dcpi1_divappr_n's excess for a quotient of n limbs: 2 a level
+constexpr std::size_t divappr_n_error(std::size_t n) noexcept {
+	return (n < dc_div_threshold) ? 0u : 2u + divappr_n_error(n / 2);
+}
+
+// q[0, nn - dn) + B^(nn - dn) times the returned limb = Q, floor(np / dp) <= Q <= floor(np / dp)
+// + divappr_error(nn, dn), for nn >= dn >= 1, dp normalized and overlapping neither np nor q;
+// np is overwritten, s holds div_scratch_limbs(dn) limbs. Shapes the approximation does not
+// serve divide exactly.
+inline limb_t div_appr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t* s) noexcept {
+	const std::size_t qn = nn - dn;
+	if (dn < dc_div_threshold || qn < dc_div_threshold || qn > dn) return div_qr(q, np, nn, dp, dn, s);
+	const limb_t v = invert_pi1(dp[dn - 1], dp[dn - 2]);
+	if (qn == dn) return dcpi1_divappr_n(q, np, dp, dn, v, s);
+	// a quotient shorter than the divisor: the top 2 qn limbs over the divisor's top qn, as
+	// dcpi1_div_qr_short, without the product by the divisor's other limbs; at most 2 more
+	const std::size_t in = dn - qn;
+	return dcpi1_divappr_n(q, np + in, dp + in, qn, v, s);
+}
+
+constexpr std::size_t divappr_error(std::size_t nn, std::size_t dn) noexcept {
+	const std::size_t qn = nn - dn;
+	if (dn < dc_div_threshold || qn < dc_div_threshold || qn > dn) return 0u;
+	return (qn == dn) ? divappr_n_error(qn) : 2u + divappr_n_error(qn);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Square root with remainder (#1763): Zimmermann's Karatsuba square root (INRIA RR-3805, 1999),
 // as GMP's mpn_sqrtrem.  With N = a3 b^3 + a2 b^2 + a1 b + a0, (s', r') = sqrtrem(a3 b + a2),
@@ -705,6 +759,41 @@ inline limb_t dc_sqrtrem(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexc
 // with the returned limb, 0 or 1, above it.  s holds sqrt_scratch_limbs(n) limbs.
 inline limb_t sqrtrem(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexcept {
 	return (n == 1) ? sqrtrem2(sp, np, np) : dc_sqrtrem(sp, np, n, s);
+}
+
+// the bound sqrt_approx keeps its root within, in units of its last limb: the one correction
+// the exact root may need, and half the approximate quotient's excess, rounded up
+constexpr std::size_t sqrt_approx_error(std::size_t n) noexcept {
+	return (n == 1) ? 1u : 2u + divappr_error(n, n - n / 2) / 2u;
+}
+
+// sp[0, n) = S with floor(sqrt(N)) <= S <= floor(sqrt(N)) + sqrt_approx_error(n), N = np[0, 2n),
+// np[2n - 1] >= 2^62, and S < B^n (#1810): dc_sqrtrem's top level without the remainder.
+// S = s' B^l + Q, the half-length root s' formed exactly as there and Q from div_appr's
+// approximate quotient of (r' B^l + a1) by s', halved: Q is the exact floor((r' B^l + a1) / (2 s'))
+// or above it by at most half the quotient's excess, rounded up. With the exact Q, the remainder
+// r = u B^l + a0 - Q^2 decides the one correction, which only lowers S, so S is never too small.
+// Skipped: the remainders of the division's low halves, the square Q^2 and the correction. An S
+// that would reach B^n is B^n - 1, the floor's largest value. np is overwritten; s holds
+// sqrt_scratch_limbs(n) limbs.
+inline void sqrt_approx(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexcept {
+	if (n == 1) {
+		sqrtrem2(sp, np, np);
+		return;
+	}
+	const std::size_t l = n / 2;
+	const std::size_t h = n - l;
+	limb_t q = (h == 1) ? sqrtrem2(sp + l, np + 2 * l, np + 2 * l) : dc_sqrtrem(sp + l, np + 2 * l, h, s);
+	if (q != 0u) sub_n(np + 2 * l, np + 2 * l, sp + l, h);
+	limb_t* qp = s;
+	qp[l] = div_appr(qp, np + l, n, sp + l, h, s + l + 1);
+	q += qp[l];
+	for (std::size_t i = 0; i + 1 < l; ++i) sp[i] = (qp[i] >> 1) | (qp[i + 1] << 63);
+	sp[l - 1] = (qp[l - 1] >> 1) | (q << 63);
+	q >>= 1;
+	if (q != 0u && add_1(sp + l, h, q) != 0u) {   // S = B^n or above: its floor is B^n - 1
+		for (std::size_t i = 0; i < n; ++i) sp[i] = ~limb_t(0);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

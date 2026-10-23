@@ -35,6 +35,8 @@
 //            x * x rounded from the short product, at the operands' precision, must be the exact
 //            product rounded once in every mode, also for all-ones operands, where only the
 //            fallback to the full product is right.
+//   div_appr, sqrt_approx  efloat_mpn's quotient and root without remainders (#1810) must lie
+//            at or above the exact ones, by at most divappr_error and sqrt_approx_error units.
 //   load_window  efloat_mpn's shifted copy, which places the fma and hypot kernels' terms in
 //            their frames (#1802), against a bit at a time, and its flag for the bits it drops.
 //
@@ -215,6 +217,90 @@ namespace {
 					if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: x + y with an exponent gap of " << gap << " bits at " << target << " bits is not the rounded exact sum\n";
 				}
 			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// efloat_mpn::div_appr and sqrt_approx (#1810) against div_qr and sqrtrem: the approximate
+	// quotient and root never below the exact ones and above them by at most divappr_error and
+	// sqrt_approx_error units of the last limb. Quotients as long as the divisor and one to three
+	// limbs shorter (sqrt's shape), across the divide-and-conquer threshold and its doublings,
+	// all-ones operands, and roots of 1 to 200 limbs.
+	int VerifyApproximateKernels(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		using efloat_mpn::limb_t;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(18100);
+		auto excess = [](const std::vector<limb_t>& approx, const std::vector<limb_t>& exact, std::size_t len, std::size_t bound) {
+			std::vector<limb_t> d(len);
+			const limb_t borrow = efloat_mpn::sub_n(d.data(), approx.data(), exact.data(), len);
+			bool ok = (borrow == 0u) && d[0] <= bound;
+			for (std::size_t i = 1; i < len; ++i) ok = ok && d[i] == 0u;
+			return ok;
+		};
+		const std::size_t lengths[] = { 1, 2, 15, 16, 17, 31, 32, 33, 63, 64, 65, 128, 129, 130 };
+		auto check_div = [&](std::size_t dn, std::size_t qn, bool ones) {
+			const std::size_t nn = dn + qn;
+			std::vector<limb_t> np(nn), np2, dp(dn), q(qn + 1), q2(qn + 1), sc(efloat_mpn::div_scratch_limbs(dn) + 8);
+			for (auto& v : np) v = ones ? ~limb_t(0) : rng();
+			for (auto& v : dp) v = ones ? ~limb_t(0) : rng();
+			dp[dn - 1] |= limb_t(1) << 63;
+			if (np[nn - 1] >= dp[dn - 1]) np[nn - 1] = dp[dn - 1] - 1u;
+			np2 = np;
+			q[qn]  = efloat_mpn::div_qr(q.data(), np.data(), nn, dp.data(), dn, sc.data());
+			q2[qn] = efloat_mpn::div_appr(q2.data(), np2.data(), nn, dp.data(), dn, sc.data());
+			if (!excess(q2, q, qn + 1, efloat_mpn::divappr_error(nn, dn))) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: div_appr of " << nn << " by " << dn << " limbs is outside its bound\n";
+			}
+		};
+		auto check_root = [&](std::size_t n, bool ones) {
+			std::vector<limb_t> a(2 * n), b, sp(n), sp2(n), sc(efloat_mpn::sqrt_scratch_limbs(n) + 8);
+			for (auto& v : a) v = ones ? ~limb_t(0) : rng();
+			a[2 * n - 1] |= limb_t(1) << 62;
+			b = a;
+			efloat_mpn::sqrtrem(sp.data(), a.data(), n, sc.data());
+			efloat_mpn::sqrt_approx(sp2.data(), b.data(), n, sc.data());
+			if (!excess(sp2, sp, n, efloat_mpn::sqrt_approx_error(n))) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: sqrt_approx of " << n << " limbs is outside its bound\n";
+			}
+		};
+		// N = D (B^qn - 1) + D - 1: an all-ones quotient, whose low halves the truncated divisor
+		// pushes to B^lo, where div_appr clamps them
+		auto check_ones_quotient = [&](std::size_t dn, std::size_t qn) {
+			const std::size_t nn = dn + qn;
+			std::vector<limb_t> dp(dn), ones(qn, ~limb_t(0)), np(nn), np2, q(qn + 1), q2(qn + 1), sc(efloat_mpn::div_scratch_limbs(dn) + 8);
+			std::vector<limb_t> sm(efloat_mpn::scratch_limbs(std::max(dn, qn)) + 8);
+			for (auto& v : dp) v = rng();
+			dp[dn - 1] |= limb_t(1) << 63;
+			efloat_mpn::mul(np.data(), dp.data(), dn, ones.data(), qn, sm.data());
+			std::vector<limb_t> dm1(dp);
+			efloat_mpn::sub_1(dm1.data(), dn, 1u);
+			const limb_t carry = efloat_mpn::add_n(np.data(), np.data(), dm1.data(), dn);
+			efloat_mpn::add_1(np.data() + dn, nn - dn, carry);   // N < D B^qn: nothing carries past nn
+			np2 = np;
+			q[qn]  = efloat_mpn::div_qr(q.data(), np.data(), nn, dp.data(), dn, sc.data());
+			q2[qn] = efloat_mpn::div_appr(q2.data(), np2.data(), nn, dp.data(), dn, sc.data());
+			if (!excess(q2, q, qn + 1, efloat_mpn::divappr_error(nn, dn))) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: div_appr of an all-ones quotient of " << qn << " limbs is outside its bound\n";
+			}
+		};
+		for (std::size_t n : lengths) {
+			for (bool ones : { false, true }) {
+				check_div(n, n, ones);
+				if (n > 1) check_div(n, n - 1, ones);
+				check_root(n, ones);
+			}
+			check_ones_quotient(n, n);
+			if (n > 1) check_ones_quotient(n, n - 1);
+		}
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			const std::size_t dn = 1 + rng() % 150;
+			const std::size_t qn = (i % 3 == 0 || dn < 4) ? dn : dn - 1 - rng() % 3;
+			check_div(dn, qn, (i % 17) == 3);
+			check_root(1 + rng() % 200, (i % 19) == 5);
 		}
 		return nrOfFailedTestCases;
 	}
@@ -714,6 +800,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 20), "efloat", "products from short products");
+	nrOfFailedTestCases += ReportTestResult(VerifyApproximateKernels(reportTestCases, 100), "efloat", "approximate quotients and roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 100), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 100), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 100), "efloat", "limb square roots");
@@ -729,6 +816,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 300), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 60), "efloat", "products from short products");
+	nrOfFailedTestCases += ReportTestResult(VerifyApproximateKernels(reportTestCases, 3000), "efloat", "approximate quotients and roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300), "efloat", "limb square roots");
@@ -741,6 +829,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 20000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 3000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 300), "efloat", "products from short products");
+	nrOfFailedTestCases += ReportTestResult(VerifyApproximateKernels(reportTestCases, 20000), "efloat", "approximate quotients and roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 3000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 3000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 3000), "efloat", "limb square roots");
@@ -753,6 +842,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 100000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 30000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 3000), "efloat", "products from short products");
+	nrOfFailedTestCases += ReportTestResult(VerifyApproximateKernels(reportTestCases, 30000), "efloat", "approximate quotients and roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 30000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 30000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 30000), "efloat", "limb square roots");
@@ -765,6 +855,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 300000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 10000), "efloat", "products from short products");
+	nrOfFailedTestCases += ReportTestResult(VerifyApproximateKernels(reportTestCases, 100000), "efloat", "approximate quotients and roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300000), "efloat", "limb square roots");

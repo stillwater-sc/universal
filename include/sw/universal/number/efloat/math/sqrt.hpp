@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -17,77 +18,82 @@ namespace sw { namespace universal {
 namespace efloat_detail {
 
 	// r[0, n) = the low n 64-bit limbs of floor(V 2^shift), V the MSB-first limbs v as an
-	// integer; shift may be negative
+	// integer; shift may be negative. V is read as 64-bit words, least significant first, and
+	// shifted once, each word read once: the bit-by-bit assembly from 32-bit halves it replaces
+	// cost a twentieth of sqrt at 8192 bits (#1810).
 	inline void load_shifted(efloat_mpn::limb_t* r, std::size_t n, const std::vector<uint32_t>& v, int64_t shift) {
-		const int64_t nv = static_cast<int64_t>(v.size());
-		auto limb32 = [&v, nv](int64_t j) -> uint64_t {
-			return (j >= 0 && j < nv) ? uint64_t(v[static_cast<std::size_t>(nv - 1 - j)]) : 0u;
+		using efloat_mpn::limb_t;
+		const std::size_t nv = v.size();
+		const int64_t     m  = static_cast<int64_t>((nv + 1) / 2);
+		auto word = [&v, nv, m](int64_t j) -> limb_t {   // word j of P = V 2^(32 (2m - nv)), an odd count padded at the bottom
+			if (j < 0 || j >= m) return 0u;
+			const std::size_t hi = static_cast<std::size_t>(2 * m - 2 - 2 * j);
+			return (limb_t(v[hi]) << 32) | ((hi + 1 < nv) ? v[hi + 1] : 0u);
 		};
+		const int64_t  s = shift - 32 * (2 * m - static_cast<int64_t>(nv));   // floor(P 2^s)
+		const int64_t  q = (s >= 0) ? -((s + 63) / 64) : (-s) / 64;          // floor(-s / 64)
+		const unsigned c = static_cast<unsigned>(-s - 64 * q);              // in [0, 64)
+		limb_t low = word(q);
 		for (std::size_t k = 0; k < n; ++k) {
-			const int64_t p = 64 * static_cast<int64_t>(k) - shift;   // the bit of V at bit 0 of r[k]
-			uint64_t w = 0;
-			if (p > -64 && p < 0) {
-				w = (limb32(0) | (limb32(1) << 32)) << static_cast<unsigned>(-p);
-			}
-			else if (p >= 0) {
-				const int64_t  j  = p / 32;
-				const unsigned sh = static_cast<unsigned>(p % 32);
-				w = limb32(j) | (limb32(j + 1) << 32);
-				if (sh != 0u) w = (w >> sh) | (limb32(j + 2) << (64u - sh));
-			}
-			r[k] = w;
+			const limb_t high = word(q + static_cast<int64_t>(k) + 1);
+			r[k] = (c == 0u) ? low : ((low >> c) | (high << (64u - c)));
+			low = high;
 		}
 	}
 
-	// sqrt(m) for m in [1, 4), correctly rounded to `precision` bits in the current mode (#1763).
-	// With F = 64 n - 1 and N = m 2^(2F), S = floor(sqrt(N)) fills n 64-bit limbs, its top bit
-	// set, and carries at least precision + 2 bits, the guard bit among them; the remainder
-	// N - S^2 is the sticky bit.  efloat_mpn::sqrtrem forms both exactly.
+	// sqrt(a) for a finite a > 0, correctly rounded to `precision` bits in the current mode, into
+	// result (#1763, #1810). With a = m 4^half, m in [1, 4), F = 64 n - 1 and N = m 2^(2F), the
+	// root S = floor(sqrt(N)) fills n 64-bit limbs, its top bit set, and carries at least
+	// precision + 2 bits, the guard bit among them; the remainder N - S^2 is the sticky bit.
+	// efloat_mpn::sqrt_approx first forms S, or at most sqrt_approx_error(n) above it (6 at 8192
+	// bits), without the remainder: precisions are whole 32-bit limbs, so that value carries 30
+	// bits or more past the precision, and Ziv's test on it (can_round) decides the rounding
+	// wherever it passes. Where it does not
+	// -- a root within a unit of a rounding boundary, and every exact square, whose root ends in
+	// zeros -- sqrtrem forms S and the remainder exactly. Before, the remainder was formed always,
+	// a square of half the root's length that GMP and MPFR skip, and the argument and the root
+	// were copied through efloat values on the way in and out.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> sqrt_exact(const efloat<nlimbs>& m, unsigned precision) {
+	inline void sqrt_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& a, unsigned precision) {
 		using efloat_mpn::limb_t;
-		const std::vector<uint32_t> mb = m.bits();
-		const int64_t frac = 32 * static_cast<int64_t>(mb.size()) - 1 - m.scale();   // m = M 2^-frac
-		std::size_t n = (static_cast<std::size_t>(precision) + 2 + 63) / 64;
+		const std::vector<uint32_t>& mb = a.limb_vector();
+		const int64_t e    = a.scale();
+		const int64_t half = e / 2 - ((e < 0 && e % 2 != 0) ? 1 : 0);   // floor(e / 2), without e - 1 overflowing
+		const int64_t frac = 32 * static_cast<int64_t>(mb.size()) - 1 - (e - 2 * half);   // m = M 2^-frac
+		// the root rounds at whole 32-bit limbs, so it is sized from them: a request of 33 bits
+		// rounds at 64, and the root then needs 66 (before, it was sized from the 33)
+		const unsigned plimbs = std::max(1u, (precision + 31) / 32);
+		std::size_t n = (32 * static_cast<std::size_t>(plimbs) + 2 + 63) / 64;
 		while (2 * (64 * static_cast<int64_t>(n) - 1) < frac) ++n;   // a longer m: N must be an integer
 		const int64_t F = 64 * static_cast<int64_t>(n) - 1;
 
-		limb_t local[512];
-		std::vector<limb_t> heap;
-		const std::size_t need = 3 * n + efloat_mpn::sqrt_scratch_limbs(n);
-		limb_t* np = local;
-		if (need > 512) { heap.resize(need); np = heap.data(); }
+		limb_buffer buffer;
+		limb_t* np   = buffer.get(3 * n + efloat_mpn::sqrt_scratch_limbs(n));
 		limb_t* sp   = np + 2 * n;
 		limb_t* work = sp + n;
+		load_shifted(np, 2 * n, mb, 2 * F - frac);
+		efloat_mpn::sqrt_approx(sp, np, n, work);
+		// S 2^-F lies within sqrt_approx_error(n) + 1 units of its last bit of the root, and its
+		// top bit weighs 2^half
+		const unsigned lost = static_cast<unsigned>(std::bit_width(efloat_mpn::sqrt_approx_error(n) + 1));
+		if (efloat_mpn::can_round(sp, n, 32 * plimbs, static_cast<unsigned>(F) - lost)) {
+			result.assign_rounded_limbs(false, sp, n, half, true, plimbs);
+			return;
+		}
 		load_shifted(np, 2 * n, mb, 2 * F - frac);
 		const limb_t carry = efloat_mpn::sqrtrem(sp, np, n, work);
 		bool sticky = (carry != 0u);
 		for (std::size_t k = 0; !sticky && k < n; ++k) sticky = (np[k] != 0u);
-
-		// S's 32-bit limbs, most significant first, then a limb only the sticky bit sets; S 2^-F
-		// is in [1, 2), and it rounds once
-		efloat<nlimbs> result(1);
-		result.set_precision(static_cast<unsigned>(32 * (2 * n + 1)));
-		for (std::size_t i = 0; i < 2 * n; ++i) {
-			const limb_t w = sp[n - 1 - i / 2];
-			result.setlimb(static_cast<unsigned>(i), (i & 1u) ? static_cast<uint32_t>(w) : static_cast<uint32_t>(w >> 32));
-		}
-		if (sticky) result.setlimb(static_cast<unsigned>(2 * n), 1u);
-		result.setexponent(0);
-		result.set_precision(precision);
-		return result;
+		result.assign_rounded_limbs(false, sp, n, half, sticky, plimbs);
 	}
 
-	// sqrt(a) for a finite a > 0 rounded once to `bits` bits: a scaled to m in [1, 4) for the
-	// exact root, the exponent halved.  sin's versine takes it at its guard precision (#1761).
+	// sqrt(a) for a finite a > 0 rounded once to `bits` bits. sin's versine takes it at its guard
+	// precision (#1761), and the inverse trigonometric and hyperbolic functions and log's AGM at
+	// their working precision.
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> sqrt_to(const efloat<nlimbs>& a, unsigned bits) {
-		const int64_t e    = a.scale();
-		const int64_t half = e / 2 - ((e < 0 && e % 2 != 0) ? 1 : 0);   // floor(e / 2), without e - 1 overflowing
-		efloat<nlimbs> m(a);
-		m.setexponent(e - 2 * half);                            // m in [1, 4)
-		efloat<nlimbs> x = sqrt_exact(m, bits);
-		x.setexponent(x.scale() + half);
+		efloat<nlimbs> x(a);   // holds the root's limbs without growing, in most cases
+		sqrt_limbs(x, a, bits);
 		return x;
 	}
 

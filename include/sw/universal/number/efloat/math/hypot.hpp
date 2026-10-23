@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <universal/number/efloat/math/exponent.hpp>  // exact_sum, limb_buffer, pack_significand, round_result
@@ -22,7 +23,8 @@ namespace efloat_detail {
 	// 4^c and floored again; the bits either floor drops are a sticky bit. N is the only integer
 	// the squares' sum floors to, and floor(sqrt(N)) the root's floor, since no square lies
 	// strictly between N and N + 1. The root S, n limbs with its top bit set, then carries the
-	// rounding bits, and the remainder N - S^2 and the dropped bits the sticky one.
+	// rounding bits, and the remainder N - S^2 and the dropped bits the sticky one. The root comes
+	// from efloat_mpn::sqrt_approx first, and the exact one only where Ziv's test fails (#1810).
 	template<unsigned nlimbs>
 	inline void hypot_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, unsigned precision) {
 		using efloat_mpn::limb_t;
@@ -55,10 +57,21 @@ namespace efloat_detail {
 			efloat_mpn::rshift(np, np, len, 2);
 			c = 1;
 		}
+		// the root without its remainder first, as sqrt takes it (#1810): S, or a few units above,
+		// rounds wherever Ziv's test passes on it; otherwise the exact root and remainder decide
+		const unsigned plimbs = (precision + 31) / 32;
+		for (std::size_t i = 0; i < 2 * n; ++i) t[i] = np[i];   // N, kept for the exact root
+		efloat_mpn::sqrt_approx(sp, np, n, work);
+		const unsigned lost = static_cast<unsigned>(std::bit_width(efloat_mpn::sqrt_approx_error(n) + 1));
+		if (efloat_mpn::can_round(sp, n, 32 * plimbs, static_cast<unsigned>(64 * n - 1) - lost)) {
+			result.assign_rounded_limbs(false, sp, n, x.scale() + c, true, plimbs);
+			return;
+		}
+		for (std::size_t i = 0; i < 2 * n; ++i) np[i] = t[i];
 		const limb_t carry = efloat_mpn::sqrtrem(sp, np, n, work);
 		sticky = sticky || (carry != 0u);
 		for (std::size_t i = 0; !sticky && i < n; ++i) sticky = (np[i] != 0u);
-		result.assign_rounded_limbs(false, sp, n, x.scale() + c, sticky, (precision + 31) / 32);
+		result.assign_rounded_limbs(false, sp, n, x.scale() + c, sticky, plimbs);
 	}
 
 }  // namespace efloat_detail
