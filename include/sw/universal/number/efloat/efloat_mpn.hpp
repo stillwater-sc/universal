@@ -296,7 +296,8 @@ namespace toom {
 
 }  // namespace toom
 
-// r[0, 2n) = a[0, n) * b[0, n), or a^2 when square, by Toom-3, for n >= 3; s holds
+// r[0, 2n) = a[0, n) * b[0, n), or a^2 when square, by Toom-3, for n >= 5 (n = 4 leaves the top
+// third empty; the thresholds lie far above); s holds
 // scratch_limbs(n) limbs: 12k + 18 here (six evaluations of k + 2 limbs, three products of
 // 2k + 2) and the five products' own after them
 inline void toom3_mul(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept {
