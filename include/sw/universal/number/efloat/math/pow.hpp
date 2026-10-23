@@ -5,8 +5,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
+#include <algorithm>
 #include <bit>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 #include <universal/number/efloat/math/exponent.hpp>
 #include <universal/number/efloat/math/logarithm.hpp>
@@ -109,6 +112,127 @@ namespace efloat_detail {
 		return true;
 	}
 
+	// a[0, na) = the top w limbs of p[0, np), shifted up to p's leading bit, and sh, the weight of
+	// p's bit 0, moved to a's; returns whether a dropped bit was 1. p is a product of two
+	// operands with their top bits set, so its own top bit is bit 63 or 62 of its top limb (#1804).
+	inline bool keep_top(efloat_mpn::limb_t* a, std::size_t& na, const efloat_mpn::limb_t* p, std::size_t np, std::size_t w, int64_t& sh) {
+		const unsigned c = static_cast<unsigned>(std::countl_zero(p[np - 1]));   // 0 or 1
+		if (np <= w) {
+			for (std::size_t i = 0; i < np; ++i) a[i] = p[i];
+			if (c != 0u) efloat_mpn::lshift(a, a, np, c);
+			na = np;
+			sh -= c;
+			return false;
+		}
+		const std::size_t lo = np - w;   // the first limb kept
+		bool dropped = false;
+		for (std::size_t i = 0; !dropped && i + 1 < lo; ++i) dropped = (p[i] != 0u);
+		if (c == 0u) {
+			dropped = dropped || (p[lo - 1] != 0u);
+			for (std::size_t i = 0; i < w; ++i) a[i] = p[lo + i];
+		}
+		else {
+			dropped = dropped || ((p[lo - 1] << 1) != 0u);
+			for (std::size_t i = 0; i < w; ++i) a[i] = (p[lo + i] << 1) | (p[lo + i - 1] >> 63);
+		}
+		na = w;
+		sh += 64 * static_cast<int64_t>(lo) - c;
+		return dropped;
+	}
+
+	// can_round (#1763) on a nonzero value a[0, n) of 64-bit limbs, least significant first,
+	// within 2^(scale - correct) of the exact result: whether its bits from position precision + 1
+	// to correct - 2, counting its leading bit as 0, are neither all 0 nor all 1 (#1804)
+	inline bool limbs_can_round(const efloat_mpn::limb_t* a, std::size_t n, unsigned precision, unsigned correct) {
+		if (correct < precision + 4) return false;
+		while (a[n - 1] == 0u) --n;
+		const int64_t lead = 64 * static_cast<int64_t>(n) - 1 - std::countl_zero(a[n - 1]);   // the leading bit's index
+		auto bit = [a, lead](unsigned p) -> unsigned {
+			const int64_t q = lead - static_cast<int64_t>(p);
+			return (q < 0) ? 0u : static_cast<unsigned>((a[q / 64] >> (q % 64)) & 1u);
+		};
+		const unsigned first = bit(precision + 1);
+		for (unsigned p = precision + 2; p <= correct - 2; ++p) {
+			if (bit(p) != first) return true;
+		}
+		return false;
+	}
+
+	// x^n, or x^-n with `reciprocal`, rounded once at `precision` bits, for a finite x != 0 of at
+	// least 2 significant bits and an integer n >= 2 (#1804) whose power's exponent stays far
+	// inside the range: binary powering on 64-bit limbs, each square and product kept to its top w limbs
+	// with its leading bit at the top. A kept product is within 2^-(64 w - 1) of its exact value,
+	// relative to it, and binary powering scales the error of each step by the squarings after
+	// it, so x^n is within 2 n 2^-(64 w - 1) of exact: bit_width(n) + 2 bits, where efloat's own
+	// arithmetic carried 69 (#1763). The reciprocal divides once more. Ziv's test (`limbs_can_round`)
+	// then decides. A power that keeps every bit is exact and rounds from the limbs outright; one
+	// that does not has more bits than the frame's precision + 21, so it lies on no rounding
+	// boundary, and Ziv's test passes once the frame is wide enough.
+	// Returns false where it does not apply, or past three widenings; pow then takes its general
+	// path. Before, the general path's preamble, the exact-power attempt and efloat arithmetic at
+	// 69 extra bits made pow(b, 7) at 128 bits cost about twelve multiplications.
+	template<unsigned nlimbs>
+	inline bool integer_power_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, uint64_t n, bool reciprocal, unsigned precision, bool carries) {
+		using efloat_mpn::limb_t;
+		if (n < 2 || x.iszero() || x.isinf() || x.isnan()) return false;
+		const unsigned bits = significant_bits(x);
+		if (bits < 2) return false;   // a power of 2: its reciprocal is exact too, and Ziv's test never passes on it
+		const int64_t ex = x.scale();
+		if (static_cast<double>(n) * (std::fabs(static_cast<double>(ex)) + 1.0) >= 1152921504606846976.0) return false;   // 2^60
+		const unsigned bw = static_cast<unsigned>(std::bit_width(n));
+		const bool negative = (x.sign() == -1) && (n & 1u);
+		const std::size_t m = (x.limb_vector().size() + 1) / 2;
+		std::size_t w = (static_cast<std::size_t>(precision) + bw + 5 + 16 + 63) / 64;
+		for (int attempt = 0; attempt < 3; ++attempt, w *= 2) {
+			limb_buffer buffer;
+			const std::size_t wq = w + 1;   // the reciprocal's limbs
+			limb_t* px   = buffer.get(m + w + 2 * w + 2 * w + wq + std::max(efloat_mpn::div_scratch_limbs(w), efloat_mpn::scratch_limbs(w)));
+			limb_t* a    = px + m;
+			limb_t* prod = a + w;
+			limb_t* num  = prod + 2 * w;
+			limb_t* q    = num + 2 * w;
+			limb_t* work = q + wq;
+			pack_significand(px, x);
+			// |x| = X 2^(ex - 64 m + 1), and the power A 2^sh, from n's leading bit down
+			std::size_t na = m;
+			for (std::size_t i = 0; i < m; ++i) a[i] = px[i];
+			int64_t sh = ex - 64 * static_cast<int64_t>(m) + 1;
+			const int64_t sx = sh;
+			bool truncated = false;
+			for (int b = static_cast<int>(bw) - 2; b >= 0; --b) {
+				efloat_mpn::mul_n(prod, a, a, na, work, true);
+				sh *= 2;
+				truncated = keep_top(a, na, prod, 2 * na, w, sh) || truncated;
+				if ((n >> b) & 1u) {
+					efloat_mpn::mul(prod, a, na, px, m, work);
+					sh += sx;
+					truncated = keep_top(a, na, prod, na + m, w, sh) || truncated;
+				}
+			}
+			const limb_t* frame   = a;
+			std::size_t   len     = na;
+			int64_t       top     = sh + 64 * static_cast<int64_t>(na) - 1;
+			unsigned      correct = static_cast<unsigned>(64 * w) - bw - 5;
+			if (reciprocal) {
+				// 1 / (A 2^sh) = floor(2^(64 (na + w) - 1) / A) 2^(-sh - 64 (na + w) + 1): w quotient limbs and a top one
+				const std::size_t nn = na + w;
+				for (std::size_t i = 0; i + 1 < nn; ++i) num[i] = 0u;
+				num[nn - 1] = limb_t(1) << 63;
+				q[w]      = efloat_mpn::div_qr(q, num, nn, a, na, work);
+				frame     = q;
+				len       = wq;
+				top       = -sh - 64 * static_cast<int64_t>(nn) + 1 + 64 * static_cast<int64_t>(wq) - 1;
+				correct  -= 1;
+				truncated = true;   // 1 / x^n is not a binary fraction: x is not a power of 2
+			}
+			if (truncated && !limbs_can_round(frame, len, 32 * ((precision + 31) / 32), correct)) continue;
+			result.assign_rounded_limbs(negative, frame, len, top, truncated, (precision + 31) / 32);
+			if (!carries) round_result(result, precision, carries);
+			return true;
+		}
+		return false;
+	}
+
 	// |x|^y = exp(y log |x|) for a finite x != 0, |x| != 1, and a finite y != 0, unrounded, at
 	// `target` bits plus guard bits, or, beyond exp's range, inf or 0, with `range` set to
 	// +1 or -1. log x carries the scale(y log x) bits the product moves above its absolute error.
@@ -163,6 +287,11 @@ constexpr efloat<nlimbs> integer_power(efloat<nlimbs> base, int exponent) {
 // pow(x, y), correctly rounded (#1763), with an integer y converted exactly
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, int y) {
+	if (y < -1 || y > 1) {   // an integer power on limbs (#1804); y carries no precision
+		const uint64_t n = (y < 0) ? 0ull - static_cast<uint64_t>(static_cast<int64_t>(y)) : static_cast<uint64_t>(y);
+		efloat<nlimbs> result(x);
+		if (efloat_detail::integer_power_limbs(result, x, n, y < 0, x.get_precision(), x.carries_precision())) return result;
+	}
 	return pow(x, efloat<nlimbs>(y));
 }
 
@@ -173,6 +302,11 @@ template<unsigned nlimbs>
 constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 	const unsigned precision = efloat_detail::result_precision(x, y);
 	const bool     carries   = x.carries_precision() || y.carries_precision();
+	// an integer y below 2^53 in magnitude: binary powering on limbs, where it applies (#1804)
+	if (!y.iszero() && !y.isinf() && !y.isnan() && y.scale() < 53 && efloat_detail::is_integer(y)) {
+		efloat<nlimbs> result(x);
+		if (efloat_detail::integer_power_limbs(result, x, static_cast<uint64_t>(std::fabs(double(y))), y.sign() == -1, precision, carries)) return result;
+	}
 	// the special values below carry the result's precision, as the computed ones do
 	auto special = [precision, carries](efloat<nlimbs> v) {
 		efloat_detail::round_result(v, precision, carries);
