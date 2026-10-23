@@ -174,10 +174,197 @@ inline bool abs_diff(limb_t* d, const limb_t* x, std::size_t k, const limb_t* y,
 // below 6n + 64, and an unbalanced mul adds a block product per level of its remainder sequence
 constexpr std::size_t scratch_limbs(std::size_t n) noexcept { return 16 * n + 128; }
 
+inline void mul_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept;
+inline limb_t sub_1(limb_t* r, std::size_t n, limb_t c) noexcept;
+inline limb_t lshift(limb_t* r, const limb_t* a, std::size_t n, unsigned c) noexcept;
+
+// operands of at least this many limbs multiply by Toom-3, below it by Karatsuba (#1814). By
+// measurement: from 256 limbs a product is 2-16% faster by Toom-3 (9% at 512, 16% at 1024), at
+// 224 and below Karatsuba is as fast or faster; a square gains 4-10% from 384 limbs. The
+// evaluations and the interpolation cost about what the saved product earns below that, where
+// GMP, with assembly for its passes and its Karatsuba, switches near 80 limbs.
+inline constexpr std::size_t toom3_threshold = 240;
+inline constexpr std::size_t toom3_sqr_threshold = 352;
+
+// Toom-3 (#1814). With a = a2 x^2 + a1 x + a0 at x = B^k, k = ceil(n / 3), and b likewise, the
+// product's five coefficients follow from its values at 0, 1, -1, -2 and infinity, five products
+// of k + 1 limbs, by Bodrato's interpolation (Bodrato and Zanoni, Integer and polynomial
+// multiplication: towards optimal Toom-Cook matrices, ISSAC 2007):
+//     r3 = (v(-2) - v(1)) / 3,  r1 = (v(1) - v(-1)) / 2,  r2 = v(-1) - v(0),
+//     r3 = (r2 - r3) / 2 + 2 v(inf),  r2 = r2 + r1 - v(inf),  r1 = r1 - r3,
+// every division exact. The values and the coefficients are held in two's complement at a fixed
+// width (k + 2 and 2k + 2 limbs), where adding, subtracting and the exact divisions all work
+// modulo B^width: a halving is an arithmetic shift, and a third the product by 3^-1 mod 2^64
+// limb by limb (Jebelean's exact division). The evaluations, by Bodrato's chain:
+//     p = a0 + a2,  a(1) = p + a1,  a(-1) = p - a1,  a(-2) = 2 (a(-1) + a2) - a0.
+namespace toom {
+
+	// r[0, w) = -r[0, w) mod B^w
+	inline void negate(limb_t* r, std::size_t w) noexcept {
+		limb_t c = 1;
+		for (std::size_t i = 0; i < w; ++i) {
+			const limb_t v = ~r[i] + c;
+			c = (v < c) ? 1u : 0u;
+			r[i] = v;
+		}
+	}
+
+	// whether r[0, w) is negative, read as two's complement
+	inline bool negative(const limb_t* r, std::size_t w) noexcept { return (r[w - 1] >> 63) != 0u; }
+
+	// r[0, w) = r[0, w) + or - b[0, nb) mod B^w, b nonnegative, nb <= w
+	inline void add_short(limb_t* r, std::size_t w, const limb_t* b, std::size_t nb) noexcept {
+		add_1(r + nb, w - nb, add_n(r, r, b, nb));
+	}
+	inline void sub_short(limb_t* r, std::size_t w, const limb_t* b, std::size_t nb) noexcept {
+		sub_1(r + nb, w - nb, sub_n(r, r, b, nb));
+	}
+
+	// r[0, w) = r[0, w) / 2, arithmetic: r is even
+	inline void halve(limb_t* r, std::size_t w) noexcept {
+		for (std::size_t i = 0; i + 1 < w; ++i) r[i] = (r[i] >> 1) | (r[i + 1] << 63);
+		r[w - 1] = static_cast<limb_t>(static_cast<std::int64_t>(r[w - 1]) >> 1);
+	}
+
+	// r[0, w) = r[0, w) / 3 mod B^w, exactly: r is a multiple of 3
+	inline void third(limb_t* r, std::size_t w) noexcept {
+		constexpr limb_t inv3 = 0xAAAA'AAAA'AAAA'AAABull;   // 3^-1 mod 2^64
+		limb_t c = 0;
+		for (std::size_t i = 0; i < w; ++i) {
+			const limb_t x = r[i];
+			const limb_t b = (x < c) ? 1u : 0u;
+			const limb_t q = (x - c) * inv3;
+			r[i] = q;
+			limb_t hi, lo;
+#if defined(__SIZEOF_INT128__)
+			const uint128_t t = static_cast<uint128_t>(q) * 3u;
+			lo = static_cast<limb_t>(t);
+			hi = static_cast<limb_t>(t >> 64);
+#else
+			mul128(q, 3u, lo, hi);
+#endif
+			(void)lo;
+			c = hi + b;
+		}
+	}
+
+	// e1, em1, em2 (k + 2 limbs each, two's complement) = a(1), a(-1), a(-2) for a = a[0, n)
+	// split at k: a0 = a[0, k), a1 = a[k, 2k), a2 = a[2k, n) of s limbs
+	inline void evaluate(limb_t* e1, limb_t* em1, limb_t* em2, const limb_t* a, std::size_t k, std::size_t s) noexcept {
+		const std::size_t w = k + 2;
+		limb_t* p = em2;   // p = a0 + a2, kept in em2 until it is formed
+		for (std::size_t i = 0; i < k; ++i) p[i] = a[i];
+		p[k] = 0u;
+		p[k + 1] = 0u;
+		add_short(p, w, a + 2 * k, s);
+		for (std::size_t i = 0; i < w; ++i) { e1[i] = p[i]; em1[i] = p[i]; }
+		add_short(e1, w, a + k, k);    // a(1)  = p + a1
+		sub_short(em1, w, a + k, k);   // a(-1) = p - a1
+		for (std::size_t i = 0; i < w; ++i) em2[i] = em1[i];
+		add_short(em2, w, a + 2 * k, s);
+		lshift(em2, em2, w, 1);        // exact: |2 (a(-1) + a2)| < 6 B^k
+		sub_short(em2, w, a, k);       // a(-2) = 2 (a(-1) + a2) - a0
+	}
+
+	// the magnitude of a two's complement value of w limbs, in place; returns whether it was negative
+	inline bool magnitude(limb_t* r, std::size_t w) noexcept {
+		const bool neg = negative(r, w);
+		if (neg) negate(r, w);
+		return neg;
+	}
+
+	// v[0, 2k + 2) = x y for x, y of k + 1 limbs whose top limbs are small (an evaluation's, 4 at
+	// most), as GMP's Toom codes form them: the product of the k low limbs, which keeps the
+	// recursion on k limbs, and the top limbs' cross terms added at B^k, one limb product each
+	inline void product(limb_t* v, const limb_t* x, const limb_t* y, std::size_t k, limb_t* s, bool square) noexcept {
+		mul_n(v, x, square ? x : y, k, s, square);
+		v[2 * k] = 0u;
+		v[2 * k + 1] = 0u;
+		const limb_t tx = x[k];
+		const limb_t ty = square ? tx : y[k];
+		if (square) {
+			if (tx != 0u) {
+				add_1(v + 2 * k, 2, addmul_1(v + k, x, k, 2 * tx));   // 2 tx x_low B^k
+				add_1(v + 2 * k, 2, tx * tx);
+			}
+			return;
+		}
+		if (tx != 0u) add_1(v + 2 * k, 2, addmul_1(v + k, y, k, tx));
+		if (ty != 0u) add_1(v + 2 * k, 2, addmul_1(v + k, x, k, ty));
+		add_1(v + 2 * k, 2, tx * ty);
+	}
+
+}  // namespace toom
+
+// r[0, 2n) = a[0, n) * b[0, n), or a^2 when square, by Toom-3, for n >= 3; s holds
+// scratch_limbs(n) limbs: 12k + 12 here and the five products' own below them
+inline void toom3_mul(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept {
+	const std::size_t k  = (n + 2) / 3;
+	const std::size_t sl = n - 2 * k;   // a2's and b2's limbs, 1 to k
+	const std::size_t we = k + 2;       // an evaluation's width
+	const std::size_t L  = 2 * k + 2;   // a coefficient's width
+	limb_t* ea1  = s;
+	limb_t* eam1 = ea1 + we;
+	limb_t* eam2 = eam1 + we;
+	limb_t* eb1  = eam2 + we;
+	limb_t* ebm1 = eb1 + we;
+	limb_t* ebm2 = ebm1 + we;
+	limb_t* v1   = ebm2 + we;   // v(1), then r1
+	limb_t* vm1  = v1 + L;      // v(-1), then r2
+	limb_t* vm2  = vm1 + L;     // v(-2), then r3
+	limb_t* ss   = vm2 + L;     // the products' scratch
+	toom::evaluate(ea1, eam1, eam2, a, k, sl);
+	const bool na1 = toom::magnitude(eam1, we);
+	const bool na2 = toom::magnitude(eam2, we);
+	bool nb1 = na1, nb2 = na2;
+	if (!square) {
+		toom::evaluate(eb1, ebm1, ebm2, b, k, sl);
+		nb1 = toom::magnitude(ebm1, we);
+		nb2 = toom::magnitude(ebm2, we);
+	}
+	// the magnitudes fit k + 1 limbs: |a(1)| < 3 B^k, |a(-1)| < 2 B^k, |a(-2)| < 5 B^k
+	toom::product(v1,  ea1,  eb1,  k, ss, square);
+	toom::product(vm1, eam1, ebm1, k, ss, square);
+	toom::product(vm2, eam2, ebm2, k, ss, square);
+	if (na1 != nb1) toom::negate(vm1, L);
+	if (na2 != nb2) toom::negate(vm2, L);
+	// v(0) and v(inf) straight into r, which they partly cover: r[0, 2k) and r[4k, 2n)
+	mul_n(r, a, square ? a : b, k, ss, square);
+	mul_n(r + 4 * k, a + 2 * k, square ? a + 2 * k : b + 2 * k, sl, ss, square);
+	const limb_t* v0   = r;
+	const limb_t* vinf = r + 4 * k;
+	const std::size_t ninf = 2 * sl;
+	// the interpolation, in two's complement of L limbs
+	sub_n(vm2, vm2, v1, L);  toom::third(vm2, L);             // r3 = (v(-2) - v(1)) / 3
+	sub_n(v1, v1, vm1, L);   toom::halve(v1, L);              // r1 = (v(1) - v(-1)) / 2
+	toom::sub_short(vm1, L, v0, 2 * k);                       // r2 = v(-1) - v(0)
+	sub_n(vm2, vm1, vm2, L); toom::halve(vm2, L);             // r3 = (r2 - r3) / 2 + 2 v(inf)
+	toom::add_short(vm2, L, vinf, ninf);
+	toom::add_short(vm2, L, vinf, ninf);
+	add_n(vm1, vm1, v1, L);  toom::sub_short(vm1, L, vinf, ninf);   // r2 = r2 + r1 - v(inf)
+	sub_n(v1, v1, vm2, L);                                    // r1 = r1 - r3
+	// r = v(0) + r1 x + r2 x^2 + r3 x^3 + v(inf) x^4: the gap between v(0) and v(inf) cleared, the
+	// middle coefficients added in; each is nonnegative, and a b < B^2n leaves nothing past r's end
+	for (std::size_t i = 2 * k; i < 4 * k; ++i) r[i] = 0u;
+	const std::size_t rn = 2 * n;
+	auto add_at = [r, rn, L](const limb_t* c, std::size_t at) {
+		const std::size_t len = (at + L <= rn) ? L : rn - at;
+		add_1(r + at + len, rn - at - len, add_n(r + at, r + at, c, len));
+	};
+	add_at(v1, k);
+	add_at(vm1, 2 * k);
+	add_at(vm2, 3 * k);
+}
+
 // r[0, 2n) = a[0, n) * b[0, n), or a^2 when square; s holds scratch_limbs(n) limbs.
 // Subtractive Karatsuba: with a = a1 B^k + a0 and b likewise, the middle coefficient is
-// z0 + z2 - (a0 - a1)(b0 - b1), where the differences have k limbs and no carry.
+// z0 + z2 - (a0 - a1)(b0 - b1), where the differences have k limbs and no carry. From
+// toom3_threshold limbs, Toom-3 (#1814).
 inline void mul_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept {
+	if (n >= (square ? toom3_sqr_threshold : toom3_threshold)) {
+		toom3_mul(r, a, b, n, s, square);
+		return;
+	}
 	if (square ? (n < karatsuba_sqr_threshold) : (n < karatsuba_threshold)) {
 		if (square) sqr_basecase(r, a, n); else mul_basecase(r, a, n, b, n);
 		return;
