@@ -4,8 +4,11 @@
 // Each is checked against a reference that shares none of its code:
 //   - cbrt and hypot: the result r must bracket the exact argument between the cubes or squares
 //     of its neighbours and the midpoints next to it, as the rounding mode requires; the cubes and
-//     squares are exact. cbrt's unrounded evaluation is checked against its error bound too,
-//     since Ziv's retries would hide a looser one from the rounded results.
+//     squares are exact. cbrt rounds from an integer cube root since #1800, which
+//     arithmetic/limb_kernels.cpp checks against S^3 + R = N; here, besides random arguments
+//     and exact cubes, roots of 2 and 4 limbs (where the root without its remainder can lie a
+//     unit or two high), three arguments found by search whose root lies just below a rounding
+//     boundary, and short arguments, whose exactness a shorter root decides.
 //   - fma: x y + z formed exactly at a width that holds it, rounded once.
 //   - fmod and remainder: binary long division, one shifted subtraction per quotient bit, which
 //     also gives the quotient's parity; and, for quotients up to 2^(2^40), the closed forms
@@ -96,8 +99,32 @@ namespace {
 		return ok;
 	}
 
-	// cbrt of P-bit arguments over 2^-300 .. 2^300, exact cubes among them, in every mode; and
-	// cbrt_working within its error bound
+	// cbrt(a) at P bits in every mode: it brackets the exact root as the mode requires, and
+	// cbrt(-a) = -cbrt(a) rounded the other way; returns the failures
+	template<unsigned nlimbs>
+	int CheckCbrt(const sw::universal::efloat<nlimbs>& a, unsigned P, bool reportTestCases) {
+		using namespace sw::universal;
+		using E = efloat<nlimbs>;
+		int failures = 0;
+		for (RoundingMode mode : all_modes) {
+			efloat_rounding_mode = mode;
+			const E r = cbrt(a);
+			const RoundingMode other = (mode == RoundingMode::RoundTowardPositive) ? RoundingMode::RoundTowardNegative
+			                         : (mode == RoundingMode::RoundTowardNegative) ? RoundingMode::RoundTowardPositive : mode;
+			efloat_rounding_mode = other;
+			const E mirrored_mode_result = -cbrt(-a);
+			efloat_rounding_mode = mode;
+			if (r.get_precision() != P || !brackets_root(r, a, 3, mode) || !same(r, mirrored_mode_result)) {
+				if (reportTestCases) std::cout << "    FAIL: cbrt(" << double(a) << ") at " << P << " bits, mode " << int(mode) << '\n';
+				++failures;
+			}
+		}
+		efloat_rounding_mode = RoundingMode::RoundToNearest;
+		return failures;
+	}
+
+	// cbrt of P-bit arguments over 2^-300 .. 2^300, exact cubes among them, in every mode
+	// (efloat_mpn::cbrtrem, which decides them since #1800, is checked in arithmetic/limb_kernels.cpp)
 	template<unsigned nlimbs>
 	int VerifyCbrtRounding(bool reportTestCases, unsigned P, int count) {
 		using namespace sw::universal;
@@ -114,35 +141,56 @@ namespace {
 				a = exact_pow(s, 3);
 				a.set_precision(P);
 			}
-			// the unrounded root keeps the error bound Ziv's test relies on
-			const E y = efloat_detail::cbrt_working(a, P);
-			E e(1);
-			e.setexponent(y.scale() - static_cast<int64_t>(P + efloat_detail::exp_log_guard_bits) + efloat_detail::cbrt_error_bits);
-			E ylo(y), yhi(y);
-			ylo.set_precision(y.get_precision() + 64u);
-			yhi.set_precision(y.get_precision() + 64u);
-			ylo -= e;
-			yhi += e;
-			if (!(exact_pow(ylo, 3) < a && a < exact_pow(yhi, 3))) {
-				if (reportTestCases && failures < 8) std::cout << "    FAIL: cbrt_working(" << double(a) << ") outside its error bound\n";
-				++failures;
+			failures += CheckCbrt(a, P, reportTestCases && failures < 8);
+		}
+		efloat_rounding_mode = saved;
+		return failures;
+	}
+
+	// cbrt of short arguments at P bits, where a root of a sixth of the limbs decides whether they
+	// are exact cubes (#1800): cubes of short roots and the integers next to them, scaled
+	template<unsigned nlimbs>
+	int VerifyCbrtShortArguments(bool reportTestCases, unsigned P) {
+		using namespace sw::universal;
+		using E = efloat<nlimbs>;
+		int failures = 0;
+		const RoundingMode saved = efloat_rounding_mode;
+		for (int v : { 2, 3, 7, 8, 9, 26, 27, 28, 124, 125, 126, 999, 1000, 1001, 3375, 1030301 }) {
+			for (int64_t k : { int64_t(0), int64_t(-30), int64_t(61) }) {
+				E x(v);
+				x.set_precision(P);
+				x.setexponent(x.scale() + k);
+				failures += CheckCbrt(x, P, reportTestCases && failures < 8);
 			}
-			for (RoundingMode mode : all_modes) {
-				efloat_rounding_mode = mode;
-				const E r = cbrt(a);
-				E mirrored_mode_result;
-				{
-					// cbrt(-a) = -cbrt(a) rounded the other way
-					const RoundingMode other = (mode == RoundingMode::RoundTowardPositive) ? RoundingMode::RoundTowardNegative
-					                         : (mode == RoundingMode::RoundTowardNegative) ? RoundingMode::RoundTowardPositive : mode;
-					efloat_rounding_mode = other;
-					mirrored_mode_result = -cbrt(-a);
-					efloat_rounding_mode = mode;
-				}
-				if (r.get_precision() != P || !brackets_root(r, a, 3, mode) || !same(r, mirrored_mode_result)) {
-					if (reportTestCases && failures < 8) std::cout << "    FAIL: cbrt(" << double(a) << ") at " << P << " bits, mode " << int(mode) << '\n';
-					++failures;
-				}
+		}
+		efloat_rounding_mode = saved;
+		return failures;
+	}
+
+	// cbrt of 96-bit arguments whose root lies a unit or two below a rounding boundary at the
+	// root's 127 bits, where cbrtrem's root without its remainder lands on or past it, so only
+	// the exact root and its remainder round them right (#1800). Found by search, about one in
+	// 2^31 arguments: m = M 2^-95, for the 96-bit M below.
+	int VerifyCbrtNearBoundaries(bool reportTestCases) {
+		using namespace sw::universal;
+		using E = efloat<3>;
+		const uint32_t significands[][3] = {
+			{ 0x96c8245au, 0xf5a17aecu, 0x54dd6773u },   // the root 2 units below a 96-bit value
+			{ 0x86f9225du, 0x50c14747u, 0xd08a82d2u },   // 1 unit below a 96-bit value
+			{ 0xc4481627u, 0x8d37f196u, 0xebae6504u },   // 1 unit below a midpoint
+		};
+		int failures = 0;
+		const RoundingMode saved = efloat_rounding_mode;
+		for (const auto& M : significands) {
+			E a(1);
+			a.set_precision(96);
+			for (unsigned i = 0; i < 3; ++i) a.setlimb(i, M[i]);
+			a.setexponent(0);
+			a.set_precision(96);
+			for (int64_t k : { int64_t(0), int64_t(3), int64_t(-300) }) {   // and scaled by 8^k
+				E x(a);
+				x.setexponent(k);
+				failures += CheckCbrt(x, 96, reportTestCases && failures < 8);
 			}
 		}
 		efloat_rounding_mode = saved;
@@ -453,6 +501,12 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainder<4>(reportTestCases, 128, 200), "efloat<4>", "fmod, remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyHugeQuotients<4>(reportTestCases, 128), "efloat<4>", "fmod, remainder of huge quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyCbrtRounding<1>(reportTestCases, 32, 200), "efloat<1>", "cbrt");
+	// roots of 2 and 4 limbs, where cbrtrem without its remainder can lie a unit or two high (#1800)
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrtRounding<3>(reportTestCases, 96, 200), "efloat<3>", "cbrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrtRounding<7>(reportTestCases, 224, 200), "efloat<7>", "cbrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrtNearBoundaries(reportTestCases), "efloat<3>", "cbrt next to rounding boundaries");
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrtShortArguments<16>(reportTestCases, 512), "efloat<16>", "cbrt of short arguments");
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrtShortArguments<64>(reportTestCases, 2048), "efloat<64>", "cbrt of short arguments");
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotRounding<1>(reportTestCases, 32, 200), "efloat<1>", "hypot");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmaRounding<1>(reportTestCases, 32, 200), "efloat<1>", "fma");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainder<1>(reportTestCases, 32, 200), "efloat<1>", "fmod, remainder");

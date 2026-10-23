@@ -1,5 +1,5 @@
 #pragma once
-// efloat_mpn.hpp: products, quotients and square roots of natural numbers on 64-bit limbs, the kernel of efloat
+// efloat_mpn.hpp: products, quotients, square and cube roots of natural numbers on 64-bit limbs, the kernel of efloat
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -11,9 +11,11 @@
 // bit partial product does the work of four 32 x 32 -> 64 bit ones, and above a threshold
 // Karatsuba replaces the schoolbook product (#1762).  Its division divides the same way, a 64-bit
 // quotient limb per step and divide-and-conquer above a threshold, and its square root is
-// Zimmermann's, on the division and the squaring (#1763).  The names follow GMP's mpn layer:
+// Zimmermann's, on the division and the squaring (#1763), and its cube root the same recursion
+// carried over to the cube (#1800).  The names follow GMP's mpn layer:
 // every operand is a pointer and a limb count, least significant limb first, and nothing
 // allocates; the caller provides the scratch space.
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -590,6 +592,174 @@ inline limb_t dc_sqrtrem(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexc
 // with the returned limb, 0 or 1, above it.  s holds sqrt_scratch_limbs(n) limbs.
 inline limb_t sqrtrem(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexcept {
 	return (n == 1) ? sqrtrem2(sp, np, np) : dc_sqrtrem(sp, np, n, s);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Cube root with remainder (#1800): the recursion of Zimmermann's square root (dc_sqrtrem above)
+// carried over to the cube. With N = N' B^(3l) + A2 B^(2l) + A0, (S', R') = cbrtrem(N') and
+// (Q, U) = divrem(R' B^l + A2, 3 S'^2), the root is S = S' B^l + Q and its remainder
+//     R = N - S^3 = U B^(2l) + A0 - Q^2 (3 S' B^l + Q),
+// since S^3 - S'^3 B^(3l) = 3 S'^2 Q B^(2l) + Q^2 (3 S' B^l + Q). Q drops the last two terms,
+// so it is never too small and at most a few units too large (cbrt_overshoot: measured at most 2,
+// and 0 when the root has an odd number of limbs, l < h); each unit is
+// corrected by R += 3 S^2 - 3 S + 1, S -= 1, with 3 S^2 = 3 S'^2 B^(2l) + 6 S' Q B^l + 3 Q^2
+// from the parts already formed. A level costs a square of h limbs, a division of an l-limb
+// quotient, and a product of 2l by n limbs for the remainder. The top level can skip the
+// remainder: cbrt rounds from S alone unless S lies within cbrt_overshoot of a rounding boundary.
+
+// r[0, 3) = s^3
+inline void cube_1(limb_t* r, limb_t s) noexcept {
+	limb_t h, l, a1, a0, b1, b0;
+	umul(s, s, h, l);
+	umul(l, s, a1, a0);
+	umul(h, s, b1, b0);
+	r[0] = a0;
+	r[1] = a1 + b0;
+	r[2] = b1 + ((r[1] < b0) ? 1u : 0u);
+}
+
+// r[0, n) = a[0, n) << c, 0 < c < 64, returns the bits shifted out of the top; r may be a
+inline limb_t lshift(limb_t* r, const limb_t* a, std::size_t n, unsigned c) noexcept {
+	limb_t out = a[n - 1] >> (64u - c);
+	for (std::size_t i = n - 1; i > 0; --i) r[i] = (a[i] << c) | (a[i - 1] >> (64u - c));
+	r[0] = a[0] << c;
+	return out;
+}
+
+// r[0, n) = a[0, n) >> c, 0 < c < 64; r may be a
+inline void rshift(limb_t* r, const limb_t* a, std::size_t n, unsigned c) noexcept {
+	for (std::size_t i = 0; i + 1 < n; ++i) r[i] = (a[i] >> c) | (a[i + 1] << (64u - c));
+	r[n - 1] = a[n - 1] >> c;
+}
+
+// sp[0] = floor(cbrt(np[0, 3))) for np[2] >= 2^61, rp[0, 3) = the remainder: a double estimate,
+// within about 2^12 of the root, one Newton step in double, and an exact correction
+inline void cbrtrem_1(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
+	const double two64 = 18446744073709551616.0;
+	const double c = std::cbrt(std::ldexp(static_cast<double>(np[2]), 128) + std::ldexp(static_cast<double>(np[1]), 64));
+	limb_t s = (c >= two64) ? ~limb_t(0) : static_cast<limb_t>(c);
+	limb_t t[3];
+	cube_1(t, s);
+	const bool below = !geq_n(np, t, 3);   // N < s^3
+	limb_t d[3];
+	if (below) sub_n(d, t, np, 3); else sub_n(d, np, t, 3);
+	const double step = (std::ldexp(static_cast<double>(d[2]), 128) + std::ldexp(static_cast<double>(d[1]), 64) + static_cast<double>(d[0])) /
+	                    (3.0 * static_cast<double>(s) * static_cast<double>(s));
+	const limb_t k = static_cast<limb_t>(step);
+	if (below) s -= k; else s = (~limb_t(0) - s < k) ? ~limb_t(0) : s + k;
+	for (;;) {   // s^3 <= N
+		cube_1(t, s);
+		if (geq_n(np, t, 3)) break;
+		--s;
+	}
+	while (s != ~limb_t(0)) {   // (s + 1)^3 > N
+		limb_t u[3];
+		cube_1(u, s + 1);
+		if (!geq_n(np, u, 3)) break;
+		++s;
+		t[0] = u[0]; t[1] = u[1]; t[2] = u[2];
+	}
+	sp[0] = s;
+	sub_n(rp, np, t, 3);
+}
+
+// the scratch limbs cbrtrem needs for a root of n limbs: a level's own 5n + 8, and below them
+// the larger of the recursion's, the division's (17 n + 162) and the remainder's (25 n + 152)
+constexpr std::size_t cbrt_scratch_limbs(std::size_t n) noexcept { return 64 * n + 512; }
+
+// the most units the root without its remainder can lie above floor(cbrt(N)): Q's excess is
+// below Q^2 / (S' B^l) + Q^3 / (3 S'^2 B^(2l)) + R / (3 S'^2 B^(2l)) < 2 + 1 + 1
+inline constexpr limb_t cbrt_overshoot = 4;
+
+// sp[0, n) = floor(cbrt(np[0, 3n))) for np[3n - 1] >= 2^61, and rp[0, 2n + 1) = N - S^3 when
+// `exact`; without it, S is the root plus 0 to cbrt_overshoot units and rp is left alone.
+// s holds cbrt_scratch_limbs(n) limbs.
+inline void cbrtrem(limb_t* sp, limb_t* rp, const limb_t* np, std::size_t n, limb_t* s, bool exact = true) noexcept {
+	if (n == 1) {   // exact either way
+		limb_t r[3];
+		cbrtrem_1(sp, exact ? rp : r, np);
+		return;
+	}
+	const std::size_t l = n / 2;
+	const std::size_t h = n - l;
+	limb_t* Rh = s;                    // 2h + 1: R'
+	limb_t* D  = Rh + 2 * h + 1;       // 2h + 1: 3 S'^2
+	limb_t* X  = D + 2 * h + 1;        // l + 2h + 2: R' B^l + A2, then the remainder of the division
+	limb_t* q  = X + l + 2 * h + 2;    // l + 2h + 2: the quotient
+	limb_t* w  = q + l + 2 * h + 2;
+	limb_t* const Sh = sp + l;         // S'
+	cbrtrem(Sh, Rh, np + 3 * l, h, w, true);
+
+	// D = 3 S'^2, normalized for the division by a shift of c bits
+	mul_n(D, Sh, Sh, h, w, true);
+	D[2 * h] = mul_1(D, D, 2 * h, 3u);
+	const std::size_t dn = (D[2 * h] != 0u) ? 2 * h + 1 : 2 * h;
+	const unsigned c = static_cast<unsigned>(std::countl_zero(D[dn - 1]));
+	for (std::size_t i = 0; i < l; ++i) X[i] = np[2 * l + i];
+	for (std::size_t i = 0; i < 2 * h + 1; ++i) X[l + i] = Rh[i];
+	std::size_t xn = l + 2 * h + 1;
+	X[xn] = 0;
+	if (c != 0u) {
+		lshift(D, D, dn, c);
+		X[xn] = lshift(X, X, xn, c);
+	}
+	++xn;
+	const limb_t qtop = div_qr(q, X, xn, D, dn, w);
+	const std::size_t qn = xn - dn;
+	q[qn] = qtop;
+	if (c != 0u) {   // U and D back to scale
+		rshift(X, X, dn, c);
+		rshift(D, D, dn, c);
+	}
+	limb_t* U = X;   // dn limbs, and one more for the clamp below
+	U[dn] = 0;
+	// Q < B^l: the root's low part, since S < (S' + 1) B^l. A larger Q is reduced to B^l - 1,
+	// and U gains D for each unit, so that U = X - D Q still holds.
+	std::size_t qlen = qn + 1;
+	while (qlen > l && q[qlen - 1] == 0u) --qlen;
+	if (qlen > l) {   // Q = B^l + q[0] at most: k = q[0] + 1 units above B^l - 1
+		U[dn] = addmul_1(U, D, dn, q[0] + 1u);
+		for (std::size_t i = 0; i < l; ++i) q[i] = ~limb_t(0);
+	}
+	for (std::size_t i = 0; i < l; ++i) sp[i] = q[i];
+	if (!exact) return;
+
+	// R = U B^(2l) + A0 - Q^2 (3 S' B^l + Q), in 2n + 3 limbs, two's complement
+	const std::size_t rn = 2 * n + 3;
+	limb_t* R  = w;                    // rn
+	limb_t* Q2 = R + rn;               // 2l: Q^2
+	limb_t* T  = Q2 + 2 * l;           // n + 1: 3 S' B^l + Q
+	limb_t* P  = T + n + 1;            // 2l + n + 1: Q^2 T
+	limb_t* G  = P + 2 * l + n + 1;    // rn: 3 S^2 - 3 S + 1
+	limb_t* SQ = G + rn;               // n: S' Q
+	limb_t* ww = SQ + n;
+	for (std::size_t i = 0; i < rn; ++i) R[i] = 0;
+	for (std::size_t i = 0; i < 2 * l; ++i) R[i] = np[i];
+	add_n(R + 2 * l, R + 2 * l, U, dn + 1);
+	mul_n(Q2, sp, sp, l, ww, true);
+	for (std::size_t i = 0; i < l; ++i) T[i] = sp[i];
+	T[n] = mul_1(T + l, Sh, h, 3u);
+	mul(P, Q2, 2 * l, T, n + 1, ww);
+	const limb_t borrow = sub_n(R, R, P, 2 * l + n + 1);
+	sub_1(R + 2 * l + n + 1, rn - (2 * l + n + 1), borrow);
+	if ((R[rn - 1] >> 63) != 0u) {   // S too large: R += 3 S^2 - 3 S + 1, S -= 1, until R >= 0
+		mul(SQ, Sh, h, sp, l, ww);   // S' Q
+		do {
+			for (std::size_t i = 0; i < rn; ++i) G[i] = 0;
+			for (std::size_t i = 0; i < dn; ++i) G[2 * l + i] = D[i];
+			add_1(G + l + n, rn - l - n, addmul_1(G + l, SQ, n, 6u));
+			add_1(G + 2 * l, rn - 2 * l, addmul_1(G, Q2, 2 * l, 3u));
+			sub_1(G + n, rn - n, submul_1(G, sp, n, 3u));
+			add_1(G, rn, 1u);
+			add_n(R, R, G, rn);
+			// Q^2 -= 2 Q - 1, S' Q -= S', Q -= 1 (Q >= 1: S never falls below S' B^l)
+			sub_1(Q2 + l, l, submul_1(Q2, sp, l, 2u));
+			add_1(Q2, 2 * l, 1u);
+			sub_1(SQ + h, n - h, sub_n(SQ, SQ, Sh, h));
+			sub_1(sp, l, 1u);
+		} while ((R[rn - 1] >> 63) != 0u);
+	}
+	for (std::size_t i = 0; i < 2 * n + 1; ++i) rp[i] = R[i];
 }
 
 }}}  // namespace sw::universal::efloat_mpn

@@ -111,6 +111,7 @@ round the exact result once into the destination (`assign_rounded`), with no all
 | `/` | exact quotient: schoolbook with the Moller-Granlund 3-by-2 reciprocal, Burnikel-Ziegler divide and conquer (GMP's `dcpi1_div_qr`) above the threshold; remainder becomes the sticky bit | `dc_div_threshold = 16` limbs | #1741, #1769 |
 | `/ int` | one-limb divisor, Moller-Granlund 2-by-1 reciprocal, in place | | #1766 |
 | `sqrt` | exact integer root and remainder by Zimmermann's Karatsuba square root (GMP's `mpn_sqrtrem`), remainder as sticky bit | | #1770 |
+| `cbrt` | integer cube root by the same recursion carried over to the cube (`cbrtrem`); the remainder, the sticky bit, formed only next to a rounding boundary (section 4.8) | | #1800 |
 | to `double`/`float` | round once to the format, subnormals included | | #1778 |
 | from decimal text | convert at the target plus 64 guard bits, retry wider only when the guard bits read `0111...1` | widths 8192, 32768 | #1740 |
 
@@ -152,7 +153,7 @@ round the exact result once into the destination (`assign_rounded`), with no all
 | `pow(x, n)` | binary powering with `bit_width(n)` extra bits | 8 | pow.hpp |
 | `tgamma`, `lgamma` | Stirling series after shifting `x` up past `0.15 W`, by a tapered Horner scheme; the shift's factors multiplied in groups; reflection below 0; working precision predicted; exact `(n-1)!` | 22 | error_and_gamma.hpp |
 | `erf`, `erfc` | positive-term series `2/sqrt(pi) e^{-x^2} sum t_n`; asymptotic series for large `x`; `1 - erf` with the cancelled bits added | 0 (32 guard bits) | error_and_gamma.hpp |
-| `cbrt` | Newton from a double seed, precision doubling each step; exact cubes found and rounded once | 8 | sqrt.hpp |
+| `cbrt` | integer cube root `floor(cbrt(m 2^(3F)))` on 64-bit limbs (`cbrtrem`), the remainder formed only next to a rounding boundary; rounded once | exact | sqrt.hpp, efloat_mpn.hpp |
 | `hypot` | exact squares, exact sum (or a proxy that rounds alike), one exact root | exact | hypot.hpp |
 | `fma` | exact product, exact sum (or a proxy), one rounding | exact | numerics.hpp |
 | `fmod`, `remainder` | exact integer remainder, `2^d mod y` by binary powering | exact | fractional.hpp |
@@ -412,7 +413,7 @@ rounded products.
 - Before: `std::erf(double(x))`; `erfc` was 0 from `x = 27.2` on, and all four modes returned
   the same value.
 
-### 4.8 cbrt, hypot, fma, fmod, remainder (#1783)
+### 4.8 cbrt, hypot, fma, fmod, remainder (#1783, #1800)
 
 Until #1783 these five were computed at the result's precision but rounded more than once, and
 `mpfr_check` found 889 to 2,063 wrong results each in 3,234 cases.
@@ -438,14 +439,29 @@ Until #1783 these five were computed at the result's precision but rounded more 
   exponent range, and multiplies the root back. When the arguments are more than
   `max(bits(max), P + 2) + 8` binades apart, the result is `max` plus a positive amount below
   its last bit, and a proxy sum gives it directly.
-- **cbrt.** `a = m 8^k`, `m` in `[1, 8)`; Newton's iteration `y <- y + (m / y^2 - y) / 3` from
-  `std::cbrt` of `double(m)`, at a precision that doubles with each step to 16 bits past the
-  working precision, then once more there. Measured within `2^-(target + 64 + 12)`, declared
-  `cbrt_error_bits = 8`; the regression test checks that bound directly. Ziv's strategy rounds
-  it. A boundary is a binary fraction, so only an exact root can be one. Before Ziv, the first
-  evaluation is rounded to nearest at `P + 32` bits and cubed: if that gives `a` exactly, the
-  root is exact and rounds once. Before #1783, Newton ran at full precision from a one-bit
-  seed and rounded unchecked: 6-33x MPFR's time and wrong in a quarter of the cases.
+- **cbrt** (#1800), the way `sqrt` is (#1770). `a = m 8^k`, `m` in `[1, 8)`, and `N = m 2^(3F)`
+  with `F = 64 n - 1` and at least `P + 18` bits in the root. `efloat_mpn::cbrtrem` forms
+  `S = floor(cbrt(N))` and `R = N - S^3` by Zimmermann's square-root recursion carried over to
+  the cube:
+  - with `N = N' B^(3l) + A2 B^(2l) + A0`, `(S', R') = cbrtrem(N')`, `(Q, U) = divrem(R' B^l +
+    A2, 3 S'^2)`, then `S = S' B^l + Q` and `R = U B^(2l) + A0 - Q^2 (3 S' B^l + Q)`;
+  - `Q` drops the last two terms of `(S' B^l + Q)^3`, so it is never too small and at most 4
+    units too large (measured: at most 2, and never with an odd number of limbs). Each unit
+    is corrected by `R += 3 S^2 - 3 S + 1`, `S -= 1`, from the parts already formed;
+  - a level costs a square of half the root, a division with a quotient of half the root, and
+    a product for the remainder; the base case is a double estimate, one Newton step in double
+    and an exact correction.
+  The top level skips the remainder. `S 2^-F` is then within `2^-(F - 3)` of the root and
+  rounds as it is unless its bits from the guard bit on are all 0 or all 1 (`can_round`): at most
+  `2^-25` of arguments (S carries 31 or 63 bits past a precision of whole 32-bit limbs), and
+  every root of at most `P + 1` bits. Then the exact root and its
+  remainder, the sticky bit, decide. A short `m` of `b` bits can be an exact cube only of a
+  root of about `b / 3` bits; where that root needs a sixth of the limbs or fewer, its exact
+  remainder decides first (`cbrt(27)` at 8192 bits). The result is correct in every mode with
+  no Ziv retries; a negative argument rounds its magnitude in the mirrored mode.
+  Before #1800 Newton's iteration ran in efloat arithmetic with 80 guard bits under Ziv's
+  strategy, 2.5-3.3x MPFR's time; before #1783 it ran at full precision from a one-bit seed
+  and rounded unchecked: 6-33x MPFR's time and wrong in a quarter of the cases.
 - **fmod** is exact: its result always fits the wider operand precision. With `2^lo` the
   smaller of the operands' last bits, `X = |x| 2^-lo = mx 2^d` and `Y = |y| 2^-lo` are
   integers, and `X mod Y = (mx mod Y)(2^d mod Y) mod Y`. `2^d mod Y` takes `log2 d` squarings
@@ -569,7 +585,7 @@ efloat / MPFR in microseconds, then the ratio.
 | `sqrt(b)` | 0.125 / 0.059 | 2.1x | 0.257 / 0.133 | 1.9x | 0.964 / 0.437 | 2.2x | 6.380 / 3.071 | 2.1x |
 | `fma(a,b,a)` | 0.120 / 0.029 | 4.2x | 0.169 / 0.049 | 3.4x | 0.657 / 0.328 | 2.0x | 5.292 / 3.137 | 1.7x |
 | `hypot(a,b)` | 0.376 / 0.170 | 2.2x | 0.650 / 0.321 | 2.0x | 2.535 / 1.017 | 2.5x | 17.65 / 8.049 | 2.2x |
-| `cbrt(b)` | 0.744 / 0.288 | 2.6x | 1.197 / 0.456 | 2.6x | 3.965 / 1.304 | 3.0x | 25.05 / 7.533 | 3.3x |
+| `cbrt(b)` | 0.279 / 0.288 | 1.0x | 0.585 / 0.468 | 1.3x | 1.844 / 1.328 | 1.4x | 12.70 / 7.489 | 1.7x |
 | `exp2(a)` | 0.736 / 1.020 | 0.7x | 1.795 / 2.671 | 0.7x | 14.05 / 17.18 | 0.8x | 207.5 / 191.0 | 1.1x |
 | `exp10(a)` | 0.763 / 2.319 | 0.3x | 1.890 / 5.989 | 0.3x | 14.51 / 30.99 | 0.5x | 211.5 / 312.7 | 0.7x |
 | `expm1(a)` | 0.618 / 0.819 | 0.8x | 1.521 / 2.353 | 0.6x | 12.29 / 15.54 | 0.8x | 191.4 / 178.0 | 1.1x |
@@ -629,14 +645,18 @@ Read the ratio column as the work left on Epic #1763.
   `1.3e-6`, `1.3e6`, `1.3e100`, `-3 + 2^-30`, `-2.71`, `1000` and `30.5` they run 0.02-1.5x MPFR
   (were 0.04-18x); the one row above that, `lgamma(2 - 2^-200)` at 128 bits (2.4x, 2.3x
   before), is `lgamma 2 = 0` after rounding, under a microsecond on both.
-- **cbrt, hypot, fma** (remeasured after #1783): `cbrt` 2.5-3.3x (was 6-33x), `hypot`
+- **cbrt** (#1800): 1.9-2.7x faster, from 2.5-3.3x MPFR to 1.0-1.7x. Over `1e-300` to `1e300`,
+  `m` next to 1 and 8, negative arguments, exact cubes and their neighbours, it runs 0.8-1.8x
+  MPFR (2.1x for an exact cube's neighbour at 8192 bits, against `a*b`'s 2.2x). `cbrt(27)` runs
+  0.01-0.3x from 512 bits; at 128 bits it is 2.4x, a call under a microsecond, where a shorter
+  root to try first would cost every full-width argument as much.
+- **cbrt, hypot, fma** (remeasured after #1783): `cbrt` 2.5-3.3x (was 6-33x; see #1800 above), `hypot`
   2.1-2.5x, `fma` 1.7-4.1x. `fma` is slower than before at small precisions (0.12 us at 128 bits
   against 0.045): it now forms the exact product and sum, where it used to round twice and was
   wrong in 29% of the cases.
 - **The primitives set the floor:** `a*b`, `b/a` and `sqrt` run 1.5-2.3x MPFR, and every
   function built on them inherits that.
-- **Largest gaps:** `fma` and `pow(b, 7)` at 128 bits (4.2x, 3.6x), `cbrt` (2.6-3.3x), and the
-  primitives.
+- **Largest gaps:** `fma` and `pow(b, 7)` at 128 bits (4.2x, 3.6x), and the primitives.
 
 **Benchmark hygiene.** Single runs of the mpmath comparison vary by 15-50%; compare branches
 with best-of-5 runs on an idle machine. Warm the caches first. The first-call cost of a new
@@ -680,11 +700,12 @@ row both ways before reading it as a cost.
 | #1794 | 2026-10-22 | atan/asin/acos/atan2 series in fixed point, fewer halvings: 0.9-3.1x MPFR to 0.4-1.1x |
 | #1796 | 2026-10-23 | log's atanh series in fixed point, AGM from 45000 bits instead of 1440: log family 1.0-2.5x MPFR to 0.3-1.2x |
 | #1799 | 2026-10-23 | lgamma, tgamma: working precision predicted, tapered Stirling sum, grouped shift product: 3.0-18.3x MPFR to 0.3-1.4x |
+| #1801 | 2026-10-23 | cbrt by an integer cube root with remainder (`cbrtrem`), no Ziv retries: 2.5-3.3x MPFR to 1.0-1.7x |
 
 ## 9. Open work
 
-**Library gaps.** An exact integer cube root with remainder, like `sqrtrem`, would make `cbrt`
-cheaper than Newton under Ziv.
+**Library gaps.** None open: the exact integer cube root with remainder that this section asked
+for is `efloat_mpn::cbrtrem` (#1800).
 
 **Speed** (Epic #1763): short (high-half) products and MPFR's can-round on them; Toom-3; short
 division (`divhigh`); the fixed-point series engine of exp and the versine (#1788, #1790)
