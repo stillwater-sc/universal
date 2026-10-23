@@ -1,4 +1,4 @@
-// limb_kernels.cpp: efloat's multiplication, addition, division and square root kernels against exact references (#1762, #1763)
+// limb_kernels.cpp: efloat's multiplication, addition, division, square and cube root kernels against exact references (#1762, #1763, #1800)
 //
 //   x * y    at a precision wide enough to hold the whole product, so the result is exact: its
 //            limbs must be the schoolbook product's, normalized, and no Inexact flag is raised.
@@ -24,14 +24,21 @@
 //            schoolbook multiply: the one- and two-limb base cases, the recursion's odd splits,
 //            perfect squares and their neighbours, all-ones radicands, and top limbs within
 //            1024 of a perfect square, where the base case's double estimate can be one low.
+//   cbrtrem  efloat_mpn's cube root must leave S^3 + R = N with R <= 3 S^2 + 3 S, the cube by the
+//            schoolbook multiply, and without its remainder lie 0 to cbrt_overshoot units above
+//            the root: the one-limb base case, the recursion's odd and even splits, the squaring's
+//            Karatsuba and the division's divide-and-conquer thresholds, perfect cubes and their
+//            neighbours, all-ones radicands, the smallest radicand, and top limbs within 1024 of
+//            a perfect cube, where the base case's double estimate is tested.
 //
 // REGRESSION_LEVEL convention (intensity progression):
 //   LEVEL 1 -- 300 random products and the threshold lengths, 2,000 sums per precision,
 //              300 limb quotients and the threshold lengths, 300 rounded quotients per precision
-//              (a twentieth of that at 40 and 60 limbs), 300 limb square roots and the lengths
-//   LEVEL 2 -- 3,000, 20,000, 3,000, 3,000 and 3,000
-//   LEVEL 3 -- 30,000, 200,000, 30,000, 30,000 and 30,000
-//   LEVEL 4 -- 300,000, 2,000,000, 300,000, 300,000 and 300,000
+//              (a twentieth of that at 40 and 60 limbs), 300 limb square roots and cube roots
+//              and the lengths
+//   LEVEL 2 -- 3,000, 20,000, 3,000, 3,000, 3,000 and 3,000
+//   LEVEL 3 -- 30,000, 200,000, 30,000, 30,000, 30,000 and 30,000
+//   LEVEL 4 -- 300,000, 2,000,000, 300,000, 300,000, 300,000 and 300,000
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -312,6 +319,72 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
+	// S^3 + R = N with R <= 3 S^2 + 3 S for efloat_mpn::cbrtrem, the cube by the schoolbook
+	// multiply; and without the remainder, S is the root plus 0 to cbrt_overshoot units
+	int VerifyCubeRoot(bool reportTestCases, std::mt19937_64& rng, size_t n) {
+		using namespace sw::universal::efloat_mpn;
+		const unsigned style = static_cast<unsigned>(rng() % 7);
+		std::vector<limb_t> a(3 * n);
+		for (auto& x : a) {
+			const uint64_t r = rng();
+			x = (style == 1) ? ~limb_t(0) : (style == 2 && (r & 3u) != 0u) ? ((r & 4u) ? ~limb_t(0) : 0u) : rng();
+		}
+		if (style == 3) {   // a perfect cube, or one away from it
+			std::vector<limb_t> b(n), b2(2 * n), work(scratch_limbs(2 * n));
+			for (auto& x : b) x = rng();
+			b[n - 1] |= limb_t(1) << 63;
+			mul_basecase(b2.data(), b.data(), n, b.data(), n);
+			mul_basecase(a.data(), b2.data(), 2 * n, b.data(), n);
+			if (rng() & 1u) { if (rng() & 1u) add_1(a.data(), 3 * n, 1u); else sub_1(a.data(), 3 * n, 1u); }
+		}
+		if (style == 4) {   // the top limb at or near a perfect cube, where the base case's double estimate is tested
+			const limb_t root = (limb_t(1) << 20) | (rng() & 0xF'FFFFu);   // root^3 >= 2^60
+			a[3 * n - 1] = root * root * root + (rng() % 2048) - 1024;
+		}
+		if (style == 5) {   // the smallest normalized radicand, 2^(192 n - 3)
+			for (auto& x : a) x = 0;
+		}
+		if (a[3 * n - 1] < (limb_t(1) << 61)) a[3 * n - 1] |= limb_t(1) << 61;   // normalized
+		std::vector<limb_t> s(n), r(2 * n + 1), approx(n), scratch(cbrt_scratch_limbs(n));
+		cbrtrem(s.data(), r.data(), a.data(), n, scratch.data(), true);
+		cbrtrem(approx.data(), nullptr, a.data(), n, scratch.data(), false);
+
+		// S^3 + R = N
+		std::vector<limb_t> s2(2 * n), check(3 * n + 1, 0u);
+		mul_basecase(s2.data(), s.data(), n, s.data(), n);
+		mul_basecase(check.data(), s2.data(), 2 * n, s.data(), n);
+		check[3 * n] = add_1(check.data() + 2 * n + 1, n - 1, add_n(check.data(), check.data(), r.data(), 2 * n + 1));
+		bool ok = (check[3 * n] == 0u);
+		for (size_t i = 0; ok && i < 3 * n; ++i) ok = (check[i] == a[i]);
+		// R <= 3 S^2 + 3 S
+		std::vector<limb_t> bound(2 * n + 1, 0u);
+		bound[2 * n] = mul_1(bound.data(), s2.data(), 2 * n, 3u);
+		add_1(bound.data() + n, n + 1, addmul_1(bound.data(), s.data(), n, 3u));
+		ok = ok && geq_n(bound.data(), r.data(), 2 * n + 1);
+		// 0 <= approx - S <= cbrt_overshoot
+		std::vector<limb_t> d(n);
+		const limb_t below = sub_n(d.data(), approx.data(), s.data(), n);
+		bool small = (below == 0u) && d[0] <= cbrt_overshoot;
+		for (size_t i = 1; small && i < n; ++i) small = (d[i] == 0u);
+		if (!ok && reportTestCases) std::cout << "    FAIL: " << n << " limb cube root: S^3 + R != N or R > 3S^2 + 3S\n";
+		if (!small && reportTestCases) std::cout << "    FAIL: " << n << " limb cube root without remainder: more than " << cbrt_overshoot << " units from the root\n";
+		return (ok && small) ? 0 : 1;
+	}
+
+	int VerifyCubeRootKernel(bool reportTestCases, unsigned nrSamples) {
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(1800);
+		// one limb (the base case), the recursion's odd splits, the squaring's Karatsuba threshold
+		// in the half-length squares, and the division's divide-and-conquer threshold
+		for (size_t n : { size_t(1), size_t(2), size_t(3), size_t(4), size_t(5), size_t(7), size_t(16), size_t(17), size_t(31), size_t(32), size_t(33), size_t(64), size_t(65), size_t(129) }) {
+			for (int k = 0; k < 7; ++k) nrOfFailedTestCases += VerifyCubeRoot(reportTestCases && nrOfFailedTestCases < 4, rng, n);
+		}
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			nrOfFailedTestCases += VerifyCubeRoot(reportTestCases && nrOfFailedTestCases < 4, rng, 1 + rng() % 150);
+		}
+		return nrOfFailedTestCases;
+	}
+
 	// floor(A 2^k / B) as MSB-first limbs without leading zero limbs, a bit at a time; returns
 	// whether a remainder is left.  A and B are the MSB-first limb vectors as integers.
 	bool reference_quotient(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b, size_t k, std::vector<uint32_t>& q) {
@@ -453,7 +526,7 @@ namespace {
 int main() try {
 	using namespace sw::universal;
 
-	std::string test_suite          = "efloat multiplication, addition, division and square root kernels";
+	std::string test_suite          = "efloat multiplication, addition, division, square and cube root kernels";
 	std::string test_tag            = "limb kernels";
 	bool        reportTestCases     = true;
 	int         nrOfFailedTestCases = 0;
@@ -467,6 +540,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 100), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 100), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 100), "efloat", "limb square roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 100), "efloat", "limb cube roots");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 
@@ -478,6 +552,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300), "efloat", "limb square roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 300), "efloat", "limb cube roots");
 #	endif
 
 #	if REGRESSION_LEVEL_2
@@ -486,6 +561,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 3000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 3000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 3000), "efloat", "limb square roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 3000), "efloat", "limb cube roots");
 #	endif
 
 #	if REGRESSION_LEVEL_3
@@ -494,6 +570,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 30000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 30000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 30000), "efloat", "limb square roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 30000), "efloat", "limb cube roots");
 #	endif
 
 #	if REGRESSION_LEVEL_4
@@ -502,6 +579,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300000), "efloat", "limb square roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 300000), "efloat", "limb cube roots");
 #	endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
