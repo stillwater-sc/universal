@@ -18,27 +18,9 @@ namespace sw { namespace universal {
 namespace efloat_detail {
 
 	// r[0, n) = the low n 64-bit limbs of floor(V 2^shift), V the MSB-first limbs v as an
-	// integer; shift may be negative. V is read as 64-bit words, least significant first, and
-	// shifted once, each word read once: the bit-by-bit assembly from 32-bit halves it replaces
-	// cost a twentieth of sqrt at 8192 bits (#1810).
+	// integer; shift may be negative (efloat_mpn::load_msb_first, #1810)
 	inline void load_shifted(efloat_mpn::limb_t* r, std::size_t n, const std::vector<uint32_t>& v, int64_t shift) {
-		using efloat_mpn::limb_t;
-		const std::size_t nv = v.size();
-		const int64_t     m  = static_cast<int64_t>((nv + 1) / 2);
-		auto word = [&v, nv, m](int64_t j) -> limb_t {   // word j of P = V 2^(32 (2m - nv)), an odd count padded at the bottom
-			if (j < 0 || j >= m) return 0u;
-			const std::size_t hi = static_cast<std::size_t>(2 * m - 2 - 2 * j);
-			return (limb_t(v[hi]) << 32) | ((hi + 1 < nv) ? v[hi + 1] : 0u);
-		};
-		const int64_t  s = shift - 32 * (2 * m - static_cast<int64_t>(nv));   // floor(P 2^s)
-		const int64_t  q = (s >= 0) ? -((s + 63) / 64) : (-s) / 64;          // floor(-s / 64)
-		const unsigned c = static_cast<unsigned>(-s - 64 * q);              // in [0, 64)
-		limb_t low = word(q);
-		for (std::size_t k = 0; k < n; ++k) {
-			const limb_t high = word(q + static_cast<int64_t>(k) + 1);
-			r[k] = (c == 0u) ? low : ((low >> c) | (high << (64u - c)));
-			low = high;
-		}
+		efloat_mpn::load_msb_first(r, n, v.data(), v.size(), shift);
 	}
 
 	// sqrt(a) for a finite a > 0, correctly rounded to `precision` bits in the current mode, into

@@ -35,6 +35,10 @@
 //            x * x rounded from the short product, at the operands' precision, must be the exact
 //            product rounded once in every mode, also for all-ones operands, where only the
 //            fallback to the full product is right.
+//   x / y    next to and on exact quotients from 1088-bit operands, where the quotient comes
+//            from div_appr and only the exact fallback rounds right (#1811).
+//   x / n    for integers of 2 to 64 bits, divided in place by one limb (#1811), against the
+//            general long division at a width that holds the quotient, rounded once.
 //   div_appr, sqrt_approx  efloat_mpn's quotient and root without remainders (#1810) must lie
 //            at or above the exact ones, by at most divappr_error and sqrt_approx_error units.
 //   load_window  efloat_mpn's shifted copy, which places the fma and hypot kernels' terms in
@@ -221,11 +225,135 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
+	// x / y where the quotient comes from div_appr (#1811), operands of 16 64-bit limbs and more,
+	// on and next to exact quotients: x = y q exactly, y of P bits and q of P / 2, at 2P + 64
+	// bits, so that the quotient must be q itself, with no Inexact flag; and x = y q plus or minus
+	// a unit of x's last bit, whose quotient lies an ulp or so off q. The approximate quotient
+	// lands on q or a few units above it, which only the exact fallback rounds right. The near
+	// cases are checked by bracketing with exact products: r y <= x < (r + ulp) y rounding down,
+	// (r - ulp) y < x <= r y rounding up, and the nearer of the two to nearest, ties to even.
+	int VerifyQuotientsNextToExact(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		using E = efloat<256>;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(18111);
+		const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+		                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+		const RoundingMode saved = efloat_rounding_mode;
+		auto full = [&rng](unsigned bits, int64_t e) {
+			E v(1);
+			v.set_precision(bits);
+			for (unsigned j = 0; j < bits / 32; ++j) v.setlimb(j, static_cast<uint32_t>(rng()) | (j == 0 ? 0x8000'0000u : 0u));
+			v.set_precision(bits);
+			v.setexponent(e);
+			return v;
+		};
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			efloat_rounding_mode = RoundingMode::RoundToNearest;
+			const unsigned P  = 32 * (34 + static_cast<unsigned>(rng() % 60));   // 1088 to 3008 bits
+			const unsigned Wx = 2 * P + 64;                                      // x's precision, and the quotient's
+			const E y = full(P, static_cast<int64_t>(rng() % 21) - 10);
+			const E q = full(P / 2 - (P / 2) % 32, static_cast<int64_t>(rng() % 21) - 10);
+			E x(y);
+			x.set_precision(Wx);
+			x *= q;   // exact: P + P / 2 bits
+			const int which = static_cast<int>(i % 3);   // y q, y q + an ulp of x, y q - an ulp of x
+			if (which != 0) {
+				E unit(1);
+				unit.setexponent(x.scale() - static_cast<int64_t>(Wx) + 1);
+				x = (which == 1) ? x + unit : x - unit;
+			}
+			x.set_precision(Wx);
+			for (RoundingMode mode : modes) {
+				efloat_rounding_mode = mode;
+				clear_efloat_exceptions();
+				const E r = x / y;
+				const bool inexact = has_efloat_exception(ExceptionFlag::Inexact);
+				efloat_rounding_mode = RoundingMode::RoundToNearest;
+				bool ok = (r.get_precision() == Wx) && (inexact == (which != 0));
+				if (which == 0) {
+					ok = ok && (r == q);
+				}
+				else {
+					// exact products at a width that holds them: r y - x and its neighbours' (r +- ulp) y - x
+					const unsigned wide = 2 * Wx + 2 * P + 128;
+					E ulp(1);
+					ulp.setexponent(r.scale() - static_cast<int64_t>(Wx) + 1);
+					E rw(r), yw(y), xw(x), uw(ulp);
+					rw.set_precision(wide); yw.set_precision(wide); xw.set_precision(wide); uw.set_precision(wide);
+					const E d0 = rw * yw - xw, dup = (rw + uw) * yw - xw, ddn = (rw - uw) * yw - xw;
+					const bool down_ok = !(d0 > E(0)) && dup > E(0);    // r y <= x < (r + ulp) y
+					const bool up_ok   = !(d0 < E(0)) && ddn < E(0);    // (r - ulp) y < x <= r y
+					if (mode == RoundingMode::RoundTowardNegative || mode == RoundingMode::RoundToZero) ok = ok && down_ok;
+					else if (mode == RoundingMode::RoundTowardPositive) ok = ok && up_ok;
+					else {
+						E a0 = d0; a0.setsign(false);
+						E au = dup; au.setsign(false);
+						E ad = ddn; ad.setsign(false);
+						ok = ok && !(a0 > au) && !(a0 > ad);   // no neighbour nearer (a tie cannot occur: x / y is not a binary midpoint here)
+					}
+				}
+				if (!ok) {
+					++nrOfFailedTestCases;
+					if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: a quotient " << (which == 0 ? "on" : "next to") << " an exact one at " << Wx << " bits, mode " << int(mode) << '\n';
+				}
+			}
+		}
+		efloat_rounding_mode = saved;
+		return nrOfFailedTestCases;
+	}
+
+	// x / n and x /= n for integers of 2 to 64 bits (#1811), which divide x's significand by one
+	// limb in place, against the general long division by efloat(n) carried at 4P + 512 bits and
+	// rounded once: a directed rounding repeated in its direction is the single rounding, and to
+	// nearest the wide quotient would have to lie within 2^-(4P + 512) of a midpoint, which a
+	// quotient that is not a binary fraction does not; an exact one is exact in both. Divisors of
+	// 3, 7, near 2^32 and 2^64, both signs, exact quotients, in every mode.
+	int VerifyIntegerDivisors(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(18110);
+		const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+		                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+		const RoundingMode saved = efloat_rounding_mode;
+		const uint64_t fixed[] = { 3u, 7u, 1000003u, 0xFFFF'FFFFull, 0x1'0000'0001ull, 0xFFFF'FFFF'FFFF'FFFFull, 0x8000'0000'0000'0001ull };
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			const unsigned p   = 1 + static_cast<unsigned>(rng() % 20);   // in limbs
+			const unsigned P   = 32 * p;
+			const size_t   nx  = (i % 3 == 0) ? 1 + rng() % p : p;
+			uint64_t n = (i < sizeof(fixed) / sizeof(fixed[0])) ? fixed[i] : (rng() >> (rng() % 62));
+			if ((n & (n - 1u)) == 0u) n += 3u;   // not a power of 2, which takes the general path
+			Real x = make(random_limbs(rng, nx), static_cast<int64_t>(rng() % 41) - 20, (rng() & 1u) != 0u, P);
+			if (i % 5 == 4) {   // an exact quotient: x = n m
+				Real m = make(random_limbs(rng, 1 + rng() % 2), static_cast<int64_t>(rng() % 21) - 10, false, P);
+				x = m * Real(n);
+			}
+			const bool negate = (i % 2 == 1) && n < (uint64_t(1) << 63);
+			for (RoundingMode mode : modes) {
+				efloat_rounding_mode = mode;
+				Real wide(x);
+				wide.set_precision(4 * P + 512);
+				Real want = negate ? wide / Real(-static_cast<int64_t>(n)) : wide / Real(n);
+				want.set_precision(x.get_precision());
+				Real t(x);
+				if (negate) t /= -static_cast<int64_t>(n); else t /= n;
+				const Real q = negate ? x / -static_cast<int64_t>(n) : x / n;
+				if (!identical(t, want) || !identical(q, want)) {
+					++nrOfFailedTestCases;
+					if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: x / " << (negate ? "-" : "") << n << " at " << P << " bits, mode " << int(mode) << '\n';
+				}
+			}
+		}
+		efloat_rounding_mode = saved;
+		return nrOfFailedTestCases;
+	}
+
 	// efloat_mpn::div_appr and sqrt_approx (#1810) against div_qr and sqrtrem: the approximate
 	// quotient and root never below the exact ones and above them by at most divappr_error and
-	// sqrt_approx_error units of the last limb. Quotients as long as the divisor and one to three
-	// limbs shorter (sqrt's shape), across the divide-and-conquer threshold and its doublings,
-	// all-ones operands, and roots of 1 to 200 limbs.
+	// sqrt_approx_error units of the last limb. Quotients as long as the divisor, one to three
+	// limbs shorter (sqrt's shape) and longer than it (the division's, #1811), across the
+	// divide-and-conquer threshold and its doublings, all-ones operands and all-ones quotients,
+	// and roots of 1 to 200 limbs.
 	int VerifyApproximateKernels(bool reportTestCases, unsigned nrSamples) {
 		using namespace sw::universal;
 		using efloat_mpn::limb_t;
@@ -294,10 +422,16 @@ namespace {
 			}
 			check_ones_quotient(n, n);
 			if (n > 1) check_ones_quotient(n, n - 1);
+			// quotients longer than the divisor, as the division forms them (#1811): exact blocks
+			// above an approximate lowest one
+			for (std::size_t extra : { std::size_t(1), std::size_t(2), n + 3 }) {
+				check_div(n, n + extra, false);
+				check_ones_quotient(n, n + extra);
+			}
 		}
 		for (unsigned i = 0; i < nrSamples; ++i) {
 			const std::size_t dn = 1 + rng() % 150;
-			const std::size_t qn = (i % 3 == 0 || dn < 4) ? dn : dn - 1 - rng() % 3;
+			const std::size_t qn = (i % 4 == 0 || dn < 4) ? dn : (i % 4 == 1) ? dn + 1 + rng() % (2 * dn) : dn - 1 - rng() % 3;
 			check_div(dn, qn, (i % 17) == 3);
 			check_root(1 + rng() % 200, (i % 19) == 5);
 		}
@@ -800,6 +934,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 20), "efloat", "products from short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyApproximateKernels(reportTestCases, 100), "efloat", "approximate quotients and roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivisors(reportTestCases, 200), "efloat", "integer divisors");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuotientsNextToExact(reportTestCases, 20), "efloat", "quotients next to exact ones");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 100), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 100), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 100), "efloat", "limb square roots");
@@ -816,6 +952,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 300), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 60), "efloat", "products from short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyApproximateKernels(reportTestCases, 3000), "efloat", "approximate quotients and roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivisors(reportTestCases, 1000), "efloat", "integer divisors");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuotientsNextToExact(reportTestCases, 60), "efloat", "quotients next to exact ones");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300), "efloat", "limb square roots");
@@ -829,6 +967,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 3000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 300), "efloat", "products from short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyApproximateKernels(reportTestCases, 20000), "efloat", "approximate quotients and roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivisors(reportTestCases, 10000), "efloat", "integer divisors");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuotientsNextToExact(reportTestCases, 600), "efloat", "quotients next to exact ones");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 3000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 3000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 3000), "efloat", "limb square roots");
@@ -842,6 +982,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 30000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 3000), "efloat", "products from short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyApproximateKernels(reportTestCases, 30000), "efloat", "approximate quotients and roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivisors(reportTestCases, 50000), "efloat", "integer divisors");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuotientsNextToExact(reportTestCases, 3000), "efloat", "quotients next to exact ones");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 30000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 30000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 30000), "efloat", "limb square roots");
@@ -855,6 +997,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 10000), "efloat", "products from short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyApproximateKernels(reportTestCases, 100000), "efloat", "approximate quotients and roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivisors(reportTestCases, 200000), "efloat", "integer divisors");
+	nrOfFailedTestCases += ReportTestResult(VerifyQuotientsNextToExact(reportTestCases, 10000), "efloat", "quotients next to exact ones");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300000), "efloat", "limb square roots");

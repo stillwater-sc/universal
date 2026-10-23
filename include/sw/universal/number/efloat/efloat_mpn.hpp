@@ -233,6 +233,33 @@ inline void mul(limb_t* r, const limb_t* a, std::size_t m, const limb_t* b, std:
 }
 
 
+// r[0, n) = the low n limbs of floor(V 2^shift), V the integer of v[0, nv), 32-bit limbs most
+// significant first, as efloat holds a significand, for a shift of either sign; returns whether
+// the bits a right shift drops are nonzero (#1810, #1811). V is read as 64-bit words, least
+// significant first, each read once and shifted once.
+inline bool load_msb_first(limb_t* r, std::size_t n, const std::uint32_t* v, std::size_t nv, std::int64_t shift) noexcept {
+	const std::int64_t m = static_cast<std::int64_t>((nv + 1) / 2);
+	auto word = [v, nv, m](std::int64_t j) -> limb_t {   // word j of P = V 2^(32 (2m - nv)), an odd count padded at the bottom
+		if (j < 0 || j >= m) return 0u;
+		const std::size_t hi = static_cast<std::size_t>(2 * m - 2 - 2 * j);
+		return (limb_t(v[hi]) << 32) | ((hi + 1 < nv) ? v[hi + 1] : 0u);
+	};
+	const std::int64_t s = shift - 32 * (2 * m - static_cast<std::int64_t>(nv));   // floor(P 2^s)
+	const std::int64_t q = (s >= 0) ? -((s + 63) / 64) : (-s) / 64;               // floor(-s / 64)
+	const unsigned     c = static_cast<unsigned>(-s - 64 * q);                    // in [0, 64)
+	limb_t low = word(q);
+	for (std::size_t k = 0; k < n; ++k) {
+		const limb_t high = word(q + static_cast<std::int64_t>(k) + 1);
+		r[k] = (c == 0u) ? low : ((low >> c) | (high << (64u - c)));
+		low = high;
+	}
+	if (s >= 0) return false;
+	for (std::int64_t j = 0; j < q && j < m; ++j) {
+		if (word(j) != 0u) return true;
+	}
+	return c != 0u && q < m && (word(q) & ((limb_t(1) << c) - 1u)) != 0u;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Short products (#1807): the high half of a product, for a result rounded to about the operands'
 // length, as MPFR's mpfr_mulhigh_n. R = r[n - 1, 2n) is formed from every partial product a_i b_j
@@ -653,9 +680,27 @@ constexpr std::size_t divappr_n_error(std::size_t n) noexcept {
 // serve divide exactly.
 inline limb_t div_appr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t* s) noexcept {
 	const std::size_t qn = nn - dn;
-	if (dn < dc_div_threshold || qn < dc_div_threshold || qn > dn) return div_qr(q, np, nn, dp, dn, s);
+	if (dn < dc_div_threshold || qn < dc_div_threshold) return div_qr(q, np, nn, dp, dn, s);
 	const limb_t v = invert_pi1(dp[dn - 1], dp[dn - 2]);
 	if (qn == dn) return dcpi1_divappr_n(q, np, dp, dn, v, s);
+	if (qn > dn) {
+		// a long quotient (#1811), as div_qr divides it: a first block of qn mod dn limbs (or dn)
+		// and blocks of dn limbs below it, exact, but for the lowest block, approximate
+		const std::size_t first = (qn % dn == 0) ? dn : qn % dn;
+		std::size_t off = qn - first;
+		limb_t qh;
+		if (first == dn)                   qh = dcpi1_div_qr_n(q + off, np + off, dp, dn, v, s);
+		else if (first < dc_div_threshold) qh = sbpi1_div_qr(q + off, np + off, dn + first, dp, dn, v);
+		else                               qh = dcpi1_div_qr_short(q + off, np + off, dn + first, dp, dn, v, s);
+		while (off > dn) {
+			off -= dn;
+			dcpi1_div_qr_n(q + off, np + off, dp, dn, v, s);
+		}
+		if (dcpi1_divappr_n(q, np, dp, dn, v, s) != 0u) {   // the lowest block reached B^dn: clamped
+			for (std::size_t i = 0; i < dn; ++i) q[i] = ~limb_t(0);
+		}
+		return qh;
+	}
 	// a quotient shorter than the divisor: the top 2 qn limbs over the divisor's top qn, as
 	// dcpi1_div_qr_short, without the product by the divisor's other limbs; at most 2 more
 	const std::size_t in = dn - qn;
@@ -664,7 +709,8 @@ inline limb_t div_appr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, 
 
 constexpr std::size_t divappr_error(std::size_t nn, std::size_t dn) noexcept {
 	const std::size_t qn = nn - dn;
-	if (dn < dc_div_threshold || qn < dc_div_threshold || qn > dn) return 0u;
+	if (dn < dc_div_threshold || qn < dc_div_threshold) return 0u;
+	if (qn > dn) return divappr_n_error(dn);   // the lowest block's
 	return (qn == dn) ? divappr_n_error(qn) : 2u + divappr_n_error(qn);
 }
 
