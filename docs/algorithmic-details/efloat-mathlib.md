@@ -622,7 +622,7 @@ Read the ratio column as the work left on Epic #1763.
   0.2-1.3x at 8192. Two exceptions at 128 bits: `log1p(1e-6)` at 2.1x (its own series, 3.1x
   before) and `log(1 + 2^-200)`, which rounds to `log 1` there, at 5.6x on both. `lgamma` and
   `tgamma` gained 5-11% below 8192 bits through their log calls.
-- **tgamma, lgamma** (#1797): 2.6-29x faster, from 3.0-6.3x and 4.8-18.3x MPFR to 0.6-1.4x. The
+- **tgamma, lgamma** (#1797): 2.6-29x faster, from 3.0-6.3x and 4.8-18.3x MPFR to 0.3-1.4x. The
   second pass at twice the width that every argument took was most of the time (112 of 136 ms
   at 8192 bits); the working precision is now predicted. The tapered Horner sum, the grouped
   shift product and the shorter shift (`0.15 W`) did the rest. Over `1 +- 2^-k`, `2 +- 2^-k`,
@@ -635,7 +635,7 @@ Read the ratio column as the work left on Epic #1763.
   wrong in 29% of the cases.
 - **The primitives set the floor:** `a*b`, `b/a` and `sqrt` run 1.5-2.3x MPFR, and every
   function built on them inherits that.
-- **Largest gaps:** `fma` and `pow(b, 7)` at 128 bits (4.1x, 3.4x), `cbrt` (2.6-3.3x), and the
+- **Largest gaps:** `fma` and `pow(b, 7)` at 128 bits (4.2x, 3.6x), `cbrt` (2.6-3.3x), and the
   primitives.
 
 **Benchmark hygiene.** Single runs of the mpmath comparison vary by 15-50%; compare branches
