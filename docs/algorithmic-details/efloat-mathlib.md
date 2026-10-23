@@ -725,6 +725,7 @@ row both ways before reading it as a cost.
 | #1796 | 2026-10-23 | log's atanh series in fixed point, AGM from 45000 bits instead of 1440: log family 1.0-2.5x MPFR to 0.3-1.2x |
 | #1799 | 2026-10-23 | lgamma, tgamma: working precision predicted, tapered Stirling sum, grouped shift product: 3.0-18.3x MPFR to 0.3-1.4x |
 | #1801 | 2026-10-23 | cbrt by an integer cube root with remainder (`cbrtrem`), no Ziv retries: 2.5-3.3x MPFR to 1.0-1.7x |
+| #1803 | 2026-10-23 | fma and hypot on limbs, product, sum and root in one frame, rounded once: fma 1.7-4.2x MPFR to 1.4-1.8x, hypot 2.0-2.5x to 0.6-1.6x |
 
 ## 9. Open work
 
