@@ -470,6 +470,21 @@ namespace efloat_detail {
 			return space.data();
 		}
 
+		// a b / B^drop truncated, na + nb - drop limbs, returned where they lie: below
+		// truncated_min_limbs the exact floor, the top of the full product formed in tmp[0, na + nb)
+		// as before #1807; from it a truncated short product within 2 units
+		// (efloat_mpn::mul_truncated), formed in tmp
+		inline const limb_t* truncated_product(const limb_t* a, std::size_t na, const limb_t* b, std::size_t nb,
+		                                       std::size_t drop, limb_t* tmp, limb_t* s) noexcept {
+			if (na < efloat_mpn::truncated_min_limbs || nb < efloat_mpn::truncated_min_limbs) {
+				if (a == b && na == nb) efloat_mpn::mul_n(tmp, a, a, na, s, true);
+				else                    efloat_mpn::mul(tmp, a, na, b, nb, s);
+				return tmp + drop;
+			}
+			efloat_mpn::mul_truncated(tmp, a, na, b, nb, drop, s);
+			return tmp;
+		}
+
 		// E[0, n + 1) = sum_k (+-1)^k s^k / (d(1) ... d(k)) 2^F, s = R 2^-F, truncated at each step,
 		// by Smith's rectangular splitting; for exp it is exp(+-s). With T_k = s^k / (d(1) ... d(k))
 		// = A_i P_j / D_ij for k = i m + j, A_i = T_(i m), P_j = s^j and D_ij = d(i m + 1) ...
@@ -488,7 +503,7 @@ namespace efloat_detail {
 		                   divisors kind = divisors::exponential, int64_t a = 0) {
 			const std::size_t w  = n + 1;           // a value below 2^64
 			const unsigned    nb = (N + m - 1) / m; // blocks
-			limb_t* P   = scratch((m + 1) * w + 2 * (2 * w + 2) + 2 * (w + 1) + efloat_mpn::scratch_limbs(w));
+			limb_t* P   = scratch((m + 1) * w + 2 * (2 * w + 2) + 2 * (w + 1) + efloat_mpn::truncated_scratch_limbs(w, w, w - 1));
 			limb_t* tmp = P + (m + 1) * w;          // a product, 2 w limbs
 			limb_t* acc = tmp + (2 * w + 2);        // the Horner value, w limbs
 			limb_t* pos = acc + (2 * w + 2);        // a block's numerator terms of either sign, w + 1 limbs
@@ -496,10 +511,11 @@ namespace efloat_detail {
 			limb_t* s   = neg + (w + 1);
 			// P_j = s^j, j = 1 .. m, n limbs each (the w-th is 0): P_j = P_(j/2)^2 or P_(j-1) s
 			for (std::size_t i = 0; i < w; ++i) P[w + i] = (i < n) ? R[i] : 0u;
-			for (unsigned j = 2; j <= m; ++j) {
-				if (j % 2 == 0) efloat_mpn::mul_n(tmp, P + (j / 2) * w, P + (j / 2) * w, n, s, true);
-				else            efloat_mpn::mul(tmp, P + (j - 1) * w, n, R, n, s);
-				for (std::size_t i = 0; i < n; ++i) P[j * w + i] = tmp[n + i];
+			for (unsigned j = 2; j <= m; ++j) {   // truncated products, within 2 units from truncated_min_limbs (#1807)
+				const limb_t* A = (j % 2 == 0) ? P + (j / 2) * w : P + (j - 1) * w;
+				const limb_t* B = (j % 2 == 0) ? A : R;
+				const limb_t* t = truncated_product(A, n, B, n, n, tmp, s);
+				for (std::size_t i = 0; i < n; ++i) P[j * w + i] = t[i];
 				P[j * w + n] = 0;
 			}
 			std::size_t acc_q = 0;                  // the limbs the Horner value has dropped
@@ -543,8 +559,8 @@ namespace efloat_detail {
 				acc_q = q;
 				// acc = B_b +- acc P_m / D_bm, D_bm = c d(base + m)
 				for (std::size_t i = 0; i < kw; ++i) pos[i] = tmp[i];
-				efloat_mpn::mul(tmp, acc, kw, P + m * w + q, k, s);   // kw + k limbs
-				div_1(neg, tmp + k, kw, c * divisor(kind, base + m));
+				const limb_t* t = truncated_product(acc, kw, P + m * w + q, k, k, tmp, s);   // kw limbs, within 2 units
+				div_1(neg, t, kw, c * divisor(kind, base + m));
 				add_or_sub(acc, pos, neg, kw, negative && (m % 2 == 1));
 			}
 			for (std::size_t i = 0; i < w; ++i) E[i] = acc[i];
@@ -567,7 +583,7 @@ namespace efloat_detail {
 		                              bool alternating = true) {
 			const std::size_t w  = n + 1;
 			const unsigned    nb = (N + m - 1) / m; // blocks
-			limb_t* P   = scratch((m + 1) * w + (2 * w + 2) + 3 * (w + 2) + efloat_mpn::scratch_limbs(w));
+			limb_t* P   = scratch((m + 1) * w + (2 * w + 2) + 3 * (w + 2) + efloat_mpn::truncated_scratch_limbs(w, w, w - 1));
 			limb_t* tmp = P + (m + 1) * w;          // a product or a quotient, 2 w + 2 limbs
 			limb_t* acc = tmp + (2 * w + 2);        // the Horner value, w + 2 limbs
 			limb_t* blk = acc + (w + 2);            // a block's sum
@@ -575,10 +591,11 @@ namespace efloat_detail {
 			limb_t* s   = grp + (w + 2);
 			// P_j = z^j, j = 1 .. m, n limbs each (the w-th is 0)
 			for (std::size_t i = 0; i < w; ++i) P[w + i] = (i < n) ? Z[i] : 0u;
-			for (unsigned j = 2; j <= m; ++j) {
-				if (j % 2 == 0) efloat_mpn::mul_n(tmp, P + (j / 2) * w, P + (j / 2) * w, n, s, true);
-				else            efloat_mpn::mul(tmp, P + (j - 1) * w, n, Z, n, s);
-				for (std::size_t i = 0; i < n; ++i) P[j * w + i] = tmp[n + i];
+			for (unsigned j = 2; j <= m; ++j) {   // truncated products, within 2 units from truncated_min_limbs (#1807)
+				const limb_t* A = (j % 2 == 0) ? P + (j / 2) * w : P + (j - 1) * w;
+				const limb_t* B = (j % 2 == 0) ? A : Z;
+				const limb_t* t = truncated_product(A, n, B, n, n, tmp, s);
+				for (std::size_t i = 0; i < n; ++i) P[j * w + i] = t[i];
 				P[j * w + n] = 0;
 			}
 			constexpr limb_t limit = limb_t(1) << 63;
@@ -634,18 +651,25 @@ namespace efloat_detail {
 				}
 				acc_q = q;
 				// acc = B_b +- acc P_m
-				efloat_mpn::mul(tmp, acc, kw, P + m * w + q, k, s);   // kw + k limbs
-				add_or_sub(acc, blk, tmp + k, kw, alternating && m % 2 == 1);
+				const limb_t* t = truncated_product(acc, kw, P + m * w + q, k, k, tmp, s);   // kw limbs, within 2 units
+				add_or_sub(acc, blk, t, kw, alternating && m % 2 == 1);
 			}
 			for (std::size_t i = 0; i < w; ++i) S[i] = acc[i];
 		}
 
-		// E[0, n + 1) = E^2, truncated to F fraction bits
+		// E[0, n + 1) = E^2, truncated to F fraction bits; from truncated_min_limbs a truncated short
+		// product within 2 units of E's last limb (#1807)
 		inline void square(limb_t* E, std::size_t n) {
 			const std::size_t w = n + 1;
-			limb_t* tmp = scratch(2 * w + efloat_mpn::scratch_limbs(w));
-			efloat_mpn::mul_n(tmp, E, E, w, tmp + 2 * w, true);
-			for (std::size_t i = 0; i < w; ++i) E[i] = tmp[n + i];
+			if (w < efloat_mpn::truncated_min_limbs) {
+				limb_t* tmp = scratch(2 * w + efloat_mpn::scratch_limbs(w));
+				efloat_mpn::mul_n(tmp, E, E, w, tmp + 2 * w, true);
+				for (std::size_t i = 0; i < w; ++i) E[i] = tmp[n + i];
+				return;
+			}
+			limb_t* tmp = scratch((w + 1) + efloat_mpn::truncated_scratch_limbs(w, w, n));
+			efloat_mpn::mul_truncated(tmp, E, w, E, w, n, tmp + w + 1);   // w + 1 limbs, the top one 0
+			for (std::size_t i = 0; i < w; ++i) E[i] = tmp[i];
 		}
 
 	}  // namespace fixed_series
@@ -659,12 +683,13 @@ namespace efloat_detail {
 	// (halving_target): more halvings cost squarings and save terms.
 	//
 	// Error: the fixed-point values carry F >= precision + 64 + T + 16 fraction bits. R = s 2^F is
-	// truncated (2^-F), each power, block and Horner step truncates (2^-F each, 2^-(F + 8) for a
-	// tapered block's dropped limbs, #1790; about N + 3 N / m + m of them, under 2^10 at 8192
-	// bits), and the tail lies below 2^-(F + 3); each squaring
-	// doubles the relative error and adds 2^-F. So exp(+-s)^(2^h) is within 2^(h + 11 - F) <=
-	// 2^-(precision + 64 + 5) of its value, far inside exp_error_bits; r's own rounding at the
-	// working precision adds 2^-(working + 1).
+	// truncated (2^-F), each block's sum and quotient truncate (2^-F each, 2^-(F + 8) for a
+	// tapered block's dropped limbs, #1790), each power and Horner product is a truncated short
+	// product within 2^(1 - F) (efloat_mpn::mul_truncated, #1807): about N + 4 N / m + 2 m units
+	// of 2^-F, under 2^10 at 8192 bits, and the tail lies below 2^-(F + 3). Each squaring doubles
+	// the relative error and adds 2^(1 - F), so exp(+-s)^(2^h) is within 2^h (2^10 + 2) 2^-F <
+	// 2^(h + 11 - F) <= 2^-(precision + 64 + 5) of its value, far inside exp_error_bits; r's own
+	// rounding at the working precision adds 2^-(working + 1).
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> exp_working(const efloat<nlimbs>& x, unsigned precision) {
 		using fixed_series::limb_t;

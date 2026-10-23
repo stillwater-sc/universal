@@ -169,9 +169,11 @@ namespace efloat_detail {
 	// scale E falls by 2 a doubling: V' = V - V^2 / 2^(F + E + 1), one square and a subtraction.
 	//
 	// Error: a doubling multiplies the relative error by (1 - v) / (1 - v / 2) < 1 and adds a
-	// truncation of 2^-(F - 1), so it does not grow with h. The series truncates about
-	// N + 3 N / m + m times, z and the product y^2 W once each: the relative error of v stays below
-	// (N + 3 N / m + m + h + 4) 2^-(F - 1) < 2^-(working + 13) for F >= working + 24. The value is
+	// truncation of 2^-(F - 2), its square a truncated short product (#1807), so it does not grow
+	// with h. The series truncates about N + 4 N / m + 2 m times (its powers and Horner products
+	// count twice, #1807), z once and the product y^2 W twice: the relative error of v stays below
+	// (N + 4 N / m + 2 m + 2 h + 5) 2^-(F - 1) < 2^-(working + 13) for F >= working + 24, the count
+	// below 2^10. The value is
 	// returned at the working precision, r's plus h bits, as the efloat kernel it replaces was.
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> versine_with(const efloat<nlimbs>& r, unsigned T) {
@@ -211,14 +213,14 @@ namespace efloat_detail {
 		// v = z W / 2 with z = Zs 2^-(F + E), Zs in [2^(F-1), 2^F): V = Zs W / 2^(F + 1)
 		int64_t E = -z.scale() - 1;
 		fixed_series::to_fixed(z, static_cast<int64_t>(F) + E, Z, n);
-		limb_t* s = fixed_series::scratch(efloat_mpn::scratch_limbs(n + 1));   // after the series, which uses it
-		efloat_mpn::mul(P, W, n + 1, Z, n, s);
-		fixed_series::shift_right(V, n, P, 2 * n + 1, F + 1u);
+		limb_t* s = fixed_series::scratch(std::max(efloat_mpn::scratch_limbs(n + 1), efloat_mpn::truncated_scratch_limbs(n + 1, n, n)));   // after the series, which uses it
+		const limb_t* wz = fixed_series::truncated_product(W, n + 1, Z, n, n, P, s);   // W Z / 2^F, n + 1 limbs, within 2 units (#1807)
+		fixed_series::shift_right(V, n, wz, n + 1, 1u);
 		for (unsigned i = 0; i < h; ++i) {   // V' = V - V^2 / 2^(F + E + 1), E' = E - 2; E stays >= 0
-			efloat_mpn::mul_n(P, V, V, n, s, true);
 			const uint64_t shift = static_cast<uint64_t>(F) + static_cast<uint64_t>(E) + 1u;
 			if (shift < 128u * n) {
-				fixed_series::shift_right(P + 2 * n, n, P, 2 * n, shift);   // below 2^(F - E - 1)
+				const limb_t* vv = fixed_series::truncated_product(V, n, V, n, n, P, s);   // V^2 / 2^F, n limbs, within 2 units
+				fixed_series::shift_right(P + 2 * n, n, vv, n, shift - F);   // below 2^(F - E - 1)
 				efloat_mpn::sub_n(V, V, P + 2 * n, n);
 			}
 			E -= 2;
@@ -407,9 +409,10 @@ namespace efloat_detail {
 	// precision whatever the size of y (fixed_series::arctangent_series, #1792).
 	//
 	// Error: each halving rounds three times at the working precision, so h of them leave a
-	// relative error below 3 h 2^-working. The series truncates about N + 2 N / g + m + 2 N / m
-	// times for groups of g terms, z once: below 2^-(working + 13) for F >= working + 24. The
-	// product y S rounds once more.
+	// relative error below 3 h 2^-working. The series truncates about N + 2 N / g + 2 m + 3 N / m
+	// times for groups of g terms (its powers and Horner products, truncated short products,
+	// count twice, #1807), z once: below 2^-(working + 13) for F >= working + 24. The product y S
+	// rounds once more.
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> atan_working_with(const efloat<nlimbs>& x, unsigned working, unsigned T) {
 		using fixed_series::limb_t;

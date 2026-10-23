@@ -39,8 +39,9 @@ namespace efloat_detail {
 	// the alternation, #1795). S lies in [1, 1.1), so with F >= working + 24 fraction bits it keeps
 	// its relative precision whatever the size of v, as log's result does as x -> 1.
 	//
-	// Error: the series truncates about N + 2 N / g + m + 2 N / m times for groups of g terms, z
-	// once: below 2^-(working + 13). z = v^2 and the product v S each round once at working + 2
+	// Error: the series truncates about N + 2 N / g + 2 m + 3 N / m times for groups of g terms
+	// (its powers and Horner products, truncated short products, count twice, #1807), z once:
+	// below 2^-(working + 13). z = v^2 and the product v S each round once at working + 2
 	// and working bits.
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> atanh_working_small(const efloat<nlimbs>& v, unsigned working) {

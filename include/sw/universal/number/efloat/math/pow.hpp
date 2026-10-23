@@ -113,10 +113,11 @@ namespace efloat_detail {
 	}
 
 	// a[0, na) = the top w limbs of p[0, np), shifted up to p's leading bit, and sh, the weight of
-	// p's bit 0, moved to a's; returns whether a dropped bit was 1. p is a product of two
-	// operands with their top bits set, so its own top bit is bit 63 or 62 of its top limb (#1804).
+	// p's bit 0, moved to a's; returns whether a dropped bit was 1. p's top limb is nonzero: a
+	// product of two operands with their top bits set has its own at bit 63 or 62, and a
+	// truncated one (#1807) can lie a unit below 2^62 of it (#1804).
 	inline bool keep_top(efloat_mpn::limb_t* a, std::size_t& na, const efloat_mpn::limb_t* p, std::size_t np, std::size_t w, int64_t& sh) {
-		const unsigned c = static_cast<unsigned>(std::countl_zero(p[np - 1]));   // 0 or 1
+		const unsigned c = static_cast<unsigned>(std::countl_zero(p[np - 1]));   // below 64
 		if (np <= w) {
 			for (std::size_t i = 0; i < np; ++i) a[i] = p[i];
 			if (c != 0u) efloat_mpn::lshift(a, a, np, c);
@@ -132,8 +133,13 @@ namespace efloat_detail {
 			for (std::size_t i = 0; i < w; ++i) a[i] = p[lo + i];
 		}
 		else {
-			dropped = dropped || ((p[lo - 1] << 1) != 0u);
-			for (std::size_t i = 0; i < w; ++i) a[i] = (p[lo + i] << 1) | (p[lo + i - 1] >> 63);
+			dropped = dropped || ((p[lo - 1] << c) != 0u);
+			if (c == 1u) {   // the usual case, by a constant shift: a variable one cost 5% at 512 bits
+				for (std::size_t i = 0; i < w; ++i) a[i] = (p[lo + i] << 1) | (p[lo + i - 1] >> 63);
+			}
+			else {
+				for (std::size_t i = 0; i < w; ++i) a[i] = (p[lo + i] << c) | (p[lo + i - 1] >> (64u - c));
+			}
 		}
 		na = w;
 		sh += 64 * static_cast<int64_t>(lo) - c;
@@ -161,9 +167,11 @@ namespace efloat_detail {
 	// x^n, or x^-n with `reciprocal`, rounded once at `precision` bits, for a finite x != 0 of at
 	// least 2 significant bits and an integer n >= 2 (#1804) whose power's exponent stays far
 	// inside the range: binary powering on 64-bit limbs, each square and product kept to its top w limbs
-	// with its leading bit at the top. A kept product is within 2^-(64 w - 1) of its exact value,
-	// relative to it, and binary powering scales the error of each step by the squarings after
-	// it, so x^n is within 2 n 2^-(64 w - 1) of exact: bit_width(n) + 2 bits, where efloat's own
+	// with its leading bit at the top. From efloat_mpn::truncated_min_limbs the products are
+	// truncated short products of w + 1 limbs, within 2 units of the limb below the w kept
+	// (#1807). A kept product is within 2^-(64 w - 1) (1 + 2^-62) of its exact value, relative
+	// to it, and binary powering scales the error of each step by the squarings after it, so x^n
+	// is within 2 n 2^-(64 w - 1) (1 + 2^-61) of exact: bit_width(n) + 2 bits, where efloat's own
 	// arithmetic carried 69 (#1763). The reciprocal divides once more. Ziv's test (`limbs_can_round`)
 	// then decides. A power that keeps every bit is exact and rounds from the limbs outright; one
 	// that does not has more bits than the frame's precision + 21, so it lies on no rounding
@@ -186,7 +194,8 @@ namespace efloat_detail {
 		for (int attempt = 0; attempt < 3; ++attempt, w *= 2) {
 			limb_buffer buffer;
 			const std::size_t wq = w + 1;   // the reciprocal's limbs
-			limb_t* px   = buffer.get(m + w + 2 * w + 2 * w + wq + std::max(efloat_mpn::div_scratch_limbs(w), efloat_mpn::scratch_limbs(w)));
+			limb_t* px   = buffer.get(m + w + 2 * w + 2 * w + wq + std::max({ efloat_mpn::div_scratch_limbs(w), efloat_mpn::scratch_limbs(w),
+			                                                                     efloat_mpn::truncated_scratch_limbs(w, w, w - 1) }));
 			limb_t* a    = px + m;
 			limb_t* prod = a + w;
 			limb_t* num  = prod + 2 * w;
@@ -199,14 +208,36 @@ namespace efloat_detail {
 			int64_t sh = ex - 64 * static_cast<int64_t>(m) + 1;
 			const int64_t sx = sh;
 			bool truncated = false;
+			// each square and product kept to its top w limbs: in full, or from truncated_min_limbs
+			// limbs its top w + 1 limbs by a truncated short product, an approximation that marks
+			// the power truncated
+			const bool short_products = (w >= efloat_mpn::truncated_min_limbs);
 			for (int b = static_cast<int>(bw) - 2; b >= 0; --b) {
-				efloat_mpn::mul_n(prod, a, a, na, work, true);
 				sh *= 2;
-				truncated = keep_top(a, na, prod, 2 * na, w, sh) || truncated;
+				if (short_products && 2 * na > w + 1 && na >= efloat_mpn::truncated_min_limbs) {
+					const std::size_t drop = 2 * na - (w + 1);
+					efloat_mpn::mul_truncated(prod, a, na, a, na, drop, work);
+					sh += 64 * static_cast<int64_t>(drop);
+					keep_top(a, na, prod, w + 1, w, sh);
+					truncated = true;
+				}
+				else {
+					efloat_mpn::mul_n(prod, a, a, na, work, true);
+					truncated = keep_top(a, na, prod, 2 * na, w, sh) || truncated;
+				}
 				if ((n >> b) & 1u) {
-					efloat_mpn::mul(prod, a, na, px, m, work);
 					sh += sx;
-					truncated = keep_top(a, na, prod, na + m, w, sh) || truncated;
+					if (short_products && na + m > w + 1 && na >= efloat_mpn::truncated_min_limbs && m >= efloat_mpn::truncated_min_limbs) {
+						const std::size_t drop = na + m - (w + 1);
+						efloat_mpn::mul_truncated(prod, a, na, px, m, drop, work);
+						sh += 64 * static_cast<int64_t>(drop);
+						keep_top(a, na, prod, w + 1, w, sh);
+						truncated = true;
+					}
+					else {
+						efloat_mpn::mul(prod, a, na, px, m, work);
+						truncated = keep_top(a, na, prod, na + m, w, sh) || truncated;
+					}
 				}
 			}
 			const limb_t* frame   = a;

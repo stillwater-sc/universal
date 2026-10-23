@@ -30,6 +30,11 @@
 //            Karatsuba and the division's divide-and-conquer thresholds, perfect cubes and their
 //            neighbours, all-ones radicands, the smallest radicand, and top limbs within 1024 of
 //            a perfect cube, where the base case's double estimate is tested.
+//   mulhigh  efloat_mpn's short product must lie below the full product's high limbs by under n
+//            units of r[n], and mul_truncated within one unit of the floor (#1807); x * y and
+//            x * x rounded from the short product, at the operands' precision, must be the exact
+//            product rounded once in every mode, also for all-ones operands, where only the
+//            fallback to the full product is right.
 //   load_window  efloat_mpn's shifted copy, which places the fma and hypot kernels' terms in
 //            their frames (#1802), against a bit at a time, and its flag for the bits it drops.
 //
@@ -211,6 +216,143 @@ namespace {
 				}
 			}
 		}
+		return nrOfFailedTestCases;
+	}
+
+	// efloat_mpn::mulhigh_n and mul_truncated (#1807) against the full product: R = r[n - 1, 2n)
+	// below the full product's limbs from n - 1 up by less than n units of r[n], and the
+	// truncated product the floor of a b / B^drop or one unit below it. Lengths straddle the
+	// basecase-to-Mulders threshold (32) and the Karatsuba ones (16, 48); squares, all-ones
+	// operands (whose dropped partial products are largest) and unbalanced truncated products.
+	// can_round on limbs is checked at the edges of the bits it reads.
+	int VerifyShortProducts(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		using efloat_mpn::limb_t;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(1807);
+		const size_t lengths[] = { 1, 2, 3, 15, 16, 17, 31, 32, 33, 47, 48, 49, 63, 64, 65, 96, 128, 129, 200 };
+		auto check_high = [&](size_t n, bool square, bool ones) {
+			std::vector<limb_t> a(n), b(n), full(2 * n), r(2 * n), sc(efloat_mpn::scratch_limbs(n) + 8), d(n + 1);
+			for (size_t i = 0; i < n; ++i) { a[i] = ones ? ~limb_t(0) : rng(); b[i] = ones ? ~limb_t(0) : rng(); }
+			const limb_t* bp = square ? a.data() : b.data();
+			efloat_mpn::mul_n(full.data(), a.data(), bp, n, sc.data(), square);
+			efloat_mpn::mulhigh_n(r.data(), a.data(), bp, n, sc.data(), square);
+			const limb_t borrow = efloat_mpn::sub_n(d.data(), full.data() + n - 1, r.data() + n - 1, n + 1);
+			bool ok = (borrow == 0u) && (n == 1 ? d[1] == 0u : d[1] < n);
+			for (size_t i = 2; i <= n; ++i) ok = ok && d[i] == 0u;
+			if (!ok) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: mulhigh_n of " << n << " limbs is off by n units or more\n";
+			}
+		};
+		auto check_truncated = [&](size_t na, size_t nb, size_t drop, bool ones) {
+			std::vector<limb_t> a(na), b(nb), full(na + nb), out(na + nb - drop), sc(efloat_mpn::truncated_scratch_limbs(na, nb, drop) + 8);
+			std::vector<limb_t> sf(efloat_mpn::scratch_limbs(std::max(na, nb)) + 8), d(na + nb - drop);
+			for (auto& v : a) v = ones ? ~limb_t(0) : rng();
+			for (auto& v : b) v = ones ? ~limb_t(0) : rng();
+			efloat_mpn::mul(full.data(), a.data(), na, b.data(), nb, sf.data());
+			efloat_mpn::mul_truncated(out.data(), a.data(), na, b.data(), nb, drop, sc.data());
+			const limb_t borrow = efloat_mpn::sub_n(d.data(), full.data() + drop, out.data(), na + nb - drop);
+			bool ok = (borrow == 0u) && d[0] <= 1u;
+			for (size_t i = 1; i < d.size(); ++i) ok = ok && d[i] == 0u;
+			if (!ok) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: mul_truncated of " << na << " x " << nb << " limbs dropping " << drop << " is not within one unit of the floor\n";
+			}
+		};
+		for (size_t n : lengths) {
+			for (bool square : { false, true }) { check_high(n, square, false); check_high(n, square, true); }
+			check_truncated(n, n, n, false);
+			check_truncated(n + 1, n, n, true);
+			check_truncated(n, n, n > 1 ? n - 1 : 0, false);
+		}
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			const size_t n = 1 + rng() % 260;
+			check_high(n, (i % 3) == 0, (i % 11) == 5);
+			const size_t na = 1 + rng() % 200, nb = (i % 2) ? na : 1 + rng() % 200;
+			check_truncated(na, nb, rng() % (na + nb), (i % 13) == 7);
+		}
+		// can_round: a value whose bits past the precision are 1 0 0 ... 0 up to bit `correct - 2`
+		// sits on a midpoint as far as it can tell, and is not rounded; a 1 at bit correct - 2 is
+		// the last one read, and one at bit correct - 1 is not
+		{
+			const unsigned precision = 100, correct = 160;
+			auto frame = [](int p) {   // three limbs, leading bit at 191, bit p (from the leading one) set
+				std::vector<limb_t> f(3, 0u);
+				f[2] = limb_t(1) << 63;
+				if (p >= 0) { const unsigned q = 191u - static_cast<unsigned>(p); f[q / 64] |= limb_t(1) << (q % 64); }
+				return f;
+			};
+			const bool ok = !efloat_mpn::can_round(frame(-1).data(), 3, precision, correct)
+			             && efloat_mpn::can_round(frame(static_cast<int>(correct) - 2).data(), 3, precision, correct)
+			             && !efloat_mpn::can_round(frame(static_cast<int>(correct) - 1).data(), 3, precision, correct)
+			             && !efloat_mpn::can_round(frame(static_cast<int>(precision)).data(), 3, precision, correct)
+			             && efloat_mpn::can_round(frame(static_cast<int>(precision) + 1).data(), 3, precision, correct)
+			             && !efloat_mpn::can_round(frame(static_cast<int>(precision) + 1).data(), 3, precision, precision + 3);
+			if (!ok) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL: efloat_mpn::can_round reads the wrong bits\n";
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// x * y and x * x at the operands' own precision from 16 64-bit limbs up, where the product
+	// rounds from mulhigh_n's high half when Ziv's test passes (#1807), against the exact product
+	// rounded once, in every mode. All-ones operands put the exact product one unit above a
+	// representable value and the short product below it, which only the fallback to the full
+	// product rounds right; 1 + 2^-k operands put it next to a boundary with nothing dropped.
+	int VerifyRoundedProducts(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(18070);
+		const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+		                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+		const RoundingMode saved = efloat_rounding_mode;
+		const size_t lengths[] = { 30, 31, 32, 33, 34, 63, 64, 65, 66, 96, 97, 98, 128, 129, 130, 256, 257, 258 };   // 32-bit limbs
+		auto check = [&](const std::vector<uint32_t>& a, const std::vector<uint32_t>& b, const char* what) {
+			const unsigned P = static_cast<unsigned>(32 * std::max(a.size(), b.size()));
+			const int64_t ea = static_cast<int64_t>(rng() % 41) - 20, eb = static_cast<int64_t>(rng() % 41) - 20;
+			const bool sa = (rng() & 1u) != 0u, sb = (rng() & 1u) != 0u;
+			const Real x = make(a, ea, sa, P), y = make(b, eb, sb, P);
+			std::vector<uint32_t> p, q;
+			const int64_t e  = reference_product(a, ea, b, eb, p);
+			const int64_t e2 = reference_product(a, ea, a, ea, q);
+			for (RoundingMode mode : modes) {
+				efloat_rounding_mode = RoundingMode::RoundToNearest;
+				Real want  = make(p, e, sa != sb, static_cast<unsigned>(32 * p.size()));
+				Real want2 = make(q, e2, false, static_cast<unsigned>(32 * q.size()));
+				efloat_rounding_mode = mode;
+				want.set_precision(P);    // the exact product rounded once, in the mode
+				want2.set_precision(P);
+				clear_efloat_exceptions();
+				const Real xy = x * y;
+				const bool inexact = has_efloat_exception(ExceptionFlag::Inexact);
+				Real s = x;
+				s *= s;
+				const bool ok = identical(xy, want) && identical(x * x, want2) && identical(s, want2) && (inexact == !(p.size() <= P / 32));
+				if (!ok) {
+					++nrOfFailedTestCases;
+					if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: " << what << " product of " << a.size() << " limbs at " << P << " bits, mode " << int(mode) << '\n';
+				}
+			}
+		};
+		for (size_t L : lengths) {
+			check(random_limbs(rng, L), random_limbs(rng, L), "random");
+			check(std::vector<uint32_t>(L, 0xFFFF'FFFFu), std::vector<uint32_t>(L, 0xFFFF'FFFFu), "all-ones");
+			std::vector<uint32_t> ones_but_last(L, 0xFFFF'FFFFu);
+			ones_but_last.back() = static_cast<uint32_t>(rng()) | 1u;
+			check(ones_but_last, std::vector<uint32_t>(L, 0xFFFF'FFFFu), "all-ones");
+			std::vector<uint32_t> near(L, 0u);
+			near[0] = 0x8000'0000u;
+			near.back() = 1u;
+			check(near, near, "1 + 2^-k");
+		}
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			const size_t L = 30 + rng() % 300;
+			check(random_limbs(rng, L), random_limbs(rng, (i % 4 == 0) ? 1 + rng() % L : L), "random");
+		}
+		efloat_rounding_mode = saved;
 		return nrOfFailedTestCases;
 	}
 
@@ -570,6 +712,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 30), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 100), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100), "efloat", "short products");
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 20), "efloat", "products from short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 100), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 100), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 100), "efloat", "limb square roots");
@@ -583,6 +727,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 300), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 300), "efloat", "short products");
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 60), "efloat", "products from short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300), "efloat", "limb square roots");
@@ -593,6 +739,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 3000), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 20000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 20000), "efloat", "limb windows");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 3000), "efloat", "short products");
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 300), "efloat", "products from short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 3000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 3000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 3000), "efloat", "limb square roots");
@@ -603,6 +751,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 30000), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 200000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 100000), "efloat", "limb windows");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 30000), "efloat", "short products");
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 3000), "efloat", "products from short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 30000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 30000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 30000), "efloat", "limb square roots");
@@ -613,6 +763,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 300000), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 300000), "efloat", "limb windows");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100000), "efloat", "short products");
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 10000), "efloat", "products from short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300000), "efloat", "limb square roots");
