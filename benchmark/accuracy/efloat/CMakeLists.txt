@@ -1,7 +1,8 @@
 # efloat against MPFR, bit for bit in all four rounding modes (#1782): MPFR is a dependency of this
 # check only, so it is built when mpfr.h, libmpfr and libgmp are found on a native build, and
 # skipped otherwise. The ctest is the quick run, every function up to 512 bits; run the program
-# with no arguments for the full one, up to 8192 bits.
+# with no arguments for the full one, up to 8192 bits. MPFR is LGPL-3.0-or-later: see
+# docs/licensing/mpfr-gmp-lgpl.md for why this optional program leaves Universal MIT.
 if(NOT CMAKE_CROSSCOMPILING)
   find_path(UNIVERSAL_MPFR_INCLUDE_DIR mpfr.h)
   find_library(UNIVERSAL_MPFR_LIBRARY mpfr)

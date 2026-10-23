@@ -14,7 +14,9 @@
 // Zimmermann's, on the division and the squaring (#1763), and its cube root the same recursion
 // carried over to the cube (#1800).  The names follow GMP's mpn layer:
 // every operand is a pointer and a limb count, least significant limb first, and nothing
-// allocates; the caller provides the scratch space.
+// allocates; the caller provides the scratch space.  The code is written from the published
+// algorithms cited at each kernel, not from GMP's sources (LGPL/GPL); see
+// docs/licensing/mpfr-gmp-lgpl.md.
 #include <bit>
 #include <cmath>
 #include <cstddef>
