@@ -150,7 +150,7 @@ round the exact result once into the destination (`assign_rounded`), with no all
 | `asin`, `acos`, `atan`, `atan2` | one `atan` kernel: reflection, argument halved below `2^-T`, `T = 0.08 sqrt(W)`; `atan(y) / y` summed in fixed point by rectangular splitting | 24 | trigonometry.hpp |
 | `sinh` ... `atanh` | `expm1` and `log1p` forms that do not cancel | 24 | hyperbolic.hpp |
 | `pow(x, y)` | `exp(y log x)`, `log x` widened by the magnitude of `y log x`; exact powers outright | 24 | pow.hpp |
-| `pow(x, n)` | binary powering with `bit_width(n)` extra bits | 8 | pow.hpp |
+| `pow(x, n)` | binary powering on 64-bit limbs, each product kept to its top limbs, `bit_width(n) + 21` guard bits; one division for `n < 0` | `bit_width(n) + 5` | pow.hpp |
 | `tgamma`, `lgamma` | Stirling series after shifting `x` up past `0.15 W`, by a tapered Horner scheme; the shift's factors multiplied in groups; reflection below 0; working precision predicted; exact `(n-1)!` | 22 | error_and_gamma.hpp |
 | `erf`, `erfc` | positive-term series `2/sqrt(pi) e^{-x^2} sum t_n`; asymptotic series for large `x`; `1 - erf` with the cancelled bits added | 0 (32 guard bits) | error_and_gamma.hpp |
 | `cbrt` | integer cube root `floor(cbrt(m 2^(3F)))` on 64-bit limbs (`cbrtrem`), the remainder formed only next to a rounding boundary; rounded once | exact | sqrt.hpp, efloat_mpn.hpp |
@@ -368,6 +368,27 @@ so its error is not multiplied by `y` (#1739). Exact powers are found first and 
 with `|x|` a perfect `2^k`-th power (a mod-8 filter rejects most non-squares). `pow(x, int)`
 uses binary powering with guard bits; before #1774 it was off by up to 32 ulps from repeated
 rounded products.
+
+**Integer exponents on limbs** (#1804). `pow(x, n)` and `pow(x, y)` with an integer `|y| < 2^53`
+go first to `integer_power_limbs`, for `|n| >= 2`, `x` of at least two significant bits and
+`n (|scale(x)| + 1) < 2^60`; everything else takes the path above.
+- Binary powering from `n`'s leading bit down, on the significand's 64-bit limbs. Each square
+  and product is kept to its top `w` limbs, shifted to its leading bit (`keep_top`), so it is
+  within `2^-(64w - 1)` of its exact value, relative to it, and its exponent is an `int64_t`.
+- The error a step makes is doubled by every squaring after it, so `x^n` is within
+  `2n 2^-(64w - 1)` of exact: `bit_width(n) + 1` bits, and the test takes 4 more. efloat
+  arithmetic carried 69 guard bits here before; the frame now carries `bit_width(n) + 21`, and
+  `w` is that plus the precision in limbs.
+- `n < 0`: one division, `floor(2^(64(na + w) - 1) / A)`, `w` limbs and a top one, one more bit
+  of error.
+- A power that kept every bit is exact and rounds from the limbs. Otherwise Ziv's test runs on the
+  limbs (`limbs_can_round`), and a failure doubles `w`, up to three times before the general path.
+  A power that does not fit the frame has more than `P + 1` bits, so it is on no rounding
+  boundary, and some width passes. `x = 1 + 2^-j + 2^-(P-2)` with `j > P/2 + 40` makes the
+  first width fail: `x^n`'s bits past `P` are 0 up to about bit `2j`.
+- The result rounds once through `assign_rounded_limbs`. No efloat is formed on the way, and
+  none of the general path's preamble runs (`x == 1` against temporaries, a copy of `|x|`,
+  `exact_pow`, `log_magnitude`).
 
 ### 4.6 tgamma, lgamma (#1779, #1797)
 
@@ -590,7 +611,8 @@ efloat returns +0 with Underflow.
 
 `mpfr_gap`, best of three, warm caches, microseconds per call, round to nearest.
 Measured 2026-10-22 with #1795 (the fixed-point log series) on top of main at 4a4e692b, the `tgamma` and `lgamma` rows
-with #1797 on top of main at cbeb5b46, and the `fma` and `hypot` rows with #1802 on top of main at 4f0c1a49, Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`,
+with #1797 on top of main at cbeb5b46, the `fma` and `hypot` rows with #1802 on top of main at 4f0c1a49, and the
+`pow(b,7)` row with #1804 on top of main at 053fd703, Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`,
 MPFR 4.2.2, GMP 6.3.0; `a = 0.718...`, `b = 1.414...`, `x = 1 + a`. Each cell is
 efloat / MPFR in microseconds, then the ratio.
 
@@ -626,7 +648,7 @@ efloat / MPFR in microseconds, then the ratio.
 | `acosh(b)` | 1.196 / 1.382 | 0.9x | 2.122 / 3.664 | 0.6x | 11.32 / 15.52 | 0.7x | 142.1 / 128.6 | 1.1x |
 | `atanh(a)` | 1.073 / 1.393 | 0.8x | 1.903 / 3.496 | 0.5x | 11.74 / 15.37 | 0.8x | 158.6 / 128.6 | 1.2x |
 | `pow(b,a)` | 1.660 / 2.210 | 0.8x | 3.355 / 5.955 | 0.6x | 23.51 / 31.63 | 0.7x | 341.0 / 316.4 | 1.1x |
-| `pow(b,7)` | 0.378 / 0.104 | 3.6x | 0.522 / 0.189 | 2.8x | 2.338 / 1.259 | 1.9x | 18.15 / 11.19 | 1.6x |
+| `pow(b,7)` | 0.071 / 0.106 | 0.7x | 0.199 / 0.195 | 1.0x | 1.715 / 1.286 | 1.3x | 16.86 / 11.22 | 1.5x |
 | `tgamma(b)` | 10.26 / 7.183 | 1.4x | 30.30 / 32.74 | 0.9x | 250.0 / 362.7 | 0.7x | 4743 / 7354 | 0.6x |
 | `lgamma(b)` | 10.00 / 7.518 | 1.3x | 28.81 / 33.61 | 0.9x | 231.6 / 757.6 | 0.3x | 4532 / 7229 | 0.6x |
 | `erf(a)` | 4.985 / 2.909 | 1.7x | 15.38 / 15.71 | 1.0x | 146.9 / 171.1 | 0.9x | 2747 / 2995 | 0.9x |
@@ -680,7 +702,12 @@ Read the ratio column as the work left on Epic #1763.
   cases.)
 - **The primitives set the floor:** `a*b`, `b/a` and `sqrt` run 1.5-2.3x MPFR, and every
   function built on them inherits that.
-- **Largest gaps:** `pow(b, 7)` at 128 and 512 bits (3.6x, 2.8x), and the primitives.
+- **pow(x, n)** (#1804): `pow(b, 7)` 1.1-5.1x faster, from 3.4/2.8/1.9/1.6x MPFR to
+  0.7/1.0/1.3/1.5x; `pow(b, -7)` from 2.6/2.2/2.2/2.1x to 0.5/0.8/1.6/1.9x. Results are
+  bit-identical to before, flags and carried precision included, over 1.44 million old-vs-new
+  results in every mode (`n` up to `2^31`, negative `n`, exact powers, `x` next to 1, powers
+  next to the range's ends, `x` that carries no precision).
+- **Largest gaps:** the primitives, `a*b`, `b/a` and `sqrt`, at 1.5-2.2x.
 
 **Benchmark hygiene.** Single runs of the mpmath comparison vary by 15-50%; compare branches
 with best-of-5 runs on an idle machine. Warm the caches first. The first-call cost of a new
@@ -726,6 +753,7 @@ row both ways before reading it as a cost.
 | #1799 | 2026-10-23 | lgamma, tgamma: working precision predicted, tapered Stirling sum, grouped shift product: 3.0-18.3x MPFR to 0.3-1.4x |
 | #1801 | 2026-10-23 | cbrt by an integer cube root with remainder (`cbrtrem`), no Ziv retries: 2.5-3.3x MPFR to 1.0-1.7x |
 | #1803 | 2026-10-23 | fma and hypot on limbs, product, sum and root in one frame, rounded once: fma 1.7-4.2x MPFR to 1.4-1.8x, hypot 2.0-2.5x to 0.6-1.6x |
+| #1806 | 2026-10-23 | pow(x, n) for integer n by binary powering on limbs with `bit_width(n) + 21` guard bits: pow(b, 7) 1.6-3.4x MPFR to 0.7-1.5x |
 
 ## 9. Open work
 
