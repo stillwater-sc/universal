@@ -9,6 +9,8 @@
 //     and exact cubes, roots of 2 and 4 limbs (where the root without its remainder can lie a
 //     unit or two high), three arguments found by search whose root lies just below a rounding
 //     boundary, and short arguments, whose exactness a shorter root decides.
+//   - sqrt next to squares (#1810): s^2 and s^2 +- an ulp, whose root without its remainder lands
+//     on the rounding boundary s, so that only the exact fallback rounds them right.
 //   - fma: x y + z formed exactly at a width that holds it, rounded once. Since #1802 fma and
 //     hypot form their results on limbs; besides random arguments, the alignments of z that the
 //     fma kernel tells apart (below, overlapping, above the product, either side of the gap where
@@ -293,6 +295,64 @@ namespace {
 				want.set_precision(result_precision);
 				if (!same(fma(xs, ys, z), want)) {
 					if (reportTestCases && failures < 8) std::cout << "    FAIL: fma(" << double(x) << ", " << double(y) << ", " << double(z) << ") at " << P << " bits, mode " << int(mode) << '\n';
+					++failures;
+				}
+			}
+		}
+		efloat_rounding_mode = saved;
+		return failures;
+	}
+
+	// sqrt of x = s^2 and of its neighbours s^2 +- an ulp at P bits, s of up to P / 2 bits (#1810): the
+	// root without its remainder lands on s, a rounding boundary, while the exact root lies a
+	// hair above or below it, so only the fallback to the exact root rounds s^2 - ulp right
+	// toward zero and -inf; s^2 itself must come out exact, with no Inexact flag. Odd and even
+	// exponents, in every mode, checked by bracketing as cbrt and hypot are.
+	template<unsigned nlimbs>
+	int VerifySqrtNearSquares(bool reportTestCases, unsigned P, int count) {
+		using namespace sw::universal;
+		using E = efloat<nlimbs>;
+		int failures = 0;
+		const RoundingMode saved = efloat_rounding_mode;
+		std::mt19937_64 rng(1810);
+		for (int i = 0; i < count; ++i) {
+			efloat_rounding_mode = RoundingMode::RoundToNearest;
+			// s of 32 floor(P / 64) bits: precisions are whole 32-bit limbs, so s^2 fits P bits
+			const E r = full_width<nlimbs>(rng, 32u * std::max(1u, P / 64), static_cast<int64_t>(rng() % 41) - 20);
+			E x = exact_pow(r, 2);
+			x.set_precision(P);   // exact: s has P / 2 bits
+			const int which = i % 3;   // s^2, s^2 - ulp, s^2 + ulp
+			if (which != 0) {
+				E ulp(1);
+				ulp.setexponent(x.scale() - static_cast<int64_t>(P) + 1);
+				x = (which == 1) ? x - ulp : x + ulp;
+				x.set_precision(P);
+			}
+			for (RoundingMode mode : all_modes) {
+				efloat_rounding_mode = mode;
+				clear_efloat_exceptions();
+				const E root = sqrt(x);
+				const bool inexact = has_efloat_exception(ExceptionFlag::Inexact);
+				const bool exact_ok = (which == 0) ? (!inexact && root == r) : inexact;
+				if (root.get_precision() != P || !brackets_root(root, x, 2, mode) || !exact_ok) {
+					if (reportTestCases && failures < 8) std::cout << "    FAIL: sqrt next to the square of a " << 32u * std::max(1u, P / 64) << "-bit root at " << P << " bits, case " << which << ", mode " << int(mode) << '\n';
+					++failures;
+				}
+			}
+		}
+		// sqrt_to at a request that is not a multiple of 32 bits rounds at whole limbs, as sqrt of
+		// an argument of that limb count does: the root carries the guard bit past them (#1810)
+		for (int i = 0; i < count; ++i) {
+			efloat_rounding_mode = RoundingMode::RoundToNearest;
+			const unsigned Pr   = 32u * (1u + static_cast<unsigned>(rng() % (P / 32)));
+			const unsigned bits = Pr - static_cast<unsigned>(rng() % 31);   // rounds at Pr
+			const E x = full_width<nlimbs>(rng, Pr, static_cast<int64_t>(rng() % 41) - 20);
+			for (RoundingMode mode : all_modes) {
+				efloat_rounding_mode = mode;
+				const E want = sqrt(x);   // at x's Pr bits
+				const E got  = efloat_detail::sqrt_to(x, bits);
+				if (!(got == want) || got.get_precision() != Pr) {
+					if (reportTestCases && failures < 8) std::cout << "    FAIL: sqrt_to at " << bits << " bits differs from sqrt at " << Pr << ", mode " << int(mode) << '\n';
 					++failures;
 				}
 			}
@@ -676,6 +736,10 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<4>(reportTestCases, 128, 200), "efloat<4>", "hypot frames");
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<3>(reportTestCases, 96, 200), "efloat<3>", "hypot frames");
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<1>(reportTestCases, 32, 200), "efloat<1>", "hypot frames");
+	// roots that land on a rounding boundary without their remainder (#1810)
+	nrOfFailedTestCases += ReportTestResult(VerifySqrtNearSquares<4>(reportTestCases, 128, 300), "efloat<4>", "sqrt next to squares");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrtNearSquares<3>(reportTestCases, 96, 300), "efloat<3>", "sqrt next to squares");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrtNearSquares<64>(reportTestCases, 2048, 60), "efloat<64>", "sqrt next to squares");
 #	endif
 
 #	if REGRESSION_LEVEL_2
@@ -687,6 +751,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFmaAlignments<5>(reportTestCases, 160, 100), "efloat<5>", "fma alignments");
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<16>(reportTestCases, 512, 60), "efloat<16>", "hypot frames");
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<5>(reportTestCases, 160, 60), "efloat<5>", "hypot frames");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrtNearSquares<16>(reportTestCases, 512, 300), "efloat<16>", "sqrt next to squares");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrtNearSquares<256>(reportTestCases, 8192, 20), "efloat<256>", "sqrt next to squares");
 #	endif
 
 #	if REGRESSION_LEVEL_3
