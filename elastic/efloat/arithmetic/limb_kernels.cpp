@@ -405,7 +405,8 @@ namespace {
 			efloat_mpn::mul(np.data(), dp.data(), dn, ones.data(), qn, sm.data());
 			std::vector<limb_t> dm1(dp);
 			efloat_mpn::sub_1(dm1.data(), dn, 1u);
-			efloat_mpn::add_n(np.data(), np.data(), dm1.data(), dn);   // no carry past nn: N < D B^qn
+			const limb_t carry = efloat_mpn::add_n(np.data(), np.data(), dm1.data(), dn);
+			efloat_mpn::add_1(np.data() + dn, nn - dn, carry);   // N < D B^qn: nothing carries past nn
 			np2 = np;
 			q[qn]  = efloat_mpn::div_qr(q.data(), np.data(), nn, dp.data(), dn, sc.data());
 			q2[qn] = efloat_mpn::div_appr(q2.data(), np2.data(), nn, dp.data(), dn, sc.data());

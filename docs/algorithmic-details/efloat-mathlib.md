@@ -765,8 +765,8 @@ Read the ratio column as the work left on Epic #1763.
   #1785's, flags and carried precision included, over 1.1 million old-vs-new results in every
   mode. (#1785 had made both exact: before it, `fma` rounded twice and was wrong in 29% of the
   cases.)
-- **The primitives set the floor:** `a*b`, `b/a` and `sqrt` run 1.5-2.3x MPFR, and every
-  function built on them inherits that.
+- **The primitives set the floor:** `a*b`, `b/a` and `a/7` run 1.5-2.2x MPFR (`sqrt` 1.0-1.2x
+  since #1810), and every function built on them inherits that.
 - **pow(x, n)** (#1804): `pow(b, 7)` 1.1-5.1x faster, from 3.4/2.8/1.9/1.6x MPFR to
   0.7/1.0/1.3/1.5x; `pow(b, -7)` from 2.6/2.2/2.2/2.1x to 0.5/0.8/1.6/1.9x. Results are
   bit-identical to before, flags and carried precision included, over 1.44 million old-vs-new
