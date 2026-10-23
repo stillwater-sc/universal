@@ -28,8 +28,8 @@ namespace sw { namespace universal { namespace efloat_mpn {
 using limb_t = std::uint64_t;
 
 // operands of at least this many limbs multiply by Karatsuba, below it by schoolbook
-inline constexpr std::size_t karatsuba_threshold = 24;
-inline constexpr std::size_t karatsuba_sqr_threshold = 32;
+inline constexpr std::size_t karatsuba_threshold = 16;
+inline constexpr std::size_t karatsuba_sqr_threshold = 48;
 
 // r[0, n) = a[0, n) * b, returns the high limb
 inline limb_t mul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
@@ -232,6 +232,117 @@ inline void mul(limb_t* r, const limb_t* a, std::size_t m, const limb_t* b, std:
 	}
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Short products (#1807): the high half of a product, for a result rounded to about the operands'
+// length, as MPFR's mpfr_mulhigh_n. R = r[n - 1, 2n) is formed from every partial product a_i b_j
+// with i + j >= n - 1, and from some below it, each one exactly, so R B^(n - 1) <= a b and it
+// misses only the a_i b_j with i + j <= n - 2: (s + 1) of them, each below B^(s + 2), at each
+// s = i + j, which sum to below (n - 1) B^n B / (B - 1). Hence
+//     0 <= a b - R B^(n - 1) < n B^n,
+// n units of r[n]. The basecase forms the n (n + 1) / 2 partial products on or above the
+// diagonal, about half a product; above mulhigh_threshold, Mulders' recursion (Mulders, On short
+// multiplications and divisions, AAECC 11(1), 2000) forms the top k = 6n / 10 limbs' product in
+// full by Karatsuba and the two cross terms by short products of the other l = n - k limbs: the
+// partial products it adds are again all those with i + j >= n - 1 and some below.
+
+inline constexpr std::size_t mulhigh_threshold = 32;   // and k = 6n / 10: both by measurement
+
+// r[n - 1, 2n) = R as above, r[0, n - 1) is overwritten; r overlaps neither operand
+inline void mulhigh_basecase(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+	for (std::size_t i = n - 1; i < 2 * n; ++i) r[i] = 0;
+	// a_i times b[n - 1 - i, n): its partial products from i + j = n - 1 up, all aligned at r[n - 1]
+	for (std::size_t i = 0; i < n; ++i) r[n + i] = addmul_1(r + n - 1, b + n - 1 - i, i + 1, a[i]);
+}
+
+// r[n - 1, 2n) = R as above for a[0, n) b[0, n), or a^2 when square; r[0, n - 1) is overwritten,
+// r overlaps neither operand, s holds scratch_limbs(n) limbs
+inline void mulhigh_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept {
+	if (n < mulhigh_threshold) {
+		mulhigh_basecase(r, a, b, n);
+		return;
+	}
+	const std::size_t k = (6 * n + 9) / 10;   // 2l <= n - 1: the top product covers r[n - 1]
+	const std::size_t l = n - k;
+	mul_n(r + 2 * l, a + l, b + l, k, s, square);   // the top limbs' product, in r[2l, 2n)
+	for (std::size_t i = n - 1; i < 2 * l; ++i) r[i] = 0;
+	// the cross terms a[k, n) b[0, l) and a[0, l) b[k, n): their limbs from l - 1 up land on r[n - 1]
+	limb_t* t = s;
+	limb_t* u = s + 2 * l;
+	mulhigh_n(t, a + k, b, l, u, false);
+	limb_t carry = add_n(r + n - 1, r + n - 1, t + l - 1, l + 1);
+	add_1(r + n + l, n - l, carry);
+	if (!square) mulhigh_n(t, a, b + k, l, u, false);   // a square's two cross terms are one
+	carry = add_n(r + n - 1, r + n - 1, t + l - 1, l + 1);
+	add_1(r + n + l, n - l, carry);
+}
+
+// The fixed-point engines' truncated product (#1807): out[0, na + nb - drop) = T with
+//     a b / B^drop - 2 < T <= floor(a b / B^drop),
+// within 2 units of its last limb where the exact floor is within 1. From truncated_min_limbs
+// up, both operands are padded with zero limbs at the bottom to n = max(na, nb, na + nb + 1 -
+// drop) limbs, so that the limbs kept start at L = drop + 2n - na - nb >= n + 1 of the padded
+// product: mulhigh_n's R is below it by less than n B^n < B^L, one unit of T's last limb. Below
+// truncated_min_limbs the product is formed in full. drop <= na + nb; s holds
+// truncated_scratch_limbs(na, nb, drop) limbs and overlaps neither operand nor out.
+inline constexpr std::size_t truncated_min_limbs = 16;
+
+constexpr std::size_t truncated_width(std::size_t na, std::size_t nb, std::size_t drop) noexcept {
+	std::size_t n = (na > nb) ? na : nb;
+	if (na + nb + 1 > drop + n) n = na + nb + 1 - drop;
+	return n;
+}
+
+constexpr std::size_t truncated_scratch_limbs(std::size_t na, std::size_t nb, std::size_t drop) noexcept {
+	const std::size_t n = truncated_width(na, nb, drop);
+	return 4 * n + scratch_limbs(n);
+}
+
+inline void mul_truncated(limb_t* out, const limb_t* a, std::size_t na, const limb_t* b, std::size_t nb, std::size_t drop, limb_t* s) noexcept {
+	const bool square = (a == b && na == nb);
+	const std::size_t len = na + nb - drop;
+	if (na < truncated_min_limbs || nb < truncated_min_limbs) {
+		limb_t* p = s;
+		if (square) mul_n(p, a, a, na, p + na + nb, true);
+		else        mul(p, a, na, b, nb, p + na + nb);
+		for (std::size_t i = 0; i < len; ++i) out[i] = p[drop + i];
+		return;
+	}
+	const std::size_t n  = truncated_width(na, nb, drop);
+	limb_t* pa = s;
+	limb_t* pb = pa + n;
+	limb_t* r  = pb + n;
+	for (std::size_t i = 0; i < n - na; ++i) pa[i] = 0u;
+	for (std::size_t i = 0; i < na; ++i) pa[n - na + i] = a[i];
+	if (!square) {
+		for (std::size_t i = 0; i < n - nb; ++i) pb[i] = 0u;
+		for (std::size_t i = 0; i < nb; ++i) pb[n - nb + i] = b[i];
+	}
+	mulhigh_n(r, pa, square ? pa : pb, n, r + 2 * n, square);
+	const std::size_t L = drop + 2 * n - na - nb;
+	for (std::size_t i = 0; i < len; ++i) out[i] = r[L + i];
+}
+
+// Ziv's test on limbs (#1763, #1807): whether a nonzero value a[0, n), within 2^(scale - correct)
+// of the exact result, has bits from position precision + 1 to correct - 2, counting its leading
+// bit as 0, that are neither all 0 nor all 1. The rounding boundaries at `precision` bits, the
+// representable values and the midpoints, are the values whose bits past position precision are
+// all 0, so then both the value and the exact result lie on one side of each of them.
+inline bool can_round(const limb_t* a, std::size_t n, unsigned precision, unsigned correct) noexcept {
+	if (correct < precision + 4) return false;
+	while (n > 0 && a[n - 1] == 0u) --n;
+	if (n == 0) return false;
+	const std::int64_t lead = 64 * static_cast<std::int64_t>(n) - 1 - std::countl_zero(a[n - 1]);   // the leading bit's index
+	auto bit = [a, lead](unsigned p) -> unsigned {
+		const std::int64_t q = lead - static_cast<std::int64_t>(p);
+		return (q < 0) ? 0u : static_cast<unsigned>((a[q / 64] >> (q % 64)) & 1u);
+	};
+	const unsigned first = bit(precision + 1);
+	for (unsigned p = precision + 2; p <= correct - 2; ++p) {
+		if (bit(p) != first) return true;
+	}
+	return false;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Division (#1763).  The divisor is normalized, its top bit set.  Each quotient limb comes from

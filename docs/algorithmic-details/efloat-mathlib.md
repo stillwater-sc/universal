@@ -107,7 +107,7 @@ round the exact result once into the destination (`assign_rounded`), with no all
 | operation | algorithm | thresholds | PR |
 |---|---|---|---|
 | `+` `-` | aligned sum in a stack frame, two guard limbs plus a sticky bit; in-place `+=` | | #1758, #1766, #1767 |
-| `*` | 64x64->128 schoolbook, dedicated squaring (`x * x`), subtractive Karatsuba, blocks for unbalanced operands | `karatsuba_threshold = 24`, `karatsuba_sqr_threshold = 32` limbs | #1767 |
+| `*` | 64x64->128 schoolbook, dedicated squaring (`x * x`), subtractive Karatsuba, blocks for unbalanced operands; from 16 limbs a short product of the high half first, rounded from when Ziv's test passes on it, the full product otherwise | `karatsuba_threshold = 16`, `karatsuba_sqr_threshold = 48`, `mulhigh_threshold = 32` limbs; `mulhigh_min_limbs = 16` | #1767, #1807 |
 | `/` | exact quotient: schoolbook with the Moller-Granlund 3-by-2 reciprocal, Burnikel-Ziegler divide and conquer (GMP's `dcpi1_div_qr`) above the threshold; remainder becomes the sticky bit | `dc_div_threshold = 16` limbs | #1741, #1769 |
 | `/ int` | one-limb divisor, Moller-Granlund 2-by-1 reciprocal, in place | | #1766 |
 | `sqrt` | exact integer root and remainder by Zimmermann's Karatsuba square root (GMP's `mpn_sqrtrem`), remainder as sticky bit | | #1770 |
@@ -137,6 +137,31 @@ round the exact result once into the destination (`assign_rounded`), with no all
 - Storage stays 32-bit and most significant first: `bits()`, `setlimb()`, the math library and
   ereal read `_limb` directly, so #1767 changed only the kernels (#1762 steps 2-3 not done).
 - Zero signs were wrong in `*`, `/` and exact cancellation until #1773 (#1768).
+- **Short products** (#1807). `efloat_mpn::mulhigh_n` forms every partial product `a_i b_j`
+  with `i + j >= n - 1`, and some below, each exactly, so its high part `R = r[n - 1, 2n)`
+  satisfies `0 <= a b - R B^(n-1) < n B^n`: the missing partial products, `s + 1` of them
+  below `B^(s+2)` at each `s <= n - 2`, sum to under `(n - 1) B^n B / (B - 1)`. Below 32 limbs
+  the basecase forms the `n (n + 1) / 2` products on and above the diagonal; above, Mulders'
+  recursion (AAECC 2000) forms the top `0.6 n` limbs' product in full and the two cross terms
+  by short products. Both thresholds and the split were measured. From 16 limbs it costs
+  0.63-0.75 of the full product, and 0.59-0.65 of a square from 32 limbs (0.8 between 16 and 31,
+  where the squaring basecase already skips half its products).
+  - `*` pads each operand of `m >= 16` limbs with a zero limb below, so `n = m + 1` and `R` is
+    right to `64 m + 62 - bit_width(n)` bits, about 55 past a product rounded to the operands'
+    length. Ziv's test on the limbs (`efloat_mpn::can_round`) then decides between rounding
+    from `R` and forming the full product. All-ones operands, whose exact product lies one unit
+    above a representable value while `R` lies below it, take the full product.
+  - `efloat_mpn::mul_truncated` gives the fixed-point engines `floor(a b / B^drop)` or one unit
+    below it, padding the operands so that the short product's error is under one unit of the
+    last limb kept. The series' powers and Horner products, exp's squarings and the versine's
+    first product and doublings use it from 16 limbs; each such product now counts as two
+    truncations in the engines' error budgets (sections 4.1, 4.3, 4.2), which stay inside their
+    stated bounds. Below 16 limbs they keep the exact floor, by the same code as before.
+  - Karatsuba from 16 limbs instead of 24 was 3-5% faster at 20 to 129 limbs, and the squaring
+    basecase up to 48 limbs instead of 32 7% faster at 129. An `addmul_2` basecase, two rows a
+    pass, was measured and dropped: the compiler already schedules the one-row loop as well.
+  - What remains of `a*b`'s gap at 2048 and 8192 bits is the kernel's: `mul_n` runs 1.4-1.5x
+    `mpn_mul_n`, whose basecase is assembly; the division kernel is level with GMP's (0.8-1.2x).
 
 ## 4. The functions
 

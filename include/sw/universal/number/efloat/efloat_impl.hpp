@@ -898,6 +898,13 @@ protected:
 	// squared.  The significands are packed into 64-bit limbs, least significant first, an odd
 	// count padded with a zero limb at the bottom, multiplied by efloat_mpn (schoolbook below
 	// its Karatsuba threshold), and the exact product is rounded into _limb once (#1762).
+	// Operands of one length from mulhigh_min_limbs up first try the product's high half
+	// (#1807): with a zero limb below each, n = m + 1 limbs, efloat_mpn::mulhigh_n leaves
+	// R = r[n - 1, 2n) below the exact high part by under n units of r[n], 2^(64 + bit_width(n))
+	// units of R's last bit, so R is right to 64 m + 62 - bit_width(n) bits, about 55 past a
+	// product rounded to the operands' length. Where Ziv's test passes on R, it rounds from R
+	// as from the exact product; where it does not, the exact product decides, as before.
+	static constexpr size_t mulhigh_min_limbs = 16;   // by measurement: below, the padded short product does not pay
 	void multiply_magnitude(const uint32_t* b, size_t nb, int64_t eb, bool b_sign) {
 		using efloat_mpn::limb_t;
 		const uint32_t* a      = _limb.data();
@@ -906,11 +913,6 @@ protected:
 		const size_t    ma     = (na + 1) / 2;
 		const size_t    mb     = (nb + 1) / 2;
 		const size_t    mt     = ma + mb;
-		scratch64 buffer;
-		limb_t* pa   = buffer.get(ma + mb + mt + efloat_mpn::scratch_limbs(std::max(ma, mb)));
-		limb_t* pb   = pa + ma;
-		limb_t* prod = pb + mb;
-		limb_t* work = prod + mt;
 		auto pack = [](limb_t* p, const uint32_t* v, size_t n) {
 			const size_t m = (n + 1) / 2;
 			for (size_t j = 0; j < m; ++j) {
@@ -920,6 +922,41 @@ protected:
 				p[j] = (limb_t(h) << 32) | l;
 			}
 		};
+		const int64_t top    = _exponent + eb + 1;
+		const size_t  target = precision_limbs();
+		if (ma == mb && ma >= mulhigh_min_limbs && 32 * target + 24 <= 64 * ma + 62 - static_cast<size_t>(std::bit_width(ma + 1))) {
+			const size_t n = ma + 1;
+			scratch64 high;
+			limb_t* qa = high.get(4 * n + efloat_mpn::scratch_limbs(n));
+			limb_t* qb = qa + n;
+			limb_t* r  = qb + n;
+			qa[0] = 0u;
+			pack(qa + 1, a, na);
+			if (!square) {
+				qb[0] = 0u;
+				pack(qb + 1, b, nb);
+			}
+			efloat_mpn::mulhigh_n(r, qa, square ? qa : qb, n, r + 2 * n, square);
+			const limb_t*  f       = r + n - 1;   // R, n + 1 limbs; its top bit weighs 2^top
+			const unsigned lead    = static_cast<unsigned>(64 * (n + 1) - 1 - static_cast<size_t>(std::countl_zero(f[n])));
+			const unsigned correct = lead - 64u - static_cast<unsigned>(std::bit_width(n));
+			if (efloat_mpn::can_round(f, n + 1, static_cast<unsigned>(32 * target), correct)) {
+				_sign = (_sign != b_sign);
+				// R's 32-bit limbs, most significant first, then a sticky limb: the exact product
+				// lies past R, and Ziv's test says on which side of every boundary
+				assign_rounded([f, n](size_t i) -> uint32_t {
+					if (i >= 2 * (n + 1)) return 1u;
+					const limb_t w = f[n - i / 2];
+					return (i & 1u) ? static_cast<uint32_t>(w) : static_cast<uint32_t>(w >> 32);
+				}, 2 * (n + 1) + 1, top);
+				return;
+			}
+		}
+		scratch64 buffer;
+		limb_t* pa   = buffer.get(ma + mb + mt + efloat_mpn::scratch_limbs(std::max(ma, mb)));
+		limb_t* pb   = pa + ma;
+		limb_t* prod = pb + mb;
+		limb_t* work = prod + mt;
 		pack(pa, a, na);
 		if (square) {
 			efloat_mpn::mul_n(prod, pa, pa, ma, work, true);
@@ -928,7 +965,6 @@ protected:
 			pack(pb, b, nb);
 			efloat_mpn::mul(prod, pa, ma, pb, mb, work);
 		}
-		const int64_t top = _exponent + eb + 1;
 		_sign = (_sign != b_sign);
 		// the product's 32-bit limbs, most significant first: its first na + nb hold a * b, and
 		// any padding limbs after them are zero
