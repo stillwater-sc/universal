@@ -93,8 +93,8 @@ machine where they were written.
   `include/`, and no link dependency in Universal's CMake package.
 - Keep programs that call MPFR optional, built only when MPFR is found, and outside the
   installed and released artifacts.
-- If a binary that links MPFR or GMP is ever distributed, it is a "Combined Work" under section 4
-  of the LGPL-3.0, and each copy must:
+- If a binary that links MPFR, or GMP under GMP's LGPL-3.0-or-later option, is ever distributed,
+  it is a "Combined Work" under section 4 of the LGPL-3.0, and each copy must:
   - carry a prominent notice that MPFR (and GMP) are used in it and are covered by the LGPL;
   - come with copies of the GNU GPL-3.0 and the LGPL-3.0;
   - if it displays copyright notices when it runs, include MPFR's and GMP's among them, with a
@@ -106,3 +106,7 @@ machine where they were written.
 
   Reject a distribution build that links either library statically unless the relinking material
   ships with it.
+- A distributor may instead take GMP under its GPL-2.0-or-later option. The selected GPL's
+  notice and corresponding-source terms then apply to the whole binary, which is then a GPL
+  work, and its compatibility with MPFR's LGPL-3.0-or-later must be checked. Universal itself
+  takes neither option: it distributes no such binary.
