@@ -39,7 +39,8 @@ set_target_properties(benchmark_takum_takum16_fast PROPERTIES FOLDER "Benchmarks
 add_test(NAME benchmark_takum_takum16_fast COMMAND benchmark_takum_takum16_fast)
 
 # efloat against MPFR called from C++ (#1763): MPFR is a dependency of this benchmark only, so it
-# is built when mpfr.h, libmpfr and libgmp are found on a native build, and skipped otherwise
+# is built when mpfr.h, libmpfr and libgmp are found on a native build, and skipped otherwise.
+# MPFR is LGPL-3.0-or-later: see docs/licensing/mpfr-gmp-lgpl.md.
 if(NOT CMAKE_CROSSCOMPILING)
   find_path(UNIVERSAL_MPFR_INCLUDE_DIR mpfr.h)
   find_library(UNIVERSAL_MPFR_LIBRARY mpfr)
