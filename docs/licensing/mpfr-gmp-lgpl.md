@@ -50,9 +50,10 @@ not installed with Universal and is not needed to build or use it.
 - `cmake --install` installs the headers, the CMake package files and the tools under `tools/`;
   no benchmark has an install rule.
 
-Someone who builds the two programs themselves links the shared libmpfr and libgmp of their own
-system. If such a binary were ever distributed, the LGPL notice would have to go with it, and
-the dynamic linking already provides for a modified library.
+Someone who builds the two programs themselves links whatever libmpfr and libgmp `find_library`
+finds on their system: usually the shared libraries, but static archives where only those are
+installed. Building them for one's own use carries no obligation. Distributing such a binary
+does: see the checklist below, and check the final linkage first (`ldd`, or the linker's map).
 
 **Constants and reference values.** `ereal_constants.hpp` says its constants were generated
 offline with MPFR; its generator, `tools/generators/ereal_reference_gen.py`, uses mpmath. Either
@@ -92,5 +93,16 @@ machine where they were written.
   `include/`, and no link dependency in Universal's CMake package.
 - Keep programs that call MPFR optional, built only when MPFR is found, and outside the
   installed and released artifacts.
-- If a binary that links MPFR or GMP is ever distributed, ship the LGPL-3.0 notice with it and
-  link the libraries dynamically.
+- If a binary that links MPFR or GMP is ever distributed, it is a "Combined Work" under section 4
+  of the LGPL-3.0, and each copy must:
+  - carry a prominent notice that MPFR (and GMP) are used in it and are covered by the LGPL;
+  - come with copies of the GNU GPL-3.0 and the LGPL-3.0;
+  - if it displays copyright notices when it runs, include MPFR's and GMP's among them, with a
+    reference to those license copies;
+  - let the recipient use a modified MPFR or GMP: link them as shared libraries already present
+    on the user's system (the simple way), or ship the object code needed to relink; a static
+    link without that is not allowed;
+  - for a "User Product", also provide the installation information that section 4 e) requires.
+
+  Reject a distribution build that links either library statically unless the relinking material
+  ships with it.
