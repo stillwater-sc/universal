@@ -150,7 +150,7 @@ round the exact result once into the destination (`assign_rounded`), with no all
 | `sinh` ... `atanh` | `expm1` and `log1p` forms that do not cancel | 24 | hyperbolic.hpp |
 | `pow(x, y)` | `exp(y log x)`, `log x` widened by the magnitude of `y log x`; exact powers outright | 24 | pow.hpp |
 | `pow(x, n)` | binary powering with `bit_width(n)` extra bits | 8 | pow.hpp |
-| `tgamma`, `lgamma` | Stirling series after shifting `x` up past `0.3 W`; reflection below 0; exact `(n-1)!` | 22 | error_and_gamma.hpp |
+| `tgamma`, `lgamma` | Stirling series after shifting `x` up past `0.15 W`, by a tapered Horner scheme; the shift's factors multiplied in groups; reflection below 0; working precision predicted; exact `(n-1)!` | 22 | error_and_gamma.hpp |
 | `erf`, `erfc` | positive-term series `2/sqrt(pi) e^{-x^2} sum t_n`; asymptotic series for large `x`; `1 - erf` with the cancelled bits added | 0 (32 guard bits) | error_and_gamma.hpp |
 | `cbrt` | Newton from a double seed, precision doubling each step; exact cubes found and rounded once | 8 | sqrt.hpp |
 | `hypot` | exact squares, exact sum (or a proxy that rounds alike), one exact root | exact | hypot.hpp |
@@ -368,22 +368,37 @@ with `|x|` a perfect `2^k`-th power (a mod-8 filter rejects most non-squares). `
 uses binary powering with guard bits; before #1774 it was off by up to 32 ulps from repeated
 rounded products.
 
-### 4.6 tgamma, lgamma (#1779)
+### 4.6 tgamma, lgamma (#1779, #1797)
 
-- Stirling's series (DLMF 5.11.1) after shifting `x` up to `z >= 0.3 W`
+- Stirling's series (DLMF 5.11.1) after shifting `x` up to `z >= 0.15 W`
   (`gamma_shift_per_bit`): `lgamma x = lgamma(x + N) - log(x (x+1) ... (x+N-1))`. The remainder
-  is bounded by the first omitted term (DLMF 5.11(ii)).
+  is bounded by the first omitted term (DLMF 5.11(ii)). The series' smallest term lies about
+  `9.06 z` bits down, so `z0 = 0.11 W` already reaches `2^-W`; 0.15 was measured by sweep
+  (#1797): 0.3 spends shift factors where Stirling terms are now cheaper, and 0.12 adds terms.
 - The coefficients `B_2k / (2k(2k-1))` come from the Brent-Harvey tangent-number recurrence
   (*Modern Computer Arithmetic* 4.7.2): positive additions and small-integer products, cached
   per thread.
-- Below 0, reflection with `n = round(x)` and `f = x - n`, which is exact. Near the zeros of
-  lgamma at 1 and 2, and near the poles, the working precision is raised by the cancellation.
-- `tgamma = sign * exp(lgamma)`, with lgamma to absolute accuracy; `(n-1)!` is exact while it
-  fits twice the result's width.
-- Before: `std::tgamma(double(x))`, 53 bits at most, inf past 171.6.
-- **Open.** `lgamma` near 1 at 8192 bits is 7.5x slower than MPFR, because the cancellation is
-  only discovered by a first pass. Estimating it up front from `|x - 1|` and `|x - 2|` is the
-  fix.
+- The series is summed by Horner's scheme in `1/z^2` (`stirling_sum`, #1797), one product a
+  term. Term `k` lies `d_k` bits below the first, so its partial sum is formed at
+  `W - d_k + 16` bits, tapered as exp's series is (#1754).
+- The shift's product (`shift_product`, #1797) multiplies its factors in groups of up to 8:
+  `(x + j0) ... (x + j0 + g - 1)` is the polynomial `sum e_i x^i` with natural coefficients
+  below `2^62`, from `x^2 .. x^8` computed once, so a group costs `g` products by a 64-bit
+  integer and one full product. Groups shorten from about 2048 bits, where the coefficients
+  reach `2^62`.
+- Below 0, reflection with `n = round(x)` and `f = x - n`, which is exact.
+- The working precision is predicted before the first pass (`lgamma_precision`, #1797): `E`,
+  the scale of the largest part (`(z - 1/2) log z`, the log of the shift's product, the log of
+  the reflection's sine), less the scale of `lgamma x`, both estimated in double. Near the
+  zeros at 1 and 2 the estimate comes from `|x - 1|` and `|x - 2|`, which a double would lose.
+  The shift alone cancels about `log2 z0` bits, 11 at 8192 bits, more than the 8 spare bits
+  #1779 started with, so every argument used to take a second pass at twice the width. A pass
+  that still falls short, next to the zeros below 0 where `std::lgamma` is no guide, is
+  repeated with the shortfall added rather than at twice the width.
+- `tgamma = sign * exp(lgamma)`, with lgamma to absolute accuracy, at `needed + E` bits, also
+  predicted (`tgamma_precision`); `(n-1)!` is exact while it fits twice the result's width.
+  The coarse lgamma pass that judges exp's range runs only for `|x| >= 2^50` or tiny `x`.
+- Before #1779: `std::tgamma(double(x))`, 53 bits at most, inf past 171.6.
 
 ### 4.7 erf, erfc (#1781)
 
@@ -537,7 +552,8 @@ efloat returns +0 with Underflow.
 ## 7. Measured speed
 
 `mpfr_gap`, best of three, warm caches, microseconds per call, round to nearest.
-Measured 2026-10-22 with #1795 (the fixed-point log series) on top of main at 4a4e692b, Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`,
+Measured 2026-10-22 with #1795 (the fixed-point log series) on top of main at 4a4e692b, and the `tgamma` and `lgamma` rows
+with #1797 on top of main at cbeb5b46, Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`,
 MPFR 4.2.2, GMP 6.3.0; `a = 0.718...`, `b = 1.414...`, `x = 1 + a`. Each cell is
 efloat / MPFR in microseconds, then the ratio.
 
@@ -574,8 +590,8 @@ efloat / MPFR in microseconds, then the ratio.
 | `atanh(a)` | 1.073 / 1.393 | 0.8x | 1.903 / 3.496 | 0.5x | 11.74 / 15.37 | 0.8x | 158.6 / 128.6 | 1.2x |
 | `pow(b,a)` | 1.660 / 2.210 | 0.8x | 3.355 / 5.955 | 0.6x | 23.51 / 31.63 | 0.7x | 341.0 / 316.4 | 1.1x |
 | `pow(b,7)` | 0.378 / 0.104 | 3.6x | 0.522 / 0.189 | 2.8x | 2.338 / 1.259 | 1.9x | 18.15 / 11.19 | 1.6x |
-| `tgamma(b)` | 28.08 / 7.163 | 3.9x | 98.18 / 32.78 | 3.0x | 1626 / 361.6 | 4.5x | 46237 / 7358 | 6.3x |
-| `lgamma(b)` | 37.17 / 7.458 | 5.0x | 188.8 / 33.47 | 5.6x | 4235 / 754.9 | 5.6x | 132489 / 7229 | 18.3x |
+| `tgamma(b)` | 10.26 / 7.183 | 1.4x | 30.30 / 32.74 | 0.9x | 250.0 / 362.7 | 0.7x | 4743 / 7354 | 0.6x |
+| `lgamma(b)` | 10.00 / 7.518 | 1.3x | 28.81 / 33.61 | 0.9x | 231.6 / 757.6 | 0.3x | 4532 / 7229 | 0.6x |
 | `erf(a)` | 4.985 / 2.909 | 1.7x | 15.38 / 15.71 | 1.0x | 146.9 / 171.1 | 0.9x | 2747 / 2995 | 0.9x |
 | `erfc(a)` | 4.920 / 3.175 | 1.5x | 15.83 / 16.23 | 1.0x | 148.0 / 174.0 | 0.9x | 2747 / 3002 | 0.9x |
 
@@ -592,8 +608,7 @@ Read the ratio column as the work left on Epic #1763.
   - the log family (#1795) up to 2048 bits: `log`, `log2`, `log1p`, `asinh`, `acosh`, `atanh`
     and `pow(b, a)` at 0.5-0.9x, `log10` at 0.3-0.4x.
 - **exp family** (#1788, #1790): 1.1-1.2x at 8192 bits, against 2.3-3.3x before #1788.
-  `erf`, `erfc` gained 10-25% and `tgamma` 1-7% through their exp calls. `tgamma`'s time is
-  mostly `lgamma`'s series, so it stays at 3-6x.
+  `erf`, `erfc` gained 10-25% and `tgamma` 1-7% through their exp calls.
 - **sin, cos, tan** (#1790): 1.1-1.2x at 8192 bits, against 2.1-3.3x at 128 bits and 1.5x at
   8192 before.
 - **atan, asin, acos, atan2** (#1792): 2-3x faster than before, which was 0.9-1.7x up to 2048
@@ -607,17 +622,21 @@ Read the ratio column as the work left on Epic #1763.
   0.2-1.3x at 8192. Two exceptions at 128 bits: `log1p(1e-6)` at 2.1x (its own series, 3.1x
   before) and `log(1 + 2^-200)`, which rounds to `log 1` there, at 5.6x on both. `lgamma` and
   `tgamma` gained 5-11% below 8192 bits through their log calls.
+- **tgamma, lgamma** (#1797): 2.6-29x faster, from 3.0-6.3x and 4.8-18.3x MPFR to 0.3-1.4x. The
+  second pass at twice the width that every argument took was most of the time (112 of 136 ms
+  at 8192 bits); the working precision is now predicted. The tapered Horner sum, the grouped
+  shift product and the shorter shift (`0.15 W`) did the rest. Over `1 +- 2^-k`, `2 +- 2^-k`,
+  `1.3e-6`, `1.3e6`, `1.3e100`, `-3 + 2^-30`, `-2.71`, `1000` and `30.5` they run 0.02-1.5x MPFR
+  (were 0.04-18x); the one row above that, `lgamma(2 - 2^-200)` at 128 bits (2.4x, 2.3x
+  before), is `lgamma 2 = 0` after rounding, under a microsecond on both.
 - **cbrt, hypot, fma** (remeasured after #1783): `cbrt` 2.5-3.3x (was 6-33x), `hypot`
   2.1-2.5x, `fma` 1.7-4.1x. `fma` is slower than before at small precisions (0.12 us at 128 bits
   against 0.045): it now forms the exact product and sum, where it used to round twice and was
   wrong in 29% of the cases.
 - **The primitives set the floor:** `a*b`, `b/a` and `sqrt` run 1.5-2.3x MPFR, and every
   function built on them inherits that.
-- **Largest gaps:** `lgamma(1.414...)` at
-  8192 bits (18x; on #1779's random arguments it was 2.1-7.5x, and the cost #1779 identified
-  is the second, wider pass that cancellation near the zeros at 1 and 2 forces; this argument
-  has not been profiled), `tgamma` (4-6x), `fma` and `pow(b, 7)` at 128 bits (4.2x, 3.6x), and
-  `cbrt` (2.6-3.3x).
+- **Largest gaps:** `fma` and `pow(b, 7)` at 128 bits (4.2x, 3.6x), `cbrt` (2.6-3.3x), and the
+  primitives.
 
 **Benchmark hygiene.** Single runs of the mpmath comparison vary by 15-50%; compare branches
 with best-of-5 runs on an idle machine. Warm the caches first. The first-call cost of a new
@@ -660,6 +679,7 @@ row both ways before reading it as a cost.
 | #1791 | 2026-10-22 | sin/cos/tan versine on the fixed-point engine; tapered blocks (exp at 8192 bits 1.6x to 1.1x) |
 | #1794 | 2026-10-22 | atan/asin/acos/atan2 series in fixed point, fewer halvings: 0.9-3.1x MPFR to 0.4-1.1x |
 | #1796 | 2026-10-23 | log's atanh series in fixed point, AGM from 45000 bits instead of 1440: log family 1.0-2.5x MPFR to 0.3-1.2x |
+| #1799 | 2026-10-23 | lgamma, tgamma: working precision predicted, tapered Stirling sum, grouped shift product: 3.0-18.3x MPFR to 0.3-1.4x |
 
 ## 9. Open work
 
@@ -670,7 +690,10 @@ cheaper than Newton under Ziv.
 division (`divhigh`); the fixed-point series engine of exp and the versine (#1788, #1790)
 carried over to expm1 (atan done in #1792, log's atanh in #1795); MPFR's bit-burst atan at 8192 bits; a cheap first Ziv try at `p + log2(p)` guard bits instead of 64; binary
 splitting for exp and sin/cos;
-binary-splitting constants; Sasaki-Kanada AGM start; up-front cancellation estimate for lgamma;
+binary-splitting constants; Sasaki-Kanada AGM start; binary splitting for lgamma's shift product;
+a tapered fill of the Bernoulli table (since #1797 the first gamma call at 8192 bits fills 1439
+terms in 1.1 s, against 915 in 0.4 s at the old `0.3 W` shift; the shorter shift saves 1.5 ms
+a warm call, so it pays after about 460 calls in a thread);
 heap-free, least-significant-first storage; Payne-Hanek reduction for huge trig arguments;
 ratio guards in CI beyond the existing division-to-multiply one.
 
