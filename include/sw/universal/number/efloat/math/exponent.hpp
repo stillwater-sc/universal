@@ -388,7 +388,8 @@ namespace efloat_detail {
 		// The series sum_k (+-1)^k s^k / (d(1) d(2) ... d(k)): d(t) = t for exp, and
 		// d(t) = (2t + 1)(2t + 2) for the versine's v / y^2 = (1/2) sum_k (-1)^k z^k 2 / (2k + 2)!
 		// in z = y^2 (#1790). The arctangent's divisors do not chain: its series
-		// atan(y) / y = sum_k (-1)^k z^k / (2k + 1) has its own engine, arctangent_series (#1792).
+		// atan(y) / y = sum_k (-1)^k z^k / (2k + 1), and atanh(y) / y without the signs, have their
+		// own engine, arctangent_series (#1792, #1795).
 		enum class divisors { exponential, versine, arctangent };
 
 		inline constexpr limb_t divisor(divisors kind, limb_t t) noexcept {
@@ -524,17 +525,20 @@ namespace efloat_detail {
 		}
 
 		// S[0, n + 1) = sum_k (-1)^k z^k / (2k + 1) 2^F, z = Z 2^-F < 2^-a, truncated at each step:
-		// atan(y) / y for z = y^2 (#1792). The divisors do not chain from term to term as exp's do,
-		// so a block of the rectangular splitting is B_i = sum_j (-1)^j P_j / (2(i m + j) + 1),
-		// P_j = z^j, and the Horner step multiplies by (-1)^m P_m alone. A block is summed in
-		// groups whose divisors' product L fits in a limb: each term adds or subtracts P_j L / d_j,
-		// one multiplication by a limb, and the group divides by L once. The terms alternate and
-		// decrease, so every partial sum of a group, of a block and of the Horner scheme has the
-		// sign of its first term and is held as a natural number.
+		// atan(y) / y for z = y^2 (#1792), or, not alternating, sum_k z^k / (2k + 1) = atanh(y) / y
+		// (#1795), for which every sum below is a plain one. The divisors do not chain from term to
+		// term as exp's do, so a block of the rectangular splitting is
+		// B_i = sum_j (-1)^j P_j / (2(i m + j) + 1), P_j = z^j, and the Horner step multiplies by
+		// (-1)^m P_m alone. A block is summed in groups whose divisors' product L fits in a limb:
+		// each term adds or subtracts P_j L / d_j, one multiplication by a limb, and the group
+		// divides by L once. The terms alternate and decrease, so every partial sum of a group, of
+		// a block and of the Horner scheme has the sign of its first term and is held as a natural
+		// number.
 		//
 		// Tapering, as in series: block b enters scaled by z^(b m) < 2^-(b m a), so it is formed on
 		// the top n - q_b limbs, 64 q_b <= b m a - 8, and its truncation stays below 2^-(F + 8).
-		inline void arctangent_series(limb_t* S, const limb_t* Z, std::size_t n, unsigned N, unsigned m, int64_t a) {
+		inline void arctangent_series(limb_t* S, const limb_t* Z, std::size_t n, unsigned N, unsigned m, int64_t a,
+		                              bool alternating = true) {
 			const std::size_t w  = n + 1;
 			const unsigned    nb = (N + m - 1) / m; // blocks
 			limb_t* P   = scratch((m + 1) * w + (2 * w + 2) + 3 * (w + 2) + efloat_mpn::scratch_limbs(w));
@@ -579,7 +583,7 @@ namespace efloat_detail {
 						if (t == 0) {
 							grp[k] = c;                   // P_0 = 1 = 2^F, the group's first term
 						}
-						else if ((t - j) % 2 == 0) {
+						else if (!alternating || (t - j) % 2 == 0) {
 							const limb_t carry = efloat_mpn::addmul_1(grp, P + t * w + q, k, c);
 							efloat_mpn::add_1(grp + k, 2, carry);
 						}
@@ -589,7 +593,7 @@ namespace efloat_detail {
 						}
 					}
 					div_1(tmp, grp, kw, L);           // the group, below 2
-					add_or_sub(blk, blk, tmp, kw, j % 2 == 1);
+					add_or_sub(blk, blk, tmp, kw, alternating && j % 2 == 1);
 					j = e;
 				}
 				if (b + 1 == nb) {
@@ -605,7 +609,7 @@ namespace efloat_detail {
 				acc_q = q;
 				// acc = B_b +- acc P_m
 				efloat_mpn::mul(tmp, acc, kw, P + m * w + q, k, s);   // kw + k limbs
-				add_or_sub(acc, blk, tmp + k, kw, m % 2 == 1);
+				add_or_sub(acc, blk, tmp + k, kw, alternating && m % 2 == 1);
 			}
 			for (std::size_t i = 0; i < w; ++i) S[i] = acc[i];
 		}

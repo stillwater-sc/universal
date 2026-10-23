@@ -23,35 +23,65 @@ namespace efloat_detail {
 	inline constexpr unsigned log_table_last  = 724;   // 724 / 512 > sqrt(2)
 	// The AGM replaces the table and series once the working precision passes this many times
 	// max(10, k), for an x within 2^-k of 1: the series gains ~2 max(10, k) bits per term, so its
-	// cost grows as W M(W) / k and the AGM's as log(W) M(W). The constant is measured (#1763).
-	inline constexpr unsigned log_agm_bits_per_series_bit = 144;
+	// cost grows as W M(W) / k and the AGM's as log(W) M(W). The constant is measured: with the
+	// series in fixed point (#1795) the two cross near 45000 working bits from the table
+	// (k = 10) and near 5000 k for x = 1 + 2^-k, k = 20 .. 40, at 65536 and 131072 bits. With the
+	// term-by-term efloat series before it, the constant was 144 (#1771): the AGM ran from 1440
+	// bits, and at 8192 bits it took 276 us where the fixed-point series takes 140.
+	inline constexpr unsigned log_agm_bits_per_series_bit = 4500;
 	// log_working(x, W) is within 2^(scale - W + log_error_bits) of log x: measured, the table and
 	// series are within 2^-(W - 3) of it and the AGM, with its own guard bits, 2^-(W + 20).
 	inline constexpr unsigned log_error_bits = 16;
 
-	// log(j / 512) = 2 atanh(u / w), u = j - 512, w = j + 512, at `bits` bits. Every term update
-	// multiplies by u^2 and divides by w^2 and by 2k + 1 -- small integers, one limb each, so each
-	// costs O(n) -- and the terms fall by (u / w)^2, at least 5 bits per term at the table's ends.
+	// atanh(v) for a finite |v| < 1/2 at `working` bits, unrounded: with z = v^2,
+	//     atanh(v) = v S(z),   S(z) = sum_k z^k / (2k + 1) = 1 + z/3 + z^2/5 + ...,
+	// S summed in fixed point by rectangular splitting (fixed_series::arctangent_series without
+	// the alternation, #1795). S lies in [1, 1.1), so with F >= working + 24 fraction bits it keeps
+	// its relative precision whatever the size of v, as log's result does as x -> 1.
+	//
+	// Error: the series truncates about N + 2 N / g + m + 2 N / m times for groups of g terms, z
+	// once: below 2^-(working + 13). z = v^2 and the product v S each round once at working + 2
+	// and working bits.
+	template<unsigned nlimbs>
+	inline efloat<nlimbs> atanh_working_small(const efloat<nlimbs>& v, unsigned working) {
+		using fixed_series::limb_t;
+		efloat<nlimbs> result(v);
+		result.set_precision(working);
+		if (v.iszero()) return result;
+		efloat<nlimbs> z(v);
+		z.set_precision(working + 2u);
+		z *= z;
+		const std::size_t n = (working + 24u + 63u) / 64u;   // fraction limbs
+		const unsigned    F = static_cast<unsigned>(64 * n);
+		std::vector<limb_t> buffer(2 * n + 1);
+		limb_t* Z  = buffer.data();          // z 2^F, n limbs
+		limb_t* Sv = Z + n;                  // S(z) 2^F, n + 1 limbs
+		fixed_series::to_fixed(z, static_cast<int64_t>(F), Z, n);
+		std::size_t top = n;
+		while (top > 0 && Z[top - 1] == 0u) --top;
+		if (top == 0) return result;         // z below 2^-F: S = 1
+		const int64_t  a = static_cast<int64_t>(F) - (64 * static_cast<int64_t>(top) - std::countl_zero(Z[top - 1]));   // z < 2^-a
+		const unsigned N = fixed_series::series_terms(a, F, fixed_series::divisors::arctangent);
+		fixed_series::arctangent_series(Sv, Z, n, N, arctangent_block_length(N), a, false);   // 0.7 sqrt(N), measured again for atanh (#1795)
+		// S = Sv 2^-F: the top bit of Sv[n] weighs 2^(64 n + 63 - F) = 2^63
+		result *= fixed_series::from_fixed<nlimbs>(Sv, n + 1, 63);
+		return result;
+	}
+
+	// log(j / 512) = 2 atanh(u / w), u = j - 512, w = j + 512, at `bits` bits: |u / w| < 0.18, and
+	// the series gains at least 5 bits a term. In fixed point (#1795) a grid point costs 7-10x
+	// less than the term-by-term efloat series it replaced (2048 bits: 16-55 us, from 108-456;
+	// 8192 bits: 0.2-0.36 ms, from 1.4-3.3 ms), which matters at high precision, where every new
+	// j fills its entry once.
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> log_grid_point(unsigned j, unsigned bits) {
 		const int64_t u = static_cast<int64_t>(j) - (int64_t(1) << log_table_shift);
 		const int64_t w = static_cast<int64_t>(j) + (int64_t(1) << log_table_shift);
-		efloat<nlimbs> sum(0.0);
-		sum.set_precision(bits);
-		if (u == 0) return sum;
-		efloat<nlimbs> power(static_cast<double>(u));
-		power.set_precision(bits);
-		power /= efloat<nlimbs>(static_cast<double>(w));                   // (u / w)^(2k + 1)
-		sum = power;
-		const efloat<nlimbs> u2(static_cast<double>(u * u));
-		const efloat<nlimbs> w2(static_cast<double>(w * w));
-		for (unsigned k = 1; ; ++k) {
-			power *= u2;
-			power /= w2;
-			const efloat<nlimbs> term = power / efloat<nlimbs>(static_cast<double>(2 * k + 1));
-			if (term.iszero() || term.scale() < sum.scale() - static_cast<int64_t>(bits) - 2) break;
-			sum += term;
-		}
+		efloat<nlimbs> v(static_cast<double>(u));
+		v.set_precision(bits);
+		if (u == 0) return v;
+		v /= efloat<nlimbs>(static_cast<double>(w));
+		efloat<nlimbs> sum = atanh_working_small(v, bits);
 		sum.setexponent(sum.scale() + 1);   // 2 atanh
 		return sum;
 	}
@@ -100,29 +130,9 @@ namespace efloat_detail {
 		series.set_precision(working);
 		const efloat<nlimbs> num = m - c;   // exact: m and c are within 2^-10 of each other
 		if (!num.iszero()) {
-			const efloat<nlimbs> v = num / (m + c);
-			const efloat<nlimbs> v2 = v * v;
-			efloat<nlimbs> power = v;
-			series = v;
-			// Term k lies ~21 k bits below the sum, so it needs only that many fewer bits: the
-			// running power and v^2 are carried at a precision that falls with the terms. Both
-			// operands are cut, because a product takes the wider of its operands' precisions.
-			efloat<nlimbs> v2_taper = v2;
-			unsigned taper = working;
-			for (unsigned k = 1; ; ++k) {
-				const int64_t below = series.scale() - power.scale();   // bits the power sits below the sum
-				const unsigned need = (below + 64 < static_cast<int64_t>(working)) ? static_cast<unsigned>(static_cast<int64_t>(working) - below) : 64u;
-				if (need + 32u <= taper) {
-					taper = need;
-					power.set_precision(taper);
-					v2_taper = v2;
-					v2_taper.set_precision(taper);
-				}
-				power *= v2_taper;
-				const efloat<nlimbs> term = power / (2 * k + 1);   // stays at the taper (#1757)
-				if (term.iszero() || term.scale() < series.scale() - static_cast<int64_t>(working) - 2) break;
-				series += term;
-			}
+			series = num / (m + c);   // v
+			series.set_precision(working);
+			series = atanh_working_small(series, working);
 			series.setexponent(series.scale() + 1);   // 2 atanh
 		}
 		efloat<nlimbs> y = series + log_table<nlimbs>(j, working);
