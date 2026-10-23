@@ -30,15 +30,17 @@
 //            Karatsuba and the division's divide-and-conquer thresholds, perfect cubes and their
 //            neighbours, all-ones radicands, the smallest radicand, and top limbs within 1024 of
 //            a perfect cube, where the base case's double estimate is tested.
+//   load_window  efloat_mpn's shifted copy, which places the fma and hypot kernels' terms in
+//            their frames (#1802), against a bit at a time, and its flag for the bits it drops.
 //
 // REGRESSION_LEVEL convention (intensity progression):
 //   LEVEL 1 -- 300 random products and the threshold lengths, 2,000 sums per precision,
 //              300 limb quotients and the threshold lengths, 300 rounded quotients per precision
 //              (a twentieth of that at 40 and 60 limbs), 300 limb square roots and cube roots
-//              and the lengths
-//   LEVEL 2 -- 3,000, 20,000, 3,000, 3,000, 3,000 and 3,000
-//   LEVEL 3 -- 30,000, 200,000, 30,000, 30,000, 30,000 and 30,000
-//   LEVEL 4 -- 300,000, 2,000,000, 300,000, 300,000, 300,000 and 300,000
+//              and the lengths, 2,000 limb windows
+//   LEVEL 2 -- 3,000, 20,000, 3,000, 3,000, 3,000 and 3,000; 20,000 windows
+//   LEVEL 3 -- 30,000, 200,000, 30,000, 30,000, 30,000 and 30,000; 100,000 windows
+//   LEVEL 4 -- 300,000, 2,000,000, 300,000, 300,000, 300,000 and 300,000; 300,000 windows
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -207,6 +209,36 @@ namespace {
 					++nrOfFailedTestCases;
 					if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: x + y with an exponent gap of " << gap << " bits at " << target << " bits is not the rounded exact sum\n";
 				}
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// efloat_mpn::load_window (#1802) against a bit-at-a-time reference: r's bit j is a's bit
+	// j - shift, and the flag says whether any of a's bits below -shift is set
+	int VerifyLoadWindow(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		using efloat_mpn::limb_t;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(1802);
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			const std::size_t na = 1 + rng() % 9;
+			const std::size_t n  = 1 + rng() % 12;
+			std::vector<limb_t> a(na);
+			for (limb_t& v : a) v = (i % 4 == 0) ? (limb_t(1) << (rng() % 64)) : rng();   // sparse ones find the flag's edges
+			const int64_t shift = static_cast<int64_t>(rng() % (64 * 24)) - 64 * 12 + ((i % 8 == 0) ? 0 : static_cast<int64_t>(rng() % 3) - 1);
+			std::vector<limb_t> r(n, ~limb_t(0));
+			const bool lost = efloat_mpn::load_window(r.data(), n, a.data(), na, shift);
+			auto bit = [&a, na](int64_t j) -> unsigned { return (j >= 0 && j < 64 * static_cast<int64_t>(na)) ? unsigned((a[static_cast<std::size_t>(j / 64)] >> (j % 64)) & 1u) : 0u; };
+			bool ok = true;
+			for (int64_t j = 0; ok && j < 64 * static_cast<int64_t>(n); ++j) {
+				ok = (((r[static_cast<std::size_t>(j / 64)] >> (j % 64)) & 1u) == bit(j - shift));
+			}
+			bool want_lost = false;
+			for (int64_t j = 0; j < -shift && !want_lost; ++j) want_lost = (bit(j) != 0u);
+			if (!ok || lost != want_lost) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: load_window of " << na << " limbs into " << n << " at shift " << shift << '\n';
 			}
 		}
 		return nrOfFailedTestCases;
@@ -537,6 +569,7 @@ int main() try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 30), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 100), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 100), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 100), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 100), "efloat", "limb square roots");
@@ -549,6 +582,7 @@ int main() try {
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 300), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300), "efloat", "limb square roots");
@@ -558,6 +592,7 @@ int main() try {
 #	if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 3000), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 20000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 20000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 3000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 3000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 3000), "efloat", "limb square roots");
@@ -567,6 +602,7 @@ int main() try {
 #	if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 30000), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 200000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 100000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 30000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 30000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 30000), "efloat", "limb square roots");
@@ -576,6 +612,7 @@ int main() try {
 #	if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 300000), "efloat", "exact products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 300000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300000), "efloat", "rounded quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300000), "efloat", "limb square roots");

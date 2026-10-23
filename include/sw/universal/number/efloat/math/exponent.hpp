@@ -171,6 +171,32 @@ namespace efloat_detail {
 		return w;
 	}
 
+	// Scratch limbs for the exact kernels (#1802): on the stack, or on the heap when a kernel
+	// needs more
+	struct limb_buffer {
+		efloat_mpn::limb_t              local[512];
+		std::vector<efloat_mpn::limb_t> heap;
+		efloat_mpn::limb_t* get(std::size_t n) {
+			if (n <= 512) return local;
+			heap.resize(n);
+			return heap.data();
+		}
+	};
+
+	// the significand of a finite x != 0 as an integer P of (size + 1) / 2 64-bit limbs, least
+	// significant first, with |x| = P 2^(scale(x) - 64 m + 1) for the m limbs returned (#1802)
+	template<unsigned nlimbs>
+	inline std::size_t pack_significand(efloat_mpn::limb_t* p, const efloat<nlimbs>& x) {
+		const std::vector<uint32_t>& v = x.limb_vector();   // most significant first, leading bit at 31
+		const std::size_t n = v.size();
+		const std::size_t m = (n + 1) / 2;
+		for (std::size_t j = 0; j < m; ++j) {
+			const std::size_t hi = 2 * m - 2 - 2 * j;   // the high half's index, an odd n padded with a zero at the bottom
+			p[j] = (efloat_mpn::limb_t(v[hi]) << 32) | ((hi + 1 < n) ? v[hi + 1] : 0u);
+		}
+		return m;
+	}
+
 	// x y exactly, for finite x and y (#1783): the product of a and b significant bits has a + b
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> exact_product(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {

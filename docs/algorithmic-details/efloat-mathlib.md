@@ -154,8 +154,8 @@ round the exact result once into the destination (`assign_rounded`), with no all
 | `tgamma`, `lgamma` | Stirling series after shifting `x` up past `0.15 W`, by a tapered Horner scheme; the shift's factors multiplied in groups; reflection below 0; working precision predicted; exact `(n-1)!` | 22 | error_and_gamma.hpp |
 | `erf`, `erfc` | positive-term series `2/sqrt(pi) e^{-x^2} sum t_n`; asymptotic series for large `x`; `1 - erf` with the cancelled bits added | 0 (32 guard bits) | error_and_gamma.hpp |
 | `cbrt` | integer cube root `floor(cbrt(m 2^(3F)))` on 64-bit limbs (`cbrtrem`), the remainder formed only next to a rounding boundary; rounded once | exact | sqrt.hpp, efloat_mpn.hpp |
-| `hypot` | exact squares, exact sum (or a proxy that rounds alike), one exact root | exact | hypot.hpp |
-| `fma` | exact product, exact sum (or a proxy), one rounding | exact | numerics.hpp |
+| `hypot` | squares, their sum and its integer square root on 64-bit limbs (`sqrtrem`), the remainder and dropped bits the sticky bit; rounded once | exact | hypot.hpp, efloat_mpn.hpp |
+| `fma` | exact product and sum on 64-bit limbs in one frame (or a proxy for a negligible term), one rounding | exact | numerics.hpp, efloat_mpn.hpp |
 | `fmod`, `remainder` | exact integer remainder, `2^d mod y` by binary powering | exact | fractional.hpp |
 
 "Error bits" is the function's `*_error_bits`: its unrounded value lies within
@@ -413,7 +413,7 @@ rounded products.
 - Before: `std::erf(double(x))`; `erfc` was 0 from `x = 27.2` on, and all four modes returned
   the same value.
 
-### 4.8 cbrt, hypot, fma, fmod, remainder (#1783, #1800)
+### 4.8 cbrt, hypot, fma, fmod, remainder (#1783, #1800, #1802)
 
 Until #1783 these five were computed at the result's precision but rounded more than once, and
 `mpfr_check` found 889 to 2,063 wrong results each in 3,234 cases.
@@ -425,8 +425,23 @@ Until #1783 these five were computed at the result's precision but rounded more 
   proxy of the same sign, `2^(L-2)`, instead. The true and the proxied sums lie strictly
   between the larger and its neighbour `2^(L-1)` away, so they round alike to any precision up
   to `pad - 2` bits, and their square roots alike up to `(pad - 4) / 2`. That keeps the width
-  bounded whatever the exponent gap. `fma` passes `pad = P + 2` and rounds the sum once;
-  `hypot` passes `2P + 4` and takes the exact root (`sqrt_to`, which rounds once).
+  bounded whatever the exponent gap. `fma` passed `pad = P + 2` and rounded the sum once;
+  `hypot` passed `2P + 4` and took the exact root (`sqrt_to`, which rounds once). Since #1802
+  both work on limbs instead (next two items); `exact_sum` remains for `fma` at the range's
+  ends, `hypot`'s far-apart arguments, and `fmod`.
+- **fma on limbs** (#1802). For finite nonzero operands with `|scale(x) + scale(y)| < 2^61`,
+  the significands' product `X Y` is formed by `efloat_mpn::mul` straight into a frame of 64-bit
+  limbs, at the bit offset where its last bit lies, and `z`'s limbs are added into it or
+  subtracted from it in place. A borrow out of the frame's top means `z` was the larger: the
+  frame then holds the difference's two's complement, which is negated. The frame reaches from
+  the lower of the two terms' last bits to a carry bit above both, unless the term whose
+  leading bit is lower lies wholly more than 66 bits below both the other's last bit and 64
+  bits past the rounding point. That term is then a proxy of its sign at the frame's last bit:
+  the true and the proxied sums lie within two frame units of the larger term, which is a
+  multiple of `2^64` of them, so they round alike. `efloat::assign_rounded_limbs` rounds the
+  frame once, in the current mode. No efloat is formed on the way. Before, the two widened
+  operands, the product, the two widened terms of the sum, and the sum were each an efloat
+  with its own allocation: an `fma` at 128 bits took the time of about four multiplications.
 - **fma at the range's ends** (#1786). When `scale(x) + scale(y)` leaves `[min_scale,
   max_scale)`, the exact product would overflow or underflow, though `x y + z` may not. Both
   terms are then scaled by `2^-t`, where `t` is the larger term's scale. A term more than
@@ -438,7 +453,13 @@ Until #1783 these five were computed at the result's precision but rounded more 
 - **hypot** scales both arguments by `2^-k`, `k = scale(max)`, so the squares stay inside the
   exponent range, and multiplies the root back. When the arguments are more than
   `max(bits(max), P + 2) + 8` binades apart, the result is `max` plus a positive amount below
-  its last bit, and a proxy sum gives it directly.
+  its last bit, and a proxy sum gives it directly. Otherwise (#1802), with `F = 64 n - 1` and
+  `n` limbs holding `P + 2` bits and at least as many limbs as `max`, the frame `N = floor((x^2 +
+  y^2) 2^(2F - 2k - 2c))` takes `X^2` exactly and `Y^2` floored; `c` is 1 when the sum is
+  `4^(k+1)` or more, and halves the frame; the bits either floor drops are a sticky bit. `N` is the only integer the
+  exact sum floors to, and `floor(sqrt(N))` is the exact root's floor, since no square lies
+  strictly between `N` and `N + 1`. `sqrtrem` gives that root `S` and its remainder, and `S`
+  rounds once, with the remainder and the dropped bits as the sticky bit.
 - **cbrt** (#1800), the way `sqrt` is (#1770). `a = m 8^k`, `m` in `[1, 8)`, and `N = m 2^(3F)`
   with `F = 64 n - 1` and at least `P + 18` bits in the root. `efloat_mpn::cbrtrem` forms
   `S = floor(cbrt(N))` and `R = N - S^3` by Zimmermann's square-root recursion carried over to
@@ -568,8 +589,8 @@ efloat returns +0 with Underflow.
 ## 7. Measured speed
 
 `mpfr_gap`, best of three, warm caches, microseconds per call, round to nearest.
-Measured 2026-10-22 with #1795 (the fixed-point log series) on top of main at 4a4e692b, and the `tgamma` and `lgamma` rows
-with #1797 on top of main at cbeb5b46, Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`,
+Measured 2026-10-22 with #1795 (the fixed-point log series) on top of main at 4a4e692b, the `tgamma` and `lgamma` rows
+with #1797 on top of main at cbeb5b46, and the `fma` and `hypot` rows with #1802 on top of main at 4f0c1a49, Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`,
 MPFR 4.2.2, GMP 6.3.0; `a = 0.718...`, `b = 1.414...`, `x = 1 + a`. Each cell is
 efloat / MPFR in microseconds, then the ratio.
 
@@ -583,8 +604,8 @@ efloat / MPFR in microseconds, then the ratio.
 | `log(x)` | 0.778 / 1.108 | 0.7x | 1.459 / 3.184 | 0.5x | 9.938 / 14.77 | 0.7x | 139.7 / 123.5 | 1.1x |
 | `sin(a)` | 0.834 / 0.732 | 1.1x | 1.907 / 2.084 | 0.9x | 14.60 / 14.14 | 1.0x | 226.1 / 193.6 | 1.2x |
 | `sqrt(b)` | 0.125 / 0.059 | 2.1x | 0.257 / 0.133 | 1.9x | 0.964 / 0.437 | 2.2x | 6.380 / 3.071 | 2.1x |
-| `fma(a,b,a)` | 0.120 / 0.029 | 4.2x | 0.169 / 0.049 | 3.4x | 0.657 / 0.328 | 2.0x | 5.292 / 3.137 | 1.7x |
-| `hypot(a,b)` | 0.376 / 0.170 | 2.2x | 0.650 / 0.321 | 2.0x | 2.535 / 1.017 | 2.5x | 17.65 / 8.049 | 2.2x |
+| `fma(a,b,a)` | 0.042 / 0.029 | 1.4x | 0.082 / 0.049 | 1.7x | 0.588 / 0.328 | 1.8x | 4.938 / 3.146 | 1.6x |
+| `hypot(a,b)` | 0.099 / 0.169 | 0.6x | 0.245 / 0.321 | 0.8x | 1.441 / 1.015 | 1.4x | 12.99 / 7.996 | 1.6x |
 | `cbrt(b)` | 0.279 / 0.288 | 1.0x | 0.585 / 0.468 | 1.3x | 1.844 / 1.328 | 1.4x | 12.70 / 7.489 | 1.7x |
 | `exp2(a)` | 0.736 / 1.020 | 0.7x | 1.795 / 2.671 | 0.7x | 14.05 / 17.18 | 0.8x | 207.5 / 191.0 | 1.1x |
 | `exp10(a)` | 0.763 / 2.319 | 0.3x | 1.890 / 5.989 | 0.3x | 14.51 / 30.99 | 0.5x | 211.5 / 312.7 | 0.7x |
@@ -650,13 +671,16 @@ Read the ratio column as the work left on Epic #1763.
   MPFR (2.1x for an exact cube's neighbour at 8192 bits, against `a*b`'s 2.2x). `cbrt(27)` runs
   0.01-0.3x from 512 bits; at 128 bits it is 2.4x, a call under a microsecond, where a shorter
   root to try first would cost every full-width argument as much.
-- **cbrt, hypot, fma** (remeasured after #1783): `cbrt` 2.5-3.3x (was 6-33x; see #1800 above), `hypot`
-  2.1-2.5x, `fma` 1.7-4.1x. `fma` is slower than before at small precisions (0.12 us at 128 bits
-  against 0.045): it now forms the exact product and sum, where it used to round twice and was
-  wrong in 29% of the cases.
+- **fma, hypot** (#1802): `fma` 1.1-2.9x faster, from 1.7-4.2x MPFR to 1.4-1.8x; `hypot`
+  1.4-3.7x faster, from 2.0-2.5x to 0.6-1.6x. `fma` now costs 1.0-1.6 multiplications of its
+  operands, as MPFR's does (1.2-1.6), so its ratio follows `a*b`'s; at 512 bits it is 1.3
+  against MPFR's 1.2, and the 1.7x there is mostly `a*b`'s 1.5x. Results are bit-identical to
+  #1785's, flags and carried precision included, over 1.1 million old-vs-new results in every
+  mode. (#1785 had made both exact: before it, `fma` rounded twice and was wrong in 29% of the
+  cases.)
 - **The primitives set the floor:** `a*b`, `b/a` and `sqrt` run 1.5-2.3x MPFR, and every
   function built on them inherits that.
-- **Largest gaps:** `fma` and `pow(b, 7)` at 128 bits (4.2x, 3.6x), and the primitives.
+- **Largest gaps:** `pow(b, 7)` at 128 and 512 bits (3.6x, 2.8x), and the primitives.
 
 **Benchmark hygiene.** Single runs of the mpmath comparison vary by 15-50%; compare branches
 with best-of-5 runs on an idle machine. Warm the caches first. The first-call cost of a new

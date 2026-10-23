@@ -632,6 +632,24 @@ inline void rshift(limb_t* r, const limb_t* a, std::size_t n, unsigned c) noexce
 	r[n - 1] = a[n - 1] >> c;
 }
 
+// r[0, n) = the low n limbs of floor(a[0, na) 2^shift), for a shift of either sign; returns
+// whether the bits a right shift drops below r are nonzero (#1802). r overlaps not a.
+inline bool load_window(limb_t* r, std::size_t n, const limb_t* a, std::size_t na, std::int64_t shift) noexcept {
+	const std::int64_t m = static_cast<std::int64_t>(na);
+	auto at = [a, m](std::int64_t j) -> limb_t { return (j >= 0 && j < m) ? a[j] : 0u; };
+	const std::int64_t q = (shift >= 0) ? -((shift + 63) / 64) : (-shift) / 64;   // floor(-shift / 64)
+	const unsigned     c = static_cast<unsigned>(-shift - 64 * q);                  // in [0, 64)
+	for (std::size_t k = 0; k < n; ++k) {
+		const std::int64_t j = q + static_cast<std::int64_t>(k);   // r[k] holds a[j] >> c and a[j + 1] << (64 - c)
+		r[k] = (c == 0u) ? at(j) : ((at(j) >> c) | (at(j + 1) << (64u - c)));
+	}
+	if (shift >= 0) return false;
+	for (std::int64_t j = 0; j < q && j < m; ++j) {
+		if (a[j] != 0u) return true;
+	}
+	return c != 0u && q < m && (a[q] & ((limb_t(1) << c) - 1u)) != 0u;
+}
+
 // sp[0] = floor(cbrt(np[0, 3))) for np[2] >= 2^61, rp[0, 3) = the remainder: a double estimate,
 // within about 2^12 of the root, one Newton step in double, and an exact correction
 inline void cbrtrem_1(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
