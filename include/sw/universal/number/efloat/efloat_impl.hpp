@@ -543,6 +543,24 @@ public:
 		if (i >= _limb.size()) _limb.resize(i + 1, 0u);
 		_limb[i] = value;
 	}
+	// For the mathlib's exact kernels (#1802): *this = (-1)^sign (R + s) 2^(top - 64 n + 1), R the
+	// nonzero integer r[0, n) of 64-bit limbs, least significant first, whose bit 64 n - 1 weighs
+	// 2^top, and s in (0, 1) when sticky, else 0: rounded once in the current mode at
+	// precision_limbs limbs, which the value then carries.
+	void assign_rounded_limbs(bool sign, const std::uint64_t* r, std::size_t n, std::int64_t top, bool sticky, unsigned precision_limbs) {
+		_precision_limbs = precision_limbs;
+		_sign = sign;
+		auto limb = [r, n](std::size_t i) -> std::uint32_t {
+			const std::uint64_t w = r[n - 1 - i / 2];
+			return (i & 1u) ? static_cast<std::uint32_t>(w) : static_cast<std::uint32_t>(w >> 32);
+		};
+		if (sticky) {
+			assign_rounded([&limb, n](std::size_t i) -> std::uint32_t { return (i < 2 * n) ? limb(i) : 1u; }, 2 * n + 1, top);
+		}
+		else {
+			assign_rounded(limb, 2 * n, top);
+		}
+	}
 
 	efloat& assign(const std::string& txt) {
 		parse(txt, *this);

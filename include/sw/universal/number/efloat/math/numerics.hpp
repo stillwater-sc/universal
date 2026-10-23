@@ -87,6 +87,117 @@ inline int ilogb(const efloat<nlimbs>& x) {
 	return static_cast<int>(x.scale());
 }
 
+namespace efloat_detail {
+
+	// x y + z for finite nonzero x, y and z with |scale(x) + scale(y)| < 2^61, rounded once at
+	// `precision` bits (#1802). The product X Y of the significands is exact on limbs, and so is
+	// its sum with Z in a frame wide enough for both, unless the term with the lower leading bit
+	// lies wholly more than 66 bits below both the other's last bit and 64 bits past the rounding
+	// point. It is then replaced by a proxy of its sign at the frame's last bit: the sum and the
+	// proxied sum lie within two frame units of the larger term, a multiple of 2^64 of them whose
+	// rounding boundaries are coarser still, on the same side of it, and so round alike. No
+	// efloat is formed on the way: before, the widened operands, the product and the sum were
+	// each one, and an fma at 128 bits took the time of about four multiplications.
+	template<unsigned nlimbs>
+	inline void fma_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z, unsigned precision) {
+		using efloat_mpn::limb_t;
+		const std::size_t nx = (x.limb_vector().size() + 1) / 2;
+		const std::size_t ny = (y.limb_vector().size() + 1) / 2;
+		const std::size_t nz = (z.limb_vector().size() + 1) / 2;
+		const std::size_t np = nx + ny;
+		const int64_t B  = 32 * static_cast<int64_t>((precision + 31) / 32);   // the rounding precision
+		const int64_t R  = x.scale() + y.scale();
+		// weights relative to 2^R: the product's limbs P from 2^(2 - 64 np) to 2^1, z's from
+		// 2^(dz - 64 nz + 1) to 2^dz, with |dz| < 2^63 since |R| < 2^61
+		const int64_t dz     = z.scale() - R;
+		const int64_t p_low  = 2 - 64 * static_cast<int64_t>(np);
+		const int64_t z_low  = dz - 64 * static_cast<int64_t>(nz) + 1;
+		const bool    z_big  = dz > 1;
+		const int64_t big_top   = z_big ? dz : 1;
+		const int64_t big_low   = z_big ? z_low : p_low;
+		const int64_t small_top = z_big ? 1 : dz;
+		const int64_t bottom    = std::min(big_low, big_top - B - 64);
+		const bool    proxied   = small_top < bottom - 66;
+		const int64_t w0 = proxied ? bottom - 64 : std::min(p_low, z_low);   // the frame's last bit
+		const std::size_t w = static_cast<std::size_t>((std::max<int64_t>(big_top, small_top) + 2 - w0 + 63) / 64);
+
+		limb_buffer buffer;
+		limb_t* px   = buffer.get(nx + ny + nz + np + w + nz + 1 + efloat_mpn::scratch_limbs(std::max(nx, ny)));
+		limb_t* py   = px + nx;
+		limb_t* pz   = py + ny;
+		limb_t* prod = pz + nz;
+		limb_t* f    = prod + np;      // the frame, w limbs
+		limb_t* g    = f + w;          // z shifted to its place in the frame, nz + 1 limbs
+		limb_t* work = g + nz + 1;
+		pack_significand(px, x);
+		pack_significand(py, y);
+		pack_significand(pz, z);
+		const bool p_neg = (x.sign() == -1) != (y.sign() == -1);
+		const bool z_neg = (z.sign() == -1);
+		bool negative = p_neg;
+		if (proxied && z_big) {   // the product is the proxy
+			efloat_mpn::load_window(f, w, pz, nz, z_low - w0);
+			negative = z_neg;
+		}
+		else {
+			// the product in place: its limbs from limb op of the frame on, shifted up cp bits
+			const std::size_t op = static_cast<std::size_t>((p_low - w0) / 64);
+			const unsigned    cp = static_cast<unsigned>((p_low - w0) % 64);
+			for (std::size_t k = 0; k < op; ++k) f[k] = 0u;
+			std::size_t end = op + np;
+			if (cp == 0u) {
+				efloat_mpn::mul(f + op, px, nx, py, ny, work);
+			}
+			else {
+				efloat_mpn::mul(prod, px, nx, py, ny, work);
+				f[end] = efloat_mpn::lshift(f + op, prod, np, cp);
+				++end;
+			}
+			for (std::size_t k = end; k < w; ++k) f[k] = 0u;
+		}
+		if (proxied) {
+			if (p_neg == z_neg) efloat_mpn::add_1(f, w, 1u); else efloat_mpn::sub_1(f, w, 1u);
+		}
+		else {
+			// z's limbs from limb oz of the frame on: added, or subtracted with the borrow out of the
+			// top saying z was the larger, when the frame holds the difference's two's complement
+			const std::size_t oz = static_cast<std::size_t>((z_low - w0) / 64);
+			const std::size_t lz = std::min(nz + 1, w - oz);
+			efloat_mpn::load_window(g, lz, pz, nz, (z_low - w0) % 64);
+			if (p_neg == z_neg) {
+				const limb_t carry = efloat_mpn::add_n(f + oz, f + oz, g, lz);
+				efloat_mpn::add_1(f + oz + lz, w - oz - lz, carry);
+			}
+			else {
+				const limb_t borrow = efloat_mpn::sub_n(f + oz, f + oz, g, lz);
+				if (efloat_mpn::sub_1(f + oz + lz, w - oz - lz, borrow) != 0u) {
+					limb_t c = 1;
+					for (std::size_t k = 0; k < w; ++k) {
+						const limb_t v = ~f[k] + c;
+						c = (v < c) ? 1u : 0u;
+						f[k] = v;
+					}
+					negative = z_neg;
+				}
+				bool zero = true;
+				for (std::size_t k = 0; zero && k < w; ++k) zero = (f[k] == 0u);
+				if (zero) {   // x y = -z: +0, or -0 rounding toward -inf (IEEE-754 6.3)
+					result = efloat<nlimbs>(0.0);
+					result.setsign(efloat_rounding_mode == RoundingMode::RoundTowardNegative);
+					return;
+				}
+			}
+		}
+		// the frame's top bit weighs 2^(R + w0 + 64 w - 1); with z the larger, that is z's scale
+		// plus a bounded offset, so the sum stays in int64_t
+		std::size_t used = w;
+		while (f[used - 1] == 0u) --used;   // the leading zero limbs, the carry room among them; f != 0
+		const int64_t top = (z_big ? z.scale() + (w0 - dz) : R + w0) + 64 * static_cast<int64_t>(used) - 1;
+		result.assign_rounded_limbs(negative, f, used, top, false, static_cast<unsigned>(B / 32));
+	}
+
+}  // namespace efloat_detail
+
 // fma(x, y, z) = x y + z, correctly rounded in the current mode at the wider of the precisions
 // x, y and z carry (#1783): the product is exact, and the sum rounds once. Before, x * y rounded
 // to the operands' precision before z was added, and the result rounded twice. The special
@@ -105,6 +216,15 @@ inline efloat<nlimbs> fma(const efloat<nlimbs>& x, const efloat<nlimbs>& y, cons
 	}
 	using E = efloat<nlimbs>;
 	const int64_t s = x.iszero() || y.iszero() ? 0 : x.scale() + y.scale();   // the product's scale is s or s + 1
+	constexpr int64_t limbs_range = int64_t(1) << 61;
+	if (!x.iszero() && !y.iszero() && !z.iszero() && s > -limbs_range && s < limbs_range) {
+		// a copy of the longest operand holds the result's limbs without growing in most cases
+		const std::size_t lx = x.limb_vector().size(), ly = y.limb_vector().size(), lz = z.limb_vector().size();
+		E result((lx >= ly && lx >= lz) ? x : (ly >= lz ? y : z));
+		efloat_detail::fma_limbs(result, x, y, z, precision);   // rounded, at the precision
+		if (!carries || result.iszero()) efloat_detail::round_result(result, precision, carries);
+		return result;
+	}
 	if (s >= E::min_scale && s < E::max_scale) {
 		E result = efloat_detail::exact_sum(efloat_detail::exact_product(x, y), z, precision + 2);
 		efloat_detail::round_result(result, precision, carries);

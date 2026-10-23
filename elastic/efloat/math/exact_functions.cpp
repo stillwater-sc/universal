@@ -9,7 +9,10 @@
 //     and exact cubes, roots of 2 and 4 limbs (where the root without its remainder can lie a
 //     unit or two high), three arguments found by search whose root lies just below a rounding
 //     boundary, and short arguments, whose exactness a shorter root decides.
-//   - fma: x y + z formed exactly at a width that holds it, rounded once.
+//   - fma: x y + z formed exactly at a width that holds it, rounded once. Since #1802 fma and
+//     hypot form their results on limbs; besides random arguments, the alignments of z that the
+//     fma kernel tells apart (below, overlapping, above the product, either side of the gap where
+//     a term becomes a proxy, cancelling) and the hypot frames whose root halves.
 //   - fmod and remainder: binary long division, one shifted subtraction per quotient bit, which
 //     also gives the quotient's parity; and, for quotients up to 2^(2^40), the closed forms
 //     2^k mod 3 and 2^k mod 7.
@@ -298,6 +301,162 @@ namespace {
 		return failures;
 	}
 
+	// x y + z formed exactly from the scales and widths of x, y and z, then rounded once at P bits
+	template<unsigned nlimbs>
+	sw::universal::efloat<nlimbs> fma_reference(const sw::universal::efloat<nlimbs>& x, const sw::universal::efloat<nlimbs>& y,
+	                                            const sw::universal::efloat<nlimbs>& z, unsigned P) {
+		using namespace sw::universal;
+		using E = efloat<nlimbs>;
+		const int64_t top = std::max(x.scale() + y.scale() + 1, z.scale()) + 2;
+		const int64_t low = std::min(efloat_detail::lowest_bit(x) + efloat_detail::lowest_bit(y), efloat_detail::lowest_bit(z));
+		const unsigned width = static_cast<unsigned>(top - low + 64);
+		const RoundingMode mode = efloat_rounding_mode;
+		efloat_rounding_mode = RoundingMode::RoundToNearest;   // exact at this width in any mode; nearest for the setup
+		E exact(x), yw(y), zw(z);
+		exact.set_precision(width);
+		yw.set_precision(width);
+		zw.set_precision(width);
+		exact *= yw;
+		efloat_rounding_mode = mode;
+		E want = exact + zw;   // exact; its zero sign follows the mode, as fma's must
+		want.set_precision(P);
+		return want;
+	}
+
+	// fma across the alignments its limb kernel distinguishes (#1802): z far below the product, on
+	// both sides of the gap where it is replaced by a proxy at the frame's last bit; z overlapping
+	// it, with the product shifted into the frame by a bit count that is not a multiple of 64; z
+	// above it, also far enough for the product to be the proxy; z cancelling it or exceeding it
+	// by a unit, where the difference changes sign; short operands; in every mode
+	template<unsigned nlimbs>
+	int VerifyFmaAlignments(bool reportTestCases, unsigned P, int count) {
+		using namespace sw::universal;
+		using E = efloat<nlimbs>;
+		int failures = 0;
+		const RoundingMode saved = efloat_rounding_mode;
+		std::mt19937_64 rng(1802);
+		const int64_t B  = 32 * static_cast<int64_t>((P + 31) / 32);
+		const int64_t np = 64 * static_cast<int64_t>((P + 63) / 64) * 2;   // the product's bits on 64-bit limbs
+		for (int i = 0; i < count; ++i) {
+			efloat_rounding_mode = RoundingMode::RoundToNearest;
+			E x = full_width<nlimbs>(rng, P, static_cast<int64_t>(rng() % 21) - 10);
+			E y = full_width<nlimbs>(rng, P, static_cast<int64_t>(rng() % 21) - 10);
+			if (i % 5 == 1) { x = E(static_cast<int>(1 + rng() % 65535)); x.set_precision(P); }   // a short x
+			const int64_t exy = x.scale() + y.scale();
+			// z's leading bit relative to the product's: around the proxy threshold below it (the
+			// product's bits, 64 more past the precision, 66 more past those), overlapping, above it
+			const int64_t offsets[] = { -(np + 66 + 64) - 1, -(np + 66 + 64), -(np + 66 + 64) + 1, -(B + 64 + 66 + 64) - 2, -(B + 64 + 66 + 64) + 2,
+			                            -np / 2 - 3, -7, -1, 0, 1, 2, 3, 37, B / 2 + 5, B + 70, B + 64 + 66 + 64 + np, 4 * B };
+			const int64_t d = offsets[rng() % (sizeof(offsets) / sizeof(offsets[0]))] + static_cast<int64_t>(rng() % 3) - 1;
+			const unsigned zP = (i % 3 == 0) ? 32u * static_cast<unsigned>(1 + rng() % ((P + 31) / 32)) : P;   // z of any width
+			E z = full_width<nlimbs>(rng, zP, exy + d);
+			z.set_precision(P);
+			if (i % 7 == 3) {   // z = -x y rounded to P bits, or a unit past it: the difference may change sign
+				E xw(x), yw(y);
+				xw.set_precision(2 * P + 64);
+				yw.set_precision(2 * P + 64);
+				z = -(xw * yw);
+				z.set_precision(P);
+				if (rng() & 1) {
+					E ulp(1);
+					ulp.setexponent(z.scale() - static_cast<int64_t>(B) + 1);
+					z += (rng() & 1) ? ulp : -ulp;
+				}
+			}
+			if (i % 7 == 5) {   // z = -x y exactly: an exact zero
+				E xw(x), yw(y);
+				xw.set_precision(2 * P + 64);
+				yw.set_precision(2 * P + 64);
+				E p = xw * yw;
+				z = -p;
+			}
+			if (rng() & 1) x = -x;
+			if (rng() & 1) z = -z;
+			for (RoundingMode mode : all_modes) {
+				efloat_rounding_mode = mode;
+				const unsigned precision = std::max({ x.get_precision(), y.get_precision(), z.get_precision() });
+				const E want = fma_reference(x, y, z, precision);
+				if (!same(fma(x, y, z), want)) {
+					if (reportTestCases && failures < 8) std::cout << "    FAIL: fma alignment " << d << " at " << P << " bits, mode " << int(mode) << '\n';
+					++failures;
+				}
+			}
+		}
+		// the fast path's exponent band, |scale(x) + scale(y)| < 2^61, and the rescaled path past it
+		for (int64_t s : { (int64_t(1) << 61) - 2, (int64_t(1) << 61) - 1, int64_t(1) << 61, (int64_t(1) << 61) + 1 }) {
+			for (int sign : { 1, -1 }) {
+				efloat_rounding_mode = RoundingMode::RoundToNearest;
+				E x = full_width<nlimbs>(rng, P, sign * (s / 2));
+				E y = full_width<nlimbs>(rng, P, sign * (s - s / 2));
+				for (int64_t d : { int64_t(-3), int64_t(0), int64_t(5) }) {
+					const E z = full_width<nlimbs>(rng, P, sign * s + d);
+					for (RoundingMode mode : all_modes) {
+						efloat_rounding_mode = mode;
+						if (!same(fma(x, y, z), fma_reference(x, y, z, P))) {
+							if (reportTestCases && failures < 8) std::cout << "    FAIL: fma at product scale " << sign * s << ", z " << d << " from it, mode " << int(mode) << '\n';
+							++failures;
+						}
+					}
+				}
+			}
+		}
+		efloat_rounding_mode = saved;
+		return failures;
+	}
+
+	// hypot where its limb kernel's frame changes (#1802): the squares' sum in [4, 8), which halves
+	// the frame's root (x = y, and both near 2), y's square dropping bits below the frame, and
+	// operands that carry no precision, with more limbs than the result's, in every mode
+	template<unsigned nlimbs>
+	int VerifyHypotFrames(bool reportTestCases, unsigned P, int count) {
+		using namespace sw::universal;
+		using E = efloat<nlimbs>;
+		int failures = 0;
+		const RoundingMode saved = efloat_rounding_mode;
+		std::mt19937_64 rng(1802);
+		for (int i = 0; i < count; ++i) {
+			efloat_rounding_mode = RoundingMode::RoundToNearest;
+			const int64_t ex = static_cast<int64_t>(rng() % 201) - 100;
+			E x = full_width<nlimbs>(rng, P, ex);
+			E y;
+			unsigned precision = P;
+			// a y = 2^(ex - m) whose square lies below the frame's last bit (the dropped bits alone
+			// make the root inexact), or within it but below the root's (the remainder alone does)
+			const int64_t F = 64 * static_cast<int64_t>((P + 2 + 63) / 64) - 1;
+			const int64_t m_dropped   = F - 62 + static_cast<int64_t>(rng() % 8);
+			const int64_t m_remainder = (F + 1) / 2 + static_cast<int64_t>(rng() % static_cast<uint64_t>(std::max<int64_t>(1, F - 63 - (F + 1) / 2 + 1)));
+			switch (i % 6) {
+			case 0: y = x; break;                                                          // the sum 2 x^2, in [2, 8)
+			case 1: y = full_width<nlimbs>(rng, P, ex); x.setlimb(0, 0xFFFF'FFFFu); break; // both near 2: the sum near 8
+			case 2: y = full_width<nlimbs>(rng, P, ex - static_cast<int64_t>(P / 2 + rng() % (P + 8))); break;
+			case 4: y = E(1); y.set_precision(P); y.setexponent(ex - m_dropped); break;
+			case 5:
+				if (F - 63 < (F + 1) / 2) { y = x; break; }   // one limb: the frame keeps every bit of y^2
+				y = E(1); y.set_precision(P); y.setexponent(ex - m_remainder); break;
+			default:   // 64-bit operands that carry no precision, rounding at the default
+				x = E(std::ldexp(static_cast<double>(rng() >> 11) + 1.0, -static_cast<int>(rng() % 40)));
+				y = E(std::ldexp(static_cast<double>(rng() >> 11) + 1.0, -static_cast<int>(rng() % 60)));
+				precision = x.get_precision();
+				break;
+			}
+			if (rng() & 1) x = -x;
+			if (rng() & 1) std::swap(x, y);
+			E target = exact_pow(x, 2);
+			target.set_precision(2 * (precision + 64u) + 8 * precision);
+			target += exact_pow(y, 2);
+			for (RoundingMode mode : all_modes) {
+				efloat_rounding_mode = mode;
+				const E r = hypot(x, y);
+				if (r.get_precision() != precision || !brackets_root(r, target, 2, mode)) {
+					if (reportTestCases && failures < 8) std::cout << "    FAIL: hypot(" << double(x) << ", " << double(y) << ") frame case " << i % 6 << " at " << precision << " bits, mode " << int(mode) << '\n';
+					++failures;
+				}
+			}
+		}
+		efloat_rounding_mode = saved;
+		return failures;
+	}
+
 	// |x| mod |y| by binary long division, and the quotient's parity
 	template<unsigned nlimbs>
 	sw::universal::efloat<nlimbs> long_division_mod(const sw::universal::efloat<nlimbs>& x, const sw::universal::efloat<nlimbs>& y, bool& odd) {
@@ -510,6 +669,13 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotRounding<1>(reportTestCases, 32, 200), "efloat<1>", "hypot");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmaRounding<1>(reportTestCases, 32, 200), "efloat<1>", "fma");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainder<1>(reportTestCases, 32, 200), "efloat<1>", "fmod, remainder");
+	// the alignments and frames of fma's and hypot's limb kernels (#1802), also at odd limb counts
+	nrOfFailedTestCases += ReportTestResult(VerifyFmaAlignments<4>(reportTestCases, 128, 300), "efloat<4>", "fma alignments");
+	nrOfFailedTestCases += ReportTestResult(VerifyFmaAlignments<3>(reportTestCases, 96, 200), "efloat<3>", "fma alignments");
+	nrOfFailedTestCases += ReportTestResult(VerifyFmaAlignments<1>(reportTestCases, 32, 200), "efloat<1>", "fma alignments");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<4>(reportTestCases, 128, 200), "efloat<4>", "hypot frames");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<3>(reportTestCases, 96, 200), "efloat<3>", "hypot frames");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<1>(reportTestCases, 32, 200), "efloat<1>", "hypot frames");
 #	endif
 
 #	if REGRESSION_LEVEL_2
@@ -517,6 +683,10 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotRounding<16>(reportTestCases, 512, 60), "efloat<16>", "hypot");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmaRounding<16>(reportTestCases, 512, 60), "efloat<16>", "fma");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainder<16>(reportTestCases, 512, 60), "efloat<16>", "fmod, remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyFmaAlignments<16>(reportTestCases, 512, 100), "efloat<16>", "fma alignments");
+	nrOfFailedTestCases += ReportTestResult(VerifyFmaAlignments<5>(reportTestCases, 160, 100), "efloat<5>", "fma alignments");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<16>(reportTestCases, 512, 60), "efloat<16>", "hypot frames");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<5>(reportTestCases, 160, 60), "efloat<5>", "hypot frames");
 #	endif
 
 #	if REGRESSION_LEVEL_3
@@ -527,6 +697,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotRounding<64>(reportTestCases, 2048, 10), "efloat<64>", "hypot");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmaRounding<64>(reportTestCases, 2048, 10), "efloat<64>", "fma");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainder<64>(reportTestCases, 2048, 10), "efloat<64>", "fmod, remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyFmaAlignments<64>(reportTestCases, 2048, 20), "efloat<64>", "fma alignments");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<64>(reportTestCases, 2048, 10), "efloat<64>", "hypot frames");
 #	endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
