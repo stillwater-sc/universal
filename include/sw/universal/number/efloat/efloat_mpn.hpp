@@ -23,16 +23,32 @@
 #include <cstdint>
 #include <universal/internal/blocktype/carry.hpp>   // mul128, uint128_t
 
+// x86-64 kernels in GNU inline assembly (gcc, clang), chosen at run time when the processor has
+// BMI2 and ADX (#1816); define EFLOAT_MPN_NO_ASM to compile the portable loops alone
+#if !defined(EFLOAT_MPN_NO_ASM) && defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
+#define EFLOAT_MPN_X86_64_ASM 1
+#include <cpuid.h>
+#else
+#define EFLOAT_MPN_X86_64_ASM 0
+#endif
+
 namespace sw { namespace universal { namespace efloat_mpn {
 
 using limb_t = std::uint64_t;
 
-// operands of at least this many limbs multiply by Karatsuba, below it by schoolbook
+// operands of at least this many limbs multiply by Karatsuba, below it by schoolbook. The
+// thresholds here and below were measured with the basecase each build runs: the x86-64
+// assembly (#1816), or the portable loops (#1762, #1807, #1769)
+#if EFLOAT_MPN_X86_64_ASM
+inline constexpr std::size_t karatsuba_threshold = 24;
+inline constexpr std::size_t karatsuba_sqr_threshold = 64;
+#else
 inline constexpr std::size_t karatsuba_threshold = 16;
 inline constexpr std::size_t karatsuba_sqr_threshold = 48;
+#endif
 
 // r[0, n) = a[0, n) * b, returns the high limb
-inline limb_t mul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+inline limb_t mul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
 	limb_t carry = 0;
 	for (std::size_t i = 0; i < n; ++i) {
 #if defined(__SIZEOF_INT128__)
@@ -52,7 +68,7 @@ inline limb_t mul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcep
 }
 
 // r[0, n) += a[0, n) * b, returns the carry out of the top: a * b + r + carry < 2^128
-inline limb_t addmul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+inline limb_t addmul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
 	limb_t carry = 0;
 	for (std::size_t i = 0; i < n; ++i) {
 #if defined(__SIZEOF_INT128__)
@@ -74,7 +90,7 @@ inline limb_t addmul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noex
 }
 
 // r[0, n) = a[0, n) + b[0, n), returns the carry; r may be a or b
-inline limb_t add_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+inline limb_t add_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
 	limb_t carry = 0;
 	for (std::size_t i = 0; i < n; ++i) {
 		const limb_t s = a[i] + carry;
@@ -86,7 +102,7 @@ inline limb_t add_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) 
 }
 
 // r[0, n) = a[0, n) - b[0, n), returns the borrow; r may be a or b
-inline limb_t sub_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+inline limb_t sub_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
 	limb_t borrow = 0;
 	for (std::size_t i = 0; i < n; ++i) {
 		const limb_t bi = b[i] + borrow;
@@ -96,6 +112,236 @@ inline limb_t sub_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) 
 		borrow = c + ((ai < bi) ? 1u : 0u);
 	}
 	return borrow;
+}
+
+#if EFLOAT_MPN_X86_64_ASM
+// The loops below are efloat's own, written from the instruction set's semantics (Intel SDM: mulx,
+// adcx, adox), not from GMP's assembly.  Each runs over a multiple of four limbs, n > 0, in order
+// from the least significant, one limb finished before the next is read, so a destination may be
+// one of the sources exactly as in the portable loops.  mulx takes b in rdx and leaves the flags
+// alone; adcx carries through CF only and adox through OF only, so the product's high halves and
+// the destination run as two carry chains.  The loop steps a negative index with lea and leaves on
+// jrcxz, neither of which touches a flag; a compare and branch would clobber both chains.
+namespace x86 {
+
+// BMI2 (mulx) and ADX (adcx, adox): cpuid leaf 7, ebx bits 8 and 19.  A static initializer that
+// multiplies before this one has run reads false and takes the portable loops, which agree.
+inline bool detect_mulx_adx() noexcept {
+	unsigned eax = 0, ebx = 0, ecx = 0, edx = 0;
+	if (__get_cpuid_max(0, nullptr) < 7) return false;
+	__cpuid_count(7, 0, eax, ebx, ecx, edx);
+	return ((ebx >> 8) & 1u) != 0 && ((ebx >> 19) & 1u) != 0;
+}
+inline const bool has_mulx_adx = detect_mulx_adx();
+
+// r[0, n) = a[0, n) * b + c, returns the high limb
+inline limb_t mul_4k(limb_t* r, const limb_t* a, std::size_t n, limb_t b, limb_t c) noexcept {
+	std::ptrdiff_t i = -static_cast<std::ptrdiff_t>(n);   // 64 bits on every x86-64 ABI, LLP64 too
+	__asm__ volatile(
+		"xor %%r8d, %%r8d\n\t"                 // CF = OF = 0
+		"1:\n\t"
+		"mulx (%[a],%[i],8), %%r9, %%r10\n\t"
+		"adcx %[c], %%r9\n\t"
+		"mov %%r9, (%[r],%[i],8)\n\t"
+		"mulx 8(%[a],%[i],8), %%r9, %[c]\n\t"
+		"adcx %%r10, %%r9\n\t"
+		"mov %%r9, 8(%[r],%[i],8)\n\t"
+		"mulx 16(%[a],%[i],8), %%r9, %%r10\n\t"
+		"adcx %[c], %%r9\n\t"
+		"mov %%r9, 16(%[r],%[i],8)\n\t"
+		"mulx 24(%[a],%[i],8), %%r9, %[c]\n\t"
+		"adcx %%r10, %%r9\n\t"
+		"mov %%r9, 24(%[r],%[i],8)\n\t"
+		"lea 4(%[i]), %[i]\n\t"
+		"jrcxz 2f\n\t"
+		"jmp 1b\n\t"
+		"2:\n\t"
+		"adcx %%r8, %[c]\n\t"
+		: [i] "+c"(i), [c] "+r"(c)
+		: [a] "r"(a + n), [r] "r"(r + n), "d"(b)
+		: "r8", "r9", "r10", "cc", "memory");
+	return c;
+}
+
+// r[0, n) += a[0, n) * b + c, returns the carry out of the top
+inline limb_t addmul_4k(limb_t* r, const limb_t* a, std::size_t n, limb_t b, limb_t c) noexcept {
+	std::ptrdiff_t i = -static_cast<std::ptrdiff_t>(n);
+	__asm__ volatile(
+		"xor %%r8d, %%r8d\n\t"
+		"1:\n\t"
+		"mulx (%[a],%[i],8), %%r9, %%r10\n\t"
+		"adox %[c], %%r9\n\t"                  // the previous high half, through OF
+		"adcx (%[r],%[i],8), %%r9\n\t"         // the destination, through CF
+		"mov %%r9, (%[r],%[i],8)\n\t"
+		"mulx 8(%[a],%[i],8), %%r9, %[c]\n\t"
+		"adox %%r10, %%r9\n\t"
+		"adcx 8(%[r],%[i],8), %%r9\n\t"
+		"mov %%r9, 8(%[r],%[i],8)\n\t"
+		"mulx 16(%[a],%[i],8), %%r9, %%r10\n\t"
+		"adox %[c], %%r9\n\t"
+		"adcx 16(%[r],%[i],8), %%r9\n\t"
+		"mov %%r9, 16(%[r],%[i],8)\n\t"
+		"mulx 24(%[a],%[i],8), %%r9, %[c]\n\t"
+		"adox %%r10, %%r9\n\t"
+		"adcx 24(%[r],%[i],8), %%r9\n\t"
+		"mov %%r9, 24(%[r],%[i],8)\n\t"
+		"lea 4(%[i]), %[i]\n\t"
+		"jrcxz 2f\n\t"
+		"jmp 1b\n\t"
+		"2:\n\t"
+		"adox %%r8, %[c]\n\t"                  // both pending carries fold into the high limb:
+		"adcx %%r8, %[c]\n\t"                  // a * b + r + c < 2^(64(n+1)), so neither overflows it
+		: [i] "+c"(i), [c] "+r"(c)
+		: [a] "r"(a + n), [r] "r"(r + n), "d"(b)
+		: "r8", "r9", "r10", "cc", "memory");
+	return c;
+}
+
+// r[0, n) -= a[0, n) * b + c, returns the borrow out of the top.  The product's limbs p come
+// from the OF chain as in addmul_4k; r - p is r + ~p + 1 on the CF chain, which starts set, and
+// the borrow is the product's high limb plus one less the final carry.
+inline limb_t submul_4k(limb_t* r, const limb_t* a, std::size_t n, limb_t b, limb_t c) noexcept {
+	std::ptrdiff_t i = -static_cast<std::ptrdiff_t>(n);
+	__asm__ volatile(
+		"xor %%r8d, %%r8d\n\t"
+		"stc\n\t"
+		"1:\n\t"
+		"mulx (%[a],%[i],8), %%r9, %%r10\n\t"
+		"adox %[c], %%r9\n\t"
+		"not %%r9\n\t"
+		"adcx (%[r],%[i],8), %%r9\n\t"
+		"mov %%r9, (%[r],%[i],8)\n\t"
+		"mulx 8(%[a],%[i],8), %%r9, %[c]\n\t"
+		"adox %%r10, %%r9\n\t"
+		"not %%r9\n\t"
+		"adcx 8(%[r],%[i],8), %%r9\n\t"
+		"mov %%r9, 8(%[r],%[i],8)\n\t"
+		"mulx 16(%[a],%[i],8), %%r9, %%r10\n\t"
+		"adox %[c], %%r9\n\t"
+		"not %%r9\n\t"
+		"adcx 16(%[r],%[i],8), %%r9\n\t"
+		"mov %%r9, 16(%[r],%[i],8)\n\t"
+		"mulx 24(%[a],%[i],8), %%r9, %[c]\n\t"
+		"adox %%r10, %%r9\n\t"
+		"not %%r9\n\t"
+		"adcx 24(%[r],%[i],8), %%r9\n\t"
+		"mov %%r9, 24(%[r],%[i],8)\n\t"
+		"lea 4(%[i]), %[i]\n\t"
+		"jrcxz 2f\n\t"
+		"jmp 1b\n\t"
+		"2:\n\t"
+		"adox %%r8, %[c]\n\t"
+		"cmc\n\t"
+		"adcx %%r8, %[c]\n\t"
+		: [i] "+c"(i), [c] "+r"(c)
+		: [a] "r"(a + n), [r] "r"(r + n), "d"(b)
+		: "r8", "r9", "r10", "cc", "memory");
+	return c;
+}
+
+// r[0, n) = a[0, n) + b[0, n) + c, c in {0, 1}, returns the carry
+inline limb_t add_4k(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t c) noexcept {
+	std::ptrdiff_t i = -static_cast<std::ptrdiff_t>(n);
+	__asm__ volatile(
+		"neg %[c]\n\t"                         // CF = c
+		"1:\n\t"
+		"mov (%[a],%[i],8), %%r9\n\t"
+		"adc (%[b],%[i],8), %%r9\n\t"
+		"mov %%r9, (%[r],%[i],8)\n\t"
+		"mov 8(%[a],%[i],8), %%r9\n\t"
+		"adc 8(%[b],%[i],8), %%r9\n\t"
+		"mov %%r9, 8(%[r],%[i],8)\n\t"
+		"mov 16(%[a],%[i],8), %%r9\n\t"
+		"adc 16(%[b],%[i],8), %%r9\n\t"
+		"mov %%r9, 16(%[r],%[i],8)\n\t"
+		"mov 24(%[a],%[i],8), %%r9\n\t"
+		"adc 24(%[b],%[i],8), %%r9\n\t"
+		"mov %%r9, 24(%[r],%[i],8)\n\t"
+		"lea 4(%[i]), %[i]\n\t"
+		"jrcxz 2f\n\t"
+		"jmp 1b\n\t"
+		"2:\n\t"
+		"mov $0, %[c]\n\t"
+		"adc $0, %[c]\n\t"
+		: [i] "+c"(i), [c] "+r"(c)
+		: [a] "r"(a + n), [b] "r"(b + n), [r] "r"(r + n)
+		: "r9", "cc", "memory");
+	return c;
+}
+
+// r[0, n) = a[0, n) - b[0, n) - c, c in {0, 1}, returns the borrow
+inline limb_t sub_4k(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t c) noexcept {
+	std::ptrdiff_t i = -static_cast<std::ptrdiff_t>(n);
+	__asm__ volatile(
+		"neg %[c]\n\t"
+		"1:\n\t"
+		"mov (%[a],%[i],8), %%r9\n\t"
+		"sbb (%[b],%[i],8), %%r9\n\t"
+		"mov %%r9, (%[r],%[i],8)\n\t"
+		"mov 8(%[a],%[i],8), %%r9\n\t"
+		"sbb 8(%[b],%[i],8), %%r9\n\t"
+		"mov %%r9, 8(%[r],%[i],8)\n\t"
+		"mov 16(%[a],%[i],8), %%r9\n\t"
+		"sbb 16(%[b],%[i],8), %%r9\n\t"
+		"mov %%r9, 16(%[r],%[i],8)\n\t"
+		"mov 24(%[a],%[i],8), %%r9\n\t"
+		"sbb 24(%[b],%[i],8), %%r9\n\t"
+		"mov %%r9, 24(%[r],%[i],8)\n\t"
+		"lea 4(%[i]), %[i]\n\t"
+		"jrcxz 2f\n\t"
+		"jmp 1b\n\t"
+		"2:\n\t"
+		"mov $0, %[c]\n\t"
+		"adc $0, %[c]\n\t"
+		: [i] "+c"(i), [c] "+r"(c)
+		: [a] "r"(a + n), [b] "r"(b + n), [r] "r"(r + n)
+		: "r9", "cc", "memory");
+	return c;
+}
+
+}  // namespace x86
+#endif
+
+// The kernels: the low n mod 4 limbs by the portable loop, the rest by the assembly when the
+// processor has it, its carry passed in
+inline limb_t mul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+#if EFLOAT_MPN_X86_64_ASM
+	if (n >= 4 && x86::has_mulx_adx) {
+		const std::size_t t = n & 3u;
+		return x86::mul_4k(r + t, a + t, n - t, b, mul_1_portable(r, a, t, b));
+	}
+#endif
+	return mul_1_portable(r, a, n, b);
+}
+
+inline limb_t addmul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+#if EFLOAT_MPN_X86_64_ASM
+	if (n >= 4 && x86::has_mulx_adx) {
+		const std::size_t t = n & 3u;
+		return x86::addmul_4k(r + t, a + t, n - t, b, addmul_1_portable(r, a, t, b));
+	}
+#endif
+	return addmul_1_portable(r, a, n, b);
+}
+
+inline limb_t add_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+#if EFLOAT_MPN_X86_64_ASM
+	if (n >= 4) {   // adc alone: every x86-64 processor has it
+		const std::size_t t = n & 3u;
+		return x86::add_4k(r + t, a + t, b + t, n - t, add_n_portable(r, a, b, t));
+	}
+#endif
+	return add_n_portable(r, a, b, n);
+}
+
+inline limb_t sub_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+#if EFLOAT_MPN_X86_64_ASM
+	if (n >= 4) {
+		const std::size_t t = n & 3u;
+		return x86::sub_4k(r + t, a + t, b + t, n - t, sub_n_portable(r, a, b, t));
+	}
+#endif
+	return sub_n_portable(r, a, b, n);
 }
 
 // r[0, n) += c, returns the carry out of the top
@@ -462,7 +708,8 @@ inline bool load_msb_first(limb_t* r, std::size_t n, const std::uint32_t* v, std
 // full by Karatsuba and the two cross terms by short products of the other l = n - k limbs: the
 // partial products it adds are again all those with i + j >= n - 1 and some below.
 
-inline constexpr std::size_t mulhigh_threshold = 32;   // and k = 6n / 10: both by measurement
+// and k = 6n / 10: both by measurement (#1807, #1816)
+inline constexpr std::size_t mulhigh_threshold = EFLOAT_MPN_X86_64_ASM ? 64 : 32;
 
 // r[n - 1, 2n) = R as above, r[0, n - 1) is overwritten; r overlaps neither operand
 inline void mulhigh_basecase(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
@@ -569,7 +816,7 @@ inline bool can_round(const limb_t* a, std::size_t n, unsigned precision, unsign
 // pays for each half with one product, so the division costs a few multiplications.
 
 // operands whose quotient and divisor both have at least this many limbs divide by divide-and-conquer
-inline constexpr std::size_t dc_div_threshold = 16;
+inline constexpr std::size_t dc_div_threshold = EFLOAT_MPN_X86_64_ASM ? 32 : 16;   // by measurement (#1769, #1816)
 
 // the high and low limbs of a * b
 inline void umul(limb_t a, limb_t b, limb_t& hi, limb_t& lo) noexcept {
@@ -669,7 +916,7 @@ inline void udiv_qr_3by2(limb_t& q, limb_t& r1, limb_t& r0, limb_t n2, limb_t n1
 }
 
 // r[0, n) -= a[0, n) * b, returns the borrow out of the top
-inline limb_t submul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+inline limb_t submul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
 	limb_t carry = 0;
 	for (std::size_t i = 0; i < n; ++i) {
 #if defined(__SIZEOF_INT128__)
@@ -687,6 +934,16 @@ inline limb_t submul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noex
 		carry = hi + ((ri < lo) ? 1u : 0u);
 	}
 	return carry;
+}
+
+inline limb_t submul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+#if EFLOAT_MPN_X86_64_ASM
+	if (n >= 4 && x86::has_mulx_adx) {
+		const std::size_t t = n & 3u;
+		return x86::submul_4k(r + t, a + t, n - t, b, submul_1_portable(r, a, t, b));
+	}
+#endif
+	return submul_1_portable(r, a, n, b);
 }
 
 // r[0, n) -= c, returns the borrow out of the top
