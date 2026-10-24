@@ -59,10 +59,11 @@ namespace efloat_detail {
 	template<unsigned nlimbs>
 	inline bool can_round(const efloat<nlimbs>& y, unsigned precision, unsigned correct) {
 		if (correct < precision + 4) return false;
-		const std::vector<uint32_t>& limbs = y.limb_vector();   // most significant first, leading bit at 31
-		auto bit = [&limbs](unsigned p) -> uint32_t {
-			const std::size_t i = p / 32;
-			return (i < limbs.size()) ? (limbs[i] >> (31 - p % 32)) & 1u : 0u;
+		const limb_kernels::limb_t* w = y.limb_data();   // least significant first, leading bit at 63 of the top
+		const std::size_t         m = y.limb_count();
+		auto bit = [w, m](unsigned p) -> uint32_t {
+			const std::size_t i = p / 64;
+			return (i < m) ? static_cast<uint32_t>((w[m - 1 - i] >> (63 - p % 64)) & 1u) : 0u;
 		};
 		const uint32_t first = bit(precision + 1);
 		for (unsigned p = precision + 2; p <= correct - 2; ++p) {
@@ -112,9 +113,10 @@ namespace efloat_detail {
 	// The number of significant bits of a finite x != 0: from its leading bit to its last 1 bit
 	template<unsigned nlimbs>
 	inline unsigned significant_bits(const efloat<nlimbs>& x) {
-		const std::vector<uint32_t>& limbs = x.limb_vector();   // most significant first, leading bit at 31
-		for (std::size_t i = limbs.size(); i-- > 0; ) {
-			if (limbs[i] != 0u) return static_cast<unsigned>(32 * i + 32 - static_cast<std::size_t>(std::countr_zero(limbs[i])));
+		const limb_kernels::limb_t* w = x.limb_data();   // least significant first, leading bit at 63 of the top
+		const std::size_t         m = x.limb_count();
+		for (std::size_t i = 0; i < m; ++i) {
+			if (w[i] != 0u) return static_cast<unsigned>(64 * (m - i) - static_cast<std::size_t>(std::countr_zero(w[i])));
 		}
 		return 0;
 	}
@@ -129,11 +131,12 @@ namespace efloat_detail {
 	template<unsigned nlimbs>
 	inline int64_t integer_value(const efloat<nlimbs>& x) {
 		if (x.iszero()) return 0;
-		const std::vector<uint32_t>& limbs = x.limb_vector();   // most significant first, leading bit at 31
+		const limb_kernels::limb_t* w = x.limb_data();   // least significant first, leading bit at 63 of the top
+		const std::size_t         m = x.limb_count();
 		uint64_t v = 0;
 		for (int64_t p = 0; p <= x.scale(); ++p) {
-			const std::size_t i = static_cast<std::size_t>(p / 32);
-			const uint32_t b = (i < limbs.size()) ? (limbs[i] >> (31 - p % 32)) & 1u : 0u;
+			const std::size_t i = static_cast<std::size_t>(p / 64);
+			const uint64_t b = (i < m) ? (w[m - 1 - i] >> (63 - p % 64)) & 1u : 0u;
 			v = (v << 1) | b;
 		}
 		return (x.sign() == -1) ? -static_cast<int64_t>(v) : static_cast<int64_t>(v);
@@ -171,29 +174,18 @@ namespace efloat_detail {
 		return w;
 	}
 
-	// Scratch limbs for the exact kernels (#1802): on the stack, or on the heap when a kernel
-	// needs more
-	struct limb_buffer {
-		efloat_mpn::limb_t              local[512];
-		std::vector<efloat_mpn::limb_t> heap;
-		efloat_mpn::limb_t* get(std::size_t n) {
-			if (n <= 512) return local;
-			heap.resize(n);
-			return heap.data();
-		}
-	};
+	// Scratch limbs for the exact kernels (#1802): on the stack, or a block from the thread's
+	// cache when a kernel needs more (#1820)
+	using limb_buffer = efloat_storage::scratch_limbs<512>;
 
-	// the significand of a finite x != 0 as an integer P of (size + 1) / 2 64-bit limbs, least
-	// significant first, with |x| = P 2^(scale(x) - 64 m + 1) for the m limbs returned (#1802)
+	// the significand of a finite x != 0 as an integer P of limb_count() 64-bit limbs, least
+	// significant first, with |x| = P 2^(scale(x) - 64 m + 1) for the m limbs returned (#1802):
+	// the limbs x holds (#1820)
 	template<unsigned nlimbs>
-	inline std::size_t pack_significand(efloat_mpn::limb_t* p, const efloat<nlimbs>& x) {
-		const std::vector<uint32_t>& v = x.limb_vector();   // most significant first, leading bit at 31
-		const std::size_t n = v.size();
-		const std::size_t m = (n + 1) / 2;
-		for (std::size_t j = 0; j < m; ++j) {
-			const std::size_t hi = 2 * m - 2 - 2 * j;   // the high half's index, an odd n padded with a zero at the bottom
-			p[j] = (efloat_mpn::limb_t(v[hi]) << 32) | ((hi + 1 < n) ? v[hi + 1] : 0u);
-		}
+	inline std::size_t pack_significand(limb_kernels::limb_t* p, const efloat<nlimbs>& x) {
+		const limb_kernels::limb_t* w = x.limb_data();
+		const std::size_t         m = x.limb_count();
+		for (std::size_t j = 0; j < m; ++j) p[j] = w[j];
 		return m;
 	}
 
@@ -324,46 +316,26 @@ namespace efloat_detail {
 	// operation truncates, and the truncations are counted in the guard bits (fixed_series).
 	namespace fixed_series {
 
-		using efloat_mpn::limb_t;
-
-		// R[0, n) |= w 2^pos for a 32-bit w; the bits that fall below 2^0 are dropped
-		inline void put_bits(limb_t* R, std::size_t n, uint32_t w, int64_t pos) noexcept {
-			uint64_t v = w;
-			if (pos < 0) {
-				if (pos <= -32) return;
-				v >>= -pos;
-				pos = 0;
-			}
-			const std::size_t limb = static_cast<std::size_t>(pos / 64);
-			const unsigned    off  = static_cast<unsigned>(pos % 64);
-			if (limb < n) R[limb] |= v << off;
-			if (off > 32 && limb + 1 < n) R[limb + 1] |= v >> (64u - off);
-		}
+		using limb_kernels::limb_t;
 
 		// R[0, n) = floor(|v| 2^shift), for a finite v with |v| 2^shift < 2^(64 n)
 		template<unsigned nlimbs>
 		inline void to_fixed(const efloat<nlimbs>& v, int64_t shift, limb_t* R, std::size_t n) noexcept {
 			for (std::size_t i = 0; i < n; ++i) R[i] = 0;
 			if (v.iszero()) return;
-			const std::vector<uint32_t>& w = v.limb_vector();   // most significant first, leading bit at 31
-			const int64_t e = v.scale();
-			for (std::size_t t = 0; t < w.size(); ++t) {
-				const int64_t pos = shift + e - 32 * static_cast<int64_t>(t) - 31;   // where w[t]'s last bit lands
-				if (pos <= -32) break;
-				put_bits(R, n, w[t], pos);
-			}
+			const limb_t*     w = v.limb_data();   // least significant first, leading bit at 63 of the top
+			const std::size_t m = v.limb_count();
+			// v's limb j has its bit 0 at 2^(scale(v) - 64 (m - j) + 1), at R's bit shift + that
+			limb_kernels::load_window(R, n, w, m, shift + v.scale() - 64 * static_cast<int64_t>(m) + 1);
 		}
 
 		// A[0, len) 2^(scale - 64 len + 1) as an efloat, exactly: the top bit of A[len - 1] weighs
 		// 2^scale. The exponent is set raw, so a value past the range overflows when it is rounded.
 		template<unsigned nlimbs>
 		inline efloat<nlimbs> from_fixed(const limb_t* A, std::size_t len, int64_t scale) {
-			std::vector<uint32_t> w(2 * len);
-			for (std::size_t i = 0; i < len; ++i) {
-				w[2 * (len - 1 - i)]     = static_cast<uint32_t>(A[i] >> 32);
-				w[2 * (len - 1 - i) + 1] = static_cast<uint32_t>(A[i]);
-			}
-			efloat<nlimbs> v(false, 0, w);
+			efloat<nlimbs> v(1);
+			v.set_significand(A, len);
+			v.setexponent(0);
 			v.set_precision(static_cast<unsigned>(64 * len));   // exact: normalizes, does not round
 			v.setexponent(v.scale() + scale);
 			return v;
@@ -374,11 +346,11 @@ namespace efloat_detail {
 		inline void div_1(limb_t* q, const limb_t* a, std::size_t n, limb_t d) noexcept {
 			const unsigned l  = static_cast<unsigned>(std::countl_zero(d));
 			const limb_t   dn = d << l;
-			const limb_t   v  = efloat_mpn::invert_limb(dn);
+			const limb_t   v  = limb_kernels::invert_limb(dn);
 			limb_t r = (l != 0u) ? a[n - 1] >> (64u - l) : 0u;   // below dn
 			for (std::size_t i = n; i-- > 0;) {
 				const limb_t n0 = (l != 0u) ? ((a[i] << l) | ((i > 0) ? a[i - 1] >> (64u - l) : 0u)) : a[i];
-				efloat_mpn::udiv_qr_2by1(q[i], r, r, n0, dn, v);
+				limb_kernels::udiv_qr_2by1(q[i], r, r, n0, dn, v);
 			}
 		}
 
@@ -395,7 +367,7 @@ namespace efloat_detail {
 
 		// r[0, n) = a + b or a - b (a >= b), n limbs
 		inline void add_or_sub(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, bool subtract) noexcept {
-			if (subtract) efloat_mpn::sub_n(r, a, b, n); else efloat_mpn::add_n(r, a, b, n);
+			if (subtract) limb_kernels::sub_n(r, a, b, n); else limb_kernels::add_n(r, a, b, n);
 		}
 
 		// log2(k!), from a table below 4096 and Stirling's series above, where it is within 2^-40
@@ -473,15 +445,15 @@ namespace efloat_detail {
 		// a b / B^drop truncated, na + nb - drop limbs, returned where they lie: below
 		// truncated_min_limbs the exact floor, the top of the full product formed in tmp[0, na + nb)
 		// as before #1807; from it a truncated short product within 2 units
-		// (efloat_mpn::mul_truncated), formed in tmp
+		// (limb_kernels::mul_truncated), formed in tmp
 		inline const limb_t* truncated_product(const limb_t* a, std::size_t na, const limb_t* b, std::size_t nb,
 		                                       std::size_t drop, limb_t* tmp, limb_t* s) noexcept {
-			if (na < efloat_mpn::truncated_min_limbs || nb < efloat_mpn::truncated_min_limbs) {
-				if (a == b && na == nb) efloat_mpn::mul_n(tmp, a, a, na, s, true);
-				else                    efloat_mpn::mul(tmp, a, na, b, nb, s);
+			if (na < limb_kernels::truncated_min_limbs || nb < limb_kernels::truncated_min_limbs) {
+				if (a == b && na == nb) limb_kernels::mul_n(tmp, a, a, na, s, true);
+				else                    limb_kernels::mul(tmp, a, na, b, nb, s);
 				return tmp + drop;
 			}
-			efloat_mpn::mul_truncated(tmp, a, na, b, nb, drop, s);
+			limb_kernels::mul_truncated(tmp, a, na, b, nb, drop, s);
 			return tmp;
 		}
 
@@ -503,7 +475,7 @@ namespace efloat_detail {
 		                   divisors kind = divisors::exponential, int64_t a = 0) {
 			const std::size_t w  = n + 1;           // a value below 2^64
 			const unsigned    nb = (N + m - 1) / m; // blocks
-			limb_t* P   = scratch((m + 1) * w + 2 * (2 * w + 2) + 2 * (w + 1) + efloat_mpn::truncated_scratch_limbs(w, w, w - 1));
+			limb_t* P   = scratch((m + 1) * w + 2 * (2 * w + 2) + 2 * (w + 1) + limb_kernels::truncated_scratch_limbs(w, w, w - 1));
 			limb_t* tmp = P + (m + 1) * w;          // a product, 2 w limbs
 			limb_t* acc = tmp + (2 * w + 2);        // the Horner value, w limbs
 			limb_t* pos = acc + (2 * w + 2);        // a block's numerator terms of either sign, w + 1 limbs
@@ -539,12 +511,12 @@ namespace efloat_detail {
 						into[k] = t;
 					}
 					else {
-						const limb_t carry = efloat_mpn::addmul_1(into, P + j * w + q, k, c);
-						efloat_mpn::add_1(into + k, 2, carry);
+						const limb_t carry = limb_kernels::addmul_1(into, P + j * w + q, k, c);
+						limb_kernels::add_1(into + k, 2, carry);
 						c *= divisor(kind, base + j);
 					}
 				}
-				efloat_mpn::sub_n(pos, pos, neg, kw + 1);   // the block is positive
+				limb_kernels::sub_n(pos, pos, neg, kw + 1);   // the block is positive
 				div_1(tmp, pos, kw + 1, c);                  // B_b, below 2
 				if (b + 1 == nb) {
 					for (std::size_t i = 0; i < kw; ++i) acc[i] = tmp[i];
@@ -583,7 +555,7 @@ namespace efloat_detail {
 		                              bool alternating = true) {
 			const std::size_t w  = n + 1;
 			const unsigned    nb = (N + m - 1) / m; // blocks
-			limb_t* P   = scratch((m + 1) * w + (2 * w + 2) + 3 * (w + 2) + efloat_mpn::truncated_scratch_limbs(w, w, w - 1));
+			limb_t* P   = scratch((m + 1) * w + (2 * w + 2) + 3 * (w + 2) + limb_kernels::truncated_scratch_limbs(w, w, w - 1));
 			limb_t* tmp = P + (m + 1) * w;          // a product or a quotient, 2 w + 2 limbs
 			limb_t* acc = tmp + (2 * w + 2);        // the Horner value, w + 2 limbs
 			limb_t* blk = acc + (w + 2);            // a block's sum
@@ -627,12 +599,12 @@ namespace efloat_detail {
 							grp[k] = c;                   // P_0 = 1 = 2^F, the group's first term
 						}
 						else if (!alternating || (t - j) % 2 == 0) {
-							const limb_t carry = efloat_mpn::addmul_1(grp, P + t * w + q, k, c);
-							efloat_mpn::add_1(grp + k, 2, carry);
+							const limb_t carry = limb_kernels::addmul_1(grp, P + t * w + q, k, c);
+							limb_kernels::add_1(grp + k, 2, carry);
 						}
 						else {
-							const limb_t borrow = efloat_mpn::submul_1(grp, P + t * w + q, k, c);
-							efloat_mpn::sub_1(grp + k, 2, borrow);
+							const limb_t borrow = limb_kernels::submul_1(grp, P + t * w + q, k, c);
+							limb_kernels::sub_1(grp + k, 2, borrow);
 						}
 					}
 					div_1(tmp, grp, kw, L);           // the group, below 2
@@ -661,14 +633,14 @@ namespace efloat_detail {
 		// product within 2 units of E's last limb (#1807)
 		inline void square(limb_t* E, std::size_t n) {
 			const std::size_t w = n + 1;
-			if (w < efloat_mpn::truncated_min_limbs) {
-				limb_t* tmp = scratch(2 * w + efloat_mpn::scratch_limbs(w));
-				efloat_mpn::mul_n(tmp, E, E, w, tmp + 2 * w, true);
+			if (w < limb_kernels::truncated_min_limbs) {
+				limb_t* tmp = scratch(2 * w + limb_kernels::scratch_limbs(w));
+				limb_kernels::mul_n(tmp, E, E, w, tmp + 2 * w, true);
 				for (std::size_t i = 0; i < w; ++i) E[i] = tmp[n + i];
 				return;
 			}
-			limb_t* tmp = scratch((w + 1) + efloat_mpn::truncated_scratch_limbs(w, w, n));
-			efloat_mpn::mul_truncated(tmp, E, w, E, w, n, tmp + w + 1);   // w + 1 limbs, the top one 0
+			limb_t* tmp = scratch((w + 1) + limb_kernels::truncated_scratch_limbs(w, w, n));
+			limb_kernels::mul_truncated(tmp, E, w, E, w, n, tmp + w + 1);   // w + 1 limbs, the top one 0
 			for (std::size_t i = 0; i < w; ++i) E[i] = tmp[i];
 		}
 
@@ -685,7 +657,7 @@ namespace efloat_detail {
 	// Error: the fixed-point values carry F >= precision + 64 + T + 16 fraction bits. R = s 2^F is
 	// truncated (2^-F), each block's sum and quotient truncate (2^-F each, 2^-(F + 8) for a
 	// tapered block's dropped limbs, #1790), each power and Horner product is a truncated short
-	// product within 2^(1 - F) (efloat_mpn::mul_truncated, #1807): about N + 4 N / m + 2 m units
+	// product within 2^(1 - F) (limb_kernels::mul_truncated, #1807): about N + 4 N / m + 2 m units
 	// of 2^-F, under 2^10 at 8192 bits, and the tail lies below 2^-(F + 3). Each squaring doubles
 	// the relative error and adds 2^(1 - F), so exp(+-s)^(2^h) is within 2^h (2^10 + 2) 2^-F <
 	// 2^(h + 11 - F) <= 2^-(precision + 64 + 5) of its value, far inside exp_error_bits; r's own

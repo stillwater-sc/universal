@@ -213,7 +213,7 @@ namespace efloat_detail {
 		// v = z W / 2 with z = Zs 2^-(F + E), Zs in [2^(F-1), 2^F): V = Zs W / 2^(F + 1)
 		int64_t E = -z.scale() - 1;
 		fixed_series::to_fixed(z, static_cast<int64_t>(F) + E, Z, n);
-		limb_t* s = fixed_series::scratch(std::max(efloat_mpn::scratch_limbs(n + 1), efloat_mpn::truncated_scratch_limbs(n + 1, n, n)));   // after the series, which uses it
+		limb_t* s = fixed_series::scratch(std::max(limb_kernels::scratch_limbs(n + 1), limb_kernels::truncated_scratch_limbs(n + 1, n, n)));   // after the series, which uses it
 		const limb_t* wz = fixed_series::truncated_product(W, n + 1, Z, n, n, P, s);   // W Z / 2^F, n + 1 limbs, within 2 units (#1807)
 		fixed_series::shift_right(V, n, wz, n + 1, 1u);
 		for (unsigned i = 0; i < h; ++i) {   // V' = V - V^2 / 2^(F + E + 1), E' = E - 2; E stays >= 0
@@ -221,7 +221,7 @@ namespace efloat_detail {
 			if (shift < 128u * n) {
 				const limb_t* vv = fixed_series::truncated_product(V, n, V, n, n, P, s);   // V^2 / 2^F, n limbs, within 2 units
 				fixed_series::shift_right(P + 2 * n, n, vv, n, shift - F);   // below 2^(F - E - 1)
-				efloat_mpn::sub_n(V, V, P + 2 * n, n);
+				limb_kernels::sub_n(V, V, P + 2 * n, n);
 			}
 			E -= 2;
 		}

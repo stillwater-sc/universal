@@ -129,7 +129,7 @@ namespace {
 	}
 
 	// cbrt of P-bit arguments over 2^-300 .. 2^300, exact cubes among them, in every mode
-	// (efloat_mpn::cbrtrem, which decides them since #1800, is checked in arithmetic/limb_kernels.cpp)
+	// (limb_kernels::cbrtrem, which decides them since #1800, is checked in arithmetic/limb_kernels.cpp)
 	template<unsigned nlimbs>
 	int VerifyCbrtRounding(bool reportTestCases, unsigned P, int count) {
 		using namespace sw::universal;

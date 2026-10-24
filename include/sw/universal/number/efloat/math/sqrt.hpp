@@ -17,17 +17,20 @@ namespace sw { namespace universal {
 
 namespace efloat_detail {
 
-	// r[0, n) = the low n 64-bit limbs of floor(V 2^shift), V the MSB-first limbs v as an
-	// integer; shift may be negative (efloat_mpn::load_msb_first, #1810)
-	inline void load_shifted(efloat_mpn::limb_t* r, std::size_t n, const std::vector<uint32_t>& v, int64_t shift) {
-		efloat_mpn::load_msb_first(r, n, v.data(), v.size(), shift);
+	// r[0, n) = the low n 64-bit limbs of floor(V 2^shift), V the integer of x's limb32_count()
+	// 32-bit limbs, as bits() lists them; shift may be negative (#1810). x holds V shifted up
+	// past its 32-bit padding, as 64-bit limbs (#1820).
+	template<unsigned nlimbs>
+	inline void load_shifted(limb_kernels::limb_t* r, std::size_t n, const efloat<nlimbs>& x, int64_t shift) {
+		const std::size_t m = x.limb_count();
+		limb_kernels::load_window(r, n, x.limb_data(), m, shift - 32 * static_cast<int64_t>(2 * m - x.limb32_count()));
 	}
 
 	// sqrt(a) for a finite a > 0, correctly rounded to `precision` bits in the current mode, into
 	// result (#1763, #1810). With a = m 4^half, m in [1, 4), F = 64 n - 1 and N = m 2^(2F), the
 	// root S = floor(sqrt(N)) fills n 64-bit limbs, its top bit set, and carries at least
 	// precision + 2 bits, the guard bit among them; the remainder N - S^2 is the sticky bit.
-	// efloat_mpn::sqrt_approx first forms S, or at most sqrt_approx_error(n) above it (6 at 8192
+	// limb_kernels::sqrt_approx first forms S, or at most sqrt_approx_error(n) above it (6 at 8192
 	// bits), without the remainder: precisions are whole 32-bit limbs, so that value carries 30
 	// bits or more past the precision, and Ziv's test on it (can_round) decides the rounding
 	// wherever it passes. Where it does not
@@ -37,11 +40,10 @@ namespace efloat_detail {
 	// were copied through efloat values on the way in and out.
 	template<unsigned nlimbs>
 	inline void sqrt_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& a, unsigned precision) {
-		using efloat_mpn::limb_t;
-		const std::vector<uint32_t>& mb = a.limb_vector();
+		using limb_kernels::limb_t;
 		const int64_t e    = a.scale();
 		const int64_t half = e / 2 - ((e < 0 && e % 2 != 0) ? 1 : 0);   // floor(e / 2), without e - 1 overflowing
-		const int64_t frac = 32 * static_cast<int64_t>(mb.size()) - 1 - (e - 2 * half);   // m = M 2^-frac
+		const int64_t frac = 32 * static_cast<int64_t>(a.limb32_count()) - 1 - (e - 2 * half);   // m = M 2^-frac
 		// the root rounds at whole 32-bit limbs, so it is sized from them: a request of 33 bits
 		// rounds at 64, and the root then needs 66 (before, it was sized from the 33)
 		const unsigned plimbs = std::max(1u, (precision + 31) / 32);
@@ -50,20 +52,20 @@ namespace efloat_detail {
 		const int64_t F = 64 * static_cast<int64_t>(n) - 1;
 
 		limb_buffer buffer;
-		limb_t* np   = buffer.get(3 * n + efloat_mpn::sqrt_scratch_limbs(n));
+		limb_t* np   = buffer.get(3 * n + limb_kernels::sqrt_scratch_limbs(n));
 		limb_t* sp   = np + 2 * n;
 		limb_t* work = sp + n;
-		load_shifted(np, 2 * n, mb, 2 * F - frac);
-		efloat_mpn::sqrt_approx(sp, np, n, work);
+		load_shifted(np, 2 * n, a, 2 * F - frac);
+		limb_kernels::sqrt_approx(sp, np, n, work);
 		// S 2^-F lies within sqrt_approx_error(n) + 1 units of its last bit of the root, and its
 		// top bit weighs 2^half
-		const unsigned lost = static_cast<unsigned>(std::bit_width(efloat_mpn::sqrt_approx_error(n) + 1));
-		if (efloat_mpn::can_round(sp, n, 32 * plimbs, static_cast<unsigned>(F) - lost)) {
+		const unsigned lost = static_cast<unsigned>(std::bit_width(limb_kernels::sqrt_approx_error(n) + 1));
+		if (limb_kernels::can_round(sp, n, 32 * plimbs, static_cast<unsigned>(F) - lost)) {
 			result.assign_rounded_limbs(false, sp, n, half, true, plimbs);
 			return;
 		}
-		load_shifted(np, 2 * n, mb, 2 * F - frac);
-		const limb_t carry = efloat_mpn::sqrtrem(sp, np, n, work);
+		load_shifted(np, 2 * n, a, 2 * F - frac);
+		const limb_t carry = limb_kernels::sqrtrem(sp, np, n, work);
 		bool sticky = (carry != 0u);
 		for (std::size_t k = 0; !sticky && k < n; ++k) sticky = (np[k] != 0u);
 		result.assign_rounded_limbs(false, sp, n, half, sticky, plimbs);
@@ -108,7 +110,7 @@ namespace efloat_detail {
 
 	// cbrt(m) for m in [1, 8), correctly rounded to `precision` bits in the current mode (#1800).
 	// With F = 64 n - 1 and N = m 2^(3F), S = floor(cbrt(N)) fills n 64-bit limbs, its top bit
-	// set, and carries at least precision + 18 bits. efloat_mpn::cbrtrem forms S without its
+	// set, and carries at least precision + 18 bits. limb_kernels::cbrtrem forms S without its
 	// remainder, 0 to cbrt_overshoot units high, so S 2^-F is within 2^-(F - 3) of the root and
 	// rounds from there unless its bits from the guard bit on are all 0 or all 1 (can_round):
 	// that happens only within a few units of a rounding boundary, at most 2^-25 of arguments
@@ -118,9 +120,8 @@ namespace efloat_detail {
 	// Ziv's strategy, and an exact cube cost a cube to recognize (#1783).
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> cbrt_exact(const efloat<nlimbs>& m, unsigned precision) {
-		using efloat_mpn::limb_t;
-		const std::vector<uint32_t> mb = m.bits();
-		const int64_t frac = 32 * static_cast<int64_t>(mb.size()) - 1 - m.scale();   // m = M 2^-frac
+		using limb_kernels::limb_t;
+		const int64_t frac = 32 * static_cast<int64_t>(m.limb32_count()) - 1 - m.scale();   // m = M 2^-frac
 		std::size_t n = (static_cast<std::size_t>(precision) + 18 + 63) / 64;
 		while (3 * (64 * static_cast<int64_t>(n) - 1) < frac) ++n;   // a longer m: N must be an integer
 		const int64_t F = 64 * static_cast<int64_t>(n) - 1;
@@ -133,26 +134,23 @@ namespace efloat_detail {
 		const std::size_t ns = static_cast<std::size_t>((sig / 3 + 2 + 63) / 64);
 		const int64_t fsig = sig - 1 - m.scale();   // the fraction bits m has
 		if (6 * ns <= n) {
-			limb_t small[6 * 8 + 1 + efloat_mpn::cbrt_scratch_limbs(8)];
+			limb_t small[6 * 8 + 1 + limb_kernels::cbrt_scratch_limbs(8)];
 			std::vector<limb_t> heap_small;
 			limb_t* sn = small;
-			const std::size_t need_small = 6 * ns + 1 + efloat_mpn::cbrt_scratch_limbs(ns);
+			const std::size_t need_small = 6 * ns + 1 + limb_kernels::cbrt_scratch_limbs(ns);
 			if (ns > 8) { heap_small.resize(need_small); sn = heap_small.data(); }
 			const int64_t Fs = 64 * static_cast<int64_t>(ns) - 1;
 			if (3 * Fs >= fsig) {
 				limb_t* ss = sn + 3 * ns;
 				limb_t* rs = ss + ns;
-				load_shifted(sn, 3 * ns, mb, 3 * Fs - frac);   // drops only m's trailing zeros
-				efloat_mpn::cbrtrem(ss, rs, sn, ns, rs + 2 * ns + 1, true);
+				load_shifted(sn, 3 * ns, m, 3 * Fs - frac);   // drops only m's trailing zeros
+				limb_kernels::cbrtrem(ss, rs, sn, ns, rs + 2 * ns + 1, true);
 				bool zero = true;
 				for (std::size_t k = 0; zero && k < 2 * ns + 1; ++k) zero = (rs[k] == 0u);
 				if (zero) {   // an exact cube: its root, rounded once
 					efloat<nlimbs> r(1);
 					r.set_precision(static_cast<unsigned>(64 * ns));
-					for (std::size_t i = 0; i < 2 * ns; ++i) {
-						const limb_t w = ss[ns - 1 - i / 2];
-						r.setlimb(static_cast<unsigned>(i), (i & 1u) ? static_cast<uint32_t>(w) : static_cast<uint32_t>(w >> 32));
-					}
+					r.set_significand(ss, ns);
 					r.setexponent(0);
 					r.set_precision(precision);
 					return r;
@@ -162,31 +160,35 @@ namespace efloat_detail {
 
 		limb_t local[1024];
 		std::vector<limb_t> heap;
-		const std::size_t need = 6 * n + 1 + efloat_mpn::cbrt_scratch_limbs(n);
+		const std::size_t need = 6 * n + 1 + limb_kernels::cbrt_scratch_limbs(n);
 		limb_t* np = local;
 		if (need > 1024) { heap.resize(need); np = heap.data(); }
 		limb_t* sp   = np + 3 * n;
 		limb_t* rp   = sp + n;
 		limb_t* work = rp + 2 * n + 1;
-		load_shifted(np, 3 * n, mb, 3 * F - frac);
+		load_shifted(np, 3 * n, m, 3 * F - frac);
 
-		// S's 32-bit limbs, most significant first, then a limb only the sticky bit sets; S 2^-F
-		// is in [1, 2)
+		// S's limbs, then a 32-bit limb only the sticky bit sets; S 2^-F is in [1, 2)
 		auto root = [&](bool sticky) {
 			efloat<nlimbs> r(1);
 			r.set_precision(static_cast<unsigned>(32 * (2 * n + 1)));
-			for (std::size_t i = 0; i < 2 * n; ++i) {
-				const limb_t w = sp[n - 1 - i / 2];
-				r.setlimb(static_cast<unsigned>(i), (i & 1u) ? static_cast<uint32_t>(w) : static_cast<uint32_t>(w >> 32));
+			if (sticky) {
+				limb_buffer frame;
+				limb_t* f = frame.get(n + 1);
+				f[0] = limb_t(1) << 32;
+				for (std::size_t i = 0; i < n; ++i) f[1 + i] = sp[i];
+				r.set_significand(f, n + 1);
 			}
-			if (sticky) r.setlimb(static_cast<unsigned>(2 * n), 1u);
+			else {
+				r.set_significand(sp, n);
+			}
 			r.setexponent(0);
 			return r;
 		};
-		efloat_mpn::cbrtrem(sp, rp, np, n, work, false);
+		limb_kernels::cbrtrem(sp, rp, np, n, work, false);
 		efloat<nlimbs> result = root(false);
 		if (!can_round(result, precision, static_cast<unsigned>(F) - 3u)) {
-			efloat_mpn::cbrtrem(sp, rp, np, n, work, true);
+			limb_kernels::cbrtrem(sp, rp, np, n, work, true);
 			bool sticky = false;
 			for (std::size_t k = 0; !sticky && k < 2 * n + 1; ++k) sticky = (rp[k] != 0u);
 			result = root(sticky);

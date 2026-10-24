@@ -66,11 +66,11 @@ efloat's kernels implement published algorithms, cited where they are used:
 
 | efloat | algorithm | source |
 |---|---|---|
-| `efloat_mpn::invert_limb`, `udiv_qr_3by2` | division by a precomputed reciprocal | Moller and Granlund, *Improved division by invariant integers*, IEEE Trans. Computers 60(2), 2011 |
-| `efloat_mpn::dcpi1_div_qr_n` | divide-and-conquer division | Burnikel and Ziegler, *Fast recursive division*, MPI-I-98-1-022, 1998 |
-| `efloat_mpn::sqrtrem`, `cbrtrem` | Karatsuba square root, and the same recursion carried to the cube | Zimmermann, *Karatsuba Square Root*, INRIA RR-3805, 1999 |
-| `efloat_mpn::mul_n` | Karatsuba multiplication | Karatsuba and Ofman, 1962 |
-| `efloat_mpn::x86::addmul_4k` and the other x86-64 loops | multiply-accumulate on two carry chains | Intel 64 and IA-32 Architectures Software Developer's Manual (`mulx`, `adcx`, `adox`); Intel, *New Instructions Supporting Large Integer Arithmetic on Intel Architecture Processors*, 2012 |
+| `limb_kernels::invert_limb`, `udiv_qr_3by2` | division by a precomputed reciprocal | Moller and Granlund, *Improved division by invariant integers*, IEEE Trans. Computers 60(2), 2011 |
+| `limb_kernels::dcpi1_div_qr_n` | divide-and-conquer division | Burnikel and Ziegler, *Fast recursive division*, MPI-I-98-1-022, 1998 |
+| `limb_kernels::sqrtrem`, `cbrtrem` | Karatsuba square root, and the same recursion carried to the cube | Zimmermann, *Karatsuba Square Root*, INRIA RR-3805, 1999 |
+| `limb_kernels::mul_n` | Karatsuba multiplication | Karatsuba and Ofman, 1962 |
+| `limb_kernels::x86::addmul_4k` and the other x86-64 loops | multiply-accumulate on two carry chains | Intel 64 and IA-32 Architectures Software Developer's Manual (`mulx`, `adcx`, `adox`); Intel, *New Instructions Supporting Large Integer Arithmetic on Intel Architecture Processors*, 2012 |
 | correct rounding, `can_round` | Ziv's strategy | Ziv, *Fast evaluation of elementary mathematical functions with correctly rounded last bit*, ACM TOMS 17(3), 1991 |
 | log by the AGM, erf, lgamma | as MPFR evaluates them | Brent and Zimmermann, *Modern Computer Arithmetic*, 2010; MPFR's `algorithms.pdf` |
 
@@ -78,7 +78,7 @@ Copyright covers code, not the algorithms it carries out. Implementing an algori
 a paper, a book or MPFR's own algorithm documentation creates no obligation under the author's
 license.
 
-`efloat_mpn.hpp` follows GMP's mpn conventions on purpose: an operand is a pointer and a limb
+`limb_kernels.hpp` (`efloat_mpn.hpp` before #1823) follows GMP's mpn conventions on purpose: an operand is a pointer and a limb
 count, least significant limb first, and several functions carry the names of their GMP
 counterparts (`sqrtrem`, `dcpi1_div_qr`, `sbpi1_div_qr`, `invert_pi1`, `udiv_qr_3by2`). The
 names and the calling convention say which algorithm a function is; they do not copy GMP's code.

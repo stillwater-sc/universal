@@ -92,9 +92,10 @@ namespace efloat_detail {
 		for (int64_t i = 0; i < k; ++i) {
 			const unsigned bits = significant_bits(root);
 			// a square r^2 = m 2^2e, m odd, has m = 1 mod 8: its last three significant bits are 001, at an even exponent
-			const std::vector<uint32_t> limbs = root.bits();
+			const limb_kernels::limb_t* w = root.limb_data();   // least significant first, leading bit at 63 of the top
+			const std::size_t         m = root.limb_count();
 			const unsigned last = bits - 1;   // the position of the last 1 bit
-			auto bit = [&limbs](unsigned p) -> uint32_t { return (limbs[p / 32] >> (31 - p % 32)) & 1u; };
+			auto bit = [w, m](unsigned p) -> uint32_t { return static_cast<uint32_t>((w[m - 1 - p / 64] >> (63 - p % 64)) & 1u); };
 			if (bits < 4 || bit(last - 1) || bit(last - 2) || ((root.scale() - static_cast<int64_t>(last)) & 1)) return false;
 			const efloat<nlimbs> r = sqrt_to(root, bits + 32);
 			efloat<nlimbs> square(r);
@@ -116,11 +117,11 @@ namespace efloat_detail {
 	// p's bit 0, moved to a's; returns whether a dropped bit was 1. p's top limb is nonzero: a
 	// product of two operands with their top bits set has its own at bit 63 or 62, and a
 	// truncated one (#1807) can lie a unit below 2^62 of it (#1804).
-	inline bool keep_top(efloat_mpn::limb_t* a, std::size_t& na, const efloat_mpn::limb_t* p, std::size_t np, std::size_t w, int64_t& sh) {
+	inline bool keep_top(limb_kernels::limb_t* a, std::size_t& na, const limb_kernels::limb_t* p, std::size_t np, std::size_t w, int64_t& sh) {
 		const unsigned c = static_cast<unsigned>(std::countl_zero(p[np - 1]));   // below 64
 		if (np <= w) {
 			for (std::size_t i = 0; i < np; ++i) a[i] = p[i];
-			if (c != 0u) efloat_mpn::lshift(a, a, np, c);
+			if (c != 0u) limb_kernels::lshift(a, a, np, c);
 			na = np;
 			sh -= c;
 			return false;
@@ -149,7 +150,7 @@ namespace efloat_detail {
 	// can_round (#1763) on a nonzero value a[0, n) of 64-bit limbs, least significant first,
 	// within 2^(scale - correct) of the exact result: whether its bits from position precision + 1
 	// to correct - 2, counting its leading bit as 0, are neither all 0 nor all 1 (#1804)
-	inline bool limbs_can_round(const efloat_mpn::limb_t* a, std::size_t n, unsigned precision, unsigned correct) {
+	inline bool limbs_can_round(const limb_kernels::limb_t* a, std::size_t n, unsigned precision, unsigned correct) {
 		if (correct < precision + 4) return false;
 		while (a[n - 1] == 0u) --n;
 		const int64_t lead = 64 * static_cast<int64_t>(n) - 1 - std::countl_zero(a[n - 1]);   // the leading bit's index
@@ -167,7 +168,7 @@ namespace efloat_detail {
 	// x^n, or x^-n with `reciprocal`, rounded once at `precision` bits, for a finite x != 0 of at
 	// least 2 significant bits and an integer n >= 2 (#1804) whose power's exponent stays far
 	// inside the range: binary powering on 64-bit limbs, each square and product kept to its top w limbs
-	// with its leading bit at the top. From efloat_mpn::truncated_min_limbs the products are
+	// with its leading bit at the top. From limb_kernels::truncated_min_limbs the products are
 	// truncated short products of w + 1 limbs, within 2 units of the limb below the w kept
 	// (#1807). A kept product is within 2^-(64 w - 1) (1 + 2^-62) of its exact value, relative
 	// to it, and binary powering scales the error of each step by the squarings after it, so x^n
@@ -181,7 +182,7 @@ namespace efloat_detail {
 	// 69 extra bits made pow(b, 7) at 128 bits cost about twelve multiplications.
 	template<unsigned nlimbs>
 	inline bool integer_power_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, uint64_t n, bool reciprocal, unsigned precision, bool carries) {
-		using efloat_mpn::limb_t;
+		using limb_kernels::limb_t;
 		if (n < 2 || x.iszero() || x.isinf() || x.isnan()) return false;
 		const unsigned bits = significant_bits(x);
 		if (bits < 2) return false;   // a power of 2: its reciprocal is exact too, and Ziv's test never passes on it
@@ -189,13 +190,13 @@ namespace efloat_detail {
 		if (static_cast<double>(n) * (std::fabs(static_cast<double>(ex)) + 1.0) >= 1152921504606846976.0) return false;   // 2^60
 		const unsigned bw = static_cast<unsigned>(std::bit_width(n));
 		const bool negative = (x.sign() == -1) && (n & 1u);
-		const std::size_t m = (x.limb_vector().size() + 1) / 2;
+		const std::size_t m = x.limb_count();
 		std::size_t w = (static_cast<std::size_t>(precision) + bw + 5 + 16 + 63) / 64;
 		for (int attempt = 0; attempt < 3; ++attempt, w *= 2) {
 			limb_buffer buffer;
 			const std::size_t wq = w + 1;   // the reciprocal's limbs
-			limb_t* px   = buffer.get(m + w + 2 * w + 2 * w + wq + std::max({ efloat_mpn::div_scratch_limbs(w), efloat_mpn::scratch_limbs(w),
-			                                                                     efloat_mpn::truncated_scratch_limbs(w, w, w - 1) }));
+			limb_t* px   = buffer.get(m + w + 2 * w + 2 * w + wq + std::max({ limb_kernels::div_scratch_limbs(w), limb_kernels::scratch_limbs(w),
+			                                                                     limb_kernels::truncated_scratch_limbs(w, w, w - 1) }));
 			limb_t* a    = px + m;
 			limb_t* prod = a + w;
 			limb_t* num  = prod + 2 * w;
@@ -211,31 +212,31 @@ namespace efloat_detail {
 			// each square and product kept to its top w limbs: in full, or from truncated_min_limbs
 			// limbs its top w + 1 limbs by a truncated short product, an approximation that marks
 			// the power truncated
-			const bool short_products = (w >= efloat_mpn::truncated_min_limbs);
+			const bool short_products = (w >= limb_kernels::truncated_min_limbs);
 			for (int b = static_cast<int>(bw) - 2; b >= 0; --b) {
 				sh *= 2;
-				if (short_products && 2 * na > w + 1 && na >= efloat_mpn::truncated_min_limbs) {
+				if (short_products && 2 * na > w + 1 && na >= limb_kernels::truncated_min_limbs) {
 					const std::size_t drop = 2 * na - (w + 1);
-					efloat_mpn::mul_truncated(prod, a, na, a, na, drop, work);
+					limb_kernels::mul_truncated(prod, a, na, a, na, drop, work);
 					sh += 64 * static_cast<int64_t>(drop);
 					keep_top(a, na, prod, w + 1, w, sh);
 					truncated = true;
 				}
 				else {
-					efloat_mpn::mul_n(prod, a, a, na, work, true);
+					limb_kernels::mul_n(prod, a, a, na, work, true);
 					truncated = keep_top(a, na, prod, 2 * na, w, sh) || truncated;
 				}
 				if ((n >> b) & 1u) {
 					sh += sx;
-					if (short_products && na + m > w + 1 && na >= efloat_mpn::truncated_min_limbs && m >= efloat_mpn::truncated_min_limbs) {
+					if (short_products && na + m > w + 1 && na >= limb_kernels::truncated_min_limbs && m >= limb_kernels::truncated_min_limbs) {
 						const std::size_t drop = na + m - (w + 1);
-						efloat_mpn::mul_truncated(prod, a, na, px, m, drop, work);
+						limb_kernels::mul_truncated(prod, a, na, px, m, drop, work);
 						sh += 64 * static_cast<int64_t>(drop);
 						keep_top(a, na, prod, w + 1, w, sh);
 						truncated = true;
 					}
 					else {
-						efloat_mpn::mul(prod, a, na, px, m, work);
+						limb_kernels::mul(prod, a, na, px, m, work);
 						truncated = keep_top(a, na, prod, na + m, w, sh) || truncated;
 					}
 				}
@@ -249,7 +250,7 @@ namespace efloat_detail {
 				const std::size_t nn = na + w;
 				for (std::size_t i = 0; i + 1 < nn; ++i) num[i] = 0u;
 				num[nn - 1] = limb_t(1) << 63;
-				q[w]      = efloat_mpn::div_qr(q, num, nn, a, na, work);
+				q[w]      = limb_kernels::div_qr(q, num, nn, a, na, work);
 				frame     = q;
 				len       = wq;
 				top       = -sh - 64 * static_cast<int64_t>(nn) + 1 + 64 * static_cast<int64_t>(wq) - 1;
