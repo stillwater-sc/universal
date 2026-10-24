@@ -36,9 +36,16 @@ namespace sw { namespace universal { namespace efloat_mpn {
 
 using limb_t = std::uint64_t;
 
-// operands of at least this many limbs multiply by Karatsuba, below it by schoolbook
-inline constexpr std::size_t karatsuba_threshold = 24;   // both by measurement (#1816)
+// operands of at least this many limbs multiply by Karatsuba, below it by schoolbook. The
+// thresholds here and below were measured with the basecase each build runs: the x86-64
+// assembly (#1816), or the portable loops (#1762, #1807, #1769)
+#if EFLOAT_MPN_X86_64_ASM
+inline constexpr std::size_t karatsuba_threshold = 24;
 inline constexpr std::size_t karatsuba_sqr_threshold = 64;
+#else
+inline constexpr std::size_t karatsuba_threshold = 16;
+inline constexpr std::size_t karatsuba_sqr_threshold = 48;
+#endif
 
 // r[0, n) = a[0, n) * b, returns the high limb
 inline limb_t mul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
@@ -129,7 +136,7 @@ inline const bool has_mulx_adx = detect_mulx_adx();
 
 // r[0, n) = a[0, n) * b + c, returns the high limb
 inline limb_t mul_4k(limb_t* r, const limb_t* a, std::size_t n, limb_t b, limb_t c) noexcept {
-	long i = -static_cast<long>(n);
+	std::ptrdiff_t i = -static_cast<std::ptrdiff_t>(n);   // 64 bits on every x86-64 ABI, LLP64 too
 	__asm__ volatile(
 		"xor %%r8d, %%r8d\n\t"                 // CF = OF = 0
 		"1:\n\t"
@@ -158,7 +165,7 @@ inline limb_t mul_4k(limb_t* r, const limb_t* a, std::size_t n, limb_t b, limb_t
 
 // r[0, n) += a[0, n) * b + c, returns the carry out of the top
 inline limb_t addmul_4k(limb_t* r, const limb_t* a, std::size_t n, limb_t b, limb_t c) noexcept {
-	long i = -static_cast<long>(n);
+	std::ptrdiff_t i = -static_cast<std::ptrdiff_t>(n);
 	__asm__ volatile(
 		"xor %%r8d, %%r8d\n\t"
 		"1:\n\t"
@@ -194,7 +201,7 @@ inline limb_t addmul_4k(limb_t* r, const limb_t* a, std::size_t n, limb_t b, lim
 // from the OF chain as in addmul_4k; r - p is r + ~p + 1 on the CF chain, which starts set, and
 // the borrow is the product's high limb plus one less the final carry.
 inline limb_t submul_4k(limb_t* r, const limb_t* a, std::size_t n, limb_t b, limb_t c) noexcept {
-	long i = -static_cast<long>(n);
+	std::ptrdiff_t i = -static_cast<std::ptrdiff_t>(n);
 	__asm__ volatile(
 		"xor %%r8d, %%r8d\n\t"
 		"stc\n\t"
@@ -234,7 +241,7 @@ inline limb_t submul_4k(limb_t* r, const limb_t* a, std::size_t n, limb_t b, lim
 
 // r[0, n) = a[0, n) + b[0, n) + c, c in {0, 1}, returns the carry
 inline limb_t add_4k(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t c) noexcept {
-	long i = -static_cast<long>(n);
+	std::ptrdiff_t i = -static_cast<std::ptrdiff_t>(n);
 	__asm__ volatile(
 		"neg %[c]\n\t"                         // CF = c
 		"1:\n\t"
@@ -264,7 +271,7 @@ inline limb_t add_4k(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n,
 
 // r[0, n) = a[0, n) - b[0, n) - c, c in {0, 1}, returns the borrow
 inline limb_t sub_4k(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t c) noexcept {
-	long i = -static_cast<long>(n);
+	std::ptrdiff_t i = -static_cast<std::ptrdiff_t>(n);
 	__asm__ volatile(
 		"neg %[c]\n\t"
 		"1:\n\t"
@@ -701,7 +708,8 @@ inline bool load_msb_first(limb_t* r, std::size_t n, const std::uint32_t* v, std
 // full by Karatsuba and the two cross terms by short products of the other l = n - k limbs: the
 // partial products it adds are again all those with i + j >= n - 1 and some below.
 
-inline constexpr std::size_t mulhigh_threshold = 64;   // and k = 6n / 10: both by measurement (#1807, #1816)
+// and k = 6n / 10: both by measurement (#1807, #1816)
+inline constexpr std::size_t mulhigh_threshold = EFLOAT_MPN_X86_64_ASM ? 64 : 32;
 
 // r[n - 1, 2n) = R as above, r[0, n - 1) is overwritten; r overlaps neither operand
 inline void mulhigh_basecase(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
@@ -808,7 +816,7 @@ inline bool can_round(const limb_t* a, std::size_t n, unsigned precision, unsign
 // pays for each half with one product, so the division costs a few multiplications.
 
 // operands whose quotient and divisor both have at least this many limbs divide by divide-and-conquer
-inline constexpr std::size_t dc_div_threshold = 32;   // by measurement (#1816)
+inline constexpr std::size_t dc_div_threshold = EFLOAT_MPN_X86_64_ASM ? 32 : 16;   // by measurement (#1769, #1816)
 
 // the high and low limbs of a * b
 inline void umul(limb_t a, limb_t b, limb_t& hi, limb_t& lo) noexcept {

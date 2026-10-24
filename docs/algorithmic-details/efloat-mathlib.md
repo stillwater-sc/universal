@@ -107,10 +107,10 @@ round the exact result once into the destination (`assign_rounded`), with no all
 | operation | algorithm | thresholds | PR |
 |---|---|---|---|
 | `+` `-` | aligned sum in a stack frame, two guard limbs plus a sticky bit; in-place `+=` | | #1758, #1766, #1767 |
-| `*` | 64x64->128 schoolbook, dedicated squaring (`x * x`), subtractive Karatsuba, blocks for unbalanced operands; from 16 limbs a short product of the high half first, rounded from when Ziv's test passes on it, the full product otherwise | `karatsuba_threshold = 24`, `karatsuba_sqr_threshold = 64`, `mulhigh_threshold = 64` limbs; `mulhigh_min_limbs = 16`; Toom-3 from `toom3_threshold = 240` (`toom3_sqr_threshold = 352`); x86-64 assembly rows (#1816) | #1767, #1807, #1814, #1816 |
-| `/` | schoolbook with the Moller-Granlund 3-by-2 reciprocal, Burnikel-Ziegler divide and conquer (GMP's `dcpi1_div_qr`) above the threshold; from it an approximate quotient (`div_appr`) rounded from where Ziv's test passes, the exact quotient and its remainder, the sticky bit, otherwise | `dc_div_threshold = 32` limbs | #1741, #1769, #1811, #1816 |
+| `*` | 64x64->128 schoolbook, dedicated squaring (`x * x`), subtractive Karatsuba, blocks for unbalanced operands; from 16 limbs a short product of the high half first, rounded from when Ziv's test passes on it, the full product otherwise | `karatsuba_threshold = 24`, `karatsuba_sqr_threshold = 64`, `mulhigh_threshold = 64` limbs (16, 48, 32 without the assembly); `mulhigh_min_limbs = 16`; Toom-3 from `toom3_threshold = 240` (`toom3_sqr_threshold = 352`); x86-64 assembly rows (#1816) | #1767, #1807, #1814, #1816 |
+| `/` | schoolbook with the Moller-Granlund 3-by-2 reciprocal, Burnikel-Ziegler divide and conquer (GMP's `dcpi1_div_qr`) above the threshold; from it an approximate quotient (`div_appr`) rounded from where Ziv's test passes, the exact quotient and its remainder, the sticky bit, otherwise | `dc_div_threshold = 32` limbs (16 without the assembly) | #1741, #1769, #1811, #1816 |
 | `/ int` | divisors of up to 64 bits: the packed significand by one limb, Moller-Granlund 2-by-1 reciprocal (`divrem_1`), rounded once | | #1766, #1811 |
-| `sqrt` | integer root by Zimmermann's Karatsuba square root (GMP's `mpn_sqrtrem`) without its remainder, an approximate quotient at the top (GMP's `divappr`), rounded from where Ziv's test passes on it; the exact root and remainder, as the sticky bit, otherwise (exact squares among them) | `dc_div_threshold = 32` limbs | #1770, #1810, #1816 |
+| `sqrt` | integer root by Zimmermann's Karatsuba square root (GMP's `mpn_sqrtrem`) without its remainder, an approximate quotient at the top (GMP's `divappr`), rounded from where Ziv's test passes on it; the exact root and remainder, as the sticky bit, otherwise (exact squares among them) | `dc_div_threshold = 32` limbs (16 without the assembly) | #1770, #1810, #1816 |
 | `cbrt` | integer cube root by the same recursion carried over to the cube (`cbrtrem`); the remainder, the sticky bit, formed only next to a rounding boundary (section 4.8) | | #1800 |
 | to `double`/`float` | round once to the format, subnormals included | | #1778 |
 | from decimal text | convert at the target plus 64 guard bits, retry wider only when the guard bits read `0111...1` | widths 8192, 32768 | #1740 |
@@ -199,7 +199,8 @@ round the exact result once into the destination (`assign_rounded`), with no all
   - Karatsuba from 16 limbs instead of 24 was 3-5% faster at 20 to 129 limbs, and the squaring
     basecase up to 48 limbs instead of 32 7% faster at 129, with the portable basecase. The
     assembly basecase (#1816) moved them back: 24 and 64 limbs, and the short product's
-    basecase to 64 limbs, the division's divide-and-conquer to 32. An `addmul_2` basecase, two rows a
+    basecase to 64 limbs, the division's divide-and-conquer to 32. Builds that compile the
+    assembly use those; builds without it keep 16, 48, 32 and 16. An `addmul_2` basecase, two rows a
     pass, was measured and dropped: the compiler already schedules the one-row loop as well.
   - What remains of `a*b`'s gap at 2048 and 8192 bits is the kernel's: `mul_n` runs 1.4-1.5x
     `mpn_mul_n`, whose basecase is assembly; the division kernel is level with GMP's (0.8-1.2x).
