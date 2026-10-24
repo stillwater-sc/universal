@@ -17,9 +17,14 @@
 //
 // Each figure is a mean over repeated calls whose results all reach a volatile sink.
 //
-// The one guard is a ratio, so that it holds at any optimization level and on any runner:
-// division may cost at most 15 multiplies at 512 bits. Long division a word at a time costs
-// ~3; the bit-serial division it replaced cost ~40.
+// The guards are ratios, so that they hold at any optimization level and on any runner:
+//   - division may cost at most 15 multiplies at 512 bits. Long division a word at a time costs
+//     ~3; the bit-serial division it replaced cost ~40.
+//   - at 128 bits a difference and a product may each cost at most 4 sums, and at 512 bits a
+//     square root at most 8 products (#1826): 1.1, 1.4 and 3.7 at -O3, 1.2, 1.3 and 4.1 at -O0.
+//     They catch a regression of several times, such as an operation that falls back to a
+//     bit-serial or allocating routine, not the 1.2-1.5x a lost fast path costs: mpfr_bands
+//     measures that.
 
 #include <universal/utility/directives.hpp>
 #include <chrono>
@@ -40,7 +45,7 @@ namespace sw { namespace universal {
 	}
 
 	struct Timings {
-		double add, mul, div, div7, exp, log, sin, sqrt;
+		double add, mul, div, div7, exp, log, sin, sqrt, sub;
 	};
 
 	// reps scales the repetition counts down for the expensive operations at high precision
@@ -71,6 +76,7 @@ namespace sw { namespace universal {
 		t.log  = microseconds([&] { s = log(x); sink = sink + double(s); }, reps);
 		t.sin  = microseconds([&] { s = sin(a); sink = sink + double(s); }, reps);
 		t.sqrt = microseconds([&] { s = sqrt(b); sink = sink + double(s); }, 2 * reps);
+		t.sub  = microseconds([&] { s = b - a; sink = sink + double(s); }, 100 * reps);
 		(void)sink;
 		return t;
 	}
@@ -89,7 +95,8 @@ try {
 	std::cout << "efloat cost per operation in microseconds (#1714; compare mpmath_gap.py)\n";
 	std::printf("%6s %9s %9s %9s %9s %10s %10s %10s %9s\n",
 	            "bits", "a+b", "a*b", "b/a", "a/7", "exp", "log", "sin", "sqrt");
-	report(128,  measure<4>(200));
+	const Timings t128 = measure<4>(200);
+	report(128, t128);
 	const Timings t512 = measure<16>(50);
 	report(512, t512);
 	report(2048, measure<64>(5));
@@ -101,6 +108,21 @@ try {
 	if (!(ratio < 15.0)) {
 		std::cout << "  *** REGRESSION: division costs " << ratio << " multiplies -- a bit-serial division may have returned (#1714) ***\n";
 		++failures;
+	}
+
+	// ratios to an operation of about the same cost (#1826)
+	struct Guard { const char* what; double ratio, bound; };
+	const Guard guards[] = {
+		{ "difference / sum at 128 bits",          t128.sub / t128.add,  4.0 },
+		{ "product / sum at 128 bits",             t128.mul / t128.add,  4.0 },
+		{ "square root / product at 512 bits",     t512.sqrt / t512.mul, 8.0 },
+	};
+	for (const Guard& g : guards) {
+		std::printf("%s: %.1f (guard: below %.0f)\n", g.what, g.ratio, g.bound);
+		if (!(g.ratio < g.bound)) {
+			std::cout << "  *** REGRESSION: " << g.what << " -- several times its cost at the time of #1826 ***\n";
+			++failures;
+		}
 	}
 
 	std::cout << "\n" << (failures == 0 ? "PASS" : "FAIL") << " efloat operation costs within bounds\n";

@@ -878,6 +878,24 @@ inline limb_t invert_pi1(limb_t d1, limb_t d0) noexcept {
 	return v;
 }
 
+// q = floor((n1 B + n0) / d), r = the remainder, for a normalized d and n1 < d, by the
+// processor's own 128-by-64-bit division where the build has one (#1826): x86-64's divq costs
+// about as much as one step by a reciprocal, and a reciprocal costs several, so a quotient of a
+// few limbs is faster this way. Elsewhere, by the reciprocal.
+#if UNIVERSAL_LIMB_KERNELS_X86_64_ASM
+inline constexpr bool hardware_division = true;
+#else
+inline constexpr bool hardware_division = false;
+#endif
+inline void udiv_qr_2by1(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d, limb_t v) noexcept;
+inline void udiv_qrnnd(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d) noexcept {
+#if UNIVERSAL_LIMB_KERNELS_X86_64_ASM
+	__asm__("divq %4" : "=a"(q), "=d"(r) : "a"(n0), "d"(n1), "rm"(d) : "cc");
+#else
+	udiv_qr_2by1(q, r, n1, n0, d, invert_limb(d));
+#endif
+}
+
 // q = floor((n1 B + n0) / d), r = the remainder, for n1 < d and v = invert_limb(d)
 inline void udiv_qr_2by1(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d, limb_t v) noexcept {
 	limb_t qh, ql;
@@ -972,6 +990,17 @@ inline bool geq_n(const limb_t* a, const limb_t* b, std::size_t n) noexcept {
 
 // q[0, nn - 1) = the low limbs of floor(np[0, nn) / d), the remainder replaces np[0]; returns
 // the quotient's top limb, 0 or 1.  d normalized, v = invert_limb(d).
+// divrem_1 without a reciprocal, for a quotient of a few limbs where the build divides in
+// hardware (udiv_qrnnd): the same quotient and remainder
+inline limb_t divrem_1_short(limb_t* q, limb_t* np, std::size_t nn, limb_t d) noexcept {
+	limb_t r  = np[nn - 1];
+	limb_t qh = 0;
+	if (r >= d) { r -= d; qh = 1; }
+	for (std::size_t i = nn - 1; i-- > 0;) udiv_qrnnd(q[i], r, r, np[i], d);
+	np[0] = r;
+	return qh;
+}
+
 inline limb_t divrem_1(limb_t* q, limb_t* np, std::size_t nn, limb_t d, limb_t v) noexcept {
 	limb_t r  = np[nn - 1];
 	limb_t qh = 0;
@@ -1019,6 +1048,49 @@ inline limb_t sbpi1_div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* 
 		q[j] = qj;
 	}
 	np[dn - 1] = n1;
+	return qh;
+}
+
+// sbpi1_div_qr without the reciprocal, for a quotient of a few limbs where the build divides in
+// hardware (#1826): each quotient limb estimated from the top two limbs by the divisor's top limb
+// (udiv_qrnnd), corrected by the divisor's second limb at most twice, then a multiply-subtract and
+// at most one add-back, as Knuth's Algorithm D (TAOCP 2, 4.3.1) on 64-bit digits. A reciprocal
+// of two limbs costs as much as several such steps. The same quotient and remainder.
+inline limb_t sb_div_qr_short(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn) noexcept {
+	const std::size_t qn = nn - dn;
+	limb_t* top = np + qn;
+	limb_t  qh  = 0;
+	if (geq_n(top, dp, dn)) { sub_n(top, top, dp, dn); qh = 1; }
+	const limb_t d1 = dp[dn - 1], d0 = dp[dn - 2];
+	for (std::size_t j = qn; j-- > 0;) {
+		limb_t* w = np + j;   // divide w[0, dn] by dp; w[dn] B + w[dn - 1] < d1 B + d0
+		const limb_t n2 = w[dn], n1 = w[dn - 1], n0 = w[dn - 2];
+		limb_t qj = ~limb_t(0), rj = 0;
+		bool   refine = true;
+		if (n2 < d1) {
+			udiv_qrnnd(qj, rj, n2, n1, d1);
+		}
+		else {   // n2 == d1: the estimate B - 1, with remainder n1 + d1, which may pass B
+			rj = n1 + d1;
+			refine = (rj >= d1);
+		}
+		// while qj d0 > rj B + n0: the estimate is at most two too large
+		for (int k = 0; refine && k < 2; ++k) {
+			limb_t ph = 0, pl = 0;
+			umul(qj, d0, ph, pl);
+			if (ph < rj || (ph == rj && pl <= n0)) break;
+			--qj;
+			rj += d1;
+			refine = (rj >= d1);   // a remainder past B ends the test: qj is then right
+		}
+		const limb_t borrow = submul_1(w, dp, dn, qj);
+		if (n2 < borrow) {   // still one too large: add the divisor back
+			add_n(w, w, dp, dn);
+			--qj;
+		}
+		w[dn] = 0u;
+		q[j] = qj;
+	}
 	return qh;
 }
 
@@ -1073,9 +1145,14 @@ inline limb_t dcpi1_div_qr_short(limb_t* q, limb_t* np, std::size_t nn, const li
 // np[0, dn); returns the quotient's top limb, 0 or 1.  nn >= dn >= 1, dp normalized (its top bit
 // set) and overlapping neither np nor q, s holds div_scratch_limbs(dn) limbs.
 inline limb_t div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t* s) noexcept {
+	const std::size_t qn = nn - dn;
+	// a quotient of one or two limbs by one or two divides faster in hardware than through a
+	// reciprocal (#1826)
+	if (hardware_division && qn <= 2 && dn <= 2) {   // by measurement: a reciprocal pays from there
+		return (dn == 1) ? divrem_1_short(q, np, nn, dp[0]) : sb_div_qr_short(q, np, nn, dp, dn);
+	}
 	if (dn == 1) return divrem_1(q, np, nn, dp[0], invert_limb(dp[0]));
 	const limb_t      v  = invert_pi1(dp[dn - 1], dp[dn - 2]);
-	const std::size_t qn = nn - dn;
 	if (dn < dc_div_threshold || qn < dc_div_threshold) return sbpi1_div_qr(q, np, nn, dp, dn, v);
 	if (qn < dn) return dcpi1_div_qr_short(q, np, nn, dp, dn, v, s);
 	// a long quotient: a first block of qn mod dn limbs (or dn), then blocks of dn limbs, each
