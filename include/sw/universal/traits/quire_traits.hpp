@@ -63,6 +63,10 @@ struct quire_traits<posit<nbits, es, bt>> {
 	static constexpr unsigned half_range  = range >> 1;
 	static constexpr unsigned radix_point = half_range;
 	static constexpr unsigned upper_range = half_range + 1u;
+
+	// capacity is a carry guard: room to accumulate 2^capacity products of maxpos^2.
+	// It sits outside the dynamic range. For es = 2, 1 (sign) + 31 + range = 16n bits,
+	// the width specified by the 2022 posit standard.
 	static constexpr unsigned capacity    = 31u;
 
 	// fraction bits of the posit (used for quire_mul product width)
