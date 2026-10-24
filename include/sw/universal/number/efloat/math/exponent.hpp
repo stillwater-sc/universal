@@ -59,10 +59,11 @@ namespace efloat_detail {
 	template<unsigned nlimbs>
 	inline bool can_round(const efloat<nlimbs>& y, unsigned precision, unsigned correct) {
 		if (correct < precision + 4) return false;
-		const std::vector<uint32_t>& limbs = y.limb_vector();   // most significant first, leading bit at 31
-		auto bit = [&limbs](unsigned p) -> uint32_t {
-			const std::size_t i = p / 32;
-			return (i < limbs.size()) ? (limbs[i] >> (31 - p % 32)) & 1u : 0u;
+		const efloat_mpn::limb_t* w = y.limb_data();   // least significant first, leading bit at 63 of the top
+		const std::size_t         m = y.limb_count();
+		auto bit = [w, m](unsigned p) -> uint32_t {
+			const std::size_t i = p / 64;
+			return (i < m) ? static_cast<uint32_t>((w[m - 1 - i] >> (63 - p % 64)) & 1u) : 0u;
 		};
 		const uint32_t first = bit(precision + 1);
 		for (unsigned p = precision + 2; p <= correct - 2; ++p) {
@@ -112,9 +113,10 @@ namespace efloat_detail {
 	// The number of significant bits of a finite x != 0: from its leading bit to its last 1 bit
 	template<unsigned nlimbs>
 	inline unsigned significant_bits(const efloat<nlimbs>& x) {
-		const std::vector<uint32_t>& limbs = x.limb_vector();   // most significant first, leading bit at 31
-		for (std::size_t i = limbs.size(); i-- > 0; ) {
-			if (limbs[i] != 0u) return static_cast<unsigned>(32 * i + 32 - static_cast<std::size_t>(std::countr_zero(limbs[i])));
+		const efloat_mpn::limb_t* w = x.limb_data();   // least significant first, leading bit at 63 of the top
+		const std::size_t         m = x.limb_count();
+		for (std::size_t i = 0; i < m; ++i) {
+			if (w[i] != 0u) return static_cast<unsigned>(64 * (m - i) - static_cast<std::size_t>(std::countr_zero(w[i])));
 		}
 		return 0;
 	}
@@ -129,11 +131,12 @@ namespace efloat_detail {
 	template<unsigned nlimbs>
 	inline int64_t integer_value(const efloat<nlimbs>& x) {
 		if (x.iszero()) return 0;
-		const std::vector<uint32_t>& limbs = x.limb_vector();   // most significant first, leading bit at 31
+		const efloat_mpn::limb_t* w = x.limb_data();   // least significant first, leading bit at 63 of the top
+		const std::size_t         m = x.limb_count();
 		uint64_t v = 0;
 		for (int64_t p = 0; p <= x.scale(); ++p) {
-			const std::size_t i = static_cast<std::size_t>(p / 32);
-			const uint32_t b = (i < limbs.size()) ? (limbs[i] >> (31 - p % 32)) & 1u : 0u;
+			const std::size_t i = static_cast<std::size_t>(p / 64);
+			const uint64_t b = (i < m) ? (w[m - 1 - i] >> (63 - p % 64)) & 1u : 0u;
 			v = (v << 1) | b;
 		}
 		return (x.sign() == -1) ? -static_cast<int64_t>(v) : static_cast<int64_t>(v);
@@ -171,29 +174,18 @@ namespace efloat_detail {
 		return w;
 	}
 
-	// Scratch limbs for the exact kernels (#1802): on the stack, or on the heap when a kernel
-	// needs more
-	struct limb_buffer {
-		efloat_mpn::limb_t              local[512];
-		std::vector<efloat_mpn::limb_t> heap;
-		efloat_mpn::limb_t* get(std::size_t n) {
-			if (n <= 512) return local;
-			heap.resize(n);
-			return heap.data();
-		}
-	};
+	// Scratch limbs for the exact kernels (#1802): on the stack, or a block from the thread's
+	// cache when a kernel needs more (#1820)
+	using limb_buffer = efloat_storage::scratch_limbs<512>;
 
-	// the significand of a finite x != 0 as an integer P of (size + 1) / 2 64-bit limbs, least
-	// significant first, with |x| = P 2^(scale(x) - 64 m + 1) for the m limbs returned (#1802)
+	// the significand of a finite x != 0 as an integer P of limb_count() 64-bit limbs, least
+	// significant first, with |x| = P 2^(scale(x) - 64 m + 1) for the m limbs returned (#1802):
+	// the limbs x holds (#1820)
 	template<unsigned nlimbs>
 	inline std::size_t pack_significand(efloat_mpn::limb_t* p, const efloat<nlimbs>& x) {
-		const std::vector<uint32_t>& v = x.limb_vector();   // most significant first, leading bit at 31
-		const std::size_t n = v.size();
-		const std::size_t m = (n + 1) / 2;
-		for (std::size_t j = 0; j < m; ++j) {
-			const std::size_t hi = 2 * m - 2 - 2 * j;   // the high half's index, an odd n padded with a zero at the bottom
-			p[j] = (efloat_mpn::limb_t(v[hi]) << 32) | ((hi + 1 < n) ? v[hi + 1] : 0u);
-		}
+		const efloat_mpn::limb_t* w = x.limb_data();
+		const std::size_t         m = x.limb_count();
+		for (std::size_t j = 0; j < m; ++j) p[j] = w[j];
 		return m;
 	}
 
@@ -326,44 +318,24 @@ namespace efloat_detail {
 
 		using efloat_mpn::limb_t;
 
-		// R[0, n) |= w 2^pos for a 32-bit w; the bits that fall below 2^0 are dropped
-		inline void put_bits(limb_t* R, std::size_t n, uint32_t w, int64_t pos) noexcept {
-			uint64_t v = w;
-			if (pos < 0) {
-				if (pos <= -32) return;
-				v >>= -pos;
-				pos = 0;
-			}
-			const std::size_t limb = static_cast<std::size_t>(pos / 64);
-			const unsigned    off  = static_cast<unsigned>(pos % 64);
-			if (limb < n) R[limb] |= v << off;
-			if (off > 32 && limb + 1 < n) R[limb + 1] |= v >> (64u - off);
-		}
-
 		// R[0, n) = floor(|v| 2^shift), for a finite v with |v| 2^shift < 2^(64 n)
 		template<unsigned nlimbs>
 		inline void to_fixed(const efloat<nlimbs>& v, int64_t shift, limb_t* R, std::size_t n) noexcept {
 			for (std::size_t i = 0; i < n; ++i) R[i] = 0;
 			if (v.iszero()) return;
-			const std::vector<uint32_t>& w = v.limb_vector();   // most significant first, leading bit at 31
-			const int64_t e = v.scale();
-			for (std::size_t t = 0; t < w.size(); ++t) {
-				const int64_t pos = shift + e - 32 * static_cast<int64_t>(t) - 31;   // where w[t]'s last bit lands
-				if (pos <= -32) break;
-				put_bits(R, n, w[t], pos);
-			}
+			const limb_t*     w = v.limb_data();   // least significant first, leading bit at 63 of the top
+			const std::size_t m = v.limb_count();
+			// v's limb j has its bit 0 at 2^(scale(v) - 64 (m - j) + 1), at R's bit shift + that
+			efloat_mpn::load_window(R, n, w, m, shift + v.scale() - 64 * static_cast<int64_t>(m) + 1);
 		}
 
 		// A[0, len) 2^(scale - 64 len + 1) as an efloat, exactly: the top bit of A[len - 1] weighs
 		// 2^scale. The exponent is set raw, so a value past the range overflows when it is rounded.
 		template<unsigned nlimbs>
 		inline efloat<nlimbs> from_fixed(const limb_t* A, std::size_t len, int64_t scale) {
-			std::vector<uint32_t> w(2 * len);
-			for (std::size_t i = 0; i < len; ++i) {
-				w[2 * (len - 1 - i)]     = static_cast<uint32_t>(A[i] >> 32);
-				w[2 * (len - 1 - i) + 1] = static_cast<uint32_t>(A[i]);
-			}
-			efloat<nlimbs> v(false, 0, w);
+			efloat<nlimbs> v(1);
+			v.set_significand(A, len);
+			v.setexponent(0);
 			v.set_precision(static_cast<unsigned>(64 * len));   // exact: normalizes, does not round
 			v.setexponent(v.scale() + scale);
 			return v;

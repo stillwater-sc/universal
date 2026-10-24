@@ -99,14 +99,16 @@ cover a new function must check the contract, not just the rounded results.
 
 ## 3. Arithmetic
 
-Storage is a `std::vector<uint32_t>`, most significant limb first. The kernels in
-`efloat_mpn.hpp` pack operands into 64-bit limbs, least significant first, work on those, and
-round the exact result once into the destination (`assign_rounded`), with no allocation up to
-2048 bits.
+Storage is 64-bit limbs, least significant first (`efloat_limbs.hpp`, #1820): the format of
+the kernels in `efloat_mpn.hpp`, so operands go to them as they are and the exact result is
+rounded once into the destination (`round_into`). The limbs live in a buffer inside the value,
+up to `EFLOAT_INLINE_LIMBS` (8) limbs, 512 bits; a longer value takes a heap block, and freed
+blocks go to a cache of the thread's, so `c = a + b` and `c op= b` allocate nothing in a steady
+state at any precision.
 
 | operation | algorithm | thresholds | PR |
 |---|---|---|---|
-| `+` `-` | aligned sum in a stack frame, two guard limbs plus a sticky bit; in-place `+=` | | #1758, #1766, #1767 |
+| `+` `-` | aligned sum in a stack frame, 64 bits past the precision plus a sticky bit; in-place `+=`; operands of one sign at the full precision as MPFR's `mpfr_add1sp`, without the frame | | #1758, #1766, #1767, #1820 |
 | `*` | 64x64->128 schoolbook, dedicated squaring (`x * x`), subtractive Karatsuba, blocks for unbalanced operands; from 16 limbs a short product of the high half first, rounded from when Ziv's test passes on it, the full product otherwise | `karatsuba_threshold = 24`, `karatsuba_sqr_threshold = 64`, `mulhigh_threshold = 64` limbs (16, 48, 32 without the assembly); `mulhigh_min_limbs = 16`; Toom-3 from `toom3_threshold = 240` (`toom3_sqr_threshold = 352`); x86-64 assembly rows (#1816) | #1767, #1807, #1814, #1816 |
 | `/` | schoolbook with the Moller-Granlund 3-by-2 reciprocal, Burnikel-Ziegler divide and conquer (GMP's `dcpi1_div_qr`) above the threshold; from it an approximate quotient (`div_appr`) rounded from where Ziv's test passes, the exact quotient and its remainder, the sticky bit, otherwise | `dc_div_threshold = 32` limbs (16 without the assembly) | #1741, #1769, #1811, #1816 |
 | `/ int` | divisors of up to 64 bits: the packed significand by one limb, Moller-Granlund 2-by-1 reciprocal (`divrem_1`), rounded once | | #1766, #1811 |
@@ -134,8 +136,8 @@ round the exact result once into the destination (`assign_rounded`), with no all
   code.
 - Before #1767 a multiply made about six allocations. 64-bit limbs and Karatsuba made `a*b`
   2.7x faster at 512 bits and 5.8x at 8192.
-- Storage stays 32-bit and most significant first: `bits()`, `setlimb()`, the math library and
-  ereal read `_limb` directly, so #1767 changed only the kernels (#1762 steps 2-3 not done).
+- Storage stayed 32-bit and most significant first through #1767, which changed only the
+  kernels; #1820 moved it (below).
 - Zero signs were wrong in `*`, `/` and exact cancellation until #1773 (#1768).
 - **sqrt without its remainder** (#1810). The kernel was level with GMP's (`sqrtrem` 4.89 us
   against `mpn_sqrtrem`'s 4.30 at 8192 bits), but `sqrt` cost twice MPFR's: MPFR asks GMP for
@@ -245,6 +247,54 @@ round the exact result once into the destination (`assign_rounded`), with no all
   - **License.** This is efloat's own code, written from the instruction set's semantics
     (Intel SDM: `mulx`, `adcx`, `adox`), not from GMP's assembly; see
     `docs/licensing/mpfr-gmp-lgpl.md`.
+- **Storage** (#1820). Until #1820 the significand was a `std::vector<uint32_t>`, most
+  significant limb first, and every operation packed its operands into 64-bit scratch, rounded
+  back into 32-bit limbs and resized the vector: at 8192 bits 88% of `a+b`'s time was outside
+  `add_n`, and at 128 bits 0.024 of `a*b`'s 0.027 us was outside the kernel.
+  - The limbs are now the kernels' own. `efloat_limbs<N>` holds 64-bit limbs, least
+    significant first, the leading bit at the top of the top limb and no zero limb below the
+    last 1 bit; a precision of an odd number of 32-bit limbs leaves the low half of the bottom
+    limb zero. The exponent is the weight of the top bit, as before, so `scale()` and every
+    algorithm that reads it are unchanged.
+  - **The storage decision.** Of the three options #1820 named -- a fixed array sized from the
+    template parameter, an inline buffer with a heap fallback, a fixed-capacity sibling type --
+    the inline buffer with a heap fallback, since precision is elastic at run time and can
+    exceed `nlimbs`, where a fixed array would have to fail or truncate. The inline size is
+    `min(ceil(nlimbs / 2) + 2, EFLOAT_INLINE_LIMBS)`, the precision and two limbs of the
+    mathlib's working precisions, and `EFLOAT_INLINE_LIMBS` is 8. Measured on `efloat<256>`:
+    caps of 2, 4, 8 and 16 limbs make `sizeof` 56, 72, 104 and 168 bytes; in-place operations
+    run within 2% of each other at every precision from 128 to 8192 bits, since the block
+    cache makes a heap value nearly as cheap as an inline one, and a copy at 512 bits costs
+    5.8 ns with a heap block against 1.8 inline. 8 keeps every value up to 512 bits inline at
+    104 bytes.
+  - **Allocation.** Heap blocks come in powers of 2, and a freed one goes to a cache of 8 a
+    thread (blocks up to 2^16 limbs), which the next value or scratch request of its size
+    takes; a reaper frees the cache when the thread ends. The scratch of `*`, `/`, `sqrt` and
+    the mathlib's kernels past their stack buffers comes from the same cache.
+    `elastic/efloat/api/storage.cpp` counts every allocation through a replacement
+    `operator new`: none at 128 bits from the first operation on, and none in a steady state
+    at 128 to 8192 bits for `c = a op b`, `c op= b`, `a / 7` and `sqrt`.
+  - **For #1819 (constexpr efloat).** The storage works in constant evaluation: the inline
+    buffer is zeroed there, and a value past it allocates with `new` and frees with `delete`
+    inside the evaluation, which C++20 allows of a transient allocation; a constant result
+    must fit the inline limbs. What stands in the way now is the arithmetic: the `efloat_mpn`
+    kernels, the assembly dispatch and the thread-local rounding mode and flags are not
+    constexpr. A fixed-capacity sibling type over the same kernels remains open.
+  - **The API.** `bits()` and `limb_vector()` return 32-bit limbs, most significant first,
+    converted from the 64-bit ones (`limb_vector()` now by value), and `setlimb()` writes one,
+    so the tests and applications that use them are unchanged. The mathlib reads
+    `limb_data()` and `limb_count()`, and `set_significand()` sets the 64-bit limbs.
+  - **Sums at the full precision.** Operands of one sign, both as long as the precision, add as
+    in MPFR's `mpfr_add1sp`: Y shifted once into the result's limbs, its shifted-out bits the
+    guard and sticky bits, X added, and a carry shifting the sum down one bit. Every other sum
+    goes through the frame, whose rounding shift now runs through `efloat_mpn::lshift`.
+  - Results are bit-identical to before, flags and carried precision included: 1.2 million
+    old-vs-new results over `+ - * /`, the integer operands, `sqrt`, `cbrt`, `fma`, `hypot`, the
+    truncations, comparisons, conversions to `double` and `float`, the mathlib and
+    `to_string`-`parse` round trips, at 32 to 8192 bits, in every mode; `mpfr_check` 0 wrong.
+  - **One behaviour changed.** A parsed literal is normalized, as every other value is. Before,
+    `parse` left zero limbs below the last 1 bit, so a parsed `1.5` compared neither equal to,
+    less than nor greater than `efloat(1.5)`, and `bits()` listed the zeros.
 
 ## 4. The functions
 
@@ -720,55 +770,55 @@ efloat returns +0 with Underflow.
 ## 7. Measured speed
 
 `mpfr_gap`, best of three, warm caches, microseconds per call, round to nearest.
-Measured 2026-10-24 with #1816 (the x86-64 assembly basecase and the thresholds re-measured
-with it), Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`, MPFR 4.2.2, GMP 6.3.0;
+Measured 2026-10-24 with #1820 (64-bit least-significant-first storage, section 3), Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`, MPFR 4.2.2, GMP 6.3.0;
 `a = 0.718...`, `b = 1.414...`, `x = 1 + a`. Each cell is
 efloat / MPFR in microseconds, then the ratio.
 
 | operation | 128 bits | | 512 bits | | 2048 bits | | 8192 bits | |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `a+b` | 0.027 / 0.013 | 2.1x | 0.036 / 0.020 | 1.8x | 0.072 / 0.048 | 1.5x | 0.232 / 0.168 | 1.4x |
-| `a*b` | 0.031 / 0.018 | 1.7x | 0.058 / 0.042 | 1.4x | 0.317 / 0.266 | 1.2x | 2.608 / 2.155 | 1.2x |
-| `b/a` | 0.049 / 0.029 | 1.7x | 0.113 / 0.079 | 1.4x | 0.549 / 0.483 | 1.1x | 4.576 / 4.306 | 1.1x |
-| `a/7` | 0.027 / 0.024 | 1.1x | 0.050 / 0.039 | 1.3x | 0.144 / 0.104 | 1.4x | 0.506 / 0.371 | 1.4x |
-| `exp(a)` | 0.575 / 0.720 | 0.8x | 1.386 / 2.161 | 0.6x | 8.458 / 15.73 | 0.5x | 105.4 / 175.0 | 0.6x |
-| `log(x)` | 0.782 / 1.108 | 0.7x | 1.383 / 3.193 | 0.4x | 6.684 / 14.79 | 0.5x | 82.21 / 123.8 | 0.7x |
-| `sin(a)` | 0.731 / 0.732 | 1.0x | 1.698 / 2.110 | 0.8x | 9.853 / 14.15 | 0.7x | 125.2 / 193.3 | 0.6x |
-| `sqrt(b)` | 0.054 / 0.059 | 0.9x | 0.125 / 0.132 | 0.9x | 0.518 / 0.436 | 1.2x | 2.914 / 3.072 | 0.9x |
-| `fma(a,b,a)` | 0.043 / 0.029 | 1.5x | 0.076 / 0.049 | 1.6x | 0.461 / 0.332 | 1.4x | 3.666 / 3.139 | 1.2x |
-| `hypot(a,b)` | 0.099 / 0.171 | 0.6x | 0.229 / 0.322 | 0.7x | 1.095 / 1.017 | 1.1x | 8.237 / 8.043 | 1.0x |
-| `cbrt(b)` | 0.292 / 0.289 | 1.0x | 0.586 / 0.467 | 1.3x | 1.594 / 1.321 | 1.2x | 9.777 / 7.508 | 1.3x |
-| `exp2(a)` | 0.720 / 1.017 | 0.7x | 1.676 / 2.654 | 0.6x | 9.884 / 17.16 | 0.6x | 114.3 / 191.1 | 0.6x |
-| `exp10(a)` | 0.750 / 2.311 | 0.3x | 1.747 / 5.970 | 0.3x | 10.15 / 31.07 | 0.3x | 116.1 / 312.6 | 0.4x |
-| `expm1(a)` | 0.606 / 0.818 | 0.7x | 1.419 / 2.364 | 0.6x | 8.501 / 15.68 | 0.5x | 105.4 / 177.8 | 0.6x |
-| `log2(x)` | 0.881 / 1.274 | 0.7x | 1.558 / 3.469 | 0.4x | 7.419 / 15.34 | 0.5x | 86.87 / 128.9 | 0.7x |
-| `log10(x)` | 0.939 / 2.438 | 0.4x | 1.610 / 6.861 | 0.2x | 7.440 / 30.31 | 0.2x | 86.93 / 253.7 | 0.3x |
-| `log1p(a)` | 0.901 / 1.209 | 0.7x | 1.528 / 3.292 | 0.5x | 6.871 / 14.87 | 0.5x | 81.82 / 123.8 | 0.7x |
-| `cos(a)` | 0.618 / 0.527 | 1.2x | 1.440 / 1.693 | 0.9x | 8.927 / 13.01 | 0.7x | 120.1 / 188.0 | 0.6x |
-| `tan(a)` | 0.882 / 1.018 | 0.9x | 1.948 / 2.348 | 0.8x | 10.67 / 15.33 | 0.7x | 131.0 / 201.5 | 0.7x |
-| `asin(a)` | 1.892 / 2.840 | 0.7x | 4.281 / 10.85 | 0.4x | 20.58 / 43.48 | 0.5x | 205.4 / 341.6 | 0.6x |
-| `acos(a)` | 1.434 / 2.854 | 0.5x | 3.606 / 10.83 | 0.3x | 17.82 / 43.25 | 0.4x | 183.9 / 339.1 | 0.5x |
-| `atan(a)` | 1.335 / 2.387 | 0.6x | 3.077 / 8.815 | 0.3x | 17.33 / 41.63 | 0.4x | 182.1 / 333.3 | 0.5x |
-| `atan2(a,b)` | 1.183 / 2.365 | 0.5x | 3.172 / 10.78 | 0.3x | 16.94 / 44.59 | 0.4x | 178.7 / 324.1 | 0.6x |
-| `sinh(a)` | 0.783 / 0.857 | 0.9x | 1.704 / 2.454 | 0.7x | 9.366 / 16.07 | 0.6x | 111.2 / 182.6 | 0.6x |
-| `cosh(a)` | 0.779 / 0.847 | 0.9x | 1.680 / 2.461 | 0.7x | 9.370 / 16.04 | 0.6x | 111.1 / 181.1 | 0.6x |
-| `tanh(a)` | 0.754 / 0.945 | 0.8x | 1.709 / 2.514 | 0.7x | 9.552 / 16.53 | 0.6x | 112.4 / 184.6 | 0.6x |
-| `asinh(a)` | 1.148 / 1.350 | 0.8x | 2.043 / 3.612 | 0.6x | 8.527 / 15.56 | 0.5x | 89.22 / 128.6 | 0.7x |
-| `acosh(b)` | 1.188 / 1.384 | 0.9x | 2.084 / 3.683 | 0.6x | 7.759 / 15.56 | 0.5x | 82.04 / 128.4 | 0.6x |
-| `atanh(a)` | 1.056 / 1.383 | 0.8x | 1.812 / 3.497 | 0.5x | 8.058 / 15.38 | 0.5x | 91.73 / 128.8 | 0.7x |
-| `pow(b,a)` | 1.588 / 2.202 | 0.7x | 3.117 / 5.969 | 0.5x | 16.21 / 31.69 | 0.5x | 191.0 / 313.9 | 0.6x |
-| `pow(b,7)` | 0.068 / 0.104 | 0.7x | 0.174 / 0.189 | 0.9x | 1.094 / 1.255 | 0.9x | 8.501 / 11.01 | 0.8x |
-| `tgamma(b)` | 10.45 / 7.138 | 1.5x | 29.56 / 32.72 | 0.9x | 193.4 / 362.6 | 0.5x | 3180 / 7355 | 0.4x |
-| `lgamma(b)` | 10.16 / 7.466 | 1.4x | 28.04 / 33.68 | 0.8x | 184.5 / 757.2 | 0.2x | 3037 / 7243 | 0.4x |
-| `erf(a)` | 3.917 / 2.940 | 1.3x | 11.73 / 15.71 | 0.7x | 96.17 / 172.1 | 0.6x | 1652 / 3000 | 0.6x |
-| `erfc(a)` | 4.095 / 3.186 | 1.3x | 12.12 / 16.18 | 0.7x | 95.75 / 172.8 | 0.6x | 1656 / 3000 | 0.6x |
-
+| `a+b` | 0.017 / 0.013 | 1.4x | 0.023 / 0.020 | 1.2x | 0.037 / 0.048 | 0.8x | 0.093 / 0.167 | 0.6x |
+| `a*b` | 0.020 / 0.018 | 1.1x | 0.043 / 0.042 | 1.0x | 0.238 / 0.267 | 0.9x | 2.374 / 2.158 | 1.1x |
+| `b/a` | 0.033 / 0.028 | 1.2x | 0.082 / 0.080 | 1.0x | 0.474 / 0.485 | 1.0x | 4.182 / 4.298 | 1.0x |
+| `a/7` | 0.022 / 0.025 | 0.9x | 0.047 / 0.040 | 1.2x | 0.108 / 0.104 | 1.0x | 0.374 / 0.374 | 1.0x |
+| `exp(a)` | 0.580 / 0.739 | 0.8x | 1.341 / 2.170 | 0.6x | 8.366 / 15.71 | 0.5x | 105.1 / 175.2 | 0.6x |
+| `log(x)` | 0.623 / 1.108 | 0.6x | 1.207 / 3.202 | 0.4x | 6.261 / 14.79 | 0.4x | 80.18 / 124.2 | 0.6x |
+| `sin(a)` | 0.634 / 0.766 | 0.8x | 1.589 / 2.112 | 0.8x | 9.513 / 14.17 | 0.7x | 123.4 / 193.6 | 0.6x |
+| `sqrt(b)` | 0.049 / 0.059 | 0.8x | 0.111 / 0.132 | 0.8x | 0.440 / 0.435 | 1.0x | 2.664 / 3.073 | 0.9x |
+| `fma(a,b,a)` | 0.036 / 0.029 | 1.2x | 0.063 / 0.049 | 1.3x | 0.386 / 0.330 | 1.2x | 3.316 / 3.163 | 1.0x |
+| `hypot(a,b)` | 0.083 / 0.170 | 0.5x | 0.205 / 0.323 | 0.6x | 1.029 / 1.018 | 1.0x | 7.957 / 8.044 | 1.0x |
+| `cbrt(b)` | 0.211 / 0.288 | 0.7x | 0.469 / 0.465 | 1.0x | 1.340 / 1.313 | 1.0x | 9.009 / 7.500 | 1.2x |
+| `exp2(a)` | 0.671 / 1.053 | 0.6x | 1.590 / 2.684 | 0.6x | 9.603 / 17.24 | 0.6x | 113.6 / 190.9 | 0.6x |
+| `exp10(a)` | 0.704 / 2.354 | 0.3x | 1.647 / 5.977 | 0.3x | 9.942 / 31.31 | 0.3x | 116.2 / 312.8 | 0.4x |
+| `expm1(a)` | 0.608 / 0.833 | 0.7x | 1.380 / 2.373 | 0.6x | 8.371 / 15.62 | 0.5x | 105.1 / 180.1 | 0.6x |
+| `log2(x)` | 0.697 / 1.276 | 0.5x | 1.326 / 3.445 | 0.4x | 6.827 / 15.32 | 0.4x | 84.69 / 128.9 | 0.7x |
+| `log10(x)` | 0.733 / 2.438 | 0.3x | 1.360 / 6.822 | 0.2x | 6.851 / 30.37 | 0.2x | 84.82 / 255.3 | 0.3x |
+| `log1p(a)` | 0.694 / 1.199 | 0.6x | 1.308 / 3.334 | 0.4x | 6.351 / 14.86 | 0.4x | 79.37 / 123.5 | 0.6x |
+| `cos(a)` | 0.530 / 0.527 | 1.0x | 1.351 / 1.720 | 0.8x | 8.684 / 12.97 | 0.7x | 118.9 / 187.9 | 0.6x |
+| `tan(a)` | 0.740 / 1.016 | 0.7x | 1.791 / 2.367 | 0.8x | 10.14 / 15.26 | 0.7x | 128.1 / 201.2 | 0.6x |
+| `asin(a)` | 1.473 / 2.877 | 0.5x | 3.766 / 10.90 | 0.3x | 18.74 / 43.70 | 0.4x | 196.7 / 341.3 | 0.6x |
+| `acos(a)` | 1.171 / 2.920 | 0.4x | 3.195 / 10.95 | 0.3x | 16.35 / 43.32 | 0.4x | 177.8 / 338.9 | 0.5x |
+| `atan(a)` | 1.070 / 2.425 | 0.4x | 2.748 / 8.870 | 0.3x | 15.91 / 41.83 | 0.4x | 175.0 / 330.1 | 0.5x |
+| `atan2(a,b)` | 1.011 / 2.394 | 0.4x | 2.924 / 10.90 | 0.3x | 15.73 / 44.69 | 0.4x | 172.6 / 324.2 | 0.5x |
+| `sinh(a)` | 0.708 / 0.870 | 0.8x | 1.578 / 2.463 | 0.6x | 9.047 / 16.02 | 0.6x | 111.0 / 183.0 | 0.6x |
+| `cosh(a)` | 0.705 / 0.872 | 0.8x | 1.557 / 2.455 | 0.6x | 9.053 / 16.05 | 0.6x | 109.7 / 181.3 | 0.6x |
+| `tanh(a)` | 0.716 / 0.966 | 0.7x | 1.605 / 2.517 | 0.6x | 9.301 / 16.53 | 0.6x | 111.5 / 184.5 | 0.6x |
+| `asinh(a)` | 0.878 / 1.350 | 0.7x | 1.757 / 3.616 | 0.5x | 7.717 / 15.51 | 0.5x | 86.30 / 128.6 | 0.7x |
+| `acosh(b)` | 0.955 / 1.382 | 0.7x | 1.878 / 3.659 | 0.5x | 7.116 / 15.54 | 0.5x | 79.66 / 128.5 | 0.6x |
+| `atanh(a)` | 0.798 / 1.380 | 0.6x | 1.509 / 3.493 | 0.4x | 7.424 / 15.37 | 0.5x | 88.91 / 128.6 | 0.7x |
+| `pow(b,a)` | 1.326 / 2.244 | 0.6x | 2.861 / 5.981 | 0.5x | 15.69 / 31.58 | 0.5x | 188.9 / 313.5 | 0.6x |
+| `pow(b,7)` | 0.064 / 0.104 | 0.6x | 0.163 / 0.193 | 0.8x | 1.016 / 1.253 | 0.8x | 8.305 / 11.00 | 0.8x |
+| `tgamma(b)` | 8.097 / 7.210 | 1.1x | 23.49 / 32.81 | 0.7x | 149.1 / 362.1 | 0.4x | 2445 / 7355 | 0.3x |
+| `lgamma(b)` | 7.708 / 7.485 | 1.0x | 22.03 / 33.57 | 0.7x | 138.1 / 756.0 | 0.2x | 2332 / 7234 | 0.3x |
+| `erf(a)` | 3.117 / 2.933 | 1.1x | 9.731 / 15.76 | 0.6x | 74.10 / 170.8 | 0.4x | 1379 / 2991 | 0.5x |
+| `erfc(a)` | 3.241 / 3.189 | 1.0x | 10.01 / 16.44 | 0.6x | 74.51 / 174.0 | 0.4x | 1386 / 3000 | 0.5x |
 Read the ratio column as the work left on Epic #1763.
 
 Against gmpy2 2.3.2 (`mpmath_gap.py`, the epic's primary target, its figures including the
-Python call) on the same machine, the three cells #1816 was filed for, at 8192 bits, are now at
-or below it: `a*b` 2.61 against 2.79 us, `b/a` 4.58 against 4.69, `sqrt` 2.91 against 3.39;
-`sin` at 128 bits, 0.73 against 0.83, too. On main before it they were 3.46, 6.02 and 3.66.
+Python call) on the same machine, pinned to one performance core (`taskset -c 2`; unpinned runs
+that land on an efficiency core read up to 3x slower), every cell of `mpmath_gap`'s table is now
+below it. The closest are `b/a` at 2048 bits, 0.48 against 0.54 us, which #1820 was filed for
+with the 0.549 it read before, and `sqrt` at 2048 bits, 0.53 against 0.56 (0.62 before #1820);
+`a+b` at 8192 bits, the other cell #1820 named, is 0.07 against 0.22.
 
 - **Ahead or level with MPFR:**
   - the exp family (#1788, #1790) up to 2048 bits: `exp`, `exp2`, `expm1`, `sinh`, `cosh` and
@@ -814,8 +864,9 @@ or below it: `a*b` 2.61 against 2.79 us, `b/a` 4.58 against 4.69, `sqrt` 2.91 ag
   #1785's, flags and carried precision included, over 1.1 million old-vs-new results in every
   mode. (#1785 had made both exact: before it, `fma` rounded twice and was wrong in 29% of the
   cases.)
-- **The primitives set the floor:** `a*b` and `b/a` run 1.4-1.8x MPFR (`a/7` 1.1-1.4x since
-  #1811, `sqrt` 1.0-1.2x since #1810), and every function built on them inherits that.
+- **The primitives set the floor:** `a*b` and `b/a` run 1.0-1.2x MPFR since #1820 (1.4-1.8x
+  before #1816), `a/7` 0.9-1.2x and `sqrt` 0.8-1.0x, and every function built on them inherits
+  that.
 - **pow(x, n)** (#1804): `pow(b, 7)` 1.1-5.1x faster, from 3.4/2.8/1.9/1.6x MPFR to
   0.7/1.0/1.3/1.5x; `pow(b, -7)` from 2.6/2.2/2.2/2.1x to 0.5/0.8/1.6/1.9x. Results are
   bit-identical to before, flags and carried precision included, over 1.44 million old-vs-new
@@ -842,9 +893,19 @@ or below it: `a*b` 2.61 against 2.79 us, `b/a` 4.58 against 4.69, `sqrt` 2.91 ag
   and power sweeps of #1803 to #1810, 1.3 million more, in every mode. `a*b` at 128 bits reads
   1.7x in this table (1.5x before); in a translation unit of its own it is faster than before
   under g++ and clang (0.0278 against 0.0294 us, 0.0299 against 0.0397).
-- **Largest gaps:** `a+b` at 128 bits (2.2x, per-operation overhead), `b/a` below 1024 bits
-  (1.5-1.8x, where MPFR has one- and two-limb paths) and at 2048 and 8192 bits (1.4x, a short
-  division), `a*b` (1.5-1.7x, the multiply kernel's own), `cbrt` at 8192 bits (1.7x).
+- **Storage** (#1820): the operations ran on 64-bit copies of 32-bit, most-significant-first
+  limbs; on the kernels' own limbs, without per-operation allocation (section 3), `a+b` takes
+  0.40-0.64 of its time before, `a*b` 0.65-0.91, `b/a` 0.67-0.91, `a/7` 0.74-0.94, `sqrt`
+  0.85-0.91, `fma` 0.83-0.90, `cbrt` 0.72-0.92, and the functions 0.75-1.0 (most at 128 and
+  512 bits, where the overhead was the largest share). Every operation is now within 1.4x
+  MPFR. The cost outside the kernels, the operation less its kernel on the same operands, is
+  at 128 bits 0.012 us for `a+b`, 0.014 for `a*b` and 0.016 for `b/a` (0.024, 0.024 and 0.033
+  before), against MPFR's 0.007-0.011; at 8192 bits 0.06 for `a+b` and 0.08 for `a*b` (0.20 and
+  0.32 before). #1820 asked for under 0.01 and 0.05: the rest is the generic rounding and the
+  operation's dispatch, where MPFR has paths for one and two limbs.
+- **Largest gaps:** `a+b` at 128 bits (1.4x, per-operation overhead), `fma` below 2048 bits
+  (1.2-1.3x), `b/a` at 128 bits (1.2x, where MPFR has one- and two-limb paths), `cbrt` at 8192
+  bits (1.2x).
 
 **Benchmark hygiene.** Single runs of the mpmath comparison vary by 15-50%; compare branches
 with best-of-5 runs on an idle machine. Warm the caches first. The first-call cost of a new
@@ -896,6 +957,7 @@ row both ways before reading it as a cost.
 | #1813 | 2026-10-23 | division from an approximate quotient (`div_appr`) with Ziv's test; `a/n` on 64-bit limbs for divisors of up to 64 bits; rounding from 64-bit frames: a/7 1.8-2.2x MPFR to 1.1-1.4x, b/a at 2048 and 8192 bits 1.8-1.9x to 1.4x |
 | #1815 | 2026-10-24 | Toom-3 multiplication and squaring (Bodrato's sequence), from 240 and 352 limbs by measurement: products 2-16% faster from 16384 bits; nothing changes up to 8192 |
 | #1818 | 2026-10-24 | x86-64 `mulx`/`adcx`/`adox` kernels in inline assembly, chosen at run time by `cpuid`, portable loops elsewhere; thresholds re-measured: `a*b`, `b/a`, `sqrt` at 8192 bits 3.46/6.02/3.66 us to 2.61/4.58/2.91, below gmpy2 |
+| #1822 | 2026-10-24 | 64-bit least-significant-first storage in an inline buffer with a per-thread block cache, no per-operation allocation: `a+b` 0.40-0.63x, `a*b` 0.65-0.91x, `b/a` 0.67-0.91x of before; every operation within 1.5x MPFR, every `mpmath_gap` cell below gmpy2; parsed literals normalized |
 
 ## 9. Open work
 
@@ -910,7 +972,7 @@ binary-splitting constants; Sasaki-Kanada AGM start; binary splitting for lgamma
 a tapered fill of the Bernoulli table (since #1797 the first gamma call at 8192 bits fills 1439
 terms in 1.1 s, against 915 in 0.4 s at the old `0.3 W` shift; the shorter shift saves 1.5 ms
 a warm call, so it pays after about 460 calls in a thread);
-heap-free, least-significant-first storage; Payne-Hanek reduction for huge trig arguments;
+Payne-Hanek reduction for huge trig arguments;
 ratio guards in CI beyond the existing division-to-multiply one.
 
 ## 10. Working on it

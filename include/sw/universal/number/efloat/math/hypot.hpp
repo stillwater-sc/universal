@@ -28,8 +28,8 @@ namespace efloat_detail {
 	template<unsigned nlimbs>
 	inline void hypot_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, unsigned precision) {
 		using efloat_mpn::limb_t;
-		const std::size_t mx = (x.limb_vector().size() + 1) / 2;
-		const std::size_t my = (y.limb_vector().size() + 1) / 2;
+		const std::size_t mx = x.limb_count();
+		const std::size_t my = y.limb_count();
 		const std::size_t n  = std::max<std::size_t>((static_cast<std::size_t>(precision) + 2 + 63) / 64, mx);
 		const int64_t     d  = x.scale() - y.scale();   // >= 0, and at most a few limbs past the precision
 		const std::size_t m  = std::max(mx, my);

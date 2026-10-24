@@ -101,9 +101,9 @@ namespace efloat_detail {
 	template<unsigned nlimbs>
 	inline void fma_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z, unsigned precision) {
 		using efloat_mpn::limb_t;
-		const std::size_t nx = (x.limb_vector().size() + 1) / 2;
-		const std::size_t ny = (y.limb_vector().size() + 1) / 2;
-		const std::size_t nz = (z.limb_vector().size() + 1) / 2;
+		const std::size_t nx = x.limb_count();
+		const std::size_t ny = y.limb_count();
+		const std::size_t nz = z.limb_count();
 		const std::size_t np = nx + ny;
 		const int64_t B  = 32 * static_cast<int64_t>((precision + 31) / 32);   // the rounding precision
 		const int64_t R  = x.scale() + y.scale();
@@ -219,7 +219,7 @@ inline efloat<nlimbs> fma(const efloat<nlimbs>& x, const efloat<nlimbs>& y, cons
 	constexpr int64_t limbs_range = int64_t(1) << 61;
 	if (!x.iszero() && !y.iszero() && !z.iszero() && s > -limbs_range && s < limbs_range) {
 		// a copy of the longest operand holds the result's limbs without growing in most cases
-		const std::size_t lx = x.limb_vector().size(), ly = y.limb_vector().size(), lz = z.limb_vector().size();
+		const std::size_t lx = x.limb_count(), ly = y.limb_count(), lz = z.limb_count();
 		E result((lx >= ly && lx >= lz) ? x : (ly >= lz ? y : z));
 		efloat_detail::fma_limbs(result, x, y, z, precision);   // rounded, at the precision
 		if (!carries || result.iszero()) efloat_detail::round_result(result, precision, carries);
