@@ -70,6 +70,7 @@ efloat's kernels implement published algorithms, cited where they are used:
 | `efloat_mpn::dcpi1_div_qr_n` | divide-and-conquer division | Burnikel and Ziegler, *Fast recursive division*, MPI-I-98-1-022, 1998 |
 | `efloat_mpn::sqrtrem`, `cbrtrem` | Karatsuba square root, and the same recursion carried to the cube | Zimmermann, *Karatsuba Square Root*, INRIA RR-3805, 1999 |
 | `efloat_mpn::mul_n` | Karatsuba multiplication | Karatsuba and Ofman, 1962 |
+| `efloat_mpn::x86::addmul_4k` and the other x86-64 loops | multiply-accumulate on two carry chains | Intel 64 and IA-32 Architectures Software Developer's Manual (`mulx`, `adcx`, `adox`); Intel, *New Instructions Supporting Large Integer Arithmetic on Intel Architecture Processors*, 2012 |
 | correct rounding, `can_round` | Ziv's strategy | Ziv, *Fast evaluation of elementary mathematical functions with correctly rounded last bit*, ACM TOMS 17(3), 1991 |
 | log by the AGM, erf, lgamma | as MPFR evaluates them | Brent and Zimmermann, *Modern Computer Arithmetic*, 2010; MPFR's `algorithms.pdf` |
 
@@ -81,7 +82,8 @@ license.
 count, least significant limb first, and several functions carry the names of their GMP
 counterparts (`sqrtrem`, `dcpi1_div_qr`, `sbpi1_div_qr`, `invert_pi1`, `udiv_qr_3by2`). The
 names and the calling convention say which algorithm a function is; they do not copy GMP's code.
-The kernels were written from the papers above. GMP's and MPFR's sources were not consulted for
+The kernels were written from the papers above, and the x86-64 assembly (#1816) from the
+instructions' documented semantics; GMP's assembly files were not consulted for it. GMP's and MPFR's sources were not consulted for
 them, and only the two libraries' installed headers and shared libraries were present on the
 machine where they were written.
 

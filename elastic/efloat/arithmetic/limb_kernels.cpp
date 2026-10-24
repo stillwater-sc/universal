@@ -44,11 +44,18 @@
 //            general long division at a width that holds the quotient, rounded once.
 //   div_appr, sqrt_approx  efloat_mpn's quotient and root without remainders (#1810) must lie
 //            at or above the exact ones, by at most divappr_error and sqrt_approx_error units.
+//   mul_1, addmul_1, submul_1, add_n, sub_n  efloat_mpn's x86-64 assembly (#1816) against the
+//            portable loops it replaces, where the processor has it: lengths 1 to 300, every
+//            n mod 4, all-ones and all-zero runs, all-ones multipliers, the carries and borrows
+//            out of the top, and destinations that are a source.  ASan and UBSan do not see
+//            inside inline assembly, so this comparison is the check on it.
 //   load_window  efloat_mpn's shifted copy, which places the fma and hypot kernels' terms in
 //            their frames (#1802), against a bit at a time, and its flag for the bits it drops.
 //
 // REGRESSION_LEVEL convention (intensity progression):
-//   LEVEL 1 -- 300 random products and the threshold lengths, 2,000 sums per precision,
+//   LEVEL 1 -- every limb kernel at lengths 1 to 300 and 3,000 more (30,000, 300,000 and
+//              1,000,000 at the levels below), 300 random products and the threshold lengths,
+//              2,000 sums per precision,
 //              300 limb quotients and the threshold lengths, 300 rounded quotients per precision
 //              (a twentieth of that at 40 and 60 limbs), 300 limb square roots and cube roots
 //              and the lengths, 2,000 limb windows
@@ -157,8 +164,8 @@ namespace {
 	int VerifyExactProducts(bool reportTestCases, unsigned nrSamples) {
 		int nrOfFailedTestCases = 0;
 		std::mt19937_64 rng(1762);
-		// the Karatsuba thresholds, 24 and 32 64-bit limbs, and twice them, with odd neighbours
-		const size_t lengths[] = { 1, 2, 3, 4, 7, 8, 9, 46, 47, 48, 49, 50, 63, 64, 65, 66, 95, 96, 97, 98, 128, 129, 255, 256 };
+		// the Karatsuba thresholds, 24 and 64 64-bit limbs (48 and 128 of efloat's), and twice them, with odd neighbours
+		const size_t lengths[] = { 1, 2, 3, 4, 7, 8, 9, 46, 47, 48, 49, 50, 63, 64, 65, 66, 95, 96, 97, 98, 127, 128, 129, 130, 255, 256, 257 };
 		for (size_t m : lengths) {
 			nrOfFailedTestCases += VerifyProduct(reportTestCases, rng, m, m);
 			nrOfFailedTestCases += VerifyProduct(reportTestCases, rng, m, 1 + rng() % m);
@@ -357,6 +364,52 @@ namespace {
 	// signs and carries: all ones, a zero middle or low third, a top third of all ones against
 	// zeros, sparse operands, and squares, into a destination of garbage; and the exact division
 	// by 3 on its own, on values whose zero limbs meet a carry, where it borrows
+	// efloat_mpn's kernels, which take the x86-64 assembly where the processor has BMI2 and ADX
+	// (#1816), against the portable loops; elsewhere both sides are the portable loop
+	int VerifyLimbKernels(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		using efloat_mpn::limb_t;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(18160);
+		const char* names[] = { "mul_1", "addmul_1", "submul_1", "add_n", "sub_n" };
+		auto check = [&](std::size_t n, int pattern, int op, bool in_place) {
+			auto value = [&]() -> limb_t {
+				if (pattern == 1) return ~limb_t(0);
+				if (pattern == 2) return (rng() & 1u) ? ~limb_t(0) : limb_t(0);
+				return rng();
+			};
+			std::vector<limb_t> a(n), b(n), r1(n), r2(n);
+			for (auto& v : a) v = value();
+			for (auto& v : b) v = value();
+			for (auto& v : r1) v = value();
+			const limb_t m = (pattern != 0 || rng() % 4 == 0) ? ~limb_t(0) : rng();
+			if (in_place) r1 = a;   // the destination is the first source
+			r2 = r1;
+			const limb_t* a1 = in_place ? r1.data() : a.data();
+			const limb_t* a2 = in_place ? r2.data() : a.data();
+			limb_t c1 = 0, c2 = 0;
+			switch (op) {
+			case 0: c1 = efloat_mpn::mul_1_portable(r1.data(), a1, n, m);         c2 = efloat_mpn::mul_1(r2.data(), a2, n, m);         break;
+			case 1: c1 = efloat_mpn::addmul_1_portable(r1.data(), a1, n, m);      c2 = efloat_mpn::addmul_1(r2.data(), a2, n, m);      break;
+			case 2: c1 = efloat_mpn::submul_1_portable(r1.data(), a1, n, m);      c2 = efloat_mpn::submul_1(r2.data(), a2, n, m);      break;
+			case 3: c1 = efloat_mpn::add_n_portable(r1.data(), a1, b.data(), n);  c2 = efloat_mpn::add_n(r2.data(), a2, b.data(), n);  break;
+			default: c1 = efloat_mpn::sub_n_portable(r1.data(), a1, b.data(), n); c2 = efloat_mpn::sub_n(r2.data(), a2, b.data(), n); break;
+			}
+			if (c1 != c2 || r1 != r2) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: " << names[op] << " of " << n << " limbs, pattern " << pattern << (in_place ? ", in place" : "") << '\n';
+			}
+		};
+		for (std::size_t n = 1; n <= 300; ++n) {
+			for (int op = 0; op < 5; ++op) {
+				for (int pattern = 0; pattern < 3; ++pattern) check(n, pattern, op, false);
+				check(n, 0, op, true);
+			}
+		}
+		for (unsigned i = 0; i < nrSamples; ++i) check(1 + rng() % 300, static_cast<int>(rng() % 3), static_cast<int>(rng() % 5), rng() % 4 == 0);
+		return nrOfFailedTestCases;
+	}
+
 	int VerifyToom3(bool reportTestCases, unsigned nrSamples) {
 		using namespace sw::universal;
 		using efloat_mpn::limb_t;
@@ -513,7 +566,7 @@ namespace {
 	// efloat_mpn::mulhigh_n and mul_truncated (#1807) against the full product: R = r[n - 1, 2n)
 	// below the full product's limbs from n - 1 up by less than n units of r[n], and the
 	// truncated product the floor of a b / B^drop or one unit below it. Lengths straddle the
-	// basecase-to-Mulders threshold (32) and the Karatsuba ones (16, 48); squares, all-ones
+	// basecase-to-Mulders threshold (64) and the Karatsuba ones (24, 64); squares, all-ones
 	// operands (whose dropped partial products are largest) and unbalanced truncated products.
 	// can_round on limbs is checked at the edges of the bits it reads.
 	int VerifyShortProducts(bool reportTestCases, unsigned nrSamples) {
@@ -521,7 +574,7 @@ namespace {
 		using efloat_mpn::limb_t;
 		int nrOfFailedTestCases = 0;
 		std::mt19937_64 rng(1807);
-		const size_t lengths[] = { 1, 2, 3, 15, 16, 17, 31, 32, 33, 47, 48, 49, 63, 64, 65, 96, 128, 129, 200 };
+		const size_t lengths[] = { 1, 2, 3, 15, 16, 17, 23, 24, 25, 31, 32, 33, 47, 48, 49, 63, 64, 65, 96, 127, 128, 129, 200 };
 		auto check_high = [&](size_t n, bool square, bool ones) {
 			std::vector<limb_t> a(n), b(n), full(2 * n), r(2 * n), sc(efloat_mpn::scratch_limbs(n) + 8), d(n + 1);
 			for (size_t i = 0; i < n; ++i) { a[i] = ones ? ~limb_t(0) : rng(); b[i] = ones ? ~limb_t(0) : rng(); }
@@ -775,7 +828,7 @@ namespace {
 		std::mt19937_64 rng(17632);
 		// one and two limbs (the base cases), the recursion's odd splits, and the division's
 		// divide-and-conquer threshold in the half-length divisions
-		for (size_t n : { size_t(1), size_t(2), size_t(3), size_t(4), size_t(5), size_t(7), size_t(31), size_t(32), size_t(33), size_t(64), size_t(65), size_t(129) }) {
+		for (size_t n : { size_t(1), size_t(2), size_t(3), size_t(4), size_t(5), size_t(7), size_t(31), size_t(32), size_t(33), size_t(63), size_t(64), size_t(65), size_t(129) }) {
 			for (int k = 0; k < 5; ++k) nrOfFailedTestCases += VerifySquareRoot(reportTestCases && nrOfFailedTestCases < 4, rng, n);
 		}
 		for (unsigned i = 0; i < nrSamples; ++i) {
@@ -1001,6 +1054,7 @@ int main() try {
 #if MANUAL_TESTING
 
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 30), "efloat", "exact products");
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbKernels(reportTestCases, 1000), "efloat", "limb kernels against the portable loops");
 	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 5), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 100), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
@@ -1020,6 +1074,7 @@ int main() try {
 
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 300), "efloat", "exact products");
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbKernels(reportTestCases, 3000), "efloat", "limb kernels against the portable loops");
 	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 20), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
@@ -1036,6 +1091,7 @@ int main() try {
 
 #	if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 3000), "efloat", "exact products");
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbKernels(reportTestCases, 30000), "efloat", "limb kernels against the portable loops");
 	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 200), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 20000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 20000), "efloat", "limb windows");
@@ -1052,6 +1108,7 @@ int main() try {
 
 #	if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 30000), "efloat", "exact products");
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbKernels(reportTestCases, 300000), "efloat", "limb kernels against the portable loops");
 	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 1000), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 200000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 100000), "efloat", "limb windows");
@@ -1068,6 +1125,7 @@ int main() try {
 
 #	if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 300000), "efloat", "exact products");
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbKernels(reportTestCases, 1000000), "efloat", "limb kernels against the portable loops");
 	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 4000), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 300000), "efloat", "limb windows");
