@@ -168,7 +168,7 @@ namespace {
 	// y with y^2 = -7 (mod 2^m), m >= 3: Hensel's lifting a bit at a time from y = 1, a root mod 8
 	// since every odd square is 1 mod 8.  Each step takes y^2 + 7 = 0 (mod 2^k) to mod 2^(k+1).
 	std::vector<uint64_t> root_of_minus_seven(unsigned m) {
-		using namespace sw::universal::efloat_mpn;
+		using namespace sw::universal::limb_kernels;
 		const size_t L = (m + 63) / 64;
 		std::vector<limb_t> y(L, 0u), sq(2 * L), work(scratch_limbs(L));
 		y[0] = 1u;
@@ -188,7 +188,7 @@ namespace {
 	// guard bit are then zero down to far below the integer root's last one, and only the
 	// remainder, the sticky bit, rounds it the right way.
 	Wide just_above(std::mt19937_64& rng, unsigned p, bool midpoint) {
-		using namespace sw::universal::efloat_mpn;
+		using namespace sw::universal::limb_kernels;
 		const unsigned P  = 32 * p;
 		const unsigned rb = midpoint ? P + 1 : P;
 		std::vector<limb_t> r = root_of_minus_seven(rb + 1);
