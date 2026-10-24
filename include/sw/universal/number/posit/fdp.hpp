@@ -110,7 +110,7 @@ quire_resolve(const quire<posit<nbits, es, bt>, capacity, LimbType>& q) {
 // ============================================================================
 
 /// quire_size: return the total quire size in bits for a posit configuration
-template<unsigned nbits, unsigned es, unsigned capacity = 30>
+template<unsigned nbits, unsigned es, unsigned capacity = 31>
 inline int quire_size() {
 	return static_cast<int>(quire_traits<posit<nbits, es>>::range + capacity);
 }

@@ -54,7 +54,7 @@ struct quire_traits {
 //   upper_range= half_range + 1           // maxpos^2 needs one extra bit
 //   qbits      = range + capacity
 //
-// For posit<32,2>: escale=4, range=480, qbits=510 (with default capacity=30)
+// For posit<32,2>: escale=4, range=480, qbits=511 (with default capacity=31)
 // ============================================================================
 template<unsigned nbits, unsigned es, typename bt>
 struct quire_traits<posit<nbits, es, bt>> {
@@ -63,7 +63,7 @@ struct quire_traits<posit<nbits, es, bt>> {
 	static constexpr unsigned half_range  = range >> 1;
 	static constexpr unsigned radix_point = half_range;
 	static constexpr unsigned upper_range = half_range + 1u;
-	static constexpr unsigned capacity    = 30u;
+	static constexpr unsigned capacity    = 31u;
 
 	// fraction bits of the posit (used for quire_mul product width)
 	static constexpr unsigned fbits       = nbits - 3u - es;

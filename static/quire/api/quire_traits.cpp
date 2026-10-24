@@ -36,7 +36,7 @@ try {
 		static_assert(QT::half_range == 240, "posit<32,2> half_range should be 240");
 		static_assert(QT::upper_range == 241, "posit<32,2> upper_range should be 241");
 		static_assert(QT::fbits == 27, "posit<32,2> fbits should be 27");
-		static_assert(QT::qbits == 510, "posit<32,2> qbits with default capacity should be 510");
+		static_assert(QT::qbits == 511, "posit<32,2> qbits with default capacity should be 511");
 
 		std::cout << "posit<32,2> quire traits:\n";
 		std::cout << "  range       = " << QT::range << '\n';
@@ -53,7 +53,7 @@ try {
 		static_assert(QT::escale == 2, "posit<16,1> escale should be 2");
 		static_assert(QT::range == 2 * (4 * 16 - 8), "posit<16,1> range should be 112");
 		static_assert(QT::half_range == 56, "posit<16,1> half_range should be 56");
-		static_assert(QT::qbits == 142, "posit<16,1> qbits should be 142");
+		static_assert(QT::qbits == 143, "posit<16,1> qbits should be 143");
 
 		std::cout << "posit<16,1> quire traits:\n";
 		std::cout << "  range       = " << QT::range << '\n';
@@ -66,7 +66,7 @@ try {
 
 		static_assert(QT::escale == 1, "posit<8,0> escale should be 1");
 		static_assert(QT::range == 1 * (4 * 8 - 8), "posit<8,0> range should be 24");
-		static_assert(QT::qbits == 54, "posit<8,0> qbits should be 54");
+		static_assert(QT::qbits == 55, "posit<8,0> qbits should be 55");
 
 		std::cout << "posit<8,0> quire traits:\n";
 		std::cout << "  range       = " << QT::range << '\n';
@@ -171,7 +171,7 @@ try {
 	// Cross-type comparison: show quire sizes for common configurations
 	// ========================================================================
 	{
-		std::cout << "Quire size comparison (default capacity=30):\n";
+		std::cout << "Quire size comparison (default capacity: posit=31, others=30):\n";
 		std::cout << "  posit<8,0>   : " << quire_traits<posit<8, 0>>::qbits << " bits\n";
 		std::cout << "  posit<16,1>  : " << quire_traits<posit<16, 1>>::qbits << " bits\n";
 		std::cout << "  posit<32,2>  : " << quire_traits<posit<32, 2>>::qbits << " bits\n";
@@ -193,8 +193,38 @@ try {
 
 		std::cout << "Custom capacity for posit<32,2>:\n";
 		std::cout << "  capacity=10 : " << QT::range + 10 << " bits\n";
-		std::cout << "  capacity=30 : " << QT::qbits << " bits (default)\n";
+		std::cout << "  capacity=31 : " << QT::qbits << " bits (default)\n";
 		std::cout << "  capacity=50 : " << QT::range + 50 << " bits\n";
+		std::cout << '\n';
+	}
+
+	// ========================================================================
+	// standard posit quire: total width is 16n bits for es = 2
+	// ========================================================================
+	{
+		using QT8  = quire_traits<posit<8, 2>>;
+		using QT16 = quire_traits<posit<16, 2>>;
+		using QT32 = quire_traits<posit<32, 2>>;
+		using QT64 = quire_traits<posit<64, 2>>;
+
+		// total width = sign bit + capacity + range
+		static_assert(QT32::capacity == 31, "posit quire default capacity should be 31");
+		static_assert(1 + QT8::capacity  + QT8::range  == 128,  "posit<8,2> quire should be 16n = 128 bits");
+		static_assert(1 + QT16::capacity + QT16::range == 256,  "posit<16,2> quire should be 16n = 256 bits");
+		static_assert(1 + QT32::capacity + QT32::range == 512,  "posit<32,2> quire should be 16n = 512 bits");
+		static_assert(1 + QT64::capacity + QT64::range == 1024, "posit<64,2> quire should be 16n = 1024 bits");
+
+		// the quire objects must agree with the traits
+		if (quire<posit<8, 2>>().total_bits()  != 128)  ++nrOfFailedTestCases;
+		if (quire<posit<16, 2>>().total_bits() != 256)  ++nrOfFailedTestCases;
+		if (quire<posit<32, 2>>().total_bits() != 512)  ++nrOfFailedTestCases;
+		if (quire<posit<64, 2>>().total_bits() != 1024) ++nrOfFailedTestCases;
+
+		std::cout << "standard posit quire widths (16n bits):\n";
+		std::cout << "  posit<8,2>   : " << quire<posit<8, 2>>().total_bits() << " bits\n";
+		std::cout << "  posit<16,2>  : " << quire<posit<16, 2>>().total_bits() << " bits\n";
+		std::cout << "  posit<32,2>  : " << quire<posit<32, 2>>().total_bits() << " bits\n";
+		std::cout << "  posit<64,2>  : " << quire<posit<64, 2>>().total_bits() << " bits\n";
 		std::cout << '\n';
 	}
 
