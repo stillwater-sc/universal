@@ -6,6 +6,9 @@
 //            limbs, 48 of efloat's), its odd splits, and the block loop for unbalanced operands;
 //            odd limb counts exercise the zero limb the packing pads them with.
 //   x * x    and x *= x take the squaring kernel.
+//   mul_n    by Toom-3 (#1814), from 240 limbs (352 for squares), against the schoolbook
+//            product: lengths either side of the thresholds, every n mod 3, nested Toom-3 from
+//            720 limbs, and operands that stress the evaluations' signs and carries.
 //   x + y    and x - y align the operand with the smaller exponent to the other, keep two limbs
 //            past the precision and fold whatever falls below them into a sticky bit.  The
 //            result must be the exact sum, formed at a precision that holds all of it, rounded
@@ -345,6 +348,74 @@ namespace {
 			}
 		}
 		efloat_rounding_mode = saved;
+		return nrOfFailedTestCases;
+	}
+
+	// efloat_mpn::mul_n by Toom-3 (#1814) against the schoolbook product: lengths either side of
+	// the thresholds (240 for products, 352 for squares), every n mod 3, products whose parts
+	// recurse into Toom-3 again (from 720 limbs), and operands that stress the evaluations'
+	// signs and carries: all ones, a zero middle or low third, a top third of all ones against
+	// zeros, sparse operands, and squares, into a destination of garbage; and the exact division
+	// by 3 on its own, on values whose zero limbs meet a carry, where it borrows
+	int VerifyToom3(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		using efloat_mpn::limb_t;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(18140);
+		auto check = [&](std::size_t n, int pattern, bool square) {
+			std::vector<limb_t> a(n), b(n), r1(2 * n), r2(2 * n), sc(efloat_mpn::scratch_limbs(n) + 8);
+			const std::size_t k = (n + 2) / 3;
+			for (std::size_t i = 0; i < n; ++i) { a[i] = rng(); b[i] = rng(); }
+			if (pattern == 1) for (std::size_t i = 0; i < n; ++i) a[i] = b[i] = ~limb_t(0);
+			if (pattern == 2) for (std::size_t i = k; i < std::min(n, 2 * k); ++i) a[i] = 0u;
+			if (pattern == 3) for (std::size_t i = 0; i < std::min(n, k); ++i) b[i] = 0u;
+			if (pattern == 4) for (std::size_t i = 2 * k; i < n; ++i) { a[i] = ~limb_t(0); b[i] = 0u; }
+			if (pattern == 5) {   // sparse: zero limbs throughout the coefficients, where the exact division by 3 borrows
+				for (std::size_t i = 0; i < n; ++i) { a[i] = (rng() % 16 == 0) ? (rng() & 3u) : 0u; b[i] = (rng() % 16 == 0) ? (rng() & 3u) : 0u; }
+				a[n - 1] = 1u; b[n - 1] = 1u;
+			}
+			for (auto& v : r2) v = rng();   // the product must not rely on a zeroed destination
+			const limb_t* bp = square ? a.data() : b.data();
+			efloat_mpn::mul_basecase(r1.data(), a.data(), n, bp, n);
+			efloat_mpn::mul_n(r2.data(), a.data(), bp, n, sc.data(), square);
+			if (r1 != r2) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: Toom-3 " << (square ? "square" : "product") << " of " << n << " limbs, pattern " << pattern << '\n';
+			}
+		};
+		// 1056 and 1060: squares whose thirds, of 352 limbs or more, square by Toom-3 again
+		const std::size_t lengths[] = { 239, 240, 241, 242, 243, 351, 352, 353, 354, 480, 481, 482, 720, 721, 722, 1025, 1056, 1060 };
+		for (std::size_t n : lengths) {
+			for (int pattern = 0; pattern < 6; ++pattern) {
+				check(n, pattern, false);
+				check(n, pattern, true);
+			}
+		}
+		for (unsigned i = 0; i < nrSamples; ++i) check(240 + rng() % 900, static_cast<int>(rng() % 6), (i % 3) == 0);
+		// the interpolation's exact division by 3, on its own: N = 3 Q mod B^w with Q built limb
+		// by limb so that N has zero limbs where a carry arrives, the case in which it borrows,
+		// and Q's negations, read as two's complement
+		for (unsigned i = 0; i < 200 + nrSamples; ++i) {
+			const std::size_t w = 2 + rng() % 40;
+			std::vector<limb_t> q(w), nq(w);
+			limb_t carry = 0;   // the carry of 3 Q into limb j
+			for (std::size_t j = 0; j < w; ++j) {
+				q[j] = rng();
+				if (carry != 0u && rng() % 3 == 0) q[j] = (0u - carry) * 0xAAAA'AAAA'AAAA'AAABull;   // 3 q_j + carry = 0 mod 2^64
+				limb_t lo = 0;
+				limb_t hi = efloat_mpn::mul_1(&lo, &q[j], 1, 3u);   // 3 q_j, without a 128-bit type (MSVC has none)
+				const limb_t sum = lo + carry;
+				hi += (sum < lo) ? 1u : 0u;
+				nq[j] = sum;
+				carry = hi;
+			}
+			if (i % 2 == 1) { efloat_mpn::toom::negate(q.data(), w); efloat_mpn::toom::negate(nq.data(), w); }
+			efloat_mpn::toom::third(nq.data(), w);
+			if (nq != q) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: Toom-3's exact division by 3 of " << w << " limbs\n";
+			}
+		}
 		return nrOfFailedTestCases;
 	}
 
@@ -930,6 +1001,7 @@ int main() try {
 #if MANUAL_TESTING
 
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 30), "efloat", "exact products");
+	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 5), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 100), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100), "efloat", "short products");
@@ -948,6 +1020,7 @@ int main() try {
 
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 300), "efloat", "exact products");
+	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 20), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 300), "efloat", "short products");
@@ -963,6 +1036,7 @@ int main() try {
 
 #	if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 3000), "efloat", "exact products");
+	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 200), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 20000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 20000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 3000), "efloat", "short products");
@@ -978,6 +1052,7 @@ int main() try {
 
 #	if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 30000), "efloat", "exact products");
+	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 1000), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 200000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 100000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 30000), "efloat", "short products");
@@ -993,6 +1068,7 @@ int main() try {
 
 #	if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyExactProducts(reportTestCases, 300000), "efloat", "exact products");
+	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 4000), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000000), "efloat", "rounded sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 300000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100000), "efloat", "short products");

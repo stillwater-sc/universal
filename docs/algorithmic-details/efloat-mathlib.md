@@ -107,7 +107,7 @@ round the exact result once into the destination (`assign_rounded`), with no all
 | operation | algorithm | thresholds | PR |
 |---|---|---|---|
 | `+` `-` | aligned sum in a stack frame, two guard limbs plus a sticky bit; in-place `+=` | | #1758, #1766, #1767 |
-| `*` | 64x64->128 schoolbook, dedicated squaring (`x * x`), subtractive Karatsuba, blocks for unbalanced operands; from 16 limbs a short product of the high half first, rounded from when Ziv's test passes on it, the full product otherwise | `karatsuba_threshold = 16`, `karatsuba_sqr_threshold = 48`, `mulhigh_threshold = 32` limbs; `mulhigh_min_limbs = 16` | #1767, #1807 |
+| `*` | 64x64->128 schoolbook, dedicated squaring (`x * x`), subtractive Karatsuba, blocks for unbalanced operands; from 16 limbs a short product of the high half first, rounded from when Ziv's test passes on it, the full product otherwise | `karatsuba_threshold = 16`, `karatsuba_sqr_threshold = 48`, `mulhigh_threshold = 32` limbs; `mulhigh_min_limbs = 16`; Toom-3 from `toom3_threshold = 240` (`toom3_sqr_threshold = 352`) | #1767, #1807, #1814 |
 | `/` | schoolbook with the Moller-Granlund 3-by-2 reciprocal, Burnikel-Ziegler divide and conquer (GMP's `dcpi1_div_qr`) above the threshold; from it an approximate quotient (`div_appr`) rounded from where Ziv's test passes, the exact quotient and its remainder, the sticky bit, otherwise | `dc_div_threshold = 16` limbs | #1741, #1769, #1811 |
 | `/ int` | divisors of up to 64 bits: the packed significand by one limb, Moller-Granlund 2-by-1 reciprocal (`divrem_1`), rounded once | | #1766, #1811 |
 | `sqrt` | integer root by Zimmermann's Karatsuba square root (GMP's `mpn_sqrtrem`) without its remainder, an approximate quotient at the top (GMP's `divappr`), rounded from where Ziv's test passes on it; the exact root and remainder, as the sticky bit, otherwise (exact squares among them) | `dc_div_threshold = 16` limbs | #1770, #1810 |
@@ -201,6 +201,20 @@ round the exact result once into the destination (`assign_rounded`), with no all
     pass, was measured and dropped: the compiler already schedules the one-row loop as well.
   - What remains of `a*b`'s gap at 2048 and 8192 bits is the kernel's: `mul_n` runs 1.4-1.5x
     `mpn_mul_n`, whose basecase is assembly; the division kernel is level with GMP's (0.8-1.2x).
+- **Toom-3** (#1814): `toom3_mul` splits the operands in thirds, evaluates them at 0, 1, -1, -2
+  and infinity by Bodrato's chain, multiplies the five pairs on `k = ceil(n / 3)` limbs (the
+  evaluations' top limbs, 4 at most, added back by one-limb products, as GMP's Toom codes do),
+  and interpolates by Bodrato's sequence in two's complement of `2k + 2` limbs, a halving an
+  arithmetic shift and a third Jebelean's exact division.
+  - **Measured, it pays only from 256 limbs** (16384 bits): a product 2-16% faster there (9% at
+    512 limbs, 16% at 1024), a square 4-10% from 384 limbs; at 224 limbs and below Karatsuba is
+    as fast or faster. The thresholds are set there. At the efloat level `a*b` gains 2.5% at 32768
+    bits and 5% at 65536, and nothing changes up to 8192.
+  - So Toom-3 does not close the gap at 8192 bits. At 128 limbs Karatsuba's 27 leaves, 16-limb
+    schoolbook products, are 69% of the time and run 1.24x GMP's assembly basecase, and its
+    combining passes the rest. An `adcx`/`adox` basecase written with intrinsics was measured
+    and dropped: g++ made it 1.5-1.7x slower and clang no faster, since neither schedules the two
+    carry chains as GMP's assembly does.
 
 ## 4. The functions
 
@@ -845,6 +859,7 @@ row both ways before reading it as a cost.
 | #1808 | 2026-10-23 | short products (Mulders' `mulhigh_n`) for `a*b` with Ziv's test and a full-product fallback, and truncated short products in the fixed-point engines and `pow(x, n)`: every function at 8192 bits from 1.0-1.2x MPFR to 0.5-1.0x, `a*b` at 8192 bits 2.2x to 1.7x |
 | #1812 | 2026-10-23 | sqrt from the root without its remainder (`sqrt_approx`, `div_appr`), the exact one only where Ziv's test fails; a limb-level wrapper: sqrt 2.0-2.3x MPFR to 1.0-1.2x |
 | #1813 | 2026-10-23 | division from an approximate quotient (`div_appr`) with Ziv's test; `a/n` on 64-bit limbs for divisors of up to 64 bits; rounding from 64-bit frames: a/7 1.8-2.2x MPFR to 1.1-1.4x, b/a at 2048 and 8192 bits 1.8-1.9x to 1.4x |
+| #1815 | 2026-10-24 | Toom-3 multiplication and squaring (Bodrato's sequence), from 240 and 352 limbs by measurement: products 2-16% faster from 16384 bits; nothing changes up to 8192 |
 
 ## 9. Open work
 
