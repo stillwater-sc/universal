@@ -897,7 +897,7 @@ with the 0.549 it read before, and `sqrt` at 2048 bits, 0.53 against 0.56 (0.62 
   limbs; on the kernels' own limbs, without per-operation allocation (section 3), `a+b` takes
   0.40-0.64 of its time before, `a*b` 0.65-0.91, `b/a` 0.67-0.91, `a/7` 0.74-0.94, `sqrt`
   0.85-0.91, `fma` 0.83-0.90, `cbrt` 0.72-0.92, and the functions 0.75-1.0 (most at 128 and
-  512 bits, where the overhead was the largest share). Every operation is now within 1.3x
+  512 bits, where the overhead was the largest share). Every operation is now within 1.4x
   MPFR. The cost outside the kernels, the operation less its kernel on the same operands, is
   at 128 bits 0.012 us for `a+b`, 0.014 for `a*b` and 0.016 for `b/a` (0.024, 0.024 and 0.033
   before), against MPFR's 0.007-0.011; at 8192 bits 0.06 for `a+b` and 0.08 for `a*b` (0.20 and
