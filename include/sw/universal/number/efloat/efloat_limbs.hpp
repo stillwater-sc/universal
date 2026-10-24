@@ -7,7 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // efloat holds its significand as 64-bit limbs, least significant first: the format of the
-// efloat_mpn kernels, so an operand goes to them as it is and a result comes back without being
+// limb_kernels kernels, so an operand goes to them as it is and a result comes back without being
 // repacked. The limbs live in a buffer inside the value, N limbs long, and on the heap when a
 // value needs more. A heap block that is freed goes to a small cache of the thread's, and the
 // next value that needs one takes it from there, so a loop of c = a + b at a precision past the

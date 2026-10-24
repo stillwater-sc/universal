@@ -19,24 +19,24 @@
 //            Addends of one sign, both as long as the precision, take a shorter path (#1820):
 //            gaps of 0 to 64 m - 1 bits, every whole number of limbs and its neighbours among
 //            them, against the same exact reference.
-//   div_qr   efloat_mpn's division on 64-bit limbs must leave N = Q D + R with R < D, the product
+//   div_qr   limb_kernels's division on 64-bit limbs must leave N = Q D + R with R < D, the product
 //            by the schoolbook multiply: one- and two-limb divisors, the divide-and-conquer
 //            threshold and its doublings, quotients shorter and longer than the divisor, and
 //            dividends whose top limbs equal the divisor's.
 //   x / y    must be the exact quotient, from a bit-serial reference, rounded once to the target
 //            in every rounding mode: dividends and divisors longer than the quotient, exact
 //            quotients, and exact quotients but for a dividend limb that only the sticky bit sees.
-//   sqrtrem  efloat_mpn's square root must leave S^2 + R = N with R <= 2 S, the square by the
+//   sqrtrem  limb_kernels's square root must leave S^2 + R = N with R <= 2 S, the square by the
 //            schoolbook multiply: the one- and two-limb base cases, the recursion's odd splits,
 //            perfect squares and their neighbours, all-ones radicands, and top limbs within
 //            1024 of a perfect square, where the base case's double estimate can be one low.
-//   cbrtrem  efloat_mpn's cube root must leave S^3 + R = N with R <= 3 S^2 + 3 S, the cube by the
+//   cbrtrem  limb_kernels's cube root must leave S^3 + R = N with R <= 3 S^2 + 3 S, the cube by the
 //            schoolbook multiply, and without its remainder lie 0 to cbrt_overshoot units above
 //            the root: the one-limb base case, the recursion's odd and even splits, the squaring's
 //            Karatsuba and the division's divide-and-conquer thresholds, perfect cubes and their
 //            neighbours, all-ones radicands, the smallest radicand, and top limbs within 1024 of
 //            a perfect cube, where the base case's double estimate is tested.
-//   mulhigh  efloat_mpn's short product must lie below the full product's high limbs by under n
+//   mulhigh  limb_kernels's short product must lie below the full product's high limbs by under n
 //            units of r[n], and mul_truncated within one unit of the floor (#1807); x * y and
 //            x * x rounded from the short product, at the operands' precision, must be the exact
 //            product rounded once in every mode, also for all-ones operands, where only the
@@ -45,14 +45,14 @@
 //            from div_appr and only the exact fallback rounds right (#1811).
 //   x / n    for integers of 2 to 64 bits, divided in place by one limb (#1811), against the
 //            general long division at a width that holds the quotient, rounded once.
-//   div_appr, sqrt_approx  efloat_mpn's quotient and root without remainders (#1810) must lie
+//   div_appr, sqrt_approx  limb_kernels's quotient and root without remainders (#1810) must lie
 //            at or above the exact ones, by at most divappr_error and sqrt_approx_error units.
-//   mul_1, addmul_1, submul_1, add_n, sub_n  efloat_mpn's x86-64 assembly (#1816) against the
+//   mul_1, addmul_1, submul_1, add_n, sub_n  limb_kernels's x86-64 assembly (#1816) against the
 //            portable loops it replaces, where the processor has it: lengths 1 to 300, every
 //            n mod 4, all-ones and all-zero runs, all-ones multipliers, the carries and borrows
 //            out of the top, and destinations that are a source.  ASan and UBSan do not see
 //            inside inline assembly, so this comparison is the check on it.
-//   load_window  efloat_mpn's shifted copy, which places the fma and hypot kernels' terms in
+//   load_window  limb_kernels's shifted copy, which places the fma and hypot kernels' terms in
 //            their frames (#1802), against a bit at a time, and its flag for the bits it drops.
 //
 // REGRESSION_LEVEL convention (intensity progression):
@@ -76,7 +76,9 @@
 #include <random>
 #include <vector>
 #include <universal/number/efloat/efloat.hpp>
+#include <universal/number/efloat/efloat_mpn.hpp>   // the deprecated name, kept for one release (#1823)
 #include <universal/verification/test_suite.hpp>
+#include <type_traits>
 
 namespace {
 
@@ -411,17 +413,17 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
-	// efloat_mpn::mul_n by Toom-3 (#1814) against the schoolbook product: lengths either side of
+	// limb_kernels::mul_n by Toom-3 (#1814) against the schoolbook product: lengths either side of
 	// the thresholds (240 for products, 352 for squares), every n mod 3, products whose parts
 	// recurse into Toom-3 again (from 720 limbs), and operands that stress the evaluations'
 	// signs and carries: all ones, a zero middle or low third, a top third of all ones against
 	// zeros, sparse operands, and squares, into a destination of garbage; and the exact division
 	// by 3 on its own, on values whose zero limbs meet a carry, where it borrows
-	// efloat_mpn's kernels, which take the x86-64 assembly where the processor has BMI2 and ADX
+	// limb_kernels's kernels, which take the x86-64 assembly where the processor has BMI2 and ADX
 	// (#1816), against the portable loops; elsewhere both sides are the portable loop
 	int VerifyLimbKernels(bool reportTestCases, unsigned nrSamples) {
 		using namespace sw::universal;
-		using efloat_mpn::limb_t;
+		using limb_kernels::limb_t;
 		int nrOfFailedTestCases = 0;
 		std::mt19937_64 rng(18160);
 		const char* names[] = { "mul_1", "addmul_1", "submul_1", "add_n", "sub_n" };
@@ -442,11 +444,11 @@ namespace {
 			const limb_t* a2 = in_place ? r2.data() : a.data();
 			limb_t c1 = 0, c2 = 0;
 			switch (op) {
-			case 0: c1 = efloat_mpn::mul_1_portable(r1.data(), a1, n, m);         c2 = efloat_mpn::mul_1(r2.data(), a2, n, m);         break;
-			case 1: c1 = efloat_mpn::addmul_1_portable(r1.data(), a1, n, m);      c2 = efloat_mpn::addmul_1(r2.data(), a2, n, m);      break;
-			case 2: c1 = efloat_mpn::submul_1_portable(r1.data(), a1, n, m);      c2 = efloat_mpn::submul_1(r2.data(), a2, n, m);      break;
-			case 3: c1 = efloat_mpn::add_n_portable(r1.data(), a1, b.data(), n);  c2 = efloat_mpn::add_n(r2.data(), a2, b.data(), n);  break;
-			default: c1 = efloat_mpn::sub_n_portable(r1.data(), a1, b.data(), n); c2 = efloat_mpn::sub_n(r2.data(), a2, b.data(), n); break;
+			case 0: c1 = limb_kernels::mul_1_portable(r1.data(), a1, n, m);         c2 = limb_kernels::mul_1(r2.data(), a2, n, m);         break;
+			case 1: c1 = limb_kernels::addmul_1_portable(r1.data(), a1, n, m);      c2 = limb_kernels::addmul_1(r2.data(), a2, n, m);      break;
+			case 2: c1 = limb_kernels::submul_1_portable(r1.data(), a1, n, m);      c2 = limb_kernels::submul_1(r2.data(), a2, n, m);      break;
+			case 3: c1 = limb_kernels::add_n_portable(r1.data(), a1, b.data(), n);  c2 = limb_kernels::add_n(r2.data(), a2, b.data(), n);  break;
+			default: c1 = limb_kernels::sub_n_portable(r1.data(), a1, b.data(), n); c2 = limb_kernels::sub_n(r2.data(), a2, b.data(), n); break;
 			}
 			if (c1 != c2 || r1 != r2) {
 				++nrOfFailedTestCases;
@@ -465,11 +467,11 @@ namespace {
 
 	int VerifyToom3(bool reportTestCases, unsigned nrSamples) {
 		using namespace sw::universal;
-		using efloat_mpn::limb_t;
+		using limb_kernels::limb_t;
 		int nrOfFailedTestCases = 0;
 		std::mt19937_64 rng(18140);
 		auto check = [&](std::size_t n, int pattern, bool square) {
-			std::vector<limb_t> a(n), b(n), r1(2 * n), r2(2 * n), sc(efloat_mpn::scratch_limbs(n) + 8);
+			std::vector<limb_t> a(n), b(n), r1(2 * n), r2(2 * n), sc(limb_kernels::scratch_limbs(n) + 8);
 			const std::size_t k = (n + 2) / 3;
 			for (std::size_t i = 0; i < n; ++i) { a[i] = rng(); b[i] = rng(); }
 			if (pattern == 1) for (std::size_t i = 0; i < n; ++i) a[i] = b[i] = ~limb_t(0);
@@ -482,8 +484,8 @@ namespace {
 			}
 			for (auto& v : r2) v = rng();   // the product must not rely on a zeroed destination
 			const limb_t* bp = square ? a.data() : b.data();
-			efloat_mpn::mul_basecase(r1.data(), a.data(), n, bp, n);
-			efloat_mpn::mul_n(r2.data(), a.data(), bp, n, sc.data(), square);
+			limb_kernels::mul_basecase(r1.data(), a.data(), n, bp, n);
+			limb_kernels::mul_n(r2.data(), a.data(), bp, n, sc.data(), square);
 			if (r1 != r2) {
 				++nrOfFailedTestCases;
 				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: Toom-3 " << (square ? "square" : "product") << " of " << n << " limbs, pattern " << pattern << '\n';
@@ -509,14 +511,14 @@ namespace {
 				q[j] = rng();
 				if (carry != 0u && rng() % 3 == 0) q[j] = (0u - carry) * 0xAAAA'AAAA'AAAA'AAABull;   // 3 q_j + carry = 0 mod 2^64
 				limb_t lo = 0;
-				limb_t hi = efloat_mpn::mul_1(&lo, &q[j], 1, 3u);   // 3 q_j, without a 128-bit type (MSVC has none)
+				limb_t hi = limb_kernels::mul_1(&lo, &q[j], 1, 3u);   // 3 q_j, without a 128-bit type (MSVC has none)
 				const limb_t sum = lo + carry;
 				hi += (sum < lo) ? 1u : 0u;
 				nq[j] = sum;
 				carry = hi;
 			}
-			if (i % 2 == 1) { efloat_mpn::toom::negate(q.data(), w); efloat_mpn::toom::negate(nq.data(), w); }
-			efloat_mpn::toom::third(nq.data(), w);
+			if (i % 2 == 1) { limb_kernels::toom::negate(q.data(), w); limb_kernels::toom::negate(nq.data(), w); }
+			limb_kernels::toom::third(nq.data(), w);
 			if (nq != q) {
 				++nrOfFailedTestCases;
 				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: Toom-3's exact division by 3 of " << w << " limbs\n";
@@ -525,7 +527,7 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
-	// efloat_mpn::div_appr and sqrt_approx (#1810) against div_qr and sqrtrem: the approximate
+	// limb_kernels::div_appr and sqrt_approx (#1810) against div_qr and sqrtrem: the approximate
 	// quotient and root never below the exact ones and above them by at most divappr_error and
 	// sqrt_approx_error units of the last limb. Quotients as long as the divisor, one to three
 	// limbs shorter (sqrt's shape) and longer than it (the division's, #1811), across the
@@ -533,12 +535,12 @@ namespace {
 	// and roots of 1 to 200 limbs.
 	int VerifyApproximateKernels(bool reportTestCases, unsigned nrSamples) {
 		using namespace sw::universal;
-		using efloat_mpn::limb_t;
+		using limb_kernels::limb_t;
 		int nrOfFailedTestCases = 0;
 		std::mt19937_64 rng(18100);
 		auto excess = [](const std::vector<limb_t>& approx, const std::vector<limb_t>& exact, std::size_t len, std::size_t bound) {
 			std::vector<limb_t> d(len);
-			const limb_t borrow = efloat_mpn::sub_n(d.data(), approx.data(), exact.data(), len);
+			const limb_t borrow = limb_kernels::sub_n(d.data(), approx.data(), exact.data(), len);
 			bool ok = (borrow == 0u) && d[0] <= bound;
 			for (std::size_t i = 1; i < len; ++i) ok = ok && d[i] == 0u;
 			return ok;
@@ -546,27 +548,27 @@ namespace {
 		const std::size_t lengths[] = { 1, 2, 15, 16, 17, 31, 32, 33, 63, 64, 65, 128, 129, 130 };
 		auto check_div = [&](std::size_t dn, std::size_t qn, bool ones) {
 			const std::size_t nn = dn + qn;
-			std::vector<limb_t> np(nn), np2, dp(dn), q(qn + 1), q2(qn + 1), sc(efloat_mpn::div_scratch_limbs(dn) + 8);
+			std::vector<limb_t> np(nn), np2, dp(dn), q(qn + 1), q2(qn + 1), sc(limb_kernels::div_scratch_limbs(dn) + 8);
 			for (auto& v : np) v = ones ? ~limb_t(0) : rng();
 			for (auto& v : dp) v = ones ? ~limb_t(0) : rng();
 			dp[dn - 1] |= limb_t(1) << 63;
 			if (np[nn - 1] >= dp[dn - 1]) np[nn - 1] = dp[dn - 1] - 1u;
 			np2 = np;
-			q[qn]  = efloat_mpn::div_qr(q.data(), np.data(), nn, dp.data(), dn, sc.data());
-			q2[qn] = efloat_mpn::div_appr(q2.data(), np2.data(), nn, dp.data(), dn, sc.data());
-			if (!excess(q2, q, qn + 1, efloat_mpn::divappr_error(nn, dn))) {
+			q[qn]  = limb_kernels::div_qr(q.data(), np.data(), nn, dp.data(), dn, sc.data());
+			q2[qn] = limb_kernels::div_appr(q2.data(), np2.data(), nn, dp.data(), dn, sc.data());
+			if (!excess(q2, q, qn + 1, limb_kernels::divappr_error(nn, dn))) {
 				++nrOfFailedTestCases;
 				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: div_appr of " << nn << " by " << dn << " limbs is outside its bound\n";
 			}
 		};
 		auto check_root = [&](std::size_t n, bool ones) {
-			std::vector<limb_t> a(2 * n), b, sp(n), sp2(n), sc(efloat_mpn::sqrt_scratch_limbs(n) + 8);
+			std::vector<limb_t> a(2 * n), b, sp(n), sp2(n), sc(limb_kernels::sqrt_scratch_limbs(n) + 8);
 			for (auto& v : a) v = ones ? ~limb_t(0) : rng();
 			a[2 * n - 1] |= limb_t(1) << 62;
 			b = a;
-			efloat_mpn::sqrtrem(sp.data(), a.data(), n, sc.data());
-			efloat_mpn::sqrt_approx(sp2.data(), b.data(), n, sc.data());
-			if (!excess(sp2, sp, n, efloat_mpn::sqrt_approx_error(n))) {
+			limb_kernels::sqrtrem(sp.data(), a.data(), n, sc.data());
+			limb_kernels::sqrt_approx(sp2.data(), b.data(), n, sc.data());
+			if (!excess(sp2, sp, n, limb_kernels::sqrt_approx_error(n))) {
 				++nrOfFailedTestCases;
 				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: sqrt_approx of " << n << " limbs is outside its bound\n";
 			}
@@ -575,19 +577,19 @@ namespace {
 		// pushes to B^lo, where div_appr clamps them
 		auto check_ones_quotient = [&](std::size_t dn, std::size_t qn) {
 			const std::size_t nn = dn + qn;
-			std::vector<limb_t> dp(dn), ones(qn, ~limb_t(0)), np(nn), np2, q(qn + 1), q2(qn + 1), sc(efloat_mpn::div_scratch_limbs(dn) + 8);
-			std::vector<limb_t> sm(efloat_mpn::scratch_limbs(std::max(dn, qn)) + 8);
+			std::vector<limb_t> dp(dn), ones(qn, ~limb_t(0)), np(nn), np2, q(qn + 1), q2(qn + 1), sc(limb_kernels::div_scratch_limbs(dn) + 8);
+			std::vector<limb_t> sm(limb_kernels::scratch_limbs(std::max(dn, qn)) + 8);
 			for (auto& v : dp) v = rng();
 			dp[dn - 1] |= limb_t(1) << 63;
-			efloat_mpn::mul(np.data(), dp.data(), dn, ones.data(), qn, sm.data());
+			limb_kernels::mul(np.data(), dp.data(), dn, ones.data(), qn, sm.data());
 			std::vector<limb_t> dm1(dp);
-			efloat_mpn::sub_1(dm1.data(), dn, 1u);
-			const limb_t carry = efloat_mpn::add_n(np.data(), np.data(), dm1.data(), dn);
-			efloat_mpn::add_1(np.data() + dn, nn - dn, carry);   // N < D B^qn: nothing carries past nn
+			limb_kernels::sub_1(dm1.data(), dn, 1u);
+			const limb_t carry = limb_kernels::add_n(np.data(), np.data(), dm1.data(), dn);
+			limb_kernels::add_1(np.data() + dn, nn - dn, carry);   // N < D B^qn: nothing carries past nn
 			np2 = np;
-			q[qn]  = efloat_mpn::div_qr(q.data(), np.data(), nn, dp.data(), dn, sc.data());
-			q2[qn] = efloat_mpn::div_appr(q2.data(), np2.data(), nn, dp.data(), dn, sc.data());
-			if (!excess(q2, q, qn + 1, efloat_mpn::divappr_error(nn, dn))) {
+			q[qn]  = limb_kernels::div_qr(q.data(), np.data(), nn, dp.data(), dn, sc.data());
+			q2[qn] = limb_kernels::div_appr(q2.data(), np2.data(), nn, dp.data(), dn, sc.data());
+			if (!excess(q2, q, qn + 1, limb_kernels::divappr_error(nn, dn))) {
 				++nrOfFailedTestCases;
 				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: div_appr of an all-ones quotient of " << qn << " limbs is outside its bound\n";
 			}
@@ -616,7 +618,7 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
-	// efloat_mpn::mulhigh_n and mul_truncated (#1807) against the full product: R = r[n - 1, 2n)
+	// limb_kernels::mulhigh_n and mul_truncated (#1807) against the full product: R = r[n - 1, 2n)
 	// below the full product's limbs from n - 1 up by less than n units of r[n], and the
 	// truncated product the floor of a b / B^drop or one unit below it. Lengths straddle the
 	// basecase-to-Mulders threshold (64) and the Karatsuba ones (24, 64); squares, all-ones
@@ -624,17 +626,17 @@ namespace {
 	// can_round on limbs is checked at the edges of the bits it reads.
 	int VerifyShortProducts(bool reportTestCases, unsigned nrSamples) {
 		using namespace sw::universal;
-		using efloat_mpn::limb_t;
+		using limb_kernels::limb_t;
 		int nrOfFailedTestCases = 0;
 		std::mt19937_64 rng(1807);
 		const size_t lengths[] = { 1, 2, 3, 15, 16, 17, 23, 24, 25, 31, 32, 33, 47, 48, 49, 63, 64, 65, 96, 127, 128, 129, 200 };
 		auto check_high = [&](size_t n, bool square, bool ones) {
-			std::vector<limb_t> a(n), b(n), full(2 * n), r(2 * n), sc(efloat_mpn::scratch_limbs(n) + 8), d(n + 1);
+			std::vector<limb_t> a(n), b(n), full(2 * n), r(2 * n), sc(limb_kernels::scratch_limbs(n) + 8), d(n + 1);
 			for (size_t i = 0; i < n; ++i) { a[i] = ones ? ~limb_t(0) : rng(); b[i] = ones ? ~limb_t(0) : rng(); }
 			const limb_t* bp = square ? a.data() : b.data();
-			efloat_mpn::mul_n(full.data(), a.data(), bp, n, sc.data(), square);
-			efloat_mpn::mulhigh_n(r.data(), a.data(), bp, n, sc.data(), square);
-			const limb_t borrow = efloat_mpn::sub_n(d.data(), full.data() + n - 1, r.data() + n - 1, n + 1);
+			limb_kernels::mul_n(full.data(), a.data(), bp, n, sc.data(), square);
+			limb_kernels::mulhigh_n(r.data(), a.data(), bp, n, sc.data(), square);
+			const limb_t borrow = limb_kernels::sub_n(d.data(), full.data() + n - 1, r.data() + n - 1, n + 1);
 			bool ok = (borrow == 0u) && (n == 1 ? d[1] == 0u : d[1] < n);
 			for (size_t i = 2; i <= n; ++i) ok = ok && d[i] == 0u;
 			if (!ok) {
@@ -643,13 +645,13 @@ namespace {
 			}
 		};
 		auto check_truncated = [&](size_t na, size_t nb, size_t drop, bool ones) {
-			std::vector<limb_t> a(na), b(nb), full(na + nb), out(na + nb - drop), sc(efloat_mpn::truncated_scratch_limbs(na, nb, drop) + 8);
-			std::vector<limb_t> sf(efloat_mpn::scratch_limbs(std::max(na, nb)) + 8), d(na + nb - drop);
+			std::vector<limb_t> a(na), b(nb), full(na + nb), out(na + nb - drop), sc(limb_kernels::truncated_scratch_limbs(na, nb, drop) + 8);
+			std::vector<limb_t> sf(limb_kernels::scratch_limbs(std::max(na, nb)) + 8), d(na + nb - drop);
 			for (auto& v : a) v = ones ? ~limb_t(0) : rng();
 			for (auto& v : b) v = ones ? ~limb_t(0) : rng();
-			efloat_mpn::mul(full.data(), a.data(), na, b.data(), nb, sf.data());
-			efloat_mpn::mul_truncated(out.data(), a.data(), na, b.data(), nb, drop, sc.data());
-			const limb_t borrow = efloat_mpn::sub_n(d.data(), full.data() + drop, out.data(), na + nb - drop);
+			limb_kernels::mul(full.data(), a.data(), na, b.data(), nb, sf.data());
+			limb_kernels::mul_truncated(out.data(), a.data(), na, b.data(), nb, drop, sc.data());
+			const limb_t borrow = limb_kernels::sub_n(d.data(), full.data() + drop, out.data(), na + nb - drop);
 			bool ok = (borrow == 0u) && d[0] <= 1u;
 			for (size_t i = 1; i < d.size(); ++i) ok = ok && d[i] == 0u;
 			if (!ok) {
@@ -680,15 +682,15 @@ namespace {
 				if (p >= 0) { const unsigned q = 191u - static_cast<unsigned>(p); f[q / 64] |= limb_t(1) << (q % 64); }
 				return f;
 			};
-			const bool ok = !efloat_mpn::can_round(frame(-1).data(), 3, precision, correct)
-			             && efloat_mpn::can_round(frame(static_cast<int>(correct) - 2).data(), 3, precision, correct)
-			             && !efloat_mpn::can_round(frame(static_cast<int>(correct) - 1).data(), 3, precision, correct)
-			             && !efloat_mpn::can_round(frame(static_cast<int>(precision)).data(), 3, precision, correct)
-			             && efloat_mpn::can_round(frame(static_cast<int>(precision) + 1).data(), 3, precision, correct)
-			             && !efloat_mpn::can_round(frame(static_cast<int>(precision) + 1).data(), 3, precision, precision + 3);
+			const bool ok = !limb_kernels::can_round(frame(-1).data(), 3, precision, correct)
+			             && limb_kernels::can_round(frame(static_cast<int>(correct) - 2).data(), 3, precision, correct)
+			             && !limb_kernels::can_round(frame(static_cast<int>(correct) - 1).data(), 3, precision, correct)
+			             && !limb_kernels::can_round(frame(static_cast<int>(precision)).data(), 3, precision, correct)
+			             && limb_kernels::can_round(frame(static_cast<int>(precision) + 1).data(), 3, precision, correct)
+			             && !limb_kernels::can_round(frame(static_cast<int>(precision) + 1).data(), 3, precision, precision + 3);
 			if (!ok) {
 				++nrOfFailedTestCases;
-				if (reportTestCases) std::cout << "    FAIL: efloat_mpn::can_round reads the wrong bits\n";
+				if (reportTestCases) std::cout << "    FAIL: limb_kernels::can_round reads the wrong bits\n";
 			}
 		}
 		return nrOfFailedTestCases;
@@ -753,11 +755,11 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
-	// efloat_mpn::load_window (#1802) against a bit-at-a-time reference: r's bit j is a's bit
+	// limb_kernels::load_window (#1802) against a bit-at-a-time reference: r's bit j is a's bit
 	// j - shift, and the flag says whether any of a's bits below -shift is set
 	int VerifyLoadWindow(bool reportTestCases, unsigned nrSamples) {
 		using namespace sw::universal;
-		using efloat_mpn::limb_t;
+		using limb_kernels::limb_t;
 		int nrOfFailedTestCases = 0;
 		std::mt19937_64 rng(1802);
 		for (unsigned i = 0; i < nrSamples; ++i) {
@@ -767,7 +769,7 @@ namespace {
 			for (limb_t& v : a) v = (i % 4 == 0) ? (limb_t(1) << (rng() % 64)) : rng();   // sparse ones find the flag's edges
 			const int64_t shift = static_cast<int64_t>(rng() % (64 * 24)) - 64 * 12 + ((i % 8 == 0) ? 0 : static_cast<int64_t>(rng() % 3) - 1);
 			std::vector<limb_t> r(n, ~limb_t(0));
-			const bool lost = efloat_mpn::load_window(r.data(), n, a.data(), na, shift);
+			const bool lost = limb_kernels::load_window(r.data(), n, a.data(), na, shift);
 			auto bit = [&a, na](int64_t j) -> unsigned { return (j >= 0 && j < 64 * static_cast<int64_t>(na)) ? unsigned((a[static_cast<std::size_t>(j / 64)] >> (j % 64)) & 1u) : 0u; };
 			bool ok = true;
 			for (int64_t j = 0; ok && j < 64 * static_cast<int64_t>(n); ++j) {
@@ -783,10 +785,10 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
-	// N = Q D + R with R < D for efloat_mpn::div_qr: the product by the schoolbook multiply,
+	// N = Q D + R with R < D for limb_kernels::div_qr: the product by the schoolbook multiply,
 	// which shares nothing with the division
 	int VerifyQuotient(bool reportTestCases, std::mt19937_64& rng, size_t dn, size_t qn) {
-		using namespace sw::universal::efloat_mpn;
+		using namespace sw::universal::limb_kernels;
 		auto random64 = [&rng](size_t n, unsigned style) {
 			std::vector<limb_t> v(n);
 			for (auto& x : v) {
@@ -816,7 +818,7 @@ namespace {
 	}
 
 	int VerifyQuotientKernel(bool reportTestCases, unsigned nrSamples) {
-		using sw::universal::efloat_mpn::dc_div_threshold;
+		using sw::universal::limb_kernels::dc_div_threshold;
 		int nrOfFailedTestCases = 0;
 		std::mt19937_64 rng(1763);
 		// one-limb and two-limb divisors, the divide-and-conquer threshold and its doublings,
@@ -836,9 +838,9 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
-	// S^2 + R = N with R <= 2 S for efloat_mpn::sqrtrem: the square by the schoolbook multiply
+	// S^2 + R = N with R <= 2 S for limb_kernels::sqrtrem: the square by the schoolbook multiply
 	int VerifySquareRoot(bool reportTestCases, std::mt19937_64& rng, size_t n) {
-		using namespace sw::universal::efloat_mpn;
+		using namespace sw::universal::limb_kernels;
 		const unsigned style = static_cast<unsigned>(rng() % 6);
 		std::vector<limb_t> a(2 * n);
 		for (auto& x : a) {
@@ -890,10 +892,10 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
-	// S^3 + R = N with R <= 3 S^2 + 3 S for efloat_mpn::cbrtrem, the cube by the schoolbook
+	// S^3 + R = N with R <= 3 S^2 + 3 S for limb_kernels::cbrtrem, the cube by the schoolbook
 	// multiply; and without the remainder, S is the root plus 0 to cbrt_overshoot units
 	int VerifyCubeRoot(bool reportTestCases, std::mt19937_64& rng, size_t n) {
-		using namespace sw::universal::efloat_mpn;
+		using namespace sw::universal::limb_kernels;
 		const unsigned style = static_cast<unsigned>(rng() % 7);
 		std::vector<limb_t> a(3 * n);
 		for (auto& x : a) {
@@ -1081,6 +1083,13 @@ namespace {
 	}
 
 }  // anonymous namespace
+
+namespace {
+	// the kernels' names before #1823: the forwarding header aliases the namespace, so code that
+	// names efloat_mpn still compiles, against the same functions
+	static_assert(std::is_same_v<decltype(&sw::universal::efloat_mpn::add_n), decltype(&sw::universal::limb_kernels::add_n)>);
+	static_assert(std::is_same_v<sw::universal::efloat_mpn::limb_t, sw::universal::limb_kernels::limb_t>);
+}
 
 #define MANUAL_TESTING 0
 #ifndef REGRESSION_LEVEL_OVERRIDE

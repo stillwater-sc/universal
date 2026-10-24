@@ -100,7 +100,7 @@ namespace efloat_detail {
 	// each one, and an fma at 128 bits took the time of about four multiplications.
 	template<unsigned nlimbs>
 	inline void fma_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z, unsigned precision) {
-		using efloat_mpn::limb_t;
+		using limb_kernels::limb_t;
 		const std::size_t nx = x.limb_count();
 		const std::size_t ny = y.limb_count();
 		const std::size_t nz = z.limb_count();
@@ -122,7 +122,7 @@ namespace efloat_detail {
 		const std::size_t w = static_cast<std::size_t>((std::max<int64_t>(big_top, small_top) + 2 - w0 + 63) / 64);
 
 		limb_buffer buffer;
-		limb_t* px   = buffer.get(nx + ny + nz + np + w + nz + 1 + efloat_mpn::scratch_limbs(std::max(nx, ny)));
+		limb_t* px   = buffer.get(nx + ny + nz + np + w + nz + 1 + limb_kernels::scratch_limbs(std::max(nx, ny)));
 		limb_t* py   = px + nx;
 		limb_t* pz   = py + ny;
 		limb_t* prod = pz + nz;
@@ -136,7 +136,7 @@ namespace efloat_detail {
 		const bool z_neg = (z.sign() == -1);
 		bool negative = p_neg;
 		if (proxied && z_big) {   // the product is the proxy
-			efloat_mpn::load_window(f, w, pz, nz, z_low - w0);
+			limb_kernels::load_window(f, w, pz, nz, z_low - w0);
 			negative = z_neg;
 		}
 		else {
@@ -146,31 +146,31 @@ namespace efloat_detail {
 			for (std::size_t k = 0; k < op; ++k) f[k] = 0u;
 			std::size_t end = op + np;
 			if (cp == 0u) {
-				efloat_mpn::mul(f + op, px, nx, py, ny, work);
+				limb_kernels::mul(f + op, px, nx, py, ny, work);
 			}
 			else {
-				efloat_mpn::mul(prod, px, nx, py, ny, work);
-				f[end] = efloat_mpn::lshift(f + op, prod, np, cp);
+				limb_kernels::mul(prod, px, nx, py, ny, work);
+				f[end] = limb_kernels::lshift(f + op, prod, np, cp);
 				++end;
 			}
 			for (std::size_t k = end; k < w; ++k) f[k] = 0u;
 		}
 		if (proxied) {
-			if (p_neg == z_neg) efloat_mpn::add_1(f, w, 1u); else efloat_mpn::sub_1(f, w, 1u);
+			if (p_neg == z_neg) limb_kernels::add_1(f, w, 1u); else limb_kernels::sub_1(f, w, 1u);
 		}
 		else {
 			// z's limbs from limb oz of the frame on: added, or subtracted with the borrow out of the
 			// top saying z was the larger, when the frame holds the difference's two's complement
 			const std::size_t oz = static_cast<std::size_t>((z_low - w0) / 64);
 			const std::size_t lz = std::min(nz + 1, w - oz);
-			efloat_mpn::load_window(g, lz, pz, nz, (z_low - w0) % 64);
+			limb_kernels::load_window(g, lz, pz, nz, (z_low - w0) % 64);
 			if (p_neg == z_neg) {
-				const limb_t carry = efloat_mpn::add_n(f + oz, f + oz, g, lz);
-				efloat_mpn::add_1(f + oz + lz, w - oz - lz, carry);
+				const limb_t carry = limb_kernels::add_n(f + oz, f + oz, g, lz);
+				limb_kernels::add_1(f + oz + lz, w - oz - lz, carry);
 			}
 			else {
-				const limb_t borrow = efloat_mpn::sub_n(f + oz, f + oz, g, lz);
-				if (efloat_mpn::sub_1(f + oz + lz, w - oz - lz, borrow) != 0u) {
+				const limb_t borrow = limb_kernels::sub_n(f + oz, f + oz, g, lz);
+				if (limb_kernels::sub_1(f + oz + lz, w - oz - lz, borrow) != 0u) {
 					limb_t c = 1;
 					for (std::size_t k = 0; k < w; ++k) {
 						const limb_t v = ~f[k] + c;

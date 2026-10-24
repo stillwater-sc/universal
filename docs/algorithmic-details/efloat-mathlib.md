@@ -10,7 +10,8 @@ The code carries the local detail: every header states its algorithm, the error 
 unrounded evaluation and the issue that introduced it. This page ties those together, and keeps
 the history and the measurements, which the code does not.
 
-- Headers: `include/sw/universal/number/efloat/` (`efloat_impl.hpp`, `efloat_mpn.hpp`, `math/*.hpp`)
+- Headers: `include/sw/universal/number/efloat/` (`efloat_impl.hpp`, `efloat_limbs.hpp`, `math/*.hpp`), and the limb
+  kernels in `include/sw/universal/internal/limbs/limb_kernels.hpp`, namespace `limb_kernels` (`efloat_mpn` before #1823)
 - Regression tests: `elastic/efloat/{api,arithmetic,conversion,math}/`
 - Accuracy against MPFR: `benchmark/accuracy/efloat/mpfr_check.cpp`
 - Speed against MPFR: `benchmark/performance/arithmetic/efloat/mpfr/mpfr_gap.cpp`
@@ -100,7 +101,7 @@ cover a new function must check the contract, not just the rounded results.
 ## 3. Arithmetic
 
 Storage is 64-bit limbs, least significant first (`efloat_limbs.hpp`, #1820): the format of
-the kernels in `efloat_mpn.hpp`, so operands go to them as they are and the exact result is
+the kernels in `limb_kernels.hpp`, so operands go to them as they are and the exact result is
 rounded once into the destination (`round_into`). The limbs live in a buffer inside the value,
 up to `EFLOAT_INLINE_LIMBS` (8) limbs, 512 bits; a longer value takes a heap block, and freed
 blocks go to a cache of the thread's, so `c = a + b` and `c op= b` allocate nothing in a steady
@@ -142,7 +143,7 @@ state at any precision.
 - **sqrt without its remainder** (#1810). The kernel was level with GMP's (`sqrtrem` 4.89 us
   against `mpn_sqrtrem`'s 4.30 at 8192 bits), but `sqrt` cost twice MPFR's: MPFR asks GMP for
   the root alone, which skips the top level's remainder, and efloat formed it every time.
-  - `efloat_mpn::sqrt_approx` stops `dc_sqrtrem`'s top level after the root: the square `Q^2`
+  - `limb_kernels::sqrt_approx` stops `dc_sqrtrem`'s top level after the root: the square `Q^2`
     and the one correction it decides are skipped, and the top division is `div_appr`.
   - `div_appr` (GMP's `divappr`) forms the high half of the quotient exactly and the low half on
     the divisor's top limbs, without the product that corrects it. Dividing by a truncated
@@ -178,7 +179,7 @@ state at any precision.
   - What is left: `div_appr` costs 5.3 us at 8192 bits, against `mpfr_div`'s whole 4.36, which
     uses a Mulders short division (`divhigh`); and below 16 limbs `mpfr_div` has dedicated
     one- and two-limb paths (`mpfr_div_1`, `mpfr_div_2`), where efloat's division is 1.5-1.7x.
-- **Short products** (#1807). `efloat_mpn::mulhigh_n` forms every partial product `a_i b_j`
+- **Short products** (#1807). `limb_kernels::mulhigh_n` forms every partial product `a_i b_j`
   with `i + j >= n - 1`, and some below, each exactly, so its high part `R = r[n - 1, 2n)`
   satisfies `0 <= a b - R B^(n-1) < n B^n`: the missing partial products, `s + 1` of them
   below `B^(s+2)` at each `s <= n - 2`, sum to under `(n - 1) B^n B / (B - 1)`. Below 32 limbs
@@ -189,10 +190,10 @@ state at any precision.
   where the squaring basecase already skips half its products).
   - `*` pads each operand of `m >= 16` limbs with a zero limb below, so `n = m + 1` and `R` is
     right to `64 m + 62 - bit_width(n)` bits, about 55 past a product rounded to the operands'
-    length. Ziv's test on the limbs (`efloat_mpn::can_round`) then decides between rounding
+    length. Ziv's test on the limbs (`limb_kernels::can_round`) then decides between rounding
     from `R` and forming the full product. All-ones operands, whose exact product lies one unit
     above a representable value while `R` lies below it, take the full product.
-  - `efloat_mpn::mul_truncated` gives the fixed-point engines `floor(a b / B^drop)` or one unit
+  - `limb_kernels::mul_truncated` gives the fixed-point engines `floor(a b / B^drop)` or one unit
     below it, padding the operands so that the short product's error is under one unit of the
     last limb kept. The series' powers and Horner products, exp's squarings and the versine's
     first product and doublings use it from 16 limbs; each such product now counts as two
@@ -230,18 +231,18 @@ state at any precision.
   run through the portable loop first and pass their carry in.
   - **Gating.** GNU inline assembly, so gcc and clang on `__x86_64__` (Linux, macOS, MinGW);
     the multiply kernels also need BMI2 and ADX, checked once by `cpuid` at start-up
-    (`efloat_mpn::x86::has_mulx_adx`), so no `-march` flag is needed and an older processor
+    (`limb_kernels::x86::has_mulx_adx`), so no `-march` flag is needed and an older processor
     takes the portable loops. A static initializer that multiplies before the check runs sees
     `false` and takes them too. MSVC, ARM, POWER and RISC-V compile only the portable loops,
-    as does any build with `EFLOAT_MPN_NO_ASM` defined. The results are the same bits either
+    as does any build with `UNIVERSAL_LIMB_KERNELS_NO_ASM` defined. The results are the same bits either
     way: the kernels are exact.
   - **Measured** (i7-12700K): `mul_basecase` 0.92-1.09x GMP's `mpn_mul_n` at 8 to 24 limbs
     (was 1.1-1.24x), 15-30% faster than the portable loop from 16 limbs; `mul_n` at 128 limbs
     1.08x `mpn_mul_n` (was 1.4x). At the efloat level, 8192 bits: `a*b` 3.51 to 2.60 us,
     `b/a` 6.27 to 4.61, `sqrt` 3.76 to 2.92, and every row 3-26% faster at 2048 and 8192 bits
-    (`a+b` least), against the same build with `EFLOAT_MPN_NO_ASM`.
+    (`a+b` least), against the same build with `UNIVERSAL_LIMB_KERNELS_NO_ASM`.
   - The thresholds were measured again with it (above); Toom-3's did not move.
-  - **Testing.** ASan and UBSan do not see inside inline assembly, so `limb_kernels` compares
+  - **Testing.** ASan and UBSan do not see inside inline assembly, so the `limb_kernels` test compares
     every kernel with its portable loop (`mul_1_portable` and the rest) at lengths 1 to 300,
     every `n mod 4`, all-ones and all-zero runs, all-ones multipliers and in-place operands.
   - **License.** This is efloat's own code, written from the instruction set's semantics
@@ -277,7 +278,7 @@ state at any precision.
   - **For #1819 (constexpr efloat).** The storage works in constant evaluation: the inline
     buffer is zeroed there, and a value past it allocates with `new` and frees with `delete`
     inside the evaluation, which C++20 allows of a transient allocation; a constant result
-    must fit the inline limbs. What stands in the way now is the arithmetic: the `efloat_mpn`
+    must fit the inline limbs. What stands in the way now is the arithmetic: the `limb_kernels`
     kernels, the assembly dispatch and the thread-local rounding mode and flags are not
     constexpr. A fixed-capacity sibling type over the same kernels remains open.
   - **The API.** `bits()` and `limb_vector()` return 32-bit limbs, most significant first,
@@ -287,7 +288,7 @@ state at any precision.
   - **Sums at the full precision.** Operands of one sign, both as long as the precision, add as
     in MPFR's `mpfr_add1sp`: Y shifted once into the result's limbs, its shifted-out bits the
     guard and sticky bits, X added, and a carry shifting the sum down one bit. Every other sum
-    goes through the frame, whose rounding shift now runs through `efloat_mpn::lshift`.
+    goes through the frame, whose rounding shift now runs through `limb_kernels::lshift`.
   - Results are bit-identical to before, flags and carried precision included: 1.2 million
     old-vs-new results over `+ - * /`, the integer operands, `sqrt`, `cbrt`, `fma`, `hypot`, the
     truncations, comparisons, conversions to `double` and `float`, the mathlib and
@@ -311,9 +312,9 @@ state at any precision.
 | `pow(x, n)` | binary powering on 64-bit limbs, each product kept to its top limbs, `bit_width(n) + 21` guard bits; one division for `n < 0` | `bit_width(n) + 5` | pow.hpp |
 | `tgamma`, `lgamma` | Stirling series after shifting `x` up past `0.15 W`, by a tapered Horner scheme; the shift's factors multiplied in groups; reflection below 0; working precision predicted; exact `(n-1)!` | 22 | error_and_gamma.hpp |
 | `erf`, `erfc` | positive-term series `2/sqrt(pi) e^{-x^2} sum t_n`; asymptotic series for large `x`; `1 - erf` with the cancelled bits added | 0 (32 guard bits) | error_and_gamma.hpp |
-| `cbrt` | integer cube root `floor(cbrt(m 2^(3F)))` on 64-bit limbs (`cbrtrem`), the remainder formed only next to a rounding boundary; rounded once | exact | sqrt.hpp, efloat_mpn.hpp |
-| `hypot` | squares, their sum and its integer square root on 64-bit limbs (`sqrtrem`), the remainder and dropped bits the sticky bit; rounded once | exact | hypot.hpp, efloat_mpn.hpp |
-| `fma` | exact product and sum on 64-bit limbs in one frame (or a proxy for a negligible term), one rounding | exact | numerics.hpp, efloat_mpn.hpp |
+| `cbrt` | integer cube root `floor(cbrt(m 2^(3F)))` on 64-bit limbs (`cbrtrem`), the remainder formed only next to a rounding boundary; rounded once | exact | sqrt.hpp, limb_kernels.hpp |
+| `hypot` | squares, their sum and its integer square root on 64-bit limbs (`sqrtrem`), the remainder and dropped bits the sticky bit; rounded once | exact | hypot.hpp, limb_kernels.hpp |
+| `fma` | exact product and sum on 64-bit limbs in one frame (or a proxy for a negligible term), one rounding | exact | numerics.hpp, limb_kernels.hpp |
 | `fmod`, `remainder` | exact integer remainder, `2^d mod y` by binary powering | exact | fractional.hpp |
 
 "Error bits" is the function's `*_error_bits`: its unrounded value lies within
@@ -611,7 +612,7 @@ Until #1783 these five were computed at the result's precision but rounded more 
   both work on limbs instead (next two items); `exact_sum` remains for `fma` at the range's
   ends, `hypot`'s far-apart arguments, and `fmod`.
 - **fma on limbs** (#1802). For finite nonzero operands with `|scale(x) + scale(y)| < 2^61`,
-  the significands' product `X Y` is formed by `efloat_mpn::mul` straight into a frame of 64-bit
+  the significands' product `X Y` is formed by `limb_kernels::mul` straight into a frame of 64-bit
   limbs, at the bit offset where its last bit lies, and `z`'s limbs are added into it or
   subtracted from it in place. A borrow out of the frame's top means `z` was the larger: the
   frame then holds the difference's two's complement, which is negated. The frame reaches from
@@ -642,7 +643,7 @@ Until #1783 these five were computed at the result's precision but rounded more 
   strictly between `N` and `N + 1`. `sqrtrem` gives that root `S` and its remainder, and `S`
   rounds once, with the remainder and the dropped bits as the sticky bit.
 - **cbrt** (#1800), the way `sqrt` is (#1770). `a = m 8^k`, `m` in `[1, 8)`, and `N = m 2^(3F)`
-  with `F = 64 n - 1` and at least `P + 18` bits in the root. `efloat_mpn::cbrtrem` forms
+  with `F = 64 n - 1` and at least `P + 18` bits in the root. `limb_kernels::cbrtrem` forms
   `S = floor(cbrt(N))` and `R = N - S^3` by Zimmermann's square-root recursion carried over to
   the cube:
   - with `N = N' B^(3l) + A2 B^(2l) + A0`, `(S', R') = cbrtrem(N')`, `(Q, U) = divrem(R' B^l +
@@ -958,11 +959,12 @@ row both ways before reading it as a cost.
 | #1815 | 2026-10-24 | Toom-3 multiplication and squaring (Bodrato's sequence), from 240 and 352 limbs by measurement: products 2-16% faster from 16384 bits; nothing changes up to 8192 |
 | #1818 | 2026-10-24 | x86-64 `mulx`/`adcx`/`adox` kernels in inline assembly, chosen at run time by `cpuid`, portable loops elsewhere; thresholds re-measured: `a*b`, `b/a`, `sqrt` at 8192 bits 3.46/6.02/3.66 us to 2.61/4.58/2.91, below gmpy2 |
 | #1822 | 2026-10-24 | 64-bit least-significant-first storage in an inline buffer with a per-thread block cache, no per-operation allocation: `a+b` 0.40-0.63x, `a*b` 0.65-0.91x, `b/a` 0.67-0.91x of before; every operation within 1.5x MPFR, every `mpmath_gap` cell below gmpy2; parsed literals normalized |
+| #1824 | 2026-10-24 | the limb kernels moved out of efloat: `efloat/efloat_mpn.hpp`, namespace `efloat_mpn`, to `internal/limbs/limb_kernels.hpp`, namespace `limb_kernels`; macros `UNIVERSAL_LIMB_KERNELS_NO_ASM` and `_X86_64_ASM` (`EFLOAT_MPN_NO_ASM` and the old header accepted, deprecated, for one release); no code change |
 
 ## 9. Open work
 
 **Library gaps.** None open: the exact integer cube root with remainder that this section asked
-for is `efloat_mpn::cbrtrem` (#1800).
+for is `limb_kernels::cbrtrem` (#1800).
 
 **Speed** (Epic #1763): short
 division (`divhigh`); the fixed-point series engine of exp and the versine (#1788, #1790)
