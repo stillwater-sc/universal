@@ -6,17 +6,45 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
 #include <cmath>
-#include <vector>
 #include <algorithm>
 
 namespace sw { namespace universal {
 
-// Helper to clear fractional bits of a limb vector and return if any non-zero bits were cleared
-static constexpr bool clear_fractional_limbs(std::vector<uint32_t>& limbs, int64_t exp) noexcept {
+// The helpers below take a significand's 64-bit limbs, least significant first, its top bit
+// weighing 2^exp (#1820): its bit i counted from the top weighs 2^(exp - i).
+
+// the significand's bit i counted from the top, 0 past its end
+template<typename Limbs>
+constexpr bool significand_bit(const Limbs& limbs, int64_t i) noexcept {
+	const int64_t total = 64 * static_cast<int64_t>(limbs.size());
+	if (i < 0 || i >= total) return false;
+	const int64_t p = total - 1 - i;
+	return ((limbs[static_cast<size_t>(p / 64)] >> (p % 64)) & 1u) != 0u;
+}
+
+// whether any bit counted from the top at index first or past it is set
+template<typename Limbs>
+constexpr bool significand_bits_from(const Limbs& limbs, int64_t first) noexcept {
+	const int64_t total = 64 * static_cast<int64_t>(limbs.size());
+	if (first <= 0) first = 0;
+	if (first >= total) return false;
+	const int64_t below = total - first;   // the bits at bottom positions [0, below)
+	const size_t  full  = static_cast<size_t>(below / 64);
+	for (size_t i = 0; i < full; ++i) {
+		if (limbs[i] != 0u) return true;
+	}
+	const unsigned rest = static_cast<unsigned>(below % 64);
+	return rest != 0u && (limbs[full] & ((uint64_t(1) << rest) - 1u)) != 0u;
+}
+
+// clears the fractional bits of a significand whose top bit weighs 2^exp, and returns whether
+// any were nonzero
+template<typename Limbs>
+constexpr bool clear_fractional_limbs(Limbs& limbs, int64_t exp) noexcept {
 	if (exp < 0) {
 		bool non_zero_frac = false;
-		for (uint32_t v : limbs) {
-			if (v != 0) {
+		for (size_t i = 0; i < limbs.size(); ++i) {
+			if (limbs[i] != 0u) {
 				non_zero_frac = true;
 				break;
 			}
@@ -25,48 +53,42 @@ static constexpr bool clear_fractional_limbs(std::vector<uint32_t>& limbs, int64
 		return non_zero_frac;
 	}
 
-	size_t total_bits = limbs.size() * 32;
-	if (exp >= static_cast<int64_t>(total_bits) - 1) {
+	const int64_t total_bits = 64 * static_cast<int64_t>(limbs.size());
+	if (exp >= total_bits - 1) {
 		return false; // no fractional bits exist!
 	}
 
+	const int64_t  cut  = total_bits - 1 - exp;   // the fractional bits, at the bottom
+	const size_t   full = static_cast<size_t>(cut / 64);
+	const unsigned rest = static_cast<unsigned>(cut % 64);
 	bool non_zero_frac = false;
-	size_t full_limbs = static_cast<size_t>(exp / 32);
-	unsigned bit_idx = static_cast<unsigned>(exp % 32);
-	
-	// Clear fractional bits of the boundary limb
-	uint32_t mask = (1u << (31u - bit_idx)) - 1u;
-	if ((limbs[full_limbs] & mask) != 0) {
-		non_zero_frac = true;
+	for (size_t i = 0; i < full; ++i) {
+		if (limbs[i] != 0u) non_zero_frac = true;
+		limbs[i] = 0u;
 	}
-	limbs[full_limbs] &= ~mask;
-
-	// Clear and check subsequent limbs
-	for (size_t i = full_limbs + 1; i < limbs.size(); ++i) {
-		if (limbs[i] != 0) {
-			non_zero_frac = true;
-		}
-		limbs[i] = 0;
+	if (rest != 0u) {
+		const uint64_t mask = (uint64_t(1) << rest) - 1u;
+		if ((limbs[full] & mask) != 0u) non_zero_frac = true;
+		limbs[full] &= ~mask;
 	}
 	return non_zero_frac;
 }
 
-// Helper to add 1 to the magnitude of the integer part of limbs at the LSB position
-// Returns true if a carry-out occurred that grew the vector. exp must be >= 0.
-static constexpr bool add_one_integer_magnitude(std::vector<uint32_t>& limbs, int64_t exp) noexcept {
-	size_t full_limbs = static_cast<size_t>(exp / 32);
-	unsigned bit_idx = static_cast<unsigned>(exp % 32);
-
-	uint64_t carry = 1ULL << (31u - bit_idx);
-	for (int i = static_cast<int>(full_limbs); i >= 0; --i) {
-		uint64_t sum = uint64_t(limbs[i]) + carry;
-		limbs[i] = static_cast<uint32_t>(sum);
-		carry = sum >> 32;
-		if (!carry) break;
+// adds 1 to the integer part of a significand whose top bit weighs 2^exp, exp >= 0. Returns
+// true if a carry out of the top added a limb, whose bit 0 then weighs 2^(exp + 1): the caller
+// adds 64 to the exponent, and normalize() moves the leading bit back to the top.
+template<typename Limbs>
+constexpr bool add_one_integer_magnitude(Limbs& limbs, int64_t exp) noexcept {
+	const int64_t p = 64 * static_cast<int64_t>(limbs.size()) - 1 - exp;   // the units bit
+	size_t   i     = static_cast<size_t>(p / 64);
+	uint64_t carry = uint64_t(1) << (p % 64);
+	for (; carry != 0u && i < limbs.size(); ++i) {
+		limbs[i] += carry;
+		carry = (limbs[i] < carry) ? 1u : 0u;
 	}
-	if (carry) {
-		// Carry-out from the MSB! Insert 1 at index 0 (which normalize will handle!)
-		limbs.insert(limbs.begin(), 1u);
+	if (carry != 0u) {
+		limbs.resize(limbs.size() + 1);
+		limbs.back() = 1u;
 		return true;
 	}
 	return false;
@@ -106,11 +128,11 @@ constexpr efloat<nlimbs> floor(const efloat<nlimbs>& x) {
 		if (x._sign) {
 			// Negative downward rounding adds 1 to magnitude
 			if (exp < 0) {
-				res._limb = { 0x80000000u };
+				res._limb.assign(1, uint64_t(1) << 63);
 				res._exponent = 0;
 			} else {
 				if (add_one_integer_magnitude(res._limb, exp)) {
-					res.setexponent(res.scale() + 32);
+					res.setexponent(res.scale() + 64);
 				}
 			}
 		}
@@ -138,11 +160,11 @@ constexpr efloat<nlimbs> ceil(const efloat<nlimbs>& x) {
 		if (!x._sign) {
 			// Positive upward rounding adds 1 to magnitude
 			if (exp < 0) {
-				res._limb = { 0x80000000u };
+				res._limb.assign(1, uint64_t(1) << 63);
 				res._exponent = 0;
 			} else {
 				if (add_one_integer_magnitude(res._limb, exp)) {
-					res.setexponent(res.scale() + 32);
+					res.setexponent(res.scale() + 64);
 				}
 			}
 		}
@@ -161,27 +183,13 @@ constexpr efloat<nlimbs> round(const efloat<nlimbs>& x) {
 
 	int64_t exp = x._exponent;
 	const auto& limbs = x._limb;
-	size_t total_bits = limbs.size() * 32;
-	if (exp >= static_cast<int64_t>(total_bits) - 1) {
+	const int64_t total_bits = 64 * static_cast<int64_t>(limbs.size());
+	if (exp >= total_bits - 1) {
 		return x; // already exactly an integer!
 	}
 
-	bool guard = false;
-	if (exp < 0) {
-		guard = (exp == -1);
-	} else {
-		size_t full_limbs = static_cast<size_t>(exp / 32);
-		unsigned bit_idx = static_cast<unsigned>(exp % 32);
-
-		if (bit_idx < 31) {
-			guard = (limbs[full_limbs] & (1u << (30u - bit_idx))) != 0;
-		} else {
-			// bit_idx == 31, guard is MSB of next limb!
-			if (full_limbs + 1 < limbs.size()) {
-				guard = (limbs[full_limbs + 1] & 0x80000000u) != 0;
-			}
-		}
-	}
+	// the half bit: below the units bit, or the leading bit itself for |x| in [1/2, 1)
+	const bool guard = (exp < 0) ? (exp == -1) : significand_bit(limbs, exp + 1);
 
 	efloat<nlimbs> res(x);
 	bool original_sign = res._sign;
@@ -193,11 +201,11 @@ constexpr efloat<nlimbs> round(const efloat<nlimbs>& x) {
 		// Round away from zero if guard is set (fraction is >= 0.5)
 		if (guard) {
 			if (exp < 0) {
-				res._limb = { 0x80000000u };
+				res._limb.assign(1, uint64_t(1) << 63);
 				res._exponent = 0;
 			} else {
 				if (add_one_integer_magnitude(res._limb, exp)) {
-					res.setexponent(res.scale() + 32);
+					res.setexponent(res.scale() + 64);
 				}
 			}
 		}
@@ -216,8 +224,8 @@ constexpr efloat<nlimbs> rint(const efloat<nlimbs>& x) {
 
 	int64_t exp = x._exponent;
 	const auto& limbs = x._limb;
-	size_t total_bits = limbs.size() * 32;
-	if (exp >= static_cast<int64_t>(total_bits) - 1) {
+	const int64_t total_bits = 64 * static_cast<int64_t>(limbs.size());
+	if (exp >= total_bits - 1) {
 		return x; // already exactly an integer!
 	}
 
@@ -228,38 +236,11 @@ constexpr efloat<nlimbs> rint(const efloat<nlimbs>& x) {
 	if (exp < 0) {
 		guard = (exp == -1);
 		lsb = false; // integer part is 0 (even!)
-		for (size_t i = 0; i < limbs.size(); ++i) {
-			uint32_t val = limbs[i];
-			if (i == 0) {
-				if ((val & 0x7FFFFFFF) != 0) sticky = true;
-			} else {
-				if (val != 0) sticky = true;
-			}
-		}
+		sticky = significand_bits_from(limbs, 1);   // the bits below the leading one
 	} else {
-		size_t full_limbs = static_cast<size_t>(exp / 32);
-		unsigned bit_idx = static_cast<unsigned>(exp % 32);
-
-		lsb = (limbs[full_limbs] & (1u << (31u - bit_idx))) != 0;
-
-		if (bit_idx < 31) {
-			guard = (limbs[full_limbs] & (1u << (30u - bit_idx))) != 0;
-			if ((limbs[full_limbs] & ((1u << (30u - bit_idx)) - 1u)) != 0) {
-				sticky = true;
-			}
-		} else {
-			if (full_limbs + 1 < limbs.size()) {
-				guard = (limbs[full_limbs + 1] & 0x80000000u) != 0;
-				if ((limbs[full_limbs + 1] & 0x7FFFFFFFu) != 0) {
-					sticky = true;
-				}
-			}
-		}
-		// check any subsequent limbs (including full_limbs + 1 if bit_idx < 31)
-		const size_t first_extra_limb = (bit_idx < 31) ? full_limbs + 1 : full_limbs + 2;
-		for (size_t i = first_extra_limb; i < limbs.size(); ++i) {
-			if (limbs[i] != 0) sticky = true;
-		}
+		lsb    = significand_bit(limbs, exp);
+		guard  = significand_bit(limbs, exp + 1);
+		sticky = significand_bits_from(limbs, exp + 2);
 	}
 
 	efloat<nlimbs> res(x);
@@ -287,11 +268,11 @@ constexpr efloat<nlimbs> rint(const efloat<nlimbs>& x) {
 		}
 		if (round_up) {
 			if (exp < 0) {
-				res._limb = { 0x80000000u };
+				res._limb.assign(1, uint64_t(1) << 63);
 				res._exponent = 0;
 			} else {
 				if (add_one_integer_magnitude(res._limb, exp)) {
-					res.setexponent(res.scale() + 32);
+					res.setexponent(res.scale() + 64);
 				}
 			}
 		}
@@ -329,13 +310,7 @@ constexpr long long llrint_impl(const efloat<nlimbs>& x) noexcept {
 		return (r.sign() == -1 ? std::numeric_limits<long long>::min() : std::numeric_limits<long long>::max());
 	}
 
-	uint64_t raw_sig = 0;
-	if (r.bits().size() >= 1) {
-		raw_sig |= (uint64_t(r.bits()[0]) << 32);
-	}
-	if (r.bits().size() >= 2) {
-		raw_sig |= r.bits()[1];
-	}
+	const uint64_t raw_sig = r.limb_data()[r.limb_count() - 1];   // the top 64 bits
 
 	uint64_t val = raw_sig >> (63 - exp);
 	if (r.sign() == -1) {

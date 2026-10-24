@@ -16,6 +16,9 @@
 //            operand the longer, and near-cancellations, including one by an operand that carries
 //            no precision and is longer than the target across a one-bit gap (#1767: it lost its
 //            last bits to the sticky bit, and 2 - (2 - 2^-127) came out 2^-126 - 2^-158).
+//            Addends of one sign, both as long as the precision, take a shorter path (#1820):
+//            gaps of 0 to 64 m - 1 bits, every whole number of limbs and its neighbours among
+//            them, against the same exact reference.
 //   div_qr   efloat_mpn's division on 64-bit limbs must leave N = Q D + R with R < D, the product
 //            by the schoolbook multiply: one- and two-limb divisors, the divide-and-conquer
 //            threshold and its doublings, quotients shorter and longer than the divisor, and
@@ -229,6 +232,56 @@ namespace {
 				if (!ok) {
 					++nrOfFailedTestCases;
 					if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: x + y with an exponent gap of " << gap << " bits at " << target << " bits is not the rounded exact sum\n";
+				}
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// x + y for addends of one sign, both as long as a precision of 64 m bits, at gaps of 0 to
+	// 64 m - 1 bits (#1820): the sum that shifts y into the result's limbs, whose guard bit is
+	// y's bit gap - 1, in the limb below gap / 64 when the gap is a whole number of limbs, and
+	// whose carry out of the top shifts the sum down one bit. The result must be the exact sum
+	// rounded once, in every rounding mode.
+	int VerifyFullLengthSums(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(18203);
+		const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+		                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+		const RoundingMode saved = efloat_rounding_mode;
+		for (unsigned m : { 1u, 2u, 3u, 8u, 17u }) {
+			const unsigned target = 64 * m;
+			std::vector<int64_t> gaps = { 0, 1, 2, 31, 32, 33, 63 };
+			for (unsigned k = 1; k < m; ++k) {
+				gaps.push_back(64 * k - 1);
+				gaps.push_back(64 * k);
+				gaps.push_back(64 * k + 1);
+			}
+			gaps.push_back(64 * static_cast<int64_t>(m) - 1);
+			for (unsigned i = 0; i < nrSamples; ++i) {
+				const int64_t gap = (i < 4 * gaps.size()) ? gaps[i % gaps.size()] : static_cast<int64_t>(rng() % target);
+				const bool negative = (rng() & 1u) != 0u;
+				std::vector<uint32_t> lx = random_limbs(rng, 2 * m), ly = random_limbs(rng, 2 * m);
+				lx.back() |= 1u;   // both as long as the precision
+				ly.back() |= 1u;
+				const int64_t ex = static_cast<int64_t>(rng() % 41) - 20;
+				const Real x = make(lx, ex, negative, target);
+				const Real y = make(ly, ex - gap, negative, target);
+				// the exact sum, at a precision that holds all of it
+				Real X = x, Y = y;
+				X.set_precision(2 * target + static_cast<unsigned>(gap) + 64);
+				Y.set_precision(2 * target + static_cast<unsigned>(gap) + 64);
+				efloat_rounding_mode = modes[i % 4];
+				Real sum = X + Y;
+				sum.set_precision(target);   // rounds once, in the current mode
+				Real accumulated = x;
+				accumulated += y;
+				const bool ok = identical(x + y, sum) && identical(y + x, sum) && identical(accumulated, sum);
+				efloat_rounding_mode = saved;
+				if (!ok) {
+					++nrOfFailedTestCases;
+					if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: x + y of one sign at " << target << " bits, both full length, with a gap of " << gap << " bits is not the rounded exact sum\n";
 				}
 			}
 		}
@@ -1057,6 +1110,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLimbKernels(reportTestCases, 1000), "efloat", "limb kernels against the portable loops");
 	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 5), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 100), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyFullLengthSums(reportTestCases, 60), "efloat", "full-length sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 20), "efloat", "products from short products");
@@ -1077,6 +1131,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLimbKernels(reportTestCases, 3000), "efloat", "limb kernels against the portable loops");
 	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 20), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyFullLengthSums(reportTestCases, 300), "efloat", "full-length sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 300), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 60), "efloat", "products from short products");
@@ -1094,6 +1149,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLimbKernels(reportTestCases, 30000), "efloat", "limb kernels against the portable loops");
 	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 200), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 20000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyFullLengthSums(reportTestCases, 3000), "efloat", "full-length sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 20000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 3000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 300), "efloat", "products from short products");
@@ -1111,6 +1167,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLimbKernels(reportTestCases, 300000), "efloat", "limb kernels against the portable loops");
 	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 1000), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 200000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyFullLengthSums(reportTestCases, 30000), "efloat", "full-length sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 100000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 30000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 3000), "efloat", "products from short products");
@@ -1128,6 +1185,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLimbKernels(reportTestCases, 1000000), "efloat", "limb kernels against the portable loops");
 	nrOfFailedTestCases += ReportTestResult(VerifyToom3(reportTestCases, 4000), "efloat", "Toom-3 products");
 	nrOfFailedTestCases += ReportTestResult(VerifyAlignedSums(reportTestCases, 2000000), "efloat", "rounded sums");
+	nrOfFailedTestCases += ReportTestResult(VerifyFullLengthSums(reportTestCases, 500000), "efloat", "full-length sums");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 300000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 10000), "efloat", "products from short products");

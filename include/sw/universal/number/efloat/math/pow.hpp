@@ -92,9 +92,10 @@ namespace efloat_detail {
 		for (int64_t i = 0; i < k; ++i) {
 			const unsigned bits = significant_bits(root);
 			// a square r^2 = m 2^2e, m odd, has m = 1 mod 8: its last three significant bits are 001, at an even exponent
-			const std::vector<uint32_t> limbs = root.bits();
+			const efloat_mpn::limb_t* w = root.limb_data();   // least significant first, leading bit at 63 of the top
+			const std::size_t         m = root.limb_count();
 			const unsigned last = bits - 1;   // the position of the last 1 bit
-			auto bit = [&limbs](unsigned p) -> uint32_t { return (limbs[p / 32] >> (31 - p % 32)) & 1u; };
+			auto bit = [w, m](unsigned p) -> uint32_t { return static_cast<uint32_t>((w[m - 1 - p / 64] >> (63 - p % 64)) & 1u); };
 			if (bits < 4 || bit(last - 1) || bit(last - 2) || ((root.scale() - static_cast<int64_t>(last)) & 1)) return false;
 			const efloat<nlimbs> r = sqrt_to(root, bits + 32);
 			efloat<nlimbs> square(r);
@@ -189,7 +190,7 @@ namespace efloat_detail {
 		if (static_cast<double>(n) * (std::fabs(static_cast<double>(ex)) + 1.0) >= 1152921504606846976.0) return false;   // 2^60
 		const unsigned bw = static_cast<unsigned>(std::bit_width(n));
 		const bool negative = (x.sign() == -1) && (n & 1u);
-		const std::size_t m = (x.limb_vector().size() + 1) / 2;
+		const std::size_t m = x.limb_count();
 		std::size_t w = (static_cast<std::size_t>(precision) + bw + 5 + 16 + 63) / 64;
 		for (int attempt = 0; attempt < 3; ++attempt, w *= 2) {
 			limb_buffer buffer;
