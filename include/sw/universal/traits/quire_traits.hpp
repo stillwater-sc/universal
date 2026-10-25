@@ -53,8 +53,9 @@ struct quire_traits {
 //   half_range = range / 2                // radix point position
 //   upper_range= half_range + 1           // maxpos^2 needs one extra bit
 //   qbits      = range + capacity
+//   total bits = qbits + 1   // the sign bit is not part of qbits
 //
-// For posit<32,2>: escale=4, range=480, qbits=511 (with default capacity=31)
+// For posit<32,2>: escale=4, range=480, qbits=511, total bits=512 (with default capacity=31)
 // ============================================================================
 template<unsigned nbits, unsigned es, typename bt>
 struct quire_traits<posit<nbits, es, bt>> {
@@ -65,9 +66,11 @@ struct quire_traits<posit<nbits, es, bt>> {
 	static constexpr unsigned upper_range = half_range + 1u;
 
 	// capacity is a carry guard: room to accumulate 2^capacity products of maxpos^2.
-	// It sits outside the dynamic range. For es = 2, 1 (sign) + 31 + range = 16n bits,
-	// the width specified by the 2022 posit standard.
-	static constexpr unsigned capacity    = 31u;
+	// It sits outside the dynamic range. 31 is the carry-guard width of the 2022 posit
+	// standard. For es = 2 it makes the total width 1 (sign) + 31 + range = 16n bits.
+	// It is not "the capacity that yields 16n" for other es: posit<16,1> gets 144 bits.
+	static constexpr unsigned standard_capacity = 31u;
+	static constexpr unsigned capacity    = standard_capacity;
 
 	// fraction bits of the posit (used for quire_mul product width)
 	static constexpr unsigned fbits       = nbits - 3u - es;

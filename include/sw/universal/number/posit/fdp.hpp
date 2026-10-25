@@ -109,14 +109,19 @@ quire_resolve(const quire<posit<nbits, es, bt>, capacity, LimbType>& q) {
 // Posit-specific quire convenience functions
 // ============================================================================
 
-/// quire_size: return the number of quire bits for a posit configuration, range + capacity.
-/// The sign bit is not counted, so a quire object is quire_size() + 1 bits wide (see total_bits()).
-/// capacity is a carry guard (2^capacity accumulations of maxpos^2). The default of 31
-/// makes a posit<nbits,2> quire exactly 16n bits wide, as in the 2022 posit standard.
-template<unsigned nbits, unsigned es, unsigned capacity = 31>
+/// quire_size: return the total quire size in bits for a posit configuration, including the sign bit.
+/// This is the same value as total_bits() of quire<posit<nbits, es>, capacity>.
+/// capacity is a carry guard (room for 2^capacity accumulations of maxpos^2) and sits outside
+/// the dynamic range. The default is the standard's 31, which makes a posit<nbits,2> quire 16n bits.
+template<unsigned nbits, unsigned es, unsigned capacity = quire_traits<posit<nbits, es>>::capacity>
 inline int quire_size() {
-	return static_cast<int>(quire_traits<posit<nbits, es>>::range + capacity);
+	return static_cast<int>(quire_traits<posit<nbits, es>>::range + capacity + 1u);
 }
+
+/// standard_quire: the quire of the 2022 posit standard, posit<nbits,2> with the standard carry guard.
+/// Its total width is 16n bits.
+template<unsigned nbits, typename bt = std::uint32_t>
+using standard_quire = quire<posit<nbits, 2, bt>, quire_traits<posit<nbits, 2, bt>>::standard_capacity>;
 
 // ============================================================================
 // Fused dot product operators
