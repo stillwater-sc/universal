@@ -27,6 +27,8 @@
 //            lie next to a rounding boundary (#1828).
 //   short    the division kernels for quotients of a few limbs, which estimate in hardware
 //            (#1826), against the ones that divide by a reciprocal.
+//   2-by-1   udiv_qr_2by1, divrem_1's step by a reciprocal (#1830), and udiv_qrnnd on dividends
+//            built as q d + r, remainders and quotients at both ends of their ranges.
 //   div_qr   limb_kernels's division on 64-bit limbs must leave N = Q D + R with R < D, the product
 //            by the schoolbook multiply: one- and two-limb divisors, the divide-and-conquer
 //            threshold and its doublings, quotients shorter and longer than the divisor, and
@@ -524,6 +526,47 @@ namespace {
 			if (!same) {
 				++nrOfFailedTestCases;
 				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: a short division by " << dn << " limbs differs from the reciprocal division\n";
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// udiv_qr_2by1, the step of divrem_1 by a reciprocal, written for its dependency chain in
+	// #1830: N = q d + r built from a chosen q and r, so that q and r are known, for normalized
+	// d: remainders of 0, 1, d - 2, d - 1 and random, quotients of 0, 1, B - 1 and random, and
+	// divisors of 2^63, B - 1 and random; both corrections are reached
+	int VerifyTwoByOneSteps(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal::limb_kernels;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(18301);
+		for (unsigned it = 0; it < nrSamples; ++it) {
+			limb_t d = rng() | (limb_t(1) << 63);
+			if (it % 7 == 1) d = limb_t(1) << 63;
+			if (it % 7 == 2) d = ~limb_t(0);
+			if (it % 7 == 3) d = (limb_t(1) << 63) + (rng() & 0xFFu);
+			limb_t q = rng();
+			if (it % 5 == 1) q = 0u;
+			if (it % 5 == 2) q = 1u;
+			if (it % 5 == 3) q = ~limb_t(0) - (rng() & 3u);
+			limb_t r = rng() % d;
+			switch (it % 6) {
+			case 1: r = 0u; break;
+			case 2: r = 1u; break;
+			case 3: r = d - 2u; break;
+			case 4: r = d - 1u; break;
+			default: break;
+			}
+			limb_t n1 = 0, n0 = 0;
+			umul(q, d, n1, n0);   // N = q d + r < d B
+			n0 += r;
+			n1 += (n0 < r) ? 1u : 0u;
+			limb_t q2 = 0, r2 = 0;
+			udiv_qr_2by1(q2, r2, n1, n0, d, invert_limb(d));
+			limb_t q3 = 0, r3 = 0;
+			udiv_qrnnd(q3, r3, n1, n0, d);
+			if (q2 != q || r2 != r || q3 != q || r3 != r) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: a 2-by-1 division step gives the wrong quotient or remainder\n";
 			}
 		}
 		return nrOfFailedTestCases;
@@ -1504,6 +1547,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifySmallProducts(reportTestCases, 60), "efloat", "small products");
 	nrOfFailedTestCases += ReportTestResult(VerifySmallSquareRoots(reportTestCases, 60), "efloat", "small square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortDivisionKernels(reportTestCases, 1000), "efloat", "short division kernels");
+	nrOfFailedTestCases += ReportTestResult(VerifyTwoByOneSteps(reportTestCases, 10000), "efloat", "2-by-1 division steps");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 20), "efloat", "products from short products");
@@ -1530,6 +1574,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifySmallProducts(reportTestCases, 300), "efloat", "small products");
 	nrOfFailedTestCases += ReportTestResult(VerifySmallSquareRoots(reportTestCases, 300), "efloat", "small square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortDivisionKernels(reportTestCases, 20000), "efloat", "short division kernels");
+	nrOfFailedTestCases += ReportTestResult(VerifyTwoByOneSteps(reportTestCases, 20000), "efloat", "2-by-1 division steps");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 2000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 300), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 60), "efloat", "products from short products");
@@ -1553,6 +1598,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifySmallProducts(reportTestCases, 3000), "efloat", "small products");
 	nrOfFailedTestCases += ReportTestResult(VerifySmallSquareRoots(reportTestCases, 3000), "efloat", "small square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortDivisionKernels(reportTestCases, 200000), "efloat", "short division kernels");
+	nrOfFailedTestCases += ReportTestResult(VerifyTwoByOneSteps(reportTestCases, 200000), "efloat", "2-by-1 division steps");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 20000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 3000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 300), "efloat", "products from short products");
@@ -1576,6 +1622,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifySmallProducts(reportTestCases, 30000), "efloat", "small products");
 	nrOfFailedTestCases += ReportTestResult(VerifySmallSquareRoots(reportTestCases, 30000), "efloat", "small square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortDivisionKernels(reportTestCases, 2000000), "efloat", "short division kernels");
+	nrOfFailedTestCases += ReportTestResult(VerifyTwoByOneSteps(reportTestCases, 2000000), "efloat", "2-by-1 division steps");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 100000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 30000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 3000), "efloat", "products from short products");
@@ -1599,6 +1646,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifySmallProducts(reportTestCases, 100000), "efloat", "small products");
 	nrOfFailedTestCases += ReportTestResult(VerifySmallSquareRoots(reportTestCases, 100000), "efloat", "small square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortDivisionKernels(reportTestCases, 10000000), "efloat", "short division kernels");
+	nrOfFailedTestCases += ReportTestResult(VerifyTwoByOneSteps(reportTestCases, 10000000), "efloat", "2-by-1 division steps");
 	nrOfFailedTestCases += ReportTestResult(VerifyLoadWindow(reportTestCases, 300000), "efloat", "limb windows");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortProducts(reportTestCases, 100000), "efloat", "short products");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedProducts(reportTestCases, 10000), "efloat", "products from short products");
