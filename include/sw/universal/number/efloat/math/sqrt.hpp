@@ -36,8 +36,9 @@ namespace efloat_detail {
 		using limb_kernels::limb_t;
 		const limb_t*     w = a.limb_data();
 		const std::size_t m = a.limb_count();
-		limb_t x[M] = {};   // a's significand, its top bit set
-		for (std::size_t i = 0; i < m; ++i) x[M - m + i] = w[i];
+		limb_t x[M] = {};   // a's significand, its top bit set, copied from the top at fixed indices (#1830)
+		EFLOAT_UNROLLED_LOOP
+		for (std::size_t k = 0; k < M; ++k) x[M - 1 - k] = (k < m) ? w[m - 1 - k] : 0u;
 		const int64_t e    = a.scale();
 		const int64_t half = e / 2 - ((e < 0 && e % 2 != 0) ? 1 : 0);   // floor(e / 2)
 		limb_t np[2 * M] = {};

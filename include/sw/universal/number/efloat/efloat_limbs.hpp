@@ -53,17 +53,33 @@ struct cache_reaper {
 };
 inline thread_local cache_reaper reaper;
 
+// Placed before a loop over a few limbs: keeps it scalar. Limbs just stored one at a time, as
+// every result's are, read back by a vector load stall the load until the stores retire (#1828).
+#if defined(__clang__)
+#define EFLOAT_SCALAR_LOOP _Pragma("clang loop vectorize(disable)")
+#elif defined(__GNUC__) && (__GNUC__ >= 14)
+#define EFLOAT_SCALAR_LOOP _Pragma("GCC novector")
+#else
+#define EFLOAT_SCALAR_LOOP
+#endif
+// Placed before a loop of a fixed count of at most 8 over a local array: scalar and unrolled
+// whole, early, so that the compiler can keep the array in registers (#1830)
+#if defined(__clang__)
+#define EFLOAT_UNROLLED_LOOP _Pragma("clang loop vectorize(disable) unroll(full)")
+#elif defined(__GNUC__) && (__GNUC__ >= 14)
+#define EFLOAT_UNROLLED_LOOP _Pragma("GCC novector") _Pragma("GCC unroll 8")
+#elif defined(__GNUC__)
+#define EFLOAT_UNROLLED_LOOP _Pragma("GCC unroll 8")
+#else
+#define EFLOAT_UNROLLED_LOOP
+#endif
+
 // d[0, n) = s[0, n) for limbs that do not overlap, or overlap with d below s: a loop for the
 // short runs, where a call to memmove costs more than the copy, and std::copy_n past them
 constexpr void copy_limbs(limb_t* d, const limb_t* s, std::size_t n) noexcept {
 	if (n <= 8 || std::is_constant_evaluated()) {
-		// one limb at a time: limbs just stored one at a time, as every result's are, read back by
-		// a vector load stall the load until the stores retire (#1828)
-#if defined(__clang__)
-		_Pragma("clang loop vectorize(disable)")
-#elif defined(__GNUC__) && (__GNUC__ >= 14)
-		_Pragma("GCC novector")
-#endif
+		// one limb at a time (#1828)
+		EFLOAT_SCALAR_LOOP
 		for (std::size_t i = 0; i < n; ++i) d[i] = s[i];
 	}
 	else {
@@ -160,16 +176,14 @@ public:
 		if (this != &rhs) assign(rhs.data(), rhs._size);
 		return *this;
 	}
+	// an inline source that fits, the common case of c = a + b, in a few instructions, inline
+	// (#1830); a copy onto itself copies each limb onto itself
 	constexpr efloat_limbs& operator=(efloat_limbs&& rhs) noexcept {
-		if (this == &rhs) return *this;
-		if (rhs._heap != nullptr || rhs._size > _capacity) {
-			release();
-			steal(rhs);
-		}
-		else {
+		if (rhs._heap == nullptr && rhs._size <= _capacity) [[likely]] {
 			copy_from(rhs._local, rhs.local_size());   // fits: keep this buffer, which may be a heap block
+			return *this;
 		}
-		return *this;
+		return move_heap(rhs);
 	}
 	constexpr ~efloat_limbs() { release(); }
 
@@ -224,6 +238,13 @@ private:
 	constexpr void copy_from(const limb_t* p, std::size_t n) noexcept {
 		efloat_storage::copy_limbs(data(), p, n);
 		_size = static_cast<std::uint32_t>(n);
+	}
+	// a source on the heap, or one larger than this buffer
+	constexpr efloat_limbs& move_heap(efloat_limbs& rhs) noexcept {
+		if (this == &rhs) return *this;
+		release();
+		steal(rhs);
+		return *this;
 	}
 	constexpr void steal(efloat_limbs& rhs) noexcept {
 		if (rhs._heap != nullptr) {
