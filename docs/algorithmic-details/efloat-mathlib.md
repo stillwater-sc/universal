@@ -345,6 +345,71 @@ state at any precision.
     at every gap of 0 to `64 m + 2` bits and products, quotients and roots of one to four limbs
     with all-ones and near-tie operands, in every mode, and the same in the
     `UNIVERSAL_LIMB_KERNELS_NO_ASM` build; `mpfr_check` 0 wrong.
+- **Short quotients and roots, and the copies between operations** (#1828). After #1826,
+  `mpfr_bands` still had `b/a` and `sqrt` at 64 and 96 bits at 1.7-2.6x MPFR, the difference at
+  384 to 1024 bits at 1.6-2.0x, and sums and differences of one to four limbs at 1.5-1.9x.
+  - **Division of one and two limbs.** Operands of at most M = 1 or 2 limbs at a precision of
+    64 M or 64 M - 32 bits divide in fixed-size code without scratch frames, as `mpfr_div_1` and
+    `mpfr_div_2` do: A and D as integers of M limbs, Q = floor(A 2^(64 M) / D) of M limbs and a top
+    bit from one `divq` or from `sb_div_qr_short`'s two steps, and the remainder R. A quotient of
+    64 M + 1 bits has its own guard bit and R the sticky bit; one of 64 M bits takes the guard
+    bit from whether 2 R >= D. The rounding is `store_short`, the short products' tail of #1826,
+    now shared by the products, quotients and roots, and inlined into each: out of line, as g++
+    first left it, a 64-bit product took 9 ns instead of 7.
+  - **Roots of one and two limbs.** N of 2 M limbs, and the exact root and remainder from
+    `sqrtrem2` or the new `limb_kernels::sqrtrem4`, `dc_sqrtrem`'s one level for four limbs in
+    registers (10.8 ns against 13.7). At 96 bits the root's 128 bits carry 32 past the precision,
+    and `sqrt_approx4` replaces the second division: s' and r' of the top two limbs from
+    `sqrtrem2`, and Q = (r' B + n1) / (2 s') in double precision from a reciprocal of the top
+    root computed alongside it, within 2^15 units of the root (nine roundings at most; 6069 units
+    the worst of 20 million radicands). It rounds from its top 96 bits where the 31 bits under the
+    guard bit are more than 2^16 from 0 and from 2^31; otherwise, about once in 2^14, the exact
+    root does. `sqrt()` takes the short root without copying its argument first, and `sqrt_to`,
+    the mathlib's root, no longer copies it at all: the copy only reserved the root's limbs,
+    which an empty value gets from the block cache for less.
+  - **Differences one bit apart.** A difference X - Y/2 that cancels its leading bit, which the
+    top limbs decide whatever borrows from below, is formed as 2 X - Y, twice the difference: no
+    shift of Y before and none of the difference after, which cost an in-place `lshift` pass at
+    512 to 1024 bits. `limb_kernels::twice_sub_n` forms it in one pass where the processor has
+    ADX, as X + (X + ~Y + 1): the inner sum's carry on `adcx` (CF), the outer on `adox` (OF), and
+    the `not` that forms ~Y leaves both flags alone. One to four limbs take a fixed loop.
+  - **Copies of short runs.** `copy_limbs` left runs of up to 8 limbs to a plain loop, which g++
+    vectorized into 32-byte loads. Read straight after the limbs were stored one at a time, as
+    every result's are, such a load cannot be forwarded from the stores and waits for them to
+    retire, and every `c = a op b` paid it in the move of its result into c: scalar copies made
+    `b-a` at 160 bits 1.25x MPFR from 1.38x, `a+b` there 1.49x from 1.61x, `b/a` at 64 bits 0.93x
+    from 1.04x, and the rest of the short cells 3-10% faster. clang's defaulted copies and moves of efloat copied the state,
+    the sign and the exponent as one 16-byte vector, with the same stall: they are written out
+    member by member, the exponent first.
+  - **Smaller things.** Sums of three limbs and more write the result's own limbs, as the long
+    ones did, and every short sum copies all of its limbs and trims a zero bottom limb after,
+    where it searched for zero limbs first; `fma`'s result no longer starts as a copy of its
+    longest operand.
+  - **Rejected, by measurement.** A move of the whole 64-byte inline buffer by `memcpy`: the
+    same store-forwarding stall, `b/a` at 64 bits 9.4 ns to 10.2. Branchless carries and
+    cancellations for one to four limbs: `mpfr_bands` repeats its operands, so the branches
+    predict, and `b-a` at 128 bits went from 1.63x to 1.80x, `a+b` at 256 bits from 1.47x to 1.69x. A fused shift and subtraction in C
+    for five limbs and more: 1.58x at 512 bits against 1.29x for `twice_sub_n`, and slower than
+    `sub_n` at 2048. Short sums of one and two limbs written in place: their limbs leave the
+    registers (`b-a` at 64 bits 1.52x to 1.60x). The reciprocal for `sqrt_approx4` from s' rather
+    than from the top limbs' own root: the division then waits for `sqrtrem2` (1.52x to 1.57x).
+    The general sum out of line, a newest-first search of the block cache, the reaper armed once
+    a thread: no change. The heap paths of `efloat_limbs` out of line: clang gained 5% at 128 bits,
+    g++ lost 4% at 544.
+  - **Not reached.** `b-a` at 128 bits stays at 1.7x MPFR and `a+b` at 160 bits at 1.5x: what is
+    left is the temporary of `s = b - a` and its move, about 2 ns, against MPFR's two-limb
+    subtraction, which takes 5.8 ns in all. Under clang the short sums and differences stay at
+    1.3-2.1x and `b/a` and `sqrt` at 96 bits at 1.6x, where g++'s are 1.3-1.5x, from code
+    generation rather than algorithm.
+  - Results are bit-identical to before, flags and carried precision included: 45 million
+    old-vs-new results over `+ - * /`, the integer operands, `sqrt`, `cbrt`, `fma`, `hypot`, the
+    mathlib and the conversions at 32 to 8192 bits, among them short quotients and roots next to
+    their rounding boundaries, squares a unit off, quotients next to exact ones and differences
+    one bit apart cancelling a limb or more, in every mode, and the same in the
+    `UNIVERSAL_LIMB_KERNELS_NO_ASM` build; `mpfr_check` 0 wrong. Of 32 deliberate mutations of
+    the new code the tests catch 29; one is equivalent (2 R = D needs more bits than the operands
+    hold), and two move the window of `sqrt_approx4` by its margin, whose bound
+    `limb_kernels.cpp` tests directly.
 
 ## 4. The functions
 
@@ -820,87 +885,88 @@ efloat returns +0 with Underflow.
 ## 7. Measured speed
 
 `mpfr_gap`, best of three, warm caches, microseconds per call, round to nearest.
-Measured 2026-10-24 with #1826 (differences, short products and short divisions, section 3), pinned to one performance core (`taskset -c 2`), Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`, MPFR 4.2.2, GMP 6.3.0;
+Measured 2026-10-25 with #1828 (short quotients and roots, differences as 2 X - Y, copies without stalls, section 3), pinned to one performance core (`taskset -c 2`), Intel Core i7-12700K, g++ 15.2 `-O3 -march=native`, MPFR 4.2.2, GMP 6.3.0;
 `a = 0.718...`, `b = 1.414...`, `x = 1 + a`. Each cell is
 efloat / MPFR in microseconds, then the ratio.
 
 | operation | 128 bits | | 512 bits | | 2048 bits | | 8192 bits | |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `a+b` | 0.013 / 0.014 | 1.0x | 0.021 / 0.020 | 1.0x | 0.034 / 0.049 | 0.7x | 0.081 / 0.170 | 0.5x |
-| `a*b` | 0.013 / 0.018 | 0.7x | 0.044 / 0.043 | 1.0x | 0.239 / 0.271 | 0.9x | 2.415 / 2.199 | 1.1x |
-| `b/a` | 0.029 / 0.029 | 1.0x | 0.085 / 0.081 | 1.0x | 0.476 / 0.491 | 1.0x | 4.204 / 4.380 | 1.0x |
-| `a/7` | 0.022 / 0.025 | 0.9x | 0.048 / 0.040 | 1.2x | 0.111 / 0.106 | 1.0x | 0.380 / 0.381 | 1.0x |
-| `exp(a)` | 0.588 / 0.753 | 0.8x | 1.386 / 2.236 | 0.6x | 8.489 / 16.04 | 0.5x | 107.1 / 178.6 | 0.6x |
-| `log(x)` | 0.629 / 1.127 | 0.6x | 1.228 / 3.246 | 0.4x | 6.300 / 15.06 | 0.4x | 81.85 / 126.0 | 0.6x |
-| `sin(a)` | 0.620 / 0.790 | 0.8x | 1.593 / 2.160 | 0.7x | 9.675 / 14.41 | 0.7x | 125.9 / 197.0 | 0.6x |
-| `sqrt(b)` | 0.037 / 0.060 | 0.6x | 0.114 / 0.135 | 0.8x | 0.449 / 0.444 | 1.0x | 2.743 / 3.128 | 0.9x |
-| `fma(a,b,a)` | 0.037 / 0.030 | 1.2x | 0.065 / 0.050 | 1.3x | 0.389 / 0.334 | 1.2x | 3.370 / 3.193 | 1.1x |
-| `hypot(a,b)` | 0.083 / 0.173 | 0.5x | 0.203 / 0.327 | 0.6x | 1.036 / 1.039 | 1.0x | 8.087 / 8.188 | 1.0x |
-| `cbrt(b)` | 0.227 / 0.292 | 0.8x | 0.489 / 0.475 | 1.0x | 1.364 / 1.346 | 1.0x | 9.187 / 7.643 | 1.2x |
-| `exp2(a)` | 0.684 / 1.083 | 0.6x | 1.609 / 2.719 | 0.6x | 9.779 / 17.59 | 0.6x | 115.7 / 194.7 | 0.6x |
-| `exp10(a)` | 0.719 / 2.382 | 0.3x | 1.675 / 6.078 | 0.3x | 10.04 / 31.61 | 0.3x | 117.6 / 318.9 | 0.4x |
-| `expm1(a)` | 0.619 / 0.863 | 0.7x | 1.389 / 2.405 | 0.6x | 8.527 / 15.95 | 0.5x | 107.1 / 181.2 | 0.6x |
-| `log2(x)` | 0.709 / 1.304 | 0.5x | 1.391 / 3.512 | 0.4x | 6.924 / 15.62 | 0.4x | 86.68 / 131.2 | 0.7x |
-| `log10(x)` | 0.735 / 2.489 | 0.3x | 1.421 / 6.956 | 0.2x | 6.987 / 30.95 | 0.2x | 86.72 / 258.3 | 0.3x |
-| `log1p(a)` | 0.697 / 1.239 | 0.6x | 1.325 / 3.336 | 0.4x | 6.496 / 15.15 | 0.4x | 81.10 / 126.2 | 0.6x |
-| `cos(a)` | 0.541 / 0.536 | 1.0x | 1.369 / 1.717 | 0.8x | 8.854 / 13.23 | 0.7x | 121.2 / 191.3 | 0.6x |
-| `tan(a)` | 0.725 / 1.021 | 0.7x | 1.784 / 2.385 | 0.7x | 10.33 / 15.55 | 0.7x | 130.9 / 205.1 | 0.6x |
-| `asin(a)` | 1.476 / 2.889 | 0.5x | 3.878 / 11.09 | 0.3x | 19.16 / 44.29 | 0.4x | 202.8 / 346.9 | 0.6x |
-| `acos(a)` | 1.183 / 2.924 | 0.4x | 3.274 / 11.07 | 0.3x | 16.71 / 43.95 | 0.4x | 182.6 / 344.4 | 0.5x |
-| `atan(a)` | 1.073 / 2.400 | 0.4x | 2.809 / 8.975 | 0.3x | 16.24 / 42.63 | 0.4x | 179.6 / 336.2 | 0.5x |
-| `atan2(a,b)` | 1.023 / 2.418 | 0.4x | 2.987 / 11.01 | 0.3x | 16.05 / 45.51 | 0.4x | 177.9 / 329.9 | 0.5x |
-| `sinh(a)` | 0.712 / 0.885 | 0.8x | 1.594 / 2.496 | 0.6x | 9.199 / 16.36 | 0.6x | 111.9 / 186.3 | 0.6x |
-| `cosh(a)` | 0.702 / 0.883 | 0.8x | 1.578 / 2.505 | 0.6x | 9.189 / 16.37 | 0.6x | 111.8 / 184.7 | 0.6x |
-| `tanh(a)` | 0.737 / 0.976 | 0.8x | 1.638 / 2.567 | 0.6x | 9.477 / 16.86 | 0.6x | 113.5 / 188.2 | 0.6x |
-| `asinh(a)` | 0.902 / 1.383 | 0.7x | 1.786 / 3.698 | 0.5x | 7.806 / 15.79 | 0.5x | 88.05 / 131.1 | 0.7x |
-| `acosh(b)` | 0.952 / 1.417 | 0.7x | 1.913 / 3.733 | 0.5x | 7.191 / 15.87 | 0.5x | 81.38 / 130.9 | 0.6x |
-| `atanh(a)` | 0.805 / 1.419 | 0.6x | 1.553 / 3.560 | 0.4x | 7.506 / 15.68 | 0.5x | 90.74 / 131.2 | 0.7x |
-| `pow(b,a)` | 1.332 / 2.284 | 0.6x | 2.925 / 6.127 | 0.5x | 15.93 / 32.28 | 0.5x | 192.8 / 319.7 | 0.6x |
-| `pow(b,7)` | 0.067 / 0.106 | 0.6x | 0.166 / 0.194 | 0.9x | 1.042 / 1.283 | 0.8x | 8.478 / 11.22 | 0.8x |
-| `tgamma(b)` | 7.693 / 7.324 | 1.1x | 23.63 / 33.39 | 0.7x | 150.8 / 368.8 | 0.4x | 2495 / 7497 | 0.3x |
-| `lgamma(b)` | 7.263 / 7.627 | 1.0x | 22.36 / 34.25 | 0.7x | 140.9 / 771.1 | 0.2x | 2383 / 7382 | 0.3x |
-| `erf(a)` | 3.098 / 2.979 | 1.0x | 10.10 / 16.03 | 0.6x | 76.15 / 174.4 | 0.4x | 1412 / 3050 | 0.5x |
-| `erfc(a)` | 3.212 / 3.264 | 1.0x | 10.25 / 16.49 | 0.6x | 76.20 / 176.0 | 0.4x | 1418 / 3059 | 0.5x |
+| `a+b` | 0.012 / 0.014 | 0.9x | 0.021 / 0.020 | 1.1x | 0.034 / 0.049 | 0.7x | 0.080 / 0.168 | 0.5x |
+| `a*b` | 0.011 / 0.018 | 0.6x | 0.044 / 0.043 | 1.0x | 0.238 / 0.271 | 0.9x | 2.408 / 2.192 | 1.1x |
+| `b/a` | 0.019 / 0.029 | 0.7x | 0.088 / 0.081 | 1.1x | 0.477 / 0.491 | 1.0x | 4.227 / 4.378 | 1.0x |
+| `a/7` | 0.021 / 0.025 | 0.8x | 0.046 / 0.040 | 1.1x | 0.110 / 0.106 | 1.0x | 0.381 / 0.380 | 1.0x |
+| `exp(a)` | 0.583 / 0.751 | 0.8x | 1.349 / 2.208 | 0.6x | 8.508 / 16.03 | 0.5x | 107.0 / 178.4 | 0.6x |
+| `log(x)` | 0.627 / 1.128 | 0.6x | 1.211 / 3.244 | 0.4x | 6.313 / 15.06 | 0.4x | 81.72 / 126.1 | 0.6x |
+| `sin(a)` | 0.612 / 0.777 | 0.8x | 1.578 / 2.155 | 0.7x | 9.634 / 14.41 | 0.7x | 126.0 / 197.2 | 0.6x |
+| `sqrt(b)` | 0.022 / 0.060 | 0.4x | 0.114 / 0.135 | 0.8x | 0.447 / 0.443 | 1.0x | 2.727 / 3.131 | 0.9x |
+| `fma(a,b,a)` | 0.035 / 0.030 | 1.2x | 0.062 / 0.050 | 1.2x | 0.382 / 0.334 | 1.1x | 3.411 / 3.197 | 1.1x |
+| `hypot(a,b)` | 0.083 / 0.174 | 0.5x | 0.199 / 0.327 | 0.6x | 1.036 / 1.032 | 1.0x | 8.083 / 8.217 | 1.0x |
+| `cbrt(b)` | 0.222 / 0.291 | 0.8x | 0.493 / 0.474 | 1.0x | 1.348 / 1.344 | 1.0x | 9.186 / 7.651 | 1.2x |
+| `exp2(a)` | 0.679 / 1.063 | 0.6x | 1.593 / 2.704 | 0.6x | 9.794 / 17.57 | 0.6x | 115.7 / 194.5 | 0.6x |
+| `exp10(a)` | 0.715 / 2.389 | 0.3x | 1.665 / 6.077 | 0.3x | 10.06 / 31.62 | 0.3x | 117.5 / 318.4 | 0.4x |
+| `expm1(a)` | 0.611 / 0.849 | 0.7x | 1.384 / 2.400 | 0.6x | 8.533 / 15.94 | 0.5x | 107.0 / 181.1 | 0.6x |
+| `log2(x)` | 0.702 / 1.292 | 0.5x | 1.364 / 3.500 | 0.4x | 6.914 / 15.60 | 0.4x | 86.48 / 131.2 | 0.7x |
+| `log10(x)` | 0.731 / 2.482 | 0.3x | 1.398 / 6.944 | 0.2x | 6.947 / 30.95 | 0.2x | 86.54 / 258.0 | 0.3x |
+| `log1p(a)` | 0.690 / 1.224 | 0.6x | 1.312 / 3.340 | 0.4x | 6.474 / 15.13 | 0.4x | 80.94 / 126.0 | 0.6x |
+| `cos(a)` | 0.536 / 0.535 | 1.0x | 1.364 / 1.721 | 0.8x | 8.852 / 13.21 | 0.7x | 121.4 / 191.4 | 0.6x |
+| `tan(a)` | 0.727 / 1.021 | 0.7x | 1.772 / 2.391 | 0.7x | 10.33 / 15.58 | 0.7x | 130.9 / 205.1 | 0.6x |
+| `asin(a)` | 1.475 / 2.892 | 0.5x | 3.862 / 11.08 | 0.3x | 19.05 / 44.39 | 0.4x | 201.3 / 346.8 | 0.6x |
+| `acos(a)` | 1.163 / 2.914 | 0.4x | 3.236 / 11.06 | 0.3x | 16.61 / 44.03 | 0.4x | 182.4 / 344.1 | 0.5x |
+| `atan(a)` | 1.053 / 2.399 | 0.4x | 2.792 / 8.996 | 0.3x | 16.14 / 42.59 | 0.4x | 179.1 / 335.5 | 0.5x |
+| `atan2(a,b)` | 1.009 / 2.408 | 0.4x | 2.952 / 11.05 | 0.3x | 15.95 / 45.39 | 0.4x | 175.8 / 328.4 | 0.5x |
+| `sinh(a)` | 0.710 / 0.881 | 0.8x | 1.576 / 2.496 | 0.6x | 9.225 / 16.36 | 0.6x | 111.9 / 186.2 | 0.6x |
+| `cosh(a)` | 0.698 / 0.884 | 0.8x | 1.553 / 2.506 | 0.6x | 9.215 / 16.37 | 0.6x | 111.9 / 184.6 | 0.6x |
+| `tanh(a)` | 0.722 / 0.980 | 0.7x | 1.619 / 2.571 | 0.6x | 9.487 / 16.86 | 0.6x | 113.5 / 188.1 | 0.6x |
+| `asinh(a)` | 0.894 / 1.377 | 0.6x | 1.765 / 3.693 | 0.5x | 7.804 / 15.80 | 0.5x | 88.00 / 131.1 | 0.7x |
+| `acosh(b)` | 0.936 / 1.405 | 0.7x | 1.898 / 3.734 | 0.5x | 7.199 / 15.83 | 0.5x | 81.17 / 130.9 | 0.6x |
+| `atanh(a)` | 0.802 / 1.409 | 0.6x | 1.538 / 3.561 | 0.4x | 7.519 / 15.67 | 0.5x | 90.71 / 131.2 | 0.7x |
+| `pow(b,a)` | 1.323 / 2.283 | 0.6x | 2.898 / 6.106 | 0.5x | 15.93 / 32.27 | 0.5x | 192.3 / 319.6 | 0.6x |
+| `pow(b,7)` | 0.065 / 0.106 | 0.6x | 0.166 / 0.193 | 0.9x | 1.038 / 1.279 | 0.8x | 8.451 / 11.20 | 0.8x |
+| `tgamma(b)` | 7.626 / 7.306 | 1.0x | 23.25 / 33.26 | 0.7x | 148.8 / 368.3 | 0.4x | 2499 / 7491 | 0.3x |
+| `lgamma(b)` | 7.193 / 7.617 | 0.9x | 22.03 / 34.17 | 0.6x | 139.0 / 769.8 | 0.2x | 2382 / 7373 | 0.3x |
+| `erf(a)` | 3.070 / 2.968 | 1.0x | 10.09 / 16.05 | 0.6x | 74.63 / 174.3 | 0.4x | 1413 / 3050 | 0.5x |
+| `erfc(a)` | 3.166 / 3.233 | 1.0x | 10.23 / 16.52 | 0.6x | 74.76 / 176.0 | 0.4x | 1419 / 3057 | 0.5x |
 Read the ratio column as the work left on Epic #1763.
 
 **Across precisions** (`mpfr_bands`, #1826). The four precisions above are all whole numbers of
 64-bit limbs, and the table times no subtraction. `mpfr_bands` times the primitives and three
 functions at the powers of 2 from 64 to 16384 bits and the half-steps between them, on random
 operands that fill their precision (`a` in [1/2, 1), `b` in [1, 2)), best of seven measurements
-of 5 ms each; each cell here is the best of three such runs, efloat / MPFR before #1826 (at
-#1824) and after it. Run it as `benchmark_efloat_mpfr_bands all 1.5` to fail on a ratio above
-1.5.
+of 5 ms each; each cell here is the best of three such runs, efloat / MPFR before #1828 (at
+#1827) and after it, under g++. Run it as `benchmark_efloat_mpfr_bands all 1.5` to fail on a
+ratio above 1.5.
 
 | bits | `a+b` | `b-a` | `a*b` | `b/a` | `a/7` | `sqrt` | `fma` | `exp` | `log` | `sin` |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 64 | 2.02 / 1.48 | 3.38 / 1.70 | 1.97 / 0.81 | 2.45 / 2.15 | 1.03 / 1.12 | 2.34 / 1.79 | 1.16 / 1.15 | 0.80 / 0.84 | 0.86 / 0.89 | 0.94 / 0.97 |
-| 96 | 2.35 / 1.47 | 3.13 / 1.80 | 1.97 / 1.13 | 2.67 / 2.60 | 0.98 / 1.06 | 2.75 / 2.68 | 1.58 / 1.58 | 0.65 / 0.68 | 0.48 / 0.50 | 0.80 / 0.81 |
-| 128 | 2.09 / 1.62 | 3.46 / 1.91 | 1.61 / 0.91 | 1.21 / 1.28 | 1.13 / 1.22 | 0.95 / 0.66 | 1.40 / 1.41 | 0.70 / 0.72 | 0.55 / 0.57 | 0.86 / 0.85 |
-| 160 | 2.87 / 1.86 | 2.81 / 1.78 | 2.41 / 1.51 | 1.14 / 1.21 | 0.91 / 0.98 | 0.92 / 0.88 | 1.44 / 1.49 | 0.63 / 0.65 | 0.41 / 0.43 | 0.64 / 0.65 |
-| 192 | 1.80 / 1.63 | 2.19 / 1.34 | 1.31 / 1.00 | 1.12 / 1.14 | 1.07 / 1.14 | 0.91 / 0.87 | 1.24 / 1.28 | 0.67 / 0.69 | 0.40 / 0.42 | 0.81 / 0.80 |
-| 256 | 2.01 / 1.72 | 2.09 / 1.57 | 1.28 / 1.26 | 1.12 / 1.10 | 0.96 / 0.99 | 0.92 / 0.87 | 1.29 / 1.33 | 0.68 / 0.69 | 0.33 / 0.34 | 0.72 / 0.73 |
-| 384 | 1.50 / 1.43 | 1.97 / 1.57 | 1.32 / 1.25 | 1.04 / 1.02 | 1.20 / 1.24 | 1.06 / 1.11 | 1.45 / 1.49 | 0.69 / 0.69 | 0.38 / 0.39 | 0.70 / 0.72 |
-| 512 | 1.45 / 1.32 | 2.45 / 2.00 | 1.13 / 1.13 | 1.07 / 1.03 | 1.44 / 1.44 | 0.88 / 0.87 | 1.28 / 1.32 | 0.64 / 0.65 | 0.37 / 0.38 | 0.69 / 0.70 |
-| 544 | 1.85 / 1.30 | 2.63 / 1.99 | 1.17 / 1.12 | 1.12 / 1.14 | 1.36 / 1.36 | 0.92 / 0.91 | 1.32 / 1.34 | 0.62 / 0.63 | 0.34 / 0.36 | 0.65 / 0.67 |
-| 768 | 1.36 / 1.19 | 2.46 / 1.94 | 1.20 / 1.16 | 1.10 / 1.06 | 1.38 / 1.40 | 0.97 / 1.00 | 1.27 / 1.31 | 0.66 / 0.66 | 0.37 / 0.38 | 0.69 / 0.69 |
-| 1024 | 1.50 / 1.34 | 2.16 / 1.74 | 0.91 / 0.90 | 1.02 / 1.06 | 1.22 / 1.22 | 0.99 / 0.96 | 1.06 / 1.06 | 0.57 / 0.57 | 0.34 / 0.34 | 0.69 / 0.70 |
-| 1056 | 1.34 / 0.97 | 1.23 / 0.98 | 1.12 / 1.10 | 1.17 / 1.17 | 1.14 / 1.15 | 1.02 / 0.99 | 1.18 / 1.18 | 0.56 / 0.56 | 0.36 / 0.36 | 0.61 / 0.61 |
-| 1536 | 1.30 / 1.15 | 1.06 / 0.85 | 0.84 / 0.86 | 1.15 / 1.13 | 1.10 / 1.11 | 1.02 / 1.00 | 0.96 / 0.97 | 0.50 / 0.50 | 0.42 / 0.42 | 0.65 / 0.66 |
-| 2048 | 0.79 / 0.73 | 1.58 / 1.29 | 0.88 / 0.87 | 0.98 / 0.98 | 1.07 / 1.07 | 1.01 / 1.01 | 1.10 / 1.11 | 0.56 / 0.56 | 0.45 / 0.45 | 0.60 / 0.60 |
-| 3072 | 0.69 / 0.61 | 1.31 / 0.93 | 1.00 / 0.99 | 0.97 / 0.97 | 1.05 / 1.05 | 1.06 / 1.05 | 1.06 / 1.04 | 0.52 / 0.52 | 0.53 / 0.52 | 0.62 / 0.62 |
-| 4096 | 0.80 / 0.68 | 0.78 / 0.65 | 0.93 / 0.93 | 0.89 / 0.90 | 1.04 / 1.04 | 0.94 / 0.92 | 1.02 / 1.02 | 0.49 / 0.49 | 0.53 / 0.53 | 0.54 / 0.54 |
-| 6144 | 0.59 / 0.51 | 1.29 / 1.03 | 1.07 / 1.04 | 0.88 / 0.88 | 1.03 / 1.03 | 0.92 / 0.93 | 1.17 / 1.18 | 0.51 / 0.51 | 0.63 / 0.63 | 0.62 / 0.62 |
-| 8192 | 0.53 / 0.46 | 1.25 / 0.99 | 1.11 / 1.10 | 0.92 / 0.93 | 1.03 / 1.04 | 0.88 / 0.89 | 1.05 / 1.05 | 0.60 / 0.60 | 0.71 / 0.71 | 0.64 / 0.64 |
-| 12288 | 0.68 / 0.47 | 1.38 / 1.04 | 1.07 / 1.06 | 1.02 / 1.02 | 1.07 / 1.05 | 0.92 / 0.92 | 1.23 / 1.23 |  |  |  |
-| 16384 | 0.65 / 0.48 | 0.78 / 0.62 | 1.16 / 1.16 | 0.99 / 0.99 | 1.06 / 1.06 | 0.86 / 0.87 | 1.15 / 1.15 |  |  |  |
+| 64 | 1.49 / 1.31 | 1.71 / 1.38 | 0.80 / 0.71 | 2.13 / 0.92 | 1.11 / 0.99 | 1.72 / 0.91 | 1.16 / 1.06 | 0.82 / 0.82 | 0.89 / 0.86 | 0.96 / 0.96 |
+| 96 | 1.44 / 1.26 | 1.81 / 1.45 | 1.11 / 0.92 | 2.60 / 1.32 | 1.06 / 0.90 | 2.54 / 1.46 | 1.59 / 1.45 | 0.69 / 0.67 | 0.50 / 0.49 | 0.80 / 0.79 |
+| 128 | 1.60 / 1.40 | 1.88 / 1.69 | 0.90 / 0.75 | 1.27 / 0.69 | 1.20 / 1.05 | 0.66 / 0.36 | 1.42 / 1.29 | 0.73 / 0.72 | 0.57 / 0.56 | 0.85 / 0.83 |
+| 160 | 1.86 / 1.54 | 1.74 / 1.29 | 1.49 / 1.33 | 1.22 / 1.17 | 0.98 / 0.85 | 0.88 / 0.84 | 1.49 / 1.37 | 0.65 / 0.65 | 0.43 / 0.42 | 0.66 / 0.65 |
+| 192 | 1.61 / 1.33 | 1.35 / 0.98 | 0.98 / 0.92 | 1.15 / 1.09 | 1.14 / 1.04 | 0.87 / 0.84 | 1.26 / 1.16 | 0.70 / 0.67 | 0.42 / 0.41 | 0.79 / 0.80 |
+| 256 | 1.76 / 1.50 | 1.55 / 1.13 | 1.26 / 1.18 | 1.10 / 1.07 | 0.99 / 0.96 | 0.85 / 0.82 | 1.34 / 1.22 | 0.69 / 0.68 | 0.34 / 0.34 | 0.72 / 0.73 |
+| 384 | 1.43 / 1.34 | 1.57 / 1.34 | 1.23 / 1.18 | 1.02 / 1.00 | 1.24 / 1.19 | 1.09 / 1.09 | 1.46 / 1.38 | 0.69 / 0.70 | 0.39 / 0.39 | 0.71 / 0.72 |
+| 512 | 1.32 / 1.31 | 1.98 / 1.30 | 1.13 / 1.11 | 1.02 / 1.04 | 1.44 / 1.39 | 0.87 / 0.87 | 1.32 / 1.26 | 0.65 / 0.65 | 0.38 / 0.37 | 0.69 / 0.69 |
+| 544 | 1.31 / 1.22 | 2.00 / 1.47 | 1.12 / 1.08 | 1.13 / 1.11 | 1.36 / 1.34 | 0.90 / 0.90 | 1.33 / 1.27 | 0.63 / 0.63 | 0.36 / 0.36 | 0.66 / 0.65 |
+| 768 | 1.19 / 1.16 | 1.93 / 1.32 | 1.10 / 1.14 | 1.06 / 1.02 | 1.37 / 1.37 | 1.00 / 0.99 | 1.30 / 1.25 | 0.67 / 0.66 | 0.38 / 0.38 | 0.70 / 0.69 |
+| 1024 | 1.33 / 1.30 | 1.73 / 1.18 | 0.90 / 0.88 | 1.05 / 1.04 | 1.22 / 1.21 | 0.96 / 0.96 | 1.06 / 1.04 | 0.57 / 0.57 | 0.34 / 0.34 | 0.69 / 0.70 |
+| 1056 | 0.97 / 0.91 | 0.98 / 0.88 | 1.09 / 1.07 | 1.17 / 1.16 | 1.15 / 1.14 | 0.98 / 0.99 | 1.19 / 1.15 | 0.56 / 0.56 | 0.36 / 0.36 | 0.61 / 0.62 |
+| 1536 | 1.15 / 1.12 | 0.85 / 0.76 | 0.85 / 0.85 | 1.14 / 1.14 | 1.11 / 1.09 | 1.00 / 0.99 | 0.97 / 0.96 | 0.50 / 0.50 | 0.42 / 0.42 | 0.65 / 0.66 |
+| 2048 | 0.73 / 0.71 | 1.28 / 0.90 | 0.87 / 0.86 | 0.99 / 0.99 | 1.07 / 1.06 | 1.01 / 1.00 | 1.10 / 1.07 | 0.56 / 0.56 | 0.45 / 0.45 | 0.60 / 0.60 |
+| 3072 | 0.60 / 0.60 | 0.93 / 0.89 | 0.99 / 0.99 | 0.97 / 0.99 | 1.05 / 1.04 | 1.05 / 1.04 | 1.05 / 1.06 | 0.52 / 0.51 | 0.53 / 0.52 | 0.62 / 0.62 |
+| 4096 | 0.68 / 0.66 | 0.64 / 0.61 | 0.93 / 0.93 | 0.90 / 0.88 | 1.04 / 1.03 | 0.92 / 0.92 | 1.04 / 1.00 | 0.49 / 0.49 | 0.53 / 0.53 | 0.54 / 0.54 |
+| 6144 | 0.51 / 0.53 | 1.03 / 0.68 | 1.04 / 1.03 | 0.88 / 0.88 | 1.03 / 1.02 | 0.92 / 0.92 | 1.18 / 1.18 | 0.51 / 0.51 | 0.63 / 0.63 | 0.62 / 0.62 |
+| 8192 | 0.47 / 0.45 | 0.99 / 0.63 | 1.10 / 1.10 | 0.92 / 0.92 | 1.03 / 1.03 | 0.88 / 0.88 | 1.04 / 1.05 | 0.60 / 0.60 | 0.71 / 0.71 | 0.64 / 0.64 |
+| 12288 | 0.47 / 0.48 | 1.05 / 0.68 | 1.07 / 1.07 | 1.01 / 1.02 | 1.05 / 1.06 | 0.92 / 0.92 | 1.24 / 1.23 |  |  |  |
+| 16384 | 0.49 / 0.49 | 0.62 / 0.58 | 1.16 / 1.16 | 0.99 / 0.99 | 1.06 / 1.06 | 0.87 / 0.86 | 1.15 / 1.15 |  |  |  |
 
-- Every cell from 1056 bits up is within 1.25x MPFR, and the functions are at 0.34-0.97x
-  throughout.
-- Below that, what is left: `b/a` and `sqrt` at 64 and 96 bits (2.2-2.7x), where MPFR has
-  dedicated one- and two-limb code (`mpfr_div_1`, `mpfr_div_2`, `mpfr_sqrt1`, `mpfr_sqrt2`); the
-  difference at 512 to 1024 bits (1.7-2.0x), which cancels a bit and costs an `lshift` pass that
-  MPFR's own difference does not; and `a+b` at 128 to 256 bits (1.6-1.9x), most of which is the
-  operator's temporary (section 3).
+- Every cell is within 1.5x MPFR but two: `b-a` at 128 bits (1.69x), where MPFR's two-limb
+  subtraction takes 5.8 ns and the operator's temporary and move are a fifth of efloat's 10, and
+  `a+b` at 160 bits (1.54x). From 1056 bits up every cell is within 1.25x, and the functions are
+  at 0.34-0.96x throughout.
+- Under clang, a separate column of the same table: `b/a` at 64 and 96 bits 1.95/2.44x before
+  to 1.06/1.64x, `sqrt` 1.93/2.96x to 1.05/1.64x, `b-a` at 512 to 1024 bits 1.51-1.90x to
+  1.19-1.49x; the short sums and differences, 1.3-2.1x at 64 to 256 bits, are where clang's code
+  lags g++'s, and `a/7` from 384 bits up (1.4-1.6x, the same before) is clang's division loop.
 
 Against gmpy2 2.3.2 (`mpmath_gap.py`, the epic's primary target, its figures including the
 Python call) on the same machine, pinned to one performance core (`taskset -c 2`; unpinned runs
@@ -998,9 +1064,16 @@ with the 0.549 it read before, and `sqrt` at 2048 bits, 0.53 against 0.56 (0.62 
   from 1.4x MPFR to 1.0x and `a*b` from 1.1x to 0.7x. `a/7` reads 4-11% slower at 64 to 256 bits
   under g++, with the same code as before: it is level under clang (18.8 against 18.9 ns at 64
   bits), a layout move of the kind described below.
-- **Largest gaps:** `b/a` and `sqrt` at 64 and 96 bits (2.2-2.7x), the difference at 512 to
-  1024 bits (1.7-2.0x), `a+b` at 128 to 256 bits (1.6-1.9x), all in `mpfr_bands` above; in
-  `mpfr_gap`, `fma` below 2048 bits (1.2-1.3x) and `cbrt` at 8192 bits (1.2x).
+- **Short quotients and roots** (#1828): against #1827 in `mpfr_bands`, `b/a` at 64 and 96 bits
+  from 2.13/2.60x MPFR to 0.92/1.32x, `sqrt` from 1.72/2.54x to 0.91/1.46x, `b-a` at 384 to 1024
+  bits from 1.57-2.00x to 1.18-1.47x and at 64 to 160 bits from 1.71-1.88x to 1.29-1.69x, `a+b` at
+  128 to 256 bits from 1.60-1.86x to 1.33-1.54x, `fma` at 96 bits from 1.59x to 1.45x, and `a*b`
+  at 64 to 256 bits 6-17% faster; in `mpfr_gap`, `b/a` and `sqrt` at 128 bits 0.66 and 0.59 of
+  their time before. `b/a` at 512 bits reads 4% slower in `mpfr_gap` and 0.5% in a translation
+  unit of its own, under either compiler: layout, as below.
+- **Largest gaps:** `b-a` at 128 bits (1.7x) and `a+b` at 160 bits (1.5x) in `mpfr_bands`, and the
+  short sums and differences under clang (1.5-2.1x); in `mpfr_gap`, `fma` below 2048 bits
+  (1.2-1.3x) and `cbrt` at 8192 bits (1.2x).
 
 **Benchmark hygiene.** Single runs of the mpmath comparison vary by 15-50%; compare branches
 with best-of-5 runs on an idle machine. Warm the caches first. The first-call cost of a new
@@ -1055,6 +1128,7 @@ row both ways before reading it as a cost.
 | #1822 | 2026-10-24 | 64-bit least-significant-first storage in an inline buffer with a per-thread block cache, no per-operation allocation: `a+b` 0.40-0.63x, `a*b` 0.65-0.91x, `b/a` 0.67-0.91x of before; every operation within 1.5x MPFR, every `mpmath_gap` cell below gmpy2; parsed literals normalized |
 | #1824 | 2026-10-24 | the limb kernels moved out of efloat: `efloat/efloat_mpn.hpp`, namespace `efloat_mpn`, to `internal/limbs/limb_kernels.hpp`, namespace `limb_kernels`; macros `UNIVERSAL_LIMB_KERNELS_NO_ASM` and `_X86_64_ASM` (`EFLOAT_MPN_NO_ASM` and the old header accepted, deprecated, for one release); no code change |
 | #1827 | 2026-10-25 | `mpfr_bands`, efloat / MPFR at 20 precisions from 64 to 16384 bits; differences at the full precision as `mpfr_sub1sp`, at any precision of whole 32-bit limbs, one to four limbs in fixed-size code; binary operators into the result without a copy; short products of one to three limbs; one-limb divisors and short exact quotients rounded from the remainder, `divq` for quotients of one or two limbs; exact small roots; ratio guards in `mpmath_gap`: `b-a` 2.1-3.4x MPFR to 0.9-2.0x, `a*b` at 64-160 bits 1.6-2.3x to 0.8-1.5x |
+| #1829 | 2026-10-25 | quotients and roots of one and two limbs in fixed-size code (`sqrtrem4`, `sqrt_approx4`), differences one bit apart as 2 X - Y in one pass (`twice_sub_n`), short copies without store-forwarding stalls, copies and moves member by member: `b/a` and `sqrt` at 64-96 bits 1.7-2.6x MPFR to 0.9-1.5x, `b-a` at 384-1024 bits 1.6-2.0x to 1.2-1.5x; every `mpfr_bands` cell within 1.5x but `b-a` at 128 bits and `a+b` at 160 |
 
 ## 9. Open work
 
@@ -1069,11 +1143,10 @@ binary-splitting constants; Sasaki-Kanada AGM start; binary splitting for lgamma
 a tapered fill of the Bernoulli table (since #1797 the first gamma call at 8192 bits fills 1439
 terms in 1.1 s, against 915 in 0.4 s at the old `0.3 W` shift; the shorter shift saves 1.5 ms
 a warm call, so it pays after about 460 calls in a thread);
-Payne-Hanek reduction for huge trig arguments; and from `mpfr_bands` (#1826): divisions and
-roots of two limbs at 96 bits (2.6-2.7x MPFR, which has `mpfr_div_2` and `mpfr_sqrt2`), a
-difference that cancels one bit at 512 to 1024 bits (1.7-2.0x: a pass of `lshift` that a
-difference formed as `2 X - Y` would save), `fma` below 512 bits (1.3-1.6x), and the binary
-operators' temporary at 64 to 256 bits (`a+b` 1.4-1.8x, of which the sum alone is level).
+Payne-Hanek reduction for huge trig arguments; and from `mpfr_bands` (#1828): `b-a` at 128
+bits (1.7x MPFR) and `a+b` at 160 bits (1.5x), where the binary operators' temporary and its move
+are what is left; the short sums and differences under clang (1.3-2.1x), and clang's `a/7` loop
+from 384 bits up (1.4-1.6x).
 
 ## 10. Working on it
 

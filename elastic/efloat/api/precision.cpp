@@ -153,6 +153,11 @@ namespace {
 					++nrOfFailedTestCases;
 				}
 			}
+			// and the short roots of 64 to 128 bits (#1828), which take their own path
+			if (sqrt(efloat<2>(2)).carries_precision() || sqrt(efloat<3>(2)).carries_precision() || sqrt(efloat<4>(2)).carries_precision()) {
+				if (reportTestCases) std::cout << "    FAIL: a short root of a literal carries a precision\n";
+				++nrOfFailedTestCases;
+			}
 			if (!sqrt(x).carries_precision() || !pow(E(2), x).carries_precision()) {
 				if (reportTestCases) std::cout << "    FAIL: a function of a value with a precision dropped it\n";
 				++nrOfFailedTestCases;

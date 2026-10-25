@@ -26,6 +26,63 @@ namespace efloat_detail {
 		limb_kernels::load_window(r, n, x.limb_data(), m, shift - 32 * static_cast<int64_t>(2 * m - x.limb32_count()));
 	}
 
+	// sqrt(a) for a finite a > 0 of at most M = 1 or 2 limbs, correctly rounded to plimbs = 2 M - 1
+	// or 2 M 32-bit limbs, into result (#1828), as MPFR's mpfr_sqrt1 and mpfr_sqrt2: with
+	// a = m 4^half, m in [1, 4), and N = m 2^(2 (64 M - 1)) of 2 M limbs, the exact root S of M limbs
+	// and its remainder R by sqrtrem2 or sqrtrem4, in fixed-size code without scratch frames. The
+	// bit after S is whether R > S, as in sqrt_limbs, and the rest whether R is 0.
+	template<std::size_t M, unsigned nlimbs>
+	inline void sqrt_short(efloat<nlimbs>& result, const efloat<nlimbs>& a, unsigned plimbs) {
+		using limb_kernels::limb_t;
+		const limb_t*     w = a.limb_data();
+		const std::size_t m = a.limb_count();
+		limb_t x[M] = {};   // a's significand, its top bit set
+		for (std::size_t i = 0; i < m; ++i) x[M - m + i] = w[i];
+		const int64_t e    = a.scale();
+		const int64_t half = e / 2 - ((e < 0 && e % 2 != 0) ? 1 : 0);   // floor(e / 2)
+		limb_t np[2 * M] = {};
+		if (e - 2 * half != 0) {   // m in [2, 4): N = x B^M
+			for (std::size_t i = 0; i < M; ++i) np[M + i] = x[i];
+		}
+		else {                     // m in [1, 2): N = x B^M / 2
+			for (std::size_t i = 0; i < M; ++i) np[M + i] = (x[i] >> 1) | ((i + 1 < M) ? (x[i + 1] << 63) : 0u);
+			np[M - 1] = x[0] << 63;
+		}
+		if constexpr (M == 2) {
+			if (plimbs == 3) {
+				// 96 bits: the root's 128 bits carry 32 past the precision, so an approximate root
+				// rounds correctly unless it lies near a rounding boundary: sqrt_approx4's, within
+				// 2^15 units of the root, rounds from its top 96 bits, the guard bit below and a
+				// nonzero rest whenever the 31 bits under the guard bit are more than 2^16 from 0
+				// and from 2^31, and it costs one division less than the exact root (#1828).
+				// Otherwise, about once in 2^14, the exact root below decides.
+				limb_t s[2] = {};
+				if (limb_kernels::sqrt_approx4(s, np)) {
+					const uint32_t low = static_cast<uint32_t>(s[0] & 0x7FFF'FFFFu);
+					if (low > 65536u && low < 0x8000'0000u - 65536u) {
+						result.template assign_rounded_short<2>(false, s, 0u, true, half, plimbs);
+						return;
+					}
+				}
+			}
+		}
+		limb_t s[M] = {}, r[M] = {};
+		limb_t carry = 0;
+		if constexpr (M == 1) carry = limb_kernels::sqrtrem2(s, r, np);
+		else                  carry = limb_kernels::sqrtrem4(s, r, np);
+		int cmp = (carry != 0u) ? 1 : 0;   // R = carry B^M + r against S
+		for (std::size_t k = M; cmp == 0 && k-- > 0;) cmp = (r[k] > s[k]) ? 1 : (r[k] < s[k]) ? -1 : 0;
+		bool zero = (carry == 0u);
+		for (std::size_t k = 0; k < M; ++k) zero = zero && (r[k] == 0u);
+		result.template assign_rounded_short<M>(false, s, (cmp > 0) ? (limb_t(1) << 63) : 0u, !zero, half, plimbs);
+	}
+
+	// whether sqrt_short takes a at a precision of plimbs 32-bit limbs
+	template<unsigned nlimbs>
+	inline bool sqrt_is_short(const efloat<nlimbs>& a, unsigned plimbs) {
+		return plimbs <= 4 && 2 * a.limb_count() <= plimbs + 1;
+	}
+
 	// sqrt(a) for a finite a > 0, correctly rounded to `precision` bits in the current mode, into
 	// result (#1763, #1810). With a = m 4^half, m in [1, 4), F = 64 n - 1 and N = m 2^(2F), the
 	// root S = floor(sqrt(N)) fills n 64-bit limbs, its top bit set, and carries at least
@@ -41,12 +98,17 @@ namespace efloat_detail {
 	template<unsigned nlimbs>
 	inline void sqrt_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& a, unsigned precision) {
 		using limb_kernels::limb_t;
-		const int64_t e    = a.scale();
-		const int64_t half = e / 2 - ((e < 0 && e % 2 != 0) ? 1 : 0);   // floor(e / 2), without e - 1 overflowing
-		const int64_t frac = 32 * static_cast<int64_t>(a.limb32_count()) - 1 - (e - 2 * half);   // m = M 2^-frac
 		// the root rounds at whole 32-bit limbs, so it is sized from them: a request of 33 bits
 		// rounds at 64, and the root then needs 66 (before, it was sized from the 33)
 		const unsigned plimbs = std::max(1u, (precision + 31) / 32);
+		if (sqrt_is_short(a, plimbs)) {
+			if (plimbs <= 2) sqrt_short<1>(result, a, plimbs);
+			else             sqrt_short<2>(result, a, plimbs);
+			return;
+		}
+		const int64_t e    = a.scale();
+		const int64_t half = e / 2 - ((e < 0 && e % 2 != 0) ? 1 : 0);   // floor(e / 2), without e - 1 overflowing
+		const int64_t frac = 32 * static_cast<int64_t>(a.limb32_count()) - 1 - (e - 2 * half);   // m = M 2^-frac
 		if (plimbs <= 8 && plimbs % 2 == 0) {
 			// a precision of up to four whole 64-bit limbs (#1826): the exact root S of the
 			// precision's own limbs, and its remainder R = N - S^2 in [0, 2 S] for the rest.
@@ -103,7 +165,9 @@ namespace efloat_detail {
 	// their working precision.
 	template<unsigned nlimbs>
 	inline efloat<nlimbs> sqrt_to(const efloat<nlimbs>& a, unsigned bits) {
-		efloat<nlimbs> x(a);   // holds the root's limbs without growing, in most cases
+		// the root's limbs are written once, by the rounding: a copy of a to hold them cost more
+		// than the buffer it saved, which past the inline limbs comes from the block cache (#1828)
+		efloat<nlimbs> x{ typename efloat<nlimbs>::uninitialized_t{} };
 		sqrt_limbs(x, a, bits);
 		return x;
 	}
@@ -128,6 +192,14 @@ constexpr efloat<nlimbs> sqrt(const efloat<nlimbs>& a) {
 	// so the result is correctly rounded in every mode and Inexact says whether it is exact
 	// (#1763).  Before, Newton's iteration ran with 64 guard bits and rounded from them, which
 	// misrounded near halfway points and set Inexact on exact roots.
+	const unsigned plimbs = a.get_precision() / 32;
+	if (efloat_detail::sqrt_is_short(a, plimbs)) {   // straight to the short root (#1828)
+		efloat<nlimbs> x{ typename efloat<nlimbs>::uninitialized_t{} };
+		if (plimbs <= 2) efloat_detail::sqrt_short<1>(x, a, plimbs);
+		else             efloat_detail::sqrt_short<2>(x, a, plimbs);
+		if (!a.carries_precision()) x.clear_precision();
+		return x;
+	}
 	efloat<nlimbs> x = efloat_detail::sqrt_to(a, a.get_precision());
 	if (!a.carries_precision()) x.clear_precision();   // as its arithmetic would (#1757)
 	return x;
