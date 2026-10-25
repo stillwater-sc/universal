@@ -5,8 +5,8 @@
 //                blocks come back from the thread's cache. A replacement operator new counts
 //                every allocation the test program makes.
 //   copies       copies, moves and assignments between values held inline and on the heap,
-//                self-assignment, a moved-from value assigned again, and a std::vector of
-//                values that grows.
+//                self-assignment and self-move-assignment, a moved-from value assigned again
+//                and moved into, and a std::vector of values that grows.
 //   limb views   bits(), limb_vector() and setlimb() show 32-bit limbs, most significant first,
 //                as efloat held them before #1820; limb_data() and limb_count() the 64-bit limbs,
 //                least significant first, that it holds now; normalize() drops a bottom limb the
@@ -188,6 +188,16 @@ namespace {
 			const E& same = c;   // through a reference: the compilers warn of a literal c = c
 			c = same;
 			check(identical(c, y), "self-assignment");
+			E& self = c;   // a move onto itself keeps the value, inline or on the heap (#1830)
+			c = std::move(self);
+			check(identical(c, y), "self-move-assignment");
+			t = x;   // a moved-from value takes a new value, of any length
+			check(identical(t, x), "a moved-from value is assigned again");
+			E h(y);
+			h = std::move(t);   // into a value that holds a heap block or inline limbs
+			check(identical(h, x), "a move assignment into a value of the other length");
+			t = std::move(h);   // and back into the moved-from value
+			check(identical(t, x), "a move assignment into a moved-from value");
 			E sum = x + y, again = x;
 			again += y;
 			check(identical(sum, again), "x + y and x += y agree");

@@ -969,15 +969,28 @@ inline void udiv_qrnnd(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d) noe
 #endif
 }
 
-// q = floor((n1 B + n0) / d), r = the remainder, for n1 < d and v = invert_limb(d)
+// q = floor((n1 B + n0) / d), r = the remainder, for n1 < d and v = invert_limb(d). Written for
+// the remainder's dependency chain from one limb to the next (#1830): the first correction
+// selects r or r + d, formed beforehand, where clang added d or 0 after the comparison; the
+// second, rare, is a branch, which clang had made a cmov too. a/7 under clang 0.84 of the time.
 inline void udiv_qr_2by1(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d, limb_t v) noexcept {
 	limb_t qh, ql;
 	umul(n1, v, qh, ql);
 	ql += n0;
 	qh += n1 + 1u + ((ql < n0) ? 1u : 0u);
-	r = n0 - qh * d;
-	if (r > ql) { --qh; r += d; }
+	const limb_t r0   = n0 - qh * d;
+	limb_t       r1   = r0 + d;
+#if defined(__clang__)
+	__asm__("" : "+r"(r1));   // else clang folds the select back into an add after the comparison
+#endif
+	const bool   over = (r0 > ql);
+	r  = over ? r1 : r0;
+	qh = over ? qh - 1u : qh;
+#if defined(__GNUC__) || defined(__clang__)
+	if (__builtin_expect(r >= d, 0)) { ++qh; r -= d; }
+#else
 	if (r >= d) { ++qh; r -= d; }
+#endif
 	q = qh;
 }
 
@@ -1128,7 +1141,11 @@ inline limb_t sbpi1_div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* 
 // hardware (#1826): each quotient limb estimated from the top two limbs by the divisor's top limb
 // (udiv_qrnnd), corrected by the divisor's second limb at most twice, then a multiply-subtract and
 // at most one add-back, as Knuth's Algorithm D (TAOCP 2, 4.3.1) on 64-bit digits. A reciprocal
-// of two limbs costs as much as several such steps. The same quotient and remainder.
+// of two limbs costs as much as several such steps. The same quotient and remainder. Always
+// inlined, so that a caller's fixed sizes unroll it: clang left it a call (#1830).
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((always_inline))
+#endif
 inline limb_t sb_div_qr_short(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn) noexcept {
 	const std::size_t qn = nn - dn;
 	limb_t* top = np + qn;

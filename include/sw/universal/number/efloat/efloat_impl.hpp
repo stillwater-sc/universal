@@ -581,9 +581,13 @@ public:
 	}
 	// T + (below + s) / B rounded at precision_limbs, 2 M - 1 or 2 M, for T = t[0, M) with its top
 	// bit set and its leading bit weighing 2^exponent, below the limb under T and s in (0, 1) when
-	// rest, else 0; t is overwritten (#1828)
+	// rest, else 0; t is overwritten (#1828). Inlined, as store_short is, so that t can stay in
+	// registers: clang left it a call (#1830).
 	template<std::size_t M>
-	void assign_rounded_short(bool sign, limb_t* t, limb_t below, bool rest, std::int64_t exponent, unsigned precision_limbs) {
+#if defined(__GNUC__) || defined(__clang__)
+	__attribute__((always_inline))
+#endif
+	inline void assign_rounded_short(bool sign, limb_t* t, limb_t below, bool rest, std::int64_t exponent, unsigned precision_limbs) {
 		_precision_limbs = precision_limbs;
 		store_short<M>(t, below, rest, exponent, sign);
 	}
@@ -834,17 +838,28 @@ public:
 	// *this = a + b, or a - b with negate_b, without copying a first (#1826): finite nonzero
 	// operands go straight to add_magnitudes, which writes the sum into this value's limbs; zeros,
 	// infinities and NaNs take a copy of a and add(), as a += b does
+#if defined(__GNUC__) || defined(__clang__)
+	__attribute__((always_inline))
+#endif
 	constexpr efloat& assign_sum(const efloat& a, const efloat& b, bool negate_b) {
-		if (a._state == FloatingPointState::Normal && b._state == FloatingPointState::Normal && this != &a && this != &b) {
+		if (a._state == FloatingPointState::Normal && b._state == FloatingPointState::Normal && this != &a && this != &b) [[likely]] {
 			_precision_limbs = merged_precision(a._precision_limbs, b._precision_limbs);
 			add_magnitudes(a._limb.data(), a._limb.size(), a._exponent, a._sign, b._limb.data(), b._limb.size(), b._exponent, b._sign != negate_b);
 			return *this;
 		}
-		*this = a;
-		return add(b, negate_b);
+		return assign_sum_special(a, b, negate_b);
 	}
 
 protected:
+
+	// assign_sum's other cases, out of line so that the operators keep only the finite ones (#1830)
+#if defined(__GNUC__) || defined(__clang__)
+	__attribute__((noinline))
+#endif
+	constexpr efloat& assign_sum_special(const efloat& a, const efloat& b, bool negate_b) {
+		*this = a;
+		return add(b, negate_b);
+	}
 
 	// *this + B for a finite nonzero *this and B = (b[0, nb), eb, b_sign), normalized, at the
 	// precision already merged into *this; b may be *this's own limbs. The operand with the
@@ -859,8 +874,12 @@ protected:
 		add_magnitudes(_limb.data(), _limb.size(), _exponent, _sign, b, nb, eb, b_sign);
 	}
 	// *this = A + B for finite nonzero, normalized A = (a[0, na), ea, a_sign) and B, at the
-	// precision already in *this; a and b may be *this's own limbs, or another value's (#1826)
-	void add_magnitudes(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t nb, int64_t eb, bool b_sign) {
+	// precision already in *this; a and b may be *this's own limbs, or another value's (#1826).
+	// Inlined into its callers, which then call the sum's kernel directly (#1830).
+#if defined(__GNUC__) || defined(__clang__)
+	__attribute__((always_inline))
+#endif
+	inline void add_magnitudes(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t nb, int64_t eb, bool b_sign) {
 		const std::size_t target = precision_limbs();
 		_sign = a_sign;
 		const bool        a_is_x = (ea >= eb);
@@ -874,11 +893,11 @@ protected:
 		if (nx == ny && nx == (target + 1) / 2 && d < 64 * uint64_t(nx) && (a_sign == b_sign || d >= 1)) {
 			// up to four limbs as straight-line code, longer operands in loops (#1826)
 			switch (nx) {
-			case 1:  add_full_length<1>(x, y, 1, ex, d, a_sign != b_sign, x_sign); break;
-			case 2:  add_full_length<2>(x, y, 2, ex, d, a_sign != b_sign, x_sign); break;
-			case 3:  add_full_length<3>(x, y, 3, ex, d, a_sign != b_sign, x_sign); break;
-			case 4:  add_full_length<4>(x, y, 4, ex, d, a_sign != b_sign, x_sign); break;
-			default: add_full_length<0>(x, y, nx, ex, d, a_sign != b_sign, x_sign); break;
+			case 1:  add_short<1>(x, y, ex, d, a_sign != b_sign, x_sign); break;
+			case 2:  add_short<2>(x, y, ex, d, a_sign != b_sign, x_sign); break;
+			case 3:  add_short<3>(x, y, ex, d, a_sign != b_sign, x_sign); break;
+			case 4:  add_short<4>(x, y, ex, d, a_sign != b_sign, x_sign); break;
+			default: add_full_length(x, y, nx, ex, d, a_sign != b_sign, x_sign); break;
 			}
 			return;
 		}
@@ -991,21 +1010,17 @@ protected:
 	// cancel any number of them, but then the low limb holds all of Y's bits, and the exact
 	// difference rounds through round_into. The result rounds
 	// from the low limb and the sticky bit, or at bit 32 of the bottom limb. No frame, and no
-	// second pass over the limbs but the one-bit shifts.
-	// M = m for one to four limbs, whose loops then have fixed bounds and unroll, and 0 for any m
-	template<std::size_t M>
-	void add_full_length(const limb_t* x, const limb_t* y, std::size_t m_any, int64_t ex, uint64_t d, bool subtract, bool x_sign) {
-		const std::size_t m = (M != 0) ? M : m_any;
-		// the result's limbs: a local array for one and two limbs, which stay in registers, else
-		// this value's own when they are neither operand's, as in c = a + b (#1828), else a local
-		// array for three and four, or scratch
-		limb_t local[(M != 0) ? M : 1];
-		std::conditional_t<M == 0, scratch_buffer<128>, no_scratch> buffer;   // none for the short ones
-		const bool in_place = (M == 0 || M >= 3) && (_limb.data() != x && _limb.data() != y);
-		limb_t* t = in_place ? _limb.resize_for_overwrite(m) : ((M != 0) ? local : buffer.get(m));
+	// second pass over the limbs but the one-bit shifts. Past four limbs: add_short below has
+	// the one to four
+	void add_full_length(const limb_t* x, const limb_t* y, std::size_t m, int64_t ex, uint64_t d, bool subtract, bool x_sign) {
+		// the result's limbs: this value's own when they are neither operand's, as in c = a + b
+		// (#1828), else scratch
+		scratch_buffer<128> buffer;
+		const bool in_place = (_limb.data() != x && _limb.data() != y);
+		limb_t* t = in_place ? _limb.resize_for_overwrite(m) : buffer.get(m);
 		// a difference one bit apart that cancels a leading bit, which the top limbs decide, is
-		// formed as 2 X - Y, twice the difference, in one pass (limb_kernels::twice_sub_n past four
-		// limbs): no shift of Y before and none of the difference after (#1828)
+		// formed as 2 X - Y, twice the difference, in one pass of limb_kernels::twice_sub_n: no
+		// shift of Y before and none of the difference after (#1828)
 		uint64_t e     = d;   // the shift of Y
 		bool     twice = false;
 		if (subtract && d == 1u) {
@@ -1021,23 +1036,13 @@ protected:
 		if (twice) {
 			// t is formed by the subtraction below
 		}
-		else if constexpr (M != 0) {
-			for (std::size_t i = 0; i < M; ++i) {
-				const std::size_t j = i + q;
-				const limb_t lo = (j < M) ? y[j] : 0u;
-				const limb_t hi = (j + 1 < M) ? y[j + 1] : 0u;
-				t[i] = (c == 0u) ? lo : ((lo >> c) | (hi << (64u - c)));
-			}
-		}
 		else if (c == 0u) {
 			efloat_storage::copy_limbs(t, y + q, m - q);
 		}
 		else {
 			limb_kernels::rshift(t, y + q, m - q, c);
 		}
-		if constexpr (M == 0) {
-			if (!twice) efloat_storage::zero_limbs(t + (m - q), q);
-		}
+		if (!twice) efloat_storage::zero_limbs(t + (m - q), q);
 		if (c == 0u) {
 			if (q > 0) o = y[q - 1];
 		}
@@ -1052,51 +1057,22 @@ protected:
 		int64_t exponent = ex;
 		bool    sign     = x_sign;
 		if (!subtract) {
-			limb_t carry = 0;
-			if constexpr (M != 0) {
-				for (std::size_t i = 0; i < M; ++i) {
-					const limb_t u = x[i] + carry;
-					const limb_t v = u + t[i];
-					carry = ((u < carry) || (v < u)) ? 1u : 0u;
-					t[i]  = v;
-				}
-			}
-			else {
-				carry = limb_kernels::add_n(t, x, t, m);
-			}
-			if (carry != 0u) {   // the sum's top bit is 2^(ex + 1): shift it down
+			if (limb_kernels::add_n(t, x, t, m) != 0u) {   // the sum's top bit is 2^(ex + 1): shift it down
 				sticky = sticky || ((o & 1u) != 0u);
 				o      = (o >> 1) | (t[0] << 63);
-				if constexpr (M != 0) {
-					for (std::size_t i = 0; i + 1 < M; ++i) t[i] = (t[i] >> 1) | (t[i + 1] << 63);
-					t[M - 1] = (t[M - 1] >> 1) | (limb_t(1) << 63);
-				}
-				else {
-					limb_kernels::rshift(t, t, m, 1u);
-					t[m - 1] |= limb_t(1) << 63;
-				}
+				limb_kernels::rshift(t, t, m, 1u);
+				t[m - 1] |= limb_t(1) << 63;
 				++exponent;
 			}
 		}
 		else {
 			// X B - (t B + o + s), s in [0, 1) the sticky part: the low limb borrows unless o and s are 0
-			limb_t borrow = (o != 0u || sticky) ? 1u : 0u;
+			const limb_t borrow = (o != 0u || sticky) ? 1u : 0u;
 			o = limb_t(0) - o - (sticky ? 1u : 0u);
 			if (twice) {
 				// 2 X - Y < B^m, its bits above B^m 0: exact, o = 0 and nothing is sticky, and any
 				// number more may cancel
-				if constexpr (M != 0) {
-					for (std::size_t i = 0; i < M; ++i) {
-						const limb_t xi = (x[i] << 1) | ((i > 0) ? (x[i - 1] >> 63) : 0u);
-						const limb_t u  = xi - y[i];
-						const limb_t v  = u - borrow;
-						borrow = ((xi < y[i]) || (u < borrow)) ? 1u : 0u;
-						t[i]   = v;
-					}
-				}
-				else {
-					limb_kernels::twice_sub_n(t, x, y, m);
-				}
+				limb_kernels::twice_sub_n(t, x, y, m);
 				--exponent;
 				if (t[m - 1] == 0u) [[unlikely]] {
 					_sign = sign;
@@ -1105,63 +1081,34 @@ protected:
 				}
 				const unsigned k = static_cast<unsigned>(std::countl_zero(t[m - 1]));
 				if (k != 0u) {
-					if constexpr (M != 0) {
-						for (std::size_t i = M; i-- > 1;) t[i] = (t[i] << k) | (t[i - 1] >> (64u - k));
-						t[0] <<= k;
-					}
-					else {
-						limb_kernels::lshift(t, t, m, k);
-					}
+					limb_kernels::lshift(t, t, m, k);
 					exponent -= k;
-				}
-			}
-			else if constexpr (M != 0) {
-				for (std::size_t i = 0; i < M; ++i) {
-					const limb_t u = x[i] - t[i];
-					const limb_t v = u - borrow;
-					borrow = ((x[i] < t[i]) || (u < borrow)) ? 1u : 0u;
-					t[i]   = v;
 				}
 			}
 			else {
 				limb_kernels::sub_n(t, x, t, m);
 				limb_kernels::sub_1(t, m, borrow);   // X > Y: no borrow out of the top
-			}
-			if (twice) {
-				// rounded below
-			}
-			else if ((t[m - 1] >> 62) == 0u && t[m - 1] != 0u) {
-				// two to 63 leading bits cancelled, which only a gap of one bit does: the difference is
-				// exact in t and o, nothing is sticky, and one shift brings its leading bit to the top
-				const unsigned k = static_cast<unsigned>(std::countl_zero(t[m - 1]));
-				if constexpr (M != 0) {
-					for (std::size_t i = M; i-- > 1;) t[i] = (t[i] << k) | (t[i - 1] >> (64u - k));
-					t[0] = (t[0] << k) | (o >> (64u - k));
-				}
-				else {
+				if ((t[m - 1] >> 62) == 0u && t[m - 1] != 0u) {
+					// two to 63 leading bits cancelled, which only a gap of one bit does: the difference
+					// is exact in t and o, nothing is sticky, and one shift brings its leading bit to the top
+					const unsigned k = static_cast<unsigned>(std::countl_zero(t[m - 1]));
 					limb_kernels::lshift(t, t, m, k);
 					t[0] |= o >> (64u - k);
+					o <<= k;
+					exponent -= k;
 				}
-				o <<= k;
-				exponent -= k;
-			}
-			else if ((t[m - 1] >> 62) == 0u) [[unlikely]] {
-				// a whole limb or more cancelled: the exact difference in t and o rounds as any other
-				_sign = sign;
-				round_cancelled(t, m, o, ex);
-				return;
-			}
-			else if ((t[m - 1] >> 63) == 0u) {   // one leading bit cancelled: shift up, the low limb's top bit in
-				if constexpr (M != 0) {
-					for (std::size_t i = M; i-- > 1;) t[i] = (t[i] << 1) | (t[i - 1] >> 63);
-					t[0] = (t[0] << 1) | (o >> 63);
+				else if ((t[m - 1] >> 62) == 0u) [[unlikely]] {
+					// a whole limb or more cancelled: the exact difference in t and o rounds as any other
+					_sign = sign;
+					round_cancelled(t, m, o, ex);
+					return;
 				}
-				else {
+				else if ((t[m - 1] >> 63) == 0u) {   // one leading bit cancelled: shift up, the low limb's top bit in
 					limb_kernels::lshift(t, t, m, 1u);
 					t[0] |= o >> 63;
+					o <<= 1;   // the bit shifted in below o is the sticky part's, which sticky covers
+					--exponent;
 				}
-				o <<= 1;   // the bit shifted in below o is the sticky part's, which sticky covers
-				--exponent;
 			}
 		}
 		// round at the precision: the low limb's top bit is the guard bit, or bit 31 of t[0]
@@ -1197,19 +1144,158 @@ protected:
 			if (t[0] == 0u) trim_low_limbs(m);
 		}
 		else {
-			// all m limbs, a copy of fixed length, then the rare zero limbs at the bottom trimmed
-			limb_t* w = _limb.resize_for_overwrite(m);
-			if constexpr (M != 0) {
-				for (std::size_t k = 0; k < M; ++k) w[k] = t[k];
-			}
-			else {
-				efloat_storage::copy_limbs(w, t, m);
-			}
+			efloat_storage::copy_limbs(_limb.resize_for_overwrite(m), t, m);
 			if (t[0] == 0u) trim_low_limbs(m);
 		}
 		_exponent = exponent;
 		_state    = FloatingPointState::Normal;
 		if (!in_range(exponent)) [[unlikely]] enforce_range();
+	}
+
+	// a + b + carry and a - b - borrow for a carry or borrow of 0 or 1, the one out left in it: an
+	// adc or sbb chain where the compiler has the builtin (#1830), which clang does not form from
+	// the comparisons
+	static inline limb_t add_carry(limb_t a, limb_t b, limb_t& carry) noexcept {
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_addcll)
+		unsigned long long out = 0;
+		const limb_t r = static_cast<limb_t>(__builtin_addcll(a, b, carry, &out));
+		carry = static_cast<limb_t>(out);
+		return r;
+#endif
+#endif
+		const limb_t u = a + carry;
+		const limb_t v = u + b;
+		carry = ((u < carry) || (v < u)) ? 1u : 0u;
+		return v;
+	}
+	static inline limb_t sub_borrow(limb_t a, limb_t b, limb_t& borrow) noexcept {
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_subcll)
+		unsigned long long out = 0;
+		const limb_t r = static_cast<limb_t>(__builtin_subcll(a, b, borrow, &out));
+		borrow = static_cast<limb_t>(out);
+		return r;
+#endif
+#endif
+		const limb_t u = a - b;
+		const limb_t v = u - borrow;
+		borrow = ((a < b) || (u < borrow)) ? 1u : 0u;
+		return v;
+	}
+
+	// add_full_length for M = m of one to four limbs (#1830), in code whose loops have fixed
+	// bounds and unroll: the result's limbs are a local array whose address is never taken, so
+	// that they stay in registers, as MPFR's mpfr_add1sp1 to mpfr_sub1sp3 keep theirs, and are
+	// stored once, by store_short. A difference that cancels a whole limb or more, which only a
+	// gap of one bit gives, goes to add_frame, which forms it exactly and rounds it once. The
+	// operands are read from memory and the result written after the last read of them, so x or
+	// y may be this value's own limbs.
+	template<std::size_t M>
+#if defined(__GNUC__) || defined(__clang__)
+	__attribute__((noinline))
+#endif
+	void add_short(const limb_t* x, const limb_t* y, int64_t ex, uint64_t d, bool subtract, bool x_sign) {
+		limb_t t[M];
+		// a difference one bit apart whose top limbs say it cancels a leading bit is formed as
+		// 2 X - Y in one pass (#1828)
+		bool twice = false;
+		if (subtract && d == 1u) twice = ((x[M - 1] - (y[M - 1] >> 1)) >> 63) == 0u;
+		int64_t exponent = ex;
+		limb_t  o        = 0;       // the 64 bits below t's last
+		bool    sticky   = false;   // whether any bit below those is set
+		if (twice) {
+			limb_t borrow = 0;
+			EFLOAT_UNROLLED_LOOP
+			for (std::size_t i = 0; i < M; ++i) {
+				const limb_t xi = (x[i] << 1) | ((i > 0) ? (x[i - 1] >> 63) : 0u);
+				t[i] = sub_borrow(xi, y[i], borrow);
+			}
+			if (t[M - 1] == 0u) [[unlikely]] {   // a limb or more cancelled
+				add_frame(x, M, y, M, ex, x_sign, d, false);
+				return;
+			}
+			--exponent;
+			const unsigned k = static_cast<unsigned>(std::countl_zero(t[M - 1]));
+			if (k != 0u) {
+				EFLOAT_UNROLLED_LOOP
+				for (std::size_t i = M - 1; i > 0; --i) t[i] = (t[i] << k) | (t[i - 1] >> (64u - k));
+				t[0] <<= k;
+				exponent -= k;
+			}
+			store_short<M>(t, 0u, false, exponent, x_sign);   // exact: 2 X - Y fits in M limbs
+			return;
+		}
+		// t = Y >> d; o = the 64 bits of Y just below t's last; sticky = whether any below those
+		if (d < 64u) [[likely]] {
+			// the common case: a shift within the limbs, nothing sticky; a limb's bits that move to
+			// the one below are shifted in two steps, which leaves 0 rather than a shift by 64 for d = 0
+			const unsigned c = static_cast<unsigned>(d);
+			EFLOAT_UNROLLED_LOOP
+			for (std::size_t i = 0; i < M; ++i) t[i] = (y[i] >> c) | ((i + 1 < M) ? ((y[i + 1] << 1) << (63u - c)) : 0u);
+			o = (y[0] << 1) << (63u - c);
+		}
+		else {
+			const std::size_t q = static_cast<std::size_t>(d / 64);
+			const unsigned    c = static_cast<unsigned>(d % 64);
+			EFLOAT_UNROLLED_LOOP
+			for (std::size_t i = 0; i < M; ++i) {
+				const std::size_t j = i + q;
+				const limb_t lo = (j < M) ? y[j] : 0u;
+				const limb_t hi = (j + 1 < M) ? y[j + 1] : 0u;
+				t[i] = (c == 0u) ? lo : ((lo >> c) | (hi << (64u - c)));
+			}
+			if (c == 0u) {
+				o = y[q - 1];
+			}
+			else {
+				o = (y[q] << (64u - c)) | (y[q - 1] >> c);
+				sticky = (y[q - 1] & ((limb_t(1) << c) - 1u)) != 0u;
+			}
+			for (std::size_t i = 0; !sticky && i + 1 < q; ++i) sticky = (y[i] != 0u);
+		}
+		if (!subtract) {
+			limb_t carry = 0;
+			EFLOAT_UNROLLED_LOOP
+			for (std::size_t i = 0; i < M; ++i) t[i] = add_carry(x[i], t[i], carry);
+			if (carry != 0u) {   // the sum's top bit is 2^(ex + 1): shift it down
+				sticky = sticky || ((o & 1u) != 0u);
+				o      = (o >> 1) | (t[0] << 63);
+				EFLOAT_UNROLLED_LOOP
+				for (std::size_t i = 0; i + 1 < M; ++i) t[i] = (t[i] >> 1) | (t[i + 1] << 63);
+				t[M - 1] = (t[M - 1] >> 1) | (limb_t(1) << 63);
+				++exponent;
+			}
+			store_short<M>(t, o, sticky, exponent, x_sign);
+			return;
+		}
+		// X B - (t B + o + s), s in [0, 1) the sticky part: the low limb borrows unless o and s are 0
+		limb_t borrow = (o != 0u || sticky) ? 1u : 0u;
+		o = limb_t(0) - o - (sticky ? 1u : 0u);
+		EFLOAT_UNROLLED_LOOP
+		for (std::size_t i = 0; i < M; ++i) t[i] = sub_borrow(x[i], t[i], borrow);
+		if ((t[M - 1] >> 62) == 0u) {
+			if (t[M - 1] == 0u) [[unlikely]] {   // a whole limb or more cancelled
+				add_frame(x, M, y, M, ex, x_sign, d, false);
+				return;
+			}
+			// two to 63 leading bits cancelled, which only a gap of one bit does: the difference is
+			// exact in t and o, nothing is sticky, and one shift brings its leading bit to the top
+			const unsigned k = static_cast<unsigned>(std::countl_zero(t[M - 1]));
+			EFLOAT_UNROLLED_LOOP
+			for (std::size_t i = M - 1; i > 0; --i) t[i] = (t[i] << k) | (t[i - 1] >> (64u - k));
+			t[0] = (t[0] << k) | (o >> (64u - k));
+			o <<= k;
+			exponent -= k;
+		}
+		else if ((t[M - 1] >> 63) == 0u) {   // one leading bit cancelled: shift up, the low limb's top bit in
+			EFLOAT_UNROLLED_LOOP
+			for (std::size_t i = M - 1; i > 0; --i) t[i] = (t[i] << 1) | (t[i - 1] >> 63);
+			t[0] = (t[0] << 1) | (o >> 63);
+			o <<= 1;   // the bit shifted in below o is the sticky part's, which sticky covers
+			--exponent;
+		}
+		store_short<M>(t, o, sticky, exponent, x_sign);
 	}
 
 	// rounds the exact difference t[0, m) B + o, its bit 64 (m + 1) - 1 weighing 2^ex, after a
@@ -1365,8 +1451,11 @@ protected:
 		if (guard || sticky) {
 			efloat_exception_flags.set(ExceptionFlag::Inexact);
 			if (rounds_up(efloat_rounding_mode, sign, ((t[0] >> drop) & 1u) != 0u, guard, sticky)) {
+				// all M limbs, without an exit once the carry is spent: a loop the compiler unrolls
+				// whole, which keeps t in registers (#1830)
 				limb_t carry = limb_t(1) << drop;
-				for (std::size_t i = 0; carry != 0u && i < M; ++i) {
+				EFLOAT_UNROLLED_LOOP
+				for (std::size_t i = 0; i < M; ++i) {
 					t[i] += carry;
 					carry = (t[i] < carry) ? 1u : 0u;
 				}
@@ -1379,6 +1468,7 @@ protected:
 		}
 		else {
 			limb_t* w = _limb.resize_for_overwrite(M);
+			EFLOAT_UNROLLED_LOOP
 			for (std::size_t k = 0; k < M; ++k) w[k] = t[k];
 			if (t[0] == 0u) trim_low_limbs(M);
 		}
@@ -1532,10 +1622,6 @@ protected:
 	template<size_t N>
 	using scratch_buffer = efloat_storage::scratch_limbs<N>;
 	using scratch64 = scratch_buffer<768>;
-	// in place of a scratch buffer where a path needs none, with nothing to destroy
-	struct no_scratch {
-		static constexpr limb_t* get(std::size_t) noexcept { return nullptr; }
-	};
 
 	// the 32-bit limbs v[0, n), most significant first, as the 64-bit limbs that hold them: an
 	// odd count padded with zeros at the bottom
@@ -1725,10 +1811,15 @@ protected:
 	// sticky bit from whether R is 0 or D / 2, as divide_exact_short.
 	template<std::size_t M>
 	void divide_short(const limb_t* a, std::size_t na, int64_t ea, const limb_t* b, std::size_t dn, int64_t eb, bool sign) {
+		// the operands at the top of their arrays, limb by limb from the top: fixed indices, where
+		// a loop of na or dn limbs became a call to memcpy (#1830)
 		limb_t np[2 * M] = {};
 		limb_t dp[M]     = {};
-		for (std::size_t i = 0; i < na; ++i) np[2 * M - na + i] = a[i];
-		for (std::size_t i = 0; i < dn; ++i) dp[M - dn + i] = b[i];
+		EFLOAT_UNROLLED_LOOP
+		for (std::size_t k = 0; k < M; ++k) {
+			np[2 * M - 1 - k] = (k < na) ? a[na - 1 - k] : 0u;
+			dp[M - 1 - k]     = (k < dn) ? b[dn - 1 - k] : 0u;
+		}
 		limb_t q[M + 1] = {};   // q[M] the top bit
 		if constexpr (M == 1) {
 			limb_t x = np[1];
@@ -2779,9 +2870,13 @@ inline bool operator>=(double lhs, const efloat<nlimbs>& rhs) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // efloat - efloat binary arithmetic operators
-// (compose from constexpr-marked compound operators)
+// (compose from constexpr-marked compound operators); always inlined, so that the result is built
+// in the caller's frame and its move follows without a call (#1830)
 // BINARY ADDITION
 template<unsigned nlimbs>
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((always_inline))
+#endif
 constexpr efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	efloat<nlimbs> sum{ typename efloat<nlimbs>::uninitialized_t{} };
 	sum.assign_sum(lhs, rhs, false);   // into sum's limbs, without a copy of lhs (#1826)
@@ -2789,6 +2884,9 @@ constexpr efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, const efloat<nlimb
 }
 // BINARY SUBTRACTION
 template<unsigned nlimbs>
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((always_inline))
+#endif
 constexpr efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	efloat<nlimbs> diff{ typename efloat<nlimbs>::uninitialized_t{} };
 	diff.assign_sum(lhs, rhs, true);
@@ -2796,6 +2894,9 @@ constexpr efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, const efloat<nlimb
 }
 // BINARY MULTIPLICATION
 template<unsigned nlimbs>
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((always_inline))
+#endif
 constexpr efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	efloat<nlimbs> mul{ typename efloat<nlimbs>::uninitialized_t{} };
 	mul.assign_product(lhs, rhs);   // into mul's limbs; x * x squares (#1761, #1826)
@@ -2803,6 +2904,9 @@ constexpr efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, const efloat<nlimb
 }
 // BINARY DIVISION
 template<unsigned nlimbs>
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((always_inline))
+#endif
 constexpr efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
 	efloat<nlimbs> ratio{ typename efloat<nlimbs>::uninitialized_t{} };
 	ratio.assign_quotient(lhs, rhs);   // into ratio's limbs (#1826)
