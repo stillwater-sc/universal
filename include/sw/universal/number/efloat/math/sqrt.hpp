@@ -47,6 +47,33 @@ namespace efloat_detail {
 		// the root rounds at whole 32-bit limbs, so it is sized from them: a request of 33 bits
 		// rounds at 64, and the root then needs 66 (before, it was sized from the 33)
 		const unsigned plimbs = std::max(1u, (precision + 31) / 32);
+		if (plimbs <= 8 && plimbs % 2 == 0) {
+			// a precision of up to four whole 64-bit limbs (#1826): the exact root S of the
+			// precision's own limbs, and its remainder R = N - S^2 in [0, 2 S] for the rest.
+			// sqrt(N) >= S + 1/2 exactly when R > S, as sqrt(N) = S + 1/2 has no integer N; the bit
+			// after S is then 1 and the rest nonzero, and otherwise the bit is 0 and the rest is
+			// whether R is. The approximate root below needs a limb more than the precision for its
+			// guard bits, and costs more here; with an odd number of 32-bit limbs the two roots have
+			// one length, and the approximate one, which skips the remainder, is faster (96 bits:
+			// 0.033 against 0.036 us).
+			std::size_t m = (32 * static_cast<std::size_t>(plimbs) + 63) / 64;
+			while (2 * (64 * static_cast<int64_t>(m) - 1) < frac) ++m;   // a longer m: N must be an integer
+			const int64_t Fm = 64 * static_cast<int64_t>(m) - 1;
+			limb_buffer buffer;
+			limb_t* np   = buffer.get(3 * m + 1 + limb_kernels::sqrt_scratch_limbs(m));
+			limb_t* f    = np + 2 * m;   // f[0] the bit from the remainder, f[1, m + 1) the root
+			limb_t* work = f + m + 1;
+			load_shifted(np, 2 * m, a, 2 * Fm - frac);
+			const limb_t carry = limb_kernels::sqrtrem(f + 1, np, m, work);   // R = carry B^m + np[0, m)
+			int cmp = (carry != 0u) ? 1 : 0;
+			for (std::size_t k = m; cmp == 0 && k-- > 0;) cmp = (np[k] > f[1 + k]) ? 1 : (np[k] < f[1 + k]) ? -1 : 0;
+			bool zero = (carry == 0u);
+			for (std::size_t k = 0; zero && k < m; ++k) zero = (np[k] == 0u);
+			f[0] = (cmp > 0) ? (limb_t(1) << 63) : 0u;
+			const bool rest = !zero;   // past the bit: whether R is 0, which R > S >= 2^63 is not
+			result.assign_rounded_limbs(false, f, m + 1, half, rest, plimbs);
+			return;
+		}
 		std::size_t n = (32 * static_cast<std::size_t>(plimbs) + 2 + 63) / 64;
 		while (2 * (64 * static_cast<int64_t>(n) - 1) < frac) ++n;   // a longer m: N must be an integer
 		const int64_t F = 64 * static_cast<int64_t>(n) - 1;
