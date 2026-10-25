@@ -162,8 +162,13 @@ public:
 		_precision_limbs = default_precision_limbs();
 	}
 
-	constexpr efloat(const efloat&) = default;
-	constexpr efloat(efloat&&) = default;
+	// the copies and moves copy the scalar members one by one, the exponent first: as the
+	// defaulted ones, clang copied the state, the sign and the exponent as one 16-byte vector,
+	// which stalls on the separate stores an operation has just written them with (#1828)
+	constexpr efloat(const efloat& rhs)
+		: _state{ rhs._state }, _sign{ rhs._sign }, _exponent{ rhs._exponent }, _limb{ rhs._limb }, _precision_limbs{ rhs._precision_limbs } {}
+	constexpr efloat(efloat&& rhs) noexcept
+		: _state{ rhs._state }, _sign{ rhs._sign }, _exponent{ rhs._exponent }, _limb{ std::move(rhs._limb) }, _precision_limbs{ rhs._precision_limbs } {}
 
 	// a value the binary operators overwrite at once (#1826): zero with no limbs and the type's
 	// precision, without reading the thread's default precision
@@ -171,8 +176,22 @@ public:
 	explicit constexpr efloat(uninitialized_t) noexcept
 		: _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{}, _precision_limbs{ nlimbs } {}
 
-	constexpr efloat& operator=(const efloat&) = default;
-	constexpr efloat& operator=(efloat&&) = default;
+	constexpr efloat& operator=(const efloat& rhs) {
+		_exponent        = rhs._exponent;
+		_state           = rhs._state;
+		_sign            = rhs._sign;
+		_limb            = rhs._limb;
+		_precision_limbs = rhs._precision_limbs;
+		return *this;
+	}
+	constexpr efloat& operator=(efloat&& rhs) noexcept {
+		_exponent        = rhs._exponent;
+		_state           = rhs._state;
+		_sign            = rhs._sign;
+		_limb            = std::move(rhs._limb);
+		_precision_limbs = rhs._precision_limbs;
+		return *this;
+	}
 
 	// specialized constructor for testing and verification: limbs are 32-bit, most significant
 	// first, the top bit of limbs[0] weighing 2^exponent
@@ -559,6 +578,14 @@ public:
 		_precision_limbs = precision_limbs;
 		_sign = sign;
 		round_into(r, n, top, sticky);
+	}
+	// T + (below + s) / B rounded at precision_limbs, 2 M - 1 or 2 M, for T = t[0, M) with its top
+	// bit set and its leading bit weighing 2^exponent, below the limb under T and s in (0, 1) when
+	// rest, else 0; t is overwritten (#1828)
+	template<std::size_t M>
+	void assign_rounded_short(bool sign, limb_t* t, limb_t below, bool rest, std::int64_t exponent, unsigned precision_limbs) {
+		_precision_limbs = precision_limbs;
+		store_short<M>(t, below, rest, exponent, sign);
 	}
 
 	efloat& assign(const std::string& txt) {
@@ -969,18 +996,32 @@ protected:
 	template<std::size_t M>
 	void add_full_length(const limb_t* x, const limb_t* y, std::size_t m_any, int64_t ex, uint64_t d, bool subtract, bool x_sign) {
 		const std::size_t m = (M != 0) ? M : m_any;
-		// the result's limbs: a local array for one and two limbs, this value's own limbs when they
-		// are neither operand's, else scratch
+		// the result's limbs: a local array for one and two limbs, which stay in registers, else
+		// this value's own when they are neither operand's, as in c = a + b (#1828), else a local
+		// array for three and four, or scratch
 		limb_t local[(M != 0) ? M : 1];
-		scratch_buffer<(M != 0) ? 1 : 128> buffer;
-		const bool in_place = (M == 0) && (_limb.data() != x && _limb.data() != y);
-		limb_t* t = (M != 0) ? local : (in_place ? _limb.resize_for_overwrite(m) : buffer.get(m));
-		const std::size_t q = static_cast<std::size_t>(d / 64);
-		const unsigned    c = static_cast<unsigned>(d % 64);
+		std::conditional_t<M == 0, scratch_buffer<128>, no_scratch> buffer;   // none for the short ones
+		const bool in_place = (M == 0 || M >= 3) && (_limb.data() != x && _limb.data() != y);
+		limb_t* t = in_place ? _limb.resize_for_overwrite(m) : ((M != 0) ? local : buffer.get(m));
+		// a difference one bit apart that cancels a leading bit, which the top limbs decide, is
+		// formed as 2 X - Y, twice the difference, in one pass (limb_kernels::twice_sub_n past four
+		// limbs): no shift of Y before and none of the difference after (#1828)
+		uint64_t e     = d;   // the shift of Y
+		bool     twice = false;
+		if (subtract && d == 1u) {
+			const limb_t top = x[m - 1] - (y[m - 1] >> 1);   // X > Y / 2
+			twice = (top >> 63) == 0u;                       // cancels, whatever borrows from below
+			if (twice) e = 0;
+		}
+		const std::size_t q = static_cast<std::size_t>(e / 64);
+		const unsigned    c = static_cast<unsigned>(e % 64);
 		// t = Y >> d; o = the 64 bits of Y just below t's last; sticky = whether any below those
 		limb_t o      = 0;
 		bool   sticky = false;
-		if constexpr (M != 0) {
+		if (twice) {
+			// t is formed by the subtraction below
+		}
+		else if constexpr (M != 0) {
 			for (std::size_t i = 0; i < M; ++i) {
 				const std::size_t j = i + q;
 				const limb_t lo = (j < M) ? y[j] : 0u;
@@ -994,7 +1035,9 @@ protected:
 		else {
 			limb_kernels::rshift(t, y + q, m - q, c);
 		}
-		if constexpr (M == 0) efloat_storage::zero_limbs(t + (m - q), q);
+		if constexpr (M == 0) {
+			if (!twice) efloat_storage::zero_limbs(t + (m - q), q);
+		}
 		if (c == 0u) {
 			if (q > 0) o = y[q - 1];
 		}
@@ -1039,7 +1082,40 @@ protected:
 			// X B - (t B + o + s), s in [0, 1) the sticky part: the low limb borrows unless o and s are 0
 			limb_t borrow = (o != 0u || sticky) ? 1u : 0u;
 			o = limb_t(0) - o - (sticky ? 1u : 0u);
-			if constexpr (M != 0) {
+			if (twice) {
+				// 2 X - Y < B^m, its bits above B^m 0: exact, o = 0 and nothing is sticky, and any
+				// number more may cancel
+				if constexpr (M != 0) {
+					for (std::size_t i = 0; i < M; ++i) {
+						const limb_t xi = (x[i] << 1) | ((i > 0) ? (x[i - 1] >> 63) : 0u);
+						const limb_t u  = xi - y[i];
+						const limb_t v  = u - borrow;
+						borrow = ((xi < y[i]) || (u < borrow)) ? 1u : 0u;
+						t[i]   = v;
+					}
+				}
+				else {
+					limb_kernels::twice_sub_n(t, x, y, m);
+				}
+				--exponent;
+				if (t[m - 1] == 0u) [[unlikely]] {
+					_sign = sign;
+					round_cancelled(t, m, o, ex - 1);
+					return;
+				}
+				const unsigned k = static_cast<unsigned>(std::countl_zero(t[m - 1]));
+				if (k != 0u) {
+					if constexpr (M != 0) {
+						for (std::size_t i = M; i-- > 1;) t[i] = (t[i] << k) | (t[i - 1] >> (64u - k));
+						t[0] <<= k;
+					}
+					else {
+						limb_kernels::lshift(t, t, m, k);
+					}
+					exponent -= k;
+				}
+			}
+			else if constexpr (M != 0) {
 				for (std::size_t i = 0; i < M; ++i) {
 					const limb_t u = x[i] - t[i];
 					const limb_t v = u - borrow;
@@ -1051,7 +1127,10 @@ protected:
 				limb_kernels::sub_n(t, x, t, m);
 				limb_kernels::sub_1(t, m, borrow);   // X > Y: no borrow out of the top
 			}
-			if ((t[m - 1] >> 62) == 0u && t[m - 1] != 0u) {
+			if (twice) {
+				// rounded below
+			}
+			else if ((t[m - 1] >> 62) == 0u && t[m - 1] != 0u) {
 				// two to 63 leading bits cancelled, which only a gap of one bit does: the difference is
 				// exact in t and o, nothing is sticky, and one shift brings its leading bit to the top
 				const unsigned k = static_cast<unsigned>(std::countl_zero(t[m - 1]));
@@ -1118,15 +1197,15 @@ protected:
 			if (t[0] == 0u) trim_low_limbs(m);
 		}
 		else {
-			std::size_t z = 0;
-			while (z + 1 < m && t[z] == 0u) ++z;
-			limb_t* w = _limb.resize_for_overwrite(m - z);
+			// all m limbs, a copy of fixed length, then the rare zero limbs at the bottom trimmed
+			limb_t* w = _limb.resize_for_overwrite(m);
 			if constexpr (M != 0) {
-				for (std::size_t k = 0; k + z < M; ++k) w[k] = t[z + k];
+				for (std::size_t k = 0; k < M; ++k) w[k] = t[k];
 			}
 			else {
-				efloat_storage::copy_limbs(w, t + z, m - z);
+				efloat_storage::copy_limbs(w, t, m);
 			}
+			if (t[0] == 0u) trim_low_limbs(m);
 		}
 		_exponent = exponent;
 		_state    = FloatingPointState::Normal;
@@ -1253,19 +1332,32 @@ protected:
 			p[0] <<= 1;
 			--exponent;
 		}
-		// the top M limbs are kept, the lowest of them to bit drop
-		limb_t* t = p + M;
+		// the top M limbs are kept, the limb below them gives the guard bit
+		bool rest = false;
+		for (std::size_t i = 0; !rest && i + 1 < M; ++i) rest = (p[i] != 0u);
+		store_short<M>(p + M, p[M - 1], rest, exponent, sign);
+	}
+
+	// Stores T + (below + s) / B rounded to the precision, for T = t[0, M) with its top bit set
+	// and its leading bit weighing 2^exponent, below the limb under T, and s in (0, 1) when rest,
+	// else 0; the precision is 64 M or 64 M - 32 bits. The rounding of the short products,
+	// quotients and roots (#1826, #1828), in code whose loops have fixed bounds and unroll.
+	// Inlined into each: out of line, as g++ left it, the caller's limbs went through memory
+	// and a 64-bit product took 9 ns instead of 7.
+	template<std::size_t M>
+#if defined(__GNUC__) || defined(__clang__)
+	__attribute__((always_inline))
+#endif
+	inline void store_short(limb_t* t, limb_t below, bool rest, int64_t exponent, bool sign) {
 		const unsigned drop = static_cast<unsigned>(64 * M - 32 * static_cast<std::size_t>(precision_limbs()));   // 0 or 32
 		bool guard = false, sticky = false;
 		if (drop == 0u) {
-			guard  = (p[M - 1] >> 63) != 0u;
-			sticky = (p[M - 1] << 1) != 0u;
-			for (std::size_t i = 0; !sticky && i + 1 < M; ++i) sticky = (p[i] != 0u);
+			guard  = (below >> 63) != 0u;
+			sticky = (below << 1) != 0u || rest;
 		}
 		else {
 			guard  = ((t[0] >> 31) & 1u) != 0u;
-			sticky = (t[0] & 0x7FFF'FFFFu) != 0u;
-			for (std::size_t i = 0; !sticky && i < M; ++i) sticky = (p[i] != 0u);
+			sticky = (t[0] & 0x7FFF'FFFFu) != 0u || below != 0u || rest;
 			t[0] &= 0xFFFF'FFFF'0000'0000ull;
 		}
 		_sign = sign;
@@ -1286,10 +1378,9 @@ protected:
 			++exponent;
 		}
 		else {
-			std::size_t z = 0;
-			while (z + 1 < M && t[z] == 0u) ++z;
-			limb_t* w = _limb.resize_for_overwrite(M - z);
-			for (std::size_t k = 0; k + z < M; ++k) w[k] = t[z + k];
+			limb_t* w = _limb.resize_for_overwrite(M);
+			for (std::size_t k = 0; k < M; ++k) w[k] = t[k];
+			if (t[0] == 0u) trim_low_limbs(M);
 		}
 		_exponent = exponent;
 		_state    = FloatingPointState::Normal;
@@ -1441,6 +1532,10 @@ protected:
 	template<size_t N>
 	using scratch_buffer = efloat_storage::scratch_limbs<N>;
 	using scratch64 = scratch_buffer<768>;
+	// in place of a scratch buffer where a path needs none, with nothing to destroy
+	struct no_scratch {
+		static constexpr limb_t* get(std::size_t) noexcept { return nullptr; }
+	};
 
 	// the 32-bit limbs v[0, n), most significant first, as the 64-bit limbs that hold them: an
 	// odd count padded with zeros at the bottom
@@ -1610,12 +1705,75 @@ protected:
 	// precision already in *this; a and b may be *this's own limbs, or another value's (#1826).
 	// A divisor of one limb divides as an integer divisor does, a limb at a time.
 	void divide_magnitudes(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
+		const std::size_t target = precision_limbs();
+		if (target <= 4 && 2 * std::max(na, dn) <= target + 1) {   // operands of at most M = (target + 1) / 2 limbs
+			if (target <= 2) divide_short<1>(a, na, ea, b, dn, eb, a_sign != b_sign);
+			else             divide_short<2>(a, na, ea, b, dn, eb, a_sign != b_sign);
+			return;
+		}
 		if (dn == 1) {   // B = b[0] 2^(eb - 63): A / B = (A / b[0]) 2^(63 - eb)
 			divide_limbs_by(a, na, ea, a_sign, b[0], b_sign, 63 - eb);
 			return;
 		}
 		divide_long(a, na, ea, a_sign, b, dn, eb, b_sign);
 	}
+	// A / D for operands of at most M = 1 or 2 limbs at a precision of 64 M or 64 M - 32 bits
+	// (#1828), as MPFR's mpfr_div_1 and mpfr_div_2 do it: A and D as integers of M limbs, their top
+	// bits set, Q = floor(A 2^(64 M) / D) of M limbs and a top bit, and the remainder R, in
+	// fixed-size code without scratch frames. A quotient of 64 M + 1 bits gives its own guard bit
+	// and R the sticky bit; one of 64 M bits has the guard bit from R, whether 2 R >= D, and the
+	// sticky bit from whether R is 0 or D / 2, as divide_exact_short.
+	template<std::size_t M>
+	void divide_short(const limb_t* a, std::size_t na, int64_t ea, const limb_t* b, std::size_t dn, int64_t eb, bool sign) {
+		limb_t np[2 * M] = {};
+		limb_t dp[M]     = {};
+		for (std::size_t i = 0; i < na; ++i) np[2 * M - na + i] = a[i];
+		for (std::size_t i = 0; i < dn; ++i) dp[M - dn + i] = b[i];
+		limb_t q[M + 1] = {};   // q[M] the top bit
+		if constexpr (M == 1) {
+			limb_t x = np[1];
+			if (x >= dp[0]) { x -= dp[0]; q[1] = 1u; }
+			limb_kernels::udiv_qrnnd(q[0], np[0], x, 0u, dp[0]);
+		}
+		else if constexpr (limb_kernels::hardware_division) {
+			q[M] = limb_kernels::sb_div_qr_short(q, np, 2 * M, dp, M);   // as div_qr would, without its dispatch
+		}
+		else {
+			limb_t work[limb_kernels::div_scratch_limbs(M)];
+			q[M] = limb_kernels::div_qr(q, np, 2 * M, dp, M, work);
+		}
+		const limb_t* r = np;   // R = r[0, M) < D
+		bool r_zero = true;
+		for (std::size_t i = 0; i < M; ++i) r_zero = r_zero && (r[i] == 0u);
+		limb_t t[M] = {};
+		limb_t below = 0;
+		bool   rest  = false;
+		int64_t exponent = ea - eb;
+		if (q[M] != 0u) {   // Q has 64 M + 1 bits: its last is the guard bit
+			for (std::size_t i = 0; i < M; ++i) t[i] = (q[i] >> 1) | (q[i + 1] << 63);
+			below = q[0] << 63;
+			rest  = !r_zero;
+		}
+		else {
+			for (std::size_t i = 0; i < M; ++i) t[i] = q[i];
+			--exponent;
+			// 2 R >= D: R >= D - R, which does not borrow, R < D
+			limb_t h[M] = {};
+			limb_t borrow = 0;
+			for (std::size_t i = 0; i < M; ++i) {
+				const limb_t x = dp[i] - r[i];
+				const limb_t y = x - borrow;
+				borrow = ((dp[i] < r[i]) || (x < borrow)) ? 1u : 0u;
+				h[i] = y;
+			}
+			int cmp = 0;
+			for (std::size_t i = M; cmp == 0 && i-- > 0;) cmp = (r[i] > h[i]) ? 1 : (r[i] < h[i]) ? -1 : 0;
+			below = (cmp >= 0) ? (limb_t(1) << 63) : 0u;
+			rest  = (cmp >= 0) ? (cmp != 0) : !r_zero;
+		}
+		store_short<M>(t, below, rest, exponent, sign);
+	}
+
 	// divide_magnitudes for a divisor of two limbs or more; out of line, so that its scratch
 	// frame is not set up for a divisor of one
 #if defined(__GNUC__) || defined(__clang__)

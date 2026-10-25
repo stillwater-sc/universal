@@ -57,6 +57,13 @@ inline thread_local cache_reaper reaper;
 // short runs, where a call to memmove costs more than the copy, and std::copy_n past them
 constexpr void copy_limbs(limb_t* d, const limb_t* s, std::size_t n) noexcept {
 	if (n <= 8 || std::is_constant_evaluated()) {
+		// one limb at a time: limbs just stored one at a time, as every result's are, read back by
+		// a vector load stall the load until the stores retire (#1828)
+#if defined(__clang__)
+		_Pragma("clang loop vectorize(disable)")
+#elif defined(__GNUC__) && (__GNUC__ >= 14)
+		_Pragma("GCC novector")
+#endif
 		for (std::size_t i = 0; i < n; ++i) d[i] = s[i];
 	}
 	else {
