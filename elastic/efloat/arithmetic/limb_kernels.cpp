@@ -23,16 +23,21 @@
 //   x * y    of one to four limbs at their full precision (#1826): the short products in
 //            fixed-size code, against the exact product rounded once, in every mode.
 //   sqrt     at 32 to 256 bits (#1826): the exact root with its remainder, and the approximate
-//            one, bracketed by exact squares, Inexact included.
+//            one, bracketed by exact squares, Inexact included; squares one unit off, whose roots
+//            lie next to a rounding boundary (#1828).
 //   short    the division kernels for quotients of a few limbs, which estimate in hardware
 //            (#1826), against the ones that divide by a reciprocal.
 //   div_qr   limb_kernels's division on 64-bit limbs must leave N = Q D + R with R < D, the product
 //            by the schoolbook multiply: one- and two-limb divisors, the divide-and-conquer
 //            threshold and its doublings, quotients shorter and longer than the divisor, and
 //            dividends whose top limbs equal the divisor's.
+//   x / y    at 128 bits with a remainder a unit either side of half the divisor (#1828).
 //   x / y    must be the exact quotient, from a bit-serial reference, rounded once to the target
 //            in every rounding mode: dividends and divisors longer than the quotient, exact
 //            quotients, and exact quotients but for a dividend limb that only the sticky bit sees.
+//   sqrtrem4 the four-limb root in registers (#1828) against the general one: random radicands,
+//            perfect squares and their neighbours, top limbs at a perfect square, the smallest.
+//   twice_sub_n  2 a - b in one pass (#1828), checked with the kernels below.
 //   sqrtrem  limb_kernels's square root must leave S^2 + R = N with R <= 2 S, the square by the
 //            schoolbook multiply: the one- and two-limb base cases, the recursion's odd splits,
 //            perfect squares and their neighbours, all-ones radicands, and top limbs within
@@ -272,15 +277,27 @@ namespace {
 				}
 				gaps.push_back(64 * static_cast<int64_t>(m) - 1);
 				for (unsigned i = 0; i < nrSamples; ++i) {
-					const int64_t gap = (i < 4 * gaps.size()) ? gaps[i % gaps.size()] : static_cast<int64_t>(rng() % target);
+					int64_t    gap = (i < 4 * gaps.size()) ? gaps[i % gaps.size()] : static_cast<int64_t>(rng() % target);
 					const bool sx = (rng() & 1u) != 0u;
-					const bool sy = (i % 2 == 0) ? !sx : ((rng() & 1u) != 0u);   // half are differences
+					bool       sy = (i % 2 == 0) ? !sx : ((rng() & 1u) != 0u);   // half are differences
 					std::vector<uint32_t> lx = random_limbs(rng, target / 32), ly = random_limbs(rng, target / 32);
 					lx.back() |= 1u;   // both as long as the precision
 					ly.back() |= 1u;
 					if (i % 7 == 3) {   // y next to 2 x: a gap of one bit that cancels deeply
 						ly = lx;
 						ly.back() ^= static_cast<uint32_t>(rng()) | 1u;
+					}
+					if (i % 13 == 6) {
+						// a difference one bit apart that cancels a limb or more, which twice the
+						// difference, 2 X - Y, leaves to the general rounding (#1828): x just above a
+						// power of 2 and y, its significand all ones but for its last bits, just below it
+						std::fill(lx.begin(), lx.end(), 0u);
+						lx.front() = 0x8000'0000u;
+						lx.back() |= 1u + (static_cast<uint32_t>(rng()) & 6u);
+						std::fill(ly.begin(), ly.end(), 0xFFFF'FFFFu);
+						ly.back() &= ~(static_cast<uint32_t>(rng()) & 0xFFFEu);
+						gap = 1;
+						sy  = !sx;
 					}
 					if (i % 11 == 5 && m >= (short_by != 0u ? 3u : 2u)) {
 						// a sum that carries out of the top while the limb shifted out of y holds only its
@@ -403,6 +420,15 @@ namespace {
 					std::vector<uint32_t> lc = random_limbs(rng, std::max(1u, target / 64));
 					const Real c = make(lc, static_cast<int64_t>(rng() % 21) - 10, false, target);
 					x = c * c;   // exact: 2 (target / 2) bits
+					if (i % 8 == 7) {
+						// a unit of the last bit off it: the root lies just above or just below an exact
+						// one, within the approximate root's error of a rounding boundary at 96 bits,
+						// where only the exact root decides (#1828)
+						Real u(1);
+						u.set_precision(target);
+						u.setexponent(x.scale() - static_cast<int64_t>(target) + 1);
+						x = (rng() & 1u) ? x + u : x - u;
+					}
 				}
 				efloat_rounding_mode = modes[i % 4];
 				clear_efloat_exceptions();
@@ -639,7 +665,7 @@ namespace {
 		using limb_kernels::limb_t;
 		int nrOfFailedTestCases = 0;
 		std::mt19937_64 rng(18160);
-		const char* names[] = { "mul_1", "addmul_1", "submul_1", "add_n", "sub_n" };
+		const char* names[] = { "mul_1", "addmul_1", "submul_1", "add_n", "sub_n", "twice_sub_n" };
 		auto check = [&](std::size_t n, int pattern, int op, bool in_place) {
 			auto value = [&]() -> limb_t {
 				if (pattern == 1) return ~limb_t(0);
@@ -661,7 +687,12 @@ namespace {
 			case 1: c1 = limb_kernels::addmul_1_portable(r1.data(), a1, n, m);      c2 = limb_kernels::addmul_1(r2.data(), a2, n, m);      break;
 			case 2: c1 = limb_kernels::submul_1_portable(r1.data(), a1, n, m);      c2 = limb_kernels::submul_1(r2.data(), a2, n, m);      break;
 			case 3: c1 = limb_kernels::add_n_portable(r1.data(), a1, b.data(), n);  c2 = limb_kernels::add_n(r2.data(), a2, b.data(), n);  break;
-			default: c1 = limb_kernels::sub_n_portable(r1.data(), a1, b.data(), n); c2 = limb_kernels::sub_n(r2.data(), a2, b.data(), n); break;
+			case 4: c1 = limb_kernels::sub_n_portable(r1.data(), a1, b.data(), n); c2 = limb_kernels::sub_n(r2.data(), a2, b.data(), n); break;
+			default:   // 2 a - b mod B^n (#1828), against a + a and less b on the portable loops
+				limb_kernels::add_n_portable(r1.data(), a1, a1, n);
+				limb_kernels::sub_n_portable(r1.data(), r1.data(), b.data(), n);
+				limb_kernels::twice_sub_n(r2.data(), a2, b.data(), n);
+				break;
 			}
 			if (c1 != c2 || r1 != r2) {
 				++nrOfFailedTestCases;
@@ -669,12 +700,12 @@ namespace {
 			}
 		};
 		for (std::size_t n = 1; n <= 300; ++n) {
-			for (int op = 0; op < 5; ++op) {
+			for (int op = 0; op < 6; ++op) {
 				for (int pattern = 0; pattern < 3; ++pattern) check(n, pattern, op, false);
 				check(n, 0, op, true);
 			}
 		}
-		for (unsigned i = 0; i < nrSamples; ++i) check(1 + rng() % 300, static_cast<int>(rng() % 3), static_cast<int>(rng() % 5), rng() % 4 == 0);
+		for (unsigned i = 0; i < nrSamples; ++i) check(1 + rng() % 300, static_cast<int>(rng() % 3), static_cast<int>(rng() % 6), rng() % 4 == 0);
 		return nrOfFailedTestCases;
 	}
 
@@ -1091,6 +1122,57 @@ namespace {
 		return ok ? 0 : 1;
 	}
 
+	// limb_kernels::sqrtrem4, the root of four limbs in registers (#1828), against dc_sqrtrem, and
+	// sqrt_approx4 within 2^15 units of it: random radicands, all-ones runs, perfect squares and
+	// their neighbours on either side (one below a square takes the correction), the top limbs at
+	// or next to a perfect square, and the smallest radicand, 2^254
+	int VerifyFourLimbSquareRoots(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal::limb_kernels;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(18280);
+		for (unsigned it = 0; it < nrSamples; ++it) {
+			const unsigned style = it % 6;
+			limb_t n[4];
+			for (auto& x : n) x = (style == 1) ? ~limb_t(0) : (style == 2) ? ((rng() & 1u) ? ~limb_t(0) : 0u) : rng();
+			if (style == 3) {   // S^2 - 1, S^2 or S^2 + 1
+				limb_t s[2] = { rng(), rng() | (limb_t(1) << 63) }, work[16];
+				mul_n(n, s, s, 2, work, true);
+				const unsigned k = static_cast<unsigned>(rng() % 3);
+				if (k == 0) sub_1(n, 4, 1u);
+				if (k == 2) add_1(n, 4, 1u);
+			}
+			if (style == 4) {   // the top two limbs a perfect square, or one off it
+				limb_t s1 = rng() | (limb_t(1) << 63), hi = 0, lo = 0;
+				umul(s1, s1, hi, lo);
+				n[3] = hi;
+				n[2] = lo + (rng() % 3) - 1u;
+			}
+			if (style == 5) { n[3] = limb_t(1) << 62; n[2] = 0u; n[1] = 0u; n[0] = (it % 12 == 5) ? 0u : rng(); }
+			if (n[3] < (limb_t(1) << 62)) n[3] |= limb_t(1) << 62;
+			limb_t s4[2] = {}, r4[2] = {};
+			const limb_t c4 = sqrtrem4(s4, r4, n);
+			limb_t np[4] = { n[0], n[1], n[2], n[3] }, sq[2] = {}, work[sqrt_scratch_limbs(2)];
+			const limb_t c = dc_sqrtrem(sq, np, 2, work);
+			if (s4[0] != sq[0] || s4[1] != sq[1] || r4[0] != np[0] || r4[1] != np[1] || c4 != c) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: sqrtrem4 differs from dc_sqrtrem (style " << style << ")\n";
+			}
+			// sqrt_approx4 within 2^15 units of the root, which the 96-bit root's window of 2^16
+			// relies on: |S' - S| as a two-limb difference
+			limb_t sa[2] = {};
+			if (sqrt_approx4(sa, n)) {
+				const bool   above = (sa[1] > sq[1]) || (sa[1] == sq[1] && sa[0] >= sq[0]);
+				const limb_t lo    = above ? sa[0] - sq[0] : sq[0] - sa[0];
+				const limb_t hi    = above ? sa[1] - sq[1] - ((sa[0] < sq[0]) ? 1u : 0u) : sq[1] - sa[1] - ((sq[0] < sa[0]) ? 1u : 0u);
+				if (hi != 0u || lo >= (limb_t(1) << 15)) {
+					++nrOfFailedTestCases;
+					if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: sqrt_approx4 is more than 2^15 units off the root (style " << style << ")\n";
+				}
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
 	int VerifySquareRootKernel(bool reportTestCases, unsigned nrSamples) {
 		int nrOfFailedTestCases = 0;
 		std::mt19937_64 rng(17632);
@@ -1295,6 +1377,92 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
+	// x / y at 128 bits with a remainder of (D - 1) / 2 or (D + 1) / 2 for an odd divisor D, a unit
+	// either side of half of it (#1828): the short quotient's guard bit is whether 2 R >= D, its
+	// comparison of R with D - R the closest it can be, where D - R borrows across the limbs. With
+	// Q chosen, R fixes A B^2 = Q D + R modulo B^2: Q = -R D^-1 mod B^2, and A is the quotient's
+	// dividend whenever its top bit is set. Against the rounded exact quotient, in every mode.
+	int VerifyShortQuotientHalves(bool reportTestCases, unsigned nrSamples) {
+		using namespace sw::universal;
+		using limb_kernels::limb_t;
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(18281);
+		const RoundingMode modes[] = { RoundingMode::RoundToNearest, RoundingMode::RoundToZero,
+		                               RoundingMode::RoundTowardPositive, RoundingMode::RoundTowardNegative };
+		const RoundingMode saved = efloat_rounding_mode;
+		// the low two limbs of a b, and of its negation
+		auto mul2 = [](const limb_t* a, const limb_t* b, limb_t* r) {
+			limb_t hi = 0, lo = 0, h1 = 0, l1 = 0, h2 = 0, l2 = 0;
+			limb_kernels::umul(a[0], b[0], hi, lo);
+			limb_kernels::umul(a[0], b[1], h1, l1);
+			limb_kernels::umul(a[1], b[0], h2, l2);
+			r[0] = lo;
+			r[1] = hi + l1 + l2;
+		};
+		auto to32 = [](const limb_t* w) {   // two limbs as four 32-bit limbs, most significant first
+			return std::vector<uint32_t>{ static_cast<uint32_t>(w[1] >> 32), static_cast<uint32_t>(w[1]), static_cast<uint32_t>(w[0] >> 32), static_cast<uint32_t>(w[0]) };
+		};
+		unsigned done = 0;
+		while (done < nrSamples) {
+			limb_t d[2] = { rng() | 1u, rng() | (limb_t(1) << 63) };   // odd and normalized
+			limb_t inv[2] = { d[0], d[1] };                             // D^-1 mod B^2 by Newton: 3 bits, then doubling
+			for (int k = 0; k < 6; ++k) {
+				limb_t dx[2], two[2];
+				mul2(d, inv, dx);
+				two[0] = limb_t(0) - dx[0];   // 2 - D x
+				two[1] = ~dx[1] + ((dx[0] == 0u) ? 1u : 0u);
+				two[0] += 2u;
+				two[1] += (two[0] < 2u) ? 1u : 0u;
+				mul2(inv, two, inv);
+			}
+			const bool above = (rng() & 1u) != 0u;
+			limb_t r[2] = { (d[0] >> 1) | (d[1] << 63), d[1] >> 1 };   // (D - 1) / 2
+			if (above) { ++r[0]; if (r[0] == 0u) ++r[1]; }              // (D + 1) / 2
+			limb_t q[2];
+			mul2(r, inv, q);
+			q[0] = limb_t(0) - q[0];   // -R D^-1
+			q[1] = ~q[1] + ((q[0] == 0u) ? 1u : 0u);
+			limb_t p[4];
+			limb_kernels::mul_basecase(p, q, 2, d, 2);
+			limb_t carry = limb_kernels::add_n(p, p, r, 2);
+			carry = limb_kernels::add_1(p + 2, 2, carry);
+			if (p[0] != 0u || p[1] != 0u || carry != 0u) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: the crafted dividend is not Q D + R\n";
+				continue;
+			}
+			const limb_t a[2] = { p[2], p[3] };
+			if ((a[1] >> 63) == 0u) continue;   // A must be normalized
+			++done;
+			const std::vector<uint32_t> la = to32(a), lb = to32(d);
+			const int64_t ex = static_cast<int64_t>(rng() % 41) - 20, ey = static_cast<int64_t>(rng() % 41) - 20;
+			const bool    sx = (rng() & 1u) != 0u, sy = (rng() & 1u) != 0u;
+			const Real x = make(la, ex, sx, 128), y = make(lb, ey, sy, 128);
+			std::vector<uint32_t> qq;
+			const bool sticky = reference_quotient(la, lb, 32 * 6, qq);
+			const int64_t length = 32 * static_cast<int64_t>(qq.size()) - static_cast<int64_t>(sw::universal::clz(qq[0]));
+			const int64_t eq = ex - ey - 32 * 6 + length - 1;
+			const unsigned sh = static_cast<unsigned>(sw::universal::clz(qq[0]));
+			if (sh != 0u) {
+				for (size_t j = 0; j + 1 < qq.size(); ++j) qq[j] = (qq[j] << sh) | (qq[j + 1] >> (32u - sh));
+				qq.back() <<= sh;
+			}
+			if (sticky) qq.push_back(1u);
+			for (RoundingMode m : modes) {
+				efloat_rounding_mode = m;
+				Real reference = make(qq, eq, sx != sy, 32 * static_cast<unsigned>(qq.size()));
+				reference.set_precision(128);
+				const Real quotient = x / y;
+				efloat_rounding_mode = saved;
+				if (!identical(quotient, reference)) {
+					++nrOfFailedTestCases;
+					if (reportTestCases && nrOfFailedTestCases <= 3) std::cout << "    FAIL: a 128-bit quotient " << (above ? "above" : "below") << " half a unit is not the rounded exact quotient\n";
+				}
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
 }  // anonymous namespace
 
 namespace {
@@ -1344,7 +1512,9 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientsNextToExact(reportTestCases, 20), "efloat", "quotients next to exact ones");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 100), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 100), "efloat", "rounded quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortQuotientHalves(reportTestCases, 1000), "efloat", "quotients next to half a unit");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 100), "efloat", "limb square roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyFourLimbSquareRoots(reportTestCases, 10000), "efloat", "four-limb square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 100), "efloat", "limb cube roots");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -1368,7 +1538,9 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientsNextToExact(reportTestCases, 60), "efloat", "quotients next to exact ones");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300), "efloat", "rounded quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortQuotientHalves(reportTestCases, 3000), "efloat", "quotients next to half a unit");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300), "efloat", "limb square roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyFourLimbSquareRoots(reportTestCases, 30000), "efloat", "four-limb square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 300), "efloat", "limb cube roots");
 #	endif
 
@@ -1389,7 +1561,9 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientsNextToExact(reportTestCases, 600), "efloat", "quotients next to exact ones");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 3000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 3000), "efloat", "rounded quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortQuotientHalves(reportTestCases, 30000), "efloat", "quotients next to half a unit");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 3000), "efloat", "limb square roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyFourLimbSquareRoots(reportTestCases, 300000), "efloat", "four-limb square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 3000), "efloat", "limb cube roots");
 #	endif
 
@@ -1410,7 +1584,9 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientsNextToExact(reportTestCases, 3000), "efloat", "quotients next to exact ones");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 30000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 30000), "efloat", "rounded quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortQuotientHalves(reportTestCases, 300000), "efloat", "quotients next to half a unit");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 30000), "efloat", "limb square roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyFourLimbSquareRoots(reportTestCases, 3000000), "efloat", "four-limb square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 30000), "efloat", "limb cube roots");
 #	endif
 
@@ -1431,7 +1607,9 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientsNextToExact(reportTestCases, 10000), "efloat", "quotients next to exact ones");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuotientKernel(reportTestCases, 300000), "efloat", "limb quotients");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundedQuotients(reportTestCases, 300000), "efloat", "rounded quotients");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortQuotientHalves(reportTestCases, 3000000), "efloat", "quotients next to half a unit");
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300000), "efloat", "limb square roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyFourLimbSquareRoots(reportTestCases, 30000000), "efloat", "four-limb square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 300000), "efloat", "limb cube roots");
 #	endif
 

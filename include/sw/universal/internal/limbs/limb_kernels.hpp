@@ -120,6 +120,23 @@ inline limb_t sub_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::s
 	return borrow;
 }
 
+// r[0, n) = 2 a[0, n) - b[0, n) mod B^n as a + (a + ~b + 1), the two sums' carries in c1 and c2,
+// which a longer run continues; r may be a or b
+inline void twice_sub_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t& c1, limb_t& c2) noexcept {
+	for (std::size_t i = 0; i < n; ++i) {
+		const limb_t ai = a[i];
+		const limb_t nb = ~b[i];
+		const limb_t s  = ai + c1;
+		const limb_t k  = (s < c1) ? 1u : 0u;
+		const limb_t d  = s + nb;   // a - b, its borrow the complement of the carry
+		c1 = k + ((d < s) ? 1u : 0u);
+		const limb_t u = ai + c2;
+		const limb_t h = (u < c2) ? 1u : 0u;
+		r[i] = u + d;
+		c2 = h + ((r[i] < u) ? 1u : 0u);
+	}
+}
+
 #if UNIVERSAL_LIMB_KERNELS_X86_64_ASM
 // The loops below are efloat's own, written from the instruction set's semantics (Intel SDM: mulx,
 // adcx, adox), not from GMP's assembly.  Each runs over a multiple of four limbs, n > 0, in order
@@ -305,6 +322,47 @@ inline limb_t sub_4k(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n,
 	return c;
 }
 
+// r[0, n) = 2 a[0, n) - b[0, n) mod B^n, carries in c1 and c2 as twice_sub_n_portable's: a + ~b
+// and its carry through CF (adcx), plus a through OF (adox), one pass for both (#1828); the not
+// that forms ~b leaves both flags alone
+inline void twice_sub_4k(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t c1, limb_t c2) noexcept {
+	std::ptrdiff_t i = -static_cast<std::ptrdiff_t>(n);
+	__asm__ volatile(
+		"xor %%r10d, %%r10d\n\t"               // CF = OF = 0
+		"mov $-1, %%r10\n\t"
+		"adcx %[c1], %%r10\n\t"                // CF = c1: all ones + c1 carries when c1 is 1
+		"mov $-1, %%r10\n\t"
+		"adox %[c2], %%r10\n\t"                // OF = c2, and adox leaves CF alone
+		"1:\n\t"
+		"mov (%[b],%[i],8), %%r9\n\t"
+		"not %%r9\n\t"
+		"adcx (%[a],%[i],8), %%r9\n\t"
+		"adox (%[a],%[i],8), %%r9\n\t"
+		"mov %%r9, (%[r],%[i],8)\n\t"
+		"mov 8(%[b],%[i],8), %%r9\n\t"
+		"not %%r9\n\t"
+		"adcx 8(%[a],%[i],8), %%r9\n\t"
+		"adox 8(%[a],%[i],8), %%r9\n\t"
+		"mov %%r9, 8(%[r],%[i],8)\n\t"
+		"mov 16(%[b],%[i],8), %%r9\n\t"
+		"not %%r9\n\t"
+		"adcx 16(%[a],%[i],8), %%r9\n\t"
+		"adox 16(%[a],%[i],8), %%r9\n\t"
+		"mov %%r9, 16(%[r],%[i],8)\n\t"
+		"mov 24(%[b],%[i],8), %%r9\n\t"
+		"not %%r9\n\t"
+		"adcx 24(%[a],%[i],8), %%r9\n\t"
+		"adox 24(%[a],%[i],8), %%r9\n\t"
+		"mov %%r9, 24(%[r],%[i],8)\n\t"
+		"lea 4(%[i]), %[i]\n\t"
+		"jrcxz 2f\n\t"
+		"jmp 1b\n\t"
+		"2:\n\t"
+		: [i] "+c"(i)
+		: [a] "r"(a + n), [b] "r"(b + n), [r] "r"(r + n), [c1] "r"(c1), [c2] "r"(c2)
+		: "r9", "r10", "cc", "memory");
+}
+
 }  // namespace x86
 #endif
 
@@ -348,6 +406,21 @@ inline limb_t sub_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) 
 	}
 #endif
 	return sub_n_portable(r, a, b, n);
+}
+
+// r[0, n) = 2 a[0, n) - b[0, n) mod B^n, in one pass where the processor has ADX (#1828); a
+// difference one bit apart that cancels its leading bit is half of it. r may be a or b.
+inline void twice_sub_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+	limb_t c1 = 1, c2 = 0;   // a + ~b + 1 = a - b
+#if UNIVERSAL_LIMB_KERNELS_X86_64_ASM
+	if (n >= 4 && x86::has_mulx_adx) {
+		const std::size_t t = n & 3u;
+		twice_sub_n_portable(r, a, b, t, c1, c2);
+		x86::twice_sub_4k(r + t, a + t, b + t, n - t, c1, c2);
+		return;
+	}
+#endif
+	twice_sub_n_portable(r, a, b, n, c1, c2);
 }
 
 // r[0, n) += c, returns the carry out of the top
@@ -1297,6 +1370,87 @@ inline limb_t sqrtrem2(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
 	sp[0] = slo;
 	rp[0] = rlo;
 	return static_cast<limb_t>(rhi);
+}
+
+// sp[0, 2) = floor(sqrt(np[0, 4))) for np[3] >= 2^62; the remainder, at most 2 S, is rp[0, 2)
+// and the returned bit above it (#1828). dc_sqrtrem's one level for n = 2 in registers: the
+// root s' of the top two limbs by sqrtrem2, the next limb of the root from one division of
+// (r' B + np[1]) by 2 s', and the remainder corrected once.
+inline limb_t sqrtrem4(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
+	limb_t s1 = 0, r1 = 0;
+	limb_t q = sqrtrem2(&s1, &r1, np + 2);   // s' = s1, r' = q B + r1 <= 2 s'
+	if (q != 0u) r1 -= s1;                    // r' - s' < s': divide by s', then halve
+	limb_t qh = 0;
+	if (r1 >= s1) { r1 -= s1; qh = 1u; }
+	limb_t q0 = 0, u = 0;
+	udiv_qrnnd(q0, u, r1, np[1], s1);         // (r' B + np[1]) / s' = (q + qh) B + q0, remainder u
+	q += qh;
+	limb_t c = q0 & 1u;                        // / (2 s') = 2 Q + c: the remainder by 2 s' gains c s'
+	limb_t s0 = (q0 >> 1) | (q << 63);
+	q >>= 1;
+	if (c != 0u) {
+		u += s1;
+		c = (u < s1) ? 1u : 0u;
+	}
+	// R = c B^2 + u B + np[0] - s0^2
+	limb_t hh = 0, ll = 0;
+	umul(s0, s0, hh, ll);
+	limb_t r0 = np[0] - ll;
+	limb_t borrow = (np[0] < ll) ? 1u : 0u;
+	limb_t rh = u - hh;
+	const limb_t borrow1 = (u < hh) ? 1u : 0u;
+	const limb_t borrow2 = (rh < borrow) ? 1u : 0u;
+	rh -= borrow;
+	borrow = borrow1 + borrow2;
+	int64_t cc = static_cast<int64_t>(c) - static_cast<int64_t>(q + borrow);
+	if (cc < 0) {   // R < 0: R += 2 S - 1, S -= 1
+		s1 += q;
+		q = (s1 < q) ? 1u : 0u;
+		// R += 2 S, S = s1 B + s0
+		const limb_t d0 = s0 << 1, d1 = (s1 << 1) | (s0 >> 63);
+		const limb_t top = s1 >> 63;
+		r0 += d0;
+		limb_t carry = (r0 < d0) ? 1u : 0u;
+		const limb_t t1 = rh + d1;
+		const limb_t k1 = (t1 < d1) ? 1u : 0u;
+		rh = t1 + carry;
+		carry = k1 + ((rh < carry) ? 1u : 0u);
+		cc += static_cast<int64_t>(carry + top + 2 * q);
+		// R -= 1
+		if (r0 == 0u) {
+			if (rh == 0u) --cc;
+			--rh;
+		}
+		--r0;
+		// S -= 1
+		if (s0 == 0u) --s1;
+		--s0;
+	}
+	sp[0] = s0;
+	sp[1] = s1;
+	rp[0] = r0;
+	rp[1] = rh;
+	return static_cast<limb_t>(cc);
+}
+
+// sp[0, 2) = S within 2^15 units of floor(sqrt(N)), N = np[0, 4) with np[3] >= 2^62, without the
+// remainder (#1828). s' = floor(sqrt(N')) and r' = N' - s'^2 for the top two limbs N' by
+// sqrtrem2; sqrt(N) lies in [s' B + Q - 1, s' B + Q] for Q = (r' B + np[1] + np[0] / B) / (2 s')
+// (dc_sqrtrem's step, whose one correction the -1 is), and Q < B + 1. Q is formed in double
+// precision, from a reciprocal of sqrt(N') computed alongside sqrtrem2 in place of a second
+// division: at most nine roundings of 2^-53 each and the 2^-63 between sqrt(N') and s' keep it
+// within 2^14.2 of its value. Returns false, with sp unset, where Q comes within 2^16 of B and S
+// might need s' + 1.
+inline bool sqrt_approx4(limb_t* sp, const limb_t* np) noexcept {
+	constexpr double two64 = 18446744073709551616.0;   // 2^64
+	limb_t s1 = 0, r1 = 0;
+	const limb_t c = sqrtrem2(&s1, &r1, np + 2);
+	const double y = 0.5 / std::sqrt(static_cast<double>(np[3]) * two64 + static_cast<double>(np[2]));
+	const double q = ((static_cast<double>(r1) + static_cast<double>(c) * two64) * two64 + static_cast<double>(np[1])) * y;
+	if (!(q < two64 - 65536.0)) return false;
+	sp[0] = static_cast<limb_t>(q);
+	sp[1] = s1;
+	return true;
 }
 
 // the scratch limbs sqrtrem needs for a root of n limbs
