@@ -228,12 +228,6 @@ try {
 		if (quire_size<32, 2>() != 512)  ++nrOfFailedTestCases;
 		if (quire_size<64, 2>() != 1024) ++nrOfFailedTestCases;
 
-		// standard_quire spells the standard width explicitly
-		if (standard_quire<8>().total_bits()  != 128)  ++nrOfFailedTestCases;
-		if (standard_quire<16>().total_bits() != 256)  ++nrOfFailedTestCases;
-		if (standard_quire<32>().total_bits() != 512)  ++nrOfFailedTestCases;
-		if (standard_quire<64>().total_bits() != 1024) ++nrOfFailedTestCases;
-
 		std::cout << "standard posit quire widths (16n bits):\n";
 		std::cout << "  posit<8,2>   : " << quire<posit<8, 2>>().total_bits() << " bits\n";
 		std::cout << "  posit<16,2>  : " << quire<posit<16, 2>>().total_bits() << " bits\n";

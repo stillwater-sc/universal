@@ -119,11 +119,6 @@ inline int quire_size() {
 	return static_cast<int>(quire_traits<posit<nbits, es>>::range + capacity + 1u);
 }
 
-/// standard_quire: the quire of the 2022 posit standard, posit<nbits,2> with the standard carry guard.
-/// Its total width is 16n bits.
-template<unsigned nbits, typename bt = std::uint32_t>
-using standard_quire = quire<posit<nbits, 2, bt>, quire_traits<posit<nbits, 2, bt>>::standard_capacity>;
-
 // ============================================================================
 // Fused dot product operators
 // ============================================================================
