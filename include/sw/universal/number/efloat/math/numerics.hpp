@@ -218,9 +218,10 @@ inline efloat<nlimbs> fma(const efloat<nlimbs>& x, const efloat<nlimbs>& y, cons
 	const int64_t s = x.iszero() || y.iszero() ? 0 : x.scale() + y.scale();   // the product's scale is s or s + 1
 	constexpr int64_t limbs_range = int64_t(1) << 61;
 	if (!x.iszero() && !y.iszero() && !z.iszero() && s > -limbs_range && s < limbs_range) {
-		// a copy of the longest operand holds the result's limbs without growing in most cases
-		const std::size_t lx = x.limb_count(), ly = y.limb_count(), lz = z.limb_count();
-		E result((lx >= ly && lx >= lz) ? x : (ly >= lz ? y : z));
+		// the result's limbs are written once, by the rounding: a copy of an operand to hold them
+		// cost more than the buffer it saved, which past the inline limbs comes from the thread's
+		// block cache (#1828)
+		E result{ typename E::uninitialized_t{} };
 		efloat_detail::fma_limbs(result, x, y, z, precision);   // rounded, at the precision
 		if (!carries || result.iszero()) efloat_detail::round_result(result, precision, carries);
 		return result;
