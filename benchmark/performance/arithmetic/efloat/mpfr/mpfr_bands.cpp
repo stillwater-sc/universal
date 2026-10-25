@@ -154,6 +154,15 @@ try {
 
 	const std::string selection = (argc > 1) ? argv[1] : "all";
 	const double limit = (argc > 2) ? std::atof(argv[2]) : 0.0;
+	// a selection that names no operation would measure nothing and pass any limit
+	bool any = false;
+	for (int i = 0; i < count; ++i) any = any || selected(selection, operations[i]);
+	if (!any) {
+		std::cerr << "mpfr_bands: '" << selection << "' names none of the operations:";
+		for (int i = 0; i < count; ++i) std::cerr << ' ' << operations[i];
+		std::cerr << '\n';
+		return EXIT_FAILURE;
+	}
 	std::printf("efloat vs MPFR %s (GMP %s) called from C++ across precisions (#1826): efloat us, efloat / MPFR\n\n",
 	            mpfr_get_version(), gmp_version);
 	std::printf("%6s", "bits");
