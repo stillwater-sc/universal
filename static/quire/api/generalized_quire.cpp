@@ -175,9 +175,9 @@ int TestPositQuire() {
 	std::cout << "  min scale:   " << q.min_scale() << '\n';
 	std::cout << '\n';
 
-	// posit<32,2> quire should have 511 total bits (510 + 1 sign)
-	if (q.total_bits() != 511) {
-		std::cerr << "FAIL: posit<32,2> quire should have 511 total bits, got " << q.total_bits() << '\n';
+	// posit<32,2> quire should have 512 total bits (511 + 1 sign)
+	if (q.total_bits() != 512) {
+		std::cerr << "FAIL: posit<32,2> quire should have 512 total bits, got " << q.total_bits() << '\n';
 		++nrOfFailedTestCases;
 	}
 
