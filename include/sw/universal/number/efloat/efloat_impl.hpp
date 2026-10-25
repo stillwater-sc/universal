@@ -165,6 +165,12 @@ public:
 	constexpr efloat(const efloat&) = default;
 	constexpr efloat(efloat&&) = default;
 
+	// a value the binary operators overwrite at once (#1826): zero with no limbs and the type's
+	// precision, without reading the thread's default precision
+	struct uninitialized_t {};
+	explicit constexpr efloat(uninitialized_t) noexcept
+		: _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{}, _precision_limbs{ nlimbs } {}
+
 	constexpr efloat& operator=(const efloat&) = default;
 	constexpr efloat& operator=(efloat&&) = default;
 
@@ -775,6 +781,44 @@ protected:
 		return *this;
 	}
 
+public:
+	// *this = a b, and *this = a / b, without copying a first (#1826): finite nonzero operands go
+	// straight to the limbs; zeros, infinities, NaNs and a power-of-2 b take a copy of a and the
+	// compound operator, which keeps them usable in constant evaluation
+	constexpr efloat& assign_product(const efloat& a, const efloat& b) {
+		if (a._state == FloatingPointState::Normal && b._state == FloatingPointState::Normal && this != &a && this != &b) {
+			_precision_limbs = merged_precision(a._precision_limbs, b._precision_limbs);
+			multiply_magnitudes(a._limb.data(), a._limb.size(), a._exponent, a._sign, b._limb.data(), b._limb.size(), b._exponent, b._sign);
+			return *this;
+		}
+		*this = a;
+		if (&a == &b) return *this *= *this;   // x * x squares (#1761)
+		return *this *= b;
+	}
+	constexpr efloat& assign_quotient(const efloat& a, const efloat& b) {
+		if (a._state == FloatingPointState::Normal && b._state == FloatingPointState::Normal && !b.is_power_of_2() && this != &a && this != &b) {
+			_precision_limbs = merged_precision(a._precision_limbs, b._precision_limbs);
+			divide_magnitudes(a._limb.data(), a._limb.size(), a._exponent, a._sign, b._limb.data(), b._limb.size(), b._exponent, b._sign);
+			return *this;
+		}
+		*this = a;
+		return *this /= b;
+	}
+	// *this = a + b, or a - b with negate_b, without copying a first (#1826): finite nonzero
+	// operands go straight to add_magnitudes, which writes the sum into this value's limbs; zeros,
+	// infinities and NaNs take a copy of a and add(), as a += b does
+	constexpr efloat& assign_sum(const efloat& a, const efloat& b, bool negate_b) {
+		if (a._state == FloatingPointState::Normal && b._state == FloatingPointState::Normal && this != &a && this != &b) {
+			_precision_limbs = merged_precision(a._precision_limbs, b._precision_limbs);
+			add_magnitudes(a._limb.data(), a._limb.size(), a._exponent, a._sign, b._limb.data(), b._limb.size(), b._exponent, b._sign != negate_b);
+			return *this;
+		}
+		*this = a;
+		return add(b, negate_b);
+	}
+
+protected:
+
 	// *this + B for a finite nonzero *this and B = (b[0, nb), eb, b_sign), normalized, at the
 	// precision already merged into *this; b may be *this's own limbs. The operand with the
 	// smaller exponent, Y, is shifted into the frame of the other, X: L limbs below X's top,
@@ -785,22 +829,43 @@ protected:
 	// bit or none the frame holds every bit of Y. The sum is formed by limb_kernels::add_n or
 	// sub_n on 64-bit limbs and rounded into _limb once (#1762, #1820).
 	void add_magnitude(const limb_t* b, std::size_t nb, int64_t eb, bool b_sign) {
+		add_magnitudes(_limb.data(), _limb.size(), _exponent, _sign, b, nb, eb, b_sign);
+	}
+	// *this = A + B for finite nonzero, normalized A = (a[0, na), ea, a_sign) and B, at the
+	// precision already in *this; a and b may be *this's own limbs, or another value's (#1826)
+	void add_magnitudes(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t nb, int64_t eb, bool b_sign) {
 		const std::size_t target = precision_limbs();
-		const limb_t*     a      = _limb.data();
-		const std::size_t na     = _limb.size();
-		const bool        a_is_x = (_exponent >= eb);
+		_sign = a_sign;
+		const bool        a_is_x = (ea >= eb);
 		const limb_t*     x      = a_is_x ? a : b;
 		const limb_t*     y      = a_is_x ? b : a;
 		const std::size_t nx     = a_is_x ? na : nb;
 		const std::size_t ny     = a_is_x ? nb : na;
-		const int64_t     ex     = a_is_x ? _exponent : eb;
-		const bool        x_sign = a_is_x ? _sign : b_sign;
-		const uint64_t    d      = static_cast<uint64_t>(a_is_x ? _exponent - eb : eb - _exponent);
-		if (_sign == b_sign && nx == ny && 2 * nx == target && d < 64 * uint64_t(nx)) {
-			add_full_length(x, y, nx, ex, d);
+		const int64_t     ex     = a_is_x ? ea : eb;
+		const bool        x_sign = a_is_x ? a_sign : b_sign;
+		const uint64_t    d      = static_cast<uint64_t>(a_is_x ? ea - eb : eb - ea);
+		if (nx == ny && nx == (target + 1) / 2 && d < 64 * uint64_t(nx) && (a_sign == b_sign || d >= 1)) {
+			// up to four limbs as straight-line code, longer operands in loops (#1826)
+			switch (nx) {
+			case 1:  add_full_length<1>(x, y, 1, ex, d, a_sign != b_sign, x_sign); break;
+			case 2:  add_full_length<2>(x, y, 2, ex, d, a_sign != b_sign, x_sign); break;
+			case 3:  add_full_length<3>(x, y, 3, ex, d, a_sign != b_sign, x_sign); break;
+			case 4:  add_full_length<4>(x, y, 4, ex, d, a_sign != b_sign, x_sign); break;
+			default: add_full_length<0>(x, y, nx, ex, d, a_sign != b_sign, x_sign); break;
+			}
 			return;
 		}
+		add_frame(x, nx, y, ny, ex, x_sign, d, a_sign == b_sign);
+	}
 
+	// add_magnitudes for operands that are not both as long as the precision, or a difference
+	// with no gap: Y shifted into a frame of 64 bits past the precision, as described above. Out
+	// of line, so that its scratch frame is not set up for the full-length sums.
+#if defined(__GNUC__) || defined(__clang__)
+	__attribute__((noinline))
+#endif
+	void add_frame(const limb_t* x, std::size_t nx, const limb_t* y, std::size_t ny, int64_t ex, bool x_sign, uint64_t d, bool same_sign) {
+		const std::size_t target = precision_limbs();
 		std::size_t L = 0;
 		if (d <= 1) {
 			L = std::max(nx, ny + static_cast<std::size_t>(d));
@@ -858,7 +923,7 @@ protected:
 		g[0] = lost ? 1u : 0u;
 
 		const std::size_t low = 1 + L - nx;   // f's limbs below X
-		if (_sign == b_sign) {
+		if (same_sign) {
 			efloat_storage::copy_limbs(f, g, low);
 			f[L + 1] = limb_kernels::add_n(f + low, x, g + low, nx);
 			round_into(f, L + 2, ex + 64, false);
@@ -889,51 +954,196 @@ protected:
 		if (iszero()) _sign = exact_zero_sum_sign(false, true);   // x - x: +0, -0 rounding toward -inf (#1768)
 	}
 
-	// X + Y for addends of one sign, both m limbs long at a precision of 64 m bits, Y below X by
-	// d < 64 m bits: the common case, as MPFR's mpfr_add1sp takes it. Y is shifted down into the
-	// result's m limbs, its bits shifted out are the guard and sticky bits, X is added, and a
-	// carry out of the top shifts the sum down one bit; no frame and no second pass to round.
-	void add_full_length(const limb_t* x, const limb_t* y, std::size_t m, int64_t ex, uint64_t d) {
-		scratch_buffer<128> buffer;
-		limb_t* t = buffer.get(m);
-		bool guard = false, sticky = false;
-		limb_t carry = 0;
-		if (d == 0) {
-			carry = limb_kernels::add_n(t, x, y, m);
+	// X + Y, or X - Y with subtract, for operands both m limbs long at a precision of 64 m or
+	// 64 m - 32 bits, Y below X by d < 64 m bits, and d >= 1 for a difference: the common case,
+	// as MPFR's mpfr_add1sp and mpfr_sub1sp take it (#1822, #1826). Y is shifted down into the
+	// result's m limbs once; the 64 bits it shifts out below them are kept as a limb, and any
+	// below that as a sticky bit. X is added to it, or it is subtracted from X with a borrow out
+	// of the low limb: a carry shifts the sum down one bit, and a difference, which a gap of two
+	// bits or more leaves with at most one leading zero, is shifted up one. A gap of one bit can
+	// cancel any number of them, but then the low limb holds all of Y's bits, and the exact
+	// difference rounds through round_into. The result rounds
+	// from the low limb and the sticky bit, or at bit 32 of the bottom limb. No frame, and no
+	// second pass over the limbs but the one-bit shifts.
+	// M = m for one to four limbs, whose loops then have fixed bounds and unroll, and 0 for any m
+	template<std::size_t M>
+	void add_full_length(const limb_t* x, const limb_t* y, std::size_t m_any, int64_t ex, uint64_t d, bool subtract, bool x_sign) {
+		const std::size_t m = (M != 0) ? M : m_any;
+		// the result's limbs: a local array for one and two limbs, this value's own limbs when they
+		// are neither operand's, else scratch
+		limb_t local[(M != 0) ? M : 1];
+		scratch_buffer<(M != 0) ? 1 : 128> buffer;
+		const bool in_place = (M == 0) && (_limb.data() != x && _limb.data() != y);
+		limb_t* t = (M != 0) ? local : (in_place ? _limb.resize_for_overwrite(m) : buffer.get(m));
+		const std::size_t q = static_cast<std::size_t>(d / 64);
+		const unsigned    c = static_cast<unsigned>(d % 64);
+		// t = Y >> d; o = the 64 bits of Y just below t's last; sticky = whether any below those
+		limb_t o      = 0;
+		bool   sticky = false;
+		if constexpr (M != 0) {
+			for (std::size_t i = 0; i < M; ++i) {
+				const std::size_t j = i + q;
+				const limb_t lo = (j < M) ? y[j] : 0u;
+				const limb_t hi = (j + 1 < M) ? y[j + 1] : 0u;
+				t[i] = (c == 0u) ? lo : ((lo >> c) | (hi << (64u - c)));
+			}
+		}
+		else if (c == 0u) {
+			efloat_storage::copy_limbs(t, y + q, m - q);
 		}
 		else {
-			const std::size_t q  = static_cast<std::size_t>(d / 64);
-			const unsigned    c  = static_cast<unsigned>(d % 64);
-			const std::size_t gw = static_cast<std::size_t>((d - 1) / 64);   // Y's bit d - 1 is the guard bit
-			const unsigned    gb = static_cast<unsigned>((d - 1) % 64);
-			guard  = ((y[gw] >> gb) & 1u) != 0u;
-			sticky = (y[gw] & ((limb_t(1) << gb) - 1u)) != 0u;
-			for (std::size_t i = 0; !sticky && i < gw; ++i) sticky = (y[i] != 0u);
-			if (c == 0u) efloat_storage::copy_limbs(t, y + q, m - q);
-			else         limb_kernels::rshift(t, y + q, m - q, c);
-			efloat_storage::zero_limbs(t + (m - q), q);
-			carry = limb_kernels::add_n(t, x, t, m);
+			limb_kernels::rshift(t, y + q, m - q, c);
 		}
+		if constexpr (M == 0) efloat_storage::zero_limbs(t + (m - q), q);
+		if (c == 0u) {
+			if (q > 0) o = y[q - 1];
+		}
+		else {
+			o = y[q] << (64u - c);
+			if (q > 0) {
+				o |= y[q - 1] >> c;
+				sticky = (y[q - 1] & ((limb_t(1) << c) - 1u)) != 0u;
+			}
+		}
+		for (std::size_t i = 0; !sticky && i + 1 < q; ++i) sticky = (y[i] != 0u);
 		int64_t exponent = ex;
-		if (carry != 0u) {   // the sum's top bit is 2^(ex + 1): shift it down, its last bit the new guard
-			sticky = sticky || guard;
-			guard  = (t[0] & 1u) != 0u;
-			limb_kernels::rshift(t, t, m, 1u);
-			t[m - 1] |= limb_t(1) << 63;
+		bool    sign     = x_sign;
+		if (!subtract) {
+			limb_t carry = 0;
+			if constexpr (M != 0) {
+				for (std::size_t i = 0; i < M; ++i) {
+					const limb_t u = x[i] + carry;
+					const limb_t v = u + t[i];
+					carry = ((u < carry) || (v < u)) ? 1u : 0u;
+					t[i]  = v;
+				}
+			}
+			else {
+				carry = limb_kernels::add_n(t, x, t, m);
+			}
+			if (carry != 0u) {   // the sum's top bit is 2^(ex + 1): shift it down
+				sticky = sticky || ((o & 1u) != 0u);
+				o      = (o >> 1) | (t[0] << 63);
+				if constexpr (M != 0) {
+					for (std::size_t i = 0; i + 1 < M; ++i) t[i] = (t[i] >> 1) | (t[i + 1] << 63);
+					t[M - 1] = (t[M - 1] >> 1) | (limb_t(1) << 63);
+				}
+				else {
+					limb_kernels::rshift(t, t, m, 1u);
+					t[m - 1] |= limb_t(1) << 63;
+				}
+				++exponent;
+			}
+		}
+		else {
+			// X B - (t B + o + s), s in [0, 1) the sticky part: the low limb borrows unless o and s are 0
+			limb_t borrow = (o != 0u || sticky) ? 1u : 0u;
+			o = limb_t(0) - o - (sticky ? 1u : 0u);
+			if constexpr (M != 0) {
+				for (std::size_t i = 0; i < M; ++i) {
+					const limb_t u = x[i] - t[i];
+					const limb_t v = u - borrow;
+					borrow = ((x[i] < t[i]) || (u < borrow)) ? 1u : 0u;
+					t[i]   = v;
+				}
+			}
+			else {
+				limb_kernels::sub_n(t, x, t, m);
+				limb_kernels::sub_1(t, m, borrow);   // X > Y: no borrow out of the top
+			}
+			if ((t[m - 1] >> 62) == 0u && t[m - 1] != 0u) {
+				// two to 63 leading bits cancelled, which only a gap of one bit does: the difference is
+				// exact in t and o, nothing is sticky, and one shift brings its leading bit to the top
+				const unsigned k = static_cast<unsigned>(std::countl_zero(t[m - 1]));
+				if constexpr (M != 0) {
+					for (std::size_t i = M; i-- > 1;) t[i] = (t[i] << k) | (t[i - 1] >> (64u - k));
+					t[0] = (t[0] << k) | (o >> (64u - k));
+				}
+				else {
+					limb_kernels::lshift(t, t, m, k);
+					t[0] |= o >> (64u - k);
+				}
+				o <<= k;
+				exponent -= k;
+			}
+			else if ((t[m - 1] >> 62) == 0u) [[unlikely]] {
+				// a whole limb or more cancelled: the exact difference in t and o rounds as any other
+				_sign = sign;
+				round_cancelled(t, m, o, ex);
+				return;
+			}
+			else if ((t[m - 1] >> 63) == 0u) {   // one leading bit cancelled: shift up, the low limb's top bit in
+				if constexpr (M != 0) {
+					for (std::size_t i = M; i-- > 1;) t[i] = (t[i] << 1) | (t[i - 1] >> 63);
+					t[0] = (t[0] << 1) | (o >> 63);
+				}
+				else {
+					limb_kernels::lshift(t, t, m, 1u);
+					t[0] |= o >> 63;
+				}
+				o <<= 1;   // the bit shifted in below o is the sticky part's, which sticky covers
+				--exponent;
+			}
+		}
+		// round at the precision: the low limb's top bit is the guard bit, or bit 31 of t[0]
+		const unsigned drop = static_cast<unsigned>(64 * m - 32 * static_cast<std::size_t>(precision_limbs()));   // 0 or 32
+		bool guard = false;
+		if (drop == 0u) {
+			guard  = (o >> 63) != 0u;
+			sticky = sticky || ((o << 1) != 0u);
+		}
+		else {
+			guard  = ((t[0] >> 31) & 1u) != 0u;
+			sticky = sticky || o != 0u || (t[0] & 0x7FFF'FFFFu) != 0u;
+			t[0] &= 0xFFFF'FFFF'0000'0000ull;
+		}
+		_sign = sign;
+		bool power_of_2 = false;   // rounded up out of the top
+		if (guard || sticky) {
+			efloat_exception_flags.set(ExceptionFlag::Inexact);
+			if (rounds_up(efloat_rounding_mode, sign, ((t[0] >> drop) & 1u) != 0u, guard, sticky)) {
+				limb_t carry = limb_t(1) << drop;
+				for (std::size_t i = 0; carry != 0u && i < m; ++i) {
+					t[i] += carry;
+					carry = (t[i] < carry) ? 1u : 0u;
+				}
+				power_of_2 = (carry != 0u);
+			}
+		}
+		if (power_of_2) {
+			_limb.assign(1, limb_t(1) << 63);
 			++exponent;
 		}
-		if (guard || sticky) efloat_exception_flags.set(ExceptionFlag::Inexact);
-		if (rounds_up(efloat_rounding_mode, _sign, (t[0] & 1u) != 0u, guard, sticky) && limb_kernels::add_1(t, m, 1u) != 0u) {
-			t[0] = limb_t(1) << 63;   // carried out of the top: the value is a power of 2
-			m = 1;
-			++exponent;
+		else if (in_place) {
+			if (t[0] == 0u) trim_low_limbs(m);
 		}
-		std::size_t z = 0;
-		while (z + 1 < m && t[z] == 0u) ++z;
-		efloat_storage::copy_limbs(_limb.resize_for_overwrite(m - z), t + z, m - z);
+		else {
+			std::size_t z = 0;
+			while (z + 1 < m && t[z] == 0u) ++z;
+			limb_t* w = _limb.resize_for_overwrite(m - z);
+			if constexpr (M != 0) {
+				for (std::size_t k = 0; k + z < M; ++k) w[k] = t[z + k];
+			}
+			else {
+				efloat_storage::copy_limbs(w, t + z, m - z);
+			}
+		}
 		_exponent = exponent;
 		_state    = FloatingPointState::Normal;
 		if (!in_range(exponent)) [[unlikely]] enforce_range();
+	}
+
+	// rounds the exact difference t[0, m) B + o, its bit 64 (m + 1) - 1 weighing 2^ex, after a
+	// cancellation of a limb or more; out of line, as it is rare
+#if defined(__GNUC__) || defined(__clang__)
+	__attribute__((noinline))
+#endif
+	void round_cancelled(const limb_t* t, std::size_t m, limb_t o, int64_t ex) {
+		scratch_buffer<129> exact;
+		limb_t* f = exact.get(m + 1);
+		f[0] = o;
+		for (std::size_t i = 0; i < m; ++i) f[1 + i] = t[i];
+		round_into(f, m + 1, ex, false);
 	}
 
 	// the sign of an exact zero sum of addends of the signs a and b (IEEE-754 6.3): their common
@@ -956,11 +1166,33 @@ protected:
 	// as from the exact product; where it does not, the exact product decides, as before.
 	static constexpr size_t mulhigh_min_limbs = 16;   // by measurement: below, the padded short product does not pay
 	void multiply_magnitude(const limb_t* b, std::size_t mb, int64_t eb, bool b_sign) {
-		const limb_t*     a      = _limb.data();
-		const std::size_t ma     = _limb.size();
+		multiply_magnitudes(_limb.data(), _limb.size(), _exponent, _sign, b, mb, eb, b_sign);
+	}
+	// *this = A B for finite nonzero, normalized A = (a[0, ma), ea, a_sign) and B, at the
+	// precision already in *this; a and b may be *this's own limbs, or another value's (#1826).
+	// Operands of one to three limbs at the full precision multiply and round in registers.
+	void multiply_magnitudes(const limb_t* a, std::size_t ma, int64_t ea, bool a_sign, const limb_t* b, std::size_t mb, int64_t eb, bool b_sign) {
 		const bool        square = (a == b && ma == mb);
+		const int64_t     top    = ea + eb + 1;
+		const std::size_t target = precision_limbs();
+		_sign = a_sign;
+		if (ma == mb && ma == (target + 1) / 2 && ma <= 3) {
+			switch (ma) {
+			case 1:  multiply_short<1>(a, b, top, a_sign != b_sign); break;
+			case 2:  multiply_short<2>(a, b, top, a_sign != b_sign); break;
+			default: multiply_short<3>(a, b, top, a_sign != b_sign); break;
+			}
+			return;
+		}
+		multiply_long(a, ma, a_sign, b, mb, b_sign, top, square);
+	}
+	// multiply_magnitudes past the short products; out of line, so that its scratch frame is not
+	// set up for them
+#if defined(__GNUC__) || defined(__clang__)
+	__attribute__((noinline))
+#endif
+	void multiply_long(const limb_t* a, std::size_t ma, bool a_sign, const limb_t* b, std::size_t mb, bool b_sign, int64_t top, bool square) {
 		const std::size_t mt     = ma + mb;
-		const int64_t     top    = _exponent + eb + 1;
 		const std::size_t target = precision_limbs();
 		if (ma == mb && ma >= mulhigh_min_limbs && 32 * target + 24 <= 64 * ma + 62 - static_cast<size_t>(std::bit_width(ma + 1))) {
 			const size_t n = ma + 1;
@@ -981,7 +1213,7 @@ protected:
 			if (limb_kernels::can_round(f, n + 1, static_cast<unsigned>(32 * target), correct)) {
 				// R and a sticky bit: the exact product lies past R, and Ziv's test says on which side
 				// of every boundary
-				_sign = (_sign != b_sign);
+				_sign = (a_sign != b_sign);
 				round_into(f, n + 1, top, true);
 				return;
 			}
@@ -991,8 +1223,77 @@ protected:
 		limb_t* work = prod + mt;
 		if (square) limb_kernels::mul_n(prod, a, a, ma, work, true);
 		else        limb_kernels::mul(prod, a, ma, b, mb, work);
-		_sign = (_sign != b_sign);
+		_sign = (a_sign != b_sign);
 		round_into(prod, mt, top, false);   // the exact product
+	}
+
+	// A B for operands of M = 1 to 3 limbs at a precision of 64 M or 64 M - 32 bits (#1826): the
+	// 2 M limbs of the product by schoolbook on 128-bit partial products, normalized by at most
+	// one bit, and rounded from them; the product's bit 128 M - 1 weighs 2^top
+	template<std::size_t M>
+	void multiply_short(const limb_t* a, const limb_t* b, int64_t top, bool sign) {
+		limb_t p[2 * M] = {};
+		for (std::size_t i = 0; i < M; ++i) {
+			limb_t carry = 0;
+			for (std::size_t j = 0; j < M; ++j) {
+				limb_t hi = 0, lo = 0;
+				limb_kernels::umul(a[j], b[i], hi, lo);
+				lo += carry;
+				hi += (lo < carry) ? 1u : 0u;
+				const limb_t r = p[i + j] + lo;
+				hi += (r < lo) ? 1u : 0u;
+				p[i + j] = r;
+				carry = hi;
+			}
+			p[i + M] = carry;
+		}
+		int64_t exponent = top;
+		if ((p[2 * M - 1] >> 63) == 0u) {   // the product of two normalized values lacks at most one bit
+			for (std::size_t i = 2 * M; i-- > 1;) p[i] = (p[i] << 1) | (p[i - 1] >> 63);
+			p[0] <<= 1;
+			--exponent;
+		}
+		// the top M limbs are kept, the lowest of them to bit drop
+		limb_t* t = p + M;
+		const unsigned drop = static_cast<unsigned>(64 * M - 32 * static_cast<std::size_t>(precision_limbs()));   // 0 or 32
+		bool guard = false, sticky = false;
+		if (drop == 0u) {
+			guard  = (p[M - 1] >> 63) != 0u;
+			sticky = (p[M - 1] << 1) != 0u;
+			for (std::size_t i = 0; !sticky && i + 1 < M; ++i) sticky = (p[i] != 0u);
+		}
+		else {
+			guard  = ((t[0] >> 31) & 1u) != 0u;
+			sticky = (t[0] & 0x7FFF'FFFFu) != 0u;
+			for (std::size_t i = 0; !sticky && i < M; ++i) sticky = (p[i] != 0u);
+			t[0] &= 0xFFFF'FFFF'0000'0000ull;
+		}
+		_sign = sign;
+		bool power_of_2 = false;
+		if (guard || sticky) {
+			efloat_exception_flags.set(ExceptionFlag::Inexact);
+			if (rounds_up(efloat_rounding_mode, sign, ((t[0] >> drop) & 1u) != 0u, guard, sticky)) {
+				limb_t carry = limb_t(1) << drop;
+				for (std::size_t i = 0; carry != 0u && i < M; ++i) {
+					t[i] += carry;
+					carry = (t[i] < carry) ? 1u : 0u;
+				}
+				power_of_2 = (carry != 0u);
+			}
+		}
+		if (power_of_2) {
+			_limb.assign(1, limb_t(1) << 63);
+			++exponent;
+		}
+		else {
+			std::size_t z = 0;
+			while (z + 1 < M && t[z] == 0u) ++z;
+			limb_t* w = _limb.resize_for_overwrite(M - z);
+			for (std::size_t k = 0; k + z < M; ++k) w[k] = t[z + k];
+		}
+		_exponent = exponent;
+		_state    = FloatingPointState::Normal;
+		if (!in_range(exponent)) [[unlikely]] enforce_range();
 	}
 
 	// Rounds R + s, R the integer r[0, n) of 64-bit limbs least significant first whose bit
@@ -1205,10 +1506,10 @@ protected:
 	// *this /= d for a finite nonzero *this and a d of up to 64 bits that is not a power of 2,
 	// rounded once in the current mode (#1761, #1811): the quotient as operator/= forms it,
 	// without building an efloat for d or a general long division. The significand P, its m
-	// 64-bit limbs given k zero limbs below so that the quotient carries the precision and a
-	// guard bit, is divided by d normalized to its top bit, a limb at a time with Moller and
-	// Granlund's reciprocal (limb_kernels::divrem_1); the remainder is the sticky bit, and the
-	// quotient rounds once. Exact, so the result is the one the general path returns.
+	// 64-bit limbs given k zero limbs below so that the quotient carries the precision and a guard
+	// bit, is divided by d normalized to its top bit, a limb at a time with Moller and Granlund's
+	// reciprocal (limb_kernels::divrem_1); the remainder is the sticky bit, and the quotient rounds
+	// once. Exact, so the result is the one the general path returns.
 	void divide_by_limb(uint64_t d, bool negative) {
 		const unsigned    target = precision_limbs();
 		const limb_t*     a      = _limb.data();
@@ -1239,6 +1540,57 @@ protected:
 		_sign = (_sign != negative);
 		round_into(q, nn, top, sticky);
 	}
+	// *this = A / d 2^-shift for a finite nonzero, normalized A = (a[0, m), ea, a_sign), at the
+	// precision already in *this: divide_by_limb's quotient, its exponent moved by shift before it
+	// rounds, so that a divisor of one limb, d 2^(eb - 63), divides the same way (#1826). A quotient
+	// of one or two limbs is the common case here, and two changes pay for it, where they cost the
+	// integer divisors of divide_by_limb more than they save (a/7 5-15% slower from 64 to 384 bits)
+	void divide_limbs_by(const limb_t* a, std::size_t m, int64_t ea, bool a_sign, uint64_t d, bool negative, int64_t shift) {
+		const unsigned    target = precision_limbs();
+		// Q = floor(P B^k / d) >= 2^(64 (m + k) - 1 - bit_width(d)): k limbs below give it the
+		// 32 target + 2 bits the rounding reads, the guard bit among them, and the remainder is the
+		// sticky bit. Where a limb fewer gives it the 32 target bits alone, the remainder R decides
+		// the rest instead, as MPFR's mpfr_div_1 does (#1826): the next bit is whether 2 R >= d,
+		// and the sticky bit whether anything remains past it. A 64-bit quotient by a one-limb
+		// divisor is then one 2-by-1 step, where it was three; elsewhere the limb is kept, which
+		// costs less than the bit.
+		const int64_t  base   = static_cast<int64_t>(std::bit_width(d)) - 64 * static_cast<int64_t>(m);
+		const int64_t  wide   = 32 * static_cast<int64_t>(target) + 3 + base;
+		const int64_t  tight  = 32 * static_cast<int64_t>(target) + base;
+		const size_t   k_wide  = (wide > 0) ? static_cast<size_t>((wide + 63) / 64) : 0u;
+		const size_t   k_tight = (tight > 0) ? static_cast<size_t>((tight + 63) / 64) : 0u;
+		const bool     by_bit = (k_tight < k_wide);
+		const size_t   k      = by_bit ? k_tight : k_wide;
+		const unsigned sh     = static_cast<unsigned>(std::countl_zero(d));
+		const size_t   nn     = m + k + ((sh != 0u) ? 1u : 0u);   // and a top limb for a normalizing shift
+		const limb_t   dn     = d << sh;
+		scratch64 buffer;
+		limb_t* num = buffer.get(2 * nn + 1);
+		limb_t* q   = num + nn;   // q[0] the bit from the remainder, q[1, nn + 1) the quotient
+		// P B^k 2^sh, shifted up by d's leading zeros as d is
+		for (size_t i = 0; i < k; ++i) num[i] = 0u;
+		if (sh == 0u) {
+			for (size_t j = 0; j < m; ++j) num[k + j] = a[j];   // a normalized d: no shift, and no top limb
+		}
+		else {
+			num[nn - 1] = limb_kernels::lshift(num + k, a, m, sh);
+		}
+		// a few limbs divide faster in hardware than through a reciprocal
+		q[nn] = (limb_kernels::hardware_division && nn <= 3) ? limb_kernels::divrem_1_short(q + 1, num, nn, dn)
+		                                                     : limb_kernels::divrem_1(q + 1, num, nn, dn, limb_kernels::invert_limb(dn));
+		// the quotient weighs 2^(scale - 64 (m + k) + 1) a unit, its limb nn - 1 included
+		const int64_t top = ea - 64 * static_cast<int64_t>(m + k) + 1 + 64 * static_cast<int64_t>(nn) - 1 + shift;
+		_sign = (a_sign != negative);
+		const limb_t r = num[0];   // R 2^sh, against dn = d 2^sh
+		if (!by_bit) {
+			round_into(q + 1, nn, top, r != 0u);
+			return;
+		}
+		const bool half = (r >= dn - r);   // 2 R >= d: the next bit
+		const bool rest = half ? (r != dn - r) : (r != 0u);
+		q[0] = half ? (limb_t(1) << 63) : 0u;
+		round_into(q, nn + 1, top, rest);
+	}
 
 	// *this = *this / b for finite nonzero operands, rounded once in the current mode: the
 	// significands as integers A and B, both normalized, Q = floor(A 2^shift / B) with
@@ -1252,8 +1604,24 @@ protected:
 	// rounding wherever it passes. Where it does not -- a quotient next to a rounding boundary,
 	// and every exact one, whose low bits are zero -- the exact quotient and remainder do.
 	void divide_magnitude(const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
-		const limb_t*     a     = _limb.data();
-		const std::size_t na    = _limb.size();
+		divide_magnitudes(_limb.data(), _limb.size(), _exponent, _sign, b, dn, eb, b_sign);
+	}
+	// *this = A / B for finite nonzero, normalized A = (a[0, na), ea, a_sign) and B, at the
+	// precision already in *this; a and b may be *this's own limbs, or another value's (#1826).
+	// A divisor of one limb divides as an integer divisor does, a limb at a time.
+	void divide_magnitudes(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
+		if (dn == 1) {   // B = b[0] 2^(eb - 63): A / B = (A / b[0]) 2^(63 - eb)
+			divide_limbs_by(a, na, ea, a_sign, b[0], b_sign, 63 - eb);
+			return;
+		}
+		divide_long(a, na, ea, a_sign, b, dn, eb, b_sign);
+	}
+	// divide_magnitudes for a divisor of two limbs or more; out of line, so that its scratch
+	// frame is not set up for a divisor of one
+#if defined(__GNUC__) || defined(__clang__)
+	__attribute__((noinline))
+#endif
+	void divide_long(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
 		const unsigned    target = precision_limbs();
 		const int64_t     qbits  = 32 * (static_cast<int64_t>(target) + 2);   // Q < 2^qbits, its leading bit at 2^(qbits - 1) or 2^(qbits - 2)
 
@@ -1264,6 +1632,12 @@ protected:
 		if (nn < dn) nn = dn;
 		const size_t qn = nn - dn + 1;                                  // with the top limb div_qr returns
 		const size_t ql = static_cast<size_t>((qbits + 63) / 64);       // the limbs the quotient's bits fill
+		// without an approximate quotient, the exact one need only carry the precision: its
+		// remainder decides the rest (#1826), when no bit of the dividend is lost to the sticky bit
+		if (limb_kernels::divappr_error(nn, dn) == 0u && 32 * static_cast<int64_t>(target) >= 64 * (static_cast<int64_t>(na) - static_cast<int64_t>(dn))) {
+			divide_exact_short(a, na, ea, a_sign, b, dn, eb, b_sign);
+			return;
+		}
 
 		scratch_buffer<1024> buffer;
 		const size_t qlen = std::max(qn, ql);
@@ -1293,8 +1667,8 @@ protected:
 		}
 		// the quotient rounds once from its 64-bit limbs, the bit qbits - 1 weighing
 		// 2^(scale(a) - scale(b)), with the sticky bit below it
-		const int64_t qtop = _exponent - eb + 64 * static_cast<int64_t>(qlen) - qbits;
-		const bool    sign = (_sign != b_sign);
+		const int64_t qtop = ea - eb + 64 * static_cast<int64_t>(qlen) - qbits;
+		const bool    sign = (a_sign != b_sign);
 		auto round_from = [&](bool sticky_bit) { _sign = sign; round_into(q, qlen, qtop, sticky_bit); };
 		const size_t error = limb_kernels::divappr_error(nn, dn);
 		if (error != 0u) {
@@ -1323,6 +1697,50 @@ protected:
 		q[nn - dn] = limb_kernels::div_qr(q, num, nn, b, dn, work);
 		for (size_t k = 0; !sticky && k < dn; ++k) sticky = (num[k] != 0u);
 		round_from(sticky);
+	}
+
+	// A / B as divide_long forms it without an approximate quotient, the exact quotient Q of at
+	// least 32 precision_limbs() bits and no more, N = A 2^shift with shift >= 0 so that no bit of
+	// A is lost: Q + R / B is the exact quotient, and the remainder R gives the bit after Q's last,
+	// whether 2 R >= B, and the sticky bit, whether R is not 0 or B / 2. It is the bit and the
+	// sticky bit two limbs of quotient used to give, at one or two division steps fewer.
+	void divide_exact_short(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
+		const unsigned target = precision_limbs();
+		const int64_t  qbits  = 32 * static_cast<int64_t>(target) + 1;   // Q < 2^qbits, its leading bit at 2^(qbits - 1) or 2^(qbits - 2)
+		const int64_t  shift  = qbits - 1 - 64 * (static_cast<int64_t>(na) - static_cast<int64_t>(dn));   // >= 0
+		const int64_t  bits_n = 64 * static_cast<int64_t>(na) + shift;
+		const size_t   nn     = std::max<size_t>(dn, static_cast<size_t>((bits_n + 63) / 64));
+		const size_t   qn     = nn - dn + 1;
+		scratch_buffer<256> buffer;
+		limb_t* num  = buffer.get(nn + qn + 1 + dn + limb_kernels::div_scratch_limbs(dn));
+		limb_t* q    = num + nn;   // q[0] the bit from the remainder, q[1, qn + 1) the quotient
+		limb_t* half = q + qn + 1; // B - R
+		limb_t* work = half + dn;
+		const std::size_t w = static_cast<std::size_t>(shift / 64);
+		const unsigned    c = static_cast<unsigned>(shift % 64);
+		efloat_storage::zero_limbs(num, w);
+		std::size_t used = w + na;
+		if (c == 0u) {
+			efloat_storage::copy_limbs(num + w, a, na);
+		}
+		else {
+			const limb_t out = limb_kernels::lshift(num + w, a, na, c);
+			if (used < nn) num[used++] = out;   // else out is 0: N < 2^bits_n
+		}
+		efloat_storage::zero_limbs(num + used, nn - used);
+		q[qn] = limb_kernels::div_qr(q + 1, num, nn, b, dn, work);
+		// R = num[0, dn) < B: the next bit is whether R >= B - R
+		limb_kernels::sub_n(half, b, num, dn);
+		int cmp = 0;
+		for (std::size_t i = dn; cmp == 0 && i-- > 0;) cmp = (num[i] > half[i]) ? 1 : (num[i] < half[i]) ? -1 : 0;
+		bool zero = true;
+		for (std::size_t i = 0; zero && i < dn; ++i) zero = (num[i] == 0u);
+		q[0] = (cmp >= 0) ? (limb_t(1) << 63) : 0u;
+		const bool rest = (cmp >= 0) ? (cmp != 0) : !zero;
+		// Q's bit qbits - 1 weighs 2^(scale(a) - scale(b)); the frame's top is Q's limb qn - 1
+		const int64_t qtop = ea - eb + 64 * static_cast<int64_t>(qn) - qbits;
+		_sign = (a_sign != b_sign);
+		round_into(q, qn + 1, qtop, rest);
 	}
 
 	// convert arithmetic types into an elastic floating-point
@@ -2207,30 +2625,29 @@ inline bool operator>=(double lhs, const efloat<nlimbs>& rhs) {
 // BINARY ADDITION
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
-	efloat<nlimbs> sum = lhs;
-	sum += rhs;
+	efloat<nlimbs> sum{ typename efloat<nlimbs>::uninitialized_t{} };
+	sum.assign_sum(lhs, rhs, false);   // into sum's limbs, without a copy of lhs (#1826)
 	return sum;
 }
 // BINARY SUBTRACTION
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
-	efloat<nlimbs> diff = lhs;
-	diff -= rhs;
+	efloat<nlimbs> diff{ typename efloat<nlimbs>::uninitialized_t{} };
+	diff.assign_sum(lhs, rhs, true);
 	return diff;
 }
 // BINARY MULTIPLICATION
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
-	efloat<nlimbs> mul = lhs;
-	if (&lhs == &rhs) mul *= mul;   // x * x squares (#1761)
-	else mul *= rhs;
+	efloat<nlimbs> mul{ typename efloat<nlimbs>::uninitialized_t{} };
+	mul.assign_product(lhs, rhs);   // into mul's limbs; x * x squares (#1761, #1826)
 	return mul;
 }
 // BINARY DIVISION
 template<unsigned nlimbs>
 constexpr efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
-	efloat<nlimbs> ratio = lhs;
-	ratio /= rhs;
+	efloat<nlimbs> ratio{ typename efloat<nlimbs>::uninitialized_t{} };
+	ratio.assign_quotient(lhs, rhs);   // into ratio's limbs (#1826)
 	return ratio;
 }
 // a temporary left operand is reused, its limbs and all, rather than copied (#1762)
