@@ -22,6 +22,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>   // std::is_constant_evaluated: the kernels run in constant evaluation (#1819)
 #include <universal/internal/blocktype/carry.hpp>   // mul128, uint128_t
 
 // x86-64 kernels in GNU inline assembly (gcc, clang), chosen at run time when the processor has
@@ -54,7 +55,7 @@ inline constexpr std::size_t karatsuba_sqr_threshold = 48;
 #endif
 
 // r[0, n) = a[0, n) * b, returns the high limb
-inline limb_t mul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+inline constexpr limb_t mul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
 	limb_t carry = 0;
 	for (std::size_t i = 0; i < n; ++i) {
 #if defined(__SIZEOF_INT128__)
@@ -74,7 +75,7 @@ inline limb_t mul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_t b
 }
 
 // r[0, n) += a[0, n) * b, returns the carry out of the top: a * b + r + carry < 2^128
-inline limb_t addmul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+inline constexpr limb_t addmul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
 	limb_t carry = 0;
 	for (std::size_t i = 0; i < n; ++i) {
 #if defined(__SIZEOF_INT128__)
@@ -96,7 +97,7 @@ inline limb_t addmul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_
 }
 
 // r[0, n) = a[0, n) + b[0, n), returns the carry; r may be a or b
-inline limb_t add_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+inline constexpr limb_t add_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
 	limb_t carry = 0;
 	for (std::size_t i = 0; i < n; ++i) {
 		const limb_t s = a[i] + carry;
@@ -108,7 +109,7 @@ inline limb_t add_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::s
 }
 
 // r[0, n) = a[0, n) - b[0, n), returns the borrow; r may be a or b
-inline limb_t sub_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+inline constexpr limb_t sub_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
 	limb_t borrow = 0;
 	for (std::size_t i = 0; i < n; ++i) {
 		const limb_t bi = b[i] + borrow;
@@ -122,7 +123,7 @@ inline limb_t sub_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::s
 
 // r[0, n) = 2 a[0, n) - b[0, n) mod B^n as a + (a + ~b + 1), the two sums' carries in c1 and c2,
 // which a longer run continues; r may be a or b
-inline void twice_sub_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t& c1, limb_t& c2) noexcept {
+inline constexpr void twice_sub_n_portable(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t& c1, limb_t& c2) noexcept {
 	for (std::size_t i = 0; i < n; ++i) {
 		const limb_t ai = a[i];
 		const limb_t nb = ~b[i];
@@ -368,9 +369,9 @@ inline void twice_sub_4k(limb_t* r, const limb_t* a, const limb_t* b, std::size_
 
 // The kernels: the low n mod 4 limbs by the portable loop, the rest by the assembly when the
 // processor has it, its carry passed in
-inline limb_t mul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+inline constexpr limb_t mul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
 #if UNIVERSAL_LIMB_KERNELS_X86_64_ASM
-	if (n >= 4 && x86::has_mulx_adx) {
+	if (n >= 4 && !std::is_constant_evaluated() && x86::has_mulx_adx) {
 		const std::size_t t = n & 3u;
 		return x86::mul_4k(r + t, a + t, n - t, b, mul_1_portable(r, a, t, b));
 	}
@@ -378,9 +379,9 @@ inline limb_t mul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcep
 	return mul_1_portable(r, a, n, b);
 }
 
-inline limb_t addmul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+inline constexpr limb_t addmul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
 #if UNIVERSAL_LIMB_KERNELS_X86_64_ASM
-	if (n >= 4 && x86::has_mulx_adx) {
+	if (n >= 4 && !std::is_constant_evaluated() && x86::has_mulx_adx) {
 		const std::size_t t = n & 3u;
 		return x86::addmul_4k(r + t, a + t, n - t, b, addmul_1_portable(r, a, t, b));
 	}
@@ -388,9 +389,9 @@ inline limb_t addmul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noex
 	return addmul_1_portable(r, a, n, b);
 }
 
-inline limb_t add_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+inline constexpr limb_t add_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
 #if UNIVERSAL_LIMB_KERNELS_X86_64_ASM
-	if (n >= 4) {   // adc alone: every x86-64 processor has it
+	if (n >= 4 && !std::is_constant_evaluated()) {   // adc alone: every x86-64 processor has it
 		const std::size_t t = n & 3u;
 		return x86::add_4k(r + t, a + t, b + t, n - t, add_n_portable(r, a, b, t));
 	}
@@ -398,9 +399,9 @@ inline limb_t add_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) 
 	return add_n_portable(r, a, b, n);
 }
 
-inline limb_t sub_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+inline constexpr limb_t sub_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
 #if UNIVERSAL_LIMB_KERNELS_X86_64_ASM
-	if (n >= 4) {
+	if (n >= 4 && !std::is_constant_evaluated()) {
 		const std::size_t t = n & 3u;
 		return x86::sub_4k(r + t, a + t, b + t, n - t, sub_n_portable(r, a, b, t));
 	}
@@ -410,10 +411,10 @@ inline limb_t sub_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) 
 
 // r[0, n) = 2 a[0, n) - b[0, n) mod B^n, in one pass where the processor has ADX (#1828); a
 // difference one bit apart that cancels its leading bit is half of it. r may be a or b.
-inline void twice_sub_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+inline constexpr void twice_sub_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
 	limb_t c1 = 1, c2 = 0;   // a + ~b + 1 = a - b
 #if UNIVERSAL_LIMB_KERNELS_X86_64_ASM
-	if (n >= 4 && x86::has_mulx_adx) {
+	if (n >= 4 && !std::is_constant_evaluated() && x86::has_mulx_adx) {
 		const std::size_t t = n & 3u;
 		twice_sub_n_portable(r, a, b, t, c1, c2);
 		x86::twice_sub_4k(r + t, a + t, b + t, n - t, c1, c2);
@@ -424,7 +425,7 @@ inline void twice_sub_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t
 }
 
 // r[0, n) += c, returns the carry out of the top
-inline limb_t add_1(limb_t* r, std::size_t n, limb_t c) noexcept {
+inline constexpr limb_t add_1(limb_t* r, std::size_t n, limb_t c) noexcept {
 	for (std::size_t i = 0; i < n && c != 0; ++i) {
 		r[i] += c;
 		c = (r[i] < c) ? 1u : 0u;
@@ -433,13 +434,13 @@ inline limb_t add_1(limb_t* r, std::size_t n, limb_t c) noexcept {
 }
 
 // r[0, m + n) = a[0, m) * b[0, n), n >= 1, schoolbook; r overlaps neither operand
-inline void mul_basecase(limb_t* r, const limb_t* a, std::size_t m, const limb_t* b, std::size_t n) noexcept {
+inline constexpr void mul_basecase(limb_t* r, const limb_t* a, std::size_t m, const limb_t* b, std::size_t n) noexcept {
 	r[m] = mul_1(r, a, m, b[0]);
 	for (std::size_t j = 1; j < n; ++j) r[m + j] = addmul_1(r + j, a, m, b[j]);
 }
 
 // r[0, 2n) = a[0, n)^2: each cross product a_i a_j (i < j) once, doubled, plus the squares a_i^2
-inline void sqr_basecase(limb_t* r, const limb_t* a, std::size_t n) noexcept {
+inline constexpr void sqr_basecase(limb_t* r, const limb_t* a, std::size_t n) noexcept {
 	for (std::size_t i = 0; i < 2 * n; ++i) r[i] = 0;
 	for (std::size_t i = 0; i + 1 < n; ++i) r[i + n] = addmul_1(r + 2 * i + 1, a + i + 1, n - i - 1, a[i]);
 	// double the cross products: their sum is below a^2 / 2, so no bit leaves the top
@@ -471,7 +472,7 @@ inline void sqr_basecase(limb_t* r, const limb_t* a, std::size_t n) noexcept {
 }
 
 // d[0, k) = |x[0, k) - y[0, h)| for h <= k, returns whether x < y
-inline bool abs_diff(limb_t* d, const limb_t* x, std::size_t k, const limb_t* y, std::size_t h) noexcept {
+inline constexpr bool abs_diff(limb_t* d, const limb_t* x, std::size_t k, const limb_t* y, std::size_t h) noexcept {
 	bool x_smaller = false;
 	bool x_high    = false;   // y is zero above h: x is the larger if any of x[h, k) is nonzero
 	for (std::size_t j = h; j < k; ++j) x_high = x_high || (x[j] != 0);
@@ -499,9 +500,9 @@ inline bool abs_diff(limb_t* d, const limb_t* x, std::size_t k, const limb_t* y,
 // below 6n + 64, and an unbalanced mul adds a block product per level of its remainder sequence
 constexpr std::size_t scratch_limbs(std::size_t n) noexcept { return 16 * n + 128; }
 
-inline void mul_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept;
-inline limb_t sub_1(limb_t* r, std::size_t n, limb_t c) noexcept;
-inline limb_t lshift(limb_t* r, const limb_t* a, std::size_t n, unsigned c) noexcept;
+inline constexpr void mul_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept;
+inline constexpr limb_t sub_1(limb_t* r, std::size_t n, limb_t c) noexcept;
+inline constexpr limb_t lshift(limb_t* r, const limb_t* a, std::size_t n, unsigned c) noexcept;
 
 // operands of at least this many limbs multiply by Toom-3, below it by Karatsuba (#1814). By
 // measurement: from 256 limbs a product is 2-16% faster by Toom-3 (9% at 512, 16% at 1024), at
@@ -525,7 +526,7 @@ inline constexpr std::size_t toom3_sqr_threshold = 352;
 namespace toom {
 
 	// r[0, w) = -r[0, w) mod B^w
-	inline void negate(limb_t* r, std::size_t w) noexcept {
+	inline constexpr void negate(limb_t* r, std::size_t w) noexcept {
 		limb_t c = 1;
 		for (std::size_t i = 0; i < w; ++i) {
 			const limb_t v = ~r[i] + c;
@@ -535,24 +536,24 @@ namespace toom {
 	}
 
 	// whether r[0, w) is negative, read as two's complement
-	inline bool negative(const limb_t* r, std::size_t w) noexcept { return (r[w - 1] >> 63) != 0u; }
+	inline constexpr bool negative(const limb_t* r, std::size_t w) noexcept { return (r[w - 1] >> 63) != 0u; }
 
 	// r[0, w) = r[0, w) + or - b[0, nb) mod B^w, b nonnegative, nb <= w
-	inline void add_short(limb_t* r, std::size_t w, const limb_t* b, std::size_t nb) noexcept {
+	inline constexpr void add_short(limb_t* r, std::size_t w, const limb_t* b, std::size_t nb) noexcept {
 		add_1(r + nb, w - nb, add_n(r, r, b, nb));
 	}
-	inline void sub_short(limb_t* r, std::size_t w, const limb_t* b, std::size_t nb) noexcept {
+	inline constexpr void sub_short(limb_t* r, std::size_t w, const limb_t* b, std::size_t nb) noexcept {
 		sub_1(r + nb, w - nb, sub_n(r, r, b, nb));
 	}
 
 	// r[0, w) = r[0, w) / 2, arithmetic: r is even
-	inline void halve(limb_t* r, std::size_t w) noexcept {
+	inline constexpr void halve(limb_t* r, std::size_t w) noexcept {
 		for (std::size_t i = 0; i + 1 < w; ++i) r[i] = (r[i] >> 1) | (r[i + 1] << 63);
 		r[w - 1] = static_cast<limb_t>(static_cast<std::int64_t>(r[w - 1]) >> 1);
 	}
 
 	// r[0, w) = r[0, w) / 3 mod B^w, exactly: r is a multiple of 3
-	inline void third(limb_t* r, std::size_t w) noexcept {
+	inline constexpr void third(limb_t* r, std::size_t w) noexcept {
 		constexpr limb_t inv3 = 0xAAAA'AAAA'AAAA'AAABull;   // 3^-1 mod 2^64
 		limb_t c = 0;
 		for (std::size_t i = 0; i < w; ++i) {
@@ -575,7 +576,7 @@ namespace toom {
 
 	// e1, em1, em2 (k + 2 limbs each, two's complement) = a(1), a(-1), a(-2) for a = a[0, n)
 	// split at k: a0 = a[0, k), a1 = a[k, 2k), a2 = a[2k, n) of s limbs
-	inline void evaluate(limb_t* e1, limb_t* em1, limb_t* em2, const limb_t* a, std::size_t k, std::size_t s) noexcept {
+	inline constexpr void evaluate(limb_t* e1, limb_t* em1, limb_t* em2, const limb_t* a, std::size_t k, std::size_t s) noexcept {
 		const std::size_t w = k + 2;
 		limb_t* p = em2;   // p = a0 + a2, kept in em2 until it is formed
 		for (std::size_t i = 0; i < k; ++i) p[i] = a[i];
@@ -592,7 +593,7 @@ namespace toom {
 	}
 
 	// the magnitude of a two's complement value of w limbs, in place; returns whether it was negative
-	inline bool magnitude(limb_t* r, std::size_t w) noexcept {
+	inline constexpr bool magnitude(limb_t* r, std::size_t w) noexcept {
 		const bool neg = negative(r, w);
 		if (neg) negate(r, w);
 		return neg;
@@ -601,7 +602,7 @@ namespace toom {
 	// v[0, 2k + 2) = x y for x, y of k + 1 limbs whose top limbs are small (an evaluation's, 4 at
 	// most), as GMP's Toom codes form them: the product of the k low limbs, which keeps the
 	// recursion on k limbs, and the top limbs' cross terms added at B^k, one limb product each
-	inline void product(limb_t* v, const limb_t* x, const limb_t* y, std::size_t k, limb_t* s, bool square) noexcept {
+	inline constexpr void product(limb_t* v, const limb_t* x, const limb_t* y, std::size_t k, limb_t* s, bool square) noexcept {
 		mul_n(v, x, square ? x : y, k, s, square);
 		v[2 * k] = 0u;
 		v[2 * k + 1] = 0u;
@@ -625,7 +626,7 @@ namespace toom {
 // third empty; the thresholds lie far above); s holds
 // scratch_limbs(n) limbs: 12k + 18 here (six evaluations of k + 2 limbs, three products of
 // 2k + 2) and the five products' own after them
-inline void toom3_mul(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept {
+inline constexpr void toom3_mul(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept {
 	const std::size_t k  = (n + 2) / 3;
 	const std::size_t sl = n - 2 * k;   // a2's and b2's limbs, 1 to k
 	const std::size_t we = k + 2;       // an evaluation's width
@@ -687,7 +688,7 @@ inline void toom3_mul(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n
 // Subtractive Karatsuba: with a = a1 B^k + a0 and b likewise, the middle coefficient is
 // z0 + z2 - (a0 - a1)(b0 - b1), where the differences have k limbs and no carry. From
 // toom3_threshold limbs, Toom-3 (#1814).
-inline void mul_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept {
+inline constexpr void mul_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept {
 	if (n >= (square ? toom3_sqr_threshold : toom3_threshold)) {
 		toom3_mul(r, a, b, n, s, square);
 		return;
@@ -727,7 +728,7 @@ inline void mul_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, li
 // r[0, m + n) = a[0, m) * b[0, n) for any m, n >= 1; r overlaps neither operand, s holds
 // scratch_limbs(max(m, n)) limbs.  An unbalanced product multiplies the longer operand a block of
 // the shorter's length at a time.
-inline void mul(limb_t* r, const limb_t* a, std::size_t m, const limb_t* b, std::size_t n, limb_t* s) noexcept {
+inline constexpr void mul(limb_t* r, const limb_t* a, std::size_t m, const limb_t* b, std::size_t n, limb_t* s) noexcept {
 	if (m < n) { const limb_t* tp = a; a = b; b = tp; const std::size_t tn = m; m = n; n = tn; }
 	if (n < karatsuba_threshold) { mul_basecase(r, a, m, b, n); return; }
 	if (m == n) { mul_n(r, a, b, n, s, false); return; }
@@ -751,7 +752,7 @@ inline void mul(limb_t* r, const limb_t* a, std::size_t m, const limb_t* b, std:
 // significant first, as efloat holds a significand, for a shift of either sign; returns whether
 // the bits a right shift drops are nonzero (#1810, #1811). V is read as 64-bit words, least
 // significant first, each read once and shifted once.
-inline bool load_msb_first(limb_t* r, std::size_t n, const std::uint32_t* v, std::size_t nv, std::int64_t shift) noexcept {
+inline constexpr bool load_msb_first(limb_t* r, std::size_t n, const std::uint32_t* v, std::size_t nv, std::int64_t shift) noexcept {
 	const std::int64_t m = static_cast<std::int64_t>((nv + 1) / 2);
 	auto word = [v, nv, m](std::int64_t j) -> limb_t {   // word j of P = V 2^(32 (2m - nv)), an odd count padded at the bottom
 		if (j < 0 || j >= m) return 0u;
@@ -791,7 +792,7 @@ inline bool load_msb_first(limb_t* r, std::size_t n, const std::uint32_t* v, std
 inline constexpr std::size_t mulhigh_threshold = UNIVERSAL_LIMB_KERNELS_X86_64_ASM ? 64 : 32;
 
 // r[n - 1, 2n) = R as above, r[0, n - 1) is overwritten; r overlaps neither operand
-inline void mulhigh_basecase(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+inline constexpr void mulhigh_basecase(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n) noexcept {
 	for (std::size_t i = n - 1; i < 2 * n; ++i) r[i] = 0;
 	// a_i times b[n - 1 - i, n): its partial products from i + j = n - 1 up, all aligned at r[n - 1]
 	for (std::size_t i = 0; i < n; ++i) r[n + i] = addmul_1(r + n - 1, b + n - 1 - i, i + 1, a[i]);
@@ -799,7 +800,7 @@ inline void mulhigh_basecase(limb_t* r, const limb_t* a, const limb_t* b, std::s
 
 // r[n - 1, 2n) = R as above for a[0, n) b[0, n), or a^2 when square; r[0, n - 1) is overwritten,
 // r overlaps neither operand, s holds scratch_limbs(n) limbs
-inline void mulhigh_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept {
+inline constexpr void mulhigh_n(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, limb_t* s, bool square) noexcept {
 	if (n < mulhigh_threshold) {
 		mulhigh_basecase(r, a, b, n);
 		return;
@@ -840,7 +841,7 @@ constexpr std::size_t truncated_scratch_limbs(std::size_t na, std::size_t nb, st
 	return 4 * n + scratch_limbs(n);
 }
 
-inline void mul_truncated(limb_t* out, const limb_t* a, std::size_t na, const limb_t* b, std::size_t nb, std::size_t drop, limb_t* s) noexcept {
+inline constexpr void mul_truncated(limb_t* out, const limb_t* a, std::size_t na, const limb_t* b, std::size_t nb, std::size_t drop, limb_t* s) noexcept {
 	const bool square = (a == b && na == nb);
 	const std::size_t len = na + nb - drop;
 	if (na < truncated_min_limbs || nb < truncated_min_limbs) {
@@ -870,7 +871,7 @@ inline void mul_truncated(limb_t* out, const limb_t* a, std::size_t na, const li
 // bit as 0, that are neither all 0 nor all 1. The rounding boundaries at `precision` bits, the
 // representable values and the midpoints, are the values whose bits past position precision are
 // all 0, so then both the value and the exact result lie on one side of each of them.
-inline bool can_round(const limb_t* a, std::size_t n, unsigned precision, unsigned correct) noexcept {
+inline constexpr bool can_round(const limb_t* a, std::size_t n, unsigned precision, unsigned correct) noexcept {
 	if (correct < precision + 4) return false;
 	while (n > 0 && a[n - 1] == 0u) --n;
 	if (n == 0) return false;
@@ -900,13 +901,15 @@ inline constexpr std::size_t dc_div_threshold = UNIVERSAL_LIMB_KERNELS_X86_64_AS
 // a + b + carry and a - b - borrow for a carry or borrow of 0 or 1, the one out left in it: an
 // adc or sbb chain where the compiler has the builtin (#1830), which clang does not form from
 // the comparisons. For the short sums of efloat and fma, which keep their limbs in registers.
-inline limb_t add_carry(limb_t a, limb_t b, limb_t& carry) noexcept {
+inline constexpr limb_t add_carry(limb_t a, limb_t b, limb_t& carry) noexcept {
 #if defined(__has_builtin)
 #if __has_builtin(__builtin_addcll)
-	unsigned long long out = 0;
-	const limb_t r = static_cast<limb_t>(__builtin_addcll(a, b, carry, &out));
-	carry = static_cast<limb_t>(out);
-	return r;
+	if (!std::is_constant_evaluated()) {
+		unsigned long long out = 0;
+		const limb_t r = static_cast<limb_t>(__builtin_addcll(a, b, carry, &out));
+		carry = static_cast<limb_t>(out);
+		return r;
+	}
 #endif
 #endif
 	const limb_t u = a + carry;
@@ -914,13 +917,15 @@ inline limb_t add_carry(limb_t a, limb_t b, limb_t& carry) noexcept {
 	carry = ((u < carry) || (v < u)) ? 1u : 0u;
 	return v;
 }
-inline limb_t sub_borrow(limb_t a, limb_t b, limb_t& borrow) noexcept {
+inline constexpr limb_t sub_borrow(limb_t a, limb_t b, limb_t& borrow) noexcept {
 #if defined(__has_builtin)
 #if __has_builtin(__builtin_subcll)
-	unsigned long long out = 0;
-	const limb_t r = static_cast<limb_t>(__builtin_subcll(a, b, borrow, &out));
-	borrow = static_cast<limb_t>(out);
-	return r;
+	if (!std::is_constant_evaluated()) {
+		unsigned long long out = 0;
+		const limb_t r = static_cast<limb_t>(__builtin_subcll(a, b, borrow, &out));
+		borrow = static_cast<limb_t>(out);
+		return r;
+	}
 #endif
 #endif
 	const limb_t u = a - b;
@@ -930,7 +935,7 @@ inline limb_t sub_borrow(limb_t a, limb_t b, limb_t& borrow) noexcept {
 }
 
 // the high and low limbs of a * b
-inline void umul(limb_t a, limb_t b, limb_t& hi, limb_t& lo) noexcept {
+inline constexpr void umul(limb_t a, limb_t b, limb_t& hi, limb_t& lo) noexcept {
 #if defined(__SIZEOF_INT128__)
 	const uint128_t t = static_cast<uint128_t>(a) * b;
 	lo = static_cast<limb_t>(t);
@@ -941,7 +946,7 @@ inline void umul(limb_t a, limb_t b, limb_t& hi, limb_t& lo) noexcept {
 }
 
 // floor((u1 B + u0) / d) for a normalized d and u1 < d, the quotient fits one limb
-inline limb_t udiv_2by1(limb_t u1, limb_t u0, limb_t d) noexcept {
+inline constexpr limb_t udiv_2by1(limb_t u1, limb_t u0, limb_t d) noexcept {
 #if defined(__SIZEOF_INT128__)
 	return static_cast<limb_t>(((static_cast<uint128_t>(u1) << 64) | u0) / d);
 #else
@@ -960,10 +965,10 @@ inline limb_t udiv_2by1(limb_t u1, limb_t u0, limb_t d) noexcept {
 }
 
 // the reciprocal of a normalized d: floor((B^2 - 1) / d) - B
-inline limb_t invert_limb(limb_t d) noexcept { return udiv_2by1(~d, ~limb_t(0), d); }
+inline constexpr limb_t invert_limb(limb_t d) noexcept { return udiv_2by1(~d, ~limb_t(0), d); }
 
 // the reciprocal of the normalized two-limb divisor d1 B + d0: floor((B^3 - 1) / (d1 B + d0)) - B
-inline limb_t invert_pi1(limb_t d1, limb_t d0) noexcept {
+inline constexpr limb_t invert_pi1(limb_t d1, limb_t d0) noexcept {
 	limb_t v = invert_limb(d1);
 	limb_t p = d1 * v + d0;
 	if (p < d0) {
@@ -992,20 +997,22 @@ inline constexpr bool hardware_division = true;
 #else
 inline constexpr bool hardware_division = false;
 #endif
-inline void udiv_qr_2by1(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d, limb_t v) noexcept;
-inline void udiv_qrnnd(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d) noexcept {
+inline constexpr void udiv_qr_2by1(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d, limb_t v) noexcept;
+inline constexpr void udiv_qrnnd(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d) noexcept {
 #if UNIVERSAL_LIMB_KERNELS_X86_64_ASM
-	__asm__("divq %4" : "=a"(q), "=d"(r) : "a"(n0), "d"(n1), "rm"(d) : "cc");
-#else
-	udiv_qr_2by1(q, r, n1, n0, d, invert_limb(d));
+	if (!std::is_constant_evaluated()) {
+		__asm__("divq %4" : "=a"(q), "=d"(r) : "a"(n0), "d"(n1), "rm"(d) : "cc");
+		return;
+	}
 #endif
+	udiv_qr_2by1(q, r, n1, n0, d, invert_limb(d));
 }
 
 // q = floor((n1 B + n0) / d), r = the remainder, for n1 < d and v = invert_limb(d). Written for
 // the remainder's dependency chain from one limb to the next (#1830): the first correction
 // selects r or r + d, formed beforehand, where clang added d or 0 after the comparison; the
 // second, rare, is a branch, which clang had made a cmov too. a/7 under clang 0.84 of the time.
-inline void udiv_qr_2by1(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d, limb_t v) noexcept {
+inline constexpr void udiv_qr_2by1(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d, limb_t v) noexcept {
 	limb_t qh, ql;
 	umul(n1, v, qh, ql);
 	ql += n0;
@@ -1013,7 +1020,7 @@ inline void udiv_qr_2by1(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d, l
 	const limb_t r0   = n0 - qh * d;
 	limb_t       r1   = r0 + d;
 #if defined(__clang__)
-	__asm__("" : "+r"(r1));   // else clang folds the select back into an add after the comparison
+	if (!std::is_constant_evaluated()) __asm__("" : "+r"(r1));   // else clang folds the select back into an add after the comparison
 #endif
 	const bool   over = (r0 > ql);
 	r  = over ? r1 : r0;
@@ -1028,7 +1035,7 @@ inline void udiv_qr_2by1(limb_t& q, limb_t& r, limb_t n1, limb_t n0, limb_t d, l
 
 // q = floor((n2 B^2 + n1 B + n0) / (d1 B + d0)) and the two-limb remainder r1 B + r0, for
 // n2 B + n1 < d1 B + d0 and v = invert_pi1(d1, d0)
-inline void udiv_qr_3by2(limb_t& q, limb_t& r1, limb_t& r0, limb_t n2, limb_t n1, limb_t n0, limb_t d1, limb_t d0, limb_t v) noexcept {
+inline constexpr void udiv_qr_3by2(limb_t& q, limb_t& r1, limb_t& r0, limb_t n2, limb_t n1, limb_t n0, limb_t d1, limb_t d0, limb_t v) noexcept {
 	limb_t q0;
 	umul(n2, v, q, q0);
 	q0 += n1;
@@ -1058,7 +1065,7 @@ inline void udiv_qr_3by2(limb_t& q, limb_t& r1, limb_t& r0, limb_t n2, limb_t n1
 }
 
 // r[0, n) -= a[0, n) * b, returns the borrow out of the top
-inline limb_t submul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+inline constexpr limb_t submul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
 	limb_t carry = 0;
 	for (std::size_t i = 0; i < n; ++i) {
 #if defined(__SIZEOF_INT128__)
@@ -1078,9 +1085,9 @@ inline limb_t submul_1_portable(limb_t* r, const limb_t* a, std::size_t n, limb_
 	return carry;
 }
 
-inline limb_t submul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
+inline constexpr limb_t submul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noexcept {
 #if UNIVERSAL_LIMB_KERNELS_X86_64_ASM
-	if (n >= 4 && x86::has_mulx_adx) {
+	if (n >= 4 && !std::is_constant_evaluated() && x86::has_mulx_adx) {
 		const std::size_t t = n & 3u;
 		return x86::submul_4k(r + t, a + t, n - t, b, submul_1_portable(r, a, t, b));
 	}
@@ -1089,7 +1096,7 @@ inline limb_t submul_1(limb_t* r, const limb_t* a, std::size_t n, limb_t b) noex
 }
 
 // r[0, n) -= c, returns the borrow out of the top
-inline limb_t sub_1(limb_t* r, std::size_t n, limb_t c) noexcept {
+inline constexpr limb_t sub_1(limb_t* r, std::size_t n, limb_t c) noexcept {
 	for (std::size_t i = 0; i < n && c != 0; ++i) {
 		const limb_t ri = r[i];
 		r[i] = ri - c;
@@ -1099,7 +1106,7 @@ inline limb_t sub_1(limb_t* r, std::size_t n, limb_t c) noexcept {
 }
 
 // whether a[0, n) >= b[0, n)
-inline bool geq_n(const limb_t* a, const limb_t* b, std::size_t n) noexcept {
+inline constexpr bool geq_n(const limb_t* a, const limb_t* b, std::size_t n) noexcept {
 	for (std::size_t i = n; i-- > 0;) {
 		if (a[i] != b[i]) return a[i] > b[i];
 	}
@@ -1110,7 +1117,7 @@ inline bool geq_n(const limb_t* a, const limb_t* b, std::size_t n) noexcept {
 // the quotient's top limb, 0 or 1.  d normalized, v = invert_limb(d).
 // divrem_1 without a reciprocal, for a quotient of a few limbs where the build divides in
 // hardware (udiv_qrnnd): the same quotient and remainder
-inline limb_t divrem_1_short(limb_t* q, limb_t* np, std::size_t nn, limb_t d) noexcept {
+inline constexpr limb_t divrem_1_short(limb_t* q, limb_t* np, std::size_t nn, limb_t d) noexcept {
 	limb_t r  = np[nn - 1];
 	limb_t qh = 0;
 	if (r >= d) { r -= d; qh = 1; }
@@ -1119,7 +1126,7 @@ inline limb_t divrem_1_short(limb_t* q, limb_t* np, std::size_t nn, limb_t d) no
 	return qh;
 }
 
-inline limb_t divrem_1(limb_t* q, limb_t* np, std::size_t nn, limb_t d, limb_t v) noexcept {
+inline constexpr limb_t divrem_1(limb_t* q, limb_t* np, std::size_t nn, limb_t d, limb_t v) noexcept {
 	limb_t r  = np[nn - 1];
 	limb_t qh = 0;
 	if (r >= d) { r -= d; qh = 1; }
@@ -1131,7 +1138,7 @@ inline limb_t divrem_1(limb_t* q, limb_t* np, std::size_t nn, limb_t d, limb_t v
 // Schoolbook division: q[0, nn - dn) = the low limbs of floor(np[0, nn) / dp[0, dn)), the
 // remainder replaces np[0, dn); returns the quotient's top limb, 0 or 1.  dn >= 2, dp normalized,
 // v = invert_pi1 of its top two limbs.
-inline limb_t sbpi1_div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t v) noexcept {
+inline constexpr limb_t sbpi1_div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t v) noexcept {
 	const std::size_t qn = nn - dn;
 	limb_t* top = np + qn;
 	limb_t  qh  = 0;
@@ -1178,7 +1185,7 @@ inline limb_t sbpi1_div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* 
 #if defined(__GNUC__) || defined(__clang__)
 __attribute__((always_inline))
 #endif
-inline limb_t sb_div_qr_short(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn) noexcept {
+inline constexpr limb_t sb_div_qr_short(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn) noexcept {
 	const std::size_t qn = nn - dn;
 	limb_t* top = np + qn;
 	limb_t  qh  = 0;
@@ -1223,7 +1230,7 @@ constexpr std::size_t div_scratch_limbs(std::size_t dn) noexcept { return dn + s
 // from the top 3n/2 limbs and the high half of the divisor, corrected by the product of that
 // half with the low half of the divisor, then the low half the same way.  tp holds
 // div_scratch_limbs(n) limbs.
-inline limb_t dcpi1_div_qr_n(limb_t* q, limb_t* np, const limb_t* dp, std::size_t n, limb_t v, limb_t* tp) noexcept {
+inline constexpr limb_t dcpi1_div_qr_n(limb_t* q, limb_t* np, const limb_t* dp, std::size_t n, limb_t v, limb_t* tp) noexcept {
 	const std::size_t lo = n / 2;
 	const std::size_t hi = n - lo;
 	limb_t qh = (hi < dc_div_threshold) ? sbpi1_div_qr(q + lo, np + 2 * lo, 2 * hi, dp + lo, hi, v)
@@ -1249,7 +1256,7 @@ inline limb_t dcpi1_div_qr_n(limb_t* q, limb_t* np, const limb_t* dp, std::size_
 
 // A quotient shorter than the divisor, qn = nn - dn < dn: divide the top 2 qn limbs of np by the
 // top qn limbs of dp, then subtract the quotient times the divisor's remaining limbs and correct.
-inline limb_t dcpi1_div_qr_short(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t v, limb_t* tp) noexcept {
+inline constexpr limb_t dcpi1_div_qr_short(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t v, limb_t* tp) noexcept {
 	const std::size_t qn = nn - dn;
 	const std::size_t in = dn - qn;
 	limb_t qh = dcpi1_div_qr_n(q, np + in, dp + in, qn, v, tp);
@@ -1266,7 +1273,7 @@ inline limb_t dcpi1_div_qr_short(limb_t* q, limb_t* np, std::size_t nn, const li
 // q[0, nn - dn) = the low limbs of floor(np[0, nn) / dp[0, dn)), the remainder replaces
 // np[0, dn); returns the quotient's top limb, 0 or 1.  nn >= dn >= 1, dp normalized (its top bit
 // set) and overlapping neither np nor q, s holds div_scratch_limbs(dn) limbs.
-inline limb_t div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t* s) noexcept {
+inline constexpr limb_t div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t* s) noexcept {
 	const std::size_t qn = nn - dn;
 	// a quotient of one or two limbs by one or two divides faster in hardware than through a
 	// reciprocal (#1826)
@@ -1300,7 +1307,7 @@ inline limb_t div_qr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, st
 // 2, as the exact code's correction loop shows; the low half's own recursion adds its error, so
 // each level of the recursion adds 2. A low half that reaches B^lo is clamped to B^lo - 1, the
 // largest the exact one can be. np is overwritten.
-inline limb_t dcpi1_divappr_n(limb_t* q, limb_t* np, const limb_t* dp, std::size_t n, limb_t v, limb_t* tp) noexcept {
+inline constexpr limb_t dcpi1_divappr_n(limb_t* q, limb_t* np, const limb_t* dp, std::size_t n, limb_t v, limb_t* tp) noexcept {
 	const std::size_t lo = n / 2;
 	const std::size_t hi = n - lo;
 	limb_t qh = (hi < dc_div_threshold) ? sbpi1_div_qr(q + lo, np + 2 * lo, 2 * hi, dp + lo, hi, v)
@@ -1329,7 +1336,7 @@ constexpr std::size_t divappr_n_error(std::size_t n) noexcept {
 // + divappr_error(nn, dn), for nn >= dn >= 1, dp normalized and overlapping neither np nor q;
 // np is overwritten, s holds div_scratch_limbs(dn) limbs. Shapes the approximation does not
 // serve divide exactly.
-inline limb_t div_appr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t* s) noexcept {
+inline constexpr limb_t div_appr(limb_t* q, limb_t* np, std::size_t nn, const limb_t* dp, std::size_t dn, limb_t* s) noexcept {
 	const std::size_t qn = nn - dn;
 	if (dn < dc_div_threshold || qn < dc_div_threshold) return div_qr(q, np, nn, dp, dn, s);
 	const limb_t v = invert_pi1(dp[dn - 1], dp[dn - 2]);
@@ -1372,10 +1379,18 @@ constexpr std::size_t divappr_error(std::size_t nn, std::size_t dn) noexcept {
 // when r < 0: the square root costs one division and one square of half its length per level,
 // and both S = floor(sqrt(N)) and the remainder are exact.
 
-// floor(sqrt(a)) for a >= 2^62, r = a - s^2: a double estimate, corrected
-inline limb_t sqrtrem1(limb_t a, limb_t& r) noexcept {
-	limb_t s = static_cast<limb_t>(std::sqrt(static_cast<double>(a)));
-	if (s > 0xFFFF'FFFFu) s = 0xFFFF'FFFFu;   // the double rounded up to 2^32
+// floor(sqrt(a)) for a >= 2^62, r = a - s^2: a double estimate, corrected. In constant
+// evaluation, where std::sqrt is not usable (#1819), Newton's iteration on integers from 2^32 - 1,
+// above the root, which descends to it
+inline constexpr limb_t sqrtrem1(limb_t a, limb_t& r) noexcept {
+	limb_t s = 0xFFFF'FFFFu;
+	if (std::is_constant_evaluated()) {
+		for (limb_t t = (s + a / s) / 2u; t < s; t = (s + a / s) / 2u) s = t;
+	}
+	else {
+		s = static_cast<limb_t>(std::sqrt(static_cast<double>(a)));
+		if (s > 0xFFFF'FFFFu) s = 0xFFFF'FFFFu;   // the double rounded up to 2^32
+	}
 	while (s * s > a) --s;
 	while (s < 0xFFFF'FFFFu && (s + 1) * (s + 1) <= a) ++s;
 	r = a - s * s;
@@ -1384,7 +1399,7 @@ inline limb_t sqrtrem1(limb_t a, limb_t& r) noexcept {
 
 // sp[0] = floor(sqrt(np[0, 2))) for np[1] >= 2^62; the remainder, at most 2 sp[0], is rp[0]
 // and the returned bit above it.  rp may be np.  The same step as dc_sqrtrem on 32-bit halves.
-inline limb_t sqrtrem2(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
+inline constexpr limb_t sqrtrem2(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
 	const limb_t n0 = np[0];
 	limb_t r1;
 	const limb_t s1 = sqrtrem1(np[1], r1);   // s1 in [2^31, 2^32), r1 <= 2 s1
@@ -1425,7 +1440,7 @@ inline limb_t sqrtrem2(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
 // and the returned bit above it (#1828). dc_sqrtrem's one level for n = 2 in registers: the
 // root s' of the top two limbs by sqrtrem2, the next limb of the root from one division of
 // (r' B + np[1]) by 2 s', and the remainder corrected once.
-inline limb_t sqrtrem4(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
+inline constexpr limb_t sqrtrem4(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
 	limb_t s1 = 0, r1 = 0;
 	limb_t q = sqrtrem2(&s1, &r1, np + 2);   // s' = s1, r' = q B + r1 <= 2 s'
 	if (q != 0u) r1 -= s1;                    // r' - s' < s': divide by s', then halve
@@ -1489,8 +1504,10 @@ inline limb_t sqrtrem4(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
 // precision, from a reciprocal of sqrt(N') computed alongside sqrtrem2 in place of a second
 // division: at most nine roundings of 2^-53 each and the 2^-63 between sqrt(N') and s' keep it
 // within 2^14.2 of its value. Returns false, with sp unset, where Q comes within 2^16 of B and S
-// might need s' + 1.
-inline bool sqrt_approx4(limb_t* sp, const limb_t* np) noexcept {
+// might need s' + 1, and in constant evaluation, where std::sqrt is not usable (#1819): the
+// caller's exact root takes over.
+inline constexpr bool sqrt_approx4(limb_t* sp, const limb_t* np) noexcept {
+	if (std::is_constant_evaluated()) return false;
 	constexpr double two64 = 18446744073709551616.0;   // 2^64
 	limb_t s1 = 0, r1 = 0;
 	const limb_t c = sqrtrem2(&s1, &r1, np + 2);
@@ -1507,7 +1524,7 @@ constexpr std::size_t sqrt_scratch_limbs(std::size_t n) noexcept { return n + 2 
 
 // sp[0, n) = floor(sqrt(np[0, 2n))) for n >= 2 and np[2n - 1] >= 2^62; the remainder replaces
 // np[0, n), with the returned limb, 0 or 1, above it.  s holds sqrt_scratch_limbs(n) limbs.
-inline limb_t dc_sqrtrem(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexcept {
+inline constexpr limb_t dc_sqrtrem(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexcept {
 	const std::size_t l = n / 2;
 	const std::size_t h = n - l;
 	// (s', r') for the top 2h limbs: s' in sp[l, n), r' in np[2l, 2l + h) and q
@@ -1535,7 +1552,7 @@ inline limb_t dc_sqrtrem(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexc
 
 // sp[0, n) = floor(sqrt(np[0, 2n))) for np[2n - 1] >= 2^62; the remainder replaces np[0, n),
 // with the returned limb, 0 or 1, above it.  s holds sqrt_scratch_limbs(n) limbs.
-inline limb_t sqrtrem(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexcept {
+inline constexpr limb_t sqrtrem(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexcept {
 	return (n == 1) ? sqrtrem2(sp, np, np) : dc_sqrtrem(sp, np, n, s);
 }
 
@@ -1554,7 +1571,7 @@ constexpr std::size_t sqrt_approx_error(std::size_t n) noexcept {
 // Skipped: the remainders of the division's low halves, the square Q^2 and the correction. An S
 // that would reach B^n is B^n - 1, the floor's largest value. np is overwritten; s holds
 // sqrt_scratch_limbs(n) limbs.
-inline void sqrt_approx(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexcept {
+inline constexpr void sqrt_approx(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexcept {
 	if (n == 1) {
 		sqrtrem2(sp, np, np);
 		return;
@@ -1588,7 +1605,7 @@ inline void sqrt_approx(limb_t* sp, limb_t* np, std::size_t n, limb_t* s) noexce
 // remainder: cbrt rounds from S alone unless S lies within cbrt_overshoot of a rounding boundary.
 
 // r[0, 3) = s^3
-inline void cube_1(limb_t* r, limb_t s) noexcept {
+inline constexpr void cube_1(limb_t* r, limb_t s) noexcept {
 	limb_t h, l, a1, a0, b1, b0;
 	umul(s, s, h, l);
 	umul(l, s, a1, a0);
@@ -1599,7 +1616,7 @@ inline void cube_1(limb_t* r, limb_t s) noexcept {
 }
 
 // r[0, n) = a[0, n) << c, 0 < c < 64, returns the bits shifted out of the top; r may be a
-inline limb_t lshift(limb_t* r, const limb_t* a, std::size_t n, unsigned c) noexcept {
+inline constexpr limb_t lshift(limb_t* r, const limb_t* a, std::size_t n, unsigned c) noexcept {
 	limb_t out = a[n - 1] >> (64u - c);
 	for (std::size_t i = n - 1; i > 0; --i) r[i] = (a[i] << c) | (a[i - 1] >> (64u - c));
 	r[0] = a[0] << c;
@@ -1607,14 +1624,14 @@ inline limb_t lshift(limb_t* r, const limb_t* a, std::size_t n, unsigned c) noex
 }
 
 // r[0, n) = a[0, n) >> c, 0 < c < 64; r may be a
-inline void rshift(limb_t* r, const limb_t* a, std::size_t n, unsigned c) noexcept {
+inline constexpr void rshift(limb_t* r, const limb_t* a, std::size_t n, unsigned c) noexcept {
 	for (std::size_t i = 0; i + 1 < n; ++i) r[i] = (a[i] >> c) | (a[i + 1] << (64u - c));
 	r[n - 1] = a[n - 1] >> c;
 }
 
 // r[0, n) = the low n limbs of floor(a[0, na) 2^shift), for a shift of either sign; returns
 // whether the bits a right shift drops below r are nonzero (#1802). r overlaps not a.
-inline bool load_window(limb_t* r, std::size_t n, const limb_t* a, std::size_t na, std::int64_t shift) noexcept {
+inline constexpr bool load_window(limb_t* r, std::size_t n, const limb_t* a, std::size_t na, std::int64_t shift) noexcept {
 	const std::int64_t m = static_cast<std::int64_t>(na);
 	auto at = [a, m](std::int64_t j) -> limb_t { return (j >= 0 && j < m) ? a[j] : 0u; };
 	const std::int64_t q = (shift >= 0) ? -((shift + 63) / 64) : (-shift) / 64;   // floor(-shift / 64)
@@ -1631,8 +1648,22 @@ inline bool load_window(limb_t* r, std::size_t n, const limb_t* a, std::size_t n
 }
 
 // sp[0] = floor(cbrt(np[0, 3))) for np[2] >= 2^61, rp[0, 3) = the remainder: a double estimate,
-// within about 2^12 of the root, one Newton step in double, and an exact correction
-inline void cbrtrem_1(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
+// within about 2^12 of the root, one Newton step in double, and an exact correction. In constant
+// evaluation, where std::cbrt is not usable (#1819), a binary search over the root's 64 bits,
+// which lies in [2^63, 2^64) since N >= 2^189.
+inline constexpr void cbrtrem_1(limb_t* sp, limb_t* rp, const limb_t* np) noexcept {
+	if (std::is_constant_evaluated()) {
+		limb_t s = limb_t(1) << 63;   // s^3 <= N
+		limb_t t[3]{};
+		for (limb_t bit = limb_t(1) << 62; bit != 0u; bit >>= 1) {
+			cube_1(t, s | bit);
+			if (geq_n(np, t, 3)) s |= bit;
+		}
+		cube_1(t, s);
+		sp[0] = s;
+		sub_n(rp, np, t, 3);
+		return;
+	}
 	const double two64 = 18446744073709551616.0;
 	const double c = std::cbrt(std::ldexp(static_cast<double>(np[2]), 128) + std::ldexp(static_cast<double>(np[1]), 64));
 	limb_t s = (c >= two64) ? ~limb_t(0) : static_cast<limb_t>(c);
@@ -1672,7 +1703,7 @@ inline constexpr limb_t cbrt_overshoot = 4;
 // sp[0, n) = floor(cbrt(np[0, 3n))) for np[3n - 1] >= 2^61, and rp[0, 2n + 1) = N - S^3 when
 // `exact`; without it, S is the root plus 0 to cbrt_overshoot units and rp is left alone.
 // s holds cbrt_scratch_limbs(n) limbs.
-inline void cbrtrem(limb_t* sp, limb_t* rp, const limb_t* np, std::size_t n, limb_t* s, bool exact = true) noexcept {
+inline constexpr void cbrtrem(limb_t* sp, limb_t* rp, const limb_t* np, std::size_t n, limb_t* s, bool exact = true) noexcept {
 	if (n == 1) {   // exact either way
 		limb_t r[3];
 		cbrtrem_1(sp, exact ? rp : r, np);

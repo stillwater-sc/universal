@@ -150,12 +150,15 @@ public:
 	using limb_t = limb_kernels::limb_t;
 	static constexpr std::size_t inline_limbs = efloat_inline_limbs(nlimbs);
 
-	// Partial-constexpr surface (#747, #1819): the default value, the sign- and state-only
-	// selectors and modifiers are constexpr-clean, and the limb storage is usable in constant
-	// evaluation (efloat_limbs.hpp). The arithmetic still calls the limb_kernels kernels, which
-	// are not constexpr, so it carries the constexpr specifier for a uniform interface but cannot
-	// be exercised in a constant expression yet. Out of scope: native-type ctors / operator=
-	// (convert_ieee754 calls std::fpclassify), conversion-out (std::pow), parse() (std::string).
+	// Constant evaluation (#747, #1819): the integer and dyadic constructors, +, -, *, /, the
+	// compound operators, the comparisons and sqrt run in a constant expression, with the same
+	// results as at run time. The limb_kernels kernels take their portable loops there instead
+	// of the assembly, the scratch past the inline limbs comes from new and delete instead of the
+	// thread's block cache, the rounding is to nearest and no status flag is raised: the thread's
+	// mode and flags are out of a constant expression's reach (rounding_mode(), raise_flags()). A
+	// value whose limbs fit the inline buffer can be a constexpr variable; a larger one cannot
+	// keep its heap block. Not yet: the math library past sqrt, conversion from and to float and
+	// double (convert_ieee754 calls std::fpclassify), and parse() (std::string).
 	constexpr efloat() noexcept
 		: _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{} {
 		_limb.assign(1, 0u);   // zero holds one limb of 0, as bits() shows it
@@ -207,30 +210,30 @@ public:
 	}
 
 	// initializers for native types
-	efloat(signed char iv)                      noexcept : _precision_limbs{ 0 } { *this = iv; }
-	efloat(short iv)                            noexcept : _precision_limbs{ 0 } { *this = iv; }
-	efloat(int iv)                              noexcept : _precision_limbs{ 0 } { *this = iv; }
-	efloat(long iv)                             noexcept : _precision_limbs{ 0 } { *this = iv; }
-	efloat(long long iv)                        noexcept : _precision_limbs{ 0 } { *this = iv; }
-	efloat(char iv)                             noexcept : _precision_limbs{ 0 } { *this = iv; }
-	efloat(unsigned short iv)                   noexcept : _precision_limbs{ 0 } { *this = iv; }
-	efloat(unsigned int iv)                     noexcept : _precision_limbs{ 0 } { *this = iv; }
-	efloat(unsigned long iv)                    noexcept : _precision_limbs{ 0 } { *this = iv; }
-	efloat(unsigned long long iv)               noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(signed char iv)                      noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(short iv)                            noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(int iv)                              noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(long iv)                             noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(long long iv)                        noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(char iv)                             noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(unsigned short iv)                   noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(unsigned int iv)                     noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(unsigned long iv)                    noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(unsigned long long iv)               noexcept : _precision_limbs{ 0 } { *this = iv; }
 	efloat(float iv)                            noexcept : _precision_limbs{ 0 } { *this = iv; }
 	efloat(double iv)                           noexcept : _precision_limbs{ 0 } { *this = iv; }
 
 	// assignment operators for native types
-	efloat& operator=(signed char rhs)          noexcept { return convert_signed(rhs); }
-	efloat& operator=(short rhs)                noexcept { return convert_signed(rhs); }
-	efloat& operator=(int rhs)                  noexcept { return convert_signed(rhs); }
-	efloat& operator=(long rhs)                 noexcept { return convert_signed(rhs); }
-	efloat& operator=(long long rhs)            noexcept { return convert_signed(rhs); }
-	efloat& operator=(char rhs)                 noexcept { return convert_unsigned(rhs); }
-	efloat& operator=(unsigned short rhs)       noexcept { return convert_unsigned(rhs); }
-	efloat& operator=(unsigned int rhs)         noexcept { return convert_unsigned(rhs); }
-	efloat& operator=(unsigned long rhs)        noexcept { return convert_unsigned(rhs); }
-	efloat& operator=(unsigned long long rhs)   noexcept { return convert_unsigned(rhs); }
+	constexpr efloat& operator=(signed char rhs)          noexcept { return convert_signed(rhs); }
+	constexpr efloat& operator=(short rhs)                noexcept { return convert_signed(rhs); }
+	constexpr efloat& operator=(int rhs)                  noexcept { return convert_signed(rhs); }
+	constexpr efloat& operator=(long rhs)                 noexcept { return convert_signed(rhs); }
+	constexpr efloat& operator=(long long rhs)            noexcept { return convert_signed(rhs); }
+	constexpr efloat& operator=(char rhs)                 noexcept { return convert_unsigned(rhs); }
+	constexpr efloat& operator=(unsigned short rhs)       noexcept { return convert_unsigned(rhs); }
+	constexpr efloat& operator=(unsigned int rhs)         noexcept { return convert_unsigned(rhs); }
+	constexpr efloat& operator=(unsigned long rhs)        noexcept { return convert_unsigned(rhs); }
+	constexpr efloat& operator=(unsigned long long rhs)   noexcept { return convert_unsigned(rhs); }
 	efloat& operator=(float rhs)                noexcept { return convert_ieee754(rhs); }
 	efloat& operator=(double rhs)               noexcept { return convert_ieee754(rhs); }
 
@@ -324,15 +327,15 @@ public:
 	// x's precision rather than widening to the type's.  When neither operand carries one, the
 	// result has none either, and rounds at the default precision: set_default_precision() if
 	// set, else nlimbs * 32 bits.  get_precision() reports that effective precision.
-	unsigned get_precision() const noexcept { return precision_limbs() * 32; }
+	constexpr unsigned get_precision() const noexcept { return precision_limbs() * 32; }
 	// precision is held in whole 32-bit limbs: set_precision(24) keeps 32 bits and
 	// set_precision(100) keeps 128, so a reference to compare against must round at
 	// get_precision(), not at the bits requested
-	void set_precision(unsigned bits) noexcept { _precision_limbs = std::max(1u, (bits + 31) / 32); normalize(); }
+	constexpr void set_precision(unsigned bits) noexcept { _precision_limbs = std::max(1u, (bits + 31) / 32); normalize(); }
 	// whether the value carries a precision of its own, and dropping it: the value rounds to
 	// the default precision and then carries none, as one constructed from a native value
-	bool carries_precision() const noexcept { return _precision_limbs != 0; }
-	void clear_precision() noexcept { _precision_limbs = 0; normalize(); }
+	constexpr bool carries_precision() const noexcept { return _precision_limbs != 0; }
+	constexpr void clear_precision() noexcept { _precision_limbs = 0; normalize(); }
 
 	// prefix operators
 	constexpr efloat operator-() const noexcept {
@@ -382,9 +385,7 @@ public:
 		if (isinf()) {
 			if (rhs.iszero()) {
 				setnan();
-				if (!std::is_constant_evaluated()) {
-					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
-				}
+				raise_flags(ExceptionFlag::InvalidOperation);
 			} else {
 				_sign = (_sign != rhs._sign);
 			}
@@ -393,9 +394,7 @@ public:
 		if (rhs.isinf()) {
 			if (iszero()) {
 				setnan();
-				if (!std::is_constant_evaluated()) {
-					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
-				}
+				raise_flags(ExceptionFlag::InvalidOperation);
 			} else {
 				const bool negative = (_sign != rhs._sign);   // before the assignment replaces it (#1768)
 				*this = rhs;
@@ -455,14 +454,10 @@ public:
 		if (rhs.iszero()) {
 			if (iszero()) {
 				setnan();
-				if (!std::is_constant_evaluated()) {
-					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
-				}
+				raise_flags(ExceptionFlag::InvalidOperation);
 			} else {
 				setinf(_sign != rhs._sign);
-				if (!std::is_constant_evaluated()) {
-					efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
-				}
+				raise_flags(ExceptionFlag::DivisionByZero);
 			}
 			return *this;
 		}
@@ -473,9 +468,7 @@ public:
 		if (isinf()) {
 			if (rhs.isinf()) {
 				setnan();
-				if (!std::is_constant_evaluated()) {
-					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
-				}
+				raise_flags(ExceptionFlag::InvalidOperation);
 			} else {
 				_sign = (_sign != rhs._sign);
 			}
@@ -554,7 +547,7 @@ public:
 	constexpr void setexponent(std::int64_t e) noexcept { _exponent = e; }
 	// sets 32-bit limb i of the significand, counted from the top as bits() lists them; the
 	// value is not normalized
-	void setlimb(unsigned i, std::uint32_t value) {
+	constexpr void setlimb(unsigned i, std::uint32_t value) {
 		const std::size_t m    = _limb.size();
 		const std::size_t need = i / 2u + 1u;
 		if (need > m) {   // the significand grows at the bottom: its top limb keeps its weight
@@ -569,12 +562,12 @@ public:
 	}
 	// sets the significand to w[0, n), 64-bit limbs least significant first, the top bit of
 	// w[n - 1] weighing 2^scale(); the value is not normalized
-	void set_significand(const limb_t* w, std::size_t n) { _limb.assign(w, n); }
+	constexpr void set_significand(const limb_t* w, std::size_t n) { _limb.assign(w, n); }
 	// For the mathlib's exact kernels (#1802): *this = (-1)^sign (R + s) 2^(top - 64 n + 1), R the
 	// nonzero integer r[0, n) of 64-bit limbs, least significant first, whose bit 64 n - 1 weighs
 	// 2^top, and s in (0, 1) when sticky, else 0: rounded once in the current mode at
 	// precision_limbs limbs, which the value then carries. r must not be this value's limbs.
-	void assign_rounded_limbs(bool sign, const limb_t* r, std::size_t n, std::int64_t top, bool sticky, unsigned precision_limbs) {
+	constexpr void assign_rounded_limbs(bool sign, const limb_t* r, std::size_t n, std::int64_t top, bool sticky, unsigned precision_limbs) {
 		_precision_limbs = precision_limbs;
 		_sign = sign;
 		round_into(r, n, top, sticky);
@@ -587,7 +580,7 @@ public:
 #if defined(__GNUC__) || defined(__clang__)
 	__attribute__((always_inline))
 #endif
-	inline void assign_rounded_short(bool sign, limb_t* t, limb_t below, bool rest, std::int64_t exponent, unsigned precision_limbs) {
+	inline constexpr void assign_rounded_short(bool sign, limb_t* t, limb_t below, bool rest, std::int64_t exponent, unsigned precision_limbs) {
 		_precision_limbs = precision_limbs;
 		store_short<M>(t, below, rest, exponent, sign);
 	}
@@ -716,7 +709,7 @@ public:
 #endif
 	constexpr void enforce_range() noexcept {
 		if (_state != FloatingPointState::Normal || in_range(_exponent)) return;
-		const RoundingMode mode = efloat_rounding_mode;
+		RoundingMode mode = rounding_mode();   // not const: see rounding_mode()
 		const bool upward = (mode == RoundingMode::RoundTowardPositive && !_sign) || (mode == RoundingMode::RoundTowardNegative && _sign);
 		if (_exponent > max_scale) {
 			if (mode == RoundingMode::RoundToNearest || upward) {
@@ -728,7 +721,7 @@ public:
 				if (p & 1u) _limb[0] = 0xFFFF'FFFF'0000'0000ull;
 				_exponent = max_scale;
 			}
-			efloat_exception_flags.set(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
+			raise_flags(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
 			return;
 		}
 		const bool to_min = upward || (mode == RoundingMode::RoundToNearest && _exponent == min_scale - 1 && !is_power_of_2());
@@ -741,7 +734,7 @@ public:
 			setzero();
 			_sign = negative;
 		}
-		efloat_exception_flags.set(ExceptionFlag::Underflow | ExceptionFlag::Inexact);
+		raise_flags(ExceptionFlag::Underflow | ExceptionFlag::Inexact);
 	}
 
 	// the significands of two normalized values compared, most significant limbs first, the
@@ -782,9 +775,7 @@ protected:
 		if (isinf()) {
 			if (rhs.isinf() && _sign != rhs_sign) {
 				setnan();
-				if (!std::is_constant_evaluated()) {
-					efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
-				}
+				raise_flags(ExceptionFlag::InvalidOperation);
 			}
 			return *this;
 		}
@@ -870,7 +861,7 @@ protected:
 	// leading bit, so the sticky bit stays far below the rounding point, and with a gap of one
 	// bit or none the frame holds every bit of Y. The sum is formed by limb_kernels::add_n or
 	// sub_n on 64-bit limbs and rounded into _limb once (#1762, #1820).
-	void add_magnitude(const limb_t* b, std::size_t nb, int64_t eb, bool b_sign) {
+	constexpr void add_magnitude(const limb_t* b, std::size_t nb, int64_t eb, bool b_sign) {
 		add_magnitudes(_limb.data(), _limb.size(), _exponent, _sign, b, nb, eb, b_sign);
 	}
 	// *this = A + B for finite nonzero, normalized A = (a[0, na), ea, a_sign) and B, at the
@@ -879,7 +870,7 @@ protected:
 #if defined(__GNUC__) || defined(__clang__)
 	__attribute__((always_inline))
 #endif
-	inline void add_magnitudes(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t nb, int64_t eb, bool b_sign) {
+	inline constexpr void add_magnitudes(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t nb, int64_t eb, bool b_sign) {
 		const std::size_t target = precision_limbs();
 		_sign = a_sign;
 		const bool        a_is_x = (ea >= eb);
@@ -910,7 +901,7 @@ protected:
 #if defined(__GNUC__) || defined(__clang__)
 	__attribute__((noinline))
 #endif
-	void add_frame(const limb_t* x, std::size_t nx, const limb_t* y, std::size_t ny, int64_t ex, bool x_sign, uint64_t d, bool same_sign) {
+	constexpr void add_frame(const limb_t* x, std::size_t nx, const limb_t* y, std::size_t ny, int64_t ex, bool x_sign, uint64_t d, bool same_sign) {
 		const std::size_t target = precision_limbs();
 		std::size_t L = 0;
 		if (d <= 1) {
@@ -1012,7 +1003,7 @@ protected:
 	// from the low limb and the sticky bit, or at bit 32 of the bottom limb. No frame, and no
 	// second pass over the limbs but the one-bit shifts. Past four limbs: add_short below has
 	// the one to four
-	void add_full_length(const limb_t* x, const limb_t* y, std::size_t m, int64_t ex, uint64_t d, bool subtract, bool x_sign) {
+	constexpr void add_full_length(const limb_t* x, const limb_t* y, std::size_t m, int64_t ex, uint64_t d, bool subtract, bool x_sign) {
 		// the result's limbs: this value's own when they are neither operand's, as in c = a + b
 		// (#1828), else scratch
 		scratch_buffer<128> buffer;
@@ -1126,8 +1117,8 @@ protected:
 		_sign = sign;
 		bool power_of_2 = false;   // rounded up out of the top
 		if (guard || sticky) {
-			efloat_exception_flags.set(ExceptionFlag::Inexact);
-			if (rounds_up(efloat_rounding_mode, sign, ((t[0] >> drop) & 1u) != 0u, guard, sticky)) {
+			raise_flags(ExceptionFlag::Inexact);
+			if (rounds_up(rounding_mode(), sign, ((t[0] >> drop) & 1u) != 0u, guard, sticky)) {
 				limb_t carry = limb_t(1) << drop;
 				for (std::size_t i = 0; carry != 0u && i < m; ++i) {
 					t[i] += carry;
@@ -1163,7 +1154,7 @@ protected:
 #if defined(__GNUC__) || defined(__clang__)
 	__attribute__((noinline))
 #endif
-	void add_short(const limb_t* x, const limb_t* y, int64_t ex, uint64_t d, bool subtract, bool x_sign) {
+	constexpr void add_short(const limb_t* x, const limb_t* y, int64_t ex, uint64_t d, bool subtract, bool x_sign) {
 		limb_t t[M];
 		// a difference one bit apart whose top limbs say it cancels a leading bit is formed as
 		// 2 X - Y in one pass (#1828)
@@ -1271,7 +1262,7 @@ protected:
 #if defined(__GNUC__) || defined(__clang__)
 	__attribute__((noinline))
 #endif
-	void round_cancelled(const limb_t* t, std::size_t m, limb_t o, int64_t ex) {
+	constexpr void round_cancelled(const limb_t* t, std::size_t m, limb_t o, int64_t ex) {
 		scratch_buffer<129> exact;
 		limb_t* f = exact.get(m + 1);
 		f[0] = o;
@@ -1283,8 +1274,18 @@ protected:
 	// sign if they agree, else +0, or -0 rounding toward -inf
 	static constexpr bool exact_zero_sum_sign(bool a, bool b) noexcept {
 		if (a == b) return a;
-		if (std::is_constant_evaluated()) return false;   // constant evaluation rounds to nearest
-		return efloat_rounding_mode == RoundingMode::RoundTowardNegative;
+		return rounding_mode() == RoundingMode::RoundTowardNegative;
+	}
+	// The thread's rounding mode and status flags, which a constant expression can neither read
+	// nor write (#1819): constant evaluation rounds to nearest and raises no flags. The mode must
+	// not initialize a const variable of its own: the compiler first tries such an initializer as
+	// a constant expression, where this returns RoundToNearest, and keeps it at run time.
+	static constexpr RoundingMode rounding_mode() noexcept {
+		if (std::is_constant_evaluated()) return RoundingMode::RoundToNearest;
+		return efloat_rounding_mode;
+	}
+	static constexpr void raise_flags(uint32_t flags) noexcept {
+		if (!std::is_constant_evaluated()) efloat_exception_flags.set(flags);
 	}
 
 	// *this * B for finite nonzero *this and B = (b[0, nb), eb, b_sign), normalized, at the
@@ -1298,13 +1299,13 @@ protected:
 	// product rounded to the operands' length. Where Ziv's test passes on R, it rounds from R
 	// as from the exact product; where it does not, the exact product decides, as before.
 	static constexpr size_t mulhigh_min_limbs = 16;   // by measurement: below, the padded short product does not pay
-	void multiply_magnitude(const limb_t* b, std::size_t mb, int64_t eb, bool b_sign) {
+	constexpr void multiply_magnitude(const limb_t* b, std::size_t mb, int64_t eb, bool b_sign) {
 		multiply_magnitudes(_limb.data(), _limb.size(), _exponent, _sign, b, mb, eb, b_sign);
 	}
 	// *this = A B for finite nonzero, normalized A = (a[0, ma), ea, a_sign) and B, at the
 	// precision already in *this; a and b may be *this's own limbs, or another value's (#1826).
 	// Operands of one to three limbs at the full precision multiply and round in registers.
-	void multiply_magnitudes(const limb_t* a, std::size_t ma, int64_t ea, bool a_sign, const limb_t* b, std::size_t mb, int64_t eb, bool b_sign) {
+	constexpr void multiply_magnitudes(const limb_t* a, std::size_t ma, int64_t ea, bool a_sign, const limb_t* b, std::size_t mb, int64_t eb, bool b_sign) {
 		const bool        square = (a == b && ma == mb);
 		const int64_t     top    = ea + eb + 1;
 		const std::size_t target = precision_limbs();
@@ -1324,7 +1325,7 @@ protected:
 #if defined(__GNUC__) || defined(__clang__)
 	__attribute__((noinline))
 #endif
-	void multiply_long(const limb_t* a, std::size_t ma, bool a_sign, const limb_t* b, std::size_t mb, bool b_sign, int64_t top, bool square) {
+	constexpr void multiply_long(const limb_t* a, std::size_t ma, bool a_sign, const limb_t* b, std::size_t mb, bool b_sign, int64_t top, bool square) {
 		const std::size_t mt     = ma + mb;
 		const std::size_t target = precision_limbs();
 		if (ma == mb && ma >= mulhigh_min_limbs && 32 * target + 24 <= 64 * ma + 62 - static_cast<size_t>(std::bit_width(ma + 1))) {
@@ -1364,7 +1365,7 @@ protected:
 	// 2 M limbs of the product by schoolbook on 128-bit partial products, normalized by at most
 	// one bit, and rounded from them; the product's bit 128 M - 1 weighs 2^top
 	template<std::size_t M>
-	void multiply_short(const limb_t* a, const limb_t* b, int64_t top, bool sign) {
+	constexpr void multiply_short(const limb_t* a, const limb_t* b, int64_t top, bool sign) {
 		limb_t p[2 * M] = {};
 		for (std::size_t i = 0; i < M; ++i) {
 			limb_t carry = 0;
@@ -1402,7 +1403,7 @@ protected:
 #if defined(__GNUC__) || defined(__clang__)
 	__attribute__((always_inline))
 #endif
-	inline void store_short(limb_t* t, limb_t below, bool rest, int64_t exponent, bool sign) {
+	inline constexpr void store_short(limb_t* t, limb_t below, bool rest, int64_t exponent, bool sign) {
 		const unsigned drop = static_cast<unsigned>(64 * M - 32 * static_cast<std::size_t>(precision_limbs()));   // 0 or 32
 		bool guard = false, sticky = false;
 		if (drop == 0u) {
@@ -1417,8 +1418,8 @@ protected:
 		_sign = sign;
 		bool power_of_2 = false;
 		if (guard || sticky) {
-			efloat_exception_flags.set(ExceptionFlag::Inexact);
-			if (rounds_up(efloat_rounding_mode, sign, ((t[0] >> drop) & 1u) != 0u, guard, sticky)) {
+			raise_flags(ExceptionFlag::Inexact);
+			if (rounds_up(rounding_mode(), sign, ((t[0] >> drop) & 1u) != 0u, guard, sticky)) {
 				// all M limbs, without an exit once the carry is spent: a loop the compiler unrolls
 				// whole, which keeps t in registers (#1830)
 				limb_t carry = limb_t(1) << drop;
@@ -1450,7 +1451,7 @@ protected:
 	// mode and with *this's sign, and stores it as normalize() leaves a value: the leading bit at
 	// the top of the top limb, at most 32 precision_limbs() bits, no zero limbs at the bottom.
 	// One pass, and _limb never grows past the precision. r must not be _limb's.
-	void round_into(const limb_t* r, std::size_t n, int64_t top, bool sticky) {
+	constexpr void round_into(const limb_t* r, std::size_t n, int64_t top, bool sticky) {
 		std::size_t hi = n;
 		while (hi > 0 && r[hi - 1] == 0u) --hi;
 		const uint64_t tb = 32u * uint64_t(precision_limbs());
@@ -1488,8 +1489,8 @@ protected:
 		if (drop != 0u) w[0] &= ~((limb_t(1) << drop) - 1u);
 		int64_t exponent = top - static_cast<int64_t>(64 * uint64_t(n) - 1 - lead);
 		if (guard || below) {
-			efloat_exception_flags.set(ExceptionFlag::Inexact);
-			if (rounds_up(efloat_rounding_mode, _sign, lsb, guard, below) && limb_kernels::add_1(w, mo, limb_t(1) << drop) != 0u) {
+			raise_flags(ExceptionFlag::Inexact);
+			if (rounds_up(rounding_mode(), _sign, lsb, guard, below) && limb_kernels::add_1(w, mo, limb_t(1) << drop) != 0u) {
 				w[0] = limb_t(1) << 63;   // carried out of the top: the value is a power of 2
 				_limb.resize_for_overwrite(1);
 				mo = 1;
@@ -1507,7 +1508,7 @@ protected:
 #if defined(__GNUC__) || defined(__clang__)
 	__attribute__((noinline))
 #endif
-	void round_short(const limb_t* r, std::size_t n, int64_t top, bool sticky) {
+	constexpr void round_short(const limb_t* r, std::size_t n, int64_t top, bool sticky) {
 		if (sticky) {
 			scratch_buffer<64> frame;
 			limb_t* fr = frame.get(n + 1);
@@ -1543,14 +1544,12 @@ protected:
 		if (last > g) return;   // nothing past the precision
 		const bool guard  = ((w[g / 64] >> (g % 64)) & 1u) != 0u;
 		const bool sticky = last < g;
-		if (!std::is_constant_evaluated()) {
-			efloat_exception_flags.set(ExceptionFlag::Inexact);
-		}
+		raise_flags(ExceptionFlag::Inexact);
 		const int64_t     k   = g + 1;   // the last bit kept
 		const std::size_t lw  = static_cast<std::size_t>(k / 64);
 		const unsigned    c   = static_cast<unsigned>(k % 64);
 		const bool        lsb = ((w[lw] >> c) & 1u) != 0u;
-		const bool        up  = rounds_up(efloat_rounding_mode, _sign, lsb, guard, sticky);
+		const bool        up  = rounds_up(rounding_mode(), _sign, lsb, guard, sticky);
 		m -= lw;
 		for (std::size_t i = 0; i < m; ++i) w[i] = w[i + lw];
 		if (c != 0u) w[0] &= ~((limb_t(1) << c) - 1u);
@@ -1659,7 +1658,7 @@ protected:
 	// bit, is divided by d normalized to its top bit, a limb at a time with Moller and Granlund's
 	// reciprocal (limb_kernels::divrem_1); the remainder is the sticky bit, and the quotient rounds
 	// once. Exact, so the result is the one the general path returns.
-	void divide_by_limb(uint64_t d, bool negative) {
+	constexpr void divide_by_limb(uint64_t d, bool negative) {
 		const unsigned    target = precision_limbs();
 		const limb_t*     a      = _limb.data();
 		const std::size_t m      = _limb.size();
@@ -1694,7 +1693,7 @@ protected:
 	// rounds, so that a divisor of one limb, d 2^(eb - 63), divides the same way (#1826). A quotient
 	// of one or two limbs is the common case here, and two changes pay for it, where they cost the
 	// integer divisors of divide_by_limb more than they save (a/7 5-15% slower from 64 to 384 bits)
-	void divide_limbs_by(const limb_t* a, std::size_t m, int64_t ea, bool a_sign, uint64_t d, bool negative, int64_t shift) {
+	constexpr void divide_limbs_by(const limb_t* a, std::size_t m, int64_t ea, bool a_sign, uint64_t d, bool negative, int64_t shift) {
 		const unsigned    target = precision_limbs();
 		// Q = floor(P B^k / d) >= 2^(64 (m + k) - 1 - bit_width(d)): k limbs below give it the
 		// 32 target + 2 bits the rounding reads, the guard bit among them, and the remainder is the
@@ -1752,13 +1751,13 @@ protected:
 	// divappr_error units, against 64 bits past the precision, so Ziv's test on it decides the
 	// rounding wherever it passes. Where it does not -- a quotient next to a rounding boundary,
 	// and every exact one, whose low bits are zero -- the exact quotient and remainder do.
-	void divide_magnitude(const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
+	constexpr void divide_magnitude(const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
 		divide_magnitudes(_limb.data(), _limb.size(), _exponent, _sign, b, dn, eb, b_sign);
 	}
 	// *this = A / B for finite nonzero, normalized A = (a[0, na), ea, a_sign) and B, at the
 	// precision already in *this; a and b may be *this's own limbs, or another value's (#1826).
 	// A divisor of one limb divides as an integer divisor does, a limb at a time.
-	void divide_magnitudes(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
+	constexpr void divide_magnitudes(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
 		const std::size_t target = precision_limbs();
 		if (target <= 4 && 2 * std::max(na, dn) <= target + 1) {   // operands of at most M = (target + 1) / 2 limbs
 			if (target <= 2) divide_short<1>(a, na, ea, b, dn, eb, a_sign != b_sign);
@@ -1778,7 +1777,7 @@ protected:
 	// and R the sticky bit; one of 64 M bits has the guard bit from R, whether 2 R >= D, and the
 	// sticky bit from whether R is 0 or D / 2, as divide_exact_short.
 	template<std::size_t M>
-	void divide_short(const limb_t* a, std::size_t na, int64_t ea, const limb_t* b, std::size_t dn, int64_t eb, bool sign) {
+	constexpr void divide_short(const limb_t* a, std::size_t na, int64_t ea, const limb_t* b, std::size_t dn, int64_t eb, bool sign) {
 		// the operands at the top of their arrays, limb by limb from the top: fixed indices, where
 		// a loop of na or dn limbs became a call to memcpy (#1830)
 		limb_t np[2 * M] = {};
@@ -1838,7 +1837,7 @@ protected:
 #if defined(__GNUC__) || defined(__clang__)
 	__attribute__((noinline))
 #endif
-	void divide_long(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
+	constexpr void divide_long(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
 		const unsigned    target = precision_limbs();
 		const int64_t     qbits  = 32 * (static_cast<int64_t>(target) + 2);   // Q < 2^qbits, its leading bit at 2^(qbits - 1) or 2^(qbits - 2)
 
@@ -1921,7 +1920,7 @@ protected:
 	// A is lost: Q + R / B is the exact quotient, and the remainder R gives the bit after Q's last,
 	// whether 2 R >= B, and the sticky bit, whether R is not 0 or B / 2. It is the bit and the
 	// sticky bit two limbs of quotient used to give, at one or two division steps fewer.
-	void divide_exact_short(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
+	constexpr void divide_exact_short(const limb_t* a, std::size_t na, int64_t ea, bool a_sign, const limb_t* b, std::size_t dn, int64_t eb, bool b_sign) {
 		const unsigned target = precision_limbs();
 		const int64_t  qbits  = 32 * static_cast<int64_t>(target) + 1;   // Q < 2^qbits, its leading bit at 2^(qbits - 1) or 2^(qbits - 2)
 		const int64_t  shift  = qbits - 1 - 64 * (static_cast<int64_t>(na) - static_cast<int64_t>(dn));   // >= 0
@@ -1963,7 +1962,7 @@ protected:
 	// convert arithmetic types into an elastic floating-point
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
-	efloat& convert_signed(SignedInt v) noexcept {
+	constexpr efloat& convert_signed(SignedInt v) noexcept {
 		clear();
 		if (0 == v) {
 			setzero();
@@ -1984,7 +1983,7 @@ protected:
 
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
-	efloat& convert_unsigned(UnsignedInt v) noexcept {
+	constexpr efloat& convert_unsigned(UnsignedInt v) noexcept {
 		clear();
 		if (0 == v) {
 			setzero();
@@ -2148,14 +2147,14 @@ protected:
 			}
 
 			if (guard || sticky) {
-				efloat_exception_flags.set(ExceptionFlag::Inexact);
+				raise_flags(ExceptionFlag::Inexact);
 				if (is_subnormal) {
-					efloat_exception_flags.set(ExceptionFlag::Underflow);
+					raise_flags(ExceptionFlag::Underflow);
 				}
 			}
 
 			bool round_up = false;
-			switch (efloat_rounding_mode) {
+			switch (rounding_mode()) {
 			case RoundingMode::RoundToNearest:
 				if (guard && (sticky || lsb)) round_up = true;
 				break;
@@ -2196,9 +2195,9 @@ protected:
 			}
 
 			if (exp > E_max) {
-				efloat_exception_flags.set(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
+				raise_flags(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
 				bool to_inf = true;
-				switch (efloat_rounding_mode) {
+				switch (rounding_mode()) {
 				case RoundingMode::RoundToZero:
 					to_inf = false;
 					break;
@@ -2286,14 +2285,14 @@ protected:
 			}
 
 			if (guard || sticky) {
-				efloat_exception_flags.set(ExceptionFlag::Inexact);
+				raise_flags(ExceptionFlag::Inexact);
 				if (is_subnormal) {
-					efloat_exception_flags.set(ExceptionFlag::Underflow);
+					raise_flags(ExceptionFlag::Underflow);
 				}
 			}
 
 			bool round_up = false;
-			switch (efloat_rounding_mode) {
+			switch (rounding_mode()) {
 			case RoundingMode::RoundToNearest:
 				if (guard && (sticky || lsb)) round_up = true;
 				break;
@@ -2334,9 +2333,9 @@ protected:
 			}
 
 			if (exp > E_max) {
-				efloat_exception_flags.set(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
+				raise_flags(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
 				bool to_inf = true;
-				switch (efloat_rounding_mode) {
+				switch (rounding_mode()) {
 				case RoundingMode::RoundToZero:
 					to_inf = false;
 					break;

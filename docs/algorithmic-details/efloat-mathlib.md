@@ -278,9 +278,8 @@ state at any precision.
   - **For #1819 (constexpr efloat).** The storage works in constant evaluation: the inline
     buffer is zeroed there, and a value past it allocates with `new` and frees with `delete`
     inside the evaluation, which C++20 allows of a transient allocation; a constant result
-    must fit the inline limbs. What stands in the way now is the arithmetic: the `limb_kernels`
-    kernels, the assembly dispatch and the thread-local rounding mode and flags are not
-    constexpr. A fixed-capacity sibling type over the same kernels remains open.
+    must fit the inline limbs. The arithmetic followed in phases 1 and 2 (the entry below); a
+    fixed-capacity sibling type over the same kernels remains open.
   - **The API.** `bits()` and `limb_vector()` return 32-bit limbs, most significant first,
     converted from the 64-bit ones (`limb_vector()` now by value), and `setlimb()` writes one,
     so the tests and applications that use them are unchanged. The mathlib reads
@@ -526,6 +525,47 @@ state at any precision.
     the exponent, the bits below the window, and the cache's LIFO slot), the tests catch all 17.
     The bound `nz <= M` survived at first: a `z` of `M + 1` limbs reaches `fma_limbs` only when
     it carries no precision, and no test made one; the last case was added for it.
+- **Arithmetic in constant evaluation** (#1819, phases 1 and 2). The integer and dyadic
+  constructors, `+`, `-`, `*`, `/`, the compound operators with efloat and integer operands, the
+  comparisons and `sqrt` run in a constant expression, so `static_assert(efloat<4>(3) +
+  efloat<4>(4) == efloat<4>(7))` compiles, and `sqrt(2)` to 1024 bits can be computed by the
+  compiler. The results are the run-time ones, bit for bit.
+  - **The kernels.** Every `limb_kernels` function is `inline constexpr`. The dispatchers to the
+    x86-64 assembly (`mul_1`, `addmul_1`, `submul_1`, `add_n`, `sub_n`, `twice_sub_n`), the
+    `divq` of `udiv_qrnnd`, the empty `asm` that keeps clang's select in `udiv_qr_2by1`, and
+    the `__builtin_addcll`/`subcll` carries each test `std::is_constant_evaluated()` first and
+    take the portable code there; `mul128` does the same for MSVC's `_umul128`, the product of
+    a build without `__int128`. The `double` seeds have integer counterparts there: `sqrtrem1`
+    runs Newton's iteration from 2^32 - 1, which descends to the root; `cbrtrem_1` finds its
+    64-bit root by a binary search over the bits with `cube_1`; and `sqrt_approx4` declines,
+    so that its caller's exact root decides, as it does near a rounding boundary. The roots
+    are exact before they round, so either path gives the same result.
+  - **The scratch.** `scratch_limbs` past its stack limbs takes `new` and `delete` in constant
+    evaluation instead of the thread's block cache, as the storage does.
+  - **The thread's state.** The rounding mode and the status flags are thread-locals, which a
+    constant expression can neither read nor write: `rounding_mode()` returns
+    `RoundToNearest` there and `raise_flags()` does nothing, and every read and write in
+    `efloat_impl.hpp` goes through them. One trap: the compiler tries the initializer of a
+    `const` variable of integral or enumeration type as a constant expression first, so
+    `const RoundingMode mode = rounding_mode();` became `RoundToNearest` at run time too.
+    `enforce_range` had that line, and `numeric_limits.cpp` failed in the directed modes
+    until the `const` went. The mode is now never held in a `const` variable.
+  - **No run-time cost.** `std::is_constant_evaluated()` is a constant in each context, so the
+    branches fold: `mpfr_bands` compiles to the same instructions as before under g++ and
+    clang, function by function, `.text` the same size to the byte, apart from instruction
+    order and register choice. clang gives a function an inline hint only when `inline` is
+    written, and `constexpr` alone does not count: with `inline` replaced by `constexpr`,
+    clang inlined less and `.text` shrank by 5.5% (`sqrt_limbs` 6158 to 1796 bytes), so the
+    kernels say `inline constexpr`.
+  - **Verification.** `elastic/efloat/api/constexpr.cpp` checks the arithmetic in
+    `static_assert`, compares the 30 results of a chain of operations evaluated by the compiler with
+    the same chain at run time at 32 to 2048 bits, on and past the inline limbs, and computes `sqrt(2)`
+    to 1024 bits at compile time. `limb_kernels.cpp` does the same for the kernels: products
+    and divisions past the Karatsuba and divide-and-conquer thresholds, square and cube roots,
+    a perfect cube, and the carries out of an all-ones limb and of equal limbs. Both pass with
+    `__int128` undefined, as on MSVC, and with the assembly off. Of 7 mutants of the
+    constant-evaluation branches, the tests catch 6; the seventh stops `sqrtrem1`'s iteration
+    one step early, which its correction loop absorbs.
 
 ## 4. The functions
 
@@ -1273,6 +1313,7 @@ row both ways before reading it as a cost.
 | #1829 | 2026-10-25 | quotients and roots of one and two limbs in fixed-size code (`sqrtrem4`, `sqrt_approx4`), differences one bit apart as 2 X - Y in one pass (`twice_sub_n`), short copies without store-forwarding stalls, copies and moves member by member: `b/a` and `sqrt` at 64-96 bits 1.7-2.6x MPFR to 0.9-1.5x, `b-a` at 384-1024 bits 1.6-2.0x to 1.2-1.5x; every `mpfr_bands` cell within 1.5x but `b-a` at 128 bits and `a+b` at 160 |
 | #1831 | 2026-10-25 | sums and differences of one to four limbs in registers (`add_short`), the binary operators, `assign_sum` and the inline move always inlined, carries by `__builtin_addcll`/`subcll`, clang's 2-by-1 division without its conditional move: `b-a` at 128 bits 1.68x MPFR to 1.45x (clang 2.08x to 1.44x), clang's `b/a` at 96 bits 1.63x to 1.03x and `a/7` 1.4-1.6x to 1.1-1.3x; every `mpfr_bands` cell within 1.5x under both compilers |
 | #1833 | 2026-10-25 | a fixed-size `fma` for operands of one to six limbs that overlap the product (`fma_short`), operands of the general `fma` and `hypot` read in place, the block cache's last-in-first-out slot and a reaper constructed once: `fma` at 64-256 bits 1.05-1.46x MPFR to 0.54-0.92x (clang 1.07-1.44x to 0.46-0.66x), `mpfr_gap` `fma` at 128 bits 1.1x to 0.7x |
+| #1834 | 2026-10-26 | arithmetic in constant evaluation (#1819 phases 1-2): `limb_kernels` `inline constexpr` with the assembly, `divq` and carry builtins behind `std::is_constant_evaluated()`, integer seeds for the roots, `new`/`delete` scratch, the rounding mode and flags out of reach (`rounding_mode()`, `raise_flags()`): the constructors from integers, `+ - * /`, the comparisons and `sqrt` in `static_assert`, bit for bit the run-time results; the same instructions at run time |
 
 ## 9. Open work
 
@@ -1292,6 +1333,12 @@ MPFR under both compilers, #1832), where the binary operator's temporary still c
 of the difference's 9, which only a result written in place would save; and `fma` at 512 to 768
 bits (1.2x), past the short path's six limbs, where a seven- and eight-limb version measured
 slower than the general path (section 3).
+
+**Constant evaluation** (#1819, phases 3 to 5): the math library past `sqrt`, whose global
+caches (ln 2, pi, the log and Bernoulli tables) and `double` estimates of working precisions a
+constant expression cannot use; conversion from and to `float` and `double`, through
+`std::fpclassify` and `std::ldexp`; `parse` from a `std::string_view`; and constexpr values past
+the inline limbs, which need a fixed-capacity type.
 
 ## 10. Working on it
 

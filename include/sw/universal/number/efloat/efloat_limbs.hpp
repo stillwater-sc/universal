@@ -138,21 +138,24 @@ inline void give_block(limb_t* b, std::uint32_t capacity) noexcept {
 }
 
 // Scratch limbs for an operation: N on the stack, or a block from the thread's cache when the
-// operation needs more, returned to it at the end of the scope
+// operation needs more, returned to it at the end of the scope. In constant evaluation, which
+// cannot reach the thread's cache, a block past the N limbs comes from new and goes back to
+// delete (#1819).
 template<std::size_t N>
 class scratch_limbs {
 public:
-	scratch_limbs() noexcept : _heap{ nullptr }, _capacity{ 0 } {}
+	constexpr scratch_limbs() noexcept : _heap{ nullptr }, _capacity{ 0 } {}
 	scratch_limbs(const scratch_limbs&) = delete;
 	scratch_limbs& operator=(const scratch_limbs&) = delete;
-	~scratch_limbs() { if (_heap != nullptr) give_block(_heap, _capacity); }
+	constexpr ~scratch_limbs() { if (_heap != nullptr) free_block(_heap, _capacity); }
 	// n limbs, whose values are left to the caller; a second call may move them
-	limb_t* get(std::size_t n) {
+	constexpr limb_t* get(std::size_t n) {
 		if (n <= N) return _local;
 		if (n > _capacity) {
-			if (_heap != nullptr) give_block(_heap, _capacity);
+			if (_heap != nullptr) free_block(_heap, _capacity);
 			_capacity = block_capacity(n);
-			_heap     = take_block(_capacity);
+			if (std::is_constant_evaluated()) _heap = new limb_t[_capacity];
+			else                              _heap = take_block(_capacity);
 		}
 		return _heap;
 	}
@@ -160,6 +163,11 @@ private:
 	limb_t        _local[N];
 	limb_t*       _heap;
 	std::uint32_t _capacity;
+
+	static constexpr void free_block(limb_t* b, std::uint32_t capacity) noexcept {
+		if (std::is_constant_evaluated()) delete[] b;
+		else                              give_block(b, capacity);
+	}
 };
 
 }  // namespace efloat_storage
