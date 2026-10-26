@@ -9,7 +9,9 @@
 //               of one 32-bit limb to 2048 bits, on and past the inline limbs: the limbs, the
 //               exponent and the sign of every result are the same (#1819). The kernels take
 //               their portable loops in constant evaluation, the assembly at run time.
-//   constants   sqrt(2) to 1024 bits by the compiler, bit for bit the run-time root.
+//   constants   sqrt(2) to 1024 bits by the compiler, bit for bit the run-time root, and pi, e
+//               and phi to 1024 and 2048 bits: a Chudnovsky series, the series of 1/k! and
+//               (1 + sqrt(5)) / 2, each rounded once, limb for limb the run-time constants.
 //
 // Constant evaluation rounds to nearest and raises no status flags: it cannot read or write the
 // thread's rounding mode and flags. Out of scope still (#1819 phases 3 to 5): the math library
@@ -17,8 +19,8 @@
 // inline limbs, whose heap block a constant expression cannot keep.
 //
 // REGRESSION_LEVEL convention (intensity progression):
-//   LEVEL 1 -- the cases above, the chain at 32 to 1056 bits.
-//   LEVEL 2 -- the chain at 2048 bits as well.
+//   LEVEL 1 -- the cases above, the chain at 32 to 1056 bits, pi, e and phi at 1024 bits.
+//   LEVEL 2 -- the chain, pi, e and phi at 2048 bits as well.
 //   LEVEL 3 -- as level 2.
 //   LEVEL 4 -- as level 3.
 //
@@ -126,6 +128,109 @@ namespace {
 			if (r.limb_data()[i] != compiled[i]) ++failures;
 		}
 		if (failures != 0 && reportTestCases) std::cerr << "FAIL: sqrt(2) at 1024 bits: constant evaluation differs from the run time\n";
+		return failures;
+	}
+
+	// pi, e and phi by the compiler. Each is evaluated with 64 guard bits, which absorb the
+	// rounding errors of a series, and then rounded once to the target. The run-time constants
+	// parse 1000-digit literals, about 3300 bits, so 2048 bits is the widest comparison.
+	template<unsigned bits> constexpr unsigned work_bits = bits + 64;
+	template<unsigned bits> using work_t = efloat<work_bits<bits> / 32 + 1>;
+	template<unsigned bits> constexpr int last_scale = -int(work_bits<bits>) - 8;   // terms below are noise
+
+	// Chudnovsky: 1/pi = 12 / 640320^(3/2) sum_k a_k (13591409 + 545140134 k), with
+	// a_k / a_(k-1) = -(6k-5)(2k-1)(6k-1) / (k^3 640320^3 / 24). Each term adds about 14 digits,
+	// so 2048 bits takes 45 terms, where Machin's formula takes about 590 and exceeds clang's
+	// default constexpr step limit.
+	template<unsigned bits>
+	constexpr work_t<bits> pi_chudnovsky() {
+		work_t<bits> a(1);
+		a.set_precision(work_bits<bits>);
+		work_t<bits> sum = a;
+		sum *= 13591409;
+		for (long long k = 1; a.scale() > last_scale<bits>; ++k) {
+			a *= -(6 * k - 5) * (2 * k - 1) * (6 * k - 1);
+			a /= k * k * k;
+			a /= 10939058860032000ll;   // 640320^3 / 24
+			work_t<bits> t = a;
+			t *= 13591409 + 545140134 * k;
+			sum += t;
+		}
+		work_t<bits> c(10005);
+		c.set_precision(work_bits<bits>);
+		work_t<bits> root = sqrt(c);   // 640320^(3/2) / 12 = 426880 sqrt(10005)
+		root *= 426880;
+		return root / sum;
+	}
+
+	// e = sum 1/k!
+	template<unsigned bits>
+	constexpr work_t<bits> e_series() {
+		work_t<bits> term(1);
+		term.set_precision(work_bits<bits>);
+		work_t<bits> sum = term;
+		for (int k = 1; term.scale() > last_scale<bits>; ++k) {
+			term /= k;
+			sum += term;
+		}
+		return sum;
+	}
+
+	// phi = (1 + sqrt(5)) / 2
+	template<unsigned bits>
+	constexpr work_t<bits> phi_root() {
+		work_t<bits> five(5);
+		five.set_precision(work_bits<bits>);
+		work_t<bits> phi = sqrt(five);
+		phi += 1;
+		phi /= 2;
+		return phi;
+	}
+
+	// a constant rounded to bits: its sign, scale and limbs, least significant first
+	template<unsigned bits>
+	struct rounded_constant {
+		std::array<std::uint64_t, bits / 64> limb{};
+		int  scale    = 0;
+		bool negative = false;
+	};
+
+	template<unsigned bits>
+	consteval rounded_constant<bits> round_constant(work_t<bits> (*constant)()) {
+		work_t<bits> v = constant();
+		v.set_precision(bits);
+		rounded_constant<bits> r;
+		for (std::size_t i = 0; i < v.limb_count() && i < r.limb.size(); ++i) r.limb[i] = v.limb_data()[i];
+		r.scale    = v.scale();
+		r.negative = v.sign() < 0;
+		return r;
+	}
+
+	template<unsigned bits, unsigned nlimbs>
+	int CompareConstant(const char* name, const rounded_constant<bits>& compiled, const efloat<nlimbs>& run, bool reportTestCases) {
+		constexpr std::size_t K = bits / 64;
+		int failures = (run.limb_count() != K || run.scale() != compiled.scale || (run.sign() < 0) != compiled.negative) ? 1 : 0;
+		for (std::size_t i = 0; failures == 0 && i < K; ++i) {
+			if (run.limb_data()[i] != compiled.limb[i]) ++failures;
+		}
+		if (failures != 0 && reportTestCases) std::cerr << "FAIL: " << name << " at " << bits << " bits: constant evaluation differs from the run time\n";
+		return failures;
+	}
+
+	template<unsigned bits>
+	int VerifyMathConstants(bool reportTestCases) {
+		constexpr rounded_constant<bits> pi  = round_constant<bits>(pi_chudnovsky<bits>);
+		constexpr rounded_constant<bits> e   = round_constant<bits>(e_series<bits>);
+		constexpr rounded_constant<bits> phi = round_constant<bits>(phi_root<bits>);
+		constexpr std::size_t top = bits / 64 - 1;
+		static_assert(pi.limb[top]  == 0xC90F'DAA2'2168'C234ull && pi.scale == 1 && !pi.negative, "pi = 11.0010010000111111011...");
+		static_assert(e.limb[top]   == 0xADF8'5458'A2BB'4A9Aull && e.scale == 1 && !e.negative, "e = 10.1011011111100001010...");
+		static_assert(phi.limb[top] == 0xCF1B'BCDC'BFA5'3E0Aull && phi.scale == 0 && !phi.negative, "phi = 1.1001111000110111011...");
+		constexpr unsigned n = bits / 32;
+		int failures = 0;
+		failures += CompareConstant("pi", pi, sw::universal::efloat_pi<n>(), reportTestCases);
+		failures += CompareConstant("e", e, sw::universal::efloat_e<n>(), reportTestCases);
+		failures += CompareConstant("phi", phi, sw::universal::efloat_phi<n>(), reportTestCases);
 		return failures;
 	}
 
@@ -248,10 +353,12 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConstantEvaluation<16, 512>(reportTestCases), "efloat<16>", "constant evaluation at 512 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifyConstantEvaluation<64, 1056>(reportTestCases), "efloat<64>", "constant evaluation at 1056 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifyConstants(reportTestCases), "efloat<32>", "sqrt(2) at 1024 bits");
+	nrOfFailedTestCases += ReportTestResult(VerifyMathConstants<1024>(reportTestCases), "efloat", "pi, e and phi at 1024 bits");
 #	endif
 
 #	if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyConstantEvaluation<64, 2048>(reportTestCases), "efloat<64>", "constant evaluation at 2048 bits");
+	nrOfFailedTestCases += ReportTestResult(VerifyMathConstants<2048>(reportTestCases), "efloat", "pi, e and phi at 2048 bits");
 #	endif
 
 #	if REGRESSION_LEVEL_3
