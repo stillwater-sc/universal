@@ -10,9 +10,9 @@ name: Prune Actions caches
 # This keeps the newest generation of each ccache artifact and deletes the rest, so the
 # budget stays bounded by the number of artifacts rather than by how often main moves.
 #
-# sccache entries (Windows/MSVC, SCCACHE_GHA_ENABLED) are deliberately left alone: they
-# are one entry per object hash, ~1170 of them, but only ~0.13GB in total. The limit is
-# on bytes, not entry count, and sccache manages its own reuse.
+# The MSVC job's sccache directory is saved the same way, as sccache-<artifact>-<ISO8601>
+# (#1843), and is pruned with them. The per-object "sccache/..." entries of the old
+# SCCACHE_GHA_ENABLED setup match neither prefix and are left to expire.
 
 on:
   # Primary trigger: prune right after a run that may have SAVED a cache. main sees
@@ -77,7 +77,7 @@ jobs:
           gh api --paginate "repos/$REPO/actions/caches?per_page=100" \
             --jq '.actions_caches[]
                   | select(.ref == "refs/heads/main")
-                  | select(.key | startswith("ccache-"))
+                  | select(.key | startswith("ccache-") or startswith("sccache-"))
                   | [.id, .key, .created_at, .size_in_bytes] | @tsv' > all.tsv
 
           # Count by streaming one line per entry and using wc: an aggregate jq such as
@@ -86,7 +86,7 @@ jobs:
           strays=$(gh api --paginate "repos/$REPO/actions/caches?per_page=100" \
             --jq '.actions_caches[]
                   | select(.ref != "refs/heads/main")
-                  | select(.key | startswith("ccache-")) | .key' | wc -l)
+                  | select(.key | startswith("ccache-") or startswith("sccache-")) | .key' | wc -l)
           if [ "$strays" -gt 0 ]; then
             echo "note: $strays ccache entries outside refs/heads/main; left untouched"
           fi
