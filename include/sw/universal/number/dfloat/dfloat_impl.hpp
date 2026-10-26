@@ -23,9 +23,6 @@
 #define DFLOAT_EXCEPT noexcept
 #endif
 #endif
-#if !defined(DFLOAT_NATIVE_SQRT)
-#define DFLOAT_NATIVE_SQRT 0
-#endif
 
 #include <universal/internal/blockbinary/to_decimal.hpp>   // to_decimal on the significand: str()
                                                            // and the wide double path need it, and
@@ -768,12 +765,11 @@ public:
 	}
 
 	constexpr bool iszero() const noexcept {
-		// zero when all bits except sign are 0
-		// Check all bits except the sign bit (nbits-1)
-		for (unsigned i = 0; i < nbits - 1; ++i) {
-			if (_encoding.at(i)) return false;
-		}
-		return true;
+		bool s;
+		int exponent;
+		significand_t significand;
+		unpack(s, exponent, significand);
+		return !isinf() && !isnan() && significand.iszero();
 	}
 
 	constexpr bool isone() const noexcept {
@@ -931,7 +927,6 @@ public:
 	// Unpack the dfloat into sign, unbiased exponent, and significand integer
 	constexpr void unpack(bool& s, int& exponent, significand_t& significand) const noexcept {
 		s = sign();
-		if (iszero()) { exponent = 0; significand = 0; return; }
 		if (isinf() || isnan()) { exponent = 0; significand = 0; return; }
 
 		// Extract combination field (5 bits)
@@ -982,6 +977,61 @@ public:
 			// DPD: decode declets from trailing bits
 			significand = dpd_decode_trailing_wide(msd);
 		}
+		if (significand.iszero()) exponent = 0;
+	}
+
+	// The correctly rounded square root of a finite value > 0 (#1725; the special values are
+	// settled by sqrt() in math/functions/sqrt.hpp).  The value is S 10^q; scaled by 10^t with
+	// t >= 0 and q - t even, sqrt(S 10^(q - t)) = sqrt(S 10^t) 10^((q - t)/2), and t is chosen so
+	// that S 10^t has at least 2 ndigits + 1 digits: its floor root F then has ndigits + 1
+	// or more, a guard digit for the rounding.  F comes from the restoring integer square root,
+	// exact, and the remainder S 10^t - F^2 is the sticky part, so round_and_pack rounds the
+	// true root once, to nearest, ties to even.  S 10^t has at most 2 ndigits + 2 digits,
+	// within the 8 ndigits + 15 value bits of wide_significand_t.  An exact root is given the
+	// preferred exponent floor(q/2) of IEEE 754-2008.
+	constexpr dfloat square_root() const noexcept {
+		bool s{ false };
+		int q{ 0 };
+		significand_t S;
+		unpack(s, q, S);
+		if (S.iszero()) return *this;                            // a zero-valued encoding (a DPD non-canonical declet)
+		const wide_significand_t ten(10);
+		wide_significand_t M;
+		M.assign(S);
+		int digits = 0;
+		{
+			wide_significand_t tmp(M);
+			while (!tmp.iszero()) { tmp /= ten; ++digits; }
+		}
+		int t = 0;
+		while (digits + t < static_cast<int>(2 * ndigits + 1) || ((q - t) & 1)) { M *= ten; ++t; }
+		// restoring square root: two bits of M per step
+		wide_significand_t F(0), bit(0), rem(M);
+		int top = static_cast<int>(2 * sig_bits) - 2;            // the sign bit stays clear
+		while (top >= 0 && !rem.test(static_cast<unsigned>(top))) --top;
+		bit.setbit(static_cast<unsigned>(top) & ~1u);
+		while (!bit.iszero()) {
+			const wide_significand_t trial = F + bit;
+			if (rem >= trial) {
+				rem -= trial;
+				F >>= 1;
+				F += bit;
+			}
+			else {
+				F >>= 1;
+			}
+			bit >>= 2;
+		}
+		int e = (q - t) / 2;
+		if (rem.iszero()) {
+			// an exact root takes the preferred exponent of IEEE 754-2008, floor(q/2): the
+			// trailing zeros the scaling introduced come off, so sqrt(144) is 12, not 12.00000
+			const int preferred = (q >= 0) ? q / 2 : -((1 - q) / 2);
+			while (e < preferred && (F % ten).iszero()) { F /= ten; ++e; }
+		}
+		dfloat r;
+		r.normalize_wide_and_pack(false, e, F, !rem.iszero());
+		return r;
 	}
 
 protected:
@@ -1571,20 +1621,54 @@ bool parse(const std::string& number, dfloat<ndigits, es, Encoding, BlockType>& 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // dfloat - dfloat binary logic operators
 
-// equal: precondition is that the storage is properly nulled in all arithmetic paths
+// three-way comparison of the values of two non-NaN dfloats: -1, 0 or +1 (#1734).  A decimal
+// value has a cohort of encodings S 10^q that differ only in q (250e-2 and 25e-1), and IEEE 754 compares values, never representations, so the significands are
+// aligned to a common exponent before they are compared.  Every encoding with a zero
+// significand is zero, whatever its exponent, and +0 == -0.  The alignment is done in
+// wide_significand_t: a significand has at most ndigits + 1 digits (a non-canonical BID
+// significand is taken at its value, as the arithmetic takes it), so the scaled one has at
+// most 2 ndigits + 1, within the 8 ndigits + 15 value bits.
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
-constexpr bool operator==(const dfloat<ndigits, es, Encoding, BlockType>& lhs, const dfloat<ndigits, es, Encoding, BlockType>& rhs) {
+constexpr int dfloat_compare_values(const dfloat<ndigits, es, Encoding, BlockType>& lhs, const dfloat<ndigits, es, Encoding, BlockType>& rhs) {
 	using Dfloat = dfloat<ndigits, es, Encoding, BlockType>;
-	// NaN != anything (including itself)
-	if (lhs.isnan() || rhs.isnan()) return false;
-	// both zero (ignoring sign)
-	if (lhs.iszero() && rhs.iszero()) return true;
-	// compare unpacked values
+	using Wide = typename Dfloat::wide_significand_t;
+	// the infinities
+	if (lhs.isinf() || rhs.isinf()) {
+		const int l = lhs.isinf() ? (lhs.sign() ? -1 : 1) : 0;
+		const int r = rhs.isinf() ? (rhs.sign() ? -1 : 1) : 0;
+		if (lhs.isinf() && rhs.isinf()) return (l > r) - (l < r);
+		return lhs.isinf() ? l : -r;
+	}
 	bool ls, rs; int le, re;
 	typename Dfloat::significand_t lsig, rsig;
 	lhs.unpack(ls, le, lsig);
 	rhs.unpack(rs, re, rsig);
-	return (ls == rs) && (le == re) && (lsig == rsig);
+	const bool lzero = lsig.iszero(), rzero = rsig.iszero();
+	if (lzero && rzero) return 0;
+	if (lzero) return rs ? 1 : -1;
+	if (rzero) return ls ? -1 : 1;
+	if (ls != rs) return ls ? -1 : 1;
+	const int sign = ls ? -1 : 1;
+	// the position of the leading digit orders the magnitudes, unless it is the same
+	const int l_scale = le + static_cast<int>(Dfloat::count_digits_s(lsig)) - 1;
+	const int r_scale = re + static_cast<int>(Dfloat::count_digits_s(rsig)) - 1;
+	if (l_scale != r_scale) return (l_scale > r_scale) ? sign : -sign;
+	// same leading digit position: the exponents differ by at most ndigits
+	Wide l, r;
+	l.assign(lsig);
+	r.assign(rsig);
+	const Wide ten(10);
+	for (int i = le; i > re; --i) l *= ten;
+	for (int i = re; i > le; --i) r *= ten;
+	if (l == r) return 0;
+	return (l > r) ? sign : -sign;
+}
+
+// equal: the values are equal, so the members of a cohort compare equal (#1734); NaN equals nothing
+template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
+constexpr bool operator==(const dfloat<ndigits, es, Encoding, BlockType>& lhs, const dfloat<ndigits, es, Encoding, BlockType>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
+	return dfloat_compare_values(lhs, rhs) == 0;
 }
 
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
@@ -1594,57 +1678,9 @@ constexpr bool operator!=(const dfloat<ndigits, es, Encoding, BlockType>& lhs, c
 
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>
 constexpr bool operator< (const dfloat<ndigits, es, Encoding, BlockType>& lhs, const dfloat<ndigits, es, Encoding, BlockType>& rhs) {
-	using Dfloat = dfloat<ndigits, es, Encoding, BlockType>;
 	// NaN is unordered
 	if (lhs.isnan() || rhs.isnan()) return false;
-	// handle infinities
-	if (lhs.isinf() && rhs.isinf()) {
-		return lhs.sign() && !rhs.sign(); // -inf < +inf
-	}
-	if (lhs.isinf()) return lhs.sign();  // -inf < anything
-	if (rhs.isinf()) return !rhs.sign(); // anything < +inf
-
-	// handle zeros
-	if (lhs.iszero() && rhs.iszero()) return false;
-	if (lhs.iszero()) return !rhs.sign(); // 0 < positive
-	if (rhs.iszero()) return lhs.sign();  // negative < 0
-
-	// both nonzero, non-special
-	bool ls = lhs.sign(), rs = rhs.sign();
-	if (ls != rs) return ls; // negative < positive
-
-	// same sign: compare magnitudes
-	bool ls_ign; int le; typename Dfloat::significand_t lsig;
-	bool rs_ign; int re; typename Dfloat::significand_t rsig;
-	lhs.unpack(ls_ign, le, lsig);
-	rhs.unpack(rs_ign, re, rsig);
-
-	// normalize to same scale for comparison
-	int l_scale = le + static_cast<int>(Dfloat::count_digits_s(lsig)) - 1;
-	int r_scale = re + static_cast<int>(Dfloat::count_digits_s(rsig)) - 1;
-
-	if (l_scale != r_scale) {
-		// higher scale means larger magnitude
-		return ls ? (l_scale > r_scale) : (l_scale < r_scale);
-	}
-
-	// same overall scale: compare significands at same exponent
-	// Align to same exponent by adjusting significands
-	typename Dfloat::significand_t ten(10);
-	if (le < re) {
-		int diff = re - le;
-		if (diff < static_cast<int>(ndigits)) {
-			for (int i = 0; i < diff; ++i) rsig *= ten;
-		}
-	}
-	else if (re < le) {
-		int diff = le - re;
-		if (diff < static_cast<int>(ndigits)) {
-			for (int i = 0; i < diff; ++i) lsig *= ten;
-		}
-	}
-
-	return ls ? (lsig > rsig) : (lsig < rsig);
+	return dfloat_compare_values(lhs, rhs) < 0;
 }
 
 template<unsigned ndigits, unsigned es, DecimalEncoding Encoding, typename BlockType>

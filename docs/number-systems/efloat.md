@@ -32,13 +32,72 @@ class efloat;
 | Property | Value |
 |---|---|
 | Significand | `nlimbs` limbs, set at compile time |
-| Exponent | independent, wide |
+| Exponent | `int64_t`; a finite value's scale lies in `[1 - 2^62, 2^62 - 1]` |
 | Precision ceiling | memory, not a host exponent range |
 
-The mathematical library is oracle-grade: `sqrt` and `cbrt` use an adaptive Newton
-iteration whose step count follows the requested precision rather than a fixed budget, and
-the trigonometric family, `exp`/`log`, and the constants `pi`, `e` and `phi` are all
-carried past a thousand digits.
+`std::numeric_limits<efloat<nlimbs>>` describes the type at its widest precision (#1786):
+`digits` is `nlimbs * 32` and `epsilon()` is `2^(1 - digits)`; `min()` and `max()` sit at the
+ends of the scale range above, and `infinity()`, `quiet_NaN()` and `signaling_NaN()` are the
+special values. The range does not fit in an `int`, so `min_exponent` and `max_exponent`
+saturate at `-INT_MAX` and `INT_MAX`. The limits that are powers of two carry no precision of
+their own, so `x + epsilon()` stays at `x`'s precision.
+
+The arithmetic keeps to that range. A result past `max()` overflows, and one below `min()`
+underflows, as IEEE-754 prescribes in each rounding mode, with no subnormals. Overflow goes to
+inf, or to the largest value at the result's precision when the mode rounds toward zero from
+it. Underflow goes to 0, or to `min()` when the mode rounds away from zero, and under round to
+nearest when the result lies above `min() / 2`. Both raise their exception flags. `fma` forms
+its product exactly even when the product alone would leave the range, so
+`fma(max(), 2, -max())` is `max()`.
+
+### Precision
+
+Every efloat value rounds at a precision, which can differ from the type's `nlimbs * 32`
+bits. `set_precision(bits)` sets it on a value, and `set_default_precision(bits)` sets the
+one a default-constructed efloat starts with.
+
+An operation runs at the wider of its operands' precisions. A value constructed from a
+native integer or float carries no precision of its own: it is exact, and it takes its
+partner's. Mixed expressions therefore stay at the precision the caller chose:
+
+```cpp
+efloat<100> x(1);
+x /= 3;
+x.set_precision(640);              // 640 of the type's 3200 bits
+auto y = x * 3 / efloat<100>(7);   // computed and rounded at 640 bits
+auto z = exp(x);                   // so is the math library
+```
+
+When neither operand carries a precision, as in `efloat<100>(1) / efloat<100>(3)`, the result
+rounds at the default precision: `set_default_precision()` if set, else the type's
+`nlimbs * 32` bits, and carries none either; so does `sqrt`, `exp`, `sin` and the rest of the
+exp/log, trigonometric and hyperbolic families of such a value. `get_precision()` reports the
+precision a value rounds at, and `carries_precision()` whether it has one of its own. An integer
+operand of a mixed operation converts exactly, all 64 bits, rather than through `double`.
+
+`+`, `-`, `*`, `/` and `sqrt` are correctly rounded at the result's precision, in all four
+rounding modes (`efloat_rounding_mode`), and so is conversion to `float` and `double`,
+subnormals included.
+
+### Mathematical library
+
+The mathematical library is correctly rounded at any precision, in all four rounding modes:
+`exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p`, `sin`, `cos`, `tan`, `asin`,
+`acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `pow`, `tgamma`,
+`lgamma`, `erf`, `erfc`, `cbrt`, `hypot` and `fma`; `fmod` and `remainder` are exact. Each
+transcendental function evaluates with guard bits past the result's precision and
+rounds by Ziv's strategy, evaluating again at a wider precision in the rare case its value lies
+too close to a rounding boundary; exact results, such as `exp2(3)` or `pow(9, 0.5)`, are formed
+exactly. Results hold out to `2^(2^62)`, far past the range of `double`: `tgamma(100001.5)` is
+about `8.93e+456575`. None of these functions go through `double`.
+
+`hypot` and `fma` form their squares, products and sums exactly and round once; `cbrt` uses
+Ziv's strategy with an exact-cube check; `fmod` and `remainder` divide exactly, even for
+quotients of `2^(2^40)` and beyond (#1783).
+
+The algorithms, their history, the measured accuracy and speed against MPFR, and the open
+work are described in [efloat: correctly rounded arithmetic and math
+library](../algorithmic-details/efloat-mathlib.md).
 
 ### Known limitations
 

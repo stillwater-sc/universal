@@ -120,9 +120,31 @@ reports that as a catastrophic failure; it is the format working as designed.
 | `pow`, `exp2`, `exp10`, `log2`, `log10` | one psi-domain product or quotient one level down |
 | `expm1`, `log1p`, `hypot` | compositions on psi points, rounded once |
 | `floor`, `ceil`, `trunc`, `round`, `fpclassify`, `min`/`max`, `nextafter` | on the encoding |
+| `sinh`, `cosh` | psi(cosh X) = 1 + psi(X - ln 2 + log1p(e^-2X)), one level down at every level |
+| `asinh`, `acosh` | ln X + ln 2 + O(X^-2) past 2^120, with ln X the exact point one level down |
+| `lgamma`, `tgamma` (X > 0) | psi(lgamma X) = psi(X (ln X - 1)) past the working type; tgamma the exact step up |
+| `asin`, `acos`, `atan`, `atan2`, `tanh`, `atanh`, `erf`, `erfc` | on the value, rounded once like the arithmetic |
+| `sin`, `cos`, `tan`, `fmod`, `remainder`, `lgamma`/`tgamma` (X < 0) | on X formed in efloat to 1024 + fbits bits, widened until the rounding is decided |
 
-The trigonometric, hyperbolic, error and gamma functions follow in #1715. sin, cos and tan of
-a value past the double range will be NaR: X mod 2 pi is not computable for X = phi(5).
+The last row's results depend on X mod 2 pi or X mod Y, which needs X to an absolute
+precision of 2^-fbits: up to 1100 bits near the top of the double range, more than any
+cascade holds. Those functions therefore build X = phi(x) in efloat, evaluate twice 32 bits
+apart, and widen until both round to the same encoding (Ziv's strategy).
+
+Domain decisions, where the result is NaR:
+
+- **sin, cos and tan past the double range** (psi > psi(DBL_MAX) = 4.632). X mod 2 pi is
+  not determined by anything the format can compute: phi(5) has 1.6 million decimal digits
+  in its exponent, so Payne-Hanek would need that many bits of pi.
+- **fmod and remainder** for Y = 0, and for |X| >= |Y| with X past the double range, for the
+  same reason. When |X| < |Y|, fmod is X itself at any level, and remainder is X or the
+  correctly rounded X -+ |Y|.
+- **lgamma and tgamma** at the poles 0 and -1 (the only negative integer a lindex holds),
+  and for negative X past the double range, where the reflection needs sin(pi X).
+- **asin, acos** for |X| > 1, **acosh** for X < 1, **atanh** for |X| >= 1: lindex has no
+  infinity.
+
+atan2 follows std::atan2; with no signed zero, atan2(0, X) is 0 for X >= 0 and pi for X < 0.
 
 ## Limitations
 
@@ -139,7 +161,8 @@ a value past the double range will be NaR: X mod 2 pi is not computable for X = 
 
 ## Verification
 
-Every test compares encodings for equality against an mpmath oracle at 600 bits, never
+Every test compares encodings for equality against an mpmath oracle at 600 bits (1600 for
+the values of the exact path), never
 through double and never by round trip:
 
 | generator | checks |
@@ -148,6 +171,7 @@ through double and never by round trip:
 | `tools/generators/lindex_conversion_gen.py` | conversion both ways in six configurations |
 | `tools/generators/lindex_arithmetic_gen.py` | + - * /: every signed pair of `lindex<8,3>`, sampled 12 to 64 bits |
 | `tools/generators/lindex_math_gen.py` | the math library: every `lindex<8,3>` encoding and pair, sampled 16 to 64 bits |
+| `tools/generators/lindex_math2_gen.py` | the trigonometric, hyperbolic, error and gamma functions, atan2, fmod and remainder: every `lindex<8,3>` encoding and pair, sampled 16 to 64 bits |
 
 The regression tests are in `static/logarithmic/lindex/`. ucalc registers `lindex8`,
 `lindex16` and `lindex32`.

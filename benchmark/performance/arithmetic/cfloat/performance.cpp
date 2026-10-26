@@ -357,22 +357,22 @@ static void TestArithmeticOperatorPerformance() {
 	PerformanceRunner("cfloat<16,5,uint16_t>    division       ", DivisionWorkload< sw::universal::cfloat<16,5,uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint32_t>    division       ", DivisionWorkload< sw::universal::cfloat<32,8,uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint64_t>   division       ", DivisionWorkload< sw::universal::cfloat<64,11,uint64_t> >, NR_OPS);
-//	PerformanceRunner("cfloat<128,15,uint64_t>  division       ", DivisionWorkload< sw::universal::cfloat<128,15,uint64_t> >, NR_OPS / 2);
-//	PerformanceRunner("cfloat<256,15,uint64_t   division       ", DivisionWorkload< sw::universal::cfloat<256,15,uint64_t> >, NR_OPS / 4);
-//	PerformanceRunner("cfloat<512,15,uint64_t>  division       ", DivisionWorkload< sw::universal::cfloat<512,15,uint64_t> >, NR_OPS / 8);
-//	PerformanceRunner("cfloat<1024,15,uint64_t> division       ", DivisionWorkload< sw::universal::cfloat<1024,15,uint64_t> >, NR_OPS / 16);
+	PerformanceRunner("cfloat<128,15,uint64_t>  division       ", DivisionWorkload< sw::universal::cfloat<128,15,uint64_t> >, NR_OPS / 2);
+	PerformanceRunner("cfloat<256,15,uint64_t>  division       ", DivisionWorkload< sw::universal::cfloat<256,15,uint64_t> >, NR_OPS / 4);
+	PerformanceRunner("cfloat<512,15,uint64_t>  division       ", DivisionWorkload< sw::universal::cfloat<512,15,uint64_t> >, NR_OPS / 8);
+	PerformanceRunner("cfloat<1024,15,uint64_t> division       ", DivisionWorkload< sw::universal::cfloat<1024,15,uint64_t> >, NR_OPS / 16);
 
-	// multiplication is the slowest operator
+	// multiplication, a 32-bit word at a time since #1743
 
 	NR_OPS = 1024 * 32;
 	PerformanceRunner("cfloat<8,2,uint16_t>     multiplication ", MultiplicationWorkload< sw::universal::cfloat<8,2,uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<16,5,uint16_t>    multiplication ", MultiplicationWorkload< sw::universal::cfloat<16,5,uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint32_t>    multiplication ", MultiplicationWorkload< sw::universal::cfloat<32,8,uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint64_t>   multiplication ", MultiplicationWorkload< sw::universal::cfloat<64,11,uint64_t> >, NR_OPS);
-//	PerformanceRunner("cfloat<128,15,uint64_t>  multiplication ", MultiplicationWorkload< sw::universal::cfloat<128,15,uint64_t> >, NR_OPS / 2);
-//	PerformanceRunner("cfloat<256,15,uint64_t   multiplication ", MultiplicationWorkload< sw::universal::cfloat<256,15,uint64_t> >, NR_OPS / 4);
-//	PerformanceRunner("cfloat<512,15,uint64_t>  multiplication ", MultiplicationWorkload< sw::universal::cfloat<512,15,uint64_t> >, NR_OPS / 8);
-//	PerformanceRunner("cfloat<1024,15,uint64_t> multiplication ", MultiplicationWorkload< sw::universal::cfloat<1024,15,uint64_t> >, NR_OPS / 16);
+	PerformanceRunner("cfloat<128,15,uint64_t>  multiplication ", MultiplicationWorkload< sw::universal::cfloat<128,15,uint64_t> >, NR_OPS / 2);
+	PerformanceRunner("cfloat<256,15,uint64_t>  multiplication ", MultiplicationWorkload< sw::universal::cfloat<256,15,uint64_t> >, NR_OPS / 4);
+	PerformanceRunner("cfloat<512,15,uint64_t>  multiplication ", MultiplicationWorkload< sw::universal::cfloat<512,15,uint64_t> >, NR_OPS / 8);
+	PerformanceRunner("cfloat<1024,15,uint64_t> multiplication ", MultiplicationWorkload< sw::universal::cfloat<1024,15,uint64_t> >, NR_OPS / 16);
 
 }
 

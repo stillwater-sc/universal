@@ -24,13 +24,8 @@
 #define FIXPNT_ENABLE_LITERALS 1
 #endif
 
-////////////////////////////////////////////////////////////////////////////////////////
-// enable native SQRT instruction for this arithmetic
-#if !defined(FIXPNT_NATIVE_SQRT)
-// default is to enable them
-#define FIXPNT_NATIVE_SQRT 1
-// if disabled, the sqrt function marshals through native IEEE-754 double
-#endif
+// FIXPNT_NATIVE_SQRT is gone: sqrt is the correctly rounded integer root, whichever headers
+// are included (#1725).
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // FIXPNT_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the

@@ -142,6 +142,36 @@ int VerifyCfloatSpecialValueConversions(bool reportTestCases) {
 
 } // namespace sw::universal
 
+// Widening into a target of 64 or more fraction bits takes the converting constructor's
+// bit-by-bit path, which VerifyExhaustiveCfloatConversion cannot reach (its double oracle
+// caps the target at 52 bits).  That path copied a subnormal source without normalizing it,
+// so every subnormal came out wrong (#1725).  Widening is exact: the target must equal the
+// target built from the source's double value (exact here), compared at the target's full
+// precision, and must convert back to the same encoding.
+template<typename Source, typename Target>
+int VerifyWideningToWideTarget(bool reportTestCases) {
+	constexpr unsigned srcFbits = Source::nbits - Source::es - 1u;
+	static_assert(srcFbits <= 52 && Source::nbits <= 20, "exhaustive, with a double oracle");
+	static_assert(Target::nbits - Target::es - 1u >= 64, "the wide conversion path");
+	int nrOfFailedTests = 0;
+	for (unsigned long long i = 0; i < (1ull << Source::nbits); ++i) {
+		Source src{};
+		src.setbits(i);
+		if (src.isnan() || src.isinf()) continue;
+		const Target tgt(src);
+		const Source back(tgt);
+		const Target expected(static_cast<double>(src));      // exact: src fits a double
+		if (!(tgt == expected) || !(back == src)) {
+			if (reportTestCases && nrOfFailedTests < 4) {
+				std::cout << "FAIL: src " << to_binary(src) << " = " << double(src)
+				          << "  ->  tgt " << double(tgt) << "  ->  back " << to_binary(back) << '\n';
+			}
+			++nrOfFailedTests;
+		}
+	}
+	return nrOfFailedTests;
+}
+
 // Regression testing guards: typically set by the cmake configuration
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -235,6 +265,17 @@ try {
 	        cfloat< 8, 3, uint8_t,  false, false, false>,
 	        cfloat< 8, 3, uint16_t, false, false, false>>(reportTestCases),
 	    test_tag, "cfloat<8,3,uint8_t> -> cfloat<8,3,uint16_t> (cross-block-type)");
+	// widening into 64+ fraction bits, subnormals included (#1725)
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifyWideningToWideTarget<
+	        cfloat<16, 5, uint32_t, true, false, false>,
+	        cfloat<80, 11, uint32_t, true, false, false>>(reportTestCases)),
+	    test_tag, "cfloat<16,5> -> cfloat<80,11> (wide target)");
+	nrOfFailedTestCases += ReportTestResult(
+	    (VerifyWideningToWideTarget<
+	        cfloat<12, 4, uint8_t, true, true, false>,
+	        cfloat<76, 9, uint8_t, true, true, false>>(reportTestCases)),
+	    test_tag, "cfloat<12,4> -> cfloat<76,9> (wide target)");
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -276,6 +317,7 @@ try {
 	        cfloat<16, 5, uint8_t, false, false, false>,
 	        cfloat<12, 4, uint8_t, false, false, false>>(reportTestCases),
 	    test_tag, "cfloat<16,5> -> cfloat<12,4> (narrowing)");
+
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

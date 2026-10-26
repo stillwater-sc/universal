@@ -14,6 +14,8 @@
 
 #include <universal/internal/blocksignificand/blocksignificand_fwd.hpp>
 #include <universal/internal/blocktype/carry.hpp>
+#include <universal/internal/blocktype/limb_division.hpp>
+#include <universal/internal/blocktype/limb_multiplication.hpp>
 
 /*
    The fraction bits in a floating-point representation benefit from different
@@ -274,37 +276,70 @@ public:
 		blocksignificand<nbits, bt> b(twosComplementFree(rhs));
 		add(lhs, b);
 	}
+	// The product lhs * rhs, modulo 2^nbits: the low nbits of the full product, which is what
+	// the shift-and-add loop it replaced produced, since every add nulled the bits above nbits.
+	// A blocktriple<MUL> sizes its significand to hold the whole product of two aligned
+	// operands, so nothing is lost in practice.
+	//
+	// Schoolbook multiplication a 32-bit word at a time (limb::multiply_low). The loop it
+	// replaced did a full-width add and shift for every bit of one operand (#1743).
 	constexpr void mul(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
-		blocksignificand<nbits, bt> base(lhs);
-		blocksignificand<nbits, bt> multiplicand(rhs);
+		std::uint32_t a[nrLimbs]{}, b[nrLimbs]{}, p[nrLimbs]{};
+		lhs.to_limbs(a);
+		rhs.to_limbs(b);
+		limb::multiply_low(a, nrLimbs, b, nrLimbs, p, nrLimbs);
 		clear();
-		for (unsigned i = 0; i < nbits; ++i) {
-			if (base.at(i)) {
-				add(*this, multiplicand);
-			}
-			multiplicand <<= 1;
-		}
-		// since we used operator+=, which enforces the nulling of leading bits
-		// we don't need to null here
+		from_limbs(p);
 	}
+	// The quotient lhs / rhs, at the operands' radix point R, truncated, with bit 0 set when
+	// anything was truncated. The operands are aligned significands of the same radix (a
+	// blocktriple<DIV> carries 2f+4 bits below its fraction for this), so the quotient's value
+	// is A / B and its bits are Q = floor(A * 2^R / B). The sticky bit 0 lies far below the
+	// rounding bits, where roundingDirection() reads it as sticky.
+	//
+	// Long division a 32-bit word at a time (limb::divide, Knuth's Algorithm D). It replaced a
+	// restoring division that produced one quotient bit per pass over the whole significand,
+	// 10 to 25 times slower from half to octuple precision (#1742).
 	constexpr void div(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
-		blocksignificand<nbits, bt> base(lhs);
-		blocksignificand<nbits, bt> divider(rhs);
-		clear();
-		unsigned outputRadix = static_cast<unsigned>(lhs.radix());
-		unsigned fbits = (outputRadix >> 1);
-		for (unsigned i = 0; i <= 2*fbits; ++i) {
-//			std::cout << "base    : " << to_binary(base) << " : " << base << '\n';
-//			std::cout << "divider : " << to_binary(divider) << " : " << divider << '\n';
-			if (divider <= base) {
-				base.sub(base, divider);
-				this->setbit(outputRadix - i);
-			}
-			divider >>= 1;
+		constexpr unsigned L  = nrLimbs;                 // 32-bit limbs of one operand
+		constexpr unsigned UL = 2u * L + 1u;             // limbs of A * 2^R, 0 <= R < nbits
+		// read everything from the operands before clear(): either may be *this
+		const int radix = lhs.radix();
+		if (radix < 0 || radix >= static_cast<int>(nbits)) {
+			// no quotient bits at this radix: every radix a blocktriple uses is in range, and
+			// one outside it -- set directly, or never set -- must not index past u[]
+			clear();
+			return;
 		}
+		const unsigned R = static_cast<unsigned>(radix);
+		std::uint32_t a[L]{}, b[L]{};
+		lhs.to_limbs(a);
+		rhs.to_limbs(b);
+		clear();
+
+		std::size_t n = L;
+		while (n > 0 && b[n - 1] == 0) --n;
+		if (n == 0) return;   // division by zero is the caller's to handle
+
+		// u = A * 2^R
+		std::uint32_t u[UL]{};
+		const unsigned limbShift = R / 32u, bitShift = R % 32u;
+		for (unsigned i = 0; i < L; ++i) {
+			const std::uint64_t x = std::uint64_t(a[i]) << bitShift;
+			u[i + limbShift]     |= static_cast<std::uint32_t>(x);
+			u[i + limbShift + 1] |= static_cast<std::uint32_t>(x >> 32);
+		}
+		std::size_t m = UL;
+		while (m > n && u[m - 1] == 0) --m;
+
+		std::uint32_t q[UL]{}, un[UL + 1]{}, vn[L]{};
+		const bool inexact = limb::divide(u, m, b, n, q, un, vn);
+		q[0] |= inexact ? 1u : 0u;
+		from_limbs(q);
 	}
 
 #ifdef FRACTION_REMAINDER
+
 	// remainder operator
 	blocksignificand& operator%=(const blocksignificand& rhs) noexcept {
 		bsquorem<nbits, bt> result = longdivision(*this, rhs);
@@ -620,7 +655,31 @@ public:
 
 protected:
 	// HELPER methods
-	// none
+	// the significand as nrLimbs 32-bit limbs, least significant first (a 64-bit top block can
+	// reach past the last limb; those bits are above nbits and zero)
+	static constexpr unsigned nrLimbs = (nbits + 31u) / 32u;
+	constexpr void to_limbs(std::uint32_t* limbs) const noexcept {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			const std::uint64_t word = static_cast<std::uint64_t>(_block[i]);
+			for (unsigned k = 0; k < bitsInBlock; k += 32u) {
+				const unsigned bit = i * bitsInBlock + k;
+				if (bit / 32u < nrLimbs) limbs[bit / 32u] |= static_cast<std::uint32_t>((word >> k) << (bit % 32u));
+			}
+		}
+	}
+	// the inverse of to_limbs: set the blocks from limbs, discarding bits above nbits
+	constexpr void from_limbs(const std::uint32_t* limbs) noexcept {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			std::uint64_t word = 0;
+			for (unsigned k = 0; k < bitsInBlock; k += 32u) {
+				const unsigned bit = i * bitsInBlock + k;
+				if (bit / 32u < nrLimbs) word |= std::uint64_t(limbs[bit / 32u] >> (bit % 32u)) << k;
+			}
+			_block[i] = static_cast<bt>(word);
+		}
+		_block[MSU] &= MSU_MASK;
+	}
+
 
 public:
 	int radixPoint;

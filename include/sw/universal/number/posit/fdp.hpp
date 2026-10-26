@@ -109,10 +109,14 @@ quire_resolve(const quire<posit<nbits, es, bt>, capacity, LimbType>& q) {
 // Posit-specific quire convenience functions
 // ============================================================================
 
-/// quire_size: return the total quire size in bits for a posit configuration
-template<unsigned nbits, unsigned es, unsigned capacity = 30>
+/// quire_size: return the total quire size in bits for a posit configuration, including the sign bit.
+/// This is the same value as total_bits() of quire<posit<nbits, es>, capacity>.
+/// capacity is a carry guard that sits outside the dynamic range: it guarantees no overflow for
+/// fewer than 2^capacity accumulations of worst-case (maxpos^2) products. The default is the
+/// standard's 31, which makes a posit<nbits,2> quire 16n bits.
+template<unsigned nbits, unsigned es, unsigned capacity = quire_traits<posit<nbits, es>>::capacity>
 inline int quire_size() {
-	return static_cast<int>(quire_traits<posit<nbits, es>>::range + capacity);
+	return static_cast<int>(quire_traits<posit<nbits, es>>::range + capacity + 1u);
 }
 
 // ============================================================================

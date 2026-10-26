@@ -25,6 +25,15 @@ result, without the full design-doc machinery.
   -- Priest's error-free transformations, Bailey/Hida's hand-crafted
   fixed-precision `dd` / `qd`, Shewchuk's adaptive expansions, and how
   Universal's `floatcascade<N>` building block ties them together.
+- [Multi-limb arithmetic](multi-limb-arithmetic.md) -- how the fixed-size
+  types store integers and significands in blocks, the 32-bit-limb kernels
+  that add, multiply (schoolbook) and divide (Knuth's Algorithm D) them under
+  `blocktriple`, `integer` and `blockbinary`, how those changes were verified
+  bit-identical, and what they gained.
+- [efloat: correctly rounded arithmetic and math library](efloat-mathlib.md) -- how
+  `efloat` rounds its arithmetic and math library correctly at any precision (Ziv's strategy
+  over stated error bounds), the algorithm behind each function, the alternatives tried and
+  dropped, how it is verified against MPFR, measured accuracy and speed, and the open work.
 
 ## Reproducing the plots
 

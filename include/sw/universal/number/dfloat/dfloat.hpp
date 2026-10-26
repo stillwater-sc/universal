@@ -19,11 +19,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
 ///
-/// DFLOAT_ENABLE_LITERALS, DFLOAT_THROW_ARITHMETIC_EXCEPTION, DFLOAT_EXCEPT and
-/// DFLOAT_NATIVE_SQRT now default in dfloat_impl.hpp, beside the code they govern, so
-/// that a translation unit which includes core.hpp directly gets the same defaults this
-/// umbrella used to supply (#1334, #1436). Defining any of them before this header still
-/// wins, as before.
+/// DFLOAT_ENABLE_LITERALS, DFLOAT_THROW_ARITHMETIC_EXCEPTION and DFLOAT_EXCEPT now default
+/// in dfloat_impl.hpp, beside the code they govern, so that a translation unit which includes
+/// core.hpp directly gets the same defaults this umbrella used to supply (#1334, #1436).
+/// Defining any of them before this header still wins, as before. DFLOAT_NATIVE_SQRT is
+/// gone: sqrt is the correctly rounded decimal root (#1725).
 ///
 // NOTE: blockbinary does not currently consume BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION.
 // dfloat's own divide-by-zero check at the dfloat layer handles the throw-vs-NaN

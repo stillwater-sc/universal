@@ -16,7 +16,8 @@
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/blocktype.hpp>
 #include <universal/internal/blocktype/carry.hpp> // carry-detection intrinsics for uint64_t limbs
-#include <universal/native/integer_core.hpp>  // nlz(), used by the Knuth division normalisation
+#include <universal/internal/blocktype/limb_division.hpp> // limb::divide, behind idiv (#1744)
+#include <universal/native/integer_core.hpp>  // nlz(), which integer.hpp users reach through this header
 #include <universal/utility/string_parse.hpp>   // shared constexpr scan_prefix / scan_sign / char classifiers
 
 /*
@@ -1194,124 +1195,15 @@ public:
 			}
 		}
 		else {
-			clear();
-			// no need to constexpr guard this for IntegerNumber as sign() will return false for Whole and Natural Numbers
-			bool sign_a = a.sign();
-			bool sign_b = b.sign();
-			bool sign_q = sign_a ^ sign_b;
-			using Integer = integer<nbits+1, BlockType, NumberType>; // nbits+1 to deal with maxneg
-			Integer _a(a), _b(b);
-			if (sign_a) _a.twosComplement();
-			if (sign_b) _b.twosComplement();			
-			
-			// filter out the easy stuff
-			if (_a < _b) { r = a; clear(); return; }
-
-			// determine first non-zero limbs
-			unsigned m{ 0 }, n{ 0 };
-			for (unsigned i = nrBlocks; i > 0; --i) {
-				if (_a.block(i - 1) != 0) {
-					m = static_cast<unsigned>(i);
-					break;
-				}
-			}
-			for (unsigned i = nrBlocks; i > 0; --i) {
-				if (_b.block(i - 1) != 0) {
-					n = static_cast<unsigned>(i);
-					break;
-				}
-			}
-
-			// single limb divisor
-			if (n == 1) {
-				std::uint64_t remainder{ 0 };
-				auto divisor = _b.block(0);
-				for (unsigned j = m; j > 0; --j) {
-					std::uint64_t dividend = remainder * BASE + _a.block(j - 1);
-					std::uint64_t limbQuotient = dividend / divisor;
-					_block[j - 1] = static_cast<BlockType>(limbQuotient);
-					remainder = dividend - limbQuotient * divisor;
-				}
-				r._block[0] = static_cast<BlockType>(remainder);
-				if (sign_q) twosComplement();
-				return;
-			}
-
-			// Knuth's algorithm calculates a normalization factor d
-			// that perfectly aligns b so that b0 >= floor(BASE/2),
-			// a requirement for the relationship: (qHat - 2) <= q <= qHat
-
-			using OriginalInteger = integer<nbits, BlockType, NumberType>;
-			using ExpandedInteger = integer<nbits + sizeof(BlockType) * 8, BlockType, NumberType>; // need room for overflow to receive the normalization bits
-
-			int shift = nlz(b.block(n - 1));
-			ExpandedInteger normalized_a;
-			normalized_a.setblock(m, static_cast<BlockType>((_a.block(m - 1) >> (bitsInBlock - shift))));
-			for (unsigned i = m - 1; i > 0; --i) {
-				normalized_a.setblock(i, static_cast<BlockType>((_a.block(i) << shift) | (_a.block(i - 1) >> (bitsInBlock - shift))));
-			}
-			normalized_a.setblock(0, static_cast<BlockType>(_a.block(0) << shift));
-			// normalize b
-			OriginalInteger normalized_b;
-			unsigned n_minus_1 = n - 1;
-			for (unsigned i = n_minus_1; i > 0; --i) {
-				normalized_b.setblock(i, static_cast<BlockType>((_b.block(i) << shift) | (_b.block(i - 1) >> (bitsInBlock - shift))));
-			}
-			normalized_b.setblock(0, static_cast<BlockType>(_b.block(0) << shift));
-
-//			std::cout << "normalized a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
-//			std::cout << "normalized b :             " << normalized_b.showLimbs() << " : " << normalized_b.showLimbValues() << '\n';
-
-			// divide by limb
-			std::uint64_t divisor = normalized_b._block[n - 1];
-			std::uint64_t v_nminus2 = normalized_b._block[n - 2]; // n > 1 at this point
-			for (int j = static_cast<int>(m - n); j >= 0; --j) {
-				std::uint64_t dividend = normalized_a.block(j + n) * BASE + normalized_a.block(j + n - 1);
-				std::uint64_t qhat = dividend / divisor;
-				std::uint64_t rhat = dividend - qhat * divisor;
-
-				while (qhat >= BASE || qhat * v_nminus2 > BASE * rhat + normalized_a.block(j + n - 2)) {
-					--qhat;
-					rhat += divisor;
-					if (rhat < BASE) continue;
-				}
-				std::uint64_t borrow{ 0 };
-				std::uint64_t diff{ 0 };
-				for (unsigned i = 0; i < n; ++i) {
-					std::uint64_t p = qhat * normalized_b.block(i);
-					diff = normalized_a.block(i + j) - static_cast<BlockType>(p) - borrow;
-					normalized_a.setblock(i + j, static_cast<BlockType>(diff));
-					borrow = (p >> bitsInBlock) - (diff >> bitsInBlock);
-				}
-				std::int64_t signedBorrow = static_cast<int64_t>(normalized_a.block(j + n) - borrow);
-				normalized_a.setblock(j + n, static_cast<BlockType>(signedBorrow));
-
-//				std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
-
-				setblock(static_cast<unsigned>(j), static_cast<BlockType>(qhat));
-				if (signedBorrow < 0) { // subtracted too much, add back
-					std::fprintf(stderr, "subtracted too much, add back\n");
-					_block[j] -= 1;
-					std::uint64_t carry{ 0 };
-					for (unsigned i = 0; i < n; ++i) {
-						carry += static_cast<std::uint64_t>(normalized_a.block(i + j)) + static_cast<std::uint64_t>(normalized_b.block(i));
-						normalized_a.setblock(i + j, static_cast<BlockType>(carry));
-						carry >>= 32;
-					}
-					BlockType rectified = static_cast<BlockType>(normalized_a.block(j + n) + carry);
-					normalized_a.setblock(j + n, rectified);
-				}
-//				std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
-			}
-			if (sign_q) twosComplement();
-
-			// remainder needs to be normalized
-			for (unsigned i = 0; i < n - 1; ++i) {
-				std::uint64_t remainder = static_cast<uint64_t>(normalized_a.block(i) >> shift);
-				remainder |= static_cast<uint64_t>(normalized_a.block(i + 1) << (32 - shift));
-				r.setblock(i, static_cast<BlockType>(remainder));
-			}
-			r.setblock(n - 1, static_cast<BlockType>(normalized_a.block(n - 1) >> shift));
+			// Several blocks: the same long division as / and % (idiv, on limb::divide). This
+			// used to be a block-digit Knuth division of its own that was wrong for every
+			// divisor wider than one block, and could trap: it normalized by the leading zeros
+			// of the signed divisor rather than its magnitude, shifted a block by its full width
+			// when no normalization was needed, and assumed 32-bit blocks (#1750). The result is
+			// formed before it is stored, so r or *this may alias a or b.
+			const idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(a, b);
+			*this = divresult.quot;
+			r = divresult.rem;
 		}
 	}
 	// signed integer conversion
@@ -1633,6 +1525,29 @@ void remainder(integer<nbits, BlockType, NumberType>& c, const integer<nbits, Bl
 	c = divresult.rem;
 }
 
+// q = a / b and r = a % b for two non-negative integers, by long division a 32-bit word at a
+// time (limb::divide, Knuth's Algorithm D). It replaced a shift-and-subtract loop that did a
+// full-width compare, subtract and shift for every quotient bit (#1744). b must be nonzero.
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+constexpr void divide_magnitudes(const integer<nbits, BlockType, NumberType>& a, const integer<nbits, BlockType, NumberType>& b,
+                                 integer<nbits, BlockType, NumberType>& q, integer<nbits, BlockType, NumberType>& r) noexcept {
+	using Integer = integer<nbits, BlockType, NumberType>;
+	constexpr unsigned L  = (nbits + 31u) / 32u;
+	constexpr unsigned NB = Integer::nrBlocks;
+	std::uint32_t u[L]{}, v[L]{}, ql[L + 1]{}, rl[L]{}, un[L + 1]{}, vn[L]{};
+	limb::gather<BlockType>([&a](unsigned i) { return a.block(i); }, NB, u, L);
+	limb::gather<BlockType>([&b](unsigned i) { return b.block(i); }, NB, v, L);
+	std::size_t m = L;
+	while (m > 1 && u[m - 1] == 0) --m;
+	std::size_t n = L;
+	while (n > 1 && v[n - 1] == 0) --n;
+	limb::divide(u, m, v, n, ql, rl, un, vn);
+	q.clear();
+	r.clear();
+	limb::scatter<BlockType>(ql, L, [&q](unsigned i, BlockType x) { q.setblock(i, x); }, NB);
+	limb::scatter<BlockType>(rl, L, [&r](unsigned i, BlockType x) { r.setblock(i, x); }, NB);
+}
+
 // divide integer<nbits, BlockType, NumberType> a and b and return result argument
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, NumberType>& _a, const integer<nbits, BlockType, NumberType>& _b) {
@@ -1670,27 +1585,12 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 			divresult.rem = _a; // a % b = a when a / b = 0
 			return divresult;
 		}
-		// initialize the long division
-		integer<nbits + 1, BlockType, NumberType> accumulator = a;
-		// prepare the subtractand
-		integer<nbits + 1, BlockType, NumberType> subtractand = b;
-		int msb_b = findMsb(b);
-		int msb_a = findMsb(a);
-		int shift = msb_a - msb_b;
-		subtractand <<= shift;
+		// divide the magnitudes; their quotient is below 2^nbits (maxneg / -1 gives 2^(nbits-1),
+		// which wraps to maxneg as it always has), so the low nbits hold all of it
+		Integer accumulator, quotient;
+		divide_magnitudes(a, b, quotient, accumulator);
 		divresult.quot = 0;
-		// long division
-		for (int i = shift; i >= 0; --i) {
-			if (subtractand <= accumulator) {
-				accumulator -= subtractand;
-				divresult.quot.setbit(static_cast<unsigned>(i));
-			}
-			else {
-				divresult.quot.setbit(static_cast<unsigned>(i), false);
-			}
-			subtractand >>= 1;
-			//		std::cout << "i = " << i << " subtractand : " << long(subtractand) << '\n';
-		}
+		for (unsigned i = 0; i < integer<nbits, BlockType, NumberType>::nrBlocks; ++i) divresult.quot.setblock(i, quotient.block(i));
 		if (result_negative) {  // take 2's complement
 			divresult.quot.flip();
 			divresult.quot += 1;
@@ -1708,23 +1608,8 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 			return divresult; // a / b = 0 when b > a
 		}
 		using Integer = integer<nbits, BlockType, NumberType>;
-		Integer accumulator(_a), subtractand(_b);
-		int msb_b = findMsb(_b);
-		int msb_a = findMsb(_a);
-		int shift = msb_a - msb_b;
-		subtractand <<= shift;
-		// long division
-		for (int i = shift; i >= 0; --i) {
-			if (subtractand <= accumulator) {
-				accumulator -= subtractand;
-				divresult.quot.setbit(static_cast<unsigned>(i));
-			}
-			else {
-				divresult.quot.setbit(static_cast<unsigned>(i), false);
-			}
-			subtractand >>= 1;
-			//		std::cout << "i = " << i << " subtractand : " << long(subtractand) << '\n';
-		}
+		Integer accumulator;
+		divide_magnitudes(_a, _b, divresult.quot, accumulator);
 		divresult.rem = accumulator;
 	}
 

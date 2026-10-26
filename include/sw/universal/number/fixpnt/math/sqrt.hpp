@@ -1,4 +1,6 @@
 #pragma once
+#include <cerrno>
+#include <cstdint>
 #include <limits>        // std::numeric_limits
 #include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for fixed-points
@@ -10,10 +12,6 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/number/fixpnt/numeric_limits.hpp>
 #include <universal/number/fixpnt/math/sqrt_tables.hpp>
-
-#ifndef FIXPNT_NATIVE_SQRT
-#define FIXPNT_NATIVE_SQRT 0
-#endif
 
 namespace sw { namespace universal {
 
@@ -120,43 +118,120 @@ namespace sw { namespace universal {
 	*/
 
 
-#if FIXPNT_NATIVE_SQRT
-	// sqrt for arbitrary cfloat
+	namespace fixpnt_sqrt_detail {
+
+		// a little-endian unsigned integer of W bits, just what the integer square root needs
+		template<unsigned W>
+		struct wide {
+			static constexpr unsigned N = (W + 31u) / 32u;
+			std::uint32_t w[N];
+			void clear() { for (unsigned i = 0; i < N; ++i) w[i] = 0; }
+			bool test(unsigned i) const { return (i < 32u * N) && ((w[i / 32u] >> (i % 32u)) & 1u); }
+			void set(unsigned i) { if (i < 32u * N) w[i / 32u] |= (std::uint32_t(1) << (i % 32u)); }
+			bool iszero() const { for (unsigned i = 0; i < N; ++i) if (w[i]) return false; return true; }
+			int compare(const wide& o) const {
+				for (unsigned i = N; i-- > 0;) { if (w[i] != o.w[i]) return (w[i] < o.w[i]) ? -1 : 1; }
+				return 0;
+			}
+			void add(const wide& o) {
+				std::uint64_t c = 0;
+				for (unsigned i = 0; i < N; ++i) { c += std::uint64_t(w[i]) + o.w[i]; w[i] = static_cast<std::uint32_t>(c); c >>= 32; }
+			}
+			void sub(const wide& o) {                       // *this >= o
+				std::int64_t b = 0;
+				for (unsigned i = 0; i < N; ++i) {
+					std::int64_t d = std::int64_t(w[i]) - o.w[i] - b;
+					b = (d < 0) ? 1 : 0;
+					w[i] = static_cast<std::uint32_t>(d + (b << 32));
+				}
+			}
+			void shr(unsigned s) {                          // s < 32
+				for (unsigned i = 0; i < N; ++i) {
+					std::uint32_t hi = (i + 1 < N) ? w[i + 1] : 0u;
+					w[i] = (w[i] >> s) | ((s != 0u) ? (hi << (32u - s)) : 0u);
+				}
+			}
+		};
+
+		// floor(sqrt(m)) and m - floor(sqrt(m))^2, by the restoring digit-by-digit method:
+		// exact, two bits of m per step
+		template<unsigned W>
+		void isqrt(wide<W> m, wide<W>& root, wide<W>& rem) {
+			root.clear();
+			int top = static_cast<int>(32u * wide<W>::N) - 1;
+			while (top >= 0 && !m.test(static_cast<unsigned>(top))) --top;
+			if (top < 0) { rem = m; return; }
+			wide<W> bit;
+			bit.clear();
+			bit.set(static_cast<unsigned>(top) & ~1u);      // the highest power of four <= m
+			while (!bit.iszero()) {
+				wide<W> trial = root;
+				trial.add(bit);
+				if (m.compare(trial) >= 0) {
+					m.sub(trial);
+					root.shr(1);
+					root.add(bit);
+				}
+				else {
+					root.shr(1);
+				}
+				bit.shr(2);
+			}
+			rem = m;
+		}
+
+	}  // namespace fixpnt_sqrt_detail
+
+	// sqrt for fixpnt, correctly rounded (#1725).
+	//
+	// A fixpnt value is N 2^-rbits for an integer N, so its root is sqrt(N 2^rbits) 2^-rbits:
+	// the result is the integer R nearest sqrt(M) for M = N 2^rbits, computed exactly by an
+	// integer square root.  With s = floor(sqrt(M)) and the remainder M - s^2, the root rounds
+	// up exactly when the remainder exceeds s, since (s + 1/2)^2 = s^2 + s + 1/4 and M is an
+	// integer: a tie cannot occur.  Only a format without an integer bit (rbits >= nbits - 1)
+	// has a root it cannot hold, sqrt of a value in [maxpos^2, maxpos], which saturates.
+	//
+	// This used to be two different functions.  fixpnt.hpp defaulted FIXPNT_NATIVE_SQRT to 1
+	// and selected a Babylonian iteration that stopped on an epsilon test, not at the correctly
+	// rounded root, and threw on a negative argument whatever FIXPNT_THROW_ARITHMETIC_EXCEPTION
+	// said; math/sqrt.hpp defaulted the switch to 0 and returned fixpnt(std::sqrt(double(a))),
+	// so a translation unit that included the core and the mathlib without the umbrella got a
+	// root through double.  The switch is gone.
+	//
+	// fixpnt has no NaN: a negative argument throws fixpnt_negative_sqrt_arg under
+	// FIXPNT_THROW_ARITHMETIC_EXCEPTION, and otherwise sets errno = EDOM and returns 0.
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& a) {
-		if (a < 0) std::cout << "sqrt arg is negative: " << a << std::endl;
-		if (a < 0) throw fixpnt_arithmetic_exception("argument to sqrt is negative");
 		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
-		Fixed eps{ std::numeric_limits<Fixed>::epsilon() };
-		Fixed y(a);
-		Fixed x(a);
-		x >>= 1; // divide by 2
-		Fixed diff = (x * x - y);
-		int iterations = 0;
-		while (sw::universal::abs(diff) > eps) {
-			x = (x + y);
-			x >>= 1;
-			y = a / x;
-			diff = x - y;
-//			std::cout << " x: " << x << " y: " << y << " diff " << diff << '\n';
-			if (++iterations > static_cast<int>(rbits)) break;
-		}
-		if (iterations > static_cast<int>(rbits)) std::cerr << "sqrt(" << double(a) << ") failed to converge\n";
-		return x;
-	}
-#else
-	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& a) {
-#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
+		if (a.iszero()) return a;
 		if (a.isneg()) {
+#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 			throw fixpnt_negative_sqrt_arg();
+#else
+			errno = EDOM;
+			return Fixed(0);
+#endif
 		}
-#else 
-		if (a.isneg()) std::cerr << "fixpnt_negative_sqrt_arg\n";
-#endif
-			return fixpnt<nbits, rbits, arithmetic, bt>(std::sqrt((double)a));
+		constexpr unsigned W = nbits + rbits + 2u;
+		using Wide = fixpnt_sqrt_detail::wide<W>;
+		Wide m, root, rem;
+		m.clear();
+		for (unsigned i = 0; i + 1u < nbits; ++i) if (a.at(i)) m.set(i + rbits);   // M = N 2^rbits, N > 0
+		fixpnt_sqrt_detail::isqrt(m, root, rem);
+		if (rem.compare(root) > 0) {                    // round to nearest: up when rem > s
+			Wide one;
+			one.clear();
+			one.set(0);
+			root.add(one);
+		}
+		// the largest raw value is 2^(nbits - 1) - 1: anything at or above 2^(nbits - 1) saturates
+		bool overflow = false;
+		for (unsigned i = nbits - 1u; i < 32u * Wide::N; ++i) if (root.test(i)) { overflow = true; break; }
+		Fixed r(0);
+		if (overflow) return r.maxpos();
+		for (unsigned i = 0; i + 1u < nbits; ++i) r.setbit(i, root.test(i));
+		return r;
 	}
-#endif
 
 	// reciprocal sqrt
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>

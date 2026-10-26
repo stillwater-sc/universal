@@ -76,14 +76,14 @@ namespace {
 		}
 
 		// ---------------------------------------------------------------------
-		// 4. Large POSITIVE exponents (5^E growth). The default budget cannot
-		//    hold 5^1000, so parse must FAIL (not return garbage); a large budget
-		//    succeeds and yields the correct magnitude (~10^1000 = 2^3321.9).
+		// 4. Large POSITIVE exponents (5^E growth). The converter widens its
+		//    intermediates for 5^1000, so the default parse succeeds as well as a
+		//    large budget (#1713), with the correct magnitude (~10^1000 = 2^3321.9).
 		// ---------------------------------------------------------------------
 		if (reportTestCases) std::cout << "  Verifying large positive-exponent handling...\n";
 		{
 			efloat<128> big;
-			if (parse("1e1000", big)) { if (reportTestCases) std::cout << "    FAIL: parse(1e1000) default budget did not fail\n"; ++failures; }
+			if (!parse("1e1000", big) || big.scale() != 3321) { if (reportTestCases) std::cout << "    FAIL: parse(1e1000) default budget scale=" << big.scale() << " (want 3321)\n"; ++failures; }
 			efloat<128> big2; big2.set_precision(3400);
 			bool ok = parse<16384>("1e1000", big2);
 			if (!ok || big2.iszero() || big2.isinf() || big2.isnan()) { if (reportTestCases) std::cout << "    FAIL: parse<16384>(1e1000) not a finite value\n"; ++failures; }
