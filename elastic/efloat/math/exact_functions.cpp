@@ -14,7 +14,8 @@
 //   - fma: x y + z formed exactly at a width that holds it, rounded once. Since #1802 fma and
 //     hypot form their results on limbs; besides random arguments, the alignments of z that the
 //     fma kernel tells apart (below, overlapping, above the product, either side of the gap where
-//     a term becomes a proxy, cancelling) and the hypot frames whose root halves.
+//     a term becomes a proxy, cancelling) and the hypot frames whose root halves; and since
+//     #1832 the short path of operands of up to 6 limbs, on both sides of each of its edges.
 //   - fmod and remainder: binary long division, one shifted subtraction per quotient bit, which
 //     also gives the quotient's parity; and, for quotients up to 2^(2^40), the closed forms
 //     2^k mod 3 and 2^k mod 7.
@@ -464,6 +465,86 @@ namespace {
 		return failures;
 	}
 
+	// fma's short path (#1832): x, y and z of at most M = 1 to 6 limbs at 64 M or 64 M - 32 bits,
+	// and z overlapping the product, scale(z) - scale(x) - scale(y) = dz in [1 - 64 M, 64]. z on
+	// both sides of each edge of that band, where fma leaves the short path; operands shorter
+	// than M limbs; an all-ones product and z that carry into the frame's top limb; z cancelling
+	// x y exactly, and by a unit either way, where the difference changes sign; z of more limbs
+	// than the result's, which carries no precision and so leaves the short path; in every mode
+	template<unsigned nlimbs>
+	int VerifyFmaShort(bool reportTestCases, int count) {
+		using namespace sw::universal;
+		using E = efloat<nlimbs>;
+		int failures = 0;
+		const RoundingMode saved = efloat_rounding_mode;
+		std::mt19937_64 rng(1832);
+		auto ones = [](unsigned P, int64_t e) {   // 2^(e + 1) - 2^(e + 1 - P): every bit set
+			E v(1);
+			v.set_precision(P);
+			for (unsigned j = 0; j < (P + 31) / 32; ++j) v.setlimb(j, 0xFFFF'FFFFu);
+			v.set_precision(P);
+			v.setexponent(e);
+			return v;
+		};
+		for (unsigned P = 32; P <= 448 && P <= 32 * nlimbs; P += 32) {
+			const int64_t M = (P + 63) / 64;
+			const int64_t edges[] = { -1 - 64 * M, -64 * M, 1 - 64 * M, 2 - 64 * M, 64 - 64 * M, -33, -1, 0, 1, 2, 31, 63, 64, 65, 66 };
+			for (int i = 0; i < count; ++i) {
+				efloat_rounding_mode = RoundingMode::RoundToNearest;
+				const int kind = i % 6;
+				E x = full_width<nlimbs>(rng, P, static_cast<int64_t>(rng() % 21) - 10);
+				E y = full_width<nlimbs>(rng, P, static_cast<int64_t>(rng() % 21) - 10);
+				if (kind == 1) {   // operands of fewer limbs than the precision
+					x = full_width<nlimbs>(rng, 32u * static_cast<unsigned>(1 + rng() % ((P + 31) / 32)), x.scale());
+					y = full_width<nlimbs>(rng, 32u * static_cast<unsigned>(1 + rng() % ((P + 31) / 32)), y.scale());
+					x.set_precision(P);
+					y.set_precision(P);
+				}
+				if (kind == 2) {   // the largest significands: the sum carries into the top limb
+					x = ones(P, x.scale());
+					y = ones(P, y.scale());
+				}
+				const int64_t exy = x.scale() + y.scale();
+				const int64_t d   = edges[rng() % (sizeof(edges) / sizeof(edges[0]))];
+				const unsigned zP = (kind == 3) ? 32u * static_cast<unsigned>(1 + rng() % ((P + 31) / 32)) : P;
+				E z = (kind == 2) ? ones(P, exy + d) : full_width<nlimbs>(rng, zP, exy + d);
+				z.set_precision(P);
+				if (kind == 5) {   // z of one or two limbs more than the result, carrying no precision
+					z = full_width<nlimbs>(rng, 64u * static_cast<unsigned>(M + 1 + static_cast<int64_t>(rng() % 2)), exy + d);
+					z.clear_precision();
+				}
+				if (kind == 4) {   // x y of at most P bits, and z = -x y, or a unit past it
+					x = full_width<nlimbs>(rng, 32u * static_cast<unsigned>(1 + rng() % ((P + 63) / 64)), x.scale());
+					y = full_width<nlimbs>(rng, std::max(32u, P - x.get_precision()), y.scale());
+					x.set_precision(P);
+					y.set_precision(P);
+					E xw(x), yw(y);
+					xw.set_precision(2 * P);
+					yw.set_precision(2 * P);
+					z = -(xw * yw);
+					z.set_precision(P);   // exact: x y has at most P bits
+					if (rng() % 3 != 0) {
+						E ulp(1);
+						ulp.setexponent(z.scale() - static_cast<int64_t>(32 * ((P + 31) / 32)) + 1 + static_cast<int64_t>(rng() % 3));
+						z += (rng() & 1) ? ulp : -ulp;
+					}
+				}
+				if (rng() & 1) x = -x;
+				if (rng() & 1) y = -y;
+				if (kind != 4 && (rng() & 1)) z = -z;
+				for (RoundingMode mode : all_modes) {
+					efloat_rounding_mode = mode;
+					if (!same(fma(x, y, z), fma_reference(x, y, z, P))) {
+						if (reportTestCases && failures < 8) std::cout << "    FAIL: fma short at " << P << " bits, case " << kind << ", z " << (z.iszero() ? 0 : z.scale() - exy) << " from x y, mode " << int(mode) << '\n';
+						++failures;
+					}
+				}
+			}
+		}
+		efloat_rounding_mode = saved;
+		return failures;
+	}
+
 	// hypot where its limb kernel's frame changes (#1802): the squares' sum in [4, 8), which halves
 	// the frame's root (x = y, and both near 2), y's square dropping bits below the frame, and
 	// operands that carry no precision, with more limbs than the result's, in every mode
@@ -733,6 +814,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFmaAlignments<4>(reportTestCases, 128, 300), "efloat<4>", "fma alignments");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmaAlignments<3>(reportTestCases, 96, 200), "efloat<3>", "fma alignments");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmaAlignments<1>(reportTestCases, 32, 200), "efloat<1>", "fma alignments");
+	// fma's short path and the edges where it hands over to the general one (#1832)
+	nrOfFailedTestCases += ReportTestResult(VerifyFmaShort<14>(reportTestCases, 120), "efloat<14>", "fma short path");
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<4>(reportTestCases, 128, 200), "efloat<4>", "hypot frames");
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<3>(reportTestCases, 96, 200), "efloat<3>", "hypot frames");
 	nrOfFailedTestCases += ReportTestResult(VerifyHypotFrames<1>(reportTestCases, 32, 200), "efloat<1>", "hypot frames");

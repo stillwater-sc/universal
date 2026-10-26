@@ -38,6 +38,7 @@ struct block_cache {
 	std::uint32_t capacity[slots];
 	unsigned      count;
 	bool          closed;   // the thread is ending: blocks are freed, not kept
+	bool          reaped;   // the reaper is constructed
 };
 inline thread_local block_cache cache{};
 
@@ -103,6 +104,10 @@ constexpr std::uint32_t block_capacity(std::size_t n) noexcept {
 
 inline limb_t* take_block(std::uint32_t capacity) {
 	block_cache& c = cache;
+	if (c.count > 0 && c.capacity[c.count - 1] == capacity) [[likely]] {
+		// the block given back last: a temporary's, in c = a + b past the inline limbs (#1832)
+		return c.block[--c.count];
+	}
 	for (unsigned i = 0; i < c.count; ++i) {
 		if (c.capacity[i] == capacity) {
 			limb_t* b = c.block[i];
@@ -118,7 +123,12 @@ inline limb_t* take_block(std::uint32_t capacity) {
 inline void give_block(limb_t* b, std::uint32_t capacity) noexcept {
 	block_cache& c = cache;
 	if (!c.closed && c.count < block_cache::slots && capacity <= block_cache::largest_kept) {
-		(void)&reaper;   // constructs the reaper, which frees the cache when the thread ends
+		if (!c.reaped) [[unlikely]] {
+			// constructs the reaper, which frees the cache when the thread ends: once, since each
+			// use of a thread_local with a constructor calls its init function (#1832)
+			(void)&reaper;
+			c.reaped = true;
+		}
 		c.block[c.count]    = b;
 		c.capacity[c.count] = capacity;
 		++c.count;

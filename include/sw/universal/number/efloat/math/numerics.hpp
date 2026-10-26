@@ -89,6 +89,106 @@ inline int ilogb(const efloat<nlimbs>& x) {
 
 namespace efloat_detail {
 
+	// x's significand as an integer of M limbs, least significant first, its top bit at the top of
+	// a[M - 1], for an x of at most M limbs: the limbs below x's are 0
+	template<std::size_t M, unsigned nlimbs>
+	inline void top_aligned(limb_kernels::limb_t* a, const efloat<nlimbs>& x) {
+		const limb_kernels::limb_t* w = x.limb_data();
+		const std::size_t         m = x.limb_count();
+		EFLOAT_UNROLLED_LOOP
+		for (std::size_t i = 0; i < M; ++i) a[i] = (i + m >= M) ? w[i + m - M] : 0u;
+	}
+
+	// fma_limbs for x, y and z of at most M = 1 to 4 limbs, rounding at 64 M or 64 M - 32 bits,
+	// and z overlapping the product: its weights relative to 2^R from dz - 64 M + 1 to dz, with
+	// 1 - 64 M <= dz <= 64 (#1832). The product's 2 M limbs and the sum then fit a frame of 2 M + 1
+	// limbs, whose last bit is the product's, and the sum is exact in it, so the proxy of
+	// fma_limbs is never needed. Each step is a loop of fixed length that the compiler unrolls,
+	// on arrays on the stack, and the rounding is store_short's: the general path's buffer,
+	// packing, alignment and round_into took 2/3 of an fma at 96 bits.
+	template<std::size_t M, unsigned nlimbs>
+	inline void fma_short(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z, unsigned precision_limbs, int64_t R, int64_t dz) {
+		using limb_kernels::limb_t;
+		constexpr std::size_t F = 2 * M + 1;
+		limb_t a[M], b[M], c[M];
+		top_aligned<M>(a, x);
+		top_aligned<M>(b, y);
+		top_aligned<M>(c, z);
+		// the product, its bit 0 weighing 2^(R + 2 - 128 M), by schoolbook as multiply_short's
+		limb_t f[F] = {};
+		for (std::size_t i = 0; i < M; ++i) {
+			limb_t carry = 0;
+			for (std::size_t j = 0; j < M; ++j) {
+				limb_t hi = 0, lo = 0;
+				limb_kernels::umul(a[j], b[i], hi, lo);
+				lo += carry;
+				hi += (lo < carry) ? 1u : 0u;
+				const limb_t r = f[i + j] + lo;
+				hi += (r < lo) ? 1u : 0u;
+				f[i + j] = r;
+				carry = hi;
+			}
+			f[i + M] = carry;
+		}
+		// z at bit o = dz + 64 M - 1 of the frame, o in [0, 64 M + 63], so in limbs q to q + M <= 2 M
+		const uint64_t    o = static_cast<uint64_t>(dz + 64 * static_cast<int64_t>(M) - 1);
+		const std::size_t q = static_cast<std::size_t>(o / 64);
+		const unsigned    s = static_cast<unsigned>(o % 64);
+		limb_t g[F] = {};
+		EFLOAT_UNROLLED_LOOP
+		for (std::size_t i = 0; i <= M; ++i) {
+			const limb_t up   = (i < M) ? c[i] << s : 0u;
+			const limb_t down = (i > 0 && s != 0u) ? c[i - 1] >> (64u - s) : 0u;
+			g[q + i] = up | down;
+		}
+		const bool p_neg = (x.sign() == -1) != (y.sign() == -1);
+		const bool z_neg = (z.sign() == -1);
+		bool negative = p_neg;
+		if (p_neg == z_neg) {
+			limb_t carry = 0;
+			EFLOAT_UNROLLED_LOOP
+			for (std::size_t k = 0; k < F; ++k) f[k] = limb_kernels::add_carry(f[k], g[k], carry);
+		}
+		else {
+			limb_t borrow = 0;
+			EFLOAT_UNROLLED_LOOP
+			for (std::size_t k = 0; k < F; ++k) f[k] = limb_kernels::sub_borrow(f[k], g[k], borrow);
+			if (borrow != 0u) {   // z was the larger: the frame holds the difference's two's complement
+				limb_t c1 = 1;
+				EFLOAT_UNROLLED_LOOP
+				for (std::size_t k = 0; k < F; ++k) {
+					const limb_t v = ~f[k] + c1;
+					c1 = (v < c1) ? 1u : 0u;
+					f[k] = v;
+				}
+				negative = z_neg;
+			}
+		}
+		std::size_t h = F;
+		while (h > 0 && f[h - 1] == 0u) --h;
+		if (h == 0) {   // x y = -z: +0, or -0 rounding toward -inf (IEEE-754 6.3)
+			result = efloat<nlimbs>(0.0);
+			result.setsign(efloat_rounding_mode == RoundingMode::RoundTowardNegative);
+			return;
+		}
+		// the frame shifted up by its leading zeros, ls limbs and sh bits, to u: its leading bit at
+		// the top of u[F - 1], and no bit lost
+		const std::size_t ls = F - h;
+		const unsigned    sh = static_cast<unsigned>(std::countl_zero(f[h - 1]));
+		limb_t u[F];
+		EFLOAT_UNROLLED_LOOP
+		for (std::size_t k = 0; k < F; ++k) {
+			const limb_t up   = (k >= ls) ? f[k - ls] << sh : 0u;
+			const limb_t down = (k >= ls + 1 && sh != 0u) ? f[k - ls - 1] >> (64u - sh) : 0u;
+			u[k] = up | down;
+		}
+		bool rest = false;
+		EFLOAT_UNROLLED_LOOP
+		for (std::size_t k = 0; k + 1 < F - M; ++k) rest = rest || (u[k] != 0u);
+		const int64_t exponent = R + 2 - 128 * static_cast<int64_t>(M) + 64 * static_cast<int64_t>(h) - 1 - static_cast<int64_t>(sh);
+		result.template assign_rounded_short<M>(negative, u + F - M, u[F - M - 1], rest, exponent, precision_limbs);
+	}
+
 	// x y + z for finite nonzero x, y and z with |scale(x) + scale(y)| < 2^61, rounded once at
 	// `precision` bits (#1802). The product X Y of the significands is exact on limbs, and so is
 	// its sum with Z in a frame wide enough for both, unless the term with the lower leading bit
@@ -110,6 +210,19 @@ namespace efloat_detail {
 		// weights relative to 2^R: the product's limbs P from 2^(2 - 64 np) to 2^1, z's from
 		// 2^(dz - 64 nz + 1) to 2^dz, with |dz| < 2^63 since |R| < 2^61
 		const int64_t dz     = z.scale() - R;
+		const std::size_t M  = static_cast<std::size_t>((B + 63) / 64);
+		if (M <= 6 && nx <= M && ny <= M && nz <= M && dz >= 1 - 64 * static_cast<int64_t>(M) && dz <= 64) {
+			const unsigned pl = static_cast<unsigned>(B / 32);
+			switch (M) {
+			case 1:  fma_short<1>(result, x, y, z, pl, R, dz); break;
+			case 2:  fma_short<2>(result, x, y, z, pl, R, dz); break;
+			case 3:  fma_short<3>(result, x, y, z, pl, R, dz); break;
+			case 4:  fma_short<4>(result, x, y, z, pl, R, dz); break;
+			case 5:  fma_short<5>(result, x, y, z, pl, R, dz); break;
+			default: fma_short<6>(result, x, y, z, pl, R, dz); break;
+			}
+			return;
+		}
 		const int64_t p_low  = 2 - 64 * static_cast<int64_t>(np);
 		const int64_t z_low  = dz - 64 * static_cast<int64_t>(nz) + 1;
 		const bool    z_big  = dz > 1;
@@ -121,17 +234,16 @@ namespace efloat_detail {
 		const int64_t w0 = proxied ? bottom - 64 : std::min(p_low, z_low);   // the frame's last bit
 		const std::size_t w = static_cast<std::size_t>((std::max<int64_t>(big_top, small_top) + 2 - w0 + 63) / 64);
 
+		// the operands' own limbs, read in place: copied, as they were until #1832, the copy's wide
+		// loads of limbs just stored one at a time stalled store forwarding
+		const limb_t* px = x.limb_data();
+		const limb_t* py = y.limb_data();
+		const limb_t* pz = z.limb_data();
 		limb_buffer buffer;
-		limb_t* px   = buffer.get(nx + ny + nz + np + w + nz + 1 + limb_kernels::scratch_limbs(std::max(nx, ny)));
-		limb_t* py   = px + nx;
-		limb_t* pz   = py + ny;
-		limb_t* prod = pz + nz;
+		limb_t* prod = buffer.get(np + w + nz + 1 + limb_kernels::scratch_limbs(std::max(nx, ny)));
 		limb_t* f    = prod + np;      // the frame, w limbs
 		limb_t* g    = f + w;          // z shifted to its place in the frame, nz + 1 limbs
 		limb_t* work = g + nz + 1;
-		pack_significand(px, x);
-		pack_significand(py, y);
-		pack_significand(pz, z);
 		const bool p_neg = (x.sign() == -1) != (y.sign() == -1);
 		const bool z_neg = (z.sign() == -1);
 		bool negative = p_neg;

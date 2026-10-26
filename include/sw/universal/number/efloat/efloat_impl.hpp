@@ -1152,38 +1152,6 @@ protected:
 		if (!in_range(exponent)) [[unlikely]] enforce_range();
 	}
 
-	// a + b + carry and a - b - borrow for a carry or borrow of 0 or 1, the one out left in it: an
-	// adc or sbb chain where the compiler has the builtin (#1830), which clang does not form from
-	// the comparisons
-	static inline limb_t add_carry(limb_t a, limb_t b, limb_t& carry) noexcept {
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_addcll)
-		unsigned long long out = 0;
-		const limb_t r = static_cast<limb_t>(__builtin_addcll(a, b, carry, &out));
-		carry = static_cast<limb_t>(out);
-		return r;
-#endif
-#endif
-		const limb_t u = a + carry;
-		const limb_t v = u + b;
-		carry = ((u < carry) || (v < u)) ? 1u : 0u;
-		return v;
-	}
-	static inline limb_t sub_borrow(limb_t a, limb_t b, limb_t& borrow) noexcept {
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_subcll)
-		unsigned long long out = 0;
-		const limb_t r = static_cast<limb_t>(__builtin_subcll(a, b, borrow, &out));
-		borrow = static_cast<limb_t>(out);
-		return r;
-#endif
-#endif
-		const limb_t u = a - b;
-		const limb_t v = u - borrow;
-		borrow = ((a < b) || (u < borrow)) ? 1u : 0u;
-		return v;
-	}
-
 	// add_full_length for M = m of one to four limbs (#1830), in code whose loops have fixed
 	// bounds and unroll: the result's limbs are a local array whose address is never taken, so
 	// that they stay in registers, as MPFR's mpfr_add1sp1 to mpfr_sub1sp3 keep theirs, and are
@@ -1209,7 +1177,7 @@ protected:
 			EFLOAT_UNROLLED_LOOP
 			for (std::size_t i = 0; i < M; ++i) {
 				const limb_t xi = (x[i] << 1) | ((i > 0) ? (x[i - 1] >> 63) : 0u);
-				t[i] = sub_borrow(xi, y[i], borrow);
+				t[i] = limb_kernels::sub_borrow(xi, y[i], borrow);
 			}
 			if (t[M - 1] == 0u) [[unlikely]] {   // a limb or more cancelled
 				add_frame(x, M, y, M, ex, x_sign, d, false);
@@ -1257,7 +1225,7 @@ protected:
 		if (!subtract) {
 			limb_t carry = 0;
 			EFLOAT_UNROLLED_LOOP
-			for (std::size_t i = 0; i < M; ++i) t[i] = add_carry(x[i], t[i], carry);
+			for (std::size_t i = 0; i < M; ++i) t[i] = limb_kernels::add_carry(x[i], t[i], carry);
 			if (carry != 0u) {   // the sum's top bit is 2^(ex + 1): shift it down
 				sticky = sticky || ((o & 1u) != 0u);
 				o      = (o >> 1) | (t[0] << 63);
@@ -1273,7 +1241,7 @@ protected:
 		limb_t borrow = (o != 0u || sticky) ? 1u : 0u;
 		o = limb_t(0) - o - (sticky ? 1u : 0u);
 		EFLOAT_UNROLLED_LOOP
-		for (std::size_t i = 0; i < M; ++i) t[i] = sub_borrow(x[i], t[i], borrow);
+		for (std::size_t i = 0; i < M; ++i) t[i] = limb_kernels::sub_borrow(x[i], t[i], borrow);
 		if ((t[M - 1] >> 62) == 0u) {
 			if (t[M - 1] == 0u) [[unlikely]] {   // a whole limb or more cancelled
 				add_frame(x, M, y, M, ex, x_sign, d, false);
