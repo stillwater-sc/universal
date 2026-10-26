@@ -100,12 +100,17 @@ jobs:
           fi
           echo "$IMAGE was published from this branch: replacing it"
 
+      # the branch name is pusher-controlled text: pass it through the environment
       - name: Build
+        env:
+          BRANCH: ${{ github.ref_name }}
+          IMAGE: ${{ steps.tag.outputs.ref }}
+          TARGET: ${{ matrix.target }}
         run: >
-          docker build --pull --target "${{ matrix.target }}"
-          --label "org.stillwater-sc.ci-branch=${{ github.ref_name }}"
-          --label "org.opencontainers.image.revision=${{ github.sha }}"
-          -t "${{ steps.tag.outputs.ref }}" docker/ci-cross
+          docker build --pull --target "$TARGET"
+          --label "org.stillwater-sc.ci-branch=$BRANCH"
+          --label "org.opencontainers.image.revision=$GITHUB_SHA"
+          -t "$IMAGE" docker/ci-cross
 
       # what the jobs depend on, checked before anything is published
       - name: Smoke test
