@@ -289,6 +289,9 @@ jobs:
         with:
           key: ${{ matrix.artifact }}
           variant: ${{ runner.os == 'Windows' && 'sccache' || 'ccache' }}
+          # the action's own checksummed sccache, even if the runner image puts another on
+          # PATH: a different sccache changes every hash key
+          install: ${{ runner.os == 'Windows' && 'binary' || 'detect' }}
           # 2G everywhere. This is a CEILING, not an allocation: ccache stores only what
           # the build produces, so the CI_LITE configurations plateau around 1.0GB
           # internal (~0.84GB stored) and never approach it. Only the two full-CI Linux
