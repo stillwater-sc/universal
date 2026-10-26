@@ -119,7 +119,8 @@ jobs:
       # the jobs that finish late -- the slow ones -- failed to save and stayed cold.
       # Deleting the generation this job restored lets the save replace it instead.
       - name: Drop the superseded ccache generation
-        if: github.ref == 'refs/heads/main' && runner.os != 'Windows'
+        if: github.ref == 'refs/heads/main'
+        shell: bash   # Git's bash on Windows, not WSL's
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash tools/scripts/ci-drop-ccache-generation.sh ${{ matrix.artifact }}
@@ -275,12 +276,19 @@ jobs:
           bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" g++-aarch64-linux-gnu qemu-user-static
           echo "QEMU_LD_PREFIX=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
 
-      # ccache for Linux and macOS
+      # ccache for Linux and macOS, sccache for MSVC (#1843). On Windows the action runs
+      # sccache over a local directory and saves it as ONE cache entry, like ccache's,
+      # with the sccache version pinned by the action's own release. The job used to run
+      # mozilla-actions/sccache-action with SCCACHE_GHA_ENABLED, which stores every object
+      # as its own Actions cache entry: from at least 2026-10-19 nearly every one of those
+      # writes failed ("create cache entry returns non-ok"), and that action installs the
+      # LATEST sccache, so sccache v0.19.0 (2026-10-24) changed every hash key and left the
+      # job at 0 hits with no way to refill.
       - name: Install and configure ccache
-        if: runner.os != 'Windows'
         uses: hendrikmuhs/ccache-action@v1.2.22
         with:
           key: ${{ matrix.artifact }}
+          variant: ${{ runner.os == 'Windows' && 'sccache' || 'ccache' }}
           # 2G everywhere. This is a CEILING, not an allocation: ccache stores only what
           # the build produces, so the CI_LITE configurations plateau around 1.0GB
           # internal (~0.84GB stored) and never approach it. Only the two full-CI Linux
@@ -315,7 +323,7 @@ jobs:
           echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
 
-      # MSVC environment for Ninja generator (must precede sccache and cmake). This runs
+      # MSVC environment for Ninja generator (must precede cmake). This runs
       # vcvars64.bat and exports what it sets or changes, as ilammy/msvc-dev-cmd did; that
       # action's latest release (v1.13.0) still declares node20, which the runners deprecate.
       - name: Set up MSVC dev environment
@@ -337,15 +345,11 @@ jobs:
             }
           }
 
-      # sccache for Windows (Ninja generator invokes cl.exe through sccache)
-      - name: Install and configure sccache
-        if: runner.os == 'Windows'
-        uses: mozilla-actions/sccache-action@v0.0.11
-
+      # the Ninja generator invokes cl.exe through sccache, whose server the cache step
+      # above started over its local directory
       - name: Set sccache compiler launcher
         if: runner.os == 'Windows'
         run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $env:GITHUB_ENV
           echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $env:GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $env:GITHUB_ENV
 
@@ -372,7 +376,8 @@ jobs:
       # the jobs that finish late -- the slow ones -- failed to save and stayed cold.
       # Deleting the generation this job restored lets the save replace it instead.
       - name: Drop the superseded ccache generation
-        if: github.ref == 'refs/heads/main' && runner.os != 'Windows'
+        if: github.ref == 'refs/heads/main'
+        shell: bash   # Git's bash on Windows, not WSL's
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash tools/scripts/ci-drop-ccache-generation.sh ${{ matrix.artifact }}
