@@ -38,6 +38,10 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
+          # Without check-latest, setup-node takes whatever 22.x the runner image has
+          # cached, and Astro raises its Node floor in patch releases (7.4.2 needs
+          # >=22.23.4 while the image had 22.23.3, #1835)
+          check-latest: true
           cache: npm
           cache-dependency-path: docs-site/package-lock.json
 
