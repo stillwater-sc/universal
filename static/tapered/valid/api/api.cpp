@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdlib>
 #include <sstream>
 #include <string>
@@ -41,6 +42,13 @@ int main() {
 	const Valid range(Posit(1), Posit(2), true, false);
 	check(range.lower<double>() == 1.0 && range.upper<double>() == 2.0, "explicit bounds");
 	check(range.lubit() && !range.uubit(), "explicit openness");
+
+	Valid upperOpen;
+	upperOpen.setinterval(Posit(1), Posit(2), false, true);
+	check(upperOpen.lower_closed() && upperOpen.upper_open(), "setinterval upper openness");
+	check(upperOpen.ub().key() == Poxel(Posit(2)).key() - 1, "setinterval decrements upper poxel key");
+	check(!upperOpen.contains(2.0), "upper-open endpoint is excluded");
+
 	check((one + 2).isexact() && (2 + one).lb() == Poxel(Posit(3)), "native addition operators");
 	check((one * 3).isexact() && (3 * one).lb() == Poxel(Posit(3)), "native multiplication operators");
 
@@ -58,12 +66,30 @@ int main() {
 	std::ostringstream text;
 	text << range;
 	check(!text.str().empty() && text.str().front() == '(' && text.str().back() == ']', "interval stream formatting");
+
+	std::ostringstream exactText;
+	exactText << one;
+	check(exactText.str() == "1", "exact stream formatting");
+
+	std::ostringstream narText;
+	narText << Valid::nar();
+	check(narText.str() == "[nar]", "NaR stream formatting");
+
 	check(type_tag(range) == "valid<8,1>", "type tag");
 	const std::string bits = to_binary(range);
 	check(!bits.empty() && bits.front() == '(' && bits.back() == ']', "binary interval formatting");
 
 	const auto nar = std::numeric_limits<Valid>::quiet_NaN();
 	check(nar.isnar(), "numeric_limits quiet_NaN");
+	check(!nar.contains(0.0), "NaR contains no values");
+	check(std::isnan(nar.lower<double>()) && std::isnan(nar.upper<double>()), "NaR native bounds are NaN");
+
+	const Valid staticNar = Valid::nar();
+	check(staticNar.isnar(), "valid::nar constructs NaR");
+
+	Poxel narPxl(SpecificValue::nar);
+	check(Valid(narPxl, Poxel(Posit(1))).isnar(), "NaR poxel bound forms NaR");
+	check(Valid(Poxel(Posit(2)), Poxel(Posit(1))).isnar(), "reversed poxel keys form NaR");
 
 	if (failures == 0)
 		std::cout << "valid API: PASS\n";

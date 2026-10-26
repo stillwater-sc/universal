@@ -17,9 +17,9 @@ void check(bool condition, const char* message) {
 }  // namespace
 
 int main() {
-	using sw::universal::posit;
-	using sw::universal::valid;
+	using namespace sw::universal;
 	using Posit = posit<7, 1>;
+	using Poxel = poxel<8, 1>;
 	using Valid = valid<8, 1>;
 
 	const Valid a(Posit(1), Posit(2));
@@ -37,6 +37,24 @@ int main() {
 	check(a < touchingOpen, "an excluded touching point is strictly ordered");
 	check(a <= same, "non-strict less-than equality");
 	check(a >= same, "non-strict greater-than equality");
+
+	const Valid nar = Valid::nar();
+	check(nar.sign() == valid_sign::undecidable, "NaR sign is undecidable");
+	check(Valid(0).sign() == valid_sign::zero, "exact zero sign");
+	check(Valid(Posit(1), Posit(2)).sign() == valid_sign::positive, "positive interval sign");
+	check(Valid(Posit(-2), Posit(-1)).sign() == valid_sign::negative, "negative interval sign");
+	check(Valid(Posit(-1), Posit(1)).sign() == valid_sign::undecidable, "cross-zero interval sign");
+	check(Valid(Posit(0), Posit(1)).sign() == valid_sign::undecidable, "zero-touching interval sign");
+
+	check(!(nar < a) && !(a < nar), "NaR intervals are unordered");
+
+	const Valid positiveUnbounded(Poxel(Posit(1)), Poxel(SpecificValue::infpos));
+	const Valid negativeUnbounded(Poxel(SpecificValue::infneg), Poxel(Posit(-1)));
+	check(!(positiveUnbounded < b), "positive infinity upper bound is unordered");
+	check(!(a < negativeUnbounded), "negative infinity lower bound is unordered");
+
+	check(hull(nar, a) == a && hull(a, nar) == a, "hull ignores NaR inputs");
+	check(hull(a, b) == Valid(Posit(1), Posit(4)), "hull spans both intervals");
 
 	if (failures == 0)
 		std::cout << "valid logic: PASS\n";

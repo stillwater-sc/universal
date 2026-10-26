@@ -223,10 +223,14 @@ class valid {
 		key_type  lo   = kmax;
 		key_type  hi   = -kmax;
 
-		for (const end& x : a)
-			for (const end& y : b) {
-				lo = std::min(lo, combine(x, y, operation::div, true));
-				hi = std::max(hi, combine(x, y, operation::div, false));
+		for (unsigned i = 0; i < 2; ++i)
+			for (unsigned j = 0; j < 2; ++j) {
+				const end& x           = a[i];
+				const end& y           = b[j];
+				const int  divisorSign = y.open && y.key == key_type(0) ? (j == 0 ? 1 : -1) : 0;
+
+				lo = std::min(lo, combine(x, y, operation::div, true, divisorSign));
+				hi = std::max(hi, combine(x, y, operation::div, false, divisorSign));
 			}
 
 		assign_keys(lo, hi);
@@ -386,7 +390,7 @@ class valid {
 
 	// Enclose one endpoint operation; strict exact results move to the open poxel.
 	// Example: combine(lo_end(), rhs.lo_end(), operation::add, true).
-	static key_type combine(const end& x, const end& y, operation op, bool lowerBound) noexcept {
+	static key_type combine(const end& x, const end& y, operation op, bool lowerBound, int divisorSign = 0) noexcept {
 		const key_type widest = lowerBound ? -kmax : kmax;
 
 		if (x.infinity == 0 && y.infinity == 0) {
@@ -402,8 +406,12 @@ class valid {
 				resultPxl = xPxl * yPxl;
 				break;
 			case operation::div:
-				if (y.key == key_type(0))
-					return widest;
+				if (y.key == key_type(0)) {
+					if (x.key == key_type(0))
+						return x.open ? widest : key_type(0);
+					const int quotientSign = signum(x) * divisorSign;
+					return quotientSign > 0 ? kmax : -kmax;
+				}
 				resultPxl = xPxl / yPxl;
 				break;
 			}
@@ -442,8 +450,10 @@ class valid {
 		case operation::div:
 			if (y.infinity != 0)
 				return x.infinity != 0 ? widest : key_type(0);
-			if (y.key == key_type(0))
-				return widest;
+			if (y.key == key_type(0)) {
+				const int quotientSign = signum(x) * divisorSign;
+				return quotientSign > 0 ? kmax : -kmax;
+			}
 			resultSign = signum(x) * signum(y);
 			break;
 		}
