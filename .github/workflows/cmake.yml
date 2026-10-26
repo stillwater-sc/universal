@@ -37,6 +37,7 @@ on:
 permissions:
   contents: read
   actions: write   # each job deletes its own superseded ccache generation before saving
+  packages: read   # the cross jobs pull their toolchain image from ghcr.io (#1817)
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -162,6 +163,19 @@ jobs:
     # Use a matrix build to enable cross-platform coverage.
     name: "${{ matrix.name }}"
     runs-on: "${{ matrix.os }}"
+    # The cross jobs run in a prebuilt toolchain image (docker/ci-cross, published by
+    # ci-images.yml), so they make no apt calls: installing the toolchains from the Ubuntu
+    # mirrors on every run was their most common failure (#1817). An entry without
+    # matrix.container has an empty image and runs on the runner itself.
+    #
+    # Inside a container ${{ github.workspace }} is still the RUNNER's path, which is not
+    # mounted at that location; $GITHUB_WORKSPACE and relative paths are right in both, so
+    # the steps below use those.
+    container:
+      image: ${{ matrix.container }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
     strategy:
       fail-fast: false
       matrix:
@@ -204,6 +218,9 @@ jobs:
             artifact: linux-riscv64-gcc
             cross: riscv64
             toolchain: cmake/toolchains/riscv64-linux-gnu.cmake
+            # ci-images.yml builds whatever tag this names: bump the number when the
+            # Dockerfile changes
+            container: ghcr.io/stillwater-sc/universal-ci-cross:riscv64-1
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
           # IBM POWER cross-compilation with QEMU emulation
           - os: ubuntu-latest
@@ -211,6 +228,7 @@ jobs:
             artifact: linux-ppc64le-gcc
             cross: ppc64le
             toolchain: cmake/toolchains/ppc64le-linux-gnu.cmake
+            container: ghcr.io/stillwater-sc/universal-ci-cross:ppc64le-1
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
           # ARM64 on a NATIVE GitHub-hosted ARM64 runner (no QEMU). Compiling and
           # running the tests natively is both faster and higher fidelity than the
@@ -228,6 +246,7 @@ jobs:
             artifact: windows-x64-mingw
             cross: mingw
             toolchain: cmake/toolchains/x86_64-w64-mingw32.cmake
+            container: ghcr.io/stillwater-sc/universal-ci-cross:mingw-1
             # efloat as for MSVC: runs the x86-64 inline-asm limb kernels under the
             # Windows x64 ABI (LLP64, 32-bit long), which no other job does
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON -DUNIVERSAL_BUILD_NUMBER_EFLOATS=ON
@@ -249,34 +268,12 @@ jobs:
         run: |
           bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" clang
 
-      - name: Install RISC-V cross-compiler and QEMU
-        if: matrix.cross == 'riscv64'
-        timeout-minutes: 15
-        run: |
-          bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" g++-riscv64-linux-gnu qemu-user-static
-          # Set sysroot so QEMU can find the RISC-V dynamic linker and libs,
-          # whether invoked via CMAKE_CROSSCOMPILING_EMULATOR or binfmt_misc
-          echo "QEMU_LD_PREFIX=/usr/riscv64-linux-gnu" >> $GITHUB_ENV
-
-      - name: Install POWER cross-compiler and QEMU
-        if: matrix.cross == 'ppc64le'
-        timeout-minutes: 15
-        run: |
-          bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" g++-powerpc64le-linux-gnu qemu-user-static
-          echo "QEMU_LD_PREFIX=/usr/powerpc64le-linux-gnu" >> $GITHUB_ENV
-
       - name: Install ARM64 cross-compiler and QEMU
         if: matrix.cross == 'aarch64'
         timeout-minutes: 15
         run: |
           bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" g++-aarch64-linux-gnu qemu-user-static
           echo "QEMU_LD_PREFIX=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
-
-      - name: Install MinGW-w64 cross-compiler and Wine
-        if: matrix.cross == 'mingw'
-        timeout-minutes: 15
-        run: |
-          bash "$GITHUB_WORKSPACE/tools/scripts/ci-apt-install.sh" --i386 g++-mingw-w64-x86-64 wine wine64
 
       # ccache for Linux and macOS
       - name: Install and configure ccache
@@ -337,20 +334,20 @@ jobs:
 
       - name: Configure CMake
         run: >
-          cmake -B ${{github.workspace}}/build
+          cmake -B build
           ${{ matrix.cmake_generator && format('-G {0}', matrix.cmake_generator) || '' }}
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
           -DCMAKE_C_COMPILER_LAUNCHER=${{ env.CMAKE_C_COMPILER_LAUNCHER || '' }}
           -DCMAKE_CXX_COMPILER_LAUNCHER=${{ env.CMAKE_CXX_COMPILER_LAUNCHER || '' }}
           ${{ matrix.cmake_flags }}
-          ${{ matrix.toolchain && format('-DCMAKE_TOOLCHAIN_FILE={0}/{1}', github.workspace, matrix.toolchain) || '' }}
+          ${{ matrix.toolchain && format('-DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/{0}', matrix.toolchain) || '' }}
           ${{ matrix.cc && format('-DCMAKE_C_COMPILER={0}', matrix.cc) || '' }}
           ${{ matrix.cxx && format('-DCMAKE_CXX_COMPILER={0}', matrix.cxx) || '' }}
 
       # One compile per vCPU: the hosted runners have 4 (3 on arm64 macOS, set in the
       # matrix). --parallel 2 dated from the 2-vCPU runners and halved every cold build.
       - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel ${{ matrix.build_jobs || 4 }}
+        run: cmake --build build --config ${{env.BUILD_TYPE}} --parallel ${{ matrix.build_jobs || 4 }}
 
       # Keep one ccache generation per artifact. ccache-action saves a NEW timestamped key
       # in its post step, and until the Prune workflow runs the old and new generations of
@@ -363,15 +360,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash tools/scripts/ci-drop-ccache-generation.sh ${{ matrix.artifact }}
 
+      # Wine makes its prefix and starts its server on first use. Under ctest -j 4 the
+      # first tests then race to create the server's directory and lose with "wine: chdir
+      # to /tmp/wine-.../server-...: No such file or directory" (#1838). So make the prefix,
+      # start one persistent server, and start Wine's services under it now. The last
+      # wineboot matters: services a TEST starts inherit that test's stdout, the persistent
+      # server keeps them alive, and ctest waits for that pipe forever.
+      - name: Start Wine
+        if: matrix.cross == 'mingw'
+        run: |
+          wineboot --init && wineserver -w
+          wineserver -p
+          wineboot </dev/null >/dev/null 2>&1
+
       - name: Test
         if: matrix.cross != 'android'
-        working-directory: ${{github.workspace}}/build
+        working-directory: build
         run: ctest -j 4 -C ${{env.BUILD_TYPE}} --output-on-failure
 
       - name: Rerun failed tests
         if: failure() && matrix.cross != 'android'
         run: |
-          cd "${{github.workspace}}/build"
+          cd build
           ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure
 
       - name: Upload test logs
@@ -380,7 +390,7 @@ jobs:
         with:
           name: test-logs-${{ matrix.artifact }}
           path: |
-            ${{github.workspace}}/build/Testing
-            ${{github.workspace}}/build/CMakeCache.txt
-            ${{github.workspace}}/build/CMakeFiles/CMakeOutput.log
-            ${{github.workspace}}/build/CMakeFiles/CMakeError.log
+            build/Testing
+            build/CMakeCache.txt
+            build/CMakeFiles/CMakeOutput.log
+            build/CMakeFiles/CMakeError.log
