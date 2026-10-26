@@ -186,7 +186,9 @@ jobs:
             name: Windows x64 (MSVC)
             artifact: windows-x64-msvc
             cmake_generator: Ninja
-            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
+            # CI_LITE builds no efloat; add it here because its limb kernels have
+            # MSVC-only paths (no __int128, _umul128, no inline asm)
+            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON -DUNIVERSAL_BUILD_NUMBER_EFLOATS=ON
           - os: macos-latest
             name: macOS ARM64 (Apple Clang)
             artifact: macos-arm64
@@ -226,7 +228,9 @@ jobs:
             artifact: windows-x64-mingw
             cross: mingw
             toolchain: cmake/toolchains/x86_64-w64-mingw32.cmake
-            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
+            # efloat as for MSVC: runs the x86-64 inline-asm limb kernels under the
+            # Windows x64 ABI (LLP64, 32-bit long), which no other job does
+            cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON -DUNIVERSAL_BUILD_NUMBER_EFLOATS=ON
           # Android aarch64 cross-compilation (Clang, 128-bit long double)
           - os: ubuntu-latest
             name: Android ARM64 (NDK Clang cross)
