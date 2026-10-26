@@ -1,27 +1,26 @@
-# Valid: Interval Arithmetic with Posit Encoding
+# Valid: Interval Arithmetic with Poxel Bounds
 
 ## Why
 
 Floating-point computation gives you a single number as the answer, but the true mathematical result almost always lies *between* representable values. How far off is the answer? Standard floating-point doesn't tell you. You need to run the computation a second time in higher precision, or perform a separate error analysis, to have any idea of the accuracy.
 
-The `valid` type pairs two posit values as interval bounds, rigorously tracking where the true result must lie. Every operation produces an interval that is *guaranteed* to contain the exact mathematical answer. This is verified computing: the output is not just an approximation, but a proven bound.
+The `valid` type pairs two poxels as interval bounds. An exact poxel denotes a posit-lattice point; an inexact poxel denotes the open interval above that point. Unlike a single poxel's sticky uncertainty flag, a Valid encloses every poxel between its bounds.
 
 ## What
 
-`valid<nbits, es>` stores an interval as a pair of posits:
+`valid<nbits, es>` stores an interval as a pair of `poxel<nbits, es>` values:
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `nbits` | `unsigned` | Bits per posit bound |
-| `es` | `unsigned` | Exponent bits per posit bound |
+| `nbits` | `unsigned` | Bits per poxel bound, including its ubit |
+| `es` | `unsigned` | Exponent bits in the `posit<nbits - 1, es>` lattice |
 
 ### Internal Structure
 
-- **Lower bound** (`lb`): posit<nbits, es>
-- **Upper bound** (`ub`): posit<nbits, es>
-- **Lower ubit** (`lubit`): is the lower bound open?
-- **Upper ubit** (`uubit`): is the upper bound open?
-- Total storage: 2 × nbits + 2 flag bits
+- **Lower poxel** (`lb`): `poxel<nbits, es>`
+- **Upper poxel** (`ub`): `poxel<nbits, es>`
+- Each poxel's ubit determines whether its outside endpoint is open.
+- Total storage: 2 × nbits bits
 
 ### Interval Types
 
@@ -34,7 +33,7 @@ The `valid` type pairs two posit values as interval bounds, rigorously tracking 
 ### Key Properties
 
 - **Guaranteed containment**: true result always lies within the interval
-- **Posit-encoded bounds**: benefits from tapered precision for tight bounds near 1.0
+- **Poxel-encoded bounds**: benefits from tapered precision and represents open endpoints
 - **Uncertainty quantification**: interval width measures result uncertainty
 - **UNUM Type II concept**: implements Gustafson's uncertainty tracking with posit encoding
 - **Rigorous arithmetic**: interval operations follow standard inclusion algebra
@@ -48,7 +47,7 @@ Interval arithmetic rules ensure that every operation produces bounds that conta
 - **Multiplication**: `[a,b] × [c,d] = [min(ac,ad,bc,bd), max(ac,ad,bc,bd)]`
 - **Division**: `[a,b] / [c,d] = [a,b] × [1/d, 1/c]` (when 0 not in [c,d])
 
-The ubit flags track whether bounds are open or closed, providing tighter containment than closed-only intervals.
+Arithmetic evaluates exact poxels at the endpoints and selects enclosing poxels for the result. Exact endpoints remain closed when attainable; inexact endpoints remain open. Division by an interval containing zero widens to the entire representable real line, while division by exact zero produces NaR.
 
 ## How to Use It
 
@@ -64,11 +63,13 @@ using namespace sw::universal;
 ```cpp
 valid<32, 2> a(1.0);    // [1.0, 1.0] - exact
 valid<32, 2> b(3.0);    // [3.0, 3.0] - exact
-valid<32, 2> c = a / b; // [0.333..., 0.333...] - interval containing 1/3
+valid<32, 2> c = a / b; // an open poxel containing 1/3
 
 std::cout << "1/3 is contained in " << c << std::endl;
-std::cout << "Width: " << c.ub() - c.lb() << std::endl;
+std::cout << "Bounds: " << c.lower<double>() << ", " << c.upper<double>() << std::endl;
 ```
+
+`to_valid(poxel)` explicitly turns one poxel into a Valid. Use `add_valid`, `sub_valid`, `mul_valid`, and `div_valid` to perform enclosing arithmetic on two poxels. Ordinary poxel operators retain their single-poxel sticky-flag behavior.
 
 ### Uncertainty Propagation
 
