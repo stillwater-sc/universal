@@ -220,7 +220,7 @@ jobs:
             toolchain: cmake/toolchains/riscv64-linux-gnu.cmake
             # ci-images.yml builds whatever tag this names: bump the number when the
             # Dockerfile changes
-            container: ghcr.io/stillwater-sc/universal-ci-cross:riscv64-1
+            container: ghcr.io/stillwater-sc/universal-ci-cross:riscv64-2
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
           # IBM POWER cross-compilation with QEMU emulation
           - os: ubuntu-latest
@@ -228,7 +228,7 @@ jobs:
             artifact: linux-ppc64le-gcc
             cross: ppc64le
             toolchain: cmake/toolchains/ppc64le-linux-gnu.cmake
-            container: ghcr.io/stillwater-sc/universal-ci-cross:ppc64le-1
+            container: ghcr.io/stillwater-sc/universal-ci-cross:ppc64le-2
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
           # ARM64 on a NATIVE GitHub-hosted ARM64 runner (no QEMU). Compiling and
           # running the tests natively is both faster and higher fidelity than the
@@ -246,7 +246,7 @@ jobs:
             artifact: windows-x64-mingw
             cross: mingw
             toolchain: cmake/toolchains/x86_64-w64-mingw32.cmake
-            container: ghcr.io/stillwater-sc/universal-ci-cross:mingw-1
+            container: ghcr.io/stillwater-sc/universal-ci-cross:mingw-2
             # efloat as for MSVC: runs the x86-64 inline-asm limb kernels under the
             # Windows x64 ABI (LLP64, 32-bit long), which no other job does
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON -DUNIVERSAL_BUILD_NUMBER_EFLOATS=ON

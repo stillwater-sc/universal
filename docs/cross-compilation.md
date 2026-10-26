@@ -140,14 +140,17 @@ Every image is Ubuntu 24.04, the same release as the `ubuntu-latest` runners. Ea
 1. Edit `docker/ci-cross/Dockerfile`.
 2. Bump the number `<n>` in that target's `container:` tag in `cmake.yml`.
 
-The image workflow reads its tags from `cmake.yml`, so the two cannot drift apart. A branch never overwrites a tag that main uses. If the Dockerfile changed and the number did not, the image workflow fails and asks for the bump. When you push the branch, the image is published before the pull request's full tier needs it.
+The image workflow reads its tags from `cmake.yml`, so the two cannot drift apart. A branch never overwrites a tag that main uses. If the Dockerfile changed and the number did not, the image workflow fails and asks for the bump. A branch also cannot take over a tag that another branch published: each image records its branch in a label.
+
+Pushing the branch starts the `CI images` run that publishes the image. The CMake workflow does not wait for it. A cross job that starts before the new tag exists fails at container setup, before any step runs; re-run it once `CI images` has finished. Marking a draft pull request ready after its push has been built avoids this.
 
 A pull request from a fork cannot publish images. If it changes the Dockerfile, a maintainer has to push the branch to this repository first.
 
 **Reproducing a CI failure locally:**
 
 ```bash
-docker run --rm -it -v "$PWD":/src -w /src ghcr.io/stillwater-sc/universal-ci-cross:ppc64le-1 bash
+# use the tag cmake.yml names for the job, e.g. universal-ci-cross:ppc64le-2
+docker run --rm -it -v "$PWD":/src -w /src ghcr.io/stillwater-sc/universal-ci-cross:ppc64le-2 bash
 # inside the container
 cmake -B build -DUNIVERSAL_BUILD_CI_LITE=ON -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/ppc64le-linux-gnu.cmake
 cmake --build build -j4 && cd build && ctest -j4 --output-on-failure

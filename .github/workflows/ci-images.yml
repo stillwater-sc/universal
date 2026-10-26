@@ -3,11 +3,14 @@ name: CI images
 # Builds the toolchain images the cross-compilation jobs in cmake.yml run in, and pushes
 # them to ghcr.io (#1817). The tag each target gets is read from cmake.yml's matrix, so
 # the two cannot disagree: change docker/ci-cross/Dockerfile, bump the number in that tag,
-# and the push of the branch publishes the new image before the PR's full tier pulls it.
+# and the push of the branch publishes the new image. Nothing makes cmake.yml wait for that:
+# a cross job that starts before the image is pushed fails at container setup, and passes
+# when re-run after this workflow finishes.
 #
 # - push of a change to the Dockerfile or this workflow, on any branch: build and publish.
-#   A branch never overwrites a tag that main's cmake.yml uses: a changed Dockerfile must
-#   bump the number, and an unchanged one is built and tested but not pushed.
+#   A branch never overwrites a tag that main's cmake.yml uses (a changed Dockerfile must
+#   bump the number; an unchanged one is built and tested but not pushed), nor one that
+#   another branch published (each image records its branch in a label).
 # - weekly on main: rebuild the tags main uses, so security and point releases arrive
 #   the way the per-run apt install used to bring them.
 # - workflow_dispatch: rebuild by hand.
@@ -77,19 +80,43 @@ jobs:
           ACTOR: ${{ github.actor }}
         run: printf '%s' "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
 
+      # Two branches that bump the same target to the same number would replace each other's
+      # image, and each PR's CI would run whichever was pushed last. A tag a branch publishes
+      # is that branch's until main takes it over.
+      - name: Check the tag is not another branch's
+        if: steps.tag.outputs.push == 'true' && github.ref != 'refs/heads/main'
+        env:
+          IMAGE: ${{ steps.tag.outputs.ref }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if ! docker pull --quiet "$IMAGE" >/dev/null 2>&1; then
+            echo "$IMAGE does not exist yet"
+            exit 0
+          fi
+          owner=$(docker inspect --format '{{ index .Config.Labels "org.stillwater-sc.ci-branch" }}' "$IMAGE")
+          if [ "$owner" != "$BRANCH" ]; then
+            echo "::error::$IMAGE was published from branch '${owner:-unknown}': bump the number in cmake.yml again"
+            exit 1
+          fi
+          echo "$IMAGE was published from this branch: replacing it"
+
       - name: Build
-        run: docker build --pull --target "${{ matrix.target }}" -t "${{ steps.tag.outputs.ref }}" docker/ci-cross
+        run: >
+          docker build --pull --target "${{ matrix.target }}"
+          --label "org.stillwater-sc.ci-branch=${{ github.ref_name }}"
+          --label "org.opencontainers.image.revision=${{ github.sha }}"
+          -t "${{ steps.tag.outputs.ref }}" docker/ci-cross
 
       # what the jobs depend on, checked before anything is published
       - name: Smoke test
         env:
           IMAGE: ${{ steps.tag.outputs.ref }}
         run: |
-          docker run --rm "$IMAGE" bash -c 'git --version && ccache --version | head -1 && cmake --version | head -1 && gh --version | head -1 && zstd --version'
+          docker run --rm "$IMAGE" bash -c 'set -o pipefail; git --version && ccache --version | head -1 && cmake --version | head -1 && gh --version | head -1 && zstd --version'
           case "${{ matrix.target }}" in
-            riscv64) docker run --rm "$IMAGE" bash -c 'riscv64-linux-gnu-g++ --version | head -1 && qemu-riscv64-static --version | head -1' ;;
-            ppc64le) docker run --rm "$IMAGE" bash -c 'powerpc64le-linux-gnu-g++ --version | head -1 && qemu-ppc64le-static --version | head -1' ;;
-            mingw)   docker run --rm "$IMAGE" bash -c 'x86_64-w64-mingw32-g++ --version | head -1 && wine --version' ;;
+            riscv64) docker run --rm "$IMAGE" bash -c 'set -o pipefail; riscv64-linux-gnu-g++ --version | head -1 && qemu-riscv64-static --version | head -1' ;;
+            ppc64le) docker run --rm "$IMAGE" bash -c 'set -o pipefail; powerpc64le-linux-gnu-g++ --version | head -1 && qemu-ppc64le-static --version | head -1' ;;
+            mingw)   docker run --rm "$IMAGE" bash -c 'set -o pipefail; x86_64-w64-mingw32-g++ --version | head -1 && wine --version' ;;
           esac
 
       - name: Push
