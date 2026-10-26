@@ -366,9 +366,15 @@ jobs:
       # start one persistent server, and start Wine's services under it now. The last
       # wineboot matters: services a TEST starts inherit that test's stdout, the persistent
       # server keeps them alive, and ctest waits for that pipe forever.
+      #
+      # The container runs as root, but Actions mounts HOME (/github/home) owned by the
+      # runner's user, and Wine will not make a prefix in a directory it does not own. So
+      # the prefix goes under root's own home, for this step and the tests.
       - name: Start Wine
         if: matrix.cross == 'mingw'
         run: |
+          export WINEPREFIX=/root/.wine
+          echo "WINEPREFIX=$WINEPREFIX" >> "$GITHUB_ENV"
           wineboot --init && wineserver -w
           wineserver -p
           wineboot </dev/null >/dev/null 2>&1
