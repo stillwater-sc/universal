@@ -1521,9 +1521,9 @@ namespace {
 	constexpr std::uint64_t ce_next(std::uint64_t& x) { x ^= x << 13; x ^= x >> 7; x ^= x << 17; return x; }
 
 	template<std::size_t N>
-	constexpr std::array<std::uint64_t, 10 * N + 24> constant_evaluated_kernels(std::uint64_t seed) {
+	constexpr std::array<std::uint64_t, 10 * N + 25> constant_evaluated_kernels(std::uint64_t seed) {
 		using namespace sw::universal::limb_kernels;
-		std::array<std::uint64_t, 10 * N + 24> out{};
+		std::array<std::uint64_t, 10 * N + 25> out{};
 		std::size_t o = 0;
 		limb_t a[N]{}, b[N]{}, p[2 * N]{};
 		for (auto& v : a) v = ce_next(seed);
@@ -1568,7 +1568,11 @@ namespace {
 		out[o++] = qq; out[o++] = rr;
 		twice_sub_n(p, a, b, N);
 		out[o++] = p[0] ^ p[N - 1];
-		out[o++] = submul_1(a, b, N, ce_next(seed)) ^ addmul_1(b, a, N, ce_next(seed));
+		// one call after the other: both advance the seed, and the second reads what the first wrote
+		const limb_t borrow = submul_1(a, b, N, ce_next(seed));
+		const limb_t carry  = addmul_1(b, a, N, ce_next(seed));
+		out[o++] = borrow;
+		out[o++] = carry;
 		delete[] s;
 		return out;
 	}
