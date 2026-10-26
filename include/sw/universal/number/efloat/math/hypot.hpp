@@ -9,7 +9,7 @@
 #include <bit>
 #include <cstddef>
 #include <cstdint>
-#include <universal/number/efloat/math/exponent.hpp>  // exact_sum, limb_buffer, pack_significand, round_result
+#include <universal/number/efloat/math/exponent.hpp>  // exact_sum, limb_buffer, round_result
 
 namespace sw {
 namespace universal {
@@ -33,17 +33,15 @@ namespace efloat_detail {
 		const std::size_t n  = std::max<std::size_t>((static_cast<std::size_t>(precision) + 2 + 63) / 64, mx);
 		const int64_t     d  = x.scale() - y.scale();   // >= 0, and at most a few limbs past the precision
 		const std::size_t m  = std::max(mx, my);
+		const limb_t* px = x.limb_data();   // read in place, as fma reads its operands (#1832)
+		const limb_t* py = y.limb_data();
 		limb_buffer buffer;
-		limb_t* px   = buffer.get(mx + my + 2 * mx + 2 * my + 2 * (2 * n + 1) + n + std::max(limb_kernels::scratch_limbs(m), limb_kernels::sqrt_scratch_limbs(n)));
-		limb_t* py   = px + mx;
-		limb_t* x2   = py + my;
+		limb_t* x2   = buffer.get(2 * mx + 2 * my + 2 * (2 * n + 1) + n + std::max(limb_kernels::scratch_limbs(m), limb_kernels::sqrt_scratch_limbs(n)));
 		limb_t* y2   = x2 + 2 * mx;
 		limb_t* np   = y2 + 2 * my;
 		limb_t* t    = np + (2 * n + 1);
 		limb_t* sp   = t + (2 * n + 1);
 		limb_t* work = sp + n;
-		pack_significand(px, x);
-		pack_significand(py, y);
 		limb_kernels::mul_n(x2, px, px, mx, work, true);
 		limb_kernels::mul_n(y2, py, py, my, work, true);
 		// N0 = (x^2 + y^2) 2^(2F - 2k) in 2n + 1 limbs: X^2 at 2F - 2(64 mx - 1) = 128 (n - mx), Y^2 2d lower

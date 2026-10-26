@@ -897,6 +897,38 @@ inline bool can_round(const limb_t* a, std::size_t n, unsigned precision, unsign
 // operands whose quotient and divisor both have at least this many limbs divide by divide-and-conquer
 inline constexpr std::size_t dc_div_threshold = UNIVERSAL_LIMB_KERNELS_X86_64_ASM ? 32 : 16;   // by measurement (#1769, #1816)
 
+// a + b + carry and a - b - borrow for a carry or borrow of 0 or 1, the one out left in it: an
+// adc or sbb chain where the compiler has the builtin (#1830), which clang does not form from
+// the comparisons. For the short sums of efloat and fma, which keep their limbs in registers.
+inline limb_t add_carry(limb_t a, limb_t b, limb_t& carry) noexcept {
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_addcll)
+	unsigned long long out = 0;
+	const limb_t r = static_cast<limb_t>(__builtin_addcll(a, b, carry, &out));
+	carry = static_cast<limb_t>(out);
+	return r;
+#endif
+#endif
+	const limb_t u = a + carry;
+	const limb_t v = u + b;
+	carry = ((u < carry) || (v < u)) ? 1u : 0u;
+	return v;
+}
+inline limb_t sub_borrow(limb_t a, limb_t b, limb_t& borrow) noexcept {
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_subcll)
+	unsigned long long out = 0;
+	const limb_t r = static_cast<limb_t>(__builtin_subcll(a, b, borrow, &out));
+	borrow = static_cast<limb_t>(out);
+	return r;
+#endif
+#endif
+	const limb_t u = a - b;
+	const limb_t v = u - borrow;
+	borrow = ((a < b) || (u < borrow)) ? 1u : 0u;
+	return v;
+}
+
 // the high and low limbs of a * b
 inline void umul(limb_t a, limb_t b, limb_t& hi, limb_t& lo) noexcept {
 #if defined(__SIZEOF_INT128__)
