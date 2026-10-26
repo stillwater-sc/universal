@@ -187,21 +187,31 @@ namespace {
 		return phi;
 	}
 
-	// the limbs of a constant rounded to bits, least significant first
+	// a constant rounded to bits: its sign, scale and limbs, least significant first
 	template<unsigned bits>
-	consteval std::array<std::uint64_t, bits / 64> rounded_limbs(work_t<bits> (*constant)()) {
+	struct rounded_constant {
+		std::array<std::uint64_t, bits / 64> limb{};
+		int  scale    = 0;
+		bool negative = false;
+	};
+
+	template<unsigned bits>
+	consteval rounded_constant<bits> round_constant(work_t<bits> (*constant)()) {
 		work_t<bits> v = constant();
 		v.set_precision(bits);
-		std::array<std::uint64_t, bits / 64> limbs{};
-		for (std::size_t i = 0; i < v.limb_count() && i < limbs.size(); ++i) limbs[i] = v.limb_data()[i];
-		return limbs;
+		rounded_constant<bits> r;
+		for (std::size_t i = 0; i < v.limb_count() && i < r.limb.size(); ++i) r.limb[i] = v.limb_data()[i];
+		r.scale    = v.scale();
+		r.negative = v.sign() < 0;
+		return r;
 	}
 
-	template<std::size_t K, unsigned nlimbs>
-	int CompareLimbs(const char* name, unsigned bits, const std::array<std::uint64_t, K>& compiled, const efloat<nlimbs>& run, bool reportTestCases) {
-		int failures = (run.limb_count() != K) ? 1 : 0;
+	template<unsigned bits, unsigned nlimbs>
+	int CompareConstant(const char* name, const rounded_constant<bits>& compiled, const efloat<nlimbs>& run, bool reportTestCases) {
+		constexpr std::size_t K = bits / 64;
+		int failures = (run.limb_count() != K || run.scale() != compiled.scale || (run.sign() < 0) != compiled.negative) ? 1 : 0;
 		for (std::size_t i = 0; failures == 0 && i < K; ++i) {
-			if (run.limb_data()[i] != compiled[i]) ++failures;
+			if (run.limb_data()[i] != compiled.limb[i]) ++failures;
 		}
 		if (failures != 0 && reportTestCases) std::cerr << "FAIL: " << name << " at " << bits << " bits: constant evaluation differs from the run time\n";
 		return failures;
@@ -209,18 +219,18 @@ namespace {
 
 	template<unsigned bits>
 	int VerifyMathConstants(bool reportTestCases) {
-		constexpr std::array<std::uint64_t, bits / 64> pi  = rounded_limbs<bits>(pi_chudnovsky<bits>);
-		constexpr std::array<std::uint64_t, bits / 64> e   = rounded_limbs<bits>(e_series<bits>);
-		constexpr std::array<std::uint64_t, bits / 64> phi = rounded_limbs<bits>(phi_root<bits>);
+		constexpr rounded_constant<bits> pi  = round_constant<bits>(pi_chudnovsky<bits>);
+		constexpr rounded_constant<bits> e   = round_constant<bits>(e_series<bits>);
+		constexpr rounded_constant<bits> phi = round_constant<bits>(phi_root<bits>);
 		constexpr std::size_t top = bits / 64 - 1;
-		static_assert(pi[top]  == 0xC90F'DAA2'2168'C234ull, "pi = 11.0010010000111111011...");
-		static_assert(e[top]   == 0xADF8'5458'A2BB'4A9Aull, "e = 10.1011011111100001010...");
-		static_assert(phi[top] == 0xCF1B'BCDC'BFA5'3E0Aull, "phi = 1.1001111000110111011...");
+		static_assert(pi.limb[top]  == 0xC90F'DAA2'2168'C234ull && pi.scale == 1 && !pi.negative, "pi = 11.0010010000111111011...");
+		static_assert(e.limb[top]   == 0xADF8'5458'A2BB'4A9Aull && e.scale == 1 && !e.negative, "e = 10.1011011111100001010...");
+		static_assert(phi.limb[top] == 0xCF1B'BCDC'BFA5'3E0Aull && phi.scale == 0 && !phi.negative, "phi = 1.1001111000110111011...");
 		constexpr unsigned n = bits / 32;
 		int failures = 0;
-		failures += CompareLimbs("pi", bits, pi, sw::universal::efloat_pi<n>(), reportTestCases);
-		failures += CompareLimbs("e", bits, e, sw::universal::efloat_e<n>(), reportTestCases);
-		failures += CompareLimbs("phi", bits, phi, sw::universal::efloat_phi<n>(), reportTestCases);
+		failures += CompareConstant("pi", pi, sw::universal::efloat_pi<n>(), reportTestCases);
+		failures += CompareConstant("e", e, sw::universal::efloat_e<n>(), reportTestCases);
+		failures += CompareConstant("phi", phi, sw::universal::efloat_phi<n>(), reportTestCases);
 		return failures;
 	}
 
