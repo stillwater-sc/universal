@@ -71,6 +71,16 @@ int main() {
 	exactText << one;
 	check(exactText.str() == "1", "exact stream formatting");
 
+	using LargePoxel = poxel<80, 2, std::uint32_t>;
+	using LargeValid = valid<80, 2, std::uint32_t>;
+	const LargePoxel largestPxl(SpecificValue::maxpos);
+	const LargeValid large(largestPxl);
+	std::ostringstream expectedLargeText;
+	expectedLargeText << largestPxl;
+	std::ostringstream largeText;
+	largeText << large;
+	check(largeText.str() == expectedLargeText.str(), "exact stream preserves poxel endpoint text");
+
 	std::ostringstream narText;
 	narText << Valid::nar();
 	check(narText.str() == "[nar]", "NaR stream formatting");
