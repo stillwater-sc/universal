@@ -68,6 +68,9 @@
 //            inside inline assembly, so this comparison is the check on it.
 //   load_window  limb_kernels's shifted copy, which places the fma and hypot kernels' terms in
 //            their frames (#1802), against a bit at a time, and its flag for the bits it drops.
+//   constexpr  the kernels evaluated by the compiler (#1819), on their portable loops, integer
+//            root seeds and new/delete scratch, against the same calls at run time: random
+//            operands, a perfect cube, and the carries out of an all-ones limb and equal limbs.
 //
 // REGRESSION_LEVEL convention (intensity progression):
 //   LEVEL 1 -- every limb kernel at lengths 1 to 300 and 3,000 more (30,000, 300,000 and
@@ -86,6 +89,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <random>
 #include <vector>
@@ -1509,6 +1513,84 @@ namespace {
 }  // anonymous namespace
 
 namespace {
+	// The kernels in constant evaluation (#1819), where they take the portable loops, an integer
+	// seed for the roots and new and delete for scratch: their results by the compiler and at run
+	// time, where the assembly and the double estimates run, the same limbs. Lengths below and
+	// past the Karatsuba and divide-and-conquer thresholds, a cube root of one limb, which seeds
+	// by a binary search there, and the carry and borrow chains of the short sums.
+	constexpr std::uint64_t ce_next(std::uint64_t& x) { x ^= x << 13; x ^= x >> 7; x ^= x << 17; return x; }
+
+	template<std::size_t N>
+	constexpr std::array<std::uint64_t, 10 * N + 24> constant_evaluated_kernels(std::uint64_t seed) {
+		using namespace sw::universal::limb_kernels;
+		std::array<std::uint64_t, 10 * N + 24> out{};
+		std::size_t o = 0;
+		limb_t a[N]{}, b[N]{}, p[2 * N]{};
+		for (auto& v : a) v = ce_next(seed);
+		for (auto& v : b) v = ce_next(seed);
+		b[N - 1] |= limb_t(1) << 63;
+		limb_t* s = new limb_t[div_scratch_limbs(N) + cbrt_scratch_limbs(N) + sqrt_scratch_limbs(N)]{};
+		mul_n(p, a, b, N, s, false);
+		for (std::size_t i = 0; i < 2 * N; ++i) out[o++] = p[i];
+		limb_t sq[2 * N]{};
+		mul_n(sq, a, a, N, s, true);
+		out[o++] = sq[0] ^ sq[N] ^ sq[2 * N - 1];
+		limb_t q[N + 1]{}, np[2 * N]{};
+		for (std::size_t i = 0; i < 2 * N; ++i) np[i] = p[i];
+		q[N] = div_qr(q, np, 2 * N, b, N, s);
+		for (std::size_t i = 0; i <= N; ++i) out[o++] = q[i];
+		for (std::size_t i = 0; i < N; ++i) out[o++] = np[i];   // the remainder
+		limb_t root[N]{}, rad[2 * N]{};
+		for (std::size_t i = 0; i < 2 * N; ++i) rad[i] = p[i];
+		rad[2 * N - 1] |= limb_t(1) << 62;
+		out[o++] = sqrtrem(root, rad, N, s);
+		for (std::size_t i = 0; i < N; ++i) out[o++] = root[i] ^ rad[i];
+		limb_t cube[3 * N]{}, croot[N]{}, crem[2 * N + 1]{};
+		for (std::size_t i = 0; i < 3 * N; ++i) cube[i] = ce_next(seed);
+		cube[3 * N - 1] |= limb_t(1) << 61;
+		cbrtrem(croot, crem, cube, N, s, true);
+		for (std::size_t i = 0; i < N; ++i) out[o++] = croot[i];
+		for (std::size_t i = 0; i < 2 * N + 1; ++i) out[o++] = crem[i];
+		limb_t c = 0, d = 1;
+		for (std::size_t i = 0; i < N; ++i) out[o++] = add_carry(a[i], b[i], c) ^ sub_borrow(a[i], b[i], d);
+		out[o++] = c + 2 * d;
+		// the carry in that makes an all-ones limb wrap, and the borrow in from equal limbs
+		limb_t c1 = 1, d1 = 1;
+		out[o++] = add_carry(~limb_t(0), a[0], c1) ^ sub_borrow(a[0], a[0], d1);
+		out[o++] = c1 + 2 * d1;
+		// a perfect cube, whose root the one-limb base case must not step past
+		limb_t pc[3]{}, pr[1]{}, prem[3]{};
+		cube_1(pc, a[0] | (limb_t(1) << 63));
+		cbrtrem(pr, prem, pc, 1, s, true);
+		out[o++] = pr[0]; out[o++] = prem[0] | prem[1] | prem[2];
+		limb_t qq = 0, rr = 0;
+		udiv_qrnnd(qq, rr, b[N - 1] >> 1, a[0], b[N - 1]);
+		out[o++] = qq; out[o++] = rr;
+		twice_sub_n(p, a, b, N);
+		out[o++] = p[0] ^ p[N - 1];
+		out[o++] = submul_1(a, b, N, ce_next(seed)) ^ addmul_1(b, a, N, ce_next(seed));
+		delete[] s;
+		return out;
+	}
+
+	template<std::size_t N, std::uint64_t seed>
+	int VerifyConstantEvaluatedKernel(bool reportTestCases) {
+		constexpr auto compiled = constant_evaluated_kernels<N>(seed);
+		const auto run = constant_evaluated_kernels<N>(seed);
+		if (compiled == run) return 0;
+		if (reportTestCases) std::cout << "    FAIL: the kernels at " << N << " limbs differ in constant evaluation\n";
+		return 1;
+	}
+	int VerifyConstantEvaluatedKernels(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		nrOfFailedTestCases += VerifyConstantEvaluatedKernel<1, 88172645463325252ull>(reportTestCases);
+		nrOfFailedTestCases += VerifyConstantEvaluatedKernel<2, 362436069ull>(reportTestCases);
+		nrOfFailedTestCases += VerifyConstantEvaluatedKernel<5, 521288629ull>(reportTestCases);
+		nrOfFailedTestCases += VerifyConstantEvaluatedKernel<16, 88675123ull>(reportTestCases);
+		nrOfFailedTestCases += VerifyConstantEvaluatedKernel<40, 5783321ull>(reportTestCases);   // Karatsuba, divide and conquer
+		return nrOfFailedTestCases;
+	}
+
 	// the kernels' names before #1823: the forwarding header aliases the namespace, so code that
 	// names efloat_mpn still compiles, against the same functions
 	static_assert(std::is_same_v<decltype(&sw::universal::efloat_mpn::add_n), decltype(&sw::universal::limb_kernels::add_n)>);
@@ -1560,6 +1642,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 100), "efloat", "limb square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyFourLimbSquareRoots(reportTestCases, 10000), "efloat", "four-limb square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 100), "efloat", "limb cube roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyConstantEvaluatedKernels(reportTestCases), "efloat", "kernels in constant evaluation");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 
@@ -1587,6 +1670,7 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifySquareRootKernel(reportTestCases, 300), "efloat", "limb square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyFourLimbSquareRoots(reportTestCases, 30000), "efloat", "four-limb square roots");
 	nrOfFailedTestCases += ReportTestResult(VerifyCubeRootKernel(reportTestCases, 300), "efloat", "limb cube roots");
+	nrOfFailedTestCases += ReportTestResult(VerifyConstantEvaluatedKernels(reportTestCases), "efloat", "kernels in constant evaluation");
 #	endif
 
 #	if REGRESSION_LEVEL_2

@@ -11,6 +11,7 @@
 // provide platform-specific carry propagation using compiler intrinsics or
 // unsigned __int128 where available, with a portable fallback.
 #include <cstdint>
+#include <type_traits>   // std::is_constant_evaluated
 
 // Platform detection for intrinsics
 #if defined(_MSC_VER)
@@ -96,16 +97,20 @@ inline uint64_t subborrow(uint64_t a, uint64_t b, uint64_t borrow_in, uint64_t& 
 #endif
 }
 
-/// multiply two uint64_t values producing a 128-bit result as lo and hi halves
-inline void mul128(uint64_t a, uint64_t b, uint64_t& lo, uint64_t& hi) {
+/// multiply two uint64_t values producing a 128-bit result as lo and hi halves; usable in
+/// constant evaluation, where MSVC's intrinsic is not (#1819)
+constexpr void mul128(uint64_t a, uint64_t b, uint64_t& lo, uint64_t& hi) {
 #if defined(_MSC_VER)
-	// MSVC: use _umul128 intrinsic
-	// Use local variable for hi output to avoid optimizer issues with reference-derived pointers
-	unsigned long long h;
-	lo = _umul128(a, b, &h);
-	hi = static_cast<uint64_t>(h);
-
-#elif defined(__SIZEOF_INT128__)
+	if (!std::is_constant_evaluated()) {
+		// MSVC: use _umul128 intrinsic
+		// Use local variable for hi output to avoid optimizer issues with reference-derived pointers
+		unsigned long long h = 0;
+		lo = _umul128(a, b, &h);
+		hi = static_cast<uint64_t>(h);
+		return;
+	}
+#endif
+#if defined(__SIZEOF_INT128__)
 	// GCC/Clang on 64-bit: use unsigned __int128
 	uint128_t product = static_cast<uint128_t>(a) * b;
 	lo = static_cast<uint64_t>(product);

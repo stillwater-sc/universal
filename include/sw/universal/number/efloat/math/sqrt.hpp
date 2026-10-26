@@ -21,7 +21,7 @@ namespace efloat_detail {
 	// 32-bit limbs, as bits() lists them; shift may be negative (#1810). x holds V shifted up
 	// past its 32-bit padding, as 64-bit limbs (#1820).
 	template<unsigned nlimbs>
-	inline void load_shifted(limb_kernels::limb_t* r, std::size_t n, const efloat<nlimbs>& x, int64_t shift) {
+	inline constexpr void load_shifted(limb_kernels::limb_t* r, std::size_t n, const efloat<nlimbs>& x, int64_t shift) {
 		const std::size_t m = x.limb_count();
 		limb_kernels::load_window(r, n, x.limb_data(), m, shift - 32 * static_cast<int64_t>(2 * m - x.limb32_count()));
 	}
@@ -32,7 +32,7 @@ namespace efloat_detail {
 	// and its remainder R by sqrtrem2 or sqrtrem4, in fixed-size code without scratch frames. The
 	// bit after S is whether R > S, as in sqrt_limbs, and the rest whether R is 0.
 	template<std::size_t M, unsigned nlimbs>
-	inline void sqrt_short(efloat<nlimbs>& result, const efloat<nlimbs>& a, unsigned plimbs) {
+	inline constexpr void sqrt_short(efloat<nlimbs>& result, const efloat<nlimbs>& a, unsigned plimbs) {
 		using limb_kernels::limb_t;
 		const limb_t*     w = a.limb_data();
 		const std::size_t m = a.limb_count();
@@ -80,7 +80,7 @@ namespace efloat_detail {
 
 	// whether sqrt_short takes a at a precision of plimbs 32-bit limbs
 	template<unsigned nlimbs>
-	inline bool sqrt_is_short(const efloat<nlimbs>& a, unsigned plimbs) {
+	inline constexpr bool sqrt_is_short(const efloat<nlimbs>& a, unsigned plimbs) {
 		return plimbs <= 4 && 2 * a.limb_count() <= plimbs + 1;
 	}
 
@@ -97,7 +97,7 @@ namespace efloat_detail {
 	// a square of half the root's length that GMP and MPFR skip, and the argument and the root
 	// were copied through efloat values on the way in and out.
 	template<unsigned nlimbs>
-	inline void sqrt_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& a, unsigned precision) {
+	inline constexpr void sqrt_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& a, unsigned precision) {
 		using limb_kernels::limb_t;
 		// the root rounds at whole 32-bit limbs, so it is sized from them: a request of 33 bits
 		// rounds at 64, and the root then needs 66 (before, it was sized from the 33)
@@ -165,7 +165,7 @@ namespace efloat_detail {
 	// precision (#1761), and the inverse trigonometric and hyperbolic functions and log's AGM at
 	// their working precision.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> sqrt_to(const efloat<nlimbs>& a, unsigned bits) {
+	inline constexpr efloat<nlimbs> sqrt_to(const efloat<nlimbs>& a, unsigned bits) {
 		// the root's limbs are written once, by the rounding: a copy of a to hold them cost more
 		// than the buffer it saved, which past the inline limbs comes from the block cache (#1828)
 		efloat<nlimbs> x{ typename efloat<nlimbs>::uninitialized_t{} };
