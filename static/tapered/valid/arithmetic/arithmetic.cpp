@@ -153,7 +153,12 @@ int main() {
 	      "negative infinity divided by open zero remains unbounded", 0, 0);
 
 	const WideValid openZeroNumerator(WidePosit(0), WidePosit(1), true, false);
-	check((openZeroNumerator / approachingZero) == WideValid::entire(), "open zero over open zero is ambiguous", 0, 0);
+	const WideValid openZeroQuotient = openZeroNumerator / approachingZero;
+	check(openZeroQuotient.lower_open() && openZeroQuotient.lower<double>() == 0.0,
+	      "open zero over open zero has open zero lower bound", 0, 0);
+	check(openZeroQuotient.upper_open() && std::isinf(openZeroQuotient.upper<double>()) &&
+	          openZeroQuotient.upper<double>() > 0.0,
+	      "open zero over open zero has positive unbounded upper bound", 0, 0);
 	check((WideValid(0) / approachingZero).iszero(), "exact zero over open zero is zero", 0, 0);
 
 	const WidePosit maxpos(sw::universal::SpecificValue::maxpos);

@@ -11,8 +11,9 @@ std::ostream& operator<<(std::ostream& stream, const valid<nbits, es, bt>& value
 	if (value.isnar())
 		return stream << "[nar]";
 
-    if(value.isexact())
+    if (value.isexact()) {
         return stream << value.template lower<double>();
+    }
 
 	return stream << (value.lower_open() ? '(' : '[') << value.template lower<double>() << ", "
 	              << value.template upper<double>() << (value.upper_open() ? ')' : ']');
