@@ -116,3 +116,46 @@ cd build_arm64
 cmake -DCMAKE_TOOLCHAIN_FILE=../Toolchain-arm64.cmake ..
 make
 ```
+
+## The cross-compilation jobs in CI
+
+The RISC-V 64, POWER 64 LE and MinGW-w64 jobs in `.github/workflows/cmake.yml` build with the toolchain files in `cmake/toolchains/` and run the tests under QEMU user mode or Wine. They run inside prebuilt images that already contain the toolchains, so a job makes no `apt` calls. Installing the toolchains from the Ubuntu mirrors on every run used to be the most common reason these jobs failed: a slow mirror ran out the install's time limit before anything was built (#1817).
+
+| Job | Image | Toolchain packages |
+|-----|-------|--------------------|
+| Linux RISC-V 64 (GCC cross) | `ghcr.io/stillwater-sc/universal-ci-cross:riscv64-<n>` | `g++-riscv64-linux-gnu`, `qemu-user-static` |
+| Linux POWER 64 LE (GCC cross) | `ghcr.io/stillwater-sc/universal-ci-cross:ppc64le-<n>` | `g++-powerpc64le-linux-gnu`, `qemu-user-static` |
+| Windows x64 (MinGW GCC cross) | `ghcr.io/stillwater-sc/universal-ci-cross:mingw-<n>` | `g++-mingw-w64-x86-64`, `wine`, `wine64` |
+
+Every image is Ubuntu 24.04, the same release as the `ubuntu-latest` runners. Each also carries `git`, `ccache`, `cmake`, `make`, `zstd` and `gh`, which the job's steps need.
+
+**Where they come from.** `docker/ci-cross/Dockerfile` has one stage per target. The `CI images` workflow (`.github/workflows/ci-images.yml`) builds them and pushes them to GHCR:
+
+- every Monday, on main, so security fixes and point releases still arrive;
+- on any push that changes the Dockerfile or the workflow;
+- by hand, with `workflow_dispatch`.
+
+**Changing an image:**
+
+1. Edit `docker/ci-cross/Dockerfile`.
+2. Bump the number `<n>` in that target's `container:` tag in `cmake.yml`.
+
+The image workflow reads its tags from `cmake.yml`, so the two cannot drift apart. A branch never overwrites a tag that main uses. If the Dockerfile changed and the number did not, the image workflow fails and asks for the bump. A branch also cannot take over a tag that another branch published: each image records its branch in a label.
+
+Pushing the branch starts the `CI images` run that publishes the image. The CMake workflow does not wait for it. A cross job that starts before the new tag exists fails at container setup, before any step runs; re-run it once `CI images` has finished. Marking a draft pull request ready after its push has been built avoids this.
+
+A pull request from a fork cannot publish images. If it changes the Dockerfile, a maintainer has to push the branch to this repository first.
+
+**Reproducing a CI failure locally:**
+
+```bash
+# use the tag cmake.yml names for the job, e.g. universal-ci-cross:ppc64le-2
+docker run --rm -it -v "$PWD":/src -w /src ghcr.io/stillwater-sc/universal-ci-cross:ppc64le-2 bash
+# inside the container
+cmake -B build -DUNIVERSAL_BUILD_CI_LITE=ON -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/ppc64le-linux-gnu.cmake
+cmake --build build -j4 && cd build && ctest -j4 --output-on-failure
+```
+
+For the MinGW image, run `wineboot --init && wineserver -w && wineserver -p && wineboot` before a parallel `ctest`. Otherwise the first tests race to start Wine and can fail with `chdir to /tmp/wine-...` (#1838).
+
+You can also build the image yourself with `docker build --target ppc64le -t universal-ci-cross:ppc64le docker/ci-cross`.
