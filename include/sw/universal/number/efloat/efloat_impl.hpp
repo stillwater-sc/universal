@@ -292,16 +292,20 @@ public:
 			_limb.assign(limbs, 2);
 		}
 		else {
-			// double-double: rhs = hi + lo exactly, |lo| <= ulp(hi) / 2
+			// double-double: rhs = hi + lo exactly, |lo| <= ulp(hi) / 2, and lo can lie any distance
+			// below hi (1 + 2^-1000 is one)
 			const double hi = static_cast<double>(rhs);
 			if (hi == 0.0 || hi - hi != 0.0) return convert_ieee754(hi);   // zero, inf, nan
 			const double lo = static_cast<double>(rhs - static_cast<long double>(hi));
 			const bool carries = _precision_limbs != 0;
 			convert_ieee754(hi);
 			if (lo != 0.0) {
-				// summed exactly at 4 limbs, which hold any double-double, unless the value carries
-				// a precision of its own
-				if (!carries) _precision_limbs = 4u;
+				// summed exactly, over the bits from hi's leading one to lo's last, unless the
+				// value carries a precision of its own
+				if (!carries) {
+					const int span = efloat_detail::fp::ilogb(hi) - efloat_detail::fp::ilogb(lo) + 54;
+					_precision_limbs = std::max(4u, static_cast<unsigned>(span + 31) / 32u);
+				}
 				*this += efloat(lo);
 				if (!carries) _precision_limbs = 0u;
 			}

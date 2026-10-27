@@ -174,11 +174,12 @@ namespace sw { namespace universal { namespace efloat_detail { namespace fp {
 		return sum;
 	}
 
-	// log |gamma x| for a finite x that is not 0 or a negative integer
+	// log |gamma x| for a finite x; +inf at 0 and the negative integers
 	constexpr double lgamma(double x) noexcept {
 		if (x < 0.5) {
 			// gamma(x) gamma(1 - x) = pi / sin(pi x), with sin(pi x) = +-sin(pi f), f = x - n
 			const double f = x - nearbyint(x);
+			if (f == 0.0) return std::numeric_limits<double>::infinity();   // a pole, as std::lgamma
 			return log(pi / fabs(sin_pi(f))) - lgamma(1.0 - x);
 		}
 		// lgamma(x) = lgamma(x + n) - log(x (x + 1) ... (x + n - 1)), x + n >= 10
