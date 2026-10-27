@@ -5,8 +5,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
-#include <cmath>
 #include <algorithm>
+#include <limits>
+#include <type_traits>
 
 namespace sw { namespace universal {
 
@@ -248,7 +249,7 @@ constexpr efloat<nlimbs> rint(const efloat<nlimbs>& x) {
 	bool inexact = clear_fractional_limbs(res._limb, exp);
 
 	bool round_up = false;
-	switch (efloat_rounding_mode) {
+	switch (efloat<nlimbs>::rounding_mode()) {   // to nearest in a constant evaluation
 	case RoundingMode::RoundToNearest:
 		round_up = guard && (sticky || lsb);
 		break;

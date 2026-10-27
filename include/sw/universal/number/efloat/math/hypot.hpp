@@ -26,7 +26,7 @@ namespace efloat_detail {
 	// rounding bits, and the remainder N - S^2 and the dropped bits the sticky one. The root comes
 	// from limb_kernels::sqrt_approx first, and the exact one only where Ziv's test fails (#1810).
 	template<unsigned nlimbs>
-	inline void hypot_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, unsigned precision) {
+	inline constexpr void hypot_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, unsigned precision) {
 		using limb_kernels::limb_t;
 		const std::size_t mx = x.limb_count();
 		const std::size_t my = y.limb_count();
@@ -80,7 +80,7 @@ namespace efloat_detail {
 //   - otherwise if either argument is NaN, the result is NaN
 //   - hypot(x, y) == hypot(y, x) == hypot(x, -y); hypot(0, y) == |y|
 template<unsigned nlimbs>
-inline efloat<nlimbs> hypot(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
+inline constexpr efloat<nlimbs> hypot(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 	// IEEE-754: Infinity suppresses NaN inside hypot! Infinity check must run first.
 	if (x.isinf() || y.isinf()) {
 		efloat<nlimbs> inf;

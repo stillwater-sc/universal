@@ -6,9 +6,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
-#include <cmath>
 #include <algorithm>
 #include <cstdint>
+#include <type_traits>
 #include <vector>
 #include <universal/number/efloat/math/constants/efloat_constants.hpp>
 #include <universal/number/efloat/math/exponent.hpp>   // result_precision, exp_log_guard_bits
@@ -37,7 +37,7 @@ namespace efloat_detail {
 
 	// atan(1/m) = sum_k (-1)^k / ((2k + 1) m^(2k + 1)) for an integer m >= 2, at `bits` bits
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> atan_reciprocal(unsigned m, unsigned bits) {
+	inline constexpr efloat<nlimbs> atan_reciprocal(unsigned m, unsigned bits) {
 		efloat<nlimbs> one(1.0);
 		one.set_precision(bits);
 		const efloat<nlimbs> m2(static_cast<double>(m) * static_cast<double>(m));
@@ -56,16 +56,15 @@ namespace efloat_detail {
 	// was right to ~210 bits, #1712): atan(1/2) = atan(1/3) + atan(1/7), since
 	// (1/3 + 1/7) / (1 - 1/21) = 1/2.  Cached per thread like ln 2.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> atan_half(unsigned bits) {
-		thread_local efloat<nlimbs> cached;
-		thread_local unsigned cached_bits = 0;
-		if (cached_bits < bits) {
-			cached = atan_reciprocal<nlimbs>(3, bits + 32) + atan_reciprocal<nlimbs>(7, bits + 32);
-			cached_bits = bits;
+	struct atan_half_constant {
+		constexpr efloat<nlimbs> operator()(unsigned width) const {
+			return atan_reciprocal<nlimbs>(3, width) + atan_reciprocal<nlimbs>(7, width);
 		}
-		efloat<nlimbs> value(cached);
-		value.set_precision(bits);
-		return value;
+	};
+
+	template<unsigned nlimbs>
+	inline constexpr efloat<nlimbs> atan_half(unsigned bits) {
+		return constant_value<nlimbs>(bits, atan_half_constant<nlimbs>{}, [](unsigned b) { return cached_constant<nlimbs>(b, atan_half_constant<nlimbs>{}); });
 	}
 
 	// pi at `bits` bits, computed rather than taken from efloat_pi<nlimbs>(), which carries the
@@ -73,21 +72,20 @@ namespace efloat_detail {
 	// reduced its argument with a pi of that narrower width (#1712).  Machin's formula,
 	// pi = 16 atan(1/5) - 4 atan(1/239), summed with 32 guard bits and cached like ln 2.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> pi(unsigned bits) {
-		thread_local efloat<nlimbs> cached;
-		thread_local unsigned cached_bits = 0;
-		if (cached_bits < bits) {
-			cached = atan_reciprocal<nlimbs>(5, bits + 32) * efloat<nlimbs>(16.0) - atan_reciprocal<nlimbs>(239, bits + 32) * efloat<nlimbs>(4.0);
-			cached_bits = bits;
+	struct pi_constant {
+		constexpr efloat<nlimbs> operator()(unsigned width) const {
+			return atan_reciprocal<nlimbs>(5, width) * efloat<nlimbs>(16.0) - atan_reciprocal<nlimbs>(239, width) * efloat<nlimbs>(4.0);
 		}
-		efloat<nlimbs> value(cached);
-		value.set_precision(bits);
-		return value;
+	};
+
+	template<unsigned nlimbs>
+	inline constexpr efloat<nlimbs> pi(unsigned bits) {
+		return constant_value<nlimbs>(bits, pi_constant<nlimbs>{}, [](unsigned b) { return cached_constant<nlimbs>(b, pi_constant<nlimbs>{}); });
 	}
 
 	// pi * 2^e at `bits` bits: pi/2 and pi/4 are pi with its exponent lowered
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> pi_scaled(unsigned bits, int e) {
+	inline constexpr efloat<nlimbs> pi_scaled(unsigned bits, int e) {
 		efloat<nlimbs> value = pi<nlimbs>(bits);
 		value.setexponent(value.scale() + e);
 		return value;
@@ -101,13 +99,13 @@ namespace efloat_detail {
 	// A P-bit x cannot lie much closer to k pi/2 than 2^-2(P + scale(x)), so the retries stop at
 	// three times that width.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> reduce_half_pi(const efloat<nlimbs>& x, unsigned bits, unsigned& quadrant) {
+	inline constexpr efloat<nlimbs> reduce_half_pi(const efloat<nlimbs>& x, unsigned bits, unsigned& quadrant) {
 		const unsigned magnitude = static_cast<unsigned>(std::max<int64_t>(0, x.scale()));
 		const unsigned limit     = 3 * (bits + magnitude) + 2 * exp_log_guard_bits;
 		unsigned working         = bits + exp_log_guard_bits + magnitude;
 		// |x| clearly below pi/4 (0.78539816...): k = 0 and r = x at the working precision, without
 		// the division by pi/2 that would only confirm it (#1761)
-		if (x.scale() < 0 && std::fabs(double(x)) < 0.7853) {
+		if (x.scale() < 0 && fp::fabs(double(x)) < 0.7853) {
 			efloat<nlimbs> r(x);
 			r.set_precision(working);
 			quadrant = 0;
@@ -118,7 +116,7 @@ namespace efloat_detail {
 		// harmless to the versine. It replaces a division at the working precision, a fifth of sin
 		// at 128 bits (#1790). r = x - k pi/2 is still formed, and widened, at full precision.
 		if (x.scale() < 40) {
-			const int64_t kk = static_cast<int64_t>(std::llround(double(x) * 0.6366197723675814));
+			const int64_t kk = static_cast<int64_t>(fp::round(double(x) * 0.6366197723675814));
 			if (kk == 0) {
 				efloat<nlimbs> r(x);
 				r.set_precision(working);
@@ -176,7 +174,7 @@ namespace efloat_detail {
 	// below 2^10. The value is
 	// returned at the working precision, r's plus h bits, as the efloat kernel it replaces was.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> versine_with(const efloat<nlimbs>& r, unsigned T) {
+	inline constexpr efloat<nlimbs> versine_with(const efloat<nlimbs>& r, unsigned T) {
 		using fixed_series::limb_t;
 		const unsigned precision = r.get_precision();
 		const int64_t  h_signed  = r.iszero() ? 0 : static_cast<int64_t>(T) + r.scale() + 1;   // halvings that bring y below 2^-T
@@ -213,7 +211,8 @@ namespace efloat_detail {
 		// v = z W / 2 with z = Zs 2^-(F + E), Zs in [2^(F-1), 2^F): V = Zs W / 2^(F + 1)
 		int64_t E = -z.scale() - 1;
 		fixed_series::to_fixed(z, static_cast<int64_t>(F) + E, Z, n);
-		limb_t* s = fixed_series::scratch(std::max(limb_kernels::scratch_limbs(n + 1), limb_kernels::truncated_scratch_limbs(n + 1, n, n)));   // after the series, which uses it
+		fixed_series::scratch_space s_space(std::max(limb_kernels::scratch_limbs(n + 1), limb_kernels::truncated_scratch_limbs(n + 1, n, n)));   // after the series, which uses it
+		limb_t* s = s_space.data();
 		const limb_t* wz = fixed_series::truncated_product(W, n + 1, Z, n, n, P, s);   // W Z / 2^F, n + 1 limbs, within 2 units (#1807)
 		fixed_series::shift_right(V, n, wz, n + 1, 1u);
 		for (unsigned i = 0; i < h; ++i) {   // V' = V - V^2 / 2^(F + E + 1), E' = E - 2; E stays >= 0
@@ -235,8 +234,8 @@ namespace efloat_detail {
 	// the noise of a flat optimum, from 128 to 8192 bits (#1790): T = 3 at 128 bits, 10 at 2048,
 	// 20 at 8192. A doubling costs one square, and each halving gains the series in z = y^2 two
 	// bits a term, so the optimum lies below exp's.
-	inline unsigned versine_target(unsigned F) noexcept {
-		const unsigned T = static_cast<unsigned>(0.22 * std::sqrt(static_cast<double>(F)) + 0.5);
+	inline constexpr unsigned versine_target(unsigned F) noexcept {
+		const unsigned T = static_cast<unsigned>(0.22 * fp::sqrt(static_cast<double>(F)) + 0.5);
 		return (T < 2u) ? 2u : T;
 	}
 
@@ -248,24 +247,24 @@ namespace efloat_detail {
 	// halved to 2^-29 at 8192 bits and ran 3x slower. The block length of the rectangular
 	// splitting, 0.7 sqrt(N), was measured with it: 1.0 sqrt(N) ran 2-6% slower from 512 to 8192
 	// bits, 2 sqrt(N) 30% slower at 8192.
-	inline unsigned arctangent_target(unsigned W) noexcept {
-		const unsigned T = static_cast<unsigned>(0.08 * std::sqrt(static_cast<double>(W)) + 0.5);
+	inline constexpr unsigned arctangent_target(unsigned W) noexcept {
+		const unsigned T = static_cast<unsigned>(0.08 * fp::sqrt(static_cast<double>(W)) + 0.5);
 		return (T < 2u) ? 2u : T;
 	}
 
-	inline unsigned arctangent_block_length(unsigned N) noexcept {
-		const unsigned m = static_cast<unsigned>(0.7 * std::sqrt(static_cast<double>(N)) + 0.5);
+	inline constexpr unsigned arctangent_block_length(unsigned N) noexcept {
+		const unsigned m = static_cast<unsigned>(0.7 * fp::sqrt(static_cast<double>(N)) + 0.5);
 		return (m < 1u) ? 1u : m;
 	}
 
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> versine(const efloat<nlimbs>& r) {
+	inline constexpr efloat<nlimbs> versine(const efloat<nlimbs>& r) {
 		return versine_with(r, versine_target(r.get_precision() + 24u));
 	}
 
 	// sin(r) and cos(r) for |r| <= pi/4 from the versine
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> sin_from_versine(const efloat<nlimbs>& v, const efloat<nlimbs>& r) {
+	inline constexpr efloat<nlimbs> sin_from_versine(const efloat<nlimbs>& v, const efloat<nlimbs>& r) {
 		if (v.iszero()) return r;   // r below the precision's resolution of v: sin r = r
 		efloat<nlimbs> w(v);        // v (2 - v) = 2v - v^2, by a squaring
 		w.setexponent(w.scale() + 1);
@@ -276,7 +275,7 @@ namespace efloat_detail {
 	}
 
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> cos_from_versine(const efloat<nlimbs>& v) {
+	inline constexpr efloat<nlimbs> cos_from_versine(const efloat<nlimbs>& v) {
 		return 1 - v;
 	}
 
@@ -291,7 +290,7 @@ namespace efloat_detail {
 	// pi/2 to |r| <= pi/4, then the versine of r. tan at a pole the reduction cannot resolve is
 	// returned as an infinity, +inf at pi/2 and -inf at -pi/2 (quadrant 3).
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> trig_working(const efloat<nlimbs>& x, unsigned bits, trig_function f) {
+	inline constexpr efloat<nlimbs> trig_working(const efloat<nlimbs>& x, unsigned bits, trig_function f) {
 		unsigned quadrant = 0;
 		const efloat<nlimbs> r = reduce_half_pi(x, bits, quadrant);
 		const efloat<nlimbs> v = versine(r);
@@ -414,7 +413,7 @@ namespace efloat_detail {
 	// count twice, #1807), z once: below 2^-(working + 13) for F >= working + 24. The product y S
 	// rounds once more.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> atan_working_with(const efloat<nlimbs>& x, unsigned working, unsigned T) {
+	inline constexpr efloat<nlimbs> atan_working_with(const efloat<nlimbs>& x, unsigned working, unsigned T) {
 		using fixed_series::limb_t;
 		efloat<nlimbs> a(x);
 		a.setsign(false);
@@ -457,14 +456,14 @@ namespace efloat_detail {
 	}
 
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> atan_working(const efloat<nlimbs>& x, unsigned working) {
+	inline constexpr efloat<nlimbs> atan_working(const efloat<nlimbs>& x, unsigned working) {
 		return atan_working_with(x, working, arctangent_target(working));
 	}
 
 	// asin x = atan(x / sqrt((1 - x)(1 + x))) for a finite 0 < |x| < 1 at `working` bits, unrounded;
 	// 1 - |x| is exact for |x| >= 1/2, so the root keeps its relative precision as |x| -> 1
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> asin_working(const efloat<nlimbs>& x, unsigned working) {
+	inline constexpr efloat<nlimbs> asin_working(const efloat<nlimbs>& x, unsigned working) {
 		efloat<nlimbs> a(x);
 		a.setsign(false);
 		a.set_precision(working);
@@ -477,7 +476,7 @@ namespace efloat_detail {
 	// acos x = 2 atan(sqrt((1 - x) / (1 + x))) for a finite -1 < x < 1 at `working` bits, unrounded:
 	// 1 - x is exact near 1, where acos x -> 0, and 1 + x near -1, where it nears pi
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> acos_working(const efloat<nlimbs>& x, unsigned working) {
+	inline constexpr efloat<nlimbs> acos_working(const efloat<nlimbs>& x, unsigned working) {
 		efloat<nlimbs> xw(x);
 		xw.set_precision(working);
 		efloat<nlimbs> result = atan_working(sqrt_to((1 - xw) / (xw + 1), working), working);
@@ -488,7 +487,7 @@ namespace efloat_detail {
 	// atan2(y, x) for finite nonzero x and y at `working` bits, unrounded: atan |y / x|, reflected
 	// to pi - atan |y / x| for x < 0, with y's sign
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> atan2_working(const efloat<nlimbs>& y, const efloat<nlimbs>& x, unsigned working) {
+	inline constexpr efloat<nlimbs> atan2_working(const efloat<nlimbs>& y, const efloat<nlimbs>& x, unsigned working) {
 		efloat<nlimbs> q(y);
 		q.set_precision(working);
 		q /= x;
@@ -506,7 +505,7 @@ namespace efloat_detail {
 	// a function whose evaluate(working) is within 2^(scale - working + inverse_trig_error_bits) of
 	// it, rounded to `precision` bits by Ziv's strategy
 	template<unsigned nlimbs, typename Evaluate>
-	inline efloat<nlimbs> round_inverse_trig(Evaluate evaluate, unsigned precision, bool carries) {
+	inline constexpr efloat<nlimbs> round_inverse_trig(Evaluate evaluate, unsigned precision, bool carries) {
 		return round_ziv<nlimbs>([&evaluate](unsigned target) { return evaluate(target + exp_log_guard_bits); },
 		                         precision, inverse_trig_error_bits, carries);
 	}
@@ -514,7 +513,7 @@ namespace efloat_detail {
 	// m pi 2^e with the sign `negative`, rounded to `precision` bits: the values atan2 and asin take
 	// at their special arguments
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> round_pi(unsigned m, int e, bool negative, unsigned precision, bool carries) {
+	inline constexpr efloat<nlimbs> round_pi(unsigned m, int e, bool negative, unsigned precision, bool carries) {
 		return round_inverse_trig<nlimbs>([m, e, negative](unsigned working) {
 			efloat<nlimbs> v = pi_scaled<nlimbs>(working, e);
 			if (m != 1u) v *= m;
@@ -525,7 +524,7 @@ namespace efloat_detail {
 
 	// a tiny x, 2 scale(x) < -(P + 6): f(x) = x + c x^3 + ... lies within 2^-(P + 4) |x| of x
 	template<unsigned nlimbs>
-	inline bool inverse_trig_tiny(const efloat<nlimbs>& x, unsigned precision) {
+	inline constexpr bool inverse_trig_tiny(const efloat<nlimbs>& x, unsigned precision) {
 		return 2 * x.scale() < -static_cast<int64_t>(precision) - 6;
 	}
 

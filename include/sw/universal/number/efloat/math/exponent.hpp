@@ -7,9 +7,9 @@
 #pragma once
 #include <algorithm>
 #include <bit>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -26,17 +26,23 @@ namespace efloat_detail {
 	// exp_working(x, P) is within 2^(scale - P - exp_log_guard_bits + exp_error_bits) of exp x
 	inline constexpr unsigned exp_error_bits = 16u;
 
+	// the status flags a function raises: the thread's, out of a constant evaluation's reach,
+	// which raises none, as efloat's arithmetic does (#1819)
+	inline constexpr void raise_flags(uint32_t flags) noexcept {
+		if (!std::is_constant_evaluated()) efloat_exception_flags.set(flags);
+	}
+
 	// The precision of the result of a function of x: x's own, what the arithmetic would give.
 	// The literals a function combines x with carry no precision and do not widen it (#1757).
 	template<unsigned nlimbs>
-	inline unsigned result_precision(const efloat<nlimbs>& x) {
+	inline constexpr unsigned result_precision(const efloat<nlimbs>& x) {
 		return x.get_precision();
 	}
 
 	// The precision of a function of x and y: the wider of the precisions they carry, as their
 	// arithmetic would give; an argument that carries none does not widen it (#1757)
 	template<unsigned nlimbs>
-	inline unsigned result_precision(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
+	inline constexpr unsigned result_precision(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 		if (!y.carries_precision()) return x.get_precision();
 		if (!x.carries_precision()) return y.get_precision();
 		return std::max(x.get_precision(), y.get_precision());
@@ -45,7 +51,7 @@ namespace efloat_detail {
 	// round a function's result once to its precision; a function of arguments that carry no
 	// precision carries none either, as their arithmetic would (#1757)
 	template<unsigned nlimbs>
-	inline void round_result(efloat<nlimbs>& result, unsigned precision, bool carries) {
+	inline constexpr void round_result(efloat<nlimbs>& result, unsigned precision, bool carries) {
 		result.set_precision(precision);
 		if (!carries) result.clear_precision();
 	}
@@ -57,7 +63,7 @@ namespace efloat_detail {
 	// whose bits past position precision are all 0, so y then lies more than 2^(scale(y) - correct)
 	// from the nearest one, and so does the exact result from y's side of it.
 	template<unsigned nlimbs>
-	inline bool can_round(const efloat<nlimbs>& y, unsigned precision, unsigned correct) {
+	inline constexpr bool can_round(const efloat<nlimbs>& y, unsigned precision, unsigned correct) {
 		if (correct < precision + 4) return false;
 		const limb_kernels::limb_t* w = y.limb_data();   // least significant first, leading bit at 63 of the top
 		const std::size_t         m = y.limb_count();
@@ -81,7 +87,7 @@ namespace efloat_detail {
 	// power, ...); what reaches round_ziv is irrational, transcendental or algebraic (exp2(1/2) is
 	// sqrt(2)), or rational but not a binary fraction, so never on a boundary.
 	template<unsigned nlimbs, typename Evaluate>
-	inline efloat<nlimbs> round_ziv(Evaluate evaluate, unsigned precision, unsigned error_bits, bool carries) {
+	inline constexpr efloat<nlimbs> round_ziv(Evaluate evaluate, unsigned precision, unsigned error_bits, bool carries) {
 		unsigned target = precision;
 		efloat<nlimbs> y = evaluate(target);
 		for (int retry = 0; retry < 8 && !y.iszero() && !y.isinf() && !y.isnan() &&
@@ -99,7 +105,7 @@ namespace efloat_detail {
 	// + 32) of itself toward c does. sin, tan and exp of a tiny x, whose leading term is exact and
 	// whose next one lies below any working precision, round this way.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> round_near(efloat<nlimbs> value, int direction, unsigned precision, bool carries) {
+	inline constexpr efloat<nlimbs> round_near(efloat<nlimbs> value, int direction, unsigned precision, bool carries) {
 		const int64_t s = value.scale();
 		value.set_precision(precision + 64);
 		efloat<nlimbs> tick(1.0);
@@ -112,7 +118,7 @@ namespace efloat_detail {
 
 	// The number of significant bits of a finite x != 0: from its leading bit to its last 1 bit
 	template<unsigned nlimbs>
-	inline unsigned significant_bits(const efloat<nlimbs>& x) {
+	inline constexpr unsigned significant_bits(const efloat<nlimbs>& x) {
 		const limb_kernels::limb_t* w = x.limb_data();   // least significant first, leading bit at 63 of the top
 		const std::size_t         m = x.limb_count();
 		for (std::size_t i = 0; i < m; ++i) {
@@ -123,13 +129,13 @@ namespace efloat_detail {
 
 	// whether a finite x is an integer
 	template<unsigned nlimbs>
-	inline bool is_integer(const efloat<nlimbs>& x) {
+	inline constexpr bool is_integer(const efloat<nlimbs>& x) {
 		return x.iszero() || (x.scale() >= 0 && static_cast<int64_t>(significant_bits(x)) <= x.scale() + 1);
 	}
 
 	// a finite integer x, |x| < 2^62, as an int64_t: its significand's bits down to the units bit
 	template<unsigned nlimbs>
-	inline int64_t integer_value(const efloat<nlimbs>& x) {
+	inline constexpr int64_t integer_value(const efloat<nlimbs>& x) {
 		if (x.iszero()) return 0;
 		const limb_kernels::limb_t* w = x.limb_data();   // least significant first, leading bit at 63 of the top
 		const std::size_t         m = x.limb_count();
@@ -145,7 +151,7 @@ namespace efloat_detail {
 	// x^n for a finite x != 0 and n >= 1, exactly: carried at the n significant_bits(x) bits the
 	// power needs, so that no partial product rounds
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> exact_power(const efloat<nlimbs>& x, uint64_t n) {
+	inline constexpr efloat<nlimbs> exact_power(const efloat<nlimbs>& x, uint64_t n) {
 		const unsigned bits = static_cast<unsigned>(n * significant_bits(x)) + 32u;
 		efloat<nlimbs> base(x);
 		base.set_precision(bits);
@@ -162,13 +168,13 @@ namespace efloat_detail {
 
 	// the weight of a finite x != 0's last 1 bit: x is an integer multiple of 2^lowest_bit(x)
 	template<unsigned nlimbs>
-	inline int64_t lowest_bit(const efloat<nlimbs>& x) {
+	inline constexpr int64_t lowest_bit(const efloat<nlimbs>& x) {
 		return x.scale() - static_cast<int64_t>(significant_bits(x)) + 1;
 	}
 
 	// x carried at `bits` bits or wider, unchanged: widening only appends zeros
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> widened(const efloat<nlimbs>& x, unsigned bits) {
+	inline constexpr efloat<nlimbs> widened(const efloat<nlimbs>& x, unsigned bits) {
 		efloat<nlimbs> w(x);
 		w.set_precision(std::max(bits, x.get_precision()));
 		return w;
@@ -182,7 +188,7 @@ namespace efloat_detail {
 	// significant first, with |x| = P 2^(scale(x) - 64 m + 1) for the m limbs returned (#1802):
 	// the limbs x holds (#1820)
 	template<unsigned nlimbs>
-	inline std::size_t pack_significand(limb_kernels::limb_t* p, const efloat<nlimbs>& x) {
+	inline constexpr std::size_t pack_significand(limb_kernels::limb_t* p, const efloat<nlimbs>& x) {
 		const limb_kernels::limb_t* w = x.limb_data();
 		const std::size_t         m = x.limb_count();
 		for (std::size_t j = 0; j < m; ++j) p[j] = w[j];
@@ -191,7 +197,7 @@ namespace efloat_detail {
 
 	// x y exactly, for finite x and y (#1783): the product of a and b significant bits has a + b
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> exact_product(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
+	inline constexpr efloat<nlimbs> exact_product(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 		if (x.iszero() || y.iszero()) return x * y;
 		const unsigned bits = significant_bits(x) + significant_bits(y);
 		return widened(x, bits) * widened(y, bits);
@@ -204,7 +210,7 @@ namespace efloat_detail {
 	// any precision whose rounding boundaries are multiples of 2^(L - 1): every precision up to
 	// pad - 2 bits, and, for a square root, every precision up to (pad - 4) / 2.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> exact_sum(const efloat<nlimbs>& a, const efloat<nlimbs>& b, unsigned pad) {
+	inline constexpr efloat<nlimbs> exact_sum(const efloat<nlimbs>& a, const efloat<nlimbs>& b, unsigned pad) {
 		if (a.iszero() || b.iszero()) {
 			const unsigned bits = std::max(a.get_precision(), b.get_precision());
 			return widened(a, bits) + widened(b, bits);   // a zero adds exactly, with IEEE's zero signs
@@ -235,8 +241,8 @@ namespace efloat_detail {
 	inline constexpr double exp_range_limit = 4611686018427387904.0;   // 2^62
 
 	template<unsigned nlimbs>
-	inline bool exp_beyond_range(const efloat<nlimbs>& x, double log2_base) {
-		return x.scale() >= 63 || std::fabs(double(x)) * log2_base >= exp_range_limit;
+	inline constexpr bool exp_beyond_range(const efloat<nlimbs>& x, double log2_base) {
+		return x.scale() >= 63 || fp::fabs(double(x)) * log2_base >= exp_range_limit;
 	}
 
 	inline constexpr double log2_e  = 1.4426950408889634;
@@ -245,18 +251,18 @@ namespace efloat_detail {
 	// exp of an argument beyond exp's range: 0 below and inf above, inexact, at the result's
 	// precision
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> exp_out_of_range(bool negative, unsigned precision, bool carries) {
+	inline constexpr efloat<nlimbs> exp_out_of_range(bool negative, unsigned precision, bool carries) {
 		efloat<nlimbs> result(0.0);
 		if (!negative) result.setinf(false);
 		round_result(result, precision, carries);
-		efloat_exception_flags.set((negative ? ExceptionFlag::Underflow : ExceptionFlag::Overflow) | ExceptionFlag::Inexact);
+		raise_flags((negative ? ExceptionFlag::Underflow : ExceptionFlag::Overflow) | ExceptionFlag::Inexact);
 		return result;
 	}
 
 	// atanh(1/m) = sum_k 1 / ((2k + 1) m^(2k + 1)) for an integer m >= 2, at `bits` bits.
 	// The terms fall by m^2 each, so the series converges by 2 log2(m) bits per term.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> atanh_reciprocal(unsigned m, unsigned bits) {
+	inline constexpr efloat<nlimbs> atanh_reciprocal(unsigned m, unsigned bits) {
 		efloat<nlimbs> one(1.0);
 		one.set_precision(bits);
 		const efloat<nlimbs> m2(static_cast<double>(m) * static_cast<double>(m));
@@ -271,17 +277,31 @@ namespace efloat_detail {
 		return sum;
 	}
 
-	// ln 2 and ln 10 at `bits` bits, computed rather than parsed: a literal stops being right
-	// at its last digit (the 59-digit ones did at ~196 bits, #1712).  ln 2 = 2 atanh(1/3) and
-	// ln 10 = 3 ln 2 + ln(5/4) = 3 ln 2 + 2 atanh(1/9), each summed with 32 guard bits.  The
-	// widest value computed so far is kept per thread, and narrower requests are rounded from it.
-	template<unsigned nlimbs>
-	inline efloat<nlimbs> ln2(unsigned bits) {
+	// The constants the functions compute with -- ln 2, ln 10, pi, 2 / sqrt(pi), log(2 pi) / 2,
+	// the log table -- are kept per thread at the widest precision computed so far, and narrower
+	// requests are rounded from it. A constant evaluation cannot keep a thread's cache, or any
+	// value past the call that makes it (#1819): there each request computes its value, at the
+	// same 32 guard bits, and rounds it once. constant_value(bits, compute, cache) is that choice:
+	// compute(width) returns the value at `width` bits, and cache(bits) the cached one.
+	template<unsigned nlimbs, typename Compute, typename Cache>
+	inline constexpr efloat<nlimbs> constant_value(unsigned bits, Compute compute, Cache cache) {
+		if (std::is_constant_evaluated()) {
+			efloat<nlimbs> value = compute(bits + 32);
+			value.set_precision(bits);
+			return value;
+		}
+		return cache(bits);
+	}
+
+	// a per-thread cache of the constant compute(width) returns: the widest value computed so far,
+	// 32 bits past its precision, rounded to `bits`. Each instantiation is its own cache, so each
+	// constant has a Compute type of its own.
+	template<unsigned nlimbs, typename Compute>
+	inline efloat<nlimbs> cached_constant(unsigned bits, Compute compute) {
 		thread_local efloat<nlimbs> cached;
 		thread_local unsigned cached_bits = 0;
 		if (cached_bits < bits) {
-			cached = atanh_reciprocal<nlimbs>(3, bits + 32);
-			cached.setexponent(cached.scale() + 1);
+			cached = compute(bits + 32);
 			cached_bits = bits;
 		}
 		efloat<nlimbs> value(cached);
@@ -289,19 +309,35 @@ namespace efloat_detail {
 		return value;
 	}
 
+	// ln 2 and ln 10 at `bits` bits, computed rather than parsed: a literal stops being right
+	// at its last digit (the 59-digit ones did at ~196 bits, #1712).  ln 2 = 2 atanh(1/3) and
+	// ln 10 = 3 ln 2 + ln(5/4) = 3 ln 2 + 2 atanh(1/9), each summed with 32 guard bits.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> ln10(unsigned bits) {
-		thread_local efloat<nlimbs> cached;
-		thread_local unsigned cached_bits = 0;
-		if (cached_bits < bits) {
-			efloat<nlimbs> a = atanh_reciprocal<nlimbs>(9, bits + 32);
-			a.setexponent(a.scale() + 1);
-			cached = ln2<nlimbs>(bits + 32) * efloat<nlimbs>(3.0) + a;
-			cached_bits = bits;
+	struct ln2_constant {
+		constexpr efloat<nlimbs> operator()(unsigned width) const {
+			efloat<nlimbs> value = atanh_reciprocal<nlimbs>(3, width);
+			value.setexponent(value.scale() + 1);
+			return value;
 		}
-		efloat<nlimbs> value(cached);
-		value.set_precision(bits);
-		return value;
+	};
+
+	template<unsigned nlimbs>
+	inline constexpr efloat<nlimbs> ln2(unsigned bits) {
+		return constant_value<nlimbs>(bits, ln2_constant<nlimbs>{}, [](unsigned b) { return cached_constant<nlimbs>(b, ln2_constant<nlimbs>{}); });
+	}
+
+	template<unsigned nlimbs>
+	struct ln10_constant {
+		constexpr efloat<nlimbs> operator()(unsigned width) const {
+			efloat<nlimbs> a = atanh_reciprocal<nlimbs>(9, width);
+			a.setexponent(a.scale() + 1);
+			return ln2<nlimbs>(width) * efloat<nlimbs>(3.0) + a;
+		}
+	};
+
+	template<unsigned nlimbs>
+	inline constexpr efloat<nlimbs> ln10(unsigned bits) {
+		return constant_value<nlimbs>(bits, ln10_constant<nlimbs>{}, [](unsigned b) { return cached_constant<nlimbs>(b, ln10_constant<nlimbs>{}); });
 	}
 
 }  // namespace efloat_detail
@@ -320,7 +356,7 @@ namespace efloat_detail {
 
 		// R[0, n) = floor(|v| 2^shift), for a finite v with |v| 2^shift < 2^(64 n)
 		template<unsigned nlimbs>
-		inline void to_fixed(const efloat<nlimbs>& v, int64_t shift, limb_t* R, std::size_t n) noexcept {
+		inline constexpr void to_fixed(const efloat<nlimbs>& v, int64_t shift, limb_t* R, std::size_t n) noexcept {
 			for (std::size_t i = 0; i < n; ++i) R[i] = 0;
 			if (v.iszero()) return;
 			const limb_t*     w = v.limb_data();   // least significant first, leading bit at 63 of the top
@@ -332,7 +368,7 @@ namespace efloat_detail {
 		// A[0, len) 2^(scale - 64 len + 1) as an efloat, exactly: the top bit of A[len - 1] weighs
 		// 2^scale. The exponent is set raw, so a value past the range overflows when it is rounded.
 		template<unsigned nlimbs>
-		inline efloat<nlimbs> from_fixed(const limb_t* A, std::size_t len, int64_t scale) {
+		inline constexpr efloat<nlimbs> from_fixed(const limb_t* A, std::size_t len, int64_t scale) {
 			efloat<nlimbs> v(1);
 			v.set_significand(A, len);
 			v.setexponent(0);
@@ -343,7 +379,7 @@ namespace efloat_detail {
 
 		// q[0, n) = floor(a[0, n) / d) for any d > 0: the quotient of a 2^l by d 2^l, d 2^l
 		// normalized, one 2-by-1 step per limb with Moller and Granlund's reciprocal
-		inline void div_1(limb_t* q, const limb_t* a, std::size_t n, limb_t d) noexcept {
+		inline constexpr void div_1(limb_t* q, const limb_t* a, std::size_t n, limb_t d) noexcept {
 			const unsigned l  = static_cast<unsigned>(std::countl_zero(d));
 			const limb_t   dn = d << l;
 			const limb_t   v  = limb_kernels::invert_limb(dn);
@@ -355,7 +391,7 @@ namespace efloat_detail {
 		}
 
 		// out[0, outn) = floor(a[0, len) / 2^shift), the limbs past a's end zero
-		inline void shift_right(limb_t* out, std::size_t outn, const limb_t* a, std::size_t len, uint64_t shift) noexcept {
+		inline constexpr void shift_right(limb_t* out, std::size_t outn, const limb_t* a, std::size_t len, uint64_t shift) noexcept {
 			const std::size_t q = static_cast<std::size_t>(shift / 64u);
 			const unsigned    b = static_cast<unsigned>(shift % 64u);
 			for (std::size_t i = 0; i < outn; ++i) {
@@ -366,21 +402,33 @@ namespace efloat_detail {
 		}
 
 		// r[0, n) = a + b or a - b (a >= b), n limbs
-		inline void add_or_sub(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, bool subtract) noexcept {
+		inline constexpr void add_or_sub(limb_t* r, const limb_t* a, const limb_t* b, std::size_t n, bool subtract) noexcept {
 			if (subtract) limb_kernels::sub_n(r, a, b, n); else limb_kernels::add_n(r, a, b, n);
 		}
 
-		// log2(k!), from a table below 4096 and Stirling's series above, where it is within 2^-40
-		inline double log2_factorial(unsigned k) noexcept {
+		// log2(k!), from a table below 4096 and Stirling's series above, where it is within 2^-40.
+		// A constant evaluation sums the table's entry itself, the same additions in the same order.
+		inline constexpr unsigned log2_factorial_table = 4096;
+
+		inline const std::vector<double>& log2_factorials() {
 			static const std::vector<double> table = [] {
-				std::vector<double> t(4096);
+				std::vector<double> t(log2_factorial_table);
 				t[0] = 0.0;
-				for (std::size_t i = 1; i < t.size(); ++i) t[i] = t[i - 1] + std::log2(static_cast<double>(i));
+				for (std::size_t i = 1; i < t.size(); ++i) t[i] = t[i - 1] + fp::log2(static_cast<double>(i));
 				return t;
 			}();
-			if (k < table.size()) return table[k];
+			return table;
+		}
+
+		inline constexpr double log2_factorial(unsigned k) noexcept {
+			if (k < log2_factorial_table) {
+				if (!std::is_constant_evaluated()) return log2_factorials()[k];
+				double sum = 0.0;
+				for (unsigned i = 1; i <= k; ++i) sum += fp::log2(static_cast<double>(i));
+				return sum;
+			}
 			const double x = static_cast<double>(k);
-			return (x * std::log(x) - x + 0.5 * std::log(2.0 * 3.141592653589793 * x) + 1.0 / (12.0 * x)) / 0.6931471805599453;
+			return (x * fp::log(x) - x + 0.5 * fp::log(2.0 * 3.141592653589793 * x) + 1.0 / (12.0 * x)) / 0.6931471805599453;
 		}
 
 		// The series sum_k (+-1)^k s^k / (d(1) d(2) ... d(k)): d(t) = t for exp, and
@@ -395,16 +443,16 @@ namespace efloat_detail {
 		}
 
 		// log2 of the divisor of the N-th term: d(1) ... d(N), or 2N + 1 for the arctangent
-		inline double log2_divisors(divisors kind, unsigned N) noexcept {
+		inline constexpr double log2_divisors(divisors kind, unsigned N) noexcept {
 			if (kind == divisors::exponential) return log2_factorial(N);
 			if (kind == divisors::versine) return log2_factorial(2 * N + 2) - 1.0;
-			return std::log2(2.0 * static_cast<double>(N) + 1.0);
+			return fp::log2(2.0 * static_cast<double>(N) + 1.0);
 		}
 
 		// the number of terms N for which s^N / (d(1) ... d(N)) < 2^-(F + 4), for s < 2^-a, a >= 1:
 		// the tail past it, below twice its first term, is then below 2^-(F + 3). N a + log2 of the
 		// divisors grows with N, so the least N past F + 4 is found by bisection.
-		inline unsigned series_terms(int64_t a, unsigned F, divisors kind = divisors::exponential) noexcept {
+		inline constexpr unsigned series_terms(int64_t a, unsigned F, divisors kind = divisors::exponential) noexcept {
 			const double need = static_cast<double>(F) + 4.0;
 			auto enough = [a, need, kind](unsigned N) { return static_cast<double>(N) * static_cast<double>(a) + log2_divisors(kind, N) > need; };
 			unsigned lo = 1, hi = static_cast<unsigned>(need / static_cast<double>(a)) + 1u;   // enough(hi)
@@ -417,10 +465,10 @@ namespace efloat_detail {
 
 		// the block length m of the rectangular splitting: about sqrt(N), and short enough that the
 		// divisor of a block, a product of m divisors up to d(N + m), fits in a limb
-		inline unsigned block_length(unsigned N, divisors kind = divisors::exponential) noexcept {
-			unsigned m = static_cast<unsigned>(std::ceil(std::sqrt(static_cast<double>(N))));
+		inline constexpr unsigned block_length(unsigned N, divisors kind = divisors::exponential) noexcept {
+			unsigned m = static_cast<unsigned>(fp::ceil(fp::sqrt(static_cast<double>(N))));
 			if (m < 1u) m = 1u;
-			while (m > 1u && static_cast<double>(m) * std::log2(static_cast<double>(divisor(kind, N + m))) >= 63.0) --m;
+			while (m > 1u && static_cast<double>(m) * fp::log2(static_cast<double>(divisor(kind, N + m))) >= 63.0) --m;
 			return m;
 		}
 
@@ -430,8 +478,8 @@ namespace efloat_detail {
 		// bits, 23 at 8192. Without tapering the optimum was 0.4 sqrt(F) (#1788), and a cost model
 		// with a scalar step at a tenth of a product chose 34 and 46 there and ran 1.8x and 1.05x
 		// slower.
-		inline unsigned halving_target(unsigned F) noexcept {
-			const unsigned T = static_cast<unsigned>(0.25 * std::sqrt(static_cast<double>(F)) + 0.5);
+		inline constexpr unsigned halving_target(unsigned F) noexcept {
+			const unsigned T = static_cast<unsigned>(0.25 * fp::sqrt(static_cast<double>(F)) + 0.5);
 			return (T < 2u) ? 2u : T;
 		}
 
@@ -442,11 +490,30 @@ namespace efloat_detail {
 			return space.data();
 		}
 
+		// scratch limbs for one series: the thread's, or in a constant evaluation, which cannot
+		// reach them, a vector of its own (#1819)
+		class scratch_space {
+		public:
+			constexpr explicit scratch_space(std::size_t limbs) : own{}, p{ nullptr } {
+				if (std::is_constant_evaluated()) {
+					own.resize(limbs);
+					p = own.data();
+				}
+				else {
+					p = scratch(limbs);
+				}
+			}
+			constexpr limb_t* data() noexcept { return p; }
+		private:
+			std::vector<limb_t> own;
+			limb_t* p;
+		};
+
 		// a b / B^drop truncated, na + nb - drop limbs, returned where they lie: below
 		// truncated_min_limbs the exact floor, the top of the full product formed in tmp[0, na + nb)
 		// as before #1807; from it a truncated short product within 2 units
 		// (limb_kernels::mul_truncated), formed in tmp
-		inline const limb_t* truncated_product(const limb_t* a, std::size_t na, const limb_t* b, std::size_t nb,
+		inline constexpr const limb_t* truncated_product(const limb_t* a, std::size_t na, const limb_t* b, std::size_t nb,
 		                                       std::size_t drop, limb_t* tmp, limb_t* s) noexcept {
 			if (na < limb_kernels::truncated_min_limbs || nb < limb_kernels::truncated_min_limbs) {
 				if (a == b && na == nb) limb_kernels::mul_n(tmp, a, a, na, s, true);
@@ -471,11 +538,12 @@ namespace efloat_detail {
 		// on the top n - q_b limbs, 64 q_b <= G_b - 8, and its truncation, 2^-(F - 64 q_b) scaled
 		// by A_b, stays below 2^-(F + 8). The Horner value moves down a block by gaining the limbs
 		// the next block keeps. a = 0 turns tapering off.
-		inline void series(limb_t* E, const limb_t* R, std::size_t n, bool negative, unsigned N, unsigned m,
+		inline constexpr void series(limb_t* E, const limb_t* R, std::size_t n, bool negative, unsigned N, unsigned m,
 		                   divisors kind = divisors::exponential, int64_t a = 0) {
 			const std::size_t w  = n + 1;           // a value below 2^64
 			const unsigned    nb = (N + m - 1) / m; // blocks
-			limb_t* P   = scratch((m + 1) * w + 2 * (2 * w + 2) + 2 * (w + 1) + limb_kernels::truncated_scratch_limbs(w, w, w - 1));
+			scratch_space P_space((m + 1) * w + 2 * (2 * w + 2) + 2 * (w + 1) + limb_kernels::truncated_scratch_limbs(w, w, w - 1));
+			limb_t* P   = P_space.data();
 			limb_t* tmp = P + (m + 1) * w;          // a product, 2 w limbs
 			limb_t* acc = tmp + (2 * w + 2);        // the Horner value, w limbs
 			limb_t* pos = acc + (2 * w + 2);        // a block's numerator terms of either sign, w + 1 limbs
@@ -551,11 +619,12 @@ namespace efloat_detail {
 		//
 		// Tapering, as in series: block b enters scaled by z^(b m) < 2^-(b m a), so it is formed on
 		// the top n - q_b limbs, 64 q_b <= b m a - 8, and its truncation stays below 2^-(F + 8).
-		inline void arctangent_series(limb_t* S, const limb_t* Z, std::size_t n, unsigned N, unsigned m, int64_t a,
+		inline constexpr void arctangent_series(limb_t* S, const limb_t* Z, std::size_t n, unsigned N, unsigned m, int64_t a,
 		                              bool alternating = true) {
 			const std::size_t w  = n + 1;
 			const unsigned    nb = (N + m - 1) / m; // blocks
-			limb_t* P   = scratch((m + 1) * w + (2 * w + 2) + 3 * (w + 2) + limb_kernels::truncated_scratch_limbs(w, w, w - 1));
+			scratch_space P_space((m + 1) * w + (2 * w + 2) + 3 * (w + 2) + limb_kernels::truncated_scratch_limbs(w, w, w - 1));
+			limb_t* P   = P_space.data();
 			limb_t* tmp = P + (m + 1) * w;          // a product or a quotient, 2 w + 2 limbs
 			limb_t* acc = tmp + (2 * w + 2);        // the Horner value, w + 2 limbs
 			limb_t* blk = acc + (w + 2);            // a block's sum
@@ -631,15 +700,17 @@ namespace efloat_detail {
 
 		// E[0, n + 1) = E^2, truncated to F fraction bits; from truncated_min_limbs a truncated short
 		// product within 2 units of E's last limb (#1807)
-		inline void square(limb_t* E, std::size_t n) {
+		inline constexpr void square(limb_t* E, std::size_t n) {
 			const std::size_t w = n + 1;
 			if (w < limb_kernels::truncated_min_limbs) {
-				limb_t* tmp = scratch(2 * w + limb_kernels::scratch_limbs(w));
+				scratch_space tmp_space(2 * w + limb_kernels::scratch_limbs(w));
+				limb_t* tmp = tmp_space.data();
 				limb_kernels::mul_n(tmp, E, E, w, tmp + 2 * w, true);
 				for (std::size_t i = 0; i < w; ++i) E[i] = tmp[n + i];
 				return;
 			}
-			limb_t* tmp = scratch((w + 1) + limb_kernels::truncated_scratch_limbs(w, w, n));
+			scratch_space tmp_space((w + 1) + limb_kernels::truncated_scratch_limbs(w, w, n));
+			limb_t* tmp = tmp_space.data();
 			limb_kernels::mul_truncated(tmp, E, w, E, w, n, tmp + w + 1);   // w + 1 limbs, the top one 0
 			for (std::size_t i = 0; i < w; ++i) E[i] = tmp[i];
 		}
@@ -663,7 +734,7 @@ namespace efloat_detail {
 	// 2^(h + 11 - F) <= 2^-(precision + 64 + 5) of its value, far inside exp_error_bits; r's own
 	// rounding at the working precision adds 2^-(working + 1).
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> exp_working(const efloat<nlimbs>& x, unsigned precision) {
+	inline constexpr efloat<nlimbs> exp_working(const efloat<nlimbs>& x, unsigned precision) {
 		using fixed_series::limb_t;
 		const unsigned T       = fixed_series::halving_target(precision + 64u + 16u);
 		const unsigned working = precision + efloat_detail::exp_log_guard_bits + T;
@@ -672,11 +743,11 @@ namespace efloat_detail {
 		// error at any |k| < 2^62, and one width serves every k from the cache. x / ln 2 in double
 		// is within 2^-53 |x| of the exact quotient, so past 2^52 k is corrected once from the r it
 		// leaves, keeping |r| <= ln 2 / 2 as the halvings assume.
-		int64_t k = static_cast<int64_t>(std::round(double(x) * log2_e));
+		int64_t k = static_cast<int64_t>(fp::round(double(x) * log2_e));
 		const efloat<nlimbs> ln2 = efloat_detail::ln2<nlimbs>(working + 64u);
 		efloat<nlimbs> r = x - efloat<nlimbs>(k) * ln2;
 		if (!r.iszero() && r.scale() >= 0) {
-			k += static_cast<int64_t>(std::round(double(r) * log2_e));
+			k += static_cast<int64_t>(fp::round(double(r) * log2_e));
 			r = x - efloat<nlimbs>(k) * ln2;
 		}
 		r.set_precision(working);
@@ -710,7 +781,7 @@ namespace efloat_detail {
 	// `precision` bits plus guard bits: the product carries scale(x) + 3 more bits than exp's
 	// working precision, so that its absolute error stays below 2^-(precision + guard bits)
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> exp_base_working(const efloat<nlimbs>& x, unsigned precision, bool ten) {
+	inline constexpr efloat<nlimbs> exp_base_working(const efloat<nlimbs>& x, unsigned precision, bool ten) {
 		const unsigned working = precision + exp_log_guard_bits + static_cast<unsigned>(std::max<int64_t>(0, x.scale() + 3));
 		efloat<nlimbs> t(x);
 		t.set_precision(working);
@@ -723,13 +794,13 @@ namespace efloat_detail {
 	// without its leading 1, for r = x / 2^h, and doubled back h times by exp(2r) - 1 = u (u + 2),
 	// so that u keeps its relative precision as x -> 0, as the versine does for cos (#1756).
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> expm1_working(const efloat<nlimbs>& x, unsigned precision) {
+	inline constexpr efloat<nlimbs> expm1_working(const efloat<nlimbs>& x, unsigned precision) {
 		if (x.scale() >= -1) {
 			efloat<nlimbs> e = exp_working(x, precision + 2);
 			e -= 1;
 			return e;
 		}
-		const unsigned halvings = static_cast<unsigned>(std::sqrt(static_cast<double>(precision)));
+		const unsigned halvings = static_cast<unsigned>(fp::sqrt(static_cast<double>(precision)));
 		const int64_t  h_signed = static_cast<int64_t>(halvings) + x.scale();   // halvings that bring r below 2^-halvings
 		const unsigned h        = (h_signed > 0) ? static_cast<unsigned>(h_signed) : 0u;
 		const unsigned working  = precision + exp_log_guard_bits + h;
