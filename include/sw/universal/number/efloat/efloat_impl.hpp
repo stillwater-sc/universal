@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <algorithm>  // std::max, std::min, std::find_if
-#include <cctype>     // std::isspace, std::tolower, in parse()
+#include <algorithm>  // std::max, std::min
+#include <array>      // std::array, to_double_expansion()
 #include <bit>        // std::bit_width, std::endian
 #include <cstddef>    // std::size_t
 #include <cstdint>
@@ -14,6 +14,7 @@
 #include <ios>        // std::streamsize, taken by to_string(); no stream is opened
 #include <limits>     // std::numeric_limits
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>    // std::move
 #include <vector>
@@ -153,14 +154,14 @@ public:
 	static constexpr std::size_t inline_limbs = efloat_inline_limbs(nlimbs);
 
 	// Constant evaluation (#747, #1819): the integer, dyadic, float and double constructors, the
-	// conversions to float and double, +, -, *, /, the compound operators, the comparisons and
-	// the math library run in a constant expression, with the same results as at run time. The limb_kernels kernels take their portable loops there instead
+	// conversions to float and double, +, -, *, /, the compound operators, the comparisons, the
+	// math library and parse() run in a constant expression, with the same results as at run
+	// time. The limb_kernels kernels take their portable loops there instead
 	// of the assembly, the scratch past the inline limbs comes from new and delete instead of the
 	// thread's block cache, the rounding is to nearest and no status flag is raised: the thread's
 	// mode and flags are out of a constant expression's reach (rounding_mode(), raise_flags()). A
 	// value whose limbs fit the inline buffer can be a constexpr variable; a larger one cannot
-	// keep its heap block. Not yet: parse() (std::string), and long double, whose encodings are
-	// read and written with memcpy.
+	// keep its heap block. Not yet: long double, whose encodings are read and written with memcpy.
 	constexpr efloat() noexcept
 		: _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{} {
 		_limb.assign(1, 0u);   // zero holds one limb of 0, as bits() shows it
@@ -644,7 +645,7 @@ public:
 		store_short<M>(t, below, rest, exponent, sign);
 	}
 
-	efloat& assign(const std::string& txt) {
+	constexpr efloat& assign(std::string_view txt) {
 		parse(txt, *this);
 		return *this;
 	}
@@ -2346,6 +2347,27 @@ inline constexpr efloat<nlimbs> fabs(const efloat<nlimbs>& a) {
 	return abs(a);
 }
 
+// to_double_expansion<N>(v): v as N doubles, each the conversion of what the ones before it
+// left, so that their sum is v to about 53 N bits: hi and lo for a dd, four for a qd. In
+// round-to-nearest, which a constant evaluation always uses, the components do not overlap.
+// Each residual is exact at v's precision. Past the double range the first component is the
+// infinity or the zero the conversion gives and the rest are 0; a NaN gives NaN, 0, ... 0.
+// constexpr, so a constant evaluation can hand an efloat result to a fixed-size type (#1819).
+template<std::size_t N, unsigned nlimbs>
+inline constexpr std::array<double, N> to_double_expansion(const efloat<nlimbs>& v) {
+	std::array<double, N> out{};
+	efloat<nlimbs> rest(v);
+	for (std::size_t i = 0; i < N; ++i) {
+		const double c = double(rest);
+		out[i] = c;
+		constexpr double largest = std::numeric_limits<double>::max();
+		if (rest.isnan() || rest.isinf() || c > largest || c < -largest) break;   // NaN, infinity, or an overflow to one
+		rest -= efloat<nlimbs>(c);
+		if (rest.iszero()) break;
+	}
+	return out;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// string parsing
 
@@ -2367,7 +2389,7 @@ enum class parse_outcome { done, undecided, refused };
 // case is `undecided`, and parse() looks at more digits. `refused` is a literal whose exact
 // conversion needs more working bits than the converter has.
 template<unsigned W, unsigned nlimbs>
-parse_outcome round_into(const sw::universal::string_parse::decimal_float_scan& d, unsigned target_bits,
+inline constexpr parse_outcome round_into(const sw::universal::string_parse::decimal_float_scan& d, unsigned target_bits,
                          bool inexact, efloat<nlimbs>& value) {
 	using Big = sw::universal::decimal_to_binary::big_integer<W>;
 	const unsigned work = target_bits + guard_bits;
@@ -2430,6 +2452,29 @@ parse_outcome round_into(const sw::universal::string_parse::decimal_float_scan& 
 	return parse_outcome::done;
 }
 
+// ASCII whitespace and case, as std::isspace and std::tolower see them in the "C" locale.
+// Those two are not constexpr.
+inline constexpr bool is_space(char c) noexcept {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
+}
+inline constexpr char to_lower(char c) noexcept {
+	return (c >= 'A' && c <= 'Z') ? static_cast<char>(c - 'A' + 'a') : c;
+}
+
+// append the decimal digits of e, with a '-' when it is negative (std::to_string is not constexpr)
+inline constexpr void append_decimal(std::string& text, std::int64_t e) {
+	const bool negative = e < 0;
+	std::uint64_t u = negative ? std::uint64_t(0) - static_cast<std::uint64_t>(e) : static_cast<std::uint64_t>(e);
+	char buffer[24]{};
+	std::size_t n = 0;
+	do {
+		buffer[n++] = static_cast<char>('0' + u % 10u);
+		u /= 10u;
+	} while (u != 0u);
+	if (negative) text.push_back('-');
+	while (n > 0) text.push_back(buffer[--n]);
+}
+
 }  // namespace efloat_parse_detail
 
 // read an ASCII decimal literal and make a binary efloat out of it.
@@ -2448,8 +2493,10 @@ parse_outcome round_into(const sw::universal::string_parse::decimal_float_scan& 
 // Returns false, and leaves a zero, for text that is not a number. A well-formed literal the
 // converter cannot reach -- a decimal exponent beyond about +/-13000 at ordinary precision --
 // returns false and leaves a NaN.
+//
+// parse() is constexpr, and a constant evaluation reads a literal as the run time does (#1819).
 template<unsigned BigBits, unsigned nlimbs>
-bool parse(const std::string& txt, efloat<nlimbs>& value) {
+inline constexpr bool parse(std::string_view txt, efloat<nlimbs>& value) {
 	// clear() leaves the Normal state with NO limbs, which is the state the digit loop
 	// below builds on -- but it is also a value no arithmetic produces: not zero to
 	// iszero() or operator==, printing as 0.000000e-01, with a truncated to_binary. Every
@@ -2458,12 +2505,12 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	// path now leaves the canonical zero instead.
 	value.clear();
 
-	std::string s = txt;
+	using namespace efloat_parse_detail;
+
 	// trim ASCII whitespace
-	auto not_space = [](unsigned char c) { return !std::isspace(c); };
-	auto first = std::find_if(s.begin(), s.end(), not_space);
-	auto last  = std::find_if(s.rbegin(), s.rend(), not_space).base();
-	s = (first < last) ? std::string(first, last) : std::string{};
+	std::string_view s = txt;
+	while (!s.empty() && is_space(s.front())) s.remove_prefix(1);
+	while (!s.empty() && is_space(s.back())) s.remove_suffix(1);
 	if (s.empty()) {
 		value.setzero();   // empty or whitespace-only input
 		return false;
@@ -2480,7 +2527,7 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 		std::string tok;
 		tok.reserve(s.size() - i);
 		for (std::size_t k = i; k < s.size(); ++k) {
-			tok.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(s[k]))));
+			tok.push_back(to_lower(s[k]));
 		}
 		if (tok == "nan") {
 			value.setnan(true);
@@ -2502,7 +2549,6 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 	// The target is the value's precision, with no ceiling taken from BigBits: the converter
 	// widens its intermediates as the literal needs, and the result is chosen wide enough to
 	// hold target + guard bits.
-	using namespace efloat_parse_detail;
 	constexpr unsigned widest = sw::universal::decimal_to_binary::widest_working_bits;
 	unsigned target_bits = std::max(1u, value.get_precision());
 	if (target_bits + guard_bits + 2u > widest) target_bits = widest - guard_bits - 2u;
@@ -2572,7 +2618,7 @@ bool parse(const std::string& txt, efloat<nlimbs>& value) {
 		if (scan.negative) text.push_back('-');
 		text.append(digits, leading, keep);
 		text.push_back('e');
-		text.append(std::to_string(last));
+		append_decimal(text, last);
 		auto truncated = sw::universal::string_parse::scan_decimal_float(text);
 		if (!truncated.valid) break;   // the exponent is out of the scanner's range
 		const unsigned t = reachable(truncated, target_bits);

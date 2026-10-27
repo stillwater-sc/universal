@@ -617,6 +617,39 @@ state at any precision.
     gamma functions at 64 and 128), compares every result with the run time, checks the exact
     cases and the conversions in `static_assert`, and computes exp(1), pi = acos(-1) and sqrt(2)
     to 1024 bits.
+- **Literals in constant evaluation** (#1819, phase 5). `parse()` takes a `std::string_view` and
+  is `constexpr`, and a constant evaluation reads a literal as the run time does, bit for bit;
+  `assign()`, `efloat_pi()`, `efloat_e()`, `efloat_phi()`, `efloat_pi_2()` and `efloat_pi_4()`
+  are `constexpr` with it, and pi read from its literal at 1024 bits is, in `static_assert`, the
+  limbs of `acos(-1)`.
+  - **The converter.** `parse()` rounds the output of the shared decimal-to-binary converter
+    (`utility/decimal_to_binary.hpp`), which is `constexpr` now for every type that uses it. It
+    computes on `integer<W>` at the narrowest of 256 to 32768 bits that holds the literal. Its
+    magnitude estimate for a short literal with a huge exponent calls `<cmath>`; a constant
+    evaluation refuses such a literal, which efloat's `parse()` refuses before reaching it anyway.
+    The `std::isspace`, `std::tolower` and `std::to_string` calls are ASCII code of its own.
+  - **integer<> multiplication by size.** `integer<W>`'s multiply ran every limb pair of the
+    width, whatever the operands held: the converter collecting 330 digits at 16384 bits did 37
+    products of 512 by 512 limbs. Past 16 limbs (512 bits) a row of a zero limb is skipped and a
+    row ends at the multiplicand's last nonzero limb, then ripples its carry. The products are the
+    same; a parse of 1e-300 or of pi at 128 bits is 2.5-3x faster (of 0.1 unchanged), pi at 1024 bits 6.1 ms -> 0.11 ms, at 3300 bits
+    16.5 ms -> 0.31 ms, and a full-width product at 768 and 1024 bits 1.6-1.9x faster. Up to 16
+    limbs the fixed-trip loop stays, which the compilers unroll; at 17 limbs clang's product is
+    slower (60 -> 80 ns), gcc's faster (96 -> 63 ns).
+  - **The step limits.** pi, e or phi fit clang's default 1048576 steps through 512 bits; 1024
+    and 2048 bits take about 4 million, the 3300 bits of the literal about 16 million clang steps
+    and 64 million gcc operations. The test raises the limits for itself.
+  - **Out of the constant evaluation.** `to_double_expansion<N>(v)` returns v as N doubles, each
+    the conversion of what the ones before it left: hi and lo for a `dd`, four for a `qd`, built in
+    the same constant expression. pi at 384 bits gives `dd_pi` exactly and `qd_pi` but for its
+    fourth component, which is two units above the nearest double to pi - x0 - x1 - x2.
+  - **No run-time change.** 66176 parses (6016 literals at 11 precisions, two widths) and
+    integer<> products at seven widths are the same as before under g++ and clang, as are the
+    cfloat, posit, dd and qd parses of the same literals.
+  - **Verification.** `elastic/efloat/conversion/constexpr_parse.cpp` reads 24 literals, each a
+    constant evaluation of its own, at 64 and 128 bits and at 512 in level 2, compares each with
+    the run time, checks ties to even and the failures in `static_assert`, and compares pi, e and
+    phi with the run time at 128 and 1024 bits, and at 3300 in level 2.
 
 ## 4. The functions
 
@@ -1006,7 +1039,7 @@ Until #1783 these five were computed at the result's precision but rounded more 
 The library computes its own constants at the working precision and caches the widest value
 per thread: `ln2 = 2 atanh(1/3)`, `ln10 = 3 ln2 + 2 atanh(1/9)`, `pi` by Machin's formula,
 `atan(1/2) = atan(1/3) + atan(1/7)`. The public `efloat_pi/e/phi<nlimbs>()` are 1000-digit
-literals that carry the type's width; #1739 stopped using them inside functions, because a
+literals that carry the type's width, `constexpr` since #1819's phase 5; #1739 stopped using them inside functions, because a
 value widened past the type's width was reduced with a narrower `pi`. The first call at a new
 precision pays to fill the caches, which matters for benchmarks.
 
@@ -1366,6 +1399,7 @@ row both ways before reading it as a cost.
 | #1833 | 2026-10-25 | a fixed-size `fma` for operands of one to six limbs that overlap the product (`fma_short`), operands of the general `fma` and `hypot` read in place, the block cache's last-in-first-out slot and a reaper constructed once: `fma` at 64-256 bits 1.05-1.46x MPFR to 0.54-0.92x (clang 1.07-1.44x to 0.46-0.66x), `mpfr_gap` `fma` at 128 bits 1.1x to 0.7x |
 | #1834 | 2026-10-26 | arithmetic in constant evaluation (#1819 phases 1-2): `limb_kernels` `inline constexpr` with the assembly, `divq` and carry builtins behind `std::is_constant_evaluated()`, integer seeds for the roots, `new`/`delete` scratch, the rounding mode and flags out of reach (`rounding_mode()`, `raise_flags()`): the constructors from integers, `+ - * /`, the comparisons and `sqrt` in `static_assert`, bit for bit the run-time results; the same instructions at run time |
 | #1847 | 2026-10-27 | the math library in constant evaluation (#1819 phase 3): cached constants computed per request (`constant_value()`), series scratch of their own, the `double` estimates from `efloat/double_math.hpp` instead of `<cmath>`, float and double converted by their encodings through `round_to_native()`, long double by its encoding: every function in `static_assert`, bit for bit the run-time results; run-time results and speed unchanged; long double now rounds in the current mode |
+| #1848 | 2026-10-27 | literals in constant evaluation (#1819 phase 5): `parse()` from a `std::string_view` and the shared decimal-to-binary converter `constexpr`, `efloat_pi/e/phi()` with them, `to_double_expansion()` for a dd or qd out of a constant evaluation; `integer<>` multiplication past 16 limbs by the operands' sizes, which makes a long literal's parse up to 57x faster; results unchanged |
 
 ## 9. Open work
 
@@ -1386,10 +1420,10 @@ of the difference's 9, which only a result written in place would save; and `fma
 bits (1.2x), past the short path's six limbs, where a seven- and eight-limb version measured
 slower than the general path (section 3).
 
-**Constant evaluation** (#1819, phases 4 and 5): `parse` from a `std::string_view`, and with it
-`efloat_pi()`, `efloat_e()` and `efloat_phi()`, which parse their 1000-digit literals; constexpr
-values past the inline limbs, which need a fixed-capacity type; and the gamma functions within
-the default step limits, which a fixed table of Stirling coefficients would bring.
+**Constant evaluation** (#1819, phase 4): constexpr values past the inline limbs, which need a
+fixed-capacity type; the gamma functions within the default step limits, which a fixed table of
+Stirling coefficients would bring; and pi, e and phi past 512 bits within them, which the
+converter's fixed-width `integer<>` copies and shifts keep from.
 
 ## 10. Working on it
 

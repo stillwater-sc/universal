@@ -505,12 +505,43 @@ public:
 					multiplicant.twosComplement();
 				}
 				clear();
-				for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
-					std::uint64_t segment(0);
-					for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
-						segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
+				if constexpr (nrBlocks <= 16) {
+					// a fixed trip count, which the compilers unroll
+					for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+						std::uint64_t segment(0);
+						for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
+							segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
 
-						if (i + j < static_cast<unsigned>(nrBlocks)) {
+							if (i + j < static_cast<unsigned>(nrBlocks)) {
+								segment += _block[i + j];
+								_block[i + j] = static_cast<bt>(segment);
+								segment >>= bitsInBlock;
+							}
+						}
+					}
+				}
+				else {
+					// a row of a zero limb adds nothing, and a row ends at the multiplicand's last
+					// nonzero limb, or the width, and then ripples its carry: the cost follows the
+					// operands' sizes, not the width, which a wide integer holding a small value
+					// would otherwise pay for (#1819: the decimal converter runs at up to 32768 bits,
+					// in constant evaluation too)
+					unsigned used = static_cast<unsigned>(nrBlocks);
+					while (used > 0 && multiplicant.block(used - 1) == 0) --used;
+					for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+						const std::uint64_t limb = static_cast<std::uint64_t>(base.block(i));
+						if (limb == 0) continue;
+						const unsigned row = static_cast<unsigned>(nrBlocks) - i;
+						const unsigned last = (used < row) ? used : row;
+						std::uint64_t segment(0);
+						unsigned j = 0;
+						for (; j < last; ++j) {
+							segment += limb * static_cast<std::uint64_t>(multiplicant.block(j));
+							segment += _block[i + j];
+							_block[i + j] = static_cast<bt>(segment);
+							segment >>= bitsInBlock;
+						}
+						for (; segment != 0 && j < row; ++j) {
 							segment += _block[i + j];
 							_block[i + j] = static_cast<bt>(segment);
 							segment >>= bitsInBlock;
