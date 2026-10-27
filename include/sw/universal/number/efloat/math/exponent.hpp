@@ -32,6 +32,11 @@ namespace efloat_detail {
 		if (!std::is_constant_evaluated()) efloat_exception_flags.set(flags);
 	}
 
+	// the thread's rounding mode, or to nearest in a constant evaluation, which cannot read it
+	inline constexpr RoundingMode rounding_mode() noexcept {
+		return std::is_constant_evaluated() ? RoundingMode::RoundToNearest : efloat_rounding_mode;
+	}
+
 	// The precision of the result of a function of x: x's own, what the arithmetic would give.
 	// The literals a function combines x with carry no precision and do not widen it (#1757).
 	template<unsigned nlimbs>

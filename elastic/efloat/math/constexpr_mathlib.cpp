@@ -202,6 +202,7 @@ namespace {
 		static_assert(erf(zero).iszero() && erfc(zero) == one, "erf(0), erfc(0)");
 		static_assert(cbrt(E(27)) == three && cbrt(E(-8)) == -two && hypot(three, four) == E(5), "cbrt(27), cbrt(-8), hypot(3, 4)");
 		static_assert(pow(two, E(10)) == E(1024) && pow(four, E(1) / two) == two && pow(two, -two) == one / four, "exact powers");
+		static_assert(fma(two, three, E(-6)).iszero() && fma(two, three, E(-6)).sign() == 1 && fma(three, four, one) == E(13), "fma: an exact cancellation is +0");
 		static_assert(fmod(E(7), three) == one && remainder(E(7), three) == one && fmod(E(-7), three) == -one, "fmod, remainder");
 		static_assert(floor(E(5) / two) == two && ceil(E(5) / two) == three && round(E(5) / two) == three && rint(E(5) / two) == two, "rounding 5/2");
 		static_assert(exp(log(two) * E(10)) > E(1023) && exp(log(two) * E(10)) < E(1025), "exp(10 ln 2) ~= 1024");

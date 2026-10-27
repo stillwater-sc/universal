@@ -169,7 +169,7 @@ namespace efloat_detail {
 		while (h > 0 && f[h - 1] == 0u) --h;
 		if (h == 0) {   // x y = -z: +0, or -0 rounding toward -inf (IEEE-754 6.3)
 			result = efloat<nlimbs>(0.0);
-			result.setsign(efloat_rounding_mode == RoundingMode::RoundTowardNegative);
+			result.setsign(efloat_detail::rounding_mode() == RoundingMode::RoundTowardNegative);
 			return;
 		}
 		// the frame shifted up by its leading zeros, ls limbs and sh bits, to u: its leading bit at
@@ -296,7 +296,7 @@ namespace efloat_detail {
 				for (std::size_t k = 0; zero && k < w; ++k) zero = (f[k] == 0u);
 				if (zero) {   // x y = -z: +0, or -0 rounding toward -inf (IEEE-754 6.3)
 					result = efloat<nlimbs>(0.0);
-					result.setsign(efloat_rounding_mode == RoundingMode::RoundTowardNegative);
+					result.setsign(efloat_detail::rounding_mode() == RoundingMode::RoundTowardNegative);
 					return;
 				}
 			}
