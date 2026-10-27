@@ -59,8 +59,12 @@ jobs:
         with:
           key: coverage-gcc-debug
           max-size: "3G"
+          # Store this build's objects only; without it the cache grew to 3.0 / 3.0 GB
+          evict-old-files: job
           save: ${{ github.ref == 'refs/heads/main' }}
 
+      # -g0 replaces Debug's -g. gcov reads the .gcno notes and .gcda counters, not
+      # DWARF, so the debug info only made every object (and the ccache) ~2.3x larger.
       - name: Configure with coverage flags
         run: |
           cmake -B build \
@@ -69,6 +73,8 @@ jobs:
             -DCMAKE_CXX_COMPILER=g++ \
             -DCMAKE_C_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
             -DCMAKE_CXX_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
+            -DCMAKE_C_FLAGS_DEBUG="-g0" \
+            -DCMAKE_CXX_FLAGS_DEBUG="-g0" \
             -DCMAKE_EXE_LINKER_FLAGS="--coverage" \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
