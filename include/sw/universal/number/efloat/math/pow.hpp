@@ -7,9 +7,9 @@
 #pragma once
 #include <algorithm>
 #include <bit>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 #include <vector>
 #include <universal/number/efloat/math/exponent.hpp>
 #include <universal/number/efloat/math/logarithm.hpp>
@@ -29,7 +29,7 @@ namespace efloat_detail {
 	inline constexpr unsigned integer_power_error_bits = 8u;
 
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> integer_power_working(const efloat<nlimbs>& x, uint64_t n, bool reciprocal, unsigned target) {
+	inline constexpr efloat<nlimbs> integer_power_working(const efloat<nlimbs>& x, uint64_t n, bool reciprocal, unsigned target) {
 		const unsigned working = target + exp_log_guard_bits + static_cast<unsigned>(std::bit_width(n)) + 2u;
 		efloat<nlimbs> base(x);
 		base.set_precision(working);
@@ -48,13 +48,13 @@ namespace efloat_detail {
 	// The largest exact power computed outright: x^n has at most n significant_bits(x) bits, and
 	// one wider than this is left to Ziv's strategy, which separates it from the rounding
 	// boundaries once its target passes the power's width
-	inline unsigned pow_exact_bits(unsigned precision) { return 16u * precision + 1024u; }
+	inline constexpr unsigned pow_exact_bits(unsigned precision) { return 16u * precision + 1024u; }
 
 	// x^n's exponent lies within n (|scale(x)| + 1) of 0: an exact power is computed only while that
 	// stays inside exp's range, where the int64_t exponent cannot overflow
 	template<unsigned nlimbs>
-	inline bool power_in_range(const efloat<nlimbs>& x, uint64_t n) {
-		return static_cast<double>(n) * (std::fabs(static_cast<double>(x.scale())) + 1.0) < exp_range_limit;
+	inline constexpr bool power_in_range(const efloat<nlimbs>& x, uint64_t n) {
+		return static_cast<double>(n) * (fp::fabs(static_cast<double>(x.scale())) + 1.0) < exp_range_limit;
 	}
 
 	// |x|^y for a finite x != 0 and a finite y != 0 when it may lie on a rounding boundary of
@@ -63,7 +63,7 @@ namespace efloat_detail {
 	// significant bits; or y = m / 2^k, m > 0 odd, with |x| a perfect 2^k-th power. Every other
 	// |x|^y is irrational, wider than a boundary or, at a y < 0, not a binary fraction.
 	template<unsigned nlimbs>
-	inline bool exact_pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y, unsigned precision, efloat<nlimbs>& result) {
+	inline constexpr bool exact_pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y, unsigned precision, efloat<nlimbs>& result) {
 		efloat<nlimbs> ax(x);
 		ax.setsign(false);
 		const unsigned ybits = significant_bits(y);
@@ -117,7 +117,7 @@ namespace efloat_detail {
 	// p's bit 0, moved to a's; returns whether a dropped bit was 1. p's top limb is nonzero: a
 	// product of two operands with their top bits set has its own at bit 63 or 62, and a
 	// truncated one (#1807) can lie a unit below 2^62 of it (#1804).
-	inline bool keep_top(limb_kernels::limb_t* a, std::size_t& na, const limb_kernels::limb_t* p, std::size_t np, std::size_t w, int64_t& sh) {
+	inline constexpr bool keep_top(limb_kernels::limb_t* a, std::size_t& na, const limb_kernels::limb_t* p, std::size_t np, std::size_t w, int64_t& sh) {
 		const unsigned c = static_cast<unsigned>(std::countl_zero(p[np - 1]));   // below 64
 		if (np <= w) {
 			for (std::size_t i = 0; i < np; ++i) a[i] = p[i];
@@ -150,7 +150,7 @@ namespace efloat_detail {
 	// can_round (#1763) on a nonzero value a[0, n) of 64-bit limbs, least significant first,
 	// within 2^(scale - correct) of the exact result: whether its bits from position precision + 1
 	// to correct - 2, counting its leading bit as 0, are neither all 0 nor all 1 (#1804)
-	inline bool limbs_can_round(const limb_kernels::limb_t* a, std::size_t n, unsigned precision, unsigned correct) {
+	inline constexpr bool limbs_can_round(const limb_kernels::limb_t* a, std::size_t n, unsigned precision, unsigned correct) {
 		if (correct < precision + 4) return false;
 		while (a[n - 1] == 0u) --n;
 		const int64_t lead = 64 * static_cast<int64_t>(n) - 1 - std::countl_zero(a[n - 1]);   // the leading bit's index
@@ -181,13 +181,13 @@ namespace efloat_detail {
 	// path. Before, the general path's preamble, the exact-power attempt and efloat arithmetic at
 	// 69 extra bits made pow(b, 7) at 128 bits cost about twelve multiplications.
 	template<unsigned nlimbs>
-	inline bool integer_power_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, uint64_t n, bool reciprocal, unsigned precision, bool carries) {
+	inline constexpr bool integer_power_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, uint64_t n, bool reciprocal, unsigned precision, bool carries) {
 		using limb_kernels::limb_t;
 		if (n < 2 || x.iszero() || x.isinf() || x.isnan()) return false;
 		const unsigned bits = significant_bits(x);
 		if (bits < 2) return false;   // a power of 2: its reciprocal is exact too, and Ziv's test never passes on it
 		const int64_t ex = x.scale();
-		if (static_cast<double>(n) * (std::fabs(static_cast<double>(ex)) + 1.0) >= 1152921504606846976.0) return false;   // 2^60
+		if (static_cast<double>(n) * (fp::fabs(static_cast<double>(ex)) + 1.0) >= 1152921504606846976.0) return false;   // 2^60
 		const unsigned bw = static_cast<unsigned>(std::bit_width(n));
 		const bool negative = (x.sign() == -1) && (n & 1u);
 		const std::size_t m = x.limb_count();
@@ -269,7 +269,7 @@ namespace efloat_detail {
 	// `target` bits plus guard bits, or, beyond exp's range, inf or 0, with `range` set to
 	// +1 or -1. log x carries the scale(y log x) bits the product moves above its absolute error.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> pow_working(const efloat<nlimbs>& x, const efloat<nlimbs>& y, unsigned target, int& range) {
+	inline constexpr efloat<nlimbs> pow_working(const efloat<nlimbs>& x, const efloat<nlimbs>& y, unsigned target, int& range) {
 		efloat<nlimbs> ax(x);
 		ax.setsign(false);
 		const int64_t magnitude = y.scale() + log_magnitude(ax) + 4;   // |y log x| < 2^magnitude
@@ -337,7 +337,7 @@ constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 	// an integer y below 2^53 in magnitude: binary powering on limbs, where it applies (#1804)
 	if (!y.iszero() && !y.isinf() && !y.isnan() && y.scale() < 53 && efloat_detail::is_integer(y)) {
 		efloat<nlimbs> result(x);
-		if (efloat_detail::integer_power_limbs(result, x, static_cast<uint64_t>(std::fabs(double(y))), y.sign() == -1, precision, carries)) return result;
+		if (efloat_detail::integer_power_limbs(result, x, static_cast<uint64_t>(efloat_detail::fp::fabs(double(y))), y.sign() == -1, precision, carries)) return result;
 	}
 	// the special values below carry the result's precision, as the computed ones do
 	auto special = [precision, carries](efloat<nlimbs> v) {
@@ -416,7 +416,7 @@ constexpr efloat<nlimbs> pow(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 	// an integer y by binary powering, where the power's exponent, below 2^61 log2 e, cannot pass
 	// exp's range; closer to it, the evaluation's range check decides
 	if (y_integer && y.scale() < 53 && magnitude < 57) {
-		const uint64_t n = static_cast<uint64_t>(std::fabs(double(y)));
+		const uint64_t n = static_cast<uint64_t>(efloat_detail::fp::fabs(double(y)));
 		return efloat_detail::round_ziv<nlimbs>([&](unsigned target) {
 			efloat<nlimbs> v = efloat_detail::integer_power_working(ax, n, y_neg, target);
 			if (negative) v.setsign(true);

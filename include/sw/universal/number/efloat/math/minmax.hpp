@@ -5,7 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
-#include <cmath>
 #include <universal/number/efloat/math/classify.hpp>
 
 namespace sw { namespace universal {

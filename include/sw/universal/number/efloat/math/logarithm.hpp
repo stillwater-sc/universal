@@ -7,7 +7,7 @@
 #pragma once
 #include <algorithm>
 #include <bit>
-#include <cmath>
+#include <type_traits>
 #include <vector>
 #include <universal/number/efloat/math/exponent.hpp>
 #include <universal/number/efloat/math/sqrt.hpp>           // sqrt_to
@@ -44,7 +44,7 @@ namespace efloat_detail {
 	// below 2^-(working + 13). z = v^2 and the product v S each round once at working + 2
 	// and working bits.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> atanh_working_small(const efloat<nlimbs>& v, unsigned working) {
+	inline constexpr efloat<nlimbs> atanh_working_small(const efloat<nlimbs>& v, unsigned working) {
 		using fixed_series::limb_t;
 		efloat<nlimbs> result(v);
 		result.set_precision(working);
@@ -75,7 +75,7 @@ namespace efloat_detail {
 	// 8192 bits: 0.2-0.36 ms, from 1.4-3.3 ms), which matters at high precision, where every new
 	// j fills its entry once.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> log_grid_point(unsigned j, unsigned bits) {
+	inline constexpr efloat<nlimbs> log_grid_point(unsigned j, unsigned bits) {
 		const int64_t u = static_cast<int64_t>(j) - (int64_t(1) << log_table_shift);
 		const int64_t w = static_cast<int64_t>(j) + (int64_t(1) << log_table_shift);
 		efloat<nlimbs> v(static_cast<double>(u));
@@ -88,9 +88,10 @@ namespace efloat_detail {
 	}
 
 	// log(j / 512) at `bits` bits, from a per-thread cache that keeps the widest value computed
-	// for each grid point, the way ln2() does: computed on first use, then rounded from.
+	// for each grid point, the way ln2() does: computed on first use, then rounded from. A
+	// constant evaluation computes the grid point (constant_value).
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> log_table(unsigned j, unsigned bits) {
+	inline efloat<nlimbs> log_table_cached(unsigned j, unsigned bits) {
 		constexpr unsigned N = log_table_last - log_table_first + 1;
 		thread_local std::vector<efloat<nlimbs>> cached(N);
 		thread_local std::vector<unsigned> cached_bits(N, 0u);
@@ -104,6 +105,12 @@ namespace efloat_detail {
 		return value;
 	}
 
+	template<unsigned nlimbs>
+	inline constexpr efloat<nlimbs> log_table(unsigned j, unsigned bits) {
+		return constant_value<nlimbs>(bits, [j](unsigned width) { return log_grid_point<nlimbs>(j, width); },
+		                              [j](unsigned b) { return log_table_cached<nlimbs>(j, b); });
+	}
+
 	// log(x) for a finite x > 0 at `working` bits by a table and a series (#1714), the way mpmath
 	// evaluates it below 2500 bits:
 	//
@@ -114,7 +121,7 @@ namespace efloat_detail {
 	// the series alone (c = 1, log c = 0), with no cancellation against e ln 2. The series
 	// atanh(v) = v + v^3 / 3 + v^5 / 5 + ... gains ~21 bits per term.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> log_table_series(const efloat<nlimbs>& x, unsigned working) {
+	inline constexpr efloat<nlimbs> log_table_series(const efloat<nlimbs>& x, unsigned working) {
 		efloat<nlimbs> m(x);
 		m.set_precision(working);
 		m.setexponent(0);
@@ -123,8 +130,8 @@ namespace efloat_detail {
 			m.setexponent(-1);
 			++e;
 		}
-		const unsigned j = static_cast<unsigned>(std::lround(std::ldexp(double(m), static_cast<int>(log_table_shift))));
-		efloat<nlimbs> c(std::ldexp(static_cast<double>(j), -static_cast<int>(log_table_shift)));   // exact
+		const unsigned j = static_cast<unsigned>(fp::round(fp::scale2(double(m), static_cast<int>(log_table_shift))));
+		efloat<nlimbs> c(fp::scale2(static_cast<double>(j), -static_cast<int>(log_table_shift)));   // exact
 		c.set_precision(working);
 
 		efloat<nlimbs> series(0.0);
@@ -156,7 +163,7 @@ namespace efloat_detail {
 	// d = x - 1, which is exact there, with |d| / 2 < |log x| < 2 |d|; elsewhere |log x| > ln 2 / 2
 	// and a double estimate from m 2^e, m in [1, 2), is good to one in its last place.
 	template<unsigned nlimbs>
-	inline int64_t log_magnitude(const efloat<nlimbs>& x) {
+	inline constexpr int64_t log_magnitude(const efloat<nlimbs>& x) {
 		const int64_t e = x.scale();
 		if (e == 0 || e == -1) {
 			const efloat<nlimbs> d = x - efloat<nlimbs>(1.0);
@@ -164,8 +171,8 @@ namespace efloat_detail {
 		}
 		efloat<nlimbs> m(x);
 		m.setexponent(0);
-		const double estimate = std::log(double(m)) + static_cast<double>(e) * 0.6931471805599453;
-		return std::ilogb(estimate) - 1;
+		const double estimate = fp::log(double(m)) + static_cast<double>(e) * 0.6931471805599453;
+		return fp::ilogb(estimate) - 1;
 	}
 
 	// log(x) for a finite x > 0, x != 1, at `working` bits by the arithmetic-geometric mean, the
@@ -179,7 +186,7 @@ namespace efloat_detail {
 	// arithmetic mean then differs from the limit by (a - b)^2 / (16 a). log s ~ W/2 ln 2 cancels
 	// against m ln 2 down to log x, so W carries those cancelled bits, `cancel`, as well.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> log_agm(const efloat<nlimbs>& x, unsigned working) {
+	inline constexpr efloat<nlimbs> log_agm(const efloat<nlimbs>& x, unsigned working) {
 		// log s < W ln 2 / 2 + 2^12 for any W this runs at, so its bits above log x are fewer than
 		// bit_width(working + 2^12) - log_magnitude(x), plus one for the cancelled bits W carries
 		const int64_t top    = std::bit_width(working + 4096u);
@@ -213,7 +220,7 @@ namespace efloat_detail {
 	// log(x) for a finite x > 0 at `working` bits: the AGM at high precision, unless x lies so
 	// close to 1 that the series converges in fewer steps than the AGM would take
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> log_working(const efloat<nlimbs>& x, unsigned working) {
+	inline constexpr efloat<nlimbs> log_working(const efloat<nlimbs>& x, unsigned working) {
 		constexpr int64_t table_bits = 10;   // the table leaves |v| < 2^-10
 		if (static_cast<int64_t>(working) <= log_agm_bits_per_series_bit * table_bits || x == efloat<nlimbs>(1.0)) {
 			return log_table_series(x, working);   // log 1 = 0 exactly
@@ -228,7 +235,7 @@ namespace efloat_detail {
 	// log2 x = log x / ln 2 and log10 x = log x / ln 10 for a finite x > 0, unrounded, at `target`
 	// bits plus guard bits
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> log_base_working(const efloat<nlimbs>& x, unsigned target, bool ten) {
+	inline constexpr efloat<nlimbs> log_base_working(const efloat<nlimbs>& x, unsigned target, bool ten) {
 		const unsigned working = target + exp_log_guard_bits;
 		efloat<nlimbs> y = log_working(x, working);
 		y /= ten ? ln10<nlimbs>(working) : ln2<nlimbs>(working);
@@ -239,7 +246,7 @@ namespace efloat_detail {
 	// is formed exactly for |x| < 1, at the working precision plus the 1 - scale(x) bits it spans
 	// below 1, and rounded only for an x so large that its log does not cancel
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> log1p_working(const efloat<nlimbs>& x, unsigned target) {
+	inline constexpr efloat<nlimbs> log1p_working(const efloat<nlimbs>& x, unsigned target) {
 		const unsigned working = target + exp_log_guard_bits + static_cast<unsigned>(std::max<int64_t>(0, 1 - x.scale()));
 		efloat<nlimbs> u(x);
 		u.set_precision(working);
@@ -250,10 +257,10 @@ namespace efloat_detail {
 	// whether a finite x > 0 is 10^j for an integer j >= 0, and j: 10^j = 5^j 2^j has more than
 	// 2.32 j significant bits, so j is at most significant_bits(x) / 2.32
 	template<unsigned nlimbs>
-	inline bool is_power_of_ten(const efloat<nlimbs>& x, int64_t& j) {
+	inline constexpr bool is_power_of_ten(const efloat<nlimbs>& x, int64_t& j) {
 		efloat<nlimbs> m(x);
 		m.setexponent(0);
-		j = std::llround(std::log10(double(m)) + static_cast<double>(x.scale()) * 0.30102999566398120);
+		j = static_cast<int64_t>(fp::round(fp::log10(double(m)) + static_cast<double>(x.scale()) * 0.30102999566398120));
 		if (j < 0 || static_cast<double>(j) * 2.32 > static_cast<double>(significant_bits(x)) + 1.0) return false;
 		if (j == 0) return x == efloat<nlimbs>(1.0);
 		return exact_power(efloat<nlimbs>(10.0), static_cast<uint64_t>(j)) == x;
@@ -272,10 +279,8 @@ constexpr efloat<nlimbs> log(const efloat<nlimbs>& x) {
 	if (x.iszero()) {
 		efloat<nlimbs> neg_inf;
 		neg_inf.setinf(true);
-		if (!std::is_constant_evaluated()) {
-			neg_inf.set_precision(x.get_precision()); // maintain dynamic precision contract
-			efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
-		}
+		neg_inf.set_precision(x.get_precision()); // maintain dynamic precision contract
+		efloat_detail::raise_flags(ExceptionFlag::DivisionByZero);
 		return neg_inf;
 	}
 	// Signbit check captures both negative normal values and negative infinity
@@ -305,10 +310,8 @@ constexpr efloat<nlimbs> log2(const efloat<nlimbs>& x) {
 	if (x.iszero()) {
 		efloat<nlimbs> neg_inf;
 		neg_inf.setinf(true);
-		if (!std::is_constant_evaluated()) {
-			neg_inf.set_precision(x.get_precision());
-			efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
-		}
+		neg_inf.set_precision(x.get_precision());
+		efloat_detail::raise_flags(ExceptionFlag::DivisionByZero);
 		return neg_inf;
 	}
 	if (x.sign() == -1) {
@@ -342,10 +345,8 @@ constexpr efloat<nlimbs> log10(const efloat<nlimbs>& x) {
 	if (x.iszero()) {
 		efloat<nlimbs> neg_inf;
 		neg_inf.setinf(true);
-		if (!std::is_constant_evaluated()) {
-			neg_inf.set_precision(x.get_precision());
-			efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
-		}
+		neg_inf.set_precision(x.get_precision());
+		efloat_detail::raise_flags(ExceptionFlag::DivisionByZero);
 		return neg_inf;
 	}
 	if (x.sign() == -1) {
@@ -389,10 +390,8 @@ constexpr efloat<nlimbs> log1p(const efloat<nlimbs>& x) {
 	if (x == efloat<nlimbs>(-1.0)) {
 		efloat<nlimbs> neg_inf;
 		neg_inf.setinf(true);
-		if (!std::is_constant_evaluated()) {
-			neg_inf.set_precision(x.get_precision());
-			efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
-		}
+		neg_inf.set_precision(x.get_precision());
+		efloat_detail::raise_flags(ExceptionFlag::DivisionByZero);
 		return neg_inf;
 	}
 	if (x.isinf()) {

@@ -14,9 +14,10 @@
 //               (1 + sqrt(5)) / 2, each rounded once, limb for limb the run-time constants.
 //
 // Constant evaluation rounds to nearest and raises no status flags: it cannot read or write the
-// thread's rounding mode and flags. Out of scope still (#1819 phases 3 to 5): the math library
-// past sqrt, conversion from and to float and double, parse(), and constexpr values past the
-// inline limbs, whose heap block a constant expression cannot keep.
+// thread's rounding mode and flags. The math library and the float and double conversions are
+// verified in elastic/efloat/math/constexpr_mathlib.cpp (#1819 phase 3). Out of scope still
+// (phases 4 and 5): parse(), and constexpr values past the inline limbs, whose heap block a
+// constant expression cannot keep.
 //
 // REGRESSION_LEVEL convention (intensity progression):
 //   LEVEL 1 -- the cases above, the chain at 32 to 1056 bits, pi, e and phi at 1024 bits.

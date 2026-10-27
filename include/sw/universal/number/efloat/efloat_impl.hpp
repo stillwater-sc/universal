@@ -7,9 +7,10 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <algorithm>  // std::max, std::min, std::find_if
 #include <cctype>     // std::isspace, std::tolower, in parse()
-#include <cmath>      // std::fpclassify, std::frexp, std::ldexp (long double conversions)
+#include <bit>        // std::bit_width, std::endian
 #include <cstddef>    // std::size_t
 #include <cstdint>
+#include <cstring>    // std::memcpy, the long double encodings
 #include <ios>        // std::streamsize, taken by to_string(); no stream is opened
 #include <limits>     // std::numeric_limits
 #include <string>
@@ -58,6 +59,7 @@ The exception types are defined, but you have the option to throw them
 #include <universal/number/efloat/exceptions.hpp>
 #include <universal/internal/limbs/limb_kernels.hpp>   // 64-bit limb products (#1762), quotients and square roots (#1763)
 #include <universal/number/efloat/efloat_limbs.hpp> // the significand's storage (#1820)
+#include <universal/number/efloat/double_math.hpp>  // the double estimates, without <cmath> (#1819)
 #include <universal/behavior/rounding.hpp>
 #include <universal/behavior/status_flags.hpp>
 
@@ -150,15 +152,15 @@ public:
 	using limb_t = limb_kernels::limb_t;
 	static constexpr std::size_t inline_limbs = efloat_inline_limbs(nlimbs);
 
-	// Constant evaluation (#747, #1819): the integer and dyadic constructors, +, -, *, /, the
-	// compound operators, the comparisons and sqrt run in a constant expression, with the same
-	// results as at run time. The limb_kernels kernels take their portable loops there instead
+	// Constant evaluation (#747, #1819): the integer, dyadic, float and double constructors, the
+	// conversions to float and double, +, -, *, /, the compound operators, the comparisons and
+	// the math library run in a constant expression, with the same results as at run time. The limb_kernels kernels take their portable loops there instead
 	// of the assembly, the scratch past the inline limbs comes from new and delete instead of the
 	// thread's block cache, the rounding is to nearest and no status flag is raised: the thread's
 	// mode and flags are out of a constant expression's reach (rounding_mode(), raise_flags()). A
 	// value whose limbs fit the inline buffer can be a constexpr variable; a larger one cannot
-	// keep its heap block. Not yet: the math library past sqrt, conversion from and to float and
-	// double (convert_ieee754 calls std::fpclassify), and parse() (std::string).
+	// keep its heap block. Not yet: parse() (std::string), and long double, whose encodings are
+	// read and written with memcpy.
 	constexpr efloat() noexcept
 		: _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{} {
 		_limb.assign(1, 0u);   // zero holds one limb of 0, as bits() shows it
@@ -220,8 +222,8 @@ public:
 	constexpr efloat(unsigned int iv)                     noexcept : _precision_limbs{ 0 } { *this = iv; }
 	constexpr efloat(unsigned long iv)                    noexcept : _precision_limbs{ 0 } { *this = iv; }
 	constexpr efloat(unsigned long long iv)               noexcept : _precision_limbs{ 0 } { *this = iv; }
-	efloat(float iv)                            noexcept : _precision_limbs{ 0 } { *this = iv; }
-	efloat(double iv)                           noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(float iv)                  noexcept : _precision_limbs{ 0 } { *this = iv; }
+	constexpr efloat(double iv)                 noexcept : _precision_limbs{ 0 } { *this = iv; }
 
 	// assignment operators for native types
 	constexpr efloat& operator=(signed char rhs)          noexcept { return convert_signed(rhs); }
@@ -234,61 +236,100 @@ public:
 	constexpr efloat& operator=(unsigned int rhs)         noexcept { return convert_unsigned(rhs); }
 	constexpr efloat& operator=(unsigned long rhs)        noexcept { return convert_unsigned(rhs); }
 	constexpr efloat& operator=(unsigned long long rhs)   noexcept { return convert_unsigned(rhs); }
-	efloat& operator=(float rhs)                noexcept { return convert_ieee754(rhs); }
-	efloat& operator=(double rhs)               noexcept { return convert_ieee754(rhs); }
+	constexpr efloat& operator=(float rhs)      noexcept { return convert_ieee754(rhs); }
+	constexpr efloat& operator=(double rhs)     noexcept { return convert_ieee754(rhs); }
 
 	// conversion operators
-	explicit operator float()             const noexcept { return convert_to_ieee754<float>(); }
-	explicit operator double()            const noexcept { return convert_to_ieee754<double>(); }
+	explicit constexpr operator float()   const noexcept { return convert_to_ieee754<float>(); }
+	explicit constexpr operator double()  const noexcept { return convert_to_ieee754<double>(); }
 
 #if LONG_DOUBLE_SUPPORT
 	efloat(long double iv)                      noexcept : _precision_limbs{ 0 } { *this = iv; }
 
-	// convert_ieee754 only builds limbs for sizeof(Real) of 4 or 8, so a wide
-	// long double (sizeof 16 on x86-64) produced 0. Decompose instead: frexp the
-	// value into m * 2^e with m in [0.5,1) (safely inside double's range), split m
-	// into an exact sum of doubles via the working double path, then apply e with
-	// setexponent(). This preserves the full long double significand AND its
-	// extended exponent range. Platforms where long double == double take the
-	// direct path.
+	// A long double is taken apart by its bits, as float and double are, in each of the formats
+	// it has (#1819): x87's 64-bit significand with its explicit leading bit, IEEE binary128's
+	// 113 bits, and IBM's double-double, which is the exact sum of two doubles. Where long double
+	// is double, the double path. Its zeros, infinities and NaNs go through double, as before.
 	efloat& operator=(long double rhs) noexcept {
-		if constexpr (sizeof(long double) <= sizeof(double)) {
+		constexpr int digits = std::numeric_limits<long double>::digits;
+		if constexpr (digits == 53) {
 			return convert_ieee754(static_cast<double>(rhs));
 		}
-		else {
-			switch (std::fpclassify(rhs)) {
-			case FP_ZERO:
-			case FP_NAN:
-			case FP_INFINITE:
-				return convert_ieee754(static_cast<double>(rhs));
-			default:
-				break;
+		else if constexpr (digits == 64 || digits == 113) {
+			// the encoding's two 64-bit words, low first on a little-endian target
+			uint64_t w[2]{ 0u, 0u };
+			std::memcpy(w, &rhs, (digits == 64) ? 10u : 16u);
+			if constexpr (std::endian::native == std::endian::big) {
+				const uint64_t t = w[0];
+				w[0] = w[1];
+				w[1] = t;
 			}
-			int e = 0;
-			long double m = std::frexp(rhs, &e);
+			// x87: the significand in w[0], sign and biased exponent in the low 16 bits of w[1];
+			// binary128: sign, exponent and the top 48 fraction bits in w[1], the rest in w[0]
+			const unsigned raw_exponent = (digits == 64) ? static_cast<unsigned>(w[1] & 0x7FFFu)
+			                                             : static_cast<unsigned>((w[1] >> 48) & 0x7FFFu);
+			uint64_t hi = (digits == 64) ? 0u : (w[1] & 0xFFFF'FFFF'FFFFull);
+			uint64_t lo = w[0];
+			if (digits == 113 && raw_exponent != 0) hi |= uint64_t(1) << 48;   // the hidden bit
+			if (raw_exponent == 0x7FFFu || (hi == 0u && lo == 0u)) return convert_ieee754(static_cast<double>(rhs));
 			clear();
-			// without a precision of its own the value is exact (#1757): sum at 4 limbs, which
-			// hold any long double significand, and keep carrying none
-			const bool carries = _precision_limbs != 0;
-			if (!carries) _precision_limbs = 4u;
-			long double r = m;
-			for (int i = 0; i < 8 && r != 0.0L; ++i) {
-				double hi = static_cast<double>(r);
-				if (hi == 0.0) break;   // remainder fell below double's range
-				*this += efloat(hi);
-				r -= static_cast<long double>(hi);
+			_sign = (digits == 64) ? ((w[1] >> 15) & 1u) != 0u : (w[1] >> 63) != 0u;
+			_state = FloatingPointState::Normal;
+			// the value is (hi, lo) 2^(e - bias - (digits - 1)), with e = 1 for a subnormal
+			const int64_t lsb_weight = ((raw_exponent != 0) ? static_cast<int64_t>(raw_exponent) : 1) - 16383 - (digits - 1);
+			const int     width      = (hi != 0u) ? 64 + static_cast<int>(std::bit_width(hi)) : static_cast<int>(std::bit_width(lo));
+			_exponent = lsb_weight + width - 1;
+			const unsigned up = static_cast<unsigned>(128 - width);   // to the top of two limbs
+			if (up >= 64u) {
+				hi = lo << (up - 64u);
+				lo = 0u;
 			}
-			if (!carries) _precision_limbs = 0u;
-			if (!iszero()) setexponent(scale() + e);
+			else if (up > 0u) {
+				hi = (hi << up) | (lo >> (64u - up));
+				lo <<= up;
+			}
+			const limb_t limbs[2]{ lo, hi };
+			_limb.assign(limbs, 2);
+		}
+		else {
+			// double-double: rhs = hi + lo exactly, |lo| <= ulp(hi) / 2, and lo can lie any distance
+			// below hi (1 + 2^-1000 is one)
+			const double hi = static_cast<double>(rhs);
+			if (hi == 0.0 || hi - hi != 0.0) return convert_ieee754(hi);   // zero, inf, nan
+			const double lo = static_cast<double>(rhs - static_cast<long double>(hi));
+			const bool carries = _precision_limbs != 0;
+			convert_ieee754(hi);
+			if (lo != 0.0) {
+				// summed exactly, over the bits from hi's leading one to lo's last, unless the
+				// value carries a precision of its own
+				if (!carries) {
+					const int span = efloat_detail::fp::ilogb(hi) - efloat_detail::fp::ilogb(lo) + 54;
+					_precision_limbs = std::max(4u, static_cast<unsigned>(span + 31) / 32u);
+				}
+				*this += efloat(lo);
+				if (!carries) _precision_limbs = 0u;
+			}
 			return *this;
 		}
+		// without a precision of its own the value is exact (#1757): normalized at 4 limbs,
+		// which hold any long double significand, and keeping none
+		if (_precision_limbs != 0) {
+			normalize();
+		}
+		else {
+			_precision_limbs = 4u;
+			normalize();
+			_precision_limbs = 0u;
+		}
+		return *this;
 	}
 
 	explicit operator long double() const noexcept {
-		if constexpr (sizeof(long double) <= sizeof(double)) {
+		constexpr int digits = std::numeric_limits<long double>::digits;
+		if constexpr (digits == 53) {
 			return static_cast<long double>(convert_to_ieee754<double>());
 		}
-		else {
+		else if constexpr (digits == 64 || digits == 113) {
 			switch (_state) {
 			case FloatingPointState::Zero:         return _sign ? -0.0L : 0.0L;
 			case FloatingPointState::QuietNaN:
@@ -299,22 +340,40 @@ public:
 			default:
 				break;
 			}
-			// bring |x| into [1,2), extract as an exact sum of doubles, then scale
-			// by the true (wide) exponent -- the dual of the assignment above.
-			const std::int64_t k = scale();
-			efloat n(*this);
-			n.setsign(false);
-			n.setexponent(0);
-			long double s = 0.0L;
-			efloat r(n);
-			for (int i = 0; i < 4 && !r.iszero(); ++i) {
-				double hi = static_cast<double>(r);
-				if (hi == 0.0) break;
-				s += static_cast<long double>(hi);
-				r -= efloat(hi);
+			// rounded once to the format, and assembled from its fields
+			const native_rounding r = round_to_native<static_cast<unsigned>(digits), -16382, 16383>();
+			if (r.overflow) {
+				if (r.to_inf) return _sign ? -std::numeric_limits<long double>::infinity() : std::numeric_limits<long double>::infinity();
+				return _sign ? -std::numeric_limits<long double>::max() : std::numeric_limits<long double>::max();
 			}
-			if (_sign) s = -s;
-			return std::ldexp(s, static_cast<int>(k));
+			const uint64_t exp_field = r.normal ? static_cast<uint64_t>(r.scale + 16383) : 0u;
+			const uint64_t sign_bit  = _sign ? 1u : 0u;
+			uint64_t w[2]{ 0u, 0u };
+			if constexpr (digits == 64) {
+				w[0] = r.lo;   // the significand, its leading bit explicit
+				w[1] = (sign_bit << 15) | exp_field;
+			}
+			else {
+				w[0] = r.lo;
+				w[1] = (sign_bit << 63) | (exp_field << 48) | (r.hi & 0xFFFF'FFFF'FFFFull);
+			}
+			if constexpr (std::endian::native == std::endian::big) {
+				const uint64_t t = w[0];
+				w[0] = w[1];
+				w[1] = t;
+			}
+			long double v = 0.0L;
+			std::memcpy(&v, w, (digits == 64) ? 10u : 16u);
+			return v;
+		}
+		else {
+			// double-double: the double nearest the value, and the double nearest what it leaves
+			const double hi = convert_to_ieee754<double>();
+			if (hi == 0.0 || hi - hi != 0.0) return static_cast<long double>(hi);   // zero, inf, nan
+			efloat rest(*this);
+			rest -= efloat(hi);
+			const double lo = rest.template convert_to_ieee754<double>();
+			return static_cast<long double>(hi) + static_cast<long double>(lo);
 		}
 	}
 #endif
@@ -2000,90 +2059,207 @@ protected:
 
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
-	efloat& convert_ieee754(Real rhs) noexcept {
+	constexpr efloat& convert_ieee754(Real rhs) noexcept {
+		// taken apart by its fields (extractFields), which a constant expression can read
+		bool     s{ false };
+		uint64_t raw_exponent{ 0 }, fraction{ 0 }, upper{ 0 };
+		extractFields(rhs, s, raw_exponent, fraction, upper);
+		using parameter = ieee754_parameter<Real>;
 		clear();
-		bool isSubnormal{ false };
-		int nan_type{ NAN_TYPE_NEITHER };
-		switch (std::fpclassify(rhs)) {
-		case FP_ZERO:
+		_sign = s;
+		if (raw_exponent == parameter::eallset) {
+			if (fraction == 0) {
+				_state = FloatingPointState::Infinite;
+			}
+			else {
+				// x86 specific: the top bit of the significand = 1 for quiet, 0 for signaling
+				int nan_type{ NAN_TYPE_NEITHER };
+				checkNaN(rhs, nan_type);
+				_state = (nan_type == NAN_TYPE_QUIET) ? FloatingPointState::QuietNaN : FloatingPointState::SignalingNaN;
+			}
+			_exponent = 0;
+			return *this;   // stay limbless
+		}
+		if (raw_exponent == 0 && fraction == 0) {
 			_state = FloatingPointState::Zero;
-			_sign = std::signbit(rhs);
 			_exponent = 0;
-			// stay limbless
-			return *this;
-		case FP_NAN:
-			_sign = std::signbit(rhs);
-			// x86 specific: the top bit of the significand = 1 for quiet, 0 for signaling
-			checkNaN(rhs, nan_type);
-			if (nan_type == NAN_TYPE_QUIET) {
-				_state = FloatingPointState::QuietNaN;
-			}
-			else {
-				_state = FloatingPointState::SignalingNaN;
-			}
-			_exponent = 0;
-			// stay limbless
-			return *this;
-		case FP_INFINITE:
-			_state = FloatingPointState::Infinite;
-			_sign = std::signbit(rhs);
-			_exponent = 0;
-			// stay limbless
-			return *this;
-		case FP_SUBNORMAL:
-			isSubnormal = true;
-			break;
-		case FP_NORMAL:
-		default:
-			break;
+			return *this;   // stay limbless
 		}
-
-		_sign = std::signbit(rhs);
-		_exponent = sw::universal::scale(rhs); // scale already deals with subnormal numbers
-		if constexpr (sizeof(Real) == 4) {
-			std::uint32_t bits{ 0 };
-			if (isSubnormal) { // subnormal number
-				bits = static_cast<std::uint32_t>(sw::universal::fractionBits(rhs));
-				bits <<= 8; // 31 - 23 = 8 bits to get the hidden bit to land on bit 31
-				std::uint32_t mask = 0x8000'0000;
-				while ((mask & bits) == 0) {
-					bits <<= 1;
-				}
-			}
-			else {
-				bits = static_cast<std::uint32_t>(sw::universal::significandBits(rhs));
-				bits <<= 8; // 31 - 23 = 8 bits to get the hidden bit to land on bit 31
-			}
-			_limb.assign(1, limb_t(bits) << 32);
-		}
-		else if constexpr (sizeof(Real) == 8) {
-			std::uint64_t bits{ 0 };
-			if (isSubnormal) { // subnormal number
-				bits = sw::universal::fractionBits(rhs);
-				bits <<= 11; // 63 - 52 = 11 bits to get the hidden bit to land on bit 63
-				std::uint64_t mask = 0x8000'0000'0000'0000;
-				while ((mask & bits) == 0) {
-					bits <<= 1;
-				}
-			}
-			else {
-				bits = sw::universal::significandBits(rhs);
-				bits <<= 11; // 63 - 52 = 11 bits to get the hidden bit to land on bit 63
-			}
-			_limb.assign(1, bits);
-		}
-		else {
-			static_assert(true);
-		}
+		// a normal value is (2^fbits + fraction) 2^(raw - bias - fbits), a subnormal one
+		// fraction 2^(1 - bias - fbits): the significand moves to the top of a 64-bit limb
+		const uint64_t significand = (raw_exponent != 0) ? (fraction | (uint64_t(1) << parameter::fbits)) : fraction;
+		const int      width       = static_cast<int>(std::bit_width(significand));
+		const int64_t  lsb_weight  = ((raw_exponent != 0) ? static_cast<int64_t>(raw_exponent) : 1) - parameter::bias - parameter::fbits;
+		_exponent = lsb_weight + width - 1;
+		_limb.assign(1, significand << (64 - width));
 		normalize_native(); // canonical, minimal representation; exact without a precision (#1757)
 		return *this;
 	}
 
+	// The rounding of a finite nonzero value to a binary format of K significand bits, the
+	// leading one included, normal scales E_min .. E_max and subnormals below them, in the
+	// current mode and with the flags IEEE-754 raises (#1819): the format's bits come from the
+	// top 128 bits of the significand, and the limbs below those are the sticky bit. A result
+	// past E_max overflows, to infinity where to_inf, else to the largest finite value; a normal
+	// one has a scale and K significand bits, its leading one at bit K - 1; a subnormal or zero
+	// one has the fraction field.
+	struct native_rounding {
+		bool     overflow;
+		bool     to_inf;
+		bool     normal;
+		int64_t  scale;
+		uint64_t hi, lo;   // the significand, right-aligned, its bits 64 and up in hi
+	};
+
+	template<unsigned K, int E_min, int E_max>
+	constexpr native_rounding round_to_native() const noexcept {
+		static_assert(K >= 2 && K <= 120, "the 128-bit window keeps the guard bit below the K bits");
+		constexpr unsigned shift = 128u - K;   // the bits below the significand
+		// the 128-bit value (h, l) and its bits
+		auto bit = [](uint64_t h, uint64_t l, unsigned p) -> bool {
+			return ((p < 64u) ? (l >> p) : (h >> (p - 64u))) & 1u;
+		};
+		auto any_below = [](uint64_t h, uint64_t l, unsigned p) -> bool {   // bits [0, p) of (h, l)
+			if (p == 0u) return false;
+			if (p < 64u) return (l & ((uint64_t(1) << p) - 1u)) != 0u;
+			if (l != 0u) return true;
+			return (p > 64u) && (h & ((p >= 128u) ? ~uint64_t(0) : ((uint64_t(1) << (p - 64u)) - 1u))) != 0u;
+		};
+
+		const std::size_t m = _limb.size();
+		const uint64_t raw_hi = _limb[m - 1];   // the leading one at bit 63
+		const uint64_t raw_lo = (m >= 2) ? _limb[m - 2] : 0u;
+		bool sticky_limbs = false;
+		for (std::size_t i = 0; i + 2 < m; ++i) {
+			if (_limb[i] != 0) {
+				sticky_limbs = true;
+				break;
+			}
+		}
+
+		int64_t  exp       = _exponent;
+		uint64_t sh        = raw_hi, sl = raw_lo;
+		unsigned eff_shift = shift;
+		bool is_subnormal  = (exp < E_min);
+		bool lsb = false, guard = false, sticky = false;
+		if (is_subnormal) {
+			const int64_t sub_shift = E_min - exp;
+			if (sub_shift >= static_cast<int64_t>(K)) {
+				// below half the smallest subnormal, except at sub_shift == K, where the leading
+				// bit is the guard bit of the smallest subnormal 2^(E_min - K + 1)
+				sh = 0;
+				sl = 0;
+				eff_shift = 128;
+				guard  = (sub_shift == static_cast<int64_t>(K)) && (raw_hi >> 63) != 0;
+				sticky = sticky_limbs || (guard ? ((raw_hi << 1) | raw_lo) != 0 : (raw_hi | raw_lo) != 0);
+			}
+			else {
+				eff_shift = shift + static_cast<unsigned>(sub_shift);
+				lsb    = bit(sh, sl, eff_shift);
+				guard  = bit(sh, sl, eff_shift - 1);
+				sticky = sticky_limbs || any_below(sh, sl, eff_shift - 1);
+			}
+		}
+		else {
+			lsb    = bit(sh, sl, shift);
+			guard  = bit(sh, sl, shift - 1);
+			sticky = sticky_limbs || any_below(sh, sl, shift - 1);
+		}
+
+		if (guard || sticky) {
+			raise_flags(ExceptionFlag::Inexact);
+			if (is_subnormal) raise_flags(ExceptionFlag::Underflow);
+		}
+
+		bool round_up = false;
+		switch (rounding_mode()) {
+		case RoundingMode::RoundToNearest:
+			if (guard && (sticky || lsb)) round_up = true;
+			break;
+		case RoundingMode::RoundToZero:
+			break;
+		case RoundingMode::RoundTowardPositive:
+			if (!_sign && (guard || sticky)) round_up = true;
+			break;
+		case RoundingMode::RoundTowardNegative:
+			if (_sign && (guard || sticky)) round_up = true;
+			break;
+		}
+
+		if (round_up) {
+			if (eff_shift >= 128u) {
+				// round up from full underflow to the smallest subnormal 2^(E_min - K + 1)
+				sh = uint64_t(1) << 63;
+				sl = 0;
+				exp = E_min - static_cast<int64_t>(K) + 1;
+				eff_shift = 127;
+				is_subnormal = true;
+			}
+			else {
+				// add 2^eff_shift; a carry out of the 128 bits doubles the value: one binade up,
+				// and for a subnormal one bit less shift, a normal number once it reaches E_min
+				const uint64_t add_lo = (eff_shift < 64u) ? (uint64_t(1) << eff_shift) : 0u;
+				const uint64_t add_hi = (eff_shift < 64u) ? 0u : (uint64_t(1) << (eff_shift - 64u));
+				const uint64_t new_lo = sl + add_lo;
+				const uint64_t carry  = (new_lo < sl) ? 1u : 0u;
+				const uint64_t new_hi = sh + add_hi + carry;
+				const bool     out    = (new_hi < sh) || (new_hi == sh && (add_hi | carry) != 0u);
+				sl = new_lo;
+				sh = new_hi;
+				if (out) {
+					sh = uint64_t(1) << 63;
+					sl = 0;
+					exp++;
+					if (is_subnormal) {
+						eff_shift--;
+						is_subnormal = (exp < E_min);
+					}
+				}
+			}
+		}
+
+		native_rounding result{ false, false, false, 0, 0u, 0u };
+		if (exp > E_max) {
+			raise_flags(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
+			bool to_inf = true;
+			switch (rounding_mode()) {
+			case RoundingMode::RoundToZero:
+				to_inf = false;
+				break;
+			case RoundingMode::RoundTowardPositive:
+				if (_sign) to_inf = false;
+				break;
+			case RoundingMode::RoundTowardNegative:
+				if (!_sign) to_inf = false;
+				break;
+			default:
+				break;
+			}
+			result.overflow = true;
+			result.to_inf   = to_inf;
+			return result;
+		}
+		// (sh, sl) >> s, for s < 128
+		auto shifted = [](uint64_t h, uint64_t l, unsigned s, uint64_t& rh, uint64_t& rl) {
+			if (s == 0u)      { rh = h; rl = l; }
+			else if (s < 64u) { rh = h >> s; rl = (l >> s) | (h << (64u - s)); }
+			else              { rh = 0u; rl = h >> (s - 64u); }
+		};
+		if (sh == 0u && sl == 0u) return result;   // a zero, below the subnormals
+		if (is_subnormal) {
+			shifted(sh, sl, eff_shift, result.hi, result.lo);
+			return result;
+		}
+		result.normal = true;
+		result.scale  = exp;
+		shifted(sh, sl, shift, result.hi, result.lo);
+		return result;
+	}
 
 	// convert elastic floating-point to native ieee-754
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
-	Real convert_to_ieee754() const noexcept {
+	constexpr Real convert_to_ieee754() const noexcept {
 		switch (_state) {
 		case FloatingPointState::Zero:
 			return (_sign ? -Real(0.0) : +Real(0.0));
@@ -2097,283 +2273,23 @@ protected:
 			break;
 		}
 
-		if constexpr (std::is_same_v<Real, float>) {
-			constexpr unsigned F_bits = 23;
-			constexpr unsigned E_bits = 8;
-			constexpr int E_max = 127;
-			constexpr int E_min = -126;
-			constexpr int E_bias = 127;
-			constexpr unsigned K = F_bits + 1; // 24
-			constexpr unsigned shift_amt = 64 - K; // 40
-
-			uint64_t raw_sig = _limb.empty() ? 0u : _limb.back();   // the top 64 bits
-			bool sticky_limbs = false;
-			for (size_t i = 0; i + 1 < _limb.size(); ++i) {
-				if (_limb[i] != 0) {
-					sticky_limbs = true;
-					break;
-				}
+		if constexpr (std::is_same_v<Real, float> || std::is_same_v<Real, double>) {
+			using parameter = ieee754_parameter<Real>;
+			using bits_t    = std::conditional_t<std::is_same_v<Real, float>, uint32_t, uint64_t>;
+			constexpr unsigned F_bits = parameter::fbits;
+			constexpr int      E_bias = parameter::bias;
+			const native_rounding r = round_to_native<F_bits + 1, 1 - E_bias, E_bias>();
+			if (r.overflow) {
+				if (r.to_inf) return (_sign ? -std::numeric_limits<Real>::infinity() : +std::numeric_limits<Real>::infinity());
+				return (_sign ? -std::numeric_limits<Real>::max() : +std::numeric_limits<Real>::max());
 			}
-
-			int64_t exp = _exponent;
-			uint64_t sig = raw_sig;
-			unsigned eff_shift = shift_amt;
-			bool is_subnormal = (exp < E_min);
-
-			bool lsb = false;
-			bool guard = false;
-			bool sticky = false;
-
-			if (is_subnormal) {
-				int64_t sub_shift = E_min - exp;
-				if (sub_shift >= static_cast<int64_t>(K)) {
-					// below half the smallest subnormal, except at sub_shift == K, where the
-					// leading bit is the guard bit of the smallest subnormal 2^(E_min - K + 1)
-					sig = 0;
-					eff_shift = 64;
-					guard = (sub_shift == static_cast<int64_t>(K)) && (raw_sig >> 63) != 0;
-					sticky = sticky_limbs || (guard ? (raw_sig << 1) != 0 : raw_sig != 0);
-					lsb = false;
-				} else {
-					eff_shift = shift_amt + static_cast<unsigned>(sub_shift);
-					lsb = (sig & (1ULL << eff_shift)) != 0;
-					guard = (sig & (1ULL << (eff_shift - 1))) != 0;
-					sticky = sticky_limbs || ((sig & ((1ULL << (eff_shift - 1)) - 1)) != 0);
-				}
-			} else {
-				lsb = (sig & (1ULL << shift_amt)) != 0;
-				guard = (sig & (1ULL << (shift_amt - 1))) != 0;
-				sticky = sticky_limbs || ((sig & ((1ULL << (shift_amt - 1)) - 1)) != 0);
-			}
-
-			if (guard || sticky) {
-				raise_flags(ExceptionFlag::Inexact);
-				if (is_subnormal) {
-					raise_flags(ExceptionFlag::Underflow);
-				}
-			}
-
-			bool round_up = false;
-			switch (rounding_mode()) {
-			case RoundingMode::RoundToNearest:
-				if (guard && (sticky || lsb)) round_up = true;
-				break;
-			case RoundingMode::RoundToZero:
-				break;
-			case RoundingMode::RoundTowardPositive:
-				if (!_sign && (guard || sticky)) round_up = true;
-				break;
-			case RoundingMode::RoundTowardNegative:
-				if (_sign && (guard || sticky)) round_up = true;
-				break;
-			}
-
-			if (round_up) {
-				if (eff_shift >= 64) {
-					// Round up from full underflow to the smallest subnormal 2^(E_min - K + 1)
-					sig = (1ULL << 63);
-					exp = E_min - static_cast<int64_t>(K) + 1;
-					eff_shift = 63;
-					is_subnormal = true;
-				} else {
-					uint64_t prev_sig = sig;
-					sig += (1ULL << eff_shift);
-					if (sig < prev_sig) {
-						if (is_subnormal) {
-							// the carry doubles the subnormal: one binade up, one bit less shift,
-							// and a normal number once that binade reaches E_min
-							sig = (1ULL << 63);
-							exp++;
-							eff_shift--;
-							is_subnormal = (exp < E_min);
-						} else {
-							sig = (1ULL << 63);
-							exp++;
-						}
-					}
-				}
-			}
-
-			if (exp > E_max) {
-				raise_flags(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
-				bool to_inf = true;
-				switch (rounding_mode()) {
-				case RoundingMode::RoundToZero:
-					to_inf = false;
-					break;
-				case RoundingMode::RoundTowardPositive:
-					if (_sign) to_inf = false;
-					break;
-				case RoundingMode::RoundTowardNegative:
-					if (!_sign) to_inf = false;
-					break;
-				default:
-					break;
-				}
-				if (to_inf) {
-					return (_sign ? -std::numeric_limits<float>::infinity() : +std::numeric_limits<float>::infinity());
-				} else {
-					return (_sign ? -std::numeric_limits<float>::max() : +std::numeric_limits<float>::max());
-				}
-			}
-
-			uint32_t sign_bit = (_sign ? 1u : 0u);
-			uint32_t exp_field = 0;
-			uint32_t frac_field = 0;
-
-			if (sig == 0) {
-				exp_field = 0;
-				frac_field = 0;
-			} else if (is_subnormal) {
-				exp_field = 0;
-				frac_field = static_cast<uint32_t>((sig >> eff_shift) & ((1ULL << F_bits) - 1));
-			} else {
-				exp_field = static_cast<uint32_t>(exp + E_bias);
-				frac_field = static_cast<uint32_t>((sig >> shift_amt) & ((1ULL << F_bits) - 1));
-			}
-
-			uint32_t bits = (sign_bit << (E_bits + F_bits)) | (exp_field << F_bits) | frac_field;
-			return sw::bit_cast<float>(bits);
-
-		} else if constexpr (std::is_same_v<Real, double>) {
-			constexpr unsigned F_bits = 52;
-			constexpr unsigned E_bits = 11;
-			constexpr int E_max = 1023;
-			constexpr int E_min = -1022;
-			constexpr int E_bias = 1023;
-			constexpr unsigned K = F_bits + 1; // 53
-			constexpr unsigned shift_amt = 64 - K; // 11
-
-			uint64_t raw_sig = _limb.empty() ? 0u : _limb.back();   // the top 64 bits
-			bool sticky_limbs = false;
-			for (size_t i = 0; i + 1 < _limb.size(); ++i) {
-				if (_limb[i] != 0) {
-					sticky_limbs = true;
-					break;
-				}
-			}
-
-			int64_t exp = _exponent;
-			uint64_t sig = raw_sig;
-			unsigned eff_shift = shift_amt;
-			bool is_subnormal = (exp < E_min);
-
-			bool lsb = false;
-			bool guard = false;
-			bool sticky = false;
-
-			if (is_subnormal) {
-				int64_t sub_shift = E_min - exp;
-				if (sub_shift >= static_cast<int64_t>(K)) {
-					// below half the smallest subnormal, except at sub_shift == K, where the
-					// leading bit is the guard bit of the smallest subnormal 2^(E_min - K + 1)
-					sig = 0;
-					eff_shift = 64;
-					guard = (sub_shift == static_cast<int64_t>(K)) && (raw_sig >> 63) != 0;
-					sticky = sticky_limbs || (guard ? (raw_sig << 1) != 0 : raw_sig != 0);
-					lsb = false;
-				} else {
-					eff_shift = shift_amt + static_cast<unsigned>(sub_shift);
-					lsb = (sig & (1ULL << eff_shift)) != 0;
-					guard = (sig & (1ULL << (eff_shift - 1))) != 0;
-					sticky = sticky_limbs || ((sig & ((1ULL << (eff_shift - 1)) - 1)) != 0);
-				}
-			} else {
-				lsb = (sig & (1ULL << shift_amt)) != 0;
-				guard = (sig & (1ULL << (shift_amt - 1))) != 0;
-				sticky = sticky_limbs || ((sig & ((1ULL << (shift_amt - 1)) - 1)) != 0);
-			}
-
-			if (guard || sticky) {
-				raise_flags(ExceptionFlag::Inexact);
-				if (is_subnormal) {
-					raise_flags(ExceptionFlag::Underflow);
-				}
-			}
-
-			bool round_up = false;
-			switch (rounding_mode()) {
-			case RoundingMode::RoundToNearest:
-				if (guard && (sticky || lsb)) round_up = true;
-				break;
-			case RoundingMode::RoundToZero:
-				break;
-			case RoundingMode::RoundTowardPositive:
-				if (!_sign && (guard || sticky)) round_up = true;
-				break;
-			case RoundingMode::RoundTowardNegative:
-				if (_sign && (guard || sticky)) round_up = true;
-				break;
-			}
-
-			if (round_up) {
-				if (eff_shift >= 64) {
-					// Round up from full underflow to the smallest subnormal 2^(E_min - K + 1)
-					sig = (1ULL << 63);
-					exp = E_min - static_cast<int64_t>(K) + 1;
-					eff_shift = 63;
-					is_subnormal = true;
-				} else {
-					uint64_t prev_sig = sig;
-					sig += (1ULL << eff_shift);
-					if (sig < prev_sig) {
-						if (is_subnormal) {
-							// the carry doubles the subnormal: one binade up, one bit less shift,
-							// and a normal number once that binade reaches E_min
-							sig = (1ULL << 63);
-							exp++;
-							eff_shift--;
-							is_subnormal = (exp < E_min);
-						} else {
-							sig = (1ULL << 63);
-							exp++;
-						}
-					}
-				}
-			}
-
-			if (exp > E_max) {
-				raise_flags(ExceptionFlag::Overflow | ExceptionFlag::Inexact);
-				bool to_inf = true;
-				switch (rounding_mode()) {
-				case RoundingMode::RoundToZero:
-					to_inf = false;
-					break;
-				case RoundingMode::RoundTowardPositive:
-					if (_sign) to_inf = false;
-					break;
-				case RoundingMode::RoundTowardNegative:
-					if (!_sign) to_inf = false;
-					break;
-				default:
-					break;
-				}
-				if (to_inf) {
-					return (_sign ? -std::numeric_limits<double>::infinity() : +std::numeric_limits<double>::infinity());
-				} else {
-					return (_sign ? -std::numeric_limits<double>::max() : +std::numeric_limits<double>::max());
-				}
-			}
-
-			uint64_t sign_bit = (_sign ? 1ULL : 0ULL);
-			uint64_t exp_field = 0;
-			uint64_t frac_field = 0;
-
-			if (sig == 0) {
-				exp_field = 0;
-				frac_field = 0;
-			} else if (is_subnormal) {
-				exp_field = 0;
-				frac_field = (sig >> eff_shift) & ((1ULL << F_bits) - 1);
-			} else {
-				exp_field = static_cast<uint64_t>(exp + E_bias);
-				frac_field = (sig >> shift_amt) & ((1ULL << F_bits) - 1);
-			}
-
-			uint64_t bits = (sign_bit << (E_bits + F_bits)) | (exp_field << F_bits) | frac_field;
-			return sw::bit_cast<double>(bits);
-
-		} else {
+			const uint64_t exp_field  = r.normal ? static_cast<uint64_t>(r.scale + E_bias) : 0u;
+			const uint64_t frac_field = r.lo & ((uint64_t(1) << F_bits) - 1u);
+			const uint64_t sign_bit   = (_sign ? 1u : 0u);
+			const uint64_t bits       = (sign_bit << (parameter::ebits + F_bits)) | (exp_field << F_bits) | frac_field;
+			return sw::bit_cast<Real>(static_cast<bits_t>(bits));
+		}
+		else {
 			return static_cast<Real>(convert_to_ieee754<double>());
 		}
 	}
@@ -2418,7 +2334,7 @@ private:
 // every state: a negative normal becomes positive, -inf becomes +inf, -0
 // becomes +0, and a NaN stays a NaN (its sign is irrelevant to isnan()).
 template<unsigned nlimbs>
-inline efloat<nlimbs> abs(const efloat<nlimbs>& a) {
+inline constexpr efloat<nlimbs> abs(const efloat<nlimbs>& a) {
 	efloat<nlimbs> result(a);
 	result.setsign(false);
 	return result;
@@ -2426,7 +2342,7 @@ inline efloat<nlimbs> abs(const efloat<nlimbs>& a) {
 
 // fabs(a): floating-point absolute value (C <cmath> spelling); same as abs.
 template<unsigned nlimbs>
-inline efloat<nlimbs> fabs(const efloat<nlimbs>& a) {
+inline constexpr efloat<nlimbs> fabs(const efloat<nlimbs>& a) {
 	return abs(a);
 }
 
@@ -2780,27 +2696,27 @@ constexpr bool operator>=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) 
 // efloat - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<unsigned nlimbs>
-inline bool operator==(const efloat<nlimbs>& lhs, double rhs) {
+inline constexpr bool operator==(const efloat<nlimbs>& lhs, double rhs) {
 	return operator==(lhs, efloat<nlimbs>(rhs));
 }
 template<unsigned nlimbs>
-inline bool operator!=(const efloat<nlimbs>& lhs, double rhs) {
+inline constexpr bool operator!=(const efloat<nlimbs>& lhs, double rhs) {
 	return !operator==(lhs, rhs);
 }
 template<unsigned nlimbs>
-inline bool operator< (const efloat<nlimbs>& lhs, double rhs) {
+inline constexpr bool operator< (const efloat<nlimbs>& lhs, double rhs) {
 	return operator<(lhs, efloat<nlimbs>(rhs));
 }
 template<unsigned nlimbs>
-inline bool operator> (const efloat<nlimbs>& lhs, double rhs) {
+inline constexpr bool operator> (const efloat<nlimbs>& lhs, double rhs) {
 	return operator< (efloat<nlimbs>(rhs), lhs);
 }
 template<unsigned nlimbs>
-inline bool operator<=(const efloat<nlimbs>& lhs, double rhs) {
+inline constexpr bool operator<=(const efloat<nlimbs>& lhs, double rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 template<unsigned nlimbs>
-inline bool operator>=(const efloat<nlimbs>& lhs, double rhs) {
+inline constexpr bool operator>=(const efloat<nlimbs>& lhs, double rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -2809,27 +2725,27 @@ inline bool operator>=(const efloat<nlimbs>& lhs, double rhs) {
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
 template<unsigned nlimbs>
-inline bool operator==(double lhs, const efloat<nlimbs>& rhs) {
+inline constexpr bool operator==(double lhs, const efloat<nlimbs>& rhs) {
 	return operator==(efloat<nlimbs>(lhs), rhs);
 }
 template<unsigned nlimbs>
-inline bool operator!=(double lhs, const efloat<nlimbs>& rhs) {
+inline constexpr bool operator!=(double lhs, const efloat<nlimbs>& rhs) {
 	return !operator==(lhs, rhs);
 }
 template<unsigned nlimbs>
-inline bool operator< (double lhs, const efloat<nlimbs>& rhs) {
+inline constexpr bool operator< (double lhs, const efloat<nlimbs>& rhs) {
 	return operator<(efloat<nlimbs>(lhs), rhs);
 }
 template<unsigned nlimbs>
-inline bool operator> (double lhs, const efloat<nlimbs>& rhs) {
+inline constexpr bool operator> (double lhs, const efloat<nlimbs>& rhs) {
 	return operator< (rhs, lhs);
 }
 template<unsigned nlimbs>
-inline bool operator<=(double lhs, const efloat<nlimbs>& rhs) {
+inline constexpr bool operator<=(double lhs, const efloat<nlimbs>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 template<unsigned nlimbs>
-inline bool operator>=(double lhs, const efloat<nlimbs>& rhs) {
+inline constexpr bool operator>=(double lhs, const efloat<nlimbs>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -2908,44 +2824,44 @@ constexpr efloat<nlimbs> operator/(efloat<nlimbs>&& lhs, const efloat<nlimbs>& r
 // integer operand converts exactly, all 64 bits, rather than through double.
 // BINARY ADDITION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, double rhs) {
+inline constexpr efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, double rhs) {
 	return operator+(lhs, efloat<nlimbs>(rhs));
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
-inline efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, Integer rhs) {
+inline constexpr efloat<nlimbs> operator+(const efloat<nlimbs>& lhs, Integer rhs) {
 	efloat<nlimbs> sum(lhs);
 	sum += rhs;   // in place, without an efloat for rhs (#1762)
 	return sum;
 }
 // BINARY SUBTRACTION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, double rhs) {
+inline constexpr efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, double rhs) {
 	return operator-(lhs, efloat<nlimbs>(rhs));
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
-inline efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, Integer rhs) {
+inline constexpr efloat<nlimbs> operator-(const efloat<nlimbs>& lhs, Integer rhs) {
 	efloat<nlimbs> difference(lhs);
 	difference -= rhs;   // in place, without an efloat for rhs (#1762)
 	return difference;
 }
 // BINARY MULTIPLICATION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, double rhs) {
+inline constexpr efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, double rhs) {
 	return operator*(lhs, efloat<nlimbs>(rhs));
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
-inline efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, Integer rhs) {
+inline constexpr efloat<nlimbs> operator*(const efloat<nlimbs>& lhs, Integer rhs) {
 	efloat<nlimbs> product(lhs);
 	product *= rhs;   // in place, without an efloat for rhs (#1762)
 	return product;
 }
 // BINARY DIVISION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, double rhs) {
+inline constexpr efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, double rhs) {
 	return operator/(lhs, efloat<nlimbs>(rhs));
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
-inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, Integer rhs) {
+inline constexpr efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, Integer rhs) {
 	efloat<nlimbs> quotient(lhs);
 	quotient /= rhs;   // a one-limb divisor divides in place (#1761)
 	return quotient;
@@ -2955,42 +2871,42 @@ inline efloat<nlimbs> operator/(const efloat<nlimbs>& lhs, Integer rhs) {
 // literal - efloat binary arithmetic operators
 // BINARY ADDITION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator+(double lhs, const efloat<nlimbs>& rhs) {
+inline constexpr efloat<nlimbs> operator+(double lhs, const efloat<nlimbs>& rhs) {
 	return operator+(efloat<nlimbs>(lhs), rhs);
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
-inline efloat<nlimbs> operator+(Integer lhs, const efloat<nlimbs>& rhs) {
+inline constexpr efloat<nlimbs> operator+(Integer lhs, const efloat<nlimbs>& rhs) {
 	efloat<nlimbs> sum(rhs);   // + commutes, and is correctly rounded either way round
 	sum += lhs;
 	return sum;
 }
 // BINARY SUBTRACTION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator-(double lhs, const efloat<nlimbs>& rhs) {
+inline constexpr efloat<nlimbs> operator-(double lhs, const efloat<nlimbs>& rhs) {
 	return operator-(efloat<nlimbs>(lhs), rhs);
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
-inline efloat<nlimbs> operator-(Integer lhs, const efloat<nlimbs>& rhs) {
+inline constexpr efloat<nlimbs> operator-(Integer lhs, const efloat<nlimbs>& rhs) {
 	return operator-(efloat<nlimbs>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator*(double lhs, const efloat<nlimbs>& rhs) {
+inline constexpr efloat<nlimbs> operator*(double lhs, const efloat<nlimbs>& rhs) {
 	return operator*(efloat<nlimbs>(lhs), rhs);
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
-inline efloat<nlimbs> operator*(Integer lhs, const efloat<nlimbs>& rhs) {
+inline constexpr efloat<nlimbs> operator*(Integer lhs, const efloat<nlimbs>& rhs) {
 	efloat<nlimbs> product(rhs);   // * commutes, and is correctly rounded either way round
 	product *= lhs;
 	return product;
 }
 // BINARY DIVISION
 template<unsigned nlimbs>
-inline efloat<nlimbs> operator/(double lhs, const efloat<nlimbs>& rhs) {
+inline constexpr efloat<nlimbs> operator/(double lhs, const efloat<nlimbs>& rhs) {
 	return operator/(efloat<nlimbs>(lhs), rhs);
 }
 template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
-inline efloat<nlimbs> operator/(Integer lhs, const efloat<nlimbs>& rhs) {
+inline constexpr efloat<nlimbs> operator/(Integer lhs, const efloat<nlimbs>& rhs) {
 	return operator/(efloat<nlimbs>(lhs), rhs);
 }
 
@@ -3117,14 +3033,14 @@ std::string to_string(const efloat<nlimbs>& value, std::streamsize precision, st
 		}
 		else {
 			int e               = 0;   // decimal exponent, filled in by to_digits below
-			int powerOfTenScale = static_cast<int>(std::floor(static_cast<double>(value.scale()) * 0.301029995663981));
+			int powerOfTenScale = static_cast<int>(efloat_detail::fp::floor(static_cast<double>(value.scale()) * 0.301029995663981));
 			int integerDigits   = (fixed ? (powerOfTenScale + 1) : 1);
 			int nrDigits        = integerDigits + static_cast<int>(precision);
 
 			int minBuffer = static_cast<int>(nlimbs) * 16;
 			int nrDigitsForFixedFormat = fixed ? std::max(minBuffer, nrDigits) : nrDigits;
 
-			double fullMagnitude = std::fabs(static_cast<double>(value));
+			double fullMagnitude = efloat_detail::fp::fabs(static_cast<double>(value));
 			if (fixed && (precision == 0) && (fullMagnitude < 1.0)) {
 				s += (fullMagnitude >= 0.5) ? '1' : '0';
 			}

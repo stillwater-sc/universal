@@ -5,7 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
-#include <cmath>
 #include <limits>
 #include <algorithm>
 #include <cstdint>
@@ -19,7 +18,7 @@ namespace efloat_detail {
 
 	// x 2^k, exactly, for a finite x
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> times_power_of_2(efloat<nlimbs> x, int64_t k) {
+	inline constexpr efloat<nlimbs> times_power_of_2(efloat<nlimbs> x, int64_t k) {
 		if (!x.iszero()) x.setexponent(x.scale() + k);
 		return x;
 	}
@@ -29,7 +28,7 @@ namespace efloat_detail {
 	// rounding error, in any mode, lies below 2^-(scale(m) + 65), far inside 1/m > 2^-(scale(m) + 1):
 	// its truncation is n, and the remainder a - n m is exact at the same width
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> integer_mod(const efloat<nlimbs>& a, const efloat<nlimbs>& m) {
+	inline constexpr efloat<nlimbs> integer_mod(const efloat<nlimbs>& a, const efloat<nlimbs>& m) {
 		if (a.iszero() || a < m) return a;
 		const unsigned bits = static_cast<unsigned>(a.scale() + 2) + significant_bits(m) + 64u;
 		const efloat<nlimbs> A = widened(a, bits), M = widened(m, bits);
@@ -39,7 +38,7 @@ namespace efloat_detail {
 
 	// 2^d mod m for d >= 0 and an integer m > 0, by binary powering modulo m
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> power_of_2_mod(int64_t d, const efloat<nlimbs>& m) {
+	inline constexpr efloat<nlimbs> power_of_2_mod(int64_t d, const efloat<nlimbs>& m) {
 		const int64_t direct = 2 * static_cast<int64_t>(significant_bits(m)) + 64;
 		if (d <= direct) return integer_mod(times_power_of_2(efloat<nlimbs>(1), d), m);
 		efloat<nlimbs> t(1);
@@ -55,7 +54,7 @@ namespace efloat_detail {
 	// x's own significand: X mod Y = (mx mod Y) (2^d mod Y) mod Y, where 2^d mod Y takes about
 	// log2(d) squarings, so an exponent gap of up to 2^62 costs no more than its bit count.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> exact_mod(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
+	inline constexpr efloat<nlimbs> exact_mod(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 		if (x.iszero() || x < y) return x;
 		const int64_t lx = lowest_bit(x), ly = lowest_bit(y);
 		const int64_t lo = std::min(lx, ly);
@@ -73,14 +72,14 @@ namespace efloat_detail {
 // truncated and multiplied back, which lost the remainder once the quotient passed the precision.
 // Special values as IEEE 754: NaN for an infinite x or a zero y, x for an infinite y.
 template<unsigned nlimbs>
-inline efloat<nlimbs> fmod(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
+inline constexpr efloat<nlimbs> fmod(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 	if (x.isnan() || y.isnan()) {
 		efloat<nlimbs> nan; nan.setnan();
 		return nan;
 	}
 	if (x.isinf() || y.iszero()) {
 		efloat<nlimbs> nan; nan.setnan();
-		efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
+		efloat_detail::raise_flags(ExceptionFlag::InvalidOperation);
 		return nan;
 	}
 	const unsigned precision = efloat_detail::result_precision(x, y);
@@ -101,14 +100,14 @@ inline efloat<nlimbs> fmod(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 // x mod 2|y| tells n's parity, and the remainder is moved into [-|y|/2, |y|/2]. Special values as
 // IEEE 754: NaN for an infinite x or a zero y, x for an infinite y.
 template<unsigned nlimbs>
-inline efloat<nlimbs> remainder(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
+inline constexpr efloat<nlimbs> remainder(const efloat<nlimbs>& x, const efloat<nlimbs>& y) {
 	if (x.isnan() || y.isnan()) {
 		efloat<nlimbs> nan; nan.setnan();
 		return nan;
 	}
 	if (y.iszero() || x.isinf()) {
 		efloat<nlimbs> nan; nan.setnan();
-		efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
+		efloat_detail::raise_flags(ExceptionFlag::InvalidOperation);
 		return nan;
 	}
 	const unsigned precision = efloat_detail::result_precision(x, y);
