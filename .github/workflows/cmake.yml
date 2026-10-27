@@ -88,6 +88,8 @@ jobs:
           # build and throwing out objects before the next run could reuse them. Hit
           # rates sat at 4-6% on main and on every branch alike.
           max-size: "2G"
+          # Keep only the objects this build used (see the full tier's step)
+          evict-old-files: job
           # Save only on pushes to main: PR/branch runs restore the warm main cache but
           # do not create new ones. Without this every PR run saved a fresh cache and a
           # CI burst evicted the warm caches under GitHub's 10GB limit (#1009).
@@ -299,6 +301,14 @@ jobs:
           # at 1G they sat pinned at "Cache size (GB): 1.0 / 1.0 (99.96%)", evicting
           # mid-build.
           max-size: "2G"
+          # Before the save, evict every object this build did not touch. Without it a
+          # cache only ever grows: each main push restores the last generation, adds the
+          # objects of the files that changed and saves the lot, so a cache that stays
+          # warm climbs to max-size (Android sat at 2.0 / 2.0 GB, 1.7GB stored, against
+          # ~40MB for one CI_LITE build). Across all artifacts that took the repo past
+          # the 10GB of cache storage the plan includes, and on 2026-10-26 the spend
+          # budget made the cache read only again. Ignored by the sccache variant.
+          evict-old-files: job
           # Save on every push to main again (#1009 still gates PR branches).
           #
           # #1408 restricted saving to four artifacts because 12 of them at ~0.8GB had

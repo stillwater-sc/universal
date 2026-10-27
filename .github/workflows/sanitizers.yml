@@ -89,8 +89,12 @@ jobs:
         with:
           key: ${{ matrix.artifact }}
           max-size: "3G"
+          # Store this build's objects only; without it the cache grew to 3.0 / 3.0 GB
+          evict-old-files: job
           save: ${{ !matrix.restore_only && (github.ref == 'refs/heads/main') }}
 
+      # -gline-tables-only replaces Debug's -g: the sanitizers' stack traces still
+      # symbolize to file:line, and the objects (and the ccache) shrink by about a quarter.
       - name: Configure CMake
         run: |
           cmake -B ${{github.workspace}}/build \
@@ -98,6 +102,8 @@ jobs:
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_CXX_COMPILER=clang++ \
             -DUNIVERSAL_BUILD_CI=ON \
+            -DCMAKE_C_FLAGS_DEBUG="-gline-tables-only" \
+            -DCMAKE_CXX_FLAGS_DEBUG="-gline-tables-only" \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             ${{ matrix.cmake_flags }}
