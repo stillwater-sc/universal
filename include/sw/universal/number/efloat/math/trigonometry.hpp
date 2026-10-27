@@ -25,11 +25,11 @@ namespace sw { namespace universal {
 // exact multiplication by 0.5 / 0.25 (both exactly representable).
 // ----------------------------------------------------------------------------
 template<unsigned nlimbs>
-inline efloat<nlimbs> efloat_pi_2() {
+inline constexpr efloat<nlimbs> efloat_pi_2() {
 	return efloat_pi<nlimbs>() * efloat<nlimbs>(0.5);
 }
 template<unsigned nlimbs>
-inline efloat<nlimbs> efloat_pi_4() {
+inline constexpr efloat<nlimbs> efloat_pi_4() {
 	return efloat_pi<nlimbs>() * efloat<nlimbs>(0.25);
 }
 
