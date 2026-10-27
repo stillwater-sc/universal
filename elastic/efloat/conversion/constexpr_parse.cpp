@@ -209,7 +209,7 @@ namespace {
 		constexpr std::array<double, 4> pi4 = to_double_expansion<4>(pi_value<12>());
 		constexpr sw::universal::qd pi_qd(pi4[0], pi4[1], pi4[2], pi4[3]);
 		// qd_pi's last component is 0x1.4cf98e804177fp-163, two units above the nearest double to
-		// pi - x0 - x1 - x2, which mpmath gives as 0x1.4cf98e804177dp-163
+		// pi - x0 - x1 - x2, which mpmath gives as 0x1.4cf98e804177dp-163 (#1849)
 		static_assert(pi_qd[0] == sw::universal::qd_pi[0] && pi_qd[1] == sw::universal::qd_pi[1] &&
 		              pi_qd[2] == sw::universal::qd_pi[2] && pi_qd[3] == 0x1.4cf98e804177dp-163, "pi as a qd");
 		constexpr std::array<double, 3> third = to_double_expansion<3>(efloat<4>(1) / efloat<4>(3));
