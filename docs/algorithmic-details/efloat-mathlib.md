@@ -641,8 +641,8 @@ state at any precision.
     and 64 million gcc operations. The test raises the limits for itself.
   - **Out of the constant evaluation.** `to_double_expansion<N>(v)` returns v as N doubles, each
     the conversion of what the ones before it left: hi and lo for a `dd`, four for a `qd`, built in
-    the same constant expression. pi at 384 bits gives `dd_pi` exactly and `qd_pi` but for its
-    fourth component, which is two units above the nearest double to pi - x0 - x1 - x2.
+    the same constant expression. pi at 384 bits gives `dd_pi` and `qd_pi` exactly, the nearest
+    expansions since #1849 corrected `qd_pi`'s fourth component.
   - **No run-time change.** 66176 parses (6016 literals at 11 precisions, two widths) and
     integer<> products at seven widths are the same as before under g++ and clang, as are the
     cfloat, posit, dd and qd parses of the same literals.
