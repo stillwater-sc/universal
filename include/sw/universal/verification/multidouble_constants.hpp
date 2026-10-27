@@ -177,9 +177,11 @@ namespace sw { namespace universal { namespace multidouble_verification {
 				++fails;
 				if (reportTestCases) std::cerr << "FAIL: " << tag << ' ' << entry.name << " is not the nearest expansion of its reference\n";
 			}
+			// a NaN result is a failure, not a comparison that comes out false; -inf is exact
 			const double err = rel_error_log2(computed, limbs, entry.id);
-			if (err > maxerr) maxerr = err;
-			if (err > limit) {
+			const bool   nan = std::isnan(err);
+			if (nan || err > maxerr) maxerr = nan ? INFINITY : err;
+			if (nan || err > limit) {
 				++fails;
 				if (reportTestCases) {
 					std::cerr << "FAIL: " << tag << ' ' << entry.name << " computed by the type: relative error 2^" << err
