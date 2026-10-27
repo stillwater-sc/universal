@@ -21,6 +21,7 @@
 #include <string>
 #include <string_view>
 #include <algorithm>
+#include <type_traits>   // std::is_constant_evaluated
 
 namespace sw { namespace universal {
 
@@ -47,37 +48,56 @@ namespace efloat_detail {
 	// BigBits-templated parse() (#1141): sizing the working precision first, then
 	// calling parse<constant_big_bits> gives an exact conversion well past the
 	// 2040-bit default d2b ceiling -- the wide budget covers the digit-integer's
-	// 5^|E| growth for a ~1000-digit literal. Invalid input -> NaN.
+	// 5^|E| growth for a ~1000-digit literal. Invalid input -> NaN. parse() is
+	// constexpr, and so is this (#1819).
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> make_constant(std::string_view decimal) {
+	inline constexpr efloat<nlimbs> make_constant(std::string_view decimal) {
 		efloat<nlimbs> value;
 		const unsigned target_bits = std::min(nlimbs * 32u, constant_literal_bits);
 		value.set_precision(target_bits);
-		if (!parse<constant_big_bits>(std::string(decimal), value)) value.setnan();
+		if (!parse<constant_big_bits>(decimal, value)) value.setnan();
 		return value;
+	}
+
+	// the literals, one type each, so that each constant has a cache of its own
+	struct pi_literal  { static constexpr const char* digits = EFLOAT_PI_DIGITS; };
+	struct e_literal   { static constexpr const char* digits = EFLOAT_E_DIGITS; };
+	struct phi_literal { static constexpr const char* digits = EFLOAT_PHI_DIGITS; };
+
+	// the run time parses each literal once per instantiation. A constant evaluation cannot keep
+	// a static, so it parses the literal on each call (literal_constant).
+	template<unsigned nlimbs, typename Literal>
+	inline efloat<nlimbs> cached_literal() {
+		static const efloat<nlimbs> c = make_constant<nlimbs>(Literal::digits);
+		return c;
+	}
+
+	template<unsigned nlimbs, typename Literal>
+	inline constexpr efloat<nlimbs> literal_constant() {
+		if (std::is_constant_evaluated()) return make_constant<nlimbs>(Literal::digits);
+		return cached_literal<nlimbs, Literal>();
 	}
 
 }  // namespace efloat_detail
 
-// efloat_pi<nlimbs>(): pi at min(nlimbs*32, ~3300) bits, cached per instantiation.
+// efloat_pi<nlimbs>(): pi at min(nlimbs*32, ~3300) bits, cached per instantiation. The three
+// constants are constexpr; past a few hundred bits a constant evaluation of one needs more than
+// clang's and MSVC's default step limits (see docs/algorithmic-details/efloat-mathlib.md).
 template<unsigned nlimbs>
-inline efloat<nlimbs> efloat_pi() {
-	static const efloat<nlimbs> c = efloat_detail::make_constant<nlimbs>(EFLOAT_PI_DIGITS);
-	return c;
+inline constexpr efloat<nlimbs> efloat_pi() {
+	return efloat_detail::literal_constant<nlimbs, efloat_detail::pi_literal>();
 }
 
 // efloat_e<nlimbs>(): Euler's number e.
 template<unsigned nlimbs>
-inline efloat<nlimbs> efloat_e() {
-	static const efloat<nlimbs> c = efloat_detail::make_constant<nlimbs>(EFLOAT_E_DIGITS);
-	return c;
+inline constexpr efloat<nlimbs> efloat_e() {
+	return efloat_detail::literal_constant<nlimbs, efloat_detail::e_literal>();
 }
 
 // efloat_phi<nlimbs>(): the golden ratio phi = (1 + sqrt(5))/2.
 template<unsigned nlimbs>
-inline efloat<nlimbs> efloat_phi() {
-	static const efloat<nlimbs> c = efloat_detail::make_constant<nlimbs>(EFLOAT_PHI_DIGITS);
-	return c;
+inline constexpr efloat<nlimbs> efloat_phi() {
+	return efloat_detail::literal_constant<nlimbs, efloat_detail::phi_literal>();
 }
 
 }} // namespace sw::universal
