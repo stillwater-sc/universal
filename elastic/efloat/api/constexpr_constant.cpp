@@ -170,9 +170,7 @@ namespace {
 		// arithmetic with efloat_constant operands returns the efloat result
 		constexpr C two_thirds = third + third;
 		static_assert(two_thirds == third * 2 && 2 * third == two_thirds && two_thirds - third == third, "+ - *");
-		// (an efloat compares with an int ambiguously, between its long long and double overloads, so
-		// the efloat results compare with efloat operands)
-		static_assert(half / half == E(1) && third / 2 < third && 1 / half == E(2) && -half == E(-0.5) && (half - E(0.5)).iszero(), "/ and unary -");
+		static_assert(half / half == 1 && third / 2 < third && 1 / half == 2 && -half == E(-0.5) && (half - E(0.5)).iszero(), "/ and unary -");
 		return 0;
 	}
 
