@@ -35,7 +35,7 @@ p = nbits - 2 - es.
 | posit | p near 1 | bits needed | binary64 gives | result |
 |---|---|---|---|---|
 | `posit<16,1>`, `posit<24,es>` | <= 22 | <= 46 | 53 | correctly rounded |
-| `posit<32,es>` (#1776) | 28 - 30 | 58 - 62 | 53 | misrounded near ties only: 5 of the 268,435,456 `posit<32,2>` in [1, 4) |
+| `posit<32,es>`, es = 1..3 (#1776) | 27 - 29 | 56 - 60 | 53 | misrounded near ties only: 5 of the 268,435,456 `posit<32,2>` in [1, 4) |
 | `posit<64,3>` (#1846) | 59 | 120 | 53 | 97.7% of random encodings misrounded; #1846 measures a mean of 17.5 ulp, max 53 |
 | `posit<128,4>` | 122 | 246 | 53 | about 70 bits lost; and maxpos = 2^2016 is past double's range |
 | `posit<256,5>` | 250 | 502 | 53 | about 200 bits lost; range as above |
@@ -55,16 +55,19 @@ Prototypes for nbits <= 64, with the default `bt = uint8_t`, on x86-64 with gcc 
 clang 21.1 at -O2, over 200,000 inputs.
 
 Correct rounding was checked against the posit rounding rule itself, independently of the
-algorithms. y is the correctly rounded sqrt(a) exactly when mid(y-1, y)^2 <= a < mid(y, y+1)^2.
-The midpoints are the (nbits+1)-bit patterns 2y - 1 and 2y + 1, which is how posit rounding is
-defined, and the comparison is exact in integers.
+algorithms. y is the correctly rounded sqrt(a) exactly when mid(y-1, y)^2 <= a <= mid(y, y+1)^2,
+where an equality is a tie and y must then be the even encoding. The midpoints are the
+(nbits+1)-bit patterns 2y - 1 and 2y + 1, which is how posit rounding is defined, and the
+comparison is exact in integers. minpos has no lower boundary, since nothing rounds to zero, and
+maxpos no upper one. Ties happen only where the regime has crowded out the fraction: in
+`posit<3,1>`, sqrt(1/4) = 1/2 is the midpoint of 1/4 and 1.
 
 **Misrounded results:**
 
 | | `posit<32,2>` random | `posit<32,2>` near ties | `posit<32,2>` every positive encoding | `posit<64,3>` random | `posit<64,3>` near ties |
 |---|---|---|---|---|---|
 | shim | 0 | 1 | 5 in [1, 4) | 195,315 | 196,778 |
-| native | 0 | 0 | **0 of 2,147,483,646** | 0 | 0 |
+| native | 0 | 0 | **0 of 2,147,483,647** | 0 | 0 |
 | cascade (dd or td, plus an exact check) | 0 | 0 | - | 0 | 0 |
 
 **Cost, ns per sqrt (gcc / clang):**
@@ -109,7 +112,8 @@ posit<nbits, es, bt> sqrt(const posit<nbits, es, bt>& a);   // correctly rounded
 
 No selector and no named alternatives. sqrt(0) = 0, sqrt(NaR) = NaR, and a negative argument
 gives NaR. The table lookups for `posit<3,0>`, `posit<3,1>`, `posit<4,0>`, `posit<5,0>`,
-`posit<8,0>` and `posit<8,1>` stay as specializations, verified exhaustively by the test.
+`posit<8,0>` and `posit<8,1>` are removed: the native algorithm is exhaustively correct at those
+sizes, and the `posit<3,1>` table was not (it gives sqrt(1/4) = 1/4, where the tie goes to 1).
 
 `rsqrt` stays `sqrt` followed by a reciprocal, which rounds twice; a correctly rounded `rsqrt` is
 outside this design.
@@ -122,10 +126,12 @@ one rounding:
 1. Decode a = S * 2^e, where S is the significand as an integer, hidden bit included.
 2. Shift S left so that the exponent is even and N = S << k has at least 2(p + 1) bits.
    Then sqrt(a) = sqrt(N) * 2^((e - k) / 2).
-3. R = isqrt(N), the integer square root, and sticky = (N != R^2). R carries at least p + 1 bits:
-   the result's bits, then the round bit; sticky is everything below them.
-4. Encode R, the sticky bit and the scale with one round to nearest, ties to even. That is correct
-   because R and sticky together determine which side of every rounding boundary sqrt(a) lies on.
+3. R = isqrt(N), the integer square root, and sticky = (N != R^2). R carries at least p + 2 bits:
+   the result's bits, the round bit, and at least one more below it.
+4. Append sticky to R as one more, lowest, bit and encode that with the scale, rounding once to
+   nearest, ties to even. The encoder sees an exact tie only when the round bit is set and nothing
+   below it is, which with the sticky bit appended means sqrt(a) really is the midpoint. So R and
+   sticky together decide which side of every rounding boundary sqrt(a) lies on.
 
 **nbits <= 64.** N is a 128-bit integer in [2^126, 2^128) and R a 64-bit one:
 
@@ -138,7 +144,9 @@ Correctness rests on the fix-up alone, so a poor seed costs time, never accuracy
 products are built from 32-bit halves: no `__int128`, no intrinsics.
 
 The encoder is posit's `uint64_t` encoder, `encode_positive_with_scale_and_fraction`, which rounds
-to nearest even with a sticky bit. posit gains a public member that wraps it.
+to nearest even on every bit it is given past the posit's precision. posit gains a public member
+that wraps it, `setpositive(scale, fraction, num_fbits)`. sqrt passes the 63 bits of R below its
+hidden bit followed by sticky: 64 fraction bits, at least 3 more than any posit<=64 keeps.
 
 **nbits > 64.** The same steps on multi-limb integers. Each correction step doubles the correct
 bits, so 128 bits need 2 steps and 256 bits need 3; each needs a full residual N - R^2 and a
@@ -151,10 +159,10 @@ skeleton. Its oracle is the midpoint rule above, independent of the algorithm.
 
 | level | inputs |
 |---|---|
-| 1 | every encoding of the posits up to 16 bits, including the table specializations; the tie cases of #1776; random `posit<32,2>`, `posit<48,2>` and `posit<64,3>`, with other block types |
+| 1 | every encoding of the posits up to 16 bits; three of the `posit<32,2>` the shim misrounds, and the 2^16 encodings above 1; random `posit<32,2>`, `posit<48,2>` and `posit<64,3>`, with other block types |
 | 2 | every `posit<32,2>` in [1, 4) (268 M) |
 | 3 | the extremes of each configuration's range |
-| 4 | every positive `posit<32,2>` (2^31) |
+| 4 | every positive `posit<32,2>`, minpos through maxpos (2^31 - 1) |
 
 ## Plan
 
