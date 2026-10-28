@@ -1,0 +1,180 @@
+#pragma once
+// efloat_constant.hpp: an efloat value frozen into fixed storage, for constexpr variables of any
+// precision (#1819, phase 4)
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source
+// license.
+//
+// An efloat keeps its significand inside the value up to EFLOAT_INLINE_LIMBS 64-bit limbs (512 bits
+// by default) and on the heap past them (#1820). A constant evaluation may allocate, but a constexpr
+// variable cannot keep what it allocated, so an efloat past the inline limbs cannot be one:
+//
+//     constexpr efloat<4>  p = efloat_pi<4>();     // 128 bits, inline: a constexpr efloat
+//     constexpr efloat<32> q = efloat_pi<32>();    // 1024 bits: an error, the limbs are on the heap
+//
+// efloat_constant<nlimbs> holds the value of an efloat<nlimbs> -- its state, sign, exponent,
+// precision and limbs -- in an array sized for nlimbs * 32 bits, so it is a constexpr variable at
+// every precision, and turns back into the same efloat, at run time or in a constant expression:
+//
+//     constexpr efloat_constant<32> pi = efloat_pi<32>();
+//     static_assert(pi > 3 && pi < efloat<32>(22) / 7);
+//     efloat<32> x = pi;                           // bit for bit efloat_pi<32>()
+//
+// It compares with itself, with efloat<nlimbs> and with native arithmetic types, converts to float
+// and double, and its + - * / and unary - return the efloat result. The array holds
+// (nlimbs + 1) / 2 64-bit limbs. A value with more limbs -- one computed at a precision set past the
+// type's -- is rounded to nlimbs * 32 bits, in the current rounding mode (to nearest in a constant
+// evaluation), and keeps that precision. A value that fits is held as it is, bit for bit: with an
+// odd nlimbs that includes an exact native integer of up to 64 bits, which carries no precision of
+// its own.
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <type_traits>
+#include <universal/number/efloat/efloat_impl.hpp>
+
+namespace sw { namespace universal {
+
+template<unsigned nlimbs>
+class efloat_constant {
+public:
+	using value_type = efloat<nlimbs>;
+	using limb_t     = typename value_type::limb_t;
+	// 64-bit limbs: as many as nlimbs * 32 bits take
+	static constexpr std::size_t capacity = (nlimbs + 1u) / 2u;
+
+	constexpr efloat_constant() noexcept : efloat_constant(value_type{}) {}
+
+	constexpr efloat_constant(const value_type& v) noexcept
+		: _limb{}, _count{ 0 }, _exponent{ 0 }, _precision_limbs{ 0 }, _state{ FloatingPointState::Zero }, _sign{ false } {
+		if (v.limb_count() <= capacity) {
+			freeze(v);
+		}
+		else if (v._state == FloatingPointState::Normal) {
+			value_type rounded(v);
+			rounded.set_precision(nlimbs * 32u);   // (nlimbs + 1) / 2 limbs at most
+			freeze(rounded);
+		}
+		else {
+			// a zero, infinity or NaN carries no significand: hold it as setzero(), setinf() and
+			// setnan() make it, with its sign and precision, whatever limbs it was left with
+			value_type special;
+			switch (v._state) {
+			case FloatingPointState::Zero:         special.setzero(); break;
+			case FloatingPointState::Infinite:     special.setinf(v._sign); break;
+			case FloatingPointState::QuietNaN:     special.setnan(true); break;
+			default:                               special.setnan(false); break;
+			}
+			special._sign            = v._sign;
+			special._precision_limbs = v._precision_limbs;
+			freeze(special);
+		}
+	}
+
+	// the efloat this holds, bit for bit
+	constexpr value_type value() const {
+		value_type v;
+		v._state           = _state;
+		v._sign            = _sign;
+		v._exponent        = _exponent;
+		v._precision_limbs = _precision_limbs;
+		v._limb.assign(_limb.data(), _count);
+		return v;
+	}
+	constexpr operator value_type() const { return value(); }
+	explicit constexpr operator double() const { return double(value()); }
+	explicit constexpr operator float()  const { return float(value()); }
+
+	// the selectors of the efloat
+	constexpr bool          iszero()        const noexcept { return _state == FloatingPointState::Zero; }
+	constexpr bool          isinf()         const noexcept { return _state == FloatingPointState::Infinite; }
+	constexpr bool          isnan()         const noexcept { return _state == FloatingPointState::QuietNaN || _state == FloatingPointState::SignalingNaN; }
+	constexpr int           sign()          const noexcept { return _sign ? -1 : 1; }
+	constexpr std::int64_t  scale()         const noexcept { return _exponent; }
+	constexpr unsigned      get_precision() const noexcept { return value().get_precision(); }
+	constexpr std::size_t   limb_count()    const noexcept { return _count; }
+	constexpr const limb_t* limb_data()     const noexcept { return _limb.data(); }
+
+	// comparisons: with itself, with efloat<nlimbs>, and with native arithmetic types, each by the
+	// efloat comparison (a native operand converts to an efloat exactly first)
+#define EFLOAT_CONSTANT_COMPARISON(op)                                                                    \
+	friend constexpr bool operator op(const efloat_constant& a, const efloat_constant& b) { return a.value() op b.value(); } \
+	friend constexpr bool operator op(const efloat_constant& a, const value_type& b)      { return a.value() op b; }         \
+	friend constexpr bool operator op(const value_type& a, const efloat_constant& b)      { return a op b.value(); }         \
+	template<typename Native, typename = std::enable_if_t<std::is_arithmetic_v<Native>>>                    \
+	friend constexpr bool operator op(const efloat_constant& a, Native b) { return a.value() op native(b); }                  \
+	template<typename Native, typename = std::enable_if_t<std::is_arithmetic_v<Native>>>                    \
+	friend constexpr bool operator op(Native a, const efloat_constant& b) { return native(a) op b.value(); }
+	EFLOAT_CONSTANT_COMPARISON(==)
+	EFLOAT_CONSTANT_COMPARISON(!=)
+	EFLOAT_CONSTANT_COMPARISON(<)
+	EFLOAT_CONSTANT_COMPARISON(>)
+	EFLOAT_CONSTANT_COMPARISON(<=)
+	EFLOAT_CONSTANT_COMPARISON(>=)
+#undef EFLOAT_CONSTANT_COMPARISON
+
+	// arithmetic, by the efloat arithmetic: the result is an efloat<nlimbs>, which an
+	// efloat_constant takes again. efloat's operators are templates, which a conversion does not
+	// reach, so these spell out the efloat_constant operands.
+#define EFLOAT_CONSTANT_ARITHMETIC(op)                                                                    \
+	friend constexpr value_type operator op(const efloat_constant& a, const efloat_constant& b) { return a.value() op b.value(); } \
+	friend constexpr value_type operator op(const efloat_constant& a, const value_type& b)      { return a.value() op b; }         \
+	friend constexpr value_type operator op(const value_type& a, const efloat_constant& b)      { return a op b.value(); }         \
+	template<typename Native, typename = std::enable_if_t<std::is_arithmetic_v<Native>>>                    \
+	friend constexpr value_type operator op(const efloat_constant& a, Native b) { return a.value() op native(b); }                  \
+	template<typename Native, typename = std::enable_if_t<std::is_arithmetic_v<Native>>>                    \
+	friend constexpr value_type operator op(Native a, const efloat_constant& b) { return native(a) op b.value(); }
+	EFLOAT_CONSTANT_ARITHMETIC(+)
+	EFLOAT_CONSTANT_ARITHMETIC(-)
+	EFLOAT_CONSTANT_ARITHMETIC(*)
+	EFLOAT_CONSTANT_ARITHMETIC(/)
+#undef EFLOAT_CONSTANT_ARITHMETIC
+	constexpr value_type operator-() const { return -value(); }
+
+private:
+	// a native operand as an efloat, exactly. A long double that is a double goes through the double
+	// constructor, which is constexpr: efloat's long double constructor reads the encoding with memcpy
+	// and is not, and where long double is double (LONG_DOUBLE_SUPPORT is 0, as on MSVC) efloat has
+	// none. Any other long double -- more bits than a double holds, or past its range -- takes the
+	// long double constructor, at run time.
+	template<typename Native>
+	static constexpr value_type native(Native x) {
+		if constexpr (std::is_same_v<Native, long double>) {
+#if LONG_DOUBLE_SUPPORT
+			// in double's range first: narrowing a finite long double past it is undefined
+			constexpr long double largest = static_cast<long double>(std::numeric_limits<double>::max());
+			constexpr long double inf     = std::numeric_limits<long double>::infinity();
+			const bool in_range = (x >= -largest && x <= largest) || x == inf || x == -inf;
+			if (x != x || (in_range && static_cast<long double>(static_cast<double>(x)) == x)) return value_type(static_cast<double>(x));
+			return value_type(x);
+#else
+			return value_type(static_cast<double>(x));
+#endif
+		}
+		else {
+			return value_type(x);
+		}
+	}
+
+	std::array<limb_t, capacity> _limb;      // the significand's limbs, least significant first; the rest 0
+	std::size_t                  _count;     // how many of them the value holds
+	std::int64_t                 _exponent;
+	unsigned                     _precision_limbs;
+	FloatingPointState           _state;
+	bool                         _sign;
+
+	constexpr void freeze(const value_type& v) noexcept {
+		_count           = (v._limb.size() < capacity) ? v._limb.size() : capacity;   // fits, by the constructor
+		_exponent        = v._exponent;
+		_precision_limbs = v._precision_limbs;
+		_state           = v._state;
+		_sign            = v._sign;
+		for (std::size_t i = 0; i < _count; ++i) _limb[i] = v._limb[i];
+	}
+};
+
+}}  // namespace sw::universal
