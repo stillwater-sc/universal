@@ -18,9 +18,6 @@
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-// and fast posits
-//#define POSIT_FAST_SPECIALIZATION 1
-#define POSIT_FAST_POSIT_32_2 0
 #include <universal/number/posit/posit.hpp>
 #include <blas/blas.hpp>
 #include <blas/solvers/cg.hpp> // adaptive CG, regular dot for IEEE, fused-dot for posits

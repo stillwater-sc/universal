@@ -1062,6 +1062,16 @@ public:
 		_block.setbit(bitIndex, value);
 		return *this;
 	}
+	// Set the posit to the positive value 1.fraction * 2^scale, rounded to nearest, ties to even.
+	// fraction holds num_fbits bits below the hidden bit, most significant first; bits past the
+	// posit's precision round, so a set lowest bit serves as a sticky bit. For algorithms that
+	// compute a significand in integers, such as sqrt. nbits <= 64: the encoder works in a uint64_t.
+	constexpr posit<nbits, es, bt>& setpositive(int scale, uint64_t fraction, unsigned num_fbits) noexcept {
+		static_assert(nbits <= 64, "setpositive requires nbits <= 64");
+		bool saturated = false;
+		_block.setbits(encode_positive_with_scale_and_fraction(scale, fraction, num_fbits, saturated));
+		return *this;
+	}
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	template<BlockTripleOperator op = BlockTripleOperator::REP>
