@@ -6,8 +6,9 @@
 //               storage: a constexpr variable that turns back into the same efloat, its state,
 //               sign, exponent, precision and limbs, checked against the run time at 32 to 3300
 //               bits and for zero, -0, the infinities and the NaNs
-//   rounding    a significand longer than nlimbs * 32 bits is rounded to it, as set_precision()
-//               rounds at run time
+//   rounding    a value with more limbs than the array holds is rounded to nlimbs * 32 bits, as
+//               set_precision() rounds at run time; one that fits is held bit for bit, a 64-bit
+//               native integer in efloat_constant<1> too
 //   comparison  with itself, with efloat and with native types, NaN unordered, in static_assert
 //   constants   pi, e and phi from their literals as efloat_constant<32> and <104> (1024 and
 //               3300 bits), limb for limb the run-time constants
@@ -85,7 +86,7 @@ namespace {
 		case 0: return ratio<nlimbs>(1, 3, bits);
 		case 1: return ratio<nlimbs>(-22, 7, bits);
 		case 2: return ratio<nlimbs>(355, 113, bits) * ratio<nlimbs>(1, 1000000, bits);
-		case 3: return efloat<nlimbs>(1234567);   // exact, no precision of its own
+		case 3: return efloat<nlimbs>(0xFFFF'FFFF'FFFF'FFFFull);   // exact, no precision of its own: 64 bits in efloat<1>
 		case 4: { efloat<nlimbs> v; v.setzero(); return v; }
 		case 5: { efloat<nlimbs> v; v.setzero(); v.setsign(true); return v; }
 		case 6: { efloat<nlimbs> v; v.setinf(false); return v; }
@@ -150,6 +151,7 @@ namespace {
 		static_assert(third < half && half > third && third <= third && third >= third && third == third && third != half, "with itself");
 		static_assert(third < E(0.5) && E(0.25) < third && third != E(0.5) && E(0.5) == half, "with efloat");
 		static_assert(half == 0.5 && 0.5 == half && third < 1 && 0 < third && third > 0.333f && half <= 0.5 && half >= 0.5, "with native types");
+		static_assert(half == 0.5L && third < 0.5L && 0.25L < third, "with long double, also where it is double");
 		static_assert(!(nan == nan) && nan != nan && !(nan < half) && !(nan > half) && !(nan <= half) && !(nan >= half), "a NaN is unordered");
 		static_assert(double(half) == 0.5 && float(third) == 1.0f / 3.0f, "to double and float");
 		// a table of constants, and one passed to a constexpr function
