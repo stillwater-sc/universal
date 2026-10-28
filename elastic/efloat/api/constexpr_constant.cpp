@@ -159,6 +159,8 @@ namespace {
 		static_assert(E(char(-1)) == E(-1) || !std::is_signed_v<char>, "efloat(char(-1)) is -1 where char is signed");
 		static_assert(minus_one == static_cast<signed char>(-1) && minus_one < 0u, "signed char; -1 below an unsigned 0");
 		static_assert(!(nan == nan) && nan != nan && !(nan < half) && !(nan > half) && !(nan <= half) && !(nan >= half), "a NaN is unordered");
+		// efloat's own >= with a NaN, against efloat and against double in either order
+		static_assert(!(E(nan) >= E(0.5)) && !(E(0.5) >= E(nan)) && !(E(nan) >= 0.5) && !(0.5 >= E(nan)), "efloat: NaN >= is false");
 		static_assert(double(half) == 0.5 && float(third) == 1.0f / 3.0f, "to double and float");
 		// a table of constants, and one passed to a constexpr function
 		constexpr std::array<C, 3> table{ { C(E(1)), third, half } };
