@@ -2312,14 +2312,6 @@ private:
 	template<unsigned nnlimbs>
 	friend constexpr bool operator< (const efloat<nnlimbs>& lhs, const efloat<nnlimbs>& rhs) noexcept;
 
-	// efloat - literal logic comparisons
-	template<unsigned nnlimbs>
-	friend bool operator==(const efloat<nnlimbs>& lhs, long long rhs);
-
-	// literal - efloat logic comparisons
-	template<unsigned nnlimbs>
-	friend bool operator==(long long lhs, const efloat<nnlimbs>& rhs);
-
 	// find the most significant bit set
 	template<unsigned nnlimbs>
 	friend signed findMsb(const efloat<nnlimbs>& v);
@@ -2774,6 +2766,32 @@ template<unsigned nlimbs>
 inline constexpr bool operator>=(const efloat<nlimbs>& lhs, double rhs) {
 	return operator< (rhs, lhs) || operator==(lhs, rhs);   // false for a NaN, as <= is
 }
+// an integer operand converts exactly, all 64 bits, rather than through double (#1852); a bool
+// compares as 0 or 1, as it adds
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator==(const efloat<nlimbs>& lhs, Integer rhs) {
+	return operator==(lhs, efloat<nlimbs>(rhs));
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator!=(const efloat<nlimbs>& lhs, Integer rhs) {
+	return !operator==(lhs, efloat<nlimbs>(rhs));
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator< (const efloat<nlimbs>& lhs, Integer rhs) {
+	return operator< (lhs, efloat<nlimbs>(rhs));
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator> (const efloat<nlimbs>& lhs, Integer rhs) {
+	return operator< (efloat<nlimbs>(rhs), lhs);
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator<=(const efloat<nlimbs>& lhs, Integer rhs) {
+	return operator<=(lhs, efloat<nlimbs>(rhs));
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator>=(const efloat<nlimbs>& lhs, Integer rhs) {
+	return operator>=(lhs, efloat<nlimbs>(rhs));
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - efloat binary logic operators
@@ -2802,6 +2820,30 @@ inline constexpr bool operator<=(double lhs, const efloat<nlimbs>& rhs) {
 template<unsigned nlimbs>
 inline constexpr bool operator>=(double lhs, const efloat<nlimbs>& rhs) {
 	return operator< (rhs, lhs) || operator==(lhs, rhs);   // false for a NaN, as <= is
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator==(Integer lhs, const efloat<nlimbs>& rhs) {
+	return operator==(efloat<nlimbs>(lhs), rhs);
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator!=(Integer lhs, const efloat<nlimbs>& rhs) {
+	return !operator==(efloat<nlimbs>(lhs), rhs);
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator< (Integer lhs, const efloat<nlimbs>& rhs) {
+	return operator< (efloat<nlimbs>(lhs), rhs);
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator> (Integer lhs, const efloat<nlimbs>& rhs) {
+	return operator< (rhs, efloat<nlimbs>(lhs));
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator<=(Integer lhs, const efloat<nlimbs>& rhs) {
+	return operator<=(efloat<nlimbs>(lhs), rhs);
+}
+template<unsigned nlimbs, typename Integer, typename = std::enable_if_t<std::is_integral_v<Integer>>>
+inline constexpr bool operator>=(Integer lhs, const efloat<nlimbs>& rhs) {
+	return operator>=(efloat<nlimbs>(lhs), rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
