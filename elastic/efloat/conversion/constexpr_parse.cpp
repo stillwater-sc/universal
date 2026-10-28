@@ -9,7 +9,7 @@
 //   constants    efloat_pi, efloat_e and efloat_phi by the compiler, bit for bit the run time's,
 //                and pi from its literal equal to pi computed by acos(-1)
 //   expansion    to_double_expansion() in static_assert: pi as a dd and as a qd, equal to
-//                dd_pi and to qd_pi's first three components (its fourth is two units off)
+//                dd_pi and qd_pi
 //
 // The constants past a few hundred bits need more than clang's and MSVC's default constexpr step
 // limits, which CMakeLists.txt raises for this test (-fconstexpr-steps, /constexpr:steps).
@@ -208,10 +208,9 @@ namespace {
 		static_assert(pi_dd.high() == sw::universal::dd_pi.high() && pi_dd.low() == sw::universal::dd_pi.low(), "pi as a dd");
 		constexpr std::array<double, 4> pi4 = to_double_expansion<4>(pi_value<12>());
 		constexpr sw::universal::qd pi_qd(pi4[0], pi4[1], pi4[2], pi4[3]);
-		// qd_pi's last component is 0x1.4cf98e804177fp-163, two units above the nearest double to
-		// pi - x0 - x1 - x2, which mpmath gives as 0x1.4cf98e804177dp-163 (#1849)
+		// qd_pi is the nearest expansion of pi since #1849; its fourth component was two units off
 		static_assert(pi_qd[0] == sw::universal::qd_pi[0] && pi_qd[1] == sw::universal::qd_pi[1] &&
-		              pi_qd[2] == sw::universal::qd_pi[2] && pi_qd[3] == 0x1.4cf98e804177dp-163, "pi as a qd");
+		              pi_qd[2] == sw::universal::qd_pi[2] && pi_qd[3] == sw::universal::qd_pi[3], "pi as a qd");
 		constexpr std::array<double, 3> third = to_double_expansion<3>(efloat<4>(1) / efloat<4>(3));
 		static_assert(third[0] == 1.0 / 3.0 && third[1] == (1.0 / 3.0) * 0x1p-54 && third[2] != 0.0, "1/3: three nonzero components");
 		constexpr std::array<double, 3> half = to_double_expansion<3>(efloat<4>(0.5));
