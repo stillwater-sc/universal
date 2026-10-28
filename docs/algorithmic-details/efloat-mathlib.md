@@ -650,6 +650,38 @@ state at any precision.
     constant evaluation of its own, at 64 and 128 bits and at 512 in level 2, compares each with
     the run time, checks ties to even and the failures in `static_assert`, and compares pi, e and
     phi with the run time at 128 and 1024 bits, and at 3300 in level 2.
+- **constexpr variables at every precision** (#1819, phase 4). An efloat whose limbs fit its
+  inline buffer -- up to `EFLOAT_INLINE_LIMBS` 64-bit limbs, 512 bits by default (#1820) -- is
+  itself a constexpr variable. Past it the limbs are on the heap, and a constexpr variable cannot
+  keep what a constant evaluation allocated (C++20, and C++23 and C++26 too).
+  `efloat_constant<nlimbs>` (`efloat/efloat_constant.hpp`) holds the value of an
+  `efloat<nlimbs>` -- state, sign, exponent, precision and limbs -- in an array sized for
+  nlimbs * 32 bits, and turns back into the same efloat:
+
+  ```cpp
+  constexpr efloat_constant<32> pi = efloat_pi<32>();       // 1024 bits
+  static_assert(pi > 3 && pi < efloat<32>(22) / 7);
+  efloat<32> x = pi;                                         // bit for bit efloat_pi<32>()
+  ```
+
+  - **Its interface.** It compares with itself, with `efloat<nlimbs>` and with native arithmetic
+    types (a native operand converts exactly), converts to float and double, and has the
+    selectors (`iszero`, `isnan`, `sign`, `scale`, `get_precision`, `limb_data`). Arithmetic goes
+    through the efloat it converts to. A significand longer than nlimbs * 32 bits -- computed at
+    a precision set past the type's -- is rounded to nlimbs * 32 bits, as `set_precision()`
+    rounds, to nearest in a constant evaluation.
+  - **Why a type of its own.** The other designs #1819 weighed change efloat: a capacity from
+    the template parameter caps the elastic precision, and a capacity parameter of its own
+    changes every one of the 244 function templates over `efloat<nlimbs>`. Raising
+    `EFLOAT_INLINE_LIMBS` still works, for a whole build, at the price of larger copies.
+    `efloat_constant` leaves efloat and its run time as they were.
+  - **NaN comparisons.** efloat's `>=` was `!(a < b)`, so `NaN >= x` was true. It is now
+    `b < a || a == b`, false for a NaN as `<=` already was; for every other value it is the same.
+  - **Verification.** `elastic/efloat/api/constexpr_constant.cpp` checks inline constexpr
+    variables at 128 and 512 bits, round trips of 10 values (fractions, a native integer without
+    a precision of its own, both zeros, both infinities, both NaNs) at 32, 128, 544, 1024 and 3300
+    bits against the run time, the rounding of a longer significand against `set_precision()`,
+    the comparisons, and pi, e and phi as `efloat_constant<32>`, and `<104>` in level 2.
 
 ## 4. The functions
 
@@ -1420,10 +1452,9 @@ of the difference's 9, which only a result written in place would save; and `fma
 bits (1.2x), past the short path's six limbs, where a seven- and eight-limb version measured
 slower than the general path (section 3).
 
-**Constant evaluation** (#1819, phase 4): constexpr values past the inline limbs, which need a
-fixed-capacity type; the gamma functions within the default step limits, which a fixed table of
-Stirling coefficients would bring; and pi, e and phi past 512 bits within them, which the
-converter's fixed-width `integer<>` copies and shifts keep from.
+**Constant evaluation** (#1819): the gamma functions within the default step limits, which a
+fixed table of Stirling coefficients would bring; and pi, e and phi past 512 bits within them,
+which the converter's fixed-width `integer<>` copies and shifts keep from.
 
 ## 10. Working on it
 

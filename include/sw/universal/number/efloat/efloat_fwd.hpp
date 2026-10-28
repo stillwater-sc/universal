@@ -13,6 +13,7 @@ namespace sw { namespace universal {
 
 // forward references
 template<unsigned nlimbs> class efloat;
+template<unsigned nlimbs> class efloat_constant;   // an efloat frozen for a constexpr variable
 
 // parse a decimal/scientific literal into an efloat, correctly rounded to the value's
 // precision whatever the literal's length (#1713). BigBits is the narrowest result width

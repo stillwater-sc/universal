@@ -161,7 +161,8 @@ public:
 	// thread's block cache, the rounding is to nearest and no status flag is raised: the thread's
 	// mode and flags are out of a constant expression's reach (rounding_mode(), raise_flags()). A
 	// value whose limbs fit the inline buffer can be a constexpr variable; a larger one cannot
-	// keep its heap block. Not yet: long double, whose encodings are read and written with memcpy.
+	// keep its heap block, and efloat_constant<nlimbs> holds it instead (efloat_constant.hpp).
+	// Not yet: long double, whose encodings are read and written with memcpy.
 	constexpr efloat() noexcept
 		: _state{ FloatingPointState::Zero }, _sign{ false }, _exponent{ 0 }, _limb{} {
 		_limb.assign(1, 0u);   // zero holds one limb of 0, as bits() shows it
@@ -2297,6 +2298,10 @@ protected:
 
 private:
 
+	// the frozen value of a constexpr variable past the inline limbs (#1819): it copies the members
+	template<unsigned nnlimbs>
+	friend class efloat_constant;
+
 	// efloat - efloat logic comparisons
 	template<unsigned nnlimbs>
 	friend constexpr bool operator==(const efloat<nnlimbs>& lhs, const efloat<nnlimbs>& rhs) noexcept;
@@ -2735,7 +2740,7 @@ constexpr bool operator<=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) 
 }
 template<unsigned nlimbs>
 constexpr bool operator>=(const efloat<nlimbs>& lhs, const efloat<nlimbs>& rhs) noexcept {
-	return !operator< (lhs, rhs);
+	return operator< (rhs, lhs) || operator==(lhs, rhs);   // false for a NaN, as <= is
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2763,7 +2768,7 @@ inline constexpr bool operator<=(const efloat<nlimbs>& lhs, double rhs) {
 }
 template<unsigned nlimbs>
 inline constexpr bool operator>=(const efloat<nlimbs>& lhs, double rhs) {
-	return !operator< (lhs, rhs);
+	return operator< (rhs, lhs) || operator==(lhs, rhs);   // false for a NaN, as <= is
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2792,7 +2797,7 @@ inline constexpr bool operator<=(double lhs, const efloat<nlimbs>& rhs) {
 }
 template<unsigned nlimbs>
 inline constexpr bool operator>=(double lhs, const efloat<nlimbs>& rhs) {
-	return !operator< (lhs, rhs);
+	return operator< (rhs, lhs) || operator==(lhs, rhs);   // false for a NaN, as <= is
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////

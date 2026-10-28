@@ -16,7 +16,7 @@ compile_all("true" "efloat" "Number Systems/elastic/floating-point/binary/efloat
 # series from coefficients a constant evaluation cannot cache, and pi, e and phi past a few hundred
 # bits read a long literal, both past clang's and MSVC's default step limits. gcc's default
 # operation limit holds the math library; the 3300-bit constants need twice it.
-foreach(target efloat_constexpr_mathlib efloat_constexpr_parse)
+foreach(target efloat_constexpr_mathlib efloat_constexpr_parse efloat_constexpr_constant)
 	if(TARGET ${target})
 		if(MSVC)
 			target_compile_options(${target} PRIVATE /constexpr:steps33554432)
