@@ -23,8 +23,8 @@
 //     static_assert(pi > 3 && pi < efloat<32>(22) / 7);
 //     efloat<32> x = pi;                           // bit for bit efloat_pi<32>()
 //
-// It compares with itself, with efloat<nlimbs> and with native arithmetic types, and converts to
-// float and double; arithmetic goes through the efloat it converts to. The array holds
+// It compares with itself, with efloat<nlimbs> and with native arithmetic types, converts to float
+// and double, and its + - * / and unary - return the efloat result. The array holds
 // (nlimbs + 1) / 2 64-bit limbs. A value with more limbs -- one computed at a precision set past the
 // type's -- is rounded to nlimbs * 32 bits, in the current rounding mode (to nearest in a constant
 // evaluation), and keeps that precision. A value that fits is held as it is, bit for bit: with an
@@ -33,6 +33,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <type_traits>
 #include <universal/number/efloat/efloat_impl.hpp>
 
@@ -116,6 +117,24 @@ public:
 	EFLOAT_CONSTANT_COMPARISON(>=)
 #undef EFLOAT_CONSTANT_COMPARISON
 
+	// arithmetic, by the efloat arithmetic: the result is an efloat<nlimbs>, which an
+	// efloat_constant takes again. efloat's operators are templates, which a conversion does not
+	// reach, so these spell out the efloat_constant operands.
+#define EFLOAT_CONSTANT_ARITHMETIC(op)                                                                    \
+	friend constexpr value_type operator op(const efloat_constant& a, const efloat_constant& b) { return a.value() op b.value(); } \
+	friend constexpr value_type operator op(const efloat_constant& a, const value_type& b)      { return a.value() op b; }         \
+	friend constexpr value_type operator op(const value_type& a, const efloat_constant& b)      { return a op b.value(); }         \
+	template<typename Native, typename = std::enable_if_t<std::is_arithmetic_v<Native>>>                    \
+	friend constexpr value_type operator op(const efloat_constant& a, Native b) { return a.value() op native(b); }                  \
+	template<typename Native, typename = std::enable_if_t<std::is_arithmetic_v<Native>>>                    \
+	friend constexpr value_type operator op(Native a, const efloat_constant& b) { return native(a) op b.value(); }
+	EFLOAT_CONSTANT_ARITHMETIC(+)
+	EFLOAT_CONSTANT_ARITHMETIC(-)
+	EFLOAT_CONSTANT_ARITHMETIC(*)
+	EFLOAT_CONSTANT_ARITHMETIC(/)
+#undef EFLOAT_CONSTANT_ARITHMETIC
+	constexpr value_type operator-() const { return -value(); }
+
 private:
 	// a native operand as an efloat, exactly. A long double that is a double goes through the double
 	// constructor, which is constexpr: efloat's long double constructor reads the encoding with memcpy
@@ -126,7 +145,11 @@ private:
 	static constexpr value_type native(Native x) {
 		if constexpr (std::is_same_v<Native, long double>) {
 #if LONG_DOUBLE_SUPPORT
-			if (x != x || static_cast<long double>(static_cast<double>(x)) == x) return value_type(static_cast<double>(x));
+			// in double's range first: narrowing a finite long double past it is undefined
+			constexpr long double largest = static_cast<long double>(std::numeric_limits<double>::max());
+			constexpr long double inf     = std::numeric_limits<long double>::infinity();
+			const bool in_range = (x >= -largest && x <= largest) || x == inf || x == -inf;
+			if (x != x || (in_range && static_cast<long double>(static_cast<double>(x)) == x)) return value_type(static_cast<double>(x));
 			return value_type(x);
 #else
 			return value_type(static_cast<double>(x));

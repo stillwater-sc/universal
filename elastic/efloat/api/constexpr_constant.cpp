@@ -9,7 +9,8 @@
 //   rounding    a value with more limbs than the array holds is rounded to nlimbs * 32 bits, as
 //               set_precision() rounds at run time; one that fits is held bit for bit, a 64-bit
 //               native integer in efloat_constant<1> too
-//   comparison  with itself, with efloat and with native types, NaN unordered, in static_assert
+//   comparison  with itself, with efloat and with native types, NaN unordered, and + - * / with
+//               them, in static_assert; a long double past double's range at run time
 //   constants   pi, e and phi from their literals as efloat_constant<32> and <104> (1024 and
 //               3300 bits), limb for limb the run-time constants
 //
@@ -32,6 +33,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <type_traits>
 #include <utility>
 #include <universal/number/efloat/efloat.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -152,6 +154,10 @@ namespace {
 		static_assert(third < E(0.5) && E(0.25) < third && third != E(0.5) && E(0.5) == half, "with efloat");
 		static_assert(half == 0.5 && 0.5 == half && third < 1 && 0 < third && third > 0.333f && half <= 0.5 && half >= 0.5, "with native types");
 		static_assert(half == 0.5L && third < 0.5L && 0.25L < third, "with long double, also where it is double");
+		constexpr C minus_one = E(-1);
+		static_assert(minus_one == char(-1) || !std::is_signed_v<char>, "a negative plain char is negative");
+		static_assert(E(char(-1)) == E(-1) || !std::is_signed_v<char>, "efloat(char(-1)) is -1 where char is signed");
+		static_assert(minus_one == static_cast<signed char>(-1) && minus_one < 0u, "signed char; -1 below an unsigned 0");
 		static_assert(!(nan == nan) && nan != nan && !(nan < half) && !(nan > half) && !(nan <= half) && !(nan >= half), "a NaN is unordered");
 		static_assert(double(half) == 0.5 && float(third) == 1.0f / 3.0f, "to double and float");
 		// a table of constants, and one passed to a constexpr function
@@ -159,6 +165,24 @@ namespace {
 		static_assert(table[0] > table[2] && table[2] > table[1], "an array of constants");
 		constexpr auto twice = [](const C& c) { return C(E(c) * 2); };
 		static_assert(twice(half) == 1 && twice(third) > half, "into and out of a constexpr function");
+		// arithmetic with efloat_constant operands returns the efloat result
+		constexpr C two_thirds = third + third;
+		static_assert(two_thirds == third * 2 && 2 * third == two_thirds && two_thirds - third == third, "+ - *");
+		// (an efloat compares with an int ambiguously, between its long long and double overloads, so
+		// the efloat results compare with efloat operands)
+		static_assert(half / half == E(1) && third / 2 < third && 1 / half == E(2) && -half == E(-0.5) && (half - E(0.5)).iszero(), "/ and unary -");
+		return 0;
+	}
+
+	// a long double past double's range takes efloat's long double constructor, at run time
+	int VerifyWideLongDouble() {
+#if LONG_DOUBLE_SUPPORT
+		if constexpr (std::numeric_limits<long double>::max_exponent > std::numeric_limits<double>::max_exponent) {
+			const efloat_constant<4> big = efloat<4>(std::numeric_limits<double>::max()) * 2;
+			const long double wider = static_cast<long double>(std::numeric_limits<double>::max()) * 4;
+			if (!(big < wider && wider > big && big != wider)) return 1;
+		}
+#endif
 		return 0;
 	}
 
@@ -225,7 +249,8 @@ int main() try {
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundTrips<32, 1024>(reportTestCases), "efloat", "round trips at 1024 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundTrips<104, 3300>(reportTestCases), "efloat", "round trips at 3300 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifyRounding(reportTestCases), "efloat", "a longer significand rounded");
-	nrOfFailedTestCases += ReportTestResult(VerifyComparisons(), "efloat", "comparisons");
+	nrOfFailedTestCases += ReportTestResult(VerifyComparisons(), "efloat", "comparisons and arithmetic");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideLongDouble(), "efloat", "a long double past double's range");
 	nrOfFailedTestCases += ReportTestResult(VerifyConstants<32>(reportTestCases), "efloat", "pi, e, phi at 1024 bits");
 #	endif
 

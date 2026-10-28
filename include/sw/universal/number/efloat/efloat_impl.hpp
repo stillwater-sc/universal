@@ -233,7 +233,11 @@ public:
 	constexpr efloat& operator=(int rhs)                  noexcept { return convert_signed(rhs); }
 	constexpr efloat& operator=(long rhs)                 noexcept { return convert_signed(rhs); }
 	constexpr efloat& operator=(long long rhs)            noexcept { return convert_signed(rhs); }
-	constexpr efloat& operator=(char rhs)                 noexcept { return convert_unsigned(rhs); }
+	// plain char is signed or unsigned as the platform has it: char(-1) is -1 where it is signed
+	constexpr efloat& operator=(char rhs) noexcept {
+		if constexpr (std::is_signed_v<char>) return convert_signed(static_cast<signed char>(rhs));
+		else                                   return convert_unsigned(static_cast<unsigned char>(rhs));
+	}
 	constexpr efloat& operator=(unsigned short rhs)       noexcept { return convert_unsigned(rhs); }
 	constexpr efloat& operator=(unsigned int rhs)         noexcept { return convert_unsigned(rhs); }
 	constexpr efloat& operator=(unsigned long rhs)        noexcept { return convert_unsigned(rhs); }
