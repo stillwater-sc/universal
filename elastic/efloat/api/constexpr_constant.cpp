@@ -180,6 +180,9 @@ namespace {
 		if constexpr (std::numeric_limits<long double>::max_exponent > std::numeric_limits<double>::max_exponent) {
 			const efloat_constant<4> big = efloat<4>(std::numeric_limits<double>::max()) * 2;
 			const long double wider = static_cast<long double>(std::numeric_limits<double>::max()) * 4;
+			// an exact value, so that a long double turned into infinity would fail
+			const efloat_constant<4> exact = efloat<4>(std::numeric_limits<double>::max()) * 4;
+			if (!(exact == wider && wider == exact)) return 1;
 			if (!(big < wider && wider > big && big != wider)) return 1;
 		}
 #endif
