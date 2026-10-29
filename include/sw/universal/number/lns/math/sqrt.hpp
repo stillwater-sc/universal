@@ -7,7 +7,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/ieee754.hpp>
-//#include <universal/number/lns/math/sqrt_tables.hpp>
 
 namespace sw { namespace universal {
 
