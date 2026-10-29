@@ -36,7 +36,7 @@ public:
 	static constexpr Cfloat denorm_min() {  // return minimum denormalized value
 		return Cfloat(sw::universal::SpecificValue::minpos);
 	}
-	static constexpr Cfloat infinity() { // return positive infinity
+	static constexpr Cfloat infinity() { // return positive infinity, maxpos when there is none
 		return Cfloat(sw::universal::SpecificValue::infpos);
 	}
 	static constexpr Cfloat quiet_NaN() { // return non-signaling NaN
@@ -62,7 +62,7 @@ public:
     // of the radix that is a valid finite floating-point number
 	static constexpr int max_exponent              = Cfloat::MAX_EXP;
 	static constexpr int max_exponent10            = sw::universal::decimal_max_exponent10(max_exponent);
-	static constexpr bool has_infinity             = true;
+	static constexpr bool has_infinity             = !(isSaturating && hasMaxExpValues); // that Inf pattern is maxpos
 	static constexpr bool has_quiet_NaN            = true;
 	static constexpr bool has_signaling_NaN        = true;
 	static constexpr float_denorm_style has_denorm = (hasSubnormals ? denorm_present : denorm_absent);

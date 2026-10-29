@@ -1202,7 +1202,12 @@ public:
 	constexpr void setzero() noexcept { clear(); }
 	constexpr void setinf(bool sign = true) noexcept {
 		// the Inf encoding is the pattern 0b0'11...11'11...10 for a +inf, and 0b1'11...11'11...110 for a -inf
-		if constexpr (0 == nrBlocks) {
+		if constexpr (isSaturating && hasMaxExpValues) {
+			// a saturating encoding with max-exponent values has no inf: that pattern is maxpos/maxneg,
+			// and an infinity saturates to it
+			if (sign) maxneg(); else maxpos();
+		}
+		else if constexpr (0 == nrBlocks) {
 			return;
 		}
 		else if constexpr (1 == nrBlocks) {
@@ -1710,7 +1715,9 @@ public:
 		// the bit pattern encoding of Inf is independent of the max-exponent value configuration
 		bool isNegInf = false;
 		bool isPosInf = false;
-		if constexpr (0 == nrBlocks) {
+		if constexpr (0 == nrBlocks || (isSaturating && hasMaxExpValues)) {
+			// a saturating encoding with max-exponent values has no inf: the Inf pattern is maxpos/maxneg
+			(void)InfType;
 			return false;
 		}
 		else if constexpr (1 == nrBlocks) {
