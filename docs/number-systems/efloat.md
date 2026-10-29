@@ -9,9 +9,10 @@ the style of a classical multi-precision float such as MPFR. That removes the li
 ceiling, so the precision you can request is limited by memory rather than by the exponent
 range of a host type.
 
-`efloat` is correctly rounded, in its arithmetic and in its whole math library, at any
-precision and in all four rounding modes. It runs at MPFR's speed, ahead of it in every
-elementary function, while staying header-only and free of dependencies. It also evaluates
+`efloat`'s arithmetic is correctly rounded at any precision in all four rounding modes, and
+its math library is designed to be: checked against MPFR from 32 to 8192 bits, it returns no
+incorrectly rounded result. It runs at MPFR's speed, ahead of it in every elementary function,
+while staying header-only and free of dependencies. It also evaluates
 at compile time: arithmetic, the math library and constants such as pi to 1024 bits can be
 computed by the compiler into `constexpr` variables.
 
@@ -93,14 +94,18 @@ no precision and so takes the default, which is the full `nlimbs * 32` bits.
 
 ### Mathematical library
 
-The mathematical library is correctly rounded at any precision, in all four rounding modes:
+The mathematical library is designed to be correctly rounded at any precision, in all four
+rounding modes:
 `exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p`, `sin`, `cos`, `tan`, `asin`,
 `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `pow`, `tgamma`,
 `lgamma`, `erf`, `erfc`, `cbrt`, `hypot` and `fma`; `fmod` and `remainder` are exact. Each
 transcendental function evaluates with guard bits past the result's precision and
 rounds by Ziv's strategy, evaluating again at a wider precision in the rare case its value lies
 too close to a rounding boundary; exact results, such as `exp2(3)` or `pow(9, 0.5)`, are formed
-exactly. Results hold out to `2^(2^62)`, far past the range of `double`: `tgamma(100001.5)` is
+exactly. The retry loop is bounded: after eight retries, at 256 times the target precision, it
+rounds its last evaluation, which is faithful but not proven correct. That can happen only for an
+exact result within about `2^-(256 P)` of a rounding boundary; no proof shows it never does, so
+the guarantee rests on measured error bounds and on the MPFR check below. Results hold out to `2^(2^62)`, far past the range of `double`: `tgamma(100001.5)` is
 about `8.93e+456575`. None of these functions go through `double`.
 
 `hypot` and `fma` form their squares, products and sums exactly and round once; `cbrt` takes
@@ -111,9 +116,10 @@ The constants `efloat_pi<nlimbs>()`, `efloat_e<nlimbs>()` and `efloat_phi<nlimbs
 correctly rounded at the type's precision; ln 2, ln 10 and the others the functions need are
 computed once per thread at the widest precision asked for and cached.
 
-Every result is checked against MPFR by `benchmark/accuracy/efloat/mpfr_check.cpp`: every
-function and conversion, all four rounding modes, 32 to 8192 bits, with special arguments per
-function. It finds no incorrectly rounded result.
+`benchmark/accuracy/efloat/mpfr_check.cpp` checks the results against MPFR: every function and
+the conversions to `float` and `double`, all four rounding modes, 32 to 8192 bits, with special
+arguments per function. It finds no incorrectly rounded result. The `long double` conversions are
+checked by `elastic/efloat/conversion/long_double.cpp`.
 
 ## Performance
 
@@ -147,9 +153,10 @@ efloat time and efloat / MPFR:
 | `erf` | 2.97 (1.0x) | 9.91 (0.6x) | 74.3 (0.4x) | 1407 (0.5x) |
 
 Across all 35 operations `mpfr_gap` times, efloat is 0.2x to 1.2x of MPFR, and every elementary
-function is at or below 1.0x at every one of the four precisions. Across 20 precisions from 64 to
-16384 bits (`mpfr_bands`), no primitive or function is more than 1.46x MPFR, under g++ and
-clang alike. Through gmpy2, the usual way to reach MPFR from Python, each call pays another
+function is at or below 1.0x at every one of the four precisions. `mpfr_bands` times the
+primitives (`+`, `-`, `*`, `/`, `a/7`, `sqrt`, `fma`) at 20 precisions from 64 to 16384 bits, and
+`exp`, `log` and `sin` at the 18 of them up to 8192 bits: no cell is above 1.46x MPFR, under g++
+and clang alike. Through gmpy2, the usual way to reach MPFR from Python, each call pays another
 ~0.04 us on top.
 
 Two habits keep measurements honest. The first call at a new precision fills the constant
@@ -164,7 +171,7 @@ the release image (`docs/licensing/mpfr-gmp-lgpl.md`):
 | target | what it does |
 |---|---|
 | `benchmark_efloat_mpfr_gap` | 35 operations at 128/512/2048/8192 bits against MPFR |
-| `benchmark_efloat_mpfr_bands` | the primitives and exp/log/sin at 20 precisions; `all 1.5` fails on a ratio above 1.5 |
+| `benchmark_efloat_mpfr_bands` | the primitives at 20 precisions (64-16384 bits), exp/log/sin to 8192; `all 1.5` fails on a ratio above 1.5 |
 | `accuracy_efloat_mpfr_check` | the correct-rounding check above |
 | `benchmark_efloat_mpmath_gap` | efloat alone, no MPFR, with ratio guards that hold on any runner; compare with `mpmath_gap.py` |
 
