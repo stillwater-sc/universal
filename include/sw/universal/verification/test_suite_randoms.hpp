@@ -427,6 +427,33 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
+	// One binary operation on given encodings, checked against a golden encoding: the reference
+	// executeBinary builds and TestType's own result must both equal it. This reaches a path
+	// that random operands rarely do, such as the scaled reference past double's range (#1863).
+	template<typename TestType>
+	int VerifyBinaryOperatorReference(bool reportTestCases, RandomsOp opcode, const std::string& a, const std::string& b, const std::string& golden) {
+		TestType testa, testb, expected, result{ 0 }, ref{ 0 };
+		testa.assign(a);
+		testb.assign(b);
+		expected.assign(golden);
+		const bool referenced = executeBinary(opcode, double(testa), double(testb), testa, testb, result, ref);
+		if (referenced && ref == expected && result == expected) return 0;
+		if (reportTestCases) {
+			const char* op = "?";
+			switch (opcode) {
+			case RandomsOp::OPCODE_ADD: case RandomsOp::OPCODE_IPA: op = "+"; break;
+			case RandomsOp::OPCODE_SUB: case RandomsOp::OPCODE_IPS: op = "-"; break;
+			case RandomsOp::OPCODE_MUL: case RandomsOp::OPCODE_IPM: op = "*"; break;
+			case RandomsOp::OPCODE_DIV: case RandomsOp::OPCODE_IPD: op = "/"; break;
+			default: break;
+			}
+			if (!referenced) std::cerr << "no reference for " << a << ' ' << op << ' ' << b << '\n';
+			else if (ref != expected) ReportBinaryArithmeticError("FAIL reference", op, testa, testb, ref, expected);
+			else ReportBinaryArithmeticError("FAIL", op, testa, testb, result, expected);
+		}
+		return 1;
+	}
+
 	// generate a random set of operands to test the binary operators for a arithmetic type configuration
 	// Basic design is that we generate nrOfRandom uint64_t values and store them in an operand array.
 	// We will then execute the unary operator on .

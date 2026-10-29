@@ -153,6 +153,28 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, RandomsOp::OPCODE_ADD, nrRandoms), typeid(c32).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, RandomsOp::OPCODE_ADD, nrRandoms), typeid(c48).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, RandomsOp::OPCODE_ADD, nrRandoms), typeid(c64).name(), "addition");
+	{
+		// c64's max-exponent binade lies past DBL_MAX: its reference is the scaled one (#1863),
+		// which random operands reach about once in a thousand
+		int fails = 0;
+		fails += VerifyBinaryOperatorReference<c64>(reportTestCases, RandomsOp::OPCODE_ADD,
+			"0b0.11111111111.1000000000000000000000000000000000000000000000000000",
+			"0b1.11111111111.0000000000000000000000000000000000000000000000000000",
+			"0b0.11111111110.0000000000000000000000000000000000000000000000000000");   // 1.5*2^1024 - 2^1024 = 2^1023
+		fails += VerifyBinaryOperatorReference<c64>(reportTestCases, RandomsOp::OPCODE_ADD,
+			"0b0.11111111111.0000000000000000000000000000000000000000000000000000",
+			"0b0.11111001010.0000000000000000000000000000000000000000000000000000",
+			"0b0.11111111111.0000000000000000000000000000000000000000000000000000");   // 2^1024 + half an ulp: the tie goes to even
+		fails += VerifyBinaryOperatorReference<c64>(reportTestCases, RandomsOp::OPCODE_ADD,
+			"0b0.11111111111.0000000000000000000000000000000000000000000000000000",
+			"0b0.11111001010.1000000000000000000000000000000000000000000000000000",
+			"0b0.11111111111.0000000000000000000000000000000000000000000000000001");   // 2^1024 + 0.75 ulp rounds up
+		fails += VerifyBinaryOperatorReference<c64>(reportTestCases, RandomsOp::OPCODE_SUB,
+			"0b0.11111111111.1000000000000000000000000000000000000000000000000000",
+			"0b0.11111111111.1000000000000000000000000000000000000000000000000000",
+			"0b0.00000000000.0000000000000000000000000000000000000000000000000000");   // exact cancellation
+		nrOfFailedTestCases += ReportTestResult(fails, "c64 max-exponent binade", "addition");
+	}
 	nrRandoms = 0; // TBD -> configurations that are more precise then double precision require a vector of 64bit words to construct the random bits
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, RandomsOp::OPCODE_ADD, nrRandoms), typeid(c80).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, RandomsOp::OPCODE_ADD, nrRandoms), typeid(c96).name(), "addition");

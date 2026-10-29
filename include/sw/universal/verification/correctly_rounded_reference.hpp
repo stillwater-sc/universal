@@ -151,6 +151,33 @@ namespace sw { namespace universal {
 			return n;
 		}
 
+		// a op b, for a result below the smallest normal, in units of the subnormal quantum 2^q
+		// and rounded to the nearest integer; a = ma * 2^ea, b = mb * 2^eb, the result's exponent
+		// is shift + q
+		inline double subnormalUnits(char op, double ma, int ea, double mb, int eb, int shift, int q) {
+			if (op == '+' || op == '-') {
+				// both operands are integer multiples of 2^q and so is their sum, which is small
+				const double sb = (op == '-') ? -mb : mb;
+				return std::ldexp(ma, ea - q) + std::ldexp(sb, eb - q);
+			}
+			if (shift <= -1000) return 0.0;
+			const double a2 = std::ldexp(ma, shift);
+			const double y = (op == '*') ? a2 * mb : a2 / mb;
+			if (std::fabs(y) < 0.25) return 0.0;   // the nearest integer is 0
+			double err{ 0 };
+			if (op == '*') {
+				double p{ 0 };
+				expansion_ops::two_prod(a2, mb, p, err);
+			}
+			else {
+				double p{ 0 }, perr{ 0 };
+				expansion_ops::two_prod(y, mb, p, perr);
+				const double residual = (a2 - p) - perr;
+				err = (mb > 0.0) ? residual : -residual;
+			}
+			return roundToInteger(y, err);
+		}
+
 	}  // namespace detail_reference
 
 	// ref = a op b rounded once to TestType through the scaled computation above; false when it
@@ -218,32 +245,7 @@ namespace sw { namespace universal {
 			// with subnormals: the nearest multiple of the subnormal quantum 2^q
 			else {
 				constexpr int q = limits::min_exponent - limits::digits;
-				double n{ 0 };   // the result in units of 2^q
-				if (op == '+' || op == '-') {
-					// both operands are integer multiples of 2^q and so is their sum, which is small
-					n = std::ldexp(ma, ea - q) + std::ldexp(sb, eb - q);
-				}
-				else {
-					const int shift = e0 - q;
-					if (shift > -1000) {
-						const double a2 = std::ldexp(ma, shift);
-						const double y = (op == '*') ? a2 * mb : a2 / mb;
-						if (std::fabs(y) >= 0.25) {   // below that the nearest integer is 0
-							double err{ 0 };
-							if (op == '*') {
-								double p{ 0 };
-								expansion_ops::two_prod(a2, mb, p, err);
-							}
-							else {
-								double p{ 0 }, perr{ 0 };
-								expansion_ops::two_prod(y, mb, p, perr);
-								const double residual = (a2 - p) - perr;
-								err = (mb > 0.0) ? residual : -residual;
-							}
-							n = detail_reference::roundToInteger(y, err);
-						}
-					}
-				}
+				const double n = detail_reference::subnormalUnits(op, ma, ea, mb, eb, e0 - q, q);
 				if (n == 0.0) {
 					const bool negative = (op == '+' || op == '-') ? false : ((ma < 0.0) != (mb < 0.0));
 					ref = TestType(negative ? -0.0 : 0.0);

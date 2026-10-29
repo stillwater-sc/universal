@@ -142,6 +142,24 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c32).name(), "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c48).name(), "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c64).name(), "multiplication");
+	{
+		// c64's max-exponent binade lies past DBL_MAX: its reference is the scaled one (#1863),
+		// which random operands reach about once in a thousand
+		int fails = 0;
+		fails += VerifyBinaryOperatorReference<c64>(reportTestCases, RandomsOp::OPCODE_MUL,
+			"0b0.11111111110.0000000000000000000000000000000000000000000000000000",
+			"0b0.10000000000.1000000000000000000000000000000000000000000000000000",
+			"0b0.11111111111.1000000000000000000000000000000000000000000000000000");   // finite operands, a product only double overflows
+		fails += VerifyBinaryOperatorReference<c64>(reportTestCases, RandomsOp::OPCODE_MUL,
+			"0b0.11111111111.0000000000000000000000000000000000000000000000000001",
+			"0b0.01111111111.0000000000000000000000000000000000000000000000000001",
+			"0b0.11111111111.0000000000000000000000000000000000000000000000000010");   // (1+2^-51+2^-104)*2^1024 rounds down
+		fails += VerifyBinaryOperatorReference<c64>(reportTestCases, RandomsOp::OPCODE_MUL,
+			"0b0.11111111111.1000000000000000000000000000000000000000000000000000",
+			"0b0.10000000000.0000000000000000000000000000000000000000000000000000",
+			"0b0.11111111111.1111111111111111111111111111111111111111111111111110");   // 3*2^1024 is past maxpos
+		nrOfFailedTestCases += ReportTestResult(fails, "c64 max-exponent binade", "multiplication");
+	}
 	nrRandoms = 0; // TBD -> configurations that are more precise then double precision require a vector of 64bit words to construct the random bits
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c80).name(), "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c96).name(), "multiplication");
