@@ -13,6 +13,7 @@
 #include <string>
 
 #include <universal/number/shared/specific_value_encoding.hpp>   // SpecificValue: the saturating reference clamp
+#include <universal/verification/correctly_rounded_reference.hpp>  // the reference, rounded once (#1861)
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -152,7 +153,15 @@ namespace sw { namespace universal {
 				}
 			}
 		}
-		testref = reference;
+		char op = ' ';
+		switch (opcode) {
+		case RandomsOp::OPCODE_ADD: case RandomsOp::OPCODE_IPA: op = '+'; break;
+		case RandomsOp::OPCODE_SUB: case RandomsOp::OPCODE_IPS: op = '-'; break;
+		case RandomsOp::OPCODE_MUL: case RandomsOp::OPCODE_IPM: op = '*'; break;
+		case RandomsOp::OPCODE_DIV: case RandomsOp::OPCODE_IPD: op = '/'; break;
+		default: break;
+		}
+		testref = correctlyRoundedReference<TestType>(op, da, db, reference);
 	}
 
 	// Execute a unary operator
