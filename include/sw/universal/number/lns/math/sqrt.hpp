@@ -1,6 +1,5 @@
 #pragma once
 #include <cerrno>
-#include <iostream>   // std::cout in BabylonianMethod below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for logarithmic floating-point
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -11,36 +10,6 @@
 //#include <universal/number/lns/math/sqrt_tables.hpp>
 
 namespace sw { namespace universal {
-
-/*
-	// straight Babylonian
-	inline double babylonian(double v) {
-		double x_n = 0.5 * v; // initial guess
-		const double eps = 1.0e-7;   // 
-		do {
-			x_n = (x_n + v / x_n) / 2.0;
-		} while (std::abs(x_n * x_n - v) > eps);
-
-		return x_n;
-	}
-*/
-
-	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-	inline lns<nbits, rbits, bt, xtra...> BabylonianMethod(const lns<nbits, rbits, bt, xtra...>& v) {
-		using LnsType = lns<nbits, rbits, bt, xtra...>;
-		constexpr double eps = 1.0e-5;
-		LnsType half(0.5);
-		LnsType x_next;
-		LnsType x_n = half * v;
-		LnsType diff;
-		do {
-			x_next = (x_n + v / x_n) * half;
-			diff = x_next - x_n;
-			   std::cout << " x_n+1: " << x_next << " x_n: " << x_n << " diff " << diff << std::endl;
-			x_n = x_next;
-		} while (double(sw::universal::abs(diff)) > eps);
-		return x_n;
-	}
 
 	/*
 	- Consider the function argument, x, in floating-point form, with a base

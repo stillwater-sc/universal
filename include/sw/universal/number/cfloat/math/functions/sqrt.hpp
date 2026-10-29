@@ -1,7 +1,6 @@
 #pragma once
 #include <cerrno>
 #include <cmath>         // the <cmath> functions used below
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for cfloat
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -13,35 +12,6 @@
 #include <universal/number/cfloat/math/functions/sqrt_tables.hpp>
 
 namespace sw { namespace universal {
-
-/*
-	// straight Babylonian
-	inline double babylonian(double v) {
-		double x_n = 0.5 * v; // initial guess
-		const double eps = 1.0e-7;   // 
-		do {
-			x_n = (x_n + v / x_n) / 2.0;
-		} while (std::abs(x_n * x_n - v) > eps);
-
-		return x_n;
-	}
-*/
-
-	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
-	inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> BabylonianMethod(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& v) {
-		const double eps = 1.0e-5;
-		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> half(0.5);
-		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x_next;
-		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x_n = half * v;
-		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> diff;
-		do {
-			x_next = (x_n + v / x_n) * half;
-			diff = x_next - x_n;
-			   std::cout << " x_n+1: " << x_next << " x_n: " << x_n << " diff " << diff << std::endl;
-			x_n = x_next;
-		} while (double(sw::universal::abs(diff)) > eps);
-		return x_n;
-	}
 
 	/*
 	- Consider the function argument, x, in floating-point form, with a base

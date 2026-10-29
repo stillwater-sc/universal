@@ -74,19 +74,6 @@ void Sqrt(double v) {
 	std::cout << std::setw(20) << type_tag(s) << " : " << s << '\n';
 }
 
-template<typename Scalar>
-void CompareBabylonianMethods(double v) {
-	std::cout << "sqrt(" << v << ")\n";
-	Sqrt<Scalar>(v);
-	Scalar a(v);
-	auto b = BabylonianMethod(a);
-	std::cout << b * b << '\n';
-	b = BabylonianMethod2(a);
-	std::cout << b * b << '\n';
-	b = BabylonianMethod3(a);
-	std::cout << b * b << '\n';
-}
-
 int main()
 try {
 	using namespace sw::universal;
@@ -108,8 +95,6 @@ try {
 	std::streamsize precision = std::cout.precision();
 	std::cout << std::setprecision(std::numeric_limits<Native>::max_digits10);
 	std::cout << native << " digits of precision : " << std::numeric_limits<Native>::max_digits10 << '\n';
-
-//	CompareBabylonianMethods<Fixed>(2.0);
 
 	{
 		std::cout << "sqrt(2)\n";
