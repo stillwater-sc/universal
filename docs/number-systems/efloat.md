@@ -12,8 +12,9 @@ range of a host type.
 `efloat`'s arithmetic is correctly rounded at any precision in all four rounding modes, and
 its math library is designed to be: checked against MPFR from 32 to 8192 bits, it returns no
 incorrectly rounded result. Measured on x86-64 (an i7-12700K, with the assembly kernels), it runs
-at MPFR's speed from 128 to 8192 bits, within 1.2x on the arithmetic and at or ahead of MPFR in
-every elementary function (see Performance), while staying header-only and free of dependencies. It also evaluates
+at MPFR's speed from 128 to 8192 bits: within 1.2x on the arithmetic, and at or ahead of MPFR
+in each of the exp, log, trigonometric, hyperbolic, power, gamma and error functions that
+`mpfr_gap` times (see Performance), while staying header-only and free of dependencies. It also evaluates
 at compile time: arithmetic, the math library and constants such as pi to 1024 bits can be
 computed by the compiler into `constexpr` variables.
 
@@ -158,8 +159,8 @@ efloat time and efloat / MPFR:
 | `tgamma` | 7.0 (1.0x) | 20.9 (0.6x) | 148 (0.4x) | 2486 (0.3x) |
 | `erf` | 2.97 (1.0x) | 9.91 (0.6x) | 74.3 (0.4x) | 1407 (0.5x) |
 
-Across all 35 operations `mpfr_gap` times, efloat is 0.2x to 1.2x of MPFR, and every elementary
-function is at or below 1.0x at every one of the four precisions. `mpfr_bands` times the
+Across all 35 operations `mpfr_gap` times, efloat is 0.2x to 1.2x of MPFR, and each of its
+elementary functions is at or below 1.0x at every one of the four precisions. `mpfr_bands` times the
 primitives (`+`, `-`, `*`, `/`, `a/7`, `sqrt`, `fma`) at 20 precisions from 64 to 16384 bits, and
 `exp`, `log` and `sin` at the 18 of them up to 8192 bits: no cell is above 1.46x MPFR, under g++
 and clang alike. Through gmpy2, the usual way to reach MPFR from Python, each call pays another
