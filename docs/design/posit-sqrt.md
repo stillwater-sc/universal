@@ -152,9 +152,25 @@ to nearest even on every bit it is given past the posit's precision. posit gains
 that wraps it, `setpositive(scale, fraction, num_fbits)`. sqrt passes the 63 bits of R below its
 hidden bit followed by sticky: 64 fraction bits, at least 3 more than any posit<=64 keeps.
 
-**nbits > 64.** The same steps on multi-limb integers. Each correction step doubles the correct
-bits, so 128 bits need 2 steps and 256 bits need 3; each needs a full residual N - R^2 and a
-quotient of about half the bits. The encoder is `convert_`.
+**nbits > 64.** The same construction on 64-bit limbs, with R of n = ceil((fbits + 3) / 64)
+limbs and N of 2n. The planned Newton steps were not needed: `limb_kernels::sqrtrem`, the exact
+square root with remainder that efloat already uses (Zimmermann's Karatsuba square root, one
+division and one square of half the length per level), returns R and N - R^2 together, and a
+nonzero remainder is the sticky bit.
+
+Neither of posit's generic conversions is fast enough here. Measured for `posit<128,4>` (gcc,
+ns): decoding through `to_value()` costs 289 and encoding through `convert_` 344, while `sqrtrem`
+itself costs 21. A first version built on them took 1500 ns, twice the shim's 800. So sqrt
+decodes the encoding straight from its limbs, and encodes with a limb version of the
+`uint64_t` encoder: the regime, exponent and R below its hidden bit are laid out on limbs, the
+top nbits - 1 bits kept, and the result rounded to nearest even from the guard bit, the dropped
+bits and sticky, saturating at minpos and maxpos.
+
+| ns per sqrt, gcc | native | shim |
+|---|---|---|
+| `posit<80,3>` | 95 | 632 |
+| `posit<128,4>` | 100 | 808 |
+| `posit<256,5>` | 148 | 1248 |
 
 ## Verification
 
@@ -167,6 +183,14 @@ skeleton. Its oracle is the midpoint rule above, independent of the algorithm.
 | 2 | every `posit<32,2>` in [1, 4) (268 M) |
 | 3 | the extremes of each configuration's range |
 | 4 | every positive `posit<32,2>`, minpos through maxpos (2^31 - 1) |
+
+For nbits > 64 the oracle is the same midpoint rule on 32-bit words, with its own schoolbook
+square, independent of the limb kernels. Level 1 checks it against the narrow oracle
+(exhaustively for `posit<12,2>` and `<16,1>`, randomly for `<32,2>` and `<64,3>`), then runs the
+random, near-tie and binade-top inputs for `posit<65,2>`, `<72,6>`, `<80,3>`, `<100,3>`, `<128,0>`,
+`<128,4>` with `uint8_t`, `uint32_t` and `uint64_t` blocks, `<192,4>` and `<256,5>`, and
+`posit<128,4>`'s maxpos = 2^2016, past `double`'s range. Level 2 adds 100,000 `posit<128,4>` and
+20,000 `posit<256,5>`; level 3 their extremes.
 
 ## Plan
 
