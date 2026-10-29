@@ -8,13 +8,15 @@
 #include <bit>
 #include <cstdint>
 #include <random>
+#include <vector>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // The oracle is the posit rounding rule itself, independent of how sqrt computes its result.
 // y is the correctly rounded sqrt(a) exactly when mid(y-1, y)^2 <= a <= mid(y, y+1)^2, where the
 // midpoints are the (nbits+1)-bit patterns 2y-1 and 2y+1, and a tie (equality) goes to the even
-// encoding. All comparisons are exact, in integers. nbits <= 64.
+// encoding. All comparisons are exact, in integers. The first form is for nbits <= 64; the wide
+// form below applies the same rule at any width, on 32-bit words.
 
 namespace {
 
@@ -227,6 +229,202 @@ namespace {
 	template<typename Posit>
 	std::uint64_t EncodingOf(double v) { return static_cast<std::uint64_t>(Posit(v).encoding()); }
 
+	////////////////////////////////////////////////////////////////////////////////////////
+	// any width: value = sig * 2^(scale - (32 W - 1)), sig in W 32-bit words, least significant
+	// first, with its top bit set. W words hold the hidden bit and nbits more.
+	struct WideDecoded { int scale; std::vector<std::uint32_t> sig; };
+
+	template<typename Posit>
+	constexpr unsigned WideWords() { return (Posit::nbits + 2u + 31u) / 32u; }
+
+	// the bits after the sign of a positive posit, most significant first
+	template<typename Posit>
+	std::vector<bool> WideBody(const Posit& a) {
+		const auto bits = a.bits();
+		std::vector<bool> body;
+		for (unsigned i = Posit::nbits - 1u; i > 0; --i) body.push_back(bits.test(i - 1u));
+		return body;
+	}
+
+	WideDecoded WideDecodeBody(const std::vector<bool>& body, unsigned es, unsigned W) {
+		const std::size_t len = body.size();
+		const bool positiveRegime = body[0];
+		std::size_t run = 0;
+		while (run < len && body[run] == positiveRegime) ++run;
+		const int k = positiveRegime ? static_cast<int>(run) - 1 : -static_cast<int>(run);
+		std::size_t pos = run + 1;   // past the regime's terminating bit
+		int exponent = 0;
+		for (unsigned i = 0; i < es; ++i, ++pos) exponent = (exponent << 1) | ((pos < len && body[pos]) ? 1 : 0);
+		WideDecoded d{ k * (1 << es) + exponent, std::vector<std::uint32_t>(W, 0u) };
+		unsigned bit = 32u * W - 1u;
+		d.sig[bit / 32u] |= 1u << (bit % 32u);
+		for (; pos < len; ++pos) {
+			--bit;
+			if (body[pos]) d.sig[bit / 32u] |= 1u << (bit % 32u);
+		}
+		return d;
+	}
+
+	template<typename Posit>
+	WideDecoded WideDecode(const Posit& a) { return WideDecodeBody(WideBody(a), Posit::es, WideWords<Posit>()); }
+
+	// the midpoint between a positive posit y and its upper or lower neighbour: the
+	// (nbits+1)-bit pattern of y, or of y's predecessor, with a 1 appended
+	template<typename Posit>
+	WideDecoded WideMidpoint(const Posit& y, bool upper) {
+		Posit base(y);
+		if (!upper) --base;
+		std::vector<bool> body = WideBody(base);
+		body.push_back(true);
+		return WideDecodeBody(body, Posit::es, WideWords<Posit>());
+	}
+
+	// the 2W-word square of a W-word integer, schoolbook
+	std::vector<std::uint32_t> WideSquare(const std::vector<std::uint32_t>& a) {
+		const std::size_t W = a.size();
+		std::vector<std::uint32_t> p(2 * W, 0u);
+		for (std::size_t i = 0; i < W; ++i) {
+			std::uint64_t carry = 0;
+			for (std::size_t j = 0; j < W; ++j) {
+				const std::uint64_t t = std::uint64_t(a[i]) * a[j] + p[i + j] + carry;
+				p[i + j] = static_cast<std::uint32_t>(t);
+				carry = t >> 32;
+			}
+			p[i + W] = static_cast<std::uint32_t>(carry);
+		}
+		return p;
+	}
+
+	// the sign of a - m^2, exactly
+	int WideCompareSquare(const WideDecoded& a, const WideDecoded& m) {
+		// a = a.sig * 2^(a.scale - (32W-1)), m^2 = m.sig^2 * 2^(2 m.scale - 2(32W-1)):
+		// compare a.sig * 2^(d + 32W - 1) with m.sig^2, which lies in [2^(64W-2), 2^(64W))
+		const int d = a.scale - 2 * m.scale;
+		if (d < 0) return -1;
+		if (d > 1) return 1;
+		const std::size_t W = a.sig.size();
+		std::vector<std::uint32_t> A(2 * W, 0u);
+		for (std::size_t i = 0; i < W; ++i) A[W + i] = a.sig[i];
+		if (d == 0) {   // a.sig * 2^(32W - 1): halve
+			for (std::size_t i = 0; i < 2 * W; ++i) A[i] = (A[i] >> 1) | ((i + 1 < 2 * W) ? (A[i + 1] << 31) : 0u);
+		}
+		const std::vector<std::uint32_t> P = WideSquare(m.sig);
+		for (std::size_t i = 2 * W; i > 0; --i) {
+			if (A[i - 1] != P[i - 1]) return A[i - 1] < P[i - 1] ? -1 : 1;
+		}
+		return 0;
+	}
+
+	template<typename Posit>
+	bool WideIsCorrectlyRounded(const Posit& a, const Posit& y) {
+		if (y.isnar() || y.iszero() || y.isneg()) return false;
+		const WideDecoded da = WideDecode(a);
+		const bool odd = y.bits().test(0);
+		Posit extreme;
+		if (y != extreme.minpos()) {
+			const int c = WideCompareSquare(da, WideMidpoint(y, false));
+			if (c < 0 || (c == 0 && odd)) return false;
+		}
+		if (y != extreme.maxpos()) {
+			const int c = WideCompareSquare(da, WideMidpoint(y, true));
+			if (c > 0 || (c == 0 && odd)) return false;
+		}
+		return true;
+	}
+
+	template<typename Posit>
+	int WideVerifyOne(const Posit& a, bool reportTestCases) {
+		const Posit y = sw::universal::sqrt(a);
+		if (WideIsCorrectlyRounded(a, y)) return 0;
+		if (reportTestCases) {
+			std::cerr << "FAIL sqrt(" << sw::universal::to_binary(a) << ") = " << sw::universal::to_binary(y) << '\n';
+		}
+		return 1;
+	}
+
+	// the positive posit 1.f * 2^scale, f the words of sig below its top bit, rounded once
+	template<typename Posit>
+	Posit WideEncode(int scale, const std::vector<std::uint32_t>& sig, unsigned topBit) {
+		constexpr unsigned F = 64u * WideWords<Posit>();
+		sw::universal::blocksignificand<F, typename Posit::BlockType> fraction;
+		fraction.clear();
+		for (unsigned i = 0; i < topBit; ++i) {   // bit topBit - 1 of sig lands at F - 1
+			if ((sig[i / 32u] >> (i % 32u)) & 1u) fraction.setbit(F - topBit + i);
+		}
+		Posit p;
+		return sw::universal::convert_<Posit::nbits, Posit::es, typename Posit::BlockType, F>(false, scale, fraction, p);
+	}
+
+	// every positive encoding through the wide oracle: its check against the narrow one
+	template<typename Posit>
+	int WideVerifyExhaustive(bool reportTestCases) {
+		int nrOfFailedTests = 0;
+		constexpr std::uint64_t positives = (1ull << (Posit::nbits - 1)) - 1ull;
+		for (std::uint64_t bits = 1; bits <= positives; ++bits) {
+			Posit a;
+			a.setbits(bits);
+			nrOfFailedTests += WideVerifyOne(a, reportTestCases);
+		}
+		return nrOfFailedTests;
+	}
+
+	// random encodings, the inputs nearest the squares of midpoints, and fractions of all ones,
+	// as VerifySqrtRandom
+	template<typename Posit>
+	int WideVerifyRandom(unsigned nrSamples, std::uint64_t seed, bool reportTestCases) {
+		constexpr unsigned nbits = Posit::nbits;
+		constexpr unsigned W = WideWords<Posit>();
+		int nrOfFailedTests = VerifySpecialCases<Posit>(reportTestCases);
+		std::mt19937_64 rng(seed);
+		auto randomPositive = [&rng]() {
+			decltype(Posit().bits()) bits;
+			bits.clear();
+			for (unsigned i = 0; i + 1u < nbits; ++i) bits.setbit(i, (rng() & 1u) != 0);
+			if (bits.iszero()) bits.setbit(0);
+			Posit p;
+			p.setbits(bits);
+			return p;
+		};
+		Posit maxpos;
+		maxpos.maxpos();
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			nrOfFailedTests += WideVerifyOne(randomPositive(), reportTestCases);
+
+			// near a tie: m^2 rounded to the posit, for the upper midpoint m of a random y
+			const Posit y = randomPositive();
+			if (y == maxpos) continue;
+			const WideDecoded m = WideMidpoint(y, true);
+			const std::vector<std::uint32_t> P = WideSquare(m.sig);
+			const bool top = (P[2 * W - 1] >> 31) != 0;   // m.sig^2 in [2^(64W-1), 2^(64W)): one more binade
+			Posit t = WideEncode<Posit>(2 * m.scale + (top ? 1 : 0), P, top ? 64u * W - 1u : 64u * W - 2u);
+			Posit below(t), above(t);
+			--below;
+			++above;
+			nrOfFailedTests += WideVerifyOne(t, reportTestCases);
+			if (!below.iszero()) nrOfFailedTests += WideVerifyOne(below, reportTestCases);
+			if (!above.isnar()) nrOfFailedTests += WideVerifyOne(above, reportTestCases);
+
+			// all ones below the hidden bit, at a random scale
+			Posit ones = WideEncode<Posit>(static_cast<int>(rng() % 64) - 32, std::vector<std::uint32_t>(2 * W, ~0u), 64u * W - 1u);
+			--ones;
+			if (!ones.iszero()) nrOfFailedTests += WideVerifyOne(ones, reportTestCases);
+		}
+		return nrOfFailedTests;
+	}
+
+	// the encodings nearest minpos and maxpos
+	template<typename Posit>
+	int WideVerifyExtremes(unsigned count, bool reportTestCases) {
+		int nrOfFailedTests = 0;
+		Posit lo, hi;
+		lo.minpos();
+		hi.maxpos();
+		for (unsigned i = 0; i < count; ++i, ++lo, --hi) {
+			nrOfFailedTests += WideVerifyOne(lo, reportTestCases) + WideVerifyOne(hi, reportTestCases);
+		}
+		return nrOfFailedTests;
+	}
+
 } // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -322,11 +520,34 @@ try {
 		nrOfFailedTestCases += ReportTestResult(nrOfFailures, "posit<32,2> #1776", test_tag);
 	}
 
-	// posits wider than 64 bits still go through double (#1846): exact squares only
+	// the wide oracle, against the narrow one's verdicts
+	nrOfFailedTestCases += ReportTestResult(WideVerifyExhaustive<posit<12, 2>>(reportTestCases), "posit<12,2> wide oracle", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyExhaustive<posit<16, 1>>(reportTestCases), "posit<16,1> wide oracle", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit<32, 2>>(2000, 13, reportTestCases), "posit<32,2> wide oracle", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit<64, 3>>(2000, 14, reportTestCases), "posit<64,3> wide oracle", test_tag);
+
+	// posits wider than 64 bits (#1846): one limb past 64, the limb boundaries, and the widest
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit< 65, 2>>(2000, 15, reportTestCases), "posit<65,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit< 80, 3>>(2000, 16, reportTestCases), "posit<80,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit<100, 3>>(2000, 17, reportTestCases), "posit<100,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit<128, 4>>(2000, 18, reportTestCases), "posit<128,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit<128, 4, std::uint32_t>>(2000, 19, reportTestCases), "posit<128,4,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit<128, 4, std::uint64_t>>(2000, 20, reportTestCases), "posit<128,4,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit<128, 0>>(2000, 21, reportTestCases), "posit<128,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit<192, 4>>(1000, 22, reportTestCases), "posit<192,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit<256, 5>>(1000, 23, reportTestCases), "posit<256,5>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit< 72, 6>>(2000, 24, reportTestCases), "posit<72,6>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyExtremes<posit<128, 4>>(64, reportTestCases), "posit<128,4> extremes", test_tag);
 	{
-		int nrOfFailures = VerifySpecialCases<posit<128, 4>>(reportTestCases);
+		// past double's range: maxpos = 2^2016 for posit<128,4>, whose root 2^1008 is exact
+		int nrOfFailures = 0;
+		posit<128, 4> maxpos;
+		maxpos.maxpos();
+		posit<128, 4> root = sqrt(maxpos);
+		if (root * root != maxpos) ++nrOfFailures;
+		nrOfFailures += WideVerifyOne(maxpos, reportTestCases);
 		if (sqrt(posit<128, 4>(1024)) != posit<128, 4>(32)) ++nrOfFailures;
-		nrOfFailedTestCases += ReportTestResult(nrOfFailures, "posit<128,4>", test_tag);
+		nrOfFailedTestCases += ReportTestResult(nrOfFailures, "posit<128,4> range", test_tag);
 	}
 #endif
 
@@ -335,6 +556,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtRange<posit<32, 2>>(EncodingOf<posit<32, 2>>(1.0), EncodingOf<posit<32, 2>>(4.0) - 1u, reportTestCases), "posit<32,2> [1, 4)", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtExhaustive<posit<20, 1>>(reportTestCases), "posit<20,1>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtRandom<posit<64, 3>>(1'000'000, 1846, reportTestCases), "posit<64,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit<128, 4>>(100'000, 1847, reportTestCases), "posit<128,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyRandom<posit<256, 5>>(20'000, 1848, reportTestCases), "posit<256,5>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
@@ -342,6 +565,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtExtremes<posit<48, 2>>(1u << 16, reportTestCases), "posit<48,2> extremes", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtExtremes<posit<64, 3>>(1u << 16, reportTestCases), "posit<64,3> extremes", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtExtremes<posit<64, 0>>(1u << 16, reportTestCases), "posit<64,0> extremes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyExtremes<posit<128, 4>>(1u << 12, reportTestCases), "posit<128,4> extremes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyExtremes<posit<256, 5>>(1u << 10, reportTestCases), "posit<256,5> extremes", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
