@@ -40,6 +40,7 @@ static constexpr struct change_these_options_to_select_what_will_be_printed
 #endif
 
 #include <algorithm>
+#include <climits>
 #include <cstdio>
 #include <cstring>
 #include <utility>
@@ -54,17 +55,34 @@ static constexpr struct change_these_options_to_select_what_will_be_printed
 // The value of a feature-test macro, from its stringized expansion. An undefined macro stringizes
 // to its own name, which starts with '_'. The standard's values are yyyymm (201907L), but SD-6
 // allows any nonzero value -- clang defines __cpp_modules as 1 -- so the digits are read for as
-// long as they last instead of exactly six of them, which ran off the end of "1" (#1809).
-constexpr long feature_value_digits(char const* s, long value)
+// long as they last instead of exactly six of them, which ran off the end of "1" (#1809). A 0x
+// prefix reads hexadecimal; a value too large for long (32 bits on MSVC) stops growing at the
+// digit that would overflow, which keeps it nonzero and not a date.
+constexpr int feature_digit(char c, int base)
 {
-    return (*s >= '0' && *s <= '9') ? feature_value_digits(s + 1, value * 10 + (*s - '0')) : value;
+    return (c >= '0' && c <= '9') ? c - '0'
+         : (base == 16 && c >= 'a' && c <= 'f') ? c - 'a' + 10
+         : (base == 16 && c >= 'A' && c <= 'F') ? c - 'A' + 10
+         : -1;
+}
+constexpr long feature_value_digits(char const* s, int base, long value)
+{
+    return (feature_digit(*s, base) < 0 || value > (LONG_MAX - feature_digit(*s, base)) / base)
+         ? value
+         : feature_value_digits(s + 1, base, value * base + feature_digit(*s, base));
 }
 constexpr long feature_value(char const* s)
 {
-    return s[0] == '_' ? 0 : feature_value_digits(s, 0);
+    return s[0] == '_' ? 0
+         : (s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) ? feature_value_digits(s + 2, 16, 0)
+         : feature_value_digits(s, 10, 0);
 }
-// a yyyymm value; anything smaller is a bare nonzero value saying only that the feature exists
-constexpr bool is_year_month(long value) { return value >= 100000; }
+// a yyyymm revision: six digits with a month 1..12; anything else that is nonzero is a bare value
+// saying only that the feature exists
+constexpr bool is_year_month(long value)
+{
+    return value >= 100000 && value <= 999999 && value % 100 >= 1 && value % 100 <= 12;
+}
 #define COMPILER_VALUE_INT(n) feature_value(#n)
 #define COMPILER_FEATURE_ENTRY(expect, name) { #name, COMPILER_VALUE_INT(name), expect },
 
