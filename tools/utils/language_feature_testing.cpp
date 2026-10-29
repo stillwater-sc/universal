@@ -51,10 +51,21 @@ static constexpr struct change_these_options_to_select_what_will_be_printed
 # endif
 #endif
 
-// Expect a string that starts with 6-decimal-digits or with '_' (if unsupported)
-#define COMPILER_VALUE_INT(n) #n [0] == '_' ? 0 : \
-    (#n[5] - '0') + (#n[4] - '0') * 10 + (#n[3] - '0') * 100 + \
-    (#n[2] - '0') * 1000 + (#n[1] - '0') * 10000 + (#n[0] - '0') * 100000
+// The value of a feature-test macro, from its stringized expansion. An undefined macro stringizes
+// to its own name, which starts with '_'. The standard's values are yyyymm (201907L), but SD-6
+// allows any nonzero value -- clang defines __cpp_modules as 1 -- so the digits are read for as
+// long as they last instead of exactly six of them, which ran off the end of "1" (#1809).
+constexpr long feature_value_digits(char const* s, long value)
+{
+    return (*s >= '0' && *s <= '9') ? feature_value_digits(s + 1, value * 10 + (*s - '0')) : value;
+}
+constexpr long feature_value(char const* s)
+{
+    return s[0] == '_' ? 0 : feature_value_digits(s, 0);
+}
+// a yyyymm value; anything smaller is a bare nonzero value saying only that the feature exists
+constexpr bool is_year_month(long value) { return value >= 100000; }
+#define COMPILER_VALUE_INT(n) feature_value(#n)
 #define COMPILER_FEATURE_ENTRY(expect, name) { #name, COMPILER_VALUE_INT(name), expect },
 
 #if defined(__has_cpp_attribute) && defined(__GNUG__)
@@ -532,14 +543,22 @@ inline void print_compiler_feature(const CompilerFeature& x)
         return;
     auto print_year_month = [](long n)
         {
+            if (!is_year_month(n))   // a bare value, such as 1, in the same width as yyyy-mm
+                return std::printf("%*ld", print.separate_year_month ? 7 : 6, n);
             return std::printf("%ld%s%02ld",
                 n / 100, print.separate_year_month ? "-" : "", n % 100);
+        };
+    // a bare value is not a revision: it cannot be ordered against the standard's
+    auto relation = [](const CompilerFeature& f)
+        {
+            if (f.maybe() && !is_year_month(f.data())) return '?';
+            return f.supported() ? (f.data() > f.std() ? '>' : '=') : '<';
         };
     std::printf("%*s ", -print.longest_macro_name, x.name());
     x.maybe() ? print_year_month(x.data()) :
         std::printf("------%s", print.separate_year_month ? "-" : "");
     if (print.standard_values)
-        std::printf("  %c  ", (x.supported() ? (x.data() > x.std() ? '>' : '=') : '<')),
+        std::printf("  %c  ", relation(x)),
         print_year_month(x.std());
     std::puts("");
 }
