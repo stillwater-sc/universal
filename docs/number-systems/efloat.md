@@ -31,12 +31,16 @@ template<unsigned nlimbs = 1024>
 class efloat;
 ```
 
-`nlimbs` sets the type's capacity in 32-bit units: an `efloat<nlimbs>` holds up to
-`nlimbs * 32` significand bits. The type carries a sign, an exponent and the significand.
+`nlimbs` sets the type's nominal width in 32-bit units, `nlimbs * 32` bits: the default
+precision, `numeric_limits<efloat<nlimbs>>::digits`, the capacity of `efloat_constant<nlimbs>`
+and the size of the inline buffer derive from it. It is not a ceiling on a value:
+`set_precision()` accepts more, and the significand then grows onto the heap, so an `efloat<4>`
+at `set_precision(256)` carries 256-bit results. The type carries a sign, an exponent and the
+significand.
 
 | Property | Value |
 |---|---|
-| Capacity | `nlimbs * 32` bits, set at compile time; each value rounds at its own precision up to it |
+| Nominal width | `nlimbs * 32` bits, set at compile time; each value rounds at its own precision, which may differ |
 | Exponent | `int64_t`; a finite value's scale lies in `[1 - 2^62, 2^62 - 1]` |
 | Storage | 64-bit limbs, least significant first: inside the value up to `EFLOAT_INLINE_LIMBS` (8, i.e. 512 bits), past that in a block from a per-thread cache |
 | Allocation | none in steady state: the cache recycles blocks, and the operators write their results in place |
@@ -88,9 +92,10 @@ operand of a mixed operation converts exactly, all 64 bits, rather than through 
 rounding modes, and so is conversion to and from `float`, `double` and `long double`,
 subnormals included.
 
-For a value the size of its precision, size the type to it: `efloat<4>` for 128 bits rather
-than `efloat<1024>` with `set_precision(128)`. A literal such as `efloat<1024>(1.0)` carries
-no precision and so takes the default, which is the full `nlimbs * 32` bits.
+Size the type to the precision you work at: `efloat<4>` for 128 bits rather than
+`efloat<1024>` with `set_precision(128)`. A value that carries no precision, such as the result
+of `efloat<1024>(1) / efloat<1024>(3)`, rounds at the default, which is the full `nlimbs * 32`
+bits unless `set_default_precision()` says otherwise.
 
 ### Mathematical library
 
