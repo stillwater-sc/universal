@@ -9,7 +9,6 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/ieee754.hpp>
 #include <universal/numerics/error_free_ops.hpp>   // two_prod: the exact squares of the midpoint test
-#include <universal/number/cfloat/math/functions/sqrt_tables.hpp>
 
 namespace sw { namespace universal {
 
