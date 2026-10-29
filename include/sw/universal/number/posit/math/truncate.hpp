@@ -5,95 +5,100 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// All four are exact and computed on the encoding, at any nbits (#1855). A posit x = (-1)^s 1.f 2^scale
+// with nf fraction bits is an integer when scale >= nf; for 0 <= scale < nf its integer part is x with
+// the low nf - scale fraction bits cleared, a shorter fraction at the same regime and exponent, so it
+// is a posit; for scale < 0, |x| < 1. floor, ceil and round then step the integer part by one in
+// magnitude, which is exact: either it stays in x's binade, where an ulp is at most 1, or it carries
+// to the power of two 2^(scale+1), which every posit in range represents. No posit arithmetic is
+// involved: the step is an addition on the encoding too.
+#include <cstddef>
+#include <universal/number/posit/math/posit_limbs.hpp>
 
 namespace sw { namespace universal {
 
-// the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
-// correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
+	namespace posit_limbs {
 
-// Truncate value by rounding toward zero, returning the nearest integral value that is not larger in magnitude than x
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> trunc(posit<nbits,es,bt> x) {
-	return posit<nbits,es,bt>(std::trunc(double(x)));
-}
+		// |x| without its fraction, for a nonzero, non-NaR x, and what the cleared bits held: any
+		// nonzero bit, and the half bit (weight 1/2); up is |x| with its fraction cleared plus one
+		template<unsigned nbits, unsigned es, typename bt>
+		struct IntegerPart {
+			posit<nbits, es, bt> magnitude;
+			posit<nbits, es, bt> up;
+			bool negative;
+			bool fraction;   // the cleared bits are nonzero: x is not an integer
+			bool half;       // the bit of weight 1/2 is set
+		};
 
-// Round to nearest: returns the integral value that is nearest to x, with halfway cases rounded away from zero
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> round(posit<nbits,es,bt> x) {
-	return posit<nbits,es,bt>(std::round(double(x)));
-}
-
-// Round x downward, returning the largest integral value that is not greater than x
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> floor(posit<nbits,es,bt> x) {
-	return posit<nbits,es,bt>(std::floor(double(x)));
-}
-
-// Round x upward, returning the smallest integral value that is greater than x
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> ceil(posit<nbits,es,bt> x) {
-	return posit<nbits,es,bt>(std::ceil(double(x)));
-}
-
-#ifdef NOW
-by design, non compilable text;
-this is the libc algorithm for floor(double)
-
-static double huge = 1.0e300;
-
-// TBD, defined to compile, not functionally correct
-#define __HI(x) x
-#define __LO(x) x
-// algorithm for floor(double)
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits, es, bt> floor(posit<nbits, es, bt> x) {
-	int i0, i1, j0;
-	unsigned i, j;
-	i0 = __HI(x);
-	i1 = __LO(x);
-	j0 = ((i0 >> 20) & 0x7ff) - 0x3ff;
-	if (j0 < 20) {
-		if (j0 < 0) { 	/* raise inexact if x != 0 */
-			if (huge + x > 0.0) {/* return 0*sign(x) if |x|<1 */
-				if (i0 >= 0) { i0 = i1 = 0; }
-				else if (((i0 & 0x7fffffff) | i1) != 0)
-				{
-					i0 = 0xbff00000; i1 = 0;
-				}
+		// The step to the next integer is on the encoding as well: adding 2^u, u the position of the
+		// bit of weight 1, carries out of the fraction exactly when the result is the power of two
+		// 2^(scale+1), and the encoding with that carry is 2^(scale+1)'s, since a posit of fewer bits
+		// padded with zeros is the same value.
+		template<unsigned nbits, unsigned es, typename bt>
+		inline IntegerPart<nbits, es, bt> integer_part(const posit<nbits, es, bt>& x, bool wantUp) noexcept {
+			using Posit = posit<nbits, es, bt>;
+			IntegerPart<nbits, es, bt> ip{ x.isneg() ? -x : x, Posit(1), x.isneg(), false, false };
+			limb_t w[limbs(nbits)];
+			gather(ip.magnitude, w);
+			const Fields f = fields<nbits, es>(w);
+			if (f.scale < 0) {   // |x| < 1: the integers around it are 0 and 1
+				ip.magnitude = Posit(0);
+				ip.fraction = true;
+				ip.half = (f.scale == -1);
+				return ip;
 			}
-		}
-		else {
-			i = (0x000fffff) >> j0;
-			if (((i0&i) | i1) == 0) return x; /* x is integral */
-			if (huge + x > 0.0) {	/* raise inexact flag */
-				if (i0 < 0) i0 += (0x00100000) >> j0;
-				i0 &= (~i); i1 = 0;
+			if (f.scale >= static_cast<int>(f.nf)) return ip;   // already an integer; up is not used
+			const unsigned unit = f.nf - static_cast<unsigned>(f.scale);   // in [1, nf]
+			ip.half = test(w, unit - 1u);
+			for (unsigned i = 0; i < unit; ++i) {
+				if (test(w, i)) { ip.fraction = true; clear(w, i); }
 			}
-		}
-	}
-	else if (j0 > 51) {
-		if (j0 == 0x400) return x + x;	/* inf or NaN */
-		else return x;		/* x is integral */
-	}
-	else {
-		i = ((unsigned)(0xffffffff)) >> (j0 - 20);
-		if ((i1&i) == 0) return x;	/* x is integral */
-		if (huge + x > 0.0) { 		/* raise inexact flag */
-			if (i0 < 0) {
-				if (j0 == 20) i0 += 1;
-				else {
-					j = i1 + (1 << (52 - j0));
-					if (j < i1) i0 += 1; 	/* got a carry */
-					i1 = j;
-				}
+			scatter(ip.magnitude, w);
+			if (wantUp) {
+				limb_t one[limbs(nbits)]{};
+				set(one, unit);
+				limb_kernels::add_n(w, w, one, limbs(nbits));
+				scatter(ip.up, w);
 			}
-			i1 &= (~i);
+			return ip;
 		}
+
+	} // namespace posit_limbs
+
+	// Truncate value by rounding toward zero, returning the nearest integral value that is not larger in magnitude than x
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits,es,bt> trunc(posit<nbits,es,bt> x) {
+		if (x.iszero() || x.isnar()) return x;
+		const auto ip = posit_limbs::integer_part(x, false);
+		return ip.negative ? -ip.magnitude : ip.magnitude;
 	}
-	__HI(x) = i0;
-	__LO(x) = i1;
-	return x;
-}
-#endif //NOW
+
+	// Round to nearest: returns the integral value that is nearest to x, with halfway cases rounded away from zero
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits,es,bt> round(posit<nbits,es,bt> x) {
+		if (x.iszero() || x.isnar()) return x;
+		const auto ip = posit_limbs::integer_part(x, true);
+		const posit<nbits, es, bt>& m = ip.half ? ip.up : ip.magnitude;
+		return ip.negative ? -m : m;
+	}
+
+	// Round x downward, returning the largest integral value that is not greater than x
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits,es,bt> floor(posit<nbits,es,bt> x) {
+		if (x.iszero() || x.isnar()) return x;
+		const auto ip = posit_limbs::integer_part(x, x.isneg());
+		if (!ip.negative) return ip.magnitude;
+		return -(ip.fraction ? ip.up : ip.magnitude);
+	}
+
+	// Round x upward, returning the smallest integral value that is greater than x
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits,es,bt> ceil(posit<nbits,es,bt> x) {
+		if (x.iszero() || x.isnar()) return x;
+		const auto ip = posit_limbs::integer_part(x, !x.isneg());
+		if (ip.negative) return -ip.magnitude;
+		return ip.fraction ? ip.up : ip.magnitude;
+	}
 
 }} // namespace sw::universal

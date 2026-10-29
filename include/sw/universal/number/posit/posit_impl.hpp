@@ -1004,7 +1004,24 @@ public:
 		decode(_block, s, r, e, f);
 		return f.none();
 	}
-	constexpr bool isinteger() const noexcept { return true; } // TODO: return (floor(*this) == *this) ? true : false; }
+	// true when the value is an integer: zero, or every fraction bit below the binary point is zero
+	// (#1855); NaR is not an integer
+	constexpr bool isinteger() const noexcept {
+		if (iszero()) return true;
+		if (isnar()) return false;
+		bool s{ false };
+		positRegime<nbits, es, bt> r;
+		positExponent<nbits, es, bt> e;
+		positFraction<fbits, bt> f;
+		decode(_block, s, r, e, f);
+		const int scale = r.scale() + e.scale();
+		if (scale < 0) return false;
+		const auto fraction = f.bits();   // f_1, the bit of weight 2^(scale - 1), at the top, fbits - 1
+		for (unsigned i = static_cast<unsigned>(scale) + 1u; i <= f.nrBits(); ++i) {
+			if (fraction.test(fbits - i)) return false;
+		}
+		return true;
+	}
 
 	blockbinary<nbits, bt, BinaryNumberType::Signed> bits() const noexcept { return _block; }
 	unsigned long long encoding() const noexcept { return _block.to_ull(); }
