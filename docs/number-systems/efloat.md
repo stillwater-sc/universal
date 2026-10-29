@@ -11,8 +11,9 @@ range of a host type.
 
 `efloat`'s arithmetic is correctly rounded at any precision in all four rounding modes, and
 its math library is designed to be: checked against MPFR from 32 to 8192 bits, it returns no
-incorrectly rounded result. It runs at MPFR's speed, ahead of it in every elementary function,
-while staying header-only and free of dependencies. It also evaluates
+incorrectly rounded result. Measured on x86-64 (an i7-12700K, with the assembly kernels), it runs
+at MPFR's speed from 128 to 8192 bits, within 1.2x on the arithmetic and at or ahead of MPFR in
+every elementary function (see Performance), while staying header-only and free of dependencies. It also evaluates
 at compile time: arithmetic, the math library and constants such as pi to 1024 bits can be
 computed by the compiler into `constexpr` variables.
 
