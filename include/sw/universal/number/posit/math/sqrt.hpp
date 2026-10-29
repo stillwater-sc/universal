@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <universal/native/ieee754.hpp>   // posit.hpp users get to_binary(float) and friends through here
 #include <universal/internal/limbs/limb_kernels.hpp>   // sqrtrem, for posits wider than 64 bits
+#include <universal/number/posit/math/posit_limbs.hpp>
 
 namespace sw { namespace universal {
 
@@ -54,92 +55,6 @@ namespace sw { namespace universal {
 			return R;
 		}
 
-		///////////////////////////////////////////////////////////////////////////////////////
-		// posits wider than 64 bits, on 64-bit limbs, least significant first (#1846)
-		using limb_kernels::limb_t;
-
-		constexpr std::size_t limbs(unsigned bits) noexcept { return (bits + 63u) / 64u; }
-		inline bool test(const limb_t* w, unsigned i) noexcept { return ((w[i / 64u] >> (i % 64u)) & 1u) != 0u; }
-		inline void set(limb_t* w, unsigned i) noexcept { w[i / 64u] |= limb_t(1) << (i % 64u); }
-
-		// the encoding of a posit, gathered from its blocks
-		template<unsigned nbits, unsigned es, typename bt>
-		inline void wide_gather(const posit<nbits, es, bt>& a, limb_t* w) noexcept {
-			constexpr unsigned bitsInBlock = sizeof(bt) * 8u;
-			const auto bits = a.bits();
-			for (std::size_t i = 0; i < limbs(nbits); ++i) w[i] = 0u;
-			for (unsigned i = 0; i < bits.nrBlocks; ++i) {
-				const unsigned pos = i * bitsInBlock;
-				w[pos / 64u] |= limb_t(bits.block(i)) << (pos % 64u);
-			}
-		}
-
-		// a positive posit's scale, and its nf fraction bits, which are w[0, nf) on return: the
-		// regime and exponent bits above them are cleared
-		struct WideFields { int scale; unsigned nf; };
-		template<unsigned nbits, unsigned es>
-		inline WideFields wide_decode(limb_t* w) noexcept {
-			const unsigned top = nbits - 2u;   // the first bit after the sign
-			const bool positiveRegime = test(w, top);
-			unsigned run = 1;
-			while (run < nbits - 1u && test(w, top - run) == positiveRegime) ++run;
-			const int k = positiveRegime ? static_cast<int>(run) - 1 : -static_cast<int>(run);
-			const int below = static_cast<int>(nbits) - 2 - static_cast<int>(run);   // bits after the terminator
-			int exponent = 0;
-			for (int i = 1; i <= static_cast<int>(es); ++i) {
-				const int j = below - i;
-				exponent = (exponent << 1) | ((j >= 0 && test(w, static_cast<unsigned>(j))) ? 1 : 0);
-			}
-			const unsigned nf = (below > static_cast<int>(es)) ? static_cast<unsigned>(below) - es : 0u;
-			for (std::size_t i = nf / 64u; i < limbs(nbits); ++i) {
-				w[i] = (i == nf / 64u) ? (w[i] & ((limb_t(1) << (nf % 64u)) - 1u)) : 0u;
-			}
-			return { k * (1 << es) + exponent, nf };
-		}
-
-		// p = sig * 2^(scale - (64 n - 1)), sig in [2^(64 n - 1), 2^(64 n)), with sticky standing for
-		// nonzero bits below sig: rounded once to nearest, ties to even, and never to zero or NaR
-		template<std::size_t n, unsigned nbits, unsigned es, typename bt>
-		inline posit<nbits, es, bt>& wide_encode(posit<nbits, es, bt>& p, int scale, const limb_t* sig, bool sticky) noexcept {
-			constexpr unsigned sbits = static_cast<unsigned>(64u * n);
-			const int k = scale >> es;   // floor(scale / 2^es)
-			const unsigned run = (k >= 0) ? static_cast<unsigned>(k) + 1u : static_cast<unsigned>(-k);
-			if (run >= nbits - 1u) {   // the regime fills the posit: past maxpos or below minpos
-				return (k >= 0) ? p.maxpos() : p.minpos();
-			}
-			// the unrounded body, T bits: the regime and its terminator, es exponent bits, and sig
-			// below its hidden bit
-			constexpr std::size_t B = limbs(sbits + es + nbits);   // T < sbits + es + nbits
-			limb_t body[B]{};
-			for (std::size_t i = 0; i < n; ++i) body[i] = sig[i];
-			body[(sbits - 1u) / 64u] &= ~(limb_t(1) << ((sbits - 1u) % 64u));
-			const unsigned exponent = static_cast<unsigned>(scale - k * (1 << es));
-			for (unsigned i = 0; i < es; ++i) {
-				if ((exponent >> i) & 1u) set(body, sbits - 1u + i);
-			}
-			const unsigned terminator = sbits - 1u + es;
-			if (k >= 0) { for (unsigned i = 1; i <= run; ++i) set(body, terminator + i); }
-			else set(body, terminator);
-			const unsigned T = terminator + run + 1u;
-
-			// the top nbits - 1 bits, and the guard bit below them
-			constexpr std::size_t L = limbs(nbits);
-			limb_t r[L];
-			const bool dropped = limb_kernels::load_window(r, L, body, B, static_cast<std::int64_t>(nbits) - static_cast<std::int64_t>(T));
-			const bool guard = (r[0] & 1u) != 0u;
-			limb_kernels::rshift(r, r, L, 1u);
-			if (guard && (dropped || sticky || (r[0] & 1u) != 0u)) limb_kernels::add_1(r, L, 1u);
-
-			constexpr unsigned bitsInBlock = sizeof(bt) * 8u;
-			blockbinary<nbits, bt, BinaryNumberType::Signed> bits;
-			bits.clear();
-			for (unsigned i = 0; i < bits.nrBlocks; ++i) {
-				const unsigned pos = i * bitsInBlock;
-				bits.setblock(i, static_cast<bt>(r[pos / 64u] >> (pos % 64u)));
-			}
-			return p.setbits(bits);
-		}
-
 	} // namespace posit_sqrt_detail
 
 	// sqrt, correctly rounded at every nbits: the integer square root of the significand, the
@@ -153,7 +68,7 @@ namespace sw { namespace universal {
 		if constexpr (nbits > 64) {
 			// the same construction on 64-bit limbs (#1846): R = floor(sqrt(N)) of n limbs and its
 			// remainder from limb_kernels::sqrtrem, both exact, then one rounding
-			using namespace posit_sqrt_detail;
+			using namespace posit_limbs;
 			constexpr unsigned fbits = Posit::fbits;
 			constexpr std::size_t n = (fbits + 3u + 63u) / 64u;   // R has 64 n >= fbits + 3 bits
 			constexpr unsigned rbits = static_cast<unsigned>(64u * n);
@@ -161,8 +76,8 @@ namespace sw { namespace universal {
 			// a = S * 2^(scale - fbits), S in [2^fbits, 2^(fbits+1)): the fraction's nf bits sit
 			// below the hidden bit, exponent bits cut off by the regime are zero
 			limb_t w[limbs(nbits)];
-			wide_gather(a, w);
-			const WideFields f = wide_decode<nbits, es>(w);
+			gather(a, w);
+			const Fields f = decode<nbits, es>(w);
 			const int ea = f.scale - static_cast<int>(fbits);
 
 			// N = S * 2^shift in [2^(2 rbits - 2), 2^(2 rbits)) with ea - shift even
@@ -179,7 +94,7 @@ namespace sw { namespace universal {
 			for (std::size_t i = 0; i < n; ++i) sticky = sticky || (N[i] != 0u);
 
 			Posit p;
-			return wide_encode<n>(p, halfExponent + static_cast<int>(rbits) - 1, R, sticky);
+			return encode(p, halfExponent + static_cast<int>(rbits) - 1, R, n, sticky);
 		}
 		else {
 			using namespace posit_sqrt_detail;
