@@ -1202,7 +1202,8 @@ efloat / MPFR in microseconds, then the ratio.
 | `lgamma(b)` | 7.091 / 7.615 | 0.9x | 20.91 / 34.22 | 0.6x | 140.1 / 772.3 | 0.2x | 2374 / 7377 | 0.3x |
 | `erf(a)` | 2.969 / 2.970 | 1.0x | 9.838 / 16.05 | 0.6x | 75.19 / 174.7 | 0.4x | 1411 / 3054 | 0.5x |
 | `erfc(a)` | 3.075 / 3.239 | 0.9x | 10.05 / 16.52 | 0.6x | 75.80 / 176.9 | 0.4x | 1418 / 3059 | 0.5x |
-Read the ratio column as the work left on Epic #1763.
+
+Epic #1763 asked for every ratio at or below gmpy2 (MPFR plus a Python call) and, as a stretch, at or below 1.5x MPFR; both held when it closed on 2026-10-29, re-measured then on main within 0.1 of these ratios.
 
 **Across precisions** (`mpfr_bands`, #1826). The four precisions above are all whole numbers of
 64-bit limbs, and the table times no subtraction. `mpfr_bands` times the primitives and three
@@ -1439,7 +1440,7 @@ row both ways before reading it as a cost.
 **Library gaps.** None open: the exact integer cube root with remainder that this section asked
 for is `limb_kernels::cbrtrem` (#1800).
 
-**Speed** (Epic #1763): short
+**Speed** (past Epic #1763, closed 2026-10-29): short
 division (`divhigh`); the fixed-point series engine of exp and the versine (#1788, #1790)
 carried over to expm1 (atan done in #1792, log's atanh in #1795); MPFR's bit-burst atan at 8192 bits; a cheap first Ziv try at `p + log2(p)` guard bits instead of 64; binary
 splitting for exp and sin/cos;
