@@ -52,7 +52,9 @@ Also:
 ## Measurements
 
 Prototypes for nbits <= 64, with the default `bt = uint8_t`, on x86-64 with gcc 15.2 and
-clang 21.1 at -O2, over 200,000 inputs.
+clang 21.1 at -O2. The random and near-tie columns, and the costs, are over 200,000 sampled
+inputs each. The "every positive encoding" column is exhaustive: native over all 2^31 - 1, the
+shim over the 2^28 in [1, 4).
 
 Correct rounding was checked against the posit rounding rule itself, independently of the
 algorithms. y is the correctly rounded sqrt(a) exactly when mid(y-1, y)^2 <= a <= mid(y, y+1)^2,
@@ -128,8 +130,10 @@ one rounding:
    Then sqrt(a) = sqrt(N) * 2^((e - k) / 2).
 3. R = isqrt(N), the integer square root, and sticky = (N != R^2). R carries at least p + 2 bits:
    the result's bits, the round bit, and at least one more below it.
-4. Append sticky to R as one more, lowest, bit and encode that with the scale, rounding once to
-   nearest, ties to even. The encoder sees an exact tie only when the round bit is set and nothing
+4. Append sticky to R as one more, lowest, bit and encode that with
+   scale = floor_log2(R) + (e - k) / 2, where k has the parity of e so (e - k) / 2 is an integer,
+   rounding once to nearest, ties to even. For nbits <= 64, N is in [2^126, 2^128), so
+   floor_log2(R) = 63; wider posits take it from the normalized multi-limb root. The encoder sees an exact tie only when the round bit is set and nothing
    below it is, which with the sticky bit appended means sqrt(a) really is the midpoint. So R and
    sticky together decide which side of every rounding boundary sqrt(a) lies on.
 
@@ -159,7 +163,7 @@ skeleton. Its oracle is the midpoint rule above, independent of the algorithm.
 
 | level | inputs |
 |---|---|
-| 1 | every encoding of the posits up to 16 bits; three of the `posit<32,2>` the shim misrounds, and the 2^16 encodings above 1; random `posit<32,2>`, `posit<48,2>` and `posit<64,3>`, with other block types |
+| 1 | every encoding of `posit<2,0>`, `<3,0>`, `<3,1>`, `<4,0>`, `<4,1>`, `<5,0>`, `<5,2>`, `<6,3>`, `<8,0..2>`, `<8,5>`, `<10,1>`, `<12,2>`, `<16,1>`, `<16,2>` and `<16,1,uint16_t>`; for `posit<32,2>`, the encodings 0x40000003, 0x4cc71534 and 0x4dff6575 that the shim misrounds and 0x40000000 to 0x4000FFFF; 20,000 random, near-tie and binade-top inputs each for `posit<24,2>`, `<32,2>`, `<32,3>`, `<32,2,uint32_t>`, `<40,2>`, `<48,2>`, `<56,2>`, `<64,0>`, `<64,2>`, `<64,3>`, `<64,3,uint32_t>` and `<64,3,uint64_t>` |
 | 2 | every `posit<32,2>` in [1, 4) (268 M) |
 | 3 | the extremes of each configuration's range |
 | 4 | every positive `posit<32,2>`, minpos through maxpos (2^31 - 1) |
