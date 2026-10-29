@@ -117,7 +117,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c16).name(), "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c24  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c24).name(), "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c32).name(), "division");
-	nrRandoms = 10; // c64: its max-exponent binade lies beyond double, where the reference overflows to inf (#1863)
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c48).name(), "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c64).name(), "division");
 	nrRandoms = 0; // TBD -> configurations that are more precise then double precision require a vector of 64bit words to construct the random bits
@@ -162,9 +161,25 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c24  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c24).name(), "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c32).name(), "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c48).name(), "division");
-	// c64's max-exponent binade lies beyond double's range: the reference overflows to inf where c64 is finite (#1863)
-	nrRandoms = 0;
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c64).name(), "division");
+	{
+		// c64's max-exponent binade lies past DBL_MAX: its reference is the scaled one (#1863),
+		// which random operands reach about once in a thousand
+		int fails = 0;
+		fails += VerifyBinaryOperatorReference<c64>(reportTestCases, RandomsOp::OPCODE_DIV,
+			"0b0.11111111111.1000000000000000000000000000000000000000000000000000",
+			"0b0.10000000000.1000000000000000000000000000000000000000000000000000",
+			"0b0.11111111110.0000000000000000000000000000000000000000000000000000");   // 1.5*2^1024 / 3 = 2^1023
+		fails += VerifyBinaryOperatorReference<c64>(reportTestCases, RandomsOp::OPCODE_DIV,
+			"0b0.11111111111.0000000000000000000000000000000000000000000000000010",
+			"0b0.01111111111.0000000000000000000000000000000000000000000000000001",
+			"0b0.11111111111.0000000000000000000000000000000000000000000000000001");   // just below (1+2^-52)*2^1024, rounds to it
+		fails += VerifyBinaryOperatorReference<c64>(reportTestCases, RandomsOp::OPCODE_DIV,
+			"0b0.11111111111.1000000000000000000000000000000000000000000000000000",
+			"0b0.01111111110.0000000000000000000000000000000000000000000000000000",
+			"0b0.11111111111.1111111111111111111111111111111111111111111111111110");   // 3*2^1024 is past maxpos
+		nrOfFailedTestCases += ReportTestResult(fails, "c64 max-exponent binade", "division");
+	}
 	nrRandoms = 0; // TBD -> configurations that are more precise then double precision require a vector of 64bit words to construct the random bits
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c80).name(), "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c96).name(), "division");
