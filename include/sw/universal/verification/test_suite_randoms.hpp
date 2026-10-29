@@ -65,9 +65,10 @@ namespace sw { namespace universal {
 		OPCODE_RAN = 60
 	};
 
-	// Execute a binary operator
+	// Execute a binary operator. Returns false when there is no reference to compare with: an
+	// operand double cannot hold exactly and a result the scaled reference does not cover
 	template<typename TestType>
-	void executeBinary(RandomsOp opcode, double da, double db, const TestType& testa, const TestType& testb, TestType& testresult, TestType& testref) {
+	bool executeBinary(RandomsOp opcode, double da, double db, const TestType& testa, const TestType& testb, TestType& testresult, TestType& testref) {
 		double reference = 0.0;
 		switch (opcode) {
 		case RandomsOp::OPCODE_ADD:
@@ -140,6 +141,22 @@ namespace sw { namespace universal {
 			std::cerr << "executeBinary does not support unary operators\n";
 			break;
 		}
+		char op = ' ';
+		switch (opcode) {
+		case RandomsOp::OPCODE_ADD: case RandomsOp::OPCODE_IPA: op = '+'; break;
+		case RandomsOp::OPCODE_SUB: case RandomsOp::OPCODE_IPS: op = '-'; break;
+		case RandomsOp::OPCODE_MUL: case RandomsOp::OPCODE_IPM: op = '*'; break;
+		case RandomsOp::OPCODE_DIV: case RandomsOp::OPCODE_IPD: op = '/'; break;
+		default: break;
+		}
+		// An operand or result past double's range has no double reference: compute it scaled (#1863)
+		if constexpr (has_scaled_reference<TestType>) {
+			const bool exactOperands = std::isfinite(da) && std::isfinite(db) && TestType(da) == testa && TestType(db) == testb;
+			if (!exactOperands || !std::isfinite(reference) || std::fabs(reference) < std::numeric_limits<double>::min()) {
+				if (scaledReference<TestType>(op, testa, testb, testref)) return true;
+				if (!exactOperands && !testa.isinf() && !testb.isinf() && !testa.isnan() && !testb.isnan()) return false;
+			}
+		}
 		// A saturating type clamps an overflow of finite operands to maxpos/maxneg. Converting
 		// double's result would not: an overflow to inf converts to inf, which is right for an
 		// inf operand but not for a product or quotient that merely exceeds the range. So the
@@ -149,19 +166,12 @@ namespace sw { namespace universal {
 				const double maxpos = double(TestType(SpecificValue::maxpos));
 				if (std::isfinite(da) && std::isfinite(db) && !std::isnan(reference) && std::fabs(reference) > maxpos) {
 					testref = TestType(reference > 0 ? SpecificValue::maxpos : SpecificValue::maxneg);
-					return;
+					return true;
 				}
 			}
 		}
-		char op = ' ';
-		switch (opcode) {
-		case RandomsOp::OPCODE_ADD: case RandomsOp::OPCODE_IPA: op = '+'; break;
-		case RandomsOp::OPCODE_SUB: case RandomsOp::OPCODE_IPS: op = '-'; break;
-		case RandomsOp::OPCODE_MUL: case RandomsOp::OPCODE_IPM: op = '*'; break;
-		case RandomsOp::OPCODE_DIV: case RandomsOp::OPCODE_IPD: op = '/'; break;
-		default: break;
-		}
 		testref = correctlyRoundedReference<TestType>(op, da, db, reference);
+		return true;
 	}
 
 	// Execute a unary operator
@@ -285,6 +295,24 @@ namespace sw { namespace universal {
 		ref = reference;
 	}
 
+	// a NaN, inf or zero operand: its special cases are not checked against double's, except an
+	// operand only double sees as inf or zero, past its range, which the scaled reference covers
+	template<typename TestType>
+	bool untestableOperand(double d, const TestType& v) {
+		switch (std::fpclassify(d)) {
+		case FP_NAN:
+			return true;
+		case FP_ZERO:
+			if constexpr (has_scaled_reference<TestType>) return v.iszero();
+			else return true;
+		case FP_INFINITE:
+			if constexpr (has_scaled_reference<TestType>) return v.isinf();
+			else return true;
+		default:
+			return false;
+		}
+	}
+
 	// generate a random set of operands to test the binary operators for a number system configuration
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
@@ -367,31 +395,14 @@ namespace sw { namespace universal {
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " testa " << testa << std::endl;
 			//std::cout << "sizeof db: " << sizeof(db) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value db " << db << " at index " << ia << " testa " << testb << std::endl;
 
-			executeBinary(opcode, da, db, testa, testb, result, ref);
+			if (!executeBinary(opcode, da, db, testa, testb, result, ref)) continue;
 			// check the result
 			if (result != ref) {
 				// we can't properly test the NaN and Inf encodings as the transformation through the custom type
 				// tends to be special cased. So check for these cases and ignore the failure
-				switch (std::fpclassify(da)) {
-				case FP_NAN:
-				case FP_INFINITE:
-				case FP_ZERO:
-					continue;
-				case FP_NORMAL:
-				case FP_SUBNORMAL:
-				default:
-					break;
-				}
-				switch (std::fpclassify(db)) {
-				case FP_NAN:
-				case FP_INFINITE:
-				case FP_ZERO:
-					continue;
-				case FP_NORMAL:
-				case FP_SUBNORMAL:
-				default:
-					break;
-				}
+				// An operand that is finite in TestType but inf in double, past double's range, is
+				// tested when the scaled reference covers it (#1863)
+				if (untestableOperand(da, testa) || untestableOperand(db, testb)) continue;
 				//if (reportTestCases) std::cerr << "result : " << result << '\n';
 				//if (reportTestCases) std::cerr << "ref    : " << ref << '\n';
 				bool resultIsInf = result.isinf();
