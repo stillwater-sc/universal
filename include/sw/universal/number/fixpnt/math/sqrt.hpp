@@ -1,16 +1,13 @@
 #pragma once
 #include <cerrno>
 #include <cstdint>
-#include <limits>        // std::numeric_limits
 // sqrt.hpp: sqrt functions for fixed-points
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/native/ieee754.hpp>
-#include <universal/number/fixpnt/numeric_limits.hpp>
-#include <universal/number/fixpnt/math/sqrt_tables.hpp>
+#include <universal/native/ieee754.hpp>   // fixpnt.hpp users get to_binary(float) and friends through here
 
 namespace sw { namespace universal {
 
