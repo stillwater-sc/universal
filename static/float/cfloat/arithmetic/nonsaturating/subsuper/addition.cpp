@@ -151,8 +151,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, RandomsOp::OPCODE_ADD, nrRandoms), typeid(c16).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c24  >(reportTestCases, RandomsOp::OPCODE_ADD, nrRandoms), typeid(c24).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, RandomsOp::OPCODE_ADD, nrRandoms), typeid(c32).name(), "addition");
-	nrRandoms = 0; // TBD -> there are double rounding errors in the test bench
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, RandomsOp::OPCODE_ADD, nrRandoms), typeid(c48).name(), "addition");
+	// c64's max-exponent binade lies beyond double's range: the reference overflows to inf where c64 is finite (#1863)
+	nrRandoms = 0;
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, RandomsOp::OPCODE_ADD, nrRandoms), typeid(c64).name(), "addition");
 	nrRandoms = 0; // TBD -> configurations that are more precise then double precision require a vector of 64bit words to construct the random bits
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, RandomsOp::OPCODE_ADD, nrRandoms), typeid(c80).name(), "addition");
