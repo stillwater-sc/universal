@@ -2,7 +2,6 @@
 #include <cerrno>
 #include <cstdint>
 #include <limits>        // std::numeric_limits
-#include <iostream>   // std::cout/cerr used below (#1334: include what you use)
 // sqrt.hpp: sqrt functions for fixed-points
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -14,77 +13,6 @@
 #include <universal/number/fixpnt/math/sqrt_tables.hpp>
 
 namespace sw { namespace universal {
-
-/*
-	// straight Babylonian
-	inline double babylonian(double v) {
-		double x_n = 0.5 * v; // initial guess
-		const double eps = 1.0e-7;   // 
-		do {
-			x_n = (x_n + v / x_n) / 2.0;
-		} while (std::abs(x_n * x_n - v) > eps);
-
-		return x_n;
-	}
-*/
-
-	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-	inline fixpnt<nbits, rbits, arithmetic, bt> BabylonianMethod(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
-		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
-		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
-		Fixed half(0.5f);
-		Fixed x_next;
-		Fixed x_n = half * v;
-		Fixed diff;
-		std::cout << "v    " << v << '\n';
-		std::cout << "x_n  " << x_n << '\n';
-		std::cout << "half " << half << '\n';
-		do {
-			x_next = (x_n + v / x_n) * half;
-			diff = x_next - x_n;
-			std::cout << " x_n+1: " << x_next << " x_n: " << x_n << " diff " << diff << '\n';
-			x_n = x_next;
-		} while ((sw::universal::abs(x_n*x_n - v) > eps));
-		return x_n;
-	}
-
-	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-	inline fixpnt<nbits, rbits, arithmetic, bt> BabylonianMethod2(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
-		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
-		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
-
-		Fixed y(v);
-		Fixed x(v);
-		x >>= 1; // divide by 2
-		Fixed diff = (x - y);
-		while (sw::universal::abs(diff) > eps) {
-			x = (x + y);
-			x >>= 1;
-			y = v / x;
-			diff = x - y;
-			std::cout << " x: " << x << " y: " << y << " diff " << diff << '\n';
-		} 
-		return x;
-	}
-
-	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-	inline fixpnt<nbits, rbits, arithmetic, bt> BabylonianMethod3(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
-		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
-		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
-
-		Fixed y(v);
-		Fixed x(v);
-		x >>= 1; // divide by 2
-		Fixed diff = (x*x - y);
-		while (sw::universal::abs(diff) > eps) {
-			x = (x + y);
-			x >>= 1;
-			y = v / x;
-			diff = x - y;
-			std::cout << " x: " << x << " y: " << y << " diff " << diff << '\n';
-		}
-		return x;
-	}
 
 	/*
 	- Consider the function argument, x, in floating-point form, with a base

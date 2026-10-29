@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>   // std::cout used by the BabylonianMethod trace (#1334: include what you use)
 // sqrt.hpp: sqrt functions for posits
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -14,24 +13,6 @@
 #include <universal/internal/limbs/limb_kernels.hpp>   // sqrtrem, for posits wider than 64 bits
 
 namespace sw { namespace universal {
-
-	// straight Babylonian
-	template<unsigned nbits, unsigned es, typename bt>
-	inline posit<nbits, es, bt> BabylonianMethod(const posit<nbits, es, bt>& v) {
-		const double eps = 1.0e-5;
-		posit<nbits, es, bt> half(0.5);
-		posit<nbits, es, bt> x_next;
-		posit<nbits, es, bt> x_n = half * v;
-		posit<nbits, es, bt> diff;
-		do {
-			x_next = (x_n + v / x_n) * half;
-			diff = x_next - x_n;
-			if (_trace_sqrt) std::cout << " x_n+1: " << x_next << " x_n: " << x_n << " diff " << diff << std::endl;
-			x_n = x_next;
-		} while (double(sw::universal::abs(diff)) > eps);
-		return x_n;
-	}
-
 
 	namespace posit_sqrt_detail {
 
