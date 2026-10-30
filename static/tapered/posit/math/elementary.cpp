@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -159,6 +160,12 @@ namespace {
 			auto en = [&](unsigned W) { return pow(argument(x, W), n); };
 			const Posit wn = saturated(Reference<Posit>(en), en);
 			if (pn != wn) fails += Fail(reportTestCases, "pow(x, int)", x, pn, wn);
+			// a double exponent: y as a double, rounded to 53 bits where the posit is wider
+			const double dy = y.isnar() ? 0.37 : double(y);
+			const Posit pd = pow(x, dy);
+			auto ed = [&](unsigned W) { return pow(argument(x, W), efloat_for<Posit::nbits>(dy)); };
+			const Posit wd = saturated(Reference<Posit>(ed), ed);
+			if (pd != wd) fails += Fail(reportTestCases, "pow(x, double)", x, pd, wd);
 		}
 		return fails;
 	}
@@ -293,6 +300,16 @@ namespace {
 		check("pow(0, -1 int)", pow(zero, -1), nar);
 		check("pow(-2, 0.5)", pow(Posit(-2), Posit(0.5)), nar);
 		check("pow(2, NaN)", pow(Posit(2), std::nan("")), nar);
+		const double inf = std::numeric_limits<double>::infinity();
+		check("pow(2, inf)", pow(Posit(2), inf), maxpos);
+		check("pow(2, -inf)", pow(Posit(2), -inf), minpos);
+		check("pow(0.5, inf)", pow(Posit(0.5), inf), minpos);
+		check("pow(1, inf)", pow(one, inf), one);
+		check("pow(-2, 3.0)", pow(Posit(-2), 3.0), Posit(-8));
+		check("pow(-2, 1e300)", pow(Posit(-2), 1e300), maxpos);   // an even integer exponent
+		check("pow(-0.5, 1e300)", pow(Posit(-0.5), 1e300), minpos);
+		check("pow(2, 0.1)", pow(Posit(2), 0.1), Reference<Posit>([](unsigned W) {
+			auto two = posit_limbs::argument(Posit(2), W); return pow(two, posit_limbs::efloat_for<Posit::nbits>(0.1)); }));
 		check("pow(2, maxpos)", pow(Posit(2), maxpos), maxpos);
 		check("pow(2, -maxpos)", pow(Posit(2), -maxpos), minpos);
 		check("pow(-2, -maxpos int)", pow(Posit(-2), -1023), -(pow(Posit(2), -1023)));
