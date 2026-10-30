@@ -94,9 +94,7 @@
 #include <random>
 #include <vector>
 #include <universal/number/efloat/efloat.hpp>
-#include <universal/number/efloat/efloat_mpn.hpp>   // the deprecated name, kept for one release (#1823)
 #include <universal/verification/test_suite.hpp>
-#include <type_traits>
 
 namespace {
 
@@ -1595,10 +1593,6 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
-	// the kernels' names before #1823: the forwarding header aliases the namespace, so code that
-	// names efloat_mpn still compiles, against the same functions
-	static_assert(std::is_same_v<decltype(&sw::universal::efloat_mpn::add_n), decltype(&sw::universal::limb_kernels::add_n)>);
-	static_assert(std::is_same_v<sw::universal::efloat_mpn::limb_t, sw::universal::limb_kernels::limb_t>);
 }
 
 #define MANUAL_TESTING 0
