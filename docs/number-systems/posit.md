@@ -169,9 +169,11 @@ convert(q.to_value(), dot_product);  // Single rounding at the end
 
 ### Math Library
 
-The posit standard asks every function to be correctly rounded for every argument, so that results
-are reproducible bit for bit. Universal's posit math library meets that at every `nbits`, and no
-function goes through `double` (#1855):
+The posit standard requires its functions to be correctly rounded for every argument, so that results
+are reproducible bit for bit. Universal's posit math library rounds every function it provides
+correctly at every `nbits`, including those the standard does not require, such as the error and gamma
+functions. No result depends on a platform's libm. The one use of `double` is the seed of `sqrt`'s
+integer square root, which an exact correction then makes right (#1855):
 
 | functions | how |
 |---|---|
@@ -196,7 +198,7 @@ in 2^28 calls.
 using namespace sw::universal;
 
 posit<128, 4> x(0.5);
-auto y = exp(x);        // correctly rounded to all 123 bits of posit<128,4>'s fraction near 1
+auto y = exp(x);        // correctly rounded to all 121 fraction bits posit<128,4> has near 1
 auto z = sin(x * 1e30); // exact argument reduction, at any magnitude
 auto g = tgamma(posit<128, 4>(200.5));  // about 1e373: past double's range, inside the posit's
 ```
@@ -217,9 +219,20 @@ though not always, right. Measured in nanoseconds per call on an i7-12700K, with
 | `pow` | 1452 | 1498 | 1635 | 1868 | 2438 |
 | `hypot` | 191 | 195 | 247 | 322 | 466 |
 
-The regression tests in `static/tapered/posit/math` check every function against efloat at four
-times the posit's precision: exhaustively at narrow widths and randomly up to 256 bits, with exact
-values, poles and saturation.
+The regression tests in `static/tapered/posit/math` use a reference independent of each
+implementation. They run exhaustively at narrow widths, randomly up to 256 bits, and on exact
+values, poles and saturation:
+
+- `sqrt.cpp` uses the rounding rule itself, in integers: the squares of the neighbouring tie
+  points bracket the argument.
+- `truncate.cpp` compares with the `double` functions up to 32 bits, where they are exact, and past
+  that checks the defining properties.
+- `fractional.cpp` compares with `std::fmod` and `std::remainder` in `double` up to 32 bits, and past
+  that with constructed exact cases.
+- `elementary.cpp` compares the transcendental functions with the same efloat function at
+  4 (fbits + 1) + 64 bits, rounded once (efloat is verified against MPFR), and widens that
+  reference near a tie point.
+- `efloat_bridge.cpp` checks the posit/efloat conversions against the posit tie points.
 
 ## Problems It Solves
 
@@ -232,4 +245,4 @@ values, poles and saturation.
 | Dot product rounding errors accumulate | Quire provides exact accumulation, single final rounding |
 | Need better precision without increasing bit width | posit<32,2> typically provides 1-2 more decimal digits than float32 |
 | Reproducible linear algebra across platforms | Quire + posit = same result on every platform |
-| Math functions that differ between platforms' libm | Every posit math function is correctly rounded, computed without libm |
+| Math functions that differ between platforms' libm | Every posit math function is correctly rounded, and no result depends on libm |
