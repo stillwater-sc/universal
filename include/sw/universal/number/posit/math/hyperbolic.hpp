@@ -1,54 +1,66 @@
 #pragma once
-// hyperbolic.hpp: hyperbolic functions for posits
+// hyperbolic.hpp: hyperbolic functions (sinh, cosh, tanh, asinh, acosh, atanh) for posits
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Correctly rounded at every nbits (#1855): computed by efloat's correctly rounded math library and
+// rounded once into the posit by posit_limbs::evaluate, which applies Ziv's test on the posit side.
+// No native floating-point type is involved, so the posit's whole precision and range hold.
+// sinh and cosh saturate past the posit's range; acosh of x < 1 and atanh of |x| > 1 are NaR, and
+// atanh(+-1), a pole, is NaR.
+#include <universal/number/posit/math/evaluate.hpp>
 
 namespace sw { namespace universal {
 
-// the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
-// correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
+	// the hyperbolic sine
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits, es, bt> sinh(posit<nbits, es, bt> x) {
+		using Posit = posit<nbits, es, bt>;
+		if (x.isnar()) return x;
+		return posit_limbs::evaluate<Posit>([&](unsigned W) { return sinh(posit_limbs::argument(x, W)); }, posit_limbs::Saturation::overflow);
+	}
 
-// value representing an angle expressed in radians
-// One radian is equivalent to 180/PI degrees
+	// the hyperbolic cosine
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits, es, bt> cosh(posit<nbits, es, bt> x) {
+		using Posit = posit<nbits, es, bt>;
+		if (x.isnar()) return x;
+		return posit_limbs::evaluate<Posit>([&](unsigned W) { return cosh(posit_limbs::argument(x, W)); }, posit_limbs::Saturation::overflow);
+	}
 
-// hyperbolic sine of an angle of x radians
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> sinh(posit<nbits,es,bt> x) {
-	return posit<nbits,es,bt>(std::sinh(double(x)));
-}
+	// the hyperbolic tangent
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits, es, bt> tanh(posit<nbits, es, bt> x) {
+		using Posit = posit<nbits, es, bt>;
+		if (x.isnar()) return x;
+		return posit_limbs::evaluate<Posit>([&](unsigned W) { return tanh(posit_limbs::argument(x, W)); });
+	}
 
-// hyperbolic cosine of an angle of x radians
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> cosh(posit<nbits,es,bt> x) {
-	return posit<nbits,es,bt>(std::cosh(double(x)));
-}
+	// the inverse hyperbolic sine
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits, es, bt> asinh(posit<nbits, es, bt> x) {
+		using Posit = posit<nbits, es, bt>;
+		if (x.isnar()) return x;
+		return posit_limbs::evaluate<Posit>([&](unsigned W) { return asinh(posit_limbs::argument(x, W)); });
+	}
 
-// hyperbolic tangent of an angle of x radians
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> tanh(posit<nbits,es,bt> x) {
-	return posit<nbits,es,bt>(std::tanh(double(x)));
-}
+	// the inverse hyperbolic cosine
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits, es, bt> acosh(posit<nbits, es, bt> x) {
+		using Posit = posit<nbits, es, bt>;
+		if (x.isnar()) return x;
+		return posit_limbs::evaluate<Posit>([&](unsigned W) { return acosh(posit_limbs::argument(x, W)); });
+	}
 
-// hyperbolic cotangent of an angle of x radians
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> atanh(posit<nbits,es,bt> x) {
-	return posit<nbits,es,bt>(std::atanh(double(x)));
-}
-
-// hyperbolic cosecant of an angle of x radians
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> acosh(posit<nbits,es,bt> x) {
-	return posit<nbits,es,bt>(std::acosh(double(x)));
-}
-
-// hyperbolic secant of an angle of x radians
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> asinh(posit<nbits,es,bt> x) {
-	return posit<nbits,es,bt>(std::asinh(double(x)));
-}
-
+	// the inverse hyperbolic tangent
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits, es, bt> atanh(posit<nbits, es, bt> x) {
+		using Posit = posit<nbits, es, bt>;
+		if (x.isnar()) return x;
+		return posit_limbs::evaluate<Posit>([&](unsigned W) { return atanh(posit_limbs::argument(x, W)); });
+	}
 
 }} // namespace sw::universal

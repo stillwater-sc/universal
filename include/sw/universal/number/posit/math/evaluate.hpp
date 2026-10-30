@@ -49,16 +49,28 @@ namespace sw { namespace universal {
 			std::uint32_t flags;
 		};
 
+		// What an efloat inf or 0 from a valid argument means. efloat's range ends at 2^(2^62), and a
+		// posit's well before: an inf is then an overflow, which a posit saturates at +-maxpos, and a 0
+		// from a function that is never 0 is an underflow, which saturates at +-minpos. Poles and
+		// domain errors are decided by the caller before it evaluates.
+		enum class Saturation {
+			none,       // an efloat inf is a pole: NaR
+			overflow,   // an efloat inf saturates at +-maxpos
+			both        // and an efloat 0 at +-minpos: the function is never 0 here
+		};
+
 		// the posit nearest f(W), where f(W) returns a function value correctly rounded to nearest at
 		// (at least) W bits as an efloat_for<nbits>
 		template<typename Posit, typename Function>
-		inline Posit evaluate(Function&& f) {
+		inline Posit evaluate(Function&& f, Saturation saturation = Saturation::none) {
 			using E = efloat_for<Posit::nbits>;
 			const efloat_environment_guard environment;
 			unsigned W = Posit::fbits + 1u + 30u;
 			Posit p;
 			for (int attempt = 0; ; ++attempt) {
 				const E y = f(W);
+				if (y.isinf() && saturation != Saturation::none) return Posit(y.sign() < 0 ? SpecificValue::maxneg : SpecificValue::maxpos);
+				if (y.iszero() && saturation == Saturation::both) return Posit(y.sign() < 0 ? SpecificValue::minneg : SpecificValue::minpos);
 				from_efloat(p, y);
 				if (y.iszero() || y.isnan() || y.isinf() || attempt == 3) break;
 				// y +- 1 ulp of y's precision: exact at that precision, also where y - ulp leaves y's binade

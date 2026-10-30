@@ -1,10 +1,11 @@
-// elementary.cpp: test suite runner for the correctly rounded posit exponential, logarithm and hypot functions
+// elementary.cpp: test suite runner for the correctly rounded posit elementary functions
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cmath>
 #include <cstdint>
 #include <random>
 #include <stdexcept>
@@ -75,14 +76,20 @@ namespace {
 	int VerifyUnary(const Posit& x, bool reportTestCases) {
 		using namespace posit_limbs;
 		int fails = 0;
-		// past efloat's own range (2^(2^62)) its inf and 0 are an overflow and an underflow: exp, exp2
-		// and exp10 are positive, so they saturate at maxpos and minpos, as past the posit's range;
-		// expm1 > -1 can only overflow; the logarithms' inf is a pole, NaR
+		// past efloat's own range (2^(2^62)) its inf and 0 are an overflow and an underflow: exp, exp2,
+		// exp10, erfc and tgamma are never 0, so they saturate at +-maxpos and +-minpos, as past the
+		// posit's range; expm1 > -1, sinh, cosh and lgamma can only overflow; any other inf is a pole, NaR
 		enum class Saturate { both, overflow, none };
 		auto check = [&](const char* fn, const Posit& got, auto&& efn, Saturate rule) {
 			Posit want = x.isnar() ? Posit(SpecificValue::nar) : Reference<Posit>([&](unsigned W) { return efn(argument(x, W)); });
-			if (!x.isnar() && rule != Saturate::none && want.isnar()) want = Posit(SpecificValue::maxpos);
-			if (!x.isnar() && rule == Saturate::both && want.iszero()) want = Posit(SpecificValue::minpos);
+			if (!x.isnar() && rule != Saturate::none && want.isnar()) {   // the sign of the efloat inf
+				const auto y = efn(argument(x, Posit::fbits + 64u));
+				if (y.isinf()) want = Posit(y.sign() < 0 ? SpecificValue::maxneg : SpecificValue::maxpos);
+			}
+			if (!x.isnar() && rule == Saturate::both && want.iszero()) {
+				const auto y = efn(argument(x, Posit::fbits + 64u));
+				want = Posit(y.sign() < 0 ? SpecificValue::minneg : SpecificValue::minpos);
+			}
 			if (got != want) fails += Fail(reportTestCases, fn, x, got, want);
 		};
 		check("exp",   exp(x),   [](const auto& e) { return exp(e); },   Saturate::both);
@@ -93,16 +100,67 @@ namespace {
 		check("log2",  log2(x),  [](const auto& e) { return log2(e); },  Saturate::none);
 		check("log10", log10(x), [](const auto& e) { return log10(e); }, Saturate::none);
 		check("log1p", log1p(x), [](const auto& e) { return log1p(e); }, Saturate::none);
+		check("sin",   sin(x),   [](const auto& e) { return sin(e); },   Saturate::none);
+		check("cos",   cos(x),   [](const auto& e) { return cos(e); },   Saturate::none);
+		check("tan",   tan(x),   [](const auto& e) { return tan(e); },   Saturate::none);
+		check("asin",  asin(x),  [](const auto& e) { return asin(e); },  Saturate::none);
+		check("acos",  acos(x),  [](const auto& e) { return acos(e); },  Saturate::none);
+		check("atan",  atan(x),  [](const auto& e) { return atan(e); },  Saturate::none);
+		check("cot",   cot(x),   [](const auto& e) { return decltype(e)(1) / tan(e); }, Saturate::none);
+		check("sec",   sec(x),   [](const auto& e) { return decltype(e)(1) / cos(e); }, Saturate::none);
+		check("csc",   csc(x),   [](const auto& e) { return decltype(e)(1) / sin(e); }, Saturate::none);
+		check("sinh",  sinh(x),  [](const auto& e) { return sinh(e); },  Saturate::overflow);
+		check("cosh",  cosh(x),  [](const auto& e) { return cosh(e); },  Saturate::overflow);
+		check("tanh",  tanh(x),  [](const auto& e) { return tanh(e); },  Saturate::none);
+		check("asinh", asinh(x), [](const auto& e) { return asinh(e); }, Saturate::none);
+		check("acosh", acosh(x), [](const auto& e) { return acosh(e); }, Saturate::none);
+		check("atanh", atanh(x), [](const auto& e) { return atanh(e); }, Saturate::none);
+		check("erf",   erf(x),   [](const auto& e) { return erf(e); },   Saturate::none);
+		check("erfc",  erfc(x),  [](const auto& e) { return erfc(e); },  Saturate::both);
+		const bool pole = x.isinteger() && (x.iszero() || x.isneg());   // of tgamma and lgamma
+		if (pole) {
+			if (!tgamma(x).isnar()) fails += Fail(reportTestCases, "tgamma", x, tgamma(x), Posit(SpecificValue::nar));
+			if (!lgamma(x).isnar()) fails += Fail(reportTestCases, "lgamma", x, lgamma(x), Posit(SpecificValue::nar));
+		}
+		else {
+			check("tgamma", tgamma(x), [](const auto& e) { return tgamma(e); }, Saturate::both);
+			check("lgamma", lgamma(x), [](const auto& e) { return lgamma(e); }, Saturate::overflow);
+		}
 		return fails;
 	}
 
 	template<typename Posit>
 	int VerifyBinary(const Posit& x, const Posit& y, bool reportTestCases) {
 		using namespace posit_limbs;
-		const Posit got = hypot(x, y);
-		const Posit want = (x.isnar() || y.isnar()) ? Posit(SpecificValue::nar)
-			: Reference<Posit>([&](unsigned W) { return hypot(argument(x, W), argument(y, W)); });
-		return (got == want) ? 0 : Fail(reportTestCases, "hypot", x, got, want);
+		const Posit nar(SpecificValue::nar);
+		const bool either = x.isnar() || y.isnar();
+		int fails = 0;
+		const Posit h = hypot(x, y);
+		const Posit wh = either ? nar : Reference<Posit>([&](unsigned W) { return hypot(argument(x, W), argument(y, W)); });
+		if (h != wh) fails += Fail(reportTestCases, "hypot", x, h, wh);
+		const Posit a = atan2(y, x);
+		const Posit wa = either ? nar : Reference<Posit>([&](unsigned W) { return atan2(argument(y, W), argument(x, W)); });
+		if (a != wa) fails += Fail(reportTestCases, "atan2", y, a, wa);
+		// pow: a nonzero x has a nonzero power, which saturates past the range; x = 0 to y < 0 is a pole
+		auto saturated = [&](Posit want, auto&& efn) {
+			if (x.iszero() || either) return want;
+			const auto e = efn(Posit::fbits + 64u);   // wider than the operands: they stay exact
+			if (e.isinf()) return Posit(e.sign() < 0 ? SpecificValue::maxneg : SpecificValue::maxpos);
+			if (e.iszero()) return Posit(e.sign() < 0 ? SpecificValue::minneg : SpecificValue::minpos);
+			return want;
+		};
+		const Posit p = pow(x, y);
+		auto ep = [&](unsigned W) { return pow(argument(x, W), argument(y, W)); };
+		const Posit wp = either ? nar : saturated(Reference<Posit>(ep), ep);
+		if (p != wp) fails += Fail(reportTestCases, "pow", x, p, wp);
+		if (!x.isnar()) {
+			const int n = static_cast<int>(y.isnar() ? 3 : (y.encoding() % 41u)) - 20;
+			const Posit pn = pow(x, n);
+			auto en = [&](unsigned W) { return pow(argument(x, W), n); };
+			const Posit wn = saturated(Reference<Posit>(en), en);
+			if (pn != wn) fails += Fail(reportTestCases, "pow(x, int)", x, pn, wn);
+		}
+		return fails;
 	}
 
 	template<typename Posit>
@@ -191,6 +249,53 @@ namespace {
 		check("hypot(x, 0)", hypot(Posit(-0.75), zero), Posit(0.75));
 		check("hypot(1, 2, 2)", hypot(one, Posit(2), Posit(2)), Posit(3));
 		check("hypot(2, 3, 6)", hypot(Posit(2), Posit(3), Posit(6)), Posit(7));
+		check("sin(0)", sin(zero), zero);
+		check("cos(0)", cos(zero), one);
+		check("tan(0)", tan(zero), zero);
+		check("asin(0)", asin(zero), zero);
+		check("acos(1)", acos(one), zero);
+		check("asin(2)", asin(Posit(2)), nar);
+		check("atan(0)", atan(zero), zero);
+		check("atan2(0, 1)", atan2(zero, one), zero);
+		check("cot(0)", cot(zero), nar);
+		check("csc(0)", csc(zero), nar);
+		check("sec(0)", sec(zero), one);
+		check("sinh(0)", sinh(zero), zero);
+		check("cosh(0)", cosh(zero), one);
+		check("sinh(maxpos)", sinh(maxpos), maxpos);
+		check("sinh(-maxpos)", sinh(-maxpos), -maxpos);
+		check("cosh(-maxpos)", cosh(-maxpos), maxpos);
+		check("tanh(maxpos)", tanh(maxpos), one);
+		check("acosh(1)", acosh(one), zero);
+		check("acosh(0)", acosh(zero), nar);
+		check("atanh(1)", atanh(one), nar);
+		check("atanh(-1)", atanh(-one), nar);
+		check("atanh(2)", atanh(Posit(2)), nar);
+		check("erf(0)", erf(zero), zero);
+		check("erfc(0)", erfc(zero), one);
+		check("erfc(maxpos)", erfc(maxpos), minpos);
+		check("tgamma(1)", tgamma(one), one);
+		check("tgamma(5)", tgamma(Posit(5)), Posit(24));
+		check("tgamma(0)", tgamma(zero), nar);
+		check("tgamma(-3)", tgamma(Posit(-3)), nar);
+		check("tgamma(maxpos)", tgamma(maxpos), maxpos);
+		check("lgamma(1)", lgamma(one), zero);
+		check("lgamma(2)", lgamma(Posit(2)), zero);
+		check("lgamma(-2)", lgamma(Posit(-2)), nar);
+		check("pow(2, 10)", pow(Posit(2), Posit(10)), Posit(1024));
+		check("pow(-2, 3)", pow(Posit(-2), 3), Posit(-8));
+		check("pow(4, 0.5)", pow(Posit(4), 0.5), Posit(2));
+		check("pow(9, 0.5)", pow(Posit(9), Posit(0.5)), Posit(3));
+		check("pow(x, 0)", pow(Posit(0.3), zero), one);
+		check("pow(0, 0)", pow(zero, zero), one);
+		check("pow(0, 2)", pow(zero, Posit(2)), zero);
+		check("pow(0, -1)", pow(zero, -one), nar);
+		check("pow(0, -1 int)", pow(zero, -1), nar);
+		check("pow(-2, 0.5)", pow(Posit(-2), Posit(0.5)), nar);
+		check("pow(2, NaN)", pow(Posit(2), std::nan("")), nar);
+		check("pow(2, maxpos)", pow(Posit(2), maxpos), maxpos);
+		check("pow(2, -maxpos)", pow(Posit(2), -maxpos), minpos);
+		check("pow(-2, -maxpos int)", pow(Posit(-2), -1023), -(pow(Posit(2), -1023)));
 		return fails;
 	}
 
@@ -298,7 +403,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit exp, log and hypot families, correctly rounded";
+	std::string test_suite  = "posit elementary functions, correctly rounded";
 	std::string test_tag    = "elementary";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
