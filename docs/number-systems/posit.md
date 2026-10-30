@@ -170,8 +170,9 @@ convert(q.to_value(), dot_product);  // Single rounding at the end
 ### Math Library
 
 The posit standard requires its functions to be correctly rounded for every argument, so that results
-are reproducible bit for bit. The functions in the table below are correctly rounded at every `nbits`
-(the transcendental ones by a bounded test, described below), including some the standard does not
+are reproducible bit for bit. The functions in the table below meet that at every `nbits`: `sqrt` and
+the exact operations by construction, the transcendental ones by design, verified but not proven,
+since their Ziv test is bounded (see below). The table includes some functions the standard does not
 require, such as the error and gamma functions. None of their results depends on a platform's libm.
 For `nbits <= 64`, `sqrt` uses `double` for the seed of its integer square root and for one
 correction estimate, and an exact fix-up then decides the root (#1855). `ipow(a, b)` in
