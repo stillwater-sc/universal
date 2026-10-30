@@ -1,57 +1,61 @@
 #pragma once
-// exponent.hpp: exponent functions for posits
+// exponent.hpp: exponential functions (exp, exp2, exp10, expm1) for posits
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Correctly rounded at every nbits (#1855): computed by efloat's correctly rounded math library and
+// rounded once into the posit by posit_limbs::evaluate, which applies Ziv's test on the posit side.
+// No native floating-point type is involved, so the posit's whole precision and range hold.
+#include <universal/number/posit/math/evaluate.hpp>
 
 namespace sw { namespace universal {
 
-// the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
-// correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
-
-// Base-e exponential function
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> exp(posit<nbits,es,bt> x) {
-	if (isnar(x)) return x;
-	posit<nbits, es, bt> p;
-	double d = std::exp(double(x));
-	if (d == 0.0) {
-		p.minpos();
+	// Past the posit's range the result saturates at maxpos, and below it at minpos: a posit rounds no
+	// nonzero value to 0. Far enough out efloat's own range ends too (2^(2^62)): its inf and 0 are
+	// then an overflow and an underflow, which saturate as well.
+	namespace posit_limbs {
+		template<typename Posit>
+		inline Posit saturate(const Posit& p, bool negative) {
+			if (p.isnar()) return Posit(negative ? SpecificValue::maxneg : SpecificValue::maxpos);
+			if (p.iszero()) return Posit(negative ? SpecificValue::minneg : SpecificValue::minpos);
+			return p;
+		}
 	}
-	else {
-		p = d;
-	}
-	return p;
-}
 
-// Base-2 exponential function
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> exp2(posit<nbits,es,bt> x) {
-	if (isnar(x)) return x;
-	posit<nbits, es, bt> p;
-	double d = std::exp2(double(x));
-	if (d == 0.0) {
-		p.minpos();
+	// e^x
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits, es, bt> exp(posit<nbits, es, bt> x) {
+		using Posit = posit<nbits, es, bt>;
+		if (x.isnar()) return x;
+		return posit_limbs::saturate(posit_limbs::evaluate<Posit>([&](unsigned W) { return exp(posit_limbs::argument(x, W)); }), false);
 	}
-	else {
-		p = d;
+
+	// 2^x
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits, es, bt> exp2(posit<nbits, es, bt> x) {
+		using Posit = posit<nbits, es, bt>;
+		if (x.isnar()) return x;
+		return posit_limbs::saturate(posit_limbs::evaluate<Posit>([&](unsigned W) { return exp2(posit_limbs::argument(x, W)); }), false);
 	}
-	return p;
-}
 
-// Base-10 exponential function
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits, es, bt> exp10(posit<nbits, es, bt> x) {
-	return posit<nbits, es, bt>(std::pow(10.0, double(x)));
-}
-		
-// Base-e exponential function exp(x)-1
-template<unsigned nbits, unsigned es, typename bt>
-posit<nbits,es,bt> expm1(posit<nbits,es,bt> x) {
-	return posit<nbits,es,bt>(std::expm1(double(x)));
-}
+	// 10^x
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits, es, bt> exp10(posit<nbits, es, bt> x) {
+		using Posit = posit<nbits, es, bt>;
+		if (x.isnar()) return x;
+		return posit_limbs::saturate(posit_limbs::evaluate<Posit>([&](unsigned W) { return exp10(posit_limbs::argument(x, W)); }), false);
+	}
 
+	// e^x - 1, accurate for x near 0
+	template<unsigned nbits, unsigned es, typename bt>
+	posit<nbits, es, bt> expm1(posit<nbits, es, bt> x) {
+		using Posit = posit<nbits, es, bt>;
+		if (x.isnar()) return x;
+		const Posit p = posit_limbs::evaluate<Posit>([&](unsigned W) { return expm1(posit_limbs::argument(x, W)); });
+		return p.isnar() ? Posit(SpecificValue::maxpos) : p;   // only an overflow is NaR here: expm1 > -1
+	}
 
 }} // namespace sw::universal
