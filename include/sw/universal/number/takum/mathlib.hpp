@@ -38,25 +38,7 @@ An algebraic treatment of elementary functions was started by Joseph Fels Ritt i
 namespace sw { namespace universal {
     //////////////////////////////////////////////////////////////////////////
 
-    // calculate the integer power a ^ b
-    // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-    template<unsigned nbits, unsigned es, typename BlockType>
-    takum<nbits, es, BlockType> ipow(const takum<nbits, es, BlockType>& a, const takum<nbits, es, BlockType>& b) {
-        // precondition
-        if (!a.isinteger() || !b.isinteger()) return takum<nbits, es, BlockType>(0);
-
-        // TODO: using uint64_t as ipow constraints dynamic range
-        uint64_t result(1);
-        uint64_t base = uint64_t(a); 
-        uint64_t exp = uint64_t(b);
-        for (;;) {
-            if (exp & 0x1) result *= base;
-            exp >>= 1;
-            if (exp == 0) break;
-            base *= base;
-        }
-        return takum<nbits, es, BlockType>(result);
-    }
+    // ipow, an integer power through uint64_t, is retired: pow(a, int) is the integer power (#1875)
 
     // clang <complex> implementation is calling these functions so we need implementations for takum
 
