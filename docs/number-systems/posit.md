@@ -167,6 +167,60 @@ Posit dot_product;
 convert(q.to_value(), dot_product);  // Single rounding at the end
 ```
 
+### Math Library
+
+The posit standard asks every function to be correctly rounded for every argument, so that results
+are reproducible bit for bit. Universal's posit math library meets that at every `nbits`, and no
+function goes through `double` (#1855):
+
+| functions | how |
+|---|---|
+| `sqrt` | the integer square root of the significand, exact remainder as the sticky bit (#1856, #1857) |
+| `trunc`, `round`, `floor`, `ceil` | exact, on the encoding |
+| `fmod`, `remainder`, `frac` | exact in efloat, rounded once (a posit's taper can make `x - n y` inexact) |
+| `exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p` | efloat, rounded once |
+| `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `cot`, `sec`, `csc` | efloat, exact argument reduction at any magnitude |
+| `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh` | efloat, rounded once |
+| `pow` (posit, `int` and `double` exponents), `hypot` (2 and 3 arguments) | efloat, rounded once |
+| `erf`, `erfc`, `tgamma`, `lgamma` | efloat, rounded once |
+
+The transcendental functions are [efloat](/universal/number-systems/efloat/)'s correctly rounded
+functions. A value rounded once in efloat and again into the posit is rounded twice, so the posit
+side applies Ziv's test. The efloat value at W bits is within 1/2 ulp of the exact result, so when
+it lies more than 1 ulp from every posit tie point it rounds to the correct posit. When it doesn't,
+W doubles. The first W carries 30 bits past the posit's fraction, so a retry happens about once
+in 2^28 calls.
+
+```cpp
+#include <universal/number/posit/posit.hpp>
+using namespace sw::universal;
+
+posit<128, 4> x(0.5);
+auto y = exp(x);        // correctly rounded to all 123 bits of posit<128,4>'s fraction near 1
+auto z = sin(x * 1e30); // exact argument reduction, at any magnitude
+auto g = tgamma(posit<128, 4>(200.5));  // about 1e373: past double's range, inside the posit's
+```
+
+Special values follow the posit rules. NaR in gives NaR out. A pole (`log(0)`, `atanh(1)`, `tgamma(0)`,
+`cot(0)`, `pow(0, -1)`) and a domain error (`asin(2)`, `log(-1)`, `pow(-2, 0.5)`) give NaR, which
+takes the place of IEEE-754's infinities and NaNs. A result past the posit's range saturates at
+`maxpos` or `minpos` with its sign, since a posit never rounds a nonzero value to 0 or to NaR:
+`exp(maxpos)` is `maxpos` and `exp(-maxpos)` is `minpos`.
+
+Correct rounding has a price at narrow widths, where the old `double` path was fast and usually,
+though not always, right. Measured in nanoseconds per call on an i7-12700K, with g++ 15 at `-O3`:
+
+| | posit<16,1> | posit<32,2> | posit<64,3> | posit<128,4> | posit<256,5> |
+|---|---:|---:|---:|---:|---:|
+| `exp` | 655 | 662 | 710 | 850 | 1203 |
+| `sin` | 917 | 944 | 1094 | 1279 | 1635 |
+| `pow` | 1452 | 1498 | 1635 | 1868 | 2438 |
+| `hypot` | 191 | 195 | 247 | 322 | 466 |
+
+The regression tests in `static/tapered/posit/math` check every function against efloat at four
+times the posit's precision: exhaustively at narrow widths and randomly up to 256 bits, with exact
+values, poles and saturation.
+
 ## Problems It Solves
 
 | Problem | How posit Solves It |
@@ -178,3 +232,4 @@ convert(q.to_value(), dot_product);  // Single rounding at the end
 | Dot product rounding errors accumulate | Quire provides exact accumulation, single final rounding |
 | Need better precision without increasing bit width | posit<32,2> typically provides 1-2 more decimal digits than float32 |
 | Reproducible linear algebra across platforms | Quire + posit = same result on every platform |
+| Math functions that differ between platforms' libm | Every posit math function is correctly rounded, computed without libm |
