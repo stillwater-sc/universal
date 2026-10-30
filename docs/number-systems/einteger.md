@@ -39,7 +39,7 @@ complement wrap, and no most-negative-value asymmetry.
 
 Full arithmetic, comparison, and decimal/hex parsing and printing are provided.
 `ipow(a, b)` is the exact integer power, with an `einteger` or `long long` exponent and the
-same edge cases as [integer's](integer.md#integer-power); it never overflows.
+same edge cases as [integer's](/universal/number-systems/integer/#integer-power); it never overflows.
 `showLimbs()` prints the limb encoding when you need to see the representation.
 
 ## Where it is used

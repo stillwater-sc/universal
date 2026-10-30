@@ -39,7 +39,7 @@ asymmetry -- the sign is carried separately from the digits.
 | Radix | any, set by template parameter |
 
 `ipow(a, n)` is the exact integer power, with an `unsigned` or `positional` exponent and the
-same edge cases as [integer's](integer.md#integer-power).
+same edge cases as [integer's](/universal/number-systems/integer/#integer-power).
 
 It is built on `blockdigit`, the internal digit-vector engine that also backs the decimal
 types, so a bug fixed in one is fixed in all of them.
