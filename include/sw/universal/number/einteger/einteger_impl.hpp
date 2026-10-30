@@ -967,6 +967,8 @@ private:
 
 	template<typename BBlockType>
 	friend constexpr bool operator==(const einteger<BBlockType>&, const einteger<BBlockType>&) noexcept;
+	template<typename BBlockType>
+	friend bool parse(const std::string&, einteger<BBlockType>&);
 };
 
 ////////////////////////    einteger functions   /////////////////////////////////
@@ -1136,6 +1138,9 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 					// complete the most significant byte
 					value.setbyte(static_cast<size_t>(byteIndex), static_cast<uint8_t>(byte));
 				}
+				// setbyte writes leading zero digits as limbs: "0x0001" left [1, 0], which
+				// is not 1 to == and isone(), and "-0x00" a negative zero (#1878)
+				value.remove_leading_zeros();
 				// check that we have [-+]0[xX] format
 				++r;
 				if (r != number.rend()) {
