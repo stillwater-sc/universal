@@ -171,7 +171,8 @@ convert(q.to_value(), dot_product);  // Single rounding at the end
 
 The posit standard requires its functions to be correctly rounded for every argument, so that results
 are reproducible bit for bit. Universal's posit math library rounds every function it provides
-correctly at every `nbits`, including those the standard does not require, such as the error and gamma
+correctly at every `nbits` (the transcendental ones by a bounded test, below), including those the
+standard does not require, such as the error and gamma
 functions. No result depends on a platform's libm. The one use of `double` is the seed of `sqrt`'s
 integer square root, which an exact correction then makes right (#1855):
 
@@ -191,7 +192,12 @@ functions. A value rounded once in efloat and again into the posit is rounded tw
 side applies Ziv's test. The efloat value at W bits is within 1/2 ulp of the exact result, so when
 it lies more than 1 ulp from every posit tie point it rounds to the correct posit. When it doesn't,
 W doubles. The first W carries 30 bits past the posit's fraction, so a retry happens about once
-in 2^28 calls.
+in 2^28 calls. The retries stop at 8 times the first W. A result still unresolved there is rounded
+as it is, which is right for an exact result on a tie point, since efloat forms exact results
+exactly. An inexact result that close to a tie, within about 2^-(8 W) relative, is not expected
+(the hardest cases known for such functions lie near 2^-(2 p)), but nothing proves it cannot occur.
+So the transcendental functions are designed to be correctly rounded, and are verified rather than
+proven; the exact operations and `sqrt` are correctly rounded by construction.
 
 ```cpp
 #include <universal/number/posit/posit.hpp>
