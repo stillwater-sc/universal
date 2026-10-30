@@ -175,9 +175,8 @@ the exact operations by construction, the transcendental ones by design, verifie
 since their Ziv test is bounded (see below). The table includes some functions the standard does not
 require, such as the error and gamma functions. None of their results depends on a platform's libm.
 For `nbits <= 64`, `sqrt` uses `double` for the seed of its integer square root and for one
-correction estimate, and an exact fix-up then decides the root (#1855). `ipow(a, b)` in
-`posit/mathlib.hpp` is a separate integer-only helper on `uint64_t`; `pow(a, int)` is the correctly
-rounded integer power.
+correction estimate, and an exact fix-up then decides the root (#1855). The integer power is
+`pow(a, int)`, correctly rounded like the rest.
 
 | functions | how |
 |---|---|

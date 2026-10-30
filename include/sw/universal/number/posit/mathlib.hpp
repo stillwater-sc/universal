@@ -34,24 +34,8 @@ An algebraic treatment of elementary functions was started by Joseph Fels Ritt i
 namespace sw { namespace universal {
     //////////////////////////////////////////////////////////////////////////
 
-    // calculate the integer power a ^ b
-    // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-    template<unsigned nbits, unsigned es, typename bt>
-    posit<nbits, es, bt> ipow(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b) {
-        // precondition
-        if (!a.isinteger() || !b.isinteger()) return posit<nbits, es, bt>(0);
-
-        uint64_t result(1);
-        uint64_t base = static_cast<uint64_t>(static_cast<long long>(a));
-        uint64_t exp = static_cast<uint64_t>(static_cast<long long>(b));
-        for (;;) {
-            if (exp & 0x1) result *= base;
-            exp >>= 1;
-            if (exp == 0) break;
-            base *= base;
-        }
-        return posit<nbits,es, bt>(result);
-    }
+    // ipow, an integer power through uint64_t, is retired: pow(a, int) is the correctly rounded
+    // integer power at every nbits (#1855)
 
     // clang <complex> implementation is calling these functions so we need implementations for posit
 
