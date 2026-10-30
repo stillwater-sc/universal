@@ -116,7 +116,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyPositionalPower<20, 10>(-30, 30, 40, reportTestCases), "positional<20,10>", "ipow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositionalPower<20, 10>(-30, 30, 40, reportTestCases), "positional<20,10>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNegativeExponent<20, 10>(reportTestCases), "positional<20,10>", "ipow negative exponent");
 
 	{
@@ -134,7 +134,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyPositionalPower<20, 3>(-30, 30, 40, reportTestCases), "positional<20,3>", "ipow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositionalPower<20, 3>(-30, 30, 40, reportTestCases), "positional<20,3>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

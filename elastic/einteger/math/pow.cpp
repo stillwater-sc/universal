@@ -142,9 +142,9 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyNativePower<std::uint32_t>(-30, 30, 40, reportTestCases), "einteger<uint32_t>", "ipow");
+	nrOfFailedTestCases += ReportTestResult(VerifyNativePower<std::uint32_t>(-30, 30, 40, reportTestCases), "einteger<uint32_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNegativeExponent<std::uint32_t>(reportTestCases), "einteger<uint32_t>", "ipow negative exponent");
-	nrOfFailedTestCases += ReportTestResult(VerifyWidePower<std::uint32_t>(400, reportTestCases), "einteger<uint32_t>", "ipow");
+	nrOfFailedTestCases += ReportTestResult(VerifyWidePower<std::uint32_t>(400, reportTestCases), "einteger<uint32_t>", test_tag);
 
 	{
 		// x *= x squares: it used to give 0, because operator*= cleared *this, which is also rhs
@@ -175,12 +175,12 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyNativePower<std::uint8_t>(-30, 30, 40, reportTestCases), "einteger<uint8_t>", "ipow");
-	nrOfFailedTestCases += ReportTestResult(VerifyWidePower<std::uint8_t>(400, reportTestCases), "einteger<uint8_t>", "ipow");
+	nrOfFailedTestCases += ReportTestResult(VerifyNativePower<std::uint8_t>(-30, 30, 40, reportTestCases), "einteger<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWidePower<std::uint8_t>(400, reportTestCases), "einteger<uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyWidePower<std::uint32_t>(4000, reportTestCases), "einteger<uint32_t>", "ipow");
+	nrOfFailedTestCases += ReportTestResult(VerifyWidePower<std::uint32_t>(4000, reportTestCases), "einteger<uint32_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4

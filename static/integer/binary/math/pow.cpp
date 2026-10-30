@@ -161,11 +161,11 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerPower<8, std::uint8_t>(-128, 127, 20, reportTestCases), "integer<8>", "ipow");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerPower<16, std::uint8_t>(-300, 300, 20, reportTestCases), "integer<16>", "ipow");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerPower<64, std::uint32_t>(-20, 20, 70, reportTestCases), "integer<64>", "ipow");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerPower<8, std::uint8_t>(-128, 127, 20, reportTestCases), "integer<8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerPower<16, std::uint8_t>(-300, 300, 20, reportTestCases), "integer<16>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerPower<64, std::uint32_t>(-20, 20, 70, reportTestCases), "integer<64>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNegativeExponent<16, std::uint16_t>(reportTestCases), "integer<16>", "ipow negative exponent");
-	nrOfFailedTestCases += ReportTestResult(VerifyWidePower<256, std::uint32_t>(reportTestCases), "integer<256>", "ipow");
+	nrOfFailedTestCases += ReportTestResult(VerifyWidePower<256, std::uint32_t>(reportTestCases), "integer<256>", test_tag);
 
 	{
 		// pow(a, int) used to go through double: 3^40 = 12157665459056928801 > 2^53 lost its low bits
@@ -180,12 +180,12 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerPower<12, std::uint16_t>(-2048, 2047, 15, reportTestCases), "integer<12>", "ipow");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerPower<32, std::uint32_t>(-1000, 1000, 40, reportTestCases), "integer<32>", "ipow");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerPower<12, std::uint16_t>(-2048, 2047, 15, reportTestCases), "integer<12>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerPower<32, std::uint32_t>(-1000, 1000, 40, reportTestCases), "integer<32>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyWidePower<1024, std::uint32_t>(reportTestCases), "integer<1024>", "ipow");
+	nrOfFailedTestCases += ReportTestResult(VerifyWidePower<1024, std::uint32_t>(reportTestCases), "integer<1024>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
