@@ -27,11 +27,7 @@
 
 // x86-64 kernels in GNU inline assembly (gcc, clang), chosen at run time when the processor has
 // BMI2 and ADX (#1816); define UNIVERSAL_LIMB_KERNELS_NO_ASM to compile the portable loops alone.
-// EFLOAT_MPN_NO_ASM, its name before #1823, is accepted too: deprecated, and to be removed after
-// one release.
-#if defined(EFLOAT_MPN_NO_ASM) && !defined(UNIVERSAL_LIMB_KERNELS_NO_ASM)
-#define UNIVERSAL_LIMB_KERNELS_NO_ASM 1
-#endif
+// (Before #1823 the macro was EFLOAT_MPN_NO_ASM; that name is no longer read.)
 #if !defined(UNIVERSAL_LIMB_KERNELS_NO_ASM) && defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
 #define UNIVERSAL_LIMB_KERNELS_X86_64_ASM 1
 #include <cpuid.h>
