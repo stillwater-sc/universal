@@ -31,14 +31,30 @@ namespace sw { namespace universal {
 
 	namespace posit_limbs {
 
+		// rounds efloat to nearest while it lives, and puts back efloat's rounding mode and status
+		// flags on every exit, an exception from the evaluation included
+		class efloat_environment_guard {
+		public:
+			efloat_environment_guard() noexcept : mode(efloat_rounding_mode), flags(get_efloat_exceptions()) {
+				efloat_rounding_mode = RoundingMode::RoundToNearest;
+			}
+			~efloat_environment_guard() {
+				efloat_rounding_mode = mode;
+				set_efloat_exceptions(flags);
+			}
+			efloat_environment_guard(const efloat_environment_guard&) = delete;
+			efloat_environment_guard& operator=(const efloat_environment_guard&) = delete;
+		private:
+			RoundingMode  mode;
+			std::uint32_t flags;
+		};
+
 		// the posit nearest f(W), where f(W) returns a function value correctly rounded to nearest at
 		// (at least) W bits as an efloat_for<nbits>
 		template<typename Posit, typename Function>
 		inline Posit evaluate(Function&& f) {
 			using E = efloat_for<Posit::nbits>;
-			const RoundingMode mode = efloat_rounding_mode;
-			const std::uint32_t flags = get_efloat_exceptions();
-			efloat_rounding_mode = RoundingMode::RoundToNearest;
+			const efloat_environment_guard environment;
 			unsigned W = Posit::fbits + 1u + 30u;
 			Posit p;
 			for (int attempt = 0; ; ++attempt) {
@@ -53,8 +69,6 @@ namespace sw { namespace universal {
 				if (below == p && above == p) break;
 				W *= 2u;
 			}
-			efloat_rounding_mode = mode;
-			set_efloat_exceptions(flags);
 			return p;
 		}
 

@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <cstdint>
 #include <random>
+#include <stdexcept>
 #include <string>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -241,7 +242,7 @@ namespace {
 	}
 
 	// the posit functions round to nearest whatever efloat's rounding mode, and leave efloat's mode
-	// and status flags as they found them
+	// and status flags as they found them, also when the evaluation throws
 	template<typename Posit>
 	int VerifyEnvironment(bool reportTestCases) {
 		int fails = 0;
@@ -259,6 +260,19 @@ namespace {
 				if (reportTestCases) std::cerr << "FAIL the efloat rounding mode or flags leaked into or out of the posit functions\n";
 			}
 		}
+		// and when the evaluation throws
+		efloat_rounding_mode = RoundingMode::RoundToZero;
+		set_efloat_exceptions(ExceptionFlag::Overflow);
+		try {
+			(void)posit_limbs::evaluate<Posit>([](unsigned) -> posit_limbs::efloat_for<Posit::nbits> { throw std::runtime_error("evaluation failed"); });
+		}
+		catch (const std::runtime_error&) {}
+		if (efloat_rounding_mode != RoundingMode::RoundToZero || get_efloat_exceptions() != ExceptionFlag::Overflow) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL an exception from the evaluation left efloat's rounding mode or flags changed\n";
+		}
+		efloat_rounding_mode = RoundingMode::RoundToNearest;
+		clear_efloat_exceptions();
 		return fails;
 	}
 
