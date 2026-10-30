@@ -850,11 +850,12 @@ protected:
 		clear();
 		if (v != 0) {
 			if (v < 0) {
-				setbits(static_cast<unsigned long long>(-v));
+				// negate in unsigned arithmetic: -v overflows for the minimum value, -2^63 (#1878)
+				setbits(0ull - static_cast<unsigned long long>(v));
 				setsign(true);
 			}
 			else {
-				setbits(static_cast<unsigned long long>(v)); // TODO: what about -2^63
+				setbits(static_cast<unsigned long long>(v));
 			}
 		}
 		return *this;

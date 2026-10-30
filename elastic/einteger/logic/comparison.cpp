@@ -36,6 +36,27 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
+	// the minimum signed values: the conversion negated them in signed arithmetic, which overflows
+	template<typename BlockType>
+	int VerifyMinimumSigned(bool reportTestCases) {
+		using EInteger = einteger<BlockType>;
+		int nrOfFailedTests = 0;
+		const long long llmin = std::numeric_limits<long long>::min();
+		const int imin = std::numeric_limits<int>::min();
+		const EInteger a(llmin), b(imin);
+		EInteger twoTo63(1);
+		twoTo63 <<= 63;
+		if (a != EInteger(llmin + 1) - EInteger(1) || !a.isneg() || a != -twoTo63) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: einteger(LLONG_MIN) = " << a << '\n';
+		}
+		if (b != EInteger(static_cast<long long>(imin)) || !b.isneg()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: einteger(INT_MIN) = " << b << '\n';
+		}
+		return nrOfFailedTests;
+	}
+
 }} // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -76,6 +97,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySelectors<std::uint8_t>(reportTestCases), "einteger<uint8_t>", "selectors");
 	nrOfFailedTestCases += ReportTestResult(VerifySelectors<std::uint16_t>(reportTestCases), "einteger<uint16_t>", "selectors");
 	nrOfFailedTestCases += ReportTestResult(VerifySelectors<std::uint32_t>(reportTestCases), "einteger<uint32_t>", "selectors");
+	nrOfFailedTestCases += ReportTestResult(VerifyMinimumSigned<std::uint8_t>(reportTestCases), "einteger<uint8_t>", "minimum signed");
+	nrOfFailedTestCases += ReportTestResult(VerifyMinimumSigned<std::uint32_t>(reportTestCases), "einteger<uint32_t>", "minimum signed");
 #endif
 
 #if REGRESSION_LEVEL_2
