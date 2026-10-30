@@ -752,7 +752,7 @@ public:
 	// on the empty default-constructed state and on any persisted
 	// constexpr einteger -- which by definition has empty _block)
 	constexpr bool iszero() const noexcept { return (_block.size() == 0 || ((_block.size() == 1) && _block[0] == bt(0))); }
-	constexpr bool isone()  const noexcept { return true; }
+	constexpr bool isone()  const noexcept { return (!_sign && _block.size() == 1 && _block[0] == bt(1)); }
 	constexpr bool isodd()  const noexcept { return (_block.size() > 0) ? (_block[0] & 0x1) : false; }
 	constexpr bool iseven() const noexcept { return !isodd(); }
 	constexpr bool ispos()  const noexcept { return !_sign; }
@@ -850,11 +850,12 @@ protected:
 		clear();
 		if (v != 0) {
 			if (v < 0) {
-				setbits(static_cast<unsigned long long>(-v));
+				// negate in unsigned arithmetic: -v overflows for the minimum value, -2^63 (#1878)
+				setbits(0ull - static_cast<unsigned long long>(v));
 				setsign(true);
 			}
 			else {
-				setbits(static_cast<unsigned long long>(v)); // TODO: what about -2^63
+				setbits(static_cast<unsigned long long>(v));
 			}
 		}
 		return *this;
@@ -935,20 +936,24 @@ protected:
 		constexpr Integer kMax = std::numeric_limits<Integer>::max();
 		constexpr Integer kMin = std::numeric_limits<Integer>::min();
 		constexpr unsigned kDigits = std::numeric_limits<Unsigned>::digits;
+		// the largest magnitude that fits: |kMin| == kMax + 1 for a negative value (#1878)
+		const Unsigned limit = neg ? static_cast<Unsigned>(static_cast<Unsigned>(kMax) + 1u) : static_cast<Unsigned>(kMax);
 		for (unsigned i = 0; i < nbits(); ++i) {
 			if (i >= kDigits) {
 				if (test(i)) return neg ? kMin : kMax;
 				continue;
 			}
 			if (test(i)) {
-				if (v > (static_cast<Unsigned>(kMax) - m)) {
+				// m > limit first: limit - m would wrap for m == 2^(digits-1) on a positive value
+				if (m > limit || v > limit - m) {
 					return neg ? kMin : kMax;
 				}
 				v += m;
 			}
 			m <<= 1;
 		}
-		return (neg ? -static_cast<Integer>(v) : static_cast<Integer>(v));
+		// negate in unsigned arithmetic: -Integer(v) overflows for |kMin|
+		return (neg ? static_cast<Integer>(static_cast<Unsigned>(Unsigned(0) - v)) : static_cast<Integer>(v));
 	}
 	template<typename Real>
 	Real convert_to_native_ieee() const noexcept {
@@ -967,6 +972,8 @@ private:
 
 	template<typename BBlockType>
 	friend constexpr bool operator==(const einteger<BBlockType>&, const einteger<BBlockType>&) noexcept;
+	template<typename BBlockType>
+	friend bool parse(const std::string&, einteger<BBlockType>&);
 };
 
 ////////////////////////    einteger functions   /////////////////////////////////
@@ -1136,6 +1143,9 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 					// complete the most significant byte
 					value.setbyte(static_cast<size_t>(byteIndex), static_cast<uint8_t>(byte));
 				}
+				// setbyte writes leading zero digits as limbs: "0x0001" left [1, 0], which
+				// is not 1 to == and isone(), and "-0x00" a negative zero (#1878)
+				value.remove_leading_zeros();
 				// check that we have [-+]0[xX] format
 				++r;
 				if (r != number.rend()) {
@@ -1430,7 +1440,7 @@ inline einteger<BlockType> operator/(const einteger<BlockType>& lhs, long long r
 
 template<typename BlockType>
 inline einteger<BlockType> operator%(const einteger<BlockType>& lhs, long long rhs) {
-	return operator/(lhs, einteger<BlockType>(rhs));
+	return operator%(lhs, einteger<BlockType>(rhs));
 }
 
 template<typename BlockType>
@@ -1463,7 +1473,7 @@ inline einteger<BlockType> operator/(long long lhs, const einteger<BlockType>& r
 
 template<typename BlockType>
 inline einteger<BlockType> operator%(long long lhs, const einteger<BlockType>& rhs) {
-	return operator/(einteger<BlockType>(lhs), rhs);
+	return operator%(einteger<BlockType>(lhs), rhs);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

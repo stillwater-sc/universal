@@ -14,8 +14,65 @@
 #include <universal/number/einteger/einteger.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw { namespace universal {
+
+	// the value selectors against the native value; isone() used to report true for every value (#1878)
+	template<typename BlockType>
+	int VerifySelectors(bool reportTestCases) {
+		using EInteger = einteger<BlockType>;
+		int nrOfFailedTests = 0;
+		for (long long v : { 0ll, 1ll, -1ll, 2ll, -2ll, 3ll, 255ll, 256ll, 257ll, -257ll, 65536ll, 65537ll, 4294967297ll, -4294967297ll }) {
+			const EInteger x(v);
+			if (x.iszero() != (v == 0) || x.isone() != (v == 1) || x.isodd() != (v % 2 != 0) || x.iseven() != (v % 2 == 0) || x.isneg() != (v < 0) || x.ispos() != (v >= 0)) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: selectors of " << v << ": iszero " << x.iszero() << " isone " << x.isone() << " isodd " << x.isodd() << " isneg " << x.isneg() << '\n';
+			}
+		}
+		const EInteger empty;   // the default-constructed state has no limbs
+		if (!empty.iszero() || empty.isone()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: default-constructed einteger selectors\n";
+		}
+		return nrOfFailedTests;
+	}
+
+	// the minimum signed values: the conversion negated them in signed arithmetic, which overflows
+	template<typename BlockType>
+	int VerifyMinimumSigned(bool reportTestCases) {
+		using EInteger = einteger<BlockType>;
+		int nrOfFailedTests = 0;
+		const long long llmin = std::numeric_limits<long long>::min();
+		const int imin = std::numeric_limits<int>::min();
+		const EInteger a(llmin), b(imin);
+		EInteger twoTo63(1);
+		twoTo63 <<= 63;
+		if (a != EInteger(llmin + 1) - EInteger(1) || !a.isneg() || a != -twoTo63) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: einteger(LLONG_MIN) = " << a << '\n';
+		}
+		if (b != EInteger(static_cast<long long>(imin)) || !b.isneg()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: einteger(INT_MIN) = " << b << '\n';
+		}
+		// and back to native: the minimums round trip, magnitudes past the range saturate
+		const long long llmax = std::numeric_limits<long long>::max();
+		const int imax = std::numeric_limits<int>::max();
+		const EInteger pastPositive = twoTo63, pastNegative = -twoTo63 - EInteger(1);
+		if (static_cast<long long>(a) != llmin || static_cast<int>(b) != imin
+			|| static_cast<long long>(EInteger(llmax)) != llmax || static_cast<int>(EInteger(imax)) != imax
+			|| static_cast<long long>(pastPositive) != llmax || static_cast<long long>(pastNegative) != llmin
+			|| static_cast<int>(a) != imin || static_cast<int>(EInteger(1ll << 31)) != imax) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: einteger to native: " << static_cast<long long>(a) << ' ' << static_cast<int>(b) << ' '
+			                               << static_cast<long long>(pastPositive) << ' ' << static_cast<long long>(pastNegative) << '\n';
+		}
+		return nrOfFailedTests;
+	}
+
+}} // namespace sw::universal
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -49,7 +106,11 @@ try {
 
 
 #if REGRESSION_LEVEL_1
-
+	nrOfFailedTestCases += ReportTestResult(VerifySelectors<std::uint8_t>(reportTestCases), "einteger<uint8_t>", "selectors");
+	nrOfFailedTestCases += ReportTestResult(VerifySelectors<std::uint16_t>(reportTestCases), "einteger<uint16_t>", "selectors");
+	nrOfFailedTestCases += ReportTestResult(VerifySelectors<std::uint32_t>(reportTestCases), "einteger<uint32_t>", "selectors");
+	nrOfFailedTestCases += ReportTestResult(VerifyMinimumSigned<std::uint8_t>(reportTestCases), "einteger<uint8_t>", "minimum signed");
+	nrOfFailedTestCases += ReportTestResult(VerifyMinimumSigned<std::uint32_t>(reportTestCases), "einteger<uint32_t>", "minimum signed");
 #endif
 
 #if REGRESSION_LEVEL_2

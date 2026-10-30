@@ -117,6 +117,24 @@ try {
 		ReportTestResult(nrOfFailedTestCases - start, "hex parse", "einteger parse");
 	}
 
+	// ----- hex leading zero digits leave no zero limbs (#1878) -----
+	// setbyte wrote "0x0001" as limbs [1, 0] on uint8_t limbs: not == 1, not isone(),
+	// and "-0x0000" a negative zero. The decimal print above does not see the extra limb.
+	{
+		int start = nrOfFailedTestCases;
+		struct Case { const char* text; long long value; };
+		for (const Case& c : { Case{ "0x0001", 1 }, Case{ "-0x0001", -1 }, Case{ "0x0000", 0 }, Case{ "-0x0000", 0 },
+		                       Case{ "0x0000'0000'0100", 256 }, Case{ "-0x00FF", -255 } }) {
+			einteger<std::uint8_t> v;
+			const einteger<std::uint8_t> ref(c.value);
+			if (!parse(c.text, v) || v != ref || v.limbs() != ref.limbs() || v.isone() != (c.value == 1) || v.isneg() != (c.value < 0)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL parse('" << c.text << "') has " << v.limbs() << " limbs, expected " << ref.limbs() << '\n';
+			}
+		}
+		ReportTestResult(nrOfFailedTestCases - start, "hex leading zeros", "einteger parse");
+	}
+
 	// ----- binary (with and without separators, signs, multi-byte) -----
 	{
 		int start = nrOfFailedTestCases;
