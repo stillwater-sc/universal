@@ -46,7 +46,7 @@ namespace sw::universal::internal {
 			a <<= 2;
 			a += 1ll;
 		}
-		Expect(a.test(nbits - 2) && !a.test(nbits - 1), "operand width");   // the top set bit is nbits - 2
+		Expect(a.findMsb() == static_cast<int>(nbits) - 2, "operand width");   // the top set bit is nbits - 2
 		return a;
 	}
 
