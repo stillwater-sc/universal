@@ -936,20 +936,24 @@ protected:
 		constexpr Integer kMax = std::numeric_limits<Integer>::max();
 		constexpr Integer kMin = std::numeric_limits<Integer>::min();
 		constexpr unsigned kDigits = std::numeric_limits<Unsigned>::digits;
+		// the largest magnitude that fits: |kMin| == kMax + 1 for a negative value (#1878)
+		const Unsigned limit = neg ? static_cast<Unsigned>(static_cast<Unsigned>(kMax) + 1u) : static_cast<Unsigned>(kMax);
 		for (unsigned i = 0; i < nbits(); ++i) {
 			if (i >= kDigits) {
 				if (test(i)) return neg ? kMin : kMax;
 				continue;
 			}
 			if (test(i)) {
-				if (v > (static_cast<Unsigned>(kMax) - m)) {
+				// m > limit first: limit - m would wrap for m == 2^(digits-1) on a positive value
+				if (m > limit || v > limit - m) {
 					return neg ? kMin : kMax;
 				}
 				v += m;
 			}
 			m <<= 1;
 		}
-		return (neg ? -static_cast<Integer>(v) : static_cast<Integer>(v));
+		// negate in unsigned arithmetic: -Integer(v) overflows for |kMin|
+		return (neg ? static_cast<Integer>(static_cast<Unsigned>(Unsigned(0) - v)) : static_cast<Integer>(v));
 	}
 	template<typename Real>
 	Real convert_to_native_ieee() const noexcept {

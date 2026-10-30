@@ -54,6 +54,18 @@ namespace sw { namespace universal {
 			++nrOfFailedTests;
 			if (reportTestCases) std::cerr << "FAIL: einteger(INT_MIN) = " << b << '\n';
 		}
+		// and back to native: the minimums round trip, magnitudes past the range saturate
+		const long long llmax = std::numeric_limits<long long>::max();
+		const int imax = std::numeric_limits<int>::max();
+		const EInteger pastPositive = twoTo63, pastNegative = -twoTo63 - EInteger(1);
+		if (static_cast<long long>(a) != llmin || static_cast<int>(b) != imin
+			|| static_cast<long long>(EInteger(llmax)) != llmax || static_cast<int>(EInteger(imax)) != imax
+			|| static_cast<long long>(pastPositive) != llmax || static_cast<long long>(pastNegative) != llmin
+			|| static_cast<int>(a) != imin || static_cast<int>(EInteger(1ll << 31)) != imax) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: einteger to native: " << static_cast<long long>(a) << ' ' << static_cast<int>(b) << ' '
+			                               << static_cast<long long>(pastPositive) << ' ' << static_cast<long long>(pastNegative) << '\n';
+		}
 		return nrOfFailedTests;
 	}
 
