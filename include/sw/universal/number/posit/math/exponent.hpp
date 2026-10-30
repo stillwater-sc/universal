@@ -15,22 +15,14 @@ namespace sw { namespace universal {
 
 	// Past the posit's range the result saturates at maxpos, and below it at minpos: a posit rounds no
 	// nonzero value to 0. Far enough out efloat's own range ends too (2^(2^62)): its inf and 0 are
-	// then an overflow and an underflow, which saturate as well.
-	namespace posit_limbs {
-		template<typename Posit>
-		inline Posit saturate(const Posit& p, bool negative) {
-			if (p.isnar()) return Posit(negative ? SpecificValue::maxneg : SpecificValue::maxpos);
-			if (p.iszero()) return Posit(negative ? SpecificValue::minneg : SpecificValue::minpos);
-			return p;
-		}
-	}
+	// then an overflow and an underflow, which saturate as well (Saturation::both).
 
 	// e^x
 	template<unsigned nbits, unsigned es, typename bt>
 	posit<nbits, es, bt> exp(posit<nbits, es, bt> x) {
 		using Posit = posit<nbits, es, bt>;
 		if (x.isnar()) return x;
-		return posit_limbs::saturate(posit_limbs::evaluate<Posit>([&](unsigned W) { return exp(posit_limbs::argument(x, W)); }), false);
+		return posit_limbs::evaluate<Posit>([&](unsigned W) { return exp(posit_limbs::argument(x, W)); }, posit_limbs::Saturation::both);
 	}
 
 	// 2^x
@@ -38,7 +30,7 @@ namespace sw { namespace universal {
 	posit<nbits, es, bt> exp2(posit<nbits, es, bt> x) {
 		using Posit = posit<nbits, es, bt>;
 		if (x.isnar()) return x;
-		return posit_limbs::saturate(posit_limbs::evaluate<Posit>([&](unsigned W) { return exp2(posit_limbs::argument(x, W)); }), false);
+		return posit_limbs::evaluate<Posit>([&](unsigned W) { return exp2(posit_limbs::argument(x, W)); }, posit_limbs::Saturation::both);
 	}
 
 	// 10^x
@@ -46,7 +38,7 @@ namespace sw { namespace universal {
 	posit<nbits, es, bt> exp10(posit<nbits, es, bt> x) {
 		using Posit = posit<nbits, es, bt>;
 		if (x.isnar()) return x;
-		return posit_limbs::saturate(posit_limbs::evaluate<Posit>([&](unsigned W) { return exp10(posit_limbs::argument(x, W)); }), false);
+		return posit_limbs::evaluate<Posit>([&](unsigned W) { return exp10(posit_limbs::argument(x, W)); }, posit_limbs::Saturation::both);
 	}
 
 	// e^x - 1, accurate for x near 0
@@ -54,8 +46,8 @@ namespace sw { namespace universal {
 	posit<nbits, es, bt> expm1(posit<nbits, es, bt> x) {
 		using Posit = posit<nbits, es, bt>;
 		if (x.isnar()) return x;
-		const Posit p = posit_limbs::evaluate<Posit>([&](unsigned W) { return expm1(posit_limbs::argument(x, W)); });
-		return p.isnar() ? Posit(SpecificValue::maxpos) : p;   // only an overflow is NaR here: expm1 > -1
+		// expm1 > -1: only an overflow leaves the range
+		return posit_limbs::evaluate<Posit>([&](unsigned W) { return expm1(posit_limbs::argument(x, W)); }, posit_limbs::Saturation::overflow);
 	}
 
 }} // namespace sw::universal
