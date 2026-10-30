@@ -37,13 +37,16 @@ namespace sw::universal::internal {
 		}
 	}
 
-	// an operand of about nbits bits with every limb populated: (2^nbits - 1) / 3 = 0b0101...01
+	// an operand of nbits - 1 bits with every limb populated, 0b0101...01, built by shift and add
+	// alone: division is one of the operators measured, so it must not shape the operands
 	template<typename BlockType, unsigned nbits>
 	einteger<BlockType> Operand() {
 		einteger<BlockType> a(1);
-		a <<= static_cast<int>(nbits);
-		a -= 1ll;
-		a /= 3ll;
+		for (unsigned i = 2; i < nbits; i += 2) {
+			a <<= 2;
+			a += 1ll;
+		}
+		Expect(a.test(nbits - 2) && !a.test(nbits - 1), "operand width");   // the top set bit is nbits - 2
 		return a;
 	}
 
@@ -100,15 +103,13 @@ namespace sw::universal::internal {
 	void SerializationWorkload(size_t NR_OPS) {
 		using EInteger = einteger<BlockType>;
 		const EInteger a = Operand<BlockType, nbits>();
-		std::string text;
 		EInteger b;
 		// two operations per iteration
 		NR_OPS >>= 1;
 		for (size_t i = 0; i < NR_OPS; ++i) {
 			std::ostringstream s;
 			s << a;
-			text = s.str();
-			b.assign(text);
+			b.assign(s.str());
 		}
 		Expect(NR_OPS == 0 || b == a, "serialization");
 	}
