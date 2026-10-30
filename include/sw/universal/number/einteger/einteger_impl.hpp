@@ -752,7 +752,7 @@ public:
 	// on the empty default-constructed state and on any persisted
 	// constexpr einteger -- which by definition has empty _block)
 	constexpr bool iszero() const noexcept { return (_block.size() == 0 || ((_block.size() == 1) && _block[0] == bt(0))); }
-	constexpr bool isone()  const noexcept { return true; }
+	constexpr bool isone()  const noexcept { return (!_sign && _block.size() == 1 && _block[0] == bt(1)); }
 	constexpr bool isodd()  const noexcept { return (_block.size() > 0) ? (_block[0] & 0x1) : false; }
 	constexpr bool iseven() const noexcept { return !isodd(); }
 	constexpr bool ispos()  const noexcept { return !_sign; }
@@ -1430,7 +1430,7 @@ inline einteger<BlockType> operator/(const einteger<BlockType>& lhs, long long r
 
 template<typename BlockType>
 inline einteger<BlockType> operator%(const einteger<BlockType>& lhs, long long rhs) {
-	return operator/(lhs, einteger<BlockType>(rhs));
+	return operator%(lhs, einteger<BlockType>(rhs));
 }
 
 template<typename BlockType>
@@ -1463,7 +1463,7 @@ inline einteger<BlockType> operator/(long long lhs, const einteger<BlockType>& r
 
 template<typename BlockType>
 inline einteger<BlockType> operator%(long long lhs, const einteger<BlockType>& rhs) {
-	return operator/(einteger<BlockType>(lhs), rhs);
+	return operator%(einteger<BlockType>(lhs), rhs);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
