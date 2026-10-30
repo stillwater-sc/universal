@@ -22,25 +22,6 @@
    can be used for forward error analysis studies.
 */
 
-/*
-// integer power function, for efficiency
-template<size_t nbits, typename BlockType>
-integer<nbits, BlockType> ipow(integer<nbits, BlockType> base, integer<nbits, BlockType> exp) {
-	integer<nbits, BlockType> result = 1;
-	for (;;) {
-		if (exp.isodd()) {    // if (exp & 1)
-			result *= base;
-		}
-		exp >>= 1;
-		if (exp.iszero()) {   // if (!exp)
-			break;
-		}
-		base *= base;
-	}
-
-	return result;
-}*/
-
 void TestSizeof() {
 	using namespace sw::universal;
 

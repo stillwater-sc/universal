@@ -340,6 +340,10 @@ public:
 			clear();
 			return *this;
 		}
+		if (&rhs == this) {   // x *= x: the clear() below would wipe rhs before it is read
+			const einteger square(rhs);
+			return *this *= square;
+		}
 		einteger base(*this);
 		bool ls = sign();
 		unsigned ll = limbs();
@@ -1298,7 +1302,7 @@ constexpr bool operator>=(const einteger<BlockType>& lhs, const einteger<BlockTy
 
 template<typename BlockType>
 inline bool operator==(const einteger<BlockType>& lhs, long long rhs) {
-	return operator==(lhs, einteger(rhs));
+	return operator==(lhs, einteger<BlockType>(rhs));
 }
 
 template<typename BlockType>
@@ -1460,6 +1464,53 @@ inline einteger<BlockType> operator/(long long lhs, const einteger<BlockType>& r
 template<typename BlockType>
 inline einteger<BlockType> operator%(long long lhs, const einteger<BlockType>& rhs) {
 	return operator/(einteger<BlockType>(lhs), rhs);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// integer power
+
+// ipow(a, b): the integer power a^b, exact, by squaring; einteger grows, so it never overflows.
+// a^0 == 1 for every a, 0^0 included, as std::pow has it. A negative b gives 1 / a^|b| truncated,
+// as einteger division truncates: 1 for a == 1, +-1 for a == -1 by the parity of b, 0 for |a| > 1,
+// and einteger's division by zero for a == 0.
+
+// a^-n for n > 0, truncated; odd is the parity of n
+template<typename BlockType>
+inline einteger<BlockType> ipow_reciprocal(const einteger<BlockType>& a, bool odd) {
+	using EInteger = einteger<BlockType>;
+	if (a.iszero()) return EInteger(1) / a;   // reports the division by zero
+	if (a == 1) return a;
+	if (a == -1) return odd ? a : EInteger(1);
+	return EInteger(0);
+}
+
+template<typename BlockType>
+inline einteger<BlockType> ipow(const einteger<BlockType>& a, const einteger<BlockType>& b) {
+	using EInteger = einteger<BlockType>;
+	if (b.isneg()) return ipow_reciprocal(a, b.isodd());
+	EInteger result(1), base(a), exp(b);
+	while (!exp.iszero()) {
+		if (exp.isodd()) result *= base;
+		exp >>= 1;
+		if (exp.iszero()) break;   // no square past the last bit
+		base *= base;
+	}
+	return result;
+}
+
+template<typename BlockType>
+inline einteger<BlockType> ipow(const einteger<BlockType>& a, long long b) {
+	using EInteger = einteger<BlockType>;
+	if (b < 0) return ipow_reciprocal(a, (b & 1) != 0);
+	EInteger result(1), base(a);
+	unsigned long long exp = static_cast<unsigned long long>(b);
+	while (exp != 0) {
+		if (exp & 1u) result *= base;
+		exp >>= 1;
+		if (exp == 0) break;
+		base *= base;
+	}
+	return result;
 }
 
 }} // namespace sw::universal

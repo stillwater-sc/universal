@@ -35,6 +35,20 @@ The Universal `integer` type removes this limitation. It provides a fixed-size, 
 - Conversions: to/from `int64_t`, `float`, `double`, strings
 - Bit manipulation: `setbit()`, `clearbit()`, `testbit()`, `flip()`
 - String I/O: binary, decimal, hex, octal representations
+- Integer power: `ipow(a, b)`, also `pow(a, b)` for an integer or `int` exponent
+
+### Integer power
+
+`ipow(a, b)` computes a^b exactly, by squaring in `integer`'s own arithmetic, so a power past
+the range wraps the way `*` wraps. The exponent is an `integer` or a native integer, which need
+not fit in `nbits`. `pow(a, b)` with an integer or `int` exponent is `ipow`; only a `double`
+exponent goes through `double`. The edge cases follow `std::pow` and integer division:
+
+- `a^0 == 1` for every `a`, `0^0` included
+- a negative exponent gives `1 / a^|b|` truncated: `1` for `a == 1`, `+-1` for `a == -1` by the
+  parity of `b`, `0` for `|a| > 1`, and the division by zero for `a == 0`
+
+The real-valued types have no `ipow`: their integer power is `pow(a, int)` (#1875).
 
 ## How It Works
 
