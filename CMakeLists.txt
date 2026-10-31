@@ -429,6 +429,10 @@ else(UNIVERSAL_BUILD_REGRESSION_LEVEL_4)
 	message(STATUS "Nothing has been set")
 endif(UNIVERSAL_BUILD_REGRESSION_LEVEL_4)
 
+# Header compile guards: cache variables that set the headers' #ifndef UNIVERSAL_* switches
+# for this build tree only (never exported to find_package consumers)
+include(tools/cmake/header_guards.cmake)
+
 # Enable verbose compiler specialization messages
 if(UNIVERSAL_VERBOSE_BUILD)
 	message(STATUS "UNIVERSAL_VERBOSE_BUILD         ${UNIVERSAL_VERBOSE_BUILD}")
