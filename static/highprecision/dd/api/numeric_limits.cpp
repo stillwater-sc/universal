@@ -196,9 +196,9 @@ namespace sw { namespace universal {
 			f[1] = x1;
 			return Real(f);
 		};
-		auto is = [](const Real& r, double x0, double x1) {
-			if (r[0] != x0 || r[1] != x1) return false;
-			for (unsigned i = 2; i < N; ++i) if (r[i] != 0.0) return false;
+		auto is = [&](const Real& r, double x0, double x1) {
+			const Real expected = limbs(x0, x1);
+			for (unsigned i = 0; i < N; ++i) if (r[i] != expected[i]) return false;
 			return true;
 		};
 		// the leading limbs DBL_MAX + 2^970 overflow, the complete sum DBL_MAX + 2^969 does not
@@ -215,6 +215,12 @@ namespace sw { namespace universal {
 		// a finite sum on the half-scale path is exact
 		if (!is(limbs(0x1.8p+1022, 0.0) + limbs(0x1p+960, 0.0), 0x1.8p+1022, 0x1p+960)) fail("1.5*2^1022 + 2^960 is not exact");
 		if (!is(mx - mx, 0.0, 0.0)) fail("max() - max() is not 0");
+		// a tail limb quarter scaling would round is added back unscaled: when the leading limbs
+		// cancel it is the whole answer
+		const Real p = limbs(0x1p+1022, 0x1p-1074), m = limbs(-0x1p+1022, 0x1p-1074);
+		if (!is(p + m, 0x1p-1073, 0.0)) fail("(2^1022, 2^-1074) + (-2^1022, 2^-1074) is not 2^-1073");
+		if (!is(p - p, 0.0, 0.0)) fail("(2^1022, 2^-1074) - itself is not 0");
+		if (!is(limbs(DBL_MAX, 0x1p-1074) - limbs(DBL_MAX, 0.0), 0x1p-1074, 0.0)) fail("(DBL_MAX, 2^-1074) - DBL_MAX is not 2^-1074");
 		return nrOfFailures;
 	}
 

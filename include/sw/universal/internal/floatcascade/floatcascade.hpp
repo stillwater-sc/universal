@@ -1749,8 +1749,11 @@ namespace expansion_ops {
     //     DBL_MAX / 2 (half scale is not enough: max() + max() is max() there, and the error-free
     //     sums overflow on the way), and scaled back. The sum overflows, to (inf, 0, ...), when it
     //     reaches DBL_MAX + 2^970, half an ulp above DBL_MAX, where double itself rounds to inf.
-    //     Scaling is exact except for a tail limb in the subnormal range, which lies far below
-    //     the precision of an operand of that size.
+    //     Only the limbs that quarter scaling keeps exact go through the scaled sum. A tail limb
+    //     near the subnormal range would lose bits there, and when the leading limbs cancel those
+    //     bits are the whole answer: (2^1022, 2^-1074) + (-2^1022, 2^-1074) is 2^-1073, not 0.
+    //     Such limbs form a suffix of each operand, and are summed unscaled and added back, as
+    //     expansion_sum_normalized does for the elastic expansions.
     template<size_t N>
     constexpr floatcascade<N> add_expansions(const floatcascade<N>& a, const floatcascade<N>& b) noexcept {
         static_assert(N == 2 || N == 3 || N == 4, "add_expansions is derived for 2, 3 and 4 components");
@@ -1768,11 +1771,23 @@ namespace expansion_ops {
         }
         if (magnitude(a[0]) < 0x1p+1022 && magnitude(b[0]) < 0x1p+1022) return add(a, b);
 
-        floatcascade<N> qa, qb;
-        for (size_t i = 0; i < N; ++i) {
-            qa[i] = a[i] * 0.25;
-            qb[i] = b[i] * 0.25;
-        }
+        // split each operand into the prefix quarter scaling keeps exact, scaled, and the suffix
+        // it would not, moved to the front of its own cascade
+        auto split = [](const floatcascade<N>& x, floatcascade<N>& scaled_prefix, floatcascade<N>& suffix) {
+            scaled_prefix.clear();
+            suffix.clear();
+            size_t k = 0;
+            bool in_suffix = false;
+            for (size_t i = 0; i < N; ++i) {
+                const double q = x[i] * 0.25;
+                if (!in_suffix && q * 4.0 == x[i]) scaled_prefix[i] = q;
+                else { in_suffix = true; suffix[k++] = x[i]; }
+            }
+            return k > 0;
+        };
+        floatcascade<N> qa, qb, la, lb;
+        const bool tail_a = split(a, qa, la);
+        const bool tail_b = split(b, qb, lb);
         r = add(qa, qb);
         for (size_t i = 0; i < N; ++i) r[i] *= 4.0;
         // r[0] is inf, or DBL_MAX with a tail of half its ulp or more in the same direction
@@ -1782,7 +1797,9 @@ namespace expansion_ops {
             const double inf = r[0] < 0.0 ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity();
             r.clear();
             r[0] = inf;
+            return r;
         }
+        if (tail_a || tail_b) r = add(r, add(la, lb));
         return r;
     }
 
