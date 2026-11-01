@@ -68,46 +68,107 @@ function(universal_merge_flag_lists out_var)
 endfunction()
 
 ################################################################################################
+# The build configurations whose flags apply: every configuration of a multi-config
+# generator (Visual Studio, Xcode, Ninja Multi-Config), or CMAKE_BUILD_TYPE.
+function(universal_summary_configurations out_var)
+  get_property(__multi GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+  if(__multi)
+    set(${out_var} ${CMAKE_CONFIGURATION_TYPES} PARENT_SCOPE)
+  else()
+    set(${out_var} "${CMAKE_BUILD_TYPE}" PARENT_SCOPE)
+  endif()
+endfunction()
+
+# Values that differ between configurations are reported as "Debug: a; Release: b".
+# Usage:
+#   universal_summary_join_per_config(out_var "<config list>" "<value list>")
+function(universal_summary_join_per_config out_var configs values)
+  set(__distinct ${values})
+  list(REMOVE_DUPLICATES __distinct)
+  list(LENGTH __distinct __count)
+  if(__count LESS_EQUAL 1)
+    set(${out_var} "${__distinct}" PARENT_SCOPE)
+    return()
+  endif()
+  set(__text "")
+  set(__i 0)
+  foreach(__c ${configs})
+    list(GET values ${__i} __v)
+    if(__text)
+      set(__text "${__text}; ")
+    endif()
+    set(__text "${__text}${__c}: ${__v}")
+    math(EXPR __i "${__i} + 1")
+  endforeach()
+  set(${out_var} "${__text}" PARENT_SCOPE)
+endfunction()
+
+################################################################################################
 # Header compile guards: C++ macros the headers test, with no CMake variable behind them.
-# A build sets one through CMAKE_CXX_FLAGS (-DNAME=value) or a directory compile definition;
-# otherwise the header's own default applies. This reports which, and the value in effect.
+# A build sets one through CMAKE_CXX_FLAGS or CMAKE_CXX_FLAGS_<CONFIG> (-DNAME=value), or a
+# directory compile definition or option (including a parent project's); otherwise the header's own default applies. This reports
+# which, and the value in effect, per configuration when the configurations disagree.
 # Usage:
 #   universal_header_guard(out_var NAME "<header default>")
 function(universal_header_guard out_var name default_text)
   get_directory_property(__defs DIRECTORY ${PROJECT_SOURCE_DIR} COMPILE_DEFINITIONS)
-  set(__haystack "${CMAKE_CXX_FLAGS} ${__defs}")
-  if(__haystack MATCHES "(^|[ ;])(-D|/D)?${name}=([^ ;]*)")
-    set(${out_var} "${CMAKE_MATCH_3} (set by the build)" PARENT_SCOPE)
-  elseif(__haystack MATCHES "(^|[ ;])(-D|/D)?${name}([ ;]|$)")
-    set(${out_var} "defined (set by the build)" PARENT_SCOPE)
-  else()
-    set(${out_var} "${default_text}" PARENT_SCOPE)
-  endif()
+  get_directory_property(__opts DIRECTORY ${PROJECT_SOURCE_DIR} COMPILE_OPTIONS)
+  universal_summary_configurations(__configs)
+  set(__values "")
+  foreach(__c ${__configs})
+    string(TOUPPER "${__c}" __cu)
+    set(__haystack "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${__cu}} ${__defs} ${__opts}")
+    if(__haystack MATCHES "(^|[ ;])(-D|/D)?${name}=([^ ;]*)")
+      list(APPEND __values "${CMAKE_MATCH_3} (set by the build)")
+    elseif(__haystack MATCHES "(^|[ ;])(-D|/D)?${name}([ ;]|$)")
+      list(APPEND __values "defined (set by the build)")
+    else()
+      list(APPEND __values "${default_text}")
+    endif()
+  endforeach()
+  universal_summary_join_per_config(__v "${__configs}" "${__values}")
+  set(${out_var} "${__v}" PARENT_SCOPE)
 endfunction()
 
 # UNIVERSAL_TRUSTED_FMA depends on the compiler and its flags (utility/directives.hpp: 0 for
-# mingw-w64 without -mfma). Rather than mirror that logic, compile the header and ask it.
+# mingw-w64 without -mfma). Rather than mirror that logic, compile the header and ask it, once
+# per configuration, with that configuration's flags plus the directory's compile options and
+# definitions (a parent project's add_compile_options(-mfma) counts).
 function(universal_probe_trusted_fma out_var)
   include(CheckCXXSourceCompiles)
   include(CMakePushCheckState)
-  cmake_push_check_state(RESET)
-  set(CMAKE_REQUIRED_QUIET ON)
-  set(CMAKE_REQUIRED_INCLUDES "${PROJECT_SOURCE_DIR}/include/sw")
   get_directory_property(__defs DIRECTORY ${PROJECT_SOURCE_DIR} COMPILE_DEFINITIONS)
-  foreach(__d ${__defs})
-    list(APPEND CMAKE_REQUIRED_DEFINITIONS "-D${__d}")
-  endforeach()
-  unset(UNIVERSAL_PROBE_TRUSTED_FMA CACHE)
-  check_cxx_source_compiles("
+  get_directory_property(__opts DIRECTORY ${PROJECT_SOURCE_DIR} COMPILE_OPTIONS)
+  # a generator expression cannot be evaluated at configure time: leave those out
+  list(FILTER __opts EXCLUDE REGEX "\\$<")
+  list(FILTER __defs EXCLUDE REGEX "\\$<")
+  string(REPLACE ";" " " __opts "${__opts}")
+  universal_summary_configurations(__configs)
+  set(__values "")
+  foreach(__c ${__configs})
+    cmake_push_check_state(RESET)
+    set(CMAKE_REQUIRED_QUIET ON)
+    set(CMAKE_REQUIRED_INCLUDES "${PROJECT_SOURCE_DIR}/include/sw")
+    set(CMAKE_REQUIRED_FLAGS "${__opts}")
+    foreach(__d ${__defs})
+      list(APPEND CMAKE_REQUIRED_DEFINITIONS "-D${__d}")
+    endforeach()
+    # try_compile uses CMAKE_CXX_FLAGS_<CONFIG> of this configuration
+    set(CMAKE_TRY_COMPILE_CONFIGURATION "${__c}")
+    string(MAKE_C_IDENTIFIER "UNIVERSAL_PROBE_TRUSTED_FMA_${__c}" __probe)
+    unset(${__probe} CACHE)
+    check_cxx_source_compiles("
 #include <universal/utility/directives.hpp>
 static_assert(UNIVERSAL_TRUSTED_FMA, \"untrusted\");
-int main() { return 0; }" UNIVERSAL_PROBE_TRUSTED_FMA)
-  cmake_pop_check_state()
-  if(UNIVERSAL_PROBE_TRUSTED_FMA)
-    set(__v "1 (std::fma is correctly rounded)")
-  else()
-    set(__v "0 (two_prod uses Dekker's product)")
-  endif()
+int main() { return 0; }" ${__probe})
+    cmake_pop_check_state()
+    if(${__probe})
+      list(APPEND __values "1 (std::fma is correctly rounded)")
+    else()
+      list(APPEND __values "0 (two_prod uses Dekker's product)")
+    endif()
+  endforeach()
+  universal_summary_join_per_config(__v "${__configs}" "${__values}")
   universal_header_guard(__set UNIVERSAL_TRUSTED_FMA "")
   if(__set)
     set(__v "${__v}, set by the build")
@@ -286,10 +347,13 @@ function(universal_print_configuration_summary)
     universal_status("  UNIVERSAL_LIMB_KERNELS_NO_ASM              :   ${__no_asm}")
     universal_status("  UNIVERSAL_HAS_GLPK                         :   ${__glpk}")
     universal_status("")
-    # UNIVERSAL_INSTRUMENT_ALL_TARGETS is declared by cmake/UniversalInstrumentation.cmake,
-    # which no CMakeLists.txt currently includes
-    if(DEFINED UNIVERSAL_INSTRUMENT_ALL_TARGETS)
+    # UNIVERSAL_INSTRUMENT_ALL_TARGETS is declared by cmake/UniversalInstrumentation.cmake, which
+    # no CMakeLists.txt currently includes. A value given on the command line is then inert, so
+    # report whether the module is active separately from the value.
+    if(COMMAND universal_add_instrumentation_flags)
       set(__instrument_all "${UNIVERSAL_INSTRUMENT_ALL_TARGETS}")
+    elseif(DEFINED UNIVERSAL_INSTRUMENT_ALL_TARGETS)
+      set(__instrument_all "${UNIVERSAL_INSTRUMENT_ALL_TARGETS} (no effect: cmake/UniversalInstrumentation.cmake not included)")
     else()
       set(__instrument_all "not declared (cmake/UniversalInstrumentation.cmake not included)")
     endif()
