@@ -304,6 +304,19 @@ private:
 // Core expansion operations - the "engine" for all cascade operations
 namespace expansion_ops {
 
+    // A sum with an infinite or NaN operand, or whose leading limbs overflow, is decided by the
+    // sum of the leading limbs. The error-free sums of the full addition would compute inf - inf
+    // there and return NaN, so return that sum with a zero tail instead, as dd and qd do (#1889).
+    // Returns true when it has set a to the non-finite result.
+    template<size_t N>
+    constexpr bool add_nonfinite(floatcascade<N>& a, double b0) noexcept {
+        const double s = a[0] + b0;
+        if (is_finite_cx(s)) return false;
+        a.clear();
+        a[0] = s;
+        return true;
+    }
+
     // Knuth's TWO-SUM: computes a + b = x + y exactly
     // Volatile intermediates prevent compiler reordering at runtime; the
     // constexpr branch (selected during constant evaluation) drops volatile
@@ -2117,6 +2130,7 @@ bool floatcascade<N>::parse(const std::string& number) {
 // Addition operator
 template<size_t N>
 floatcascade<N>& floatcascade<N>::operator+=(const floatcascade<N>& rhs) noexcept {
+    if (expansion_ops::add_nonfinite(*this, rhs[0])) return *this;
     floatcascade<2*N> temp = expansion_ops::add_cascades(*this, rhs);
 
     // Compress back to N components

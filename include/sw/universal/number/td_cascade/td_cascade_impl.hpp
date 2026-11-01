@@ -321,6 +321,7 @@ public:
 
     // Compound assignment operators
     CONSTEXPRESSION td_cascade& operator+=(const td_cascade& rhs) noexcept {
+        if (expansion_ops::add_nonfinite(cascade, rhs.cascade[0])) return *this;
         auto result = expansion_ops::add_cascades(cascade, rhs.cascade);  // 6 components
         // Compress to 3 components using proven QD algorithm
         cascade = expansion_ops::compress_6to3(result);
@@ -328,6 +329,7 @@ public:
     }
 
     CONSTEXPRESSION td_cascade& operator-=(const td_cascade& rhs) noexcept {
+        if (expansion_ops::add_nonfinite(cascade, -rhs.cascade[0])) return *this;
         floatcascade<3> neg_rhs;
         neg_rhs[0]   = -rhs.cascade[0];
         neg_rhs[1]   = -rhs.cascade[1];
