@@ -52,7 +52,9 @@ inline dd_cascade nroot(const dd_cascade&, int);
     //     NEWTON_DIVISION     1.4 ulps   580 nsec/op   (default)
     //     NEWTON_RECIPROCAL   3.8 ulps   376 nsec/op
     //     KARP                5.5 ulps   142 nsec/op   = classic dd
-    //     (classic dd itself 10.8 ulps at 42 nsec/op)
+    //     (classic dd itself 10.8 ulps at 42 nsec/op; since #1883 classic dd adds one
+    //      Newton correction to Karp: 1.99 units of 2^-106 worst relative error,
+    //      see dd/math/functions/sqrt.hpp)
     //
     // Every formulation scales the argument into [0.5, 2) first, exactly, by a
     // power of two. Each of them squares a value of magnitude ~sqrt(a) or

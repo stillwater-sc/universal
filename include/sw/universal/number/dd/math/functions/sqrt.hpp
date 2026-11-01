@@ -14,13 +14,27 @@ namespace sw { namespace universal {
     //   NOTE: dd must be a non-negative number
     inline dd sqrt(dd a) {
         /* Strategy:  Use Karp's trick:  if x is an approximation
-           to sqrt(a), then
+           to 1/sqrt(a), then
 
               sqrt(a) = a*x + [a - (a*x)^2] * x / 2   (approx)
 
            The approximation is accurate to twice the accuracy of x.
            Also, the multiplication (a*x) and [-]*x can be done with
            only half the precision.
+
+           Then one Newton correction (#1883). Relative error against a qd
+           reference, in units of 2^-106, 200000 arguments in [1,4) and
+           200000 across 2^[-1000,1000], i7-12700K, -O2:
+
+                                        worst   mean   > 1 unit   gcc 15.2   clang
+              Karp alone (before #1883)  7.92   0.67     26 %     35 ns/op   31 ns/op
+              Karp + Newton correction   1.95   0.19      1 %     85 ns/op   64 ns/op
+              dd_cascade NEWTON_DIVISION 0.75   0.14      0 %    539 ns/op  562 ns/op
+
+           Over 10^6 arguments per range the worst is 1.99 units, still below
+           epsilon() = 2^-105. It comes from the dd rounding of sqr(r) in the
+           residual and of the final add.
+           Correct rounding takes dd_cascade's two Newton divisions.
         */
 
         if (a.iszero()) return dd{};
@@ -47,7 +61,14 @@ namespace sw { namespace universal {
 
         double x  = 1.0 / std::sqrt(b.high());
         double bx = b.high() * x;
-        return ldexp(add(bx, (b - sqr(dd(bx))).high() * (x * 0.5)), k);
+        dd r = add(bx, (b - sqr(dd(bx))).high() * (x * 0.5));
+        // One Newton correction, r' = r + (b - r^2) / (2r), with 1/(2r) taken as x/2 (#1883).
+        // Karp's step alone leaves up to 7.9 units of 2^-106: its correction uses the double
+        // x in place of 1/sqrt(b) and only the leading limb of the residual. Here the residual
+        // is ~2^-104, so a double correction is plenty, and what remains is the rounding of
+        // the dd sqr(r) and of the final add.
+        r += (b - sqr(r)).high() * (x * 0.5);
+        return ldexp(r, k);
     }
 
     // Computes the square root of a double in double-double precision. 
