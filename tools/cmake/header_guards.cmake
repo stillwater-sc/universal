@@ -32,7 +32,7 @@ endfunction()
 
 # the same macro given both as a cache variable and by hand (CMAKE_CXX_FLAGS,
 # CMAKE_CXX_FLAGS_<CONFIG>, or a parent project's compile definitions or options, including
-# ones inside a generator expression such as $<$<CONFIG:Debug>:NAME=0> or
+# a NAME=value inside a generator expression such as $<$<CONFIG:Debug>:NAME=0> or
 # $<IF:$<CONFIG:Debug>,NAME=0,NAME=1>) would be defined twice,
 # with the command-line order deciding which wins: refuse it.
 # Usage:
@@ -57,9 +57,11 @@ function(_universal_header_guard_single_source name)
   get_directory_property(defs COMPILE_DEFINITIONS)
   get_directory_property(opts COMPILE_OPTIONS)
   string(APPEND haystack " ${defs} ${opts}")
-  # ':' opens the content of a generator expression, ',' separates its arguments
-  # ($<IF:cond,NAME=0,NAME=1>), '>' closes it
-  if(haystack MATCHES "(^|[ ;:,])(-D|/D)?${name}([= ;>,]|$)")
+  # A plain token, -DNAME, NAME or NAME=value; or, inside a generator expression (after ':'
+  # or ',', as in $<IF:cond,NAME=0,NAME=1>), only NAME=value. A bare name there can be an
+  # operand rather than a definition ($<TARGET_PROPERTY:tgt,NAME>), and a bare definition can
+  # only duplicate a flag guard's own, which is harmless.
+  if(haystack MATCHES "(^|[ ;])(-D|/D)?${name}([= ;]|$)" OR haystack MATCHES "[:,](-D|/D)?${name}=")
     message(FATAL_ERROR "${name} is set both by ${source} "
                         "and by hand (CMAKE_CXX_FLAGS, CMAKE_CXX_FLAGS_<CONFIG>, or a compile "
                         "definition or option); set it one way only.")
