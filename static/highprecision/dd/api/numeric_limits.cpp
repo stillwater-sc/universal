@@ -235,6 +235,28 @@ namespace sw { namespace universal {
 		if (!is(p - p, 0.0, 0.0)) fail("(2^1022, 2^-1074) - itself is not 0");
 		if (!is(limbs(DBL_MAX, 0x1p-1074) - limbs(DBL_MAX, 0.0), 0x1p-1074, 0.0)) fail("(DBL_MAX, 2^-1074) - DBL_MAX is not 2^-1074");
 		if (!is(limbs(0x1p+1023, 0.0) + limbs(0x1p-1074, 0.0), 0x1p+1023, 0x1p-1074)) fail("2^1023 + 2^-1074 is not (2^1023, 2^-1074)");
+		// a sum whose leading limbs land on the tie DBL_MAX + 2^970: the rest of the sum decides.
+		// Below the threshold the value is above max() and rounds to it (#1892 review)
+		auto is_max = [&](const Real& r, bool negative) {
+			const Real m = negative ? -mx : mx;
+			for (unsigned i = 0; i < N; ++i) if (r[i] != m[i]) return false;
+			return true;
+		};
+		const Real dmax = limbs(DBL_MAX, 0.0);
+		if (!is_max(dmax + limbs(0x1p+970, -0x1p-1074), false)) fail("DBL_MAX + (2^970, -2^-1074) is not max()");
+		if (!is_max(-dmax - limbs(0x1p+970, -0x1p-1074), true)) fail("-DBL_MAX - (2^970, -2^-1074) is not -max()");
+		const Real tie_up = dmax + limbs(0x1p+970, 0x1p-1074);
+		if (!tie_up.isinf() || tie_up.isneg() || !is(tie_up, tie_up[0], 0.0)) fail("DBL_MAX + (2^970, 2^-1074) is not (inf, 0, ...)");
+		const Real tie = dmax + limbs(0x1p+970, 0.0);
+		if (!tie.isinf() || tie.isneg() || !is(tie, tie[0], 0.0)) fail("DBL_MAX + 2^970 is not (inf, 0, ...)");
+		// DBL_MAX + 2^970 - 2^900: dd's 106 bits round it to the threshold, three or more limbs keep it
+		const Real near = dmax + limbs(0x1p+970, -0x1p+900);
+		if constexpr (N == 2) {
+			if (!near.isinf() || near.isneg()) fail("DBL_MAX + (2^970, -2^900) is not inf at two limbs");
+		}
+		else {
+			if (!is_max(near, false)) fail("DBL_MAX + (2^970, -2^900) is not max()");
+		}
 		return nrOfFailures;
 	}
 
