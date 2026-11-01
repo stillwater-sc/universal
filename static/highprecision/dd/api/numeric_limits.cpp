@@ -181,32 +181,38 @@ namespace sw { namespace universal {
 		return nrOfFailures;
 	}
 
+	// a multi-double value with the leading limbs (x0, x1) and zeros below
+	template<typename Real, unsigned N>
+	Real RangeLimbs(double x0, double x1) {
+		if constexpr (std::is_same_v<Real, dd> || std::is_same_v<Real, qd>) {
+			return Real(x0, x1);
+		}
+		else {
+			floatcascade<N> f;
+			f.clear();
+			f[0] = x0;
+			f[1] = x1;
+			return Real(f);
+		}
+	}
+
+	template<typename Real, unsigned N>
+	bool RangeLimbsEqual(const Real& a, const Real& b) {
+		for (unsigned i = 0; i < N; ++i) if (a[i] != b[i]) return false;
+		return true;
+	}
+
 	// addition at the top of the range, where an intermediate two_sum can overflow although the
 	// complete sum is finite, or the tail can carry a sum past max() (#1889 cascades, #1891 dd/qd)
 	template<typename Real, unsigned N>
-	int VerifyRangeBoundary(bool reportTestCases, const std::string& type) {
+	int VerifyRangeCarry(bool reportTestCases, const std::string& type) {
 		int nrOfFailures = 0;
 		auto fail = [&](const std::string& what) {
 			++nrOfFailures;
 			if (reportTestCases) std::cerr << "FAIL: " << type << ' ' << what << '\n';
 		};
-		auto limbs = [](double x0, double x1) {
-			if constexpr (std::is_same_v<Real, dd> || std::is_same_v<Real, qd>) {
-				return Real(x0, x1);
-			}
-			else {
-				floatcascade<N> f;
-				f.clear();
-				f[0] = x0;
-				f[1] = x1;
-				return Real(f);
-			}
-		};
-		auto is = [&](const Real& r, double x0, double x1) {
-			const Real expected = limbs(x0, x1);
-			for (unsigned i = 0; i < N; ++i) if (r[i] != expected[i]) return false;
-			return true;
-		};
+		auto limbs = [](double x0, double x1) { return RangeLimbs<Real, N>(x0, x1); };
+		auto is = [&](const Real& r, double x0, double x1) { return RangeLimbsEqual<Real, N>(r, limbs(x0, x1)); };
 		// the leading limbs DBL_MAX + 2^970 overflow, the complete sum DBL_MAX + 2^969 does not
 		const Real a = limbs(DBL_MAX, -0x1p+969), b = limbs(0x1p+970, 0.0);
 		if (!is(a + b, DBL_MAX, 0x1p+969)) fail("(DBL_MAX, -2^969) + 2^970 is not (DBL_MAX, 2^969)");
@@ -228,6 +234,18 @@ namespace sw { namespace universal {
 		// a finite sum on the half-scale path is exact
 		if (!is(limbs(0x1.8p+1022, 0.0) + limbs(0x1p+960, 0.0), 0x1.8p+1022, 0x1p+960)) fail("1.5*2^1022 + 2^960 is not exact");
 		if (!is(mx - mx, 0.0, 0.0)) fail("max() - max() is not 0");
+		return nrOfFailures;
+	}
+
+	template<typename Real, unsigned N>
+	int VerifyRangeSubnormalTail(bool reportTestCases, const std::string& type) {
+		int nrOfFailures = 0;
+		auto fail = [&](const std::string& what) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL: " << type << ' ' << what << '\n';
+		};
+		auto limbs = [](double x0, double x1) { return RangeLimbs<Real, N>(x0, x1); };
+		auto is = [&](const Real& r, double x0, double x1) { return RangeLimbsEqual<Real, N>(r, limbs(x0, x1)); };
 		// a tail limb quarter scaling would round is added back unscaled: when the leading limbs
 		// cancel it is the whole answer
 		const Real p = limbs(0x1p+1022, 0x1p-1074), m = limbs(-0x1p+1022, 0x1p-1074);
@@ -235,12 +253,23 @@ namespace sw { namespace universal {
 		if (!is(p - p, 0.0, 0.0)) fail("(2^1022, 2^-1074) - itself is not 0");
 		if (!is(limbs(DBL_MAX, 0x1p-1074) - limbs(DBL_MAX, 0.0), 0x1p-1074, 0.0)) fail("(DBL_MAX, 2^-1074) - DBL_MAX is not 2^-1074");
 		if (!is(limbs(0x1p+1023, 0.0) + limbs(0x1p-1074, 0.0), 0x1p+1023, 0x1p-1074)) fail("2^1023 + 2^-1074 is not (2^1023, 2^-1074)");
+		return nrOfFailures;
+	}
+
+	template<typename Real, unsigned N>
+	int VerifyRangeTie(bool reportTestCases, const std::string& type) {
+		int nrOfFailures = 0;
+		auto fail = [&](const std::string& what) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL: " << type << ' ' << what << '\n';
+		};
+		auto limbs = [](double x0, double x1) { return RangeLimbs<Real, N>(x0, x1); };
+		auto is = [&](const Real& r, double x0, double x1) { return RangeLimbsEqual<Real, N>(r, limbs(x0, x1)); };
 		// a sum whose leading limbs land on the tie DBL_MAX + 2^970: the rest of the sum decides.
 		// Below the threshold the value is above max() and rounds to it (#1892 review)
 		auto is_max = [&](const Real& r, bool negative) {
-			const Real m = negative ? -mx : mx;
-			for (unsigned i = 0; i < N; ++i) if (r[i] != m[i]) return false;
-			return true;
+			const Real m = std::numeric_limits<Real>::max();
+			return negative ? RangeLimbsEqual<Real, N>(r, -m) : RangeLimbsEqual<Real, N>(r, m);
 		};
 		const Real dmax = limbs(DBL_MAX, 0.0);
 		if (!is_max(dmax + limbs(0x1p+970, -0x1p-1074), false)) fail("DBL_MAX + (2^970, -2^-1074) is not max()");
@@ -258,6 +287,13 @@ namespace sw { namespace universal {
 			if (!is_max(near, false)) fail("DBL_MAX + (2^970, -2^900) is not max()");
 		}
 		return nrOfFailures;
+	}
+
+	template<typename Real, unsigned N>
+	int VerifyRangeBoundary(bool reportTestCases, const std::string& type) {
+		return VerifyRangeCarry<Real, N>(reportTestCases, type)
+			+ VerifyRangeSubnormalTail<Real, N>(reportTestCases, type)
+			+ VerifyRangeTie<Real, N>(reportTestCases, type);
 	}
 
 } }
