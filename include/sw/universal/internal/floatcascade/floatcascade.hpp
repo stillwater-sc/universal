@@ -455,10 +455,11 @@ namespace expansion_ops {
     // Priest's TWO-PROD: computes a * b = x + y exactly
     // Runtime path uses std::fma (hardware FMA on supported targets).
     // Constexpr branch falls back to a split-based product (FMA-free) since
-    // std::fma is not constexpr in C++20.  sw::universal::split is constexpr
-    // (from error_free_ops.hpp) and gives the exact a_hi/a_lo/b_hi/b_lo
-    // decomposition that lets us recover the rounding error via
-    //   y = ((a_hi*b_hi - p) + a_hi*b_lo + a_lo*b_hi) + a_lo*b_lo.
+    // std::fma is not constexpr in C++20.  sw::universal::dekker_residual is constexpr
+    // (from error_free_ops.hpp): it splits a and b into exact a_hi/a_lo/b_hi/b_lo halves
+    // and recovers the rounding error via
+    //   y = ((a_hi*b_hi - p) + a_hi*b_lo + a_lo*b_hi) + a_lo*b_lo,
+    // scaling the operands first where a split or a partial product would overflow (#1881).
     //
     // That same split-based path is taken at RUNTIME on a build whose fma is not
     // correctly rounded. y == fma(a, b, -x) is an error-free transformation only if fma
@@ -469,10 +470,7 @@ namespace expansion_ops {
             double p = a * b;
             x = p;
             if (sw::universal::is_finite_cx(p)) {
-                double a_hi = 0.0, a_lo = 0.0, b_hi = 0.0, b_lo = 0.0;
-                sw::universal::split(a, a_hi, a_lo);
-                sw::universal::split(b, b_hi, b_lo);
-                y = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+                y = sw::universal::dekker_residual(a, b, p);
             }
             else {
                 y = 0.0;

@@ -247,6 +247,11 @@ namespace sw { namespace universal {
 
 #if !defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
 	// Computes high word and low word of a double
+	//
+	// Above SPLIT_THRESHOLD the value is split in a domain scaled down by 2^28 and the halves
+	// scaled back up. When the top 27 bits of such a value round up (DBL_MAX does), the high
+	// half is 2^996 and comes back as 2^1024 = inf: no 26-bit high half of it is finite.
+	// two_prod and two_sqr therefore never split a factor that large; see dekker_residual.
 	constexpr inline void split(double a, double& hi, double& lo) {
 		constexpr int BITS = 27;  // ( std::numeric_limits< double >::digits + 1 ) / 2;
 		constexpr double SPLITTER = 134217729.0;  // std::ldexp(1.0, BITS) + 1.0;
@@ -290,6 +295,100 @@ namespace sw { namespace universal {
 			}
 		}
 	}
+
+	// Dekker's residual r = a * b - p of a finite product p = fl(a * b), exact over the whole
+	// finite range (#1881).
+	//
+	// The split and the partial products must stay finite. Two cases where they would not:
+	//  - a factor above the split threshold, whose high half can overflow (see split). The
+	//    product is then at most 2^1000, so the other factor is below 2^5: move the large
+	//    factor down by 2^28 and the small one up by 2^28. The product, p and r are unchanged.
+	//  - a product above 2^1000, where a_hi * b_hi can exceed |a * b| by a relative 2^-25 and
+	//    pass DBL_MAX. Move the larger factor (at least 2^500) and p down by 2^28, form the
+	//    residual of the scaled product, and scale it back up.
+	// Each scaling is by a power of two of a value far above the subnormal range, so is exact.
+	// Both cases are rare, so the common path is plain Dekker.
+	namespace eft_detail {
+		constexpr double SPLIT_THRESHOLD   = 6.6969287949141700e+299;  // DBL_MAX * 2^-28, as in split
+		constexpr double PRODUCT_THRESHOLD = 1.0715086071862673e+301;  // 2^1000
+		constexpr double UP   = 268435456.0;  // 2^28
+		constexpr double DOWN = 1.0 / UP;     // 2^-28
+
+		// Veltkamp's split without split()'s range test. Above SPLIT_THRESHOLD the high half can
+		// overflow to a non-finite value, which propagates into the residual: the constant-evaluated
+		// path never passes such a value, and the run-time path detects the non-finite residual.
+		constexpr inline void split_in_range(double a, double& hi, double& lo) {
+			constexpr double SPLITTER = 134217729.0;  // 2^27 + 1
+			if (std::is_constant_evaluated()) {
+				double temp = SPLITTER * a;
+				hi = temp - (temp - a);
+			}
+			else {
+				volatile double temp = SPLITTER * a;
+				hi = temp - (temp - a);
+			}
+			lo = a - hi;
+		}
+
+		constexpr inline double dekker_partials(double a, double b, double p) {
+			double a_hi = 0.0, a_lo = 0.0, b_hi = 0.0, b_lo = 0.0;
+			split_in_range(a, a_hi, a_lo);
+			split_in_range(b, b_hi, b_lo);
+			return ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+		}
+
+		constexpr inline double dekker_residual_scaled(double a, double b, double p, double abs_a, double abs_b, double abs_p) {
+			if (abs_p > PRODUCT_THRESHOLD) {
+				if (abs_a >= abs_b) a *= DOWN; else b *= DOWN;
+				return dekker_partials(a, b, p * DOWN) * UP;
+			}
+			if (abs_a > SPLIT_THRESHOLD) return dekker_partials(a * DOWN, b * UP, p);
+			return dekker_partials(a * UP, b * DOWN, p);
+		}
+	}
+
+	constexpr inline double dekker_residual(double a, double b, double p) {
+		using namespace eft_detail;
+		if (std::is_constant_evaluated()) {
+			// an overflow is not a constant expression, so test the operands before splitting
+			const double abs_a = (a < 0.0) ? -a : a;
+			const double abs_b = (b < 0.0) ? -b : b;
+			const double abs_p = (p < 0.0) ? -p : p;
+			if (abs_p > PRODUCT_THRESHOLD || abs_a > SPLIT_THRESHOLD || abs_b > SPLIT_THRESHOLD) {
+				return dekker_residual_scaled(a, b, p, abs_a, abs_b, abs_p);
+			}
+			return dekker_partials(a, b, p);
+		}
+		else {
+			// Any overflow in the split or the partial products leaves the residual inf or NaN,
+			// and without one it is exact; so form it first and redo it scaled only when it is
+			// not finite. One test on the result is cheaper than three on the operands.
+			const double r = dekker_partials(a, b, p);
+			if (r - r == 0.0) [[likely]] return r;
+			return dekker_residual_scaled(a, b, p, std::abs(a), std::abs(b), std::abs(p));
+		}
+	}
+
+	// The square's residual r = a * a - p, as dekker_residual but with one split. A finite
+	// square has |a| < 2^512, so only the product case applies: a moves down by 2^14.
+	constexpr inline double dekker_square_residual(double a, double p) {
+		using namespace eft_detail;
+		auto partials = [](double x, double px) {
+			double hi = 0.0, lo = 0.0;
+			split_in_range(x, hi, lo);
+			return ((hi * hi - px) + 2.0 * hi * lo) + lo * lo;
+		};
+		if (std::is_constant_evaluated()) {
+			const double abs_p = (p < 0.0) ? -p : p;
+			if (abs_p > PRODUCT_THRESHOLD) return partials(a * (1.0 / 16384.0), p * DOWN) * UP;  // a * 2^-14
+			return partials(a, p);
+		}
+		else {
+			const double r = partials(a, p);
+			if (r - r == 0.0) [[likely]] return r;
+			return partials(a * (1.0 / 16384.0), p * DOWN) * UP;
+		}
+	}
 #endif
 
 	// TwoProd
@@ -305,10 +404,7 @@ namespace sw { namespace universal {
 		if (std::is_constant_evaluated()) {
 			double p = a * b;
 			if (is_finite_cx(p)) {
-				double a_hi = 0.0, a_lo = 0.0, b_hi = 0.0, b_lo = 0.0;
-				split(a, a_hi, a_lo);
-				split(b, b_hi, b_lo);
-				r = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+				r = dekker_residual(a, b, p);
 			}
 			else {
 				r = 0.0;
@@ -321,10 +417,7 @@ namespace sw { namespace universal {
 #if defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
 				r = UNIVERSAL_FMS(a, b, p);
 #else
-				double a_hi, a_lo, b_hi, b_lo;
-				split(a, a_hi, a_lo);
-				split(b, b_hi, b_lo);
-				r = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+				r = dekker_residual(a, b, p);
 #endif
 			}
 			else
@@ -344,9 +437,7 @@ namespace sw { namespace universal {
 		if (std::is_constant_evaluated()) {
 			double p = a * a;
 			if (is_finite_cx(p)) {
-				double hi = 0.0, lo = 0.0;
-				split(a, hi, lo);
-				r = ((hi * hi - p) + 2.0 * hi * lo) + lo * lo;
+				r = dekker_square_residual(a, p);
 			}
 			else {
 				r = 0.0;
@@ -359,9 +450,7 @@ namespace sw { namespace universal {
 #if defined( RELIABLE_FUSED_MULTIPLY_SUBTRACT_OPERATOR )
 				r = UNIVERSAL_FMS(a, a, p);
 #else
-				double hi, lo;
-				split(a, hi, lo);
-				r = ((hi * hi - p) + 2.0 * hi * lo) + lo * lo;
+				r = dekker_square_residual(a, p);
 #endif
 			}
 			else
