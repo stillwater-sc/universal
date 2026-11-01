@@ -304,19 +304,6 @@ private:
 // Core expansion operations - the "engine" for all cascade operations
 namespace expansion_ops {
 
-    // A sum with an infinite or NaN operand, or whose leading limbs overflow, is decided by the
-    // sum of the leading limbs. The error-free sums of the full addition would compute inf - inf
-    // there and return NaN, so return that sum with a zero tail instead, as dd and qd do (#1889).
-    // Returns true when it has set a to the non-finite result.
-    template<size_t N>
-    constexpr bool add_nonfinite(floatcascade<N>& a, double b0) noexcept {
-        const double s = a[0] + b0;
-        if (is_finite_cx(s)) return false;
-        a.clear();
-        a[0] = s;
-        return true;
-    }
-
     // Knuth's TWO-SUM: computes a + b = x + y exactly
     // Volatile intermediates prevent compiler reordering at runtime; the
     // constexpr branch (selected during constant evaluation) drops volatile
@@ -1750,6 +1737,55 @@ namespace expansion_ops {
         return result;
     }
 
+    // The sum of two N-component cascades, compressed back to N components: the + and - of
+    // dd_cascade, td_cascade, qd_cascade and floatcascade<N> (#1889).
+    //   - an infinite or NaN operand decides the result through the leading limbs alone, with a
+    //     zero tail, as dd and qd do: the error-free sums would compute inf - inf there and
+    //     return NaN. inf + finite is inf, inf - inf is NaN.
+    //   - near the top of the range a sum of finite operands can overflow in an intermediate
+    //     two_sum although the complete sum is finite (DBL_MAX - 2^969 plus 2^970), or stay
+    //     finite in the leading limbs while the tail carries it past max(). So when an operand
+    //     reaches 2^1022 the sum is formed at quarter scale, where every intermediate stays below
+    //     DBL_MAX / 2 (half scale is not enough: max() + max() is max() there, and the error-free
+    //     sums overflow on the way), and scaled back. The sum overflows, to (inf, 0, ...), when it
+    //     reaches DBL_MAX + 2^970, half an ulp above DBL_MAX, where double itself rounds to inf.
+    //     Scaling is exact except for a tail limb in the subnormal range, which lies far below
+    //     the precision of an operand of that size.
+    template<size_t N>
+    constexpr floatcascade<N> add_expansions(const floatcascade<N>& a, const floatcascade<N>& b) noexcept {
+        static_assert(N == 2 || N == 3 || N == 4, "add_expansions is derived for 2, 3 and 4 components");
+        auto add = [](const floatcascade<N>& x, const floatcascade<N>& y) {
+            if constexpr (N == 2) return compress_4to2(add_cascades(x, y));
+            else if constexpr (N == 3) return compress_6to3(add_cascades(x, y));
+            else return compress_8to4(add_cascades(x, y));
+        };
+        auto magnitude = [](double x) { return x < 0.0 ? -x : x; };
+        floatcascade<N> r;
+        if (!is_finite_cx(a[0]) || !is_finite_cx(b[0])) {
+            r.clear();
+            r[0] = a[0] + b[0];
+            return r;
+        }
+        if (magnitude(a[0]) < 0x1p+1022 && magnitude(b[0]) < 0x1p+1022) return add(a, b);
+
+        floatcascade<N> qa, qb;
+        for (size_t i = 0; i < N; ++i) {
+            qa[i] = a[i] * 0.25;
+            qb[i] = b[i] * 0.25;
+        }
+        r = add(qa, qb);
+        for (size_t i = 0; i < N; ++i) r[i] *= 4.0;
+        // r[0] is inf, or DBL_MAX with a tail of half its ulp or more in the same direction
+        const bool overflow = !is_finite_cx(r[0]) ||
+            (magnitude(r[0]) == std::numeric_limits<double>::max() && (r[0] < 0.0) == (r[1] < 0.0) && magnitude(r[1]) >= 0x1p+970);
+        if (overflow) {
+            const double inf = r[0] < 0.0 ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity();
+            r.clear();
+            r[0] = inf;
+        }
+        return r;
+    }
+
 } // namespace expansion_ops
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2130,23 +2166,7 @@ bool floatcascade<N>::parse(const std::string& number) {
 // Addition operator
 template<size_t N>
 floatcascade<N>& floatcascade<N>::operator+=(const floatcascade<N>& rhs) noexcept {
-    if (expansion_ops::add_nonfinite(*this, rhs[0])) return *this;
-    floatcascade<2*N> temp = expansion_ops::add_cascades(*this, rhs);
-
-    // Compress back to N components
-    if constexpr (N == 2) {
-        *this = expansion_ops::compress_4to2(temp);
-    }
-    else if constexpr (N == 3) {
-        *this = expansion_ops::compress_6to3(temp);
-    }
-    else if constexpr (N == 4) {
-        *this = expansion_ops::compress_8to4(temp);
-    }
-    else {
-        *this = expansion_ops::renormalize(temp);
-    }
-
+    *this = expansion_ops::add_expansions(*this, rhs);
     return *this;
 }
 

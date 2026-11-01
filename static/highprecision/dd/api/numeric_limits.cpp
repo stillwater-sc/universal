@@ -180,6 +180,44 @@ namespace sw { namespace universal {
 		return nrOfFailures;
 	}
 
+	// cascade addition at the top of the range, where an intermediate two_sum can overflow
+	// although the complete sum is finite, or the tail can carry a sum past max() (#1889)
+	template<typename Real, unsigned N>
+	int VerifyCascadeRangeBoundary(bool reportTestCases, const std::string& type) {
+		int nrOfFailures = 0;
+		auto fail = [&](const std::string& what) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL: " << type << ' ' << what << '\n';
+		};
+		auto limbs = [](double x0, double x1) {
+			floatcascade<N> f;
+			f.clear();
+			f[0] = x0;
+			f[1] = x1;
+			return Real(f);
+		};
+		auto is = [](const Real& r, double x0, double x1) {
+			if (r[0] != x0 || r[1] != x1) return false;
+			for (unsigned i = 2; i < N; ++i) if (r[i] != 0.0) return false;
+			return true;
+		};
+		// the leading limbs DBL_MAX + 2^970 overflow, the complete sum DBL_MAX + 2^969 does not
+		const Real a = limbs(DBL_MAX, -0x1p+969), b = limbs(0x1p+970, 0.0);
+		if (!is(a + b, DBL_MAX, 0x1p+969)) fail("(DBL_MAX, -2^969) + 2^970 is not (DBL_MAX, 2^969)");
+		if (!is(b + a, DBL_MAX, 0x1p+969)) fail("2^970 + (DBL_MAX, -2^969) is not (DBL_MAX, 2^969)");
+		if (!is(a - (-b), DBL_MAX, 0x1p+969)) fail("(DBL_MAX, -2^969) - (-2^970) is not (DBL_MAX, 2^969)");
+		// the leading limbs DBL_MAX + 2^969 round to DBL_MAX, the complete sum is past max()
+		const Real mx = std::numeric_limits<Real>::max();
+		const Real over = mx + limbs(0x1p+969, 0.0);
+		if (!over.isinf() || over.isneg() || !is(over, over[0], 0.0)) fail("max() + 2^969 is not (inf, 0, ...)");
+		const Real under = -mx - limbs(0x1p+969, 0.0);
+		if (!under.isinf() || !under.isneg() || !is(under, under[0], 0.0)) fail("-max() - 2^969 is not (-inf, 0, ...)");
+		// a finite sum on the half-scale path is exact
+		if (!is(limbs(0x1.8p+1022, 0.0) + limbs(0x1p+960, 0.0), 0x1.8p+1022, 0x1p+960)) fail("1.5*2^1022 + 2^960 is not exact");
+		if (!is(mx - mx, 0.0, 0.0)) fail("max() - max() is not 0");
+		return nrOfFailures;
+	}
+
 } }
 
 int main()
@@ -207,6 +245,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<dd_cascade, 2>(reportTestCases, "dd_cascade"), "dd_cascade", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<td_cascade, 3>(reportTestCases, "td_cascade"), "td_cascade", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<qd_cascade, 4>(reportTestCases, "qd_cascade"), "qd_cascade", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyCascadeRangeBoundary<dd_cascade, 2>(reportTestCases, "dd_cascade"), "dd_cascade", "range boundary");
+	nrOfFailedTestCases += ReportTestResult(VerifyCascadeRangeBoundary<td_cascade, 3>(reportTestCases, "td_cascade"), "td_cascade", "range boundary");
+	nrOfFailedTestCases += ReportTestResult(VerifyCascadeRangeBoundary<qd_cascade, 4>(reportTestCases, "qd_cascade"), "qd_cascade", "range boundary");
 #endif
 
 #if REGRESSION_LEVEL_2
