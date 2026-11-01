@@ -617,9 +617,11 @@ public:
 	constexpr double& operator[](int index) { return (index == 0 ? hi : lo); }
 
 	// create specific number system values of interest
+	// the largest normalized pair: DBL_MAX and the largest double below half an ulp of it,
+	// DBL_MAX * 2^-54 (a lo of 2^970 or more would round hi + lo up to inf, #1882)
 	constexpr dd& maxpos() noexcept {
-		hi = 1.7976931348623157e+308;
-		lo = 1.9958403095347196e+292;
+		hi = 0x1.fffffffffffffp+1023;
+		lo = 0x1.fffffffffffffp+969;
 		return *this;
 	}
 	constexpr dd& minpos() noexcept {
@@ -638,8 +640,8 @@ public:
 		return *this;
 	}
 	constexpr dd& maxneg() noexcept {
-		hi = -1.7976931348623157e+308;
-		lo = -1.9958403095347196e+292;
+		hi = -0x1.fffffffffffffp+1023;
+		lo = -0x1.fffffffffffffp+969;
 		return *this;
 	}
 

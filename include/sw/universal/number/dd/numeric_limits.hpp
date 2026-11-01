@@ -14,8 +14,11 @@ class numeric_limits< sw::universal::dd > {
 public:
 	using DoubleDouble = sw::universal::dd;
 	static constexpr bool is_specialized = true;
+	// min() is the smallest value at full precision: below it the last limb is subnormal and the
+	// expansion holds fewer than digits bits, so epsilon() no longer bounds the relative rounding
+	// error. It is 2^(-1022 + 53 * (limbs - 1)), and min_exponent follows it (#1882).
 	static constexpr DoubleDouble min() { // return minimum value
-		return DoubleDouble(radix * (numeric_limits< double >::min() / numeric_limits< double >::epsilon()));
+		return DoubleDouble(0x1p-969);
 	} 
 	static constexpr DoubleDouble max() { // return maximum value
 		return DoubleDouble(sw::universal::SpecificValue::maxpos);
@@ -24,9 +27,9 @@ public:
 		//return DoubleDouble(sw::universal::SpecificValue::maxneg);
 		return (-(max)());
 	} 
+	// epsilon is eps(double)^2 / 2 = 2^-105, the same in dd_cascade
 	static constexpr DoubleDouble epsilon() { // return smallest effective increment from 1.0
-		constexpr double epsilon{ std::numeric_limits< double >::epsilon() };
-		return (epsilon * epsilon) * 0.5;
+		return DoubleDouble(0x1p-105);
 	}
 	static constexpr DoubleDouble round_error() { // return largest rounding error
 		return DoubleDouble(1.0 / radix);
@@ -52,9 +55,9 @@ public:
 	static constexpr bool is_exact                 = false;
 	static constexpr int  radix                    = 2;
 
-	// C++ specification: min_exponent is one more than the smallest negative power 
-	// of the radix that is a valid normalized number
-	static constexpr int  min_exponent             = DoubleDouble::MIN_EXP_NORMAL + 1;
+	// C++ specification: min_exponent is one more than the smallest negative power
+	// of the radix that is a valid normalized number: min() == 2^(min_exponent - 1)
+	static constexpr int  min_exponent             = std::numeric_limits<double>::min_exponent + std::numeric_limits<double>::digits;
 	static constexpr int  min_exponent10           = static_cast<int>(min_exponent * 0.30103);
 	// C++ specification: max_exponent is one more than the largest integer power 
 	// of the radix that is a valid finite floating-point number

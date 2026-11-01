@@ -467,10 +467,12 @@ public:
     constexpr double& operator[](size_t index) { return cascade[index]; }
 
     // create specific number system values of interest
+    // the largest normalized expansion: DBL_MAX, then each limb DBL_MAX * 2^-54k, the largest
+    // double below half an ulp of the one before (#1882)
     constexpr td_cascade& maxpos() noexcept {
-        cascade[0] = 1.7976931348623157e+308;
-        cascade[1] = 1.9958403095347196e+292;
-        cascade[2] = 2.2158278651204452e+276;
+        cascade[0] = 0x1.fffffffffffffp+1023;
+        cascade[1] = 0x1.fffffffffffffp+969;
+        cascade[2] = 0x1.fffffffffffffp+915;
         return *this;
     }
     constexpr td_cascade& minpos() noexcept {
@@ -489,9 +491,9 @@ public:
         return *this;
     }
     constexpr td_cascade& maxneg() noexcept {
-        cascade[0] = -1.7976931348623157e+308;
-        cascade[1] = -1.9958403095347196e+292;
-        cascade[2] = -2.2158278651204452e+276;
+        cascade[0] = -0x1.fffffffffffffp+1023;
+        cascade[1] = -0x1.fffffffffffffp+969;
+        cascade[2] = -0x1.fffffffffffffp+915;
         return *this;
     }
 

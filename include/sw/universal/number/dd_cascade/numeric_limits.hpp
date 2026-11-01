@@ -14,17 +14,22 @@ class numeric_limits< sw::universal::dd_cascade > {
 public:
 	using DD = sw::universal::dd_cascade;
 	static constexpr bool is_specialized = true;
+	// min() is the smallest value at full precision: below it the last limb is subnormal and the
+	// expansion holds fewer than digits bits, so epsilon() no longer bounds the relative rounding
+	// error. It is 2^(-1022 + 53 * (limbs - 1)), and min_exponent follows it (#1882).
 	static constexpr DD min() { // return minimum value
-		return DD(4.9406564584124654e-324, 0.0); // std::numeric_limits<double>::min()
+		return DD(0x1p-969, 0.0);
 	}
+	// the largest normalized expansion: DBL_MAX, then DBL_MAX * 2^-54, below half an ulp of it
 	static constexpr DD max() { // return maximum value
-		return DD(1.7976931348623157e+308, 9.9792015476735972e+291);
+		return DD(0x1.fffffffffffffp+1023, 0x1.fffffffffffffp+969);
 	}
 	static constexpr DD lowest() { // return most negative value
-		return DD(-1.7976931348623157e+308, -9.9792015476735972e+291);
+		return DD(-0x1.fffffffffffffp+1023, -0x1.fffffffffffffp+969);
 	}
+	// epsilon is eps(double)^2 / 2 = 2^-105, the same in dd
 	static constexpr DD epsilon() { // return smallest effective increment from 1.0
-		return DD(4.93038065763132e-32, 0.0);  // 2^-106 for double-double precision
+		return DD(0x1p-105, 0.0);
 	}
 	static constexpr DD round_error() { // return largest rounding error
 		return DD(0.5, 0.0);
@@ -50,8 +55,9 @@ public:
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
-	static constexpr int min_exponent   = std::numeric_limits<double>::min_exponent;
-	static constexpr int min_exponent10 = std::numeric_limits<double>::min_exponent10;
+	// min() == 2^(min_exponent - 1)
+	static constexpr int min_exponent   = std::numeric_limits<double>::min_exponent + std::numeric_limits<double>::digits;
+	static constexpr int min_exponent10 = static_cast<int>(min_exponent * 0.30103);
 	static constexpr int max_exponent   = std::numeric_limits<double>::max_exponent;
 	static constexpr int max_exponent10 = std::numeric_limits<double>::max_exponent10;
 	static constexpr bool has_infinity  = true;
