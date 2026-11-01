@@ -130,7 +130,7 @@ function(universal_header_guard_value out_var name)
       list(APPEND __values "${CMAKE_MATCH_3} (set by the build)")
     elseif(__haystack MATCHES "(^|[ ;])(-D|/D)?${name}([ ;]|$)")
       list(APPEND __values "defined (set by the build)")
-    elseif(__haystack MATCHES ":(-D|/D)?${name}([=>])")
+    elseif(__haystack MATCHES "[:,](-D|/D)?${name}([=>,])")
       # its condition is not evaluated at configure time
       list(APPEND __values "set in a generator expression")
     else()

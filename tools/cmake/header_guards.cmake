@@ -32,7 +32,8 @@ endfunction()
 
 # the same macro given both as a cache variable and by hand (CMAKE_CXX_FLAGS,
 # CMAKE_CXX_FLAGS_<CONFIG>, or a parent project's compile definitions or options, including
-# ones inside a generator expression such as $<$<CONFIG:Debug>:NAME=0>) would be defined twice,
+# ones inside a generator expression such as $<$<CONFIG:Debug>:NAME=0> or
+# $<IF:$<CONFIG:Debug>,NAME=0,NAME=1>) would be defined twice,
 # with the command-line order deciding which wins: refuse it.
 # Usage:
 #   _universal_header_guard_single_source(NAME ["<what sets it>"])   default: NAME=<cache value>
@@ -56,8 +57,9 @@ function(_universal_header_guard_single_source name)
   get_directory_property(defs COMPILE_DEFINITIONS)
   get_directory_property(opts COMPILE_OPTIONS)
   string(APPEND haystack " ${defs} ${opts}")
-  # ':' opens the content of a generator expression, '>' closes it
-  if(haystack MATCHES "(^|[ ;:])(-D|/D)?${name}([= ;>]|$)")
+  # ':' opens the content of a generator expression, ',' separates its arguments
+  # ($<IF:cond,NAME=0,NAME=1>), '>' closes it
+  if(haystack MATCHES "(^|[ ;:,])(-D|/D)?${name}([= ;>,]|$)")
     message(FATAL_ERROR "${name} is set both by ${source} "
                         "and by hand (CMAKE_CXX_FLAGS, CMAKE_CXX_FLAGS_<CONFIG>, or a compile "
                         "definition or option); set it one way only.")
