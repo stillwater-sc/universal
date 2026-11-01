@@ -66,15 +66,18 @@ public:
 	static constexpr bool has_infinity             = true;
 	static constexpr bool has_quiet_NaN            = true;
 	static constexpr bool has_signaling_NaN        = true;
-	static constexpr float_denorm_style has_denorm = denorm_absent;
-	static constexpr bool has_denorm_loss          = false;
+	// The same in dd, qd, dd_cascade, td_cascade and qd_cascade (#1888). Below min() the low
+	// limbs go subnormal and then underflow, so precision falls off gradually down to
+	// denorm_min(), the double subnormal; each limb operation rounds to nearest.
+	static constexpr float_denorm_style has_denorm = denorm_present;
+	static constexpr bool has_denorm_loss          = std::numeric_limits<double>::has_denorm_loss;
 
 	static constexpr bool is_iec559                = false;
-	static constexpr bool is_bounded               = false;
+	static constexpr bool is_bounded               = true;
 	static constexpr bool is_modulo                = false;
 	static constexpr bool traps                    = false;
 	static constexpr bool tinyness_before          = false;
-	static constexpr float_round_style round_style = round_toward_zero;
+	static constexpr float_round_style round_style = round_to_nearest;
 };
 
 }

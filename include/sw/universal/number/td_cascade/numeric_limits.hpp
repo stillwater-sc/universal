@@ -44,12 +44,23 @@ public:
 	static constexpr bool has_infinity = true;
 	static constexpr bool has_quiet_NaN = true;
 	static constexpr bool has_signaling_NaN = true;
+	// The same in dd, qd, dd_cascade, td_cascade and qd_cascade (#1888). Below min() the low
+	// limbs go subnormal and then underflow, so precision falls off gradually down to
+	// denorm_min(), the double subnormal; each limb operation rounds to nearest.
 	static constexpr float_denorm_style has_denorm = denorm_present;
-	static constexpr bool has_denorm_loss = true;
+	static constexpr bool has_denorm_loss = std::numeric_limits<double>::has_denorm_loss;
 
-	static constexpr TD infinity() { return TD(std::numeric_limits<double>::infinity(), 0.0, 0.0); }
-	static constexpr TD quiet_NaN() { return TD(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0); }
-	static constexpr TD signaling_NaN() { return TD(std::numeric_limits<double>::signaling_NaN(), 0.0, 0.0); }
+	// special values carry the code in the leading limb and zeros in the rest, as setinf() and
+	// setnan() build them and isinf()/isnan() test them, the same in dd and qd (#1889)
+	static constexpr TD infinity() { // return positive infinity
+		return TD(sw::universal::SpecificValue::infpos);
+	}
+	static constexpr TD quiet_NaN() { // return non-signaling NaN
+		return TD(sw::universal::SpecificValue::qnan);
+	}
+	static constexpr TD signaling_NaN() { // return signaling NaN
+		return TD(sw::universal::SpecificValue::snan);
+	}
 	static constexpr TD denorm_min() { return TD(std::numeric_limits<double>::denorm_min(), 0.0, 0.0); }
 
 	static constexpr bool is_iec559 = false;

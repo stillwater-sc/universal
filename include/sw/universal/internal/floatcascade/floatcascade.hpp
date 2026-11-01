@@ -1737,6 +1737,72 @@ namespace expansion_ops {
         return result;
     }
 
+    // The sum of two N-component cascades, compressed back to N components: the + and - of
+    // dd_cascade, td_cascade, qd_cascade and floatcascade<N> (#1889).
+    //   - an infinite or NaN operand decides the result through the leading limbs alone, with a
+    //     zero tail, as dd and qd do: the error-free sums would compute inf - inf there and
+    //     return NaN. inf + finite is inf, inf - inf is NaN.
+    //   - near the top of the range a sum of finite operands can overflow in an intermediate
+    //     two_sum although the complete sum is finite (DBL_MAX - 2^969 plus 2^970), or stay
+    //     finite in the leading limbs while the tail carries it past max(). So when an operand
+    //     reaches 2^1022 the sum is formed at quarter scale, where every intermediate stays below
+    //     DBL_MAX / 2 (half scale is not enough: max() + max() is max() there, and the error-free
+    //     sums overflow on the way), and scaled back. The sum overflows, to (inf, 0, ...), when it
+    //     reaches DBL_MAX + 2^970, half an ulp above DBL_MAX, where double itself rounds to inf.
+    //     Only the limbs that quarter scaling keeps exact go through the scaled sum. A tail limb
+    //     near the subnormal range would lose bits there, and when the leading limbs cancel those
+    //     bits are the whole answer: (2^1022, 2^-1074) + (-2^1022, 2^-1074) is 2^-1073, not 0.
+    //     Such limbs form a suffix of each operand, and are summed unscaled and added back, as
+    //     expansion_sum_normalized does for the elastic expansions.
+    template<size_t N>
+    constexpr floatcascade<N> add_expansions(const floatcascade<N>& a, const floatcascade<N>& b) noexcept {
+        static_assert(N == 2 || N == 3 || N == 4, "add_expansions is derived for 2, 3 and 4 components");
+        auto add = [](const floatcascade<N>& x, const floatcascade<N>& y) {
+            if constexpr (N == 2) return compress_4to2(add_cascades(x, y));
+            else if constexpr (N == 3) return compress_6to3(add_cascades(x, y));
+            else return compress_8to4(add_cascades(x, y));
+        };
+        auto magnitude = [](double x) { return x < 0.0 ? -x : x; };
+        floatcascade<N> r;
+        if (!is_finite_cx(a[0]) || !is_finite_cx(b[0])) {
+            r.clear();
+            r[0] = a[0] + b[0];
+            return r;
+        }
+        if (magnitude(a[0]) < 0x1p+1022 && magnitude(b[0]) < 0x1p+1022) return add(a, b);
+
+        // split each operand into the prefix quarter scaling keeps exact, scaled, and the suffix
+        // it would not, moved to the front of its own cascade
+        auto split = [](const floatcascade<N>& x, floatcascade<N>& scaled_prefix, floatcascade<N>& suffix) {
+            scaled_prefix.clear();
+            suffix.clear();
+            size_t k = 0;
+            bool in_suffix = false;
+            for (size_t i = 0; i < N; ++i) {
+                const double q = x[i] * 0.25;
+                if (!in_suffix && q * 4.0 == x[i]) scaled_prefix[i] = q;
+                else { in_suffix = true; suffix[k++] = x[i]; }
+            }
+            return k > 0;
+        };
+        floatcascade<N> qa, qb, la, lb;
+        const bool tail_a = split(a, qa, la);
+        const bool tail_b = split(b, qb, lb);
+        r = add(qa, qb);
+        for (size_t i = 0; i < N; ++i) r[i] *= 4.0;
+        // r[0] is inf, or DBL_MAX with a tail of half its ulp or more in the same direction
+        const bool overflow = !is_finite_cx(r[0]) ||
+            (magnitude(r[0]) == std::numeric_limits<double>::max() && (r[0] < 0.0) == (r[1] < 0.0) && magnitude(r[1]) >= 0x1p+970);
+        if (overflow) {
+            const double inf = r[0] < 0.0 ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity();
+            r.clear();
+            r[0] = inf;
+            return r;
+        }
+        if (tail_a || tail_b) r = add(r, add(la, lb));
+        return r;
+    }
+
 } // namespace expansion_ops
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2117,22 +2183,7 @@ bool floatcascade<N>::parse(const std::string& number) {
 // Addition operator
 template<size_t N>
 floatcascade<N>& floatcascade<N>::operator+=(const floatcascade<N>& rhs) noexcept {
-    floatcascade<2*N> temp = expansion_ops::add_cascades(*this, rhs);
-
-    // Compress back to N components
-    if constexpr (N == 2) {
-        *this = expansion_ops::compress_4to2(temp);
-    }
-    else if constexpr (N == 3) {
-        *this = expansion_ops::compress_6to3(temp);
-    }
-    else if constexpr (N == 4) {
-        *this = expansion_ops::compress_8to4(temp);
-    }
-    else {
-        *this = expansion_ops::renormalize(temp);
-    }
-
+    *this = expansion_ops::add_expansions(*this, rhs);
     return *this;
 }
 

@@ -37,14 +37,16 @@ public:
 	static constexpr DD denorm_min() {  // return minimum denormalized value
 		return DD(std::numeric_limits<double>::denorm_min(), 0.0);
 	}
+	// special values carry the code in the leading limb and zeros in the rest, as setinf() and
+	// setnan() build them and isinf()/isnan() test them, the same in dd and qd (#1889)
 	static constexpr DD infinity() { // return positive infinity
-		return DD(std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+		return DD(sw::universal::SpecificValue::infpos);
 	}
 	static constexpr DD quiet_NaN() { // return non-signaling NaN
-		return DD(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN());
+		return DD(sw::universal::SpecificValue::qnan);
 	}
 	static constexpr DD signaling_NaN() { // return signaling NaN
-		return DD(std::numeric_limits<double>::signaling_NaN(), std::numeric_limits<double>::signaling_NaN());
+		return DD(sw::universal::SpecificValue::snan);
 	}
 
 	static constexpr int digits       = 106; // 2 * 53 bits of precision
@@ -63,8 +65,11 @@ public:
 	static constexpr bool has_infinity  = true;
 	static constexpr bool has_quiet_NaN = true;
 	static constexpr bool has_signaling_NaN = true;
+	// The same in dd, qd, dd_cascade, td_cascade and qd_cascade (#1888). Below min() the low
+	// limbs go subnormal and then underflow, so precision falls off gradually down to
+	// denorm_min(), the double subnormal; each limb operation rounds to nearest.
 	static constexpr float_denorm_style has_denorm = denorm_present;
-	static constexpr bool has_denorm_loss = true;
+	static constexpr bool has_denorm_loss = std::numeric_limits<double>::has_denorm_loss;
 
 	static constexpr bool is_iec559  = false;
 	static constexpr bool is_bounded = true;

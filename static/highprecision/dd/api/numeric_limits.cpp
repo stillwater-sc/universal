@@ -1,4 +1,4 @@
-// numeric_limits.cpp: std::numeric_limits of the multi-double types (#1882)
+// numeric_limits.cpp: std::numeric_limits of the multi-double types (#1882, #1888, #1889)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -12,10 +12,18 @@
 //   min()     the smallest value at full precision, 2^(-1022 + 53(N-1)): below it the last limb is
 //             subnormal. min() == 2^(min_exponent - 1), as std::numeric_limits requires.
 //   epsilon() eps(double)^N / 2 = 2^-(52N + 1), an exact power of two.
+//   traits    has_denorm = denorm_present (below min() precision falls off gradually down to
+//             denorm_min()), has_denorm_loss as double's, is_bounded, round_to_nearest.
+//   specials  infinity(), quiet_NaN() and signaling_NaN() carry the code in the leading limb
+//             and zeros in the rest, as setinf()/setnan() and SpecificValue build them.
 // Before #1882 dd's max() rounded to inf, the cascades' min() was denorm_min(), min_exponent was
 // double's in every type, and the cascades' epsilon() came from truncated decimal literals.
+// Before #1888 dd/qd reported denorm_absent, unbounded and round_toward_zero, and before #1889
+// dd_cascade and qd_cascade put the special value in every limb.
 #include <universal/utility/directives.hpp>
+#include <bit>
 #include <cfloat>
+#include <cstdint>
 #include <cmath>
 #include <limits>
 #include <universal/number/dd/dd.hpp>
@@ -53,6 +61,22 @@ namespace sw { namespace universal {
 	static_assert(std::numeric_limits<qd>::min()[0] == 0x1p-863 && std::numeric_limits<qd>::max()[3] == 0x1.fffffffffffffp+861, "qd min/max");
 	static_assert(std::numeric_limits<dd>::epsilon()[0] == std::numeric_limits<dd_cascade>::epsilon()[0], "dd and dd_cascade epsilon agree");
 	static_assert(std::numeric_limits<qd>::epsilon()[0] == std::numeric_limits<qd_cascade>::epsilon()[0], "qd and qd_cascade epsilon agree");
+
+	// the traits are the same in all five types (#1888)
+	template<typename Real>
+	constexpr bool shared_traits() {
+		using L = std::numeric_limits<Real>;
+		return L::has_denorm == std::denorm_present && L::has_denorm_loss == std::numeric_limits<double>::has_denorm_loss
+		    && L::is_bounded && L::round_style == std::round_to_nearest;
+	}
+	static_assert(shared_traits<dd>(),         "dd traits");
+	static_assert(shared_traits<qd>(),         "qd traits");
+	static_assert(shared_traits<dd_cascade>(), "dd_cascade traits");
+	static_assert(shared_traits<td_cascade>(), "td_cascade traits");
+	static_assert(shared_traits<qd_cascade>(), "qd_cascade traits");
+	// special values carry the code in the leading limb only (#1889)
+	static_assert(std::numeric_limits<dd_cascade>::infinity()[1] == 0.0, "dd_cascade infinity() tail");
+	static_assert(std::numeric_limits<qd_cascade>::infinity()[3] == 0.0, "qd_cascade infinity() tail");
 
 	template<typename Real, unsigned N>
 	int VerifyNumericLimits(bool reportTestCases, const std::string& type) {
@@ -108,6 +132,95 @@ namespace sw { namespace universal {
 		if (eps[0] != std::ldexp(1.0, -(p - 1) * static_cast<int>(N) - 1) || !tail_is_zero(eps)) fail("epsilon() is " + to_hex(eps[0]));
 		if (!(Real(1.0) + eps > Real(1.0))) fail("1 + epsilon() is not above 1");
 
+		// traits, the same in all five types (#1888)
+		if (L::has_denorm != std::denorm_present) fail("has_denorm is not denorm_present");
+		if (L::has_denorm_loss != std::numeric_limits<double>::has_denorm_loss) fail("has_denorm_loss is not double's");
+		if (!L::is_bounded) fail("is_bounded is false");
+		if (L::round_style != std::round_to_nearest) fail("round_style is not round_to_nearest");
+		// below min() the value degrades gradually: min() / 2 is not zero, and denorm_min() is held
+		if ((mn * Real(0.5))[0] != std::ldexp(mn[0], -1)) fail("min() / 2 is not held");
+		if (L::denorm_min()[0] != std::numeric_limits<double>::denorm_min() || !tail_is_zero(L::denorm_min())) fail("denorm_min() is not the double subnormal");
+
+		// special values: the code in the leading limb, zeros in the rest (#1889)
+		auto bits = [](double d) { return std::bit_cast<std::uint64_t>(d); };
+		auto same_bits = [&](const Real& a, const Real& b) {
+			for (unsigned i = 0; i < N; ++i) if (bits(a[i]) != bits(b[i])) return false;
+			return true;
+		};
+		const Real inf = L::infinity();
+		if (inf[0] != std::numeric_limits<double>::infinity() || !tail_is_zero(inf)) fail("infinity() is not (inf, 0, ...)");
+		if (!inf.isinf() || inf.isnan()) fail("infinity() is not isinf()");
+		if (!same_bits(inf, Real(SpecificValue::infpos))) fail("infinity() != SpecificValue::infpos");
+		Real ninf = -inf;
+		if (ninf[0] != -std::numeric_limits<double>::infinity() || !tail_is_zero(ninf) || !ninf.isinf()) fail("-infinity() is not (-inf, 0, ...)");
+		const Real qnan = L::quiet_NaN();
+		if (!std::isnan(qnan[0]) || !tail_is_zero(qnan) || !qnan.isnan()) fail("quiet_NaN() is not (nan, 0, ...)");
+		if (!same_bits(qnan, Real(SpecificValue::qnan))) fail("quiet_NaN() != SpecificValue::qnan");
+		const Real snan = L::signaling_NaN();
+		if (!std::isnan(snan[0]) || !tail_is_zero(snan) || !snan.isnan()) fail("signaling_NaN() is not (nan, 0, ...)");
+		if (!same_bits(snan, Real(SpecificValue::snan))) fail("signaling_NaN() != SpecificValue::snan");
+		// infinity stays infinity through arithmetic with a finite value
+		if (!(inf + Real(1.0)).isinf() || (inf + Real(1.0)).isnan()) fail("infinity() + 1 is not inf");
+		if (!(inf * Real(2.0)).isinf() || (inf * Real(2.0)).isnan()) fail("infinity() * 2 is not inf");
+		if (!(Real(1.0) - inf).isinf() || (Real(1.0) - inf).isnan()) fail("1 - infinity() is not -inf");
+		if (double(inf) != std::numeric_limits<double>::infinity()) fail("double(infinity()) is not inf");
+		// the cascades' addition used to return NaN for any infinite operand (#1889)
+		if (!(inf + inf).isinf() || (inf + inf).isnan()) fail("infinity() + infinity() is not inf");
+		if (!(inf - inf).isnan()) fail("infinity() - infinity() is not NaN");
+		if (!(qnan + Real(1.0)).isnan()) fail("NaN + 1 is not NaN");
+		const Real ovf = mx + mx;
+		if (!ovf.isinf() || ovf.isneg() || !tail_is_zero(ovf)) fail("max() + max() is not (inf, 0, ...)");
+		Real acc = Real(1.0);
+		acc += inf;
+		if (!acc.isinf() || !tail_is_zero(acc)) fail("1 += infinity() is not (inf, 0, ...)");
+		acc = Real(1.0);
+		acc -= inf;
+		if (!acc.isinf() || !acc.isneg() || !tail_is_zero(acc)) fail("1 -= infinity() is not (-inf, 0, ...)");
+
+		return nrOfFailures;
+	}
+
+	// cascade addition at the top of the range, where an intermediate two_sum can overflow
+	// although the complete sum is finite, or the tail can carry a sum past max() (#1889)
+	template<typename Real, unsigned N>
+	int VerifyCascadeRangeBoundary(bool reportTestCases, const std::string& type) {
+		int nrOfFailures = 0;
+		auto fail = [&](const std::string& what) {
+			++nrOfFailures;
+			if (reportTestCases) std::cerr << "FAIL: " << type << ' ' << what << '\n';
+		};
+		auto limbs = [](double x0, double x1) {
+			floatcascade<N> f;
+			f.clear();
+			f[0] = x0;
+			f[1] = x1;
+			return Real(f);
+		};
+		auto is = [&](const Real& r, double x0, double x1) {
+			const Real expected = limbs(x0, x1);
+			for (unsigned i = 0; i < N; ++i) if (r[i] != expected[i]) return false;
+			return true;
+		};
+		// the leading limbs DBL_MAX + 2^970 overflow, the complete sum DBL_MAX + 2^969 does not
+		const Real a = limbs(DBL_MAX, -0x1p+969), b = limbs(0x1p+970, 0.0);
+		if (!is(a + b, DBL_MAX, 0x1p+969)) fail("(DBL_MAX, -2^969) + 2^970 is not (DBL_MAX, 2^969)");
+		if (!is(b + a, DBL_MAX, 0x1p+969)) fail("2^970 + (DBL_MAX, -2^969) is not (DBL_MAX, 2^969)");
+		if (!is(a - (-b), DBL_MAX, 0x1p+969)) fail("(DBL_MAX, -2^969) - (-2^970) is not (DBL_MAX, 2^969)");
+		// the leading limbs DBL_MAX + 2^969 round to DBL_MAX, the complete sum is past max()
+		const Real mx = std::numeric_limits<Real>::max();
+		const Real over = mx + limbs(0x1p+969, 0.0);
+		if (!over.isinf() || over.isneg() || !is(over, over[0], 0.0)) fail("max() + 2^969 is not (inf, 0, ...)");
+		const Real under = -mx - limbs(0x1p+969, 0.0);
+		if (!under.isinf() || !under.isneg() || !is(under, under[0], 0.0)) fail("-max() - 2^969 is not (-inf, 0, ...)");
+		// a finite sum on the half-scale path is exact
+		if (!is(limbs(0x1.8p+1022, 0.0) + limbs(0x1p+960, 0.0), 0x1.8p+1022, 0x1p+960)) fail("1.5*2^1022 + 2^960 is not exact");
+		if (!is(mx - mx, 0.0, 0.0)) fail("max() - max() is not 0");
+		// a tail limb quarter scaling would round is added back unscaled: when the leading limbs
+		// cancel it is the whole answer
+		const Real p = limbs(0x1p+1022, 0x1p-1074), m = limbs(-0x1p+1022, 0x1p-1074);
+		if (!is(p + m, 0x1p-1073, 0.0)) fail("(2^1022, 2^-1074) + (-2^1022, 2^-1074) is not 2^-1073");
+		if (!is(p - p, 0.0, 0.0)) fail("(2^1022, 2^-1074) - itself is not 0");
+		if (!is(limbs(DBL_MAX, 0x1p-1074) - limbs(DBL_MAX, 0.0), 0x1p-1074, 0.0)) fail("(DBL_MAX, 2^-1074) - DBL_MAX is not 2^-1074");
 		return nrOfFailures;
 	}
 
@@ -138,6 +251,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<dd_cascade, 2>(reportTestCases, "dd_cascade"), "dd_cascade", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<td_cascade, 3>(reportTestCases, "td_cascade"), "td_cascade", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<qd_cascade, 4>(reportTestCases, "qd_cascade"), "qd_cascade", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyCascadeRangeBoundary<dd_cascade, 2>(reportTestCases, "dd_cascade"), "dd_cascade", "range boundary");
+	nrOfFailedTestCases += ReportTestResult(VerifyCascadeRangeBoundary<td_cascade, 3>(reportTestCases, "td_cascade"), "td_cascade", "range boundary");
+	nrOfFailedTestCases += ReportTestResult(VerifyCascadeRangeBoundary<qd_cascade, 4>(reportTestCases, "qd_cascade"), "qd_cascade", "range boundary");
 #endif
 
 #if REGRESSION_LEVEL_2

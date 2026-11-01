@@ -343,9 +343,7 @@ public:
 
     // Compound assignment operators
     CONSTEXPRESSION dd_cascade& operator+=(const dd_cascade& rhs) noexcept {
-		auto result = expansion_ops::add_cascades(cascade, rhs.cascade);  // 4 components
-		// Compress to 2 components using proven QD algorithm
-		cascade = expansion_ops::compress_4to2(result);
+		cascade = expansion_ops::add_expansions(cascade, rhs.cascade);
         return *this;
     }
 
@@ -354,9 +352,7 @@ public:
 		neg_rhs[0] = -rhs.cascade[0];
 		neg_rhs[1] = -rhs.cascade[1];
 
-		auto result = expansion_ops::add_cascades(cascade, neg_rhs);  // 4 components
-		// Compress to 2 components using proven QD algorithm
-		cascade = expansion_ops::compress_4to2(result);
+		cascade = expansion_ops::add_expansions(cascade, neg_rhs);
 		return *this;
     }
 
