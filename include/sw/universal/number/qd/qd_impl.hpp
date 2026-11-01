@@ -579,11 +579,13 @@ public:
 	constexpr double& operator[](int index)      { return x[index]; }
 
 	// create specific number system values of interest
+	// the largest normalized expansion: DBL_MAX, then each limb DBL_MAX * 2^-54k, the largest
+	// double below half an ulp of the one before (#1882)
 	constexpr qd& maxpos() noexcept {
-		x[0] = std::numeric_limits<double>::max(); 
-		x[1] = 0.0; 
-		x[2] = 0.0; 
-		x[3] = 0.0;
+		x[0] = 0x1.fffffffffffffp+1023;
+		x[1] = 0x1.fffffffffffffp+969;
+		x[2] = 0x1.fffffffffffffp+915;
+		x[3] = 0x1.fffffffffffffp+861;
 		return *this;
 	}
 	// smallest positive normal number
@@ -610,10 +612,10 @@ public:
 		return *this;
 	}
 	constexpr qd& maxneg() noexcept {
-		x[0] = std::numeric_limits<double>::lowest();
-		x[1] = 0.0;
-		x[2] = 0.0;
-		x[3] = 0.0;
+		x[0] = -0x1.fffffffffffffp+1023;
+		x[1] = -0x1.fffffffffffffp+969;
+		x[2] = -0x1.fffffffffffffp+915;
+		x[3] = -0x1.fffffffffffffp+861;
 		return *this;
 	}
 

@@ -488,11 +488,13 @@ public:
     constexpr double& operator[](size_t index) { return cascade[index]; }
 
     // create specific number system values of interest
+    // the largest normalized expansion: DBL_MAX, then each limb DBL_MAX * 2^-54k, the largest
+    // double below half an ulp of the one before (#1882)
     constexpr qd_cascade& maxpos() noexcept {
-        cascade[0] = 1.79769313486231570814527423731704357e+308;
-        cascade[1] = 9.97920154767359795037289025843547926e+291;
-        cascade[2] = 5.53956966280111259858119742279688267e+275;
-        cascade[3] = 3.07507899888268538886654502482441665e+259;
+        cascade[0] = 0x1.fffffffffffffp+1023;
+        cascade[1] = 0x1.fffffffffffffp+969;
+        cascade[2] = 0x1.fffffffffffffp+915;
+        cascade[3] = 0x1.fffffffffffffp+861;
         return *this;
     }
     constexpr qd_cascade& minpos() noexcept {
@@ -515,10 +517,10 @@ public:
         return *this;
     }
     constexpr qd_cascade& maxneg() noexcept {
-        cascade[0] = -1.79769313486231570814527423731704357e+308;
-        cascade[1] = -9.97920154767359795037289025843547926e+291;
-        cascade[2] = -5.53956966280111259858119742279688267e+275;
-        cascade[3] = -3.07507899888268538886654502482441665e+259;
+        cascade[0] = -0x1.fffffffffffffp+1023;
+        cascade[1] = -0x1.fffffffffffffp+969;
+        cascade[2] = -0x1.fffffffffffffp+915;
+        cascade[3] = -0x1.fffffffffffffp+861;
         return *this;
     }
 

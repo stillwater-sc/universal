@@ -41,15 +41,16 @@ void ConstructExtremeValues() {
 	std::cout << to_binary(a) << " : " << a << '\n';
 	std::cout << to_binary(b) << " : " << b << '\n';
 	// maxpos exponent is 0b111'1111'1110;
-	// lo segment is scaled by 2^53
+	// lo segment is scaled by 2^-54: the largest double below half an ulp of hi (#1882).
+	// Scaled by 2^-53 it would be 2^970 - ulp, at least half an ulp of hi, and hi + lo rounds to inf.
 	int i = 0x7fE;
 	std::cout << "exponent is " << i - Cfloat::EXP_BIAS << '\n';
-	std::cout << "lo exponent is " << (i - Cfloat::EXP_BIAS - 53) << '\n';
-	std::cout << to_binary(i - 53) << '\n'; // get the unbiased scaled exponent value
-	// 111'1100'1001
-	a.setbits(0x7C9F'FFFF'FFFF'FFFFull);
+	std::cout << "lo exponent is " << (i - Cfloat::EXP_BIAS - 54) << '\n';
+	std::cout << to_binary(i - 54) << '\n'; // get the unbiased scaled exponent value
+	// 111'1100'1000
+	a.setbits(0x7C8F'FFFF'FFFF'FFFFull);
 	std::cout << to_binary(a) << " : " << a << '\n';
-	b = 1.9958403095347196e+292;
+	b = 0x1.fffffffffffffp+969;
 	std::cout << to_binary(b) << " : " << b << '\n';
 
 	// construct the doubledouble minpos bit pattern

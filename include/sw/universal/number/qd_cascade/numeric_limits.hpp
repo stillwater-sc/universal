@@ -14,23 +14,22 @@ class numeric_limits< sw::universal::qd_cascade > {
 public:
 	using QD = sw::universal::qd_cascade;
 	static constexpr bool is_specialized = true;
+	// min() is the smallest value at full precision: below it the last limb is subnormal and the
+	// expansion holds fewer than digits bits, so epsilon() no longer bounds the relative rounding
+	// error. It is 2^(-1022 + 53 * (limbs - 1)), and min_exponent follows it (#1882).
 	static constexpr QD min() { // return minimum value
-		return QD(4.9406564584124654e-324, 0.0, 0.0, 0.0); // std::numeric_limits<double>::min()
+		return QD(0x1p-863, 0.0, 0.0, 0.0);
 	}
+	// the largest normalized expansion: DBL_MAX, then each limb DBL_MAX * 2^-54k, below half an ulp of the one before
 	static constexpr QD max() { // return maximum value
-		return QD(1.79769313486231570814527423731704357e+308,
-		          9.97920154767359795037289025843547926e+291,
-		          5.53956966280111259858119742279688267e+275,
-		          3.07507899888268538886654502482441665e+259);
+		return QD(0x1.fffffffffffffp+1023, 0x1.fffffffffffffp+969, 0x1.fffffffffffffp+915, 0x1.fffffffffffffp+861);
 	}
 	static constexpr QD lowest() { // return most negative value
-		return QD(-1.79769313486231570814527423731704357e+308,
-		          -9.97920154767359795037289025843547926e+291,
-		          -5.53956966280111259858119742279688267e+275,
-		          -3.07507899888268538886654502482441665e+259);
+		return QD(-0x1.fffffffffffffp+1023, -0x1.fffffffffffffp+969, -0x1.fffffffffffffp+915, -0x1.fffffffffffffp+861);
 	}
+	// epsilon is eps(double)^4 / 2 = 2^-209, the same in qd
 	static constexpr QD epsilon() { // return smallest effective increment from 1.0
-		return QD(1.21543267145725712652978599954436861e-63, 0.0, 0.0, 0.0);  // 2^-209 = eps(double)^4 / 2
+		return QD(0x1p-209, 0.0, 0.0, 0.0);
 	}
 	static constexpr QD round_error() { // return largest rounding error
 		return QD(0.5, 0.0, 0.0, 0.0);
@@ -65,8 +64,9 @@ public:
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
-	static constexpr int min_exponent   = std::numeric_limits<double>::min_exponent;
-	static constexpr int min_exponent10 = std::numeric_limits<double>::min_exponent10;
+	// min() == 2^(min_exponent - 1)
+	static constexpr int min_exponent   = std::numeric_limits<double>::min_exponent + 3 * std::numeric_limits<double>::digits;
+	static constexpr int min_exponent10 = static_cast<int>(min_exponent * 0.30103);
 	static constexpr int max_exponent   = std::numeric_limits<double>::max_exponent;
 	static constexpr int max_exponent10 = std::numeric_limits<double>::max_exponent10;
 	static constexpr bool has_infinity  = true;
