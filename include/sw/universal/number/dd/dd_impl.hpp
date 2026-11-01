@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <array>
 #include <algorithm>    // std::max, in to_string()'s fixed-format path
 #include <ios>          // std::streamsize / std::ios_base, in the to_string() signature
 #include <iosfwd>       // std::ostream in the operator<< forward declaration (#1334)
@@ -30,6 +31,7 @@
 #include <universal/native/ieee754_core.hpp>          // extractFields/ieee754_parameter (#1334)
 #include <universal/native/manipulators_core.hpp>   // scale(), without the to_triple/to_hex text layer
 #include <universal/numerics/error_free_ops.hpp>
+#include <universal/numerics/range_limit_add.hpp>   // add_at_range_limit (#1891)
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -354,6 +356,16 @@ public:
 	explicit constexpr operator long double() const noexcept { return static_cast<long double>(hi) + static_cast<long double>(lo); }
 #endif
 
+	// the dd sum of two finite (hi, lo) pairs whose error-free sums do not overflow
+	static CONSTEXPRESSION void add_limbs(double& hi, double& lo, double rhs_hi, double rhs_lo) {
+		double s2;
+		hi = two_sum(hi, rhs_hi, s2);
+		double t2, t1 = two_sum(lo, rhs_lo, t2);
+		lo = two_sum(s2, t1, t1);
+		t1 += t2;
+		three_sum(hi, lo, t1);
+	}
+
 	// prefix operators
 	constexpr dd operator-() const noexcept {
 		return dd(-hi, -lo);
@@ -361,35 +373,32 @@ public:
 
 	// arithmetic operators
 	CONSTEXPRESSION dd& operator+=(const dd& rhs) {
-		double s2;
-		hi = two_sum(hi, rhs.hi, s2);
-		if (is_finite_cx(hi)) {
-			double t2, t1 = two_sum(lo, rhs.lo, t2);
-			lo = two_sum(s2, t1, t1);
-			t1 += t2;
-			three_sum(hi, lo, t1);
-		}
-		else {
+		// a non-finite operand decides the result through the leading limbs
+		if (!is_finite_cx(hi) || !is_finite_cx(rhs.hi)) {
+			hi += rhs.hi;
 			lo = 0.0;
+			return *this;
 		}
+		if (!reaches_range_limit(hi, rhs.hi)) {
+			add_limbs(hi, lo, rhs.hi, rhs.lo);
+			return *this;
+		}
+		// an operand reaches 2^1022: the leading-limb sum can overflow while the complete sum is finite (#1891)
+		auto add = [](const std::array<double, 2>& x, const std::array<double, 2>& y) {
+			double h = x[0], l = x[1];
+			add_limbs(h, l, y[0], y[1]);
+			return std::array<double, 2>{ h, l };
+		};
+		const std::array<double, 2> r = add_at_range_limit<2>(std::array<double, 2>{ hi, lo }, std::array<double, 2>{ rhs.hi, rhs.lo }, add);
+		hi = r[0];
+		lo = r[1];
 		return *this;
 	}
 	CONSTEXPRESSION dd& operator+=(double rhs) {
 		return operator+=(dd(rhs));
 	}
 	CONSTEXPRESSION dd& operator-=(const dd& rhs) {
-		double s2;
-		hi = two_sum(hi, -rhs.hi, s2);
-		if (is_finite_cx(hi)) {
-			double t2, t1 = two_sum(lo, -rhs.lo, t2);
-			lo = two_sum(s2, t1, t1);
-			t1 += t2;
-			three_sum(hi, lo, t1);
-		}
-		else {
-			lo = 0.0;
-		}
-		return *this;
+		return operator+=(dd(-rhs.hi, -rhs.lo));
 	}
 	CONSTEXPRESSION dd& operator-=(double rhs) {
 		return operator-=(dd(rhs));

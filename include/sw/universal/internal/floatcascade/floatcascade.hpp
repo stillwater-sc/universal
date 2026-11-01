@@ -26,6 +26,7 @@
 #include <universal/native/ieee754_core.hpp>          // extractFields/ieee754_parameter (#1334)
 #include <universal/native/manipulators_core.hpp>   // scale(), without the to_triple/to_hex text layer
 #include <universal/numerics/error_free_ops.hpp>
+#include <universal/numerics/range_limit_add.hpp>   // add_at_range_limit (#1891)
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -1762,44 +1763,24 @@ namespace expansion_ops {
             else if constexpr (N == 3) return compress_6to3(add_cascades(x, y));
             else return compress_8to4(add_cascades(x, y));
         };
-        auto magnitude = [](double x) { return x < 0.0 ? -x : x; };
         floatcascade<N> r;
         if (!is_finite_cx(a[0]) || !is_finite_cx(b[0])) {
             r.clear();
             r[0] = a[0] + b[0];
             return r;
         }
-        if (magnitude(a[0]) < 0x1p+1022 && magnitude(b[0]) < 0x1p+1022) return add(a, b);
+        if (!reaches_range_limit(a[0], b[0])) return add(a, b);
 
-        // split each operand into the prefix quarter scaling keeps exact, scaled, and the suffix
-        // it would not, moved to the front of its own cascade
-        auto split = [](const floatcascade<N>& x, floatcascade<N>& scaled_prefix, floatcascade<N>& suffix) {
-            scaled_prefix.clear();
-            suffix.clear();
-            size_t k = 0;
-            bool in_suffix = false;
-            for (size_t i = 0; i < N; ++i) {
-                const double q = x[i] * 0.25;
-                if (!in_suffix && q * 4.0 == x[i]) scaled_prefix[i] = q;
-                else { in_suffix = true; suffix[k++] = x[i]; }
-            }
-            return k > 0;
+        // the shared range-limit rule of the multi-double types (numerics/range_limit_add.hpp)
+        auto to_array = [](const floatcascade<N>& x) {
+            std::array<double, N> v{};
+            for (size_t i = 0; i < N; ++i) v[i] = x[i];
+            return v;
         };
-        floatcascade<N> qa, qb, la, lb;
-        const bool tail_a = split(a, qa, la);
-        const bool tail_b = split(b, qb, lb);
-        r = add(qa, qb);
-        for (size_t i = 0; i < N; ++i) r[i] *= 4.0;
-        // r[0] is inf, or DBL_MAX with a tail of half its ulp or more in the same direction
-        const bool overflow = !is_finite_cx(r[0]) ||
-            (magnitude(r[0]) == std::numeric_limits<double>::max() && (r[0] < 0.0) == (r[1] < 0.0) && magnitude(r[1]) >= 0x1p+970);
-        if (overflow) {
-            const double inf = r[0] < 0.0 ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity();
-            r.clear();
-            r[0] = inf;
-            return r;
-        }
-        if (tail_a || tail_b) r = add(r, add(la, lb));
+        auto add_arrays = [&](const std::array<double, N>& x, const std::array<double, N>& y) {
+            return to_array(add(floatcascade<N>(x), floatcascade<N>(y)));
+        };
+        r = floatcascade<N>(add_at_range_limit<N>(to_array(a), to_array(b), add_arrays));
         return r;
     }
 
