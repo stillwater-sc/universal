@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <array>
 #include <algorithm>    // std::max, in to_string()'s fixed-format path
 #include <ios>          // std::streamsize / std::ios_base, in the to_string() signature
 #include <iosfwd>       // std::ostream in the operator<< forward declaration (#1334)
@@ -45,6 +46,7 @@
 #include <universal/native/ieee754_core.hpp>          // extractFields/ieee754_parameter (#1334)
 #include <universal/native/manipulators_core.hpp>   // scale(), without the to_triple/to_hex text layer
 #include <universal/numerics/error_free_ops.hpp>
+#include <universal/numerics/range_limit_add.hpp>   // add_at_range_limit (#1891)
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -330,11 +332,19 @@ public:
 	// arithmetic operators
 #define IEEE_ERROR_BOUND 1
 	CONSTEXPRESSION qd& operator+=(const qd& rhs) {
-#if defined(IEEE_ERROR_BOUND)
-		return *this = accurate_addition(*this, rhs);
-#else // !IEEE_ERROR_BOUND -> CRAY_ERROR_BOUND
-		return *this = approximate_addition(*this, rhs);
-#endif
+		// a non-finite operand decides the result through the leading limbs
+		if (!is_finite_cx(x[0]) || !is_finite_cx(rhs.x[0])) {
+			return *this = qd(x[0] + rhs.x[0]);
+		}
+		if (!reaches_range_limit(x[0], rhs.x[0])) return *this = add_kernel(*this, rhs);
+		// an operand reaches 2^1022: the leading-limb sum can overflow while the complete sum is finite (#1891)
+		auto add = [this](const std::array<double, 4>& a, const std::array<double, 4>& b) {
+			const qd s = add_kernel(qd(a[0], a[1], a[2], a[3]), qd(b[0], b[1], b[2], b[3]));
+			return std::array<double, 4>{ s.x[0], s.x[1], s.x[2], s.x[3] };
+		};
+		const std::array<double, 4> r = add_at_range_limit<4>(
+			std::array<double, 4>{ x[0], x[1], x[2], x[3] }, std::array<double, 4>{ rhs.x[0], rhs.x[1], rhs.x[2], rhs.x[3] }, add);
+		return *this = qd(r[0], r[1], r[2], r[3]);
 	}
 	CONSTEXPRESSION qd& operator+=(double rhs) {
 		return operator+=(qd(rhs));
@@ -658,6 +668,15 @@ public:
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/// arithmetic operator helpers
+
+	// the qd sum of two finite operands whose error-free sums do not overflow
+	constexpr qd add_kernel(const qd& a, const qd& b) const {
+#if defined(IEEE_ERROR_BOUND)
+		return accurate_addition(a, b);
+#else // !IEEE_ERROR_BOUND -> CRAY_ERROR_BOUND
+		return approximate_addition(a, b);
+#endif
+	}
 
 	constexpr qd accurate_addition(const qd& a, const qd& b) const {
 		// std::abs(double) is not constexpr in C++20; use a ternary helper.
