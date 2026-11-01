@@ -31,9 +31,17 @@ function(_universal_register_header_guard name default_text set_text)
 endfunction()
 
 # the same macro given both as a cache variable and by hand (CMAKE_CXX_FLAGS,
-# CMAKE_CXX_FLAGS_<CONFIG>, or a parent project's compile definitions or options) would be
-# defined twice, with the command-line order deciding which wins: refuse it
+# CMAKE_CXX_FLAGS_<CONFIG>, or a parent project's compile definitions or options, including
+# ones inside a generator expression such as $<$<CONFIG:Debug>:NAME=0>) would be defined twice,
+# with the command-line order deciding which wins: refuse it.
+# Usage:
+#   _universal_header_guard_single_source(NAME ["<what sets it>"])   default: NAME=<cache value>
 function(_universal_header_guard_single_source name)
+  if(ARGC GREATER 1)
+    set(source "${ARGV1}")
+  else()
+    set(source "a CMake cache variable (${name}=${${name}})")
+  endif()
   get_property(multi GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
   if(multi)
     set(configs ${CMAKE_CONFIGURATION_TYPES})
@@ -48,8 +56,9 @@ function(_universal_header_guard_single_source name)
   get_directory_property(defs COMPILE_DEFINITIONS)
   get_directory_property(opts COMPILE_OPTIONS)
   string(APPEND haystack " ${defs} ${opts}")
-  if(haystack MATCHES "(^|[ ;])(-D|/D)?${name}([= ;]|$)")
-    message(FATAL_ERROR "${name} is set both as a CMake cache variable (${name}=${${name}}) "
+  # ':' opens the content of a generator expression, '>' closes it
+  if(haystack MATCHES "(^|[ ;:])(-D|/D)?${name}([= ;>]|$)")
+    message(FATAL_ERROR "${name} is set both by ${source} "
                         "and by hand (CMAKE_CXX_FLAGS, CMAKE_CXX_FLAGS_<CONFIG>, or a compile "
                         "definition or option); set it one way only.")
   endif()
@@ -155,9 +164,7 @@ universal_header_guard_flag(UNIVERSAL_LIMB_KERNELS_NO_ASM
 # it for the targets there, the only code that includes the GLPK solver.
 option(UNIVERSAL_USE_GLPK "Build the POP precision tuner with the GLPK LP solver (defines UNIVERSAL_HAS_GLPK)" OFF)
 if(UNIVERSAL_USE_GLPK)
-  if(CMAKE_CXX_FLAGS MATCHES "(-D|/D)UNIVERSAL_HAS_GLPK([= ]|$)")
-    message(FATAL_ERROR "UNIVERSAL_HAS_GLPK is set both by UNIVERSAL_USE_GLPK=ON and in CMAKE_CXX_FLAGS; set it one way only.")
-  endif()
+  _universal_header_guard_single_source(UNIVERSAL_HAS_GLPK "UNIVERSAL_USE_GLPK=ON")
   find_path(GLPK_INCLUDE_DIR glpk.h)
   find_library(GLPK_LIBRARY NAMES glpk)
   if(NOT GLPK_INCLUDE_DIR OR NOT GLPK_LIBRARY)
