@@ -22,6 +22,29 @@
 #   universal_header_guard_flag(NAME "<doc>" "<summary default text>")
 #       OFF | ON  ->  NAME defined
 
+# Generator expressions are evaluated at generation time, so a configure-time check sees their
+# text. To tell a definition the expression emits from an operand it tests, reduce every
+# innermost condition-style expression -- $<CONFIG:Debug>, $<BOOL:...>,
+# $<TARGET_PROPERTY:tgt,NAME>, $<STREQUAL:a,b>, ... -- to the placeholder 0, until none is
+# left. What remains after ':' or ',' is content: $<$<CONFIG:Debug>:NAME=0> becomes
+# $<0:NAME=0>, $<IF:$<CONFIG:Debug>,NAME=0,NAME=1> keeps both branches, and
+# $<$<BOOL:$<TARGET_PROPERTY:tgt,NAME>>:USE_FMA> becomes $<0:USE_FMA>, which names no guard.
+# $<IF:...> is protected, $<0:...> and $<1:...> do not match the operator pattern. An
+# expression that emits its own arguments ($<LOWER_CASE:...>, $<JOIN:...>) is reduced too, so
+# a guard inside one is missed rather than misreported.
+function(universal_reduce_genex_conditions out_var text)
+  string(REPLACE "$<IF:" "$<_IF_:" text "${text}")
+  foreach(i RANGE 32)
+    # $<OP:args> and the argument-less $<OP> ($<CONFIG>, $<COMPILE_LANGUAGE>)
+    string(REGEX REPLACE "\\$<[A-Z][A-Z_]*(:[^$<>]*)?>" "0" reduced "${text}")
+    if(reduced STREQUAL text)
+      break()
+    endif()
+    set(text "${reduced}")
+  endforeach()
+  set(${out_var} "${text}" PARENT_SCOPE)
+endfunction()
+
 # record a guard for the summary: what to print when the header default applies, and what to
 # print when the build has set it (empty when it has not)
 function(_universal_register_header_guard name default_text set_text)
@@ -32,8 +55,8 @@ endfunction()
 
 # the same macro given both as a cache variable and by hand (CMAKE_CXX_FLAGS,
 # CMAKE_CXX_FLAGS_<CONFIG>, or a parent project's compile definitions or options, including
-# a NAME=value inside a generator expression such as $<$<CONFIG:Debug>:NAME=0> or
-# $<IF:$<CONFIG:Debug>,NAME=0,NAME=1>) would be defined twice,
+# a definition a generator expression emits, such as $<$<CONFIG:Debug>:NAME=0>,
+# $<$<CONFIG:Debug>:NAME> or $<IF:$<CONFIG:Debug>,NAME=0,NAME=1>) would be defined twice,
 # with the command-line order deciding which wins: refuse it.
 # Usage:
 #   _universal_header_guard_single_source(NAME ["<what sets it>"])   default: NAME=<cache value>
@@ -57,11 +80,10 @@ function(_universal_header_guard_single_source name)
   get_directory_property(defs COMPILE_DEFINITIONS)
   get_directory_property(opts COMPILE_OPTIONS)
   string(APPEND haystack " ${defs} ${opts}")
-  # A plain token, -DNAME, NAME or NAME=value; or, inside a generator expression (after ':'
-  # or ',', as in $<IF:cond,NAME=0,NAME=1>), only NAME=value. A bare name there can be an
-  # operand rather than a definition ($<TARGET_PROPERTY:tgt,NAME>), and a bare definition can
-  # only duplicate a flag guard's own, which is harmless.
-  if(haystack MATCHES "(^|[ ;])(-D|/D)?${name}([= ;]|$)" OR haystack MATCHES "[:,](-D|/D)?${name}=")
+  # a plain token -DNAME / NAME / NAME=value, or the content of a generator expression (after
+  # ':' or ',' once its conditions are reduced, see universal_reduce_genex_conditions)
+  universal_reduce_genex_conditions(haystack "${haystack}")
+  if(haystack MATCHES "(^|[ ;])(-D|/D)?${name}([= ;]|$)" OR haystack MATCHES "[:,](-D|/D)?${name}([=>,; ]|$)")
     message(FATAL_ERROR "${name} is set both by ${source} "
                         "and by hand (CMAKE_CXX_FLAGS, CMAKE_CXX_FLAGS_<CONFIG>, or a compile "
                         "definition or option); set it one way only.")
