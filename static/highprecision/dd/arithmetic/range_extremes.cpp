@@ -123,6 +123,23 @@ namespace sw { namespace universal {
 		for (double b : { 0.5, 1.0, -0.75, 0x1p-52, 0x1p-512, 0x1p-1074, 0x1.fffffffffffffp-1 }) {
 			nrOfFailures += CheckResidual(reportTestCases, DBL_MAX, b);
 		}
+		// Without a trusted fma CheckResidual only bounds |r|, so pin the exact run-time residuals
+		// the static_asserts check in constant evaluation (volatile keeps the call from folding).
+		{
+			volatile double top = DBL_MAX, below_one = 0x1.fffffffffffffp-1, root = 0x1.fffffffffffffp+511;
+			double r = 0.0;
+			double p = two_prod(top, below_one, r);
+			if (!(p == 0x1.ffffffffffffep+1023 && r == 0x1p918)) {
+				++nrOfFailures;
+				if (reportTestCases) std::cerr << "FAIL: two_prod(DBL_MAX, 1 - 2^-53) = " << to_hex(p) << " residual " << r << " expected 2^918\n";
+			}
+			r = 0.0;
+			p = two_sqr(root, r);
+			if (!(p == 0x1.ffffffffffffep+1023 && r == 0x1p918)) {
+				++nrOfFailures;
+				if (reportTestCases) std::cerr << "FAIL: two_sqr(2^512 - 2^459) = " << to_hex(p) << " residual " << r << " expected 2^918\n";
+			}
+		}
 		return nrOfFailures;
 	}
 
