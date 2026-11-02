@@ -946,6 +946,7 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to +minpos: its magnitude would wrap (#1901)
 			if (sign()) {
 				if (_block[MSU] == (SIGN_BIT_MASK | 1ul)) { // pattern: 1.00.001 = minneg
 					_block[MSU] = 0; // pattern: 0.00.000 = +0 
@@ -976,6 +977,7 @@ public:
 			}
 		}
 		else {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to +minpos: its magnitude would wrap (#1901)
 			if (sign()) {
 				// special case: pattern: 1.00.001 = minneg transitions to pattern: 0.00.000 = +0 
 				if (isminnegencoding()) {
@@ -1052,6 +1054,7 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to -minpos (#1901)
 			if (sign()) {
 				++_block[MSU];
 			}
@@ -1080,6 +1083,7 @@ public:
 			}
 		}
 		else {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to -minpos (#1901)
 			if (sign()) {
 				bool carry = true;
 				for (unsigned i = 0; i < MSU; ++i) {
