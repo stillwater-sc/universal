@@ -177,7 +177,7 @@ constexpr inline void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nb
 	using cfloatType = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	// test special cases
 	if (src.isnan()) {
-		tgt.setnan(src.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
+		tgt.setnan(src.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET); // a blocktriple carries the NaN type in its sign
 	}
 	else	if (src.isinf()) {
 		tgt.setinf(src.sign());
@@ -453,6 +453,11 @@ public:
 	// With max-exponent values the binade holds values, and inf is the pattern after maxpos at the top
 	// of it, 0b...11...10, below the NaN 0b...11...11 (#1780)
 	static constexpr uint64_t INF_ENCODING = (_hasMaxExpValues ? (ALL_ONES_FR & ~1ull) : 0ull);
+	// NaN typing (#1896): without max-exponent values the whole all-ones-exponent binade except inf is NaN,
+	// and the fraction MSB tells quiet (1) from signalling (0) as in IEEE-754. That needs fbits >= 2 so a
+	// signalling NaN has a nonzero payload. Otherwise (max-exponent values, or fbits == 1) there are only
+	// two NaN patterns, s.11..11.11..11, and the sign is the type: quiet = positive, signalling = negative.
+	static constexpr bool ieeeNanTyping = !_hasMaxExpValues && (fbits >= 2u);
 
 	static constexpr unsigned nrBlocks = 1u + ((nbits - 1ull) / bitsInBlock);
 	static constexpr unsigned MSU = nrBlocks - 1u; // MSU == Most Significant Unit, as MSB is already taken
@@ -487,7 +492,7 @@ public:
 	template<unsigned nnbits, unsigned ees, typename bbt, bool ssub, bool ssup, bool ssat>
 	cfloat(const cfloat<nnbits, ees, bbt, ssub, ssup, ssat>& rhs) noexcept : _block{} {
 		if (rhs.isnan()) {
-			setnan(rhs.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
+			setnan(rhs.isnan(NAN_TYPE_SIGNALLING) ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
 		}
 		else if (rhs.isinf()) {
 			setinf(rhs.sign());
@@ -707,23 +712,24 @@ public:
 			setnan(NAN_TYPE_SIGNALLING);
 			return *this;
 		}
+#endif
+		// a quiet NaN operand propagates in both modes: the significand path below has no NaN
 		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
-#endif
 		// normal + inf  = inf
 		// normal + -inf = -inf
 		// inf + normal = inf
 		// inf + inf    = inf
-		// inf + -inf    = ?
+		// inf + -inf    = qnan
 		// -inf + normal = -inf
 		// -inf + -inf   = -inf
-		// -inf + inf    = ?
+		// -inf + inf    = qnan
 		if (isinf()) {
 			if (rhs.isinf()) {
 				if (sign() != rhs.sign()) {
-					setnan(NAN_TYPE_SIGNALLING);
+					setnan(NAN_TYPE_QUIET); // an invalid operation delivers a quiet NaN (IEEE-754 7.2, #1896)
 				}
 				return *this;
 			}
@@ -793,11 +799,12 @@ public:
 			setnan(NAN_TYPE_SIGNALLING);
 			return *this;
 		}
+#endif
+		// a quiet NaN operand propagates in both modes: the significand path below has no NaN
 		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
-#endif
 		//  inf * inf = inf
 		//  inf * -inf = -inf
 		// -inf * inf = -inf
@@ -858,9 +865,14 @@ public:
 		// snan / qnan = snan
 		// snan / snan = snan
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
+		// signalling NaNs throw, quiet NaNs propagate, and only then is a zero divisor an exception
+		if (rhs.isnan(NAN_TYPE_SIGNALLING)) throw cfloat_divide_by_nan();
+		if (isnan(NAN_TYPE_SIGNALLING)) throw cfloat_operand_is_nan();
+		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+			setnan(NAN_TYPE_QUIET);
+			return *this;
+		}
 		if (rhs.iszero()) throw cfloat_divide_by_zero();
-		if (rhs.isnan()) throw cfloat_divide_by_nan();
-		if (isnan()) throw cfloat_operand_is_nan();
 #else
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
 			setnan(NAN_TYPE_SIGNALLING);
@@ -1011,9 +1023,10 @@ public:
 				}
 			}
 			else {
-				// special case: pattern: 0.11.111 = nan transitions to pattern: 1.11.111 = snan 
+				// special case: pattern 0.11.111 transitions to pattern 1.11.111, the next encoding;
+				// setsign keeps it raw, as setnan would write a canonical NaN instead (#1896)
 				if (isnanencoding()) {
-					setnan(NAN_TYPE_SIGNALLING);
+					setsign(true);
 				}
 				else {
 					if constexpr (!hasSubnormals) {
@@ -1295,10 +1308,18 @@ public:
 		}	
 	}
 	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
-		// the NaN encoding is the pattern 0b0'11...11'11...11 for a quiet Nan, and 0b1'11...11'11...111 for a signalling NaN
 		if constexpr (0 == nrBlocks) {
 			return;
 		}
+		else if constexpr (ieeeNanTyping) {
+			// IEEE-754 (#1896): exponent all ones, the fraction MSB (the quiet bit) set for a quiet NaN,
+			// clear for a signalling NaN, whose payload is then the next bit: 0b0'11...11'10...00 and
+			// 0b0'11...11'01...00, the patterns std::numeric_limits<float/double> use
+			for (unsigned i = 0; i < nrBlocks; ++i) _block[i] = ieee_inf_block(i);
+			setbit(NaNType == NAN_TYPE_SIGNALLING ? fbits - 2u : fbits - 1u, true);
+			return;
+		}
+		// the NaN encoding is the pattern 0b0'11...11'11...11 for a quiet Nan, and 0b1'11...11'11...111 for a signalling NaN
 		else if constexpr (1 == nrBlocks) {
 			// fall through
 		}
@@ -1795,11 +1816,14 @@ public:
 			if (ismaxexpvalue()) {
 				// all these max-exponent encodings are NANs, except for the encoding representing INF
 				bool isNaN = isinf() ? false : true;
-				bool isNegNaN = isNaN && sign();
-				bool isPosNaN = isNaN && !sign();
+				// the type is the quiet bit, as in IEEE-754 (#1896), or the sign when the fraction is too
+				// short to hold a quiet bit and a nonzero signalling payload
+				bool isQuiet = ieeeNanTyping ? at(fbits - 1u) : !sign();
+				bool isSigNaN = isNaN && !isQuiet;
+				bool isQuietNaN = isNaN && isQuiet;
 				return (NaNType == NAN_TYPE_EITHER ? (isNaN) :
-					(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
-						(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
+					(NaNType == NAN_TYPE_SIGNALLING ? isSigNaN :
+						(NaNType == NAN_TYPE_QUIET ? isQuietNaN : false)));
 			}
 			else {
 				return false;
@@ -2122,7 +2146,7 @@ public:
 			return sign() ? -TargetFloat(0) : TargetFloat(0);
 		}
 		else if (isnan()) {
-			v = sign() ? std::numeric_limits<TargetFloat>::signaling_NaN() : std::numeric_limits<TargetFloat>::quiet_NaN();
+			v = isnan(NAN_TYPE_SIGNALLING) ? std::numeric_limits<TargetFloat>::signaling_NaN() : std::numeric_limits<TargetFloat>::quiet_NaN();
 		}
 		else if (isinf()) {
 			v = sign() ? -std::numeric_limits<TargetFloat>::infinity() : std::numeric_limits<TargetFloat>::infinity();
@@ -2188,7 +2212,7 @@ public:
 	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const {
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
@@ -2249,7 +2273,7 @@ public:
 		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
@@ -2330,7 +2354,7 @@ public:
 						}
 					}
 					else {  // this cfloat has no max-exponent values and thus this represents a nan, signalling or quiet determined by the sign
-						tgt.setnan(tgt.sign());
+						tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 					}			
 				}
 			}
@@ -2344,7 +2368,7 @@ public:
 	constexpr void normalizeMultiplication(blocktriple<fbits, BlockTripleOperator::MUL, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
@@ -2407,7 +2431,7 @@ public:
 		constexpr unsigned divshift = blocktriple<fbits, BlockTripleOperator::DIV, bt>::divshift;
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
@@ -2710,8 +2734,8 @@ public:
 			return true;
 		}
 		constexpr uint64_t quietbit = ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask;
-		// a cfloat encodes a signalling NaN with sign = 1 and a quiet NaN with
-		// sign = 0, so the source sign is deliberately not propagated here
+		// setnan writes the canonical pattern of that type, so neither the source
+		// sign nor its payload is propagated here
 		setnan((rawFraction & quietbit) != 0ull ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING);
 		return true;
 	}
@@ -3190,23 +3214,7 @@ public:
 					}
 				}
 			}
-			// post-processing results to implement saturation and projection after rounding logic
-			if constexpr (isSaturating) {
-				if (isinf(INF_TYPE_POSITIVE) || isnan(NAN_TYPE_QUIET)) {
-					maxpos();
-				}
-				else if (isinf(INF_TYPE_NEGATIVE) || isnan(NAN_TYPE_SIGNALLING)) {
-					maxneg();
-				}
-			}
-			else {
-				if (isnan(NAN_TYPE_QUIET)) {
-					setinf(false);
-				}
-				else if (isnan(NAN_TYPE_SIGNALLING)) {
-					setinf(true);
-				}
-			}
+			post_process();
 			return *this;  // TODO: unreachable in some configurations	
 		}
 	}
@@ -3214,21 +3222,20 @@ public:
 	// post-processing results to implement saturation and projection after rounding logic
 	// arithmetic bit operations can't produce NaN encodings, so we need to re-interpret
 	// these encodings and 'project' them to the proper values.
+	// The direction of the overflow is the sign of the encoding the rounding landed on, not
+	// its NaN type: with IEEE NaN typing (#1896) the two differ.
 	void constexpr post_process() noexcept {
 		if constexpr (isSaturating) {
-			if (isinf(INF_TYPE_POSITIVE) || isnan(NAN_TYPE_QUIET)) {
+			if (isinf(INF_TYPE_POSITIVE) || (isnan() && !sign())) {
 				maxpos();
 			}
-			else if (isinf(INF_TYPE_NEGATIVE) || isnan(NAN_TYPE_SIGNALLING)) {
+			else if (isinf(INF_TYPE_NEGATIVE) || (isnan() && sign())) {
 				maxneg();
 			}
 		}
 		else {
-			if (isnan(NAN_TYPE_QUIET)) {
-				setinf(false);
-			}
-			else if (isnan(NAN_TYPE_SIGNALLING)) {
-				setinf(true);
+			if (isnan()) {
+				setinf(sign());
 			}
 		}
 	}

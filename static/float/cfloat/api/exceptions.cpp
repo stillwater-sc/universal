@@ -12,8 +12,70 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw { namespace universal {
+
+	// With exceptions enabled a signalling NaN operand throws, and a quiet NaN operand, of either
+	// sign, propagates as a quiet NaN instead of reaching the significand arithmetic (#1896)
+	template<typename Cfloat>
+	int VerifyNanOperands(bool reportTestCases, const std::string& type) {
+		int nrOfFailedTestCases = 0;
+		auto fail = [&](const std::string& what) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: " << type << ' ' << what << '\n';
+		};
+		const Cfloat x(1.5f);
+		Cfloat qnan;
+		qnan.setnan(NAN_TYPE_QUIET);
+		for (const Cfloat& q : { qnan, Cfloat(-qnan) }) {
+			if (!q.isnan(NAN_TYPE_QUIET)) continue;   // sign-typed NaNs: -qNaN is the signalling NaN
+			try {
+				if (!(q + x).isnan(NAN_TYPE_QUIET)) fail("qNaN + x is not a quiet NaN");
+				if (!(x + q).isnan(NAN_TYPE_QUIET)) fail("x + qNaN is not a quiet NaN");
+				if (!(q - x).isnan(NAN_TYPE_QUIET)) fail("qNaN - x is not a quiet NaN");
+				if (!(x - q).isnan(NAN_TYPE_QUIET)) fail("x - qNaN is not a quiet NaN");
+				if (!(q / x).isnan(NAN_TYPE_QUIET)) fail("qNaN / x is not a quiet NaN");
+				if (!(x / q).isnan(NAN_TYPE_QUIET)) fail("x / qNaN is not a quiet NaN");
+				if (!(q / Cfloat(0)).isnan(NAN_TYPE_QUIET)) fail("qNaN / 0 is not a quiet NaN");
+				if (!(q * x).isnan(NAN_TYPE_QUIET)) fail("qNaN * x is not a quiet NaN");
+				if (!(x * q).isnan(NAN_TYPE_QUIET)) fail("x * qNaN is not a quiet NaN");
+			}
+			catch (const cfloat_arithmetic_exception&) {
+				fail("a quiet NaN operand threw");
+			}
+		}
+		Cfloat snan;
+		snan.setnan(NAN_TYPE_SIGNALLING);
+		bool threw = false;
+		try { Cfloat r = snan + x; (void)r; }
+		catch (const cfloat_operand_is_nan&) { threw = true; }
+		if (!threw) fail("sNaN + x did not throw");
+		threw = false;
+		try { Cfloat r = snan - x; (void)r; }
+		catch (const cfloat_operand_is_nan&) { threw = true; }
+		if (!threw) fail("sNaN - x did not throw");
+		threw = false;
+		try { Cfloat r = x - snan; (void)r; }
+		catch (const cfloat_operand_is_nan&) { threw = true; }
+		if (!threw) fail("x - sNaN did not throw");
+		threw = false;
+		try { Cfloat r = x * snan; (void)r; }
+		catch (const cfloat_operand_is_nan&) { threw = true; }
+		if (!threw) fail("x * sNaN did not throw");
+		threw = false;
+		try { Cfloat r = x / snan; (void)r; }
+		catch (const cfloat_divide_by_nan&) { threw = true; }
+		if (!threw) fail("x / sNaN did not throw");
+		threw = false;
+		try { Cfloat r = x / Cfloat(0); (void)r; }
+		catch (const cfloat_divide_by_zero&) { threw = true; }
+		if (!threw) fail("x / 0 did not throw");
+		return nrOfFailedTestCases;
+	}
+
+} }
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -53,6 +115,8 @@ try {
 #else // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyNanOperands<half>(reportTestCases, "half"), "half", "NaN operands");
+	nrOfFailedTestCases += ReportTestResult(VerifyNanOperands<cfloat<8, 4, std::uint8_t, true, true, false>>(reportTestCases, "cfloat<8,4,sub,max>"), "cfloat<8,4,sub,max>", "NaN operands");
 #endif
 
 #if REGRESSION_LEVEL_2
