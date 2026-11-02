@@ -91,7 +91,9 @@ namespace sw { namespace universal {
 		// NaN type is the quiet bit (#1896): the native NaNs keep their type in either direction, and
 		// cfloat's own quiet NaN is the native quiet NaN pattern
 		const Bits qnan = native_bits(std::numeric_limits<Native>::quiet_NaN());
-		const Bits snan = native_bits(std::numeric_limits<Native>::signaling_NaN());
+		// the signalling pattern is built from bits: the value numeric_limits<Native>::signaling_NaN()
+		// returns differs between toolchains, and passing it through an FP register may quiet it
+		const Bits snan = Bits(pinf | Bits(Bits(qnan & ~pinf) >> 1));
 		c.setbits(qnan);
 		if (!c.isnan(NAN_TYPE_QUIET)) fail("setbits(native qNaN) is not a quiet NaN");
 		c.setbits(Bits(qnan | ninf));
