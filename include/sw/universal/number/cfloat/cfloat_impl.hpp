@@ -107,6 +107,12 @@ namespace sw { namespace universal {
  *   hasMaxExpValues  : reclaim max-exponent encodings as numeric values instead of
  *                      reserving the entire all-1s exponent binade for inf/NaN;
  *                      only 4 encodings are reserved for +-inf and quiet/signalling NaN
+ *
+ * Special encodings: inf is the encoding right after maxpos, and every NaN sits above it.
+ *   without hasMaxExpValues : IEEE-754, inf = s.11..11.00..00, NaN = s.11..11.(non-zero)
+ *   with hasMaxExpValues    : inf = s.11..11.11..10, NaN = s.11..11.11..11
+ *   with both hasMaxExpValues and isSaturating there is no inf: s.11..11.11..10 is maxpos/maxneg
+ * Quiet and signalling NaN are told apart by the sign (positive is quiet) (#1780)
  *   isSaturating     : saturate to maxneg or maxpos when value is out of dynamic range
  */
 
@@ -442,7 +448,11 @@ public:
 	static constexpr uint64_t topfbits = fbits % 64;
 	static constexpr uint64_t FR_SHIFT = (topfbits > 0 ? (64 - topfbits) : 0);
 	static constexpr uint64_t ALL_ONES_FR = (topfbits > 0 ? (0xFFFF'FFFF'FFFF'FFFFull >> FR_SHIFT) : 0ull); // special case for nbits <= 64
-	static constexpr uint64_t INF_ENCODING = (ALL_ONES_FR & ~1ull);
+	// fraction bits of +-inf. Without max-exponent values the all-ones exponent binade holds no values
+	// and inf is IEEE-754's: fraction 0, the encoding right after maxpos, every other pattern a NaN.
+	// With max-exponent values the binade holds values, and inf is the pattern after maxpos at the top
+	// of it, 0b...11...10, below the NaN 0b...11...11 (#1780)
+	static constexpr uint64_t INF_ENCODING = (_hasMaxExpValues ? (ALL_ONES_FR & ~1ull) : 0ull);
 
 	static constexpr unsigned nrBlocks = 1u + ((nbits - 1ull) / bitsInBlock);
 	static constexpr unsigned MSU = nrBlocks - 1u; // MSU == Most Significant Unit, as MSB is already taken
@@ -1200,9 +1210,23 @@ public:
 		}
 	}
 	constexpr void setzero() noexcept { clear(); }
+	// block i of the IEEE-754 +inf encoding: the exponent bits set, fraction and sign clear
+	static constexpr bt ieee_inf_block(unsigned i) noexcept {
+		bt b{ 0 };
+		for (unsigned j = 0; j < bitsInBlock; ++j) {
+			const unsigned g = i * bitsInBlock + j;
+			if (g >= fbits && g < nbits - 1) b = bt(b | bt(bt(1) << j));
+		}
+		return b;
+	}
 	constexpr void setinf(bool sign = true) noexcept {
-		// the Inf encoding is the pattern 0b0'11...11'11...10 for a +inf, and 0b1'11...11'11...110 for a -inf
-		if constexpr (isSaturating && hasMaxExpValues) {
+		// without max-exponent values inf is IEEE-754's 0b0'11...11'00...00 / 0b1'11...11'00...00 (#1780);
+		// with them it is the pattern 0b0'11...11'11...10 for a +inf, and 0b1'11...11'11...110 for a -inf
+		if constexpr (!hasMaxExpValues) {
+			for (unsigned i = 0; i < nrBlocks; ++i) _block[i] = ieee_inf_block(i);
+			if (sign) _block[MSU] |= SIGN_BIT_MASK;
+		}
+		else if constexpr (isSaturating && hasMaxExpValues) {
 			// a saturating encoding with max-exponent values has no inf: that pattern is maxpos/maxneg,
 			// and an infinity saturates to it
 			if (sign) maxneg(); else maxpos();
@@ -1474,8 +1498,8 @@ public:
 			}
 		}
 		else {
-			// the Inf encoding is the pattern 0b0'11...11'11...10 for a +inf, and 0b1'11...11'11...110 for a -inf
-			// the maxpos is the encoding before that
+			// inf is the encoding right after maxpos: 0b0'11...11'11...10 with max-exponent values,
+			// 0b0'11...11'00...00 (IEEE-754) without them (#1780)
 			if constexpr (hasMaxExpValues) {
 				// maximum positive value has this bit pattern: 0-1...1-111...101, that is, sign = 0, e = 11..11, f = 111...101
 				clear();
@@ -1712,13 +1736,21 @@ public:
 		return false;
 	}
 	constexpr bool isinf(int InfType = INF_TYPE_EITHER) const noexcept {
-		// the bit pattern encoding of Inf is independent of the max-exponent value configuration
+		// the bit pattern of inf depends on the max-exponent value configuration, see setinf()
 		bool isNegInf = false;
 		bool isPosInf = false;
 		if constexpr (0 == nrBlocks || (isSaturating && hasMaxExpValues)) {
 			// a saturating encoding with max-exponent values has no inf: the Inf pattern is maxpos/maxneg
 			(void)InfType;
 			return false;
+		}
+		else if constexpr (!hasMaxExpValues) {
+			// IEEE-754: all-ones exponent, zero fraction (#1780)
+			bool isInf = (_block[MSU] & MSU_MASK & bt(~SIGN_BIT_MASK)) == ieee_inf_block(MSU);
+			for (unsigned i = 0; isInf && i < MSU; ++i) isInf = (_block[i] == ieee_inf_block(i));
+			const bool negative = (_block[MSU] & SIGN_BIT_MASK) != 0;
+			isNegInf = isInf && negative;
+			isPosInf = isInf && !negative;
 		}
 		else if constexpr (1 == nrBlocks) {
 			isNegInf = (_block[MSU] & MSU_MASK) == (MSU_MASK ^ LSB_BIT_MASK);
@@ -2532,9 +2564,10 @@ protected:
 				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
 			}
 		}
-		// post-rounding cleanup: rounding at the maxpos boundary can
-		// produce a NaN encoding; project back to inf or maxpos
-		if (isnan()) {
+		// post-rounding cleanup: rounding at the maxpos boundary carries into the all-ones
+		// exponent, which is inf without max-exponent values and a NaN past them (#1780);
+		// project back to inf or maxpos
+		if (isnan() || isinf()) {
 			if constexpr (isSaturating) {
 				this->maxpos();
 			}
@@ -2596,9 +2629,10 @@ protected:
 				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
 			}
 		}
-		// post-rounding cleanup: rounding at the maxpos boundary can
-		// produce a NaN encoding; project back to inf or maxpos/maxneg
-		if (isnan()) {
+		// post-rounding cleanup: rounding at the maxpos boundary carries into the all-ones
+		// exponent, which is inf without max-exponent values and a NaN past them (#1780);
+		// project back to inf or maxpos/maxneg
+		if (isnan() || isinf()) {
 			if constexpr (isSaturating) {
 				if (s) this->maxneg(); else this->maxpos();
 			}
