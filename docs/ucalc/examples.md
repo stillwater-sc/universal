@@ -270,7 +270,7 @@ This reveals how bit-width translates to decimal accuracy:
 
 ```text
 fp8e4m3> precision
-  type:           fp8e4m3 (OFP 8-bit e4m3)
+  type:           fp8e4m3 (8-bit e4m3, max-exponent values)
   binary digits:  3
   decimal digits: 0.9
   epsilon:        1.25e-01

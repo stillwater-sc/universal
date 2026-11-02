@@ -52,15 +52,31 @@ So `half`, `single`, `duble`, `quad` and the other configurations without max-ex
 ### Standard IEEE-754 Aliases
 
 ```cpp
-using fp8e2m5   = cfloat<8, 2, uint8_t, true, false, false>;     // quarter precision
-using fp8e3m4   = cfloat<8, 3, uint8_t, true, false, false>;     // ML training
-using fp8e4m3   = cfloat<8, 4, uint8_t, true, false, false>;     // NVIDIA FP8
-using fp8e5m2   = cfloat<8, 5, uint8_t, true, false, false>;     // NVIDIA FP8
+using quarter   = cfloat<8, 2, uint8_t, true, false, false>;     // 8-bit, IEEE-754 style
 using half      = cfloat<16, 5, uint16_t, true, false, false>;   // IEEE-754 binary16
 using single    = cfloat<32, 8, uint32_t, true, false, false>;   // IEEE-754 binary32
-using duble     = cfloat<64, 11, uint32_t, true, false, false>;  // IEEE-754 binary64
-using quad      = cfloat<128, 15, uint32_t, true, false, false>; // IEEE-754 binary128
+using duble     = cfloat<64, 11, uint64_t, true, false, false>;  // IEEE-754 binary64
+using quad      = cfloat<128, 15, uint64_t, true, false, false>; // IEEE-754 binary128
+using octo      = cfloat<256, 19, uint64_t, true, false, false>; // IEEE-754 binary256
 ```
+
+### FP8 Aliases
+
+```cpp
+using fp8e2m5   = cfloat<8, 2, uint8_t, true, true, false>;
+using fp8e3m4   = cfloat<8, 3, uint8_t, true, true, false>;
+using fp8e4m3   = cfloat<8, 4, uint8_t, true, true, false>;
+using fp8e5m2   = cfloat<8, 5, uint8_t, true, true, false>;
+```
+
+These enable subnormals and max-exponent values, to get the most numbers out of 256 encodings. They are **not** the OCP OFP8 formats (#1903): the all-1s exponent binade holds numbers, so maxpos is larger and inf and NaN sit elsewhere.
+
+| alias | maxpos | +inf | OCP format | OCP maxpos | OCP +inf |
+|---|---|---|---|---|---|
+| `fp8e4m3` | 416 (`0x7D`) | `0x7E` | E4M3 (`e4m3fn`) | 448 (`0x7E`) | none, overflow is NaN |
+| `fp8e5m2` | 81920 (`0x7D`) | `0x7E` | E5M2 | 57344 (`0x7B`) | `0x7C` |
+
+For the OCP formats use `microfloat`'s `e4m3` and `e5m2`. `cfloat<8, 5, uint8_t, true, false, false>` is also bit-identical to OCP E5M2. No cfloat configuration matches E4M3FN.
 
 ### Deep Learning Format Aliases
 

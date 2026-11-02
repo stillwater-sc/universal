@@ -333,16 +333,16 @@ inline std::string type_tag([[maybe_unused]] CfloatType v = {}) {
 		s << "fp8 (IEEE-754 quarter)";
 	}
 	else if constexpr (nbits == 8 && es == 2 && hasSubnormals && hasMaxExpValues && !isSaturating) {
-		s << "fp8e2m5 (DL 8-bit e2m5)";
+		s << "fp8e2m5 (8-bit e2m5, max-exponent values)";
 	}
 	else if constexpr (nbits == 8 && es == 3 && hasSubnormals && hasMaxExpValues && !isSaturating) {
-		s << "fp8e3m4 (DL 8-bit e3m4)";
+		s << "fp8e3m4 (8-bit e3m4, max-exponent values)";
 	}
 	else if constexpr (nbits == 8 && es == 4 && hasSubnormals && hasMaxExpValues && !isSaturating) {
-		s << "fp8e4m3 (OFP 8-bit e4m3)";
+		s << "fp8e4m3 (8-bit e4m3, max-exponent values)";
 	}
 	else if constexpr (nbits == 8 && es == 5 && hasSubnormals && hasMaxExpValues && !isSaturating) {
-		s << "fp8e5m2 (OFP 8-bit e5m2)";
+		s << "fp8e5m2 (8-bit e5m2, max-exponent values)";
 	}
 	else {
 		s << "cfloat<"
