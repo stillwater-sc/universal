@@ -20,7 +20,8 @@ namespace sw { namespace universal {
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> trunc(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
 	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
-	if (x.isnan() || x.isinf() || x.iszero()) return x;
+	if (x.isnan()) return x.quieted();
+	if (x.isinf() || x.iszero()) return x;
 	// subnormals have magnitude < 1 (the smallest normal is well below 1 for any
 	// es), so truncation toward zero yields signed zero.
 	if (!x.isnormal()) {
@@ -46,7 +47,8 @@ cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> trunc(cfloat
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> floor(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
 	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
-	if (x.isnan() || x.isinf()) return x;
+	if (x.isnan()) return x.quieted();
+	if (x.isinf()) return x;
 	Cfloat t = trunc(x);
 	// negative, non-integral -> the largest integer <= x is one below trunc
 	if (x.sign() && t != x) t = t - Cfloat(1);
@@ -57,7 +59,8 @@ cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> floor(cfloat
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ceil(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
 	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
-	if (x.isnan() || x.isinf()) return x;
+	if (x.isnan()) return x.quieted();
+	if (x.isinf()) return x;
 	Cfloat t = trunc(x);
 	// positive, non-integral -> the smallest integer >= x is one above trunc
 	if (!x.sign() && t != x) t = t + Cfloat(1);
@@ -68,7 +71,8 @@ cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ceil(cfloat<
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> round(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
 	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
-	if (x.isnan() || x.isinf() || x.iszero()) return x;
+	if (x.isnan()) return x.quieted();
+	if (x.isinf() || x.iszero()) return x;
 	Cfloat t = trunc(x);
 	if (t == x) return x;                        // already integral
 	// Decide whether to round away from zero WITHOUT constructing 0.5 -- some

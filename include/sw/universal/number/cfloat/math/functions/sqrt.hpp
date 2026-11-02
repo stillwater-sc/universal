@@ -148,7 +148,7 @@ namespace sw { namespace universal {
 		// sent -0 down the negative branch; IEEE 754 requires sqrt(-0) to be -0. NaN and zero
 		// are therefore settled before the sign test, and -inf is left to it because
 		// sqrt(-inf) IS NaN (#1589).
-		if (a.isnan())  return a;                     // sqrt(nan) is nan
+		if (a.isnan())  return a.quieted();           // sqrt(nan) is a quiet nan (IEEE-754 6.2)
 		if (a.iszero()) return a;                     // sqrt(+-0) is +-0, sign preserved
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw cfloat_negative_sqrt_arg();

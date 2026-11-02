@@ -707,14 +707,10 @@ public:
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
 			throw cfloat_operand_is_nan{};
 		}
-#else
-		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
-			setnan(NAN_TYPE_SIGNALLING);
-			return *this;
-		}
 #endif
-		// a quiet NaN operand propagates in both modes: the significand path below has no NaN
-		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+		// a NaN operand delivers a quiet NaN: a signalling one is an invalid operation (IEEE-754 6.2,
+		// #1899) that throws above when exceptions are on; the significand path below has no NaN
+		if (isnan() || rhs.isnan()) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
@@ -794,14 +790,10 @@ public:
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
 			throw cfloat_operand_is_nan{};
 		}
-#else
-		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
-			setnan(NAN_TYPE_SIGNALLING);
-			return *this;
-		}
 #endif
-		// a quiet NaN operand propagates in both modes: the significand path below has no NaN
-		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+		// a NaN operand delivers a quiet NaN: a signalling one is an invalid operation (IEEE-754 6.2,
+		// #1899) that throws above when exceptions are on; the significand path below has no NaN
+		if (isnan() || rhs.isnan()) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
@@ -860,10 +852,7 @@ public:
 		if constexpr (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 #endif
 		// special case handling of the inputs
-		// qnan / qnan = qnan
-		// qnan / snan = qnan
-		// snan / qnan = snan
-		// snan / snan = snan
+		// any NaN operand, quiet or signalling, delivers a quiet NaN (IEEE-754 6.2, #1899)
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		// signalling NaNs throw, quiet NaNs propagate, and only then is a zero divisor an exception
 		if (rhs.isnan(NAN_TYPE_SIGNALLING)) throw cfloat_divide_by_nan();
@@ -874,11 +863,8 @@ public:
 		}
 		if (rhs.iszero()) throw cfloat_divide_by_zero();
 #else
-		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
-			setnan(NAN_TYPE_SIGNALLING);
-			return *this;
-		}
-		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+		// a NaN operand delivers a quiet NaN, a signalling one included (IEEE-754 6.2, #1899)
+		if (isnan() || rhs.isnan()) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
@@ -1371,6 +1357,14 @@ public:
 			}
 		}
 		_block[MSU] = NaNType == NAN_TYPE_SIGNALLING ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
+	}
+	// the value an operation delivers for this operand: a signalling NaN becomes the canonical quiet
+	// NaN (IEEE-754 6.2, #1899), and everything else, a quiet NaN's sign and payload included, is kept
+	constexpr cfloat quieted() const noexcept {
+		if (!isnan(NAN_TYPE_SIGNALLING)) return *this;
+		cfloat q{};
+		q.setnan(NAN_TYPE_QUIET);
+		return q;
 	}
 	constexpr void setsign(bool sign = true) {
 		if (sign) {
@@ -4108,7 +4102,7 @@ template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasM
 constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> frexp(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& x, int* exp) {
 	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	// std::frexp special cases: +-0, inf, and nan are returned unchanged with *exp = 0.
-	if (x.iszero() || x.isinf() || x.isnan()) { *exp = 0; return x; }
+	if (x.iszero() || x.isinf() || x.isnan()) { *exp = 0; return x.quieted(); }
 	// Place the fraction at scale -1 so |fraction| lands in [0.5, 1) (std::frexp).
 	// A few extreme low-range configs (es <= 2, where the minimum normal exponent
 	// is >= 0) cannot represent any value below 1.0 as a normal, so [0.5,1) is not
@@ -4129,7 +4123,8 @@ constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturat
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ldexp(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& x, int exp) {
 	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
-	if (x.isnan() || x.isinf() || x.iszero()) return x;
+	if (x.isnan()) return x.quieted();
+	if (x.isinf() || x.iszero()) return x;
 
 	// Fast path: a normal value that stays strictly inside the normal range only needs
 	// its exponent field rewritten, which is exact. This is what ldexp used to do in
