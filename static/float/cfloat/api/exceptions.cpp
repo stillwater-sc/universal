@@ -32,6 +32,10 @@ namespace sw { namespace universal {
 				if (!(q + x).isnan(NAN_TYPE_QUIET)) fail("qNaN + x is not a quiet NaN");
 				if (!(x + q).isnan(NAN_TYPE_QUIET)) fail("x + qNaN is not a quiet NaN");
 				if (!(q - x).isnan(NAN_TYPE_QUIET)) fail("qNaN - x is not a quiet NaN");
+				if (!(x - q).isnan(NAN_TYPE_QUIET)) fail("x - qNaN is not a quiet NaN");
+				if (!(q / x).isnan(NAN_TYPE_QUIET)) fail("qNaN / x is not a quiet NaN");
+				if (!(x / q).isnan(NAN_TYPE_QUIET)) fail("x / qNaN is not a quiet NaN");
+				if (!(q / Cfloat(0)).isnan(NAN_TYPE_QUIET)) fail("qNaN / 0 is not a quiet NaN");
 				if (!(q * x).isnan(NAN_TYPE_QUIET)) fail("qNaN * x is not a quiet NaN");
 				if (!(x * q).isnan(NAN_TYPE_QUIET)) fail("x * qNaN is not a quiet NaN");
 			}
@@ -49,6 +53,14 @@ namespace sw { namespace universal {
 		try { Cfloat r = x * snan; (void)r; }
 		catch (const cfloat_operand_is_nan&) { threw = true; }
 		if (!threw) fail("x * sNaN did not throw");
+		threw = false;
+		try { Cfloat r = x / snan; (void)r; }
+		catch (const cfloat_divide_by_nan&) { threw = true; }
+		if (!threw) fail("x / sNaN did not throw");
+		threw = false;
+		try { Cfloat r = x / Cfloat(0); (void)r; }
+		catch (const cfloat_divide_by_zero&) { threw = true; }
+		if (!threw) fail("x / 0 did not throw");
 		return nrOfFailedTestCases;
 	}
 

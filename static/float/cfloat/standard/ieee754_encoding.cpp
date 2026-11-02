@@ -237,6 +237,20 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
+	// ++ walks the raw encodings: the largest positive NaN steps to the all-ones pattern, not to a canonical NaN
+	template<typename Cfloat>
+	int VerifyIncrementPastNaN(bool reportTestCases, const std::string& type) {
+		int nrOfFailedTestCases = 0;
+		Cfloat c;
+		c.setbits(0x7FFFu);
+		++c;
+		if (raw_bits(c) != 0xFFFFu) {
+			if (reportTestCases) std::cerr << "FAIL: " << type << " ++0x7FFF is " << to_binary(c) << ", not 0xFFFF\n";
+			++nrOfFailedTestCases;
+		}
+		return nrOfFailedTestCases;
+	}
+
 } }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -281,6 +295,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBfloatShapeExhaustive(reportTestCases), "cfloat<16,8,uint8_t>", "vs bfloat16");
 	nrOfFailedTestCases += ReportTestResult(VerifyQuadSpecials(reportTestCases), "quad", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMaxExpValueLayouts(reportTestCases), "cfloat<8,4>", "max-exponent layouts");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrementPastNaN<half>(reportTestCases, "half"), "half", "++ past NaN");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrementPastNaN<cfloat<16, 5, std::uint8_t, true, false, false>>(reportTestCases, "cfloat<16,5,uint8_t>"), "cfloat<16,5,uint8_t>", "++ past NaN");
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -865,9 +865,14 @@ public:
 		// snan / qnan = snan
 		// snan / snan = snan
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
+		// signalling NaNs throw, quiet NaNs propagate, and only then is a zero divisor an exception
+		if (rhs.isnan(NAN_TYPE_SIGNALLING)) throw cfloat_divide_by_nan();
+		if (isnan(NAN_TYPE_SIGNALLING)) throw cfloat_operand_is_nan();
+		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+			setnan(NAN_TYPE_QUIET);
+			return *this;
+		}
 		if (rhs.iszero()) throw cfloat_divide_by_zero();
-		if (rhs.isnan()) throw cfloat_divide_by_nan();
-		if (isnan()) throw cfloat_operand_is_nan();
 #else
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
 			setnan(NAN_TYPE_SIGNALLING);
@@ -1018,9 +1023,10 @@ public:
 				}
 			}
 			else {
-				// special case: pattern: 0.11.111 = nan transitions to pattern: 1.11.111 = snan 
+				// special case: pattern 0.11.111 transitions to pattern 1.11.111, the next encoding;
+				// setsign keeps it raw, as setnan would write a canonical NaN instead (#1896)
 				if (isnanencoding()) {
-					setnan(NAN_TYPE_SIGNALLING);
+					setsign(true);
 				}
 				else {
 					if constexpr (!hasSubnormals) {
@@ -2206,7 +2212,7 @@ public:
 	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const {
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
@@ -2267,7 +2273,7 @@ public:
 		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
@@ -2362,7 +2368,7 @@ public:
 	constexpr void normalizeMultiplication(blocktriple<fbits, BlockTripleOperator::MUL, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
@@ -2425,7 +2431,7 @@ public:
 		constexpr unsigned divshift = blocktriple<fbits, BlockTripleOperator::DIV, bt>::divshift;
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
