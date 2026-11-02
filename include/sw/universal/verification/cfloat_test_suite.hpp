@@ -1333,8 +1333,8 @@ namespace sw { namespace universal {
 				else if (a.isinf() || b.isinf()) {
 					// a      b  =  ref
 					// +inf +inf = +inf
-					// +inf -inf = snan
-					// -inf +inf = snan
+					// +inf -inf = qnan
+					// -inf +inf = qnan
 					// -inf -inf = -inf
 					if (a.isinf()) {
 						if (b.isinf()) {
@@ -1342,7 +1342,7 @@ namespace sw { namespace universal {
 								cref.setinf(a.sign());
 							}
 							else {
-								cref.setnan(NAN_TYPE_SIGNALLING);
+								cref.setnan(NAN_TYPE_QUIET); // invalid operation (#1896)
 							}
 						}
 						else {
@@ -1479,17 +1479,17 @@ namespace sw { namespace universal {
 				}
 				else if (a.isinf() || b.isinf()) {
 					// a      b  =  ref
-					// +inf +inf = snan
+					// +inf +inf = qnan
 					// +inf -inf = +inf
 					// -inf +inf = -inf
-					// -inf -inf = snan
+					// -inf -inf = qnan
 					if (a.isinf()) {
 						if (b.isinf()) {
 							if (a.sign() != b.sign()) {
 								cref.setinf(a.sign());
 							}
 							else {
-								cref.setnan(NAN_TYPE_SIGNALLING);
+								cref.setnan(NAN_TYPE_QUIET); // invalid operation (#1896)
 							}
 						}
 						else {

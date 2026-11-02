@@ -33,17 +33,18 @@ Standard sign-exponent-fraction layout:
 - NaN: exponent all-1s, fraction non-zero (when `hasMaxExpValues` is false), as in IEEE-754
 - When `hasMaxExpValues`: the all-1s exponent binade encodes numeric values; only 4 encodings are reserved: +-inf is `s.11...11.11...10` and NaN is `s.11...11.11...11`
 - When `isSaturating`: overflow produces maxpos/maxneg instead of infinity. With `hasMaxExpValues` as well there is no infinity at all: `s.11...11.11...10` is maxpos/maxneg (the OCP E4M3FN layout)
-- Quiet and signalling NaN are told apart by the sign bit (positive is quiet), not by IEEE-754's quiet bit
+- Quiet and signalling NaN: without `hasMaxExpValues` the fraction MSB is the quiet bit, as in IEEE-754 (#1896): set is quiet, clear is signalling, whatever the sign. `setnan` writes `0.11...11.10...00` (quiet) and `0.11...11.01...00` (signalling). With `hasMaxExpValues`, and in the corner case of a one-bit fraction, there are only two NaN patterns and the sign is the type: `0.11...11.11...11` is quiet, `1.11...11.11...11` is signalling
+- Invalid operations (`inf - inf`, `0 * inf`, `0 / 0`, `sqrt(-x)`) deliver a quiet NaN
 
 One rule covers every configuration: infinity is the encoding right after maxpos, and every NaN sits above it. Subnormals do not affect the all-1s exponent binade, so the eight configurations have three layouts there. For `cfloat<8,4>`, positive half of the all-1s exponent binade:
 
 | configuration | `0x78` .. `0x7D` | `0x7E` | `0x7F` | maxpos |
 |---|---|---|---|---|
-| `hasMaxExpValues` false (`0x78` = inf) | inf, then NaN | NaN | NaN (quiet) | `0x77` = 240 |
+| `hasMaxExpValues` false | `0x78` inf, `0x79`..`0x7B` sNaN, `0x7C`..`0x7D` qNaN | qNaN | qNaN | `0x77` = 240 |
 | `hasMaxExpValues` | 256 .. 416 | inf | NaN (quiet) | `0x7D` = 416 |
 | `hasMaxExpValues`, `isSaturating` | 256 .. 416 | 448 | NaN (quiet) | `0x7E` = 448 |
 
-So `half`, `single`, `duble`, `quad` and the other configurations without max-exponent values are bit-compatible with IEEE-754 for values and infinities, and classify every IEEE-754 NaN pattern as NaN (#1780). NaN type and payload are not bit-compatible: cfloat tells quiet from signalling NaN by the sign bit, not by IEEE-754's quiet bit, so a negative IEEE quiet NaN reads as signalling, and converting a native NaN writes a fixed NaN pattern without its payload.
+So `half`, `single`, `duble`, `quad` and the other configurations without max-exponent values are bit-compatible with IEEE-754 for values and infinities (#1780), and classify every IEEE-754 NaN pattern as NaN of the same type, quiet or signalling (#1896). The NaN payload and sign are not carried: converting a native NaN, or setting one with `setnan`, writes the canonical pattern of its type. A cfloat quiet NaN is the native `quiet_NaN()` pattern.
 
 ### Standard IEEE-754 Aliases
 
