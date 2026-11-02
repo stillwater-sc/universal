@@ -41,7 +41,7 @@ quire_mul(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturati
 
 	if (lhs.iszero() || rhs.iszero()) return product;  // product is zero
 	if (lhs.isinf() || lhs.isnan() || rhs.isinf() || rhs.isnan()) {
-		product.setnan();
+		product.setnan(false);   // a quiet NaN: the blocktriple carries the type in its sign
 		return product;
 	}
 
@@ -74,7 +74,7 @@ quire_resolve(const quire<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, 
 	constexpr int bt_radix = BT::radix;  // = 2*fbits
 
 	Scalar result;
-	if (q.isnan()) { result.setnan(); return result; }  // NaR propagated through the accumulator (#1226)
+	if (q.isnan()) { result.setnan(NAN_TYPE_QUIET); return result; }  // NaR propagated through the accumulator (#1226)
 	if (q.iszero()) {
 		result.setzero();
 		return result;

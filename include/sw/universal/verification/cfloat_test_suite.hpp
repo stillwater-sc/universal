@@ -1316,19 +1316,8 @@ namespace sw { namespace universal {
 					// if both are nan then signalling nan wins
 					// a        b   =   ref
 					// qnan    qnan = qnan
-					// qnan     #   = qnan
-					// #       qnan = qnan
-					// snan     #   = snan
-					// #       snan = snan
-					// snan    snan = snan
-					// snan    qnan = snan
-					// qnan    snan = snan
-					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
-						cref.setnan(NAN_TYPE_SIGNALLING);
-					}
-					else {
-						cref.setnan(NAN_TYPE_QUIET);
-					}
+					// any NaN operand, quiet or signalling, delivers a quiet NaN (IEEE-754 6.2, #1899)
+					cref.setnan(NAN_TYPE_QUIET);
 				}
 				else if (a.isinf() || b.isinf()) {
 					// a      b  =  ref
@@ -1463,19 +1452,8 @@ namespace sw { namespace universal {
 					// if both are nan then signalling nan wins
 					// a        b   =   ref
 					// qnan    qnan = qnan
-					// qnan     #   = qnan
-					// #       qnan = qnan
-					// snan     #   = snan
-					// #       snan = snan
-					// snan    snan = snan
-					// snan    qnan = snan
-					// qnan    snan = snan
-					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
-						cref.setnan(NAN_TYPE_SIGNALLING);
-					}
-					else {
-						cref.setnan(NAN_TYPE_QUIET);
-					}
+					// any NaN operand, quiet or signalling, delivers a quiet NaN (IEEE-754 6.2, #1899)
+					cref.setnan(NAN_TYPE_QUIET);
 				}
 				else if (a.isinf() || b.isinf()) {
 					// a      b  =  ref
@@ -1606,13 +1584,8 @@ namespace sw { namespace universal {
 #else
 				nut = a * b;
 				if (a.isnan() || b.isnan()) {
-					// nan-type propagates
-					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
-						cref.setnan(NAN_TYPE_SIGNALLING);
-					}
-					else {
-						cref.setnan(NAN_TYPE_QUIET);
-					}
+					// a NaN operand delivers a quiet NaN (IEEE-754 6.2, #1899)
+					cref.setnan(NAN_TYPE_QUIET);
 				}
 				else if (a.isinf() || b.isinf()) {
 					// a      b  =  ref
@@ -1753,13 +1726,8 @@ namespace sw { namespace universal {
 				nut = a / b;
 				bool resultSign = a.sign() != b.sign();
 				if (a.isnan() || b.isnan()) {
-					// nan-type propagates
-					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
-						cref.setnan(NAN_TYPE_SIGNALLING);
-					}
-					else {
-						cref.setnan(NAN_TYPE_QUIET);
-					}
+					// a NaN operand delivers a quiet NaN (IEEE-754 6.2, #1899)
+					cref.setnan(NAN_TYPE_QUIET);
 				}
 				else if (a.isinf() || b.isinf()) {
 					//     a /   b  =  ref
