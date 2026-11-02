@@ -138,6 +138,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNextafterSpecialCases< cfloat< 16, 5, std::uint8_t , false, false, false> >(reportTestCases), "cfloat< 16, 5, uint8_t, nosub>", "special cases");
 	nrOfFailedTestCases += ReportTestResult(VerifyNextafterSpecialCases< single >(reportTestCases), "single", "special cases");
 	nrOfFailedTestCases += ReportTestResult(VerifyNextafterSpecialCases< quad >(reportTestCases), "quad", "special cases");
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafterSpecialCases< cfloat< 80,11, std::uint8_t , false, false, false> >(reportTestCases), "cfloat< 80,11, uint8_t, nosub>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafterSpecialCases< cfloat<128,15, std::uint8_t , false, false, false> >(reportTestCases), "cfloat<128,15, uint8_t, nosub>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafterSpecialCases< cfloat<128,15, std::uint64_t, false, false, false> >(reportTestCases), "cfloat<128,15, uint64_t, nosub>", "special cases");
 #endif
 
 #if REGRESSION_LEVEL_2
