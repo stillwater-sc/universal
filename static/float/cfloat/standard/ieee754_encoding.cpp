@@ -13,7 +13,7 @@
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <cstdint>
-#include <cstring>
+#include <bit>
 #include <limits>
 #include <string>
 #include <universal/number/cfloat/cfloat.hpp>
@@ -63,7 +63,7 @@ namespace sw { namespace universal {
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cerr << "FAIL: " << type << ' ' << what << '\n';
 		};
-		auto native_bits = [](Native v) { Bits b{}; std::memcpy(&b, &v, sizeof(Bits)); return b; };
+		auto native_bits = [](Native v) { return std::bit_cast<Bits>(v); };
 		const Native inf = std::numeric_limits<Native>::infinity();
 		const Bits pinf = native_bits(inf), ninf = native_bits(-inf);
 		if (Bits(raw_bits(Cfloat(inf))) != pinf) fail("Cfloat(+inf) is not the native +inf pattern");

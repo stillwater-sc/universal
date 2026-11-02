@@ -43,7 +43,7 @@ One rule covers every configuration: infinity is the encoding right after maxpos
 | `hasMaxExpValues` | 256 .. 416 | inf | NaN (quiet) | `0x7D` = 416 |
 | `hasMaxExpValues`, `isSaturating` | 256 .. 416 | 448 | NaN (quiet) | `0x7E` = 448 |
 
-So `half`, `single`, `duble`, `quad` and the other configurations without max-exponent values are bit-compatible with IEEE-754 for values, infinities and NaNs (#1780).
+So `half`, `single`, `duble`, `quad` and the other configurations without max-exponent values are bit-compatible with IEEE-754 for values and infinities, and classify every IEEE-754 NaN pattern as NaN (#1780). NaN type and payload are not bit-compatible: cfloat tells quiet from signalling NaN by the sign bit, not by IEEE-754's quiet bit, so a negative IEEE quiet NaN reads as signalling, and converting a native NaN writes a fixed NaN pattern without its payload.
 
 ### Standard IEEE-754 Aliases
 
