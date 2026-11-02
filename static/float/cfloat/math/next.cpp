@@ -79,6 +79,16 @@ int VerifyNextafterSpecialCases(bool reportTestCases) {
 	Wide wnan; wnan.setnan(NAN_TYPE_QUIET);
 	r = nexttoward(one, wnan);      check(isquiet(r), "nexttoward(1, qNaN)", r);
 	r = nexttoward(snan, Wide(1));  check(isquiet(r), "nexttoward(sNaN, 1)", r);
+
+	// an x wider than the cfloat<128,15> target: 1 + 2 ulp(x) rounds to 1 in 128 bits, so a
+	// compare in 128 bits would call it equal to the target 1 and return 1 instead of stepping
+	if constexpr (Cfloat::fbits > Wide::fbits) {
+		Cfloat up1(one), up2(one);
+		++up1;
+		++up2; ++up2;
+		r = nexttoward(up2, Wide(1)); check(r == up1, "nexttoward(1 + 2ulp, 1) for wide x", r);
+		r = nexttoward(up1, Wide(2)); check(r == up2, "nexttoward(1 + ulp, 2) for wide x", r);
+	}
 	return nrOfFailedTests;
 }
 
@@ -141,6 +151,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNextafterSpecialCases< cfloat< 80,11, std::uint8_t , false, false, false> >(reportTestCases), "cfloat< 80,11, uint8_t, nosub>", "special cases");
 	nrOfFailedTestCases += ReportTestResult(VerifyNextafterSpecialCases< cfloat<128,15, std::uint8_t , false, false, false> >(reportTestCases), "cfloat<128,15, uint8_t, nosub>", "special cases");
 	nrOfFailedTestCases += ReportTestResult(VerifyNextafterSpecialCases< cfloat<128,15, std::uint64_t, false, false, false> >(reportTestCases), "cfloat<128,15, uint64_t, nosub>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafterSpecialCases< cfloat<256,19, std::uint64_t, true, false, false> >(reportTestCases), "cfloat<256,19>", "special cases");
 #endif
 
 #if REGRESSION_LEVEL_2

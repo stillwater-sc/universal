@@ -43,22 +43,26 @@ cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> nextafter(cfl
 	return next;
 }
 
-// nexttoward steps x by one ulp of x's own type; the target is only compared, in 128-bit
-// precision (#1901: it used to step a 128-bit copy of x and round back, which never moved a
-// narrower x). An x wider than cfloat<128,15> is rounded for that comparison.
+// nexttoward steps x by one ulp of x's own type; the target only sets the direction (#1901: it
+// used to step a 128-bit copy of x and round back, which never moved a narrower x). x and the
+// target are compared in a format that holds both exactly: cfloat<128,15> for any x up to that
+// size, wider in exponent and/or fraction for a wider x.
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> nexttoward(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<128, 15, bt, hasSubnormals, hasMaxExpValues, isSaturating> target) {
 	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	using Wide   = cfloat<128, 15, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
+	constexpr unsigned cmpEs    = (es > Wide::es ? es : Wide::es);
+	constexpr unsigned cmpFbits = (Cfloat::fbits > Wide::fbits ? Cfloat::fbits : Wide::fbits);
+	using Compare = cfloat<1u + cmpEs + cmpFbits, cmpEs, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	if (x.isnan() || target.isnan()) { // a NaN operand gives a quiet NaN
 		Cfloat qnan;
 		qnan.setnan(NAN_TYPE_QUIET);
 		return qnan;
 	}
-	Wide wx(x);
-	if (wx == target) return Cfloat(target);
+	Compare cx(x), ct(target);  // both exact
+	if (cx == ct) return Cfloat(target);
 	Cfloat next(x);
-	if (wx > target) --next; else ++next;
+	if (cx > ct) --next; else ++next;
 	if (next.isinf() && !x.isinf()) errno = ERANGE;  // overflow range error
 	return next;
 }
