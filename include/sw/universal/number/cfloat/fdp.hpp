@@ -39,11 +39,12 @@ quire_mul(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturati
 	constexpr unsigned fbits = nbits - 1u - es;
 	blocktriple<fbits, BlockTripleOperator::MUL, bt> a, b, product;
 
-	if (lhs.iszero() || rhs.iszero()) return product;  // product is zero
+	// specials first: a NaN times zero, and inf times zero, are NaN, not a zero product
 	if (lhs.isinf() || lhs.isnan() || rhs.isinf() || rhs.isnan()) {
 		product.setnan(false);   // a quiet NaN: the blocktriple carries the type in its sign
 		return product;
 	}
+	if (lhs.iszero() || rhs.iszero()) return product;  // product is zero
 
 	lhs.normalizeMultiplication(a);
 	rhs.normalizeMultiplication(b);

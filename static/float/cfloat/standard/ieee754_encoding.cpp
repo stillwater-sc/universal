@@ -20,6 +20,7 @@
 #include <limits>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/bfloat16/bfloat16.hpp>
@@ -303,17 +304,8 @@ namespace sw { namespace universal {
 		Cfloat acc(s);
 		acc += x;
 		if (!quiet(acc)) fail("sNaN += x is not a quiet NaN");
-		if (!quiet(sqrt(s))) fail("sqrt(sNaN) is not a quiet NaN");
-		if (!quiet(exp(s)) || !quiet(exp2(s))) fail("exp(sNaN) is not a quiet NaN");
-		if (!quiet(trunc(s)) || !quiet(floor(s)) || !quiet(ceil(s)) || !quiet(round(s))) fail("trunc/floor/ceil/round(sNaN) is not a quiet NaN");
-		if (!quiet(ldexp(s, 3))) fail("ldexp(sNaN) is not a quiet NaN");
-		int e = 7;
-		if (!quiet(frexp(s, &e)) || e != 0) fail("frexp(sNaN) is not a quiet NaN with exponent 0");
-		// the fused dot product: a NaN element makes the quire NaR, which resolves to a quiet NaN
-		const std::vector<Cfloat> vx{ x, s }, vy{ x, x };
-		if (!quiet(fdp(vx, vy))) fail("fdp with a sNaN element is not a quiet NaN");
 		// a quiet NaN goes through unchanged
-		if (!quiet(sqrt(q)) || !quiet(q + x)) fail("a quiet NaN operand does not deliver a quiet NaN");
+		if (!quiet(q + x)) fail("a quiet NaN operand does not deliver a quiet NaN");
 		// conversions keep the type (#1899 decision): to the other typing and back
 		using Other = typename std::conditional<(Cfloat::nbits == 16), cfloat<8, 4, std::uint8_t, true, true, false>, half>::type;
 		if (!Cfloat(Other(s)).isnan(NAN_TYPE_SIGNALLING)) fail("a conversion round trip does not keep the sNaN");
@@ -321,6 +313,37 @@ namespace sw { namespace universal {
 			if (!(-s).isnan(NAN_TYPE_SIGNALLING)) fail("-sNaN is not a signalling NaN");
 			if (!abs(s).isnan(NAN_TYPE_SIGNALLING) || !abs(-s).isnan(NAN_TYPE_SIGNALLING)) fail("abs(sNaN) is not a signalling NaN");
 		}
+		return nrOfFailedTestCases;
+	}
+
+	// the math functions and the fused dot product deliver a quiet NaN for a signalling NaN argument (#1899)
+	template<typename Cfloat>
+	int VerifySignallingNanFunctions(bool reportTestCases, const std::string& type) {
+		int nrOfFailedTestCases = 0;
+		auto fail = [&](const std::string& what) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: " << type << ' ' << what << '\n';
+		};
+		Cfloat s, q;
+		s.setnan(NAN_TYPE_SIGNALLING);
+		q.setnan(NAN_TYPE_QUIET);
+		const Cfloat x(1.5f);
+		auto quiet = [](const Cfloat& v) { return v.isnan(NAN_TYPE_QUIET); };
+		if (!quiet(sqrt(s))) fail("sqrt(sNaN) is not a quiet NaN");
+		if (!quiet(exp(s)) || !quiet(exp2(s))) fail("exp(sNaN) is not a quiet NaN");
+		if (!quiet(trunc(s)) || !quiet(floor(s)) || !quiet(ceil(s)) || !quiet(round(s))) fail("trunc/floor/ceil/round(sNaN) is not a quiet NaN");
+		if (!quiet(ldexp(s, 3))) fail("ldexp(sNaN) is not a quiet NaN");
+		int e = 7;
+		if (!quiet(frexp(s, &e)) || e != 0) fail("frexp(sNaN) is not a quiet NaN with exponent 0");
+		// the fused dot product: a NaN element makes the quire NaR, which resolves to a quiet NaN
+		const Cfloat zero(0);
+		for (const auto& [vx, vy] : { std::pair{ std::vector<Cfloat>{ x, s }, std::vector<Cfloat>{ x, x } },
+		                              std::pair{ std::vector<Cfloat>{ s }, std::vector<Cfloat>{ zero } },
+		                              std::pair{ std::vector<Cfloat>{ zero }, std::vector<Cfloat>{ s } },
+		                              std::pair{ std::vector<Cfloat>{ q }, std::vector<Cfloat>{ zero } } }) {
+			if (!quiet(fdp(vx, vy))) fail("fdp with a NaN element is not a quiet NaN");
+		}
+		if (!quiet(sqrt(q))) fail("sqrt(qNaN) is not a quiet NaN");
 		return nrOfFailedTestCases;
 	}
 
@@ -385,6 +408,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyIncrementPastNaN<half>(reportTestCases, "half"), "half", "++ past NaN");
 	nrOfFailedTestCases += ReportTestResult(VerifySignallingNanOperands<half>(reportTestCases, "half", true), "half", "sNaN operands");
 	nrOfFailedTestCases += ReportTestResult(VerifySignallingNanOperands<cfloat<8, 4, std::uint8_t, true, true, false>>(reportTestCases, "cfloat<8,4,sub,max>", false), "cfloat<8,4,sub,max>", "sNaN operands");
+	nrOfFailedTestCases += ReportTestResult(VerifySignallingNanFunctions<half>(reportTestCases, "half"), "half", "sNaN functions");
+	nrOfFailedTestCases += ReportTestResult(VerifySignallingNanFunctions<cfloat<8, 4, std::uint8_t, true, true, false>>(reportTestCases, "cfloat<8,4,sub,max>"), "cfloat<8,4,sub,max>", "sNaN functions");
 	nrOfFailedTestCases += ReportTestResult(VerifyNormalizeNanType<half>(reportTestCases, "half"), "half", "normalize NaN type");
 	nrOfFailedTestCases += ReportTestResult(VerifyNormalizeNanType<cfloat<8, 4, std::uint8_t, true, true, false>>(reportTestCases, "cfloat<8,4,sub,max>"), "cfloat<8,4,sub,max>", "normalize NaN type");
 	nrOfFailedTestCases += ReportTestResult(VerifyIncrementPastNaN<cfloat<16, 5, std::uint8_t, true, false, false>>(reportTestCases, "cfloat<16,5,uint8_t>"), "cfloat<16,5,uint8_t>", "++ past NaN");
