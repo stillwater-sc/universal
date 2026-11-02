@@ -79,6 +79,10 @@ int VerifyNextafterSpecialCases(bool reportTestCases) {
 	Wide wnan; wnan.setnan(NAN_TYPE_QUIET);
 	r = nexttoward(one, wnan);      check(isquiet(r), "nexttoward(1, qNaN)", r);
 	r = nexttoward(snan, Wide(1));  check(isquiet(r), "nexttoward(sNaN, 1)", r);
+	Wide wnzero(0); wnzero.setsign(true);
+	r = nexttoward(pzero, wnzero);  check(r.iszero() && r.sign(), "nexttoward(+0, -0) is -0", r);
+	r = nexttoward(nzero, Wide(0)); check(r.iszero() && !r.sign(), "nexttoward(-0, +0) is +0", r);
+	r = Cfloat(wnzero);             check(r.iszero() && r.sign(), "cfloat-to-cfloat conversion keeps -0", r);
 
 	// an x wider than the cfloat<128,15> target: 1 + 2 ulp(x) rounds to 1 in 128 bits, so a
 	// compare in 128 bits would call it equal to the target 1 and return 1 instead of stepping

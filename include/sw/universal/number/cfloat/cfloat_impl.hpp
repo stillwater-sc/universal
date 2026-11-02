@@ -499,6 +499,7 @@ public:
 		}
 		else if (rhs.iszero()) {
 			setzero();
+			setsign(rhs.sign()); // a conversion keeps the sign of zero (#1901)
 		}
 		else {
 			if constexpr (std::is_same_v<bt, bbt>) {
