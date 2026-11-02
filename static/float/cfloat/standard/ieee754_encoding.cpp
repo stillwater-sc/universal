@@ -115,7 +115,7 @@ namespace sw { namespace universal {
 #if UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP
 		// only where the hardware does not quiet a signalling NaN on register contact
 		q.setnan(NAN_TYPE_SIGNALLING);
-		if ((native_bits(Native(q)) & nativeQuietBit) != 0) fail("Native(signalling NaN) is not a native signalling NaN");
+		if (!std::isnan(Native(q)) || (native_bits(Native(q)) & nativeQuietBit) != 0) fail("Native(signalling NaN) is not a native signalling NaN");
 #endif
 		// invalid operations deliver a quiet NaN (IEEE-754 7.2)
 		const Cfloat pi(inf), ni(-inf), zero(0);
