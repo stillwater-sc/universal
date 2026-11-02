@@ -712,11 +712,12 @@ public:
 			setnan(NAN_TYPE_SIGNALLING);
 			return *this;
 		}
+#endif
+		// a quiet NaN operand propagates in both modes: the significand path below has no NaN
 		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
-#endif
 		// normal + inf  = inf
 		// normal + -inf = -inf
 		// inf + normal = inf
@@ -798,11 +799,12 @@ public:
 			setnan(NAN_TYPE_SIGNALLING);
 			return *this;
 		}
+#endif
+		// a quiet NaN operand propagates in both modes: the significand path below has no NaN
 		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
-#endif
 		//  inf * inf = inf
 		//  inf * -inf = -inf
 		// -inf * inf = -inf
