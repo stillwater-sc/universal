@@ -499,6 +499,7 @@ public:
 		}
 		else if (rhs.iszero()) {
 			setzero();
+			setsign(rhs.sign()); // a conversion keeps the sign of zero (#1901)
 		}
 		else {
 			if constexpr (std::is_same_v<bt, bbt>) {
@@ -946,6 +947,7 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to +minpos: its magnitude would wrap (#1901)
 			if (sign()) {
 				if (_block[MSU] == (SIGN_BIT_MASK | 1ul)) { // pattern: 1.00.001 = minneg
 					_block[MSU] = 0; // pattern: 0.00.000 = +0 
@@ -976,6 +978,7 @@ public:
 			}
 		}
 		else {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to +minpos: its magnitude would wrap (#1901)
 			if (sign()) {
 				// special case: pattern: 1.00.001 = minneg transitions to pattern: 0.00.000 = +0 
 				if (isminnegencoding()) {
@@ -1017,8 +1020,10 @@ public:
 				else {
 					if constexpr (!hasSubnormals) {
 						if (iszero()) {
-							// special case, we need to jump past all the subnormal value encodings minus 1 so that the increment code below ends up on normal minpos
-							setfraction(0xFFFF'FFFF'FFFF'FFFFull);
+							// special case: jump past all the subnormal value encodings to normal minpos;
+							// setfraction only reaches 64 fraction bits, so a carry would not reach the exponent of a wider format
+							minpos();
+							return *this;
 						}
 					}
 					bool carry = true;
@@ -1052,6 +1057,7 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to -minpos (#1901)
 			if (sign()) {
 				++_block[MSU];
 			}
@@ -1080,6 +1086,7 @@ public:
 			}
 		}
 		else {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to -minpos (#1901)
 			if (sign()) {
 				bool carry = true;
 				for (unsigned i = 0; i < MSU; ++i) {
