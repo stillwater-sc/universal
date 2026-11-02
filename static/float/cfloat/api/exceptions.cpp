@@ -50,6 +50,14 @@ namespace sw { namespace universal {
 		catch (const cfloat_operand_is_nan&) { threw = true; }
 		if (!threw) fail("sNaN + x did not throw");
 		threw = false;
+		try { Cfloat r = snan - x; (void)r; }
+		catch (const cfloat_operand_is_nan&) { threw = true; }
+		if (!threw) fail("sNaN - x did not throw");
+		threw = false;
+		try { Cfloat r = x - snan; (void)r; }
+		catch (const cfloat_operand_is_nan&) { threw = true; }
+		if (!threw) fail("x - sNaN did not throw");
+		threw = false;
 		try { Cfloat r = x * snan; (void)r; }
 		catch (const cfloat_operand_is_nan&) { threw = true; }
 		if (!threw) fail("x * sNaN did not throw");

@@ -108,6 +108,15 @@ namespace sw { namespace universal {
 		if (!std::isnan(Native(q))) fail("Native(quiet NaN) is not NaN");
 		q.setnan(NAN_TYPE_SIGNALLING);
 		if (!q.isnan(NAN_TYPE_SIGNALLING) || (Bits(raw_bits(q)) & ninf) != pinf) fail("setnan(signalling) is not a positive signalling NaN");
+		// to_native picks the native NaN of the same type: the quiet bit of the result tells
+		const Bits nativeQuietBit = Bits(qnan & ~pinf);
+		q.setnan(NAN_TYPE_QUIET);
+		if ((native_bits(Native(q)) & nativeQuietBit) == 0) fail("Native(quiet NaN) is not a native quiet NaN");
+#if UNIVERSAL_SNAN_ROUND_TRIPS_NATIVE_FP
+		// only where the hardware does not quiet a signalling NaN on register contact
+		q.setnan(NAN_TYPE_SIGNALLING);
+		if ((native_bits(Native(q)) & nativeQuietBit) != 0) fail("Native(signalling NaN) is not a native signalling NaN");
+#endif
 		// invalid operations deliver a quiet NaN (IEEE-754 7.2)
 		const Cfloat pi(inf), ni(-inf), zero(0);
 		if (!(pi + ni).isnan(NAN_TYPE_QUIET)) fail("inf + -inf is not a quiet NaN");
@@ -237,6 +246,34 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
+	// the four blocktriple normalizations carry the NaN type in the blocktriple's sign (set = signalling)
+	template<typename Cfloat>
+	int VerifyNormalizeNanType(bool reportTestCases, const std::string& type) {
+		using bt = typename Cfloat::BlockType;
+		constexpr unsigned fbits = Cfloat::fbits;
+		int nrOfFailedTestCases = 0;
+		for (int t : { NAN_TYPE_QUIET, NAN_TYPE_SIGNALLING }) {
+			const bool signalling = (t == NAN_TYPE_SIGNALLING);
+			Cfloat c;
+			c.setnan(t);
+			blocktriple<fbits, BlockTripleOperator::REP, bt> rep;
+			blocktriple<fbits, BlockTripleOperator::ADD, bt> add;
+			blocktriple<fbits, BlockTripleOperator::MUL, bt> mul;
+			blocktriple<fbits, BlockTripleOperator::DIV, bt> div;
+			c.normalize(rep);
+			c.normalizeAddition(add);
+			c.normalizeMultiplication(mul);
+			c.normalizeDivision(div);
+			const bool ok = rep.isnan() && rep.sign() == signalling && add.isnan() && add.sign() == signalling &&
+				mul.isnan() && mul.sign() == signalling && div.isnan() && div.sign() == signalling;
+			if (!ok) {
+				if (reportTestCases) std::cerr << "FAIL: " << type << (signalling ? " signalling" : " quiet") << " NaN changes type in a normalization\n";
+				++nrOfFailedTestCases;
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
 	// ++ walks the raw encodings: the largest positive NaN steps to the all-ones pattern, not to a canonical NaN
 	template<typename Cfloat>
 	int VerifyIncrementPastNaN(bool reportTestCases, const std::string& type) {
@@ -296,6 +333,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyQuadSpecials(reportTestCases), "quad", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMaxExpValueLayouts(reportTestCases), "cfloat<8,4>", "max-exponent layouts");
 	nrOfFailedTestCases += ReportTestResult(VerifyIncrementPastNaN<half>(reportTestCases, "half"), "half", "++ past NaN");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalizeNanType<half>(reportTestCases, "half"), "half", "normalize NaN type");
+	nrOfFailedTestCases += ReportTestResult(VerifyNormalizeNanType<cfloat<8, 4, std::uint8_t, true, true, false>>(reportTestCases, "cfloat<8,4,sub,max>"), "cfloat<8,4,sub,max>", "normalize NaN type");
 	nrOfFailedTestCases += ReportTestResult(VerifyIncrementPastNaN<cfloat<16, 5, std::uint8_t, true, false, false>>(reportTestCases, "cfloat<16,5,uint8_t>"), "cfloat<16,5,uint8_t>", "++ past NaN");
 #endif
 
