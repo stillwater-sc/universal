@@ -20,6 +20,7 @@
 #include <limits>
 #include <string>
 #include <type_traits>
+#include <vector>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -308,6 +309,9 @@ namespace sw { namespace universal {
 		if (!quiet(ldexp(s, 3))) fail("ldexp(sNaN) is not a quiet NaN");
 		int e = 7;
 		if (!quiet(frexp(s, &e)) || e != 0) fail("frexp(sNaN) is not a quiet NaN with exponent 0");
+		// the fused dot product: a NaN element makes the quire NaR, which resolves to a quiet NaN
+		const std::vector<Cfloat> vx{ x, s }, vy{ x, x };
+		if (!quiet(fdp(vx, vy))) fail("fdp with a sNaN element is not a quiet NaN");
 		// a quiet NaN goes through unchanged
 		if (!quiet(sqrt(q)) || !quiet(q + x)) fail("a quiet NaN operand does not deliver a quiet NaN");
 		// conversions keep the type (#1899 decision): to the other typing and back
