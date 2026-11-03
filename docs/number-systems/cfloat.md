@@ -52,15 +52,63 @@ So `half`, `single`, `duble`, `quad` and the other configurations without max-ex
 ### Standard IEEE-754 Aliases
 
 ```cpp
-using fp8e2m5   = cfloat<8, 2, uint8_t, true, false, false>;     // quarter precision
-using fp8e3m4   = cfloat<8, 3, uint8_t, true, false, false>;     // ML training
-using fp8e4m3   = cfloat<8, 4, uint8_t, true, false, false>;     // NVIDIA FP8
-using fp8e5m2   = cfloat<8, 5, uint8_t, true, false, false>;     // NVIDIA FP8
+using quarter   = cfloat<8, 2, uint8_t, true, false, false>;     // 8-bit, IEEE-754 style
 using half      = cfloat<16, 5, uint16_t, true, false, false>;   // IEEE-754 binary16
 using single    = cfloat<32, 8, uint32_t, true, false, false>;   // IEEE-754 binary32
-using duble     = cfloat<64, 11, uint32_t, true, false, false>;  // IEEE-754 binary64
-using quad      = cfloat<128, 15, uint32_t, true, false, false>; // IEEE-754 binary128
+using duble     = cfloat<64, 11, uint64_t, true, false, false>;  // IEEE-754 binary64
+using quad      = cfloat<128, 15, uint64_t, true, false, false>; // IEEE-754 binary128
+using octo      = cfloat<256, 19, uint64_t, true, false, false>; // IEEE-754 binary256
 ```
+
+### FP8 Aliases
+
+```cpp
+using fp8e2m5   = cfloat<8, 2, uint8_t, true, true, false>;
+using fp8e3m4   = cfloat<8, 3, uint8_t, true, true, false>;
+using fp8e4m3   = cfloat<8, 4, uint8_t, true, true, false>;
+using fp8e5m2   = cfloat<8, 5, uint8_t, true, true, false>;
+```
+
+These enable subnormals and max-exponent values, to get the most numbers out of 256 encodings. They are **not** the OCP OFP8 formats (#1903): the all-1s exponent binade holds numbers, so maxpos is larger and inf and NaN sit elsewhere.
+
+| alias | maxpos | +inf | OCP format | OCP maxpos | OCP +inf | OCP overflow |
+|---|---|---|---|---|---|---|
+| `fp8e4m3` | 416 (`0x7D`) | `0x7E` | E4M3 (`e4m3fn`) | 448 (`0x7E`) | none | NaN (NONSAT) or maxpos (SAT) |
+| `fp8e5m2` | 81920 (`0x7D`) | `0x7E` | E5M2 | 57344 (`0x7B`) | `0x7C` | inf (NONSAT) or maxpos (SAT) |
+
+The OCP specification has two overflow modes for conversion: NONSAT and SAT. The OCP encodings are available in two places:
+
+| OCP format | encoding-identical type | overflow |
+|---|---|---|
+| E4M3 | `microfloat` `e4m3` | NaN (NONSAT) |
+| E4M3 | `cfloat<8, 4, uint8_t, true, true, true>` | maxpos (SAT) |
+| E5M2 | `microfloat` `e5m2` | inf (NONSAT) |
+| E5M2 | `cfloat<8, 5, uint8_t, true, false, false>` | inf (NONSAT) |
+
+Each of these matches the OCP encoding on all 256 patterns. The saturating cfloat also saturates arithmetic results, not only conversions.
+
+#### How OCP spends the top binade, and why
+
+The top binade (all-1s exponent) holds `2^m` encodings per sign: 8 for E4M3, 4 for E5M2. The two OCP formats treat it differently, and neither gives up as much of it as the IEEE layout would. The rationale is in section 3 of Micikevicius et al., [*FP8 Formats for Deep Learning*](https://arxiv.org/abs/2209.05433) (NVIDIA, Arm, Intel, 2022), the proposal the OCP OFP8 specification is based on. Its stated principle is to stay consistent with IEEE-754 unless deviating gives a significant benefit for deep-learning accuracy.
+
+**E4M3 reclaims 7 of the 8 encodings.** It has no infinity and keeps a single NaN pattern, `S.1111.111`. The other seven become the magnitudes 256, 288, ..., 448. That extends the range from 17 to 18 binades: maxpos is 448 instead of the IEEE-style 240. With only 4 exponent bits, the paper judges the extra range much more useful than multiple special encodings. It stops at 7: a single unsigned NaN and zero would free one more value (480), but would break the +/- symmetry that lets IEEE values be compared and sorted as integers. The paper judges that 448 -> 480 is not worth that.
+
+**E5M2 reclaims none of the 4.** It keeps IEEE infinity and NaN at `S.11111.00` and `S.11111.{01,10,11}`. The paper gives three reasons:
+- **FP16 interchange.** E5M2 is IEEE half precision with fewer mantissa bits, as bfloat16 is single precision with fewer. Converting between E5M2 and FP16 is just rounding the mantissa, including the special values.
+- **Little to gain.** Reclaiming the binade would add only 3 magnitudes, one binade on top of the 32 that E5M2 already spans, subnormals included. The paper's experiments found 5 exponent bits give enough range per tensor. For E4M3 the same move was one binade on 17.
+- **Overflow handling.** E5M2 is the recommended gradient format. Training that mixes FP8 and FP16 relies on special values, because FP16 automatic mixed precision adjusts its loss scale by causing and detecting overflows (section 2).
+
+So the values OCP gives up are few. E4M3 loses 2 of 256 encodings, its two NaNs. E5M2 loses 8: 2 infinities and 6 NaNs. In E4M3 the paper chose more values over IEEE conformance. In E5M2 the values on offer were worth less than FP16 compatibility and inf/NaN for overflow detection.
+
+The cfloat FP8 aliases make a third choice. `hasMaxExpValues` reclaims every top-binade encoding except one infinity and one NaN per sign:
+
+| | E4M3 values in the top binade | maxpos | E5M2 values in the top binade | maxpos |
+|---|---|---|---|---|
+| IEEE-style (`hasMaxExpValues = false`) | 0 | 240 | 0 | 57344 (OCP E5M2) |
+| cfloat `fp8eXmY` (`hasMaxExpValues = true`) | 6 | 416 | 2 | 81920 |
+| OCP | 7 | 448 (E4M3) | 0 | 57344 |
+
+For E4M3 the cfloat alias has one value fewer than OCP, because it also keeps an infinity. For E5M2 it has two values more, at the cost of no longer being FP16 with a shorter mantissa.
 
 ### Deep Learning Format Aliases
 
