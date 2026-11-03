@@ -10,8 +10,8 @@
 # (; & | ` > < newline), an unknown flag or a second positional get no
 # decision from this hook and fall through to the normal permission flow, so a
 # parsing gap can only withhold an allow, never grant one. A shell expansion
-# ($ anywhere; glob, brace or tilde in the target or --repo) is denied, since
-# bash would hand gh a PR the hook never saw.
+# anywhere in the command ($, glob, brace or tilde) is denied, since bash
+# would hand gh arguments the hook never saw.
 #
 # The merge target (number, URL or branch) and --repo are handed to
 # `gh pr view` exactly as written, so the hook checks the same PR that
@@ -32,10 +32,14 @@ emit() {  # $1 = allow|deny, $2 = reason
     exit 0
 }
 
-# bash expands $VAR / $(...) before gh runs, so the hook cannot know which PR
-# would be merged: deny, rather than leave it to the normal permission flow
+# bash expands $VAR / $(...), globs, braces and ~ before gh runs, and an
+# expansion inside a flag value can add arguments (--subject {fix,1898} gives
+# gh a positional 1898), so the hook cannot know which PR would be merged.
+# shlex does not record quoting, so check the raw command: deny, rather than
+# leave it to the normal permission flow
 case "$cmd" in
     *'$'*) emit deny "The merge command contains a shell expansion (\$), so the PR to be merged cannot be identified. Pass the PR number or URL literally, then retry." ;;
+    *[*?[{~]*) emit deny "The merge command contains a shell glob, brace or tilde character, so the PR to be merged cannot be identified. Pass the PR number or URL literally (use --body-file for message text with such characters), then retry." ;;
 esac
 
 # compound commands: no opinion (normal permission flow decides)
@@ -94,11 +98,6 @@ print(repo or '')
 
 target=$(printf '%s\n' "$parsed" | sed -n 1p)
 repo_flag=$(printf '%s\n' "$parsed" | sed -n 2p)
-
-# glob, brace and tilde expansion would also change the target bash hands gh
-case "$target$repo_flag" in
-    *[*?[{~]*) emit deny "The merge target or --repo contains a shell glob, brace or tilde character, so the PR to be merged cannot be identified. Pass the PR number or URL literally, then retry." ;;
-esac
 
 args=()
 [ -n "$target" ] && args+=("$target")
