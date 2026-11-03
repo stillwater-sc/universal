@@ -23,6 +23,11 @@ const SITE = join(DOCS, 'site');       // Starlight-native pages
 const OUT = join(import.meta.dirname, 'src', 'content', 'docs');
 const BASE = '/universal';  // Astro base path
 
+// Starlight builds each page's "Edit page" link from editLink.baseUrl plus the
+// GENERATED path (src/content/docs/...), which is git-ignored. So every page
+// gets an editUrl pointing at the file it was made from.
+const EDIT = 'https://github.com/stillwater-sc/universal/edit/main';
+
 // -- Source maps ----------------------------------------------------
 
 /** Map from source path (relative to docs/) -> destination path (relative to content/docs/).
@@ -239,6 +244,13 @@ function addFrontmatter(content, srcRelative, extraFields = {}) {
   return `${fm}\n\n${body}`;
 }
 
+// A site page keeps its own frontmatter; add the editUrl unless it sets one.
+function addEditUrl(content, editPath) {
+  const fm = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fm || /^editUrl:/m.test(fm[1])) return content;
+  return content.replace(/^---\r?\n/, (open) => `${open}editUrl: "${EDIT}/${editPath}"\n`);
+}
+
 function syncFile(srcPath, srcRelative, destRelative, extraFields = {}) {
   if (!existsSync(srcPath)) {
     console.warn(`  SKIP (not found): ${srcPath}`);
@@ -250,15 +262,15 @@ function syncFile(srcPath, srcRelative, destRelative, extraFields = {}) {
   writeFileSync(destPath, addFrontmatter(content, srcRelative, extraFields));
 }
 
-/** Copy a file verbatim (already has frontmatter). */
-function copySiteFile(srcPath, destRelative) {
+/** Copy a file verbatim (already has frontmatter), adding its editUrl. */
+function copySiteFile(srcPath, destRelative, editPath) {
   if (!existsSync(srcPath)) {
     console.warn(`  SKIP (not found): ${srcPath}`);
     return;
   }
   const destPath = join(OUT, destRelative);
   mkdirSync(dirname(destPath), { recursive: true });
-  cpSync(srcPath, destPath);
+  writeFileSync(destPath, addEditUrl(readFileSync(srcPath, 'utf-8'), editPath));
 }
 
 // -- Main ----------------------------------------------------------
@@ -280,17 +292,17 @@ mkdirSync(OUT, { recursive: true });
 
 // 1. Sync docs/ files (add frontmatter, rewrite links)
 for (const [src, dest] of Object.entries(FILE_MAP)) {
-  syncFile(join(DOCS, src), src, dest);
+  syncFile(join(DOCS, src), src, dest, { editUrl: `"${EDIT}/docs/${src}"` });
 }
 
 // 2. Sync repo-root files (srcRelative uses ../ prefix for link resolution)
 for (const [src, dest] of Object.entries(ROOT_FILE_MAP)) {
-  syncFile(join(REPO, src), `../${src}`, dest);
+  syncFile(join(REPO, src), `../${src}`, dest, { editUrl: `"${EDIT}/${src}"` });
 }
 
 // 3. Copy Starlight-native site pages verbatim (already have frontmatter)
 for (const [src, dest] of Object.entries(SITE_FILES)) {
-  copySiteFile(join(SITE, src), dest);
+  copySiteFile(join(SITE, src), dest, `docs/site/${src}`);
 }
 
 // 4. Copy images to public/ (served as static assets at /universal/img/)
