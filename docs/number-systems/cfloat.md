@@ -71,12 +71,21 @@ using fp8e5m2   = cfloat<8, 5, uint8_t, true, true, false>;
 
 These enable subnormals and max-exponent values, to get the most numbers out of 256 encodings. They are **not** the OCP OFP8 formats (#1903): the all-1s exponent binade holds numbers, so maxpos is larger and inf and NaN sit elsewhere.
 
-| alias | maxpos | +inf | OCP format | OCP maxpos | OCP +inf |
-|---|---|---|---|---|---|
-| `fp8e4m3` | 416 (`0x7D`) | `0x7E` | E4M3 (`e4m3fn`) | 448 (`0x7E`) | none, overflow is NaN |
-| `fp8e5m2` | 81920 (`0x7D`) | `0x7E` | E5M2 | 57344 (`0x7B`) | `0x7C` |
+| alias | maxpos | +inf | OCP format | OCP maxpos | OCP +inf | OCP overflow |
+|---|---|---|---|---|---|---|
+| `fp8e4m3` | 416 (`0x7D`) | `0x7E` | E4M3 (`e4m3fn`) | 448 (`0x7E`) | none | NaN (NONSAT) or maxpos (SAT) |
+| `fp8e5m2` | 81920 (`0x7D`) | `0x7E` | E5M2 | 57344 (`0x7B`) | `0x7C` | inf (NONSAT) or maxpos (SAT) |
 
-For the OCP formats use `microfloat`'s `e4m3` and `e5m2`. `cfloat<8, 5, uint8_t, true, false, false>` is also bit-identical to OCP E5M2. No cfloat configuration matches E4M3FN.
+The OCP specification has two overflow modes for conversion: NONSAT and SAT. The OCP encodings are available in two places:
+
+| OCP format | encoding-identical type | overflow |
+|---|---|---|
+| E4M3 | `microfloat` `e4m3` | NaN (NONSAT) |
+| E4M3 | `cfloat<8, 4, uint8_t, true, true, true>` | maxpos (SAT) |
+| E5M2 | `microfloat` `e5m2` | inf (NONSAT) |
+| E5M2 | `cfloat<8, 5, uint8_t, true, false, false>` | inf (NONSAT) |
+
+Each of these matches the OCP encoding on all 256 patterns. The saturating cfloat also saturates arithmetic results, not only conversions.
 
 ### Deep Learning Format Aliases
 

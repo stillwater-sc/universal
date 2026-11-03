@@ -160,8 +160,9 @@ using tf32 = cfloat<19, 8, std::uint32_t, true, false, false>;
 // These are NOT the OCP OFP8 formats (#1903). With max-exponent values the all-1s exponent
 // binade holds numbers, so maxpos is larger than OCP's (fp8e5m2: 81920 vs 57344, fp8e4m3:
 // 416 vs 448) and inf and NaN sit at different encodings. The OCP formats are microfloat's
-// e4m3 (= e4m3fn: no inf, NaN at 0x7F/0xFF) and e5m2 (IEEE-style inf at 0x7C);
-// cfloat<8, 5, uint8_t, true, false, false> is also bit-identical to OCP E5M2.
+// e4m3 (= e4m3fn: no inf, NaN at 0x7F/0xFF, overflow to NaN) and e5m2 (IEEE-style inf at 0x7C).
+// Encoding-identical cfloats: cfloat<8, 4, uint8_t, true, true, true> is E4M3 with OCP's
+// saturating (SAT) overflow, cfloat<8, 5, uint8_t, true, false, false> is E5M2 with overflow to inf.
 using fp8e2m5  = cfloat<8, 2, std::uint8_t, true, true, false>;
 using fp8e3m4  = cfloat<8, 3, std::uint8_t, true, true, false>;
 using fp8e4m3  = cfloat<8, 4, std::uint8_t, true, true, false>;
