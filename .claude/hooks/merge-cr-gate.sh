@@ -5,12 +5,19 @@
 # reviewer. A `gh pr merge` (including --admin) is allowed when the PR has at
 # least one review by CodeRabbit; it is denied when it has none.
 #
-# Only a single, plain `gh pr merge ...` invocation is judged. Anything with
-# shell operators (; & | ` $( > < newline) gets no decision from this hook and
-# falls through to the normal permission flow, so nothing can ride along on an
-# approved merge.
+# Only a single, plain `gh pr merge ...` invocation is judged, and only when
+# every argument is one `gh pr merge` documents. Anything else -- shell
+# operators (; & | ` $( > < newline), an unknown flag, a second positional --
+# gets no decision from this hook and falls through to the normal permission
+# flow. A parsing gap can therefore only withhold an allow, never grant one.
+#
+# The merge target (number, URL or branch) and --repo are handed to
+# `gh pr view` exactly as written, so the hook checks the same PR that
+# `gh pr merge` would merge.
 #
 # Output: PreToolUse JSON with permissionDecision allow|deny, or nothing.
+
+CODERABBIT_LOGIN='coderabbitai[bot]'   # GitHub App bot; [] cannot occur in a user login
 
 input=$(cat)
 cmd=$(printf '%s' "$input" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('command',''))" 2>/dev/null)
@@ -23,51 +30,91 @@ if printf '%s' "$cmd" | grep -qE '[;&|`<>]|\$\(' || [ "$(printf '%s' "$cmd" | wc
     exit 0
 fi
 
-printf '%s' "$cmd" | grep -qE '^[[:space:]]*gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)' || exit 0
-
 emit() {  # $1 = allow|deny, $2 = reason
     python3 -c "import json,sys; print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': sys.argv[1], 'permissionDecisionReason': sys.argv[2]}}))" "$1" "$2"
     exit 0
 }
 
-# PR number: the first bare integer argument after `merge` (or a /pull/N URL);
-# without one, gh merges the current branch's PR
-pr=$(printf '%s' "$cmd" | python3 -c "
-import sys, re, shlex
-try: toks = shlex.split(sys.stdin.read())
-except ValueError: sys.exit(0)
-i = toks.index('merge') + 1 if 'merge' in toks else len(toks)
-skip_value = {'--subject','-t','--body','-b','--body-file','-F','--match-head-commit','--author-email','-A','--repo','-R'}
-j = i
-while j < len(toks):
-    t = toks[j]
-    if t in skip_value: j += 2; continue
-    m = re.fullmatch(r'#?(\d+)', t) or re.search(r'/pull/(\d+)', t)
-    if m: print(m.group(1)); break
-    j += 1
-")
-repo_flag=$(printf '%s' "$cmd" | python3 -c "
+# Parse against gh pr merge's flag set. Prints two lines, target then repo
+# (either may be empty); exits non-zero for anything it does not recognise.
+parsed=$(printf '%s' "$cmd" | python3 -c "
 import sys, shlex
 try: toks = shlex.split(sys.stdin.read())
-except ValueError: sys.exit(0)
-for k in ('--repo','-R'):
-    if k in toks and toks.index(k)+1 < len(toks): print(toks[toks.index(k)+1]); break
-")
+except ValueError: sys.exit(1)
+if toks[:3] != ['gh', 'pr', 'merge']: sys.exit(1)
+long_bool  = {'--admin','--auto','--delete-branch','--disable-auto','--merge','--rebase','--squash','--help'}
+long_value = {'--author-email','--body','--body-file','--match-head-commit','--subject','--repo'}
+short_bool  = {'d':'--delete-branch','m':'--merge','r':'--rebase','s':'--squash'}
+short_value = {'A':'--author-email','b':'--body','F':'--body-file','t':'--subject','R':'--repo'}
+target, repo = [], None
+args = toks[3:]
+i = 0
+while i < len(args):
+    t = args[i]; i += 1
+    if t == '--':
+        target += args[i:]; break
+    if t.startswith('--'):
+        name, eq, val = t.partition('=')
+        if name in long_bool and not eq: continue
+        if name not in long_value: sys.exit(1)
+        if not eq:
+            if i >= len(args): sys.exit(1)
+            val = args[i]; i += 1
+        if name == '--repo': repo = val
+        continue
+    if t.startswith('-') and len(t) > 1:
+        # cobra short flags: a run of bool letters, optionally ending in one
+        # value letter whose value is attached or is the next argument
+        j = 1
+        while j < len(t):
+            c = t[j]; j += 1
+            if c in short_bool: continue
+            if c not in short_value: sys.exit(1)
+            val = t[j:]
+            if val.startswith('='): val = val[1:]
+            if not val:
+                if i >= len(args): sys.exit(1)
+                val = args[i]; i += 1
+            if c == 'R': repo = val
+            break
+        continue
+    target.append(t)
+if len(target) > 1: sys.exit(1)
+print(target[0] if target else '')
+print(repo or '')
+") || exit 0
+
+target=$(printf '%s\n' "$parsed" | sed -n 1p)
+repo_flag=$(printf '%s\n' "$parsed" | sed -n 2p)
 
 args=()
-[ -n "$pr" ] && args+=("$pr")
+[ -n "$target" ] && args+=("$target")
 [ -n "$repo_flag" ] && args+=(--repo "$repo_flag")
 
-result=$(gh pr view "${args[@]}" --json number,reviews \
-    -q '"\(.number) \([.reviews[] | select(.author.login | test("^coderabbit"; "i"))] | length)"' 2>/dev/null)
-if [ -z "$result" ]; then
-    exit 0   # could not query GitHub: no opinion, normal permission flow decides
-fi
-num=${result%% *}
-count=${result##* }
+# resolve the target exactly as gh pr merge would; without a target gh uses
+# the current branch's PR
+url=$(gh pr view "${args[@]}" --json url -q .url 2>/dev/null)
+case "$url" in
+    https://github.com/*/*/pull/*) ;;
+    *) exit 0 ;;   # could not resolve (or not github.com): no opinion
+esac
+path=${url#https://github.com/}       # OWNER/REPO/pull/N
+owner=${path%%/*}; rest=${path#*/}
+name=${rest%%/*}; num=${rest##*/}
+case "$num" in ''|*[!0-9]*) exit 0 ;; esac
 
-if [ "$count" -ge 1 ] 2>/dev/null; then
-    emit allow "PR #$num has $count CodeRabbit review(s): CodeRabbit is the outside reviewer for agent-authored PRs, so merging (including --admin) is permitted by project policy."
+# one count per page with --paginate; sum them
+counts=$(gh api --paginate "repos/$owner/$name/pulls/$num/reviews" \
+    -q "[.[] | select(.user.login == \"$CODERABBIT_LOGIN\" and .user.type == \"Bot\")] | length" 2>/dev/null) || exit 0
+[ -n "$counts" ] || exit 0
+count=0
+for c in $counts; do
+    case "$c" in ''|*[!0-9]*) exit 0 ;; esac
+    count=$((count + c))
+done
+
+if [ "$count" -ge 1 ]; then
+    emit allow "PR $owner/$name#$num has $count CodeRabbit review(s): CodeRabbit is the outside reviewer for agent-authored PRs, so merging (including --admin) is permitted by project policy."
 else
-    emit deny "PR #$num has no CodeRabbit review yet. Project policy: an agent-authored PR merges only after at least one CodeRabbit review cycle. Wait for CodeRabbit to review, then retry."
+    emit deny "PR $owner/$name#$num has no CodeRabbit review yet. Project policy: an agent-authored PR merges only after at least one CodeRabbit review cycle. Wait for CodeRabbit to review, then retry."
 fi
