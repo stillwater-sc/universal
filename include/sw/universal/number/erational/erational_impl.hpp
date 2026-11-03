@@ -215,7 +215,9 @@ public:
 		return *this;
 	}
 	erational& operator/=(const erational& rhs) {
-		if (rhs.denominator.iszero()) {   // a NaN divisor, canonical 0/0 or an n/0 from setdenominator(0), is not a zero
+		// either operand a NaN (canonical 0/0, or an n/0 from setdenominator(0)): NaN, before the
+		// zero-divisor test, so NaN / 0 is NaN as it is through erational_divide()
+		if (denominator.iszero() || rhs.denominator.iszero()) {
 			setnan();
 			return *this;
 		}

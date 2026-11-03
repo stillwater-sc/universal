@@ -62,6 +62,9 @@ int VerifyDivideByZeroThrows(bool reportTestCases) {
 		expectNaN(erational_divide(seven, raw).quot, "erational_divide(7, 1/0)");
 		erational q(seven); q /= raw;
 		expectNaN(q, "7 /= 1/0");
+		// a NaN dividend gives NaN even over a zero divisor, through both entry points
+		expectNaN(nan / zero, "NaN / 0");
+		expectNaN(erational_divide(nan, zero).quot, "erational_divide(NaN, 0)");
 		if (int(nan) != 0 || static_cast<unsigned long long>(nan) != 0ull) {
 			++nrOfFailedTests;
 			if (reportTestCases) std::cerr << "FAIL: integer conversion of NaN is not 0\n";
