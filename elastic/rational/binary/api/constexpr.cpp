@@ -69,15 +69,12 @@ try {
 		constexpr erational z{};
 		static_assert( z.iszero(),  "constexpr default-constructed erational is zero (numerator empty)");
 		// Note: at constant evaluation BOTH numerator and denominator are
-		// empty, so isnan() (defined as numerator.iszero() && denominator.iszero())
-		// returns true.  This is the deliberate consequence of the empty-
-		// vector constexpr representation: the runtime default ctor calls
-		// setzero() which sets denominator = 1, but that path heap-allocates
-		// and is not available at constant evaluation under C++20's
-		// transient-allocation rule.  Users who need a non-NaN constexpr
-		// erational must wait for edecimal arithmetic to become constexpr
-		// (which would let them initialize denominator = 1 at compile time).
-		static_assert( z.isnan(),   "constexpr default-constructed erational has empty num+denom -> isnan() at compile time");
+		// empty, because the runtime default ctor's setzero() (denominator = 1)
+		// heap-allocates and is not available at constant evaluation under
+		// C++20's transient-allocation rule.  That empty state is the
+		// constant-initialized zero, not the 0/0 NaN: isnan() excludes it via
+		// is_constant_zero(), and arithmetic treats it as 0/1 (#1894).
+		static_assert(!z.isnan(),   "constexpr default-constructed erational is zero, not NaN");
 		static_assert(!z.isinf(),   "constexpr default-constructed erational !isinf()");
 		static_assert(!z.sign(),    "constexpr default-constructed erational sign() == false");
 		static_assert(!z.isneg(),   "constexpr default-constructed erational !isneg()");
