@@ -16,7 +16,7 @@ composition repos**. Tracking epic: universal#1204.
 | dense LU iterative refinement (`ext/solvers/luir`, `squeeze`, `nbe`) | MTL5 `mtl::lu_iterative_refine` + `mtl::normwise_backward_error`; the posit/precision experiments in **mp-ir** |
 | fdp / quire reproducibility studies, mpdot/mpfma | **mp-blas** (via the quire accumulator bridge) |
 | stationary + CG iterative-method studies | **mp-iterative** |
-| numerics studies (roots/integration/interpolation/optimization/approximation) | **mp-numerics** |
+| numerics studies (roots/integration/interpolation/optimization/approximation) | **mp-numerics**, published at https://stillwater-sc.github.io/mp-numerics/ |
 
 ## Architectural rule
 
