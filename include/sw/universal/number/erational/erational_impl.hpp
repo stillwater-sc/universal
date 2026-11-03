@@ -567,14 +567,8 @@ protected:
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	erational& convert_signed(SignedInt& rhs) {
-		if (rhs < 0) {
-			negative = true;
-			numerator = -rhs;
-		}
-		else {
-			negative = false;
-			numerator = rhs;
-		}
+		// magnitude() negates in unsigned arithmetic: -rhs overflowed (UB) for the minimum (#1908)
+		numerator   = edecimal(magnitude(rhs, negative));
 		denominator = 1;
 		return *this;
 	}

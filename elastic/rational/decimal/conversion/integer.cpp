@@ -92,6 +92,18 @@ try {
 		nrOfFailedTestCases += ReportTestResult(fails, "erational", "signed integer part");
 	}
 	{
+		// the 64-bit edges, through edecimal's conversion: INT64_MIN's magnitude 2^63 and values
+		// above LLONG_MAX used to overflow its signed accumulator (#1908)
+		constexpr long long          llmin  = std::numeric_limits<long long>::min();
+		constexpr unsigned long long ullmax = std::numeric_limits<unsigned long long>::max();
+		int fails = 0;
+		fails += VerifyIntegerPart(erational(llmin, 1), llmin, "INT64_MIN/1", reportTestCases);
+		fails += VerifyIntegerPart(erational(llmin),    llmin, "INT64_MIN",   reportTestCases);
+		fails += check(static_cast<unsigned long long>(erational(ullmax)) == ullmax, "ULLONG_MAX -> unsigned long long", reportTestCases);
+		fails += check(static_cast<unsigned long long>(erational(ullmax, 1u)) == ullmax, "ULLONG_MAX/1 -> unsigned long long", reportTestCases);
+		nrOfFailedTestCases += ReportTestResult(fails, "erational", "64-bit edges");
+	}
+	{
 		// NaN has no integer value: 0, without throwing out of the noexcept operators
 		erational nan;
 		nan.setnan();

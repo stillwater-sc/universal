@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <universal/number/edecimal/edecimal.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -76,6 +77,24 @@ try {
 			fails += VerifyNarrowing(v, reportTestCases);
 		}
 		nrOfFailedTestCases += ReportTestResult(fails, "edecimal", "narrowing to native integers");
+	}
+	{
+		// the 64-bit edges: the accumulator used to be a signed long long, which overflowed (UB) on
+		// the magnitude 2^63 of INT64_MIN and on every value above LLONG_MAX (#1908)
+		constexpr long long          llmin  = std::numeric_limits<long long>::min();
+		constexpr long long          llmax  = std::numeric_limits<long long>::max();
+		constexpr unsigned long long ullmax = std::numeric_limits<unsigned long long>::max();
+		int fails = 0;
+		fails += VerifyNarrowing(llmin, reportTestCases);
+		fails += VerifyNarrowing(llmax, reportTestCases);
+		auto check = [&](bool ok, const char* what) {
+			if (!ok) { ++fails; if (reportTestCases) std::cerr << "FAIL: " << what << '\n'; }
+		};
+		check(static_cast<unsigned long long>(edecimal(ullmax)) == ullmax, "edecimal(ULLONG_MAX) -> unsigned long long");
+		check(static_cast<unsigned long long>(edecimal(9223372036854775808ull)) == 9223372036854775808ull, "edecimal(2^63) -> unsigned long long");
+		check(static_cast<long long>(edecimal(ullmax)) == -1LL, "edecimal(ULLONG_MAX) -> long long wraps to -1");
+		check(static_cast<unsigned long long>(edecimal(-1LL)) == ullmax, "edecimal(-1) -> unsigned long long wraps to ULLONG_MAX");
+		nrOfFailedTestCases += ReportTestResult(fails, "edecimal", "64-bit edges");
 	}
 #endif
 
