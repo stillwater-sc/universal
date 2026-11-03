@@ -16,6 +16,9 @@ export default defineConfig({
           href: 'https://github.com/stillwater-sc/universal',
         },
       ],
+      // Turns the edit link on. Every page sets its own editUrl in
+      // sync-content.mjs, because Starlight would join this base with the
+      // generated (git-ignored) src/content/docs/ path.
       editLink: {
         baseUrl:
           'https://github.com/stillwater-sc/universal/edit/main/docs-site/',
