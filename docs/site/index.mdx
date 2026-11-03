@@ -133,6 +133,17 @@ extended-precision types.
 | **Adaptive Real** | `ereal` -- expansion-based, precision set at compile time |
 | **Lazy Unbounded Real** | `elreal` -- refines on demand, no precision ceiling |
 
+## Universal in numerical methods
+
+[MTL5](https://stillwater-sc.github.io/mtl5/) is a C++20 linear-algebra library
+that is generic over the scalar type, so Universal's types plug straight into
+its algorithms. The studies that do this, and measure where each number system
+stops being usable, are published by
+[mp-numerics](https://stillwater-sc.github.io/mp-numerics/): for example
+[Givens rotations and Householder reflectors](https://stillwater-sc.github.io/mp-numerics/studies/linalg/givens-householder/)
+and [QR and least squares](https://stillwater-sc.github.io/mp-numerics/studies/linalg/decompositions/)
+across IEEE, posit, takum, cfloat, lns, fixed point, dd and qd.
+
 ## Citation
 
 Please cite [our JOSS paper](https://joss.theoj.org/papers/10.21105/joss.05072) if you use Universal in your work.
