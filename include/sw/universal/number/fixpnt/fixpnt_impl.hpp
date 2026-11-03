@@ -1,7 +1,20 @@
 #pragma once
-// FIXPNT_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
-// application to enable. The default lives here rather than in the fixpnt.hpp umbrella,
-// so that including core.hpp alone defines it as well (#1436).
+// FIXPNT_THROW_DIVIDE_BY_ZERO: a division by zero throws fixpnt_divide_by_zero. fixpnt has no
+// NaN or infinity to carry the failure in the value, so it throws unless the application opts
+// out, by setting this to 0 or, when this is not set, FIXPNT_THROW_ARITHMETIC_EXCEPTION to 0.
+// With it off, x / 0 is maxpos or maxneg (by the dividend's sign) for Saturate and 0 for
+// Modulo, and nothing is printed (#1894). Decided here, before the default below, so that a
+// FIXPNT_THROW_ARITHMETIC_EXCEPTION the application set is told apart from that default.
+#if !defined(FIXPNT_THROW_DIVIDE_BY_ZERO)
+#if defined(FIXPNT_THROW_ARITHMETIC_EXCEPTION)
+#define FIXPNT_THROW_DIVIDE_BY_ZERO FIXPNT_THROW_ARITHMETIC_EXCEPTION
+#else
+#define FIXPNT_THROW_DIVIDE_BY_ZERO 1
+#endif
+#endif
+// FIXPNT_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on the other arithmetic errors,
+// left to the application to enable. The default lives here rather than in the fixpnt.hpp
+// umbrella, so that including core.hpp alone defines it as well (#1436).
 #if !defined(FIXPNT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr for signalling an error
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
@@ -516,13 +529,10 @@ public:
 	/// In Modulo mode, the result wraps on overflow.
 	/// In Saturate mode, the result clamps to maxpos or maxneg on overflow.
 	constexpr fixpnt& operator/=(const fixpnt& rhs) {
-#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
+#if FIXPNT_THROW_DIVIDE_BY_ZERO
 		if (rhs.iszero()) throw fixpnt_divide_by_zero();
 #else
 		if (rhs.iszero()) {
-			if (!std::is_constant_evaluated()) {
-				std::fprintf(stderr, "fixpnt_divide_by_zero\n");
-			}
 			if constexpr (arithmetic == Saturate) {
 				// saturate to maxpos or maxneg based on sign of dividend
 				if (isneg())

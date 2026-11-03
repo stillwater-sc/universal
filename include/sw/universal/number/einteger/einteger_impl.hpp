@@ -25,7 +25,20 @@
 #define EINTEGER_ENABLE_LITERALS 1
 #endif
 
-// enable throwing specific exceptions for integer arithmetic errors
+// EINTEGER_THROW_DIVIDE_BY_ZERO: a division or remainder by zero throws einteger_divide_by_zero.
+// einteger has no NaN to carry the failure in the value, so it throws unless the application
+// opts out, by setting this to 0 or, when this is not set, EINTEGER_THROW_ARITHMETIC_EXCEPTION
+// to 0. With it off, x / 0 and x % 0 are 0 and nothing is printed (#1894). Decided before the
+// default below, so that an EINTEGER_THROW_ARITHMETIC_EXCEPTION the application set is told
+// apart from that default.
+#if !defined(EINTEGER_THROW_DIVIDE_BY_ZERO)
+#if defined(EINTEGER_THROW_ARITHMETIC_EXCEPTION)
+#define EINTEGER_THROW_DIVIDE_BY_ZERO EINTEGER_THROW_ARITHMETIC_EXCEPTION
+#else
+#define EINTEGER_THROW_DIVIDE_BY_ZERO 1
+#endif
+#endif
+// enable throwing specific exceptions for the other integer arithmetic errors
 // left to application to enable
 #if !defined(EINTEGER_THROW_ARITHMETIC_EXCEPTION)
 // default is to write a diagnostic to stderr for signalling an error
@@ -405,13 +418,20 @@ public:
 	
 	// reduce returns the ratio and remainder of a and b in *this and r
 	void reduce(const einteger& a, const einteger& b, einteger& r) {
-		if (b.iszero()) {
-#if EINTEGER_THROW_ARITHMETIC_EXCEPTION
+		// every limb, not iszero(): setblock() does not trim, so a zero can be [0, 0, ...]
+		bool divisorIsZero = true;
+		for (size_t i = b._block.size(); i > 0; --i) {
+			if (b._block[i - 1] != bt(0)) { divisorIsZero = false; break; }
+		}
+		if (divisorIsZero) {
+#if EINTEGER_THROW_DIVIDE_BY_ZERO
 			throw einteger_divide_by_zero{};
 #else
-			std::fprintf(stderr, "einteger_divide_by_zero\n");
+			// opted out of the exception: quotient and remainder are 0
+			clear();
+			r.clear();
 			return;
-#endif // EINTEGER_THROW_ARITHMETIC_EXCEPTION
+#endif // EINTEGER_THROW_DIVIDE_BY_ZERO
 		}
 		clear();
 		r.clear();
