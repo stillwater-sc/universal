@@ -246,9 +246,13 @@ function addFrontmatter(content, srcRelative, extraFields = {}) {
 
 // A site page keeps its own frontmatter; add the editUrl unless it sets one.
 function addEditUrl(content, editPath) {
-  const fm = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!fm || /^editUrl:/m.test(fm[1])) return content;
-  return content.replace(/^---\r?\n/, (open) => `${open}editUrl: "${EDIT}/${editPath}"\n`);
+  // Astro accepts frontmatter after a UTF-8 BOM; keep the BOM in front.
+  const bom = content.startsWith('\uFEFF') ? '\uFEFF' : '';
+  const text = content.slice(bom.length);
+  const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  // editUrl as a top-level key, bare or quoted.
+  if (!fm || /^(['"]?)editUrl\1[ \t]*:/m.test(fm[1])) return content;
+  return bom + text.replace(/^---\r?\n/, (open) => `${open}editUrl: "${EDIT}/${editPath}"${open.slice(3)}`);
 }
 
 function syncFile(srcPath, srcRelative, destRelative, extraFields = {}) {
