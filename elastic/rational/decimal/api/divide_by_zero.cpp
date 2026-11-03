@@ -54,6 +54,14 @@ int VerifyDivideByZeroThrows(bool reportTestCases) {
 		expectNaN(nan + seven, "NaN + 7");
 		expectNaN(nan * seven, "NaN * 7");
 		expectNaN(erational_divide(seven, nan).quot, "erational_divide(7, NaN)");
+		// an n/0 that was never normalized is a NaN as well, on either side
+		erational raw;
+		raw.setnumerator(edecimal(1));
+		raw.setdenominator(edecimal(0));
+		expectNaN(erational_divide(raw, seven).quot, "erational_divide(1/0, 7)");
+		expectNaN(erational_divide(seven, raw).quot, "erational_divide(7, 1/0)");
+		erational q(seven); q /= raw;
+		expectNaN(q, "7 /= 1/0");
 		if (int(nan) != 0 || static_cast<unsigned long long>(nan) != 0ull) {
 			++nrOfFailedTests;
 			if (reportTestCases) std::cerr << "FAIL: integer conversion of NaN is not 0\n";

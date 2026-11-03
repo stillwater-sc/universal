@@ -215,7 +215,7 @@ public:
 		return *this;
 	}
 	erational& operator/=(const erational& rhs) {
-		if (rhs.isnan()) {   // iszero() is true for 0/0 as well: a NaN divisor is not a zero
+		if (rhs.denominator.iszero()) {   // a NaN divisor, canonical 0/0 or an n/0 from setdenominator(0), is not a zero
 			setnan();
 			return *this;
 		}
@@ -759,7 +759,9 @@ struct erationalintdiv {
 // divide integer erational a and b and return result argument
 inline erationalintdiv erational_divide(const erational& lhs, const erational& rhs) {
 	erationalintdiv divresult;
-	if (rhs.isnan()) {   // iszero() is true for 0/0 as well: a NaN divisor is not a zero
+	// either operand a NaN: canonical 0/0, or an n/0 from setdenominator(0) that was never normalized.
+	// Tested before iszero(), which is true for 0/0 as well: a NaN divisor is not a zero
+	if (lhs.bottom().iszero() || rhs.bottom().iszero()) {
 		divresult.quot.setnan();
 		divresult.rem.setnan();
 		return divresult;
