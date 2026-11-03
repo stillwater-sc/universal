@@ -17,6 +17,9 @@
 // INTEGER_ENABLE_LITERALS and INTEGER_THROW_ARITHMETIC_EXCEPTION now default in
 // integer_impl.hpp, beside the #if blocks that test them, so core.hpp gets the same
 // defaults this umbrella does. A caller can still set either before the include.
+//
+// INTEGER_THROW_DIVIDE_BY_ZERO (default 1, #1894): a division by zero throws. Set it, or
+// INTEGER_THROW_ARITHMETIC_EXCEPTION, to 0 to get 0 instead; see integer_impl.hpp.
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

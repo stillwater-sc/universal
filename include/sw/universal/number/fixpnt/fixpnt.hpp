@@ -31,6 +31,9 @@
 // FIXPNT_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
 // application to enable by defining it before this include. Its default, and its forwarding to the quire, lives in
 // fixpnt_impl.hpp, so that core.hpp alone defines it as well (#1436).
+// FIXPNT_THROW_DIVIDE_BY_ZERO (default 1, #1894): a division by zero throws. Set it, or
+// FIXPNT_THROW_ARITHMETIC_EXCEPTION, to 0 to get maxpos/maxneg (Saturate) or 0 (Modulo)
+// instead; see fixpnt_impl.hpp.
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

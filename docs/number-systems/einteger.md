@@ -42,6 +42,21 @@ Full arithmetic, comparison, and decimal/hex parsing and printing are provided.
 same edge cases as [integer's](/universal/number-systems/integer/#integer-power); it never overflows.
 `showLimbs()` prints the limb encoding when you need to see the representation.
 
+### Division by zero
+
+`einteger` has no NaN or infinity to carry a failed division in the value, so by
+default a division by zero throws `einteger_divide_by_zero`. A caller that would rather get a value
+opts out before the include, with `EINTEGER_THROW_DIVIDE_BY_ZERO 0`, or with
+`EINTEGER_THROW_ARITHMETIC_EXCEPTION 0` when the first is not set:
+
+```cpp
+#define EINTEGER_THROW_DIVIDE_BY_ZERO 0
+#include <universal/number/einteger/einteger.hpp>
+```
+
+With the exception off, `x / 0` and `x % 0` are `0`, as are both outputs of `reduce()`.
+Nothing is printed (#1894).
+
 ## Where it is used
 
 `einteger` backs the exact-arithmetic oracles used to validate the floating-point types.

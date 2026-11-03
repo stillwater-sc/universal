@@ -1,6 +1,19 @@
 #pragma once
-// ERATIONAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
-// application to enable. The default lives here rather than in the erational.hpp umbrella,
+// ERATIONAL_THROW_DIVIDE_BY_ZERO: a division by zero throws erational_divide_by_zero, unless the
+// application opts out, by setting this to 0 or, when this is not set,
+// ERATIONAL_THROW_ARITHMETIC_EXCEPTION to 0. With it off, x / 0 is NaN, the 0/0 state that
+// isnan() reports and that arithmetic carries along, and nothing is printed (#1894). Decided
+// before the default below, so that an ERATIONAL_THROW_ARITHMETIC_EXCEPTION the application set
+// is told apart from that default.
+#if !defined(ERATIONAL_THROW_DIVIDE_BY_ZERO)
+#if defined(ERATIONAL_THROW_ARITHMETIC_EXCEPTION)
+#define ERATIONAL_THROW_DIVIDE_BY_ZERO ERATIONAL_THROW_ARITHMETIC_EXCEPTION
+#else
+#define ERATIONAL_THROW_DIVIDE_BY_ZERO 1
+#endif
+#endif
+// ERATIONAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on the other arithmetic errors,
+// left to the application to enable. The default lives here rather than in the erational.hpp umbrella,
 // so that including core.hpp alone defines it as well (#1436).
 #if !defined(ERATIONAL_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr for signalling an error
@@ -202,14 +215,20 @@ public:
 		return *this;
 	}
 	erational& operator/=(const erational& rhs) {
+		if (rhs.isnan()) {   // iszero() is true for 0/0 as well: a NaN divisor is not a zero
+			setnan();
+			return *this;
+		}
 		if (rhs.iszero()) {
-#if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
+#if ERATIONAL_THROW_DIVIDE_BY_ZERO
 			throw erational_divide_by_zero();
 #else
-			std::fprintf(stderr, "erational_divide_by_zero\n");
+			// opted out of the exception: the quotient is NaN
+			setnan();
+			return *this;
 #endif
 		}
-		negative = !((negative && rhs.negative) || (!negative && !rhs.negative));
+		negative =!((negative && rhs.negative) || (!negative && !rhs.negative));
 		numerator *= rhs.denominator;
 		denominator *= rhs.numerator;
 		normalize();
@@ -235,6 +254,12 @@ public:
 		negative    = false;
 		numerator   = 0;
 		denominator = 1;
+	}
+	// the NaN state, 0/0, which isnan() reports
+	void setnan() {
+		negative    = false;
+		numerator   = 0;
+		denominator = 0;
 	}
 	constexpr void setsign(bool sign) noexcept { negative = sign; }
 	constexpr void setneg() noexcept { negative = true; }
@@ -359,13 +384,12 @@ protected:
 		a = numerator; b = denominator;  // precondition is numerator and denominator are positive
 
 		if (b.iszero()) {
-#if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
-			throw erational_divide_by_zero();
-#else
-			std::fprintf(stderr, "erational_divide_by_zero\n");
-			denominator = 0;
-			numerator = 0;
-#endif
+			// not a division by zero itself: the operator that divided has already thrown, or
+			// opted out and set NaN. A zero denominator here comes from arithmetic on a NaN
+			// operand or from setdenominator(0), and settles on the canonical NaN, 0/0. The
+			// GCD loop below must not run with a zero divisor.
+			setnan();
+			return;
 		}
 		while (a % b > 0) {
 			r = a % b;
@@ -728,16 +752,24 @@ struct erationalintdiv {
 
 // divide integer erational a and b and return result argument
 inline erationalintdiv erational_divide(const erational& lhs, const erational& rhs) {
+	erationalintdiv divresult;
+	if (rhs.isnan()) {   // iszero() is true for 0/0 as well: a NaN divisor is not a zero
+		divresult.quot.setnan();
+		divresult.rem.setnan();
+		return divresult;
+	}
 	if (rhs.iszero()) {
-#if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
+#if ERATIONAL_THROW_DIVIDE_BY_ZERO
 		throw erational_divide_by_zero{};
 #else
-		std::fprintf(stderr, "erational_divide_by_zero\n");
+		// opted out of the exception: quotient and remainder are NaN
+		divresult.quot.setnan();
+		divresult.rem.setnan();
+		return divresult;
 #endif
 	}
 
 	// a/b / c/d => ad / bc
-	erationalintdiv divresult;
 	divresult.quot.setnumerator(lhs.top() * rhs.bottom());
 	divresult.quot.setdenominator(lhs.bottom() * rhs.top());
 	return divresult;

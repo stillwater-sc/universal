@@ -17,6 +17,9 @@
 /// einteger_impl.hpp, beside the code they govern, so that a translation unit which
 /// includes core.hpp directly gets the same defaults this umbrella used to supply
 /// (#1334, #1436). Defining either before this header still wins, as before.
+///
+/// EINTEGER_THROW_DIVIDE_BY_ZERO (default 1, #1894): a division by zero throws. Set it, or
+/// EINTEGER_THROW_ARITHMETIC_EXCEPTION, to 0 to get 0 instead; see einteger_impl.hpp.
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library

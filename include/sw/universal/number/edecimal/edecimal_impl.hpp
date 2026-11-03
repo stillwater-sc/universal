@@ -1,6 +1,19 @@
 #pragma once
-// EDECIMAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
-// application to enable. The default lives here rather than in the edecimal.hpp umbrella,
+// EDECIMAL_THROW_DIVIDE_BY_ZERO: a division or remainder by zero throws
+// edecimal_integer_divide_by_zero. edecimal has no NaN to carry the failure in the value, so it
+// throws unless the application opts out, by setting this to 0 or, when this is not set,
+// EDECIMAL_THROW_ARITHMETIC_EXCEPTION to 0. With it off, x / 0 and x % 0 are 0 and nothing is
+// printed (#1894). Decided before the default below, so that an
+// EDECIMAL_THROW_ARITHMETIC_EXCEPTION the application set is told apart from that default.
+#if !defined(EDECIMAL_THROW_DIVIDE_BY_ZERO)
+#if defined(EDECIMAL_THROW_ARITHMETIC_EXCEPTION)
+#define EDECIMAL_THROW_DIVIDE_BY_ZERO EDECIMAL_THROW_ARITHMETIC_EXCEPTION
+#else
+#define EDECIMAL_THROW_DIVIDE_BY_ZERO 1
+#endif
+#endif
+// EDECIMAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on the other arithmetic errors,
+// left to the application to enable. The default lives here rather than in the edecimal.hpp umbrella,
 // so that including core.hpp alone defines it as well (#1436).
 #if !defined(EDECIMAL_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr as a signalling error
@@ -821,11 +834,16 @@ struct decintdiv {
 // divide integer edecimal a and b and return result argument
 inline decintdiv decint_divide(const edecimal& _a, const edecimal& _b) {
 	if (_b.iszero()) {
-#if EDECIMAL_THROW_ARITHMETIC_EXCEPTION
+#if EDECIMAL_THROW_DIVIDE_BY_ZERO
 		throw edecimal_integer_divide_by_zero{};
 #else
-		std::fprintf(stderr, "integer_divide_by_zero\n");
-#endif // EDECIMAL_THROW_ARITHMETIC_EXCEPTION
+		// opted out of the exception: the long division below must not run with a zero
+		// divisor, so quotient and remainder are 0
+		decintdiv zeroed;
+		zeroed.quot = 0;
+		zeroed.rem = 0;
+		return zeroed;
+#endif // EDECIMAL_THROW_DIVIDE_BY_ZERO
 	}
 	// generate the absolute values to do long division 
 	bool a_negative = _a.sign();
