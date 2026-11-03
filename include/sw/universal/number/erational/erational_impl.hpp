@@ -168,6 +168,8 @@ public:
 
 	// arithmetic operators
 	erational& operator+=(const erational& rhs) {
+		if (rhs.is_constant_zero()) return *this += runtime_zero();
+		if (is_constant_zero()) setzero();
 		edecimal a = (negative ? -numerator : numerator);
 		edecimal b = denominator;
 		edecimal c = (rhs.negative ? -rhs.numerator : rhs.numerator);
@@ -188,6 +190,8 @@ public:
 		return *this;
 	}
 	erational& operator-=(const erational& rhs) {
+		if (rhs.is_constant_zero()) return *this -= runtime_zero();
+		if (is_constant_zero()) setzero();
 		edecimal a = (negative ? -numerator : numerator);
 		edecimal b = denominator;
 		edecimal c = (rhs.negative ? -rhs.numerator : rhs.numerator);
@@ -208,6 +212,8 @@ public:
 		return *this;
 	}
 	erational& operator*=(const erational& rhs) {
+		if (rhs.is_constant_zero()) return *this *= runtime_zero();
+		if (is_constant_zero()) setzero();
 		numerator *= rhs.numerator;
 		denominator *= rhs.denominator;
 		negative = !((negative && rhs.negative) || (!negative && !rhs.negative));
@@ -215,6 +221,8 @@ public:
 		return *this;
 	}
 	erational& operator/=(const erational& rhs) {
+		if (rhs.is_constant_zero()) return *this /= runtime_zero();
+		if (is_constant_zero()) setzero();
 		// either operand a NaN (canonical 0/0, or an n/0 from setdenominator(0)): NaN, before the
 		// zero-divisor test, so NaN / 0 is NaN as it is through erational_divide()
 		if (denominator.iszero() || rhs.denominator.iszero()) {
@@ -243,7 +251,10 @@ public:
 	constexpr bool isneg()          const noexcept { return negative; }   // <  0
 	constexpr bool ispos()          const noexcept { return !negative; }  // >= 0
 	constexpr bool isinf()          const noexcept { return false; }
-	constexpr bool isnan()          const noexcept { return numerator.iszero() && denominator.iszero(); }
+	constexpr bool isnan()          const noexcept { return numerator.iszero() && denominator.iszero() && !is_constant_zero(); }
+	// the zero a constant-evaluated default constructor leaves: both digit vectors empty, where the
+	// runtime zero is 0/1. It is zero, not the 0/0 NaN, and arithmetic replaces it with 0/1 first.
+	constexpr bool is_constant_zero() const noexcept { return numerator.empty() && denominator.empty(); }
 	constexpr bool sign()           const noexcept { return negative; }
 	constexpr edecimal top()        const noexcept { return numerator; }
 	constexpr edecimal bottom()     const noexcept { return denominator; }
@@ -257,6 +268,8 @@ public:
 		numerator   = 0;
 		denominator = 1;
 	}
+	// the runtime zero, 0/1, standing in for an operand in the constant-initialized zero state
+	static erational runtime_zero() { erational z; z.setzero(); return z; }
 	// the NaN state, 0/0, which isnan() reports
 	void setnan() {
 		negative    = false;
@@ -431,6 +444,7 @@ protected:
 		// erational_divide, the divide-by-zero fallback). Resolve it here in
 		// IEEE terms before the exponent search, which would otherwise spin
 		// forever (den * 2^p stays zero, so den2p_le_num is always true).
+		if (is_constant_zero()) return static_cast<Real>(0);
 		if (denominator.iszero()) {
 			if (numerator.iszero()) return std::numeric_limits<Real>::quiet_NaN();   // 0/0
 			return negative ? -std::numeric_limits<Real>::infinity()
@@ -759,7 +773,11 @@ struct erationalintdiv {
 };
 
 // divide integer erational a and b and return result argument
-inline erationalintdiv erational_divide(const erational& lhs, const erational& rhs) {
+inline erationalintdiv erational_divide(const erational& _lhs, const erational& _rhs) {
+	// the constant-initialized zero (empty digit vectors) is zero: give it the runtime form, 0/1
+	erational lhs(_lhs), rhs(_rhs);
+	if (lhs.is_constant_zero()) lhs.setzero();
+	if (rhs.is_constant_zero()) rhs.setzero();
 	erationalintdiv divresult;
 	// either operand a NaN: canonical 0/0, or an n/0 from setdenominator(0) that was never normalized.
 	// Tested before iszero(), which is true for 0/0 as well: a NaN divisor is not a zero

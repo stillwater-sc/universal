@@ -23,6 +23,41 @@ inline erational MakeNaN() {
 	return r;
 }
 
+// a namespace-scope erational is constant-initialized: its digit vectors stay empty. It is zero,
+// not the 0/0 NaN, on either side of an operator
+erational constantZero;
+
+int VerifyConstantZero(bool reportTestCases) {
+	int nrOfFailedTests = 0;
+	auto check = [&](bool ok, const char* label) {
+		if (!ok) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: " << label << '\n';
+		}
+	};
+	erational one(1), seven(7), zero(0);
+	check(constantZero.is_constant_zero(), "a namespace-scope erational is constant-initialized");
+	check(constantZero.iszero() && !constantZero.isnan(), "the constant zero is zero, not NaN");
+	check(double(constantZero) == 0.0, "double(constant zero) == 0");
+	check(int(constantZero) == 0, "int(constant zero) == 0");
+	check(constantZero + one == one && one + constantZero == one, "0 + 1 == 1");
+	check(one - constantZero == one, "1 - 0 == 1");
+	check((constantZero - one) == erational(-1), "0 - 1 == -1");
+	check((constantZero * seven).iszero() && !(constantZero * seven).isnan(), "0 * 7 == 0");
+	check((seven * constantZero).iszero() && !(seven * constantZero).isnan(), "7 * 0 == 0");
+	check((constantZero / seven).iszero() && !(constantZero / seven).isnan(), "0 / 7 == 0");
+	auto d = erational_divide(constantZero, seven);
+	check(d.quot.iszero() && !d.quot.isnan(), "erational_divide(0, 7) == 0");
+	// and as a divisor it is a zero divisor, which throws by default
+	bool threw = false;
+	try { erational r = seven / constantZero; (void)r; } catch (const erational_divide_by_zero&) { threw = true; }
+	check(threw, "7 / constant zero throws erational_divide_by_zero");
+	threw = false;
+	try { auto q = erational_divide(seven, constantZero); (void)q; } catch (const erational_divide_by_zero&) { threw = true; }
+	check(threw, "erational_divide(7, constant zero) throws erational_divide_by_zero");
+	return nrOfFailedTests;
+}
+
 int VerifyDivideByZeroThrows(bool reportTestCases) {
 	int nrOfFailedTests = 0;
 	auto expectThrow = [&](auto op, const char* label) {
@@ -121,6 +156,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyDivideByZeroThrows(reportTestCases), "erational", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConstantZero(reportTestCases), "erational", "constant-initialized zero");
 #endif
 
 #if REGRESSION_LEVEL_2
