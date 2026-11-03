@@ -418,7 +418,12 @@ public:
 	
 	// reduce returns the ratio and remainder of a and b in *this and r
 	void reduce(const einteger& a, const einteger& b, einteger& r) {
-		if (b.iszero()) {
+		// every limb, not iszero(): setblock() does not trim, so a zero can be [0, 0, ...]
+		bool divisorIsZero = true;
+		for (size_t i = b._block.size(); i > 0; --i) {
+			if (b._block[i - 1] != bt(0)) { divisorIsZero = false; break; }
+		}
+		if (divisorIsZero) {
 #if EINTEGER_THROW_DIVIDE_BY_ZERO
 			throw einteger_divide_by_zero{};
 #else

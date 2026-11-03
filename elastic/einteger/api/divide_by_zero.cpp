@@ -34,6 +34,10 @@ int VerifyDivideByZeroThrows(bool reportTestCases) {
 	expectThrow([&] { EInteger r(seven); r /= zero; }, "7 /= 0");
 	expectThrow([&] { EInteger r(seven); r %= zero; }, "7 %= 0");
 	expectThrow([&] { EInteger q, r; q.reduce(seven, zero, r); }, "reduce(7, 0)");
+	// a zero held in more than one limb, which setblock() can build
+	EInteger widezero; widezero.setblock(1, 0);
+	expectThrow([&] { EInteger r = seven / widezero; (void)r; }, "7 / [0,0]");
+	expectThrow([&] { EInteger r = seven % widezero; (void)r; }, "7 % [0,0]");
 	if (seven / EInteger(2) != EInteger(3) || seven % EInteger(2) != EInteger(1)) {
 		++nrOfFailedTests;
 		if (reportTestCases) std::cerr << "FAIL: 7 / 2 or 7 % 2\n";
