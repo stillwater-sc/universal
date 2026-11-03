@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -85,7 +86,9 @@ namespace {
 	struct Ranked { erational v; int rank; std::string name; };
 
 	std::vector<Ranked> OrderedValues() {
-		erational negzero(-0.0);      // negative zero: the flag is set, the digits are 0/1
+		// a zero with the sign flag set, as 0 * -3 leaves it (to_ieee754 gives -0.0). erational(-0.0)
+		// would not do: convert_ieee754 returns a plain 0 for either IEEE zero.
+		const erational negzero = erational(0) * erational(-3);
 		return {
 			{ erational(-7),         0, "-7"    },
 			{ erational(-3, 2),      1, "-3/2"  },
@@ -94,7 +97,7 @@ namespace {
 			{ erational(-1, 2),      3, "-1/2"  },
 			{ erational(-2, 4),      3, "-2/4"  },   // unreduced
 			{ erational(0),          4, "0"     },
-			{ negzero,               4, "-0"    },
+			{ negzero,               4, "0*-3"  },
 			{ constant_zero,         4, "cz"    },
 			{ erational(0, -5),      4, "0/-5"  },
 			{ erational(1, 2),       5, "1/2"   },
@@ -130,6 +133,15 @@ try {
 #else // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
+	{
+		// the fixtures are what they claim: a sign-flagged zero, and a constant-initialized zero
+		int fails = 0;
+		const erational negzero = erational(0) * erational(-3);
+		fails += check(negzero.iszero() && negzero.isneg(), "0 * -3 is a sign-flagged zero", reportTestCases);
+		fails += check(std::signbit(double(negzero)), "0 * -3 converts to -0.0", reportTestCases);
+		fails += check(constant_zero.is_constant_zero(), "namespace-scope erational is constant-initialized", reportTestCases);
+		nrOfFailedTestCases += ReportTestResult(fails, "erational", "zero fixtures");
+	}
 	{
 		// every ordered pair, all six operators (#1908: the sign; #1909: the constant zero)
 		const auto values = OrderedValues();
