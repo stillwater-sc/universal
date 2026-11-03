@@ -36,6 +36,11 @@ int VerifyDivideByZeroValue(bool reportTestCases) {
 	expectNaN(nan * seven, "NaN * 7");
 	expectNaN(nan / seven, "NaN / 7");
 	expectNaN(seven / nan, "7 / NaN");
+	// a NaN converts to integer 0, instead of throwing out of the noexcept conversion operators
+	if (int(nan) != 0 || static_cast<unsigned long long>(nan) != 0ull) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: integer conversion of NaN is not 0\n";
+	}
 	if (seven / erational(2) != erational(7, 2)) {
 		++nrOfFailedTests;
 		if (reportTestCases) std::cerr << "FAIL: 7 / 2 != 7/2\n";

@@ -406,11 +406,17 @@ protected:
 	// convert to signed int
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
-	SignedInt to_signed() const { return static_cast<SignedInt>(numerator / denominator); }
+	SignedInt to_signed() const {
+		if (denominator.iszero()) return SignedInt(0);   // NaN has no integer value; the edecimal division would throw out of the noexcept operators
+		return static_cast<SignedInt>(numerator / denominator);
+	}
 	// convert to unsigned int
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
-	UnsignedInt to_unsigned() const { return static_cast<UnsignedInt>(numerator / denominator); }
+	UnsignedInt to_unsigned() const {
+		if (denominator.iszero()) return UnsignedInt(0);   // NaN has no integer value; the edecimal division would throw out of the noexcept operators
+		return static_cast<UnsignedInt>(numerator / denominator);
+	}
 	// convert to ieee-754: correctly-rounded (round-half-to-even) conversion of
 	// the exact rational numerator/denominator to the target binary float.
 	// The previous one-liner (Real(numerator)/Real(denominator)) ignored the
