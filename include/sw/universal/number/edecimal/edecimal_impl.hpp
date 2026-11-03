@@ -479,8 +479,8 @@ protected:
 
 	// conversion functions
 	inline short              to_short()       const noexcept { return short(to_long_long()); }
-	inline int                to_int()         const noexcept { return short(to_long_long()); }
-	inline long               to_long()        const noexcept { return short(to_long_long()); }
+	inline int                to_int()         const noexcept { return static_cast<int>(to_long_long()); }
+	inline long               to_long()        const noexcept { return static_cast<long>(to_long_long()); }
 	inline long long          to_long_long()   const noexcept {
 		// Horner's method: accumulate from most-significant digit
 		long long v = 0;
