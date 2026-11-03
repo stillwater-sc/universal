@@ -479,20 +479,25 @@ protected:
 
 	// conversion functions
 	inline short              to_short()       const noexcept { return short(to_long_long()); }
-	inline int                to_int()         const noexcept { return short(to_long_long()); }
-	inline long               to_long()        const noexcept { return short(to_long_long()); }
-	inline long long          to_long_long()   const noexcept {
+	inline int                to_int()         const noexcept { return static_cast<int>(to_long_long()); }
+	inline long               to_long()        const noexcept { return static_cast<long>(to_long_long()); }
+	// the value modulo 2^64 is exact for every edecimal that fits 64 bits, signed or unsigned, and
+	// wraps beyond: the accumulation is in unsigned arithmetic, where overflow is defined. A signed
+	// long long accumulator overflowed (UB) on the magnitude 2^63 of INT64_MIN and on any value
+	// above LLONG_MAX, so neither INT64_MIN nor a large unsigned value converted (#1908).
+	inline unsigned long long to_ulong_long()  const noexcept {
 		// Horner's method: accumulate from most-significant digit
-		long long v = 0;
+		unsigned long long v = 0;
 		for (edecimal::const_reverse_iterator rit = this->rbegin(); rit != this->rend(); ++rit) {
-			v = v * 10 + *rit;
+			v = v * 10u + static_cast<unsigned long long>(*rit);
 		}
-		return sign() ? -v : v;
+		return sign() ? 0ull - v : v;
 	}
+	// the same value as a long long: C++20 defines the unsigned-to-signed conversion as modular
+	inline long long          to_long_long()   const noexcept { return static_cast<long long>(to_ulong_long()); }
 	inline unsigned short     to_ushort()      const noexcept { return static_cast<unsigned short>(to_ulong_long()); }
 	inline unsigned int       to_uint()        const noexcept { return static_cast<unsigned int>(to_ulong_long()); }
 	inline unsigned long      to_ulong()       const noexcept { return static_cast<unsigned long>(to_ulong_long()); }
-	inline unsigned long long to_ulong_long()  const noexcept { return static_cast<unsigned long long>(to_long_long()); }
 	inline float              to_float()       const noexcept {
 		return static_cast<float>(to_double());
 	}
@@ -519,26 +524,28 @@ protected:
 		bool sign = false;
 		setzero(); // initialize the edecimal value to 0
 		if (v == 0) return *this;
-		if (numeric_limits<Ty>::is_signed) {
+		// the magnitude in the unsigned type: negating a signed v overflowed (UB) for the minimum,
+		// whose magnitude, 2^63 for INT64_MIN, has no signed representation (#1908)
+		using Unsigned = std::make_unsigned_t<Ty>;
+		Unsigned u = static_cast<Unsigned>(v);
+		if constexpr (numeric_limits<Ty>::is_signed) {
 			if (v < 0) {
 				sign = true; // negative number
-				// transform to sign-magnitude on positive side
-				v *= Ty(-1);
+				u = static_cast<Unsigned>(Unsigned(0) - u);
 			}
 		}
-		uint64_t mask = 0x1;
 		// IMPORTANT: can't use initializer or assignment operator as it would yield 
 		// an infinite loop calling convert_integer. So we need to construct the
 		// edecimal from first principals
 		edecimal base; // can't use base(1) semantics here as it would cause an infinite loop
 		base.clear();
 		base.push_back(1);
-		while (v) { // minimum loop iterations; exits when no bits left
-			if (v & mask) {
+		while (u) { // minimum loop iterations; exits when no bits left
+			if (u & Unsigned(1)) {
 				*this += base;
 			}
 			base += base;
-			v >>= 1;
+			u = static_cast<Unsigned>(u >> 1);
 		}
 		// lastly, set the sign
 		setsign(sign);

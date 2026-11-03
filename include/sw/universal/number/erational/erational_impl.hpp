@@ -86,8 +86,17 @@ public:
 	constexpr erational& operator=(const erational&) = default;
 	constexpr erational& operator=(erational&&) = default;
 
-	erational(std::int64_t n, std::uint64_t d) : negative{ false }, numerator { n }, denominator{ d } {
-		negative = ((n < 0) ^ (d < 0));
+	// n/d from two integers of any sign: the magnitudes go to the digits and the sign to the flag,
+	// so erational(-3, 2) and erational(3, -2) are both -3/2, and a zero numerator is never
+	// negative. The fraction is not reduced: erational(8, 18) keeps 8/18. A zero d is stored as
+	// is, an n/0 that the logic operators treat as unordered (#1908).
+	template<typename N, typename D,
+		typename = std::enable_if_t<std::is_integral_v<N> && std::is_integral_v<D>>>
+	erational(N n, D d) : negative{ false }, numerator{}, denominator{} {
+		bool nneg{ false }, dneg{ false };
+		numerator   = edecimal(magnitude(n, nneg));
+		denominator = edecimal(magnitude(d, dneg));
+		negative    = !numerator.iszero() && (nneg != dneg);
 	}
 
 	// initializers for native types
@@ -423,14 +432,53 @@ protected:
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	SignedInt to_signed() const {
 		if (denominator.iszero()) return SignedInt(0);   // NaN has no integer value; the edecimal division would throw out of the noexcept operators
-		return static_cast<SignedInt>(numerator / denominator);
+		return static_cast<SignedInt>(signed_quotient());
 	}
-	// convert to unsigned int
+	// convert to unsigned int: the same integer value as to_signed, so a negative value wraps
+	// modulo 2^n, as an edecimal (and a C++ signed integer) converts to an unsigned type
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
 	UnsignedInt to_unsigned() const {
 		if (denominator.iszero()) return UnsignedInt(0);   // NaN has no integer value; the edecimal division would throw out of the noexcept operators
-		return static_cast<UnsignedInt>(numerator / denominator);
+		return static_cast<UnsignedInt>(signed_quotient());
+	}
+	// the integer part, truncated toward zero, with the sign applied: the digits hold magnitudes
+	// and the sign lives in the flag, so -7/2 is -3 (#1908)
+	edecimal signed_quotient() const {
+		edecimal q = numerator / denominator;
+		if (negative && !q.iszero()) q = -q;
+		return q;
+	}
+	// |v| as an unsigned long long, and whether v is negative; 0 - |v| keeps INT64_MIN exact
+	template<typename I>
+	static unsigned long long magnitude(I v, bool& neg) {
+		if constexpr (std::is_signed_v<I>) {
+			neg = (v < 0);
+			return neg ? 0ull - static_cast<unsigned long long>(v) : static_cast<unsigned long long>(v);
+		}
+		else {
+			neg = false;
+			return static_cast<unsigned long long>(v);
+		}
+	}
+	// three-way comparison of values for the logic operators: -1, 0 or +1, and 2 (unordered) when
+	// either operand is a NaN, the 0/0 state or an n/0 left by setdenominator(0) or erational(n, 0).
+	// The sign flag orders the values, +0 and -0 are equal, an unreduced 2/4 equals 1/2 (the
+	// magnitudes are cross-multiplied), and the constant-initialized zero (both digit vectors
+	// empty) is 0 (#1908, #1909).
+	static int compare(const erational& a, const erational& b) {
+		const bool aunordered = a.denominator.iszero() && !a.is_constant_zero();
+		const bool bunordered = b.denominator.iszero() && !b.is_constant_zero();
+		if (aunordered || bunordered) return 2;
+		const bool azero = a.numerator.iszero(), bzero = b.numerator.iszero();
+		if (azero && bzero) return 0;
+		if (azero) return b.negative ? 1 : -1;
+		if (bzero) return a.negative ? -1 : 1;
+		if (a.negative != b.negative) return a.negative ? -1 : 1;
+		const edecimal ad = a.numerator * b.denominator;
+		const edecimal bc = a.denominator * b.numerator;
+		const int magnitude_order = (ad < bc) ? -1 : ((bc < ad) ? 1 : 0);
+		return a.negative ? -magnitude_order : magnitude_order;
 	}
 	// convert to ieee-754: correctly-rounded (round-half-to-even) conversion of
 	// the exact rational numerator/denominator to the target binary float.
@@ -519,14 +567,8 @@ protected:
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	erational& convert_signed(SignedInt& rhs) {
-		if (rhs < 0) {
-			negative = true;
-			numerator = -rhs;
-		}
-		else {
-			negative = false;
-			numerator = rhs;
-		}
+		// magnitude() negates in unsigned arithmetic: -rhs overflowed (UB) for the minimum (#1908)
+		numerator   = edecimal(magnitude(rhs, negative));
 		denominator = 1;
 		return *this;
 	}
@@ -686,9 +728,13 @@ inline erational operator/(const erational& lhs, const erational& rhs) {
 
 /// erational - erational logic operators
 
+// All six compare values through erational::compare(): the sign flag applies, +0 == -0, an
+// unreduced fraction equals its reduced form, and the constant-initialized zero is 0. A NaN is
+// unordered, as in IEEE-754: every comparison with it is false except !=.
+
 // equality test
 inline bool operator==(const erational& lhs, const erational& rhs) {
-	return lhs.numerator == rhs.numerator && lhs.denominator == rhs.denominator;
+	return erational::compare(lhs, rhs) == 0;
 }
 // inequality test
 inline bool operator!=(const erational& lhs, const erational& rhs) {
@@ -696,63 +742,38 @@ inline bool operator!=(const erational& lhs, const erational& rhs) {
 }
 // less-than test
 inline bool operator<(const erational& lhs, const erational& rhs) {
-	// a/b < c/d  => ad / bd < cb / bd => ad < cb
-	edecimal ad = lhs.numerator * rhs.denominator;
-	edecimal bc = lhs.denominator * rhs.numerator;
-	return ad < bc;
+	return erational::compare(lhs, rhs) == -1;
 }
 // greater-than test
 inline bool operator>(const erational& lhs, const erational& rhs) {
-	return operator<(rhs, lhs);
+	return erational::compare(lhs, rhs) == 1;
 }
 // less-or-equal test
 inline bool operator<=(const erational& lhs, const erational& rhs) {
-	return operator<(lhs, rhs) || operator==(lhs, rhs);
+	const int c = erational::compare(lhs, rhs);
+	return c == -1 || c == 0;
 }
 // greater-or-equal test
 inline bool operator>=(const erational& lhs, const erational& rhs) {
-	return !operator<(lhs, rhs);
+	const int c = erational::compare(lhs, rhs);
+	return c == 1 || c == 0;
 }
 
 // erational - long logic operators
-inline bool operator==(const erational& lhs, long rhs) {
-	return lhs == erational(rhs);
-}
-inline bool operator!=(const erational& lhs, long rhs) {
-	return !operator==(lhs, erational(rhs));
-}
-inline bool operator< (const erational& lhs, long rhs) {
-	return operator<(lhs, erational(rhs));
-}
-inline bool operator> (const erational& lhs, long rhs) {
-	return operator< (erational(rhs), lhs);
-}
-inline bool operator<=(const erational& lhs, long rhs) {
-	return operator< (lhs, erational(rhs)) || operator==(lhs, erational(rhs));
-}
-inline bool operator>=(const erational& lhs, long rhs) {
-	return !operator<(lhs, erational(rhs));
-}
+inline bool operator==(const erational& lhs, long rhs) { return lhs == erational(rhs); }
+inline bool operator!=(const erational& lhs, long rhs) { return lhs != erational(rhs); }
+inline bool operator< (const erational& lhs, long rhs) { return lhs <  erational(rhs); }
+inline bool operator> (const erational& lhs, long rhs) { return lhs >  erational(rhs); }
+inline bool operator<=(const erational& lhs, long rhs) { return lhs <= erational(rhs); }
+inline bool operator>=(const erational& lhs, long rhs) { return lhs >= erational(rhs); }
 
 // long - erational logic operators
-inline bool operator==(long lhs, const erational& rhs) {
-	return erational(lhs) == rhs;
-}
-inline bool operator!=(long lhs, const erational& rhs) {
-	return !operator==(erational(lhs), rhs);
-}
-inline bool operator< (long lhs, const erational& rhs) {
-	return operator<(erational(lhs), rhs);
-}
-inline bool operator> (long lhs, const erational& rhs) {
-	return operator< (erational(lhs), rhs);
-}
-inline bool operator<=(long lhs, const erational& rhs) {
-	return operator< (erational(lhs), rhs) || operator==(erational(lhs), rhs);
-}
-inline bool operator>=(long lhs, const erational& rhs) {
-	return !operator<(erational(lhs), rhs);
-}
+inline bool operator==(long lhs, const erational& rhs) { return erational(lhs) == rhs; }
+inline bool operator!=(long lhs, const erational& rhs) { return erational(lhs) != rhs; }
+inline bool operator< (long lhs, const erational& rhs) { return erational(lhs) <  rhs; }
+inline bool operator> (long lhs, const erational& rhs) { return erational(lhs) >  rhs; }
+inline bool operator<=(long lhs, const erational& rhs) { return erational(lhs) <= rhs; }
+inline bool operator>=(long lhs, const erational& rhs) { return erational(lhs) >= rhs; }
 
 ///////////////////////////////////////////////////////////////////////
 
