@@ -276,6 +276,12 @@ namespace {
 			nrOfFailedTestCases += ReportTestResult(VerifyFloatConversion<Mod>(reportTestCases), type_tag(Mod()), "double conversion");
 			nrOfFailedTestCases += ReportTestResult(VerifySaturationBoundary<Sat, float>(reportTestCases), type_tag(Sat()), "float saturation");
 			nrOfFailedTestCases += ReportTestResult(VerifySaturationBoundary<Sat, double>(reportTestCases), type_tag(Sat()), "double saturation");
+#if LONG_DOUBLE_SUPPORT
+			// a wider long double reaches convert_long_double for nbits > 62
+			if constexpr (std::numeric_limits<long double>::digits > std::numeric_limits<double>::digits) {
+				nrOfFailedTestCases += ReportTestResult(VerifySaturationBoundary<Sat, long double>(reportTestCases), type_tag(Sat()), "long double saturation");
+			}
+#endif
 		}
 	}
 
