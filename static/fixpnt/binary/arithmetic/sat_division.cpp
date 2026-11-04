@@ -398,9 +398,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 65, 32, uint32_t>(reportTestCases), "fixpnt< 65,32,Saturate,uint32_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 65, 32, uint64_t>(reportTestCases), "fixpnt< 65,32,Saturate,uint64_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 80, 40, uint8_t >(reportTestCases), "fixpnt< 80,40,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 80, 40, uint16_t>(reportTestCases), "fixpnt< 80,40,Saturate,uint16_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 80, 40, uint32_t>(reportTestCases), "fixpnt< 80,40,Saturate,uint32_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 80, 40, uint64_t>(reportTestCases), "fixpnt< 80,40,Saturate,uint64_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision<128, 64, uint8_t >(reportTestCases), "fixpnt<128,64,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision<128, 64, uint16_t>(reportTestCases), "fixpnt<128,64,Saturate,uint16_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision<128, 64, uint32_t>(reportTestCases), "fixpnt<128,64,Saturate,uint32_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision<128, 64, uint64_t>(reportTestCases), "fixpnt<128,64,Saturate,uint64_t>", test_tag);
 #endif
