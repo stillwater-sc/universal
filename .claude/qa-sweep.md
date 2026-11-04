@@ -19,8 +19,8 @@ against it.
 
 ## Build and test
 
-At most `-j4`. Build directories: `build-ci/`, and `build-asan-<n>/` for
-area `<n>`.
+At most `-j4`. Build directories: `build-ci/`, and `build-asan-<n>/` and
+`build-ubsan-<n>/` for area `<n>`.
 
 ```bash
 cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release -DUNIVERSAL_BUILD_CI_LITE=ON
@@ -68,23 +68,34 @@ which are experimental.
 
 ## Sanitizers
 
-AddressSanitizer and UndefinedBehaviorSanitizer together, with Clang, over the
-area's tests at regression level 1. This is the configuration of
-`.github/workflows/sanitizers.yml`, which runs the two separately over the
-whole CI build:
+AddressSanitizer and UndefinedBehaviorSanitizer, with Clang, over the area's
+tests at regression level 1, in two separate builds as
+`.github/workflows/sanitizers.yml` runs them. They can't share one: ASan
+compiles at `-O1`, and UBSan needs `-O0` because the optimizer can remove UB
+sites before the instrumentation sees them (see the comment above
+`UNIVERSAL_ENABLE_ASAN` in `CMakeLists.txt`). Run them one after the other.
 
 ```bash
+# ASan
 cmake -S . -B build-asan-<n> -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
-  -DUNIVERSAL_ENABLE_ASAN=ON -DUNIVERSAL_ENABLE_UBSAN=ON \
+  -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUNIVERSAL_ENABLE_ASAN=ON \
   -DCMAKE_C_FLAGS_DEBUG="-gline-tables-only" -DCMAKE_CXX_FLAGS_DEBUG="-gline-tables-only" \
   <selection>
 cmake --build build-asan-<n> -j4
-ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 \
   ctest --test-dir build-asan-<n> -j4 --timeout 600 --output-on-failure
+
+# UBSan
+cmake -S . -B build-ubsan-<n> -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUNIVERSAL_ENABLE_UBSAN=ON \
+  -DCMAKE_C_FLAGS_DEBUG="-gline-tables-only" -DCMAKE_CXX_FLAGS_DEBUG="-gline-tables-only" \
+  <selection>
+cmake --build build-ubsan-<n> -j4
+UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+  ctest --test-dir build-ubsan-<n> -j4 --timeout 600 --output-on-failure
 ```
 
-`<n>` is the area's number. A separate build directory per area keeps one
+`<n>` is the area's number. Separate build directories per area keep one
 area's options from carrying over into another's when the sweep runs in a
 clone that is not fresh. The first frame to report is the first one inside
 `include/sw/`.
