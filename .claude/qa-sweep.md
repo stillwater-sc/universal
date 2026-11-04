@@ -23,7 +23,7 @@ At most `-j4`. Build directories: `build-ci/`, and `build-asan-<n>/` and
 `build-ubsan-<n>/` for area `<n>`.
 
 ```bash
-cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release -DUNIVERSAL_BUILD_CI_LITE=ON \
+cmake --fresh -S . -B build-ci -DCMAKE_BUILD_TYPE=Release -DUNIVERSAL_BUILD_CI_LITE=ON \
   -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
   -DUNIVERSAL_BUILD_REGRESSION_STRESS=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_4=OFF \
   -DUNIVERSAL_BUILD_REGRESSION_LEVEL_3=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_2=OFF \
@@ -33,11 +33,15 @@ ctest --test-dir build-ci -j4 --timeout 600 --output-on-failure
 ```
 
 This is the fast CI tier's build (`UNIVERSAL_BUILD_CI_LITE`), at regression
-level 1, with GCC. Every configure in this file names its compiler and its
-regression level explicitly, turning `STRESS` and levels 2-4 off and level 1
-on: CMake keeps cached compiler and `UNIVERSAL_BUILD_REGRESSION_*` settings
-across reconfigures, so a reused build directory would otherwise keep whatever
-it was first configured with. A test's name is its target's:
+level 1, with GCC. Every configure in this file uses `cmake --fresh`, which
+discards the build tree's cache: CMake keeps cached settings across
+reconfigures, and takes a compiler only on the first configure, so a reused
+`build-ci/` that once held a full or `UNIVERSAL_BUILD_CI` build would keep
+those options, its compiler and its regression level. The objects stay, so a
+rebuild is still incremental. The regression flags then only restate the
+defaults: `STRESS` and levels 2-4 off, level 1 on. `--fresh` needs CMake 3.24 or later,
+newer than the 3.22 that `CMakeLists.txt` accepts; with an older CMake, report
+that as the build step's finding and stop. A test's name is its target's:
 `<type>_<stem>`, as in `posit_logarithm`. Build one type's tests by turning on
 its `UNIVERSAL_BUILD_NUMBER_*` option, as the **Areas** table does.
 
@@ -85,7 +89,7 @@ sites before the instrumentation sees them (see the comment above
 
 ```bash
 # ASan
-cmake -S . -B build-asan-<n> -DCMAKE_BUILD_TYPE=Debug \
+cmake --fresh -S . -B build-asan-<n> -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUNIVERSAL_ENABLE_ASAN=ON \
   -DCMAKE_C_FLAGS_DEBUG="-gline-tables-only" -DCMAKE_CXX_FLAGS_DEBUG="-gline-tables-only" \
   -DUNIVERSAL_BUILD_REGRESSION_STRESS=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_4=OFF \
@@ -97,7 +101,7 @@ ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 \
   ctest --test-dir build-asan-<n> -j4 --timeout 600 --output-on-failure
 
 # UBSan
-cmake -S . -B build-ubsan-<n> -DCMAKE_BUILD_TYPE=Debug \
+cmake --fresh -S . -B build-ubsan-<n> -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUNIVERSAL_ENABLE_UBSAN=ON \
   -DCMAKE_C_FLAGS_DEBUG="-gline-tables-only" -DCMAKE_CXX_FLAGS_DEBUG="-gline-tables-only" \
   -DUNIVERSAL_BUILD_REGRESSION_STRESS=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_4=OFF \
