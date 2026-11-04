@@ -8,6 +8,8 @@
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>
+#include <cmath>
+#include <random>
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
@@ -283,6 +285,62 @@ int VerifySatDivisionSpecialCases(bool reportTestCases) {
 	return nrOfFailures;
 }
 
+// Saturating division on configurations wider than 64 bits (#1906). The division itself was
+// right; the operands were not: Saturate integer conversion clamped every int to maxpos/maxneg
+// once the integer part was wider than int, so 1/2 computed maxpos/maxpos = 1.
+template<unsigned nbits, unsigned rbits, typename BlockType>
+int VerifyWideSatDivision(bool reportTestCases) {
+	using namespace sw::universal;
+	using Fixpnt = fixpnt<nbits, rbits, Saturate, BlockType>;
+	static_assert(rbits >= 32 && nbits - rbits >= 16, "the exact-quotient construction below needs these ranges");
+	int nrOfFailures = 0;
+	auto check = [&](const Fixpnt& a, const Fixpnt& b, const Fixpnt& expected) {
+		Fixpnt result = a / b;
+		if (result != expected) {
+			++nrOfFailures;
+			if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, result, expected);
+		}
+	};
+
+	// the cases from the issue, with integer operands
+	check(Fixpnt(1), Fixpnt(2),  Fixpnt(0.5));
+	check(Fixpnt(6), Fixpnt(3),  Fixpnt(2));
+	check(Fixpnt(-6), Fixpnt(3), Fixpnt(-2));
+	check(Fixpnt(6), Fixpnt(-3), Fixpnt(-2));
+	check(Fixpnt(-6), Fixpnt(-3), Fixpnt(2));
+	check(Fixpnt(1u), Fixpnt(4u), Fixpnt(0.25));
+	check(Fixpnt(-3), Fixpnt(8ull), Fixpnt(-0.375));
+	if constexpr (rbits <= 40) {
+		// double's 53 bits hold 1/3 well past rbits, and its pattern 0101... is never near a tie
+		check(Fixpnt(1), Fixpnt(3), Fixpnt(1.0 / 3.0));
+		check(Fixpnt(-1), Fixpnt(3), Fixpnt(-1.0 / 3.0));
+	}
+
+	// randomized exact quotients: q = m * 2^e and b = n * 2^g with n odd, so a = q * b is exact in
+	// double and in the fixpnt, and a / b must return q bit for bit
+	std::mt19937_64 rng(0x1906);
+	std::uniform_int_distribution<int> mDist(-((1 << 20) - 1), (1 << 20) - 1);
+	std::uniform_int_distribution<int> nDist(0, (1 << 11) - 1);
+	constexpr int e = -16;
+	constexpr int g = -8;
+	for (int i = 0; i < 1000; ++i) {
+		int m = mDist(rng);
+		int n = 2 * nDist(rng) + 1;
+		if (rng() & 1) n = -n;
+		double q = std::ldexp(static_cast<double>(m), e);
+		double b = std::ldexp(static_cast<double>(n), g);
+		check(Fixpnt(q * b), Fixpnt(b), Fixpnt(q));
+	}
+
+	// the clamp still triggers on a real overflow
+	Fixpnt maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg), half(0.5), mhalf(-0.5);
+	check(maxpos, half,  maxpos);
+	check(maxneg, half,  maxneg);
+	check(maxpos, mhalf, maxneg);
+	check(maxneg, mhalf, maxpos);
+	return nrOfFailures;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -333,6 +391,20 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 2, Saturate, uint8_t>(reportTestCases), "fixpnt< 4, 2,Saturate,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 3, Saturate, uint8_t>(reportTestCases), "fixpnt< 4, 3,Saturate,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 4, Saturate, uint8_t>(reportTestCases), "fixpnt< 4, 4,Saturate,uint8_t>", test_tag);
+
+	// wider than 64 bits, every block type (#1906)
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 65, 32, uint8_t >(reportTestCases), "fixpnt< 65,32,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 65, 32, uint16_t>(reportTestCases), "fixpnt< 65,32,Saturate,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 65, 32, uint32_t>(reportTestCases), "fixpnt< 65,32,Saturate,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 65, 32, uint64_t>(reportTestCases), "fixpnt< 65,32,Saturate,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 80, 40, uint8_t >(reportTestCases), "fixpnt< 80,40,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 80, 40, uint16_t>(reportTestCases), "fixpnt< 80,40,Saturate,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 80, 40, uint32_t>(reportTestCases), "fixpnt< 80,40,Saturate,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision< 80, 40, uint64_t>(reportTestCases), "fixpnt< 80,40,Saturate,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision<128, 64, uint8_t >(reportTestCases), "fixpnt<128,64,Saturate,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision<128, 64, uint16_t>(reportTestCases), "fixpnt<128,64,Saturate,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision<128, 64, uint32_t>(reportTestCases), "fixpnt<128,64,Saturate,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSatDivision<128, 64, uint64_t>(reportTestCases), "fixpnt<128,64,Saturate,uint64_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

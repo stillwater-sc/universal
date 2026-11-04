@@ -792,25 +792,36 @@ protected:
 		static_assert(std::is_arithmetic_v<Arith>);
 		fixpnt f;
 		f.clear();
+		// the integer part of a fixpnt has ib bits, sign included, so it holds the integers in
+		// [-2^(ib-1), 2^(ib-1)). The range check is done on that bound in the source type:
+		// converting maxpos/maxneg into Arith instead wraps as soon as ib exceeds Arith's width.
+		constexpr unsigned ib = nbits - rbits;
 		if constexpr (std::is_integral_v<Arith> && std::is_signed_v<Arith>) {
 			if (0 == v) return f;
-			if constexpr (arithmetic == Saturate) {
-				constexpr fixpnt maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-				// check if we are in the representable range
-				if (v >= static_cast<Arith>(maxpos)) { return maxpos; }
-				if (v <= static_cast<Arith>(maxneg)) { return maxneg; }
-			}
 			constexpr unsigned sizeofInteger = 8 * sizeof(v);
+			if constexpr (arithmetic == Saturate) {
+				if constexpr (ib == 0) {
+					// no integer bits: the range is [-0.5, 0.5), so every nonzero integer is out of range
+					return (v > 0 ? fixpnt(SpecificValue::maxpos) : fixpnt(SpecificValue::maxneg));
+				}
+				else if constexpr (ib < sizeofInteger) {
+					// 2^(ib-1) fits Arith; when ib >= sizeofInteger every Arith value fits the fixpnt
+					constexpr Arith bound = static_cast<Arith>(Arith(1) << (ib - 1));
+					if (v >= bound) return fixpnt(SpecificValue::maxpos);
+					if (v < -bound) return fixpnt(SpecificValue::maxneg);
+				}
+			}
 			if (v == std::numeric_limits<Arith>::min()) {
-				// v is at maxneg 0x10...000
-				if constexpr (sizeofInteger <= (nbits - rbits)) {
-					f.setbit(sizeofInteger + rbits - 1);
+				// v is -2^(sizeofInteger-1): set that bit and sign-extend it through the integer part,
+				// or leave zero when Modulo wraps it away (-2^(sizeofInteger-1) mod 2^ib == 0)
+				if constexpr (sizeofInteger <= ib) {
+					for (unsigned i = sizeofInteger + rbits - 1; i < nbits; ++i) f.setbit(i);
 				}
 			}
 			else {
 				bool negative = (v < 0 ? true : false);
 				v = (v < 0 ? -v : v);
-				unsigned upper = (sizeofInteger < (nbits - rbits)) ? sizeofInteger : (nbits - rbits);
+				constexpr unsigned upper = (sizeofInteger < ib) ? sizeofInteger : ib;
 				for (unsigned i = 0; i < upper; ++i) {
 					if (v & 0x1) f.setbit(i + rbits);
 					v >>= 1;
@@ -820,16 +831,22 @@ protected:
 		}
 		else if constexpr (std::is_unsigned_v<Arith>) {
 			if (0 == v) return f;
+			constexpr unsigned sizeofInteger = 8 * sizeof(v);
 			if constexpr (arithmetic == Saturate) {
-				constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-				// check if we are in the representable range
-				if (v >= static_cast<Arith>(maxpos)) { return maxpos; }
-				if (v <= static_cast<Arith>(maxneg)) { return maxneg; }
+				// an unsigned value can only overflow upward, past maxpos
+				if constexpr (ib == 0) {
+					return fixpnt(SpecificValue::maxpos);
+				}
+				else if constexpr (ib - 1 < sizeofInteger) {
+					// 2^(ib-1) fits Arith; otherwise every Arith value fits the fixpnt
+					constexpr Arith bound = static_cast<Arith>(Arith(1) << (ib - 1));
+					if (v >= bound) return fixpnt(SpecificValue::maxpos);
+				}
 			}
-			constexpr uint64_t mask = 0x1;
-			unsigned upper = (nbits - rbits) <= 64 ? nbits : 64;
-			for (unsigned i = 0; i < upper - rbits && v > 0; ++i) {
-				if (v & mask) f.setbit(i + rbits); // we have no fractional part in v
+			// keep the low ib bits: Modulo wraps there, and Saturate has already clamped what does not fit
+			constexpr unsigned upper = (sizeofInteger < ib) ? sizeofInteger : ib;
+			for (unsigned i = 0; i < upper && v > 0; ++i) {
+				if (v & 0x1) f.setbit(i + rbits); // we have no fractional part in v
 				v >>= 1;
 			}
 		}
@@ -893,16 +910,17 @@ protected:
 					if (lsb && (!round && !sticky)) ++fraction; // round to even
 					if (round || sticky) ++fraction;
 				}
-				fraction = (s ? (~fraction + 1) : fraction); // if negative, map to two's complement
+				// negate in the full nbits: a 64-bit two's complement would leave the bits above 64 zero
 				f.setbits(fraction);
+				if (s) f.twosComplement();
 			}
 			else {
 				int shiftLeft = -shiftRight;
 				if (shiftLeft < (64 - ieee754_parameter<Arith>::fbits)) {  // what is the distance between the MSB and 64?
 					// no need to round, just shift the bits in place
 					fraction <<= shiftLeft;
-					fraction = (s ? (~fraction + 1) : fraction); // if negative, map to two's complement
 					f.setbits(fraction);
+					if (s) f.twosComplement(); // negate in the full nbits, as above
 				}
 				else {
 					// we need to project the bits we have on the fixpnt
