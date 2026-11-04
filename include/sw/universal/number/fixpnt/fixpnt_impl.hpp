@@ -898,7 +898,10 @@ protected:
 			int radixPoint = ieee754_parameter<Arith>::fbits - biasedExponent;
 
 			// our fixed-point has its radixPoint at rbits
-			int shiftRight = std::min(radixPoint - int(rbits), 64);
+			// A shift past fbits + 1 puts the leading bit below the guard position: the value rounds
+			// to zero. Do not cap the shift at 64 first: for an x87 long double (fbits 63) the
+			// leading bit then became the guard bit, and 0.3L rounded to 1 at fixpnt<16,0>.
+			int shiftRight = radixPoint - int(rbits);
 			if (shiftRight > (ieee754_parameter<Arith>::fbits + 1)) return f; // return zero
 			if (shiftRight > 0) {
 				// we need to round the raw bits
@@ -920,7 +923,8 @@ protected:
 				}
 				bool sticky = (mask & fraction);
 
-				fraction >>= shiftRight;  // shift out the bits we are rounding away
+				// shift out the bits we are rounding away; a shift of 64 (x87 fbits + 1) leaves nothing
+				fraction = (shiftRight < 64) ? (fraction >> shiftRight) : 0;
 				bool lsb = (fraction & 0x1ul);
 				//  ... lsb | guard  round sticky   round
 				//       x     0       x     x       down

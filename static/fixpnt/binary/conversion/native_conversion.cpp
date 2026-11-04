@@ -242,6 +242,15 @@ namespace {
 			probes.push_back({ -top, maxneg });
 			probes.push_back({ std::nextafter(-top, -std::numeric_limits<Real>::infinity()), maxneg });
 		}
+		else if constexpr (Fixpnt::nbits == static_cast<unsigned>(std::numeric_limits<Real>::digits)) {
+			// the largest Real below 2^(ib-1) is maxpos + 1/2 ulp, a tie that rounds to even, up to
+			// 2^(ib-1): the positive one carries into the sign bit and must clamp to maxpos, the
+			// negative one lands on maxneg
+			probes.push_back({ std::nextafter(top, Real(0)), maxpos });
+			probes.push_back({ std::nextafter(-top, Real(0)), maxneg });
+			probes.push_back({ top, maxpos });
+			probes.push_back({ -top, maxneg });
+		}
 		probes.push_back({ std::numeric_limits<Real>::max(), maxpos });
 		probes.push_back({ std::numeric_limits<Real>::lowest(), maxneg });
 		probes.push_back({ std::numeric_limits<Real>::infinity(), maxpos });
@@ -264,6 +273,44 @@ namespace {
 		return fails;
 	}
 
+	// values below one ulp: under 1/2 ulp round to zero, above it to one ulp. An x87 long double
+	// capped its rounding shift at 64 and shifted a uint64_t by 64, which x86 does as a shift by 0:
+	// fixpnt<16,0>(0.3L) was -26213 and fixpnt<16,8>(1e-30L) was -3.8
+	template<typename Fixpnt, typename Real>
+	int VerifySubUlpValues(bool reportTestCases) {
+		constexpr int rbits = static_cast<int>(Fixpnt::rbits);
+		Fixpnt zero, ulp;
+		zero.clear();
+		ulp.setbits(0x1);
+		struct Probe { Real v; Fixpnt expected; };
+		std::vector<Probe> probes;
+		for (Real m : { Real(1), Real(1.2), Real(1.9) }) {
+			for (int k = 2; k <= 70; k += 17) probes.push_back({ std::ldexp(m, -rbits - k), zero });  // below 1/2 ulp
+		}
+		probes.push_back({ std::numeric_limits<Real>::denorm_min(), zero });
+		probes.push_back({ std::numeric_limits<Real>::min(), zero });
+		if constexpr (rbits < 60) {
+			probes.push_back({ std::ldexp(Real(1.5), -rbits - 1), ulp });  // 3/4 ulp
+			probes.push_back({ std::ldexp(Real(1), -rbits - 1), zero });    // 1/2 ulp: tie to even
+		}
+		int fails = 0;
+		for (const Probe& p : probes) {
+			for (Real v : { p.v, -p.v }) {
+				const Fixpnt result(v);
+				const Fixpnt expected = (v < 0) ? -p.expected : p.expected;
+				if (result != expected) {
+					++fails;
+					if (reportTestCases) {
+						std::cerr << "FAIL: " << sw::universal::type_tag(result) << " from " << typeid(Real).name() << ' '
+						          << std::setprecision(std::numeric_limits<Real>::max_digits10) << v << " -> "
+						          << sw::universal::to_binary(result) << " expected " << sw::universal::to_binary(expected) << '\n';
+					}
+				}
+			}
+		}
+		return fails;
+	}
+
 	template<unsigned nbits, unsigned rbits, typename bt>
 	void VerifyBothModes(bool reportTestCases, int& nrOfFailedTestCases) {
 		using namespace sw::universal;
@@ -276,7 +323,11 @@ namespace {
 			nrOfFailedTestCases += ReportTestResult(VerifyFloatConversion<Mod>(reportTestCases), type_tag(Mod()), "double conversion");
 			nrOfFailedTestCases += ReportTestResult(VerifySaturationBoundary<Sat, float>(reportTestCases), type_tag(Sat()), "float saturation");
 			nrOfFailedTestCases += ReportTestResult(VerifySaturationBoundary<Sat, double>(reportTestCases), type_tag(Sat()), "double saturation");
+			nrOfFailedTestCases += ReportTestResult(VerifySubUlpValues<Sat, double>(reportTestCases), type_tag(Sat()), "double below 1 ulp");
+			nrOfFailedTestCases += ReportTestResult(VerifySubUlpValues<Mod, double>(reportTestCases), type_tag(Mod()), "double below 1 ulp");
 #if LONG_DOUBLE_SUPPORT
+			nrOfFailedTestCases += ReportTestResult(VerifySubUlpValues<Sat, long double>(reportTestCases), type_tag(Sat()), "long double below 1 ulp");
+			nrOfFailedTestCases += ReportTestResult(VerifySubUlpValues<Mod, long double>(reportTestCases), type_tag(Mod()), "long double below 1 ulp");
 			// a wider long double reaches convert_long_double for nbits > 62
 			if constexpr (std::numeric_limits<long double>::digits > std::numeric_limits<double>::digits) {
 				nrOfFailedTestCases += ReportTestResult(VerifySaturationBoundary<Sat, long double>(reportTestCases), type_tag(Sat()), "long double saturation");
