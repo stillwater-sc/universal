@@ -58,7 +58,7 @@ The details are in `blocktype_harness.hpp`:
 
 - **`+`, `-`, `*` and `/` hardly depend on the BlockType:**
   - The ratio is 0.93x to 1.3x with gcc. With clang it is 0.85x to 1.05x from 96 bits up.
-  - At 96 to 256 bits, `uint32_t` is 2% to 13% faster than `uint64_t`.
+  - At 96 to 256 bits, `uint32_t` is faster than `uint64_t` for `+`, `-`, `*` and `/`: by 1% to 6% with gcc and 9% to 16% with clang.
   - `uint64_t` wins only at 64 bits (a single limb): 1.3x with gcc and 1.8x to 1.9x with clang.
 - **The time is a fixed cost, not limb processing:**
   - Wide posit arithmetic costs 420 to 2670 ns per operation.
