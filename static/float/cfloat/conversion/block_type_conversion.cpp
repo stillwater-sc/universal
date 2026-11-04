@@ -37,6 +37,14 @@
    sign; <128,11> puts it exactly on the limb boundary at bit 64 (no straddle); <129,11> one bit
    past it; the others straddle two limbs. A seeded sweep of random doubles over the whole
    exponent range, subnormals included, checks the encodings agree across block types.
+
+   cfloat<80,8> has a narrower exponent range than double, so doubles far below its min normal
+   2^-126 land in its subnormal range with fewer bits than they carry and are rounded before the
+   fraction is placed. (2^53 - 1) * 2^-200 rounds up across a binade to 2^-147: the carry runs
+   through every fraction bit. A carry out of the fraction into the exponent field, a subnormal
+   rounding up to min normal, cannot come from a native float or double when nbits > 64: rounding
+   at the top subnormal binade needs fbits < 53, which forces es >= 11, and then the cfloat's min
+   normal lies at or below the double's smallest subnormal.
 */
 
 namespace sw {
@@ -95,12 +103,31 @@ inline std::vector<double> RandomSamples(std::size_t n) {
 	return xs;
 }
 
+// a deep subnormal of cfloat<80,8> whose rounding carries across a binade
+inline int VerifyRoundingCarry(bool reportTestCases) {
+	const double x        = std::ldexp(9007199254740991.0, -200);  // (2^53 - 1) * 2^-200
+	const double expected = std::ldexp(1.0, -147);                   // the cfloat's grid is 2^-197
+	int fails = 0;
+	for (double v : {x, -x}) {
+		fails += VerifyValue<80, 8>(v, false, reportTestCases);
+		cfloat<80, 8, std::uint64_t, true, false, false> c;
+		c = v;
+		if (static_cast<double>(c) != (v < 0 ? -expected : expected)) {
+			if (reportTestCases)
+				std::cerr << "FAIL: cfloat<80,8,uint64_t> = " << std::hexfloat << v << " gave " << static_cast<double>(c)
+				          << std::defaultfloat << " : " << to_binary(c) << '\n';
+			++fails;
+		}
+	}
+	return fails;
+}
+
 template<unsigned nbits, unsigned es>
 int VerifyConfiguration(bool reportTestCases) {
 	int fails = 0;
 	for (double d : RandomSamples(2000)) fails += VerifyValue<nbits, es>(d, (es >= 11), reportTestCases);
-	for (double d : Samples()) {  // every double and float is exact in these configurations
-		fails += VerifyValue<nbits, es>(d, true, reportTestCases);
+	for (double d : Samples()) {  // every double is exact when es >= 11, every float in all of them
+		fails += VerifyValue<nbits, es>(d, (es >= 11), reportTestCases);
 		const float f = static_cast<float>(d);
 		if (std::isfinite(f) && f != 0.0f) fails += VerifyValue<nbits, es>(f, true, reportTestCases);
 	}
@@ -168,6 +195,8 @@ int main() try {
 
 #	if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<65, 11>(reportTestCases), "cfloat<65,11>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<80, 8>(reportTestCases), "cfloat<80,8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundingCarry(reportTestCases), "cfloat<80,8> rounding carry", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<80, 11>(reportTestCases), "cfloat<80,11>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<96, 11>(reportTestCases), "cfloat<96,11>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConfiguration<128, 11>(reportTestCases), "cfloat<128,11>", test_tag);
