@@ -24,18 +24,20 @@ At most `-j4`. Build directories: `build-ci/`, and `build-asan-<n>/` and
 
 ```bash
 cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release -DUNIVERSAL_BUILD_CI_LITE=ON \
+  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
   -DUNIVERSAL_BUILD_REGRESSION_STRESS=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_4=OFF \
-  -DUNIVERSAL_BUILD_REGRESSION_LEVEL_3=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_2=OFF
+  -DUNIVERSAL_BUILD_REGRESSION_LEVEL_3=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_2=OFF \
+  -DUNIVERSAL_BUILD_REGRESSION_LEVEL_1=ON
 cmake --build build-ci -j4
 ctest --test-dir build-ci -j4 --timeout 600 --output-on-failure
 ```
 
 This is the fast CI tier's build (`UNIVERSAL_BUILD_CI_LITE`), at regression
-level 1, with GCC. Every configure in this file turns the higher levels off
-explicitly: CMake keeps a cached `UNIVERSAL_BUILD_REGRESSION_*` setting across
-reconfigures, so a clone that has been built at level 2-4 would otherwise stay
-there. With them off, the default `UNIVERSAL_BUILD_REGRESSION_SANITY` selects
-level 1. A test's name is its target's:
+level 1, with GCC. Every configure in this file names its compiler and its
+regression level explicitly, turning `STRESS` and levels 2-4 off and level 1
+on: CMake keeps cached compiler and `UNIVERSAL_BUILD_REGRESSION_*` settings
+across reconfigures, so a reused build directory would otherwise keep whatever
+it was first configured with. A test's name is its target's:
 `<type>_<stem>`, as in `posit_logarithm`. Build one type's tests by turning on
 its `UNIVERSAL_BUILD_NUMBER_*` option, as the **Areas** table does.
 
@@ -88,6 +90,7 @@ cmake -S . -B build-asan-<n> -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_C_FLAGS_DEBUG="-gline-tables-only" -DCMAKE_CXX_FLAGS_DEBUG="-gline-tables-only" \
   -DUNIVERSAL_BUILD_REGRESSION_STRESS=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_4=OFF \
   -DUNIVERSAL_BUILD_REGRESSION_LEVEL_3=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_2=OFF \
+  -DUNIVERSAL_BUILD_REGRESSION_LEVEL_1=ON \
   <selection>
 cmake --build build-asan-<n> -j4
 ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 \
@@ -99,6 +102,7 @@ cmake -S . -B build-ubsan-<n> -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_C_FLAGS_DEBUG="-gline-tables-only" -DCMAKE_CXX_FLAGS_DEBUG="-gline-tables-only" \
   -DUNIVERSAL_BUILD_REGRESSION_STRESS=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_4=OFF \
   -DUNIVERSAL_BUILD_REGRESSION_LEVEL_3=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_2=OFF \
+  -DUNIVERSAL_BUILD_REGRESSION_LEVEL_1=ON \
   <selection>
 cmake --build build-ubsan-<n> -j4
 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
