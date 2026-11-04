@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit, NotebookEdit
 ---
 
-<!-- Generated from stillwater-sc/claude-plugins plugins/qa-sweep/agents/qa-reviewer.md at 1537658 by scripts/sync-qa-sweep.sh. Edit it there, not here. -->
+<!-- Generated from stillwater-sc/claude-plugins plugins/qa-sweep/agents/qa-reviewer.md at 8589ff4 by scripts/sync-qa-sweep.sh. Edit it there, not here. -->
 
 You review a C++ codebase for defects. You never change files, push, or
 comment on GitHub. Your output is a list of findings for the caller to report.
