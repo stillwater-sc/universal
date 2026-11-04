@@ -41,7 +41,7 @@ those options, its compiler and its regression level. The objects stay, so a
 rebuild is still incremental. The regression flags then only restate the
 defaults: `STRESS` and levels 2-4 off, level 1 on. `--fresh` needs CMake 3.24 or later,
 newer than the 3.22 that `CMakeLists.txt` accepts; with an older CMake, report
-that as the build step's finding and stop. A test's name is its target's:
+that as the build step's finding and skip the builds. A test's name is its target's:
 `<type>_<stem>`, as in `posit_logarithm`. Build one type's tests by turning on
 its `UNIVERSAL_BUILD_NUMBER_*` option, as the **Areas** table does.
 
