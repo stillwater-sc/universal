@@ -786,6 +786,18 @@ protected:
 	}
 #endif
 
+	// 2^e in the floating-point type Real, by exact repeated scaling so it can be evaluated at
+	// compile time: +inf when 2^e overflows Real, and 0 when it is below Real's smallest subnormal
+	template<typename Real>
+	static constexpr Real exact_pow2(int e) {
+		if (e >= std::numeric_limits<Real>::max_exponent) return std::numeric_limits<Real>::infinity();
+		if (e < std::numeric_limits<Real>::min_exponent - std::numeric_limits<Real>::digits) return Real(0);
+		Real r = Real(1);
+		const Real step = (e >= 0) ? Real(2) : Real(0.5);
+		for (int n = (e >= 0) ? e : -e; n > 0; --n) r *= step;
+		return r;
+	}
+
 	// convert arithmetic types into a fixpnt
 	template<typename Arith>
 	static constexpr fixpnt convert(Arith v) {
@@ -853,11 +865,19 @@ protected:
 		else if constexpr (std::is_floating_point_v<Arith>) {
 			if (v == 0.0) return f;
 			if constexpr (arithmetic == Saturate) {	// check if the value is in the representable range
+				// The conversion below rounds the magnitude to nearest even, so the clamp bounds are
+				// rounding boundaries, computed exactly in Arith:
+				//  - v >= maxpos + 1/2 ulp = 2^(ib-1) - 2^-(rbits+1) rounds past maxpos (maxpos is odd,
+				//    so the tie rounds up too) and would carry into the sign bit
+				//  - v <= maxneg = -2^(ib-1); anything above it rounds to maxneg or a larger value
+				// When the upper bound is not exact in Arith it rounds to 2^(ib-1), and then no Arith
+				// value lies between the true bound and 2^(ib-1). Comparing against float(maxpos)
+				// instead let maxpos + 3/4 ulp through, which wrapped to maxneg (#1915).
+				constexpr Arith upperBound = exact_pow2<Arith>(static_cast<int>(ib) - 1) - exact_pow2<Arith>(-static_cast<int>(rbits) - 1);
+				constexpr Arith lowerBound = -exact_pow2<Arith>(static_cast<int>(ib) - 1);
 				fixpnt a;
-				a.maxpos();
-				if (v >= float(a)) { return a; } // set to max pos value
-				a.maxneg();
-				if (v <= float(a)) { return a; } // set to max neg value
+				if (v >= upperBound) { return a.maxpos(); }
+				if (v <= lowerBound) { return a.maxneg(); }
 			}
 
 #if LONG_DOUBLE_SUPPORT

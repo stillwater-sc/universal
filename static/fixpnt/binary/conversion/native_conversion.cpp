@@ -7,9 +7,11 @@
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <cstdint>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <string>
+#include <typeinfo>
 #include <vector>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -200,6 +202,68 @@ namespace {
 		return fails;
 	}
 
+	// Saturate clamps a Real at the rounding boundaries: values that round past maxpos or below
+	// maxneg must clamp, not carry into the sign bit (#1915). The probes are maxpos/maxneg plus or
+	// minus fractions of an ulp, exact in Real when nbits + 2 <= digits. Configurations wider than
+	// digits are checked at the largest Real below 2^(ib-1), which must convert exactly.
+	template<typename Fixpnt, typename Real>
+	int VerifySaturationBoundary(bool reportTestCases) {
+		constexpr int ib = static_cast<int>(Fixpnt::nbits - Fixpnt::rbits);
+		constexpr int rbits = static_cast<int>(Fixpnt::rbits);
+		Fixpnt maxpos, maxneg;
+		maxpos.maxpos();
+		maxneg.maxneg();
+		const Real ulp = std::ldexp(Real(1), -rbits);
+		const Real top = std::ldexp(Real(1), ib - 1);  // 2^(ib-1) = maxpos + ulp = -maxneg
+		struct Probe { Real v; Fixpnt expected; };
+		std::vector<Probe> probes;
+		if constexpr (Fixpnt::nbits + 2 <= static_cast<unsigned>(std::numeric_limits<Real>::digits)) {
+			Fixpnt belowMaxpos = maxpos;
+			--belowMaxpos;
+			const Real mp = top - ulp;
+			for (Real k : { Real(0), Real(0.25), Real(0.5), Real(0.75), Real(1), Real(4) }) {
+				probes.push_back({ mp + k * ulp, maxpos });
+				probes.push_back({ -top - k * ulp, maxneg });
+			}
+			probes.push_back({ mp - Real(0.25) * ulp, maxpos });
+			probes.push_back({ mp - Real(0.5) * ulp, belowMaxpos });  // tie rounds to the even neighbor
+			probes.push_back({ -top + Real(0.25) * ulp, maxneg });
+		}
+		else if constexpr (Fixpnt::nbits > static_cast<unsigned>(std::numeric_limits<Real>::digits)) {
+			// the largest Real below 2^(ib-1) is 2^(ib-1) - 2^(ib-1-digits): bits nbits-1-digits
+			// through nbits-2 set, so it is exact in the fixpnt and below the rounding midpoint
+			constexpr unsigned digits = static_cast<unsigned>(std::numeric_limits<Real>::digits);
+			Fixpnt below;
+			below.clear();
+			for (unsigned i = Fixpnt::nbits - 1 - digits; i < Fixpnt::nbits - 1; ++i) below.setbit(i);
+			probes.push_back({ std::nextafter(top, Real(0)), below });
+			probes.push_back({ top, maxpos });
+			probes.push_back({ std::nextafter(top, std::numeric_limits<Real>::infinity()), maxpos });
+			probes.push_back({ -top, maxneg });
+			probes.push_back({ std::nextafter(-top, -std::numeric_limits<Real>::infinity()), maxneg });
+		}
+		probes.push_back({ std::numeric_limits<Real>::max(), maxpos });
+		probes.push_back({ std::numeric_limits<Real>::lowest(), maxneg });
+		probes.push_back({ std::numeric_limits<Real>::infinity(), maxpos });
+		probes.push_back({ -std::numeric_limits<Real>::infinity(), maxneg });
+
+		int fails = 0;
+		for (const Probe& p : probes) {
+			const Fixpnt constructed(p.v);
+			Fixpnt assigned;
+			assigned = p.v;
+			if (constructed != p.expected || assigned != p.expected) {
+				++fails;
+				if (reportTestCases) {
+					std::cerr << "FAIL: " << sw::universal::type_tag(constructed) << " from " << typeid(Real).name() << ' '
+					          << std::setprecision(std::numeric_limits<Real>::max_digits10) << p.v << " -> "
+					          << sw::universal::to_binary(constructed) << " expected " << sw::universal::to_binary(p.expected) << '\n';
+				}
+			}
+		}
+		return fails;
+	}
+
 	template<unsigned nbits, unsigned rbits, typename bt>
 	void VerifyBothModes(bool reportTestCases, int& nrOfFailedTestCases) {
 		using namespace sw::universal;
@@ -210,6 +274,8 @@ namespace {
 		if constexpr (nbits > rbits) { // the float check needs integer bits for its sign
 			nrOfFailedTestCases += ReportTestResult(VerifyFloatConversion<Sat>(reportTestCases), type_tag(Sat()), "double conversion");
 			nrOfFailedTestCases += ReportTestResult(VerifyFloatConversion<Mod>(reportTestCases), type_tag(Mod()), "double conversion");
+			nrOfFailedTestCases += ReportTestResult(VerifySaturationBoundary<Sat, float>(reportTestCases), type_tag(Sat()), "float saturation");
+			nrOfFailedTestCases += ReportTestResult(VerifySaturationBoundary<Sat, double>(reportTestCases), type_tag(Sat()), "double saturation");
 		}
 	}
 
@@ -255,6 +321,12 @@ try {
 	VerifyBothModes<128, 32, std::uint64_t>(reportTestCases, nrOfFailedTestCases);
 	VerifyBothModes<128, 64, std::uint64_t>(reportTestCases, nrOfFailedTestCases);
 	VerifyBothModes<200,100, std::uint32_t>(reportTestCases, nrOfFailedTestCases);
+	// Saturate compared a double against float(maxpos), which rounds up to 2^(ib-1) once maxpos
+	// needs more than 24 bits: fixpnt<32,0,Saturate>(2147483647.75) was maxneg (#1915)
+	VerifyBothModes< 24,  0, std::uint32_t>(reportTestCases, nrOfFailedTestCases);
+	VerifyBothModes< 32,  0, std::uint32_t>(reportTestCases, nrOfFailedTestCases);
+	VerifyBothModes< 40,  8, std::uint32_t>(reportTestCases, nrOfFailedTestCases);
+	VerifyBothModes< 51, 20, std::uint64_t>(reportTestCases, nrOfFailedTestCases);
 #endif
 
 #if REGRESSION_LEVEL_2
