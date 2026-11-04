@@ -3152,16 +3152,22 @@ public:
 								bitsToShift = 0;
 							}
 							if constexpr (bitsInBlock == 64) {
-								// uint64_t blocks: the fraction bits one at a time. This branch was empty -- the
-								// block copy below assumes blocks narrower than the uint64_t it copies from -- so
-								// cfloat<128,15,uint64_t> = 1.5 stayed 0 (#1518). setbit() ORs the bits in, as
-								// the block copy does: a subnormal rounded up to min normal carries into the
-								// exponent field's lsb.
-								for (unsigned i = 0; i < 64; ++i) {
-									if (((fractionToCopy >> i) & 1ull) == 0) continue;
-									const unsigned position = i + static_cast<unsigned>(bitsToShift);
-									if (position < nbits - 1u) setbit(position, true);
+								// uint64_t blocks: the block copy below assumes blocks narrower than the uint64_t
+								// it copies from (#1518), so the 64-bit fraction is placed directly: it lands in
+								// at most two adjacent limbs. The bits are ORed in, as the block copy does: a
+								// subnormal rounded up to min normal carries into the exponent field's lsb.
+								// Placing the bits one at a time cost 8-70x a uint32_t-block conversion (#1918).
+								const unsigned shift     = static_cast<unsigned>(bitsToShift);
+								const unsigned lowBlock  = shift / 64u;
+								const unsigned bitOffset = shift % 64u;
+								if (lowBlock < nrBlocks) {
+									_block[lowBlock] |= (fractionToCopy << bitOffset);
+									if (bitOffset != 0 && lowBlock + 1u < nrBlocks) {
+										_block[lowBlock + 1u] |= (fractionToCopy >> (64u - bitOffset));
+									}
 								}
+								// keep the bits outside of nbits null; setsign() then writes the sign bit
+								_block[MSU] &= MSU_MASK;
 								setsign(s);
 							}
 							else {

@@ -45,7 +45,7 @@ The details are in `blocktype_harness.hpp`:
 - **`uint32_t` vs `uint64_t`:**
   - From 96 bits up, `uint32_t` runs at 0.8x to 1.45x the `uint64_t` time for every arithmetic operation.
   - At 64 bits, a single `uint64_t` limb is 2.5x faster for `+`/`-`.
-  - The exception is conversion from `double`, where `uint64_t` is 8x to 70x slower: the fraction is copied bit by bit (see Follow-ups).
+  - The exception in these tables is conversion from `double`, where `uint64_t` is 8x to 70x slower: the fraction was copied bit by bit. Fixed by #1918 (see Follow-ups).
 - **The cost doesn't grow smoothly with the limb count:**
   - With gcc, a 196-bit add costs 250 to 330 ns for every BlockType, while a 256-bit add costs 65 to 76 ns with `uint32_t`/`uint64_t`.
   - With clang, `uint8_t` add is about 4.5x slower than `uint16_t` at 96 and 128 bits.
@@ -77,7 +77,7 @@ The details are in `blocktype_harness.hpp`:
 
 Slow paths these numbers expose, filed as issues:
 
-1. #1918: `cfloat` conversion from `double` copies the fraction one bit at a time with `uint64_t` limbs (`cfloat_impl.hpp`, the `bitsInBlock == 64` branch added for #1518).
+1. #1918 (fixed): `cfloat` conversion from `double` copied the fraction one bit at a time with `uint64_t` limbs (`cfloat_impl.hpp`, the `bitsInBlock == 64` branch added for #1518). It now shifts the fraction into the at most two limbs it lands in. With `uint64_t` limbs at 96, 128, 196 and 256 bits, conversion now takes 1.4, 1.4, 20.5 and 4.5 ns with gcc, and 1.7, 1.6, 2.0 and 1.7 ns with clang, down from 130 to 150 ns. That is no slower than `uint32_t` except at 196 bits with gcc (1.1x). The tables below are the baseline from before the fix.
 2. #1919: `cfloat` add/sub: bit-serial loops in `normalizeAddition()` make 196 bits cost 3.8x as much as 256 bits with gcc.
 3. #1920: `cfloat` `operator<` computes a full subtraction when `hasSubnormals` is set. An ordered comparison of the encodings would cost a few ns.
 4. #1921: `posit` add/mul/div and conversion from `double` above 64 bits carry a fixed cost of hundreds of ns that doesn't depend on the BlockType.
