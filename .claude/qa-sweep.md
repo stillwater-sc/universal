@@ -23,13 +23,19 @@ At most `-j4`. Build directories: `build-ci/`, and `build-asan-<n>/` and
 `build-ubsan-<n>/` for area `<n>`.
 
 ```bash
-cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release -DUNIVERSAL_BUILD_CI_LITE=ON
+cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release -DUNIVERSAL_BUILD_CI_LITE=ON \
+  -DUNIVERSAL_BUILD_REGRESSION_STRESS=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_4=OFF \
+  -DUNIVERSAL_BUILD_REGRESSION_LEVEL_3=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_2=OFF
 cmake --build build-ci -j4
 ctest --test-dir build-ci -j4 --timeout 600 --output-on-failure
 ```
 
-This is the fast CI tier's build (`UNIVERSAL_BUILD_CI_LITE`), at the default
-regression level 1, with GCC. A test's name is its target's:
+This is the fast CI tier's build (`UNIVERSAL_BUILD_CI_LITE`), at regression
+level 1, with GCC. Every configure in this file turns the higher levels off
+explicitly: CMake keeps a cached `UNIVERSAL_BUILD_REGRESSION_*` setting across
+reconfigures, so a clone that has been built at level 2-4 would otherwise stay
+there. With them off, the default `UNIVERSAL_BUILD_REGRESSION_SANITY` selects
+level 1. A test's name is its target's:
 `<type>_<stem>`, as in `posit_logarithm`. Build one type's tests by turning on
 its `UNIVERSAL_BUILD_NUMBER_*` option, as the **Areas** table does.
 
@@ -80,6 +86,8 @@ sites before the instrumentation sees them (see the comment above
 cmake -S . -B build-asan-<n> -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUNIVERSAL_ENABLE_ASAN=ON \
   -DCMAKE_C_FLAGS_DEBUG="-gline-tables-only" -DCMAKE_CXX_FLAGS_DEBUG="-gline-tables-only" \
+  -DUNIVERSAL_BUILD_REGRESSION_STRESS=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_4=OFF \
+  -DUNIVERSAL_BUILD_REGRESSION_LEVEL_3=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_2=OFF \
   <selection>
 cmake --build build-asan-<n> -j4
 ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 \
@@ -89,6 +97,8 @@ ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 \
 cmake -S . -B build-ubsan-<n> -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUNIVERSAL_ENABLE_UBSAN=ON \
   -DCMAKE_C_FLAGS_DEBUG="-gline-tables-only" -DCMAKE_CXX_FLAGS_DEBUG="-gline-tables-only" \
+  -DUNIVERSAL_BUILD_REGRESSION_STRESS=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_4=OFF \
+  -DUNIVERSAL_BUILD_REGRESSION_LEVEL_3=OFF -DUNIVERSAL_BUILD_REGRESSION_LEVEL_2=OFF \
   <selection>
 cmake --build build-ubsan-<n> -j4
 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
