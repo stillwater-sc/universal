@@ -18,7 +18,7 @@ taskset -c 2 ./benchmark/performance/arithmetic/benchmark_blocktype_cfloat_block
 ```
 
 - **Default run:** about 30 s per type, the median of 9 samples of at least 10 ms each.
-- **Long mode:** build with `REGRESSION_LEVEL_4` for 21 samples of at least 25 ms each.
+- **Long mode:** configure with `-DUNIVERSAL_BUILD_REGRESSION_LEVEL_4=ON` (or `-DUNIVERSAL_BUILD_REGRESSION_STRESS=ON`), which defines `REGRESSION_LEVEL_4`, for 21 samples of at least 25 ms each.
 - **`MANUAL_TESTING`:** times 128 bits only, as a quick look while working on the limb loops.
 
 Pin the process to one core: timings vary by core on a hybrid processor.
@@ -61,8 +61,10 @@ The details are in `blocktype_harness.hpp`:
   - At 96 to 256 bits, `uint32_t` is 2% to 13% faster than `uint64_t`.
   - `uint64_t` wins only at 64 bits (a single limb): 1.3x with gcc and 1.8x to 1.9x with clang.
 - **The time is a fixed cost, not limb processing:**
-  - Wide posit arithmetic costs 420 to 2550 ns per operation. A posit add or subtract costs 20x to 35x a `cfloat` add of the same width, a multiply about 6x and a divide about 2x.
-  - `posit` `sqrt`, which runs on the limb kernels, takes 35 to 190 ns, 6x to 20x *less* than a posit add.
+  - Wide posit arithmetic costs 420 to 2670 ns per operation.
+  - With `uint64_t` limbs, a posit add costs 15x to 35x a `cfloat` add of the same width. The exception is 196 bits with gcc (5.6x), where the `cfloat` add is itself slow (#1919).
+  - On the same limbs, a posit multiply costs 3x to 7x a `cfloat` multiply, and a divide 1.8x to 2.6x.
+  - `posit` `sqrt`, which runs on the limb kernels, takes 34 to 190 ns: 4x to 26x *less* than a posit add in the same configuration.
 - **Conversion from `double`:** 3 to 5 ns at 64 bits, then 360 to 840 ns from 96 bits up, for every BlockType.
 - **`<` is limb-bound:** 1 to 2.2 ns with `uint32_t`/`uint64_t`. `uint8_t` is 2.5x to 10x slower with gcc, and 2x to 6x with clang.
 
