@@ -73,12 +73,12 @@ The details are in `blocktype_harness.hpp`:
 
 ## Follow-ups
 
-Slow paths these numbers expose:
+Slow paths these numbers expose, filed as issues:
 
-1. `cfloat` conversion from `double` copies the fraction one bit at a time with `uint64_t` limbs (`cfloat_impl.hpp`, the `bitsInBlock == 64` branch added for #1518).
-2. `cfloat` add/sub: bit-serial loops in `normalizeAddition()` make 196 bits cost 3.8x as much as 256 bits with gcc.
-3. `cfloat` `operator<` computes a full subtraction when `hasSubnormals` is set. An ordered comparison of the encodings would cost a few ns.
-4. `posit` add/mul/div and conversion from `double` above 64 bits carry a fixed cost of hundreds of ns that doesn't depend on the BlockType.
+1. #1918: `cfloat` conversion from `double` copies the fraction one bit at a time with `uint64_t` limbs (`cfloat_impl.hpp`, the `bitsInBlock == 64` branch added for #1518).
+2. #1919: `cfloat` add/sub: bit-serial loops in `normalizeAddition()` make 196 bits cost 3.8x as much as 256 bits with gcc.
+3. #1920: `cfloat` `operator<` computes a full subtraction when `hasSubnormals` is set. An ordered comparison of the encodings would cost a few ns.
+4. #1921: `posit` add/mul/div and conversion from `double` above 64 bits carry a fixed cost of hundreds of ns that doesn't depend on the BlockType.
 
 ## Results
 
