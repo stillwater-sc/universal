@@ -780,14 +780,17 @@ protected:
 			}
 		}
 		if (!sig.empty()) sticky = true;
-		if (guard && (sticky || lsb)) ++f;
+		// round on the raw bits: a Saturate ++f stops at maxpos, which loses the carry that a
+		// magnitude just below 2^(ib-1) needs to become maxneg once negated
+		if (guard && (sticky || lsb)) ++f._block;
 		if (sig.negative()) f.twosComplement();
 		return f;
 	}
 #endif
 
 	// 2^e in the floating-point type Real, by exact repeated scaling so it can be evaluated at
-	// compile time: +inf when 2^e overflows Real, and 0 when it is below Real's smallest subnormal
+	// compile time (std::ldexp is not constexpr): +inf when 2^e overflows Real, and 0 when it is
+	// below Real's smallest subnormal
 	template<typename Real>
 	static constexpr Real exact_pow2(int e) {
 		if (e >= std::numeric_limits<Real>::max_exponent) return std::numeric_limits<Real>::infinity();
@@ -865,24 +868,24 @@ protected:
 		else if constexpr (std::is_floating_point_v<Arith>) {
 			if (v == 0.0) return f;
 			if constexpr (arithmetic == Saturate) {	// check if the value is in the representable range
-				// The conversion below rounds the magnitude to nearest even, so the clamp bounds are
-				// rounding boundaries, computed exactly in Arith:
-				//  - v >= maxpos + 1/2 ulp = 2^(ib-1) - 2^-(rbits+1) rounds past maxpos (maxpos is odd,
-				//    so the tie rounds up too) and would carry into the sign bit
-				//  - v <= maxneg = -2^(ib-1); anything above it rounds to maxneg or a larger value
-				// When the upper bound is not exact in Arith it rounds to 2^(ib-1), and then no Arith
-				// value lies between the true bound and 2^(ib-1). Comparing against float(maxpos)
-				// instead let maxpos + 3/4 ulp through, which wrapped to maxneg (#1915).
-				constexpr Arith upperBound = exact_pow2<Arith>(static_cast<int>(ib) - 1) - exact_pow2<Arith>(-static_cast<int>(rbits) - 1);
-				constexpr Arith lowerBound = -exact_pow2<Arith>(static_cast<int>(ib) - 1);
+				// Clamp at +/-2^(ib-1), a power of two and so exact in every floating-point format.
+				// A |v| below it rounds to at most 2^(ib-1): for a negative v that is maxneg, and for
+				// a positive v it carries into the sign bit, which is caught after the conversion.
+				// Comparing against float(maxpos) instead let maxpos + 3/4 ulp through, and it
+				// wrapped to maxneg (#1915).
+				constexpr Arith bound = exact_pow2<Arith>(static_cast<int>(ib) - 1);
 				fixpnt a;
-				if (v >= upperBound) { return a.maxpos(); }
-				if (v <= lowerBound) { return a.maxneg(); }
+				if (v >= bound) { return a.maxpos(); }
+				if (v <= -bound) { return a.maxneg(); }
 			}
 
 #if LONG_DOUBLE_SUPPORT
 			if constexpr (std::is_same_v<Arith, long double> && nbits > 62) {
-				return convert_long_double(v);
+				fixpnt r = convert_long_double(v);
+				if constexpr (arithmetic == Saturate) {
+					if (v > 0 && r.sign()) r.maxpos();  // rounded up into the sign bit
+				}
+				return r;
 			}
 #endif
 			bool s{ false };
@@ -952,6 +955,9 @@ protected:
 					}
 					if (s) f.twosComplement();
 				}
+			}
+			if constexpr (arithmetic == Saturate) {
+				if (!s && f.sign()) f.maxpos();  // a positive value rounded up into the sign bit
 			}
 		}
 		return f;
