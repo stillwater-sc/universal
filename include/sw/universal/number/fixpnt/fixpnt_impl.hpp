@@ -780,11 +780,26 @@ protected:
 			}
 		}
 		if (!sig.empty()) sticky = true;
-		if (guard && (sticky || lsb)) ++f;
+		// round on the raw bits: a Saturate ++f stops at maxpos, which loses the carry that a
+		// magnitude just below 2^(ib-1) needs to become maxneg once negated
+		if (guard && (sticky || lsb)) ++f._block;
 		if (sig.negative()) f.twosComplement();
 		return f;
 	}
 #endif
+
+	// 2^e in the floating-point type Real, by exact repeated scaling so it can be evaluated at
+	// compile time (std::ldexp is not constexpr): +inf when 2^e overflows Real, and 0 when it is
+	// below Real's smallest subnormal
+	template<typename Real>
+	static constexpr Real exact_pow2(int e) {
+		if (e >= std::numeric_limits<Real>::max_exponent) return std::numeric_limits<Real>::infinity();
+		if (e < std::numeric_limits<Real>::min_exponent - std::numeric_limits<Real>::digits) return Real(0);
+		Real r = Real(1);
+		const Real step = (e >= 0) ? Real(2) : Real(0.5);
+		for (int n = (e >= 0) ? e : -e; n > 0; --n) r *= step;
+		return r;
+	}
 
 	// convert arithmetic types into a fixpnt
 	template<typename Arith>
@@ -853,16 +868,24 @@ protected:
 		else if constexpr (std::is_floating_point_v<Arith>) {
 			if (v == 0.0) return f;
 			if constexpr (arithmetic == Saturate) {	// check if the value is in the representable range
+				// Clamp at +/-2^(ib-1), a power of two and so exact in every floating-point format.
+				// A |v| below it rounds to at most 2^(ib-1): for a negative v that is maxneg, and for
+				// a positive v it carries into the sign bit, which is caught after the conversion.
+				// Comparing against float(maxpos) instead let maxpos + 3/4 ulp through, and it
+				// wrapped to maxneg (#1915).
+				constexpr Arith bound = exact_pow2<Arith>(static_cast<int>(ib) - 1);
 				fixpnt a;
-				a.maxpos();
-				if (v >= float(a)) { return a; } // set to max pos value
-				a.maxneg();
-				if (v <= float(a)) { return a; } // set to max neg value
+				if (v >= bound) { return a.maxpos(); }
+				if (v <= -bound) { return a.maxneg(); }
 			}
 
 #if LONG_DOUBLE_SUPPORT
 			if constexpr (std::is_same_v<Arith, long double> && nbits > 62) {
-				return convert_long_double(v);
+				fixpnt r = convert_long_double(v);
+				if constexpr (arithmetic == Saturate) {
+					if (v > 0 && r.sign()) r.maxpos();  // rounded up into the sign bit
+				}
+				return r;
 			}
 #endif
 			bool s{ false };
@@ -875,7 +898,10 @@ protected:
 			int radixPoint = ieee754_parameter<Arith>::fbits - biasedExponent;
 
 			// our fixed-point has its radixPoint at rbits
-			int shiftRight = std::min(radixPoint - int(rbits), 64);
+			// A shift past fbits + 1 puts the leading bit below the guard position: the value rounds
+			// to zero. Do not cap the shift at 64 first: for an x87 long double (fbits 63) the
+			// leading bit then became the guard bit, and 0.3L rounded to 1 at fixpnt<16,0>.
+			int shiftRight = radixPoint - int(rbits);
 			if (shiftRight > (ieee754_parameter<Arith>::fbits + 1)) return f; // return zero
 			if (shiftRight > 0) {
 				// we need to round the raw bits
@@ -897,7 +923,8 @@ protected:
 				}
 				bool sticky = (mask & fraction);
 
-				fraction >>= shiftRight;  // shift out the bits we are rounding away
+				// shift out the bits we are rounding away; a shift of 64 (x87 fbits + 1) leaves nothing
+				fraction = (shiftRight < 64) ? (fraction >> shiftRight) : 0;
 				bool lsb = (fraction & 0x1ul);
 				//  ... lsb | guard  round sticky   round
 				//       x     0       x     x       down
@@ -932,6 +959,9 @@ protected:
 					}
 					if (s) f.twosComplement();
 				}
+			}
+			if constexpr (arithmetic == Saturate) {
+				if (!s && f.sign()) f.maxpos();  // a positive value rounded up into the sign bit
 			}
 		}
 		return f;
