@@ -89,7 +89,14 @@ Slow paths these numbers expose, filed as issues:
    - With gcc, `lt` costs 1.0 to 2.1 ns at every width and BlockType (was 13 to 440).
    - With clang, it costs 1.2 to 3.3 ns (was 17 to 353).
    - The tables below are the baseline from before the fix.
-4. #1921: `posit` add/mul/div and conversion from `double` above 64 bits carry a fixed cost of hundreds of ns that doesn't depend on the BlockType.
+4. #1921 (fixed): `posit` add/mul/div and conversion from `double` above 64 bits carried a fixed cost of hundreds of ns that didn't depend on the BlockType. The decode into a blocktriple copied the fraction one bit at a time, and the encode copied the result out bit by bit and rebuilt the posit from shifted multi-limb temporaries. Both now run on 64-bit limbs through `posit_limbs`, the decoder and encoder that `sqrt` has used since #1857. `blockbinary::to_ull()` now gathers a block at a time.
+   - add: 56 to 275 ns with gcc (was 430 to 1794) and 33 to 163 ns with clang (was 425 to 1685), 6x to 32x faster. With `uint64_t` limbs at 64, 128 and 256 bits it costs 58, 76 and 101 ns with gcc, and 33, 49 and 53 ns with clang.
+   - mul is 4.9x to 38x faster, and div 2.2x to 4.3x. Most of the remaining div cost is the blocktriple divide.
+   - Conversion from `double` above 64 bits: 15 to 37 ns with gcc (was 387 to 824) and 4.7 to 13.6 ns with clang (was 360 to 791).
+   - With clang, `posit<64,2>` sqrt with `uint8/16/32_t` limbs costs 33 ns, as with `uint64_t` (was 183 to 190). The bit-serial `to_ull()` read the encoding.
+   - Wide sqrt is 4 to 12 ns slower with gcc, because gcc inlines the shared limb kernels less now that the arithmetic calls them too. clang is unchanged.
+   - Still slow: conversion to `double` (200 to 530 ns), which decodes bit by bit.
+   - The tables below are the baseline from before the fix.
 
 ## Results
 

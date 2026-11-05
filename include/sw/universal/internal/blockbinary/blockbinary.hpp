@@ -940,14 +940,13 @@ public:
 		}
 		return ll;
 	}
+	// the low min(nbits, 64) bits as they are stored, not sign-extended, gathered a block at a time
 	constexpr uint64_t to_ull() const {
 		uint64_t ull{ 0 };
-		uint64_t mask{ 1 };
-		uint32_t msb = nbits < 64 ? nbits : 64;
-		for (uint32_t i = 0; i < msb; ++i) {
-			ull |= at(i) ? mask : 0;
-			mask <<= 1;
+		for (unsigned i = 0; i < nrBlocks && i * bitsInBlock < 64u; ++i) {
+			ull |= static_cast<uint64_t>(_block[i]) << (i * bitsInBlock);
 		}
+		if constexpr (nbits < 64) ull &= (uint64_t(1) << nbits) - 1u;
 		return ull;
 	}
 	template<typename Real,

@@ -14,7 +14,7 @@
 // to the power of two 2^(scale+1), which every posit in range represents. No posit arithmetic is
 // involved: the step is an addition on the encoding too.
 #include <cstddef>
-#include <universal/number/posit/math/posit_limbs.hpp>
+#include <universal/number/posit/posit_limbs.hpp>
 
 namespace sw { namespace universal {
 
