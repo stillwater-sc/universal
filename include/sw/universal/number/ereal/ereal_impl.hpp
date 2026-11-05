@@ -658,23 +658,44 @@ public:
 
 		// the halvings: exact, a power of two per limb. A limb pushed below the normal range is
 		// dropped, as the normal-limb invariant requires; it lay below representable precision.
-		auto applyHalvings = [&result, &halvings]() {
-			if (halvings > 0 && !result.iszero() && !result.isinf() && !result.isnan()) {
-				for (auto& v : result._limb) v = std::ldexp(v, -halvings);
-				std::size_t keep = 1;
-				while (keep < result._limb.size() && std::isnormal(result._limb[keep])) ++keep;
-				result._limb.resize(keep);
-			}
-			halvings = 0;
+		auto halve = [&result](int h) {
+			if (h <= 0 || result.iszero() || result.isinf() || result.isnan()) return;
+			for (auto& v : result._limb) v = std::ldexp(v, -h);
+			std::size_t keep = 1;
+			while (keep < result._limb.size() && std::isnormal(result._limb[keep])) ++keep;
+			result._limb.resize(keep);
 		};
 		// A positive power of ten here comes only from the precision cap, after the reduction
-		// recorded its halvings. Scaling up first can overflow a value the halvings bring back
-		// in range: (10^309 + 1) * 2^-300 is 4.9e218, but its truncated digits times 10^166 are
-		// past DBL_MAX (CodeRabbit on PR #1938). So the halvings go first then. They cannot
-		// underflow: the integer has up to MAX_SIG_DIGITS digits, the halvings are at most the
-		// scanned digits. With a negative power both steps shrink the value, so the order does
-		// not matter.
-		if (exponent > 0) applyHalvings();
+		// recorded its halvings, and neither order of the two is safe on its own:
+		//   scaling first can overflow a value the halvings bring back in range: the truncated
+		//   digits of (10^309 + 1) * 2^-300 times 10^166 are past DBL_MAX, although the value is
+		//   4.9e218;
+		//   halving first can push the value, or just its tail limbs, below the normal range
+		//   before the scaling brings it back: with 1200 halvings, ereal<1> returned 0 and
+		//   ereal<4> kept 33 of its 64 digits.
+		// So they alternate (CodeRabbit on PR #1938): halve until the leading limb is just above
+		// one, which keeps every limb normal up to max_safe_limbs, then scale by as large a power
+		// of ten as keeps it below 2^1000, and repeat. Whatever is left of either one is applied
+		// afterward, at the size of the final value.
+		if (exponent > 0 && halvings > 0) {
+			constexpr int ceilingBits = std::numeric_limits<FpType>::max_exponent - 24;   // 2^1000 for double
+			while (exponent > 0 && halvings > 0 && !result.iszero() && !result.isinf() && !result.isnan()) {
+				int lead = std::ilogb(result._limb[0]);
+				if (lead > 0) {
+					int h = (halvings < lead) ? halvings : lead;
+					halve(h);
+					halvings -= h;
+					lead -= h;
+				}
+				// 10^step < 2^(3.33 * step): stay below the ceiling
+				int step = static_cast<int>(static_cast<double>(ceilingBits - lead) / 3.33);
+				if (step > exponent) step = exponent;
+				if (step > max_exponent10) step = max_exponent10;
+				if (step <= 0) break;   // cannot happen with lead <= 0, but never spin
+				result = result * pown(ten, step);
+				exponent -= step;
+			}
+		}
 
 		// Apply the power-of-ten scale.
 		//
@@ -706,7 +727,7 @@ public:
 			}
 		}
 
-		applyHalvings();   // a no-op when they were applied before the scaling
+		halve(halvings);   // what the alternation left, at the size of the final value
 
 		// Apply sign
 		if (negative) {

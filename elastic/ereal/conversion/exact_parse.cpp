@@ -143,27 +143,35 @@ int VerifyNonDyadicAccuracy(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
-// Truncation after the reduction can leave a positive power of ten together with halvings. The
-// value (10^309 + 1) * 2^-300 is 4.9e218, but scaling its truncated digits by 10^166 before the
-// halvings overflowed to inf (CodeRabbit on PR #1938). Its reference is 10^309 * 2^-300 =
-// 5^309 * 2^9, which stays in range, and the dropped 2^-300 is far below ereal<8>'s precision.
+// Truncation after the reduction can leave a positive power of ten together with halvings, and
+// neither order of the two is safe on its own (CodeRabbit on PR #1938):
+// - scaling first overflowed: the value (10^309 + 1) * 2^-300 is 4.9e218, but its truncated digits
+//   times 10^166 are past DBL_MAX, and the parse returned inf;
+// - halving first underflowed: with 1200 halvings, ereal<1> returned 0, and ereal<4> kept 33 of
+//   its 64 digits, because its tail limbs fell below the normal range before the scaling.
+// The value is (10^k + 1) * 2^-h. Its reference is 10^k * 2^-h = 5^k * 2^(k-h), built in range;
+// the +1 lies far below precision.
+template<unsigned nlimbs>
 int VerifyScaleOrder(bool reportTestCases) {
 	using namespace sw::universal;
-	using Real = ereal<8>;
+	using Real = ereal<nlimbs>;
 	int nrOfFailedTests = 0;
-	for (int extra : { 309, 305, 300 }) {          // 10^extra + 1, times 5^300, over 10^300
-		std::string digits = "1" + std::string(static_cast<std::size_t>(extra - 1), '0') + "1";
-		for (int k = 0; k < 300; ++k) timesFive(digits);
+	const double tol = std::ldexp(1.0, -50 * static_cast<int>(nlimbs));   // about 53 bits a limb
+	struct Shape { int k; int h; };
+	for (Shape sh : { Shape{ 309, 300 }, Shape{ 305, 300 }, Shape{ 300, 300 }, Shape{ 309, 1200 }, Shape{ 250, 1000 } }) {
+		std::string digits = "1" + std::string(static_cast<std::size_t>(sh.k - 1), '0') + "1";
+		for (int i = 0; i < sh.h; ++i) timesFive(digits);
 		Real got;
-		if (!got.parse(digits + "e-300") || got.isinf() || got.isnan()) {
-			if (reportTestCases) std::cerr << "FAIL (10^" << extra << " + 1) * 2^-300 is not finite\n";
-			++nrOfFailedTests;
-			continue;
+		bool ok = got.parse(digits + "e-" + std::to_string(sh.h));
+		Real ref = pown(Real(5.0), sh.k);
+		for (int shift = sh.k - sh.h; shift != 0; ) {
+			int s = (shift < -900) ? -900 : (shift > 900) ? 900 : shift;
+			ref *= Real(std::ldexp(1.0, s));
+			shift -= s;
 		}
-		Real ref = pown(Real(5.0), extra) * Real(std::ldexp(1.0, extra - 300));
-		double rel = std::fabs(double((got - ref) / ref));
-		if (!(rel <= std::ldexp(1.0, -420))) {
-			if (reportTestCases) std::cerr << "FAIL (10^" << extra << " + 1) * 2^-300 relative error " << rel << '\n';
+		double rel = (ok && !got.iszero() && !got.isinf() && !got.isnan()) ? std::fabs(double((got - ref) / ref)) : 1.0;
+		if (!(rel <= tol)) {
+			if (reportTestCases) std::cerr << "FAIL ereal<" << nlimbs << "> (10^" << sh.k << " + 1) * 2^-" << sh.h << " -> " << double(got) << ", relative error " << rel << '\n';
 			++nrOfFailedTests;
 		}
 	}
@@ -213,7 +221,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySingleLimb(reportTestCases), "ereal<8>", "dyadic, one limb");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimb(reportTestCases), "ereal<8>", "dyadic, two limbs");
 	nrOfFailedTestCases += ReportTestResult(VerifyNonDyadicAccuracy(reportTestCases), "ereal<8>", "non-dyadic accuracy");
-	nrOfFailedTestCases += ReportTestResult(VerifyScaleOrder(reportTestCases), "ereal<8>", "halvings before scaling");
+	nrOfFailedTestCases += ReportTestResult(VerifyScaleOrder<1>(reportTestCases), "ereal<1>", "halvings and scaling");
+	nrOfFailedTestCases += ReportTestResult(VerifyScaleOrder<2>(reportTestCases), "ereal<2>", "halvings and scaling");
+	nrOfFailedTestCases += ReportTestResult(VerifyScaleOrder<4>(reportTestCases), "ereal<4>", "halvings and scaling");
+	nrOfFailedTestCases += ReportTestResult(VerifyScaleOrder<8>(reportTestCases), "ereal<8>", "halvings and scaling");
 #endif
 
 #if REGRESSION_LEVEL_2
