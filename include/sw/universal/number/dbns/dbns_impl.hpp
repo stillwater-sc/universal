@@ -125,6 +125,10 @@ class dbns {
 	static_assert(sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported");
 	static_assert(_nbits - _fbbits < 66, "configuration not supported: the scale of this configuration is > 2^64");
 	static_assert(_fbbits < 64, "configuration not supported: scaling factor is > 2^64");
+	// the exponent fields are carried in 32 bits by setexponent() and extractExponent(), and
+	// conversion searches them in 64-bit arithmetic (#1933)
+	static_assert(_fbbits <= 32, "configuration not supported: the first base exponent field is wider than 32 bits");
+	static_assert(_nbits - _fbbits - 1 <= 32, "configuration not supported: the second base exponent field is wider than 32 bits");
 public:
 	typedef bt BlockType;
 
@@ -652,12 +656,12 @@ public:
 			uint64_t bits{ 0 };
 			if (0 == base) {
 				for (unsigned i = sbbits; i < nbits - 1; ++i) {
-					bits |= (at(i) ? (1 << (i - sbbits)) : 0);
+					bits |= (at(i) ? (1ull << (i - sbbits)) : 0ull);
 				}
 			}
 			else {
 				for (unsigned i = 0; i < sbbits; ++i) {
-					bits |= (at(i) ? (1 << i) : 0);
+					bits |= (at(i) ? (1ull << i) : 0ull);
 				}
 			}
 			return static_cast<uint32_t>(bits);
@@ -816,18 +820,35 @@ protected:
 		// nearest representable value in the logarithmic domain. This used to admit any a and
 		// then try to project an out-of-range pair back, which failed for a third of all values
 		// and sent them to the zero pattern or to a far neighbour.
-		const int maxA = static_cast<int>(MAX_A);
+		// In 64-bit integers: a field may be 32 bits wide, and dbns<34,1>'s MAX_B of 2^32 - 1 cast
+		// to int was -1, so this loop did not run at all.
+		// Only a window of b needs searching. With a clamped to [-MAX_A, 0], a b below
+		// scale/log2(3) has a = 0 and an error that shrinks as b grows, and a b above
+		// (scale + MAX_A)/log2(3) has a = -MAX_A and an error that grows with b, so the nearest
+		// pair has b within that window, give or take one. The window is at most MAX_A/log2(3) + 4
+		// wide and is cut to [0, MAX_B], so the search costs min(MAX_B + 1, MAX_A/log2(3) + 4)
+		// steps rather than MAX_B + 1: 3 for dbns<34,1>, 32 for dbns<32,26>.
+		const long long maxA = static_cast<long long>(MAX_A);
+		const long long maxB = static_cast<long long>(MAX_B);
 		double lowestError = 1.0e300;
-		int best_a = 0;   // the base-2 exponent, -a in the encoding
-		int best_b = 0;
-		for (int b = 0; b <= static_cast<int>(MAX_B); ++b) {
-			// constexpr-safe round-to-nearest-int for finite double in int range
-			double r = scale - b * log2of3;
-			int a = static_cast<int>(r >= 0.0 ? r + 0.5 : r - 0.5);
+		long long best_a = 0;   // the base-2 exponent, -a in the encoding
+		long long best_b = 0;
+		auto floorToLL = [](double x) { long long i = static_cast<long long>(x); return (static_cast<double>(i) > x) ? i - 1 : i; };
+		long long bLo = floorToLL(scale / log2of3) - 1;
+		long long bHi = floorToLL((scale + static_cast<double>(maxA)) / log2of3) + 2;
+		if (bLo < 0) bLo = 0;
+		if (bLo > maxB) bLo = maxB;
+		if (bHi < 0) bHi = 0;
+		if (bHi > maxB) bHi = maxB;
+		if (bLo > bHi) bLo = bHi;   // the value is beyond the range: the window collapses onto its edge
+		for (long long b = bLo; b <= bHi; ++b) {
+			// constexpr-safe round-to-nearest-int for finite double in long long range
+			double r = scale - static_cast<double>(b) * log2of3;
+			long long a = static_cast<long long>(r >= 0.0 ? r + 0.5 : r - 0.5);
 			if (a > 0) a = 0;
 			if (a < -maxA) a = -maxA;
 			if (a == -maxA && b == 0) a = -(maxA - 1);   // (MAX_A, 0) is the zero encoding
-			double diff = scale - (a + b * log2of3);
+			double diff = scale - (static_cast<double>(a) + static_cast<double>(b) * log2of3);
 			double err = (diff < 0.0 ? -diff : diff);
 #if DBNS_TRACE_CONVERSION
 			if (!std::is_constant_evaluated()) {

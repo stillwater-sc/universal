@@ -111,6 +111,62 @@ int VerifyIssueCases(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// Fields up to the supported 32 bits, where an exhaustive check is out of reach. The conversion
+// searches a window of the second base exponents; this oracle scans whichever field is small in
+// full, every a with its best b or every b with its best a, so it checks the window as well.
+// dbns<34,1> has a 32-bit second field: its MAX_B cast to int was -1, and the search did not run.
+template<unsigned nbits, unsigned fbbits, typename bt>
+int VerifyWideFields(bool reportTestCases) {
+	using namespace sw::universal;
+	using Dbns = dbns<nbits, fbbits, bt>;
+	const double log2of3 = std::log2(3.0);
+	const long long maxA = (1ll << fbbits) - 1;
+	const long long maxB = (1ll << (nbits - fbbits - 1)) - 1;
+	auto oracle = [&](double l) {   // the least log2 error over all encodable pairs, zero excluded
+		double best = 1.0e300;
+		auto consider = [&](long long a, long long b) {
+			if (a == maxA && b == 0) return;   // the zero encoding
+			best = std::fmin(best, std::fabs(l - (static_cast<double>(-a) + static_cast<double>(b) * log2of3)));
+		};
+		if (maxA <= 100000) {
+			for (long long a = 0; a <= maxA; ++a) {
+				double bf = (l + static_cast<double>(a)) / log2of3;
+				for (long long b = static_cast<long long>(std::floor(bf)); b <= static_cast<long long>(std::floor(bf)) + 1; ++b)
+					if (b >= 0 && b <= maxB) consider(a, b);
+				if (bf < 0) consider(a, 0);
+				if (bf > static_cast<double>(maxB)) consider(a, maxB);
+			}
+		}
+		else {
+			for (long long b = 0; b <= maxB; ++b) {
+				double af = static_cast<double>(b) * log2of3 - l;   // the a that makes it exact
+				for (long long a = static_cast<long long>(std::floor(af)); a <= static_cast<long long>(std::floor(af)) + 1; ++a)
+					if (a >= 0 && a <= maxA) consider(a, b);
+				if (af < 0) consider(0, b);
+				if (af > static_cast<double>(maxA)) consider(maxA, b);
+			}
+		}
+		return best;
+	};
+	double lo = -static_cast<double>(maxA - 1), hi = static_cast<double>(maxB) * log2of3;
+	if (lo < -1000.0) lo = -1000.0;   // what a double can express
+	if (hi >  1000.0) hi =  1000.0;
+	std::mt19937_64 rng(19330 + nbits);
+	std::uniform_real_distribution<double> uniform(lo, hi);
+	int nrOfFailedTests = 0;
+	for (int i = 0; i < 1000; ++i) {
+		double l = uniform(rng);
+		Dbns d(std::exp2(l));
+		double got = std::fabs(std::log2(double(d)) - l);
+		double best = oracle(l);
+		if (!(got <= best + 1.0e-9)) {
+			if (reportTestCases && nrOfFailedTests < 3) std::cerr << "FAIL " << type_tag(Dbns()) << " 2^" << l << " -> " << double(d) << ", log2 error " << got << " where " << best << " is reachable\n";
+			++nrOfFailedTests;
+		}
+	}
+	return nrOfFailedTests;
+}
+
 } // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -163,6 +219,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNearest<10, 6, std::uint8_t >(reportTestCases), "dbns<10,6,uint8>", "nearest");
 	nrOfFailedTestCases += ReportTestResult(VerifyNearest<12, 3, std::uint16_t>(reportTestCases), "dbns<12,3,uint16>", "nearest");
 	nrOfFailedTestCases += ReportTestResult(VerifyNearest<12, 5, std::uint8_t >(reportTestCases), "dbns<12,5,uint8>", "nearest");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<34,  1, std::uint8_t >(reportTestCases), "dbns<34,1,uint8>", "32-bit field");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<32, 26, std::uint32_t>(reportTestCases), "dbns<32,26,uint32>", "26-bit field");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<24, 19, std::uint8_t >(reportTestCases), "dbns<24,19,uint8>", "19-bit field");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<20, 10, std::uint16_t>(reportTestCases), "dbns<20,10,uint16>", "both fields wide");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits< 8, 3, std::uint8_t >(reportTestCases), "dbns<8,3,uint8>", "minpos");
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits<10, 4, std::uint8_t >(reportTestCases), "dbns<10,4,uint8>", "minpos");
