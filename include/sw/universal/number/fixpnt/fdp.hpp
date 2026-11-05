@@ -14,6 +14,7 @@
 // Relates to #345, #548
 
 #include <cstddef>       // std::size_t
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <type_traits>   // the type traits used below
 #include <vector>
 #include <stdexcept>
@@ -188,11 +189,11 @@ void fdp_qc(quire<Scalar, capacity, LimbType>& sum_of_products, size_t n,
                              std::is_same_v<typename Vector::value_type, Scalar>, int> = 0) {
 	if (n == 0) return;
 	if (incx == 0 || incy == 0)
-		throw std::invalid_argument("fdp_qc: incx and incy must be positive");
+		throw_or_abort(std::invalid_argument("fdp_qc: incx and incy must be positive"));
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
 		if (ix >= x.size() || iy >= y.size())
-			throw std::out_of_range("fdp_qc: index out of bounds");
+			throw_or_abort(std::out_of_range("fdp_qc: index out of bounds"));
 		sum_of_products += quire_mul(x[ix], y[iy]);
 	}
 }
@@ -206,11 +207,11 @@ fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy)
 
 	if (n == 0) return Scalar(0);
 	if (incx == 0 || incy == 0)
-		throw std::invalid_argument("fdp_stride: incx and incy must be positive");
+		throw_or_abort(std::invalid_argument("fdp_stride: incx and incy must be positive"));
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
 		if (ix >= x.size() || iy >= y.size())
-			throw std::out_of_range("fdp_stride: index out of bounds");
+			throw_or_abort(std::out_of_range("fdp_stride: index out of bounds"));
 		q += quire_mul(x[ix], y[iy]);
 	}
 
@@ -226,7 +227,7 @@ fdp(const Vector& x, const Vector& y) {
 
 	size_t n = size(x);
 	if (n > size(y))
-		throw std::invalid_argument("fdp: y vector must be at least as long as x");
+		throw_or_abort(std::invalid_argument("fdp: y vector must be at least as long as x"));
 	for (size_t i = 0; i < n; ++i) {
 		q += quire_mul(x[i], y[i]);
 	}

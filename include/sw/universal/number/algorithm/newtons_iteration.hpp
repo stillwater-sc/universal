@@ -9,6 +9,7 @@
 #include <universal/native/ieee754.hpp>
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 #include <universal/internal/value/value.hpp>
 #undef BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 #undef VALUE_THROW_ARITHMETIC_EXCEPTION

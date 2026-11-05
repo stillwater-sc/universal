@@ -63,6 +63,7 @@
 #if !defined(UNUM_THROW_ARITHMETIC_EXCEPTION)
 #define UNUM_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <universal/number/unum/exceptions.hpp>
 #include <universal/number/unum/unum_fwd.hpp>   // unum is named before it is defined

@@ -69,6 +69,7 @@
 // default is to not throw: an invalid operation produces NaR
 #define LINDEX_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <universal/utility/directives.hpp>   // LONG_DOUBLE_SUPPORT
 #include <universal/internal/blockbinary/blockbinary.hpp>

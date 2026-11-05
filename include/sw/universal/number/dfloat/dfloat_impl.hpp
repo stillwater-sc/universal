@@ -16,6 +16,7 @@
 #if !defined(DFLOAT_THROW_ARITHMETIC_EXCEPTION)
 #define DFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 #if !defined(DFLOAT_EXCEPT)
 #if DFLOAT_THROW_ARITHMETIC_EXCEPTION
 #define DFLOAT_EXCEPT

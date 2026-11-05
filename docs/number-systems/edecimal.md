@@ -47,6 +47,11 @@ opts out before the include, with `EDECIMAL_THROW_DIVIDE_BY_ZERO 0`, or with
 #include <universal/number/edecimal/edecimal.hpp>
 ```
 
+A build with exceptions disabled (`-fno-exceptions`) gets the value without asking:
+`EDECIMAL_THROW_DIVIDE_BY_ZERO` defaults to `UNIVERSAL_HAS_EXCEPTIONS`, which
+`<universal/utility/exceptions.hpp>` takes from the compiler. Setting it to `1` in such a build
+stops with an `#error` (#1925).
+
 With the exception off, `x / 0` and `x % 0` are `0`, as are both fields of
 `decint_divide()`. Nothing is printed, and the long division never runs with a zero divisor
 (#1894).

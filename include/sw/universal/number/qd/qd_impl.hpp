@@ -13,6 +13,7 @@
 #define QUADDOUBLE_EXCEPT noexcept
 #endif
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 // qd_impl.hpp: implementation of the double-double floating-point number system described in
 // 

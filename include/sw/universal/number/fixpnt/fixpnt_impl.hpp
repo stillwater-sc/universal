@@ -1,4 +1,5 @@
 #pragma once
+#include <universal/utility/exceptions.hpp>  // UNIVERSAL_HAS_EXCEPTIONS (#1925)
 // FIXPNT_THROW_DIVIDE_BY_ZERO: a division by zero throws fixpnt_divide_by_zero. fixpnt has no
 // NaN or infinity to carry the failure in the value, so it throws unless the application opts
 // out, by setting this to 0 or, when this is not set, FIXPNT_THROW_ARITHMETIC_EXCEPTION to 0.
@@ -9,7 +10,8 @@
 #if defined(FIXPNT_THROW_ARITHMETIC_EXCEPTION)
 #define FIXPNT_THROW_DIVIDE_BY_ZERO FIXPNT_THROW_ARITHMETIC_EXCEPTION
 #else
-#define FIXPNT_THROW_DIVIDE_BY_ZERO 1
+// throw by default, unless the build has exceptions disabled (#1925)
+#define FIXPNT_THROW_DIVIDE_BY_ZERO UNIVERSAL_HAS_EXCEPTIONS
 #endif
 #endif
 // FIXPNT_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on the other arithmetic errors,
@@ -24,6 +26,7 @@
 #if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
 #define QUIRE_THROW_ARITHMETIC_EXCEPTION FIXPNT_THROW_ARITHMETIC_EXCEPTION
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 // fixpnt_impl.hpp: implementation of an arbitrary configuration binary fixed-point number parameterized in total bits and radix bits
 //

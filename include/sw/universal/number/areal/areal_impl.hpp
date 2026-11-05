@@ -10,6 +10,7 @@
 #if !defined(AREAL_THROW_ARITHMETIC_EXCEPTION)
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <cstddef>    // std::size_t in parse()
 #include <cstdint>    // std::int64_t, std::uint64_t in parse() and the encodings

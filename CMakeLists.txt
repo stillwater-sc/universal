@@ -170,7 +170,7 @@ option(UNIVERSAL_BUILD_MIXEDPRECISION_POP           "Set to ON to build POP prec
 option(UNIVERSAL_BUILD_TYPE_HIERARCHY              "Set to ON to build type hierarchy tests"             OFF)
 
 # application environment tests
-option(UNIVERSAL_BUILD_APP_ENVIRONMENT             "Set to ON to build applicatoin environment tests"    OFF)
+option(UNIVERSAL_BUILD_APP_ENVIRONMENT             "Set to ON to build the integration tests"            OFF)
 
 # C API library and test programs
 option(UNIVERSAL_BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
@@ -911,6 +911,10 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	# conversions
 	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)
 
+	# integration tests: multifile, and every number system built with -fno-exceptions,
+	# which keeps a stray throw from breaking bare-metal builds again (#1925)
+	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
+
 	# utility tests: the decimal-to-binary converter, string parsing, fma traits and error
 	# tracking. Enabled only by UNIVERSAL_BUILD_ALL before, so no CI job built them and they
 	# never gated a merge -- which is how the converter's #1504 went unnoticed (#1542).
@@ -1044,10 +1048,10 @@ if(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 endif(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 
 ##################################################################
-###          multi-file application regression environment
+###          integration tests: multi-file and no-exceptions application environments
 
 if(UNIVERSAL_BUILD_APP_ENVIRONMENT)
-add_subdirectory("static/appenv")
+add_subdirectory("integration")
 endif(UNIVERSAL_BUILD_APP_ENVIRONMENT)
 
 ##################################################################

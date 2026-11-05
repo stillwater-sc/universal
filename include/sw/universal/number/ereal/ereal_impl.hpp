@@ -30,6 +30,7 @@
 // default is to return the IEEE-754 special value
 #define EREAL_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 // supporting types and functions, from the I/O-free halves of the native support:
 // sw::universal::isinf/isnan (ieee754_core.hpp) and scale(double)

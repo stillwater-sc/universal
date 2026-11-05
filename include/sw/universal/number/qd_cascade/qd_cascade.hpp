@@ -38,6 +38,7 @@
 #define QD_CASCADE_EXCEPT noexcept
 #endif
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

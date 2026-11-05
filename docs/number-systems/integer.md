@@ -62,6 +62,11 @@ opts out before the include, with `INTEGER_THROW_DIVIDE_BY_ZERO 0`, or with
 #include <universal/number/integer/integer.hpp>
 ```
 
+A build with exceptions disabled (`-fno-exceptions`) gets the value without asking:
+`INTEGER_THROW_DIVIDE_BY_ZERO` defaults to `UNIVERSAL_HAS_EXCEPTIONS`, which
+`<universal/utility/exceptions.hpp>` takes from the compiler. Setting it to `1` in such a build
+stops with an `#error` (#1925).
+
 With the exception off, `x / 0` and `x % 0` are `0`, as are both outputs of `reduce()`
 and `idiv()`. Nothing is printed. `INTEGER_THROW_ARITHMETIC_EXCEPTION` still defaults to `0`,
 so the `WholeNumber` and `NaturalNumber` domain errors keep their default; only division by

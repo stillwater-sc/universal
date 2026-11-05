@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/boolean_logic_operators.hpp>
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <universal/internal/value/value.hpp>
 #include <universal/number/quire/exceptions.hpp>
 
@@ -54,10 +55,10 @@ public:
 		_sign = rhs.sign();
 		int i,f, scale = rhs.scale();
 		if (scale > int(half_range)) {
-			throw operand_too_large_for_quire{};
+			throw_or_abort(operand_too_large_for_quire{});
 		}
 		if (scale < -int(half_range)) {
-			throw operand_too_small_for_quire{};
+			throw_or_abort(operand_too_small_for_quire{});
 		}
 		sw::universal::internal::bitblock<fbits+1> fraction = rhs.get_fixed_point();
 		// divide bits between upper and lower accumulator
@@ -106,7 +107,7 @@ public:
 		magnitude = _sign ? -rhs : rhs;
 		unsigned msb = find_msb(magnitude);
 		if (msb > half_range + capacity) {
-			throw operand_too_large_for_quire{};
+			throw_or_abort(operand_too_large_for_quire{});
 		}
 		else {
 			// copy the value into the quire
@@ -129,7 +130,7 @@ public:
 		reset();
 		unsigned msb = find_msb(rhs);
 		if (msb > half_range + capacity) {
-			throw operand_too_large_for_quire{};
+			throw_or_abort(operand_too_large_for_quire{});
 		}
 		else {
 			// copy the value into the quire
@@ -169,10 +170,10 @@ public:
 		if (rhs.iszero()) return *this;
 		int i, f, scale = rhs.scale();
 		if (scale >  int(half_range)) {
-			throw operand_too_large_for_quire{};
+			throw_or_abort(operand_too_large_for_quire{});
 		}
 		if (scale < -int(half_range)) {
-			throw operand_too_small_for_quire{};
+			throw_or_abort(operand_too_small_for_quire{});
 		}
 		if (rhs.sign()) {			// subtract
 			// lsb in the quire of the lowest bit of the explicit fixed point value including the hidden bit of the fraction

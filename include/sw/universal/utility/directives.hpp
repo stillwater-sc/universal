@@ -22,6 +22,10 @@
 
 #endif // _MSC_VER
 
+// ========== exception detection ==========
+// UNIVERSAL_HAS_EXCEPTIONS and throw_or_abort(), for builds with -fno-exceptions (#1925)
+#include <universal/utility/exceptions.hpp>
+
 // ========== LONG_DOUBLE_SUPPORT detection ==========
 // The single definition of LONG_DOUBLE_SUPPORT (#1534). utility/long_double.hpp used to define it
 // as well, from a hand-maintained per-compiler table, and neither header could see the other's

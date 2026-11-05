@@ -24,7 +24,7 @@
 // default is to enable them
 #define EINTEGER_ENABLE_LITERALS 1
 #endif
-
+#include <universal/utility/exceptions.hpp>  // UNIVERSAL_HAS_EXCEPTIONS (#1925)
 // EINTEGER_THROW_DIVIDE_BY_ZERO: a division or remainder by zero throws einteger_divide_by_zero.
 // einteger has no NaN to carry the failure in the value, so it throws unless the application
 // opts out, by setting this to 0 or, when this is not set, EINTEGER_THROW_ARITHMETIC_EXCEPTION
@@ -35,7 +35,8 @@
 #if defined(EINTEGER_THROW_ARITHMETIC_EXCEPTION)
 #define EINTEGER_THROW_DIVIDE_BY_ZERO EINTEGER_THROW_ARITHMETIC_EXCEPTION
 #else
-#define EINTEGER_THROW_DIVIDE_BY_ZERO 1
+// throw by default, unless the build has exceptions disabled (#1925)
+#define EINTEGER_THROW_DIVIDE_BY_ZERO UNIVERSAL_HAS_EXCEPTIONS
 #endif
 #endif
 // enable throwing specific exceptions for the other integer arithmetic errors
@@ -44,6 +45,7 @@
 // default is to write a diagnostic to stderr for signalling an error
 #define EINTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <universal/number/einteger/exceptions.hpp>
 #include <universal/number/einteger/einteger_fwd.hpp>

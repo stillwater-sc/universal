@@ -25,6 +25,7 @@
 #if !defined(BISECTION_THROW_ARITHMETIC_EXCEPTION)
 #define BISECTION_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <universal/internal/blockbinary/blockbinary.hpp>
 

@@ -26,7 +26,7 @@ the integer arithmetic can be configured to:
 - throw exceptions on arithmetic
 - throw exceptions on encoding errors for Whole and Natural Numbers
 
-you need the exception types defined, but you have the option to throw them
+you need the exception types defined, but you have the option to throw_or_abort(them
  */
 // INTEGER_ENABLE_LITERALS / INTEGER_THROW_ARITHMETIC_EXCEPTION: the defaults live
 // HERE, beside the #if blocks that test them, rather than in the integer.hpp
@@ -36,6 +36,7 @@ you need the exception types defined, but you have the option to throw them
 #if !defined(INTEGER_ENABLE_LITERALS)
 #define INTEGER_ENABLE_LITERALS 1
 #endif
+#include <universal/utility/exceptions.hpp>  // UNIVERSAL_HAS_EXCEPTIONS (#1925)
 // INTEGER_THROW_DIVIDE_BY_ZERO: a division or remainder by zero throws integer_divide_by_zero.
 // integer has no NaN to carry the failure in the value, so it throws unless the application
 // opts out, by setting this to 0 or, when this is not set, INTEGER_THROW_ARITHMETIC_EXCEPTION
@@ -46,7 +47,8 @@ you need the exception types defined, but you have the option to throw them
 #if defined(INTEGER_THROW_ARITHMETIC_EXCEPTION)
 #define INTEGER_THROW_DIVIDE_BY_ZERO INTEGER_THROW_ARITHMETIC_EXCEPTION
 #else
-#define INTEGER_THROW_DIVIDE_BY_ZERO 1
+// throw by default, unless the build has exceptions disabled (#1925)
+#define INTEGER_THROW_DIVIDE_BY_ZERO UNIVERSAL_HAS_EXCEPTIONS
 #endif
 #endif
 // INTEGER_THROW_ARITHMETIC_EXCEPTION gates the other arithmetic errors: the domain errors of
@@ -54,11 +56,12 @@ you need the exception types defined, but you have the option to throw them
 #if !defined(INTEGER_THROW_ARITHMETIC_EXCEPTION)
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <universal/number/integer/exceptions.hpp>
 
  // composition types used by integer
-#include <universal/internal/blocktriple/blocktriple_fwd.hpp>  // normalize() only NAMES blocktriple;
+#include <universal/internal/blocktriple/blocktriple_fwd.hpp>  // normalize() only NAMES blocktriple);
                                                               // it is a member template, so the definition
                                                               // is needed only where it is called (#1334)
 

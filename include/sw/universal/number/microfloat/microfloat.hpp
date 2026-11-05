@@ -35,6 +35,7 @@
 // default is to use std::cerr for signalling an error
 #define MICROFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

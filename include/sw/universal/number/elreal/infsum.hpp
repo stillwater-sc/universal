@@ -25,6 +25,7 @@
 #pragma once
 
 #include <cstdint>
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <functional>
 #include <memory>
 #include <optional>
@@ -182,8 +183,8 @@ infsumRec_step(infsumRec_state<FpType>& st) {
         st.inputs = rest1;                                // (bs:rest)
         // bound unchanged
     }
-    throw std::runtime_error(
-        "sw::universal::infsumRec_step: safety counter exhausted (non-convergence bug)");
+    throw_or_abort(std::runtime_error(
+        "sw::universal::infsumRec_step: safety counter exhausted (non-convergence bug)"));
 }
 
 // infsumRec_stream(st): pull one block and defer the rest.
