@@ -91,19 +91,24 @@ public:
 	}
 
 	// arithmetic operators
-	// prefix operator
+	// prefix operator: the negation, leaving *this unchanged. It used to assign to the members of
+	// a const object, so -x did not compile (#1930).
 	faithful operator-() const {
-		value = -value;
-		error = -error;
-		return *this;
+		return faithful(-value, -error);
 	}
 
 	// in-place arithmetic assignment operators
+	// The compensated operators carry each operand's error into the result's (#1930). With
+	// x = a + ea and y = b + eb, and the exact roundoff r of the operation on the heads:
+	//   x + y = s + (r + ea + eb)
+	//   x - y = s + (r + ea - eb)
+	//   x * y = p + (r + a*eb + b*ea)          dropping ea*eb, below the error's own precision
+	//   x / y = d + (r + ea - d*eb) / b        to first order, with r = a - b*d from twoDiv
 	faithful& operator+=(const faithful& rhs) {
 		FloatingPointType a(value), b(rhs.value), s, r;
 		twoSum(a, b, s, r);
 		value = s;
-		error += r;
+		error += r + rhs.error;
 		return *this; 
 	}
 	faithful& operator+=(double rhs) { return *this += faithful(rhs); }
@@ -111,7 +116,7 @@ public:
 		FloatingPointType a(value), b(-rhs.value), s, r;
 		twoSum(a, b, s, r);
 		value = s;
-		error += r + rhs.error;
+		error += r - rhs.error;
 		return *this; 
 	}
 	faithful& operator-=(double rhs) { return *this -= faithful(rhs); }
@@ -127,7 +132,7 @@ public:
 		FloatingPointType a(value), b(rhs.value), d, r;
 		twoDiv(a, b, d, r);
 		value = d;
-		error = (error + r) / b;
+		error = (error + r - d * rhs.error) / b;
 		return *this;
 	}
 	faithful& operator/=(double rhs) { return *this /= faithful(rhs); }
@@ -162,6 +167,9 @@ public:
 	inline bool isnan() const { return false; }
 	inline bool sign() const { return value < 0.0; }
 	inline int scale() const { return sw::universal::scale(value); }
+	// the two parts: the rounded value and its compensation, as dd_cascade names them
+	inline FloatingPointType high() const { return value; }
+	inline FloatingPointType low()  const { return error; }
 
 private:
 	FloatingPointType value;
