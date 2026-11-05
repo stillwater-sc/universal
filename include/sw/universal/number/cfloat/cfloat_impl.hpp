@@ -3577,48 +3577,30 @@ template<unsigned nnbits, unsigned nes, typename nbt, bool nsub, bool nsup, bool
 constexpr inline bool operator!=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned nnbits, unsigned nes, typename nbt, bool nsub, bool nsup, bool nsat>
 constexpr inline bool operator< (const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& lhs, const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& rhs) {
+	// The encoding is sign-magnitude, and with NaN set aside the magnitude bits order the values:
+	// the exponent field sits above the fraction, subnormals have the all-zeros exponent, and inf is
+	// the successor of maxpos. So after the NaN and zero checks, a comparison is a limb-by-limb
+	// compare of the magnitudes from the MSU down, reversed for negatives (#1920).
+	// Without subnormals every all-zeros-exponent encoding is a zero, but those encodings still
+	// sort below every normal, so the same compare holds once 'both are zero' is filtered out.
 	if (lhs.isnan() || rhs.isnan()) return false;
-	// need this as arithmetic difference is defined as snan(indeterminate)
-	if (lhs.isinf(INF_TYPE_NEGATIVE) && rhs.isinf(INF_TYPE_NEGATIVE)) return false;
-	if (lhs.isinf(INF_TYPE_POSITIVE) && rhs.isinf(INF_TYPE_POSITIVE)) return false;
-	if constexpr (nsub) {
-		cfloat<nnbits, nes, nbt, nsub, nsup, nsat> diff = (lhs - rhs);
-		return (!diff.iszero() && diff.sign()) ? true : false;  // got to guard against -0
+	if (lhs.iszero() && rhs.iszero()) return false;  // +0 == -0, and all the zero encodings collapse
+	using Cfloat = cfloat<nnbits, nes, nbt, nsub, nsup, nsat>;
+	const bool negative = lhs.sign();
+	if (negative != rhs.sign()) return negative;
+	constexpr nbt magnitudeMask = static_cast<nbt>(Cfloat::MSU_MASK & static_cast<nbt>(~Cfloat::SIGN_BIT_MASK));
+	nbt l = static_cast<nbt>(lhs._block[Cfloat::MSU] & magnitudeMask);
+	nbt r = static_cast<nbt>(rhs._block[Cfloat::MSU] & magnitudeMask);
+	for (unsigned i = Cfloat::MSU; l == r && i > 0; ) {
+		--i;
+		l = lhs._block[i];
+		r = rhs._block[i];
 	}
-	else {
-		if (lhs.iszero() && rhs.iszero()) return false;  // we need to 'collapse' all zero encodings
-		if (lhs.sign() && !rhs.sign()) return true;
-		if (!lhs.sign() && rhs.sign()) return false;
-		bool positive = lhs.ispos();
-		if (positive) {
-			if (lhs.scale() < rhs.scale()) return true;
-			if (lhs.scale() > rhs.scale()) return false;
-		}
-		else {
-			if (lhs.scale() > rhs.scale()) return true;
-			if (lhs.scale() < rhs.scale()) return false;
-		}
-		// sign and scale are the same
-		if (lhs.scale() == rhs.scale()) {
-			// compare fractions: we do not have subnormals, so we can ignore the hidden bit
-			blockbinary<nnbits - 1ull - nes, nbt> l, r;
-			lhs.fraction(l);
-			rhs.fraction(r);
-			blockbinary<nnbits - nes, nbt> ll, rr; // fbits + 1 so we can 0 extend to honor 2's complement encoding of blockbinary
-			ll.assignWithoutSignExtend(l);
-			rr.assignWithoutSignExtend(r);
-			return (positive ? (ll < rr) : (ll > rr));
-		}
-		return false;
-	}
+	return negative ? (r < l) : (l < r);
 }
 template<unsigned nnbits, unsigned nes, typename nbt, bool nsub, bool nsup, bool nsat>
-constexpr inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { 
-	if (lhs.isnan() || rhs.isnan()) return false;
-	// need this as arithmetic difference is defined as snan(indeterminate)
-	if (lhs.isinf(INF_TYPE_NEGATIVE) && rhs.isinf(INF_TYPE_NEGATIVE)) return false;
-	if (lhs.isinf(INF_TYPE_POSITIVE) && rhs.isinf(INF_TYPE_POSITIVE)) return false;
-	return  operator< (rhs, lhs); 
+constexpr inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) {
+	return operator< (rhs, lhs);
 }
 template<unsigned nnbits, unsigned nes, typename nbt, bool nsub, bool nsup, bool nsat>
 constexpr inline bool operator<=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { 
