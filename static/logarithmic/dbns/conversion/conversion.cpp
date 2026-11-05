@@ -58,7 +58,7 @@ namespace sw { namespace universal {
 	// Conversion from double, at the rounding boundaries:
 	// - every encoding converts back to itself, with either sign;
 	// - just below the log-domain midpoint of two neighbours a value goes to the lower one, and
-	//   just above it to the upper one, with either sign;
+	//   just above it to the upper one, with either sign; at the midpoint, to one of the two;
 	// - below half of minpos a value is zero; beyond maxpos it saturates to maxpos.
 	template<unsigned nbits, unsigned fbbits, typename bt, auto... x>
 	int VerifyConversion(bool reportTestCases) {
@@ -74,6 +74,14 @@ namespace sw { namespace universal {
 			if (i + 1 == enc.size()) break;
 			const double mid = 0.5 * (std::log2(v) + std::log2(double(enc[i + 1])));
 			const double below = std::exp2(mid - nudge), above = std::exp2(mid + nudge);
+			// the midpoint itself: the geometric mean of the two values is irrational unless it is
+			// a lattice point, so a double cannot hold the exact tie, and the rounding of log2
+			// decides which neighbour is nearer. Either one is right; anything else is not.
+			const double atMid = std::exp2(mid);
+			const TestType m(atMid);
+			if (!(m == enc[i]) && !(m == enc[i + 1])) nrOfFailedTests += ReportMismatch(reportTestCases, atMid, m, enc[i], reported);
+			const TestType nm(-atMid);
+			if (!(nm == -enc[i]) && !(nm == -enc[i + 1])) nrOfFailedTests += ReportMismatch(reportTestCases, -atMid, nm, -enc[i], reported);
 			if (!(TestType(below) == enc[i]))      nrOfFailedTests += ReportMismatch(reportTestCases, below, TestType(below), enc[i], reported);
 			if (!(TestType(above) == enc[i + 1]))  nrOfFailedTests += ReportMismatch(reportTestCases, above, TestType(above), enc[i + 1], reported);
 			if (!(TestType(-below) == -enc[i]))     nrOfFailedTests += ReportMismatch(reportTestCases, -below, TestType(-below), -enc[i], reported);
