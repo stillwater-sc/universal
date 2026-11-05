@@ -46,7 +46,6 @@ namespace sw { namespace universal {
 	// NaN and inf take x87's canonical encodings, so they classify as they do on x86.
 	inline void extractLongDoubleFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& lowerBits, uint64_t& upperBits) noexcept {
 		constexpr int           bias        = 16383;
-		constexpr std::uint64_t integerBit  = 0x8000'0000'0000'0000ull;
 		constexpr std::uint64_t fmask       = 0x7FFF'FFFF'FFFF'FFFFull;
 		s = std::signbit(value);
 		if (value != value) {  // nan

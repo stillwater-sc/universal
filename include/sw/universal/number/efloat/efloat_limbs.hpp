@@ -52,7 +52,15 @@ struct cache_reaper {
 		cache.closed = true;
 	}
 };
-inline thread_local cache_reaper reaper;
+// A function-local thread_local, not an inline thread_local variable: MinGW gcc emits the TLS init
+// function of an inline thread_local with a constructor as a strong symbol in every translation
+// unit, so a program that used efloat in two of them failed to link with "multiple definition of
+// TLS init function for efloat_storage::reaper" (#1925). The local's guard is per-thread, so it
+// is still constructed once per thread, on the first call.
+inline cache_reaper& reaper() noexcept {
+	thread_local cache_reaper r;
+	return r;
+}
 
 // Placed before a loop over a few limbs: keeps it scalar. Limbs just stored one at a time, as
 // every result's are, read back by a vector load stall the load until the stores retire (#1828).
@@ -126,7 +134,7 @@ inline void give_block(limb_t* b, std::uint32_t capacity) noexcept {
 		if (!c.reaped) [[unlikely]] {
 			// constructs the reaper, which frees the cache when the thread ends: once, since each
 			// use of a thread_local with a constructor calls its init function (#1832)
-			(void)&reaper;
+			(void)reaper();
 			c.reaped = true;
 		}
 		c.block[c.count]    = b;
