@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <vector>
 #include <universal/number/dbns/dbns.hpp>
@@ -91,7 +92,7 @@ namespace sw { namespace universal {
 	// Conversion from integers, and to them:
 	// - an integer converts to the encoding nearest it, as its double does;
 	// - a power of three, the only integers a dbns holds exactly, converts exactly;
-	// - long(v) truncates the value of every encoding toward zero.
+	// - long(v) and long long(v) truncate the value of every encoding toward zero.
 	template<unsigned nbits, unsigned fbbits, typename bt, auto... x>
 	int VerifyIntegerConversion(bool reportTestCases) {
 		using TestType = dbns<nbits, fbbits, bt, x...>;
@@ -108,22 +109,34 @@ namespace sw { namespace universal {
 			return best;
 		};
 		const double top = std::fmin(double(enc.back()), 4096.0);
-		for (long n = 1; static_cast<double>(n) <= top; ++n) {
+		for (long n = 1; static_cast<double>(n) <= top; ++n) {   // top <= 4096: fits any long
 			const double dn = static_cast<double>(n);
 			const TestType expected = nearest(dn);
 			if (!(TestType(n) == expected))  nrOfFailedTests += ReportMismatch(reportTestCases, dn, TestType(n), expected, reported);
 			if (!(TestType(-n) == -expected)) nrOfFailedTests += ReportMismatch(reportTestCases, -dn, TestType(-n), -expected, reported);
 		}
-		for (long p = 1; static_cast<double>(p) <= double(enc.back()) && p < (1l << 40); p *= 3) {
+		// in long long: long is 32 bits on LLP64 (Windows), where 1l << 40 and the larger powers
+		// would overflow it
+		for (long long p = 1; static_cast<double>(p) <= double(enc.back()) && p < (1ll << 40); p *= 3) {
 			if (double(TestType(p)) != static_cast<double>(p)) nrOfFailedTests += ReportMismatch(reportTestCases, static_cast<double>(p), TestType(p), TestType(p), reported);
 		}
+		// long(v) and long long(v) within the range of each, so that the reference cast is defined
+		const double longMax = static_cast<double>((std::numeric_limits<long>::max)());
 		for (const TestType& e : enc) {
 			const double v = double(e);
-			if (v >= 9.0e18) continue;   // beyond long
-			const long want = static_cast<long>(std::trunc(v));
-			if (long(e) != want || long(-e) != -want) {
-				if (reportTestCases && reported++ < 10) std::cerr << "FAIL " << type_tag(TestType()) << " long(" << v << ") = " << long(e) << ", expected " << want << '\n';
-				++nrOfFailedTests;
+			if (v < longMax) {
+				const long want = static_cast<long>(std::trunc(v));
+				if (long(e) != want || long(-e) != -want) {
+					if (reportTestCases && reported++ < 10) std::cerr << "FAIL " << type_tag(TestType()) << " long(" << v << ") = " << long(e) << ", expected " << want << '\n';
+					++nrOfFailedTests;
+				}
+			}
+			if (v < 9.0e18) {
+				const long long want = static_cast<long long>(std::trunc(v));
+				if ((long long)(e) != want || (long long)(-e) != -want) {
+					if (reportTestCases && reported++ < 10) std::cerr << "FAIL " << type_tag(TestType()) << " long long(" << v << ") = " << (long long)(e) << ", expected " << want << '\n';
+					++nrOfFailedTests;
+				}
 			}
 		}
 		return nrOfFailedTests;
