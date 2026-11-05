@@ -498,13 +498,16 @@ public:
 		return *this;
 	}
 	constexpr dbns& minpos() noexcept {
-		// minimum positive value has this bit pattern: 0-11...11-00...00, that is, sign = 0, first base = 11..10, second base = 00..00
+		// minimum positive value has this bit pattern: 0-11...10-00...00, that is, sign = 0,
+		// first base = 11..10, second base = 00..00: 0.5^(MAX_A - 1). 0-11...11-00...00 is the
+		// zero encoding, which this used to produce, so minpos was 0 and minneg NaN (#1933).
 		clear();
 		flip();
 		setbit(nbits - 1, false);
 		for (unsigned i = 0; i < sbbits; ++i) {
 			setbit(i, false);
 		}
+		setbit(sbbits, false);
 		return *this;
 	}
 	constexpr dbns& zero() noexcept {
@@ -805,20 +808,25 @@ protected:
 		// statistics counters below already use.
 		if (!std::is_constant_evaluated()) std::cout << "scale : " << scale << '\n';
 #endif
-		double lowestError = 1.0e10;
-		constexpr int kNotFound = std::numeric_limits<int>::max();
-		int best_a = kNotFound;
-		int best_b = kNotFound;
-		for (int b = 0; b <= static_cast<int>(SB_MASK); ++b) {
+		// The search walks the second base exponents b and, for each, takes the first base
+		// exponent nearest scale - b*log2(3), clamped to the encodable range: the encoding
+		// stores 0.5^a with a in [0, MAX_A], so the base-2 exponent is -a. The pair nearest in
+		// log2 wins. The pair (MAX_A, 0) is reserved for zero, so it is replaced by minpos's
+		// (MAX_A - 1, 0) (#1933). Every candidate is a valid encoding, so the result is the
+		// nearest representable value in the logarithmic domain. This used to admit any a and
+		// then try to project an out-of-range pair back, which failed for a third of all values
+		// and sent them to the zero pattern or to a far neighbour.
+		const int maxA = static_cast<int>(MAX_A);
+		double lowestError = 1.0e300;
+		int best_a = 0;   // the base-2 exponent, -a in the encoding
+		int best_b = 0;
+		for (int b = 0; b <= static_cast<int>(MAX_B); ++b) {
 			// constexpr-safe round-to-nearest-int for finite double in int range
 			double r = scale - b * log2of3;
 			int a = static_cast<int>(r >= 0.0 ? r + 0.5 : r - 0.5);
-			if (a > 0 || a > static_cast<int>(MAX_A)) {
-				if (!std::is_constant_evaluated()) {
-					if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.exponentOverflowDuringSearch;
-				}
-				continue;
-			}
+			if (a > 0) a = 0;
+			if (a < -maxA) a = -maxA;
+			if (a == -maxA && b == 0) a = -(maxA - 1);   // (MAX_A, 0) is the zero encoding
 			double diff = scale - (a + b * log2of3);
 			double err = (diff < 0.0 ? -diff : diff);
 #if DBNS_TRACE_CONVERSION
@@ -839,70 +847,19 @@ protected:
 		if (!std::is_constant_evaluated()) std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
 #endif
 		clear();
-
-		// If the search produced no candidate, avoid using sentinel values in the
-		// adjustment logic below. Fall back to the existing saturating behavior.
-		if (best_a == kNotFound || best_b == kNotFound) {
-			if (!std::is_constant_evaluated()) {
-				if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.roundingFailure;
-			}
-			setexponent(0, 0);
-			setexponent(1, MAX_B);
-			setsign(s);
-			// avoid assigning to nan(ind)
-			if (isnan()) setzero();
+		// below half of minpos, 2^-(MAX_A - 1), the nearest value is zero
+		if (scale < -static_cast<double>(maxA - 1) - 1.0) {
+			setzero();
 			return *this;
 		}
-
-		// best_b >= 0 invariant -- skipped at compile time (assert is not constexpr-safe)
-		int a = -best_a;
-		int b = best_b;
-		if (a < 0 || a > static_cast<int>(MAX_A) || b > static_cast<int>(MAX_B)) {
-			// try to project the value back into valid pairs
-			// the approximations of unity looks like (8,-5), (19,-12), (84,-53),... 
-			// they grow too fast and in a rather irregular manner. There are more 
-			// subtle number theoretic considerations, but the ones outlined above 
-			// should be sufficient to figure out a good solution to the problem.
-			// 2^3*3^-2 = 0.888  2^-3*3^2 = 1.125
-			// 2^8*3^-5 = 1.053  2^-8*3^5 = 0.949
-			// multiplier   0.5, 1.5, 0.6, 0.889, 1.125, 0.949, 1.053.....
-			int first[]  = { 1, 1, -1, 3, -3, 5, -5, 8, -8, 19, -19, 84, -84 };
-			int second[] = { 0, 1, -1, 2, -2, 3, -3, 5, -5, 12, -12, 53, -53 };
-			bool unableToAdjust{ true };
-			for (unsigned i = 0; i < 13; ++i) {
-				int adjusted_a = a - first[i];
-				int adjusted_b = b - second[i];
-				if (adjusted_a >= 0 && adjusted_a < static_cast<int>(MAX_A) && adjusted_b >= 0 && adjusted_b < static_cast<int>(MAX_B)) {
-					setexponent(0, static_cast<unsigned>(adjusted_a));
-					setexponent(1, static_cast<unsigned>(adjusted_b));
-					setsign(s);
-					unableToAdjust = false;
-					break;
-				}
-			}
-			if (unableToAdjust) {
-				if (!std::is_constant_evaluated()) {
-					if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.roundingFailure;
-				}
-				//if (a > b) {
-				if (best_a < 0 && best_b >= 0) {
-					setexponent(0, MAX_A);
-					setexponent(1, 0);
-					setsign(false); // we need to avoid nan(ind)
-				}
-				else {   // we have maxed out
-					setexponent(0, 0);
-					setexponent(1, MAX_B);
-					setsign(s);
-				}
-			}
-		}
-		else {
-			a <<= sbbits;
-			_block[MSU] = static_cast<bt>(static_cast<bt>(s ? SIGN_BIT_MASK : 0u) | static_cast<bt>(a) | static_cast<bt>(b));
-		}
-		// avoid assigning to nan(ind)
-		if (isnan()) setzero();
+		// through the field setters, which handle any number of blocks. This wrote
+		// (sign | a << sbbits | b) into the most significant block alone, which is the whole
+		// encoding only when it fits one block: dbns<16,5> with the default uint8_t blocks
+		// truncated the exponents into the top byte and never wrote the low one, so 1.5
+		// became 1.4e122, and every dbns wider than its block type converted wrongly (#1933)
+		setexponent(0, static_cast<unsigned>(-best_a));
+		setexponent(1, static_cast<unsigned>(best_b));
+		setsign(s);
 		return *this;
 	}
 
