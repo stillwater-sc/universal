@@ -22,8 +22,9 @@
      of hasSubnormals, hasMaxExpValues and isSaturating, against the double values. Without
      subnormals every all-zeros-exponent encoding is a zero, and the reference treats it so.
    - on random pairs of a 3-limb configuration, against the double values.
-   - on random, neighbouring and negated pairs of wide configurations, against the definition the
-     operator used to have: the sign of the difference, computed in the subnormal twin of the type.
+   - on random, neighbouring (one bit flipped, low or anywhere) and negated pairs of wide
+     configurations, against the definition the operator used to have: the sign of the
+     difference, computed in the subnormal twin of the type.
 */
 
 namespace sw {
@@ -151,7 +152,7 @@ int VerifyWide(bool reportTestCases) {
 	for (int trial = 0; trial < 3000; ++trial) {
 		Cfloat a{}, b{};
 		randomize(a, rng);
-		switch (trial % 4) {
+		switch (trial % 5) {
 		case 0:  // an unrelated encoding
 			randomize(b, rng);
 			break;
@@ -165,6 +166,13 @@ int VerifyWide(bool reportTestCases) {
 		case 2:  // the negation
 			b = a;
 			b.setsign(!a.sign());
+			break;
+		case 3:  // a neighbour: one bit flipped anywhere below the sign, so the compare can stop in any limb
+			{
+				b = a;
+				const unsigned k = static_cast<unsigned>(rng.next() % (nbits - 1u));
+				b.setbit(k, !a.at(k));
+			}
 			break;
 		default:  // the same value
 			b = a;
