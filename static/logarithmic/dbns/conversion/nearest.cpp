@@ -21,6 +21,7 @@
 #include <universal/verification/test_reporters.hpp>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <random>
 #include <vector>
 
@@ -99,6 +100,43 @@ int VerifyLimits(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+#if LONG_DOUBLE_SUPPORT
+// 0.5^17000 * 3^11420 is 2^1100.0: past double's range, within a wider long double's, and with
+// both exponents past what a long double holds as separate factors, so the decode takes the 2^L
+// path. Constant-evaluated, that path went through double and overflowed where the run-time one
+// did not (CodeRabbit on PR #1939).
+using WideDbns = sw::universal::dbns<31, 15, std::uint32_t>;
+constexpr long double constexprWideDecode() {
+	WideDbns d;
+	d.setbits(0);
+	d.setexponent(0, 17000);
+	d.setexponent(1, 11420);
+	return static_cast<long double>(d);
+}
+#endif
+
+int VerifyConstexprWideRange(bool reportTestCases) {
+	int nrOfFailedTests = 0;
+#if LONG_DOUBLE_SUPPORT
+	if constexpr (std::numeric_limits<long double>::max_exponent > 1200) {
+		constexpr long double ce = constexprWideDecode();
+		WideDbns d;
+		d.setbits(0);
+		d.setexponent(0, 17000);
+		d.setexponent(1, 11420);
+		long double rt = static_cast<long double>(d);
+		const long double want = 11420.0L * 1.5849625007211561814537389439478L - 17000.0L;
+		if (!std::isfinite(ce) || !(ce > 0.0L) || !std::isfinite(rt) || std::fabs(std::log2(ce) - want) > 1.0e-9L || std::fabs((ce - rt) / rt) > 1.0e-12L) {
+			if (reportTestCases) std::cerr << "FAIL constexpr long double 0.5^17000 * 3^11420 = " << ce << ", run time " << rt << '\n';
+			++nrOfFailedTests;
+		}
+	}
+#else
+	(void)reportTestCases;
+#endif
+	return nrOfFailedTests;
+}
+
 // the configurations in the issue
 int VerifyIssueCases(bool reportTestCases) {
 	using namespace sw::universal;
@@ -115,14 +153,14 @@ int VerifyIssueCases(bool reportTestCases) {
 	e.setexponent(0, 31);
 	e.setexponent(1, 647);
 	double ev = double(e);
-	if (!std::isfinite(ev) || std::fabs(std::log2(ev) - (647.0 * std::log2(3.0) - 31.0)) > 1.0e-12) ++nrOfFailedTests;
+	if (!std::isfinite(ev) || !(ev > 0.0) || std::fabs(std::log2(ev) - (647.0 * std::log2(3.0) - 31.0)) > 1.0e-12) ++nrOfFailedTests;
 	// and to float: 3^81 overflows a float, 0.5^31 * 3^81 is 2^97.4
 	dbns<16, 5> f;
 	f.setbits(0);   // trivially constructible: clear the sign and every field first
 	f.setexponent(0, 31);
 	f.setexponent(1, 81);
 	float fv = float(f);
-	if (!std::isfinite(fv) || std::fabs(std::log2(double(fv)) - (81.0 * std::log2(3.0) - 31.0)) > 1.0e-6) ++nrOfFailedTests;
+	if (!std::isfinite(fv) || !(fv > 0.0f) || std::fabs(std::log2(double(fv)) - (81.0 * std::log2(3.0) - 31.0)) > 1.0e-6) ++nrOfFailedTests;
 	if (nrOfFailedTests && reportTestCases) std::cerr << "FAIL dbns<16,5>(1.5) = " << double(a) << ", dbns<16,8>(1.5) = " << double(c) << '\n';
 	return nrOfFailedTests;
 }
@@ -223,6 +261,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyIssueCases(reportTestCases), "dbns<16,5>, dbns<16,8>", "issue cases");
+	nrOfFailedTestCases += ReportTestResult(VerifyConstexprWideRange(reportTestCases), "dbns<31,15,uint32>", "constexpr long double");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundTrip< 8, 3, std::uint8_t >(reportTestCases), "dbns<8,3,uint8>", "round trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundTrip<10, 4, std::uint8_t >(reportTestCases), "dbns<10,4,uint8>", "round trip");

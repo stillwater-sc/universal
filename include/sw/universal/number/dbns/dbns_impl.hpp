@@ -130,6 +130,9 @@ class dbns {
 	// conversion searches them in 64-bit arithmetic (#1933)
 	static_assert(_fbbits <= 32, "configuration not supported: the first base exponent field is wider than 32 bits");
 	static_assert(_nbits - _fbbits - 1 <= 32, "configuration not supported: the second base exponent field is wider than 32 bits");
+	// conversion searches min(2^sbbits, 2^fbbits / log2(3)) exponent pairs: one field of at most
+	// 20 bits keeps that below about a million, where two 32-bit fields would be 2.7 billion
+	static_assert(_fbbits <= 20 || _nbits - _fbbits - 1 <= 20, "configuration not supported: with both exponent fields wider than 20 bits a conversion would search billions of exponent pairs");
 public:
 	typedef bt BlockType;
 
@@ -951,7 +954,18 @@ protected:
 			magnitude = TargetFloat(0);
 		}
 		else if (std::is_constant_evaluated()) {
-			magnitude = static_cast<TargetFloat>(sw::math::constexpr_math::exp2(L));   // double only
+			// 2^L = 2^F * 2^N with F in [0, 1): 2^F from the constexpr exp2, which is double only,
+			// and 2^N exactly in the target type, so a long double keeps its wider range at compile
+			// time as it does at run time (CodeRabbit on PR #1939)
+			double Nd = static_cast<double>(static_cast<long long>(L));
+			if (Nd > L) Nd -= 1.0;
+			const long long N = static_cast<long long>(Nd);
+			magnitude = static_cast<TargetFloat>(sw::math::constexpr_math::exp2(L - Nd));
+			// scale in steps that stay normal: 2^-N for a large negative N would underflow as a
+			// single factor before the product does
+			long long n = N;
+			while (n > 0) { long long k = (n > 512) ? 512 : n; magnitude *= ipow(TargetFloat(2), static_cast<uint64_t>(k)); n -= k; }
+			while (n < 0) { long long k = (-n > 512) ? 512 : -n; magnitude *= ipow(TargetFloat(0.5), static_cast<uint64_t>(k)); n += k; }
 		}
 		else {
 			// in the wider of double and the target: L rounded to float would cost a float's
