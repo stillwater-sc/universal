@@ -48,6 +48,7 @@
 #if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
 #define QUIRE_THROW_ARITHMETIC_EXCEPTION CFLOAT_THROW_ARITHMETIC_EXCEPTION
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 // CFLOAT_NATIVE_SQRT is gone: sqrt is correctly rounded at every width, and the configuration
 // alone picks the path (#1725).

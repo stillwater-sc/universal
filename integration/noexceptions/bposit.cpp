@@ -11,5 +11,6 @@ int noexceptions_bposit() {
 	using namespace sw::universal;
 	using noexceptions::fail;
 	using Number = bposit<16, 4, 1>;
-	return noexceptions::exercise_fdp<Number>("bposit", true) + noexceptions::exercise<Number>("bposit");
+	// operator>> parses with strtold, so it must accept decimal text (#1925)
+	return noexceptions::exercise_fdp<Number>("bposit", true) + noexceptions::exercise<Number, true, true>("bposit");
 }

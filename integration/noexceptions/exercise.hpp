@@ -29,8 +29,9 @@ inline int fail(const char* tag, const char* what) {
 // the operations of a real-valued number system, from values every exact configuration holds
 // exactly (a logarithmic system does not, and checks only the ordering):
 // ((1.5 + 0.75 - 0.75) * 1.5 / 0.75 + 1.5 - 0.75) * 1.5 / 0.75 = 7.5
-// Input = false for a number system whose stream input is declared but does not work
-template<typename Real, bool Input = true>
+// Input = false for a number system whose stream input is declared but does not work;
+// RequireInput = true for one whose stream input must accept decimal text such as "1.5"
+template<typename Real, bool Input = true, bool RequireInput = false>
 int exercise(const char* tag, bool exact = true) {
 	int fails = 0;
 	Real a(1.5), b(0.75f), zero(0);
@@ -58,6 +59,7 @@ int exercise(const char* tag, bool exact = true) {
 		std::istringstream istr("1.5");
 		Real e(0);
 		istr >> e;
+		if (RequireInput && istr.fail()) fails += fail(tag, "stream input refused 1.5");
 		// a parse may refuse the token, but one that succeeds must produce the value
 		if (exact && !istr.fail() && double(e) != 1.5) fails += fail(tag, "stream input");
 	}

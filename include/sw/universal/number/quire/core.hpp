@@ -39,6 +39,7 @@
 // default is to use a stderr diagnostic as the signalling error
 #	define QUIRE_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>

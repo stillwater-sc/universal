@@ -15,6 +15,7 @@
 #if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
 #define QUIRE_THROW_ARITHMETIC_EXCEPTION DBNS_THROW_ARITHMETIC_EXCEPTION
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 // DBNS_TRACE_CONVERSION: the trace statements in convert_ieee754's (a,b) search print,
 // so they need <iostream>. They are compiled only when tracing is actually switched on

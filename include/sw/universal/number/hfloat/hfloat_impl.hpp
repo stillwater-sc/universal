@@ -34,6 +34,7 @@
 #if !defined(HFLOAT_THROW_ARITHMETIC_EXCEPTION)
 #define HFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 #if !defined(HFLOAT_EXCEPT)
 #if HFLOAT_THROW_ARITHMETIC_EXCEPTION
 #define HFLOAT_EXCEPT

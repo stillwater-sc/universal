@@ -38,6 +38,7 @@
 #define DOUBLEDOUBLE_EXCEPT noexcept
 #endif
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 // DOUBLEDOUBLE_NATIVE_SQRT is gone: setting it to 0 selected a sqrt that went through double.
 // sqrt is always the native, full-precision one (#1724).

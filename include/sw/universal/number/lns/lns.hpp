@@ -38,6 +38,7 @@
 #if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
 #define QUIRE_THROW_ARITHMETIC_EXCEPTION LNS_THROW_ARITHMETIC_EXCEPTION
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

@@ -41,6 +41,7 @@
 #define BLOCKDECIMAL_THROW_ARITHMETIC_EXCEPTION DFIXPNT_THROW_ARITHMETIC_EXCEPTION
 #endif
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 // the building block
 #include <universal/internal/blockdecimal/blockdecimal.hpp>

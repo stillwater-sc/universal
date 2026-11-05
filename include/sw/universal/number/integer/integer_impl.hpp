@@ -56,6 +56,7 @@ you need the exception types defined, but you have the option to throw_or_abort(
 #if !defined(INTEGER_THROW_ARITHMETIC_EXCEPTION)
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <universal/number/integer/exceptions.hpp>
 
