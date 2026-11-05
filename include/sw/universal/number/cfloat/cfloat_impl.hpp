@@ -1392,22 +1392,30 @@ public:
 				// we are a subnormal number: all exponent bits are 0
 				exponentBits = 0;
 			}
-			// TODO: optimize
-			uint32_t mask = (1ul << (es - 1));
-			for (unsigned i = nbits - 2; i > nbits - 2 - es; --i) {
-				setbit(i, (mask & exponentBits));
-				mask >>= 1;
-			}
+			setExponentField(exponentBits);
 		}
 		else {
 			uint32_t exponentBits = static_cast<uint32_t>(scale + EXP_BIAS);
-			uint32_t mask = (1ul << (es - 1));
-			for (unsigned i = nbits - 2; i > nbits - 2 - es; --i) {
-				setbit(i, (mask & exponentBits));
-				mask >>= 1;
-			}
+			setExponentField(exponentBits);
 		}
 		return true;
+	}
+	// write the es-bit exponent field from the low es bits of ebits, a limb at a time. Writing it
+	// a bit at a time with setbit() was one of the costs behind #1919.
+	constexpr void setExponentField(uint64_t ebits) noexcept {
+		constexpr uint64_t fieldMask  = (1ull << es) - 1ull;   // es < 21
+		constexpr unsigned lsb        = nbits - 1u - es;       // == fbits
+		constexpr unsigned firstBlock = lsb / bitsInBlock;
+		constexpr unsigned lastBlock  = (lsb + es - 1u) / bitsInBlock;
+		ebits &= fieldMask;
+		for (unsigned b = firstBlock; b <= lastBlock; ++b) {
+			const unsigned origin = b * bitsInBlock;  // bit position of the limb's lsb
+			uint64_t m{ 0 }, v{ 0 };
+			if (origin >= lsb) { m = fieldMask >> (origin - lsb); v = ebits >> (origin - lsb); }
+			else               { m = fieldMask << (lsb - origin); v = ebits << (lsb - origin); }  // lsb - origin < bitsInBlock
+			const bt keep = static_cast<bt>(~static_cast<bt>(m));
+			_block[b] = static_cast<bt>(static_cast<bt>(_block[b] & keep) | static_cast<bt>(v));
+		}
 	}
 	constexpr void setfraction(uint64_t raw_bits) {
 		// unoptimized as it is not meant to be an end-user API, it is a test API
@@ -1707,9 +1715,8 @@ public:
 			}
 		}
 		else {
-			blockbinary<es, bt> ebits{};
-			exponent(ebits);
-			if (ebits.iszero()) {
+			const uint64_t ebits = exponentField();
+			if (ebits == 0) {
 				// subnormal scale is determined by fraction
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
 				e = (2l - (1l << (es - 1ull))) - 1;
@@ -1721,7 +1728,7 @@ public:
 				}
 			}
 			else {
-				e = static_cast<int>(unsigned(ebits) - EXP_BIAS);
+				e = static_cast<int>(ebits) - EXP_BIAS;
 			}
 		}
 		return e;
@@ -1914,22 +1921,17 @@ public:
 	// isnormal returns true if 0 or exponent bits are not all zero or one, false otherwise
 	constexpr bool isnormal() const noexcept {
 		if (iszeroencoding()) return false; // zero is not a normal number (matches std::isnormal / IEEE classification)
-		blockbinary<es, bt> e{};
-		exponent(e);
-		return !e.iszero() && !e.all();
+		const uint64_t e = exponentField();
+		return e != 0 && e != ((1ull << es) - 1ull);
 	}
 	// isdenormal returns true if exponent bits are all zero, false otherwise
 	constexpr bool isdenormal() const noexcept {
 		if (iszeroencoding()) return false; // filter out the one special case
-		blockbinary<es, bt> e{};
-		exponent(e);
-		return e.iszero(); 
+		return exponentField() == 0;
 	}
 	// ismaxexpvalue returns true if exponent bits are all one, false otherwise
 	constexpr bool ismaxexpvalue() const noexcept {
-		blockbinary<es, bt> e{};
-		exponent(e);
-		return e.all();
+		return exponentField() == ((1ull << es) - 1ull);
 	}
 	// isinteger is TBD
 	constexpr bool isinteger() const noexcept { return false; } // return (floor(*this) == *this) ? true : false; }
@@ -1991,6 +1993,24 @@ public:
 	constexpr void sign(bool& s) const {
 		s = sign();
 	}
+	// the es-bit exponent field as an unsigned integer, gathered a limb at a time. Copying it bit by
+	// bit with at() (and reading it back through blockbinary::to_ull(), another bit loop) put two
+	// es-iteration loops into every isnormal()/isdenormal()/scale() of a cfloat whose field
+	// straddles limbs, several per add. That made cfloat<196,19> with uint32_t/uint64_t limbs and
+	// cfloat<128,15,uint8_t> 3x to 5x slower than the widths around them (#1919).
+	constexpr uint64_t exponentField() const noexcept {
+		constexpr unsigned lsb        = nbits - 1u - es;  // == fbits
+		constexpr unsigned firstBlock = lsb / bitsInBlock;
+		constexpr unsigned lastBlock  = (lsb + es - 1u) / bitsInBlock;
+		uint64_t raw{ 0 };
+		for (unsigned b = firstBlock; b <= lastBlock; ++b) {
+			const uint64_t limb   = static_cast<uint64_t>(_block[b]);
+			const unsigned origin = b * bitsInBlock;  // bit position of the limb's lsb
+			if (origin >= lsb) raw |= (limb << (origin - lsb));  // origin - lsb < es < 21
+			else               raw |= (limb >> (lsb - origin));  // lsb - origin < bitsInBlock
+		}
+		return raw & ((1ull << es) - 1ull);  // drops the sign and anything above the field
+	}
 	constexpr void exponent(blockbinary<es, bt>& e) const {
 		e.clear();
 		if constexpr (0 == nrBlocks) return;
@@ -2004,7 +2024,7 @@ public:
 				e.setbits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
 			}
 			else {
-				for (unsigned i = 0; i < es; ++i) { e.setbit(i, at(nbits - 1ull - es + i)); }
+				e.setbits(exponentField());  // the field straddles limbs
 			}
 		}
 	}

@@ -354,8 +354,10 @@ public:
 		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
 		if (bitsToShift >= long(bitsInBlock)) {
 			int blockShift = bitsToShift / static_cast<int>(bitsInBlock);
-			for (int i = static_cast<int>(MSU); i >= blockShift; --i) {
-				_block[i] = _block[i - blockShift];
+			// indexed from the source block: the same moves, top down, in a form gcc's loop
+			// analysis does not misread as reaching below _block[0]
+			for (int i = static_cast<int>(MSU) - blockShift; i >= 0; --i) {
+				_block[i + blockShift] = _block[i];
 			}
 			for (int i = blockShift - 1; i >= 0; --i) {
 				_block[i] = bt(0);
