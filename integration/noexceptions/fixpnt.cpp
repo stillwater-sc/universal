@@ -11,5 +11,6 @@ int noexceptions_fixpnt() {
 	using namespace sw::universal;
 	using noexceptions::fail;
 	using Number = fixpnt<16, 8>;
-	return noexceptions::exercise_fdp<Number>("fixpnt", true) + noexceptions::exercise<Number>("fixpnt");
+	// operator>> parses decimal text since #1931
+	return noexceptions::exercise_fdp<Number>("fixpnt", true) + noexceptions::exercise<Number, true, true>("fixpnt");
 }
