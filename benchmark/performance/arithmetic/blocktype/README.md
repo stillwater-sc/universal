@@ -85,7 +85,10 @@ Slow paths these numbers expose, filed as issues:
    - Multiply is 1.4x to 2.4x faster and divide 1.1x to 1.3x wherever the field straddles limbs.
    - Still slow: 64-bit `uint8_t` add, at 141 ns with gcc and 330 ns with clang. That is a different cost.
    - The tables below are the baseline from before the fix.
-3. #1920: `cfloat` `operator<` computes a full subtraction when `hasSubnormals` is set. An ordered comparison of the encodings would cost a few ns.
+3. #1920 (fixed): `cfloat` `operator<` computed a full subtraction when `hasSubnormals` is set. It now compares the encodings limb by limb from the MSU down, after the NaN and zero checks, reversed for negatives.
+   - With gcc, `lt` costs 1.0 to 2.1 ns at every width and BlockType (was 13 to 440).
+   - With clang, it costs 1.2 to 3.3 ns (was 17 to 353).
+   - The tables below are the baseline from before the fix.
 4. #1921: `posit` add/mul/div and conversion from `double` above 64 bits carry a fixed cost of hundreds of ns that doesn't depend on the BlockType.
 
 ## Results
