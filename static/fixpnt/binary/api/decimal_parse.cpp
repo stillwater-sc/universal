@@ -14,6 +14,7 @@
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_reporters.hpp>
 #include <cstdint>
+#include <random>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -185,6 +186,64 @@ int VerifyWide(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// An independent oracle over every rbits of an 8-bit fixpnt, under both policies. The expected
+// encoding is computed in integers: the token is N * 10^p, its scaled value N * 10^p * 2^rbits
+// is rounded to nearest, ties to even, and then clamped (Saturate) or wrapped (Modulo) to 8 bits.
+// Two CodeRabbit findings on PR #1937 were edge cases of rbits that hand-picked tokens missed:
+// fixpnt<8,8> with its sign bit as the top fraction bit, and fixpnt<8,7>, where -0.999 rounds
+// to -1 but its magnitude does not fit.
+template<unsigned rbits, bool arithmetic>
+int VerifyOracle8(std::mt19937_64& rng, bool reportTestCases) {
+	using namespace sw::universal;
+	using Fixpnt = fixpnt<8, rbits, arithmetic, std::uint8_t>;
+	int nrOfFailedTests = 0;
+	for (int i = 0; i < 4000; ++i) {
+		// [-]int.frac[e(+|-)x]: int 0..300 (often 0 or 1), up to 5 fraction digits, exponent -3..3
+		long long ip = (i % 4 == 0) ? 0 : (i % 4 == 1) ? 1 : static_cast<long long>(rng() % 301);
+		int fd = static_cast<int>(rng() % 6);
+		long long fp = 0, pow10fd = 1;
+		for (int k = 0; k < fd; ++k) { fp = fp * 10 + static_cast<long long>(rng() % 10); pow10fd *= 10; }
+		int ex = (i % 3 == 0) ? static_cast<int>(rng() % 7) - 3 : 0;
+		bool negative = (rng() & 1u) != 0;
+		std::string text = (negative ? "-" : "") + std::to_string(ip);
+		if (fd > 0) {
+			std::string f = std::to_string(fp);
+			text += "." + std::string(static_cast<std::size_t>(fd) - f.size(), '0') + f;
+		}
+		if (ex != 0) text += "e" + std::to_string(ex);
+		// value = N * 10^p, N = ip * 10^fd + fp, p = ex - fd
+		long long N = ip * pow10fd + fp;
+		int p = ex - fd;
+		// scaled = N * 2^rbits * 10^p: an integer quotient q and remainder r over den = 10^-p
+		long long num = N * (1ll << rbits), den = 1;
+		for (int k = 0; k < p; ++k) num *= 10;
+		for (int k = 0; k < -p; ++k) den *= 10;
+		long long q = num / den, r = num % den;
+		if (2 * r > den || (2 * r == den && (q & 1))) ++q;   // round to nearest, ties to even
+		long long sq = negative ? -q : q;
+		long long expected;
+		if (arithmetic == Saturate) expected = (sq > 127) ? 127 : (sq < -128) ? -128 : sq;
+		else                        expected = static_cast<long long>(static_cast<std::int8_t>(static_cast<std::uint8_t>(sq & 0xFF)));
+		Fixpnt want, got(0);
+		want.setbits(static_cast<std::uint64_t>(static_cast<std::uint8_t>(expected & 0xFF)));
+		if (!parse(text, got) || !(got == want)) {
+			if (reportTestCases && nrOfFailedTests < 3) std::cerr << "FAIL " << type_tag(Fixpnt()) << " '" << text << "' -> " << to_binary(got) << ", expected " << to_binary(want) << '\n';
+			++nrOfFailedTests;
+		}
+	}
+	return nrOfFailedTests;
+}
+
+template<bool arithmetic>
+int VerifyOracleAllRbits(bool reportTestCases) {
+	std::mt19937_64 rng(arithmetic ? 1931 : 19310);
+	return VerifyOracle8<0, arithmetic>(rng, reportTestCases) + VerifyOracle8<1, arithmetic>(rng, reportTestCases)
+	     + VerifyOracle8<2, arithmetic>(rng, reportTestCases) + VerifyOracle8<3, arithmetic>(rng, reportTestCases)
+	     + VerifyOracle8<4, arithmetic>(rng, reportTestCases) + VerifyOracle8<5, arithmetic>(rng, reportTestCases)
+	     + VerifyOracle8<6, arithmetic>(rng, reportTestCases) + VerifyOracle8<7, arithmetic>(rng, reportTestCases)
+	     + VerifyOracle8<8, arithmetic>(rng, reportTestCases);
+}
+
 // operator>>: several tokens, and a bad one sets failbit and leaves the target unchanged
 int VerifyStream(bool reportTestCases) {
 	using namespace sw::universal;
@@ -221,6 +280,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMidpoints(reportTestCases), "fixpnt<16,8>", "midpoints");
 	nrOfFailedTestCases += ReportTestResult(VerifyWide(reportTestCases), "fixpnt<80,64>", "wide");
 	nrOfFailedTestCases += ReportTestResult(VerifyStream(reportTestCases), "fixpnt<16,8>", "operator>>");
+	nrOfFailedTestCases += ReportTestResult(VerifyOracleAllRbits<Saturate>(reportTestCases), "fixpnt<8,0..8,Saturate>", "integer oracle");
+	nrOfFailedTestCases += ReportTestResult(VerifyOracleAllRbits<Modulo>(reportTestCases), "fixpnt<8,0..8,Modulo>", "integer oracle");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

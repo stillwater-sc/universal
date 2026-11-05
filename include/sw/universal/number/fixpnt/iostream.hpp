@@ -321,13 +321,32 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 			round  = doubleFraction();
 			sticky = !frac.empty();
 		}
-		if (round && (sticky || lsb)) {
-			Fixpnt ulp;
-			ulp.clear();
-			ulp.setbit(0, true);
-			fraction += ulp;   // may carry into the integer bits: 0.99999 rounds to 1.0
+		// The fraction holds a magnitude, which is not always a value of the signed type:
+		// - with no integer bits (rbits == nbits) its top bit is the sign bit, so a magnitude of
+		//   1/2 or more reads as negative. Under Saturate it is out of range either way: at or
+		//   beyond the bound of its sign.
+		// - rounding it up first can overflow it: in fixpnt<8,7> 0.999 rounds to 1, which
+		//   saturates to 127/128 before the sign, and -0.999 came out -127/128 instead of -1.
+		// So the clamp comes first, and the rounding ulp is applied after the sign (CodeRabbit
+		// on PR #1937). Modulo keeps its wrap.
+		if constexpr (arithmetic == Saturate && rbits == nbits) {
+			if (fraction.at(nbits - 1)) {
+				value = negative ? maxneg : maxpos;
+				return true;
+			}
 		}
-		if (negative) tmp -= fraction; else tmp += fraction;
+		const bool up = round && (sticky || lsb);
+		Fixpnt ulp;
+		ulp.clear();
+		ulp.setbit(0, true);
+		if (negative) {
+			tmp -= fraction;
+			if (up) tmp -= ulp;   // may carry into the integer bits: -0.99999 rounds to -1.0
+		}
+		else {
+			tmp += fraction;
+			if (up) tmp += ulp;
+		}
 		value = tmp;
 		return true;
 	}
