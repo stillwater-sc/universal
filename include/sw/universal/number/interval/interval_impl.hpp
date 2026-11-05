@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <limits>
 #include <type_traits>
 #include <algorithm>
@@ -329,9 +330,10 @@ public:
 			// interval claiming to enclose an unbounded set while excluding
 			// everything beyond maxpos. Silently returning a too-narrow enclosure
 			// is the one failure mode interval arithmetic must never have, so
-			// throw instead: there is no correct value to return.
+			// throw instead: there is no correct value to return. Without exceptions
+			// that is an abort (#1925).
 			if constexpr (!can_represent_unbounded) {
-				throw interval_unrepresentable_unbounded();
+				throw_or_abort(interval_unrepresentable_unbounded());
 			}
 			else {
 				_lo = -std::numeric_limits<Scalar>::infinity();

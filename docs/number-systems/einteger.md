@@ -54,6 +54,11 @@ opts out before the include, with `EINTEGER_THROW_DIVIDE_BY_ZERO 0`, or with
 #include <universal/number/einteger/einteger.hpp>
 ```
 
+A build with exceptions disabled (`-fno-exceptions`) gets the value without asking:
+`EINTEGER_THROW_DIVIDE_BY_ZERO` defaults to `UNIVERSAL_HAS_EXCEPTIONS`, which
+`<universal/utility/exceptions.hpp>` takes from the compiler. Setting it to `1` in such a build
+stops with an `#error` (#1925).
+
 With the exception off, `x / 0` and `x % 0` are `0`, as are both outputs of `reduce()`.
 Nothing is printed (#1894).
 

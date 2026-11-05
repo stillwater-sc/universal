@@ -8,7 +8,9 @@ name: ASCII Guard
 # exempt. See CLAUDE.md 'No Unicode Characters' and tools/scripts/check-ascii.sh.
 #
 # The same job also runs tools/scripts/check-std-includes.py: every header under
-# include/sw must include the standard headers it uses (#1389).
+# include/sw must include the standard headers it uses (#1389), and
+# tools/scripts/check-ungated-throws.py: every throw in the library headers compiles
+# away in a build with -fno-exceptions (#1925).
 
 on:
   pull_request:
@@ -35,3 +37,7 @@ jobs:
       # facility must include its header, not inherit it from the include graph (#1389).
       - name: Check that headers include the standard headers they use
         run: python3 ./tools/scripts/check-std-includes.py
+      # Same job again: every throw, try and catch in the library headers is gated behind an
+      # exception macro or goes through throw_or_abort(), so -fno-exceptions builds (#1925).
+      - name: Check that every throw compiles away without exceptions
+        run: python3 ./tools/scripts/check-ungated-throws.py

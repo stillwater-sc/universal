@@ -65,6 +65,7 @@
 #pragma once
 
 #include <algorithm>
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <cstddef>
 #include <limits>
 #include <vector>
@@ -116,7 +117,7 @@ inline ZBCL<FpType> sum(series<FpType> s, std::size_t max_depth = 1024) {
     using B = block<FpType>;
 
     if (max_depth == 0) {
-        throw elreal_sum_budget_exceeded("sum: max_depth must be >= 1");
+        throw_or_abort(elreal_sum_budget_exceeded("sum: max_depth must be >= 1"));
     }
 
     // Per-term block cap: terms are expected to be finite ZBCLs (Phase 5 uses
@@ -150,9 +151,9 @@ inline ZBCL<FpType> sum(series<FpType> s, std::size_t max_depth = 1024) {
             using EXP = typename block<FpType>::exp_t;
             if (lead > EXP(std::numeric_limits<int>::max()) ||
                 lead < EXP(std::numeric_limits<int>::min())) {
-                throw elreal_sum_budget_exceeded(
+                throw_or_abort(elreal_sum_budget_exceeded(
                     "sum: a term's leading exponent exceeds int range for the "
-                    "convergence guard (non-host-range term in the eager sum).");
+                    "convergence guard (non-host-range term in the eager sum)."));
             }
             leads.push_back(static_cast<int>(lead));
             sawNonzero = true;
@@ -167,10 +168,10 @@ inline ZBCL<FpType> sum(series<FpType> s, std::size_t max_depth = 1024) {
             // Refuse to silently truncate a term that exceeds the block cap --
             // dropping its suffix would return an incorrect sum.
             if (!bcur.is_empty()) {
-                throw elreal_sum_budget_exceeded(
+                throw_or_abort(elreal_sum_budget_exceeded(
                     "sum: a term has more than per_term_cap blocks; refusing to "
                     "silently truncate it (would corrupt the sum). Pre-renormalise "
-                    "the term or raise per_term_cap.");
+                    "the term or raise per_term_cap."));
             }
         }
         cur = cur.tail();
@@ -188,9 +189,9 @@ inline ZBCL<FpType> sum(series<FpType> s, std::size_t max_depth = 1024) {
         for (std::size_t i = 0; i < w; ++i)     headMax = std::max(headMax, leads[i]);
         for (std::size_t i = n - w; i < n; ++i) tailMax = std::max(tailMax, leads[i]);
         if (tailMax >= headMax) {
-            throw elreal_sum_budget_exceeded(
+            throw_or_abort(elreal_sum_budget_exceeded(
                 "sum: series did not converge within max_depth terms "
-                "(term magnitudes not decaying); not Cauchy-stable.");
+                "(term magnitudes not decaying); not Cauchy-stable."));
         }
     }
 

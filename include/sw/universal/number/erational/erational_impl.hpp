@@ -1,4 +1,5 @@
 #pragma once
+#include <universal/utility/exceptions.hpp>  // UNIVERSAL_HAS_EXCEPTIONS (#1925)
 // ERATIONAL_THROW_DIVIDE_BY_ZERO: a division by zero throws erational_divide_by_zero, unless the
 // application opts out, by setting this to 0 or, when this is not set,
 // ERATIONAL_THROW_ARITHMETIC_EXCEPTION to 0. With it off, x / 0 is NaN, the 0/0 state that
@@ -9,7 +10,8 @@
 #if defined(ERATIONAL_THROW_ARITHMETIC_EXCEPTION)
 #define ERATIONAL_THROW_DIVIDE_BY_ZERO ERATIONAL_THROW_ARITHMETIC_EXCEPTION
 #else
-#define ERATIONAL_THROW_DIVIDE_BY_ZERO 1
+// throw by default, unless the build has exceptions disabled (#1925)
+#define ERATIONAL_THROW_DIVIDE_BY_ZERO UNIVERSAL_HAS_EXCEPTIONS
 #endif
 #endif
 // ERATIONAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on the other arithmetic errors,

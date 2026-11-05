@@ -22,6 +22,7 @@
 #pragma once
 
 #include <algorithm>
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -738,9 +739,9 @@ inline std::optional<block<FpType>> addRec_step(addRec_state<FpType>& st) {
 	assert(false && "elreal addRec_step: safety_counter exhausted -- "
 	                "non-convergence in the streaming addition state machine. "
 	                "Inspect addRec_step state (fs/gs/workspace) at the call site.");
-	throw std::runtime_error("sw::universal::addRec_step: safety_counter exhausted; "
+	throw_or_abort(std::runtime_error("sw::universal::addRec_step: safety_counter exhausted; "
 	                         "non-convergence in the streaming addition state machine (bug). "
-	                         "See threeAdd.hpp for diagnosis.");
+	                         "See threeAdd.hpp for diagnosis."));
 }
 
 // addRec_stream(st): pull one block and defer the rest.

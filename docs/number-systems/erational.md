@@ -48,6 +48,11 @@ get a value opts out before the include, with `ERATIONAL_THROW_DIVIDE_BY_ZERO 0`
 #include <universal/number/erational/erational.hpp>
 ```
 
+A build with exceptions disabled (`-fno-exceptions`) gets the value without asking:
+`ERATIONAL_THROW_DIVIDE_BY_ZERO` defaults to `UNIVERSAL_HAS_EXCEPTIONS`, which
+`<universal/utility/exceptions.hpp>` takes from the compiler. Setting it to `1` in such a build
+stops with an `#error` (#1925).
+
 With the exception off, `x / 0` is NaN: the 0/0 state that `isnan()` reports. Arithmetic
 carries a NaN along, and a NaN divisor gives a NaN without throwing, in either mode. Any
 operation that leaves a zero denominator, such as `setdenominator(0)` followed by

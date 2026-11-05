@@ -6,6 +6,7 @@
 #pragma once
 
 #include <universal/number/unum2/common.hpp>
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <universal/number/unum2/op_matrix.hpp>
 
 #include <vector>
@@ -38,16 +39,16 @@ public:
 
     lattice() {
         if(!_is_power_of_two(_N))
-            throw std::invalid_argument("Number of elements in the lattice has to be power of 2!");
+            throw_or_abort(std::invalid_argument("Number of elements in the lattice has to be power of 2!"));
     
         // First element in the lattice must be 1.
         if(_exacts[0] != 1)
-            throw std::invalid_argument("First element in lattice must be 1");
+            throw_or_abort(std::invalid_argument("First element in lattice must be 1"));
         
         int last = 1;
         for(std::vector<int>::iterator it = _exacts.begin() + 1; it < _exacts.end(); ++it) {
             if(*it < 1 || *it <= last) 
-                throw std::invalid_argument("Lattice always be in ascending order");
+                throw_or_abort(std::invalid_argument("Lattice always be in ascending order"));
             last = *it;
         }
     }
@@ -64,7 +65,7 @@ public:
 
     double exactvalue(uint64_t i) const {
         if(i >= _N) 
-            throw std::out_of_range("Lattice index out of range");
+            throw_or_abort(std::out_of_range("Lattice index out of range"));
     
         // Return nothing if not exact.
         if(i & 0x01) 

@@ -1,4 +1,5 @@
 #pragma once
+#include <universal/utility/exceptions.hpp>  // UNIVERSAL_HAS_EXCEPTIONS (#1925)
 // EDECIMAL_THROW_DIVIDE_BY_ZERO: a division or remainder by zero throws
 // edecimal_integer_divide_by_zero. edecimal has no NaN to carry the failure in the value, so it
 // throws unless the application opts out, by setting this to 0 or, when this is not set,
@@ -9,7 +10,8 @@
 #if defined(EDECIMAL_THROW_ARITHMETIC_EXCEPTION)
 #define EDECIMAL_THROW_DIVIDE_BY_ZERO EDECIMAL_THROW_ARITHMETIC_EXCEPTION
 #else
-#define EDECIMAL_THROW_DIVIDE_BY_ZERO 1
+// throw by default, unless the build has exceptions disabled (#1925)
+#define EDECIMAL_THROW_DIVIDE_BY_ZERO UNIVERSAL_HAS_EXCEPTIONS
 #endif
 #endif
 // EDECIMAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on the other arithmetic errors,

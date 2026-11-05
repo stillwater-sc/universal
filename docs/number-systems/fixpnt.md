@@ -59,6 +59,11 @@ opts out before the include, with `FIXPNT_THROW_DIVIDE_BY_ZERO 0`, or with
 #include <universal/number/fixpnt/fixpnt.hpp>
 ```
 
+A build with exceptions disabled (`-fno-exceptions`) gets the value without asking:
+`FIXPNT_THROW_DIVIDE_BY_ZERO` defaults to `UNIVERSAL_HAS_EXCEPTIONS`, which
+`<universal/utility/exceptions.hpp>` takes from the compiler. Setting it to `1` in such a build
+stops with an `#error` (#1925).
+
 With the exception off, `x / 0` is `maxpos` or `maxneg` by the sign of the dividend for
 `Saturate`, and `0` for `Modulo`. Nothing is printed. Before #1894 the opt-out was the
 default and it wrote a line to stderr, which generic code could not detect.

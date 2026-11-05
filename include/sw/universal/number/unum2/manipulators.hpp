@@ -8,6 +8,7 @@
 // what turns a lattice point into a std::string. iostream.hpp is the <iostream> half.
 // Self-contained.
 #include <cstdint>
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -20,7 +21,7 @@ namespace sw { namespace universal {
 template<int... exacts>
 std::string lattice<exacts...>::get_exact(uint64_t i) const {
     if(i >= _N) 
-        throw std::out_of_range("Lattice index out of range");
+        throw_or_abort(std::out_of_range("Lattice index out of range"));
 
     // Return nothing if not exact.
     if(i & 0x01) 
