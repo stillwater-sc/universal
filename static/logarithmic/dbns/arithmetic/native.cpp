@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <random>
 #include <string>
 #include <vector>
 #include <universal/number/dbns/dbns.hpp>
@@ -119,6 +120,87 @@ int VerifyNativeMulDiv(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// The configurations of conversion/nearest.cpp, with fields up to 32 bits wide, where an exhaustive
+// pass is out of reach: random operand pairs, checked against an oracle that scans the smaller field
+// in full for the pair nearest the exact log2, in long double. The exponents of a product can reach
+// 2^33, where the log2 itself is only as exact as a double carries it, so the tolerance scales with
+// their size.
+template<unsigned nbits, unsigned fbbits, typename bt>
+int VerifyNativeSampled(int samples, bool reportTestCases) {
+	using namespace sw::universal;
+	using Dbns = dbns<nbits, fbbits, bt>;
+	const long double l3 = 1.5849625007211561814537389439478L;
+	const long long maxA = static_cast<long long>(Dbns::MAX_A), maxB = static_cast<long long>(Dbns::MAX_B);
+	auto pairLog = [&](long long a, long long b) { return static_cast<long double>(b) * l3 - static_cast<long double>(a); };
+	// the least log2 distance from L to an encodable pair, the zero pattern excluded
+	auto oracle = [&](long double L) {
+		long double best = 1.0e300L;
+		auto consider = [&](long long a, long long b) {
+			if (a < 0 || a > maxA || b < 0 || b > maxB || (a == maxA && b == 0)) return;
+			best = std::fmin(best, std::fabs(L - pairLog(a, b)));
+		};
+		if (maxA <= maxB) {
+			for (long long a = 0; a <= maxA; ++a) {
+				long double bf = (L + static_cast<long double>(a)) / l3;
+				long long b0 = static_cast<long long>(std::floor(bf));
+				for (long long b = b0 - 1; b <= b0 + 1; ++b) consider(a, std::clamp(b, 0ll, maxB));
+			}
+		}
+		else {
+			for (long long b = 0; b <= maxB; ++b) {
+				long double af = static_cast<long double>(b) * l3 - L;
+				long long a0 = static_cast<long long>(std::floor(af));
+				for (long long a = a0 - 1; a <= a0 + 1; ++a) consider(std::clamp(a, 0ll, maxA), b);
+			}
+		}
+		return best;
+	};
+	std::mt19937_64 rng(1940 + nbits * 64 + fbbits);
+	std::uniform_int_distribution<long long> ua(0, maxA), ub(0, maxB);
+	auto randomOperand = [&]() {
+		Dbns d;
+		do {
+			d.setbits(0);
+			d.setexponent(0, static_cast<std::uint32_t>(ua(rng)));
+			d.setexponent(1, static_cast<std::uint32_t>(ub(rng)));
+			d.setsign((rng() & 1u) != 0);
+		} while (d.iszero() || d.isnan());
+		return d;
+	};
+	int nrOfFailedTests = 0, reported = 0;
+	const long double minposLog = -static_cast<long double>(maxA - 1);
+	for (int i = 0; i < samples; ++i) {
+		const Dbns x = randomOperand(), y = randomOperand();
+		const long long ax = x.extractExponent(0), bx = x.extractExponent(1);
+		const long long ay = y.extractExponent(0), by = y.extractExponent(1);
+		const bool negative = x.sign() != y.sign();
+		for (int op = 0; op < 2; ++op) {
+			const long long a = op == 0 ? ax + ay : ax - ay;
+			const long long b = op == 0 ? bx + by : bx - by;
+			const Dbns r = op == 0 ? x * y : x / y;
+			const long double L = pairLog(a, b);
+			bool ok;
+			if (a >= 0 && a <= maxA && b >= 0 && b <= maxB && !(a == maxA && b == 0)) {
+				ok = !r.iszero() && !r.isnan() && r.sign() == negative
+				  && static_cast<long long>(r.extractExponent(0)) == a && static_cast<long long>(r.extractExponent(1)) == b;
+			}
+			else if (L < minposLog - 1.0L) {
+				ok = r.iszero();
+			}
+			else {
+				const long double tol = 1.0e-9L + 1.0e-15L * (std::fabs(static_cast<long double>(a)) + 1.6L * std::fabs(static_cast<long double>(b)));
+				ok = !r.iszero() && !r.isnan() && r.sign() == negative
+				  && std::fabs(L - pairLog(r.extractExponent(0), r.extractExponent(1))) <= oracle(L) + tol;
+			}
+			if (!ok) {
+				++nrOfFailedTests;
+				if (reportTestCases && reported++ < 5) std::cerr << "FAIL " << type_tag(Dbns()) << (op == 0 ? " * " : " / ") << ": exact 0.5^" << a << " * 3^" << b << " -> " << to_binary(r) << '\n';
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
 } // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -162,6 +244,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeMulDiv< 6, 2, std::uint8_t >(reportTestCases), "dbns<6,2>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeMulDiv< 8, 3, std::uint8_t >(reportTestCases), "dbns<8,3>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeMulDiv< 8, 5, std::uint8_t >(reportTestCases), "dbns<8,5>", test_tag);
+
+	// the configurations of conversion/nearest.cpp, sampled
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<16,  5, std::uint8_t >(2000, reportTestCases), "dbns<16,5>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<16,  8, std::uint8_t >(2000, reportTestCases), "dbns<16,8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<34,  1, std::uint8_t >(2000, reportTestCases), "dbns<34,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<32, 26, std::uint32_t>(2000, reportTestCases), "dbns<32,26,uint32>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<24, 19, std::uint8_t >(2000, reportTestCases), "dbns<24,19>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<20, 10, std::uint16_t>( 500, reportTestCases), "dbns<20,10,uint16>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<34,  1, std::uint64_t>(2000, reportTestCases), "dbns<34,1,uint64>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<40, 30, std::uint64_t>(2000, reportTestCases), "dbns<40,30,uint64>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<48, 20, std::uint64_t>(  20, reportTestCases), "dbns<48,20,uint64>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
