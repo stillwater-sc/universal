@@ -5,6 +5,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cstdint>
+#include <bit>
 
 // Configure td_cascade: throwing arithmetic exceptions disabled so divide-by-zero
 // has defined constexpr-safe behavior (returns +/-inf or NaN encoding) rather
@@ -229,6 +231,25 @@ try {
 		constexpr auto cx_q = []() { td_cascade t(1.0); t /= td_cascade(-0.0); return t; }();
 		static_assert(cx_q < td_cascade(0.0), "constexpr 1.0 / -0.0 should be -inf");
 		static_assert(cx_q.isinf(), "constexpr 1.0 / -0.0 should be inf");
+	}
+
+	// ----------------------------------------------------------------------------
+	// Division by infinity: a finite value over +-inf is a zero signed by the exclusive or of
+	// the operand signs. It came out NaN before #1327; the constexpr branch reads the signs
+	// with bit_cast, since std::signbit is not constexpr before C++23 (#1942).
+	// ----------------------------------------------------------------------------
+	{
+		constexpr auto zeroSign = [](const td_cascade& v) { return (std::bit_cast<std::uint64_t>(v[0]) >> 63) != 0; };
+		constexpr td_cascade pp = td_cascade(2.0)  / td_cascade(SpecificValue::infpos);
+		constexpr td_cascade np = td_cascade(-2.0) / td_cascade(SpecificValue::infpos);
+		constexpr td_cascade pn = td_cascade(2.0)  / td_cascade(SpecificValue::infneg);
+		constexpr td_cascade nn = td_cascade(-2.0) / td_cascade(SpecificValue::infneg);
+		static_assert(pp.iszero() && !zeroSign(pp), "constexpr 2 / +inf should be +0");
+		static_assert(np.iszero() &&  zeroSign(np), "constexpr -2 / +inf should be -0");
+		static_assert(pn.iszero() &&  zeroSign(pn), "constexpr 2 / -inf should be -0");
+		static_assert(nn.iszero() && !zeroSign(nn), "constexpr -2 / -inf should be +0");
+		constexpr auto cq = []() { td_cascade t(-0.75); t /= td_cascade(SpecificValue::infpos); return t; }();
+		static_assert(cq.iszero() && zeroSign(cq), "constexpr -0.75 /= +inf should be -0");
 	}
 
 	// ----------------------------------------------------------------------------
