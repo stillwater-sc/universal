@@ -62,6 +62,10 @@ const std::vector<Case> saturate8_4 = {
 	{ "8",            true,   7.9375 },
 	{ "12",           true,   7.9375 },
 	{ "-12",          true,  -8.0 },
+	{ "-10",          true,  -8.0 },        // 10 does not fit: Fixpnt(10) is maxpos, and -1 * maxpos is not maxneg
+	{ "-1e1",         true,  -8.0 },
+	{ "-1.0e1",       true,  -8.0 },
+	{ "10",           true,   7.9375 },
 	{ "7.96875",      true,   7.9375 },     // the tie above maxpos rounds and then clamps
 	{ "1e100000000",  true,   7.9375 },
 	{ "-1e100000000", true,  -8.0 },

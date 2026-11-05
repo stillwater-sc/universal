@@ -245,7 +245,11 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 		}
 		if (i != body.size()) return false;
 		// leading zeros carry no value
-		while (!digits.empty() && digits.front() == '0') { digits.erase(digits.begin()); --point; }
+		{
+			const std::size_t lz = digits.find_first_not_of('0');   // one erase, not one per zero
+			if (lz == std::string::npos) digits.clear();
+			else { digits.erase(0, lz); point -= static_cast<long long>(lz); }
+		}
 		if (digits.empty()) { value = tmp; return true; }   // zero
 
 		// integer part: digits [0, point), padded with zeros when the exponent moves the point
@@ -258,10 +262,17 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 		const long long ndigits = static_cast<long long>(digits.size());
 		const long long intDigits = (point > 0) ? point : 0;
 		const Fixpnt zero(0), maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+		// where 10 itself does not fit, a saturating ten is maxpos: -1 * maxpos is -maxpos, not
+		// the maxneg that -10 should clamp to. Any nonzero value times ten is out of range then.
+		const bool tenSaturates = (arithmetic == Saturate) && !(double(ten) == 10.0);
 		for (long long k = 0; k < intDigits; ++k) {
 			if (k >= ndigits) {
 				if (tmp == zero) break;
 				if (arithmetic == Saturate && (tmp == maxpos || tmp == maxneg)) break;
+			}
+			if (tenSaturates && !(tmp == zero)) {
+				tmp = negative ? maxneg : maxpos;
+				break;
 			}
 			int d = (k < ndigits) ? (digits[static_cast<std::size_t>(k)] - '0') : 0;
 			tmp *= ten;
