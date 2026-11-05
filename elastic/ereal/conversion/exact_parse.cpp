@@ -143,6 +143,33 @@ int VerifyNonDyadicAccuracy(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// Truncation after the reduction can leave a positive power of ten together with halvings. The
+// value (10^309 + 1) * 2^-300 is 4.9e218, but scaling its truncated digits by 10^166 before the
+// halvings overflowed to inf (CodeRabbit on PR #1938). Its reference is 10^309 * 2^-300 =
+// 5^309 * 2^9, which stays in range, and the dropped 2^-300 is far below ereal<8>'s precision.
+int VerifyScaleOrder(bool reportTestCases) {
+	using namespace sw::universal;
+	using Real = ereal<8>;
+	int nrOfFailedTests = 0;
+	for (int extra : { 309, 305, 300 }) {          // 10^extra + 1, times 5^300, over 10^300
+		std::string digits = "1" + std::string(static_cast<std::size_t>(extra - 1), '0') + "1";
+		for (int k = 0; k < 300; ++k) timesFive(digits);
+		Real got;
+		if (!got.parse(digits + "e-300") || got.isinf() || got.isnan()) {
+			if (reportTestCases) std::cerr << "FAIL (10^" << extra << " + 1) * 2^-300 is not finite\n";
+			++nrOfFailedTests;
+			continue;
+		}
+		Real ref = pown(Real(5.0), extra) * Real(std::ldexp(1.0, extra - 300));
+		double rel = std::fabs(double((got - ref) / ref));
+		if (!(rel <= std::ldexp(1.0, -420))) {
+			if (reportTestCases) std::cerr << "FAIL (10^" << extra << " + 1) * 2^-300 relative error " << rel << '\n';
+			++nrOfFailedTests;
+		}
+	}
+	return nrOfFailedTests;
+}
+
 } // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -186,6 +213,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySingleLimb(reportTestCases), "ereal<8>", "dyadic, one limb");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimb(reportTestCases), "ereal<8>", "dyadic, two limbs");
 	nrOfFailedTestCases += ReportTestResult(VerifyNonDyadicAccuracy(reportTestCases), "ereal<8>", "non-dyadic accuracy");
+	nrOfFailedTestCases += ReportTestResult(VerifyScaleOrder(reportTestCases), "ereal<8>", "halvings before scaling");
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -656,6 +656,26 @@ public:
 			result = result + ereal<maxlimbs, FpType>(static_cast<double>(c - '0'));
 		}
 
+		// the halvings: exact, a power of two per limb. A limb pushed below the normal range is
+		// dropped, as the normal-limb invariant requires; it lay below representable precision.
+		auto applyHalvings = [&result, &halvings]() {
+			if (halvings > 0 && !result.iszero() && !result.isinf() && !result.isnan()) {
+				for (auto& v : result._limb) v = std::ldexp(v, -halvings);
+				std::size_t keep = 1;
+				while (keep < result._limb.size() && std::isnormal(result._limb[keep])) ++keep;
+				result._limb.resize(keep);
+			}
+			halvings = 0;
+		};
+		// A positive power of ten here comes only from the precision cap, after the reduction
+		// recorded its halvings. Scaling up first can overflow a value the halvings bring back
+		// in range: (10^309 + 1) * 2^-300 is 4.9e218, but its truncated digits times 10^166 are
+		// past DBL_MAX (CodeRabbit on PR #1938). So the halvings go first then. They cannot
+		// underflow: the integer has up to MAX_SIG_DIGITS digits, the halvings are at most the
+		// scanned digits. With a negative power both steps shrink the value, so the order does
+		// not matter.
+		if (exponent > 0) applyHalvings();
+
 		// Apply the power-of-ten scale.
 		//
 		// A negative exponent is applied by DIVIDING by the normal-range 10^e,
@@ -686,14 +706,7 @@ public:
 			}
 		}
 
-		// the halvings: exact, a power of two per limb. A limb pushed below the normal range is
-		// dropped, as the normal-limb invariant requires; it lay below representable precision.
-		if (halvings > 0 && !result.iszero() && !result.isinf() && !result.isnan()) {
-			for (auto& v : result._limb) v = std::ldexp(v, -halvings);
-			std::size_t keep = 1;
-			while (keep < result._limb.size() && std::isnormal(result._limb[keep])) ++keep;
-			result._limb.resize(keep);
-		}
+		applyHalvings();   // a no-op when they were applied before the scaling
 
 		// Apply sign
 		if (negative) {
