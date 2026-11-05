@@ -5,6 +5,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cstdint>
+#include <bit>
 
 // Configure dd: throwing arithmetic exceptions disabled so divide-by-zero
 // has defined constexpr-safe behavior (returns +/-inf or NaN encoding) rather
@@ -224,6 +226,25 @@ try {
 		constexpr auto cx_q = []() { dd t(1.0); t /= dd(-0.0); return t; }();
 		static_assert(cx_q < dd(0.0), "constexpr 1.0 / -0.0 should be -inf");
 		static_assert(cx_q.isinf(), "constexpr 1.0 / -0.0 should be inf");
+	}
+
+	// ----------------------------------------------------------------------------
+	// Division by infinity: a finite value over +-inf is a zero signed by the exclusive or of
+	// the operand signs. It came out NaN before #1327; the constexpr branch reads the signs
+	// with bit_cast, since std::signbit is not constexpr before C++23 (#1942).
+	// ----------------------------------------------------------------------------
+	{
+		constexpr auto zeroSign = [](const dd& v) { return (std::bit_cast<std::uint64_t>(v[0]) >> 63) != 0; };
+		constexpr dd pp = dd(2.0)  / dd(SpecificValue::infpos);
+		constexpr dd np = dd(-2.0) / dd(SpecificValue::infpos);
+		constexpr dd pn = dd(2.0)  / dd(SpecificValue::infneg);
+		constexpr dd nn = dd(-2.0) / dd(SpecificValue::infneg);
+		static_assert(pp.iszero() && !zeroSign(pp), "constexpr 2 / +inf should be +0");
+		static_assert(np.iszero() &&  zeroSign(np), "constexpr -2 / +inf should be -0");
+		static_assert(pn.iszero() &&  zeroSign(pn), "constexpr 2 / -inf should be -0");
+		static_assert(nn.iszero() && !zeroSign(nn), "constexpr -2 / -inf should be +0");
+		constexpr auto cq = []() { dd t(-0.75); t /= dd(SpecificValue::infpos); return t; }();
+		static_assert(cq.iszero() && zeroSign(cq), "constexpr -0.75 /= +inf should be -0");
 	}
 
 	// ----------------------------------------------------------------------------

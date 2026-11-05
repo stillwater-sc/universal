@@ -8,10 +8,6 @@ file(GLOB_RECURSE ALL_CXX_SOURCE_FILES
   ${CMAKE_SOURCE_DIR}/bitblock/*.hpp
   ${CMAKE_SOURCE_DIR}/perf/*.hpp
   ${CMAKE_SOURCE_DIR}/perf/*.cpp   
-  ${CMAKE_SOURCE_DIR}/tests/posit/*.hpp
-  ${CMAKE_SOURCE_DIR}/tests/posit/*.cpp
-  ${CMAKE_SOURCE_DIR}/tests/posit/specialized/*.hpp
-  ${CMAKE_SOURCE_DIR}/tests/posit/specialized/*.cpp
   ${CMAKE_SOURCE_DIR}/tools/cmd/*.hpp
   ${CMAKE_SOURCE_DIR}/tools/cmd/*.cpp 
   ${CMAKE_SOURCE_DIR}/tools/utils/*.hpp

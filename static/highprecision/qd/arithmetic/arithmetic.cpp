@@ -10,6 +10,7 @@
 #include <universal/number/qd/qd.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/multidouble_special_division.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/verification/test_suite_randoms.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
@@ -253,6 +254,14 @@ try {
 #else  // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
+
+	// a division with an infinite or NaN operand follows IEEE-754: finite / +-inf is a signed zero
+	// (#1327). The checks lived in a file under tests/ that nothing built (#1942).
+	nrOfFailedTestCases += ReportTestResult(
+		multidouble_verification::VerifyDivisionByInfinity<qd>(test_tag, reportTestCases),
+		"qd division by infinity",
+		test_tag
+	);
 
 	constexpr unsigned nrOfRandoms = 1000;
 	std::stringstream aqds;
