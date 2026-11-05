@@ -11,7 +11,9 @@
 //     block type, dbns<10,4> with the default uint8_t included, converted almost every value wrongly;
 //   - the (a, b) search admitted first base exponents beyond the field, and projecting them back
 //     failed for a third of all values, which landed on the zero pattern or a far neighbour;
-//   - minpos() produced the zero pattern, so minpos was 0 and minneg NaN.
+//   - minpos() produced the zero pattern, so minpos was 0 and minneg NaN;
+//   - decoding computed 0.5^a and 3^b apart, so a value in range decoded to inf, 0 or NaN when
+//     one factor alone left the range.
 // The value of a dbns is 0.5^a * 3^b, and by unique factorization each (a, b) is a distinct value,
 // so the nearest encoding is well defined. The reference is a brute-force search over all of them.
 #include <universal/utility/directives.hpp>
@@ -107,6 +109,20 @@ int VerifyIssueCases(bool reportTestCases) {
 	if (double(c) != 1.5) ++nrOfFailedTests;
 	dbns<8, 3> d(1.5);
 	if (double(d) != 1.5) ++nrOfFailedTests;
+	// decoding: 3^647 alone overflows a double, but 0.5^31 * 3^647 is 2^994.69; it decoded to inf
+	dbns<16, 5> e;
+	e.setbits(0);   // trivially constructible: clear the sign and every field first
+	e.setexponent(0, 31);
+	e.setexponent(1, 647);
+	double ev = double(e);
+	if (!std::isfinite(ev) || std::fabs(std::log2(ev) - (647.0 * std::log2(3.0) - 31.0)) > 1.0e-12) ++nrOfFailedTests;
+	// and to float: 3^81 overflows a float, 0.5^31 * 3^81 is 2^97.4
+	dbns<16, 5> f;
+	f.setbits(0);   // trivially constructible: clear the sign and every field first
+	f.setexponent(0, 31);
+	f.setexponent(1, 81);
+	float fv = float(f);
+	if (!std::isfinite(fv) || std::fabs(std::log2(double(fv)) - (81.0 * std::log2(3.0) - 31.0)) > 1.0e-6) ++nrOfFailedTests;
 	if (nrOfFailedTests && reportTestCases) std::cerr << "FAIL dbns<16,5>(1.5) = " << double(a) << ", dbns<16,8>(1.5) = " << double(c) << '\n';
 	return nrOfFailedTests;
 }
@@ -128,7 +144,7 @@ int VerifyWideFields(bool reportTestCases) {
 			if (a == maxA && b == 0) return;   // the zero encoding
 			best = std::fmin(best, std::fabs(l - (static_cast<double>(-a) + static_cast<double>(b) * log2of3)));
 		};
-		if (maxA <= 100000) {
+		if (maxA <= maxB) {   // scan the smaller field
 			for (long long a = 0; a <= maxA; ++a) {
 				double bf = (l + static_cast<double>(a)) / log2of3;
 				for (long long b = static_cast<long long>(std::floor(bf)); b <= static_cast<long long>(std::floor(bf)) + 1; ++b)
@@ -154,7 +170,8 @@ int VerifyWideFields(bool reportTestCases) {
 	std::mt19937_64 rng(19330 + nbits);
 	std::uniform_real_distribution<double> uniform(lo, hi);
 	int nrOfFailedTests = 0;
-	for (int i = 0; i < 1000; ++i) {
+	const int samples = (maxA > 100000 && maxB > 100000) ? 100 : 1000;   // both fields wide: each search is long
+	for (int i = 0; i < samples; ++i) {
 		double l = uniform(rng);
 		Dbns d(std::exp2(l));
 		double got = std::fabs(std::log2(double(d)) - l);
@@ -224,6 +241,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<32, 26, std::uint32_t>(reportTestCases), "dbns<32,26,uint32>", "26-bit field");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<24, 19, std::uint8_t >(reportTestCases), "dbns<24,19,uint8>", "19-bit field");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<20, 10, std::uint16_t>(reportTestCases), "dbns<20,10,uint16>", "both fields wide");
+	// one uint64_t block holding fields wider than 32 bits together: setexponent() shifted the
+	// first base field in 32 bits there (CodeRabbit on PR #1939)
+	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<34,  1, std::uint64_t>(reportTestCases), "dbns<34,1,uint64>", "one block, 32-bit field");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<48, 20, std::uint64_t>(reportTestCases), "dbns<48,20,uint64>", "one block, 47 field bits");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<40, 30, std::uint64_t>(reportTestCases), "dbns<40,30,uint64>", "one block, 30-bit first field");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits< 8, 3, std::uint8_t >(reportTestCases), "dbns<8,3,uint8>", "minpos");
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits<10, 4, std::uint8_t >(reportTestCases), "dbns<10,4,uint8>", "minpos");

@@ -44,6 +44,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
+#include <cmath>      // std::exp2, std::log2
 #include <limits>
 #include <type_traits>
 
@@ -467,9 +468,12 @@ public:
 		if constexpr (1 == nrBlocks) {
 			if (base == 0) {
 				_block[MSU] &= ~FB_MASK;
-				exponentBits &= MAX_A; // lob off any bits outside the field width
-				exponentBits <<= sbbits; // shift them in place
-				_block[MSU] |= (exponentBits & FB_MASK); 
+				// in 64 bits: a single uint64_t block holds fields wider than 32 bits together, and
+				// shifting a uint32_t by sbbits lost the top of the field, or was undefined at a
+				// 32-bit second field (CodeRabbit on PR #1939)
+				uint64_t field = static_cast<uint64_t>(exponentBits) & MAX_A;   // lob off any bits outside the field width
+				field <<= sbbits;                                                  // shift them in place
+				_block[MSU] |= static_cast<bt>(field & FB_MASK);
 			}
 			else if (base == 1) {
 				_block[MSU] &= ~SB_MASK;
@@ -920,10 +924,42 @@ protected:
 		constexpr unsigned minSubnormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
 		static_assert(fbbits <= minSubnormalExponent, "dbns::to_ieee754: fraction is too small to represent with requested floating-point type");
 
-		TargetFloat dim1, dim2;
-		dim1 = ipow(TargetFloat(base0), extractExponent(0));
-		dim2 = ipow(TargetFloat(base1), extractExponent(1));
-		return static_cast<TargetFloat>(signValue) * dim1 * dim2;
+		const uint64_t a = extractExponent(0);
+		const uint64_t b = extractExponent(1);
+		// 0.5^a and 3^b each stay in the normal range for these exponents: their product rounds
+		// once, as it always has
+		constexpr uint64_t maxHalvings  = static_cast<uint64_t>(-(std::numeric_limits<TargetFloat>::min_exponent - 1));
+		constexpr uint64_t maxTriplings = static_cast<uint64_t>(static_cast<double>(std::numeric_limits<TargetFloat>::max_exponent - 1) / log2of3);
+		if (a <= maxHalvings && b <= maxTriplings) {
+			TargetFloat dim1 = ipow(TargetFloat(base0), a);
+			TargetFloat dim2 = ipow(TargetFloat(base1), b);
+			return static_cast<TargetFloat>(signValue) * dim1 * dim2;
+		}
+		// Otherwise one factor leaves the range while the value need not: in dbns<16,5>,
+		// 3^647 * 0.5^31 is 2^994, but 3^647 alone overflowed and the value decoded to inf, and
+		// with both fields wide 0.5^a * 3^b came out 0 * inf = NaN (#1933). So the value is taken
+		// as 2^L, L = b * log2(3) - a. log2(3) is split into a 20-bit head, whose product with a
+		// 32-bit b is exact, and a tail, so that L keeps its fraction when b * log2(3) is large.
+		constexpr double log2of3hi = 1.5849609375;                           // 0x1.95c0p+0, 20 bits
+		constexpr double log2of3lo = log2of3 - log2of3hi;                      // the rest
+		const double L = (static_cast<double>(b) * log2of3hi - static_cast<double>(a)) + static_cast<double>(b) * log2of3lo;
+		TargetFloat magnitude;
+		if (L > static_cast<double>(std::numeric_limits<TargetFloat>::max_exponent)) {
+			magnitude = std::numeric_limits<TargetFloat>::infinity();
+		}
+		else if (L < static_cast<double>(std::numeric_limits<TargetFloat>::min_exponent - std::numeric_limits<TargetFloat>::digits - 1)) {
+			magnitude = TargetFloat(0);
+		}
+		else if (std::is_constant_evaluated()) {
+			magnitude = static_cast<TargetFloat>(sw::math::constexpr_math::exp2(L));   // double only
+		}
+		else {
+			// in the wider of double and the target: L rounded to float would cost a float's
+			// precision of 97.4 in the exponent, and a long double keeps its wider range
+			using Wide = std::conditional_t<(sizeof(TargetFloat) > sizeof(double)), TargetFloat, double>;
+			magnitude = static_cast<TargetFloat>(std::exp2(static_cast<Wide>(L)));
+		}
+		return static_cast<TargetFloat>(signValue) * magnitude;
 	}
 
 private:
