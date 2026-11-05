@@ -14,7 +14,10 @@ int noexceptions_faithful() {
 	int fails = 0;
 	Number a(1.5), b(0.75);
 	a += b;
+	a -= b;
 	a *= b;
+	Number n = -a;   // unary minus compiles since #1930
+	if (n.high() != -a.high()) fails += fail("faithful", "negation");
 	a /= Number(0.0);
 	std::ostringstream ostr;
 	ostr << a;

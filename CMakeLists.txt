@@ -857,6 +857,7 @@ if(UNIVERSAL_BUILD_CI)
 	set(UNIVERSAL_BUILD_NUMERIC_QUIRES ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK OFF)
 	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
+	set(UNIVERSAL_BUILD_NUMERIC_FAITHFUL ON)   # faithful's tests live in numeric/faithful (#1930)
 
 	# we now have a standalone complex<> solution
 	set(UNIVERSAL_BUILD_COMPLEX ON)
@@ -914,6 +915,10 @@ if(UNIVERSAL_BUILD_CI_LITE)
 	# integration tests: multifile, and every number system built with -fno-exceptions,
 	# which keeps a stray throw from breaking bare-metal builds again (#1925)
 	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
+
+	# faithful's compensated arithmetic has its only tests in numeric/faithful, which NUMERICS
+	# alone enabled, so no CI job ran them (#1930)
+	set(UNIVERSAL_BUILD_NUMERIC_FAITHFUL ON)
 
 	# utility tests: the decimal-to-binary converter, string parsing, fma traits and error
 	# tracking. Enabled only by UNIVERSAL_BUILD_ALL before, so no CI job built them and they
