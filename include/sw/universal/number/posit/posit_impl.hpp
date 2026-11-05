@@ -74,6 +74,7 @@
 #include <universal/utility/decimal_to_binary.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/number/posit/posit_limbs.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 // intermediate value tracing
 #include <universal/number/algorithm/trace_constants.hpp>
@@ -376,87 +377,27 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 }
 #endif
 
-// needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
+// p = (-1)^sign * 1.fraction_in * 2^scale, rounded once to nearest, ties to even, never to zero or
+// NaR. Every bit of fraction_in counts at its own weight, so a caller that folds a sticky bit into
+// the lowest bit must pass enough bits for it to lie below the guard bit, as the callers do with
+// nbits + 4 or more. The significand is placed on 64-bit limbs and
+// rounded by posit_limbs::encode (#1921); assembling the posit from shifted multi-limb
+// temporaries cost several ns per bit.
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 constexpr inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignificand<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
-#if POSIT_TRACE_ENABLED
-	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-#endif
-#if POSIT_TRACE_ENABLED
-	if constexpr (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
-#endif
-
-	p.clear();
-	// construct the posit
-	// interpolation rule checks
-	if (check_inward_projection_range<nbits, es, bt>(_scale)) {    // regime dominated
-#if POSIT_TRACE_ENABLED
-		if constexpr (_trace_conversion) std::cout << "inward projection" << std::endl;
-#endif
-		// we are projecting to minpos/maxpos or minneg/maxneg
-		int k = calculate_unconstrained_k<nbits, es>(_scale);
-		k < 0 ? (_sign ? p.minneg() : p.minpos()) : (_sign ? p.maxneg() : p.maxpos());
-		// we are done
-#if POSIT_TRACE_ENABLED
-		if constexpr (_trace_rounding) std::cout << "projection  rounding ";
-#endif
+	using namespace posit_limbs;
+	constexpr unsigned bitsInBlock = sizeof(bt) * 8u;
+	constexpr std::size_t n = limbs(fbits + 1u);
+	limb_t sig[n]{};
+	for (unsigned i = 0; i < blocksignificand<fbits, bt>::nrBlocks; ++i) {
+		const unsigned pos = i * bitsInBlock;
+		sig[pos / 64u] |= limb_t(fraction_in.block(i)) << (pos % 64u);
 	}
-	else {
-		constexpr unsigned pt_len = nbits + 3 + es;
-		using BlockBinary = blockbinary<pt_len, bt, BinaryNumberType::Signed>;
-		BlockBinary pt_bits{ 0 };
-		BlockBinary regime{ 0 };
-		BlockBinary exponent{0};
-		BlockBinary fraction{0};
-		BlockBinary sticky_bit{0};
-
-		bool s = _sign;
-		int e  = _scale;
-		bool r = (e >= 0);  // positive or negative regime to create runs such as: 11..110 or 00..001
-
-		unsigned run = unsigned(r ? 1 + (e >> es) : -(e >> es));
-		regime.setbit(0, 1 ^ r);
-		for (unsigned i = 1; i <= run; ++i) regime.setbit(i, r);
-
-		exponent = static_cast<unsigned long long>(e) % (1ull << es);
-		int nbits_plus_one = static_cast<int>(nbits) + 1;
-		int sign_regime_es = static_cast<int>(2ull + run + es);
-		unsigned nrFbits = static_cast<unsigned>(std::max<int>(0, (nbits_plus_one - sign_regime_es)));
-
-		// when nrFbits > fbits then we need to round
-		// copy the most significant nf fraction bits into fraction
-		unsigned lsb = (nrFbits <= fbits ? 0 : nrFbits - fbits);
-		for (unsigned i = lsb; i < nrFbits; ++i) fraction.setbit(i, fraction_in.test(fbits - nrFbits + i));
-
-		bool sb = (nrFbits < fbits) ? fraction_in.anyAfter(fbits - nrFbits) : false;
-
-		// construct the untruncated posit
-		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
-		regime <<= static_cast<int>(es + nrFbits + 1u);
-		exponent <<= static_cast<int>(nrFbits + 1u);
-		fraction <<= 1u;
-		sticky_bit.setbit(0, sb);
-
-		pt_bits |= regime;
-		pt_bits |= exponent;
-		pt_bits |= fraction;
-		pt_bits |= sticky_bit;
-
-		unsigned len = 1 + std::max<unsigned>((nbits + 1u), (2u + run + es));
-		bool blast = pt_bits.test(len - nbits);
-		bool bafter = pt_bits.test(len - nbits - 1u);      // len >= nbits + 2, so this is >= 1 (no unsigned wrap)
-		bool bsticky = pt_bits.anyAfter(len - nbits - 1u); // 1u (not 1ull) keeps the index expression unsigned
-
-		bool rb = (blast & bafter) | (bafter & bsticky);
-
-		blockbinary<nbits, bt> ptt{0};
-		pt_bits <<= static_cast<int>(pt_len - len);
-		truncate(pt_bits, ptt);
-		if (rb) ++ptt;
-		if (s) ptt = ptt.twosComplement();
-		p.setbits(ptt);
-	}
-	return p;
+	if constexpr (fbits % 64u != 0u) sig[n - 1] &= (limb_t(1) << (fbits % 64u)) - 1u;
+	set(sig, fbits);   // the hidden bit
+	limb_t aligned[n];
+	limb_kernels::load_window(aligned, n, sig, n, static_cast<std::int64_t>(64u * n - 1u - fbits));
+	return encode(p, _scale, aligned, n, false, _sign);
 }
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
@@ -477,37 +418,33 @@ constexpr inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>&
 		p.setnar();
 		return p;
 	}
-	// The blocktriple's significant may have overflowed into the integer bits
-	// (especially after ADD). The real scale = v.scale() + v.significandscale().
-	// Extract the fraction bits starting below the MSB position.
-	using BlockTriple = blocktriple<fbits, op, bt>;
-	int sigScale = v.significandscale(); // how many bits the MSB is above radix
-	int realScale = v.scale() + sigScale;
-	// The MSB (hidden bit) is at position radix + sigScale.
-	// Fraction bits start at (radix + sigScale - 1) downward.
-	// We extract enough bits for convert_ rounding.
-	// nrFbits can be up to nbits-1-es (when regime is minimal), so we need
-	// at least nbits-1-es + 3 (guard/round/sticky) = nbits+2-es bits.
-	// Using nbits+4 is safe for all configurations and still fits within the blocktriple.
-	constexpr unsigned extractBits = nbits + 4;
-	blocksignificand<extractBits, bt> frac;
-	int msbPos = static_cast<int>(BlockTriple::radix) + sigScale; // position of hidden bit
-	for (unsigned i = 0; i < extractBits; ++i) {
-		int srcPos = msbPos - 1 - static_cast<int>(i); // start from bit below MSB
-		if (srcPos >= 0 && srcPos < static_cast<int>(BlockTriple::bfbits)) {
-			frac.setbit(extractBits - 1 - i, v.at(static_cast<unsigned>(srcPos)));
-		}
+	// The significand may have overflowed into the integer bits (especially after ADD), so its
+	// most significant bit is the hidden bit, at or above the radix. Gather it a limb at a time,
+	// left-align it, and round once (#1921): copying the fraction out one bit at a time, and
+	// assembling the posit from shifted multi-limb temporaries in convert_, cost several ns per bit.
+	using namespace posit_limbs;
+	using BlockTriple  = blocktriple<fbits, op, bt>;
+	using Significand  = typename BlockTriple::significand_t;
+	constexpr unsigned bitsInBlock = sizeof(bt) * 8u;
+	constexpr unsigned sigBits     = BlockTriple::bfbits;
+	constexpr std::size_t n        = limbs(sigBits);
+	limb_t sig[n]{};
+	for (unsigned i = 0; i < Significand::nrBlocks; ++i) {
+		const unsigned pos = i * bitsInBlock;
+		sig[pos / 64u] |= limb_t(v.block(i)) << (pos % 64u);
 	}
-	// Capture sticky information from blocktriple bits below the extracted range.
-	// Without this, division (and other ops with wide significands) can lose
-	// rounding-critical bits, causing systematic -1 ULP errors.
-	int lowestExtracted = msbPos - static_cast<int>(extractBits);
-	if (lowestExtracted > 0) {
-		if (v.any(static_cast<unsigned>(lowestExtracted))) {
-			frac.setbit(0, true); // fold remaining bits into sticky position
-		}
+	if constexpr (sigBits % 64u != 0u) sig[n - 1] &= (limb_t(1) << (sigBits % 64u)) - 1u;
+	std::size_t top = n - 1;
+	while (top > 0 && sig[top] == 0u) --top;
+	if (sig[top] == 0u) {   // no significand bits: a zero the operator did not flag
+		p.setzero();
+		return p;
 	}
-	return convert_<nbits, es, bt, extractBits>(v.sign(), realScale, frac, p);
+	const int msb = static_cast<int>(64u * top + 63u) - std::countl_zero(sig[top]);
+	limb_t aligned[n];
+	limb_kernels::load_window(aligned, n, sig, n, static_cast<std::int64_t>(64u * n - 1u) - msb);
+	const int realScale = v.scale() + (msb - BlockTriple::radix);
+	return encode(p, realScale, aligned, n, false, v.sign());
 }
 
 
@@ -1117,29 +1054,15 @@ public:
 	// normalize: decompose posit value into a blocktriple<fbits, REP> for quire accumulation
 	template<typename TargetBlockType = bt>
 	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const noexcept {
-		using namespace sw::universal::internal;
-		if (iszero()) { tgt.setzero(); return; }
-		if (isnar())  { tgt.setnan();  return; }
-		bool               _sign{ false };
-		positRegime<nbits, es, bt>   _regime;
-		positExponent<nbits, es, bt> _exponent;
-		positFraction<fbits, bt>     _fraction;
-		decode(_block, _sign, _regime, _exponent, _fraction);
-		tgt.setnormal();
-		tgt.setsign(_sign);
 		// REP normalization collapses the tapered posit encoding into a canonical 1.ffff blocktriple.
 		// The variable-length regime and optional exponent are fully absorbed into scale; the significand
 		// is rebuilt with an explicit hidden bit so quire/blocktriple consumers no longer need posit-specific logic.
-		tgt.setscale(_regime.scale() + _exponent.scale());
-		tgt.setbit(fbits);  // hidden bit
-		auto frac = _fraction.bits();
-		for (unsigned i = 0; i < fbits; ++i) {
-			tgt.setbit(i, frac.at(i));
-		}
+		if (iszero()) { tgt.setzero(); return; }
+		if (isnar())  { tgt.setnan();  return; }
+		unpack(tgt, 0u);
 	}
 
 	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
-		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
 		// test special cases
 		if (isnar()) {
 			tgt.setnan();
@@ -1148,33 +1071,8 @@ public:
 			tgt.setzero();
 		}
 		else {
-			tgt.setnormal(); // a blocktriple is always normalized
-			// decode the posit fields
-			bool		     		s{ false };
-			positRegime<nbits, es, bt>   r;
-			positExponent<nbits, es, bt> e;
-			positFraction<fbits, bt>     f;
-			decode(_block, s, r, e, f);
-			tgt.setsign(s);
-			tgt.setscale(r.scale() + e.scale());
-			// extract fraction bits into the blocktriple significant with hidden bit
-			if constexpr (fbits < 64 && BlockTripleConfiguration::rbits < (64 - fbits)) {
-				uint64_t raw = f.bits().to_ull();
-				raw |= (1ull << fbits); // add the hidden bit
-				raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
-				tgt.setbits(raw);
-			}
-			else {
-				// copy fraction bits into blocktriple block by block
-				auto frac = f.bits();
-				constexpr unsigned fracBlocks = blockbinary<fbits, bt, BinaryNumberType::Unsigned>::nrBlocks;
-				for (unsigned i = 0; i < fracBlocks; ++i) {
-					tgt.setblock(i, frac[i]);
-				}
-				tgt.setradix();
-				tgt.setbit(fbits); // add the hidden bit
-				tgt.bitShift(BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
-			}
+			// the significand with its hidden bit, above the rounding bits required for correct rounding
+			unpack(tgt, blocktriple<fbits, BlockTripleOperator::ADD, bt>::rbits);
 		}
 	}
 
@@ -1188,36 +1086,12 @@ public:
 			tgt.setzero();
 		}
 		else {
-			tgt.setnormal();
-			// decode the posit fields
-			bool		     		s{ false };
-			positRegime<nbits, es, bt>   r;
-			positExponent<nbits, es, bt> e;
-			positFraction<fbits, bt>     f;
-			decode(_block, s, r, e, f);
-			tgt.setsign(s);
-			tgt.setscale(r.scale() + e.scale());
-			// extract fraction bits into the blocktriple significant with hidden bit
 			// no rounding shift needed for MUL -- blocktriple::mul handles radix placement
-			if constexpr (fbits < 64) {
-				uint64_t raw = f.bits().to_ull();
-				raw |= (1ull << fbits); // add the hidden bit
-				tgt.setbits(raw);
-			}
-			else {
-				auto frac = f.bits();
-				constexpr unsigned fracBlocks = blockbinary<fbits, bt, BinaryNumberType::Unsigned>::nrBlocks;
-				for (unsigned i = 0; i < fracBlocks; ++i) {
-					tgt.setblock(i, frac[i]);
-				}
-				tgt.setbit(fbits); // add the hidden bit
-			}
+			unpack(tgt, 0u);
 		}
 	}
 
 	constexpr void normalizeDivision(blocktriple<fbits, BlockTripleOperator::DIV, bt>& tgt) const {
-		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::DIV, bt>;
-		constexpr unsigned divshift = BlockTripleConfiguration::divshift;
 		// test special cases
 		if (isnar()) {
 			tgt.setnan();
@@ -1226,32 +1100,8 @@ public:
 			tgt.setzero();
 		}
 		else {
-			tgt.setnormal();
-			// decode the posit fields
-			bool		     		s{ false };
-			positRegime<nbits, es, bt>   r;
-			positExponent<nbits, es, bt> e;
-			positFraction<fbits, bt>     f;
-			decode(_block, s, r, e, f);
-			tgt.setsign(s);
-			tgt.setscale(r.scale() + e.scale());
-			// extract fraction bits with hidden bit, shifted left by divshift for alignment
-			if constexpr (fbits < 64 && divshift < (64 - fbits)) {
-				uint64_t raw = f.bits().to_ull();
-				raw |= (1ull << fbits); // add the hidden bit
-				raw <<= divshift;       // alignment shift for division
-				tgt.setbits(raw);
-			}
-			else {
-				auto frac = f.bits();
-				constexpr unsigned fracBlocks = blockbinary<fbits, bt, BinaryNumberType::Unsigned>::nrBlocks;
-				for (unsigned i = 0; i < fracBlocks; ++i) {
-					tgt.setblock(i, frac[i]);
-				}
-				tgt.setradix();
-				tgt.setbit(fbits); // add the hidden bit
-				tgt.bitShift(divshift);  // alignment shift for division
-			}
+			// the significand with its hidden bit, shifted left by divshift for alignment
+			unpack(tgt, blocktriple<fbits, BlockTripleOperator::DIV, bt>::divshift);
 		}
 	}
 
@@ -1263,6 +1113,36 @@ public:
 
 private:
 	blockbinary<nbits, bt, BinaryNumberType::Signed> _block;
+
+	// decode this nonzero, non-NaR posit into tgt: its sign, its scale, and the significand 1.f
+	// with f left-aligned in fbits bits, its lowest bit at bit `shift` of tgt's significand.
+	// The fields are read a limb at a time (#1921); extract_fields() copies the fraction one
+	// bit at a time, at a few ns per bit.
+	template<typename BlockTriple>
+	constexpr void unpack(BlockTriple& tgt, unsigned shift) const noexcept {
+		using namespace posit_limbs;
+		using Significand = typename BlockTriple::significand_t;
+		using TargetBlock = std::remove_cv_t<std::remove_reference_t<decltype(tgt.block(0))>>;
+		constexpr unsigned bitsInTarget = sizeof(TargetBlock) * 8u;
+		constexpr std::size_t L = limbs(nbits);
+		limb_t w[L];
+		gather(_block, w);
+		const bool negative = test(w, nbits - 1u);
+		if (negative) negate<nbits>(w);
+		const Fields f = decode<nbits, es>(w);   // w = the nf fraction bits
+		set(w, f.nf);                            // the hidden bit
+		constexpr std::size_t M = limbs(Significand::nrBlocks * bitsInTarget);
+		limb_t sig[M];
+		limb_kernels::load_window(sig, M, w, L, static_cast<std::int64_t>(fbits - f.nf + shift));
+		tgt.setnormal();
+		tgt.setsign(negative);
+		tgt.setscale(f.scale);
+		tgt.setradix();
+		for (unsigned i = 0; i < Significand::nrBlocks; ++i) {
+			const unsigned pos = i * bitsInTarget;
+			tgt.setblock(i, static_cast<TargetBlock>(sig[pos / 64u] >> (pos % 64u)));
+		}
+	}
 
 	// HELPER methods
 
@@ -1602,18 +1482,24 @@ private:
 				return convert_long_double_wide(rhs, s);
 			}
 #endif
-			// nbits > 64: route through convert_<>() with a blocksignificand.
-			// convert_<>() is constexpr (PR 716) and handles wide blockbinary arithmetic.
-			constexpr unsigned ieeeBits = ieee_fbits + 1u; // hidden bit + fraction bits
-			constexpr unsigned extractBits = (ieeeBits > nbits + 4u) ? ieeeBits : (nbits + 4u);
-			blocksignificand<extractBits, bt> fracBits;
-			// Place source_fraction's top ieee_fbits bits at the top of fracBits.
-			for (unsigned i = 0; i < ieee_fbits; ++i) {
-				if ((source_fraction >> (ieee_fbits - 1u - i)) & 1ull) {
-					fracBits.setbit(extractBits - 1u - i, true);
-				}
+			if constexpr (ieee_fbits < 64u) {
+				// nbits > 64: the significand fits one limb, hidden bit on top; round it once (#1921)
+				const posit_limbs::limb_t sig = (posit_limbs::limb_t(1) << 63) | (posit_limbs::limb_t(source_fraction) << (63u - ieee_fbits));
+				return posit_limbs::encode(*this, scale, &sig, 1u, false, s);
 			}
-			return convert_<nbits, es, bt, extractBits>(s, scale, fracBits, *this);
+			else {
+				// a significand wider than a limb: route through convert_<>() with a blocksignificand
+				constexpr unsigned ieeeBits = ieee_fbits + 1u; // hidden bit + fraction bits
+				constexpr unsigned extractBits = (ieeeBits > nbits + 4u) ? ieeeBits : (nbits + 4u);
+				blocksignificand<extractBits, bt> fracBits;
+				// Place source_fraction's top ieee_fbits bits at the top of fracBits.
+				for (unsigned i = 0; i < ieee_fbits; ++i) {
+					if ((source_fraction >> (ieee_fbits - 1u - i)) & 1ull) {
+						fracBits.setbit(extractBits - 1u - i, true);
+					}
+				}
+				return convert_<nbits, es, bt, extractBits>(s, scale, fracBits, *this);
+			}
 		}
 	}
 

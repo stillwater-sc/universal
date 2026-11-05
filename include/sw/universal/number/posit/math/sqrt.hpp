@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <universal/native/ieee754.hpp>   // posit.hpp users get to_binary(float) and friends through here
 #include <universal/internal/limbs/limb_kernels.hpp>   // sqrtrem, for posits wider than 64 bits
-#include <universal/number/posit/math/posit_limbs.hpp>
+#include <universal/number/posit/posit_limbs.hpp>
 
 namespace sw { namespace universal {
 

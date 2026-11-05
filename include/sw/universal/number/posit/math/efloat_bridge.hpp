@@ -14,7 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <universal/number/efloat/core.hpp>
-#include <universal/number/posit/math/posit_limbs.hpp>
+#include <universal/number/posit/posit_limbs.hpp>
 
 namespace sw { namespace universal {
 

@@ -1,6 +1,8 @@
 #pragma once
 // posit_limbs.hpp: a posit's encoding on 64-bit limbs, decoded to its scale and fraction and
-// encoded back with one rounding, at any nbits; shared by the posit math library (#1846, #1855)
+// encoded back with one rounding, at any nbits. posit arithmetic and conversion decode and
+// encode through it (#1921), and so does the posit math library (#1846, #1855). Every function
+// is constexpr, so posit arithmetic stays usable in constant evaluation.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -8,7 +10,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstddef>
 #include <cstdint>
+#include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/limbs/limb_kernels.hpp>
+#include <universal/number/posit/posit_fwd.hpp>
 
 namespace sw { namespace universal {
 
@@ -17,25 +21,30 @@ namespace sw { namespace universal {
 		using limb_kernels::limb_t;
 
 		constexpr std::size_t limbs(unsigned bits) noexcept { return (bits + 63u) / 64u; }
-		inline bool test(const limb_t* w, unsigned i) noexcept { return ((w[i / 64u] >> (i % 64u)) & 1u) != 0u; }
-		inline void set(limb_t* w, unsigned i) noexcept { w[i / 64u] |= limb_t(1) << (i % 64u); }
-		inline void clear(limb_t* w, unsigned i) noexcept { w[i / 64u] &= ~(limb_t(1) << (i % 64u)); }
+		constexpr bool test(const limb_t* w, unsigned i) noexcept { return ((w[i / 64u] >> (i % 64u)) & 1u) != 0u; }
+		constexpr void set(limb_t* w, unsigned i) noexcept { w[i / 64u] |= limb_t(1) << (i % 64u); }
+		constexpr void clear(limb_t* w, unsigned i) noexcept { w[i / 64u] &= ~(limb_t(1) << (i % 64u)); }
 
-		// the encoding of a posit, gathered from its blocks
-		template<unsigned nbits, unsigned es, typename bt>
-		inline void gather(const posit<nbits, es, bt>& a, limb_t* w) noexcept {
+		// the bits of a blockbinary, gathered from its blocks into limbs(nbits) limbs
+		template<unsigned nbits, typename bt, BinaryNumberType NumberType>
+		constexpr void gather(const blockbinary<nbits, bt, NumberType>& bits, limb_t* w) noexcept {
 			constexpr unsigned bitsInBlock = sizeof(bt) * 8u;
-			const auto bits = a.bits();
 			for (std::size_t i = 0; i < limbs(nbits); ++i) w[i] = 0u;
-			for (unsigned i = 0; i < bits.nrBlocks; ++i) {
+			for (unsigned i = 0; i < blockbinary<nbits, bt, NumberType>::nrBlocks; ++i) {
 				const unsigned pos = i * bitsInBlock;
 				w[pos / 64u] |= limb_t(bits.block(i)) << (pos % 64u);
 			}
 		}
 
+		// the encoding of a posit, gathered from its blocks
+		template<unsigned nbits, unsigned es, typename bt>
+		inline void gather(const posit<nbits, es, bt>& a, limb_t* w) noexcept {
+			gather(a.bits(), w);
+		}
+
 		// the posit with encoding w[0, limbs(nbits)), bits at and above nbits ignored
 		template<unsigned nbits, unsigned es, typename bt>
-		inline posit<nbits, es, bt>& scatter(posit<nbits, es, bt>& p, const limb_t* w) noexcept {
+		constexpr posit<nbits, es, bt>& scatter(posit<nbits, es, bt>& p, const limb_t* w) noexcept {
 			constexpr unsigned bitsInBlock = sizeof(bt) * 8u;
 			blockbinary<nbits, bt, BinaryNumberType::Signed> bits;
 			bits.clear();
@@ -46,12 +55,21 @@ namespace sw { namespace universal {
 			return p.setbits(bits);
 		}
 
+		// the posit's negation, on its encoding: two's complement of w[0, limbs(nbits)) at nbits bits
+		template<unsigned nbits>
+		constexpr void negate(limb_t* w) noexcept {
+			constexpr std::size_t L = limbs(nbits);
+			for (std::size_t i = 0; i < L; ++i) w[i] = ~w[i];
+			limb_kernels::add_1(w, L, 1u);
+			if constexpr (nbits % 64u != 0u) w[L - 1] &= (limb_t(1) << (nbits % 64u)) - 1u;
+		}
+
 		// a positive posit's scale, and its nf fraction bits, which are w[0, nf) on return: the
 		// regime and exponent bits above them are cleared. Exponent bits cut off by the regime
 		// are zero.
 		struct Fields { int scale; unsigned nf; };
 		template<unsigned nbits, unsigned es>
-		inline Fields decode(limb_t* w) noexcept {
+		constexpr Fields decode(limb_t* w) noexcept {
 			const unsigned top = nbits - 2u;   // the first bit after the sign
 			const bool positiveRegime = test(w, top);
 			unsigned run = 1;
@@ -72,7 +90,7 @@ namespace sw { namespace universal {
 
 		// the scale and fraction length of a positive posit's encoding w, which is left as it is
 		template<unsigned nbits, unsigned es>
-		inline Fields fields(const limb_t* w) noexcept {
+		constexpr Fields fields(const limb_t* w) noexcept {
 			limb_t t[limbs(nbits)];
 			for (std::size_t i = 0; i < limbs(nbits); ++i) t[i] = w[i];
 			return decode<nbits, es>(t);
@@ -80,12 +98,13 @@ namespace sw { namespace universal {
 
 		// p = sig * 2^(scale - (64 n - 1)), sig = s[0, n) in [2^(64 n - 1), 2^(64 n)), with sticky
 		// standing for nonzero bits below sig: rounded once to nearest, ties to even, and never to
-		// zero or NaR. The sign is applied by the caller.
+		// zero or NaR. The result is negated when negative is set.
 		template<unsigned nbits, unsigned es, typename bt>
-		inline posit<nbits, es, bt>& encode(posit<nbits, es, bt>& p, int scale, const limb_t* sig, std::size_t n, bool sticky) noexcept {
+		constexpr posit<nbits, es, bt>& encode(posit<nbits, es, bt>& p, int scale, const limb_t* sig, std::size_t n, bool sticky, bool negative = false) noexcept {
 			const int k = scale >> es;   // floor(scale / 2^es)
 			const unsigned run = (k >= 0) ? static_cast<unsigned>(k) + 1u : static_cast<unsigned>(-k);
 			if (run >= nbits - 1u) {   // the regime fills the posit: past maxpos or below minpos
+				if (negative) return (k >= 0) ? p.maxneg() : p.minneg();
 				return (k >= 0) ? p.maxpos() : p.minpos();
 			}
 			// the unrounded body, T bits: the regime and its terminator, es exponent bits, and sig
@@ -116,17 +135,10 @@ namespace sw { namespace universal {
 			const bool guard = (r[0] & 1u) != 0u;
 			limb_kernels::rshift(r, r, L, 1u);
 			if (guard && (dropped || sticky || (r[0] & 1u) != 0u)) limb_kernels::add_1(r, L, 1u);
+			if (negative) negate<nbits>(r);
 			return scatter(p, r);
 		}
 
-		// the posit's negation, on its encoding: two's complement of w[0, limbs(nbits)) at nbits bits
-		template<unsigned nbits>
-		inline void negate(limb_t* w) noexcept {
-			constexpr std::size_t L = limbs(nbits);
-			for (std::size_t i = 0; i < L; ++i) w[i] = ~w[i];
-			limb_kernels::add_1(w, L, 1u);
-			if constexpr (nbits % 64u != 0u) w[L - 1] &= (limb_t(1) << (nbits % 64u)) - 1u;
-		}
 
 	} // namespace posit_limbs
 
