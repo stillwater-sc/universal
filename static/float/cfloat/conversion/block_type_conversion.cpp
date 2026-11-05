@@ -42,9 +42,10 @@
    2^-126 land in its subnormal range with fewer bits than they carry and are rounded before the
    fraction is placed. (2^53 - 1) * 2^-200 rounds up across a binade to 2^-147: the carry runs
    through every fraction bit. A carry out of the fraction into the exponent field, a subnormal
-   rounding up to min normal, cannot come from a native float or double when nbits > 64: rounding
-   at the top subnormal binade needs fbits < 53, which forces es >= 11, and then the cfloat's min
-   normal lies at or below the double's smallest subnormal.
+   rounding up to min normal, cannot come from a native float or double when nbits > 64. The top
+   subnormal binade holds fbits significant bits, so rounding there needs fbits < 53, which with
+   nbits > 64 forces es >= 12; the cfloat's min normal is then at most 2^-2046, below the double's
+   smallest subnormal 2^-1074. With es <= 11, fbits >= 53 and every double in that binade is exact.
 */
 
 namespace sw {
