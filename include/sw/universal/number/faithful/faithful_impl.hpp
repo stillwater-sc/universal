@@ -104,11 +104,16 @@ public:
 	//   x - y = s + (r + ea - eb)
 	//   x * y = p + (r + a*eb + b*ea)          dropping ea*eb, below the error's own precision
 	//   x / y = d + (r + ea - d*eb) / b        to first order, with r = a - b*d from twoDiv
+	// Those first-order forms need each error below half an ulp of its value. Cancellation breaks
+	// that: (1 + 2^-24) - (1 - 2^-24) leaves value and error both 2^-24, and dividing by it gave
+	// zero. So every result is renormalized, and the divisor of /= is too, since faithful(v, e)
+	// can be built from any pair.
 	faithful& operator+=(const faithful& rhs) {
 		FloatingPointType a(value), b(rhs.value), s, r;
 		twoSum(a, b, s, r);
 		value = s;
 		error += r + rhs.error;
+		renormalize();
 		return *this; 
 	}
 	faithful& operator+=(double rhs) { return *this += faithful(rhs); }
@@ -117,6 +122,7 @@ public:
 		twoSum(a, b, s, r);
 		value = s;
 		error += r - rhs.error;
+		renormalize();
 		return *this; 
 	}
 	faithful& operator-=(double rhs) { return *this -= faithful(rhs); }
@@ -125,14 +131,18 @@ public:
 		twoProd(a, b, p, r);
 		value = p;
 		error = a*rhs.error + b*error + r;
+		renormalize();
 		return *this; 
 	}
 	faithful& operator*=(double rhs) { return *this *= faithful(rhs); }
 	faithful& operator/=(const faithful& rhs) {
-		FloatingPointType a(value), b(rhs.value), d, r;
+		faithful divisor(rhs);
+		divisor.renormalize();
+		FloatingPointType a(value), b(divisor.value), d, r;
 		twoDiv(a, b, d, r);
 		value = d;
-		error = (error + r - d * rhs.error) / b;
+		error = (error + r - d * divisor.error) / b;
+		renormalize();
 		return *this;
 	}
 	faithful& operator/=(double rhs) { return *this /= faithful(rhs); }
@@ -174,6 +184,15 @@ public:
 private:
 	FloatingPointType value;
 	FloatingPointType error;
+
+	// make the pair canonical: value is value + error rounded, and error what remains, at most
+	// half an ulp of value. twoSum is exact, so the represented value does not change.
+	void renormalize() {
+		FloatingPointType s, r;
+		twoSum(value, error, s, r);
+		value = s;
+		error = r;
+	}
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<typename FPType>
