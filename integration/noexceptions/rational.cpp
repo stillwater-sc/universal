@@ -11,6 +11,6 @@ int noexceptions_rational() {
 	using namespace sw::universal;
 	using noexceptions::fail;
 	using Number = rational<16>;
-	// rational stream input is declared but has no working definition
-	return noexceptions::exercise<Number, false>("rational");
+	// operator>> parses decimal text since #1929
+	return noexceptions::exercise<Number, true, true>("rational");
 }
