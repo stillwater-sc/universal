@@ -135,7 +135,8 @@ int VerifyConstexprWideRange(bool reportTestCases) {
 		d.setexponent(0, 151);
 		d.setexponent(1, 1);
 		float rt = static_cast<float>(d);
-		if (!(ce == rt) || !(ce > 0.0f)) {
+		// 1.5 * 2^-150 rounds to 2^-149, the smallest float subnormal
+		if (!(ce == rt) || ce != std::numeric_limits<float>::denorm_min()) {
 			if (reportTestCases) std::cerr << "FAIL constexpr float 0.5^151 * 3 = " << ce << ", run time " << rt << '\n';
 			++nrOfFailedTests;
 		}
