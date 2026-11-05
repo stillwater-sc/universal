@@ -115,8 +115,31 @@ constexpr long double constexprWideDecode() {
 }
 #endif
 
+// 0.5^151 * 3 is 1.5 * 2^-150, a float subnormal that rounds to 2^-149, decoded through the 2^L
+// path for float. Constant-evaluated, the scaling ran in float steps of 2^-512, which underflowed
+// to zero first (CodeRabbit on PR #1939).
+constexpr float constexprFloatSubnormal() {
+	sw::universal::dbns<16, 8, std::uint16_t> d;
+	d.setbits(0);
+	d.setexponent(0, 151);
+	d.setexponent(1, 1);
+	return static_cast<float>(d);
+}
+
 int VerifyConstexprWideRange(bool reportTestCases) {
 	int nrOfFailedTests = 0;
+	{
+		constexpr float ce = constexprFloatSubnormal();
+		sw::universal::dbns<16, 8, std::uint16_t> d;
+		d.setbits(0);
+		d.setexponent(0, 151);
+		d.setexponent(1, 1);
+		float rt = static_cast<float>(d);
+		if (!(ce == rt) || !(ce > 0.0f)) {
+			if (reportTestCases) std::cerr << "FAIL constexpr float 0.5^151 * 3 = " << ce << ", run time " << rt << '\n';
+			++nrOfFailedTests;
+		}
+	}
 #if LONG_DOUBLE_SUPPORT
 	if constexpr (std::numeric_limits<long double>::max_exponent > 1200) {
 		constexpr long double ce = constexprWideDecode();
@@ -261,7 +284,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyIssueCases(reportTestCases), "dbns<16,5>, dbns<16,8>", "issue cases");
-	nrOfFailedTestCases += ReportTestResult(VerifyConstexprWideRange(reportTestCases), "dbns<31,15,uint32>", "constexpr long double");
+	nrOfFailedTestCases += ReportTestResult(VerifyConstexprWideRange(reportTestCases), "dbns<16,8>, dbns<31,15>", "constexpr decode");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundTrip< 8, 3, std::uint8_t >(reportTestCases), "dbns<8,3,uint8>", "round trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyRoundTrip<10, 4, std::uint8_t >(reportTestCases), "dbns<10,4,uint8>", "round trip");

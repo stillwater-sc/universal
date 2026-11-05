@@ -960,12 +960,16 @@ protected:
 			double Nd = static_cast<double>(static_cast<long long>(L));
 			if (Nd > L) Nd -= 1.0;
 			const long long N = static_cast<long long>(Nd);
-			magnitude = static_cast<TargetFloat>(sw::math::constexpr_math::exp2(L - Nd));
-			// scale in steps that stay normal: 2^-N for a large negative N would underflow as a
-			// single factor before the product does
+			// The scaling runs in the wider of double and the target, in steps that stay normal
+			// there, and the result is rounded to the target once: a float step of 2^-512 would
+			// underflow to zero before the product, and a subnormal float result came out 0
+			// (CodeRabbit on PR #1939)
+			using Wide = std::conditional_t<(sizeof(TargetFloat) > sizeof(double)), TargetFloat, double>;
+			Wide m = static_cast<Wide>(sw::math::constexpr_math::exp2(L - Nd));
 			long long n = N;
-			while (n > 0) { long long k = (n > 512) ? 512 : n; magnitude *= ipow(TargetFloat(2), static_cast<uint64_t>(k)); n -= k; }
-			while (n < 0) { long long k = (-n > 512) ? 512 : -n; magnitude *= ipow(TargetFloat(0.5), static_cast<uint64_t>(k)); n += k; }
+			while (n > 0) { long long k = (n > 512) ? 512 : n; m *= ipow(Wide(2), static_cast<uint64_t>(k)); n -= k; }
+			while (n < 0) { long long k = (-n > 512) ? 512 : -n; m *= ipow(Wide(0.5), static_cast<uint64_t>(k)); n += k; }
+			magnitude = static_cast<TargetFloat>(m);
 		}
 		else {
 			// in the wider of double and the target: L rounded to float would cost a float's
