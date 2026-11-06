@@ -6,8 +6,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // With the switch set, a domain error throws instead of returning NaN with EDOM (#1955): sqrt of a
-// negative throws faithful_negative_sqrt_arg, and log, log2, log10 and log1p of an argument outside
-// their domain throw faithful_negative_log_arg. A range result, inf or 0, is a value, not an
+// negative throws faithful_negative_sqrt_arg, log, log2, log10 and log1p of an argument outside
+// their domain throw faithful_negative_log_arg, and sin, cos and tan of an infinity and asin and
+// acos beyond [-1, 1] throw faithful_domain_error (#1956). A range result, inf or 0, is a value, not an
 // error, and does not throw. The default, non-throwing configuration is tested in mathlib.cpp and
 // exponential.cpp.
 #include <universal/utility/directives.hpp>
@@ -43,6 +44,11 @@ int VerifyThrows(bool reportTestCases) {
 	throwsAs([] { return log10(F(Real(-10))); }, faithful_negative_log_arg{}, "log10(-10)");
 	throwsAs([] { return log1p(F(Real(-2))); }, faithful_negative_log_arg{}, "log1p(-2)");
 	throwsAs([] { return log1p(F(-std::numeric_limits<Real>::infinity())); }, faithful_negative_log_arg{}, "log1p(-inf)");
+	throwsAs([] { return sin(F(std::numeric_limits<Real>::infinity())); }, faithful_domain_error{"sin"}, "sin(inf)");
+	throwsAs([] { return cos(F(-std::numeric_limits<Real>::infinity())); }, faithful_domain_error{"cos"}, "cos(-inf)");
+	throwsAs([] { return tan(F(std::numeric_limits<Real>::infinity())); }, faithful_domain_error{"tan"}, "tan(inf)");
+	throwsAs([] { return asin(F(Real(2))); }, faithful_domain_error{"asin"}, "asin(2)");
+	throwsAs([] { return acos(F(Real(-2))); }, faithful_domain_error{"acos"}, "acos(-2)");
 	// the exception is a faithful arithmetic exception, so a caller can catch the family
 	{
 		bool caught = false;
