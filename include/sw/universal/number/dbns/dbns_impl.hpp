@@ -279,53 +279,13 @@ public:
 			return *this;
 		}
 #if defined(NATIVE_DBNS_ARITHMETIC)
-		bool negative = sign() ^ rhs.sign(); // determine sign of result
-		uint32_t a = extractExponent(0) + rhs.extractExponent(0);
-		uint32_t b = extractExponent(1) + rhs.extractExponent(1);
-		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
-			clear();
-			if (a > MAX_A || b > MAX_B) {
-				// try to project the value back into valid pairs
-				// the approximations of unity looks like (3, -2), (8,-5), (19,-12), (84,-53),... 
-				// they grow too fast and in a rather irregular manner. There are more 
-				// subtle number theoretic considerations, but the ones outlined above 
-				// should be sufficient to figure out a good solution to the problem.
-				// 2^3*3^-2 = 0.888  2^-3*3^2 = 1.125
-				// 2^8*3^-5 = 1.053  2^-8*3^5 = 0.949
-				unsigned first[] = { 3, 8, 19, 84 };
-				unsigned second[] = { 2, 5, 12, 53 };
-				bool unableToAdjust{ true };
-				for (unsigned i = 0; i < 4; ++i) {
-					unsigned adjusted_a = a - first[i];
-					unsigned adjusted_b = b - second[i];
-					if (adjusted_a <= MAX_A && adjusted_b <= MAX_B) {
-						setexponent(0, adjusted_a);
-						setexponent(1, adjusted_b);
-						unableToAdjust = false;
-					}
-				}
-				if (unableToAdjust){
-					if (a > b) {
-						setexponent(0, MAX_A);
-						setexponent(1, 0);
-						negative = false; // we need to avoid nan(ind)
-					}
-					else {
-						setexponent(0, 0);
-						setexponent(1, MAX_B);
-					}
-				}
-			}
-			else {
-				setexponent(0, a);
-				setexponent(1, b);
-			}
-		}
-		else {
-			static_assert(true, "multi-limb TBD");
-		}
-		setsign(negative);
-		if (isnan()) setzero(); // if the arithmetic ends up in the nan encoding, set the value to zero
+		// The exact product is (-1)^(s1^s2) * 0.5^(a1+a2) * 3^(b1+b2). It is stored as is when that
+		// pair is an encoding, and rounded to the nearest one otherwise, by the same rule as a
+		// conversion (#1940). This used to project an out-of-range pair back with approximations
+		// of unity, which changed the value by up to 11%.
+		assign_pair(static_cast<long long>(extractExponent(0)) + static_cast<long long>(rhs.extractExponent(0)),
+		            static_cast<long long>(extractExponent(1)) + static_cast<long long>(rhs.extractExponent(1)),
+		            sign() != rhs.sign());
 #else
 		// marshall through double value
 		* this = double(*this) * double(rhs);
@@ -350,19 +310,12 @@ public:
 		if (iszero()) return *this;
 
 #if defined(NATIVE_DBNS_ARITHMETIC)
-		// this simple code doesn't work because of modulo underflow when the right hand side exponent is bigger than the left hand side
-		bool negative = sign() ^ rhs.sign(); // determine sign of result
-		uint32_t e0 = extractExponent(0) - rhs.extractExponent(0);
-		uint32_t e1 = extractExponent(1) - rhs.extractExponent(1);
-		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
-			clear();
-			setexponent(0, e0);
-			setexponent(1, e1);
-		}
-		else {
-			static_assert(true, "multi-limb TBD");
-		}
-		setsign(negative);
+		// The exact quotient is (-1)^(s1^s2) * 0.5^(a1-a2) * 3^(b1-b2), in signed arithmetic: a
+		// divisor with the larger exponents gives a negative one, which wrapped in uint32_t and
+		// has no encoding anyway, so such a quotient rounds to the nearest encoding (#1940).
+		assign_pair(static_cast<long long>(extractExponent(0)) - static_cast<long long>(rhs.extractExponent(0)),
+		            static_cast<long long>(extractExponent(1)) - static_cast<long long>(rhs.extractExponent(1)),
+		            sign() != rhs.sign());
 #else
 		// marshall through double value
 		* this = double(*this) / double(rhs);
@@ -819,6 +772,14 @@ protected:
 		// statistics counters below already use.
 		if (!std::is_constant_evaluated()) std::cout << "scale : " << scale << '\n';
 #endif
+		return assign_log2(scale, s);
+	}
+
+	// The encoding nearest 2^scale, with the given sign, in the logarithmic domain: the one rounding
+	// rule that conversion from a native type and the native multiply and divide share (#1940).
+	// scale is log2 of the magnitude; below half of minpos the result is zero, and beyond maxpos it
+	// saturates to maxpos.
+	constexpr dbns& assign_log2(double scale, bool negative) noexcept {
 		// The search walks the second base exponents b and, for each, takes the first base
 		// exponent nearest scale - b*log2(3), clamped to the encodable range: the encoding
 		// stores 0.5^a with a in [0, MAX_A], so the base-2 exponent is -a. The pair nearest in
@@ -887,8 +848,31 @@ protected:
 		// became 1.4e122, and every dbns wider than its block type converted wrongly (#1933)
 		setexponent(0, static_cast<unsigned>(-best_a));
 		setexponent(1, static_cast<unsigned>(best_b));
-		setsign(s);
+		setsign(negative);
 		return *this;
+	}
+
+	// log2 of 0.5^a * 3^b, for exponents of any size: log2(3) is split into a 20-bit head, whose
+	// product with b is exact for |b| below 2^33, and the tail
+	static constexpr double pair_log2(long long a, long long b) noexcept {
+		constexpr double hi = 1.5849609375;           // 20 bits of log2(3)
+		constexpr double lo = log2of3 - hi;
+		return (static_cast<double>(b) * hi - static_cast<double>(a)) + static_cast<double>(b) * lo;
+	}
+
+	// the value (-1)^negative * 0.5^a * 3^b: stored exactly when (a, b) is an encoding, which the
+	// zero pattern (MAX_A, 0) is not, and rounded to the nearest encoding otherwise
+	constexpr dbns& assign_pair(long long a, long long b, bool negative) noexcept {
+		const long long maxA = static_cast<long long>(MAX_A);
+		const long long maxB = static_cast<long long>(MAX_B);
+		if (a >= 0 && a <= maxA && b >= 0 && b <= maxB && !(a == maxA && b == 0)) {
+			clear();
+			setexponent(0, static_cast<unsigned>(a));
+			setexponent(1, static_cast<unsigned>(b));
+			setsign(negative);
+			return *this;
+		}
+		return assign_log2(pair_log2(a, b), negative);
 	}
 
 	//////////////////////////////////////////////////////
