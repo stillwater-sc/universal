@@ -7,10 +7,11 @@
 //
 // The exponentials and logarithms are compensated (#1955): evaluated in faithful arithmetic, not
 // through the FloatingPointType. Each is measured against a reference that holds more than the
-// pair's precision: long double for faithful<float>, qd for faithful<double>. The error is in
+// pair's precision: dd for faithful<float>, qd for faithful<double>. The error is in
 // units of the pair's epsilon(), eps(Real)^2 / 2, relative to the exact result.
 #include <universal/utility/directives.hpp>
 #include <universal/number/faithful/faithful.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/number/qd/qd.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <cerrno>
@@ -26,20 +27,24 @@ using sw::universal::faithful;
 using sw::universal::qd;
 
 // the reference arithmetic of each FloatingPointType
+// The faithful<float> reference is dd, not long double: on MSVC and on macOS ARM64 long double is
+// a 53-bit double, which cannot hold a pair such as (1, 2^-40) exactly, so the reference would
+// take the logarithm of a different number. dd holds every canonical faithful<float> exactly and
+// its functions are accurate to about 2^-100, far below a unit of 2^-47.
 struct FloatRef {
 	using Real = float;
-	using Exact = long double;
+	using Exact = sw::universal::dd;
 	static constexpr int epsExp = -47;
-	static Exact value(const faithful<float>& v) { return static_cast<long double>(v.high()) + static_cast<long double>(v.low()); }
-	static Exact exp(Exact v)   { return std::exp(v); }
-	static Exact exp2(Exact v)  { return std::exp2(v); }
-	static Exact exp10(Exact v) { return std::pow(10.0L, v); }
-	static Exact expm1(Exact v) { return std::expm1(v); }
-	static Exact log(Exact v)   { return std::log(v); }
-	static Exact log2(Exact v)  { return std::log2(v); }
-	static Exact log10(Exact v) { return std::log10(v); }
-	static Exact log1p(Exact v) { return std::log1p(v); }
-	static double rel(Exact got, Exact want) { return static_cast<double>(std::fabs((got - want) / want)); }
+	static Exact value(const faithful<float>& v) { return Exact(double(v.high())) + Exact(double(v.low())); }
+	static Exact exp(const Exact& v)   { return sw::universal::exp(v); }
+	static Exact exp2(const Exact& v)  { return sw::universal::exp2(v); }
+	static Exact exp10(const Exact& v) { return sw::universal::exp(v * sw::universal::dd_ln10); }
+	static Exact expm1(const Exact& v) { return sw::universal::expm1(v); }
+	static Exact log(const Exact& v)   { return sw::universal::log(v); }
+	static Exact log2(const Exact& v)  { return sw::universal::log2(v); }
+	static Exact log10(const Exact& v) { return sw::universal::log10(v); }
+	static Exact log1p(const Exact& v) { return sw::universal::log1p(v); }
+	static double rel(const Exact& got, const Exact& want) { return double(abs((got - want) / want)); }
 };
 struct DoubleRef {
 	using Real = double;
