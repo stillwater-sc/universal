@@ -140,6 +140,8 @@ int VerifyAbs(bool reportTestCases) {
 	// the value is positive but the sum negative, and the other way around
 	checkAbs(Faithful(std::ldexp(1.0f, -30), -std::ldexp(1.0f, -29)));
 	checkAbs(Faithful(-std::ldexp(1.0f, -30), std::ldexp(1.0f, -29)));
+	checkAbs(Faithful(1.0f, -2.0f));
+	checkAbs(Faithful(1.0f, -1.0f));
 	std::mt19937_64 rng(36);
 	for (int i = 0; i < 20000; ++i) checkAbs(randomFaithful(rng, (i % 2) == 0));
 	Faithful ninf;
@@ -223,6 +225,10 @@ int VerifyModifiersAndClassification(bool reportTestCases) {
 	a.setinf(true);
 	check(a.isinf() && a.sign(), "setinf(true) is -inf");
 	check(Faithful(1.5f).isinf() == false && Faithful(1.5f).isnan() == false, "1.5 is finite");
+	// the sign and zero of the represented value, for pairs that are not canonical
+	check(Faithful(1.0f, -1.0f).iszero(), "(1, -1) is zero");
+	check(Faithful(1.0f, -2.0f).sign() && Faithful(1.0f, -2.0f).isneg(), "(1, -2) is negative");
+	check(!Faithful(-1.0f, 2.0f).sign() && !Faithful(-1.0f, 2.0f).isneg(), "(-1, 2) is positive");
 	check(Faithful(std::numeric_limits<float>::infinity()).isinf(), "faithful(inf) is inf");
 	check(Faithful(std::numeric_limits<float>::quiet_NaN()).isnan(), "faithful(NaN) is NaN");
 	// an infinity survives arithmetic: renormalizing it used to leave a NaN error, and the
@@ -254,6 +260,10 @@ int VerifyText(bool reportTestCases) {
 	check(type_tag(faithful<double>()), "faithful<double>");
 	check(components(Faithful(-1.5f, std::ldexp(1.0f, -30))), "(-, scale 0, value -1.5, error 9.31322575e-10)");
 	check(components(Faithful(0.0f)), "zero");
+	// a pair that is not canonical: the sign and scale are those of the represented -1, and the
+	// parts print as given
+	check(components(Faithful(1.0f, -2.0f)), "(-, scale 0, value 1, error -2)");
+	check(components(Faithful(1.0f, 3.0f)), "(+, scale 2, value 1, error 3)");
 	Faithful x;
 	x.setnan();
 	check(components(x), "nan");

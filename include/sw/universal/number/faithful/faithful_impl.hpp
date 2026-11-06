@@ -7,8 +7,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
-#include <cmath>        // std::isfinite, std::isinf, std::isnan
+#include <cmath>        // std::isinf, std::isnan
+#include <concepts>     // std::convertible_to
 #include <limits>
+#include <type_traits>  // std::is_floating_point_v
 
 #include <universal/native/ieee754_core.hpp>          // the bit-manipulation half (#1334)
 #include <universal/native/manipulators_core.hpp>   // scale(), without the text layer
@@ -53,12 +55,22 @@ faithful<FloatingPointType>& maxneg(faithful<FloatingPointType>& lmaxneg) {
 }
 
 // The classification of a part, for a native FloatingPointType and for a Universal one such as
-// cfloat: the unqualified call finds std:: for a native type and the type's own overload by ADL.
-// They are free functions because inside faithful an unqualified isinf() names the member.
+// cfloat. A native type uses <cmath>. A Universal type uses its own isinf() and isnan() members,
+// which its core defines; its free isinf()/isnan() overloads live in its mathlib, which a caller
+// of the core alone does not include. Anything else is found unqualified, by ADL. These are free
+// functions because inside faithful an unqualified isinf() names faithful's own member.
 namespace faithful_detail {
-	template<typename Real> inline bool part_isfinite(const Real& v) { using std::isfinite; return isfinite(v); }
-	template<typename Real> inline bool part_isinf(const Real& v)    { using std::isinf;    return isinf(v); }
-	template<typename Real> inline bool part_isnan(const Real& v)    { using std::isnan;    return isnan(v); }
+	template<typename Real> inline bool part_isinf(const Real& v) {
+		if constexpr (std::is_floating_point_v<Real>) return std::isinf(v);
+		else if constexpr (requires { { v.isinf() } -> std::convertible_to<bool>; }) return v.isinf();
+		else { using std::isinf; return isinf(v); }
+	}
+	template<typename Real> inline bool part_isnan(const Real& v) {
+		if constexpr (std::is_floating_point_v<Real>) return std::isnan(v);
+		else if constexpr (requires { { v.isnan() } -> std::convertible_to<bool>; }) return v.isnan();
+		else { using std::isnan; return isnan(v); }
+	}
+	template<typename Real> inline bool part_isfinite(const Real& v) { return !part_isinf(v) && !part_isnan(v); }
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
@@ -184,13 +196,16 @@ public:
 	}
 
 	// selectors
-	inline bool isneg() const { return value < 0.0; }
-	inline bool iszero() const { return value == 0.0 && error == 0.0; }
+	// The sign, the scale and zero are those of the represented value. Its rounded sum is the
+	// value of the canonical pair, so a pair built with faithful(v, e) that is not canonical, such
+	// as (1, -2), reports the sign of -1, not of its first part (#1936).
+	inline bool isneg() const { return rounded() < FloatingPointType(0); }
+	inline bool iszero() const { return rounded() == FloatingPointType(0); }
 	// the head carries an infinity or a NaN; renormalize() keeps the error of such a value zero
 	inline bool isinf() const { return faithful_detail::part_isinf(value); }
 	inline bool isnan() const { return faithful_detail::part_isnan(value); }
-	inline bool sign() const { return value < 0.0; }
-	inline int scale() const { return sw::universal::scale(value); }
+	inline bool sign() const { return rounded() < FloatingPointType(0); }
+	inline int scale() const { return sw::universal::scale(rounded()); }
 	// the two parts: the rounded value and its compensation, as dd_cascade names them
 	inline FloatingPointType high() const { return value; }
 	inline FloatingPointType low()  const { return error; }
@@ -214,6 +229,12 @@ private:
 		twoSum(value, error, s, r);
 		value = s;
 		error = faithful_detail::part_isfinite(s) ? r : FloatingPointType(0);
+	}
+
+	// value + error rounded: the value of the canonical pair. A non-finite value keeps itself,
+	// whatever the error of a pair built by hand.
+	FloatingPointType rounded() const {
+		return faithful_detail::part_isfinite(value) ? FloatingPointType(value + error) : value;
 	}
 
 	// the canonical form of a copy, for the comparisons
@@ -302,15 +323,12 @@ inline faithful<FloatingPointType> operator/(const faithful<FloatingPointType>& 
 
 
 
-/// Magnitude: both parts negated when the represented value is negative (#1936). The sign is
-/// read from the canonical form, where the value carries the sign of value + error.
+/// Magnitude: both parts negated when the represented value is negative (#1936). sign() reads the
+/// rounded value + error, which carries the sign of the represented value.
 template<typename FloatingPointType>
 faithful<FloatingPointType> abs(const faithful<FloatingPointType>& v) {
-	const faithful<FloatingPointType> a(v.high(), v.low());
-	FloatingPointType h(a.high()), l(a.low()), s, r;
-	twoSum(h, l, s, r);
-	if (s == 0) return faithful<FloatingPointType>(FloatingPointType(0), FloatingPointType(0));   // +0, also for -0
-	return (s < 0) ? -a : a;
+	if (v.iszero()) return faithful<FloatingPointType>(FloatingPointType(0), FloatingPointType(0));   // +0, also for -0
+	return v.sign() ? -v : v;
 }
 
 
