@@ -14,6 +14,7 @@
 
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp>
+#include <universal/verification/correctly_rounded_reference.hpp>  // the reference, rounded once (#1861)
 
 namespace sw { namespace universal {
 
@@ -110,7 +111,15 @@ namespace sw { namespace universal {
 			std::cerr << "unary operators not supported in executeBinary: operation ignored\n";
 			break;
 		}
-		testref = dc;
+		char op = ' ';
+		switch (opcode) {
+		case OPCODE_ADD: case OPCODE_IPA: op = '+'; break;
+		case OPCODE_SUB: case OPCODE_IPS: op = '-'; break;
+		case OPCODE_MUL: case OPCODE_IPM: op = '*'; break;
+		case OPCODE_DIV: case OPCODE_IPD: op = '/'; break;
+		default: break;
+		}
+		testref = correctlyRoundedReference<TestType>(op, da, db, dc);
 	}
 
 	// Execute a unary operator

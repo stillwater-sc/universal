@@ -1316,25 +1316,14 @@ namespace sw { namespace universal {
 					// if both are nan then signalling nan wins
 					// a        b   =   ref
 					// qnan    qnan = qnan
-					// qnan     #   = qnan
-					// #       qnan = qnan
-					// snan     #   = snan
-					// #       snan = snan
-					// snan    snan = snan
-					// snan    qnan = snan
-					// qnan    snan = snan
-					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
-						cref.setnan(NAN_TYPE_SIGNALLING);
-					}
-					else {
-						cref.setnan(NAN_TYPE_QUIET);
-					}
+					// any NaN operand, quiet or signalling, delivers a quiet NaN (IEEE-754 6.2, #1899)
+					cref.setnan(NAN_TYPE_QUIET);
 				}
 				else if (a.isinf() || b.isinf()) {
 					// a      b  =  ref
 					// +inf +inf = +inf
-					// +inf -inf = snan
-					// -inf +inf = snan
+					// +inf -inf = qnan
+					// -inf +inf = qnan
 					// -inf -inf = -inf
 					if (a.isinf()) {
 						if (b.isinf()) {
@@ -1342,7 +1331,7 @@ namespace sw { namespace universal {
 								cref.setinf(a.sign());
 							}
 							else {
-								cref.setnan(NAN_TYPE_SIGNALLING);
+								cref.setnan(NAN_TYPE_QUIET); // invalid operation (#1896)
 							}
 						}
 						else {
@@ -1463,33 +1452,22 @@ namespace sw { namespace universal {
 					// if both are nan then signalling nan wins
 					// a        b   =   ref
 					// qnan    qnan = qnan
-					// qnan     #   = qnan
-					// #       qnan = qnan
-					// snan     #   = snan
-					// #       snan = snan
-					// snan    snan = snan
-					// snan    qnan = snan
-					// qnan    snan = snan
-					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
-						cref.setnan(NAN_TYPE_SIGNALLING);
-					}
-					else {
-						cref.setnan(NAN_TYPE_QUIET);
-					}
+					// any NaN operand, quiet or signalling, delivers a quiet NaN (IEEE-754 6.2, #1899)
+					cref.setnan(NAN_TYPE_QUIET);
 				}
 				else if (a.isinf() || b.isinf()) {
 					// a      b  =  ref
-					// +inf +inf = snan
+					// +inf +inf = qnan
 					// +inf -inf = +inf
 					// -inf +inf = -inf
-					// -inf -inf = snan
+					// -inf -inf = qnan
 					if (a.isinf()) {
 						if (b.isinf()) {
 							if (a.sign() != b.sign()) {
 								cref.setinf(a.sign());
 							}
 							else {
-								cref.setnan(NAN_TYPE_SIGNALLING);
+								cref.setnan(NAN_TYPE_QUIET); // invalid operation (#1896)
 							}
 						}
 						else {
@@ -1606,13 +1584,8 @@ namespace sw { namespace universal {
 #else
 				nut = a * b;
 				if (a.isnan() || b.isnan()) {
-					// nan-type propagates
-					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
-						cref.setnan(NAN_TYPE_SIGNALLING);
-					}
-					else {
-						cref.setnan(NAN_TYPE_QUIET);
-					}
+					// a NaN operand delivers a quiet NaN (IEEE-754 6.2, #1899)
+					cref.setnan(NAN_TYPE_QUIET);
 				}
 				else if (a.isinf() || b.isinf()) {
 					// a      b  =  ref
@@ -1753,13 +1726,8 @@ namespace sw { namespace universal {
 				nut = a / b;
 				bool resultSign = a.sign() != b.sign();
 				if (a.isnan() || b.isnan()) {
-					// nan-type propagates
-					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
-						cref.setnan(NAN_TYPE_SIGNALLING);
-					}
-					else {
-						cref.setnan(NAN_TYPE_QUIET);
-					}
+					// a NaN operand delivers a quiet NaN (IEEE-754 6.2, #1899)
+					cref.setnan(NAN_TYPE_QUIET);
 				}
 				else if (a.isinf() || b.isinf()) {
 					//     a /   b  =  ref

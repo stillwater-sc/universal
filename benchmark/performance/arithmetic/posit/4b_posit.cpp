@@ -5,9 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-// enable fast specialized posit<4,0>
-//#define POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_4_0 1
 // disable posit arithmetic exceptions for performance benchmarks
 // that exercise all values including division by zero
 //#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
@@ -21,11 +18,7 @@ try {
 	constexpr size_t nbits = 4;
 	constexpr size_t es = 0;
 
-#if defined(POSIT_FAST_POSIT_4_0)
-	std::cout << "Fast specialization posit<4,0> configuration performance tests\n";
-#else
-	std::cout << "Reference posit<4,0> configuration performance tests\n";
-#endif
+	std::cout << "posit<4,0> configuration performance tests\n";
 	posit<nbits, es> number;
 	OperatorPerformance perfReport;
 	GeneratePerformanceReport(number, perfReport);

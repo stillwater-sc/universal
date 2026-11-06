@@ -164,14 +164,14 @@ try {
 		a = 71.0f;
 		int failures{ 0 };
 		for (int i = 0; i < 100; ++i) {
-			b = ipow(a, i);
+			b = pow(a, i);
 			ref = bfloat16(std::pow(float(a), float(i)));
 			if (b != ref) {
-				if (true) std::cerr << "bfloat16 ipow(2.0f, " << i << ") " << to_binary(b) << " != " << to_binary(ref) << '\n';
+				if (true) std::cerr << "bfloat16 pow(71.0f, " << i << ") " << to_binary(b) << " != " << to_binary(ref) << '\n';
 				failures++;
 			}
 		}
-		nrOfFailedTestCases += ReportTestResult(failures, "bfloat16", "ipow");
+		nrOfFailedTestCases += ReportTestResult(failures, "bfloat16", "pow(a, int)");
 	}
 
 	{

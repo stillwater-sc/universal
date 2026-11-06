@@ -6,7 +6,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
-#include <cmath>
 #include <type_traits>                                 // std::is_constant_evaluated
 #include <universal/behavior/status_flags.hpp>         // ExceptionFlag, efloat_exception_flags
 #include <universal/number/efloat/math/exponent.hpp>   // exp, expm1
@@ -39,7 +38,7 @@ namespace efloat_detail {
 
 	// sinh, cosh or tanh of a finite x != 0 in exp's range, unrounded, at `target` bits plus guard bits
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> sinh_working(const efloat<nlimbs>& x, unsigned target) {
+	inline constexpr efloat<nlimbs> sinh_working(const efloat<nlimbs>& x, unsigned target) {
 		efloat<nlimbs> a(x);
 		a.setsign(false);
 		efloat<nlimbs> s;
@@ -58,7 +57,7 @@ namespace efloat_detail {
 	}
 
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> cosh_working(const efloat<nlimbs>& x, unsigned target) {
+	inline constexpr efloat<nlimbs> cosh_working(const efloat<nlimbs>& x, unsigned target) {
 		efloat<nlimbs> a(x);
 		a.setsign(false);
 		const efloat<nlimbs> e = exp_working(a, target + 4);
@@ -66,7 +65,7 @@ namespace efloat_detail {
 	}
 
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> tanh_working(const efloat<nlimbs>& x, unsigned target) {
+	inline constexpr efloat<nlimbs> tanh_working(const efloat<nlimbs>& x, unsigned target) {
 		efloat<nlimbs> a(x);
 		a.setsign(false);
 		a.setexponent(a.scale() + 1);   // 2 |x|, exact
@@ -81,7 +80,7 @@ namespace efloat_detail {
 	// `target` bits plus guard bits, as log1p of an argument that does not cancel; log1p's relative
 	// error is at most its argument's
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> asinh_working(const efloat<nlimbs>& x, unsigned target) {
+	inline constexpr efloat<nlimbs> asinh_working(const efloat<nlimbs>& x, unsigned target) {
 		efloat<nlimbs> a(x);
 		a.setsign(false);
 		a.set_precision(target + exp_log_guard_bits + 8);
@@ -94,7 +93,7 @@ namespace efloat_detail {
 	}
 
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> acosh_working(const efloat<nlimbs>& x, unsigned target) {
+	inline constexpr efloat<nlimbs> acosh_working(const efloat<nlimbs>& x, unsigned target) {
 		efloat<nlimbs> xw(x);
 		xw.set_precision(target + exp_log_guard_bits + 8);
 		// acosh(x) = log1p((x - 1) + sqrt((x - 1)(x + 1))); x - 1 is exact for x <= 2
@@ -103,7 +102,7 @@ namespace efloat_detail {
 	}
 
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> atanh_working(const efloat<nlimbs>& x, unsigned target) {
+	inline constexpr efloat<nlimbs> atanh_working(const efloat<nlimbs>& x, unsigned target) {
 		efloat<nlimbs> a(x);
 		a.setsign(false);
 		a.set_precision(target + exp_log_guard_bits + 8);
@@ -119,20 +118,20 @@ namespace efloat_detail {
 
 	// a hyperbolic function of x, rounded to x's precision by Ziv's strategy
 	template<unsigned nlimbs, typename Evaluate>
-	inline efloat<nlimbs> round_hyperbolic(const efloat<nlimbs>& x, Evaluate evaluate) {
+	inline constexpr efloat<nlimbs> round_hyperbolic(const efloat<nlimbs>& x, Evaluate evaluate) {
 		return round_ziv<nlimbs>([&x, &evaluate](unsigned target) { return evaluate(x, target); },
 		                         result_precision(x), hyperbolic_error_bits, x.carries_precision());
 	}
 
 	// a tiny x, 2 scale(x) < -(P + 6): f(x) = x + c x^3 + ... lies within 2^-(P + 4) |x| of x
 	template<unsigned nlimbs>
-	inline bool hyperbolic_tiny(const efloat<nlimbs>& x) {
+	inline constexpr bool hyperbolic_tiny(const efloat<nlimbs>& x) {
 		return 2 * x.scale() < -static_cast<int64_t>(result_precision(x)) - 6;
 	}
 
 	// sinh or cosh overflow beyond exp's range, where exp does
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> hyperbolic_overflow(const efloat<nlimbs>& x, bool negative) {
+	inline constexpr efloat<nlimbs> hyperbolic_overflow(const efloat<nlimbs>& x, bool negative) {
 		efloat<nlimbs> inf = exp_out_of_range<nlimbs>(false, result_precision(x), x.carries_precision());
 		inf.setinf(negative);
 		return inf;
@@ -195,7 +194,7 @@ constexpr efloat<nlimbs> tanh(const efloat<nlimbs>& x) {
 		return efloat_detail::round_near(x, -x.sign(), precision, x.carries_precision());
 	}
 	// tanh |x| = 1 - 2 e^-2|x| + ..., within 2^-(P + 6) of 1 for |x| > (P + 7) ln 2 / 2, below it
-	if (x.scale() >= 63 || std::fabs(double(x)) > static_cast<double>(precision + 7) * 0.34657359027997264) {
+	if (x.scale() >= 63 || efloat_detail::fp::fabs(double(x)) > static_cast<double>(precision + 7) * 0.34657359027997264) {
 		return efloat_detail::round_near(efloat<nlimbs>(x.sign() == -1 ? -1.0 : 1.0), -x.sign(), precision, x.carries_precision());
 	}
 	return efloat_detail::round_hyperbolic(x, [](const efloat<nlimbs>& v, unsigned t) { return efloat_detail::tanh_working(v, t); });

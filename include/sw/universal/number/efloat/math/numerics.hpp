@@ -5,11 +5,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #pragma once
+#include <algorithm>
+#include <climits>  // INT_MAX
 #include <cmath>    // FP_ILOGB0, FP_ILOGBNAN
 #include <cstdint>
-#include <climits>  // INT_MAX
-#include <algorithm>
 #include <initializer_list>
+#include <type_traits>
 #include <universal/number/efloat/math/exponent.hpp>   // exact_product, exact_sum, round_result
 
 namespace sw {
@@ -77,7 +78,7 @@ constexpr efloat<nlimbs> logb(const efloat<nlimbs>& x) {
 
 // ilogb(x): logb as an int, with the <cmath> special values.
 template<unsigned nlimbs>
-inline int ilogb(const efloat<nlimbs>& x) {
+inline constexpr int ilogb(const efloat<nlimbs>& x) {
 	if (x.isnan())
 		return FP_ILOGBNAN;
 	if (x.isinf())
@@ -92,7 +93,7 @@ namespace efloat_detail {
 	// x's significand as an integer of M limbs, least significant first, its top bit at the top of
 	// a[M - 1], for an x of at most M limbs: the limbs below x's are 0
 	template<std::size_t M, unsigned nlimbs>
-	inline void top_aligned(limb_kernels::limb_t* a, const efloat<nlimbs>& x) {
+	inline constexpr void top_aligned(limb_kernels::limb_t* a, const efloat<nlimbs>& x) {
 		const limb_kernels::limb_t* w = x.limb_data();
 		const std::size_t         m = x.limb_count();
 		EFLOAT_UNROLLED_LOOP
@@ -107,7 +108,7 @@ namespace efloat_detail {
 	// on arrays on the stack, and the rounding is store_short's: the general path's buffer,
 	// packing, alignment and round_into took 2/3 of an fma at 96 bits.
 	template<std::size_t M, unsigned nlimbs>
-	inline void fma_short(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z, unsigned precision_limbs, int64_t R, int64_t dz) {
+	inline constexpr void fma_short(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z, unsigned precision_limbs, int64_t R, int64_t dz) {
 		using limb_kernels::limb_t;
 		constexpr std::size_t F = 2 * M + 1;
 		limb_t a[M], b[M], c[M];
@@ -168,7 +169,7 @@ namespace efloat_detail {
 		while (h > 0 && f[h - 1] == 0u) --h;
 		if (h == 0) {   // x y = -z: +0, or -0 rounding toward -inf (IEEE-754 6.3)
 			result = efloat<nlimbs>(0.0);
-			result.setsign(efloat_rounding_mode == RoundingMode::RoundTowardNegative);
+			result.setsign(efloat_detail::rounding_mode() == RoundingMode::RoundTowardNegative);
 			return;
 		}
 		// the frame shifted up by its leading zeros, ls limbs and sh bits, to u: its leading bit at
@@ -199,7 +200,7 @@ namespace efloat_detail {
 	// efloat is formed on the way: before, the widened operands, the product and the sum were
 	// each one, and an fma at 128 bits took the time of about four multiplications.
 	template<unsigned nlimbs>
-	inline void fma_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z, unsigned precision) {
+	inline constexpr void fma_limbs(efloat<nlimbs>& result, const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z, unsigned precision) {
 		using limb_kernels::limb_t;
 		const std::size_t nx = x.limb_count();
 		const std::size_t ny = y.limb_count();
@@ -295,7 +296,7 @@ namespace efloat_detail {
 				for (std::size_t k = 0; zero && k < w; ++k) zero = (f[k] == 0u);
 				if (zero) {   // x y = -z: +0, or -0 rounding toward -inf (IEEE-754 6.3)
 					result = efloat<nlimbs>(0.0);
-					result.setsign(efloat_rounding_mode == RoundingMode::RoundTowardNegative);
+					result.setsign(efloat_detail::rounding_mode() == RoundingMode::RoundTowardNegative);
 					return;
 				}
 			}
@@ -315,7 +316,7 @@ namespace efloat_detail {
 // to the operands' precision before z was added, and the result rounded twice. The special
 // values come from efloat's own multiply and add, as IEEE's do: 0 inf is NaN.
 template<unsigned nlimbs>
-inline efloat<nlimbs> fma(const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z) {
+inline constexpr efloat<nlimbs> fma(const efloat<nlimbs>& x, const efloat<nlimbs>& y, const efloat<nlimbs>& z) {
 	if (x.isnan() || y.isnan() || z.isnan() || x.isinf() || y.isinf()) return x * y + z;
 	if (z.isinf()) return z;   // x y is finite, though x * y may overflow: inf - inf would be NaN
 	const bool carries = x.carries_precision() || y.carries_precision() || z.carries_precision();

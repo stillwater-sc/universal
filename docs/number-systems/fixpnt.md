@@ -47,6 +47,27 @@ For example, `fixpnt<8, 4>` uses 4 integer bits and 4 fraction bits:
 - Conversions: to/from `int`, `float`, `double`
 - Range queries: `minpos()`, `maxpos()`, `minneg()`, `maxneg()`
 
+### Division by zero
+
+`fixpnt` has no NaN or infinity to carry a failed division in the value, so by
+default a division by zero throws `fixpnt_divide_by_zero`. A caller that would rather get a value
+opts out before the include, with `FIXPNT_THROW_DIVIDE_BY_ZERO 0`, or with
+`FIXPNT_THROW_ARITHMETIC_EXCEPTION 0` when the first is not set:
+
+```cpp
+#define FIXPNT_THROW_DIVIDE_BY_ZERO 0
+#include <universal/number/fixpnt/fixpnt.hpp>
+```
+
+A build with exceptions disabled (`-fno-exceptions`) gets the value without asking:
+`FIXPNT_THROW_DIVIDE_BY_ZERO` defaults to `UNIVERSAL_HAS_EXCEPTIONS`, which
+`<universal/utility/exceptions.hpp>` takes from the compiler. Setting it to `1` in such a build
+stops with an `#error` (#1925).
+
+With the exception off, `x / 0` is `maxpos` or `maxneg` by the sign of the dividend for
+`Saturate`, and `0` for `Modulo`. Nothing is printed. Before #1894 the opt-out was the
+default and it wrote a line to stderr, which generic code could not detect.
+
 ## How It Works
 
 Internally, `fixpnt` stores its value in a `blockbinary<nbits, bt>` -- the same limb-based storage used by `integer`. All arithmetic is performed as scaled integer operations:

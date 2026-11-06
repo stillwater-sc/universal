@@ -26,7 +26,7 @@ the integer arithmetic can be configured to:
 - throw exceptions on arithmetic
 - throw exceptions on encoding errors for Whole and Natural Numbers
 
-you need the exception types defined, but you have the option to throw them
+you need the exception types defined, but you have the option to throw_or_abort(them
  */
 // INTEGER_ENABLE_LITERALS / INTEGER_THROW_ARITHMETIC_EXCEPTION: the defaults live
 // HERE, beside the #if blocks that test them, rather than in the integer.hpp
@@ -36,14 +36,32 @@ you need the exception types defined, but you have the option to throw them
 #if !defined(INTEGER_ENABLE_LITERALS)
 #define INTEGER_ENABLE_LITERALS 1
 #endif
+#include <universal/utility/exceptions.hpp>  // UNIVERSAL_HAS_EXCEPTIONS (#1925)
+// INTEGER_THROW_DIVIDE_BY_ZERO: a division or remainder by zero throws integer_divide_by_zero.
+// integer has no NaN to carry the failure in the value, so it throws unless the application
+// opts out, by setting this to 0 or, when this is not set, INTEGER_THROW_ARITHMETIC_EXCEPTION
+// to 0. With it off, x / 0 and x % 0 are 0 and nothing is printed (#1894). Decided before the
+// default below, so that an INTEGER_THROW_ARITHMETIC_EXCEPTION the application set is told
+// apart from that default.
+#if !defined(INTEGER_THROW_DIVIDE_BY_ZERO)
+#if defined(INTEGER_THROW_ARITHMETIC_EXCEPTION)
+#define INTEGER_THROW_DIVIDE_BY_ZERO INTEGER_THROW_ARITHMETIC_EXCEPTION
+#else
+// throw by default, unless the build has exceptions disabled (#1925)
+#define INTEGER_THROW_DIVIDE_BY_ZERO UNIVERSAL_HAS_EXCEPTIONS
+#endif
+#endif
+// INTEGER_THROW_ARITHMETIC_EXCEPTION gates the other arithmetic errors: the domain errors of
+// WholeNumber and NaturalNumber
 #if !defined(INTEGER_THROW_ARITHMETIC_EXCEPTION)
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <universal/number/integer/exceptions.hpp>
 
  // composition types used by integer
-#include <universal/internal/blocktriple/blocktriple_fwd.hpp>  // normalize() only NAMES blocktriple;
+#include <universal/internal/blocktriple/blocktriple_fwd.hpp>  // normalize() only NAMES blocktriple);
                                                               // it is a member template, so the definition
                                                               // is needed only where it is called (#1334)
 
@@ -505,12 +523,43 @@ public:
 					multiplicant.twosComplement();
 				}
 				clear();
-				for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
-					std::uint64_t segment(0);
-					for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
-						segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
+				if constexpr (nrBlocks <= 16) {
+					// a fixed trip count, which the compilers unroll
+					for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+						std::uint64_t segment(0);
+						for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
+							segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
 
-						if (i + j < static_cast<unsigned>(nrBlocks)) {
+							if (i + j < static_cast<unsigned>(nrBlocks)) {
+								segment += _block[i + j];
+								_block[i + j] = static_cast<bt>(segment);
+								segment >>= bitsInBlock;
+							}
+						}
+					}
+				}
+				else {
+					// a row of a zero limb adds nothing, and a row ends at the multiplicand's last
+					// nonzero limb, or the width, and then ripples its carry: the cost follows the
+					// operands' sizes, not the width, which a wide integer holding a small value
+					// would otherwise pay for (#1819: the decimal converter runs at up to 32768 bits,
+					// in constant evaluation too)
+					unsigned used = static_cast<unsigned>(nrBlocks);
+					while (used > 0 && multiplicant.block(used - 1) == 0) --used;
+					for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+						const std::uint64_t limb = static_cast<std::uint64_t>(base.block(i));
+						if (limb == 0) continue;
+						const unsigned row = static_cast<unsigned>(nrBlocks) - i;
+						const unsigned last = (used < row) ? used : row;
+						std::uint64_t segment(0);
+						unsigned j = 0;
+						for (; j < last; ++j) {
+							segment += limb * static_cast<std::uint64_t>(multiplicant.block(j));
+							segment += _block[i + j];
+							_block[i + j] = static_cast<bt>(segment);
+							segment >>= bitsInBlock;
+						}
+						for (; segment != 0 && j < row; ++j) {
 							segment += _block[i + j];
 							_block[i + j] = static_cast<bt>(segment);
 							segment >>= bitsInBlock;
@@ -643,18 +692,14 @@ public:
 	constexpr integer& operator/=(const integer& rhs) {
 		if constexpr (EXACT_FIT && 1 == nrBlocks) {
 			if (rhs._block[0] == 0) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+#if INTEGER_THROW_DIVIDE_BY_ZERO
 				throw integer_divide_by_zero{};
 #else
-				// When exceptions are disabled we still must avoid the actual
-				// divide-by-zero below (UB at runtime; constexpr eval would
-				// be ill-formed). Set the result to 0 and bail out.
-				if (!std::is_constant_evaluated()) {
-					std::fprintf(stderr, "integer_divide_by_zero\n");
-				}
+				// opted out of the exception: the native divide below would be UB (and
+				// ill-formed in constant evaluation), so the quotient is 0
 				clear();
 				return *this;
-#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+#endif // INTEGER_THROW_DIVIDE_BY_ZERO
 			}
 			if constexpr (NumberType == WholeNumber) {
 				if (*this < rhs) {
@@ -700,18 +745,14 @@ public:
 	constexpr integer& operator%=(const integer& rhs) {
 		if constexpr (nbits == (sizeof(BlockType) * 8)) {
 			if (rhs._block[0] == 0) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+#if INTEGER_THROW_DIVIDE_BY_ZERO
 				throw integer_divide_by_zero{};
 #else
-				// When exceptions are disabled we still must avoid the actual
-				// modulo-by-zero below (UB at runtime; constexpr would be
-				// ill-formed). Set the result to 0 and bail out.
-				if (!std::is_constant_evaluated()) {
-					std::fprintf(stderr, "integer_divide_by_zero\n");
-				}
+				// opted out of the exception: the native modulo below would be UB (and
+				// ill-formed in constant evaluation), so the remainder is 0
 				clear();
 				return *this;
-#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+#endif // INTEGER_THROW_DIVIDE_BY_ZERO
 			}
 			if constexpr (NumberType != IntegerNumberType::IntegerNumber) {
 				_block[0] = static_cast<bt>(_block[0] % rhs._block[0]);  // unsigned: no sign bit to extend
@@ -1145,12 +1186,14 @@ public:
 	// reduce returns the ratio and remainder of a and b in *this and r
 	void reduce(const integer& a, const integer& b, integer& r) {
 		if (b.iszero()) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+#if INTEGER_THROW_DIVIDE_BY_ZERO
 			throw integer_divide_by_zero{};
 #else
-			std::fprintf(stderr, "integer_divide_by_zero\n");
+			// opted out of the exception: quotient and remainder are 0
+			clear();
+			r.clear();
 			return;
-#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+#endif // INTEGER_THROW_DIVIDE_BY_ZERO
 		}
 
 		if (a.iszero()) {
@@ -1514,12 +1557,14 @@ constexpr signed findMsb(const integer<nbits, BlockType, NumberType>& v) {
 // remainder returns a mod b in c
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 void remainder(integer<nbits, BlockType, NumberType>& c, const integer<nbits, BlockType, NumberType>& a, const integer<nbits, BlockType, NumberType>& b) {
-	if (b == integer<nbits, BlockType, NumberType>(0)) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+	if (b.iszero()) {
+#if INTEGER_THROW_DIVIDE_BY_ZERO
 		throw integer_divide_by_zero{};
 #else
-		std::fprintf(stderr, "integer_divide_by_zero\n");
-#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+		// opted out of the exception: the remainder is 0
+		c.clear();
+		return;
+#endif // INTEGER_THROW_DIVIDE_BY_ZERO
 	}
 	idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(a, b);
 	c = divresult.rem;
@@ -1552,18 +1597,17 @@ constexpr void divide_magnitudes(const integer<nbits, BlockType, NumberType>& a,
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, NumberType>& _a, const integer<nbits, BlockType, NumberType>& _b) {
 	if (_b.iszero()) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+#if INTEGER_THROW_DIVIDE_BY_ZERO
 		throw integer_divide_by_zero{};
 #else
-		// When exceptions are disabled we still must avoid the actual
-		// long-division below (UB on integer div-by-zero; constexpr would
-		// be ill-formed). Return zeroed quot/rem and bail out.
-		if (!std::is_constant_evaluated()) {
-			std::fprintf(stderr, "integer_divide_by_zero\n");
-		}
+		// opted out of the exception: the long division below must not run, so quotient and
+		// remainder are 0. Set them explicitly: integer is trivially constructible, so a
+		// default-constructed idiv_t holds indeterminate limbs.
 		idiv_t<nbits, BlockType, NumberType> zeroed;
+		zeroed.quot.clear();
+		zeroed.rem.clear();
 		return zeroed;
-#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+#endif // INTEGER_THROW_DIVIDE_BY_ZERO
 	}
 
 	idiv_t<nbits, BlockType, NumberType> divresult;

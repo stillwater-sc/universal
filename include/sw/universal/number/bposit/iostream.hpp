@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cerrno>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -22,8 +24,14 @@ std::istream& operator>>(std::istream& istr, bposit<nbits, rs, es, bt>& v) {
 	std::string txt;
 	istr >> txt;
 	if (txt == "nar" || txt == "NaR") { v.setnar(); return istr; }
-	try { v = std::stold(txt); }
-	catch (...) { istr.setstate(std::ios::failbit); }
+	// strtold rather than std::stold, which reports a bad token by throwing: this extractor
+	// must also build with exceptions disabled (#1925)
+	const char* first = txt.c_str();
+	char* last = nullptr;
+	errno = 0;
+	long double value = std::strtold(first, &last);
+	if (last == first || errno == ERANGE) istr.setstate(std::ios::failbit);
+	else v = value;
 	return istr;
 }
 

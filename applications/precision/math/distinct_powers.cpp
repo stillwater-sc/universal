@@ -64,7 +64,7 @@ size_t IntegerPowerCombinationsUsingSet(const posit<nbits, es>& min, const posit
 	std::set<Posit> combinations;
 	for (Posit a = min; a <= max; a = a + 1) {
 		for (Posit b = min; b <= max; b = b + 1) {
-			combinations.insert(ipow(a, b));
+			combinations.insert(pow(a, static_cast<int>(b)));   // correctly rounded a^b
 		}
 	}
 	return combinations.size();
@@ -142,7 +142,7 @@ version_posit_set:
 		constexpr size_t es = 3;
 		using Posit = posit<nbits, es>;
 
-		std::cout << "100^100 = " << ipow(Posit(100), Posit(100)) << '\n';
+		std::cout << "100^100 = " << pow(Posit(100), 100) << '\n';
 
 		Posit min = 2;
 		for (Posit max = min + 1; max <= 100; ++max) {

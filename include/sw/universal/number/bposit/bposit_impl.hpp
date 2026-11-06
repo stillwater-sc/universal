@@ -37,6 +37,7 @@
 #if !defined(BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION)
 #define BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION BPOSIT_THROW_ARITHMETIC_EXCEPTION
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <bit>
 #include <cmath>

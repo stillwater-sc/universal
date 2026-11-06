@@ -16,7 +16,7 @@ namespace sw { namespace universal {
 	inline ereal<maxlimbs, FpType> fmod(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
 		if (y.iszero()) {
 			// fmod(x, 0) is undefined - raise domain error
-			throw ereal_divide_by_zero();
+			throw_or_abort(ereal_divide_by_zero());
 		}
 
 		using Real = ereal<maxlimbs, FpType>;
@@ -51,7 +51,7 @@ namespace sw { namespace universal {
 
 		if (y.iszero()) {
 			// remainder(x, 0) is undefined - raise domain error
-			throw ereal_divide_by_zero();
+			throw_or_abort(ereal_divide_by_zero());
 		}
 
 		// Compute quotient = x / y

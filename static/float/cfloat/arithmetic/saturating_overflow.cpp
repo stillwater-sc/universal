@@ -15,6 +15,12 @@
 // false, and the one that does not runs in manual mode. This suite sweeps every pair of
 // encodings through the four operations, against the IEEE double reference of
 // cfloat_test_suite.hpp.
+//
+// A saturating cfloat with max-exponent values has no inf: the pattern a nonsaturating
+// cfloat uses for +-inf, 0b0.11..11.11..110, is maxpos. isinf() still recognized it, so
+// the largest finite value behaved as inf: maxpos / 2 was inf, double(maxpos) was inf,
+// and frexp returned it unchanged (#1865). The sweep above does not see it, because it
+// compares encodings and the double reference inf converts back to the same bits.
 #include <universal/utility/directives.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -30,6 +36,46 @@ int VerifySaturatingArithmetic(bool reportTestCases) {
 	fails += VerifyCfloatSubtraction<Cfloat>(reportTestCases);
 	fails += VerifyCfloatMultiplication<Cfloat>(reportTestCases);
 	fails += VerifyCfloatDivision<Cfloat>(reportTestCases);
+	return fails;
+}
+
+// maxpos and maxneg of a saturating cfloat with max-exponent values are finite values (#1865)
+template<unsigned nbits, unsigned es, bool hasSubnormals>
+int VerifyMaxposIsFinite(bool reportTestCases) {
+	using Cfloat = cfloat<nbits, es, uint8_t, hasSubnormals, true, true>;
+	constexpr unsigned fbits = nbits - 1u - es;
+	// all-ones exponent field is the scale 2^(es-1), fraction 11..110 is the significand 2 - 2^(1-fbits)
+	const double expected = std::ldexp(2.0 - std::ldexp(1.0, 1 - static_cast<int>(fbits)), 1 << (es - 1u));
+	int fails = 0;
+	auto check = [&](bool ok, const char* what) {
+		if (!ok) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL " << type_tag(Cfloat()) << " : " << what << '\n';
+		}
+	};
+	Cfloat maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+	check(!maxpos.isinf() && !maxneg.isinf(), "maxpos/maxneg isinf()");
+	check(!maxpos.isnan() && !maxneg.isnan(), "maxpos/maxneg isnan()");
+	check(double(maxpos) == expected && double(maxneg) == -expected, "double(maxpos/maxneg)");
+	check(double(maxpos / Cfloat(2)) == expected / 2.0, "maxpos / 2");
+	check(double(maxneg / Cfloat(2)) == -expected / 2.0, "maxneg / 2");
+	Cfloat below(maxpos);
+	--below;
+	check(double(maxpos - below) == std::ldexp(1.0, (1 << (es - 1u)) - static_cast<int>(fbits)), "maxpos - (maxpos - 1 ulp)");
+	check((maxpos - maxpos).iszero(), "maxpos - maxpos");
+	int e = 0;
+	Cfloat fr = frexp(maxpos, &e);
+	// the fraction is in [0.5, 1), or in [1, 2) where the format cannot represent 0.5 as a normal (es <= 2)
+	const int expectedExp = (1 << (es - 1u)) + (std::numeric_limits<Cfloat>::min_exponent <= 0 ? 1 : 0);
+	check(double(fr) == std::ldexp(expected, -expectedExp) && e == expectedExp, "frexp(maxpos)");
+	check(ldexp(fr, e) == maxpos, "ldexp(frexp(maxpos))");
+	// an infinity saturates to maxpos/maxneg
+	check(Cfloat(SpecificValue::infpos) == maxpos && Cfloat(SpecificValue::infneg) == maxneg, "SpecificValue::infpos/infneg");
+	check(Cfloat(std::numeric_limits<double>::infinity()) == maxpos, "Cfloat(+inf)");
+	check(Cfloat(-std::numeric_limits<double>::infinity()) == maxneg, "Cfloat(-inf)");
+	check(!(maxpos * Cfloat(2)).isinf() && (maxpos * Cfloat(2)) == maxpos, "maxpos * 2 saturates");
+	check(!std::numeric_limits<Cfloat>::has_infinity, "numeric_limits::has_infinity");
+	check(double(std::numeric_limits<Cfloat>::max()) == expected, "numeric_limits::max()");
 	return fails;
 }
 
@@ -91,6 +137,15 @@ try {
 	// with max-exponent values the overflow never reached the inf pattern; kept as a guard
 	nrOfFailedTestCases += ReportTestResult(VerifySaturatingArithmetic<8, 3, false, true >(reportTestCases), "cfloat<8,3,f,t,t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySaturatingArithmetic<8, 3, true,  true >(reportTestCases), "cfloat<8,3,t,t,t>", test_tag);
+
+	// with max-exponent values, maxpos is the inf pattern of a nonsaturating cfloat and is finite
+	nrOfFailedTestCases += ReportTestResult(VerifyMaxposIsFinite< 8, 3, false>(reportTestCases), "cfloat<8,3,f,t,t>", "maxpos is finite");
+	nrOfFailedTestCases += ReportTestResult(VerifyMaxposIsFinite< 8, 2, true >(reportTestCases), "cfloat<8,2,t,t,t>", "maxpos is finite");
+	nrOfFailedTestCases += ReportTestResult(VerifyMaxposIsFinite< 8, 3, true >(reportTestCases), "cfloat<8,3,t,t,t>", "maxpos is finite");
+	nrOfFailedTestCases += ReportTestResult(VerifyMaxposIsFinite<16, 5, true >(reportTestCases), "cfloat<16,5,t,t,t>", "maxpos is finite");
+	nrOfFailedTestCases += ReportTestResult(VerifyMaxposIsFinite<32, 8, false>(reportTestCases), "cfloat<32,8,f,t,t>", "maxpos is finite");
+	nrOfFailedTestCases += ReportTestResult(VerifyMaxposIsFinite<32, 8, true >(reportTestCases), "cfloat<32,8,t,t,t>", "maxpos is finite");
+	nrOfFailedTestCases += ReportTestResult(VerifyMaxposIsFinite<40, 8, true >(reportTestCases), "cfloat<40,8,t,t,t>", "maxpos is finite");
 #endif
 
 #if REGRESSION_LEVEL_2

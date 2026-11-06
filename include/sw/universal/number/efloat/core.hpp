@@ -34,5 +34,6 @@
 #include <universal/number/efloat/exceptions.hpp>
 #include <universal/number/efloat/efloat_fwd.hpp>
 #include <universal/number/efloat/efloat_impl.hpp>
+#include <universal/number/efloat/efloat_constant.hpp>
 #include <universal/traits/efloat_traits.hpp>
 #include <universal/number/efloat/numeric_limits.hpp>

@@ -226,6 +226,7 @@ def main() -> None:
     constants.append(("pi_4",     pi / 4,                "pi/4"))
     constants.append(("two_pi",   2 * pi,                "2*pi"))
     constants.append(("three_pi", 3 * pi,                "3*pi"))
+    constants.append(("three_pi_4", 3 * pi / 4,          "3*pi/4"))
     constants.append(("inv_pi",   1 / pi,                "1/pi"))
     constants.append(("two_inv_pi", 2 / pi,              "2/pi"))
 

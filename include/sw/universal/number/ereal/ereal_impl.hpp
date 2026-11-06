@@ -30,6 +30,7 @@
 // default is to return the IEEE-754 special value
 #define EREAL_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 // supporting types and functions, from the I/O-free halves of the native support:
 // sw::universal::isinf/isnan (ieee754_core.hpp) and scale(double)
@@ -508,14 +509,14 @@ public:
 
 		// Parse mantissa digits.
 		//
-		// Significant digits are accumulated into `result` as an integer via
-		// Horner (result = result*10 + digit); the decimal point and any explicit
-		// exponent are applied afterward as a power of ten. Accumulation stops
-		// after MAX_SIG_DIGITS significant digits because (a) ereal<maxlimbs, FpType>
-		// cannot represent more than ~maxlimbs*16 decimal digits anyway, and
-		// (b) `result`'s leading component must stay below DBL_MAX, so the integer
-		// can hold at most ~307 digits. Past the cap, integer digits scale the
-		// exponent and fraction digits (below precision) are dropped (#1006).
+		// The significant digits are collected as a string. Once the scale is known, the factors
+		// of five they share with a negative power of ten are cancelled, exactly (#1932). Then
+		// they are accumulated into `result` as an integer via Horner (result = result*10 +
+		// digit), and the remaining power of ten and power of two are applied. The integer keeps
+		// at most MAX_SIG_DIGITS digits because (a) ereal<maxlimbs, FpType> cannot represent more
+		// than ~maxlimbs*16 decimal digits of a value anyway, and (b) `result`'s leading component
+		// must stay below DBL_MAX, so the integer can hold at most ~307 digits. Past the cap the
+		// digits are dropped and the exponent scaled, which truncates (#1006).
 		bool found_digit = false;
 		bool saw_exponent_marker = false;
 		bool sig_started = false;   // seen the first nonzero significant digit
@@ -524,7 +525,13 @@ public:
 		// (16 digits per double limb, and double's 10^307 ceiling)
 		constexpr unsigned sigCap = static_cast<unsigned>(max_exponent10 - 1);
 		const unsigned MAX_SIG_DIGITS = (maxlimbs * digits10_per_limb + digits10_per_limb < sigCap) ? (maxlimbs * digits10_per_limb + digits10_per_limb) : sigCap;
+		// The scan keeps more digits than that, for the exact reduction below: a dyadic value
+		// needs one decimal digit per fraction bit (1 + 2^-150 has 150), although after its fives
+		// cancel it is a short integer times a power of two (#1932). The bound keeps that
+		// reduction, which is quadratic in the digits, cheap; MAX_SIG_DIGITS applies after it.
+		const unsigned SCAN_SIG_DIGITS = 4u * sigCap;
 		ereal<maxlimbs, FpType> ten(10.0);
+		std::string sig;            // the significant digits, without leading zeros
 
 		while (pos < str.length()) {
 			char c = str[pos];
@@ -539,10 +546,8 @@ public:
 					// the fraction still shifts the scale (e.g. 0.001).
 					if (decimal_point_seen) ++decimal_position;
 				}
-				else if (numSig < MAX_SIG_DIGITS) {
-					// result = result * 10 + digit
-					result = result * ten;
-					result = result + ereal<maxlimbs, FpType>(static_cast<double>(digit));
+				else if (numSig < SCAN_SIG_DIGITS) {
+					sig.push_back(c);   // accumulated below, once the scale is known (#1932)
 					++numSig;
 					if (decimal_point_seen) ++decimal_position;
 				}
@@ -606,6 +611,92 @@ public:
 		}
 		exponent += dropped_integer;
 
+		// Cancel factors of five between the digits and a negative power of ten, exactly, in the
+		// digit string (#1932). The value is sig * 10^exponent, and 10 = 2 * 5:
+		//   a trailing 0 is a factor 10:  drop it and one power of ten
+		//   a trailing 5 is a factor 5:   sig/5 = 2*sig/10, so double the digits, drop the zero
+		//                                 that leaves, and one power of ten, and keep a 1/2
+		// The division by 10^exponent that follows is a multiplication by a Newton reciprocal,
+		// and 1/10 has no finite binary expansion: 15 / 10 came back as 1.5 - 1.2e-260. A
+		// decimal with a finite binary value, 1.5 or 0.0625, ends up here with no power of ten
+		// left, as an integer times 2^-halvings, and both steps are exact.
+		int halvings = 0;
+		while (exponent < 0 && !sig.empty()) {
+			char last = sig.back();
+			if (last == '0') {
+				sig.pop_back();
+				++exponent;
+			}
+			else if (last == '5') {
+				unsigned carry = 0;
+				for (std::size_t k = sig.size(); k-- > 0; ) {
+					unsigned v = 2u * static_cast<unsigned>(sig[k] - '0') + carry;
+					sig[k] = static_cast<char>('0' + v % 10u);
+					carry = v / 10u;
+				}
+				if (carry) sig.insert(sig.begin(), static_cast<char>('0' + carry));
+				sig.pop_back();   // the doubled digits end in 0
+				++exponent;
+				++halvings;
+			}
+			else break;
+		}
+		// trailing zeros of an integer are a positive power of ten, which keeps the Horner
+		// accumulation short
+		while (exponent >= 0 && sig.size() > 1 && sig.back() == '0') { sig.pop_back(); ++exponent; }
+		// the precision cap: digits past it lie below what the type can hold. Dropping them and
+		// scaling the exponent truncates, as the scan used to (#1006).
+		if (sig.size() > MAX_SIG_DIGITS) {
+			exponent += static_cast<int>(sig.size() - MAX_SIG_DIGITS);
+			sig.resize(MAX_SIG_DIGITS);
+		}
+		// result = sig, by Horner: exact while the integer fits the limbs
+		for (char c : sig) {
+			result = result * ten;
+			result = result + ereal<maxlimbs, FpType>(static_cast<double>(c - '0'));
+		}
+
+		// the halvings: exact, a power of two per limb. A limb pushed below the normal range is
+		// dropped, as the normal-limb invariant requires; it lay below representable precision.
+		auto halve = [&result](int h) {
+			if (h <= 0 || result.iszero() || result.isinf() || result.isnan()) return;
+			for (auto& v : result._limb) v = std::ldexp(v, -h);
+			std::size_t keep = 1;
+			while (keep < result._limb.size() && std::isnormal(result._limb[keep])) ++keep;
+			result._limb.resize(keep);
+		};
+		// A positive power of ten here comes only from the precision cap, after the reduction
+		// recorded its halvings, and neither order of the two is safe on its own:
+		//   scaling first can overflow a value the halvings bring back in range: the truncated
+		//   digits of (10^309 + 1) * 2^-300 times 10^166 are past DBL_MAX, although the value is
+		//   4.9e218;
+		//   halving first can push the value, or just its tail limbs, below the normal range
+		//   before the scaling brings it back: with 1200 halvings, ereal<1> returned 0 and
+		//   ereal<4> kept 33 of its 64 digits.
+		// So they alternate (CodeRabbit on PR #1938): halve until the leading limb is just above
+		// one, which keeps every limb normal up to max_safe_limbs, then scale by as large a power
+		// of ten as keeps it below 2^1000, and repeat. Whatever is left of either one is applied
+		// afterward, at the size of the final value.
+		if (exponent > 0 && halvings > 0) {
+			constexpr int ceilingBits = std::numeric_limits<FpType>::max_exponent - 24;   // 2^1000 for double
+			while (exponent > 0 && halvings > 0 && !result.iszero() && !result.isinf() && !result.isnan()) {
+				int lead = std::ilogb(result._limb[0]);
+				if (lead > 0) {
+					int h = (halvings < lead) ? halvings : lead;
+					halve(h);
+					halvings -= h;
+					lead -= h;
+				}
+				// 10^step < 2^(3.33 * step): stay below the ceiling
+				int step = static_cast<int>(static_cast<double>(ceilingBits - lead) / 3.33);
+				if (step > exponent) step = exponent;
+				if (step > max_exponent10) step = max_exponent10;
+				if (step <= 0) break;   // cannot happen with lead <= 0, but never spin
+				result = result * pown(ten, step);
+				exponent -= step;
+			}
+		}
+
 		// Apply the power-of-ten scale.
 		//
 		// A negative exponent is applied by DIVIDING by the normal-range 10^e,
@@ -635,6 +726,8 @@ public:
 				if (e > 0 && !result.iszero()) result = result / pown(ten, e);
 			}
 		}
+
+		halve(halvings);   // what the alternation left, at the size of the final value
 
 		// Apply sign
 		if (negative) {

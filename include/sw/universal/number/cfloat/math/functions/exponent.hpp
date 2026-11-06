@@ -15,7 +15,7 @@ namespace sw { namespace universal {
 // Base-e exponential function
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> exp(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
-	if (isnan(x)) return x;
+	if (isnan(x)) return x.quieted();
 	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> p;
 	double d = std::exp(double(x));
 	if (d == 0.0) {
@@ -30,7 +30,7 @@ cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> exp(cfloat<n
 // Base-2 exponential function
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> exp2(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
-	if (isnan(x)) return x;
+	if (isnan(x)) return x.quieted();
 	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> p;
 	double d = std::exp2(double(x));
 	if (d == 0.0) {

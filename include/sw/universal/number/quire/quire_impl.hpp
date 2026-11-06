@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>      // the fixed-width integer types
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <cmath>        // std::ldexp
 #include <string>       // std::string
 #include <vector>       // std::vector
@@ -360,11 +361,11 @@ public:
 
 	/// Bit addressing: index 0 is at the bottom of the lower range
 	bool operator[](unsigned index) const {
-		if (index >= qbits) throw std::out_of_range("quire bit index out of range");
+		if (index >= qbits) throw_or_abort(std::out_of_range("quire bit index out of range"));
 		return _accu.test(index);
 	}
 	bool testbit(unsigned index) const {
-		if (index >= qbits) throw std::out_of_range("quire bit index out of range");
+		if (index >= qbits) throw_or_abort(std::out_of_range("quire bit index out of range"));
 		return _accu.test(index);
 	}
 
@@ -388,7 +389,7 @@ public:
 	void set_sign(bool v) noexcept { _sign = v; }
 	void setnan() noexcept { reset(); _nar = true; }  // force the non-finite (NaR) state
 	void setbit(unsigned index) {
-		if (index >= qbits) throw std::out_of_range("quire bit index out of range");
+		if (index >= qbits) throw_or_abort(std::out_of_range("quire bit index out of range"));
 		_accu.setbit(index);
 	}
 	void zero() noexcept {

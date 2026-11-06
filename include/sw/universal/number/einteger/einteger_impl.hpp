@@ -24,13 +24,28 @@
 // default is to enable them
 #define EINTEGER_ENABLE_LITERALS 1
 #endif
-
-// enable throwing specific exceptions for integer arithmetic errors
+#include <universal/utility/exceptions.hpp>  // UNIVERSAL_HAS_EXCEPTIONS (#1925)
+// EINTEGER_THROW_DIVIDE_BY_ZERO: a division or remainder by zero throws einteger_divide_by_zero.
+// einteger has no NaN to carry the failure in the value, so it throws unless the application
+// opts out, by setting this to 0 or, when this is not set, EINTEGER_THROW_ARITHMETIC_EXCEPTION
+// to 0. With it off, x / 0 and x % 0 are 0 and nothing is printed (#1894). Decided before the
+// default below, so that an EINTEGER_THROW_ARITHMETIC_EXCEPTION the application set is told
+// apart from that default.
+#if !defined(EINTEGER_THROW_DIVIDE_BY_ZERO)
+#if defined(EINTEGER_THROW_ARITHMETIC_EXCEPTION)
+#define EINTEGER_THROW_DIVIDE_BY_ZERO EINTEGER_THROW_ARITHMETIC_EXCEPTION
+#else
+// throw by default, unless the build has exceptions disabled (#1925)
+#define EINTEGER_THROW_DIVIDE_BY_ZERO UNIVERSAL_HAS_EXCEPTIONS
+#endif
+#endif
+// enable throwing specific exceptions for the other integer arithmetic errors
 // left to application to enable
 #if !defined(EINTEGER_THROW_ARITHMETIC_EXCEPTION)
 // default is to write a diagnostic to stderr for signalling an error
 #define EINTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <universal/number/einteger/exceptions.hpp>
 #include <universal/number/einteger/einteger_fwd.hpp>
@@ -340,6 +355,10 @@ public:
 			clear();
 			return *this;
 		}
+		if (&rhs == this) {   // x *= x: the clear() below would wipe rhs before it is read
+			const einteger square(rhs);
+			return *this *= square;
+		}
 		einteger base(*this);
 		bool ls = sign();
 		unsigned ll = limbs();
@@ -401,13 +420,20 @@ public:
 	
 	// reduce returns the ratio and remainder of a and b in *this and r
 	void reduce(const einteger& a, const einteger& b, einteger& r) {
-		if (b.iszero()) {
-#if EINTEGER_THROW_ARITHMETIC_EXCEPTION
+		// every limb, not iszero(): setblock() does not trim, so a zero can be [0, 0, ...]
+		bool divisorIsZero = true;
+		for (size_t i = b._block.size(); i > 0; --i) {
+			if (b._block[i - 1] != bt(0)) { divisorIsZero = false; break; }
+		}
+		if (divisorIsZero) {
+#if EINTEGER_THROW_DIVIDE_BY_ZERO
 			throw einteger_divide_by_zero{};
 #else
-			std::fprintf(stderr, "einteger_divide_by_zero\n");
+			// opted out of the exception: quotient and remainder are 0
+			clear();
+			r.clear();
 			return;
-#endif // EINTEGER_THROW_ARITHMETIC_EXCEPTION
+#endif // EINTEGER_THROW_DIVIDE_BY_ZERO
 		}
 		clear();
 		r.clear();
@@ -748,7 +774,7 @@ public:
 	// on the empty default-constructed state and on any persisted
 	// constexpr einteger -- which by definition has empty _block)
 	constexpr bool iszero() const noexcept { return (_block.size() == 0 || ((_block.size() == 1) && _block[0] == bt(0))); }
-	constexpr bool isone()  const noexcept { return true; }
+	constexpr bool isone()  const noexcept { return (!_sign && _block.size() == 1 && _block[0] == bt(1)); }
 	constexpr bool isodd()  const noexcept { return (_block.size() > 0) ? (_block[0] & 0x1) : false; }
 	constexpr bool iseven() const noexcept { return !isodd(); }
 	constexpr bool ispos()  const noexcept { return !_sign; }
@@ -846,11 +872,12 @@ protected:
 		clear();
 		if (v != 0) {
 			if (v < 0) {
-				setbits(static_cast<unsigned long long>(-v));
+				// negate in unsigned arithmetic: -v overflows for the minimum value, -2^63 (#1878)
+				setbits(0ull - static_cast<unsigned long long>(v));
 				setsign(true);
 			}
 			else {
-				setbits(static_cast<unsigned long long>(v)); // TODO: what about -2^63
+				setbits(static_cast<unsigned long long>(v));
 			}
 		}
 		return *this;
@@ -931,20 +958,24 @@ protected:
 		constexpr Integer kMax = std::numeric_limits<Integer>::max();
 		constexpr Integer kMin = std::numeric_limits<Integer>::min();
 		constexpr unsigned kDigits = std::numeric_limits<Unsigned>::digits;
+		// the largest magnitude that fits: |kMin| == kMax + 1 for a negative value (#1878)
+		const Unsigned limit = neg ? static_cast<Unsigned>(static_cast<Unsigned>(kMax) + 1u) : static_cast<Unsigned>(kMax);
 		for (unsigned i = 0; i < nbits(); ++i) {
 			if (i >= kDigits) {
 				if (test(i)) return neg ? kMin : kMax;
 				continue;
 			}
 			if (test(i)) {
-				if (v > (static_cast<Unsigned>(kMax) - m)) {
+				// m > limit first: limit - m would wrap for m == 2^(digits-1) on a positive value
+				if (m > limit || v > limit - m) {
 					return neg ? kMin : kMax;
 				}
 				v += m;
 			}
 			m <<= 1;
 		}
-		return (neg ? -static_cast<Integer>(v) : static_cast<Integer>(v));
+		// negate in unsigned arithmetic: -Integer(v) overflows for |kMin|
+		return (neg ? static_cast<Integer>(static_cast<Unsigned>(Unsigned(0) - v)) : static_cast<Integer>(v));
 	}
 	template<typename Real>
 	Real convert_to_native_ieee() const noexcept {
@@ -963,6 +994,8 @@ private:
 
 	template<typename BBlockType>
 	friend constexpr bool operator==(const einteger<BBlockType>&, const einteger<BBlockType>&) noexcept;
+	template<typename BBlockType>
+	friend bool parse(const std::string&, einteger<BBlockType>&);
 };
 
 ////////////////////////    einteger functions   /////////////////////////////////
@@ -1132,6 +1165,9 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 					// complete the most significant byte
 					value.setbyte(static_cast<size_t>(byteIndex), static_cast<uint8_t>(byte));
 				}
+				// setbyte writes leading zero digits as limbs: "0x0001" left [1, 0], which
+				// is not 1 to == and isone(), and "-0x00" a negative zero (#1878)
+				value.remove_leading_zeros();
 				// check that we have [-+]0[xX] format
 				++r;
 				if (r != number.rend()) {
@@ -1298,7 +1334,7 @@ constexpr bool operator>=(const einteger<BlockType>& lhs, const einteger<BlockTy
 
 template<typename BlockType>
 inline bool operator==(const einteger<BlockType>& lhs, long long rhs) {
-	return operator==(lhs, einteger(rhs));
+	return operator==(lhs, einteger<BlockType>(rhs));
 }
 
 template<typename BlockType>
@@ -1426,7 +1462,7 @@ inline einteger<BlockType> operator/(const einteger<BlockType>& lhs, long long r
 
 template<typename BlockType>
 inline einteger<BlockType> operator%(const einteger<BlockType>& lhs, long long rhs) {
-	return operator/(lhs, einteger<BlockType>(rhs));
+	return operator%(lhs, einteger<BlockType>(rhs));
 }
 
 template<typename BlockType>
@@ -1459,7 +1495,54 @@ inline einteger<BlockType> operator/(long long lhs, const einteger<BlockType>& r
 
 template<typename BlockType>
 inline einteger<BlockType> operator%(long long lhs, const einteger<BlockType>& rhs) {
-	return operator/(einteger<BlockType>(lhs), rhs);
+	return operator%(einteger<BlockType>(lhs), rhs);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// integer power
+
+// ipow(a, b): the integer power a^b, exact, by squaring; einteger grows, so it never overflows.
+// a^0 == 1 for every a, 0^0 included, as std::pow has it. A negative b gives 1 / a^|b| truncated,
+// as einteger division truncates: 1 for a == 1, +-1 for a == -1 by the parity of b, 0 for |a| > 1,
+// and einteger's division by zero for a == 0.
+
+// a^-n for n > 0, truncated; odd is the parity of n
+template<typename BlockType>
+inline einteger<BlockType> ipow_reciprocal(const einteger<BlockType>& a, bool odd) {
+	using EInteger = einteger<BlockType>;
+	if (a.iszero()) return EInteger(1) / a;   // reports the division by zero
+	if (a == 1) return a;
+	if (a == -1) return odd ? a : EInteger(1);
+	return EInteger(0);
+}
+
+template<typename BlockType>
+inline einteger<BlockType> ipow(const einteger<BlockType>& a, const einteger<BlockType>& b) {
+	using EInteger = einteger<BlockType>;
+	if (b.isneg()) return ipow_reciprocal(a, b.isodd());
+	EInteger result(1), base(a), exp(b);
+	while (!exp.iszero()) {
+		if (exp.isodd()) result *= base;
+		exp >>= 1;
+		if (exp.iszero()) break;   // no square past the last bit
+		base *= base;
+	}
+	return result;
+}
+
+template<typename BlockType>
+inline einteger<BlockType> ipow(const einteger<BlockType>& a, long long b) {
+	using EInteger = einteger<BlockType>;
+	if (b < 0) return ipow_reciprocal(a, (b & 1) != 0);
+	EInteger result(1), base(a);
+	unsigned long long exp = static_cast<unsigned long long>(b);
+	while (exp != 0) {
+		if (exp & 1u) result *= base;
+		exp >>= 1;
+		if (exp == 0) break;
+		base *= base;
+	}
+	return result;
 }
 
 }} // namespace sw::universal

@@ -26,6 +26,7 @@
 #include <universal/native/ieee754_core.hpp>          // extractFields/ieee754_parameter (#1334)
 #include <universal/native/manipulators_core.hpp>   // scale(), without the to_triple/to_hex text layer
 #include <universal/numerics/error_free_ops.hpp>
+#include <universal/numerics/range_limit_add.hpp>   // add_at_range_limit (#1891)
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -455,10 +456,11 @@ namespace expansion_ops {
     // Priest's TWO-PROD: computes a * b = x + y exactly
     // Runtime path uses std::fma (hardware FMA on supported targets).
     // Constexpr branch falls back to a split-based product (FMA-free) since
-    // std::fma is not constexpr in C++20.  sw::universal::split is constexpr
-    // (from error_free_ops.hpp) and gives the exact a_hi/a_lo/b_hi/b_lo
-    // decomposition that lets us recover the rounding error via
-    //   y = ((a_hi*b_hi - p) + a_hi*b_lo + a_lo*b_hi) + a_lo*b_lo.
+    // std::fma is not constexpr in C++20.  sw::universal::dekker_residual is constexpr
+    // (from error_free_ops.hpp): it splits a and b into exact a_hi/a_lo/b_hi/b_lo halves
+    // and recovers the rounding error via
+    //   y = ((a_hi*b_hi - p) + a_hi*b_lo + a_lo*b_hi) + a_lo*b_lo,
+    // scaling the operands first where a split or a partial product would overflow (#1881).
     //
     // That same split-based path is taken at RUNTIME on a build whose fma is not
     // correctly rounded. y == fma(a, b, -x) is an error-free transformation only if fma
@@ -469,10 +471,7 @@ namespace expansion_ops {
             double p = a * b;
             x = p;
             if (sw::universal::is_finite_cx(p)) {
-                double a_hi = 0.0, a_lo = 0.0, b_hi = 0.0, b_lo = 0.0;
-                sw::universal::split(a, a_hi, a_lo);
-                sw::universal::split(b, b_hi, b_lo);
-                y = ((a_hi * b_hi - p) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo;
+                y = sw::universal::dekker_residual(a, b, p);
             }
             else {
                 y = 0.0;
@@ -1739,6 +1738,52 @@ namespace expansion_ops {
         return result;
     }
 
+    // The sum of two N-component cascades, compressed back to N components: the + and - of
+    // dd_cascade, td_cascade, qd_cascade and floatcascade<N> (#1889).
+    //   - an infinite or NaN operand decides the result through the leading limbs alone, with a
+    //     zero tail, as dd and qd do: the error-free sums would compute inf - inf there and
+    //     return NaN. inf + finite is inf, inf - inf is NaN.
+    //   - near the top of the range a sum of finite operands can overflow in an intermediate
+    //     two_sum although the complete sum is finite (DBL_MAX - 2^969 plus 2^970), or stay
+    //     finite in the leading limbs while the tail carries it past max(). So when an operand
+    //     reaches 2^1022 the sum is formed at quarter scale, where every intermediate stays below
+    //     DBL_MAX / 2 (half scale is not enough: max() + max() is max() there, and the error-free
+    //     sums overflow on the way), and scaled back. The sum overflows, to (inf, 0, ...), when it
+    //     reaches DBL_MAX + 2^970, half an ulp above DBL_MAX, where double itself rounds to inf.
+    //     Only the limbs that quarter scaling keeps exact go through the scaled sum. A tail limb
+    //     near the subnormal range would lose bits there, and when the leading limbs cancel those
+    //     bits are the whole answer: (2^1022, 2^-1074) + (-2^1022, 2^-1074) is 2^-1073, not 0.
+    //     Such limbs form a suffix of each operand, and are summed unscaled and added back, as
+    //     expansion_sum_normalized does for the elastic expansions.
+    template<size_t N>
+    constexpr floatcascade<N> add_expansions(const floatcascade<N>& a, const floatcascade<N>& b) noexcept {
+        static_assert(N == 2 || N == 3 || N == 4, "add_expansions is derived for 2, 3 and 4 components");
+        auto add = [](const floatcascade<N>& x, const floatcascade<N>& y) {
+            if constexpr (N == 2) return compress_4to2(add_cascades(x, y));
+            else if constexpr (N == 3) return compress_6to3(add_cascades(x, y));
+            else return compress_8to4(add_cascades(x, y));
+        };
+        floatcascade<N> r;
+        if (!is_finite_cx(a[0]) || !is_finite_cx(b[0])) {
+            r.clear();
+            r[0] = a[0] + b[0];
+            return r;
+        }
+        if (!reaches_range_limit(a[0], b[0])) return add(a, b);
+
+        // the shared range-limit rule of the multi-double types (numerics/range_limit_add.hpp)
+        auto to_array = [](const floatcascade<N>& x) {
+            std::array<double, N> v{};
+            for (size_t i = 0; i < N; ++i) v[i] = x[i];
+            return v;
+        };
+        auto add_arrays = [&](const std::array<double, N>& x, const std::array<double, N>& y) {
+            return to_array(add(floatcascade<N>(x), floatcascade<N>(y)));
+        };
+        r = floatcascade<N>(add_at_range_limit<N>(to_array(a), to_array(b), add_arrays));
+        return r;
+    }
+
 } // namespace expansion_ops
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2119,22 +2164,7 @@ bool floatcascade<N>::parse(const std::string& number) {
 // Addition operator
 template<size_t N>
 floatcascade<N>& floatcascade<N>::operator+=(const floatcascade<N>& rhs) noexcept {
-    floatcascade<2*N> temp = expansion_ops::add_cascades(*this, rhs);
-
-    // Compress back to N components
-    if constexpr (N == 2) {
-        *this = expansion_ops::compress_4to2(temp);
-    }
-    else if constexpr (N == 3) {
-        *this = expansion_ops::compress_6to3(temp);
-    }
-    else if constexpr (N == 4) {
-        *this = expansion_ops::compress_8to4(temp);
-    }
-    else {
-        *this = expansion_ops::renormalize(temp);
-    }
-
+    *this = expansion_ops::add_expansions(*this, rhs);
     return *this;
 }
 

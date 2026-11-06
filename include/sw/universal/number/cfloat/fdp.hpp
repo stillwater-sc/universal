@@ -39,11 +39,12 @@ quire_mul(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturati
 	constexpr unsigned fbits = nbits - 1u - es;
 	blocktriple<fbits, BlockTripleOperator::MUL, bt> a, b, product;
 
-	if (lhs.iszero() || rhs.iszero()) return product;  // product is zero
+	// specials first: a NaN times zero, and inf times zero, are NaN, not a zero product
 	if (lhs.isinf() || lhs.isnan() || rhs.isinf() || rhs.isnan()) {
-		product.setnan();
+		product.setnan(false);   // a quiet NaN: the blocktriple carries the type in its sign
 		return product;
 	}
+	if (lhs.iszero() || rhs.iszero()) return product;  // product is zero
 
 	lhs.normalizeMultiplication(a);
 	rhs.normalizeMultiplication(b);
@@ -74,7 +75,7 @@ quire_resolve(const quire<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, 
 	constexpr int bt_radix = BT::radix;  // = 2*fbits
 
 	Scalar result;
-	if (q.isnan()) { result.setnan(); return result; }  // NaR propagated through the accumulator (#1226)
+	if (q.isnan()) { result.setnan(NAN_TYPE_QUIET); return result; }  // NaR propagated through the accumulator (#1226)
 	if (q.iszero()) {
 		result.setzero();
 		return result;

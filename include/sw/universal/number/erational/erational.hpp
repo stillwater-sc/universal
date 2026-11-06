@@ -30,6 +30,8 @@
 // ERATIONAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
 // application to enable by defining it before this include. Its default lives in
 // erational_impl.hpp, so that core.hpp alone defines it as well (#1436).
+// ERATIONAL_THROW_DIVIDE_BY_ZERO (default 1, #1894): a division by zero throws. Set it, or
+// ERATIONAL_THROW_ARITHMETIC_EXCEPTION, to 0 to get NaN (0/0) instead; see erational_impl.hpp.
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library

@@ -35,6 +35,27 @@ grows with the value. There is no overflow.
 Arithmetic, comparison, parsing and printing are provided, along with `sqrt` and the
 number-theoretic helpers used by the educational examples.
 
+### Division by zero
+
+`edecimal` has no NaN or infinity to carry a failed division in the value, so by
+default a division by zero throws `edecimal_integer_divide_by_zero`. A caller that would rather get a value
+opts out before the include, with `EDECIMAL_THROW_DIVIDE_BY_ZERO 0`, or with
+`EDECIMAL_THROW_ARITHMETIC_EXCEPTION 0` when the first is not set:
+
+```cpp
+#define EDECIMAL_THROW_DIVIDE_BY_ZERO 0
+#include <universal/number/edecimal/edecimal.hpp>
+```
+
+A build with exceptions disabled (`-fno-exceptions`) gets the value without asking:
+`EDECIMAL_THROW_DIVIDE_BY_ZERO` defaults to `UNIVERSAL_HAS_EXCEPTIONS`, which
+`<universal/utility/exceptions.hpp>` takes from the compiler. Setting it to `1` in such a build
+stops with an `#error` (#1925).
+
+With the exception off, `x / 0` and `x % 0` are `0`, as are both fields of
+`decint_divide()`. Nothing is printed, and the long division never runs with a zero divisor
+(#1894).
+
 ## Related
 
 - [`einteger`](/universal/number-systems/einteger/) -- the binary equivalent, faster to compute with

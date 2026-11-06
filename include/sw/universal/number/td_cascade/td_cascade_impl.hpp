@@ -321,9 +321,7 @@ public:
 
     // Compound assignment operators
     CONSTEXPRESSION td_cascade& operator+=(const td_cascade& rhs) noexcept {
-        auto result = expansion_ops::add_cascades(cascade, rhs.cascade);  // 6 components
-        // Compress to 3 components using proven QD algorithm
-        cascade = expansion_ops::compress_6to3(result);
+        cascade = expansion_ops::add_expansions(cascade, rhs.cascade);
         return *this;
     }
 
@@ -333,9 +331,7 @@ public:
         neg_rhs[1]   = -rhs.cascade[1];
         neg_rhs[2]   = -rhs.cascade[2];
 
-        auto result = expansion_ops::add_cascades(cascade, neg_rhs);  // 6 components
-        // Compress to 3 components using proven QD algorithm
-        cascade = expansion_ops::compress_6to3(result);
+        cascade = expansion_ops::add_expansions(cascade, neg_rhs);
         return *this;
     }
 
@@ -467,10 +463,12 @@ public:
     constexpr double& operator[](size_t index) { return cascade[index]; }
 
     // create specific number system values of interest
+    // the largest normalized expansion: DBL_MAX, then each limb DBL_MAX * 2^-54k, the largest
+    // double below half an ulp of the one before (#1882)
     constexpr td_cascade& maxpos() noexcept {
-        cascade[0] = 1.7976931348623157e+308;
-        cascade[1] = 1.9958403095347196e+292;
-        cascade[2] = 2.2158278651204452e+276;
+        cascade[0] = 0x1.fffffffffffffp+1023;
+        cascade[1] = 0x1.fffffffffffffp+969;
+        cascade[2] = 0x1.fffffffffffffp+915;
         return *this;
     }
     constexpr td_cascade& minpos() noexcept {
@@ -489,9 +487,9 @@ public:
         return *this;
     }
     constexpr td_cascade& maxneg() noexcept {
-        cascade[0] = -1.7976931348623157e+308;
-        cascade[1] = -1.9958403095347196e+292;
-        cascade[2] = -2.2158278651204452e+276;
+        cascade[0] = -0x1.fffffffffffffp+1023;
+        cascade[1] = -0x1.fffffffffffffp+969;
+        cascade[2] = -0x1.fffffffffffffp+915;
         return *this;
     }
 

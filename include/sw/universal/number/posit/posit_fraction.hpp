@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <algorithm>
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <iosfwd>   // std::ostream/std::istream name the friend declarations below;
                     // the definitions live in posit_fields_io.hpp (#1334)
 #include <universal/number/posit/exceptions.hpp>
@@ -81,10 +82,10 @@ public:
 	bool assign(unsigned int remaining_bits, blockbinary<FBits, bt>& _positFraction, std::unsigned hpos = FBits)
 	{
         if (hpos > FBits)
-            throw posit_hpos_too_large{};
+            throw_or_abort(posit_hpos_too_large{});
                     
         if (remaining_bits > fbits)
-            throw posit_rbits_too_large{};
+            throw_or_abort(posit_rbits_too_large{});
                     
         reset();                                    // In any case
         
@@ -108,7 +109,7 @@ public:
 	bool assign2(unsigned int remaining_bits, blockbinary<FBits, bt>& _positFraction)
 	{
 		if (remaining_bits > fbits)
-			throw posit_rbits_too_large{};
+			throw_or_abort(posit_rbits_too_large{});
 
 		reset();                                    // In any case
 												// if input is empty -> reset
@@ -146,7 +147,7 @@ public:
             
         // Check range
 		if (long(fbits) + shift >= long(Size))
-			throw std::runtime_error("shift_too_large"); // value_shift_too_large{};
+			throw_or_abort(std::runtime_error("shift_too_large")); // value_shift_too_large{};
                 
         const long hpos = fbits + shift;       // position of hidden bit
             

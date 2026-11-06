@@ -20,7 +20,7 @@ The Universal `integer` type removes this limitation. It provides a fixed-size, 
 
 - **Two's complement encoding** with configurable width
 - **Modular arithmetic** by default (overflow wraps silently, like native types)
-- **Optional exceptions** on overflow, underflow, and division by zero
+- **Division by zero throws** by default; optional exceptions for the domain errors
 - **Domain enforcement**: `WholeNumber` rejects negatives; `NaturalNumber` rejects zero and negatives
 - **Trivially copyable**: no heap allocation, suitable for GPU/FPGA memory
 - **Full constexpr support** for compile-time evaluation
@@ -35,6 +35,42 @@ The Universal `integer` type removes this limitation. It provides a fixed-size, 
 - Conversions: to/from `int64_t`, `float`, `double`, strings
 - Bit manipulation: `setbit()`, `clearbit()`, `testbit()`, `flip()`
 - String I/O: binary, decimal, hex, octal representations
+- Integer power: `ipow(a, b)`, also `pow(a, b)` for an integer or `int` exponent
+
+### Integer power
+
+`ipow(a, b)` computes a^b exactly, by squaring in `integer`'s own arithmetic, so a power past
+the range wraps the way `*` wraps. The exponent is an `integer` or a native integer, which need
+not fit in `nbits`. `pow(a, b)` with an integer or `int` exponent is `ipow`; only a `double`
+exponent goes through `double`. The edge cases follow `std::pow` and integer division:
+
+- `a^0 == 1` for every `a`, `0^0` included
+- a negative exponent gives `1 / a^|b|` truncated: `1` for `a == 1`, `+-1` for `a == -1` by the
+  parity of `b`, `0` for `|a| > 1`, and the division by zero for `a == 0`
+
+The real-valued types have no `ipow`: their integer power is `pow(a, int)` (#1875).
+
+### Division by zero
+
+`integer` has no NaN or infinity to carry a failed division in the value, so by
+default a division by zero throws `integer_divide_by_zero`. A caller that would rather get a value
+opts out before the include, with `INTEGER_THROW_DIVIDE_BY_ZERO 0`, or with
+`INTEGER_THROW_ARITHMETIC_EXCEPTION 0` when the first is not set:
+
+```cpp
+#define INTEGER_THROW_DIVIDE_BY_ZERO 0
+#include <universal/number/integer/integer.hpp>
+```
+
+A build with exceptions disabled (`-fno-exceptions`) gets the value without asking:
+`INTEGER_THROW_DIVIDE_BY_ZERO` defaults to `UNIVERSAL_HAS_EXCEPTIONS`, which
+`<universal/utility/exceptions.hpp>` takes from the compiler. Setting it to `1` in such a build
+stops with an `#error` (#1925).
+
+With the exception off, `x / 0` and `x % 0` are `0`, as are both outputs of `reduce()`
+and `idiv()`. Nothing is printed. `INTEGER_THROW_ARITHMETIC_EXCEPTION` still defaults to `0`,
+so the `WholeNumber` and `NaturalNumber` domain errors keep their default; only division by
+zero changed (#1894).
 
 ## How It Works
 

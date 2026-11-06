@@ -16,6 +16,9 @@ export default defineConfig({
           href: 'https://github.com/stillwater-sc/universal',
         },
       ],
+      // Turns the edit link on. Every page sets its own editUrl in
+      // sync-content.mjs, because Starlight would join this base with the
+      // generated (git-ignored) src/content/docs/ path.
       editLink: {
         baseUrl:
           'https://github.com/stillwater-sc/universal/edit/main/docs-site/',
@@ -179,6 +182,21 @@ export default defineConfig({
         {
           label: 'Resources',
           items: [{ autogenerate: { directory: 'resources' } }],
+        },
+        {
+          // The peer sites: MTL5's generic linear algebra, and the
+          // mp-numerics studies that run it in Universal's number types.
+          label: 'Related',
+          items: [
+            {
+              label: 'mp-numerics studies',
+              link: 'https://stillwater-sc.github.io/mp-numerics/',
+            },
+            {
+              label: 'MTL5 linear algebra',
+              link: 'https://stillwater-sc.github.io/mtl5/',
+            },
+          ],
         },
         {
           // Doxygen C++ API reference, generated into public/api/ by

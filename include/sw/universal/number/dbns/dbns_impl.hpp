@@ -15,6 +15,7 @@
 #if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
 #define QUIRE_THROW_ARITHMETIC_EXCEPTION DBNS_THROW_ARITHMETIC_EXCEPTION
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 // DBNS_TRACE_CONVERSION: the trace statements in convert_ieee754's (a,b) search print,
 // so they need <iostream>. They are compiled only when tracing is actually switched on
@@ -43,6 +44,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
+#include <cmath>      // std::exp2, std::log2
 #include <limits>
 #include <type_traits>
 
@@ -124,6 +126,13 @@ class dbns {
 	static_assert(sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported");
 	static_assert(_nbits - _fbbits < 66, "configuration not supported: the scale of this configuration is > 2^64");
 	static_assert(_fbbits < 64, "configuration not supported: scaling factor is > 2^64");
+	// the exponent fields are carried in 32 bits by setexponent() and extractExponent(), and
+	// conversion searches them in 64-bit arithmetic (#1933)
+	static_assert(_fbbits <= 32, "configuration not supported: the first base exponent field is wider than 32 bits");
+	static_assert(_nbits - _fbbits - 1 <= 32, "configuration not supported: the second base exponent field is wider than 32 bits");
+	// conversion searches min(2^sbbits, 2^fbbits / log2(3)) exponent pairs: one field of at most
+	// 20 bits keeps that below about a million, where two 32-bit fields would be 2.7 billion
+	static_assert(_fbbits <= 20 || _nbits - _fbbits - 1 <= 20, "configuration not supported: with both exponent fields wider than 20 bits a conversion would search billions of exponent pairs");
 public:
 	typedef bt BlockType;
 
@@ -270,53 +279,13 @@ public:
 			return *this;
 		}
 #if defined(NATIVE_DBNS_ARITHMETIC)
-		bool negative = sign() ^ rhs.sign(); // determine sign of result
-		uint32_t a = extractExponent(0) + rhs.extractExponent(0);
-		uint32_t b = extractExponent(1) + rhs.extractExponent(1);
-		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
-			clear();
-			if (a > MAX_A || b > MAX_B) {
-				// try to project the value back into valid pairs
-				// the approximations of unity looks like (3, -2), (8,-5), (19,-12), (84,-53),... 
-				// they grow too fast and in a rather irregular manner. There are more 
-				// subtle number theoretic considerations, but the ones outlined above 
-				// should be sufficient to figure out a good solution to the problem.
-				// 2^3*3^-2 = 0.888  2^-3*3^2 = 1.125
-				// 2^8*3^-5 = 1.053  2^-8*3^5 = 0.949
-				unsigned first[] = { 3, 8, 19, 84 };
-				unsigned second[] = { 2, 5, 12, 53 };
-				bool unableToAdjust{ true };
-				for (unsigned i = 0; i < 4; ++i) {
-					unsigned adjusted_a = a - first[i];
-					unsigned adjusted_b = b - second[i];
-					if (adjusted_a <= MAX_A && adjusted_b <= MAX_B) {
-						setexponent(0, adjusted_a);
-						setexponent(1, adjusted_b);
-						unableToAdjust = false;
-					}
-				}
-				if (unableToAdjust){
-					if (a > b) {
-						setexponent(0, MAX_A);
-						setexponent(1, 0);
-						negative = false; // we need to avoid nan(ind)
-					}
-					else {
-						setexponent(0, 0);
-						setexponent(1, MAX_B);
-					}
-				}
-			}
-			else {
-				setexponent(0, a);
-				setexponent(1, b);
-			}
-		}
-		else {
-			static_assert(true, "multi-limb TBD");
-		}
-		setsign(negative);
-		if (isnan()) setzero(); // if the arithmetic ends up in the nan encoding, set the value to zero
+		// The exact product is (-1)^(s1^s2) * 0.5^(a1+a2) * 3^(b1+b2). It is stored as is when that
+		// pair is an encoding, and rounded to the nearest one otherwise, by the same rule as a
+		// conversion (#1940). This used to project an out-of-range pair back with approximations
+		// of unity, which changed the value by up to 11%.
+		assign_pair(static_cast<long long>(extractExponent(0)) + static_cast<long long>(rhs.extractExponent(0)),
+		            static_cast<long long>(extractExponent(1)) + static_cast<long long>(rhs.extractExponent(1)),
+		            sign() != rhs.sign());
 #else
 		// marshall through double value
 		* this = double(*this) * double(rhs);
@@ -341,19 +310,12 @@ public:
 		if (iszero()) return *this;
 
 #if defined(NATIVE_DBNS_ARITHMETIC)
-		// this simple code doesn't work because of modulo underflow when the right hand side exponent is bigger than the left hand side
-		bool negative = sign() ^ rhs.sign(); // determine sign of result
-		uint32_t e0 = extractExponent(0) - rhs.extractExponent(0);
-		uint32_t e1 = extractExponent(1) - rhs.extractExponent(1);
-		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
-			clear();
-			setexponent(0, e0);
-			setexponent(1, e1);
-		}
-		else {
-			static_assert(true, "multi-limb TBD");
-		}
-		setsign(negative);
+		// The exact quotient is (-1)^(s1^s2) * 0.5^(a1-a2) * 3^(b1-b2), in signed arithmetic: a
+		// divisor with the larger exponents gives a negative one, which wrapped in uint32_t and
+		// has no encoding anyway, so such a quotient rounds to the nearest encoding (#1940).
+		assign_pair(static_cast<long long>(extractExponent(0)) - static_cast<long long>(rhs.extractExponent(0)),
+		            static_cast<long long>(extractExponent(1)) - static_cast<long long>(rhs.extractExponent(1)),
+		            sign() != rhs.sign());
 #else
 		// marshall through double value
 		* this = double(*this) / double(rhs);
@@ -462,9 +424,12 @@ public:
 		if constexpr (1 == nrBlocks) {
 			if (base == 0) {
 				_block[MSU] &= ~FB_MASK;
-				exponentBits &= MAX_A; // lob off any bits outside the field width
-				exponentBits <<= sbbits; // shift them in place
-				_block[MSU] |= (exponentBits & FB_MASK); 
+				// in 64 bits: a single uint64_t block holds fields wider than 32 bits together, and
+				// shifting a uint32_t by sbbits lost the top of the field, or was undefined at a
+				// 32-bit second field (CodeRabbit on PR #1939)
+				uint64_t field = static_cast<uint64_t>(exponentBits) & MAX_A;   // lob off any bits outside the field width
+				field <<= sbbits;                                                  // shift them in place
+				_block[MSU] |= static_cast<bt>(field & FB_MASK);
 			}
 			else if (base == 1) {
 				_block[MSU] &= ~SB_MASK;
@@ -497,13 +462,16 @@ public:
 		return *this;
 	}
 	constexpr dbns& minpos() noexcept {
-		// minimum positive value has this bit pattern: 0-11...11-00...00, that is, sign = 0, first base = 11..10, second base = 00..00
+		// minimum positive value has this bit pattern: 0-11...10-00...00, that is, sign = 0,
+		// first base = 11..10, second base = 00..00: 0.5^(MAX_A - 1). 0-11...11-00...00 is the
+		// zero encoding, which this used to produce, so minpos was 0 and minneg NaN (#1933).
 		clear();
 		flip();
 		setbit(nbits - 1, false);
 		for (unsigned i = 0; i < sbbits; ++i) {
 			setbit(i, false);
 		}
+		setbit(sbbits, false);
 		return *this;
 	}
 	constexpr dbns& zero() noexcept {
@@ -648,12 +616,12 @@ public:
 			uint64_t bits{ 0 };
 			if (0 == base) {
 				for (unsigned i = sbbits; i < nbits - 1; ++i) {
-					bits |= (at(i) ? (1 << (i - sbbits)) : 0);
+					bits |= (at(i) ? (1ull << (i - sbbits)) : 0ull);
 				}
 			}
 			else {
 				for (unsigned i = 0; i < sbbits; ++i) {
-					bits |= (at(i) ? (1 << i) : 0);
+					bits |= (at(i) ? (1ull << i) : 0ull);
 				}
 			}
 			return static_cast<uint32_t>(bits);
@@ -804,21 +772,51 @@ protected:
 		// statistics counters below already use.
 		if (!std::is_constant_evaluated()) std::cout << "scale : " << scale << '\n';
 #endif
-		double lowestError = 1.0e10;
-		constexpr int kNotFound = std::numeric_limits<int>::max();
-		int best_a = kNotFound;
-		int best_b = kNotFound;
-		for (int b = 0; b <= static_cast<int>(SB_MASK); ++b) {
-			// constexpr-safe round-to-nearest-int for finite double in int range
-			double r = scale - b * log2of3;
-			int a = static_cast<int>(r >= 0.0 ? r + 0.5 : r - 0.5);
-			if (a > 0 || a > static_cast<int>(MAX_A)) {
-				if (!std::is_constant_evaluated()) {
-					if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.exponentOverflowDuringSearch;
-				}
-				continue;
-			}
-			double diff = scale - (a + b * log2of3);
+		return assign_log2(scale, s);
+	}
+
+	// The encoding nearest 2^scale, with the given sign, in the logarithmic domain: the one rounding
+	// rule that conversion from a native type and the native multiply and divide share (#1940).
+	// scale is log2 of the magnitude; below half of minpos the result is zero, and beyond maxpos it
+	// saturates to maxpos.
+	constexpr dbns& assign_log2(double scale, bool negative) noexcept {
+		// The search walks the second base exponents b and, for each, takes the first base
+		// exponent nearest scale - b*log2(3), clamped to the encodable range: the encoding
+		// stores 0.5^a with a in [0, MAX_A], so the base-2 exponent is -a. The pair nearest in
+		// log2 wins. The pair (MAX_A, 0) is reserved for zero, so it is replaced by minpos's
+		// (MAX_A - 1, 0) (#1933). Every candidate is a valid encoding, so the result is the
+		// nearest representable value in the logarithmic domain. This used to admit any a and
+		// then try to project an out-of-range pair back, which failed for a third of all values
+		// and sent them to the zero pattern or to a far neighbour.
+		// In 64-bit integers: a field may be 32 bits wide, and dbns<34,1>'s MAX_B of 2^32 - 1 cast
+		// to int was -1, so this loop did not run at all.
+		// Only a window of b needs searching. With a clamped to [-MAX_A, 0], a b below
+		// scale/log2(3) has a = 0 and an error that shrinks as b grows, and a b above
+		// (scale + MAX_A)/log2(3) has a = -MAX_A and an error that grows with b, so the nearest
+		// pair has b within that window, give or take one. The window is at most MAX_A/log2(3) + 4
+		// wide and is cut to [0, MAX_B], so the search costs min(MAX_B + 1, MAX_A/log2(3) + 4)
+		// steps rather than MAX_B + 1: 3 for dbns<34,1>, 32 for dbns<32,26>.
+		const long long maxA = static_cast<long long>(MAX_A);
+		const long long maxB = static_cast<long long>(MAX_B);
+		double lowestError = 1.0e300;
+		long long best_a = 0;   // the base-2 exponent, -a in the encoding
+		long long best_b = 0;
+		auto floorToLL = [](double x) { long long i = static_cast<long long>(x); return (static_cast<double>(i) > x) ? i - 1 : i; };
+		long long bLo = floorToLL(scale / log2of3) - 1;
+		long long bHi = floorToLL((scale + static_cast<double>(maxA)) / log2of3) + 2;
+		if (bLo < 0) bLo = 0;
+		if (bLo > maxB) bLo = maxB;
+		if (bHi < 0) bHi = 0;
+		if (bHi > maxB) bHi = maxB;
+		if (bLo > bHi) bLo = bHi;   // the value is beyond the range: the window collapses onto its edge
+		for (long long b = bLo; b <= bHi; ++b) {
+			// constexpr-safe round-to-nearest-int for finite double in long long range
+			double r = scale - static_cast<double>(b) * log2of3;
+			long long a = static_cast<long long>(r >= 0.0 ? r + 0.5 : r - 0.5);
+			if (a > 0) a = 0;
+			if (a < -maxA) a = -maxA;
+			if (a == -maxA && b == 0) a = -(maxA - 1);   // (MAX_A, 0) is the zero encoding
+			double diff = scale - (static_cast<double>(a) + static_cast<double>(b) * log2of3);
 			double err = (diff < 0.0 ? -diff : diff);
 #if DBNS_TRACE_CONVERSION
 			if (!std::is_constant_evaluated()) {
@@ -838,71 +836,43 @@ protected:
 		if (!std::is_constant_evaluated()) std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
 #endif
 		clear();
-
-		// If the search produced no candidate, avoid using sentinel values in the
-		// adjustment logic below. Fall back to the existing saturating behavior.
-		if (best_a == kNotFound || best_b == kNotFound) {
-			if (!std::is_constant_evaluated()) {
-				if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.roundingFailure;
-			}
-			setexponent(0, 0);
-			setexponent(1, MAX_B);
-			setsign(s);
-			// avoid assigning to nan(ind)
-			if (isnan()) setzero();
+		// below half of minpos, 2^-(MAX_A - 1), the nearest value is zero
+		if (scale < -static_cast<double>(maxA - 1) - 1.0) {
+			setzero();
 			return *this;
 		}
-
-		// best_b >= 0 invariant -- skipped at compile time (assert is not constexpr-safe)
-		int a = -best_a;
-		int b = best_b;
-		if (a < 0 || a > static_cast<int>(MAX_A) || b > static_cast<int>(MAX_B)) {
-			// try to project the value back into valid pairs
-			// the approximations of unity looks like (8,-5), (19,-12), (84,-53),... 
-			// they grow too fast and in a rather irregular manner. There are more 
-			// subtle number theoretic considerations, but the ones outlined above 
-			// should be sufficient to figure out a good solution to the problem.
-			// 2^3*3^-2 = 0.888  2^-3*3^2 = 1.125
-			// 2^8*3^-5 = 1.053  2^-8*3^5 = 0.949
-			// multiplier   0.5, 1.5, 0.6, 0.889, 1.125, 0.949, 1.053.....
-			int first[]  = { 1, 1, -1, 3, -3, 5, -5, 8, -8, 19, -19, 84, -84 };
-			int second[] = { 0, 1, -1, 2, -2, 3, -3, 5, -5, 12, -12, 53, -53 };
-			bool unableToAdjust{ true };
-			for (unsigned i = 0; i < 13; ++i) {
-				int adjusted_a = a - first[i];
-				int adjusted_b = b - second[i];
-				if (adjusted_a >= 0 && adjusted_a < static_cast<int>(MAX_A) && adjusted_b >= 0 && adjusted_b < static_cast<int>(MAX_B)) {
-					setexponent(0, static_cast<unsigned>(adjusted_a));
-					setexponent(1, static_cast<unsigned>(adjusted_b));
-					setsign(s);
-					unableToAdjust = false;
-					break;
-				}
-			}
-			if (unableToAdjust) {
-				if (!std::is_constant_evaluated()) {
-					if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.roundingFailure;
-				}
-				//if (a > b) {
-				if (best_a < 0 && best_b >= 0) {
-					setexponent(0, MAX_A);
-					setexponent(1, 0);
-					setsign(false); // we need to avoid nan(ind)
-				}
-				else {   // we have maxed out
-					setexponent(0, 0);
-					setexponent(1, MAX_B);
-					setsign(s);
-				}
-			}
-		}
-		else {
-			a <<= sbbits;
-			_block[MSU] = static_cast<bt>(static_cast<bt>(s ? SIGN_BIT_MASK : 0u) | static_cast<bt>(a) | static_cast<bt>(b));
-		}
-		// avoid assigning to nan(ind)
-		if (isnan()) setzero();
+		// through the field setters, which handle any number of blocks. This wrote
+		// (sign | a << sbbits | b) into the most significant block alone, which is the whole
+		// encoding only when it fits one block: dbns<16,5> with the default uint8_t blocks
+		// truncated the exponents into the top byte and never wrote the low one, so 1.5
+		// became 1.4e122, and every dbns wider than its block type converted wrongly (#1933)
+		setexponent(0, static_cast<unsigned>(-best_a));
+		setexponent(1, static_cast<unsigned>(best_b));
+		setsign(negative);
 		return *this;
+	}
+
+	// log2 of 0.5^a * 3^b, for exponents of any size: log2(3) is split into a 20-bit head, whose
+	// product with b is exact for |b| below 2^33, and the tail
+	static constexpr double pair_log2(long long a, long long b) noexcept {
+		constexpr double hi = 1.5849609375;           // 20 bits of log2(3)
+		constexpr double lo = log2of3 - hi;
+		return (static_cast<double>(b) * hi - static_cast<double>(a)) + static_cast<double>(b) * lo;
+	}
+
+	// the value (-1)^negative * 0.5^a * 3^b: stored exactly when (a, b) is an encoding, which the
+	// zero pattern (MAX_A, 0) is not, and rounded to the nearest encoding otherwise
+	constexpr dbns& assign_pair(long long a, long long b, bool negative) noexcept {
+		const long long maxA = static_cast<long long>(MAX_A);
+		const long long maxB = static_cast<long long>(MAX_B);
+		if (a >= 0 && a <= maxA && b >= 0 && b <= maxB && !(a == maxA && b == 0)) {
+			clear();
+			setexponent(0, static_cast<unsigned>(a));
+			setexponent(1, static_cast<unsigned>(b));
+			setsign(negative);
+			return *this;
+		}
+		return assign_log2(pair_log2(a, b), negative);
 	}
 
 	//////////////////////////////////////////////////////
@@ -941,10 +911,57 @@ protected:
 		constexpr unsigned minSubnormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
 		static_assert(fbbits <= minSubnormalExponent, "dbns::to_ieee754: fraction is too small to represent with requested floating-point type");
 
-		TargetFloat dim1, dim2;
-		dim1 = ipow(TargetFloat(base0), extractExponent(0));
-		dim2 = ipow(TargetFloat(base1), extractExponent(1));
-		return static_cast<TargetFloat>(signValue) * dim1 * dim2;
+		const uint64_t a = extractExponent(0);
+		const uint64_t b = extractExponent(1);
+		// 0.5^a and 3^b each stay in the normal range for these exponents: their product rounds
+		// once, as it always has
+		constexpr uint64_t maxHalvings  = static_cast<uint64_t>(-(std::numeric_limits<TargetFloat>::min_exponent - 1));
+		constexpr uint64_t maxTriplings = static_cast<uint64_t>(static_cast<double>(std::numeric_limits<TargetFloat>::max_exponent - 1) / log2of3);
+		if (a <= maxHalvings && b <= maxTriplings) {
+			TargetFloat dim1 = ipow(TargetFloat(base0), a);
+			TargetFloat dim2 = ipow(TargetFloat(base1), b);
+			return static_cast<TargetFloat>(signValue) * dim1 * dim2;
+		}
+		// Otherwise one factor leaves the range while the value need not: in dbns<16,5>,
+		// 3^647 * 0.5^31 is 2^994, but 3^647 alone overflowed and the value decoded to inf, and
+		// with both fields wide 0.5^a * 3^b came out 0 * inf = NaN (#1933). So the value is taken
+		// as 2^L, L = b * log2(3) - a. log2(3) is split into a 20-bit head, whose product with a
+		// 32-bit b is exact, and a tail, so that L keeps its fraction when b * log2(3) is large.
+		constexpr double log2of3hi = 1.5849609375;                           // 0x1.95c0p+0, 20 bits
+		constexpr double log2of3lo = log2of3 - log2of3hi;                      // the rest
+		const double L = (static_cast<double>(b) * log2of3hi - static_cast<double>(a)) + static_cast<double>(b) * log2of3lo;
+		TargetFloat magnitude;
+		if (L > static_cast<double>(std::numeric_limits<TargetFloat>::max_exponent)) {
+			magnitude = std::numeric_limits<TargetFloat>::infinity();
+		}
+		else if (L < static_cast<double>(std::numeric_limits<TargetFloat>::min_exponent - std::numeric_limits<TargetFloat>::digits - 1)) {
+			magnitude = TargetFloat(0);
+		}
+		else if (std::is_constant_evaluated()) {
+			// 2^L = 2^F * 2^N with F in [0, 1): 2^F from the constexpr exp2, which is double only,
+			// and 2^N exactly in the target type, so a long double keeps its wider range at compile
+			// time as it does at run time (CodeRabbit on PR #1939)
+			double Nd = static_cast<double>(static_cast<long long>(L));
+			if (Nd > L) Nd -= 1.0;
+			const long long N = static_cast<long long>(Nd);
+			// The scaling runs in the wider of double and the target, in steps that stay normal
+			// there, and the result is rounded to the target once: a float step of 2^-512 would
+			// underflow to zero before the product, and a subnormal float result came out 0
+			// (CodeRabbit on PR #1939)
+			using Wide = std::conditional_t<(sizeof(TargetFloat) > sizeof(double)), TargetFloat, double>;
+			Wide m = static_cast<Wide>(sw::math::constexpr_math::exp2(L - Nd));
+			long long n = N;
+			while (n > 0) { long long k = (n > 512) ? 512 : n; m *= ipow(Wide(2), static_cast<uint64_t>(k)); n -= k; }
+			while (n < 0) { long long k = (-n > 512) ? 512 : -n; m *= ipow(Wide(0.5), static_cast<uint64_t>(k)); n += k; }
+			magnitude = static_cast<TargetFloat>(m);
+		}
+		else {
+			// in the wider of double and the target: L rounded to float would cost a float's
+			// precision of 97.4 in the exponent, and a long double keeps its wider range
+			using Wide = std::conditional_t<(sizeof(TargetFloat) > sizeof(double)), TargetFloat, double>;
+			magnitude = static_cast<TargetFloat>(std::exp2(static_cast<Wide>(L)));
+		}
+		return static_cast<TargetFloat>(signValue) * magnitude;
 	}
 
 private:

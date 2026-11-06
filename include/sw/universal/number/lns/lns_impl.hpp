@@ -12,6 +12,7 @@
 #if !defined(LNS_THROW_ARITHMETIC_EXCEPTION)
 #define LNS_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <iosfwd>     // std::ostream/std::istream in the friend declarations (#1334)
 #include <universal/utility/icf_array_bounds.hpp>

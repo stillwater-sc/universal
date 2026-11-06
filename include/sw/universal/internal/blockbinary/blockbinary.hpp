@@ -7,6 +7,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <cstdint>
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <universal/utility/icf_array_bounds.hpp>
 #include <string>   // the std::string constructor
 #include <type_traits>
@@ -320,7 +321,7 @@ public:
 					// is unreachable at runtime because is_constant_evaluated() is false
 					// there; the runtime intrinsic path below handles all execution.
 					// Users on MSVC needing compile-time eval should use uint32_t limbs.
-					throw "blockbinary<N, uint64_t> constexpr multiply requires __int128 support (gcc/clang); on MSVC use uint32_t limbs for compile-time evaluation";
+					throw_or_abort("blockbinary<N, uint64_t> constexpr multiply requires __int128 support (gcc/clang); on MSVC use uint32_t limbs for compile-time evaluation");
 #endif
 				}
 				else {
@@ -397,7 +398,7 @@ public:
 #else
 					// See the signed branch: forcing a throw turns silent zero-result
 					// into a compile error on platforms without __int128 (MSVC).
-					throw "blockbinary<N, uint64_t> constexpr multiply requires __int128 support (gcc/clang); on MSVC use uint32_t limbs for compile-time evaluation";
+					throw_or_abort("blockbinary<N, uint64_t> constexpr multiply requires __int128 support (gcc/clang); on MSVC use uint32_t limbs for compile-time evaluation");
 #endif
 				}
 				else {
@@ -940,14 +941,13 @@ public:
 		}
 		return ll;
 	}
+	// the low min(nbits, 64) bits as they are stored, not sign-extended, gathered a block at a time
 	constexpr uint64_t to_ull() const {
 		uint64_t ull{ 0 };
-		uint64_t mask{ 1 };
-		uint32_t msb = nbits < 64 ? nbits : 64;
-		for (uint32_t i = 0; i < msb; ++i) {
-			ull |= at(i) ? mask : 0;
-			mask <<= 1;
+		for (unsigned i = 0; i < nrBlocks && i * bitsInBlock < 64u; ++i) {
+			ull |= static_cast<uint64_t>(_block[i]) << (i * bitsInBlock);
 		}
+		if constexpr (nbits < 64) ull &= (uint64_t(1) << nbits) - 1u;
 		return ull;
 	}
 	template<typename Real,
@@ -1222,7 +1222,7 @@ template<unsigned nbits, unsigned roundingBits, typename B, BinaryNumberType T>
 blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>& a, const blockbinary<nbits, B, T>& b) {
 	if (b.iszero()) {
 		// division by zero
-		throw "urdiv divide by zero";
+		throw_or_abort("urdiv divide by zero");
 	}
 	// generate the absolute values to do long division 
 	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()

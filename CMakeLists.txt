@@ -170,7 +170,7 @@ option(UNIVERSAL_BUILD_MIXEDPRECISION_POP           "Set to ON to build POP prec
 option(UNIVERSAL_BUILD_TYPE_HIERARCHY              "Set to ON to build type hierarchy tests"             OFF)
 
 # application environment tests
-option(UNIVERSAL_BUILD_APP_ENVIRONMENT             "Set to ON to build applicatoin environment tests"    OFF)
+option(UNIVERSAL_BUILD_APP_ENVIRONMENT             "Set to ON to build the integration tests"            OFF)
 
 # C API library and test programs
 option(UNIVERSAL_BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
@@ -644,6 +644,12 @@ if(MSVC)
 	set(CMAKE_CXX_FLAGS     "${CMAKE_CXX_FLAGS} /EHsc")
 endif()
 
+# Header compile guards: cache variables that set the headers' #ifndef UNIVERSAL_* switches
+# for this build tree only (never exported to find_package consumers). Included once
+# CMAKE_CXX_FLAGS* hold their final values (EXTRA_CXX_FLAGS above), so that a guard also set
+# there is caught, and before any target is added.
+include(tools/cmake/header_guards.cmake)
+
 ####
 # Set include directory that contains all the different components
 # universal: number systems
@@ -851,6 +857,7 @@ if(UNIVERSAL_BUILD_CI)
 	set(UNIVERSAL_BUILD_NUMERIC_QUIRES ON)
 	set(UNIVERSAL_BUILD_MIXEDPRECISION_SDK OFF)
 	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
+	set(UNIVERSAL_BUILD_NUMERIC_FAITHFUL ON)   # faithful's tests live in numeric/faithful (#1930)
 
 	# we now have a standalone complex<> solution
 	set(UNIVERSAL_BUILD_COMPLEX ON)
@@ -904,6 +911,14 @@ if(UNIVERSAL_BUILD_CI_LITE)
 
 	# conversions
 	set(UNIVERSAL_BUILD_NUMBER_CONVERSIONS ON)
+
+	# integration tests: multifile, and every number system built with -fno-exceptions,
+	# which keeps a stray throw from breaking bare-metal builds again (#1925)
+	set(UNIVERSAL_BUILD_APP_ENVIRONMENT ON)
+
+	# faithful's compensated arithmetic has its only tests in numeric/faithful, which NUMERICS
+	# alone enabled, so no CI job ran them (#1930)
+	set(UNIVERSAL_BUILD_NUMERIC_FAITHFUL ON)
 
 	# utility tests: the decimal-to-binary converter, string parsing, fma traits and error
 	# tracking. Enabled only by UNIVERSAL_BUILD_ALL before, so no CI job built them and they
@@ -1038,10 +1053,10 @@ if(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 endif(UNIVERSAL_BUILD_MIXEDPRECISION_SDK)
 
 ##################################################################
-###          multi-file application regression environment
+###          integration tests: multi-file and no-exceptions application environments
 
 if(UNIVERSAL_BUILD_APP_ENVIRONMENT)
-add_subdirectory("static/appenv")
+add_subdirectory("integration")
 endif(UNIVERSAL_BUILD_APP_ENVIRONMENT)
 
 ##################################################################

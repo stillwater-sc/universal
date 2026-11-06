@@ -90,7 +90,10 @@ namespace sw { namespace universal {
 				Integer ia(a), ib(b), iq, ir;
 				iq.reduce(ia, ib, ir);
 				const Integer qref(a / b), rref(a % b);
-				if (iq != qref || ir != rref || iq.isneg() != (a / b < 0) || ir.isneg() != (a % b < 0)) {
+				// the operators, the einteger and the literal forms: the literal % returned the quotient (#1878)
+				const long long la = a, lb = b;
+				const bool operatorsMatch = (ia / ib == qref) && (ia % ib == rref) && (ia / lb == qref) && (ia % lb == rref) && (la / ib == qref) && (la % ib == rref);
+				if (!operatorsMatch || iq != qref || ir != rref || iq.isneg() != (a / b < 0) || ir.isneg() != (a % b < 0)) {
 					nrOfFailedTests++;
 					if (reportTestCases && nrOfFailedTests < 10) {
 						std::cerr << "FAIL: " << a << " / " << b << " = " << iq << " rem " << ir

@@ -29,7 +29,7 @@ try {
 	using Fixpnt9_4  = fixpnt<9,  4, Modulo, std::uint8_t>;
 	using Fixpnt16_8 = fixpnt<16, 8, Modulo, std::uint8_t>;
 
-	// ----- decimal (integer-only in B1) -----
+	// ----- decimal integers (fractions and exponents: decimal_parse.cpp, #1931) -----
 	{
 		int start = nrOfFailedTestCases;
 		Fixpnt8_4 a;

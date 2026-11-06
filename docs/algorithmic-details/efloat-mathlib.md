@@ -566,6 +566,122 @@ state at any precision.
     `__int128` undefined, as on MSVC, and with the assembly off. Of 7 mutants of the
     constant-evaluation branches, the tests catch 6; the seventh stops `sqrtrem1`'s iteration
     one step early, which its correction loop absorbs.
+- **The math library in constant evaluation** (#1819, phase 3). Every function of the library
+  runs in a constant expression, with the results the run time gives, bit for bit: `constexpr
+  efloat<34> e = exp(one)` at 1024 bits, `static_assert(cbrt(efloat<8>(27)) == 3)`.
+  - **The constants.** ln 2, ln 10, pi, atan(1/2), 2 / sqrt(pi), log(2 pi) / 2, the log table and
+    the Stirling coefficients are cached per thread at the widest precision computed so far. A
+    constant evaluation can keep neither a thread-local nor a value past the call that makes it,
+    so there `constant_value()` computes the constant at the request's precision plus the cache's
+    32 guard bits and rounds it once. That can differ in its last bits from a value rounded from
+    a wider cache, as two run-time caches of different widths can; the functions round correctly
+    by Ziv's test, so their results do not. The fixed-point series take their scratch from a
+    vector of their own there (`scratch_space`), and `log2_factorial` sums its table entry.
+  - **The estimates.** The functions size their work in `double`: series terms, halvings, block
+    lengths, the bits a subtraction cancels, the precision lgamma's parts call for. Those came
+    from `<cmath>`, which a constant expression cannot call. They come from
+    `efloat/double_math.hpp` now, the same code in both: `floor`, `ceil`, `trunc`, `round`,
+    `nearbyint`, `fabs`, `ilogb` and the power-of-2 scale by the fields, bit for bit `<cmath>`'s
+    over 20 million arguments; `log2`, `log` and `log10` by `sw::math::constexpr_math`'s artanh
+    series, within 2^-52 max(1, |log2 x|) of `std::log2`; `sin(pi f)` by its Taylor series; and `lgamma` by
+    Stirling's series and the reflection, within 2^-40 of max(1, |lgamma x|). `sqrt` is the one
+    function with two paths: the integer root of the significand in a constant evaluation, the
+    instruction at run time. IEEE-754 rounds a square root correctly, so they are the same value,
+    and the instruction is ~30x faster, which exp, sin and expm1 measured (their halving targets
+    take a root on every call: 4-11% slower at 128 bits through the integer path).
+  - **The conversions.** efloat from and to `float` and `double` read and write the fields of the
+    encoding (`extractFields`, `sw::bit_cast`) instead of `std::fpclassify`, `std::signbit` and
+    `std::frexp`, and both directions round through one routine, `round_to_native<K, E_min,
+    E_max>()`, a 128-bit window over the significand. `long double` takes the same routine: x87's
+    64-bit significand and IEEE binary128's 113 bits by their encodings, IBM's double-double as the
+    double nearest the value plus the double nearest the rest. It used to sum doubles and scale by
+    `std::ldexp`, which rounded to nearest in every mode and twice below the normal range: of 1.2
+    million values in the four modes, 249889 came out wrong, and the double-double round trip
+    failed 149 times in 60000. Now none do (x87 here, binary128 under QEMU for RISC-V, double-double
+    for POWER). The float and double conversions are unchanged, results and flags, over 1.6
+    million values in the four modes.
+  - **The thread's state.** The flags go through `efloat_detail::raise_flags()`; `cbrt`'s mirrored
+    mode for a negative root, and `rint`, take the mode through `rounding_mode()`; and the -inf of
+    `log(0)` carries x's precision in a constant evaluation as at run time, which it did not.
+  - **The step limits.** At 512 bits every function fits clang's default 1048576 steps but the two
+    gamma functions, whose Stirling coefficients (m^2 / 2 products at the working precision)
+    a constant evaluation recomputes every call: about 4 million steps at 64 bits. A program that
+    evaluates lgamma or tgamma at compile time raises the limit, as the test does
+    (`-fconstexpr-steps`, MSVC `/constexpr:steps`); gcc's default operation limit holds them.
+  - **No run-time cost.** Every function at 128, 512 and 2048 bits runs within the noise of
+    before, lgamma 3-5% faster (its double estimate no longer goes through libm), and 125656
+    results of 41 functions at 7 precisions and in the four modes, with their flags, are the same
+    as before under g++ and clang.
+  - **Verification.** `elastic/efloat/math/constexpr_mathlib.cpp` evaluates each function at six
+    arguments, each value a constant evaluation of its own, at 128 bits and at 512 in level 2 (the
+    gamma functions at 64 and 128), compares every result with the run time, checks the exact
+    cases and the conversions in `static_assert`, and computes exp(1), pi = acos(-1) and sqrt(2)
+    to 1024 bits.
+- **Literals in constant evaluation** (#1819, phase 5). `parse()` takes a `std::string_view` and
+  is `constexpr`, and a constant evaluation reads a literal as the run time does, bit for bit;
+  `assign()`, `efloat_pi()`, `efloat_e()`, `efloat_phi()`, `efloat_pi_2()` and `efloat_pi_4()`
+  are `constexpr` with it, and pi read from its literal at 1024 bits is, in `static_assert`, the
+  limbs of `acos(-1)`.
+  - **The converter.** `parse()` rounds the output of the shared decimal-to-binary converter
+    (`utility/decimal_to_binary.hpp`), which is `constexpr` now for every type that uses it. It
+    computes on `integer<W>` at the narrowest of 256 to 32768 bits that holds the literal. Its
+    magnitude estimate for a short literal with a huge exponent calls `<cmath>`; a constant
+    evaluation refuses such a literal, which efloat's `parse()` refuses before reaching it anyway.
+    The `std::isspace`, `std::tolower` and `std::to_string` calls are ASCII code of its own.
+  - **integer<> multiplication by size.** `integer<W>`'s multiply ran every limb pair of the
+    width, whatever the operands held: the converter collecting 330 digits at 16384 bits did 37
+    products of 512 by 512 limbs. Past 16 limbs (512 bits) a row of a zero limb is skipped and a
+    row ends at the multiplicand's last nonzero limb, then ripples its carry. The products are the
+    same; a parse of 1e-300 or of pi at 128 bits is 2.5-3x faster (of 0.1 unchanged), pi at 1024 bits 6.1 ms -> 0.11 ms, at 3300 bits
+    16.5 ms -> 0.31 ms, and a full-width product at 768 and 1024 bits 1.6-1.9x faster. Up to 16
+    limbs the fixed-trip loop stays, which the compilers unroll; at 17 limbs clang's product is
+    slower (60 -> 80 ns), gcc's faster (96 -> 63 ns).
+  - **The step limits.** pi, e or phi fit clang's default 1048576 steps through 512 bits; 1024
+    and 2048 bits take about 4 million, the 3300 bits of the literal about 16 million clang steps
+    and 64 million gcc operations. The test raises the limits for itself.
+  - **Out of the constant evaluation.** `to_double_expansion<N>(v)` returns v as N doubles, each
+    the conversion of what the ones before it left: hi and lo for a `dd`, four for a `qd`, built in
+    the same constant expression. pi at 384 bits gives `dd_pi` and `qd_pi` exactly, the nearest
+    expansions since #1849 corrected `qd_pi`'s fourth component.
+  - **No run-time change.** 66176 parses (6016 literals at 11 precisions, two widths) and
+    integer<> products at seven widths are the same as before under g++ and clang, as are the
+    cfloat, posit, dd and qd parses of the same literals.
+  - **Verification.** `elastic/efloat/conversion/constexpr_parse.cpp` reads 24 literals, each a
+    constant evaluation of its own, at 64 and 128 bits and at 512 in level 2, compares each with
+    the run time, checks ties to even and the failures in `static_assert`, and compares pi, e and
+    phi with the run time at 128 and 1024 bits, and at 3300 in level 2.
+- **constexpr variables at every precision** (#1819, phase 4). An efloat whose limbs fit its
+  inline buffer -- up to `EFLOAT_INLINE_LIMBS` 64-bit limbs, 512 bits by default (#1820) -- is
+  itself a constexpr variable. Past it the limbs are on the heap, and a constexpr variable cannot
+  keep what a constant evaluation allocated (C++20, and C++23 and C++26 too).
+  `efloat_constant<nlimbs>` (`efloat/efloat_constant.hpp`) holds the value of an
+  `efloat<nlimbs>` -- state, sign, exponent, precision and limbs -- in an array sized for
+  nlimbs * 32 bits, and turns back into the same efloat:
+
+  ```cpp
+  constexpr efloat_constant<32> pi = efloat_pi<32>();       // 1024 bits
+  static_assert(pi > 3 && pi < efloat<32>(22) / 7);
+  efloat<32> x = pi;                                         // bit for bit efloat_pi<32>()
+  ```
+
+  - **Its interface.** It compares with itself, with `efloat<nlimbs>` and with native arithmetic
+    types (a native operand converts exactly), converts to float and double, and has the
+    selectors (`iszero`, `isnan`, `sign`, `scale`, `get_precision`, `limb_data`). Arithmetic goes
+    through the efloat it converts to. A significand longer than nlimbs * 32 bits -- computed at
+    a precision set past the type's -- is rounded to nlimbs * 32 bits, as `set_precision()`
+    rounds, to nearest in a constant evaluation.
+  - **Why a type of its own.** The other designs #1819 weighed change efloat: a capacity from
+    the template parameter caps the elastic precision, and a capacity parameter of its own
+    changes every one of the 244 function templates over `efloat<nlimbs>`. Raising
+    `EFLOAT_INLINE_LIMBS` still works, for a whole build, at the price of larger copies.
+    `efloat_constant` leaves efloat and its run time as they were.
+  - **NaN comparisons.** efloat's `>=` was `!(a < b)`, so `NaN >= x` was true. It is now
+    `b < a || a == b`, false for a NaN as `<=` already was; for every other value it is the same.
+  - **Verification.** `elastic/efloat/api/constexpr_constant.cpp` checks inline constexpr
+    variables at 128 and 512 bits, round trips of 10 values (fractions, a native integer without
+    a precision of its own, both zeros, both infinities, both NaNs) at 32, 128, 544, 1024 and 3300
+    bits against the run time, the rounding of a longer significand against `set_precision()`,
+    the comparisons, and pi, e and phi as `efloat_constant<32>`, and `<104>` in level 2.
 
 ## 4. The functions
 
@@ -955,7 +1071,7 @@ Until #1783 these five were computed at the result's precision but rounded more 
 The library computes its own constants at the working precision and caches the widest value
 per thread: `ln2 = 2 atanh(1/3)`, `ln10 = 3 ln2 + 2 atanh(1/9)`, `pi` by Machin's formula,
 `atan(1/2) = atan(1/3) + atan(1/7)`. The public `efloat_pi/e/phi<nlimbs>()` are 1000-digit
-literals that carry the type's width; #1739 stopped using them inside functions, because a
+literals that carry the type's width, `constexpr` since #1819's phase 5; #1739 stopped using them inside functions, because a
 value widened past the type's width was reduced with a narrower `pi`. The first call at a new
 precision pays to fill the caches, which matters for benchmarks.
 
@@ -1086,7 +1202,8 @@ efloat / MPFR in microseconds, then the ratio.
 | `lgamma(b)` | 7.091 / 7.615 | 0.9x | 20.91 / 34.22 | 0.6x | 140.1 / 772.3 | 0.2x | 2374 / 7377 | 0.3x |
 | `erf(a)` | 2.969 / 2.970 | 1.0x | 9.838 / 16.05 | 0.6x | 75.19 / 174.7 | 0.4x | 1411 / 3054 | 0.5x |
 | `erfc(a)` | 3.075 / 3.239 | 0.9x | 10.05 / 16.52 | 0.6x | 75.80 / 176.9 | 0.4x | 1418 / 3059 | 0.5x |
-Read the ratio column as the work left on Epic #1763.
+
+Epic #1763 asked for every ratio at or below gmpy2 (MPFR plus a Python call) and, as a stretch, at or below 1.5x MPFR; both held when it closed on 2026-10-29, re-measured then on main within 0.1 of these ratios.
 
 **Across precisions** (`mpfr_bands`, #1826). The four precisions above are all whole numbers of
 64-bit limbs, and the table times no subtraction. `mpfr_bands` times the primitives and three
@@ -1308,19 +1425,22 @@ row both ways before reading it as a cost.
 | #1815 | 2026-10-24 | Toom-3 multiplication and squaring (Bodrato's sequence), from 240 and 352 limbs by measurement: products 2-16% faster from 16384 bits; nothing changes up to 8192 |
 | #1818 | 2026-10-24 | x86-64 `mulx`/`adcx`/`adox` kernels in inline assembly, chosen at run time by `cpuid`, portable loops elsewhere; thresholds re-measured: `a*b`, `b/a`, `sqrt` at 8192 bits 3.46/6.02/3.66 us to 2.61/4.58/2.91, below gmpy2 |
 | #1822 | 2026-10-24 | 64-bit least-significant-first storage in an inline buffer with a per-thread block cache, no per-operation allocation: `a+b` 0.40-0.63x, `a*b` 0.65-0.91x, `b/a` 0.67-0.91x of before; every operation within 1.5x MPFR, every `mpmath_gap` cell below gmpy2; parsed literals normalized |
-| #1824 | 2026-10-24 | the limb kernels moved out of efloat: `efloat/efloat_mpn.hpp`, namespace `efloat_mpn`, to `internal/limbs/limb_kernels.hpp`, namespace `limb_kernels`; macros `UNIVERSAL_LIMB_KERNELS_NO_ASM` and `_X86_64_ASM` (`EFLOAT_MPN_NO_ASM` and the old header accepted, deprecated, for one release); no code change |
+| #1824 | 2026-10-24 | the limb kernels moved out of efloat: `efloat/efloat_mpn.hpp`, namespace `efloat_mpn`, to `internal/limbs/limb_kernels.hpp`, namespace `limb_kernels`; macros `UNIVERSAL_LIMB_KERNELS_NO_ASM` and `_X86_64_ASM` (`EFLOAT_MPN_NO_ASM` and the old header accepted, deprecated, for one release, then removed after v5.12.0); no code change |
 | #1827 | 2026-10-25 | `mpfr_bands`, efloat / MPFR at 20 precisions from 64 to 16384 bits; differences at the full precision as `mpfr_sub1sp`, at any precision of whole 32-bit limbs, one to four limbs in fixed-size code; binary operators into the result without a copy; short products of one to three limbs; one-limb divisors and short exact quotients rounded from the remainder, `divq` for quotients of one or two limbs; exact small roots; ratio guards in `mpmath_gap`: `b-a` 2.1-3.4x MPFR to 0.9-2.0x, `a*b` at 64-160 bits 1.6-2.3x to 0.8-1.5x |
 | #1829 | 2026-10-25 | quotients and roots of one and two limbs in fixed-size code (`sqrtrem4`, `sqrt_approx4`), differences one bit apart as 2 X - Y in one pass (`twice_sub_n`), short copies without store-forwarding stalls, copies and moves member by member: `b/a` and `sqrt` at 64-96 bits 1.7-2.6x MPFR to 0.9-1.5x, `b-a` at 384-1024 bits 1.6-2.0x to 1.2-1.5x; every `mpfr_bands` cell within 1.5x but `b-a` at 128 bits and `a+b` at 160 |
 | #1831 | 2026-10-25 | sums and differences of one to four limbs in registers (`add_short`), the binary operators, `assign_sum` and the inline move always inlined, carries by `__builtin_addcll`/`subcll`, clang's 2-by-1 division without its conditional move: `b-a` at 128 bits 1.68x MPFR to 1.45x (clang 2.08x to 1.44x), clang's `b/a` at 96 bits 1.63x to 1.03x and `a/7` 1.4-1.6x to 1.1-1.3x; every `mpfr_bands` cell within 1.5x under both compilers |
 | #1833 | 2026-10-25 | a fixed-size `fma` for operands of one to six limbs that overlap the product (`fma_short`), operands of the general `fma` and `hypot` read in place, the block cache's last-in-first-out slot and a reaper constructed once: `fma` at 64-256 bits 1.05-1.46x MPFR to 0.54-0.92x (clang 1.07-1.44x to 0.46-0.66x), `mpfr_gap` `fma` at 128 bits 1.1x to 0.7x |
 | #1834 | 2026-10-26 | arithmetic in constant evaluation (#1819 phases 1-2): `limb_kernels` `inline constexpr` with the assembly, `divq` and carry builtins behind `std::is_constant_evaluated()`, integer seeds for the roots, `new`/`delete` scratch, the rounding mode and flags out of reach (`rounding_mode()`, `raise_flags()`): the constructors from integers, `+ - * /`, the comparisons and `sqrt` in `static_assert`, bit for bit the run-time results; the same instructions at run time |
+| #1847 | 2026-10-27 | the math library in constant evaluation (#1819 phase 3): cached constants computed per request (`constant_value()`), series scratch of their own, the `double` estimates from `efloat/double_math.hpp` instead of `<cmath>`, float and double converted by their encodings through `round_to_native()`, long double by its encoding: every function in `static_assert`, bit for bit the run-time results; run-time results and speed unchanged; long double now rounds in the current mode |
+| #1848 | 2026-10-27 | literals in constant evaluation (#1819 phase 5): `parse()` from a `std::string_view` and the shared decimal-to-binary converter `constexpr`, `efloat_pi/e/phi()` with them, `to_double_expansion()` for a dd or qd out of a constant evaluation; `integer<>` multiplication past 16 limbs by the operands' sizes, which makes a long literal's parse up to 57x faster; results unchanged |
+| #1851 | 2026-10-27 | constexpr variables at every precision (#1819 phase 4): `efloat_constant<nlimbs>` holds an efloat value in fixed storage past the inline limbs and turns back into the same efloat; `>=` false for a NaN, as `<=` was |
 
 ## 9. Open work
 
 **Library gaps.** None open: the exact integer cube root with remainder that this section asked
 for is `limb_kernels::cbrtrem` (#1800).
 
-**Speed** (Epic #1763): short
+**Speed** (past Epic #1763, closed 2026-10-29): short
 division (`divhigh`); the fixed-point series engine of exp and the versine (#1788, #1790)
 carried over to expm1 (atan done in #1792, log's atanh in #1795); MPFR's bit-burst atan at 8192 bits; a cheap first Ziv try at `p + log2(p)` guard bits instead of 64; binary
 splitting for exp and sin/cos;
@@ -1334,11 +1454,9 @@ of the difference's 9, which only a result written in place would save; and `fma
 bits (1.2x), past the short path's six limbs, where a seven- and eight-limb version measured
 slower than the general path (section 3).
 
-**Constant evaluation** (#1819, phases 3 to 5): the math library past `sqrt`, whose global
-caches (ln 2, pi, the log and Bernoulli tables) and `double` estimates of working precisions a
-constant expression cannot use; conversion from and to `float` and `double`, through
-`std::fpclassify` and `std::ldexp`; `parse` from a `std::string_view`; and constexpr values past
-the inline limbs, which need a fixed-capacity type.
+**Constant evaluation** (#1819): the gamma functions within the default step limits, which a
+fixed table of Stirling coefficients would bring; and pi, e and phi past 512 bits within them,
+which the converter's fixed-width `integer<>` copies and shifts keep from.
 
 ## 10. Working on it
 

@@ -88,6 +88,7 @@
 #ifndef CFLOAT_THROW_ARITHMETIC_EXCEPTION
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #ifndef TRACE_CONVERSION
 #define TRACE_CONVERSION 0
@@ -107,6 +108,12 @@ namespace sw { namespace universal {
  *   hasMaxExpValues  : reclaim max-exponent encodings as numeric values instead of
  *                      reserving the entire all-1s exponent binade for inf/NaN;
  *                      only 4 encodings are reserved for +-inf and quiet/signalling NaN
+ *
+ * Special encodings: inf is the encoding right after maxpos, and every NaN sits above it.
+ *   without hasMaxExpValues : IEEE-754, inf = s.11..11.00..00, NaN = s.11..11.(non-zero)
+ *   with hasMaxExpValues    : inf = s.11..11.11..10, NaN = s.11..11.11..11
+ *   with both hasMaxExpValues and isSaturating there is no inf: s.11..11.11..10 is maxpos/maxneg
+ * Quiet and signalling NaN are told apart by the sign (positive is quiet) (#1780)
  *   isSaturating     : saturate to maxneg or maxpos when value is out of dynamic range
  */
 
@@ -171,7 +178,7 @@ constexpr inline void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nb
 	using cfloatType = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	// test special cases
 	if (src.isnan()) {
-		tgt.setnan(src.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
+		tgt.setnan(src.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET); // a blocktriple carries the NaN type in its sign
 	}
 	else	if (src.isinf()) {
 		tgt.setinf(src.sign());
@@ -442,7 +449,16 @@ public:
 	static constexpr uint64_t topfbits = fbits % 64;
 	static constexpr uint64_t FR_SHIFT = (topfbits > 0 ? (64 - topfbits) : 0);
 	static constexpr uint64_t ALL_ONES_FR = (topfbits > 0 ? (0xFFFF'FFFF'FFFF'FFFFull >> FR_SHIFT) : 0ull); // special case for nbits <= 64
-	static constexpr uint64_t INF_ENCODING = (ALL_ONES_FR & ~1ull);
+	// fraction bits of +-inf. Without max-exponent values the all-ones exponent binade holds no values
+	// and inf is IEEE-754's: fraction 0, the encoding right after maxpos, every other pattern a NaN.
+	// With max-exponent values the binade holds values, and inf is the pattern after maxpos at the top
+	// of it, 0b...11...10, below the NaN 0b...11...11 (#1780)
+	static constexpr uint64_t INF_ENCODING = (_hasMaxExpValues ? (ALL_ONES_FR & ~1ull) : 0ull);
+	// NaN typing (#1896): without max-exponent values the whole all-ones-exponent binade except inf is NaN,
+	// and the fraction MSB tells quiet (1) from signalling (0) as in IEEE-754. That needs fbits >= 2 so a
+	// signalling NaN has a nonzero payload. Otherwise (max-exponent values, or fbits == 1) there are only
+	// two NaN patterns, s.11..11.11..11, and the sign is the type: quiet = positive, signalling = negative.
+	static constexpr bool ieeeNanTyping = !_hasMaxExpValues && (fbits >= 2u);
 
 	static constexpr unsigned nrBlocks = 1u + ((nbits - 1ull) / bitsInBlock);
 	static constexpr unsigned MSU = nrBlocks - 1u; // MSU == Most Significant Unit, as MSB is already taken
@@ -477,13 +493,14 @@ public:
 	template<unsigned nnbits, unsigned ees, typename bbt, bool ssub, bool ssup, bool ssat>
 	cfloat(const cfloat<nnbits, ees, bbt, ssub, ssup, ssat>& rhs) noexcept : _block{} {
 		if (rhs.isnan()) {
-			setnan(rhs.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
+			setnan(rhs.isnan(NAN_TYPE_SIGNALLING) ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
 		}
 		else if (rhs.isinf()) {
 			setinf(rhs.sign());
 		}
 		else if (rhs.iszero()) {
 			setzero();
+			setsign(rhs.sign()); // a conversion keeps the sign of zero (#1901)
 		}
 		else {
 			if constexpr (std::is_same_v<bt, bbt>) {
@@ -692,28 +709,25 @@ public:
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
 			throw cfloat_operand_is_nan{};
 		}
-#else
-		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
-			setnan(NAN_TYPE_SIGNALLING);
-			return *this;
-		}
-		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+#endif
+		// a NaN operand delivers a quiet NaN: a signalling one is an invalid operation (IEEE-754 6.2,
+		// #1899) that throws above when exceptions are on; the significand path below has no NaN
+		if (isnan() || rhs.isnan()) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
-#endif
 		// normal + inf  = inf
 		// normal + -inf = -inf
 		// inf + normal = inf
 		// inf + inf    = inf
-		// inf + -inf    = ?
+		// inf + -inf    = qnan
 		// -inf + normal = -inf
 		// -inf + -inf   = -inf
-		// -inf + inf    = ?
+		// -inf + inf    = qnan
 		if (isinf()) {
 			if (rhs.isinf()) {
 				if (sign() != rhs.sign()) {
-					setnan(NAN_TYPE_SIGNALLING);
+					setnan(NAN_TYPE_QUIET); // an invalid operation delivers a quiet NaN (IEEE-754 7.2, #1896)
 				}
 				return *this;
 			}
@@ -778,16 +792,13 @@ public:
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
 			throw cfloat_operand_is_nan{};
 		}
-#else
-		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
-			setnan(NAN_TYPE_SIGNALLING);
-			return *this;
-		}
-		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+#endif
+		// a NaN operand delivers a quiet NaN: a signalling one is an invalid operation (IEEE-754 6.2,
+		// #1899) that throws above when exceptions are on; the significand path below has no NaN
+		if (isnan() || rhs.isnan()) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
-#endif
 		//  inf * inf = inf
 		//  inf * -inf = -inf
 		// -inf * inf = -inf
@@ -843,20 +854,19 @@ public:
 		if constexpr (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 #endif
 		// special case handling of the inputs
-		// qnan / qnan = qnan
-		// qnan / snan = qnan
-		// snan / qnan = snan
-		// snan / snan = snan
+		// any NaN operand, quiet or signalling, delivers a quiet NaN (IEEE-754 6.2, #1899)
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
-		if (rhs.iszero()) throw cfloat_divide_by_zero();
-		if (rhs.isnan()) throw cfloat_divide_by_nan();
-		if (isnan()) throw cfloat_operand_is_nan();
-#else
-		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
-			setnan(NAN_TYPE_SIGNALLING);
+		// signalling NaNs throw, quiet NaNs propagate, and only then is a zero divisor an exception
+		if (rhs.isnan(NAN_TYPE_SIGNALLING)) throw cfloat_divide_by_nan();
+		if (isnan(NAN_TYPE_SIGNALLING)) throw cfloat_operand_is_nan();
+		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
-		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+		if (rhs.iszero()) throw cfloat_divide_by_zero();
+#else
+		// a NaN operand delivers a quiet NaN, a signalling one included (IEEE-754 6.2, #1899)
+		if (isnan() || rhs.isnan()) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
@@ -938,6 +948,7 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to +minpos: its magnitude would wrap (#1901)
 			if (sign()) {
 				if (_block[MSU] == (SIGN_BIT_MASK | 1ul)) { // pattern: 1.00.001 = minneg
 					_block[MSU] = 0; // pattern: 0.00.000 = +0 
@@ -968,6 +979,7 @@ public:
 			}
 		}
 		else {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to +minpos: its magnitude would wrap (#1901)
 			if (sign()) {
 				// special case: pattern: 1.00.001 = minneg transitions to pattern: 0.00.000 = +0 
 				if (isminnegencoding()) {
@@ -1001,15 +1013,18 @@ public:
 				}
 			}
 			else {
-				// special case: pattern: 0.11.111 = nan transitions to pattern: 1.11.111 = snan 
+				// special case: pattern 0.11.111 transitions to pattern 1.11.111, the next encoding;
+				// setsign keeps it raw, as setnan would write a canonical NaN instead (#1896)
 				if (isnanencoding()) {
-					setnan(NAN_TYPE_SIGNALLING);
+					setsign(true);
 				}
 				else {
 					if constexpr (!hasSubnormals) {
 						if (iszero()) {
-							// special case, we need to jump past all the subnormal value encodings minus 1 so that the increment code below ends up on normal minpos
-							setfraction(0xFFFF'FFFF'FFFF'FFFFull);
+							// special case: jump past all the subnormal value encodings to normal minpos;
+							// setfraction only reaches 64 fraction bits, so a carry would not reach the exponent of a wider format
+							minpos();
+							return *this;
 						}
 					}
 					bool carry = true;
@@ -1043,6 +1058,7 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to -minpos (#1901)
 			if (sign()) {
 				++_block[MSU];
 			}
@@ -1071,6 +1087,7 @@ public:
 			}
 		}
 		else {
+			if (sign() && iszeroencoding()) setsign(false); // -0 steps like +0, to -minpos (#1901)
 			if (sign()) {
 				bool carry = true;
 				for (unsigned i = 0; i < MSU; ++i) {
@@ -1200,9 +1217,28 @@ public:
 		}
 	}
 	constexpr void setzero() noexcept { clear(); }
+	// block i of the IEEE-754 +inf encoding: the exponent bits set, fraction and sign clear
+	static constexpr bt ieee_inf_block(unsigned i) noexcept {
+		bt b{ 0 };
+		for (unsigned j = 0; j < bitsInBlock; ++j) {
+			const unsigned g = i * bitsInBlock + j;
+			if (g >= fbits && g < nbits - 1) b = bt(b | bt(bt(1) << j));
+		}
+		return b;
+	}
 	constexpr void setinf(bool sign = true) noexcept {
-		// the Inf encoding is the pattern 0b0'11...11'11...10 for a +inf, and 0b1'11...11'11...110 for a -inf
-		if constexpr (0 == nrBlocks) {
+		// without max-exponent values inf is IEEE-754's 0b0'11...11'00...00 / 0b1'11...11'00...00 (#1780);
+		// with them it is the pattern 0b0'11...11'11...10 for a +inf, and 0b1'11...11'11...110 for a -inf
+		if constexpr (!hasMaxExpValues) {
+			for (unsigned i = 0; i < nrBlocks; ++i) _block[i] = ieee_inf_block(i);
+			if (sign) _block[MSU] |= SIGN_BIT_MASK;
+		}
+		else if constexpr (isSaturating && hasMaxExpValues) {
+			// a saturating encoding with max-exponent values has no inf: that pattern is maxpos/maxneg,
+			// and an infinity saturates to it
+			if (sign) maxneg(); else maxpos();
+		}
+		else if constexpr (0 == nrBlocks) {
 			return;
 		}
 		else if constexpr (1 == nrBlocks) {
@@ -1266,10 +1302,18 @@ public:
 		}	
 	}
 	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
-		// the NaN encoding is the pattern 0b0'11...11'11...11 for a quiet Nan, and 0b1'11...11'11...111 for a signalling NaN
 		if constexpr (0 == nrBlocks) {
 			return;
 		}
+		else if constexpr (ieeeNanTyping) {
+			// IEEE-754 (#1896): exponent all ones, the fraction MSB (the quiet bit) set for a quiet NaN,
+			// clear for a signalling NaN, whose payload is then the next bit: 0b0'11...11'10...00 and
+			// 0b0'11...11'01...00, the patterns std::numeric_limits<float/double> use
+			for (unsigned i = 0; i < nrBlocks; ++i) _block[i] = ieee_inf_block(i);
+			setbit(NaNType == NAN_TYPE_SIGNALLING ? fbits - 2u : fbits - 1u, true);
+			return;
+		}
+		// the NaN encoding is the pattern 0b0'11...11'11...11 for a quiet Nan, and 0b1'11...11'11...111 for a signalling NaN
 		else if constexpr (1 == nrBlocks) {
 			// fall through
 		}
@@ -1322,6 +1366,14 @@ public:
 		}
 		_block[MSU] = NaNType == NAN_TYPE_SIGNALLING ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 	}
+	// the value an operation delivers for this operand: a signalling NaN becomes the canonical quiet
+	// NaN (IEEE-754 6.2, #1899), and everything else, a quiet NaN's sign and payload included, is kept
+	constexpr cfloat quieted() const noexcept {
+		if (!isnan(NAN_TYPE_SIGNALLING)) return *this;
+		cfloat q{};
+		q.setnan(NAN_TYPE_QUIET);
+		return q;
+	}
 	constexpr void setsign(bool sign = true) {
 		if (sign) {
 			_block[MSU] |= SIGN_BIT_MASK;
@@ -1341,22 +1393,30 @@ public:
 				// we are a subnormal number: all exponent bits are 0
 				exponentBits = 0;
 			}
-			// TODO: optimize
-			uint32_t mask = (1ul << (es - 1));
-			for (unsigned i = nbits - 2; i > nbits - 2 - es; --i) {
-				setbit(i, (mask & exponentBits));
-				mask >>= 1;
-			}
+			setExponentField(exponentBits);
 		}
 		else {
 			uint32_t exponentBits = static_cast<uint32_t>(scale + EXP_BIAS);
-			uint32_t mask = (1ul << (es - 1));
-			for (unsigned i = nbits - 2; i > nbits - 2 - es; --i) {
-				setbit(i, (mask & exponentBits));
-				mask >>= 1;
-			}
+			setExponentField(exponentBits);
 		}
 		return true;
+	}
+	// write the es-bit exponent field from the low es bits of ebits, a limb at a time. Writing it
+	// a bit at a time with setbit() was one of the costs behind #1919.
+	constexpr void setExponentField(uint64_t ebits) noexcept {
+		constexpr uint64_t fieldMask  = (1ull << es) - 1ull;   // es < 21
+		constexpr unsigned lsb        = nbits - 1u - es;       // == fbits
+		constexpr unsigned firstBlock = lsb / bitsInBlock;
+		constexpr unsigned lastBlock  = (lsb + es - 1u) / bitsInBlock;
+		ebits &= fieldMask;
+		for (unsigned b = firstBlock; b <= lastBlock; ++b) {
+			const unsigned origin = b * bitsInBlock;  // bit position of the limb's lsb
+			uint64_t m{ 0 }, v{ 0 };
+			if (origin >= lsb) { m = fieldMask >> (origin - lsb); v = ebits >> (origin - lsb); }
+			else               { m = fieldMask << (lsb - origin); v = ebits << (lsb - origin); }  // lsb - origin < bitsInBlock
+			const bt keep = static_cast<bt>(~static_cast<bt>(m));
+			_block[b] = static_cast<bt>(static_cast<bt>(_block[b] & keep) | static_cast<bt>(v));
+		}
 	}
 	constexpr void setfraction(uint64_t raw_bits) {
 		// unoptimized as it is not meant to be an end-user API, it is a test API
@@ -1469,8 +1529,8 @@ public:
 			}
 		}
 		else {
-			// the Inf encoding is the pattern 0b0'11...11'11...10 for a +inf, and 0b1'11...11'11...110 for a -inf
-			// the maxpos is the encoding before that
+			// inf is the encoding right after maxpos: 0b0'11...11'11...10 with max-exponent values,
+			// 0b0'11...11'00...00 (IEEE-754) without them (#1780)
 			if constexpr (hasMaxExpValues) {
 				// maximum positive value has this bit pattern: 0-1...1-111...101, that is, sign = 0, e = 11..11, f = 111...101
 				clear();
@@ -1656,9 +1716,8 @@ public:
 			}
 		}
 		else {
-			blockbinary<es, bt> ebits{};
-			exponent(ebits);
-			if (ebits.iszero()) {
+			const uint64_t ebits = exponentField();
+			if (ebits == 0) {
 				// subnormal scale is determined by fraction
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
 				e = (2l - (1l << (es - 1ull))) - 1;
@@ -1670,7 +1729,7 @@ public:
 				}
 			}
 			else {
-				e = static_cast<int>(unsigned(ebits) - EXP_BIAS);
+				e = static_cast<int>(ebits) - EXP_BIAS;
 			}
 		}
 		return e;
@@ -1707,11 +1766,21 @@ public:
 		return false;
 	}
 	constexpr bool isinf(int InfType = INF_TYPE_EITHER) const noexcept {
-		// the bit pattern encoding of Inf is independent of the max-exponent value configuration
+		// the bit pattern of inf depends on the max-exponent value configuration, see setinf()
 		bool isNegInf = false;
 		bool isPosInf = false;
-		if constexpr (0 == nrBlocks) {
+		if constexpr (0 == nrBlocks || (isSaturating && hasMaxExpValues)) {
+			// a saturating encoding with max-exponent values has no inf: the Inf pattern is maxpos/maxneg
+			(void)InfType;
 			return false;
+		}
+		else if constexpr (!hasMaxExpValues) {
+			// IEEE-754: all-ones exponent, zero fraction (#1780)
+			bool isInf = (_block[MSU] & MSU_MASK & bt(~SIGN_BIT_MASK)) == ieee_inf_block(MSU);
+			for (unsigned i = 0; isInf && i < MSU; ++i) isInf = (_block[i] == ieee_inf_block(i));
+			const bool negative = (_block[MSU] & SIGN_BIT_MASK) != 0;
+			isNegInf = isInf && negative;
+			isPosInf = isInf && !negative;
 		}
 		else if constexpr (1 == nrBlocks) {
 			isNegInf = (_block[MSU] & MSU_MASK) == (MSU_MASK ^ LSB_BIT_MASK);
@@ -1756,11 +1825,14 @@ public:
 			if (ismaxexpvalue()) {
 				// all these max-exponent encodings are NANs, except for the encoding representing INF
 				bool isNaN = isinf() ? false : true;
-				bool isNegNaN = isNaN && sign();
-				bool isPosNaN = isNaN && !sign();
+				// the type is the quiet bit, as in IEEE-754 (#1896), or the sign when the fraction is too
+				// short to hold a quiet bit and a nonzero signalling payload
+				bool isQuiet = ieeeNanTyping ? at(fbits - 1u) : !sign();
+				bool isSigNaN = isNaN && !isQuiet;
+				bool isQuietNaN = isNaN && isQuiet;
 				return (NaNType == NAN_TYPE_EITHER ? (isNaN) :
-					(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
-						(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
+					(NaNType == NAN_TYPE_SIGNALLING ? isSigNaN :
+						(NaNType == NAN_TYPE_QUIET ? isQuietNaN : false)));
 			}
 			else {
 				return false;
@@ -1850,22 +1922,17 @@ public:
 	// isnormal returns true if 0 or exponent bits are not all zero or one, false otherwise
 	constexpr bool isnormal() const noexcept {
 		if (iszeroencoding()) return false; // zero is not a normal number (matches std::isnormal / IEEE classification)
-		blockbinary<es, bt> e{};
-		exponent(e);
-		return !e.iszero() && !e.all();
+		const uint64_t e = exponentField();
+		return e != 0 && e != ((1ull << es) - 1ull);
 	}
 	// isdenormal returns true if exponent bits are all zero, false otherwise
 	constexpr bool isdenormal() const noexcept {
 		if (iszeroencoding()) return false; // filter out the one special case
-		blockbinary<es, bt> e{};
-		exponent(e);
-		return e.iszero(); 
+		return exponentField() == 0;
 	}
 	// ismaxexpvalue returns true if exponent bits are all one, false otherwise
 	constexpr bool ismaxexpvalue() const noexcept {
-		blockbinary<es, bt> e{};
-		exponent(e);
-		return e.all();
+		return exponentField() == ((1ull << es) - 1ull);
 	}
 	// isinteger is TBD
 	constexpr bool isinteger() const noexcept { return false; } // return (floor(*this) == *this) ? true : false; }
@@ -1927,6 +1994,24 @@ public:
 	constexpr void sign(bool& s) const {
 		s = sign();
 	}
+	// the es-bit exponent field as an unsigned integer, gathered a limb at a time. Copying it bit by
+	// bit with at() (and reading it back through blockbinary::to_ull(), another bit loop) put two
+	// es-iteration loops into every isnormal()/isdenormal()/scale() of a cfloat whose field
+	// straddles limbs, several per add. That made cfloat<196,19> with uint32_t/uint64_t limbs and
+	// cfloat<128,15,uint8_t> 3x to 5x slower than the widths around them (#1919).
+	constexpr uint64_t exponentField() const noexcept {
+		constexpr unsigned lsb        = nbits - 1u - es;  // == fbits
+		constexpr unsigned firstBlock = lsb / bitsInBlock;
+		constexpr unsigned lastBlock  = (lsb + es - 1u) / bitsInBlock;
+		uint64_t raw{ 0 };
+		for (unsigned b = firstBlock; b <= lastBlock; ++b) {
+			const uint64_t limb   = static_cast<uint64_t>(_block[b]);
+			const unsigned origin = b * bitsInBlock;  // bit position of the limb's lsb
+			if (origin >= lsb) raw |= (limb << (origin - lsb));  // origin - lsb < es < 21
+			else               raw |= (limb >> (lsb - origin));  // lsb - origin < bitsInBlock
+		}
+		return raw & ((1ull << es) - 1ull);  // drops the sign and anything above the field
+	}
 	constexpr void exponent(blockbinary<es, bt>& e) const {
 		e.clear();
 		if constexpr (0 == nrBlocks) return;
@@ -1940,7 +2025,7 @@ public:
 				e.setbits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
 			}
 			else {
-				for (unsigned i = 0; i < es; ++i) { e.setbit(i, at(nbits - 1ull - es + i)); }
+				e.setbits(exponentField());  // the field straddles limbs
 			}
 		}
 	}
@@ -2083,7 +2168,7 @@ public:
 			return sign() ? -TargetFloat(0) : TargetFloat(0);
 		}
 		else if (isnan()) {
-			v = sign() ? std::numeric_limits<TargetFloat>::signaling_NaN() : std::numeric_limits<TargetFloat>::quiet_NaN();
+			v = isnan(NAN_TYPE_SIGNALLING) ? std::numeric_limits<TargetFloat>::signaling_NaN() : std::numeric_limits<TargetFloat>::quiet_NaN();
 		}
 		else if (isinf()) {
 			v = sign() ? -std::numeric_limits<TargetFloat>::infinity() : std::numeric_limits<TargetFloat>::infinity();
@@ -2149,7 +2234,7 @@ public:
 	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REP, TargetBlockType>& tgt) const {
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
@@ -2210,7 +2295,7 @@ public:
 		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
@@ -2291,7 +2376,7 @@ public:
 						}
 					}
 					else {  // this cfloat has no max-exponent values and thus this represents a nan, signalling or quiet determined by the sign
-						tgt.setnan(tgt.sign());
+						tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 					}			
 				}
 			}
@@ -2305,7 +2390,7 @@ public:
 	constexpr void normalizeMultiplication(blocktriple<fbits, BlockTripleOperator::MUL, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
@@ -2368,7 +2453,7 @@ public:
 		constexpr unsigned divshift = blocktriple<fbits, BlockTripleOperator::DIV, bt>::divshift;
 		// test special cases
 		if (isnan()) {
-			tgt.setnan();
+			tgt.setnan(isnan(NAN_TYPE_SIGNALLING)); // a blocktriple carries the NaN type in its sign
 		}
 		else if (isinf()) {
 			tgt.setinf(sign());
@@ -2525,9 +2610,10 @@ protected:
 				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
 			}
 		}
-		// post-rounding cleanup: rounding at the maxpos boundary can
-		// produce a NaN encoding; project back to inf or maxpos
-		if (isnan()) {
+		// post-rounding cleanup: rounding at the maxpos boundary carries into the all-ones
+		// exponent, which is inf without max-exponent values and a NaN past them (#1780);
+		// project back to inf or maxpos
+		if (isnan() || isinf()) {
 			if constexpr (isSaturating) {
 				this->maxpos();
 			}
@@ -2589,9 +2675,10 @@ protected:
 				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
 			}
 		}
-		// post-rounding cleanup: rounding at the maxpos boundary can
-		// produce a NaN encoding; project back to inf or maxpos/maxneg
-		if (isnan()) {
+		// post-rounding cleanup: rounding at the maxpos boundary carries into the all-ones
+		// exponent, which is inf without max-exponent values and a NaN past them (#1780);
+		// project back to inf or maxpos/maxneg
+		if (isnan() || isinf()) {
 			if constexpr (isSaturating) {
 				if (s) this->maxneg(); else this->maxpos();
 			}
@@ -2669,8 +2756,8 @@ public:
 			return true;
 		}
 		constexpr uint64_t quietbit = ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask;
-		// a cfloat encodes a signalling NaN with sign = 1 and a quiet NaN with
-		// sign = 0, so the source sign is deliberately not propagated here
+		// setnan writes the canonical pattern of that type, so neither the source
+		// sign nor its payload is propagated here
 		setnan((rawFraction & quietbit) != 0ull ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING);
 		return true;
 	}
@@ -3086,16 +3173,22 @@ public:
 								bitsToShift = 0;
 							}
 							if constexpr (bitsInBlock == 64) {
-								// uint64_t blocks: the fraction bits one at a time. This branch was empty -- the
-								// block copy below assumes blocks narrower than the uint64_t it copies from -- so
-								// cfloat<128,15,uint64_t> = 1.5 stayed 0 (#1518). setbit() ORs the bits in, as
-								// the block copy does: a subnormal rounded up to min normal carries into the
-								// exponent field's lsb.
-								for (unsigned i = 0; i < 64; ++i) {
-									if (((fractionToCopy >> i) & 1ull) == 0) continue;
-									const unsigned position = i + static_cast<unsigned>(bitsToShift);
-									if (position < nbits - 1u) setbit(position, true);
+								// uint64_t blocks: the block copy below assumes blocks narrower than the uint64_t
+								// it copies from (#1518), so the 64-bit fraction is placed directly: it lands in
+								// at most two adjacent limbs. The bits are ORed in, as the block copy does: a
+								// subnormal rounded up to min normal carries into the exponent field's lsb.
+								// Placing the bits one at a time cost 8-70x a uint32_t-block conversion (#1918).
+								const unsigned shift     = static_cast<unsigned>(bitsToShift);
+								const unsigned lowBlock  = shift / 64u;
+								const unsigned bitOffset = shift % 64u;
+								if (lowBlock < nrBlocks) {
+									_block[lowBlock] |= (fractionToCopy << bitOffset);
+									if (bitOffset != 0 && lowBlock + 1u < nrBlocks) {
+										_block[lowBlock + 1u] |= (fractionToCopy >> (64u - bitOffset));
+									}
 								}
+								// keep the bits outside of nbits null; setsign() then writes the sign bit
+								_block[MSU] &= MSU_MASK;
 								setsign(s);
 							}
 							else {
@@ -3149,23 +3242,7 @@ public:
 					}
 				}
 			}
-			// post-processing results to implement saturation and projection after rounding logic
-			if constexpr (isSaturating) {
-				if (isinf(INF_TYPE_POSITIVE) || isnan(NAN_TYPE_QUIET)) {
-					maxpos();
-				}
-				else if (isinf(INF_TYPE_NEGATIVE) || isnan(NAN_TYPE_SIGNALLING)) {
-					maxneg();
-				}
-			}
-			else {
-				if (isnan(NAN_TYPE_QUIET)) {
-					setinf(false);
-				}
-				else if (isnan(NAN_TYPE_SIGNALLING)) {
-					setinf(true);
-				}
-			}
+			post_process();
 			return *this;  // TODO: unreachable in some configurations	
 		}
 	}
@@ -3173,21 +3250,20 @@ public:
 	// post-processing results to implement saturation and projection after rounding logic
 	// arithmetic bit operations can't produce NaN encodings, so we need to re-interpret
 	// these encodings and 'project' them to the proper values.
+	// The direction of the overflow is the sign of the encoding the rounding landed on, not
+	// its NaN type: with IEEE NaN typing (#1896) the two differ.
 	void constexpr post_process() noexcept {
 		if constexpr (isSaturating) {
-			if (isinf(INF_TYPE_POSITIVE) || isnan(NAN_TYPE_QUIET)) {
+			if (isinf(INF_TYPE_POSITIVE) || (isnan() && !sign())) {
 				maxpos();
 			}
-			else if (isinf(INF_TYPE_NEGATIVE) || isnan(NAN_TYPE_SIGNALLING)) {
+			else if (isinf(INF_TYPE_NEGATIVE) || (isnan() && sign())) {
 				maxneg();
 			}
 		}
 		else {
-			if (isnan(NAN_TYPE_QUIET)) {
-				setinf(false);
-			}
-			else if (isnan(NAN_TYPE_SIGNALLING)) {
-				setinf(true);
+			if (isnan()) {
+				setinf(sign());
 			}
 		}
 	}
@@ -3502,48 +3578,30 @@ template<unsigned nnbits, unsigned nes, typename nbt, bool nsub, bool nsup, bool
 constexpr inline bool operator!=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned nnbits, unsigned nes, typename nbt, bool nsub, bool nsup, bool nsat>
 constexpr inline bool operator< (const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& lhs, const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& rhs) {
+	// The encoding is sign-magnitude, and with NaN set aside the magnitude bits order the values:
+	// the exponent field sits above the fraction, subnormals have the all-zeros exponent, and inf is
+	// the successor of maxpos. So after the NaN and zero checks, a comparison is a limb-by-limb
+	// compare of the magnitudes from the MSU down, reversed for negatives (#1920).
+	// Without subnormals every all-zeros-exponent encoding is a zero, but those encodings still
+	// sort below every normal, so the same compare holds once 'both are zero' is filtered out.
 	if (lhs.isnan() || rhs.isnan()) return false;
-	// need this as arithmetic difference is defined as snan(indeterminate)
-	if (lhs.isinf(INF_TYPE_NEGATIVE) && rhs.isinf(INF_TYPE_NEGATIVE)) return false;
-	if (lhs.isinf(INF_TYPE_POSITIVE) && rhs.isinf(INF_TYPE_POSITIVE)) return false;
-	if constexpr (nsub) {
-		cfloat<nnbits, nes, nbt, nsub, nsup, nsat> diff = (lhs - rhs);
-		return (!diff.iszero() && diff.sign()) ? true : false;  // got to guard against -0
+	if (lhs.iszero() && rhs.iszero()) return false;  // +0 == -0, and all the zero encodings collapse
+	using Cfloat = cfloat<nnbits, nes, nbt, nsub, nsup, nsat>;
+	const bool negative = lhs.sign();
+	if (negative != rhs.sign()) return negative;
+	constexpr nbt magnitudeMask = static_cast<nbt>(Cfloat::MSU_MASK & static_cast<nbt>(~Cfloat::SIGN_BIT_MASK));
+	nbt l = static_cast<nbt>(lhs._block[Cfloat::MSU] & magnitudeMask);
+	nbt r = static_cast<nbt>(rhs._block[Cfloat::MSU] & magnitudeMask);
+	for (unsigned i = Cfloat::MSU; l == r && i > 0; ) {
+		--i;
+		l = lhs._block[i];
+		r = rhs._block[i];
 	}
-	else {
-		if (lhs.iszero() && rhs.iszero()) return false;  // we need to 'collapse' all zero encodings
-		if (lhs.sign() && !rhs.sign()) return true;
-		if (!lhs.sign() && rhs.sign()) return false;
-		bool positive = lhs.ispos();
-		if (positive) {
-			if (lhs.scale() < rhs.scale()) return true;
-			if (lhs.scale() > rhs.scale()) return false;
-		}
-		else {
-			if (lhs.scale() > rhs.scale()) return true;
-			if (lhs.scale() < rhs.scale()) return false;
-		}
-		// sign and scale are the same
-		if (lhs.scale() == rhs.scale()) {
-			// compare fractions: we do not have subnormals, so we can ignore the hidden bit
-			blockbinary<nnbits - 1ull - nes, nbt> l, r;
-			lhs.fraction(l);
-			rhs.fraction(r);
-			blockbinary<nnbits - nes, nbt> ll, rr; // fbits + 1 so we can 0 extend to honor 2's complement encoding of blockbinary
-			ll.assignWithoutSignExtend(l);
-			rr.assignWithoutSignExtend(r);
-			return (positive ? (ll < rr) : (ll > rr));
-		}
-		return false;
-	}
+	return negative ? (r < l) : (l < r);
 }
 template<unsigned nnbits, unsigned nes, typename nbt, bool nsub, bool nsup, bool nsat>
-constexpr inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { 
-	if (lhs.isnan() || rhs.isnan()) return false;
-	// need this as arithmetic difference is defined as snan(indeterminate)
-	if (lhs.isinf(INF_TYPE_NEGATIVE) && rhs.isinf(INF_TYPE_NEGATIVE)) return false;
-	if (lhs.isinf(INF_TYPE_POSITIVE) && rhs.isinf(INF_TYPE_POSITIVE)) return false;
-	return  operator< (rhs, lhs); 
+constexpr inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) {
+	return operator< (rhs, lhs);
 }
 template<unsigned nnbits, unsigned nes, typename nbt, bool nsub, bool nsup, bool nsat>
 constexpr inline bool operator<=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { 
@@ -4060,7 +4118,7 @@ template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasM
 constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> frexp(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& x, int* exp) {
 	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	// std::frexp special cases: +-0, inf, and nan are returned unchanged with *exp = 0.
-	if (x.iszero() || x.isinf() || x.isnan()) { *exp = 0; return x; }
+	if (x.iszero() || x.isinf() || x.isnan()) { *exp = 0; return x.quieted(); }
 	// Place the fraction at scale -1 so |fraction| lands in [0.5, 1) (std::frexp).
 	// A few extreme low-range configs (es <= 2, where the minimum normal exponent
 	// is >= 0) cannot represent any value below 1.0 as a normal, so [0.5,1) is not
@@ -4081,7 +4139,8 @@ constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturat
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ldexp(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& x, int exp) {
 	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
-	if (x.isnan() || x.isinf() || x.iszero()) return x;
+	if (x.isnan()) return x.quieted();
+	if (x.isinf() || x.iszero()) return x;
 
 	// Fast path: a normal value that stays strictly inside the normal range only needs
 	// its exponent field rewritten, which is exact. This is what ldexp used to do in

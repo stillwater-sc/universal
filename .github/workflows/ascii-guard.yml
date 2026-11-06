@@ -8,7 +8,10 @@ name: ASCII Guard
 # exempt. See CLAUDE.md 'No Unicode Characters' and tools/scripts/check-ascii.sh.
 #
 # The same job also runs tools/scripts/check-std-includes.py: every header under
-# include/sw must include the standard headers it uses (#1389).
+# include/sw must include the standard headers it uses (#1389), and
+# tools/scripts/check-ungated-throws.py: every throw in the library headers compiles
+# away in a build with -fno-exceptions (#1925); and that tests/ holds only the install smoke
+# test, since nothing builds a regression test placed there (#1942).
 
 on:
   pull_request:
@@ -35,3 +38,19 @@ jobs:
       # facility must include its header, not inherit it from the include graph (#1389).
       - name: Check that headers include the standard headers they use
         run: python3 ./tools/scripts/check-std-includes.py
+      # Same job again: every throw, try and catch in the library headers is gated behind an
+      # exception macro or goes through throw_or_abort(), so -fno-exceptions builds (#1925).
+      - name: Check that every throw compiles away without exceptions
+        run: python3 ./tools/scripts/check-ungated-throws.py
+      # Same job again: a regression test belongs in a suite that a CMakeLists builds. tests/ holds
+      # only the install smoke test; a test added there is never compiled, as
+      # tests/issue_1327_divide_by_infinity.cpp was not for three months (#1942).
+      - name: Check that tests/ holds only the install smoke test
+        run: |
+          stray=$(git ls-files tests | grep -v '^tests/cmake_install/' || true)
+          if [ -n "$stray" ]; then
+            echo "These files are under tests/, which no regression build compiles:"
+            echo "$stray"
+            echo "Put a regression test in its suite, e.g. static/<category>/<type>/<subsystem>/."
+            exit 1
+          fi

@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <sstream>
 #include <cstdio>
 #include <cstdint>
@@ -324,7 +325,7 @@ inline void mul(decimal& lhs, const decimal& rhs) {
 // integer division of lhs / rhs, returns new decimal
 inline decimal div(const decimal& lhs, const decimal& rhs) {
 	if (rhs.iszero()) {
-		throw "Divide by 0";
+		throw_or_abort("Divide by 0");
 	}
 	// generate the absolute values to do long division 
 	bool a_negative = lhs.sign();

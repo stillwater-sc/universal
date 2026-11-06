@@ -24,25 +24,7 @@ namespace sw {
     namespace universal {
         //////////////////////////////////////////////////////////////////////////
 
-        // calculate the integer power a ^ b
-        // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-        template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-        dbns<nbits, fbbits, bt, xtra...> ipow(const dbns<nbits, fbbits, bt, xtra...>& a, int b) {
-            // precondition
-            if (!a.isinteger()) return dbns<nbits, fbbits, bt, xtra...>(0);
-
-            // TODO: using uint64_t as ipow constraints dynamic range
-            uint64_t result(1);
-            uint64_t base = uint64_t(a);
-            uint64_t exp = uint64_t(b);
-            for (;;) {
-                if (exp & 0x1) result *= base;
-                exp >>= 1;
-                if (exp == 0) break;
-                base *= base;
-            }
-            return dbns<nbits, fbbits, bt, xtra...>(result);
-        }
+        // ipow, an integer power through uint64_t, is retired (#1875)
 
         // clang <complex> implementation is calling these functions so we need implementations for posit
 

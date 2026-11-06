@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstdint>
+#include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <new>         // std::bad_alloc
 #include <stdexcept>   // std::runtime_error; it used to arrive with lattice.hpp's <iostream> (#1334)
 
@@ -29,15 +30,16 @@ public:
             _present_flags[i] = nullptr;
         }
 
+#if UNIVERSAL_HAS_EXCEPTIONS
         try {
-            for(size_t i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
-                _matrices[i] = new unum2<T>[N * N];
-                _present_flags[i] = new bool[N * N];
-            }
-        } catch(const std::bad_alloc& e) {
+            allocate(N);
+        } catch(const std::bad_alloc&) {
             cleanup();
             throw;  // rethrow
         }
+#else
+        allocate(N);  // without exceptions a failed new terminates the program (#1925)
+#endif
         
         for(size_t i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
             for(size_t j = 0; j < N * N; j++)
@@ -70,12 +72,19 @@ public:
 
     unum2<T> get(uint64_t i, uint64_t j, op_matrix_type type) {
         if(!has(i, j, type)) 
-            throw std::runtime_error("The given operation has to been set/interned yet!");
+            throw_or_abort(std::runtime_error("The given operation has to been set/interned yet!"));
 
         return _matrices[type][i * _N + j];
     }
 
 private:
+    void allocate(size_t N) {
+        for(size_t i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
+            _matrices[i] = new unum2<T>[N * N];
+            _present_flags[i] = new bool[N * N];
+        }
+    }
+
     void cleanup() {
         for(size_t i = 0; i < OP_MATRIX_TOTAL_SUPPORTED_OPS; i++) {
             delete[] _matrices[i];

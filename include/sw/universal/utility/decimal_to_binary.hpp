@@ -125,14 +125,15 @@ namespace detail {
 // Nine digits fit in a uint32 (10^9 < 2^32), so a chunk can be accumulated in
 // machine arithmetic and folded in with a single big multiply, cutting the number
 // of full-width multiplies by nine.
+inline constexpr std::size_t CHUNK_DIGITS = 9;
+inline constexpr int power_of_ten[CHUNK_DIGITS + 1] = {
+	1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000
+};
+
 template<unsigned BigBits>
-inline big_integer<BigBits>
+inline constexpr big_integer<BigBits>
 collect_digits(std::string_view int_part, std::string_view frac_part) {
 	using Big = big_integer<BigBits>;
-	constexpr std::size_t CHUNK_DIGITS = 9;
-	static const int power_of_ten[CHUNK_DIGITS + 1] = {
-		1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000
-	};
 
 	Big M(0);
 	auto absorb = [&M](std::string_view part) {
@@ -163,7 +164,7 @@ collect_digits(std::string_view int_part, std::string_view frac_part) {
 // No new overflow exposure: the running base never exceeds 5^e, which the caller
 // must already have room for.
 template<unsigned BigBits>
-inline void multiply_by_5_to_the_e(big_integer<BigBits>& x, std::int64_t e) {
+inline constexpr void multiply_by_5_to_the_e(big_integer<BigBits>& x, std::int64_t e) {
 	if (e <= 0) return;
 	using Big = big_integer<BigBits>;
 	Big base(5);
@@ -180,7 +181,7 @@ inline void multiply_by_5_to_the_e(big_integer<BigBits>& x, std::int64_t e) {
 // the 2048-bit default working width the naive bit loop is 2048 iterations per
 // call, several calls per parse (universal#1319).
 template<unsigned BigBits>
-inline int msb_position(const big_integer<BigBits>& x) noexcept {
+inline constexpr int msb_position(const big_integer<BigBits>& x) noexcept {
 	using Big = big_integer<BigBits>;
 	static_assert(Big::bitsInBlock == 32u, "block scan assumes 32-bit limbs");
 	for (int b = static_cast<int>(Big::nrBlocks) - 1; b >= 0; --b) {
@@ -196,7 +197,7 @@ inline int msb_position(const big_integer<BigBits>& x) noexcept {
 
 // True when any bit strictly below position `limit` is set (the sticky test).
 template<unsigned BigBits>
-inline bool any_bit_below(const big_integer<BigBits>& x, int limit) noexcept {
+inline constexpr bool any_bit_below(const big_integer<BigBits>& x, int limit) noexcept {
 	if (limit <= 0) return false;
 	const int fullBlocks = limit / 32;
 	for (int b = 0; b < fullBlocks; ++b) {
@@ -226,7 +227,7 @@ inline bool any_bit_below(const big_integer<BigBits>& x, int limit) noexcept {
 // and they add nothing to M's size -- 0.000...0001 is M = 1 -- so counting them would ask for
 // working bits a value does not need, and past the widest rung refuse a value that is only a
 // digit long (#1504). They still count toward E, which uses frac_part's full length.
-inline std::uint64_t significant_digits(const sw::universal::string_parse::decimal_float_scan& d) noexcept {
+inline constexpr std::uint64_t significant_digits(const sw::universal::string_parse::decimal_float_scan& d) noexcept {
 	std::uint64_t leading{ 0 };
 	bool          seen{ false };
 	for (char c : d.int_part)  { if (c != '0') { seen = true; break; } ++leading; }
@@ -238,7 +239,7 @@ inline std::uint64_t significant_digits(const sw::universal::string_parse::decim
 	return seen ? total - leading : 0u;
 }
 
-inline std::uint64_t required_working_bits(const sw::universal::string_parse::decimal_float_scan& d,
+inline constexpr std::uint64_t required_working_bits(const sw::universal::string_parse::decimal_float_scan& d,
                                            unsigned target_mantissa_bits) noexcept {
 	const std::uint64_t digits = significant_digits(d);
 	// log2(10) ~= 3.3219, log2(5) ~= 2.3219, in 1/1024ths and rounded up.
@@ -265,7 +266,7 @@ inline std::uint64_t required_working_bits(const sw::universal::string_parse::de
 // the copy is lossless in either direction: widening from a narrow speed-dispatch
 // width, or narrowing from a working width wider than the caller's (#1504).
 template<unsigned Out, unsigned Work>
-inline basic_result<Out> rewidth(const basic_result<Work>& in) {
+inline constexpr basic_result<Out> rewidth(const basic_result<Work>& in) {
 	basic_result<Out> out;
 	out.valid        = in.valid;
 	out.negative     = in.negative;
@@ -297,7 +298,7 @@ inline basic_result<Out> rewidth(const basic_result<Work>& in) {
 //    19 digits, yet their exponents are -8000 and -8001. An estimate there would be exactly the
 //    silent wrong answer #1504 is about. A result this path calls valid has an exact exponent.
 template<unsigned BigBits>
-inline basic_result<BigBits>
+inline constexpr basic_result<BigBits>
 convert_by_magnitude(const sw::universal::string_parse::decimal_float_scan& d,
                      unsigned target_mantissa_bits) {
 	basic_result<BigBits> out{};
@@ -332,6 +333,9 @@ convert_by_magnitude(const sw::universal::string_parse::decimal_float_scan& d,
 		return out;
 	}
 	if (inexact) return out;   // refused: dropped digits can move the exponent
+	// the estimate below is <cmath>, which a constant expression cannot call: a constant
+	// evaluation refuses what only the estimate reaches (short digits, huge exponent)
+	if (std::is_constant_evaluated()) return out;
 	q += static_cast<std::int64_t>(d.exp10);
 
 	// |value| = m * 2^e with m in [1, 2), from log2(D) + q * log2(10). The estimate is carried in
@@ -387,7 +391,7 @@ convert_by_magnitude(const sw::universal::string_parse::decimal_float_scan& d,
 // pin the width (the oracle test does, to check the dispatch against a fixed
 // 2048-bit reference).
 template<unsigned BigBits>
-inline basic_result<BigBits>
+inline constexpr basic_result<BigBits>
 convert_at_width(const sw::universal::string_parse::decimal_float_scan& d,
                  unsigned target_mantissa_bits) {
 	using Big = big_integer<BigBits>;
@@ -545,7 +549,7 @@ convert_at_width(const sw::universal::string_parse::decimal_float_scan& d,
 inline constexpr unsigned widest_working_bits = 32768u;
 
 template<unsigned BigBits = default_big_bits>
-inline basic_result<BigBits>
+inline constexpr basic_result<BigBits>
 convert(const sw::universal::string_parse::decimal_float_scan& d,
         unsigned target_mantissa_bits) {
 	if (!d.valid || target_mantissa_bits == 0u || target_mantissa_bits > BigBits) {
@@ -592,7 +596,7 @@ convert(const sw::universal::string_parse::decimal_float_scan& d,
 
 // Convenience overload: parse the string in one call.
 template<unsigned BigBits = default_big_bits>
-inline basic_result<BigBits>
+inline constexpr basic_result<BigBits>
 convert(std::string_view s, unsigned target_mantissa_bits) {
 	auto scan = sw::universal::string_parse::scan_decimal_float(s);
 	if (!scan.valid) {

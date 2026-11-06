@@ -11,6 +11,7 @@
 #include <iostream>
 #include <istream>
 #include <ostream>
+#include <string>
 
 #include <universal/number/rational/core.hpp>
 #include <universal/number/rational/manipulators.hpp>
@@ -22,9 +23,16 @@ inline std::ostream& operator<<(std::ostream& ostr, const rational<nnbits,nBase,
 	return ostr << double(v);
 }
 
+// reads one whitespace-delimited token: an integer, n/d, or a decimal with an optional exponent
+// (see parse() in manipulators.hpp). A token the rational cannot hold exactly sets failbit and
+// leaves v unchanged (#1929).
 template<unsigned nnbits, typename nBase, typename nbt>
-inline std::istream& operator>>(std::istream& istr, const rational<nnbits,nBase,nbt>& v) {
-	istr >> v._fraction;
+inline std::istream& operator>>(std::istream& istr, rational<nnbits,nBase,nbt>& v) {
+	std::string txt;
+	if (!(istr >> txt)) return istr;
+	rational<nnbits, nBase, nbt> tmp(0);
+	if (parse(txt, tmp)) v = tmp;
+	else istr.setstate(std::ios::failbit);
 	return istr;
 }
 

@@ -1,11 +1,27 @@
 #pragma once
-// ERATIONAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
-// application to enable. The default lives here rather than in the erational.hpp umbrella,
+#include <universal/utility/exceptions.hpp>  // UNIVERSAL_HAS_EXCEPTIONS (#1925)
+// ERATIONAL_THROW_DIVIDE_BY_ZERO: a division by zero throws erational_divide_by_zero, unless the
+// application opts out, by setting this to 0 or, when this is not set,
+// ERATIONAL_THROW_ARITHMETIC_EXCEPTION to 0. With it off, x / 0 is NaN, the 0/0 state that
+// isnan() reports and that arithmetic carries along, and nothing is printed (#1894). Decided
+// before the default below, so that an ERATIONAL_THROW_ARITHMETIC_EXCEPTION the application set
+// is told apart from that default.
+#if !defined(ERATIONAL_THROW_DIVIDE_BY_ZERO)
+#if defined(ERATIONAL_THROW_ARITHMETIC_EXCEPTION)
+#define ERATIONAL_THROW_DIVIDE_BY_ZERO ERATIONAL_THROW_ARITHMETIC_EXCEPTION
+#else
+// throw by default, unless the build has exceptions disabled (#1925)
+#define ERATIONAL_THROW_DIVIDE_BY_ZERO UNIVERSAL_HAS_EXCEPTIONS
+#endif
+#endif
+// ERATIONAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on the other arithmetic errors,
+// left to the application to enable. The default lives here rather than in the erational.hpp umbrella,
 // so that including core.hpp alone defines it as well (#1436).
 #if !defined(ERATIONAL_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr for signalling an error
 #define ERATIONAL_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 // erational_impl.hpp: implementation of adaptive precision decimal erational arithmetic type
 //
@@ -73,8 +89,17 @@ public:
 	constexpr erational& operator=(const erational&) = default;
 	constexpr erational& operator=(erational&&) = default;
 
-	erational(std::int64_t n, std::uint64_t d) : negative{ false }, numerator { n }, denominator{ d } {
-		negative = ((n < 0) ^ (d < 0));
+	// n/d from two integers of any sign: the magnitudes go to the digits and the sign to the flag,
+	// so erational(-3, 2) and erational(3, -2) are both -3/2, and a zero numerator is never
+	// negative. The fraction is not reduced: erational(8, 18) keeps 8/18. A zero d is stored as
+	// is, an n/0 that the logic operators treat as unordered (#1908).
+	template<typename N, typename D,
+		typename = std::enable_if_t<std::is_integral_v<N> && std::is_integral_v<D>>>
+	erational(N n, D d) : negative{ false }, numerator{}, denominator{} {
+		bool nneg{ false }, dneg{ false };
+		numerator   = edecimal(magnitude(n, nneg));
+		denominator = edecimal(magnitude(d, dneg));
+		negative    = !numerator.iszero() && (nneg != dneg);
 	}
 
 	// initializers for native types
@@ -155,6 +180,8 @@ public:
 
 	// arithmetic operators
 	erational& operator+=(const erational& rhs) {
+		if (rhs.is_constant_zero()) return *this += runtime_zero();
+		if (is_constant_zero()) setzero();
 		edecimal a = (negative ? -numerator : numerator);
 		edecimal b = denominator;
 		edecimal c = (rhs.negative ? -rhs.numerator : rhs.numerator);
@@ -175,6 +202,8 @@ public:
 		return *this;
 	}
 	erational& operator-=(const erational& rhs) {
+		if (rhs.is_constant_zero()) return *this -= runtime_zero();
+		if (is_constant_zero()) setzero();
 		edecimal a = (negative ? -numerator : numerator);
 		edecimal b = denominator;
 		edecimal c = (rhs.negative ? -rhs.numerator : rhs.numerator);
@@ -195,6 +224,8 @@ public:
 		return *this;
 	}
 	erational& operator*=(const erational& rhs) {
+		if (rhs.is_constant_zero()) return *this *= runtime_zero();
+		if (is_constant_zero()) setzero();
 		numerator *= rhs.numerator;
 		denominator *= rhs.denominator;
 		negative = !((negative && rhs.negative) || (!negative && !rhs.negative));
@@ -202,14 +233,24 @@ public:
 		return *this;
 	}
 	erational& operator/=(const erational& rhs) {
+		if (rhs.is_constant_zero()) return *this /= runtime_zero();
+		if (is_constant_zero()) setzero();
+		// either operand a NaN (canonical 0/0, or an n/0 from setdenominator(0)): NaN, before the
+		// zero-divisor test, so NaN / 0 is NaN as it is through erational_divide()
+		if (denominator.iszero() || rhs.denominator.iszero()) {
+			setnan();
+			return *this;
+		}
 		if (rhs.iszero()) {
-#if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
+#if ERATIONAL_THROW_DIVIDE_BY_ZERO
 			throw erational_divide_by_zero();
 #else
-			std::fprintf(stderr, "erational_divide_by_zero\n");
+			// opted out of the exception: the quotient is NaN
+			setnan();
+			return *this;
 #endif
 		}
-		negative = !((negative && rhs.negative) || (!negative && !rhs.negative));
+		negative =!((negative && rhs.negative) || (!negative && !rhs.negative));
 		numerator *= rhs.denominator;
 		denominator *= rhs.numerator;
 		normalize();
@@ -222,7 +263,10 @@ public:
 	constexpr bool isneg()          const noexcept { return negative; }   // <  0
 	constexpr bool ispos()          const noexcept { return !negative; }  // >= 0
 	constexpr bool isinf()          const noexcept { return false; }
-	constexpr bool isnan()          const noexcept { return numerator.iszero() && denominator.iszero(); }
+	constexpr bool isnan()          const noexcept { return numerator.iszero() && denominator.iszero() && !is_constant_zero(); }
+	// the zero a constant-evaluated default constructor leaves: both digit vectors empty, where the
+	// runtime zero is 0/1. It is zero, not the 0/0 NaN, and arithmetic replaces it with 0/1 first.
+	constexpr bool is_constant_zero() const noexcept { return numerator.empty() && denominator.empty(); }
 	constexpr bool sign()           const noexcept { return negative; }
 	constexpr edecimal top()        const noexcept { return numerator; }
 	constexpr edecimal bottom()     const noexcept { return denominator; }
@@ -235,6 +279,14 @@ public:
 		negative    = false;
 		numerator   = 0;
 		denominator = 1;
+	}
+	// the runtime zero, 0/1, standing in for an operand in the constant-initialized zero state
+	static erational runtime_zero() { erational z; z.setzero(); return z; }
+	// the NaN state, 0/0, which isnan() reports
+	void setnan() {
+		negative    = false;
+		numerator   = 0;
+		denominator = 0;
 	}
 	constexpr void setsign(bool sign) noexcept { negative = sign; }
 	constexpr void setneg() noexcept { negative = true; }
@@ -359,13 +411,12 @@ protected:
 		a = numerator; b = denominator;  // precondition is numerator and denominator are positive
 
 		if (b.iszero()) {
-#if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
-			throw erational_divide_by_zero();
-#else
-			std::fprintf(stderr, "erational_divide_by_zero\n");
-			denominator = 0;
-			numerator = 0;
-#endif
+			// not a division by zero itself: the operator that divided has already thrown, or
+			// opted out and set NaN. A zero denominator here comes from arithmetic on a NaN
+			// operand or from setdenominator(0), and settles on the canonical NaN, 0/0. The
+			// GCD loop below must not run with a zero divisor.
+			setnan();
+			return;
 		}
 		while (a % b > 0) {
 			r = a % b;
@@ -382,11 +433,56 @@ protected:
 	// convert to signed int
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
-	SignedInt to_signed() const { return static_cast<SignedInt>(numerator / denominator); }
-	// convert to unsigned int
+	SignedInt to_signed() const {
+		if (denominator.iszero()) return SignedInt(0);   // NaN has no integer value; the edecimal division would throw out of the noexcept operators
+		return static_cast<SignedInt>(signed_quotient());
+	}
+	// convert to unsigned int: the same integer value as to_signed, so a negative value wraps
+	// modulo 2^n, as an edecimal (and a C++ signed integer) converts to an unsigned type
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
-	UnsignedInt to_unsigned() const { return static_cast<UnsignedInt>(numerator / denominator); }
+	UnsignedInt to_unsigned() const {
+		if (denominator.iszero()) return UnsignedInt(0);   // NaN has no integer value; the edecimal division would throw out of the noexcept operators
+		return static_cast<UnsignedInt>(signed_quotient());
+	}
+	// the integer part, truncated toward zero, with the sign applied: the digits hold magnitudes
+	// and the sign lives in the flag, so -7/2 is -3 (#1908)
+	edecimal signed_quotient() const {
+		edecimal q = numerator / denominator;
+		if (negative && !q.iszero()) q = -q;
+		return q;
+	}
+	// |v| as an unsigned long long, and whether v is negative; 0 - |v| keeps INT64_MIN exact
+	template<typename I>
+	static unsigned long long magnitude(I v, bool& neg) {
+		if constexpr (std::is_signed_v<I>) {
+			neg = (v < 0);
+			return neg ? 0ull - static_cast<unsigned long long>(v) : static_cast<unsigned long long>(v);
+		}
+		else {
+			neg = false;
+			return static_cast<unsigned long long>(v);
+		}
+	}
+	// three-way comparison of values for the logic operators: -1, 0 or +1, and 2 (unordered) when
+	// either operand is a NaN, the 0/0 state or an n/0 left by setdenominator(0) or erational(n, 0).
+	// The sign flag orders the values, +0 and -0 are equal, an unreduced 2/4 equals 1/2 (the
+	// magnitudes are cross-multiplied), and the constant-initialized zero (both digit vectors
+	// empty) is 0 (#1908, #1909).
+	static int compare(const erational& a, const erational& b) {
+		const bool aunordered = a.denominator.iszero() && !a.is_constant_zero();
+		const bool bunordered = b.denominator.iszero() && !b.is_constant_zero();
+		if (aunordered || bunordered) return 2;
+		const bool azero = a.numerator.iszero(), bzero = b.numerator.iszero();
+		if (azero && bzero) return 0;
+		if (azero) return b.negative ? 1 : -1;
+		if (bzero) return a.negative ? -1 : 1;
+		if (a.negative != b.negative) return a.negative ? -1 : 1;
+		const edecimal ad = a.numerator * b.denominator;
+		const edecimal bc = a.denominator * b.numerator;
+		const int magnitude_order = (ad < bc) ? -1 : ((bc < ad) ? 1 : 0);
+		return a.negative ? -magnitude_order : magnitude_order;
+	}
 	// convert to ieee-754: correctly-rounded (round-half-to-even) conversion of
 	// the exact rational numerator/denominator to the target binary float.
 	// The previous one-liner (Real(numerator)/Real(denominator)) ignored the
@@ -399,6 +495,7 @@ protected:
 		// erational_divide, the divide-by-zero fallback). Resolve it here in
 		// IEEE terms before the exponent search, which would otherwise spin
 		// forever (den * 2^p stays zero, so den2p_le_num is always true).
+		if (is_constant_zero()) return static_cast<Real>(0);
 		if (denominator.iszero()) {
 			if (numerator.iszero()) return std::numeric_limits<Real>::quiet_NaN();   // 0/0
 			return negative ? -std::numeric_limits<Real>::infinity()
@@ -473,14 +570,8 @@ protected:
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	erational& convert_signed(SignedInt& rhs) {
-		if (rhs < 0) {
-			negative = true;
-			numerator = -rhs;
-		}
-		else {
-			negative = false;
-			numerator = rhs;
-		}
+		// magnitude() negates in unsigned arithmetic: -rhs overflowed (UB) for the minimum (#1908)
+		numerator   = edecimal(magnitude(rhs, negative));
 		denominator = 1;
 		return *this;
 	}
@@ -640,9 +731,13 @@ inline erational operator/(const erational& lhs, const erational& rhs) {
 
 /// erational - erational logic operators
 
+// All six compare values through erational::compare(): the sign flag applies, +0 == -0, an
+// unreduced fraction equals its reduced form, and the constant-initialized zero is 0. A NaN is
+// unordered, as in IEEE-754: every comparison with it is false except !=.
+
 // equality test
 inline bool operator==(const erational& lhs, const erational& rhs) {
-	return lhs.numerator == rhs.numerator && lhs.denominator == rhs.denominator;
+	return erational::compare(lhs, rhs) == 0;
 }
 // inequality test
 inline bool operator!=(const erational& lhs, const erational& rhs) {
@@ -650,63 +745,38 @@ inline bool operator!=(const erational& lhs, const erational& rhs) {
 }
 // less-than test
 inline bool operator<(const erational& lhs, const erational& rhs) {
-	// a/b < c/d  => ad / bd < cb / bd => ad < cb
-	edecimal ad = lhs.numerator * rhs.denominator;
-	edecimal bc = lhs.denominator * rhs.numerator;
-	return ad < bc;
+	return erational::compare(lhs, rhs) == -1;
 }
 // greater-than test
 inline bool operator>(const erational& lhs, const erational& rhs) {
-	return operator<(rhs, lhs);
+	return erational::compare(lhs, rhs) == 1;
 }
 // less-or-equal test
 inline bool operator<=(const erational& lhs, const erational& rhs) {
-	return operator<(lhs, rhs) || operator==(lhs, rhs);
+	const int c = erational::compare(lhs, rhs);
+	return c == -1 || c == 0;
 }
 // greater-or-equal test
 inline bool operator>=(const erational& lhs, const erational& rhs) {
-	return !operator<(lhs, rhs);
+	const int c = erational::compare(lhs, rhs);
+	return c == 1 || c == 0;
 }
 
 // erational - long logic operators
-inline bool operator==(const erational& lhs, long rhs) {
-	return lhs == erational(rhs);
-}
-inline bool operator!=(const erational& lhs, long rhs) {
-	return !operator==(lhs, erational(rhs));
-}
-inline bool operator< (const erational& lhs, long rhs) {
-	return operator<(lhs, erational(rhs));
-}
-inline bool operator> (const erational& lhs, long rhs) {
-	return operator< (erational(rhs), lhs);
-}
-inline bool operator<=(const erational& lhs, long rhs) {
-	return operator< (lhs, erational(rhs)) || operator==(lhs, erational(rhs));
-}
-inline bool operator>=(const erational& lhs, long rhs) {
-	return !operator<(lhs, erational(rhs));
-}
+inline bool operator==(const erational& lhs, long rhs) { return lhs == erational(rhs); }
+inline bool operator!=(const erational& lhs, long rhs) { return lhs != erational(rhs); }
+inline bool operator< (const erational& lhs, long rhs) { return lhs <  erational(rhs); }
+inline bool operator> (const erational& lhs, long rhs) { return lhs >  erational(rhs); }
+inline bool operator<=(const erational& lhs, long rhs) { return lhs <= erational(rhs); }
+inline bool operator>=(const erational& lhs, long rhs) { return lhs >= erational(rhs); }
 
 // long - erational logic operators
-inline bool operator==(long lhs, const erational& rhs) {
-	return erational(lhs) == rhs;
-}
-inline bool operator!=(long lhs, const erational& rhs) {
-	return !operator==(erational(lhs), rhs);
-}
-inline bool operator< (long lhs, const erational& rhs) {
-	return operator<(erational(lhs), rhs);
-}
-inline bool operator> (long lhs, const erational& rhs) {
-	return operator< (erational(lhs), rhs);
-}
-inline bool operator<=(long lhs, const erational& rhs) {
-	return operator< (erational(lhs), rhs) || operator==(erational(lhs), rhs);
-}
-inline bool operator>=(long lhs, const erational& rhs) {
-	return !operator<(erational(lhs), rhs);
-}
+inline bool operator==(long lhs, const erational& rhs) { return erational(lhs) == rhs; }
+inline bool operator!=(long lhs, const erational& rhs) { return erational(lhs) != rhs; }
+inline bool operator< (long lhs, const erational& rhs) { return erational(lhs) <  rhs; }
+inline bool operator> (long lhs, const erational& rhs) { return erational(lhs) >  rhs; }
+inline bool operator<=(long lhs, const erational& rhs) { return erational(lhs) <= rhs; }
+inline bool operator>=(long lhs, const erational& rhs) { return erational(lhs) >= rhs; }
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -727,17 +797,31 @@ struct erationalintdiv {
 };
 
 // divide integer erational a and b and return result argument
-inline erationalintdiv erational_divide(const erational& lhs, const erational& rhs) {
+inline erationalintdiv erational_divide(const erational& _lhs, const erational& _rhs) {
+	// the constant-initialized zero (empty digit vectors) is zero: give it the runtime form, 0/1
+	erational lhs(_lhs), rhs(_rhs);
+	if (lhs.is_constant_zero()) lhs.setzero();
+	if (rhs.is_constant_zero()) rhs.setzero();
+	erationalintdiv divresult;
+	// either operand a NaN: canonical 0/0, or an n/0 from setdenominator(0) that was never normalized.
+	// Tested before iszero(), which is true for 0/0 as well: a NaN divisor is not a zero
+	if (lhs.bottom().iszero() || rhs.bottom().iszero()) {
+		divresult.quot.setnan();
+		divresult.rem.setnan();
+		return divresult;
+	}
 	if (rhs.iszero()) {
-#if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
+#if ERATIONAL_THROW_DIVIDE_BY_ZERO
 		throw erational_divide_by_zero{};
 #else
-		std::fprintf(stderr, "erational_divide_by_zero\n");
+		// opted out of the exception: quotient and remainder are NaN
+		divresult.quot.setnan();
+		divresult.rem.setnan();
+		return divresult;
 #endif
 	}
 
 	// a/b / c/d => ad / bc
-	erationalintdiv divresult;
 	divresult.quot.setnumerator(lhs.top() * rhs.bottom());
 	divresult.quot.setdenominator(lhs.bottom() * rhs.top());
 	return divresult;

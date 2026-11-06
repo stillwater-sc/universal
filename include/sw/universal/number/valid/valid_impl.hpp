@@ -13,6 +13,7 @@
 #if !defined(VALID_THROW_ARITHMETIC_EXCEPTION)
 #	define VALID_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 namespace sw {
 namespace universal {

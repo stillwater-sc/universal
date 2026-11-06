@@ -179,6 +179,9 @@ universal
     ├──  rational
     └── unum
 |── include
+|── integration                # Application-environment tests across static and elastic systems
+    |── multifile              # several number systems linked into one program
+    |── noexceptions           # every number system built with -fno-exceptions
 |── internal
 |── joss
 |── linalg
@@ -186,7 +189,6 @@ universal
 |── numeric
 |── playground
 |── static                     # Regression Suites for static number systems
-    |── appenv
     ├── areal
     |   ├──  api
     |   ├──  arithmetic

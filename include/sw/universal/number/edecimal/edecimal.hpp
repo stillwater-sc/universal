@@ -25,6 +25,8 @@
 // EDECIMAL_THROW_ARITHMETIC_EXCEPTION: throw specific exceptions on arithmetic errors, left to the
 // application to enable by defining it before this include. Its default lives in
 // edecimal_impl.hpp, so that core.hpp alone defines it as well (#1436).
+// EDECIMAL_THROW_DIVIDE_BY_ZERO (default 1, #1894): a division by zero throws. Set it, or
+// EDECIMAL_THROW_ARITHMETIC_EXCEPTION, to 0 to get 0 instead; see edecimal_impl.hpp.
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library

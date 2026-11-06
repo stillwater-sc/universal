@@ -7,8 +7,8 @@
 #pragma once
 #include <algorithm>
 #include <bit>
-#include <cmath>
 #include <cstdint>
+#include <type_traits>
 #include <vector>
 
 namespace sw { namespace universal {
@@ -25,23 +25,22 @@ namespace efloat_detail {
 
 	// 2 / sqrt(pi) at `bits` bits, cached like pi
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> two_over_sqrt_pi(unsigned bits) {
-		thread_local efloat<nlimbs> cached;
-		thread_local unsigned cached_bits = 0;
-		if (cached_bits < bits) {
+	struct two_over_sqrt_pi_constant {
+		constexpr efloat<nlimbs> operator()(unsigned width) const {
 			efloat<nlimbs> two(2.0);
-			two.set_precision(bits + 32u);
-			cached = two / sqrt_to(pi<nlimbs>(bits + 32u), bits + 32u);
-			cached_bits = bits;
+			two.set_precision(width);
+			return two / sqrt_to(pi<nlimbs>(width), width);
 		}
-		efloat<nlimbs> value(cached);
-		value.set_precision(bits);
-		return value;
+	};
+
+	template<unsigned nlimbs>
+	inline constexpr efloat<nlimbs> two_over_sqrt_pi(unsigned bits) {
+		return constant_value<nlimbs>(bits, two_over_sqrt_pi_constant<nlimbs>{}, [](unsigned b) { return cached_constant<nlimbs>(b, two_over_sqrt_pi_constant<nlimbs>{}); });
 	}
 
 	// x^2 for a finite x, exactly: carried at twice its significant bits
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> exact_square(const efloat<nlimbs>& x) {
+	inline constexpr efloat<nlimbs> exact_square(const efloat<nlimbs>& x) {
 		efloat<nlimbs> a(x);
 		if (a.sign() == -1) a = -a;
 		a.set_precision(2u * significant_bits(x) + 32u);
@@ -56,7 +55,7 @@ namespace efloat_detail {
 	// which has no cancellation, unlike the alternating Taylor series. Past n > 2 x^2 the terms fall
 	// by more than half each, so the tail beyond a term is below that term.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> erf_series(const efloat<nlimbs>& x, const efloat<nlimbs>& x2, unsigned W) {
+	inline constexpr efloat<nlimbs> erf_series(const efloat<nlimbs>& x, const efloat<nlimbs>& x2, unsigned W) {
 		efloat<nlimbs> t(x);
 		if (t.sign() == -1) t = -t;
 		t.set_precision(W);
@@ -96,7 +95,7 @@ namespace efloat_detail {
 
 	// whether erfc's asymptotic series reaches W bits at x: its smallest term, near n = x^2, lies
 	// about x^2 log2(e) bits below its first
-	inline bool erfc_asymptotic_reaches(double x2, unsigned W) {
+	inline constexpr bool erfc_asymptotic_reaches(double x2, unsigned W) {
 		return x2 * log2_e >= static_cast<double>(W) + 8.0;
 	}
 
@@ -108,7 +107,7 @@ namespace efloat_detail {
 	// 7.12(i)); the terms fall to 2^-(W + 2) before they grow again, past n = x^2, where
 	// erfc_asymptotic_reaches
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> erfc_asymptotic(const efloat<nlimbs>& x, const efloat<nlimbs>& x2, unsigned W) {
+	inline constexpr efloat<nlimbs> erfc_asymptotic(const efloat<nlimbs>& x, const efloat<nlimbs>& x2, unsigned W) {
 		efloat<nlimbs> one(1.0);
 		one.set_precision(W);
 		efloat<nlimbs> u = one / x2;   // 1 / (2 x^2)
@@ -134,7 +133,7 @@ namespace efloat_detail {
 
 	// erf x, unrounded, for a finite x != 0 at which it does not round as +/-1: erf x is odd
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> erf_working(const efloat<nlimbs>& x, unsigned target) {
+	inline constexpr efloat<nlimbs> erf_working(const efloat<nlimbs>& x, unsigned target) {
 		const unsigned W = target + exp_log_guard_bits + erf_guard_bits;
 		efloat<nlimbs> y = erf_series(x, exact_square(x), W);
 		if (x.sign() == -1) y = -y;
@@ -146,7 +145,7 @@ namespace efloat_detail {
 	// precision plus the bits it cancels, at most log2(1 / erfc x) < x^2 log2(e) + log2(sqrt(pi)
 	// (x + sqrt(x^2 + 2)) / 2) (Abramowitz and Stegun 7.1.13)
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> erfc_working(const efloat<nlimbs>& x, unsigned target) {
+	inline constexpr efloat<nlimbs> erfc_working(const efloat<nlimbs>& x, unsigned target) {
 		const unsigned W = target + exp_log_guard_bits + erf_guard_bits;
 		efloat<nlimbs> one(1.0);
 		const efloat<nlimbs> x2 = exact_square(x);
@@ -157,8 +156,8 @@ namespace efloat_detail {
 		const double x2d = double(x2);
 		if (erfc_asymptotic_reaches(x2d, W)) return erfc_asymptotic(x, x2, W);
 		const double xd = double(x);
-		const double lost = x2d * log2_e + std::log2(0.8862269254527580 * (xd + std::sqrt(x2d + 2.0)));
-		const unsigned cancel = (lost > 0.0) ? static_cast<unsigned>(std::ceil(lost)) + 2u : 2u;
+		const double lost = x2d * log2_e + fp::log2(0.8862269254527580 * (xd + fp::sqrt(x2d + 2.0)));
+		const unsigned cancel = (lost > 0.0) ? static_cast<unsigned>(fp::ceil(lost)) + 2u : 2u;
 		one.set_precision(W + cancel);
 		efloat<nlimbs> y = one - erf_series(x, x2, W + cancel);
 		y.set_precision(W);
@@ -168,9 +167,9 @@ namespace efloat_detail {
 	// whether erfc |x| < 2^-(P + 5), below which erf x rounds as +/-1 and erfc of a negative x as
 	// 2: erfc |x| < exp(-x^2) for |x| >= 1
 	template<unsigned nlimbs>
-	inline bool erfc_negligible(const efloat<nlimbs>& x, unsigned precision) {
+	inline constexpr bool erfc_negligible(const efloat<nlimbs>& x, unsigned precision) {
 		if (x.scale() >= 31) return true;
-		const double ax = std::fabs(double(x));
+		const double ax = fp::fabs(double(x));
 		return ax >= 1.0 && ax * ax * log2_e >= static_cast<double>(precision) + 6.0;
 	}
 
@@ -179,7 +178,7 @@ namespace efloat_detail {
 // erf: the error function, correctly rounded (#1763): odd, exact at 0 and +/-inf, by Ziv's
 // strategy elsewhere, where it is transcendental
 template<unsigned nlimbs>
-inline efloat<nlimbs> erf(const efloat<nlimbs>& x) {
+inline constexpr efloat<nlimbs> erf(const efloat<nlimbs>& x) {
 	if (x.isnan() || x.iszero()) return x;   // erf(+/-0) = +/-0
 	const unsigned precision = efloat_detail::result_precision(x);
 	efloat<nlimbs> one(x.sign() == -1 ? -1.0 : 1.0);
@@ -196,7 +195,7 @@ inline efloat<nlimbs> erf(const efloat<nlimbs>& x) {
 // erfc: the complementary error function 1 - erf x, correctly rounded (#1763): exact at 0 and
 // +/-inf, 0 where exp's range ends, and by Ziv's strategy elsewhere
 template<unsigned nlimbs>
-inline efloat<nlimbs> erfc(const efloat<nlimbs>& x) {
+inline constexpr efloat<nlimbs> erfc(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
 	const unsigned precision = efloat_detail::result_precision(x);
 	if (x.iszero() || x.isinf()) {
@@ -243,14 +242,14 @@ namespace efloat_detail {
 
 	// log2 of a bound on |c_k / z^(2k - 1)| for z = 2^log2z: log2(2 zeta(2k) (2k)! / ((2 pi)^2k 2k
 	// (2k - 1))) - (2k - 1) log2 z, with zeta(2k) <= 2
-	inline double stirling_log2_term(unsigned k, double log2z) {
+	inline constexpr double stirling_log2_term(unsigned k, double log2z) {
 		const double log2_2pi = 2.6514961294723187;
 		const double kk = 2.0 * k;
-		return 2.0 + std::lgamma(kk + 1.0) / 0.6931471805599453 - kk * log2_2pi - std::log2(kk * (kk - 1.0)) - (kk - 1.0) * log2z;
+		return 2.0 + fp::lgamma(kk + 1.0) / 0.6931471805599453 - kk * log2_2pi - fp::log2(kk * (kk - 1.0)) - (kk - 1.0) * log2z;
 	}
 
 	// the number of Stirling terms whose first omitted term lies below 2^-(W + 8) at z >= z0
-	inline unsigned stirling_terms(double log2z, unsigned W) {
+	inline constexpr unsigned stirling_terms(double log2z, unsigned W) {
 		for (unsigned k = 1; ; ++k) {
 			if (stirling_log2_term(k, log2z) < -static_cast<double>(W) - 8.0) return k - 1;
 		}
@@ -268,13 +267,7 @@ namespace efloat_detail {
 	// products, and the working precision varies with x by a few bits (#1797), so a refill takes
 	// 1/32 more terms and 64 more bits than asked for, lest such arguments refill it in turn.
 	template<unsigned nlimbs>
-	inline const std::vector<efloat<nlimbs>>& stirling_coefficients(unsigned m, unsigned bits) {
-		thread_local std::vector<efloat<nlimbs>> cached;
-		thread_local unsigned cached_bits = 0;
-		if (m < cached.size() && bits <= cached_bits) return cached;
-		m = std::max<unsigned>(m, static_cast<unsigned>(cached.size() == 0 ? 0 : cached.size() - 1));
-		m += m / 32u + 2u;
-		bits = std::max(bits, cached_bits) + 64u;
+	inline constexpr std::vector<efloat<nlimbs>> stirling_compute(unsigned m, unsigned bits) {
 		const unsigned wide = bits + 2u * static_cast<unsigned>(std::bit_width(m)) + 8u;
 		std::vector<efloat<nlimbs>> T(m + 1);
 		T[1] = 1;
@@ -286,7 +279,7 @@ namespace efloat_detail {
 				if (j > k) T[j] += T[j - 1] * static_cast<int>(j - k);
 			}
 		}
-		cached.assign(m + 1, efloat<nlimbs>(0.0));
+		std::vector<efloat<nlimbs>> coefficients(m + 1, efloat<nlimbs>(0.0));
 		for (unsigned k = 1; k <= m; ++k) {
 			efloat<nlimbs> d(1.0);   // 4^k - 1, exact
 			d.set_precision(2u * k + 8u);
@@ -297,25 +290,38 @@ namespace efloat_detail {
 			c.set_precision(bits + 32u);
 			c.setexponent(c.scale() - 2 * static_cast<int64_t>(k));
 			if (k % 2 == 0) c = -c;
-			cached[k] = c;
+			coefficients[k] = c;
 		}
+		return coefficients;
+	}
+
+	// the coefficients for m terms at `bits` bits, from the thread's cache, refilled as above
+	template<unsigned nlimbs>
+	inline const std::vector<efloat<nlimbs>>& stirling_coefficients(unsigned m, unsigned bits) {
+		thread_local std::vector<efloat<nlimbs>> cached;
+		thread_local unsigned cached_bits = 0;
+		if (m < cached.size() && bits <= cached_bits) return cached;
+		m = std::max<unsigned>(m, static_cast<unsigned>(cached.size() == 0 ? 0 : cached.size() - 1));
+		m += m / 32u + 2u;
+		bits = std::max(bits, cached_bits) + 64u;
+		cached = stirling_compute<nlimbs>(m, bits);
 		cached_bits = bits;
 		return cached;
 	}
 
 	// log(2 pi) / 2 at `bits` bits, cached
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> half_log_2pi(unsigned bits) {
-		thread_local efloat<nlimbs> cached;
-		thread_local unsigned cached_bits = 0;
-		if (cached_bits < bits) {
-			cached = log_working(pi_scaled<nlimbs>(bits + 32u, 1), bits + 32u);
-			cached.setexponent(cached.scale() - 1);
-			cached_bits = bits;
+	struct half_log_2pi_constant {
+		constexpr efloat<nlimbs> operator()(unsigned width) const {
+			efloat<nlimbs> value = log_working(pi_scaled<nlimbs>(width, 1), width);
+			value.setexponent(value.scale() - 1);
+			return value;
 		}
-		efloat<nlimbs> value(cached);
-		value.set_precision(bits);
-		return value;
+	};
+
+	template<unsigned nlimbs>
+	inline constexpr efloat<nlimbs> half_log_2pi(unsigned bits) {
+		return constant_value<nlimbs>(bits, half_log_2pi_constant<nlimbs>{}, [](unsigned b) { return cached_constant<nlimbs>(b, half_log_2pi_constant<nlimbs>{}); });
 	}
 
 	// sum_{k=1}^{m} c_k / z^(2k - 1) at `W` bits for z >= z0, by Horner's scheme in w = 1 / z^2,
@@ -324,8 +330,21 @@ namespace efloat_detail {
 	// term, so S_k is formed at W - d_k + 16 bits (tapered, as exp's series is, #1754): its
 	// rounding then weighs below 2^-(W + 16) of the first term, under 2^-(W + 5) for all m terms
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> stirling_sum(const efloat<nlimbs>& z, double log2z, unsigned m, unsigned W) {
-		const std::vector<efloat<nlimbs>>& c = stirling_coefficients<nlimbs>(m, W);
+	inline constexpr efloat<nlimbs> stirling_sum(const efloat<nlimbs>& z, double log2z, unsigned m, unsigned W) {
+		// the thread's cached coefficients, or in a constant evaluation, which cannot keep them, a
+		// first fill's worth of its own (#1819)
+		// (a pointer, not a reference: a reference's initializer is tried as a constant
+		// expression first, where is_constant_evaluated() is true even at run time)
+		std::vector<efloat<nlimbs>> own;
+		const std::vector<efloat<nlimbs>>* coefficients = nullptr;
+		if (std::is_constant_evaluated()) {
+			own = stirling_compute<nlimbs>(m + m / 32u + 2u, W + 64u);
+			coefficients = &own;
+		}
+		else {
+			coefficients = &stirling_coefficients<nlimbs>(m, W);
+		}
+		const std::vector<efloat<nlimbs>>& c = *coefficients;
 		efloat<nlimbs> one(1.0);
 		one.set_precision(W);
 		const efloat<nlimbs> inv = one / z;
@@ -362,7 +381,7 @@ namespace efloat_detail {
 	inline constexpr unsigned gamma_shift_group = 8u;
 
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> shift_product(const efloat<nlimbs>& x, int64_t N, unsigned W) {
+	inline constexpr efloat<nlimbs> shift_product(const efloat<nlimbs>& x, int64_t N, unsigned W) {
 		efloat<nlimbs> product(x);
 		product.set_precision(W);
 		const unsigned G = static_cast<unsigned>(std::min<int64_t>(gamma_shift_group, N - 1));
@@ -395,9 +414,9 @@ namespace efloat_detail {
 
 	// lgamma x for a finite x > 0 at `W` bits, within 2^(E - W + gamma_error_bits) of it
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> lgamma_positive(const efloat<nlimbs>& x, unsigned W, int64_t& E) {
-		const double z0 = std::max(16.0, std::ceil(gamma_shift_per_bit * W));
-		const int64_t N = (x.scale() < 62 && double(x) < z0) ? static_cast<int64_t>(std::ceil(z0 - double(x))) : 0;
+	inline constexpr efloat<nlimbs> lgamma_positive(const efloat<nlimbs>& x, unsigned W, int64_t& E) {
+		const double z0 = std::max(16.0, fp::ceil(gamma_shift_per_bit * W));
+		const int64_t N = (x.scale() < 62 && double(x) < z0) ? static_cast<int64_t>(fp::ceil(z0 - double(x))) : 0;
 		efloat<nlimbs> z(x);
 		z.set_precision(W);
 		if (N > 0) z += efloat<nlimbs>(N);
@@ -409,7 +428,7 @@ namespace efloat_detail {
 		y += half_log_2pi<nlimbs>(W);
 
 		// the series, from c_1 / z down, below 1 / (12 z) in all
-		const double log2z = (z.scale() < 1000) ? std::log2(double(z)) : static_cast<double>(z.scale());
+		const double log2z = (z.scale() < 1000) ? fp::log2(double(z)) : static_cast<double>(z.scale());
 		const unsigned m = stirling_terms(log2z, W);
 		if (m > 0) y += stirling_sum(z, log2z, m, W);
 
@@ -427,7 +446,7 @@ namespace efloat_detail {
 	// the reflection gamma(x) gamma(1 - x) = pi / sin(pi x), with x = n + f, n = round(x) and f
 	// exact, so sin(pi x) = (-1)^n sin(pi f) keeps its relative precision near the poles.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> lgamma_abs(const efloat<nlimbs>& x, unsigned W, int64_t& E, bool& negative) {
+	inline constexpr efloat<nlimbs> lgamma_abs(const efloat<nlimbs>& x, unsigned W, int64_t& E, bool& negative) {
 		negative = false;
 		if (x.sign() != -1) return lgamma_positive(x, W, E);
 		const efloat<nlimbs> n = round(x);
@@ -455,13 +474,13 @@ namespace efloat_detail {
 	// z - lgamma x, at z = x + N; below 0 also the log of the reflection's sine. One bit high
 	// rather than low: a low estimate costs a second pass.
 	template<unsigned nlimbs>
-	inline int64_t lgamma_parts_scale(const efloat<nlimbs>& x, unsigned W) {
+	inline constexpr int64_t lgamma_parts_scale(const efloat<nlimbs>& x, unsigned W) {
 		if (x.scale() >= 1000) return x.scale() + 12;   // x log x, log x < 2^11
-		const double z0 = std::max(16.0, std::ceil(gamma_shift_per_bit * W));
+		const double z0 = std::max(16.0, fp::ceil(gamma_shift_per_bit * W));
 		auto positive = [z0](double t) {
-			const double z = (t < z0) ? t + std::ceil(z0 - t) : t;
-			const double main = (z - 0.5) * std::log(z);
-			const double product = (t < z0) ? std::fabs(main - z + 0.92 - std::lgamma(t)) : 0.0;
+			const double z = (t < z0) ? t + fp::ceil(z0 - t) : t;
+			const double main = (z - 0.5) * fp::log(z);
+			const double product = (t < z0) ? fp::fabs(main - z + 0.92 - fp::lgamma(t)) : 0.0;
 			return std::max(main, product);
 		};
 		const double xd = double(x);
@@ -471,11 +490,11 @@ namespace efloat_detail {
 		} else if (xd > 0.0) {
 			part = positive(xd);
 		} else {
-			const double f = xd - std::nearbyint(xd);
-			const double sine = (f == 0.0) ? 0.0 : std::fabs(std::log(std::fabs(std::sin(3.141592653589793 * f))));
+			const double f = xd - fp::nearbyint(xd);
+			const double sine = (f == 0.0) ? 0.0 : fp::fabs(fp::log(fp::fabs(fp::sin_pi(f))));
 			part = std::max(positive(1.0 - xd), sine);
 		}
-		return (part < 1.0) ? 2 : static_cast<int64_t>(std::floor(std::log2(part))) + 2;
+		return (part < 1.0) ? 2 : static_cast<int64_t>(fp::floor(fp::log2(part))) + 2;
 	}
 
 	// the scale of lgamma x for an x at which it is not 0, estimated in double: next to the zeros
@@ -483,23 +502,23 @@ namespace efloat_detail {
 	// would lose d; elsewhere from std::lgamma, which may be far off next to the zeros below 0
 	// (lgamma_working retries there)
 	template<unsigned nlimbs>
-	inline int64_t lgamma_scale_estimate(const efloat<nlimbs>& x) {
+	inline constexpr int64_t lgamma_scale_estimate(const efloat<nlimbs>& x) {
 		if (x.scale() >= 1000) return x.scale() - 1;
-		if (x.scale() < -1000) return static_cast<int64_t>(std::floor(std::log2(-0.6931471805599453 * static_cast<double>(x.scale()))));   // -log |x|
+		if (x.scale() < -1000) return static_cast<int64_t>(fp::floor(fp::log2(-0.6931471805599453 * static_cast<double>(x.scale()))));   // -log |x|
 		for (int zero = 1; zero <= 2; ++zero) {
 			const efloat<nlimbs> d = x - zero;
 			if (d.iszero()) return 0;
 			if (d.scale() < -8) return d.scale() - zero;   // gamma = 0.577, 1 - gamma = 0.423
 		}
-		const double l = std::fabs(std::lgamma(double(x)));
-		return (l == 0.0 || !std::isfinite(l)) ? 0 : static_cast<int64_t>(std::floor(std::log2(l)));
+		const double l = fp::fabs(fp::lgamma(double(x)));
+		return (l == 0.0 || !fp::isfinite(l)) ? 0 : static_cast<int64_t>(fp::floor(fp::log2(l)));
 	}
 
 	// the working precision lgamma_working predicts for `needed` bits below lgamma x: needed + 8
 	// and the cancellation E - scale(lgamma x). E depends on W through the shift, by a bit or so,
 	// hence the iteration.
 	template<unsigned nlimbs>
-	inline int64_t lgamma_precision(const efloat<nlimbs>& x, int64_t needed) {
+	inline constexpr int64_t lgamma_precision(const efloat<nlimbs>& x, int64_t needed) {
 		const int64_t s = lgamma_scale_estimate(x);
 		int64_t W = needed + 8;
 		for (int i = 0; i < 3; ++i) W = needed + 8 + std::max<int64_t>(0, lgamma_parts_scale(x, static_cast<unsigned>(W)) - s);
@@ -508,7 +527,7 @@ namespace efloat_detail {
 
 	// the working precision tgamma_working predicts for `needed` bits below 1, absolute: needed + 8 + E
 	template<unsigned nlimbs>
-	inline int64_t tgamma_precision(const efloat<nlimbs>& x, int64_t needed) {
+	inline constexpr int64_t tgamma_precision(const efloat<nlimbs>& x, int64_t needed) {
 		int64_t W = needed + 8;
 		for (int i = 0; i < 3; ++i) W = needed + 8 + std::max<int64_t>(0, lgamma_parts_scale(x, static_cast<unsigned>(W)));
 		return W;
@@ -520,7 +539,7 @@ namespace efloat_detail {
 	// log2 z0 bits, and near the zeros at 1 and 2 the distance from them. Where the prediction
 	// falls short, next to the zeros below 0, the pass is repeated with the shortfall added.
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> lgamma_working(const efloat<nlimbs>& x, unsigned target) {
+	inline constexpr efloat<nlimbs> lgamma_working(const efloat<nlimbs>& x, unsigned target) {
 		const int64_t needed = static_cast<int64_t>(target + exp_log_guard_bits + gamma_error_bits);
 		int64_t W = lgamma_precision(x, needed);
 		efloat<nlimbs> y;
@@ -540,7 +559,7 @@ namespace efloat_detail {
 	// lgamma x is within 2^-(target + exp_log_guard_bits + 1) of itself, its error in exp's result.
 	// That needs W >= E + needed, with E predicted (#1797).
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> tgamma_working(const efloat<nlimbs>& x, unsigned target) {
+	inline constexpr efloat<nlimbs> tgamma_working(const efloat<nlimbs>& x, unsigned target) {
 		const int64_t needed = static_cast<int64_t>(target + exp_log_guard_bits + gamma_error_bits) + 1;
 		int64_t W = tgamma_precision(x, needed);
 		efloat<nlimbs> L;
@@ -558,7 +577,7 @@ namespace efloat_detail {
 
 	// (n - 1)! for an integer n >= 1, exactly, while it has at most `limit` bits; false past it
 	template<unsigned nlimbs>
-	inline bool exact_factorial(int64_t n, unsigned limit, efloat<nlimbs>& result) {
+	inline constexpr bool exact_factorial(int64_t n, unsigned limit, efloat<nlimbs>& result) {
 		unsigned bits = 1;
 		for (int64_t j = 2; j < n; ++j) {
 			bits += static_cast<unsigned>(std::bit_width(static_cast<uint64_t>(j)));
@@ -576,19 +595,19 @@ namespace efloat_detail {
 // factorial could lie on a rounding boundary, and by Ziv's strategy elsewhere, from Stirling's
 // series and the reflection formula below 0
 template<unsigned nlimbs>
-inline efloat<nlimbs> tgamma(const efloat<nlimbs>& x) {
+inline constexpr efloat<nlimbs> tgamma(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
 	const unsigned precision = efloat_detail::result_precision(x);
 	if (x.iszero() || (x.isinf() && x.sign() != -1)) {
 		efloat<nlimbs> result;
 		result.setinf(x.sign() == -1);   // gamma(+/-0) = +/-inf, gamma(+inf) = +inf
-		if (x.iszero()) efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
+		if (x.iszero()) efloat_detail::raise_flags(ExceptionFlag::DivisionByZero);
 		return result;
 	}
 	if (x.isinf() || (x.sign() == -1 && efloat_detail::is_integer(x))) {
 		efloat<nlimbs> nan;   // gamma(-inf) and the poles at the negative integers
 		nan.setnan();
-		efloat_exception_flags.set(ExceptionFlag::InvalidOperation);
+		efloat_detail::raise_flags(ExceptionFlag::InvalidOperation);
 		return nan;
 	}
 	// (n - 1)! exactly where it has at most twice the bits a result rounds to: a wider factorial
@@ -619,7 +638,7 @@ inline efloat<nlimbs> tgamma(const efloat<nlimbs>& x) {
 // lgamma: log |gamma x|, correctly rounded (#1763): exactly 0 at 1 and 2, and by Ziv's strategy
 // elsewhere, where it is transcendental
 template<unsigned nlimbs>
-inline efloat<nlimbs> lgamma(const efloat<nlimbs>& x) {
+inline constexpr efloat<nlimbs> lgamma(const efloat<nlimbs>& x) {
 	if (x.isnan()) return x;
 	const unsigned precision = efloat_detail::result_precision(x);
 	if (x.isinf()) {
@@ -630,7 +649,7 @@ inline efloat<nlimbs> lgamma(const efloat<nlimbs>& x) {
 	if (x.iszero() || (x.sign() == -1 && efloat_detail::is_integer(x))) {
 		efloat<nlimbs> result;   // the poles at 0 and the negative integers
 		result.setinf(false);
-		efloat_exception_flags.set(ExceptionFlag::DivisionByZero);
+		efloat_detail::raise_flags(ExceptionFlag::DivisionByZero);
 		return result;
 	}
 	if (x == efloat<nlimbs>(1.0) || x == efloat<nlimbs>(2.0)) {

@@ -26,25 +26,7 @@ namespace sw {
     namespace universal {
         //////////////////////////////////////////////////////////////////////////
 
-        // calculate the integer power a ^ b
-        // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-        inline bfloat16 ipow(bfloat16 a, bfloat16 b) {
-            // precondition
-            if (!a.isinteger() || !b.isinteger()) return bfloat16(0);
-
-			//using ComputeType = bfloat16;  bfloat16 does have enough precision to handle the intermediate results
-            using ComputeType = float;
-            ComputeType result{ 1 };
-            ComputeType base = ComputeType(a);
-            uint64_t exp = uint64_t(b);
-            for (;;) {
-                if (exp & 0x1) result *= base;
-                exp >>= 1;
-                if (exp == 0) break;
-                base *= base;
-            }
-            return bfloat16(result);
-        }
+        // ipow, an integer power through float, is retired: pow(a, int) is the integer power (#1875)
 
         // clang <complex> implementation is calling these functions so we need implementations for bfloat16
 

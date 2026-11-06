@@ -7,9 +7,9 @@
 #pragma once
 #include <algorithm>
 #include <bit>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 #include <vector>
 #include <universal/number/efloat/math/exponent.hpp>   // can_round, exact_power, round_result
 
@@ -219,7 +219,7 @@ namespace efloat_detail {
 	// as for sqrt. Before, Newton's iteration ran in efloat arithmetic with 80 guard bits under
 	// Ziv's strategy, and an exact cube cost a cube to recognize (#1783).
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> cbrt_exact(const efloat<nlimbs>& m, unsigned precision) {
+	inline constexpr efloat<nlimbs> cbrt_exact(const efloat<nlimbs>& m, unsigned precision) {
 		using limb_kernels::limb_t;
 		const int64_t frac = 32 * static_cast<int64_t>(m.limb32_count()) - 1 - m.scale();   // m = M 2^-frac
 		std::size_t n = (static_cast<std::size_t>(precision) + 18 + 63) / 64;
@@ -300,7 +300,7 @@ namespace efloat_detail {
 	// cbrt(a) for a finite a > 0 rounded once to `bits` bits: a scaled to m in [1, 8) for the
 	// root, the exponent divided by 3
 	template<unsigned nlimbs>
-	inline efloat<nlimbs> cbrt_to(const efloat<nlimbs>& a, unsigned bits) {
+	inline constexpr efloat<nlimbs> cbrt_to(const efloat<nlimbs>& a, unsigned bits) {
 		const int64_t e     = a.scale();
 		const int64_t third = e / 3 - ((e < 0 && e % 3 != 0) ? 1 : 0);   // floor(e / 3)
 		efloat<nlimbs> m(a);
@@ -316,19 +316,24 @@ namespace efloat_detail {
 // decided from the integer cube root of a's significand, exact where it must be, and rounded
 // once. cbrt(-a) = -cbrt(a), rounded as the negative value it is.
 template<unsigned nlimbs>
-inline efloat<nlimbs> cbrt(const efloat<nlimbs>& a) {
+inline constexpr efloat<nlimbs> cbrt(const efloat<nlimbs>& a) {
 	if (a.iszero() || a.isinf() || a.isnan()) return a;
 	const unsigned precision = a.get_precision();
 	const bool carries = a.carries_precision();
 	const bool negative = (a.sign() == -1);
 	efloat<nlimbs> abs_a(a);
 	abs_a.setsign(false);
-	// a negative root rounds as the negative value: the magnitude in the mirrored mode
-	const RoundingMode mode = efloat_rounding_mode;
-	if (negative && mode == RoundingMode::RoundTowardPositive) efloat_rounding_mode = RoundingMode::RoundTowardNegative;
-	else if (negative && mode == RoundingMode::RoundTowardNegative) efloat_rounding_mode = RoundingMode::RoundTowardPositive;
-	efloat<nlimbs> y = efloat_detail::cbrt_to(abs_a, precision);
-	efloat_rounding_mode = mode;
+	// a negative root rounds as the negative value: the magnitude in the mirrored mode. A constant
+	// evaluation rounds to nearest, which mirrors to itself, and cannot reach the thread's mode.
+	efloat<nlimbs> y = [&]() {
+		if (std::is_constant_evaluated()) return efloat_detail::cbrt_to(abs_a, precision);
+		const RoundingMode mode = efloat_rounding_mode;
+		if (negative && mode == RoundingMode::RoundTowardPositive) efloat_rounding_mode = RoundingMode::RoundTowardNegative;
+		else if (negative && mode == RoundingMode::RoundTowardNegative) efloat_rounding_mode = RoundingMode::RoundTowardPositive;
+		efloat<nlimbs> root = efloat_detail::cbrt_to(abs_a, precision);
+		efloat_rounding_mode = mode;
+		return root;
+	}();
 	if (negative) y = -y;
 	if (!carries) y.clear_precision();
 	return y;

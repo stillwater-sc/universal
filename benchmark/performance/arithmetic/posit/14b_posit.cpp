@@ -6,9 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // Configure the posit template environment
-// first: enable fast specialized posit<14,0>
-#define POSIT_FAST_POSIT_14_0 0
-// second: disable posit arithmetic exceptions
+// disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/posit/posit.hpp>
 #include <universal/performance/number_system.hpp>

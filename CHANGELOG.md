@@ -7,7 +7,120 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet.
+### 2026-11-05 to 2026-11-06
+
+Seventeen PRs and eighteen issues closed. Two themes: Universal now builds without exceptions,
+and `faithful<Real>` went from a type whose comparisons, limits and math library were stubs to
+one with a compensated elementary-function library. Nearly every defect here had compiled and
+passed its tests, because the code or the test was a stub that returned a plausible value.
+
+#### Behaviour changes
+
+* **faithful arithmetic** ([#1935](https://github.com/stillwater-sc/universal/pull/1935)) --
+  `+=`, `-=` and `/=` (and binary `+`, `-`, `/`) now carry both operands' errors and
+  renormalize, so their compensation terms change.
+* **faithful comparisons and modifiers** ([#1948](https://github.com/stillwater-sc/universal/pull/1948)) --
+  comparisons, `abs()`, `++`/`--`, `sign()` and `scale()` now return results for the
+  represented value instead of stub or first-part values. Arithmetic on an infinite faithful
+  yields an infinity instead of NaN.
+* **faithful limits** ([#1951](https://github.com/stillwater-sc/universal/pull/1951)) --
+  `std::numeric_limits<faithful<Real>>` returns real limits instead of zeros and ones, and
+  `minpos`/`maxpos`/`minneg`/`maxneg` set their argument.
+* **faithful without exceptions** ([#1958](https://github.com/stillwater-sc/universal/pull/1958)-[#1961](https://github.com/stillwater-sc/universal/pull/1961)) --
+  with `FAITHFUL_THROW_ARITHMETIC_EXCEPTION` set, domain errors throw
+  `faithful_negative_sqrt_arg` (sqrt, [#1953](https://github.com/stillwater-sc/universal/pull/1953)),
+  `faithful_negative_log_arg` or `faithful_domain_error`. Range results (inf, 0) never throw.
+  `faithful<long double>` has no trigonometric functions where `long double` is wider than
+  `double`: the shared reduction cannot hold it, so it gets none rather than wrong ones.
+* **dbns conversion** ([#1939](https://github.com/stillwater-sc/universal/pull/1939)) --
+  conversion from double returns the encoding nearest in log2. Multi-block configurations such as
+  `dbns<16,5>` were wrong for almost every value. `minpos` is `0.5^(MAX_A-1)` instead of 0,
+  and `minneg` is `-0.5^(MAX_A-1)` instead of NaN.
+* **dbns native arithmetic** ([#1947](https://github.com/stillwater-sc/universal/pull/1947)) --
+  with `NATIVE_DBNS_ARITHMETIC` defined, `*` and `/` return the encoding nearest in log2 to the exact
+  result instead of a projected or wrapped one.
+* **ereal parse** ([#1938](https://github.com/stillwater-sc/universal/pull/1938)) --
+  `parse()` and `operator>>` return the exact value for a decimal with a finite binary
+  expansion that fits the type's limb budget. `1.5` is one limb, equal to `ereal(1.5)`. A
+  value needing more limbs than `maxlimbs`, such as `1 + 2^-53` in `ereal<1>`, is still
+  truncated.
+* **fixpnt parse** ([#1937](https://github.com/stillwater-sc/universal/pull/1937)) -- with
+  Saturate, a negative decimal at the bottom of the range reads as maxneg (`-8` in
+  `fixpnt<8,4>`), not `-maxpos`.
+
+#### Added
+
+* **A math library for faithful ([#1952](https://github.com/stillwater-sc/universal/issues/1952) /
+  PRs [#1953](https://github.com/stillwater-sc/universal/pull/1953), [#1958](https://github.com/stillwater-sc/universal/pull/1958),
+  [#1959](https://github.com/stillwater-sc/universal/pull/1959), [#1960](https://github.com/stillwater-sc/universal/pull/1960),
+  [#1961](https://github.com/stillwater-sc/universal/pull/1961))** -- `mathlib.hpp` had
+  included 14 headers from a directory that did not exist. The functions are evaluated in
+  faithful arithmetic, not through `Real`, which would keep half the pair's precision:
+
+  | family | functions | method | worst error (float / double host) |
+  |---|---|---|---|
+  | classify, minmax | `isnan` ... `copysign`, `fmin`, `fmax` | exact | -- |
+  | sqrt | `sqrt` | one Newton step from the residual, via `twoProd` | 1.32 / 1.37 |
+  | truncation | `floor`, `ceil`, `trunc`, `round`, `fmod` | exact; `fmod` in a Shewchuk expansion | exact |
+  | exponential | `exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p` | exact `x - m ln2` reduction, `/512` Taylor kernel; `atanh` series for log | 2.9 / 3.7 |
+  | trigonometric | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2` | the shared Payne-Hanek reduction ([#1723](https://github.com/stillwater-sc/universal/issues/1723)), to `max()` | 3.6 / 3.5 |
+  | hyperbolic | `sinh` ... `atanh`, `cbrt`, `hypot` | non-cancelling forms over `expm1`/`log1p`; `cbrt` with two Newton steps | 3.6 / 3.9 |
+  | power | `pow` | binary powering for integer `\|y\| <= 64`; otherwise `y log b` reduced exactly | grows: see below |
+
+  The errors are in units of `epsilon()`, measured against `dd` for `faithful<float>` and `qd`
+  for `faithful<double>`. `pow` is not bounded by 5 units. Its error is a few units while
+  `|y log x| <= 1` and grows linearly beyond: the error budget is about `5 + 4|y log x|` on
+  the exp/log path (51 units measured at `|y| = 50` on [0.5, 2]) and `5 + |y|` for binary
+  powering. The test holds every `pow` sample to `5 + 4 g`, with `g` the measure of its path.
+  That growth is a limit of pair precision, which dd shares. Every test includes a mutation check: evaluating through `Real` must fail it.
+  `math/constants.hpp` holds ln 2, ln 10 and pi/2 as four doubles, split exactly into `Real`
+  parts.
+
+#### Fixed
+
+* **Building with -fno-exceptions ([#1925](https://github.com/stillwater-sc/universal/issues/1925) /
+  PR [#1928](https://github.com/stillwater-sc/universal/pull/1928))** -- the umbrella header
+  failed for 14 of 42 number systems with gcc and 19 with clang.
+  * `utility/exceptions.hpp` detects `UNIVERSAL_HAS_EXCEPTIONS` and provides
+    `throw_or_abort()`. About 60 ungated throws now go through it.
+  * A throw switch set to 1 in a build without exceptions is an `#error`.
+  * `integration/noexceptions` builds all 42 types with `-fno-exceptions -Werror` in CI_LITE.
+  * `tools/scripts/check-ungated-throws.py` guards against regressions in the ASCII Guard job.
+  * Found on the way: efloat failed to link from two translation units on MinGW, because the
+    TLS init of an inline `thread_local` was emitted as a strong symbol.
+* **faithful stubs ([#1930](https://github.com/stillwater-sc/universal/issues/1930),
+  [#1936](https://github.com/stillwater-sc/universal/issues/1936), [#1949](https://github.com/stillwater-sc/universal/issues/1949))**
+  -- unary minus did not compile. `==` and `<` were always false, `abs()` returned zero, and
+  `++` printed "TBD". `numeric_limits` reported `digits` as 3333333. `attributes.hpp` and
+  `manipulators.hpp` were another type's copies and did not compile. The limits now follow the
+  multi-double convention ([#1882](https://github.com/stillwater-sc/universal/issues/1882)) with
+  `Real` in place of double.
+* **dbns conversion and native arithmetic ([#1933](https://github.com/stillwater-sc/universal/issues/1933),
+  [#1940](https://github.com/stillwater-sc/universal/issues/1940))** -- `dbns<16,5>` converted
+  1.5 to 1.4e122: the encoding went into the most significant block only. The native divide
+  subtracted exponents in `uint32_t`, so `3 / 1.5` was 0. Conversion and the native operators
+  now round by the same nearest-pair rule.
+* **Stream input ([#1929](https://github.com/stillwater-sc/universal/issues/1929),
+  [#1931](https://github.com/stillwater-sc/universal/issues/1931), [#1932](https://github.com/stillwater-sc/universal/issues/1932))**:
+  * rational's `operator>>` was declared and never defined.
+  * fixpnt read decimal integers only. It now rounds fractions to nearest-even from the exact
+    decimal, never through a double.
+  * ereal's `parse("1.5")` carried a `1.2e-260` residual from dividing by ten.
+
+#### Tests
+
+* **Tests that checked nothing** ([#1941](https://github.com/stillwater-sc/universal/issues/1941),
+  [#1942](https://github.com/stillwater-sc/universal/issues/1942)):
+  * dbns `conversion.cpp` ran with `MANUAL_TESTING` set and returned 0. It now checks round
+    trips and rounding boundaries; against the old dbns, 17 of 21 checks fail.
+  * `tests/issue_1327_divide_by_infinity.cpp` was never compiled. Its 26 cases now run in every
+    multi-double suite, and ASCII Guard rejects anything in `tests/` except `cmake_install`.
+
+#### Removed
+
+* **Five unreferenced CMake helpers** ([#1944](https://github.com/stillwater-sc/universal/issues/1944) /
+  PR [#1946](https://github.com/stillwater-sc/universal/pull/1946)), some unused since 2019.
+  The new `tools/cmake/README.md` documents the ones that remain.
 
 ## [5.1.0](https://github.com/stillwater-sc/universal/compare/v5.0.0...v5.1.0) (2026-09-25)
 
