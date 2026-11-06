@@ -110,31 +110,36 @@ inline std::string to_native(const rational<nbits,Base,bt>& v, bool = false) {
 
 namespace rational_parse {
 
-// The parse accumulates magnitudes, so r >= 0 throughout and the sign is applied at the end.
+// The parse accumulates the value with its sign, so a negative number runs -1, -12, -128 and
+// never needs its magnitude: in two's complement the most negative value has none, and
+// accumulating +128 to negate at the end rejected -128 in 8 bits (#1973). r has the sign of the
+// number, or is zero, throughout.
 
-// r = r * 10 + digit, false when the result does not fit
+// r = r * 10 + digit (or - digit, for a negative number), false when the result does not fit
 template<typename Rational>
-bool append_digit(Rational& r, int digit, const Rational& ten, bool tenFits) {
+bool append_digit(Rational& r, int digit, bool negative, const Rational& ten, bool tenFits) {
 	const Rational dg(digit);
 	if (double(dg) != double(digit)) return false;    // too narrow to hold the digit itself
 	const Rational zero(0);
-	if (r == zero) { r = dg; return true; }           // leading digit: nothing to scale
+	if (r == zero) { r = negative ? -dg : dg; return true; }   // leading digit: nothing to scale
 	if (!tenFits) return false;
-	Rational next = r * ten + dg;
-	// a wrap that lands negative fools the undo, since the subtraction wraps back: in 8 bits
-	// 12*10 + 8 is -128, and (-128 - 8) is 120 again, so check the sign first
-	if (next < zero) return false;
-	if (!((next - dg) / ten == r)) return false;      // wrapped
+	Rational next = negative ? r * ten - dg : r * ten + dg;
+	// a wrap that lands on the wrong side of zero fools the undo, since undoing wraps back: in 8
+	// bits 12*10 + 8 is -128, and (-128 - 8) is 120 again, so check the sign first
+	if (negative ? zero < next : next < zero) return false;
+	const Rational undone = negative ? next + dg : next - dg;
+	if (!(undone / ten == r)) return false;           // wrapped
 	r = next;
 	return true;
 }
 
 // r = r * 10, false when the result does not fit
 template<typename Rational>
-bool scale_by_ten(Rational& r, const Rational& ten, bool tenFits) {
+bool scale_by_ten(Rational& r, bool negative, const Rational& ten, bool tenFits) {
 	if (!tenFits) return false;
 	Rational next = r * ten;
-	if (next < Rational(0)) return false;             // wrapped negative
+	const Rational zero(0);
+	if (negative ? zero < next : next < zero) return false;   // wrapped past zero
 	if (!(next / ten == r)) return false;             // wrapped
 	r = next;
 	return true;
@@ -177,7 +182,7 @@ bool parse(const std::string& txt, rational<nbits, Base, bt>& v) {
 	Rational num(0), den(1);
 	bool digits = false;
 	while (i < n && rp::is_digit(txt[i])) {
-		if (!rp::append_digit(num, txt[i] - '0', ten, tenFits)) return false;
+		if (!rp::append_digit(num, txt[i] - '0', negative, ten, tenFits)) return false;
 		digits = true;
 		++i;
 	}
@@ -189,7 +194,7 @@ bool parse(const std::string& txt, rational<nbits, Base, bt>& v) {
 		Rational d(0);
 		bool ddigits = false;
 		while (i < n && rp::is_digit(txt[i])) {
-			if (!rp::append_digit(d, txt[i] - '0', ten, tenFits)) return false;
+			if (!rp::append_digit(d, txt[i] - '0', false, ten, tenFits)) return false;   // the denominator is unsigned
 			ddigits = true;
 			++i;
 		}
@@ -208,7 +213,7 @@ bool parse(const std::string& txt, rational<nbits, Base, bt>& v) {
 			std::size_t last = end;
 			while (last > i && txt[last - 1] == '0') --last;
 			for (std::size_t k = i; k < last; ++k) {
-				if (!rp::append_digit(num, txt[k] - '0', ten, tenFits)) return false;
+				if (!rp::append_digit(num, txt[k] - '0', negative, ten, tenFits)) return false;
 				++fractionDigits;
 			}
 			if (end > i) digits = true;
@@ -233,13 +238,12 @@ bool parse(const std::string& txt, rational<nbits, Base, bt>& v) {
 		// value = num * 10^(exponent - fractionDigits); zero stays zero at any exponent
 		if (!(num == Rational(0))) {
 			long long power = exponent - fractionDigits;
-			for (; power > 0; --power) if (!rp::scale_by_ten(num, ten, tenFits)) return false;
+			for (; power > 0; --power) if (!rp::scale_by_ten(num, negative, ten, tenFits)) return false;
 			for (; power < 0; ++power) if (!rp::divide_by_ten(num, ten, tenFits)) return false;
 		}
 	}
 
-	Rational result = num / den;
-	v = negative ? -result : result;
+	v = num / den;   // num carries the sign
 	return true;
 }
 
