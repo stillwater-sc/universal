@@ -4,39 +4,43 @@
 // Copyright (C) 2023-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// Part of the text layer (#1334): sign() and scale() are value queries, but faithful_range()
+// streams faithful values through a stringstream, so this header sits above iostream.hpp and is
+// not included by core.hpp. Until #1949 faithful_range() was another type's, written for nbits and
+// a block type, and the umbrella left this header out because it did not compile.
 #include <iomanip>       // std::setw
 #include <sstream>       // std::stringstream
 #include <string>        // std::string
-#include <cmath> // for std:pow()
+#include <universal/number/faithful/core.hpp>
+#include <universal/number/faithful/manipulators.hpp>   // type_tag
+#include <universal/number/faithful/iostream.hpp>       // operator<< on faithful
 
 namespace sw { namespace universal {
 
-// functions to provide details about
-// the properties of the number system configuration
-// in terms of native types.
-// Since many number system configurations cannot be represented by 
-// native types, these are all convenience functions.
-// They should not be used for the core algorithms.
-
-	// free function sign
+// the sign and the binary scale of the value a faithful represents, value + error
 template<typename FloatingPointType>
-bool sign(const faithful<FloatingPointType>& v) {
+inline bool sign(const faithful<FloatingPointType>& v) {
 	return v.sign();
 }
 
-// generate the maxneg through maxpos value range of a logarithmic number system configuration
-// the type of arithmetic, Modulo or Saturating, does not affect the range
 template<typename FloatingPointType>
-std::string faithful_range(const faithful<nbits, bt) {
-	using FAITHFUL = faithful<FloatingPointType>;
+inline int scale(const faithful<FloatingPointType>& v) {
+	return v.scale();
+}
+
+// the maxneg through maxpos value range of a faithful configuration
+template<typename FloatingPointType>
+inline std::string faithful_range(const faithful<FloatingPointType>& v = {}) {
+	using Faithful = faithful<FloatingPointType>;
+	Faithful lmaxneg, lminneg, lminpos, lmaxpos;
 	std::stringstream s;
-	FAITHFUL l;
 	s << std::setw(45) << type_tag(v) << " : [ "
-		<< l.maxneg() << " ... "
-		<< l.minneg() << " "
-		<< "0 "
-		<< l.minpos() << " ... "
-		<< l.maxpos() << " ]";
+	  << maxneg(lmaxneg) << " ... "
+	  << minneg(lminneg) << " "
+	  << "0 "
+	  << minpos(lminpos) << " ... "
+	  << maxpos(lmaxpos) << " ]";
 	return s.str();
 }
 
