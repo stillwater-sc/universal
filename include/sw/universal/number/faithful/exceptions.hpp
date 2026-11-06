@@ -38,6 +38,11 @@ namespace sw { namespace universal {
 		faithful_negative_sqrt_arg() : faithful_arithmetic_exception("negative sqrt argument") {}
 	};
 
+	// negative argument to log, log2, log10, or an argument below -1 to log1p
+	struct faithful_negative_log_arg : public faithful_arithmetic_exception {
+		faithful_negative_log_arg() : faithful_arithmetic_exception("negative log argument") {}
+	};
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	/// faithful internal operation exceptions
 

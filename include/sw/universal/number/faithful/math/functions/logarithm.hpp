@@ -24,7 +24,10 @@
 // numeric/faithful/exponential.cpp (faithful<float> / faithful<double>):
 //   log 2.6 / 2.7 (arguments near 1), log2 1.3 / 1.4, log10 1.8 / 3.7, log1p 2.7 / 3.4
 //
-// log(0) is -inf with ERANGE, and a negative argument NaN with EDOM, as <cmath>.
+// log(0) is -inf with ERANGE, and a negative argument NaN with EDOM, as <cmath>; with
+// FAITHFUL_THROW_ARITHMETIC_EXCEPTION set, a negative argument throws faithful_negative_log_arg
+// instead, as sqrt throws faithful_negative_sqrt_arg. The range results, inf and 0, are values,
+// not errors, and do not throw.
 // Only a native FloatingPointType.
 #include <cerrno>        // errno, EDOM, ERANGE
 #include <cmath>         // std::frexp, std::ldexp, std::sqrt
@@ -77,6 +80,17 @@ namespace faithful_detail {
 		return b;
 	}
 
+	// a domain error: a throw when FAITHFUL_THROW_ARITHMETIC_EXCEPTION is set, else NaN with EDOM
+	template<typename Real>
+	inline faithful<Real> log_domain_error() {
+#if FAITHFUL_THROW_ARITHMETIC_EXCEPTION
+		throw faithful_negative_log_arg();
+#else
+		errno = EDOM;
+		return faithful<Real>(std::numeric_limits<Real>::quiet_NaN());
+#endif
+	}
+
 	// the shared special cases; returns true and sets r when x is not a finite positive value
 	template<typename Real>
 	inline bool log_special(const faithful<Real>& x, faithful<Real>& r) {
@@ -88,8 +102,7 @@ namespace faithful_detail {
 			return true;
 		}
 		if (x.sign()) {
-			errno = EDOM;
-			r = F(std::numeric_limits<Real>::quiet_NaN());
+			r = log_domain_error<Real>();
 			return true;
 		}
 		if (x.isinf()) { r = x; return true; }
@@ -149,18 +162,14 @@ inline faithful<FloatingPointType> log1p(const faithful<FloatingPointType>& x) {
 	if (x.iszero()) return x;                        // log1p(+-0) = +-0
 	if (x.isinf()) {
 		if (!x.sign()) return x;
-		errno = EDOM;
-		return F(std::numeric_limits<Real>::quiet_NaN());
+		return faithful_detail::log_domain_error<Real>();
 	}
 	const F one(Real(1));
 	if (x == -one) {
 		errno = ERANGE;
 		return F(-std::numeric_limits<Real>::infinity());
 	}
-	if (x < -one) {
-		errno = EDOM;
-		return F(std::numeric_limits<Real>::quiet_NaN());
-	}
+	if (x < -one) return faithful_detail::log_domain_error<Real>();
 	if (std::fabs(Real(x)) < Real(0.25)) return faithful_detail::two_atanh(x / (F(Real(2)) + x));
 	return log(one + x);
 }

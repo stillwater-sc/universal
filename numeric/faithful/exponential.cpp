@@ -147,6 +147,8 @@ int VerifySpecialValues(bool reportTestCases) {
 	check(iszero(exp(F(-RL::max()))) && errno == ERANGE, "exp underflow is 0 with ERANGE");
 	check(exp2(F(Real(10))) == F(Real(1024)) && exp2(F(Real(-3))) == F(Real(0.125)), "exp2 of an integer is exact");
 	check(signbit(expm1(F(Real(-0.0)))) && expm1(ninf) == F(Real(-1)), "expm1(-0) = -0, expm1(-inf) = -1");
+	errno = 0;
+	check(expm1(F(-RL::max())) == F(Real(-1)) && errno == 0, "expm1(-max) = -1 without a range error");
 	check(log(one) == zero && log2(one) == zero && log10(one) == zero, "log(1) = 0");
 	check(log2(F(Real(1024))) == F(Real(10)) && log2(F(Real(0.125))) == F(Real(-3)), "log2 of a power of two is exact");
 	check(log2(F(std::ldexp(Real(1), RL::min_exponent - RL::digits))) == F(Real(RL::min_exponent - RL::digits)), "log2(denorm_min) is exact");

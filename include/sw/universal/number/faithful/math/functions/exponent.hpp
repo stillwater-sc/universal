@@ -221,6 +221,13 @@ inline faithful<FloatingPointType> expm1(const faithful<FloatingPointType>& x) {
 		for (int i = 0; i < 9; ++i) s = faithful_detail::scale2(s, 1) + s * s;
 		return s;
 	}
+	if (x.sign()) {
+		// exp(x) may underflow to 0 and set ERANGE, but expm1(x) -> -1 is not a range error
+		const int saved = errno;
+		const F e = exp(x);
+		errno = saved;
+		return e - F(Real(1));
+	}
 	const F e = exp(x);
 	return e.isinf() ? e : e - F(Real(1));
 }
