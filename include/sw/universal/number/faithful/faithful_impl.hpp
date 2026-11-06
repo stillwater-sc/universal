@@ -1,15 +1,16 @@
 #pragma once
 #include <iosfwd>       // std::ostream/std::istream in the friend declarations (#1334)
-#include <cstdio>       // fprintf(stderr,...) for the TBD diagnostics
 #include <string>       // std::string, returned by the text layer's builders
-#include <string>
 // faithful_impl.hpp: definition of a faithfully rounded number system
 //
 // Copyright (C) 2023-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
+#include <cmath>        // std::isinf, std::isnan
+#include <concepts>     // std::convertible_to
 #include <limits>
+#include <type_traits>  // std::is_floating_point_v
 
 #include <universal/native/ieee754_core.hpp>          // the bit-manipulation half (#1334)
 #include <universal/native/manipulators_core.hpp>   // scale(), without the text layer
@@ -51,6 +52,25 @@ faithful<FloatingPointType>& minneg(faithful<FloatingPointType>& lminneg) {
 template<typename FloatingPointType>
 faithful<FloatingPointType>& maxneg(faithful<FloatingPointType>& lmaxneg) {
 	return lmaxneg;
+}
+
+// The classification of a part, for a native FloatingPointType and for a Universal one such as
+// cfloat. A native type uses <cmath>. A Universal type uses its own isinf() and isnan() members,
+// which its core defines; its free isinf()/isnan() overloads live in its mathlib, which a caller
+// of the core alone does not include. Anything else is found unqualified, by ADL. These are free
+// functions because inside faithful an unqualified isinf() names faithful's own member.
+namespace faithful_detail {
+	template<typename Real> inline bool part_isinf(const Real& v) {
+		if constexpr (std::is_floating_point_v<Real>) return std::isinf(v);
+		else if constexpr (requires { { v.isinf() } -> std::convertible_to<bool>; }) return v.isinf();
+		else { using std::isinf; return isinf(v); }
+	}
+	template<typename Real> inline bool part_isnan(const Real& v) {
+		if constexpr (std::is_floating_point_v<Real>) return std::isnan(v);
+		else if constexpr (requires { { v.isnan() } -> std::convertible_to<bool>; }) return v.isnan();
+		else { using std::isnan; return isnan(v); }
+	}
+	template<typename Real> inline bool part_isfinite(const Real& v) { return !part_isinf(v) && !part_isnan(v); }
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
@@ -147,10 +167,10 @@ public:
 	}
 	faithful& operator/=(double rhs) { return *this /= faithful(rhs); }
 
-	// prefix/postfix operators
+	// prefix/postfix operators: a compensated addition of one, so the roundoff of the head is kept
+	// in the error (#1936)
 	faithful& operator++() {
-		std::fprintf(stderr, "operator++() TBD\n");
-		return *this;
+		return *this += faithful(FloatingPointType(1));
 	}
 	faithful operator++(int) {
 		faithful tmp(*this);
@@ -158,8 +178,7 @@ public:
 		return tmp;
 	}
 	faithful& operator--() {
-		std::fprintf(stderr, "operator--() TBD\n");
-		return *this;
+		return *this -= faithful(FloatingPointType(1));
 	}
 	faithful operator--(int) {
 		faithful tmp(*this);
@@ -168,15 +187,25 @@ public:
 	}
 
 	// modifiers
-	void reset() {	}
+	void reset()   { value = 0; error = 0; }
+	void setzero() { value = 0; error = 0; }
+	void setnan()  { value = std::numeric_limits<FloatingPointType>::quiet_NaN(); error = 0; }
+	void setinf(bool negative = false) {
+		value = negative ? -std::numeric_limits<FloatingPointType>::infinity() : std::numeric_limits<FloatingPointType>::infinity();
+		error = 0;
+	}
 
 	// selectors
-	inline bool isneg() const { return value < 0.0; }
-	inline bool iszero() const { return value == 0.0 && error == 0.0; }
-	inline bool isinf() const { return false; }
-	inline bool isnan() const { return false; }
-	inline bool sign() const { return value < 0.0; }
-	inline int scale() const { return sw::universal::scale(value); }
+	// The sign, the scale and zero are those of the represented value. Its rounded sum is the
+	// value of the canonical pair, so a pair built with faithful(v, e) that is not canonical, such
+	// as (1, -2), reports the sign of -1, not of its first part (#1936).
+	inline bool isneg() const { return rounded() < FloatingPointType(0); }
+	inline bool iszero() const { return rounded() == FloatingPointType(0); }
+	// the head carries an infinity or a NaN; renormalize() keeps the error of such a value zero
+	inline bool isinf() const { return faithful_detail::part_isinf(value); }
+	inline bool isnan() const { return faithful_detail::part_isnan(value); }
+	inline bool sign() const { return rounded() < FloatingPointType(0); }
+	inline int scale() const { return sw::universal::scale(rounded()); }
 	// the two parts: the rounded value and its compensation, as dd_cascade names them
 	inline FloatingPointType high() const { return value; }
 	inline FloatingPointType low()  const { return error; }
@@ -187,11 +216,32 @@ private:
 
 	// make the pair canonical: value is value + error rounded, and error what remains, at most
 	// half an ulp of value. twoSum is exact, so the represented value does not change.
+	// An infinite or NaN value has no roundoff (#1936). twoSum(inf, x) leaves inf - inf = NaN as
+	// its roundoff, which the operators add into the error before they get here; renormalizing
+	// that pair would make the value NaN too, and value + error turned an infinity into a NaN.
+	// So a non-finite value keeps itself and drops the error, and a sum that overflows does too.
 	void renormalize() {
+		if (!faithful_detail::part_isfinite(value)) {
+			error = 0;
+			return;
+		}
 		FloatingPointType s, r;
 		twoSum(value, error, s, r);
 		value = s;
-		error = r;
+		error = faithful_detail::part_isfinite(s) ? r : FloatingPointType(0);
+	}
+
+	// value + error rounded: the value of the canonical pair. A non-finite value keeps itself,
+	// whatever the error of a pair built by hand.
+	FloatingPointType rounded() const {
+		return faithful_detail::part_isfinite(value) ? FloatingPointType(value + error) : value;
+	}
+
+	// the canonical form of a copy, for the comparisons
+	faithful normalized() const {
+		faithful c(*this);
+		c.renormalize();
+		return c;
 	}
 
 	// template parameters need names different from class template parameters (for gcc and clang)
@@ -216,18 +266,30 @@ private:
 
 ////////////////////// operators
 
+// The comparisons order by the represented value, value + error (#1936). Both operands are
+// renormalized first, which leaves each value the rounded sum and each error at most half an ulp
+// of its value. Rounding preserves order, so a smaller value means a smaller sum, and only a tie
+// of the values needs the errors. That is exact, with no rounding of value + error. A NaN
+// compares unordered, as in IEEE-754: every comparison is false except !=.
 template<typename FPType>
-inline bool operator==(const faithful<FPType>& lhs, const faithful<FPType>& rhs) { return false; }
+inline bool operator==(const faithful<FPType>& lhs, const faithful<FPType>& rhs) {
+	const faithful<FPType> l = lhs.normalized(), r = rhs.normalized();
+	return l.value == r.value && l.error == r.error;
+}
 template<typename FPType>
 inline bool operator!=(const faithful<FPType>& lhs, const faithful<FPType>& rhs) { return !operator==(lhs, rhs); }
 template<typename FPType>
-inline bool operator< (const faithful<FPType>& lhs, const faithful<FPType>& rhs) { return false; }
+inline bool operator< (const faithful<FPType>& lhs, const faithful<FPType>& rhs) {
+	const faithful<FPType> l = lhs.normalized(), r = rhs.normalized();
+	if (l.value != r.value) return l.value < r.value;   // false when either is NaN
+	return l.error < r.error;
+}
 template<typename FPType>
 inline bool operator> (const faithful<FPType>& lhs, const faithful<FPType>& rhs) { return  operator< (rhs, lhs); }
 template<typename FPType>
-inline bool operator<=(const faithful<FPType>& lhs, const faithful<FPType>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const faithful<FPType>& lhs, const faithful<FPType>& rhs) { return operator< (lhs, rhs) || operator==(lhs, rhs); }
 template<typename FPType>
-inline bool operator>=(const faithful<FPType>& lhs, const faithful<FPType>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const faithful<FPType>& lhs, const faithful<FPType>& rhs) { return operator< (rhs, lhs) || operator==(lhs, rhs); }
 
 // faithful - faithful binary arithmetic operators
 // BINARY ADDITION
@@ -261,10 +323,12 @@ inline faithful<FloatingPointType> operator/(const faithful<FloatingPointType>& 
 
 
 
-/// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
+/// Magnitude: both parts negated when the represented value is negative (#1936). sign() reads the
+/// rounded value + error, which carries the sign of the represented value.
 template<typename FloatingPointType>
 faithful<FloatingPointType> abs(const faithful<FloatingPointType>& v) {
-	return faithful<FloatingPointType>();
+	if (v.iszero()) return faithful<FloatingPointType>(FloatingPointType(0), FloatingPointType(0));   // +0, also for -0
+	return v.sign() ? -v : v;
 }
 
 

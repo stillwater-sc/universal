@@ -1,88 +1,51 @@
 #pragma once
-// manipulators.hpp: definitions of helper functions for faithful numbers manipulation
+// manipulators.hpp: the functions that turn a faithful into a std::string
 //
-// Copyright (C) 2023-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iomanip>
-#include <typeinfo>  // for typeid()
-#include <sstream>
-#include <string>
-
-// pull in the color printing for shells utility
-#include <universal/utility/color_print.hpp>
+//
+// Layer 2a of the faithful headers (#1334): the <iomanip> half. iostream.hpp is the <iostream>
+// half. Until #1936 this file was a copy of another type's manipulators, written for nbits, rbits
+// and at(), which faithful does not have, and the umbrella left it out because it did not
+// compile; components() lived in iostream.hpp instead and called a fraction() faithful lacks.
+#include <iomanip>       // std::setprecision
+#include <limits>        // std::numeric_limits<>::max_digits10
+#include <sstream>       // std::stringstream
+#include <string>        // std::string
+#include <universal/native/ieee754_type_tag.hpp>
+#include <universal/number/faithful/core.hpp>
 
 namespace sw { namespace universal {
 
-	// Generate a type tag for this faithful
-	template<typename FloatingPointType,
-		std::enable_if_t< is_faithful<FloatingPointType>, bool> = true
-	>
-	inline std::string type_tag(const FloatingPointType & = {}) {
-		std::stringstream s;
-		typename FloatingPointType::BlockType bt{0};
-		s << "faithful<"
-			<< std::setw(3) << FloatingPointType::nbits << ", "
-			<< std::setw(3) << FloatingPointType::rbits << ", "
-			<< type_tag(bt) << ", "
-		<< std::setw(10) << type_tag(Behavior{ FloatingPointType::behavior }) << '>';
+// the type tag: faithful<double>, faithful<float>
+template<typename FloatingPointType>
+inline std::string type_tag(const faithful<FloatingPointType>& = {}) {
+	return std::string("faithful<") + type_tag(FloatingPointType{}) + '>';
+}
+
+// the two parts of a faithful: the sign and scale of the represented value, then the rounded value
+// and the error it carries, each to enough digits to read back exactly
+template<typename FloatingPointType>
+inline std::string components(const faithful<FloatingPointType>& v) {
+	std::stringstream s;
+	if (v.isnan()) {
+		s << "nan";
 		return s.str();
 	}
-
-	template<typename FloatingPointType,
-		std::enable_if_t< is_faithful<FloatingPointType>, bool> = true
-	>
-	inline std::string range(const FloatingPointType & = {}) {
-		std::stringstream s;
-		FloatingPointType b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
-		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
+	if (v.iszero()) {
+		s << "zero";
 		return s.str();
 	}
-
-	// report if a native floating-point value is within the dynamic range of the faithful configuration
-	template<typename FloatingPointType,
-		std::enable_if_t< is_faithful<FloatingPointType>, bool> = true
-	>
-	inline bool isInRange(double v) {
-		FloatingPointType a{};
-
-		bool inside = true;
-		if (v > double(a.maxpos()) || v < double(a.maxneg())) inside = false;
-		return inside;
-	}
-
-	template<typename FloatingPointType,
-		std::enable_if_t< is_faithful<FloatingPointType>, bool> = true
-	>
-	inline std::string color_print(const FloatingPointType& l, bool nibbleMarker = false) {
-
-		std::stringstream s;
-
-		Color red(ColorCode::FG_RED);
-		Color yellow(ColorCode::FG_YELLOW);
-		Color blue(ColorCode::FG_BLUE);
-		Color magenta(ColorCode::FG_MAGENTA);
-		Color cyan(ColorCode::FG_CYAN);
-		Color white(ColorCode::FG_WHITE);
-		Color def(ColorCode::FG_DEFAULT);
-		s << red << (l.sign() ? "1" : "0");
-	
-		// integer bits
-		for (int i = static_cast<int>(FloatingPointType::nbits) - 2; i >= static_cast<int>(FloatingPointType::rbits); --i) {
-			s << cyan << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
-			if ((i - FloatingPointType::rbits) > 0 && ((i - FloatingPointType::rbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
-		}
-
-		// fraction bits
-		if constexpr (FloatingPointType::rbits > 0) {
-			s << magenta << '.';
-			for (int i = static_cast<int>(FloatingPointType::rbits) - 1; i >= 0; --i) {
-				s << magenta << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
-				if (i > 0 && (i % 4) == 0 && nibbleMarker) s << yellow << '\'';
-			}
-		}
-		s << def;
+	if (v.isinf()) {
+		s << (v.sign() ? "-inf" : "+inf");
 		return s.str();
 	}
+	s << std::setprecision(std::numeric_limits<FloatingPointType>::max_digits10)
+	  << "(" << (v.sign() ? "-" : "+") << ", scale " << v.scale()
+	  << ", value " << v.high() << ", error " << v.low() << ")";
+	return s.str();
+}
 
 }} // namespace sw::universal
