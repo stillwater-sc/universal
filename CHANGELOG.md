@@ -7,120 +7,629 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 2026-11-05 to 2026-11-06
+Nothing yet.
 
-Seventeen PRs and eighteen issues closed. Two themes: Universal now builds without exceptions,
-and `faithful<Real>` went from a type whose comparisons, limits and math library were stubs to
-one with a compensated elementary-function library. Nearly every defect here had compiled and
-passed its tests, because the code or the test was a stub that returned a plausible value.
+## [5.15.0](https://github.com/stillwater-sc/universal/compare/v5.14.0...v5.15.0) (2026-11-06)
 
-#### Behaviour changes
+**multi-double limits and overflow, IEEE-754 cfloat infinities and NaNs, builds without exceptions, and faithful's math library.** 45 commits since v5.14.0, with 25 behaviour changes:
 
-* **faithful arithmetic** ([#1935](https://github.com/stillwater-sc/universal/pull/1935)) --
-  `+=`, `-=` and `/=` (and binary `+`, `-`, `/`) now carry both operands' errors and
-  renormalize, so their compensation terms change.
-* **faithful comparisons and modifiers** ([#1948](https://github.com/stillwater-sc/universal/pull/1948)) --
-  comparisons, `abs()`, `++`/`--`, `sign()` and `scale()` now return results for the
-  represented value instead of stub or first-part values. Arithmetic on an infinite faithful
-  yields an infinity instead of NaN.
-* **faithful limits** ([#1951](https://github.com/stillwater-sc/universal/pull/1951)) --
-  `std::numeric_limits<faithful<Real>>` returns real limits instead of zeros and ones, and
-  `minpos`/`maxpos`/`minneg`/`maxneg` set their argument.
-* **faithful without exceptions** ([#1958](https://github.com/stillwater-sc/universal/pull/1958)-[#1961](https://github.com/stillwater-sc/universal/pull/1961)) --
-  with `FAITHFUL_THROW_ARITHMETIC_EXCEPTION` set, domain errors throw
-  `faithful_negative_sqrt_arg` (sqrt, [#1953](https://github.com/stillwater-sc/universal/pull/1953)),
-  `faithful_negative_log_arg` or `faithful_domain_error`. Range results (inf, 0) never throw.
-  `faithful<long double>` has no trigonometric functions where `long double` is wider than
-  `double`: the shared reduction cannot hold it, so it gets none rather than wrong ones.
-* **dbns conversion** ([#1939](https://github.com/stillwater-sc/universal/pull/1939)) --
-  conversion from double returns the encoding nearest in log2. Multi-block configurations such as
-  `dbns<16,5>` were wrong for almost every value. `minpos` is `0.5^(MAX_A-1)` instead of 0,
-  and `minneg` is `-0.5^(MAX_A-1)` instead of NaN.
-* **dbns native arithmetic** ([#1947](https://github.com/stillwater-sc/universal/pull/1947)) --
-  with `NATIVE_DBNS_ARITHMETIC` defined, `*` and `/` return the encoding nearest in log2 to the exact
-  result instead of a projected or wrapped one.
-* **ereal parse** ([#1938](https://github.com/stillwater-sc/universal/pull/1938)) --
-  `parse()` and `operator>>` return the exact value for a decimal with a finite binary
-  expansion that fits the type's limb budget. `1.5` is one limb, equal to `ereal(1.5)`. A
-  value needing more limbs than `maxlimbs`, such as `1 + 2^-53` in `ereal<1>`, is still
-  truncated.
-* **fixpnt parse** ([#1937](https://github.com/stillwater-sc/universal/pull/1937)) -- with
-  Saturate, a negative decimal at the bottom of the range reads as maxneg (`-8` in
-  `fixpnt<8,4>`), not `-maxpos`.
+* dd, qd and the cascades get consistent `numeric_limits` and no longer overflow at the top of the
+  range (#1884-#1893).
+* cfloat encodes infinities and types NaNs as IEEE-754 does when it has no max-exponent values
+  (#1895-#1905).
+* Division by zero throws by default in fixpnt, integer, einteger, edecimal and erational (#1907).
+* Every number system builds with `-fno-exceptions` (#1928).
+* `faithful<Real>` went from stubbed comparisons and limits to a compensated elementary-function
+  library (#1935-#1965).
 
-#### Added
+### Highlights: faithful's math library
 
-* **A math library for faithful ([#1952](https://github.com/stillwater-sc/universal/issues/1952) /
-  PRs [#1953](https://github.com/stillwater-sc/universal/pull/1953), [#1958](https://github.com/stillwater-sc/universal/pull/1958),
-  [#1959](https://github.com/stillwater-sc/universal/pull/1959), [#1960](https://github.com/stillwater-sc/universal/pull/1960),
-  [#1961](https://github.com/stillwater-sc/universal/pull/1961))** -- `mathlib.hpp` had
-  included 14 headers from a directory that did not exist. The functions are evaluated in
-  faithful arithmetic, not through `Real`, which would keep half the pair's precision:
+`mathlib.hpp` had included 14 headers from a directory that did not exist
+([#1952](https://github.com/stillwater-sc/universal/issues/1952)). The functions are evaluated
+in faithful arithmetic, not through `Real`, which would keep half the pair's precision. With
+`FAITHFUL_THROW_ARITHMETIC_EXCEPTION` set, domain errors throw `faithful_negative_sqrt_arg`,
+`faithful_negative_log_arg` or `faithful_domain_error`. `faithful<long double>` has no
+trigonometric functions where `long double` is wider than `double`.
 
-  | family | functions | method | worst error (float / double host) |
-  |---|---|---|---|
-  | classify, minmax | `isnan` ... `copysign`, `fmin`, `fmax` | exact | -- |
-  | sqrt | `sqrt` | one Newton step from the residual, via `twoProd` | 1.32 / 1.37 |
-  | truncation | `floor`, `ceil`, `trunc`, `round`, `fmod` | exact; `fmod` in a Shewchuk expansion | exact |
-  | exponential | `exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p` | exact `x - m ln2` reduction, `/512` Taylor kernel; `atanh` series for log | 2.9 / 3.7 |
-  | trigonometric | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2` | the shared Payne-Hanek reduction ([#1723](https://github.com/stillwater-sc/universal/issues/1723)), to `max()` | 3.6 / 3.5 |
-  | hyperbolic | `sinh` ... `atanh`, `cbrt`, `hypot` | non-cancelling forms over `expm1`/`log1p`; `cbrt` with two Newton steps | 3.6 / 3.9 |
-  | power | `pow` | binary powering for integer `\|y\| <= 64`; otherwise `y log b` reduced exactly | grows: see below |
+| family | functions | method | worst error (float / double host) |
+|---|---|---|---|
+| classify, minmax | `isnan` ... `copysign`, `fmin`, `fmax` | exact | -- |
+| sqrt | `sqrt` | one Newton step from the residual, via `twoProd` | 1.32 / 1.37 |
+| truncation | `floor`, `ceil`, `trunc`, `round`, `fmod` | exact; `fmod` in a Shewchuk expansion | exact |
+| exponential | `exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p` | exact `x - m ln2` reduction, `/512` Taylor kernel; `atanh` series for log | 2.9 / 3.7 |
+| trigonometric | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2` | the shared Payne-Hanek reduction ([#1723](https://github.com/stillwater-sc/universal/issues/1723)), to `max()` | 3.6 / 3.5 |
+| hyperbolic | `sinh` ... `atanh`, `cbrt`, `hypot` | non-cancelling forms over `expm1`/`log1p`; `cbrt` with two Newton steps | 3.6 / 3.9 |
+| power | `pow` | binary powering for integer `\|y\| <= 64`; otherwise `y log b` reduced exactly | grows: see below |
 
-  The errors are in units of `epsilon()`, measured against `dd` for `faithful<float>` and `qd`
-  for `faithful<double>`. `pow` is not bounded by 5 units. Its error is a few units while
-  `|y log x| <= 1` and grows linearly beyond: the error budget is about `5 + 4|y log x|` on
-  the exp/log path (51 units measured at `|y| = 50` on [0.5, 2]) and `5 + |y|` for binary
-  powering. The test holds every `pow` sample to `5 + 4 g`, with `g` the measure of its path.
-  That growth is a limit of pair precision, which dd shares. Every test includes a mutation check: evaluating through `Real` must fail it.
-  `math/constants.hpp` holds ln 2, ln 10 and pi/2 as four doubles, split exactly into `Real`
-  parts.
+The errors are in units of `epsilon()`, measured against `dd` for `faithful<float>` and `qd`
+for `faithful<double>`. `pow` is not bounded by 5 units. Its error is a few units while
+`|y log x| <= 1` and grows linearly beyond: the error budget is about `5 + 4|y log x|` on
+the exp/log path (51 units measured at `|y| = 50` on [0.5, 2]) and `5 + |y|` for binary
+powering. The test holds every `pow` sample to `5 + 4 g`, with `g` the measure of its path.
+That growth is a limit of pair precision, which dd shares. Every test includes a mutation check: evaluating through `Real` must fail it.
+`math/constants.hpp` holds ln 2, ln 10 and pi/2 as four doubles, split exactly into `Real`
+parts.
 
-#### Fixed
+### Behaviour changes
 
-* **Building with -fno-exceptions ([#1925](https://github.com/stillwater-sc/universal/issues/1925) /
-  PR [#1928](https://github.com/stillwater-sc/universal/pull/1928))** -- the umbrella header
-  failed for 14 of 42 number systems with gcc and 19 with clang.
-  * `utility/exceptions.hpp` detects `UNIVERSAL_HAS_EXCEPTIONS` and provides
-    `throw_or_abort()`. About 60 ungated throws now go through it.
-  * A throw switch set to 1 in a build without exceptions is an `#error`.
-  * `integration/noexceptions` builds all 42 types with `-fno-exceptions -Werror` in CI_LITE.
-  * `tools/scripts/check-ungated-throws.py` guards against regressions in the ASCII Guard job.
-  * Found on the way: efloat failed to link from two translation units on MinGW, because the
-    TLS init of an inline `thread_local` was emitted as a strong symbol.
-* **faithful stubs ([#1930](https://github.com/stillwater-sc/universal/issues/1930),
-  [#1936](https://github.com/stillwater-sc/universal/issues/1936), [#1949](https://github.com/stillwater-sc/universal/issues/1949))**
-  -- unary minus did not compile. `==` and `<` were always false, `abs()` returned zero, and
-  `++` printed "TBD". `numeric_limits` reported `digits` as 3333333. `attributes.hpp` and
-  `manipulators.hpp` were another type's copies and did not compile. The limits now follow the
-  multi-double convention ([#1882](https://github.com/stillwater-sc/universal/issues/1882)) with
-  `Real` in place of double.
-* **dbns conversion and native arithmetic ([#1933](https://github.com/stillwater-sc/universal/issues/1933),
-  [#1940](https://github.com/stillwater-sc/universal/issues/1940))** -- `dbns<16,5>` converted
-  1.5 to 1.4e122: the encoding went into the most significant block only. The native divide
-  subtracted exponents in `uint32_t`, so `3 / 1.5` was 0. Conversion and the native operators
-  now round by the same nearest-pair rule.
-* **Stream input ([#1929](https://github.com/stillwater-sc/universal/issues/1929),
-  [#1931](https://github.com/stillwater-sc/universal/issues/1931), [#1932](https://github.com/stillwater-sc/universal/issues/1932))**:
-  * rational's `operator>>` was declared and never defined.
-  * fixpnt read decimal integers only. It now rounds fractions to nearest-even from the exact
-    decimal, never through a double.
-  * ereal's `parse("1.5")` carried a `1.2e-260` residual from dividing by ten.
+- **dd**: dd and qd multiply/divide (and dd_cascade divide) at the top of the double range return the exact result instead of NaN ([#1884](https://github.com/stillwater-sc/universal/pull/1884))
+- **dd**: numeric_limits<dd|qd|dd_cascade|td_cascade|qd_cascade> min(), max(), lowest(), min_exponent and the cascades' epsilon() change value; qd's min() moves from 2^-969 to 2^-863 ([#1887](https://github.com/stillwater-sc/universal/pull/1887))
+- **dd**: numeric_limits of dd and qd now report denorm_present, is_bounded and round_to_nearest (was denorm_absent, unbounded, round_toward_zero), so generic code that picks minpos from has_denorm now uses denorm_min(); the cascades report has_denorm_loss = false and dd_cascade/qd_cascade infinity() and NaNs are (x, 0, ...) instead of x in every limb; dd_cascade, td_cascade and qd_cascade inf + finite is now inf instead of NaN ([#1890](https://github.com/stillwater-sc/universal/pull/1890))
+- **dd**: dd and qd sums whose leading limbs overflow but whose complete sum is finite now return that sum instead of inf; sums between max() and DBL_MAX + 2^970 return max() in all five multi-double types ([#1892](https://github.com/stillwater-sc/universal/pull/1892))
+- **dd**: dd sqrt results change in the last bits: worst error 7.9 -> 1.99 units of 2^-106, at about 2x the cost ([#1893](https://github.com/stillwater-sc/universal/pull/1893))
+- **cfloat**: cfloat configurations without max-exponent values (the default, half, single, duble, quad, bfloat_t, tf32, ...) encode +-inf as IEEE-754 does (exponent all ones, fraction 0); the old inf pattern s.11..11.11..10 is now a NaN ([#1895](https://github.com/stillwater-sc/universal/pull/1895))
+- **cfloat**: cfloat configurations without max-exponent values (the default, half, single, duble, quad, bfloat_t, tf32, ...) type NaNs by the IEEE-754 quiet bit instead of the sign, and setnan writes the IEEE canonical patterns; inf - inf is a quiet NaN in every configuration; with CFLOAT_THROW_ARITHMETIC_EXCEPTION quiet NaN operands propagate instead of throwing or yielding 0 ([#1897](https://github.com/stillwater-sc/universal/pull/1897))
+- **cfloat**: arithmetic (+ - * /, fdp) and sqrt/exp/exp2/trunc/floor/ceil/round/ldexp/frexp on a signalling NaN deliver a quiet NaN instead of propagating the signalling NaN, in every cfloat configuration with arithmetic exceptions off; fdp with a NaN or inf times zero is a quiet NaN instead of 0 ([#1900](https://github.com/stillwater-sc/universal/pull/1900))
+- **cfloat**: cfloat min/max return a quiet NaN for a NaN in either argument and order -0 below +0; nextafter/nexttoward return a quiet NaN for a NaN argument, nextafter(-0, 1) and ++(-0) give +minpos, and nexttoward steps by x's own ulp ([#1902](https://github.com/stillwater-sc/universal/pull/1902))
+- **cfloat**: converting a cfloat -0 to another cfloat configuration now gives -0 instead of +0 ([#1902](https://github.com/stillwater-sc/universal/pull/1902))
+- **cfloat**: type_tag of cfloat fp8e2m5/fp8e3m4/fp8e4m3/fp8e5m2 prints "(8-bit eXmY, max-exponent values)" instead of "(DL 8-bit ...)" / "(OFP 8-bit ...)" ([#1905](https://github.com/stillwater-sc/universal/pull/1905))
+- **fixpnt,integer,einteger,edecimal,erational**: a division by zero in fixpnt, integer, einteger, edecimal and erational now throws by default instead of printing to stderr and returning a value; define <TYPE>_THROW_DIVIDE_BY_ZERO 0 (or <TYPE>_THROW_ARITHMETIC_EXCEPTION 0) to get the value, which no longer prints ([#1907](https://github.com/stillwater-sc/universal/pull/1907))
+- **erational,edecimal**: erational comparisons and integer conversions now honour the sign (int(erational(-7)) is -7, erational(-7) < erational(7)); a NaN erational compares unordered; erational(n, d) takes the sign of either argument and no longer double-counts it ([#1913](https://github.com/stillwater-sc/universal/pull/1913))
+- **erational,edecimal**: int(edecimal) and long(edecimal) now return the value (narrowed as C++ narrows a long long) instead of a value truncated to 16 bits ([#1913](https://github.com/stillwater-sc/universal/pull/1913))
+- **fixpnt**: fixpnt Saturate construction from an integer now clamps only values outside the integer range (fixpnt<65,32,Saturate>(1) is 1, fixpnt<16,8,Saturate>(1u) is 1); fixpnt from INT64_MIN-style minima, wide unsigned values and negative doubles at nbits > 64 now gives the value instead of a wrong one ([#1914](https://github.com/stillwater-sc/universal/pull/1914))
+- **fixpnt**: fixpnt<..., Saturate> built from a float, double or long double just above maxpos (by 1/2 ulp or more, below 2^(ib-1)) now clamps to maxpos instead of wrapping to maxneg ([#1916](https://github.com/stillwater-sc/universal/pull/1916))
+- **fixpnt**: fixpnt<..., Saturate> built from a long double with more than 62 significant bits just above maxneg (within 1 ulp) now gives maxneg instead of maxneg + 1 ulp ([#1916](https://github.com/stillwater-sc/universal/pull/1916))
+- **fixpnt**: fixpnt built from a long double smaller than 2^-(rbits+1) (x87, nbits <= 62) now gives zero instead of an unrelated value ([#1916](https://github.com/stillwater-sc/universal/pull/1916))
+- **numeric**: faithful's +=, -=, /= (and binary +, -, /) now carry both operands' errors and renormalize, so their compensation terms change ([#1935](https://github.com/stillwater-sc/universal/pull/1935))
+- **fixpnt**: fixpnt parse()/operator>> with Saturate now reads a negative decimal at the bottom of the range as maxneg (-8 in fixpnt<8,4>), not -maxpos ([#1937](https://github.com/stillwater-sc/universal/pull/1937))
+- **ereal**: ereal parse() and operator>> now return the exact value for a decimal with a finite binary expansion that fits the limb budget (1.5 is one limb equal to ereal(1.5)); other decimals are unchanged in accuracy ([#1938](https://github.com/stillwater-sc/universal/pull/1938))
+- **dbns**: dbns conversion from double now returns the encoding nearest in log2 (multi-block configurations such as dbns<16,5> were wrong for almost every value), decoding no longer overflows or underflows for in-range values, and minpos/minneg are 0.5^(MAX_A-1) instead of 0/NaN ([#1939](https://github.com/stillwater-sc/universal/pull/1939))
+- **dbns**: with NATIVE_DBNS_ARITHMETIC defined, dbns * and / now return the encoding nearest in log2 to the exact result instead of a projected or wrapped one ([#1947](https://github.com/stillwater-sc/universal/pull/1947))
+- **numeric**: faithful comparisons, abs(), ++/--, sign() and scale() now return the represented value's results instead of stub or first-part values, and arithmetic on an infinite faithful yields an infinity instead of NaN ([#1948](https://github.com/stillwater-sc/universal/pull/1948))
+- **numeric**: std::numeric_limits<faithful<Real>> now returns real limits instead of zeros and ones (min, max, lowest, epsilon, denorm_min, digits), and minpos/maxpos/minneg/maxneg set their argument ([#1951](https://github.com/stillwater-sc/universal/pull/1951))
 
-#### Tests
+### Added
 
-* **Tests that checked nothing** ([#1941](https://github.com/stillwater-sc/universal/issues/1941),
-  [#1942](https://github.com/stillwater-sc/universal/issues/1942)):
-  * dbns `conversion.cpp` ran with `MANUAL_TESTING` set and returned 0. It now checks round
-    trips and rounding boundaries; against the old dbns, 17 of 21 checks fail.
-  * `tests/issue_1327_divide_by_infinity.cpp` was never compiled. Its 26 cases now run in every
-    multi-double suite, and ASCII Guard rejects anything in `tests/` except `cmake_install`.
+- **numeric**: Faithful's math library: classification, fmin/fmax and a compensated sqrt ([#1953](https://github.com/stillwater-sc/universal/pull/1953))
+- **numeric**: Exact floor, ceil, trunc, round and fmod for faithful ([#1958](https://github.com/stillwater-sc/universal/pull/1958))
+- **numeric**: Compensated exp, exp2, exp10, expm1, log, log2, log10 and log1p for faithful ([#1959](https://github.com/stillwater-sc/universal/pull/1959))
+- **numeric**: Compensated sin, cos, tan, asin, acos, atan and atan2 for faithful ([#1960](https://github.com/stillwater-sc/universal/pull/1960))
+- **numeric**: Compensated sinh, cosh, tanh, asinh, acosh, atanh, pow, cbrt and hypot for faithful ([#1961](https://github.com/stillwater-sc/universal/pull/1961))
 
-#### Removed
+### Build System
 
-* **Five unreferenced CMake helpers** ([#1944](https://github.com/stillwater-sc/universal/issues/1944) /
-  PR [#1946](https://github.com/stillwater-sc/universal/pull/1946)), some unused since 2019.
-  The new `tools/cmake/README.md` documents the ones that remain.
+- **cmake**: Report every UNIVERSAL_* option and header guard in the configuration summary ([#1885](https://github.com/stillwater-sc/universal/pull/1885))
+- **cmake**: Set the header compile guards through CMake cache variables ([#1886](https://github.com/stillwater-sc/universal/pull/1886))
+- 1 docs-site dependency bump (dependabot)
+
+### Documentation
+
+- Link the mp-numerics and MTL5 sites from the landing page and sidebar ([#1912](https://github.com/stillwater-sc/universal/pull/1912))
+- Record the no-exceptions and faithful math library work of 2026-11-05/06 ([#1963](https://github.com/stillwater-sc/universal/pull/1963))
+
+### Fixed
+
+- **dd**: Exact two_prod residual at the top of the double range ([#1884](https://github.com/stillwater-sc/universal/pull/1884))
+- **dd**: Consistent numeric_limits max, min and epsilon for the multi-double types ([#1887](https://github.com/stillwater-sc/universal/pull/1887))
+- **dd**: One set of numeric_limits traits and special values for the multi-double types ([#1890](https://github.com/stillwater-sc/universal/pull/1890))
+- **dd**: Finite dd and qd sums at the top of the range no longer overflow ([#1892](https://github.com/stillwater-sc/universal/pull/1892))
+- **dd**: One Newton correction after Karp's step in dd sqrt ([#1893](https://github.com/stillwater-sc/universal/pull/1893))
+- **cfloat**: IEEE-754 infinity encoding when there are no max-exponent values ([#1895](https://github.com/stillwater-sc/universal/pull/1895))
+- **cfloat**: IEEE-754 quiet-bit NaN typing when there are no max-exponent values ([#1897](https://github.com/stillwater-sc/universal/pull/1897))
+- **cfloat**: An operation on a signalling NaN delivers a quiet NaN ([#1900](https://github.com/stillwater-sc/universal/pull/1900))
+- **cfloat**: NaN, signed zero and precision in min/max and nextafter ([#1902](https://github.com/stillwater-sc/universal/pull/1902))
+- **cfloat**: Describe the fp8 aliases as what they are, not OCP ([#1905](https://github.com/stillwater-sc/universal/pull/1905))
+- **fixpnt,integer,einteger,edecimal,erational**: Division by zero throws by default ([#1907](https://github.com/stillwater-sc/universal/pull/1907))
+- Point the docs site's "Edit page" links at the source files ([#1910](https://github.com/stillwater-sc/universal/pull/1910))
+- **erational,edecimal**: Honour the sign in comparisons and integer conversion ([#1913](https://github.com/stillwater-sc/universal/pull/1913))
+- **fixpnt**: Correct Saturate integer conversion and wide negative doubles ([#1914](https://github.com/stillwater-sc/universal/pull/1914))
+- **fixpnt**: Clamp Saturate float conversion at the rounding boundary ([#1916](https://github.com/stillwater-sc/universal/pull/1916))
+- Build every number system with -fno-exceptions ([#1928](https://github.com/stillwater-sc/universal/pull/1928))
+- **rational**: Read rationals from a stream ([#1934](https://github.com/stillwater-sc/universal/pull/1934))
+- Faithful negates without assigning and carries both operands' errors ([#1935](https://github.com/stillwater-sc/universal/pull/1935))
+- **fixpnt**: Read decimal text with a fraction and an exponent ([#1937](https://github.com/stillwater-sc/universal/pull/1937))
+- **ereal**: Parse a decimal with a finite binary value exactly ([#1938](https://github.com/stillwater-sc/universal/pull/1938))
+- **dbns**: Convert to the nearest encoding, in every configuration ([#1939](https://github.com/stillwater-sc/universal/pull/1939))
+- **dbns**: Round native products and quotients to the nearest encoding ([#1947](https://github.com/stillwater-sc/universal/pull/1947))
+- **numeric**: Implement faithful's comparisons, abs, ++/--, modifiers and classification ([#1948](https://github.com/stillwater-sc/universal/pull/1948))
+- **numeric**: Faithful's numeric_limits, extremes and attributes.hpp ([#1951](https://github.com/stillwater-sc/universal/pull/1951))
+
+### Miscellaneous
+
+- **dx**: Gate gh pr merge on a CodeRabbit review ([#1911](https://github.com/stillwater-sc/universal/pull/1911))
+- Add a daily QA sweep, configured for Universal and synced from the qa-sweep plugin ([#1922](https://github.com/stillwater-sc/universal/pull/1922))
+- **cmake**: Remove the unreferenced helpers in tools/cmake and describe the rest ([#1946](https://github.com/stillwater-sc/universal/pull/1946))
+
+### Performance
+
+- **cfloat**: Place a double's fraction in uint64_t limbs with one shift ([#1923](https://github.com/stillwater-sc/universal/pull/1923))
+- **cfloat**: Read and write the exponent field a limb at a time ([#1924](https://github.com/stillwater-sc/universal/pull/1924))
+- **cfloat**: Compare encodings in operator< instead of subtracting ([#1926](https://github.com/stillwater-sc/universal/pull/1926))
+- **posit**: Decode and encode arithmetic operands on 64-bit limbs ([#1927](https://github.com/stillwater-sc/universal/pull/1927))
+
+### Testing
+
+- **cfloat,posit**: Benchmark BlockType limb-processing cost ([#1917](https://github.com/stillwater-sc/universal/pull/1917))
+- Move the division-by-infinity checks into the multi-double suites ([#1943](https://github.com/stillwater-sc/universal/pull/1943))
+- **dbns**: Make the conversion runner check the rounding boundaries ([#1945](https://github.com/stillwater-sc/universal/pull/1945))
+- **numeric**: Measure faithful<float> sqrt against dd, not long double ([#1965](https://github.com/stillwater-sc/universal/pull/1965))
+
+## [5.14.0](https://github.com/stillwater-sc/universal/compare/v5.13.0...v5.14.0) (2026-10-30)
+
+**ipow is the exact integer power on integer types; einteger basics fixed.** 4 commits since v5.13.0.
+
+### Behaviour changes
+
+- **math**: ipow() is removed from cfloat, fixpnt, lns, takum, dbns, bfloat16 and faithful; use pow(a, int) ([#1876](https://github.com/stillwater-sc/universal/pull/1876))
+- **integer**: integer pow(a, integer) and pow(a, int) are exact (they went through double); ipow with a negative exponent gives the truncated 1 / a^|b| (it returned garbage); einteger x *= x squares (it gave 0) ([#1877](https://github.com/stillwater-sc/universal/pull/1877))
+- **einteger**: einteger isone() is false for anything but +1; einteger % long long and long long % einteger return the remainder instead of the quotient; a hex literal with leading zero digits parses equal to the same integer value; long long(einteger(2^63)) saturates to LLONG_MAX instead of returning LLONG_MIN ([#1879](https://github.com/stillwater-sc/universal/pull/1879))
+
+### Added
+
+- **integer**: Ipow is the exact integer power of integer, positional and einteger ([#1877](https://github.com/stillwater-sc/universal/pull/1877))
+
+### Changed
+
+- **math**: Retire ipow on cfloat, fixpnt, lns, takum, dbns, bfloat16 and faithful ([#1876](https://github.com/stillwater-sc/universal/pull/1876))
+
+### Fixed
+
+- **einteger**: Isone, literal %, hex parse and minimum-value conversions ([#1879](https://github.com/stillwater-sc/universal/pull/1879))
+
+### Testing
+
+- **einteger**: Fill in the empty assignment, exceptions, factorial and performance suites ([#1880](https://github.com/stillwater-sc/universal/pull/1880))
+
+## [5.13.0](https://github.com/stillwater-sc/universal/compare/v5.12.0...v5.13.0) (2026-10-30)
+
+**a correctly rounded posit math library at every nbits, without double.** 6 commits since v5.12.0.
+
+### Behaviour changes
+
+- **posit**: posit trunc/round/floor/ceil/fmod/remainder/frac are exact or correctly rounded at every nbits (they went through double); posit isinteger() is false for non-integers (it was always true), so ipow of a non-integer posit returns 0 ([#1869](https://github.com/stillwater-sc/universal/pull/1869))
+- **posit**: posit exp, exp2, exp10, expm1, log, log2, log10, log1p and hypot are correctly rounded at every nbits and computed without double; results change for posits wider than double holds, exp past the range is maxpos (it was NaR), log(0) is NaR; up to 32 bits rounding is unchanged in 400k samples, and they are slower up to 64 bits (0.65-0.8 us) ([#1870](https://github.com/stillwater-sc/universal/pull/1870))
+- **posit**: posit sin, cos, tan, asin, acos, atan, atan2, cot, sec, csc, sinh, cosh, tanh, asinh, acosh, atanh, pow, erf and erfc are correctly rounded at every nbits without double, with posit saturation instead of NaR on overflow, and 4-70x slower up to 64 bits (erf the most); tgamma and lgamma are new ([#1871](https://github.com/stillwater-sc/universal/pull/1871))
+- **efloat**: efloat/efloat_mpn.hpp and namespace efloat_mpn are gone (use internal/limbs/limb_kernels.hpp and limb_kernels), and EFLOAT_MPN_NO_ASM is no longer read (use UNIVERSAL_LIMB_KERNELS_NO_ASM) ([#1873](https://github.com/stillwater-sc/universal/pull/1873))
+- **posit**: posit ipow(a, b) is removed; use pow(a, int(b)), which is correctly rounded ([#1874](https://github.com/stillwater-sc/universal/pull/1874))
+
+### Added
+
+- **posit**: Trunc, round, floor, ceil, fmod, remainder and frac without double, at any nbits ([#1869](https://github.com/stillwater-sc/universal/pull/1869))
+- **posit**: Correctly rounded exp, log and hypot families, computed in efloat at any nbits ([#1870](https://github.com/stillwater-sc/universal/pull/1870))
+- **posit**: Correctly rounded trigonometric, hyperbolic, pow, error and gamma functions, computed in efloat ([#1871](https://github.com/stillwater-sc/universal/pull/1871))
+
+### Changed
+
+- **efloat**: Remove the deprecated efloat_mpn header and EFLOAT_MPN_NO_ASM ([#1873](https://github.com/stillwater-sc/universal/pull/1873))
+- **posit**: Retire ipow; pow(a, int) is the integer power ([#1874](https://github.com/stillwater-sc/universal/pull/1874))
+
+### Documentation
+
+- **posit**: The math library, correctly rounded at every nbits without double ([#1872](https://github.com/stillwater-sc/universal/pull/1872))
+
+## [5.12.0](https://github.com/stillwater-sc/universal/compare/v5.11.0...v5.12.0) (2026-10-29)
+
+**efloat at MPFR speed and in constant evaluation, native correctly rounded posit sqrt.** 56 commits since v5.11.0.
+
+### Behaviour changes
+
+- **efloat**: efloat exp, exp2, exp10, expm1, sinh, cosh and pow return finite, correctly rounded results out to |x log2 b| < 2^62 instead of inf or 0 (with Overflow/Underflow) once |x| >= 2^17, e.g. exp(131072) = 2^189096.6 and exp(-200000) = 2^-288539 ([#1777](https://github.com/stillwater-sc/universal/pull/1777))
+- **efloat**: double(x) and float(x) of an efloat x below the smallest normal now round correctly in every mode; before, values between half the smallest subnormal and the smallest subnormal could round to 0, directed rounding up from below the smallest subnormal gave 0, and a carry out of a subnormal gave the smallest normal ([#1778](https://github.com/stillwater-sc/universal/pull/1778))
+- **efloat**: efloat tgamma and lgamma return correctly rounded results at the argument's precision instead of a double's 53 bits, finite far past double's range (tgamma(100001.5) = 8.93e+456575 instead of inf), and C's special values and flags at the poles ([#1779](https://github.com/stillwater-sc/universal/pull/1779))
+- **efloat**: efloat erf and erfc return correctly rounded results at the argument's precision in every rounding mode instead of a double's 53 bits, and erfc no longer underflows to 0 from x = 27.23 on (erfc(1000.5) ~ 2^-1444231) ([#1781](https://github.com/stillwater-sc/universal/pull/1781))
+- **efloat**: efloat cbrt, hypot and fma results change to the correctly rounded value; fmod and remainder become exact, and fmod(x, inf) returns x instead of NaN ([#1785](https://github.com/stillwater-sc/universal/pull/1785))
+- **efloat**: std::numeric_limits<efloat<N>> is specialized (infinity() was 0); results outside [2^(1-2^62), 2^(2^62)) overflow to inf (or max) and underflow to 0 (or min) per rounding mode; nextafter(0, y) is +-2^(1-2^62), was 2^-1074; efloat::isone() is true for 1 ([#1787](https://github.com/stillwater-sc/universal/pull/1787))
+- **efloat**: a parsed efloat literal is normalized: "1.5" now equals efloat(1.5), and bits() no longer lists zero limbs below its last 1 bit ([#1822](https://github.com/stillwater-sc/universal/pull/1822))
+- **quire**: default posit quire is one bit wider, e.g. posit<32,2> total_bits 511 -> 512 ([#1825](https://github.com/stillwater-sc/universal/pull/1825))
+- **quire**: quire_size() now includes the sign bit, so the propq table is one bit larger per row ([#1825](https://github.com/stillwater-sc/universal/pull/1825))
+- **efloat**: long double(efloat) now rounds once in the current rounding mode; it ignored the directed modes and double-rounded subnormals (249889 of 1.2M x87 cases), and double-double round trips no longer fail ([#1847](https://github.com/stillwater-sc/universal/pull/1847))
+- **math**: the corrected constants change the last bits of qd and qd_cascade exp, log, log2, log10, sin, cos, tan, asin, acos and atan, and of dd log2: of 20000 results, 5315 change, 4582 to more accurate; dd_cascade and td_cascade results are unchanged ([#1850](https://github.com/stillwater-sc/universal/pull/1850))
+- **efloat**: efloat's operator>= (efloat with efloat or double) returns false when an operand is NaN; it returned true ([#1851](https://github.com/stillwater-sc/universal/pull/1851))
+- **efloat**: efloat(char(-1)) is -1 where plain char is signed, as on x86; it was 2^64 - 1 ([#1851](https://github.com/stillwater-sc/universal/pull/1851))
+- **efloat**: efloat compared with an integer past 2^53 (<, >, <=, >=, !=) is now exact instead of rounding the integer to double ([#1853](https://github.com/stillwater-sc/universal/pull/1853))
+- **posit**: posit sqrt is correctly rounded for nbits <= 64; results change for posits wider than 27 + es bits ([#1856](https://github.com/stillwater-sc/universal/pull/1856))
+- **posit**: posit<3,1> sqrt(0.25) is now 1 (ties to even), not 0.25 ([#1856](https://github.com/stillwater-sc/universal/pull/1856))
+- **posit**: posit sqrt is correctly rounded for nbits > 64; results change for every posit wider than 64 bits, and sqrt no longer overflows near the ends of their range ([#1857](https://github.com/stillwater-sc/universal/pull/1857))
+- **cfloat**: saturating cfloat with max-exponent values: maxpos/maxneg are finite (isinf() false, double() finite, arithmetic on them finite) and numeric_limits::has_infinity is false ([#1867](https://github.com/stillwater-sc/universal/pull/1867))
+
+### Added
+
+- **efloat**: Exp, exp2, exp10, expm1, sinh, cosh and pow hold results out to 2^(2^62) ([#1777](https://github.com/stillwater-sc/universal/pull/1777))
+- **efloat**: Correctly rounded tgamma and lgamma at any precision ([#1779](https://github.com/stillwater-sc/universal/pull/1779))
+- **efloat**: Correctly rounded erf and erfc at any precision ([#1781](https://github.com/stillwater-sc/universal/pull/1781))
+- **quire**: Set default posit quire capacity to 31 for 16n width ([#1825](https://github.com/stillwater-sc/universal/pull/1825)) by @aniketchonu
+- **efloat**: Arithmetic, comparisons and sqrt in constant evaluation ([#1834](https://github.com/stillwater-sc/universal/pull/1834))
+- **valid**: Overhaul valid to incorporate poxels ([#1686](https://github.com/stillwater-sc/universal/pull/1686)) by @singul4ri7y
+- **efloat**: The math library and the float conversions in constant evaluation ([#1847](https://github.com/stillwater-sc/universal/pull/1847))
+- **efloat**: Parse and the constants pi, e and phi in constant evaluation ([#1848](https://github.com/stillwater-sc/universal/pull/1848))
+- **efloat**: Efloat_constant, constexpr variables at every precision ([#1851](https://github.com/stillwater-sc/universal/pull/1851))
+
+### Build System
+
+- 2 docs-site dependency bumps (dependabot)
+
+### CI/CD
+
+- Build and test efloat on the MSVC and MinGW jobs ([#1836](https://github.com/stillwater-sc/universal/pull/1836))
+- Build the docs on the newest Node 22 release, not the runner's cached one ([#1837](https://github.com/stillwater-sc/universal/pull/1837))
+- Run the RISC-V, POWER and MinGW jobs in prebuilt toolchain images ([#1839](https://github.com/stillwater-sc/universal/pull/1839))
+- Set up the MSVC environment without the node20 msvc-dev-cmd action ([#1842](https://github.com/stillwater-sc/universal/pull/1842))
+- Cache the MSVC job's sccache as one entry, with a pinned version ([#1844](https://github.com/stillwater-sc/universal/pull/1844))
+- Store one build per ccache and drop debug info from the coverage objects ([#1845](https://github.com/stillwater-sc/universal/pull/1845))
+
+### Changed
+
+- **efloat**: Move efloat_mpn to internal/limbs/limb_kernels.hpp, namespace limb_kernels ([#1824](https://github.com/stillwater-sc/universal/pull/1824))
+- **math**: Remove the unused BabylonianMethod square roots ([#1859](https://github.com/stillwater-sc/universal/pull/1859))
+- **math**: Drop the dead sqrt_tables.hpp and unused sqrt includes ([#1860](https://github.com/stillwater-sc/universal/pull/1860))
+
+### Documentation
+
+- **efloat**: Commit the MPFR verification and document the math library ([#1784](https://github.com/stillwater-sc/universal/pull/1784))
+- **efloat**: Record limb-granular precision and code-layout noise in the code ([#1793](https://github.com/stillwater-sc/universal/pull/1793))
+- **efloat**: Merge date of #1796 in the mathlib history ([#1798](https://github.com/stillwater-sc/universal/pull/1798))
+- **efloat**: Record of MPFR's and GMP's LGPL against Universal's MIT license ([#1805](https://github.com/stillwater-sc/universal/pull/1805))
+- **posit**: Design for a native, correctly rounded sqrt ([#1854](https://github.com/stillwater-sc/universal/pull/1854))
+- **efloat**: The number system page covers performance and compile-time evaluation ([#1868](https://github.com/stillwater-sc/universal/pull/1868))
+
+### Fixed
+
+- **efloat**: Correctly rounded float and double conversion below the smallest normal ([#1778](https://github.com/stillwater-sc/universal/pull/1778))
+- **efloat**: Correctly rounded cbrt, hypot and fma; exact fmod and remainder ([#1785](https://github.com/stillwater-sc/universal/pull/1785))
+- **efloat**: Std::numeric_limits, range-bounded arithmetic, isone() ([#1787](https://github.com/stillwater-sc/universal/pull/1787))
+- **math**: The multi-double constant tables are the nearest expansions, generated by each type ([#1850](https://github.com/stillwater-sc/universal/pull/1850))
+- **efloat**: Compare with an integer exactly, in every operator and order ([#1853](https://github.com/stillwater-sc/universal/pull/1853))
+- **posit**: Sqrt is correctly rounded, natively, for nbits <= 64 ([#1856](https://github.com/stillwater-sc/universal/pull/1856))
+- **posit**: Sqrt is correctly rounded, natively, for posits wider than 64 bits ([#1857](https://github.com/stillwater-sc/universal/pull/1857))
+- **verification**: The random-operand verifiers round their double reference once ([#1862](https://github.com/stillwater-sc/universal/pull/1862))
+- **verification**: A scaled reference past double's range ([#1864](https://github.com/stillwater-sc/universal/pull/1864))
+- **tools**: Language_feature_testing reads a feature macro of any length ([#1866](https://github.com/stillwater-sc/universal/pull/1866))
+- **cfloat**: A saturating cfloat with max-exponent values has no inf ([#1867](https://github.com/stillwater-sc/universal/pull/1867))
+
+### Performance
+
+- **efloat**: Exp on a fixed-point series kernel with rectangular splitting ([#1789](https://github.com/stillwater-sc/universal/pull/1789))
+- **efloat**: Sin/cos/tan on the fixed-point series engine, tapered blocks ([#1791](https://github.com/stillwater-sc/universal/pull/1791))
+- **efloat**: Atan, asin, acos, atan2 on the fixed-point series engine ([#1794](https://github.com/stillwater-sc/universal/pull/1794))
+- **efloat**: Log's atanh series on the fixed-point engine, AGM from 45000 bits ([#1796](https://github.com/stillwater-sc/universal/pull/1796))
+- **efloat**: Lgamma and tgamma: predicted working precision, grouped shift product, tapered Stirling sum ([#1799](https://github.com/stillwater-sc/universal/pull/1799))
+- **efloat**: Cbrt by an exact integer cube root with remainder, like sqrt's sqrtrem ([#1801](https://github.com/stillwater-sc/universal/pull/1801))
+- **efloat**: Fma and hypot on limb scratch, exact product and sum in place, one rounding ([#1803](https://github.com/stillwater-sc/universal/pull/1803))
+- **efloat**: Pow(x, n) for integer n by binary powering on limbs with bit_width(n) + 21 guard bits ([#1806](https://github.com/stillwater-sc/universal/pull/1806))
+- **efloat**: Short products for a*b and the fixed-point engines, Mulders' mulhigh with a can-round fallback ([#1808](https://github.com/stillwater-sc/universal/pull/1808))
+- **efloat**: Sqrt without the remainder except next to a rounding boundary, and a limb-level wrapper ([#1812](https://github.com/stillwater-sc/universal/pull/1812))
+- **efloat**: Division from an approximate quotient with Ziv's test, and a/n on 64-bit limbs ([#1813](https://github.com/stillwater-sc/universal/pull/1813))
+- **efloat**: Toom-3 multiplication and squaring above measured thresholds ([#1815](https://github.com/stillwater-sc/universal/pull/1815))
+- **efloat**: X86-64 mulx/adcx/adox kernels in inline assembly, chosen at run time, and the thresholds re-measured ([#1818](https://github.com/stillwater-sc/universal/pull/1818))
+- **efloat**: 64-bit least-significant-first limbs in an inline buffer with a per-thread block cache ([#1822](https://github.com/stillwater-sc/universal/pull/1822))
+- **efloat**: Differences, short products and short divisions at small precisions, and a per-precision table against MPFR ([#1827](https://github.com/stillwater-sc/universal/pull/1827))
+- **efloat**: One- and two-limb quotients and roots, differences as 2X - Y, and copies without store-forwarding stalls ([#1829](https://github.com/stillwater-sc/universal/pull/1829))
+- **efloat**: Short sums in registers, the binary operators inlined, and clang's short code ([#1831](https://github.com/stillwater-sc/universal/pull/1831))
+- **efloat**: A fixed-size fma for short operands, operands read in place, and the block cache's last-in-first-out slot ([#1833](https://github.com/stillwater-sc/universal/pull/1833))
+
+### Testing
+
+- **efloat**: Pi, e and phi computed by the compiler ([#1841](https://github.com/stillwater-sc/universal/pull/1841))
+
+## [5.11.0](https://github.com/stillwater-sc/universal/compare/v5.10.0...v5.11.0) (2026-10-21)
+
+**efloat correctly rounded in every rounding mode, and 1.3-5.8x faster arithmetic toward MPFR.** 15 commits since v5.10.0.
+
+### Behaviour changes
+
+- **efloat**: efloat x op literal and the math library run at x's precision rather than the type's nlimbs * 32 bits, and functions of literals carry no precision; efloat division, addition and subtraction are now correctly rounded (quotients were often 1 ulp off, sums truncated), and sinh/cosh/tanh/asinh/acosh/atanh/sqrt/cbrt round once from guard bits, so last-place digits change ([#1758](https://github.com/stillwater-sc/universal/pull/1758))
+- **efloat**: efloat sin, cos, tan and sqrt use new algorithms; ordinary results matched main bit for bit in a 7200-value sweep, but a result may differ in the last place where both round within 0.5 ulp ([#1760](https://github.com/stillwater-sc/universal/pull/1760))
+- **efloat**: efloat x - y across a one-bit exponent gap, with y longer than the result precision (y carrying none), now returns the correctly rounded difference ([#1767](https://github.com/stillwater-sc/universal/pull/1767))
+- **efloat**: efloat sqrt is now correctly rounded in every rounding mode and raises Inexact only when the root is inexact; it misrounded about 0.6% of results (sqrt(4 - 2^-62) at 64 bits gave 2, not 2 - 2^-63) and flagged exact roots Inexact ([#1770](https://github.com/stillwater-sc/universal/pull/1770))
+- **efloat**: efloat log (and log2/log10/log1p/pow built on it) is now correctly rounded near rounding boundaries; above 8128 bits main's Newton path had absolute error ~2^-W, losing thousands of bits for x near 1 ([#1771](https://github.com/stillwater-sc/universal/pull/1771))
+- **efloat**: efloat exp, sin, cos and tan are now correctly rounded in the directed rounding modes; tiny and short arguments returned results 1 ulp off ([#1772](https://github.com/stillwater-sc/universal/pull/1772))
+- **efloat**: efloat zero and infinite results of + - * / and unary minus now carry IEEE-754 signs (e.g. (-3) * 0 = -0, 3 * (-inf) = -inf, x - x = -0 rounding toward -inf) ([#1773](https://github.com/stillwater-sc/universal/pull/1773))
+- **efloat**: efloat exp2, exp10, expm1, log2, log10, log1p, sinh, cosh, tanh, asinh, acosh, atanh, asin, acos, atan, atan2 and pow are correctly rounded in every rounding mode (directed-mode results move by 1 ulp, pow(x, int) by up to 32, atanh near -1 by far more) ([#1774](https://github.com/stillwater-sc/universal/pull/1774))
+- **efloat**: efloat pow and atan2 follow IEEE-754 at signed zeros and infinities (atan2(+-0, -0) = +-pi, atan2(-0, x < 0) = -pi, pow(-0, odd) = -0, pow(x, +-inf), pow(+-inf, y)), and an operand that carries no precision no longer widens their result ([#1774](https://github.com/stillwater-sc/universal/pull/1774))
+- **efloat**: efloat exp2 of an integer and pow's exact powers are returned past exp's 2^17 range instead of overflowing to inf or 0 ([#1774](https://github.com/stillwater-sc/universal/pull/1774))
+
+### Added
+
+- **efloat**: Native operands carry no precision; + - / correctly rounded ([#1758](https://github.com/stillwater-sc/universal/pull/1758))
+- **lindex**: Trigonometric, hyperbolic, error and gamma functions, fmod and remainder ([#1759](https://github.com/stillwater-sc/universal/pull/1759))
+
+### Build System
+
+- 1 docs-site dependency bump (dependabot)
+
+### Fixed
+
+- **efloat**: Correctly rounded exp, sin, cos and tan in every rounding mode ([#1772](https://github.com/stillwater-sc/universal/pull/1772))
+- **efloat**: IEEE-754 signs for zero and infinite results of + - * / ([#1773](https://github.com/stillwater-sc/universal/pull/1773))
+- **efloat**: Correctly rounded exp2, exp10, expm1, log2, log10, log1p, hyperbolic, inverse trig and pow ([#1774](https://github.com/stillwater-sc/universal/pull/1774))
+- Simplifying efloat api ([#1775](https://github.com/stillwater-sc/universal/pull/1775))
+
+### Performance
+
+- **efloat**: Sin, cos and tan by a halved versine series, 2.6-3.4x faster; sqrt 3-4x ([#1760](https://github.com/stillwater-sc/universal/pull/1760))
+- **efloat**: Sin/cos/tan 1.6-2.2x faster, now ahead of mpmath; small-integer division in place, squaring ([#1766](https://github.com/stillwater-sc/universal/pull/1766))
+- **efloat**: Multiply on 64-bit limbs with Karatsuba, 2.7-5.8x faster; add and integer operands in place ([#1767](https://github.com/stillwater-sc/universal/pull/1767))
+- **efloat**: Division on 64-bit limbs with divide-and-conquer, 1.7-5.3x faster; sqrt 1.3-4.6x ([#1769](https://github.com/stillwater-sc/universal/pull/1769))
+- **efloat**: Correctly rounded sqrt from an exact limb square root, 2.7-3.4x faster ([#1770](https://github.com/stillwater-sc/universal/pull/1770))
+- **efloat**: Log by the AGM at high precision, 5.0x faster at 8192 bits; Ziv retry for correct rounding ([#1771](https://github.com/stillwater-sc/universal/pull/1771))
+
+### Testing
+
+- **efloat**: Mpmath_gap at 128, 512, 2048 and 8192 bits, plus a gmpy2/MPFR table ([#1764](https://github.com/stillwater-sc/universal/pull/1764))
+- **efloat**: Mpfr_gap benchmark, efloat against MPFR called from C++ ([#1765](https://github.com/stillwater-sc/universal/pull/1765))
+
+## [5.10.0](https://github.com/stillwater-sc/universal/compare/v5.9.0...v5.10.0) (2026-10-19)
+
+**correctly rounded sqrt everywhere, full-precision multi-double trig, word-at-a-time division and multiplication, efloat at mpmath speed.** 23 commits since v5.9.0.
+
+### Behaviour changes
+
+- **dd_cascade**: dd_cascade/td_cascade/qd_cascade exp(x) is finite for 709.0 <= x < 709.78 (was +inf) and nonzero for -745.13 < x <= -709.0 (was 0) ([#1721](https://github.com/stillwater-sc/universal/pull/1721))
+- **math**: dd/qd/dd_cascade/td_cascade/qd_cascade math functions no longer print to std::cerr; domain errors return a quiet NaN (was a signalling NaN in sqrt, nroot, asin, acos) with errno = EDOM, sin/cos/sincos/tan of a finite argument too large to reduce return NaN with errno = ERANGE (sincos crashed), atan2(+-0, +-0) and npwr(0, 0) follow std (were NaN) ([#1722](https://github.com/stillwater-sc/universal/pull/1722))
+- **math**: qd sqrt and trigonometry included through core.hpp + mathlib.hpp (without qd.hpp) are now full precision (were double); the DOUBLEDOUBLE/QUADDOUBLE/DD_CASCADE/TD_CASCADE/QD_CASCADE_NATIVE_SQRT and QUADDOUBLE_NATIVE_TRIGONOMETRY switches are removed, and with them qd's shim-only sec, csc and cot ([#1726](https://github.com/stillwater-sc/universal/pull/1726))
+- **math**: dd/qd/dd_cascade/td_cascade/qd_cascade sin, cos, sincos and tan are now full precision for every finite argument (results change for |x| > pi/4, most visibly for large |x| and near multiples of pi/2); arguments past ~1e100 return the correct value instead of NaN with ERANGE, and the <type>_trig_argument_too_large exceptions are removed ([#1727](https://github.com/stillwater-sc/universal/pull/1727))
+- **cfloat**: cfloat sqrt is now correctly rounded for every configuration (it misrounded up to a quarter of the arguments for 25 <= fbits <= 52, and wider formats in the last ulp); a negative argument sets errno = EDOM and returns a quiet NaN without printing; CFLOAT_NATIVE_SQRT is removed; converting a subnormal cfloat into a cfloat of 64 or more fraction bits now gives the right value ([#1728](https://github.com/stillwater-sc/universal/pull/1728))
+- **lns**: lns sqrt is now exact in the exponent domain (it went through double, capping precision at 53 bits and deciding every tie by rounding noise); a negative argument sets errno = EDOM and returns NaN without printing; LNS_NATIVE_SQRT is removed ([#1729](https://github.com/stillwater-sc/universal/pull/1729))
+- **fixpnt**: fixpnt sqrt is now correctly rounded (the default Babylonian iteration and the through-double path both missed); a negative argument sets errno = EDOM and returns 0 unless FIXPNT_THROW_ARITHMETIC_EXCEPTION is set (it threw unconditionally and printed to std::cout); FIXPNT_NATIVE_SQRT is removed ([#1730](https://github.com/stillwater-sc/universal/pull/1730))
+- **dfloat**: dfloat sqrt is now correctly rounded in decimal (decimal64 and decimal128 roots were wrong in their trailing digits); an exact root has the preferred exponent floor(q/2); a negative argument sets errno = EDOM and returns a quiet NaN without printing; DFLOAT_NATIVE_SQRT is removed ([#1731](https://github.com/stillwater-sc/universal/pull/1731))
+- **edecimal**: edecimal sqrt is now the exact floor root at any size (it went through double, so it was wrong past ~16 digits and inf past ~308); a negative argument sets errno = EDOM and returns 0 without printing; EDECIMAL_NATIVE_SQRT is removed ([#1732](https://github.com/stillwater-sc/universal/pull/1732))
+- **erational**: erational sqrt returns the exact root when there is one and otherwise the nearest dyadic at 106 bits by default (it went through double, 53 bits at most), with a new precision argument sqrt(x, bits); it no longer prints on every call; a negative argument sets errno = EDOM and returns NaN unless the throw flag is set; ERATIONAL_NATIVE_SQRT is removed ([#1733](https://github.com/stillwater-sc/universal/pull/1733))
+- **dfloat**: dfloat ==, !=, <= and >= compare values: 250e-2 == 25e-1 and 0e-6 == 0 are now true ([#1736](https://github.com/stillwater-sc/universal/pull/1736))
+- **efloat**: efloat exp/log/pow/hyperbolic and trigonometric functions now return results accurate to the full precision instead of ~2^-200 (exp/log) or the default-width pi (trig); low-order digits of existing results change ([#1739](https://github.com/stillwater-sc/universal/pull/1739))
+- **efloat**: efloat parse()/assign() of long literals, or at precisions above ~1900 bits (including efloat<>'s default), now return the correctly rounded value instead of a truncated one or 0; parse("1e1000") with the default budget succeeds; an unreachable literal such as 1e100000 leaves NaN instead of 0 ([#1740](https://github.com/stillwater-sc/universal/pull/1740))
+- **dfloat**: dfloat iszero() is true for every zero cohort member (e.g. 0e-6), so division by one returns infinity (or throws) instead of 0, and unpack() of such a value reports exponent 0 ([#1738](https://github.com/stillwater-sc/universal/pull/1738))
+- **integer**: integer<>::reduce() with a divisor wider than one block now returns the correct quotient and remainder (it returned wrong values, or trapped with SIGFPE) ([#1752](https://github.com/stillwater-sc/universal/pull/1752))
+- **efloat**: efloat log(x) for binary exponents beyond the type's default precision (e.g. |e| > 2^32 in efloat<1>) is now correctly rounded; it was off in the last places, or inf for tiny x ([#1754](https://github.com/stillwater-sc/universal/pull/1754))
+- **posit**: posit to int conversion keeps exact integer values above 2^24 (it went through float and rounded them) ([#1735](https://github.com/stillwater-sc/universal/pull/1735))
+
+### Added
+
+- **math**: Exact (Payne-Hanek) trigonometric argument reduction for dd, qd and the cascades ([#1727](https://github.com/stillwater-sc/universal/pull/1727))
+
+### Changed
+
+- **math**: Multi-double math headers report errors without std::cerr ([#1722](https://github.com/stillwater-sc/universal/pull/1722))
+- **math**: Remove the multi-double NATIVE_SQRT and NATIVE_TRIGONOMETRY switches ([#1726](https://github.com/stillwater-sc/universal/pull/1726))
+
+### Documentation
+
+- Multi-limb arithmetic architecture and algorithms in Algorithmic Details ([#1753](https://github.com/stillwater-sc/universal/pull/1753))
+
+### Fixed
+
+- **dd_cascade**: Exp is finite up to ln(DBL_MAX) and nonzero down to ln(2^-1075) ([#1721](https://github.com/stillwater-sc/universal/pull/1721))
+- **cfloat**: Sqrt is correctly rounded at every width; subnormals widen correctly ([#1728](https://github.com/stillwater-sc/universal/pull/1728))
+- **lns**: Sqrt is exact, the exponent halved and rounded to even (1729) ([#1729](https://github.com/stillwater-sc/universal/pull/1729))
+- **fixpnt**: Sqrt is the correctly rounded integer root, whichever headers are included (1730) ([#1730](https://github.com/stillwater-sc/universal/pull/1730))
+- **dfloat**: Sqrt is the correctly rounded decimal root (1731) ([#1731](https://github.com/stillwater-sc/universal/pull/1731))
+- **edecimal**: Sqrt is the exact floor of the square root at any size ([#1732](https://github.com/stillwater-sc/universal/pull/1732))
+- **erational**: Sqrt returns the exact rational root, or the nearest dyadic at N bits ([#1733](https://github.com/stillwater-sc/universal/pull/1733))
+- **posit**: Preserve exact integers when converting to int ([#1735](https://github.com/stillwater-sc/universal/pull/1735)) by @vera-rubin
+- **dfloat**: Comparisons compare values, so cohort members are equal ([#1736](https://github.com/stillwater-sc/universal/pull/1736))
+- **efloat**: Exp/log family is accurate to the full precision, not ~2^-200 ([#1739](https://github.com/stillwater-sc/universal/pull/1739))
+- **efloat**: Parse rounds a literal of any length to the full precision ([#1740](https://github.com/stillwater-sc/universal/pull/1740))
+- **dfloat**: Recognize zero-valued cohort encodings ([#1738](https://github.com/stillwater-sc/universal/pull/1738)) by @Huang-404-Q
+- **integer**: Reduce() divides with idiv, so multi-block divisors are right and never trap ([#1752](https://github.com/stillwater-sc/universal/pull/1752))
+
+### Performance
+
+- **efloat**: Long division a word at a time, 13x faster at 608 bits ([#1741](https://github.com/stillwater-sc/universal/pull/1741))
+- **blocksignificand**: Long division a word at a time, 10-46x faster cfloat division ([#1746](https://github.com/stillwater-sc/universal/pull/1746))
+- **blocksignificand**: Multiplication a word at a time, 2-14x faster cfloat multiply ([#1747](https://github.com/stillwater-sc/universal/pull/1747))
+- **integer**: Integer and blockbinary division a word at a time, 14-75x faster ([#1748](https://github.com/stillwater-sc/universal/pull/1748))
+- **efloat**: Log by a table and an atanh series, 6-10x faster; exp and log within 2x of mpmath ([#1754](https://github.com/stillwater-sc/universal/pull/1754))
+
+### Testing
+
+- **blocktriple**: Division tests check the real contract and gate CI ([#1751](https://github.com/stillwater-sc/universal/pull/1751))
+
+## [5.9.0](https://github.com/stillwater-sc/universal/compare/v5.8.0...v5.9.0) (2026-10-17)
+
+**lindex -- a correctly rounded level-index number system, and a cfloat +inf fix.** 7 commits since v5.8.0.
+
+### Behaviour changes
+
+- **cfloat**: a positive cfloat infinity prints as "inf" (was "-inf"); blocktriple::setinf() now requires its sign argument ([#1720](https://github.com/stillwater-sc/universal/pull/1720))
+- **dd_cascade, qd_cascade**: log, log2, log10 and log1p of a non-positive argument no longer print a message to std::cerr; they still set errno = EDOM and return NaN, as std::log does ([#1708](https://github.com/stillwater-sc/universal/pull/1708), [#1716](https://github.com/stillwater-sc/universal/pull/1716))
+
+### Added
+
+- **lindex**: Shared phi/psi kernel and mpmath oracle (#1349 part 2) ([#1707](https://github.com/stillwater-sc/universal/pull/1707))
+- **lindex**: Lindex<nbits, lbits, bt> core type and conversion (#1349 part 3) ([#1708](https://github.com/stillwater-sc/universal/pull/1708))
+- **lindex**: Correctly rounded + - * / and reciprocal (#1349 part 4) ([#1711](https://github.com/stillwater-sc/universal/pull/1711))
+- **lindex**: Correctly rounded math library with exact exp/log (#1349 part 5) ([#1716](https://github.com/stillwater-sc/universal/pull/1716))
+- **lindex**: Encoding tables, ucalc registration, docs and JOSS (#1349 part 6) ([#1718](https://github.com/stillwater-sc/universal/pull/1718))
+
+### CI/CD
+
+- Move Codacy file exclusions into .codacy.yaml ([#1710](https://github.com/stillwater-sc/universal/pull/1710))
+
+### Fixed
+
+- **cfloat**: +inf prints as inf, not -inf ([#1720](https://github.com/stillwater-sc/universal/pull/1720))
+
+## [5.8.0](https://github.com/stillwater-sc/universal/compare/v5.7.0...v5.8.0) (2026-10-16)
+
+**native quire<float>/quire<double> accumulator protocol, unum1 and poxel fixes.** 5 commits since v5.7.0.
+
+### Behaviour changes
+
+- **unum1**: ubound<> results are now outward-rounded enclosures with open ends; ubound(inexact unum) is the open tile instead of a closed interval, and next_exact(1.0) is 1 + 2^-maxfsize instead of 2 ([#1700](https://github.com/stillwater-sc/universal/pull/1700))
+- **poxel**: tile_interval (areal/poxel) * and / at open-zero or infinite ends return tighter intervals; ucalc rootbox and precision-sweep results change accordingly ([#1704](https://github.com/stillwater-sc/universal/pull/1704))
+- **unum1**: unum Type I (esizesize <= 3, fsizesize <= 5) arithmetic and conversions give the tile that holds the exact result; an inexact operand whose result spans several tiles now gives NaN, and overflow gives (maxpos, inf) or NaN below -maxpos ([#1705](https://github.com/stillwater-sc/universal/pull/1705))
+- **quire**: quire_resolve for quire<float>/quire<double> rounds to nearest, ties to even, from the full quire instead of truncating, so a resolved native quire can differ in the last bit ([#1703](https://github.com/stillwater-sc/universal/pull/1703))
+- **quire**: quire_mul on float/double returns a NaR quire for 0 * inf and 0 * NaN, as IEEE 754 requires, instead of an exact zero ([#1703](https://github.com/stillwater-sc/universal/pull/1703))
+
+### Added
+
+- **quire**: Accumulator protocol for native quire<float> and quire<double> ([#1703](https://github.com/stillwater-sc/universal/pull/1703))
+
+### CI/CD
+
+- Bring the ready-PR cycle back to ~20 minutes ([#1706](https://github.com/stillwater-sc/universal/pull/1706))
+
+### Fixed
+
+- **unum1**: Ubound rounds outward and gains sqrt ([#1700](https://github.com/stillwater-sc/universal/pull/1700))
+- **poxel**: Give tile_interval's limit corners their real limit ([#1704](https://github.com/stillwater-sc/universal/pull/1704))
+- **unum1**: A scalar unum op gives the tile that holds the exact result ([#1705](https://github.com/stillwater-sc/universal/pull/1705))
+
+## [5.7.0](https://github.com/stillwater-sc/universal/compare/v5.6.2...v5.7.0) (2026-10-16)
+
+**quire accumulator protocol, uncertainty-box trace.** 3 commits since v5.6.2.
+
+### Added
+
+- **utility**: Trace the uncertainty box per step and draw it as an HTML page ([#1691](https://github.com/stillwater-sc/universal/pull/1691))
+- **quire**: Accumulator_* protocol so linear-algebra libraries accumulate in a quire ([#1699](https://github.com/stillwater-sc/universal/pull/1699))
+
+### Documentation
+
+- **lindex**: Level-index design assessment, citations verified ([#1698](https://github.com/stillwater-sc/universal/pull/1698))
+
+## [5.6.2](https://github.com/stillwater-sc/universal/compare/v5.6.1...v5.6.2) (2026-10-15)
+
+**cfloat signed-zero sums, release Docker build.** 3 commits since v5.6.1: a cfloat fix, a CI fix and a docs-site dependency bump. Nothing in the API is removed or renamed, so code that compiles against v5.6.1 compiles against v5.6.2.
+
+### Behaviour changes
+
+- **cfloat**: `+0 + -0`, `-0 + +0` and `+0 - +0` now return `+0` instead of `-0`, per IEEE 754 roundTiesToEven ([#1688](https://github.com/stillwater-sc/universal/pull/1688))
+
+### Build System
+
+- 1 docs-site dependency bump (dependabot)
+
+### Fixed
+
+- **ci**: Drop the release Docker build's GHA layer cache ([#1684](https://github.com/stillwater-sc/universal/pull/1684))
+- **cfloat**: A sum of two zeros is -0 only when both are -0 ([#1688](https://github.com/stillwater-sc/universal/pull/1688)) by @Dom-Planer
+
+## [5.6.1](https://github.com/stillwater-sc/universal/compare/v5.6.0...v5.6.1) (2026-10-12)
+
+**CI coverage for poxel and bposit, CMake 3.22...4.2.** 1 commit since v5.6.0: a build fix. Nothing in the API is removed or renamed, so code that compiles against v5.6.0 compiles against v5.6.1. There are no behaviour changes.
+
+### Fixed
+
+- **cmake**: Aggregate poxel, bposit and cascade tests into the CI build categories ([#1683](https://github.com/stillwater-sc/universal/pull/1683))
+
+## [5.6.0](https://github.com/stillwater-sc/universal/compare/v5.5.0...v5.6.0) (2026-10-12)
+
+**bposit fused multiply-add.** 2 commits since v5.5.0: one feature and one cleanup. Nothing in the working API is removed or renamed, so code that compiles against v5.5.0 compiles against v5.6.0. There are no behaviour changes.
+
+### Added
+
+- **bposit**: Fused multiply-add through the quire ([#1681](https://github.com/stillwater-sc/universal/pull/1681))
+
+### Miscellaneous
+
+- **headers**: Remove the unused number-system skeletons ([#1682](https://github.com/stillwater-sc/universal/pull/1682))
+
+## [5.5.0](https://github.com/stillwater-sc/universal/compare/v5.4.0...v5.5.0) (2026-10-11)
+
+**wide poxels, poxel/posit interop, and correctly rounded posit conversion.** 3 commits since v5.4.0: two features and one fix. Nothing is removed or renamed in the API, so code that compiles against v5.4.0 compiles against v5.5.0. Callers converting posits to float, double or long double should read Behaviour changes.
+
+### Behaviour changes
+
+- **posit**: float/double/long double conversion of posits whose fraction is wider than long double's significand (posit<80,3>, <128,2>, <256,2>, ... on x87; posits with more than 52 fraction bits where long double is double) now returns the nearest value instead of a truncated or twice-rounded one ([#1679](https://github.com/stillwater-sc/universal/pull/1679))
+
+### Added
+
+- **poxel**: Conversion to and from posit<nbits - 1, es>, and sampled tests at 16 and 32 bits ([#1675](https://github.com/stillwater-sc/universal/pull/1675))
+- **poxel**: Poxels wider than 64 bits ([#1677](https://github.com/stillwater-sc/universal/pull/1677))
+
+### Fixed
+
+- **posit**: Round posit to float, double and long double once, to nearest ([#1679](https://github.com/stillwater-sc/universal/pull/1679))
+
+## [5.4.0](https://github.com/stillwater-sc/universal/compare/v5.3.0...v5.4.0) (2026-10-11)
+
+**the b-posit math library, and full-precision multi-double math.** 7 commits since v5.3.0: five features and two fixes. Nothing is removed or renamed in the API, so code that compiles against v5.3.0 compiles against v5.4.0. The configuration macros QUADDOUBLE_NATIVE_HYPERBOLIC and QUADDOUBLE_NATIVE_MINMAX no longer have any effect. Callers of ereal math and of dd/qd/cascade math should read Behaviour changes.
+
+### Behaviour changes
+
+- **ereal**: ereal isone() is false for values only near 1; log, sin, cos, tan, sinh, tanh, asinh, acosh, atanh, fmod, remainder and pow return different (correct) values at the arguments above ([#1672](https://github.com/stillwater-sc/universal/pull/1672))
+- **multidouble**: dd/qd/dd_cascade/td_cascade/qd_cascade trunc, round, fmod, remainder, hypot, min, max and log1p return full-precision (and for the first four, exact) results instead of double roundings ([#1673](https://github.com/stillwater-sc/universal/pull/1673))
+- **math**: dd/dd_cascade/td_cascade/qd_cascade hyperbolic, erf and erfc return full-precision results instead of double roundings, and gain lgamma and tgamma; qd's inverse hyperbolics keep relative accuracy near 0 and 1; log of arguments beyond 2^500 (or below 2^-500) gains up to 120 bits in all five types; QUADDOUBLE_NATIVE_HYPERBOLIC/MINMAX are removed ([#1674](https://github.com/stillwater-sc/universal/pull/1674))
+- **qd**: qd erf and erfc return quad-double results instead of std::erf of the leading limb ([#1670](https://github.com/stillwater-sc/universal/pull/1670))
+- **bposit**: bposit math functions return the correctly rounded result, which can differ by one encoding from the earlier double-rounded value ([#1669](https://github.com/stillwater-sc/universal/pull/1669), [#1671](https://github.com/stillwater-sc/universal/pull/1671))
+
+### Added
+
+- **bposit**: The math library, phase 1: elementary functions and complex support ([#1666](https://github.com/stillwater-sc/universal/pull/1666))
+- **bposit**: Correctly rounded elementary functions, by libm and quad-double ([#1669](https://github.com/stillwater-sc/universal/pull/1669))
+- **qd**: Erf, erfc, lgamma and tgamma in quad-double precision ([#1670](https://github.com/stillwater-sc/universal/pull/1670))
+- **bposit**: Correctly rounded erf, erfc, tgamma and lgamma ([#1671](https://github.com/stillwater-sc/universal/pull/1671))
+- **math**: Multi-double hyperbolic, erf, erfc, lgamma and tgamma at full precision ([#1674](https://github.com/stillwater-sc/universal/pull/1674))
+
+### Fixed
+
+- **ereal**: Isone, log near 1, trig at negative x, tanh, inverse hyperbolics, fmod and pow ([#1672](https://github.com/stillwater-sc/universal/pull/1672))
+- **multidouble**: Exact trunc, round, fmod, remainder; full-precision hypot, min/max, log1p ([#1673](https://github.com/stillwater-sc/universal/pull/1673))
+
+## [5.3.0](https://github.com/stillwater-sc/universal/compare/v5.2.0...v5.3.0) (2026-10-10)
+
+**the uncertainty box in ucalc, and einteger and areal fixes.** 7 commits since v5.2.0: five features, one fix and one CI change. Nothing is removed or renamed, so code that compiles against v5.2.0 compiles against v5.3.0. Callers of einteger arithmetic and of areal conversion from float and double should read Behaviour changes.
+
+### Behaviour changes
+
+- **areal**: areal<64,11> from double and areal<32,8> from float now set the ubit when the source's last fraction bit is dropped, instead of returning a truncated value marked exact ([#1657](https://github.com/stillwater-sc/universal/pull/1657))
+- **einteger**: einteger division keeps the quotient's sign for single-limb divisors, and % of a negative dividend is now negative (truncated, as in C++) ([#1662](https://github.com/stillwater-sc/universal/pull/1662))
+- **einteger**: einteger a - b with a negative and b positive now returns a - b (it returned the difference of the magnitudes), and -0 no longer arises ([#1662](https://github.com/stillwater-sc/universal/pull/1662))
+- **einteger**: einteger<uint32_t> division of multi-limb values now returns the correct quotient and remainder (some were wrong) ([#1662](https://github.com/stillwater-sc/universal/pull/1662))
+- **areal**: areal conversion from float into areals wider than 32 bits, and from double into areals with 53-63 fraction bits, now returns the value (it returned wrong values); subnormal floats now convert at their true scale ([#1665](https://github.com/stillwater-sc/universal/pull/1665))
+
+### Added
+
+- **ucalc**: Areal and poxel tile types, single tiles and tile intervals ([#1657](https://github.com/stillwater-sc/universal/pull/1657))
+- **ucalc**: Ubox and decide, the uncertainty box and its decidable questions ([#1658](https://github.com/stillwater-sc/universal/pull/1658))
+- **ucalc**: The tightest box and the overestimation factor in ubox ([#1662](https://github.com/stillwater-sc/universal/pull/1662))
+- **ucalc**: Roots and rootbox, root finding with tile intervals ([#1663](https://github.com/stillwater-sc/universal/pull/1663))
+- **ucalc**: MCP tools, the quadratic script, acceptance tests and the tutorial step ([#1664](https://github.com/stillwater-sc/universal/pull/1664))
+
+### CI/CD
+
+- Time-limit and retry the apt installs so a hung runner fails fast ([#1652](https://github.com/stillwater-sc/universal/pull/1652))
+
+### Fixed
+
+- **areal**: Float and double conversion: subnormal sources, and areals wider than the bit assembly ([#1665](https://github.com/stillwater-sc/universal/pull/1665))
+
+## [5.2.0](https://github.com/stillwater-sc/universal/compare/v5.1.0...v5.2.0) (2026-10-09)
+
+**bounded posits, valids, poxels and tile intervals.** 26 commits since v5.1.0: eight features, eight fixes, four documentation changes and six docs-site dependency bumps. Nothing is removed or renamed, so code that compiles against v5.1.0 compiles against v5.2.0. Callers of takum and of the cfloat/bfloat16 string assignment should read Behaviour changes.
+
+### Behaviour changes
+
+- **takum**: takum and takum_log values, conversions and results whose magnitude falls below minpos now saturate to minpos/minneg instead of becoming zero ([#1620](https://github.com/stillwater-sc/universal/pull/1620))
+- **takum**: takum<30..57, 3> + - * / and takum fma at every width are now correctly rounded; results that were double-rounded through a double change by one ulp ([#1621](https://github.com/stillwater-sc/universal/pull/1621))
+- **takum**: takum sqrt above 29 bits, rsqrt at every width, and takum -> float (and takum<58..64> -> double) conversion are now correctly rounded; results that were double-rounded change by one ulp, and values in (2^-150, 2^-149) convert to 2^-149 instead of 0.0f ([#1623](https://github.com/stillwater-sc/universal/pull/1623))
+- **takum**: takum and takum_log exp/exp2/exp10/expm1/pow/sinh/cosh/erfc now saturate to maxpos/maxneg where the double result overflows (was NaR) and to minpos/minneg where it underflows (was zero), for the specified rbits = 3 ([#1625](https://github.com/stillwater-sc/universal/pull/1625))
+- **takum**: takum and takum_log configurations with rbits 4 or 5 now compute + - (and for takum also * / sqrt) correctly for operands outside double's range, where they returned NaR or zero ([#1627](https://github.com/stillwater-sc/universal/pull/1627))
+- **takum**: takum and takum_log math functions with rbits 4 or 5 now return the correct value for arguments or results outside double's range, where they returned NaR or zero; the arithmetic half landed in #1627 ([#1629](https://github.com/stillwater-sc/universal/pull/1629))
+- **cfloat**: cfloat::assign and bfloat16::assign reject a "0b..." string whose fields are not 1.es.fbits bits wide; a misplaced first '.' was accepted silently. The value stays zero, with a diagnostic. bfloat16's to_binary prints positive values with a "0b0." prefix (was "0x0."), so its output can be assigned back ([#1648](https://github.com/stillwater-sc/universal/pull/1648))
+
+### Added
+
+- **takum**: Opt-in fast takum<16,3,uint16_t> specialization ([#1614](https://github.com/stillwater-sc/universal/pull/1614)) by @jamesquinlan
+- **bposit**: The bounded posit, Gustafson's b-posit <N, rS, eS> ([#1634](https://github.com/stillwater-sc/universal/pull/1634))
+- **valid**: Implementation of Valid ([#1628](https://github.com/stillwater-sc/universal/pull/1628)) by @singul4ri7y
+- **bposit**: Exact fused dot products through the generalized quire ([#1635](https://github.com/stillwater-sc/universal/pull/1635))
+- **poxel**: Posit lattice with an uncertainty bit ([#1638](https://github.com/stillwater-sc/universal/pull/1638))
+- **poxel**: Tile_interval enclosure and the five #1637 ubit applications ([#1641](https://github.com/stillwater-sc/universal/pull/1641))
+- **poxel**: Enclosing sqrt for tile_interval and the quadratic-roots application ([#1649](https://github.com/stillwater-sc/universal/pull/1649))
+- **utility**: Precision-vs-magnitude profiles and the DSP type comparison ([#1650](https://github.com/stillwater-sc/universal/pull/1650))
+
+### Build System
+
+- 6 docs-site dependency bumps (dependabot)
+
+### Documentation
+
+- Rewrite the ubit tutorial around flag vs enclosure ([#1643](https://github.com/stillwater-sc/universal/pull/1643))
+- Publish bposit and valid on the docs site ([#1644](https://github.com/stillwater-sc/universal/pull/1644))
+- Clear the Doxygen warnings and drop archived posits from the index ([#1645](https://github.com/stillwater-sc/universal/pull/1645))
+- Decimals-of-accuracy tutorial, from the full range to a fitted b-posit ([#1651](https://github.com/stillwater-sc/universal/pull/1651))
+
+### Fixed
+
+- **ereal**: Guard VerifyReach on max_safe_limbs where long double is double ([#1618](https://github.com/stillwater-sc/universal/pull/1618))
+- **takum**: Saturate below minpos instead of rounding to zero ([#1620](https://github.com/stillwater-sc/universal/pull/1620))
+- **takum**: Round + - * / and fma once, not twice through a double ([#1621](https://github.com/stillwater-sc/universal/pull/1621))
+- **takum**: Round sqrt, rsqrt and IEEE conversion once ([#1623](https://github.com/stillwater-sc/universal/pull/1623))
+- **takum**: Saturate math results at double's range limits instead of NaR / zero ([#1625](https://github.com/stillwater-sc/universal/pull/1625))
+- **takum**: Exact arithmetic for rbits 4-5 values outside double's range ([#1627](https://github.com/stillwater-sc/universal/pull/1627))
+- **takum**: Elementary functions past double's range for rbits 4-5 ([#1629](https://github.com/stillwater-sc/universal/pull/1629))
+- **cfloat**: Reject assign(string) fields of the wrong width ([#1648](https://github.com/stillwater-sc/universal/pull/1648))
 
 ## [5.1.0](https://github.com/stillwater-sc/universal/compare/v5.0.0...v5.1.0) (2026-09-25)
 
