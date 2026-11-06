@@ -146,45 +146,38 @@ int VerifyAccuracy(double bound, double powBound) {
 		}
 		report("hypot", worst, bound);
 	}
-	// pow: |y log x| <= 1, where the result is within a few units, then up to |y log x| ~ 40
-	auto powRange = [&](const char* name, Real xlo, Real xhi, Real ylo, Real yhi, double b) {
-		double worst = 0.0;
+	// pow's error grows as pow.hpp documents, so each sample is held to its own bound,
+	// bound + powBound * g, with g the measure of the path the sample takes: |y| for an integer y
+	// with |y| <= 64, which takes binary powering, and |y log x| for the exp/log path. The report
+	// gives the worst error and the worst slope, (error - bound) / g, the growth per unit of g.
+	auto powCheck = [&](const char* name, auto genX, auto genY) {
+		double worst = 0.0, slope = 0.0, excess = -1.0;
 		for (int i = 0; i < N; ++i) {
-			const F x = randomIn<Real>(rng, xlo, xhi), y = randomIn<Real>(rng, ylo, yhi);
+			const F x = genX(rng), y = genY(rng);
 			const double u = Ref::rel(Ref::value(pow(x, y)), Ref::pow(Ref::value(x), Ref::value(y))) / std::ldexp(1.0, Ref::epsExp);
-			if (std::isnan(u) ? !std::isnan(worst) : (!std::isnan(worst) && u > worst)) { worst = u; at = x; }   // a NaN, once seen, sticks
+			const double yv = double(y.high()), xv = double(x.high());
+			const bool binary = (std::floor(yv) == yv) && y.low() == Real(0) && std::fabs(yv) <= 64.0;
+			const double g = binary ? std::fabs(yv) : std::fabs(yv * std::log(xv));
+			const double allowed = bound + powBound * g;
+			if (std::isnan(u)) { worst = u; at = x; excess = u; continue; }
+			if (!std::isnan(worst) && u > worst) worst = u;
+			if (g > 1.0 && (u - bound) / g > slope) slope = (u - bound) / g;
+			if (!std::isnan(excess) && u - allowed > excess) { excess = u - allowed; at = x; }
 		}
-		report(name, worst, b);
+		std::cout << "  " << type_tag(F()) << ' ' << name << " worst " << worst << " units, slope " << slope;
+		if (!std::isnan(excess) && excess <= 0.0) { std::cout << '\n'; return; }
+		++fails;
+		std::cout << "  FAIL at " << at << '\n';
 	};
-	// the bound of a range grows with its largest |y log x| (or |y| for binary powering), as
-	// pow.hpp documents: powBound units per unit of it, plus the base bound
-	powRange("pow x in [0.5, 2], |y| <= 1",   Real(0.5), Real(2),   Real(-1),  Real(1),  bound);
-	powRange("pow x in [0.5, 2], |y| <= 50",  Real(0.5), Real(2),   Real(-50), Real(50), bound + powBound * 50 * 0.6931);
-	powRange("pow x in [1e-6, 1e6], |y| <= 2", Real(1e-6), Real(1e6), Real(-2), Real(2),  bound);
-	// integer exponents beyond +-64: the exp/log path, with |y log x| up to about 51
-	{
-		double worst = 0.0;
-		std::uniform_int_distribution<int> n(-1000, 1000);
-		for (int i = 0; i < N; ++i) {
-			const F x = randomIn<Real>(rng, Real(0.95), Real(1.05));
-			const F y(Real(n(rng)));
-			const double u = Ref::rel(Ref::value(pow(x, y)), Ref::pow(Ref::value(x), Ref::value(y))) / std::ldexp(1.0, Ref::epsExp);
-			if (std::isnan(u) ? !std::isnan(worst) : (!std::isnan(worst) && u > worst)) { worst = u; at = x; }   // a NaN, once seen, sticks
-		}
-		report("pow integer y in [-1000, 1000]", worst, bound + powBound * 1000 * 0.0513);
-	}
-	// integer exponents: binary powering
-	{
-		double worst = 0.0;
-		std::uniform_int_distribution<int> n(-64, 64);
-		for (int i = 0; i < N; ++i) {
-			const F x = randomIn<Real>(rng, Real(0.5), Real(2));
-			const F y(Real(n(rng)));
-			const double u = Ref::rel(Ref::value(pow(x, y)), Ref::pow(Ref::value(x), Ref::value(y))) / std::ldexp(1.0, Ref::epsExp);
-			if (std::isnan(u) ? !std::isnan(worst) : (!std::isnan(worst) && u > worst)) { worst = u; at = x; }   // a NaN, once seen, sticks
-		}
-		report("pow integer y in [-64, 64]", worst, bound + powBound * 64);
-	}
+	auto uniform = [](Real lo, Real hi) { return [=](std::mt19937_64& g) { return randomIn<Real>(g, lo, hi); }; };
+	auto integer = [](int lo, int hi) { return [=](std::mt19937_64& g) { std::uniform_int_distribution<int> n(lo, hi); return F(Real(n(g))); }; };
+	powCheck("pow x in [0.5, 2], |y| <= 1",    uniform(Real(0.5), Real(2)),    uniform(Real(-1), Real(1)));
+	powCheck("pow x in [0.5, 2], |y| <= 50",   uniform(Real(0.5), Real(2)),    uniform(Real(-50), Real(50)));
+	powCheck("pow x in [1e-6, 1e6], |y| <= 2", uniform(Real(1e-6), Real(1e6)), uniform(Real(-2), Real(2)));
+	// integer exponents beyond +-64 take the exp/log path; |y log x| up to about 49
+	powCheck("pow integer y in [-1000, 1000]", uniform(Real(0.95), Real(1.05)), integer(-1000, 1000));
+	// integer exponents up to +-64: binary powering, whose error grows with |y|
+	powCheck("pow integer y in [-64, 64]",     uniform(Real(0.5), Real(2)),    integer(-64, 64));
 	return fails;
 }
 
@@ -303,11 +296,12 @@ try {
 
 #if REGRESSION_LEVEL_1
 	// the bounds, in units of epsilon(). Measured worst over 20000 arguments per range, gcc and
-	// clang: 3.6 for faithful<float> and 3.9 for faithful<double>, except pow, which grows with
-	// |y log x| as pow.hpp documents (51 units at |y| = 50, 72 for integer y up to 64): its bound is
-	// powBound units per unit of |y log x|, or of |y| for binary powering. Through the
-	// FloatingPointType sinh and cbrt are 10^7 to 10^18 units off, so the test fails them.
-	constexpr double bound = 5.0, powBound = 1.6;
+	// clang: 3.6 for faithful<float> and 3.9 for faithful<double>, except pow, whose error grows
+	// with |y log x| (or |y| for binary powering) as pow.hpp documents. Each pow sample is held to
+	// bound + powBound * that. The measured slope is at most 2.7 on the exp/log path and 1.0 for
+	// binary powering, gcc and clang; powBound = 3 leaves room for other platforms' samples. Through the FloatingPointType sinh and cbrt are 10^7 to
+	// 10^18 units off, so the test fails them.
+	constexpr double bound = 5.0, powBound = 3.0;
 	nrOfFailedTestCases += ReportTestResult(VerifyAccuracy<FloatRef>(bound, powBound), "faithful<float>", "accuracy");
 	nrOfFailedTestCases += ReportTestResult(VerifyAccuracy<DoubleRef>(bound, powBound), "faithful<double>", "accuracy");
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialValues<float>(reportTestCases), "faithful<float>", "special values");

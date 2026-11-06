@@ -15,8 +15,9 @@
 //     relative error of |y k| units; what remains is the error of y log(b), which grows with
 //     |y log(b)|: the pair's log(b) is accurate to a few units of its own magnitude, and y
 //     multiplies that.
-// Accuracy, therefore: a few units of epsilon() while |y log x| <= 1, and growing linearly beyond,
-// about 1.5 |y log x| units on the exp/log path and about |y| units for binary powering. This is a
+// Accuracy, therefore: a few units of epsilon() while |y log x| <= 1, and growing linearly beyond:
+// at most 5 + 2.7 |y log x| units measured on the exp/log path (51 at |y| = 50 on [0.5, 2]), and
+// at most 5 + |y| units for binary powering (58 at |y| = 64). This is a
 // limit of pair precision, not of the algorithm: exp(w) needs w to an absolute epsilon(), and a
 // pair y log(b) holds it to a relative one. dd's pow has the same limit. A caller that needs
 // x^y for a large y to full precision needs a wider type for the logarithm.
