@@ -33,11 +33,11 @@ passed its tests, because the code or the test was a stub that returned a plausi
   `faithful<long double>` has no trigonometric functions where `long double` is wider than
   `double`: the shared reduction cannot hold it, so it gets none rather than wrong ones.
 * **dbns conversion** ([#1939](https://github.com/stillwater-sc/universal/pull/1939)) --
-  conversion from double returns the nearest encoding. Multi-block configurations such as
+  conversion from double returns the encoding nearest in log2. Multi-block configurations such as
   `dbns<16,5>` were wrong for almost every value. `minpos` is `0.5^(MAX_A-1)` instead of 0,
   and `minneg` is `-0.5^(MAX_A-1)` instead of NaN.
 * **dbns native arithmetic** ([#1947](https://github.com/stillwater-sc/universal/pull/1947)) --
-  with `NATIVE_DBNS_ARITHMETIC` defined, `*` and `/` return the nearest encoding of the exact
+  with `NATIVE_DBNS_ARITHMETIC` defined, `*` and `/` return the encoding nearest in log2 to the exact
   result instead of a projected or wrapped one.
 * **ereal parse** ([#1938](https://github.com/stillwater-sc/universal/pull/1938)) --
   `parse()` and `operator>>` return the exact value for a decimal with a finite binary
