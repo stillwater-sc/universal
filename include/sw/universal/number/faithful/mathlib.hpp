@@ -14,6 +14,8 @@
 //                 copysign, fabs (abs() is defined with the type)
 //   minmax.hpp    fmin, fmax
 //   sqrt.hpp      sqrt, compensated: about twice the FloatingPointType's precision
+//   truncate.hpp  floor, ceil, trunc, round, exact (#1954)
+//   fractional.hpp fmod, exact (#1954)
 //
 // What it does not have yet (#1952): exp, log, the trigonometric and hyperbolic functions, pow. They
 // cannot evaluate through the FloatingPointType, which would throw away half the pair's
@@ -21,3 +23,5 @@
 #include <universal/number/faithful/math/functions/classify.hpp>
 #include <universal/number/faithful/math/functions/minmax.hpp>
 #include <universal/number/faithful/math/functions/sqrt.hpp>
+#include <universal/number/faithful/math/functions/truncate.hpp>
+#include <universal/number/faithful/math/functions/fractional.hpp>
