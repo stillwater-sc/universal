@@ -56,4 +56,4 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-// #include <universal/number/faithful/mathlib.hpp>
+#include <universal/number/faithful/mathlib.hpp>
