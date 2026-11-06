@@ -57,8 +57,10 @@ template<typename Dbns>
 bool IsNearest(const std::vector<Encoding<Dbns>>& enc, long long a, long long b, bool negative, const Dbns& r) {
 	const long double l3 = 1.5849625007211561814537389439478L;
 	const long double L = static_cast<long double>(b) * l3 - static_cast<long double>(a);
+	// zero is nearest when the value is nearer 0 than minpos, |v| < minpos / 2: decided from the
+	// linear values, rather than by repeating the log-domain threshold the implementation uses
 	const long double minposLog = enc.front().log2v;
-	if (L < minposLog - 1.0L) return r.iszero();                      // below half of minpos: zero
+	if (std::exp2(L - minposLog) < 0.5L) return r.iszero();
 	if (r.iszero() || r.isnan() || r.sign() != negative) return false;
 	auto it = std::lower_bound(enc.begin(), enc.end(), L, [](const Encoding<Dbns>& e, long double v) { return e.log2v < v; });
 	long double best = 1.0e300L;
@@ -173,7 +175,7 @@ int VerifyNativeSampled(int samples, bool reportTestCases) {
 		return d;
 	};
 	int nrOfFailedTests = 0, reported = 0;
-	const long double minposLog = -static_cast<long double>(maxA - 1);
+	const long double minposLog = -static_cast<long double>(maxA - 1);   // minpos is 0.5^(MAX_A - 1)
 	for (int i = 0; i < samples; ++i) {
 		const Dbns x = randomOperand(), y = randomOperand();
 		const long long ax = x.extractExponent(0), bx = x.extractExponent(1);
@@ -189,7 +191,7 @@ int VerifyNativeSampled(int samples, bool reportTestCases) {
 				ok = !r.iszero() && !r.isnan() && r.sign() == negative
 				  && static_cast<long long>(r.extractExponent(0)) == a && static_cast<long long>(r.extractExponent(1)) == b;
 			}
-			else if (L < minposLog - 1.0L) {
+			else if (std::exp2(L - minposLog) < 0.5L) {   // nearer 0 than minpos, in linear terms
 				ok = r.iszero();
 			}
 			else {
@@ -258,7 +260,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<20, 10, std::uint16_t>( 500, reportTestCases), "dbns<20,10,uint16>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<34,  1, std::uint64_t>(2000, reportTestCases), "dbns<34,1,uint64>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<40, 30, std::uint64_t>(2000, reportTestCases), "dbns<40,30,uint64>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<48, 20, std::uint64_t>(  20, reportTestCases), "dbns<48,20,uint64>", test_tag);
+	// windows wider than exhaustive_search_limit, searched with argmin_frac (#1973). dbns<48,20>
+	// took ~1 ms for each out-of-range product, so it ran only 20 samples; the cost now is the
+	// oracle's, which scans a million first exponents per check.
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<48, 20, std::uint64_t>( 100, reportTestCases), "dbns<48,20,uint64>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<36, 16, std::uint64_t>(2000, reportTestCases), "dbns<36,16,uint64>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<40, 24, std::uint64_t>(2000, reportTestCases), "dbns<40,24,uint64>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<10,  6, std::uint8_t >(2000, reportTestCases), "dbns<10,6>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<12,  3, std::uint8_t >(2000, reportTestCases), "dbns<12,3>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<12,  3, std::uint16_t>(2000, reportTestCases), "dbns<12,3,uint16>", test_tag);
@@ -268,6 +275,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<48, 20, std::uint64_t>(1000, reportTestCases), "dbns<48,20,uint64>", "native * /, more samples");
 	// multi-block: dbns wider than its uint8_t block type
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeMulDiv<10, 4, std::uint8_t >(reportTestCases), "dbns<10,4>", test_tag);
 #endif
