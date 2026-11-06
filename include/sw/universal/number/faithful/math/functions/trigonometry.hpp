@@ -34,8 +34,9 @@
 //
 // Errors follow <cmath>: sin, cos and tan of an infinity, and asin and acos beyond [-1, 1], are
 // NaN with EDOM; with FAITHFUL_THROW_ARITHMETIC_EXCEPTION set they throw faithful_domain_error.
-// Only float and double hosts: the reduction's limbs are doubles, so a long double part would
-// lose bits or overflow. atan2 follows std's special cases. Only a native FloatingPointType.
+// Only hosts whose values convert to double exactly: float, double, and a long double that has
+// double's format. The reduction's limbs are doubles, so a wider long double part would lose
+// bits or overflow. atan2 follows std's special cases. Only a native FloatingPointType.
 #include <algorithm>     // std::max
 #include <cerrno>        // errno, EDOM
 #include <cmath>         // std::atan2, std::ldexp
@@ -53,9 +54,11 @@ namespace sw { namespace universal {
 
 namespace faithful_detail {
 	// The reduction takes each part of the argument as a double limb, so it serves a
-	// FloatingPointType whose values convert to double exactly: float and double. A long double
-	// part has more bits than a double and can exceed DBL_MAX, so faithful<long double> has no
-	// trigonometric functions rather than wrong ones (#1956 review).
+	// FloatingPointType whose values convert to double exactly: float and double, and long double
+	// where it has double's format (MSVC, macOS ARM64). A wider long double part has more bits than
+	// a double and can exceed DBL_MAX, so there faithful<long double> has no trigonometric
+	// functions rather than wrong ones (#1956 review). The test of the property, not of the type,
+	// is deliberate: a long double that is a double works correctly.
 	template<typename Real>
 	concept trig_host = std::is_floating_point_v<Real>
 		&& std::numeric_limits<Real>::digits <= std::numeric_limits<double>::digits

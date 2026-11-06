@@ -183,10 +183,13 @@ int VerifySpecialValues(bool reportTestCases) {
 	check(signbit(atan2(nzero, one)) && iszero(atan2(nzero, one)), "atan2(-0, 1) = -0");
 	check(atan2(one, zero) == pi_2 && atan2(-one, zero) == -pi_2, "atan2(+-1, 0) = +-pi/2");
 	check(atan2(one, pinf) == zero && atan2(pinf, pinf) == F(Real(0.5)) * pi_2, "atan2 with infinities");
-	// faithful<long double> has no trigonometric functions: its parts do not fit the double limbs
-	// of the reduction, and a wrong result would be worse than none
-	static_assert(!has_sin<faithful<long double>> && has_sin<faithful<double>> && has_sin<faithful<float>>,
-	              "sin is offered for faithful<float> and faithful<double>, not faithful<long double>");
+	// faithful<long double> has trigonometric functions only where long double has double's format,
+	// as on MSVC and macOS ARM64: a wider long double part does not fit the double limbs of the
+	// reduction, and a wrong result would be worse than none
+	constexpr bool ldFitsDouble = std::numeric_limits<long double>::digits <= std::numeric_limits<double>::digits
+		&& std::numeric_limits<long double>::max_exponent <= std::numeric_limits<double>::max_exponent;
+	static_assert(has_sin<faithful<double>> && has_sin<faithful<float>>, "sin is offered for faithful<float> and faithful<double>");
+	static_assert(has_sin<faithful<long double>> == ldFitsDouble, "sin of faithful<long double> exactly when long double fits a double");
 	// the largest arguments still reduce
 	check(isfinite(sin(F(RL::max()))) && isfinite(cos(std::numeric_limits<F>::max())), "sin(max) and cos(max) are finite");
 	return fails;
