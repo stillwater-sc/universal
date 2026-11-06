@@ -7,6 +7,7 @@ set(CONCURRENCY_SRCS concurrency.cpp)
 set(EXAMPLE_SRCS gismo_test.cpp
 	 skeleton.cpp
 	 type_test.cpp
+	 precision_table.cpp
 	 float_to_decimal_string.cpp
 	 # conversion.cpp dropped from build: depends on extracted <blas/...> (universal#1209); source left in place
 	 closure_of_8bit_systems.cpp
