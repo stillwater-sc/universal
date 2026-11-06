@@ -917,10 +917,10 @@ protected:
 	// division, so its neighbours are checked as well; the caller scores the final candidates
 	// with the exact rule of the scan.
 	static constexpr long long argmin_frac(long long n, double gamma, double beta) noexcept {
-		constexpr long long small = 32;
+		constexpr long long scan_limit = 32;   // not "small": rpcndr.h, via windows.h, defines it as a macro
 		auto f = [&](long long x) { return frac_part(beta + static_cast<double>(x) * gamma); };
 		auto better = [&](long long& best, long long x) { if (x >= 0 && x < n && f(x) < f(best)) best = x; };
-		if (n <= small) {
+		if (n <= scan_limit) {
 			long long best = 0;
 			for (long long x = 1; x < n; ++x) better(best, x);
 			return best;
@@ -934,7 +934,7 @@ protected:
 				if (static_cast<double>(x) < q) ++x;   // ceil
 				return x;
 			};
-			if (K <= small) {
+			if (K <= scan_limit) {
 				for (long long k = 1; k <= K; ++k) { const long long x = xk(k); for (long long c = x - 1; c <= x + 1; ++c) better(best, c); }
 				return best;
 			}
@@ -950,7 +950,7 @@ protected:
 		if (static_cast<double>(K) < kq) ++K;   // ceil
 		if (K < 0) K = 0;
 		auto xk = [&](long long k) { return floor_ll((beta + static_cast<double>(k)) / g); };
-		if (K <= small) {
+		if (K <= scan_limit) {
 			for (long long k = 0; k < K; ++k) { const long long x = xk(k); for (long long c = x - 1; c <= x + 1; ++c) better(best, c); }
 			return best;
 		}

@@ -207,6 +207,71 @@ int VerifyNativeSampled(int samples, bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// The search for wide windows (argmin_frac, #1973) must pick the encoding the exhaustive scan
+// picks, not merely one within the oracle's tolerance: a near tie is where a search that only
+// approximates the minimum would differ. This replays the scan over every b in the window, with
+// the library's own scoring and tie rule, on the product's scale formed exactly as assign_pair
+// forms it, and requires the identical encoding for every out-of-range product.
+template<unsigned nbits, unsigned fbbits, typename bt>
+int VerifyMatchesScan(int samples, bool reportTestCases) {
+	using namespace sw::universal;
+	using Dbns = dbns<nbits, fbbits, bt>;
+	const long long maxA = static_cast<long long>(Dbns::MAX_A), maxB = static_cast<long long>(Dbns::MAX_B);
+	constexpr double log2of3 = 1.5849625007211561814537389439478;
+	auto floorLL = [](double x) { long long i = static_cast<long long>(x); return (static_cast<double>(i) > x) ? i - 1 : i; };
+	// assign_pair's scale: log2(3) split into a 20-bit head and its tail
+	auto pairLog2 = [&](long long a, long long b) {
+		constexpr double hi = 1.5849609375, lo = log2of3 - hi;
+		return (static_cast<double>(b) * hi - static_cast<double>(a)) + static_cast<double>(b) * lo;
+	};
+	// the scan of assign_log2, as written before argmin_frac: returns (first exponent, b)
+	auto scan = [&](double scale, long long& encA, long long& encB) {
+		long long bLo = floorLL(scale / log2of3) - 1, bHi = floorLL((scale + static_cast<double>(maxA)) / log2of3) + 2;
+		bLo = std::clamp(bLo, 0ll, maxB);
+		bHi = std::clamp(bHi, 0ll, maxB);
+		if (bLo > bHi) bLo = bHi;
+		double lowest = 1.0e300;
+		for (long long b = bLo; b <= bHi; ++b) {
+			const double r = scale - static_cast<double>(b) * log2of3;
+			long long a = static_cast<long long>(r >= 0.0 ? r + 0.5 : r - 0.5);
+			if (a > 0) a = 0;
+			if (a < -maxA) a = -maxA;
+			if (a == -maxA && b == 0) a = -(maxA - 1);
+			const double diff = scale - (static_cast<double>(a) + static_cast<double>(b) * log2of3);
+			const double err = diff < 0.0 ? -diff : diff;
+			if (err < lowest) { lowest = err; encA = -a; encB = b; }
+		}
+		return (bHi - bLo + 1);
+	};
+	std::mt19937_64 rng(1973 + nbits * 64 + fbbits);
+	std::uniform_int_distribution<long long> ua(0, maxA), ub(0, maxB);
+	int nrOfFailedTests = 0, reported = 0, wide = 0;
+	for (int i = 0; i < samples; ++i) {
+		Dbns x, y;
+		x.setbits(0); x.setexponent(0, static_cast<std::uint32_t>(ua(rng))); x.setexponent(1, static_cast<std::uint32_t>(ub(rng)));
+		y.setbits(0); y.setexponent(0, static_cast<std::uint32_t>(ua(rng))); y.setexponent(1, static_cast<std::uint32_t>(ub(rng)));
+		if (x.iszero() || y.iszero() || x.isnan() || y.isnan()) continue;
+		const long long ax = x.extractExponent(0), bx = x.extractExponent(1), ay = y.extractExponent(0), by = y.extractExponent(1);
+		for (int op = 0; op < 2; ++op) {
+			const long long a = op == 0 ? ax + ay : ax - ay;
+			const long long b = op == 0 ? bx + by : bx - by;
+			if (a >= 0 && a <= maxA && b >= 0 && b <= maxB && !(a == maxA && b == 0)) continue;   // stored exactly
+			const double scale = pairLog2(a, b);
+			if (scale < -static_cast<double>(maxA - 1) - 1.0) continue;                        // zero
+			long long wantA = 0, wantB = 0;
+			if (scan(scale, wantA, wantB) > 4096) ++wide;
+			const Dbns r = op == 0 ? x * y : x / y;
+			if (static_cast<long long>(r.extractExponent(0)) != wantA || static_cast<long long>(r.extractExponent(1)) != wantB) {
+				++nrOfFailedTests;
+				if (reportTestCases && reported++ < 5) std::cerr << "FAIL " << type_tag(Dbns()) << (op == 0 ? " * " : " / ") << "0.5^" << a << " * 3^" << b
+					<< " -> (" << r.extractExponent(0) << ", " << r.extractExponent(1) << "), the scan gives (" << wantA << ", " << wantB << ")\n";
+			}
+		}
+	}
+	if (wide == 0) ++nrOfFailedTests;   // the configuration must reach the wide-window search
+	return nrOfFailedTests;
+}
+
 } // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -266,6 +331,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<48, 20, std::uint64_t>( 100, reportTestCases), "dbns<48,20,uint64>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<36, 16, std::uint64_t>(2000, reportTestCases), "dbns<36,16,uint64>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<40, 24, std::uint64_t>(2000, reportTestCases), "dbns<40,24,uint64>", test_tag);
+	// the same configurations, requiring the exhaustive scan's encoding exactly
+	nrOfFailedTestCases += ReportTestResult(VerifyMatchesScan<48, 20, std::uint64_t>( 100, reportTestCases), "dbns<48,20,uint64>", "matches the scan");
+	nrOfFailedTestCases += ReportTestResult(VerifyMatchesScan<36, 16, std::uint64_t>(2000, reportTestCases), "dbns<36,16,uint64>", "matches the scan");
+	nrOfFailedTestCases += ReportTestResult(VerifyMatchesScan<40, 24, std::uint64_t>(2000, reportTestCases), "dbns<40,24,uint64>", "matches the scan");
+	nrOfFailedTestCases += ReportTestResult(VerifyMatchesScan<31, 15, std::uint32_t>(2000, reportTestCases), "dbns<31,15,uint32>", "matches the scan");
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<10,  6, std::uint8_t >(2000, reportTestCases), "dbns<10,6>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<12,  3, std::uint8_t >(2000, reportTestCases), "dbns<12,3>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<12,  3, std::uint16_t>(2000, reportTestCases), "dbns<12,3,uint16>", test_tag);
