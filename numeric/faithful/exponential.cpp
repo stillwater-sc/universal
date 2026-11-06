@@ -90,7 +90,7 @@ double worstUnits(Fn f, RefFn ref, Gen gen, int n, std::mt19937_64& rng, faithfu
 		const faithful<typename Ref::Real> x = gen(rng);
 		const auto want = ref(Ref::value(x));
 		const double u = Ref::rel(Ref::value(f(x)), want) / std::ldexp(1.0, Ref::epsExp);
-		if (!(u <= worst)) { worst = u; worstAt = x; }   // also catches a NaN
+		if (std::isnan(u) ? !std::isnan(worst) : (!std::isnan(worst) && u > worst)) { worst = u; worstAt = x; }   // a NaN, once seen, sticks
 	}
 	return worst;
 }

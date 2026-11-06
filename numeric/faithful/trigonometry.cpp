@@ -95,10 +95,14 @@ double worstUnits(Fn f, RefFn ref, Gen gen, int n, std::mt19937_64& rng, faithfu
 		const faithful<typename Ref::Real> x = gen(rng);
 		const auto want = ref(Ref::value(x));
 		const double u = Ref::rel(Ref::value(f(x)), want) / std::ldexp(1.0, Ref::epsExp);
-		if (!(u <= worst)) { worst = u; worstAt = x; }
+		if (std::isnan(u) ? !std::isnan(worst) : (!std::isnan(worst) && u > worst)) { worst = u; worstAt = x; }   // a NaN, once seen, sticks
 	}
 	return worst;
 }
+
+// whether sin(T) is callable: a requires-expression outside a template would be ill-formed, not false
+template<typename T>
+constexpr bool has_sin = requires(T v) { sin(v); };
 
 template<typename Ref>
 int VerifyAccuracy(double bound) {
@@ -128,6 +132,9 @@ int VerifyAccuracy(double bound) {
 	report("cos [-1e4, 1e4]", worstUnits<Ref>([](const F& x) { return cos(x); }, [](const auto& v) { return Ref::cos(v); }, mid, N, rng, at));
 	report("sin to max()",    worstUnits<Ref>([](const F& x) { return sin(x); }, [](const auto& v) { return Ref::sin(v); }, wide, N, rng, at));
 	report("cos to max()",    worstUnits<Ref>([](const F& x) { return cos(x); }, [](const auto& v) { return Ref::cos(v); }, wide, N, rng, at));
+	report("tan [-1e4, 1e4]", worstUnits<Ref>([](const F& x) { return tan(x); }, [](const auto& v) { return Ref::tan(v); }, mid, N, rng, at));
+	report("tan to max()",    worstUnits<Ref>([](const F& x) { return tan(x); }, [](const auto& v) { return Ref::tan(v); }, wide, N, rng, at));
+	report("tan near k pi/2", worstUnits<Ref>([](const F& x) { return tan(x); }, [](const auto& v) { return Ref::tan(v); }, nearK, N, rng, at));
 	report("sin near k pi/2", worstUnits<Ref>([](const F& x) { return sin(x); }, [](const auto& v) { return Ref::sin(v); }, nearK, N, rng, at));
 	report("cos near k pi/2", worstUnits<Ref>([](const F& x) { return cos(x); }, [](const auto& v) { return Ref::cos(v); }, nearK, N, rng, at));
 	report("atan wide",       worstUnits<Ref>([](const F& x) { return atan(x); }, [](const auto& v) { return Ref::atan(v); }, [&](std::mt19937_64& g) { return randomLog<Real>(g, -40, 40); }, N, rng, at));
@@ -141,7 +148,7 @@ int VerifyAccuracy(double bound) {
 		for (int i = 0; i < N; ++i) {
 			const F y = randomLog<Real>(rng, -30, 30), x = randomLog<Real>(rng, -30, 30);
 			const double u = Ref::rel(Ref::value(atan2(y, x)), Ref::atan2(Ref::value(y), Ref::value(x))) / std::ldexp(1.0, Ref::epsExp);
-			if (!(u <= worst)) { worst = u; at = y; }
+			if (std::isnan(u) ? !std::isnan(worst) : (!std::isnan(worst) && u > worst)) { worst = u; at = y; }   // a NaN, once seen, sticks
 		}
 		report("atan2 quadrants", worst);
 	}
@@ -176,6 +183,10 @@ int VerifySpecialValues(bool reportTestCases) {
 	check(signbit(atan2(nzero, one)) && iszero(atan2(nzero, one)), "atan2(-0, 1) = -0");
 	check(atan2(one, zero) == pi_2 && atan2(-one, zero) == -pi_2, "atan2(+-1, 0) = +-pi/2");
 	check(atan2(one, pinf) == zero && atan2(pinf, pinf) == F(Real(0.5)) * pi_2, "atan2 with infinities");
+	// faithful<long double> has no trigonometric functions: its parts do not fit the double limbs
+	// of the reduction, and a wrong result would be worse than none
+	static_assert(!has_sin<faithful<long double>> && has_sin<faithful<double>> && has_sin<faithful<float>>,
+	              "sin is offered for faithful<float> and faithful<double>, not faithful<long double>");
 	// the largest arguments still reduce
 	check(isfinite(sin(F(RL::max()))) && isfinite(cos(std::numeric_limits<F>::max())), "sin(max) and cos(max) are finite");
 	return fails;
@@ -221,7 +232,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 	// the bound, in units of epsilon(). Measured worst over 20000 arguments per range, gcc and
-	// clang: 3.1 for faithful<float> (tan) and 3.5 for faithful<double> (tan). Through the
+	// clang: 3.6 for faithful<float> (tan) and 3.5 for faithful<double> (tan). Through the
 	// FloatingPointType sin is 10^10 to 10^51 units off, and a reduction that subtracts q pi/2
 	// with a pair pi/2 is 10^4 units off on [-pi, pi] and far worse beyond, so the test fails both.
 	constexpr double bound = 5.0;

@@ -28,12 +28,14 @@
 // Worst relative error, in units of the pair's epsilon(), over 20000 arguments per range in
 // numeric/faithful/trigonometry.cpp (faithful<float> / faithful<double>):
 //   sin, cos on [-pi, pi], [-1e4, 1e4], up to max() and next to k pi/2   2.1 / 2.9
-//   tan on [-pi, pi]                                                      3.1 / 3.5
+//   tan on [-pi, pi], [-1e4, 1e4], up to max() and next to k pi/2       3.6 / 3.5
 //   asin, acos (also next to +-1)                                         2.5 / 3.0
 //   atan, atan2 (all four quadrants)                                      2.2 / 2.1
 //
 // Errors follow <cmath>: sin, cos and tan of an infinity, and asin and acos beyond [-1, 1], are
-// NaN with EDOM; with FAITHFUL_THROW_ARITHMETIC_EXCEPTION set they throw faithful_domain_error. atan2 follows std's special cases. Only a native FloatingPointType.
+// NaN with EDOM; with FAITHFUL_THROW_ARITHMETIC_EXCEPTION set they throw faithful_domain_error.
+// Only float and double hosts: the reduction's limbs are doubles, so a long double part would
+// lose bits or overflow. atan2 follows std's special cases. Only a native FloatingPointType.
 #include <algorithm>     // std::max
 #include <cerrno>        // errno, EDOM
 #include <cmath>         // std::atan2, std::ldexp
@@ -50,6 +52,15 @@
 namespace sw { namespace universal {
 
 namespace faithful_detail {
+	// The reduction takes each part of the argument as a double limb, so it serves a
+	// FloatingPointType whose values convert to double exactly: float and double. A long double
+	// part has more bits than a double and can exceed DBL_MAX, so faithful<long double> has no
+	// trigonometric functions rather than wrong ones (#1956 review).
+	template<typename Real>
+	concept trig_host = std::is_floating_point_v<Real>
+		&& std::numeric_limits<Real>::digits <= std::numeric_limits<double>::digits
+		&& std::numeric_limits<Real>::max_exponent <= std::numeric_limits<double>::max_exponent;
+
 	namespace constants {
 		// pi / 2: the shared table's pi, halved, which is exact
 		inline constexpr double pi_2[4] = {
@@ -151,7 +162,7 @@ namespace faithful_detail {
 }
 
 template<typename FloatingPointType>
-	requires std::is_floating_point_v<FloatingPointType>
+	requires faithful_detail::trig_host<FloatingPointType>
 inline faithful<FloatingPointType> sin(const faithful<FloatingPointType>& x) {
 	if (x.isnan()) return x;
 	if (x.isinf()) return faithful_detail::domain_error<FloatingPointType>("sin");
@@ -162,7 +173,7 @@ inline faithful<FloatingPointType> sin(const faithful<FloatingPointType>& x) {
 }
 
 template<typename FloatingPointType>
-	requires std::is_floating_point_v<FloatingPointType>
+	requires faithful_detail::trig_host<FloatingPointType>
 inline faithful<FloatingPointType> cos(const faithful<FloatingPointType>& x) {
 	if (x.isnan()) return x;
 	if (x.isinf()) return faithful_detail::domain_error<FloatingPointType>("cos");
@@ -172,7 +183,7 @@ inline faithful<FloatingPointType> cos(const faithful<FloatingPointType>& x) {
 }
 
 template<typename FloatingPointType>
-	requires std::is_floating_point_v<FloatingPointType>
+	requires faithful_detail::trig_host<FloatingPointType>
 inline faithful<FloatingPointType> tan(const faithful<FloatingPointType>& x) {
 	if (x.isnan()) return x;
 	if (x.isinf()) return faithful_detail::domain_error<FloatingPointType>("tan");
@@ -184,7 +195,7 @@ inline faithful<FloatingPointType> tan(const faithful<FloatingPointType>& x) {
 
 // the angle of (x, y), in [-pi, pi]
 template<typename FloatingPointType>
-	requires std::is_floating_point_v<FloatingPointType>
+	requires faithful_detail::trig_host<FloatingPointType>
 inline faithful<FloatingPointType> atan2(const faithful<FloatingPointType>& y, const faithful<FloatingPointType>& x) {
 	using Real = FloatingPointType;
 	using F = faithful<Real>;
@@ -222,7 +233,7 @@ inline faithful<FloatingPointType> atan2(const faithful<FloatingPointType>& y, c
 }
 
 template<typename FloatingPointType>
-	requires std::is_floating_point_v<FloatingPointType>
+	requires faithful_detail::trig_host<FloatingPointType>
 inline faithful<FloatingPointType> atan(const faithful<FloatingPointType>& x) {
 	using Real = FloatingPointType;
 	if (x.iszero()) return x;                        // atan(+-0) = +-0
@@ -230,7 +241,7 @@ inline faithful<FloatingPointType> atan(const faithful<FloatingPointType>& x) {
 }
 
 template<typename FloatingPointType>
-	requires std::is_floating_point_v<FloatingPointType>
+	requires faithful_detail::trig_host<FloatingPointType>
 inline faithful<FloatingPointType> asin(const faithful<FloatingPointType>& x) {
 	using Real = FloatingPointType;
 	using F = faithful<Real>;
@@ -242,7 +253,7 @@ inline faithful<FloatingPointType> asin(const faithful<FloatingPointType>& x) {
 }
 
 template<typename FloatingPointType>
-	requires std::is_floating_point_v<FloatingPointType>
+	requires faithful_detail::trig_host<FloatingPointType>
 inline faithful<FloatingPointType> acos(const faithful<FloatingPointType>& x) {
 	using Real = FloatingPointType;
 	using F = faithful<Real>;
