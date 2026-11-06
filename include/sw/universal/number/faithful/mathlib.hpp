@@ -18,8 +18,10 @@
 //   fractional.hpp fmod, exact (#1954)
 //   exponent.hpp  exp, exp2, exp10, expm1, compensated (#1955)
 //   logarithm.hpp log, log2, log10, log1p, compensated (#1955)
+//   trigonometry.hpp sin, cos, tan, asin, acos, atan, atan2, compensated, with the exact
+//                 Payne-Hanek reduction (#1956)
 //
-// What it does not have yet (#1952): the trigonometric and hyperbolic functions, pow. They
+// What it does not have yet (#1952): the hyperbolic functions, pow, cbrt, hypot. They
 // cannot evaluate through the FloatingPointType, which would throw away half the pair's
 // precision, so they need compensated algorithms of their own, as dd's in dd/math/functions.
 #include <universal/number/faithful/math/functions/classify.hpp>
@@ -29,3 +31,4 @@
 #include <universal/number/faithful/math/functions/fractional.hpp>
 #include <universal/number/faithful/math/functions/exponent.hpp>
 #include <universal/number/faithful/math/functions/logarithm.hpp>
+#include <universal/number/faithful/math/functions/trigonometry.hpp>
