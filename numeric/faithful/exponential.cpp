@@ -28,7 +28,7 @@ using sw::universal::qd;
 
 // the reference arithmetic of each FloatingPointType
 // The faithful<float> reference is dd, not long double: on MSVC and on macOS ARM64 long double is
-// a 53-bit double, which cannot hold a pair such as (1, 2^-40) exactly, so the reference would
+// a 53-bit double, which cannot hold a pair such as (1, 2^-60) exactly, so the reference would
 // take the logarithm of a different number. dd holds every canonical faithful<float> exactly and
 // its functions are accurate to about 2^-100, far below a unit of 2^-47.
 struct FloatRef {
