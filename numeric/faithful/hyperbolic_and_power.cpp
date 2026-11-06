@@ -246,6 +246,32 @@ int VerifySpecialValues(bool reportTestCases) {
 	check(iszero(pow(F(Real(10)), F(Real(-1.0e6)))), "pow underflow is 0");
 	errno = 0;
 	check(isinf(pow(F(Real(1.0e10)), F(Real(64)))) && errno == ERANGE, "pow overflow with an integer y is inf with ERANGE");
+	// a negative integer y whose positive power x^|y| overflows: the result underflows rather
+	// than becoming NaN (#1969). 1 / x^|y| was 1 / inf, and finite / inf was NaN.
+	{
+		const F x(std::ldexp(Real(1), RL::max_exponent * 3 / 4));   // x^2 overflows, x^-2 is below denorm_min
+		errno = 0;
+		const F r = pow(x, F(Real(-2)));
+		check(iszero(r) && !signbit(r) && errno == ERANGE, "pow(2^(3 max_exponent / 4), -2) = +0 with ERANGE");
+		check(signbit(pow(-x, F(Real(-3)))) && iszero(pow(-x, F(Real(-3)))), "pow(-2^(3 max_exponent / 4), -3) = -0");
+	}
+	{
+		// x^|y| overflows, but x^y is subnormal and representable: 2^-1040 for double, 2^-140 for float
+		const bool isDouble = RL::digits == 53;
+		const int a = isDouble ? 20 : 5, n = isDouble ? -52 : -28;
+		const F r = pow(F(std::ldexp(Real(1), a)), F(Real(n)));
+		check(r == F(std::ldexp(Real(1), a * n)), "pow(2^a, n) with a subnormal result is exact");
+		// not a power of two: (1.5 2^c)^m, whose positive power just overflows and whose result
+		// is subnormal with 45 bits (double, about 2^-1029) or 20 bits (float, about 2^-128.5)
+		const int c = isDouble ? 20 : 5, m = isDouble ? -50 : -23;
+		const F x(std::ldexp(Real(1.5), c));
+		const Real want = std::pow(Real(1.5), Real(m)) * std::ldexp(Real(1), c * m);
+		const Real got = Real(pow(x, F(Real(m))));
+		const Real tol = std::ldexp(Real(1), -8) * want;
+		check(want != Real(0) && std::fabs(got - want) <= tol, "pow(1.5 2^a, n) with a subnormal result");
+	}
+	// in range, a negative integer y is unchanged by taking the power of two out first
+	check(pow(F(Real(3)), F(Real(-4))) == F(Real(1)) / F(Real(81)), "pow(3, -4) = 1/81");
 	{
 		// exp(y log(b)) alone is past exp's range, and 2^n brings the result back: 0.7^270 for
 		// float, 0.7^2000 for double, both nonzero
