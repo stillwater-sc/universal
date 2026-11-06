@@ -27,6 +27,7 @@
 #include <type_traits>   // std::is_floating_point_v
 #include <vector>
 #include <universal/number/faithful/core.hpp>
+#include <universal/number/faithful/math/functions/truncate.hpp>   // faithful_detail::canonical
 #include <universal/numerics/twosum.hpp>
 #include <universal/numerics/twoprod.hpp>
 

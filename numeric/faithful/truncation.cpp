@@ -117,9 +117,17 @@ int VerifyIntegerValued(bool reportTestCases) {
 		checkOne(F(big, Real(-0.25)));
 	}
 	std::mt19937_64 rng(1954);
+	int naiveMisses = 0;   // samples where floor through Real gives the wrong integer
 	for (int i = 0; i < 40000; ++i) {
-		checkOne(bigWithFraction<Real>(rng));
+		const F big = bigWithFraction<Real>(rng);
+		checkOne(big);
+		if (Ref::value(F(std::floor(Real(big)))) != Ref::floor(Ref::value(big))) ++naiveMisses;
 		checkOne(ordinary<Real>(rng, -4, std::numeric_limits<Real>::digits + 8));
+	}
+	// the generator must reach the case the exact algorithm exists for, or the loop proves nothing
+	if (naiveMisses == 0) {
+		++fails;
+		if (reportTestCases) std::cerr << "FAIL " << type_tag(F()) << " no sample where floor through Real is wrong\n";
 	}
 
 	// the special values and the signed zeros
