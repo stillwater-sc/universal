@@ -5,15 +5,20 @@ name: Release
 # Workflow:
 # 1. Developers work on feature branches using conventional commits
 # 2. Feature PRs are merged to main (PR titles linted by conventional-commits.yml)
-# 3. When ready to release, maintainer pushes an annotated tag:
+# 3. When ready to release, maintainer merges a prepare-release PR that renames
+#    CHANGELOG.md's [Unreleased] section to the new version, then pushes an
+#    annotated tag on that merge commit:
+#      tools/scripts/check-changelog-version.sh v4.0.0
 #      git tag -a v4.0.0 -m "feat!: v4.0.0 - redesigned type system"
 #      git push origin v4.0.0
 # 4. This workflow:
+#    - Fails, before anything is published, if CHANGELOG.md at the tag has no
+#      section for the version
 #    - Generates release notes with git-cliff from conventional commits
 #    - Creates a GitHub Release
 #    - Builds and pushes Docker image to Docker Hub
 #
-# No files on main are modified. No rebase cascade.
+# The workflow itself modifies no files on main. No rebase cascade.
 #
 # Manual trigger:
 #   - Can be triggered manually to build/push Docker only
@@ -57,6 +62,13 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "Releasing version: ${VERSION} (tag: ${TAG})"
+
+      # CHANGELOG.md went 14 releases without an entry (v5.2.0 - v5.15.0) because
+      # nothing in a tag-push release touches it. Stop here, before the Release and
+      # the Docker image exist, so a missing entry is fixed by moving the tag rather
+      # than by editing a published release.
+      - name: Require a CHANGELOG.md section for this version
+        run: tools/scripts/check-changelog-version.sh "${GITHUB_REF_NAME}"
 
       - name: Generate release notes with git-cliff
         uses: orhun/git-cliff-action@v4
