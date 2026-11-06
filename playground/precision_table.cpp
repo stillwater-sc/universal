@@ -33,7 +33,7 @@ int main()
 {
 	using namespace sw::universal;
 
-    std::cout << "| Format | Bits | Significand | ε (relative step at 1) | Smallest normal | Largest |\n";
+    std::cout << "| Format | Bits | Significand | eps (relative step at 1) | Smallest normal | Largest |\n";
     std::cout << "|---|---|---|---|---|---|\n";
 
     precision_info<cfloat<64,11>>("binary64 (cfloat<64,11> or double)", 64, 53);
