@@ -29,8 +29,10 @@ headers no build ever included: faithful's `attributes.hpp`, `manipulators.hpp` 
 
 ## Key Decisions
 
-- **No exceptions is detected, not configured.** `UNIVERSAL_HAS_EXCEPTIONS` comes from
-  `__cpp_exceptions`, `__EXCEPTIONS` or `_CPPUNWIND`. A throw switch set to 1 without exceptions
+- **No exceptions is detected by default.** `UNIVERSAL_HAS_EXCEPTIONS` comes from
+  `__cpp_exceptions`, `__EXCEPTIONS` or `_CPPUNWIND`. An application can still define it as 0
+  before including any Universal header, to get the no-exceptions behaviour in a build that has
+  exceptions. A throw switch set to 1 without exceptions
   is an `#error`, not a silent downgrade. `exceptions_check.hpp` has no include guard on
   purpose, so a switch defined after the first include is still caught.
 - **faithful follows the multi-double conventions.** `faithful<Real>` is the same two-part
@@ -62,8 +64,10 @@ split exactly into `Real` parts, so a float host gets them to about 100 bits.
 
 - **long double is not a reference.** The float-host tests first used `long double` as the
   reference. That passed on Linux and failed the full CI tier on MSVC and macOS ARM64, where
-  `long double` is 53 bits and cannot hold a pair such as (1, 2^-40). All float references are
-  now `dd`.
+  `long double` is 53 bits and cannot hold a float pair whose parts are more than 53 bits
+  apart, such as (1, 2^-60). The exponential, trigonometric and hyperbolic tests now use `dd`.
+  The `sqrt` test in `numeric/faithful/mathlib.cpp` still uses `long double` for
+  `faithful<float>`. It passes the full tier, but it should move to `dd` for consistency.
 - **The same assumption almost reached the library.** The trig reduction carries double limbs. A
   `static_assert` excluding `faithful<long double>` would have broken where `long double` has
   double's format. The constraint `trig_host` therefore tests the property itself: every value
@@ -71,11 +75,12 @@ split exactly into `Real` parts, so a float host gets them to about 100 bits.
   asserts `has_sin<faithful<long double>> == ldFitsDouble`.
 - **Error bounds from a budget, not a measurement.** `pow`'s first bounds were fitted to gcc's
   measurements. They failed on MSVC and then on macOS, whose random samples differ. The bound is
-  now per sample and per path, derived from the error budget:
-  - the exp/log path allows `5 + 4 g` with `g = |y log x|` (log(b) contributes 3 units, the
-    product about 1);
-  - binary powering allows `5 + |y|`.
-  The measured slopes, 2.7 (libstdc++), 3.2 (libc++) and 1.0, sit inside it.
+  now per sample: `5 + 4 g`, with `g` the measure of the path the sample takes, `|y log x|` on
+  the exp/log path and `|y|` for binary powering. The slope 4 comes from the exp/log error
+  budget (log(b) contributes 3 units, the product about 1). The estimated budget for binary
+  powering is only `5 + |y|`, but the test applies the same `5 + 4 g` to it, so at `|y| = 64` it
+  allows 261 units, not 69. The measured slopes, 2.7 (libstdc++), 3.2 (libc++) and 1.0 for
+  binary powering, sit inside it.
 - **A NaN can hide in a worst-error tracker.** `max(worst, err)` with a NaN `err` keeps the old
   worst. CodeRabbit caught it in the trig test. The tracking now keeps a NaN once seen.
 - **Infinity through renormalization.** `twoSum(inf, x)` has a NaN roundoff, which reached the
@@ -87,8 +92,9 @@ split exactly into `Real` parts, so a float host gets them to about 100 bits.
 ## Testing & Validation
 
 Each faithful test measures over 20000 to 100000 arguments per range, against `dd` for
-`faithful<float>` and `qd` for `faithful<double>`. The bound is 5 units of `epsilon()`, and the
-worst measured error is 3.9. Evaluating through `Real` misses by 10^7 to 10^51 units. Every PR
+`faithful<float>` (`long double` for `sqrt`) and `qd` for `faithful<double>`. For every function
+except `pow`, the bound is 5 units of `epsilon()`, and the worst measured error is 3.9. `pow` is
+held to the growing bound above; it measured 51 units at `|y| = 50` on [0.5, 2]. Evaluating through `Real` misses by 10^7 to 10^51 units. Every PR
 was built and run with gcc and clang locally, iterated against CodeRabbit as a draft, and merged
 after the full 11-platform tier passed.
 

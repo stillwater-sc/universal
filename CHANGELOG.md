@@ -28,19 +28,22 @@ passed its tests, because the code or the test was a stub that returned a plausi
   `minpos`/`maxpos`/`minneg`/`maxneg` set their argument.
 * **faithful without exceptions** ([#1958](https://github.com/stillwater-sc/universal/pull/1958)-[#1961](https://github.com/stillwater-sc/universal/pull/1961)) --
   with `FAITHFUL_THROW_ARITHMETIC_EXCEPTION` set, domain errors throw
+  `faithful_negative_sqrt_arg` (sqrt, [#1953](https://github.com/stillwater-sc/universal/pull/1953)),
   `faithful_negative_log_arg` or `faithful_domain_error`. Range results (inf, 0) never throw.
   `faithful<long double>` has no trigonometric functions where `long double` is wider than
   `double`: the shared reduction cannot hold it, so it gets none rather than wrong ones.
 * **dbns conversion** ([#1939](https://github.com/stillwater-sc/universal/pull/1939)) --
   conversion from double returns the nearest encoding. Multi-block configurations such as
-  `dbns<16,5>` were wrong for almost every value. `minpos`/`minneg` are `0.5^(MAX_A-1)`
-  instead of 0/NaN.
+  `dbns<16,5>` were wrong for almost every value. `minpos` is `0.5^(MAX_A-1)` instead of 0,
+  and `minneg` is `-0.5^(MAX_A-1)` instead of NaN.
 * **dbns native arithmetic** ([#1947](https://github.com/stillwater-sc/universal/pull/1947)) --
   with `NATIVE_DBNS_ARITHMETIC` defined, `*` and `/` return the nearest encoding of the exact
   result instead of a projected or wrapped one.
 * **ereal parse** ([#1938](https://github.com/stillwater-sc/universal/pull/1938)) --
   `parse()` and `operator>>` return the exact value for a decimal with a finite binary
-  expansion. `1.5` is one limb, equal to `ereal(1.5)`.
+  expansion that fits the type's limb budget. `1.5` is one limb, equal to `ereal(1.5)`. A
+  value needing more limbs than `maxlimbs`, such as `1 + 2^-53` in `ereal<1>`, is still
+  truncated.
 * **fixpnt parse** ([#1937](https://github.com/stillwater-sc/universal/pull/1937)) -- with
   Saturate, a negative decimal at the bottom of the range reads as maxneg (`-8` in
   `fixpnt<8,4>`), not `-maxpos`.
@@ -61,12 +64,15 @@ passed its tests, because the code or the test was a stub that returned a plausi
   | truncation | `floor`, `ceil`, `trunc`, `round`, `fmod` | exact; `fmod` in a Shewchuk expansion | exact |
   | exponential | `exp`, `exp2`, `exp10`, `expm1`, `log`, `log2`, `log10`, `log1p` | exact `x - m ln2` reduction, `/512` Taylor kernel; `atanh` series for log | 2.9 / 3.7 |
   | trigonometric | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2` | the shared Payne-Hanek reduction ([#1723](https://github.com/stillwater-sc/universal/issues/1723)), to `max()` | 3.6 / 3.5 |
-  | hyperbolic, power | `sinh` ... `atanh`, `pow`, `cbrt`, `hypot` | non-cancelling forms over `expm1`/`log1p`; `pow` reduces `y log b` exactly | 3.6 / 3.9 |
+  | hyperbolic | `sinh` ... `atanh`, `cbrt`, `hypot` | non-cancelling forms over `expm1`/`log1p`; `cbrt` with two Newton steps | 3.6 / 3.9 |
+  | power | `pow` | binary powering for integer `\|y\| <= 64`; otherwise `y log b` reduced exactly | grows: see below |
 
   The errors are in units of `epsilon()`, measured against `dd` for `faithful<float>` and `qd`
-  for `faithful<double>`. `pow`'s error grows with `|y log x|` (about `5 + 4|y log x|`), or
-  with `|y|` for integer exponents up to 64. That is a limit of pair precision, which dd
-  shares. Every test includes a mutation check: evaluating through `Real` must fail it.
+  for `faithful<double>`. `pow` is not bounded by 5 units. Its error is a few units while
+  `|y log x| <= 1` and grows linearly beyond: the error budget is about `5 + 4|y log x|` on
+  the exp/log path (51 units measured at `|y| = 50` on [0.5, 2]) and `5 + |y|` for binary
+  powering. The test holds every `pow` sample to `5 + 4 g`, with `g` the measure of its path.
+  That growth is a limit of pair precision, which dd shares. Every test includes a mutation check: evaluating through `Real` must fail it.
   `math/constants.hpp` holds ln 2, ln 10 and pi/2 as four doubles, split exactly into `Real`
   parts.
 
