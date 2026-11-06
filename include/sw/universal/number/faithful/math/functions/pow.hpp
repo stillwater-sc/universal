@@ -118,6 +118,7 @@ inline faithful<FloatingPointType> pow(const faithful<FloatingPointType>& x, con
 	F r;
 	if (is_integer(y) && std::fabs(Real(y)) <= Real(64)) {
 		r = faithful_detail::ipow(ax, static_cast<int>(Real(y)));
+		if (r.isinf() || r.iszero()) errno = ERANGE;   // overflow, or underflow of a nonzero base
 	}
 	else {
 		static const F ln2 = faithful_detail::pair<Real>(faithful_detail::constants::ln2);
@@ -157,10 +158,12 @@ inline faithful<FloatingPointType> pow(const faithful<FloatingPointType>& x, con
 			r = zero;
 		}
 		else {
-			const F e = exp(w);
-			const int ni = static_cast<int>(nv);
-			r = faithful_detail::scale2(faithful_detail::scale2(e, ni / 2), ni - ni / 2);
-			if (r.isinf()) errno = ERANGE;
+			// reduce w itself, w = m ln2 + r exactly, and apply 2^(m + n) once at the end: exp(w) on
+			// its own overflows or underflows whenever |w| is past exp's range, though 2^n brings the
+			// result back, as for pow(0.7f, 270) = 2^-270 exp(270 log(1.4)) with exp(90.8) > FLT_MAX
+			const Real m = std::floor(Real(w) / ln2.high() + Real(0.5));
+			r = faithful_detail::exp_reduced(faithful_detail::reduce_ln2(w, m), m + nv);
+			if (r.isinf() || r.iszero()) errno = ERANGE;
 		}
 	}
 	return negate ? -r : r;

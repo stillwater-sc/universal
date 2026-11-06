@@ -56,7 +56,11 @@ inline faithful<FloatingPointType> sinh(const faithful<FloatingPointType>& x) {
 	using F = faithful<Real>;
 	if (x.isnan() || x.isinf() || x.iszero()) return x;
 	const F ax = abs(x);
-	static const Real overflowAt = std::log(std::numeric_limits<Real>::max());
+	// below exp's overflow point with margin: std::log(max) rounded to Real can lie above the true
+	// ln(max), 88.7228393555 against 88.7228390521 for float, where exp overflows and the direct
+	// forms give NaN or an unflagged inf. Past this point e^-|x| is far below epsilon(), so the
+	// scaled form loses nothing
+	static const Real overflowAt = std::log(std::numeric_limits<Real>::max()) - Real(1);
 	F r;
 	if (Real(ax) > overflowAt) {
 		r = faithful_detail::half_exp_large(ax);
@@ -77,7 +81,11 @@ inline faithful<FloatingPointType> cosh(const faithful<FloatingPointType>& x) {
 	if (x.isinf()) return abs(x);
 	if (x.iszero()) return F(Real(1));
 	const F ax = abs(x);
-	static const Real overflowAt = std::log(std::numeric_limits<Real>::max());
+	// below exp's overflow point with margin: std::log(max) rounded to Real can lie above the true
+	// ln(max), 88.7228393555 against 88.7228390521 for float, where exp overflows and the direct
+	// forms give NaN or an unflagged inf. Past this point e^-|x| is far below epsilon(), so the
+	// scaled form loses nothing
+	static const Real overflowAt = std::log(std::numeric_limits<Real>::max()) - Real(1);
 	if (Real(ax) > overflowAt) return faithful_detail::half_exp_large(ax);
 	const F e = exp(ax);
 	return faithful_detail::scale2(e + F(Real(1)) / e, -1);

@@ -161,6 +161,18 @@ int VerifyAccuracy(double bound, double powBound) {
 	powRange("pow x in [0.5, 2], |y| <= 1",   Real(0.5), Real(2),   Real(-1),  Real(1),  bound);
 	powRange("pow x in [0.5, 2], |y| <= 50",  Real(0.5), Real(2),   Real(-50), Real(50), bound + powBound * 50 * 0.6931);
 	powRange("pow x in [1e-6, 1e6], |y| <= 2", Real(1e-6), Real(1e6), Real(-2), Real(2),  bound);
+	// integer exponents beyond +-64: the exp/log path, with |y log x| up to about 51
+	{
+		double worst = 0.0;
+		std::uniform_int_distribution<int> n(-1000, 1000);
+		for (int i = 0; i < N; ++i) {
+			const F x = randomIn<Real>(rng, Real(0.95), Real(1.05));
+			const F y(Real(n(rng)));
+			const double u = Ref::rel(Ref::value(pow(x, y)), Ref::pow(Ref::value(x), Ref::value(y))) / std::ldexp(1.0, Ref::epsExp);
+			if (std::isnan(u) ? !std::isnan(worst) : (!std::isnan(worst) && u > worst)) { worst = u; at = x; }   // a NaN, once seen, sticks
+		}
+		report("pow integer y in [-1000, 1000]", worst, bound + powBound * 1000 * 0.0513);
+	}
 	// integer exponents: binary powering
 	{
 		double worst = 0.0;
@@ -198,6 +210,13 @@ int VerifySpecialValues(bool reportTestCases) {
 	check(isnan(atanh(two)) && errno == EDOM, "atanh(2) = NaN with EDOM");
 	errno = 0;
 	check(isinf(cosh(F(RL::max()))) && errno == ERANGE, "cosh overflow is inf with ERANGE");
+	// sinh and cosh at std::log(max) rounded to Real, which for float lies above the true ln(max)
+	{
+		const F x(std::log(RL::max()));
+		errno = 0;
+		const F s = sinh(x), c = cosh(x);
+		check(isfinite(s) && isfinite(c) && errno == 0, "sinh and cosh at log(max) are finite, without ERANGE");
+	}
 	// sinh just below its overflow point: e^x overflows, sinh(x) does not
 	{
 		const F x(std::log(RL::max()) + Real(0.5));
@@ -232,6 +251,15 @@ int VerifySpecialValues(bool reportTestCases) {
 	errno = 0;
 	check(isinf(pow(F(Real(10)), F(Real(1.0e6)))) && errno == ERANGE, "pow overflow is inf with ERANGE");
 	check(iszero(pow(F(Real(10)), F(Real(-1.0e6)))), "pow underflow is 0");
+	errno = 0;
+	check(isinf(pow(F(Real(1.0e10)), F(Real(64)))) && errno == ERANGE, "pow overflow with an integer y is inf with ERANGE");
+	{
+		// exp(y log(b)) alone is past exp's range, and 2^n brings the result back: 0.7^270 for
+		// float, 0.7^2000 for double, both nonzero
+		const F y(Real(std::numeric_limits<Real>::digits == 24 ? 270 : 2000));
+		const F r = pow(F(Real(0.7)), y);
+		check(isfinite(r) && !iszero(r), "pow(0.7, y) with exp(w) past exp's range is finite and nonzero");
+	}
 	return fails;
 }
 
