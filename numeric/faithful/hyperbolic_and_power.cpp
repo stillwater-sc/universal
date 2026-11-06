@@ -298,10 +298,13 @@ try {
 	// the bounds, in units of epsilon(). Measured worst over 20000 arguments per range, gcc and
 	// clang: 3.6 for faithful<float> and 3.9 for faithful<double>, except pow, whose error grows
 	// with |y log x| (or |y| for binary powering) as pow.hpp documents. Each pow sample is held to
-	// bound + powBound * that. The measured slope is at most 2.7 on the exp/log path and 1.0 for
-	// binary powering, gcc and clang; powBound = 3 leaves room for other platforms' samples. Through the FloatingPointType sinh and cbrt are 10^7 to
+	// bound + powBound * that. powBound comes from the error budget of the exp/log path, not from a
+	// measurement: log(b) is good to about 3 units of its own magnitude (exponential.cpp measures
+	// 2.7), and the pair product y log(b) adds about 1, both scaling with |y log x|, so the slope can
+	// approach 4. Measured: at most 2.7 with libstdc++'s samples and 3.2 with libc++'s (macOS) on
+	// the exp/log path, and 1.0 for binary powering. Through the FloatingPointType sinh and cbrt are 10^7 to
 	// 10^18 units off, so the test fails them.
-	constexpr double bound = 5.0, powBound = 3.0;
+	constexpr double bound = 5.0, powBound = 4.0;
 	nrOfFailedTestCases += ReportTestResult(VerifyAccuracy<FloatRef>(bound, powBound), "faithful<float>", "accuracy");
 	nrOfFailedTestCases += ReportTestResult(VerifyAccuracy<DoubleRef>(bound, powBound), "faithful<double>", "accuracy");
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialValues<float>(reportTestCases), "faithful<float>", "special values");
