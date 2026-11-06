@@ -26,7 +26,7 @@ the integer arithmetic can be configured to:
 - throw exceptions on arithmetic
 - throw exceptions on encoding errors for Whole and Natural Numbers
 
-you need the exception types defined, but you have the option to throw_or_abort(them
+you need the exception types defined, but you have the option to throw them
  */
 // INTEGER_ENABLE_LITERALS / INTEGER_THROW_ARITHMETIC_EXCEPTION: the defaults live
 // HERE, beside the #if blocks that test them, rather than in the integer.hpp
@@ -61,7 +61,7 @@ you need the exception types defined, but you have the option to throw_or_abort(
 #include <universal/number/integer/exceptions.hpp>
 
  // composition types used by integer
-#include <universal/internal/blocktriple/blocktriple_fwd.hpp>  // normalize() only NAMES blocktriple);
+#include <universal/internal/blocktriple/blocktriple_fwd.hpp>  // normalize() only NAMES blocktriple;
                                                               // it is a member template, so the definition
                                                               // is needed only where it is called (#1334)
 
