@@ -35,7 +35,9 @@ inline faithful<FloatingPointType> sqrt(const faithful<FloatingPointType>& a) {
 	using Real = FloatingPointType;
 	using F = faithful<Real>;
 	if (a.isnan()) return a;
-	if (a.iszero()) return F(a.high(), Real(0));     // sqrt(+-0) = +-0
+	// sqrt(+-0) = +-0. A pair whose sum cancels, such as (1, -1), is +0: only a value part that is
+	// itself a zero carries its sign.
+	if (a.iszero()) return F(a.high() == Real(0) ? a.high() : Real(0), Real(0));
 	if (a.sign()) {
 #if FAITHFUL_THROW_ARITHMETIC_EXCEPTION
 		throw faithful_negative_sqrt_arg();

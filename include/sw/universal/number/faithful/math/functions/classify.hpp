@@ -52,8 +52,10 @@ template<typename FloatingPointType>
 inline bool signbit(const faithful<FloatingPointType>& a) {
 	if constexpr (std::is_floating_point_v<FloatingPointType>) {
 		const FloatingPointType v = FloatingPointType(a);
-		// a zero sum keeps the sign of its value part: (-0, 0) is -0, while (1, -1) sums to +0
-		return std::signbit(v == FloatingPointType(0) ? a.high() : v);
+		// A zero sum is -0 only when the value part is itself -0: faithful(-0.0) is the pair (-0, +0).
+		// A sum that cancels, (1, -1) or (-1, 1), is +0, as the IEEE sum is.
+		if (v == FloatingPointType(0)) return a.high() == FloatingPointType(0) && std::signbit(a.high());
+		return std::signbit(v);
 	}
 	else {
 		return a.sign();

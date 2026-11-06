@@ -44,7 +44,9 @@ int VerifyClassification(bool reportTestCases) {
 	// signbit, copysign, fabs
 	check(!signbit(one) && signbit(-one) && signbit(nzero) && !signbit(zero), "signbit, including -0");
 	check(signbit(F(Real(1), Real(-2))) && !signbit(F(Real(-1), Real(2))), "signbit of the represented value");
-	check(!signbit(F(Real(1), Real(-1))), "(1, -1) sums to +0");
+	check(!signbit(F(Real(1), Real(-1))) && !signbit(F(Real(-1), Real(1))), "(1, -1) and (-1, 1) sum to +0");
+	check(signbit(F(Real(-0.0), Real(-0.0))) && signbit(F(Real(-0.0), Real(0))), "(-0, -0) and (-0, +0) are -0");
+	check(!signbit(copysign(F(Real(2)), F(Real(-1), Real(1)))), "copysign with a cancelling pair takes +");
 	check(copysign(F(Real(2)), -one) == F(Real(-2)) && copysign(F(Real(-2)), one) == F(Real(2)), "copysign");
 	check(signbit(copysign(zero, -one)) && !signbit(copysign(nzero, one)), "copysign of zeros");
 	check(fabs(F(Real(-2.5))) == F(Real(2.5)) && fabs(F(Real(1), Real(-2))) == F(Real(1)), "fabs");
@@ -138,6 +140,11 @@ int VerifySqrt(bool reportTestCases, double bound, double& worst) {
 	};
 	check(sqrt(F(Real(0))) == F(Real(0)) && !signbit(sqrt(F(Real(0)))), "sqrt(+0) = +0");
 	check(iszero(sqrt(F(Real(-0.0)))) && signbit(sqrt(F(Real(-0.0)))), "sqrt(-0) = -0");
+	{
+		const F c1 = sqrt(F(Real(1), Real(-1))), c2 = sqrt(F(Real(-1), Real(1)));
+		check(c1.high() == Real(0) && c1.low() == Real(0) && !signbit(c1), "sqrt((1, -1)) = +0");
+		check(c2.high() == Real(0) && c2.low() == Real(0) && !signbit(c2), "sqrt((-1, 1)) = +0");
+	}
 	check(isinf(sqrt(F(RL::infinity()))) && !signbit(sqrt(F(RL::infinity()))), "sqrt(+inf) = +inf");
 	check(isnan(sqrt(F(RL::quiet_NaN()))), "sqrt(NaN) = NaN");
 	errno = 0;
