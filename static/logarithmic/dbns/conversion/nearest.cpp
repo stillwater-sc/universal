@@ -309,6 +309,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<34,  1, std::uint64_t>(reportTestCases), "dbns<34,1,uint64>", "one block, 32-bit field");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<48, 20, std::uint64_t>(reportTestCases), "dbns<48,20,uint64>", "one block, 47 field bits");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<40, 30, std::uint64_t>(reportTestCases), "dbns<40,30,uint64>", "one block, 30-bit first field");
+	// windows of the second base exponents wider than exhaustive_search_limit (4096), searched
+	// with argmin_frac rather than scanned (#1973): 41k, 32k and, above, 660k candidates
+	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<36, 16, std::uint64_t>(reportTestCases), "dbns<36,16,uint64>", "41k-candidate window");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideFields<40, 24, std::uint64_t>(reportTestCases), "dbns<40,24,uint64>", "32k-candidate window");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits< 8, 3, std::uint8_t >(reportTestCases), "dbns<8,3,uint8>", "minpos");
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits<10, 4, std::uint8_t >(reportTestCases), "dbns<10,4,uint8>", "minpos");
