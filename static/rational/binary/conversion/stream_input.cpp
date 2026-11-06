@@ -38,6 +38,8 @@ const std::vector<Case> cases16 = {
 	{ "2.",         true,   2.0 },
 	{ "0.1",        true,   0.1 },
 	{ "2.5e-3",     true,   0.0025 },
+	{ "-1e1",       true, -10.0 },     // scale_by_ten on a negative value
+	{ "-3.5e2",     true, -350.0 },
 	{ "1E2",        true, 100.0 },
 	{ "1.25e+1",    true,  12.5 },
 	{ "0e-99999",   true,   0.0 },
@@ -68,6 +70,9 @@ const std::vector<Case> cases8 = {
 	{ "-12.8e1",    true, -128.0 },
 	{ "-128/2",     true,  -64.0 },
 	{ "-128/128",   false,   0.0 },    // the denominator is unsigned, and 128 does not fit
+	{ "-1.2e2",     true, -120.0 },    // scale_by_ten on a negative value
+	{ "-1.3e2",     false,   0.0 },    // -130 wraps past zero in the scaling
+	{ "-6.4e1",     true,  -64.0 },
 	{ "128",        false,   0.0 },
 	{ "1.27e2",     true,  127.0 },
 	{ "-0.125",     true,  -0.125 },   // 125 / 10^3 reduces to 1/8 as it goes
