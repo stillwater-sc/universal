@@ -8,7 +8,8 @@
 // With the switch set, a domain error throws instead of returning NaN with EDOM (#1955): sqrt of a
 // negative throws faithful_negative_sqrt_arg, log, log2, log10 and log1p of an argument outside
 // their domain throw faithful_negative_log_arg, and sin, cos and tan of an infinity and asin and
-// acos beyond [-1, 1] throw faithful_domain_error (#1956). A range result, inf or 0, is a value, not an
+// acos beyond [-1, 1], acosh below 1, atanh beyond +-1 and pow of a negative base with a
+// non-integer exponent throw faithful_domain_error (#1956, #1957). A range result, inf or 0, is a value, not an
 // error, and does not throw. The default, non-throwing configuration is tested in mathlib.cpp and
 // exponential.cpp.
 #include <universal/utility/directives.hpp>
@@ -49,6 +50,9 @@ int VerifyThrows(bool reportTestCases) {
 	throwsAs([] { return tan(F(std::numeric_limits<Real>::infinity())); }, faithful_domain_error{"tan"}, "tan(inf)");
 	throwsAs([] { return asin(F(Real(2))); }, faithful_domain_error{"asin"}, "asin(2)");
 	throwsAs([] { return acos(F(Real(-2))); }, faithful_domain_error{"acos"}, "acos(-2)");
+	throwsAs([] { return acosh(F(Real(0.5))); }, faithful_domain_error{"acosh"}, "acosh(0.5)");
+	throwsAs([] { return atanh(F(Real(2))); }, faithful_domain_error{"atanh"}, "atanh(2)");
+	throwsAs([] { return pow(F(Real(-2)), F(Real(0.5))); }, faithful_domain_error{"pow"}, "pow(-2, 0.5)");
 	// the exception is a faithful arithmetic exception, so a caller can catch the family
 	{
 		bool caught = false;
@@ -63,6 +67,9 @@ int VerifyThrows(bool reportTestCases) {
 		check(isinf(exp(F(std::numeric_limits<Real>::max()))), "exp overflow = inf");
 		check(iszero(exp(F(-std::numeric_limits<Real>::max()))), "exp underflow = 0");
 		check(log(F(Real(1))) == F(Real(0)), "log(1) = 0");
+		check(isinf(atanh(F(Real(1)))), "atanh(1) = inf");
+		check(isinf(pow(F(Real(0)), F(Real(-1)))), "pow(0, -1) = inf");
+		check(isinf(pow(F(Real(10)), F(Real(1.0e6)))), "pow overflow = inf");
 	}
 	catch (...) {
 		check(false, "a range result does not throw");

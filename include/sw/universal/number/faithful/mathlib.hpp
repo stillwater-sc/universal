@@ -20,10 +20,14 @@
 //   logarithm.hpp log, log2, log10, log1p, compensated (#1955)
 //   trigonometry.hpp sin, cos, tan, asin, acos, atan, atan2, compensated, with the exact
 //                 Payne-Hanek reduction (#1956)
+//   hyperbolic.hpp sinh, cosh, tanh, asinh, acosh, atanh, compensated (#1957)
+//   pow.hpp       pow: a few units while |y log x| <= 1, growing linearly beyond (#1957)
+//   cbrt.hpp      cbrt, compensated (#1957)
+//   hypot.hpp     hypot, without overflow or underflow (#1957)
 //
-// What it does not have yet (#1952): the hyperbolic functions, pow, cbrt, hypot. They
-// cannot evaluate through the FloatingPointType, which would throw away half the pair's
-// precision, so they need compensated algorithms of their own, as dd's in dd/math/functions.
+// The compensated functions evaluate in faithful arithmetic, not through the FloatingPointType,
+// which would throw away half the pair's precision (#1952). Each is measured against a wider
+// reference in numeric/faithful/, and its worst error is in its header.
 #include <universal/number/faithful/math/functions/classify.hpp>
 #include <universal/number/faithful/math/functions/minmax.hpp>
 #include <universal/number/faithful/math/functions/sqrt.hpp>
@@ -32,3 +36,7 @@
 #include <universal/number/faithful/math/functions/exponent.hpp>
 #include <universal/number/faithful/math/functions/logarithm.hpp>
 #include <universal/number/faithful/math/functions/trigonometry.hpp>
+#include <universal/number/faithful/math/functions/hyperbolic.hpp>
+#include <universal/number/faithful/math/functions/pow.hpp>
+#include <universal/number/faithful/math/functions/cbrt.hpp>
+#include <universal/number/faithful/math/functions/hypot.hpp>
