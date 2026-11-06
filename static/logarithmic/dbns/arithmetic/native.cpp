@@ -122,9 +122,9 @@ int VerifyNativeMulDiv(bool reportTestCases) {
 
 // The configurations of conversion/nearest.cpp, with fields up to 32 bits wide, where an exhaustive
 // pass is out of reach: random operand pairs, checked against an oracle that scans the smaller field
-// in full for the pair nearest the exact log2, in long double. The exponents of a product can reach
-// 2^33, where the log2 itself is only as exact as a double carries it, so the tolerance scales with
-// their size.
+// in full for the pair nearest the exact result. A product's exponents can reach 2^33, so distances
+// are taken from exponent differences, |(b - b')*log2(3) - (a - a')|, which stay small and exact
+// enough for a tight bound that still accepts a tie (CodeRabbit on PR #1947).
 template<unsigned nbits, unsigned fbbits, typename bt>
 int VerifyNativeSampled(int samples, bool reportTestCases) {
 	using namespace sw::universal;
@@ -132,12 +132,17 @@ int VerifyNativeSampled(int samples, bool reportTestCases) {
 	const long double l3 = 1.5849625007211561814537389439478L;
 	const long long maxA = static_cast<long long>(Dbns::MAX_A), maxB = static_cast<long long>(Dbns::MAX_B);
 	auto pairLog = [&](long long a, long long b) { return static_cast<long double>(b) * l3 - static_cast<long double>(a); };
-	// the least log2 distance from L to an encodable pair, the zero pattern excluded
-	auto oracle = [&](long double L) {
+	// the log2 distance between the exact pair (a, b) and a candidate (ca, cb), from the differences
+	auto distance = [&](long long a, long long b, long long ca, long long cb) {
+		return std::fabs(static_cast<long double>(b - cb) * l3 - static_cast<long double>(a - ca));
+	};
+	// the least log2 distance from the exact pair (a, b) to an encodable pair, the zero pattern excluded
+	auto oracle = [&](long long ea, long long eb) {
+		const long double L = pairLog(ea, eb);
 		long double best = 1.0e300L;
 		auto consider = [&](long long a, long long b) {
 			if (a < 0 || a > maxA || b < 0 || b > maxB || (a == maxA && b == 0)) return;
-			best = std::fmin(best, std::fabs(L - pairLog(a, b)));
+			best = std::fmin(best, distance(ea, eb, a, b));
 		};
 		if (maxA <= maxB) {
 			for (long long a = 0; a <= maxA; ++a) {
@@ -188,9 +193,8 @@ int VerifyNativeSampled(int samples, bool reportTestCases) {
 				ok = r.iszero();
 			}
 			else {
-				const long double tol = 1.0e-9L + 1.0e-15L * (std::fabs(static_cast<long double>(a)) + 1.6L * std::fabs(static_cast<long double>(b)));
 				ok = !r.iszero() && !r.isnan() && r.sign() == negative
-				  && std::fabs(L - pairLog(r.extractExponent(0), r.extractExponent(1))) <= oracle(L) + tol;
+				  && distance(a, b, r.extractExponent(0), r.extractExponent(1)) <= oracle(a, b) + 1.0e-12L;
 			}
 			if (!ok) {
 				++nrOfFailedTests;
@@ -255,6 +259,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<34,  1, std::uint64_t>(2000, reportTestCases), "dbns<34,1,uint64>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<40, 30, std::uint64_t>(2000, reportTestCases), "dbns<40,30,uint64>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<48, 20, std::uint64_t>(  20, reportTestCases), "dbns<48,20,uint64>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<10,  6, std::uint8_t >(2000, reportTestCases), "dbns<10,6>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<12,  3, std::uint8_t >(2000, reportTestCases), "dbns<12,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<12,  3, std::uint16_t>(2000, reportTestCases), "dbns<12,3,uint16>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<12,  5, std::uint16_t>(2000, reportTestCases), "dbns<12,5,uint16>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<16,  8, std::uint16_t>(2000, reportTestCases), "dbns<16,8,uint16>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeSampled<31, 15, std::uint32_t>( 200, reportTestCases), "dbns<31,15,uint32>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
