@@ -37,20 +37,43 @@ inline faithful<FloatingPointType>& convert(const triple<nbits, BlockType>& v, f
 	return p;
 }
 
+namespace faithful_detail {
+	// 2^e in Real, exactly, by repeated doubling or halving: constexpr where std::ldexp is not.
+	// Exact for every e from the smallest subnormal exponent to the largest finite one.
+	template<typename Real> constexpr Real pow2(int e) {
+		Real r(1);
+		if (e >= 0) for (int i = 0; i < e; ++i) r *= Real(2);
+		else        for (int i = 0; i < -e; ++i) r /= Real(2);
+		return r;
+	}
+}
+
+// The extremes of a faithful<Real> (#1949). A faithful is a value of Real plus an error, so the
+// smallest positive value is Real's subnormal minimum with no error. The largest is Real's maximum
+// plus the largest error that does not round the sum up to infinity: max * 2^-(digits + 1), just
+// below half an ulp of max. dd's max() is built the same way (#1882). These used to return their
+// argument unchanged, a default zero.
 template<typename FloatingPointType>
-faithful<FloatingPointType>& minpos(faithful<FloatingPointType>& lminpos) {
+constexpr faithful<FloatingPointType>& minpos(faithful<FloatingPointType>& lminpos) {
+	lminpos = faithful<FloatingPointType>(std::numeric_limits<FloatingPointType>::denorm_min(), FloatingPointType(0));
 	return lminpos;
 }
 template<typename FloatingPointType>
-faithful<FloatingPointType>& maxpos(faithful<FloatingPointType>& lmaxpos) {
+constexpr faithful<FloatingPointType>& maxpos(faithful<FloatingPointType>& lmaxpos) {
+	constexpr FloatingPointType top = std::numeric_limits<FloatingPointType>::max();
+	lmaxpos = faithful<FloatingPointType>(top, top * faithful_detail::pow2<FloatingPointType>(-(std::numeric_limits<FloatingPointType>::digits + 1)));
 	return lmaxpos;
 }
 template<typename FloatingPointType>
-faithful<FloatingPointType>& minneg(faithful<FloatingPointType>& lminneg) {
+constexpr faithful<FloatingPointType>& minneg(faithful<FloatingPointType>& lminneg) {
+	faithful<FloatingPointType> p;
+	lminneg = -minpos(p);
 	return lminneg;
 }
 template<typename FloatingPointType>
-faithful<FloatingPointType>& maxneg(faithful<FloatingPointType>& lmaxneg) {
+constexpr faithful<FloatingPointType>& maxneg(faithful<FloatingPointType>& lmaxneg) {
+	faithful<FloatingPointType> p;
+	lmaxneg = -maxpos(p);
 	return lmaxneg;
 }
 
@@ -77,14 +100,14 @@ namespace faithful_detail {
 template<typename FloatingPointType = double>
 class faithful {
 public:
-	faithful() : value{ 0 }, error{ 0 } {}
-	faithful(FloatingPointType v, FloatingPointType e) : value{ v }, error{ e } {}
+	constexpr faithful() : value{ 0 }, error{ 0 } {}
+	constexpr faithful(FloatingPointType v, FloatingPointType e) : value{ v }, error{ e } {}
 
-	faithful(const faithful&) = default;
-	faithful(faithful&&) = default;
+	constexpr faithful(const faithful&) = default;
+	constexpr faithful(faithful&&) = default;
 
-	faithful& operator=(const faithful&) = default;
-	faithful& operator=(faithful&&) = default;
+	constexpr faithful& operator=(const faithful&) = default;
+	constexpr faithful& operator=(faithful&&) = default;
 
 	// conversion from compensated to faithfully rounded
 	explicit operator FloatingPointType() const { return value + error; }
@@ -113,7 +136,7 @@ public:
 	// arithmetic operators
 	// prefix operator: the negation, leaving *this unchanged. It used to assign to the members of
 	// a const object, so -x did not compile (#1930).
-	faithful operator-() const {
+	constexpr faithful operator-() const {
 		return faithful(-value, -error);
 	}
 
@@ -207,8 +230,8 @@ public:
 	inline bool sign() const { return rounded() < FloatingPointType(0); }
 	inline int scale() const { return sw::universal::scale(rounded()); }
 	// the two parts: the rounded value and its compensation, as dd_cascade names them
-	inline FloatingPointType high() const { return value; }
-	inline FloatingPointType low()  const { return error; }
+	constexpr FloatingPointType high() const { return value; }
+	constexpr FloatingPointType low()  const { return error; }
 
 private:
 	FloatingPointType value;

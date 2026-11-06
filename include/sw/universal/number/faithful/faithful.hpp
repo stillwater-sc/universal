@@ -46,12 +46,13 @@
 ///     core.hpp          arithmetic, no streams
 ///     manipulators.hpp  type_tag() and components(), the string half
 ///     iostream.hpp      operator<< / operator>>
+///     attributes.hpp    sign(), scale() and faithful_range()
 #include <universal/number/faithful/core.hpp>
 #include <universal/number/faithful/manipulators.hpp>
 #include <universal/number/faithful/iostream.hpp>
 
 // useful functions to work with faithful numbers
-//#include <universal/number/faithful/attributes.hpp>
+#include <universal/number/faithful/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
