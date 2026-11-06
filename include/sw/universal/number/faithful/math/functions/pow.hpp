@@ -19,7 +19,10 @@
 // about 5 + 4 |y log x| units on the exp/log path, where log(b) contributes up to 3 units of its
 // own magnitude and the product y log(b) about 1 (measured slopes 2.7 and 3.2 on libstdc++'s and
 // libc++'s samples; 51 units at |y| = 50 on [0.5, 2]), and about 5 + |y| units for binary
-// powering (58 at |y| = 64). This is a
+// powering (58 at |y| = 64). These estimates hold for results at or above
+// numeric_limits<faithful<Real>>::min(), the full-precision floor (2^-102 for float, 2^-969 for
+// double). Below it the error part is subnormal and the pair holds fewer digits, down to the one
+// bit of denorm_min(): pow(2, -148.5) for float is 1.414 denorm_min(), 29% from its nearest pair. This is a
 // limit of pair precision, not of the algorithm: exp(w) needs w to an absolute epsilon(), and a
 // pair y log(b) holds it to a relative one. dd's pow has the same limit. A caller that needs
 // x^y for a large y to full precision needs a wider type for the logarithm.
