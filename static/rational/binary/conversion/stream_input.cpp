@@ -62,6 +62,12 @@ const std::vector<Case> cases16 = {
 const std::vector<Case> cases8 = {
 	{ "127",        true,  127.0 },
 	{ "-127",       true, -127.0 },
+	{ "-128",       true, -128.0 },    // the type minimum: its magnitude does not fit (#1973)
+	{ "-129",       false,   0.0 },
+	{ "-1.28e2",    true, -128.0 },
+	{ "-12.8e1",    true, -128.0 },
+	{ "-128/2",     true,  -64.0 },
+	{ "-128/128",   false,   0.0 },    // the denominator is unsigned, and 128 does not fit
 	{ "128",        false,   0.0 },
 	{ "1.27e2",     true,  127.0 },
 	{ "-0.125",     true,  -0.125 },   // 125 / 10^3 reduces to 1/8 as it goes
@@ -95,12 +101,13 @@ int VerifyCases(const std::vector<Case>& cases, bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
-// every value rational<8> encodes, written as n/d, reads back as the same value
+// every value rational<8> encodes, written as n/d, reads back as the same value, down to the
+// numerator -128
 template<typename Rational>
 int VerifyRoundTrip(bool reportTestCases) {
 	using namespace sw::universal;
 	int nrOfFailedTests = 0;
-	for (int n = -127; n <= 127; ++n) {
+	for (int n = -128; n <= 127; ++n) {
 		for (int d = 1; d <= 127; ++d) {
 			Rational a;
 			a.set(n, d);
@@ -118,7 +125,7 @@ int VerifyRoundTrip(bool reportTestCases) {
 }
 
 // every integer from 0 to limit, written in decimal: the parse succeeds exactly when the value
-// fits (|v| <= maxInt), and then gives the value. The arithmetic wraps on overflow, so this is
+// fits (-maxInt - 1 <= v <= maxInt, two's complement), and then gives the value. The arithmetic wraps on overflow, so this is
 // what proves the overflow checks: 12*10 + 8 wraps to -128 in 8 bits, and undoing it with a
 // subtraction wraps back, which an earlier version of the check accepted
 template<typename Rational>
@@ -130,7 +137,7 @@ int VerifyIntegerRange(long long maxInt, long long limit, bool reportTestCases) 
 			std::string txt = (sign ? "-" : "") + std::to_string(i);
 			Rational v(0);
 			bool ok = parse(txt, v);
-			bool fits = (i <= maxInt);
+			bool fits = sign ? (i <= maxInt + 1) : (i <= maxInt);   // -128 fits in 8 bits, 128 does not
 			double expected = sign ? -double(i) : double(i);
 			if (ok != fits || (ok && double(v) != expected)) {
 				++nrOfFailedTests;
