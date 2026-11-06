@@ -262,13 +262,20 @@ int VerifySpecialValues(bool reportTestCases) {
 		const F r = pow(F(std::ldexp(Real(1), a)), F(Real(n)));
 		check(r == F(std::ldexp(Real(1), a * n)), "pow(2^a, n) with a subnormal result is exact");
 		// not a power of two: (1.5 2^c)^m, whose positive power just overflows and whose result
-		// is subnormal with 45 bits (double, about 2^-1029) or 20 bits (float, about 2^-128.5)
+		// is subnormal with 45 bits (double, about 2^-1029) or 20 bits (float, about 2^-128.5).
 		const int c = isDouble ? 20 : 5, m = isDouble ? -50 : -23;
+		// Compared at the unscaled exponent, where 1.5^m is a dd to about 2^-100 and scaling the
+		// subnormal result up by 2^(-c m) is exact: the nearest subnormal is within half a
+		// subnormal ulp, and the bound allows one, for a double rounding at a tie.
 		const F x(std::ldexp(Real(1.5), c));
-		const Real want = std::pow(Real(1.5), Real(m)) * std::ldexp(Real(1), c * m);
-		const Real got = Real(pow(x, F(Real(m))));
-		const Real tol = std::ldexp(Real(1), -8) * want;
-		check(want != Real(0) && std::fabs(got - want) <= tol, "pow(1.5 2^a, n) with a subnormal result");
+		const F rs = pow(x, F(Real(m)));
+		sw::universal::dd p(1.0);
+		for (int i = 0; i < -m; ++i) p *= sw::universal::dd(1.5);
+		const sw::universal::dd want = sw::universal::dd(1.0) / p;   // 1.5^m
+		const sw::universal::dd got = sw::universal::dd(std::ldexp(double(rs.high()), -c * m))
+		                            + sw::universal::dd(std::ldexp(double(rs.low()), -c * m));
+		const double ulp = std::ldexp(double(RL::denorm_min()), -c * m);   // a subnormal ulp, unscaled
+		check(!iszero(rs) && double(abs(got - want)) <= ulp, "pow(1.5 2^c, m) with a subnormal result is within a subnormal ulp");
 	}
 	// in range, a negative integer y is unchanged by taking the power of two out first
 	check(pow(F(Real(3)), F(Real(-4))) == F(Real(1)) / F(Real(81)), "pow(3, -4) = 1/81");
