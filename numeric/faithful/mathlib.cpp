@@ -8,10 +8,13 @@
 // Until #1950 faithful's mathlib.hpp included 14 headers from a math/ directory that did not exist,
 // so faithful had no math functions. It now has the classification and sign functions, fmin and
 // fmax, and a compensated sqrt. The sqrt is measured against references that hold more than the
-// pair's precision: long double for faithful<float>, and qd for faithful<double>.
+// pair's precision: dd for faithful<float>, and qd for faithful<double>. Not long double: on MSVC
+// and macOS ARM64 it is a 53-bit double, which rounds a pair whose parts lie more than 53 bits
+// apart, such as (1, 2^-60). dd holds every canonical faithful<float> exactly.
 #include <universal/utility/directives.hpp>
 #include <universal/number/faithful/faithful.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/dd/dd.hpp>
 #include <universal/number/qd/qd.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <cerrno>
@@ -81,10 +84,11 @@ int VerifyClassificationOverCfloat(bool reportTestCases) {
 
 // the relative error of r against the exact square root of x, in units of eps(Real)^2 / 2
 double sqrtErrorUnits(const sw::universal::faithful<float>& x, const sw::universal::faithful<float>& r) {
-	const long double xv = static_cast<long double>(x.high()) + static_cast<long double>(x.low());
-	const long double ref = std::sqrt(xv);
-	const long double got = static_cast<long double>(r.high()) + static_cast<long double>(r.low());
-	return static_cast<double>(std::fabs(got - ref) / ref) / std::ldexp(1.0, -47);
+	using sw::universal::dd;
+	const dd xv = dd(double(x.high())) + dd(double(x.low()));
+	const dd ref = sqrt(xv);
+	const dd got = dd(double(r.high())) + dd(double(r.low()));
+	return double(abs(got - ref) / ref) / std::ldexp(1.0, -47);
 }
 double sqrtErrorUnits(const sw::universal::faithful<double>& x, const sw::universal::faithful<double>& r) {
 	using sw::universal::qd;
@@ -104,7 +108,7 @@ int VerifySqrt(bool reportTestCases, double bound, double& worst) {
 	auto measure = [&](const F& x) {
 		const F r = sqrt(x);
 		const double u = sqrtErrorUnits(x, r);
-		if (u > worst) worst = u;
+		if (std::isnan(u) ? !std::isnan(worst) : (!std::isnan(worst) && u > worst)) worst = u;   // a NaN, once seen, sticks
 		if (u <= bound) return;
 		++fails;
 		if (reportTestCases && reported++ < 8) std::cerr << "FAIL " << type_tag(F()) << " sqrt" << x << " = " << r << ", " << u << " units\n";
