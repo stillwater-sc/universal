@@ -33,9 +33,18 @@ namespace sw { namespace universal {
 // incur a benign extra rounding in the double intermediate before the areal rounding.
 //
 // Sub-issue of #1189 (universal fma). Relates to #1194.
+//
+// An inexact input carries over: double(x) of an areal with its ubit set is the lower end of its
+// interval, so the fused result of those values is marked inexact as well. fma ignored the input
+// ubits: fma(areal<16,5>(0.1f), 1, 0) was exact while 0.1 * 1 + 0 was not (#1970). Like + - * /,
+// this flags the result inexact; it does not promise that the result's interval encloses the
+// exact interval result (see areal_impl.hpp).
 template<unsigned nbits, unsigned es, typename bt>
 areal<nbits, es, bt> fma(const areal<nbits, es, bt>& a, const areal<nbits, es, bt>& b, const areal<nbits, es, bt>& c) {
-	return areal<nbits, es, bt>(std::fma(double(a), double(b), double(c)));
+	areal<nbits, es, bt> r(std::fma(double(a), double(b), double(c)));
+	const bool inexactInput = (a.at(0) && !a.isnan() && !a.isinf()) || (b.at(0) && !b.isnan() && !b.isinf()) || (c.at(0) && !c.isnan() && !c.isinf());
+	if (inexactInput && !r.isnan() && !r.isinf()) r.set(0);
+	return r;
 }
 
 }} // namespace sw::universal

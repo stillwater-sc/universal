@@ -99,11 +99,15 @@ namespace {
 		using namespace sw::universal;
 		int nrFailed = 0;
 
-		// areal<32,8> and areal<64,11> carry binary32's and binary64's field widths
+		// areal<32,8> and areal<64,11> have binary32's and binary64's sign and exponent fields, but
+		// the ubit takes one fraction bit: their exact values have 23 and 52 significant bits, and
+		// the ubit is not a digit (#1970). digits10 agrees with the native type in both. max_digits10
+		// agrees for areal<64,11> (17), but areal<32,8> needs only 8 decimal digits to tell its 23-bit
+		// values apart, where float needs 9.
 		if (std::numeric_limits<areal<32, 8>>::digits10 != std::numeric_limits<float>::digits10
-		 || std::numeric_limits<areal<32, 8>>::max_digits10 != std::numeric_limits<float>::max_digits10) {
+		 || std::numeric_limits<areal<32, 8>>::max_digits10 != 8) {
 			++nrFailed;
-			if (reportTestCases) std::cerr << "areal<32,8> disagrees with native float\n";
+			if (reportTestCases) std::cerr << "areal<32,8> digits10/max_digits10 are not 6/8\n";
 		}
 		if (std::numeric_limits<areal<64, 11>>::digits10 != std::numeric_limits<double>::digits10
 		 || std::numeric_limits<areal<64, 11>>::max_digits10 != std::numeric_limits<double>::max_digits10) {
@@ -326,7 +330,7 @@ try {
 #if MANUAL_TESTING
 
 	// one of each shape, so manual mode exercises both formulas and the native check
-	nrOfFailedTestCases += VerifyFloatDigits<areal<32, 8>>("areal<32,8>", 24, 6, 9, reportTestCases);
+	nrOfFailedTestCases += VerifyFloatDigits<areal<32, 8>>("areal<32,8>", 23, 6, 8, reportTestCases);
 	nrOfFailedTestCases += VerifyIntegerDigits<integer<32>>("integer<32>", 31, 9, reportTestCases);
 	nrOfFailedTestCases += VerifyAgreementWithNative(reportTestCases);
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -335,15 +339,16 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	// areal: digits = nbits - es, a faithful float with IEEE field widths
+	// areal: digits = fbits + 1 = nbits - 1 - es, the significand of an exact value; the ubit is
+	// not a digit (#1970), so each has one digit fewer than the IEEE format of its field widths
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyFloatDigits<areal<16, 5>>("areal<16,5>", 11, 3, 5, reportTestCases),
+		VerifyFloatDigits<areal<16, 5>>("areal<16,5>", 10, 2, 5, reportTestCases),
 		test_tag, "areal<16,5>");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyFloatDigits<areal<32, 8>>("areal<32,8>", 24, 6, 9, reportTestCases),
+		VerifyFloatDigits<areal<32, 8>>("areal<32,8>", 23, 6, 8, reportTestCases),
 		test_tag, "areal<32,8>");
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyFloatDigits<areal<64, 11>>("areal<64,11>", 53, 15, 17, reportTestCases),
+		VerifyFloatDigits<areal<64, 11>>("areal<64,11>", 52, 15, 17, reportTestCases),
 		test_tag, "areal<64,11>");
 
 	// microfloat: digits = fbits + 1
