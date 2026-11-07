@@ -1,11 +1,11 @@
 #pragma once
-#include <string>
 // msvc_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <string>
 
 #if defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */

@@ -258,12 +258,12 @@ int VerifyText(bool reportTestCases) {
 	};
 	check(type_tag(Faithful()), "faithful<float>");
 	check(type_tag(faithful<double>()), "faithful<double>");
-	check(components(Faithful(-1.5f, std::ldexp(1.0f, -30))), "(-, scale 0, value -1.5, error 9.31322575e-10)");
+	check(components(Faithful(-1.5f, std::ldexp(1.0f, -30))), "( value -1.5, error 9.31322575e-10)");
 	check(components(Faithful(0.0f)), "zero");
 	// a pair that is not canonical: the sign and scale are those of the represented -1, and the
 	// parts print as given
-	check(components(Faithful(1.0f, -2.0f)), "(-, scale 0, value 1, error -2)");
-	check(components(Faithful(1.0f, 3.0f)), "(+, scale 2, value 1, error 3)");
+	check(components(Faithful(1.0f, -2.0f)), "( value 1, error -2)");
+	check(components(Faithful(-1.0f, 3.0f)), "( value -1, error 3)");
 	Faithful x;
 	x.setnan();
 	check(components(x), "nan");

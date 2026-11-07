@@ -46,6 +46,7 @@ jobs:
             lns
             dbns
             areal
+            faithful
             interval
             bfloat16
             dfloat
