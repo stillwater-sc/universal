@@ -11,7 +11,10 @@
 //   - uncertainty: when it is not, ubit == 1 and the true value lies within one ulp;
 //   - faithfulness: for random operands, |value(fma) - true| < ulp, with
 //     (ubit == 0) iff the result is exact -- checked against a long-double reference
-//     computed independently of the implementation's double/std::fma path;
+//     computed independently of the implementation's double/std::fma path. An operand whose
+//     ubit is set makes the result inexact too (#1970): the ubit is a flag, as for + - * /,
+//     and fma(0.1, 1, 0) is as inexact as 0.1 * 1 + 0. The reference takes each operand at
+//     its represented value, the lower end of its interval;
 //   - IEEE special values (inf*0 -> NaN, inf / NaN propagation).
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
@@ -83,8 +86,9 @@ namespace {
 			// independent reference: exact a*b + c in long double (exact for these small configs)
 			long double tru = (long double)double(a) * (long double)double(b) + (long double)double(c);
 			bool ubit = r.at(0);
-			if (v == 0.0) {                      // exact zero result: must be exact
-				if (tru != 0.0L || ubit) { ++fails; if (reportTestCases) std::cout << "    FAIL zero-result faithfulness\n"; }
+			const bool inexactInput = a.at(0) || b.at(0) || c.at(0);
+			if (v == 0.0) {                      // a zero result: exact unless an operand was inexact
+				if (tru != 0.0L || ubit != inexactInput) { ++fails; if (reportTestCases) std::cout << "    FAIL zero-result faithfulness\n"; }
 				continue;
 			}
 			long double err = std::fabs((long double)v - tru);
@@ -95,8 +99,8 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL faithfulness: |v - true| = " << double(err)
 					<< " > ulp " << ulp << "  (v=" << v << ", true=" << double(tru) << ")\n";
 			}
-			// uncertainty bit: 0 iff the result is exact
-			bool exact = (err == 0.0L);
+			// uncertainty bit: 0 iff the fused result is exact and every operand was exact
+			bool exact = (err == 0.0L) && !inexactInput;
 			if (ubit == exact) {
 				++fails;
 				if (reportTestCases) std::cout << "    FAIL ubit semantics: ubit=" << ubit << " but exact=" << exact
