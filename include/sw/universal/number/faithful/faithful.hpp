@@ -40,7 +40,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-/// INCLUDE FILES that make up the library
 ///
 /// Layered per #1334:
 ///     core.hpp          arithmetic, no streams

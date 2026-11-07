@@ -1,16 +1,17 @@
 #pragma once
-#include <universal/native/ieee754_decoder.hpp>   // the decoder unions this header reads (#1536)
 // ieee754_float.hpp: manipulation functions for IEEE-754 single precision floating-point type
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/native/ieee754_decoder.hpp>   // the decoder unions this header reads (#1536)
+#include <universal/utility/color_print.hpp>
+
 #include <cstdint>
 #include <sstream>
 #include <iomanip>
 #include <string>
-#include <universal/utility/color_print.hpp>
 
 namespace sw { namespace universal {
 

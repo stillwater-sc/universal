@@ -1,6 +1,7 @@
 // arithmetic.cpp: faithfully rounded floating-point arithmetic
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -76,8 +77,8 @@ void CompensatedEvaluation() {
 	std::cout << "+-------\nCompensated Evaluation for type : " << type_tag(Real()) << '\n';
 
 	Real a, b;
-	Real eps = std::numeric_limits<Real>::epsilon();
-	Real epsHalf = std::numeric_limits<Real>::epsilon() / 2.0f;
+	const Real eps = std::numeric_limits<Real>::epsilon();
+	const Real epsHalf = std::numeric_limits<Real>::epsilon() / 2.0f;
 	a = 0.5f + epsHalf;
 	b = 1.0f + eps;
 	std::cout << "a = 0.5 + half epsilon : " << to_binary(a) << " : " << a << '\n';
@@ -129,12 +130,12 @@ try {
 		constexpr Real eps = std::numeric_limits<Real>::epsilon();
 		constexpr Real epsHalf = std::numeric_limits<Real>::epsilon() / 2.0f;
 		a = 0.5f + epsHalf;
-		b = 1.0f;
+		b = 1.0f + epsHalf;
 		std::cout << std::fixed;
 		std::cout << "epsilon      : " << to_binary(eps) << " : " << eps << '\n';
 		std::cout << "half epsilon : " << to_binary(epsHalf) << " : " << epsHalf << '\n';
-		std::cout << "operand a    : " << to_binary(a) << " : " << a << '\n';
-		std::cout << "operand b    : " << to_binary(b) << " : " << b << '\n';
+		std::cout << "operand a    : " << to_binary(a) << " : " << a << " : epsHalf rounds up so the ULP is set\n";
+		std::cout << "operand b    : " << to_binary(b) << " : " << b << " : epsHalf rounds down so the ULP is not set\n";
 		twoSum(a, b, s, r);
 		std::cout << a << " + " << b << " = " << s << " + " << r << '\n';
 		// validation using a double
@@ -142,6 +143,13 @@ try {
 		double sum = da + db;
 		std::cout << "sum " << sum << " vs " << (ds + dr) << '\n';
 		std::cout << std::defaultfloat;
+
+		faithful<Real> ffa, fa(0.5f), feps(eps), fepsHalf(epsHalf), fsum;
+		ffa = fa + fepsHalf;
+		std::cout << "faithful fa      : " << to_binary(fa) << " : " << fa << '\n';
+		std::cout << "faithful epsHalf : " << to_binary(fepsHalf) << " : " << fepsHalf << '\n';
+		std::cout << "faithful a       : " << to_binary(ffa) << " : " << ffa << '\n';
+		std::cout << "compensated sum  : " << components(ffa) << " : " << ffa << '\n';
 	}
 
 	std::cout << "\n\n";

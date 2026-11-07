@@ -14,6 +14,7 @@
 #include <limits>        // std::numeric_limits<>::max_digits10
 #include <sstream>       // std::stringstream
 #include <string>        // std::string
+#include <universal/native/ieee754.hpp>
 #include <universal/native/ieee754_type_tag.hpp>
 #include <universal/number/faithful/core.hpp>
 
@@ -43,8 +44,29 @@ inline std::string components(const faithful<FloatingPointType>& v) {
 		return s.str();
 	}
 	s << std::setprecision(std::numeric_limits<FloatingPointType>::max_digits10)
-	  << "(" << (v.sign() ? "-" : "+") << ", scale " << v.scale()
-	  << ", value " << v.high() << ", error " << v.low() << ")";
+	  << "( value " << v.high() << ", error " << v.low() << ")";
+	return s.str();
+}
+
+template<typename FloatingPointType>
+inline std::string to_binary(const faithful<FloatingPointType>& v, bool nibbleMarker = false) {
+	std::stringstream s;
+	if (v.isnan()) {
+		s << "( nan, 0)";
+		return s.str();
+	}
+	if (v.iszero()) {
+		s << "( zero, 0)";
+		return s.str();
+	}
+	if (v.isinf()) {
+		s << (v.sign() ? "(-inf, 0)" : "(+inf, 0)");
+		return s.str();
+	}
+	FloatingPointType value = v.high();
+	FloatingPointType error = v.low();
+	s << std::setprecision(std::numeric_limits<FloatingPointType>::max_digits10) << "("
+	  << to_binary(value, nibbleMarker) << ", " << to_binary(error, nibbleMarker) << ")";
 	return s.str();
 }
 
