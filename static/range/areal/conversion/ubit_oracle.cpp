@@ -193,6 +193,32 @@ int VerifyWideSourceRoundTrip(bool reportTestCases) {
 	return fails;
 }
 
+// The same for subnormals of a source with 61 or more fraction bits, which normalize into the
+// blocktriple bit by bit: areal<72,4> into areal<80,4>, wider in fraction, and back, exactly
+// (CodeRabbit). The subnormals have up to three set bits, so double holds every value.
+int VerifyWideSubnormalRoundTrip(bool reportTestCases) {
+	using Src = areal<72, 4, std::uint32_t>;
+	using Wide = areal<80, 4, std::uint32_t>;
+	int fails = 0, reported = 0;
+	for (unsigned lead = 1; lead <= Src::fbits; ++lead) {
+		for (unsigned extra : { 0u, 2u, 7u }) {
+			Src x;
+			x.setzero();
+			x.set(lead);
+			if (extra != 0 && lead > extra) x.set(lead - extra);
+			const Wide w(x);
+			const Src back(w);
+			bool ok = double(w) == double(x) && !w.at(0) && !back.at(0);
+			for (unsigned i = 0; i < Src::nbits && ok; ++i) ok = (back.at(i) == x.at(i));
+			if (!ok) {
+				++fails;
+				if (reportTestCases && reported++ < 5) std::cerr << "FAIL wide subnormal " << double(x) << " -> " << double(w) << " -> " << double(back) << '\n';
+			}
+		}
+	}
+	return fails;
+}
+
 }  // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -262,6 +288,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConvertingConstructor<areal<10, 2, std::uint8_t>, areal<12, 5, std::uint8_t>>(reportTestCases), "areal<10,2> from areal<12,5>", "converting ctor");
 	nrOfFailedTestCases += ReportTestResult(VerifyConvertingConstructor<areal<32, 8, std::uint8_t>, areal<16, 5, std::uint8_t>>(reportTestCases), "areal<32,8> from areal<16,5>", "converting ctor");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideSourceRoundTrip(reportTestCases), "areal<64,11> via areal<80,15>", "converting ctor round trip");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSubnormalRoundTrip(reportTestCases), "areal<72,4> via areal<80,4>", "converting ctor subnormals");
 #endif
 
 #if REGRESSION_LEVEL_2

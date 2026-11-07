@@ -1752,8 +1752,12 @@ public:
 					tgt.setsign(sign());
 					tgt.setscale(scl);
 					tgt.setradix(); // set radix point for proper significand interpretation
+					// lift the leading one to the hidden-bit position, as the fast path does with its shift:
+					// a wide subnormal was copied unshifted and read as 1.f, so areal<72,4> subnormals
+					// added, multiplied and converted to the wrong value (CodeRabbit, #1970)
+					const unsigned shift = static_cast<unsigned>(MIN_EXP_NORMAL - scl);
 					for (unsigned i = 0; i < fbits; ++i) {
-						tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix) - 1 - i, at(1 + fbits - 1 - i));
+						if (at(1 + fbits - 1 - i)) tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix) - 1 - i + shift);
 					}
 				}
 			}
@@ -1812,8 +1816,12 @@ public:
 					tgt.setsign(sign());
 					tgt.setscale(scl);
 					tgt.setradix(fbits); // set radix point for proper significand interpretation
+					// lift the leading one to the hidden-bit position, as the fast path does with its shift:
+					// a wide subnormal was copied unshifted and read as 1.f, so areal<72,4> subnormals
+					// added, multiplied and converted to the wrong value (CodeRabbit, #1970)
+					const unsigned shift = static_cast<unsigned>(MIN_EXP_NORMAL - scl);
 					for (unsigned i = 0; i < fbits; ++i) {
-						tgt.setbit(fbits - 1 - i, at(1 + fbits - 1 - i));
+						if (at(1 + fbits - 1 - i)) tgt.setbit(fbits - 1 - i + shift);
 					}
 				}
 			}
@@ -1876,8 +1884,12 @@ public:
 					tgt.setsign(sign());
 					tgt.setscale(scl);
 					tgt.setradix(); // set radix point for proper significand interpretation
+					// lift the leading one to the hidden-bit position, as the fast path does with its shift:
+					// a wide subnormal was copied unshifted and read as 1.f, so areal<72,4> subnormals
+					// added, multiplied and converted to the wrong value (CodeRabbit, #1970)
+					const unsigned shift = static_cast<unsigned>(MIN_EXP_NORMAL - scl);
 					for (unsigned i = 0; i < fbits; ++i) {
-						tgt.setbit(divshift + fbits - 1 - i, at(1 + fbits - 1 - i));
+						if (at(1 + fbits - 1 - i)) tgt.setbit(divshift + fbits - 1 - i + shift);
 					}
 				}
 			}
