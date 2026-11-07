@@ -86,9 +86,10 @@ namespace {
 	struct Ranked { erational v; int rank; std::string name; };
 
 	std::vector<Ranked> OrderedValues() {
-		// a zero with the sign flag set, as 0 * -3 leaves it (to_ieee754 gives -0.0). erational(-0.0)
-		// would not do: convert_ieee754 returns a plain 0 for either IEEE zero.
-		const erational negzero = erational(0) * erational(-3);
+		// a zero with the sign flag set (to_ieee754 gives -0.0). Arithmetic no longer leaves one, 0 * -3
+		// is +0 since #1990, and erational(-0.0) is a plain 0, so the flag is set by hand.
+		erational negzero(0);
+		negzero.setneg();
 		return {
 			{ erational(-7),         0, "-7"    },
 			{ erational(-3, 2),      1, "-3/2"  },
@@ -97,7 +98,7 @@ namespace {
 			{ erational(-1, 2),      3, "-1/2"  },
 			{ erational(-2, 4),      3, "-2/4"  },   // unreduced
 			{ erational(0),          4, "0"     },
-			{ negzero,               4, "0*-3"  },
+			{ negzero,               4, "-0"    },
 			{ constant_zero,         4, "cz"    },
 			{ erational(0, -5),      4, "0/-5"  },
 			{ erational(1, 2),       5, "1/2"   },
@@ -136,9 +137,14 @@ try {
 	{
 		// the fixtures are what they claim: a sign-flagged zero, and a constant-initialized zero
 		int fails = 0;
-		const erational negzero = erational(0) * erational(-3);
-		fails += check(negzero.iszero() && negzero.isneg(), "0 * -3 is a sign-flagged zero", reportTestCases);
-		fails += check(std::signbit(double(negzero)), "0 * -3 converts to -0.0", reportTestCases);
+		// arithmetic no longer leaves a -0 (0 * -3 is +0 since #1990), so the sign-flagged zero that
+		// the comparisons must treat as 0 is set by hand
+		erational negzero(0);
+		negzero.setneg();
+		fails += check(negzero.iszero() && negzero.isneg(), "setneg() on 0 is a sign-flagged zero", reportTestCases);
+		fails += check(std::signbit(double(negzero)), "a sign-flagged zero converts to -0.0", reportTestCases);
+		const erational product = erational(0) * erational(-3);
+		fails += check(product.iszero() && !product.isneg(), "0 * -3 is +0 (#1990)", reportTestCases);
 		fails += check(constant_zero.is_constant_zero(), "namespace-scope erational is constant-initialized", reportTestCases);
 		nrOfFailedTestCases += ReportTestResult(fails, "erational", "zero fixtures");
 	}

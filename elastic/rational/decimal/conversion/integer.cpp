@@ -86,7 +86,7 @@ try {
 		fails += VerifyIntegerPart(erational(-7, -2),             3, "-7/-2",    reportTestCases);
 		fails += VerifyIntegerPart(erational(-3, 2),             -1, "-3/2",     reportTestCases);
 		fails += VerifyIntegerPart(erational(-1, 2),              0, "-1/2",     reportTestCases);
-		fails += VerifyIntegerPart(erational(0) * erational(-3),  0, "0 * -3 (sign-flagged zero)", reportTestCases);
+		fails += VerifyIntegerPart(erational(0) * erational(-3),  0, "0 * -3 (+0 since #1990)", reportTestCases);
 		fails += VerifyIntegerPart(erational(-2.75),             -2, "-2.75",    reportTestCases);
 		fails += VerifyIntegerPart(erational(-1000000000000LL), -1000000000000LL, "-1e12", reportTestCases);
 		nrOfFailedTestCases += ReportTestResult(fails, "erational", "signed integer part");

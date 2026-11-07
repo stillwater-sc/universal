@@ -156,26 +156,26 @@ public:
 	// unitary operators
 	erational operator-() const {
 		erational tmp(*this);
-		tmp.setsign(!tmp.sign());
+		if (!tmp.iszero()) tmp.setsign(!tmp.sign());   // no negative zero (#1990)
 		return tmp;
 	}
+	// x + 1 and x - 1 as values: adding one to the numerator alone made 1/2 into 2/2 and -3/2
+	// into -4/2 (#1990)
 	erational operator++(int) { // postfix
 		erational tmp(*this);
-		++numerator;
+		++(*this);
 		return tmp;
 	}
 	erational& operator++() { // prefix
-		++numerator;
-		return *this;
+		return *this += erational(1);
 	}
 	erational operator--(int) { // postfix
 		erational tmp(*this);
-		--numerator;
+		--(*this);
 		return tmp;
 	}
 	erational& operator--() { // prefix
-		--numerator;
-		return *this;
+		return *this -= erational(1);
 	}
 
 	// arithmetic operators
@@ -228,7 +228,7 @@ public:
 		if (is_constant_zero()) setzero();
 		numerator *= rhs.numerator;
 		denominator *= rhs.denominator;
-		negative = !((negative && rhs.negative) || (!negative && !rhs.negative));
+		negative = (negative != rhs.negative);
 		normalize();
 		return *this;
 	}
@@ -250,9 +250,12 @@ public:
 			return *this;
 #endif
 		}
-		negative =!((negative && rhs.negative) || (!negative && !rhs.negative));
+		negative = (negative != rhs.negative);
+		// read rhs before *this changes: in x /= x they are the same object, and the second
+		// product read the numerator the first had just changed, so 1/2 /= itself gave 1/2 (#1990)
+		const edecimal rnum = rhs.numerator;
 		numerator *= rhs.denominator;
-		denominator *= rhs.numerator;
+		denominator *= rnum;
 		normalize();
 		return *this;
 	}
@@ -270,8 +273,11 @@ public:
 	constexpr bool sign()           const noexcept { return negative; }
 	constexpr edecimal top()        const noexcept { return numerator; }
 	constexpr edecimal bottom()     const noexcept { return denominator; }
+	// {numerator, denominator} with the sign on the numerator: -3/2 is {-3, 2}. A part beyond int64
+	// saturates to INT64_MIN or INT64_MAX rather than wrapping, so a huge value is not reported as a
+	// small one of either sign. The NaN 0/0 is {0, 0} (#1990).
 	std::pair<int64_t, int64_t> toPair() const noexcept {
-		return { int64_t(numerator), int64_t(denominator) };
+		return { saturate_int64(numerator, negative), saturate_int64(denominator, false) };
 	}
 
 	// modifiers
@@ -405,7 +411,18 @@ public:
 protected:
 	// HELPER methods
 
-	// remove greatest common divisor out of the numerator/denominator pair
+	// a non-negative magnitude, negated if neg, clamped to int64
+	static int64_t saturate_int64(const edecimal& magnitude, bool neg) noexcept {
+		const edecimal int64max(std::numeric_limits<int64_t>::max());
+		if (magnitude > int64max) {
+			return neg ? std::numeric_limits<int64_t>::min() : std::numeric_limits<int64_t>::max();
+		}
+		const int64_t v = static_cast<int64_t>(static_cast<long long>(magnitude));
+		return neg ? -v : v;
+	}
+
+	// remove greatest common divisor out of the numerator/denominator pair, and clear the sign of
+	// a zero, so that no operation leaves a -0 (#1990)
 	void normalize() {
 		edecimal a, b, r;
 		a = numerator; b = denominator;  // precondition is numerator and denominator are positive
@@ -418,13 +435,14 @@ protected:
 			setnan();
 			return;
 		}
-		while (a % b > 0) {
-			r = a % b;
+		// Euclid, with one remainder per step
+		for (r = a % b; !r.iszero(); r = a % b) {
 			a = b;
 			b = r;
 		}
 		numerator /= b;
 		denominator /= b;
+		if (numerator.iszero()) negative = false;
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////
@@ -601,7 +619,9 @@ protected:
 		denominator = 1;
 		negative = false;
 		if (rhs == 0) return *this;                       // +/-0 -> 0/1
-		if (std::isinf(rhs) || std::isnan(rhs)) return *this;  // not representable; map to 0
+		// erational has no infinity, so NaN and +/-inf both become the 0/0 NaN state, which converts
+		// back to the IEEE NaN. They used to become 0 (#1990).
+		if (std::isinf(rhs) || std::isnan(rhs)) { setnan(); return *this; }
 
 		// 2^k as an exact edecimal via square-and-multiply (k >= 0).
 		auto pow2 = [](int k) {
