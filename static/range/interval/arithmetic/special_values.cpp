@@ -372,6 +372,32 @@ int VerifyStreamInput(bool reportTestCases) {
 			if (reportTestCases) std::cerr << "FAIL locale round trip: wrote '" << written << "', read " << y << '\n';
 		}
 	}
+	// a locale whose decimal point is a comma, with '.' grouping: operator<< writes [1,5, 2.000,25],
+	// and only the comma followed by a space separates the bounds
+	{
+		struct comma_decimal : std::numpunct<char> {
+			char do_decimal_point() const override { return ','; }
+			char do_thousands_sep() const override { return '.'; }
+			std::string do_grouping() const override { return "\3"; }
+		};
+		const std::locale european(std::locale::classic(), new comma_decimal);
+		const I x(Real(1.5), Real(2000.25));
+		std::stringstream s;
+		s.imbue(european);
+		s << x;
+		const std::string written = s.str();
+		I y(Real(7), Real(9));
+		s >> y;
+		if (written != "[1,5, 2.000,25]" || s.fail() || !(x == y)) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL comma-decimal round trip: wrote '" << written << "', read " << y << '\n';
+		}
+		I z(Real(7), Real(9));
+		std::istringstream bad("[1,5,2,5]");   // no space after the separator: ambiguous, so it fails
+		bad.imbue(european);
+		bad >> z;
+		if (!bad.fail() || !(z == I(Real(7), Real(9)))) ++fails;
+	}
 	// what operator<< writes reads back
 	std::mt19937_64 rng(1971);
 	std::uniform_real_distribution<Real> u(Real(-1000), Real(1000));

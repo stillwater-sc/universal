@@ -12,6 +12,7 @@
 #include <iostream>
 #include <istream>
 #include <limits>
+#include <locale>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -34,13 +35,22 @@ namespace interval_detail {
 	// operator>>, which must take the whole token (CodeRabbit). inf maps only to a real infinity:
 	// posit's infinity() is maxpos, and reading "inf" as maxpos would claim an unbounded interval
 	// that is finite.
+	// operator<< separates the bounds with ", ". Where the stream's locale writes a comma inside
+	// a number, as a decimal point or a thousands separator ([1,5, 2,5]), only a comma followed by
+	// whitespace ends a bound; elsewhere any comma does, so "[1,2]" still reads (CodeRabbit).
 	template<typename Scalar>
 	bool read_bound(std::istream& istr, Scalar& out) {
+		const auto& punct = std::use_facet<std::numpunct<char>>(istr.getloc());
+		const bool commaInNumbers = punct.decimal_point() == ',' || (punct.thousands_sep() == ',' && !punct.grouping().empty());
 		std::string tok;
 		istr >> std::ws;
 		char ch;
 		while (istr.get(ch)) {
-			if (ch == ',' || ch == ']') { istr.unget(); break; }
+			if (ch == ']') { istr.unget(); break; }
+			if (ch == ',') {
+				const int next = istr.peek();
+				if (!commaInNumbers || next == std::char_traits<char>::eof() || std::isspace(next)) { istr.unget(); break; }
+			}
 			tok += ch;
 		}
 		while (!tok.empty() && std::isspace(static_cast<unsigned char>(tok.back()))) tok.pop_back();
