@@ -22,12 +22,22 @@ inline std::ostream& operator<<(std::ostream& ostr, const interval<Scalar>& v) {
 	return ostr << '[' << v._lo << ", " << v._hi << ']';
 }
 
-// stream input
+// stream input: [lo, hi], the format operator<< writes. A malformed token, a wrong delimiter,
+// or lo > hi sets failbit and leaves v unchanged; it used to overwrite v whatever was read
+// (#1971).
 template<typename Scalar>
 inline std::istream& operator>>(std::istream& istr, interval<Scalar>& v) {
-	Scalar lo, hi;
-	char c;
-	istr >> c >> lo >> c >> hi >> c;  // expects format [lo, hi]
+	Scalar lo{}, hi{};
+	char open = 0, comma = 0, close = 0;
+	istr >> open;
+	if (istr && open == '[') istr >> lo;
+	if (istr) istr >> comma;
+	if (istr && comma == ',') istr >> hi;
+	if (istr) istr >> close;
+	if (!istr || open != '[' || comma != ',' || close != ']' || hi < lo) {
+		istr.setstate(std::ios_base::failbit);
+		return istr;
+	}
 	v._lo = lo;
 	v._hi = hi;
 	return istr;
