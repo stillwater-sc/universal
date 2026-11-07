@@ -491,8 +491,10 @@ public:
 	}
 
 	// to_native: the midpoint of the interval. For a single lattice interval float2SORN maps it back
-	// into that interval; a span maps back to the lattice interval holding its midpoint. An interval
-	// with one infinite bound reports that bound; the whole real line and NaN report NaN.
+	// into that interval; a span maps back to the lattice interval holding its midpoint. When the
+	// midpoint rounds outside the interval on its way back to float, as it does for (0, 2^-149], a
+	// closed bound is reported instead. An interval with one infinite bound reports that bound; the
+	// whole real line and NaN report NaN.
 	template<typename NativeReal>
 	NativeReal to_native() const noexcept {
 		if (isnan()) return std::numeric_limits<NativeReal>::quiet_NaN();
@@ -501,7 +503,15 @@ public:
 		if (std::isinf(lo) && std::isinf(hi)) return (lo == hi ? lo : std::numeric_limits<NativeReal>::quiet_NaN());
 		if (std::isinf(lo)) return lo;
 		if (std::isinf(hi)) return hi;
-		return lo + (hi - lo) / NativeReal(2);
+		const NativeReal mid = lo + (hi - lo) / NativeReal(2);
+		const Real back = static_cast<Real>(mid);
+		const SORN_INTERVAL& i = sornIntVal;
+		const bool inside = ((back > i.lowerBound) || (back == i.lowerBound && !i.lowerIsOpen)) &&
+		                    ((back < i.upperBound) || (back == i.upperBound && !i.upperIsOpen));
+		if (inside) return mid;
+		if (!i.upperIsOpen) return hi;
+		if (!i.lowerIsOpen) return lo;
+		return mid;
 	}
 	// make conversions to native types explicit
 	explicit operator float()       const noexcept { return to_native<float>(); }

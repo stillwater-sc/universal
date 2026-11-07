@@ -173,6 +173,7 @@ try {
 	using LogSorn    = sorn<-2, 2, 1, 0, 1, 1, 1, 1>;   // logarithmic with infinity
 	using NoZeroSorn = sorn<0, 4, 4, 1, 1, 1, 1, 0>;    // linear, no exact zero
 	using FiniteSorn = sorn<0, 4, 8, 1, 1, 1, 0, 1>;    // linear, no infinity
+	using TinySorn   = sorn<-149, -148, 1, 0, 1, 0, 0, 1>;   // logarithmic at the bottom of binary32: 0 (0,2^-149] (2^-149,2^-148]
 
 #if MANUAL_TESTING
 
@@ -188,6 +189,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeRoundTrip<LogSorn>(reportTestCases), "sorn<-2,2,1,log>", "to_native round trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeRoundTrip<NoZeroSorn>(reportTestCases), "sorn<0,4,4,nozero>", "to_native round trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyNativeRoundTrip<FiniteSorn>(reportTestCases), "sorn<0,4,8,noinf>", "to_native round trip");
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeRoundTrip<TinySorn>(reportTestCases), "sorn<-149,-148,1,log>", "to_native round trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyNaNAssignment<LinSorn>(reportTestCases), "sorn<0,4,8>", "nan assignment");
 	nrOfFailedTestCases += ReportTestResult(VerifySaturation<FiniteSorn>(reportTestCases), "sorn<0,4,8,noinf>", "saturation");
 	nrOfFailedTestCases += ReportTestResult(VerifySaturation<LinSorn>(reportTestCases), "sorn<0,4,8>", "saturation");
