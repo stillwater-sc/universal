@@ -490,7 +490,8 @@ public:
 		return absVal;
 	}
 
-	// to_native: the midpoint of the interval, the value float2SORN maps back into it. An interval
+	// to_native: the midpoint of the interval. For a single lattice interval float2SORN maps it back
+	// into that interval; a span maps back to the lattice interval holding its midpoint. An interval
 	// with one infinite bound reports that bound; the whole real line and NaN report NaN.
 	template<typename NativeReal>
 	NativeReal to_native() const noexcept {

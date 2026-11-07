@@ -94,7 +94,7 @@ adjacent ones. The API built on that:
 | `sorn()` | NaN, which stands for the empty set |
 | `sorn(SpecificValue::...)` | `maxpos`/`minpos` and `maxneg`/`minneg` are the outermost finite and innermost intervals; `infpos`/`infneg` the interval reaching infinity (saturating without one); `qnan`, `snan` and `nar` give NaN. A lattice without negatives has no `minneg`/`maxneg`: they come out NaN |
 | `a == b`, `a != b` | the same interval, bounds and open/closed conditions alike. NaN is unequal to everything, itself included |
-| `double(s)`, `float(s)` | the interval's midpoint, which converts back into the same interval. One infinite bound gives that bound; the whole line, and NaN, give NaN |
+| `double(s)`, `float(s)` | the interval's midpoint; for a single lattice interval it converts back into that interval (a span does not: the midpoint of `[-0.5,0.5]` converts to `0`). One infinite bound gives that bound; the whole line, and NaN, give NaN |
 | `a + b`, `a - b`, `a * b` | interval arithmetic, rounded outward onto the lattice. Operands may be `const` and temporaries; a native scalar operand of any arithmetic type is an exact value |
 | `a / b` | `a` times the reciprocal of `b`. A divisor that straddles zero gives the whole lattice; dividing by the exact zero gives NaN |
 | NaN operand | NaN result, for every operator |
