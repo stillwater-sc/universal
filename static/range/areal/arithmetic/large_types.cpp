@@ -253,6 +253,40 @@ int VerifyUbitTracking(bool reportTestCases) {
 
 }} // namespace sw::universal
 
+// Subnormals of an areal with 61 or more fraction bits take the bit-by-bit path into the
+// blocktriple, which copied the fraction without lifting its leading one to the hidden-bit position,
+// as the fast path does. The operand was then read as 1.f: for areal<72,4> a subnormal x gave
+// x + x = 1.7e-18 for 2x = 2.3e-10, and the converting constructor was wrong the same way
+// (CodeRabbit, #1970). These subnormals have one to three set bits, so every expected value is
+// exact in double.
+template<typename ArealType>
+int VerifyWideSubnormals(bool reportTestCases) {
+	static_assert(ArealType::fbits >= 61, "the bit-by-bit normalization path is the one under test");
+	int fails = 0, reported = 0;
+	auto check = [&](bool ok, const ArealType& x, const char* what) {
+		if (!ok) { ++fails; if (reportTestCases && reported++ < 8) std::cerr << "FAIL " << what << " for " << double(x) << '\n'; }
+	};
+	const ArealType zero(0), one(1), two(2);
+	for (unsigned lead = 1; lead <= ArealType::fbits; lead += 5) {
+		for (unsigned extra : { 0u, 1u, 3u }) {
+			ArealType x;
+			x.setzero();
+			x.set(lead);                                    // exponent field 0: a subnormal
+			if (extra != 0 && lead > extra) x.set(lead - extra);
+			const double v = double(x);
+			if (v == 0.0) continue;
+			const ArealType sum = x + zero, twice = x + x, diff = x - x, prod = x * one, dbl = x * two, quot = x / one;
+			check(double(sum) == v && !sum.at(0), x, "x + 0");
+			check(double(twice) == 2.0 * v && !twice.at(0), x, "x + x");
+			check(double(diff) == 0.0 && !diff.at(0), x, "x - x");
+			check(double(prod) == v && !prod.at(0), x, "x * 1");
+			check(double(dbl) == 2.0 * v && !dbl.at(0), x, "x * 2");
+			check(double(quot) == v && !quot.at(0), x, "x / 1");
+		}
+	}
+	return fails;
+}
+
 // Regression testing guards
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
@@ -281,6 +315,14 @@ try {
 #else // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
+
+    nrOfFailedTestCases += ReportTestResult(
+        VerifyWideSubnormals<areal<72, 4, uint32_t>>(reportTestCases),
+        "areal<72,4>", "wide subnormals");
+    // 88 fraction bits, and subnormals within double's range, so the expected values are exact
+    nrOfFailedTestCases += ReportTestResult(
+        VerifyWideSubnormals<areal<96, 6, uint32_t>>(reportTestCases),
+        "areal<96,6>", "wide subnormals");
 
     // Large areal configurations that exercise multi-block code paths
     // MUST use uint32_t blocks for portable carry propagation

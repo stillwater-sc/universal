@@ -175,12 +175,30 @@ public:
 	// decorated/converting constructors
 
 	/// <summary>
-	/// construct an areal from another, block type bt must be the same
+	/// construct an areal from another configuration with the same block type. The value converts
+	/// with the target's rounding, its ubit set when bits are dropped, and the source's ubit
+	/// carries over: an inexact source stays inexact. The body was empty, so the target held
+	/// whatever its storage held (#1970): areal<16,5>(areal<8,3>(1.5f)) was garbage.
 	/// </summary>
-	/// <param name="rhs"></param>
+	/// <param name="rhs">the source areal</param>
 	template<unsigned nnbits, unsigned ees>
-	areal(const areal<nnbits, ees, bt>& rhs) {
-		// this->assign(rhs);
+	areal(const areal<nnbits, ees, bt>& rhs) : _block{} {
+		// Through a blocktriple of the source's width, as the arithmetic converts its results:
+		// normalizeAddition holds the source's value exactly, and convert() truncates it into this
+		// configuration, sets the ubit when bits drop, and saturates or underflows with the ubit.
+		// A native intermediate cannot hold every source: areal has one binade more than IEEE, so
+		// the top binade of areal<64,11> overflows double, and long double is double on some
+		// platforms (CodeRabbit).
+		using Src = areal<nnbits, ees, bt>;
+		if (rhs.isnan()) {   // directly: the blocktriple's setnan() would make a quiet NaN signalling (CodeRabbit)
+			setnan(rhs.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
+			return;
+		}
+		blocktriple<Src::fbits, BlockTripleOperator::ADD, bt> v;
+		rhs.normalizeAddition(v);
+		if (v.iszero()) v.setsign(rhs.sign());   // normalizeAddition leaves a zero unsigned, and -0 must stay -0
+		convert(v, *this, rhs.at(0));
+		if (rhs.at(0) && !isnan() && !isinf()) set(0);   // an inexact source stays inexact
 	}
 
 	// specific value constructor
@@ -248,13 +266,15 @@ public:
 	template<typename Ty>
 	constexpr areal& convert_unsigned_integer(const Ty& rhs) noexcept {
 		if constexpr (fbits < 53) {
-			// For small fraction fields, double can exactly represent all
-			// integers distinguishable at this precision; delegate safely
-			return operator=(static_cast<double>(rhs));
+			// double holds every integer below 2^53 exactly, so it converts those, a subnormal
+			// target included. A larger one rounded in double first, and the areal saw an exact
+			// value: areal<32,8>(2^60 - 1) came out as 2^60 with the ubit clear (#1970). Those go
+			// through the native path below, which keeps the dropped bits in the ubit.
+			if (static_cast<uint64_t>(rhs) < (1ull << 53)) return operator=(static_cast<double>(rhs));
 		}
-		else {
+		{
 			// Native conversion: avoids silent precision loss through
-			// double for integers > 2^53
+			// double for integers >= 2^53
 			clear();
 			if (rhs == 0) return *this;
 
@@ -330,13 +350,14 @@ public:
 	template<typename Ty>
 	constexpr areal& convert_signed_integer(const Ty& rhs) noexcept {
 		if constexpr (fbits < 53) {
-			// For small fraction fields, double can exactly represent all
-			// integers distinguishable at this precision; delegate safely
-			return operator=(static_cast<double>(rhs));
+			// as for the unsigned integers: double is exact below 2^53, and a larger magnitude
+			// goes through the native path, which keeps the dropped bits in the ubit (#1970)
+			const uint64_t mag = (rhs < 0) ? (0ull - static_cast<uint64_t>(rhs)) : static_cast<uint64_t>(rhs);
+			if (mag < (1ull << 53)) return operator=(static_cast<double>(rhs));
 		}
-		else {
+		{
 			// Native conversion: avoids silent precision loss through
-			// double for integers > 2^53
+			// double for integers >= 2^53
 			clear();
 			if (rhs == 0) return *this;
 
@@ -518,12 +539,23 @@ public:
 					ubit = (mask & raw) != 0;
 					raw >>= shiftRight + adjustment;
 				}
-				else { // all bits of the float go into this representation and need to be shifted up
-					// target has more precision than source, shift left to align
-					// ubit = false; already set to false (exact representation)
+				else { // the target has more fraction bits than the source
+					// but the subnormal scale can still take the net shift to the right: then bits
+					// drop below the target's LSB and the ubit must record it. This shifted right
+					// and dropped them with the ubit clear (#1970): areal<30,5>(-5.4181703e-07f)
+					// came out truncated and marked exact.
 					int shiftLeft = (-shiftRight) - adjustment;
-					if (shiftLeft > 0) raw <<= shiftLeft;
-					else if (shiftLeft < 0) raw >>= (-shiftLeft);
+					if (shiftLeft > 0) {
+						raw <<= shiftLeft;   // exact: every source bit fits
+					}
+					else {
+						// a net right shift of r drops r + 1 bits: the r shifted out, and the one
+						// that lands on bit 0, the ubit position, which the assembly clears
+						const int r = -shiftLeft;
+						const uint32_t dropped = (r + 1 >= 32) ? 0xFFFF'FFFFu : ((1u << (r + 1)) - 1u);
+						ubit = (raw & dropped) != 0;
+						raw = (r >= 32) ? 0u : (raw >> r);
+					}
 				}
 			}
 			else {
@@ -542,12 +574,23 @@ public:
 					ubit = (mask & raw) != 0;
 					raw >>= shiftRight + adjustment;
 				}
-				else { // all bits of the float go into this representation and need to be shifted up
-					// target has more precision than source, shift left to align
-					// ubit = false; already set to false (exact representation)
+				else { // the target has more fraction bits than the source
+					// but the subnormal scale can still take the net shift to the right: then bits
+					// drop below the target's LSB and the ubit must record it. This shifted right
+					// and dropped them with the ubit clear (#1970): areal<30,5>(-5.4181703e-07f)
+					// came out truncated and marked exact.
 					int shiftLeft = (-shiftRight) - adjustment;
-					if (shiftLeft > 0) raw <<= shiftLeft;
-					else if (shiftLeft < 0) raw >>= (-shiftLeft);
+					if (shiftLeft > 0) {
+						raw <<= shiftLeft;   // exact: every source bit fits
+					}
+					else {
+						// a net right shift of r drops r + 1 bits: the r shifted out, and the one
+						// that lands on bit 0, the ubit position, which the assembly clears
+						const int r = -shiftLeft;
+						const uint32_t dropped = (r + 1 >= 32) ? 0xFFFF'FFFFu : ((1u << (r + 1)) - 1u);
+						ubit = (raw & dropped) != 0;
+						raw = (r >= 32) ? 0u : (raw >> r);
+					}
 				}
 			}
 		}
@@ -721,12 +764,22 @@ public:
 				ubit = (mask & raw) != 0;
 				raw >>= (static_cast<std::int64_t>(shiftRight) + adjustment);
 			}
-			else { // all bits of the double go into this representation and need to be shifted up
-				// target has more precision than source, shift left to align
-				// ubit = false; already set to false (exact representation)
+			else { // the target has more fraction bits than the source
+				// but the subnormal scale can still take the net shift to the right: then bits
+				// drop below the target's LSB and the ubit must record it, which it did not
+				// (#1970): double into areal<64,3> and the other configurations with fbits >= 52
 				int64_t shiftLeft = static_cast<int64_t>(-shiftRight) - adjustment;
-				if (shiftLeft > 0) raw <<= shiftLeft;
-				else if (shiftLeft < 0) raw >>= (-shiftLeft);
+				if (shiftLeft > 0) {
+					raw <<= shiftLeft;   // exact: every source bit fits
+				}
+				else {
+					// a net right shift of r drops r + 1 bits: the r shifted out, and the one that
+					// lands on bit 0, the ubit position, which the assembly clears
+					const int64_t r = -shiftLeft;
+					const uint64_t dropped = (r + 1 >= 64) ? ~0ull : ((1ull << (r + 1)) - 1ull);
+					ubit = (raw & dropped) != 0;
+					raw = (r >= 64) ? 0ull : (raw >> r);
+				}
 			}
 		}
 		else {
@@ -1699,8 +1752,12 @@ public:
 					tgt.setsign(sign());
 					tgt.setscale(scl);
 					tgt.setradix(); // set radix point for proper significand interpretation
+					// lift the leading one to the hidden-bit position, as the fast path does with its shift:
+					// a wide subnormal was copied unshifted and read as 1.f, so areal<72,4> subnormals
+					// added, multiplied and converted to the wrong value (CodeRabbit, #1970)
+					const unsigned shift = static_cast<unsigned>(MIN_EXP_NORMAL - scl);
 					for (unsigned i = 0; i < fbits; ++i) {
-						tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix) - 1 - i, at(1 + fbits - 1 - i));
+						if (at(1 + fbits - 1 - i)) tgt.setbit(static_cast<unsigned>(BlockTripleConfiguration::radix) - 1 - i + shift);
 					}
 				}
 			}
@@ -1759,8 +1816,12 @@ public:
 					tgt.setsign(sign());
 					tgt.setscale(scl);
 					tgt.setradix(fbits); // set radix point for proper significand interpretation
+					// lift the leading one to the hidden-bit position, as the fast path does with its shift:
+					// a wide subnormal was copied unshifted and read as 1.f, so areal<72,4> subnormals
+					// added, multiplied and converted to the wrong value (CodeRabbit, #1970)
+					const unsigned shift = static_cast<unsigned>(MIN_EXP_NORMAL - scl);
 					for (unsigned i = 0; i < fbits; ++i) {
-						tgt.setbit(fbits - 1 - i, at(1 + fbits - 1 - i));
+						if (at(1 + fbits - 1 - i)) tgt.setbit(fbits - 1 - i + shift);
 					}
 				}
 			}
@@ -1823,8 +1884,12 @@ public:
 					tgt.setsign(sign());
 					tgt.setscale(scl);
 					tgt.setradix(); // set radix point for proper significand interpretation
+					// lift the leading one to the hidden-bit position, as the fast path does with its shift:
+					// a wide subnormal was copied unshifted and read as 1.f, so areal<72,4> subnormals
+					// added, multiplied and converted to the wrong value (CodeRabbit, #1970)
+					const unsigned shift = static_cast<unsigned>(MIN_EXP_NORMAL - scl);
 					for (unsigned i = 0; i < fbits; ++i) {
-						tgt.setbit(divshift + fbits - 1 - i, at(1 + fbits - 1 - i));
+						if (at(1 + fbits - 1 - i)) tgt.setbit(divshift + fbits - 1 - i + shift);
 					}
 				}
 			}
