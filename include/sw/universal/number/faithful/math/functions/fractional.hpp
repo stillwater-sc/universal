@@ -22,6 +22,7 @@
 //
 // Only a native FloatingPointType: the quotient chunk is taken with std::trunc.
 #include <cerrno>        // errno, EDOM
+#include <algorithm>     // std::copy
 #include <cmath>         // std::trunc, std::frexp, std::ldexp
 #include <limits>        // std::numeric_limits
 #include <type_traits>   // std::is_floating_point_v
@@ -36,28 +37,49 @@ namespace sw { namespace universal {
 namespace faithful_detail {
 	// An exact sum of FloatingPointType components, nonoverlapping and ordered from the smallest
 	// magnitude up, with zeros eliminated, so the last component carries the sign of the whole.
+	// The components live in an inline buffer: a std::vector cost a heap allocation per
+	// expansion, and fmod copies one on every step of its loop and exp, exp10 and pow build
+	// several per call (#1969). The largest expansion the library's functions form is 12
+	// components for float and 11 for double, so 32 inline components cover them; a larger one,
+	// which a long chain of add() calls can still make, moves to the heap, and stays correct.
 	template<typename Real>
 	class exact_expansion {
 	public:
+		exact_expansion() noexcept : n(0) {}
+		exact_expansion(const exact_expansion& o) : heap(o.heap), n(o.n) {
+			if (heap.empty()) std::copy(o.buf, o.buf + n, buf);   // only the live components
+		}
+		exact_expansion& operator=(const exact_expansion& o) {
+			if (this != &o) {
+				heap = o.heap;
+				n = o.n;
+				if (heap.empty()) std::copy(o.buf, o.buf + n, buf);
+			}
+			return *this;
+		}
 		void add(Real b) {
 			if (b == Real(0)) return;
+			Real* c = data();
 			Real q = b;
 			std::size_t j = 0;
-			for (std::size_t i = 0; i < c.size(); ++i) {
+			for (std::size_t i = 0; i < n; ++i) {
 				Real a(q), e(c[i]), s, r;
 				twoSum(a, e, s, r);
 				q = s;
 				if (r != Real(0)) c[j++] = r;
 			}
-			c.resize(j);
-			if (q != Real(0)) c.push_back(q);
+			n = j;
+			if (q != Real(0)) push(q);
 		}
 		// -1, 0 or +1
-		int sign() const { return c.empty() ? 0 : (c.back() < Real(0) ? -1 : 1); }
+		int sign() const { return n == 0 ? 0 : (data()[n - 1] < Real(0) ? -1 : 1); }
+		// the number of components
+		std::size_t size() const noexcept { return n; }
 		// the sum rounded, accumulated from the smallest component up
 		Real approx() const {
+			const Real* c = data();
 			Real s(0);
-			for (const Real& v : c) s += v;
+			for (std::size_t i = 0; i < n; ++i) s += c[i];
 			return s;
 		}
 		// the expansion rounded to a pair: the leading part the rounded sum, the trailing part the
@@ -71,7 +93,22 @@ namespace faithful_detail {
 			return faithful<Real>(s, r);
 		}
 	private:
-		std::vector<Real> c;
+		static constexpr std::size_t inline_capacity = 32;
+		Real buf[inline_capacity];   // components [0, n) while heap is empty; the rest is never read
+		std::vector<Real> heap;      // all components, once there have been more than inline_capacity
+		std::size_t n;
+
+		Real* data() noexcept { return heap.empty() ? buf : heap.data(); }
+		const Real* data() const noexcept { return heap.empty() ? buf : heap.data(); }
+		void push(Real q) {
+			if (heap.empty()) {
+				if (n < inline_capacity) { buf[n++] = q; return; }
+				heap.assign(buf, buf + n);   // spill: from here on the components live on the heap
+			}
+			heap.resize(n);
+			heap.push_back(q);
+			++n;
+		}
 	};
 }
 

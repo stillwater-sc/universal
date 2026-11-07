@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
+#include <cerrno>       // EDOM for the square root of a negative interval
 #include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
 #include <limits>
 #include <type_traits>
@@ -170,10 +171,51 @@ namespace interval_detail {
 			// prod (below) is the exact real product and the comparison to double(p) is exact.
 			double prod = double(a) * double(b);
 			double pd = double(p);
+			// the same holds only inside double's range: a wide exponent field can take the
+			// product or p to 0 or inf in double, so round outward there, keeping exact zeros
+			const bool zero = (a == Scalar(0) || b == Scalar(0));
+			if (!zero && (!std::isnormal(prod) || !std::isnormal(pd))) { lo = round_down(p); hi = round_up(p); return; }
 			if (prod == pd) { lo = hi = p; }                    // a*b exactly representable
 			else if (prod > pd) { lo = p; hi = round_up(p); }   // p rounded down: true value above p
 			else { lo = round_down(p); hi = p; }                // p rounded up: true value below p
 		}
+	}
+
+	// Directed enclosure of sqrt(v), v >= 0: sets lo <= sqrt(v) <= hi, 1-ulp optimal. The
+	// direction comes from the sign of the residual s*s - v. fma gives it exactly only while
+	// that residual is representable; for a small v its bits fall below denorm_min and it
+	// rounds to zero, so an inexact root was taken as exact and the endpoint excluded the true
+	// root: 1955 of the 1999 values k*denorm_min (#1971). Below the threshold the residual is
+	// formed after scaling v by 2^(2 digits) and s by 2^digits, both exact. cfloat (gated to
+	// 2*digits <= 53) decides by exact double promotion, as prod_enclose does.
+	template<typename Scalar>
+	inline void sqrt_enclose(Scalar v, Scalar& lo, Scalar& hi) noexcept {
+		using std::sqrt; using std::fma; using std::ldexp; using std::isfinite;
+		const Scalar s = sqrt(v);
+		if (!isfinite(s) || v == Scalar(0)) { lo = hi = s; return; }   // +inf, NaN, and +-0 are exact
+		int direction;   // sign of s*s - v
+		if constexpr (std::is_floating_point_v<Scalar>) {
+			constexpr int p = std::numeric_limits<Scalar>::digits;
+			Scalar r;
+			if (v >= ldexp(std::numeric_limits<Scalar>::min(), 2 * p)) {
+				r = fma(s, s, -v);
+			}
+			else {
+				const Scalar ss = ldexp(s, p), vs = ldexp(v, 2 * p);   // exact: s is normal, v small
+				r = fma(ss, ss, -vs);
+			}
+			direction = (r > Scalar(0)) - (r < Scalar(0));
+		}
+		else {
+			// exact while both are normal doubles: 2*digits <= 53 bounds the significands, but a
+			// wide exponent field can still leave double's range, where the comparison would see
+			// 0 or inf and call an inexact root exact; round outward there (CodeRabbit)
+			const double sq = double(s) * double(s), vd = double(v);
+			if (!std::isnormal(sq) || !std::isnormal(vd)) { lo = round_down(s); hi = round_up(s); return; }
+			direction = (sq > vd) - (sq < vd);
+		}
+		lo = (direction > 0) ? round_down(s) : s;   // s above sqrt(v): the lower bound moves down
+		hi = (direction < 0) ? round_up(s) : s;     // s below sqrt(v): the upper bound moves up
 	}
 }
 
@@ -419,9 +461,23 @@ public:
 	constexpr Scalar lower() const noexcept { return _lo; }
 	constexpr Scalar upper() const noexcept { return _hi; }
 
-	// midpoint of the interval
+	// midpoint of the interval. (lo + hi) / 2 overflowed for two large bounds of one sign
+	// (mid([1e308, 1.7e308]) was inf), so that case halves first. An unbounded interval follows
+	// IEEE 1788-2015: mid([-inf, +inf]) is 0, and a half-bounded one gives the finite extreme
+	// on its unbounded side; [-inf, +inf] gave inf - inf = NaN, and so did double() (#1971).
+	// The empty interval's midpoint is NaN.
 	constexpr Scalar mid() const noexcept {
-		return (_lo + _hi) / Scalar(2);
+		if (isnan()) return std::numeric_limits<Scalar>::quiet_NaN();   // a NaN bound decides first: [NaN, inf] is not half-bounded
+		if constexpr (can_represent_unbounded) {
+			const Scalar inf = std::numeric_limits<Scalar>::infinity();
+			if (_lo == _hi && (_lo == inf || _lo == -inf)) return _lo;   // setinf(): [inf, inf] or [-inf, -inf]
+			if (_lo == -inf && _hi == inf) return Scalar(0);
+			if (_lo == -inf) return std::numeric_limits<Scalar>::lowest();
+			if (_hi == inf) return std::numeric_limits<Scalar>::max();
+		}
+		const Scalar m = (_lo + _hi) / Scalar(2);
+		if (m - m == m - m) return m;              // finite: x - x is 0, but NaN for inf and NaN
+		return _lo / Scalar(2) + _hi / Scalar(2);  // the sum overflowed (or a bound is NaN)
 	}
 
 	// radius (half-width) of the interval -- rounded UP so that mid() +/- rad()
@@ -561,13 +617,17 @@ inline bool operator>(const interval<Scalar>& lhs, const interval<Scalar>& rhs) 
 	return rhs < lhs;
 }
 
+// The empty interval (NaN bounds) is unordered, as a NaN is: every ordering with it is false.
+// Written as negations, <= and >= were both true for it (#1971).
 template<typename Scalar>
 inline bool operator<=(const interval<Scalar>& lhs, const interval<Scalar>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
 	return !(lhs > rhs);
 }
 
 template<typename Scalar>
 inline bool operator>=(const interval<Scalar>& lhs, const interval<Scalar>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
 	return !(lhs < rhs);
 }
 
@@ -715,23 +775,21 @@ inline interval<Scalar> sqrt(const interval<Scalar>& x) {
 		throw interval_negative_sqrt_arg();
 	}
 #endif
-	// sqrt is inexact in general. A clamped-to-zero lower bound (negative sqrt argument)
-	// stays exactly 0. EFT (fma residual s*s - x) widens an endpoint only when sqrt was
-	// actually inexact (#1247); otherwise round outward unconditionally (#1234).
+	// A fully negative argument has no real square root: the result is the empty interval,
+	// the NaN sentinel intersect() uses, with EDOM. It was [0, NaN] (#1971). An interval that
+	// straddles zero keeps its nonnegative part, so its lower bound is exactly 0.
+	if (x.isnan() || x.hi() < Scalar(0)) {
+		if (!x.isnan()) errno = EDOM;
+		interval<Scalar> empty;
+		empty.setnan();
+		return empty;
+	}
+	// sqrt is inexact in general. EFT (the residual s*s - x) widens an endpoint only when sqrt
+	// was actually inexact (#1247); otherwise round outward unconditionally (#1234).
 	if constexpr (interval_detail::interval_eft_exact<Scalar>::value) {
-		using std::fma;
-		Scalar lo;
-		if (x.lo() < Scalar(0)) {
-			lo = Scalar(0);
-		}
-		else {
-			Scalar s = sqrt(x.lo());
-			Scalar r = fma(s, s, -x.lo());                          // s*s - lo; >0 => s above sqrt(lo)
-			lo = (r > Scalar(0)) ? interval_detail::round_down(s) : s;
-		}
-		Scalar sh = sqrt(x.hi());
-		Scalar rh = fma(sh, sh, -x.hi());                           // sh*sh - hi; <0 => sh below sqrt(hi)
-		Scalar hi = (rh < Scalar(0)) ? interval_detail::round_up(sh) : sh;
+		Scalar lo = Scalar(0), unused, hi;
+		if (!(x.lo() < Scalar(0))) interval_detail::sqrt_enclose(x.lo(), lo, unused);
+		interval_detail::sqrt_enclose(x.hi(), unused, hi);
 		return interval<Scalar>(lo, hi);
 	}
 	else {
@@ -744,6 +802,10 @@ inline interval<Scalar> sqrt(const interval<Scalar>& x) {
 // power function
 template<typename Scalar>
 inline interval<Scalar> pow(const interval<Scalar>& x, int n) {
+	// the empty interval stays empty at every exponent, 0 included (the scalar pow(NaN, 0) = 1
+	// does not carry over to sets); its NaN bounds are never degenerate, so the odd-power path
+	// would recurse on them forever
+	if (x.isnan()) return x;
 	if (n == 0) return interval<Scalar>(Scalar(1));
 	if (n == 1) return x;
 	if (n < 0) return interval<Scalar>(Scalar(1)) / pow(x, -n);
@@ -752,13 +814,29 @@ inline interval<Scalar> pow(const interval<Scalar>& x, int n) {
 	if (n % 2 == 0) {
 		return sqr(pow(x, n / 2));
 	}
-	// Odd power
+	// Odd power. x * x^(n-1) treats the two factors as independent, so it was up to 2x too wide
+	// across zero: pow([-2, 3], 3) gave [-18, 27] for the exact [-8, 27] (#1971). An odd power
+	// is increasing, so the result is [lo^n, hi^n], each end the enclosure of a point's power,
+	// where the dependency problem does not arise.
+	if (!x.isdegenerate()) {
+		const interval<Scalar> lo = pow(interval<Scalar>(x.lo(), x.lo()), n);
+		const interval<Scalar> hi = pow(interval<Scalar>(x.hi(), x.hi()), n);
+		interval<Scalar> r;
+		r.set(lo.lo(), hi.hi());
+		return r;
+	}
 	return x * pow(x, n - 1);
 }
 
-// intersection of two intervals (returns empty interval if no overlap)
+// intersection of two intervals (returns empty interval if no overlap). The empty interval
+// intersects to empty from either side: std::max(x, NaN) is x, so intersect(x, empty) was x (#1971).
 template<typename Scalar>
 inline interval<Scalar> intersect(const interval<Scalar>& a, const interval<Scalar>& b) {
+	if (a.isnan() || b.isnan()) {
+		interval<Scalar> empty;
+		empty.setnan();
+		return empty;
+	}
 	Scalar lo = std::max(a.lo(), b.lo());
 	Scalar hi = std::min(a.hi(), b.hi());
 	if (lo > hi) {
@@ -769,9 +847,12 @@ inline interval<Scalar> intersect(const interval<Scalar>& a, const interval<Scal
 	return interval<Scalar>(lo, hi);
 }
 
-// hull (union) of two intervals
+// hull (union) of two intervals. The empty interval is the identity: hull(empty, x) is x.
+// std::min(NaN, x) is NaN, so it was [nan, nan] in one order and x in the other (#1971).
 template<typename Scalar>
 inline interval<Scalar> hull(const interval<Scalar>& a, const interval<Scalar>& b) {
+	if (a.isnan()) return b;
+	if (b.isnan()) return a;
 	return interval<Scalar>(std::min(a.lo(), b.lo()), std::max(a.hi(), b.hi()));
 }
 
