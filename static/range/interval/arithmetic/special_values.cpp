@@ -113,6 +113,37 @@ int VerifyCfloatSqrt(bool reportTestCases) {
 	return fails;
 }
 
+// cfloat<32,20> passes the EFT gate (2*12 significand bits <= 53) but its exponent field runs far
+// past double's: double(s) * double(s) and double(v) both became inf (or 0), compared equal, and
+// an inexact root was taken as exact (CodeRabbit). Powers of two beyond double's range are built
+// from the encoding, and every comparison is made in the cfloat itself: for v = 2^(2k) the root
+// 2^k is exact and must be enclosed; for v = 2^(2k+1) the root is irrational, cfloat's correctly
+// rounded sqrt s is within half an ulp of it, and the result must bracket s strictly.
+int VerifyCfloatWideExponentSqrt(bool reportTestCases) {
+	using C = sw::universal::cfloat<32, 20, std::uint32_t, true, false, false>;
+	using I = interval<C>;
+	static_assert(sw::universal::interval_detail::interval_eft_exact<C>::value, "the EFT path is the one under test");
+	constexpr long long bias = (1ll << 19) - 1;
+	auto pow2 = [&](long long e) { C c; c.setbits(static_cast<std::uint64_t>(e + bias) << 11); return c; };
+	int fails = 0;
+	for (long long k : { 1000ll, 5000ll, 100000ll, -1000ll, -5000ll, -100000ll }) {
+		const C square = pow2(2 * k), root = pow2(k);
+		const I r = sqrt(I(square, square));
+		if (!(r.lo() <= root && root <= r.hi())) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL cfloat<32,20> sqrt(2^" << 2 * k << ") = [" << to_binary(r.lo()) << ", " << to_binary(r.hi()) << "]\n";
+		}
+		const C odd = pow2(2 * k + 1);
+		const C s = sqrt(odd);
+		const I ro = sqrt(I(odd, odd));
+		if (!(ro.lo() < s && s < ro.hi())) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL cfloat<32,20> sqrt(2^" << 2 * k + 1 << ") does not bracket its rounded root\n";
+		}
+	}
+	return fails;
+}
+
 template<typename Real>
 int VerifyNegativeSqrt(bool reportTestCases) {
 	using I = interval<Real>;
@@ -147,6 +178,9 @@ int VerifyMidpoint(bool reportTestCases) {
 	check(left.mid() == RL::lowest() && right.mid() == RL::max(), "a half-bounded interval's mid is the finite extreme");
 	I empty; empty.setnan();
 	check(std::isnan(empty.mid()), "the empty interval's mid is NaN");
+	I pinf; pinf.setinf(false);
+	I ninf; ninf.setinf(true);
+	check(pinf.mid() == inf && ninf.mid() == -inf && double(pinf) == double(inf), "mid of setinf()'s [inf, inf] and [-inf, -inf] is that infinity");
 	check(I(Real(1), Real(3)).mid() == Real(2), "an ordinary mid is unchanged");
 	// random wide intervals near the top of the range: mid is finite and inside
 	std::mt19937_64 rng(19710);
@@ -197,12 +231,13 @@ int VerifyOddPower(bool reportTestCases) {
 			}
 		}
 	}
-	// inexact endpoints: the result encloses the exact range and stays within a few ulps of it
-	const I x(Real(-0.3), Real(0.7));
-	const I r = pow(x, 3);
-	const long double lo3 = static_cast<long double>(x.lo()) * x.lo() * x.lo(), hi3 = static_cast<long double>(x.hi()) * x.hi() * x.hi();
-	if (!(r.lo() <= lo3 && hi3 <= r.hi())) ++fails;
-	if (r.hi() - r.lo() > Real(1.0001) * Real(hi3 - lo3)) ++fails;   // not the dependency-widened x * x^2
+	// fractional endpoints whose cubes are exact: the result is exactly [lo^3, hi^3]; the
+	// dependency-widened x * x^2 would be [-0.140625, 0.421875]
+	if (pow(I(Real(-0.25), Real(0.75)), 3) != I(Real(-0.015625), Real(0.421875))) ++fails;
+	// the empty interval stays empty at every exponent; NaN bounds are never degenerate, and the
+	// odd-power path recursed on them until the stack ran out (CodeRabbit)
+	I empty; empty.setnan();
+	for (int n : { 3, 6, -3, 2, 5 }) if (!pow(empty, n).isnan()) ++fails;
 	// even powers and negative odd powers keep working
 	if (pow(I(Real(-2), Real(3)), 2) != I(Real(0), Real(9))) ++fails;
 	const I inv = pow(I(Real(2), Real(4)), -3);
@@ -228,6 +263,8 @@ int VerifyStreamInput(bool reportTestCases) {
 		{ "[1, x]",          false, Real(0),    Real(0) },
 		{ "[1, 2",           false, Real(0),    Real(0) },
 		{ "",                false, Real(0),    Real(0) },
+		{ "[nan, 1]",        false, Real(0),    Real(0) },   // one NaN bound is not an interval
+		{ "[1, 2x]",         false, Real(0),    Real(0) },   // trailing text inside a bound
 	};
 	for (const Case& c : cases) {
 		I v(Real(7), Real(9));
@@ -238,6 +275,38 @@ int VerifyStreamInput(bool reportTestCases) {
 		if (!pass) {
 			++fails;
 			if (reportTestCases) std::cerr << "FAIL '" << c.text << "' -> " << (ok ? "ok " : "fail ") << v << '\n';
+		}
+	}
+	// unbounded and empty intervals, as operator<< prints them, in either case and sign
+	{
+		const Real inf = std::numeric_limits<Real>::infinity();
+		const char* texts[] = { "[-inf, inf]", "[-INF, +Infinity]", "[1, inf]", "[-inf, -2]" };
+		const Real los[] = { -inf, -inf, Real(1), -inf }, his[] = { inf, inf, inf, Real(-2) };
+		for (int i = 0; i < 4; ++i) {
+			I v;
+			std::istringstream in(texts[i]);
+			in >> v;
+			if (in.fail() || v.lo() != los[i] || v.hi() != his[i]) {
+				++fails;
+				if (reportTestCases) std::cerr << "FAIL '" << texts[i] << "' -> " << v << '\n';
+			}
+		}
+		for (const char* t : { "[nan, nan]", "[-nan, -nan]", "[NaN, nan]" }) {
+			I v(Real(1), Real(2));
+			std::istringstream in(t);
+			in >> v;
+			if (in.fail() || !v.isnan()) { ++fails; if (reportTestCases) std::cerr << "FAIL '" << t << "' -> " << v << '\n'; }
+		}
+		// and what operator<< writes for them reads back
+		I entire; entire.setlo(-inf); entire.sethi(inf);
+		I empty; empty.setnan();
+		for (const I& x : { entire, empty }) {
+			std::stringstream s;
+			s << x;
+			I y(Real(1), Real(2));
+			s >> y;
+			const bool same = x.isnan() ? y.isnan() : (x == y);
+			if (s.fail() || !same) { ++fails; if (reportTestCases) std::cerr << "FAIL round trip of " << x << " -> " << y << '\n'; }
 		}
 	}
 	// what operator<< writes reads back
@@ -299,6 +368,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSqrt<float>(reportTestCases), "interval<float>", "subnormal sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSqrt<double>(reportTestCases), "interval<double>", "subnormal sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSqrt(reportTestCases), "interval<cfloat<16,5,sub>>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatWideExponentSqrt(reportTestCases), "interval<cfloat<32,20,sub>>", "sqrt past double's range");
 	nrOfFailedTestCases += ReportTestResult(VerifyNegativeSqrt<float>(reportTestCases), "interval<float>", "negative sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyNegativeSqrt<double>(reportTestCases), "interval<double>", "negative sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyMidpoint<float>(reportTestCases), "interval<float>", "mid");

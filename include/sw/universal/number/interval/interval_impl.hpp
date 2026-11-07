@@ -171,6 +171,10 @@ namespace interval_detail {
 			// prod (below) is the exact real product and the comparison to double(p) is exact.
 			double prod = double(a) * double(b);
 			double pd = double(p);
+			// the same holds only inside double's range: a wide exponent field can take the
+			// product or p to 0 or inf in double, so round outward there, keeping exact zeros
+			const bool zero = (a == Scalar(0) || b == Scalar(0));
+			if (!zero && (!std::isnormal(prod) || !std::isnormal(pd))) { lo = round_down(p); hi = round_up(p); return; }
 			if (prod == pd) { lo = hi = p; }                    // a*b exactly representable
 			else if (prod > pd) { lo = p; hi = round_up(p); }   // p rounded down: true value above p
 			else { lo = round_down(p); hi = p; }                // p rounded up: true value below p
@@ -203,7 +207,11 @@ namespace interval_detail {
 			direction = (r > Scalar(0)) - (r < Scalar(0));
 		}
 		else {
-			const double sq = double(s) * double(s), vd = double(v);   // exact: 2*digits <= 53
+			// exact while both are normal doubles: 2*digits <= 53 bounds the significands, but a
+			// wide exponent field can still leave double's range, where the comparison would see
+			// 0 or inf and call an inexact root exact; round outward there (CodeRabbit)
+			const double sq = double(s) * double(s), vd = double(v);
+			if (!std::isnormal(sq) || !std::isnormal(vd)) { lo = round_down(s); hi = round_up(s); return; }
 			direction = (sq > vd) - (sq < vd);
 		}
 		lo = (direction > 0) ? round_down(s) : s;   // s above sqrt(v): the lower bound moves down
@@ -461,6 +469,7 @@ public:
 	constexpr Scalar mid() const noexcept {
 		if constexpr (can_represent_unbounded) {
 			const Scalar inf = std::numeric_limits<Scalar>::infinity();
+			if (_lo == _hi && (_lo == inf || _lo == -inf)) return _lo;   // setinf(): [inf, inf] or [-inf, -inf]
 			if (_lo == -inf && _hi == inf) return Scalar(0);
 			if (_lo == -inf) return std::numeric_limits<Scalar>::lowest();
 			if (_hi == inf) return std::numeric_limits<Scalar>::max();
@@ -794,6 +803,7 @@ template<typename Scalar>
 inline interval<Scalar> pow(const interval<Scalar>& x, int n) {
 	if (n == 0) return interval<Scalar>(Scalar(1));
 	if (n == 1) return x;
+	if (x.isnan()) return x;   // the empty interval: NaN bounds are never degenerate, so the odd-power path would recurse forever
 	if (n < 0) return interval<Scalar>(Scalar(1)) / pow(x, -n);
 
 	// Even power
