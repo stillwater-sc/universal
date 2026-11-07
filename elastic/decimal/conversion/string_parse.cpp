@@ -140,6 +140,9 @@ try {
 		// "3.0" has frac="0" and exp10=0 -> effective_exp = -1.  Reject as
 		// non-integer per the strict policy (use "3" or "3e0" instead).
 		nrOfFailedTestCases += CheckReject("3.0",      reportTestCases);
+		// #1989 asked for "2.0" to parse as 2; the strict rule stays, so it is rejected too
+		nrOfFailedTestCases += CheckReject("2.0",      reportTestCases);
+		nrOfFailedTestCases += CheckReject("-2.00",    reportTestCases);
 		nrOfFailedTestCases += CheckReject("10.50e0",  reportTestCases);
 		ReportTestResult(nrOfFailedTestCases - start, "fractional input rejected", "edecimal parse");
 	}
