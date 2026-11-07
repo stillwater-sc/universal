@@ -392,6 +392,23 @@ int VerifyStreamInput(bool reportTestCases) {
 			++fails;
 			if (reportTestCases) std::cerr << "FAIL comma-decimal round trip: wrote '" << written << "', read " << y << '\n';
 		}
+		// a comma as the thousands separator: [1,000, 2,000] (CodeRabbit)
+		struct comma_grouping : std::numpunct<char> {
+			char do_thousands_sep() const override { return ','; }
+			std::string do_grouping() const override { return "\3"; }
+		};
+		const std::locale grouped(std::locale::classic(), new comma_grouping);
+		const I g(Real(1000), Real(2000));
+		std::stringstream gs;
+		gs.imbue(grouped);
+		gs << g;
+		const std::string gw = gs.str();
+		I gy(Real(7), Real(9));
+		gs >> gy;
+		if (gw != "[1,000, 2,000]" || gs.fail() || !(g == gy)) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL comma-grouping round trip: wrote '" << gw << "', read " << gy << '\n';
+		}
 		I z(Real(7), Real(9));
 		std::istringstream bad("[1,5,2,5]");   // no space after the separator: ambiguous, so it fails
 		bad.imbue(european);
