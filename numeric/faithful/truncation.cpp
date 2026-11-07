@@ -204,6 +204,40 @@ int VerifyFmod(bool reportTestCases, double relTol) {
 
 }  // namespace
 
+// The exact expansion behind fmod, exp, exp10 and pow keeps its components in an inline buffer of
+// 32, and moves to the heap past that (#1969). The library's functions stay below it (12 components
+// for float, 11 for double), so this drives one past it directly: 2^(-1074 + 60k) for k = 0..34
+// are 35 double components that no twoSum can merge, 60 bits apart. It checks the size, the sign,
+// that a copy of a spilled expansion is the same sum, and that adding the negations in turn
+// cancels it to zero exactly, through and back below the inline capacity.
+int VerifyExpansionSpill(bool reportTestCases) {
+	using sw::universal::faithful_detail::exact_expansion;
+	int fails = 0;
+	auto check = [&](bool ok, const char* what) { if (!ok) { ++fails; if (reportTestCases) std::cerr << "FAIL expansion " << what << '\n'; } };
+	constexpr int count = 35;
+	exact_expansion<double> e;
+	for (int k = 0; k < count; ++k) e.add(std::ldexp(1.0, -1074 + 60 * k));
+	check(e.size() == count, "holds 35 separate components past the inline 32");
+	check(e.sign() == 1, "is positive");
+	check(e.approx() == std::ldexp(1.0, -1074 + 60 * (count - 1)), "rounds to its leading component");
+	exact_expansion<double> copy(e);
+	check(copy.size() == count && copy.approx() == e.approx(), "copies when spilled");
+	exact_expansion<double> assigned;
+	assigned.add(1.0);
+	assigned = e;
+	check(assigned.size() == count, "assigns when spilled");
+	for (int k = count - 1; k >= 0; --k) {
+		copy.add(-std::ldexp(1.0, -1074 + 60 * k));
+		if (copy.size() != static_cast<std::size_t>(k)) { check(false, "cancels one component at a time"); break; }
+	}
+	check(copy.size() == 0 && copy.sign() == 0 && copy.approx() == 0.0, "cancels to zero");
+	check(e.size() == count, "is unchanged by changes to its copy");
+	// a spilled expansion keeps working: adding a value that overlaps its top merges into it
+	e.add(std::ldexp(1.0, -1074 + 60 * (count - 1)));
+	check(e.size() == count && e.approx() == std::ldexp(1.0, -1074 + 60 * (count - 1) + 1), "merges an overlapping add");
+	return fails;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -246,6 +280,7 @@ try {
 	// the remainder is exact, then rounded once to the pair: a relative error below epsilon()
 	nrOfFailedTestCases += ReportTestResult(VerifyFmod<FloatRef>(reportTestCases, std::ldexp(1.0, -46)), "faithful<float>", "fmod");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmod<DoubleRef>(reportTestCases, std::ldexp(1.0, -104)), "faithful<double>", "fmod");
+	nrOfFailedTestCases += ReportTestResult(VerifyExpansionSpill(reportTestCases), "exact_expansion<double>", "past the inline capacity");
 #endif
 
 #if REGRESSION_LEVEL_2
