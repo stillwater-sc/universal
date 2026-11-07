@@ -71,6 +71,7 @@ namespace interval_detail {
 		}
 		std::istringstream in(tok);
 		in.imbue(istr.getloc());   // the caller's locale: what operator<< wrote with it, e.g. 1_000, reads back
+		in.flags(istr.flags());    // and its format flags: an integer Scalar under std::hex reads [a, 14] as 10 and 20
 		Scalar v{};
 		in >> v;
 		if (in.fail()) return false;

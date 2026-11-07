@@ -251,6 +251,24 @@ int VerifyOddPower(bool reportTestCases) {
 	return fails;
 }
 
+// the stream's format flags reach the bound parser: an integer interval written under std::hex as
+// [a, 14] reads back as [10, 20], not as a parse failure or decimal 14 (CodeRabbit)
+int VerifyStreamFlags(bool reportTestCases) {
+	using I = interval<int>;
+	int fails = 0;
+	I x; x.set(10, 20);
+	std::stringstream s;
+	s << std::hex << x;
+	const std::string written = s.str();
+	I y; y.set(1, 2);
+	s >> y;
+	if (written != "[a, 14]" || s.fail() || y.lo() != 10 || y.hi() != 20) {
+		++fails;
+		if (reportTestCases) std::cerr << "FAIL hex round trip: wrote '" << written << "', read [" << y.lo() << ", " << y.hi() << "]\n";
+	}
+	return fails;
+}
+
 // posit: NaR compares equal to itself, so the NaN test must be the scalar's own; posit prints NaR
 // as "nar" but does not read it; and its infinity() is maxpos, so "inf" is not a bound it can hold
 int VerifyPositStreamInput(bool reportTestCases) {
@@ -486,6 +504,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyStreamInput<float>(reportTestCases), "interval<float>", "operator>>");
 	nrOfFailedTestCases += ReportTestResult(VerifyStreamInput<double>(reportTestCases), "interval<double>", "operator>>");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositStreamInput(reportTestCases), "interval<posit<16,2>>", "operator>>");
+	nrOfFailedTestCases += ReportTestResult(VerifyStreamFlags(reportTestCases), "interval<int>", "operator>> format flags");
 #endif
 
 #if REGRESSION_LEVEL_2
