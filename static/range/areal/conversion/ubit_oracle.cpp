@@ -129,8 +129,13 @@ int VerifyConvertingConstructor(bool reportTestCases) {
 	for (std::uint64_t raw = 0; raw < (std::uint64_t(1) << Source::nbits); ++raw) {
 		src.setbits(raw);
 		if (src.isnan()) {
+			// a NaN keeps its kind: quiet stays quiet, signalling stays signalling
 			const Target t(src);
-			if (!t.isnan()) ++fails;
+			if (!t.isnan() || t.isnan(sw::universal::NAN_TYPE_QUIET) != src.isnan(sw::universal::NAN_TYPE_QUIET)
+			               || t.isnan(sw::universal::NAN_TYPE_SIGNALLING) != src.isnan(sw::universal::NAN_TYPE_SIGNALLING)) {
+				++fails;
+				if (reportTestCases && reported++ < 5) std::cerr << "FAIL NaN kind " << sw::universal::to_binary(src) << " -> " << sw::universal::to_binary(t) << '\n';
+			}
 			continue;
 		}
 		const Target t(src);

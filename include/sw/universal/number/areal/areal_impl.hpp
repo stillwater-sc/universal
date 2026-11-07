@@ -190,6 +190,10 @@ public:
 		// the top binade of areal<64,11> overflows double, and long double is double on some
 		// platforms (CodeRabbit).
 		using Src = areal<nnbits, ees, bt>;
+		if (rhs.isnan()) {   // directly: the blocktriple's setnan() would make a quiet NaN signalling (CodeRabbit)
+			setnan(rhs.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
+			return;
+		}
 		blocktriple<Src::fbits, BlockTripleOperator::ADD, bt> v;
 		rhs.normalizeAddition(v);
 		if (v.iszero()) v.setsign(rhs.sign());   // normalizeAddition leaves a zero unsigned, and -0 must stay -0
