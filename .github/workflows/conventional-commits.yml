@@ -48,6 +48,7 @@ jobs:
             areal
             faithful
             interval
+            sorn
             bfloat16
             dfloat
             hfloat

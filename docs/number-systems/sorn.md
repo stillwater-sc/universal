@@ -58,8 +58,9 @@ using namespace sw::universal;
 ### Basic Usage
 
 ```cpp
-// 20-bit SORN with 8 linear steps, half-open, negative, with zero and infinity
-sorn<-10, 10, 8, true, true, true, true, true> a, b, c;
+// 19-bit SORN: 8 linear steps on [0, 4], half-open, mirrored negatives, with zero and infinity.
+// A linear lattice must start at 0; setSornDT asserts on any other start.
+sorn<0, 4, 8, true, true, true, true, true> a, b, c;
 
 a = 3.5;  // Assigned to the interval containing 3.5
 b = 2.1;  // Assigned to the interval containing 2.1
@@ -81,6 +82,29 @@ sorn<0, 100, 16, true, true, false, false, true> sensor_b(5.05);
 auto combined = sensor_a + sensor_b;
 // Result is the rigorous union of all possible sums
 ```
+
+### What a sorn value is
+
+A `sorn` holds one connected interval of its lattice: a single lattice interval, or a span of
+adjacent ones. The API built on that:
+
+| Operation | Behaviour |
+|-----------|-----------|
+| `sorn s = x;` | the lattice interval containing `x`. A value beyond the lattice saturates to the outermost interval on its side; a NaN gives NaN |
+| `sorn()` | NaN, which stands for the empty set |
+| `sorn(SpecificValue::...)` | `maxpos`/`minpos` and `maxneg`/`minneg` are the outermost finite and innermost intervals; `infpos`/`infneg` the interval reaching infinity (saturating without one); `qnan`, `snan` and `nar` give NaN. A lattice without negatives has no `minneg`/`maxneg`: they come out NaN |
+| `a == b`, `a != b` | the same interval, bounds and open/closed conditions alike. NaN is unequal to everything, itself included |
+| `double(s)`, `float(s)` | the interval's midpoint, which converts back into the same interval. One infinite bound gives that bound; the whole line, and NaN, give NaN |
+| `a + b`, `a - b`, `a * b` | interval arithmetic, rounded outward onto the lattice. Operands may be `const` and temporaries; a native scalar operand of any arithmetic type is an exact value |
+| `a / b` | `a` times the reciprocal of `b`. A divisor that straddles zero gives the whole lattice; dividing by the exact zero gives NaN |
+| NaN operand | NaN result, for every operator |
+| `setbits(v)`, `getBits()`, `to_binary(s)` | one bit per lattice interval covered, lowest interval in bit 0. No bit set is NaN |
+
+The lattice is built once per configuration (`sorn<...>::datatype()`) and shared by every value,
+so copying a `sorn` copies one interval and nothing else.
+
+`numeric_limits<sorn<...>>` is not derived from the lattice yet: its `min()`, `max()` and digit
+constants are placeholders.
 
 ## Problems It Solves
 

@@ -25,16 +25,13 @@
 
 namespace sw { namespace universal {
 
-// non-const sorn: its current interval
+// a sorn prints its current interval. There used to be a second overload that printed the
+// lattice's range for a const operand, so a temporary such as (a + b) printed the range instead
+// of its value (#1972).
 template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero>
-inline std::ostream& operator<<(std::ostream& ostr, sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& s) {
+inline std::ostream& operator<<(std::ostream& ostr, const sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& s) {
+	if (s.isnan()) return ostr << "nan";
 	return ostr << s.sornIntVal.getInt();
-}
-
-// const sorn: the range of its lattice
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero>
-inline std::ostream& operator<<(std::ostream& ostr, const sorn< _start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs) { 
-	return ostr << "[ " << lhs.minVal() << ", " << lhs.maxVal() << "]";
 }
 
 }} // namespace sw::universal

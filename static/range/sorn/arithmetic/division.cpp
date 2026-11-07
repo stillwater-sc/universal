@@ -6,59 +6,48 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <universal/number/sorn/sorn.hpp>
-#include <universal/verification/test_suite.hpp>    // there is a generic VerifyDivision here
+#include <universal/verification/test_suite.hpp>
 
 namespace sw { namespace universal {
 
-	//template<typename SornType,
-	//	std::enable_if_t<is_sorn<SornType>, SornType> = 0
-	//>
+	// the special cases of SORN division; enclosure.cpp checks that every quotient encloses x / y
 	template<typename SornType>
-	int VerifyDivision_(bool reportTestCases) {
-		constexpr size_t nbits = SornType::nbits;
-		// using value_type = typename SornType::value_type;
-
-		SornType s;
-		std::cerr << "SORN type : " << type_tag(s) << " : nbits = " << nbits << '\n';
-
-		constexpr size_t NR_ENCODINGS = 16; // (1ull << nbits);
-
+	int VerifyDivisionSpecialCases(bool reportTestCases) {
 		int nrOfFailedTestCases = 0;
-
-		SornType a, b, c, cref;
-		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			double da = double(a);
-			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
-				double db = double(b);
-
-				double ref = da + db;
-				c = a + b;
-				cref = ref;
-				//std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-				//std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-				if (c != cref) {
-					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
-					++nrOfFailedTestCases;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "+", a, b, c, cref);
-					//std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-					//std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-				}
-				else {
-					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
-				}
-				if (nrOfFailedTestCases > 24) return nrOfFailedTestCases;
+		auto check = [&](const SornType& got, const std::string& expected, const char* label) {
+			std::stringstream s;
+			s << got;
+			if (s.str() != expected) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: " << label << " = " << s.str() << ", expected " << expected << '\n';
 			}
-		}
+		};
+		const SornType a(1.25);                          // (1,1.5]
+		const SornType b(0.75);                          // (0.5,1]
+		const SornType straddle = SornType(-0.25) + SornType(0.25);   // [-0.5,0.5]
+		const SornType zero(0);
+		const SornType minpos(SpecificValue::minpos);    // (0,0.5]
+		const SornType minneg(SpecificValue::minneg);    // [-0.5,0)
+
+		check(a / b,        "(1,3]",       "(1,1.5] / (0.5,1]");
+		check(a / -b,       "[-3,-1)",     "(1,1.5] / [-1,-0.5)");
+		check(a / straddle, "[-inf,inf]",  "divisor straddling zero");
+		check(a / zero,     "nan",         "division by the exact zero");
+		check(zero / a,     "0",           "zero dividend");
+		check(zero / zero,  "nan",         "0 / 0");
+		check(a / minpos,   "(2,inf]",     "divisor with an open zero bound");
+		check(a / minneg,   "[-inf,-2)",   "negative divisor with an open zero bound");
+		check(a / 2,        "(0.5,1]",     "sorn / int");
+		check(a / -2.0,     "[-1,-0.5)",   "sorn / negative double");
+		check(a / 0.0f,     "nan",         "sorn / 0.0f");
+		check(1 / a,        "(0.5,1]",     "int / sorn");
+		check(3.0 / b,      "(2.5,inf]",   "double / sorn");   // [3, 6) saturates past 4
 		return nrOfFailedTestCases;
 	}
 
-} }  // namespace sw::universal
+}}  // namespace sw::universal
 
-
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -68,9 +57,9 @@ namespace sw { namespace universal {
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
@@ -84,25 +73,22 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+	using LinSorn = sorn<0, 4, 8>;   // linear set up SORN datatype
+
 #if MANUAL_TESTING
-	
-//	using FloatSorn = sorn<0, 4, 8 >; // set up SORN datatype (linear);
 
-//	TestCase< FloatSorn, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
-
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision_<FloatSorn>(reportTestCases), "sorn<float>", test_tag);
+	const LinSorn a(1.25), b(0.75);
+	std::cout << a << " / " << b << " = " << (a / b) << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;
+	return EXIT_SUCCESS;   // ignore failures
 #else
-	using FloatSorn = sorn<0, 4, 8 >; // set up SORN datatype (linear);
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<FloatSorn>(reportTestCases), "sorn<float>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivisionSpecialCases<LinSorn>(reportTestCases), "sorn<0,4,8>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	
 #endif
 
 #if REGRESSION_LEVEL_3

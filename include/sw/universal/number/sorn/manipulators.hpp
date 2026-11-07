@@ -22,7 +22,7 @@ namespace sw { namespace universal {
 
 // sornInterval::getInt: the interval as text, "v" for a point, "(a,b]" etc otherwise
 template<typename Real>
-std::string sornInterval<Real>::getInt() {
+std::string sornInterval<Real>::getInt() const {
 	std::stringstream configStream;
 	if ((this->lowerBound == this->upperBound) && (not this->lowerIsOpen && not this->upperIsOpen)) {
 		configStream << this->lowerBound;
@@ -35,7 +35,7 @@ std::string sornInterval<Real>::getInt() {
 
 // sorn::getConfig: all configuration parameters and flags as text
 template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero>
-std::string sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::getConfig() {
+std::string sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::getConfig() const {
 	std::stringstream configStream;
 	configStream << "-- configuration parameters:" << '\t' << "start: " << start << ", stop: " << stop << ", steps: " << steps << ", stepSize: " << stepSize << '\n';
 	configStream << "-- configuration flags:" << "\t\t";
@@ -50,11 +50,11 @@ std::string sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::get
 
 // sorn::getDT: the SORN datatype configuration as text
 template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero>
-std::string sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::getDT() {
+std::string sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::getDT() const {
 	std::stringstream DTstream;
 	DTstream << "-- SORN datatype:" << "\t\t";
-	for (std::size_t b = 0; b < sornDT.size(); b++) {
-		DTstream << sornDT[b].getInt() << ' ';
+	for (std::size_t b = 0; b < datatype().size(); b++) {
+		DTstream << datatype()[b].getInt() << ' ';
 	}
 	DTstream << '\n';
 	return DTstream.str();
@@ -94,17 +94,18 @@ std::string sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::get
 		return inRange;
 	}
 
-	// transform sorn to a binary representation
+	// transform sorn to a binary representation: one bit per lattice interval the value covers,
+	// the highest interval first, with a nibble marker every four bits on request
 	template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero>
 	inline std::string to_binary(const sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& number, bool nibbleMarker) {
+		constexpr std::size_t N = sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::sornBits;
+		const auto bits = number.getBits();
 		std::stringstream s;
-
-//		using Real = sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::Real;
-//		auto lowerBound = number.minVal();
-//		auto upperBound = number.maxVal();
-
-//		s << "[ " << to_binary(float(lowerBound), nibbleMarker) << ", " << to_binary(float(upperBound), nibbleMarker) << "]";
-
+		s << "0b";
+		for (std::size_t i = N; i-- > 0;) {
+			s << (bits[i] ? '1' : '0');
+			if (nibbleMarker && i > 0 && (i % 4) == 0) s << '\'';
+		}
 		return s.str();
 	}
 

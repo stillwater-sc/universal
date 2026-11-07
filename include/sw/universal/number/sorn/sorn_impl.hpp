@@ -12,6 +12,7 @@
 #include <string>     // std::string, returned by getInt/getConfig/getDT (defined in manipulators.hpp)
 #include <vector>
 #include <bitset>
+#include <type_traits>
 
 #include <universal/number/shared/specific_value_encoding.hpp>
 
@@ -37,7 +38,7 @@ struct sornInterval {
 	bool upperIsOpen;
 
 	// the interval as text; defined in manipulators.hpp -- it builds it with a stringstream (#1334)
-	std::string getInt();
+	std::string getInt() const;
 
 	bool isZero() const noexcept {
 		if (this->lowerBound == 0 && this->upperBound == 0 && not this->lowerIsOpen && not this->upperIsOpen) {
@@ -128,27 +129,35 @@ inline std::vector<sornInterval<Real>> setSornDT(signed int start, signed int st
 	return sornDT;
 }
 
-// float2SORN: a function converting a single float input to a SORN interval
+// float2SORN: convert a single float to the SORN interval that contains it.
+// A NaN converts to NaN. A value outside the lattice saturates to the outermost interval on
+// its side, the same rule adaptToDT() applies to arithmetic results (#1972).
 template<typename Real>
-sornInterval<Real> float2SORN(float operand, std::vector<sornInterval<Real>> sornDT, sornInterval<Real>& sornIntVal) {
-	for (size_t b = 0; b < sornDT.size(); b++) {
-		if (	( (operand > sornDT[b].lowerBound) || (operand == sornDT[b].lowerBound && not sornDT[b].lowerIsOpen) ) &&
-				( (operand < sornDT[b].upperBound) || (operand == sornDT[b].upperBound && not sornDT[b].upperIsOpen) )		) {
-			sornIntVal = sornDT[b];
+sornInterval<Real> float2SORN(float operand, const std::vector<sornInterval<Real>>& sornDT, sornInterval<Real>& sornIntVal) {
+	if (std::isnan(operand) || sornDT.empty()) {
+		sornIntVal = { std::numeric_limits<Real>::quiet_NaN(), std::numeric_limits<Real>::quiet_NaN(), false, false };
+		return sornIntVal;
+	}
+	for (const auto& interval : sornDT) {
+		if (	( (operand > interval.lowerBound) || (operand == interval.lowerBound && not interval.lowerIsOpen) ) &&
+				( (operand < interval.upperBound) || (operand == interval.upperBound && not interval.upperIsOpen) )		) {
+			sornIntVal = interval;
+			return sornIntVal;
 		}
 	}
+	sornIntVal = (operand <= sornDT.front().lowerBound ? sornDT.front() : sornDT.back());
 	return sornIntVal;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-// class sorn: a class for defining a SORN format:	sorn<start,stop,steps,lin,halfopen,neg,inf,zero>					 
-// 
-// -- Mandatory configuration parameters:	
-//		start:	lowest value in the SORN lattice // for "lin" start=0 // for "log" -inf<start<inf, lattice begins with 2^start 
+// class sorn: a class for defining a SORN format:	sorn<start,stop,steps,lin,halfopen,neg,inf,zero>
+//
+// -- Mandatory configuration parameters:
+//		start:	lowest value in the SORN lattice // for "lin" start=0 // for "log" -inf<start<inf, lattice begins with 2^start
 //		stop:	highest non-infinity value in the SORN lattice // for "lin" start<stop // for "log" start<stop, lattice ends with 2^stop
 //		steps:	number of intervals/steps within the SORN representation between "start" and "stop" for "lin" (positive part),
 //				not required for "log" distribution (any positve value allowed)
-// 
+//
 // -- Optional configuration parameters: (all "true" by default)
 //		lin:		set the SORN interval distribution to "linear" (true) or "logarithmic" (false)
 //		halfopen:	set the SORN interval distribution to "halfopen bounds, no exact values" (true) or "open bounds,
@@ -156,6 +165,9 @@ sornInterval<Real> float2SORN(float operand, std::vector<sornInterval<Real>> sor
 //		neg:		include negative values/intervals in the SORN datatype, symmetric to positive part
 //		inf:		inlcude infinity value/interval bounds to the SORN datatype
 //		zero:		inlcude the exact zero value in the SORN datatype
+//
+// A sorn value is one connected interval of the lattice: a single lattice interval, or a span of
+// adjacent ones. NaN stands for the empty set (no lattice interval).
 //////////////////////////////////////////////////////////////////////////////////////////////////
 template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg=1, bool _inf=1, bool _zero=1>
 class sorn {
@@ -167,8 +179,8 @@ public:
 private:
 
 	// input configuration parameters
-	static constexpr signed int start	= _start;	// lowest non-zero value in the SORN lattice 
-	static constexpr signed int stop	= _stop;	// highest non-infinity value in the SORN lattice 
+	static constexpr signed int start	= _start;	// lowest non-zero value in the SORN lattice
+	static constexpr signed int stop	= _stop;	// highest non-infinity value in the SORN lattice
 	static constexpr unsigned int steps	= _steps;	// number of intervals/steps within the SORN representation between start and stop (only for positive part, only for linear distribution)
 	static constexpr float stepSize = (float)(stop - start) / (float)steps;
 
@@ -179,15 +191,18 @@ private:
 	static constexpr bool flagLin		= _lin;			// set the SORN interval distribution to "linear"										(default: true)
 	static constexpr bool flagLog		= not _lin;		// set the SORN interval distribution to "logarithmic"									(default: false)
 	static constexpr bool flagHalfopen	= _halfopen;	// set the SORN interval distribution to halfopen without exacts						(default: true)
-	static constexpr bool flagOpen		= not _halfopen;// set the SORN interval distribution to open with intermediate exacts					(default: false) 
+	static constexpr bool flagOpen		= not _halfopen;// set the SORN interval distribution to open with intermediate exacts					(default: false)
+
+	static constexpr Real kInf = std::numeric_limits<Real>::infinity();
+	static constexpr Real kNaN = std::numeric_limits<Real>::quiet_NaN();
 
 public:
 
 	// SORN value with NaN initialisation
-	SORN_INTERVAL sornIntVal = { std::numeric_limits<Real>::quiet_NaN() , std::numeric_limits<Real>::quiet_NaN() , false , false };
+	SORN_INTERVAL sornIntVal = { kNaN , kNaN , false , false };
 
 	// SORN bitwidth (redundant with sornDT.size())
-	static constexpr size_t sornBits =	( 
+	static constexpr size_t sornBits =	(
 											( (flagLin ? steps : stop - start + 1) + (flagInf ? 1 : 0) ) *		// determine number of intervals (either halfopen or open)
 											(flagOpen ? 2 : 1)													// double if open intervals with intermediate exact values are used
 										) *
@@ -196,43 +211,49 @@ public:
 										((flagOpen & flagInf & flagNeg) ? 1 : 0);									// for open intervals only one value for +-inf is used
 	static constexpr size_t nbits = sornBits;
 
-	// SORN datatype
-	std::vector<SORN_INTERVAL> sornDT = setSornDT<Real>(start, stop, steps, stepSize, flagNeg, flagInf, flagZero, flagLin, flagLog, flagHalfopen, flagOpen, sornBits);
+	// datatype: the lattice of intervals this configuration represents. It is built once per
+	// configuration and shared by every object; a per-object std::vector made every construction,
+	// copy and conversion allocate (#1972).
+	static const std::vector<SORN_INTERVAL>& datatype() {
+		static const std::vector<SORN_INTERVAL> dt = setSornDT<Real>(start, stop, steps, stepSize, flagNeg, flagInf, flagZero, flagLin, flagLog, flagHalfopen, flagOpen, sornBits);
+		return dt;
+	}
+	// sornDT: the lattice under its original name, for existing callers. Code that may run during
+	// static initialization should call datatype() instead.
+	static inline const std::vector<SORN_INTERVAL>& sornDT = datatype();
 
 	// constructors
 	sorn() {}
 
 	// specific value constructor
-	constexpr sorn(const SpecificValue code) noexcept {
+	sorn(const SpecificValue code) {
 		switch (code) {
 		case SpecificValue::maxpos:
-			//maxpos();
+			maxpos();
 			break;
 		case SpecificValue::minpos:
-			//minpos();
+			minpos();
 			break;
 		case SpecificValue::zero:
 		default:
-			//zero();
+			setzero();
 			break;
 		case SpecificValue::minneg:
-			//minneg();
+			minneg();
 			break;
 		case SpecificValue::maxneg:
-			//maxneg();
+			maxneg();
 			break;
 		case SpecificValue::infpos:
-			//setinf(false);
+			setinf(false);
 			break;
 		case SpecificValue::infneg:
-			//setinf(true);
+			setinf(true);
 			break;
-		case SpecificValue::nar: // approximation as IEEE-754 SORNs don't have a NaR
+		case SpecificValue::nar: // a SORN has no NaR: the empty set stands in for it
 		case SpecificValue::qnan:
-			//setnan(NAN_TYPE_QUIET);
-			break;
 		case SpecificValue::snan:
-			//setnan(NAN_TYPE_SIGNALLING);
+			setnan();
 			break;
 		}
 	}
@@ -253,31 +274,29 @@ public:
 	sorn(long double initial_value)			{ *this = initial_value; }
 
 	// assignment operators for native types
-	sorn operator=(signed char rhs)			{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(short rhs)				{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(int rhs)					{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(long rhs)				{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(long long rhs)			{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(char rhs)				{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(unsigned short rhs)		{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(unsigned int rhs)		{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(unsigned long rhs)		{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(unsigned long long rhs)	{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(float rhs)				{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(double rhs)				{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
-	sorn operator=(long double rhs)			{ float2SORN( (float)rhs, sornDT, this->sornIntVal); return *this; }
+	sorn& operator=(signed char rhs)		{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(short rhs)				{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(int rhs)				{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(long rhs)				{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(long long rhs)			{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(char rhs)				{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(unsigned short rhs)		{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(unsigned int rhs)		{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(unsigned long rhs)		{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(unsigned long long rhs)	{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(float rhs)				{ return assign(rhs); }
+	sorn& operator=(double rhs)				{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(long double rhs)		{ return assign(static_cast<float>(rhs)); }
 
 	///////////////////////////////
 	////////// operators //////////
 	///////////////////////////////
 
-	// write to output: operator<<(std::ostream&, sorn&) is in iostream.hpp (#1334)
-
-	// arithmetics	(TODO: div, comparison?)
+	// write to output: operator<<(std::ostream&, const sorn&) is in iostream.hpp (#1334)
 
 	// negation operator
-	sorn operator-() {
-		if (iszero()) {
+	sorn operator-() const {
+		if (iszero() || isnan()) {
 			return *this;
 		}
 		else {
@@ -290,10 +309,13 @@ public:
 		}
 	}
 
-	// single operand addition 
-	
+	// single operand addition
+
 	// sorn + sorn
-	sorn& operator+=(sorn& rhs) {
+	sorn& operator+=(const sorn& rhs) {
+		if (isnan() || rhs.isnan()) {
+			return setnan();
+		}
 		if (rhs.iszero()) {
 			return *this;
 		}
@@ -310,24 +332,12 @@ public:
 			return *this;
 		}
 	}
-	// sorn + int
-	sorn& operator+=(int rhs) {
-		this->sornIntVal.lowerBound += rhs;
-		this->sornIntVal.upperBound += rhs;
-		adaptToDT();
-		return *this;
-	}
-	// sorn + float
-	sorn& operator+=(float rhs) {
-		this->sornIntVal.lowerBound += rhs;
-		this->sornIntVal.upperBound += rhs;
-		adaptToDT();
-		return *this;
-	}
-	// sorn + double
-	sorn& operator+=(double rhs) {
-		this->sornIntVal.lowerBound += (float)rhs;
-		this->sornIntVal.upperBound += (float)rhs;
+	// sorn + native scalar: the scalar is an exact value, not converted to a lattice interval first
+	template<typename Scalar> requires std::is_arithmetic_v<Scalar>
+	sorn& operator+=(Scalar rhs) {
+		if (isnan()) return *this;
+		this->sornIntVal.lowerBound += static_cast<Real>(rhs);
+		this->sornIntVal.upperBound += static_cast<Real>(rhs);
 		adaptToDT();
 		return *this;
 	}
@@ -335,7 +345,10 @@ public:
 	// single operand subtraction
 
 	// sorn - sorn
-	sorn& operator-=(sorn& rhs) {
+	sorn& operator-=(const sorn& rhs) {
+		if (isnan() || rhs.isnan()) {
+			return setnan();
+		}
 		if (rhs.iszero()) {
 			return *this;
 		}
@@ -352,24 +365,12 @@ public:
 			return *this;
 		}
 	}
-	// sorn - int
-	sorn& operator-=(int rhs) {
-		this->sornIntVal.lowerBound -= rhs;
-		this->sornIntVal.upperBound -= rhs;
-		adaptToDT();
-		return *this;
-	}
-	// sorn - float
-	sorn& operator-=(float rhs) {
-		this->sornIntVal.lowerBound -= rhs;
-		this->sornIntVal.upperBound -= rhs;
-		adaptToDT();
-		return *this;
-	}
-	// sorn - double
-	sorn& operator-=(double rhs) {
-		this->sornIntVal.lowerBound -= (float)rhs;
-		this->sornIntVal.upperBound -= (float)rhs;
+	// sorn - native scalar
+	template<typename Scalar> requires std::is_arithmetic_v<Scalar>
+	sorn& operator-=(Scalar rhs) {
+		if (isnan()) return *this;
+		this->sornIntVal.lowerBound -= static_cast<Real>(rhs);
+		this->sornIntVal.upperBound -= static_cast<Real>(rhs);
 		adaptToDT();
 		return *this;
 	}
@@ -377,82 +378,84 @@ public:
 	// single operand multiplication
 
 	// sorn * sorn
-	sorn& operator*=(sorn& rhs) {
-		// 1. create references and intermediate values for the bounds
-		float &lhsLOW	= this->sornIntVal.lowerBound;
-		float &lhsUP	= this->sornIntVal.upperBound;
-		float &rhsLOW	= rhs.sornIntVal.lowerBound;
-		float &rhsUP	= rhs.sornIntVal.upperBound;
-		float resLOW;
-		float resUP;
-		// 2. create references and intermediate values for the conditions
-		bool &lhsLOWc	= this->sornIntVal.lowerIsOpen;
-		bool &lhsUPc	= this->sornIntVal.upperIsOpen;
-		bool &rhsLOWc	= rhs.sornIntVal.lowerIsOpen;
-		bool &rhsUPc	= rhs.sornIntVal.upperIsOpen;
-		bool resLOWc;
-		bool resUPc;
-		// 3. check zero case
+	sorn& operator*=(const sorn& rhs) {
+		if (isnan() || rhs.isnan()) {
+			return setnan();
+		}
 		if (rhs.iszero() || this->iszero()) {
-			setzero();
+			return setzero();
+		}
+		// interval product: the bounds are the smallest and largest of the four corner products.
+		// A corner is attained (closed) when both of its factors are, or when one factor is a
+		// closed zero, which makes the product zero whatever the other operand is. A bound
+		// product with a zero factor is zero, also against an infinite bound, where IEEE
+		// 0 * inf is NaN. The earlier case table ORed the open conditions, so it dropped the
+		// attained zero of [-inf,-2) * [0,1] (#1972).
+		struct Corner { float value; bool open; };
+		auto corner = [](float a, bool aOpen, float b, bool bOpen) {
+			const bool closedZero = (a == 0.0f && !aOpen) || (b == 0.0f && !bOpen);
+			return Corner{ (a == 0.0f || b == 0.0f) ? 0.0f : a * b, (aOpen || bOpen) && !closedZero };
+		};
+		const SORN_INTERVAL& l = this->sornIntVal;
+		const SORN_INTERVAL& r = rhs.sornIntVal;
+		const Corner corners[4] = {
+			corner(l.lowerBound, l.lowerIsOpen, r.lowerBound, r.lowerIsOpen),
+			corner(l.lowerBound, l.lowerIsOpen, r.upperBound, r.upperIsOpen),
+			corner(l.upperBound, l.upperIsOpen, r.lowerBound, r.lowerIsOpen),
+			corner(l.upperBound, l.upperIsOpen, r.upperBound, r.upperIsOpen),
+		};
+		Corner lo = corners[0], hi = corners[0];
+		for (const Corner& c : corners) {
+			if (c.value < lo.value || (c.value == lo.value && !c.open)) lo = c;
+			if (c.value > hi.value || (c.value == hi.value && !c.open)) hi = c;
+		}
+		this->sornIntVal = { lo.value, hi.value, lo.open, hi.open };
+		adaptToDT();
+		return *this;
+	}
+	// sorn * native scalar
+	template<typename Scalar> requires std::is_arithmetic_v<Scalar>
+	sorn& operator*=(Scalar rhs) {
+		if (isnan()) return *this;
+		const Real r = static_cast<Real>(rhs);
+		if (std::isnan(r)) return setnan();
+		if (r == 0) return setzero();   // also for an infinite bound, where inf * 0 is NaN
+		this->sornIntVal.lowerBound *= r;
+		this->sornIntVal.upperBound *= r;
+		if (r < 0) { switchBounds(); }
+		adaptToDT();
+		return *this;
+	}
+
+	// single operand division
+
+	// sorn / sorn: multiply by the reciprocal of the divisor. A divisor that straddles zero makes
+	// the quotient unbounded on both sides, so the result is the whole lattice; dividing by the
+	// exact zero is NaN (the empty set).
+	sorn& operator/=(const sorn& rhs) {
+		if (isnan() || rhs.isnan() || rhs.iszero()) {
+			return setnan();
+		}
+		if (iszero()) {
 			return *this;
 		}
-		else { // 4. follow interval arithmetic rules for multiplication
-			if (lhsLOW >= 0) { //					  lower bound					upper bound					lower condition					upper condition
-				if		(rhsLOW >= 0)				{ resLOW = lhsLOW * rhsLOW;		resUP = lhsUP  * rhsUP;		resLOWc = lhsLOWc || rhsLOWc;	resUPc = lhsUPc  || rhsUPc; }
-				else if (rhsLOW < 0 && rhsUP >= 0)	{ resLOW = lhsUP  * rhsLOW;		resUP = lhsUP  * rhsUP;		resLOWc = lhsUPc  || rhsLOWc;	resUPc = lhsUPc  || rhsUPc; }
-				else if (rhsUP < 0)					{ resLOW = lhsUP  * rhsLOW;		resUP = lhsLOW * rhsUP;		resLOWc = lhsUPc  || rhsLOWc;	resUPc = lhsLOWc || rhsUPc; }
-				else                                { resLOW = 0              ;		resUP = 0             ;		resLOWc = 0                 ;	resUPc = 0                ; } // ETLO added
-			}
-			else if (lhsLOW < 0 && lhsUP >= 0) {
-				if		(rhsLOW >= 0)				{ resLOW = lhsLOW * rhsUP;		resUP = lhsUP  * rhsUP;		resLOWc = lhsLOWc || rhsUPc;	resUPc = lhsUPc  || rhsUPc; }
-				else if (rhsLOW < 0 && rhsUP >= 0)	{ resLOW = fmin(lhsLOW * rhsUP  , lhsUP * rhsLOW);			resLOWc = (lhsLOW * rhsUP  < lhsUP*rhsLOW ? lhsLOWc || rhsUPc  : lhsUPc || rhsLOWc);	// lower bound & condition
-													  resUP  = fmax(lhsLOW * rhsLOW , lhsUP * rhsUP );			resUPc  = (lhsLOW * rhsLOW > lhsUP*rhsUP  ? lhsLOWc || rhsLOWc : lhsUPc || rhsUPc ); }	// upper bound & condition
-				else if (rhsUP < 0)					{ resLOW = lhsUP  * rhsLOW;		resUP = lhsLOW * rhsLOW;	resLOWc = lhsUPc  || rhsLOWc;	resUPc = lhsLOWc || rhsLOWc;}
-				else                                { resLOW = 0              ;		resUP = 0             ;		resLOWc = 0                 ;	resUPc = 0                ; } // ETLO added 
-			}
-			else if (lhsUP < 0) {
-				if		(rhsLOW >= 0)				{ resLOW = lhsLOW * rhsUP;		resUP = lhsUP  * rhsLOW;	resLOWc = lhsLOWc || rhsUPc;	resUPc = lhsUPc  || rhsLOWc;}
-				else if (rhsLOW < 0 && rhsUP >= 0)	{ resLOW = lhsLOW * rhsUP;		resUP = lhsLOW * rhsLOW;	resLOWc = lhsLOWc || rhsUPc;	resUPc = lhsLOWc || rhsLOWc;}
-				else if (rhsUP < 0)					{ resLOW = lhsUP  * rhsUP;		resUP = lhsLOW * rhsLOW;	resLOWc = lhsUPc  || rhsUPc;	resUPc = lhsLOWc || rhsLOWc;}
-				else                                { resLOW = 0              ;		resUP = 0             ;		resLOWc = 0                 ;	resUPc = 0                ; } // ETLO added
-			}
-			else {
-				{ resLOW = 0              ;		resUP = 0             ;		resLOWc = 0                 ;	resUPc = 0                ; } // ETLO added
-			}
-			// 5. set results
-			if (resLOW == -0) { resLOW = 0; } // remove -0
-			if (resUP  == -0) { resUP  = 0; } // remove -0
-			this->sornIntVal.lowerBound	 = resLOW;
-			this->sornIntVal.upperBound	 = resUP;
-			this->sornIntVal.lowerIsOpen = resLOWc;
-			this->sornIntVal.upperIsOpen = resUPc;
-			// 6. return
+		sorn recip;
+		if (!reciprocal(rhs.sornIntVal, recip.sornIntVal)) {
+			this->sornIntVal = { -kInf, kInf, false, false };
 			adaptToDT();
 			return *this;
 		}
+		return *this *= recip;
 	}
-	// sorn * int
-	sorn& operator*=(int rhs) {
-		this->sornIntVal.lowerBound *= rhs;
-		this->sornIntVal.upperBound *= rhs;
-		if (rhs < 0) { switchBounds(); }
-		adaptToDT();
-		return *this;
-	}
-	// sorn * float
-	sorn& operator*=(float rhs) {
-		this->sornIntVal.lowerBound *= rhs;
-		this->sornIntVal.upperBound *= rhs;
-		if (rhs < 0) { switchBounds(); }
-		adaptToDT();
-		return *this;
-	}
-	// sorn * double
-	sorn& operator*=(double rhs) {
-		this->sornIntVal.lowerBound *= (float)rhs;
-		this->sornIntVal.upperBound *= (float)rhs;
-		if (rhs < 0) { switchBounds(); }
+	// sorn / native scalar
+	template<typename Scalar> requires std::is_arithmetic_v<Scalar>
+	sorn& operator/=(Scalar rhs) {
+		if (isnan()) return *this;
+		const Real r = static_cast<Real>(rhs);
+		if (std::isnan(r) || r == 0) return setnan();
+		this->sornIntVal.lowerBound /= r;
+		this->sornIntVal.upperBound /= r;
+		if (r < 0) { switchBounds(); }
 		adaptToDT();
 		return *this;
 	}
@@ -462,7 +465,8 @@ public:
 	//////////////////////////////////////////
 
 	// absolute value
-	sorn abs() {
+	sorn abs() const {
+		if (isnan()) return *this;
 		sorn absVal;
 		if (this->sornIntVal.upperBound <= 0) {
 			absVal = -*this;
@@ -486,16 +490,22 @@ public:
 		return absVal;
 	}
 
-	template<typename Real>
-	Real to_native() const noexcept {
-		return Real(0.0f);
+	// to_native: the midpoint of the interval, the value float2SORN maps back into it. An interval
+	// with one infinite bound reports that bound; the whole real line and NaN report NaN.
+	template<typename NativeReal>
+	NativeReal to_native() const noexcept {
+		if (isnan()) return std::numeric_limits<NativeReal>::quiet_NaN();
+		const NativeReal lo = static_cast<NativeReal>(sornIntVal.lowerBound);
+		const NativeReal hi = static_cast<NativeReal>(sornIntVal.upperBound);
+		if (std::isinf(lo) && std::isinf(hi)) return (lo == hi ? lo : std::numeric_limits<NativeReal>::quiet_NaN());
+		if (std::isinf(lo)) return lo;
+		if (std::isinf(hi)) return hi;
+		return lo + (hi - lo) / NativeReal(2);
 	}
 	// make conversions to native types explicit
-	//explicit operator int()       const noexcept { return to_int(); }
-	//explicit operator long()      const noexcept { return to_long(); }
-	//explicit operator long long() const noexcept { return to_long_long(); }
-	explicit operator float()     const noexcept { return to_native<float>(); }
-	explicit operator double()    const noexcept { return to_native<double>(); }
+	explicit operator float()       const noexcept { return to_native<float>(); }
+	explicit operator double()      const noexcept { return to_native<double>(); }
+	explicit operator long double() const noexcept { return to_native<long double>(); }
 
 	///////////////////////////////////////
 	////////// helper functions //////////
@@ -503,20 +513,63 @@ public:
 
 	// special value functions
 	bool iszero() const noexcept { return this->sornIntVal.isZero(); }
-	bool isnan() const noexcept { return false; }
+	bool isnan()  const noexcept { return std::isnan(this->sornIntVal.lowerBound) || std::isnan(this->sornIntVal.upperBound); }
 
-	sorn& setzero() { this->sornIntVal = { 0,0,0,0 }; return *this; }
+	sorn& setzero() noexcept { this->sornIntVal = { 0, 0, false, false }; return *this; }
+	sorn& setnan()  noexcept { this->sornIntVal = { kNaN, kNaN, false, false }; return *this; }
 
-	Real minVal() const noexcept { return sornDT[0].lowerBound; }
-	Real maxVal() const noexcept { return sornDT[sornDT.size() - 1].upperBound; }
+	// specific lattice values; a configuration without negative intervals has no minneg or
+	// maxneg, and those come out NaN
+	sorn& maxpos() {	// the positive interval with the largest finite upper bound
+		const auto& dt = datatype();
+		for (auto it = dt.rbegin(); it != dt.rend(); ++it) {
+			if (it->upperBound > 0 && std::isfinite(it->upperBound)) { this->sornIntVal = *it; return *this; }
+		}
+		return setnan();
+	}
+	sorn& minpos() {	// the positive interval closest to zero
+		for (const auto& interval : datatype()) {
+			if (interval.lowerBound >= 0 && interval.upperBound > 0) { this->sornIntVal = interval; return *this; }
+		}
+		return setnan();
+	}
+	sorn& minneg() {	// the negative interval closest to zero
+		const auto& dt = datatype();
+		for (auto it = dt.rbegin(); it != dt.rend(); ++it) {
+			if (it->lowerBound < 0 && it->upperBound <= 0) { this->sornIntVal = *it; return *this; }
+		}
+		return setnan();
+	}
+	sorn& maxneg() {	// the negative interval with the most negative finite lower bound
+		for (const auto& interval : datatype()) {
+			if (interval.lowerBound < 0 && std::isfinite(interval.lowerBound)) { this->sornIntVal = interval; return *this; }
+		}
+		return setnan();
+	}
+	// setinf: the interval reaching infinity; without one, infinity saturates to the outermost
+	// interval, as converting INFINITY does
+	sorn& setinf(bool negative) {
+		return assign(negative ? -kInf : kInf);
+	}
+
+	Real minVal() const noexcept { return datatype().front().lowerBound; }
+	Real maxVal() const noexcept { return datatype().back().upperBound; }
 
 	// adaptToDT: adapt the variable sornIntVal to the defined datatype
 	SORN_INTERVAL& adaptToDT() {
+		const auto& dt = datatype();
+		// 0. an indeterminate bound (inf - inf, NaN input) is the empty set; drop a negative zero
+		if (isnan()) {
+			setnan();
+			return this->sornIntVal;
+		}
+		if (this->sornIntVal.lowerBound == 0) this->sornIntVal.lowerBound = 0;
+		if (this->sornIntVal.upperBound == 0) this->sornIntVal.upperBound = 0;
 		// 1. lower bound
 		bool lowerExists = false;
 		// 1.1. check if lower bound already exisits in DT
-		for (size_t b = 0; b < sornDT.size(); b++) {
-			if (this->sornIntVal.lowerBound == sornDT[b].lowerBound && this->sornIntVal.lowerIsOpen == sornDT[b].lowerIsOpen) {
+		for (size_t b = 0; b < dt.size(); b++) {
+			if (this->sornIntVal.lowerBound == dt[b].lowerBound && this->sornIntVal.lowerIsOpen == dt[b].lowerIsOpen) {
 				lowerExists = true;
 			}
 		}
@@ -525,25 +578,25 @@ public:
 			// 1.2.1. lower bound < min value
 			if (this->sornIntVal.lowerBound < minVal()) {
 				this->sornIntVal.lowerBound = minVal();
-				this->sornIntVal.lowerIsOpen = this->sornDT[0].lowerIsOpen;
+				this->sornIntVal.lowerIsOpen = dt[0].lowerIsOpen;
 			}
 			else {
-				for (size_t b = 0; b < sornDT.size(); b++) {
+				for (size_t b = 0; b < dt.size(); b++) {
 					// 1.2.2. lower bound value between two possible values (from DT)
-					if (this->sornIntVal.lowerBound > sornDT[b].lowerBound && this->sornIntVal.lowerBound < sornDT[b].upperBound) {
-						this->sornIntVal.lowerBound = sornDT[b].lowerBound;
-						this->sornIntVal.lowerIsOpen = sornDT[b].lowerIsOpen;
+					if (this->sornIntVal.lowerBound > dt[b].lowerBound && this->sornIntVal.lowerBound < dt[b].upperBound) {
+						this->sornIntVal.lowerBound = dt[b].lowerBound;
+						this->sornIntVal.lowerIsOpen = dt[b].lowerIsOpen;
 					} // 1.2.3. lower bound in DT but open/close condition does not match
-					else if (this->sornIntVal.lowerBound == sornDT[b].lowerBound && this->sornIntVal.lowerIsOpen != sornDT[b].lowerIsOpen) {
+					else if (this->sornIntVal.lowerBound == dt[b].lowerBound && this->sornIntVal.lowerIsOpen != dt[b].lowerIsOpen) {
 						// cond. is "open" but has to be "closed"
 						if (this->sornIntVal.lowerIsOpen) {
-							this->sornIntVal.lowerBound = sornDT[b].lowerBound;
-							this->sornIntVal.lowerIsOpen = sornDT[b].lowerIsOpen;
+							this->sornIntVal.lowerBound = dt[b].lowerBound;
+							this->sornIntVal.lowerIsOpen = dt[b].lowerIsOpen;
 						}
 						// cond. is "closed" but has to be "open" --> utilize prevoius interval
-						else if (not this->sornIntVal.lowerIsOpen) {
-							this->sornIntVal.lowerBound = sornDT[b - 1].lowerBound;
-							this->sornIntVal.lowerIsOpen = sornDT[b - 1].lowerIsOpen;
+						else if (not this->sornIntVal.lowerIsOpen && b > 0) {
+							this->sornIntVal.lowerBound = dt[b - 1].lowerBound;
+							this->sornIntVal.lowerIsOpen = dt[b - 1].lowerIsOpen;
 						}
 					}
 				}
@@ -552,8 +605,8 @@ public:
 		// 2. upper bound
 		bool upperExists = false;
 		// 2.1.check if upper bound already exisits in DT
-		for (size_t b = 0; b < sornDT.size(); b++) {
-			if (this->sornIntVal.upperBound == sornDT[b].upperBound && this->sornIntVal.upperIsOpen == sornDT[b].upperIsOpen) {
+		for (size_t b = 0; b < dt.size(); b++) {
+			if (this->sornIntVal.upperBound == dt[b].upperBound && this->sornIntVal.upperIsOpen == dt[b].upperIsOpen) {
 				upperExists = true;
 			}
 		}
@@ -562,25 +615,25 @@ public:
 			// 2.2.1 upper bound > max value
 			if (this->sornIntVal.upperBound > maxVal()) {
 				this->sornIntVal.upperBound = maxVal();
-				this->sornIntVal.upperIsOpen = this->sornDT[sornDT.size() - 1].upperIsOpen;
+				this->sornIntVal.upperIsOpen = dt[dt.size() - 1].upperIsOpen;
 			}
 			else {
-				for (size_t b = 0; b < sornDT.size(); b++) {
+				for (size_t b = 0; b < dt.size(); b++) {
 					// 2.2.2. upper bound value between two possible values (from DT)
-					if (this->sornIntVal.upperBound > sornDT[b].lowerBound && this->sornIntVal.upperBound < sornDT[b].upperBound) {
-						this->sornIntVal.upperBound = sornDT[b].upperBound;
-						this->sornIntVal.upperIsOpen = sornDT[b].upperIsOpen;
+					if (this->sornIntVal.upperBound > dt[b].lowerBound && this->sornIntVal.upperBound < dt[b].upperBound) {
+						this->sornIntVal.upperBound = dt[b].upperBound;
+						this->sornIntVal.upperIsOpen = dt[b].upperIsOpen;
 						break; // when the upper bound it set to open zero the next iteration would set it to closed zero
 					} // 2.2.3. upper bound in DT but open/close condition does not match
-					else if (this->sornIntVal.upperBound == sornDT[b].upperBound && this->sornIntVal.upperIsOpen != sornDT[b].upperIsOpen) {
+					else if (this->sornIntVal.upperBound == dt[b].upperBound && this->sornIntVal.upperIsOpen != dt[b].upperIsOpen) {
 						// cond. is "open" but has to be "closed"
 						if (this->sornIntVal.upperIsOpen) {
-							this->sornIntVal.upperBound = sornDT[b].upperBound;
-							this->sornIntVal.upperIsOpen = sornDT[b].upperIsOpen;
+							this->sornIntVal.upperBound = dt[b].upperBound;
+							this->sornIntVal.upperIsOpen = dt[b].upperIsOpen;
 						} // cond. is "closed" but has to be "open" --> utilize next interval
-						else if (not this->sornIntVal.upperIsOpen) {
-							this->sornIntVal.upperBound = sornDT[b+1].upperBound;
-							this->sornIntVal.upperIsOpen = sornDT[b+1].upperIsOpen;
+						else if (not this->sornIntVal.upperIsOpen && b + 1 < dt.size()) {
+							this->sornIntVal.upperBound = dt[b+1].upperBound;
+							this->sornIntVal.upperIsOpen = dt[b+1].upperIsOpen;
 						}
 						break;
 					}
@@ -601,21 +654,31 @@ public:
 		return this->sornIntVal;
 	}
 
-	void setbits(std::uint64_t v) noexcept {}
+	// setbits: set the value from the low sornBits bits of an encoding, as setBits does
+	void setbits(std::uint64_t v) {
+		std::bitset<sornBits> bin;
+		for (size_t b = 0; b < sornBits && b < 64; b++) {
+			bin[b] = ((v >> b) & 1u) != 0;
+		}
+		setBits(bin);
+	}
 
-	// setBits: set the sornIntVal parameter via binary input (input type: bitset)
-	SORN_INTERVAL& setBits(std::bitset<sornBits> bin) {
+	// setBits: set the sornIntVal parameter via binary input (input type: bitset). The value spans
+	// from the lowest to the highest set bit; no bit set is the empty set, NaN.
+	SORN_INTERVAL& setBits(const std::bitset<sornBits>& bin) {
+		const auto& dt = datatype();
 		bool lowerSet = false;
 		for (size_t b = 0; b < sornBits; b++) {
 			if (bin[b] == 1 && not lowerSet) {
-				this->sornIntVal = this->sornDT[b];
+				this->sornIntVal = dt[b];
 				lowerSet = true;
 			}
 			else if (bin[b] == 1 && lowerSet) {
-				this->sornIntVal.upperBound = this->sornDT[b].upperBound;
-				this->sornIntVal.upperIsOpen = this->sornDT[b].upperIsOpen;
+				this->sornIntVal.upperBound = dt[b].upperBound;
+				this->sornIntVal.upperIsOpen = dt[b].upperIsOpen;
 			}
 		}
+		if (not lowerSet) setnan();
 		return this->sornIntVal;
 	}
 
@@ -624,29 +687,54 @@ public:
 	//////////////////////////////////////
 
 	// getConfig: writes all configuration parameters and flags to a string
-	std::string getConfig();   // defined in manipulators.hpp (#1334)
+	std::string getConfig() const;   // defined in manipulators.hpp (#1334)
 
 	// getDT: writes the SORN datatype configuration to a string
-	std::string getDT();       // defined in manipulators.hpp (#1334)
+	std::string getDT() const;       // defined in manipulators.hpp (#1334)
 
-	// getBits: returns the binary representation of a SORN value using bitset class (note: displayed from max downto 0 when using << operator)
-	std::bitset<sornBits> getBits() {
+	// getBits: the binary representation of a SORN value using bitset class, one bit for every
+	// lattice interval the value covers (note: displayed from max downto 0 when using << operator)
+	std::bitset<sornBits> getBits() const {
+		const auto& dt = datatype();
+		const SORN_INTERVAL& v = this->sornIntVal;
 		std::bitset<sornBits> raw_bits;
 		for (size_t b = 0; b < sornBits; b++) {
-			if ((sornIntVal.lowerBound == sornDT[b].lowerBound && sornIntVal.lowerIsOpen == sornDT[b].lowerIsOpen) ||
-				(sornIntVal.upperBound == sornDT[b].upperBound && sornIntVal.upperIsOpen == sornDT[b].upperIsOpen)) {
-				raw_bits[b] = 0b1;
-			}
-			else {
-				raw_bits[b] = 0b0;
-			}
+			const SORN_INTERVAL& interval = dt[b];
+			const bool lowerInside = (interval.lowerBound > v.lowerBound) ||
+			                         (interval.lowerBound == v.lowerBound && (not v.lowerIsOpen || interval.lowerIsOpen));
+			const bool upperInside = (interval.upperBound < v.upperBound) ||
+			                         (interval.upperBound == v.upperBound && (not v.upperIsOpen || interval.upperIsOpen));
+			raw_bits[b] = lowerInside && upperInside;
 		}
 		return raw_bits;
 	}
 
 private:
-	template<signed int _sstart, signed int _sstop, unsigned int _ssteps, bool _llin, bool _hhalfopen, bool _nneg, bool _iinf, bool _zzero>
-	friend bool operator!=(const sorn< _sstart, _sstop, _ssteps, _llin, _hhalfopen, _nneg, _iinf, _zzero>& lhs, const sorn< _sstart, _sstop, _ssteps, _llin, _hhalfopen, _nneg, _iinf, _zzero>&);
+	sorn& assign(float rhs) {
+		float2SORN(rhs, datatype(), this->sornIntVal);
+		return *this;
+	}
+
+	// reciprocal: 1/y for an interval y that excludes zero, with the open/closed conditions
+	// carried to the swapped bounds. Returns false when y contains zero.
+	static bool reciprocal(const SORN_INTERVAL& y, SORN_INTERVAL& r) {
+		const bool positive = (y.lowerBound > 0) || (y.lowerBound == 0 && y.lowerIsOpen && y.upperBound > 0);
+		const bool negative = (y.upperBound < 0) || (y.upperBound == 0 && y.upperIsOpen && y.lowerBound < 0);
+		if (positive) {
+			r.lowerBound = Real(1) / y.upperBound;                                // 1/inf = 0
+			r.upperBound = (y.lowerBound == 0 ? kInf : Real(1) / y.lowerBound);
+		}
+		else if (negative) {
+			r.lowerBound = (y.upperBound == 0 ? -kInf : Real(1) / y.upperBound);  // stored zeros are +0
+			r.upperBound = Real(1) / y.lowerBound;
+		}
+		else {
+			return false;
+		}
+		r.lowerIsOpen = y.upperIsOpen;
+		r.upperIsOpen = y.lowerIsOpen;
+		return true;
+	}
 
 	template<signed int _sstart, signed int _sstop, unsigned int _ssteps, bool _llin, bool _hhalfopen, bool _nneg, bool _iinf, bool _zzero>
 	friend std::ostream& operator<<(std::ostream&, const sorn< _sstart, _sstop, _ssteps, _llin, _hhalfopen, _nneg, _iinf, _zzero>&);
@@ -655,156 +743,60 @@ private:
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero>
-inline bool operator!=(const sorn< _start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs, const sorn< _start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) { 
-	return false; 
+#define SORN_TEMPLATE_PARAMS template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero>
+#define SORN_TYPE sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>
+
+// equality: the same interval, bounds and open/closed conditions alike. NaN, the empty set,
+// compares unequal to everything, itself included, as an IEEE NaN does.
+SORN_TEMPLATE_PARAMS
+inline bool operator==(const SORN_TYPE& lhs, const SORN_TYPE& rhs) {
+	const auto& l = lhs.sornIntVal;
+	const auto& r = rhs.sornIntVal;
+	return l.lowerBound == r.lowerBound && l.upperBound == r.upperBound &&
+	       l.lowerIsOpen == r.lowerIsOpen && l.upperIsOpen == r.upperIsOpen;
+}
+SORN_TEMPLATE_PARAMS
+inline bool operator!=(const SORN_TYPE& lhs, const SORN_TYPE& rhs) {
+	return !(lhs == rhs);
 }
 
 // operator<<(std::ostream&, const sorn&) is declared a friend above and defined in iostream.hpp (#1334)
 
+// two operand arithmetic: sorn op sorn, sorn op scalar, scalar op sorn. A scalar operand is an
+// exact value; the operators take const references so temporaries and const operands work (#1972).
 
-//////////////////////////////////////////
-////////// two operand addition //////////
-//////////////////////////////////////////
+SORN_TEMPLATE_PARAMS
+inline SORN_TYPE operator+(const SORN_TYPE& lhs, const SORN_TYPE& rhs) { SORN_TYPE sum = lhs; return sum += rhs; }
+template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero, typename Scalar> requires std::is_arithmetic_v<Scalar>
+inline SORN_TYPE operator+(const SORN_TYPE& lhs, Scalar rhs) { SORN_TYPE sum = lhs; return sum += rhs; }
+template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero, typename Scalar> requires std::is_arithmetic_v<Scalar>
+inline SORN_TYPE operator+(Scalar lhs, const SORN_TYPE& rhs) { SORN_TYPE sum = rhs; return sum += lhs; }
 
-// sorn + sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator+ (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs,
-																		   sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> sum = lhs;
-	return sum += rhs;
-}
-// sorn + int
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator+ (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs, int rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> sum = lhs;
-	return sum += rhs;
-}
-// sorn + float
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator+ (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs, float rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> sum = lhs;
-	return sum += rhs;
-}
-// sorn + double
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator+ (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs, double rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> sum = lhs;
-	return sum += rhs;
-}
-// int + sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator+ (int lhs, sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> sum = rhs;
-	return sum += lhs;
-}
-// float + sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator+ (float lhs, sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> sum = rhs;
-	return sum += lhs;
-}
-// double + sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator+ (double lhs, sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> sum = rhs;
-	return sum += lhs;
-}
+SORN_TEMPLATE_PARAMS
+inline SORN_TYPE operator-(const SORN_TYPE& lhs, const SORN_TYPE& rhs) { SORN_TYPE dif = lhs; return dif -= rhs; }
+template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero, typename Scalar> requires std::is_arithmetic_v<Scalar>
+inline SORN_TYPE operator-(const SORN_TYPE& lhs, Scalar rhs) { SORN_TYPE dif = lhs; return dif -= rhs; }
+template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero, typename Scalar> requires std::is_arithmetic_v<Scalar>
+inline SORN_TYPE operator-(Scalar lhs, const SORN_TYPE& rhs) { SORN_TYPE dif = -rhs; return dif += lhs; }
 
-/////////////////////////////////////////////
-////////// two operand subtraction //////////
-/////////////////////////////////////////////
+SORN_TEMPLATE_PARAMS
+inline SORN_TYPE operator*(const SORN_TYPE& lhs, const SORN_TYPE& rhs) { SORN_TYPE prod = lhs; return prod *= rhs; }
+template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero, typename Scalar> requires std::is_arithmetic_v<Scalar>
+inline SORN_TYPE operator*(const SORN_TYPE& lhs, Scalar rhs) { SORN_TYPE prod = lhs; return prod *= rhs; }
+template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero, typename Scalar> requires std::is_arithmetic_v<Scalar>
+inline SORN_TYPE operator*(Scalar lhs, const SORN_TYPE& rhs) { SORN_TYPE prod = rhs; return prod *= lhs; }
 
-// sorn - sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator- (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs,
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> dif = lhs;
-	return dif -= rhs;
-}
-// sorn - int
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator- (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs, int rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> dif = lhs;
-	return dif -= rhs;
-}
-// sorn - float
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator- (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs, float rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> dif = lhs;
-	return dif -= rhs;
-}
-// sorn - double
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator- (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs, double rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> dif = lhs;
-	return dif -= rhs;
-}
-// int - sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator- (int lhs, sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> dif = -rhs;
-	return dif += lhs;
-}
-// float - sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator- (float lhs, sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> dif = -rhs;
-	return dif += lhs;
-}
-// double - sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator- (double lhs, sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> dif = -rhs;
-	return dif += lhs;
-}
-
-////////////////////////////////////////////////
-////////// two operand multiplication //////////
-////////////////////////////////////////////////
-
-// sorn * sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator* (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs,
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> prod = lhs;
-	return prod *= rhs;
-}
-// sorn * int
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator* (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs, int rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> prod = lhs;
-	return prod *= rhs;
-}
-// sorn * float
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator* (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs, float rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> prod = lhs;
-	return prod *= rhs;
-}
-// sorn * double
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator* (sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& lhs, double rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> prod = lhs;
-	return prod *= rhs;
-}
-// int * sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator* (int lhs, sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> prod = rhs;
-	return prod *= lhs;
-}
-// float * sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator* (float lhs, sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> prod = rhs;
-	return prod *= lhs;
-}
-// double * sorn
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator* (double lhs, sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& rhs) {
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> prod = rhs;
-	return prod *= lhs;
+SORN_TEMPLATE_PARAMS
+inline SORN_TYPE operator/(const SORN_TYPE& lhs, const SORN_TYPE& rhs) { SORN_TYPE quot = lhs; return quot /= rhs; }
+template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero, typename Scalar> requires std::is_arithmetic_v<Scalar>
+inline SORN_TYPE operator/(const SORN_TYPE& lhs, Scalar rhs) { SORN_TYPE quot = lhs; return quot /= rhs; }
+// scalar / sorn: the scalar as an exact point divided by the interval
+template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero, typename Scalar> requires std::is_arithmetic_v<Scalar>
+inline SORN_TYPE operator/(Scalar lhs, const SORN_TYPE& rhs) {
+	SORN_TYPE quot;
+	const float c = static_cast<float>(lhs);
+	quot.sornIntVal = { c, c, false, false };
+	return quot /= rhs;
 }
 
 ///////////////////////////////////////////
@@ -812,17 +804,17 @@ sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> operator* (doubl
 ///////////////////////////////////////////
 
 // absolute value
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> abs(sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> op) {
+SORN_TEMPLATE_PARAMS
+inline SORN_TYPE abs(SORN_TYPE op) {
 	return op.abs();
 }
 
 // hypot(sorn,sorn)
-template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg = 1, bool _inf = 1, bool _zero = 1>
-sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> hypot(sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> lhs,
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> rhs) {
+SORN_TEMPLATE_PARAMS
+inline SORN_TYPE hypot(SORN_TYPE lhs, SORN_TYPE rhs) {
 	using std::sqrt;
-	sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> res, lhsAbs, rhsAbs;
+	SORN_TYPE res, lhsAbs, rhsAbs;
+	if (lhs.isnan() || rhs.isnan()) return res.setnan();
 	// take abs value of inputs
 	lhsAbs = lhs.abs();
 	rhsAbs = rhs.abs();
@@ -835,5 +827,7 @@ sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero> hypot(sorn<_star
 	return res;
 }
 
-}} // end namespace sw::universal
+#undef SORN_TYPE
+#undef SORN_TEMPLATE_PARAMS
 
+}} // end namespace sw::universal
