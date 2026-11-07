@@ -24,6 +24,7 @@
 #include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
 
 #include <cstdint>       // uint8_t, the digit type
+#include <cmath>         // std::isnan/std::isinf in convert_ieee754
 #include <cassert>       // assert(), used by findMsd() and the helpers
 #include <vector>        // std::vector, the base class
 #include <algorithm>     // std::swap / std::equal
@@ -293,9 +294,10 @@ public:
 		if (shift < 0) {
 			return operator>>=(-shift);
 		}
-		for (int i = 0; i < shift; ++i) {
-			this->insert(this->begin(), 0);
-		}
+		// zero stays a single digit: padding it gave 0000, which compared unequal to 0 (#1989)
+		if (iszero()) return *this;
+		// one insert for all the new low-order digits, not one per digit
+		this->insert(this->begin(), static_cast<size_t>(shift), uint8_t{ 0 });
 		return *this;
 	}
 	edecimal& operator>>=(int shift) {
@@ -307,9 +309,7 @@ public:
 			this->setzero();
 		}
 		else {
-			for (int i = 0; i < shift; ++i) {
-				this->erase(this->begin());
-			}
+			this->erase(this->begin(), this->begin() + shift);
 		}
 		return *this;
 	}
@@ -317,7 +317,8 @@ public:
 	// unitary operators
 	edecimal operator-() const {
 		edecimal tmp(*this);
-		tmp.setsign(!tmp.sign());
+		// zero has no negative form: -0 compared unequal to 0 (#1989)
+		if (!tmp.iszero()) tmp.setsign(!tmp.sign());
 		return tmp;
 	}
 	edecimal operator++(int) { // postfix
@@ -384,7 +385,7 @@ public:
 		assert(d <= 9); // test argument assumption
 		clear();
 		push_back(d);
-		negative = sign;
+		negative = sign && d != 0;   // no negative zero (#1989)
 	}
 	inline void setbits(uint64_t v) { *this = v; } // API to be consistent with the other number systems
 
@@ -562,7 +563,10 @@ protected:
 		}
 #endif
 		clear();
-		if (rhs <= 0.5 && rhs >= -0.5) {
+		// edecimal has no NaN or infinity: both convert to 0, as they do for einteger, erational and
+		// the long double path below. Before #1989 the bits of inf were read as a finite value (2^128
+		// for float, 2^1024 for double) and NaN became a large positive value.
+		if (std::isnan(rhs) || std::isinf(rhs) || (rhs <= 0.5 && rhs >= -0.5)) {
 			return *this = 0;
 		}
 		else {
@@ -875,23 +879,28 @@ inline decintdiv decint_divide(const edecimal& _a, const edecimal& _b) {
 	int msd_a = findMsd(a);
 	int shift = msd_a - msd_b;
 	subtractand <<= shift;
-	// long division
+	// long division: the quotient digits come out most significant first, so collect them and
+	// store them reversed once, instead of inserting each one at the front of the quotient
+	std::vector<uint8_t> qdigits;
+	qdigits.reserve(static_cast<size_t>(shift) + 1);
 	for (int i = shift; i >= 0; --i) {
 		if (subtractand <= accumulator) {
 			edecimal multiple = findLargestMultiple(accumulator, subtractand);
 			accumulator -= multiple * subtractand;
-			uint8_t multiplier = static_cast<uint8_t>(int(multiple)); // TODO: fix the ugly
-			divresult.quot.insert(divresult.quot.begin(), multiplier);
+			qdigits.push_back(static_cast<uint8_t>(int(multiple)));
 		}
 		else {
-			divresult.quot.insert(divresult.quot.begin(), 0);
+			qdigits.push_back(0);
 		}
 		subtractand >>= 1;
 		if (subtractand == 0) break;
 	}
+	divresult.quot.assign(qdigits.rbegin(), qdigits.rend());
 	if (result_negative) {
-		divresult.quot.setneg();
+		divresult.quot.setneg();   // |a| >= |b| here, so the quotient is not zero
 	}
+	// the remainder takes the sign of the dividend; the negation leaves the zero remainder of an
+	// exact division positive (-6 % 3 was -0, which compared unequal to 0, #1989)
 	if (_a < 0) {
 		divresult.rem = -accumulator;
 	}

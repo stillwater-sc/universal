@@ -56,6 +56,20 @@ With the exception off, `x / 0` and `x % 0` are `0`, as are both fields of
 `decint_divide()`. Nothing is printed, and the long division never runs with a zero divisor
 (#1894).
 
+### Zero, conversion and parsing
+
+- **Zero has one form.** It has a single `0` digit and a positive sign. Negation, the remainder of
+  an exact division (`-6 % 3`) and shifting zero (`0 << 3`) all give that zero, so they compare
+  equal to `edecimal(0)` (#1989).
+- **Integer semantics.** `/` and `%` truncate toward zero, and the remainder takes the sign of the
+  dividend, as they do for native integers. `<<` and `>>` multiply and divide by powers of ten,
+  and `>>` truncates toward zero.
+- **Converting from float, double or long double.** The value is truncated toward zero. NaN and
+  +/-inf convert to `0`, as they do for `einteger` and `erational` (#1989).
+- **Parsing.** `parse()` accepts integers, decimal points and exponents when the value is an exact
+  integer (`"3.14e2"` is 314). Any digits left after the decimal point, even zeros, are rejected:
+  `"3.14"`, `"3.0"` and `"10.50e0"` all fail, so the input's digits are preserved exactly (#865).
+
 ## Related
 
 - [`einteger`](/universal/number-systems/einteger/) -- the binary equivalent, faster to compute with
