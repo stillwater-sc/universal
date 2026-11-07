@@ -27,9 +27,15 @@ Where `fbits = nbits - 2 - es` (the uncertainty bit takes one bit from what woul
 ### The Uncertainty Bit
 
 - **ubit = 0**: The value is *exactly* the represented floating-point value
-- **ubit = 1**: The true value lies *strictly between* this encoding and the next representable value
+- **ubit = 1**: The value is *not exact*. For a conversion, or an operation on exact operands, the true value lies *strictly between* this encoding and the next representable value
 
-This provides a faithful bound: the true result is always within one ULP of the stored value, and you *know* when it's not exact.
+For conversions and for operations on exact operands this is a faithful bound: the true result is within one ULP of the stored value, and you *know* when it's not exact.
+
+### What the ubit promises, and what it does not
+
+A single areal's ubit is a **flag**, not an enclosure. An operation on an operand whose ubit is set takes that operand at the lower end of its interval and marks the result inexact. It does not promise that the result's interval contains every result the operands' intervals allow. For example, `(0, minpos) - minpos` is marked inexact, but the true range of that difference, `(-minpos, 0)`, is not the interval the result names.
+
+When you need a guaranteed enclosure, carry a pair of areals as a `tile_interval` (`<universal/utility/tile_interval.hpp>`): its two ends are tiles chosen so that the pair encloses the exact result. The tutorial [A real with an uncertainty bit](../tutorials/a-real-with-uncertainty.md) compares the two.
 
 ### Key Properties
 
@@ -108,5 +114,5 @@ size_t count_roundings(const std::vector<Real>& values) {
 | IEEE rounding modes are complex and rarely used correctly | Single ubit replaces all rounding mode logic |
 | Overflow jumps to infinity, destroying information | Gradual overflow with ubit=1 preserves "above maxpos" |
 | Underflow flushes to zero prematurely | Gradual underflow with subnormals + ubit |
-| Validated numerics requires expensive interval arithmetic | Single extra bit provides faithful bounds |
+| Validated numerics requires expensive interval arithmetic | A single extra bit flags every inexact result; a `tile_interval` of two areals encloses it |
 | Reproducibility debates about rounding mode choices | Ubit is deterministic: no mode selection needed |

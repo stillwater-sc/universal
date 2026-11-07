@@ -28,6 +28,15 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+//
+// What the ubit promises (#1970). A conversion, or an operation on exact operands, truncates the
+// exact result to an encoding and sets the ubit exactly when bits were dropped, so a set ubit
+// means the exact result lies strictly between the encoding and the next one. An operation on an
+// operand whose ubit is set takes that operand at the lower end of its interval and marks the
+// result inexact: the ubit is a flag that the value is not exact. It does not promise that the
+// result's interval encloses every result the operands' intervals allow: (0, minpos) - minpos is
+// marked inexact, but the true range (-minpos, 0) is not the interval it names. For a guaranteed
+// enclosure, carry a pair of areals in tile_interval (utility/tile_interval.hpp, #1641).
 #include <cassert>
 #include <cmath>      // std::ldexp in to_native()
 #include <limits>
@@ -2617,10 +2626,15 @@ constexpr areal<nbits, es, bt> operator/(const areal<nbits, es, bt>& lhs, const 
 // to_string() and to_binary() moved to manipulators.hpp in #1334: both format through a
 // std::stringstream, which is what keeps them out of the core.
 
-/// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
+/// Magnitude: the sign bit off, the value bits and the ubit kept, so an inexact value stays
+/// inexact and (-0, minneg) becomes (0, minpos). A NaN is returned as is. This used to return
+/// areal<nbits, es> with the default block type, through a constructor areal does not have, so
+/// it disagreed with its declaration and no call compiled (#1970).
 template<unsigned nbits, unsigned es, typename bt>
-areal<nbits,es> abs(const areal<nbits,es,bt>& v) {
-	return areal<nbits,es>(false, v.scale(), v.fraction(), v.isZero());
+areal<nbits,es,bt> abs(const areal<nbits,es,bt>& v) {
+	areal<nbits,es,bt> a(v);
+	if (!v.isnan()) a.reset(nbits - 1);
+	return a;
 }
 
 

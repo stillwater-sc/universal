@@ -45,6 +45,15 @@ template<typename Tile> struct is_areal : std::false_type {};
 template<unsigned nbits, unsigned es, typename bt>
 struct is_areal<sw::universal::areal<nbits, es, bt>> : std::true_type {};
 
+// The smallest positive tile, minpos. For poxel numeric_limits::min() is minpos, by the posit
+// convention; for areal it is the smallest normal value, as for an IEEE float (#1970), and minpos
+// is denorm_min().
+template<typename Tile>
+Tile smallest_positive_tile() {
+	if constexpr (is_areal<Tile>::value) return std::numeric_limits<Tile>::denorm_min();
+	else return std::numeric_limits<Tile>::min();
+}
+
 // significant digits that keep neighbouring lattice points apart
 template<typename Tile>
 constexpr int digits() {
@@ -460,9 +469,9 @@ TypeOps register_tile_type(const std::string& name) {
 	};
 
 	ops.maxpos  = [mk]() { return mk(std::numeric_limits<Tile>::max(), true); };
-	ops.minpos  = [mk]() { return mk(std::numeric_limits<Tile>::min(), true); };
+	ops.minpos  = [mk]() { return mk(smallest_positive_tile<Tile>(), true); };
 	ops.maxneg  = [mk]() { return mk(std::numeric_limits<Tile>::lowest(), true); };
-	ops.minneg  = [mk]() { return mk(Tile(-std::numeric_limits<Tile>::min()), true); };
+	ops.minneg  = [mk]() { return mk(Tile(-smallest_positive_tile<Tile>()), true); };
 	ops.epsilon = [mk]() { return mk(std::numeric_limits<Tile>::epsilon(), true); };
 	// the neighbouring tile, as a value of its own
 	ops.next    = [mk, x](const Value& a) { Tile t = x(a).t; return mk(++t, true); };
@@ -536,9 +545,9 @@ TypeOps register_tile_interval_type(const std::string& name) {
 
 	auto point = [mk](const Tile& t) { return mk(I(t)); };
 	ops.maxpos  = [point]() { return point(std::numeric_limits<Tile>::max()); };
-	ops.minpos  = [point]() { return point(std::numeric_limits<Tile>::min()); };
+	ops.minpos  = [point]() { return point(smallest_positive_tile<Tile>()); };
 	ops.maxneg  = [point]() { return point(std::numeric_limits<Tile>::lowest()); };
-	ops.minneg  = [point]() { return point(Tile(-std::numeric_limits<Tile>::min())); };
+	ops.minneg  = [point]() { return point(Tile(-smallest_positive_tile<Tile>())); };
 	ops.epsilon = [point]() { return point(std::numeric_limits<Tile>::epsilon()); };
 	// the tile just past either end
 	ops.next    = [mk, x](const Value& a) { const I v = x(a); const std::int64_t k = std::min(v.hi_key() + 1, T::kmax); return mk(I::from_keys(k, k)); };
