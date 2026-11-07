@@ -27,11 +27,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const interval<Scalar>& v) {
 }
 
 namespace interval_detail {
-	// One bound of "[lo, hi]": the text up to the next ',' or ']'. inf, infinity and nan, with an
-	// optional sign and in any case, are what operator<< prints for unbounded and empty intervals,
-	// and std::istream's operator>> for double does not read them on libstdc++, so they map to
-	// Scalar's own values here; anything else is parsed by Scalar's operator>>, which must take
-	// the whole token (CodeRabbit).
+	// One bound of "[lo, hi]": the text up to the next ',' or ']'. inf, infinity, nan and nar, with
+	// an optional sign and in any case, are what operator<< prints for unbounded and empty
+	// intervals, and neither std::istream's operator>> for double (on libstdc++) nor posit's reads
+	// all of them, so they map to Scalar's own values here; anything else is parsed by Scalar's
+	// operator>>, which must take the whole token (CodeRabbit). inf maps only to a real infinity:
+	// posit's infinity() is maxpos, and reading "inf" as maxpos would claim an unbounded interval
+	// that is finite.
 	template<typename Scalar>
 	bool read_bound(std::istream& istr, Scalar& out) {
 		std::string tok;
@@ -48,11 +50,11 @@ namespace interval_detail {
 		const bool negative = (t[0] == '-');
 		const std::string body = (t[0] == '-' || t[0] == '+') ? t.substr(1) : t;
 		if (body == "inf" || body == "infinity") {
-			if (!std::numeric_limits<Scalar>::has_infinity) return false;
+			if (!(std::numeric_limits<Scalar>::has_infinity && std::numeric_limits<Scalar>::infinity() > std::numeric_limits<Scalar>::max())) return false;
 			out = negative ? Scalar(-std::numeric_limits<Scalar>::infinity()) : std::numeric_limits<Scalar>::infinity();
 			return true;
 		}
-		if (body == "nan") {
+		if (body == "nan" || body == "nar") {
 			if (!std::numeric_limits<Scalar>::has_quiet_NaN) return false;
 			out = std::numeric_limits<Scalar>::quiet_NaN();
 			return true;
@@ -81,7 +83,9 @@ inline std::istream& operator>>(std::istream& istr, interval<Scalar>& v) {
 	ok = ok && interval_detail::read_bound(istr, hi);
 	ok = ok && static_cast<bool>(istr >> close) && close == ']';
 	if (ok) {
-		const bool loNaN = !(lo == lo), hiNaN = !(hi == hi);
+		// Scalar's own classification: posit's NaR compares equal to itself
+		using std::isnan;
+		const bool loNaN = isnan(lo), hiNaN = isnan(hi);
 		ok = (loNaN == hiNaN) && !(hi < lo);   // both NaN is the empty interval; one NaN is not an interval
 	}
 	if (!ok) {

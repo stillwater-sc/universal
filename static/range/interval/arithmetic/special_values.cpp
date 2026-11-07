@@ -28,6 +28,7 @@
 
 #include <universal/number/interval/interval.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace {
@@ -181,6 +182,10 @@ int VerifyMidpoint(bool reportTestCases) {
 	I pinf; pinf.setinf(false);
 	I ninf; ninf.setinf(true);
 	check(pinf.mid() == inf && ninf.mid() == -inf && double(pinf) == double(inf), "mid of setinf()'s [inf, inf] and [-inf, -inf] is that infinity");
+	I nanHi; nanHi.setlo(-inf); nanHi.sethi(RL::quiet_NaN());
+	I nanLo; nanLo.setlo(RL::quiet_NaN()); nanLo.sethi(inf);
+	check(std::isnan(nanHi.mid()) && std::isnan(nanLo.mid()) && std::isnan(double(nanHi)) && std::isnan(double(nanLo)),
+	      "a NaN bound gives a NaN mid, whatever the other bound");
 	check(I(Real(1), Real(3)).mid() == Real(2), "an ordinary mid is unchanged");
 	// random wide intervals near the top of the range: mid is finite and inside
 	std::mt19937_64 rng(19710);
@@ -242,6 +247,43 @@ int VerifyOddPower(bool reportTestCases) {
 	if (pow(I(Real(-2), Real(3)), 2) != I(Real(0), Real(9))) ++fails;
 	const I inv = pow(I(Real(2), Real(4)), -3);
 	if (!(inv.lo() <= Real(1) / Real(64) && Real(1) / Real(8) <= inv.hi())) ++fails;
+	return fails;
+}
+
+// posit: NaR compares equal to itself, so the NaN test must be the scalar's own; posit prints NaR
+// as "nar" but does not read it; and its infinity() is maxpos, so "inf" is not a bound it can hold
+int VerifyPositStreamInput(bool reportTestCases) {
+	using P = sw::universal::posit<16, 2>;
+	using I = interval<P>;
+	int fails = 0;
+	struct Case { const char* text; bool ok; bool empty; };
+	const Case cases[] = {
+		{ "[nan, 1]",   false, false },   // one NaR bound is not an interval
+		{ "[NaR, 1]",   false, false },
+		{ "[1, nar]",   false, false },
+		{ "[1, inf]",   false, false },   // posit has no infinity to bound with
+		{ "[nar, nar]", true,  true  },   // what operator<< prints for the empty interval
+		{ "[nan, NaN]", true,  true  },
+		{ "[1, 2]",     true,  false },
+	};
+	for (const Case& c : cases) {
+		I v(P(5), P(6));
+		std::istringstream in(c.text);
+		in >> v;
+		const bool ok = !in.fail();
+		const bool pass = (ok == c.ok) && (c.ok ? (c.empty ? v.isnan() : (v.lo() == P(1) && v.hi() == P(2)))
+		                                         : (v.lo() == P(5) && v.hi() == P(6)));
+		if (!pass) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL interval<posit> '" << c.text << "' -> " << (ok ? "ok " : "fail ") << v << '\n';
+		}
+	}
+	I empty; empty.setnan();
+	std::stringstream s;
+	s << empty;
+	I back(P(5), P(6));
+	s >> back;
+	if (s.fail() || !back.isnan()) { ++fails; if (reportTestCases) std::cerr << "FAIL interval<posit> round trip of " << empty << '\n'; }
 	return fails;
 }
 
@@ -379,6 +421,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyOddPower<double>(reportTestCases), "interval<double>", "odd power");
 	nrOfFailedTestCases += ReportTestResult(VerifyStreamInput<float>(reportTestCases), "interval<float>", "operator>>");
 	nrOfFailedTestCases += ReportTestResult(VerifyStreamInput<double>(reportTestCases), "interval<double>", "operator>>");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositStreamInput(reportTestCases), "interval<posit<16,2>>", "operator>>");
 #endif
 
 #if REGRESSION_LEVEL_2

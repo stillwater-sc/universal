@@ -467,6 +467,7 @@ public:
 	// on its unbounded side; [-inf, +inf] gave inf - inf = NaN, and so did double() (#1971).
 	// The empty interval's midpoint is NaN.
 	constexpr Scalar mid() const noexcept {
+		if (isnan()) return std::numeric_limits<Scalar>::quiet_NaN();   // a NaN bound decides first: [NaN, inf] is not half-bounded
 		if constexpr (can_represent_unbounded) {
 			const Scalar inf = std::numeric_limits<Scalar>::infinity();
 			if (_lo == _hi && (_lo == inf || _lo == -inf)) return _lo;   // setinf(): [inf, inf] or [-inf, -inf]
