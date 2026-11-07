@@ -796,20 +796,26 @@ protected:
 		// pair has b within that window, give or take one. The window is at most MAX_A/log2(3) + 4
 		// wide and is cut to [0, MAX_B], so the search costs min(MAX_B + 1, MAX_A/log2(3) + 4)
 		// steps rather than MAX_B + 1: 3 for dbns<34,1>, 32 for dbns<32,26>.
+		// When both fields are wide that is still large: dbns<48,20>'s window is 660k, which made a
+		// conversion take 1.6 ms (#1973). Inside the window, where a is not clamped, the error of
+		// b is the distance from scale - b*log2(3) to the nearest integer, a linear function
+		// mod 1, whose minimum over a range of b argmin_frac finds in O(log) steps. Windows above
+		// exhaustive_search_limit take that path; the smaller ones keep the scan.
 		const long long maxA = static_cast<long long>(MAX_A);
 		const long long maxB = static_cast<long long>(MAX_B);
 		double lowestError = 1.0e300;
 		long long best_a = 0;   // the base-2 exponent, -a in the encoding
 		long long best_b = 0;
-		auto floorToLL = [](double x) { long long i = static_cast<long long>(x); return (static_cast<double>(i) > x) ? i - 1 : i; };
-		long long bLo = floorToLL(scale / log2of3) - 1;
-		long long bHi = floorToLL((scale + static_cast<double>(maxA)) / log2of3) + 2;
+		long long bLo = floor_ll(scale / log2of3) - 1;
+		long long bHi = floor_ll((scale + static_cast<double>(maxA)) / log2of3) + 2;
 		if (bLo < 0) bLo = 0;
 		if (bLo > maxB) bLo = maxB;
 		if (bHi < 0) bHi = 0;
 		if (bHi > maxB) bHi = maxB;
 		if (bLo > bHi) bLo = bHi;   // the value is beyond the range: the window collapses onto its edge
-		for (long long b = bLo; b <= bHi; ++b) {
+		// the candidate b, scored as the scan scores it; a tie keeps the smaller b when the
+		// candidates come in ascending order, as they do in the scan
+		auto consider = [&](long long b) {
 			// constexpr-safe round-to-nearest-int for finite double in long long range
 			double r = scale - static_cast<double>(b) * log2of3;
 			long long a = static_cast<long long>(r >= 0.0 ? r + 0.5 : r - 0.5);
@@ -826,11 +832,43 @@ protected:
 				std::cout << "a : " << a << " b : " << b << " err : " << err << " fb : " << fb << " sb : " << sb << " value : " << value << '\n';
 			}
 #endif
-			if (err < lowestError) {
+			if (err < lowestError || (err == lowestError && b < best_b)) {
 				lowestError = err;
 				best_a = a;
 				best_b = b;
 			}
+		};
+		if (bHi - bLo + 1 <= exhaustive_search_limit) {
+			for (long long b = bLo; b <= bHi; ++b) consider(b);
+		}
+		else {
+			// a is unclamped, -MAX_A <= round(r) <= 0, for r = scale - b*log2(3) in
+			// [-MAX_A - 1/2, 1/2): b in [i0, i1]. Outside that the error grows away from the
+			// interior, so its edges and the window's edges are scored directly, with a margin
+			// for rounding.
+			long long i0 = floor_ll((scale - 0.5) / log2of3) + 1;
+			long long i1 = floor_ll((scale + static_cast<double>(maxA) + 0.5) / log2of3);
+			if (i0 < bLo) i0 = bLo;
+			if (i1 > bHi) i1 = bHi;
+			auto considerNear = [&](long long b) {
+				for (long long c = b - 2; c <= b + 2; ++c) if (c >= bLo && c <= bHi) consider(c);
+			};
+			considerNear(bLo);
+			if (i0 <= i1) {
+				// r(i0 + x) = r(i0) - x*log2(3): its distance to the integers is the smaller of
+				// frac(r) and frac(-r), and each is a linear function mod 1 of x
+				const long long n = i1 - i0 + 1;
+				const double r0 = scale - static_cast<double>(i0) * log2of3;
+				const long long xUp   = argmin_frac(n, frac_part(-log2of3), frac_part(r0));    // r just above an integer
+				const long long xDown = argmin_frac(n, frac_part(log2of3), frac_part(-r0));    // r just below one
+				const long long first  = (xUp < xDown) ? xUp : xDown;
+				const long long second = (xUp < xDown) ? xDown : xUp;
+				considerNear(i0);
+				considerNear(i0 + first);
+				considerNear(i0 + second);
+				considerNear(i1);
+			}
+			considerNear(bHi);
 		}
 #if DBNS_TRACE_CONVERSION
 		if (!std::is_constant_evaluated()) std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
@@ -850,6 +888,76 @@ protected:
 		setexponent(1, static_cast<unsigned>(best_b));
 		setsign(negative);
 		return *this;
+	}
+
+	// windows of b up to this size are scanned; wider ones are searched with argmin_frac
+	static constexpr long long exhaustive_search_limit = 4096;
+
+	// floor and fractional part of a finite double well inside long long's range, constexpr
+	static constexpr long long floor_ll(double x) noexcept {
+		long long i = static_cast<long long>(x);
+		return (static_cast<double>(i) > x) ? i - 1 : i;
+	}
+	static constexpr double frac_part(double x) noexcept {
+		const double f = x - static_cast<double>(floor_ll(x));
+		return (f < 0.0 || f >= 1.0) ? 0.0 : f;
+	}
+
+	// The x in [0, n) that minimizes frac(beta + x*gamma), for beta and gamma in [0, 1), in
+	// O(log n) steps rather than n (#1973). f(x) = frac(beta + x*gamma) rises in runs and drops
+	// at each wrap past an integer, so a minimum sits at a run's start:
+	//   gamma <= 1/2: at x = 0, or at x_k = ceil((k - beta)/gamma), the first x after the k-th
+	//     wrap, k = 1..K with K = floor(beta + (n-1)*gamma). f(x_k) = gamma * frac((beta - k)/gamma),
+	//     which over k is the same problem again, with gamma' = frac(-1/gamma) and K <= n*gamma
+	//     + 1 terms.
+	//   gamma > 1/2: f falls by g = 1 - gamma at each step, so the minimum sits at a run's end:
+	//     x = n - 1, or x_k = floor((beta + k)/g), k = 0..K-1, with K = ceil(n*g - beta).
+	//     f(x_k) = g * frac((beta + k)/g): gamma' = frac(1/g), and K <= n*g + 1 terms.
+	// Either way the count at least halves. The index found is rounded back through a
+	// division, so its neighbours are checked as well; the caller scores the final candidates
+	// with the exact rule of the scan.
+	static constexpr long long argmin_frac(long long n, double gamma, double beta) noexcept {
+		constexpr long long scan_limit = 32;   // not "small": rpcndr.h, via windows.h, defines it as a macro
+		auto f = [&](long long x) { return frac_part(beta + static_cast<double>(x) * gamma); };
+		auto better = [&](long long& best, long long x) { if (x >= 0 && x < n && f(x) < f(best)) best = x; };
+		if (n <= scan_limit) {
+			long long best = 0;
+			for (long long x = 1; x < n; ++x) better(best, x);
+			return best;
+		}
+		if (gamma <= 0.5) {
+			long long best = 0;
+			const long long K = floor_ll(beta + static_cast<double>(n - 1) * gamma);
+			auto xk = [&](long long k) {
+				const double q = (static_cast<double>(k) - beta) / gamma;
+				long long x = floor_ll(q);
+				if (static_cast<double>(x) < q) ++x;   // ceil
+				return x;
+			};
+			if (K <= scan_limit) {
+				for (long long k = 1; k <= K; ++k) { const long long x = xk(k); for (long long c = x - 1; c <= x + 1; ++c) better(best, c); }
+				return best;
+			}
+			const long long k = argmin_frac(K, frac_part(-1.0 / gamma), frac_part((beta - 1.0) / gamma)) + 1;
+			const long long x = xk(k);
+			for (long long c = x - 1; c <= x + 1; ++c) better(best, c);
+			return best;
+		}
+		const double g = 1.0 - gamma;
+		long long best = n - 1;
+		const double kq = static_cast<double>(n) * g - beta;
+		long long K = floor_ll(kq);
+		if (static_cast<double>(K) < kq) ++K;   // ceil
+		if (K < 0) K = 0;
+		auto xk = [&](long long k) { return floor_ll((beta + static_cast<double>(k)) / g); };
+		if (K <= scan_limit) {
+			for (long long k = 0; k < K; ++k) { const long long x = xk(k); for (long long c = x - 1; c <= x + 1; ++c) better(best, c); }
+			return best;
+		}
+		const long long k = argmin_frac(K, frac_part(1.0 / g), frac_part(beta / g));
+		const long long x = xk(k);
+		for (long long c = x - 1; c <= x + 1; ++c) better(best, c);
+		return best;
 	}
 
 	// log2 of 0.5^a * 3^b, for exponents of any size: log2(3) is split into a 20-bit head, whose
