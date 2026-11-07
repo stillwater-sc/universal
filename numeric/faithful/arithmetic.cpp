@@ -77,8 +77,8 @@ void CompensatedEvaluation() {
 	std::cout << "+-------\nCompensated Evaluation for type : " << type_tag(Real()) << '\n';
 
 	Real a, b;
-	constexpr Real eps = std::numeric_limits<Real>::epsilon();
-	constexpr Real epsHalf = std::numeric_limits<Real>::epsilon() / 2.0f;
+	const Real eps = std::numeric_limits<Real>::epsilon();
+	const Real epsHalf = std::numeric_limits<Real>::epsilon() / 2.0f;
 	a = 0.5f + epsHalf;
 	b = 1.0f + eps;
 	std::cout << "a = 0.5 + half epsilon : " << to_binary(a) << " : " << a << '\n';
