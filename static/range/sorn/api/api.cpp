@@ -82,10 +82,16 @@ try {
 	sornType c9 = aNeg * bNeg; // case 9
 	std::cout << "-- Case 9: \t" << aNeg << " * " << bNeg << " = " << c9 << "\n\n";
 
-return EXIT_SUCCESS;
-
 	sornType s8 = s2 * f1;
 	std::cout << "-- Scalar Multiplication: \t" << s2 << " * " << f1 << " = " << s8 << std::endl;
+
+	// division: a divisor that straddles zero gives the whole lattice, the exact zero gives NaN
+	sornType q1 = s2 / s3;
+	sornType q2 = s2 / aMid;
+	sornType q3 = s2 / sornType(0);
+	std::cout << "-- Division: \t\t" << s2 << " / " << s3 << " = " << q1 << '\n';
+	std::cout << "-- Division: \t\t" << s2 << " / " << aMid << " = " << q2 << '\n';
+	std::cout << "-- Division by zero: \t" << s2 << " / 0 = " << q3 << '\n';
 	std::cout << '\n';
 
 	// abs
