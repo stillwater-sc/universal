@@ -19,6 +19,7 @@
 #include <universal/verification/test_suite.hpp>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <random>
 
 namespace {
@@ -96,6 +97,66 @@ int VerifyCancellation(bool reportTestCases) {
 		nrOfFailedTests += check("z / cancel", exact(z / d), Z / D, std::fabs(Z / D), tol, z, d, reportTestCases, reported);
 		nrOfFailedTests += check("z * cancel", exact(z * d), Z * D, std::fabs(Z * D), tol, z, d, reportTestCases, reported);
 	}
+	return nrOfFailedTests;
+}
+
+// + - * / with an infinite or NaN operand, division by a signed zero, and signed-zero results,
+// against IEEE-754
+// arithmetic on the heads: a non-finite operand decides the result by the heads alone, and the
+// result carries no error. finite / inf was NaN, since twoDiv's residual 1 - inf*0 reached the
+// error part of the finite quotient 0 (#1969).
+template<typename Real>
+int VerifyNonFiniteOperands(bool reportTestCases) {
+	using F = sw::universal::faithful<Real>;
+	using RL = std::numeric_limits<Real>;
+	int nrOfFailedTests = 0;
+	const Real inf = RL::infinity(), nan = RL::quiet_NaN();
+	const Real tiny = std::ldexp(Real(1), -(RL::digits + 4));
+	// finite pairs with an error part, the extremes, the signed zeros, and the non-finite values
+	const F operands[] = {
+		F(Real(1)), F(Real(-3), Real(3) * tiny), F(Real(1.5), tiny), F(RL::max()), F(-RL::denorm_min()),
+		F(Real(0)), F(Real(-0.0)), F(inf), F(-inf), F(nan)
+	};
+	// the IEEE classification and sign must agree, and the result must carry no error
+	auto same = [](Real got, Real want) {
+		if (std::isnan(want)) return std::isnan(got);
+		return got == want && std::signbit(got) == std::signbit(want);
+	};
+	auto check = [&](const F& got, Real want, const F& x, const F& y, const char* op) {
+		const bool ok = same(got.high(), want) && got.low() == Real(0);
+		if (!ok) {
+			++nrOfFailedTests;
+			if (reportTestCases && nrOfFailedTests < 10)
+				std::cerr << "FAIL " << x << ' ' << op << ' ' << y << " = (" << got.high() << ", " << got.low() << "), expected " << want << '\n';
+		}
+	};
+	for (const F& x : operands) {
+		for (const F& y : operands) {
+			const Real a = x.high(), b = y.high();
+			const bool nonFinite = !std::isfinite(a) || !std::isfinite(b);
+			if (nonFinite) {
+				check(x + y, a + b, x, y, "+");
+				check(x - y, a - b, x, y, "-");
+				check(x * y, a * b, x, y, "*");
+				check(x / y, a / b, x, y, "/");
+				F z = x; z /= y; check(z, a / b, x, y, "/=");
+			}
+			else if (b == Real(0)) {
+				check(x / y, a / b, x, y, "/ by zero");   // +-inf, or NaN for 0/0
+			}
+		}
+	}
+	// signed zeros from finite operands follow IEEE-754: a -0 head kept its value but lost its
+	// sign in renormalization, since twoSum(-0, 0) is +0
+	const F pz(Real(0)), nz(Real(-0.0)), one(Real(1)), mone(Real(-1));
+	check(nz * one, Real(-0.0), nz, one, "*");
+	check(one * nz, Real(-0.0), one, nz, "*");
+	check(pz * mone, Real(-0.0), pz, mone, "*");
+	check(nz + nz, Real(-0.0), nz, nz, "+");
+	check(nz - pz, Real(-0.0), nz, pz, "-");
+	check(pz + nz, Real(0), pz, nz, "+");
+	check(nz / one, Real(-0.0), nz, one, "/");
+	check(pz / mone, Real(-0.0), pz, mone, "/");
 	return nrOfFailedTests;
 }
 
@@ -193,6 +254,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNegation(reportTestCases), test_tag, "negation");
 	nrOfFailedTestCases += ReportTestResult(VerifyCompensatedArithmetic(reportTestCases), test_tag, "compensated + - * /");
 	nrOfFailedTestCases += ReportTestResult(VerifyCancellation(reportTestCases), test_tag, "cancellation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNonFiniteOperands<float>(reportTestCases), "faithful<float>", "non-finite operands");
+	nrOfFailedTestCases += ReportTestResult(VerifyNonFiniteOperands<double>(reportTestCases), "faithful<double>", "non-finite operands");
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -182,6 +182,15 @@ public:
 		faithful divisor(rhs);
 		divisor.renormalize();
 		FloatingPointType a(value), b(divisor.value), d, r;
+		// a non-finite head: the IEEE quotient of the heads, with no error. twoDiv's residual
+		// a - b*d is 1 - inf*0 = NaN for 1/inf, and the error term would turn the finite quotient
+		// 0 into NaN (#1969). Division is the only operator that takes an infinite operand to a
+		// finite head; + - * give a non-finite head there, whose error renormalize() clears.
+		if (!faithful_detail::part_isfinite(a) || !faithful_detail::part_isfinite(b)) {
+			value = a / b;
+			error = 0;
+			return *this;
+		}
 		twoDiv(a, b, d, r);
 		value = d;
 		error = (error + r - d * divisor.error) / b;
@@ -248,6 +257,9 @@ private:
 			error = 0;
 			return;
 		}
+		// a zero error is already canonical. twoSum(-0, 0) is +0, so summing would drop the sign
+		// of a -0 head: -0 * 1 was +0, and x / -0 divided by +0 (#1969)
+		if (error == FloatingPointType(0)) return;
 		FloatingPointType s, r;
 		twoSum(value, error, s, r);
 		value = s;

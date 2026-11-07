@@ -59,18 +59,35 @@ namespace faithful_detail {
 		return floor(h) != h;
 	}
 
-	// x^n by binary powering
+	// x^n by binary powering, for a positive finite x and |n| <= 64. The power of two is taken
+	// out first: x = 2^k b with b in [sqrt(1/2), sqrt(2)), so b^|n| lies within 2^(+-32) and
+	// neither the powering nor the reciprocal can overflow or underflow; 2^(k n) is applied once
+	// at the end, exactly unless the result is subnormal. Powering x itself overflowed x^|n|
+	// before a negative n took its reciprocal: pow(2^20, -52) was 1/inf, which gave NaN, where
+	// the result 2^-1040 is representable (#1969). In range the result is unchanged, since
+	// scaling by a power of two is exact.
 	template<typename Real>
-	inline faithful<Real> ipow(faithful<Real> x, int n) {
+	inline faithful<Real> ipow(const faithful<Real>& x, int n) {
+		int k = 0;
+		faithful<Real> b = center(x, k);
 		const bool reciprocal = n < 0;
 		unsigned m = static_cast<unsigned>(reciprocal ? -n : n);
 		faithful<Real> r(Real(1));
 		while (m != 0) {
-			if (m & 1u) r *= x;
+			if (m & 1u) r *= b;
 			m >>= 1;
-			if (m != 0) x *= x;
+			if (m != 0) b *= b;
 		}
-		return reciprocal ? faithful<Real>(Real(1)) / r : r;
+		if (reciprocal) r = faithful<Real>(Real(1)) / r;
+		// apply 2^e. In range that is exact. Where the head lands subnormal, ldexp rounds it
+		// without seeing the error part, so the head's exact remainder, taken at the unscaled
+		// exponent where it is representable, joins the error part, and the compensated sum
+		// rounds the two together. Past max() the result is inf, with no error.
+		const int e = k * n;
+		const Real h = std::ldexp(r.high(), e);
+		if (!part_isfinite(h)) return faithful<Real>(h);
+		const Real rem = (r.high() - std::ldexp(h, -e)) + r.low();
+		return faithful<Real>(h) + faithful<Real>(std::ldexp(rem, e));
 	}
 }
 
