@@ -27,7 +27,8 @@
 #include <cmath>         // std::isnan/std::isinf in convert_ieee754
 #include <cassert>       // assert(), used by findMsd() and the helpers
 #include <vector>        // std::vector, the base class
-#include <algorithm>     // std::swap / std::equal
+#include <algorithm>     // std::swap / std::equal / std::reverse
+#include <utility>       // std::move
 #include <iosfwd>        // std::ostream/std::istream in the friend declarations (#1334)
 #include <string>        // std::string, used by parse() and operator=(const std::string&)
 #include <cstdio>        // fprintf(stderr,...) for the diagnostics
@@ -895,7 +896,11 @@ inline decintdiv decint_divide(const edecimal& _a, const edecimal& _b) {
 		subtractand >>= 1;
 		if (subtractand == 0) break;
 	}
-	divresult.quot.assign(qdigits.rbegin(), qdigits.rend());
+	// least significant digit first, then moved into the quotient's digit vector: no copy. (An
+	// assign() from reverse iterators drew a gcc 13 -Wstringop-overflow false positive, an error
+	// under -Werror in the noexceptions build.)
+	std::reverse(qdigits.begin(), qdigits.end());
+	static_cast<std::vector<uint8_t>&>(divresult.quot) = std::move(qdigits);
 	if (result_negative) {
 		divresult.quot.setneg();   // |a| >= |b| here, so the quotient is not zero
 	}
