@@ -146,6 +146,48 @@ int VerifyConvertingConstructor(bool reportTestCases) {
 	return fails;
 }
 
+// A source past every native type's range: areal has one binade more than IEEE, so the top
+// binade of areal<64,11>, maxpos included, overflows double, and long double is double on some
+// platforms. The converting constructor goes through a blocktriple, so it needs no native type
+// (CodeRabbit). Widening to areal<80,15> and narrowing back must give the same encoding, exactly,
+// for every sampled encoding, the top binade included; narrowing maxpos to areal<32,8> saturates.
+int VerifyWideSourceRoundTrip(bool reportTestCases) {
+	using Src = areal<64, 11, std::uint8_t>;
+	using Wide = areal<80, 15, std::uint8_t>;
+	using Narrow = areal<32, 8, std::uint8_t>;
+	int fails = 0, reported = 0;
+	std::mt19937_64 rng(19701);
+	auto roundTrip = [&](const Src& x) {
+		if (x.isnan()) return;
+		const Wide w(x);
+		const Src back(w);
+		bool ok = !w.isinf() || x.isinf();
+		ok = ok && (w.at(0) == x.at(0)) && (back.at(0) == x.at(0));
+		for (unsigned i = 0; i < Src::nbits && ok; ++i) ok = (back.at(i) == x.at(i));
+		if (!ok) {
+			++fails;
+			if (reportTestCases && reported++ < 5) std::cerr << "FAIL round trip " << sw::universal::to_binary(x) << " -> " << sw::universal::to_binary(w) << " -> " << sw::universal::to_binary(back) << '\n';
+		}
+	};
+	Src x;
+	for (int i = 0; i < 20000; ++i) {
+		std::uint64_t raw = rng();
+		if (i % 4 == 0) raw |= 0x7FE0'0000'0000'0000ull;   // the top binades, near maxpos
+		x.setbits(raw);
+		roundTrip(x);
+	}
+	roundTrip(Src(sw::universal::SpecificValue::maxpos));
+	roundTrip(Src(sw::universal::SpecificValue::maxneg));
+	roundTrip(Src(sw::universal::SpecificValue::minpos));
+	roundTrip(Src(sw::universal::SpecificValue::minneg));
+	const Narrow n{ Src(sw::universal::SpecificValue::maxpos) };
+	if (n.isinf() || !(n.at(0)) || double(n) != double(Narrow(sw::universal::SpecificValue::maxpos))) {
+		++fails;
+		if (reportTestCases) std::cerr << "FAIL areal<64,11> maxpos into areal<32,8> = " << sw::universal::to_binary(n) << ", expected (maxpos, inf)\n";
+	}
+	return fails;
+}
+
 }  // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -214,6 +256,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConvertingConstructor<areal<8, 3, std::uint8_t>, areal<12, 4, std::uint8_t>>(reportTestCases), "areal<8,3> from areal<12,4>", "converting ctor");
 	nrOfFailedTestCases += ReportTestResult(VerifyConvertingConstructor<areal<10, 2, std::uint8_t>, areal<12, 5, std::uint8_t>>(reportTestCases), "areal<10,2> from areal<12,5>", "converting ctor");
 	nrOfFailedTestCases += ReportTestResult(VerifyConvertingConstructor<areal<32, 8, std::uint8_t>, areal<16, 5, std::uint8_t>>(reportTestCases), "areal<32,8> from areal<16,5>", "converting ctor");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideSourceRoundTrip(reportTestCases), "areal<64,11> via areal<80,15>", "converting ctor round trip");
 #endif
 
 #if REGRESSION_LEVEL_2

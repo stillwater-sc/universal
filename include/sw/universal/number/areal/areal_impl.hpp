@@ -183,23 +183,18 @@ public:
 	/// <param name="rhs">the source areal</param>
 	template<unsigned nnbits, unsigned ees>
 	areal(const areal<nnbits, ees, bt>& rhs) : _block{} {
-		// the source's significand, hidden bit included, and its largest binary exponent decide
-		// which native type holds its value exactly; to_native reads the value bits and leaves
-		// the ubit, so it gives the lower end of an inexact source
-		constexpr int srcDigits = static_cast<int>(nnbits) - 1 - static_cast<int>(ees);
-		constexpr long long srcMaxExp = 1ll << (ees - 1);
-		constexpr long long srcMinExp = 2ll - srcMaxExp - srcDigits;   // the scale of the smallest subnormal
-		using DL = std::numeric_limits<double>;
-		using LL = std::numeric_limits<long double>;
-		bool approximate = false;   // the native value might not hold the source exactly
-		if constexpr (srcDigits <= DL::digits && srcMaxExp <= DL::max_exponent && srcMinExp >= DL::min_exponent - DL::digits) {
-			*this = double(rhs);
-		}
-		else {
-			*this = static_cast<long double>(rhs);
-			approximate = !(srcDigits <= LL::digits && srcMaxExp <= LL::max_exponent && srcMinExp >= LL::min_exponent - LL::digits);
-		}
-		if ((rhs.at(0) || approximate) && !isnan() && !isinf()) set(0);
+		// Through a blocktriple of the source's width, as the arithmetic converts its results:
+		// normalizeAddition holds the source's value exactly, and convert() truncates it into this
+		// configuration, sets the ubit when bits drop, and saturates or underflows with the ubit.
+		// A native intermediate cannot hold every source: areal has one binade more than IEEE, so
+		// the top binade of areal<64,11> overflows double, and long double is double on some
+		// platforms (CodeRabbit).
+		using Src = areal<nnbits, ees, bt>;
+		blocktriple<Src::fbits, BlockTripleOperator::ADD, bt> v;
+		rhs.normalizeAddition(v);
+		if (v.iszero()) v.setsign(rhs.sign());   // normalizeAddition leaves a zero unsigned, and -0 must stay -0
+		convert(v, *this, rhs.at(0));
+		if (rhs.at(0) && !isnan() && !isinf()) set(0);   // an inexact source stays inexact
 	}
 
 	// specific value constructor
