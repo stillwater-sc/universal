@@ -22,6 +22,7 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <locale>
 #include <random>
 #include <sstream>
 #include <string>
@@ -242,7 +243,7 @@ int VerifyOddPower(bool reportTestCases) {
 	// the empty interval stays empty at every exponent; NaN bounds are never degenerate, and the
 	// odd-power path recursed on them until the stack ran out (CodeRabbit)
 	I empty; empty.setnan();
-	for (int n : { 3, 6, -3, 2, 5 }) if (!pow(empty, n).isnan()) ++fails;
+	for (int n : { 0, 1, 3, 6, -3, 2, 5 }) if (!pow(empty, n).isnan()) ++fails;
 	// even powers and negative odd powers keep working
 	if (pow(I(Real(-2), Real(3)), 2) != I(Real(0), Real(9))) ++fails;
 	const I inv = pow(I(Real(2), Real(4)), -3);
@@ -349,6 +350,26 @@ int VerifyStreamInput(bool reportTestCases) {
 			s >> y;
 			const bool same = x.isnan() ? y.isnan() : (x == y);
 			if (s.fail() || !same) { ++fails; if (reportTestCases) std::cerr << "FAIL round trip of " << x << " -> " << y << '\n'; }
+		}
+	}
+	// a caller's locale: digit grouping with '_' writes [1_000, 2_000], and the same stream reads
+	// it back, since the bound parser takes the input stream's locale, not the global one
+	{
+		struct underscore_grouping : std::numpunct<char> {
+			char do_thousands_sep() const override { return '_'; }
+			std::string do_grouping() const override { return "\3"; }
+		};
+		const std::locale grouped(std::locale::classic(), new underscore_grouping);
+		I x(Real(1000), Real(2000));
+		std::stringstream s;
+		s.imbue(grouped);
+		s << x;
+		const std::string written = s.str();
+		I y(Real(7), Real(9));
+		s >> y;
+		if (written != "[1_000, 2_000]" || s.fail() || !(x == y)) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL locale round trip: wrote '" << written << "', read " << y << '\n';
 		}
 	}
 	// what operator<< writes reads back

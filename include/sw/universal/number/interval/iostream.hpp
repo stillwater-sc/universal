@@ -60,6 +60,7 @@ namespace interval_detail {
 			return true;
 		}
 		std::istringstream in(tok);
+		in.imbue(istr.getloc());   // the caller's locale: what operator<< wrote with it, e.g. 1_000, reads back
 		Scalar v{};
 		in >> v;
 		if (in.fail()) return false;

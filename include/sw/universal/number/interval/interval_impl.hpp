@@ -802,9 +802,12 @@ inline interval<Scalar> sqrt(const interval<Scalar>& x) {
 // power function
 template<typename Scalar>
 inline interval<Scalar> pow(const interval<Scalar>& x, int n) {
+	// the empty interval stays empty at every exponent, 0 included (the scalar pow(NaN, 0) = 1
+	// does not carry over to sets); its NaN bounds are never degenerate, so the odd-power path
+	// would recurse on them forever
+	if (x.isnan()) return x;
 	if (n == 0) return interval<Scalar>(Scalar(1));
 	if (n == 1) return x;
-	if (x.isnan()) return x;   // the empty interval: NaN bounds are never degenerate, so the odd-power path would recurse forever
 	if (n < 0) return interval<Scalar>(Scalar(1)) / pow(x, -n);
 
 	// Even power
