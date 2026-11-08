@@ -17,6 +17,8 @@
 //     [nan, nan] in one order, and intersect(x, empty) was x;
 //   - an odd power was up to 2x too wide across zero;
 //   - operator>> overwrote its target on a failed parse and accepted a wrong delimiter.
+// The follow-up sweep (#1991) added long double subnormal roots and the Stage-1 sqrt of the
+// types outside the EFT gate, every positive encoding of cfloat<16,5> and posit<16,1>.
 #include <universal/utility/directives.hpp>
 #include <cerrno>
 #include <cmath>
@@ -41,7 +43,10 @@ using sw::universal::interval;
 // (Sterbenz) and adding the product's roundoff keeps the sign
 template<typename Real>
 int SquareMinus(Real e, Real v) {
-	const int k = (std::numeric_limits<Real>::digits == 53) ? 600 : 60;
+	// k large enough that the residual of v*2^(2k) is representable, small enough that the
+	// largest v tested stays finite: float, double, and an 80-bit or 128-bit long double
+	constexpr int digits = std::numeric_limits<Real>::digits;
+	const int k = (digits == 24) ? 60 : (digits == 53) ? 600 : 200;
 	const Real es = std::ldexp(e, k), vs = std::ldexp(v, 2 * k);
 	const Real p = es * es;
 	const Real err = std::fma(es, es, -p);
@@ -141,6 +146,31 @@ int VerifyCfloatWideExponentSqrt(bool reportTestCases) {
 		if (!(ro.lo() < s && s < ro.hi())) {
 			++fails;
 			if (reportTestCases) std::cerr << "FAIL cfloat<32,20> sqrt(2^" << 2 * k + 1 << ") does not bracket its rounded root\n";
+		}
+	}
+	return fails;
+}
+
+// The types outside the EFT gate (cfloat without subnormals, posit) take Stage 1 of sqrt:
+// round_down and round_up of the rounded root, unconditionally. Every positive finite encoding
+// of a 16-bit configuration, the smallest values included, must enclose its root (#1991). The
+// squares of their significands fit a double, so the check is exact.
+template<typename Real>
+int VerifyOutwardSqrt(unsigned rawEnd, bool reportTestCases) {
+	static_assert(!sw::universal::interval_detail::interval_eft_exact<Real>::value, "this checks the Stage-1 path");
+	using I = interval<Real>;
+	int fails = 0;
+	Real v;
+	for (unsigned raw = 1; raw < rawEnd; ++raw) {
+		v.setbits(raw);
+		const double vd = double(v);
+		if (!(vd > 0.0) || !std::isfinite(vd)) continue;
+		const I r = sqrt(I(v, v));
+		const double lo = double(r.lo()), hi = double(r.hi());
+		const bool ok = (lo <= 0.0 || lo * lo <= vd) && hi * hi >= vd;
+		if (!ok) {
+			++fails;
+			if (reportTestCases && fails < 5) std::cerr << "FAIL " << sw::universal::type_tag(v) << " sqrt(" << vd << ") = [" << lo << ", " << hi << "]\n";
 		}
 	}
 	return fails;
@@ -491,8 +521,17 @@ try {
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSqrt<float>(reportTestCases), "interval<float>", "subnormal sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifySubnormalSqrt<double>(reportTestCases), "interval<double>", "subnormal sqrt");
+#if LONG_DOUBLE_SUPPORT
+	// long double takes the native branch of sqrt_enclose too, at 64 or 113 bits on x86 and
+	// aarch64 Linux; a double-double long double is not IEEE and has no single ulp (#1991)
+	if constexpr (std::numeric_limits<long double>::is_iec559) {
+		nrOfFailedTestCases += ReportTestResult(VerifySubnormalSqrt<long double>(reportTestCases), "interval<long double>", "subnormal sqrt");
+	}
+#endif
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSqrt(reportTestCases), "interval<cfloat<16,5,sub>>", "sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatWideExponentSqrt(reportTestCases), "interval<cfloat<32,20,sub>>", "sqrt past double's range");
+	nrOfFailedTestCases += ReportTestResult(VerifyOutwardSqrt<sw::universal::cfloat<16, 5, std::uint16_t>>(0x7C00u, reportTestCases), "interval<cfloat<16,5>>", "Stage-1 sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyOutwardSqrt<sw::universal::posit<16, 1>>(0x8000u, reportTestCases), "interval<posit<16,1>>", "Stage-1 sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyNegativeSqrt<float>(reportTestCases), "interval<float>", "negative sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyNegativeSqrt<double>(reportTestCases), "interval<double>", "negative sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyMidpoint<float>(reportTestCases), "interval<float>", "mid");

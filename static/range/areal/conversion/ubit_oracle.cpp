@@ -111,6 +111,14 @@ int VerifyIntegerUbit(bool reportTestCases) {
 	checkUnsigned(std::numeric_limits<unsigned long long>::max());
 	checkUnsigned((1ull << 63) + 1ull);
 	for (long long v : { 0ll, 1ll, -1ll, 1000ll, (1ll << 53) - 1, 1ll << 53 }) checkSigned(v);   // the double path, unchanged
+	// the double path for both signs, across every binade below 2^53: a magnitude with more
+	// significant bits than fbits + 1 drops bits and sets the ubit, a negative one as a positive
+	// one, and the saturated values past maxpos are inexact as well (#1991)
+	for (int k = 1; k < 53; ++k) {
+		const long long p = 1ll << k;
+		for (long long d : { -1ll, 0ll, 1ll, 3ll }) { checkSigned(p + d); checkSigned(-(p + d)); }
+	}
+	checkSigned(-((1ll << 53) - 1));
 	std::mt19937_64 rng(19700);
 	for (int i = 0; i < 20000; ++i) {
 		const std::uint64_t r = rng() >> (rng() % 40);   // magnitudes from 2^24 up to 2^64
