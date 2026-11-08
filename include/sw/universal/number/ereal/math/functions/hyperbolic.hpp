@@ -34,8 +34,8 @@ namespace sw { namespace universal {
 	inline ereal<maxlimbs, FpType> sinh(const ereal<maxlimbs, FpType>& x) {
 		using Real = ereal<maxlimbs, FpType>;
 
-		// Special cases
-		if (x.iszero()) return Real(0.0);
+		// Special cases: sinh(+-0) = +-0, sinh(+-inf) = +-inf (C99 F.10.2.5)
+		if (x.iszero() || x.isnan() || x.isinf()) return x;
 
 		// sinh is odd: evaluate at a = |x|, so that sinh(-x) is exactly -sinh(x).  Near 0, from
 		// expm1: (e + e / (e + 1)) / 2 with e = e^a - 1, where the difference of the two
@@ -80,8 +80,10 @@ namespace sw { namespace universal {
 	inline ereal<maxlimbs, FpType> cosh(const ereal<maxlimbs, FpType>& x) {
 		using Real = ereal<maxlimbs, FpType>;
 
-		// cosh(0) = 1
+		// cosh(+-0) = 1, cosh(+-inf) = +inf (C99 F.10.2.4)
 		if (x.iszero()) return Real(1.0);
+		if (x.isnan()) return x;
+		if (x.isinf()) return ereal_detail::signed_inf<maxlimbs, FpType>(false);
 
 		// cosh(x) = (exp(x) + exp(-x)) / 2
 		Real exp_x = exp(x);
@@ -116,8 +118,9 @@ namespace sw { namespace universal {
 	inline ereal<maxlimbs, FpType> tanh(const ereal<maxlimbs, FpType>& x) {
 		using Real = ereal<maxlimbs, FpType>;
 
-		// Special cases
-		if (x.iszero()) return Real(0.0);
+		// Special cases: tanh(+-0) = +-0, tanh(+-inf) = +-1 (C99 F.10.2.6)
+		if (x.iszero() || x.isnan()) return x;
+		if (x.isinf()) return x.isneg() ? Real(-1.0) : Real(1.0);
 
 		// tanh is odd: evaluate at a = |x|.  Near 0, e / (e + 2) with e = expm1(2a), which does not
 		// cancel; beyond, 1 - 2 / (e^2a + 1), which saturates to 1 once e^2a overflows.  The form
@@ -163,19 +166,25 @@ namespace sw { namespace universal {
 	inline ereal<maxlimbs, FpType> asinh(const ereal<maxlimbs, FpType>& x) {
 		using Real = ereal<maxlimbs, FpType>;
 
-		// Special case
-		if (x.iszero()) return Real(0.0);
+		// Special cases: asinh(+-0) = +-0, asinh(+-inf) = +-inf (C99 F.10.2.2); inf used to
+		// reach a * a / (1 + sqrt(1 + a * a)) = inf / inf = NaN (#2006)
+		if (x.iszero() || x.isnan() || x.isinf()) return x;
 
 		// asinh is odd: evaluate at a = |x|, as log1p(a + a^2 / (1 + sqrt(1 + a^2))).  The form
 		// log(x + sqrt(x^2 + 1)) takes the logarithm of 1 + x and cancels completely for tiny x:
-		// asinh(3e-50) was 0 (#1668).  Beyond 2^256, a^2 would overflow before the correction
-		// 1 / (4 a^2) mattered, and asinh(a) = log(a) + ln 2.
+		// asinh(3e-50) was 0 (#1668).  For a large a, a^2 overflows the limb type, so use
+		// log(a) + log(1 + sqrt(1 + (1/a)^2)), which has no square of a and no cancellation.
+		// The limit is a quarter of the limb type's exponent range: 2^256 for double limbs, 2^32
+		// for float limbs, where a fixed 2^256 let asinh(1e30) square to inf / inf = NaN (#2006).
+		// The old large-a form log(a) + ln 2 dropped the 1 / (4 a^2) term, which a wide
+		// configuration carries.
 		const bool negative = x.isneg();
 		const Real a = negative ? -x : x;
 		const Real one(1.0);
 		Real r;
-		if (a > Real(std::ldexp(1.0, 256))) {
-			r = log(a) + ereal_ln2<maxlimbs, FpType>();
+		if (a > ereal_detail::square_safe_limit<maxlimbs, FpType>()) {
+			const Real inv = one / a;
+			r = log(a) + log1p(sqrt(one + inv * inv));
 		}
 		else {
 			const Real a2 = a * a;
@@ -210,6 +219,10 @@ namespace sw { namespace universal {
 	inline ereal<maxlimbs, FpType> acosh(const ereal<maxlimbs, FpType>& x) {
 		using Real = ereal<maxlimbs, FpType>;
 
+		// C99 F.10.2.1: acosh(+inf) = +inf; NaN for NaN and below 1
+		if (x.isnan()) return x;
+		if (x.isinf()) return x.isneg() ? ereal_detail::quiet_nan<maxlimbs, FpType>() : x;
+
 		// Domain check: x must be >= 1
 		Real one(1.0);
 		if (x < one) {
@@ -220,8 +233,12 @@ namespace sw { namespace universal {
 		if (x == one) return Real(0.0);
 
 		// acosh(x) = log1p(t + sqrt(t (t + 2))) with t = x - 1 exact, which keeps its relative
-		// accuracy as x approaches 1.  Beyond 2^256, log(x) + ln 2, as for asinh.
-		if (x > Real(std::ldexp(1.0, 256))) return log(x) + ereal_ln2<maxlimbs, FpType>();
+		// accuracy as x approaches 1.  For a large x, log(x) + log(1 + sqrt(1 - (1/x)^2)), as
+		// for asinh: t (t + 2) would overflow.
+		if (x > ereal_detail::square_safe_limit<maxlimbs, FpType>()) {
+			const Real inv = one / x;
+			return log(x) + log1p(sqrt(one - inv * inv));
+		}
 		const Real t = x - one;
 		return log1p(t + sqrt(t * (t + Real(2.0))));
 	}
@@ -251,13 +268,14 @@ namespace sw { namespace universal {
 	inline ereal<maxlimbs, FpType> atanh(const ereal<maxlimbs, FpType>& x) {
 		using Real = ereal<maxlimbs, FpType>;
 
-		// Special case
-		if (x.iszero()) return Real(0.0);
+		// Special cases: atanh(+-0) = +-0, atanh(+-1) = +-inf, NaN beyond (C99 F.10.2.3)
+		if (x.iszero() || x.isnan()) return x;
 
-		// Domain check: |x| must be < 1
+		// Domain check: |x| must be <= 1
 		Real one(1.0);
 		Real abs_x = abs(x);
-		if (abs_x >= one) {
+		if (abs_x == one) return ereal_detail::signed_inf<maxlimbs, FpType>(x.isneg());
+		if (abs_x > one) {
 			return std::numeric_limits<Real>::quiet_NaN();
 		}
 

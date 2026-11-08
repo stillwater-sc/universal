@@ -84,6 +84,17 @@ trigonometric and hyperbolic families and their inverses, `fma`, `frexp`/`ldexp`
 `fdim`/`modf`/`rint`/`nearbyint`, plus `std::complex<ereal>` support. Constants are
 carried to the precision the type holds rather than to a fixed cap.
 
+At NaN, the infinities and the signed zeros, every function returns what C99 Annex F
+specifies. Some examples: `sqrt(-1)` is NaN, `log(+inf)` is +inf, `pow(-0, -1)` is -inf,
+`atan2(+0, -0)` is pi, `sin(-0)` is -0 and `ceil(-0.5)` is -0. `fmod` and `remainder` are
+exact for quotients of any size, and `fmod(x, 0)` is NaN. Only a build with
+`EREAL_THROW_ARITHMETIC_EXCEPTION` set throws instead, as it does for `x / 0`. `hypot`
+scales its operands, so `hypot(1e200, 1e200)` does not overflow.
+
+One limit remains. `sin`, `cos` and `tan` reduce their argument with the configuration's
+own pi, so a huge argument loses about as many bits as its exponent, and at `ereal<4>`
+the result is wrong from about 1e100 on (#2016).
+
 ## Choosing between ereal and elreal
 
 | | `ereal` | [`elreal`](/universal/number-systems/elreal/) |

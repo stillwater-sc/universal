@@ -13,12 +13,12 @@ namespace sw { namespace universal {
 	//   Note: For adaptive precision, "next" may involve adding a small limb
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> nextafter(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
-		if (x == y) return y;
-	
+		// NaN first: a NaN compares equal to everything in ereal (#2005), so nextafter(NaN, y)
+		// returned y (#2006)
 		if (x.isnan() || y.isnan()) {
-			// if either is NaN, return NaN
 			return ereal<maxlimbs, FpType>(std::numeric_limits<double>::quiet_NaN());
-	    }
+		}
+		if (x == y) return y;
 		
 		// find the smallest limb, and move in the direction of y
 	    ereal<maxlimbs, FpType> n{x};

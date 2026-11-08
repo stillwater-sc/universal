@@ -78,7 +78,8 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 1: Handle special cases
 		// ============================================================================
-		if (x.iszero()) return Real(0.0);
+		if (x.iszero() || x.isnan()) return x;   // sin(-0) is -0 (C99 F.10.1.6)
+		if (x.isinf()) return ereal_detail::quiet_nan<maxlimbs, FpType>();
 
 		// ============================================================================
 		// STEP 2: High-precision pi constant
@@ -164,6 +165,8 @@ namespace sw { namespace universal {
 		// STEP 1: Handle special cases
 		// ============================================================================
 		if (x.iszero()) return Real(1.0);
+		if (x.isnan()) return x;
+		if (x.isinf()) return ereal_detail::quiet_nan<maxlimbs, FpType>();
 
 		// ============================================================================
 		// STEP 2: High-precision pi constant
@@ -217,8 +220,9 @@ namespace sw { namespace universal {
 	inline ereal<maxlimbs, FpType> tan(const ereal<maxlimbs, FpType>& x) {
 		using Real = ereal<maxlimbs, FpType>;
 
-		// Special case
-		if (x.iszero()) return Real(0.0);
+		// Special cases: tan(-0) is -0 (C99 F.10.1.7)
+		if (x.iszero() || x.isnan()) return x;
+		if (x.isinf()) return ereal_detail::quiet_nan<maxlimbs, FpType>();
 
 		// tan(x) = sin(x) / cos(x)
 		Real sin_x = sin(x);
@@ -261,13 +265,13 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 1: Domain check and special cases
 		// ============================================================================
+		// asin(NaN) is NaN, where the comparisons below let it through (#2006); asin(-0) is -0
+		if (x.isnan() || x.iszero()) return x;
 		Real abs_x = abs(x);
 		Real one(1.0);
 		if (abs_x > one) {
 			return std::numeric_limits<Real>::quiet_NaN();
 		}
-
-		if (x.iszero()) return Real(0.0);
 
 		// High-precision pi/2 constant (100+ digits)
 		Real pi_2;
@@ -279,8 +283,11 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 2: Argument reduction for |x| > 0.8
 		// ============================================================================
-		// For |x| > 0.8, use asin(x) = sign(x) * (pi/2 - asin(sqrt(1-x^2)))
-		Real threshold(0.8);
+		// For |x| > 1/sqrt(2), use asin(x) = sign(x) * (pi/2 - asin(sqrt(1-x^2))), so that the
+		// series below only sees x^2 <= 1/2.  Its terms shrink by about x^2 each, and at the
+		// old switch point of 0.8 (x^2 = 0.64) it needed 1.55 times the iteration cap: asin
+		// and acos lost up to 100 bits at ereal<8> for 0.7 < |x| <= 0.8 (#2006).
+		Real threshold(0.70710678118654752);
 		if (abs_x > threshold) {
 			Real sqrt_arg = sqrt(one - abs_x * abs_x);
 			Real result = pi_2 - asin(sqrt_arg);
@@ -303,7 +310,9 @@ namespace sw { namespace universal {
 		// how far the series must run for this configuration, and the convergence test:
 		// both in the limb type's own terms (#1567)
 		const int precision_bits = series_precision_bits<maxlimbs, FpType>();
-		int max_iterations = precision_bits;
+		// x^2 <= 1/2 converges within precision_bits terms; the bound leaves room, and
+		// convergence breaks out long before it
+		int max_iterations = 2 * precision_bits;
 
 		for (int n = 1; n < max_iterations; ++n) {
 			// Correct recursion: term_n = term_{n-1} * x^2 * (2n-1)^2 / [2n(2n+1)]
@@ -344,6 +353,7 @@ namespace sw { namespace universal {
 		using Real = ereal<maxlimbs, FpType>;
 
 		// Domain check: |x| must be <= 1
+		if (x.isnan()) return x;
 		Real abs_x = abs(x);
 		Real one(1.0);
 		if (abs_x > one) {
@@ -437,7 +447,8 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 1: Handle special cases
 		// ============================================================================
-		if (x.iszero()) return Real(0.0);
+		if (x.iszero() || x.isnan()) return x;   // atan(-0) is -0 (C99 F.10.1.3)
+		if (x.isinf()) return x.isneg() ? -ereal_pi_2<maxlimbs, FpType>() : ereal_pi_2<maxlimbs, FpType>();
 
 		// Extract sign and work with absolute value
 		bool negative = x.isneg();
@@ -537,21 +548,23 @@ namespace sw { namespace universal {
 		const Real pi = ereal_pi<maxlimbs, FpType>();
 		const Real pi_2 = ereal_pi_2<maxlimbs, FpType>();
 
-		// Special cases
-		if (x.iszero() && y.iszero()) {
-			return std::numeric_limits<Real>::quiet_NaN();
-		}
-
-		if (x.iszero()) {
-			// x = 0, result is +/-pi/2
-			return y.isneg() ? -pi_2 : pi_2;
-		}
-
+		// C99 F.10.1.4.  The sign of the result is the sign of y, -0 included; the sign of x,
+		// -0 included, picks the half plane.  atan2(0, -0) is pi, where it was NaN, and
+		// atan2(-0, -1) is -pi, where it was pi (#2006).
+		if (x.isnan() || y.isnan()) return ereal_detail::quiet_nan<maxlimbs, FpType>();
+		const bool yneg = y.signbit();
+		const bool xneg = x.signbit();
+		auto with_sign = [yneg](const Real& v) { return yneg ? -v : v; };
 		if (y.iszero()) {
-			// y = 0, result is 0 or +/-pi
-			if (x.isneg()) return pi;
-			return Real(0.0);
+			// atan2(+-0, x) is +-0 for x > 0 or x = +0, and +-pi for x < 0 or x = -0
+			return xneg ? with_sign(pi) : y;
 		}
+		if (y.isinf()) {
+			if (x.isinf()) return with_sign(xneg ? pi - ereal_pi_4<maxlimbs, FpType>() : ereal_pi_4<maxlimbs, FpType>());
+			return with_sign(pi_2);
+		}
+		if (x.isinf()) return xneg ? with_sign(pi) : ereal_detail::signed_zero<maxlimbs, FpType>(yneg);
+		if (x.iszero()) return with_sign(pi_2);   // x = +-0 and y finite and nonzero
 
 		// General case: compute atan(y/x) and adjust for quadrant
 		Real ratio = y / x;

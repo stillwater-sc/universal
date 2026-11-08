@@ -7,74 +7,107 @@
 #include <universal/utility/directives.hpp>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <random>
+#include <string>
+#include <string_view>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_mathlib_adaptive.hpp>
+#include <universal/verification/ereal_precision.hpp>
+#include <math/constants/reference_constants.hpp>
 
 namespace {
 	using namespace sw::universal;
+
+		// The checks below are exact (ereal_precision.hpp: both sides become dyadic rationals),
+		// never through double: a double comparison passes a result correct to only 53 bits,
+		// and so cannot see a loss of ereal's precision (#2008).
+		//
+		// Each check asks for ereal_bits_of<Real>::value less kMarginBits.  A result may carry
+		// up to twice the limbs asked for (the limb budget), so the measured agreement is well
+		// above that floor: ereal<4> shows 419-441 bits against 212, ereal<8> 840-880 against
+		// 424.  At 16 and 19 limbs every value saturates near 1024-1044 bits, where the last
+		// double limb reaches 2^-1074; the worst case there is cbrt(2)^3 at ereal<19>, 1023 bits
+		// against 1007.  16 bits of margin leaves that case 32 bits of slack.
+		constexpr int kMarginBits = 16;
+
+		template<typename Real>
+		constexpr int wanted_bits() { return ereal_bits_of<Real>::value - kMarginBits; }
+
+		template<typename Real>
+		bool exactly(const Real& a, const Real& b) { return agreed_bits_absolute(a, b) == kExactAgreement; }
+
+		template<typename A, typename B>
+		int expect_bits(const std::string& what, const A& got, const B& ref, int bits, bool reportTestCases) {
+			if (agrees_to_bits(got, ref, bits)) return 0;
+			if (reportTestCases) {
+				std::cout << "    FAIL " << what << ": ";
+				if (got.isnan() || got.isinf()) std::cout << "not finite";
+				else std::cout << agreed_bits(got, ref) << " bits";
+				std::cout << ", wanted at least " << bits << '\n';
+			}
+			return 1;
+		}
+
+		template<typename A>
+		int expect_bits(const std::string& what, const A& got, std::string_view ref, int bits, bool reportTestCases) {
+			if (agrees_to_bits(got, ref, bits)) return 0;
+			if (reportTestCases) std::cout << "    FAIL " << what << ": " << agreed_bits(got, ref) << " bits, wanted at least " << bits << '\n';
+			return 1;
+		}
+
+		template<typename Real>
+		int expect_exact(const std::string& what, const Real& got, const Real& ref, bool reportTestCases) {
+			if (exactly(got, ref)) return 0;
+			if (reportTestCases) std::cout << "    FAIL " << what << " is not exact\n";
+			return 1;
+		}
 
 		// Verify sqrt function
 		template<typename Real>
 		int VerifySqrt(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			const int bits = wanted_bits<Real>();
 
-			// Test: sqrt(4.0) = 2.0 (perfect square, verify with high precision)
-			// Note: For adaptive precision types, even perfect squares may have correction terms
-			Real x(4.0), expected(2.0);
-			Real result = sqrt(x);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("sqrt(4.0)", "2.0", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// perfect squares: sqrt is correctly rounded, so these are exact
+			nrOfFailedTestCases += expect_exact("sqrt(4) == 2", sqrt(Real(4.0)), Real(2.0), reportTestCases);
+			nrOfFailedTestCases += expect_exact("sqrt(9) == 3", sqrt(Real(9.0)), Real(3.0), reportTestCases);
+			nrOfFailedTestCases += expect_exact("sqrt(0.25) == 0.5", sqrt(Real(0.25)), Real(0.5), reportTestCases);
 
-			// Test: sqrt(9.0) = 3.0 (perfect square, verify with high precision)
-			x = 9.0; expected = 3.0;
-			result = sqrt(x);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("sqrt(9.0)", "3.0", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// against the 340-digit references
+			nrOfFailedTestCases += expect_bits("sqrt(2) vs reference", sqrt(Real(2.0)), s_sqrt2, bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("sqrt(3) vs reference", sqrt(Real(3.0)), s_sqrt3, bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("sqrt(5) vs reference", sqrt(Real(5.0)), s_sqrt5, bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("sqrt(0.5) vs reference", sqrt(Real(0.5)), s_inv_sqrt2, bits, reportTestCases);
 
-			// Test: (sqrt(2))^2 = 2.0 (identity verification)
-			x = 2.0;
-			result = sqrt(x);
-			Real squared = result * result;
-			expected = x;
-			if (!check_relative_error(squared, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("sqrt(2)^2", "identity", squared, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: (sqrt(3))^2 = 3.0 (identity verification)
-			x = 3.0;
-			result = sqrt(x);
-			squared = result * result;
-			expected = x;
-			if (!check_relative_error(squared, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("sqrt(3)^2", "identity", squared, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// identities: (sqrt(2))^2 == 2, (sqrt(3))^2 == 3
+			Real s2 = sqrt(Real(2.0)), s3 = sqrt(Real(3.0));
+			nrOfFailedTestCases += expect_bits("sqrt(2)^2 == 2", s2 * s2, Real(2.0), bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("sqrt(3)^2 == 3", s3 * s3, Real(3.0), bits, reportTestCases);
 
 			// Test: sqrt(0.0) = 0.0 (mathematically exact)
 			Real zero(0.0);
-			result = sqrt(zero);
-			expected = 0.0;
+			Real result = sqrt(zero);
+			Real expected = 0.0;
 			if (!check_exact_value(result, expected)) {
 				if (reportTestCases) std::cout << "    FAIL sqrt(0.0) != 0.0 (exact)\n";
+				++nrOfFailedTestCases;
+			}
+
+			// C99 F.10.4.5 special values: sqrt(-0) = -0, sqrt(+inf) = +inf, sqrt(x < 0) = NaN
+			result = sqrt(-zero);
+			if (!result.iszero() || !result.signbit()) {
+				if (reportTestCases) std::cout << "    FAIL sqrt(-0) != -0\n";
+				++nrOfFailedTestCases;
+			}
+			result = sqrt(Real(std::numeric_limits<double>::infinity()));
+			if (!result.isinf() || result.signbit()) {
+				if (reportTestCases) std::cout << "    FAIL sqrt(+inf) != +inf\n";
+				++nrOfFailedTestCases;
+			}
+			if (!sqrt(Real(-1.0)).isnan()) {
+				if (reportTestCases) std::cout << "    FAIL sqrt(-1) != NaN\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -85,114 +118,68 @@ namespace {
 		template<typename Real>
 		int VerifyCbrt(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			const int bits = wanted_bits<Real>();
 
-			// Test: cbrt(8.0) = 2.0 (perfect cube, verify with high precision)
-			// Note: For adaptive precision types, even perfect cubes may have correction terms
-			Real x(8.0), expected(2.0);
-			Real result = cbrt(x);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("cbrt(8.0)", "2.0", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// perfect cubes (cbrt is not correctly rounded, so to the configuration's bits)
+			nrOfFailedTestCases += expect_bits("cbrt(8) == 2", cbrt(Real(8.0)), Real(2.0), bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("cbrt(27) == 3", cbrt(Real(27.0)), Real(3.0), bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("cbrt(-8) == -2", cbrt(Real(-8.0)), Real(-2.0), bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("cbrt(-27) == -3", cbrt(Real(-27.0)), Real(-3.0), bits, reportTestCases);
 
-			// Test: cbrt(27.0) = 3.0 (perfect cube, verify with high precision)
-			x = 27.0; expected = 3.0;
-			result = cbrt(x);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("cbrt(27.0)", "3.0", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: cbrt(-8.0) = -2.0 (perfect cube, negative value, verify with high precision)
-			x = -8.0; expected = -2.0;
-			result = cbrt(x);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("cbrt(-8.0)", "-2.0", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: cbrt(-27.0) = -3.0 (perfect cube, negative value, verify with high precision)
-			x = -27.0; expected = -3.0;
-			result = cbrt(x);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("cbrt(-27.0)", "-3.0", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: (cbrt(2))^3 = 2.0 (identity verification)
-			x = 2.0;
-			result = cbrt(x);
-			Real cubed = result * result * result;
-			expected = x;
-			if (!check_relative_error(cubed, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("cbrt(2)^3", "identity", cubed, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// identity: (cbrt(2))^3 == 2
+			Real c = cbrt(Real(2.0));
+			nrOfFailedTestCases += expect_bits("cbrt(2)^3 == 2", c * c * c, Real(2.0), bits, reportTestCases);
+			// cbrt(2 * 2^30) == cbrt(2) * 2^10: the scaling is exact
+			nrOfFailedTestCases += expect_bits("cbrt(2^31) == 2^10 cbrt(2)", cbrt(ldexp(Real(2.0), 30)), ldexp(c, 10), bits, reportTestCases);
 
 			// Test: cbrt(0.0) = 0.0 (mathematically exact)
 			Real zero(0.0);
-			result = cbrt(zero);
-			expected = 0.0;
+			Real result = cbrt(zero);
+			Real expected = 0.0;
 			if (!check_exact_value(result, expected)) {
 				if (reportTestCases) std::cout << "    FAIL cbrt(0.0) != 0.0 (exact)\n";
+				++nrOfFailedTestCases;
+			}
+			// C99 F.10.4.1: cbrt(-0) = -0, cbrt(+-inf) = +-inf
+			result = cbrt(-zero);
+			if (!result.iszero() || !result.signbit()) {
+				if (reportTestCases) std::cout << "    FAIL cbrt(-0) != -0\n";
+				++nrOfFailedTestCases;
+			}
+			result = cbrt(Real(-std::numeric_limits<double>::infinity()));
+			if (!result.isinf() || !result.signbit()) {
+				if (reportTestCases) std::cout << "    FAIL cbrt(-inf) != -inf\n";
 				++nrOfFailedTestCases;
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-
-		template<typename Real>
-		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
-			double a = double(x), b = double(y);
-			double diff = std::abs(a - b);
-			if (diff == 0.0) return true;
-			double scale = std::max(std::abs(a), std::abs(b));
-			return diff <= std::max(absTol, relTol * scale);
-		}
-
 		// Property fuzzer over the positive domain: sqrt(x)^2==x, sqrt(x*x)==x,
-		// cbrt(x)^3==x, and sqrt monotonicity.
-		template<typename Real>
+		// cbrt(x)^3==x, and sqrt monotonicity.  An identity cannot see a result that is
+		// self-consistently wrong, so sqrt and cbrt are also measured against the same
+		// function at a wider configuration, Wide.
+		template<typename Real, typename Wide>
 		int VerifySqrtFuzz(bool reportTestCases, unsigned nrIterations) {
+			static_assert(ereal_bits_of<Wide>::value > ereal_bits_of<Real>::value, "the reference must be wider");
 			int nrOfFailedTestCases = 0;
+			const int bits = wanted_bits<Real>();
 			std::mt19937_64 rng(0xC1A55'1FFEULL);
 			std::uniform_real_distribution<double> dist(1.0e-3, 1.0e4);
 			Real one(1.0);
 			for (unsigned i = 0; i < nrIterations; ++i) {
 				double dx = dist(rng);
 				Real x(dx);
+				const std::string at = " at x=" + std::to_string(dx);
 				Real s = sqrt(x);
-				if (!close_rel(s * s, x, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL sqrt(x)^2==x at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (!close_rel(sqrt(x * x), x, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL sqrt(x*x)==x at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
+				nrOfFailedTestCases += expect_bits("sqrt(x)^2==x" + at, s * s, x, bits, reportTestCases);
+				nrOfFailedTestCases += expect_bits("sqrt(x*x)==x" + at, sqrt(x * x), x, bits, reportTestCases);
+				nrOfFailedTestCases += expect_bits("sqrt(x) vs wide" + at, s, sqrt(Wide(dx)), bits, reportTestCases);
 				Real c = cbrt(x);
-				if (!close_rel(c * c * c, x, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL cbrt(x)^3==x at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
+				nrOfFailedTestCases += expect_bits("cbrt(x)^3==x" + at, c * c * c, x, bits, reportTestCases);
+				nrOfFailedTestCases += expect_bits("cbrt(x) vs wide" + at, c, cbrt(Wide(dx)), bits, reportTestCases);
 				if (!(sqrt(x) < sqrt(x + one))) {
-					if (reportTestCases) std::cout << "    FAIL sqrt monotonic at x=" << dx << '\n';
+					if (reportTestCases) std::cout << "    FAIL sqrt monotonic" << at << '\n';
 					++nrOfFailedTestCases;
 				}
 			}
@@ -261,20 +248,20 @@ try {
 #elif REGRESSION_LEVEL_2
 	sqrtFuzzCount = 100;
 #endif
-	nrOfFailedTestCases += ReportTestResult(VerifySqrtFuzz<ereal<>>(reportTestCases, sqrtFuzzCount), "sqrt/cbrt property fuzz", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySqrtFuzz<ereal<>, ereal<19>>(reportTestCases, sqrtFuzzCount), "sqrt/cbrt property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Extended precision tests at 512 bits (~=154 decimal digits)
-	test_tag = "sqrt high precision";
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<8>>(reportTestCases), "sqrt(ereal<8>)", test_tag);
+	// a narrower configuration: 4 limbs, 212 bits (ereal<> is ereal<8>, covered at level 1)
+	test_tag = "sqrt narrow precision";
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<4>>(reportTestCases), "sqrt(ereal<4>)", test_tag);
 
-	test_tag = "cbrt high precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyCbrt<ereal<8>>(reportTestCases), "cbrt(ereal<8>)", test_tag);
+	test_tag = "cbrt narrow precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyCbrt<ereal<4>>(reportTestCases), "cbrt(ereal<4>)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	// High precision tests at 1024 bits (~=308 decimal digits)
+	// High precision tests at 16 limbs, 848 bits
 	test_tag = "sqrt very high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<16>>(reportTestCases), "sqrt(ereal<16>)", test_tag);
 
@@ -283,7 +270,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 1216 bits (~=303 decimal digits, maximum algorithmically valid)
+	// Extreme precision tests at 19 limbs, 1007 bits (the most double limbs can hold)
 	test_tag = "sqrt extreme precision";
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt<ereal<19>>(reportTestCases), "sqrt(ereal<19>)", test_tag);
 

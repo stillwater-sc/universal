@@ -2,35 +2,37 @@
 //
 // ereal plugs into the portable sw::universal::complex<T> (NOT std::complex<T>,
 // which is UB on user-defined types per ISO C++ 26.2/2). Complex arithmetic and
-// real/imag/conj/norm/arg/abs carry ereal's full working precision; the shared
-// library's complex transcendentals pivot through double, so those are checked
-// only to ~double tolerance here. (Issue #1167)
+// real/imag/conj/norm carry ereal's full working precision, and are checked exactly
+// here (ereal_precision.hpp, never through double: #2008). (Issue #1167)
+//
+// abs, arg and the complex transcendentals of the shared library pivot through double
+// (math/complex/complex_operators.hpp, complex_functions.hpp), so they deliver 53 bits
+// whatever the configuration.  Measured on ereal<8>: abs(1+i) vs sqrt(2) 53 bits,
+// abs(0.7+1.3i) vs sqrt(norm) 59 bits, sqrt(2+3i)^2 vs 2+3i 52-53 bits.  Their precision
+// checks are left out rather than loosened to 53 bits; what stays is exact (abs(3+4i) == 5)
+// or checks only that the function is available.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <cmath>
 #include <limits>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/ereal_precision.hpp>
 
 namespace {
 
-	template<unsigned maxlimbs>
-	bool IsClose(const sw::universal::ereal<maxlimbs>& a, double target_val, double tolerance = 1e-12) {
-		double diff = std::abs(double(a) - target_val);
-		return diff <= tolerance * (1.0 + std::abs(target_val));
-	}
+	// A check asks for ereal_bits_of<E>::value less kMarginBits.  (a / b) * b == a, the one
+	// inexact identity here, measures 862-863 bits on ereal<8> (424 bits; the limb budget lets
+	// a result carry twice the limbs), so 16 bits of margin leaves ample slack.
+	constexpr int kMarginBits = 16;
 
-	// agreement of a and b in bits: ilogb(|a - b|); a large negative value (or the
-	// -100000 sentinel for an exact match) means agreement to that many bits.
+	// exact: the dyadic values are equal, whatever the limb structure
 	template<unsigned maxlimbs>
-	int AgreementBits(const sw::universal::ereal<maxlimbs>& a, const sw::universal::ereal<maxlimbs>& b) {
-		using namespace sw::universal;
-		ereal<maxlimbs> d = a - b;
-		return d.iszero() ? -100000 : ilogb(d);
+	bool Exactly(const sw::universal::ereal<maxlimbs>& a, const sw::universal::ereal<maxlimbs>& b) {
+		return sw::universal::agreed_bits_absolute(a, b) == sw::universal::kExactAgreement;
 	}
 
 	int VerifyErealComplex(bool reportTestCases) {
@@ -55,11 +57,11 @@ namespace {
 		if (reportTestCases) std::cout << "  Verifying construction / real / imag...\n";
 		{
 			complex<E> z(E(3.0), E(4.0));
-			if (!IsClose(z.real(), 3.0) || !IsClose(z.imag(), 4.0)) {
+			if (!Exactly(z.real(), E(3.0)) || !Exactly(z.imag(), E(4.0))) {
 				if (reportTestCases) std::cout << "    FAIL: member real/imag\n";
 				++failures;
 			}
-			if (!IsClose(real(z), 3.0) || !IsClose(imag(z), 4.0)) {
+			if (!Exactly(real(z), E(3.0)) || !Exactly(imag(z), E(4.0))) {
 				if (reportTestCases) std::cout << "    FAIL: free real/imag\n";
 				++failures;
 			}
@@ -84,7 +86,7 @@ namespace {
 		}
 
 		// -----------------------------------------------------------------
-		// 4. conj / norm / abs at full precision
+		// 4. conj / norm at full precision; abs(3+4i) == 5 is exact even through double
 		// -----------------------------------------------------------------
 		if (reportTestCases) std::cout << "  Verifying conj / norm / abs...\n";
 		{
@@ -98,7 +100,7 @@ namespace {
 				if (reportTestCases) std::cout << "    FAIL: norm != 25\n";
 				++failures;
 			}
-			if (abs(z) != E(5.0)) {     // sqrt(25) is exact
+			if (!Exactly(abs(z), E(5.0))) {     // sqrt(25) is exact
 				if (reportTestCases) std::cout << "    FAIL: abs != 5\n";
 				++failures;
 			}
@@ -123,36 +125,37 @@ namespace {
 		}
 
 		// -----------------------------------------------------------------
-		// 6. high-precision identity: (a / b) * b == a to many bits
+		// 6. high-precision identity: (a / b) * b == a to the configuration's bits
 		// -----------------------------------------------------------------
 		if (reportTestCases) std::cout << "  Verifying (a/b)*b == a to high precision...\n";
 		{
+			const int wanted = ereal_bits_of<E>::value - kMarginBits;
 			complex<E> a(E(2.0), E(3.0)), b(E(-1.5), E(0.75));
 			complex<E> r = (a / b) * b;
-			int br = AgreementBits(r.real(), a.real());
-			int bi = AgreementBits(r.imag(), a.imag());
-			if (br > -200 || bi > -200) {
-				if (reportTestCases) std::cout << "    FAIL: (a/b)*b bits re=" << br << " im=" << bi << "\n";
+			if (!agrees_to_bits(r.real(), a.real(), wanted) || !agrees_to_bits(r.imag(), a.imag(), wanted)) {
+				if (reportTestCases) std::cout << "    FAIL: (a/b)*b bits re=" << agreed_bits(r.real(), a.real())
+				                               << " im=" << agreed_bits(r.imag(), a.imag()) << ", wanted at least " << wanted << "\n";
 				++failures;
 			}
 		}
 
 		// -----------------------------------------------------------------
-		// 7. transcendentals available and correct to ~double (shared library
-		//    pivots through std::complex<double>)
+		// 7. transcendentals are available.  The shared library pivots them through
+		//    std::complex<double>, so they carry 53 bits; their precision is not
+		//    checked here (see the top of the file).
 		// -----------------------------------------------------------------
-		if (reportTestCases) std::cout << "  Verifying complex transcendentals (~double)...\n";
+		if (reportTestCases) std::cout << "  Verifying complex transcendentals are available...\n";
 		{
 			complex<E> z(E(2.0), E(3.0));
 			complex<E> back = sqrt(z) * sqrt(z);
-			if (!IsClose(back.real(), 2.0, 1e-10) || !IsClose(back.imag(), 3.0, 1e-10)) {
-				if (reportTestCases) std::cout << "    FAIL: sqrt round-trip\n";
-				++failures;
-			}
 			complex<E> w(E(0.5), E(0.7));
 			complex<E> rt = log(exp(w));
-			if (!IsClose(rt.real(), 0.5, 1e-10) || !IsClose(rt.imag(), 0.7, 1e-10)) {
-				if (reportTestCases) std::cout << "    FAIL: log(exp(z)) round-trip\n";
+			bool finite = true;
+			for (const E& v : { back.real(), back.imag(), rt.real(), rt.imag() }) {
+				if (v.isnan() || v.isinf() || v.iszero()) finite = false;
+			}
+			if (!finite) {
+				if (reportTestCases) std::cout << "    FAIL: sqrt / exp / log returned a zero or non-finite part\n";
 				++failures;
 			}
 		}

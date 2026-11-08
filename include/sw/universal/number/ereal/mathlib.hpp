@@ -8,15 +8,18 @@
 
 // These functions are arbitrary-precision approximations computed in ereal's own
 // expansion arithmetic (Taylor series / Newton iteration with argument reduction),
-// NOT double-precision shims. Accuracy tracks the operand's precision up to ereal's
+// NOT double-precision shims -- except erf, erfc, tgamma and lgamma, which are still
+// double stubs (error_and_gamma.hpp; measured at 53 bits on every configuration, #2017).
+// Accuracy tracks the operand's precision up to ereal's
 // architectural ceiling: Shewchuk expansion arithmetic caps maxlimbs at 19 (the last
 // limb must stay above DBL_MIN to preserve the non-overlapping property), so ~19*53
 // bits ~= 300 decimal digits.
 //
 // Cross-checked at ereal<19>: exp(1) and pi (via atan) reproduce independently
 // generated ~1000-digit constant literals (mpmath: e, pi) to ~290 digits, and
-// sqrt/log/sin/erf/gamma/... agree with the efloat multi-digit sibling to the same
-// level. This is corroboration between two implementations plus known constants,
+// sqrt/log/sin/... agree with the efloat multi-digit sibling to the same level.  The
+// math tests check every function to its configuration's bits through an exact
+// dyadic oracle (verification/ereal_precision.hpp), never through a double (#2006). This is corroboration between two implementations plus known constants,
 // not a proof against a third-party oracle. For unbounded precision use efloat.
 // See #582.
 //
@@ -35,13 +38,16 @@
 // Numeric operations
 #include <universal/number/ereal/math/functions/numerics.hpp>
 #include <universal/number/ereal/math/functions/classify.hpp>
+// C99 Annex F special values: signed zero, inf and NaN helpers (#2006), before every
+// function that uses them
+#include <universal/number/ereal/math/functions/special_values.hpp>
+#include <universal/number/ereal/math/functions/truncate.hpp>
 
 // Low-complexity functions
 #include <universal/number/ereal/math/functions/error_and_gamma.hpp>
 #include <universal/number/ereal/math/functions/fractional.hpp>
 #include <universal/number/ereal/math/functions/hypot.hpp>
 #include <universal/number/ereal/math/functions/minmax.hpp>
-#include <universal/number/ereal/math/functions/truncate.hpp>
 #include <universal/number/ereal/math/functions/next.hpp>
 
 // Medium-complexity functions

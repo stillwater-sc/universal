@@ -12,21 +12,22 @@ namespace sw { namespace universal {
 	// Phase 2: uses Phase 1 floor/ceil based on sign
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> trunc(const ereal<maxlimbs, FpType>& x) {
-		// Truncate toward zero: floor for positive, ceil for negative
-		return (x >= ereal<maxlimbs, FpType>(0.0)) ? floor(x) : ceil(x);
+		if (x.isnan() || x.isinf() || x.iszero()) return x;
+		// Truncate toward zero: floor for positive, ceil for negative; trunc(-0.5) is -0
+		const ereal<maxlimbs, FpType> r = x.isneg() ? ceil(x) : floor(x);
+		return ereal_detail::zero_with_sign_of(r, x);
 	}
 
 	// round: round to nearest integer, halfway cases away from zero
 	// Phase 2: uses Phase 1 floor/ceil with arithmetic
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> round(const ereal<maxlimbs, FpType>& x) {
+		if (x.isnan() || x.isinf() || x.iszero()) return x;
 		// Round to nearest: add 0.5 then floor (for positive)
-		// Symmetric handling for negative values
-		if (x >= ereal<maxlimbs, FpType>(0.0)) {
-			return floor(x + ereal<maxlimbs, FpType>(0.5));
-		} else {
-			return ceil(x - ereal<maxlimbs, FpType>(0.5));
-		}
+		// Symmetric handling for negative values; round(-0.3) is -0
+		const ereal<maxlimbs, FpType> r = x.isneg() ? ceil(x - ereal<maxlimbs, FpType>(0.5))
+		                                           : floor(x + ereal<maxlimbs, FpType>(0.5));
+		return ereal_detail::zero_with_sign_of(r, x);
 	}
 
 	// floor: return largest integer value not greater than x
@@ -34,7 +35,9 @@ namespace sw { namespace universal {
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> floor(const ereal<maxlimbs, FpType>& x) {
 		const auto& limbs = x.limbs();
-		if (limbs.empty() || x.iszero()) return ereal<maxlimbs, FpType>(0.0);
+		// +-0, +-inf and NaN are their own floor (C99 F.10.6)
+		if (limbs.empty()) return ereal<maxlimbs, FpType>(0.0);
+		if (x.iszero() || x.isnan() || x.isinf()) return x;
 
 		// Create result expansion by flooring components
 		std::vector<FpType> result_limbs(limbs.size(), FpType(0));   // the limb type: a double buffer would round an x87 or binary128 limb (#1576)
@@ -71,7 +74,9 @@ namespace sw { namespace universal {
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> ceil(const ereal<maxlimbs, FpType>& x) {
 		const auto& limbs = x.limbs();
-		if (limbs.empty() || x.iszero()) return ereal<maxlimbs, FpType>(0.0);
+		// +-0, +-inf and NaN are their own ceil (C99 F.10.6)
+		if (limbs.empty()) return ereal<maxlimbs, FpType>(0.0);
+		if (x.iszero() || x.isnan() || x.isinf()) return x;
 
 		// Create result expansion by ceiling components
 		std::vector<FpType> result_limbs(limbs.size(), FpType(0));   // the limb type: a double buffer would round an x87 or binary128 limb (#1576)
@@ -100,7 +105,7 @@ namespace sw { namespace universal {
 			}
 		}
 
-		return result;
+		return ereal_detail::zero_with_sign_of(result, x);   // ceil(-0.5) is -0
 	}
 
 	// rint: round to the nearest integer, halfway cases to even (IEEE default).
@@ -112,13 +117,16 @@ namespace sw { namespace universal {
 		ereal<maxlimbs, FpType> f    = floor(x);   // largest integer <= x
 		ereal<maxlimbs, FpType> diff = x - f;      // fractional part in [0, 1)
 		ereal<maxlimbs, FpType> half(0.5);
-		if (diff < half) return f;
-		if (diff > half) return f + ereal<maxlimbs, FpType>(1.0);
-
-		// exactly halfway: pick the even neighbor. f is even iff f/2 is an integer.
-		ereal<maxlimbs, FpType> hf = f * half;
-		if (floor(hf) == hf) return f;
-		return f + ereal<maxlimbs, FpType>(1.0);
+		ereal<maxlimbs, FpType> r;
+		if (diff < half) r = f;
+		else if (diff > half) r = f + ereal<maxlimbs, FpType>(1.0);
+		else {
+			// exactly halfway: pick the even neighbor. f is even iff f/2 is an integer.
+			ereal<maxlimbs, FpType> hf = f * half;
+			r = (floor(hf) == hf) ? f : f + ereal<maxlimbs, FpType>(1.0);
+		}
+		// a zero result has the sign of x: rint(-0.3) is -0, where -1 + 1 gave +0
+		return ereal_detail::zero_with_sign_of(r, x);
 	}
 
 	// nearbyint: identical to rint for ereal. (std distinguishes them only by the

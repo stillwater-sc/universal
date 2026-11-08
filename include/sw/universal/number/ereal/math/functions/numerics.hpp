@@ -72,11 +72,11 @@ namespace sw { namespace universal {
 		return ilogb(term) < ilogb(sum) - bits;
 	}
 
-	// copysign: copy sign from one value to another
-	// Phase 1: uses ereal's sign() method and unary minus operator
+	// copysign: the magnitude of x with the sign bit of y.  The sign bit, not sign(): sign() reads
+	// -0 as positive, so copysign(1, -0) was 1 and copysign(-0, 1) was -0 (#2006).
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> copysign(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
-		if (x.sign() == y.sign()) {
+		if (x.signbit() == y.signbit()) {
 			return x;
 		} else {
 			return -x;
