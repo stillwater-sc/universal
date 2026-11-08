@@ -71,6 +71,18 @@ The comparison operators compare values. The sign orders them, `+0 == -0`, an un
 its sign: `int(erational(-7, 2))` is `-3`. The unsigned conversions give that same value
 wrapped modulo 2^n, as a C++ signed integer converts (#1908).
 
+### Zero, increment, non-finite values and `toPair`
+
+- **Zero has no sign.** Every operation leaves `+0`: `erational(0) / erational(-3)`, `-erational(0)`
+  and `x - x` all give `0/1` (#1990).
+- **Increment and decrement.** `++` and `--` add and subtract one as a value: `1/2` becomes `3/2`,
+  and `-3/2` becomes `-1/2`.
+- **Converting from float, double or long double.** A finite value converts exactly. erational has
+  no infinity, so NaN and +/-inf both convert to the 0/0 NaN, which converts back to the IEEE NaN.
+- **`toPair()`.** It returns `{numerator, denominator}` as `int64_t`, with the sign on the numerator:
+  `-3/2` is `{-3, 2}`. A part beyond the int64 range saturates to `INT64_MIN` or `INT64_MAX` instead
+  of wrapping, and the NaN is `{0, 0}`.
+
 ## Related
 
 - [`rational`](/universal/number-systems/rational/) -- fixed-width rational, when the ratio is bounded

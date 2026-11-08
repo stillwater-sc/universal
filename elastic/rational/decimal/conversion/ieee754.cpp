@@ -135,6 +135,23 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
+	// NaN and +/-inf convert to the 0/0 NaN state, which converts back to the IEEE NaN; they used to
+	// become 0 (#1990). erational has no infinity, so isinf() stays false.
+	template<typename Real>
+	int VerifyNonFinite(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		const Real values[] = { std::numeric_limits<Real>::quiet_NaN(), -std::numeric_limits<Real>::quiet_NaN(),
+		                        std::numeric_limits<Real>::infinity(), -std::numeric_limits<Real>::infinity() };
+		for (Real v : values) {
+			const erational r(v);
+			if (!r.isnan() || r.isinf() || !std::isnan(Real(r))) {
+				if (reportTestCases) std::cout << "    FAIL erational(" << v << ") = " << r << " is not NaN\n";
+				++nrOfFailedTestCases;
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
 }  // anonymous namespace
 
 // Regression testing guards
@@ -162,6 +179,11 @@ int main() try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifySpecificConversions(reportTestCases), "erational", "specific values");
 	nrOfFailedTestCases += ReportTestResult(VerifyDegenerateDenominator(reportTestCases), "erational", "degenerate denominator");
+	nrOfFailedTestCases += ReportTestResult(VerifyNonFinite<float>(reportTestCases), "erational", "float nan/inf");
+	nrOfFailedTestCases += ReportTestResult(VerifyNonFinite<double>(reportTestCases), "erational", "double nan/inf");
+#if LONG_DOUBLE_SUPPORT
+	nrOfFailedTestCases += ReportTestResult(VerifyNonFinite<long double>(reportTestCases), "erational", "long double nan/inf");
+#endif
 
 #if MANUAL_TESTING
 	nrOfFailedTestCases += ReportTestResult(VerifyDoubleRoundTrip(reportTestCases, 2000), "erational", "double roundtrip");
