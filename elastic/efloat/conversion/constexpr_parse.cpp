@@ -140,7 +140,9 @@ namespace {
 		static_assert(read<128>("1e1000").scale() == 3321, "past the double range");
 		static_assert(!reads<128>("garbage") && read<128>("garbage").iszero(), "not a number: false, and a zero");
 		static_assert(!reads<128>("") && !reads<128>("1.5e") && !reads<128>("--1"), "malformed text");
-		static_assert(!reads<128>("1e100000") && read<128>("1e100000").isnan(), "past the converter's reach: false, and a NaN");
+		static_assert(reads<128>("1e100000") && read<128>("1e100000").scale() == 332192, "past the exact converter's reach: a value (#2005)");
+		static_assert(reads<128>("-0e100000") && read<128>("-0e100000").iszero() && read<128>("-0e100000").sign() < 0, "a zero at any exponent");
+		static_assert(read<128>("1e99999999999999999999").isinf() && read<128>("1e-99999999999999999999").iszero(), "past the range");
 		return 0;
 	}
 

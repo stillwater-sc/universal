@@ -13,6 +13,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cstdint>
 #include <cstdio>
 #include <string>
 #include <universal/number/efloat/efloat.hpp>
@@ -95,17 +96,21 @@ int VerifyDefaultPrecision(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
-// a well-formed literal past the converter's reach is reported, and leaves a NaN, not a zero
+// a well-formed literal past the exact converter's reach is a value (#2005): it used to leave a
+// NaN. 10^100000 lies in [2^332192, 2^332193), and 7.5e-100000 in [2^-332190, 2^-332189).
 int VerifyUnreachable(bool reportTestCases) {
 	int nrOfFailedTests = 0;
-	for (const char* txt : { "1e100000", "-7.5e-100000" }) {
+	struct expectation { const char* txt; bool negative; std::int64_t scale; };
+	for (const expectation& c : { expectation{ "1e100000", false, 332192 }, expectation{ "-7.5e-100000", true, -332190 } }) {
 		efloat<10> x;
-		const bool ok = parse(std::string(txt), x);
+		const bool ok = parse(std::string(c.txt), x);
 		efloat<10> y;
-		y.assign(txt);
-		if (ok || !x.isnan() || !y.isnan()) {
+		y.assign(c.txt);
+		const bool right = ok && !x.isnan() && !x.isinf() && !x.iszero() && x.scale() == c.scale
+		                && ((x.sign() == -1) == c.negative) && y == x;
+		if (!right) {
 			++nrOfFailedTests;
-			if (reportTestCases) std::cerr << "FAIL: " << txt << " was not reported (ok " << ok << ")\n";
+			if (reportTestCases) std::cerr << "FAIL: " << c.txt << " (ok " << ok << ", scale " << x.scale() << ")\n";
 		}
 	}
 	return nrOfFailedTests;
@@ -150,7 +155,7 @@ try {
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyParseVectors<64>(reportTestCases), "efloat<64>", "608 and 2048 bits");
 	nrOfFailedTestCases += ReportTestResult(VerifyDefaultPrecision(reportTestCases), "efloat<>", "default precision");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnreachable(reportTestCases), "efloat<10>", "unreachable literal");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnreachable(reportTestCases), "efloat<10>", "past the exact converter");
 #endif
 
 #if REGRESSION_LEVEL_2

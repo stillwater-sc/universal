@@ -20,8 +20,17 @@ class numeric_limits< sw::universal::ereal<maxLimbs, FpType> > {
 public:
 	using ErealType = sw::universal::ereal<maxLimbs, FpType>;
 	static constexpr bool is_specialized = true;
+	// min() is the smallest value at full precision: the leading limb 2^(min_exponent - 1) of
+	// the limb type raised by (maxLimbs - 1) limbs, so that all maxLimbs limbs stay normal.
+	// For double limbs it is 2^(-1022 + 53 (maxLimbs - 1)): 2^-651 for ereal<8>, 2^-68 for
+	// ereal<19>.  This is the convention of dd, qd and the cascades (#1882), applied to
+	// ereal's own limb count (user decision, #2005).  It was the two-limb floor 2^-969 for
+	// every maxLimbs, while min_exponent and minpos() said 2^-1022.  Below min(), down to
+	// minpos() = denorm_min(), a value carries fewer limbs: the denormal range.
 	static constexpr ErealType min() { // return minimum value
-		return ErealType(FpType(radix) * (numeric_limits< FpType >::min() / numeric_limits< FpType >::epsilon()));
+		FpType v = numeric_limits< FpType >::min();
+		for (int i = 0; i < full_precision_shift; ++i) v *= FpType(radix);
+		return ErealType(v);
 	} 
 	static constexpr ErealType max() { // return maximum value
 		return ErealType(sw::universal::SpecificValue::maxpos);
@@ -41,10 +50,10 @@ public:
 		return ErealType(FpType(1) / FpType(radix));
 	}
 	static ErealType denorm_min() {  // return minimum denormalized value
-		// has_denorm is denorm_absent -- an expansion's components are all normal -- and
-		// the C++20 contract then requires denorm_min() to return min(), not the limb
-		// type's subnormal (and not zero). elreal's numeric_limits does the same (#1574).
-		return (min)();
+		// the smallest positive value, a single limb at the limb type's smallest normal:
+		// minpos().  Between it and min() a value keeps fewer limbs, as a subnormal keeps
+		// fewer bits (#2005).
+		return ErealType(sw::universal::SpecificValue::minpos);
 	}
 	static constexpr ErealType infinity() { // return positive infinity
 		return ErealType(sw::universal::SpecificValue::infpos);
@@ -72,7 +81,9 @@ public:
 
 	// C++ specification: min_exponent is one more than the smallest negative power 
 	// of the radix that is a valid normalized number
-	static constexpr int  min_exponent             = ErealType::MIN_EXP_NORMAL + 1;
+	// min() == 2^(min_exponent - 1): the limb type's min_exponent raised by (maxLimbs - 1) limbs
+	static constexpr int  full_precision_shift     = static_cast<int>(maxLimbs - 1) * std::numeric_limits<FpType>::digits;
+	static constexpr int  min_exponent             = std::numeric_limits<FpType>::min_exponent + full_precision_shift;
 	static constexpr int  min_exponent10           = static_cast<int>(min_exponent * 0.30103);
 	// C++ specification: max_exponent is one more than the largest integer power 
 	// of the radix that is a valid finite floating-point number
@@ -81,7 +92,7 @@ public:
 	static constexpr bool has_infinity             = true;
 	static constexpr bool has_quiet_NaN            = true;
 	static constexpr bool has_signaling_NaN        = true;
-	static constexpr float_denorm_style has_denorm = denorm_absent;
+	static constexpr float_denorm_style has_denorm = denorm_present;   // fewer limbs below min()
 	static constexpr bool has_denorm_loss          = false;
 
 	static constexpr bool is_iec559                = false;

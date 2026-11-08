@@ -536,7 +536,7 @@ public:
 		while (pos < str.length()) {
 			char c = str[pos];
 
-			if (std::isdigit(c)) {
+			if (std::isdigit(static_cast<unsigned char>(c))) {   // a byte above 127 is UB as a char
 				found_digit = true;
 				int digit = c - '0';
 				if (digit != 0) sig_started = true;
@@ -588,10 +588,14 @@ public:
 				++pos;
 			}
 
+			// Saturate the exponent: it overflowed int, and ereal("1e4294967297") wrapped to 1e1
+			// (#2005). Any exponent past the cap is far beyond every limb type's range, so the
+			// scaling below still reaches inf or 0.
+			constexpr int exponent_cap = 100000000;
 			bool found_exp_digit = false;
-			while (pos < str.length() && std::isdigit(str[pos])) {
+			while (pos < str.length() && std::isdigit(static_cast<unsigned char>(str[pos]))) {
 				found_exp_digit = true;
-				exponent = exponent * 10 + (str[pos] - '0');
+				if (exponent < exponent_cap) exponent = exponent * 10 + (str[pos] - '0');
 				++pos;
 			}
 
@@ -782,7 +786,7 @@ public:
 			return s;
 		}
 
-		bool negative = isneg();
+		bool negative = signbit();   // the sign bit, so -0 prints as -0 (#2005)
 		int  e{ 0 };
 		if (fixed && scientific) fixed = false; // scientific format takes precedence
 		if (isnan()) {
@@ -829,11 +833,20 @@ public:
 					s += (fullMagnitude >= 0.5) ? '1' : '0';
 				}
 				else if (fixed && nrDigits <= 0) {
-					// process values that are near zero
+					// Values below 10^-precision.  One in [10^-(p+1), 10^-p) still rounds up into
+					// the last digit when it is at least half of it: 0.006 at two digits is 0.01,
+					// where every such value used to print as 0.00 (#2005).  Half a unit,
+					// 5 * 10^-(p+1), is not dyadic, so there is no exact tie to break.
+					bool roundsUp = false;
+					if (nrDigits == 0 && precision > 0) {
+						const ereal halfUnit = ereal(5.0) / pown(ereal(10.0), static_cast<int>(precision) + 1);
+						roundsUp = !(abs(*this) < halfUnit);
+					}
 					s += '0';
 					if (precision > 0) {
 						s += '.';
-						s.append(static_cast<unsigned int>(precision), '0');
+						s.append(static_cast<unsigned int>(precision - 1), '0');
+						s += roundsUp ? '1' : '0';
 					}
 				}
 				else {
@@ -861,9 +874,13 @@ public:
 							}
 						}
 						else {
+							// precision digits after the point: the leading zeros, then the rest
+							// from t.  A rounding carry raises integerDigits (0.0996 -> 0.10), so
+							// the count comes from it, not from nrDigits, which dropped a digit (#2005).
 							s += "0.";
-							if (integerDigits < 0) s.append(static_cast<size_t>(-integerDigits), '0');
-							for (int i = 0; i < nrDigits; ++i) s += t[static_cast<unsigned>(i)];
+							const int zeros = (integerDigits < 0) ? -integerDigits : 0;
+							s.append(static_cast<size_t>(zeros), '0');
+							for (int i = 0; i < static_cast<int>(precision) - zeros; ++i) s += t[static_cast<unsigned>(i)];
 						}
 					}
 					else {
@@ -1439,7 +1456,7 @@ private:
 
 template<unsigned nlimbs, typename FpType>
 inline ereal<nlimbs, FpType> abs(const ereal<nlimbs, FpType>& a) {
-	return (a < 0 ? -a : a);
+	return (a.signbit() ? -a : a);   // the sign bit: abs(-0) is +0 (#2005)
 }
 
 // pown returns x raised to the integer power n
@@ -1494,9 +1511,12 @@ bool parse(const std::string& txt, ereal<nlimbs, FpType>& value) {
 // ereal - ereal binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
+// NaN is unordered (IEEE 754): == and every ordering are false for a NaN operand, and != is
+// true.  compare_adaptive reads a NaN limb as equal to anything, so nan == 5 was true (#2005).
 template<unsigned nlimbs, typename FpType>
 inline bool operator==(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
 	using namespace expansion_ops;
+	if (lhs.isnan() || rhs.isnan()) return false;
 	return compare_adaptive(lhs.limbs(), rhs.limbs()) == 0;
 }
 template<unsigned nlimbs, typename FpType>
@@ -1506,6 +1526,7 @@ inline bool operator!=(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpT
 template<unsigned nlimbs, typename FpType>
 inline bool operator< (const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
 	using namespace expansion_ops;
+	if (lhs.isnan() || rhs.isnan()) return false;
 	return compare_adaptive(lhs.limbs(), rhs.limbs()) < 0;
 }
 template<unsigned nlimbs, typename FpType>
@@ -1518,7 +1539,7 @@ inline bool operator<=(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpT
 }
 template<unsigned nlimbs, typename FpType>
 inline bool operator>=(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
-	return !operator< (lhs, rhs);
+	return operator< (rhs, lhs) || operator==(lhs, rhs);   // not !(lhs < rhs): false for NaN
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1546,7 +1567,7 @@ inline bool operator<=(const ereal<nlimbs, FpType>& lhs, double rhs) {
 }
 template<unsigned nlimbs, typename FpType>
 inline bool operator>=(const ereal<nlimbs, FpType>& lhs, double rhs) {
-	return !operator< (lhs, rhs);
+	return operator< (rhs, lhs) || operator==(lhs, rhs);   // not !(lhs < rhs): false for NaN
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1575,7 +1596,7 @@ inline bool operator<=(double lhs, const ereal<nlimbs, FpType>& rhs) {
 }
 template<unsigned nlimbs, typename FpType>
 inline bool operator>=(double lhs, const ereal<nlimbs, FpType>& rhs) {
-	return !operator< (lhs, rhs);
+	return operator< (rhs, lhs) || operator==(lhs, rhs);   // not !(lhs < rhs): false for NaN
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
