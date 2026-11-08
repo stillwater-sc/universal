@@ -23,7 +23,7 @@
 //   digits             the largest d with w <= 2^(1-d), so a d-digit binary format is no finer at 1;
 //                      0 when nothing finite lies above 1
 //   min_exponent ...   from the smallest positive and the largest finite lattice points, p and P:
-//                      p = 2^(min_exponent-1) and P < 2^max_exponent, as min() and max() are for float
+//                      2^(min_exponent-1) <= p < 2^min_exponent and 2^(max_exponent-1) <= P < 2^max_exponent
 // The lattice is a function-local static vector, so the functions are not constexpr. The constants
 // are, and are computed from the template parameters the way setSornDT() builds the lattice.
 

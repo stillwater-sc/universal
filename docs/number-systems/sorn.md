@@ -116,7 +116,7 @@ the lattice's analogue of the IEEE quantity:
 | `infinity()` | the interval reaching +inf; without one, the top interval |
 | `quiet_NaN()`, `signaling_NaN()` | NaN, the empty set |
 | `digits` | the largest `d` with `w <= 2^(1-d)`; 0 when nothing finite lies above 1. `digits10` and `max_digits10` follow from it as for IEEE |
-| `min_exponent`, `max_exponent` | from the smallest positive lattice point `p` and the largest finite one `P`: `p = 2^(min_exponent-1)`, `P < 2^max_exponent` |
+| `min_exponent`, `max_exponent` | from the smallest positive lattice point `p` and the largest finite one `P`: `2^(min_exponent-1) <= p < 2^min_exponent` and `2^(max_exponent-1) <= P < 2^max_exponent` (for `sorn<0,4,8>`, `p = 0.5` gives 0 and `P = 4` gives 3) |
 | `has_infinity`, `is_signed` | the `inf` and `neg` template flags |
 | `has_quiet_NaN` | `true` |
 | `round_style` | `round_indeterminate`: a conversion encloses, it does not round |
