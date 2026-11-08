@@ -270,6 +270,14 @@ namespace sw { namespace universal {
 		auto p2 = [](int k) { return PowerOfTwo<BlockType>(k); };
 		const EInteger MAX = p2(E) - p2(E - D);   // 2^E - 2^(E-D): D ones
 		const EInteger halfUlp = p2(E - D - 1);
+		// The edges above hold for an IEEE binary format. IBM double-double, the long double of
+		// ppc64le, has digits = 106 but its max is a pair of doubles, 0x1.fffffffffffff7ffffffffffff8p+1023,
+		// not 106 ones below 2^1024, so there is no single threshold to test. einteger(max) is
+		// still exact there; only the IEEE edges are skipped.
+		if (EInteger(maxpos) != MAX) {
+			if (reportTestCases) std::cerr << "SKIP: " << realName << " is not an IEEE binary format; its max is not 2^E - 2^(E-D)\n";
+			return (static_cast<Real>(EInteger(maxpos)) == maxpos) ? 0 : 1;   // the round trip of max must still hold
+		}
 		check(MAX, maxpos, "MAX");
 		check(MAX - EInteger(1), maxpos, "MAX - 1");
 		check(MAX + halfUlp - EInteger(1), maxpos, "MAX + ulp/2 - 1: just below the threshold");
