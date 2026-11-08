@@ -76,9 +76,10 @@ inline bool is_integer(ZBCL<FpType> y, std::size_t window, bool& odd) {
 	for (int step = 0; step < 64; ++step) {
 		if (!first_nonzero_block(y, window).found) return true;
 		const double c = to_double_approx(y, window);
-		// beyond the host's range: an even integer, as every value that size is. Compared before
-		// the cast below, which is undefined for an out-of-range double on a narrow host.
-		if (!(std::fabs(c) <= static_cast<double>(std::numeric_limits<FpType>::max()))) return true;
+		// beyond the host's range, or beyond double's: an even integer, as every value that size
+		// is. Tested before the cast below, which is undefined for an out-of-range double on a
+		// narrow host. isfinite comes first because a long double host's max() converts to inf.
+		if (!std::isfinite(c) || !(std::fabs(c) <= static_cast<double>(std::numeric_limits<FpType>::max()))) return true;
 		if (std::fabs(c) < 0.75) return false;
 		const double piece = static_cast<double>(static_cast<FpType>(std::nearbyint(c)));   // an integer
 		if (std::fmod(piece, 2.0) != 0.0) odd = !odd;

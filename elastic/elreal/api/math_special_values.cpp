@@ -198,6 +198,23 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
+#if LONG_DOUBLE_SUPPORT
+	// on a long double host max() exceeds double's range and converts to inf, so the integer test
+	// must reject an infinite approximation before the range comparison: a stream value of
+	// 2^2000 used to reach from_native as inf and fail its normalisation assertion
+	int VerifyWideHostIntegerTest(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		using B = block<long double>;
+		const ZBCL<long double> y = ZBCL<long double>::singleton(B{ 1.0L, typename B::exp_t(2000) });   // 2^2000
+		bool odd = true;
+		if (!detail::is_integer(y, 4, odd) || odd) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: is_integer(2^2000) on a long double host is not an even integer\n";
+		}
+		return nrOfFailedTestCases;
+	}
+#endif
+
 }}  // namespace sw::universal
 
 #define MANUAL_TESTING 0
@@ -243,6 +260,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPow<elreal<double>>(reportTestCases), "elreal<double>", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyRange<elreal<double>>(reportTestCases), "elreal<double>", "exp range and leading zero block");
 	nrOfFailedTestCases += ReportTestResult(VerifyNarrowHostPow(reportTestCases), "elreal<float>", "pow beyond the host range");
+#if LONG_DOUBLE_SUPPORT
+	nrOfFailedTestCases += ReportTestResult(VerifyWideHostIntegerTest(reportTestCases), "elreal<long double>", "integer test beyond double");
+#endif
 #endif
 
 #if REGRESSION_LEVEL_2
