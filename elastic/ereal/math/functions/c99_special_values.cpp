@@ -340,11 +340,13 @@ namespace {
 		std::uniform_int_distribution<int> expo(-span, span);
 		// each draw in a fixed order: argument evaluation order is unspecified in C++, and gcc
 		// and clang would otherwise generate different cases from the same seed
+		// The value is formed in Host: a long double exponent beyond 1023 would overflow a
+		// double to inf.
 		auto draw = [&](int expoDivisor, bool withSign) {
-			const double m = mant(rng);
+			const Host m = static_cast<Host>(mant(rng));
 			const int e = expo(rng) / expoDivisor;
-			const double s = (withSign && (rng() & 1)) ? -1.0 : 1.0;
-			return static_cast<Host>(std::ldexp(m, e) * s);
+			const Host s = (withSign && (rng() & 1)) ? Host(-1) : Host(1);
+			return std::ldexp(m, e) * s;
 		};
 		for (int i = 0; i < nrCases; ++i) {
 			const Host x = draw(1, true);
@@ -462,6 +464,7 @@ try {
 #if LONG_DOUBLE_SUPPORT
 	nrOfFailedTestCases += ReportTestResult(VerifyUnary<ereal<3, long double>>(reportTestCases), "ereal<3, long double>", "unary");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinary<ereal<3, long double>>(reportTestCases), "ereal<3, long double>", "binary");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactRemainders<ereal<3, long double>, long double>(reportTestCases, 2000), "ereal<3, long double>", "exact fmod/remainder");
 #endif
 #endif
 
