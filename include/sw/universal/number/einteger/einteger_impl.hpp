@@ -11,6 +11,7 @@
 #include <vector>
 #include <limits>
 #include <type_traits>
+#include <cmath>     // std::ldexp in convert_to_native_ieee
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -168,9 +169,11 @@ public:
 		remove_leading_zeros();
 		return *this;
 	}
+	// >> divides the magnitude by 2^shift and truncates toward zero, keeping the sign: einteger is
+	// sign-magnitude, so -5 >> 1 is -2, where a native arithmetic shift rounds toward -inf (-3)
 	einteger& operator>>=(int shift) {
 		if (shift == 0) return *this;
-		if (shift < 0) return operator>>=(-shift);
+		if (shift < 0) return operator<<=(-shift);   // was operator>>=, so a >>= -2 shifted right (#1987)
 		// shift == nbits shifts ALL significant bits out, so the result is
 		// 0.  The previous `>` test let this case fall through to the
 		// block-shift path with MSU < blockShift, where the inner copy
@@ -203,6 +206,7 @@ public:
 			shift -= static_cast<int>(blockShift * bitsInBlock);
 			if (shift == 0) {
 				remove_leading_zeros();
+				if (iszero()) _sign = false;
 				return *this;
 			}
 		}
@@ -221,6 +225,7 @@ public:
 			_block[0] >>= shift;
 		}
 		remove_leading_zeros();
+		if (iszero()) _sign = false;   // a negative value shifted to zero is +0, not -0 (#1987)
 		return *this;
 	}
 	
@@ -977,16 +982,31 @@ protected:
 		// negate in unsigned arithmetic: -Integer(v) overflows for |kMin|
 		return (neg ? static_cast<Integer>(static_cast<Unsigned>(Unsigned(0) - v)) : static_cast<Integer>(v));
 	}
+	// the nearest Real, ties to even, rounded once. Adding 2^i for each set bit rounded at every add
+	// once the value passed 2^digits, so (float)(2^30 + 2^29 + 2^6 + 1) came out 128 too low (#1987).
+	// The top digits bits are gathered exactly, rounded with the next bit and a sticky bit of the
+	// rest, then scaled; a value beyond the Real's range becomes infinity, as it does for a native
+	// integer.
 	template<typename Real>
 	Real convert_to_native_ieee() const noexcept {
-		Real v{ 0 };
-		Real m{ 1.0 };
-		for (unsigned i = 0; i < nbits(); ++i) {
-			if (test(i)) {
-				v += m;
-			}
-			m *= Real(2.0);
+		constexpr int digits = std::numeric_limits<Real>::digits;
+		int top = static_cast<int>(nbits()) - 1;
+		while (top >= 0 && !test(static_cast<unsigned>(top))) --top;
+		if (top < 0) return Real(0);
+		// the bits kept: [low, top], at most digits of them, so every partial sum below is exact
+		const int low = (top >= digits) ? top - digits + 1 : 0;
+		Real significand{ 0 };
+		for (int i = top; i >= low; --i) {
+			significand = significand * Real(2) + (test(static_cast<unsigned>(i)) ? Real(1) : Real(0));
 		}
+		if (low > 0) {
+			const bool roundBit = test(static_cast<unsigned>(low - 1));
+			bool sticky = false;
+			for (int i = low - 2; i >= 0 && !sticky; --i) sticky = test(static_cast<unsigned>(i));
+			const bool lsb = test(static_cast<unsigned>(low));
+			if (roundBit && (sticky || lsb)) significand += Real(1);   // at most 2^digits: still exact
+		}
+		const Real v = std::ldexp(significand, low);
 		return (sign() ? -v : v);
 	}
 
@@ -1346,65 +1366,53 @@ inline einteger<BlockType> operator%(const einteger<BlockType>& lhs, const einte
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// einteger - literal binary arithmetic operators
+// einteger - native scalar binary arithmetic operators
+//
+// One overload per operator for every native arithmetic operand type, either side. There were long
+// long overloads for all five and an extra unsigned long long one for /, so a / 2 was ambiguous
+// between the two and did not compile (#1987). An integer operand converts exactly; a floating-point
+// one converts as einteger(double) does, truncating toward zero.
 
-template<typename BlockType>
-inline einteger<BlockType> operator+(const einteger<BlockType>& lhs, long long rhs) {
-	return operator+(lhs, einteger<BlockType>(rhs));
+// the einteger value of a native arithmetic operand
+template<typename BlockType, typename Scalar>
+inline einteger<BlockType> einteger_operand(Scalar v) {
+	if constexpr (std::is_floating_point_v<Scalar>) {
+#if LONG_DOUBLE_SUPPORT
+		if constexpr (std::is_same_v<Scalar, long double>) return einteger<BlockType>(v);
+		else return einteger<BlockType>(static_cast<double>(v));
+#else
+		return einteger<BlockType>(static_cast<double>(v));
+#endif
+	}
+	else if constexpr (std::is_signed_v<Scalar>) {
+		return einteger<BlockType>(static_cast<long long>(v));
+	}
+	else {
+		return einteger<BlockType>(static_cast<unsigned long long>(v));
+	}
 }
 
-template<typename BlockType>
-inline einteger<BlockType> operator-(const einteger<BlockType>& lhs, long long rhs) {
-	return operator-(lhs, einteger<BlockType>(rhs));
+// a native arithmetic type other than bool
+template<typename Scalar>
+inline constexpr bool is_einteger_scalar_v = std::is_arithmetic_v<Scalar> && !std::is_same_v<Scalar, bool>;
+
+#define EINTEGER_SCALAR_OPERATOR(OP)                                                                       \
+template<typename BlockType, typename Scalar, std::enable_if_t<is_einteger_scalar_v<Scalar>, int> = 0>   \
+inline einteger<BlockType> operator OP(const einteger<BlockType>& lhs, Scalar rhs) {                     \
+	return operator OP(lhs, einteger_operand<BlockType>(rhs));                                             \
+}                                                                                                          \
+template<typename BlockType, typename Scalar, std::enable_if_t<is_einteger_scalar_v<Scalar>, int> = 0>   \
+inline einteger<BlockType> operator OP(Scalar lhs, const einteger<BlockType>& rhs) {                     \
+	return operator OP(einteger_operand<BlockType>(lhs), rhs);                                             \
 }
 
-template<typename BlockType>
-inline einteger<BlockType> operator*(const einteger<BlockType>& lhs, long long rhs) {
-	return operator*(lhs, einteger<BlockType>(rhs));
-}
+EINTEGER_SCALAR_OPERATOR(+)
+EINTEGER_SCALAR_OPERATOR(-)
+EINTEGER_SCALAR_OPERATOR(*)
+EINTEGER_SCALAR_OPERATOR(/)
+EINTEGER_SCALAR_OPERATOR(%)
 
-template<typename BlockType>
-inline einteger<BlockType> operator/(const einteger<BlockType>& lhs, long long rhs) {
-	return operator/(lhs, einteger<BlockType>(rhs));
-}
-
-template<typename BlockType>
-inline einteger<BlockType> operator%(const einteger<BlockType>& lhs, long long rhs) {
-	return operator%(lhs, einteger<BlockType>(rhs));
-}
-
-template<typename BlockType>
-inline einteger<BlockType> operator/(const einteger<BlockType>& lhs, unsigned long long rhs) {
-	return operator/(lhs, einteger<BlockType>(rhs));
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-// literal - einteger binary arithmetic operators
-
-template<typename BlockType>
-inline einteger<BlockType> operator+(long long lhs, const einteger<BlockType>& rhs) {
-	return operator+(einteger<BlockType>(lhs), rhs);
-}
-
-template<typename BlockType>
-inline einteger<BlockType> operator-(long long lhs, const einteger<BlockType>& rhs) {
-	return operator-(einteger<BlockType>(lhs), rhs);
-}
-
-template<typename BlockType>
-inline einteger<BlockType> operator*(long long lhs, const einteger<BlockType>& rhs) {
-	return operator*(einteger<BlockType>(lhs), rhs);
-}
-
-template<typename BlockType>
-inline einteger<BlockType> operator/(long long lhs, const einteger<BlockType>& rhs) {
-	return operator/(einteger<BlockType>(lhs), rhs);
-}
-
-template<typename BlockType>
-inline einteger<BlockType> operator%(long long lhs, const einteger<BlockType>& rhs) {
-	return operator%(einteger<BlockType>(lhs), rhs);
-}
+#undef EINTEGER_SCALAR_OPERATOR
 
 ////////////////////////////////////////////////////////////////////////////////
 // integer power

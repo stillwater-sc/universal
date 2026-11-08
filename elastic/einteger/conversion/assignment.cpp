@@ -157,6 +157,45 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
+	// einteger -> float/double rounds once, to nearest with ties to even, as a native 64-bit integer
+	// converts. Adding 2^i per set bit rounded at every add past 2^24 (float) or 2^53 (double), so
+	// (float)(2^30 + 2^29 + 2^6 + 1) was 1610612736 instead of 1610612864 (#1987). Values wider than
+	// 64 bits are checked by scaling: rounding commutes with multiplying by 2^k.
+	template<typename BlockType>
+	int VerifyIeeeRounding(int randomCases, bool reportTestCases) {
+		using EInteger = einteger<BlockType>;
+		int nrOfFailedTests = 0;
+		auto check = [&](unsigned long long u, bool negative, int scale) {
+			EInteger a(u);
+			a <<= scale;
+			if (negative) a = -a;
+			const float  fref = (negative ? -1.0f : 1.0f) * std::ldexp(static_cast<float>(u), scale);
+			const double dref = (negative ? -1.0  : 1.0 ) * std::ldexp(static_cast<double>(u), scale);
+			if (static_cast<float>(a) != fref || static_cast<double>(a) != dref) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: " << (negative ? "-" : "") << u << " * 2^" << scale << " -> float " << static_cast<float>(a) << " (expected " << fref << "), double " << static_cast<double>(a) << " (expected " << dref << ")\n";
+			}
+		};
+		// the issue's case, ties to even in both directions, and the carry into a new binade
+		const unsigned long long specific[] = {
+			(1ull << 30) + (1ull << 29) + (1ull << 6) + 1,
+			(1ull << 24) + 1, (1ull << 24) + 3, (1ull << 25) + 2, (1ull << 25) + 6,
+			(1ull << 53) + 1, (1ull << 53) + 3, (1ull << 54) + 2, (1ull << 63) + 1025,
+			0xFFFFFFull, 0x1FFFFFFull, 0xFFFFFFFFFFFFFFFFull, 0x20000000000001ull, 0x3FFFFFFFFFFFFFull };
+		for (unsigned long long u : specific) {
+			for (int scale : { 0, 1, 37, 64, 100 }) {
+				check(u, false, scale);
+				check(u, true, scale);
+			}
+		}
+		std::mt19937_64 rng(1987);
+		for (int i = 0; i < randomCases; ++i) {
+			const unsigned long long u = rng() >> (rng() % 40);   // many magnitudes
+			check(u, (i & 1) != 0, static_cast<int>(rng() % 120));
+		}
+		return nrOfFailedTests;
+	}
+
 	// copy, move and self-assignment keep the value; a moved-from einteger may be reassigned
 	template<typename BlockType>
 	int VerifyCopyAndMove(bool reportTestCases) {
@@ -265,6 +304,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyIeeeAssignment<std::uint32_t, float>(1000, reportTestCases), "einteger<uint32_t>", "float");
 	nrOfFailedTestCases += ReportTestResult(VerifyIeeeAssignment<std::uint32_t, double>(1000, reportTestCases), "einteger<uint32_t>", "double");
 	nrOfFailedTestCases += ReportTestResult(VerifyIeeeConversion<std::uint32_t>(reportTestCases), "einteger<uint32_t>", "to float/double");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeRounding<std::uint32_t>(2000, reportTestCases), "einteger<uint32_t>", "float/double rounding");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeRounding<std::uint8_t>(500, reportTestCases), "einteger<uint8_t>", "float/double rounding");
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyAndMove<std::uint8_t>(reportTestCases), "einteger<uint8_t>", "copy/move");
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyAndMove<std::uint32_t>(reportTestCases), "einteger<uint32_t>", "copy/move");
 #if LONG_DOUBLE_SUPPORT
