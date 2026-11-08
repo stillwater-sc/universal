@@ -1145,8 +1145,9 @@ inline bool matches_hex(const std::string& s) noexcept {
 
 // the digits of number from position first on, bitsPerDigit bits each (1 binary, 3 octal, 4 hex),
 // written into magnitude from the least significant digit up, a byte at a time; apostrophes are
-// skipped, and the caller trims the leading zero limbs. Linear in the length: a shift and an add per digit made binary and octal quadratic, with
-// an allocation per digit, 0.032 s for 80,000 binary digits (#2010).
+// skipped, and the caller trims the leading zero limbs. Linear in the length: a shift and an add
+// per digit made binary and octal quadratic, with an allocation per digit, 0.032 s for 80,000
+// binary digits (#2010).
 template<typename Integer>
 inline void parse_power_of_two_digits(const std::string& number, std::string::size_type first,
                                       unsigned bitsPerDigit, Integer& magnitude) {

@@ -54,7 +54,11 @@ areal<nbits, es, bt> fma(const areal<nbits, es, bt>& a, const areal<nbits, es, b
 	const double s = std::fma(da, db, dc);
 	areal<nbits, es, bt> r(s);
 	if (r.isnan() || r.isinf()) return r;   // a finite result implies finite operands
-	if (!r.at(0) && s != 0.0) {
+	// The correction needs exact double operands and an exact double product: 2*(fbits+1) <= 53.
+	// A wider significand reaches here already rounded by double(a), and correcting the rounded
+	// operands would mark an exact result inexact (areal<80,11>: fma(1 + 2^-60, 1, -2^-60) is 1).
+	constexpr bool narrow = 2u * (areal<nbits, es, bt>::fbits + 1u) <= 53u;
+	if (narrow && !r.at(0) && s != 0.0) {
 		// r holds s exactly; recover the rounding error of s when the product is exact in double
 		const double p = da * db;
 		// at or above 2^-969 = 2^53 * DBL_MIN the product's rounding error is a double, so a zero

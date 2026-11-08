@@ -345,6 +345,26 @@ int VerifyFmaCases(bool reportTestCases) {
 	return fails;
 }
 
+// A significand wider than double's: fma must not correct with operands double has rounded.
+// fma(1 + 2^-60, 1, -2^-60) is exactly 1, where the correction on the rounded operands (1, 1,
+// -2^-60) stepped below 1 and set the ubit (#2010 review).
+int VerifyFmaWide(bool reportTestCases) {
+	int nrOfFailedTestCases = 0;
+	using Real = areal<80, 11, std::uint8_t>;
+	const Real one(1.0), tiny(std::ldexp(1.0, -60));
+	const Real a = one + tiny;
+	if (a.at(0) || a == one) {
+		if (reportTestCases) std::cerr << "FAIL: 1 + 2^-60 is not exact in areal<80,11>\n";
+		return 1;
+	}
+	const Real r = fma(a, one, -tiny);
+	if (r.at(0) || r != one) {
+		++nrOfFailedTestCases;
+		if (reportTestCases) std::cerr << "FAIL: areal<80,11> fma(1 + 2^-60, 1, -2^-60) = " << to_binary(r) << ", expected exact 1\n";
+	}
+	return nrOfFailedTestCases;
+}
+
 // A single areal's ubit is a flag (#1970): an inexact operand makes the result inexact, and a
 // result from exact operands names the interval holding the exact value. It does not promise that
 // the result's interval encloses the exact interval result: (0, minpos) - minpos is flagged, but
@@ -421,6 +441,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFmaSampled<areal<16, 5>, 192>(reportTestCases, 20000, 0x2010u), "areal<16,5>", "fma sampled");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmaSampled<areal<32, 8>, 640>(reportTestCases, 2000, 0x2010u), "areal<32,8>", "fma sampled");
 	nrOfFailedTestCases += ReportTestResult(VerifyFlagSemantics(reportTestCases), "areal<16,5>", "ubit is a flag");
+	nrOfFailedTestCases += ReportTestResult(VerifyFmaWide(reportTestCases), "areal<80,11,uint8>", "fma wide significand");
 #endif
 
 #if REGRESSION_LEVEL_2
