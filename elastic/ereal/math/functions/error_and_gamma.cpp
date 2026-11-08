@@ -27,6 +27,7 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/ereal_precision.hpp>
+#include <math/constants/reference_constants.hpp>
 
 namespace {
 	using namespace sw::universal;
@@ -121,8 +122,16 @@ namespace {
 			if (reportTestCases) std::cout << "    FAIL lgamma(1) or lgamma(2) != 0\n";
 			++nrOfFailedTestCases;
 		}
-		// lgamma(x) == log(tgamma(x)) and agreement with a reference: left out, lgamma and
-		// tgamma are double shims (53 bits, see the top of the file)
+		// lgamma(x) == log(tgamma(x)) at full precision: left out, lgamma and tgamma are double
+		// shims (53 bits, see the top of the file, #2017).  A finite value is still checked to
+		// the shim's own precision, so a function that returned 0 for every x would fail:
+		// lgamma(3) = log(2).
+		constexpr int kShimBits = 48;   // a double result, less a few bits of libm error
+		if (!agrees_to_bits(lgamma(Real(3.0)), s_ln2, kShimBits)) {
+			if (reportTestCases) std::cout << "    FAIL lgamma(3) != log(2) to " << kShimBits << " bits: "
+			                               << measured_bits(lgamma(Real(3.0)), s_ln2) << '\n';
+			++nrOfFailedTestCases;
+		}
 
 		// special value: lgamma(+Inf) = +Inf
 		Real linf = lgamma(Real(std::numeric_limits<double>::infinity()));

@@ -10,7 +10,7 @@
 // whatever the configuration.  Measured on ereal<8>: abs(1+i) vs sqrt(2) 53 bits,
 // abs(0.7+1.3i) vs sqrt(norm) 59 bits, sqrt(2+3i)^2 vs 2+3i 52-53 bits.  Their precision
 // checks are left out rather than loosened to 53 bits; what stays is exact (abs(3+4i) == 5)
-// or checks only that the function is available.
+// or checks only that the function is available.  Tracked as #2017.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
