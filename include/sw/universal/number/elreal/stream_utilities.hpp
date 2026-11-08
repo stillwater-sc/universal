@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <type_traits>
 
 #include <universal/number/elreal/block.hpp>
 #include <universal/number/elreal/zbcl.hpp>
@@ -65,27 +66,44 @@ inline ZBCL<FpType> from_integer(unsigned long long magnitude, bool negative) {
 
 // is_integer(y, window, odd): whether y is an integer to within the window, decided from the
 // stream rather than from a double approximation. pow(2, 3 + 2^-200) was 8 because 3 + 2^-200
-// rounds to 3.0. Each step subtracts the nearest integer the host holds exactly, so the
-// remainder of an integer stays an integer and shrinks by the host's precision each time; the
-// test ends when the remainder is zero (integer) or below 3/4 and nonzero (not). odd reports the
-// parity of an integer y. A y whose approximation exceeds the host's range is treated as an even
-// integer, as every value of that size is on the host.
+// rounds to 3.0, and a double cannot see the 0.5 in 2^2000 + 0.5, which elreal holds exactly on
+// any host. odd reports the parity of an integer y.
+//
+// While the leading nonzero block is itself an integer (its lowest set bit at or above 2^0), it is
+// subtracted exactly, and its bit 0 decides the parity it contributes. That needs no assumption
+// about how the remaining blocks overlap. Once the leading block has fractional bits, the
+// remainder is below about 2^(host digits), so its nearest integer comes from a double without
+// overflow, and the remainder is an integer exactly when subtracting that leaves zero within the
+// window -- the window in which elreal decides equality. (A long double host's blocks reach 2^64,
+// beyond what a double rounds exactly, so there the subtraction repeats until it is below 2^52.)
 template <typename FpType>
 inline bool is_integer(ZBCL<FpType> y, std::size_t window, bool& odd) {
 	odd = false;
-	for (int step = 0; step < 64; ++step) {
-		if (!first_nonzero_block(y, window).found) return true;
-		const double c = to_double_approx(y, window);
-		// beyond the host's range, or beyond double's: an even integer, as every value that size
-		// is. Tested before the cast below, which is undefined for an out-of-range double on a
-		// narrow host. isfinite comes first because a long double host's max() converts to inf.
-		if (!std::isfinite(c) || !(std::fabs(c) <= static_cast<double>(std::numeric_limits<FpType>::max()))) return true;
-		if (std::fabs(c) < 0.75) return false;
-		const double piece = static_cast<double>(static_cast<FpType>(std::nearbyint(c)));   // an integer
+	using W = std::conditional_t<std::is_same_v<FpType, long double>, long double, double>;
+	constexpr int D = std::numeric_limits<W>::digits;
+	for (std::size_t step = 0; step < window + 8; ++step) {
+		const auto lead = first_nonzero_block(y, window);
+		if (!lead.found) return true;
+		// the lowest set bit of the leading block: |v| = mant * 2^(e - D), mant an integer
+		int e = 0;
+		W mant = std::ldexp(std::frexp(std::fabs(static_cast<W>(lead.blk.v)), &e), D);
+		long long lsb = static_cast<long long>(e) - D + static_cast<long long>(lead.blk.exp);
+		while (std::fmod(mant, W(2)) == W(0)) { mant /= W(2); ++lsb; }
+		if (lsb >= 0) {
+			if (lsb == 0) odd = !odd;                                   // the block's bit 0
+			y = add(lead.rest, negate(ZBCL<FpType>::singleton(lead.blk)));
+			continue;
+		}
+		const double c = to_double_approx(lead.rest, window);
+		const double piece = static_cast<double>(static_cast<FpType>(std::nearbyint(c)));   // an integer, host exact
 		if (std::fmod(piece, 2.0) != 0.0) odd = !odd;
-		y = add(y, from_native<FpType>(-piece));
+		y = add(lead.rest, from_native<FpType>(-piece));
+		// below 2^52, c is within 1/4 of the remainder, so piece is its nearest integer and what is
+		// left is zero exactly when the remainder was an integer. Above (a long double host, whose
+		// blocks reach 2^64), the double rounded too: what is left is smaller, so go round again.
+		if (std::fabs(c) < 4503599627370496.0) return !first_nonzero_block(y, window).found;   // 2^52
 	}
-	return true;   // more than 64 host-precision steps: far beyond any parity a host can show
+	return true;   // more integer blocks than the window holds: an integer to precision
 }
 
 }}} // namespace sw::universal::detail

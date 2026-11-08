@@ -198,18 +198,51 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
+	// integer-ness of values a double cannot see: elreal holds 2^2000 + 0.5 exactly on any host,
+	// and its double approximation is inf. Treating every such value as an even integer let
+	// pow(-2, 2^2000 + 0.5) through the negative-base domain check.
+	template<typename FpType>
+	int VerifyIntegerTestBeyondDouble(bool reportTestCases, const std::string& host) {
+		int nrOfFailedTestCases = 0;
+		using B = block<FpType>;
+		using S = ZBCL<FpType>;
+		using Real = elreal<FpType>;
+		auto expect = [&](bool ok, const std::string& what) {
+			if (!ok) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: " << host << ' ' << what << '\n';
+			}
+		};
+		const S big = S::singleton(B{ static_cast<FpType>(1.0), typename B::exp_t(2000) });   // 2^2000
+		bool odd = true;
+		expect(detail::is_integer(big, 4, odd) && !odd, "2^2000 is an even integer");
+		const S bigHalf = add(big, from_native<FpType>(0.5));
+		expect(!detail::is_integer(bigHalf, 4, odd), "2^2000 + 0.5 is not an integer");
+		const S bigOne = add(big, from_native<FpType>(1.0));
+		expect(detail::is_integer(bigOne, 4, odd) && odd, "2^2000 + 1 is an odd integer");
+		expect(pow(Real(-2.0), Real(bigHalf)).isnan(), "pow(-2, 2^2000 + 0.5) is NaN");
+		expect(pow(Real(-1.0), Real(bigOne)).sign() == -1, "pow(-1, 2^2000 + 1) is -1");
+		return nrOfFailedTestCases;
+	}
+
 #if LONG_DOUBLE_SUPPORT
-	// on a long double host max() exceeds double's range and converts to inf, so the integer test
-	// must reject an infinite approximation before the range comparison: a stream value of
-	// 2^2000 used to reach from_native as inf and fail its normalisation assertion
-	int VerifyWideHostIntegerTest(bool reportTestCases) {
+	// a long double block reaches 2^64, beyond what a double rounds exactly: 2^60 + 3, held as the
+	// block 2^60 + 3.5 and a block -0.5, rounds to 2^60 + 4 in a double
+	int VerifyLongDoubleBlockRounding(bool reportTestCases) {
 		int nrOfFailedTestCases = 0;
 		using B = block<long double>;
-		const ZBCL<long double> y = ZBCL<long double>::singleton(B{ 1.0L, typename B::exp_t(2000) });   // 2^2000
-		bool odd = true;
-		if (!detail::is_integer(y, 4, odd) || odd) {
+		using S = ZBCL<long double>;
+		const long double lead = std::ldexp(1.0L, 60) + 3.5L;
+		const S y = add(S::singleton(B{ lead, 0 }), from_native<long double>(-0.5));   // 2^60 + 3
+		bool odd = false;
+		if (!detail::is_integer(y, 4, odd) || !odd) {
 			++nrOfFailedTestCases;
-			if (reportTestCases) std::cerr << "FAIL: is_integer(2^2000) on a long double host is not an even integer\n";
+			if (reportTestCases) std::cerr << "FAIL: long double 2^60 + 3 is not reported as an odd integer\n";
+		}
+		const S z = add(S::singleton(B{ lead, 0 }), from_native<long double>(-0.25));      // 2^60 + 3.25
+		if (detail::is_integer(z, 4, odd)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: long double 2^60 + 3.25 is reported as an integer\n";
 		}
 		return nrOfFailedTestCases;
 	}
@@ -260,8 +293,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPow<elreal<double>>(reportTestCases), "elreal<double>", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyRange<elreal<double>>(reportTestCases), "elreal<double>", "exp range and leading zero block");
 	nrOfFailedTestCases += ReportTestResult(VerifyNarrowHostPow(reportTestCases), "elreal<float>", "pow beyond the host range");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerTestBeyondDouble<double>(reportTestCases, "elreal<double>"), "elreal<double>", "integer test beyond double");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerTestBeyondDouble<float>(reportTestCases, "elreal<float>"), "elreal<float>", "integer test beyond double");
 #if LONG_DOUBLE_SUPPORT
-	nrOfFailedTestCases += ReportTestResult(VerifyWideHostIntegerTest(reportTestCases), "elreal<long double>", "integer test beyond double");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerTestBeyondDouble<long double>(reportTestCases, "elreal<long double>"), "elreal<long double>", "integer test beyond double");
+	nrOfFailedTestCases += ReportTestResult(VerifyLongDoubleBlockRounding(reportTestCases), "elreal<long double>", "integer test past 2^53");
 #endif
 #endif
 
