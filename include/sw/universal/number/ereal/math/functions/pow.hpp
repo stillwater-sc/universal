@@ -10,32 +10,45 @@
 namespace sw { namespace universal {
 
 	// pow: power function x^y
-	// Phase 4b: Implementation using exp(y * log(x)) with special case handling
-	// Special cases:
-	//   - x^0 = 1 for any x (including 0)
-	//   - 0^y = 0 for y > 0
-	//   - 1^y = 1 for any y
-	//   - x^1 = x for any x
-	//   - x^2, x^3, ... use direct multiplication for small integer powers
+	// Small integer exponents use binary powering; the rest exp(y * log(|x|)), with the sign of
+	// an odd integer exponent for a negative base.  Special values follow C99 F.10.4.4:
+	//   - pow(x, +-0) = 1 and pow(+1, y) = 1, even for a NaN operand
+	//   - pow(-1, +-inf) = 1; pow(x, -inf) is +inf for |x| < 1 and +0 for |x| > 1, and
+	//     pow(x, +inf) the reverse
+	//   - pow(+-0, y): +-0 or +-inf for an odd integer y > 0 or < 0, else +0 or +inf
+	//   - pow(-inf, y): -0 or -inf for an odd integer y < 0 or > 0, else +0 or +inf;
+	//     pow(+inf, y) is +0 for y < 0 and +inf for y > 0
+	//   - NaN for a negative finite base and a finite non-integer exponent
+	// pow(0, -1) used to be NaN, and pow(-2, 1e200), an even integer beyond int, NaN too (#2006).
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> pow(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
 		using Real = ereal<maxlimbs, FpType>;
 
-		// Special case: y = 0 => x^0 = 1 (for any x, including 0)
 		if (y.iszero()) return Real(1.0);
+		if (x.isone()) return Real(1.0);
+		if (x.isnan() || y.isnan()) return ereal_detail::quiet_nan<maxlimbs, FpType>();
 
-		// Special case: x = 0
-		if (x.iszero()) {
-			if (y.isneg()) {
-				// 0^(-y) = 1/0^y = undefined, return NaN
-				return std::numeric_limits<Real>::quiet_NaN();
-			}
-			// 0^y = 0 for y > 0
-			return Real(0.0);
+		if (y.isinf()) {
+			const Real ax = abs(x);
+			const Real one(1.0);
+			if (ax == one) return one;                             // pow(-1, +-inf)
+			const bool grows = (ax > one) == !y.isneg();
+			return grows ? ereal_detail::signed_inf<maxlimbs, FpType>(false) : Real(0.0);
 		}
 
-		// Special case: x = 1 => 1^y = 1
-		if (x.isone()) return Real(1.0);
+		const bool y_odd = ereal_detail::is_odd_integer(y);
+		if (x.iszero()) {
+			const bool negative = y_odd && x.signbit();
+			return y.isneg() ? ereal_detail::signed_inf<maxlimbs, FpType>(negative)
+			                 : ereal_detail::signed_zero<maxlimbs, FpType>(negative);
+		}
+		if (x.isinf()) {
+			const bool negative = y_odd && x.isneg();
+			return y.isneg() ? ereal_detail::signed_zero<maxlimbs, FpType>(negative)
+			                 : ereal_detail::signed_inf<maxlimbs, FpType>(negative);
+		}
+
+		// finite, nonzero x and y from here on
 
 		// Special case: y = 1 => x^1 = x
 		if (y.isone()) return x;
@@ -90,11 +103,12 @@ namespace sw { namespace universal {
 			// n == 0 is already handled at the top of the function
 		}
 
-		// General case: x^y = exp(y * log(x))
-		// Only valid for x > 0
+		// General case: x^y = exp(y * log(|x|)).  A negative base needs an integer exponent, one
+		// too large for the loop above, and takes its sign from the exponent's parity.
 		if (x.isneg()) {
-			// Negative base with non-integer exponent is complex
-			return std::numeric_limits<Real>::quiet_NaN();
+			if (!ereal_detail::is_integer(y)) return ereal_detail::quiet_nan<maxlimbs, FpType>();
+			const Real r = exp(y * log(-x));
+			return y_odd ? -r : r;
 		}
 
 		return exp(y * log(x));

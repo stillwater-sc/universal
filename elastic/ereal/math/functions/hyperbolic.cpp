@@ -8,17 +8,85 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include <string>
+#include <string_view>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_mathlib_adaptive.hpp>
+#include <universal/verification/ereal_precision.hpp>
+#include <math/constants/reference_constants.hpp>
 
 namespace {
 	using namespace sw::universal;
+
+	// The precision checks below are exact (ereal_precision.hpp): every value is compared
+	// with its reference as a dyadic rational and the agreement is counted in bits. The
+	// tolerances of 1e-14 they replace went through double and so passed a result correct
+	// to only 53 bits (#2008).
+	//
+	// References are, in order of preference, a stored decimal constant
+	// (reference_constants.hpp), an exact value, or the same function at a wider
+	// configuration (ereal<19>, the widest a double limb supports). An inverse is also
+	// checked by applying the forward function, which the stored constants pin down
+	// independently: sinh(asinh(2)) == 2.
+	//
+	// Each check asks for the bits the configuration holds less a margin. The margins
+	// were measured (compile with -DEREAL_PRECISION_TRACE to print every agreement) and
+	// carry slack over the worst value seen at ereal<8>, <16> and <19>: every check measured
+	// at or above the configuration's own bits (results carry spare limbs).
+	constexpr int kFunctionMargin = 16;   // a function at a stored constant, an exact value or the wide configuration
+	constexpr int kIdentityMargin = 24;   // an identity or a round trip: cosh^2 - sinh^2 at |x| = 3 can cancel ~7 bits
+	using Wide = ereal<19>;               // the wide reference configuration
+
+	int expect_bits(int got, int wanted, const std::string& what, bool reportTestCases) {
+#ifdef EREAL_PRECISION_TRACE
+		std::cout << "    " << what << ": " << got << " bits (wanted " << wanted << ")\n";
+#endif
+		if (got >= wanted) return 0;
+		if (reportTestCases) std::cout << "    FAIL " << what << ": " << got << " bits, wanted at least " << wanted << '\n';
+		return 1;
+	}
+
+	// bits to which v agrees with a decimal reference, which may carry a sign; -1 for a
+	// value that cannot agree (NaN, inf, zero)
+	template<typename Real>
+	int bits_vs(const Real& v, std::string_view ref) {
+		if (v.isnan() || v.isinf() || v.iszero()) return -1;
+		Real w = v;
+		if (!ref.empty() && ref.front() == '-') { ref.remove_prefix(1); w = -v; }
+		// digits enough to certify the configuration, within the 320 the references certify
+		const int cap = std::min(320, static_cast<int>(ereal_bits_of<Real>::value * 0.30103) + 4);
+		return agreed_bits(w, ref, cap);
+	}
+
+	// bits to which a agrees with b, relative to b; -1 for NaN or inf
+	template<unsigned m, typename F, unsigned n, typename G>
+	int bits_vs(const ereal<m, F>& a, const ereal<n, G>& b) {
+		if (a.isnan() || a.isinf() || b.isnan() || b.isinf()) return -1;
+		if (b.iszero()) return a.iszero() ? kExactAgreement : -1;
+		return agreed_bits(a, b);
+	}
+
+	// the configuration's precision less a margin
+	template<typename Real>
+	constexpr int wanted_bits(int margin) { return ereal_bits_of<Real>::value - margin; }
+
+	// f(x) at Real against f(x) at the wide configuration, when Real is narrower
+	template<typename Real, typename Fn>
+	int expect_vs_wide(Fn f, double x, const std::string& what, bool reportTestCases) {
+		if constexpr (ereal_bits_of<Real>::value < ereal_bits_of<Wide>::value) {
+			return expect_bits(bits_vs(f(Real(x)), f(Wide(x))), wanted_bits<Real>(kFunctionMargin), what + " vs ereal<19>", reportTestCases);
+		}
+		else {
+			return 0;
+		}
+	}
 
 		// Verify sinh function
 		template<typename Real>
 		int VerifySinh(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			const int wanted = wanted_bits<Real>(kFunctionMargin);
 
 			// Test: sinh(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
@@ -28,32 +96,14 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: sinh(1) ~= 1.175201194 (approximate)
-			x = 1.0;
-			expected = Real(std::sinh(1.0));
-			result = sinh(x);
-			double threshold = 1e-14;  // Double precision accuracy
+			// Test: sinh(1/2) against its stored value, sinh(1) against the wide configuration
+			nrOfFailedTestCases += expect_bits(bits_vs(sinh(Real(0.5)), s_sinh_half), wanted, "sinh(1/2)", reportTestCases);
+			nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& v) { return sinh(v); }, 1.0, "sinh(1)", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("sinh", "1", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: sinh(-x) = -sinh(x) (odd function identity)
+			// Test: sinh(-x) = -sinh(x) (odd function identity, exact)
 			x = 2.0;
-			Real sinh_pos = sinh(x);
-			Real sinh_neg = sinh(-x);
-			Real identity = sinh_pos + sinh_neg;
-			expected = 0.0;
-
-			if (!check_relative_error(identity, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("sinh(-x) + sinh(x)", "identity", identity, expected, threshold);
-				}
+			if (!(sinh(-x) == -sinh(x))) {
+				if (reportTestCases) std::cout << "    FAIL sinh(-2) != -sinh(2) (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -64,6 +114,7 @@ namespace {
 		template<typename Real>
 		int VerifyCosh(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			const int wanted = wanted_bits<Real>(kFunctionMargin);
 
 			// Test: cosh(0) = 1 (mathematically exact)
 			Real x(0.0), expected(1.0);
@@ -73,32 +124,14 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: cosh(1) ~= 1.543080635 (approximate)
-			x = 1.0;
-			expected = Real(std::cosh(1.0));
-			result = cosh(x);
-			double threshold = 1e-14;  // Double precision accuracy
+			// Test: cosh(1/2) against its stored value, cosh(1) against the wide configuration
+			nrOfFailedTestCases += expect_bits(bits_vs(cosh(Real(0.5)), s_cosh_half), wanted, "cosh(1/2)", reportTestCases);
+			nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& v) { return cosh(v); }, 1.0, "cosh(1)", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("cosh", "1", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: cosh(-x) = cosh(x) (even function identity)
+			// Test: cosh(-x) = cosh(x) (even function identity, exact)
 			x = 2.0;
-			Real cosh_pos = cosh(x);
-			Real cosh_neg = cosh(-x);
-			Real identity = cosh_pos - cosh_neg;
-			expected = 0.0;
-
-			if (!check_relative_error(identity, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("cosh(-x) - cosh(x)", "identity", identity, expected, threshold);
-				}
+			if (!(cosh(-x) == cosh(x))) {
+				if (reportTestCases) std::cout << "    FAIL cosh(-2) != cosh(2) (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -106,16 +139,8 @@ namespace {
 			x = 1.5;
 			Real cosh_x = cosh(x);
 			Real sinh_x = sinh(x);
-			identity = cosh_x * cosh_x - sinh_x * sinh_x;
-			expected = 1.0;
-
-			if (!check_relative_error(identity, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("cosh^2(x) - sinh^2(x)", "identity", identity, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			Real identity = cosh_x * cosh_x - sinh_x * sinh_x;
+			nrOfFailedTestCases += expect_bits(bits_vs(identity, Real(1.0)), wanted_bits<Real>(kIdentityMargin), "cosh^2(1.5) - sinh^2(1.5) == 1", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -124,6 +149,7 @@ namespace {
 		template<typename Real>
 		int VerifyTanh(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			const int wanted = wanted_bits<Real>(kFunctionMargin);
 
 			// Test: tanh(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
@@ -133,39 +159,21 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: tanh(1) ~= 0.761594156 (approximate)
-			x = 1.0;
-			expected = Real(std::tanh(1.0));
-			result = tanh(x);
-			double threshold = 1e-14;  // Double precision accuracy
+			// Test: tanh(1/2) against its stored value, tanh(1) against the wide configuration
+			nrOfFailedTestCases += expect_bits(bits_vs(tanh(Real(0.5)), s_tanh_half), wanted, "tanh(1/2)", reportTestCases);
+			nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& v) { return tanh(v); }, 1.0, "tanh(1)", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("tanh", "1", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: tanh(-x) = -tanh(x) (odd function identity)
+			// Test: tanh(-x) = -tanh(x) (odd function identity, exact)
 			x = 2.0;
-			Real tanh_pos = tanh(x);
-			Real tanh_neg = tanh(-x);
-			Real identity = tanh_pos + tanh_neg;
-			expected = 0.0;
-
-			if (!check_relative_error(identity, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("tanh(-x) + tanh(x)", "identity", identity, expected, threshold);
-				}
+			if (!(tanh(-x) == -tanh(x))) {
+				if (reportTestCases) std::cout << "    FAIL tanh(-2) != -tanh(2) (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: |tanh(x)| < 1 for all x (mathematical bound)
+			// Test: |tanh(x)| < 1 for all x (mathematical bound, in ereal: tanh(10) = 1 - 4e-9)
 			x = 10.0;
 			result = tanh(x);
-			if (std::abs(double(result)) >= 1.0) {
+			if (!(abs(result) < Real(1.0))) {
 				if (reportTestCases) std::cout << "    FAIL |tanh(x)| >= 1 (bound violation)\n";
 				++nrOfFailedTestCases;
 			}
@@ -186,32 +194,14 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: asinh(sinh(x)) ~= x (identity test, roundtrip)
+			// Test: asinh(sinh(x)) = x (round trip)
 			x = 1.5;
-			result = asinh(sinh(x));
-			expected = x;
-			double threshold = 1e-14;  // Double precision accuracy
+			nrOfFailedTestCases += expect_bits(bits_vs(asinh(sinh(x)), x), wanted_bits<Real>(kIdentityMargin), "asinh(sinh(1.5)) == 1.5", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("asinh(sinh(x))", "identity", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: asinh(2) ~= 1.443635475 (approximate)
+			// Test: asinh(2), through sinh(asinh(2)) == 2 and against the wide configuration
 			x = 2.0;
-			result = asinh(x);
-			expected = Real(std::asinh(2.0));
-
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("asinh", "2", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			nrOfFailedTestCases += expect_bits(bits_vs(sinh(asinh(x)), x), wanted_bits<Real>(kIdentityMargin), "sinh(asinh(2)) == 2", reportTestCases);
+			nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& v) { return asinh(v); }, 2.0, "asinh(2)", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -229,32 +219,14 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: acosh(cosh(x)) ~= x for x > 0 (identity test, roundtrip)
+			// Test: acosh(cosh(x)) = x for x > 0 (round trip)
 			x = 1.5;
-			result = acosh(cosh(x));
-			expected = x;
-			double threshold = 1e-14;  // Double precision accuracy
+			nrOfFailedTestCases += expect_bits(bits_vs(acosh(cosh(x)), x), wanted_bits<Real>(kIdentityMargin), "acosh(cosh(1.5)) == 1.5", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("acosh(cosh(x))", "identity", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: acosh(2) ~= 1.316957897 (approximate)
+			// Test: acosh(2), through cosh(acosh(2)) == 2 and against the wide configuration
 			x = 2.0;
-			result = acosh(x);
-			expected = Real(std::acosh(2.0));
-
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("acosh", "2", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			nrOfFailedTestCases += expect_bits(bits_vs(cosh(acosh(x)), x), wanted_bits<Real>(kIdentityMargin), "cosh(acosh(2)) == 2", reportTestCases);
+			nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& v) { return acosh(v); }, 2.0, "acosh(2)", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -272,76 +244,46 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: atanh(tanh(x)) ~= x (identity test, roundtrip)
+			// Test: atanh(tanh(x)) = x (round trip, against tanh(1/2)'s stored value too)
 			x = 0.5;
-			result = atanh(tanh(x));
-			expected = x;
-			double threshold = 1e-14;  // Double precision accuracy
+			nrOfFailedTestCases += expect_bits(bits_vs(atanh(tanh(x)), x), wanted_bits<Real>(kIdentityMargin), "atanh(tanh(1/2)) == 1/2", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("atanh(tanh(x))", "identity", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: atanh(0.5) ~= 0.549306144 (approximate)
-			x = 0.5;
-			result = atanh(x);
-			expected = Real(std::atanh(0.5));
-
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("atanh", "0.5", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// Test: atanh(1/2), through tanh(atanh(1/2)) == 1/2 and against the wide configuration
+			nrOfFailedTestCases += expect_bits(bits_vs(tanh(atanh(x)), x), wanted_bits<Real>(kIdentityMargin), "tanh(atanh(1/2)) == 1/2", reportTestCases);
+			nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& v) { return atanh(v); }, 0.5, "atanh(1/2)", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
 
-
-		template<typename Real>
-		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
-			double a = double(x), b = double(y);
-			double diff = std::abs(a - b);
-			if (diff == 0.0) return true;
-			double scale = std::max(std::abs(a), std::abs(b));
-			return diff <= std::max(absTol, relTol * scale);
-		}
-
-		// Property fuzzer: the cosh^2-sinh^2==1 identity, tanh==sinh/cosh, sinh/cosh
-		// parity, the inverse relations asinh(sinh(x))==x and atanh(tanh(x))==x,
-		// and sinh monotonicity.
-		template<typename Real>
+		// Property fuzzer: sinh and cosh against a wider configuration, the
+		// cosh^2-sinh^2==1 identity, tanh==sinh/cosh, sinh/cosh parity, the inverse
+		// relations asinh(sinh(x))==x and atanh(tanh(x))==x, and sinh monotonicity.
+		template<typename Real, typename FuzzWide>
 		int VerifyHyperbolicFuzz(bool reportTestCases, unsigned nrIterations) {
 			int nrOfFailedTestCases = 0;
 			std::mt19937_64 rng(0xC1A55'1FFEULL);
 			std::uniform_real_distribution<double> dist(-3.0, 3.0);
-			Real one(1.0);
+			const Real one(1.0);
+			const int wanted   = wanted_bits<Real>(kFunctionMargin);
+			const int identity = wanted_bits<Real>(kIdentityMargin);
 			for (unsigned i = 0; i < nrIterations; ++i) {
 				double dx = dist(rng);
 				Real x(dx);
-				if (!close_rel(cosh(x) * cosh(x) - sinh(x) * sinh(x), one, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL cosh^2-sinh^2==1 at x=" << dx << '\n';
+				const std::string at = " at x=" + std::to_string(dx);
+				const Real sh = sinh(x), ch = cosh(x), th = tanh(x);
+				const FuzzWide wx(dx);
+				nrOfFailedTestCases += expect_bits(bits_vs(sh, sinh(wx)), wanted, "sinh vs wide" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(bits_vs(ch, cosh(wx)), wanted, "cosh vs wide" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(bits_vs(ch * ch - sh * sh, one), identity, "cosh^2-sinh^2==1" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(bits_vs(th, sh / ch), identity, "tanh==sinh/cosh" + at, reportTestCases);
+				if (sinh(-x) != -sh || cosh(-x) != ch) {
+					if (reportTestCases) std::cout << "    FAIL parity" << at << '\n';
 					++nrOfFailedTestCases;
 				}
-				if (!close_rel(tanh(x), sinh(x) / cosh(x), 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL tanh==sinh/cosh at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (sinh(-x) != -sinh(x) || cosh(-x) != cosh(x)) {
-					if (reportTestCases) std::cout << "    FAIL parity at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (!close_rel(asinh(sinh(x)), x, 1.0e-13) || !close_rel(atanh(tanh(x)), x, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL inverse at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (!(sinh(x) < sinh(x + one))) {
-					if (reportTestCases) std::cout << "    FAIL sinh monotonic at x=" << dx << '\n';
+				nrOfFailedTestCases += expect_bits(bits_vs(asinh(sh), x), identity, "asinh(sinh(x))==x" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(bits_vs(atanh(th), x), identity, "atanh(tanh(x))==x" + at, reportTestCases);
+				if (!(sh < sinh(x + one))) {
+					if (reportTestCases) std::cout << "    FAIL sinh monotonic" << at << '\n';
 					++nrOfFailedTestCases;
 				}
 			}
@@ -425,7 +367,7 @@ try {
 #elif REGRESSION_LEVEL_2
 	hyperbolicFuzzCount = 100;
 #endif
-	nrOfFailedTestCases += ReportTestResult(VerifyHyperbolicFuzz<ereal<>>(reportTestCases, hyperbolicFuzzCount), "hyperbolic property fuzz", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyHyperbolicFuzz<ereal<>, ereal<16>>(reportTestCases, hyperbolicFuzzCount), "hyperbolic property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

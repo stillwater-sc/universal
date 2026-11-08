@@ -152,6 +152,10 @@ namespace sw { namespace universal {
 	inline ereal<maxlimbs, FpType> expm1(const ereal<maxlimbs, FpType>& x) {
 		using Real = ereal<maxlimbs, FpType>;
 
+		// C99 F.10.3.3: expm1(+-0) = +-0, expm1(+inf) = +inf, expm1(-inf) = -1
+		if (x.iszero() || x.isnan()) return x;
+		if (x.isinf()) return x.isneg() ? Real(-1.0) : x;
+
 		// For small x, use Taylor series directly
 		// This avoids catastrophic cancellation in exp(x) - 1
 		Real threshold(0.1);

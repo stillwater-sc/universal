@@ -54,6 +54,9 @@ namespace sw { namespace universal {
 		// ============================================================================
 		// STEP 1: Handle special cases
 		// ============================================================================
+		// C99 F.10.3.7: log(NaN) = NaN, log(+inf) = +inf; frexp of inf used to give NaN (#2006)
+		if (x.isnan()) return x;
+		if (x.isinf() && !x.isneg()) return x;
 		if (x.iszero()) {
 			// log(0) = -inf, as std::log does. This used to return the literal -1.0e308,
 			// which is not infinity -- isinf(log(0)) was false -- and which is not even
@@ -162,6 +165,10 @@ namespace sw { namespace universal {
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> log1p(const ereal<maxlimbs, FpType>& x) {
 		using Real = ereal<maxlimbs, FpType>;
+
+		// C99 F.10.3.9: log1p(+-0) = +-0, log1p(-1) = -inf, NaN below -1, log1p(+inf) = +inf
+		if (x.iszero() || x.isnan()) return x;
+		if (x.isinf()) return x.isneg() ? ereal_detail::quiet_nan<maxlimbs, FpType>() : x;
 
 		// For small x, use Taylor series directly
 		// This avoids catastrophic cancellation in log(1+x)

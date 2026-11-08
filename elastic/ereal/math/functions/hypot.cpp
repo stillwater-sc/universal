@@ -5,87 +5,99 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <random>
+#include <string>
+#include <string_view>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/verification/test_suite_mathlib_adaptive.hpp>
+#include <universal/verification/ereal_precision.hpp>
+#include <math/constants/reference_constants.hpp>
 
 namespace {
 	using namespace sw::universal;
+
+		// The checks below are exact (ereal_precision.hpp: both sides become dyadic rationals),
+		// never through double: a double comparison passes a result correct to only 53 bits,
+		// and so cannot see a loss of ereal's precision (#2008).
+		//
+		// Each check asks for ereal_bits_of<Real>::value less kMarginBits.  A result may carry
+		// up to twice the limbs asked for (the limb budget), so the measured agreement is well
+		// above that floor: ereal<4> shows 432-441 bits against 212, ereal<8> 865-880 against
+		// 424.  At 16 and 19 limbs every value saturates near 1027-1044 bits, where the last
+		// double limb reaches 2^-1074; the worst case is the fuzzer's hypot^2 == x^2 + y^2 at
+		// 1027 bits against ereal<19>'s 1007.  16 bits of margin leaves it 36 bits of slack.
+		constexpr int kMarginBits = 16;
+
+		template<typename Real>
+		constexpr int wanted_bits() { return ereal_bits_of<Real>::value - kMarginBits; }
+
+		template<typename A, typename B>
+		int expect_bits(const std::string& what, const A& got, const B& ref, int bits, bool reportTestCases) {
+			if (agrees_to_bits(got, ref, bits)) return 0;
+			if (reportTestCases) std::cout << "    FAIL " << what << ": " << measured_bits(got, ref) << " bits, wanted at least " << bits << '\n';
+			return 1;
+		}
+
+		template<typename A>
+		int expect_bits(const std::string& what, const A& got, std::string_view ref, int bits, bool reportTestCases) {
+			if (agrees_to_bits(got, ref, bits)) return 0;
+			if (reportTestCases) std::cout << "    FAIL " << what << ": " << measured_bits(got, ref) << " bits, wanted at least " << bits << '\n';
+			return 1;
+		}
+
+		// exact: the dyadic values are equal, whatever the limb structure
+		template<typename Real>
+		int expect_exact(const std::string& what, const Real& got, const Real& ref, bool reportTestCases) {
+			if (agreed_bits_absolute(got, ref) == kExactAgreement) return 0;
+			if (reportTestCases) std::cout << "    FAIL " << what << " is not exact\n";
+			return 1;
+		}
 
 		// Verify hypot 2D function
 		template<typename Real>
 		int VerifyHypot2D(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			const int bits = wanted_bits<Real>();
 
-			// Test: hypot(3, 4) = 5 (Pythagorean triple, verify with high precision)
-			// Note: For adaptive precision types, even exact Pythagorean triples may have correction terms
-			Real x(3.0), y(4.0), expected(5.0);
-			Real result = hypot(x, y);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("hypot(3, 4)", "5", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// Pythagorean triples: the squares and their sum are exact, so the result is the
+			// correctly rounded sqrt of a perfect square
+			nrOfFailedTestCases += expect_bits("hypot(3, 4) == 5", hypot(Real(3.0), Real(4.0)), Real(5.0), bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("hypot(5, 12) == 13", hypot(Real(5.0), Real(12.0)), Real(13.0), bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("hypot(8, 15) == 17", hypot(Real(8.0), Real(15.0)), Real(17.0), bits, reportTestCases);
 
-			// Test: hypot(5, 12) = 13 (Pythagorean triple, verify with high precision)
-			x = 5.0; y = 12.0; expected = 13.0;
-			result = hypot(x, y);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("hypot(5, 12)", "13", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: hypot(8, 15) = 17 (Pythagorean triple, verify with high precision)
-			x = 8.0; y = 15.0; expected = 17.0;
-			result = hypot(x, y);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("hypot(8, 15)", "17", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: hypot(1, 1)^2 = 1^2 + 1^2 (identity verification)
-			x = 1.0; y = 1.0;
-			result = hypot(x, y);
-			Real result_squared = result * result;
-			Real expected_sum = x*x + y*y;
-			Real identity = result_squared;
-			expected = expected_sum;
-			if (!check_relative_error(identity, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("hypot(1,1)^2", "identity", identity, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// hypot(1, 1) == sqrt(2), against the 340-digit reference, and its square
+			Real h = hypot(Real(1.0), Real(1.0));
+			nrOfFailedTestCases += expect_bits("hypot(1, 1) vs sqrt(2) reference", h, s_sqrt2, bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("hypot(1,1)^2 == 2", h * h, Real(2.0), bits, reportTestCases);
 
 			// Test: hypot(0, 0) = 0 (mathematically exact)
-			result = hypot(Real(0.0), Real(0.0));
+			Real result = hypot(Real(0.0), Real(0.0));
 			if (!result.iszero()) {
 				if (reportTestCases) std::cout << "    FAIL hypot(0, 0) != 0 (not zero)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: hypot(3, 0) = 3 (verify with high precision)
-			x = 3.0; expected = 3.0;
-			result = hypot(x, Real(0.0));
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("hypot(3, 0)", "3", result, expected, threshold);
-				}
+			// hypot(x, 0) == |x|
+			nrOfFailedTestCases += expect_bits("hypot(3, 0) == 3", hypot(Real(3.0), Real(0.0)), Real(3.0), bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("hypot(-3, 0) == 3", hypot(Real(-3.0), Real(0.0)), Real(3.0), bits, reportTestCases);
+
+			// C99 F.10.4.3: hypot(+-inf, y) = +inf even for a NaN y
+			const double inf = std::numeric_limits<double>::infinity();
+			result = hypot(Real(inf), Real(std::numeric_limits<double>::quiet_NaN()));
+			if (!result.isinf() || result.signbit()) {
+				if (reportTestCases) std::cout << "    FAIL hypot(inf, NaN) != +inf\n";
 				++nrOfFailedTestCases;
 			}
+			result = hypot(Real(1.0), Real(-inf));
+			if (!result.isinf() || result.signbit()) {
+				if (reportTestCases) std::cout << "    FAIL hypot(1, -inf) != +inf\n";
+				++nrOfFailedTestCases;
+			}
+			// no overflow in the squares: hypot(1e200, 1e200) == 1e200 sqrt(2)
+			Real big(1.0e200);
+			nrOfFailedTestCases += expect_bits("hypot(1e200, 1e200) == 1e200 sqrt(2)", hypot(big, big), big * sqrt(Real(2.0)), bits, reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -94,6 +106,7 @@ namespace {
 		template<typename Real>
 		int VerifyHypot3D(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			const int bits = wanted_bits<Real>();
 
 			// Test: hypot(0, 0, 0) = 0 (mathematically exact)
 			Real result = hypot(Real(0.0), Real(0.0), Real(0.0));
@@ -102,73 +115,41 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: hypot(2, 3, 6) = 7 (Pythagorean quadruple, verify with high precision)
-			// Note: For adaptive precision types, even exact Pythagorean quadruples may have correction terms
-			Real x(2.0), y(3.0), z(6.0);
-			Real expected = 7.0;
-			result = hypot(x, y, z);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("hypot(2, 3, 6)", "7", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// Pythagorean quadruple: hypot(2, 3, 6) == 7
+			nrOfFailedTestCases += expect_bits("hypot(2, 3, 6) == 7", hypot(Real(2.0), Real(3.0), Real(6.0)), Real(7.0), bits, reportTestCases);
+			nrOfFailedTestCases += expect_bits("hypot(1, 4, 8) == 9", hypot(Real(1.0), Real(4.0), Real(8.0)), Real(9.0), bits, reportTestCases);
 
-			// Test: hypot(1, 1, 1) = sqrt(3) (unit cube diagonal, approximate as sqrt(3) is irrational)
-			Real one(1.0);
-			result = hypot(one, one, one);
-			expected = sqrt(Real(3.0));
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("hypot(1, 1, 1)", "sqrt(3)", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// hypot(1, 1, 1) == sqrt(3), the unit cube diagonal, against the 340-digit reference
+			nrOfFailedTestCases += expect_bits("hypot(1, 1, 1) vs sqrt(3) reference", hypot(Real(1.0), Real(1.0), Real(1.0)), s_sqrt3, bits, reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
 
-
-		template<typename Real>
-		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
-			double a = double(x), b = double(y);
-			double diff = std::abs(a - b);
-			if (diff == 0.0) return true;
-			double scale = std::max(std::abs(a), std::abs(b));
-			return diff <= std::max(absTol, relTol * scale);
-		}
-
 		// Property fuzzer: hypot(x,y)^2==x^2+y^2, hypot(x,0)==|x|, symmetry, and
-		// the hypot(x,y) >= max(|x|,|y|) lower bound.
-		template<typename Real>
+		// the hypot(x,y) >= max(|x|,|y|) lower bound.  The identity cannot see a result that
+		// is self-consistently wrong, so hypot is also measured against Wide, a wider
+		// configuration.
+		template<typename Real, typename Wide>
 		int VerifyHypotFuzz(bool reportTestCases, unsigned nrIterations) {
+			static_assert(ereal_bits_of<Wide>::value > ereal_bits_of<Real>::value, "the reference must be wider");
 			int nrOfFailedTestCases = 0;
+			const int bits = wanted_bits<Real>();
 			std::mt19937_64 rng(0xC1A55'1FFEULL);
 			std::uniform_real_distribution<double> dist(-1.0e3, 1.0e3);
 			for (unsigned i = 0; i < nrIterations; ++i) {
-				Real x(dist(rng)), y(dist(rng));
-				if (!close_rel(hypot(x, y) * hypot(x, y), x * x + y * y, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL hypot^2==x^2+y^2\n";
-					++nrOfFailedTestCases;
-				}
-				// hypot(x,0) == |x| and symmetry hold on the projected value;
-				// the internal expansions need not be bit-identical, so compare
-				// via close_rel rather than the structural operator==.
-				if (!close_rel(hypot(x, Real(0.0)), abs(x), 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL hypot(x,0)==|x|\n";
-					++nrOfFailedTestCases;
-				}
-				if (!close_rel(hypot(x, y), hypot(y, x), 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL hypot symmetry\n";
-					++nrOfFailedTestCases;
-				}
-				// lower bound on the projected value (allow a tiny relative slack)
-				double h = double(hypot(x, y));
-				double m = std::max(std::abs(double(x)), std::abs(double(y)));
-				if (h < m * (1.0 - 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL hypot lower bound\n";
+				const double dx = dist(rng), dy = dist(rng);
+				Real x(dx), y(dy);
+				const std::string at = " at x=" + std::to_string(dx) + " y=" + std::to_string(dy);
+				Real h = hypot(x, y);
+				nrOfFailedTestCases += expect_bits("hypot^2==x^2+y^2" + at, h * h, x * x + y * y, bits, reportTestCases);
+				nrOfFailedTestCases += expect_bits("hypot vs wide" + at, h, hypot(Wide(dx), Wide(dy)), bits, reportTestCases);
+				nrOfFailedTestCases += expect_bits("hypot(x,0)==|x|" + at, hypot(x, Real(0.0)), abs(x), bits, reportTestCases);
+				// symmetry: the operands are sorted by magnitude first, so it is exact
+				nrOfFailedTestCases += expect_exact("hypot symmetry" + at, h, hypot(y, x), reportTestCases);
+				// lower bound, compared in ereal
+				Real m = (abs(x) < abs(y)) ? abs(y) : abs(x);
+				if (h < m) {
+					if (reportTestCases) std::cout << "    FAIL hypot lower bound" << at << '\n';
 					++nrOfFailedTestCases;
 				}
 			}
@@ -236,20 +217,20 @@ try {
 #elif REGRESSION_LEVEL_2
 	hypotFuzzCount = 100;
 #endif
-	nrOfFailedTestCases += ReportTestResult(VerifyHypotFuzz<ereal<>>(reportTestCases, hypotFuzzCount), "hypot property fuzz", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyHypotFuzz<ereal<>, ereal<19>>(reportTestCases, hypotFuzzCount), "hypot property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	// Extended precision tests at 512 bits (~=154 decimal digits)
-	test_tag = "hypot 2D high precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<8>>(reportTestCases), "hypot(ereal<8>, ereal<8>)", test_tag);
+	// a narrower configuration: 4 limbs, 212 bits (ereal<> is ereal<8>, covered at level 1)
+	test_tag = "hypot 2D narrow precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<4>>(reportTestCases), "hypot(ereal<4>, ereal<4>)", test_tag);
 
-	test_tag = "hypot 3D high precision";
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot3D<ereal<8>>(reportTestCases), "hypot(ereal<8>, ereal<8>, ereal<8>)", test_tag);
+	test_tag = "hypot 3D narrow precision";
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot3D<ereal<4>>(reportTestCases), "hypot(ereal<4>, ereal<4>, ereal<4>)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	// High precision tests at 1024 bits (~=308 decimal digits)
+	// High precision tests at 16 limbs, 848 bits
 	test_tag = "hypot 2D very high precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<16>>(reportTestCases), "hypot(ereal<16>, ereal<16>)", test_tag);
 
@@ -258,7 +239,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// Extreme precision tests at 1216 bits (~=303 decimal digits, maximum algorithmically valid)
+	// Extreme precision tests at 19 limbs, 1007 bits (the most double limbs can hold)
 	test_tag = "hypot 2D extreme precision";
 	nrOfFailedTestCases += ReportTestResult(VerifyHypot2D<ereal<19>>(reportTestCases), "hypot(ereal<19>, ereal<19>)", test_tag);
 

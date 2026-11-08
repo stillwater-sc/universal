@@ -17,8 +17,7 @@ namespace sw { namespace universal {
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> cbrt(const ereal<maxlimbs, FpType>& a) {
 		// Handle special cases
-		if (a.iszero()) return ereal<maxlimbs, FpType>(0.0);
-		if (a.isnan() || a.isinf()) return a;
+		if (a.iszero() || a.isnan() || a.isinf()) return a;   // cbrt(-0) is -0
 
 		// Extract and save sign (cbrt preserves sign)
 		bool negative = a.isneg();

@@ -5,14 +5,27 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <random>
+#include <string>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/ereal_precision.hpp>
 
 namespace {
 	using namespace sw::universal;
+
+		// fmod, remainder and modf are exact: every result here is checked for exact equality
+		// of the dyadic values (ereal_precision.hpp), never through double, where a tolerance
+		// of 1e-10 passed a result correct to 53 bits (#2008).  std::fmod and std::remainder
+		// are exact too, so on double operands they are an independent exact reference.
+		template<typename Real>
+		bool exactly(const Real& a, const Real& b) { return agreed_bits_absolute(a, b) == kExactAgreement; }
+
+		// a zero with the given sign
+		template<typename Real>
+		bool is_signed_zero(const Real& v, bool negative) { return v.iszero() && (v.signbit() == negative); }
 
 		// Verify fmod function
 		template<typename Real>
@@ -25,9 +38,36 @@ namespace {
 			Real n = trunc(x / y);
 			Real expected = x - (n * y);
 
-			if (result != expected) {
+			if (!exactly(result, expected)) {
 				if (reportTestCases) std::cout << "    FAIL fmod(5.3, 2.0) property violation\n";
 				++nrOfFailedTestCases;
+			}
+			if (!exactly(result, Real(std::fmod(5.3, 2.0)))) {
+				if (reportTestCases) std::cout << "    FAIL fmod(5.3, 2.0) != std::fmod\n";
+				++nrOfFailedTestCases;
+			}
+
+			// exact for any quotient size: trunc(x / y) holds only the type's precision, the
+			// exact reduction does not.  fmod(1e200, 3) is 2.
+			{
+				const double big[][2] = { {1.0e200, 3.0}, {-1.0e200, 3.0}, {1.0e300, 7.0e-300}, {1.0e18, 0.1} };
+				for (const auto& c : big) {
+					Real r = fmod(Real(c[0]), Real(c[1]));
+					if (!exactly(r, Real(std::fmod(c[0], c[1])))) {
+						if (reportTestCases) std::cout << "    FAIL fmod(" << c[0] << ", " << c[1] << ") != std::fmod = " << std::fmod(c[0], c[1]) << '\n';
+						++nrOfFailedTestCases;
+					}
+				}
+			}
+
+			// a dividend past double's precision: fmod(1 + 2^-300, 0.75) == 0.25 + 2^-300
+			{
+				Real tiny = ldexp(Real(1.0), -300);
+				Real r = fmod(Real(1.0) + tiny, Real(0.75));
+				if (!exactly(r, Real(0.25) + tiny)) {
+					if (reportTestCases) std::cout << "    FAIL fmod(1 + 2^-300, 0.75) != 0.25 + 2^-300\n";
+					++nrOfFailedTestCases;
+				}
 			}
 
 			// Test: fmod sign property (same sign as dividend)
@@ -53,7 +93,7 @@ namespace {
 			// {input, expected integer part, expected fractional part}
 			const double cases[][3] = {
 				{ 3.75, 3.0, 0.75}, {-3.75, -3.0, -0.75}, {0.25, 0.0, 0.25},
-				{-0.25, 0.0, -0.25}, {5.0, 5.0, 0.0}, {-2.0, -2.0, 0.0},
+				{-0.25, 0.0, -0.25}, {5.0, 5.0, 0.0}, {-2.0, -2.0, -0.0}, {-3.0, -3.0, -0.0},
 			};
 			for (const auto& c : cases) {
 				Real ip;
@@ -63,8 +103,13 @@ namespace {
 					                               << " frac=" << double(fr) << " expected int=" << c[1] << " frac=" << c[2] << "\n";
 					++nrOfFailedTestCases;
 				}
+				// the fraction has the sign of x, also when it is zero: modf(-3) is -0 (C99 F.10.3.12)
+				if (fr.signbit() != std::signbit(c[0])) {
+					if (reportTestCases) std::cout << "    FAIL modf(" << c[0] << ") fraction has the wrong sign\n";
+					++nrOfFailedTestCases;
+				}
 				// identity: int + frac == x
-				if (ip + fr != Real(c[0])) {
+				if (!exactly(ip + fr, Real(c[0]))) {
 					if (reportTestCases) std::cout << "    FAIL modf(" << c[0] << ") int+frac != x\n";
 					++nrOfFailedTestCases;
 				}
@@ -83,7 +128,7 @@ namespace {
 				Real x(7.0), y(3.0);
 				Real result = remainder(x, y);
 				Real expected(1.0);
-				if (result != expected) {
+				if (!exactly(result, expected)) {
 					if (reportTestCases) std::cout << "    FAIL remainder(7.0, 3.0) = "
 						<< double(result) << ", expected 1.0\n";
 					++nrOfFailedTestCases;
@@ -97,7 +142,7 @@ namespace {
 				Real x(5.0), y(2.0);
 				Real result = remainder(x, y);
 				Real expected(1.0);
-				if (result != expected) {
+				if (!exactly(result, expected)) {
 					if (reportTestCases) std::cout << "    FAIL remainder(5.0, 2.0) = "
 						<< double(result) << ", expected 1.0 (rounds 2.5 to 2 even)\n";
 					++nrOfFailedTestCases;
@@ -111,7 +156,7 @@ namespace {
 				Real x(7.0), y(2.0);
 				Real result = remainder(x, y);
 				Real expected(-1.0);
-				if (result != expected) {
+				if (!exactly(result, expected)) {
 					if (reportTestCases) std::cout << "    FAIL remainder(7.0, 2.0) = "
 						<< double(result) << ", expected -1.0 (rounds 3.5 to 4 even)\n";
 					++nrOfFailedTestCases;
@@ -124,7 +169,7 @@ namespace {
 				Real x(-7.0), y(3.0);
 				Real result = remainder(x, y);
 				Real expected(-1.0);
-				if (result != expected) {
+				if (!exactly(result, expected)) {
 					if (reportTestCases) std::cout << "    FAIL remainder(-7.0, 3.0) = "
 						<< double(result) << ", expected -1.0\n";
 					++nrOfFailedTestCases;
@@ -137,7 +182,7 @@ namespace {
 				Real x(9.0), y(3.0);
 				Real result = remainder(x, y);
 				Real expected(0.0);
-				if (result != expected) {
+				if (!exactly(result, expected)) {
 					if (reportTestCases) std::cout << "    FAIL remainder(9.0, 3.0) = "
 						<< double(result) << ", expected 0.0\n";
 					++nrOfFailedTestCases;
@@ -152,7 +197,7 @@ namespace {
 				Real expected(1.0);
 				Real y_half = y / Real(2.0);
 
-				if (result != expected) {
+				if (!exactly(result, expected)) {
 					if (reportTestCases) std::cout << "    FAIL remainder(10.0, 3.0) = "
 						<< double(result) << ", expected 1.0\n";
 					++nrOfFailedTestCases;
@@ -172,7 +217,7 @@ namespace {
 				Real x(11.0), y(4.0);
 				Real result = remainder(x, y);
 				Real expected(-1.0);
-				if (result != expected) {
+				if (!exactly(result, expected)) {
 					if (reportTestCases) std::cout << "    FAIL remainder(11.0, 4.0) = "
 						<< double(result) << ", expected -1.0\n";
 					++nrOfFailedTestCases;
@@ -182,59 +227,75 @@ namespace {
 			return nrOfFailedTestCases;
 		}
 
-		// Verify division by zero exception handling
+		// fmod(x, 0) and remainder(x, 0): NaN in the default build, as C99 F.10.7.1/F.10.7.2
+		// ask (#2006; they used to throw ereal_divide_by_zero in every build).  Under
+		// EREAL_THROW_ARITHMETIC_EXCEPTION they throw ereal_divide_by_zero, as x / 0 does.
 		template<typename Real>
-		int VerifyDivisionByZeroExceptions(bool reportTestCases) {
+		int VerifyDivisionByZero(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-
-			// Test: remainder(x, 0) should throw ereal_divide_by_zero
-			{
-				Real x(5.0), y(0.0);
+			const Real x(5.0), zero(0.0);
+			for (int op = 0; op < 2; ++op) {
+				const char* name = (op == 0) ? "remainder(5.0, 0.0)" : "fmod(5.0, 0.0)";
+#if EREAL_THROW_ARITHMETIC_EXCEPTION
 				bool caught_exception = false;
-
 				try {
-					Real result = remainder(x, y);
-					// If we get here, exception was not thrown
-					if (reportTestCases) std::cout << "    FAIL remainder(5.0, 0.0) should throw exception\n";
-					++nrOfFailedTestCases;
+					Real result = (op == 0) ? remainder(x, zero) : fmod(x, zero);
+					(void)result;
 				}
 				catch (const ereal_divide_by_zero&) {
 					caught_exception = true;
 				}
 				catch (...) {
-					if (reportTestCases) std::cout << "    FAIL remainder(5.0, 0.0) threw wrong exception type\n";
+					if (reportTestCases) std::cout << "    FAIL " << name << " threw wrong exception type\n";
 					++nrOfFailedTestCases;
+					continue;
 				}
-
 				if (!caught_exception) {
+					if (reportTestCases) std::cout << "    FAIL " << name << " should throw ereal_divide_by_zero\n";
 					++nrOfFailedTestCases;
 				}
+#else
+				Real result = (op == 0) ? remainder(x, zero) : fmod(x, zero);
+				if (!result.isnan()) {
+					if (reportTestCases) std::cout << "    FAIL " << name << " should be NaN\n";
+					++nrOfFailedTestCases;
+				}
+				result = (op == 0) ? remainder(x, -zero) : fmod(x, -zero);
+				if (!result.isnan()) {
+					if (reportTestCases) std::cout << "    FAIL " << name << " with -0 should be NaN\n";
+					++nrOfFailedTestCases;
+				}
+#endif
 			}
+			return nrOfFailedTestCases;
+		}
 
-			// Test: fmod(x, 0) should throw ereal_divide_by_zero
-			{
-				Real x(5.0), y(0.0);
-				bool caught_exception = false;
-
-				try {
-					Real result = fmod(x, y);
-					// If we get here, exception was not thrown
-					if (reportTestCases) std::cout << "    FAIL fmod(5.0, 0.0) should throw exception\n";
-					++nrOfFailedTestCases;
-				}
-				catch (const ereal_divide_by_zero&) {
-					caught_exception = true;
-				}
-				catch (...) {
-					if (reportTestCases) std::cout << "    FAIL fmod(5.0, 0.0) threw wrong exception type\n";
-					++nrOfFailedTestCases;
-				}
-
-				if (!caught_exception) {
-					++nrOfFailedTestCases;
-				}
+		// C99 F.10.7.1 / F.10.7.2 special values: fmod(+-0, y) = +-0, fmod(x, +-inf) = x,
+		// NaN for an infinite x or a NaN operand, and a zero result has the sign of x.
+		template<typename Real>
+		int VerifyFmodSpecialValues(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			const double inf = std::numeric_limits<double>::infinity();
+			const double qnan = std::numeric_limits<double>::quiet_NaN();
+			const Real zero(0.0);
+			auto fail = [&](const std::string& what) {
+				if (reportTestCases) std::cout << "    FAIL " << what << '\n';
+				++nrOfFailedTestCases;
+			};
+			for (int op = 0; op < 2; ++op) {
+				const std::string name = (op == 0) ? "fmod" : "remainder";
+				auto f = [op](const Real& a, const Real& b) { return (op == 0) ? fmod(a, b) : remainder(a, b); };
+				if (!is_signed_zero(f(zero, Real(3.0)), false))  fail(name + "(+0, 3) != +0");
+				if (!is_signed_zero(f(-zero, Real(3.0)), true))  fail(name + "(-0, 3) != -0");
+				if (!exactly(f(Real(5.5), Real(inf)), Real(5.5))) fail(name + "(5.5, +inf) != 5.5");
+				if (!exactly(f(Real(-5.5), Real(-inf)), Real(-5.5))) fail(name + "(-5.5, -inf) != -5.5");
+				if (!f(Real(inf), Real(2.0)).isnan())  fail(name + "(inf, 2) != NaN");
+				if (!f(Real(qnan), Real(2.0)).isnan()) fail(name + "(NaN, 2) != NaN");
+				if (!f(Real(2.0), Real(qnan)).isnan()) fail(name + "(2, NaN) != NaN");
+				// an exact multiple: a zero with the sign of x
+				if (!is_signed_zero(f(Real(-6.0), Real(3.0)), true))  fail(name + "(-6, 3) != -0");
+				if (!is_signed_zero(f(Real(6.0), Real(-3.0)), false)) fail(name + "(6, -3) != +0");
 			}
-
 			return nrOfFailedTestCases;
 		}
 
@@ -271,27 +332,37 @@ namespace {
 			for (unsigned i = 0; i < nrIterations; ++i) {
 				double dx = xd(rng), dy = yd(rng) * (rng() & 1 ? 1.0 : -1.0);
 				Real x(dx), y(dy);
-				// fmod: x == trunc(x/y)*y + fmod(x,y)
+				const std::string at = " at x=" + std::to_string(dx) + " y=" + std::to_string(dy);
+				// fmod: x == trunc(x/y)*y + fmod(x,y), exactly (|x/y| < 2^11, so trunc(x/y) and
+				// the product are exact)
 				Real r = fmod(x, y);
 				Real n = trunc(x / y);
-				double recon = double(n * y + r);
-				if (std::abs(recon - dx) > 1.0e-10 * (1.0 + std::abs(dx))) {
-					if (reportTestCases) std::cout << "    FAIL fmod reduction at x=" << dx << " y=" << dy << '\n';
+				if (!exactly(n * y + r, x)) {
+					if (reportTestCases) std::cout << "    FAIL fmod reduction" << at << '\n';
+					++nrOfFailedTestCases;
+				}
+				// fmod and remainder are exact, and so are std::fmod and std::remainder
+				if (!exactly(r, Real(std::fmod(dx, dy)))) {
+					if (reportTestCases) std::cout << "    FAIL fmod != std::fmod" << at << '\n';
 					++nrOfFailedTestCases;
 				}
 				// |fmod(x,y)| < |y| and same sign as x (when nonzero)
-				if (std::abs(double(r)) >= std::abs(dy)) {
-					if (reportTestCases) std::cout << "    FAIL |fmod| >= |y| at x=" << dx << '\n';
+				if (!(abs(r) < abs(y))) {
+					if (reportTestCases) std::cout << "    FAIL |fmod| >= |y|" << at << '\n';
 					++nrOfFailedTestCases;
 				}
 				if (!r.iszero() && (r.isneg() != (dx < 0.0))) {
-					if (reportTestCases) std::cout << "    FAIL fmod sign at x=" << dx << '\n';
+					if (reportTestCases) std::cout << "    FAIL fmod sign" << at << '\n';
 					++nrOfFailedTestCases;
 				}
-				// remainder: |remainder(x,y)| <= |y|/2 (within rounding)
+				// remainder: |remainder(x,y)| <= |y|/2, exactly
 				Real rem = remainder(x, y);
-				if (std::abs(double(rem)) > std::abs(dy) * 0.5 + 1.0e-10 * std::abs(dy)) {
-					if (reportTestCases) std::cout << "    FAIL |remainder| > |y|/2 at x=" << dx << " y=" << dy << '\n';
+				if (abs(rem) > ldexp(abs(y), -1)) {
+					if (reportTestCases) std::cout << "    FAIL |remainder| > |y|/2" << at << '\n';
+					++nrOfFailedTestCases;
+				}
+				if (!exactly(rem, Real(std::remainder(dx, dy)))) {
+					if (reportTestCases) std::cout << "    FAIL remainder != std::remainder" << at << '\n';
 					++nrOfFailedTestCases;
 				}
 			}
@@ -347,14 +418,21 @@ try {
 	std::cout << "remainder(7.0, 2.0) = " << double(remainder(x2, y2))
 		<< " (expected: -1.0, rounds 3.5 to 4 even)\n";
 
-	std::cout << "\nDivision by zero exception test:\n";
-	try {
+	std::cout << "\nDivision by zero (C99: NaN; throws under EREAL_THROW_ARITHMETIC_EXCEPTION):\n";
+	{
 		ereal<> x3(5.0), y3(0.0);
+#if EREAL_THROW_ARITHMETIC_EXCEPTION
+		try {
+			ereal<> result = remainder(x3, y3);
+			std::cout << "ERROR: Should have thrown exception! got " << double(result) << '\n';
+		}
+		catch (const ereal_divide_by_zero& e) {
+			std::cout << "Caught expected exception: " << e.what() << "\n";
+		}
+#else
 		ereal<> result = remainder(x3, y3);
-		std::cout << "ERROR: Should have thrown exception!\n";
-	}
-	catch (const ereal_divide_by_zero& e) {
-		std::cout << "Caught expected exception: " << e.what() << "\n";
+		std::cout << "remainder(5.0, 0.0) = " << double(result) << " (expected: nan)\n";
+#endif
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -374,13 +452,20 @@ try {
 	test_tag = "fmod vs remainder";
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodVsRemainder<ereal<>>(reportTestCases), "fmod vs remainder", test_tag);
 
+	test_tag = "fmod/remainder special values";
+	nrOfFailedTestCases += ReportTestResult(VerifyFmodSpecialValues<ereal<>>(reportTestCases), "fmod/remainder C99 special values", test_tag);
+
 	test_tag = "fractional fuzz";
 	nrOfFailedTestCases += ReportTestResult(VerifyFractionalFuzz<ereal<>>(reportTestCases, 50), "fmod/remainder property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	test_tag = "division by zero exceptions";
-	nrOfFailedTestCases += ReportTestResult(VerifyDivisionByZeroExceptions<ereal<>>(reportTestCases), "division by zero", test_tag);
+#if EREAL_THROW_ARITHMETIC_EXCEPTION
+	test_tag = "division by zero throws";
+#else
+	test_tag = "division by zero is NaN";
+#endif
+	nrOfFailedTestCases += ReportTestResult(VerifyDivisionByZero<ereal<>>(reportTestCases), "fmod/remainder(x, 0)", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

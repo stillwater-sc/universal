@@ -8,17 +8,74 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include <string>
+#include <string_view>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_mathlib_adaptive.hpp>
+#include <universal/verification/ereal_precision.hpp>
+#include <math/constants/reference_constants.hpp>
 
 namespace {
 	using namespace sw::universal;
+
+	// Precision (#2008, #2006). Every value is checked exactly, against a decimal reference
+	// or another ereal, by the dyadic oracle in ereal_precision.hpp: nothing passes through a
+	// double, so a result correct to only 53 bits fails. Each check asks for the bits the
+	// configuration holds, ereal_bits_of<Real>::value, less kMarginBits.
+	//
+	// Measured (2026-11, gcc -O2) at ereal<8>/<16>/<19>, bits held 424/848/1007: every check
+	// here reaches at least 472/896/1020 bits (a result may carry up to twice its limbs, so
+	// it can exceed the bits held). The smallest surplus is 13 bits, the fuzz identities at
+	// ereal<19>. A margin of 16 bits keeps every check passing with room for platform
+	// differences in the last limb, while asking for 408/832/991 bits: far beyond the 53 a
+	// double-only result has (VerifyDoubleTruncationIsVisible shows the check can tell).
+	constexpr int kMarginBits = 16;
+
+	template<typename Real>
+	constexpr int wanted_bits() { return ereal_bits_of<Real>::value - kMarginBits; }
+
+	// The widest double-limb configuration (maxlimbs <= 19), the reference for values that
+	// have no stored constant.
+	using WideReal = ereal<19, double>;
+
+	// References computed with mpmath at 360 digits, printed to 330 significant digits.
+	// The arguments are the doubles the tests pass, converted exactly (mpf(0.01) is the
+	// double 0.01, not the decimal).
+	//   kExp2      = exp(2)
+	//   kExpm1_001 = expm1(mpf(0.01))
+	constexpr std::string_view kExp2 =
+		"7.389056098930650227230427460575007813180315570551847324087127822522573796079057"
+		"76338431248507912179477375316126547886612388460369278127337447839221339807777490"
+		"01228956074107537023913309475506820865818202696478682084042209822552348757424625"
+		"41414679928129331888070763301019337899740729986960095303307515320818823684694793"
+		"02991355877";
+	constexpr std::string_view kExpm1_001 =
+		"0.010050167084168057752424385313484369731243899318130831789141650500379617021528"
+		"21323393832472698424349332296688425646999811003182182612935750644675456895975297"
+		"26357692415538274527865378764919862726361409577016896886580900822581782495827000"
+		"03611364268279638639853872063450641671901548477176557239626404924342213029117041"
+		"3614336416360";
+
+
+	template<typename Real>
+	int expect_bits(const Real& got, std::string_view ref, int bits, const std::string& what, bool reportTestCases) {
+		if (agrees_to_bits(got, ref, bits)) return 0;
+		if (reportTestCases) std::cout << "    FAIL " << what << ": " << measured_bits(got, ref) << " bits, wanted " << bits << '\n';
+		return 1;
+	}
+	template<typename Real, typename Ref>
+	int expect_bits(const Real& got, const Ref& ref, int bits, const std::string& what, bool reportTestCases) {
+		if (agrees_to_bits(got, ref, bits)) return 0;
+		if (reportTestCases) std::cout << "    FAIL " << what << ": " << measured_bits(got, ref) << " bits, wanted " << bits << '\n';
+		return 1;
+	}
 
 		// Verify exp function
 		template<typename Real>
 		int VerifyExp(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
 
 			// Test: exp(0) = 1 (mathematically exact)
 			Real x(0.0), expected(1.0);
@@ -28,45 +85,37 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: exp(1) = e ~= 2.718281828 (approximate)
-			x = 1.0;
-			double exp_1 = std::exp(1.0);
-			expected = Real(exp_1);
-			result = exp(x);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("exp", "1", result, expected, threshold);
-				}
+			// exp(1) = e, exp(-1) = 1/e: stored references
+			nrOfFailedTestCases += expect_bits(exp(Real(1.0)), s_e, bits, "exp(1) vs e", reportTestCases);
+			nrOfFailedTestCases += expect_bits(exp(Real(-1.0)), s_inv_e, bits, "exp(-1) vs 1/e", reportTestCases);
+			// exp(2) = e^2: mpmath reference
+			nrOfFailedTestCases += expect_bits(exp(Real(2.0)), kExp2, bits, "exp(2) vs e^2", reportTestCases);
+
+			return nrOfFailedTestCases;
+		}
+
+		// Sensitivity of the check itself: exp(1) truncated to a double must FAIL the check the
+		// real result passes. Without this, a check that could not see past 53 bits would pass
+		// the double-only results it exists to catch (#2008).
+		template<typename Real>
+		int VerifyDoubleTruncationIsVisible(bool reportTestCases) {
+			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
+			Real full = exp(Real(1.0));
+			Real truncated = Real(double(full));
+			if (!agrees_to_bits(full, s_e, bits)) {
+				if (reportTestCases) std::cout << "    FAIL exp(1) does not reach " << bits << " bits\n";
 				++nrOfFailedTestCases;
 			}
-
-			// Test: exp(2) = e^2 ~= 7.389056099 (approximate)
-			x = 2.0;
-			double exp_2 = std::exp(2.0);
-			expected = Real(exp_2);
-			result = exp(x);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("exp", "2", result, expected, threshold);
-				}
+			if (agrees_to_bits(truncated, s_e, bits)) {
+				if (reportTestCases) std::cout << "    FAIL a 53-bit exp(1) passes the " << bits << "-bit check: the check is blind\n";
 				++nrOfFailedTestCases;
 			}
-
-			// Test: exp(-1) = 1/e ~= 0.367879441 (approximate)
-			x = -1.0;
-			double exp_neg1 = std::exp(-1.0);
-			expected = Real(exp_neg1);
-			result = exp(x);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("exp", "-1", result, expected, threshold);
-				}
+			// and the truncated value is a correct double: the check fails it for precision, not for being wrong
+			if (!agrees_to_bits(truncated, s_e, 50)) {
+				if (reportTestCases) std::cout << "    FAIL double(exp(1)) is not e to 50 bits\n";
 				++nrOfFailedTestCases;
 			}
-
 			return nrOfFailedTestCases;
 		}
 
@@ -74,38 +123,13 @@ namespace {
 		template<typename Real>
 		int VerifyExp2(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
 
-			// Test: exp2(3) = 8 (2^3 = 8, verify with double-precision accuracy)
-			// Note: exp2 implementation limited by underlying double precision (~15 digits)
-			Real x(3.0), expected(8.0);
-			Real result = exp2(x);
-			constexpr double threshold = 1e-14;  // Double precision accuracy
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("exp2(3)", "8", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: exp2(10) = 1024 (2^10 = 1024, verify with double-precision accuracy)
-			x = 10.0; expected = 1024.0;
-			result = exp2(x);
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("exp2(10)", "1024", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: exp2(-1) = 0.5 (2^-1 = 0.5, verify with double-precision accuracy)
-			x = -1.0; expected = 0.5;
-			result = exp2(x);
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("exp2(-1)", "0.5", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// exact powers of two; exp2 goes through exp(x ln2), so the result need not be
+			// bit-exact, only correct to the configuration
+			nrOfFailedTestCases += expect_bits(exp2(Real(3.0)), Real(8.0), bits, "exp2(3) vs 8", reportTestCases);
+			nrOfFailedTestCases += expect_bits(exp2(Real(10.0)), Real(1024.0), bits, "exp2(10) vs 1024", reportTestCases);
+			nrOfFailedTestCases += expect_bits(exp2(Real(-1.0)), Real(0.5), bits, "exp2(-1) vs 0.5", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -114,38 +138,12 @@ namespace {
 		template<typename Real>
 		int VerifyExp10(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
 
-			// Test: exp10(2) = 100 (10^2 = 100, verify with double-precision accuracy)
-			// Note: exp10 implementation limited by underlying double precision (~15 digits)
-			Real x(2.0), expected(100.0);
-			Real result = exp10(x);
-			constexpr double threshold = 1e-14;  // Double precision accuracy
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("exp10(2)", "100", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: exp10(3) = 1000 (10^3 = 1000, verify with double-precision accuracy)
-			x = 3.0; expected = 1000.0;
-			result = exp10(x);
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("exp10(3)", "1000", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: exp10(-1) = 0.1 (10^-1 = 0.1, verify with double-precision accuracy)
-			x = -1.0; expected = 0.1;
-			result = exp10(x);
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("exp10(-1)", "0.1", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			nrOfFailedTestCases += expect_bits(exp10(Real(2.0)), Real(100.0), bits, "exp10(2) vs 100", reportTestCases);
+			nrOfFailedTestCases += expect_bits(exp10(Real(3.0)), Real(1000.0), bits, "exp10(3) vs 1000", reportTestCases);
+			// 0.1 has no finite binary value: compare against the decimal itself, not double(0.1)
+			nrOfFailedTestCases += expect_bits(exp10(Real(-1.0)), std::string_view("0.1"), bits, "exp10(-1) vs 0.1", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -154,6 +152,7 @@ namespace {
 		template<typename Real>
 		int VerifyExpm1(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
 
 			// Test: expm1(0) = 0 (e^0 - 1 = 1 - 1 = 0, mathematically exact)
 			Real x(0.0), expected(0.0);
@@ -163,32 +162,12 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: expm1(0.01) for small x accuracy (approximate)
-			x = 0.01;
-			double std_expm1 = std::expm1(0.01);
-			expected = Real(std_expm1);
-			result = expm1(x);
-			if (!check_relative_error(result, expected)) {
-				if (reportTestCases) {
-					double threshold = get_adaptive_threshold<Real>();
-					report_error_detail("expm1", "0.01", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// expm1(0.01): small-x accuracy, mpmath reference
+			nrOfFailedTestCases += expect_bits(expm1(Real(0.01)), kExpm1_001, bits, "expm1(0.01)", reportTestCases);
 
-			// Test: expm1(1) ~= e - 1 ~= 1.718281828 (approximate)
-			// Note: expm1 implementation limited by underlying double precision (~15 digits)
-			x = 1.0;
-			std_expm1 = std::expm1(1.0);
-			expected = Real(std_expm1);
-			result = expm1(x);
-			constexpr double threshold = 1e-14;  // Double precision accuracy
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("expm1", "1", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// expm1(1) = e - 1: the stored e with its leading digit lowered by one
+			const std::string e_minus_1 = "1" + std::string(s_e.substr(1));
+			nrOfFailedTestCases += expect_bits(expm1(Real(1.0)), std::string_view(e_minus_1), bits, "expm1(1) vs e-1", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -197,67 +176,46 @@ namespace {
 		template<typename Real>
 		int VerifyExpLogRoundtrip(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
+			constexpr int bits = wanted_bits<Real>();
 
-			// Test: log(exp(x)) ~= x for various x
+			// Test: log(exp(x)) ~= x for various x, in ereal itself
 			double test_values[] = {0.1, 0.5, 1.0, 2.0, 3.0};
 
 			for (double val : test_values) {
 				Real x(val);
-				Real result = log(exp(x));
-				error_mag = std::abs(double(result - x));
-				if (error_mag >= 1e-14) {
-					if (reportTestCases) {
-						std::cout << "    FAIL log(exp(" << val << ")) roundtrip error = " << error_mag << "\n";
-					}
-					++nrOfFailedTestCases;
-				}
+				nrOfFailedTestCases += expect_bits(log(exp(x)), x, bits, "log(exp(" + std::to_string(val) + ")) roundtrip", reportTestCases);
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-
-		// Compare via the double projection within a relative tolerance, with an
-		// absolute floor so near-zero results do not make the test spuriously strict.
-		template<typename Real>
-		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
-			double a = double(x), b = double(y);
-			double diff = std::abs(a - b);
-			if (diff == 0.0) return true;
-			double scale = std::max(std::abs(a), std::abs(b));
-			return diff <= std::max(absTol, relTol * scale);
-		}
-
 		// Property fuzzer: exp/log inverse, the exp(a+b)==exp(a)*exp(b) addition
-		// theorem, exp(-x)==1/exp(x), expm1(x)==exp(x)-1, and monotonicity.
+		// theorem, exp(-x)==1/exp(x), expm1(x)==exp(x)-1, and monotonicity. Identities are
+		// checked in ereal itself; since a self-consistent loss of precision would satisfy
+		// them, exp(x) is also checked against exp at the widest configuration, on every
+		// fourth sample: the ereal<19> exp dominates the cost of an iteration.
 		template<typename Real>
 		int VerifyExponentFuzz(bool reportTestCases, unsigned nrIterations) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
+			constexpr bool hasWiderReference = ereal_bits_of<Real>::value < ereal_bits_of<WideReal>::value;
 			std::mt19937_64 rng(0xC1A55'1FFEULL);
 			std::uniform_real_distribution<double> dist(-5.0, 5.0);
 			Real one(1.0);
 			for (unsigned i = 0; i < nrIterations; ++i) {
 				double dx = dist(rng);
 				Real x(dx);
-				if (!close_rel(log(exp(x)), x, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL log(exp(x)) at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (!close_rel(exp(-x), one / exp(x), 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL exp(-x)==1/exp(x) at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (!close_rel(expm1(x), exp(x) - one, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL expm1==exp-1 at x=" << dx << '\n';
-					++nrOfFailedTestCases;
+				const std::string at = " at x=" + std::to_string(dx);
+				Real ex = exp(x);
+				nrOfFailedTestCases += expect_bits(log(ex), x, bits, "log(exp(x))" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(exp(-x), one / ex, bits, "exp(-x)==1/exp(x)" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(expm1(x), ex - one, bits, "expm1==exp-1" + at, reportTestCases);
+				if constexpr (hasWiderReference) {
+					if (i % 4 == 0) nrOfFailedTestCases += expect_bits(ex, exp(WideReal(dx)), bits, "exp(x) vs ereal<19>" + at, reportTestCases);
 				}
 				Real y(dist(rng));
-				if (!close_rel(exp(x + y), exp(x) * exp(y), 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL exp(a+b)==exp(a)exp(b) at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (!(exp(x) < exp(x + one))) {
+				nrOfFailedTestCases += expect_bits(exp(x + y), ex * exp(y), bits, "exp(a+b)==exp(a)exp(b)" + at, reportTestCases);
+				if (!(ex < exp(x + one))) {
 					if (reportTestCases) std::cout << "    FAIL exp monotonic at x=" << dx << '\n';
 					++nrOfFailedTestCases;
 				}
@@ -313,6 +271,9 @@ try {
 	// Phase 4a functions: exp, exp2, exp10, expm1
 	test_tag = "exp";
 	nrOfFailedTestCases += ReportTestResult(VerifyExp<ereal<>>(reportTestCases), "exp(ereal)", test_tag);
+
+	test_tag = "exp precision check sensitivity";
+	nrOfFailedTestCases += ReportTestResult(VerifyDoubleTruncationIsVisible<ereal<>>(reportTestCases), "double-truncated exp(1) is caught", test_tag);
 
 	test_tag = "exp2";
 	nrOfFailedTestCases += ReportTestResult(VerifyExp2<ereal<>>(reportTestCases), "exp2(ereal)", test_tag);

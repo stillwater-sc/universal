@@ -8,17 +8,86 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include <string>
+#include <string_view>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_mathlib_adaptive.hpp>
+#include <universal/verification/ereal_precision.hpp>
+#include <math/constants/reference_constants.hpp>
 
 namespace {
 	using namespace sw::universal;
+
+	// The precision checks below are exact (ereal_precision.hpp): every value is compared
+	// with its reference as a dyadic rational and the agreement is counted in bits. The
+	// tolerances of 1e-14 they replace went through double and so passed a result correct
+	// to only 53 bits (#2008).
+	//
+	// References are, in order of preference, a stored decimal constant
+	// (reference_constants.hpp), an exact value, or the same function at a wider
+	// configuration (ereal<19>, the widest a double limb supports). An identity such as
+	// sin^2 + cos^2 == 1 is checked as well, but cannot by itself see a value that is
+	// consistently wrong in both of its terms.
+	//
+	// Each check asks for the bits the configuration holds less a margin. The margins
+	// were measured (compile with -DEREAL_PRECISION_TRACE to print every agreement) and
+	// carry slack over the worst value seen at ereal<8>, <16> and <19>: every check measured
+	// at or above the configuration's own bits (results carry spare limbs).
+	constexpr int kFunctionMargin = 16;   // a function at a stored constant, an exact value or the wide configuration
+	constexpr int kIdentityMargin = 16;   // an identity or a round trip through two functions
+	using Wide = ereal<19>;               // the wide reference configuration
+
+	int expect_bits(int got, int wanted, const std::string& what, bool reportTestCases) {
+#ifdef EREAL_PRECISION_TRACE
+		std::cout << "    " << what << ": " << got << " bits (wanted " << wanted << ")\n";
+#endif
+		if (got >= wanted) return 0;
+		if (reportTestCases) std::cout << "    FAIL " << what << ": " << got << " bits, wanted at least " << wanted << '\n';
+		return 1;
+	}
+
+	// bits to which v agrees with a decimal reference, which may carry a sign; -1 for a
+	// value that cannot agree (NaN, inf, zero)
+	template<typename Real>
+	int bits_vs(const Real& v, std::string_view ref) {
+		if (v.isnan() || v.isinf() || v.iszero()) return -1;
+		Real w = v;
+		if (!ref.empty() && ref.front() == '-') { ref.remove_prefix(1); w = -v; }
+		// digits enough to certify the configuration, within the 320 the references certify
+		const int cap = std::min(320, static_cast<int>(ereal_bits_of<Real>::value * 0.30103) + 4);
+		return agreed_bits(w, ref, cap);
+	}
+
+	// bits to which a agrees with b, relative to b; -1 for NaN or inf
+	template<unsigned m, typename F, unsigned n, typename G>
+	int bits_vs(const ereal<m, F>& a, const ereal<n, G>& b) {
+		if (a.isnan() || a.isinf() || b.isnan() || b.isinf()) return -1;
+		if (b.iszero()) return a.iszero() ? kExactAgreement : -1;
+		return agreed_bits(a, b);
+	}
+
+	// the configuration's precision less a margin
+	template<typename Real>
+	constexpr int wanted_bits(int margin) { return ereal_bits_of<Real>::value - margin; }
+
+	// f(x) at Real against f(x) at the wide configuration, when Real is narrower
+	template<typename Real, typename Fn>
+	int expect_vs_wide(Fn f, double x, const std::string& what, bool reportTestCases) {
+		if constexpr (ereal_bits_of<Real>::value < ereal_bits_of<Wide>::value) {
+			return expect_bits(bits_vs(f(Real(x)), f(Wide(x))), wanted_bits<Real>(kFunctionMargin), what + " vs ereal<19>", reportTestCases);
+		}
+		else {
+			return 0;
+		}
+	}
 
 		// Verify sin function
 		template<typename Real>
 		int VerifySin(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr unsigned N = Real::maxNrLimbs;
+			const int wanted = wanted_bits<Real>(kFunctionMargin);
 
 			// Test: sin(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
@@ -28,45 +97,23 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: sin(pi/6) ~= 0.5 (approximate, pi/6 is irrational)
-			x = Real(0.5235987755982989);  // pi/6
-			expected = 0.5;
-			result = sin(x);
-			double threshold = 1e-14;  // Double precision accuracy
+			// Test: sin(1/2) against its stored value
+			nrOfFailedTestCases += expect_bits(bits_vs(sin(Real(0.5)), s_sin_half), wanted, "sin(1/2)", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
+			// Test: sin(pi/6) = 1/2, with pi/6 at the configuration's precision
+			x = ereal_pi<N, double>() / Real(6.0);
+			nrOfFailedTestCases += expect_bits(bits_vs(sin(x), Real(0.5)), wanted, "sin(pi/6) == 1/2", reportTestCases);
 
-				if (reportTestCases) {
-					report_error_detail("sin", "pi/6", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// Test: sin(pi/2) = 1
+			nrOfFailedTestCases += expect_bits(bits_vs(sin(ereal_pi_2<N, double>()), Real(1.0)), wanted, "sin(pi/2) == 1", reportTestCases);
 
-			// Test: sin(pi/2) ~= 1 (approximate, pi/2 is irrational)
-			x = Real(1.5707963267948966);  // pi/2
-			expected = 1.0;
-			result = sin(x);
+			// Test: sin(1) against the wide configuration
+			nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& v) { return sin(v); }, 1.0, "sin(1)", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("sin", "pi/2", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: sin(-x) = -sin(x) (odd function identity)
+			// Test: sin(-x) = -sin(x) (odd function identity, exact)
 			x = 1.0;
-			Real sin_pos = sin(x);
-			Real sin_neg = sin(-x);
-			Real identity = sin_pos + sin_neg;
-			expected = 0.0;
-
-			if (!check_relative_error(identity, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("sin(-x) + sin(x)", "identity", identity, expected, threshold);
-				}
+			if (!(sin(-x) == -sin(x))) {
+				if (reportTestCases) std::cout << "    FAIL sin(-1) != -sin(1) (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -77,6 +124,8 @@ namespace {
 		template<typename Real>
 		int VerifyCos(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr unsigned N = Real::maxNrLimbs;
+			const int wanted = wanted_bits<Real>(kFunctionMargin);
 
 			// Test: cos(0) = 1 (mathematically exact)
 			Real x(0.0), expected(1.0);
@@ -86,32 +135,19 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: cos(pi/3) ~= 0.5 (approximate, pi/3 is irrational)
-			x = Real(1.0471975511965979);  // pi/3
-			expected = 0.5;
-			result = cos(x);
-			double threshold = 1e-14;  // Double precision accuracy
+			// Test: cos(1/2) against its stored value
+			nrOfFailedTestCases += expect_bits(bits_vs(cos(Real(0.5)), s_cos_half), wanted, "cos(1/2)", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
+			// Test: cos(pi/3) = 1/2, with pi/3 at the configuration's precision
+			nrOfFailedTestCases += expect_bits(bits_vs(cos(ereal_pi_3<N, double>()), Real(0.5)), wanted, "cos(pi/3) == 1/2", reportTestCases);
 
-				if (reportTestCases) {
-					report_error_detail("cos", "pi/3", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// Test: cos(1) against the wide configuration
+			nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& v) { return cos(v); }, 1.0, "cos(1)", reportTestCases);
 
-			// Test: cos(-x) = cos(x) (even function identity)
+			// Test: cos(-x) = cos(x) (even function identity, exact)
 			x = 1.0;
-			Real cos_pos = cos(x);
-			Real cos_neg = cos(-x);
-			Real identity = cos_pos - cos_neg;
-			expected = 0.0;
-
-			if (!check_relative_error(identity, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("cos(-x) - cos(x)", "identity", identity, expected, threshold);
-				}
+			if (!(cos(-x) == cos(x))) {
+				if (reportTestCases) std::cout << "    FAIL cos(-1) != cos(1) (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -119,16 +155,8 @@ namespace {
 			x = 0.7;
 			Real sin_x = sin(x);
 			Real cos_x = cos(x);
-			identity = sin_x * sin_x + cos_x * cos_x;
-			expected = 1.0;
-
-			if (!check_relative_error(identity, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("sin^2(x) + cos^2(x)", "identity", identity, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			Real identity = sin_x * sin_x + cos_x * cos_x;
+			nrOfFailedTestCases += expect_bits(bits_vs(identity, Real(1.0)), wanted_bits<Real>(kIdentityMargin), "sin^2(0.7) + cos^2(0.7) == 1", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -137,6 +165,8 @@ namespace {
 		template<typename Real>
 		int VerifyTan(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr unsigned N = Real::maxNrLimbs;
+			const int wanted = wanted_bits<Real>(kFunctionMargin);
 
 			// Test: tan(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
@@ -146,32 +176,19 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: tan(pi/4) ~= 1 (approximate, pi/4 is irrational)
-			x = Real(0.7853981633974483);  // pi/4
-			expected = 1.0;
-			result = tan(x);
-			double threshold = 1e-14;  // Double precision accuracy
+			// Test: tan(1/2) against its stored value
+			nrOfFailedTestCases += expect_bits(bits_vs(tan(Real(0.5)), s_tan_half), wanted, "tan(1/2)", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
+			// Test: tan(pi/4) = 1, with pi/4 at the configuration's precision
+			nrOfFailedTestCases += expect_bits(bits_vs(tan(ereal_pi_4<N, double>()), Real(1.0)), wanted, "tan(pi/4) == 1", reportTestCases);
 
-				if (reportTestCases) {
-					report_error_detail("tan", "pi/4", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// Test: tan(1) against the wide configuration
+			nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& v) { return tan(v); }, 1.0, "tan(1)", reportTestCases);
 
-			// Test: tan(-x) = -tan(x) (odd function identity)
+			// Test: tan(-x) = -tan(x) (odd function identity, exact)
 			x = 0.5;
-			Real tan_pos = tan(x);
-			Real tan_neg = tan(-x);
-			Real identity = tan_pos + tan_neg;
-			expected = 0.0;
-
-			if (!check_relative_error(identity, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("tan(-x) + tan(x)", "identity", identity, expected, threshold);
-				}
+			if (!(tan(-x) == -tan(x))) {
+				if (reportTestCases) std::cout << "    FAIL tan(-0.5) != -tan(0.5) (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -182,6 +199,7 @@ namespace {
 		template<typename Real>
 		int VerifyAtan(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			const int wanted = wanted_bits<Real>(kFunctionMargin);
 
 			// Test: atan(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
@@ -191,32 +209,15 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: atan(1) ~= pi/4 (approximate, Taylor series convergence may be slow)
-			x = 1.0;
-			result = atan(x);
-			expected = Real(std::atan(1.0));
-			// Use relaxed threshold for Taylor series convergence at boundary
-			double relaxed_threshold = 4e-3;  // Taylor series convergence at boundary
-			if (!check_relative_error(result, expected, relaxed_threshold)) {
-				if (reportTestCases) {
-					report_error_detail("atan", "1", result, expected, relaxed_threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// Test: atan(1) = pi/4 (this used to be allowed a relative error of 4e-3)
+			nrOfFailedTestCases += expect_bits(bits_vs(atan(Real(1.0)), s_pi_4), wanted, "atan(1) == pi/4", reportTestCases);
 
-			// Test: atan(tan(x)) ~= x for |x| < pi/2 (identity test)
-			x = 0.5;  // Use smaller value for better convergence
-			result = atan(tan(x));
-			expected = x;
-			double threshold = 1e-14;  // Double precision accuracy
+			// Test: atan(1/2) against the wide configuration
+			nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& v) { return atan(v); }, 0.5, "atan(1/2)", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("atan(tan(x))", "identity", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// Test: atan(tan(x)) = x for |x| < pi/2 (round trip)
+			x = 0.5;
+			nrOfFailedTestCases += expect_bits(bits_vs(atan(tan(x)), x), wanted_bits<Real>(kIdentityMargin), "atan(tan(1/2)) == 1/2", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -225,6 +226,7 @@ namespace {
 		template<typename Real>
 		int VerifyAsin(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			const int wanted = wanted_bits<Real>(kFunctionMargin);
 
 			// Test: asin(0) = 0 (mathematically exact)
 			Real x(0.0), expected(0.0);
@@ -234,32 +236,21 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: asin(1) ~= pi/2 (approximate)
-			x = 1.0;
-			result = asin(x);
-			expected = Real(std::asin(1.0));
-			double threshold = 1e-14;  // Double precision accuracy
+			// Test: asin(1) = pi/2, asin(1/2) = pi/6
+			nrOfFailedTestCases += expect_bits(bits_vs(asin(Real(1.0)), s_pi_2), wanted, "asin(1) == pi/2", reportTestCases);
+			nrOfFailedTestCases += expect_bits(bits_vs(asin(Real(0.5)), s_pi_6), wanted, "asin(1/2) == pi/6", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("asin", "1", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
+			// The top of the series range. asin switched to its sqrt identity at 0.8, and the
+			// series stopped at its iteration cap before converging for 0.7 < |x| <= 0.8: asin and
+			// acos lost up to 100 bits at ereal<8> (#2006). The switch is at 1/sqrt(2) now.
+			for (double v : { 0.7, 0.7071, 0.7072, 0.75, 0.78, 0.8, -0.79 }) {
+				nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& a) { return asin(a); }, v, "asin(" + std::to_string(v) + ")", reportTestCases);
+				nrOfFailedTestCases += expect_vs_wide<Real>([](const auto& a) { return acos(a); }, v, "acos(" + std::to_string(v) + ")", reportTestCases);
 			}
 
-			// Test: asin(sin(x)) ~= x for |x| <= pi/2 (identity test, Taylor series convergence)
-			x = 0.5;  // Use smaller value for better Taylor series convergence
-			result = asin(sin(x));
-			expected = x;
-			// Use relaxed threshold for Taylor series convergence limitations
-			double relaxed_threshold = 4e-3;  // Taylor series convergence
-			if (!check_relative_error(result, expected, relaxed_threshold)) {
-				if (reportTestCases) {
-					report_error_detail("asin(sin(x))", "identity", result, expected, relaxed_threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// Test: asin(sin(x)) = x for |x| <= pi/2 (round trip; this used to be allowed 4e-3)
+			x = 0.5;
+			nrOfFailedTestCases += expect_bits(bits_vs(asin(sin(x)), x), wanted_bits<Real>(kIdentityMargin), "asin(sin(1/2)) == 1/2", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -268,45 +259,23 @@ namespace {
 		template<typename Real>
 		int VerifyAcos(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			const int wanted = wanted_bits<Real>(kFunctionMargin);
 
-			// Test: acos(1) = 0 (approximate due to Taylor series computation)
-			Real x(1.0), expected(0.0);
+			// Test: acos(1) = 0 (exact)
+			Real x(1.0);
 			Real result = acos(x);
-			double threshold = 1e-14;  // Double precision accuracy
-
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("acos", "1", result, expected, threshold);
-				}
+			if (!result.iszero()) {
+				if (reportTestCases) std::cout << "    FAIL acos(1) != 0 (exact)\n";
 				++nrOfFailedTestCases;
 			}
 
-			// Test: acos(0) ~= pi/2 (approximate)
-			x = 0.0;
-			result = acos(x);
-			expected = Real(std::acos(0.0));
+			// Test: acos(0) = pi/2, acos(1/2) = pi/3
+			nrOfFailedTestCases += expect_bits(bits_vs(acos(Real(0.0)), s_pi_2), wanted, "acos(0) == pi/2", reportTestCases);
+			nrOfFailedTestCases += expect_bits(bits_vs(acos(Real(0.5)), s_pi_3), wanted, "acos(1/2) == pi/3", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-					report_error_detail("acos", "0", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: acos(cos(x)) ~= x for 0 <= x <= pi (identity test, Taylor series convergence)
-			x = 0.5;  // Use smaller value for better convergence
-			result = acos(cos(x));
-			expected = x;
-			// Use relaxed threshold for Taylor series convergence limitations
-			double relaxed_threshold = 4e-3;  // Taylor series convergence
-			if (!check_relative_error(result, expected, relaxed_threshold)) {
-				if (reportTestCases) {
-					report_error_detail("acos(cos(x))", "identity", result, expected, relaxed_threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// Test: acos(cos(x)) = x for 0 <= x <= pi (round trip; this used to be allowed 4e-3)
+			x = 0.5;
+			nrOfFailedTestCases += expect_bits(bits_vs(acos(cos(x)), x), wanted_bits<Real>(kIdentityMargin), "acos(cos(1/2)) == 1/2", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -315,35 +284,23 @@ namespace {
 		template<typename Real>
 		int VerifyAtan2(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			const int wanted = wanted_bits<Real>(kFunctionMargin);
 
-			// Test: atan2(1, 1) ~= pi/4 (approximate, Taylor series convergence)
+			// Test: atan2(1, 1) = pi/4 and atan2(1, -1) = 3pi/4 (these used to be allowed 4e-3)
 			Real y(1.0), x(1.0);
-			Real result = atan2(y, x);
-			Real expected = Real(std::atan2(1.0, 1.0));
-			// Use relaxed threshold for Taylor series convergence
-			double relaxed_threshold = 4e-3;  // Taylor series convergence at boundary
-			if (!check_relative_error(result, expected, relaxed_threshold)) {
-				if (reportTestCases) {
-					report_error_detail("atan2", "(1, 1)", result, expected, relaxed_threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: atan2(1, -1) ~= 3pi/4 (approximate, Taylor series convergence)
-			y = 1.0; x = -1.0;
-			result = atan2(y, x);
-			expected = Real(std::atan2(1.0, -1.0));
-			if (!check_relative_error(result, expected, relaxed_threshold)) {
-				if (reportTestCases) {
-					report_error_detail("atan2", "(1, -1)", result, expected, relaxed_threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			nrOfFailedTestCases += expect_bits(bits_vs(atan2(y, x), s_pi_4), wanted, "atan2(1, 1) == pi/4", reportTestCases);
+			x = -1.0;
+			nrOfFailedTestCases += expect_bits(bits_vs(atan2(y, x), s_three_pi_4), wanted, "atan2(1, -1) == 3pi/4", reportTestCases);
+			// and the other two quadrants
+			y = -1.0;
+			nrOfFailedTestCases += expect_bits(bits_vs(-atan2(y, x), s_three_pi_4), wanted, "atan2(-1, -1) == -3pi/4", reportTestCases);
+			x = 1.0;
+			nrOfFailedTestCases += expect_bits(bits_vs(-atan2(y, x), s_pi_4), wanted, "atan2(-1, 1) == -pi/4", reportTestCases);
 
 			// Test: atan2(0, 1) = 0 (mathematically exact)
 			y = 0.0; x = 1.0;
-			result = atan2(y, x);
-			expected = 0.0;
+			Real result = atan2(y, x);
+			Real expected = 0.0;
 			if (!check_exact_value(result, expected)) {
 				if (reportTestCases) std::cout << "    FAIL atan2(0, 1) != 0 (exact)\n";
 				++nrOfFailedTestCases;
@@ -352,48 +309,35 @@ namespace {
 			return nrOfFailedTestCases;
 		}
 
-
-		template<typename Real>
-		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
-			double a = double(x), b = double(y);
-			double diff = std::abs(a - b);
-			if (diff == 0.0) return true;
-			double scale = std::max(std::abs(a), std::abs(b));
-			return diff <= std::max(absTol, relTol * scale);
-		}
-
-		// Property fuzzer over the principal domain: Pythagorean identity, the
-		// tan==sin/cos quotient, sin/cos parity, and the inverse relations
-		// asin(sin(x))==x, atan(tan(x))==x, atan2(sin x, cos x)==x.
-		template<typename Real>
+		// Property fuzzer over the principal domain: sin and cos against a wider
+		// configuration, the Pythagorean identity, the tan==sin/cos quotient, sin/cos
+		// parity, and the inverse relations asin(sin(x))==x, atan(tan(x))==x,
+		// atan2(sin x, cos x)==x.
+		template<typename Real, typename FuzzWide>
 		int VerifyTrigonometryFuzz(bool reportTestCases, unsigned nrIterations) {
 			int nrOfFailedTestCases = 0;
 			std::mt19937_64 rng(0xC1A55'1FFEULL);
 			std::uniform_real_distribution<double> dist(-1.4, 1.4);  // within (-pi/2, pi/2)
-			Real one(1.0);
+			const Real one(1.0);
+			const int wanted   = wanted_bits<Real>(kFunctionMargin);
+			const int identity = wanted_bits<Real>(kIdentityMargin);
 			for (unsigned i = 0; i < nrIterations; ++i) {
 				double dx = dist(rng);
 				Real x(dx);
-				if (!close_rel(sin(x) * sin(x) + cos(x) * cos(x), one, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL sin^2+cos^2==1 at x=" << dx << '\n';
+				const std::string at = " at x=" + std::to_string(dx);
+				const Real s = sin(x), c = cos(x);
+				const FuzzWide wx(dx);
+				nrOfFailedTestCases += expect_bits(bits_vs(s, sin(wx)), wanted, "sin vs wide" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(bits_vs(c, cos(wx)), wanted, "cos vs wide" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(bits_vs(s * s + c * c, one), identity, "sin^2+cos^2==1" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(bits_vs(tan(x), s / c), identity, "tan==sin/cos" + at, reportTestCases);
+				if (sin(-x) != -s || cos(-x) != c) {
+					if (reportTestCases) std::cout << "    FAIL parity" << at << '\n';
 					++nrOfFailedTestCases;
 				}
-				if (!close_rel(tan(x), sin(x) / cos(x), 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL tan==sin/cos at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (sin(-x) != -sin(x) || cos(-x) != cos(x)) {
-					if (reportTestCases) std::cout << "    FAIL parity at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (!close_rel(asin(sin(x)), x, 1.0e-13) || !close_rel(atan(tan(x)), x, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL inverse at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (!close_rel(atan2(sin(x), cos(x)), x, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL atan2(sin,cos)==x at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
+				nrOfFailedTestCases += expect_bits(bits_vs(asin(s), x), identity, "asin(sin(x))==x" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(bits_vs(atan(tan(x)), x), identity, "atan(tan(x))==x" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(bits_vs(atan2(s, c), x), identity, "atan2(sin,cos)==x" + at, reportTestCases);
 			}
 			return nrOfFailedTestCases;
 		}
@@ -479,7 +423,7 @@ try {
 #elif REGRESSION_LEVEL_2
 	trigFuzzCount = 100;
 #endif
-	nrOfFailedTestCases += ReportTestResult(VerifyTrigonometryFuzz<ereal<>>(reportTestCases, trigFuzzCount), "trig property fuzz", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyTrigonometryFuzz<ereal<>, ereal<16>>(reportTestCases, trigFuzzCount), "trig property fuzz", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

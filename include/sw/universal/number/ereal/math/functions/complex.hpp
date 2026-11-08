@@ -13,9 +13,11 @@
 // generically, so this header only registers ereal as a Universal number type
 // and re-exposes real/imag/conj for symmetry with the other number systems.
 //
-// PRECISION NOTE: complex ARITHMETIC (+ - * /) and real/imag/conj/norm/arg/abs
-// run on ereal's own operators and therefore carry the operand's full working
-// precision. The complex TRANSCENDENTALS (exp/log/sqrt/pow/sin/cos/sinh/...) in
+// PRECISION NOTE: complex ARITHMETIC (+ - * /) and real/imag/conj/norm run on
+// ereal's own operators and therefore carry the operand's full working precision.
+// abs and arg do not: the shared library computes them through double (std::sqrt and
+// std::atan2 on doubles, complex_operators.hpp), so they carry 53 bits (#2017).
+// The complex TRANSCENDENTALS (exp/log/sqrt/pow/sin/cos/sinh/...) in
 // the shared library currently pivot through std::complex<double>, so on ereal
 // they are only accurate to ~double. This is a property of the shared library
 // (it affects every user-defined type, not just ereal); a full-precision complex

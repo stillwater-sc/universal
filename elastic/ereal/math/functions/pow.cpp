@@ -8,51 +8,93 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include <string>
+#include <string_view>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/ereal_precision.hpp>
+#include <math/constants/reference_constants.hpp>
 
 namespace {
 	using namespace sw::universal;
+
+	// Precision (#2008, #2006). Every value is checked exactly, against a decimal reference
+	// or another ereal, by the dyadic oracle in ereal_precision.hpp: nothing passes through a
+	// double, so a result correct to only 53 bits fails. Each check asks for the bits the
+	// configuration holds, ereal_bits_of<Real>::value, less kMarginBits.
+	//
+	// Measured (2026-11, gcc -O2) at ereal<8>/<16>/<19>, bits held 424/848/1007: the
+	// integer powers are exact, and every other check reaches at least 431/876/1016 bits (a
+	// result may carry up to twice its limbs, so it can exceed the bits held). The smallest
+	// surplus is 7/28/9 bits, pow(e, 2) with e parsed from its decimal string (the parsed e
+	// itself agrees to 431/876/1016). A margin of 16 bits keeps every check passing with room
+	// for platform differences in the last limb, while asking for 408/832/991 bits: far
+	// beyond the 53 a double-only result has. The arguments here are small (|y log x| < 25);
+	// the error of exp(y log x) grows with that product, so a test of large exponents would
+	// need a wider, stated margin.
+	constexpr int kMarginBits = 16;
+
+	template<typename Real>
+	constexpr int wanted_bits() { return ereal_bits_of<Real>::value - kMarginBits; }
+
+	// The widest double-limb configuration (maxlimbs <= 19), the reference for values that
+	// have no stored constant.
+	using WideReal = ereal<19, double>;
+
+	// References computed with mpmath at 360 digits, printed to 330 significant digits.
+	// The arguments are the doubles the tests pass, converted exactly (mpf(3.141592653589793)
+	// is the double nearest pi, not pi).
+	//   kExp2      = exp(2)                      (e^2)
+	//   kPow2PiD   = power(2, mpf(3.141592653589793))
+	//   kPow10_1p5 = power(10, mpf(1.5))         (10 sqrt(10))
+	constexpr std::string_view kExp2 =
+		"7.389056098930650227230427460575007813180315570551847324087127822522573796079057"
+		"76338431248507912179477375316126547886612388460369278127337447839221339807777490"
+		"01228956074107537023913309475506820865818202696478682084042209822552348757424625"
+		"41414679928129331888070763301019337899740729986960095303307515320818823684694793"
+		"02991355877";
+	constexpr std::string_view kPow2PiD =
+		"8.824977827076286874738941696579312098341913251408856142094696125424247390204572"
+		"18168287439242013534420484369519650361914738890224893268498136277392972233760073"
+		"28000367445055955983696415659781066306686397422905089473717236697741918345857256"
+		"76622185696633649607135006166708849371720338468649992340713401104207230464496108"
+		"46924613252";
+	constexpr std::string_view kPow10_1p5 =
+		"31.62277660168379331998893544432718533719555139325216826857504852792594438639238"
+		"22134424810837930029518734728415284005514854885603045388001469051959670015390334"
+		"49216571792599406591501534741133394841240853169295770904715764610443692578790620"
+		"37808609941828371711548406328552999118596824564203326961604691314336128949791890"
+		"26652954361";
+
+
+	template<typename Real>
+	int expect_bits(const Real& got, std::string_view ref, int bits, const std::string& what, bool reportTestCases) {
+		if (agrees_to_bits(got, ref, bits)) return 0;
+		if (reportTestCases) std::cout << "    FAIL " << what << ": " << measured_bits(got, ref) << " bits, wanted " << bits << '\n';
+		return 1;
+	}
+	template<typename Real, typename Ref>
+	int expect_bits(const Real& got, const Ref& ref, int bits, const std::string& what, bool reportTestCases) {
+		if (agrees_to_bits(got, ref, bits)) return 0;
+		if (reportTestCases) std::cout << "    FAIL " << what << ": " << measured_bits(got, ref) << " bits, wanted " << bits << '\n';
+		return 1;
+	}
 
 		// Verify pow function - special cases
 		template<typename Real>
 		int VerifyPowSpecialCases(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
+			constexpr int bits = wanted_bits<Real>();
 
-			// Test: x^0 = 1 for any x
-			Real x(5.0), y(0.0), expected(1.0);
-			Real result = pow(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cout << "    FAIL pow(5, 0) != 1\n";
-				++nrOfFailedTestCases;
-			}
+			// x^0 = 1, x^1 = x, 1^y = 1: exact results, checked to the configuration
+			nrOfFailedTestCases += expect_bits(pow(Real(5.0), Real(0.0)), Real(1.0), bits, "pow(5, 0) vs 1", reportTestCases);
+			nrOfFailedTestCases += expect_bits(pow(Real(5.0), Real(1.0)), Real(5.0), bits, "pow(5, 1) vs 5", reportTestCases);
+			nrOfFailedTestCases += expect_bits(pow(Real(1.0), Real(42.0)), Real(1.0), bits, "pow(1, 42) vs 1", reportTestCases);
 
-			// Test: x^1 = x
-			y = 1.0; expected = x;
-			result = pow(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cout << "    FAIL pow(5, 1) != 5\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: 1^y = 1
-			x = 1.0; y = 42.0; expected = 1.0;
-			result = pow(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cout << "    FAIL pow(1, 42) != 1\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: 0^y = 0 for y > 0
-			x = 0.0; y = 2.0; expected = 0.0;
-			result = pow(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cout << "    FAIL pow(0, 2) != 0\n";
+			// Test: 0^y = +0 for y > 0
+			Real result = pow(Real(0.0), Real(2.0));
+			if (!result.iszero() || std::signbit(double(result))) {
+				if (reportTestCases) std::cout << "    FAIL pow(0, 2) != +0\n";
 				++nrOfFailedTestCases;
 			}
 
@@ -63,53 +105,14 @@ namespace {
 		template<typename Real>
 		int VerifyPowIntegerPowers(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
 
-			double error_mag;
-
-			// Test: 2^3 = 8
-			Real x(2.0), y(3.0), expected(8.0);
-			Real result = pow(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cout << "    FAIL pow(2, 3) != 8\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: 10^2 = 100
-			x = 10.0; y = 2.0; expected = 100.0;
-			result = pow(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cout << "    FAIL pow(10, 2) != 100\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: 3^4 = 81
-			x = 3.0; y = 4.0; expected = 81.0;
-			result = pow(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cout << "    FAIL pow(3, 4) != 81\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: 2^(-1) = 0.5
-			x = 2.0; y = -1.0; expected = 0.5;
-			result = pow(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cout << "    FAIL pow(2, -1) != 0.5\n";
-				++nrOfFailedTestCases;
-			}
-
-			// Test: 10^(-2) = 0.01
-			x = 10.0; y = -2.0; expected = 0.01;
-			result = pow(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cout << "    FAIL pow(10, -2) != 0.01\n";
-				++nrOfFailedTestCases;
-			}
+			nrOfFailedTestCases += expect_bits(pow(Real(2.0), Real(3.0)), Real(8.0), bits, "pow(2, 3) vs 8", reportTestCases);
+			nrOfFailedTestCases += expect_bits(pow(Real(10.0), Real(2.0)), Real(100.0), bits, "pow(10, 2) vs 100", reportTestCases);
+			nrOfFailedTestCases += expect_bits(pow(Real(3.0), Real(4.0)), Real(81.0), bits, "pow(3, 4) vs 81", reportTestCases);
+			nrOfFailedTestCases += expect_bits(pow(Real(2.0), Real(-1.0)), Real(0.5), bits, "pow(2, -1) vs 0.5", reportTestCases);
+			// 0.01 has no finite binary value: compare against the decimal itself, not double(0.01)
+			nrOfFailedTestCases += expect_bits(pow(Real(10.0), Real(-2.0)), std::string_view("0.01"), bits, "pow(10, -2) vs 0.01", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -118,63 +121,22 @@ namespace {
 		template<typename Real>
 		int VerifyPowLargeIntegerAndNegativeBases(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
+			constexpr int bits = wanted_bits<Real>();
 
-			// Test 1: Large positive integer exponent with negative base
-			// (-2)^15 = -32768
-			{
-				Real x(-2.0), y(15.0);
-				Real result = pow(x, y);
-				Real expected(-32768.0);
-				error_mag = std::abs(double(result - expected));
-				if (error_mag >= 1e-10) {
-					if (reportTestCases) std::cout << "    FAIL pow(-2, 15) = "
-						<< double(result) << ", expected -32768\n";
-					++nrOfFailedTestCases;
-				}
-			}
+			// Every expected value below is an integer or a power of two, exact in a double, so
+			// Real(expected) is the exact reference.
 
-			// Test 2: Large negative integer exponent with negative base
-			// (-2)^(-10) = 1/1024 = 0.0009765625
-			{
-				Real x(-2.0), y(-10.0);
-				Real result = pow(x, y);
-				Real expected(1.0 / 1024.0);
-				error_mag = std::abs(double(result - expected));
-				if (error_mag >= 1e-10) {
-					if (reportTestCases) std::cout << "    FAIL pow(-2, -10) = "
-						<< double(result) << ", expected " << double(expected) << "\n";
-					++nrOfFailedTestCases;
-				}
-			}
+			// Test 1: Large positive integer exponent with negative base: (-2)^15 = -32768
+			nrOfFailedTestCases += expect_bits(pow(Real(-2.0), Real(15.0)), Real(-32768.0), bits, "pow(-2, 15) vs -32768", reportTestCases);
 
-			// Test 3: Even integer exponent with negative base (result should be positive)
-			// (-3)^20 = 3^20 = 3486784401
-			{
-				Real x(-3.0), y(20.0);
-				Real result = pow(x, y);
-				double expected = std::pow(3.0, 20.0);
-				error_mag = std::abs(double(result) - expected);
-				if (error_mag >= 1e-6) {
-					if (reportTestCases) std::cout << "    FAIL pow(-3, 20) = "
-						<< double(result) << ", expected positive " << expected << "\n";
-					++nrOfFailedTestCases;
-				}
-			}
+			// Test 2: Large negative integer exponent with negative base: (-2)^(-10) = 1/1024
+			nrOfFailedTestCases += expect_bits(pow(Real(-2.0), Real(-10.0)), Real(1.0 / 1024.0), bits, "pow(-2, -10) vs 1/1024", reportTestCases);
 
-			// Test 4: Odd integer exponent with negative base (result should be negative)
-			// (-3)^21 = -3^21 = -10460353203
-			{
-				Real x(-3.0), y(21.0);
-				Real result = pow(x, y);
-				double expected = -std::pow(3.0, 21.0);
-				error_mag = std::abs(double(result) - expected);
-				if (error_mag >= 1e-6) {
-					if (reportTestCases) std::cout << "    FAIL pow(-3, 21) = "
-						<< double(result) << ", expected negative " << expected << "\n";
-					++nrOfFailedTestCases;
-				}
-			}
+			// Test 3: Even integer exponent with negative base (result positive): (-3)^20 = 3486784401
+			nrOfFailedTestCases += expect_bits(pow(Real(-3.0), Real(20.0)), Real(3486784401.0), bits, "pow(-3, 20) vs 3486784401", reportTestCases);
+
+			// Test 4: Odd integer exponent with negative base (result negative): (-3)^21 = -10460353203
+			nrOfFailedTestCases += expect_bits(pow(Real(-3.0), Real(21.0)), Real(-10460353203.0), bits, "pow(-3, 21) vs -10460353203", reportTestCases);
 
 			// Test 5: Non-integer exponent with negative base should return NaN
 			// (-2)^2.5 should be NaN (complex result)
@@ -189,46 +151,15 @@ namespace {
 				}
 			}
 
-			// Test 6: Very large integer exponent (within int range)
-			// 2^30 = 1073741824
-			{
-				Real x(2.0), y(30.0);
-				Real result = pow(x, y);
-				double expected = std::pow(2.0, 30.0);
-				error_mag = std::abs(double(result) - expected);
-				if (error_mag >= 1e-6) {
-					if (reportTestCases) std::cout << "    FAIL pow(2, 30) = "
-						<< double(result) << ", expected " << expected << "\n";
-					++nrOfFailedTestCases;
-				}
-			}
+			// Test 6: Very large integer exponent (within int range): 2^30 = 1073741824
+			nrOfFailedTestCases += expect_bits(pow(Real(2.0), Real(30.0)), Real(1073741824.0), bits, "pow(2, 30) vs 2^30", reportTestCases);
 
 			// Test 7: Exponent just outside old [-10, 10] limit
 			// (-2)^11 = -2048 (previously would have returned NaN)
-			{
-				Real x(-2.0), y(11.0);
-				Real result = pow(x, y);
-				Real expected(-2048.0);
-				error_mag = std::abs(double(result - expected));
-				if (error_mag >= 1e-10) {
-					if (reportTestCases) std::cout << "    FAIL pow(-2, 11) = "
-						<< double(result) << ", expected -2048\n";
-					++nrOfFailedTestCases;
-				}
-			}
+			nrOfFailedTestCases += expect_bits(pow(Real(-2.0), Real(11.0)), Real(-2048.0), bits, "pow(-2, 11) vs -2048", reportTestCases);
 
 			// Test 8: Negative base with integer exponent = 0 (should be 1)
-			{
-				Real x(-5.0), y(0.0);
-				Real result = pow(x, y);
-				Real expected(1.0);
-				error_mag = std::abs(double(result - expected));
-				if (error_mag >= 1e-15) {
-					if (reportTestCases) std::cout << "    FAIL pow(-5, 0) = "
-						<< double(result) << ", expected 1\n";
-					++nrOfFailedTestCases;
-				}
-			}
+			nrOfFailedTestCases += expect_bits(pow(Real(-5.0), Real(0.0)), Real(1.0), bits, "pow(-5, 0) vs 1", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -237,35 +168,17 @@ namespace {
 		template<typename Real>
 		int VerifyPowFractionalPowers(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
+			constexpr int bits = wanted_bits<Real>();
 
 			// Test: 4^0.5 = 2 (square root)
-			Real x(4.0), y(0.5), expected(2.0);
-			Real result = pow(x, y);
-			error_mag = std::abs(double(result - expected));
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cout << "    FAIL pow(4, 0.5) != 2\n";
-				++nrOfFailedTestCases;
-			}
+			nrOfFailedTestCases += expect_bits(pow(Real(4.0), Real(0.5)), Real(2.0), bits, "pow(4, 0.5) vs 2", reportTestCases);
 
-			// Test: 8^(1/3) ~= 2 (cube root)
-			x = 8.0; y = Real(1.0) / Real(3.0);
-			result = pow(x, y);
-			error_mag = std::abs(double(result) - 2.0);
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cout << "    FAIL pow(8, 1/3) != 2\n";
-				++nrOfFailedTestCases;
-			}
+			// Test: 8^(1/3) ~= 2 (cube root). The exponent is 1/3 to the configuration, so the
+			// result is 2 to the configuration (d(8^y)/dy = 8^y ln8 is small).
+			nrOfFailedTestCases += expect_bits(pow(Real(8.0), Real(1.0) / Real(3.0)), Real(2.0), bits, "pow(8, 1/3) vs 2", reportTestCases);
 
-			// Test: 2^0.5 = sqrt(2)
-			x = 2.0; y = 0.5;
-			result = pow(x, y);
-			double sqrt_2 = std::sqrt(2.0);
-			error_mag = std::abs(double(result) - sqrt_2);
-			if (error_mag >= 1e-15) {
-				if (reportTestCases) std::cout << "    FAIL pow(2, 0.5) != sqrt(2)\n";
-				++nrOfFailedTestCases;
-			}
+			// Test: 2^0.5 = sqrt(2): stored reference
+			nrOfFailedTestCases += expect_bits(pow(Real(2.0), Real(0.5)), s_sqrt2, bits, "pow(2, 0.5) vs sqrt2", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -274,81 +187,52 @@ namespace {
 		template<typename Real>
 		int VerifyPowGeneralPowers(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
-			double error_mag;
+			constexpr int bits = wanted_bits<Real>();
 
-			// Test: 2^pi
-			Real x(2.0), y(3.141592653589793);
-			Real result = pow(x, y);
-			double expected = std::pow(2.0, 3.141592653589793);
-			error_mag = std::abs(double(result) - expected);
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cout << "    FAIL pow(2, pi) precision\n";
-				++nrOfFailedTestCases;
-			}
+			// Test: 2^pi, with pi the double 3.141592653589793 (mpmath reference for that double)
+			nrOfFailedTestCases += expect_bits(pow(Real(2.0), Real(3.141592653589793)), kPow2PiD, bits, "pow(2, double(pi))", reportTestCases);
 
-			// Test: e^2 = exp(2)
-			x = Real(std::exp(1.0)); y = 2.0;
-			result = pow(x, y);
-			expected = std::exp(2.0);
-			error_mag = std::abs(double(result) - expected);
-			if (error_mag >= 1e-14) {  // slightly relaxed
-				if (reportTestCases) std::cout << "    FAIL pow(e, 2) != exp(2)\n";
-				++nrOfFailedTestCases;
-			}
+			// Test: e^2 = exp(2). The base must be e to the configuration's precision: the
+			// double std::exp(1.0) is e only to 53 bits, and so would be its square.
+			Real e;
+			e.parse(std::string(s_e));
+			nrOfFailedTestCases += expect_bits(pow(e, Real(2.0)), kExp2, bits, "pow(e, 2) vs e^2", reportTestCases);
 
-			// Test: 10^1.5
-			x = 10.0; y = 1.5;
-			result = pow(x, y);
-			expected = std::pow(10.0, 1.5);
-			error_mag = std::abs(double(result) - expected);
-			if (error_mag >= 1e-13) {  // relaxed for compound operations
-				if (reportTestCases) std::cout << "    FAIL pow(10, 1.5) precision\n";
-				++nrOfFailedTestCases;
-			}
+			// Test: 10^1.5 = 10 sqrt(10)
+			nrOfFailedTestCases += expect_bits(pow(Real(10.0), Real(1.5)), kPow10_1p5, bits, "pow(10, 1.5)", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
 
-
-		template<typename Real>
-		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
-			double a = double(x), b = double(y);
-			double diff = std::abs(a - b);
-			if (diff == 0.0) return true;
-			double scale = std::max(std::abs(a), std::abs(b));
-			return diff <= std::max(absTol, relTol * scale);
-		}
-
 		// Property fuzzer over the positive domain: pow(x,2)==x*x, pow(x,0.5)==
 		// sqrt(x), the pow(x,a)*pow(x,b)==pow(x,a+b) exponent law, and the
-		// pow(x,0)==1 / pow(x,1)==x fixed points.
+		// pow(x,0)==1 / pow(x,1)==x fixed points, checked in ereal itself. Since a
+		// self-consistent loss of precision would satisfy them, pow(x,1.5) is also checked
+		// against pow at the widest configuration, on every fourth sample (the ereal<19> pow
+		// dominates an iteration's cost).
 		template<typename Real>
 		int VerifyPowFuzz(bool reportTestCases, unsigned nrIterations) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
 			std::mt19937_64 rng(0xC1A55'1FFEULL);
 			std::uniform_real_distribution<double> dist(0.1, 50.0);
-			Real one(1.0), two(2.0), half(0.5);
+			constexpr bool hasWiderReference = ereal_bits_of<Real>::value < ereal_bits_of<WideReal>::value;
+			Real one(1.0), two(2.0), half(0.5), threeHalves(1.5);
 			for (unsigned i = 0; i < nrIterations; ++i) {
 				double dx = dist(rng);
 				Real x(dx);
-				if (!close_rel(pow(x, two), x * x, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL pow(x,2)==x*x at x=" << dx << '\n';
-					++nrOfFailedTestCases;
+				const std::string at = " at x=" + std::to_string(dx);
+				Real p15 = pow(x, threeHalves);
+				nrOfFailedTestCases += expect_bits(pow(x, two), x * x, bits, "pow(x,2)==x*x" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(pow(x, half), sqrt(x), bits, "pow(x,0.5)==sqrt(x)" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(p15 * pow(x, half), pow(x, two), bits, "pow exponent law" + at, reportTestCases);
+				if constexpr (hasWiderReference) {
+					if (i % 4 == 0) nrOfFailedTestCases += expect_bits(p15, pow(WideReal(dx), WideReal(1.5)), bits, "pow(x,1.5) vs ereal<19>" + at, reportTestCases);
 				}
-				if (!close_rel(pow(x, half), sqrt(x), 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL pow(x,0.5)==sqrt(x) at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (!close_rel(pow(x, Real(1.5)) * pow(x, half), pow(x, two), 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL pow exponent law at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				// fixed points: compared with tolerance -- the general pow path
+				// fixed points: checked to the configuration -- the general pow path
 				// need not return exactly 1 / x on every platform.
-				if (!close_rel(pow(x, Real(0.0)), one, 1.0e-13) || !close_rel(pow(x, one), x, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL pow fixed points at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
+				nrOfFailedTestCases += expect_bits(pow(x, Real(0.0)), one, bits, "pow(x,0)==1" + at, reportTestCases);
+				nrOfFailedTestCases += expect_bits(pow(x, one), x, bits, "pow(x,1)==x" + at, reportTestCases);
 			}
 			return nrOfFailedTestCases;
 		}

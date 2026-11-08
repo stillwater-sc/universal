@@ -8,17 +8,66 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include <string>
+#include <string_view>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_mathlib_adaptive.hpp>
+#include <universal/verification/ereal_precision.hpp>
+#include <math/constants/reference_constants.hpp>
 
 namespace {
 	using namespace sw::universal;
+
+	// Precision (#2008, #2006). Every value is checked exactly, against a decimal reference
+	// or another ereal, by the dyadic oracle in ereal_precision.hpp: nothing passes through a
+	// double, so a result correct to only 53 bits fails. Each check asks for the bits the
+	// configuration holds, ereal_bits_of<Real>::value, less kMarginBits.
+	//
+	// Measured (2026-11, gcc -O2) at ereal<8>/<16>/<19>, bits held 424/848/1007: every check
+	// here reaches at least 434/876/1018 bits (a result may carry up to twice its limbs, so
+	// it can exceed the bits held). The smallest surplus is 10/28/11 bits, log(e) of an e
+	// parsed from its decimal string. A margin of 16 bits keeps every check passing with
+	// room for platform differences in the last limb, while asking for 408/832/991 bits:
+	// far beyond the 53 a double-only result has.
+	constexpr int kMarginBits = 16;
+
+	template<typename Real>
+	constexpr int wanted_bits() { return ereal_bits_of<Real>::value - kMarginBits; }
+
+	// The widest double-limb configuration (maxlimbs <= 19), the reference for values that
+	// have no stored constant.
+	using WideReal = ereal<19, double>;
+
+	// Reference computed with mpmath at 360 digits, printed to 330 significant digits; the
+	// argument is the double 0.01 converted exactly (mpf(0.01)), not the decimal.
+	//   kLog1p_001 = log1p(mpf(0.01))
+	constexpr std::string_view kLog1p_001 =
+		"0.009950330853168083054321117066257624171826884982057320887631653238805916412350"
+		"12176473800978001516346529341753387268814793094664450336821419048326011273166613"
+		"79485523865212490814513769960225581412353835423574199689728855668229158003758467"
+		"24830708814066285999340362602697635240153690515932529357434131016022466115692935"
+		"82302809433484";
+
+
+	template<typename Real>
+	int expect_bits(const Real& got, std::string_view ref, int bits, const std::string& what, bool reportTestCases) {
+		if (agrees_to_bits(got, ref, bits)) return 0;
+		if (reportTestCases) std::cout << "    FAIL " << what << ": " << measured_bits(got, ref) << " bits, wanted " << bits << '\n';
+		return 1;
+	}
+	template<typename Real, typename Ref>
+	int expect_bits(const Real& got, const Ref& ref, int bits, const std::string& what, bool reportTestCases) {
+		if (agrees_to_bits(got, ref, bits)) return 0;
+		if (reportTestCases) std::cout << "    FAIL " << what << ": " << measured_bits(got, ref) << " bits, wanted " << bits << '\n';
+		return 1;
+	}
 
 		// Verify log function
 		template<typename Real>
 		int VerifyLog(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
 
 			// Test: log(1) = 0 (mathematically exact)
 			Real x(1.0), expected(0.0);
@@ -28,50 +77,15 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log(e) = 1 (approximate - e is irrational)
-			x = Real(std::exp(1.0));
-			expected = Real(1.0);
-			result = log(x);
-			constexpr double threshold = 1e-14;  // Double precision accuracy
+			// log(e) = 1. The argument must be e to the configuration's precision: the double
+			// std::exp(1.0) is e only to 53 bits, and so is its logarithm's distance from 1.
+			Real e;
+			e.parse(std::string(s_e));
+			nrOfFailedTestCases += expect_bits(log(e), Real(1.0), bits, "log(e) vs 1", reportTestCases);
 
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-
-					report_error_detail("log", "e", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: log(2) ~= 0.693147181 (approximate)
-			x = 2.0;
-			double log_2 = std::log(2.0);
-			expected = Real(log_2);
-			result = log(x);
-
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-
-					report_error_detail("log", "2", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: log(10) ~= 2.302585093 (approximate)
-			x = 10.0;
-			double log_10 = std::log(10.0);
-			expected = Real(log_10);
-			result = log(x);
-
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-
-					report_error_detail("log", "10", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// log(2), log(10): stored references
+			nrOfFailedTestCases += expect_bits(log(Real(2.0)), s_ln2, bits, "log(2) vs ln2", reportTestCases);
+			nrOfFailedTestCases += expect_bits(log(Real(10.0)), s_ln10, bits, "log(10) vs ln10", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -80,38 +94,12 @@ namespace {
 		template<typename Real>
 		int VerifyLog2(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
 
-			// Test: log2(2) = 1 (verify with double-precision accuracy)
-			// Note: log2 implementation limited by underlying double precision
-			Real x(2.0), expected(1.0);
-			Real result = log2(x);
-			constexpr double threshold = 1e-14;  // Double precision accuracy
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("log2(2)", "1", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: log2(8) = 3 (verify with double-precision accuracy)
-			x = 8.0; expected = 3.0;
-			result = log2(x);
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("log2(8)", "3", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: log2(1024) = 10 (verify with double-precision accuracy)
-			x = 1024.0; expected = 10.0;
-			result = log2(x);
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("log2(1024)", "10", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// exact results; checked to the configuration, as log2 need not be bit-exact
+			nrOfFailedTestCases += expect_bits(log2(Real(2.0)), Real(1.0), bits, "log2(2) vs 1", reportTestCases);
+			nrOfFailedTestCases += expect_bits(log2(Real(8.0)), Real(3.0), bits, "log2(8) vs 3", reportTestCases);
+			nrOfFailedTestCases += expect_bits(log2(Real(1024.0)), Real(10.0), bits, "log2(1024) vs 10", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -120,38 +108,11 @@ namespace {
 		template<typename Real>
 		int VerifyLog10(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
 
-			// Test: log10(10) = 1 (verify with double-precision accuracy)
-			// Note: log10 implementation limited by underlying double precision
-			Real x(10.0), expected(1.0);
-			Real result = log10(x);
-			constexpr double threshold = 1e-14;  // Double precision accuracy
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("log10(10)", "1", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: log10(100) = 2 (verify with double-precision accuracy)
-			x = 100.0; expected = 2.0;
-			result = log10(x);
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("log10(100)", "2", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
-
-			// Test: log10(1000) = 3 (verify with double-precision accuracy)
-			x = 1000.0; expected = 3.0;
-			result = log10(x);
-			if (!check_relative_error(result, expected, threshold)) {
-				if (reportTestCases) {
-					report_error_detail("log10(1000)", "3", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			nrOfFailedTestCases += expect_bits(log10(Real(10.0)), Real(1.0), bits, "log10(10) vs 1", reportTestCases);
+			nrOfFailedTestCases += expect_bits(log10(Real(100.0)), Real(2.0), bits, "log10(100) vs 2", reportTestCases);
+			nrOfFailedTestCases += expect_bits(log10(Real(1000.0)), Real(3.0), bits, "log10(1000) vs 3", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -160,6 +121,7 @@ namespace {
 		template<typename Real>
 		int VerifyLog1p(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
 
 			// Test: log1p(0) = 0 (log(1+0) = log(1) = 0, exact)
 			Real x(0.0), expected(0.0);
@@ -169,35 +131,12 @@ namespace {
 				++nrOfFailedTestCases;
 			}
 
-			// Test: log1p(0.01) for small x accuracy (approximate)
-			x = 0.01;
-			double std_log1p = std::log1p(0.01);
-			expected = Real(std_log1p);
-			result = log1p(x);
-			// Use relaxed threshold for Taylor series approximation
-			double relaxed_threshold = 3e-5;  // Taylor series achieves ~2e-5 accuracy
-			if (!check_relative_error(result, expected, relaxed_threshold)) {
-				if (reportTestCases) {
-					report_error_detail("log1p", "0.01", result, expected, relaxed_threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// log1p(0.01): small-x accuracy, mpmath reference. (This used to be checked to 3e-5
+			// for a Taylor-series log1p; it now reaches the configuration.)
+			nrOfFailedTestCases += expect_bits(log1p(Real(0.01)), kLog1p_001, bits, "log1p(0.01)", reportTestCases);
 
-			// Test: log1p(1) = log(2) ~= 0.693147181 (approximate)
-			x = 1.0;
-			std_log1p = std::log1p(1.0);
-			expected = Real(std_log1p);
-			result = log1p(x);
-			constexpr double threshold = 1e-14;  // Double precision accuracy
-
-			if (!check_relative_error(result, expected, threshold)) {
-
-				if (reportTestCases) {
-
-					report_error_detail("log1p", "1", result, expected, threshold);
-				}
-				++nrOfFailedTestCases;
-			}
+			// log1p(1) = ln2: stored reference
+			nrOfFailedTestCases += expect_bits(log1p(Real(1.0)), s_ln2, bits, "log1p(1) vs ln2", reportTestCases);
 
 			return nrOfFailedTestCases;
 		}
@@ -206,70 +145,48 @@ namespace {
 		template<typename Real>
 		int VerifyLogExpRoundtrip(bool reportTestCases) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
 
-			// Test: exp(log(x)) = x for various x (mathematical identity)
+			// Test: exp(log(x)) = x for various x (mathematical identity), in ereal itself
 			double test_values[] = {0.1, 0.5, 1.0, 2.0, 5.0, 10.0};
-
-			constexpr double threshold = 1e-14;  // Double precision accuracy
 
 			for (double val : test_values) {
 				Real x(val);
-				Real result = exp(log(x));
-				if (!check_relative_error(result, x, threshold)) {
-					if (reportTestCases) {
-						std::cout << "    FAIL exp(log(" << val << ")) roundtrip\n";
-						report_error_detail("exp(log(x))", std::to_string(val), result, x, threshold);
-					}
-					++nrOfFailedTestCases;
-				}
+				nrOfFailedTestCases += expect_bits(exp(log(x)), x, bits, "exp(log(" + std::to_string(val) + ")) roundtrip", reportTestCases);
 			}
 
 			return nrOfFailedTestCases;
 		}
 
-
-		// Compare via the double projection within a relative tolerance, with an
-		// absolute floor so near-zero results do not make the test spuriously strict.
-		template<typename Real>
-		bool close_rel(const Real& x, const Real& y, double relTol, double absTol = 1.0e-15) {
-			double a = double(x), b = double(y);
-			double diff = std::abs(a - b);
-			if (diff == 0.0) return true;
-			double scale = std::max(std::abs(a), std::abs(b));
-			return diff <= std::max(absTol, relTol * scale);
-		}
-
 		// Property fuzzer over the positive domain: exp/log inverse, the
-		// log(a*b)==log(a)+log(b) product rule, and monotonicity. log1p is checked
-		// with a loose tolerance -- its current accuracy is ~1e-5 (precision
-		// improvement tracked under #954).
+		// log(a*b)==log(a)+log(b) product rule, log1p(x)==log(1+x), and monotonicity.
+		// Identities are checked in ereal itself; since a self-consistent loss of precision
+		// would satisfy them, log(x) is also checked against log at the widest configuration,
+		// on every fourth sample (the ereal<19> log dominates an iteration's cost).
 		template<typename Real>
 		int VerifyLogarithmFuzz(bool reportTestCases, unsigned nrIterations) {
 			int nrOfFailedTestCases = 0;
+			constexpr int bits = wanted_bits<Real>();
+			constexpr bool hasWiderReference = ereal_bits_of<Real>::value < ereal_bits_of<WideReal>::value;
 			std::mt19937_64 rng(0xC1A55'1FFEULL);
 			std::uniform_real_distribution<double> dist(1.0e-2, 1.0e3);
 			Real one(1.0);
 			for (unsigned i = 0; i < nrIterations; ++i) {
 				double dx = dist(rng);
 				Real x(dx);
-				if (!close_rel(exp(log(x)), x, 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL exp(log(x)) at x=" << dx << '\n';
-					++nrOfFailedTestCases;
+				const std::string at = " at x=" + std::to_string(dx);
+				Real lx = log(x);
+				nrOfFailedTestCases += expect_bits(exp(lx), x, bits, "exp(log(x))" + at, reportTestCases);
+				if constexpr (hasWiderReference) {
+					if (i % 4 == 0) nrOfFailedTestCases += expect_bits(lx, log(WideReal(dx)), bits, "log(x) vs ereal<19>" + at, reportTestCases);
 				}
 				Real y(dist(rng));
-				if (!close_rel(log(x * y), log(x) + log(y), 1.0e-13)) {
-					if (reportTestCases) std::cout << "    FAIL log(a*b)==log(a)+log(b) at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
-				if (!(log(x) < log(x + one))) {
+				nrOfFailedTestCases += expect_bits(log(x * y), lx + log(y), bits, "log(a*b)==log(a)+log(b)" + at, reportTestCases);
+				if (!(lx < log(x + one))) {
 					if (reportTestCases) std::cout << "    FAIL log monotonic at x=" << dx << '\n';
 					++nrOfFailedTestCases;
 				}
-				// log1p(x) == log(1+x); loose tolerance pending the #954 precision work
-				if (!close_rel(log1p(x), log(one + x), 1.0e-4)) {
-					if (reportTestCases) std::cout << "    FAIL log1p(x)==log(1+x) at x=" << dx << '\n';
-					++nrOfFailedTestCases;
-				}
+				nrOfFailedTestCases += expect_bits(log1p(x), log(one + x), bits, "log1p(x)==log(1+x)" + at, reportTestCases);
 			}
 			return nrOfFailedTestCases;
 		}

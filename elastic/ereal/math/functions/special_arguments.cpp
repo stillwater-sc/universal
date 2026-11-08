@@ -19,22 +19,55 @@
 //
 // The references are independent of the function under test: Taylor series for the tiny
 // arguments, libm in double for the shape, and exact dyadic values for fmod and remainder.
+// Precision is measured exactly (ereal_precision.hpp), never through a double (#2008): the
+// series references, the stored constants (sin and cos at -1e3 and -1e6), and, for the
+// arguments that have neither, the same function at a wider configuration. libm stays as
+// the one reference that shares no code with ereal, but it only certifies ~50 bits, so it
+// checks the shape and the wide configuration checks the precision.
 #include <universal/utility/directives.hpp>
+#include <algorithm>
 #include <cmath>
 #include <limits>
+#include <string_view>
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/ereal_precision.hpp>
+#include <math/constants/reference_constants.hpp>
 
 namespace {
 	using namespace sw::universal;
 
-	// bits of agreement between a value and its reference
-	template<typename Real>
-	double agreement(const Real& v, const Real& ref) {
-		const Real d = abs(v - ref);
-		if (d.iszero()) return 1.0e6;
-		return -std::log2(double(d / abs(ref)));
+	// bits of agreement between a value and its reference, exact (no double in between);
+	// -1 for a value that cannot agree
+	template<unsigned m, typename F, unsigned n, typename G>
+	int agreement(const ereal<m, F>& v, const ereal<n, G>& ref) {
+		if (v.isnan() || v.isinf() || ref.isnan() || ref.isinf()) return -1;
+		if (ref.iszero()) return v.iszero() ? kExactAgreement : -1;
+		return agreed_bits(v, ref);
 	}
+
+	// bits of agreement with a decimal reference, which may carry a sign
+	template<typename Real>
+	int agreement(const Real& v, std::string_view ref) {
+		if (v.isnan() || v.isinf() || v.iszero()) return -1;
+		Real w = v;
+		if (!ref.empty() && ref.front() == '-') { ref.remove_prefix(1); w = -v; }
+		const int cap = std::min(320, static_cast<int>(ereal_bits_of<Real>::value * 0.30103) + 4);
+		return agreed_bits(w, ref, cap);
+	}
+
+	// The configuration the range checks measure against: twice ereal<8>'s limbs, so its
+	// own error is far below what is asked of the value under test
+	using Wide = ereal<16>;
+
+	// Margins below the configuration's precision, measured at ereal<8> (compile with
+	// -DEREAL_PRECISION_TRACE to print every agreement):
+	//   near 0 and near 1, against the series: worst seen 408 of 424 bits, at
+	//   acosh(1 + 2^-100), whose reference goes through a sqrt and rounded coefficients
+	constexpr int kSeriesMargin = 32;
+	//   across the range, against the wide configuration or a stored constant: every value
+	//   measured at or above 424 bits (results carry spare limbs), so this is all slack
+	constexpr int kRangeMargin = 24;
 
 	// the rational coefficient n / d, exact to the working precision: a double literal such as
 	// 1.0 / 6.0 would put a 2^-53 error into the x^2 term
@@ -56,9 +89,12 @@ namespace {
 		return x * r;
 	}
 
-	template<typename Real>
-	int expect_bits(const char* label, double arg, const Real& v, const Real& ref, double bits, bool reportTestCases) {
-		const double got = agreement(v, ref);
+	template<typename Real, typename Ref>
+	int expect_bits(const char* label, double arg, const Real& v, const Ref& ref, int bits, bool reportTestCases) {
+		const int got = agreement(v, ref);
+#ifdef EREAL_PRECISION_TRACE
+		std::cout << "    " << label << "(" << arg << "): " << got << " bits (wanted " << bits << ")\n";
+#endif
 		if (got >= bits) return 0;
 		if (reportTestCases) std::cout << "    FAIL " << label << "(" << arg << "): " << got << " bits, expected " << bits << '\n';
 		return 1;
@@ -84,7 +120,8 @@ namespace {
 
 	// log(1 + t) and log1p(t) against t - t^2/2 + t^3/3 - ..., and log(1 - t)
 	template<typename Real>
-	int VerifyLogNearOne(bool reportTestCases, double bits) {
+	int VerifyLogNearOne(bool reportTestCases) {
+		const int bits = ereal_bits_of<Real>::value - kSeriesMargin;
 		int fails = 0;
 		for (double t : { 1.0e-20, 1.0e-30, std::ldexp(1.0, -100), 3.0e-50 }) {
 			const Real x(t);
@@ -98,7 +135,8 @@ namespace {
 
 	// sinh, tanh, asinh and atanh at tiny arguments, against their Taylor series
 	template<typename Real>
-	int VerifyHyperbolicNearZero(bool reportTestCases, double bits) {
+	int VerifyHyperbolicNearZero(bool reportTestCases) {
+		const int bits = ereal_bits_of<Real>::value - kSeriesMargin;
 		int fails = 0;
 		for (double t : { 1.0e-20, -1.0e-30, 3.1752805378007457e-50, -1.0e-100 }) {
 			const Real x(t);
@@ -115,39 +153,70 @@ namespace {
 		return fails;
 	}
 
-	// the shape across the range, against libm: large tanh, huge asinh and acosh, and the
-	// moderate arguments the new branches meet at 1/2
+	// across the range: large tanh, huge asinh and acosh, and the moderate arguments the
+	// new branches meet at 1/2. The shape against libm, the precision against Wide.
 	template<typename Real>
 	int VerifyHyperbolicRange(bool reportTestCases) {
+		const int bits = ereal_bits_of<Real>::value - kRangeMargin;
 		int fails = 0;
 		for (double v : { 0.25, 0.4999, 0.5, 0.75, 3.0, 20.0, 3576.4793954088896, 1.0e300 }) {
-			fails += expect_near("tanh", v, tanh(Real(v)), std::tanh(v), 1.0e-15, reportTestCases);
-			fails += expect_near("tanh", -v, tanh(Real(-v)), std::tanh(-v), 1.0e-15, reportTestCases);
+			const Real x(v), mx(-v);
+			const Wide wx(v), wmx(-v);
+			const Real th = tanh(x), mth = tanh(mx);
+			fails += expect_near("tanh", v, th, std::tanh(v), 1.0e-15, reportTestCases);
+			fails += expect_near("tanh", -v, mth, std::tanh(-v), 1.0e-15, reportTestCases);
+			fails += expect_bits("tanh vs wide", v, th, tanh(wx), bits, reportTestCases);
+			fails += expect_bits("tanh vs wide", -v, mth, tanh(wmx), bits, reportTestCases);
 			if (v < 700.0) {
-				fails += expect_near("sinh", v, sinh(Real(v)), std::sinh(v), 1.0e-15, reportTestCases);
-				fails += expect_near("sinh", -v, sinh(Real(-v)), std::sinh(-v), 1.0e-15, reportTestCases);
+				const Real sh = sinh(x), msh = sinh(mx);
+				fails += expect_near("sinh", v, sh, std::sinh(v), 1.0e-15, reportTestCases);
+				fails += expect_near("sinh", -v, msh, std::sinh(-v), 1.0e-15, reportTestCases);
+				fails += expect_bits("sinh vs wide", v, sh, sinh(wx), bits, reportTestCases);
+				fails += expect_bits("sinh vs wide", -v, msh, sinh(wmx), bits, reportTestCases);
 			}
-			fails += expect_near("asinh", v, asinh(Real(v)), std::asinh(v), 1.0e-15, reportTestCases);
-			fails += expect_near("asinh", -v, asinh(Real(-v)), std::asinh(-v), 1.0e-15, reportTestCases);
-			if (v < 1.0) fails += expect_near("atanh", -v, atanh(Real(-v)), std::atanh(-v), 1.0e-15, reportTestCases);
-			else         fails += expect_near("acosh", v, acosh(Real(v)), std::acosh(v), 1.0e-15, reportTestCases);
+			const Real ash = asinh(x), mash = asinh(mx);
+			fails += expect_near("asinh", v, ash, std::asinh(v), 1.0e-15, reportTestCases);
+			fails += expect_near("asinh", -v, mash, std::asinh(-v), 1.0e-15, reportTestCases);
+			fails += expect_bits("asinh vs wide", v, ash, asinh(wx), bits, reportTestCases);
+			fails += expect_bits("asinh vs wide", -v, mash, asinh(wmx), bits, reportTestCases);
+			if (v < 1.0) {
+				const Real ath = atanh(mx);
+				fails += expect_near("atanh", -v, ath, std::atanh(-v), 1.0e-15, reportTestCases);
+				fails += expect_bits("atanh vs wide", -v, ath, atanh(wmx), bits, reportTestCases);
+			}
+			else {
+				const Real ach = acosh(x);
+				fails += expect_near("acosh", v, ach, std::acosh(v), 1.0e-15, reportTestCases);
+				fails += expect_bits("acosh vs wide", v, ach, acosh(wx), bits, reportTestCases);
+			}
 		}
 		return fails;
 	}
 
 	// sin, cos and tan at negative arguments of several magnitudes: the odd and even symmetry
-	// exactly, and libm's value in double
+	// exactly, libm's value in double for the shape, and the precision against Wide
 	template<typename Real>
 	int VerifyTrigNegative(bool reportTestCases) {
+		const int bits = ereal_bits_of<Real>::value - kRangeMargin;
 		int fails = 0;
 		for (double v : { 1.0, 7.0, 219.34981640059584, 5549.5471854265415, 123456.789, 1.0e9 }) {
 			const Real x(v), mx(-v);
-			if (!(sin(mx) == -sin(x))) { ++fails; if (reportTestCases) std::cout << "    FAIL sin(-x) != -sin(x) at " << v << '\n'; }
-			if (!(cos(mx) == cos(x)))  { ++fails; if (reportTestCases) std::cout << "    FAIL cos(-x) != cos(x) at " << v << '\n'; }
-			fails += expect_near("sin", -v, sin(mx), std::sin(-v), 1.0e-15, reportTestCases);
-			fails += expect_near("cos", -v, cos(mx), std::cos(-v), 1.0e-15, reportTestCases);
-			fails += expect_near("tan", -v, tan(mx), std::tan(-v), 1.0e-14, reportTestCases);
+			const Wide wmx(-v);
+			const Real s = sin(mx), c = cos(mx), t = tan(mx);
+			if (!(s == -sin(x))) { ++fails; if (reportTestCases) std::cout << "    FAIL sin(-x) != -sin(x) at " << v << '\n'; }
+			if (!(c == cos(x)))  { ++fails; if (reportTestCases) std::cout << "    FAIL cos(-x) != cos(x) at " << v << '\n'; }
+			fails += expect_near("sin", -v, s, std::sin(-v), 1.0e-15, reportTestCases);
+			fails += expect_near("cos", -v, c, std::cos(-v), 1.0e-15, reportTestCases);
+			fails += expect_near("tan", -v, t, std::tan(-v), 1.0e-14, reportTestCases);
+			fails += expect_bits("sin vs wide", -v, s, sin(wmx), bits, reportTestCases);
+			fails += expect_bits("cos vs wide", -v, c, cos(wmx), bits, reportTestCases);
+			fails += expect_bits("tan vs wide", -v, t, tan(wmx), bits, reportTestCases);
 		}
+		// against the stored values at -1e3 and -1e6: sin is odd, cos even
+		fails += expect_bits("-sin(-x) vs s_sin_1e3", -1.0e3, -sin(Real(-1.0e3)), s_sin_1e3, bits, reportTestCases);
+		fails += expect_bits("cos vs s_cos_1e3", -1.0e3, cos(Real(-1.0e3)), s_cos_1e3, bits, reportTestCases);
+		fails += expect_bits("-sin(-x) vs s_sin_1e6", -1.0e6, -sin(Real(-1.0e6)), s_sin_1e6, bits, reportTestCases);
+		fails += expect_bits("cos vs s_cos_1e6", -1.0e6, cos(Real(-1.0e6)), s_cos_1e6, bits, reportTestCases);
 		// huge arguments, beyond what the stored pi resolves: the reduction must still finish,
 		// in a bounded number of passes, with a value in [-1, 1]
 		for (double v : { 1.0e300, -1.0e300, std::numeric_limits<double>::max() }) {
@@ -212,17 +281,36 @@ namespace {
 		return fails;
 	}
 
-	// pow with an exponent whose leading limb is an integer, and a base whose leading limb is 1
-	template<typename Real>
+	// pow with an exponent whose leading limb is an integer, and a base whose leading limb is 1.
+	// The references use only arithmetic and the stored ln2 and e, none of pow, exp or log.
+	template<unsigned N>
 	int VerifyPowNearInteger(bool reportTestCases) {
+		using Real = ereal<N>;
 		int fails = 0;
-		// 2^(3 + 1e-30) - 8 = 8 (2^(1e-30) - 1) ~= 8 ln2 1e-30
-		const Real y = Real(3.0) + Real(1.0e-30);
+		// 2^(3 + d) - 8 = 8 (2^d - 1) = 8 (u + u^2/2 + u^3/6 + u^4/24 + ...), u = d ln2, with
+		// d the double nearest 1e-30. u^5 is 2^-480 of u, past what ereal<8> holds. The excess
+		// keeps the absolute precision of pow's value 8, so it is ~100 bits (log2(8/excess))
+		// short of the configuration: kPowExcessLoss.
+		constexpr int kPowExcessLoss = 100;
+		const Real d(1.0e-30);
+		const Real u = d * ereal_ln2<N, double>();
+		const Real excessRef = Real(8.0) * u * (Real(1.0) + u * (Real(1.0) / Real(2.0) + u * (Real(1.0) / Real(6.0) + u / Real(24.0))));
+		const Real y = Real(3.0) + d;
 		const Real excess = pow(Real(2.0), y) - Real(8.0);
-		fails += expect_near("pow(2, 3 + 1e-30) - 8, scaled", 3.0, excess * Real(1.0e30), 8.0 * 0.69314718055994531, 1.0e-14, reportTestCases);
-		// (1 + 1e-20)^(1e20) = e (1 - 1e-20 / 2 + ...)
-		const Real base = Real(1.0) + Real(1.0e-20);
-		fails += expect_near("pow(1 + 1e-20, 1e20)", 1.0e20, pow(base, Real(1.0e20)), 2.718281828459045, 1.0e-15, reportTestCases);
+		fails += expect_bits("pow(2, 3 + 1e-30) - 8", 3.0, excess, excessRef, ereal_bits_of<Real>::value - kRangeMargin - kPowExcessLoss, reportTestCases);
+		// (1 + b)^n = e^(n log1p(b)) = e * e^w, w = n (b - b^2/2 + b^3/3 - ...) - 1, with b the
+		// double nearest 1e-20 and n = 1e20 (exact). w is the rounding of b, so twelve terms
+		// of e^w and of log1p reach past ereal<8> (measured: this reference agrees with its
+		// own ereal<16> evaluation to 481 bits).
+		const Real b(1.0e-20), n(1.0e20);
+		Real l(0.0);
+		for (int k = 12; k >= 1; --k) l = Real(1.0) / Real(double(k)) - b * l;
+		const Real w = n * b * l - Real(1.0);
+		Real ew(0.0);
+		for (int k = 12; k >= 1; --k) ew = Real(1.0) + w * ew / Real(double(k));
+		const Real powRef = ereal_e<N, double>() * ew;
+		const Real base = Real(1.0) + b;
+		fails += expect_bits("pow(1 + 1e-20, 1e20)", 1.0e20, pow(base, n), powRef, ereal_bits_of<Real>::value - kRangeMargin, reportTestCases);
 		return fails;
 	}
 
@@ -255,7 +343,7 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	using Real = ereal<8>;   // about 424 bits; the near-zero references hold 380 of them
+	using Real = ereal<8>;   // 424 bits; the checks ask for that less a measured margin
 
 #if MANUAL_TESTING
 
@@ -269,12 +357,12 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyIsOne<Real>(reportTestCases), "isone(ereal<8>)", "isone");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogNearOne<Real>(reportTestCases, 380.0), "log near 1", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyHyperbolicNearZero<Real>(reportTestCases, 380.0), "hyperbolic near 0", "hyperbolic");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogNearOne<Real>(reportTestCases), "log near 1", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyHyperbolicNearZero<Real>(reportTestCases), "hyperbolic near 0", "hyperbolic");
 	nrOfFailedTestCases += ReportTestResult(VerifyHyperbolicRange<Real>(reportTestCases), "hyperbolic vs libm", "hyperbolic");
 	nrOfFailedTestCases += ReportTestResult(VerifyTrigNegative<Real>(reportTestCases), "trig at negative x", "trigonometry");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainderExact<Real>(reportTestCases), "fmod/remainder exact", "fractional");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowNearInteger<Real>(reportTestCases), "pow near integer", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowNearInteger<8>(reportTestCases), "pow near integer", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyTrigHugeNarrow(reportTestCases), "trig at DBL_MAX, ereal<1>", "trigonometry");
 #endif
 
