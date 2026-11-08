@@ -19,6 +19,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <climits>
 #include <limits>
+#include <stdexcept>
 #include <string_view>
 #include <universal/verification/ereal_reference_digits.hpp>
 
@@ -81,6 +82,19 @@ inline int agreed_bits_absolute(const ereal<m, F>& a, const ereal<n, G>& b) {
 	if (dn.sign()) dn.setsign(false);
 	if (dn.iszero()) return kExactAgreement;
 	return -(dn.findMsb() + d.scale) - 1;
+}
+
+// Bits measured for a failure message, never throwing: -1 where the oracle has no value to
+// compare (a NaN or inf on either side, or a zero reference).
+template<unsigned m, typename F, unsigned n, typename G>
+inline int measured_bits(const ereal<m, F>& got, const ereal<n, G>& ref) {
+	if (got.isnan() || got.isinf() || ref.isnan() || ref.isinf() || ref.iszero()) return -1;
+	return agreed_bits(got, ref);
+}
+template<unsigned maxlimbs, typename FpType>
+inline int measured_bits(const ereal<maxlimbs, FpType>& got, std::string_view ref) {
+	if (got.isnan() || got.isinf() || got.iszero()) return -1;
+	return agreed_bits(got, ref);
 }
 
 // The check a test asks for: got agrees with ref to at least `bits` bits.

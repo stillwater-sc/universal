@@ -57,17 +57,6 @@ namespace {
 		"03611364268279638639853872063450641671901548477176557239626404924342213029117041"
 		"3614336416360";
 
-	// Bits measured for a failure message; -1 where the oracle has no value to compare.
-	template<typename Real>
-	int measured_bits(const Real& got, std::string_view ref) {
-		if (got.isnan() || got.isinf() || got.iszero()) return -1;
-		return agreed_bits(got, ref);
-	}
-	template<typename Real, typename Ref>
-	int measured_bits(const Real& got, const Ref& ref) {
-		if (got.isnan() || got.isinf() || ref.isnan() || ref.isinf() || ref.iszero()) return -1;
-		return agreed_bits(got, ref);
-	}
 
 	template<typename Real>
 	int expect_bits(const Real& got, std::string_view ref, int bits, const std::string& what, bool reportTestCases) {

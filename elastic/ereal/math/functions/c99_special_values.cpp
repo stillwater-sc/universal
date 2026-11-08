@@ -338,10 +338,18 @@ namespace {
 		std::uniform_real_distribution<double> mant(1.0, 2.0);
 		const int span = std::numeric_limits<Host>::max_exponent - 2;
 		std::uniform_int_distribution<int> expo(-span, span);
+		// each draw in a fixed order: argument evaluation order is unspecified in C++, and gcc
+		// and clang would otherwise generate different cases from the same seed
+		auto draw = [&](int expoDivisor, bool withSign) {
+			const double m = mant(rng);
+			const int e = expo(rng) / expoDivisor;
+			const double s = (withSign && (rng() & 1)) ? -1.0 : 1.0;
+			return static_cast<Host>(std::ldexp(m, e) * s);
+		};
 		for (int i = 0; i < nrCases; ++i) {
-			const Host x = static_cast<Host>(std::ldexp(mant(rng), expo(rng)) * ((rng() & 1) ? -1.0 : 1.0));
-			Host y = static_cast<Host>(std::ldexp(mant(rng), expo(rng)) * ((rng() & 1) ? -1.0 : 1.0));
-			if (i % 3 == 0) y = static_cast<Host>(std::ldexp(mant(rng), expo(rng) / 16));   // quotients of every size
+			const Host x = draw(1, true);
+			Host y = draw(1, true);
+			if (i % 3 == 0) y = draw(16, false);   // quotients of every size
 			const Host f = std::fmod(x, y), r = std::remainder(x, y);
 			const Real ef = fmod(Real(x), Real(y)), er = remainder(Real(x), Real(y));
 			if (!(ef == Real(f)) || ef.signbit() != std::signbit(f)) {

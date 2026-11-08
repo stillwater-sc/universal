@@ -133,8 +133,8 @@ namespace {
 			complex<E> a(E(2.0), E(3.0)), b(E(-1.5), E(0.75));
 			complex<E> r = (a / b) * b;
 			if (!agrees_to_bits(r.real(), a.real(), wanted) || !agrees_to_bits(r.imag(), a.imag(), wanted)) {
-				if (reportTestCases) std::cout << "    FAIL: (a/b)*b bits re=" << agreed_bits(r.real(), a.real())
-				                               << " im=" << agreed_bits(r.imag(), a.imag()) << ", wanted at least " << wanted << "\n";
+				if (reportTestCases) std::cout << "    FAIL: (a/b)*b bits re=" << measured_bits(r.real(), a.real())
+				                               << " im=" << measured_bits(r.imag(), a.imag()) << ", wanted at least " << wanted << "\n";
 				++failures;
 			}
 		}

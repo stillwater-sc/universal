@@ -36,19 +36,14 @@ namespace {
 		template<typename A, typename B>
 		int expect_bits(const std::string& what, const A& got, const B& ref, int bits, bool reportTestCases) {
 			if (agrees_to_bits(got, ref, bits)) return 0;
-			if (reportTestCases) {
-				std::cout << "    FAIL " << what << ": ";
-				if (got.isnan() || got.isinf()) std::cout << "not finite";
-				else std::cout << agreed_bits(got, ref) << " bits";
-				std::cout << ", wanted at least " << bits << '\n';
-			}
+			if (reportTestCases) std::cout << "    FAIL " << what << ": " << measured_bits(got, ref) << " bits, wanted at least " << bits << '\n';
 			return 1;
 		}
 
 		template<typename A>
 		int expect_bits(const std::string& what, const A& got, std::string_view ref, int bits, bool reportTestCases) {
 			if (agrees_to_bits(got, ref, bits)) return 0;
-			if (reportTestCases) std::cout << "    FAIL " << what << ": " << agreed_bits(got, ref) << " bits, wanted at least " << bits << '\n';
+			if (reportTestCases) std::cout << "    FAIL " << what << ": " << measured_bits(got, ref) << " bits, wanted at least " << bits << '\n';
 			return 1;
 		}
 
