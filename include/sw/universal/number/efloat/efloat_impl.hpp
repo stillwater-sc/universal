@@ -2477,6 +2477,124 @@ inline constexpr void append_decimal(std::string& text, std::int64_t e) {
 	while (n > 0) text.push_back(buffer[--n]);
 }
 
+// 10^n at `bits` bits, by repeated squaring. 10^(2^k) is exact while it fits in the bits, and
+// each squaring past that at most doubles its relative error, and each product adds one
+// rounding: 10^n is good to about bits - log2(n) - 1 bits. The last square is not taken, so a
+// 10^n inside the exponent range never overflows on the way.
+template<unsigned nlimbs>
+inline constexpr efloat<nlimbs> power_of_ten(std::uint64_t n, unsigned bits) {
+	efloat<nlimbs> result(1);
+	result.set_precision(bits);
+	efloat<nlimbs> base(10);
+	base.set_precision(bits);
+	while (n != 0u) {
+		if (n & 1u) result *= base;
+		n >>= 1;
+		if (n != 0u) base *= base;
+	}
+	return result;
+}
+
+// read the exponent field of a literal, [+-]?[0-9]+, saturating its magnitude at exponent_limit:
+// past efloat's decimal range, about +/-1.39e18, a larger exponent reads the same
+constexpr std::int64_t exponent_limit = std::int64_t(4'000'000'000'000'000'000);
+inline constexpr bool read_exponent(std::string_view s, std::int64_t& e) noexcept {
+	e = 0;
+	std::size_t i = 0;
+	bool negative = false;
+	if (i < s.size() && (s[i] == '+' || s[i] == '-')) {
+		negative = (s[i] == '-');
+		++i;
+	}
+	if (i == s.size()) return false;   // no digits
+	for (; i < s.size(); ++i) {
+		const char c = s[i];
+		if (c < '0' || c > '9') return false;
+		e = (e <= exponent_limit / 10) ? e * 10 + (c - '0') : exponent_limit;   // e * 10 + 9 <= 4e18 + 9
+	}
+	if (e > exponent_limit) e = exponent_limit;
+	if (negative) e = -e;
+	return true;
+}
+
+// A literal the exact converter cannot reach, its decimal exponent too large for the
+// converter's widest working width: the value is digits * 10^exp10 computed in efloat's own
+// arithmetic at target_bits + 128 bits and then rounded to target_bits. digits are the
+// literal's significant digits, the first one nonzero, and exp10 the decimal exponent of the
+// last. The working bits cover the log2|exp10| bits power_of_ten loses with 64 left over, so the
+// result is faithfully rounded, and correctly rounded unless the literal lies within about
+// 2^-64 units of the target's last place from a midpoint. A value past efloat's exponent range
+// overflows or underflows as an operation's result does (enforce_range): inf, or the largest
+// value when the mode rounds toward zero, and 0 or min().
+template<unsigned nlimbs>
+inline constexpr void scale_by_power_of_ten(std::string_view digits, std::int64_t exp10, bool negative,
+                                            unsigned target_bits, efloat<nlimbs>& value) {
+	const bool carried = value.carries_precision();
+	const unsigned bits = target_bits + 128u;
+
+	// digits past those that can move the result by a unit in the working bits stand in as a
+	// trailing 1, which keeps the value strictly above the kept digits as they lie
+	const std::size_t keep = static_cast<std::size_t>(bits) * 30103u / 100000u + 3u;
+	bool sticky = false;
+	if (digits.size() > keep) {
+		for (std::size_t i = keep; i < digits.size(); ++i) {
+			if (digits[i] != '0') { sticky = true; break; }
+		}
+		exp10 += static_cast<std::int64_t>(digits.size() - keep);   // digits.size() is far below 2^62
+		digits = digits.substr(0, keep);
+	}
+	efloat<nlimbs> m(0);
+	m.set_precision(bits);
+	for (std::size_t i = 0; i < digits.size(); i += 19u) {
+		const std::size_t len = std::min<std::size_t>(19u, digits.size() - i);
+		std::uint64_t chunk = 0, scale = 1;
+		for (std::size_t k = 0; k < len; ++k) {
+			chunk = chunk * 10u + static_cast<std::uint64_t>(digits[i + k] - '0');
+			scale *= 10u;
+		}
+		m *= scale;
+		m += chunk;
+	}
+	std::int64_t ndigits = static_cast<std::int64_t>(digits.size());
+	if (sticky) {
+		m *= 10;
+		m += 1;
+		--exp10;
+		++ndigits;
+	}
+	m.setsign(negative);
+
+	// m * 10^exp10 lies in [10^(top - 1), 10^top). max() lies below 10^decimal_max and min()
+	// above 10^-decimal_max, so past these two the result overflows or underflows: say so as
+	// an operation does, from a power of 2 past the range
+	constexpr std::int64_t decimal_max = 1388255822130839284;   // ceil((max_scale + 1) log10(2))
+	const std::int64_t top = exp10 + ndigits;
+	if (top - 1 > decimal_max || top < -decimal_max) {
+		value = efloat<nlimbs>(1);
+		value.set_precision(target_bits);
+		value.setsign(negative);
+		value.setexponent((top - 1 > decimal_max) ? efloat<nlimbs>::max_scale + 1 : efloat<nlimbs>::min_scale - 2);
+		value.normalize();
+	}
+	else {
+		// two factors of about 10^(exp10 / 2) each, which stay inside the range where 10^exp10
+		// would not: m / 10^|exp10| lies in the range when 10^|exp10| does not
+		const std::uint64_t n  = static_cast<std::uint64_t>((exp10 < 0) ? -exp10 : exp10);
+		const std::uint64_t n1 = n / 2u;
+		if (exp10 >= 0) {
+			if (n1 != 0u) m *= power_of_ten<nlimbs>(n1, bits);
+			if (n - n1 != 0u) m *= power_of_ten<nlimbs>(n - n1, bits);
+		}
+		else {
+			if (n1 != 0u) m /= power_of_ten<nlimbs>(n1, bits);
+			m /= power_of_ten<nlimbs>(n - n1, bits);
+		}
+		value = m;
+		value.set_precision(target_bits);
+	}
+	if (!carried) value.clear_precision();
+}
+
 }  // namespace efloat_parse_detail
 
 // read an ASCII decimal literal and make a binary efloat out of it.
@@ -2489,12 +2607,15 @@ inline constexpr void append_decimal(std::string& text, std::int64_t e) {
 // digits beyond those that can affect the rounding are dropped and kept as a sticky bit, and
 // the converter widens its intermediates as the remaining digits and the exponent need (#1713).
 // BigBits is the narrowest result width tried first; it no longer limits the precision.
-// The one limit is the converter's widest working width, 32768 bits: past about 16000 bits
+// The converter's limit is its widest working width, 32768 bits: past about 16000 bits
 // (efloat<>'s default precision is 32768) a literal is correctly rounded to the most it can reach.
+// A literal it cannot reach at all -- a decimal exponent beyond about +/-13000 at ordinary
+// precision -- is computed in efloat's own arithmetic (scale_by_power_of_ten): faithfully
+// rounded, and correctly rounded except within about 2^-64 units of a midpoint (#2005). The
+// exponent may be anything: past efloat's range, about 10^+/-1.39e18, the value overflows to
+// inf or underflows to 0 as an operation's result does, and a zero is a zero at any exponent.
 //
-// Returns false, and leaves a zero, for text that is not a number. A well-formed literal the
-// converter cannot reach -- a decimal exponent beyond about +/-13000 at ordinary precision --
-// returns false and leaves a NaN.
+// Returns false, and leaves a zero, for text that is not a number.
 //
 // parse() is constexpr, and a constant evaluation reads a literal as the run time does (#1819).
 template<unsigned BigBits, unsigned nlimbs>
@@ -2541,12 +2662,24 @@ inline constexpr bool parse(std::string_view txt, efloat<nlimbs>& value) {
 		}
 	}
 
-	// Decimal / scientific literal.
-	auto scan = sw::universal::string_parse::scan_decimal_float(s);
+	// Decimal / scientific literal. The exponent is read here rather than by the scanner, whose
+	// exponent is an int32: efloat's decimal exponents reach about +/-1.39e18 (#2005).
+	std::string_view body = s;
+	std::int64_t exp10 = 0;
+	const std::size_t epos = s.find_first_of("eE");
+	if (epos != std::string_view::npos) {
+		body = s.substr(0, epos);
+		if (!read_exponent(s.substr(epos + 1u), exp10)) {
+			value.setzero();   // malformed exponent
+			return false;
+		}
+	}
+	auto scan = sw::universal::string_parse::scan_decimal_float(body);
 	if (!scan.valid) {
 		value.setzero();   // malformed digits
 		return false;
 	}
+	const unsigned full_bits = std::max(1u, value.get_precision());
 
 	// The target is the value's precision, with no ceiling taken from BigBits: the converter
 	// widens its intermediates as the literal needs, and the result is chosen wide enough to
@@ -2596,6 +2729,22 @@ inline constexpr bool parse(std::string_view txt, efloat<nlimbs>& value) {
 	digits.append(scan.frac_part.data(), scan.frac_part.size());
 	const std::size_t leading = std::min(digits.find_first_not_of('0'), digits.size());
 	const std::size_t significant = digits.size() - leading;
+	if (significant == 0u) {
+		// a zero, whatever its exponent: 0e100000 is 0, and -0e5 is -0
+		value.setzero();
+		if (scan.negative) value.setsign(true);
+		return true;
+	}
+	// the decimal exponent of the last digit, for a literal the exact converter cannot reach
+	auto scale_digits = [&]() {
+		const std::int64_t last = static_cast<std::int64_t>(scan.int_part.size())
+		                        - static_cast<std::int64_t>(digits.size()) + exp10;
+		scale_by_power_of_ten(std::string_view(digits).substr(leading), last, scan.negative, full_bits, value);
+		return true;
+	};
+	// past an exponent of 2^30 the exact converter, whose exponent is an int32, is out of reach
+	if (exp10 > (std::int64_t(1) << 30) || exp10 < -(std::int64_t(1) << 30)) return scale_digits();
+	scan.exp10 = static_cast<std::int32_t>(exp10);
 
 	// a dropped digit moves the value by less than 10^-(keep-1) of it, and one unit in the
 	// last guard bit is more than 2^-(target + guard_bits) of it: keep >= 1 + (target + guard_bits) * log10(2)
@@ -2635,12 +2784,9 @@ inline constexpr bool parse(std::string_view txt, efloat<nlimbs>& value) {
 		widen *= 2u;   // the dropped digits sit on a rounding boundary: look at more of them
 	}
 
-	if (outcome != parse_outcome::done) {
-		// a well-formed literal this converter cannot reach, such as 1e100000: say so with a
-		// NaN rather than a zero that looks like a value
-		value.setnan(true);
-		return false;
-	}
+	// a well-formed literal this converter cannot reach, such as 1e100000, is computed in
+	// efloat's own arithmetic instead (#2005)
+	if (outcome != parse_outcome::done) return scale_digits();
 	return true;
 }
 
@@ -3020,7 +3166,8 @@ namespace efloat_detail {
 
 	// append a signed decimal exponent, minimum 2 digits (efloat's exponent range
 	// far exceeds double's, so 4+ digit exponents are reachable -- e.g. 1e1000).
-	inline void append_exponent(std::string& str, int e) {
+	// It is 64-bit: efloat's binary exponent reaches +/-2^62, a decimal exponent of about +/-1.39e18.
+	inline void append_exponent(std::string& str, std::int64_t e) {
 		str += (e < 0 ? '-' : '+');
 		std::string digits = std::to_string((e < 0) ? -e : e);
 		if (digits.size() < 2) digits.insert(0, 2u - digits.size(), '0');
@@ -3050,7 +3197,7 @@ namespace efloat_detail {
 	// exponent returned in `exponent` (value ~= 0.s[0]s[1]... * 10^(exponent+1),
 	// i.e. s[0] is the leading significant digit at 10^exponent).
 	template<unsigned nlimbs>
-	void to_digits(const efloat<nlimbs>& value, std::vector<char>& s, int& exponent, int precision) {
+	void to_digits(const efloat<nlimbs>& value, std::vector<char>& s, std::int64_t& exponent, int precision) {
 		constexpr double log10_2 = 0.301029995663981;
 		if (value.iszero()) {
 			exponent = 0;
@@ -3058,15 +3205,42 @@ namespace efloat_detail {
 			return;
 		}
 
-		// estimate the power-of-ten exponent from the binary scale, then correct
-		int e = static_cast<int>(log10_2 * static_cast<double>(value.scale()));
+		// Estimate the power-of-ten exponent from the binary scale, then correct. The exponent is
+		// 64-bit: a scale of up to +/-2^62 is a decimal exponent of up to about +/-1.39e18 (#2005).
+		// Past 2^40 the double product is off by up to a few hundred, so the estimate is moved
+		// toward zero by far more than that: a power of ten past the value's could overflow.
+		std::int64_t e = static_cast<std::int64_t>(log10_2 * static_cast<double>(value.scale()));
+		e -= e / (std::int64_t(1) << 40);
 
 		efloat<nlimbs> r(value); r.setsign(false);   // |value|
 		const efloat<nlimbs> ten(10.0), one(1.0);
-		if (e < 0)      { for (int k = 0; k < -e; ++k) r = r * ten; }
-		else if (e > 0) { for (int k = 0; k <  e; ++k) r = r / ten; }
-		if (r >= ten)     { r = r / ten; ++e; }
-		else if (r < one) { r = r * ten; --e; }
+		if (e != 0) {
+			// |value| scaled by 10^-e at the value's precision and guard bits: 10^|e| comes from
+			// log2|e| squarings (efloat_parse_detail::power_of_ten), each at most doubling its
+			// relative error, so the guard bits cover log2|e| bits and 32 more
+			const std::uint64_t n = static_cast<std::uint64_t>((e < 0) ? -e : e);
+			unsigned lost = 0;
+			for (std::uint64_t k = n; k != 0u; k >>= 1) ++lost;
+			const unsigned bits = value.get_precision() + 32u * ((lost + 31u) / 32u) + 32u;
+			r.set_precision(bits);
+			if (e < 0) r *= efloat_parse_detail::power_of_ten<nlimbs>(n, bits);
+			else       r /= efloat_parse_detail::power_of_ten<nlimbs>(n, bits);
+		}
+		// the estimate is within a few decimal places of the value's, more past a scale of 2^40:
+		// each correction moves by the decimal exponent r's own scale gives, which never overshoots
+		while (r >= ten || r < one) {
+			const unsigned bits = r.get_precision();
+			if (r >= ten) {
+				const std::int64_t d = std::max<std::int64_t>(1, static_cast<std::int64_t>(log10_2 * static_cast<double>(r.scale())));
+				if (d == 1) r /= ten; else r /= efloat_parse_detail::power_of_ten<nlimbs>(static_cast<std::uint64_t>(d), bits);
+				e += d;
+			}
+			else {
+				const std::int64_t d = std::max<std::int64_t>(1, static_cast<std::int64_t>(-log10_2 * static_cast<double>(r.scale())));
+				if (d == 1) r *= ten; else r *= efloat_parse_detail::power_of_ten<nlimbs>(static_cast<std::uint64_t>(d), bits);
+				e -= d;
+			}
+		}
 
 		const int nrDigits = precision + 1;
 		for (int i = 0; i < nrDigits; ++i) {
@@ -3130,9 +3304,16 @@ std::string to_string(const efloat<nlimbs>& value, std::streamsize precision, st
 			if (!fixed) s += (uppercase ? "E+00" : "e+00");
 		}
 		else {
-			int e               = 0;   // decimal exponent, filled in by to_digits below
-			int powerOfTenScale = static_cast<int>(efloat_detail::fp::floor(static_cast<double>(value.scale()) * 0.301029995663981));
-			int integerDigits   = (fixed ? (powerOfTenScale + 1) : 1);
+			// the decimal exponent and the digit counts are 64-bit: efloat's decimal exponent
+			// reaches about +/-1.39e18 (#2005). The digit counts are held under INT_MAX / 4, so
+			// their sums fit an int: a fixed format with more integer digits than that, such as
+			// max() with its 1.39e18, prints in scientific instead.
+			std::int64_t e               = 0;   // decimal exponent, filled in by to_digits below
+			std::int64_t powerOfTenScale = static_cast<std::int64_t>(efloat_detail::fp::floor(static_cast<double>(value.scale()) * 0.301029995663981));
+			constexpr std::int64_t digit_limit = std::numeric_limits<int>::max() / 4;
+			if (precision > digit_limit) precision = digit_limit;
+			if (fixed && powerOfTenScale + 1 > digit_limit) fixed = false;
+			int integerDigits   = (fixed ? static_cast<int>(std::max<std::int64_t>(powerOfTenScale + 1, -digit_limit)) : 1);
 			int nrDigits        = integerDigits + static_cast<int>(precision);
 
 			int minBuffer = static_cast<int>(nlimbs) * 16;

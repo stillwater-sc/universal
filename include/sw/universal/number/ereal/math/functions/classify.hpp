@@ -49,11 +49,11 @@ namespace sw { namespace universal {
 		return !x.iszero() && !x.isinf() && !x.isnan();
 	}
 
-	// signbit: test sign bit
-	// Phase 1: uses ereal's native isneg() method
+	// signbit: the sign bit of the leading limb.  isneg() is false for -0, so signbit(-0)
+	// was false (#2005).
 	template<unsigned maxlimbs, typename FpType>
 	inline bool signbit(const ereal<maxlimbs, FpType>& x) {
-		return x.isneg();
+		return x.signbit();
 	}
 
 }} // namespace sw::universal

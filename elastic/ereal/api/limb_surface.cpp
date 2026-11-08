@@ -49,15 +49,24 @@ namespace {
 		int fails = 0;
 		fails += expect(L::is_specialized, name + ": numeric_limits is specialized", reportTestCases);
 		fails += expect(L::digits == static_cast<int>(N) * LF::digits, name + ": digits = maxlimbs * digits of the limb", reportTestCases);
-		fails += expect(L::max_exponent == LF::max_exponent && L::min_exponent == LF::min_exponent, name + ": exponent range is the limb type's", reportTestCases);
+		fails += expect(L::max_exponent == LF::max_exponent, name + ": max_exponent is the limb type's", reportTestCases);
+		// min() is the full-precision floor: the limb type's smallest normal raised by N - 1
+		// limbs, so all N limbs stay normal (#1882 convention for N limbs, #2005)
+		const int floorExp = LF::min_exponent - 1 + static_cast<int>(N - 1) * LF::digits;
+		fails += expect(L::min_exponent == floorExp + 1, name + ": min_exponent is the full-precision floor's", reportTestCases);
+		fails += expect(value_of((L::min)()) == dyadic::from_fp(std::ldexp(F(1), floorExp)), name + ": min() == 2^(min_exponent - 1)", reportTestCases);
+		fails += expect((L::min)().limbs().size() == 1, name + ": min() is a single limb", reportTestCases);
 		fails += expect(L::max() == R(SpecificValue::maxpos) && L::max()[0] == LF::max(), name + ": max() is maxpos, led by the limb type's max", reportTestCases);
 		fails += expect(L::lowest() == -L::max(), name + ": lowest() is -max()", reportTestCases);
 		// epsilon is 2^(1 - digits) of the whole expansion, so it agrees with digits
 		fails += expect(value_of(L::epsilon()) == dyadic::from_fp(std::ldexp(F(1), 1 - L::digits)),
 		                name + ": epsilon() is 2^(1 - digits)", reportTestCases);
-		// has_denorm is denorm_absent, so C++20 requires denorm_min() == min()
-		fails += expect(L::has_denorm == std::denorm_absent && value_of(L::denorm_min()) == value_of((L::min)()),
-		                name + ": denorm_min() is min() when subnormals are absent", reportTestCases);
+		// below min(), down to minpos(), a value carries fewer limbs: has_denorm is present and
+		// denorm_min() is minpos(), the limb type's smallest normal (#2005)
+		fails += expect(L::has_denorm == std::denorm_present && value_of(L::denorm_min()) == value_of(R(SpecificValue::minpos))
+		                && L::denorm_min().limbs()[0] == LF::min(),
+		                name + ": denorm_min() is minpos(), the limb type's smallest normal", reportTestCases);
+		fails += expect(value_of(L::denorm_min()) != value_of((L::min)()) || N == 1, name + ": denorm_min() is below min() for N > 1", reportTestCases);
 		fails += expect(L::infinity().isinf() && L::quiet_NaN().isnan(), name + ": infinity() and quiet_NaN()", reportTestCases);
 		return fails;
 	}
@@ -206,6 +215,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyTraitsAndTags(reportTestCases), test_tag, "traits and type_tag");
 	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<5, float>("ereal<5, float>", reportTestCases), test_tag, "float numeric_limits");
 	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<8, double>("ereal<8>", reportTestCases), test_tag, "double numeric_limits");
+	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<1, double>("ereal<1>", reportTestCases), test_tag, "ereal<1> numeric_limits");
+	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<2, double>("ereal<2>", reportTestCases), test_tag, "ereal<2> numeric_limits");
+	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<19, double>("ereal<19>", reportTestCases), test_tag, "ereal<19> numeric_limits");
 	nrOfFailedTestCases += ReportTestResult(VerifyStreams<5, float>("ereal<5, float>", 25, reportTestCases), test_tag, "float streams");
 	nrOfFailedTestCases += ReportTestResult(VerifyStreams<8, double>("ereal<8>", 100, reportTestCases), test_tag, "double streams");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerOfTwo<5, float>("ereal<5, float>", reportTestCases), test_tag, "float ldexp/frexp/ilogb");

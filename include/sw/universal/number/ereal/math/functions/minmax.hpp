@@ -8,18 +8,31 @@
 
 namespace sw { namespace universal {
 
-	// min: return minimum of two values
-	// Phase 1: uses adaptive-precision comparison operators
+	// min and max follow C99 fmin and fmax (F.10.9.2, F.10.9.3): a NaN operand is ignored,
+	// and the result is NaN only when both are.  They used to depend on the argument order:
+	// max(1, NaN) was NaN and max(NaN, 1) was 1 (#2005).
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> min(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
-		return (x < y) ? x : y;
+		if (x.isnan()) return y;
+		if (y.isnan()) return x;
+		return (y < x) ? y : x;
 	}
 
-	// max: return maximum of two values
-	// Phase 1: uses adaptive-precision comparison operators
 	template<unsigned maxlimbs, typename FpType>
 	inline ereal<maxlimbs, FpType> max(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
-		return (x > y) ? x : y;
+		if (x.isnan()) return y;
+		if (y.isnan()) return x;
+		return (x < y) ? y : x;
+	}
+
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> fmin(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
+		return min(x, y);
+	}
+
+	template<unsigned maxlimbs, typename FpType>
+	inline ereal<maxlimbs, FpType> fmax(const ereal<maxlimbs, FpType>& x, const ereal<maxlimbs, FpType>& y) {
+		return max(x, y);
 	}
 
 	// fdim: positive difference -- x - y if x > y, otherwise +0 (NaN if either is NaN)
