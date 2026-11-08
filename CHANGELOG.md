@@ -7,7 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet.
+**Two QA sweeps: ranges (areal, interval, sorn) and elastic integers and rationals.** 20 commits since v5.15.0, with 21 behaviour changes:
+
+* areal's ubit is a flag, set wherever a conversion drops bits; numeric_limits<areal> describes the encoding (#1970, #1982, #1983).
+* interval sqrt encloses subnormal roots, and empty and unbounded intervals behave (#1971, #1979).
+* sorn compares, converts and divides instead of returning placeholders (#1972, #1985).
+* einteger, edecimal and erational have one zero, convert NaN and infinity predictably, and parse strictly (#1984, #1987-#1990).
+* valid joins the ubox trace of the quadratic formula (#1690).
+
+### Behaviour changes
+
+- **numeric**: faithful finite / +-inf is now a signed zero instead of NaN, a -0 result keeps its sign (-0 * 1 is -0, x / -0 is -inf for positive x), and pow with a negative integer exponent whose positive power overflows returns the underflowed (zero or subnormal) result instead of NaN ([#1974](https://github.com/stillwater-sc/universal/pull/1974))
+- **rational**: rational parse() and operator>> now accept the type's most negative integer (-128 in rational<8>, -32768 in rational<16>), which they rejected ([#1976](https://github.com/stillwater-sc/universal/pull/1976))
+- **interval**: interval sqrt of a fully negative interval is the empty interval (NaN bounds) with EDOM instead of [0, NaN]; mid() and double() of [-inf, +inf] are 0 and of a half-bounded interval the finite extreme instead of NaN or inf; the empty interval compares false under <= and >=, hull(empty, x) is x and intersect(x, empty) is empty; odd powers are [lo^n, hi^n] (tighter across zero); operator>> sets failbit and leaves the target unchanged on malformed input ([#1979](https://github.com/stillwater-sc/universal/pull/1979))
+- **areal**: areal conversions from float, double and integers set the ubit when they drop bits into a subnormal target or from an integer above 2^53 (they returned an exact-marked truncation), and areal<a,b>(areal<c,d>) converts the value instead of leaving the result uninitialized ([#1982](https://github.com/stillwater-sc/universal/pull/1982))
+- **areal**: areal addition, multiplication and division of subnormal operands in configurations with 61 or more fraction bits (such as areal<72,4>) now return the correct value; the operand was read as 1.f and the result was wrong ([#1982](https://github.com/stillwater-sc/universal/pull/1982))
+- **areal**: numeric_limits<areal> reports the encoding's limits (min() is the smallest normal value instead of minpos, denorm_min() minpos instead of 1, epsilon() 2^-fbits instead of 0, digits fbits + 1 instead of counting the ubit, IEEE-convention exponents, has_denorm present, is_bounded true); abs(areal) compiles; fma marks its result inexact when an input is ([#1983](https://github.com/stillwater-sc/universal/pull/1983))
+- **sorn**: sorn operator!= compares values (it was always false) and operator== exists ([#1985](https://github.com/stillwater-sc/universal/pull/1985))
+- **sorn**: double(sorn)/float(sorn) return the interval midpoint instead of 0 ([#1985](https://github.com/stillwater-sc/universal/pull/1985))
+- **sorn**: printing a const sorn or a temporary prints its value, not the lattice range ([#1985](https://github.com/stillwater-sc/universal/pull/1985))
+- **sorn**: sorn NaN assignment gives NaN, out-of-range values saturate, and NaN operands propagate ([#1985](https://github.com/stillwater-sc/universal/pull/1985))
+- **sorn**: sorn multiplication keeps an attained zero bound closed and no longer turns 0 * inf bounds into NaN ([#1985](https://github.com/stillwater-sc/universal/pull/1985))
+- **edecimal**: edecimal -x % y with an exact division, -edecimal(0) and edecimal(0) << k now give +0, which compares equal to edecimal(0) ([#1992](https://github.com/stillwater-sc/universal/pull/1992))
+- **edecimal**: edecimal from a NaN or infinite float/double is now 0 instead of a large garbage value ([#1992](https://github.com/stillwater-sc/universal/pull/1992))
+- **erational**: erational ++ and -- now add/subtract one (1/2 ++ is 3/2, was 2/2) ([#1993](https://github.com/stillwater-sc/universal/pull/1993))
+- **erational**: erational zero results are +0: 0 * -3 and 0 / -3 print 0/1 and convert to +0.0 (were -0/1 and -0.0) ([#1993](https://github.com/stillwater-sc/universal/pull/1993))
+- **erational**: erational::toPair() returns the sign on the numerator and saturates to INT64_MIN/INT64_MAX (was the magnitude, wrapping) ([#1993](https://github.com/stillwater-sc/universal/pull/1993))
+- **erational**: erational from a NaN or +/-inf float/double/long double is now NaN (0/0), was 0 ([#1993](https://github.com/stillwater-sc/universal/pull/1993))
+- **einteger**: einteger parse() rejects more than one leading sign ("--5", "-+0x5"), which used to parse with radix-dependent signs ([#1995](https://github.com/stillwater-sc/universal/pull/1995))
+- **einteger**: einteger parse() leaves the destination unchanged on failure instead of setting it to 0 ([#1995](https://github.com/stillwater-sc/universal/pull/1995))
+- **einteger**: einteger a >>= -k now shifts left by k (was right by k) ([#1994](https://github.com/stillwater-sc/universal/pull/1994))
+- **einteger**: einteger conversion to float/double/long double is now correctly rounded; values above 2^24 (float) or 2^53 (double) can differ in the last bit from before ([#1994](https://github.com/stillwater-sc/universal/pull/1994))
+
+### Added
+
+- **valid**: Join the ubox trace, with an exact oracle for sqrt ([#1997](https://github.com/stillwater-sc/universal/pull/1997))
+- Add a precision table for floating point formats useful in DSP, Control, and HPC ([#1968](https://github.com/stillwater-sc/universal/pull/1968))
+
+### Fixed
+
+- **numeric**: faithful divides by infinity, keeps -0, and pow underflows ([#1974](https://github.com/stillwater-sc/universal/pull/1974))
+- **rational**: Parse the most negative value ([#1976](https://github.com/stillwater-sc/universal/pull/1976))
+- **interval**: Enclose subnormal square roots and handle unbounded and empty intervals ([#1979](https://github.com/stillwater-sc/universal/pull/1979))
+- **numeric**: faithful to_binary and print format ([#1981](https://github.com/stillwater-sc/universal/pull/1981))
+- **areal**: Set the ubit wherever a conversion drops bits, and convert between configurations ([#1982](https://github.com/stillwater-sc/universal/pull/1982))
+- **areal**: numeric_limits from the encoding, a callable abs, fma ubits, and the ubit's promise ([#1983](https://github.com/stillwater-sc/universal/pull/1983))
+- **sorn**: Comparison, to_native, NaN, SpecificValue, const operators and division ([#1985](https://github.com/stillwater-sc/universal/pull/1985))
+- **edecimal**: One form of zero, NaN/inf conversion to 0, and single-step shifts ([#1992](https://github.com/stillwater-sc/universal/pull/1992))
+- **erational**: ++/-- as values, x /= x aliasing, no -0, signed toPair, NaN/inf to NaN ([#1993](https://github.com/stillwater-sc/universal/pull/1993))
+- **einteger**: Negative shift direction, +0 after >>=, round-once float conversion, any native operand ([#1994](https://github.com/stillwater-sc/universal/pull/1994))
+- **einteger**: One optional sign in parse, unchanged value on failure, chunked decimal parse ([#1995](https://github.com/stillwater-sc/universal/pull/1995))
+- **numeric**: Settle the #1991 sweep follow-ups: expansion copy, dbns bound, interval and areal tests ([#1996](https://github.com/stillwater-sc/universal/pull/1996))
+- Replace the non-ASCII epsilon in playground/precision_table.cpp ([#1975](https://github.com/stillwater-sc/universal/pull/1975))
+
+### Performance
+
+- **dbns**: Search wide windows of the second base exponent in O(log) steps ([#1978](https://github.com/stillwater-sc/universal/pull/1978))
+- **numeric**: Keep faithful's exact expansion in an inline buffer ([#1980](https://github.com/stillwater-sc/universal/pull/1980))
+
+### Documentation
+
+- Fill in the CHANGELOG for v5.2.0 through v5.15.0 ([#1966](https://github.com/stillwater-sc/universal/pull/1966))
+- **integer**: Restore two comments mangled by the throw_or_abort rewrite ([#1977](https://github.com/stillwater-sc/universal/pull/1977))
+
+### CI
+
+- Stop a release whose tag has no CHANGELOG.md section ([#1967](https://github.com/stillwater-sc/universal/pull/1967))
+
 
 ## [5.15.0](https://github.com/stillwater-sc/universal/compare/v5.14.0...v5.15.0) (2026-11-06)
 
