@@ -31,12 +31,13 @@ inline int64_t scale(const elreal<FpType>& v) { return static_cast<int64_t>(v.sc
 
 // significand(v): the normalised significand in [1,2) (sign applied), so that
 // v ~ significand * 2^scale. Defined as v / 2^scale, taken from the host
-// approximation; returns 0 for zero.
+// approximation over the precision window; returns 0 for zero. It used to sum the first
+// two blocks only, which is 0 when the leading blocks are zero (#2003).
 template <typename FpType, typename Real = double,
           typename = std::enable_if_t<std::is_floating_point<Real>::value, Real>>
 inline Real significand(const elreal<FpType>& v) {
-    if (v.iszero()) return Real{0};
-    return static_cast<Real>(std::ldexp(v.template approx<Real>(2), -v.scale()));
+    if (!v.isfinite() || v.iszero()) return Real{0};
+    return static_cast<Real>(std::ldexp(v.template approx<Real>(v.precision() + 1), -static_cast<int>(v.scale())));
 }
 
 }} // namespace sw::universal
