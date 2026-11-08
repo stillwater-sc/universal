@@ -1459,12 +1459,18 @@ namespace expansion_ops {
     // and the digit subtraction in to_decimal_string both depend on it.
     //
     // Results are bit-identical to the formulation this replaces, over 40,000 random full-width
-    // additions and subtractions, so this is a speed change and nothing else. Cost of an
-    // addition, i7-12700K -O3: gcc 13.3 69.6 -> 51.0 nsec/op, clang 18.1 80.1 -> 85.6. The clang
-    // direction is the same compiler flip #1315 recorded for these benchmarks generally, and it
-    // survives every formulation of the merge that was tried -- branchy, branchless,
-    // register-resident, and with the operands ordered unconditionally -- all within a couple of
-    // nsec of each other there (universal#1340).
+    // additions and subtractions, so this is a speed change and nothing else. Cost of a
+    // qd_cascade addition, i7-12700K -O3, benchmark_hp_scalar, sort -> merge:
+    //   gcc 13.3   69.6 -> 51.0 nsec/op     clang 18.1  80.1 -> 85.6   (2026-08, universal#1340)
+    //   gcc 15.2   70.4 -> 50.8 nsec/op     clang 21.1  77.9 -> 77.7   (2026-11, universal#1342)
+    // The clang 18 loss survived every formulation of the merge that was tried -- branchy,
+    // branchless, register-resident, and with the operands ordered unconditionally. Clang 21
+    // removes it: the two formulations tie, and the qd_cascade kernels move by 3% or less either
+    // way. Clang still adds more slowly than gcc here, but the sort is not why: dd_cascade and
+    // td_cascade, which still sort, show the same gap (24.3 vs 18.7 and 40.0 vs 36.2 nsec/op).
+    // Clang compiles the old sort into mostly branchless packed code (119 packed-double
+    // instructions and 53 branches, where gcc emits 189 branches), which is why it held up
+    // under clang 18, but that is no longer an advantage over the merge.
     constexpr inline floatcascade<8> add_cascades(const floatcascade<4>& a, const floatcascade<4>& b) {
         // std::abs(double) is not constexpr in C++20; use a ternary helper.
         auto absv = [](double x) constexpr -> double { return x < 0.0 ? -x : x; };
