@@ -62,6 +62,19 @@ stops with an `#error` (#1925).
 With the exception off, `x / 0` and `x % 0` are `0`, as are both outputs of `reduce()`.
 Nothing is printed (#1894).
 
+### Shifts, native operands and conversion to float
+
+- **Shifts.** `<<=` and `>>=` scale the magnitude by 2^k and keep the sign. A negative count shifts
+  the other way: `a >>= -2` is `a <<= 2`. Since the value is sign-magnitude, `>>=` truncates
+  toward zero: `-5 >> 1` is `-2`, where a native arithmetic shift rounds toward -inf and gives `-3`.
+  A negative value shifted to zero is `+0` (#1987).
+- **Native operands.** `+ - * / %` take any native arithmetic type on either side (`a / 2`,
+  `7 - a`, `a * 2u`). An integer operand converts exactly. A floating-point operand converts the
+  way `einteger(double)` does, truncating toward zero, so `a / 2.5` is `a / 2`.
+- **Conversion to `float`, `double` and `long double`.** The result is rounded once, to nearest
+  with ties to even, as a native 64-bit integer converts. A value beyond the target's range
+  becomes infinity.
+
 ## Where it is used
 
 `einteger` backs the exact-arithmetic oracles used to validate the floating-point types.

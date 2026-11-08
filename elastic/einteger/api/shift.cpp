@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <sstream>
 #include <cstdint>
+#include <string>
 #include <universal/number/einteger/einteger.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/verification/test_reporters.hpp>
@@ -185,6 +186,47 @@ try {
 			"u32 >> 17", payload15, 15, 17, expected.c_str(), reportTestCases);
 		ReportTestResult(nrOfFailedTestCases - start,
 			"unaligned shift vs integer<2048>", "einteger shift");
+	}
+
+	// A negative shift count shifts the other way: a >>= -k is a <<= k and a <<= -k is a >>= k.
+	// operator>>= with a negative count called itself with -shift, so 8 >>= -2 gave 2 (#1987).
+	// >> truncates the magnitude toward zero and keeps the sign, so -5 >> 1 is -2, and a negative
+	// value shifted to zero is +0, not a -0 (#1987).
+	{
+		int start = nrOfFailedTestCases;
+		auto check = [&](const einteger<std::uint32_t>& got, long long expected, const std::string& what) {
+			std::ostringstream os, es;
+			os << got;
+			es << expected;
+			if (os.str() != es.str() || (got.iszero() && got.isneg())) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL " << what << " got=" << os.str() << (got.isneg() ? " (negative)" : "") << " expected=" << es.str() << '\n';
+			}
+		};
+		for (long long v : { 0ll, 1ll, 3ll, 8ll, 255ll, 123456789ll, -1ll, -3ll, -5ll, -8ll, -123456789ll }) {
+			for (int k = 0; k <= 24; ++k) {
+				const long long scale = 1ll << k;
+				einteger<std::uint32_t> a(v), b(v), c(v), d(v);
+				a >>= -k;   // left by k
+				b <<= -k;   // right by k
+				c >>= k;
+				d <<= k;
+				const std::string tag = std::to_string(v) + " k=" + std::to_string(k);
+				check(a, v * scale, tag + " >>= -k");
+				check(b, v / scale, tag + " <<= -k");
+				check(c, v / scale, tag + " >>= k");
+				check(d, v * scale, tag + " <<= k");
+			}
+		}
+		// shifts by whole limbs, and past the top, of a negative value
+		for (int k : { 32, 64, 96, 200 }) {
+			einteger<std::uint32_t> a(-1);
+			a <<= 40;
+			a >>= 40 + k;
+			check(a, 0, "-2^40 >> " + std::to_string(40 + k));
+		}
+		ReportTestResult(nrOfFailedTestCases - start,
+			"negative shift counts and signs", "einteger shift");
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
