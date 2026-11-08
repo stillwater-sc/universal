@@ -41,6 +41,7 @@
 #include <universal/number/elreal/negate.hpp>           // negate
 #include <universal/number/elreal/online_multiply.hpp>  // mul_online
 #include <universal/number/elreal/online_divide.hpp>    // div_online
+#include <universal/number/elreal/stream_utilities.hpp> // first_nonzero_block, from_integer
 
 namespace sw { namespace universal {
 
@@ -139,17 +140,19 @@ public:
     explicit elreal(stream_type v, std::size_t depth = elreal_default_precision())
         : _value(std::move(v)), _depth(depth), _cls(elreal_class::finite) {}
 
-    // native conversions (exact for integers < 2^53; from_native for floats)
-    elreal(signed char iv)        { *this = static_cast<double>(iv); }
-    elreal(short iv)              { *this = static_cast<double>(iv); }
-    elreal(int iv)               { *this = static_cast<double>(iv); }
-    elreal(long iv)              { *this = static_cast<double>(iv); }
-    elreal(long long iv)         { *this = static_cast<double>(iv); }
-    elreal(unsigned char iv)     { *this = static_cast<double>(iv); }
-    elreal(unsigned short iv)    { *this = static_cast<double>(iv); }
-    elreal(unsigned int iv)      { *this = static_cast<double>(iv); }
-    elreal(unsigned long iv)     { *this = static_cast<double>(iv); }
-    elreal(unsigned long long iv){ *this = static_cast<double>(iv); }
+    // native conversions. Integers are exact at every width: they are split into chunks the
+    // host holds exactly (#2003); a cast through double rounded every integer above 2^53.
+    // Floats go through from_native.
+    elreal(signed char iv)        { assign_integer(iv); }
+    elreal(short iv)              { assign_integer(iv); }
+    elreal(int iv)               { assign_integer(iv); }
+    elreal(long iv)              { assign_integer(iv); }
+    elreal(long long iv)         { assign_integer(iv); }
+    elreal(unsigned char iv)     { assign_integer(iv); }
+    elreal(unsigned short iv)    { assign_integer(iv); }
+    elreal(unsigned int iv)      { assign_integer(iv); }
+    elreal(unsigned long iv)     { assign_integer(iv); }
+    elreal(unsigned long long iv){ assign_integer(iv); }
     elreal(float iv)             { *this = static_cast<double>(iv); }
     elreal(double iv)            { *this = iv; }
 
@@ -162,8 +165,8 @@ public:
         return *this;
     }
     elreal& operator=(float rhs)       { return *this = static_cast<double>(rhs); }
-    elreal& operator=(int rhs)         { return *this = static_cast<double>(rhs); }
-    elreal& operator=(long long rhs)   { return *this = static_cast<double>(rhs); }
+    elreal& operator=(int rhs)         { return assign_integer(rhs); }
+    elreal& operator=(long long rhs)   { return assign_integer(rhs); }
 
     // SpecificValue: materialise a named encoding. elreal now carries a non-finite
     // classification, so infpos/infneg/qnan/snan map to the corresponding states.
@@ -263,37 +266,73 @@ public:
     const stream_type& stream() const noexcept { return _value; }
 
     // --- classification ------------------------------------------------------
-    bool iszero()   const noexcept { return _cls == elreal_class::finite && _value.is_empty(); }
+    // A finite value is zero when no block within the precision window is nonzero: the
+    // same window, precision() + 1 blocks, in which == decides that two values are equal.
+    // A cancelled result such as a - a is a stream of zero blocks, not the empty stream,
+    // and the leading block of 1 - (1 + 2^-100) is zero although the value is not, so
+    // the leading nonzero block decides zero, sign and scale (#2003). Beyond the window
+    // a value is zero to precision, exactly as it compares equal to zero there.
+    //
+    // elreal has one, unsigned zero. A -0.0 converts to the empty stream like +0.0, and
+    // a zero reports sign() == +1 whichever way it was formed.
+    bool iszero()   const noexcept { return _cls == elreal_class::finite && !leading_block().found; }
     bool isnan()    const noexcept { return _cls == elreal_class::qnan; }
     bool isinf()    const noexcept { return detail::is_inf_class(_cls); }
     bool isfinite() const noexcept { return _cls == elreal_class::finite; }
     bool isneg()    const noexcept { return sign() < 0; }
 
     // sign(): -1 if negative, +1 otherwise. For +-inf the inf sign; for nan +1
-    // (sign of NaN is unspecified); for finite the most significant block's sign
+    // (sign of NaN is unspecified); for finite the leading nonzero block's sign
     // (+1 for zero).
     int sign() const noexcept {
         if (_cls == elreal_class::pinf || _cls == elreal_class::qnan) return 1;
         if (_cls == elreal_class::ninf) return -1;
-        auto bl = _value.take(1);
-        return (!bl.empty() && bl.front().sign() < 0) ? -1 : 1;
+        const lead_type lead = leading_block();
+        return (lead.found && lead.blk.sign() < 0) ? -1 : 1;
     }
-    // scale(): the value's binary exponent (leading block's combined exponent);
-    // 0 for zero and for non-finite. int64_t (not int): elreal carries an unbounded
-    // integer<256> exponent, so a narrow int cast could overflow; the host-FP
+    // scale(): the value's binary exponent (the leading nonzero block's combined
+    // exponent); 0 for zero and for non-finite. int64_t (not int): elreal carries an
+    // unbounded integer<256> exponent, so a narrow int cast could overflow; the host-FP
     // attribute surface this feeds (ldexp / significand) is bounded by FpType's
     // exponent range, for which int64_t has vast headroom; the full-width exponent
     // stays reachable via block::exponent().
     int64_t scale() const noexcept {
         if (_cls != elreal_class::finite) return 0;
-        auto bl = _value.take(1);
-        return bl.empty() ? 0 : static_cast<int64_t>(bl.front().exponent());
+        const lead_type lead = leading_block();
+        return lead.found ? static_cast<int64_t>(lead.blk.exponent()) : 0;
     }
+    // canonical(): the stream from its first nonzero block on, or the empty stream for a
+    // value that is zero to precision. The stream functions read head() for the value's
+    // sign and scale: log and sin of a cancelled zero searched its zero blocks without end,
+    // and log and sqrt of a value with a leading zero block range-reduced on that block
+    // (#2003).
+    stream_type canonical() const { return _cls == elreal_class::finite ? leading_block().rest : stream_type{}; }
 
 private:
     stream_type  _value;   // lazy, memoised block co-list (empty when non-finite)
     std::size_t  _depth;   // default pull depth for boundary operations
     elreal_class _cls;     // IEEE-style finite / +-inf / nan classification
+
+    // leading_block(): the first nonzero block within the precision window. It walks the
+    // memoised stream head to tail and stops at that block, so a value whose first block
+    // is nonzero forces only that block, and no vector is built.
+    using lead_type = detail::nonzero_lead<FpType>;
+    lead_type leading_block() const noexcept {
+        return detail::first_nonzero_block(_value, _depth + 1);
+    }
+
+    // assign_integer: an integer of any width, exact (detail::from_integer)
+    template <typename Int>
+    elreal& assign_integer(Int iv) {
+        static_assert(std::is_integral_v<Int>, "assign_integer takes an integer");
+        _depth = elreal_default_precision();
+        _cls   = elreal_class::finite;
+        const bool negative = iv < Int(0);
+        const unsigned long long mag = negative ? 0ull - static_cast<unsigned long long>(iv)
+                                                : static_cast<unsigned long long>(iv);
+        _value = detail::from_integer<FpType>(mag, negative);
+        return *this;
+    }
 
     // internal: construct a non-finite elreal (empty stream, given class)
     elreal(elreal_class cls, std::size_t depth) : _value{}, _depth(depth), _cls(cls) {}
@@ -349,12 +388,11 @@ template <typename FpType> inline elreal<FpType> operator/(double a, const elrea
 template <typename FpType>
 inline int elreal_cmp(const elreal<FpType>& a, const elreal<FpType>& b) {
     const std::size_t d = a.precision() > b.precision() ? a.precision() : b.precision();
-    ZBCL<FpType> diff = add(a.stream(), negate(b.stream()));
-    const auto blocks = diff.take(d + 1);
-    // first nonzero limb decides the ordering; none within d -> equal to precision
-    const auto it = std::find_if(blocks.begin(), blocks.end(),
-        [](const auto& blk) { return !blk.is_zero_block(); });
-    return it != blocks.end() ? it->sign() : 0;
+    // first nonzero limb decides the ordering; none within d + 1 -> equal to precision.
+    // The walk stops at that limb: 1/3 < 1/7 is decided by the first block of the
+    // difference, and forcing all d + 1 of them took milliseconds (#2003).
+    const auto lead = detail::first_nonzero_block(add(a.stream(), negate(b.stream())), d + 1);
+    return lead.found ? lead.blk.sign() : 0;
 }
 // total ordering with IEEE non-finite semantics layered on top of the finite
 // (depth-bounded) primitive: NaN is unordered (every relation but != is false);
@@ -382,16 +420,22 @@ template <typename FpType> inline bool operator==(const elreal<FpType>& a, doubl
 template <typename FpType> inline bool operator!=(const elreal<FpType>& a, double b) { return !(a == elreal<FpType>(b)); }
 template <typename FpType> inline bool operator< (const elreal<FpType>& a, double b) { return a <  elreal<FpType>(b); }
 template <typename FpType> inline bool operator> (const elreal<FpType>& a, double b) { return a >  elreal<FpType>(b); }
+template <typename FpType> inline bool operator<=(const elreal<FpType>& a, double b) { return a <= elreal<FpType>(b); }
+template <typename FpType> inline bool operator>=(const elreal<FpType>& a, double b) { return a >= elreal<FpType>(b); }
+template <typename FpType> inline bool operator==(double a, const elreal<FpType>& b) { return elreal<FpType>(a) == b; }
+template <typename FpType> inline bool operator!=(double a, const elreal<FpType>& b) { return elreal<FpType>(a) != b; }
+template <typename FpType> inline bool operator< (double a, const elreal<FpType>& b) { return elreal<FpType>(a) <  b; }
+template <typename FpType> inline bool operator> (double a, const elreal<FpType>& b) { return elreal<FpType>(a) >  b; }
+template <typename FpType> inline bool operator<=(double a, const elreal<FpType>& b) { return elreal<FpType>(a) <= b; }
+template <typename FpType> inline bool operator>=(double a, const elreal<FpType>& b) { return elreal<FpType>(a) >= b; }
 
 // abs / fabs
 template <typename FpType>
 inline elreal<FpType> abs(const elreal<FpType>& a) {
     if (a.isnan()) return a;                       // |nan| = nan
     if (a.isinf()) return a.sign() < 0 ? -a : a;   // |-inf| = +inf
-    // sign from the leading (most significant) block
-    auto bl = a.stream().take(1);
-    bool neg = !bl.empty() && bl.front().sign() < 0;
-    return neg ? -a : a;
+    // sign from the leading nonzero block; the first block can be zero (#2003)
+    return a.sign() < 0 ? -a : a;
 }
 template <typename FpType> inline elreal<FpType> fabs(const elreal<FpType>& a) { return abs(a); }
 
