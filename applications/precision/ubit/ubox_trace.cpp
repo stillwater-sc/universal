@@ -6,8 +6,8 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 //
 // #196.  The smaller root of 3x^2 + 100x + 2 = 0 (The End of Error, pp. 181-184; see also
-// quadratic_roots.cpp), evaluated step by step in tile intervals of areal and poxel at 16
-// and 32 bits, in two forms:
+// quadratic_roots.cpp), evaluated step by step in tile intervals of areal and poxel and in
+// valid (the Type III unum interval, #1690) at 16 and 32 bits, in two forms:
 //     as written    r1 = (-b + sqrt(b^2 - 4ac)) / (2a)
 //     rearranged    r1 = 2c / (-b - sqrt(b^2 - 4ac))
 // and with two kinds of operands: exact a, b, c, and a, b, c known only to within one tile
@@ -29,6 +29,7 @@
 #include <vector>
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/poxel/poxel.hpp>
+#include <universal/number/valid/valid.hpp>
 #include <universal/utility/tile_interval.hpp>
 #include <universal/utility/ubox_trace.hpp>
 
@@ -103,6 +104,27 @@ void trace_type(const std::string& name, int digits, ubox_trace& tw, ubox_trace&
 	rearranged(ur.series(name, digits), A, B, C);
 }
 
+// valid is its own enclosure type, a pair of poxel tiles, so it is traced as it is
+template<typename Valid>
+Valid wide_valid(int v) {
+	using P = typename Valid::poxel_type;
+	const auto k = P(v).key();
+	P lo{}, hi{};
+	lo.setkey(k - 1);
+	hi.setkey(k + 1);
+	return Valid(lo, hi);
+}
+
+template<typename Valid>
+void trace_valid(const std::string& name, int digits, ubox_trace& tw, ubox_trace& tr, ubox_trace& uw, ubox_trace& ur) {
+	const Valid a(3), b(100), c(2);
+	as_written(tw.series(name, digits), a, b, c);
+	rearranged(tr.series(name, digits), a, b, c);
+	const Valid A = wide_valid<Valid>(3), B = wide_valid<Valid>(100), C = wide_valid<Valid>(2);
+	as_written(uw.series(name, digits), A, B, C);
+	rearranged(ur.series(name, digits), A, B, C);
+}
+
 int fails = 0;
 void check(bool ok, const std::string& what) {
 	std::cout << (ok ? "  ok    " : "  FAIL  ") << what << '\n';
@@ -151,6 +173,8 @@ try {
 	using areal32 = areal<32, 8, std::uint32_t>;
 	using poxel16 = poxel<16, 2, std::uint16_t>;
 	using poxel32 = poxel<32, 2, std::uint32_t>;
+	using valid16 = valid<16, 2, std::uint16_t>;
+	using valid32 = valid<32, 2, std::uint32_t>;
 
 	const std::string path = argc > 1 ? argv[1] : "ubox_trace.html";
 
@@ -170,14 +194,17 @@ try {
 
 	trace_type<areal16>("areal<16,5>", 6, tw, tr, uw, ur);
 	trace_type<poxel16>("poxel<16,2>", 6, tw, tr, uw, ur);
+	trace_valid<valid16>("valid<16,2>", 6, tw, tr, uw, ur);
 	trace_type<areal32>("areal<32,8>", 9, tw, tr, uw, ur);
 	trace_type<poxel32>("poxel<32,2>", 9, tw, tr, uw, ur);
+	trace_valid<valid32>("valid<32,2>", 9, tw, tr, uw, ur);
 
 	const std::vector<ubox_trace> traces{ tw, tr, uw, ur };
 	std::ostringstream page;
 	write_html(page, "The uncertainty box through the quadratic formula",
 	           "Each step of r1 for 3x^2 + 100x + 2 = 0 is evaluated in tile intervals: guaranteed enclosures built "
-	           "from areal (float lattice) and poxel (posit lattice) tiles, at 16 and 32 bits.  The chart plots the "
+	           "from areal (float lattice) and poxel (posit lattice) tiles, and in valid (the Type III unum interval, "
+	           "a pair of poxel tiles), at 16 and 32 bits.  The chart plots the "
 	           "relative width of each box per step; the rows draw every type's box on one number line around the "
 	           "exact value (dashed).  Solid caps are closed ends, dashed caps open ends; a box narrower than the "
 	           "scale resolves is drawn as a thin mark.  Hover for the interval and its width in tiles.",
@@ -199,16 +226,29 @@ try {
 	check(contains_references(tw) && contains_references(tr) && contains_references(uw) && contains_references(ur),
 	      "every box at every step contains the exact value of that step");
 	check(contains_boxes(uw, tw) && contains_boxes(ur, tr), "operands one tile wide give a box at least as wide at every step as exact operands");
+	const std::size_t nseries = tw.all_series().size();
 	bool narrower = true, jump = true;
-	for (std::size_t k = 0; k < 4; ++k) {
+	for (std::size_t k = 0; k < nseries; ++k) {
 		narrower = narrower && final_box(tr, k).tiles < final_box(tw, k).tiles && final_box(ur, k).tiles < final_box(uw, k).tiles;
 		jump = jump && box_at(tw, k, "-b + sqrt(d)").relative_width() > 100 * box_at(tw, k, "sqrt(d)").relative_width();
 	}
 	check(narrower, "the rearranged r1 ends in fewer tiles than r1 as written, for every type and both kinds of operands");
 	check(jump, "cancellation: the relative width of -b + sqrt(d) is more than 100 times that of sqrt(d)");
 	// the same expressions as quadratic_roots.cpp, so the same tile counts (README: 1365+ tiles as written, 3 rearranged)
-	check(final_box(tw, 2).tiles >= 1365 && final_box(tw, 3).tiles >= 1365 && final_box(tr, 2).tiles <= 3 && final_box(tr, 3).tiles <= 3,
-	      "at 32 bits r1 as written spans 1365+ tiles and the rearranged r1 at most 3, as quadratic_roots.cpp reports");
+	bool counts = true;
+	for (std::size_t k = 3; k < nseries; ++k) counts = counts && final_box(tw, k).tiles >= 1365 && final_box(tr, k).tiles <= 3;
+	check(nseries == 6 && counts, "at 32 bits r1 as written spans 1365+ tiles and the rearranged r1 at most 3, as quadratic_roots.cpp reports");
+	// valid is a pair of poxel tiles with the same outward rounding as tile_interval<poxel>, so the
+	// two must give the same box at every step: series 1 and 2 at 16 bits, 4 and 5 at 32 bits (#1690)
+	bool same = true;
+	for (const ubox_trace* t : { &tw, &tr, &uw, &ur })
+		for (std::size_t k : { std::size_t(1), std::size_t(4) }) {
+			const auto& P = t->all_series()[k].boxes;
+			const auto& V = t->all_series()[k + 1].boxes;
+			for (std::size_t i = 0; i < P.size(); ++i)
+				same = same && P[i].lo == V[i].lo && P[i].hi == V[i].hi && P[i].lo_open == V[i].lo_open && P[i].hi_open == V[i].hi_open && P[i].tiles == V[i].tiles;
+		}
+	check(same, "valid and tile_interval<poxel> give the same box at every step");
 
 	std::cout << (fails == 0 ? "PASS\n" : "FAIL\n");
 	return (fails == 0 ? EXIT_SUCCESS : EXIT_FAILURE);

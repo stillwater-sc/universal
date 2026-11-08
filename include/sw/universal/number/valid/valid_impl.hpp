@@ -88,6 +88,11 @@ class valid {
 
 	const poxel_type& lb() const noexcept { return _loPxl; }
 	const poxel_type& ub() const noexcept { return _hiPxl; }
+	// the tile keys of the two ends, the order of the tiles on the real line: even keys are
+	// lattice points, odd keys the open gaps between them, as tile_interval<poxel> numbers them.
+	// hi_key() - lo_key() + 1 is the width in tiles.
+	key_type lo_key() const noexcept { return _loPxl.key(); }
+	key_type hi_key() const noexcept { return _hiPxl.key(); }
 
 	bool lubit() const noexcept { return _loPxl.ubit(); }
 	bool uubit() const noexcept { return _hiPxl.ubit(); }
@@ -97,6 +102,8 @@ class valid {
 	bool upper_closed() const noexcept { return !upper_open(); }
 
 	bool isnar() const noexcept { return _loPxl.isnar() || _hiPxl.isnar(); }
+	// the name the enclosure utilities use for NaR (universal/utility/ubox_trace.hpp, #1690)
+	bool isnan() const noexcept { return isnar(); }
 	bool isexact() const noexcept { return !isnar() && _loPxl == _hiPxl && _loPxl.isexact(); }
 	bool isinterval() const noexcept { return !isnar() && !isexact(); }
 	bool iszero() const noexcept { return isexact() && _loPxl.iszero(); }
