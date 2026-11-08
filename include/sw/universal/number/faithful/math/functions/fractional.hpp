@@ -46,15 +46,9 @@ namespace faithful_detail {
 	class exact_expansion {
 	public:
 		exact_expansion() noexcept : n(0) {}
-		exact_expansion(const exact_expansion& o) : heap(o.heap), n(o.n) {
-			if (heap.empty()) std::copy(o.buf, o.buf + n, buf);   // only the live components
-		}
+		exact_expansion(const exact_expansion& o) : n(0) { copy_from(o); }
 		exact_expansion& operator=(const exact_expansion& o) {
-			if (this != &o) {
-				heap = o.heap;
-				n = o.n;
-				if (heap.empty()) std::copy(o.buf, o.buf + n, buf);
-			}
+			if (this != &o) copy_from(o);
 			return *this;
 		}
 		void add(Real b) {
@@ -99,6 +93,20 @@ namespace faithful_detail {
 		std::size_t n;
 
 		Real* data() noexcept { return heap.empty() ? buf : heap.data(); }
+		// Only the live components [0, n). A spilled expansion's heap can hold more than n
+		// entries, since add() shrinks n without shrinking the vector, and copying the whole
+		// vector copied those stale entries too (#1991). One that fits goes back inline.
+		void copy_from(const exact_expansion& o) {
+			const Real* src = o.data();
+			if (o.n <= inline_capacity) {
+				std::copy(src, src + o.n, buf);
+				heap.clear();
+			}
+			else {
+				heap.assign(src, src + o.n);
+			}
+			n = o.n;
+		}
 		const Real* data() const noexcept { return heap.empty() ? buf : heap.data(); }
 		void push(Real q) {
 			if (heap.empty()) {

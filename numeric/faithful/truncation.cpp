@@ -231,6 +231,19 @@ int VerifyExpansionSpill(bool reportTestCases) {
 		if (copy.size() != static_cast<std::size_t>(k)) { check(false, "cancels one component at a time"); break; }
 	}
 	check(copy.size() == 0 && copy.sign() == 0 && copy.approx() == 0.0, "cancels to zero");
+	// a spilled expansion that shrank holds stale entries past its size; a copy takes only the
+	// live components, back into the inline buffer when they fit (#1991)
+	{
+		exact_expansion<double> shrunk(e);
+		for (int k = count - 1; k >= 10; --k) shrunk.add(-std::ldexp(1.0, -1074 + 60 * k));
+		exact_expansion<double> c1(shrunk), c2;
+		c2.add(3.0);
+		c2 = shrunk;
+		check(c1.size() == 10 && c2.size() == 10, "copies only the live components of a shrunk expansion");
+		check(c1.approx() == std::ldexp(1.0, -1074 + 60 * 9) && c2.approx() == c1.approx(), "copies the sum of a shrunk expansion");
+		for (int k = 10; k < count; ++k) c1.add(std::ldexp(1.0, -1074 + 60 * k));   // and spills again from the inline copy
+		check(c1.size() == count && c1.approx() == e.approx(), "spills again after a copy");
+	}
 	check(e.size() == count, "is unchanged by changes to its copy");
 	// a spilled expansion keeps working: adding a value that overlaps its top merges into it
 	e.add(std::ldexp(1.0, -1074 + 60 * (count - 1)));

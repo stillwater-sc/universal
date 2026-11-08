@@ -916,6 +916,16 @@ protected:
 	// Either way the count at least halves. The index found is rounded back through a
 	// division, so its neighbours are checked as well; the caller scores the final candidates
 	// with the exact rule of the scan.
+	// Every floor_ll() here stays inside long long's range, however small gamma or g gets
+	// (#1991). The top call has gamma = frac(+-log2(3)), 0.415 or 0.585, and n below 2^63.
+	//   gamma <= 1/2: the divisions by gamma run only for k <= K <= beta + (n-1)*gamma, so
+	//     (k - beta)/gamma <= n - 1. The recursion forms 1/gamma only when K > scan_limit,
+	//     which needs n*gamma > 31, so |1/gamma| and |(beta - 1)/gamma| stay below n/31.
+	//   gamma > 1/2: the loop divides by g only for k < K, and the recursion only when
+	//     K > scan_limit, which needs n*g > 31. k < K <= ceil(n*g - beta) gives (beta + k)/g < n,
+	//     and 1/g and beta/g stay below n/31.
+	// The recursive n is K, below the caller's n, so the bound carries down. A gamma of 0, or
+	// one too small to recurse, leaves K at most 32 and the divisions bounded by n.
 	static constexpr long long argmin_frac(long long n, double gamma, double beta) noexcept {
 		constexpr long long scan_limit = 32;   // not "small": rpcndr.h, via windows.h, defines it as a macro
 		auto f = [&](long long x) { return frac_part(beta + static_cast<double>(x) * gamma); };
