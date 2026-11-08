@@ -226,10 +226,13 @@ namespace sw { namespace universal {
 	}
 
 #if LONG_DOUBLE_SUPPORT
-	// a long double block reaches 2^64, beyond what a double rounds exactly: 2^60 + 3, held as the
-	// block 2^60 + 3.5 and a block -0.5, rounds to 2^60 + 4 in a double
+	// an x87 long double block reaches 2^64, beyond what a double rounds exactly: 2^60 + 3, held as
+	// the block 2^60 + 3.5 and a block -0.5, rounds to 2^60 + 4 in a double
+	// Only where long double is wider than double: on MSVC and macOS ARM64 it has 53 bits, the
+	// block 2^60 + 3.5 does not exist, and the double rounding this checks cannot happen.
 	int VerifyLongDoubleBlockRounding(bool reportTestCases) {
 		int nrOfFailedTestCases = 0;
+		if (std::numeric_limits<long double>::digits < 64) return nrOfFailedTestCases;
 		using B = block<long double>;
 		using S = ZBCL<long double>;
 		const long double lead = std::ldexp(1.0L, 60) + 3.5L;
