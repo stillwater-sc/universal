@@ -270,13 +270,29 @@ namespace sw { namespace universal {
 		auto p2 = [](int k) { return PowerOfTwo<BlockType>(k); };
 		const EInteger MAX = p2(E) - p2(E - D);   // 2^E - 2^(E-D): D ones
 		const EInteger halfUlp = p2(E - D - 1);
-		// The edges above hold for an IEEE binary format. IBM double-double, the long double of
-		// ppc64le, has digits = 106 but its max is a pair of doubles, 0x1.fffffffffffff7ffffffffffff8p+1023,
-		// not 106 ones below 2^1024, so there is no single threshold to test. einteger(max) is
-		// still exact there; only the IEEE edges are skipped.
-		if (EInteger(maxpos) != MAX) {
-			if (reportTestCases) std::cerr << "SKIP: " << realName << " is not an IEEE binary format; its max is not 2^E - 2^(E-D)\n";
-			return (static_cast<Real>(EInteger(maxpos)) == maxpos) ? 0 : 1;   // the round trip of max must still hold
+		// The edges above hold for an IEEE binary format, whose max is (1 - 2^-D) 2^E exactly. That
+		// is decided from Real itself, not from the conversion under test. IBM double-double, the
+		// long double of ppc64le, has D = 106 but its max is a pair of doubles,
+		// 0x1.fffffffffffff7ffffffffffff8p+1023, and (1 - 2^-106) 2^1024 overflows it: there is no
+		// single threshold to test. There, einteger(max) is checked against an exact reference
+		// built from double conversions alone: max is the sum of the doubles it peels into.
+		const bool ieeeLayout = (std::ldexp(Real(1) - std::ldexp(Real(1), -D), E) == maxpos);
+		if (!ieeeLayout) {
+			EInteger reference(0);
+			Real rest = maxpos;
+			for (int i = 0; i < 8 && rest != Real(0); ++i) {
+				const double piece = static_cast<double>(rest);
+				reference += EInteger(piece);
+				rest -= static_cast<Real>(piece);
+			}
+			if (reportTestCases) std::cerr << "SKIP: " << realName << " is not an IEEE binary format; its IEEE edges are skipped\n";
+			const bool exact = (rest == Real(0)) && (EInteger(maxpos) == reference) && (EInteger(-maxpos) == -reference);
+			const bool roundTrip = (static_cast<Real>(reference) == maxpos);
+			if (!exact || !roundTrip) {
+				if (reportTestCases) std::cerr << "FAIL: einteger(" << realName << " max) = " << EInteger(maxpos) << ", expected " << reference << '\n';
+				return 1;
+			}
+			return 0;
 		}
 		check(MAX, maxpos, "MAX");
 		check(MAX - EInteger(1), maxpos, "MAX - 1");
