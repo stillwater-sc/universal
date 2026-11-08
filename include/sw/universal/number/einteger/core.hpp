@@ -18,7 +18,7 @@
 //
 // parse() and assign(const std::string&) stay here: assign is built on parse, and
 // parse reads its four grammars with hand-written matchers rather than std::regex
-// (see einteger_impl.hpp), so it needs <string> and <map> but no stream. Diagnostics
+// (see einteger_impl.hpp), so it needs <string> but no stream. Diagnostics
 // in the core use fprintf(stderr, ...), the idiom Phase 0 established.
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>

@@ -42,6 +42,21 @@ Full arithmetic, comparison, and decimal/hex parsing and printing are provided.
 same edge cases as [integer's](/universal/number-systems/integer/#integer-power); it never overflows.
 `showLimbs()` prints the limb encoding when you need to see the representation.
 
+### Parsing
+
+`parse(str, value)` reads the whole string, with at most one leading sign:
+
+| Form | Example | Value |
+|---|---|---|
+| decimal | `-1234` | -1234 |
+| octal: a leading `0` selects it, C-style | `0777`, `00777` | 511 |
+| hex, with `'` digit separators | `0xFF'FF` | 65535 |
+| binary, with `'` digit separators | `-0b1010'0101` | -165 |
+
+- **Rejected input:** a run of signs (`--5`, `-+0x5`) and a leading-zero string with a digit outside `[0-7]` (`08`, `0749`).
+- **Failure:** `parse()` returns false and leaves `value` unchanged, as `integer`'s parse does (#1988).
+- **Zero:** a negative zero in any radix (`-0`, `-0x0`) is `+0`.
+
 ### Division by zero
 
 `einteger` has no NaN or infinity to carry a failed division in the value, so by

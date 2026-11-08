@@ -229,6 +229,67 @@ try {
 		ReportTestResult(nrOfFailedTestCases - start, "block-width parity", "einteger parse");
 	}
 
+	// ----- one optional sign, in every radix (#1988) -----
+	// A run of signs used to be accepted and read differently per radix: decimal "-+5" was 5 and
+	// "--5" -5, octal "-+05" was -5, hex looked only at the sign next to "0x".
+	{
+		int start = nrOfFailedTestCases;
+		for (const char* bad : { "--5", "-+5", "+-5", "++5", "--05", "-+05", "--0x5", "-+0x5", "+-0x5",
+		                         "--0b101", "-+0b101", "-", "+", "--", "-+0", "+-0" }) {
+			nrOfFailedTestCases += CheckReject<std::uint32_t>(bad, reportTestCases);
+			nrOfFailedTestCases += CheckReject<std::uint8_t >(bad, reportTestCases);
+		}
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("+5",      "5",   reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("-5",      "-5",  reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("-017",    "-15", reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("+017",    "15",  reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("-0x1F",   "-31", reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("+0x1F",   "31",  reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("-0b101",  "-5",  reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("+0b101",  "5",   reportTestCases);
+		// a negative zero in any radix is +0
+		for (const char* z : { "-0", "-00", "-0x0", "-0x000", "-0b0", "-0b'0'0" }) {
+			Int v;
+			if (!parse(z, v) || !v.iszero() || v.isneg()) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL: '" << z << "' is not +0\n";
+			}
+		}
+		ReportTestResult(nrOfFailedTestCases - start, "single sign", "einteger parse");
+	}
+
+	// ----- a failed parse leaves the destination unchanged (#1988) -----
+	{
+		int start = nrOfFailedTestCases;
+		for (const char* bad : { "", "abc", "--5", "0x", "08", "12 34" }) {
+			Int v(-12345);
+			if (parse(bad, v) || v != Int(-12345)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL: parse('" << bad << "') changed the destination to " << v << '\n';
+			}
+		}
+		ReportTestResult(nrOfFailedTestCases - start, "failure leaves value", "einteger parse");
+	}
+
+	// ----- long decimal strings round-trip through print, at chunk boundaries (#1988) -----
+	{
+		int start = nrOfFailedTestCases;
+		for (size_t n : { 1u, 8u, 9u, 10u, 17u, 18u, 19u, 27u, 100u, 1000u, 5001u }) {
+			for (const char* sign : { "", "-" }) {
+				std::string digits(n, '0');
+				for (size_t i = 0; i < n; ++i) digits[i] = static_cast<char>('0' + (i * 7 + 3) % 10);
+				digits[0] = '9';
+				const std::string s = std::string(sign) + digits;
+				nrOfFailedTestCases += CheckParse<std::uint32_t>(s.c_str(), s.c_str(), reportTestCases);
+				nrOfFailedTestCases += CheckParse<std::uint8_t >(s.c_str(), s.c_str(), reportTestCases);
+			}
+		}
+		// zeros inside and at the end of a nine-digit chunk
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("1000000000000000000", "1000000000000000000", reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("1000000001000000001", "1000000001000000001", reportTestCases);
+		ReportTestResult(nrOfFailedTestCases - start, "long decimal round trip", "einteger parse");
+	}
+
 	// ----- operator>> sets failbit on a bad token -----
 	{
 		int start = nrOfFailedTestCases;

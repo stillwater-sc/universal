@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <cstdio>    // fprintf/fputs/fwrite(stderr, ...) for the diagnostics; keeps <iostream> out of the core (#1334)
 #include <string>
-#include <map>
+#include <algorithm>   // std::min in parse()
 #include <vector>
 #include <limits>
 #include <type_traits>
@@ -1028,14 +1028,21 @@ inline bool is_hex_digit(char c) noexcept {
 	return is_decimal_digit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
-// position of the first character past the leading [-+]* run
+// position of the first character past the one optional leading sign. A run of signs used to be
+// accepted, and each radix read it differently: "-+5" was 5 and "--5" -5 in decimal, while octal
+// "-+05" was -5 (#1988). At most one sign is accepted now, as integer<> and string_parse do.
 inline std::string::size_type skip_signs(const std::string& s) noexcept {
-	std::string::size_type pos = 0;
-	while (pos < s.size() && is_sign(s[pos])) ++pos;
-	return pos;
+	return (!s.empty() && is_sign(s[0])) ? 1 : 0;
 }
 
-// ^[-+]*0b[01']+
+// the value of a hex digit, which the matchers have already validated
+inline unsigned nibble(char c) noexcept {
+	if (c >= '0' && c <= '9') return static_cast<unsigned>(c - '0');
+	if (c >= 'a' && c <= 'f') return static_cast<unsigned>(c - 'a' + 10);
+	return static_cast<unsigned>(c - 'A' + 10);
+}
+
+// ^[-+]?0b[01']+
 inline bool matches_binary(const std::string& s) noexcept {
 	std::string::size_type pos = skip_signs(s);
 	if (s.size() - pos < 3 || s[pos] != '0' || s[pos + 1] != 'b') return false;
@@ -1045,7 +1052,7 @@ inline bool matches_binary(const std::string& s) noexcept {
 	return true;
 }
 
-// ^[-+]*0[0-7]*$
+// ^[-+]?0[0-7]*$
 inline bool matches_octal(const std::string& s) noexcept {
 	std::string::size_type pos = skip_signs(s);
 	if (pos == s.size() || s[pos] != '0') return false;
@@ -1055,7 +1062,7 @@ inline bool matches_octal(const std::string& s) noexcept {
 	return true;
 }
 
-// ^[-+]*(0|[1-9][0-9]*)$
+// ^[-+]?(0|[1-9][0-9]*)$
 inline bool matches_decimal(const std::string& s) noexcept {
 	std::string::size_type pos = skip_signs(s);
 	if (pos == s.size()) return false;
@@ -1067,7 +1074,7 @@ inline bool matches_decimal(const std::string& s) noexcept {
 	return true;
 }
 
-// ^[-+]*0[xX][0-9a-fA-F']+
+// ^[-+]?0[xX][0-9a-fA-F']+
 inline bool matches_hex(const std::string& s) noexcept {
 	std::string::size_type pos = skip_signs(s);
 	if (s.size() - pos < 3 || s[pos] != '0' || (s[pos + 1] != 'x' && s[pos + 1] != 'X')) return false;
@@ -1080,187 +1087,88 @@ inline bool matches_hex(const std::string& s) noexcept {
 } // namespace einteger_detail
 
 // read a einteger ASCII format and make a binary einteger out of it
+//
+// Accepted syntax, the whole string, with at most one leading sign:
+//   binary:  ^[-+]?0b[01']+               (apostrophes separate digit groups)
+//   octal:   ^[-+]?0[0-7]*$               (C-style: a leading zero selects octal)
+//   decimal: ^[-+]?(0|[1-9][0-9]*)$
+//   hex:     ^[-+]?0[xX][0-9a-fA-F']+
+//
+// A LEADING ZERO SELECTS OCTAL, however many of them there are. The octal pattern used to require
+// the second character to be [1-7], so "0777" parsed as octal 511 while "00777" fell through to
+// decimal 777: a caller could not predict the radix of its own input (universal#1370). Decimal
+// excludes a leading zero, so "08" and "0749", which are not valid octal and which C rejects, are
+// rejected rather than re-read as decimal.
+//
+// On failure value is left unchanged, as integer<>'s parse leaves it; it used to be zeroed (#1988).
 template<typename BlockType>
 bool parse(const std::string& number, einteger<BlockType>& value) {
 	using Integer = einteger<BlockType>;
-	bool bSuccess = false;
-	value.clear();
-	// binary: ^[-+]*0b[01']+
-	//
-	// A LEADING ZERO SELECTS OCTAL, however many of them there are.
-	//
-	// The octal pattern used to require the second character to be [1-7], so the radix
-	// depended on the number of leading zeros: "0777" parsed as octal 511 while
-	// "00777" fell through to decimal 777, and "075" was 61 while "0075" was 75. A
-	// caller could not predict the radix of its own input, and zero-padding a value
-	// silently changed it (universal#1370).
-	// octal: ^[-+]*0[0-7]*$
-	//
-	// Decimal excludes a leading zero, so a string that opens with '0' is committed to
-	// the octal (or 0x / 0b) reading rather than quietly falling back. Without this,
-	// "08" and "0749" -- which are not valid octal, and which C rejects outright --
-	// would be re-interpreted as decimal, so "0747" would be 487 and "0749" 749.
-	// decimal: ^[-+]*(0|[1-9][0-9]*)$
-	// hex: ^[-+]*0[xX][0-9a-fA-F']+
-	// setup associative array to map chars to nibbles
-	std::map<char, int> charLookup{
-		{ '0', 0 },
-		{ '1', 1 },
-		{ '2', 2 },
-		{ '3', 3 },
-		{ '4', 4 },
-		{ '5', 5 },
-		{ '6', 6 },
-		{ '7', 7 },
-		{ '8', 8 },
-		{ '9', 9 },
-		{ 'a', 10 },
-		{ 'b', 11 },
-		{ 'c', 12 },
-		{ 'd', 13 },
-		{ 'e', 14 },
-		{ 'f', 15 },
-		{ 'A', 10 },
-		{ 'B', 11 },
-		{ 'C', 12 },
-		{ 'D', 13 },
-		{ 'E', 14 },
-		{ 'F', 15 },
-	};
+	const bool negative = !number.empty() && number[0] == '-';
+	const std::string::size_type body = einteger_detail::skip_signs(number);   // first character past the sign
+	Integer magnitude;
+	magnitude.clear();
 	if (einteger_detail::matches_octal(number)) {
-		// Format: [+-]*0[0-7]*  (C-style octal, no separators). The digits after the
-		// leading '0' are OPTIONAL, so "0" and "00" reach here and are zero, and the
-		// leading zeros of "00777" are not special -- only the first is a radix marker.
-		// Walk left-to-right: skip sign(s), skip the one marker '0', then accumulate
-		// value = value * 8 + digit. Any further zeros simply contribute nothing.
-		bool sign = false;
-		std::string::size_type pos = 0;
-		while (pos < number.size() && (number[pos] == '+' || number[pos] == '-')) {
-			if (number[pos] == '-') sign = !sign;
-			++pos;
+		// skip the one radix '0', then value = value * 8 + digit; further zeros contribute nothing
+		for (std::string::size_type pos = body + 1; pos < number.size(); ++pos) {
+			magnitude <<= 3;
+			magnitude += Integer(static_cast<long long>(number[pos] - '0'));
 		}
-		// matches_octal guarantees a leading '0'; what follows it may be empty
-		++pos;
-		for (; pos < number.size(); ++pos) {
-			value *= 8LL;
-			value += static_cast<long long>(number[pos] - '0');
-		}
-		value.setsign(sign && !value.iszero());
-		bSuccess = true;
 	}
 	else if (einteger_detail::matches_hex(number)) {
-		//std::cout << "found a hexadecimal representation\n";
-		// each char is a nibble
-		int byte = 0;
-		int byteIndex = 0;
+		// each digit is a nibble: fill bytes from the least significant digit up to the 'x'
+		unsigned byte = 0;
+		size_t byteIndex = 0;
 		bool odd = false;
-		for (std::string::const_reverse_iterator r = number.rbegin();
-			r != number.rend();
-			++r) {
-			if (*r == '\'') {
-				// ignore
-			}
-			else if (*r == 'x' || *r == 'X') {
-				if (odd) {
-					// complete the most significant byte
-					value.setbyte(static_cast<size_t>(byteIndex), static_cast<uint8_t>(byte));
-				}
-				// setbyte writes leading zero digits as limbs: "0x0001" left [1, 0], which
-				// is not 1 to == and isone(), and "-0x00" a negative zero (#1878)
-				value.remove_leading_zeros();
-				// check that we have [-+]0[xX] format
-				++r;
-				if (r != number.rend()) {
-					if (*r == '0') {
-						// check if we have a sign
-						++r;
-						if (r == number.rend()) {
-							// no sign, thus by definition positive
-							bSuccess = true;
-						}
-						else if (*r == '+') {
-							// optional positive sign, no further action necessary
-							bSuccess = true;
-						}
-						else if (*r == '-') {
-							// negative sign, invert
-							value = -value;
-							bSuccess = true;
-						}
-						else {
-							// matches_hex will have filtered this out
-							bSuccess = false;
-						}
-					}
-					else {
-						// we didn't find the obligatory '0', matches_hex should have filtered this out
-						bSuccess = false;
-					}
-				}
-				else {
-					// we are missing the obligatory '0', matches_hex should have filtered this out
-					bSuccess = false;
-				}
-				// we have reached the end of our parse
-				break;
+		for (std::string::size_type pos = number.size(); pos-- > body + 2; ) {
+			const char c = number[pos];
+			if (c == '\'') continue;
+			if (odd) {
+				byte += einteger_detail::nibble(c) << 4;
+				magnitude.setbyte(byteIndex++, static_cast<uint8_t>(byte));
 			}
 			else {
-				if (odd) {
-					byte += charLookup.at(*r) << 4;
-					value.setbyte(static_cast<size_t>(byteIndex), static_cast<uint8_t>(byte));
-					++byteIndex;
-				}
-				else {
-					byte = charLookup.at(*r);
-				}
-				odd = !odd;
+				byte = einteger_detail::nibble(c);
 			}
+			odd = !odd;
 		}
+		if (odd) magnitude.setbyte(byteIndex, static_cast<uint8_t>(byte));   // the most significant nibble
+		// setbyte writes leading zero digits as limbs: "0x0001" left [1, 0], which is not 1 to == and
+		// isone() (#1878)
+		magnitude.remove_leading_zeros();
 	}
 	else if (einteger_detail::matches_decimal(number)) {
-		//std::cout << "found a decimal integer representation\n";
-		Integer scale = 1;
-		bool sign{ false };
-		for (std::string::const_reverse_iterator r = number.rbegin();
-			r != number.rend();
-			++r) {
-			if (*r == '-') {
-				sign = true;;
-			}
-			else if (*r == '+') {
-				break;
-			}
-			else {
-				Integer digit = charLookup.at(*r);
-				value += scale * digit;
+		// most significant digits first, nine at a time: value = value * 10^k + chunk. Adding
+		// scale * digit from the right with a growing power of ten cost a big-integer multiply per
+		// digit, 0.67 s for 40,000 digits (#1988).
+		std::string::size_type pos = body;
+		while (pos < number.size()) {
+			const std::string::size_type len = std::min<std::string::size_type>(9, number.size() - pos);
+			long long chunk = 0, scale = 1;
+			for (std::string::size_type i = 0; i < len; ++i) {
+				chunk = chunk * 10 + (number[pos + i] - '0');
 				scale *= 10;
 			}
+			magnitude *= Integer(scale);
+			magnitude += Integer(chunk);
+			pos += len;
 		}
-		value.setsign(sign);
-		bSuccess = true;
 	}
 	else if (einteger_detail::matches_binary(number)) {
-		// '0b' prefix is at positions [0..2) after an optional leading sign.
-		// We walk the digits left-to-right, accumulating value = value*2 + bit.
-		// Apostrophes are digit-group separators and are ignored.
-		bool sign = false;
-		std::string::size_type pos = 0;
-		while (pos < number.size() && (number[pos] == '+' || number[pos] == '-')) {
-			if (number[pos] == '-') sign = !sign;
-			++pos;
-		}
-		// matches_binary guarantees '0b' present after the sign run
-		pos += 2;
-		for (; pos < number.size(); ++pos) {
-			char c = number[pos];
+		// skip "0b", then value = value * 2 + bit; apostrophes are digit-group separators
+		for (std::string::size_type pos = body + 2; pos < number.size(); ++pos) {
+			const char c = number[pos];
 			if (c == '\'') continue;
-			value *= 2LL;
-			if (c == '1') value += 1LL;
+			magnitude <<= 1;
+			if (c == '1') magnitude += Integer(1ll);
 		}
-		value.setsign(sign && !value.iszero());
-		bSuccess = true;
 	}
-	return bSuccess;
+	else {
+		return false;
+	}
+	magnitude.setsign(negative && !magnitude.iszero());
+	value = magnitude;
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
