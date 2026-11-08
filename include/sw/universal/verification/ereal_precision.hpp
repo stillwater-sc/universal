@@ -94,7 +94,12 @@ inline int measured_bits(const ereal<m, F>& got, const ereal<n, G>& ref) {
 template<unsigned maxlimbs, typename FpType>
 inline int measured_bits(const ereal<maxlimbs, FpType>& got, std::string_view ref) {
 	if (got.isnan() || got.isinf() || got.iszero()) return -1;
-	return agreed_bits(got, ref);
+	try {
+		return agreed_bits(got, ref);
+	}
+	catch (const std::invalid_argument&) {
+		return -1;   // a zero or malformed reference: the decimal oracle has nothing to compare
+	}
 }
 
 // The check a test asks for: got agrees with ref to at least `bits` bits.
