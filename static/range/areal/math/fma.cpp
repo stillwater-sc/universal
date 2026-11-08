@@ -86,7 +86,8 @@ namespace {
 			// independent reference: exact a*b + c in long double (exact for these small configs)
 			long double tru = (long double)double(a) * (long double)double(b) + (long double)double(c);
 			bool ubit = r.at(0);
-			const bool inexactInput = a.at(0) || b.at(0) || c.at(0);
+			// an exact zero factor makes the product exactly 0, so the other factor's ubit drops nothing (#2010)
+			const bool inexactInput = (!(a.iszero() || b.iszero()) && (a.at(0) || b.at(0))) || c.at(0);
 			if (v == 0.0) {                      // a zero result: exact unless an operand was inexact
 				if (tru != 0.0L || ubit != inexactInput) { ++fails; if (reportTestCases) std::cout << "    FAIL zero-result faithfulness\n"; }
 				continue;

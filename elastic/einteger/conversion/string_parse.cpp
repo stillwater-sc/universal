@@ -214,6 +214,72 @@ try {
 		ReportTestResult(nrOfFailedTestCases - start, "malformed reject", "einteger parse");
 	}
 
+	// ----- a radix prefix needs a digit: separators alone are not a number (#2010) -----
+	// "0x'" and "0b''" parsed as 0, since [0-9a-fA-F']+ is satisfied by a separator. The digits
+	// after "0b" and "0x" must now include one digit; a separator may still sit anywhere among them.
+	// Octal and decimal never took a separator, so "0'" and "''" were already rejected.
+	{
+		int start = nrOfFailedTestCases;
+		for (const char* bad : { "0x'", "0X'", "0b'", "0x''", "0b'''", "-0x'", "+0b'", "-0X''",
+		                         "0x", "0b", "-0x", "+0b", "0'", "-0'", "''", "'", "0''", "00'", "'0", "'0x1" }) {
+			nrOfFailedTestCases += CheckReject<std::uint32_t>(bad, reportTestCases);
+			nrOfFailedTestCases += CheckReject<std::uint8_t >(bad, reportTestCases);
+			Int v(-12345);
+			if (parse(bad, v) || v != Int(-12345)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL: parse('" << bad << "') changed the destination to " << v << '\n';
+			}
+		}
+		// one digit is enough, wherever the separators are
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("0x'0",     "0",    reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("0x0'",     "0",    reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("0x'f'",    "15",   reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("-0X''1",   "-1",   reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("0b'1",     "1",    reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint32_t>("0b1''0'",  "2",    reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint8_t >("-0b'0'0",  "0",    reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint8_t >("0x'1'00",  "256",  reportTestCases);
+		ReportTestResult(nrOfFailedTestCases - start, "prefix without digits", "einteger parse");
+	}
+
+	// ----- binary, octal and hex agree on long inputs, across every limb width (#2010) -----
+	// binary and octal now share the byte-filling path of hex: a value spanning many limbs, with
+	// octal digits straddling byte boundaries, must come out the same in all three radixes
+	{
+		int start = nrOfFailedTestCases;
+		std::string bin = "0b", oct = "0", hex = "0x";
+		const char* hexdigits = "0123456789abcdef";
+		// 3 * 4 * 50 bits, so all three spell the same value without padding
+		std::string bits;
+		for (int i = 0; i < 600; ++i) bits += ((i * 7 + 3) % 5 < 2) ? '1' : '0';
+		bits[0] = '1';
+		bin += bits;
+		for (size_t i = 0; i < bits.size(); i += 3) oct += static_cast<char>('0' + (bits[i] - '0') * 4 + (bits[i + 1] - '0') * 2 + (bits[i + 2] - '0'));
+		for (size_t i = 0; i < bits.size(); i += 4) hex += hexdigits[(bits[i] - '0') * 8 + (bits[i + 1] - '0') * 4 + (bits[i + 2] - '0') * 2 + (bits[i + 3] - '0')];
+		auto agree = [&](auto zero) {
+			using E = decltype(zero);
+			E b, o, h;
+			if (!parse(bin, b) || !parse(oct, o) || !parse(hex, h) || b != o || b != h || b.limbs() != h.limbs()) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL: binary, octal and hex parse of a 600-bit value differ\n";
+			}
+			E ref(1), top(1);   // the leading bit, as a check that the 600 bits all landed
+			ref <<= 599;
+			top <<= 600;
+			if (b < ref || b >= top) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL: the 600-bit value is out of [2^599, 2^600)\n";
+			}
+		};
+		agree(einteger<std::uint8_t>{});
+		agree(einteger<std::uint16_t>{});
+		agree(einteger<std::uint32_t>{});
+		nrOfFailedTestCases += CheckParse<std::uint8_t >("01234567", "342391",  reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint16_t>("0777777777777777777777", "9223372036854775807", reportTestCases);
+		nrOfFailedTestCases += CheckParse<std::uint8_t >("-0b1'0000'0000'0000'0001", "-65537", reportTestCases);
+		ReportTestResult(nrOfFailedTestCases - start, "binary octal hex agree", "einteger parse");
+	}
+
 	// ----- cross-block-width parity: uint8_t, uint16_t, uint32_t all parse identically -----
 	{
 		int start = nrOfFailedTestCases;

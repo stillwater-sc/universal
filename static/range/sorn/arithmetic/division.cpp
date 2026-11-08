@@ -34,6 +34,8 @@ namespace sw { namespace universal {
 		check(a / straddle, "[-inf,inf]",  "divisor straddling zero");
 		check(a / zero,     "nan",         "division by the exact zero");
 		check(zero / a,     "0",           "zero dividend");
+		// 0 / y = 0 for every nonzero y, so a divisor straddling zero leaves the zero dividend 0 (#2010)
+		check(zero / straddle, "0",        "zero dividend, divisor straddling zero");
 		check(zero / zero,  "nan",         "0 / 0");
 		check(a / minpos,   "(2,inf]",     "divisor with an open zero bound");
 		check(a / minneg,   "[-inf,-2)",   "negative divisor with an open zero bound");

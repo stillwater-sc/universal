@@ -1629,7 +1629,10 @@ public:
 				uint64_t fbitMask = (0xFFFFFFFFFFFFFFFFull >> (64 - fbits)) << 1;
 				raw = (fbitMask & combined) >> 1;
 			}
-			else if constexpr (3 == nrBlocks) {
+			else if constexpr (3 == nrBlocks && 3 * bitsInBlock <= 64) {
+				// three 32-bit limbs do not fit a uint64_t: shifting the top one by 64 is UB, and it
+				// made areal<72,8,uint32_t>(1.5) * 3 zero under clang -O2 and ORed the exponent into
+				// the fraction at -O0 (#2010). They take the bit-by-bit path below.
 				uint64_t combined = (uint64_t(_block[2]) << (2 * bitsInBlock)) | (uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]);
 				uint64_t fbitMask = (0xFFFFFFFFFFFFFFFFull >> (64 - fbits)) << 1;
 				raw = (fbitMask & combined) >> 1;

@@ -196,6 +196,122 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
+	// 2^k as an einteger
+	template<typename BlockType>
+	einteger<BlockType> PowerOfTwo(int k) {
+		einteger<BlockType> p(1);
+		p <<= k;
+		return p;
+	}
+
+	// einteger -> Real where the rounding needs every bit (#1994, #2010). With D = digits and a
+	// leading bit 2^T, the bit 2^(T-D) is the round bit; a sticky bit far below it, in another limb
+	// and another 64-bit word, decides the tie. The expected values are exact sums of powers of two.
+	// T = 100 is the issue's example (2^100 + 2^47 + 1 to double); T = D + 70 puts the round bit in
+	// the second 64-bit word and the sticky bit in the first; T = max_exponent - 1 is the top binade.
+	template<typename BlockType, typename Real>
+	int VerifyIeeeStickyRounding(const char* realName, bool reportTestCases) {
+		using EInteger = einteger<BlockType>;
+		constexpr int D = std::numeric_limits<Real>::digits;
+		constexpr int E = std::numeric_limits<Real>::max_exponent;   // 2^E is the first power that overflows
+		int nrOfFailedTests = 0;
+		auto check = [&](const EInteger& a, Real expected, const char* what, int T) {
+			for (bool negative : { false, true }) {
+				const EInteger v = negative ? -a : a;
+				const Real ref = negative ? -expected : expected;
+				const Real got = static_cast<Real>(v);
+				if (got != ref) {
+					++nrOfFailedTests;
+					if (reportTestCases) std::cerr << "FAIL: " << realName << '(' << (negative ? "-" : "") << what << ") with T = " << T << " is " << std::hexfloat << got << ", expected " << ref << std::defaultfloat << '\n';
+				}
+			}
+		};
+		auto p2 = [](int k) { return PowerOfTwo<BlockType>(k); };
+		const Real one(1);
+		for (int T : { 100, D + 70, E - 1 }) {
+			if (T <= D + 1 || T >= E) continue;
+			const Real top = std::ldexp(one, T);
+			check(p2(T) + p2(T - D) + p2(0), top + std::ldexp(one, T - D + 1), "2^T + 2^(T-D) + 1: sticky rounds up", T);
+			check(p2(T) + p2(T - D), top, "2^T + 2^(T-D): tie to even, down", T);
+			check(p2(T) + p2(T - D + 1) + p2(T - D), top + std::ldexp(one, T - D + 2), "2^T + 2^(T-D+1) + 2^(T-D): tie to even, up", T);
+			check(p2(T) + p2(T - D) - EInteger(1), top, "2^T + 2^(T-D) - 1: below the tie", T);
+			check(p2(T) + p2(T - D + 1) + p2(0), top + std::ldexp(one, T - D + 1), "2^T + 2^(T-D+1) + 1: round bit clear", T);
+			check(p2(T + 1) - EInteger(1), std::ldexp(one, T + 1), "2^(T+1) - 1: carry into the next binade", T);
+		}
+		if constexpr (D >= 64) {
+			// a long double holds a full 64-bit integer exactly (not on MSVC or macOS ARM64: D == 53 there)
+			check(p2(63) + EInteger(1), std::ldexp(one, 63) + one, "2^63 + 1", 63);
+		}
+		return nrOfFailedTests;
+	}
+
+	// einteger -> Real at the top of the range: the largest finite value, the round-to-nearest
+	// threshold to infinity at MAX + ulp/2 (a tie with an odd MAX, so it rounds up), 2^E itself and
+	// beyond. Also the other direction: Real max converts to the exact einteger.
+	template<typename BlockType, typename Real>
+	int VerifyIeeeOverflow(const char* realName, bool reportTestCases) {
+		using EInteger = einteger<BlockType>;
+		constexpr int D = std::numeric_limits<Real>::digits;
+		constexpr int E = std::numeric_limits<Real>::max_exponent;
+		const Real maxpos = std::numeric_limits<Real>::max();
+		const Real inf = std::numeric_limits<Real>::infinity();
+		int nrOfFailedTests = 0;
+		auto check = [&](const EInteger& a, Real expected, const char* what) {
+			for (bool negative : { false, true }) {
+				const EInteger v = negative ? -a : a;
+				const Real ref = negative ? -expected : expected;
+				const Real got = static_cast<Real>(v);
+				if (got != ref) {
+					++nrOfFailedTests;
+					if (reportTestCases) std::cerr << "FAIL: " << realName << '(' << (negative ? "-" : "") << what << ") is " << std::hexfloat << got << ", expected " << ref << std::defaultfloat << '\n';
+				}
+			}
+		};
+		auto p2 = [](int k) { return PowerOfTwo<BlockType>(k); };
+		const EInteger MAX = p2(E) - p2(E - D);   // 2^E - 2^(E-D): D ones
+		const EInteger halfUlp = p2(E - D - 1);
+		check(MAX, maxpos, "MAX");
+		check(MAX - EInteger(1), maxpos, "MAX - 1");
+		check(MAX + halfUlp - EInteger(1), maxpos, "MAX + ulp/2 - 1: just below the threshold");
+		check(MAX + halfUlp, inf, "MAX + ulp/2: the threshold, a tie that rounds to even");
+		check(MAX + halfUlp + EInteger(1), inf, "MAX + ulp/2 + 1");
+		check(p2(E) - EInteger(1), inf, "2^E - 1");
+		check(p2(E), inf, "2^E");
+		check(p2(E) + EInteger(1), inf, "2^E + 1");
+		check(p2(E + 100), inf, "2^(E + 100)");
+		const EInteger fromMax(maxpos);
+		if (fromMax != MAX || EInteger(-maxpos) != -MAX) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: einteger(" << realName << " max) = " << fromMax << ", expected " << MAX << '\n';
+		}
+		return nrOfFailedTests;
+	}
+
+	// the overflow edge of one type is an ordinary value of a wider one
+	template<typename BlockType>
+	int VerifyIeeeCrossRange(bool reportTestCases) {
+		using EInteger = einteger<BlockType>;
+		int nrOfFailedTests = 0;
+		const EInteger p128 = PowerOfTwo<BlockType>(128), p1024 = PowerOfTwo<BlockType>(1024);
+		const EInteger fltMax(std::numeric_limits<float>::max());
+		if (static_cast<double>(p128) != std::ldexp(1.0, 128) || static_cast<float>(p128) != std::numeric_limits<float>::infinity()
+		    || static_cast<double>(fltMax) != static_cast<double>(std::numeric_limits<float>::max())
+		    || static_cast<float>(p1024) != std::numeric_limits<float>::infinity()
+		    || static_cast<double>(p1024) != std::numeric_limits<double>::infinity()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: 2^128, FLT_MAX or 2^1024 across float and double\n";
+		}
+#if LONG_DOUBLE_SUPPORT
+		if constexpr (std::numeric_limits<long double>::max_exponent > 1024) {
+			if (static_cast<long double>(p1024) != std::ldexp(1.0l, 1024)) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: long double(2^1024)\n";
+			}
+		}
+#endif
+		return nrOfFailedTests;
+	}
+
 	// copy, move and self-assignment keep the value; a moved-from einteger may be reassigned
 	template<typename BlockType>
 	int VerifyCopyAndMove(bool reportTestCases) {
@@ -306,10 +422,26 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyIeeeConversion<std::uint32_t>(reportTestCases), "einteger<uint32_t>", "to float/double");
 	nrOfFailedTestCases += ReportTestResult(VerifyIeeeRounding<std::uint32_t>(2000, reportTestCases), "einteger<uint32_t>", "float/double rounding");
 	nrOfFailedTestCases += ReportTestResult(VerifyIeeeRounding<std::uint8_t>(500, reportTestCases), "einteger<uint8_t>", "float/double rounding");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeStickyRounding<std::uint32_t, float>("float", reportTestCases), "einteger<uint32_t>", "float sticky rounding");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeStickyRounding<std::uint32_t, double>("double", reportTestCases), "einteger<uint32_t>", "double sticky rounding");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeStickyRounding<std::uint16_t, float>("float", reportTestCases), "einteger<uint16_t>", "float sticky rounding");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeStickyRounding<std::uint16_t, double>("double", reportTestCases), "einteger<uint16_t>", "double sticky rounding");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeStickyRounding<std::uint8_t, double>("double", reportTestCases), "einteger<uint8_t>", "double sticky rounding");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeOverflow<std::uint32_t, float>("float", reportTestCases), "einteger<uint32_t>", "float overflow edge");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeOverflow<std::uint32_t, double>("double", reportTestCases), "einteger<uint32_t>", "double overflow edge");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeOverflow<std::uint16_t, float>("float", reportTestCases), "einteger<uint16_t>", "float overflow edge");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeOverflow<std::uint16_t, double>("double", reportTestCases), "einteger<uint16_t>", "double overflow edge");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeOverflow<std::uint8_t, float>("float", reportTestCases), "einteger<uint8_t>", "float overflow edge");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeCrossRange<std::uint32_t>(reportTestCases), "einteger<uint32_t>", "2^128 and 2^1024");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeCrossRange<std::uint16_t>(reportTestCases), "einteger<uint16_t>", "2^128 and 2^1024");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeRounding<std::uint16_t>(500, reportTestCases), "einteger<uint16_t>", "float/double rounding");
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyAndMove<std::uint8_t>(reportTestCases), "einteger<uint8_t>", "copy/move");
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyAndMove<std::uint32_t>(reportTestCases), "einteger<uint32_t>", "copy/move");
 #if LONG_DOUBLE_SUPPORT
 	nrOfFailedTestCases += ReportTestResult(VerifyLongDoubleAssignment<std::uint32_t>(reportTestCases), "einteger<uint32_t>", "long double");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeStickyRounding<std::uint32_t, long double>("long double", reportTestCases), "einteger<uint32_t>", "long double sticky rounding");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeStickyRounding<std::uint16_t, long double>("long double", reportTestCases), "einteger<uint16_t>", "long double sticky rounding");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeeeOverflow<std::uint32_t, long double>("long double", reportTestCases), "einteger<uint32_t>", "long double overflow edge");
 #endif
 #endif
 

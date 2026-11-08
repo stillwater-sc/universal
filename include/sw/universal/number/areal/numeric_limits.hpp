@@ -50,8 +50,8 @@ public:
 		return AREAL(sw::universal::SpecificValue::maxneg);
 	}
 	static constexpr AREAL epsilon() { // the distance from 1.0 to the next value, 2^-fbits
-		// with es = 1 the encoding cannot hold 2^-fbits, and the smallest positive value is the
-		// closest it comes
+		// with es = 1 the bias is 0 and 1.0 is a subnormal, 0.1 * 2^1, so the step from 1.0 is the
+		// subnormal spacing 2^(1 - fbits): denorm_min(), and 2^-fbits is not representable
 		if constexpr (-static_cast<int>(AREAL::fbits) >= AREAL::MIN_EXP_SUBNORMAL) return pow2(-static_cast<int>(AREAL::fbits));
 		else return denorm_min();
 	}
@@ -67,8 +67,12 @@ public:
 	static constexpr AREAL quiet_NaN() { // return non-signaling NaN
 		return AREAL(NAN);
 	}
-	static constexpr AREAL signaling_NaN() { // return signaling NaN
-		return AREAL(NAN);
+	static constexpr AREAL signaling_NaN() { // the signalling NaN encoding, the one with the sign bit set
+		// AREAL(NAN) is the quiet NaN: this returned it, so signaling_NaN().isnan(NAN_TYPE_SIGNALLING)
+		// was false (#2010)
+		AREAL a;
+		a.setnan(sw::universal::NAN_TYPE_SIGNALLING);
+		return a;
 	}
 
 	static constexpr int digits       = static_cast<int>(AREAL::fbits) + 1;   // the significand of an exact value; the ubit is not a digit

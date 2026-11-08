@@ -16,9 +16,37 @@
 #include <universal/verification/test_suite.hpp>
 #include <cerrno>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
+#include <new>
 #include <random>
 #include <string>
+
+// every allocation the program makes, through any of the replaceable operators new, so that the
+// exact_expansion copy test can see what a copy allocates (#2010). gcc reads the replaced
+// operators' malloc and free as a mismatch with new and delete, which they are not.
+#if defined(__GNUC__) && !defined(__clang__)
+#	pragma GCC diagnostic ignored "-Wmismatched-new-delete"
+#endif
+static volatile unsigned long long allocations = 0;     // volatile: gcc 15 assumes operator new
+static volatile unsigned long long allocatedBytes = 0;  // leaves globals alone and folds the reads
+
+void* operator new(std::size_t n) {
+	allocations = allocations + 1;   // not ++: C++20 deprecates it on a volatile
+	allocatedBytes = allocatedBytes + n;
+	if (void* p = std::malloc(n != 0 ? n : 1)) return p;
+	throw std::bad_alloc();
+}
+void* operator new[](std::size_t n) {
+	allocations = allocations + 1;   // not ++: C++20 deprecates it on a volatile
+	allocatedBytes = allocatedBytes + n;
+	if (void* p = std::malloc(n != 0 ? n : 1)) return p;
+	throw std::bad_alloc();
+}
+void operator delete(void* p) noexcept { std::free(p); }
+void operator delete[](void* p) noexcept { std::free(p); }
+void operator delete(void* p, std::size_t) noexcept { std::free(p); }
+void operator delete[](void* p, std::size_t) noexcept { std::free(p); }
 
 namespace {
 
@@ -210,6 +238,10 @@ int VerifyFmod(bool reportTestCases, double relTol) {
 // are 35 double components that no twoSum can merge, 60 bits apart. It checks the size, the sign,
 // that a copy of a spilled expansion is the same sum, and that adding the negations in turn
 // cancels it to zero exactly, through and back below the inline capacity.
+// publish an object's address, so that the compiler cannot drop the allocations it made
+const volatile void* volatile escapedObject = nullptr;
+void escape(const void* p) { escapedObject = p; }
+
 int VerifyExpansionSpill(bool reportTestCases) {
 	using sw::universal::faithful_detail::exact_expansion;
 	int fails = 0;
@@ -232,13 +264,29 @@ int VerifyExpansionSpill(bool reportTestCases) {
 	}
 	check(copy.size() == 0 && copy.sign() == 0 && copy.approx() == 0.0, "cancels to zero");
 	// a spilled expansion that shrank holds stale entries past its size; a copy takes only the
-	// live components, back into the inline buffer when they fit (#1991)
+	// live components, back into the inline buffer when they fit (#1991). The values cannot tell:
+	// the stale entries are never read. What a copy allocates can (#2010): the copy used to copy
+	// the whole heap vector, so a copy of an expansion shrunk to 10 components allocated a
+	// 35-entry vector, where it now allocates nothing, and one shrunk to 33 allocated 35 entries
+	// where it now allocates 33.
 	{
 		exact_expansion<double> shrunk(e);
 		for (int k = count - 1; k >= 10; --k) shrunk.add(-std::ldexp(1.0, -1074 + 60 * k));
-		exact_expansion<double> c1(shrunk), c2;
+		exact_expansion<double> c2;
 		c2.add(3.0);
+		unsigned long long before = allocations;
+		exact_expansion<double> c1(shrunk);
 		c2 = shrunk;
+		escape(&c1); escape(&c2);   // the copies stay live, so their allocations stay
+		check(allocations == before, "a copy of a spilled expansion that fits inline allocates nothing");
+		exact_expansion<double> spilled(e);
+		for (int k = count - 1; k >= 33; --k) spilled.add(-std::ldexp(1.0, -1074 + 60 * k));
+		before = allocations;
+		const unsigned long long bytesBefore = allocatedBytes;
+		const exact_expansion<double> c3(spilled);
+		escape(&c3);
+		check(c3.size() == 33 && allocations == before + 1 && allocatedBytes - bytesBefore < count * sizeof(double),
+		      "a copy of a shrunk spilled expansion allocates for its live components only");
 		check(c1.size() == 10 && c2.size() == 10, "copies only the live components of a shrunk expansion");
 		check(c1.approx() == std::ldexp(1.0, -1074 + 60 * 9) && c2.approx() == c1.approx(), "copies the sum of a shrunk expansion");
 		for (int k = 10; k < count; ++k) c1.add(std::ldexp(1.0, -1074 + 60 * k));   // and spills again from the inline copy

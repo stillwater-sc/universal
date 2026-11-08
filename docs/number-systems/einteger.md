@@ -53,7 +53,12 @@ same edge cases as [integer's](/universal/number-systems/integer/#integer-power)
 | hex, with `'` digit separators | `0xFF'FF` | 65535 |
 | binary, with `'` digit separators | `-0b1010'0101` | -165 |
 
-- **Rejected input:** a run of signs (`--5`, `-+0x5`) and a leading-zero string with a digit outside `[0-7]` (`08`, `0749`).
+- **Rejected input:**
+  - a run of signs (`--5`, `-+0x5`);
+  - a leading-zero string with a digit outside `[0-7]` (`08`, `0749`);
+  - a `0x` or `0b` prefix with no digit after it, whether or not separators follow (`0x`, `0x'`, `-0b''`; #2010).
+- **Separators:** `'` may stand anywhere among the hex and binary digits, so `0x'0` and `0b1''0'` are accepted.
+- **Floating-point operands:** a NaN or infinite operand, in `a + x` as in `a += x`, converts to 0 as `einteger(x)` does (#2010).
 - **Failure:** `parse()` returns false and leaves `value` unchanged, as `integer`'s parse does (#1988).
 - **Zero:** a negative zero in any radix (`-0`, `-0x0`) is `+0`.
 

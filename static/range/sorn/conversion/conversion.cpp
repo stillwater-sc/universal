@@ -81,6 +81,105 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
+	// contains: is the value v inside the sorn's interval, compared in long double
+	template<typename SornType>
+	bool contains(const SornType& s, long double v) {
+		const auto& i = s.sornIntVal;
+		const long double lo = i.lowerBound, hi = i.upperBound;
+		const bool aboveLower = (v > lo) || (v == lo && !i.lowerIsOpen);
+		const bool belowUpper = (v < hi) || (v == hi && !i.upperIsOpen);
+		return aboveLower && belowUpper;
+	}
+
+	// a double or long double just above or below a lattice point converts to an interval that
+	// contains it; both used to be rounded to float first, which put a value just above a lattice
+	// point into the interval below it (#2010)
+	template<typename SornType>
+	int VerifyNativeInputEnclosure(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		auto check = [&](long double v, const SornType& s, const char* type) {
+			// a value beyond the lattice saturates to its outermost interval
+			const long double clamped = std::min(std::max(v, static_cast<long double>(SornType::datatype().front().lowerBound)),
+			                                     static_cast<long double>(SornType::datatype().back().upperBound));
+			if (!contains(s, clamped)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: " << type << ' ' << v << " -> " << s << " does not contain it\n";
+			}
+		};
+		constexpr double dinf = std::numeric_limits<double>::infinity();
+		constexpr long double ldinf = std::numeric_limits<long double>::infinity();
+		for (const auto& interval : SornType::datatype()) {
+			for (float p : { interval.lowerBound, interval.upperBound }) {
+				if (!std::isfinite(p)) continue;
+				const double d = p;
+				for (double v : { d, std::nextafter(d, dinf), std::nextafter(d, -dinf), d + 1.0e-12, d - 1.0e-12, d * (1.0 + 1.0e-9) }) {
+					check(v, SornType(v), "double");
+				}
+				const long double ld = p;
+				for (long double v : { ld, std::nextafter(ld, ldinf), std::nextafter(ld, -ldinf) }) {
+					check(v, SornType(v), "long double");
+				}
+			}
+		}
+		// a value too small for a float still lies on its side of zero
+		for (double v : { 1.0e-300, -1.0e-300 }) check(v, SornType(v), "double");
+		// the case of the sweep: where 0.5 closes an interval, 0.5 + 1e-12 lies in the next one
+		if (SornType(0.5).sornIntVal.upperBound == 0.5f && SornType(0.5 + 1.0e-12) == SornType(0.5)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: sorn(0.5 + 1e-12) == sorn(0.5) = " << SornType(0.5) << '\n';
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// a 64-bit integer past 2^24 converts to an interval that contains it; it used to be rounded to
+	// float first, so 2^24 + 1 landed in the interval of 2^24 (#2010)
+	template<typename SornType>
+	int VerifyIntegerInputEnclosure(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		auto check = [&](long double v, const SornType& s, const char* type) {
+			// a value beyond the lattice saturates to its outermost interval
+			const long double clamped = std::min(std::max(v, static_cast<long double>(SornType::datatype().front().lowerBound)),
+			                                     static_cast<long double>(SornType::datatype().back().upperBound));
+			if (!contains(s, clamped)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: " << type << ' ' << v << " -> " << s << " does not contain it\n";
+			}
+		};
+		constexpr long long p24 = 1ll << 24, p25 = 1ll << 25;
+		for (long long v : { p24 - 1, p24, p24 + 1, p25 - 1, p25, p25 + 1, -(p24 + 1), -(p25 + 1),
+		                     std::numeric_limits<long long>::max(), std::numeric_limits<long long>::min() }) {
+			check(static_cast<long double>(v), SornType(v), "long long");
+		}
+		for (unsigned long long v : { 16777217ull, 33554433ull, std::numeric_limits<unsigned long long>::max() }) {
+			check(static_cast<long double>(v), SornType(v), "unsigned long long");
+		}
+		if (SornType(16777217ll) == SornType(16777216ll)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: sorn(16777217) == sorn(16777216) = " << SornType(16777216ll) << '\n';
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// to_native of a wide finite interval: hi - lo used to overflow float, so float([-2^127, 2^127])
+	// came out as 2^127 instead of the midpoint 0 (#2010)
+	template<typename SornType>
+	int VerifyWideIntervalToNative(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		const float big = std::ldexp(1.0f, 127);
+		const SornType symmetric = sornFromInterval<SornType>({ -big, big, false, false });
+		if (float(symmetric) != 0.0f || double(symmetric) != 0.0 || static_cast<long double>(symmetric) != 0.0l) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: midpoint of " << symmetric << " = " << float(symmetric) << " (float), " << double(symmetric) << " (double)\n";
+		}
+		const SornType skewed = sornFromInterval<SornType>({ -big, std::ldexp(1.0f, 126), false, false });
+		const float f = float(skewed);
+		if (f != -std::ldexp(1.0f, 125) || double(skewed) != double(f) || !contains(skewed, f)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: midpoint of " << skewed << " = " << f << " (float), " << double(skewed) << " (double)\n";
+		}
+		return nrOfFailedTestCases;
+	}
+
 	// sorn(SpecificValue) used to do nothing, leaving the default NaN
 	int VerifySpecificValues(bool reportTestCases) {
 		int nrOfFailedTestCases = 0;
@@ -174,6 +273,13 @@ try {
 	using NoZeroSorn = sorn<0, 4, 4, 1, 1, 1, 1, 0>;    // linear, no exact zero
 	using FiniteSorn = sorn<0, 4, 8, 1, 1, 1, 0, 1>;    // linear, no infinity
 	using TinySorn   = sorn<-149, -148, 1, 0, 1, 0, 0, 1>;   // logarithmic at the bottom of binary32: 0 (0,2^-149] (2^-149,2^-148]
+	using WideSorn   = sorn<-3, 127, 1, 0>;             // logarithmic up to 2^127
+	using IntSorn    = sorn<23, 26, 1, 0>;              // logarithmic around 2^24: ... (2^23,2^24] (2^24,2^25] ...
+
+	// only the halfopen lattice is implemented: a configuration with _halfopen = false, such as
+	// sorn<0, 4, 8, 1, 0>, does not compile; it stops at the static_assert in class sorn (#2010).
+	// The default configuration is the halfopen one.
+	static_assert(std::is_same_v<LinSorn, sorn<0, 4, 8, 1, 1, 1, 1, 1>>, "the default sorn lattice is halfopen");
 
 #if MANUAL_TESTING
 
@@ -197,6 +303,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsRoundTrip<LinSorn>(reportTestCases), "sorn<0,4,8>", "setbits/getBits");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsRoundTrip<LogSorn>(reportTestCases), "sorn<-2,2,1,log>", "setbits/getBits");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsRoundTrip<NoZeroSorn>(reportTestCases), "sorn<0,4,4,nozero>", "setbits/getBits");
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeInputEnclosure<LinSorn>(reportTestCases), "sorn<0,4,8>", "double/long double enclosure");
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeInputEnclosure<LogSorn>(reportTestCases), "sorn<-2,2,1,log>", "double/long double enclosure");
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeInputEnclosure<NoZeroSorn>(reportTestCases), "sorn<0,4,4,nozero>", "double/long double enclosure");
+	nrOfFailedTestCases += ReportTestResult(VerifyNativeInputEnclosure<TinySorn>(reportTestCases), "sorn<-149,-148,1,log>", "double/long double enclosure");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerInputEnclosure<IntSorn>(reportTestCases), "sorn<23,26,1,log>", "64-bit integer enclosure");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideIntervalToNative<WideSorn>(reportTestCases), "sorn<-3,127,1,log>", "to_native wide interval");
 #endif
 
 #if REGRESSION_LEVEL_2
