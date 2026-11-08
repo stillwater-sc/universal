@@ -126,21 +126,27 @@ template <typename FpType> inline elreal<FpType> atan(const elreal<FpType>& x) {
     }
     return elreal<FpType>(atan(x.canonical(), d), d);
 }
+// sinh, cosh and tanh evaluate exp(+-x) and exp(2x) on the stream, so the exp range guard
+// applies to their arguments too: beyond it they take their limits instead
 template <typename FpType> inline elreal<FpType> sinh(const elreal<FpType>& x) {
     const std::size_t d = x.precision();
     if (!x.isfinite()) return x;                                                              // sinh(+-inf) = +-inf
+    if (std::fabs(double(x)) >= detail::kExpReductionLimit) return detail::elreal_inf<FpType>(x.sign(), d);
     return elreal<FpType>(sinh(x.canonical(), d), d);
 }
 template <typename FpType> inline elreal<FpType> cosh(const elreal<FpType>& x) {
     const std::size_t d = x.precision();
     if (x.isnan()) return x;
     if (x.isinf()) return detail::elreal_inf<FpType>(1, d);                                   // cosh(+-inf) = +inf
+    if (std::fabs(double(x)) >= detail::kExpReductionLimit) return detail::elreal_inf<FpType>(1, d);
     return elreal<FpType>(cosh(x.canonical(), d), d);
 }
 template <typename FpType> inline elreal<FpType> tanh(const elreal<FpType>& x) {
     const std::size_t d = x.precision();
     if (x.isnan()) return x;
-    if (x.isinf()) return detail::elreal_special<FpType>(x.sign() < 0 ? -1.0 : 1.0, d);      // tanh(+-inf) = +-1
+    const double limit = x.sign() < 0 ? -1.0 : 1.0;
+    if (x.isinf()) return detail::elreal_special<FpType>(limit, d);                          // tanh(+-inf) = +-1
+    if (std::fabs(double(x)) >= detail::kExpReductionLimit / 2.0) return detail::elreal_special<FpType>(limit, d);   // exp(2x) guard
     return elreal<FpType>(tanh(x.canonical(), d), d);
 }
 
@@ -172,8 +178,21 @@ inline elreal<FpType> pow(const elreal<FpType>& x, const elreal<FpType>& y) {
         return detail::elreal_inf<FpType>((x.sign() < 0 && yint && odd) ? -1 : 1, d);
     }
     if (x.iszero()) return y.sign() > 0 ? detail::elreal_special<FpType>(0.0, d) : detail::elreal_inf<FpType>(1, d);
-    if (x.sign() < 0 && !yint) return detail::elreal_nan<FpType>(d);
-    return elreal<FpType>(pow(x.canonical(), y.canonical(), d), d);
+    const bool xneg = x.sign() < 0;
+    if (xneg && !yint) return detail::elreal_nan<FpType>(d);
+    // an integer exponent of at most 64 is binary powering on the stream, with no exp
+    const double yd = double(y);
+    if (yint && std::fabs(yd) <= 64.0) return elreal<FpType>(pow(x.canonical(), y.canonical(), d), d);
+    // otherwise exp(y * log|x|). Guard that argument itself, as exp does: a large y, or a base
+    // far from 1, takes the result past 2^(2^62 * 1.44), where it is inf or 0. Its scale is read
+    // from the stream, so a base just above 1 is not mistaken for 1.
+    const elreal<FpType> ax = xneg ? -x : x;
+    const ZBCL<FpType> arg = mul(y.canonical(), log(ax.canonical(), d), d);
+    const double a = to_double_approx(arg, 2);
+    elreal<FpType> result = (std::fabs(a) >= detail::kExpReductionLimit)
+        ? (a < 0.0 ? detail::elreal_special<FpType>(0.0, d) : detail::elreal_inf<FpType>(1, d))
+        : elreal<FpType>(exp(arg, d), d);
+    return (xneg && odd) ? -result : result;
 }
 // hypot: +inf when either operand is infinite, even with a NaN; then NaN in, NaN out
 template <typename FpType>

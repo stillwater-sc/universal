@@ -151,11 +151,50 @@ namespace sw { namespace universal {
 		if (std::fabs(double(exp(Real(40.0))) / 2.3538526683701998541e17 - 1.0) > 1e-15) fail("exp(40)", double(exp(Real(40.0))), 2.3538526683701998541e17);
 		if (std::fabs(double(exp(Real(-40.0))) / 4.2483542552915889953e-18 - 1.0) > 1e-15) fail("exp(-40)", double(exp(Real(-40.0))), 4.2483542552915889953e-18);
 
+		// arguments past the exp range guard, reached through sinh, cosh, tanh and pow as well
+		// as exp: they used to hand an unreduced argument to the stream exp, and stall
+		const double inf = std::numeric_limits<double>::infinity();
+		auto limit = [&](const Real& got, double expected, const char* what) {
+			if (!sameValue(got, expected, 1e-15)) fail(what, double(got), expected);
+		};
+		const auto t1 = std::chrono::steady_clock::now();
+		limit(sinh(Real(1e300)), inf, "sinh(1e300)");
+		limit(sinh(Real(-1e300)), -inf, "sinh(-1e300)");
+		limit(cosh(Real(-1e300)), inf, "cosh(-1e300)");
+		limit(tanh(Real(1e300)), 1.0, "tanh(1e300)");
+		limit(tanh(Real(-1e300)), -1.0, "tanh(-1e300)");
+		limit(pow(Real(2.0), Real(1e300)), inf, "pow(2, 1e300)");
+		limit(pow(Real(2.0), Real(-1e300)), 0.0, "pow(2, -1e300)");
+		limit(pow(Real(0.5), Real(1e300)), 0.0, "pow(0.5, 1e300)");
+		limit(pow(Real(-2.0), Real(1e300)), inf, "pow(-2, 1e300)");   // 1e300 is an even integer
+		limit(pow(Real(1.0) + Real(std::ldexp(1.0, -100)), Real(1e300)), inf, "pow(1 + 2^-100, 1e300)");   // base near 1
+		const double guardSeconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t1).count();
+		if (guardSeconds > 10.0) fail("seconds for the range-guarded calls", guardSeconds, 10.0);
+
 		const Real x = Real(1.0) - (Real(1.0) - Real(std::ldexp(1.0, -100)));   // 2^-100, leading zero block
 		if (std::fabs(double(log(x)) + 100.0 * std::log(2.0)) > 1e-13) fail("log(2^-100)", double(log(x)), -100.0 * std::log(2.0));
 		if (double(sqrt(x)) != std::ldexp(1.0, -50)) fail("sqrt(2^-100)", double(sqrt(x)), std::ldexp(1.0, -50));
 		const Real nx = (Real(1.0) - std::ldexp(1.0, -100)) - Real(1.0);          // -2^-100, leading zero block
 		if (!sqrt(nx).isnan()) fail("sqrt(-2^-100)", double(sqrt(nx)), std::numeric_limits<double>::quiet_NaN());
+		return nrOfFailedTestCases;
+	}
+
+	// a float host keeps exponents beyond float's range, so the integer test sees a finite double
+	// above FLT_MAX: it is an even integer there, and casting it to float was undefined
+	int VerifyNarrowHostPow(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		using F = elreal<float>;
+		const F y = F(1e30f) * F(1e30f);   // 1e60, beyond FLT_MAX
+		const F r = pow(F(-2.0f), y);
+		if (!r.isinf() || r.sign() != 1) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: elreal<float> pow(-2, 1e60) = " << double(r) << ", expected +inf\n";
+		}
+		const F z = pow(F(-2.0f), F(3.0f));
+		if (double(z) != -8.0) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: elreal<float> pow(-2, 3) = " << double(z) << ", expected -8\n";
+		}
 		return nrOfFailedTestCases;
 	}
 
@@ -203,6 +242,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialValues<elreal<double>>(reportTestCases), "elreal<double>", "special values");
 	nrOfFailedTestCases += ReportTestResult(VerifyPow<elreal<double>>(reportTestCases), "elreal<double>", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyRange<elreal<double>>(reportTestCases), "elreal<double>", "exp range and leading zero block");
+	nrOfFailedTestCases += ReportTestResult(VerifyNarrowHostPow(reportTestCases), "elreal<float>", "pow beyond the host range");
 #endif
 
 #if REGRESSION_LEVEL_2

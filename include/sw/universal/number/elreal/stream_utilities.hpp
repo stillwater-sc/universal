@@ -69,14 +69,16 @@ inline ZBCL<FpType> from_integer(unsigned long long magnitude, bool negative) {
 // remainder of an integer stays an integer and shrinks by the host's precision each time; the
 // test ends when the remainder is zero (integer) or below 3/4 and nonzero (not). odd reports the
 // parity of an integer y. A y whose approximation exceeds the host's range is treated as an even
-// integer, as every double of that size is.
+// integer, as every value of that size is on the host.
 template <typename FpType>
 inline bool is_integer(ZBCL<FpType> y, std::size_t window, bool& odd) {
 	odd = false;
 	for (int step = 0; step < 64; ++step) {
 		if (!first_nonzero_block(y, window).found) return true;
 		const double c = to_double_approx(y, window);
-		if (!std::isfinite(c)) return true;
+		// beyond the host's range: an even integer, as every value that size is. Compared before
+		// the cast below, which is undefined for an out-of-range double on a narrow host.
+		if (!(std::fabs(c) <= static_cast<double>(std::numeric_limits<FpType>::max()))) return true;
 		if (std::fabs(c) < 0.75) return false;
 		const double piece = static_cast<double>(static_cast<FpType>(std::nearbyint(c)));   // an integer
 		if (std::fmod(piece, 2.0) != 0.0) odd = !odd;
