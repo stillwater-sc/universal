@@ -30,10 +30,10 @@ namespace sw { namespace universal {
 
 // the four patterns exactly as einteger_impl.hpp compiled them before #1455
 struct GrammarOracle {
-	std::regex binary { "^[-+]*0b[01']+" };
-	std::regex octal  { "^[-+]*0[0-7]*$" };
-	std::regex decimal{ "^[-+]*(0|[1-9][0-9]*)$" };
-	std::regex hex    { "^[-+]*0[xX][0-9a-fA-F']+" };
+	std::regex binary { "^[-+]?0b[01']+" };
+	std::regex octal  { "^[-+]?0[0-7]*$" };
+	std::regex decimal{ "^[-+]?(0|[1-9][0-9]*)$" };
+	std::regex hex    { "^[-+]?0[xX][0-9a-fA-F']+" };
 };
 
 // printable rendering of a test string for failure reports, embedded NULs included
