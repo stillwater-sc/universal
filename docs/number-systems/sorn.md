@@ -103,8 +103,25 @@ adjacent ones. The API built on that:
 The lattice is built once per configuration (`sorn<...>::datatype()`) and shared by every value,
 so copying a `sorn` copies one interval and nothing else.
 
-`numeric_limits<sorn<...>>` is not derived from the lattice yet: its `min()`, `max()` and digit
-constants are placeholders.
+`numeric_limits<sorn<...>>` is derived from the lattice. A value is an interval, so each member is
+the lattice's analogue of the IEEE quantity:
+
+| Member | Value |
+|---|---|
+| `min()`, `max()` | the positive interval nearest zero, and the outermost finite positive interval |
+| `lowest()` | `maxneg`; without negatives the exact zero, and without that `minpos` |
+| `epsilon()` | the interval holding `w`, the width of the lattice interval just above 1 (`(1,1.5]` in `sorn<0,4,8>`, so `w = 0.5`) |
+| `round_error()` | the interval holding `w/2`, the furthest a point lies from the midpoint `double(s)` returns |
+| `denorm_min()` | `min()`; there are no denormals |
+| `infinity()` | the interval reaching +inf; without one, the top interval |
+| `quiet_NaN()`, `signaling_NaN()` | NaN, the empty set |
+| `digits` | the largest `d` with `w <= 2^(1-d)`; 0 when nothing finite lies above 1. `digits10` and `max_digits10` follow from it as for IEEE |
+| `min_exponent`, `max_exponent` | from the smallest positive lattice point `p` and the largest finite one `P`: `p = 2^(min_exponent-1)`, `P < 2^max_exponent` |
+| `has_infinity`, `is_signed` | the `inf` and `neg` template flags |
+| `has_quiet_NaN` | `true` |
+| `round_style` | `round_indeterminate`: a conversion encloses, it does not round |
+
+The functions are not `constexpr`, because the lattice is built at run time. The constants are.
 
 ## Problems It Solves
 
