@@ -91,9 +91,27 @@ exact for quotients of any size, and `fmod(x, 0)` is NaN. Only a build with
 `EREAL_THROW_ARITHMETIC_EXCEPTION` set throws instead, as it does for `x / 0`. `hypot`
 scales its operands, so `hypot(1e200, 1e200)` does not overflow.
 
-One limit remains. `sin`, `cos` and `tan` reduce their argument with the configuration's
-own pi, so a huge argument loses about as many bits as its exponent, and at `ereal<4>`
-the result is wrong from about 1e100 on (#2016).
+`sin`, `cos` and `tan` keep the configuration's precision at any argument. They reduce it
+by Payne and Hanek's method, from as many bits of 1/(2 pi) as the argument's exponent
+needs. Those bits are computed once per configuration in `einteger`, so the reduction
+covers the whole range of the limb type, including 2^16383 for an 80-bit or 128-bit
+`long double`. `sin(ereal<4>(1e200))` is -0.6440 to 282 bits; it used to be -0.3737
+(#2016).
+
+`erf`, `erfc`, `tgamma` and `lgamma` are computed in ereal arithmetic. Until #2017 they
+went through `double` and gave 53 bits at every configuration.
+- **erf:** a series of positive terms. Where erfc falls below the precision, erf is
+  computed as 1 - erfc, with erfc from its asymptotic series.
+- **erfc:** the asymptotic series where it reaches the precision. Elsewhere it is
+  1 - erf computed in a configuration twice as wide, or a continued fraction.
+- **lgamma:** Stirling's series, shifted up, with the reflection formula below 0.
+- **tgamma:** an exact factorial at a positive integer; otherwise exp(lgamma) with the sign.
+
+Two limits remain:
+- **Underflow:** a value near the limb type's floor keeps only the bits above it.
+  `erfc(20)`, near 2^-577, has about 490 bits with double limbs.
+- **erfc at `ereal<19>`:** there is no wider configuration to run 1 - erf in. For x
+  between about 2 and 8, erfc loses the bits that cancellation costs, about 1.44 x^2.
 
 ## Choosing between ereal and elreal
 

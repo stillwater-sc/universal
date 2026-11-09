@@ -8,8 +8,8 @@
 
 // These functions are arbitrary-precision approximations computed in ereal's own
 // expansion arithmetic (Taylor series / Newton iteration with argument reduction),
-// NOT double-precision shims -- except erf, erfc, tgamma and lgamma, which are still
-// double stubs (error_and_gamma.hpp; measured at 53 bits on every configuration, #2017).
+// NOT double-precision shims. erf, erfc, tgamma and lgamma were double stubs until #2017;
+// sin, cos and tan of a huge argument lost about log2|x| bits until #2016.
 // Accuracy tracks the operand's precision up to ereal's
 // architectural ceiling: Shewchuk expansion arithmetic caps maxlimbs at 19 (the last
 // limb must stay above DBL_MIN to preserve the non-overlapping property), so ~19*53
@@ -44,7 +44,6 @@
 #include <universal/number/ereal/math/functions/truncate.hpp>
 
 // Low-complexity functions
-#include <universal/number/ereal/math/functions/error_and_gamma.hpp>
 #include <universal/number/ereal/math/functions/fractional.hpp>
 #include <universal/number/ereal/math/functions/hypot.hpp>
 #include <universal/number/ereal/math/functions/minmax.hpp>
@@ -59,7 +58,11 @@
 
 // High-complexity functions
 #include <universal/number/ereal/math/functions/sqrt.hpp>
+// sin, cos and tan reduce by Payne-Hanek, from bits of 1/(2 pi) in einteger (#2016)
+#include <universal/number/ereal/math/functions/payne_hanek.hpp>
 #include <universal/number/ereal/math/functions/trigonometry.hpp>
+// erf, erfc, tgamma and lgamma use exp, log and sin (#2017)
+#include <universal/number/ereal/math/functions/error_and_gamma.hpp>
 
 // Complex number support (sw::universal::complex<ereal>)
 #include <universal/number/ereal/math/functions/complex.hpp>
