@@ -35,6 +35,8 @@ For conversions and for operations on exact operands this is a faithful bound: t
 
 A single areal's ubit is a **flag**, not an enclosure. An operation on an operand whose ubit is set takes that operand at the lower end of its interval and marks the result inexact. It does not promise that the result's interval contains every result the operands' intervals allow. For example, `(0, minpos) - minpos` is marked inexact, but the true range of that difference, `(-minpos, 0)`, is not the interval the result names.
 
+One exception: a product with an exact zero factor is exactly zero, so the other factor's ubit does not carry. `x * 0` and `fma(x, 0, 0)` are exact 0 even when `x` is inexact, and `fma(x, 0, z)` is as exact as `z` (#2010). `fma` also sets the ubit when its sum was rounded in the intermediate, not only when the final encoding truncates.
+
 When you need a guaranteed enclosure, carry a pair of areals as a `tile_interval` (`<universal/utility/tile_interval.hpp>`): its two ends are tiles chosen so that the pair encloses the exact result. The tutorial [A real with an uncertainty bit](../tutorials/a-real-with-uncertainty.md) compares the two.
 
 ### Key Properties

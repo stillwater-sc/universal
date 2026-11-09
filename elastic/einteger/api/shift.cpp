@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <sstream>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <universal/number/einteger/einteger.hpp>
 #include <universal/number/integer/integer.hpp>
@@ -227,6 +228,45 @@ try {
 		}
 		ReportTestResult(nrOfFailedTestCases - start,
 			"negative shift counts and signs", "einteger shift");
+	}
+
+	// INT_MIN as a shift count: both operators negated a negative count, and -INT_MIN overflows int,
+	// which is undefined (#2010). a <<= INT_MIN is a right shift by 2^31 bits, so 0 for every value
+	// held here; a >>= INT_MIN is a left shift by 2^31 bits, checked on 0, which must stay 0 without
+	// allocating 2^31 zero bits. (1 >>= INT_MIN, the value 2^(2^31) in 256 MB, is checked by hand.)
+	{
+		int start = nrOfFailedTestCases;
+		constexpr int kMin = std::numeric_limits<int>::min();
+		constexpr int kMax = std::numeric_limits<int>::max();
+		auto checkZero = [&](const auto& got, const std::string& what) {
+			if (!got.iszero() || got.isneg() || got.limbs() != 0) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL " << what << " got=" << got << " limbs=" << got.limbs() << " expected=0\n";
+			}
+		};
+		for (long long v : { 1ll, -1ll, 123456789ll, -123456789ll, 0x7FFF'FFFF'FFFF'FFFFll }) {
+			einteger<std::uint32_t> a(v), b(v), c(v);
+			einteger<std::uint8_t> d(v);
+			a <<= kMin;
+			b >>= kMax;
+			c <<= -kMax;
+			d <<= kMin;
+			checkZero(a, std::to_string(v) + " <<= INT_MIN");
+			checkZero(b, std::to_string(v) + " >>= INT_MAX");
+			checkZero(c, std::to_string(v) + " <<= -INT_MAX");
+			checkZero(d, std::to_string(v) + " <<= INT_MIN (uint8_t)");
+		}
+		einteger<std::uint32_t> big;
+		big.assign("123456789012345678901234567890123456789012345678901234567890");
+		big <<= kMin;
+		checkZero(big, "big <<= INT_MIN");
+		einteger<std::uint32_t> z(0), zl(0);
+		z >>= kMin;
+		zl <<= kMax;
+		checkZero(z, "0 >>= INT_MIN");
+		checkZero(zl, "0 <<= INT_MAX");
+		ReportTestResult(nrOfFailedTestCases - start,
+			"INT_MIN and INT_MAX shift counts", "einteger shift");
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

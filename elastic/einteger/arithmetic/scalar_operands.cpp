@@ -4,6 +4,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+#include <limits>
 #include <string>
 #include <sstream>
 #include <universal/number/einteger/einteger.hpp>
@@ -70,6 +72,91 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
+	// A NaN or infinite operand converts to 0, as einteger(double) converts it and as edecimal does
+	// (#1992): einteger has no NaN or inf to carry. So + and - leave the einteger alone, * gives 0,
+	// and a division or remainder by the operand is a division by zero, reported as einteger reports
+	// it (#2010). The compound forms used to convert the operand to long long, undefined for NaN and
+	// inf, and a += NaN came out a - 2^63.
+	template<typename BlockType, typename Real>
+	int VerifyNonFiniteOperands(const char* realName, bool reportTestCases) {
+		using EInteger = einteger<BlockType>;
+		int nrOfFailedTestCases = 0;
+		auto check = [&](const EInteger& got, long long expected, long long a, const char* op, const char* x) {
+			if (!equals(got, expected)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: " << a << ' ' << op << ' ' << x << " (" << realName << ") = " << got << ", expected " << expected << '\n';
+			}
+		};
+		// a / x, a % x, a /= x and a %= x divide by zero: they throw, or give 0 when the exception is opted out
+		auto checkDivideByZero = [&](auto op, long long a, const char* label, const char* x) {
+#if EINTEGER_THROW_DIVIDE_BY_ZERO
+			try {
+				const EInteger r = op();
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: " << a << ' ' << label << ' ' << x << " (" << realName << ") = " << r << ", expected einteger_divide_by_zero\n";
+			}
+			catch (const einteger_divide_by_zero&) {}
+#else
+			check(op(), 0, a, label, x);
+#endif
+		};
+		struct NonFinite { Real value; const char* name; };
+		const NonFinite operands[] = {
+			{ std::numeric_limits<Real>::quiet_NaN(), "nan" },
+			{ -std::numeric_limits<Real>::quiet_NaN(), "-nan" },
+			{ std::numeric_limits<Real>::infinity(), "inf" },
+			{ -std::numeric_limits<Real>::infinity(), "-inf" },
+		};
+		const long long values[] = { -1000003, -12, -1, 0, 1, 7, 1000003 };
+		for (long long a : values) {
+			const EInteger ea(a);
+			for (const NonFinite& op : operands) {
+				const Real x = op.value;
+				check(ea + x, a, a, "+", op.name);
+				check(ea - x, a, a, "-", op.name);
+				check(ea * x, 0, a, "*", op.name);
+				check(x + ea, a, a, "+ (reversed)", op.name);
+				check(x - ea, -a, a, "- (reversed)", op.name);
+				check(x * ea, 0, a, "* (reversed)", op.name);
+				if (a != 0) {
+					check(x / ea, 0, a, "/ (reversed)", op.name);
+					check(x % ea, 0, a, "% (reversed)", op.name);
+				}
+				checkDivideByZero([&] { return EInteger(ea / x); }, a, "/", op.name);
+				checkDivideByZero([&] { return EInteger(ea % x); }, a, "%", op.name);
+				EInteger r(ea);
+				r += x;
+				check(r, a, a, "+=", op.name);
+				r -= x;
+				check(r, a, a, "-=", op.name);
+				r *= x;
+				check(r, 0, a, "*=", op.name);
+				checkDivideByZero([&] { EInteger q(ea); q /= x; return q; }, a, "/=", op.name);
+				checkDivideByZero([&] { EInteger q(ea); q %= x; return q; }, a, "%=", op.name);
+			}
+		}
+		// a finite compound operand past the long long range converts as einteger(double) does
+		{
+			EInteger r(100);
+			r -= Real(1e18) * Real(1e18);
+			EInteger ref(Real(1e18) * Real(1e18));
+			ref = EInteger(100) - ref;
+			if (r != ref) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: 100 -= 1e36 (" << realName << ") = " << r << ", expected " << ref << '\n';
+			}
+			EInteger q(7);
+			q *= Real(2.75);
+			q += Real(-0.5);
+			q /= Real(3.9);
+			if (!equals(q, 4)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: ((7 *= 2.75) += -0.5) /= 3.9 (" << realName << ") = " << q << ", expected 4\n";
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
 }}  // namespace sw::universal
 
 #define MANUAL_TESTING 0
@@ -119,6 +206,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyScalarOperands<U32, unsigned long long>("unsigned long long", reportTestCases), "einteger<uint32_t>", "unsigned long long");
 	nrOfFailedTestCases += ReportTestResult(VerifyScalarOperands<std::uint8_t, int>("int", reportTestCases), "einteger<uint8_t>", "int");
 	nrOfFailedTestCases += ReportTestResult(VerifyFloatingOperands<U32>(reportTestCases), "einteger<uint32_t>", "float and double");
+	nrOfFailedTestCases += ReportTestResult(VerifyNonFiniteOperands<U32, float>("float", reportTestCases), "einteger<uint32_t>", "float nan/inf");
+	nrOfFailedTestCases += ReportTestResult(VerifyNonFiniteOperands<U32, double>("double", reportTestCases), "einteger<uint32_t>", "double nan/inf");
+	nrOfFailedTestCases += ReportTestResult(VerifyNonFiniteOperands<std::uint8_t, double>("double", reportTestCases), "einteger<uint8_t>", "double nan/inf");
+#if LONG_DOUBLE_SUPPORT
+	nrOfFailedTestCases += ReportTestResult(VerifyNonFiniteOperands<U32, long double>("long double", reportTestCases), "einteger<uint32_t>", "long double nan/inf");
+#endif
 #endif
 
 #if REGRESSION_LEVEL_2

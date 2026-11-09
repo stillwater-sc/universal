@@ -10,10 +10,13 @@
 // holds it. An open end whose root is a lattice point moves to the gap beyond that point. A
 // negative lower end clamps to a closed 0, and an entirely negative valid gives NaR (#1690).
 //
-// The oracle decides every end exactly: the lattice values of these configurations have at
-// most 14 significand bits, so their squares are exact in double, and a root is located by
-// comparing the input end against the squares of the lattice points, never by a rounded sqrt.
+// The oracle decides every end exactly: a root is located by a binary search over the lattice
+// points p, comparing p * p against the input end x, never by a rounded sqrt. The comparison is
+// exact: TwoProduct gives p * p = h + l with h the rounded square and l its error (valid<32,2>'s
+// lattice values have up to 28 significand bits, so their squares need up to 56), and x is a
+// double, so p * p < x, == x or > x is decided by h against x, then by the sign of l.
 #include <universal/utility/directives.hpp>
+#include <cmath>
 #include <cstdint>
 #include <iostream>
 #include <random>
@@ -35,8 +38,9 @@ public:
 	static constexpr key_type kmax = Valid::kmax;
 
 	SqrtOracle() {
-		// the nonnegative lattice points, key 0, 2, ..., kmax - 1
-		for (key_type k = 0; k < kmax; k += 2) squares.push_back(value(k) * value(k));
+		// the nonnegative lattice points, key 0, 2, ..., kmax - 1, tabulated for the small
+		// configurations; the large ones compute them as the search needs them
+		if constexpr (kmax < 70000) for (key_type k = 0; k < kmax; k += 2) points.push_back(value(k));
 	}
 
 	static double value(key_type k) {   // the value of the lattice point at an even key
@@ -55,13 +59,13 @@ public:
 	// point whose square is x, or the gap between the points whose squares bracket it
 	key_type root_tile(key_type k) const {
 		const double x = value(k);
-		std::size_t lo = 0, hi = squares.size() - 1;   // the largest j with squares[j] <= x
+		std::uint64_t lo = 0, hi = nrPoints - 1;      // the largest j with point(j)^2 <= x
 		while (lo < hi) {
-			const std::size_t mid = lo + (hi - lo + 1) / 2;
-			if (squares[mid] <= x) lo = mid; else hi = mid - 1;
+			const std::uint64_t mid = lo + (hi - lo + 1) / 2;
+			if (compare_square(point(mid), x) <= 0) lo = mid; else hi = mid - 1;
 		}
-		const key_type point = static_cast<key_type>(2 * lo);
-		return (squares[lo] == x) ? point : point + 1;
+		const key_type pointKey = static_cast<key_type>(2 * lo);
+		return (compare_square(point(lo), x) == 0) ? pointKey : pointKey + 1;
 	}
 
 	// the expected lower key of sqrt for an input lower key a (with a nonnegative upper end)
@@ -92,7 +96,15 @@ public:
 		else {
 			wantLo = expected_lo(a);
 			wantHi = expected_hi(b);
-			if (wantHi < wantLo) wantHi = wantLo;
+			// The expected ends cannot cross. The input [a, b] holds some value y, and sqrt(y) lies
+			// in one tile T; sqrt is monotone, so expected_lo(a) <= T <= expected_hi(b). This
+			// clamped wantHi up to wantLo, which no input of any configuration here reaches (an
+			// instrumented run of every interval of valid<6,0>, <8,1>, <10,1> and <12,2> counted
+			// none, #2010). A crossing would be an oracle defect, so it fails on its own.
+			if (wantHi < wantLo) {
+				if (reportTestCases && reported++ < 10) std::cerr << "FAIL oracle: sqrt(keys [" << a << ", " << b << "]) expects the empty [" << wantLo << ", " << wantHi << "]\n";
+				return 1;
+			}
 			ok = !r.isnar() && r.lo_key() == wantLo && r.hi_key() == wantHi;
 		}
 		if (!ok && reportTestCases && reported++ < 10) {
@@ -103,7 +115,19 @@ public:
 	}
 
 private:
-	std::vector<double> squares;
+	static constexpr std::uint64_t nrPoints = (static_cast<std::uint64_t>(kmax) + 1u) / 2u;
+	std::vector<double> points;
+
+	double point(std::uint64_t j) const {   // the lattice point at key 2j
+		return points.empty() ? value(static_cast<key_type>(2 * j)) : points[j];
+	}
+	// the sign of p * p - x, exactly
+	static int compare_square(double p, double x) {
+		const double h = p * p;
+		const double l = std::fma(p, p, -h);   // p * p = h + l exactly
+		if (h != x) return (h < x) ? -1 : 1;   // x is a double: |l| cannot reach it from h
+		return (l < 0.0) ? -1 : ((l > 0.0) ? 1 : 0);
+	}
 };
 
 // every interval of a small configuration: every pair of tile keys a <= b
@@ -128,6 +152,32 @@ int VerifyTilesAndSamples(bool reportTestCases, int samples) {
 	std::uniform_int_distribution<long long> key(-static_cast<long long>(Valid::kmax), static_cast<long long>(Valid::kmax));
 	for (int i = 0; i < samples; ++i) {
 		key_type a = static_cast<key_type>(key(rng)), b = static_cast<key_type>(key(rng));
+		if (b < a) std::swap(a, b);
+		fails += oracle.check(a, b, reportTestCases, reported);
+	}
+	return fails;
+}
+
+// a configuration too large to sweep: the edge tiles, then random single tiles and random
+// intervals over the whole key range, with a fixed seed. The draws are sequenced statements, as
+// the order in which a function's arguments are evaluated is unspecified.
+template<typename Valid>
+int VerifySampled(bool reportTestCases, int samples, std::uint64_t seed) {
+	using key_type = typename Valid::key_type;
+	constexpr key_type kmax = Valid::kmax;
+	const SqrtOracle<Valid> oracle;
+	int fails = 0, reported = 0;
+	const key_type edges[] = { -kmax, -kmax + 1, -2, -1, 0, 1, 2, 3, 4, kmax - 4, kmax - 3, kmax - 2, kmax - 1, kmax };
+	for (key_type a : edges) {
+		for (key_type b : edges) if (a <= b) fails += oracle.check(a, b, reportTestCases, reported);
+	}
+	std::mt19937_64 rng(seed);
+	std::uniform_int_distribution<long long> key(-static_cast<long long>(kmax), static_cast<long long>(kmax));
+	for (int i = 0; i < samples; ++i) {
+		const key_type k = static_cast<key_type>(key(rng));
+		fails += oracle.check(k, k, reportTestCases, reported);
+		key_type a = static_cast<key_type>(key(rng));
+		key_type b = static_cast<key_type>(key(rng));
 		if (b < a) std::swap(a, b);
 		fails += oracle.check(a, b, reportTestCases, reported);
 	}
@@ -191,9 +241,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAllIntervals<valid<8, 1>>(reportTestCases), "valid<8,1>", "sqrt of every interval");
 	nrOfFailedTestCases += ReportTestResult(VerifyAllIntervals<valid<10, 1>>(reportTestCases), "valid<10,1>", "sqrt of every interval");
 	nrOfFailedTestCases += ReportTestResult(VerifyTilesAndSamples<valid<16, 2>>(reportTestCases, 20000), "valid<16,2>", "sqrt of every tile");
+	// valid<32,2> had no sqrt test but the ubox trace demo (#2010)
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<valid<32, 2>>(reportTestCases, 2000, 0x2010u), "valid<32,2>", "sqrt of sampled tiles and intervals");
 #endif
 
 #if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<valid<32, 2>>(reportTestCases, 50000, 0x2010u + 1u), "valid<32,2>", "sqrt of sampled tiles and intervals");
 #endif
 
 #if REGRESSION_LEVEL_3

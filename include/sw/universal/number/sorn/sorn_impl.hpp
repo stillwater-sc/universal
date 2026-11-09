@@ -132,21 +132,106 @@ inline std::vector<sornInterval<Real>> setSornDT(signed int start, signed int st
 // float2SORN: convert a single float to the SORN interval that contains it.
 // A NaN converts to NaN. A value outside the lattice saturates to the outermost interval on
 // its side, the same rule adaptToDT() applies to arithmetic results (#1972).
+// side says where the value being converted lies relative to operand, its rounding to float:
+// 0 when operand is the value itself, +1 when the value lies strictly between operand and the
+// next float above it, -1 when it lies strictly between the next float below and operand.
+// Every lattice bound is a float, so none lies strictly between the value and operand, and
+// the interval found encloses the value; looking up the rounded float alone put a value just
+// above a lattice point into the interval below it (#2010).
 template<typename Real>
-sornInterval<Real> float2SORN(float operand, const std::vector<sornInterval<Real>>& sornDT, sornInterval<Real>& sornIntVal) {
+sornInterval<Real> float2SORN(float operand, const std::vector<sornInterval<Real>>& sornDT, sornInterval<Real>& sornIntVal, int side = 0) {
 	if (std::isnan(operand) || sornDT.empty()) {
 		sornIntVal = { std::numeric_limits<Real>::quiet_NaN(), std::numeric_limits<Real>::quiet_NaN(), false, false };
 		return sornIntVal;
 	}
 	for (const auto& interval : sornDT) {
-		if (	( (operand > interval.lowerBound) || (operand == interval.lowerBound && not interval.lowerIsOpen) ) &&
-				( (operand < interval.upperBound) || (operand == interval.upperBound && not interval.upperIsOpen) )		) {
+		const bool aboveLower = (operand > interval.lowerBound) ||
+		                        (operand == interval.lowerBound && (side > 0 || (side == 0 && not interval.lowerIsOpen)));
+		const bool belowUpper = (operand < interval.upperBound) ||
+		                        (operand == interval.upperBound && (side < 0 || (side == 0 && not interval.upperIsOpen)));
+		if (aboveLower && belowUpper) {
 			sornIntVal = interval;
 			return sornIntVal;
 		}
 	}
 	sornIntVal = (operand <= sornDT.front().lowerBound ? sornDT.front() : sornDT.back());
 	return sornIntVal;
+}
+
+// sornCompareToFloat: the sign of v - f, compared in the precision of v, where f is v rounded
+// to float. A NaN compares as 0.
+template<typename Scalar>
+inline int sornCompareToFloat(Scalar v, float f) {
+	if constexpr (std::is_integral_v<Scalar>) {
+		// f is a whole number here; at or past 2^digits it exceeds every value of Scalar, and
+		// below that it converts back to Scalar exactly
+		if (f >= std::ldexp(1.0f, std::numeric_limits<Scalar>::digits)) return -1;
+		const Scalar fi = static_cast<Scalar>(f);
+		return (v > fi) - (v < fi);
+	}
+	else {
+		const Scalar fs = static_cast<Scalar>(f);
+		return (v > fs) - (v < fs);
+	}
+}
+
+// sornEnclose: the floats lo <= v <= hi on either side of a native value v; exact when v is a
+// float, and then lo == hi == v. When v is not a float, lo < v < hi.
+struct sornScalarEnclosure { float lo; float hi; bool exact; };
+template<typename Scalar>
+inline sornScalarEnclosure sornEnclose(Scalar v) {
+	constexpr float inf = std::numeric_limits<float>::infinity();
+	const float f = static_cast<float>(v);
+	const int c = sornCompareToFloat(v, f);
+	if (c > 0) return { f, std::nextafter(f, inf), false };
+	if (c < 0) return { std::nextafter(f, -inf), f, false };
+	return { f, f, true };
+}
+
+// sornRoundOut: the float result f moved outward past the exact value: up to the float above
+// it for an upper bound, down for a lower bound. c is the sign of exact - f; inexact reports c != 0.
+inline float sornRoundOut(float f, int c, bool up, bool& inexact) {
+	constexpr float inf = std::numeric_limits<float>::infinity();
+	inexact = (c != 0);
+	if (up && c > 0) return std::nextafter(f, inf);
+	if (!up && c < 0) return std::nextafter(f, -inf);
+	return f;
+}
+// a + b rounded outward; the TwoSum error is exact in float
+inline float sornAddOut(float a, float b, bool up, bool& inexact) {
+	const float s = a + b;
+	int c = 0;
+	if (std::isfinite(s)) {
+		const float bb = s - a;
+		const float err = (a - (s - bb)) + (b - bb);
+		c = (err > 0) - (err < 0);
+	}
+	else if (std::isinf(s) && std::isfinite(a) && std::isfinite(b)) {
+		c = (s > 0 ? -1 : 1);   // overflow: the exact sum is finite
+	}
+	return sornRoundOut(s, c, up, inexact);
+}
+// a * b rounded outward; the product of two floats is exact in double. A zero factor gives 0,
+// also against an infinite bound, as the sorn * sorn corner products do.
+inline float sornMulOut(float a, float b, bool up, bool& inexact) {
+	inexact = false;
+	if (a == 0.0f || b == 0.0f) return 0.0f;
+	if (!std::isfinite(a) || !std::isfinite(b)) return a * b;
+	const double d = static_cast<double>(a) * static_cast<double>(b);
+	const float f = static_cast<float>(d);
+	const double fd = static_cast<double>(f);
+	return sornRoundOut(f, (d > fd) - (d < fd), up, inexact);
+}
+// a / b rounded outward, for b > 0 (a zero b stands for the limit from above)
+inline float sornDivOut(float a, float b, bool up, bool& inexact) {
+	inexact = false;
+	if (a == 0.0f) return 0.0f;
+	const float q = a / b;
+	if (b == 0.0f || !std::isfinite(a) || !std::isfinite(b) || std::isnan(q)) return q;
+	// q * b is exact in double; the exact quotient lies above q when a > q * b (b > 0)
+	const double qb = static_cast<double>(q) * static_cast<double>(b);
+	const double ad = static_cast<double>(a);
+	return sornRoundOut(q, (ad > qb) - (ad < qb), up, inexact);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,6 +256,9 @@ sornInterval<Real> float2SORN(float operand, const std::vector<sornInterval<Real
 //////////////////////////////////////////////////////////////////////////////////////////////////
 template<signed int _start, signed int _stop, unsigned int _steps, bool _lin = 1, bool _halfopen = 1, bool _neg=1, bool _inf=1, bool _zero=1>
 class sorn {
+	// the open configuration, with exact values between the open intervals, is not implemented:
+	// setSornDT() builds no lattice for it (#2010)
+	static_assert(_halfopen, "sorn: only the halfopen lattice (_halfopen = true) is implemented");
 public:
 	using Real = float;
 	using SORN_INTERVAL = sornInterval<Real>;
@@ -273,20 +361,22 @@ public:
 	sorn(double initial_value)				{ *this = initial_value; }
 	sorn(long double initial_value)			{ *this = initial_value; }
 
-	// assignment operators for native types
-	sorn& operator=(signed char rhs)		{ return assign(static_cast<float>(rhs)); }
-	sorn& operator=(short rhs)				{ return assign(static_cast<float>(rhs)); }
-	sorn& operator=(int rhs)				{ return assign(static_cast<float>(rhs)); }
-	sorn& operator=(long rhs)				{ return assign(static_cast<float>(rhs)); }
-	sorn& operator=(long long rhs)			{ return assign(static_cast<float>(rhs)); }
-	sorn& operator=(char rhs)				{ return assign(static_cast<float>(rhs)); }
-	sorn& operator=(unsigned short rhs)		{ return assign(static_cast<float>(rhs)); }
-	sorn& operator=(unsigned int rhs)		{ return assign(static_cast<float>(rhs)); }
-	sorn& operator=(unsigned long rhs)		{ return assign(static_cast<float>(rhs)); }
-	sorn& operator=(unsigned long long rhs)	{ return assign(static_cast<float>(rhs)); }
+	// assignment operators for native types: the lattice interval that encloses the value. A value
+	// that is not a float is looked up on its side of its rounding to float, so a double just
+	// above a lattice point, or a 64-bit integer past 2^24, is not put into the interval below (#2010).
+	sorn& operator=(signed char rhs)		{ return assignNative(rhs); }
+	sorn& operator=(short rhs)				{ return assignNative(rhs); }
+	sorn& operator=(int rhs)				{ return assignNative(rhs); }
+	sorn& operator=(long rhs)				{ return assignNative(rhs); }
+	sorn& operator=(long long rhs)			{ return assignNative(rhs); }
+	sorn& operator=(char rhs)				{ return assignNative(rhs); }
+	sorn& operator=(unsigned short rhs)		{ return assignNative(rhs); }
+	sorn& operator=(unsigned int rhs)		{ return assignNative(rhs); }
+	sorn& operator=(unsigned long rhs)		{ return assignNative(rhs); }
+	sorn& operator=(unsigned long long rhs)	{ return assignNative(rhs); }
 	sorn& operator=(float rhs)				{ return assign(rhs); }
-	sorn& operator=(double rhs)				{ return assign(static_cast<float>(rhs)); }
-	sorn& operator=(long double rhs)		{ return assign(static_cast<float>(rhs)); }
+	sorn& operator=(double rhs)				{ return assignNative(rhs); }
+	sorn& operator=(long double rhs)		{ return assignNative(rhs); }
 
 	///////////////////////////////
 	////////// operators //////////
@@ -332,12 +422,13 @@ public:
 			return *this;
 		}
 	}
-	// sorn + native scalar: the scalar is an exact value, not converted to a lattice interval first
+	// sorn + native scalar: the scalar is an exact value, not converted to a lattice interval first.
+	// The scalar and the bound sums are rounded outward, so the result encloses the exact one (#2010).
 	template<typename Scalar> requires std::is_arithmetic_v<Scalar>
 	sorn& operator+=(Scalar rhs) {
 		if (isnan()) return *this;
-		this->sornIntVal.lowerBound += static_cast<Real>(rhs);
-		this->sornIntVal.upperBound += static_cast<Real>(rhs);
+		const sornScalarEnclosure r = sornEnclose(rhs);
+		shiftBounds(r.lo, r.hi, r.exact);
 		adaptToDT();
 		return *this;
 	}
@@ -365,12 +456,12 @@ public:
 			return *this;
 		}
 	}
-	// sorn - native scalar
+	// sorn - native scalar, rounded outward as sorn + scalar is
 	template<typename Scalar> requires std::is_arithmetic_v<Scalar>
 	sorn& operator-=(Scalar rhs) {
 		if (isnan()) return *this;
-		this->sornIntVal.lowerBound -= static_cast<Real>(rhs);
-		this->sornIntVal.upperBound -= static_cast<Real>(rhs);
+		const sornScalarEnclosure r = sornEnclose(rhs);
+		shiftBounds(-r.hi, -r.lo, r.exact);
 		adaptToDT();
 		return *this;
 	}
@@ -413,16 +504,29 @@ public:
 		adaptToDT();
 		return *this;
 	}
-	// sorn * native scalar
+	// sorn * native scalar, with the scalar and the bound products rounded outward (#2010). A zero
+	// factor makes the product zero whatever the other one is, as in sorn * sorn: the exact zero
+	// times an infinite scalar is 0, and so is a zero scalar times an infinite bound.
 	template<typename Scalar> requires std::is_arithmetic_v<Scalar>
 	sorn& operator*=(Scalar rhs) {
 		if (isnan()) return *this;
-		const Real r = static_cast<Real>(rhs);
-		if (std::isnan(r)) return setnan();
-		if (r == 0) return setzero();   // also for an infinite bound, where inf * 0 is NaN
-		this->sornIntVal.lowerBound *= r;
-		this->sornIntVal.upperBound *= r;
-		if (r < 0) { switchBounds(); }
+		const sornScalarEnclosure r = sornEnclose(rhs);
+		if (std::isnan(r.lo)) return setnan();
+		if (r.exact && r.lo == 0) return setzero();
+		if (iszero()) return *this;
+		// |rhs| lies in [mlo, mhi], mlo >= 0; a negative scalar negates the product afterwards
+		const bool negative = (r.lo < 0);
+		const float mlo = (negative ? -r.hi : r.lo);
+		const float mhi = (negative ? -r.lo : r.hi);
+		SORN_INTERVAL& v = this->sornIntVal;
+		bool lowerInexact{ false }, upperInexact{ false };
+		const float lower = sornMulOut(v.lowerBound, (v.lowerBound >= 0 ? mlo : mhi), false, lowerInexact);
+		const float upper = sornMulOut(v.upperBound, (v.upperBound >= 0 ? mhi : mlo), true, upperInexact);
+		v.lowerIsOpen = v.lowerIsOpen || lowerInexact || (!r.exact && v.lowerBound != 0 && std::isfinite(v.lowerBound));
+		v.upperIsOpen = v.upperIsOpen || upperInexact || (!r.exact && v.upperBound != 0 && std::isfinite(v.upperBound));
+		v.lowerBound = lower;
+		v.upperBound = upper;
+		if (negative) negateBounds();
 		adaptToDT();
 		return *this;
 	}
@@ -430,8 +534,10 @@ public:
 	// single operand division
 
 	// sorn / sorn: multiply by the reciprocal of the divisor. A divisor that straddles zero makes
-	// the quotient unbounded on both sides, so the result is the whole lattice; dividing by the
-	// exact zero is NaN (the empty set).
+	// the quotient of a nonzero dividend unbounded on both sides, so the result is the whole
+	// lattice; dividing by the exact zero is NaN (the empty set). The exact zero divided by any
+	// other divisor, one that straddles zero included, is 0: 0 / y = 0 for every nonzero y in the
+	// divisor, and the zero in it is excluded as it is for the exact zero divisor (#2010).
 	sorn& operator/=(const sorn& rhs) {
 		if (isnan() || rhs.isnan() || rhs.iszero()) {
 			return setnan();
@@ -447,15 +553,25 @@ public:
 		}
 		return *this *= recip;
 	}
-	// sorn / native scalar
+	// sorn / native scalar, with the scalar and the bound quotients rounded outward (#2010)
 	template<typename Scalar> requires std::is_arithmetic_v<Scalar>
 	sorn& operator/=(Scalar rhs) {
 		if (isnan()) return *this;
-		const Real r = static_cast<Real>(rhs);
-		if (std::isnan(r) || r == 0) return setnan();
-		this->sornIntVal.lowerBound /= r;
-		this->sornIntVal.upperBound /= r;
-		if (r < 0) { switchBounds(); }
+		const sornScalarEnclosure r = sornEnclose(rhs);
+		if (std::isnan(r.lo) || (r.exact && r.lo == 0)) return setnan();
+		// |rhs| lies in [mlo, mhi], mlo >= 0; a negative scalar negates the quotient afterwards
+		const bool negative = (r.lo < 0);
+		const float mlo = (negative ? -r.hi : r.lo);
+		const float mhi = (negative ? -r.lo : r.hi);
+		SORN_INTERVAL& v = this->sornIntVal;
+		bool lowerInexact{ false }, upperInexact{ false };
+		const float lower = sornDivOut(v.lowerBound, (v.lowerBound >= 0 ? mhi : mlo), false, lowerInexact);
+		const float upper = sornDivOut(v.upperBound, (v.upperBound >= 0 ? mlo : mhi), true, upperInexact);
+		v.lowerIsOpen = v.lowerIsOpen || lowerInexact || (!r.exact && v.lowerBound != 0 && std::isfinite(v.lowerBound));
+		v.upperIsOpen = v.upperIsOpen || upperInexact || (!r.exact && v.upperBound != 0 && std::isfinite(v.upperBound));
+		v.lowerBound = lower;
+		v.upperBound = upper;
+		if (negative) negateBounds();
 		adaptToDT();
 		return *this;
 	}
@@ -503,7 +619,9 @@ public:
 		if (std::isinf(lo) && std::isinf(hi)) return (lo == hi ? lo : std::numeric_limits<NativeReal>::quiet_NaN());
 		if (std::isinf(lo)) return lo;
 		if (std::isinf(hi)) return hi;
-		const NativeReal mid = lo + (hi - lo) / NativeReal(2);
+		// hi - lo overflows a float for a wide finite interval; halve first then (#2010)
+		const NativeReal width = hi - lo;
+		const NativeReal mid = (std::isfinite(width) ? lo + width / NativeReal(2) : lo / NativeReal(2) + hi / NativeReal(2));
 		const Real back = static_cast<Real>(mid);
 		const SORN_INTERVAL& i = sornIntVal;
 		const bool inside = ((back > i.lowerBound) || (back == i.lowerBound && !i.lowerIsOpen)) &&
@@ -655,6 +773,14 @@ public:
 		return this->sornIntVal;
 	}
 
+	// negateBounds: the interval of the negated values, -[a,b) = (-b,-a]
+	SORN_INTERVAL& negateBounds() {
+		switchBounds();
+		this->sornIntVal.lowerBound = -this->sornIntVal.lowerBound;
+		this->sornIntVal.upperBound = -this->sornIntVal.upperBound;
+		return this->sornIntVal;
+	}
+
 	// switchBounds: switch Boundaries of sornIntVal
 	SORN_INTERVAL& switchBounds() {
 		float newLow  = this->sornIntVal.upperBound;
@@ -724,6 +850,25 @@ private:
 	sorn& assign(float rhs) {
 		float2SORN(rhs, datatype(), this->sornIntVal);
 		return *this;
+	}
+	// assignNative: a native value that may not be a float, looked up on its side of its float rounding
+	template<typename Scalar>
+	sorn& assignNative(Scalar rhs) {
+		const float f = static_cast<float>(rhs);
+		float2SORN(f, datatype(), this->sornIntVal, sornCompareToFloat(rhs, f));
+		return *this;
+	}
+	// shiftBounds: add the exact value enclosed by [rlo, rhi] to the bounds, rounding outward; a
+	// rounded bound, or one moved by an inexact scalar, excludes itself and becomes open
+	void shiftBounds(float rlo, float rhi, bool exact) {
+		SORN_INTERVAL& v = this->sornIntVal;
+		bool lowerInexact{ false }, upperInexact{ false };
+		const float lower = sornAddOut(v.lowerBound, rlo, false, lowerInexact);
+		const float upper = sornAddOut(v.upperBound, rhi, true, upperInexact);
+		v.lowerIsOpen = v.lowerIsOpen || lowerInexact || (!exact && std::isfinite(v.lowerBound));
+		v.upperIsOpen = v.upperIsOpen || upperInexact || (!exact && std::isfinite(v.upperBound));
+		v.lowerBound = lower;
+		v.upperBound = upper;
 	}
 
 	// reciprocal: 1/y for an interval y that excludes zero, with the open/closed conditions
@@ -805,8 +950,9 @@ inline SORN_TYPE operator/(const SORN_TYPE& lhs, Scalar rhs) { SORN_TYPE quot = 
 template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero, typename Scalar> requires std::is_arithmetic_v<Scalar>
 inline SORN_TYPE operator/(Scalar lhs, const SORN_TYPE& rhs) {
 	SORN_TYPE quot;
-	const float c = static_cast<float>(lhs);
-	quot.sornIntVal = { c, c, false, false };
+	// a scalar that is not a float is the open interval between its float neighbours (#2010)
+	const sornScalarEnclosure c = sornEnclose(lhs);
+	quot.sornIntVal = { c.lo, c.hi, !c.exact, !c.exact };
 	return quot /= rhs;
 }
 

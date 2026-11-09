@@ -144,7 +144,7 @@ try {
 		std::cout << "sum " << sum << " vs " << (ds + dr) << '\n';
 		std::cout << std::defaultfloat;
 
-		faithful<Real> ffa, fa(0.5f), feps(eps), fepsHalf(epsHalf), fsum;
+		faithful<Real> ffa, fa(0.5f), feps(eps), fepsHalf(epsHalf);
 		ffa = fa + fepsHalf;
 		std::cout << "faithful fa      : " << to_binary(fa) << " : " << fa << '\n';
 		std::cout << "faithful epsHalf : " << to_binary(fepsHalf) << " : " << fepsHalf << '\n';

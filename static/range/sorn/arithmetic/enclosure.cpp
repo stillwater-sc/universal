@@ -143,6 +143,67 @@ namespace sw { namespace universal {
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cerr << "FAIL: " << big << " * 0 = " << (big * 0) << '\n';
 		}
+		// and the exact zero times an infinite scalar is zero, as zero * sorn(infpos) is; the scalar
+		// path used to give NaN (#2010)
+		const SornType zero(0), infneg(SpecificValue::infneg);
+		constexpr double inf = std::numeric_limits<double>::infinity();
+		const SornType products[] = { zero * inf, inf * zero, zero * -inf, zero * std::numeric_limits<float>::infinity(),
+		                              zero * big, big * zero, zero * infneg };
+		for (const SornType& p : products) {
+			if (!p.iszero() || p != zero * big) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: 0 * inf = " << p << ", expected " << (zero * big) << '\n';
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// scalar operands that are not floats, just above and below the lattice points: the result
+	// encloses the exact one. They used to be rounded to float, and the bound arithmetic to
+	// nearest, so (0,0.5] + 1e-12 came out as (0,0.5], which misses 0.5 + 1e-12 (#2010).
+	template<typename SornType>
+	int VerifyInexactScalarEnclosure(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		const long double lo = SornType::datatype().front().lowerBound;
+		const long double hi = SornType::datatype().back().upperBound;
+		auto check = [&](const SornType& c, long double ref, const SornType& a, char op, long double y) {
+			ref = std::min(std::max(ref, lo), hi);   // a value beyond the lattice saturates
+			const auto& i = c.sornIntVal;
+			const long double l = i.lowerBound, u = i.upperBound;
+			const bool inside = ((ref > l) || (ref == l && !i.lowerIsOpen)) && ((ref < u) || (ref == u && !i.upperIsOpen));
+			if (!inside) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: " << a << ' ' << op << ' ' << y << " = " << c << " misses " << ref << '\n';
+			}
+		};
+		const double scalars[] = { 1.0e-12, -1.0e-12, 1.0 + 1.0e-12, 1.0 - 1.0e-12, -(1.0 + 1.0e-12), 0.1, 3.0e-8, 2.0 - 1.0e-15 };
+		for (const SornType& a : operands<SornType>(false)) {
+			const auto& i = a.sornIntVal;
+			// the closed finite bounds of a single interval are in it; use them as the operand x
+			for (float xb : { i.lowerBound, i.upperBound }) {
+				const long double x = xb;
+				const bool member = std::isfinite(xb) && ((xb == i.lowerBound && !i.lowerIsOpen) || (xb == i.upperBound && !i.upperIsOpen));
+				if (!member) continue;
+				for (double y : scalars) {
+					const long double ly = y;
+					check(a + y, x + ly, a, '+', ly);
+					check(a - y, x - ly, a, '-', ly);
+					check(a * y, x * ly, a, '*', ly);
+					check(a / y, x / ly, a, '/', ly);
+					if (x != 0) check(y / a, ly / x, a, '\\', ly);   // y / a, reported as a \ y
+				}
+				// a 64-bit integer past 2^24 is not a float either
+				const long long n = (1ll << 24) + 1;
+				check(a * n, x * static_cast<long double>(n), a, '*', static_cast<long double>(n));
+				check(a / n, x / static_cast<long double>(n), a, '/', static_cast<long double>(n));
+			}
+		}
+		// the case of the sweep
+		const SornType half(0.5);
+		if (half + 1.0e-12 == half) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: " << half << " + 1e-12 = " << (half + 1.0e-12) << '\n';
+		}
 		return nrOfFailedTestCases;
 	}
 
@@ -199,6 +260,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyUnaryEnclosure<LinSorn>(reportTestCases), "sorn<0,4,8>", "negate and abs");
 	nrOfFailedTestCases += ReportTestResult(VerifyNaNPropagation<LinSorn>(reportTestCases), "sorn<0,4,8>", "nan propagation");
 	nrOfFailedTestCases += ReportTestResult(VerifyScalarOperands<LinSorn>(reportTestCases), "sorn<0,4,8>", "scalar operands");
+	nrOfFailedTestCases += ReportTestResult(VerifyInexactScalarEnclosure<LinSorn>(reportTestCases), "sorn<0,4,8>", "inexact scalar enclosure");
+	nrOfFailedTestCases += ReportTestResult(VerifyInexactScalarEnclosure<LogSorn>(reportTestCases), "sorn<-2,2,1,log>", "inexact scalar enclosure");
+	nrOfFailedTestCases += ReportTestResult(VerifyInexactScalarEnclosure<NoZeroSorn>(reportTestCases), "sorn<0,2,2,nozero>", "inexact scalar enclosure");
 #endif
 
 #if REGRESSION_LEVEL_2

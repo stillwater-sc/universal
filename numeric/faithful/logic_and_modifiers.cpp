@@ -247,7 +247,7 @@ int VerifyModifiersAndClassification(bool reportTestCases) {
 	return fails;
 }
 
-// type_tag and components print the type and both parts
+// type_tag, components and to_binary print the type and both parts
 int VerifyText(bool reportTestCases) {
 	using namespace sw::universal;
 	int fails = 0;
@@ -269,6 +269,32 @@ int VerifyText(bool reportTestCases) {
 	check(components(x), "nan");
 	x.setinf(true);
 	check(components(x), "-inf");
+
+	// to_binary prints both parts as IEEE-754 encodings, sign.exponent.fraction (4fa9814). It was
+	// printed by arithmetic.cpp but never checked (#2010); the expected strings are the encodings
+	// written out by hand: 1.5f is 0.01111111.1000..., 2^-30 has the biased exponent 97, 01100001
+	check(to_binary(Faithful(1.5f, std::ldexp(1.0f, -30))),
+	      "(0b0.01111111.10000000000000000000000, 0b0.01100001.00000000000000000000000)");
+	check(to_binary(Faithful(-1.5f, -std::ldexp(1.0f, -30))),
+	      "(0b1.01111111.10000000000000000000000, 0b1.01100001.00000000000000000000000)");
+	// a tail from arithmetic: 1 - 2^-26 rounds to 1 and keeps -2^-26 (biased exponent 101) as its error
+	check(to_binary(Faithful(1.0f) - Faithful(std::ldexp(1.0f, -26))),
+	      "(0b0.01111111.00000000000000000000000, 0b1.01100101.00000000000000000000000)");
+	check(to_binary(Faithful(1.5f, std::ldexp(1.0f, -30)), true),
+	      "(0b0.0111'1111.100'0000'0000'0000'0000'0000, 0b0.0110'0001.000'0000'0000'0000'0000'0000)");
+	// faithful<double>: 2^-60 has the biased exponent 963, 01111000011; -3 is 1.10000000000.1000...
+	check(to_binary(faithful<double>(1.0, std::ldexp(1.0, -60))),
+	      "(0b0.01111111111.0000000000000000000000000000000000000000000000000000, 0b0.01111000011.0000000000000000000000000000000000000000000000000000)");
+	check(to_binary(faithful<double>(-3.0, std::ldexp(1.0, -54))),
+	      "(0b1.10000000000.1000000000000000000000000000000000000000000000000000, 0b0.01111001001.0000000000000000000000000000000000000000000000000000)");
+	check(to_binary(Faithful(0.0f)), "( zero, 0)");
+	check(to_binary(Faithful(-0.0f)), "( zero, 0)");
+	x.setinf(true);
+	check(to_binary(x), "(-inf, 0)");
+	x.setinf(false);
+	check(to_binary(x), "(+inf, 0)");
+	x.setnan();
+	check(to_binary(x), "( nan, 0)");
 	return fails;
 }
 
@@ -319,7 +345,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAbs(reportTestCases), test_tag, "abs");
 	nrOfFailedTestCases += ReportTestResult(VerifyIncrementDecrement(reportTestCases), test_tag, "++ and --");
 	nrOfFailedTestCases += ReportTestResult(VerifyModifiersAndClassification(reportTestCases), test_tag, "modifiers, isinf, isnan");
-	nrOfFailedTestCases += ReportTestResult(VerifyText(reportTestCases), test_tag, "type_tag and components");
+	nrOfFailedTestCases += ReportTestResult(VerifyText(reportTestCases), test_tag, "type_tag, components and to_binary");
 #endif
 
 #if REGRESSION_LEVEL_2

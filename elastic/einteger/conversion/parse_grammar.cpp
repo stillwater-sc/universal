@@ -28,12 +28,14 @@
 
 namespace sw { namespace universal {
 
-// the four patterns exactly as einteger_impl.hpp compiled them before #1455
+// the four patterns einteger_impl.hpp compiled before #1455, with one sign since #1988, and since
+// #2010 at least one digit after "0b" and "0x": "[01']+" let "0b'" and "-0x''" parse as 0. The
+// apostrophes may still stand anywhere among the digits, before and after them included.
 struct GrammarOracle {
-	std::regex binary { "^[-+]?0b[01']+" };
+	std::regex binary { "^[-+]?0b'*[01][01']*" };
 	std::regex octal  { "^[-+]?0[0-7]*$" };
 	std::regex decimal{ "^[-+]?(0|[1-9][0-9]*)$" };
-	std::regex hex    { "^[-+]?0[xX][0-9a-fA-F']+" };
+	std::regex hex    { "^[-+]?0[xX]'*[0-9a-fA-F][0-9a-fA-F']*" };
 };
 
 // printable rendering of a test string for failure reports, embedded NULs included
@@ -78,6 +80,7 @@ inline int VerifyEveryByteInContext(bool reportTestCases) {
 	const std::vector<std::string> prefixes = {
 		"", "+", "-", "+-", "0", "1", "7", "9", "-0", "+1", "00", "07",
 		"0b", "0x", "0X", "0B", "-0b", "+0x", "0b1", "0b'", "0x1", "0xa", "0x'", "12",
+		"0b''", "0x''", "-0b'", "+0X'", "0b'1", "0x'f",
 	};
 	const std::vector<std::string> suffixes = { "", "0", "1", "7", "a", "'" };
 	int nrOfFailedTests = 0;
@@ -149,7 +152,7 @@ try {
 
 	{
 		GrammarOracle oracle;
-		for (const char* s : { "0", "-0b1", "0x", "0b", "--0777", "08", "0x'", "+-0XaF'" }) {
+		for (const char* s : { "0", "-0b1", "0x", "0b", "--0777", "08", "0x'", "0b''", "0x'0", "+-0XaF'" }) {
 			nrOfFailedTestCases += CompareOne(oracle, s, true);
 		}
 	}

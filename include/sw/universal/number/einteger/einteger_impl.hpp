@@ -128,7 +128,12 @@ public:
 	// logic shift operators
 	einteger& operator<<=(int shift) {
 		if (shift == 0) return *this;
-		if (shift < 0) return operator>>=(-shift);
+		if (shift < 0) {
+			// -INT_MIN is not an int: a right shift by 2^31 bits, done in two steps (#2010)
+			if (shift == std::numeric_limits<int>::min()) { operator>>=(std::numeric_limits<int>::max()); return operator>>=(1); }
+			return operator>>=(-shift);
+		}
+		if (iszero()) { remove_leading_zeros(); return *this; }   // nothing to move: do not allocate 2^k zero bits
 
 		// by default extend the limbs by 1: TODO: can this be improved?
 		_block.push_back(0);
@@ -173,12 +178,16 @@ public:
 	// sign-magnitude, so -5 >> 1 is -2, where a native arithmetic shift rounds toward -inf (-3)
 	einteger& operator>>=(int shift) {
 		if (shift == 0) return *this;
-		if (shift < 0) return operator<<=(-shift);   // was operator>>=, so a >>= -2 shifted right (#1987)
+		if (shift < 0) {
+			// -INT_MIN is not an int: a left shift by 2^31 bits, done in two steps (#2010)
+			if (shift == std::numeric_limits<int>::min()) { operator<<=(std::numeric_limits<int>::max()); return operator<<=(1); }
+			return operator<<=(-shift);   // was operator>>=, so a >>= -2 shifted right (#1987)
+		}
 		// shift == nbits shifts ALL significant bits out, so the result is
 		// 0.  The previous `>` test let this case fall through to the
 		// block-shift path with MSU < blockShift, where the inner copy
 		// loop is skipped and the original limbs survive unchanged.
-		if (shift >= static_cast<int>(nbits())) {
+		if (static_cast<size_t>(shift) >= _block.size() * bitsInBlock) {   // not int(nbits()): it wraps past 2^31 bits
 			setzero();
 			return *this;
 		}
@@ -422,6 +431,19 @@ public:
 	einteger& operator%=(long long rhs) {
 		return *this %= einteger(rhs);
 	}
+	// a floating-point operand converts as einteger(double) does: truncated toward zero, NaN and inf
+	// to 0. Without these it went through the long long overloads above, and the conversion to long
+	// long is undefined for NaN, inf and |x| >= 2^63: a += NaN gave a - 2^63 (#2010)
+	template<typename Real, std::enable_if_t<std::is_floating_point_v<Real>, int> = 0>
+	einteger& operator+=(Real rhs) { return *this += from_floating(rhs); }
+	template<typename Real, std::enable_if_t<std::is_floating_point_v<Real>, int> = 0>
+	einteger& operator-=(Real rhs) { return *this -= from_floating(rhs); }
+	template<typename Real, std::enable_if_t<std::is_floating_point_v<Real>, int> = 0>
+	einteger& operator*=(Real rhs) { return *this *= from_floating(rhs); }
+	template<typename Real, std::enable_if_t<std::is_floating_point_v<Real>, int> = 0>
+	einteger& operator/=(Real rhs) { return *this /= from_floating(rhs); }
+	template<typename Real, std::enable_if_t<std::is_floating_point_v<Real>, int> = 0>
+	einteger& operator%=(Real rhs) { return *this %= from_floating(rhs); }
 	
 	// reduce returns the ratio and remainder of a and b in *this and r
 	void reduce(const einteger& a, const einteger& b, einteger& r) {
@@ -1012,6 +1034,17 @@ protected:
 
 private:
 
+	// the einteger of a floating-point value, as the native constructors make it
+	template<typename Real>
+	static einteger from_floating(Real v) {
+#if LONG_DOUBLE_SUPPORT
+		if constexpr (std::is_same_v<Real, long double>) return einteger(v);
+		else return einteger(static_cast<double>(v));
+#else
+		return einteger(static_cast<double>(v));
+#endif
+	}
+
 	template<typename BBlockType>
 	friend constexpr bool operator==(const einteger<BBlockType>&, const einteger<BBlockType>&) noexcept;
 	template<typename BBlockType>
@@ -1062,14 +1095,17 @@ inline unsigned nibble(char c) noexcept {
 	return static_cast<unsigned>(c - 'A' + 10);
 }
 
-// ^[-+]?0b[01']+
+// ^[-+]?0b'*[01][01']*
+// The digits after "0b" may carry apostrophes anywhere, but at least one digit: "0b'" was 0 (#2010)
 inline bool matches_binary(const std::string& s) noexcept {
 	std::string::size_type pos = skip_signs(s);
 	if (s.size() - pos < 3 || s[pos] != '0' || s[pos + 1] != 'b') return false;
+	bool digit = false;
 	for (pos += 2; pos < s.size(); ++pos) {
-		if (s[pos] != '0' && s[pos] != '1' && s[pos] != '\'') return false;
+		if (s[pos] == '0' || s[pos] == '1') digit = true;
+		else if (s[pos] != '\'') return false;
 	}
-	return true;
+	return digit;
 }
 
 // ^[-+]?0[0-7]*$
@@ -1094,14 +1130,42 @@ inline bool matches_decimal(const std::string& s) noexcept {
 	return true;
 }
 
-// ^[-+]?0[xX][0-9a-fA-F']+
+// ^[-+]?0[xX]'*[0-9a-fA-F][0-9a-fA-F']*
+// as binary: apostrophes anywhere after "0x", but at least one digit: "0x'" was 0 (#2010)
 inline bool matches_hex(const std::string& s) noexcept {
 	std::string::size_type pos = skip_signs(s);
 	if (s.size() - pos < 3 || s[pos] != '0' || (s[pos + 1] != 'x' && s[pos + 1] != 'X')) return false;
+	bool digit = false;
 	for (pos += 2; pos < s.size(); ++pos) {
-		if (!is_hex_digit(s[pos]) && s[pos] != '\'') return false;
+		if (is_hex_digit(s[pos])) digit = true;
+		else if (s[pos] != '\'') return false;
 	}
-	return true;
+	return digit;
+}
+
+// the digits of number from position first on, bitsPerDigit bits each (1 binary, 3 octal, 4 hex),
+// written into magnitude from the least significant digit up, a byte at a time; apostrophes are
+// skipped, and the caller trims the leading zero limbs. Linear in the length: a shift and an add
+// per digit made binary and octal quadratic, with an allocation per digit, 0.032 s for 80,000
+// binary digits (#2010).
+template<typename Integer>
+inline void parse_power_of_two_digits(const std::string& number, std::string::size_type first,
+                                      unsigned bitsPerDigit, Integer& magnitude) {
+	unsigned accumulator = 0;   // at most 7 + 4 pending bits
+	unsigned pending = 0;
+	unsigned byteIndex = 0;
+	for (std::string::size_type pos = number.size(); pos-- > first; ) {
+		const char c = number[pos];
+		if (c == '\'') continue;
+		accumulator |= nibble(c) << pending;
+		pending += bitsPerDigit;
+		if (pending >= 8) {
+			magnitude.setbyte(byteIndex++, static_cast<uint8_t>(accumulator & 0xFFu));
+			accumulator >>= 8;
+			pending -= 8;
+		}
+	}
+	if (pending > 0) magnitude.setbyte(byteIndex, static_cast<uint8_t>(accumulator));
 }
 
 } // namespace einteger_detail
@@ -1109,10 +1173,10 @@ inline bool matches_hex(const std::string& s) noexcept {
 // read a einteger ASCII format and make a binary einteger out of it
 //
 // Accepted syntax, the whole string, with at most one leading sign:
-//   binary:  ^[-+]?0b[01']+               (apostrophes separate digit groups)
+//   binary:  ^[-+]?0b'*[01][01']*        (apostrophes separate digit groups; one digit at least)
 //   octal:   ^[-+]?0[0-7]*$               (C-style: a leading zero selects octal)
 //   decimal: ^[-+]?(0|[1-9][0-9]*)$
-//   hex:     ^[-+]?0[xX][0-9a-fA-F']+
+//   hex:     ^[-+]?0[xX]'*[0-9a-fA-F][0-9a-fA-F']*
 //
 // A LEADING ZERO SELECTS OCTAL, however many of them there are. The octal pattern used to require
 // the second character to be [1-7], so "0777" parsed as octal 511 while "00777" fell through to
@@ -1129,33 +1193,12 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 	Integer magnitude;
 	magnitude.clear();
 	if (einteger_detail::matches_octal(number)) {
-		// skip the one radix '0', then value = value * 8 + digit; further zeros contribute nothing
-		for (std::string::size_type pos = body + 1; pos < number.size(); ++pos) {
-			magnitude <<= 3;
-			magnitude += Integer(static_cast<long long>(number[pos] - '0'));
-		}
+		// skip the one radix '0'; each further digit is three bits
+		einteger_detail::parse_power_of_two_digits(number, body + 1, 3, magnitude);
 	}
 	else if (einteger_detail::matches_hex(number)) {
-		// each digit is a nibble: fill bytes from the least significant digit up to the 'x'
-		unsigned byte = 0;
-		size_t byteIndex = 0;
-		bool odd = false;
-		for (std::string::size_type pos = number.size(); pos-- > body + 2; ) {
-			const char c = number[pos];
-			if (c == '\'') continue;
-			if (odd) {
-				byte += einteger_detail::nibble(c) << 4;
-				magnitude.setbyte(byteIndex++, static_cast<uint8_t>(byte));
-			}
-			else {
-				byte = einteger_detail::nibble(c);
-			}
-			odd = !odd;
-		}
-		if (odd) magnitude.setbyte(byteIndex, static_cast<uint8_t>(byte));   // the most significant nibble
-		// setbyte writes leading zero digits as limbs: "0x0001" left [1, 0], which is not 1 to == and
-		// isone() (#1878)
-		magnitude.remove_leading_zeros();
+		// skip "0x"; each digit is a nibble
+		einteger_detail::parse_power_of_two_digits(number, body + 2, 4, magnitude);
 	}
 	else if (einteger_detail::matches_decimal(number)) {
 		// most significant digits first, nine at a time: value = value * 10^k + chunk. Adding
@@ -1175,17 +1218,15 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 		}
 	}
 	else if (einteger_detail::matches_binary(number)) {
-		// skip "0b", then value = value * 2 + bit; apostrophes are digit-group separators
-		for (std::string::size_type pos = body + 2; pos < number.size(); ++pos) {
-			const char c = number[pos];
-			if (c == '\'') continue;
-			magnitude <<= 1;
-			if (c == '1') magnitude += Integer(1ll);
-		}
+		// skip "0b"; each digit is a bit
+		einteger_detail::parse_power_of_two_digits(number, body + 2, 1, magnitude);
 	}
 	else {
 		return false;
 	}
+	// setbyte writes leading zero digits as limbs: "0x0001" left [1, 0], which is not 1 to == and
+	// isone() (#1878)
+	magnitude.remove_leading_zeros();
 	magnitude.setsign(negative && !magnitude.iszero());
 	value = magnitude;
 	return true;
