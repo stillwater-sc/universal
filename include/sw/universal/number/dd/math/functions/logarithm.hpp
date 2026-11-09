@@ -110,7 +110,7 @@ namespace sw { namespace universal {
 	inline dd log1p(const dd& a) {
 		if (a.isnan() || a.isinf()) return a;
 
-		if (a.iszero()) return dd(0.0);
+		if (a.iszero()) return a;   // log1p(-0) is -0 (#2032)
 
 		if (a == -1.0) return dd(SpecificValue::infneg);
 

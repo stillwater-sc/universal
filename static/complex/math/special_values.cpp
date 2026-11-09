@@ -13,7 +13,7 @@
 //    the sign of a zero, an infinity and a NaN included. Annex G leaves some of those signs
 //    unspecified; the cases where this implementation and glibc choose differently are listed
 //    in kUnspecified and skipped.
-// The signs are read in T itself, never through double: dd's -0 converts to +0.
+// The signs are read in T itself, never through double: dd's -0 converted to +0 before #2032.
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <complex>

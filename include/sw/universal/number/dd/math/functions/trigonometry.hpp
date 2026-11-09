@@ -37,7 +37,7 @@ namespace sw { namespace universal {
     inline dd sin_taylor(const dd& a) {
         const double threshold = 0.5 * std::abs(double(a)) * dd_eps;
 
-        if (a.iszero()) return 0.0; 
+        if (a.iszero()) return a;   // keeps the sign of -0 (#2032)
 
         dd x = -sqr(a);
         dd s{ a };
@@ -76,7 +76,7 @@ namespace sw { namespace universal {
 
     inline void sincos_taylor(const dd& a, dd& sin_a, dd& cos_a) {
         if (a.iszero()) {
-            sin_a = 0.0;
+            sin_a = a;   // sin(-0) is -0 (#2032)
             cos_a = 1.0;
             return;
         }
@@ -108,7 +108,7 @@ namespace sw { namespace universal {
            we can compute sin(x) from sin(s), cos(s).  This greatly
            increases the convergence of the sine Taylor series. */
 
-        if (a.iszero()) return 0.0;
+        if (a.iszero()) return a;   // sin(-0) is -0 (#2032)
 
         if (a.isnan()) return dd(SpecificValue::qnan);
         if (a.isinf()) { errno = EDOM; return dd(SpecificValue::qnan); }
@@ -248,7 +248,7 @@ namespace sw { namespace universal {
     inline void sincos(const dd& a, dd& sin_a, dd& cos_a) {
 
         if (a.iszero()) {
-            sin_a = 0.0;
+            sin_a = a;   // sin(-0) is -0 (#2032)
             cos_a = 1.0;
             return;
         }
@@ -348,6 +348,19 @@ namespace sw { namespace universal {
             return (y.ispos()) ? dd_3pi_4 : -dd_pi_4;
         }
 
+        // x^2 + y^2 overflows or underflows long before x and y do: atan2(2e100, -1e200)
+        // returned -8e15 and atan2(3e-200, 1e-200) -inf (#2032). atan2 is scale invariant, so
+        // bring both near 1 by the same power of 2, limb by limb, which is exact.
+        if (std::isfinite(x.high()) && std::isfinite(y.high())) {
+            int e = 0;
+            (void)std::frexp(std::abs(x.high()) > std::abs(y.high()) ? x.high() : y.high(), &e);
+            if (e != 0) {
+                dd xs(std::ldexp(x.high(), -e), std::ldexp(x.low(), -e));
+                dd ys(std::ldexp(y.high(), -e), std::ldexp(y.low(), -e));
+                return atan2(ys, xs);
+            }
+        }
+
         dd r = sqrt(sqr(x) + sqr(y));
         dd xx = x / r;
         dd yy = y / r;
@@ -375,6 +388,7 @@ namespace sw { namespace universal {
     }
 
     inline dd tan(const dd& a) {
+        if (a.iszero()) return a;   // tan(-0) is -0 (#2032)
         dd s, c;
         sincos(a, s, c);
         return s / c;

@@ -181,7 +181,7 @@ namespace {
 	}
 
 	// far from the origin, where a square of a component leaves the range: atanh(x) ~ 1/x and
-	// atan(x + i) ~ pi/2. dd's and qd's own atan2 squares its arguments and returned -4e15 at
+	// atan(x + i) ~ pi/2. dd's and qd's own atan2 squared its arguments and returned -4e15 at
 	// 1e100; with float limbs the squares in atanh overflowed past 1.8e19 and gave 0 at 2^65.
 	const double kDoubleRange[] = { 36893488147419103232.0, 1e100, 1e160, 1e300 };   // 2^65 first
 	// 1/x stays above float's min(); its trailing limbs fall below it, so near 1e-37 float limbs

@@ -107,7 +107,7 @@ namespace sw { namespace universal {
 	inline qd log1p(const qd& a) {
 		if (a.isnan() || a.isinf()) return a;
 
-		if (a.iszero()) return qd(0.0);
+		if (a.iszero()) return a;   // log1p(-0) is -0 (#2032)
 
 		if (a == -1.0) return qd(SpecificValue::infneg);
 
