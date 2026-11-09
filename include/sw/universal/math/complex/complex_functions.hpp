@@ -271,8 +271,6 @@ complex<T> cacosh(const complex<T>& z) {
 
 // atanh(z) = log((1 + z) / (1 - z)) / 2, as
 //   Re = log1p(4x / ((1 - x)^2 + y^2)) / 4, Im = atan2(2y, (1 - x)(1 + x) - y^2) / 2
-// Past |z| = 1e150 the squares would leave the range of double limbs; there
-// atanh(z) = 1/z +- i pi/2 to better than 2^-990.
 template<typename T>
 complex<T> catanh(const complex<T>& z) {
 	const T x = z.real(), y = z.imag();
@@ -288,15 +286,14 @@ complex<T> catanh(const complex<T>& z) {
 	if (is_inf(x) || is_inf(y)) return complex<T>(with_sign(T(0), x), with_sign(half_pi<T>(), y));
 	const T ax = magnitude(x), ay = magnitude(y);
 	if (y == T(0) && ax == T(1)) return complex<T>(with_sign(infinity<T>(), x), y);
-	if (ax > T(1e150) || ay > T(1e150)) {
-		const T h = hypot_annexf(x, y);
-		const T re = div(div(x, h), h);
-		const T im = with_sign(half_pi<T>(), y) - (y / h) / h;
-		return complex<T>(re, im);
-	}
+	// (1 - x)^2 + y^2 as hypot(1 - x, y)^2, applied one factor at a time, and the atan2
+	// arguments divided by s = max(|x|, |y|): nothing is squared at full size, so the formula
+	// holds to the edge of the range (float limbs overflow a square past 1.8e19)
 	const T omx = T(1) - x;
-	const T re = div(odd_log1p(div(mul(T(4), x), omx * omx + y * y)), T(4));
-	const T im = div(atan2_annexf(mul(T(2), y), omx * (T(1) + x) - y * y), T(2));
+	const T h = hypot_annexf(omx, y);
+	const T re = div(odd_log1p(mul(T(4), div(div(x, h), h))), T(4));
+	const T s = (ax > T(1) || ay > T(1)) ? (ax < ay ? ay : ax) : T(1);
+	const T im = div(atan2_annexf(mul(T(2), div(y, s)), (omx / s) * (T(1) + x) - (y / s) * y), T(2));
 	return complex<T>(re, im);
 }
 

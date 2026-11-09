@@ -6,7 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// Two checks, for ereal<4>, dd, qd and efloat<4>:
+// Two checks, for ereal<4>, ereal<4, float>, dd, qd and efloat<4>:
 //  - a table of Annex G values and branch-cut sides, run everywhere;
 //  - where the C library is glibc, whose complex functions follow Annex G, every function on
 //    a 10 x 10 grid of zeros, finite values, infinities and NaNs against std::complex<double>,
@@ -274,6 +274,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialValues<ereal<4>>(reportTestCases), "ereal<4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySpecialValues<ereal<4, float>>(reportTestCases), "ereal<4, float>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialValues<dd>(reportTestCases), "dd", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialValues<qd>(reportTestCases), "qd", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialValues<efloat<4>>(reportTestCases), "efloat<4>", test_tag);

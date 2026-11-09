@@ -50,10 +50,10 @@ namespace {
 	// per-type: the precision to ask for, and the agreement of a value with a reference
 	template<typename T> struct Measure;
 
-	template<unsigned maxlimbs>
-	struct Measure<ereal<maxlimbs>> {
-		static constexpr int bits = ereal_bits_of<ereal<maxlimbs>>::value;
-		static int agreement(const ereal<maxlimbs>& v, std::string_view ref) { return bits_vs(v, ref); }
+	template<unsigned maxlimbs, typename FpType>
+	struct Measure<ereal<maxlimbs, FpType>> {
+		static constexpr int bits = ereal_bits_of<ereal<maxlimbs, FpType>>::value;
+		static int agreement(const ereal<maxlimbs, FpType>& v, std::string_view ref) { return bits_vs(v, ref); }
 	};
 	template<>
 	struct Measure<dd> {
@@ -181,13 +181,19 @@ namespace {
 	}
 
 	// far from the origin, where a square of a component leaves the range: atanh(x) ~ 1/x and
-	// atan(x + i) ~ pi/2 (dd's and qd's own atan2 squares its arguments and returned -4e15 here)
-	template<typename T>
-	int VerifyLargeArguments(bool reportTestCases) {
+	// atan(x + i) ~ pi/2. dd's and qd's own atan2 squares its arguments and returned -4e15 at
+	// 1e100; with float limbs the squares in atanh overflowed past 1.8e19 and gave 0 at 2^65.
+	const double kDoubleRange[] = { 36893488147419103232.0, 1e100, 1e160, 1e300 };   // 2^65 first
+	// 1/x stays above float's min(); its trailing limbs fall below it, so near 1e-37 float limbs
+	// keep ~26 bits of 1/x (the limb floor, ereal.md): that check is loosened to 1e-6
+	const double kFloatRange[]  = { 36893488147419103232.0, 1e30, 1e37 };
+
+	template<typename T, std::size_t N>
+	int VerifyLargeArguments(const double (&points)[N], double tolerance, bool reportTestCases) {
 		using C = complex<T>;
 		int nrOfFailedTestCases = 0;
-		auto close = [](double got, double want) { return std::fabs(got - want) <= 1e-14 * std::fabs(want); };
-		for (double x : { 36893488147419103232.0, 1e100, 1e160, 1e300 }) {   // 2^65 first
+		auto close = [tolerance](double got, double want) { return std::fabs(got - want) <= tolerance * std::fabs(want); };
+		for (double x : points) {
 			const C h = atanh(C(T(x), T(0)));
 			const C a = atan(C(T(x), T(1)));
 			if (!close(double(h.real()) * x, 1.0) || !close(double(h.imag()), 1.5707963267948966) ||
@@ -241,10 +247,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPrecision<qd>(8, reportTestCases), "qd", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyPrecision<efloat<8>>(16, reportTestCases), "efloat<8>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyPrecision<Double>(6, reportTestCases), "cfloat<64,11> (double path)", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<ereal<8>>(reportTestCases), "ereal<8>", "large arguments");
-	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<dd>(reportTestCases), "dd", "large arguments");
-	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<qd>(reportTestCases), "qd", "large arguments");
-	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<efloat<8>>(reportTestCases), "efloat<8>", "large arguments");
+	nrOfFailedTestCases += ReportTestResult(VerifyPrecision<ereal<4, float>>(8, reportTestCases), "ereal<4, float>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<ereal<8>>(kDoubleRange, 1e-14, reportTestCases), "ereal<8>", "large arguments");
+	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<ereal<4, float>>(kFloatRange, 1e-6, reportTestCases), "ereal<4, float>", "large arguments");
+	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<dd>(kDoubleRange, 1e-14, reportTestCases), "dd", "large arguments");
+	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<qd>(kDoubleRange, 1e-14, reportTestCases), "qd", "large arguments");
+	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<efloat<8>>(kDoubleRange, 1e-14, reportTestCases), "efloat<8>", "large arguments");
 #endif
 
 #if REGRESSION_LEVEL_2
