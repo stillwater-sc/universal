@@ -113,6 +113,10 @@ T atan2_annexf(const T& y, const T& x) {
 		return with_sign(T(0), y);
 	}
 	if (x == T(0)) return with_sign(half_pi<T>(), y);
+	// atan2 is scale invariant; bring extreme arguments near 1 first, since a type's atan2 may
+	// square them (dd's and qd's do, and atan2(2e100, -1e200) overflows there)
+	const T m = magnitude(x) < magnitude(y) ? magnitude(y) : magnitude(x);
+	if (m > T(1e100) || m < T(1e-100)) return atan2(y / m, x / m);
 	return atan2(y, x);
 }
 

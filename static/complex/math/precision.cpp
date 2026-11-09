@@ -17,6 +17,7 @@
 // stays on the double path and is held to double precision, to show the fallback still works.
 #include <universal/utility/directives.hpp>
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <string_view>
 #include <universal/number/ereal/ereal.hpp>
@@ -179,6 +180,26 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
+	// far from the origin, where a square of a component leaves the range: atanh(x) ~ 1/x and
+	// atan(x + i) ~ pi/2 (dd's and qd's own atan2 squares its arguments and returned -4e15 here)
+	template<typename T>
+	int VerifyLargeArguments(bool reportTestCases) {
+		using C = complex<T>;
+		int nrOfFailedTestCases = 0;
+		auto close = [](double got, double want) { return std::fabs(got - want) <= 1e-14 * std::fabs(want); };
+		for (double x : { 36893488147419103232.0, 1e100, 1e160, 1e300 }) {   // 2^65 first
+			const C h = atanh(C(T(x), T(0)));
+			const C a = atan(C(T(x), T(1)));
+			if (!close(double(h.real()) * x, 1.0) || !close(double(h.imag()), 1.5707963267948966) ||
+			    !close(double(a.real()), 1.5707963267948966)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "    FAIL x = " << x << ": atanh(x) = (" << double(h.real()) << ", " << double(h.imag())
+				                               << "), Re atan(x + i) = " << double(a.real()) << '\n';
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
 }  // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -220,6 +241,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPrecision<qd>(8, reportTestCases), "qd", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyPrecision<efloat<8>>(16, reportTestCases), "efloat<8>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyPrecision<Double>(6, reportTestCases), "cfloat<64,11> (double path)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<ereal<8>>(reportTestCases), "ereal<8>", "large arguments");
+	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<dd>(reportTestCases), "dd", "large arguments");
+	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<qd>(reportTestCases), "qd", "large arguments");
+	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<efloat<8>>(reportTestCases), "efloat<8>", "large arguments");
 #endif
 
 #if REGRESSION_LEVEL_2
