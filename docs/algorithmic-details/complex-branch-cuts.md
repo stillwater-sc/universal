@@ -217,16 +217,19 @@ they treat the edge cases. Three rules make it independent of them:
    is called. `T`'s `exp`, `sinh`, `atan2` and the rest only ever see finite arguments. `hypot`
    and `atan2` themselves come from `complex_native_real.hpp`, which implements their Annex F
    special values and calls `T`'s `atan2` only for finite, nonzero arguments.
-2. **Signed zeros are formed explicitly.** `dd` and `qd` drop the sign of a zero in their
-   arithmetic: `0 * -1` gives `+0`, and `sin(-0)` gives `+0`. Before this was handled,
+2. **Signed zeros are formed explicitly.** `dd` and `qd` used to drop the sign of a zero in
+   their arithmetic: `0 * -1` gave `+0`, and so did `sin(-0)`. Before this was handled,
    `atanh(2.5 - 0i)` in `dd` came out on the upper side of its cut. The kernels form every
    product, sum, quotient and odd function that can meet a zero through helpers (`mul`, `add`,
    `sub`, `div`, `odd_sin`, `odd_tan`, `odd_sinh`, `odd_asinh`, `odd_log1p`). These give the
-   IEEE sign of a zero result, whatever `T`'s arithmetic does with it.
+   IEEE sign of a zero result, whatever `T`'s arithmetic does with it. #2032 then fixed `dd` and
+   `qd` themselves, so for them the helpers now agree with the arithmetic; they stay for any
+   other element type.
 3. **Extreme arguments are scaled before `T`'s `atan2`.** `atan2` is scale invariant, but `dd`'s
-   and `qd`'s implementations square their arguments, so `atan2(2e100, -1e200)` overflowed and
-   returned -8e15. `atan2_annexf` divides both arguments by the larger magnitude when it lies
-   above 1e100 or below 1e-100.
+   and `qd`'s implementations used to square their arguments, so `atan2(2e100, -1e200)`
+   overflowed and returned -8e15 (fixed in #2032). `atan2_annexf` divides both arguments by the
+   larger magnitude when it lies above 1e100 or below 1e-100, so a type's `atan2` never needs to
+   cope with extreme arguments.
 
 Pi and its fractions are computed once per type, in `T`, as `4 atan(1)`. As a result, the angles
 in the special values, such as `3pi/4` for `log(-inf + i inf)`, carry `T`'s precision too.
@@ -266,8 +269,8 @@ The same test checks `atanh(x)` and `atan(x + i)` at `x` = 2^65, 1e100, 1e160 an
 - A table of Annex G values and the cut sides above. It runs on every platform.
 - Where the C library is glibc, all 16 functions on a 10 x 10 grid of `{-inf, -2.5, -1, -0, +0,
   0.5, 1, 2.5, +inf, NaN}`, against `std::complex<double>`. The signs of zeros, infinities and
-  NaNs are compared too, read in `T` itself: a `dd` holding `-0` converts to `+0` through
-  `double`. Seventeen cases are skipped, the ones where Annex G leaves a sign unspecified and
+  NaNs are compared too, read in `T` itself rather than through `double` (a `dd` holding `-0`
+  converted to `+0` before #2032). Seventeen cases are skipped, the ones where Annex G leaves a sign unspecified and
   glibc picks the other sign (for example `exp(-inf - i inf)`, `sinh(-inf + i inf)`). All
   other cases match.
 
@@ -276,9 +279,6 @@ from `acosh(z) = +-i acos(z)` and the Annex G value `acos(+-0 + iNaN) = pi/2 + i
 
 ## Open
 
-- `dd` and `qd` lose the sign of zero in their real arithmetic and in `sin`/`tan` at `-0`, and
-  their `atan2` overflows for large arguments. The complex kernels work around both, but the real
-  functions themselves are unchanged.
 - Very close to `|z| = 1`, `log` in `dd` and `qd` keeps only absolute accuracy (see above).
 - The double path inherits the platform's `std::complex<double>`, and with it the platform's
   conformance to Annex G.

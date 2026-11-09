@@ -35,9 +35,9 @@ template<typename T> T with_sign(const T& v, const T& s) {
 }
 
 // Signed zeros decide which side of a branch cut a value lies on, and not every element type
-// keeps them through its arithmetic: dd and qd give 0 * -1 = +0 and sin(-0) = +0. The kernels
-// therefore form the products and odd functions that can meet a zero through these, which
-// give the IEEE sign of a zero result whatever T's arithmetic does with it.
+// keeps them through its arithmetic: dd and qd gave 0 * -1 = +0 and sin(-0) = +0 before #2032.
+// The kernels therefore form the products and odd functions that can meet a zero through these,
+// which give the IEEE sign of a zero result whatever T's arithmetic does with it.
 template<typename T> T mul(const T& a, const T& b) {
 	if ((a == T(0) && is_finite(b)) || (b == T(0) && is_finite(a))) {
 		return (sign_bit(a) != sign_bit(b)) ? -T(0) : T(0);
@@ -114,7 +114,7 @@ T atan2_annexf(const T& y, const T& x) {
 	}
 	if (x == T(0)) return with_sign(half_pi<T>(), y);
 	// atan2 is scale invariant; bring extreme arguments near 1 first, since a type's atan2 may
-	// square them (dd's and qd's do, and atan2(2e100, -1e200) overflows there)
+	// square them (dd's and qd's did before #2032: atan2(2e100, -1e200) overflowed)
 	const T m = magnitude(x) < magnitude(y) ? magnitude(y) : magnitude(x);
 	if (m > T(1e100) || m < T(1e-100)) return atan2(y / m, x / m);
 	return atan2(y, x);

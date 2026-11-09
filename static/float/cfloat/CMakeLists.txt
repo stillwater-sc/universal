@@ -67,7 +67,7 @@ compile_all("true" "cfloat_ftt" "Number Systems/static/floating-point/binary/cfl
 compile_all("true" "cfloat_ttt" "Number Systems/static/floating-point/binary/cfloat/arithmetic/saturating/subsuper" "${SAT_ARITH_SUBSUP_SRC}")
 
 
-if(BUILD_COMPLEX)
+if(UNIVERSAL_BUILD_COMPLEX)   # was BUILD_COMPLEX, which nothing sets (#2033)
 
 	message(STATUS "Adding regression suite for complex arithmetic using cfloats")
 	compile_all("true" "cfloat_cmplx" "Complex/Number Systems/static/floating-point/binary/cfloat/arithmetic" "${COMPLEX_ARITHMETIC_SRC}")
@@ -75,8 +75,8 @@ if(BUILD_COMPLEX)
 	message(STATUS "Adding regression suite for complex math functions using cfloats")
 	compile_all("true" "cfloat_cmplx" "Complex/Number Systems/static/floating-point/binary/cfloat/math" "${COMPLEX_MATH_SRC}")
 
-else(BUILD_COMPLEX)
+else(UNIVERSAL_BUILD_COMPLEX)
 	message(STATUS "Removing regression suite for complex arithmetic using cfloats")
 	message(STATUS "Removing regression suite for complex math functions using cfloats")
-endif(BUILD_COMPLEX)
+endif(UNIVERSAL_BUILD_COMPLEX)
 

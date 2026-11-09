@@ -42,7 +42,7 @@ namespace sw { namespace universal {
 
         // sqrt(0) is 0. Without this the seed below is 1/sqrt(0) = inf and the iteration
         // returns NaN; dd has always guarded it, qd never did (universal#1332).
-        if (a.iszero()) return qd(0.0);
+        if (a.iszero()) return a;   // sqrt(-0) is -0 (#2032)
         if (a.isnan() || a.isinf()) return a;
 
         // Scale into [0.5, 2) first. The scaling is by a power of two, so it is exact and

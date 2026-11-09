@@ -312,8 +312,9 @@ public:
 	explicit constexpr operator unsigned int()          const noexcept { return convert_to_unsigned_impl<unsigned int>(); }
 	explicit constexpr operator unsigned long()         const noexcept { return convert_to_unsigned_impl<unsigned long>(); }
 	explicit constexpr operator unsigned long long()    const noexcept { return convert_to_unsigned_impl<unsigned long long>(); }
-	explicit constexpr operator float()                 const noexcept { return static_cast<float>(x[0] + x[1] + x[2] + x[3]); }
-	explicit constexpr operator double()                const noexcept { return x[0] + x[1] + x[2] + x[3]; }
+	// a zero converts from its leading limb: -0 + +0 is +0 (#2032)
+	explicit constexpr operator float()                 const noexcept { return static_cast<float>(x[0] == 0.0 ? x[0] : x[0] + x[1] + x[2] + x[3]); }
+	explicit constexpr operator double()                const noexcept { return x[0] == 0.0 ? x[0] : x[0] + x[1] + x[2] + x[3]; }
 
 
 #if LONG_DOUBLE_SUPPORT
@@ -322,7 +323,7 @@ public:
 	// constexpr-clean.
 			  qd(long double iv)                    noexcept { *this = iv; }
 			  qd& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
-	explicit constexpr operator long double() const noexcept { return static_cast<long double>(x[0]) + static_cast<long double>(x[1]) + static_cast<long double>(x[2]) + static_cast<long double>(x[3]); }
+	explicit constexpr operator long double() const noexcept { return x[0] == 0.0 ? static_cast<long double>(x[0]) : static_cast<long double>(x[0]) + static_cast<long double>(x[1]) + static_cast<long double>(x[2]) + static_cast<long double>(x[3]); }
 #endif
 
 	// prefix operators
@@ -337,6 +338,8 @@ public:
 		if (!is_finite_cx(x[0]) || !is_finite_cx(rhs.x[0])) {
 			return *this = qd(x[0] + rhs.x[0]);
 		}
+		// two zeros: the leading limbs carry the IEEE sign of the sum, -0 only for -0 + -0 (#2032)
+		if (x[0] == 0.0 && rhs.x[0] == 0.0) return *this = qd(x[0] + rhs.x[0]);
 		if (!reaches_range_limit(x[0], rhs.x[0])) return *this = add_kernel(*this, rhs);
 		// an operand reaches 2^1022: the leading-limb sum can overflow while the complete sum is finite (#1891)
 		auto add = [this](const std::array<double, 4>& a, const std::array<double, 4>& b) {
@@ -358,6 +361,9 @@ public:
 	}
 #define ACCURATE_MULTIPLICATION 1
 	CONSTEXPRESSION qd& operator*=(const qd& rhs) {
+		// a zero factor: the leading limbs carry the IEEE result, a signed zero, or NaN for
+		// inf * 0 or a NaN factor; the error-free products would lose the sign (#2032)
+		if (x[0] == 0.0 || rhs.x[0] == 0.0) return *this = qd(x[0] * rhs.x[0]);
 #if defined(ACCURATE_MULTIPLICATION)
 		return *this = accurate_multiplication(*this, rhs);
 #else
@@ -365,6 +371,7 @@ public:
 #endif
 	}
 	CONSTEXPRESSION qd& operator*=(double rhs) {
+		if (x[0] == 0.0 || rhs == 0.0) return *this = qd(x[0] * rhs);   // see operator*=(const qd&)
 		double q0, q1, q2;
 
 		double p0 = two_prod(x[0], rhs, q0);
@@ -448,6 +455,8 @@ public:
 			return *this;
 		}
 #endif
+		// a zero dividend over a nonzero divisor: a zero with the IEEE sign (#2032)
+		if (x[0] == 0.0) return *this = qd(x[0] / rhs.x[0]);
 
 #if ACCURATE_DIVISION
 		return *this = accurate_division(*this, rhs);

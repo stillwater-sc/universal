@@ -28,7 +28,7 @@ inline void sincos_taylor(const qd& a, qd& sin_a, qd& cos_a) {
     qd p, s, t, x;
 
     if (a.iszero()) {
-        sin_a = 0.0;
+        sin_a = a;   // sin(-0) is -0 (#2032)
         cos_a = 1.0;
         return;
     }
@@ -112,7 +112,7 @@ inline qd sin(const qd& a) {
        sin(x) from sin(s) and cos(s).  This greatly increases the
        convergence of the sine Taylor series.                          */
 
-    if (a.iszero()) return 0.0;
+    if (a.iszero()) return a;   // sin(-0) is -0 (#2032)
 
     if (a.isnan()) return qd(SpecificValue::qnan);
     if (a.isinf()) { errno = EDOM; return qd(SpecificValue::qnan); }
@@ -253,7 +253,7 @@ inline qd cos(const qd& a) {
 inline void sincos(const qd& a, qd& sin_a, qd& cos_a) {
 
     if (a.iszero()) {
-        sin_a = 0.0;
+        sin_a = a;   // sin(-0) is -0 (#2032)
         cos_a = 1.0;
         return;
     }
@@ -378,6 +378,19 @@ inline qd atan2(const qd& y, const qd& x) {
         return (y.ispos()) ? qd_3pi_4 : -qd_pi_4;
     }
 
+    // x^2 + y^2 overflows or underflows long before x and y do: atan2(1e160, 3e160)
+    // returned 7.39 and atan2(3e-200, 1e-200) NaN (#2032). atan2 is scale invariant, so
+    // bring both near 1 by the same power of 2, limb by limb, which is exact.
+    if (std::isfinite(x[0]) && std::isfinite(y[0])) {
+        int e = 0;
+        (void)std::frexp(std::abs(x[0]) > std::abs(y[0]) ? x[0] : y[0], &e);
+        if (e != 0) {
+            qd xs(std::ldexp(x[0], -e), std::ldexp(x[1], -e), std::ldexp(x[2], -e), std::ldexp(x[3], -e));
+            qd ys(std::ldexp(y[0], -e), std::ldexp(y[1], -e), std::ldexp(y[2], -e), std::ldexp(y[3], -e));
+            return atan2(ys, xs);
+        }
+    }
+
     qd r = sqrt(sqr(x) + sqr(y));
     qd xx = x / r;
     qd yy = y / r;
@@ -413,6 +426,7 @@ inline qd atan(const qd& a) {
 }
 
 inline qd tan(const qd& a) {
+    if (a.iszero()) return a;   // tan(-0) is -0 (#2032)
     qd s, c;
     sincos(a, s, c);
     return s / c;

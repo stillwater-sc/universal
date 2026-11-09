@@ -101,7 +101,7 @@ namespace sw { namespace universal {
     // Base-e exponential function exp(x)-1
     // For small |x|, use Taylor series to avoid catastrophic cancellation
     inline qd expm1(const qd& x) {
-        if (x.iszero()) return qd(0.0);
+        if (x.iszero()) return x;   // expm1(-0) is -0 (#2032)
         if (std::abs(x[0]) < 0.5) {
             qd s = x;
             qd term = x;

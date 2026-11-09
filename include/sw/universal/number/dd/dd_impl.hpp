@@ -343,8 +343,9 @@ public:
 	explicit constexpr operator unsigned int()          const noexcept { return convert_to_unsigned_impl<unsigned int>(); }
 	explicit constexpr operator unsigned long()         const noexcept { return convert_to_unsigned_impl<unsigned long>(); }
 	explicit constexpr operator unsigned long long()    const noexcept { return convert_to_unsigned_impl<unsigned long long>(); }
-	explicit constexpr operator float()                 const noexcept { return static_cast<float>(hi + lo); }
-	explicit constexpr operator double()                const noexcept { return hi + lo; }
+	// a zero converts from its leading limb: -0 + +0 is +0 (#2032)
+	explicit constexpr operator float()                 const noexcept { return static_cast<float>(hi == 0.0 ? hi : hi + lo); }
+	explicit constexpr operator double()                const noexcept { return hi == 0.0 ? hi : hi + lo; }
 
 
 #if LONG_DOUBLE_SUPPORT
@@ -353,7 +354,7 @@ public:
 	// constexpr-clean (just hi + lo).
 			  dd(long double iv)                    noexcept { *this = iv; }
 			  dd& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
-	explicit constexpr operator long double() const noexcept { return static_cast<long double>(hi) + static_cast<long double>(lo); }
+	explicit constexpr operator long double() const noexcept { return hi == 0.0 ? static_cast<long double>(hi) : static_cast<long double>(hi) + static_cast<long double>(lo); }
 #endif
 
 	// the dd sum of two finite (hi, lo) pairs whose error-free sums do not overflow
@@ -375,6 +376,12 @@ public:
 	CONSTEXPRESSION dd& operator+=(const dd& rhs) {
 		// a non-finite operand decides the result through the leading limbs
 		if (!is_finite_cx(hi) || !is_finite_cx(rhs.hi)) {
+			hi += rhs.hi;
+			lo = 0.0;
+			return *this;
+		}
+		// two zeros: the leading limbs carry the IEEE sign of the sum, -0 only for -0 + -0 (#2032)
+		if (hi == 0.0 && rhs.hi == 0.0) {
 			hi += rhs.hi;
 			lo = 0.0;
 			return *this;
@@ -404,6 +411,13 @@ public:
 		return operator-=(dd(rhs));
 	}
 	CONSTEXPRESSION dd& operator*=(const dd& rhs) {
+		// a zero factor: the leading limbs carry the IEEE result, a signed zero, or NaN for
+		// inf * 0 or a NaN factor; the error-free products below would lose the sign (#2032)
+		if (hi == 0.0 || rhs.hi == 0.0) {
+			hi *= rhs.hi;
+			lo = 0.0;
+			return *this;
+		}
 		double p[7]{};
 		//	e powers in p = 0, 1, 1, 1, 2, 2, 2
 		p[0] = two_prod(hi, rhs.hi, p[1]);
@@ -480,6 +494,12 @@ public:
 					? dd(SpecificValue::infpos)
 					: dd(SpecificValue::infneg);
 			}
+			return *this;
+		}
+		// a zero dividend over a finite nonzero divisor: a zero with the IEEE sign (#2032)
+		if (hi == 0.0) {
+			hi /= rhs.hi;
+			lo = 0.0;
 			return *this;
 		}
 

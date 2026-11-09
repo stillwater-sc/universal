@@ -37,7 +37,7 @@ namespace sw { namespace universal {
            Correct rounding takes dd_cascade's two Newton divisions.
         */
 
-        if (a.iszero()) return dd{};
+        if (a.iszero()) return a;   // sqrt(-0) is -0 (#2032)
 
 #if DOUBLEDOUBLE_THROW_ARITHMETIC_EXCEPTION
         if (a.isneg()) throw dd_negative_sqrt_arg();
