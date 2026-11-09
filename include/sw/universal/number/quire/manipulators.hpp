@@ -82,6 +82,7 @@ std::string to_binary(const quire<NumberType, capacity, LimbType>& q) {
 	constexpr unsigned cb = qb - capacity;
 	std::stringstream  ostr;
 	if (q.isnan()) { ostr << "nar"; return ostr.str(); }
+	if (q.isinf()) { ostr << (q.sign() ? "-inf" : "+inf"); return ostr.str(); }
 	ostr << (q.sign() ? "-:" : "+:");
 	// print capacity + '_' + upper bits (above radix), then '.', then lower bits
 	for (int i = static_cast<int>(qb) - 1; i >= static_cast<int>(cb); --i) {

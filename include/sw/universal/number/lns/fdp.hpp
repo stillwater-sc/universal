@@ -156,7 +156,7 @@ lns<nbits, rbits, bt, xtra...>
 quire_resolve(const quire<lns<nbits, rbits, bt, xtra...>, capacity, LimbType>& q) {
 	using Scalar = lns<nbits, rbits, bt, xtra...>;
 
-	if (q.isnan()) {  // NaR propagated through the accumulator (#1226)
+	if (q.isnar()) {  // NaN propagated through the accumulator (#1226); no infinity encoding, so an infinity too (#2019)
 		Scalar result;
 		result.setnan();
 		return result;

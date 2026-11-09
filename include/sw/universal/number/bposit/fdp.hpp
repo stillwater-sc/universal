@@ -40,7 +40,7 @@ template<unsigned nbits, unsigned rs, unsigned es, typename bt, unsigned capacit
 bposit<nbits, rs, es, bt> quire_resolve(const quire<bposit<nbits, rs, es, bt>, capacity, LimbType>& q) {
 	using B = bposit<nbits, rs, es, bt>;
 	B result;
-	if (q.isnan())  { result.setnar(); return result; }
+	if (q.isnar())  { result.setnar(); return result; }  // any non-finite state: a posit has no infinities (#2019)
 	if (q.iszero()) { result.setzero(); return result; }
 	constexpr unsigned rp = quire_traits<B>::radix_point;
 	const int s = q.scale();                                    // the sum's binary scale

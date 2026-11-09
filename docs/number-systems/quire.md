@@ -167,11 +167,28 @@ split reduction exactly, so a parallel or distributed result doesn't depend on h
 were divided. With MTL5's thread pool, a `quire<double>` dot product gives the same bits at
 any thread count, where a `double` or `long double` accumulator regroups the sum.
 
-For `quire<float>` and `quire<double>`, an infinite or NaN operand makes the quire NaR, and
-it rounds out as a quiet NaN. `quire_resolve` on these quires now rounds the same way as
+`quire_resolve` on `quire<float>` and `quire<double>` now rounds the same way as
 `accumulator_value`, once and to nearest even; it used to truncate through `convert_to`.
 A `quire<double>` is about 4226 bits (528 bytes), so each partial of a threaded reduction
 carries one.
+
+### Infinities and NaN
+
+The accumulator has no encoding for a non-finite value, so the quire keeps one of three sticky
+states beside it: +inf, -inf and NaN. They follow IEEE 754 (#2019):
+
+| accumulated | quire state | `float`, `double`, `cfloat` resolve to |
+|---|---|---|
+| `1 + inf`, `inf + inf` | +inf | +inf |
+| `-inf + (-inf)` | -inf | -inf |
+| `inf + (-inf)` | NaN | NaN |
+| a NaN term, or a product `inf * 0` | NaN | NaN |
+
+- **Products:** `quire_mul` returns an infinity for `inf * x` with `x` nonzero, signed by the XOR of the signs. `inf * 0` and a NaN factor give NaN.
+- **Stickiness:** once infinite, the quire ignores finite terms, but a later opposite infinity or NaN still turns it NaN. NaN stays NaN. An assignment, `clear()` or `load_bits()` starts the quire finite again.
+- **Selectors:** `isinf()` is true only for an infinity, with `sign()` telling which; `isnan()` only for NaN; `isnar()` for any of the three.
+- **Comparisons:** an infinite quire compares as that infinity. A NaN quire is unordered: every comparison is false, and `!=` is true.
+- **Posit and bposit:** they have no infinities, so any non-finite state resolves to NaR, as before. lns and dbns have no infinity encoding either and resolve it to NaN.
 
 ## Problems It Solves
 

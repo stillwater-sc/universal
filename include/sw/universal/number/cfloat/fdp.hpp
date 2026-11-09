@@ -39,9 +39,15 @@ quire_mul(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturati
 	constexpr unsigned fbits = nbits - 1u - es;
 	blocktriple<fbits, BlockTripleOperator::MUL, bt> a, b, product;
 
-	// specials first: a NaN times zero, and inf times zero, are NaN, not a zero product
-	if (lhs.isinf() || lhs.isnan() || rhs.isinf() || rhs.isnan()) {
+	// specials first: a NaN times zero, and inf times zero, are NaN, not a zero product;
+	// inf times a nonzero value is an infinity signed by the XOR of the signs (#2019)
+	if (lhs.isnan() || rhs.isnan()) {
 		product.setnan(false);   // a quiet NaN: the blocktriple carries the type in its sign
+		return product;
+	}
+	if (lhs.isinf() || rhs.isinf()) {
+		if (lhs.iszero() || rhs.iszero()) product.setnan(false);
+		else product.setinf(lhs.sign() != rhs.sign());
 		return product;
 	}
 	if (lhs.iszero() || rhs.iszero()) return product;  // product is zero
@@ -75,7 +81,8 @@ quire_resolve(const quire<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, 
 	constexpr int bt_radix = BT::radix;  // = 2*fbits
 
 	Scalar result;
-	if (q.isnan()) { result.setnan(NAN_TYPE_QUIET); return result; }  // NaR propagated through the accumulator (#1226)
+	if (q.isnan()) { result.setnan(NAN_TYPE_QUIET); return result; }  // NaN propagated through the accumulator (#1226)
+	if (q.isinf()) { result.setinf(q.sign()); return result; }        // a signed infinity (#2019); a saturating cfloat clamps
 	if (q.iszero()) {
 		result.setzero();
 		return result;

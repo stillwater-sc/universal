@@ -40,9 +40,15 @@ quire_mul(float lhs, float rhs) {
 	blocktriple<fbits, BlockTripleOperator::MUL, uint32_t> a, b, product;
 
 	// non-finite first: 0 * inf is NaN in IEEE-754, so a zero operand must not
-	// hide an infinite or NaN one
-	if (std::isnan(lhs) || std::isnan(rhs) || std::isinf(lhs) || std::isinf(rhs)) {
+	// hide an infinite or NaN one; inf * nonzero is an infinity signed by the
+	// XOR of the operand signs (#2019)
+	if (std::isnan(lhs) || std::isnan(rhs)) {
 		product.setnan();
+		return product;
+	}
+	if (std::isinf(lhs) || std::isinf(rhs)) {
+		if (lhs == 0.0f || rhs == 0.0f) product.setnan();
+		else product.setinf(std::signbit(lhs) != std::signbit(rhs));
 		return product;
 	}
 	if (lhs == 0.0f || rhs == 0.0f) return product;
@@ -85,9 +91,15 @@ quire_mul(double lhs, double rhs) {
 	blocktriple<fbits, BlockTripleOperator::MUL, uint32_t> a, b, product;
 
 	// non-finite first: 0 * inf is NaN in IEEE-754, so a zero operand must not
-	// hide an infinite or NaN one
-	if (std::isnan(lhs) || std::isnan(rhs) || std::isinf(lhs) || std::isinf(rhs)) {
+	// hide an infinite or NaN one; inf * nonzero is an infinity signed by the
+	// XOR of the operand signs (#2019)
+	if (std::isnan(lhs) || std::isnan(rhs)) {
 		product.setnan();
+		return product;
+	}
+	if (std::isinf(lhs) || std::isinf(rhs)) {
+		if (lhs == 0.0 || rhs == 0.0) product.setnan();
+		else product.setinf(std::signbit(lhs) != std::signbit(rhs));
 		return product;
 	}
 	if (lhs == 0.0 || rhs == 0.0) return product;
@@ -148,8 +160,9 @@ double quire_resolve(const quire<double, capacity, LimbType>& q) {
 //
 // Both products are exact (48 and 106 significand bits, subnormals included)
 // and both quires span the full product range, so a dot product accumulates
-// exactly and rounds once. An infinite or NaN operand makes the quire NaR,
-// which rounds out as a quiet NaN.
+// exactly and rounds once. A NaN operand, inf * 0, or opposite infinities make
+// the quire NaN, which rounds out as a quiet NaN; otherwise an infinite product
+// makes it that signed infinity (#2019).
 //
 // Relates to stillwater-sc/mtl5#582
 // ============================================================================

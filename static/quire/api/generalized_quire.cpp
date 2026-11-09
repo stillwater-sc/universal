@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>  // std::isnan
+#include <limits> // std::numeric_limits
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/fdp.hpp>
 #include <universal/number/posit/posit.hpp>
@@ -271,13 +272,20 @@ int TestNonFiniteHandling() {
 		++nrOfFailedTestCases;
 	}
 
-	// An inf blocktriple on a fresh quire also sets the NaR state.
+	// An inf blocktriple on a fresh quire sets the +inf state, not NaN (#2019),
+	// and the opposite infinity then makes it NaN.
 	blocktriple<23, BlockTripleOperator::REP, uint32_t> inf_val;
-	inf_val.setinf(false);   // either infinity sets the NaR state
+	inf_val.setinf(false);
 	quire<Scalar> qi;
 	qi += inf_val;
-	if (!qi.isnan() || !std::isnan(qi.convert_to<double>())) {
-		std::cerr << "FAIL: adding inf should set the quire NaR state (no throw)\n";
+	if (!qi.isinf() || qi.isnan() || qi.sign() || qi.convert_to<double>() != std::numeric_limits<double>::infinity()) {
+		std::cerr << "FAIL: adding +inf should set the quire +inf state (no throw)\n";
+		++nrOfFailedTestCases;
+	}
+	inf_val.setinf(true);
+	qi += inf_val;
+	if (!qi.isnan() || qi.isinf() || !std::isnan(qi.convert_to<double>())) {
+		std::cerr << "FAIL: +inf + -inf in the quire should be NaN\n";
 		++nrOfFailedTestCases;
 	}
 
