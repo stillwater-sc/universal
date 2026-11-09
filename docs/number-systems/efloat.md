@@ -234,8 +234,8 @@ The tests are `elastic/efloat/api/constexpr.cpp`, `api/constexpr_constant.cpp`,
 
 - `std::complex<efloat>` is not supported, because the standard defines `std::complex` only for
   `float`, `double` and `long double`. Use `sw::universal::complex<efloat>`. Its arithmetic,
-  `abs`, `arg` and `norm` run at the operands' precision. Its transcendental functions still go
-  through `std::complex<double>`, which limits them to double accuracy.
+  `abs`, `arg`, `norm` and transcendental functions all compute in efloat, at its precision
+  (#2026; see [complex](complex.md)).
 - Values carry no subnormals: the exponent range is wide enough (`2^(2^62)`) that underflow is
   a range limit, not a precision loss.
 

@@ -13,15 +13,10 @@
 // generically, so this header only registers ereal as a Universal number type
 // and re-exposes real/imag/conj for symmetry with the other number systems.
 //
-// PRECISION NOTE: complex ARITHMETIC (+ - * /) and real/imag/conj/norm run on
-// ereal's own operators and therefore carry the operand's full working precision.
-// abs and arg do not: the shared library computes them through double (std::sqrt and
-// std::atan2 on doubles, complex_operators.hpp), so they carry 53 bits (#2017).
-// The complex TRANSCENDENTALS (exp/log/sqrt/pow/sin/cos/sinh/...) in
-// the shared library currently pivot through std::complex<double>, so on ereal
-// they are only accurate to ~double. This is a property of the shared library
-// (it affects every user-defined type, not just ereal); a full-precision complex
-// transcendental layer built on ereal's own sin/cos/exp is a future enhancement.
+// PRECISION: ereal is registered as high precision (is_high_precision), so complex
+// arithmetic, real/imag/conj/norm, abs, arg and the transcendentals (exp/log/sqrt/pow/
+// sin/cos/sinh/asin/...) all compute in ereal's own arithmetic and carry its precision
+// (#2026). The transcendentals follow the C99 branch cuts and Annex G special values.
 //
 // std::complex<ereal> is intentionally NOT supported: std::complex<T> is only
 // defined for float, double, and long double (ISO C++ 26.2/2), so instantiating
@@ -35,6 +30,10 @@ namespace sw { namespace universal {
 // Mark ereal as a Universal number type for complex compatibility
 template<unsigned maxlimbs, typename FpType>
 struct is_universal_number<ereal<maxlimbs, FpType>> : std::true_type {};
+
+// compute the complex functions in ereal, not through double (#2026)
+template<unsigned maxlimbs, typename FpType>
+struct is_high_precision<ereal<maxlimbs, FpType>> : std::true_type {};
 
 ////////////////////////////////////////////////////////////////////
 // Functions for sw::universal::complex<ereal> (portable)

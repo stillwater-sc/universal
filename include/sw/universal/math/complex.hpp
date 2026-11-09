@@ -21,9 +21,9 @@
 //   Complex z2 = exp(z1);              // exponential
 //   Real magnitude = abs(z1);          // |z1|
 //
-// For high-precision types (dd, qd), native implementations are used to
-// preserve full precision. For other types, transcendental functions
-// delegate to std::complex<double>.
+// For high-precision types (is_high_precision<T>: ereal, efloat, dd, qd), abs, arg
+// and the transcendental functions compute in T to keep its full precision (#2026).
+// For other types they delegate to std::complex<double>.
 
 #include <cmath>
 #include <complex>    // for std::complex<double> interop
@@ -38,10 +38,11 @@
 #include <universal/math/complex/complex_functions.hpp>
 #include <universal/math/complex/complex_literals.hpp>
 
-// Note: Native implementations for dd and qd are included conditionally
-// when those types are used. Include them explicitly if needed:
-//   #include <universal/math/complex/complex_functions_dd.hpp>
-//   #include <universal/math/complex/complex_functions_qd.hpp>
+// Note: dd and qd are marked high precision by their complex headers; include them
+// to compute complex<dd> and complex<qd> in dd and qd:
+//   #include <universal/number/dd/math/complex/complex.hpp>
+//   #include <universal/number/qd/math/complex/complex.hpp>
+// ereal and efloat are marked by their mathlib.
 
 namespace sw { namespace universal {
 
