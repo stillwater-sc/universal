@@ -1,10 +1,9 @@
 // complex.cpp: regression tests for sw::universal::complex<efloat> support.
 //
 // efloat plugs into the portable sw::universal::complex<T> (NOT std::complex<T>,
-// which is UB on user-defined types per ISO C++ 26.2/2). Complex arithmetic and
-// real/imag/conj/norm/arg/abs carry efloat's full working precision; the shared
-// library's complex transcendentals pivot through double, so those are checked
-// only to ~double tolerance here. (Issue #1110)
+// which is UB on user-defined types per ISO C++ 26.2/2). Complex arithmetic,
+// real/imag/conj/norm/arg/abs and the transcendentals all compute in efloat at its
+// working precision (#2026). (Issue #1110)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -156,34 +155,42 @@ int VerifyEfloatComplex(bool reportTestCases) {
 	}
 
 	// ---------------------------------------------------------------------
-	// 7. transcendentals are available and correct to ~double
-	//    (shared library pivots through std::complex<double>)
+	// 7. the transcendentals compute in efloat (#2026): they used to go through
+	//    std::complex<double> and agree to ~53 bits. At 256 bits, |difference|
+	//    scales measured (re/im, "exact" = no difference): sqrt(z)^2 -254/exact,
+	//    log(exp(w)) exact/-256, exp(i pi) exact/-256.
 	// ---------------------------------------------------------------------
 	if (reportTestCases)
-		std::cout << "  Verifying complex transcendentals (~double)...\n";
+		std::cout << "  Verifying complex transcendentals at 256-bit...\n";
 	{
+		constexpr int64_t kScale = -240;
 		// sqrt round-trip: sqrt(z)^2 == z
 		complex<E> z(E(2.0), E(3.0));
 		complex<E> back = sqrt(z) * sqrt(z);
-		if (!IsClose(back.real(), 2.0, 1e-10) || !IsClose(back.imag(), 3.0, 1e-10)) {
+		int64_t sr = AgreementScale(back.real(), z.real()), si = AgreementScale(back.imag(), z.imag());
+		if (sr > kScale || si > kScale) {
 			if (reportTestCases)
-				std::cout << "    FAIL: sqrt round-trip\n";
+				std::cout << "    FAIL: sqrt round-trip scale re=" << sr << " im=" << si << "\n";
 			++failures;
 		}
 		// exp/log round-trip: log(exp(z)) == z  (principal branch, small imag)
-		complex<E> w(E(0.5), E(0.7));
+		complex<E> w(E(0.5), E(0.75));
 		complex<E> rt = log(exp(w));
-		if (!IsClose(rt.real(), 0.5, 1e-10) || !IsClose(rt.imag(), 0.7, 1e-10)) {
+		sr = AgreementScale(rt.real(), w.real());
+		si = AgreementScale(rt.imag(), w.imag());
+		if (sr > kScale || si > kScale) {
 			if (reportTestCases)
-				std::cout << "    FAIL: log(exp(z)) round-trip\n";
+				std::cout << "    FAIL: log(exp(z)) round-trip scale re=" << sr << " im=" << si << "\n";
 			++failures;
 		}
-		// Euler: exp(i*pi) == -1 (imag ~ 0)
-		complex<E> ipi(E(0.0), E(std::acos(-1.0)));
+		// Euler: exp(i*pi) == -1, with pi at 256 bits
+		complex<E> ipi(E(0.0), E(4) * atan(E(1)));
 		complex<E> e = exp(ipi);
-		if (!IsClose(e.real(), -1.0, 1e-10) || !IsClose(e.imag(), 0.0, 1e-10)) {
+		sr = AgreementScale(e.real(), E(-1.0));
+		si = AgreementScale(e.imag(), E(0.0));
+		if (sr > kScale || si > kScale) {
 			if (reportTestCases)
-				std::cout << "    FAIL: exp(i*pi) != -1\n";
+				std::cout << "    FAIL: exp(i*pi) != -1, scale re=" << sr << " im=" << si << "\n";
 			++failures;
 		}
 	}

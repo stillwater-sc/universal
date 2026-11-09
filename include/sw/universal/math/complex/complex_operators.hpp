@@ -9,6 +9,7 @@
 #include <cmath>
 #include <sstream>
 #include <universal/math/complex/complex_impl.hpp>
+#include <universal/math/complex/complex_native_real.hpp>
 
 namespace sw { namespace universal {
 
@@ -185,25 +186,41 @@ constexpr T norm(const complex<T>& c) noexcept {
 }
 
 /// Absolute value (magnitude): |z| = sqrt(a^2 + b^2)
+/// A high-precision T (is_high_precision) computes it in T, scaled like hypot so that
+/// a^2 cannot overflow or underflow; any other T goes through double.
 template<ComplexCompatible T>
 T abs(const complex<T>& c) {
-	// Delegate to double for the sqrt to ensure correctness
-	double re = static_cast<double>(c.real());
-	double im = static_cast<double>(c.imag());
-	return T(std::sqrt(re * re + im * im));
+	if constexpr (is_high_precision_v<T>) {
+		return detail::cx::hypot_annexf(c.real(), c.imag());
+	}
+	else {
+		double re = static_cast<double>(c.real());
+		double im = static_cast<double>(c.imag());
+		return T(std::hypot(re, im));
+	}
 }
 
-/// Phase angle (argument): arg(z) = atan2(b, a)
+/// Phase angle (argument): arg(z) = atan2(b, a), in T for a high-precision T
 template<ComplexCompatible T>
 T arg(const complex<T>& c) {
-	return T(std::atan2(static_cast<double>(c.imag()), static_cast<double>(c.real())));
+	if constexpr (is_high_precision_v<T>) {
+		return detail::cx::atan2_annexf(c.imag(), c.real());
+	}
+	else {
+		return T(std::atan2(static_cast<double>(c.imag()), static_cast<double>(c.real())));
+	}
 }
 
 /// Construct complex from polar coordinates: polar(rho, theta) = rho * (cos(theta) + i*sin(theta))
 template<ComplexCompatible T>
 complex<T> polar(const T& rho, const T& theta = T{}) {
-	double th = static_cast<double>(theta);
-	return complex<T>(rho * T(std::cos(th)), rho * T(std::sin(th)));
+	if constexpr (is_high_precision_v<T>) {
+		return complex<T>(rho * cos(theta), rho * sin(theta));
+	}
+	else {
+		double th = static_cast<double>(theta);
+		return complex<T>(rho * T(std::cos(th)), rho * T(std::sin(th)));
+	}
 }
 
 /// Project onto the Riemann sphere
@@ -222,31 +239,43 @@ complex<T> proj(const complex<T>& c) {
 // Classification functions
 
 /// Check if any component is NaN
+/// A high-precision T is classified by its own isnan/isinf: its range can exceed double's.
 template<ComplexCompatible T>
 bool isnan(const complex<T>& c) {
-	// Use ADL to find the appropriate isnan for T, or fall back to std::isnan via double
-	using std::isnan;
-	double re = static_cast<double>(c.real());
-	double im = static_cast<double>(c.imag());
-	return isnan(re) || isnan(im);
+	if constexpr (is_high_precision_v<T>) {
+		return detail::cx::is_nan(c.real()) || detail::cx::is_nan(c.imag());
+	}
+	else {
+		double re = static_cast<double>(c.real());
+		double im = static_cast<double>(c.imag());
+		return std::isnan(re) || std::isnan(im);
+	}
 }
 
 /// Check if any component is infinite
 template<ComplexCompatible T>
 bool isinf(const complex<T>& c) {
-	using std::isinf;
-	double re = static_cast<double>(c.real());
-	double im = static_cast<double>(c.imag());
-	return isinf(re) || isinf(im);
+	if constexpr (is_high_precision_v<T>) {
+		return detail::cx::is_inf(c.real()) || detail::cx::is_inf(c.imag());
+	}
+	else {
+		double re = static_cast<double>(c.real());
+		double im = static_cast<double>(c.imag());
+		return std::isinf(re) || std::isinf(im);
+	}
 }
 
 /// Check if both components are finite
 template<ComplexCompatible T>
 bool isfinite(const complex<T>& c) {
-	using std::isfinite;
-	double re = static_cast<double>(c.real());
-	double im = static_cast<double>(c.imag());
-	return isfinite(re) && isfinite(im);
+	if constexpr (is_high_precision_v<T>) {
+		return detail::cx::is_finite(c.real()) && detail::cx::is_finite(c.imag());
+	}
+	else {
+		double re = static_cast<double>(c.real());
+		double im = static_cast<double>(c.imag());
+		return std::isfinite(re) && std::isfinite(im);
+	}
 }
 
 /// Check if both components are normal (not zero, subnormal, infinite, or NaN)

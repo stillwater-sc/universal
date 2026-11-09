@@ -81,7 +81,8 @@ int main() {
 
 The math library is complete to the configuration's precision: roots, `exp`/`log`, the
 trigonometric and hyperbolic families and their inverses, `fma`, `frexp`/`ldexp`,
-`fdim`/`modf`/`rint`/`nearbyint`, plus `std::complex<ereal>` support. Constants are
+`fdim`/`modf`/`rint`/`nearbyint`, plus `sw::universal::complex<ereal>`, whose `abs`, `arg` and
+transcendental functions also compute in ereal (#2026, [complex](complex.md)). Constants are
 carried to the precision the type holds rather than to a fixed cap.
 
 At NaN, the infinities and the signed zeros, every function returns what C99 Annex F

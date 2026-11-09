@@ -1,16 +1,11 @@
 // complex.cpp: regression tests for sw::universal::complex<ereal> support.
 //
 // ereal plugs into the portable sw::universal::complex<T> (NOT std::complex<T>,
-// which is UB on user-defined types per ISO C++ 26.2/2). Complex arithmetic and
-// real/imag/conj/norm carry ereal's full working precision, and are checked exactly
-// here (ereal_precision.hpp, never through double: #2008). (Issue #1167)
-//
-// abs, arg and the complex transcendentals of the shared library pivot through double
-// (math/complex/complex_operators.hpp, complex_functions.hpp), so they deliver 53 bits
-// whatever the configuration.  Measured on ereal<8>: abs(1+i) vs sqrt(2) 53 bits,
-// abs(0.7+1.3i) vs sqrt(norm) 59 bits, sqrt(2+3i)^2 vs 2+3i 52-53 bits.  Their precision
-// checks are left out rather than loosened to 53 bits; what stays is exact (abs(3+4i) == 5)
-// or checks only that the function is available.  Tracked as #2017.
+// which is UB on user-defined types per ISO C++ 26.2/2). Complex arithmetic,
+// real/imag/conj/norm, abs, arg and the transcendentals all compute in ereal (#2026) and
+// are checked here exactly, to the configuration's precision (ereal_precision.hpp, never
+// through double: #2008). (Issue #1167) The transcendentals are checked against mpmath,
+// and their special values, in static/complex/math/.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -21,12 +16,13 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/ereal_precision.hpp>
+#include <math/constants/reference_constants.hpp>
 
 namespace {
 
-	// A check asks for ereal_bits_of<E>::value less kMarginBits.  (a / b) * b == a, the one
-	// inexact identity here, measures 862-863 bits on ereal<8> (424 bits; the limb budget lets
-	// a result carry twice the limbs), so 16 bits of margin leaves ample slack.
+	// A check asks for ereal_bits_of<E>::value less kMarginBits.  The inexact checks measure
+	// 476-880 bits on ereal<8> (424 bits; the limb budget lets a result carry twice the limbs),
+	// so 16 bits of margin leaves ample slack.
 	constexpr int kMarginBits = 16;
 
 	// exact: the dyadic values are equal, whatever the limb structure
@@ -140,22 +136,34 @@ namespace {
 		}
 
 		// -----------------------------------------------------------------
-		// 7. transcendentals are available.  The shared library pivots them through
-		//    std::complex<double>, so they carry 53 bits; their precision is not
-		//    checked here (see the top of the file).
+		// 7. abs, arg and the transcendentals compute in ereal (#2026): on ereal<8> they used
+		//    to go through double and agree with the truth to 53 bits.  Measured now:
+		//    abs(1+i) 880 bits, arg(1+i) 485, sqrt(2+3i)^2 865-866, exp(log(2+3i)) 476-477.
 		// -----------------------------------------------------------------
-		if (reportTestCases) std::cout << "  Verifying complex transcendentals are available...\n";
+		if (reportTestCases) std::cout << "  Verifying abs / arg / sqrt / exp / log to full precision...\n";
 		{
-			complex<E> z(E(2.0), E(3.0));
-			complex<E> back = sqrt(z) * sqrt(z);
-			complex<E> w(E(0.5), E(0.7));
-			complex<E> rt = log(exp(w));
-			bool finite = true;
-			for (const E& v : { back.real(), back.imag(), rt.real(), rt.imag() }) {
-				if (v.isnan() || v.isinf() || v.iszero()) finite = false;
+			const int wanted = ereal_bits_of<E>::value - kMarginBits;
+			const complex<E> one_i(E(1.0), E(1.0));
+			if (!agrees_to_bits(abs(one_i), s_sqrt2, wanted)) {
+				if (reportTestCases) std::cout << "    FAIL: abs(1+i) bits=" << measured_bits(abs(one_i), s_sqrt2) << ", wanted at least " << wanted << "\n";
+				++failures;
 			}
-			if (!finite) {
-				if (reportTestCases) std::cout << "    FAIL: sqrt / exp / log returned a zero or non-finite part\n";
+			if (!agrees_to_bits(arg(one_i), s_pi_4, wanted)) {
+				if (reportTestCases) std::cout << "    FAIL: arg(1+i) bits=" << measured_bits(arg(one_i), s_pi_4) << ", wanted at least " << wanted << "\n";
+				++failures;
+			}
+			const complex<E> z(E(2.0), E(3.0));
+			const complex<E> s = sqrt(z);
+			const complex<E> back = s * s;
+			if (!agrees_to_bits(back.real(), z.real(), wanted) || !agrees_to_bits(back.imag(), z.imag(), wanted)) {
+				if (reportTestCases) std::cout << "    FAIL: sqrt(z)^2 bits re=" << measured_bits(back.real(), z.real())
+				                               << " im=" << measured_bits(back.imag(), z.imag()) << ", wanted at least " << wanted << "\n";
+				++failures;
+			}
+			const complex<E> rt = exp(log(z));
+			if (!agrees_to_bits(rt.real(), z.real(), wanted) || !agrees_to_bits(rt.imag(), z.imag(), wanted)) {
+				if (reportTestCases) std::cout << "    FAIL: exp(log(z)) bits re=" << measured_bits(rt.real(), z.real())
+				                               << " im=" << measured_bits(rt.imag(), z.imag()) << ", wanted at least " << wanted << "\n";
 				++failures;
 			}
 		}

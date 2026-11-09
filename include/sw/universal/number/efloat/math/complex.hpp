@@ -13,13 +13,10 @@
 // generically, so this header only registers efloat as a Universal number type
 // and re-exposes real/imag/conj for symmetry with the other number systems.
 //
-// PRECISION NOTE: complex ARITHMETIC (+ - * /) and real/imag/conj/norm/arg/abs
-// run on efloat's own operators and therefore carry the operand's full working
-// precision. The complex TRANSCENDENTALS (exp/log/sqrt/pow/sin/cos/sinh/...) in
-// the shared library currently pivot through std::complex<double>, so on efloat
-// they are only accurate to ~double. This is a property of the shared library
-// (it affects every user-defined type, not just efloat); a full-precision complex
-// transcendental layer built on efloat's own sin/cos/exp is a future enhancement.
+// PRECISION: efloat is registered as high precision (is_high_precision), so complex
+// arithmetic, real/imag/conj/norm, abs, arg and the transcendentals (exp/log/sqrt/pow/
+// sin/cos/sinh/asin/...) all compute in efloat's own arithmetic and carry its precision
+// (#2026). The transcendentals follow the C99 branch cuts and Annex G special values.
 //
 // std::complex<efloat> is intentionally NOT supported: std::complex<T> is only
 // defined for float, double, and long double (ISO C++ 26.2/2), so instantiating
@@ -34,6 +31,10 @@ namespace universal {
 // Mark efloat as a Universal number type for complex compatibility
 template<unsigned nlimbs>
 struct is_universal_number<efloat<nlimbs>> : std::true_type {};
+
+// compute the complex functions in efloat, not through double (#2026)
+template<unsigned nlimbs>
+struct is_high_precision<efloat<nlimbs>> : std::true_type {};
 
 ////////////////////////////////////////////////////////////////////
 // Functions for sw::universal::complex<efloat> (portable)
