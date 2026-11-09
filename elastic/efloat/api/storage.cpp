@@ -63,18 +63,22 @@ namespace {
 	// publish an object's address, so that the compiler cannot drop the allocations it made
 	const volatile void* volatile escapedObject = nullptr;
 
-	// the counter sees an allocation: two, for a std::vector made with new and its elements. If
-	// the replacement operator new were not linked in, or the reads of the counter were folded,
-	// every check below would pass against code that allocates.
+	// the counter sees an allocation: one for each of two new-expressions, an array and a scalar,
+	// both published. (Not a std::vector: MSVC's debug library allocates an iterator proxy for
+	// one.) If the replacement operator new were not linked in, or the reads of the counter were
+	// folded, every check below would pass against code that allocates.
 	int VerifyTheCounterCounts(bool reportTestCases) {
 		const unsigned long long before = allocations;
-		auto* v = new std::vector<std::uint64_t>(64);
-		escapedObject = v;
+		auto* limbs = new std::uint64_t[64];
+		escapedObject = limbs;
+		auto* limb = new std::uint64_t(1);
+		escapedObject = limb;
 		const unsigned long long made = allocations - before;
-		delete v;
+		delete limb;
+		delete[] limbs;
 		escapedObject = nullptr;
 		if (made != 2) {
-			if (reportTestCases) std::cout << "FAIL: new std::vector<std::uint64_t>(64) counted " << made << " allocations, not 2\n";
+			if (reportTestCases) std::cout << "FAIL: new std::uint64_t[64] and new std::uint64_t counted " << made << " allocations, not 2\n";
 			return 1;
 		}
 		return 0;
