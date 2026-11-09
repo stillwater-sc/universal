@@ -105,7 +105,9 @@ from one value to the other.
 ## Special values
 
 These are representative cases from Annex G (the full table is in the standard, G.6). In the
-table, `x` stands for a finite nonzero value.
+table, `x` stands for a finite nonzero value and `y` for a finite value. Like the standard, the table
+gives each case for a positive-signed imaginary part. `f(conj(z)) == conj(f(z))` gives the other
+half-plane, so `sqrt(-inf - iy)` is `+0 - i inf`.
 
 | Function | Input | Result |
 |----------|-------|--------|
@@ -119,11 +121,11 @@ table, `x` stands for a finite nonzero value.
 | `log`  | `-inf + i inf` | `+inf + i 3pi/4` |
 | `log`  | `NaN + i inf` | `+inf + iNaN` |
 | `sqrt` | `x + i inf` | `+inf + i inf`, also for `x` NaN |
-| `sqrt` | `-inf + iy` | `+0 + i inf` |
+| `sqrt` | `-inf + iy`, `y` positive-signed | `+0 + i inf` |
 | `acos` | `+-0 + iNaN` | `pi/2 + iNaN` |
 | `acosh`| `+-0 + i0` | `+0 + i pi/2` |
 | `atanh`| `+1 + i0` | `+inf + i0` (divide-by-zero) |
-| `atanh`| `+inf + iy` | `+0 + i pi/2` |
+| `atanh`| `+inf + iy`, `y` positive-signed | `+0 + i pi/2` |
 | `tanh` | `+inf + iy` | `1 + i0 sin(2y)` |
 | `cosh` | `+inf + iy` | `+inf cis(y)`, for nonzero `y` |
 
