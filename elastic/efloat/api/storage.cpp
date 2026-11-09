@@ -3,7 +3,7 @@
 //   allocations  c = a op b and c op= b allocate nothing in a steady state: a value up to the
 //                inline limbs never does, from the first operation on, and past them the heap
 //                blocks come back from the thread's cache. A replacement operator new counts
-//                every allocation the test program makes.
+//                every allocation the test program makes, and a first check shows that it does.
 //   copies       copies, moves and assignments between values held inline and on the heap,
 //                self-assignment and self-move-assignment, a moved-from value assigned again
 //                and moved into, and a std::vector of values that grows.
@@ -39,15 +39,17 @@
 #if defined(__GNUC__) && !defined(__clang__)
 #	pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 #endif
-static unsigned long long allocations = 0;
+// volatile: gcc 15 assumes operator new leaves globals alone (-fassume-sane-operators-new-delete)
+// and may fold reads of a plain counter across inlined code that allocates (#2010, #2023)
+static volatile unsigned long long allocations = 0;
 
 void* operator new(std::size_t n) {
-	++allocations;
+	allocations = allocations + 1;   // not ++: C++20 deprecates it on a volatile
 	if (void* p = std::malloc(n != 0 ? n : 1)) return p;
 	throw std::bad_alloc();
 }
 void* operator new[](std::size_t n) {
-	++allocations;
+	allocations = allocations + 1;   // not ++: C++20 deprecates it on a volatile
 	if (void* p = std::malloc(n != 0 ? n : 1)) return p;
 	throw std::bad_alloc();
 }
@@ -57,6 +59,30 @@ void operator delete(void* p, std::size_t) noexcept { std::free(p); }
 void operator delete[](void* p, std::size_t) noexcept { std::free(p); }
 
 namespace {
+
+	// publish an object's address, so that the compiler cannot drop the allocations it made
+	const volatile void* volatile escapedObject = nullptr;
+
+	// the counter sees an allocation: one for each of two new-expressions, an array and a scalar,
+	// both published. (Not a std::vector: MSVC's debug library allocates an iterator proxy for
+	// one.) If the replacement operator new were not linked in, or the reads of the counter were
+	// folded, every check below would pass against code that allocates.
+	int VerifyTheCounterCounts(bool reportTestCases) {
+		const unsigned long long before = allocations;
+		auto* limbs = new std::uint64_t[64];
+		escapedObject = limbs;
+		auto* limb = new std::uint64_t(1);
+		escapedObject = limb;
+		const unsigned long long made = allocations - before;
+		delete limb;
+		delete[] limbs;
+		escapedObject = nullptr;
+		if (made != 2) {
+			if (reportTestCases) std::cout << "FAIL: new std::uint64_t[64] and new std::uint64_t counted " << made << " allocations, not 2\n";
+			return 1;
+		}
+		return 0;
+	}
 
 	// a value of `bits` bits, all of them random, its leading bit set, at the given scale
 	template<unsigned nlimbs>
@@ -300,6 +326,7 @@ int main() try {
 #else
 
 #	if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyTheCounterCounts(reportTestCases), "efloat", "the allocation counter counts");
 	nrOfFailedTestCases += ReportTestResult(VerifyInlineValuesDoNotAllocate(reportTestCases), "efloat", "inline values do not allocate");
 	nrOfFailedTestCases += ReportTestResult(VerifySteadyStateAllocations(reportTestCases, 10), "efloat", "steady-state allocations");
 	nrOfFailedTestCases += ReportTestResult(VerifyCopiesAndMoves(reportTestCases, 200), "efloat", "copies and moves");

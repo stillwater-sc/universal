@@ -34,16 +34,18 @@
 // down", so it needs no size tracking and no thread safety (the test is single
 // threaded).
 namespace {
-long g_liveAllocations = 0;
+// volatile: gcc 15 assumes operator new leaves globals alone (-fassume-sane-operators-new-delete)
+// and may fold reads of a plain counter across inlined code that allocates (#2010, #2023)
+volatile long g_liveAllocations = 0;
 }
 void* operator new(std::size_t n) {
     void* p = std::malloc(n ? n : 1);
     if (!p) throw std::bad_alloc();
-    ++g_liveAllocations;
+    g_liveAllocations = g_liveAllocations + 1;   // not ++: C++20 deprecates it on a volatile
     return p;
 }
-void operator delete(void* p) noexcept { if (p) { --g_liveAllocations; std::free(p); } }
-void operator delete(void* p, std::size_t) noexcept { if (p) { --g_liveAllocations; std::free(p); } }
+void operator delete(void* p) noexcept { if (p) { g_liveAllocations = g_liveAllocations - 1; std::free(p); } }
+void operator delete(void* p, std::size_t) noexcept { if (p) { g_liveAllocations = g_liveAllocations - 1; std::free(p); } }
 void* operator new[](std::size_t n) { return operator new(n); }
 void operator delete[](void* p) noexcept { operator delete(p); }
 void operator delete[](void* p, std::size_t) noexcept { operator delete(p); }
