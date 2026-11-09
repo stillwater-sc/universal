@@ -460,14 +460,20 @@ try {
 
 #if REGRESSION_LEVEL_2
 
-	// Test with different exponent sizes to exercise different fbits thresholds
-	// areal<64, 2>: fbits = 60, can represent up to 2^60 fraction bits
-	nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedIntegerConversion<areal<64, 2>>(reportTestCases), test_tag, "areal<64,2> large unsigned");
-	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<64, 2>>(reportTestCases), test_tag, "areal<64,2> large signed");
+	// The large-integer checks branch on fbits (53, >= 54, >= 62, >= 63), and they need an exponent
+	// range that reaches 2^64, so es >= 7. (areal<64,2> and areal<64,4>, which these replace, have
+	// maxpos 8 and 512: every value checked saturated, #2022.)
+	// areal<63,8>: fbits = 53, the 2^54 + 1 truncation case
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedIntegerConversion<areal<63, 8>>(reportTestCases), test_tag, "areal<63,8> large unsigned");
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<63, 8>>(reportTestCases), test_tag, "areal<63,8> large signed");
 
-	// areal<64, 4>: fbits = 58
-	nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedIntegerConversion<areal<64, 4>>(reportTestCases), test_tag, "areal<64,4> large unsigned");
-	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<64, 4>>(reportTestCases), test_tag, "areal<64,4> large signed");
+	// areal<64,7>: fbits = 55
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedIntegerConversion<areal<64, 7>>(reportTestCases), test_tag, "areal<64,7> large unsigned");
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<64, 7>>(reportTestCases), test_tag, "areal<64,7> large signed");
+
+	// areal<73,8>: fbits = 63, UINT64_MAX and INT64_MAX are exact
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedIntegerConversion<areal<73, 8>>(reportTestCases), test_tag, "areal<73,8> large unsigned");
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<73, 8>>(reportTestCases), test_tag, "areal<73,8> large signed");
 
 	// areal<64, 11>: fbits = 51 (below threshold, uses double delegation)
 	nrOfFailedTestCases += ReportTestResult( VerifySmallIntegerConversion<areal<64, 11>>(reportTestCases), test_tag, "areal<64,11> small integers");

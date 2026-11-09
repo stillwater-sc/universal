@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>
 #include <vector>
 #include <iostream>
 #include <typeinfo>
@@ -16,6 +17,41 @@
 #include <universal/verification/test_reporters.hpp> 
 
 namespace sw { namespace universal {
+
+	// The areal that a correct op on exact operands produces, given the double result s of the op
+	// and the exact error err of s, so that the exact result is s + err (#2022).
+	//
+	// areal truncates toward zero and sets the ubit when it drops bits. Converting s alone is not a
+	// reference once s itself has rounded: the exponents of two exact areal<9,6> operands span 63
+	// binades, so 2^22 + 2^-31 rounds to 2^22 in double and areal(2^22) claims an exact sum. Every
+	// value of the small areals these suites enumerate is a double, so no areal value lies strictly
+	// between s and its double neighbour toward s + err. The exact result truncates to trunc(s)
+	// when err points away from zero and to trunc(nextafter(s, 0)) when it points toward zero, and
+	// in both cases bits were dropped.
+	template<typename TestType>
+	TestType ArealReference(double s, double err) {
+		TestType r;
+		if (err == 0.0 || !std::isfinite(s) || !std::isfinite(err)) {
+			r = s;
+			return r;
+		}
+		r = (std::signbit(err) == std::signbit(s)) ? s : std::nextafter(s, 0.0);
+		if (!r.isinf() && !r.isnan()) r.set(0);  // the ubit
+		return r;
+	}
+
+	// the exact error of s = a + b (Knuth's two-sum)
+	inline double TwoSumError(double a, double b, double s) {
+		const double bb = s - a;
+		return (a - (s - bb)) + (b - bb);
+	}
+
+	// an error of q = a / b with the sign of the exact a / b - q: the remainder a - q*b is exact
+	// under fma, and a / b - q = (a - q*b) / b
+	inline double QuotientError(double a, double b, double q) {
+		const double r = std::fma(-q, b, a);
+		return std::signbit(b) ? -r : r;
+	}
 
 	template<typename SrcType, typename TestType>
 	void ReportIntervalConversionError(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
@@ -318,7 +354,7 @@ namespace sw { namespace universal {
 
 			    // Compute reference - assignment sets ubit correctly
 			    double ref = double(a) + double(b);
-			    TestType cref = ref;
+			    TestType cref = ArealReference<TestType>(ref, TwoSumError(double(a), double(b), ref));
 
 			    // The ubit of c should match cref
 			    if (hasUbit(c) != hasUbit(cref)) {
@@ -414,7 +450,7 @@ namespace sw { namespace universal {
 			    if (c.isnan() || c.isinf()) continue;
 
 			    double ref = double(a) * double(b);
-			    TestType cref = ref;
+			    TestType cref = ArealReference<TestType>(ref, std::fma(double(a), double(b), -ref));
 
 			    if (hasUbit(c) != hasUbit(cref)) {
 				    nrOfFailedTests++;
@@ -479,7 +515,7 @@ namespace sw { namespace universal {
 			    if (c.isnan() || c.isinf()) continue;
 
 			    double ref = double(a) - double(b);
-			    TestType cref = ref;
+			    TestType cref = ArealReference<TestType>(ref, TwoSumError(double(a), -double(b), ref));
 
 			    if (hasUbit(c) != hasUbit(cref)) {
 				    nrOfFailedTests++;
@@ -574,7 +610,7 @@ namespace sw { namespace universal {
 			    if (c.isnan() || c.isinf()) continue;
 
 			    double ref = double(a) / double(b);
-			    TestType cref = ref;
+			    TestType cref = ArealReference<TestType>(ref, QuotientError(double(a), double(b), ref));
 
 			    if (hasUbit(c) != hasUbit(cref)) {
 				    nrOfFailedTests++;
@@ -681,7 +717,7 @@ namespace sw { namespace universal {
 #else
 			    c = a + b;
 #endif  // THROW_ARITHMETIC_EXCEPTION
-			    cref = ref;
+			    cref = ArealReference<TestType>(ref, TwoSumError(da, db, ref));
 			    if (c != cref) {
 				    if (ref == 0 and c.iszero())
 					    continue;  // mismatched is ignored as compiler optimizes away negative zero
@@ -750,7 +786,7 @@ namespace sw { namespace universal {
 			    c = a;
 			    c += b;
 #endif  // THROW_ARITHMETIC_EXCEPTION
-			    cref = ref;
+			    cref = ArealReference<TestType>(ref, TwoSumError(da, db, ref));
 			    if (c != cref) {
 				    if (ref == 0 and c.iszero())
 					    continue;  // mismatched is ignored as compiler optimizes away negative zero
@@ -817,7 +853,7 @@ namespace sw { namespace universal {
 #else
 			    c = a - b;
 #endif  // THROW_ARITHMETIC_EXCEPTION
-			    cref = ref;
+			    cref = ArealReference<TestType>(ref, TwoSumError(da, -db, ref));
 			    if (c != cref) {
 				    if (ref == 0 and c.iszero())
 					    continue;  // mismatched is ignored as compiler optimizes away negative zero
@@ -888,7 +924,7 @@ namespace sw { namespace universal {
 			    c = a;
 			    c -= b;
 #endif  // THROW_ARITHMETIC_EXCEPTION
-			    cref = ref;
+			    cref = ArealReference<TestType>(ref, TwoSumError(da, -db, ref));
 			    if (c != cref) {
 				    if (ref == 0 and c.iszero())
 					    continue;  // mismatched is ignored as compiler optimizes away negative zero
@@ -954,7 +990,7 @@ namespace sw { namespace universal {
 #else
 			    c = a * b;
 #endif
-			    cref = ref;
+			    cref = ArealReference<TestType>(ref, std::fma(da, db, -ref));
 			    if (c != cref) {
 				    if (ref == 0.0 && c.iszero())
 					    continue;  // signed zero mismatch
@@ -1020,7 +1056,7 @@ namespace sw { namespace universal {
 			    c = a;
 			    c *= b;
 #endif
-			    cref = ref;
+			    cref = ArealReference<TestType>(ref, std::fma(da, db, -ref));
 			    if (c != cref) {
 				    if (ref == 0.0 && c.iszero())
 					    continue;  // signed zero mismatch
@@ -1092,7 +1128,7 @@ namespace sw { namespace universal {
 			    c   = a / b;
 			    ref = da / db;
 #endif
-			    cref = ref;
+			    cref = ArealReference<TestType>(ref, QuotientError(da, db, ref));
 			    if (c != cref) {
 				    if (ref == 0.0 && c.iszero())
 					    continue;  // signed zero mismatch
@@ -1167,7 +1203,7 @@ namespace sw { namespace universal {
 			    c /= b;
 			    ref = da / db;
 #endif
-			    cref = ref;
+			    cref = ArealReference<TestType>(ref, QuotientError(da, db, ref));
 			    if (c != cref) {
 				    if (ref == 0.0 && c.iszero())
 					    continue;  // signed zero mismatch
