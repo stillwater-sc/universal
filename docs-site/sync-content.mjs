@@ -113,6 +113,7 @@ const FILE_MAP = {
   'algorithmic-details/multi-component-arithmetic.md': 'algorithmic-details/multi-component-arithmetic.md',
   'algorithmic-details/multi-limb-arithmetic.md': 'algorithmic-details/multi-limb-arithmetic.md',
   'algorithmic-details/efloat-mathlib.md': 'algorithmic-details/efloat-mathlib.md',
+  'algorithmic-details/complex-branch-cuts.md': 'algorithmic-details/complex-branch-cuts.md',
 
   // -- Design -----------------------------------------------------
   'multi-limb-arithmetic.md': 'design/multi-limb.md',

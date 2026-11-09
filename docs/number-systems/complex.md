@@ -97,6 +97,8 @@ Cuts for Complex Elementary Functions", 1987), Kahan's form for `tanh`, a `hypot
 `abs` and `sqrt`, and `log1p` for `log` near `|z| = 1`. The branch cuts are the C99 ones, and
 the special values of zeros, infinities and NaNs are those of C99 Annex G. The sign of a zero
 on a branch cut picks its side, as in C: `sqrt(-4 + 0i)` is `2i` and `sqrt(-4 - 0i)` is `-2i`.
+[Complex functions: branch cuts, signed zeros and C99 Annex G](../algorithmic-details/complex-branch-cuts.md)
+explains the cuts, their history and the formulas.
 Measured against mpmath, `ereal<8>` agrees to at least 475 bits (it holds 424), `qd` to 212
 and `dd` to 102 of its 106. A result whose true value is 1 to within the precision, such as
 `log` very close to `|z| = 1` in `dd` or `qd`, keeps only the absolute accuracy.
