@@ -75,10 +75,16 @@ namespace {
 		n += expect(v, 1, false, "-0 /= 2", reportTestCases);
 		// conversion to the native types keeps the sign: the trailing limbs of a zero are +0
 		for (const qd& z : { nz, pz * m1, -pz }) {
-			if (!std::signbit(double(z)) || !std::signbit(float(z)) || !std::signbit(static_cast<long double>(z))) {
+			if (!std::signbit(double(z)) || !std::signbit(float(z))) {
 				if (reportTestCases) std::cout << "    FAIL -0 converts to +0 (double " << double(z) << ")\n";
 				++n;
 			}
+#if LONG_DOUBLE_SUPPORT
+			if (!std::signbit(static_cast<long double>(z))) {   // the conversion exists only with long double support
+				if (reportTestCases) std::cout << "    FAIL -0 converts to +0 as long double\n";
+				++n;
+			}
+#endif
 		}
 		if (std::signbit(double(pz)) || std::signbit(double(nz * nz))) {
 			if (reportTestCases) std::cout << "    FAIL +0 converts to -0\n";
