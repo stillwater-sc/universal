@@ -110,6 +110,27 @@ namespace {
 		{ 1e-20,  s_tgamma_1em20,  s_lgamma_1em20 },
 	};
 
+	// erf at the edge of the limb range: erf's series sums to about exp(x^2), which would
+	// overflow where x^2 log2(e) passes max_exponent before erfc's asymptotic series reaches
+	// the precision (float limbs near 9.5, ereal<19> near 27). erf is 1 there to every bit
+	// the configuration holds.
+	template<typename Real>
+	int VerifyErfRangeEdge(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		using F = typename limb_of<Real>::type;
+		const double lim = std::sqrt(static_cast<double>(std::numeric_limits<F>::max_exponent) * 0.6931471805599453);
+		for (double v : { lim - 0.3, lim - 0.1, lim, lim + 0.2, lim + 0.6 }) {
+			const Real e = erf(Real(v));
+			nrOfFailedTestCases += expect_bits(bits_vs(e, Real(1.0)), ereal_bits_of<Real>::value - kFunctionMargin, "erf at the range edge " + std::to_string(v), reportTestCases);
+			const Real c = erfc(Real(v));
+			if (c.isnan() || c.isinf() || c.isneg()) {
+				if (reportTestCases) std::cout << "    FAIL erfc at the range edge " << v << " is not a finite nonnegative value\n";
+				++nrOfFailedTestCases;
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
 	// erf/erfc: fixed point, parity, the special values, the stored references and erf + erfc == 1
 	template<typename Real>
 	int VerifyErrorFunction(bool reportTestCases) {
@@ -140,6 +161,8 @@ namespace {
 			nrOfFailedTestCases += expect_ref(erf(x), c.erf_ref, "erf" + at, reportTestCases);
 			nrOfFailedTestCases += expect_ref(erfc(x), c.erfc_ref, "erfc" + at, reportTestCases);
 		}
+
+		nrOfFailedTestCases += VerifyErfRangeEdge<Real>(reportTestCases);
 
 		// erf(x) + erfc(x) == 1, absolute
 		for (double v : { 0.3, 1.0, 2.0, 2.5, -1.7, 3.0 }) {
@@ -354,7 +377,10 @@ try {
 
 #	if REGRESSION_LEVEL_3
 	// ereal<19> has no wider configuration to run erfc's 1 - erf in, and gives up the bits
-	// that cancellation costs for 2 < x < 8: erf/erfc are left out there
+	// that cancellation costs for 2 < x < 8: its erf/erfc checks are only the range edge
+	test_tag = "erf range edge";
+	nrOfFailedTestCases += ReportTestResult(VerifyErfRangeEdge<ereal<19>>(reportTestCases), "erf range edge(ereal<19>)", test_tag);
+	test_tag = "gamma";
 	nrOfFailedTestCases += ReportTestResult(VerifyTgamma<ereal<19>>(reportTestCases), "tgamma(ereal<19>)", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyLgamma<ereal<19>>(reportTestCases), "lgamma(ereal<19>)", test_tag);
 #	endif

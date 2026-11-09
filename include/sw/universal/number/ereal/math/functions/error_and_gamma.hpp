@@ -109,6 +109,16 @@ namespace ereal_detail {
 		return erfc_bits(x2) > static_cast<double>(series_precision_bits<maxlimbs, FpType>() + 16);
 	}
 
+	// whether erf's series, whose sum grows as exp(x^2) ~= 2^(x^2 log2 e), would leave the
+	// limb type's range at x^2. There erfc x is below 2^-(max_exponent - 16), under the
+	// precision of 1, and the asymptotic series' error is relative to erfc, so 1 - erfc is
+	// accurate even where that series does not reach the configuration's precision: float
+	// limbs near x = 9.5 and ereal<19> near x = 27 (#2027 review)
+	template<typename FpType>
+	inline bool erf_series_overflows(double x2) {
+		return erfc_bits(x2) > static_cast<double>(std::numeric_limits<FpType>::max_exponent - 16);
+	}
+
 	// erfc x for x > 0 by the asymptotic series (DLMF 7.12.1):
 	//   erfc x = exp(-x^2) / (x sqrt(pi)) sum_{n>=0} (-1)^n (2n - 1)!! / (2 x^2)^n
 	// whose remainder is smaller than the first omitted term; used only where the terms fall
@@ -170,7 +180,7 @@ namespace ereal_detail {
 	inline ereal<maxlimbs, FpType> erfc_positive(const ereal<maxlimbs, FpType>& x) {
 		const double xd = double(x);
 		const double x2d = xd * xd;
-		if (erfc_asymptotic_reaches<maxlimbs, FpType>(x2d)) return erfc_asymptotic(x);
+		if (erfc_asymptotic_reaches<maxlimbs, FpType>(x2d) || erf_series_overflows<FpType>(x2d)) return erfc_asymptotic(x);
 
 		constexpr unsigned W = erfc_wide_limbs<maxlimbs, FpType>();
 		using Wide = ereal<W, FpType>;
@@ -333,7 +343,8 @@ namespace ereal_detail {
 		if (x.isinf()) return x.isneg() ? Real(-1.0) : Real(1.0);
 		const Real ax = abs(x);
 		const double ad = double(ax);
-		Real r = ereal_detail::erfc_asymptotic_reaches<maxlimbs, FpType>(ad * ad)
+		const double a2 = ad * ad;
+		Real r = (ereal_detail::erfc_asymptotic_reaches<maxlimbs, FpType>(a2) || ereal_detail::erf_series_overflows<FpType>(a2))
 		             ? Real(1.0) - ereal_detail::erfc_asymptotic(ax)
 		             : ereal_detail::erf_series(ax);
 		return x.isneg() ? -r : r;
