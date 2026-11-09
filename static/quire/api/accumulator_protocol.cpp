@@ -255,12 +255,15 @@ int VerifyNativeRoundOut(const std::string& tag) {
 	check("max*2 - max", accumulator_value(sum({ {mx, Real(2)}, {-mx, one} }), to_real), mx);
 	check("max*2", accumulator_value(sum({ {mx, Real(2)} }), to_real), std::numeric_limits<Real>::infinity());
 
-	// a NaN or infinite operand makes the quire NaR, also when the other
-	// operand is zero (0 * inf is NaN in IEEE-754)
+	// an infinite product makes the quire that signed infinity (#2019)
 	const Real inf = std::numeric_limits<Real>::infinity();
 	const Real nan = std::numeric_limits<Real>::quiet_NaN();
+	check("1*1 + inf*1", accumulator_value(sum({ {one, one}, {inf, one} }), to_real), inf);
+	check("1*1 + inf*-2", accumulator_value(sum({ {one, one}, {inf, Real(-2)} }), to_real), -inf);
+
+	// a NaN operand, opposite infinities, or 0 * inf (NaN in IEEE-754) make it NaN
 	const std::pair<const char*, Quire> nar_cases[] = {
-		{ "1*1 + inf*1", sum({ {one, one}, {inf, one} }) },
+		{ "inf*1 + -inf*1", sum({ {inf, one}, {-inf, one} }) },
 		{ "1*1 + 0*inf", sum({ {one, one}, {Real(0), inf} }) },
 		{ "1*1 + -inf*0", sum({ {one, one}, {-inf, Real(0)} }) },
 		{ "1*1 + 0*NaN", sum({ {one, one}, {Real(0), nan} }) },

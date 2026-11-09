@@ -248,8 +248,8 @@ int TestQuireMul() {
 		Scalar a, b(1.0f);
 		a.setinf();
 		auto product = quire_mul(a, b);
-		if (!product.isnan()) {
-			std::cerr << "FAIL: quire_mul(inf, 1) should be NaN\n";
+		if (!product.isinf() || !product.sign()) {   // setinf() defaults to -inf; -inf * 1 is -inf (#2019)
+			std::cerr << "FAIL: quire_mul(-inf, 1) should be -inf\n";
 			++nrOfFailedTestCases;
 		}
 	}
@@ -287,24 +287,24 @@ int TestSpecialValues() {
 		auto product = quire_mul(nzero, Scalar(123.0f));
 		if (!product.iszero()) { std::cerr << "FAIL: -0*123\n"; ++nrOfFailedTestCases; }
 	}
-	// +inf * 1 = NaN (quire cannot represent infinity)
+	// +inf * 1 = +inf (#2019)
 	{
 		Scalar pinf; pinf.setinf(false);
 		auto product = quire_mul(pinf, Scalar(1.0f));
-		if (!product.isnan()) { std::cerr << "FAIL: +inf*1\n"; ++nrOfFailedTestCases; }
+		if (!product.isinf() || product.sign()) { std::cerr << "FAIL: +inf*1\n"; ++nrOfFailedTestCases; }
 	}
-	// -inf * 1 = NaN
+	// -inf * 1 = -inf
 	{
 		Scalar ninf; ninf.setinf(true);
 		auto product = quire_mul(ninf, Scalar(1.0f));
-		if (!product.isnan()) { std::cerr << "FAIL: -inf*1\n"; ++nrOfFailedTestCases; }
+		if (!product.isinf() || !product.sign()) { std::cerr << "FAIL: -inf*1\n"; ++nrOfFailedTestCases; }
 	}
-	// inf * inf = NaN
+	// inf * inf = +inf
 	{
 		Scalar inf1, inf2;
 		inf1.setinf(false); inf2.setinf(false);
 		auto product = quire_mul(inf1, inf2);
-		if (!product.isnan()) { std::cerr << "FAIL: inf*inf\n"; ++nrOfFailedTestCases; }
+		if (!product.isinf() || product.sign()) { std::cerr << "FAIL: inf*inf\n"; ++nrOfFailedTestCases; }
 	}
 	// val * NaN = NaN
 	{

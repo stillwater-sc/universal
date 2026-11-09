@@ -99,7 +99,8 @@ template<typename Real, typename NumberType, unsigned capacity, typename LimbTyp
 	requires std::is_floating_point_v<Real> && (std::numeric_limits<Real>::digits <= 64)
 Real quire_round_to(const quire<NumberType, capacity, LimbType>& q) {
 	using Quire = quire<NumberType, capacity, LimbType>;
-	if (q.isnar()) return std::numeric_limits<Real>::quiet_NaN();
+	if (q.isnan()) return std::numeric_limits<Real>::quiet_NaN();
+	if (q.isinf()) return q.sign() ? -std::numeric_limits<Real>::infinity() : std::numeric_limits<Real>::infinity();  // #2019
 	if (q.iszero()) return q.sign() ? -Real(0) : Real(0);
 
 	constexpr int digits = std::numeric_limits<Real>::digits;
