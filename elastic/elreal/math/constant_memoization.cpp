@@ -35,7 +35,9 @@
 // A cached call should do essentially no work. Counting allocations says so
 // deterministically, where a wall-clock comparison would be flaky on a shared runner.
 namespace {
-long g_allocations = 0;
+// volatile: gcc 15 assumes operator new leaves globals alone (-fassume-sane-operators-new-delete)
+// and may fold reads of a plain counter across inlined code that allocates (#2010, #2023)
+volatile long g_allocations = 0;
 }
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
@@ -44,7 +46,7 @@ long g_allocations = 0;
 void* operator new(std::size_t n) {
     void* p = std::malloc(n ? n : 1);
     if (!p) throw std::bad_alloc();
-    ++g_allocations;
+    g_allocations = g_allocations + 1;   // not ++: C++20 deprecates it on a volatile
     return p;
 }
 void operator delete(void* p) noexcept { std::free(p); }
