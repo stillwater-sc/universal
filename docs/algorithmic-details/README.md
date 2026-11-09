@@ -34,6 +34,10 @@ result, without the full design-doc machinery.
   `efloat` rounds its arithmetic and math library correctly at any precision (Ziv's strategy
   over stated error bounds), the algorithm behind each function, the alternatives tried and
   dropped, how it is verified against MPFR, measured accuracy and speed, and the open work.
+- [Complex functions: branch cuts, signed zeros and C99 Annex G](complex-branch-cuts.md) --
+  where the cuts of `log`, `sqrt` and the inverse functions lie and why the sign of zero picks
+  the side, the history from Kahan's 1987 paper to C99 Annex G, the special values, the
+  formulas chosen for accuracy, and how `complex<T>` implements and verifies them in any `T`.
 
 ## Reproducing the plots
 
