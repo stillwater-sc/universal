@@ -68,6 +68,65 @@ With the exception off, `x / 0` is `maxpos` or `maxneg` by the sign of the divid
 `Saturate`, and `0` for `Modulo`. Nothing is printed. Before #1894 the opt-out was the
 default and it wrote a line to stderr, which generic code could not detect.
 
+### Trigonometry: the double path and the CORDIC engine
+
+`fixpnt` has two kinds of trigonometry, because there are two kinds of experiment.
+
+- **Software experiments** use the ordinary `sin`, `cos`, `tan`, `atan`, `atan2` and `hypot`. They
+  compute through `double`: `sin(x)` is `fixpnt(std::sin(double(x)))`. This is fast and convenient. A
+  `double` carries 53 significant bits, though, so for a format with more than about 52 fraction bits,
+  such as `fixpnt<64,60>` or `fixpnt<128,120>`, the result is correct to at most 53 bits.
+- **Hardware experiments** use the circular CORDIC engine in namespace `cordic` (#2015). It is a
+  shift-and-add model of a CORDIC unit, computed in the type's own arithmetic. It is correct to the
+  full width of the type, and it has an iteration count and a guard width that a designer can set.
+
+```cpp
+#include <universal/number/fixpnt/fixpnt.hpp>
+using namespace sw::universal;
+
+using F = fixpnt<32, 28, Saturate, std::uint32_t>;
+F theta(0.5), s, c;
+cordic::sincos(theta, s, c);                    // rotation mode: sin and cos together
+F a = cordic::atan2(F(1), F(-1));               // vectoring mode: 3 pi / 4
+F r, t;
+cordic::polar(F(3), F(4), r, t);                // r = 5, t = atan2(4, 3)
+
+// a unit with 4 guard bits that stops after 16 iterations
+F s16 = cordic::sin<4>(theta, 16);
+```
+
+The functions are `sincos`, `sin` and `cos` (rotation mode), and `atan2`, `atan`, `hypot` and
+`polar` (vectoring mode). Each takes the iteration count as an optional last argument, and the guard
+width as an optional first template argument. Asking for more iterations than the datapath has
+fraction bits gives that maximum.
+
+- **Datapath.** The iterations run in a wider `fixpnt`, with `g` guard fraction bits and enough integer
+  bits that nothing wraps. Each shift truncates, as an arithmetic shift does in hardware. The result is
+  rounded to nearest once, at the end, and then follows the type's arithmetic: a result the type
+  cannot hold, such as `cos(0) = 1` in `fixpnt<8,7>`, saturates under `Saturate` and wraps under
+  `Modulo`, as a conversion from `double` does.
+- **Defaults.** The guard width is `g = ceil(log2(rbits + 8)) + 2`, and the iteration count is
+  `rbits + g`. With them, every result is within 1 ulp of the exact value. The measured worst case is
+  0.62 ulp, over every encoding of the formats up to 16 bits and samples of `fixpnt<128,120>`.
+- **Accuracy against the iteration count.** The angle left after `n` iterations is at most
+  `atan(2^-(n-1))`, so the error halves with each iteration until the guard bits run out. In
+  `fixpnt<16,12>` the worst `sin` error is 509 ulp at 4 iterations, 32 ulp at 8 and 2.4 ulp at 12.
+  At the default 19 iterations, it is 7.9 ulp with no guard bits, 3.1 with 2, 1.1 with 4 and 0.57
+  with the default 7.
+- **Range reduction.** Rotation converges for `|theta| <= 1.7432866...` radians. A format that holds
+  only `[-1, 1)` or less needs no reduction, and that choice is made at compile time. Every other
+  format reduces by `pi/2`, with a `pi/2` that carries the integer bits of the quotient in addition to
+  the datapath's fraction bits, so the reduced angle is accurate whatever the size of `theta`.
+- **Vectoring.** `atan2` and `hypot` first scale both inputs by a power of two, so the larger lies in
+  `[1/2, 1)`. Then a small input keeps its angle accuracy. Next they rotate a left half-plane vector
+  by `-pi/2` or `+pi/2`. `atan2(0, 0)` and `hypot(0, 0)` are 0.
+- **Constants.** The `atan(2^-i)` table, `1/K_n` for every iteration count `n`, and `pi/2` are computed
+  once per datapath type, by series in `fixpnt` arithmetic 16 bits wider than the datapath, and are
+  then rounded to it. Nothing goes through `double`.
+
+The tests are in `static/fixpnt/binary/math/cordic.cpp`. The lns add/sub has a hyperbolic CORDIC for
+the same purpose (`CORDICAddSub`, #783).
+
 ## How It Works
 
 Internally, `fixpnt` stores its value in a `blockbinary<nbits, bt>` -- the same limb-based storage used by `integer`. All arithmetic is performed as scaled integer operations:

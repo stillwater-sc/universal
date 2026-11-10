@@ -10,6 +10,14 @@
 
 namespace sw { namespace universal {
 
+// These functions compute through double: sin(x) is fixpnt(std::sin(double(x))). They serve software
+// experiments, where fixpnt stands in for a real number. A double carries 53 significant bits, so for a
+// fixpnt with more than about 52 fraction bits (fixpnt<64,60>, fixpnt<128,120>) the result is correct to
+// at most 53 bits, and the bits below are noise.
+//
+// For hardware experiments, and for full precision at any width, use the CORDIC engine in
+// math/cordic.hpp: cordic::sin, cordic::cos, cordic::sincos, cordic::atan, cordic::atan2 (#2015).
+
 // value representing an angle expressed in radians
 // One radian is equivalent to 180/PI degrees
 

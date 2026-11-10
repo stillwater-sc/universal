@@ -9,6 +9,7 @@
 #include <cstdint>       // the fixed-width integer types
 #include <universal/number/fixpnt/math/classify.hpp>
 #include <universal/number/fixpnt/math/complex.hpp>
+#include <universal/number/fixpnt/math/cordic.hpp>
 #include <universal/number/fixpnt/math/error_and_gamma.hpp>
 #include <universal/number/fixpnt/math/exponent.hpp>
 #include <universal/number/fixpnt/math/fma.hpp>
