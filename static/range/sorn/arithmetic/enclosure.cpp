@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <iomanip>
 #include <universal/number/sorn/sorn.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -207,6 +208,123 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
+	// exact bound check for sorn op sorn (#2021). The image of two intervals under + - * / has its
+	// bounds at sums, differences, products and quotients of the operand bounds. On a lattice
+	// whose points are not short dyadic values, such as a linear one with 3, 5 or 7 steps, those
+	// are not floats, and a bound rounded to nearest can land inside the image. The comparisons
+	// are exact: a sum or product of two floats is exact in double, and the sign of r - n/d is
+	// the sign of r*d - n times that of d, where r*d is exact in double and the sign of a double
+	// difference is always right. The operands have finite bounds, and a divisor excludes zero.
+	struct BoundValue { double num; double den; bool attained; };
+
+	// sign of v - num/den, exactly, for den != 0
+	inline int compareToQuotient(double v, double num, double den) {
+		if (std::isinf(v)) return v > 0 ? 1 : -1;
+		const double d = v * den - num;
+		const int s = (d > 0) - (d < 0);
+		return den > 0 ? s : -s;
+	}
+
+	template<typename SornType>
+	int VerifyExactBounds(char op, bool spans, bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		std::vector<SornType> ops;
+		for (const SornType& s : operands<SornType>(spans)) {
+			const auto& i = s.sornIntVal;
+			if (std::isfinite(i.lowerBound) && std::isfinite(i.upperBound)) ops.push_back(s);
+		}
+		for (const SornType& a : ops) {
+			for (const SornType& b : ops) {
+				const auto& x = a.sornIntVal;
+				const auto& y = b.sornIntVal;
+				if (op == '/' && !((y.lowerBound > 0 || (y.lowerBound == 0 && y.lowerIsOpen)) || (y.upperBound < 0 || (y.upperBound == 0 && y.upperIsOpen)))) continue;
+				SornType c;
+				std::vector<BoundValue> lower, upper;   // the candidates for the image's bounds
+				switch (op) {
+				case '+':
+					c = a + b;
+					lower.push_back({ double(x.lowerBound) + double(y.lowerBound), 1.0, !x.lowerIsOpen && !y.lowerIsOpen });
+					upper.push_back({ double(x.upperBound) + double(y.upperBound), 1.0, !x.upperIsOpen && !y.upperIsOpen });
+					break;
+				case '-':
+					c = a - b;
+					lower.push_back({ double(x.lowerBound) - double(y.upperBound), 1.0, !x.lowerIsOpen && !y.upperIsOpen });
+					upper.push_back({ double(x.upperBound) - double(y.lowerBound), 1.0, !x.upperIsOpen && !y.lowerIsOpen });
+					break;
+				case '*':
+				case '/': {
+					c = (op == '*') ? a * b : a / b;
+					// a zero divisor bound is open here: it stands for the limit, which an
+					// unbounded quotient approaches; skip that corner
+					for (int p = 0; p < 2; ++p) {
+						for (int q = 0; q < 2; ++q) {
+							const double xb = p ? x.upperBound : x.lowerBound, yb = q ? y.upperBound : y.lowerBound;
+							const bool closed = !(p ? x.upperIsOpen : x.lowerIsOpen) && !(q ? y.upperIsOpen : y.lowerIsOpen);
+							if (op == '*') { lower.push_back({ xb * yb, 1.0, closed }); upper.push_back(lower.back()); }
+							else if (yb != 0) { lower.push_back({ xb, yb, closed }); upper.push_back(lower.back()); }
+						}
+					}
+					break;
+				}
+				}
+				const auto& r = c.sornIntVal;
+				if (c.isnan()) continue;
+				// a value beyond the lattice saturates to its outermost interval
+				const double minV = SornType::datatype().front().lowerBound, maxV = SornType::datatype().back().upperBound;
+				bool ok = true;
+				for (const BoundValue& v : lower) {
+					if (compareToQuotient(maxV, v.num, v.den) < 0) continue;
+					const int cmp = compareToQuotient(r.lowerBound, v.num, v.den);
+					if (cmp > 0 || (cmp == 0 && r.lowerIsOpen && v.attained)) ok = false;
+				}
+				for (const BoundValue& v : upper) {
+					if (compareToQuotient(minV, v.num, v.den) > 0) continue;
+					const int cmp = compareToQuotient(r.upperBound, v.num, v.den);
+					if (cmp < 0 || (cmp == 0 && r.upperIsOpen && v.attained)) ok = false;
+				}
+				if (!ok) {
+					++nrOfFailedTestCases;
+					if (reportTestCases && nrOfFailedTestCases <= 10) {
+						std::cerr << std::setprecision(9) << "FAIL: " << a << ' ' << op << ' ' << b << " = " << c << " does not enclose the image of the bounds\n";
+					}
+				}
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// 1 / y through the scalar path: the exact 1, so the reciprocal's own rounding is all there is.
+	// Its bounds are 1 / (the bounds of y), which are not floats for most lattice points (#2021).
+	template<typename SornType>
+	int VerifyReciprocalBounds(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		for (const SornType& y : operands<SornType>(true)) {
+			const auto& i = y.sornIntVal;
+			if (!std::isfinite(i.lowerBound) || !std::isfinite(i.upperBound)) continue;
+			const bool positive = i.lowerBound > 0 || (i.lowerBound == 0 && i.lowerIsOpen);
+			const bool negative = i.upperBound < 0 || (i.upperBound == 0 && i.upperIsOpen);
+			if (!positive && !negative) continue;
+			const SornType c = 1.0f / y;
+			const auto& r = c.sornIntVal;
+			const double maxV = SornType::datatype().back().upperBound, minV = SornType::datatype().front().lowerBound;
+			bool ok = true;
+			// 1/hi is the lower bound and 1/lo the upper one; a zero bound stands for an unbounded side
+			if (i.upperBound != 0 && compareToQuotient(maxV, 1.0, i.upperBound) >= 0) {
+				const int cmp = compareToQuotient(r.lowerBound, 1.0, i.upperBound);
+				if (cmp > 0 || (cmp == 0 && r.lowerIsOpen && !i.upperIsOpen)) ok = false;
+			}
+			if (i.lowerBound != 0 && compareToQuotient(minV, 1.0, i.lowerBound) <= 0) {
+				const int cmp = compareToQuotient(r.upperBound, 1.0, i.lowerBound);
+				if (cmp < 0 || (cmp == 0 && r.upperIsOpen && !i.lowerIsOpen)) ok = false;
+			}
+			if (!ok) {
+				++nrOfFailedTestCases;
+				if (reportTestCases && nrOfFailedTestCases <= 10) std::cerr << std::setprecision(9) << "FAIL: 1 / " << y << " = " << c << " does not enclose the reciprocal\n";
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
 }}  // namespace sw::universal
 
 #define MANUAL_TESTING 0
@@ -239,6 +357,9 @@ try {
 	using LinSorn    = sorn<0, 4, 8>;                   // linear, 19 intervals
 	using LogSorn    = sorn<-2, 2, 1, 0, 1, 1, 1, 1>;   // logarithmic
 	using NoZeroSorn = sorn<0, 2, 2, 1, 1, 1, 1, 0>;    // linear, no exact zero
+	using SeventhsSorn = sorn<0, 3, 7>;                 // linear, points k * 3/7: not dyadic
+	using FifthsSorn   = sorn<0, 1, 5>;                 // linear, points k * 0.2: not dyadic
+	using ThirdsSorn   = sorn<0, 6, 18>;                // linear, points k / 3: 1/3 and 3 are both points
 
 #if MANUAL_TESTING
 
@@ -263,6 +384,19 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyInexactScalarEnclosure<LinSorn>(reportTestCases), "sorn<0,4,8>", "inexact scalar enclosure");
 	nrOfFailedTestCases += ReportTestResult(VerifyInexactScalarEnclosure<LogSorn>(reportTestCases), "sorn<-2,2,1,log>", "inexact scalar enclosure");
 	nrOfFailedTestCases += ReportTestResult(VerifyInexactScalarEnclosure<NoZeroSorn>(reportTestCases), "sorn<0,2,2,nozero>", "inexact scalar enclosure");
+	// lattices whose points are not short dyadic values: their bound sums, products and
+	// reciprocals are not floats (#2021)
+	for (char op : { '+', '-', '*', '/' }) {
+		const std::string tag = std::string("exact bounds ") + op;
+		nrOfFailedTestCases += ReportTestResult(VerifyExactBounds<SeventhsSorn>(op, true, reportTestCases), "sorn<0,3,7> spans", tag);
+		nrOfFailedTestCases += ReportTestResult(VerifyExactBounds<FifthsSorn>(op, true, reportTestCases), "sorn<0,1,5> spans", tag);
+		nrOfFailedTestCases += ReportTestResult(VerifyExactBounds<LinSorn>(op, true, reportTestCases), "sorn<0,4,8> spans", tag);
+		nrOfFailedTestCases += ReportTestResult(VerifyExactBounds<LogSorn>(op, true, reportTestCases), "sorn<-2,2,1,log> spans", tag);
+	}
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocalBounds<SeventhsSorn>(reportTestCases), "sorn<0,3,7> spans", "exact bounds 1/y");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocalBounds<FifthsSorn>(reportTestCases), "sorn<0,1,5> spans", "exact bounds 1/y");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocalBounds<ThirdsSorn>(reportTestCases), "sorn<0,6,18> spans", "exact bounds 1/y");
+	nrOfFailedTestCases += ReportTestResult(VerifyExactBounds<ThirdsSorn>('/', true, reportTestCases), "sorn<0,6,18> spans", "exact bounds /");
 #endif
 
 #if REGRESSION_LEVEL_2

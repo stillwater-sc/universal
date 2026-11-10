@@ -414,10 +414,13 @@ public:
 			return *this;
 		}
 		else {
-			this->sornIntVal.lowerBound += rhs.sornIntVal.lowerBound;
-			this->sornIntVal.upperBound += rhs.sornIntVal.upperBound;
-			this->sornIntVal.lowerIsOpen = (this->sornIntVal.lowerIsOpen || rhs.sornIntVal.lowerIsOpen);
-			this->sornIntVal.upperIsOpen = (this->sornIntVal.upperIsOpen || rhs.sornIntVal.upperIsOpen);
+			// the bound sums are rounded outward, and a rounded bound is open (#2021)
+			SORN_INTERVAL& v = this->sornIntVal;
+			const SORN_INTERVAL& r = rhs.sornIntVal;
+			bool lowerInexact{ false }, upperInexact{ false };
+			const float lower = sornAddOut(v.lowerBound, r.lowerBound, false, lowerInexact);
+			const float upper = sornAddOut(v.upperBound, r.upperBound, true, upperInexact);
+			v = { lower, upper, v.lowerIsOpen || r.lowerIsOpen || lowerInexact, v.upperIsOpen || r.upperIsOpen || upperInexact };
 			adaptToDT();
 			return *this;
 		}
@@ -448,10 +451,13 @@ public:
 			return *this;
 		}
 		else {
-			this->sornIntVal.lowerBound -= rhs.sornIntVal.upperBound;
-			this->sornIntVal.upperBound -= rhs.sornIntVal.lowerBound;
-			this->sornIntVal.lowerIsOpen = (this->sornIntVal.lowerIsOpen || rhs.sornIntVal.upperIsOpen);
-			this->sornIntVal.upperIsOpen = (this->sornIntVal.upperIsOpen || rhs.sornIntVal.lowerIsOpen);
+			// the bound differences are rounded outward, and a rounded bound is open (#2021)
+			SORN_INTERVAL& v = this->sornIntVal;
+			const SORN_INTERVAL& r = rhs.sornIntVal;
+			bool lowerInexact{ false }, upperInexact{ false };
+			const float lower = sornAddOut(v.lowerBound, -r.upperBound, false, lowerInexact);
+			const float upper = sornAddOut(v.upperBound, -r.lowerBound, true, upperInexact);
+			v = { lower, upper, v.lowerIsOpen || r.upperIsOpen || lowerInexact, v.upperIsOpen || r.lowerIsOpen || upperInexact };
 			adaptToDT();
 			return *this;
 		}
@@ -481,11 +487,16 @@ public:
 		// closed zero, which makes the product zero whatever the other operand is. A bound
 		// product with a zero factor is zero, also against an infinite bound, where IEEE
 		// 0 * inf is NaN. The earlier case table ORed the open conditions, so it dropped the
-		// attained zero of [-inf,-2) * [0,1] (#1972).
-		struct Corner { float value; bool open; };
+		// attained zero of [-inf,-2) * [0,1] (#1972). Each corner is rounded down for the lower
+		// bound and up for the upper one, and a rounded corner is open on that side (#2021).
+		struct Corner { float down; float up; bool downOpen; bool upOpen; };
 		auto corner = [](float a, bool aOpen, float b, bool bOpen) {
 			const bool closedZero = (a == 0.0f && !aOpen) || (b == 0.0f && !bOpen);
-			return Corner{ (a == 0.0f || b == 0.0f) ? 0.0f : a * b, (aOpen || bOpen) && !closedZero };
+			const bool open = (aOpen || bOpen) && !closedZero;
+			bool downInexact{ false }, upInexact{ false };
+			const float down = sornMulOut(a, b, false, downInexact);
+			const float up   = sornMulOut(a, b, true, upInexact);
+			return Corner{ down, up, open || downInexact, open || upInexact };
 		};
 		const SORN_INTERVAL& l = this->sornIntVal;
 		const SORN_INTERVAL& r = rhs.sornIntVal;
@@ -497,10 +508,10 @@ public:
 		};
 		Corner lo = corners[0], hi = corners[0];
 		for (const Corner& c : corners) {
-			if (c.value < lo.value || (c.value == lo.value && !c.open)) lo = c;
-			if (c.value > hi.value || (c.value == hi.value && !c.open)) hi = c;
+			if (c.down < lo.down || (c.down == lo.down && !c.downOpen)) lo = c;
+			if (c.up > hi.up || (c.up == hi.up && !c.upOpen)) hi = c;
 		}
-		this->sornIntVal = { lo.value, hi.value, lo.open, hi.open };
+		this->sornIntVal = { lo.down, hi.up, lo.downOpen, hi.upOpen };
 		adaptToDT();
 		return *this;
 	}
@@ -872,23 +883,30 @@ private:
 	}
 
 	// reciprocal: 1/y for an interval y that excludes zero, with the open/closed conditions
-	// carried to the swapped bounds. Returns false when y contains zero.
+	// carried to the swapped bounds. Each bound is rounded outward, and a rounded bound is open
+	// (#2021). Returns false when y contains zero.
 	static bool reciprocal(const SORN_INTERVAL& y, SORN_INTERVAL& r) {
 		const bool positive = (y.lowerBound > 0) || (y.lowerBound == 0 && y.lowerIsOpen && y.upperBound > 0);
 		const bool negative = (y.upperBound < 0) || (y.upperBound == 0 && y.upperIsOpen && y.lowerBound < 0);
+		// 1/b rounded outward, for b != 0: 1/b = -(1/|b|) for a negative b, which turns the
+		// direction of the rounding around
+		auto recip = [](float b, bool up, bool& inexact) {
+			return (b > 0) ? sornDivOut(1.0f, b, up, inexact) : -sornDivOut(1.0f, -b, !up, inexact);
+		};
+		bool lowerInexact{ false }, upperInexact{ false };
 		if (positive) {
-			r.lowerBound = Real(1) / y.upperBound;                                // 1/inf = 0
-			r.upperBound = (y.lowerBound == 0 ? kInf : Real(1) / y.lowerBound);
+			r.lowerBound = recip(y.upperBound, false, lowerInexact);                                // 1/inf = 0
+			r.upperBound = (y.lowerBound == 0 ? kInf : recip(y.lowerBound, true, upperInexact));
 		}
 		else if (negative) {
-			r.lowerBound = (y.upperBound == 0 ? -kInf : Real(1) / y.upperBound);  // stored zeros are +0
-			r.upperBound = Real(1) / y.lowerBound;
+			r.lowerBound = (y.upperBound == 0 ? -kInf : recip(y.upperBound, false, lowerInexact));  // stored zeros are +0
+			r.upperBound = recip(y.lowerBound, true, upperInexact);
 		}
 		else {
 			return false;
 		}
-		r.lowerIsOpen = y.upperIsOpen;
-		r.upperIsOpen = y.lowerIsOpen;
+		r.lowerIsOpen = y.upperIsOpen || lowerInexact;
+		r.upperIsOpen = y.lowerIsOpen || upperInexact;
 		return true;
 	}
 
