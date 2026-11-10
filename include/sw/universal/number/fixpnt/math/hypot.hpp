@@ -42,6 +42,9 @@ hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN
 
 namespace sw { namespace universal {
 
+// hypot computes through double (hypotf through float, hypotl through long double), so the result is
+// correct to at most 53 bits. cordic::hypot in math/cordic.hpp computes it in the fixpnt arithmetic
+// itself, to any width, and models a CORDIC unit for hardware experiments (#2015).
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> hypot(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> y) {
 	return fixpnt<nbits, rbits, arithmetic, bt>(std::hypot(double(x),double(y)));
