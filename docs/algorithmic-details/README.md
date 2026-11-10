@@ -39,6 +39,12 @@ result, without the full design-doc machinery.
   the side, the history from Kahan's 1987 paper to C99 Annex G, the special values, the
   formulas chosen for accuracy, and how `complex<T>` implements and verifies them in any `T`.
 
+- [CORDIC](cordic.md) -- rotation, multiplication and the elementary functions by shift and add:
+  why it exists, Walther's unified recurrence with its circular, linear and hyperbolic geometries (the
+  `m` in the `x` update), convergence, the gain, range reduction and the error budget, when to use it,
+  the history from Volder's B-58 navigation computer (1956) to today's FPGAs and radios, and the fixpnt
+  engines in Universal with their measured accuracy.
+
 ## Reproducing the plots
 
 The transfer-function and error-envelope figures in these docs are

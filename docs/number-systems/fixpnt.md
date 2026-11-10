@@ -93,12 +93,19 @@ cordic::polar(F(3), F(4), r, t);                // r = 5, t = atan2(4, 3)
 
 // a unit with 4 guard bits that stops after 16 iterations
 F s16 = cordic::sin<4>(theta, 16);
+
+// linear CORDIC: multiply and divide by shift and add (#2040)
+F p = cordic::mul(F(3.25), F(-1.5));            // -4.875
+F q = cordic::div(F(1), F(3));                  // 1/3, rounded to 28 fraction bits
 ```
 
-The functions are `sincos`, `sin` and `cos` (rotation mode), and `atan2`, `atan`, `hypot` and
-`polar` (vectoring mode). Each takes the iteration count as an optional last argument, and the guard
-width as an optional first template argument. Asking for more iterations than the datapath has
-fraction bits gives that maximum.
+The circular functions are `sincos`, `sin` and `cos` (rotation mode), and `atan2`, `atan`, `hypot`
+and `polar` (vectoring mode). The linear functions are `mul` (rotation mode) and `div` (vectoring
+mode). Each takes the iteration count as an optional last argument, and the guard width as an
+optional first template argument. Asking for more iterations than the datapath has fraction bits
+gives that maximum. All of them run the same iteration, Walther's unified CORDIC, with the geometry
+`m` (circular, linear or hyperbolic) as a template parameter. `docs/algorithmic-details/cordic.md`
+explains the algorithm and its history.
 
 - **Datapath.** The iterations run in a wider `fixpnt`, with `g` guard fraction bits and enough integer
   bits that nothing wraps. Each shift truncates, as an arithmetic shift does in hardware. The result is
@@ -124,8 +131,15 @@ fraction bits gives that maximum.
   once per datapath type, by series in `fixpnt` arithmetic 16 bits wider than the datapath, and are
   then rounded to it. Nothing goes through `double`.
 
-The tests are in `static/fixpnt/binary/math/cordic.cpp`. The lns add/sub has a hyperbolic CORDIC for
-the same purpose (`CORDICAddSub`, #783).
+- **Linear mode.** `mul` and `div` scale both operands by powers of two into `[1/2, 1)`, as a
+  floating-point unit aligns significands, so a small operand keeps its accuracy. The datapath carries
+  as many fraction bits as the result can need, plus guard bits: under `Modulo` that includes every
+  bit of a wrapped product or quotient. Division by zero follows `operator/`. The measured worst case
+  is 0.53 ulp for `mul` and 0.50 ulp for `div`, over every pair of the 8-bit formats and samples up to
+  `fixpnt<128,120>`, against exact integer references.
+
+The tests are in `static/fixpnt/binary/math/cordic.cpp` (circular) and `cordic_linear.cpp` (linear).
+The lns add/sub has a hyperbolic CORDIC for the same purpose (`CORDICAddSub`, #783).
 
 ## How It Works
 
