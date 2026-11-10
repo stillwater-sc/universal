@@ -1,5 +1,5 @@
 #pragma once
-// cordic.hpp: a circular CORDIC engine for fixed-points, for hardware codesign (#2015)
+// cordic.hpp: a CORDIC engine for fixed-points, for hardware codesign (#2015, #2040)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -16,21 +16,34 @@
 //   cordic::atan2(y, x), cordic::atan(x)   vectoring mode
 //   cordic::hypot(x, y)
 //   cordic::polar(x, y, r, theta)          r = hypot(x, y), theta = atan2(y, x)
+//   cordic::mul(x, z)                      linear rotation mode: x * z
+//   cordic::div(y, x)                      linear vectoring mode: y / x
 //
 // Every function takes an optional iteration count as its last argument, and the guard width as an
 // optional first template argument:
 //
 //   cordic::sincos<4>(theta, s, c, 12);     4 guard bits, 12 iterations
 //
-// The algorithm. Iterate i = 0 .. n-1:
+// The algorithm (Volder 1959; unified by Walther 1971). Iterate i = 0 .. n-1:
 //
-//   x_{i+1} = x_i - d_i * (y_i >> i)
+//   x_{i+1} = x_i - m * d_i * (y_i >> i)
 //   y_{i+1} = y_i + d_i * (x_i >> i)
-//   z_{i+1} = z_i - d_i * atan(2^-i)
+//   z_{i+1} = z_i - d_i * alpha_i
 //
-// with d_i = sign(z_i) in rotation mode (z -> 0) and d_i = -sign(y_i) in vectoring mode (y -> 0).
-// Rotation starts at (1/K_n, 0, theta) and ends at (cos theta, sin theta). Vectoring starts at (x, y, 0)
-// and ends at (K_n * hypot(x, y), 0, atan2(y, x)). K_n = prod_{i<n} sqrt(1 + 2^-2i) -> 1.6467602581...
+// with d_i = sign(z_i) in rotation mode (z -> 0) and d_i = -sign(y_i) in vectoring mode (y -> 0). The
+// coordinate system m picks the geometry, and with it the elementary angles alpha_i and the gain:
+//
+//   m =  1  circular    alpha_i = atan(2^-i)   preserves x^2 + y^2 (up to K)   sin, cos, atan2, hypot
+//   m =  0  linear      alpha_i = 2^-i         preserves x                     x * z, y / x
+//   m = -1  hyperbolic  alpha_i = atanh(2^-i)  preserves x^2 - y^2 (up to K)   (#2041)
+//
+// detail::step is that one iteration, written once for all three; docs/algorithmic-details/cordic.md
+// tells the history and derives the three from one rotation.
+//
+// Circular rotation starts at (1/K_n, 0, theta) and ends at (cos theta, sin theta). Circular vectoring
+// starts at (x, y, 0) and ends at (K_n * hypot(x, y), 0, atan2(y, x)), where
+// K_n = prod_{i<n} sqrt(1 + 2^-2i) -> 1.6467602581... Linear rotation starts at (x, 0, z) and ends at
+// (x, x * z, 0); linear vectoring starts at (x, y, 0) and ends at (x, 0, y / x). The linear gain is 1.
 //
 // The datapath. The iterations run in a wider fixpnt with g guard fraction bits, Modulo arithmetic and
 // enough integer bits that nothing wraps; each shift truncates (an arithmetic shift, as in hardware), and
@@ -55,6 +68,21 @@
 // type, with 16 bits beyond it, by series in the fixpnt arithmetic itself (atan by its Taylor series,
 // pi/4 by Machin's formula, 1/K_n = 1/sqrt(prod (1 + 4^-i)) with the correctly rounded fixpnt sqrt), and
 // then rounded to the datapath. Nothing goes through double, so the engine is correct beyond 52 bits.
+//
+// Linear mode. mul and div scale both operands by powers of two into [1/2, 1), as a floating-point unit
+// aligns significands, so the error is relative to the operands' size and not to the datapath's: linear
+// CORDIC converges for |z| < 2 (rotation) and |y / x| < 2 (vectoring), and the normalized operands lie
+// inside. The datapath has B + g fraction bits, where B is the number of bits the result can need:
+//
+//   mul, Saturate:  B = nbits + 1        a larger product saturates, and is detected from the exponents
+//   mul, Modulo:    B = nbits + ib       every bit of a wrapped product, ib = nbits - rbits
+//   div, Saturate:  B = nbits
+//   div, Modulo:    B = nbits + rbits    every bit of a wrapped quotient
+//
+// with g = ceil(log2(B + 8)) + 2 guard bits for mul, and one more for div, whose error is divided by
+// x >= 1/2. The default iteration count is B + g. Division by zero follows fixpnt's operator/: it throws
+// fixpnt_divide_by_zero, or with FIXPNT_THROW_DIVIDE_BY_ZERO 0 gives maxpos or maxneg by the sign of the
+// dividend under Saturate and 0 under Modulo.
 #include <array>
 #include <cstdint>
 
@@ -62,6 +90,9 @@ namespace sw { namespace universal { namespace cordic {
 
 // the guard width sentinel: pick g = ceil(log2(rbits + 8)) + 2
 inline constexpr unsigned auto_guard = 0xFFFF'FFFFu;
+
+// the coordinate system m of the unified CORDIC iteration x_{i+1} = x_i - m * d_i * (y_i >> i)
+enum class coordinates : int { hyperbolic = -1, linear = 0, circular = 1 };
 
 namespace detail {
 
@@ -93,6 +124,22 @@ namespace detail {
 		static constexpr unsigned M = reduce ? ib - 1u : 0u;
 		static constexpr unsigned redR = rotR + M + 2u;
 		static constexpr unsigned redN = redR + M + 3u;
+	};
+
+	// the shape of the linear datapaths: B result bits plus g guard bits, see the header comment
+	template<unsigned nbits, unsigned rbits, bool arithmetic, unsigned guard>
+	struct linear_config {
+		static_assert(nbits >= 2, "cordic: the target fixpnt needs at least 2 bits");
+		static_assert(rbits <= nbits, "cordic: rbits cannot exceed nbits");
+		static constexpr unsigned ib = nbits - rbits;
+		static constexpr unsigned mulB = (arithmetic == Saturate) ? nbits + 1u : nbits + ib;
+		static constexpr unsigned mulG = (guard == auto_guard) ? clog2(mulB + 8u) + 2u : guard;
+		static constexpr unsigned mulR = mulB + mulG;
+		static constexpr unsigned mulN = mulR + 3u;
+		static constexpr unsigned divB = (arithmetic == Saturate) ? nbits : nbits + rbits;
+		static constexpr unsigned divG = (guard == auto_guard) ? clog2(divB + 8u) + 3u : guard;
+		static constexpr unsigned divR = divB + divG;
+		static constexpr unsigned divN = divR + 3u;
 	};
 
 	// the generator: the datapath's fraction bits plus 16, with integer bits for the series' divisors
@@ -189,26 +236,50 @@ namespace detail {
 		return t;
 	}
 
-	// rotation mode: drive z to 0
-	template<typename Work, std::size_t N>
-	void rotate(Work& x, Work& y, Work& z, unsigned n, const std::array<Work, N>& A) {
-		for (unsigned i = 0; i < n; ++i) {
-			const Work xs = x >> static_cast<int>(i);
+	// the elementary angles of linear CORDIC, alpha_i = 2^-i, exact in the datapath
+	template<typename Work>
+	struct linear_tables {
+		static constexpr unsigned R = Work::rbits;
+		std::array<Work, R> pow2{};
+		linear_tables() {
+			const Work one(1);
+			for (unsigned i = 0; i < R; ++i) pow2[i] = one >> static_cast<int>(i);
+		}
+	};
+	template<typename Work>
+	const linear_tables<Work>& linear_tables_of() {
+		static const linear_tables<Work> t;
+		return t;
+	}
+
+	// one CORDIC iteration in coordinate system m, with shift i, elementary angle alpha and d = up ? +1 : -1:
+	//   x <- x - m d (y >> i),   y <- y + d (x >> i),   z <- z - d alpha
+	// The shifts truncate, as an arithmetic shift does in hardware, and both use the values before the step.
+	template<coordinates m, typename Work>
+	void step(Work& x, Work& y, Work& z, unsigned i, const Work& alpha, bool up) {
+		const Work xs = x >> static_cast<int>(i);
+		if constexpr (m == coordinates::linear) {                    // m = 0: x does not change
+			if (up) { y += xs; z -= alpha; }
+			else    { y -= xs; z += alpha; }
+		}
+		else {
 			const Work ys = y >> static_cast<int>(i);
-			if (!z.isneg()) { x -= ys; y += xs; z -= A[i]; }
-			else            { x += ys; y -= xs; z += A[i]; }
+			constexpr bool circular = (m == coordinates::circular);
+			if (up) { if constexpr (circular) x -= ys; else x += ys; y += xs; z -= alpha; }
+			else    { if constexpr (circular) x += ys; else x -= ys; y -= xs; z += alpha; }
 		}
 	}
 
-	// vectoring mode: drive y to 0
-	template<typename Work, std::size_t N>
+	// rotation mode: drive z to 0, d_i = sign(z_i)
+	template<coordinates m, typename Work, std::size_t N>
+	void rotate(Work& x, Work& y, Work& z, unsigned n, const std::array<Work, N>& A) {
+		for (unsigned i = 0; i < n; ++i) step<m>(x, y, z, i, A[i], !z.isneg());
+	}
+
+	// vectoring mode: drive y to 0, d_i = -sign(y_i)
+	template<coordinates m, typename Work, std::size_t N>
 	void vector(Work& x, Work& y, Work& z, unsigned n, const std::array<Work, N>& A) {
-		for (unsigned i = 0; i < n; ++i) {
-			const Work xs = x >> static_cast<int>(i);
-			const Work ys = y >> static_cast<int>(i);
-			if (y.isneg()) { x -= ys; y += xs; z -= A[i]; }
-			else           { x += ys; y -= xs; z += A[i]; }
-		}
+		for (unsigned i = 0; i < n; ++i) step<m>(x, y, z, i, A[i], y.isneg());
 	}
 
 	// round raw * 2^-shift to nearest, ties to even, in place
@@ -279,7 +350,7 @@ namespace detail {
 			if (!y.isneg()) { x = y;  y = -ox; z = T.pi_over_2; }
 			else            { x = -y; y = ox;  z = -T.pi_over_2; }
 		}
-		vector(x, y, z, n, T.atan);
+		vector<coordinates::circular>(x, y, z, n, T.atan);
 		v.x = x;
 		v.z = z;
 		return v;
@@ -291,6 +362,44 @@ namespace detail {
 	}
 
 	constexpr unsigned clamp_iterations(unsigned n, unsigned maxN) noexcept { return n < maxN ? n : maxN; }
+
+	// the index of the most significant set bit of a nonzero magnitude
+	template<unsigned W, typename bt>
+	unsigned msb_of(const blockbinary<W, bt, BinaryNumberType::Signed>& a) {
+		for (unsigned i = W; i-- > 0;) {
+			if (a.at(i)) return i;
+		}
+		return 0;
+	}
+
+	// a nonzero target value as a magnitude in [2^e, 2^(e+1)) raw units, with e and the sign
+	template<typename Fixed>
+	struct magnitude {
+		blockbinary<Fixed::nbits + 2u, typename Fixed::BlockType, BinaryNumberType::Signed> raw;
+		unsigned e;
+		bool negative;
+		explicit magnitude(const Fixed& f) : raw(widen(f)), e(0), negative(raw.isneg()) {
+			if (negative) raw.twosComplement();              // maxneg's magnitude fits in nbits + 2 bits
+			e = msb_of(raw);
+		}
+	};
+
+	// the datapath value of a magnitude scaled into [1/2, 1)
+	template<typename Lin, typename M>
+	Lin normalized(const M& a) {
+		Lin v;
+		v = a.raw;
+		v <<= static_cast<int>(Lin::rbits - a.e - 1u);
+		return v;
+	}
+
+	// the Target whose raw value is round(v * 2^E), for a datapath value 0 <= |v| < 2 with Lin::rbits >= E
+	template<typename Target, typename Lin>
+	Target scaled_fit(Lin v, int E, bool negative) {
+		if (E <= -2) return Target(0);                       // |v * 2^E| < 1/2 rounds to 0
+		if (negative) v = -v;
+		return fit<Target>(v.bits(), static_cast<unsigned>(static_cast<int>(Lin::rbits) - E));
+	}
 
 }  // namespace detail
 
@@ -337,7 +446,7 @@ void sincos(const fixpnt<nbits, rbits, arithmetic, bt>& theta,
 	}
 
 	Rot x = T.invK[n], y(0), z = r;
-	detail::rotate(x, y, z, n, T.atan);
+	detail::rotate<coordinates::circular>(x, y, z, n, T.atan);
 
 	Rot S, Co;
 	switch (quadrant) {
@@ -413,6 +522,64 @@ fixpnt<nbits, rbits, arithmetic, bt> hypot(const fixpnt<nbits, rbits, arithmetic
 	fixpnt<nbits, rbits, arithmetic, bt> r, theta;
 	polar<guard>(x, y, r, theta, iterations);
 	return r;
+}
+
+// linear rotation mode: x * z. Both operands are scaled into [1/2, 1), the iterations accumulate the
+// shifted x under the signed binary digits of z, and the product is scaled back and rounded once.
+template<unsigned guard = auto_guard, unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
+fixpnt<nbits, rbits, arithmetic, bt> mul(const fixpnt<nbits, rbits, arithmetic, bt>& x, const fixpnt<nbits, rbits, arithmetic, bt>& z,
+                                         unsigned iterations = detail::linear_config<nbits, rbits, arithmetic, guard>::mulR) {
+	using Cfg    = detail::linear_config<nbits, rbits, arithmetic, guard>;
+	using Target = fixpnt<nbits, rbits, arithmetic, bt>;
+	using Lin    = fixpnt<Cfg::mulN, Cfg::mulR, Modulo, bt>;
+	if (x.iszero() || z.iszero()) return Target(0);
+	const detail::magnitude<Target> ax(x), az(z);
+	const bool negative = (ax.negative != az.negative);
+	// x * z = x' z' 2^E raw units, with x', z' in [1/2, 1)
+	const int E = static_cast<int>(ax.e + az.e + 2u) - static_cast<int>(rbits);
+	if constexpr (arithmetic == Saturate) {
+		// |x' z'| >= 1/4, so the product is at least 2^(E-2) >= 2^nbits raw units: beyond maxpos
+		if (E >= static_cast<int>(nbits) + 2) return negative ? Target(SpecificValue::maxneg) : Target(SpecificValue::maxpos);
+	}
+	const unsigned n = detail::clamp_iterations(iterations, Cfg::mulR);
+	Lin xv = detail::normalized<Lin>(ax), yv(0), zv = detail::normalized<Lin>(az);
+	detail::rotate<coordinates::linear>(xv, yv, zv, n, detail::linear_tables_of<Lin>().pow2);
+	return detail::scaled_fit<Target>(yv, E, negative);
+}
+
+// linear vectoring mode: y / x. Both operands are scaled into [1/2, 1), so y' / x' lies in (1/2, 2),
+// inside the convergence range; the iterations subtract the shifted x from y and count it in z.
+template<unsigned guard = auto_guard, unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
+fixpnt<nbits, rbits, arithmetic, bt> div(const fixpnt<nbits, rbits, arithmetic, bt>& y, const fixpnt<nbits, rbits, arithmetic, bt>& x,
+                                         unsigned iterations = detail::linear_config<nbits, rbits, arithmetic, guard>::divR) {
+	using Cfg    = detail::linear_config<nbits, rbits, arithmetic, guard>;
+	using Target = fixpnt<nbits, rbits, arithmetic, bt>;
+	using Lin    = fixpnt<Cfg::divN, Cfg::divR, Modulo, bt>;
+	if (x.iszero()) {
+#if FIXPNT_THROW_DIVIDE_BY_ZERO
+		throw fixpnt_divide_by_zero();
+#else
+		if constexpr (arithmetic == Saturate) {
+			return y.isneg() ? Target(SpecificValue::maxneg) : Target(SpecificValue::maxpos);
+		}
+		else {
+			return Target(0);
+		}
+#endif
+	}
+	if (y.iszero()) return Target(0);
+	const detail::magnitude<Target> ay(y), ax(x);
+	const bool negative = (ay.negative != ax.negative);
+	// y / x = (y' / x') 2^E raw units, with y', x' in [1/2, 1)
+	const int E = static_cast<int>(ay.e + rbits) - static_cast<int>(ax.e);
+	if constexpr (arithmetic == Saturate) {
+		// y' / x' > 1/2, so the quotient exceeds 2^(E-1) >= 2^(nbits-1) raw units: beyond maxpos and maxneg
+		if (E >= static_cast<int>(nbits)) return negative ? Target(SpecificValue::maxneg) : Target(SpecificValue::maxpos);
+	}
+	const unsigned n = detail::clamp_iterations(iterations, Cfg::divR);
+	Lin xv = detail::normalized<Lin>(ax), yv = detail::normalized<Lin>(ay), zv(0);
+	detail::vector<coordinates::linear>(xv, yv, zv, n, detail::linear_tables_of<Lin>().pow2);
+	return detail::scaled_fit<Target>(zv, E, negative);
 }
 
 }}} // namespace sw::universal::cordic
