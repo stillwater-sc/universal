@@ -39,7 +39,7 @@
 // and wraps under Modulo, as a conversion from double does.
 //
 //   rotation:   sign, 2 integer bits, rbits + g fraction bits
-//   vectoring:  sign, 2 integer bits, nbits + g fraction bits; the inputs are scaled by a power of two
+//   vectoring:  sign, 2 integer bits, nbits + 1 + g fraction bits; the inputs are scaled by a power of two
 //               so the larger magnitude lies in [1/2, 1), which keeps the angle accurate for small inputs
 //
 // The default guard width is g = ceil(log2(rbits + 8)) + 2, and the default iteration count is rbits + g.
@@ -84,8 +84,8 @@ namespace detail {
 		static constexpr unsigned rotR = rbits + g;
 		static constexpr unsigned rotN = rotR + 3u;
 
-		// vectoring datapath
-		static constexpr unsigned vecR = nbits + g;
+		// vectoring datapath: one bit more than the widest input, 1 = 2^nbits in atan(x) for rbits == nbits
+		static constexpr unsigned vecR = nbits + 1u + g;
 		static constexpr unsigned vecN = vecR + 3u;
 
 		// range reduction: |theta| < 2^M; needed when 2^M exceeds the convergence range 1.74...
@@ -249,7 +249,8 @@ namespace detail {
 		bool zero{ false };
 	};
 
-	// vectoring on raw target values, given in nbits + 1 bits so atan(x) can pass 1 = 2^rbits
+	// vectoring on raw target values, given in nbits + 2 bits so atan(x) can pass 1 = 2^rbits, even
+	// when rbits == nbits and 1 = 2^nbits
 	template<typename Vec, unsigned IN, typename bt>
 	vectored<Vec> vector_raw(const blockbinary<IN, bt, BinaryNumberType::Signed>& rx,
 	                         const blockbinary<IN, bt, BinaryNumberType::Signed>& ry, unsigned n) {
@@ -285,8 +286,8 @@ namespace detail {
 	}
 
 	template<typename Fixed>
-	blockbinary<Fixed::nbits + 1u, typename Fixed::BlockType, BinaryNumberType::Signed> widen(const Fixed& f) {
-		return blockbinary<Fixed::nbits + 1u, typename Fixed::BlockType, BinaryNumberType::Signed>(f.bits());
+	blockbinary<Fixed::nbits + 2u, typename Fixed::BlockType, BinaryNumberType::Signed> widen(const Fixed& f) {
+		return blockbinary<Fixed::nbits + 2u, typename Fixed::BlockType, BinaryNumberType::Signed>(f.bits());
 	}
 
 	constexpr unsigned clamp_iterations(unsigned n, unsigned maxN) noexcept { return n < maxN ? n : maxN; }
@@ -399,7 +400,7 @@ fixpnt<nbits, rbits, arithmetic, bt> atan(const fixpnt<nbits, rbits, arithmetic,
 	using Cfg = detail::config<nbits, rbits, guard>;
 	using Vec = fixpnt<Cfg::vecN, Cfg::vecR, Modulo, bt>;
 	const unsigned n = detail::clamp_iterations(iterations, Cfg::vecR);
-	blockbinary<nbits + 1u, bt, BinaryNumberType::Signed> one;
+	blockbinary<nbits + 2u, bt, BinaryNumberType::Signed> one;
 	one.clear();
 	one.setbit(rbits);
 	const auto v = detail::vector_raw<Vec>(one, detail::widen(x), n);

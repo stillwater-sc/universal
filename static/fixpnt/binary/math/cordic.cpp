@@ -328,12 +328,15 @@ try {
 
 #if REGRESSION_LEVEL_1
 	// exhaustive: every encoding, and every pair for the 8-bit formats; both arithmetic behaviours, a format
-	// that holds only [-1, 1) (no range reduction), and one with a single fraction bit
+	// that holds only [-1, 1) (no range reduction), one with a single fraction bit, and one with no integer bit
 	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<8, 4, Modulo, std::uint8_t>>("fixpnt<8,4,mod>", reportTestCases, 0, 0)), "fixpnt<8,4,mod>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<8, 4, Saturate, std::uint8_t>>("fixpnt<8,4,sat>", reportTestCases, 0, 0)), "fixpnt<8,4,sat>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<8, 7, Modulo, std::uint8_t>>("fixpnt<8,7,mod>", reportTestCases, 0, 0)), "fixpnt<8,7,mod>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<8, 7, Saturate, std::uint8_t>>("fixpnt<8,7,sat>", reportTestCases, 0, 0)), "fixpnt<8,7,sat>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<8, 1, Saturate, std::uint8_t>>("fixpnt<8,1,sat>", reportTestCases, 0, 0)), "fixpnt<8,1,sat>", test_tag);
+	// no integer bit: [-1/2, 1/2), where atan(x) needs 1 = 2^nbits in the datapath
+	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<8, 8, Modulo, std::uint8_t>>("fixpnt<8,8,mod>", reportTestCases, 0, 0)), "fixpnt<8,8,mod>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<8, 8, Saturate, std::uint8_t>>("fixpnt<8,8,sat>", reportTestCases, 0, 0)), "fixpnt<8,8,sat>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<12, 8, Modulo, std::uint8_t>>("fixpnt<12,8,mod>", reportTestCases, 0, 20000)), "fixpnt<12,8,mod>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<12, 8, Saturate, std::uint16_t>>("fixpnt<12,8,sat>", reportTestCases, 0, 20000)), "fixpnt<12,8,sat>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<16, 12, Modulo, std::uint16_t>>("fixpnt<16,12,mod>", reportTestCases, 0, 20000)), "fixpnt<16,12,mod>", test_tag);
