@@ -393,14 +393,11 @@ namespace detail {
 	// ln 2 and 1/ln 2 in the exp reduction type
 	template<typename Red>
 	struct ln2_reduction {
-		Red ln2{};
-		Red inv_ln2{};
-		ln2_reduction() {
-			using G = typename generator<Red>::type;
-			const G l = ln2_series<G>();
-			ln2 = l;
-			inv_ln2 = G(1) / l;
-		}
+		using G = typename generator<Red>::type;
+		Red ln2;
+		Red inv_ln2;
+		ln2_reduction() : ln2_reduction(ln2_series<G>()) {}
+		explicit ln2_reduction(const G& l) : ln2(l), inv_ln2(G(1) / l) {}
 	};
 	template<typename Red>
 	const ln2_reduction<Red>& ln2_reduction_of() {

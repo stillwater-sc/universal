@@ -203,14 +203,14 @@ namespace {
 	int VerifyGuardWidth(bool reportTestCases) {
 		int fails = 0;
 		auto worst = [](auto guardTag) {
-			constexpr unsigned g = decltype(guardTag)::value;
+			using G = decltype(guardTag);
 			double w = 0.0;
 			for (std::uint64_t b = 0; b < (1ull << Fixed::nbits); ++b) {
 				Fixed x;
 				x.setbits(b);
 				const double e = double(x);
-				w = std::max(w, ulp_error(cordic::exp<g>(x), std::exp(e), true));
-				if (e > 0.0) w = std::max(w, ulp_error(cordic::log<g>(x), std::log(e)));
+				w = std::max(w, ulp_error(cordic::exp<G::value>(x), std::exp(e), true));
+				if (e > 0.0) w = std::max(w, ulp_error(cordic::log<G::value>(x), std::log(e)));
 			}
 			return w;
 		};
