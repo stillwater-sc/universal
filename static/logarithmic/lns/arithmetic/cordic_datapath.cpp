@@ -7,9 +7,11 @@
 //
 // CORDICDatapathAddSub computes the Gauss corrections sb_add(d) = log2(1 + 2^d) and sb_sub(d) = log2(1 - 2^d)
 // with the fixpnt CORDIC engine. These tests measure the log-domain error of both corrections at every
-// d = -k 2^-rbits an lns difference can take, against a long double reference, in units of the lns
-// encoding (2^-rbits); check that the iteration and guard knobs trade accuracy as a hardware unit would;
-// and run the policy through lns operator+ and operator- by specializing lns_addsub_traits.
+// d = -k 2^-rbits an lns difference can take, down past the cutoff where the policy returns 0, against a
+// long double reference, in units of the lns encoding (2^-rbits); check that the iteration and guard knobs
+// trade accuracy as a hardware unit would, and that every configuration stays within the error bound its
+// lns_addsub_log_error_bound trait advertises; and run the policy through lns operator+ and operator- by
+// specializing lns_addsub_traits.
 #include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/lns/lns_addsub_cordic_datapath.hpp>
@@ -36,14 +38,15 @@ namespace sw { namespace universal {
 		double band = 0.0;  // sb_sub for d in (-1, 0), the cancellation band
 	};
 
-	// the worst errors of sb_add and sb_sub over d = -k 2^-rbits, k = 1 .. (rbits + 2) 2^rbits, every
-	// stride-th k (stride 1 is every d the policy computes a nonzero correction for)
+	// the worst errors of sb_add and sb_sub over d = -k 2^-rbits, k = 1 .. (dmax + 2) 2^rbits, every
+	// stride-th k: dmax is the default policy's cutoff, below which it returns 0, so the sweep also
+	// measures the corrections the policy drops
 	template<typename Policy, typename LnsType>
 	CorrectionError MeasureCorrections(long long stride = 1) {
 		constexpr int r = static_cast<int>(LnsType::rbits);
 		const long double ulp = std::ldexp(1.0L, -r);
 		const long double ln2 = 0.693147180559945309417232121458176568L;
-		const long long K = static_cast<long long>(LnsType::rbits + 2u) << r;
+		const long long K = static_cast<long long>(CORDICDatapathAddSub<LnsType>::dmax + 2u) << r;
 		CorrectionError e;
 		for (long long k = 1; k <= K; k += stride) {
 			const double d = -std::ldexp(static_cast<double>(k), -r);
@@ -73,18 +76,31 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
-	// the knobs: fewer iterations or fewer guard bits must not be more accurate, and the default must be the
-	// most accurate of the configurations measured
+	// the worst error of a configuration, in lns units, checked against the log-domain bound of its
+	// lns_addsub_log_error_bound trait; a nonfinite error fails
+	template<typename Policy, typename LnsType>
+	double WorstWithinBound(int& nrOfFailedTestCases, bool reportTestCases, const char* label, long long stride = 1) {
+		const CorrectionError e = MeasureCorrections<Policy, LnsType>(stride);
+		const double worst = std::fmax(e.add, std::fmax(e.sub, e.band));
+		const double bound = lns_addsub_log_error_bound_v<Policy> * std::ldexp(1.0, static_cast<int>(LnsType::rbits));
+		if (!(worst <= bound)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cout << label << ": worst error " << worst << " lns units, trait bound " << bound << '\n';
+		}
+		return worst;
+	}
+
+	// the knobs: fewer iterations or fewer guard bits must not be more accurate, the default must be the
+	// most accurate of the configurations measured, and each must stay within its trait's bound
 	template<typename LnsType>
 	int VerifyKnobs(bool reportTestCases) {
-		auto worst = [](const CorrectionError& e) { return std::fmax(e.add, std::fmax(e.sub, e.band)); };
-		const double it6   = worst(MeasureCorrections<CORDICDatapathAddSub<LnsType, 6>, LnsType>());
-		const double it10  = worst(MeasureCorrections<CORDICDatapathAddSub<LnsType, 10>, LnsType>());
-		const double it14  = worst(MeasureCorrections<CORDICDatapathAddSub<LnsType, 14>, LnsType>());
-		const double g0    = worst(MeasureCorrections<CORDICDatapathAddSub<LnsType, 0, 0>, LnsType>());
-		const double g2    = worst(MeasureCorrections<CORDICDatapathAddSub<LnsType, 0, 2>, LnsType>());
-		const double full  = worst(MeasureCorrections<CORDICDatapathAddSub<LnsType>, LnsType>());
 		int nrOfFailedTestCases = 0;
+		const double it6   = WorstWithinBound<CORDICDatapathAddSub<LnsType, 6>, LnsType>(nrOfFailedTestCases, reportTestCases, "iterations 6");
+		const double it10  = WorstWithinBound<CORDICDatapathAddSub<LnsType, 10>, LnsType>(nrOfFailedTestCases, reportTestCases, "iterations 10");
+		const double it14  = WorstWithinBound<CORDICDatapathAddSub<LnsType, 14>, LnsType>(nrOfFailedTestCases, reportTestCases, "iterations 14");
+		const double g0    = WorstWithinBound<CORDICDatapathAddSub<LnsType, 0, 0>, LnsType>(nrOfFailedTestCases, reportTestCases, "guard 0");
+		const double g2    = WorstWithinBound<CORDICDatapathAddSub<LnsType, 0, 2>, LnsType>(nrOfFailedTestCases, reportTestCases, "guard 2");
+		const double full  = WorstWithinBound<CORDICDatapathAddSub<LnsType>, LnsType>(nrOfFailedTestCases, reportTestCases, "default");
 		if (!(it6 > it10 && it10 > it14 && it14 > full)) ++nrOfFailedTestCases;
 		if (!(g0 > g2 && g2 > full)) ++nrOfFailedTestCases;
 		if (reportTestCases || nrOfFailedTestCases > 0) {
@@ -197,6 +213,15 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 	    VerifyCorrections<CORDICDatapathAddSub<LNS24_12>, LNS24_12>(reportTestCases, "lns<24,12>", bound), "lns<24,12>", "corrections");
 	nrOfFailedTestCases += ReportTestResult(VerifyKnobs<LNS12_6>(reportTestCases), "lns<12,6>", "iteration and guard knobs");
+	{
+		// truncated so far that 2^d rounds to 1 or above in the cancellation band: the subtractor saturates, the
+		// correction stays finite, and the error stays within the capped trait bound
+		using LNS32_16t = lns<32, 16, std::uint32_t>;
+		int failed = 0;
+		WorstWithinBound<CORDICDatapathAddSub<LNS32_16t, 4>, LNS32_16t>(failed, reportTestCases, "lns<32,16>, 4 iterations", 31);
+		WorstWithinBound<CORDICDatapathAddSub<LNS32_16t, 12>, LNS32_16t>(failed, reportTestCases, "lns<32,16>, 12 iterations", 31);
+		nrOfFailedTestCases += ReportTestResult(failed, "lns<32,16>", "truncated units within bound");
+	}
 #endif
 
 #if REGRESSION_LEVEL_3

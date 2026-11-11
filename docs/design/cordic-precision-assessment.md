@@ -221,13 +221,13 @@ resolution of its own datapath.
 
 ## lns< 8, 4, uint8_t> (rbits = 4)
 
-Bus: 5 integer bits (sign included), 10 fraction bits (g = 6), and 16 in the cancellation band. Default iterations: 25 on the narrow bus, 31 on the wide one. Grid stride 1.
+Bus: 6 integer bits (sign included), 10 fraction bits (g = 6), and 16 in the cancellation band. Default iterations: 26 on the narrow bus, 32 on the wide one. Grid stride 1.
 
 ### Convergence: worst error in lns units against the iteration count
 
 | k         | sb_add     | sb_sub     | band       |
 |-----------|------------|------------|------------|
-| 1         | 25.0015    | 25.3594    | 31.5991    |
+| 1         | 25.3481    | 25.3706    | 31.5991    |
 | 5         | 3.0168     | 3.0235     | 14.7796    |
 | 9         | 0.2132     | 0.2361     | 1.9885     |
 | 13        | 0.0274     | 0.0346     | 0.0360     |
@@ -250,10 +250,10 @@ Bus: 5 integer bits (sign included), 10 fraction bits (g = 6), and 16 in the can
 ### Histogram at the default knobs, both corrections
 
 ```text
-< 2^-8  : 59
-2^-8    : 41
-2^-7    : 67
-2^-6    : 24
+< 2^-8  : 133
+2^-8    : 120
+2^-7    : 133
+2^-6    : 29
 2^-5    : 1
 ```
 
@@ -274,7 +274,7 @@ Bus: 6 integer bits (sign included), 12 fraction bits (g = 6), and 20 in the can
 
 | k         | sb_add     | sb_sub     | band       |
 |-----------|------------|------------|------------|
-| 2         | 53.9213    | 53.9199    | 344.6124   |
+| 2         | 54.2700    | 54.2700    | 344.6124   |
 | 6         | 6.2778     | 7.1306     | 91.3951    |
 | 10        | 0.3908     | 0.4611     | 8.3323     |
 | 14        | 0.0422     | 0.0430     | 1.0056     |
@@ -297,10 +297,10 @@ Bus: 6 integer bits (sign included), 12 fraction bits (g = 6), and 20 in the can
 ### Histogram at the default knobs, both corrections
 
 ```text
-< 2^-8  : 351
-2^-8    : 234
-2^-7    : 339
-2^-6    : 100
+< 2^-8  : 657
+2^-8    : 540
+2^-7    : 598
+2^-6    : 125
 ```
 
 ### Against the double model, on the same grid
@@ -320,7 +320,7 @@ Bus: 6 integer bits (sign included), 14 fraction bits (g = 6), and 24 in the can
 
 | k         | sb_add     | sb_sub     | band       |
 |-----------|------------|------------|------------|
-| 4         | 77.6864    | 78.0469    | 1.34e+03   |
+| 4         | 78.0356    | 78.0581    | 1.34e+03   |
 | 8         | 6.5881     | 7.1244     | 371.6835   |
 | 12        | 0.4291     | 0.4704     | 24.3682    |
 | 16        | 0.0717     | 0.0862     | 1.9039     |
@@ -344,10 +344,10 @@ Bus: 6 integer bits (sign included), 14 fraction bits (g = 6), and 24 in the can
 ### Histogram at the default knobs, both corrections
 
 ```text
-< 2^-8  : 1617
-2^-8    : 1255
-2^-7    : 1595
-2^-6    : 638
+< 2^-8  : 2844
+2^-8    : 2462
+2^-7    : 2651
+2^-6    : 732
 2^-5    : 15
 ```
 
@@ -362,99 +362,99 @@ The double model's band column is direct evaluation, not CORDIC.
 
 ## lns<24,12, uint32_t> (rbits = 12)
 
-Bus: 6 integer bits (sign included), 19 fraction bits (g = 7), and 33 in the cancellation band. Default iterations: 36 on the narrow bus, 51 on the wide one. Grid stride 3.
+Bus: 7 integer bits (sign included), 19 fraction bits (g = 7), and 33 in the cancellation band. Default iterations: 37 on the narrow bus, 52 on the wide one. Grid stride 5.
 
 ### Convergence: worst error in lns units against the iteration count
 
 | k         | sb_add     | sb_sub     | band       |
 |-----------|------------|------------|------------|
-| 8         | 112.3763   | 118.7612   | 1.86e+04   |
-| 12        | 7.3894     | 7.6680     | 7.29e+03   |
-| 16        | 0.8652     | 1.0342     | 558.2538   |
-| 20        | 0.0593     | 0.0738     | 131.1889   |
-| 24        | 0.0163     | 0.0216     | 7.7927     |
-| 28        | 0.0148     | 0.0219     | 0.0631     |
-| 32        | 0.0148     | 0.0219     | 0.0244     |
-| 36        | 0.0148     | 0.0219     | 0.0005     |
-| default   | 0.0148     | 0.0219     | 0.0005     |
+| 8         | 111.9027   | 119.4928   | 1.86e+04   |
+| 12        | 7.3894     | 7.6171     | 7.29e+03   |
+| 16        | 0.8627     | 0.9670     | 558.2538   |
+| 20        | 0.0621     | 0.0682     | 131.1889   |
+| 24        | 0.0155     | 0.0218     | 7.7927     |
+| 28        | 0.0149     | 0.0187     | 0.0548     |
+| 32        | 0.0149     | 0.0198     | 0.0244     |
+| 36        | 0.0149     | 0.0198     | 0.0004     |
+| default   | 0.0149     | 0.0198     | 0.0003     |
 
 ### Guard bits: worst error in lns units, default iterations
 
 | g         | sb_add     | sb_sub     | band       |
 |-----------|------------|------------|------------|
-| 0         | 1.8922     | 2.5249     | 0.2278     |
-| 1         | 0.9928     | 1.4847     | 0.0327     |
-| 2         | 0.5015     | 0.7890     | 0.0325     |
-| 3         | 0.2288     | 0.3236     | 0.0325     |
-| 4         | 0.1182     | 0.1664     | 0.0046     |
-| 5         | 0.0584     | 0.0834     | 0.0005     |
-| 6         | 0.0288     | 0.0491     | 0.0006     |
-| 7         | 0.0148     | 0.0219     | 0.0005     |
+| 0         | 1.8033     | 2.5027     | 0.2278     |
+| 1         | 0.9821     | 1.4847     | 0.0327     |
+| 2         | 0.5128     | 0.7497     | 0.0325     |
+| 3         | 0.2331     | 0.3236     | 0.0325     |
+| 4         | 0.1175     | 0.1601     | 0.0007     |
+| 5         | 0.0584     | 0.0811     | 0.0024     |
+| 6         | 0.0299     | 0.0495     | 0.0006     |
+| 7         | 0.0149     | 0.0198     | 0.0003     |
 
 ### Histogram at the default knobs, both corrections
 
 ```text
-< 2^-8  : 21717
-2^-8    : 12268
-2^-7    : 4223
-2^-6    : 22
+< 2^-8  : 21940
+2^-8    : 11256
+2^-7    : 2836
+2^-6    : 14
 ```
 
 ### Against the double model, on the same grid
 
 | policy                            | sb_add     | sb_sub     | band       |
 |-----------------------------------|------------|------------|------------|
-| CORDICAddSub (double, k = rbits)  | 3.8634     | 3.9941     | 0.0000     |
-| CORDICDatapathAddSub (default)    | 0.0148     | 0.0219     | 0.0005     |
+| CORDICAddSub (double, k = rbits)  | 3.8634     | 3.8647     | 0.0000     |
+| CORDICDatapathAddSub (default)    | 0.0149     | 0.0198     | 0.0003     |
 
 The double model's band column is direct evaluation, not CORDIC.
 
 ## lns<32,16, uint32_t> (rbits = 16)
 
-Bus: 7 integer bits (sign included), 23 fraction bits (g = 7), and 41 in the cancellation band. Default iterations: 41 on the narrow bus, 60 on the wide one. Grid stride 73.
+Bus: 7 integer bits (sign included), 23 fraction bits (g = 7), and 41 in the cancellation band. Default iterations: 41 on the narrow bus, 60 on the wide one. Grid stride 105.
 
 ### Convergence: worst error in lns units against the iteration count
 
 | k         | sb_add     | sb_sub     | band       |
 |-----------|------------|------------|------------|
-| 12        | 110.4062   | 116.5896   | inf        |
-| 16        | 13.5442    | 15.3276    | 1.04e+05   |
-| 20        | 0.8566     | 0.9844     | 1.81e+04   |
-| 24        | 0.0622     | 0.0680     | 721.9438   |
-| 28        | 0.0154     | 0.0202     | 58.6836    |
-| 32        | 0.0146     | 0.0207     | 0.4230     |
-| 36        | 0.0146     | 0.0207     | 0.0973     |
-| 40        | 0.0146     | 0.0207     | 0.0002     |
-| 44        | 0.0146     | 0.0207     | 0.0043     |
-| default   | 0.0146     | 0.0207     | 0.0002     |
+| 12        | 112.4726   | 122.1887   | 1.60e+06   |
+| 16        | 13.6190    | 15.3603    | 1.04e+05   |
+| 20        | 0.8465     | 0.9410     | 1.81e+04   |
+| 24        | 0.0580     | 0.0693     | 721.9438   |
+| 28        | 0.0166     | 0.0191     | 58.6836    |
+| 32        | 0.0145     | 0.0202     | 0.4230     |
+| 36        | 0.0145     | 0.0202     | 0.0973     |
+| 40        | 0.0145     | 0.0202     | 0.0002     |
+| 44        | 0.0145     | 0.0202     | 0.0043     |
+| default   | 0.0145     | 0.0202     | 0.0002     |
 
 ### Guard bits: worst error in lns units, default iterations
 
 | g         | sb_add     | sb_sub     | band       |
 |-----------|------------|------------|------------|
-| 0         | 1.8265     | 2.8511     | 0.2152     |
-| 1         | 0.9393     | 1.3293     | 0.0450     |
-| 2         | 0.4855     | 0.7904     | 0.0851     |
-| 3         | 0.2276     | 0.3327     | 0.0201     |
-| 4         | 0.1212     | 0.1636     | 0.0124     |
-| 5         | 0.0569     | 0.0843     | 0.0038     |
-| 6         | 0.0308     | 0.0432     | 0.0043     |
-| 7         | 0.0146     | 0.0207     | 0.0002     |
+| 0         | 1.8567     | 2.3295     | 0.2152     |
+| 1         | 0.9346     | 1.2771     | 0.0450     |
+| 2         | 0.4719     | 0.8131     | 0.0851     |
+| 3         | 0.2297     | 0.3229     | 0.0201     |
+| 4         | 0.1232     | 0.1601     | 0.0124     |
+| 5         | 0.0575     | 0.0855     | 0.0038     |
+| 6         | 0.0283     | 0.0454     | 0.0043     |
+| 7         | 0.0145     | 0.0202     | 0.0002     |
 
 ### Histogram at the default knobs, both corrections
 
 ```text
-< 2^-8  : 18630
-2^-8    : 10366
-2^-7    : 3311
-2^-6    : 13
+< 2^-8  : 19677
+2^-8    : 10160
+2^-7    : 2608
+2^-6    : 11
 ```
 
 ### Against the double model, on the same grid
 
 | policy                            | sb_add     | sb_sub     | band       |
 |-----------------------------------|------------|------------|------------|
-| CORDICAddSub (double, k = rbits)  | 3.4445     | 4.0514     | 0.0000     |
-| CORDICDatapathAddSub (default)    | 0.0146     | 0.0207     | 0.0002     |
+| CORDICAddSub (double, k = rbits)  | 3.3892     | 4.0437     | 0.0000     |
+| CORDICDatapathAddSub (default)    | 0.0145     | 0.0202     | 0.0002     |
 
 The double model's band column is direct evaluation, not CORDIC.

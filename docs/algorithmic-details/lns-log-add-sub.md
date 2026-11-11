@@ -534,7 +534,7 @@ bounds are:
 | ArnoldBaileyAddSub        | 2.5e-2                    | piecewise-linear secant worst case |
 | CORDICAddSub<Lns, N>      | `4 * 2^-min(N, 60)`        | hyperbolic CORDIC engineering envelope |
 | ArnoldCotransformationAddSub | `2 * 2^-rbits`           | faithful rounding (Vouzis 2010) |
-| CORDICDatapathAddSub<Lns, N, g> | `8 * 2^-(rbits + g)`, or `2^(rbits + 4 - N)` if larger | measured bus error; leftover angle amplified by the band |
+| CORDICDatapathAddSub<Lns, N, g> | `8 * 2^-(rbits + g)`, or `min(2^(rbits + 4 - N), 2 rbits + g + 3)` if larger | bus error and dropped tail; leftover angle amplified by the band, capped by the saturating subtractor |
 
 ## 10. Files
 

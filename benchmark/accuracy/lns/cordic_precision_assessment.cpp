@@ -253,7 +253,8 @@ namespace sw { namespace universal {
 	// Part 2 (#2046): CORDICDatapathAddSub, the fixpnt datapath
 	// ------------------------------------------------------------------
 
-	// Worst errors, in lns units (2^-rbits), over the lns grid d = -k 2^-rbits, k = 1 .. (rbits + 2) 2^rbits,
+	// Worst errors, in lns units (2^-rbits), over the lns grid d = -k 2^-rbits, k = 1 .. (dmax + 2) 2^rbits,
+	// past the default policy's cutoff dmax = rbits + g + 1, below which it returns 0,
 	// thinned to about 16k points; the reference is long double, with 1 - 2^d from expm1.
 	struct GridError {
 		double add = 0.0, sub = 0.0, band = 0.0;
@@ -262,7 +263,7 @@ namespace sw { namespace universal {
 
 	template<typename LnsType>
 	long long grid_stride() {
-		const long long K = static_cast<long long>(LnsType::rbits + 2u) << LnsType::rbits;
+		const long long K = static_cast<long long>(CORDICDatapathAddSub<LnsType>::dmax + 2u) << LnsType::rbits;
 		return (K > 16384) ? (K / 16384) | 1 : 1;
 	}
 
@@ -271,7 +272,7 @@ namespace sw { namespace universal {
 		constexpr int r = static_cast<int>(LnsType::rbits);
 		const long double ulp = std::ldexp(1.0L, -r);
 		const long double ln2 = 0.693147180559945309417232121458176568L;
-		const long long K = static_cast<long long>(LnsType::rbits + 2u) << r;
+		const long long K = static_cast<long long>(CORDICDatapathAddSub<LnsType>::dmax + 2u) << r;
 		const long long stride = grid_stride<LnsType>();
 		for (long long k = 1; k <= K; k += stride) {
 			const double d = -std::ldexp(static_cast<double>(k), -r);

@@ -342,8 +342,14 @@ most, since it amplifies whatever angle is left over by up to
 The engine's default iteration count runs every shift down to the
 resolution of the unit's own datapath, past the point where the error
 stops falling: 24 iterations already reach the default's accuracy in
-`lns<16,8>`. Truncated far enough, `2^d` can round to 1, and `sb_sub` then
-gives `-inf`, a result of 0.
+`lns<16,8>`. Truncated far enough, `2^d` can round to 1 or above; the
+subtractor `1 - 2^d` then saturates at the smallest positive value of its
+bus, as an underflow detect would, so every correction stays finite.
+Below `d = -(rbits + g + 1)` the correction is under one bus unit and the
+policy returns 0. The `lns_addsub_log_error_bound` trait is `8` bus units
+at the default count and `2^(rbits + 4 - Iterations)` for a truncated one,
+capped at `2 rbits + g + 3`, a bound the saturating subtractor guarantees;
+the regression test checks every configuration it measures against it.
 
 In software it costs fixpnt emulation, 3 to 8 times `CORDICAddSub`; the
 cost that matters is the hardware's, which the knobs model.
