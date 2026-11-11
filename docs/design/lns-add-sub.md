@@ -4,7 +4,7 @@ This document describes the design of the configurable add/sub algorithm
 framework for the logarithmic number system (`lns`) in the Universal Numbers
 Library. The framework lets users choose, per `lns` instantiation, how the
 single hard operation in the log domain -- addition -- is computed, and ships
-with seven algorithms covering the full SRAM-vs-accuracy trade-off space,
+with eight algorithms covering the full SRAM-vs-accuracy trade-off space,
 including a hardware-codesign tier and a fast-faithful-rounding tier.
 
 The framework was developed in six phases tracked under Epic #777
@@ -54,7 +54,7 @@ exactly at `d = 0` (which is the `a + (-a) = 0` case).
 
 So the entire game in lns add/sub is computing `sb_add(d)` and `sb_sub(d)` --
 the rest is bookkeeping (sign routing, special values, encode/decode). The
-seven algorithms in this framework differ only in *how* they compute `sb_add`
+eight algorithms in this framework differ only in *how* they compute `sb_add`
 and `sb_sub`.
 
 > **Naming convention.** Universal's policy class API uses the prefix `sb_`
@@ -258,6 +258,17 @@ log-domain at iteration count `k`. The assessment artifact tabulates the
 empirical envelope per (rbits, k) configuration, with histograms and
 worst-case witness inputs.
 
+**The datapath sibling (#2046).** `CORDICAddSub` iterates in `double`, so
+its truncation, guard bits and rounding are those of a 53-bit float.
+`CORDICDatapathAddSub`, in the opt-in header
+`include/sw/universal/number/lns/lns_addsub_cordic_datapath.hpp`, runs the
+same two passes through the fixpnt CORDIC engine on a fixpnt bus of
+`rbits + g` fraction bits, and runs the cancellation band on a bus
+`rbits + 2` bits wider instead of falling back to direct evaluation. Its
+worst log-domain error is 0.044 lns units from `lns<8,4>` to `lns<32,24>`,
+and it takes the iteration count and the bus guard width as template
+parameters. `CORDICAddSub` stays as it was, so no existing result changes.
+
 ### 7. ArnoldCotransformationAddSub (Novel Cotransformation Combination)
 
 Implements the **Novel Cotransformation Combination** from
@@ -390,7 +401,7 @@ shine.
 ## Measured throughput and accuracy
 
 The benchmark at `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp`
-measures all seven algorithms across representative configs. Sample output
+measures all eight algorithms across representative configs. Sample output
 (host-dependent; numbers below are illustrative from a single run on a
 desktop x86_64 build):
 
@@ -470,8 +481,11 @@ desktop x86_64 build):
 
 ## Files
 
-- `include/sw/universal/number/lns/lns_addsub_algorithms.hpp` -- all seven
+- `include/sw/universal/number/lns/lns_addsub_algorithms.hpp` -- seven
   algorithm policies + traits class + `detail::gauss_log_add` dispatcher
+- `include/sw/universal/number/lns/lns_addsub_cordic_datapath.hpp` -- the eighth,
+  `CORDICDatapathAddSub`, on the fixpnt CORDIC engine (opt-in, #2046)
+- `static/logarithmic/lns/arithmetic/cordic_datapath.cpp` -- its regression test
 - `include/sw/universal/number/lns/lns_impl.hpp` -- `operator+=` / `operator-=`
   delegate to `lns_addsub_algorithm_t<lns>::add_assign` / `sub_assign`
 - `static/logarithmic/lns/arithmetic/log_add_algorithms.cpp` -- cross-validation
@@ -480,6 +494,7 @@ desktop x86_64 build):
   throughput + accuracy benchmark
 - `benchmark/accuracy/lns/cordic_precision_assessment.cpp` -- per-iteration
   convergence study, ULP histograms, worst-case witness table for
-  `CORDICAddSub` across the rbits sweep
+  `CORDICAddSub` across the rbits sweep, and the same study for
+  `CORDICDatapathAddSub`
 - `docs/design/cordic-precision-assessment.md` -- generated artifact from
   the precision/accuracy assessment tool

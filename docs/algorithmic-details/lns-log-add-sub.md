@@ -1,6 +1,6 @@
 # LNS log-domain add/sub algorithms
 
-This document gives the mathematical derivation of the seven add/sub algorithms
+This document gives the mathematical derivation of the eight add/sub algorithms
 that Universal's `lns` template ships with, the transfer functions they
 approximate, and a decision tree for picking one for a given target.
 
@@ -48,7 +48,7 @@ a vertical tangent (catastrophic cancellation) as `d -> 0-` and equals
 
 So the entire question of "how to add in log space" reduces to: *how do you
 evaluate `sb_add(d)` and `sb_sub(d)`*. The rest -- sign routing, special
-values, encode / decode -- is bookkeeping that all seven algorithms share
+values, encode / decode -- is bookkeeping that all eight algorithms share
 via the `detail::gauss_log_add` dispatcher.
 
 ### Naming note
@@ -127,7 +127,7 @@ The customization point is the traits class
 `DoubleTripAddSub` for backward compatibility; user code switches by
 specialising the trait.
 
-## 4. The seven algorithms
+## 4. The eight algorithms
 
 ### 4.1 DoubleTripAddSub (default, correctness baseline)
 
@@ -182,7 +182,7 @@ table. Users raise `IndexBits` for tighter accuracy.
 `sb_sub` is the same idea, *except* the lowest cell (`|d| < step`) falls
 back to direct `cm::log2` / `cm::exp2`: linear interpolation across the
 cancellation singularity has unbounded error. This is a common pattern --
-five of the seven algorithms use the same direct-eval fallback in
+five of the eight algorithms use the same direct-eval fallback in
 `d in (-1, 0)`.
 
 References: Mitchell 1962 (the foundational paper).
@@ -310,7 +310,8 @@ regression tests.
 `MaxIterations` the residual exp error exceeds the true magnitude of
 `u - 1` near the singularity, and the chain produces invalid arguments to
 `log2`. Hardware retargets would substitute a cotransformation or small
-lookup -- not a transcendental.
+lookup -- not a transcendental -- or, as `CORDICDatapathAddSub` (4.8)
+does, a wider bus.
 
 ### 4.7 ArnoldCotransformationAddSub (fast + faithful rounding)
 
@@ -383,6 +384,32 @@ total:     ~3200 doubles = ~25 KB
 
 The advertised log-domain bound is `2 * 2^-rbits` (one ULP at the encoding
 precision) -- matching the "faithful rounding" target.
+
+### 4.8 CORDICDatapathAddSub (hardware datapath tier)
+
+`CORDICAddSub` iterates in `double`, so it models the algorithm.
+`CORDICDatapathAddSub` (`include/sw/universal/number/lns/lns_addsub_cordic_datapath.hpp`,
+opt-in, #2046) runs the same two passes through the fixpnt CORDIC engine
+and models the datapath: `t = d ln 2`, `v = exp(t)` by hyperbolic rotation,
+`w = 1 +/- v`, `log(w)` by hyperbolic vectoring, then `* 1/ln 2`, every unit
+on a fixpnt bus of `rbits + g` fraction bits that truncates its shifts and
+rounds once.
+
+**Cancellation regime**: the band `d in (-1, 0)` is the one place where a
+fixed-point bus loses: `w = 1 - 2^d` can be as small as `ln 2 * 2^-rbits`,
+so an absolute error `e` in `v` is a relative error `e * 2^rbits / ln 2` in
+`w`, and `log2` turns a relative error into the same absolute one. The
+policy runs that band on a bus `rbits + 2` bits wider, which pays for the
+lost bits in width rather than in a table or a transcendental: every path
+is CORDIC.
+
+The result is within 0.044 lns units of the exact corrections across
+`lns<8,4>` to `lns<32,24>`, against 3 to 4 units for `CORDICAddSub` at
+`k = rbits`. The iteration count and the guard width are template
+parameters, and `docs/design/cordic-precision-assessment.md` tabulates both
+per configuration. The truncated-iteration rows show the price of the
+band: it amplifies the leftover angle by up to `2^(rbits + 1)`, so it needs
+about `2 rbits + 8` iterations where the other paths need about `rbits + 12`.
 
 ## 5. Algorithm overlay
 
@@ -507,19 +534,25 @@ bounds are:
 | ArnoldBaileyAddSub        | 2.5e-2                    | piecewise-linear secant worst case |
 | CORDICAddSub<Lns, N>      | `4 * 2^-min(N, 60)`        | hyperbolic CORDIC engineering envelope |
 | ArnoldCotransformationAddSub | `2 * 2^-rbits`           | faithful rounding (Vouzis 2010) |
+| CORDICDatapathAddSub<Lns, N, g> | `8 * 2^-(rbits + g)`, or `min(2^(rbits + 4 - N), 2 rbits + g + 3)` if larger | bus error and dropped tail; leftover angle amplified by the band, capped by the saturating subtractor |
 
 ## 10. Files
 
-- `include/sw/universal/number/lns/lns_addsub_algorithms.hpp` -- all seven
+- `include/sw/universal/number/lns/lns_addsub_algorithms.hpp` -- seven
   algorithm policies + traits class + `detail::gauss_log_add` dispatcher
+- `include/sw/universal/number/lns/lns_addsub_cordic_datapath.hpp` -- the eighth,
+  `CORDICDatapathAddSub`, opt-in since it brings in fixpnt
 - `include/sw/universal/number/lns/lns_impl.hpp` -- `operator+=` / `operator-=`
   delegate to `lns_addsub_algorithm_t<lns>::add_assign` / `sub_assign`
 - `static/logarithmic/lns/arithmetic/log_add_algorithms.cpp` -- cross-validation
   regression suite (algorithm vs algorithm, corner cases, cancellation tier)
+- `static/logarithmic/lns/arithmetic/cordic_datapath.cpp` -- `CORDICDatapathAddSub`:
+  the corrections at every lns-grid `d`, the knobs, and lns `+` / `-` through it
 - `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp` -- per-algorithm
   throughput + accuracy benchmark
 - `benchmark/accuracy/lns/cordic_precision_assessment.cpp` -- per-iteration
-  convergence study, ULP histograms, worst-case witness table for `CORDICAddSub`
+  convergence study, ULP histograms, worst-case witness table for `CORDICAddSub`,
+  and the iteration, guard and histogram tables for `CORDICDatapathAddSub`
 - `docs/algorithmic-details/scripts/generate_lns_plots.py` -- the script that
   generated the SVGs in this document; rerun whenever the algorithms or
   default parameters change

@@ -21,6 +21,10 @@
 //   3. Worst-case input table -- the operand pair producing the largest
 //      log-domain error at each (rbits, k) combination.
 //
+// A second part (#2046) assesses CORDICDatapathAddSub, the same algorithm on a fixpnt datapath, on the
+// lns grid d = -k 2^-rbits, in lns units: the convergence against the iteration count, the guard-width
+// sweep, a histogram, and the double model measured the same way.
+//
 // Configurations exercised (per the trigger comment):
 //   lns<8,4>, lns<12,6>, lns<16,8>, lns<24,12>, lns<32,16>
 //
@@ -32,6 +36,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -39,6 +44,8 @@
 
 #define LNS_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/lns/lns_addsub_cordic_datapath.hpp>
+#include <utility>
 
 namespace sw { namespace universal {
 
@@ -242,6 +249,126 @@ namespace sw { namespace universal {
 		std::cout << std::defaultfloat;
 	}
 
+	// ------------------------------------------------------------------
+	// Part 2 (#2046): CORDICDatapathAddSub, the fixpnt datapath
+	// ------------------------------------------------------------------
+
+	// Worst errors, in lns units (2^-rbits), over the lns grid d = -k 2^-rbits, k = 1 .. (dmax + 2) 2^rbits,
+	// past the default policy's cutoff dmax = rbits + g + 1, below which it returns 0,
+	// thinned to about 16k points; the reference is long double, with 1 - 2^d from expm1.
+	struct GridError {
+		double add = 0.0, sub = 0.0, band = 0.0;
+		double worst() const { return std::fmax(add, std::fmax(sub, band)); }
+	};
+
+	template<typename LnsType>
+	long long grid_stride() {
+		const long long K = static_cast<long long>(CORDICDatapathAddSub<LnsType>::dmax + 2u) << LnsType::rbits;
+		return (K > 16384) ? (K / 16384) | 1 : 1;
+	}
+
+	template<typename Policy, typename LnsType, typename Visit>
+	void walk_grid(Visit&& visit) {
+		constexpr int r = static_cast<int>(LnsType::rbits);
+		const long double ulp = std::ldexp(1.0L, -r);
+		const long double ln2 = 0.693147180559945309417232121458176568L;
+		const long long K = static_cast<long long>(CORDICDatapathAddSub<LnsType>::dmax + 2u) << r;
+		const long long stride = grid_stride<LnsType>();
+		for (long long k = 1; k <= K; k += stride) {
+			const double d = -std::ldexp(static_cast<double>(k), -r);
+			const long double ld = d;
+			const long double ra = std::log2(1.0L + std::exp2(ld));
+			const long double rs = std::log2(-std::expm1(ld * ln2));
+			visit(d, static_cast<double>(std::fabs(Policy::sb_add(d) - ra) / ulp),
+			         static_cast<double>(std::fabs(Policy::sb_sub(d) - rs) / ulp));
+		}
+	}
+
+	template<typename Policy, typename LnsType>
+	GridError grid_error() {
+		GridError e;
+		walk_grid<Policy, LnsType>([&](double d, double ea, double es) {
+			e.add = std::fmax(e.add, ea);
+			if (d > -1.0) e.band = std::fmax(e.band, es); else e.sub = std::fmax(e.sub, es);
+		});
+		return e;
+	}
+
+	std::string units(double v) {
+		std::ostringstream s;
+		if (v >= 1000.0) s << std::scientific << std::setprecision(2) << v;
+		else s << std::fixed << std::setprecision(4) << v;
+		return s.str();
+	}
+
+	void grid_row(const std::string& label, const GridError& e) {
+		std::cout << "| " << std::setw(9) << std::left << label << " | " << std::setw(10) << units(e.add)
+		          << " | " << std::setw(10) << units(e.sub) << " | " << std::setw(10) << units(e.band) << " |\n";
+	}
+
+	template<typename LnsType, unsigned K>
+	void datapath_iteration_row() {
+		grid_row(std::to_string(K), grid_error<CORDICDatapathAddSub<LnsType, K>, LnsType>());
+	}
+	template<typename LnsType, unsigned G>
+	void datapath_guard_row() {
+		grid_row(std::to_string(G), grid_error<CORDICDatapathAddSub<LnsType, 0u, G>, LnsType>());
+	}
+
+	template<typename LnsType>
+	void report_datapath(const char* name) {
+		using Policy = CORDICDatapathAddSub<LnsType>;
+		constexpr unsigned r = LnsType::rbits;
+		std::cout << "\n## " << name << " (rbits = " << r << ")\n\n";
+		std::cout << "Bus: " << Policy::ibits << " integer bits (sign included), " << Policy::narrow_rbits
+		          << " fraction bits (g = " << Policy::guard << "), and " << Policy::wide_rbits
+		          << " in the cancellation band. Default iterations: "
+		          << cordic::hyperbolic_iterations<typename Policy::Narrow> << " on the narrow bus, "
+		          << cordic::hyperbolic_iterations<typename Policy::Wide> << " on the wide one. Grid stride "
+		          << grid_stride<LnsType>() << ".\n";
+
+		std::cout << "\n### Convergence: worst error in lns units against the iteration count\n\n";
+		std::cout << "| k         | sb_add     | sb_sub     | band       |\n";
+		std::cout << "|-----------|------------|------------|------------|\n";
+		[]<unsigned... I>(std::integer_sequence<unsigned, I...>) {
+			(datapath_iteration_row<LnsType, (r > 4u ? r - 4u : 1u) + 4u * I>(), ...);
+		}(std::make_integer_sequence<unsigned, (r + 20u) / 4u>{});
+		grid_row("default", grid_error<Policy, LnsType>());
+
+		std::cout << "\n### Guard bits: worst error in lns units, default iterations\n\n";
+		std::cout << "| g         | sb_add     | sb_sub     | band       |\n";
+		std::cout << "|-----------|------------|------------|------------|\n";
+		[]<unsigned... G>(std::integer_sequence<unsigned, G...>) {
+			(datapath_guard_row<LnsType, G>(), ...);
+		}(std::make_integer_sequence<unsigned, Policy::guard + 1u>{});
+
+		std::cout << "\n### Histogram at the default knobs, both corrections\n\n";
+		std::array<std::size_t, 8> bins{};   // <2^-8, 2^-8, ..., 2^-2, >=2^-1 lns units
+		walk_grid<Policy, LnsType>([&](double, double ea, double es) {
+			for (double e : { ea, es }) {
+				int b = (e <= 0.0) ? 0 : static_cast<int>(std::floor(std::log2(e))) + 9;
+				++bins[static_cast<std::size_t>(std::clamp(b, 0, 7))];
+			}
+		});
+		std::cout << "```text\n";
+		const char* label[8] = { "< 2^-8", "2^-8", "2^-7", "2^-6", "2^-5", "2^-4", "2^-3", ">= 2^-2" };
+		for (std::size_t i = 0; i < bins.size(); ++i) {
+			if (bins[i] != 0) std::cout << std::setw(8) << std::left << label[i] << ": " << bins[i] << '\n';
+		}
+		std::cout << "```\n";
+
+		std::cout << "\n### Against the double model, on the same grid\n\n";
+		std::cout << "| policy                            | sb_add     | sb_sub     | band       |\n";
+		std::cout << "|-----------------------------------|------------|------------|------------|\n";
+		auto row = [](const char* label, const GridError& e) {
+			std::cout << "| " << std::setw(33) << std::left << label << " | " << std::setw(10) << units(e.add)
+			          << " | " << std::setw(10) << units(e.sub) << " | " << std::setw(10) << units(e.band) << " |\n";
+		};
+		row("CORDICAddSub (double, k = rbits)", grid_error<CORDICAddSub<LnsType>, LnsType>());
+		row("CORDICDatapathAddSub (default)", grid_error<Policy, LnsType>());
+		std::cout << "\nThe double model's band column is direct evaluation, not CORDIC.\n";
+	}
+
 }}  // namespace sw::universal
 
 int main()
@@ -277,11 +404,28 @@ try {
 	std::cout << "  of k, matching the fallback used by `LookupAddSub`,\n";
 	std::cout << "  `PolynomialAddSub`, and `ArnoldBaileyAddSub`. Hardware retargets\n";
 	std::cout << "  would replace that with a co-transformation or small lookup\n";
-	std::cout << "  rather than a transcendental.\n";
+	std::cout << "  rather than a transcendental. `CORDICDatapathAddSub` (below) does it\n";
+	std::cout << "  with CORDIC on a wider bus.\n";
 	std::cout << "- For d <= -1 (the pure-CORDIC `sb_sub` branch) and across all\n";
 	std::cout << "  of `sb_add`, the per-iteration error is bounded by approximately\n";
 	std::cout << "  4 * 2^-k log-domain. The histograms surface where this envelope\n";
 	std::cout << "  is tight vs slack.\n";
+
+	std::cout << "\n# The fixpnt datapath: CORDICDatapathAddSub (#2046)\n";
+	std::cout << "\n`CORDICDatapathAddSub` runs the same two passes through the fixpnt CORDIC engine\n";
+	std::cout << "(`include/sw/universal/number/fixpnt/math/cordic.hpp`): every shift truncates,\n";
+	std::cout << "each unit rounds once, and sb_sub in the cancellation band d in (-1, 0) runs on a\n";
+	std::cout << "bus rbits + 2 bits wider, so that band is CORDIC too. Errors below are in lns\n";
+	std::cout << "units (2^-rbits), measured at the lns grid d = -k 2^-rbits against a long double\n";
+	std::cout << "reference. The iteration count k counts the repeated shifts, as the engine does,\n";
+	std::cout << "and applies to every unit; the default gives each unit every shift down to the\n";
+	std::cout << "resolution of its own datapath.\n";
+
+	report_datapath<lns< 8, 4, std::uint8_t>>("lns< 8, 4, uint8_t>");
+	report_datapath<lns<12, 6, std::uint8_t>>("lns<12, 6, uint8_t>");
+	report_datapath<lns<16, 8, std::uint16_t>>("lns<16, 8, uint16_t>");
+	report_datapath<lns<24,12, std::uint32_t>>("lns<24,12, uint32_t>");
+	report_datapath<lns<32,16, std::uint32_t>>("lns<32,16, uint32_t>");
 
 	return EXIT_SUCCESS;
 }

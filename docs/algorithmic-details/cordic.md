@@ -390,6 +390,7 @@ Sridharan and Maharatna surveyed the whole field in "50 Years of CORDIC" (2009),
 | `cordic::sincos`, `sin`, `cos` | dfixpnt | decimal circular rotation | #2042 |
 | `cordic::atan2`, `atan`, `hypot`, `polar` | dfixpnt | decimal circular vectoring | #2042 |
 | `CORDICAddSub` | lns add/sub | hyperbolic, in `double` | #783 |
+| `CORDICDatapathAddSub` | lns add/sub | hyperbolic rotation, then vectoring, on the fixpnt engine | #2046 |
 
 The fixpnt engines all go through one iteration, `cordic::detail::step<m>`, which is the unified
 recurrence with `m` as a template parameter (`cordic::coordinates::circular`, `linear`, `hyperbolic`).
@@ -615,6 +616,29 @@ The decimal engine falls one decimal digit per position. In `dfixpnt<4,4,Saturat
 
 and in `dfixpnt<4,3,Saturate>`, the worst `sin` or `atan` error is 24.2 with no guard digits, 3.41 with
 one, 0.688 with two, and 0.521 at the default three.
+
+### lns addition and subtraction
+
+An lns adds through the Gauss corrections `sb_add(d) = log2(1 + 2^d)` and `sb_sub(d) = log2(1 - 2^d)`,
+`d <= 0`, which are two hyperbolic passes: rotation for `2^d = exp(d ln 2)`, vectoring for the logarithm.
+`CORDICAddSub` (#783) runs them in `double`. `CORDICDatapathAddSub`
+(`include/sw/universal/number/lns/lns_addsub_cordic_datapath.hpp`, #2046) runs them on the engine above,
+as a chain of units on a fixpnt bus of `rbits + g` fraction bits:
+
+```text
+t = d * ln 2,  v = cordic::exp(t),  w = 1 +/- v,  sb = cordic::log(w) * (1 / ln 2)
+```
+
+`sb_sub` near `d = 0` is the hard case for any fixed-point datapath. `w = 1 - 2^d` falls to about
+`ln 2 * 2^-rbits`, so the bus's absolute error in `v` becomes a relative error `2^rbits` times larger
+in `w`, and the logarithm passes a relative error through as an absolute one. The policy runs
+`d in (-1, 0)` on a bus `rbits + 2` bits wider, so the whole function is shift and add, with no table
+and no fallback to a transcendental. Its worst error is 0.044 units of `2^-rbits` from `lns<8,4>` to
+`lns<32,24>`, against 3 to 4 units for the `double` model at `rbits` iterations, and lns sums and
+differences through it agree with direct evaluation to the encoding. The two knobs are template
+parameters, `CORDICDatapathAddSub<Lns, Iterations, Guard>`; in `lns<16,8>` 20 iterations reach the
+default's error except in the band, which amplifies the leftover angle and needs 24.
+`docs/design/cordic-precision-assessment.md` tabulates both knobs for every configuration.
 
 ## References
 

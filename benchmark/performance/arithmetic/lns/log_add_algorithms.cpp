@@ -1,7 +1,8 @@
 // log_add_algorithms.cpp : per-algorithm benchmark for the configurable
 // lns add/sub framework (Phase D of issue #777, resolves #782;
 // CORDIC entry added for Phase E / #783;
-// ArnoldCotransformation entry added for Phase F / #829).
+// ArnoldCotransformation entry added for Phase F / #829;
+// CORDICDatapath entry added for #2046).
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
@@ -18,12 +19,14 @@
 //   - ArnoldBaileyAddSub
 //   - CORDICAddSub (Phase E / #783)
 //   - ArnoldCotransformationAddSub (Phase F / #829)
+//   - CORDICDatapathAddSub (#2046)
 //
 // Results are printed as Markdown tables suitable for direct paste into
 // release notes or the design document at docs/design/lns-add-sub.md.
 #include <universal/utility/directives.hpp>
 #define LNS_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/lns/lns_addsub_cordic_datapath.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -236,7 +239,7 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
-	// Run all five algorithms for one (nbits, rbits, bt) configuration and
+	// Run every algorithm for one (nbits, rbits, bt) configuration and
 	// emit a Markdown row per algorithm.
 	template<typename LnsType>
 	void benchmark_config(const char* config_name, std::size_t throughput_iters,
@@ -248,6 +251,7 @@ namespace sw { namespace universal {
 		double t_ab     = measure_throughput<LnsType, ArnoldBaileyAddSub<LnsType>>(throughput_iters);
 		double t_cordic = measure_throughput<LnsType, CORDICAddSub<LnsType>>(throughput_iters);
 		double t_cotr   = measure_throughput<LnsType, ArnoldCotransformationAddSub<LnsType>>(throughput_iters);
+		double t_datapath = measure_throughput<LnsType, CORDICDatapathAddSub<LnsType>>(throughput_iters);
 
 		auto a_direct = measure_accuracy<LnsType, DirectEvaluationAddSub<LnsType>>(accuracy_samples);
 		auto a_lookup = measure_accuracy<LnsType, LookupAddSub<LnsType>>(accuracy_samples);
@@ -256,6 +260,7 @@ namespace sw { namespace universal {
 		auto a_double = measure_accuracy<LnsType, DoubleTripAddSub<LnsType>>(accuracy_samples);
 		auto a_cordic = measure_accuracy<LnsType, CORDICAddSub<LnsType>>(accuracy_samples);
 		auto a_cotr   = measure_accuracy<LnsType, ArnoldCotransformationAddSub<LnsType>>(accuracy_samples);
+		auto a_datapath = measure_accuracy<LnsType, CORDICDatapathAddSub<LnsType>>(accuracy_samples);
 
 		auto fmt_row = [](const char* name, double tput, const auto& acc) {
 			std::cout << "| " << std::setw(19) << std::left << name
@@ -279,6 +284,7 @@ namespace sw { namespace universal {
 		fmt_row("ArnoldBailey",     t_ab,     a_ab);
 		fmt_row("CORDIC",           t_cordic, a_cordic);
 		fmt_row("ArnoldCotr",       t_cotr,   a_cotr);
+		fmt_row("CORDICDatapath",   t_datapath, a_datapath);
 	}
 
 }}  // namespace sw::universal
@@ -320,6 +326,9 @@ try {
 	std::cout << "  reflects the cost model of a fully-bypassed hardware pipeline.\n";
 	std::cout << "  See docs/design/cordic-precision-assessment.md for the\n";
 	std::cout << "  per-iteration convergence study and ULP histograms.\n";
+	std::cout << "- CORDICDatapath runs the same algorithm through the fixpnt CORDIC\n";
+	std::cout << "  engine, so it models the datapath bit for bit, cancellation band\n";
+	std::cout << "  included; its cost here is fixpnt emulation, not the hardware's.\n";
 	std::cout << "- ArnoldCotr (Novel Cotransformation, Vouzis/Collange/Arnold 2010)\n";
 	std::cout << "  fills the fast+faithful tier: ~1 ULP of Direct across the full d\n";
 	std::cout << "  domain (including the cancellation regime that breaks Lookup /\n";
