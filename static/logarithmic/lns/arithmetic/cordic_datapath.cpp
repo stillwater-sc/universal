@@ -20,6 +20,7 @@
 #include <universal/verification/test_reporters.hpp>
 #include <cmath>
 #include <iostream>
+#include <limits>
 
 // one lns type routed through the policy: operator+ and operator- of lns<8,4,uint16_t> use it in this program
 using LNS8_4_cordic = sw::universal::lns<8, 4, std::uint16_t>;
@@ -38,6 +39,13 @@ namespace sw { namespace universal {
 		double band = 0.0;  // sb_sub for d in (-1, 0), the cancellation band
 	};
 
+	// the larger of a running worst error and a sample, with a NaN sample taken as an infinite error, so a
+	// NaN correction fails every bound instead of vanishing from the maximum
+	inline double worse(double worst, double sample) {
+		if (sample != sample) return std::numeric_limits<double>::infinity();
+		return (sample > worst) ? sample : worst;
+	}
+
 	// the worst errors of sb_add and sb_sub over d = -k 2^-rbits, k = 1 .. (dmax + 2) 2^rbits, every
 	// stride-th k: dmax is the default policy's cutoff, below which it returns 0, so the sweep also
 	// measures the corrections the policy drops
@@ -55,9 +63,9 @@ namespace sw { namespace universal {
 			const long double rs = std::log2(-std::expm1(ld * ln2));    // 1 - 2^d without cancellation
 			const double ea = static_cast<double>(std::fabs(Policy::sb_add(d) - ra) / ulp);
 			const double es = static_cast<double>(std::fabs(Policy::sb_sub(d) - rs) / ulp);
-			if (ea > e.add) e.add = ea;
-			if (d > -1.0) { if (es > e.band) e.band = es; }
-			else if (es > e.sub) e.sub = es;
+			e.add = worse(e.add, ea);
+			if (d > -1.0) e.band = worse(e.band, es);
+			else          e.sub  = worse(e.sub, es);
 		}
 		return e;
 	}
@@ -81,7 +89,7 @@ namespace sw { namespace universal {
 	template<typename Policy, typename LnsType>
 	double WorstWithinBound(int& nrOfFailedTestCases, bool reportTestCases, const char* label, long long stride = 1) {
 		const CorrectionError e = MeasureCorrections<Policy, LnsType>(stride);
-		const double worst = std::fmax(e.add, std::fmax(e.sub, e.band));
+		const double worst = worse(worse(e.add, e.sub), e.band);
 		const double bound = lns_addsub_log_error_bound_v<Policy> * std::ldexp(1.0, static_cast<int>(LnsType::rbits));
 		if (!(worst <= bound)) {
 			++nrOfFailedTestCases;
