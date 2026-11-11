@@ -48,6 +48,8 @@
 //   - ArnoldBaileyAddSub              -- piecewise-linear, no transcendentals
 //   - CORDICAddSub                    -- hyperbolic CORDIC; hardware-codesign tier (#783)
 //   - ArnoldCotransformationAddSub    -- Novel Cotransformation Combination; faithful rounding (#829)
+//   - CORDICDatapathAddSub            -- CORDICAddSub on a fixpnt datapath; opt-in, in
+//                                        lns_addsub_cordic_datapath.hpp since it brings in fixpnt (#2046)
 //
 // All policies are drop-in via the same traits specialization.
 //

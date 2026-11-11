@@ -11,7 +11,7 @@ the [Naming convention](../lns/#how) note explaining the `sb_` prefix.
 
 Universal ships a configurable framework that lets users select, per
 `lns<>` instantiation, which `sb_add` / `sb_sub` implementation is used.
-This page covers that framework: the customization point, the seven
+This page covers that framework: the customization point, the eight
 shipped algorithms, and the decision tree for picking one.
 
 For the math behind why log-domain addition is the hard case, see
@@ -80,9 +80,10 @@ mixed-sign / cancellation routing.
 
 ## Shipped algorithms
 
-Universal ships seven algorithms covering the full SRAM-vs-accuracy
+Universal ships eight algorithms covering the full SRAM-vs-accuracy
 trade-off space, plus a hardware-codesign tier and a fast-faithful-rounding
-tier. All are header-only and constexpr-friendly.
+tier. All are header-only, and all but `CORDICDatapathAddSub` are
+constexpr-friendly.
 
 ### 1. `DoubleTripAddSub` (default)
 
@@ -228,7 +229,8 @@ The cancellation regime (`d in (-1, 0)` for `sb_sub`) falls back to
 direct evaluation via `cm::log2` / `cm::exp2`, matching `Lookup`,
 `Polynomial`, and `ArnoldBailey`. Hardware retargets would substitute a
 co-transformation or small lookup in that band rather than a
-transcendental.
+transcendental. `CORDICDatapathAddSub` (section 8) computes that band
+with CORDIC on a wider fixpnt bus.
 
 See `docs/design/cordic-precision-assessment.md` for the per-iteration
 convergence study, ULP histograms, and worst-case input table across
@@ -265,6 +267,90 @@ F4 + sb_add LUTs, typically a few KB at `rbits <= 16`.
 See `docs/design/lns-add-sub.md` Section 7 for the full algorithmic
 derivation, references, and LUT-sizing analysis.
 
+### 8. `CORDICDatapathAddSub` (hardware datapath tier)
+
+The same two passes as `CORDICAddSub`, run through the fixpnt CORDIC
+engine (`include/sw/universal/number/fixpnt/math/cordic.hpp`) instead of
+`double`, so the policy models the datapath and not only the algorithm:
+every shift truncates, the guard width and the iteration count are the
+hardware's, and each unit rounds its result once. It is opt-in, because it
+brings in fixpnt, and it is not `constexpr`:
+
+```cpp
+#include <universal/number/lns/lns.hpp>
+#include <universal/number/lns/lns_addsub_cordic_datapath.hpp>
+
+template<typename Lns,
+         unsigned Iterations = 0,                    // 0: the engine's default for each unit
+         unsigned Guard      = cordic::auto_guard>   // bus guard bits, default ceil(log2(rbits + 8)) + 2
+struct CORDICDatapathAddSub { ... };
+```
+
+Each correction is a chain of units joined by a fixpnt bus with
+`rbits + g` fraction bits:
+
+```text
+t  = d * ln 2          constant multiplier
+v  = cordic::exp(t)    hyperbolic rotation, v = 2^d
+w  = 1 +/- v           adder, exact on the bus
+L  = cordic::log(w)    hyperbolic vectoring
+sb = L * (1 / ln 2)    constant multiplier
+```
+
+The cancellation band `d in (-1, 0)` of `sb_sub` is CORDIC too. There,
+`1 - 2^d` shrinks to about `ln 2 * 2^-rbits`, so a bus error of `2^-R` in
+`v` becomes a relative error of `2^(rbits - R)` in `w`. The band runs on a
+bus `rbits + 2` bits wider, which keeps the log-domain error at about
+`2^-(rbits + g)`. No path evaluates a transcendental from `<cmath>` or
+`constexpr_math`.
+
+Accuracy, as the worst log-domain error in lns units (`2^-rbits`) over
+every `d = -k 2^-rbits`:
+
+| configuration | `sb_add` | `sb_sub`, `d <= -1` | `sb_sub` band |
+|---|---|---|---|
+| `CORDICAddSub<lns<16,8>>` (double, `k = rbits`) | 3.41 | 3.89 | direct evaluation |
+| `CORDICDatapathAddSub<lns<16,8>>` | 0.033 | 0.044 | 0.003 |
+
+From `lns<8,4>` to `lns<32,24>` the worst error at the default knobs is
+0.044 lns units. The sums and differences then agree with
+`DirectEvaluationAddSub` to the encoding: on `lns<8,4>`, exhaustively,
+within one encoding step, and on every benchmark sample from `lns<16,8>`
+up, exactly.
+
+Both knobs are template parameters. `Iterations` counts the repeated
+shifts, as the engine does, and applies to every unit; the band needs the
+most, since it amplifies whatever angle is left over by up to
+`2^(rbits + 1)`. In `lns<16,8>`:
+
+| iterations | `sb_add` | `sb_sub` | band |
+|---|---|---|---|
+| 8 | 6.59 | 7.12 | 372 |
+| 12 | 0.429 | 0.470 | 24.4 |
+| 16 | 0.072 | 0.086 | 1.90 |
+| 20 | 0.033 | 0.044 | 0.215 |
+| 24 | 0.033 | 0.044 | 0.006 |
+| default (30 narrow, 41 wide) | 0.033 | 0.044 | 0.003 |
+
+| guard bits | `sb_add` | `sb_sub` | band |
+|---|---|---|---|
+| 0 | 1.77 | 2.41 | 0.127 |
+| 2 | 0.437 | 0.724 | 0.037 |
+| 4 | 0.112 | 0.131 | 0.027 |
+| default (6) | 0.033 | 0.044 | 0.003 |
+
+The engine's default iteration count runs every shift down to the
+resolution of the unit's own datapath, past the point where the error
+stops falling: 24 iterations already reach the default's accuracy in
+`lns<16,8>`. Truncated far enough, `2^d` can round to 1, and `sb_sub` then
+gives `-inf`, a result of 0.
+
+In software it costs fixpnt emulation, 3 to 8 times `CORDICAddSub`; the
+cost that matters is the hardware's, which the knobs model.
+`docs/design/cordic-precision-assessment.md` has the tables for every
+configuration in the sweep, and the regression test is
+`static/logarithmic/lns/arithmetic/cordic_datapath.cpp`.
+
 ## Decision tree
 
 | If your target ...                                                   | use                                  |
@@ -277,6 +363,7 @@ derivation, references, and LUT-sizing analysis.
 | is energy-constrained, wants no transcendentals, ok with ~2.5% rel error | `ArnoldBaileyAddSub`             |
 | is targeting FPGA / ASIC and wants the cost model that matches       | `CORDICAddSub` (or `CORDICAddSub<Lns, K>` for a truncated iteration budget) |
 | wants software-fast AND faithful rounding (no transcendentals)       | `ArnoldCotransformationAddSub` (~1 ULP, small LUT footprint) |
+| is designing an FPGA / ASIC CORDIC unit and wants its errors bit for bit | `CORDICDatapathAddSub` (iteration count and guard width as knobs) |
 
 For most general-purpose software the choice is between
 `DirectEvaluation` (cleanest, exact) and `Polynomial` (saves one
@@ -317,7 +404,7 @@ included alongside the rest of your `lns<>` use.
 
 The benchmark target
 `benchmark/performance/arithmetic/lns/log_add_algorithms.cpp` measures
-all seven algorithms across representative `(nbits, rbits)`
+all eight algorithms across representative `(nbits, rbits)`
 configurations. It produces a Markdown table of throughput (ops / sec)
 and per-algorithm value-domain error vs the `DirectEvaluation` oracle.
 
@@ -332,6 +419,7 @@ Sample output for `lns<24, 16, uint32_t>` on a desktop x86_64 build:
 | ArnoldBailey        | ~1.1 M ops/sec  | ~5e-2                    |
 | CORDIC              | ~0.9 M ops/sec  | ~3.2e-5                  |
 | ArnoldCotr          | ~1.1 M ops/sec  | ~1.1e-5 (faithful, 1 ULP)|
+| CORDICDatapath      | ~0.16 M ops/sec | 0                        |
 
 The throughput differential between algorithms is small at the `lns<>`
 class API level because the encode / decode dominates the per-call
