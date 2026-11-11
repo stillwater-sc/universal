@@ -154,7 +154,7 @@ explains the algorithm and its history.
   `atanh` splits off the power of two in `1 - |t|`, so every argument the type holds converges. One
   datapath serves the family, with `max(nbits, rbits + 2) + g` fraction bits, since `exp` can need
   every bit of the type; the default guard width is `ceil(log2(B + 8)) + 3`. The measured worst case
-  is 0.57 ulp over all eight functions and `tan`, over every encoding of the formats up to 16 bits
+  is 0.57 ulp over the seven hyperbolic functions and `tan`, over every encoding of the formats up to 16 bits
   and samples up to `fixpnt<128,120>`.
 - **Overflow and the domain.** `exp`, `sinh`, `cosh` and `tan` are not bounded, so a result beyond
   the type saturates in either arithmetic; wrapping exactly would need a datapath as wide as the
