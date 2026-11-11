@@ -72,6 +72,7 @@
 #include <cmath>
 #include <cstdint>
 #include <type_traits>
+#include <universal/number/dfixpnt/core.hpp>   // dfixpnt, DecimalEncoding, Modulo, Saturate: the header stands alone
 
 namespace sw { namespace universal { namespace cordic {
 
