@@ -68,15 +68,15 @@ With the exception off, `x / 0` is `maxpos` or `maxneg` by the sign of the divid
 `Saturate`, and `0` for `Modulo`. Nothing is printed. Before #1894 the opt-out was the
 default and it wrote a line to stderr, which generic code could not detect.
 
-### Trigonometry: the double path and the CORDIC engine
+### Elementary functions: the double path and the CORDIC engine
 
-`fixpnt` has two kinds of trigonometry, because there are two kinds of experiment.
+`fixpnt` has two kinds of elementary functions, because there are two kinds of experiment.
 
-- **Software experiments** use the ordinary `sin`, `cos`, `tan`, `atan`, `atan2` and `hypot`. They
-  compute through `double`: `sin(x)` is `fixpnt(std::sin(double(x)))`. This is fast and convenient. A
+- **Software experiments** use the ordinary `sin`, `cos`, `tan`, `atan`, `atan2`, `hypot`, `exp`, `log`
+  and the hyperbolic functions. They compute through `double`: `sin(x)` is `fixpnt(std::sin(double(x)))`. This is fast and convenient. A
   `double` carries 53 significant bits, though, so for a format with more than about 52 fraction bits,
   such as `fixpnt<64,60>` or `fixpnt<128,120>`, the result is correct to at most 53 bits.
-- **Hardware experiments** use the circular CORDIC engine in namespace `cordic` (#2015). It is a
+- **Hardware experiments** use the CORDIC engine in namespace `cordic` (#2015, #2040, #2041). It is a
   shift-and-add model of a CORDIC unit, computed in the type's own arithmetic. It is correct to the
   full width of the type, and it has an iteration count and a guard width that a designer can set.
 
@@ -97,11 +97,21 @@ F s16 = cordic::sin<4>(theta, 16);
 // linear CORDIC: multiply and divide by shift and add (#2040)
 F p = cordic::mul(F(3.25), F(-1.5));            // -4.875
 F q = cordic::div(F(1), F(3));                  // 1/3, rounded to 28 fraction bits
+
+// hyperbolic CORDIC: exp, log, sqrt and the hyperbolic functions (#2041)
+F e = cordic::exp(F(1));                        // 2.7182818
+F l = cordic::log(F(2));                        // 0.6931472
+F w = cordic::sqrt(F(2));                       // 1.4142136
+F sh, ch;
+cordic::sinhcosh(F(0.5), sh, ch);               // sinh and cosh together
+F th = cordic::tanh(F(0.5)), at = cordic::atanh(F(0.5)), tn = cordic::tan(theta);
 ```
 
 The circular functions are `sincos`, `sin` and `cos` (rotation mode), and `atan2`, `atan`, `hypot`
 and `polar` (vectoring mode). The linear functions are `mul` (rotation mode) and `div` (vectoring
-mode). Each takes the iteration count as an optional last argument, and the guard width as an
+mode). The hyperbolic functions are `exp`, `sinhcosh`, `sinh`, `cosh` and `tanh` (rotation mode),
+and `atanh`, `log` and `sqrt` (vectoring mode); `tan` and `tanh` follow their rotation with a linear
+division. Each takes the iteration count as an optional last argument, and the guard width as an
 optional first template argument. Asking for more iterations than the datapath has fraction bits
 gives that maximum. All of them run the same iteration, Walther's unified CORDIC, with the geometry
 `m` (circular, linear or hyperbolic) as a template parameter. `docs/algorithmic-details/cordic.md`
@@ -138,7 +148,23 @@ explains the algorithm and its history.
   is 0.53 ulp for `mul` and 0.50 ulp for `div`, over every pair of the 8-bit formats and samples up to
   `fixpnt<128,120>`, against exact integer references.
 
-The tests are in `static/fixpnt/binary/math/cordic.cpp` (circular) and `cordic_linear.cpp` (linear).
+- **Hyperbolic mode.** The iterations start at shift 1 and repeat the shifts 4, 13, 40, ..., which
+  convergence needs; the iteration count includes the repeats. `exp`, `sinh`, `cosh` and `tanh`
+  reduce `z = q ln 2 + r`, `log` and `sqrt` scale `w` by a power of two (of four, for `sqrt`), and
+  `atanh` splits off the power of two in `1 - |t|`, so every argument the type holds converges. One
+  datapath serves the family, with `max(nbits, rbits + 2) + g` fraction bits, since `exp` can need
+  every bit of the type; the default guard width is `ceil(log2(B + 8)) + 3`. The measured worst case
+  is 0.57 ulp over all eight functions and `tan`, over every encoding of the formats up to 16 bits
+  and samples up to `fixpnt<128,120>`.
+- **Overflow and the domain.** `exp`, `sinh`, `cosh` and `tan` are not bounded, so a result beyond
+  the type saturates in either arithmetic; wrapping exactly would need a datapath as wide as the
+  result. `sqrt` saturates as `fixpnt`'s own `sqrt` does. `tanh`, `atanh` and `log` follow the type's
+  arithmetic. `fixpnt` has no NaN: `log(0)` and `atanh(+-1)` set `errno = ERANGE` and give `maxneg` or
+  `maxpos`, `log` of a negative value and `atanh` beyond `+-1` set `errno = EDOM` and give 0, and
+  `sqrt` of a negative value follows `fixpnt`'s `sqrt`.
+
+The tests are in `static/fixpnt/binary/math/cordic.cpp` (circular), `cordic_linear.cpp` (linear) and
+`cordic_hyperbolic.cpp` (hyperbolic, and `tan`).
 The lns add/sub has a hyperbolic CORDIC for the same purpose (`CORDICAddSub`, #783).
 
 ## How It Works
