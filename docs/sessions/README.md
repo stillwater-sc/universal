@@ -52,7 +52,7 @@ Examples:
 
 Newest first, and every document in this directory is listed. Titles come from each
 document's H1. Status and Focus come from its `**Status:**` and `**Focus:**` header lines
-where it has them -- 23 of the 49 do. The remaining 26 predate that convention, so their
+where it has them -- 24 of the 50 do. The remaining 26 predate that convention, so their
 Focus is the opening prose of the document's own Overview, Summary or Objective section.
 Either way the wording is the document's, not a paraphrase.
 
@@ -60,6 +60,9 @@ Either way the wording is the document's, not a paraphrase.
 
 #### November
 
+- **2026-11-08 to 2026-11-11**: [The Elastic Reals Sweep, and a CORDIC Family](./2026-11-11_elastic_reals_sweep_and_a_cordic_family.md)
+  - Status: Complete -- 21 PRs merged, the #1999 sweep closed, five CORDIC issues closed
+  - Focus: Close out the range and elastic-integer sweep leftovers; triage the elastic reals QA sweep #1999 into four tracking issues and resolve them; fix the follow-ups it surfaced (complex in T, dd/qd signed zero, quire infinities, sorn outward rounding); assess elreal transcendental performance without changing code; build CORDIC engines for fixpnt, dfixpnt and lns.
 - **2026-11-06 to 2026-11-08**: [Two QA Sweeps -- Ranges, and Elastic Integers and Rationals](./2026-11-08_two_qa_sweeps_ranges_and_elastic_integers.md)
   - Status: Complete -- 18 PRs merged, 14 issues closed, both sweeps closed
   - Focus: Backfill the CHANGELOG and gate releases on it; split the QA sweeps #1962 (ranges: areal, interval, sorn) and #1984 (elastic integers and rationals) into tracking issues and resolve every one; bring `valid` into the ubox trace.
@@ -305,4 +308,4 @@ ls -1 docs/sessions/*.md | sort
 ---
 
 **Maintained by:** Universal Numbers Library Team
-**Last Updated:** 2026-11-08
+**Last Updated:** 2026-11-11
