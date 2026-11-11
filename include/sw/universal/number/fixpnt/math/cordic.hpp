@@ -126,8 +126,11 @@
 
 namespace sw { namespace universal { namespace cordic {
 
-// the guard width sentinel: pick g = ceil(log2(rbits + 8)) + 2
+// the guard width sentinel: pick g = ceil(log2(rbits + 8)) + 2; shared with the decimal engine for dfixpnt
+#ifndef SW_UNIVERSAL_CORDIC_AUTO_GUARD
+#define SW_UNIVERSAL_CORDIC_AUTO_GUARD
 inline constexpr unsigned auto_guard = 0xFFFF'FFFFu;
+#endif
 
 // the coordinate system m of the unified CORDIC iteration x_{i+1} = x_i - m * d_i * (y_i >> i)
 enum class coordinates : int { hyperbolic = -1, linear = 0, circular = 1 };
