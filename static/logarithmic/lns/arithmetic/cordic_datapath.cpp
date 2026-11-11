@@ -152,7 +152,6 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "lns add/sub on a fixpnt hyperbolic CORDIC datapath (#2046)";
-	std::string test_tag    = "cordic datapath";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
