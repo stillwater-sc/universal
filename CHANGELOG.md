@@ -7,12 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-**Two QA sweeps: ranges (areal, interval, sorn) and elastic integers and rationals.** 20 commits since v5.15.0, with 21 behaviour changes:
+**QA sweeps of the ranges, the elastic integers and the elastic reals, and a CORDIC family for fixed-point and lns hardware experiments.** 41 commits since v5.15.0, with 31 behaviour changes:
 
 * areal's ubit is a flag, set wherever a conversion drops bits; `numeric_limits<areal>` describes the encoding (#1970, #1982, #1983).
 * interval sqrt encloses subnormal roots, and empty and unbounded intervals behave (#1971, #1979).
-* sorn compares, converts and divides instead of returning placeholders (#1972, #1985).
+* sorn compares, converts and divides instead of returning placeholders, derives `numeric_limits` from its lattice, and rounds its bounds outward (#1972, #1985, #2000, #2024, #2037).
 * einteger, edecimal and erational have one zero, convert NaN and infinity predictably, and parse strictly (#1984, #1987-#1990).
+* ereal, elreal and efloat return C99 special values, keep the sign of zero, and ereal's trigonometric and special functions reach the configuration's precision (#1999, #2013, #2018, #2020, #2027).
+* `complex<T>` computes in T, dd and qd keep the sign of zero, and the generalized quire keeps signed infinities apart from NaN (#2025, #2030, #2034).
+* fixpnt gains CORDIC engines in circular, linear and hyperbolic mode, dfixpnt a decimal CORDIC, and lns an add/sub policy that runs on the fixpnt CORDIC datapath (#2015, #2038, #2043-#2046, #2048).
 * valid joins the ubox trace of the quadratic formula (#1690).
 
 ### Behaviour changes
@@ -38,11 +41,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **einteger**: einteger parse() leaves the destination unchanged on failure instead of setting it to 0 ([#1995](https://github.com/stillwater-sc/universal/pull/1995))
 - **einteger**: einteger a >>= -k now shifts left by k (was right by k) ([#1994](https://github.com/stillwater-sc/universal/pull/1994))
 - **einteger**: einteger conversion to float/double/long double is now correctly rounded; values above 2^24 (float) or 2^53 (double) can differ in the last bit from before ([#1994](https://github.com/stillwater-sc/universal/pull/1994))
+- **sorn**: std::numeric_limits<sorn<...>> min(), max(), lowest(), denorm_min(), round_error(), the digit and exponent constants, has_infinity, has_quiet_NaN, is_signed and round_style now describe the lattice instead of placeholder values ([#2000](https://github.com/stillwater-sc/universal/pull/2000))
+- **elreal**: elreal iszero/sign/scale/abs/signbit/significand read the first nonzero block, so cancelled values are zero and a leading zero block no longer gives the wrong sign; integer construction is exact; the math functions return C99 special values for NaN, inf and out-of-domain arguments; pow changes for negative and zero bases and for exponents near an integer ([#2013](https://github.com/stillwater-sc/universal/pull/2013))
+- **ereal**: ereal math functions return C99 Annex F special values (sqrt(-1) and sqrt(-inf) are NaN; sqrt(+inf), log(+inf), asinh(+inf) and acosh(+inf) are +inf; atanh(+-1) is +-inf; pow and atan2 follow the C99 tables; hypot(inf, NaN) is inf) and keep the sign of zero (sin, tan, asin, atan, sinh, tanh, asinh, atanh, expm1, log1p, cbrt, floor, ceil, trunc, round, rint, modf, fmod and remainder); copysign reads the sign bit; fmod(x, 0) and remainder(x, 0) return NaN instead of throwing, fmod(x, +-inf) is x, and both are exact for any quotient; hypot no longer overflows in its squares; sqrt is exact on perfect squares and differs in the last limbs otherwise ([#2018](https://github.com/stillwater-sc/universal/pull/2018))
+- **ereal**: ereal comparisons with a NaN operand are false (!= true) where ==, >= and <= returned true; ereal min/max ignore a NaN operand (C99 fmin/fmax) whatever the argument order; ereal signbit(-0) is true, abs(-0) is +0 and -0 prints with its sign; numeric_limits<ereal<N, F>>::min() is 2^(min_exponent(F) - 1 + digits(F) (N - 1)) (2^-651 for ereal<8>, was 2^-969 for every N), min_exponent follows it, has_denorm is denorm_present and denorm_min() is minpos(); ereal parse of a decimal exponent beyond int saturates to inf or 0; ereal fixed-format to_string rounds values below 10^-p and keeps the last digit after a carry; efloat to_string prints the extreme values with a 64-bit exponent and its last digits can differ for large exponents (now exact); efloat parse of exponents beyond about +-13000 returns the value (was NaN and false), and 0eN is a signed zero ([#2020](https://github.com/stillwater-sc/universal/pull/2020))
+- **sorn**, **einteger**, **areal**: sorn conversions from double, long double and wide integers enclose the input (sorn(1e-300) is (0, 0.5], was exact 0), scalar sorn operators round their bounds outward and open a rounded bound, float(sorn) of a wide interval is its midpoint, and zero sorn * inf is 0; sorn<..., _halfopen = false> no longer compiles; einteger compound operators with a NaN, inf or |x| >= 2^63 floating-point operand use einteger(x) (NaN and inf are 0) instead of an undefined long long conversion; einteger parse rejects a 0x or 0b prefix with no digits ("0x'"); areal fma of an exact zero product is exact, fma marks a sum the double intermediate rounded as inexact, and numeric_limits<areal>::signaling_NaN() is a signaling NaN; areal<72,8,uint32_t> multiplication is correct ([#2024](https://github.com/stillwater-sc/universal/pull/2024))
+- **quire**: quire<float>, quire<double> and quire<cfloat> now resolve a sum with an infinite term and no NaN to that signed infinity instead of NaN; quire::isinf() and isnan() no longer both report every non-finite state ([#2025](https://github.com/stillwater-sc/universal/pull/2025))
+- **ereal**: ereal sin/cos/tan of large arguments and erf/erfc/tgamma/lgamma now return values correct to the configuration's precision instead of to about 53 bits (and, for sin/cos/tan past about 1e100 at ereal<4>, instead of wrong values) ([#2027](https://github.com/stillwater-sc/universal/pull/2027))
+- **math**: complex<ereal>, complex<efloat>, complex<dd> and complex<qd> abs, arg and transcendentals now return values at the element type's precision instead of double's; abs on the double path uses std::hypot ([#2030](https://github.com/stillwater-sc/universal/pull/2030))
+- **dd**: dd and qd arithmetic, sin/tan/log1p/expm1/sqrt and conversions to native floats now give zero results the IEEE 754 sign (e.g. +0 * -1 is -0, sin(-0) is -0, double(dd(-0.0)) is -0); dd and qd atan2 now return correct values for arguments whose squares leave the double range ([#2034](https://github.com/stillwater-sc/universal/pull/2034))
+- **sorn**: sorn + - * / sorn and scalar / sorn can return a wider interval (one more lattice interval at a bound) where the exact bound is not a float; the result now encloses the exact one ([#2037](https://github.com/stillwater-sc/universal/pull/2037))
 
 ### Added
 
 - **valid**: Join the ubox trace, with an exact oracle for sqrt ([#1997](https://github.com/stillwater-sc/universal/pull/1997))
 - Add a precision table for floating point formats useful in DSP, Control, and HPC ([#1968](https://github.com/stillwater-sc/universal/pull/1968))
+- **fixpnt**: Circular CORDIC engine for sin, cos, atan, atan2 and hypot ([#2038](https://github.com/stillwater-sc/universal/pull/2038))
+- **fixpnt**: Linear CORDIC for multiply and divide, on a unified CORDIC core ([#2043](https://github.com/stillwater-sc/universal/pull/2043))
+- **fixpnt**: Hyperbolic CORDIC for exp, log, sqrt and the hyperbolic functions, and tan ([#2044](https://github.com/stillwater-sc/universal/pull/2044))
+- **dfixpnt**: Decimal CORDIC for sin, cos, atan, atan2 and hypot ([#2045](https://github.com/stillwater-sc/universal/pull/2045))
+- **lns**: CORDICDatapathAddSub, lns add/sub on the fixpnt hyperbolic CORDIC datapath ([#2048](https://github.com/stillwater-sc/universal/pull/2048))
 
 ### Fixed
 
@@ -59,6 +77,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **einteger**: One optional sign in parse, unchanged value on failure, chunked decimal parse ([#1995](https://github.com/stillwater-sc/universal/pull/1995))
 - **numeric**: Settle the #1991 sweep follow-ups: expansion copy, dbns bound, interval and areal tests ([#1996](https://github.com/stillwater-sc/universal/pull/1996))
 - Replace the non-ASCII epsilon in playground/precision_table.cpp ([#1975](https://github.com/stillwater-sc/universal/pull/1975))
+- **sorn**: Derive numeric_limits from the lattice ([#2000](https://github.com/stillwater-sc/universal/pull/2000))
+- **elreal**: Zero and sign of cancelled values, C99 special values, pow and exp range ([#2013](https://github.com/stillwater-sc/universal/pull/2013))
+- **ereal**: C99 special values, exact fmod, and math tests checked to the type's precision ([#2018](https://github.com/stillwater-sc/universal/pull/2018))
+- **ereal**: NaN comparisons, signed zero, numeric_limits floor, and efloat print/parse at the exponent extremes ([#2020](https://github.com/stillwater-sc/universal/pull/2020))
+- Sorn enclosure, einteger operands and parse, areal fma, and QA sweep test follow-ups ([#2024](https://github.com/stillwater-sc/universal/pull/2024))
+- **quire**: Keep signed infinities apart from NaN in the generalized quire ([#2025](https://github.com/stillwater-sc/universal/pull/2025))
+- **ereal**: Payne-Hanek reduction for sin/cos/tan, and erf/erfc/tgamma/lgamma in ereal arithmetic ([#2027](https://github.com/stillwater-sc/universal/pull/2027))
+- **math**: Compute complex abs, arg and the transcendentals in T for high-precision types ([#2030](https://github.com/stillwater-sc/universal/pull/2030))
+- **dd**: Keep the sign of zero and atan2's range in dd and qd; fix stale complex CMake gates ([#2034](https://github.com/stillwater-sc/universal/pull/2034))
+- **areal**: Exact references for the level 2-4 addition, subtraction and integer tests ([#2035](https://github.com/stillwater-sc/universal/pull/2035))
+- **efloat**: Make the allocation-counting tests immune to gcc 15 folding the counter ([#2036](https://github.com/stillwater-sc/universal/pull/2036))
+- **sorn**: Round the sorn-with-sorn bounds and the reciprocal outward ([#2037](https://github.com/stillwater-sc/universal/pull/2037))
 
 ### Performance
 
@@ -69,6 +99,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fill in the CHANGELOG for v5.2.0 through v5.15.0 ([#1966](https://github.com/stillwater-sc/universal/pull/1966))
 - **integer**: Restore two comments mangled by the throw_or_abort rewrite ([#1977](https://github.com/stillwater-sc/universal/pull/1977))
+- **qd_cascade**: Record that clang 21 no longer loses on the add_cascades<4> merge ([#2002](https://github.com/stillwater-sc/universal/pull/2002))
+- **math**: Branch cuts, signed zeros and C99 Annex G for complex<T> ([#2031](https://github.com/stillwater-sc/universal/pull/2031))
+
+### Build System
+
+- **deps**: Bump the docs-site-minor-patch group ([#2028](https://github.com/stillwater-sc/universal/pull/2028))
 
 ### CI
 
