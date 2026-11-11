@@ -379,9 +379,12 @@ Sridharan and Maharatna surveyed the whole field in "50 Years of CORDIC" (2009),
 |---|---|---|---|
 | `cordic::sincos`, `sin`, `cos` | fixpnt | circular rotation | #2015 |
 | `cordic::atan2`, `atan`, `hypot`, `polar` | fixpnt | circular vectoring | #2015 |
+| `cordic::tan` | fixpnt | circular rotation, then linear vectoring | #2041 |
 | `cordic::mul` | fixpnt | linear rotation | #2040 |
 | `cordic::div` | fixpnt | linear vectoring | #2040 |
-| `sinh`, `cosh`, `exp`, `atanh`, `log`, `sqrt` | fixpnt | hyperbolic | planned, #2041 |
+| `cordic::exp`, `sinhcosh`, `sinh`, `cosh` | fixpnt | hyperbolic rotation | #2041 |
+| `cordic::tanh` | fixpnt | hyperbolic rotation, then linear vectoring | #2041 |
+| `cordic::atanh`, `log`, `sqrt` | fixpnt | hyperbolic vectoring | #2041 |
 | decimal `sin`, `cos`, `atan2` | dfixpnt | decimal circular | planned, #2042 |
 | `CORDICAddSub` | lns add/sub | hyperbolic, in `double` | #783 |
 
@@ -389,8 +392,9 @@ The fixpnt engines all go through one iteration, `cordic::detail::step<m>`, whic
 recurrence with `m` as a template parameter (`cordic::coordinates::circular`, `linear`, `hyperbolic`).
 Rotation mode and vectoring mode are loops over it that choose `d_i`.
 
-They are hardware models, not fast software math. The default fixpnt `sin`, `cos`, `atan`, `atan2` and
-`hypot` compute through `double` and serve software experiments. The `cordic::` functions model a
+They are hardware models, not fast software math. The default fixpnt `sin`, `cos`, `tan`, `atan`,
+`atan2`, `hypot`, `exp`, `log` and hyperbolic functions compute through `double` and serve software
+experiments. The `cordic::` functions model a
 shift-and-add unit bit for bit: each shift truncates, the datapath has a chosen number of guard bits, and
 the unit stops after a chosen number of iterations. A designer can then measure the error of a unit
 before building it. Both knobs are on every function:
@@ -405,6 +409,9 @@ cordic::sincos(F(0.5), s, c);         // defaults: within 1 ulp
 F p = cordic::mul(F(3.25), F(-1.5));  // -4.875, by shift and add
 F q = cordic::div(F(1), F(3));        // 0.33333, by shift and subtract
 F q12 = cordic::div<4>(F(1), F(3), 12);   // a unit with 4 guard bits that stops after 12 iterations
+F e = cordic::exp(F(1));              // 2.71828, by hyperbolic rotation
+F l = cordic::log(F(10));             // 2.30259, by hyperbolic vectoring
+F r = cordic::sqrt(F(2));             // 1.41421, from the vectoring gain
 ```
 
 ### The datapath
@@ -425,8 +432,34 @@ F q12 = cordic::div<4>(F(1), F(3), 12);   // a unit with 4 guard bits that stops
 
   The guard width is `ceil(log2(B + 8)) + 2` for `mul`, and one more for `div`, whose error is divided by
   `x >= 1/2`. The default iteration count is `B + g`. Division by zero follows fixpnt's `operator/`.
-- **Constants.** The `atan(2^-i)` table, `1/K_n` for every iteration count and `pi/2` come from series in
-  fixpnt arithmetic 16 bits wider than the datapath. None of them goes through `double`, so the engines
+- **Hyperbolic.** The iterations start at shift 1 and repeat 4, 13, 40, ...; the iteration count counts
+  the repeats, and the default is every iteration whose shift is at most `B + g`. One datapath serves
+  the family, with `B = max(nbits, rbits + 2)` fraction bits: `exp` reaches `2^(ib-1)` and needs every
+  bit of the type, and `atanh` needs `1 +- t` exactly. Its integer bits hold `ln(maxpos)` and
+  `ln(minpos)`, and the guard width is `ceil(log2(B + 8)) + 3`. The arguments are reduced so the
+  iterations always converge:
+  - `exp`, `sinh`, `cosh`, `tanh`: `z = q ln 2 + r` with `|r| <= ln 2 / 2`, in a wider type whose
+    `ln 2` carries the bits of `q`. `exp z = 2^q (cosh r + sinh r)`, and for `|z|`,
+    `cosh, sinh = 2^(q-1) (e^r +- 4^-q e^-r)` with `e^(+-r) = cosh r +- sinh r`. `tanh` divides the
+    two, so `2^(q-1)` cancels, by linear vectoring.
+  - `log`: `w = m 2^e` with `m` in `[3/4, 3/2)`, so `ln w = e ln 2 + 2 atanh((m - 1) / (m + 1))`, and
+    a `w` near 1 has `e = 0` and no cancellation.
+  - `sqrt`: `w = m 4^k` with `m` in `[1/4, 1)`, from `(m + 1/4, m - 1/4, 0)`.
+  - `atanh`: with `1 - |t| = 2^-e [1, 2)`, `atanh |t| = e ln 2 / 2 + atanh(y / x)` for
+    `x, y = (1 + |t|) +- (1 - |t|) 2^e`, a ratio in `(-1/3, 1/3)`, for every `|t| < 1`.
+- **`tan`** is circular rotation, then linear vectoring of the normalized `sin` and `cos`. Where `tan`
+  still fits the type, `cos >= 2^-(ib-1)`, and the absolute error of `cos` is amplified by up to
+  `1 / cos^2`, so its rotation datapath has `rbits + 2 (ib - 1) + g` fraction bits.
+- **Overflow and the domain.** `exp`, `sinh`, `cosh` and `tan` are not bounded, and wrapping them
+  exactly would need a datapath as wide as the result: `exp` of `fixpnt<32,0>`'s largest argument has
+  about `3e9` integer bits. So a result beyond the type saturates in either arithmetic, as an overflow
+  detect in hardware does. `sqrt` saturates as fixpnt's own `sqrt` does. `tanh`, `atanh` and `log` are
+  bounded and follow the type's arithmetic. fixpnt has no NaN, so the domain errors follow `<cmath>`'s
+  `errno`: `log(0)` and `atanh(+-1)` are poles (`ERANGE`, with `maxneg` or `maxpos`), `log` of a negative
+  value and `atanh` beyond `+-1` are domain errors (`EDOM`, with 0), and `sqrt` of a negative value
+  throws `fixpnt_negative_sqrt_arg` or sets `EDOM`, as fixpnt's `sqrt` does.
+- **Constants.** The `atan(2^-i)` and `atanh(2^-i)` tables, `1/K_n` for every iteration count, `pi/2`
+  and `ln 2 = 2 atanh(1/3)` come from series in fixpnt arithmetic 16 bits wider than the datapath. None of them goes through `double`, so the engines
   are correct at any width. The linear engine needs no table beyond the exact powers of two.
 
 ### Measured accuracy
@@ -444,8 +477,27 @@ over every encoding (or every pair, for the 8-bit formats) and over samples of t
 | `fixpnt<64,32>` | 0.533 | 0.516 | 0.503 | 0.503 | 0.518 | 0.503 |
 | `fixpnt<128,120>` | 0.496 | 0.528 | 0.503 | 0.515 | 0.500 | 0.500 |
 
-The references are independent of the engines. For the circular engine they are `double` (up to 32
-bits) or `qd`. For the linear engine they are exact rational results in `integer<>` arithmetic, so the
+For the hyperbolic engine and `tan`, over every encoding up to 16 bits and samples beyond (`-` marks a
+function whose every result saturates in that format, such as `cosh >= 1` in `fixpnt<8,8>`):
+
+| format | exp | sinh | cosh | tanh | atanh | log | sqrt | tan |
+|---|---|---|---|---|---|---|---|---|
+| `fixpnt<8,4>` | 0.495 | 0.489 | 0.497 | 0.491 | 0.494 | 0.499 | 0.496 | 0.495 |
+| `fixpnt<8,8>` | - | 0.497 | - | 0.494 | 0.495 | 0.493 | 0.490 | 0.535 |
+| `fixpnt<12,8>` | 0.500 | 0.503 | 0.507 | 0.500 | 0.495 | 0.500 | 0.509 | 0.502 |
+| `fixpnt<16,12>` | 0.519 | 0.511 | 0.508 | 0.502 | 0.500 | 0.502 | 0.513 | 0.512 |
+| `fixpnt<16,15>` | 0.507 | 0.510 | - | 0.507 | 0.504 | 0.510 | 0.515 | 0.566 |
+| `fixpnt<32,16>` | 0.501 | 0.500 | 0.502 | 0.500 | 0.500 | 0.500 | 0.500 | 0.500 |
+| `fixpnt<64,32>` | 0.498 | 0.498 | 0.498 | 0.497 | 0.498 | 0.497 | 0.497 | 0.500 |
+| `fixpnt<64,60>` | 0.501 | 0.500 | 0.500 | 0.500 | 0.500 | 0.500 | 0.502 | 0.500 |
+| `fixpnt<128,120>` | 0.499 | 0.500 | 0.500 | 0.500 | 0.500 | 0.500 | 0.500 | 0.500 |
+
+`sinh` near 0 and `log` near 1 lose relative accuracy to cancellation in a floating-point format, but a
+fixed-point ulp is absolute, and they stay within the same bound: `sinh` of a small `z` is the `y` of the
+rotation with no reduction, and `log` of a `w` near 1 has `e = 0`.
+
+The references are independent of the engines. For the circular and hyperbolic engines they are `double`
+(up to 32 bits) or `qd`. For the linear engine they are exact rational results in `integer<>` arithmetic, so the
 error is measured exactly, even for wrapped 128-bit products.
 
 ### The hardware knobs
@@ -473,6 +525,31 @@ The guard width sets the floor that more iterations cannot pass:
 | 2 | 3.08 | 1.38 | 1.02 |
 | 4 | 1.09 | 0.627 | 0.565 |
 | default | 0.565 (7) | 0.513 (7) | 0.498 (8) |
+
+The hyperbolic engine in the same format, whose default is 26 iterations (the shifts 1 to 24, with 4 and
+13 repeated, over 8 guard bits):
+
+| iterations | `exp` | `log` | `sqrt` | `tanh` |
+|---|---|---|---|---|
+| 4 | 3280 | 866 | 46.0 | 658 |
+| 8 | 252 | 64.8 | 0.838 | 61.1 |
+| 12 | 16.3 | 4.80 | 0.502 | 3.88 |
+| 16 | 2.44 | 0.989 | 0.508 | 0.719 |
+| 20 | 0.607 | 0.530 | 0.508 | 0.511 |
+| default | 0.519 (26) | 0.502 (26) | 0.513 (26) | 0.502 (26) |
+
+| guard bits | `exp` | `log` | `sqrt` | `tanh` |
+|---|---|---|---|---|
+| 0 | 5.76 | 1.30 | 4.14 | 1.15 |
+| 2 | 1.77 | 0.643 | 1.38 | 0.703 |
+| 4 | 0.888 | 0.537 | 0.715 | 0.541 |
+| default | 0.519 (8) | 0.502 (8) | 0.513 (8) | 0.502 (8) |
+
+`exp` needs the most: its result reaches `2^(ib-1)`, so the angle error is multiplied by up to 8 in
+`fixpnt<16,12>`. `sqrt` needs the fewest. It reads the length of the vector, not its angle, and an
+angle `eps` left over changes the length only by `cosh(eps) - 1 ~= eps^2 / 2`: the length converges
+twice as fast as the angle, and 8 iterations already give `sqrt` to within 1 ulp. A repeated iteration
+(the fifth, with shift 4 again) does not halve the error as the others do.
 
 ## References
 

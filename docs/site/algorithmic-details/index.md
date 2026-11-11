@@ -33,6 +33,13 @@ the trade-off space rather than the API-level usage.
   the sign of zero picks the side, the history from Kahan's 1987 paper to C99
   Annex G, the special values, the formulas chosen for accuracy, and how
   `complex<T>` implements and verifies them in any `T`.
+- [CORDIC](../algorithmic-details/cordic/)
+  -- rotation, multiplication and the elementary functions by shift and add:
+  why CORDIC exists, Walther's unified iteration and what the `m` in its `x`
+  update means for the circular, linear and hyperbolic geometries,
+  convergence, gain and range reduction, when to use it, its history from
+  Volder's B-58 navigation computer to today's FPGAs, and Universal's fixpnt
+  CORDIC engine.
 
 ## Companion sections
 

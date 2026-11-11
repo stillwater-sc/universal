@@ -77,6 +77,10 @@ Algorithmic-details docs should follow this pattern:
 5. Provide a picker decision tree.
 6. Cross-link to the implementation, the design doc, the benchmarks, and
    the regression tests.
+7. Publish it on the docs site: add the file to `FILE_MAP` in
+   `docs-site/sync-content.mjs`, and an entry to the site's landing page,
+   `docs/site/algorithmic-details/index.md`. The site copies only the files
+   that map lists, and this README is not on the site.
 
 Keep mathematical notation ASCII per the project CLAUDE.md (`log2`, `<=`,
 `->`, `^`, `2^x`).
