@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/dfixpnt/core.hpp>   // the functions compute; the core is all they need (#1334)
+#include <universal/number/dfixpnt/math/cordic.hpp>   // the decimal CORDIC engine (#2042)
 
 namespace sw { namespace universal {
 

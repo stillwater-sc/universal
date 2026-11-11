@@ -256,7 +256,9 @@ Sixty years of work have produced many refinements of the basic iteration:
 - **Pipelined and unrolled** units lay the iterations out in space, one stage per iteration, for one
   result per clock. **Iterative** units reuse one stage `n` times, for the smallest area.
 - **Decimal CORDIC**, and Meggitt's pseudo-division and pseudo-multiplication, use powers of ten, and
-  repeat each digit position up to nine times. This is how calculators work.
+  repeat each digit position up to nine times. This is how calculators work. Taking each angle 0 to 9
+  times, while it fits, makes the gain depend on the data, so the unit yields `tan = y / x`; taking it
+  exactly nine times, in either direction, keeps the gain constant (see the dfixpnt engine below).
 
 ## When to use CORDIC, and when not
 
@@ -385,7 +387,8 @@ Sridharan and Maharatna surveyed the whole field in "50 Years of CORDIC" (2009),
 | `cordic::exp`, `sinhcosh`, `sinh`, `cosh` | fixpnt | hyperbolic rotation | #2041 |
 | `cordic::tanh` | fixpnt | hyperbolic rotation, then linear vectoring | #2041 |
 | `cordic::atanh`, `log`, `sqrt` | fixpnt | hyperbolic vectoring | #2041 |
-| decimal `sin`, `cos`, `atan2` | dfixpnt | decimal circular | planned, #2042 |
+| `cordic::sincos`, `sin`, `cos` | dfixpnt | decimal circular rotation | #2042 |
+| `cordic::atan2`, `atan`, `hypot`, `polar` | dfixpnt | decimal circular vectoring | #2042 |
 | `CORDICAddSub` | lns add/sub | hyperbolic, in `double` | #783 |
 
 The fixpnt engines all go through one iteration, `cordic::detail::step<m>`, which is the unified
@@ -462,6 +465,37 @@ F r = cordic::sqrt(F(2));             // 1.41421, from the vectoring gain
   and `ln 2 = 2 atanh(1/3)` come from series in fixpnt arithmetic 16 bits wider than the datapath. None of them goes through `double`, so the engines
   are correct at any width. The linear engine needs no table beyond the exact powers of two.
 
+### The decimal engine for dfixpnt
+
+`dfixpnt` is a sign-magnitude decimal fixed-point, and in decimal a shift by one digit divides by 10
+exactly up to truncation. So its engine uses the elementary angles `atan(10^-j)`:
+
+- **Position 0** is one rotation by `+-atan(1) = +-pi/4`. **Every position `j >= 1`** is nine rotations
+  by `+-atan(10^-j)`, each in the direction that drives `z` (rotation) or `y` (vectoring) toward 0.
+- **The gain is constant.** Every rotation is taken, in one direction or the other, so after `n`
+  positions the gain is `K_n = sqrt(2) prod_{1 <= j < n} (1 + 10^-2j)^(9/2) -> 1.4796485628...`, whatever
+  the angle. Rotation starts from `(1/K_n, 0, theta)` and ends at `(cos theta, sin theta)`, and
+  vectoring ends at `(K_n hypot(x, y), 0, atan2(y, x))`, as in binary CORDIC. The calculator form, which
+  takes each angle 0 to 9 times while it fits, needs half the rotations, but its gain depends on the
+  angle, and turning its `tan` into `sin` and `cos` takes a division and a square root.
+- **It converges.** `atan(t) / t` decreases, so `atan(10^-k) >= 10^(j-k) atan(10^-j)`, and
+  `9 sum_{k>j} atan(10^-k)` is at least `atan(10^-j)` less the last angle: every angle is covered by the
+  ones after it. The range is `pi/4 + 9 sum_{j>=1} atan(10^-j) = 1.7824130...`, and the angle left after
+  `n` positions is at most `atan(10^-(n-1))`, so the error falls one decimal digit per position.
+- **Sign-magnitude.** A digit shift of a sign-magnitude value truncates toward zero, not toward minus
+  infinity. The engine computes on `|theta|`, `|x|` and `|y|` and applies the signs last, so `sin` and
+  `atan2` are exactly odd and `cos` exactly even.
+- **The datapath** has `g` guard fraction digits, with `g` one more than the number of digits of
+  `9 (radix + 4)`, since the truncation error grows by about a unit per rotation. Rotation has
+  `radix + g` fraction digits and reduces `|theta|` by `pi/2` when the type holds more than `(-1, 1)`.
+  Vectoring has `ndigits + 1 + g`, with the inputs scaled by a power of ten so the larger lies in
+  `[1/10, 1)`. The registers have exactly the arithmetic of a BCD `dfixpnt` with `Modulo` arithmetic,
+  with a byte per digit for speed, and the engine reads and writes digits, so BCD, BID and DPD targets
+  give identical results. The result is rounded to nearest, ties to even, once.
+- **The constants** (`atan(10^-j)`, `1/K_n`, `pi/2`, `2/pi`) come from series in `dfixpnt` arithmetic
+  8 digits wider than the datapath; `1/K_n` comes from a Newton iteration for the reciprocal square
+  root, which multiplies only, so `dfixpnt` needs no square root.
+
 ### Measured accuracy
 
 Every result is within 1 ulp of the exact value, after the type's arithmetic. These are the worst cases
@@ -496,8 +530,24 @@ function whose every result saturates in that format, such as `cosh >= 1` in `fi
 fixed-point ulp is absolute, and they stay within the same bound: `sinh` of a small `z` is the `y` of the
 rotation with no reduction, and `log` of a `w` near 1 has `e = 0`.
 
+For the decimal engine, in units of the last decimal digit, over every value of the formats up to 6 digits
+(every pair for the 2-digit ones) and samples of the wide formats:
+
+| format | sin | cos | atan | atan2 | hypot |
+|---|---|---|---|---|---|
+| `dfixpnt<2,1>` | 0.496 | 0.498 | 0.495 | 0.500 | 0.499 |
+| `dfixpnt<3,2>` | 0.503 | 0.505 | 0.500 | 0.500 | 0.501 |
+| `dfixpnt<4,4>` | 0.529 | 0.517 | 0.510 | 0.501 | 0.500 |
+| `dfixpnt<6,4>` | 0.534 | 0.530 | 0.500 | 0.500 | 0.502 |
+| `dfixpnt<8,6>` | 0.537 | 0.532 | 0.500 | 0.500 | 0.502 |
+| `dfixpnt<12,4>` | 0.524 | 0.522 | 0.500 | 0.500 | 0.500 |
+| `dfixpnt<20,18>` | 0.503 | 0.504 | 0.500 | 0.500 | 0.500 |
+| `dfixpnt<34,30>` | 0.505 | 0.505 | 0.500 | 0.500 | 0.500 |
+| `dfixpnt<50,40>` | 0.499 | 0.509 | 0.500 | 0.498 | 0.499 |
+
 The references are independent of the engines. For the circular and hyperbolic engines they are `double`
-(up to 32 bits) or `qd`. For the linear engine they are exact rational results in `integer<>` arithmetic, so the
+(up to 32 bits) or `qd`; for the decimal engine, `double` up to 12 digits and `qd` (about 62 digits)
+beyond. For the linear engine they are exact rational results in `integer<>` arithmetic, so the
 error is measured exactly, even for wrapped 128-bit products.
 
 ### The hardware knobs
@@ -551,6 +601,21 @@ angle `eps` left over changes the length only by `cosh(eps) - 1 ~= eps^2 / 2`: t
 twice as fast as the angle, and 8 iterations already give `sqrt` to within 1 ulp. A repeated iteration
 (the fifth, with shift 4 again) does not halve the error as the others do.
 
+The decimal engine falls one decimal digit per position. In `dfixpnt<4,4,Saturate>`, whose defaults are
+7 positions for rotation, 8 for vectoring and 3 guard digits, the worst error in units of the last digit:
+
+| positions | `sin` | `atan` |
+|---|---|---|
+| 1 | 7070 | 7850 |
+| 2 | 986 | 997 |
+| 3 | 100 | 100 |
+| 4 | 10.3 | 10.5 |
+| 5 | 1.38 | 1.47 |
+| default | 0.529 (7) | 0.510 (8) |
+
+and in `dfixpnt<4,3,Saturate>`, the worst `sin` or `atan` error is 24.2 with no guard digits, 3.41 with
+one, 0.688 with two, and 0.521 at the default three.
+
 ## References
 
 - J. E. Volder, "Binary computation algorithms for coordinate rotation and function generation", Convair
@@ -561,6 +626,8 @@ twice as fast as the angle, and 8 iterations already give `sqrt` to within 1 ulp
   EC-8(3), 335-339, 1959.
 - J. E. Meggitt, "Pseudo Division and Pseudo Multiplication Processes", *IBM Journal of Research and
   Development*, 6(2), 210-226, 1962.
+- H. Schmid and A. Bogacki, "Use Decimal CORDIC for Generation of Many Transcendental Functions",
+  *EDN*, February 1973.
 - J. S. Walther, "A Unified Algorithm for Elementary Functions", *AFIPS Spring Joint Computer
   Conference*, 38, 379-385, 1971.
 - D. S. Cochran, "Algorithms and Accuracy in the HP-35", *Hewlett-Packard Journal*, June 1972.

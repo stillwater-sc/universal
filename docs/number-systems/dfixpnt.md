@@ -65,6 +65,8 @@ All three encodings produce identical arithmetic results. BCD is the default and
 - Digit access: `digit(i)`, `setdigit(i, d)` (index 0 = least significant)
 - Range queries: `minpos()`, `maxpos()`, `minneg()`, `maxneg()`, `zero()`
 - Inspection: `type_tag()`, `to_binary()`, `color_print()`
+- Math: `abs`, `floor`, `ceil`, and a decimal CORDIC engine for `sin`, `cos`, `atan`, `atan2` and
+  `hypot` (below)
 
 ## How It Works
 
@@ -205,6 +207,37 @@ std::cout << "fields   : " << type_field(x) << '\n';
 //   type     : dfixpnt<  8,   3, BCD,     Modulo, h>
 //   fields   : fields(i:5|f:3)
 ```
+
+### Trigonometry: the decimal CORDIC engine
+
+`dfixpnt` computes `sin`, `cos`, `atan`, `atan2` and `hypot` with a decimal CORDIC engine in namespace
+`cordic` (#2042), the decimal counterpart of `fixpnt`'s binary engine. It is a digit-by-digit model of a
+decimal shift-and-add unit, in sign-magnitude decimal arithmetic, correct to the full width of the type,
+and it has an iteration count (in digit positions) and a number of guard digits that a designer can set.
+
+```cpp
+#include <universal/number/dfixpnt/dfixpnt.hpp>
+using namespace sw::universal;
+
+using D = dfixpnt<12, 10>;
+D s, c;
+cordic::sincos(D(0.5), s, c);                // s = 0.4794255386, c = 0.8775825619
+D a = cordic::atan2(D(1), D(-1));            // 2.3561944902 = 3 pi / 4
+D h = cordic::hypot(D(3), D(4));             // 5.0000000000
+
+// a unit with 2 guard digits that stops after 6 digit positions
+D s6 = cordic::sin<2>(D(0.5), 6);
+```
+
+Each digit position `j >= 1` is nine rotations by `+-atan(10^-j)` (position 0 is one by `+-pi/4`), so
+the gain is the same constant for every angle and `sin` and `cos` come out directly, without the
+division and square root that the calculator form needs. The engine computes on magnitudes and applies
+the signs last, so `sin` and `atan2` are exactly odd and `cos` exactly even, and it reads and writes
+digits, so BCD, BID and DPD give identical results. Every result is within 1 ulp (one unit in the last
+digit) of the exact value; the measured worst case is 0.54 ulp, over every value of the formats up to 6
+digits and samples up to `dfixpnt<50,40>`. A result the type cannot hold, such as `cos(0) = 1` in
+`dfixpnt<4,4>`, saturates under `Saturate` and wraps under `Modulo`. `docs/algorithmic-details/cordic.md`
+explains the algorithm, and the tests are in `static/fixpnt/decimal/math/cordic.cpp`.
 
 ## Problems It Solves
 
