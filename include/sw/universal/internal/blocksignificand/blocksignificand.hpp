@@ -619,12 +619,18 @@ public:
 
 		// process the value above the radix, with double weights: exact powers of two up to
 		// 2^1023 (a 64-bit integer weight saturated finite values past bit 63), inf beyond
+		// Start at the leading set bit: the weight of an unset high bit may exceed 2^1023, and an
+		// inf weight halved stays inf and would swamp the finite bits below it.
 		if (shift >= 0) {
-			double bitValue{ 1.0 };
-			for (int i = 0; i < shift; ++i) bitValue *= 2.0;
-			for (; bit >= radixPoint; --bit) {
-				if (tmp.test(static_cast<unsigned>(bit))) d += bitValue;
-				bitValue *= 0.5;
+			const int top = tmp.msb();   // -1 when no bit is set
+			if (top >= radixPoint) {
+				if (top < bit) bit = top;
+				double bitValue{ 1.0 };
+				for (int i = radixPoint; i < bit; ++i) bitValue *= 2.0;
+				for (; bit >= radixPoint; --bit) {
+					if (tmp.test(static_cast<unsigned>(bit))) d += bitValue;
+					bitValue *= 0.5;
+				}
 			}
 		}
 		// else (shift < 0): no integer-weight contribution remains above the radix for this configuration.

@@ -590,8 +590,9 @@ private:
 	static constexpr int compare_magnitude(const blocktriple& a, const blocktriple& b) noexcept {
 		const int ma = a._significand.msb(), mb = b._significand.msb();
 		if (ma < 0 || mb < 0) return (ma < 0) ? ((mb < 0) ? 0 : -1) : 1;   // a zero significand
-		const int ea = a._scale + ma - a._significand.radix();
-		const int eb = b._scale + mb - b._significand.radix();
+		// in 64 bits: setscale() accepts any int, and scale + msb could overflow before the radix cancels it
+		const long long ea = static_cast<long long>(a._scale) + ma - a._significand.radix();
+		const long long eb = static_cast<long long>(b._scale) + mb - b._significand.radix();
 		if (ea != eb) return (ea < eb) ? -1 : 1;
 		significand_t x(a._significand), y(b._significand);
 		x <<= (static_cast<int>(bfbits) - 1 - ma);

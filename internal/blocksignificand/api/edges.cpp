@@ -71,6 +71,12 @@ int VerifyToDouble(bool reportTestCases) {
 	wider.setbit(78);
 	wider.setbit(1);
 	check(wider.to_double(false), 75557863725914323419136.0 + 0.5, "unsigned 2^76 + 2^-1");
+	// more than 1024 bits above the radix: the unset high bits must not make the weight inf
+	blocksignificand<1100, uint8_t> huge(1, 0);
+	check(huge.to_double(false), 1.0, "unsigned 1 in 1100 bits");
+	check(huge.to_double(true), 1.0, "2's complement 1 in 1100 bits");
+	huge.setbit(1023);
+	check(huge.to_double(false), 8.98846567431158e307 * 1.0 + 1.0, "unsigned 2^1023 + 1");
 	return nrOfFailedTests;
 }
 

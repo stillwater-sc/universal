@@ -78,6 +78,16 @@ int VerifyLayoutIndependentOrder(bool reportTestCases) {
 		check(quotient < Div(2.0), false, "DIV 3/1.5 < 2.0");
 		check(Div(1.75) < quotient, true, "DIV 1.75 < 3/1.5");
 	}
+	{
+		// extreme scales: the binade arithmetic must not overflow an int
+		using Rep = blocktriple<4, BlockTripleOperator::REP, uint8_t>;
+		Rep big(1.0), small(1.0);
+		big.setscale(std::numeric_limits<int>::max());
+		small.setscale(std::numeric_limits<int>::min());
+		check(big == big, true, "scale INT_MAX == itself");
+		check(small < big, true, "scale INT_MIN < scale INT_MAX");
+		check(big < small, false, "scale INT_MAX < scale INT_MIN");
+	}
 	return nrOfFailedTests;
 }
 

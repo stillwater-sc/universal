@@ -126,6 +126,13 @@ int VerifyWideToDouble(bool reportTestCases) {
 		++nrOfFailedTests;
 		if (reportTestCases) std::cerr << "FAIL: blockfraction<48> to_double = " << b.to_double() << '\n';
 	}
+	blockfraction<1100, uint8_t> c;   // more than 1024 bits above the radix
+	c.setradix(0);
+	c.setbit(0);
+	if (c.to_double() != 1.0) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: blockfraction<1100> 1 to_double = " << c.to_double() << '\n';
+	}
 	return nrOfFailedTests;
 }
 
