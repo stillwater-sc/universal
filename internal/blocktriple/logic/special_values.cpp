@@ -41,6 +41,46 @@ int VerifySpecialValueComparisons(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// an operator result is left unnormalized (a MUL product 2.25 is 10.01b at radix 2*fbits with
+// scale 0), a native value is 1.001b with scale 1: the order must not depend on that layout
+int VerifyLayoutIndependentOrder(bool reportTestCases) {
+	using namespace sw::universal;
+	int nrOfFailedTests = 0;
+	auto check = [&](bool got, bool expected, const char* label) {
+		if (got != expected) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: " << label << '\n';
+		}
+	};
+	{
+		using Mul = blocktriple<4, BlockTripleOperator::MUL, uint8_t>;
+		Mul a(1.5), b(1.5), product;
+		product.mul(a, b);                         // 2.25, with the overflow bit set
+		Mul two(2.0), exact(2.25), three(3.0), minus(-2.25);
+		check(product == exact, true, "MUL 1.5*1.5 == 2.25");
+		check(product != exact, false, "MUL 1.5*1.5 != 2.25");
+		check(product < two, false, "MUL 1.5*1.5 < 2.0");
+		check(two < product, true, "MUL 2.0 < 1.5*1.5");
+		check(product < three, true, "MUL 1.5*1.5 < 3.0");
+		check(product >= exact, true, "MUL 1.5*1.5 >= 2.25");
+		check(minus < product, true, "MUL -2.25 < 1.5*1.5");
+		Mul c(-1.5), negproduct;
+		negproduct.mul(c, b);                      // -2.25
+		check(negproduct == minus, true, "MUL -1.5*1.5 == -2.25");
+		check(negproduct < Mul(-2.0), true, "MUL -1.5*1.5 < -2.0");
+		check(Mul(-3.0) < negproduct, true, "MUL -3.0 < -1.5*1.5");
+	}
+	{
+		using Div = blocktriple<8, BlockTripleOperator::DIV, uint32_t>;
+		Div a(3.0), b(1.5), quotient;
+		quotient.div(a, b);                        // 2.0
+		check(quotient == Div(2.0), true, "DIV 3/1.5 == 2.0");
+		check(quotient < Div(2.0), false, "DIV 3/1.5 < 2.0");
+		check(Div(1.75) < quotient, true, "DIV 1.75 < 3/1.5");
+	}
+	return nrOfFailedTests;
+}
+
 } // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -83,6 +123,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialValueComparisons<blocktriple<10, BlockTripleOperator::ADD, uint16_t>>(reportTestCases), "blocktriple<10,ADD,uint16_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialValueComparisons<blocktriple<10, BlockTripleOperator::MUL, uint32_t>>(reportTestCases), "blocktriple<10,MUL,uint32_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialValueComparisons<blocktriple<52, BlockTripleOperator::REP, uint64_t>>(reportTestCases), "blocktriple<52,REP,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLayoutIndependentOrder(reportTestCases), "blocktriple MUL/DIV results", "layout-independent order");
 #endif
 
 #if REGRESSION_LEVEL_2

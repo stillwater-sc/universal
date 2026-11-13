@@ -583,6 +583,23 @@ public:
 	}
 
 private:
+	// Order of the magnitudes of two finite values, -1, 0 or 1, independent of their layout: an
+	// operator result is left unnormalized (a MUL product of 2.25 is 10.01b at radix 2*fbits with
+	// scale 0) while a native value is 1.001b at its operand radix with scale 1. Compare the
+	// binade of the leading one, then the bits aligned at that leading one; nothing is discarded.
+	static constexpr int compare_magnitude(const blocktriple& a, const blocktriple& b) noexcept {
+		const int ma = a._significand.msb(), mb = b._significand.msb();
+		if (ma < 0 || mb < 0) return (ma < 0) ? ((mb < 0) ? 0 : -1) : 1;   // a zero significand
+		const int ea = a._scale + ma - a._significand.radix();
+		const int eb = b._scale + mb - b._significand.radix();
+		if (ea != eb) return (ea < eb) ? -1 : 1;
+		significand_t x(a._significand), y(b._significand);
+		x <<= (static_cast<int>(bfbits) - 1 - ma);
+		y <<= (static_cast<int>(bfbits) - 1 - mb);
+		if (x == y) return 0;
+		return x.unsigned_less(y) ? -1 : 1;
+	}
+
 	// special cases to keep track of
 	bool _nan; // most dominant state
 	bool _inf; // second most dominant state
@@ -895,7 +912,7 @@ inline bool operator==(const blocktriple<fbits, op, bt>& lhs, const blocktriple<
 	if (lhs._nan || rhs._nan) return false;
 	if (lhs._zero || rhs._zero) return lhs._zero && rhs._zero;
 	if (lhs._inf || rhs._inf) return lhs._inf && rhs._inf && lhs._sign == rhs._sign;
-	return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._significand == rhs._significand;
+	return lhs._sign == rhs._sign && blocktriple<fbits, op, bt>::compare_magnitude(lhs, rhs) == 0;
 }
 template<unsigned fbits, BlockTripleOperator op, typename bt>
 inline bool operator!=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return !operator==(lhs, rhs); }
@@ -907,16 +924,8 @@ inline bool operator< (const blocktriple<fbits, op, bt>& lhs, const blocktriple<
 	if (lhs._zero) return rhs._zero ? false : !rhs._sign;
 	if (rhs._zero) return lhs._sign;
 	if (lhs._sign != rhs._sign) return lhs._sign;
-	// same sign: compare the magnitudes, larger scale first, then the significand bits
-	bool magnitudeLess{ false };
-	if (lhs._scale != rhs._scale) {
-		magnitudeLess = (lhs._scale < rhs._scale);
-	}
-	else {
-		if (lhs._significand == rhs._significand) return false;
-		magnitudeLess = (lhs._significand < rhs._significand);
-	}
-	return lhs._sign ? !magnitudeLess : magnitudeLess;
+	const int order = blocktriple<fbits, op, bt>::compare_magnitude(lhs, rhs);
+	return lhs._sign ? (order > 0) : (order < 0);
 }
 template<unsigned fbits, BlockTripleOperator op, typename bt>
 inline bool operator> (const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return  operator< (rhs, lhs); }

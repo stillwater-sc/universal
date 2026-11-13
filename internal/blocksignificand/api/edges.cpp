@@ -39,6 +39,11 @@ int VerifyFractionUll(bool reportTestCases) {
 	check(c.fraction_ull(), 0xFFFF'FFFF'FFFF'FFFFull, "fraction_ull radix 70");
 	blocksignificand<80, uint32_t> d(0x0123'4567'89AB'CDEFull, 64);
 	check(d.fraction_ull(), 0x0123'4567'89AB'CDEFull, "fraction_ull radix 64");
+	// uint64_t limbs: the fraction bits live in the low limb, not in the MSU
+	blocksignificand<80, uint64_t> e(0x0123'4567'89AB'CDEFull, 64);
+	check(e.fraction_ull(), 0x0123'4567'89AB'CDEFull, "fraction_ull radix 64, uint64_t limbs");
+	blocksignificand<80, uint64_t> f(0xFFFF'0000'FFFF'0000ull, 20);
+	check(f.fraction_ull(), 0x000F'0000ull, "fraction_ull radix 20, uint64_t limbs");
 	return nrOfFailedTests;
 }
 
@@ -58,6 +63,14 @@ int VerifyToDouble(bool reportTestCases) {
 	blocksignificand<10, uint8_t> one(0b01'0000'0000ull, 8);
 	check(one.to_double(false), 1.0, "unsigned 1.0");
 	check(one.to_double(true), 1.0, "2's complement 1.0");
+	// an integer weight past bit 63 is finite: 2^64 is exact in a double
+	blocksignificand<65, uint8_t> wide(0, 0);
+	wide.setbit(64);
+	check(wide.to_double(false), 18446744073709551616.0, "unsigned 2^64");
+	blocksignificand<80, uint32_t> wider(0, 2);
+	wider.setbit(78);
+	wider.setbit(1);
+	check(wider.to_double(false), 75557863725914323419136.0 + 0.5, "unsigned 2^76 + 2^-1");
 	return nrOfFailedTests;
 }
 
@@ -67,6 +80,17 @@ constexpr double constexpr_to_double() {
 	return v.to_double();
 }
 static_assert(constexpr_to_double() == 1.5, "blocksignificand::to_double in a constant expression");
+
+// the raw constructor drops bits above nbits, so they cannot take part in an ordering
+int VerifyPaddingBits(bool reportTestCases) {
+	int nrOfFailedTests = 0;
+	blocksignificand<10, uint8_t> a(0x400ull, 0), b(1ull, 0);   // bit 10 is outside the 10 bits
+	if (!a.iszero() || !(a < b) || a == b) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: blocksignificand<10>(0x400) kept a bit above nbits\n";
+	}
+	return nrOfFailedTests;
+}
 
 // 2's complement order, every pair of 8 bits
 int VerifyOrder(bool reportTestCases) {
@@ -124,6 +148,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFractionUll(reportTestCases), "blocksignificand", "fraction_ull");
 	nrOfFailedTestCases += ReportTestResult(VerifyToDouble(reportTestCases), "blocksignificand", "to_double");
 	nrOfFailedTestCases += ReportTestResult(VerifyOrder(reportTestCases), "blocksignificand<8,uint8_t>", "2's complement order");
+	nrOfFailedTestCases += ReportTestResult(VerifyPaddingBits(reportTestCases), "blocksignificand<10,uint8_t>", "bits above nbits");
 #endif
 
 #if REGRESSION_LEVEL_2

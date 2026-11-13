@@ -131,7 +131,9 @@ public:
 	template <size_t... I>
 	constexpr blocksignificand(const uint64_t raw, int radixPoint, std::index_sequence<I...>) noexcept
 	          : radixPoint{ radixPoint }, encoding{ BitEncoding::Flex }
-		  , _block{ static_cast<bt>(I * bitsInBlock < 64 ? (storageMask & (raw >> (I * bitsInBlock % 64))) : 0ull)... } {}  // limbs past bit 63 are 0
+		  , _block{ static_cast<bt>(I * bitsInBlock < 64 ? (storageMask & (raw >> (I * bitsInBlock % 64))) : 0ull)... } {  // limbs past bit 63 are 0
+		_block[MSU] &= MSU_MASK;  // the invariant the comparisons rely on: no bits above nbits
+	}
 
 	constexpr blocksignificand(const uint64_t raw, int radixPoint) noexcept
 	        : blocksignificand(raw, radixPoint, std::make_index_sequence<nrBlocks>{}) {}
@@ -539,7 +541,12 @@ public:
 	}
 	constexpr uint64_t fraction_ull() const noexcept {
 		if (radixPoint <= 0) return 0;  // no fraction bits
-		uint64_t raw = significand_ull();
+		// the low 64 bits, gathered from the low limbs: significand_ull() keeps only the MSU
+		// for uint64_t limbs, which holds no fraction bits once nbits > 64
+		uint64_t raw{ 0 };
+		for (unsigned i = 0; i < nrBlocks && i * bitsInBlock < 64; ++i) {
+			raw |= (static_cast<uint64_t>(_block[i]) << (i * bitsInBlock));
+		}
 		// remove the non-fraction bits; a radix at or past bit 64 keeps all 64 bits
 		if (radixPoint < 64) raw &= (0xFFFF'FFFF'FFFF'FFFFull >> (64 - radixPoint));
 		return raw;
@@ -610,21 +617,14 @@ public:
 			--shift; // and remove the MSB from the value computation
 		}
 
-		// process the value above the radix
-		if (shift >= 0 && shift < 64) {
-			uint64_t bitValue = (uint64_t{1} << shift);
+		// process the value above the radix, with double weights: exact powers of two up to
+		// 2^1023 (a 64-bit integer weight saturated finite values past bit 63), inf beyond
+		if (shift >= 0) {
+			double bitValue{ 1.0 };
+			for (int i = 0; i < shift; ++i) bitValue *= 2.0;
 			for (; bit >= radixPoint; --bit) {
-				if (tmp.test(static_cast<unsigned>(bit))) d += static_cast<double>(bitValue);
-				bitValue >>= 1;
-			}
-		} else if (shift >= 64) {
-			// Exceeds the range representable by a 64-bit weight. If any bit above the radix
-			// is set, the converted value saturates.
-			for (; bit >= radixPoint; --bit) {
-				if (tmp.test(static_cast<unsigned>(bit))) {
-					d = std::numeric_limits<double>::infinity();
-					break;
-				}
+				if (tmp.test(static_cast<unsigned>(bit))) d += bitValue;
+				bitValue *= 0.5;
 			}
 		}
 		// else (shift < 0): no integer-weight contribution remains above the radix for this configuration.

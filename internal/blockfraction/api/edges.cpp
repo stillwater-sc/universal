@@ -56,7 +56,26 @@ int VerifyShifts(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
-// every pair of an 8-bit blockfraction ordered as unsigned numbers
+// shifting every bit out keeps the radix point, like every other shift
+template<unsigned nbits, typename bt>
+int VerifyShiftOutKeepsRadix(bool reportTestCases) {
+	int nrOfFailedTests = 0;
+	for (int s : { static_cast<int>(nbits), static_cast<int>(nbits) + 5 }) {
+		blockfraction<nbits, bt> l, r;
+		l.setradix(3); r.setradix(3);
+		l.setbits(0x5); r.setbits(0x5);
+		l <<= s;
+		r >>= s;
+		l.setbits(8); r.setbits(8);   // 8 at radix 3 is 1.0
+		if (l.radix() != 3 || r.radix() != 3 || l.to_double() != 1.0 || r.to_double() != 1.0) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: blockfraction<" << nbits << "> shift by " << s << " changed the radix to " << l.radix() << '/' << r.radix() << '\n';
+		}
+	}
+	return nrOfFailedTests;
+}
+
+// every pair of an nbits blockfraction ordered as unsigned numbers
 template<unsigned nbits, typename bt>
 int VerifyUnsignedOrder(bool reportTestCases) {
 	static_assert(nbits <= 10, "exhaustive pairs");
@@ -158,6 +177,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySetbits<uint32_t>(reportTestCases), "blockfraction<128,uint32_t>", "setbits");
 	nrOfFailedTestCases += ReportTestResult(VerifySetbits<uint64_t>(reportTestCases), "blockfraction<128,uint64_t>", "setbits");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideToDouble(reportTestCases), "blockfraction", "wide to_double");
+	nrOfFailedTestCases += ReportTestResult(VerifyShiftOutKeepsRadix<12, uint8_t>(reportTestCases), "blockfraction<12,uint8_t>", "shift out keeps radix");
+	nrOfFailedTestCases += ReportTestResult(VerifyShiftOutKeepsRadix<40, uint32_t>(reportTestCases), "blockfraction<40,uint32_t>", "shift out keeps radix");
 #endif
 
 #if REGRESSION_LEVEL_2
