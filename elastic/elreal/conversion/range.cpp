@@ -87,6 +87,13 @@ int VerifyUnnormalisedStream(bool reportTestCases) {
 		++nrOfFailedTests;
 		if (reportTestCases) std::cerr << "FAIL: unnormalised two-block stream = " << got << " expected 4\n";
 	}
+	// a block whose v is far from 1: v = 2^-200, exp = 200 is 1, also as a float (converting
+	// v to float before normalising it flushed it to 0)
+	const R one(ZBCL<double>::singleton(B{ std::ldexp(1.0, -200), typename B::exp_t(200) }));
+	if (one.approx<float>(1) != 1.0f || double(one) != 1.0) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: block (2^-200, exp 200) = " << one.approx<float>(1) << " as float, " << double(one) << " as double\n";
+	}
 	return nrOfFailedTests;
 }
 

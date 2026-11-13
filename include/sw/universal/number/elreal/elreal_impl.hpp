@@ -284,8 +284,11 @@ public:
             if (b.is_zero_block()) continue;
             const long long rel = clamped(b.exponent() - top);   // <= 0
             if (rel <= -far) continue;   // far below the leading block: nothing at T's precision
-            // v * 2^exp = (v * 2^-s) * 2^E with s = scale_of_v(): the first factor is in [1, 2)
-            acc += std::ldexp(static_cast<T>(b.v), static_cast<int>(rel) - b.scale_of_v());
+            // v * 2^exp = (v * 2^-s) * 2^E with s = scale_of_v(): the first factor is in [1, 2).
+            // Normalise in the host type, exactly, before converting: a v of 2^-200 converted
+            // to float first is 0 (#2056 review)
+            const T coefficient = static_cast<T>(detail_block::ldexp_block(b.v, -b.scale_of_v()));
+            acc += std::ldexp(coefficient, static_cast<int>(rel));
         }
         return std::ldexp(acc, static_cast<int>(clamped(top - exp_t(down))));
     }
