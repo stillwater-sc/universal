@@ -59,6 +59,18 @@ int VerifyToLongLong(bool reportTestCases) {
 	check(static_cast<long long>(maxll), std::numeric_limits<long long>::max(), "LLONG_MAX round trip");
 	blockdigit<20> minll(std::numeric_limits<long long>::min());
 	check(static_cast<long long>(minll), std::numeric_limits<long long>::min(), "LLONG_MIN round trip");
+	// the unsigned conversions keep the unsigned range
+	for (unsigned long long u : { 9223372036854775808ull, 18446744073709551615ull }) {
+		blockdigit<20> v(u);
+		if (static_cast<unsigned long long>(v) != u) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: unsigned round trip of " << u << " = " << static_cast<unsigned long long>(v) << '\n';
+		}
+	}
+	if (static_cast<unsigned long long>(big) != 18446744073709551615ull) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: unsigned conversion of 10^30 - 1 does not saturate\n";
+	}
 	return nrOfFailedTests;
 }
 

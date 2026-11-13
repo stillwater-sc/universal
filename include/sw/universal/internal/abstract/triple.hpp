@@ -184,12 +184,28 @@ public:
 		return v;
 	}
 	// the special values first: the product read an infinity or a NaN as 1.0 * 2^scale
+	// rounded ONCE to Real's precision, to nearest even: accumulating the fraction bits in a
+	// narrower Real rounded at every step, so 1 + 2^-24 + 2^-25 came out 1.0f, one ulp low
 	template<typename Real>
 	Real to_native() const {
 		if (_nan) return std::numeric_limits<Real>::quiet_NaN();
 		if (_inf) return _sign ? -std::numeric_limits<Real>::infinity() : std::numeric_limits<Real>::infinity();
 		if (_zero) return _sign ? -Real(0) : Real(0);
-		return static_cast<Real>(sign_value()) * std::ldexp(fraction_value<Real>(), _scale);
+		constexpr int target = std::numeric_limits<Real>::digits - 1;   // fraction bits Real holds
+		const int kept = (static_cast<int>(fbits) < target) ? static_cast<int>(fbits) : target;
+		Real v = Real(1);
+		Real weight = Real(0.5);
+		for (int i = static_cast<int>(fbits) - 1; i >= static_cast<int>(fbits) - kept; --i, weight *= Real(0.5)) {
+			if (_fraction.test(static_cast<unsigned>(i))) v += weight;   // exact: within Real's precision
+		}
+		const int guardPos = static_cast<int>(fbits) - kept - 1;
+		if (guardPos >= 0 && _fraction.test(static_cast<unsigned>(guardPos))) {
+			bool sticky = false;
+			for (int i = guardPos - 1; i >= 0 && !sticky; --i) sticky = _fraction.test(static_cast<unsigned>(i));
+			const bool lsb = (kept == 0) ? true : _fraction.test(static_cast<unsigned>(static_cast<int>(fbits) - kept));
+			if (sticky || lsb) v += weight * Real(2);   // one unit of the last kept bit
+		}
+		return static_cast<Real>(sign_value()) * std::ldexp(v, _scale);
 	}
 	long double to_long_double() const { return to_native<long double>(); }
 	double to_double() const           { return to_native<double>(); }
@@ -219,7 +235,9 @@ private:
 		unsigned long long kept = below >> drop;
 		const unsigned long long half = 1ull << (drop - 1);
 		const unsigned long long rest = below & ((half << 1) - 1ull);
-		if (rest > half || (rest == half && (kept & 1ull))) {
+		// the last kept bit; with no fraction bits it is the hidden bit, which is odd
+		const bool lsb = (fbits == 0) ? true : ((kept & 1ull) != 0);
+		if (rest > half || (rest == half && lsb)) {
 			++kept;
 			if constexpr (fbits < 64) {
 				if (kept >> fbits) { kept = 0; ++_scale; }   // 1.11..1 + ulp = 10.00..0

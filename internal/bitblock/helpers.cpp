@@ -12,6 +12,7 @@
 // 48 < nbits < 112. Every case below failed (or did not compile) before the fix.
 #include <universal/utility/directives.hpp>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <universal/internal/bitblock/bitblock.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -80,6 +81,12 @@ int VerifyCopySlice(bool reportTestCases) {
 	if (t.to_ullong() != 0x3C0) {
 		++nrOfFailedTests;
 		if (reportTestCases) std::cerr << "FAIL: copy_slice_into(0xF0, [4,8), shift 2) = 0x" << std::hex << t.to_ullong() << std::dec << '\n';
+	}
+	bitblock<16> w;   // a shift that would wrap end + shift is rejected, not applied
+	copy_slice_into(s, w, 4, 8, std::numeric_limits<unsigned>::max() - 3u);
+	if (w.any()) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: copy_slice_into with a wrapping shift wrote 0x" << std::hex << w.to_ullong() << std::dec << '\n';
 	}
 	bitblock<16> u = bits_of<16>(0x8001);   // the target is not reset
 	copy_slice_into(s, u, 0, 8, 4);

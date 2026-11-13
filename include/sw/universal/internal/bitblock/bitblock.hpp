@@ -350,7 +350,7 @@ void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, unsigned 
 	// do NOT reset the target!!!  The slice [begin, end) must lie in src, and its image
 	// [begin + shift, end + shift) in tgt (the tests were inverted: every valid slice threw)
 	if (begin > end || end > src_size) throw iteration_bound_too_large{};
-	if (end + shift > tgt_size) throw iteration_bound_too_large{};
+	if (shift > tgt_size || end > tgt_size - shift) throw iteration_bound_too_large{};   // without wrapping end + shift
 	for (unsigned i = begin; i < end; i++)
 		tgt.set(i + shift, src[i]);
 }
@@ -361,7 +361,7 @@ void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, unsigned 
 	// do NOT reset the target!!!  The slice [begin, end) must lie in src, and its image
 	// [begin + shift, end + shift) in tgt (the tests were inverted: every valid slice was a no-op)
 	if (begin > end || end > src_size) return;
-	if (end + shift > tgt_size) return;
+	if (shift > tgt_size || end > tgt_size - shift) return;   // without wrapping end + shift
 	for (unsigned i = begin; i < end; i++)
 		tgt.set(i + shift, src[i]);
 }

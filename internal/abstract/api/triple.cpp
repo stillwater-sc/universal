@@ -53,6 +53,31 @@ int VerifyConversion(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// to a narrower native type the value rounds once: 1 + 2^-24 + 2^-25 is above the tie, so it
+// rounds up to 1 + 2^-23 (adding the bits one at a time in float lost both); and triple<0>
+// rounds an integer tie with the hidden bit as its odd last bit, so 3 rounds to 4
+int VerifySingleRounding(bool reportTestCases) {
+	int nrOfFailedTests = 0;
+	const triple<52, std::uint32_t> t(1.0 + std::ldexp(1.0, -24) + std::ldexp(1.0, -25));
+	if (float(t) != 0x1.000002p0f) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: float(triple<52>(1 + 2^-24 + 2^-25)) = " << float(t) << '\n';
+	}
+	const triple<52, std::uint32_t> tie(1.0 + std::ldexp(1.0, -24));   // exactly a tie: to even, 1
+	if (float(tie) != 1.0f) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: float(triple<52>(1 + 2^-24)) = " << float(tie) << '\n';
+	}
+	for (long long v : { 3LL, 5LL, 6LL, -3LL }) {
+		const double expected = rne(static_cast<double>(v), 0);
+		if (double(triple<0, std::uint8_t>(v)) != expected) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: triple<0>(" << v << ") = " << double(triple<0, std::uint8_t>(v)) << " expected " << expected << '\n';
+		}
+	}
+	return nrOfFailedTests;
+}
+
 int VerifySpecialValues(bool reportTestCases) {
 	using T = triple<23, std::uint32_t>;
 	const double inf = std::numeric_limits<double>::infinity();
@@ -128,6 +153,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<52>(reportTestCases), "triple<52>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialValues(reportTestCases), "triple<23>", "special values");
 	nrOfFailedTestCases += ReportTestResult(VerifyOrder(reportTestCases), "triple<8>", "order");
+	nrOfFailedTestCases += ReportTestResult(VerifySingleRounding(reportTestCases), "triple", "single rounding");
 #endif
 
 #if REGRESSION_LEVEL_2

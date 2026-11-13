@@ -105,11 +105,11 @@ public:
 
 	// explicit conversion operators
 	explicit operator long long() const noexcept { return to_long_long(); }
-	explicit operator unsigned long long() const noexcept { return static_cast<unsigned long long>(to_long_long()); }
+	explicit operator unsigned long long() const noexcept { return to_unsigned_long_long(); }
 	explicit operator int() const noexcept { return static_cast<int>(to_long_long()); }
 	explicit operator long() const noexcept { return static_cast<long>(to_long_long()); }
 	explicit operator unsigned int() const noexcept { return static_cast<unsigned int>(to_long_long()); }
-	explicit operator unsigned long() const noexcept { return static_cast<unsigned long>(to_long_long()); }
+	explicit operator unsigned long() const noexcept { return static_cast<unsigned long>(to_unsigned_long_long()); }
 	explicit operator float() const noexcept { return to_float(); }
 	explicit operator double() const noexcept { return to_double(); }
 
@@ -529,6 +529,19 @@ private:
 	}
 
 	// conversion helpers
+	// the unsigned range: a magnitude past LLONG_MAX but within ULLONG_MAX converts exactly, one
+	// past ULLONG_MAX saturates; a negative value converts as its long long, modulo 2^64, as before
+	unsigned long long to_unsigned_long_long() const noexcept {
+		if (_negative && !iszero()) return static_cast<unsigned long long>(to_long_long());
+		constexpr std::uint64_t limit = std::numeric_limits<std::uint64_t>::max();
+		std::uint64_t v = 0;
+		for (unsigned i = ndigits; i > 0; --i) {
+			const std::uint64_t d = static_cast<std::uint64_t>(_digit[i - 1]);
+			if (v > (limit - d) / radix) return limit;   // past the range: saturate
+			v = v * radix + d;
+		}
+		return v;
+	}
 	long long to_long_long() const noexcept {
 		// Use Horner's method (accumulate from most-significant digit)
 		// to avoid overflow in a separate base multiplier
