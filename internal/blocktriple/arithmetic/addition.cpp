@@ -188,7 +188,7 @@ void TestCase(ArgumentType lhs, ArgumentType rhs) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -236,15 +236,16 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<4, BlockTripleOperator::ADD, uint32_t> >(reportTestCases), "blocktriple<4,BlockTripleOperator::ADD, uint32_t>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<8, BlockTripleOperator::ADD, uint8_t> >(reportTestCases), "blocktriple<8,BlockTripleOperator::ADD, uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<8, BlockTripleOperator::ADD, uint16_t> >(reportTestCases), "blocktriple<8,BlockTripleOperator::ADD, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<8, BlockTripleOperator::ADD, uint32_t> >(reportTestCases), "blocktriple<8,BlockTripleOperator::ADD, uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<9, BlockTripleOperator::ADD, uint8_t> >(reportTestCases), "blocktriple<9,BlockTripleOperator::ADD, uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<9, BlockTripleOperator::ADD, uint16_t> >(reportTestCases), "blocktriple<9,BlockTripleOperator::ADD, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<9, BlockTripleOperator::ADD, uint32_t> >(reportTestCases), "blocktriple<9,BlockTripleOperator::ADD, uint32_t>", "addition");
 #endif
 
 #if REGRESSION_LEVEL_2
+	// fbits >= 8 enumerates 13 scales x 2^16 (or more) pairs per limb type: level 1 runs one limb type
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<8, BlockTripleOperator::ADD, uint16_t> >(reportTestCases), "blocktriple<8,BlockTripleOperator::ADD, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<8, BlockTripleOperator::ADD, uint32_t> >(reportTestCases), "blocktriple<8,BlockTripleOperator::ADD, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<9, BlockTripleOperator::ADD, uint8_t> >(reportTestCases), "blocktriple<9,BlockTripleOperator::ADD, uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<9, BlockTripleOperator::ADD, uint16_t> >(reportTestCases), "blocktriple<9,BlockTripleOperator::ADD, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<9, BlockTripleOperator::ADD, uint32_t> >(reportTestCases), "blocktriple<9,BlockTripleOperator::ADD, uint32_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<10, BlockTripleOperator::ADD, uint8_t> >(reportTestCases), "blocktriple<10,BlockTripleOperator::ADD, uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<10, BlockTripleOperator::ADD, uint16_t> >(reportTestCases), "blocktriple<10,BlockTripleOperator::ADD, uint16_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<10, BlockTripleOperator::ADD, uint32_t> >(reportTestCases), "blocktriple<10,BlockTripleOperator::ADD, uint32_t>", "addition");

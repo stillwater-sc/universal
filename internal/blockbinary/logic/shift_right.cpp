@@ -7,50 +7,43 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
+#include <limits>
 
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 #include <universal/verification/blockbinary_test_status.hpp>
 
-// enumerate all shift right cases for an blockbinary<nbits,BlockType> configuration
+// arithmetic shift right of a set of negative and positive values by every stride from 0
+// to nbits + 1: the reference is the C++20 arithmetic shift of the int64_t value, so a shift
+// by nbits or more leaves the sign extension, -1 for a negative value and 0 otherwise
 template<size_t nbits, typename BlockType = uint8_t>
 int VerifyArithmeticRightShift(bool reportTestCases) {
+	static_assert(nbits >= 2 && nbits <= 64, "the int64_t reference covers 2 to 64 bits");
 	using namespace sw::universal;
 	using BlockBinary = blockbinary<nbits, BlockType>;
 
 	if (reportTestCases) std::cout << type_tag(BlockBinary()) << '\n';
 
-	// take maxneg and shift it right in all possible strides
+	constexpr long long maxposValue = (nbits == 64) ? std::numeric_limits<long long>::max() : static_cast<long long>((1ull << (nbits - 1)) - 1ull);
+	constexpr long long maxnegValue = -maxposValue - 1;
+	const long long values[] = { maxnegValue, maxnegValue + 1, -1, -(maxposValue / 3) - 1, 0, 1, maxposValue / 3, maxposValue };
 	int nrOfFailedTests = 0;
-	BlockBinary a, result;
-	BlockBinary mostNegative; maxneg(mostNegative);
-	int64_t shiftRef, resultRef;
-	for (size_t i = 0; i < nbits+1; i++) {
-		a = mostNegative;
-		int64_t denominator = 0;
-		if (i == 64) { 
-			shiftRef = 0;
+	for (long long v : values) {
+		for (int i = 0; i < static_cast<int>(nbits) + 2; ++i) {
+			BlockBinary a(v);
+			BlockBinary result = a >> long(i);
+			long long resultRef = (v >> (i < 63 ? i : 63));
+			long long resultValue = (long long)result;
+			if (resultValue != resultRef) {
+				nrOfFailedTests++;
+				if (reportTestCases) ReportArithmeticShiftError("FAIL", ">>", a, static_cast<size_t>(i), result, resultRef);
+			}
+			else {
+				if (reportTestCases) ReportArithmeticShiftSuccess("PASS", ">>", a, static_cast<size_t>(i), result, resultRef);
+			}
+			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
-		else if (i == 63) { // special case for int64_t shift as it is maxneg
-			shiftRef = -1;
-		}
-		else { // i < 63
-			denominator = (1ll << i);
-			shiftRef = ((long long)a / denominator);
-		}
-
-		result = a >> long(i);
-		resultRef = (long long)result;
-
-		if (shiftRef != resultRef) {
-			nrOfFailedTests++;
-			if (reportTestCases) ReportArithmeticShiftError("FAIL", ">>", a, i, result, resultRef);
-		}
-		else {
-			if (reportTestCases) ReportArithmeticShiftSuccess("PASS", ">>", a, i, result, resultRef);
-		}
-		if (nrOfFailedTests > 100) return nrOfFailedTests;
 	}
 	return nrOfFailedTests;
 }
@@ -119,9 +112,9 @@ void ShiftExamples() {
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
@@ -202,6 +195,11 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	// multi-limb and wider limb configurations: the shift crosses limb boundaries
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<12, uint16_t>(reportTestCases), "blockbinary<12,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<33, uint32_t>(reportTestCases), "blockbinary<33,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<40, uint8_t>(reportTestCases), "blockbinary<40,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<64, uint64_t>(reportTestCases), "blockbinary<64,uint64_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<2>(reportTestCases), "blockbinary<2>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<3>(reportTestCases), "blockbinary<3>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<4>(reportTestCases), "blockbinary<4>", test_tag);

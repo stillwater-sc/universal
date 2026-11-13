@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <universal/utility/exceptions.hpp>  // throw_or_abort (#1925)
+#include <universal/internal/blockbinary/exceptions.hpp>
 #include <universal/utility/icf_array_bounds.hpp>
 #include <string>   // the std::string constructor
 #include <type_traits>
@@ -16,6 +17,11 @@
 #include <universal/internal/blocktype/limb_division.hpp>   // limb::divide, behind longdivision (#1744)
 
 #include <universal/internal/bit_manipulation.hpp>
+
+// x / 0 and x % 0: 0 returns 0, 1 throws blockbinary_divide_by_zero (see exceptions.hpp)
+#if !defined(BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION)
+#define BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION 0
+#endif
 
 namespace sw { namespace universal {
 
@@ -123,7 +129,23 @@ public:
 	constexpr blockbinary(long long initial_value) noexcept : _block{} { *this = initial_value; }
 
 	// specific value constructors
-	constexpr blockbinary(const std::string& s) noexcept : _block{} {  }  // TODO
+	// a bit string, most significant bit first, with an optional 0b prefix and ' separators,
+	// as to_binary() writes it. Bits above nbits are dropped; any other character leaves 0.
+	explicit constexpr blockbinary(const std::string& s) noexcept : _block{} {
+		std::size_t pos = (s.size() > 1 && s[0] == '0' && (s[1] == 'b' || s[1] == 'B')) ? 2 : 0;
+		unsigned nrBits = 0;
+		for (std::size_t i = pos; i < s.size(); ++i) {
+			if (s[i] == '\'') continue;
+			if (s[i] != '0' && s[i] != '1') { clear(); return; }
+			++nrBits;
+		}
+		unsigned bit = nrBits;
+		for (std::size_t i = pos; i < s.size(); ++i) {
+			if (s[i] == '\'') continue;
+			--bit;
+			if (s[i] == '1' && bit < nbits) setbit(bit);
+		}
+	}
 	constexpr blockbinary(const SpecificValue code) : _block{} {
 		switch (code) {
 		case SpecificValue::infpos:
@@ -460,25 +482,25 @@ public:
 		return *this;
 	}
 #endif
+	// Division truncates toward zero, as C++ integer division does. Signed maxneg / -1 has no
+	// representable quotient and wraps to maxneg (and maxneg % -1 is 0), without trapping.
 	constexpr blockbinary& operator/=(const blockbinary& rhs) {
-		if constexpr (nbits == (sizeof(BlockType) * 8)) {
-			if (rhs.iszero()) {
-				*this = 0;
-				return *this;
+		if (rhs.iszero()) return divide_by_zero();
+		if constexpr (nbits == bitsInBlock) {
+			// one full limb: native division, in the domain of the encoding
+			if constexpr (NumberType == BinaryNumberType::Signed) {
+				using S = std::make_signed_t<bt>;
+				const S divisor = static_cast<S>(rhs._block[0]);
+				if (divisor == S(-1)) {
+					_block[0] = static_cast<bt>(bt(0) - _block[0]);  // negate modulo 2^nbits: no overflow trap
+				}
+				else {
+					_block[0] = static_cast<bt>(static_cast<S>(_block[0]) / divisor);
+				}
 			}
-			if constexpr (sizeof(BlockType) == 1) {
-				_block[0] = static_cast<bt>(std::int8_t(_block[0]) / std::int8_t(rhs._block[0]));
+			else {
+				_block[0] = static_cast<bt>(_block[0] / rhs._block[0]);
 			}
-			else if constexpr (sizeof(BlockType) == 2) {
-				_block[0] = static_cast<bt>(std::int16_t(_block[0]) / std::int16_t(rhs._block[0]));
-			}
-			else if constexpr (sizeof(BlockType) == 4) {
-				_block[0] = static_cast<bt>(std::int32_t(_block[0]) / std::int32_t(rhs._block[0]));
-			}
-			else if constexpr (sizeof(BlockType) == 8) {
-				_block[0] = static_cast<bt>(std::int64_t(_block[0]) / std::int64_t(rhs._block[0]));
-			}
-			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
 		}
 		else {
 			quorem<nbits, BlockType, NumberType> result = longdivision(*this, rhs);
@@ -487,24 +509,21 @@ public:
 		return *this;
 	}
 	constexpr blockbinary& operator%=(const blockbinary& rhs) {
-		if constexpr (nbits == (sizeof(BlockType) * 8)) {
-			if (rhs.iszero()) {
-				*this = 0;
-				return *this;
+		if (rhs.iszero()) return divide_by_zero();
+		if constexpr (nbits == bitsInBlock) {
+			if constexpr (NumberType == BinaryNumberType::Signed) {
+				using S = std::make_signed_t<bt>;
+				const S divisor = static_cast<S>(rhs._block[0]);
+				if (divisor == S(-1)) {
+					_block[0] = bt(0);  // x % -1 == 0 for every x, maxneg included
+				}
+				else {
+					_block[0] = static_cast<bt>(static_cast<S>(_block[0]) % divisor);
+				}
 			}
-			if constexpr (sizeof(BlockType) == 1) {
-				_block[0] = static_cast<bt>(std::int8_t(_block[0]) % std::int8_t(rhs._block[0]));
+			else {
+				_block[0] = static_cast<bt>(_block[0] % rhs._block[0]);
 			}
-			else if constexpr (sizeof(BlockType) == 2) {
-				_block[0] = static_cast<bt>(std::int16_t(_block[0]) % std::int16_t(rhs._block[0]));
-			}
-			else if constexpr (sizeof(BlockType) == 4) {
-				_block[0] = static_cast<bt>(std::int32_t(_block[0]) % std::int32_t(rhs._block[0]));
-			}
-			else if constexpr (sizeof(BlockType) == 8) {
-				_block[0] = static_cast<bt>(std::int64_t(_block[0]) % std::int64_t(rhs._block[0]));
-			}
-			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
 		}
 		else {
 			quorem<nbits, BlockType, NumberType> result = longdivision(*this, rhs);
@@ -580,7 +599,10 @@ public:
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		if (bitsToShift >= static_cast<int>(nbits)) {
+			// every bit is shifted out: what remains is the sign extension, -1 or 0
+			const bool negative = sign();
 			setzero();
+			if (negative) flip();
 			return *this;
 		}
 		bool signext = sign();
@@ -658,6 +680,15 @@ public:
 		}
 	}
 	constexpr void setzero() noexcept { clear(); }
+	// the result of x / 0 and x % 0, as BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION selects
+	constexpr blockbinary& divide_by_zero() {
+#if BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION
+		throw_or_abort(blockbinary_divide_by_zero());
+#else
+		clear();
+		return *this;
+#endif
+	}
 	constexpr void set() noexcept { // set all bits to 1
 		if constexpr (nrBlocks > 1) {
 			for (unsigned i = 0; i < nrBlocks - 1; ++i) {
@@ -1098,7 +1129,7 @@ blockbinary<N, B, T> operator>>(const blockbinary<N, B, T>& a, long b) {
 // divide a by b and return both quotient and remainder
 template<unsigned N, typename B, BinaryNumberType T>
 constexpr quorem<N, B, T> longdivision(const blockbinary<N, B, T>& dividend, const blockbinary<N, B, T>& divisor) {
-	static_assert(T == BinaryNumberType::Signed, "longdivision requires signed blockbinary types");
+	// Unsigned works as well: sign() is false, so both operands are magnitudes
 	using BlockBinary = blockbinary<N + 1, B, T>;
 	quorem<N, B, T> result = { 0, 0, 0 };
 	if (divisor.iszero()) {
@@ -1113,8 +1144,10 @@ constexpr quorem<N, B, T> longdivision(const blockbinary<N, B, T>& dividend, con
 	// normalize both arguments to positive, which requires expansion by 1-bit to deal with maxneg
 	BlockBinary a(dividend);
 	BlockBinary b(divisor);
-	if (a_sign) a.twosComplement();
-	if (b_sign) b.twosComplement();
+	if constexpr (T == BinaryNumberType::Signed) {
+		if (a_sign) a.twosComplement();
+		if (b_sign) b.twosComplement();
+	}
 
 	if (a < b) { // optimization for integer numbers
 		result.rem = dividend; // a % b = a when a / b = 0
@@ -1137,15 +1170,13 @@ constexpr quorem<N, B, T> longdivision(const blockbinary<N, B, T>& dividend, con
 	accumulator.clear();
 	limb::scatter<B>(rl, L, [&accumulator](unsigned i, B x) { accumulator.setblock(i, x); }, BlockBinary::nrBlocks);
 	limb::scatter<B>(ql, L, [&result](unsigned i, B x) { result.quo.setblock(i, x); }, blockbinary<N, B, T>::nrBlocks);
-	if (result_negative) {  // take 2's complement
-		result.quo.flip();
-		result.quo += 1;
-	}
-	if (a_sign) {
-		result.rem = -accumulator;
-	}
-	else {
-		result.rem = accumulator;
+	result.rem = accumulator;
+	if constexpr (T == BinaryNumberType::Signed) {
+		if (result_negative) {  // take 2's complement
+			result.quo.flip();
+			result.quo += 1;
+		}
+		if (a_sign) result.rem = -accumulator;
 	}
 	return result;
 }
@@ -1221,9 +1252,10 @@ constexpr blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const b
 template<unsigned nbits, unsigned roundingBits, typename B, BinaryNumberType T>
 blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>& a, const blockbinary<nbits, B, T>& b) {
 	if (b.iszero()) {
-		// division by zero
-		throw_or_abort("urdiv divide by zero");
+		// no quotient to return: urdiv raises whatever BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION says
+		throw_or_abort(blockbinary_divide_by_zero("urdiv divide by zero"));
 	}
+	if (a.iszero()) return blockbinary<2 * nbits + roundingBits, B, T>(0);
 	// generate the absolute values to do long division 
 	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
 	bool a_sign = a.sign();
@@ -1239,7 +1271,7 @@ blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>
 	// initialize the long division
 	blockbinary<2 * nbits + roundingBits + 1, B, T> decimator(a_new);
 	blockbinary<2 * nbits + roundingBits + 1, B, T> subtractand(b_new); // prepare the subtractand
-	blockbinary<2 * nbits + roundingBits + 1, B, T> result;
+	blockbinary<2 * nbits + roundingBits + 1, B, T> result(0);  // every bit is written below msb_a only
 
 	constexpr unsigned msp = nbits + roundingBits; // msp = most significant position
 	decimator <<= msp; // scale the decimator to the largest possible positive value

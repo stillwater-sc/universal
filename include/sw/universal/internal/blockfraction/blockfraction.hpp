@@ -266,8 +266,11 @@ public:
 	constexpr blockfraction& operator<<=(int bitsToShift) noexcept {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
-		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
-		if (bitsToShift >= long(bitsInBlock)) {
+		if (bitsToShift >= static_cast<int>(nbits)) {
+			setzero();   // every bit is shifted out
+			return *this;
+		}
+		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
 			int blockShift = bitsToShift / static_cast<int>(bitsInBlock);
 			for (int i = static_cast<int>(MSU); i >= blockShift; --i) {
 				_block[i] = _block[i - blockShift];
@@ -277,7 +280,10 @@ public:
 			}
 			// adjust the shift
 			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
-			if (bitsToShift == 0) return *this;
+			if (bitsToShift == 0) {
+				_block[MSU] &= MSU_MASK;  // null the bits shifted past nbits
+				return *this;
+			}
 		}
 		if constexpr (MSU > 0) {
 			// construct the mask for the upper bits in the block that need to move to the higher word
@@ -290,6 +296,7 @@ public:
 			}
 		}
 		_block[0] <<= bitsToShift;
+		_block[MSU] &= MSU_MASK;  // null the bits shifted past nbits: iszero() and == read raw blocks
 		return *this;
 	}
 	constexpr blockfraction& operator>>=(int bitsToShift) noexcept {
@@ -368,21 +375,24 @@ public:
 	}
 	constexpr void setbits(uint64_t value) noexcept {
 		// radixPoint needs to be set, either using the constructor or the setradix() function
+		// the value lands in the low bits, whatever the limb width: uint64_t limbs used to put it
+		// in the MOST significant block, so the same call meant a different number per limb type
 		if constexpr (1 == nrBlocks) {
-			_block[0] = value & storageMask;
+			_block[0] = static_cast<bt>(value & storageMask);
 		}
 		else if constexpr (1 < nrBlocks) {
 			if constexpr (bitsInBlock == 64) {
-				// just set the highest bits with the value provided
-				_block[MSU] = value;
+				_block[0] = static_cast<bt>(value);
+				for (unsigned i = 1; i < nrBlocks; ++i) _block[i] = bt(0);
 			}
 			else {
 				for (unsigned i = 0; i < nrBlocks; ++i) {
-					_block[i] = value & storageMask;
+					_block[i] = static_cast<bt>(value & storageMask);
 					value >>= bitsInBlock;
 				}
 			}
 		}
+		_block[MSU] &= MSU_MASK;
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
 	constexpr blockfraction& flip() noexcept { // in-place one's complement
@@ -488,7 +498,7 @@ public:
 
 		// process the value above the radix
 		if (shift >= 0 && shift < 64) {
-			unsigned bitValue = 1ull << shift;
+			uint64_t bitValue = (uint64_t{ 1 } << shift);  // was unsigned: weights past 2^31 were truncated
 			for (; bit >= radixPoint; --bit) {
 				if (tmp.test(static_cast<unsigned>(bit))) d += static_cast<double>(bitValue);
 				bitValue >>= 1;
@@ -507,7 +517,9 @@ public:
 		// else (shift < 0): no integer-weight contribution remains above the radix for this configuration.
 
 		// process the value below the radix
-		double v = std::pow(2.0, -double(radixPoint));
+		// 2^-radixPoint by halving, which is exact and, unlike std::pow, usable in a constant expression
+		double v{ 1.0 };
+		for (int i = 0; i < radixPoint; ++i) v *= 0.5;
 		for (unsigned fbit = 0; fbit < static_cast<unsigned>(radixPoint); ++fbit) {
 			if (tmp.test(fbit)) d += v;
 			v *= 2.0;
@@ -570,10 +582,14 @@ public:
 	//////////////////////////////////////////////////////////////////////////////////
 	// logic operators
 
+	// a blockfraction is an unsigned entity: compare the bits as an unsigned number, limb by
+	// limb. Subtracting and testing the top bit was wrong whenever an operand had it set,
+	// and div() relies on this ordering.
 	friend constexpr bool operator<(const blockfraction& lhs, const blockfraction& rhs) noexcept {
-		blockfraction diff;
-		diff.sub(lhs, rhs);
-		return diff.isneg();
+		for (int i = static_cast<int>(MSU); i >= 0; --i) {
+			if (lhs._block[i] != rhs._block[i]) return lhs._block[i] < rhs._block[i];
+		}
+		return false;
 	}
 
 	friend constexpr bool operator<=(const blockfraction& lhs, const blockfraction& rhs) noexcept {
