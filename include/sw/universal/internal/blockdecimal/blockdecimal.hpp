@@ -215,12 +215,12 @@ public:
 	}
 
 	// convert to double (signed)
+	// Horner from the most significant digit: past 308 digits 10^i overflowed to inf and the
+	// leading zero digits made 0 * inf = NaN; now a value past double's range is inf (#2053)
 	constexpr double to_double() const {
 		double result = 0.0;
-		double scale = 1.0;
-		for (unsigned i = 0; i < ndigits; ++i) {
-			result += digit(i) * scale;
-			scale *= 10.0;
+		for (unsigned i = ndigits; i > 0; --i) {
+			result = result * 10.0 + static_cast<double>(digit(i - 1));
 		}
 		return _negative ? -result : result;
 	}
@@ -457,11 +457,14 @@ public:
 
 	// digit shift operators (matching blockdigit interface)
 	constexpr blockdecimal& operator<<=(int shift) {
+		// -INT_MIN is not an int: the two operators called each other without end (#2053)
+		if (shift == std::numeric_limits<int>::min()) { clear(); return *this; }
 		if (shift < 0) return operator>>=(-shift);
 		shift_left(static_cast<unsigned>(shift));
 		return *this;
 	}
 	constexpr blockdecimal& operator>>=(int shift) {
+		if (shift == std::numeric_limits<int>::min()) { clear(); return *this; }   // every digit shifts out
 		if (shift < 0) return operator<<=(-shift);
 		shift_right(static_cast<unsigned>(shift));
 		if (iszero()) _negative = false;
@@ -549,6 +552,9 @@ private:
 
 	constexpr void store_magnitude(unsigned long long value) {
 		if constexpr (encoding == DecimalEncoding::BID) {
+			// keep the low ndigits decimal digits, as BCD and DPD do: the binary field holds
+			// only nbits, so 12345 into 3 BID digits kept 12345 mod 1024 = 57 (#2053)
+			if constexpr (ndigits < 20) value %= pow10(ndigits);
 			from_uint64(static_cast<uint64_t>(value));
 		} else {
 			for (unsigned i = 0; i < ndigits && value > 0; ++i) {

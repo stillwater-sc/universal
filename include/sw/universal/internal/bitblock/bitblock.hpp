@@ -309,7 +309,10 @@ bitblock<nbits> extract_long_double_fraction(uint128& _112b_fraction_without_hid
 		mask >>= 1;
 	}
 	mask = uint64_t(0x8000000000000000ull);
-	ub = (nbits < 112 - 48 ? nbits : 112 - 48); // max 64 bits in the lower half
+	// the bits still to fill, at most the 64 of the lower half: counting nbits again ran msb
+	// below 0 and wrote out of bounds for 48 < nbits < 112
+	const unsigned remaining = nbits - ub;
+	ub = (remaining < 112 - 48 ? remaining : 112 - 48);
 	for (unsigned int i = 0; i < ub; i++) {
 		_fraction[msb--] = _112b_fraction_without_hidden_bit.lower & mask;
 		mask >>= 1;
@@ -344,9 +347,10 @@ void copy_into(const bitblock<src_size>& src, unsigned shift, bitblock<tgt_size>
 // copy a slice of a bitset into a bigger bitset starting at position indicated by the shift value
 template<unsigned src_size, unsigned tgt_size>
 void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, unsigned begin = 0, unsigned end = src_size, unsigned shift = 0) {
-	// do NOT reset the target!!!
-	if (end <= src_size) throw iteration_bound_too_large{};
-	if (end + shift < tgt_size) throw iteration_bound_too_large{};
+	// do NOT reset the target!!!  The slice [begin, end) must lie in src, and its image
+	// [begin + shift, end + shift) in tgt (the tests were inverted: every valid slice threw)
+	if (begin > end || end > src_size) throw iteration_bound_too_large{};
+	if (shift > tgt_size || end > tgt_size - shift) throw iteration_bound_too_large{};   // without wrapping end + shift
 	for (unsigned i = begin; i < end; i++)
 		tgt.set(i + shift, src[i]);
 }
@@ -354,9 +358,10 @@ void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, unsigned 
 // copy a slice of a bitset into a bigger bitset starting at position indicated by the shift value
 template<unsigned src_size, unsigned tgt_size>
 void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, unsigned begin = 0, unsigned end = src_size, unsigned shift = 0) {
-	// do NOT reset the target!!!
-	if (end <= src_size) return;
-	if (end + shift < tgt_size) return;
+	// do NOT reset the target!!!  The slice [begin, end) must lie in src, and its image
+	// [begin + shift, end + shift) in tgt (the tests were inverted: every valid slice was a no-op)
+	if (begin > end || end > src_size) return;
+	if (shift > tgt_size || end > tgt_size - shift) return;   // without wrapping end + shift
 	for (unsigned i = begin; i < end; i++)
 		tgt.set(i + shift, src[i]);
 }
@@ -466,8 +471,9 @@ void integer_divide_unsigned(const bitblock<operand_size>& a, const bitblock<ope
 // divide bitsets a and b and return result in bitset result. 
 // By providing more bits in the result, the algorithm will fill these with fraction bits if available.
 // Radix point must be maintained by calling function.
+// returns true when the quotient is inexact, that is when a remainder is left: the caller's sticky bit
 template<unsigned operand_size, unsigned result_size>
-void divide_with_fraction(const bitblock<operand_size>& a, const bitblock<operand_size>& b, bitblock<result_size>& result) {
+bool divide_with_fraction(const bitblock<operand_size>& a, const bitblock<operand_size>& b, bitblock<result_size>& result) {
 	bitblock<result_size> subtractand, accumulator;
 	result.reset();
 	copy_into<operand_size, result_size>(a, result_size - operand_size, accumulator);
@@ -502,7 +508,9 @@ void divide_with_fraction(const bitblock<operand_size>& a, const bitblock<operan
 			//std::cout << "result      " << result << std::endl;
 			subtractand >>= 1u;
 		}
+		return accumulator.any();
 	}
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -546,23 +554,25 @@ struct round_t
 		}
 #endif // BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 
-		bitblock<tgt_size> result((src >> n).to_ullong()); // convert to unsigned to deal with different sizes
+		// the kept bits, bit by bit: bitblock has no unsigned long long constructor, so this did
+		// not compile, and to_ullong() throws for a source past 64 bits
+		bitblock<tgt_size> result;
+		for (unsigned i = 0; i < tgt_size && i + n < src_size; ++i) result[i] = src[i + n];
 
 		if (n > 0 && src[n - 1]) {                         // round up potentially if first cut-off bit is true
 #ifdef BITBLOCK_ROUND_TIES_AWAY_FROM_ZERO					   // TODO: Evil hack to be consistent with assign_fraction, for testing only
-			result = result.to_ullong() + 1;
-#else            
-
+			increment_bitset(result);
+#else
 			bool more_bits = false;
-			for (long i = 0; i + 1 < n && !more_bits; ++i)
+			for (unsigned i = 0; i + 1 < n && !more_bits; ++i)
 				more_bits |= src[i];
 			if (more_bits) {
-				result = result.to_ullong() + 1;           // increment_unsigned is ambiguous 
+				increment_bitset(result);
 			}
 			else {                                         // tie: round up odd number
 #ifndef BITBLOCK_ROUND_TIES_TO_ZERO                        // TODO: evil hack to be removed later
 				if (result[0])
-					result = result.to_ullong() + 1;
+					increment_bitset(result);
 #endif
 			}
 #endif
@@ -679,7 +689,7 @@ std::string to_hex(bitblock<nbits> bits, bool nibbleMarker = false, bool hexPref
 		break;
 	default:
 		{
-			unsigned nrHexits = (nbits >> 2) + (nbits % 4 ? 0 : 1);
+			unsigned nrHexits = (nbits + 3) / 4;   // was one too many for a multiple of 4 and one short otherwise
 			for (unsigned i = 0; i < nrHexits; i++) {
 				hexit = static_cast<unsigned>((bits[3] << 3u) + (bits[2] << 2u) + (bits[1] << 1u) + bits[0]);
 				hexStr = hexits[hexit] + hexStr;
