@@ -16,6 +16,13 @@
 #include <type_traits>
 
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/utility/exceptions.hpp>   // throw_or_abort
+#include <universal/internal/blockdigit/exceptions.hpp>
+
+// x / 0 and x % 0: 0 returns 0, 1 throws blockdigit_divide_by_zero (see exceptions.hpp)
+#if !defined(BLOCKDIGIT_THROW_ARITHMETIC_EXCEPTION)
+#define BLOCKDIGIT_THROW_ARITHMETIC_EXCEPTION 0
+#endif
 
 namespace sw { namespace universal {
 
@@ -251,6 +258,8 @@ public:
 	// digit shift left (insert zeros at LSD end)
 	blockdigit& operator<<=(int shift) {
 		if (shift <= 0) {
+			// -INT_MIN is not an int: the two operators called each other without end (#2053)
+			if (shift == std::numeric_limits<int>::min()) { clear(); return *this; }
 			if (shift < 0) return operator>>=(-shift);
 			return *this;
 		}
@@ -270,6 +279,7 @@ public:
 	// digit shift right (remove digits from LSD end)
 	blockdigit& operator>>=(int shift) {
 		if (shift <= 0) {
+			if (shift == std::numeric_limits<int>::min()) { clear(); return *this; }   // every digit shifts out
 			if (shift < 0) return operator<<=(-shift);
 			return *this;
 		}
@@ -371,6 +381,7 @@ public:
 		std::string s;
 		if (_negative) s += '-';
 		bool leadingZero = true;
+		[[maybe_unused]] bool leadingDigitWritten = false;
 		for (int i = static_cast<int>(ndigits) - 1; i >= 0; --i) {
 			DigitType d = _digit[i];
 			if (d == 0 && leadingZero && i > 0) continue;
@@ -378,13 +389,19 @@ public:
 			if constexpr (radix <= 10) {
 				s += static_cast<char>('0' + d);
 			}
-			else {
+			else if constexpr (radix <= 36) {
 				if (d < 10) {
 					s += static_cast<char>('0' + d);
 				}
 				else {
 					s += static_cast<char>('A' + d - 10);
 				}
+			}
+			else {
+				// past 36 there are no more letters ('A' + 26 is '['; radix 256 reached non-ASCII
+				// bytes): each digit in decimal, separated by ':'
+				if (!leadingDigitWritten) leadingDigitWritten = true; else s += ':';
+				s += std::to_string(static_cast<unsigned>(d));
 			}
 		}
 		return s;
@@ -446,8 +463,12 @@ private:
 	// long division: returns {quotient, remainder}
 	static std::pair<blockdigit, blockdigit> div_mod(const blockdigit& _a, const blockdigit& _b) {
 		if (_b.iszero()) {
+#if BLOCKDIGIT_THROW_ARITHMETIC_EXCEPTION
+			throw_or_abort(blockdigit_divide_by_zero());
+#else
 			std::fprintf(stderr, "blockdigit: division by zero\n");
 			return { blockdigit(0), blockdigit(0) };
+#endif
 		}
 		bool resultSign = (_a._negative != _b._negative);
 		// work with positive magnitudes
@@ -511,11 +532,17 @@ private:
 	long long to_long_long() const noexcept {
 		// Use Horner's method (accumulate from most-significant digit)
 		// to avoid overflow in a separate base multiplier
-		long long v = 0;
+		// in the unsigned domain, clamped to [LLONG_MIN, LLONG_MAX]: the signed accumulation
+		// overflowed (undefined) for magnitudes past LLONG_MAX
+		constexpr std::uint64_t limit = static_cast<std::uint64_t>(std::numeric_limits<long long>::max()) + 1ull;   // |LLONG_MIN|
+		std::uint64_t v = 0;
 		for (unsigned i = ndigits; i > 0; --i) {
-			v = v * static_cast<long long>(radix) + static_cast<long long>(_digit[i - 1]);
+			const std::uint64_t d = static_cast<std::uint64_t>(_digit[i - 1]);
+			if (v > (limit - d) / radix) { v = limit; break; }   // past the range: saturate
+			v = v * radix + d;
 		}
-		return _negative ? -v : v;
+		if (_negative) return (v >= limit) ? std::numeric_limits<long long>::min() : -static_cast<long long>(v);
+		return (v >= limit) ? std::numeric_limits<long long>::max() : static_cast<long long>(v);
 	}
 	float to_float() const noexcept {
 		return static_cast<float>(to_double());

@@ -8,6 +8,8 @@
 #include <cassert>
 #include <iostream>
 #include <iomanip>
+#include <cmath>
+#include <cstdint>
 #include <limits>
 #include <tuple>
 #include <algorithm> // std::max
@@ -131,8 +133,15 @@ public:
 			setzero();
 			return *this;
 		}
+		// a negative value converts through its magnitude, taken in the unsigned domain:
+		// -rhs overflows for LLONG_MIN, and shifting a negative value left is undefined
+		if (rhs < 0) {
+			*this = static_cast<unsigned long long>(0ull - static_cast<unsigned long long>(rhs));
+			_sign = true;
+			return *this;
+		}
 		reset();
-		_sign = (0x8000000000000000 & rhs);  // 1 is negative, 0 is positive
+		_sign = false;
 		if (_sign) {
 			// process negative number: process 2's complement of the input
 			_scale = int(sw::universal::find_msb(-rhs)) - 1;
@@ -152,20 +161,22 @@ public:
 		}
 		return *this;
 	}
+	// plain char may be signed: convert its value (a negative char went through unsigned long long)
 	constexpr value<fbits>& operator=(char rhs) {
-		*this = (unsigned long long)(rhs);
+		*this = static_cast<long long>(rhs);
 		return *this;
 	}
+	// the unsigned types through unsigned long long: an unsigned long past LLONG_MAX turned negative
 	constexpr value<fbits>& operator=(unsigned short rhs) {
-		*this = static_cast<long long>(rhs);
+		*this = static_cast<unsigned long long>(rhs);
 		return *this;
 	}
 	constexpr value<fbits>& operator=(unsigned int rhs) {
-		*this = static_cast<long long>(rhs);
+		*this = static_cast<unsigned long long>(rhs);
 		return *this;
 	}
 	constexpr value<fbits>& operator=(unsigned long rhs) {
-		*this = static_cast<long long>(rhs);
+		*this = static_cast<unsigned long long>(rhs);
 		return *this;
 	}
 	constexpr value<fbits>& operator=(unsigned long long rhs) {
@@ -191,10 +202,11 @@ public:
 		case FP_ZERO:
 			_nrOfBits = fbits;
 			_zero = true;
+			_sign = std::signbit(rhs);   // -0.0 keeps its sign
 			break;
 		case FP_INFINITE:
 			_inf  = true;
-			_sign = true;
+			_sign = (rhs < 0);           // was always true: +inf read back as -inf
 			break;
 		case FP_NAN:
 			_nan = true;
@@ -225,10 +237,11 @@ public:
 		case FP_ZERO:
 			_nrOfBits = fbits;
 			_zero = true;
+			_sign = std::signbit(rhs);   // -0.0 keeps its sign
 			break;
 		case FP_INFINITE:
 			_inf = true;
-			_sign = true;
+			_sign = (rhs < 0);           // was always true: +inf read back as -inf
 			break;
 		case FP_NAN:
 			_nan = true;
@@ -258,10 +271,11 @@ public:
 		case FP_ZERO:
 			_nrOfBits = fbits;
 			_zero = true;
+			_sign = std::signbit(rhs);   // -0.0 keeps its sign
 			break;
 		case FP_INFINITE:
 			_inf = true;
-			_sign = true;
+			_sign = (rhs < 0);           // was always true: +inf read back as -inf
 			break;
 		case FP_NAN:
 			_nan = true;
@@ -314,8 +328,10 @@ public:
 	}
 
 	// operators
-	constexpr value<fbits> operator-() const {				
-		return value<fbits>(!_sign, _scale, _fraction, _zero, _inf);
+	constexpr value<fbits> operator-() const {
+		value<fbits> negated(*this);   // keeps NaN, which the (sign, scale, fraction, zero, inf) constructor dropped
+		negated._sign = !_sign;
+		return negated;
 	}
 
 	value<fbits>& operator++() {
@@ -356,9 +372,9 @@ public:
 		_nrOfBits = fbits;
 		_fraction.reset();
 	}
-	void setinf() {      // this maps to NaR on the posit side, and that has a sign = 1
+	void setinf(bool sign = true) {      // this maps to NaR on the posit side, and that has a sign = 1
 		_inf      = true;
-		_sign     = true;
+		_sign     = sign;
 		_zero     = false;
 		_nan      = false;
 		_scale    = 0;
@@ -490,12 +506,44 @@ public:
 	}
 
 	// conversion helpers
-	int to_int()                 const noexcept { return int(to_float()); }
-	long to_long()               const noexcept { return long(to_float()); }
-	long long to_long_long()     const noexcept { return (long long)(to_double()); }
-	float to_float()             const noexcept { return sign_value<float>() * scale_value<float>() * fraction_value<float>(); }
-	double to_double()           const noexcept { return sign_value<double>() * scale_value<double>() * fraction_value<double>(); }
-	long double to_long_double() const noexcept { return sign_value<long double>() * scale_value<long double>() * fraction_value<long double>(); }
+	// truncated toward zero, exactly, from the bits: going through float or double lost every
+	// bit past 24 or 53; out-of-range values and infinities saturate, NaN is 0
+	int to_int()                 const noexcept {
+		const long long v = to_long_long();
+		if (v > std::numeric_limits<int>::max()) return std::numeric_limits<int>::max();
+		if (v < std::numeric_limits<int>::min()) return std::numeric_limits<int>::min();
+		return static_cast<int>(v);
+	}
+	long to_long()               const noexcept {
+		const long long v = to_long_long();
+		if (v > std::numeric_limits<long>::max()) return std::numeric_limits<long>::max();
+		if (v < std::numeric_limits<long>::min()) return std::numeric_limits<long>::min();
+		return static_cast<long>(v);
+	}
+	long long to_long_long()     const noexcept {
+		if (_nan || _zero) return 0;
+		if (_inf || _scale > 62) {
+			if (_sign && _scale == 63 && !_inf && !anyAfter(_fraction, static_cast<int>(fbits) - 1)) return std::numeric_limits<long long>::min();
+			return _sign ? std::numeric_limits<long long>::min() : std::numeric_limits<long long>::max();
+		}
+		if (_scale < 0) return 0;
+		std::uint64_t magnitude = (1ull << _scale);
+		for (int i = static_cast<int>(fbits) - 1, w = _scale - 1; i >= 0 && w >= 0; --i, --w) {
+			if (_fraction.test(static_cast<unsigned>(i))) magnitude |= (1ull << w);
+		}
+		return _sign ? -static_cast<long long>(magnitude) : static_cast<long long>(magnitude);
+	}
+	float to_float()             const noexcept { return to_native<float>(); }
+	double to_double()           const noexcept { return to_native<double>(); }
+	long double to_long_double() const noexcept { return to_native<long double>(); }
+	// the special values first: the product below read an infinity or a NaN as 1.0 * 2^scale
+	template<typename Real>
+	Real to_native() const noexcept {
+		if (_nan) return std::numeric_limits<Real>::quiet_NaN();
+		if (_inf) return _sign ? -std::numeric_limits<Real>::infinity() : std::numeric_limits<Real>::infinity();
+		if (_zero) return _sign ? -Real(0) : Real(0);
+		return sign_value<Real>() * scale_value<Real>() * fraction_value<Real>();
+	}
 
 	// explicit conversion operators to native types
 	explicit operator long double() const { return to_long_double(); }
@@ -517,44 +565,41 @@ public:
 				_fraction[static_cast<unsigned>(t)] = src_fraction[static_cast<unsigned>(s)];
 		}
 	}
-	// round to a target size number of bits using round-to-nearest round-to-even-on-tie
+	// round to a target size number of bits using round-to-nearest round-to-even-on-tie.
+	// It used to OR the discarded bits into the last kept bit (jamming), which is not
+	// round-to-nearest, and to drop NaN; with no fraction bits a tie truncated.
 	template<unsigned tgt_size>
-	value<tgt_size> round_to() {
+	value<tgt_size> round_to() const {
+		value<tgt_size> result;
+		if (_nan) { result.setnan(); return result; }
+		if (_inf) { result.setinf(_sign); return result; }
+		if (_zero) { result.set(_sign, 0, bitblock<tgt_size>{}, true, false, false); return result; }
 		bitblock<tgt_size> rounded_fraction;
-		if constexpr (tgt_size == 0) {
-			bool round_up = false;
-			if constexpr (fbits >= 2) {
-				bool blast = _fraction[fbits - 1ull];
-				bool sb = anyAfter(_fraction, static_cast<int>(fbits) - 2);
-				if (blast && sb) round_up = true;
+		int scale = _scale;
+		if constexpr (tgt_size >= fbits) {
+			// widening: copy the fraction to the top of the target
+			for (int i = int(fbits) - 1, rb = int(tgt_size) - 1; i >= 0; --i, --rb) {
+				rounded_fraction[static_cast<unsigned>(rb)] = _fraction[static_cast<unsigned>(i)];
 			}
-			else if constexpr (fbits == 1) {
-				round_up = _fraction[0];
-			}
-			return value<tgt_size>(_sign, (round_up ? _scale + 1 : _scale), rounded_fraction, _zero, _inf);
 		}
 		else {
-			if (!_zero && !_inf) {
-				if constexpr (tgt_size < fbits) {
-					int rb = int(tgt_size) - 1;
-					int lb = int(fbits) - int(tgt_size) - 1;
-					for (int i = int(fbits) - 1; i > lb; i--, rb--) {
-						rounded_fraction[static_cast<unsigned>(rb)] = _fraction[static_cast<unsigned>(i)];
-					}
-					bool blast = _fraction[static_cast<unsigned>(lb)];
-					bool sb = false;
-					if (lb > 0) sb = anyAfter(_fraction, lb-1);
-					if (blast || sb) rounded_fraction[0ull] = true;
-				}
-				else {
-					int rb = int(tgt_size) - 1;
-					for (int i = int(fbits) - 1; i >= 0; i--, rb--) {
-						rounded_fraction[static_cast<unsigned>(rb)] = _fraction[static_cast<unsigned>(i)];
-					}
-				}
+			// the kept bits are the top tgt_size fraction bits; guard is the next, sticky the rest
+			constexpr int lb = int(fbits) - int(tgt_size) - 1;   // position of the guard bit
+			for (int i = int(fbits) - 1, rb = int(tgt_size) - 1; i > lb; --i, --rb) {
+				rounded_fraction[static_cast<unsigned>(rb)] = _fraction[static_cast<unsigned>(i)];
+			}
+			const bool guard  = _fraction[static_cast<unsigned>(lb)];
+			const bool sticky = (lb > 0) && anyAfter(_fraction, lb - 1);
+			bool lsb = true;   // with no fraction bits left the kept significand is the hidden bit
+			if constexpr (tgt_size > 0) lsb = rounded_fraction[0];
+			if (guard && (sticky || lsb)) {
+				bool carry = true;
+				if constexpr (tgt_size > 0) carry = increment_bitset(rounded_fraction);
+				if (carry) ++scale;   // 1.11..1 + ulp = 10.00..0: the fraction wrapped to zero
 			}
 		}
-		return value<tgt_size>(_sign, _scale, rounded_fraction, _zero, _inf);
+		result.set(_sign, scale, rounded_fraction, false, false, false);
+		return result;
 	}
 
 private:
@@ -853,18 +898,23 @@ inline std::istream& operator>> (std::istream& istr, const value<nfbits>& v) {
 	return istr;
 }
 
+// IEEE-754 semantics: NaN is unequal to everything, +0 == -0, infinities compare by sign
 template<unsigned nfbits>
-inline bool operator==(const value<nfbits>& lhs, const value<nfbits>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction && lhs._nrOfBits == rhs._nrOfBits && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
+inline bool operator==(const value<nfbits>& lhs, const value<nfbits>& rhs) {
+	if (lhs._nan || rhs._nan) return false;
+	if (lhs._zero || rhs._zero) return lhs._zero && rhs._zero;
+	if (lhs._inf || rhs._inf) return lhs._inf && rhs._inf && lhs._sign == rhs._sign;
+	return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction;
+}
 template<unsigned nfbits>
 inline bool operator!=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned nfbits>
 inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) {
-	if (lhs._inf) {
-		if (rhs._inf) return false; else return true; // everything is less than -infinity
-	}
-	else {
-		if (rhs._inf) return false;
-	}
+	// NaN is unordered; -inf is below all but -inf and +inf above all but +inf (every
+	// infinity used to compare as -inf)
+	if (lhs._nan || rhs._nan) return false;
+	if (lhs._inf) return lhs._sign && !(rhs._inf && rhs._sign);
+	if (rhs._inf) return !rhs._sign;
 
 	if (lhs._zero) {
 		if (rhs._zero) return false; // they are both 0
@@ -928,9 +978,9 @@ inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) {
 template<unsigned nfbits>
 inline bool operator> (const value<nfbits>& lhs, const value<nfbits>& rhs) { return  operator< (rhs, lhs); }
 template<unsigned nfbits>
-inline bool operator<=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return operator< (lhs, rhs) || operator==(lhs, rhs); }   // false for NaN
 template<unsigned nfbits>
-inline bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return operator< (rhs, lhs) || operator==(lhs, rhs); }
 
 template<unsigned nbits>
 inline std::string to_binary(const bitblock<nbits>& a, bool nibbleMarker = true) {
@@ -967,7 +1017,39 @@ inline std::string to_triple(const value<fbits>& v, bool nibbleMarker = true) {
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
 template<unsigned nfbits>
 value<nfbits> abs(const value<nfbits>& v) {
-	return value<nfbits>(false, v.scale(), v.fraction(), v.iszero());
+	value<nfbits> a(v);   // keeps NaN and infinity, which the constructor dropped
+	if (a.sign()) a = -a;
+	return a;
+}
+
+// a value widened to tgtbits fraction bits, exactly: the fraction moves to the top of the wider one
+template<unsigned tgtbits, unsigned srcbits>
+value<tgtbits> widen_value(const value<srcbits>& v) {
+	static_assert(tgtbits >= srcbits, "widen_value: the target must hold every source bit");
+	return v.template round_to<tgtbits>();
+}
+
+// The IEEE-754 special cases of a sum lhs + rhs (rhs already negated for a difference): NaN in,
+// or inf + -inf, gives NaN; an infinity gives that infinity; a zero operand gives the other one
+// exactly, and 0 + 0 a zero that is negative only when both are. Returns true when it set result.
+template<unsigned fbits, unsigned abits>
+bool sum_special_cases(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 1>& result) {
+	if (lhs.isnan() || rhs.isnan() || (lhs.isinf() && rhs.isinf() && lhs.sign() != rhs.sign())) {
+		result.setnan();
+		return true;
+	}
+	if (lhs.isinf() || rhs.isinf()) {
+		result.setinf(lhs.isinf() ? lhs.sign() : rhs.sign());
+		return true;
+	}
+	if (lhs.iszero() && rhs.iszero()) {
+		result.set(lhs.sign() && rhs.sign(), 0, bitblock<abits + 1>{}, true, false, false);
+		return true;
+	}
+	// addition treated a zero operand as 1.0 * 2^0 (its scale and empty fraction)
+	if (lhs.iszero()) { result = widen_value<abits + 1>(rhs); return true; }
+	if (rhs.iszero()) { result = widen_value<abits + 1>(lhs); return true; }
+	return false;
 }
 
 // add two values with fbits fraction bits, round them to abits, and return the abits+1 result value
@@ -982,10 +1064,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 	// to simplify the result processing assign the biggest 
 	// absolute value to R1, then the sign of the result will be sign of the value in R1.
 
-	if (lhs.isinf() || rhs.isinf()) {
-		result.setinf();
-		return;
-	}
+	if (sum_special_cases<fbits, abits>(lhs, rhs, result)) return;
 	int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
 
 	// align the fractions
@@ -1044,10 +1123,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 // subtract module: use ADDER
 template<unsigned fbits, unsigned abits>
 void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 1>& result) {
-	if (lhs.isinf() || rhs.isinf()) {
-		result.setinf();
-		return;
-	}
+	if (sum_special_cases<fbits, abits>(lhs, -rhs, result)) return;
 	int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
 
 	// align the fractions
@@ -1158,12 +1234,18 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 	static constexpr unsigned fhbits = fbits + 1;  // fraction + hidden bit
 	if (_trace_value_mul) std::cout << "lhs  " << to_triple(lhs) << std::endl << "rhs  " << to_triple(rhs) << std::endl;
 
+	const bool product_sign = lhs.sign() ^ rhs.sign();
+	// NaN in, or 0 * inf, is NaN; inf * x is a signed inf; 0 * x a signed zero
+	if (lhs.isnan() || rhs.isnan() || (lhs.isinf() && rhs.iszero()) || (lhs.iszero() && rhs.isinf())) {
+		result.setnan();
+		return;
+	}
 	if (lhs.isinf() || rhs.isinf()) {
-		result.setinf();
+		result.setinf(product_sign);
 		return;
 	}
 	if (lhs.iszero() || rhs.iszero()) {
-		result.setzero();
+		result.set(product_sign, 0, bitblock<mbits>{}, true, false, false);
 		return;
 	}
 
@@ -1201,12 +1283,19 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 	static constexpr unsigned fhbits = fbits + 1;  // fraction + hidden bit
 	if (_trace_value_div) std::cout << "lhs  " << to_triple(lhs) << std::endl << "rhs  " << to_triple(rhs) << std::endl;
 
-	if (lhs.isinf() || rhs.isinf()) {
-		result.setinf();
+	const bool quotient_sign = lhs.sign() ^ rhs.sign();
+	// NaN in, 0 / 0 and inf / inf are NaN; x / 0 and inf / x a signed inf (x / 0 was 0);
+	// 0 / x and x / inf a signed zero
+	if (lhs.isnan() || rhs.isnan() || (lhs.iszero() && rhs.iszero()) || (lhs.isinf() && rhs.isinf())) {
+		result.setnan();
 		return;
 	}
-	if (lhs.iszero() || rhs.iszero()) {
-		result.setzero();
+	if (lhs.isinf() || rhs.iszero()) {
+		result.setinf(quotient_sign);
+		return;
+	}
+	if (lhs.iszero() || rhs.isinf()) {
+		result.set(quotient_sign, 0, bitblock<divbits>{}, true, false, false);
 		return;
 	}
 
@@ -1218,7 +1307,7 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 		// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
 		bitblock<fhbits> r1 = lhs.get_fixed_point();
 		bitblock<fhbits> r2 = rhs.get_fixed_point();
-		divide_with_fraction(r1, r2, result_fraction);
+		const bool inexact = divide_with_fraction(r1, r2, result_fraction);
 		if (_trace_value_div) std::cout << "r1     " << r1 << std::endl << "r2     " << r2 << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;
 		// check if the radix point needs to shift
 		// radix point is at divbits - fhbits
@@ -1232,6 +1321,9 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 		}
 		result_fraction <<= static_cast<unsigned>(shift);    // shift hidden bit out
 		new_scale -= (shift - static_cast<int>(fhbits));
+		// the remainder is the sticky bit below the quotient's guard bits: without it a quotient
+		// whose computed bits ended in a tie rounded to even, though the true value was above it
+		if (inexact) result_fraction.set(0);
 		if (_trace_value_div) std::cout << "shift  " << shift << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;;
 	}
 	else {   // posit<3,0>, <4,1>, <5,2>, <6,3>, <7,4> etc are pure sign and scale
@@ -1244,14 +1336,14 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 
 template<unsigned fbits>
 value<fbits> operator+(const value<fbits>& lhs, const value<fbits>& rhs) {
-	constexpr unsigned abits = fbits + 5;
+	constexpr unsigned abits = fbits + 4;   // the hidden bit and 3 alignment bits: module_add's layout (fbits + 5 shifted every sum)
 	value<abits+1> result;
 	module_add<fbits,abits>(lhs, rhs, result);
 	return result.template round_to<fbits>();
 }
 template<unsigned fbits>
 value<fbits> operator-(const value<fbits>& lhs, const value<fbits>& rhs) {
-	constexpr unsigned abits = fbits + 5;
+	constexpr unsigned abits = fbits + 4;   // as for operator+
 	value<abits+1> result;
 	module_subtract<fbits,abits>(lhs, rhs, result);
 	return result.template round_to<fbits>();

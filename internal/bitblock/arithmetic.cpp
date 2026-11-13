@@ -112,7 +112,17 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 }
 
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
 int main()
 try {
@@ -201,16 +211,22 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<8>(bReportIndividualTestCases), "bitblock<8>", "*");
 
 	std::cout << "Arithmetic: division\n";
-	bitblock<8> a, b;
-	bitblock<16> c;
-	try {
-		integer_divide_unsigned(a, b, c); // divide by zero
-	}
-	catch (const bitblock_divide_by_zero& e) {
-		std::cerr << "Properly caught exception: " << e.what() << std::endl;
-	}
-	catch (...) {
-		std::cerr << "Why can't I catch this specific exception type?" << std::endl;
+	{
+		// this suite sets BITBLOCK_THROW_ARITHMETIC_EXCEPTION, so x / 0 must raise
+		// bitblock_divide_by_zero: the check used to pass whether or not it threw
+		bitblock<8> a, b;
+		bitblock<16> c;
+		a = 5ull;
+		bool caught = false;
+		try {
+			integer_divide_unsigned(a, b, c); // divide by zero
+		}
+		catch (const bitblock_divide_by_zero&) {
+			caught = true;
+		}
+		catch (...) {
+		}
+		nrOfFailedTestCases += ReportTestResult(caught ? 0 : 1, "bitblock<8>", "x / 0 raises bitblock_divide_by_zero");
 	}
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetDivision<3>(bReportIndividualTestCases), "bitblock<3>", "/");
@@ -220,14 +236,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetDivision<7>(bReportIndividualTestCases), "bitblock<7>", "/");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetDivision<8>(bReportIndividualTestCases), "bitblock<8>", "/");
 
-#if STRESS_TESTING
-
-	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<16>(bReportIndividualTestCases), "bitblock<8>", "+");
-	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<16>(bReportIndividualTestCases), "bitblock<8>", "-");
-	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<16>(bReportIndividualTestCases), "bitblock<8>", "*");
-	nrOfFailedTestCases += ReportTestResult(VerifyBitsetDivision<16>(bReportIndividualTestCases), "bitblock<8>", "/");
-
-#endif // STRESS_TESTING
+#if REGRESSION_LEVEL_4
+	// exhaustive 16-bit cases: 2^32 pairs each, a stress test
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<16>(bReportIndividualTestCases), "bitblock<16>", "+");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<16>(bReportIndividualTestCases), "bitblock<16>", "-");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<16>(bReportIndividualTestCases), "bitblock<16>", "*");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetDivision<16>(bReportIndividualTestCases), "bitblock<16>", "/");
+#endif
 
 #endif // MANUAL_TESTING
 

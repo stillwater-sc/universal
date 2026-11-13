@@ -1076,9 +1076,9 @@ add_subdirectory("internal/floatcascade")
 add_subdirectory("internal/expansion")
 # number system conversion marshalls
 add_subdirectory("internal/conversion")
-# experimental Dragon and Grisu working types
-add_subdirectory("internal/f2s")
-add_subdirectory("internal/gfp")
+# the experimental Dragon/Grisu working types gfp and f2s are archived in ./archive (#2053)
+# abstract (sign, scale, significand) triple
+add_subdirectory("internal/abstract")
 # compile-time math facility (sw::math::constexpr_math)
 add_subdirectory("internal/constexpr_math")
 endif(UNIVERSAL_BUILD_NUMBER_INTERNALS)
