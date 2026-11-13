@@ -68,6 +68,15 @@ int VerifySingleRounding(bool reportTestCases) {
 		++nrOfFailedTests;
 		if (reportTestCases) std::cerr << "FAIL: float(triple<52>(1 + 2^-24)) = " << float(tie) << '\n';
 	}
+	// to a subnormal float: rounded at the subnormal's precision, not at 24 bits and again
+	// in the scaling (0x1.0000028p-127 came out 0x1p-127)
+	for (double d : { 0x1.0000028p-127, 0x1.0000018p-127, -0x1.0000038p-130, 0x1.8p-150, 0x1p-150, 0x1.0000001p-150, 0x1p-152, 0x1.fffffep-127 }) {
+		const triple<52, std::uint32_t> s(d);
+		if (float(s) != static_cast<float>(d)) {   // the cast of the double is correctly rounded
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: float(triple<52>(" << d << ")) = " << float(s) << " expected " << static_cast<float>(d) << '\n';
+		}
+	}
 	for (long long v : { 3LL, 5LL, 6LL, -3LL }) {
 		const double expected = rne(static_cast<double>(v), 0);
 		if (double(triple<0, std::uint8_t>(v)) != expected) {

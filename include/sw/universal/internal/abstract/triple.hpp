@@ -184,15 +184,29 @@ public:
 		return v;
 	}
 	// the special values first: the product read an infinity or a NaN as 1.0 * 2^scale
-	// rounded ONCE to Real's precision, to nearest even: accumulating the fraction bits in a
-	// narrower Real rounded at every step, so 1 + 2^-24 + 2^-25 came out 1.0f, one ulp low
+	// rounded ONCE to Real's precision, to nearest even, including a subnormal result's reduced
+	// precision: accumulating the fraction bits in a narrower Real rounded at every step, so
+	// 1 + 2^-24 + 2^-25 came out 1.0f, one ulp low
 	template<typename Real>
 	Real to_native() const {
 		if (_nan) return std::numeric_limits<Real>::quiet_NaN();
 		if (_inf) return _sign ? -std::numeric_limits<Real>::infinity() : std::numeric_limits<Real>::infinity();
 		if (_zero) return _sign ? -Real(0) : Real(0);
-		constexpr int target = std::numeric_limits<Real>::digits - 1;   // fraction bits Real holds
-		const int kept = (static_cast<int>(fbits) < target) ? static_cast<int>(fbits) : target;
+		constexpr int target = std::numeric_limits<Real>::digits - 1;   // fraction bits of a normal Real
+		constexpr int emin   = std::numeric_limits<Real>::min_exponent - 1;   // scale of the smallest normal
+		// a subnormal result holds fewer fraction bits: round to those here, so the scaling
+		// below is exact and does not round a second time (#2057 review)
+		const int available = (_scale < emin) ? target - (emin - _scale) : target;
+		if (available < -1) return _sign ? -Real(0) : Real(0);   // below half the smallest subnormal
+		if (available == -1) {
+			// the hidden bit is the guard bit of the smallest subnormal: above the tie it rounds up,
+			// at the tie to even, that is to zero
+			bool sticky = false;
+			for (int i = static_cast<int>(fbits) - 1; i >= 0 && !sticky; --i) sticky = _fraction.test(static_cast<unsigned>(i));
+			const Real r = sticky ? std::numeric_limits<Real>::denorm_min() : Real(0);
+			return _sign ? -r : r;
+		}
+		const int kept = (static_cast<int>(fbits) < available) ? static_cast<int>(fbits) : available;
 		Real v = Real(1);
 		Real weight = Real(0.5);
 		for (int i = static_cast<int>(fbits) - 1; i >= static_cast<int>(fbits) - kept; --i, weight *= Real(0.5)) {
