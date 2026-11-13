@@ -1823,16 +1823,19 @@ void floatcascade<N>::to_digits(std::vector<char>& s, int& exponent, int precisi
     r = expansion_ops::renormalize(r);
     if (exp < 0) {
         if (exp < -300) {
-            // Scale up to avoid underflow
+            // Scale up by 2^106 first, which is exact and lifts subnormal components into the
+            // normal range, then by 10^-exp in two factors: 10^-exp itself is inf once
+            // -exp > 308, which turned every |x| below ~1e-308 into garbage (#2054)
             floatcascade<N> scaled;
             for (size_t i = 0; i < N; ++i) {
-                scaled[i] = std::ldexp(r[i], 53);
+                scaled[i] = std::ldexp(r[i], 106);
             }
             r = scaled;
-            r *= pown(_ten, -exp);
+            r *= pown(_ten, 300);
+            r *= pown(_ten, -exp - 300);
             // Scale back down
             for (size_t i = 0; i < N; ++i) {
-                r[i] = std::ldexp(r[i], -53);
+                r[i] = std::ldexp(r[i], -106);
             }
         }
         else {
@@ -2215,54 +2218,59 @@ floatcascade<N>& floatcascade<N>::operator/=(const floatcascade<N>& rhs) noexcep
             e[0] = std::numeric_limits<double>::quiet_NaN();
             for (size_t i = 1; i < N; ++i) e[i] = 0.0;
         } else {
-            // Set to infinity with appropriate sign
-            double inf_val = (sign() == rhs.sign()) ? INFINITY : -INFINITY;
+            // infinity with the sign of the quotient: from the sign BITS, because sign() is 0
+            // for a zero and +x / +0 compared 1 with 0 and came out -inf (#2054)
+            double inf_val = (std::signbit(e[0]) == std::signbit(rhs.e[0])) ? INFINITY : -INFINITY;
             e[0] = inf_val;
             for (size_t i = 1; i < N; ++i) e[i] = 0.0;
         }
         return *this;
     }
 
-    // Newton-Raphson division: compute reciprocal then multiply
-    // Initial approximation q0 = a/b using highest component
-    double q0 = e[0] / rhs.e[0];
-
-    // Compute residual: *this - q0 * rhs
-    floatcascade<N> q0_fc;
-    q0_fc[0] = q0;
-    for (size_t i = 1; i < N; ++i) q0_fc[i] = 0.0;
-
-    floatcascade<N> q0_times_rhs = expansion_ops::multiply_cascades(q0_fc, rhs);
-
-    // Use add_cascades for subtraction (add negative)
-    floatcascade<N> neg_q0_times_rhs;
-    for (size_t i = 0; i < N; ++i) {
-        neg_q0_times_rhs[i] = -q0_times_rhs[i];
+    // Long division, one quotient digit at a time, as qd_cascade does: each digit is the leading
+    // component of the running residual over the leading component of the divisor, and the
+    // residual is then reduced by that digit's product. An N-component quotient needs N + 1
+    // digits, the last only to round the N-th. Two digits, as this used to take, left
+    // floatcascade<3> and <4> division at double-double accuracy (#2054).
+    const double q0 = e[0] / rhs.e[0];
+    if (!std::isfinite(q0)) {
+        // an infinite dividend or an overflowing quotient has no residual to refine: every
+        // subtraction below would be inf - inf, which left NaN in the tail
+        e[0] = q0;
+        for (size_t i = 1; i < N; ++i) e[i] = 0.0;
+        return *this;
     }
-    floatcascade<2*N> residual_expanded = expansion_ops::add_cascades(*this, neg_q0_times_rhs);
+    double q[N + 1]{};
+    q[0] = q0;
+    floatcascade<N> residual(*this);
+    for (size_t k = 1; k <= N; ++k) {
+        floatcascade<N> digit;
+        digit[0] = q[k - 1];
+        for (size_t i = 1; i < N; ++i) digit[i] = 0.0;
+        residual -= expansion_ops::multiply_cascades(digit, rhs);
+        q[k] = residual.e[0] / rhs.e[0];
+    }
 
-    // Compress residual back to N components
-    floatcascade<N> residual;
-    if constexpr (N == 2) {
-        residual = expansion_ops::compress_4to2(residual_expanded);
+    floatcascade<N> result_cascade;
+    if constexpr (N == 4) {
+        expansion_ops::renorm5(q[0], q[1], q[2], q[3], q[4]);
+        for (size_t i = 0; i < 4; ++i) result_cascade[i] = q[i];
     }
     else if constexpr (N == 3) {
-        residual = expansion_ops::compress_6to3(residual_expanded);
+        expansion_ops::renorm4(q[0], q[1], q[2], q[3]);
+        for (size_t i = 0; i < 3; ++i) result_cascade[i] = q[i];
     }
-    else if constexpr (N == 4) {
-        residual = expansion_ops::compress_8to4(residual_expanded);
+    else if constexpr (N == 2) {
+        double s{ 0.0 }, t{ 0.0 };
+        expansion_ops::fast_two_sum(q[0], q[1], s, t);
+        t += q[2];
+        expansion_ops::fast_two_sum(s, t, result_cascade[0], result_cascade[1]);
     }
-
-    // Refine: q1 = q0 + residual/rhs
-    double q1 = residual.e[0] / rhs.e[0];
-
-    // Combine quotients using two_sum for error-free addition
-    floatcascade<N> result_cascade;
-    result_cascade[0] = q0;
-    result_cascade[1] = q1;
-    for (size_t i = 2; i < N; ++i) result_cascade[i] = 0.0;
-
-    *this = expansion_ops::renormalize(result_cascade);
+    else {
+        for (size_t i = 0; i < N; ++i) result_cascade[i] = q[i];
+        result_cascade = expansion_ops::renormalize(result_cascade);
+    }
+    *this = result_cascade;
     return *this;
 }
 

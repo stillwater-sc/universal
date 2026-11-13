@@ -8,6 +8,8 @@
 
 #include <cmath>
 #include <limits>
+#include <vector>
+#include <universal/internal/expansion/expansion_ops.hpp>
 
 namespace sw { namespace universal {
 
@@ -29,29 +31,61 @@ namespace sw { namespace universal {
 		// the parity of n.  The quotient is taken in chunks of `chunk` bits from the leading
 		// limbs, so n can be any size: fmod(1e200, 3) is 2, where trunc(x / y) carried only the
 		// type's precision and left 1.4e70 (#2006).  Each step subtracts q * b * 2^k with q < 2^(chunk+2),
-		// a limb-sized integer, so q * b and the subtraction are exact, and no division is needed.
+		// a limb-sized integer, and no division is needed.
+		//
+		// The steps run on the raw expansions, not on ereal: q * b of a multi-limb b has twice
+		// b's limbs, and ereal's arithmetic cuts every result to the limb budget, so the old
+		// Real(q) * bk lost the low limbs of the product and the remainder was off by them
+		// (ereal<4> fmod(1e30/7, 1/3) was ~1e-101 relative to y, #2054).  The exact remainder is
+		// below b, so it spans about b's precision: it is returned exactly whenever it fits the
+		// limb budget, and otherwise as its leading limb_budget limbs, like any other result.
 		template<unsigned maxlimbs, typename FpType>
-		inline ereal<maxlimbs, FpType> exact_remainder(const ereal<maxlimbs, FpType>& a, const ereal<maxlimbs, FpType>& b, bool& odd) {
-			using Real = ereal<maxlimbs, FpType>;
+		inline std::vector<FpType> exact_remainder_expansion(const ereal<maxlimbs, FpType>& a, const ereal<maxlimbs, FpType>& b, bool& odd) {
+			using Expansion = std::vector<FpType>;
 			constexpr int digits = std::numeric_limits<FpType>::digits;
 			constexpr int chunk = (digits > 16) ? digits - 8 : digits / 2;   // q stays well inside a limb
+			auto negated = [](Expansion e) { for (auto& v : e) v = -v; return e; };
+			auto sign = [](const Expansion& e) { return expansion_ops::sign_adaptive(e); };
 			odd = false;
-			Real r = a;
-			const int eb = ilogb(b);
-			while (!(r < b)) {
-				const int d = ilogb(r) - eb;                 // r / b is in [2^(d-1), 2^(d+1))
+			Expansion r = a.limbs();
+			const Expansion& B = b.limbs();
+			const int eb = std::ilogb(B[0]);
+			while (expansion_ops::compare_adaptive(r, B) >= 0) {
+				const int d = std::ilogb(r[0]) - eb;           // r / b is in [2^(d-1), 2^(d+1))
 				const int k = (d > chunk) ? d - chunk : 0;
-				const Real bk = ldexp(b, k);                  // exact
+				Expansion bk(B);
+				for (auto& v : bk) v = std::ldexp(v, k);       // exact
 				// the leading limbs give the quotient to within a few units; correct it exactly
-				FpType q = std::floor(r.limbs()[0] / bk.limbs()[0]);
+				FpType q = std::floor(r[0] / bk[0]);
 				if (q < FpType(0)) q = FpType(0);
-				Real t = r - Real(q) * bk;
-				for (int i = 0; i < 8 && t.isneg(); ++i)  { q -= FpType(1); t += bk; }
-				for (int i = 0; i < 8 && !(t < bk); ++i)  { q += FpType(1); t -= bk; }
+				Expansion t = expansion_ops::expansion_sum_normalized(r, negated(expansion_ops::expansion_product(bk, Expansion{ q })));
+				for (int i = 0; i < 8 && sign(t) < 0; ++i) {
+					q -= FpType(1);
+					t = expansion_ops::expansion_sum_normalized(t, bk);
+				}
+				for (int i = 0; i < 8 && expansion_ops::compare_adaptive(t, bk) >= 0; ++i) {
+					q += FpType(1);
+					t = expansion_ops::expansion_sum_normalized(t, negated(bk));
+				}
 				if (k == 0 && std::fmod(q, FpType(2)) != FpType(0)) odd = !odd;
 				r = t;
+				if (r.empty()) break;   // an exact multiple
 			}
 			return r;
+		}
+
+		// an expansion as an ereal, cut to the limb budget as every ereal result is
+		template<unsigned maxlimbs, typename FpType>
+		inline ereal<maxlimbs, FpType> from_expansion(const std::vector<FpType>& e) {
+			using Real = ereal<maxlimbs, FpType>;
+			Real result(0.0);
+			for (FpType limb : e) result += Real(limb);
+			return result;
+		}
+
+		template<unsigned maxlimbs, typename FpType>
+		inline ereal<maxlimbs, FpType> exact_remainder(const ereal<maxlimbs, FpType>& a, const ereal<maxlimbs, FpType>& b, bool& odd) {
+			return from_expansion<maxlimbs, FpType>(exact_remainder_expansion(a, b, odd));
 		}
 
 	}  // namespace ereal_detail
@@ -83,11 +117,20 @@ namespace sw { namespace universal {
 		if (y.isinf() || x.iszero()) return x;
 		const Real ay = abs(y);
 		bool odd = false;
-		Real r = ereal_detail::exact_remainder(abs(x), ay, odd);   // |x| - n |y|, in [0, |y|)
+		// |x| - n |y| in [0, |y|), on the raw expansion: it may need a limb more than the budget,
+		// and r - |y| below is then exact and small, where the budgeted r was not (#2054)
+		std::vector<FpType> r = ereal_detail::exact_remainder_expansion(abs(x), ay, odd);
 		// round n to nearest: past the half, or at the half with an odd n, take n + 1
-		const Real twice = ldexp(r, 1);
-		if (twice > ay || (twice == ay && odd)) r = r - ay;
-		return x.signbit() ? ereal_detail::zero_with_sign_of(-r, x) : ereal_detail::zero_with_sign_of(r, x);
+		std::vector<FpType> twice(r);
+		for (auto& v : twice) v = std::ldexp(v, 1);
+		const int half = expansion_ops::compare_adaptive(twice, ay.limbs());
+		if (half > 0 || (half == 0 && odd)) {
+			std::vector<FpType> negy(ay.limbs());
+			for (auto& v : negy) v = -v;
+			r = expansion_ops::expansion_sum_normalized(r, negy);
+		}
+		const Real rr = ereal_detail::from_expansion<maxlimbs, FpType>(r);
+		return x.signbit() ? ereal_detail::zero_with_sign_of(-rr, x) : ereal_detail::zero_with_sign_of(rr, x);
 	}
 
 	// modf: split x into integer and fractional parts. Returns the fractional

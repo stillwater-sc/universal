@@ -12,6 +12,7 @@
 #include <universal/number/ereal/ereal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/ereal_precision.hpp>
+#include <universal/verification/dyadic_exact.hpp>
 
 namespace {
 	using namespace sw::universal;
@@ -372,6 +373,80 @@ namespace {
 }  // anonymous namespace
 
 
+namespace {
+	using namespace sw::universal;
+
+	// the exact value of an ereal: the sum of its limbs as a dyadic rational
+	template<unsigned maxlimbs>
+	dyadic exact_value_of(const ereal<maxlimbs>& v) {
+		dyadic acc;
+		for (double limb : v.limbs()) acc = acc + dyadic::from_double(limb);
+		return acc;
+	}
+
+	// D - n Y for the integer n nearest D / Y: zero exactly when D is an integer multiple of Y
+	dyadic residual_of_multiple(const dyadic& D, const dyadic& Y) {
+		using bigint = dyadic::bigint;
+		if (D.numerator == bigint(0)) return dyadic();
+		bigint num = D.numerator, den = Y.numerator;
+		const int s = D.scale - Y.scale;
+		for (int i = 0; i < s; ++i) num = num * bigint(2);
+		for (int i = 0; i < -s; ++i) den = den * bigint(2);
+		const bigint n = num / den;   // truncated; the residual is then below Y in magnitude
+		dyadic E = D - dyadic(n, 0) * Y;
+		// to the nearest multiple: a remainder near -y/2 leaves D just below a multiple
+		if (less_in_magnitude(Y, E + E)) E = (E.numerator < bigint(0)) == (Y.numerator < bigint(0)) ? E - Y : E + Y;
+		return E;
+	}
+
+	// fmod and remainder of operands with many limbs, checked against a dyadic oracle:
+	// r = x - n y with n an integer, 0 <= r < y for fmod and |r| <= y/2 for remainder. The
+	// quotient digit's product q * y has twice y's limbs and was cut to the limb budget, so
+	// ereal<4> fmod(1e30/7, 1/3) missed by ~1e-101 relative to y (#2054). The exact remainder
+	// is returned whenever it fits the limb budget; only a result that fills the budget may
+	// be short of it, and then by less than the last limb's unit, 2^(-53 (budget - 1)) y.
+	template<unsigned maxlimbs>
+	int VerifyMultiLimbFmod(bool reportTestCases) {
+		using Real = ereal<maxlimbs>;
+		constexpr unsigned budget = Real::limb_budget;
+		const int last = 53 * static_cast<int>(budget - 1);
+		auto within = [&](const Real& result, const dyadic& X, const dyadic& Y) {
+			const dyadic E = residual_of_multiple(X - exact_value_of(result), Y);
+			if (E.numerator == dyadic::bigint(0)) return true;                       // exact
+			if (result.limbs().size() < budget) return false;                        // it fit: must be exact
+			return less_in_magnitude(dyadic(E.numerator, E.scale + last), Y);       // truncated to the budget
+		};
+		int nrOfFailedTestCases = 0;
+		const Real xs[] = { Real(1e30) / Real(7.0), Real(1e200) / Real(3.0), Real(10.0) / Real(7.0), Real(2.0) / Real(3.0) + Real(1e20) };
+		const Real ys[] = { Real(1.0) / Real(3.0), Real(2.0) / Real(7.0), Real(1.0) / Real(1e10), Real(3.0) / Real(11.0) };
+		for (const Real& x : xs) {
+			for (const Real& y : ys) {
+				const dyadic X = exact_value_of(x), Y = exact_value_of(y);
+				const Real f = fmod(x, y);
+				const Real r = remainder(x, y);
+				const dyadic F = exact_value_of(f), R = exact_value_of(r);
+				const bool fmodOk = within(f, X, Y) && !f.isneg() && less_in_magnitude(F, Y);
+				const bool remOk  = within(r, X, Y) && !less_in_magnitude(Y, R + R);
+				if (!fmodOk || !remOk) {
+					++nrOfFailedTestCases;
+					if (reportTestCases) std::cerr << "FAIL: ereal<" << maxlimbs << "> fmod/remainder(" << double(x) << ", " << double(y) << "): fmod " << fmodOk << " remainder " << remOk << '\n';
+				}
+			}
+		}
+		// the case of the sweep fits the budget, so it is exact
+		{
+			const Real x = Real(1e30) / Real(7.0), y = Real(1.0) / Real(3.0);
+			const dyadic E = residual_of_multiple(exact_value_of(x) - exact_value_of(fmod(x, y)), exact_value_of(y));
+			if (E.numerator != dyadic::bigint(0)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: ereal<" << maxlimbs << "> fmod(1e30/7, 1/3) is not exact\n";
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+}  // namespace
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -457,6 +532,8 @@ try {
 
 	test_tag = "fractional fuzz";
 	nrOfFailedTestCases += ReportTestResult(VerifyFractionalFuzz<ereal<>>(reportTestCases, 50), "fmod/remainder property fuzz", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimbFmod<4>(reportTestCases), "fmod/remainder ereal<4> multi-limb", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimbFmod<8>(reportTestCases), "fmod/remainder ereal<8> multi-limb", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -25,7 +25,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <numeric>
 #include <string>
 #include <vector>
 #include <type_traits>
@@ -251,11 +250,39 @@ public:
     // T, summed IN T -- so approx<long double> keeps the extra range/precision a wider
     // host offers (rather than rounding through double). T must be a floating type.
     template <typename T = double>
-    T approx(std::size_t depth) const {
+    T approx(std::size_t depth) const { return approx_scaled<T>(depth, 0); }
+
+    // approx_scaled<T>(depth, down): the value times 2^-down, as approx<T> materialises it.
+    // The blocks are summed relative to the largest block exponent and scaled once at the
+    // end: converting each block on its own saturated it to +-inf past T's range, and
+    // opposite-signed infinities summed to NaN (double(exp(elreal(1e6))) was NaN, #2054).
+    // A value past T's range now gives +-inf, and significand() scales by -scale first.
+    template <typename T = double>
+    T approx_scaled(std::size_t depth, int64_t down) const {
         static_assert(std::is_floating_point_v<T>, "elreal::approx<T> requires a native floating-point T");
+        using exp_t = typename block_type::exp_t;
         const auto blocks = _value.take(depth);
-        return std::accumulate(blocks.begin(), blocks.end(), T{0},
-            [](T acc, const auto& b) { return acc + b.template value_as<T>(); });
+        bool found = false;
+        exp_t top{ 0 };
+        for (const auto& b : blocks) {
+            if (b.is_zero_block()) continue;
+            if (!found || top < b.exp) { top = b.exp; found = true; }
+        }
+        if (!found) return T{0};
+        constexpr long long far = 1LL << 20;   // beyond the exponent range of every native T
+        auto clamped = [](const exp_t& e) -> long long {
+            if (exp_t(far) < e) return far;
+            if (e < exp_t(-far)) return -far;
+            return static_cast<long long>(e);
+        };
+        T acc{ 0 };
+        for (const auto& b : blocks) {
+            if (b.is_zero_block()) continue;
+            const long long rel = clamped(b.exp - top);
+            if (rel <= -far) continue;   // far below the leading block: nothing at T's precision
+            acc += std::ldexp(static_cast<T>(b.v), static_cast<int>(rel));
+        }
+        return std::ldexp(acc, static_cast<int>(clamped(top - exp_t(down))));
     }
 
     // refine(depth): raise the default pull depth; the next boundary op pulls deeper,

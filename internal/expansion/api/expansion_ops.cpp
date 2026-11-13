@@ -9,6 +9,8 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/internal/expansion/expansion_ops.hpp>
+#include <universal/verification/dyadic_exact.hpp>
+#include <random>
 
 namespace sw { namespace universal {
 
@@ -232,70 +234,124 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
-	// Test FAST-EXPANSION-SUM
+	// the exact value of an expansion, as a dyadic rational
+	dyadic exact_sum(const std::vector<double>& e) {
+		dyadic acc;
+		for (double v : e) acc = acc + dyadic::from_double(v);
+		return acc;
+	}
+
+	// Test FAST-EXPANSION-SUM: the sum is EXACT, and the output is in decreasing magnitude. A tolerance of 1e-14 on a double sum of the components let
+	// an implementation that dropped components pass ({3, 1e-20} + {2, 1e-30} lost both
+	// tails, #2054); every check here is exact dyadic equality.
 	int test_fast_expansion_sum() {
 		using namespace expansion_ops;
 		int nrOfFailedTests = 0;
 
 		std::cout << "Testing FAST-EXPANSION-SUM\n";
 
-		// Test case 1: Add two 2-component expansions
-		{
-			std::vector<double> e = { 3.0, 5.0e-16 };
-			std::vector<double> f = { 2.0, 3.0e-16 };
+		auto check = [&](const std::vector<double>& e, const std::vector<double>& f, const char* label) {
+			const std::vector<double> h = fast_expansion_sum(e, f);
+			// Shewchuk's output is non-overlapping bit-wise, not in Priest's canonical form
+			// (is_nonoverlapping): the callers renormalize when they need that
+			if (exact_sum(h) != exact_sum(e) + exact_sum(f) || !is_decreasing_magnitude(h)) {
+				++nrOfFailedTests;
+				std::cout << "FAIL: fast_expansion_sum " << label << '\n';
+			}
+			return h;
+		};
 
-			std::vector<double> h = fast_expansion_sum(e, f);
+		check({ 3.0, 1.0e-20 }, { 2.0, 1.0e-30 }, "{3, 1e-20} + {2, 1e-30}");
+		check({ 3.0, 5.0e-16 }, { 2.0, 3.0e-16 }, "{3, 5e-16} + {2, 3e-16}");
+		check({ 1.0, 1.0e-200 }, { -1.0 }, "{1, 1e-200} + {-1}");
+		check({ 1.0e300, 1.0e100 }, { -1.0e300, 1.0e-100 }, "cancellation of the leading components");
+		check({ 0.0 }, { 0.0 }, "zero + zero");
 
-			// Verify value
-			double e_sum = 0.0, f_sum = 0.0, h_sum = 0.0;
-			for (auto v : e) e_sum += v;
-			for (auto v : f) f_sum += v;
-			for (auto v : h) h_sum += v;
-
-			// h should equal e + f
-			double expected = e_sum + f_sum;
-			if (std::abs(h_sum - expected) > 1.0e-14) ++nrOfFailedTests;
-
-			// Verify properties
-			if (!is_decreasing_magnitude(h)) ++nrOfFailedTests;
-		}
-
-		// Test case 2: Add empty expansion
+		// adding an empty expansion returns the other unchanged
 		{
 			std::vector<double> e = { 1.0, 2.0 };
-			std::vector<double> f;
-
-			std::vector<double> h = fast_expansion_sum(e, f);
-
-			// Should return e unchanged
-			if (h.size() != e.size()) ++nrOfFailedTests;
-			for (size_t i = 0; i < e.size(); ++i) {
-				if (h[i] != e[i]) ++nrOfFailedTests;
-			}
+			std::vector<double> h = fast_expansion_sum(e, std::vector<double>{});
+			if (h != e) ++nrOfFailedTests;
 		}
 
-		// Test case 3: Identity test (a + b) - a = b
+		// (a + b) - a == b, exactly
 		{
 			std::vector<double> a = { 1.5, 1.5e-17 };
 			std::vector<double> b = { 0.5, 5.0e-18 };
-
-			std::vector<double> sum = fast_expansion_sum(a, b);
-
-			// Negate a
 			std::vector<double> neg_a = a;
 			for (auto& v : neg_a) v = -v;
-
-			std::vector<double> recovered_b = fast_expansion_sum(sum, neg_a);
-
-			// recovered_b should equal b (within precision)
-			if (recovered_b.size() == 0) ++nrOfFailedTests;
-
-			// Check first component
-			if (std::abs(recovered_b[0] - b[0]) > 1.0e-14) {
+			const std::vector<double> recovered_b = fast_expansion_sum(fast_expansion_sum(a, b), neg_a);
+			if (exact_sum(recovered_b) != exact_sum(b)) {
 				++nrOfFailedTests;
+				std::cout << "FAIL: fast_expansion_sum (a + b) - a != b\n";
 			}
 		}
 
+		// random expansions, made non-overlapping by renormalization
+		{
+			std::mt19937_64 rng(2054);
+			std::uniform_real_distribution<double> mantissa(-1.0, 1.0);
+			std::uniform_int_distribution<int> exponent(-80, 80), length(1, 8);
+			auto random_expansion = [&]() {
+				std::vector<double> v(static_cast<size_t>(length(rng)));
+				for (auto& c : v) c = std::ldexp(mantissa(rng), exponent(rng));
+				return renormalize_expansion(v);
+			};
+			for (int t = 0; t < 2000; ++t) {
+				const std::vector<double> e = random_expansion(), f = random_expansion();
+				if (e.empty() || f.empty()) continue;
+				check(e, f, "random");
+				if (nrOfFailedTests > 10) break;
+			}
+		}
+
+		return nrOfFailedTests;
+	}
+
+	// the special values and zeros of scale_expansion, compress_expansion and expansion_quotient
+	int test_expansion_edge_cases() {
+		using namespace expansion_ops;
+		int nrOfFailedTests = 0;
+		const double inf = std::numeric_limits<double>::infinity();
+		const double nan = std::numeric_limits<double>::quiet_NaN();
+		auto fail = [&](const char* label) { ++nrOfFailedTests; std::cout << "FAIL: " << label << '\n'; };
+
+		// a zero scales to zero, not to the empty expansion
+		{
+			const std::vector<double> h = scale_expansion(std::vector<double>{ 0.0 }, 5.0);
+			if (h.size() != 1 || h[0] != 0.0) fail("scale_expansion({0}, 5) != {0}");
+			const std::vector<double> k = scale_expansion(std::vector<double>{ 3.0, 1e-20 }, 0.0);
+			if (k.size() != 1 || k[0] != 0.0) fail("scale_expansion(e, 0) != {0}");
+			const std::vector<double> m = scale_expansion(std::vector<double>{ 3.0, 1e-20 }, 7.0);
+			if (exact_sum(m) != dyadic::from_double(21.0) + dyadic::from_double(7.0) * dyadic::from_double(1e-20)) fail("scale_expansion({3, 1e-20}, 7) is not exact");
+		}
+		// a non-finite component is the value of the compressed expansion
+		{
+			const std::vector<double> h = compress_expansion(std::vector<double>{ 1.0, nan, 1e-20 }, 0.0);
+			if (h.size() != 1 || !std::isnan(h[0])) fail("compress_expansion dropped a NaN");
+			const std::vector<double> k = compress_expansion(std::vector<double>{ inf, 1.0 }, 0.0);
+			if (k.size() != 1 || k[0] != inf) fail("compress_expansion({inf, 1}) != {inf}");
+			const std::vector<double> m = compress_expansion(std::vector<double>{ -inf, 1.0 }, 1e-10);
+			if (m.size() != 1 || m[0] != -inf) fail("compress_expansion({-inf, 1}) != {-inf}");
+			const std::vector<double> n = compress_expansion(std::vector<double>{ inf, -inf }, 0.0);
+			if (n.size() != 1 || !std::isnan(n[0])) fail("compress_expansion({inf, -inf}) != {NaN}");
+		}
+		// the IEEE quotient for a zero or non-finite divisor
+		{
+			auto q = [](double a, double b) { return expansion_quotient(std::vector<double>{ a }, std::vector<double>{ b }); };
+			std::vector<double> r = q(1.0, 0.0);
+			if (r.size() != 1 || r[0] != inf) fail("expansion_quotient({1}, {0}) != {inf}");
+			r = q(-1.0, 0.0);
+			if (r.size() != 1 || r[0] != -inf) fail("expansion_quotient({-1}, {0}) != {-inf}");
+			r = q(1.0, -0.0);
+			if (r.size() != 1 || r[0] != -inf) fail("expansion_quotient({1}, {-0}) != {-inf}");
+			r = q(0.0, 0.0);
+			if (r.size() != 1 || !std::isnan(r[0])) fail("expansion_quotient({0}, {0}) != {NaN}");
+			r = q(3.0, inf);
+			if (r.size() != 1 || r[0] != 0.0 || std::signbit(r[0])) fail("expansion_quotient({3}, {inf}) != {+0}");
+			r = q(-3.0, inf);
+			if (r.size() != 1 || r[0] != 0.0 || !std::signbit(r[0])) fail("expansion_quotient({-3}, {inf}) != {-0}");
+		}
 		return nrOfFailedTests;
 	}
 
@@ -435,6 +491,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(test_two_prod(),            "expansion", "two_prod");
 	nrOfFailedTestCases += ReportTestResult(test_grow_expansion(),      "expansion", "grow_expansion");
 	nrOfFailedTestCases += ReportTestResult(test_fast_expansion_sum(),  "expansion", "fast_expansion_sum");
+	nrOfFailedTestCases += ReportTestResult(test_expansion_edge_cases(),"expansion", "edge cases");
 	nrOfFailedTestCases += ReportTestResult(test_linear_expansion_sum(),"expansion", "linear_expansion_sum");
 	nrOfFailedTestCases += ReportTestResult(test_invariants(),          "expansion", "invariants");
 
