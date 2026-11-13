@@ -262,11 +262,15 @@ public:
         static_assert(std::is_floating_point_v<T>, "elreal::approx<T> requires a native floating-point T");
         using exp_t = typename block_type::exp_t;
         const auto blocks = _value.take(depth);
+        // the leader by the COMBINED exponent E(b) = scale_of_v() + exp: a block may carry a v
+        // well above 1, and scaling by the raw exp alone could overflow the accumulator for a
+        // stream built directly from blocks (the arithmetic produces normalised blocks)
         bool found = false;
         exp_t top{ 0 };
         for (const auto& b : blocks) {
             if (b.is_zero_block()) continue;
-            if (!found || top < b.exp) { top = b.exp; found = true; }
+            const exp_t e = b.exponent();
+            if (!found || top < e) { top = e; found = true; }
         }
         if (!found) return T{0};
         constexpr long long far = 1LL << 20;   // beyond the exponent range of every native T
@@ -278,9 +282,10 @@ public:
         T acc{ 0 };
         for (const auto& b : blocks) {
             if (b.is_zero_block()) continue;
-            const long long rel = clamped(b.exp - top);
+            const long long rel = clamped(b.exponent() - top);   // <= 0
             if (rel <= -far) continue;   // far below the leading block: nothing at T's precision
-            acc += std::ldexp(static_cast<T>(b.v), static_cast<int>(rel));
+            // v * 2^exp = (v * 2^-s) * 2^E with s = scale_of_v(): the first factor is in [1, 2)
+            acc += std::ldexp(static_cast<T>(b.v), static_cast<int>(rel) - b.scale_of_v());
         }
         return std::ldexp(acc, static_cast<int>(clamped(top - exp_t(down))));
     }

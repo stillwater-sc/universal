@@ -58,6 +58,11 @@ namespace sw { namespace universal {
 				// the leading limbs give the quotient to within a few units; correct it exactly
 				FpType q = std::floor(r[0] / bk[0]);
 				if (q < FpType(0)) q = FpType(0);
+				// near the top of the range q * bk can round past it (fmod(DBL_MAX, 2 - 2^-44)
+				// rounds q up to 2^45 + 1), and an inf product would leave NaN limbs in the raw
+				// subtraction: back q off until the product is finite; the correction below adds
+				// back what that undershoots
+				while (q > FpType(0) && !std::isfinite(q * bk[0])) q -= FpType(1);
 				Expansion t = expansion_ops::expansion_sum_normalized(r, negated(expansion_ops::expansion_product(bk, Expansion{ q })));
 				for (int i = 0; i < 8 && sign(t) < 0; ++i) {
 					q -= FpType(1);
@@ -74,10 +79,19 @@ namespace sw { namespace universal {
 			return r;
 		}
 
-		// an expansion as an ereal, cut to the limb budget as every ereal result is
+		// an expansion as an ereal, cut to the limb budget TOWARD ZERO: a plain cut drops the tail,
+		// and a tail of the opposite sign leaves a result larger in magnitude than the exact
+		// one, so a remainder just below y came back as y itself, breaking |fmod(x, y)| < |y|.
+		// The last kept limb is then stepped one unit toward zero, which, the tail being below
+		// half its unit, puts the result between the exact value and zero.
 		template<unsigned maxlimbs, typename FpType>
-		inline ereal<maxlimbs, FpType> from_expansion(const std::vector<FpType>& e) {
+		inline ereal<maxlimbs, FpType> from_expansion(std::vector<FpType> e) {
 			using Real = ereal<maxlimbs, FpType>;
+			constexpr std::size_t budget = Real::limb_budget;
+			if (e.size() > budget && e[budget] != FpType(0) && (std::signbit(e[budget]) != std::signbit(e[0]))) {
+				e[budget - 1] = std::nextafter(e[budget - 1], std::signbit(e[0]) ? std::numeric_limits<FpType>::infinity() : -std::numeric_limits<FpType>::infinity());
+			}
+			if (e.size() > budget) e.resize(budget);
 			Real result(0.0);
 			for (FpType limb : e) result += Real(limb);
 			return result;

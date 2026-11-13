@@ -69,6 +69,27 @@ int VerifySignificandOfLargeValues(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+// a stream built directly from blocks need not be normalised: v * 2^exp with |v| well above 1.
+// The scaling picks its leader and scales by the combined exponent scale_of_v() + exp, so
+// a block v = DBL_MAX with a large tail stays finite (#2056 review)
+int VerifyUnnormalisedStream(bool reportTestCases) {
+	using R = elreal<double>;
+	using B = block<double>;
+	int nrOfFailedTests = 0;
+	// value = DBL_MAX * 2^-1022 + 2^970 * 2^-1022 = 4 - 2^-52, held as two zero-overlap blocks
+	// with equal raw exp; as a double it is a tie that rounds to even, 4. Summed at the raw exp,
+	// DBL_MAX + 2^970 rounded to inf.
+	const B lead{ std::numeric_limits<double>::max(), typename B::exp_t(-1022) };
+	const B tail{ std::ldexp(1.0, 970), typename B::exp_t(-1022) };
+	const R v(ZBCL<double>::cons(lead, ZBCL<double>::singleton(tail)));
+	const double got = double(v);
+	if (got != 4.0) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: unnormalised two-block stream = " << got << " expected 4\n";
+	}
+	return nrOfFailedTests;
+}
+
 } // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -108,6 +129,7 @@ try {
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyPastDoubleRange(reportTestCases), "elreal<double>", "past double's range");
 	nrOfFailedTestCases += ReportTestResult(VerifySignificandOfLargeValues(reportTestCases), "elreal<double>", "significand of large values");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnnormalisedStream(reportTestCases), "elreal<double>", "unnormalised block stream");
 #endif
 
 #if REGRESSION_LEVEL_2

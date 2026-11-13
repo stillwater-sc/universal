@@ -76,7 +76,8 @@ int VerifyWellFormed(bool reportTestCases) {
 			const S results[] = { a + b, a - b, a * b };
 			const char* names[] = { "+", "-", "*" };
 			for (int k = 0; k < 3; ++k) {
-				if (!results[k].isnan() && !well_formed(results[k])) {
+				// the operands are finite and non-empty, so is every result: NaN is the empty set
+				if (results[k].isnan() || !well_formed(results[k])) {
 					++nrOfFailedTests;
 					if (reportTestCases) std::cerr << "FAIL: " << a << ' ' << names[k] << ' ' << b << " = " << results[k] << " is not an interval\n";
 				}

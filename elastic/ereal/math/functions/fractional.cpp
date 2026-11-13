@@ -433,6 +433,16 @@ namespace {
 				}
 			}
 		}
+		// near the top of the range: the first quotient digit's product q * y rounded past DBL_MAX
+		// and left NaN limbs (#2056 review); on double operands std::fmod is an exact reference
+		{
+			const double x = std::numeric_limits<double>::max(), y = 2.0 - std::ldexp(1.0, -44);
+			const Real f = fmod(Real(x), Real(y));
+			if (f.isnan() || double(f) != std::fmod(x, y) || f.limbs().size() > 1) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cerr << "FAIL: ereal<" << maxlimbs << "> fmod(DBL_MAX, 2 - 2^-44) = " << double(f) << " expected " << std::fmod(x, y) << '\n';
+			}
+		}
 		// the case of the sweep fits the budget, so it is exact
 		{
 			const Real x = Real(1e30) / Real(7.0), y = Real(1.0) / Real(3.0);
@@ -441,6 +451,22 @@ namespace {
 				++nrOfFailedTestCases;
 				if (reportTestCases) std::cerr << "FAIL: ereal<" << maxlimbs << "> fmod(1e30/7, 1/3) is not exact\n";
 			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// a remainder that needs more limbs than the budget is cut toward zero, so it stays below
+	// y: 3 b = 1 - 2^-108 exactly, so fmod(1 - 2^-108 (1 + 2^-52), b) = b - 2^-160, and a plain
+	// cut that drops the negative last limb returned b itself (#2056 review)
+	int VerifyBudgetedFmodBound(bool reportTestCases) {
+		using Real = ereal<1>;   // a two-limb budget
+		int nrOfFailedTestCases = 0;
+		const Real b = Real(0x1.5555555555555p-2) + Real(0x1.5555555555555p-56);
+		const Real a = Real(1.0) - Real(0x1.0000000000001p-108);
+		const Real f = fmod(a, b);
+		if (!(f < b) || f.isneg()) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: ereal<1> fmod is not below the divisor\n";
 		}
 		return nrOfFailedTestCases;
 	}
@@ -534,6 +560,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFractionalFuzz<ereal<>>(reportTestCases, 50), "fmod/remainder property fuzz", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimbFmod<4>(reportTestCases), "fmod/remainder ereal<4> multi-limb", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiLimbFmod<8>(reportTestCases), "fmod/remainder ereal<8> multi-limb", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyBudgetedFmodBound(reportTestCases), "fmod ereal<1> below the divisor", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
