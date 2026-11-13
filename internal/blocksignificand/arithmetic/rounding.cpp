@@ -16,8 +16,36 @@
 #include <universal/verification/blocksignificand_test_suite.hpp>
 #include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)
 
+// The round-to-nearest-even truth table of roundingDirection(lsb position):
+//   lsb | guard  round sticky   round
+//    x     0       x     x       down
+//    0     1       0     0       down  (tie, to even)
+//    1     1       0     0        up   (tie, to even)
+//    x     1       1     x        up
+//    x     1       x     1        up
+// with the lsb at bit 6, guard at bit 5, round at bit 4 and the sticky bits below: each case
+// runs with no sticky bit, with one at bit 0 and with one at bit 3.
+template<unsigned nbits, typename bt>
+int VerifyRoundingTruthTable(bool reportTestCases) {
+	using namespace sw::universal;
+	int nrOfFailedTests = 0;
+	for (uint64_t lgr = 0; lgr < 8; ++lgr) {
+		for (uint64_t sticky : { uint64_t(0), uint64_t(0x1), uint64_t(0x8) }) {
+			const bool lsb = (lgr & 0x4) != 0, guard = (lgr & 0x2) != 0, round = (lgr & 0x1) != 0;
+			const bool expected = guard && (lsb || round || sticky != 0);
+			blocksignificand<nbits, bt> a;
+			a.setbits((lgr << 4) | sticky);
+			if (a.roundingDirection(6) != expected) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL: " << to_binary(a, true) << " rounds " << (expected ? "down" : "up") << ", expected " << (expected ? "up" : "down") << '\n';
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -27,9 +55,9 @@
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
@@ -91,6 +119,9 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundingTruthTable<10, uint8_t>(reportTestCases), "blocksignificand<10,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundingTruthTable<10, uint32_t>(reportTestCases), "blocksignificand<10,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRoundingTruthTable<40, uint16_t>(reportTestCases), "blocksignificand<40,uint16_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

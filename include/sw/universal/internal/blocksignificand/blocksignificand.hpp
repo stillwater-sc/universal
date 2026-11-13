@@ -131,7 +131,9 @@ public:
 	template <size_t... I>
 	constexpr blocksignificand(const uint64_t raw, int radixPoint, std::index_sequence<I...>) noexcept
 	          : radixPoint{ radixPoint }, encoding{ BitEncoding::Flex }
-		  , _block{ static_cast<bt>(storageMask & (raw >> I*bitsInBlock))... } {}
+		  , _block{ static_cast<bt>(I * bitsInBlock < 64 ? (storageMask & (raw >> (I * bitsInBlock % 64))) : 0ull)... } {  // limbs past bit 63 are 0
+		_block[MSU] &= MSU_MASK;  // the invariant the comparisons rely on: no bits above nbits
+	}
 
 	constexpr blocksignificand(const uint64_t raw, int radixPoint) noexcept
 	        : blocksignificand(raw, radixPoint, std::make_index_sequence<nrBlocks>{}) {}
@@ -538,11 +540,23 @@ public:
 		return fractionBits;
 	}
 	constexpr uint64_t fraction_ull() const noexcept {
-		uint64_t raw = significand_ull();
-		// remove the non-fraction bits
-		uint64_t fractionBits = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - radixPoint));
-		raw &= fractionBits;
+		if (radixPoint <= 0) return 0;  // no fraction bits
+		// the low 64 bits, gathered from the low limbs: significand_ull() keeps only the MSU
+		// for uint64_t limbs, which holds no fraction bits once nbits > 64
+		uint64_t raw{ 0 };
+		for (unsigned i = 0; i < nrBlocks && i * bitsInBlock < 64; ++i) {
+			raw |= (static_cast<uint64_t>(_block[i]) << (i * bitsInBlock));
+		}
+		// remove the non-fraction bits; a radix at or past bit 64 keeps all 64 bits
+		if (radixPoint < 64) raw &= (0xFFFF'FFFF'FFFF'FFFFull >> (64 - radixPoint));
 		return raw;
+	}
+	// the bits as an unsigned number: true when *this < rhs
+	constexpr bool unsigned_less(const blocksignificand& rhs) const noexcept {
+		for (int i = static_cast<int>(MSU); i >= 0; --i) {
+			if (_block[i] != rhs._block[i]) return _block[i] < rhs._block[i];
+		}
+		return false;
 	}
 	template <size_t... I>
 	constexpr uint64_t significand_ull(std::index_sequence<I...> = {}) const noexcept {
@@ -583,44 +597,48 @@ public:
 	constexpr float to_float() const noexcept {
 		return float(to_double());
 	}
-	constexpr double to_double() const noexcept {
+	// twosComplement == true reads the bits as a 2's complement number, the layout of an ADD
+	// result (00h.fffff, the MSB a sign). false reads them as an unsigned magnitude, the
+	// layout of the MUL, DIV and SQRT results, whose MSB is an overflow bit, not a sign.
+	constexpr double to_double(bool twosComplement = true) const noexcept {
 		double d{ 0.0 };
 		double s{ 1.0 };
 		blocksignificand<nbits, bt> tmp(*this);
 		int bit = static_cast<int>(nbits - 1);
 		int shift = static_cast<int>(nbits - 1 - radixPoint);
 
-		// special case preprocessing for 2's complement encodings
-//		if (encoding == BitEncoding::Twos) {
-			// nbits in the target form 00h.fffff, check msb and if set take 2's complement
-			if (test(static_cast<unsigned>(bit--))) {
+		if (twosComplement) {
+			// check the msb and if set take 2's complement
+			if (test(static_cast<unsigned>(bit))) {
 				tmp.twosComplement();
 				s = -1.0;
 			}
+			--bit;
 			--shift; // and remove the MSB from the value computation
-//		}
+		}
 
-		// process the value above the radix
-		if (shift >= 0 && shift < 64) {
-			uint64_t bitValue = (uint64_t{1} << shift);
-			for (; bit >= radixPoint; --bit) {
-				if (tmp.test(static_cast<unsigned>(bit))) d += static_cast<double>(bitValue);
-				bitValue >>= 1;
-			}
-		} else if (shift >= 64) {
-			// Exceeds the range representable by a 64-bit weight. If any bit above the radix
-			// is set, the converted value saturates.
-			for (; bit >= radixPoint; --bit) {
-				if (tmp.test(static_cast<unsigned>(bit))) {
-					d = std::numeric_limits<double>::infinity();
-					break;
+		// process the value above the radix, with double weights: exact powers of two up to
+		// 2^1023 (a 64-bit integer weight saturated finite values past bit 63), inf beyond
+		// Start at the leading set bit: the weight of an unset high bit may exceed 2^1023, and an
+		// inf weight halved stays inf and would swamp the finite bits below it.
+		if (shift >= 0) {
+			const int top = tmp.msb();   // -1 when no bit is set
+			if (top >= radixPoint) {
+				if (top < bit) bit = top;
+				double bitValue{ 1.0 };
+				for (int i = radixPoint; i < bit; ++i) bitValue *= 2.0;
+				for (; bit >= radixPoint; --bit) {
+					if (tmp.test(static_cast<unsigned>(bit))) d += bitValue;
+					bitValue *= 0.5;
 				}
 			}
 		}
 		// else (shift < 0): no integer-weight contribution remains above the radix for this configuration.
 
-		// process the value below the radix
-		double v = std::pow(2.0, -double(radixPoint));
+		// process the value below the radix: 2^-radixPoint by halving, which is exact and,
+		// unlike std::pow, usable in a constant expression
+		double v{ 1.0 };
+		for (int i = 0; i < radixPoint; ++i) v *= 0.5;
 		for (unsigned fbit = 0; fbit < static_cast<unsigned>(radixPoint); ++fbit) {
 			if (tmp.test(fbit)) d += v;
 			v *= 2.0;
@@ -708,10 +726,12 @@ public:
 	//////////////////////////////////////////////////////////////////////////////////
 	// logic operators
 
+	// 2's complement order, compared limb by limb: subtracting to compare overflowed when the
+	// operands were more than half the range apart (and cost a full-width subtraction)
 	friend constexpr bool operator<(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {
-		blocksignificand diff;
-		diff.sub(lhs, rhs);
-		return diff.isneg();
+		const bool ls = lhs.isneg(), rs = rhs.isneg();
+		if (ls != rs) return ls;
+		return lhs.unsigned_less(rhs);  // same sign: 2's complement order is the unsigned order
 	}
 
 	friend constexpr bool operator<=(const blocksignificand& lhs, const blocksignificand& rhs) noexcept {

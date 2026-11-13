@@ -84,7 +84,7 @@ void GenerateMaxValues() {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()

@@ -11,6 +11,7 @@
 #include <string>
 #include <ios>      // std::streamsize in the to_string declaration
 #include <limits>
+#include <type_traits>
 #include <algorithm>
 #include <vector>
 
@@ -160,6 +161,7 @@ public:
 	constexpr blocktriple(long iv)               noexcept { *this = iv; }
 	constexpr blocktriple(long long iv)          noexcept { *this = iv; }
 	constexpr blocktriple(char iv)               noexcept { *this = iv; }
+	constexpr blocktriple(unsigned char iv)      noexcept { *this = iv; }
 	constexpr blocktriple(unsigned short iv)     noexcept { *this = iv; }
 	constexpr blocktriple(unsigned int iv)       noexcept { *this = iv; }
 	constexpr blocktriple(unsigned long iv)      noexcept { *this = iv; }
@@ -174,7 +176,12 @@ public:
 	constexpr blocktriple& operator=(int rhs)                noexcept { return convert_signed_integer(rhs); }
 	constexpr blocktriple& operator=(long rhs)               noexcept { return convert_signed_integer(rhs); }
 	constexpr blocktriple& operator=(long long rhs)          noexcept { return convert_signed_integer(rhs); }
-	constexpr blocktriple& operator=(char rhs)               noexcept { return convert_unsigned_integer(rhs); }
+	// plain char is signed or unsigned depending on the platform: convert it as the type it is
+	constexpr blocktriple& operator=(char rhs)               noexcept {
+		if constexpr (std::is_signed_v<char>) return convert_signed_integer(static_cast<signed char>(rhs));
+		else return convert_unsigned_integer(static_cast<unsigned char>(rhs));
+	}
+	constexpr blocktriple& operator=(unsigned char rhs)      noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned short rhs)     noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned int rhs)       noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
@@ -576,6 +583,24 @@ public:
 	}
 
 private:
+	// Order of the magnitudes of two finite values, -1, 0 or 1, independent of their layout: an
+	// operator result is left unnormalized (a MUL product of 2.25 is 10.01b at radix 2*fbits with
+	// scale 0) while a native value is 1.001b at its operand radix with scale 1. Compare the
+	// binade of the leading one, then the bits aligned at that leading one; nothing is discarded.
+	static constexpr int compare_magnitude(const blocktriple& a, const blocktriple& b) noexcept {
+		const int ma = a._significand.msb(), mb = b._significand.msb();
+		if (ma < 0 || mb < 0) return (ma < 0) ? ((mb < 0) ? 0 : -1) : 1;   // a zero significand
+		// in 64 bits: setscale() accepts any int, and scale + msb could overflow before the radix cancels it
+		const long long ea = static_cast<long long>(a._scale) + ma - a._significand.radix();
+		const long long eb = static_cast<long long>(b._scale) + mb - b._significand.radix();
+		if (ea != eb) return (ea < eb) ? -1 : 1;
+		significand_t x(a._significand), y(b._significand);
+		x <<= (static_cast<int>(bfbits) - 1 - ma);
+		y <<= (static_cast<int>(bfbits) - 1 - mb);
+		if (x == y) return 0;
+		return x.unsigned_less(y) ? -1 : 1;
+	}
+
 	// special cases to keep track of
 	bool _nan; // most dominant state
 	bool _inf; // second most dominant state
@@ -592,79 +617,47 @@ protected:
 
 private:
 	/// <summary>
-	/// round a set of source bits to the present representation.
-	/// srcbits is the number of bits of significand in the source representation
-	/// round is intended for rounding raw IEEE-754 bits only
+	/// round a significand of srcbits bits to the fbits + 1 bits of this blocktriple,
+	/// to nearest, ties to even.
+	///
+	/// raw holds the source significand with its leading (hidden) bit at srcbits - 1.
+	/// When fbits + 1 < srcbits the low bits are rounded away, and the result has its
+	/// hidden bit at fbits; a carry out of 1.11..1 increments _scale. When fbits + 1 >=
+	/// srcbits nothing is rounded and raw is returned UNCHANGED: the caller places it
+	/// with placeSignificand(), because the hidden bit may sit beyond the 64 bits of a
+	/// uint64_t (fbits >= 64).
 	/// </summary>
-	/// <param name="raw">the raw unrounded bits</param>
-	/// <returns></returns>
-	template<unsigned srcbits, typename Real>
+	template<unsigned srcbits>
 	constexpr uint64_t round(uint64_t raw) noexcept {
-		if constexpr (fbits < srcbits) {
-			// round to even: lsb guard round sticky
-			// collect guard, round, and sticky bits
-			// this same logic will work for the case where
-			// we only have a guard bit and no round and/or sticky bits
-			// because the mask logic will make round and sticky both 0
-
-			// example: rounding the bits of a float to our fbits 
-			// float significand: 24bits : 0bhfff'ffff'ffff'ffff'ffff'ffff; h is hidden, f are fraction bits
-			// blocktriple target: 10bits: 0bhfff'ffff'fff    hidden bit is implicit, 10 fraction bits
-			//                                           lg'rs
-			//                             0b0000'0000'0001'0000'0000'0000; guard mask == 1 << srcbits - fbits - 2: 24 - 10 - 2 = 12
-			constexpr unsigned upper = ieee754_parameter<Real>::nbits + 2;
-			constexpr int offset = fbits + 2;
-			constexpr int fullShift = srcbits - offset;  // srcbits includes the hidden bit, fbits does not
-			constexpr unsigned shift = (fullShift < 0 ? 0 : fullShift);
-			uint64_t mask = (srcbits < offset ? 0 : (1ull << shift));
-			bool guard = (mask & raw);
-			mask >>= 1;
-			bool round = (mask & raw);
-			if constexpr (shift > 1 && shift < upper) { // protect against a negative shift
-				uint64_t allones(uint64_t(~0));
-				mask = uint64_t(allones << (shift - 1));
-				mask = ~mask;
-			}
-			else {
-				mask = 0;
-			}
-			bool sticky = (mask & raw);
-
-			raw >>= (shift + 1);  // shift out the bits we are rounding away
-			bool lsb = (raw & 0x1);
-
-			//  ... lsb | guard  round sticky   round
-			//       x     0       x     x       down
-			//       0     1       0     0       down  round to even
-			//       1     1       0     0        up   round to even
-			//       x     1       0     1        up
-			//       x     1       1     0        up
-			//       x     1       1     1        up
-			if (guard) {
-				if (lsb && (!round && !sticky)) ++raw; // round to even
-				if (round || sticky) ++raw;
-				if (raw == overflowPattern) {
+		static_assert(srcbits >= 1 && srcbits <= 64, "round: a source significand holds 1 to 64 bits");
+		if constexpr (fbits + 1 < srcbits) {
+			constexpr unsigned drop = srcbits - fbits - 1;   // 1 <= drop <= 63
+			constexpr uint64_t half = (1ull << (drop - 1));  // weight of the guard bit
+			const uint64_t rest = raw & ((half << 1) - 1ull);
+			raw >>= drop;
+			if (rest > half || (rest == half && (raw & 1ull))) {
+				++raw;
+				if (raw == (1ull << (fbits + 1))) {  // 1.11..1 + ulp = 10.00..0
 					++_scale;
 					raw >>= 1;
 				}
 			}
 		}
-		else {
-			constexpr unsigned shift = fbits - srcbits;
-			if constexpr (shift < ieee754_parameter<Real>::nbits) {
-				raw <<= shift;
-			}
-			else {
-#if !BIT_CAST_IS_CONSTEXPR
-				std::fprintf(stderr, "round: shift %d is too large (>= 64)\n", int(shift));
-#endif
-			}
-		}
 		return raw;
+	}
+
+	// set the significand from the bits returned by round<srcbits>(), with the hidden bit at fbits
+	template<unsigned srcbits>
+	constexpr void placeSignificand(uint64_t rounded) noexcept {
+		_significand.setbits(rounded);
+		if constexpr (fbits + 1 > srcbits) {
+			_significand <<= static_cast<int>(fbits + 1 - srcbits);
+		}
 	}
 
 	template<typename Ty>
 	constexpr inline blocktriple& convert_unsigned_integer(const Ty& rhs) noexcept {
+		static_assert(std::is_unsigned_v<Ty>, "convert_unsigned_integer requires an unsigned type");
 		clear();
 		_nan = false;
 		_inf = false;
@@ -672,34 +665,11 @@ private:
 		if (0 == rhs) return *this;
 		_zero = false;
 		_sign = false;
-		uint64_t raw = static_cast<uint64_t>(rhs);
-		_scale = static_cast<int>(find_msb(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr unsigned sizeInBits = 8 * sizeof(Ty);
-		uint64_t shift = sizeInBits - _scale - 1;
-		raw <<= shift;
-		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);
-		switch (op) {
-		case BlockTripleOperator::ADD:
-			_significand.setradix(fbits);
-			break;
-		case BlockTripleOperator::MUL:
-			_significand.setradix(fbits);
-			break;
-		case BlockTripleOperator::DIV:
-			_significand.setradix(2 * fbits);
-			break;
-		case BlockTripleOperator::SQRT:
-			_significand.setradix(2 * fbits);
-			break;
-		case BlockTripleOperator::REP:
-			_significand.setradix(fbits);
-			break;
-		}
-		_significand.setbits(rounded_bits);
-		return *this;
+		return convert_magnitude<8 * sizeof(Ty)>(static_cast<uint64_t>(rhs));
 	}
 	template<typename Ty>
 	constexpr inline blocktriple& convert_signed_integer(const Ty& rhs) noexcept {
+		static_assert(std::is_signed_v<Ty>, "convert_signed_integer requires a signed type");
 		clear();
 		_nan = false;
 		_inf = false;
@@ -707,30 +677,19 @@ private:
 		if (0 == rhs) return *this;
 		_zero = false;
 		_sign = (rhs < 0);
-		uint64_t raw = static_cast<uint64_t>(_sign ? -rhs : rhs);
-		_scale = static_cast<int>(find_msb(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr unsigned sizeInBits = 8 * sizeof(Ty);
-		uint64_t shift = sizeInBits - _scale - 1;
-		raw <<= shift;
-		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);  // TODO: there is something wrong here: that second template param only supports float types
-		switch (op) {
-		case BlockTripleOperator::ADD:
-			_significand.setradix(fbits);
-			break;
-		case BlockTripleOperator::MUL:
-			_significand.setradix(fbits);
-			break;
-		case BlockTripleOperator::DIV:
-			_significand.setradix(2 * fbits);
-			break;
-		case BlockTripleOperator::SQRT:
-			_significand.setradix(2 * fbits);
-			break;
-		case BlockTripleOperator::REP:
-			_significand.setradix(fbits);
-			break;
-		}
-		_significand.setbits(rounded_bits);
+		// the magnitude in the unsigned domain: -rhs overflows for the most negative value
+		using Unsigned = std::make_unsigned_t<Ty>;
+		const Unsigned bits = static_cast<Unsigned>(rhs);
+		const Unsigned magnitude = _sign ? static_cast<Unsigned>(Unsigned(0) - bits) : bits;
+		return convert_magnitude<8 * sizeof(Ty)>(static_cast<uint64_t>(magnitude));
+	}
+	// a non-zero integer magnitude of at most sizeInBits bits
+	template<unsigned sizeInBits>
+	constexpr blocktriple& convert_magnitude(uint64_t raw) noexcept {
+		_scale = static_cast<int>(find_msb(raw)) - 1; // find_msb is 1-based; raw != 0
+		raw <<= (sizeInBits - 1u - static_cast<unsigned>(_scale));  // leading bit at sizeInBits - 1
+		placeSignificand<sizeInBits>(round<sizeInBits>(raw));
+		alignForOperator();
 		return *this;
 	}
 
@@ -785,31 +744,30 @@ private:
 		if constexpr (std::is_same_v<Real, long double>) {
 			return convert_long_double(rhs);
 		}
+		else
 #endif
-		if (rawExponent == 0ull) {
-			// value is a subnormal: TBD
-#if ! BIT_CAST_IS_CONSTEXPR
-			std::fprintf(stderr, "subnormal value TBD\n");
-#endif
-		}
-		else {
-			int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
-
-			// normal number, not zero
+		{
+			// float and double: the significand fits a uint64_t (the else keeps a long double,
+			// whose significand may not, from instantiating this path)
+			constexpr unsigned srcfbits = ieee754_parameter<Real>::fbits;
 			_nan = false;
 			_inf = false;
 			_zero = false;
 			_sign = s;
-			_scale = exponent;
-
-			// add the hidden bit
-			rawFraction |= (1ull << ieee754_parameter<Real>::fbits);
-			uint64_t rounded_bits = round<ieee754_parameter<Real>::fbits+1, Real>(rawFraction);
-			_significand.setbits(rounded_bits);
+			if (rawExponent == 0ull) {
+				// subnormal: 0.fff * 2^(1 - bias); normalize so the leading one becomes the hidden bit
+				const int msb = static_cast<int>(find_msb(rawFraction)) - 1;  // 0-based, rawFraction != 0
+				_scale = 1 - ieee754_parameter<Real>::bias - (static_cast<int>(srcfbits) - msb);
+				rawFraction <<= (srcfbits - static_cast<unsigned>(msb));
+			}
+			else {
+				_scale = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
+				rawFraction |= (1ull << srcfbits);  // add the hidden bit
+			}
+			placeSignificand<srcfbits + 1>(round<srcfbits + 1>(rawFraction));
 			alignForOperator();
+			return *this;
 		}
-
-		return *this;
 	}
 
 	// move a significand held as 1.fff (fbits + 1 bits, hidden bit at fbits) to the operator's layout
@@ -823,12 +781,13 @@ private:
 			_significand <<= rbits;
 			break;
 		case BlockTripleOperator::MUL:
-			_significand.setradix(2*fbits);
-			_significand <<= fbits;
+			// the operand layout mul() consumes: radix at fbits, the product lands at 2*fbits
+			_significand.setradix(fbits);
 			break;
 		case BlockTripleOperator::DIV:
-			_significand.setradix(2*fbits);
-			_significand <<= fbits;
+			// the operand layout div() consumes, as cfloat's normalizeDivision builds it
+			_significand.setradix(radix);
+			_significand <<= static_cast<int>(divshift);
 			break;
 		case BlockTripleOperator::SQRT:
 			_significand.setradix(2 * fbits);
@@ -889,7 +848,9 @@ private:
 				return v;
 			}
 		}
-		Real v = Real(_significand);
+		// only the ADD layout is 2's complement; the MUL, DIV and SQRT layouts hold an unsigned
+		// magnitude whose top bit is an overflow bit, and REP's top bit is always clear
+		Real v = Real(_significand.to_double(op == BlockTripleOperator::ADD));
 		v *= std::pow(Real(2.0f), Real(_scale));
 		Real s = (_sign ? Real(-1.0) : Real(1.0));
 		return s * v;
@@ -945,83 +906,34 @@ public:
 
 
 
+// IEEE-754 comparison semantics: NaN is unordered (every comparison with it is false, and
+// != is true), +0 == -0, and -inf < every finite value < +inf.
 template<unsigned fbits, BlockTripleOperator op, typename bt>
-inline bool operator==(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._significand == rhs._significand && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
+inline bool operator==(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) {
+	if (lhs._nan || rhs._nan) return false;
+	if (lhs._zero || rhs._zero) return lhs._zero && rhs._zero;
+	if (lhs._inf || rhs._inf) return lhs._inf && rhs._inf && lhs._sign == rhs._sign;
+	return lhs._sign == rhs._sign && blocktriple<fbits, op, bt>::compare_magnitude(lhs, rhs) == 0;
+}
 template<unsigned fbits, BlockTripleOperator op, typename bt>
 inline bool operator!=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned fbits, BlockTripleOperator op, typename bt>
 inline bool operator< (const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) {
-	if (lhs._inf) {
-		if (rhs._inf) return false; else return true; // everything is less than -infinity
-	}
-	else {
-		if (rhs._inf) return false;
-	}
-
-	if (lhs._zero) {
-		if (rhs._zero) return false; // they are both 0
-		if (rhs._sign) return false; else return true;
-	}
-	if (rhs._zero) {
-		if (lhs._sign) return true; else return false;
-	}
-	if (lhs._sign) {
-		if (rhs._sign) {	// both operands are negative
-			if (lhs._scale > rhs._scale) {
-				return true;	// lhs is more negative
-			}
-			else {
-				if (lhs._scale == rhs._scale) {
-					// compare the fraction, which is an unsigned value
-					if (lhs._significand == rhs._significand) return false; // they are the same value
-					if (lhs._significand > rhs._significand) {
-						return true; // lhs is more negative
-					}
-					else {
-						return false; // lhs is less negative
-					}
-				}
-				else {
-					return false; // lhs is less negative
-				}
-			}
-		}
-		else {
-			return true; // lhs is negative, rhs is positive
-		}
-	}
-	else {
-		if (rhs._sign) {
-			return false; // lhs is positive, rhs is negative
-		}
-		else {
-			if (lhs._scale > rhs._scale) {
-				return false; // lhs is more positive
-			}
-			else {
-				if (lhs._scale == rhs._scale) {
-					// compare the fractions
-					if (lhs._significand == rhs._significand) return false; // they are the same value
-					if (lhs._significand > rhs._significand) {
-						return false; // lhs is more positive than rhs
-					}
-					else {
-						return true; // lhs is less positive than rhs
-					}
-				}
-				else {
-					return true; // lhs is less positive
-				}
-			}
-		}
-	}
+	if (lhs._nan || rhs._nan) return false;
+	if (lhs._inf) return lhs._sign && !(rhs._inf && rhs._sign);   // -inf is below all but -inf
+	if (rhs._inf) return !rhs._sign;                                // a non-inf lhs is below +inf only
+	if (lhs._zero) return rhs._zero ? false : !rhs._sign;
+	if (rhs._zero) return lhs._sign;
+	if (lhs._sign != rhs._sign) return lhs._sign;
+	const int order = blocktriple<fbits, op, bt>::compare_magnitude(lhs, rhs);
+	return lhs._sign ? (order > 0) : (order < 0);
 }
 template<unsigned fbits, BlockTripleOperator op, typename bt>
 inline bool operator> (const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return  operator< (rhs, lhs); }
 template<unsigned fbits, BlockTripleOperator op, typename bt>
-inline bool operator<=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return operator< (lhs, rhs) || operator==(lhs, rhs); }
 template<unsigned fbits, BlockTripleOperator op, typename bt>
-inline bool operator>=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return operator< (rhs, lhs) || operator==(lhs, rhs); }
 
 
 ////////////////////////////////// string conversion functions //////////////////////////////

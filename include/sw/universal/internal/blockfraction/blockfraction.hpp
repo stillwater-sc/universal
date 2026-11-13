@@ -266,8 +266,11 @@ public:
 	constexpr blockfraction& operator<<=(int bitsToShift) noexcept {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
-		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
-		if (bitsToShift >= long(bitsInBlock)) {
+		if (bitsToShift >= static_cast<int>(nbits)) {
+			for (unsigned i = 0; i < nrBlocks; ++i) _block[i] = bt(0);   // every bit is shifted out; keep the radix
+			return *this;
+		}
+		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
 			int blockShift = bitsToShift / static_cast<int>(bitsInBlock);
 			for (int i = static_cast<int>(MSU); i >= blockShift; --i) {
 				_block[i] = _block[i - blockShift];
@@ -277,7 +280,10 @@ public:
 			}
 			// adjust the shift
 			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
-			if (bitsToShift == 0) return *this;
+			if (bitsToShift == 0) {
+				_block[MSU] &= MSU_MASK;  // null the bits shifted past nbits
+				return *this;
+			}
 		}
 		if constexpr (MSU > 0) {
 			// construct the mask for the upper bits in the block that need to move to the higher word
@@ -290,13 +296,14 @@ public:
 			}
 		}
 		_block[0] <<= bitsToShift;
+		_block[MSU] &= MSU_MASK;  // null the bits shifted past nbits: iszero() and == read raw blocks
 		return *this;
 	}
 	constexpr blockfraction& operator>>=(int bitsToShift) noexcept {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		if (bitsToShift >= static_cast<int>(nbits)) {
-			setzero();
+			for (unsigned i = 0; i < nrBlocks; ++i) _block[i] = bt(0);   // every bit is shifted out; keep the radix
 			return *this;
 		}
 
@@ -368,21 +375,24 @@ public:
 	}
 	constexpr void setbits(uint64_t value) noexcept {
 		// radixPoint needs to be set, either using the constructor or the setradix() function
+		// the value lands in the low bits, whatever the limb width: uint64_t limbs used to put it
+		// in the MOST significant block, so the same call meant a different number per limb type
 		if constexpr (1 == nrBlocks) {
-			_block[0] = value & storageMask;
+			_block[0] = static_cast<bt>(value & storageMask);
 		}
 		else if constexpr (1 < nrBlocks) {
 			if constexpr (bitsInBlock == 64) {
-				// just set the highest bits with the value provided
-				_block[MSU] = value;
+				_block[0] = static_cast<bt>(value);
+				for (unsigned i = 1; i < nrBlocks; ++i) _block[i] = bt(0);
 			}
 			else {
 				for (unsigned i = 0; i < nrBlocks; ++i) {
-					_block[i] = value & storageMask;
+					_block[i] = static_cast<bt>(value & storageMask);
 					value >>= bitsInBlock;
 				}
 			}
 		}
+		_block[MSU] &= MSU_MASK;
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
 	constexpr blockfraction& flip() noexcept { // in-place one's complement
@@ -486,28 +496,28 @@ public:
 		int bit = static_cast<int>(nbits - 1);
 		int shift = static_cast<int>(nbits - 1 - radixPoint);
 
-		// process the value above the radix
-		if (shift >= 0 && shift < 64) {
-			unsigned bitValue = 1ull << shift;
-			for (; bit >= radixPoint; --bit) {
-				if (tmp.test(static_cast<unsigned>(bit))) d += static_cast<double>(bitValue);
-				bitValue >>= 1;
-			}
-		}
-		else if (shift >= 64) {
-			// Integer weights exceed what this implementation can express.
-			// If any bit above the radix is set, the magnitude is effectively unbounded here.
-			for (; bit >= radixPoint; --bit) {
-				if (tmp.test(static_cast<unsigned>(bit))) {
-					d = std::numeric_limits<double>::infinity();
-					break;
+		// process the value above the radix, with double weights: exact powers of two up to
+		// 2^1023 (an unsigned weight truncated past 2^31, a 64-bit one saturated past bit 63)
+		// Start at the leading set bit: the weight of an unset high bit may exceed 2^1023, and an
+		// inf weight halved stays inf and would swamp the finite bits below it.
+		if (shift >= 0) {
+			const int top = tmp.msb();   // -1 when no bit is set
+			if (top >= radixPoint) {
+				if (top < bit) bit = top;
+				double bitValue{ 1.0 };
+				for (int i = radixPoint; i < bit; ++i) bitValue *= 2.0;
+				for (; bit >= radixPoint; --bit) {
+					if (tmp.test(static_cast<unsigned>(bit))) d += bitValue;
+					bitValue *= 0.5;
 				}
 			}
 		}
 		// else (shift < 0): no integer-weight contribution remains above the radix for this configuration.
 
 		// process the value below the radix
-		double v = std::pow(2.0, -double(radixPoint));
+		// 2^-radixPoint by halving, which is exact and, unlike std::pow, usable in a constant expression
+		double v{ 1.0 };
+		for (int i = 0; i < radixPoint; ++i) v *= 0.5;
 		for (unsigned fbit = 0; fbit < static_cast<unsigned>(radixPoint); ++fbit) {
 			if (tmp.test(fbit)) d += v;
 			v *= 2.0;
@@ -570,10 +580,14 @@ public:
 	//////////////////////////////////////////////////////////////////////////////////
 	// logic operators
 
+	// a blockfraction is an unsigned entity: compare the bits as an unsigned number, limb by
+	// limb. Subtracting and testing the top bit was wrong whenever an operand had it set,
+	// and div() relies on this ordering.
 	friend constexpr bool operator<(const blockfraction& lhs, const blockfraction& rhs) noexcept {
-		blockfraction diff;
-		diff.sub(lhs, rhs);
-		return diff.isneg();
+		for (int i = static_cast<int>(MSU); i >= 0; --i) {
+			if (lhs._block[i] != rhs._block[i]) return lhs._block[i] < rhs._block[i];
+		}
+		return false;
 	}
 
 	friend constexpr bool operator<=(const blockfraction& lhs, const blockfraction& rhs) noexcept {
