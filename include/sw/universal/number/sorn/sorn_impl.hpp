@@ -720,6 +720,13 @@ public:
 				this->sornIntVal.lowerBound = minVal();
 				this->sornIntVal.lowerIsOpen = dt[0].lowerIsOpen;
 			}
+			// 1.2.1b. lower bound at or past the top of a lattice without infinity: the whole
+			// result lies above the lattice and saturates to the outermost interval, as a
+			// conversion does (left alone, the lower bound stayed above the clamped upper one)
+			else if (this->sornIntVal.lowerBound >= maxVal()) {
+				this->sornIntVal.lowerBound = dt[dt.size() - 1].lowerBound;
+				this->sornIntVal.lowerIsOpen = dt[dt.size() - 1].lowerIsOpen;
+			}
 			else {
 				for (size_t b = 0; b < dt.size(); b++) {
 					// 1.2.2. lower bound value between two possible values (from DT)
@@ -756,6 +763,12 @@ public:
 			if (this->sornIntVal.upperBound > maxVal()) {
 				this->sornIntVal.upperBound = maxVal();
 				this->sornIntVal.upperIsOpen = dt[dt.size() - 1].upperIsOpen;
+			}
+			// 2.2.1b. upper bound at or below the bottom of the lattice: saturate to the
+			// outermost interval on that side, the mirror of 1.2.1b
+			else if (this->sornIntVal.upperBound <= minVal()) {
+				this->sornIntVal.upperBound = dt[0].upperBound;
+				this->sornIntVal.upperIsOpen = dt[0].upperIsOpen;
 			}
 			else {
 				for (size_t b = 0; b < dt.size(); b++) {

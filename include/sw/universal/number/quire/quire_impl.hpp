@@ -199,18 +199,17 @@ public:
 	quire& operator=(float rhs) {
 		reset();
 		if (rhs == 0.0f) return *this;
-		// Use fbits=22 (not 23) to avoid an edge case in blocktriple::round<>:
-		// when fbits == ieee754_fbits, round<> shifts right by 1, placing the
-		// hidden bit at fbits-1 instead of at the radix (fbits). Using fbits-1
-		// ensures the hidden bit lands correctly at the radix position.
-		blocktriple<22, BlockTripleOperator::REP, uint32_t> v(rhs);
+		// all 24 significand bits: the 22 fraction bits used here dodged a blocktriple::round<>
+		// defect (fbits == srcbits - 1 dropped a bit, fixed in #2052) by rounding away the
+		// last bit of every float, so quire<float> = 1 + FLT_EPSILON resolved to 1 (#2054)
+		blocktriple<23, BlockTripleOperator::REP, uint32_t> v(rhs);
 		return *this = v;
 	}
 	quire& operator=(double rhs) {
 		reset();
 		if (rhs == 0.0) return *this;
-		// Use fbits=51 (not 52) for the same reason as the float overload above.
-		blocktriple<51, BlockTripleOperator::REP, uint32_t> v(rhs);
+		// all 53 significand bits, as for float above
+		blocktriple<52, BlockTripleOperator::REP, uint32_t> v(rhs);
 		return *this = v;
 	}
 

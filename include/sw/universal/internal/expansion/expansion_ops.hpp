@@ -353,85 +353,36 @@ inline std::vector<FpType> grow_expansion(const std::vector<FpType>& e, std::typ
  */
 template<typename FpType = double>
 inline std::vector<FpType> fast_expansion_sum(const std::vector<FpType>& e, const std::vector<FpType>& f) {
-    size_t m = e.size();
-    size_t n = f.size();
-
-    // Special cases
+    // Shewchuk's FAST-EXPANSION-SUM with zero elimination: merge the components of both
+    // expansions in increasing magnitude, then run them through one chain of two_sums, each
+    // emitting its roundoff. Every input bit lands in exactly one output component, so the
+    // sum is exact. The earlier merge dropped components ({3, 1e-20} + {2, 1e-30} lost both
+    // tails, #2054). The expansions are stored most significant first, so the merge walks
+    // both from the back, and the output is reversed into that order.
+    const size_t m = e.size();
+    const size_t n = f.size();
     if (m == 0) return f;
     if (n == 0) return e;
 
+    std::vector<FpType> g;
+    g.reserve(m + n);
+    size_t i = m, j = n;   // one past the next (smallest remaining) component of each
+    while (i > 0 || j > 0) {
+        if (j == 0 || (i > 0 && std::abs(e[i - 1]) <= std::abs(f[j - 1]))) g.push_back(e[--i]);
+        else g.push_back(f[--j]);
+    }
+
     std::vector<FpType> h;
     h.reserve(m + n);
-
-    size_t i = 0, j = 0;
-    FpType q = FpType(0);
-
-    // Merge process: walk through both expansions from least to most significant
-    // Note: Our expansions are stored in DECREASING order [most sig ... least sig]
-    // So we walk backwards through the arrays
-
-    // Pick the smaller component to start
-    FpType e_curr = (m > 0) ? e[m - 1] : FpType(0);
-    FpType f_curr = (n > 0) ? f[n - 1] : FpType(0);
-
-    // Start with the absolutely smaller component
-    if (std::abs(e_curr) < std::abs(f_curr) || (m == 0)) {
-        q = f_curr;
-        j = n - 1;
-        if (j > 0) j--;
-        else j = SIZE_MAX;  // Mark as exhausted
-    } else {
-        q = e_curr;
-        i = m - 1;
-        if (i > 0) i--;
-        else i = SIZE_MAX;  // Mark as exhausted
+    FpType Q = g[0];
+    for (size_t k = 1; k < g.size(); ++k) {
+        FpType sum, roundoff;
+        two_sum(Q, g[k], sum, roundoff);
+        if (roundoff != FpType(0)) h.push_back(roundoff);
+        Q = sum;
     }
-
-    // Merge remaining components
-    while (i != SIZE_MAX || j != SIZE_MAX) {
-        FpType next_component;
-
-        if (i == SIZE_MAX) {
-            // Only f remains
-            next_component = f[j];
-            if (j > 0) j--; else j = SIZE_MAX;
-        } else if (j == SIZE_MAX) {
-            // Only e remains
-            next_component = e[i];
-            if (i > 0) i--; else i = SIZE_MAX;
-        } else {
-            // Both available - pick smaller magnitude
-            if (std::abs(e[i]) < std::abs(f[j])) {
-                next_component = e[i];
-                if (i > 0) i--; else i = SIZE_MAX;
-            } else {
-                next_component = f[j];
-                if (j > 0) j--; else j = SIZE_MAX;
-            }
-        }
-
-        FpType q_new, h_i;
-        two_sum(q, next_component, q_new, h_i);  // Use TWO-SUM for correctness
-
-        if (h_i != FpType(0)) {
-            h.push_back(h_i);
-        }
-        q = q_new;
-    }
-
-    if (q != FpType(0)) {
-        h.push_back(q);
-    }
-
-    // Ensure we always have at least one component (even if zero)
-    // This maintains the ereal invariant: limb vector is never empty
-    if (h.empty()) {
-        h.push_back(FpType(0));
-    }
-
-    // Reverse to get decreasing magnitude order
-    std::reverse(h.begin(), h.end());
-
+    if (Q != FpType(0) || h.empty()) h.push_back(Q);
+    std::reverse(h.begin(), h.end());   // most significant first
     return h;
 }
 
@@ -573,96 +524,83 @@ inline std::vector<FpType> linear_expansion_sum(const std::vector<FpType>& e, co
  */
 namespace detail_priest {
 
-    // sweepUpRec: cumulative twoSum from the back; emits residuals as we go
-    // and the final carry as the leading element of the (reversed) result.
-    template<typename FpType = double>
-    inline std::vector<FpType>
-    sweepUpRec(const std::vector<FpType>& as, size_t pos, FpType b) {
-        if (pos == as.size()) return { b };
-        FpType s, e;
-        two_sum(as[pos], b, s, e);
-        std::vector<FpType> rest = sweepUpRec(as, pos + 1, s);
-        std::vector<FpType> result;
-        result.reserve(rest.size() + 1);
-        result.push_back(e);
-        result.insert(result.end(), rest.begin(), rest.end());
-        return result;
-    }
+    // Priest's renormalization (sweep up, then a sweep down per suffix), iteratively and on
+    // reused buffers. The recursive formulation built a std::vector per element and per
+    // recursion level, 4.5 us at m = 8 and 11 us at m = 16 on ereal's hot path (#2054). The
+    // two_sums are the same, in the same order, so the result is bit-identical.
 
-    // sweepUp: build a "loose" non-overlapping form by sweeping from least to
-    // most significant. Returns the result in decreasing magnitude order.
+    // sweepUp: cumulative two_sum from the least significant component; the residuals and
+    // the final carry, written to out in decreasing magnitude order. as is most significant first.
     template<typename FpType = double>
-    inline std::vector<FpType> sweepUp(const std::vector<FpType>& as) {
-        if (as.empty()) return {};
-        // Walk the input back-to-front by passing a position index; the
-        // recursion produces the residual-first sequence, which we reverse
-        // at the end to get decreasing magnitude order.
-        std::vector<FpType> reversed_input(as.rbegin(), as.rend());
-        FpType ra = reversed_input.front();
-        std::vector<FpType> result = sweepUpRec(reversed_input, 1, ra);
-        std::reverse(result.begin(), result.end());
-        return result;
-    }
-
-    template<typename FpType = double>
-    inline std::vector<FpType> sweepDown(const std::vector<FpType>& as);
-
-    template<typename FpType = double>
-
-    inline std::vector<FpType>
-    sweepDownRec(const std::vector<FpType>& as, size_t pos, FpType b) {
-        if (pos == as.size()) return { b };
-        FpType s, e;
-        two_sum(as[pos], b, s, e);
-        std::vector<FpType> tail;
-        if (e == FpType(0)) {
-            // Re-enter sweepDown on the remaining tail (effectively dropping
-            // the zero residual).
-            std::vector<FpType> remaining(as.begin() + pos + 1, as.end());
-            tail = sweepDown(remaining);
-        } else {
-            tail = sweepDownRec(as, pos + 1, e);
+    inline void sweepUp(const FpType* as, size_t n, std::vector<FpType>& out) {
+        out.clear();
+        if (n == 0) return;
+        FpType b = as[n - 1];
+        for (size_t idx = n - 1; idx-- > 0; ) {
+            FpType s, e;
+            two_sum(as[idx], b, s, e);
+            out.push_back(e);
+            b = s;
         }
-        std::vector<FpType> result;
-        result.reserve(tail.size() + 1);
-        result.push_back(s);
-        result.insert(result.end(), tail.begin(), tail.end());
-        return result;
+        out.push_back(b);
+        std::reverse(out.begin(), out.end());
     }
 
-    template<typename FpType>
-    inline std::vector<FpType> sweepDown(const std::vector<FpType>& as) {
-        if (as.empty()) return {};
-        return sweepDownRec(as, 1, as.front());
-    }
-
+    // sweepDown: from the most significant component down; a zero residual restarts the
+    // sweep at the component after the one just summed
     template<typename FpType = double>
-    inline std::vector<FpType> remove_zeros(const std::vector<FpType>& xs) {
-        std::vector<FpType> out;
-        out.reserve(xs.size());
-        for (FpType v : xs) {
-            if (v != FpType(0)) out.push_back(v);
+    inline void sweepDown(const std::vector<FpType>& as, std::vector<FpType>& out) {
+        out.clear();
+        const size_t n = as.size();
+        if (n == 0) return;
+        FpType b = as[0];
+        size_t pos = 1;
+        while (true) {
+            if (pos == n) { out.push_back(b); break; }
+            FpType s, e;
+            two_sum(as[pos], b, s, e);
+            out.push_back(s);
+            if (e == FpType(0)) {
+                if (pos + 1 >= n) break;
+                b = as[pos + 1];
+                pos += 2;
+            }
+            else {
+                b = e;
+                pos += 1;
+            }
         }
-        return out;
     }
 
     template<typename FpType = double>
-
-    inline std::vector<FpType>
-    priest_renormalize(std::vector<FpType> as) {
-        if (as.empty()) return {};
-        std::vector<FpType> up = sweepUp(as);
-        if (up.empty()) return {};
-        FpType f = up.front();
-        std::vector<FpType> fs(up.begin() + 1, up.end());
-        std::vector<FpType> recursed = priest_renormalize(std::move(fs));
-        std::vector<FpType> cleaned = remove_zeros(recursed);
-        std::vector<FpType> down = sweepDown(cleaned);
-        std::vector<FpType> result;
-        result.reserve(down.size() + 1);
-        result.push_back(f);
-        result.insert(result.end(), down.begin(), down.end());
-        return result;
+    inline std::vector<FpType> priest_renormalize(std::vector<FpType> as) {
+        const size_t n = as.size();
+        if (n == 0) return {};
+        // the leading component of each suffix's sweep up: f[k] heads level k, and level k
+        // recurses on the rest of its sweep, which the next pass sweeps in place
+        std::vector<FpType> heads;
+        heads.reserve(n);
+        std::vector<FpType> up;
+        up.reserve(n);
+        std::vector<FpType> level(std::move(as));
+        while (!level.empty()) {
+            sweepUp(level.data(), level.size(), up);
+            heads.push_back(up.front());
+            level.assign(up.begin() + 1, up.end());
+        }
+        // unwind: the result of level k is its head followed by the sweep down of the
+        // zero-free result of level k + 1
+        std::vector<FpType> acc, down;
+        acc.reserve(n);
+        down.reserve(n);
+        for (size_t k = heads.size(); k-- > 0; ) {
+            acc.erase(std::remove(acc.begin(), acc.end(), FpType(0)), acc.end());
+            sweepDown(acc, down);
+            acc.clear();
+            acc.push_back(heads[k]);
+            acc.insert(acc.end(), down.begin(), down.end());
+        }
+        return acc;
     }
 
 } // namespace detail_priest
@@ -727,6 +665,9 @@ inline std::vector<FpType> scale_expansion(const std::vector<FpType>& e, std::ty
         if (product != FpType(0)) products.push_back(product);
         if (error != FpType(0)) products.push_back(error);
     }
+    // a zero expansion (or an underflowed product) scales to zero, not to the empty expansion,
+    // which callers read as no value at all (#2054)
+    if (products.empty()) return std::vector<FpType>{ FpType(0) };
 
     // Sort by decreasing magnitude (most significant first)
     std::sort(products.begin(), products.end(), [](FpType a, FpType b) {
@@ -770,6 +711,20 @@ inline std::vector<FpType> scale_expansion(const std::vector<FpType>& e, std::ty
 template<typename FpType = double>
 inline std::vector<FpType> compress_expansion(const std::vector<FpType>& e, std::type_identity_t<FpType> epsilon = FpType(0)) {
     if (e.empty()) return e;
+
+    // a non-finite component is the value: a NaN, or opposite infinities, give NaN, and an
+    // infinity is kept. The magnitude threshold below dropped a NaN (NaN > t is false) and,
+    // with epsilon == 0, every component next to an infinity (0 * inf is NaN) (#2054)
+    {
+        bool nan = false, posinf = false, neginf = false;
+        for (const auto& component : e) {
+            if (std::isnan(component)) nan = true;
+            else if (std::isinf(component)) (component > FpType(0) ? posinf : neginf) = true;
+        }
+        if (nan || (posinf && neginf)) return std::vector<FpType>{ std::numeric_limits<FpType>::quiet_NaN() };
+        if (posinf) return std::vector<FpType>{ std::numeric_limits<FpType>::infinity() };
+        if (neginf) return std::vector<FpType>{ -std::numeric_limits<FpType>::infinity() };
+    }
 
     // Find largest magnitude for relative threshold
     FpType max_magnitude = FpType(0);
@@ -1142,9 +1097,14 @@ template<typename FpType = double>
 inline std::vector<FpType> expansion_quotient(const std::vector<FpType>& e, const std::vector<FpType>& f, int iterations = 3, std::size_t budget = 0) {
     // Divide-by-zero / non-finite divisor: fall back to the direct reciprocal,
     // which yields the IEEE special value (Inf/NaN) the callers expect.
+    // A zero or non-finite divisor: the leading components decide the IEEE result -- x / 0 is
+    // +-inf, 0 / 0 NaN, x / inf +-0 -- so their IEEE quotient is the quotient of the values.
+    // The product with the reciprocal {inf} came back NaN, because two_prod's error term of
+    // x * inf is inf - inf ({1} / {0} was NaN, #2054).
     if (f.empty() || f[0] == FpType(0) || !std::isfinite(f[0])) {
-        std::vector<FpType> reciprocal = expansion_reciprocal(f, iterations, budget);
-        return expansion_product(e, reciprocal);
+        const FpType a = e.empty() ? FpType(0) : e[0];
+        const FpType b = f.empty() ? FpType(0) : f[0];
+        return std::vector<FpType>{ a / b };
     }
     // f = f' * 2^k with f' in [0.5, 1): k = ilogb(f[0]) + 1.
     int k = std::ilogb(f[0]) + 1;

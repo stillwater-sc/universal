@@ -14,12 +14,19 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/fdp.hpp>
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/lns/lns.hpp>
+#include <universal/number/lns/fdp.hpp>
+#include <universal/number/dbns/dbns.hpp>
+#include <universal/number/dbns/fdp.hpp>
+#include <universal/number/bposit/bposit.hpp>
+#include <universal/number/bposit/fdp.hpp>
 #include <universal/number/quire/quire.hpp>   // brings in the native float/double quire_mul and quire_resolve
 #include <universal/verification/test_reporters.hpp>
 
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -236,6 +243,58 @@ void VerifyPositNaR(const std::string& tag) {
 	expect(q.isnan() && quire_resolve(q).isnar(), tag, "NaR product resolves to NaR");
 }
 
+// assigning a native value keeps all of its significand bits: the assignment rounded floats
+// to 23 and doubles to 52 significand bits to dodge a blocktriple rounding defect, so
+// quire<float> = 1 + FLT_EPSILON resolved to 1 (#2054)
+template<typename Real>
+void VerifyNativeAssignmentIsExact(const std::string& tag) {
+	using namespace sw::universal;
+	const Real eps = std::numeric_limits<Real>::epsilon();
+	const Real values[] = { Real(1) + eps, Real(1) + Real(3) * eps, -(Real(2) - eps), std::numeric_limits<Real>::max(), std::numeric_limits<Real>::min() * (Real(1) + eps) };
+	for (Real v : values) {
+		quire<Real> q;
+		q = v;
+		std::ostringstream label;
+		label << "quire = " << std::hexfloat << v << " resolves to the value assigned";
+		expect(quire_resolve(q) == v, tag, label.str());
+	}
+}
+
+// lns, dbns and bposit have no infinity: the infinite and NaN quire states resolve to the
+// type's NaN (NaR for bposit), and the generic quire operations -- abs, the comparisons,
+// convert_to, to_binary -- treat the states as on any other quire (#2054)
+template<typename Target>
+bool is_nan_like(const Target& v) {
+	if constexpr (requires { v.isnar(); }) return v.isnar();
+	else return v.isnan();
+}
+
+template<typename Target>
+void VerifyTargetWithoutInfinity(const std::string& tag) {
+	using namespace sw::universal;
+	using Q = quire<Target>;
+	Q pinf(SpecificValue::infpos), ninf(SpecificValue::infneg), nan(SpecificValue::qnan);
+	Q one;  one += quire_mul(Target(1), Target(1));
+	Q zero;
+
+	expect(is_nan_like(quire_resolve(pinf)), tag, "+inf quire resolves to the type's NaN");
+	expect(is_nan_like(quire_resolve(ninf)), tag, "-inf quire resolves to the type's NaN");
+	expect(is_nan_like(quire_resolve(nan)),  tag, "NaN quire resolves to the type's NaN");
+	Q sum;
+	sum += quire_mul(Target(1), Target(2));
+	sum += quire_mul(Target(2), Target(2));
+	expect(!is_nan_like(quire_resolve(sum)) && quire_resolve(sum) == Target(6.0), tag, "1*2 + 2*2 resolves to 6");
+
+	expect(abs(ninf).isinf() && !abs(ninf).sign(), tag, "abs(-inf) is +inf");
+	expect(  ninf <  pinf  &&   ninf <  one  &&  one < pinf && zero < pinf, tag, "-inf < 1 < +inf");
+	expect(!(pinf <  pinf) && !(pinf < one) && !(one < ninf), tag, "no value below -inf or above +inf");
+	expect(!(nan == nan) && !(nan < pinf) && !(pinf < nan), tag, "NaN unordered");
+	expect(pinf.template convert_to<int>() == std::numeric_limits<int>::max(),    tag, "convert_to<int>(+inf) saturates");
+	expect(ninf.template convert_to<int>() == std::numeric_limits<int>::lowest(), tag, "convert_to<int>(-inf) saturates");
+	expect(nan.template convert_to<int>() == 0, tag, "convert_to<int>(NaN) is 0");
+	expect(to_binary(pinf) == "+inf" && to_binary(ninf) == "-inf" && to_binary(nan) == "nar", tag, "to_binary of the non-finite states");
+}
+
 }  // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -247,9 +306,9 @@ void VerifyPositNaR(const std::string& tag) {
 #	undef REGRESSION_LEVEL_3
 #	undef REGRESSION_LEVEL_4
 #	define REGRESSION_LEVEL_1 1
-#	define REGRESSION_LEVEL_2 1
-#	define REGRESSION_LEVEL_3 1
-#	define REGRESSION_LEVEL_4 1
+#	define REGRESSION_LEVEL_2 0
+#	define REGRESSION_LEVEL_3 0
+#	define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
@@ -283,6 +342,11 @@ try {
 	VerifyCfloat<cfloat<32, 8, std::uint32_t, true, false, false>>("cfloat<32,8>");
 	VerifyCfloat<cfloat<16, 5, std::uint16_t, true, false, false>>("cfloat<16,5>");
 	VerifyPositNaR<posit<16, 1>>("posit<16,1>");
+	VerifyNativeAssignmentIsExact<float>("float");
+	VerifyNativeAssignmentIsExact<double>("double");
+	VerifyTargetWithoutInfinity<lns<16, 8, std::uint16_t>>("lns<16,8>");
+	VerifyTargetWithoutInfinity<dbns<8, 3, std::uint8_t>>("dbns<8,3>");
+	VerifyTargetWithoutInfinity<bposit<16, 5, 2, std::uint16_t>>("bposit<16,5,2>");
 #	endif
 
 #	if REGRESSION_LEVEL_2

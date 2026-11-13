@@ -131,6 +131,23 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
+	// ereal<19>'s three erfc paths, each at a point where it is cheap, so that the default CI
+	// runs them (the full ereal<19> checks are REGRESSION_LEVEL_3): x = 0.3 runs 1 - erf in
+	// the wide configuration (erfc_wide_limbs), x = 20 the continued fraction, and the range
+	// edge the asymptotic series that erf_series_overflows selects
+	template<typename Real>
+	int VerifyErfcPaths(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		for (const auto& c : erf_cases) {
+			if (c.x != 0.3 && c.x != 20.0) continue;
+			const std::string at = "(" + std::to_string(c.x) + ")";
+			nrOfFailedTestCases += expect_ref(erfc(Real(c.x)), c.erfc_ref, "erfc" + at, reportTestCases);
+			nrOfFailedTestCases += expect_ref(erf(Real(c.x)), c.erf_ref, "erf" + at, reportTestCases);
+		}
+		nrOfFailedTestCases += VerifyErfRangeEdge<Real>(reportTestCases);
+		return nrOfFailedTestCases;
+	}
+
 	// erf/erfc: fixed point, parity, the special values, the stored references and erf + erfc == 1
 	template<typename Real>
 	int VerifyErrorFunction(bool reportTestCases) {
@@ -355,6 +372,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyErrorFunction<ereal<4>>(reportTestCases), "erf/erfc(ereal<4>)", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyErrorFunction<ereal<>>(reportTestCases), "erf/erfc(ereal<8>)", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyErrorFunction<ereal<4, float>>(reportTestCases), "erf/erfc(ereal<4, float>)", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyErfcPaths<ereal<19>>(reportTestCases), "erfc paths(ereal<19>)", test_tag);
 
 	test_tag = "tgamma";
 	nrOfFailedTestCases += ReportTestResult(VerifyTgamma<ereal<4>>(reportTestCases), "tgamma(ereal<4>)", test_tag);
@@ -378,8 +396,7 @@ try {
 #	if REGRESSION_LEVEL_3
 	// ereal<19> has no wider configuration to run erfc's 1 - erf in, and gives up the bits
 	// that cancellation costs for 2 < x < 8: its erf/erfc checks are only the range edge
-	test_tag = "erf range edge";
-	nrOfFailedTestCases += ReportTestResult(VerifyErfRangeEdge<ereal<19>>(reportTestCases), "erf range edge(ereal<19>)", test_tag);
+	// (the range edge runs at level 1, in VerifyErfcPaths)
 	test_tag = "gamma";
 	nrOfFailedTestCases += ReportTestResult(VerifyTgamma<ereal<19>>(reportTestCases), "tgamma(ereal<19>)", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyLgamma<ereal<19>>(reportTestCases), "lgamma(ereal<19>)", test_tag);

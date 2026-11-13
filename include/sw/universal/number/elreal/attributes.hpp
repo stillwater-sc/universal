@@ -37,7 +37,8 @@ template <typename FpType, typename Real = double,
           typename = std::enable_if_t<std::is_floating_point<Real>::value, Real>>
 inline Real significand(const elreal<FpType>& v) {
     if (!v.isfinite() || v.iszero()) return Real{0};
-    return static_cast<Real>(std::ldexp(v.template approx<Real>(v.precision() + 1), -static_cast<int>(v.scale())));
+    // scaled by -scale before it is materialised: the value itself may be past Real's range (#2054)
+    return static_cast<Real>(v.template approx_scaled<Real>(v.precision() + 1, v.scale()));
 }
 
 }} // namespace sw::universal
