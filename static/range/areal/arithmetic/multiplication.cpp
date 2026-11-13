@@ -30,6 +30,24 @@ void GenerateTestCase(Ty a, Ty b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
+// products of an areal wider than 64 bits: the significand went through fraction_ull(),
+// whose mask shift was UB past 64 bits and on gcc -O2 dropped the product's bits (9a5fb1a);
+// exact products of exact operands must come out exact and without the uncertainty bit
+template<typename Areal>
+int VerifyWideMultiplication(bool reportTestCases) {
+	int nrOfFailedTestCases = 0;
+	const double cases[][3] = { { 1.5, 3.0, 4.5 }, { 1.25, 1.25, 1.5625 }, { -2.5, 6.0, -15.0 }, { 0.75, -0.5, -0.375 } };
+	for (const auto& c : cases) {
+		const Areal a(c[0]), b(c[1]);
+		const Areal p = a * b;
+		if (double(p) != c[2] || p.ubit()) {   // an exact product has the uncertainty bit clear
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: " << type_tag(a) << ' ' << c[0] << " * " << c[1] << " = " << double(p) << " expected " << c[2] << '\n';
+		}
+	}
+	return nrOfFailedTestCases;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 // NOTE: areal uses specialized VerifyMultiplication that only tests exact values (ubit=0).
 // Interval values (ubit=1) represent open intervals and cannot be compared against double reference.
@@ -91,6 +109,8 @@ try {
 */
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyWideMultiplication< areal<72, 8, uint32_t> >(reportTestCases), "areal<72,8,uint32_t>", "wide multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideMultiplication< areal<80, 11, uint16_t> >(reportTestCases), "areal<80,11,uint16_t>", "wide multiplication");
 	// areal<nbits, es> requires nbits > es + 2 (for sign + exponent + ubit + at least 1 fraction bit)
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< areal<4, 1, uint8_t> >(reportTestCases), "areal< 4,1>", "multiplication");
 

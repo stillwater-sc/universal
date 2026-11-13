@@ -78,6 +78,18 @@ int CheckShiftZero(const char* tag, const std::uint8_t* bytes, unsigned n,
 
 }
 
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
@@ -268,6 +280,27 @@ try {
 		ReportTestResult(nrOfFailedTestCases - start,
 			"INT_MIN and INT_MAX shift counts", "einteger shift");
 	}
+
+#if REGRESSION_LEVEL_4
+	// a >>= INT_MIN on a NONZERO value: a left shift by 2^31 bits, done in two steps since
+	// -INT_MIN is not an int (#2010). 1 becomes 2^(2^31), a 256 MB value, so this runs only
+	// in the stress level; shifting back by <<= INT_MIN, a right shift by 2^31, recovers 1 (#2054)
+	{
+		int start = nrOfFailedTestCases;
+		constexpr int kMin = std::numeric_limits<int>::min();
+		for (long long v : { 1ll, -3ll }) {
+			einteger<std::uint32_t> a(v);
+			a >>= kMin;
+			const bool grew = (a.nbits() >= 2147483648u) && (a.isneg() == (v < 0));
+			a <<= kMin;
+			if (!grew || a != einteger<std::uint32_t>(v)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL " << v << " >>= INT_MIN then <<= INT_MIN: grew=" << grew << " got=" << a << '\n';
+			}
+		}
+		ReportTestResult(nrOfFailedTestCases - start, "nonzero >>= INT_MIN", "einteger shift");
+	}
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -41,7 +41,7 @@ double BestTime(Work work, int runs = 3) {
 
 // a deterministic digit string of the given length over the first radix digits, leading digit nonzero
 inline std::string Digits(size_t length, unsigned radix) {
-	const char* alphabet = "0123456789";
+	const char* alphabet = "0123456789abcdef";
 	std::string s(length, '0');
 	for (size_t i = 0; i < length; ++i) s[i] = alphabet[(i * 7 + 3) % radix];
 	s[0] = '1';
@@ -56,10 +56,11 @@ einteger<BlockType> NaiveParse(const std::string& digits, unsigned radix) {
 	int shift = 0;
 	if (radix == 2) shift = 1;
 	if (radix == 8) shift = 3;
+	if (radix == 16) shift = 4;
 	const EInteger multiplier(static_cast<long long>(radix));
 	for (char c : digits) {
 		if (shift > 0) value <<= shift; else value *= multiplier;
-		value += EInteger(static_cast<long long>(c - '0'));
+		value += EInteger(static_cast<long long>(c <= '9' ? c - '0' : c - 'a' + 10));
 	}
 	return value;
 }
@@ -134,6 +135,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyParseSpeedUp<U32>("decimal 4000 digits", "", 4000, 10, 3.0, reportTestCases), "decimal", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyParseSpeedUp<U32>("binary 20000 bits", "0b", 20000, 2, 8.0, reportTestCases), "binary", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyParseSpeedUp<U32>("octal 20000 bits", "0", 20000 / 3, 8, 8.0, reportTestCases), "octal", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseSpeedUp<U32>("hex 20000 bits", "0x", 20000 / 4, 16, 8.0, reportTestCases), "hex", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyParseSpeedUp<std::uint8_t>("binary 20000 bits", "0b", 20000, 2, 8.0, reportTestCases), "binary uint8_t", test_tag);
 #endif
 
@@ -141,6 +143,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyParseSpeedUp<U32>("decimal 16000 digits", "", 16000, 10, 3.0, reportTestCases), "decimal", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyParseSpeedUp<U32>("binary 80000 bits", "0b", 80000, 2, 8.0, reportTestCases), "binary", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyParseSpeedUp<U32>("octal 80000 bits", "0", 80000 / 3, 8, 8.0, reportTestCases), "octal", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyParseSpeedUp<U32>("hex 80000 bits", "0x", 80000 / 4, 16, 8.0, reportTestCases), "hex", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

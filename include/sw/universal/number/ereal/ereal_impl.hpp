@@ -1535,11 +1535,15 @@ inline bool operator> (const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpT
 }
 template<unsigned nlimbs, typename FpType>
 inline bool operator<=(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	using namespace expansion_ops;
+	if (lhs.isnan() || rhs.isnan()) return false;   // one comparison, not < then ==
+	return compare_adaptive(lhs.limbs(), rhs.limbs()) <= 0;
 }
 template<unsigned nlimbs, typename FpType>
 inline bool operator>=(const ereal<nlimbs, FpType>& lhs, const ereal<nlimbs, FpType>& rhs) {
-	return operator< (rhs, lhs) || operator==(lhs, rhs);   // not !(lhs < rhs): false for NaN
+	using namespace expansion_ops;
+	if (lhs.isnan() || rhs.isnan()) return false;   // not !(lhs < rhs): false for NaN
+	return compare_adaptive(lhs.limbs(), rhs.limbs()) >= 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1563,11 +1567,11 @@ inline bool operator> (const ereal<nlimbs, FpType>& lhs, double rhs) {
 }
 template<unsigned nlimbs, typename FpType>
 inline bool operator<=(const ereal<nlimbs, FpType>& lhs, double rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator<=(lhs, ereal<nlimbs, FpType>(rhs));   // one temporary, not one per < and ==
 }
 template<unsigned nlimbs, typename FpType>
 inline bool operator>=(const ereal<nlimbs, FpType>& lhs, double rhs) {
-	return operator< (rhs, lhs) || operator==(lhs, rhs);   // not !(lhs < rhs): false for NaN
+	return operator>=(lhs, ereal<nlimbs, FpType>(rhs));   // one temporary; false for NaN
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1592,11 +1596,11 @@ inline bool operator> (double lhs, const ereal<nlimbs, FpType>& rhs) {
 }
 template<unsigned nlimbs, typename FpType>
 inline bool operator<=(double lhs, const ereal<nlimbs, FpType>& rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator<=(ereal<nlimbs, FpType>(lhs), rhs);   // one temporary, not one per < and ==
 }
 template<unsigned nlimbs, typename FpType>
 inline bool operator>=(double lhs, const ereal<nlimbs, FpType>& rhs) {
-	return operator< (rhs, lhs) || operator==(lhs, rhs);   // not !(lhs < rhs): false for NaN
+	return operator>=(ereal<nlimbs, FpType>(lhs), rhs);   // one temporary; false for NaN
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
