@@ -126,6 +126,8 @@
 #include <array>
 #include <cerrno>
 #include <cstdint>
+#include <universal/number/fixpnt/core.hpp>          // fixpnt, Modulo, Saturate: the header stands alone
+#include <universal/number/fixpnt/math/sqrt.hpp>     // the correctly rounded sqrt that builds 1/K_n
 
 namespace sw { namespace universal { namespace cordic {
 

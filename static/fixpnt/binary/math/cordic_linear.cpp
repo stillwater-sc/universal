@@ -7,7 +7,8 @@
 //
 // cordic::mul (linear rotation mode) and cordic::div (linear vectoring mode) model a shift-and-add CORDIC
 // unit in the type's own arithmetic. With the default guard width and iteration count, every result is
-// within 1 ulp of the exact value, at any width; the measured worst case is printed for each configuration.
+// within kWorst = 0.6 ulp of the exact value, at any width; the measured worst case is printed for each
+// configuration. A final step that truncates instead of rounding to nearest exceeds that bound.
 //
 // The reference is exact and independent of the engine and of fixpnt's own operator* and operator/: the
 // exact result is the rational N / D in raw units (x * z: N = X Z, D = 2^rbits; y / x: N = Y 2^rbits,
@@ -172,12 +173,17 @@ namespace {
 		return fails;
 	}
 
-	// every pair or samples, with the worst errors, at most 1 ulp
+	// the bound at the default guard width and iteration count. The measured worst over every configuration
+	// below, all four levels, is 0.531 ulp (mul in fixpnt<12,8,sat>); kWorst leaves a little room for samples,
+	// and a final step that truncates exceeds it.
+	constexpr double kWorst = 0.6;
+
+	// every pair or samples, with the worst errors, at most kWorst
 	template<typename Fixed>
 	int VerifyLinear(const std::string& tag, bool reportTestCases, unsigned long long samples) {
 		Worst w;
 		int fails = Measure<Fixed>(w, samples, reportTestCases);
-		const double bound = 1.0;
+		const double bound = kWorst;
 		auto check = [&](const char* name, double e) {
 			if (e > bound) {
 				if (reportTestCases) std::cerr << "FAIL: " << tag << ' ' << name << " worst error " << e << " ulp exceeds " << bound << '\n';
@@ -225,9 +231,9 @@ namespace {
 			prevMul = w.mul;
 			prevDiv = w.div;
 		}
-		// 4 iterations leave a large error; the full count is within 1 ulp
+		// 4 iterations leave a large error; the full count is within the bound
 		const Worst w4 = WorstAt<Fixed>(4, 4000), wf = WorstAt<Fixed>(full, 4000);
-		if (w4.mul < 16.0 || w4.div < 16.0 || wf.mul > 1.0 || wf.div > 1.0) {
+		if (w4.mul < 16.0 || w4.div < 16.0 || wf.mul > kWorst || wf.div > kWorst) {
 			if (reportTestCases) std::cerr << "FAIL: the iteration count does not control the error\n";
 			++fails;
 		}
@@ -249,7 +255,11 @@ namespace {
 			std::cout << "  g = 4: mul " << g4.mul << "  div " << g4.div << '\n';
 			std::cout << "  default: mul " << gd.mul << "  div " << gd.div << '\n';
 		}
-		if (!(g0.mul > g4.mul && g0.div > g4.div) || gd.mul > 1.0 || gd.div > 1.0) {
+		// Modulo's div datapath carries nbits + rbits bits so a wrapped quotient keeps every bit; for a
+		// quotient in range the rbits beyond it absorb the truncation error even with no guard bits, so
+		// there only mul shows a floor
+		const bool divFloor = (Fixed::arithmetic == Saturate);
+		if (!(g0.mul > g4.mul && (!divFloor || g0.div > g4.div)) || gd.mul > kWorst || gd.div > kWorst) {
 			if (reportTestCases) std::cerr << "FAIL: the guard width does not control the error floor\n";
 			++fails;
 		}
@@ -374,6 +384,11 @@ try {
 	// the hardware-model knobs
 	nrOfFailedTestCases += ReportTestResult((VerifyIterationCount<fixpnt<16, 12, Saturate, std::uint16_t>>(reportTestCases)), "iteration count", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyGuardWidth<fixpnt<16, 12, Saturate, std::uint16_t>>(reportTestCases)), "guard width", test_tag);
+	// Modulo, whose datapath carries every bit of a wrapped result, and a wide type on byte limbs
+	nrOfFailedTestCases += ReportTestResult((VerifyIterationCount<fixpnt<32, 16, Modulo, std::uint32_t>>(reportTestCases)), "iteration count <32,16,mod>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyGuardWidth<fixpnt<32, 16, Modulo, std::uint32_t>>(reportTestCases)), "guard width <32,16,mod>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyIterationCount<fixpnt<64, 32, Saturate, std::uint8_t>>(reportTestCases)), "iteration count <64,32,sat,u8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyGuardWidth<fixpnt<64, 32, Saturate, std::uint8_t>>(reportTestCases)), "guard width <64,32,sat,u8>", test_tag);
 
 	// special arguments
 	nrOfFailedTestCases += ReportTestResult((VerifySpecialArguments<fixpnt<16, 8, Saturate, std::uint16_t>>(reportTestCases)), "fixpnt<16,8,sat> special", test_tag);

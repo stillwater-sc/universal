@@ -7,12 +7,14 @@
 //
 // cordic::sincos/sin/cos (rotation mode) and cordic::atan2/atan/hypot/polar (vectoring mode) model a
 // decimal shift-and-add CORDIC unit in dfixpnt's own decimal arithmetic. With the default guard digits and
-// iteration count, every result is within 1 ulp (one unit in the last decimal digit, 10^-radix) of the exact
-// value, at any width; the measured worst case is printed for each configuration.
+// iteration count, every result is within kWorst = 0.6 ulp (an ulp is one unit in the last decimal digit,
+// 10^-radix) of the exact value, at any width; the measured worst case is printed for each configuration.
+// A final step that truncates instead of rounding to nearest exceeds that bound.
 //
-// The references are independent of the engine: double for formats of at most 12 digits, whose values a
-// double holds to far better than their ulp, and qd (~62 decimal digits) beyond that, with the dfixpnt
-// value converted to qd from its digits, 15 at a time.
+// The references are independent of the engine: double for formats of at most 8 digits, where double's
+// 16 digits leave 8 below the ulp, and qd (~62 decimal digits) beyond that, with the dfixpnt value
+// converted to qd from its digits, 15 at a time. A 12-digit format would leave double only 4 digits below
+// its ulp, too few to tell a 0.5 ulp result from a 0.5001 one.
 //
 // The error is measured against the exact value after the type's arithmetic: Saturate clamps the exact
 // value to [maxneg, maxpos], and Modulo measures the distance modulo 10^idigits, so a result that rounds up
@@ -58,9 +60,9 @@ namespace {
 		return f.sign() ? -v : v;
 	}
 
-	// the reference value type: double for formats of at most 12 digits, qd beyond
+	// the reference value type: double for formats of at most 8 digits, qd beyond
 	template<typename Fixed>
-	using Ref = std::conditional_t<(Fixed::ndigits <= 12u), double, qd>;
+	using Ref = std::conditional_t<(Fixed::ndigits <= 8u), double, qd>;
 
 	template<typename Fixed>
 	Ref<Fixed> exact_of(const Fixed& f) {
@@ -185,7 +187,10 @@ namespace {
 		return fails;
 	}
 
-	// every function within 1 ulp at the default guard digits and iteration count
+	// every function within the bound at the default guard digits and iteration count. The measured worst
+	// over every configuration below, all four levels, is 0.537 ulp (sin in dfixpnt<8,6>); kWorst leaves a
+	// little room for samples, and a final step that truncates exceeds it.
+	constexpr double kWorst = 0.6;
 	template<typename Fixed>
 	int VerifyCordic(const std::string& tag, bool reportTestCases, unsigned long long unarySamples, unsigned long long binarySamples) {
 		Worst w;
@@ -198,8 +203,8 @@ namespace {
 		          << " / " << cordic::decimal_vectoring_iterations<Fixed> << ")\n";
 		std::cout.unsetf(std::ios::fixed);
 		for (double e : { w.sin, w.cos, w.atan, w.atan2, w.hypot }) {
-			if (e > 1.0) {
-				if (reportTestCases) std::cerr << "FAIL: " << tag << " error " << e << " ulp exceeds 1 ulp\n";
+			if (e > kWorst) {
+				if (reportTestCases) std::cerr << "FAIL: " << tag << " error " << e << " ulp exceeds " << kWorst << " ulp\n";
 				++fails;
 			}
 		}
@@ -287,7 +292,7 @@ namespace {
 		const double ga = worst(std::integral_constant<unsigned, cordic::auto_guard>{});
 		std::cout << type_tag(Fixed()) << " worst sin/atan error at the default iteration count: g = 0: " << g0
 		          << "  g = 1: " << g1 << "  g = 2: " << g2 << "  g = " << cordic::decimal_guard_digits<Fixed> << ": " << ga << '\n';
-		if (!(g0 > g1 && g1 > g2 && g2 >= ga && g0 > 1.0 && ga <= 1.0)) {
+		if (!(g0 > g1 && g1 > g2 && g2 >= ga && g0 > 1.0 && ga <= kWorst)) {
 			if (reportTestCases) std::cerr << "FAIL: " << type_tag(Fixed()) << " the error does not fall with the guard digits\n";
 			++fails;
 		}
@@ -321,7 +326,7 @@ namespace {
 		expect(s, zero, "sin(0)");
 		expect(c, one, "cos(0)");
 		for (double k : { 0.25, 0.5, 0.75, 1.0, -0.5, -1.0, 2.0 }) {     // k pi: the quadrant boundaries
-			const Fixed theta(double(pi) * k);                      // the nearest dfixpnt, as an argument
+			const Fixed theta(double(pi) * k);                      // a dfixpnt near k pi, measured as given
 			cordic::sincos(theta, s, c);
 			near(s, sin(exact_of(theta)), "sin(k pi)");
 			near(c, cos(exact_of(theta)), "cos(k pi)");
@@ -345,6 +350,28 @@ namespace {
 		expect(cordic::hypot(maxpos, zero), maxpos, "hypot(maxpos, 0)");
 		expect(cordic::hypot(zero, maxneg), maxpos, "hypot(0, maxneg)");
 		near(cordic::hypot(maxpos, maxpos), exact_of(maxpos) * sqrt(R(2.0)), "hypot(maxpos, maxpos)");   // saturates or wraps
+		return fails;
+	}
+
+	// the final rounding of every engine result, decimal_detail::round_digits, on exact ties: to nearest,
+	// ties to even, on the magnitude. An error bound cannot see this, since a tie is 1/2 ulp away either way.
+	int VerifyFinalRounding(bool reportTestCases) {
+		using D = dfixpnt<6, 0, DecimalEncoding::BCD, Modulo>;
+		int fails = 0;
+		struct Case { long long v; unsigned shift; long long want; };
+		constexpr Case cases[] = {
+			{ 25, 1, 2 }, { 35, 1, 4 }, { 15, 1, 2 }, { 5, 1, 0 }, { 45, 1, 4 },   // 2.5, 3.5, 1.5, 0.5, 4.5: ties to even
+			{ -25, 1, -2 }, { -35, 1, -4 },                                         // the sign applies to the magnitude
+			{ 26, 1, 3 }, { 24, 1, 2 }, { 251, 2, 3 }, { 2501, 3, 3 },               // above and below a tie, a sticky digit
+			{ 250, 2, 2 }, { 1500, 3, 2 }, { 9995, 1, 1000 },                       // ties to even past zeros, a carry
+		};
+		for (const Case& k : cases) {
+			const D got = cordic::decimal_detail::round_digits<D, false>(D(k.v), k.shift);
+			if (got != D(k.want)) {
+				if (reportTestCases) std::cerr << "FAIL: round_digits(" << k.v << " * 10^-" << k.shift << ") = " << got << ", expected " << k.want << '\n';
+				++fails;
+			}
+		}
 		return fails;
 	}
 
@@ -413,6 +440,9 @@ try {
 	// the encodings agree digit for digit
 	nrOfFailedTestCases += ReportTestResult((VerifyEncodings<6, 4, Saturate>(reportTestCases, 2000)), "encodings <6,4,sat>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyEncodings<8, 2, Modulo>(reportTestCases, 2000)), "encodings <8,2,mod>", test_tag);
+
+	// the final rounding on exact ties, which the error bounds cannot see
+	nrOfFailedTestCases += ReportTestResult((VerifyFinalRounding(reportTestCases)), "final rounding", test_tag);
 
 	// the hardware-model knobs
 	nrOfFailedTestCases += ReportTestResult((VerifyIterationCount<dfixpnt<4, 4, BCD, Saturate>>(reportTestCases)), "iteration count", test_tag);
