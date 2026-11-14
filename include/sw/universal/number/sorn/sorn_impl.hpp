@@ -578,7 +578,8 @@ public:
 				return Corner{ q, q, true, true, true };
 			}
 			if (std::isinf(a) && std::isinf(b)) return Corner{ 0.0f, 0.0f, true, true, false };
-			if (std::isinf(b)) return Corner{ 0.0f, 0.0f, true, true, true };      // a finite: the limit 0
+			// a finite: a / inf = 0, attained when the divisor holds its infinite bound, whatever a is
+			if (std::isinf(b)) return Corner{ 0.0f, 0.0f, bOpen, bOpen, true };
 			const bool open = aOpen || bOpen;
 			bool downInexact{ false }, upInexact{ false };
 			// sornDivOut takes a positive divisor: a / b = -(a / |b|) for a negative one, which turns

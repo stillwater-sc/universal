@@ -32,14 +32,14 @@ namespace {
 		using C = complex<T>;
 		const C r = sqrt(C(T(2.0), T(0.0)));
 		const T e = r.real() * r.real() - T(2.0);
-		if (std::fabs(double(e)) > tolerance) {
+		if (!(std::fabs(double(e)) <= tolerance)) {                 // a NaN residual fails too
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "    FAIL sqrt(2 + 0i)^2 - 2 = " << double(e) << ", above " << tolerance << '\n';
 		}
 		// atanh's real part at 1/2: atanh(1/2) = ln(3) / 2, to the type's precision
 		const C h = atanh(C(T(0.5), T(0.0)));
 		const T d = h.real() * T(2.0) - log(T(3.0));
-		if (std::fabs(double(d)) > tolerance) {
+		if (!(std::fabs(double(d)) <= tolerance)) {
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cout << "    FAIL 2 atanh(1/2) - ln 3 = " << double(d) << ", above " << tolerance << '\n';
 		}

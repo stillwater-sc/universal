@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <iomanip>
+#include <limits>
 #include <universal/number/sorn/sorn.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -413,6 +414,13 @@ namespace sw { namespace universal {
 		if (!(r2.lowerBound == -4.0f && r2.upperBound == -1.0f)) {
 			++nrOfFailedTestCases;
 			if (reportTestCases) std::cerr << "FAIL: [-4,-3.5) / (1,3.5] = " << q2 << " expected [-4,-1)\n";
+		}
+		// a divisor that holds its infinite bound: a / inf = 0 is attained, so the zero bound is closed
+		const SornType q3 = interval(1.0f, 1.5f, false, true) / interval(2.0f, std::numeric_limits<float>::infinity(), false, false);
+		const auto& r3 = q3.sornIntVal;
+		if (!(r3.lowerBound == 0.0f && !r3.lowerIsOpen)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: [1,1.5) / [2,inf] = " << q3 << " does not hold the attained 0\n";
 		}
 		return nrOfFailedTestCases;
 	}
