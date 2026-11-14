@@ -409,7 +409,7 @@ using namespace sw::universal;
 
 using F = fixpnt<32, 16, Saturate, std::uint32_t>;
 F s, c;
-cordic::sincos(F(0.5), s, c);         // defaults: within 1 ulp
+cordic::sincos(F(0.5), s, c);         // defaults: within 0.65 ulp
 F p = cordic::mul(F(3.25), F(-1.5));  // -4.875, by shift and add
 F q = cordic::div(F(1), F(3));        // 0.33333, by shift and subtract
 F q12 = cordic::div<4>(F(1), F(3), 12);   // a unit with 4 guard bits that stops after 12 iterations
@@ -426,7 +426,12 @@ F r = cordic::sqrt(F(2));             // 1.41421, from the vectoring gain
 - **Circular.** Rotation has `rbits + g` fraction bits and reduces by `pi/2` when the type holds more
   than `[-1, 1)`. Vectoring has `nbits + 1 + g`, with the inputs scaled so the larger lies in `[1/2, 1)`.
   The default guard width is `g = ceil(log2(rbits + 8)) + 2`, and the default iteration count is
-  `rbits + g`.
+  `rbits + g`. Vectoring also has to get the magnitude right: after `n` iterations the residual angle
+  leaves `hypot` a relative error of `1 - cos(atan(2^-(n-1))) ~= 2^-(2n-1)`, so it needs about `nbits / 2`
+  iterations whatever `rbits` is. `atan2`, `atan`, `hypot` and `polar` size their datapath from
+  `B = max(rbits, (nbits + 4) / 2)` result bits, with `g = ceil(log2(B + 8)) + 2` guard bits and `B + g`
+  iterations (`cordic::default_vector_iterations`, `cordic::vector_guard_bits`). With `rbits + g` alone, an
+  integer-heavy `fixpnt<32,0>` ran 5 iterations, and `hypot(3e8, 4e8)` came out 499944976 (#2060).
 - **Linear.** Both operands are scaled into `[1/2, 1)`, so a product or quotient is as accurate for small
   operands as for large ones. The datapath has `B + g` fraction bits, where `B` is the number of bits the
   result can need:
@@ -499,8 +504,9 @@ exactly up to truncation. So its engine uses the elementary angles `atan(10^-j)`
 
 ### Measured accuracy
 
-Every result is within 1 ulp of the exact value, after the type's arithmetic. These are the worst cases
-over every encoding (or every pair, for the 8-bit formats) and over samples of the wide formats:
+Every result is within 0.65 ulp of the exact value, after the type's arithmetic, for any split of `nbits`
+into integer and fraction bits. These are the worst cases over every encoding (or every pair, for the
+8-bit formats) and over samples of the wide formats:
 
 | format | sin | cos | atan2 | hypot | mul | div |
 |---|---|---|---|---|---|---|
@@ -511,6 +517,9 @@ over every encoding (or every pair, for the 8-bit formats) and over samples of t
 | `fixpnt<32,16>` | 0.564 | 0.546 | 0.514 | 0.513 | 0.524 | 0.500 |
 | `fixpnt<64,32>` | 0.533 | 0.516 | 0.503 | 0.503 | 0.518 | 0.503 |
 | `fixpnt<128,120>` | 0.496 | 0.528 | 0.503 | 0.515 | 0.500 | 0.500 |
+| `fixpnt<32,0>` | 0.547 | 0.543 | 0.500 | 0.504 | | |
+| `fixpnt<40,3>` | 0.532 | 0.521 | 0.499 | 0.503 | | |
+| `fixpnt<24,2>` (Modulo) | 0.555 | 0.543 | 0.500 | 0.503 | | |
 
 For the hyperbolic engine and `tan`, over every encoding up to 16 bits and samples beyond (`-` marks a
 function whose every result saturates in that format, such as `cosh >= 1` in `fixpnt<8,8>`):

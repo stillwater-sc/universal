@@ -418,6 +418,8 @@ public:
 			lo = 0.0;
 			return *this;
 		}
+		// the IEEE sign of the product, for a result that underflows to zero (#2060)
+		const bool negative = (hi < 0.0) != (rhs.hi < 0.0);
 		double p[7]{};
 		//	e powers in p = 0, 1, 1, 1, 2, 2, 2
 		p[0] = two_prod(hi, rhs.hi, p[1]);
@@ -441,6 +443,7 @@ public:
 			hi = p[0];
 			lo = 0.0;
 		}
+		if (hi == 0.0) { hi = negative ? -0.0 : 0.0; lo = 0.0; }   // an underflowed product keeps its sign
 		return *this;
 	}
 	CONSTEXPRESSION dd& operator*=(double rhs) {
@@ -1162,7 +1165,7 @@ inline dd ulp(const dd& a) {
 inline dd abs(dd a) {
 	double hi = a.high();
 	double lo = a.low();
-	if (hi < 0) { // flip the pair with respect to 0
+	if (std::signbit(hi)) { // flip the pair with respect to 0, -0 included (#2060)
 		hi = -hi;
 		lo = -lo;
 	}
@@ -1336,6 +1339,16 @@ constexpr inline dd fma(const dd& a, const dd& b, const dd& c) {
 	qd_mul(a, b, p);
 	qd_add(p, c, p);
 	p[0] = two_sum(p[0], p[1] + p[2] + p[3], p[1]);
+	if (p[0] == 0.0) {
+		// a zero result has the IEEE sign: a zero product plus a zero c is negative only when both are,
+		// an underflowed product plus a zero c has the product's sign, and an exact cancellation is +0 (#2060)
+		auto neg = [](double v) { return (std::bit_cast<std::uint64_t>(v) >> 63) != 0; };
+		const bool psign = neg(a.high()) != neg(b.high());
+		const bool exactZeroProduct = (a.high() == 0.0 || b.high() == 0.0);
+		bool negative = false;
+		if (c.high() == 0.0) negative = exactZeroProduct ? (psign && neg(c.high())) : psign;
+		return dd(negative ? -0.0 : 0.0, 0.0);
+	}
 	return dd(p[0], p[1]);
 }
 

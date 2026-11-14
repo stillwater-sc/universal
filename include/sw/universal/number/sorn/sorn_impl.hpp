@@ -544,11 +544,13 @@ public:
 
 	// single operand division
 
-	// sorn / sorn: multiply by the reciprocal of the divisor. A divisor that straddles zero makes
-	// the quotient of a nonzero dividend unbounded on both sides, so the result is the whole
-	// lattice; dividing by the exact zero is NaN (the empty set). The exact zero divided by any
-	// other divisor, one that straddles zero included, is 0: 0 / y = 0 for every nonzero y in the
-	// divisor, and the zero in it is excluded as it is for the exact zero divisor (#2010).
+	// sorn / sorn. A divisor that straddles zero makes the quotient of a nonzero dividend unbounded
+	// on both sides, so the result is the whole lattice; dividing by the exact zero is NaN (the empty
+	// set). The exact zero divided by any other divisor, one that straddles zero included, is 0:
+	// 0 / y = 0 for every nonzero y in the divisor, and the zero in it is excluded as it is for the
+	// exact zero divisor (#2010). Otherwise the bounds are the smallest and largest of the four corner
+	// quotients, each rounded outward once, as operator*= does with the corner products: multiplying
+	// by the outward-rounded reciprocal rounded twice and widened exact bounds (#2060).
 	sorn& operator/=(const sorn& rhs) {
 		if (isnan() || rhs.isnan() || rhs.iszero()) {
 			return setnan();
@@ -556,13 +558,53 @@ public:
 		if (iszero()) {
 			return *this;
 		}
-		sorn recip;
-		if (!reciprocal(rhs.sornIntVal, recip.sornIntVal)) {
+		const SORN_INTERVAL& l = this->sornIntVal;
+		const SORN_INTERVAL& r = rhs.sornIntVal;
+		const bool positive = (r.lowerBound > 0) || (r.lowerBound == 0 && r.lowerIsOpen && r.upperBound > 0);
+		const bool negative = (r.upperBound < 0) || (r.upperBound == 0 && r.upperIsOpen && r.lowerBound < 0);
+		if (!positive && !negative) {
 			this->sornIntVal = { -kInf, kInf, false, false };
 			adaptToDT();
 			return *this;
 		}
-		return *this *= recip;
+		// a / b for a dividend bound a and a divisor bound b of the sign-definite divisor. An open
+		// zero b stands for the limit from the divisor's side; inf / inf has no limit of its own and
+		// is left out, since the other corners already reach both 0 and inf.
+		struct Corner { float down; float up; bool downOpen; bool upOpen; bool valid; };
+		auto corner = [negative](float a, bool aOpen, float b, bool bOpen) {
+			if (a == 0.0f) return Corner{ 0.0f, 0.0f, aOpen, aOpen, true };      // 0 / y = 0, attained when a is
+			if (b == 0.0f) {                                                        // the limit a / (+-0)
+				const float q = ((a > 0) != negative) ? kInf : -kInf;
+				return Corner{ q, q, true, true, true };
+			}
+			if (std::isinf(a) && std::isinf(b)) return Corner{ 0.0f, 0.0f, true, true, false };
+			// a finite: a / inf = 0, attained when the divisor holds its infinite bound, whatever a is
+			if (std::isinf(b)) return Corner{ 0.0f, 0.0f, bOpen, bOpen, true };
+			const bool open = aOpen || bOpen;
+			bool downInexact{ false }, upInexact{ false };
+			// sornDivOut takes a positive divisor: a / b = -(a / |b|) for a negative one, which turns
+			// the direction of the rounding around
+			const float down = (b > 0) ? sornDivOut(a, b, false, downInexact) : -sornDivOut(a, -b, true, downInexact);
+			const float up   = (b > 0) ? sornDivOut(a, b, true, upInexact)    : -sornDivOut(a, -b, false, upInexact);
+			return Corner{ down, up, open || downInexact, open || upInexact, true };
+		};
+		const Corner corners[4] = {
+			corner(l.lowerBound, l.lowerIsOpen, r.lowerBound, r.lowerIsOpen),
+			corner(l.lowerBound, l.lowerIsOpen, r.upperBound, r.upperIsOpen),
+			corner(l.upperBound, l.upperIsOpen, r.lowerBound, r.lowerIsOpen),
+			corner(l.upperBound, l.upperIsOpen, r.upperBound, r.upperIsOpen),
+		};
+		bool any = false;
+		Corner lo{}, hi{};
+		for (const Corner& c : corners) {
+			if (!c.valid) continue;
+			if (!any) { lo = c; hi = c; any = true; continue; }
+			if (c.down < lo.down || (c.down == lo.down && !c.downOpen)) lo = c;
+			if (c.up > hi.up || (c.up == hi.up && !c.upOpen)) hi = c;
+		}
+		this->sornIntVal = { lo.down, hi.up, lo.downOpen, hi.upOpen };
+		adaptToDT();
+		return *this;
 	}
 	// sorn / native scalar, with the scalar and the bound quotients rounded outward (#2010)
 	template<typename Scalar> requires std::is_arithmetic_v<Scalar>
@@ -893,34 +935,6 @@ private:
 		v.upperIsOpen = v.upperIsOpen || upperInexact || (!exact && std::isfinite(v.upperBound));
 		v.lowerBound = lower;
 		v.upperBound = upper;
-	}
-
-	// reciprocal: 1/y for an interval y that excludes zero, with the open/closed conditions
-	// carried to the swapped bounds. Each bound is rounded outward, and a rounded bound is open
-	// (#2021). Returns false when y contains zero.
-	static bool reciprocal(const SORN_INTERVAL& y, SORN_INTERVAL& r) {
-		const bool positive = (y.lowerBound > 0) || (y.lowerBound == 0 && y.lowerIsOpen && y.upperBound > 0);
-		const bool negative = (y.upperBound < 0) || (y.upperBound == 0 && y.upperIsOpen && y.lowerBound < 0);
-		// 1/b rounded outward, for b != 0: 1/b = -(1/|b|) for a negative b, which turns the
-		// direction of the rounding around
-		auto recip = [](float b, bool up, bool& inexact) {
-			return (b > 0) ? sornDivOut(1.0f, b, up, inexact) : -sornDivOut(1.0f, -b, !up, inexact);
-		};
-		bool lowerInexact{ false }, upperInexact{ false };
-		if (positive) {
-			r.lowerBound = recip(y.upperBound, false, lowerInexact);                                // 1/inf = 0
-			r.upperBound = (y.lowerBound == 0 ? kInf : recip(y.lowerBound, true, upperInexact));
-		}
-		else if (negative) {
-			r.lowerBound = (y.upperBound == 0 ? -kInf : recip(y.upperBound, false, lowerInexact));  // stored zeros are +0
-			r.upperBound = recip(y.lowerBound, true, upperInexact);
-		}
-		else {
-			return false;
-		}
-		r.lowerIsOpen = y.upperIsOpen || lowerInexact;
-		r.upperIsOpen = y.lowerIsOpen || upperInexact;
-		return true;
 	}
 
 	template<signed int _sstart, signed int _sstop, unsigned int _ssteps, bool _llin, bool _hhalfopen, bool _nneg, bool _iinf, bool _zzero>

@@ -20,6 +20,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <new>
@@ -38,6 +39,12 @@ namespace {
 // and may fold reads of a plain counter across inlined code that allocates (#2010, #2023)
 volatile long g_liveAllocations = 0;
 }
+// the replacement operators pair malloc with free, which gcc's -Wmismatched-new-delete cannot see
+// once a direct new is inlined next to a delete (the canary below), as in constant_memoization.cpp
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
+#endif
 void* operator new(std::size_t n) {
     void* p = std::malloc(n ? n : 1);
     if (!p) throw std::bad_alloc();
@@ -49,10 +56,41 @@ void operator delete(void* p, std::size_t) noexcept { if (p) { g_liveAllocations
 void* operator new[](std::size_t n) { return operator new(n); }
 void operator delete[](void* p) noexcept { operator delete(p); }
 void operator delete[](void* p, std::size_t) noexcept { operator delete(p); }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 namespace {
 
 using namespace sw::universal;
+
+// the canary: a direct new[] and new, kept alive through a volatile escape, must count 2 (#2060).
+// If the replacement operator new were not linked in, or the reads of the counter were folded,
+// every check below would pass against code that allocates. (Not a std::vector: MSVC's debug
+// library allocates an iterator proxy for one.)
+const volatile void* volatile g_escapedObject = nullptr;
+int verify_the_counter_counts(bool reportTestCases) {
+    const long before = g_liveAllocations;
+    auto* limbs = new std::uint64_t[64];
+    g_escapedObject = limbs;
+    auto* limb = new std::uint64_t(1);
+    g_escapedObject = limb;
+    const long made = g_liveAllocations - before;
+    delete limb;
+    delete[] limbs;
+    g_escapedObject = nullptr;
+    if (made != 2) {
+        if (reportTestCases) std::cout << "FAIL: new std::uint64_t[64] and new std::uint64_t counted " << made << " allocations, not 2\n";
+        return 1;
+    }
+    // a live count also comes back down
+    if (made == 2 && g_liveAllocations != before) {
+        if (reportTestCases) std::cout << "FAIL: the live count did not come back down after delete\n";
+        return 1;
+    }
+    return 0;
+}
+
 
 // Run `body` `iterations` times, each creating a lazy stream, pulling a few blocks and
 // dropping it. Reports the growth in live allocations across the loop.
@@ -126,6 +164,7 @@ try {
 
 #else
 
+    nrOfFailedTestCases += verify_the_counter_counts(reportTestCases);
     nrOfFailedTestCases += verify_lazy_producers_release<double>("double", reportTestCases);
     nrOfFailedTestCases += verify_lazy_producers_release<float>("float", reportTestCases);
 

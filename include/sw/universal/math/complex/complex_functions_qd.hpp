@@ -13,10 +13,4 @@
 #include <universal/number/qd/qd.hpp>
 #include <universal/math/complex/complex_impl.hpp>
 
-namespace sw { namespace universal {
-
-// Mark qd as a high-precision type
-template<>
-struct is_high_precision<qd> : std::true_type {};
-
-}} // namespace sw::universal
+// is_high_precision<qd> is registered by number/qd/mathlib.hpp, which qd.hpp includes (#2060).

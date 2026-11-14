@@ -98,6 +98,36 @@ namespace {
 		return n;
 	}
 
+	// abs, fma and a product that underflows to zero keep the IEEE sign too (#2060)
+	int VerifySignedZeroFollowups(bool reportTestCases) {
+		const qd pz(0.0), nz(-0.0), one(1.0), m1(-1.0), tiny(1e-200), third = one / qd(3.0);
+		int n = 0;
+		n += expect(abs(nz), 0, false, "abs(-0)", reportTestCases);
+		n += expect(abs(pz), 0, false, "abs(+0)", reportTestCases);
+		if (abs(-third) != third) {
+			if (reportTestCases) std::cout << "    FAIL abs(-1/3) != 1/3\n";
+			++n;
+		}
+		// fma: a zero product plus a zero c is -0 only when both are -0; an exact cancellation is +0
+		n += expect(fma(nz, one, nz), 1, false, "fma(-0, 1, -0)", reportTestCases);
+		n += expect(fma(pz, m1, nz), 1, false, "fma(+0, -1, -0)", reportTestCases);
+		n += expect(fma(nz, one, pz), 0, false, "fma(-0, 1, +0)", reportTestCases);
+		n += expect(fma(pz, one, pz), 0, false, "fma(+0, 1, +0)", reportTestCases);
+		n += expect(fma(third, m1, third), 0, false, "fma(1/3, -1, 1/3)", reportTestCases);
+		// an underflowed product plus a zero c has the product's sign
+		n += expect(fma(tiny, -tiny, nz), 1, false, "fma(1e-200, -1e-200, -0)", reportTestCases);
+		n += expect(fma(tiny, -tiny, pz), 1, false, "fma(1e-200, -1e-200, +0)", reportTestCases);
+		// products that underflow: the sign is the XOR of the operands' signs
+		n += expect(tiny * -tiny * tiny, 1, false, "1e-200 * -1e-200 * 1e-200", reportTestCases);
+		n += expect(-tiny * -tiny * -tiny, 1, false, "-1e-200 * -1e-200 * -1e-200", reportTestCases);
+		n += expect(tiny * tiny * tiny, 0, false, "1e-200 * 1e-200 * 1e-200", reportTestCases);
+		n += expect((tiny * tiny) * -1e-200, 1, false, "(1e-200 * 1e-200) * -1e-200 (double)", reportTestCases);
+		qd v = -tiny;
+		v *= tiny;
+		v *= tiny;
+		n += expect(v, 1, false, "-1e-200 *= 1e-200 *= 1e-200", reportTestCases);
+		return n;
+	}
 }  // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -128,6 +158,7 @@ try {
 #if MANUAL_TESTING
 
 	nrOfFailedTestCases += ReportTestResult(VerifySignedZeroArithmetic(reportTestCases), "qd", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySignedZeroFollowups(reportTestCases), "qd abs, fma, underflow", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
@@ -135,6 +166,7 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifySignedZeroArithmetic(reportTestCases), "qd", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySignedZeroFollowups(reportTestCases), "qd abs, fma, underflow", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

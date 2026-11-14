@@ -364,14 +364,18 @@ public:
 		// a zero factor: the leading limbs carry the IEEE result, a signed zero, or NaN for
 		// inf * 0 or a NaN factor; the error-free products would lose the sign (#2032)
 		if (x[0] == 0.0 || rhs.x[0] == 0.0) return *this = qd(x[0] * rhs.x[0]);
+		const bool negative = (x[0] < 0.0) != (rhs.x[0] < 0.0);
 #if defined(ACCURATE_MULTIPLICATION)
-		return *this = accurate_multiplication(*this, rhs);
+		*this = accurate_multiplication(*this, rhs);
 #else
-		return *this = approximate_multiplication(*this, rhs);
+		*this = approximate_multiplication(*this, rhs);
 #endif
+		if (x[0] == 0.0) *this = qd(negative ? -0.0 : 0.0);     // an underflowed product keeps its sign (#2060)
+		return *this;
 	}
 	CONSTEXPRESSION qd& operator*=(double rhs) {
 		if (x[0] == 0.0 || rhs == 0.0) return *this = qd(x[0] * rhs);   // see operator*=(const qd&)
+		const bool negative = (x[0] < 0.0) != (rhs < 0.0);
 		double q0, q1, q2;
 
 		double p0 = two_prod(x[0], rhs, q0);
@@ -395,6 +399,7 @@ public:
 		x[1] = s1;
 		x[2] = s2;
 		x[3] = s3;
+		if (x[0] == 0.0) *this = qd(negative ? -0.0 : 0.0);     // an underflowed product keeps its sign (#2060)
 		return *this;
 	}
 #define ACCURATE_DIVISION 1
@@ -1400,7 +1405,7 @@ inline qd reciprocal(const qd& a) {
 }
 
 inline qd abs(const qd& a) {
-	return (a[0] < 0.0) ? -a : a;
+	return std::signbit(a[0]) ? -a : a;      // -0 included (#2060)
 }
 
 inline qd ceil(const qd& a) {
@@ -1606,6 +1611,15 @@ inline qd fma(const qd& a, const qd& b, const qd& c) {
 	// take the leading five components and let the qd renormalization round to four
 	double r0 = en > 0 ? e[0] : 0.0, r1 = en > 1 ? e[1] : 0.0, r2 = en > 2 ? e[2] : 0.0, r3 = en > 3 ? e[3] : 0.0, r4 = en > 4 ? e[4] : 0.0;
 	renorm(r0, r1, r2, r3, r4);
+	if (r0 == 0.0) {
+		// a zero result has the IEEE sign: a zero product plus a zero c is negative only when both are,
+		// an underflowed product plus a zero c has the product's sign, and an exact cancellation is +0 (#2060)
+		const bool psign = std::signbit(a[0]) != std::signbit(b[0]);
+		const bool exactZeroProduct = (a[0] == 0.0 || b[0] == 0.0);
+		bool negative = false;
+		if (c[0] == 0.0) negative = exactZeroProduct ? (psign && std::signbit(c[0])) : psign;
+		return qd(negative ? -0.0 : 0.0);
+	}
 	return qd(r0, r1, r2, r3);
 }
 

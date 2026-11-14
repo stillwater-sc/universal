@@ -206,6 +206,33 @@ namespace {
 		return nrOfFailedTestCases;
 	}
 
+	// near the branch points: atanh(z) at z = -1 + 1e-12 i, and atan(z) at its mirror z = 1e-12 + i.
+	// The real part log1p(4x / h^2) / 4 had an argument near -1 there and lost about half the digits
+	// (complex<dd>: relative error 1.1e-13); x < 0 is now evaluated as -atanh(-z) (#2060). The
+	// references are mpmath at 140 digits, for the double nearest 1e-12.
+	constexpr std::string_view kNearRe = "-14.16208414824424676887324103670746594715467062915114078460413650090999774244466726080035010612647308621270810662996226035821014832570735738";
+	constexpr std::string_view kNearIm = "0.78539816339769830961566084581484738293577292035225633404401972170664852344097491431396514309690965628306734481237801553696321032024946086496";
+	template<typename T>
+	int VerifyNearBranchPoint(int margin, bool reportTestCases) {
+		using C = complex<T>;
+		using M = Measure<T>;
+		const int wanted = M::bits - margin;
+		int nrOfFailedTestCases = 0;
+		const C h = atanh(C(T(-1.0), T(1e-12)));
+		nrOfFailedTestCases += expect_bits(M::agreement(h.real(), kNearRe), wanted, "Re atanh(-1 + 1e-12 i)", reportTestCases);
+		nrOfFailedTestCases += expect_bits(M::agreement(h.imag(), kNearIm), wanted, "Im atanh(-1 + 1e-12 i)", reportTestCases);
+		const C a = atan(C(T(1e-12), T(1.0)));                      // = (Im, -Re) of the atanh above
+		nrOfFailedTestCases += expect_bits(M::agreement(a.real(), kNearIm), wanted, "Re atan(1e-12 + i)", reportTestCases);
+		nrOfFailedTestCases += expect_bits(M::agreement(a.imag(), kNearRe.substr(1)), wanted, "Im atan(1e-12 + i)", reportTestCases);
+		// the odd symmetry, exactly: atanh(-z) = -atanh(z)
+		const C g = atanh(C(T(1.0), T(-1e-12)));
+		if (!(g.real() == -h.real() && g.imag() == -h.imag())) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cout << "    FAIL atanh(1 - 1e-12 i) != -atanh(-1 + 1e-12 i)\n";
+		}
+		return nrOfFailedTestCases;
+	}
+
 }  // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -253,6 +280,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<dd>(kDoubleRange, 1e-14, reportTestCases), "dd", "large arguments");
 	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<qd>(kDoubleRange, 1e-14, reportTestCases), "qd", "large arguments");
 	nrOfFailedTestCases += ReportTestResult(VerifyLargeArguments<efloat<8>>(kDoubleRange, 1e-14, reportTestCases), "efloat<8>", "large arguments");
+	nrOfFailedTestCases += ReportTestResult(VerifyNearBranchPoint<dd>(8, reportTestCases), "dd", "near the branch point");
+	nrOfFailedTestCases += ReportTestResult(VerifyNearBranchPoint<qd>(8, reportTestCases), "qd", "near the branch point");
+	nrOfFailedTestCases += ReportTestResult(VerifyNearBranchPoint<ereal<8>>(16, reportTestCases), "ereal<8>", "near the branch point");
 #endif
 
 #if REGRESSION_LEVEL_2

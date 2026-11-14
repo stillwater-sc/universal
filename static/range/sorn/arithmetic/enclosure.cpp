@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <iomanip>
+#include <limits>
 #include <universal/number/sorn/sorn.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -293,6 +294,137 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
+	// tightness of sorn op sorn (#2060): every lattice interval the result covers must meet the exact
+	// image of the operands. Enclosure alone passed when the division, through an outward-rounded
+	// reciprocal, rounded twice and widened bounds that are lattice points ([-4,-3.5) / [-3.5,-3) was
+	// (0.5,1.5], the image is (1, 4/3]). The operands have finite bounds, and a divisor excludes zero.
+	template<typename SornType>
+	int VerifyTightBounds(char op, bool spans, bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		std::vector<SornType> ops;
+		for (const SornType& s : operands<SornType>(spans)) {
+			const auto& i = s.sornIntVal;
+			if (std::isfinite(i.lowerBound) && std::isfinite(i.upperBound)) ops.push_back(s);
+		}
+		const auto& lattice = SornType::datatype();
+		for (const SornType& a : ops) {
+			for (const SornType& b : ops) {
+				const auto& x = a.sornIntVal;
+				const auto& y = b.sornIntVal;
+				if (op == '/' && !((y.lowerBound > 0 || (y.lowerBound == 0 && y.lowerIsOpen)) || (y.upperBound < 0 || (y.upperBound == 0 && y.upperIsOpen)))) continue;
+				const SornType c = (op == '*') ? a * b : a / b;
+				if (c.isnan()) continue;
+				// the image's bounds: the extreme corners, exactly, with whether each is attained; a zero
+				// divisor bound stands for an unbounded limit
+				bool unboundedBelow = false, unboundedAbove = false, first = true;
+				BoundValue lo{ 0, 1, false }, hi{ 0, 1, false };
+				for (int p = 0; p < 2; ++p) {
+					for (int q = 0; q < 2; ++q) {
+						const double xb = p ? x.upperBound : x.lowerBound, yb = q ? y.upperBound : y.lowerBound;
+						const bool closed = !(p ? x.upperIsOpen : x.lowerIsOpen) && !(q ? y.upperIsOpen : y.lowerIsOpen);
+						BoundValue v{ xb, 1.0, closed };
+						if (op == '*') v.num = xb * yb;
+						else if (yb == 0) {
+							if (xb == 0) continue;
+							const bool posInf = (xb > 0) == (q == 0);   // a zero lower bound: y -> 0+
+							(posInf ? unboundedAbove : unboundedBelow) = true;
+							continue;
+						}
+						else { v.den = yb; if (xb == 0) v.attained = !(p ? x.upperIsOpen : x.lowerIsOpen); }
+						if (first) { lo = v; hi = v; first = false; continue; }
+						// exact: v < lo  <=>  v.num lo.den < lo.num v.den for a positive den product; the products
+						// of two floats are exact in double
+						const double lhs = v.num * lo.den * (v.den * lo.den > 0 ? 1 : -1);
+						const double rhs = lo.num * v.den * (v.den * lo.den > 0 ? 1 : -1);
+						if (lhs < rhs || (lhs == rhs && v.attained)) lo = v;
+						const double lhs2 = v.num * hi.den * (v.den * hi.den > 0 ? 1 : -1);
+						const double rhs2 = hi.num * v.den * (v.den * hi.den > 0 ? 1 : -1);
+						if (lhs2 > rhs2 || (lhs2 == rhs2 && v.attained)) hi = v;
+					}
+				}
+				for (const auto& I : lattice) {
+					const double mid = std::isinf(I.lowerBound) ? I.upperBound - 1.0 : (std::isinf(I.upperBound) ? I.lowerBound + 1.0 : 0.5 * (double(I.lowerBound) + double(I.upperBound)));
+					if (!contains(c, mid)) continue;                    // not covered by the result
+					// does I meet the image? I above the image's upper bound, or below its lower one, fails
+					bool below = false, above = false;
+					if (!first && !unboundedAbove) {
+						const int cmp = compareToQuotient(I.lowerBound, hi.num, hi.den);   // I.lower vs the image's top
+						above = (cmp > 0) || (cmp == 0 && (I.lowerIsOpen || !hi.attained));
+					}
+					if (!first && !unboundedBelow) {
+						const int cmp = compareToQuotient(I.upperBound, lo.num, lo.den);
+						below = (cmp < 0) || (cmp == 0 && (I.upperIsOpen || !lo.attained));
+					}
+					if (below || above) {
+						++nrOfFailedTestCases;
+						if (reportTestCases && nrOfFailedTestCases <= 10) {
+							std::cerr << std::setprecision(9) << "FAIL: " << a << ' ' << op << ' ' << b << " = " << c << " covers a lattice interval outside the exact image\n";
+						}
+						break;
+					}
+				}
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// the outward-rounding helpers on the branches a lattice rarely reaches: a sum that overflows the
+	// float range, and quotients by a zero or of an infinite bound
+	inline int VerifyBoundHelpers(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		constexpr float fmax = std::numeric_limits<float>::max(), inf = std::numeric_limits<float>::infinity();
+		auto check = [&](bool ok, const char* what) {
+			if (!ok) { ++nrOfFailedTestCases; if (reportTestCases) std::cerr << "FAIL: " << what << '\n'; }
+		};
+		bool inexact = false;
+		// the exact sum 2 FLT_MAX is finite: rounded down it is FLT_MAX, rounded up inf, inexact both ways
+		check(sornAddOut(fmax, fmax, false, inexact) == fmax && inexact, "sornAddOut(max, max) down is not max, inexact");
+		check(sornAddOut(fmax, fmax, true, inexact) == inf && inexact, "sornAddOut(max, max) up is not inf, inexact");
+		check(sornAddOut(-fmax, -fmax, true, inexact) == -fmax && inexact, "sornAddOut(-max, -max) up is not -max, inexact");
+		check(sornAddOut(inf, 1.0f, false, inexact) == inf && !inexact, "sornAddOut(inf, 1) is not an exact inf");
+		check(sornAddOut(1.0f, 2.0f, true, inexact) == 3.0f && !inexact, "sornAddOut(1, 2) is not an exact 3");
+		// quotients: a zero divisor stands for the limit from above, an infinite operand is exact
+		check(sornDivOut(1.0f, 0.0f, true, inexact) == inf && !inexact, "sornDivOut(1, 0) is not inf");
+		check(sornDivOut(-1.0f, 0.0f, false, inexact) == -inf && !inexact, "sornDivOut(-1, 0) is not -inf");
+		check(sornDivOut(inf, 2.0f, true, inexact) == inf && !inexact, "sornDivOut(inf, 2) is not inf");
+		check(sornDivOut(3.0f, inf, false, inexact) == 0.0f && !inexact, "sornDivOut(3, inf) is not 0");
+		check(sornDivOut(0.0f, 3.0f, false, inexact) == 0.0f && !inexact, "sornDivOut(0, 3) is not 0");
+		check(sornDivOut(1.0f, 3.0f, false, inexact) < sornDivOut(1.0f, 3.0f, true, inexact) && inexact, "sornDivOut(1, 3) does not straddle 1/3");
+		return nrOfFailedTestCases;
+	}
+
+	// the sweep's repro values (#2060): bounds of an exact quotient that are lattice points stay put
+	template<typename SornType>
+	int VerifyDivisionRepro(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		auto interval = [](float lo, float hi, bool loOpen, bool hiOpen) {
+			SornType s;
+			s.sornIntVal = { lo, hi, loOpen, hiOpen };
+			return s;
+		};
+		const SornType a = interval(-4.0f, -3.5f, false, true);
+		const SornType q1 = a / interval(-3.5f, -3.0f, false, true);   // the image is (1, 4/3]
+		const SornType q2 = a / interval(1.0f, 3.5f, true, false);     // the image is [-4, -1)
+		const auto& r1 = q1.sornIntVal;
+		const auto& r2 = q2.sornIntVal;
+		if (!(r1.lowerBound == 1.0f && r1.upperBound == 1.5f)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: [-4,-3.5) / [-3.5,-3) = " << q1 << " expected (1,1.5]\n";
+		}
+		if (!(r2.lowerBound == -4.0f && r2.upperBound == -1.0f)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: [-4,-3.5) / (1,3.5] = " << q2 << " expected [-4,-1)\n";
+		}
+		// a divisor that holds its infinite bound: a / inf = 0 is attained, so the zero bound is closed
+		const SornType q3 = interval(1.0f, 1.5f, false, true) / interval(2.0f, std::numeric_limits<float>::infinity(), false, false);
+		const auto& r3 = q3.sornIntVal;
+		if (!(r3.lowerBound == 0.0f && !r3.lowerIsOpen)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL: [1,1.5) / [2,inf] = " << q3 << " does not hold the attained 0\n";
+		}
+		return nrOfFailedTestCases;
+	}
+
 	// 1 / y through the scalar path: the exact 1, so the reciprocal's own rounding is all there is.
 	// Its bounds are 1 / (the bounds of y), which are not floats for most lattice points (#2021).
 	template<typename SornType>
@@ -397,6 +529,15 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocalBounds<FifthsSorn>(reportTestCases), "sorn<0,1,5> spans", "exact bounds 1/y");
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocalBounds<ThirdsSorn>(reportTestCases), "sorn<0,6,18> spans", "exact bounds 1/y");
 	nrOfFailedTestCases += ReportTestResult(VerifyExactBounds<ThirdsSorn>('/', true, reportTestCases), "sorn<0,6,18> spans", "exact bounds /");
+	// tightness: the bounds of the exact image that are lattice points are not widened (#2060)
+	for (char op : { '*', '/' }) {
+		const std::string tag = std::string("tight bounds ") + op;
+		nrOfFailedTestCases += ReportTestResult(VerifyTightBounds<LinSorn>(op, false, reportTestCases), "sorn<0,4,8>", tag);
+		nrOfFailedTestCases += ReportTestResult(VerifyTightBounds<SeventhsSorn>(op, true, reportTestCases), "sorn<0,3,7> spans", tag);
+		nrOfFailedTestCases += ReportTestResult(VerifyTightBounds<LogSorn>(op, true, reportTestCases), "sorn<-2,2,1,log> spans", tag);
+	}
+	nrOfFailedTestCases += ReportTestResult(VerifyDivisionRepro<LinSorn>(reportTestCases), "sorn<0,4,8>", "division repro");
+	nrOfFailedTestCases += ReportTestResult(VerifyBoundHelpers(reportTestCases), "sorn", "outward-rounding helpers");
 #endif
 
 #if REGRESSION_LEVEL_2

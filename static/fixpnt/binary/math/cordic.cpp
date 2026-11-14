@@ -7,8 +7,8 @@
 //
 // cordic::sincos/sin/cos (rotation mode) and cordic::atan2/atan/hypot/polar (vectoring mode) model a
 // shift-and-add CORDIC unit in the type's own arithmetic. With the default guard width and iteration
-// count, every result is within 1 ulp of the exact value, at any width; the measured worst case is
-// printed for each configuration.
+// count, every result is within 0.65 ulp of the exact value, at any width and for any split of nbits
+// into integer and fraction bits; the measured worst case is printed for each configuration.
 //
 // The references are independent of the engine: double for formats of at most 32 bits, whose values a
 // double holds exactly and whose ulp is far above double's error, and qd (~212 bits) beyond that, with
@@ -158,7 +158,9 @@ namespace {
 		return fails;
 	}
 
-	// every function within 1 ulp at the default guard width and iteration count
+	// every function within the bound at the default guard width and iteration count. The measured worst
+	// over every configuration below is 0.62 ulp (fixpnt<128,120>); kWorst leaves a little room for samples.
+	constexpr double kWorst = 0.65;
 	template<typename Fixed>
 	int VerifyCordic(const std::string& tag, bool reportTestCases, unsigned long long unarySamples, unsigned long long binarySamples) {
 		Worst w;
@@ -167,11 +169,12 @@ namespace {
 		std::cout << std::left << std::setw(30) << tag << std::fixed << std::setprecision(3)
 		          << " worst ulp: sin " << w.sin << "  cos " << w.cos << "  atan " << w.atan
 		          << "  atan2 " << w.atan2 << "  hypot " << w.hypot
-		          << "   (g = " << cordic::guard_bits<Fixed> << ", n = " << cordic::default_iterations<Fixed> << ")\n";
+		          << "   (g = " << cordic::guard_bits<Fixed> << ", n = " << cordic::default_iterations<Fixed>
+		          << "; vectoring g = " << cordic::vector_guard_bits<Fixed> << ", n = " << cordic::default_vector_iterations<Fixed> << ")\n";
 		std::cout.unsetf(std::ios::fixed);
 		for (double e : { w.sin, w.cos, w.atan, w.atan2, w.hypot }) {
-			if (e > 1.0) {
-				if (reportTestCases) std::cerr << "FAIL: " << tag << " error " << e << " ulp exceeds 1 ulp\n";
+			if (e > kWorst) {
+				if (reportTestCases) std::cerr << "FAIL: " << tag << " error " << e << " ulp exceeds " << kWorst << " ulp\n";
 				++fails;
 			}
 		}
@@ -232,6 +235,54 @@ namespace {
 			if (reportTestCases) std::cerr << "FAIL: " << type_tag(Fixed()) << " the error does not fall with the guard width\n";
 			++fails;
 		}
+		return fails;
+	}
+
+	// the vectoring knobs: an explicit iteration count above the clamp is the clamp, 0 iterations leave only
+	// the half-plane rotation, and an explicit guard width reaches every vectoring function the same way
+	template<typename Fixed>
+	int VerifyVectoringKnobs(bool reportTestCases) {
+		int fails = 0;
+		auto check = [&](bool ok, const char* what) {
+			if (!ok) {
+				if (reportTestCases) std::cerr << "FAIL: " << type_tag(Fixed()) << ' ' << what << '\n';
+				++fails;
+			}
+		};
+		constexpr unsigned n = cordic::default_vector_iterations<Fixed>;
+		std::mt19937_64 rng(2060);
+		for (int i = 0; i < 200; ++i) {
+			const Fixed x = random_fixpnt<Fixed>(rng), y = random_fixpnt<Fixed>(rng);
+			// past the clamp (the datapath's fraction bits), more iterations change nothing
+			check(cordic::hypot(x, y, 1000u) == cordic::hypot(x, y, 100000u), "hypot past the clamp depends on the count");
+			check(cordic::atan2(y, x, 1000u) == cordic::atan2(y, x, 100000u), "atan2 past the clamp depends on the count");
+			// an explicit guard width, the same for polar, hypot and atan2
+			Fixed r, theta;
+			cordic::polar<3>(x, y, r, theta, n);
+			check(r == cordic::hypot<3>(x, y, n) && theta == cordic::atan2<3>(y, x, n), "polar<3> disagrees with hypot<3>/atan2<3>");
+		}
+		// 0 iterations: a vector with x < 0 is only rotated into the right half-plane, and nothing more
+		// happens, K_0 = 1: a vector on the positive x axis comes back unchanged
+		const Fixed three(3);
+		check(cordic::hypot(three, Fixed(0), 0u) == three, "hypot(3, 0) with 0 iterations is not 3");
+		check(cordic::hypot(-three, Fixed(0), 0u) == Fixed(0), "hypot(-3, 0) with 0 iterations is not the rotated x = 0");
+		check(cordic::atan2(Fixed(0), three, 0u) == Fixed(0), "atan2(0, 3) with 0 iterations is not 0");
+		check(cordic::atan(Fixed(0), 0u) == Fixed(0), "atan(0) with 0 iterations is not 0");
+		// the guard bits matter: with none, the truncation error of the default count shows in hypot
+		auto worst_hypot = [&](auto guardTag) {
+			constexpr unsigned g = decltype(guardTag)::value;
+			std::mt19937_64 r2(2061);
+			double w = 0.0;
+			for (int i = 0; i < 2000; ++i) {
+				const Fixed x = random_fixpnt<Fixed>(r2), y = random_fixpnt<Fixed>(r2);
+				w = std::max(w, ulp_error(cordic::hypot<g>(x, y), ref_hypot(exact_of(x), exact_of(y))));
+			}
+			return w;
+		};
+		const double g0 = worst_hypot(std::integral_constant<unsigned, 0>{});
+		const double ga = worst_hypot(std::integral_constant<unsigned, cordic::auto_guard>{});
+		std::cout << type_tag(Fixed()) << " worst hypot error: g = 0: " << g0 << "  g = " << cordic::vector_guard_bits<Fixed> << ": " << ga << '\n';
+		check(g0 > ga && ga <= kWorst, "the hypot error does not fall with the guard width");
 		return fails;
 	}
 
@@ -348,10 +399,16 @@ try {
 	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<64, 60, Modulo, std::uint64_t>>("fixpnt<64,60,mod>", reportTestCases, 500, 500)), "fixpnt<64,60,mod>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<64, 32, Saturate, std::uint32_t>>("fixpnt<64,32,sat>", reportTestCases, 500, 500)), "fixpnt<64,32,sat>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<128, 120, Saturate, std::uint32_t>>("fixpnt<128,120,sat>", reportTestCases, 200, 200)), "fixpnt<128,120,sat>", test_tag);
+	// integer-heavy formats: rbits much smaller than nbits, where hypot needs about nbits / 2 iterations (#2060)
+	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<32, 0, Saturate, std::uint32_t>>("fixpnt<32,0,sat>", reportTestCases, 2000, 5000)), "fixpnt<32,0,sat>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<40, 3, Saturate, std::uint32_t>>("fixpnt<40,3,sat>", reportTestCases, 500, 1000)), "fixpnt<40,3,sat>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyCordic<fixpnt<24, 2, Modulo, std::uint32_t>>("fixpnt<24,2,mod>", reportTestCases, 2000, 5000)), "fixpnt<24,2,mod>", test_tag);
 
 	// the hardware-model knobs
 	nrOfFailedTestCases += ReportTestResult((VerifyIterationCount<fixpnt<16, 12, Saturate, std::uint16_t>>(reportTestCases)), "iteration count", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyGuardWidth<fixpnt<16, 12, Saturate, std::uint16_t>>(reportTestCases)), "guard width", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyVectoringKnobs<fixpnt<32, 0, Saturate, std::uint32_t>>(reportTestCases)), "vectoring knobs <32,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyVectoringKnobs<fixpnt<16, 12, Saturate, std::uint16_t>>(reportTestCases)), "vectoring knobs <16,12>", test_tag);
 
 	// special arguments
 	nrOfFailedTestCases += ReportTestResult((VerifySpecialArguments<fixpnt<16, 8, Saturate, std::uint16_t>>(reportTestCases)), "fixpnt<16,8,sat> special", test_tag);

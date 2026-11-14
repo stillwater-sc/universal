@@ -284,6 +284,13 @@ complex<T> catanh(const complex<T>& z) {
 		return complex<T>(quiet_nan<T>(), quiet_nan<T>());
 	}
 	if (is_inf(x) || is_inf(y)) return complex<T>(with_sign(T(0), x), with_sign(half_pi<T>(), y));
+	// atanh is odd, signed zeros included (C99 G.6.2.3): evaluate x < 0 as -atanh(-z). The real part's
+	// log1p(4x / h^2) has an argument near -1 when x is near -1, where it cancels and loses about half
+	// the digits; for x > 0 the argument is positive and log1p is well conditioned (#2060)
+	if (x < T(0)) {
+		const complex<T> r = catanh(complex<T>(-x, -y));
+		return complex<T>(-r.real(), -r.imag());
+	}
 	const T ax = magnitude(x), ay = magnitude(y);
 	if (y == T(0) && ax == T(1)) return complex<T>(with_sign(infinity<T>(), x), y);
 	// (1 - x)^2 + y^2 as hypot(1 - x, y)^2, applied one factor at a time, and the atan2
