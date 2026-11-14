@@ -13,10 +13,4 @@
 #include <universal/number/dd/dd.hpp>
 #include <universal/math/complex/complex_impl.hpp>
 
-namespace sw { namespace universal {
-
-// Mark dd as a high-precision type
-template<>
-struct is_high_precision<dd> : std::true_type {};
-
-}} // namespace sw::universal
+// is_high_precision<dd> is registered by number/dd/mathlib.hpp, which dd.hpp includes (#2060).

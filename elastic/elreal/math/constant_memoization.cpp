@@ -21,6 +21,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <new>
@@ -61,6 +62,29 @@ void operator delete[](void* p, std::size_t) noexcept { operator delete(p); }
 namespace {
 
 using namespace sw::universal;
+
+// the canary: a direct new[] and new, kept alive through a volatile escape, must count 2 (#2060).
+// If the replacement operator new were not linked in, or the reads of the counter were folded,
+// every check below would pass against code that allocates. (Not a std::vector: MSVC's debug
+// library allocates an iterator proxy for one.)
+const volatile void* volatile g_escapedObject = nullptr;
+int verify_the_counter_counts(bool reportTestCases) {
+    const long before = g_allocations;
+    auto* limbs = new std::uint64_t[64];
+    g_escapedObject = limbs;
+    auto* limb = new std::uint64_t(1);
+    g_escapedObject = limb;
+    const long made = g_allocations - before;
+    delete limb;
+    delete[] limbs;
+    g_escapedObject = nullptr;
+    if (made != 2) {
+        if (reportTestCases) std::cout << "FAIL: new std::uint64_t[64] and new std::uint64_t counted " << made << " allocations, not 2\n";
+        return 1;
+    }
+    return 0;
+}
+
 
 // (1) a repeat call must be served from the cache, i.e. cost essentially nothing
 template <typename FpType>
@@ -156,6 +180,7 @@ try {
 
 #else
 
+    nrOfFailedTestCases += verify_the_counter_counts(reportTestCases);
     nrOfFailedTestCases += verify_constant_is_cached<double>("double", reportTestCases);
     nrOfFailedTestCases += verify_shallow_is_unaffected_by_deeper<double>("double", reportTestCases);
 

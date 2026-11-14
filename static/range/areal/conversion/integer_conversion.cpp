@@ -456,6 +456,11 @@ try {
 	std::cout << "Large signed integer conversion (native path)\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<64, 8>>(reportTestCases), test_tag, "areal<64,8> large signed");
 
+	// areal<73,8>: fbits = 63, UINT64_MAX and INT64_MAX are exact; the fbits >= 63 branch of the
+	// large-integer checks, which areal<64,8> does not reach, runs at level 1 (#2060)
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedIntegerConversion<areal<73, 8>>(reportTestCases), test_tag, "areal<73,8> large unsigned");
+	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<73, 8>>(reportTestCases), test_tag, "areal<73,8> large signed");
+
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -470,10 +475,6 @@ try {
 	// areal<64,7>: fbits = 55
 	nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedIntegerConversion<areal<64, 7>>(reportTestCases), test_tag, "areal<64,7> large unsigned");
 	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<64, 7>>(reportTestCases), test_tag, "areal<64,7> large signed");
-
-	// areal<73,8>: fbits = 63, UINT64_MAX and INT64_MAX are exact
-	nrOfFailedTestCases += ReportTestResult( VerifyLargeUnsignedIntegerConversion<areal<73, 8>>(reportTestCases), test_tag, "areal<73,8> large unsigned");
-	nrOfFailedTestCases += ReportTestResult( VerifyLargeSignedIntegerConversion<areal<73, 8>>(reportTestCases), test_tag, "areal<73,8> large signed");
 
 	// areal<64, 11>: fbits = 51 (below threshold, uses double delegation)
 	nrOfFailedTestCases += ReportTestResult( VerifySmallIntegerConversion<areal<64, 11>>(reportTestCases), test_tag, "areal<64,11> small integers");

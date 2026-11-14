@@ -25,3 +25,13 @@
 // last: the shared implementations call exp, log, sqrt and sin
 #include <universal/number/dd/math/functions/hyperbolic.hpp>
 #include <universal/number/dd/math/functions/error_and_gamma.hpp>
+
+// complex<dd> computes abs, arg and the complex transcendentals in dd arithmetic, not through
+// std::complex<double>. The trait is registered with the mathlib, as ereal and efloat register
+// theirs, so the path does not depend on whether number/dd/math/complex/complex.hpp is included:
+// without it, complex<dd> used to fall back to 53 bits (#2060).
+#include <universal/math/complex/complex_traits.hpp>
+namespace sw { namespace universal {
+template<>
+struct is_high_precision<dd> : std::true_type {};
+}}

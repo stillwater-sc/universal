@@ -66,6 +66,9 @@
 // The default guard width is g = ceil(log2(rbits + 8)) + 2, and the default iteration count is rbits + g.
 // The truncation error grows by about one unit of the datapath per iteration, and the g guard bits absorb
 // it; the angle error after n iterations is at most atan(2^-(n-1)) ~= 2^-(n-1).
+// Vectoring must also get the magnitude: its relative error after n iterations is ~2^-(2n-1), so hypot
+// needs about nbits / 2 iterations however few fraction bits the type has. atan2, atan, hypot and polar
+// use B = max(rbits, (nbits + 4) / 2) result bits, g = ceil(log2(B + 8)) + 2 and B + g iterations.
 //
 // Range reduction. Rotation converges for |theta| <= sum_i atan(2^-i) = 1.7432866... A fixpnt that holds
 // only [-1, 1) or less needs no reduction, and the choice is made at compile time. Any wider type reduces
@@ -156,8 +159,15 @@ namespace detail {
 		static constexpr unsigned rotR = rbits + g;
 		static constexpr unsigned rotN = rotR + 3u;
 
+		// vectoring: the angle needs rbits bits, and the magnitude, whose relative error after n iterations
+		// is 1 - cos(atan(2^-(n-1))) ~= 2^-(2n-1), needs about nbits/2: hypot(x, y) of a fixpnt<32,0> is a
+		// 32-bit integer, and rbits + g = 5 iterations leave it 2^-9 off (#2060)
+		static constexpr unsigned vecBase = (rbits > (nbits + 4u) / 2u) ? rbits : (nbits + 4u) / 2u;
+		static constexpr unsigned vecG = (guard == auto_guard) ? clog2(vecBase + 8u) + 2u : guard;
+		static constexpr unsigned vecIterations = vecBase + vecG;    // the default vectoring iteration count
+
 		// vectoring datapath: one bit more than the widest input, 1 = 2^nbits in atan(x) for rbits == nbits
-		static constexpr unsigned vecR = nbits + 1u + g;
+		static constexpr unsigned vecR = nbits + 1u + vecG;
 		static constexpr unsigned vecN = vecR + 3u;
 	};
 
@@ -696,6 +706,12 @@ template<typename Fixed, unsigned guard = auto_guard>
 inline constexpr unsigned default_iterations = detail::config<Fixed::nbits, Fixed::rbits, guard>::iterations;
 template<typename Fixed, unsigned guard = auto_guard>
 inline constexpr unsigned guard_bits = detail::config<Fixed::nbits, Fixed::rbits, guard>::g;
+// the vectoring functions (atan2, atan, hypot, polar) size their iterations and guard bits for the magnitude
+// as well as the angle: at least (nbits + 4) / 2 result bits, so hypot is within 1 ulp at any rbits
+template<typename Fixed, unsigned guard = auto_guard>
+inline constexpr unsigned default_vector_iterations = detail::config<Fixed::nbits, Fixed::rbits, guard>::vecIterations;
+template<typename Fixed, unsigned guard = auto_guard>
+inline constexpr unsigned vector_guard_bits = detail::config<Fixed::nbits, Fixed::rbits, guard>::vecG;
 
 // rotation mode: s = sin(theta) and c = cos(theta)
 template<unsigned guard = auto_guard, unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
@@ -732,7 +748,7 @@ fixpnt<nbits, rbits, arithmetic, bt> cos(const fixpnt<nbits, rbits, arithmetic, 
 template<unsigned guard = auto_guard, unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 void polar(const fixpnt<nbits, rbits, arithmetic, bt>& x, const fixpnt<nbits, rbits, arithmetic, bt>& y,
            fixpnt<nbits, rbits, arithmetic, bt>& r, fixpnt<nbits, rbits, arithmetic, bt>& theta,
-           unsigned iterations = detail::config<nbits, rbits, guard>::iterations) {
+           unsigned iterations = detail::config<nbits, rbits, guard>::vecIterations) {
 	using Cfg    = detail::config<nbits, rbits, guard>;
 	using Target = fixpnt<nbits, rbits, arithmetic, bt>;
 	using Vec    = fixpnt<Cfg::vecN, Cfg::vecR, Modulo, bt>;
@@ -746,7 +762,7 @@ void polar(const fixpnt<nbits, rbits, arithmetic, bt>& x, const fixpnt<nbits, rb
 
 template<unsigned guard = auto_guard, unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> atan2(const fixpnt<nbits, rbits, arithmetic, bt>& y, const fixpnt<nbits, rbits, arithmetic, bt>& x,
-                                           unsigned iterations = detail::config<nbits, rbits, guard>::iterations) {
+                                           unsigned iterations = detail::config<nbits, rbits, guard>::vecIterations) {
 	using Cfg = detail::config<nbits, rbits, guard>;
 	using Vec = fixpnt<Cfg::vecN, Cfg::vecR, Modulo, bt>;
 	const unsigned n = detail::clamp_iterations(iterations, Cfg::vecR);
@@ -758,7 +774,7 @@ fixpnt<nbits, rbits, arithmetic, bt> atan2(const fixpnt<nbits, rbits, arithmetic
 // atan(x) = atan2(x, 1), with the 1 held in the datapath, so it works where the type cannot hold 1
 template<unsigned guard = auto_guard, unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> atan(const fixpnt<nbits, rbits, arithmetic, bt>& x,
-                                          unsigned iterations = detail::config<nbits, rbits, guard>::iterations) {
+                                          unsigned iterations = detail::config<nbits, rbits, guard>::vecIterations) {
 	using Cfg = detail::config<nbits, rbits, guard>;
 	using Vec = fixpnt<Cfg::vecN, Cfg::vecR, Modulo, bt>;
 	const unsigned n = detail::clamp_iterations(iterations, Cfg::vecR);
@@ -771,7 +787,7 @@ fixpnt<nbits, rbits, arithmetic, bt> atan(const fixpnt<nbits, rbits, arithmetic,
 
 template<unsigned guard = auto_guard, unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> hypot(const fixpnt<nbits, rbits, arithmetic, bt>& x, const fixpnt<nbits, rbits, arithmetic, bt>& y,
-                                           unsigned iterations = detail::config<nbits, rbits, guard>::iterations) {
+                                           unsigned iterations = detail::config<nbits, rbits, guard>::vecIterations) {
 	fixpnt<nbits, rbits, arithmetic, bt> r, theta;
 	polar<guard>(x, y, r, theta, iterations);
 	return r;
