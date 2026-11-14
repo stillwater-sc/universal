@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-**The follow-ups of QA sweep #2039: the quire, the native helpers, and fixes to recent commits.**
+## [5.17.0](https://github.com/stillwater-sc/universal/compare/v5.16.0...v5.17.0) (2026-11-14)
+
+**The follow-ups of QA sweep #2039: the quire, the native helpers, cross-type promotion, and fixes to recent commits.** 7 commits since v5.16.0, with 4 behaviour changes:
+
+* fixpnt CORDIC hypot is accurate in every format, sorn division is tight again, complex atanh is accurate near -1, and dd/qd keep the sign of zero (#2060, #2062).
+* The native helpers classify every NaN payload, `find_msb(long)` works on LP64, and `ulp`, `fastipow` and `universal_cast` handle their edge cases (#2063).
+* The quire rejects operands past its ends, `convert_to` is correctly rounded, and `numeric_limits<quire>` is specialized (#2058, #2064).
+* Mixed-type operators promote to the operand type with the larger range, then the one with more precision, whichever operand comes first (#2059, #2067).
 
 ### Behaviour changes
 
@@ -26,7 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - Record the internals sweep, the v5.16.0 recovery and the #2039 follow-ups ([#2065](https://github.com/stillwater-sc/universal/pull/2065))
-- Record the #2059 promotion decision and the close of sweep #2039
+- Record the #2059 promotion decision and the close of sweep #2039 ([#2068](https://github.com/stillwater-sc/universal/pull/2068))
+- Prepare the v5.17.0 release
 
 ## [5.16.0](https://github.com/stillwater-sc/universal/compare/v5.15.0...v5.16.0) (2026-11-13)
 
