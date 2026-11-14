@@ -111,8 +111,16 @@ inline constexpr unsigned precision_bits_v =
 
 namespace detail {
 
+	// The operators in mixed_arithmetic.hpp name promote_t in their return type, so overload resolution
+	// forms it for any operand pair, "x" + std::string included, before the constraints reject the
+	// candidate. numeric_limits of an array or function type does not compile: ask only object types.
 	template<typename T>
-	constexpr bool has_limits_v = std::numeric_limits<T>::is_specialized;
+	constexpr bool has_limits() {
+		if constexpr (std::is_object_v<T> && !std::is_array_v<T>) return std::numeric_limits<T>::is_specialized;
+		else return false;
+	}
+	template<typename T>
+	constexpr bool has_limits_v = has_limits<T>();
 
 	template<typename T>
 	constexpr long promotion_max_exponent() {

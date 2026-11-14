@@ -518,6 +518,12 @@ try {
 		expectPromotion(std::is_same_v<promote_t<C16w, bfloat16>, promote_t<bfloat16, C16w>>,
 			"<cfloat<16,8>, bfloat16> depends on operand order");
 
+		// overload resolution forms promote_t for any operand pair ("-" + std::string in
+		// blockbinary/to_decimal.hpp): it must stay well-formed for array operands, where
+		// numeric_limits<char[2]> does not compile with libstdc++ 14
+		expectPromotion(std::is_same_v<promote_t<char[2], std::string>, std::string>
+		             || std::is_same_v<promote_t<char[2], std::string>, char[2]>, "<char[2], std::string> is ill-formed");
+
 		// the value: 1e20 is past cfloat<16,5>'s maxpos (65504) but inside cfloat<16,8>'s
 		{
 			C16w big(1.0e20);
