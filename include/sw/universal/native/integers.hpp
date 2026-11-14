@@ -91,10 +91,11 @@ template<typename Integer,
 inline std::string to_binary(const Integer& number, bool bNibbleMarker = true, int nbits = 0) {
 	// bit by bit through the unsigned type, so nbits beyond 64 (or the type) is no shift past the
 	// width: those bits are the sign extension (#2059)
-	using U = std::make_unsigned_t<Integer>;
+	// bool has no make_unsigned: read it as the unsigned char of the same width
+	using U = std::conditional_t<std::is_same_v<Integer, bool>, unsigned char, std::make_unsigned_t<std::conditional_t<std::is_same_v<Integer, bool>, unsigned char, Integer>>>;
 	constexpr int width = static_cast<int>(8 * sizeof(Integer));
 	const U u = static_cast<U>(number);
-	const bool negative = std::is_signed_v<Integer> && (number < 0);
+	const bool negative = std::is_signed_v<Integer> && !std::is_same_v<Integer, bool> && (number < Integer(0));
 	std::stringstream s;
 	if (nbits <= 0) nbits = width;
 	s << "0b";
@@ -114,7 +115,7 @@ template<typename Integer,
 inline std::string to_hex(const Integer& number, bool nibbleMarker = false, bool hexPrefix = true) {
 	// nibble by nibble through the unsigned type: a 1ull mask shifted by the width went past 64
 	// bits for a 128-bit integer (#2059)
-	using U = std::make_unsigned_t<Integer>;
+	using U = std::conditional_t<std::is_same_v<Integer, bool>, unsigned char, std::make_unsigned_t<std::conditional_t<std::is_same_v<Integer, bool>, unsigned char, Integer>>>;
 	constexpr unsigned nibbles = static_cast<unsigned>(2 * sizeof(Integer));
 	const char hex[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 	const U u = static_cast<U>(number);

@@ -300,24 +300,22 @@ template<typename Real>
 	inline bool checkNaN(long double value, int& nan_type) {
 		nan_type = NAN_TYPE_NEITHER;
 		if (!(value != value)) return false;
-		if constexpr (std::numeric_limits<long double>::digits == 53 || std::numeric_limits<long double>::digits == 106) {
-			double lead{};
-			std::memcpy(&lead, &value, sizeof(double));         // IBM: the leading double comes first
-			return checkNaN(lead, nan_type);
-		}
-		else if constexpr (std::endian::native == std::endian::little && (std::numeric_limits<long double>::digits == 64 || std::numeric_limits<long double>::digits == 113)) {
-			std::uint64_t word[2]{};
-			std::memcpy(word, &value, (sizeof(long double) < sizeof(word)) ? sizeof(long double) : sizeof(word));
-			const bool quiet = (std::numeric_limits<long double>::digits == 64)
-				? ((word[0] >> 62) & 1u) != 0
-				: ((word[1] >> 47) & 1u) != 0;
-			nan_type = quiet ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING;
-			return true;
+#if LONG_DOUBLE_SUPPORT && (LDBL_MANT_DIG != 64) && (LDBL_MANT_DIG != 53)
+		// binary128 (either byte order) and IBM double-double: the decoder extractLongDoubleFields uses
+		nan_type = longDoubleNaNIsQuiet(value) ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING;
+		return true;
+#else
+		if constexpr (std::numeric_limits<long double>::digits == 53) {
+			return checkNaN(static_cast<double>(value), nan_type);   // long double is double: the same bits
 		}
 		else {
-			nan_type = NAN_TYPE_QUIET;                          // a NaN of a layout not decoded here
+			// x87 extended, little-endian wherever it exists: the explicit integer bit is 63, the quiet bit 62
+			std::uint64_t significand{};
+			std::memcpy(&significand, &value, sizeof(significand));
+			nan_type = ((significand >> 62) & 1u) ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING;
 			return true;
 		}
+#endif
 	}
 
 	template<typename Real>

@@ -70,6 +70,7 @@ namespace {
 		fails += report(to_hex(std::uint32_t(0xDEADBEEF)) == "0xDEADBEEF", "to_hex(0xDEADBEEF)", reportTestCases);
 		fails += report(to_hex(std::int16_t(-1)) == "0xFFFF", "to_hex(int16_t -1)", reportTestCases);
 		fails += report(to_hex(std::uint64_t(0x0123456789ABCDEFull)) == "0x0123456789ABCDEF", "to_hex(uint64_t)", reportTestCases);
+		fails += report(to_binary(true, false) == "0b00000001" && to_hex(false) == "0x00", "to_binary(bool)/to_hex(bool)", reportTestCases);
 		return fails;
 	}
 
