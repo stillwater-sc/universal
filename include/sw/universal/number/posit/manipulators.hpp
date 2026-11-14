@@ -324,7 +324,8 @@ bool parse(const std::string& txt, posit<nbits, es, bt>& p) {
 	// check if the txt is of the native posit form: nbits.esXhexvalue
 	// The digit field also accepts a 0x prefix and ' separators: hex_format used to
 	// emit both, and strings it wrote should still read back.
-	std::regex posit_regex(R"(^[0-9]+\.[0-9]+[xX](0[xX])?[0-9A-Fa-f']+p?$)");
+	// built once: constructing a std::regex costs far more than matching it (#2070)
+	static const std::regex posit_regex(R"(^[0-9]+\.[0-9]+[xX](0[xX])?[0-9A-Fa-f']+p?$)");
 	if (std::regex_match(txt, posit_regex)) {
 		// found a posit representation: parse nbits.esxHEXVALUEp
 		std::string nbitsStr, esStr, bitStr;

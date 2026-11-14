@@ -507,10 +507,25 @@ public:
 	posit& operator=(const posit&) = default;
 	posit& operator=(posit&&) = default;
 
-	/// Construct posit from another posit with the same alignment
+	/// Construct a posit from a posit of another configuration: the source is decoded on its
+	/// encoding and rounded once into this one (#2070). It went through double, which lost
+	/// precision past 53 bits, rounded twice, and turned values outside double's range into NaR or
+	/// 0; a posit saturates to maxpos/minpos instead.
 	template<unsigned nnbits, unsigned ees, typename bbt>
-	posit(const posit<nnbits, ees, bbt>& a) {
-		*this = double(a);
+	posit(const posit<nnbits, ees, bbt>& a) noexcept {
+		if (a.iszero()) { setzero(); return; }
+		if (a.isnar())  { setnar();  return; }
+		using posit_limbs::limb_t;
+		constexpr std::size_t L = posit_limbs::limbs(nnbits);
+		limb_t w[L];
+		posit_limbs::gather(a, w);
+		const bool negative = a.isneg();
+		if (negative) posit_limbs::negate<nnbits>(w);
+		const posit_limbs::Fields f = posit_limbs::decode<nnbits, ees>(w);   // w = the nf fraction bits
+		posit_limbs::set(w, f.nf);                                          // the hidden bit above them
+		limb_t sig[L];                                                       // the hidden bit at the top
+		limb_kernels::load_window(sig, L, w, L, static_cast<std::int64_t>(64u * L - 1u - f.nf));
+		posit_limbs::encode(*this, f.scale, sig, L, false, negative);
 	}
 
 	// specific value constructor
@@ -814,78 +829,11 @@ public:
 		return *this /= posit<nbits, es, bt>(rhs);
 	}
 	
+	// 1 / x, rounded once: the division path, which also gives NaR for 0 and NaR (#2070). The
+	// old bespoke reciprocal no longer compiled: it used helpers blockbinary had dropped.
 	posit reciprocal() const noexcept {
-#if POSIT_TRACE_ENABLED
-		if (_trace_reciprocal) std::cout << "-------------------- RECIPROCAL ----------------" << std::endl;
-#endif
-		posit<nbits, es, bt> p;
-		// special case of NaR (Not a Real)
-		if (isnar()) {
-			p.setnar();
-			return p;
-		}
-		if (iszero()) {
-			p.setnar();
-			return p;
-		}
-		// compute the reciprocal
-		bool old_sign = _block.test(nbits-1);
-		blockbinary<nbits, bt> raw_bits;
-		if (ispowerof2()) {
-			raw_bits = twos_complement(_block);
-			raw_bits.set(nbits-1, old_sign);
-			p.setbits(raw_bits);
-		}
-		else {
-			bool s{ false };
-			positRegime<nbits, es, bt> r;
-			positExponent<nbits, es, bt> e;
-			positFraction<fbits, bt> f;
-			decode(_block, s, r, e, f);
-
-			constexpr unsigned operand_size = fhbits;
-			blockbinary<operand_size, bt> one;
-			one.set(operand_size - 1, true);
-			blockbinary<operand_size, bt> frac;
-			copy_into(f.bits(), 0, frac);
-			frac.set(operand_size - 1, true);
-			constexpr unsigned reciprocal_size = 3 * fbits + 4;
-			blockbinary<reciprocal_size> reciprocal;
-			divide_with_fraction(one, frac, reciprocal);
-#if POSIT_TRACE_ENABLED
-			if (_trace_reciprocal) {
-				std::cout << "one    " << one << std::endl;
-				std::cout << "frac   " << frac << std::endl;
-				std::cout << "recip  " << reciprocal << std::endl;
-			}
-#endif
-
-			// radix point falls at operand size == reciprocal_size - operand_size - 1
-			reciprocal <<= operand_size - 1;
-#if POSIT_TRACE_ENABLED
-			if (_trace_reciprocal) std::cout << "frac   " << reciprocal << std::endl;
-#endif
-			int new_scale = -scale(*this);
-			int msb = findMostSignificantBit(reciprocal);
-			if (msb > 0) {
-				int shift = static_cast<int>(reciprocal_size - static_cast<unsigned>(msb));
-				reciprocal <<= static_cast<unsigned>(shift);
-				new_scale -= (shift-1);
-#if POSIT_TRACE_ENABLED
-				if (_trace_reciprocal) std::cout << "result " << reciprocal << std::endl;
-#endif
-			}
-			//std::bitset<operand_size> tr;
-			//truncate(reciprocal, tr);
-			//std::cout << "tr     " << tr << std::endl;
-
-			// the following is failing for some reason
-			// value<reciprocal_size> v(old_sign, new_scale, reciprocal);
-			// convert(v, p);
-			// instead the following works
-			convert_<nbits, es, bt, reciprocal_size>(old_sign, new_scale, reciprocal, p);
-		}
-		return p;
+		if (iszero() || isnar()) { posit p; p.setnar(); return p; }
+		return posit(1) / *this;
 	}
 	// absolute value is simply the 2's complement when negative
 	posit abs() const noexcept {
@@ -895,12 +843,41 @@ public:
 	}
 
 	// make conversions to native types explicit
-	explicit operator int()         const noexcept { return static_cast<int>(to_native<double>()); }
-	explicit operator long()        const noexcept { return static_cast<long>(to_native<double>()); }
-	explicit operator long long()   const noexcept { return static_cast<long long>(to_native<long double>()); }
+	// Integer conversions truncate toward zero, exactly at any nbits, and saturate to the integer
+	// type's range; NaR gives the type's minimum, the "integer indefinite" a hardware float-to-int
+	// conversion produces (#2070). They went through double, which lost bits past 53 for
+	// posit<128,2> and made an out-of-range value or NaR undefined behaviour.
+	explicit operator int()         const noexcept { return to_integer<int>(); }
+	explicit operator long()        const noexcept { return to_integer<long>(); }
+	explicit operator long long()   const noexcept { return to_integer<long long>(); }
 	explicit operator float()       const noexcept { return to_native<float>(); }
 	explicit operator double()      const noexcept { return to_native<double>(); }
 	explicit operator long double() const noexcept { return to_native<long double>(); }
+
+	template<typename Integer>
+	Integer to_integer() const noexcept {
+		static_assert(std::is_integral_v<Integer> && std::is_signed_v<Integer>, "to_integer: a signed integer type");
+		if (iszero()) return Integer(0);
+		if (isnar()) return std::numeric_limits<Integer>::min();
+		using posit_limbs::limb_t;
+		constexpr std::size_t L = posit_limbs::limbs(nbits);
+		limb_t w[L];
+		posit_limbs::gather(*this, w);
+		const bool negative = isneg();
+		if (negative) posit_limbs::negate<nbits>(w);
+		const posit_limbs::Fields f = posit_limbs::decode<nbits, es>(w);
+		if (f.scale < 0) return Integer(0);
+		constexpr int digits = std::numeric_limits<Integer>::digits;   // magnitude bits
+		if (f.scale >= digits) return negative ? std::numeric_limits<Integer>::min() : std::numeric_limits<Integer>::max();
+		// |x| truncated: the hidden bit at 2^scale and the fraction bits of weight 2^(scale - 1) .. 2^0
+		using U = std::make_unsigned_t<Integer>;
+		U magnitude = U(1) << f.scale;
+		for (int i = 1; i <= f.scale; ++i) {
+			const int j = static_cast<int>(f.nf) - i;   // the fraction bit of weight 2^(scale - i)
+			if (j >= 0 && posit_limbs::test(w, static_cast<unsigned>(j))) magnitude |= U(1) << (f.scale - i);
+		}
+		return negative ? static_cast<Integer>(U(0) - magnitude) : static_cast<Integer>(magnitude);
+	}
 
 	// Selectors
 	constexpr bool sign() const noexcept { return _block.test(nbits - 1); }
@@ -1325,17 +1302,25 @@ private:
 			scale, fraction, static_cast<unsigned>(scale), saturated);
 	}
 
-	// Constexpr integer-to-posit conversion for nbits <= 64.
-	// Builds the posit encoding directly via uint64_t shift/mask, bypassing convert_<>()
-	// (which is not constexpr because it relies on non-constexpr blockbinary operators).
-	// For nbits > 64, the existing IEEE-754 path is used at runtime.
+	// a 64-bit magnitude into a posit wider than 64 bits, exactly, then rounded once: it went
+	// through double, so posit<128,2>(2^60 + 1) was 2^60 (#2070)
+	constexpr posit<nbits, es, bt>& convert_wide_magnitude(std::uint64_t magnitude, bool negative) noexcept {
+		const unsigned msb = find_msb(magnitude) - 1u;   // find_msb is 1-based
+		const posit_limbs::limb_t sig[1] = { magnitude << (63u - msb) };
+		return posit_limbs::encode(*this, static_cast<int>(msb), sig, 1u, false, negative);
+	}
+
+	// Constexpr integer-to-posit conversion.
+	// Builds the posit encoding directly via uint64_t shift/mask for nbits <= 64, bypassing
+	// convert_<>() (which is not constexpr because it relies on non-constexpr blockbinary
+	// operators), and through the limb encoder for nbits > 64.
 	template<typename Ty>
 	constexpr posit<nbits, es, bt>& convert_unsigned_integer(Ty rhs) noexcept {
 		clear();
 		if (rhs == Ty(0)) return *this;
 
 		if constexpr (nbits > 64) {
-			return convert_ieee754(static_cast<double>(rhs));
+			return convert_wide_magnitude(static_cast<std::uint64_t>(rhs), false);
 		}
 		else {
 			bool saturated = false;
@@ -1351,7 +1336,12 @@ private:
 		if (rhs == Ty(0)) return *this;
 
 		if constexpr (nbits > 64) {
-			return convert_ieee754(static_cast<double>(rhs));
+			using UnsignedTy = std::make_unsigned_t<Ty>;
+			const bool s = (rhs < Ty(0));
+			const UnsignedTy abs_v = s
+				? static_cast<UnsignedTy>(UnsignedTy(0) - static_cast<UnsignedTy>(rhs))
+				: static_cast<UnsignedTy>(rhs);
+			return convert_wide_magnitude(static_cast<std::uint64_t>(abs_v), s);
 		}
 		else {
 			bool s = (rhs < Ty(0));
@@ -1938,7 +1928,10 @@ inline bool ispowerof2(const posit<nbits, es, bt>& p) {
 template<unsigned nbits, unsigned es, typename bt>
 inline posit<nbits, es, bt> ulp(const posit<nbits, es, bt>& a) {
 	posit<nbits, es, bt> b(a);
-	return ++b - a;
+	++b;
+	// past maxpos the next encoding is NaR: maxpos's ulp is its gap to the posit below (#2070)
+	if (b.isnar() && !a.isnar()) { b = a; --b; return a - b; }
+	return b - a;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
