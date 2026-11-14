@@ -59,9 +59,9 @@ constexpr Target cast_via(const Source& src) noexcept {
 template<typename Target, typename Source>
 	requires UniversalNumber<Source> && UniversalNumber<Target>
 constexpr Target universal_cast(const Source& src) noexcept {
-	// Zero short-circuit: avoids signed-zero edge cases
-	if (src.iszero()) return Target{};
-
+	// a zero goes through the intermediate as well, which carries its sign: Target{} turned -0 into +0
+	// (#2059). precision_bits_v counts fraction bits, without the hidden bit, so <= 52 is what fits
+	// a double's 53-bit significand.
 	constexpr unsigned srcPrec = precision_bits_v<Source>;
 	constexpr unsigned tgtPrec = precision_bits_v<Target>;
 	constexpr unsigned maxPrec = (srcPrec > tgtPrec) ? srcPrec : tgtPrec;
@@ -86,11 +86,6 @@ constexpr Target universal_cast(const Source& src) noexcept {
 template<typename Target, typename Source>
 	requires UniversalNumber<Source> && UniversalNumber<Target>
 constexpr Target& universal_assign(Target& tgt, const Source& src) noexcept {
-	if (src.iszero()) {
-		tgt = Target{};
-		return tgt;
-	}
-
 	constexpr unsigned srcPrec = precision_bits_v<Source>;
 	constexpr unsigned tgtPrec = precision_bits_v<Target>;
 	constexpr unsigned maxPrec = (srcPrec > tgtPrec) ? srcPrec : tgtPrec;

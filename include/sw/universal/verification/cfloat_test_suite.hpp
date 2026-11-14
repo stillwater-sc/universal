@@ -230,7 +230,8 @@ namespace sw { namespace universal {
 			ref.setbits(i);
 			SrcType da = SrcType(ref);
 			int old = nrOfFailedTests;
-			SrcType oneULP = ulp(da);
+			// signed: one ulp away from zero, which the negative half below relies on (ulp() is a magnitude, #2059)
+			SrcType oneULP = (da < 0) ? -ulp(da) : ulp(da);
 			if (i % 2) {
 				if (i == 1)	{
 					// special case of a tie that needs to round to even -> 0

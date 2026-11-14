@@ -17,12 +17,14 @@ namespace sw { namespace universal {
 
 	inline BIT_CAST_CONSTEXPR void setbit(float& v, unsigned index, bool b = true) {
 		uint32_t raw = sw::bit_cast<uint32_t>(v);
-		uint32_t mask = (1u << index); // do we want to bound check?
+		if (index >= 32u) return;           // no such bit: the shift would be UB (#2059)
+		uint32_t mask = (1u << index);
 		if (b) raw |= mask; else raw &= ~mask;
 		v = sw::bit_cast<float>(raw);
 	}
 
 	inline BIT_CAST_CONSTEXPR void setbit(double& v, unsigned index, bool b = true) {
+		if (index >= 64u) return;           // no such bit: the shift would be UB (#2059)
 		uint64_t raw = sw::bit_cast<uint64_t>(v);
 		uint64_t mask = (1ull << index);
 		if (b) raw |= mask; else raw &= ~mask;
