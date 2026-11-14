@@ -11,6 +11,7 @@
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/bfloat16/bfloat16.hpp>
 // cross-type conversion infrastructure
 #include <universal/number/convert/convert.hpp>
 // test infrastructure
@@ -487,21 +488,56 @@ try {
 	{
 		int sectionFails = 0;
 
-		// Verify that promote_t picks the wider type
+		// promote_t ranks by range, then precision, then a tie-break independent of operand order (#2059)
 		using P32 = posit<32,2>;
+		using P64 = posit<64,3>;
 		using C16 = cfloat<16,5,uint16_t>;
+		using C16w = cfloat<16,8,uint16_t>;   // bfloat16's range and precision
 		using C32 = cfloat<32,8,uint32_t>;
+		using I32 = integer<32>;
+		using F16 = fixpnt<16,8>;
 
-		static_assert(std::is_same_v<promote_t<P32, C16>, P32>,
-			"posit<32,2> should be promoted over cfloat<16,5>");
+		auto expectPromotion = [&](bool same, const char* label) {
+			if (!same) {
+				++sectionFails;
+				if (reportTestCases) std::cerr << "FAIL: promote_t " << label << '\n';
+			}
+		};
+		// one operand covers the other in range and precision: it wins, in either order
+		expectPromotion(std::is_same_v<promote_t<P32, C16>, P32>, "<posit<32,2>, cfloat<16,5>> is the posit");
+		expectPromotion(std::is_same_v<promote_t<C16, P32>, P32>, "<cfloat<16,5>, posit<32,2>> is the posit");
+		expectPromotion(std::is_same_v<promote_t<P64, C32>, P64>, "<posit<64,3>, cfloat<32,8>> is the posit");
+		expectPromotion(std::is_same_v<promote_t<I32, F16>, I32>, "<integer<32>, fixpnt<16,8>> is the integer");
+		// neither covers the other: range decides, so a sum past the narrow type's maxpos is kept
+		expectPromotion(std::is_same_v<promote_t<C16w, C16>, C16w>, "<cfloat<16,8>, cfloat<16,5>> is the wide-range cfloat");
+		expectPromotion(std::is_same_v<promote_t<C16, C16w>, C16w>, "<cfloat<16,5>, cfloat<16,8>> is the wide-range cfloat");
+		// posit<32,2> has 28 digits to 24, but max_exponent 120 to 128: cfloat<32,8> covers the range
+		expectPromotion(std::is_same_v<promote_t<P32, C32>, C32>, "<posit<32,2>, cfloat<32,8>> is the cfloat");
+		expectPromotion(std::is_same_v<promote_t<C32, P32>, C32>, "<cfloat<32,8>, posit<32,2>> is the cfloat");
+		// equal range, precision and size: the tie-break still gives one answer for both orders
+		expectPromotion(std::is_same_v<promote_t<C16w, bfloat16>, promote_t<bfloat16, C16w>>,
+			"<cfloat<16,8>, bfloat16> depends on operand order");
 
-		// posit<32,2> has fbits=27, cfloat<32,8> has fbits=23
-		// so posit<32,2> has higher precision and always wins
-		static_assert(std::is_same_v<promote_t<P32, C32>, P32>,
-			"posit<32,2> has more fraction bits than cfloat<32,8>");
-		static_assert(std::is_same_v<promote_t<C32, P32>, P32>,
-			"posit<32,2> has more fraction bits than cfloat<32,8>");
+		// overload resolution forms promote_t for any operand pair ("-" + std::string in
+		// blockbinary/to_decimal.hpp): it must stay well-formed for array operands, where
+		// numeric_limits<char[2]> does not compile with libstdc++ 14
+		expectPromotion(std::is_same_v<promote_t<char[2], std::string>, std::string>
+		             || std::is_same_v<promote_t<char[2], std::string>, char[2]>, "<char[2], std::string> is ill-formed");
 
+		// the value: 1e20 is past cfloat<16,5>'s maxpos (65504) but inside cfloat<16,8>'s
+		{
+			C16w big(1.0e20);
+			C16 one(1.0);
+			const double sums[2] = { static_cast<double>(big + one), static_cast<double>(one + big) };
+			for (double sum : sums) {
+				if (!(std::fabs(sum - static_cast<double>(big)) <= 1.0e18)) {
+					++sectionFails;
+					if (reportTestCases) std::cerr << "FAIL: cfloat<16,8>(1e20) + cfloat<16,5>(1) = " << sum << ", expected ~1e20\n";
+				}
+			}
+		}
+
+		nrOfFailedTestCases += sectionFails;
 		if (sectionFails == 0) {
 			std::cout << "PASS: promotion traits\n";
 		}

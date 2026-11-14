@@ -10,9 +10,10 @@
 // comparison operators (==, !=, <, <=, >, >=) for mixed Universal
 // number type expressions.
 //
-// Promotion rule: the result type is the operand with greater
-// precision (more fraction/significand bits). When precision is
-// equal, the left-hand operand's type wins.
+// Promotion rule (promote_t in traits/cross_type_traits.hpp, #2059): the
+// result type is the operand type that covers both operands, ranked by
+// dynamic range first, then precision, with a tie-break that does not
+// depend on operand order: a + b and b + a have the same type.
 //
 // Usage:
 //   #include <universal/number/posit/posit.hpp>
@@ -21,7 +22,7 @@
 //
 //   posit<32,2> p(3.14);
 //   cfloat<32,8> c(2.71);
-//   auto sum = p + c;    // result type: posit<32,2> (same precision, LHS wins)
+//   auto sum = p + c;    // result type: cfloat<32,8> (max_exponent 128 against posit's 120)
 
 #include <type_traits>
 #include <concepts>
