@@ -188,7 +188,9 @@ namespace {
 		fails += report(L::has_infinity && L::infinity().isinf() && !L::infinity().sign(), "infinity() is not +inf", reportTestCases);
 		fails += report(L::has_quiet_NaN && L::quiet_NaN().isnan(), "quiet_NaN() is not NaN", reportTestCases);
 		fails += report(L::max() > L::min() && L::lowest() < L::min() && L::lowest().sign(), "max/min/lowest are not ordered", reportTestCases);
-		fails += report(L::min().convert_to<double>() == std::ldexp(1.0, -static_cast<int>(Q::radix_point)), "min() is not 2^-radix_point", reportTestCases);
+		// 2^-2148 is below double's range, so inspect the quire itself: positive, bit 0 only
+		const Q mn = L::min();
+		fails += report(!mn.iszero() && !mn.sign() && mn.testbit(0) && mn.scale() == Q::lowest_scale, "min() is not 2^-radix_point (bit 0)", reportTestCases);
 		fails += report(L::digits == static_cast<int>(Q::qbits), "digits is not qbits", reportTestCases);
 		fails += report(L::round_error().iszero() && L::is_exact, "round_error() is not 0", reportTestCases);
 		return fails;
