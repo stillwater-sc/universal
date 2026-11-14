@@ -541,6 +541,9 @@ try {
 	// a sample of the level 3 extremes, near minpos and maxpos, at level 1 (#2071)
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtExtremes<posit<32, 2>>(1u << 8, reportTestCases), "posit<32,2> extremes", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySqrtExtremes<posit<64, 3>>(1u << 8, reportTestCases), "posit<64,3> extremes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySqrtExtremes<posit<48, 2>>(1u << 8, reportTestCases), "posit<48,2> extremes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySqrtExtremes<posit<64, 0>>(1u << 8, reportTestCases), "posit<64,0> extremes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(WideVerifyExtremes<posit<256, 5>>(64, reportTestCases), "posit<256,5> extremes", test_tag);
 	{
 		// past double's range: maxpos = 2^2016 for posit<128,4>, whose root 2^1008 is exact
 		int nrOfFailures = 0;

@@ -356,11 +356,22 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-
+	// levels 2 and 3 were empty (#2071)
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual<posit<12, 1>>(reportTestCases), "posit<12,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual<posit<12, 1>>(reportTestCases), "posit<12,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan<posit<12, 1>>(reportTestCases), "posit<12,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan<posit<12, 1>>(reportTestCases), "posit<12,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan<posit<12, 1>>(reportTestCases), "posit<12,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<posit<12, 1>>(reportTestCases), "posit<12,1>", ">=");
 #endif
 
 #if REGRESSION_LEVEL_3
-
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual<posit<14, 2>>(reportTestCases), "posit<14,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual<posit<14, 2>>(reportTestCases), "posit<14,2>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan<posit<14, 2>>(reportTestCases), "posit<14,2>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan<posit<14, 2>>(reportTestCases), "posit<14,2>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan<posit<14, 2>>(reportTestCases), "posit<14,2>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<posit<14, 2>>(reportTestCases), "posit<14,2>", ">=");
 #endif
 
 #if REGRESSION_LEVEL_4

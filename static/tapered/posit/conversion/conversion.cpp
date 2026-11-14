@@ -106,11 +106,13 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-
+	// levels 2 and 3 were empty (#2071)
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<10, 1>, posit<11, 1>, double>(reportTestCases), "posit<10,1>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<11, 1>, posit<12, 1>, double>(reportTestCases), "posit<11,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<posit<11, 2>, posit<12, 2>, double>(reportTestCases), "posit<11,2>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4

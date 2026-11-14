@@ -130,6 +130,44 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
+	// a random sample of the 8-bit triples, where the exhaustive run is too slow for level 1
+	template<unsigned nbits, unsigned es>
+	int VerifyFmaFamSampled(unsigned nrSamples, std::uint64_t seed, bool reportTestCases) {
+		using Posit = posit<nbits, es>;
+		const ExactFused<nbits, es> ref;
+		using Int = typename ExactFused<nbits, es>::Int;
+		const Int one = ref.operand(Posit(1));
+		std::mt19937_64 rng(seed);
+		int nrOfFailedTests = 0;
+		for (unsigned s = 0; s < nrSamples; ++s) {
+			Posit a, b, c;
+			a.setbits(rng());
+			b.setbits(rng());
+			c.setbits(rng());
+			if (a.isnar() || b.isnar() || c.isnar()) continue;
+			const Int A = ref.operand(a), B = ref.operand(b), C = ref.operand(c);
+			if (fma(a, b, c) != ref.round(A * B + C * one)) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests < 10) std::cerr << "FAIL fma(" << a << ", " << b << ", " << c << ")\n";
+			}
+			if (fam(a, b, c) != ref.round((A + B) * C)) {
+				++nrOfFailedTests;
+				if (reportTestCases && nrOfFailedTests < 10) std::cerr << "FAIL fam(" << a << ", " << b << ", " << c << ")\n";
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+	// a posit with every encoding bit random, not only the low 64
+	template<typename Posit>
+	Posit RandomEncoding(std::mt19937_64& rng) {
+		constexpr unsigned nbits = Posit::nbits;
+		posit_limbs::limb_t w[posit_limbs::limbs(nbits)];
+		for (auto& limb : w) limb = rng();
+		Posit p;
+		return posit_limbs::scatter(p, w);
+	}
+
 	template<unsigned nbits, unsigned es>
 	int VerifyFmma(bool reportTestCases) {
 		using Posit = posit<nbits, es>;
@@ -180,10 +218,8 @@ namespace sw { namespace universal {
 			if (reportTestCases && nrOfFailedTests < 10) std::cerr << "FAIL " << type_tag(a) << ' ' << what << " a = " << to_binary(a) << " b = " << to_binary(b) << '\n';
 		};
 		for (unsigned i = 0; i < nrSamples; ++i) {
-			Posit a, b;
-			// a near 1 half the time, so sums and products keep most bits; anywhere otherwise
-			a.setbits(rng());
-			b.setbits(rng());
+			// every encoding bit random; then near 1 half the time, so sums and products keep most bits
+			Posit a = RandomEncoding<Posit>(rng), b = RandomEncoding<Posit>(rng);
 			if (i % 2 == 0) { a = a / (abs(a) + one); b = b / (abs(b) + one); }
 			if (a.isnar() || b.isnar()) continue;
 			check(fma(a, b, zero) == a * b, "fma(a, b, 0) == a*b", a, b);
@@ -256,6 +292,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult((VerifyFmaFam<6, 1>(reportTestCases)), "posit<6,1>", "fma and fam");
 	nrOfFailedTestCases += ReportTestResult((VerifyFmaFam<6, 2>(reportTestCases)), "posit<6,2>", "fma and fam");
 	nrOfFailedTestCases += ReportTestResult((VerifyFmaFam<7, 0>(reportTestCases)), "posit<7,0>", "fma and fam");
+	nrOfFailedTestCases += ReportTestResult((VerifyFmaFamSampled<8, 1>(200000, 2081, reportTestCases)), "posit<8,1> sampled", "fma and fam");
+	nrOfFailedTestCases += ReportTestResult((VerifyFmaFamSampled<8, 2>(200000, 2082, reportTestCases)), "posit<8,2> sampled", "fma and fam");
 	nrOfFailedTestCases += ReportTestResult((VerifyFmma<4, 0>(reportTestCases)), "posit<4,0>", "fmma");
 	nrOfFailedTestCases += ReportTestResult((VerifyFmma<5, 1>(reportTestCases)), "posit<5,1>", "fmma");
 	nrOfFailedTestCases += ReportTestResult(VerifySmallConfigurations(reportTestCases), "es + 2 >= nbits", "fma, fam, fmma");
