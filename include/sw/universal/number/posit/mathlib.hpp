@@ -46,10 +46,13 @@ namespace sw { namespace universal {
     //template<unsigned nbits, unsigned es>
     //inline bool isinf(const posit<nbits, es>& p) { return p.isnar(); }
 
-    // copysign returns a value with the magnitude of a, and the sign of b
+    // copysign returns a value with the magnitude of a, and the sign of b. NaR has no sign to
+    // give or take: copysign with a NaR operand is NaR (#2071, user decision: NaR propagates).
+    // copysign(x, NaR) flipped x, because NaR's encoding has its sign bit set.
     template<unsigned nbits, unsigned es, typename bt>
     inline posit<nbits, es, bt> copysign(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b) {
         posit<nbits, es, bt> c(a);
+        if (a.isnar() || b.isnar()) { c.setnar(); return c; }
         if (a.sign() == b.sign()) return c;
         return -c;
     }

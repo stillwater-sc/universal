@@ -129,12 +129,17 @@ void fdp_qc(Qy& sum_of_products, size_t n,
             const Vector& x, size_t incx,
             const Vector& y, size_t incy,
             std::enable_if_t<is_posit<typename Vector::value_type>, int> = 0) {
+	using Scalar = typename Vector::value_type;
 	if (n == 0) return;
-	assert(incx > 0 && "fdp_qc: incx must be positive");
-	assert(incy > 0 && "fdp_qc: incy must be positive");
+	// a zero stride or an index past either vector is the caller's error: it makes the quire NaR, in
+	// every build (#2071). The asserts these replace vanished under NDEBUG, leaving an endless loop
+	// or an out-of-bounds read.
+	Scalar nar;
+	nar.setnar();
+	if (incx == 0 || incy == 0) { sum_of_products += quire_mul(nar, nar); return; }
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
-		assert(ix < x.size() && iy < y.size() && "fdp_qc: index out of bounds");
+		if (ix >= x.size() || iy >= y.size()) { sum_of_products += quire_mul(nar, nar); return; }
 		sum_of_products += quire_mul(x[ix], y[iy]);
 	}
 }
@@ -147,11 +152,13 @@ fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy)
 	quire<Scalar> q;
 
 	if (n == 0) return Scalar(0);
-	assert(incx > 0 && "fdp_stride: incx must be positive");
-	assert(incy > 0 && "fdp_stride: incy must be positive");
+	// a zero stride or an index past either vector gives NaR, in every build (#2071)
+	Scalar nar;
+	nar.setnar();
+	if (incx == 0 || incy == 0) return nar;
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
-		assert(ix < x.size() && iy < y.size() && "fdp_stride: index out of bounds");
+		if (ix >= x.size() || iy >= y.size()) return nar;
 		q += quire_mul(x[ix], y[iy]);
 	}
 
@@ -166,7 +173,9 @@ fdp(const Vector& x, const Vector& y) {
 	quire<Scalar> q;
 
 	size_t n = size(x);
-	assert(n <= size(y) && "fdp: y vector must be at least as long as x");
+	// a y shorter than x gives NaR, in every build (#2071): the assert vanished under NDEBUG and the
+	// loop read past y
+	if (n > size(y)) { Scalar nar; nar.setnar(); return nar; }
 	for (size_t i = 0; i < n; ++i) {
 		q += quire_mul(x[i], y[i]);
 	}

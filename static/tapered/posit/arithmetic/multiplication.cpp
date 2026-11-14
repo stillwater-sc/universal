@@ -16,6 +16,7 @@
 //#define ALGORITHM_TRACE_MUL
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_test_suite_randoms.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_mul
@@ -119,9 +120,15 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_3
+	// levels 3 and 4 were empty (#2071): exhaustive at 11 bits, then random samples of wider posits
+	// (the random verifier checks against double, so its posits stay inside double precision)
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<11, 1>>(reportTestCases), "posit<11,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit<11, 2>>(reportTestCases), "posit<11,2>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 2>>(reportTestCases, OPCODE_MUL, 100000), "posit<32,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<24, 1>>(reportTestCases, OPCODE_MUL, 100000), "posit<24,1>", "multiplication");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -1,341 +1,226 @@
 #pragma once
-// atomic_fused_operators.hpp: atomic fused operators for posits using blocktriple<>
+// atomic_fused_operators.hpp: fused multiply-add, add-multiply and multiply-multiply-add for posits,
+// each computed exactly and rounded once
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// These operators use blocktriple<> for intermediate computation, chaining
-// multiply and add operations with a single final rounding step via convert().
-// No dependency on internal::value<>, bitblock<>, module_multiply, or module_add.
+// fma(a, b, c) = a*b + c, fam(a, b, c) = (a + b)*c and fmma(a, b, c, d) = a*b +/- c*d are evaluated on
+// 64-bit limbs (#2071). Each posit enters as its exact significand and scale (posit_limbs::decode),
+// products are exact, and sums are exact too, except that an addend too small to move the result
+// across any rounding boundary is replaced by one sticky unit below all of them. The result is then
+// rounded once (posit_limbs::encode).
+//
+// These replaced a blocktriple chain that was not correctly rounded for fam: a + b was formed in an
+// ADD blocktriple of the operands' width and moved into a MUL blocktriple of fbits + 3 bits with no
+// sticky, so posit<6,1> fam(0.09375, 2.5, 0.4375) was 1 instead of 1.25. The chain also sized its
+// blocktriples nbits - 3 - es, which wraps for es + 2 >= nbits, so posit<5,3> did not compile.
+//
+// Why the collapse is safe. Let S = H + L, with H the addend of larger magnitude, p its significand
+// bits, and t <= fbits + 1 the posit's precision anywhere. The rounding boundaries near H (the
+// representable values and the midpoints between them, also one binade lower when L is negative and
+// H a power of two) are at least 2^min(lsb(H), msb(H) - fbits - 3) apart from H unless H is one. With
+// cut = min(lsb(H) - extra, msb(H) - fbits - 4) - 2, an L below 2^cut and its replacement, a unit at
+// 2^(cut - 1) of L's sign, lie strictly on the same side of every such boundary. For fam the sum is
+// multiplied by c before rounding; extra = fbits keeps |L c| below the boundary spacing of H c.
+
+#include <cstddef>
+#include <cstdint>
+#include <universal/number/posit/posit_limbs.hpp>
 
 namespace sw { namespace universal {
 
+namespace posit_fused {
+
+	using limb_t = limb_kernels::limb_t;
+
+	// a value mag * 2^e, with a sign; mag has N limbs
+	template<std::size_t N>
+	struct term {
+		bool         zero;
+		bool         negative;
+		std::int64_t e;
+		limb_t       mag[N];
+	};
+
+	// the number of significant bits of a[0, n), 0 when a is zero
+	template<std::size_t N>
+	inline std::int64_t bitlength(const limb_t* a) noexcept {
+		for (std::size_t i = N; i-- > 0;) {
+			if (a[i] != 0u) {
+				unsigned b = 64u;
+				while (((a[i] >> (b - 1u)) & 1u) == 0u) --b;
+				return static_cast<std::int64_t>(64u * i + b);
+			}
+		}
+		return 0;
+	}
+
+	// the position of the lowest set bit of a nonzero a[0, n)
+	template<std::size_t N>
+	inline std::int64_t lowest_bit(const limb_t* a) noexcept {
+		for (std::size_t i = 0; i < N; ++i) {
+			if (a[i] != 0u) {
+				unsigned b = 0;
+				while (((a[i] >> b) & 1u) == 0u) ++b;
+				return static_cast<std::int64_t>(64u * i + b);
+			}
+		}
+		return 0;
+	}
+
+	template<std::size_t N> inline std::int64_t msb(const term<N>& t) noexcept { return t.e + bitlength<N>(t.mag) - 1; }
+	template<std::size_t N> inline std::int64_t lsb(const term<N>& t) noexcept { return t.e + lowest_bit<N>(t.mag); }
+
+	template<std::size_t N>
+	inline term<N> zero_term() noexcept {
+		term<N> t{};
+		t.zero = true;
+		return t;
+	}
+
+	// a finite posit, exactly: its significand with the hidden bit, and the weight of its last bit
+	template<std::size_t N, unsigned nbits, unsigned es, typename bt>
+	inline term<N> from_posit(const posit<nbits, es, bt>& p) noexcept {
+		if (p.iszero()) return zero_term<N>();
+		constexpr std::size_t L = posit_limbs::limbs(nbits);
+		static_assert(L <= N, "posit_fused: a term holds at least the posit's encoding");
+		limb_t w[L];
+		posit_limbs::gather(p, w);
+		term<N> t{};
+		t.negative = p.isneg();
+		if (t.negative) posit_limbs::negate<nbits>(w);
+		const posit_limbs::Fields f = posit_limbs::decode<nbits, es>(w);   // w = the fraction bits
+		posit_limbs::set(w, f.nf);                                          // and the hidden bit
+		for (std::size_t i = 0; i < L; ++i) t.mag[i] = w[i];
+		t.e = static_cast<std::int64_t>(f.scale) - static_cast<std::int64_t>(f.nf);
+		return t;
+	}
+
+	// x * y, exactly; the caller sizes N for the product
+	template<std::size_t N>
+	inline term<N> mul(const term<N>& x, const term<N>& y) noexcept {
+		if (x.zero || y.zero) return zero_term<N>();
+		const std::size_t m = static_cast<std::size_t>((bitlength<N>(x.mag) + 63) / 64);
+		const std::size_t n = static_cast<std::size_t>((bitlength<N>(y.mag) + 63) / 64);
+		limb_t r[2 * N]{};
+		limb_kernels::mul_basecase(r, x.mag, m, y.mag, n);
+		term<N> t{};
+		for (std::size_t i = 0; i < N; ++i) t.mag[i] = r[i];   // m + n limbs fit N by the caller's sizing
+		t.negative = (x.negative != y.negative);
+		t.e = x.e + y.e;
+		return t;
+	}
+
+	// x + y, exact up to the collapse described at the top; extra widens the margin for a product
+	// that follows (fam)
+	template<std::size_t N>
+	inline term<N> add(const term<N>& x, const term<N>& y, std::int64_t fbits, std::int64_t extra) noexcept {
+		if (x.zero) return y;
+		if (y.zero) return x;
+		const bool xLarger = msb(x) >= msb(y);
+		const term<N>& H = xLarger ? x : y;
+		term<N> L = xLarger ? y : x;
+		const std::int64_t cutA = lsb(H) - extra;
+		const std::int64_t cutB = msb(H) - fbits - 4;
+		const std::int64_t cut = ((cutA < cutB) ? cutA : cutB) - 2;
+		if (msb(L) < cut) {   // too small to cross a boundary: one sticky unit at 2^(cut - 1)
+			for (std::size_t i = 0; i < N; ++i) L.mag[i] = 0u;
+			L.mag[0] = 1u;
+			L.e = cut - 1;
+		}
+		const std::int64_t e0 = (H.e < L.e) ? H.e : L.e;
+		limb_t a[N], b[N];
+		limb_kernels::load_window(a, N, H.mag, N, H.e - e0);
+		limb_kernels::load_window(b, N, L.mag, N, L.e - e0);
+		term<N> t{};
+		t.e = e0;
+		if (H.negative == L.negative) {
+			limb_kernels::add_n(t.mag, a, b, N);
+			t.negative = H.negative;
+		}
+		else if (limb_kernels::geq_n(a, b, N)) {
+			limb_kernels::sub_n(t.mag, a, b, N);
+			t.negative = H.negative;
+		}
+		else {
+			limb_kernels::sub_n(t.mag, b, a, N);
+			t.negative = L.negative;
+		}
+		t.zero = (bitlength<N>(t.mag) == 0);   // exact cancellation: the single posit zero
+		return t;
+	}
+
+	// the term, rounded once into the posit
+	template<std::size_t N, unsigned nbits, unsigned es, typename bt>
+	inline posit<nbits, es, bt> round(const term<N>& t) noexcept {
+		posit<nbits, es, bt> p;
+		if (t.zero) { p.setzero(); return p; }
+		const std::int64_t bits = bitlength<N>(t.mag);
+		limb_t sig[N];   // the leading bit at the top of the window
+		limb_kernels::load_window(sig, N, t.mag, N, static_cast<std::int64_t>(64u * N) - bits);
+		const std::int64_t scale = t.e + bits - 1;
+		posit_limbs::encode(p, static_cast<int>(scale), sig, N, false, t.negative);
+		return p;
+	}
+
+	// limbs for every intermediate: a sum of two products, or a sum times a posit, stays below
+	// 4 fbits + 16 bits after the collapse; the margin covers the posit's own encoding
+	template<unsigned nbits, unsigned es, typename bt>
+	constexpr std::size_t capacity() noexcept {
+		constexpr unsigned F = posit<nbits, es, bt>::fbits;
+		constexpr std::size_t widest = posit_limbs::limbs(5u * F + 192u);
+		constexpr std::size_t encoding = posit_limbs::limbs(nbits);
+		return (widest > encoding) ? widest : encoding;
+	}
+
+}  // namespace posit_fused
+
 ///////////////////////////////////////////////////////////////////////////////
-// Helper: transfer a blocktriple result into an ADD-type blocktriple.
-// Used when chaining MUL->ADD (FMA, FMMA) or when widening an ADD operand.
-// The source significand is in magnitude form (blocktriple always normalizes
-// to magnitude after add/mul). We extract fraction bits below the MSB and
-// place them into the ADD layout: hidden bit at tgt_fbits, shifted by rbits.
-
-template<unsigned src_fbits, BlockTripleOperator src_op, typename bt, unsigned tgt_fbits>
-inline void extractToAdd(const blocktriple<src_fbits, src_op, bt>& src,
-                         blocktriple<tgt_fbits, BlockTripleOperator::ADD, bt>& tgt) {
-	if (src.iszero()) { tgt.setzero(); return; }
-	if (src.isnan() || src.isinf()) { tgt.setnan(); return; }
-
-	using Src = blocktriple<src_fbits, src_op, bt>;
-	using Tgt = blocktriple<tgt_fbits, BlockTripleOperator::ADD, bt>;
-
-	int sigScale = src.significandscale();
-	int realScale = src.scale() + sigScale;
-	int msbPos = static_cast<int>(Src::radix) + sigScale;
-
-	tgt.setnormal();
-	tgt.setsign(src.sign());
-	tgt.setscale(realScale);
-
-	// Build raw significand: hidden bit at tgt_fbits, fraction below, shifted by rbits
-	if constexpr (tgt_fbits + Tgt::rbits + 1 < 64) {
-		// fast path: everything fits in a uint64_t
-		uint64_t raw = 0;
-		for (unsigned i = 0; i < tgt_fbits; ++i) {
-			int srcPos = msbPos - 1 - static_cast<int>(i);
-			if (srcPos >= 0 && srcPos < static_cast<int>(Src::bfbits) &&
-			    src.at(static_cast<unsigned>(srcPos)))
-				raw |= (1ull << (tgt_fbits - 1 - i));
-		}
-		raw |= (1ull << tgt_fbits);   // hidden bit
-		raw <<= Tgt::rbits;           // rounding bits shift
-		tgt.setbits(raw);
-	}
-	else {
-		// block-by-block path for large configurations
-		tgt.clear();
-		tgt.setnormal();
-		tgt.setsign(src.sign());
-		tgt.setscale(realScale);
-		for (unsigned i = 0; i < tgt_fbits; ++i) {
-			int srcPos = msbPos - 1 - static_cast<int>(i);
-			if (srcPos >= 0 && srcPos < static_cast<int>(Src::bfbits) &&
-			    src.at(static_cast<unsigned>(srcPos)))
-				tgt.setbit(Tgt::rbits + tgt_fbits - 1 - i, true);
-		}
-		tgt.setbit(static_cast<unsigned>(Tgt::radix), true); // hidden bit at radix
-		tgt.setradix();
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Helper: transfer a blocktriple result into a MUL-type blocktriple.
-// Used when chaining ADD->MUL (FAM).
-// MUL input layout: hidden bit at tgt_fbits, fraction below, no rounding shift.
-// IMPORTANT: only valid for post-operation blocktriples where significandscale()
-// correctly identifies the MSB position (at or above radix). Do NOT use on
-// freshly-normalized MUL blocktriples (pre-multiply), where MSB is below radix.
-
-template<unsigned src_fbits, BlockTripleOperator src_op, typename bt, unsigned tgt_fbits>
-inline void extractToMul(const blocktriple<src_fbits, src_op, bt>& src,
-                         blocktriple<tgt_fbits, BlockTripleOperator::MUL, bt>& tgt) {
-	if (src.iszero()) { tgt.setzero(); return; }
-	if (src.isnan() || src.isinf()) { tgt.setnan(); return; }
-
-	using Src = blocktriple<src_fbits, src_op, bt>;
-
-	int sigScale = src.significandscale();
-	int realScale = src.scale() + sigScale;
-	int msbPos = static_cast<int>(Src::radix) + sigScale;
-
-	tgt.setnormal();
-	tgt.setsign(src.sign());
-	tgt.setscale(realScale);
-
-	// Build raw significand: hidden bit at tgt_fbits, fraction below
-	if constexpr (tgt_fbits + 1 < 64) {
-		uint64_t raw = 0;
-		for (unsigned i = 0; i < tgt_fbits; ++i) {
-			int srcPos = msbPos - 1 - static_cast<int>(i);
-			if (srcPos >= 0 && srcPos < static_cast<int>(Src::bfbits) &&
-			    src.at(static_cast<unsigned>(srcPos)))
-				raw |= (1ull << (tgt_fbits - 1 - i));
-		}
-		raw |= (1ull << tgt_fbits);   // hidden bit
-		tgt.setbits(raw);
-	}
-	else {
-		tgt.clear();
-		tgt.setnormal();
-		tgt.setsign(src.sign());
-		tgt.setscale(realScale);
-		for (unsigned i = 0; i < tgt_fbits; ++i) {
-			int srcPos = msbPos - 1 - static_cast<int>(i);
-			if (srcPos >= 0 && srcPos < static_cast<int>(Src::bfbits) &&
-			    src.at(static_cast<unsigned>(srcPos)))
-				tgt.setbit(tgt_fbits - 1 - i, true);
-		}
-		tgt.setbit(tgt_fbits, true); // hidden bit
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Helper: normalize a posit into a wider-than-natural MUL blocktriple.
-// Used when the other MUL operand has higher precision (e.g., an ADD result).
-// The posit's fbits fraction bits are placed in the top positions and
-// the remaining lower bits are zero-extended.
-
-template<unsigned nbits, unsigned es, typename bt, unsigned wfbits>
-inline void normalizeMultiplicationWide(const posit<nbits, es, bt>& p,
-                                        blocktriple<wfbits, BlockTripleOperator::MUL, bt>& tgt) {
-	constexpr unsigned pf = nbits - 3 - es;  // posit's natural fraction bits
-	if (p.isnar()) { tgt.setnan(); return; }
-	if (p.iszero()) { tgt.setzero(); return; }
-
-	tgt.setnormal();
-	tgt.setsign(sign(p));
-	tgt.setscale(scale(p));
-
-	if constexpr (wfbits + 1 < 64) {
-		blockbinary<pf, bt> frac = extract_fraction<nbits, es, bt, pf>(p);
-		uint64_t raw = (pf > 0) ? frac.to_ull() : 0ull;
-		raw |= (1ull << pf);              // hidden bit at pf
-		raw <<= (wfbits - pf);            // zero-extend: hidden bit at wfbits
-		tgt.setbits(raw);
-	}
-	else {
-		tgt.clear();
-		tgt.setnormal();
-		tgt.setsign(sign(p));
-		tgt.setscale(scale(p));
-		blockbinary<pf, bt> frac = extract_fraction<nbits, es, bt, pf>(p);
-		for (unsigned i = 0; i < pf; ++i) {
-			if (frac.test(i))
-				tgt.setbit((wfbits - pf) + i, true);
-		}
-		tgt.setbit(wfbits, true); // hidden bit
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// FMA: fused multiply-add:  a*b + c  (single rounding at end)
-//
-// Pattern: MUL -> ADD -> convert
-//   1. Multiply a*b via blocktriple (full-precision product)
-//   2. Widen product and c to ADD blocktriples at product precision
-//   3. Add the two at full precision
-//   4. Single rounding step via convert(blocktriple, posit)
+// FMA: fused multiply-add, a*b + c, rounded once
 
 template<unsigned nbits, unsigned es, typename bt>
 posit<nbits, es, bt> fma(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b,
                          const posit<nbits, es, bt>& c) {
-	constexpr unsigned fbits = nbits - 3 - es;
-	constexpr unsigned mbits = 2 * (fbits + 1);  // product precision for ADD step
-
-	posit<nbits, es, bt> result;
-	result.setzero();
-
-	if (a.isnar() || b.isnar() || c.isnar()) {
-		result.setnar();
-		return result;
-	}
-
-	// Step 1: Multiply a * b
-	if (a.iszero() || b.iszero()) {
-		return c;  // product is zero, result = 0 + c = c
-	}
-	blocktriple<fbits, BlockTripleOperator::MUL, bt> ma, mb, product;
-	a.normalizeMultiplication(ma);
-	b.normalizeMultiplication(mb);
-	product.mul(ma, mb);
-
-	if (product.iszero()) return c;
-
-	if (c.iszero()) {
-		convert(product, result);
-		return result;
-	}
-
-	// Step 2: Add product + c at product precision
-	blocktriple<mbits, BlockTripleOperator::ADD, bt> add_product, add_c, sum;
-	extractToAdd(product, add_product);
-	// normalize c to its natural ADD type, then widen to product precision
-	blocktriple<fbits, BlockTripleOperator::ADD, bt> c_natural;
-	c.normalizeAddition(c_natural);
-	extractToAdd(c_natural, add_c);
-	sum.add(add_product, add_c);
-
-	if (sum.iszero()) { result.setzero(); return result; }
-	if (sum.isinf()) { result.setnar(); return result; }
-	convert(sum, result);
-	return result;
+	using namespace posit_fused;
+	constexpr std::size_t N = capacity<nbits, es, bt>();
+	constexpr std::int64_t F = posit<nbits, es, bt>::fbits;
+	if (a.isnar() || b.isnar() || c.isnar()) { posit<nbits, es, bt> r; r.setnar(); return r; }
+	const term<N> product = mul(from_posit<N>(a), from_posit<N>(b));
+	return round<N, nbits, es, bt>(add(product, from_posit<N>(c), F, 0));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// FAM: fused add-multiply:  (a + b) * c  (single rounding at end)
-//
-// Pattern: ADD -> MUL -> convert
-//   1. Add a+b via blocktriple
-//   2. Transfer sum to MUL type, multiply by c
-//   3. Single rounding step via convert(blocktriple, posit)
+// FAM: fused add-multiply, (a + b)*c, rounded once
 
 template<unsigned nbits, unsigned es, typename bt>
 posit<nbits, es, bt> fam(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b,
                          const posit<nbits, es, bt>& c) {
-	constexpr unsigned fbits = nbits - 3 - es;
-	constexpr unsigned wfbits = fbits + 3;  // wider MUL to preserve ADD precision
-
-	posit<nbits, es, bt> result;
-	result.setzero();
-
-	if (a.isnar() || b.isnar() || c.isnar()) {
-		result.setnar();
-		return result;
-	}
-
-	// special case: c is zero -> (a + b) * 0 = 0
-	if (c.iszero()) return result;
-	// special case: a and b both zero -> (0 + 0) * c = 0
-	if (a.iszero() && b.iszero()) return result;
-
-	// Step 1: Compute a + b, prepare MUL operand at wider precision
-	blocktriple<wfbits, BlockTripleOperator::MUL, bt> mul_sum, mul_c, product;
-
-	if (a.iszero()) {
-		// sum = b; normalize directly to wide MUL
-		normalizeMultiplicationWide<nbits, es, bt, wfbits>(b, mul_sum);
-	}
-	else if (b.iszero()) {
-		// sum = a; normalize directly to wide MUL
-		normalizeMultiplicationWide<nbits, es, bt, wfbits>(a, mul_sum);
-	}
-	else {
-		blocktriple<fbits, BlockTripleOperator::ADD, bt> aa, ab, sum_ab;
-		a.normalizeAddition(aa);
-		b.normalizeAddition(ab);
-		sum_ab.add(aa, ab);
-		if (sum_ab.iszero()) return result;
-		extractToMul(sum_ab, mul_sum);
-	}
-
-	// Step 2: Multiply (a+b) * c at wider precision
-	normalizeMultiplicationWide<nbits, es, bt, wfbits>(c, mul_c);
-	product.mul(mul_sum, mul_c);
-
-	if (product.iszero()) { result.setzero(); return result; }
-	if (product.isinf()) { result.setnar(); return result; }
-	convert(product, result);
-	return result;
+	using namespace posit_fused;
+	constexpr std::size_t N = capacity<nbits, es, bt>();
+	constexpr std::int64_t F = posit<nbits, es, bt>::fbits;
+	if (a.isnar() || b.isnar() || c.isnar()) { posit<nbits, es, bt> r; r.setnar(); return r; }
+	const term<N> sum = add(from_posit<N>(a), from_posit<N>(b), F, F);
+	return round<N, nbits, es, bt>(mul(sum, from_posit<N>(c)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// FMMA: fused multiply-multiply-add:  (a * b) +/- (c * d)
-//
-// Pattern: MUL -> MUL -> ADD -> convert
-//   1. Multiply a*b and c*d via blocktriple
-//   2. Transfer both products to ADD blocktriples at product precision
-//   3. Optionally negate second product (for subtraction)
-//   4. Add the two products
-//   5. Single rounding step via convert(blocktriple, posit)
+// FMMA: fused multiply-multiply-add, a*b + c*d, or a*b - c*d when opIsAdd is false, rounded once
 
 template<unsigned nbits, unsigned es, typename bt>
 posit<nbits, es, bt> fmma(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b,
-                           const posit<nbits, es, bt>& c, const posit<nbits, es, bt>& d,
-                           bool opIsAdd = true) {
-	constexpr unsigned fbits = nbits - 3 - es;
-	constexpr unsigned mbits = 2 * (fbits + 1);  // product precision for ADD step
-
-	posit<nbits, es, bt> result;
-	result.setzero();
-
-	if (a.isnar() || b.isnar() || c.isnar() || d.isnar()) {
-		result.setnar();
-		return result;
-	}
-
-	// Compute product_ab = a * b
-	blocktriple<fbits, BlockTripleOperator::MUL, bt> ma, mb, product_ab;
-	bool ab_zero = a.iszero() || b.iszero();
-	if (!ab_zero) {
-		a.normalizeMultiplication(ma);
-		b.normalizeMultiplication(mb);
-		product_ab.mul(ma, mb);
-		ab_zero = product_ab.iszero();
-	}
-
-	// Compute product_cd = c * d
-	blocktriple<fbits, BlockTripleOperator::MUL, bt> mc, md, product_cd;
-	bool cd_zero = c.iszero() || d.iszero();
-	if (!cd_zero) {
-		c.normalizeMultiplication(mc);
-		d.normalizeMultiplication(md);
-		product_cd.mul(mc, md);
-		cd_zero = product_cd.iszero();
-	}
-
-	if (ab_zero && cd_zero) return result;
-
-	// Only one product is non-zero: convert directly
-	if (ab_zero) {
-		if (!opIsAdd) product_cd.setsign(!product_cd.sign());
-		convert(product_cd, result);
-		return result;
-	}
-	if (cd_zero) {
-		convert(product_ab, result);
-		return result;
-	}
-
-	// Both products non-zero: add at product precision
-	blocktriple<mbits, BlockTripleOperator::ADD, bt> add_ab, add_cd, sum;
-	extractToAdd(product_ab, add_ab);
-	extractToAdd(product_cd, add_cd);
-	if (!opIsAdd) add_cd.setsign(!add_cd.sign());
-	sum.add(add_ab, add_cd);
-
-	if (sum.iszero()) { result.setzero(); return result; }
-	if (sum.isinf()) { result.setnar(); return result; }
-	convert(sum, result);
-	return result;
+                          const posit<nbits, es, bt>& c, const posit<nbits, es, bt>& d,
+                          bool opIsAdd = true) {
+	using namespace posit_fused;
+	constexpr std::size_t N = capacity<nbits, es, bt>();
+	constexpr std::int64_t F = posit<nbits, es, bt>::fbits;
+	if (a.isnar() || b.isnar() || c.isnar() || d.isnar()) { posit<nbits, es, bt> r; r.setnar(); return r; }
+	const term<N> ab = mul(from_posit<N>(a), from_posit<N>(b));
+	term<N> cd = mul(from_posit<N>(c), from_posit<N>(d));
+	if (!opIsAdd) cd.negative = !cd.negative;
+	return round<N, nbits, es, bt>(add(ab, cd, F, 0));
 }
 
 }} // namespace sw::universal
