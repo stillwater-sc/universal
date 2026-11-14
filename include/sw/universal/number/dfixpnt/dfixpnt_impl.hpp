@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <array>
 #include <string>       // std::string: assign() and to_string() stay in the core
 #include <cstdint>
 #include <cstdio>       // fprintf(stderr, ...) for the division-by-zero diagnostic (#1334)
@@ -164,87 +165,48 @@ public:
 		return *this;
 	}
 
+	// a double is exactly m * 2^e, so it has a finite decimal expansion: the result is that value rounded
+	// once to radix fraction digits, to nearest with ties away from zero, on the magnitude. A magnitude of
+	// 10^idigits or more saturates to all nines with the sign, as does an infinity; NaN gives 0. The digits
+	// come from exact decimal arithmetic on m * 10^radix (doubling it e times, or halving it -e times with
+	// the dropped bits kept for the rounding), not from a double product, which rounds once v * 10^radix
+	// reaches 2^53 (#2076).
 	constexpr dfixpnt& operator=(double rhs) {
-		// IEEE 754 double's representable decimal exponent range is +/- ~308.
-		// Once `ndigits` (or `radix`) exceeds that, the `scaled *= 10.0` and
-		// `max_magnitude *= 10.0` loops below overflow to +inf -- and `inf >=
-		// inf` is true, so the saturation check would silently coerce ANY
-		// input (including 1.0) to all-nines.  Other constructors (string,
-		// integer) don't go through this path, so the constraint is local to
-		// double conversion -- the type itself remains usable for
-		// arbitrarily-wide configurations.
-		static_assert(ndigits <= static_cast<unsigned>(std::numeric_limits<double>::max_exponent10),
-			"dfixpnt::operator=(double): ndigits exceeds double's decimal exponent range "
-			"(~308); use a narrower instantiation for double conversion, or assign via a "
-			"non-FP path (string / integer).");
-
 		clear();
 		// std::isnan is not constexpr in C++20; use a NaN-safe equivalent
 		// (NaN is the only value not equal to itself).
 		if (rhs != rhs || rhs == 0.0) return *this;
-		if (rhs < 0) {
-			_sign = true;
-			rhs = -rhs;
-		} else {
-			_sign = false;
-		}
-		// scale up by 10^radix to get the fixed-point integer representation
-		double scaled = rhs;
-		for (unsigned i = 0; i < radix; ++i) scaled *= 10.0;
-		// round to nearest, half away from zero (scaled >= 0 here)
-		scaled += 0.5;
+		const bool negative = (rhs < 0.0);
+		if (negative) rhs = -rhs;
+		if (rhs > std::numeric_limits<double>::max()) return saturated(negative);   // an infinity
 
-		// Compute representational ceiling = 10^ndigits in FP space.
-		double max_magnitude = 1.0;
-		for (unsigned i = 0; i < ndigits; ++i) max_magnitude *= 10.0;
-
-		// Saturate at the storage limit before any out-of-range cast.
-		// Pre-fix code materialized scaled into uint64_t, which overflows
-		// (UB per C++20 [conv.fpint]) for ndigits >= 20 since 10^20 exceeds
-		// UINT64_MAX (~1.84e19).  Now we extract digits in FP space, so the
-		// only constraint is that scaled fit in double's exponent range
-		// (covers ndigits up to ~308).
-		if (scaled >= max_magnitude) {
-			for (unsigned i = 0; i < ndigits; ++i) _block.setdigit(i, 9);
-			return *this;
+		const dyadic d = decompose(rhs);
+		decimal_work w{};
+		std::uint64_t m = d.m;                              // m < 2^53: at most 16 digits, above the radix
+		for (unsigned i = radix; m != 0; ++i) { w[i] = static_cast<std::uint8_t>(m % 10u); m /= 10u; }
+		if (d.e >= 0) {
+			if (beyond_storage(w)) return saturated(negative);
+			for (int k = 0; k < d.e; ++k) {
+				double_digits(w);
+				if (beyond_storage(w)) return saturated(negative);
+			}
 		}
-
-		// Extract decimal digits LSD-first via FP-domain repeated div/mod by 10.
-		//
-		// Per iteration we want:
-		//   digit_i = scaled mod 10
-		//   scaled  = floor(scaled / 10)
-		//
-		// 10.0 is exactly representable in IEEE 754 double, but 0.1 is not,
-		// so dividing by 10.0 is the closest correct primitive.  The floor
-		// emulation handles two regimes:
-		//
-		//   * scaled / 10.0 < 2^53: q is in the dense-integer range of double,
-		//     casting to unsigned long long truncates correctly.
-		//   * scaled / 10.0 >= 2^53: q is already representable at integer
-		//     (or coarser) granularity in double, so q is its own floor.
-		//
-		// For source values above 2^53 the lower decimal digits accumulate
-		// FP rounding error -- intrinsic to converting from a double, which
-		// carries only ~16 significant decimal digits regardless of which
-		// extraction algorithm is used.
-		constexpr double pow2_53 = 9007199254740992.0;  // 2^53
-		double v = scaled;
-		for (unsigned i = 0; i < ndigits; ++i) {
-			if (v < 1.0) break;
-			double q = v / 10.0;
-			double q_floor = (q < pow2_53)
-				? static_cast<double>(static_cast<unsigned long long>(q))
-				: q;
-			// digit = v - 10 * floor(v/10).  Clamp against any FP noise
-			// from the subtraction so we never write an out-of-range digit.
-			double d_d = v - 10.0 * q_floor;
-			unsigned d = (d_d < 0.0) ? 0u
-			           : (d_d >= 10.0) ? 9u
-			           : static_cast<unsigned>(d_d);
-			_block.setdigit(i, d);
-			v = q_floor;
+		else {
+			bool half = false;                              // the last bit dropped: the rounding bit
+			for (int k = 0; k < -d.e; ++k) {
+				if (all_zero(w)) { half = false; break; }   // only zeros are left to drop
+				half = halve_digits(w);
+			}
+			if (half) {                                     // ties away from zero: the sticky bits do not matter
+				for (unsigned i = 0; i < work_digits; ++i) {
+					if (w[i] < 9u) { ++w[i]; break; }
+					w[i] = 0;
+				}
+			}
+			if (beyond_storage(w)) return saturated(negative);   // halving could leave it above storage
 		}
+		for (unsigned i = 0; i < ndigits; ++i) _block.setdigit(i, w[i]);
+		_sign = negative && !_block.iszero();               // a magnitude that rounds to 0 is +0
 		return *this;
 	}
 
@@ -265,7 +227,8 @@ public:
 	constexpr explicit operator long() const { return static_cast<long>(to_int64()); }
 	constexpr explicit operator long long() const { return to_int64(); }
 	constexpr explicit operator unsigned long long() const { return static_cast<unsigned long long>(to_int64()); }
-	constexpr explicit operator float() const { return static_cast<float>(to_double()); }
+	// correctly rounded, to nearest with ties to even; float is rounded once, not through double
+	constexpr explicit operator float() const { return static_cast<float>(to_binary<24, -126, 127>()); }
 	constexpr explicit operator double() const { return to_double(); }
 
 	/////////////////////////////////////////////////////////////////////////
@@ -651,19 +614,147 @@ private:
 		return static_cast<long long>(mag);
 	}
 
-	// convert to double
-	constexpr double to_double() const {
-		double result = 0.0;
-		double scale = 1.0;
-		for (unsigned i = 0; i < ndigits; ++i) {
-			result += _block.digit(i) * scale;
-			scale *= 10.0;
+	// convert to double, correctly rounded
+	constexpr double to_double() const { return to_binary<53, -1022, 1023>(); }
+
+	// Exact decimal arithmetic for the conversions to and from binary floating-point (#2076). The work
+	// register holds ndigits + 20 digits, least significant first: room for m * 10^radix with m < 2^53
+	// (16 digits above the radix), for a carry, and for a 63-bit integer part above the radix.
+	static constexpr unsigned work_digits = ndigits + 20u;
+	using decimal_work = std::array<std::uint8_t, work_digits>;
+
+	// a finite positive double as m * 2^e with an integer m in [2^52, 2^53). A product with a power of two
+	// is exact while it stays a normal double, and a doubling is always exact, subnormals included.
+	struct dyadic { std::uint64_t m; int e; };
+	static constexpr dyadic decompose(double v) {
+		constexpr double two52 = 4503599627370496.0;       // 2^52
+		constexpr double two53 = 9007199254740992.0;       // 2^53
+		constexpr double two32 = 4294967296.0;              // 2^32
+		int e = 0;
+		while (v >= two53 * two32) { v /= two32; e += 32; } // stays >= 2^53: exact
+		while (v >= two53) { v *= 0.5; ++e; }
+		while (v < two52 / two32) { v *= two32; e -= 32; }  // stays < 2^52: exact
+		while (v < two52) { v *= 2.0; --e; }
+		return { static_cast<std::uint64_t>(v), e };
+	}
+
+	// v * 2^k, exactly, for a result that is representable: every intermediate keeps the bits of v, and its
+	// last bit weighs no less than the result's
+	static constexpr double scale2(double v, int k) {
+		constexpr double two32 = 4294967296.0;
+		for (; k >= 32; k -= 32) v *= two32;
+		for (; k <= -32; k += 32) v /= two32;
+		for (; k > 0; --k) v *= 2.0;
+		for (; k < 0; ++k) v *= 0.5;
+		return v;
+	}
+
+	static constexpr bool all_zero(const decimal_work& w) {
+		for (unsigned i = 0; i < work_digits; ++i) if (w[i] != 0) return false;
+		return true;
+	}
+	// a magnitude of 10^ndigits or more
+	static constexpr bool beyond_storage(const decimal_work& w) {
+		for (unsigned i = ndigits; i < work_digits; ++i) if (w[i] != 0) return true;
+		return false;
+	}
+	static constexpr void double_digits(decimal_work& w) {
+		unsigned carry = 0;
+		for (unsigned i = 0; i < work_digits; ++i) {
+			const unsigned v = 2u * w[i] + carry;
+			w[i] = static_cast<std::uint8_t>(v % 10u);
+			carry = v / 10u;
 		}
-		// scale down by 10^radix
-		double divisor = 1.0;
-		for (unsigned i = 0; i < radix; ++i) divisor *= 10.0;
-		result /= divisor;
-		return _sign ? -result : result;
+	}
+	// w = floor(w / 2); returns the bit dropped
+	static constexpr bool halve_digits(decimal_work& w) {
+		unsigned rem = 0;
+		for (unsigned i = work_digits; i-- > 0;) {
+			const unsigned v = 10u * rem + w[i];
+			w[i] = static_cast<std::uint8_t>(v / 2u);
+			rem = v % 2u;
+		}
+		return rem != 0;
+	}
+	// the digits from position radix up, as an integer, when there are at most 19 of them
+	static constexpr std::uint64_t integer_part(const decimal_work& w) {
+		std::uint64_t v = 0;
+		for (unsigned i = work_digits; i-- > radix;) v = 10u * v + w[i];
+		return v;
+	}
+	static constexpr unsigned top_digit(const decimal_work& w) {      // the index of the highest nonzero digit
+		for (unsigned i = work_digits; i-- > 0;) if (w[i] != 0) return i;
+		return 0;
+	}
+
+	constexpr dfixpnt& saturated(bool negative) {
+		clear();
+		for (unsigned i = 0; i < ndigits; ++i) _block.setdigit(i, 9);
+		_sign = negative;
+		return *this;
+	}
+
+	// The value rounded to nearest, ties to even, into a binary format with p significand bits, normal
+	// exponents emin .. emax and subnormals below 2^emin; returned as the double that holds it exactly, or
+	// an infinity beyond the format's largest value. The magnitude N 10^-radix is scaled by a power of two
+	// into an integer Q in [2^62, 2^63) plus a fraction, exactly, in decimal: N is doubled s times, or its
+	// integer part halved; then Q is rounded to the format's grid with the fraction as sticky bits.
+	template<unsigned p, int emin, int emax>
+	constexpr double to_binary() const {
+		static_assert(p >= 2u && p <= 53u && emin >= -1022 && emax <= 1023, "to_binary: a format a double holds");
+		if (_block.iszero()) return 0.0;
+		decimal_work w{};
+		for (unsigned i = 0; i < ndigits; ++i) w[i] = static_cast<std::uint8_t>(_block.digit(i));
+		constexpr std::uint64_t two62 = 1ull << 62;
+		constexpr std::uint64_t two63 = 1ull << 63;
+		int s = 0;                                          // the magnitude is (Q + fraction) * 2^-s
+		bool sticky = false;
+		if (top_digit(w) >= radix + 19u || integer_part(w) >= two63) {
+			// at least 2^63: drop the fraction digits, then halve the integer part below 2^63
+			for (unsigned i = 0; i < radix; ++i) {
+				if (w[i] != 0) sticky = true;
+				w[i] = 0;
+			}
+			while (top_digit(w) >= radix + 19u || integer_part(w) >= two63) {
+				decimal_work q{};                           // halve the integer part, which starts at radix
+				unsigned rem = 0;
+				for (unsigned i = work_digits; i-- > radix;) {
+					const unsigned v = 10u * rem + w[i];
+					q[i] = static_cast<std::uint8_t>(v / 2u);
+					rem = v % 2u;
+				}
+				if (rem != 0) sticky = true;
+				w = q;
+				--s;
+			}
+		}
+		else {
+			// below 2^63: double until the integer part reaches 2^62
+			while (integer_part(w) < two62) {
+				double_digits(w);
+				++s;
+			}
+			for (unsigned i = 0; i < radix; ++i) if (w[i] != 0) { sticky = true; break; }
+		}
+		const std::uint64_t Q = integer_part(w);            // in [2^62, 2^63)
+		const int E = 62 - s;                               // the exponent of the leading bit
+		if (E > emax) return _sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity();
+		const int lsb = ((E > emin) ? E : emin) - static_cast<int>(p) + 1;   // the weight of the format's last bit
+		const int shift = lsb + s;                          // the bits of Q below that weight, at least 9
+		std::uint64_t R = 0;
+		if (shift <= 63) {
+			R = Q >> shift;
+			const bool round = ((Q >> (shift - 1)) & 1u) != 0;
+			const bool rest = sticky || (Q & ((1ull << (shift - 1)) - 1u)) != 0;
+			if (round && (rest || (R & 1u) != 0)) ++R;
+		}
+		// else Q 2^-s is below half of the smallest subnormal: it rounds to 0
+		if (R == 0) return _sign ? -0.0 : 0.0;
+		int top = lsb;                                      // the exponent of R's leading bit
+		for (std::uint64_t r = R; r > 1u; r >>= 1) ++top;
+		if (top > emax) return _sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity();
+		const double v = scale2(static_cast<double>(R), lsb);   // R <= 2^p: exact
+		return _sign ? -v : v;
 	}
 };
 
