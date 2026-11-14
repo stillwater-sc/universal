@@ -8,13 +8,17 @@
 
 namespace sw { namespace universal {
 
-// the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
-// correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
+// A posit is zero, NaR, or normal: it has no infinity and no subnormals. Each function decides on
+// the encoding; fpclassify and isnormal went through long double, which made posit<1024,5> maxpos
+// FP_INFINITE and minpos FP_ZERO (#2071). NaR is the Posit Standard's single exception value: it
+// is a NaN to isnan and fpclassify, and never an infinity (#2071, user decision: NaR propagates).
 
 // STD LIB function for IEEE floats: Categorizes floating point value arg into the following categories: zero, subnormal, normal, infinite, NAN, or implementation-defined category.
 template<unsigned nbits, unsigned es, typename bt>
 int fpclassify(const posit<nbits,es,bt>& p) {
-	return std::fpclassify((long double)(p));
+	if (p.iszero()) return FP_ZERO;
+	if (p.isnar())  return FP_NAN;
+	return FP_NORMAL;
 }
 	
 // STD LIB function for IEEE floats: Determines if the given floating point number arg has finite value i.e. it is normal, subnormal or zero, but not infinite or NaN.
@@ -27,8 +31,8 @@ inline bool isfinite(const posit<nbits,es,bt>& p) {
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is a positive or negative infinity.
 // specialized for posits
 template<unsigned nbits, unsigned es, typename bt>
-inline bool isinf(const posit<nbits, es, bt>& p) {
-	return p.isnar();
+inline bool isinf(const posit<nbits, es, bt>&) {
+	return false;   // NaR is not an infinity (#2071); it was reported as both
 }
 
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is a not-a-number (NaN) value.
@@ -42,14 +46,14 @@ inline bool isnan(const posit<nbits, es, bt>& p) {
 // specialized for posits
 template<unsigned nbits, unsigned es, typename bt>
 inline bool isnormal(const posit<nbits, es, bt>& p) {
-	return std::isnormal((long double)(p));
+	return !p.iszero() && !p.isnar();
 }
 
 // STD LIB function for IEEE floats: Determines if the given floating point number arg is normal, i.e. is neither zero, subnormal, infinite, nor NaN.
 // specialized for posits
 template<unsigned nbits, unsigned es, typename bt>
-inline bool isdenorm(const posit<nbits, es, bt>& p) {
-	return (p.isnar() ? false : false); // posits are never denormalized
+inline bool isdenorm(const posit<nbits, es, bt>&) {
+	return false;   // posits are never denormalized
 }
 
 }} // namespace sw::universal
