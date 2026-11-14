@@ -10,6 +10,7 @@
 #include <cmath>    // std::frexp, std::ldexp
 #include <cstdint>
 #include <cstring>  // std::memcpy
+#include <limits>   // std::numeric_limits, for the long double NaN layout
 #include <universal/native/long_double_significand.hpp>  // the full significand, for types wider than 62 bits (#1517)
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
@@ -247,6 +248,22 @@ namespace sw { namespace universal {
 	}
 #endif
 
+// NaN classification from the raw fields: every encoding with an all-ones exponent and a nonzero
+// fraction is a NaN, quiet when the fraction's leading bit (the quiet bit) is set, signalling
+// otherwise. Only the canonical patterns were recognised before, so 0x7f800001, 0x7fc00001,
+// 0x7fffffff and every other payload were "not NaN" (#2059). The one exception kept is MSVC's
+// signaling_NaN(), which comes through its runtime as quiet bit | 1 (0x7fc00001) and has always
+// been classified as signalling there.
+template<typename Real>
+	inline constexpr int classifyNaNFields(uint64_t rawExponent, uint64_t rawFraction) noexcept {
+		if (rawExponent != ieee754_parameter<Real>::eallset || rawFraction == 0) return NAN_TYPE_NEITHER;
+		constexpr uint64_t quietBit = ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask;
+#if defined(_MSC_VER)
+		if (rawFraction == (quietBit | 1u)) return NAN_TYPE_SIGNALLING;
+#endif
+		return (rawFraction & quietBit) ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING;
+	}
+
 template<typename Real>
 	inline BIT_CAST_CONSTEXPR bool checkNaN(Real value, int& nan_type) {
 		nan_type = NAN_TYPE_NEITHER;
@@ -255,68 +272,52 @@ template<typename Real>
 
 	template<>
 	inline BIT_CAST_CONSTEXPR bool checkNaN(float value, int& nan_type) {
-		bool bIsNaN{ false };
 		bool s{ false };
 		uint64_t rawExponent{ 0 };
 		uint64_t rawFraction{ 0 };
 		uint64_t bits{ 0 };
 		extractFields(value, s, rawExponent, rawFraction, bits);
-		if (rawExponent == ieee754_parameter<float>::eallset) { // nan and inf need to be remapped
-			if (rawFraction == (ieee754_parameter<float>::fmask & ieee754_parameter<float>::snanmask) ||
-				rawFraction == (ieee754_parameter<float>::fmask & (ieee754_parameter<float>::qnanmask | ieee754_parameter<float>::snanmask))) {
-				// 1.11111111.00000000.......00000001 signalling nan
-				// 0.11111111.00000000000000000000001 signalling nan
-				// MSVC
-				// 1.11111111.10000000.......00000001 signalling nan
-				// 0.11111111.10000000.......00000001 signalling nan
-				nan_type = NAN_TYPE_SIGNALLING;
-				bIsNaN = true;
-			}
-			else if (rawFraction == (ieee754_parameter<float>::fmask & ieee754_parameter<float>::qnanmask)) {
-				// 1.11111111.10000000.......00000000 quiet nan
-				// 0.11111111.10000000.......00000000 quiet nan
-				nan_type = NAN_TYPE_QUIET;
-				bIsNaN = true;
-			}
-			else {
-				nan_type = NAN_TYPE_NEITHER;
-				bIsNaN = false;
-			}
-		}
-		return bIsNaN;
+		nan_type = classifyNaNFields<float>(rawExponent, rawFraction);
+		return nan_type != NAN_TYPE_NEITHER;
 	}
 
 	template<>
 	inline BIT_CAST_CONSTEXPR bool checkNaN(double value, int& nan_type) {
-		bool bIsNaN{ false };
 		bool s{ false };
 		uint64_t rawExponent{ 0 };
 		uint64_t rawFraction{ 0 };
 		uint64_t bits{ 0 };
 		extractFields(value, s, rawExponent, rawFraction, bits);
-		if (rawExponent == ieee754_parameter<double>::eallset) { // nan and inf need to be remapped
-			if (rawFraction == (ieee754_parameter<double>::fmask & ieee754_parameter<double>::snanmask) ||
-				rawFraction == (ieee754_parameter<double>::fmask & (ieee754_parameter<double>::qnanmask | ieee754_parameter<double>::snanmask))) {
-				// 1.11111111.00000000.......00000001 signalling nan
-				// 0.11111111.00000000000000000000001 signalling nan
-				// MSVC
-				// 1.11111111.10000000.......00000001 signalling nan
-				// 0.11111111.10000000.......00000001 signalling nan
-				nan_type = NAN_TYPE_SIGNALLING;
-				bIsNaN = true;
-			}
-			else if (rawFraction == (ieee754_parameter<double>::fmask & ieee754_parameter<double>::qnanmask)) {
-				// 1.11111111.10000000.......00000000 quiet nan
-				// 0.11111111.10000000.......00000000 quiet nan
-				nan_type = NAN_TYPE_QUIET;
-				bIsNaN = true;
-			}
-			else {
-				nan_type = NAN_TYPE_NEITHER;
-				bIsNaN = false;
-			}
+		nan_type = classifyNaNFields<double>(rawExponent, rawFraction);
+		return nan_type != NAN_TYPE_NEITHER;
+	}
+
+	// long double: the quiet bit is the leading fraction bit of each format. x87 extended keeps an
+	// explicit integer bit, so its quiet bit is significand bit 62; binary128 has it at fraction bit
+	// 111, bit 47 of the high word; a double-width long double, or IBM double-double, is classified
+	// by its (leading) double. The generic overload returned "not NaN" for every long double (#2059).
+	template<>
+	inline bool checkNaN(long double value, int& nan_type) {
+		nan_type = NAN_TYPE_NEITHER;
+		if (!(value != value)) return false;
+		if constexpr (std::numeric_limits<long double>::digits == 53 || std::numeric_limits<long double>::digits == 106) {
+			double lead{};
+			std::memcpy(&lead, &value, sizeof(double));         // IBM: the leading double comes first
+			return checkNaN(lead, nan_type);
 		}
-		return bIsNaN;
+		else if constexpr (std::endian::native == std::endian::little && (std::numeric_limits<long double>::digits == 64 || std::numeric_limits<long double>::digits == 113)) {
+			std::uint64_t word[2]{};
+			std::memcpy(word, &value, (sizeof(long double) < sizeof(word)) ? sizeof(long double) : sizeof(word));
+			const bool quiet = (std::numeric_limits<long double>::digits == 64)
+				? ((word[0] >> 62) & 1u) != 0
+				: ((word[1] >> 47) & 1u) != 0;
+			nan_type = quiet ? NAN_TYPE_QUIET : NAN_TYPE_SIGNALLING;
+			return true;
+		}
+		else {
+			nan_type = NAN_TYPE_QUIET;                          // a NaN of a layout not decoded here
+			return true;
+		}
 	}
 
 	template<typename Real>
@@ -346,6 +347,14 @@ template<typename Real>
 			}
 		}
 		return bIsInf;
+	}
+
+	template<>
+	inline bool checkInf(long double value, int& inf_type) {
+		inf_type = INF_TYPE_NEITHER;
+		if (value == std::numeric_limits<long double>::infinity())  { inf_type = INF_TYPE_POSITIVE; return true; }
+		if (value == -std::numeric_limits<long double>::infinity()) { inf_type = INF_TYPE_NEGATIVE; return true; }
+		return false;
 	}
 
 	template<>

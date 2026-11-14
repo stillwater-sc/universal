@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>    // std::nextafter
+#include <limits>   // std::numeric_limits
 
 namespace sw { namespace universal {
 
@@ -16,8 +18,15 @@ namespace sw { namespace universal {
 		typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
 	>
 	inline Real ulp(const Real& a) {
-		Real next = ((a < 0) ? std::nextafter(a, Real(-INFINITY)) : std::nextafter(a, Real(+INFINITY)));
-		return next - a;
+		// the magnitude of the spacing at a: the gap to the next value away from zero, or, at the
+		// largest finite value, the gap below it (there is no finite value above). It used to be
+		// negative for negative a, inf at max() and NaN at inf (#2059). ulp(inf) is inf, ulp(NaN) NaN.
+		if (a != a) return a;
+		const Real m = (a < 0) ? -a : a;
+		if (m == std::numeric_limits<Real>::infinity()) return m;
+		const Real next = std::nextafter(m, std::numeric_limits<Real>::infinity());
+		if (next == std::numeric_limits<Real>::infinity()) return m - std::nextafter(m, Real(0));
+		return next - m;
 	}
 
 	// check if the floating-point number is NaN

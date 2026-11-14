@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
+#include <limits>
+#include <type_traits>
 #include <universal/native/integer_core.hpp>   // nlz -- the I/O-free bit-manipulation half (#1334)
 #include <sstream>
 #include <string>
@@ -51,97 +53,32 @@ inline int64_t ipow(int64_t base, unsigned exp) {
 // location: Leiden, Netherlands 
 // email: orsonpeters@gmail.com
 inline int64_t fastipow(int64_t base, uint8_t exp) {
-	static const uint8_t highest_bit_set[] = {
-		0, 1, 2, 2, 3, 3, 3, 3,
-		4, 4, 4, 4, 4, 4, 4, 4,
-		5, 5, 5, 5, 5, 5, 5, 5,
-		5, 5, 5, 5, 5, 5, 5, 5,
-		6, 6, 6, 6, 6, 6, 6, 6,
-		6, 6, 6, 6, 6, 6, 6, 6,
-		6, 6, 6, 6, 6, 6, 6, 6,
-		6, 6, 6, 6, 6, 6, 6, 255, // anything past 63 is a guaranteed overflow with base > 1
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-	};
-
-	int64_t result = 1;
-
-	switch (highest_bit_set[exp]) {
-	case 255: // we use 255 as an overflow marker and return 0 on overflow/underflow
-		if (base == 1) {
-			return 1;
+	// computed in the unsigned domain, with overflow detected before each multiply: the signed
+	// squarings overflowed (UB) for 3^41, and (-2)^63 = INT64_MIN came out 0 (#2059). An overflow
+	// returns 0, as it always promised; 0^0 is 1.
+	const bool negative = (base < 0) && (exp & 1u);
+	std::uint64_t b = (base < 0) ? (std::uint64_t(0) - static_cast<std::uint64_t>(base)) : static_cast<std::uint64_t>(base);
+	std::uint64_t result = 1;
+	constexpr std::uint64_t umax = ~std::uint64_t(0);
+	unsigned e = exp;
+	while (e > 0) {
+		if (e & 1u) {
+			if (b != 0 && result > umax / b) return 0;
+			result *= b;
 		}
-
-		if (base == -1) {
-			return 1ll - 2ll * static_cast<int64_t>(exp & 0x01u);
+		e >>= 1;
+		if (e > 0) {
+			if (b > 1 && b > umax / b) return 0;    // the square is needed by a later bit, and overflows
+			b *= b;
 		}
-
-		return 0;
-	case 6:
-		if (exp & 1) result *= base;
-		exp >>= 1;
-		base *= base;
-#if defined(_MSC_VER)
-		[[fallthrough]]; // fallthrough is explicit
-#endif
-	case 5:
-		if (exp & 1) result *= base;
-		exp >>= 1;
-		base *= base;
-#if defined(_MSC_VER)
-		[[fallthrough]]; // fallthrough is explicit
-#endif
-	case 4:
-		if (exp & 1) result *= base;
-		exp >>= 1;
-		base *= base;
-#if defined(_MSC_VER)
-		[[fallthrough]]; // fallthrough is explicit
-#endif
-	case 3:
-		if (exp & 1) result *= base;
-		exp >>= 1;
-		base *= base;
-#if defined(_MSC_VER)
-		[[fallthrough]]; // fallthrough is explicit
-#endif
-	case 2:
-		if (exp & 1) result *= base;
-		exp >>= 1;
-		base *= base;
-#if defined(_MSC_VER)
-		[[fallthrough]]; // fallthrough is explicit
-#endif
-	case 1:
-		if (exp & 1) result *= base;
-#if defined(_MSC_VER)
-		[[fallthrough]]; // fallthrough is explicit
-#endif
-	default:
-		return result;
 	}
+	constexpr std::uint64_t limit = std::uint64_t(1) << 63;    // |INT64_MIN|
+	if (negative) {
+		if (result > limit) return 0;
+		return (result == limit) ? std::numeric_limits<int64_t>::min() : -static_cast<int64_t>(result);
+	}
+	if (result >= limit) return 0;
+	return static_cast<int64_t>(result);
 }
 
 ////////////////// string operators
@@ -152,14 +89,19 @@ template<typename Integer,
          typename = typename std::enable_if< std::is_integral<Integer>::value, Integer >::type
 >
 inline std::string to_binary(const Integer& number, bool bNibbleMarker = true, int nbits = 0) {
+	// bit by bit through the unsigned type, so nbits beyond 64 (or the type) is no shift past the
+	// width: those bits are the sign extension (#2059)
+	using U = std::make_unsigned_t<Integer>;
+	constexpr int width = static_cast<int>(8 * sizeof(Integer));
+	const U u = static_cast<U>(number);
+	const bool negative = std::is_signed_v<Integer> && (number < 0);
 	std::stringstream s;
-	if (nbits == 0) nbits = 8*sizeof(number);
+	if (nbits <= 0) nbits = width;
 	s << "0b";
-	uint64_t mask = (1ull << (nbits - 1));
 	for (int i = nbits - 1; i >= 0; --i) {
-		s << ((number & mask) ? '1' : '0');
+		const bool bit = (i < width) ? (((u >> i) & U(1)) != 0) : negative;
+		s << (bit ? '1' : '0');
 		if (bNibbleMarker && i > 0 && i % 4 == 0) s << '\'';
-		mask >>= 1;
 	}
 	return s.str();
 }
@@ -170,25 +112,17 @@ template<typename Integer,
 	typename = typename std::enable_if< std::is_integral<Integer>::value, Integer >::type
 >
 inline std::string to_hex(const Integer& number, bool nibbleMarker = false, bool hexPrefix = true) {
+	// nibble by nibble through the unsigned type: a 1ull mask shifted by the width went past 64
+	// bits for a 128-bit integer (#2059)
+	using U = std::make_unsigned_t<Integer>;
+	constexpr unsigned nibbles = static_cast<unsigned>(2 * sizeof(Integer));
+	const char hex[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+	const U u = static_cast<U>(number);
 	std::stringstream s;
-	uint64_t nbits = 8 * sizeof(number);
-	char hex[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 	if (hexPrefix) s << "0x";
-	uint64_t mask = (1ull << (nbits - 1));
-	uint64_t nibble{ 0 };
-	unsigned nibbleIndex = static_cast<unsigned>(nbits / 4 - 1u);
-	unsigned rightShift = nibbleIndex * 4;
-	for (int i = static_cast<int>(nbits - 1u); i >= 0; --i) {
-		nibble |= (mask & number);
-		mask >>= 1;
-		if ((i % 4) == 0) {
-			nibble >>= rightShift;
-			s << hex[nibble];
-			rightShift -= 4;
-			nibble = 0;
-			if (nibbleMarker && nibbleIndex > 0 && nibbleIndex % 4 == 0) s << '\'';
-			--nibbleIndex;
-		}
+	for (unsigned n = nibbles; n-- > 0;) {
+		s << hex[static_cast<unsigned>((u >> (4 * n)) & U(0xF))];
+		if (nibbleMarker && n > 0 && n % 4 == 0) s << '\'';
 	}
 	return s.str();
 }

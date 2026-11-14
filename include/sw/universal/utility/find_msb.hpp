@@ -149,20 +149,16 @@ inline constexpr unsigned find_msb(int x) {
 /// </summary>
 /// <param name="x">value to scan</param>
 /// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
+inline constexpr unsigned find_msb(long long x);
 inline constexpr unsigned find_msb(long x) {
-	// find the first non-zero bit
-	uint32_t tmp = uint32_t(x);
-	unsigned int base = 0;
-
-	if (tmp & 0xFFFF0000) { base += 16; tmp >>= 16; }
-	if (tmp & 0x0000FF00) { base += 8;  tmp >>= 8; }
-	if (tmp & 0x000000F0) { base += 4;  tmp >>= 4; }
-	unsigned int bval = 0;
-	while (tmp > 0) {
-		++bval;
-		tmp >>= 1;
+	// long is 64 bits on LP64 (Linux, macOS) and 32 on LLP64 (Windows): scanning only the low 32
+	// bits made find_msb(1L << 40) zero on LP64 (#2059)
+	if constexpr (sizeof(long) == sizeof(long long)) {
+		return find_msb(static_cast<long long>(x));
 	}
-	return base + bval;
+	else {
+		return find_msb(static_cast<int>(x));
+	}
 }
 
 /// <summary>
@@ -170,7 +166,7 @@ inline constexpr unsigned find_msb(long x) {
 /// </summary>
 /// <param name="x">value to scan</param>
 /// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
-constexpr unsigned find_msb(long long x) {
+inline constexpr unsigned find_msb(long long x) {
 	// find the first non-zero bit
 	uint64_t tmp = uint64_t(x);
 	unsigned int base = 0;
