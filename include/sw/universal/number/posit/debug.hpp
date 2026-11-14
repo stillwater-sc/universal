@@ -22,19 +22,19 @@ void posit<nbits, es, bt>::constexprClassParameters() const noexcept {
 	std::cout << "type              : " << type_tag(*this) << '\n';
 	std::cout << "nbits             : " << nbits << '\n';
 	std::cout << "es                : " << es << std::endl;
-	std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
-	std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, 0, true) << '\n';
+	std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, true, static_cast<int>(sizeof(bt) * 8)) << '\n';
+	std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, true, static_cast<int>(sizeof(bt) * 8)) << '\n';
 	std::cout << "nrBlocks          : " << nrBlocks << '\n';
 	std::cout << "bits in MSU       : " << bitsInMSU << '\n';
 	std::cout << "MSU               : " << MSU << '\n';
-	std::cout << "MSU MASK          : " << to_binary(MSU_MASK, 0, true) << '\n';
-	std::cout << "SIGN_BIT_MASK     : " << to_binary(SIGN_BIT_MASK, 0, true) << '\n';
-	std::cout << "LSB_BIT_MASK      : " << to_binary(LSB_BIT_MASK, 0, true) << '\n';
+	std::cout << "MSU MASK          : " << to_binary(MSU_MASK, true, static_cast<int>(sizeof(bt) * 8)) << '\n';
+	std::cout << "SIGN_BIT_MASK     : " << to_binary(SIGN_BIT_MASK, true, static_cast<int>(sizeof(bt) * 8)) << '\n';
+	std::cout << "LSB_BIT_MASK      : " << to_binary(LSB_BIT_MASK, true, static_cast<int>(sizeof(bt) * 8)) << '\n';
 }
 template<unsigned nbits, unsigned es, typename bt>
 void posit<nbits, es, bt>::showLimbs() const {
 	for (unsigned b = 0; b < nrBlocks; ++b) {
-		std::cout << to_binary(_block[nrBlocks - b - 1], sizeof(bt) * 8) << ' ';
+		std::cout << to_binary(_block.block(nrBlocks - b - 1), true, static_cast<int>(sizeof(bt) * 8)) << ' ';   // the block, not one bit (#2070)
 	}
 	std::cout << '\n';
 }

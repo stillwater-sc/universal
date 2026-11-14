@@ -34,7 +34,7 @@ namespace std {
 		static constexpr Posit denorm_min() {  // return minimum denormalized value
 			return Posit(sw::universal::SpecificValue::minpos);
 		}
-		static constexpr Posit infinity() { // return positive infinity
+		static constexpr Posit infinity() { // no infinity: maxpos is the saturation value (has_infinity is false)
 			return Posit(sw::universal::SpecificValue::maxpos);
 		}
 		static constexpr Posit quiet_NaN() { // return non-signaling NaN
@@ -57,16 +57,21 @@ namespace std {
 		// sits at scale (2 - nbits) * 2^es (#1608).
 		static constexpr int min_exponent = static_cast<int>(2 - int(nbits)) * (1 << es) + 1;
 		static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(min_exponent);
-		static constexpr int max_exponent = (nbits - 2) * (1 << es);
-		static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
-		static constexpr bool has_infinity = true;
+		// and max_exponent is one more than maxpos's scale, (nbits - 2) * 2^es: radix^(max_exponent - 1)
+		// is maxpos's binade (#2070)
+		static constexpr int max_exponent = static_cast<int>(nbits - 2) * (1 << es) + 1;
+		// maxpos is exactly 2^(max_exponent - 1), not just below 2^max_exponent as an IEEE maximum is:
+		// the largest power of ten at or below it comes from maxpos's own scale
+		static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent - 1);
+		// a posit has NaR, not an infinity, and its values are a finite set (#2070), as for bposit
+		static constexpr bool has_infinity = false;
 		static constexpr bool has_quiet_NaN = true;
-		static constexpr bool has_signaling_NaN = true;
+		static constexpr bool has_signaling_NaN = false;
 		static constexpr float_denorm_style has_denorm = denorm_absent;
 		static constexpr bool has_denorm_loss = false;
 
 		static constexpr bool is_iec559 = false;
-		static constexpr bool is_bounded = false;
+		static constexpr bool is_bounded = true;
 		static constexpr bool is_modulo = false;
 		static constexpr bool traps = false;
 		static constexpr bool tinyness_before = false;

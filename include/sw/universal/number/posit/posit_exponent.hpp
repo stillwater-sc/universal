@@ -135,11 +135,11 @@ template<unsigned nbits, unsigned es, typename bt>
 inline int scale(const positExponent<nbits, es, bt>& e) { return e.scale(); }
 
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator==(const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return lhs._Bits == rhs._Bits && lhs._NrOfBits == rhs._NrOfBits; }
+inline bool operator==(const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return lhs._expBits == rhs._expBits && lhs._nrExpBits == rhs._nrExpBits; }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator!=(const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned nbits, unsigned es, typename bt>
-inline bool operator< (const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return lhs._NrOfBits == rhs._NrOfBits && lhs._Bits < rhs._Bits; }
+inline bool operator< (const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return lhs._nrExpBits == rhs._nrExpBits && lhs._expBits < rhs._expBits; }
 template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const positExponent<nbits, es, bt>& lhs, const positExponent<nbits, es, bt>& rhs) { return  operator< (rhs, lhs); }
 template<unsigned nbits, unsigned es, typename bt>

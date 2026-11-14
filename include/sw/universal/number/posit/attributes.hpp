@@ -13,9 +13,21 @@ namespace sw { namespace universal {
 using namespace sw::universal::internal;
 
 
+// useed = 2^(2^es) as an integer, which fits 64 bits for es <= 5 only (#2070)
 template<unsigned es>
 constexpr std::uint64_t useed() {
-	return 1ull << (1u << es);
+	static_assert(es <= 5, "useed<es>() = 2^(2^es) fits std::uint64_t for es <= 5: use useed_value<nbits, es>()");
+	return std::uint64_t(1) << (1u << es);
+}
+
+namespace detail {
+	// 2^e in double by doubling, constexpr and without a shift: e >= 64 is a valid useed scale
+	// (es >= 6), where 1 << e is undefined; e > 1023 gives inf, as double has no larger value
+	constexpr double pow2_double(unsigned e) {
+		double v = 1.0;
+		for (unsigned i = 0; i < e; ++i) v *= 2.0;
+		return v;
+	}
 }
 
 // useed_scale<es>() is defined in posit_scale_helpers.hpp
@@ -23,13 +35,13 @@ constexpr std::uint64_t useed() {
 // double value representation of the useed value of a posit<nbits, es>
 template<unsigned nbits, unsigned es>
 constexpr double useed() {
-	return std::pow(2.0, std::pow(2.0, es));
+	return detail::pow2_double(useed_scale<es>());
 }
 
 // calculate the value of useed
 template<unsigned nbits, unsigned es>
 constexpr double useed_value() {
-	return double(uint64_t(1) << useed_scale<es>());
+	return detail::pow2_double(useed_scale<es>());   // the shift was UB for es >= 6 (#2070)
 }
 
 // generate the minpos bit pattern for the sign requested (true is negative half, false is positive half)
@@ -117,7 +129,7 @@ inline long double exponent_value(const posit<nbits, es, bt>& p) {
 
 template<unsigned nbits, unsigned es, typename bt>
 inline long double fraction_value(const posit<nbits, es, bt>& p) {
-	constexpr unsigned fbits = nbits - 3 - es;
+	constexpr unsigned fbits = posit<nbits, es, bt>::fbits;   // nbits - 3 - es wrapped for es + 2 >= nbits (#2070)
 	bool		     		_sign;
 	positRegime<nbits, es, bt>   _regime;
 	positExponent<nbits, es, bt> _exponent;

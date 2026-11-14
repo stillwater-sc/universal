@@ -92,10 +92,9 @@ template<unsigned nbits, unsigned es, typename bt>
 inline std::istream& operator>> (std::istream& istr, posit<nbits, es, bt>& p) {
 	std::string txt;
 	istr >> txt;
-	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
-		istr.setstate(std::ios::failbit);
-	}
+	// a failed parse sets failbit, as the standard extractors do, and leaves p unchanged; it
+	// wrote to std::cerr as well, which a caller reading untrusted input cannot silence (#2070)
+	if (!parse(txt, p)) istr.setstate(std::ios::failbit);
 	return istr;
 }
 
