@@ -45,7 +45,7 @@
 // enable throwing specific exceptions for integer arithmetic errors
 // left to application to enable
 #if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
-// default is to use std::cerr as a signalling error
+// default: an operand outside the accumulator is dropped (operator= leaves zero, += skips it)
 #	define QUIRE_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 #include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)
@@ -76,6 +76,7 @@
 #include <universal/number/quire/manipulators.hpp>
 #include <universal/number/quire/iostream.hpp>
 #include <universal/number/quire/attributes.hpp>
+#include <universal/number/quire/numeric_limits.hpp>   // was never included: is_specialized was false (#2058)
 // quire_mul / quire_resolve and the accumulator_* protocol for quire<float>
 // and quire<double> (mtl5#582)
 #include <universal/native/fdp.hpp>
