@@ -1,15 +1,12 @@
 # Development Session: The Internals Sweep, v5.16.0, and the #2039 Follow-ups
 
 **Date:** 2026-11-13 to 2026-11-14
-**Status:** Complete -- 7 PRs merged, the #2029 sweep closed, v5.16.0 released, two of three #2039
-tracking issues closed
+**Status:** Complete -- 9 PRs merged, the #2029 and #2039 sweeps closed, v5.16.0 released
 **Focus:** Triage QA sweep #2029 (internal building blocks) into three tracking issues and resolve
 them; recover the v5.16.0 release whose tag was pushed without a prepare-release PR; triage QA sweep
 #2039 (quire, native helpers, recent commits) into three tracking issues and resolve them.
-**Issues closed:** #2029, #2052, #2053, #2054, #2058, #2060
-**PRs merged:** #2055, #2056, #2057, #2061, #2062, #2063, #2064
-**Left open:** #2059 (the cross-type `promote_t` decision; everything else in it merged with #2063),
-#2039 (closes when #2059 does)
+**Issues closed:** #2029, #2039, #2052, #2053, #2054, #2058, #2059, #2060
+**PRs merged:** #2055, #2056, #2057, #2061, #2062, #2063, #2064, #2065, #2067
 
 ## Session Overview
 
@@ -23,7 +20,8 @@ findings, one CI cycle costs 1-2 hours, so a sweep becomes at most three trackin
 | | #2053 legacy and digit internals: value, bitblock, abstract triple, blockdecimal, blockdigit; gfp and f2s archived | #2057 |
 | #2039 | #2060 follow-ups: fixpnt CORDIC hypot, sorn division, complex atanh, dd/qd zero signs | #2062 |
 | | #2058 quire: asymmetric range checks, convert_to rounding, numeric_limits | #2064 |
-| | #2059 native and utility helpers (all but the promotion rule) | #2063 |
+| | #2059 native and utility helpers | #2063 |
+| | #2059 the cross-type promotion rule | #2067 |
 
 Between the two sweeps, v5.16.0 was tagged on a9d6a659 with no prepare-release PR. release.yml stopped
 at its CHANGELOG check (#1967), before the GitHub Release and the Docker image. PR #2061 renamed
@@ -35,10 +33,12 @@ moved to its merge commit as an annotated tag. The rerun published the release a
 - **At most three tracking issues per QA sweep** (user). Recorded in the qa-triage skill and in memory.
 - **gfp and f2s are archived, not fixed** (user, #2053). Their Grisu paths were stubs, the two headers
   could not be included together, and their tests asserted nothing.
-- **The promotion rule stays open** (#2059). Mixed-type operators pick the result type by fraction bits
-  alone and bridge through double. The options are recorded on the issue: promote by range and
-  precision with a deterministic tie-break, a wider bridge than double past 53 bits, or a compile error
-  for incomparable types.
+- **Cross-type promotion: option (a)** (user, #2059). Of the three options on the issue (promote by
+  range and precision with a deterministic tie-break, a wider bridge than double past 53 bits, a
+  compile error for incomparable types), the first. The double bridge stays. When neither type covers
+  the other, the larger maximum exponent wins over precision: a result past the narrow type's maxpos
+  is lost, extra significand bits only round away. Precision decides only when the maximum exponents
+  tie, and the lower exponent bound only after that.
 
 ## Implementation Details
 
@@ -62,6 +62,10 @@ moved to its merge commit as an annotated tag. The rerun published the release a
 - **quire** (#2064): operands are checked against the accumulator's real ends (bit 0 and bit qbits - 1),
   not +-half_range; `convert_to` rounds to nearest even from 64 leading bits and a sticky bit, with
   subnormals, overflow to inf and integral saturation; `numeric_limits<quire>` is included and corrected.
+- **promote_t** (#2067): types rank by `numeric_limits` `max_exponent`, then `digits`, then
+  `min_exponent`, then `sizeof`, then the compiler's spelling of the type, so `promote_t<A, B>` and
+  `promote_t<B, A>` are one type. `cfloat<16,8>(1e20) + cfloat<16,5>(1)` is about 1e20 (was inf), and
+  `posit<32,2>` with `cfloat<32,8>` now gives the cfloat (max_exponent 128 against 120).
 - **native** (#2063): `find_msb(long)` on LP64, NaN classification of every payload (and long double),
   `ulp` as a magnitude, `fastipow` without signed overflow, `setbit` bounds, `to_binary`/`to_hex` past
   64 bits, and `universal_cast` keeping -0.
@@ -81,6 +85,13 @@ moved to its merge commit as an annotated tag. The rerun published the release a
 - **CI_LITE builds neither `static/quire` nor `static/native`.** Those suites only run in the full tier,
   so they were built locally with their own options; that caught a quire fixture asserting the old
   truncating `convert_to`.
+- **A trait in a return type meets every operand pair.** The mixed operators name `promote_t` in their
+  return type, so overload resolution forms it for `"-" + std::string` in `blockbinary/to_decimal.hpp`.
+  `numeric_limits<char[2]>` compiles with the local libstdc++ 15 but not with CI's libstdc++ 14. The
+  ranking now asks `numeric_limits` only of non-array object types; reproduced and verified in the
+  `gcc:14` Docker image.
+- **A test section that could not fail.** The promotion section of `cross_type_conversion.cpp` never added
+  its failures to the total; it does now.
 - **Review findings worth keeping** (CodeRabbit): a closed infinite divisor bound attains `a / inf = 0`;
   NaN residuals must fail a tolerance check (`!(|e| <= tol)`); `make_unsigned` rejects `bool`; a quire
   `min()` of 2^-2148 cannot be checked through a double.
@@ -98,11 +109,11 @@ moved to its merge commit as an annotated tag. The rerun published the release a
 
 ## Next Steps
 
-- #2059: the user's decision on cross-type promotion; then the mixed-arithmetic tests it calls for, and
-  #2039 closes with a map of its tracking issues to PRs.
+- Option (b) of #2059, a bridge wider than double for operands past 53 bits, remains possible: mixed
+  `==` between two such types can still equate distinct values.
 - Deferred, not filed: limb-wise quire accumulation, the extra division in the complex `clog`/`abs`
   helpers, CORDIC's duplicate shifted copies, and the bit-serial internals noted in #2029.
-- **Release:** `[Unreleased]` holds #2062-#2064.
+- **Release:** `[Unreleased]` holds #2062-#2064 and #2067.
 
 ## Appendix
 
