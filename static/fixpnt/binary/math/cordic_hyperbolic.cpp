@@ -68,6 +68,21 @@ namespace {
 		if constexpr (std::is_same_v<Ref<Fixed>, double>) return double(f); else return to_qd(f);
 	}
 
+	// the largest encoding at or below v, from its raw value floor(v 2^rbits), bit by bit; |v| < 2^(nbits-rbits-1)
+	template<typename Fixed, typename R>
+	Fixed floor_of(const R& v) {
+		R u = floor(v * ldexp(R(1.0), static_cast<int>(Fixed::rbits)));
+		const bool negative = u < R(0.0);
+		if (negative) u = -u;                               // an integer: the raw magnitude, exactly
+		Fixed f;
+		f.clear();
+		for (unsigned i = Fixed::nbits - 1u; i-- > 0;) {
+			const R w = ldexp(R(1.0), static_cast<int>(i));
+			if (!(u < w)) { f.setbit(i, true); u -= w; }
+		}
+		return negative ? Fixed(-f) : f;
+	}
+
 	// the error of got against the exact value e, in ulps, after the type's arithmetic; clamp measures an
 	// unbounded function, which saturates in either arithmetic
 	template<typename Fixed, typename R>
@@ -388,8 +403,15 @@ namespace {
 		// through the range reduction of the largest arguments; the unbounded results saturate
 		const R pi = R(4.0) * atan(R(1.0));
 		const R pi_over_2 = pi / R(2.0);
-		for (const Fixed& p : { Fixed(double(pi_over_2)), Fixed(double(-pi_over_2)), Fixed(double(R(3.0) * pi_over_2)) }) {
-			for (const Fixed& t : { p - minpos, p, p + minpos }) near(cordic::tan(t), tan(exact_of(t)), "tan near an odd multiple of pi/2");
+		for (const R& pole : { pi_over_2, R(-1.0) * pi_over_2, R(3.0) * pi_over_2 }) {
+			// the two encodings on each side of the pole, quantized from the reference (a double would put
+			// a wide type's neighbours all on one side)
+			const Fixed below = floor_of<Fixed>(pole), above = below + minpos;
+			if (!(exact_of(below) < pole && pole < exact_of(above))) {
+				if (reportTestCases) std::cerr << "FAIL: " << type_tag(below) << " the arguments do not straddle the pole\n";
+				++fails;
+			}
+			for (const Fixed& t : { below - minpos, below, above, above + minpos }) near(cordic::tan(t), tan(exact_of(t)), "tan next to an odd multiple of pi/2");
 		}
 		near(cordic::tan(maxpos), tan(exact_of(maxpos)), "tan(maxpos)");
 		near(cordic::tan(maxneg), tan(exact_of(maxneg)), "tan(maxneg)");
