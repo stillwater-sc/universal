@@ -60,6 +60,9 @@ Either way the wording is the document's, not a paraphrase.
 
 #### November
 
+- **2026-11-13 to 2026-11-14**: [The Internals Sweep, v5.16.0, and the #2039 Follow-ups](./2026-11-14_internals_sweep_and_the_2039_follow_ups.md)
+  - Status: Complete -- 7 PRs merged, the #2029 sweep closed, v5.16.0 released, two of three #2039 tracking issues closed
+  - Focus: Triage QA sweep #2029 (internal building blocks) into three tracking issues and resolve them; recover the v5.16.0 release; triage QA sweep #2039 (quire, native helpers, recent commits) and resolve all but the cross-type promotion decision.
 - **2026-11-08 to 2026-11-11**: [The Elastic Reals Sweep, and a CORDIC Family](./2026-11-11_elastic_reals_sweep_and_a_cordic_family.md)
   - Status: Complete -- 21 PRs merged, the #1999 sweep closed, five CORDIC issues closed
   - Focus: Close out the range and elastic-integer sweep leftovers; triage the elastic reals QA sweep #1999 into four tracking issues and resolve them; fix the follow-ups it surfaced (complex in T, dd/qd signed zero, quire infinities, sorn outward rounding); assess elreal transcendental performance without changing code; build CORDIC engines for fixpnt, dfixpnt and lns.
@@ -308,4 +311,4 @@ ls -1 docs/sessions/*.md | sort
 ---
 
 **Maintained by:** Universal Numbers Library Team
-**Last Updated:** 2026-11-11
+**Last Updated:** 2026-11-14

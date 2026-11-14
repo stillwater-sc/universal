@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+**The follow-ups of QA sweep #2039: the quire, the native helpers, and fixes to recent commits.**
+
+### Behaviour changes
+
+- fixpnt `cordic::atan2`/`atan`/`hypot`/`polar` run more iterations by default where rbits < (nbits + 4) / 2, and hypot is within 0.65 ulp there (was up to millions of ulps); sorn division returns tighter bounds where the exact bound is a lattice point; complex atanh near -1 and atan near i gain full precision; complex<dd>/<qd> compute in dd/qd whatever is included; dd/qd abs(-0) is +0, fma and underflowed products keep the IEEE zero sign ([#2062](https://github.com/stillwater-sc/universal/pull/2062))
+- **native**: ulp(x) is a positive magnitude for negative x, finite at max(); checkNaN classifies every NaN payload; find_msb(long) is correct on LP64; fastipow(-2, 63) is INT64_MIN and overflow is never UB; universal_cast/universal_assign keep -0 ([#2063](https://github.com/stillwater-sc/universal/pull/2063))
+- **quire**: convert_to<float/double> is correctly rounded (was truncated to 53 bits), integral targets saturate, a NaN quire converts to NaR for posit targets; operands past either end of an asymmetric quire are rejected (throw guard) or dropped instead of being accepted and lost; min_scale()/max_scale() report the accumulator's ends; numeric_limits<quire> is specialized ([#2064](https://github.com/stillwater-sc/universal/pull/2064))
+
+### Fixed
+
+- CORDIC hypot iterations, tight sorn division, complex atanh near -1, dd/qd zero signs ([#2062](https://github.com/stillwater-sc/universal/pull/2062))
+- **native**: find_msb(long) on LP64, NaN payloads, ulp and fastipow edges, setbit bounds, signed-zero universal_cast ([#2063](https://github.com/stillwater-sc/universal/pull/2063))
+- **quire**: Operand range from the accumulator's ends, correctly rounded convert_to, numeric_limits ([#2064](https://github.com/stillwater-sc/universal/pull/2064))
+
+### Documentation
+
+- Record the internals sweep, the v5.16.0 recovery and the #2039 follow-ups
+
 ## [5.16.0](https://github.com/stillwater-sc/universal/compare/v5.15.0...v5.16.0) (2026-11-13)
 
 **QA sweeps of the ranges, the elastic integers, the elastic reals and the internal building blocks, and a CORDIC family for fixed-point and lns hardware experiments.** 46 commits since v5.15.0, with 34 behaviour changes:
