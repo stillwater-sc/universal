@@ -52,7 +52,9 @@ namespace sw { namespace universal {
 		using P = posit<128, 2>;
 		constexpr long long p60 = 1ll << 60;
 		const P a(p60 + 1);
-		fails += report(static_cast<long>(a) == static_cast<long>(p60 + 1), "(long)posit<128,2>(2^60 + 1) is exact", reportTestCases);
+		// long is 32 bits on Windows: there 2^60 + 1 is out of range and saturates
+		const long expectedLong = (std::numeric_limits<long>::digits >= 61) ? static_cast<long>(p60 + 1) : std::numeric_limits<long>::max();
+		fails += report(static_cast<long>(a) == expectedLong, "(long)posit<128,2>(2^60 + 1) is exact, or LONG_MAX for a 32-bit long", reportTestCases);
 		fails += report(static_cast<long long>(a) == p60 + 1, "(long long)posit<128,2>(2^60 + 1) is exact", reportTestCases);
 		fails += report(static_cast<long long>(-a) == -(p60 + 1), "(long long)posit<128,2>(-(2^60 + 1)) is exact", reportTestCases);
 		using S = posit<32, 2>;

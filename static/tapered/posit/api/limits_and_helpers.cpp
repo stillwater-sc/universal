@@ -48,6 +48,10 @@ namespace sw { namespace universal {
 	int VerifyLimits(bool reportTestCases) {
 		int fails = 0;
 		fails += report(std::numeric_limits<posit<16, 1>>::max_exponent == 29, "posit<16,1> max_exponent is 29", reportTestCases);
+		// max_exponent10: the largest n with 10^n at or below maxpos (posit<8,0>: 64, so 1; posit<16,1>: 2^28, so 8)
+		fails += report(std::numeric_limits<posit<8, 0>>::max_exponent10 == 1, "posit<8,0> max_exponent10 is 1", reportTestCases);
+		fails += report(std::numeric_limits<posit<16, 1>>::max_exponent10 == 8, "posit<16,1> max_exponent10 is 8", reportTestCases);
+		fails += report(std::numeric_limits<posit<32, 2>>::max_exponent10 == 36, "posit<32,2> max_exponent10 is 36", reportTestCases);
 		fails += VerifyExponentRange<8, 0>(reportTestCases);
 		fails += VerifyExponentRange<16, 1>(reportTestCases);
 		fails += VerifyExponentRange<32, 2>(reportTestCases);

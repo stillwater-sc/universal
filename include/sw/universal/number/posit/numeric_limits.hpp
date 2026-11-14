@@ -60,7 +60,9 @@ namespace std {
 		// and max_exponent is one more than maxpos's scale, (nbits - 2) * 2^es: radix^(max_exponent - 1)
 		// is maxpos's binade (#2070)
 		static constexpr int max_exponent = static_cast<int>(nbits - 2) * (1 << es) + 1;
-		static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
+		// maxpos is exactly 2^(max_exponent - 1), not just below 2^max_exponent as an IEEE maximum is:
+		// the largest power of ten at or below it comes from maxpos's own scale
+		static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent - 1);
 		// a posit has NaR, not an infinity, and its values are a finite set (#2070), as for bposit
 		static constexpr bool has_infinity = false;
 		static constexpr bool has_quiet_NaN = true;
