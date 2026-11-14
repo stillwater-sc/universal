@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-**QA sweeps of the ranges, the elastic integers and the elastic reals, and a CORDIC family for fixed-point and lns hardware experiments.** 41 commits since v5.15.0, with 31 behaviour changes:
+## [5.16.0](https://github.com/stillwater-sc/universal/compare/v5.15.0...v5.16.0) (2026-11-13)
+
+**QA sweeps of the ranges, the elastic integers, the elastic reals and the internal building blocks, and a CORDIC family for fixed-point and lns hardware experiments.** 46 commits since v5.15.0, with 34 behaviour changes:
 
 * areal's ubit is a flag, set wherever a conversion drops bits; `numeric_limits<areal>` describes the encoding (#1970, #1982, #1983).
 * interval sqrt encloses subnormal roots, and empty and unbounded intervals behave (#1971, #1979).
@@ -17,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `complex<T>` computes in T, dd and qd keep the sign of zero, and the generalized quire keeps signed infinities apart from NaN (#2025, #2030, #2034).
 * fixpnt gains CORDIC engines in circular, linear and hyperbolic mode, dfixpnt a decimal CORDIC, and lns an add/sub policy that runs on the fixpnt CORDIC datapath (#2015, #2038, #2043-#2046, #2048).
 * valid joins the ubox trace of the quadratic formula (#1690).
+* the internal building blocks (blocktriple, blockbinary, blockfraction, blocksignificand, value, bitblock, blockdecimal, blockdigit) convert, compare, round and divide correctly, and the unused gfp and f2s types move to ./archive (#2029, #2055-#2057).
 
 ### Behaviour changes
 
@@ -51,6 +54,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **math**: complex<ereal>, complex<efloat>, complex<dd> and complex<qd> abs, arg and transcendentals now return values at the element type's precision instead of double's; abs on the double path uses std::hypot ([#2030](https://github.com/stillwater-sc/universal/pull/2030))
 - **dd**: dd and qd arithmetic, sin/tan/log1p/expm1/sqrt and conversions to native floats now give zero results the IEEE 754 sign (e.g. +0 * -1 is -0, sin(-0) is -0, double(dd(-0.0)) is -0); dd and qd atan2 now return correct values for arguments whose squares leave the double range ([#2034](https://github.com/stillwater-sc/universal/pull/2034))
 - **sorn**: sorn + - * / sorn and scalar / sorn can return a wider interval (one more lattice interval at a bound) where the exact bound is not a float; the result now encloses the exact one ([#2037](https://github.com/stillwater-sc/universal/pull/2037))
+- **internal**: blockbinary Unsigned / and % at nbits == limb width, and arithmetic >>= by nbits or more on a negative value, now return the correct results; blocktriple comparisons follow IEEE-754 (NaN unordered, +0 == -0) and a MUL/DIV blocktriple built from a native value has the operand layout mul()/div() consume ([#2055](https://github.com/stillwater-sc/universal/pull/2055))
+- **numeric**: ereal fmod/remainder of multi-limb operands are now exact whenever the result fits the limb budget (otherwise cut toward zero); floatcascade<3>/<4> division gains full precision, and x / +0 is +inf for positive x, -inf for negative x and NaN for x = 0; elreal conversion past double's range is +-inf instead of NaN; sorn arithmetic past the ends of a lattice without infinity saturates; a float or double assigned to a native quire keeps its last significand bit; expansion_ops fast_expansion_sum, scale_expansion, compress_expansion and expansion_quotient special cases changed ([#2056](https://github.com/stillwater-sc/universal/pull/2056))
+- **internal**: value<fbits> arithmetic, rounding and special values now follow IEEE-754 (sums were wrong for every input; x / 0 is a signed inf; infinities keep their sign; round_to rounds to nearest even); blockdecimal BID wraps modulo 10^ndigits; the internal gfp and f2s types are archived ([#2057](https://github.com/stillwater-sc/universal/pull/2057))
 
 ### Added
 
@@ -89,6 +95,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **areal**: Exact references for the level 2-4 addition, subtraction and integer tests ([#2035](https://github.com/stillwater-sc/universal/pull/2035))
 - **efloat**: Make the allocation-counting tests immune to gcc 15 folding the counter ([#2036](https://github.com/stillwater-sc/universal/pull/2036))
 - **sorn**: Round the sorn-with-sorn bounds and the reciprocal outward ([#2037](https://github.com/stillwater-sc/universal/pull/2037))
+- **internal**: Blocktriple, blockbinary, blockfraction and blocksignificand conversion, comparison, division and shift defects ([#2055](https://github.com/stillwater-sc/universal/pull/2055))
+- **numeric**: Exact ereal remainder, elreal past double range, sorn saturation, floatcascade division, expansion_ops sums and native quire assignment ([#2056](https://github.com/stillwater-sc/universal/pull/2056))
+- **internal**: Value arithmetic and special values, bitblock helpers, abstract triple, blockdecimal/blockdigit edges; archive gfp/f2s ([#2057](https://github.com/stillwater-sc/universal/pull/2057))
 
 ### Performance
 
@@ -101,6 +110,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **integer**: Restore two comments mangled by the throw_or_abort rewrite ([#1977](https://github.com/stillwater-sc/universal/pull/1977))
 - **qd_cascade**: Record that clang 21 no longer loses on the add_cascades<4> merge ([#2002](https://github.com/stillwater-sc/universal/pull/2002))
 - **math**: Branch cuts, signed zeros and C99 Annex G for complex<T> ([#2031](https://github.com/stillwater-sc/universal/pull/2031))
+- Record the two QA sweeps of 2026-11-06/08 and fill in Unreleased ([#1998](https://github.com/stillwater-sc/universal/pull/1998))
+- Record the elastic reals sweep and the CORDIC family, and fill in Unreleased ([#2049](https://github.com/stillwater-sc/universal/pull/2049))
 
 ### Build System
 
