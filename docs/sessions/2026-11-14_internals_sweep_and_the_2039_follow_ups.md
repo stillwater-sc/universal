@@ -36,8 +36,9 @@ moved to its merge commit as an annotated tag. The rerun published the release a
 - **Cross-type promotion: option (a)** (user, #2059). Of the three options on the issue (promote by
   range and precision with a deterministic tie-break, a wider bridge than double past 53 bits, a
   compile error for incomparable types), the first. The double bridge stays. When neither type covers
-  the other, range wins over precision: a result past the narrow type's maxpos is lost, extra
-  significand bits only round away.
+  the other, the larger maximum exponent wins over precision: a result past the narrow type's maxpos
+  is lost, extra significand bits only round away. Precision decides only when the maximum exponents
+  tie, and the lower exponent bound only after that.
 
 ## Implementation Details
 
