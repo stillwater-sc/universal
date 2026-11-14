@@ -129,8 +129,8 @@ int VerifyProtocolConstraints() {
 }
 
 // accumulator_value to float and double rounds to nearest even from the full
-// quire. convert_to<>() keeps only the leading 53 bits, so these sums, whose
-// deciding bits lie further down, are where the two differ.
+// quire, and so does convert_to<>() since #2058 (it kept only the leading 53 bits,
+// truncating). These sums have their deciding bits further down.
 int VerifyRoundOut() {
 	using namespace sw::universal;
 	using Scalar = cfloat<32, 8, uint32_t, true, false, false>;
@@ -158,8 +158,8 @@ int VerifyRoundOut() {
 	// 1 + 3*2^-54: nearest double is 1 + 2^-52; truncation gives 1
 	Quire q = sum({ {one, one}, {three * p2(-27), p2(-27)} });
 	check("1 + 3*2^-54 to double", accumulator_value(q, to_double), 1.0 + std::ldexp(1.0, -52));
-	if (q.convert_to<double>() == accumulator_value(q, to_double)) {
-		std::cerr << "FAIL: fixture does not distinguish rounding from truncation\n";
+	if (q.convert_to<double>() != accumulator_value(q, to_double)) {
+		std::cerr << "FAIL: convert_to<double> does not round as accumulator_value does\n";
 		++nrOfFailedTestCases;
 	}
 	// a tie goes to even; any bit below the tie breaks it
@@ -241,7 +241,7 @@ int VerifyNativeRoundOut(const std::string& tag) {
 	check("1 + half ulp", accumulator_value(sum({ {one, one}, {half_ulp, one} }), to_real), one);
 	check("1 + half ulp + tiny",
 	      accumulator_value(sum({ {one, one}, {half_ulp, one}, {p2(-60), p2(-60)} }), to_real), one + u);
-	// quire_resolve rounds as accumulator_value does, not truncating like convert_to
+	// quire_resolve rounds as accumulator_value and convert_to do
 	const Quire t = sum({ {one, one}, {half_ulp, one}, {p2(-60), p2(-60)} });
 	check("quire_resolve", quire_resolve(t), one + u);
 

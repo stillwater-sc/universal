@@ -36,7 +36,8 @@
 // enable throwing specific exceptions for arithmetic errors
 // left to application to enable
 #if !defined(QUIRE_THROW_ARITHMETIC_EXCEPTION)
-// default is to use a stderr diagnostic as the signalling error
+// default: an operand outside the accumulator is dropped, silently (operator= leaves zero,
+// += skips it); the core has no I/O for a diagnostic (#2058)
 #	define QUIRE_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 #include <universal/utility/exceptions_check.hpp>  // reject a throw switch without exceptions (#1925)

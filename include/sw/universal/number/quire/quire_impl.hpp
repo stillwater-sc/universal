@@ -54,6 +54,11 @@ public:
 	static constexpr unsigned upper_range = Traits::upper_range;
 	static constexpr unsigned qbits       = range + capacity;
 	static constexpr unsigned msb_index   = qbits - 1;
+	// the scales the accumulator holds: bit 0 is 2^-radix_point, bit qbits - 1 is 2^(qbits - 1 - radix_point).
+	// The radix point need not sit in the middle (cfloat, fixpnt and bposit quires are asymmetric), so
+	// an operand is checked against these, not against +-half_range (#2058).
+	static constexpr int lowest_scale  = -static_cast<int>(radix_point);
+	static constexpr int highest_scale = static_cast<int>(qbits) - 1 - static_cast<int>(radix_point);
 
 	// the accumulator: unsigned magnitude with sign managed externally
 	using accumulator_type = blockbinary<qbits, LimbType, BinaryNumberType::Unsigned>;
@@ -123,14 +128,14 @@ public:
 		if (rhs.isinf() || rhs.isnan()) { record_nonfinite(rhs); return *this; }
 		_sign = rhs.sign();
 
-		int scale = rhs.scale();
+		const int top = leading_scale(rhs);
 #if QUIRE_THROW_ARITHMETIC_EXCEPTION
-		if (scale >  static_cast<int>(half_range)) throw operand_too_large_for_quire{};
-		if (scale < -static_cast<int>(half_range)) throw operand_too_small_for_quire{};
+		if (top > highest_scale) throw operand_too_large_for_quire{};
+		if (top < lowest_scale)  throw operand_too_small_for_quire{};
 #else
-		// Opt-out build: an operand outside the quire's dynamic range cannot be
-		// represented; leave the quire zero rather than throwing.
-		if (scale >  static_cast<int>(half_range) || scale < -static_cast<int>(half_range)) {
+		// Default build: an operand outside the accumulator cannot be represented; the
+		// quire is left zero (no diagnostic is printed: the core has no I/O, #1334).
+		if (top > highest_scale || top < lowest_scale) {
 			reset();
 			return *this;
 		}
@@ -162,11 +167,11 @@ public:
 			? (static_cast<uint64_t>(-(rhs + 1)) + 1ull)
 			: static_cast<uint64_t>(rhs);
 		if (magnitude == 0) return *this;
-		unsigned msb = find_msb(magnitude);
+		unsigned msb = find_msb(magnitude);   // the bit count: the leading bit is 2^(msb - 1)
 #if QUIRE_THROW_ARITHMETIC_EXCEPTION
-		if (msb > half_range + capacity) throw operand_too_large_for_quire{};
+		if (static_cast<int>(msb) - 1 > highest_scale) throw operand_too_large_for_quire{};
 #else
-		if (msb > half_range + capacity) { reset(); return *this; }
+		if (static_cast<int>(msb) - 1 > highest_scale) { reset(); return *this; }
 #endif
 		// place integer value at the radix point (integers have scale >= 0)
 		for (unsigned i = 0; i < 64 && i < msb; ++i) {
@@ -183,11 +188,11 @@ public:
 		clear();
 		_sign = false;
 		if (rhs == 0) return *this;
-		unsigned msb = find_msb(rhs);
+		unsigned msb = find_msb(rhs);         // the bit count: the leading bit is 2^(msb - 1)
 #if QUIRE_THROW_ARITHMETIC_EXCEPTION
-		if (msb > half_range + capacity) throw operand_too_large_for_quire{};
+		if (static_cast<int>(msb) - 1 > highest_scale) throw operand_too_large_for_quire{};
 #else
-		if (msb > half_range + capacity) { reset(); return *this; }
+		if (static_cast<int>(msb) - 1 > highest_scale) { reset(); return *this; }
 #endif
 		for (unsigned i = 0; i < 64 && i < msb; ++i) {
 			if (rhs & (uint64_t(1) << i)) {
@@ -228,14 +233,14 @@ public:
 		// NaN, recorded above, can still change it.
 		if (_is_pinf || _is_ninf) return *this;
 
-		int scale = rhs.scale();
+		const int top = leading_scale(rhs);
 #if QUIRE_THROW_ARITHMETIC_EXCEPTION
-		if (scale >  static_cast<int>(half_range)) throw operand_too_large_for_quire{};
-		if (scale < -static_cast<int>(half_range)) throw operand_too_small_for_quire{};
+		if (top > highest_scale) throw operand_too_large_for_quire{};
+		if (top < lowest_scale)  throw operand_too_small_for_quire{};
 #else
-		// Opt-out build: an operand outside the quire's dynamic range cannot be
-		// represented; skip it rather than throwing (leaves the running sum intact).
-		if (scale >  static_cast<int>(half_range) || scale < -static_cast<int>(half_range)) {
+		// Default build: an operand outside the accumulator cannot be represented; it is
+		// skipped and the running sum is left intact (no diagnostic: the core has no I/O).
+		if (top > highest_scale || top < lowest_scale) {
 			return *this;
 		}
 #endif
@@ -361,8 +366,8 @@ public:
 	bool isneg()  const noexcept { return sign(); }
 	bool ispos()  const noexcept { return !sign(); }
 	int  dynamic_range() const noexcept { return static_cast<int>(range); }
-	int  max_scale() const noexcept { return static_cast<int>(upper_range); }
-	int  min_scale() const noexcept { return -static_cast<int>(half_range); }
+	int  max_scale() const noexcept { return highest_scale; }   // the scale of the accumulator's top bit
+	int  min_scale() const noexcept { return lowest_scale; }    // the scale of its bit 0
 	int  capacity_range() const noexcept { return static_cast<int>(capacity); }
 	unsigned total_bits() const noexcept { return qbits + 1; }  // +1 for the sign bit
 
@@ -473,22 +478,29 @@ public:
 	}
 
 	/// Convert quire to a target number type.
-	/// This implementation extracts at most 53 significant bits (double precision).
-	/// For target types wider than 64 bits total, a direct bit-extraction path
-	/// would be needed; we guard against silent precision loss with a static_assert.
+	/// float and double are rounded to nearest, ties to even, once, from every bit of the
+	/// accumulator: the leading 64 bits and a sticky bit for the rest; a value beyond the
+	/// target's range overflows to +-inf, and one below it rounds through the subnormals (#2058).
+	/// An integral target is the value truncated toward zero, as static_cast does, saturated to
+	/// the target's range. Another target of at most 8 bytes goes through double, rounded to odd
+	/// so the target's own rounding of it is correct for targets of at most 51 significand bits;
+	/// for wider targets use to_blocktriple().
 	template<typename TargetType>
 	TargetType convert_to() const {
 		static_assert(sizeof(TargetType) <= 8,
-			"convert_to<T>() uses double as intermediate and is limited to 53 bits "
-			"of significand precision. Use to_blocktriple() for wider target types.");
+			"convert_to<T>() goes through at most 64 bits of the accumulator. "
+			"Use to_blocktriple() for wider target types.");
 		if (_is_nan) {
 			// Only floating-point targets have a NaN encoding; converting a NaN
 			// double to an integral type is undefined behavior, so return 0 there.
 			if constexpr (std::is_floating_point_v<TargetType>) {
 				return TargetType(std::numeric_limits<double>::quiet_NaN());
 			}
-			else {
+			else if constexpr (std::is_integral_v<TargetType>) {
 				return TargetType(0);
+			}
+			else {
+				return TargetType(std::numeric_limits<double>::quiet_NaN());
 			}
 		}
 		if (isinf()) {
@@ -502,20 +514,35 @@ public:
 			}
 		}
 		if (iszero()) return TargetType(0);
-		// find the scale
-		int s = scale();
-		// extract the most significant bits as a double for conversion
-		double value = 0.0;
-		double weight = std::ldexp(1.0, s);
-		int msb_pos = s + static_cast<int>(radix_point);
-		for (int i = msb_pos; i >= 0 && (msb_pos - i) < 53; --i) {
-			if (_accu.test(static_cast<unsigned>(i))) {
-				value += weight;
+		const int s = scale();
+		if constexpr (std::is_integral_v<TargetType>) {
+			// |value| < 2^(s+1): the integer part, truncated toward zero, saturated
+			using Lim = std::numeric_limits<TargetType>;
+			if (s < 0) return TargetType(0);
+			if (s >= Lim::digits) return _sign ? Lim::lowest() : Lim::max();
+			std::uint64_t m = 0;
+			for (int k = 0; k <= s; ++k) {
+				if (_accu.test(static_cast<unsigned>(static_cast<int>(radix_point) + k))) m |= (std::uint64_t(1) << k);
 			}
-			weight *= 0.5;
+			if (_sign) {
+				if constexpr (Lim::is_signed) {
+					// |lowest()| = max() + 1 fits in the unsigned magnitude
+					const std::uint64_t limit = static_cast<std::uint64_t>(Lim::max()) + 1u;
+					if (m >= limit) return Lim::lowest();
+					return static_cast<TargetType>(-static_cast<long long>(m));
+				}
+				else {
+					return TargetType(0);                     // a negative value saturates to 0
+				}
+			}
+			return static_cast<TargetType>(m);
 		}
-		if (_sign) value = -value;
-		return TargetType(value);
+		else if constexpr (std::is_floating_point_v<TargetType>) {
+			return round_to_native<TargetType>(s, false);
+		}
+		else {
+			return TargetType(round_to_native<double>(s, true));
+		}
 	}
 
 	// ////////////////////////////////////////////////////////////////=
@@ -602,6 +629,73 @@ private:
 		bool negative = v.sign();
 		if ((negative && _is_pinf) || (!negative && _is_ninf)) { setnan(); return; }
 		setinf(negative);
+	}
+
+	/// The leading 64 bits of the nonzero accumulator, its leading bit at bit 63, and whether
+	/// any bit below them is set. s is the scale of the leading bit.
+	void leading_bits(int s, std::uint64_t& m, bool& sticky) const {
+		const int top = s + static_cast<int>(radix_point);
+		m = 0;
+		for (int k = 0; k < 64; ++k) {
+			const int pos = top - k;
+			if (pos < 0) break;
+			if (_accu.test(static_cast<unsigned>(pos))) m |= (std::uint64_t(1) << (63 - k));
+		}
+		sticky = (top - 64 >= 0) && anyAfter(static_cast<unsigned>(top - 64));
+	}
+
+	/// The nonzero, finite value rounded to the native binary floating-point type Real: to
+	/// nearest, ties to even, or, with toOdd, to odd (the last kept bit ORed with the dropped
+	/// ones), which a later rounding to at least 2 fewer bits leaves correct. Overflow is +-inf
+	/// (toOdd: +-max(), which a later rounding saturates or overflows as the target does).
+	template<typename Real>
+	Real round_to_native(int s, bool toOdd) const {
+		using Lim = std::numeric_limits<Real>;
+		constexpr int p    = Lim::digits;            // significand bits, the hidden one included
+		constexpr int emin = Lim::min_exponent - 1;  // the scale of the smallest normal
+		constexpr int emax = Lim::max_exponent - 1;  // the scale of the largest binade
+		std::uint64_t m;
+		bool sticky;
+		leading_bits(s, m, sticky);
+		// the value is m 2^(s - 63) plus the sticky tail; quantum q = 2^(max(s, emin) - (p - 1))
+		const int q = ((s > emin) ? s : emin) - (p - 1);
+		const int shift = q - (s - 63);              // the low bits of m below the quantum
+		std::uint64_t kept;
+		bool roundBit, rest;
+		if (shift >= 65) { kept = 0; roundBit = false; rest = true; }
+		else if (shift == 64) { kept = 0; roundBit = (m >> 63) != 0; rest = ((m << 1) != 0) || sticky; }
+		else {
+			kept = m >> shift;
+			roundBit = (shift > 0) && (((m >> (shift - 1)) & 1u) != 0);
+			rest = sticky || ((shift > 1) && ((m & ((std::uint64_t(1) << (shift - 1)) - 1u)) != 0));
+		}
+		if (toOdd) {
+			if (roundBit || rest) kept |= 1u;
+		}
+		else if (roundBit && (rest || (kept & 1u))) {
+			++kept;                                      // a carry to 2^p stays exact in Real
+		}
+		Real v;
+		if (s > emax) {
+			v = toOdd ? Lim::max() : Lim::infinity();
+		}
+		else {
+			v = std::ldexp(static_cast<Real>(kept), q); // exact, or the overflow of a carry: inf
+			if (toOdd && std::isinf(v)) v = Lim::max();
+		}
+		return _sign ? -v : v;
+	}
+
+	/// The scale of a blocktriple's leading significand bit: its scale, plus the bits a MUL or
+	/// ADD result carries above its radix (accu_base_offset places by the static radix)
+	template<unsigned fbits, BlockTripleOperator op, typename bt>
+	static int leading_scale(const blocktriple<fbits, op, bt>& v) {
+		constexpr unsigned bfbits = blocktriple<fbits, op, bt>::bfbits;
+		constexpr int bt_radix = blocktriple<fbits, op, bt>::radix;
+		for (unsigned i = bfbits; i-- > 0;) {
+			if (v.test(i)) return v.scale() + static_cast<int>(i) - bt_radix;
+		}
+		return v.scale();
 	}
 
 	// ////////////////////////////////////////////////////////////////=
