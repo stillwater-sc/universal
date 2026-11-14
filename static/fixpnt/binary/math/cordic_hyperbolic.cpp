@@ -9,7 +9,8 @@
 // cordic::exp, sinh, cosh, sinhcosh and tanh (hyperbolic rotation), cordic::atanh, log and sqrt (hyperbolic
 // vectoring), and cordic::tan (circular rotation, then linear vectoring) model a shift-and-add CORDIC unit
 // in the type's own arithmetic. With the default guard width and iteration count, every result is within
-// 1 ulp of the exact value, at any width; the measured worst case is printed for each configuration.
+// kWorst = 0.6 ulp of the exact value, at any width; the measured worst case is printed for each
+// configuration. A final step that truncates instead of rounding to nearest exceeds that bound.
 //
 // The references are independent of the engine: double for formats of at most 32 bits, whose values a
 // double holds exactly and whose ulp is far above double's error, and qd (~212 bits) beyond that, with the
@@ -24,6 +25,7 @@
 // The double-path exp, log, sinh, cosh, tanh, atanh and sqrt keep their own tests.
 #include <universal/utility/directives.hpp>
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <cmath>
 #include <cstdint>
@@ -40,7 +42,7 @@ namespace {
 	// the double overloads, ahead of everything: unqualified, abs(double) would find an integer abs
 	using std::abs; using std::floor; using std::ldexp;
 	using std::exp; using std::log; using std::sqrt; using std::sinh; using std::cosh; using std::tanh;
-	using std::atanh; using std::tan;
+	using std::atanh; using std::tan; using std::atan;
 
 	// the exact value of a fixpnt as a qd, 32 bits at a time
 	template<typename Fixed>
@@ -136,7 +138,10 @@ namespace {
 		return fails;
 	}
 
-	// every function within 1 ulp at the default guard width and iteration count
+	// every function within the bound at the default guard width and iteration count. The measured worst
+	// over every configuration below, all four levels, is 0.566 ulp (tan in fixpnt<16,15>); kWorst leaves a
+	// little room for samples, and a final step that truncates exceeds it.
+	constexpr double kWorst = 0.6;
 	template<typename Fixed>
 	int VerifyHyperbolic(const std::string& tag, bool reportTestCases, unsigned long long samples) {
 		Worst w;
@@ -147,8 +152,8 @@ namespace {
 		          << "   (g = " << cordic::hyperbolic_guard_bits<Fixed> << ", n = " << cordic::hyperbolic_iterations<Fixed> << ")\n";
 		std::cout.unsetf(std::ios::fixed);
 		for (double e : { w.exp, w.sinh, w.cosh, w.tanh, w.atanh, w.log, w.sqrt, w.tan }) {
-			if (e > 1.0) {
-				if (reportTestCases) std::cerr << "FAIL: " << tag << " error " << e << " ulp exceeds 1 ulp\n";
+			if (e > kWorst) {
+				if (reportTestCases) std::cerr << "FAIL: " << tag << " error " << e << " ulp exceeds " << kWorst << " ulp\n";
 				++fails;
 			}
 		}
@@ -220,9 +225,99 @@ namespace {
 		const double ga = worst(std::integral_constant<unsigned, cordic::auto_guard>{});
 		std::cout << type_tag(Fixed()) << " worst exp/log error at the default iteration count: g = 0: " << g0
 		          << "  g = 2: " << g2 << "  g = 4: " << g4 << "  g = " << cordic::hyperbolic_guard_bits<Fixed> << ": " << ga << '\n';
-		if (!(g0 > g2 && g2 > g4 && g4 >= ga && g0 > 1.0 && ga <= 1.0)) {
+		if (!(g0 > g2 && g2 > g4 && g4 >= ga && g0 > 1.0 && ga <= kWorst)) {
 			if (reportTestCases) std::cerr << "FAIL: " << type_tag(Fixed()) << " the error does not fall with the guard width\n";
 			++fails;
+		}
+		return fails;
+	}
+
+	// the worst error of sinh, cosh, tanh, atanh, sqrt and tan over every encoding, at an iteration count
+	// and a guard width; tan has its own circular datapath, and its count sets both of its passes
+	template<typename Fixed, unsigned guard = cordic::auto_guard>
+	Worst MeasureOthers(unsigned n, unsigned nTan) {
+		Worst w;
+		for (std::uint64_t b = 0; b < (1ull << Fixed::nbits); ++b) {
+			Fixed x;
+			x.setbits(b);
+			const double e = double(x);
+			w.sinh = std::max(w.sinh, ulp_error(cordic::sinh<guard>(x, n), std::sinh(e), true));
+			w.cosh = std::max(w.cosh, ulp_error(cordic::cosh<guard>(x, n), std::cosh(e), true));
+			w.tanh = std::max(w.tanh, ulp_error(cordic::tanh<guard>(x, n), std::tanh(e)));
+			if (std::abs(e) < 1.0) w.atanh = std::max(w.atanh, ulp_error(cordic::atanh<guard>(x, n), std::atanh(e)));
+			if (e > 0.0) w.sqrt = std::max(w.sqrt, ulp_error(cordic::sqrt<guard>(x, n), std::sqrt(e), true));
+			w.tan = std::max(w.tan, ulp_error(cordic::tan<guard>(x, nTan), std::tan(e), true));
+		}
+		return w;
+	}
+
+	inline std::array<double, 6> others_of(const Worst& w) { return { w.sinh, w.cosh, w.tanh, w.atanh, w.sqrt, w.tan }; }
+	constexpr const char* kOtherNames[6] = { "sinh", "cosh", "tanh", "atanh", "sqrt", "tan" };
+
+	// the iteration count controls sinh, cosh, tanh, atanh, sqrt and tan as it does exp and log: two
+	// iterations leave every function far off, and the default count is within the bound. The hyperbolic
+	// functions' error does not rise with more iterations. tan's can: near its pole the error of cos is
+	// amplified by 1 / cos^2, and a count too short for that flips a saturated result between maxpos and
+	// maxneg, so for tan the default count must instead be the best of all of them.
+	template<typename Fixed>
+	int VerifyIterationCountOthers(bool reportTestCases) {
+		using HCfg = cordic::detail::hyperbolic_config<Fixed::nbits, Fixed::rbits, cordic::auto_guard>;
+		using TCfg = cordic::detail::tan_config<Fixed::nbits, Fixed::rbits, cordic::auto_guard>;
+		int fails = 0;
+		std::array<double, 6> previous{};
+		double bestTan = 1e300;
+		std::cout << type_tag(Fixed()) << " worst sinh/cosh/tanh/atanh/sqrt/tan error against the iteration count:\n";
+		// the hyperbolic and the tan counts advance together, each up to its own default
+		const unsigned last = (HCfg::iterations > TCfg::R) ? HCfg::iterations : TCfg::R;
+		for (unsigned n = 2; n <= last; ++n) {
+			const std::array<double, 6> w = others_of(MeasureOthers<Fixed>(n, n));
+			std::cout << "  n = " << std::setw(2) << n;
+			for (unsigned f = 0; f < 6; ++f) std::cout << "  " << kOtherNames[f] << ' ' << std::setw(9) << w[f];
+			std::cout << '\n';
+			for (unsigned f = 0; f < 6; ++f) {
+				const bool rising = (f != 5) && (n > 2) && (w[f] > previous[f] * 1.0001 + 0.5);
+				const bool loose  = (n == 2) && !(w[f] > 2.0);
+				if (rising || loose) {
+					if (reportTestCases) std::cerr << "FAIL: " << type_tag(Fixed()) << ' ' << kOtherNames[f] << " n = " << n << " error " << w[f]
+					                               << (rising ? " rose from " : " is already small at 2 iterations: ") << previous[f] << '\n';
+					++fails;
+				}
+			}
+			if (n < last) bestTan = std::min(bestTan, w[5]);
+			previous = w;
+		}
+		if (previous[5] > bestTan) {
+			if (reportTestCases) std::cerr << "FAIL: " << type_tag(Fixed()) << " tan at the default count " << previous[5] << " is worse than at a shorter count " << bestTan << '\n';
+			++fails;
+		}
+		for (unsigned f = 0; f < 6; ++f) {
+			if (previous[f] > kWorst) {
+				if (reportTestCases) std::cerr << "FAIL: " << type_tag(Fixed()) << ' ' << kOtherNames[f] << " at the default count: " << previous[f] << " ulp\n";
+				++fails;
+			}
+		}
+		return fails;
+	}
+
+	// the guard width sets the floor for sinh, cosh, tanh, atanh, sqrt and tan, at the default count: the
+	// error does not rise with more guard bits, and none is at least 0.1 ulp worse than the default width.
+	// The bounded tanh and atanh stay below 1 ulp even with none; the others exceed it.
+	template<typename Fixed>
+	int VerifyGuardWidthOthers(bool reportTestCases) {
+		int fails = 0;
+		const std::array<double, 6> g0 = others_of(MeasureOthers<Fixed, 0>(~0u, ~0u));
+		const std::array<double, 6> g2 = others_of(MeasureOthers<Fixed, 2>(~0u, ~0u));
+		const std::array<double, 6> g4 = others_of(MeasureOthers<Fixed, 4>(~0u, ~0u));
+		const std::array<double, 6> ga = others_of(MeasureOthers<Fixed>(~0u, ~0u));
+		std::cout << type_tag(Fixed()) << " worst error at the default iteration count against the guard width (g = 0, 2, 4, default):\n";
+		for (unsigned f = 0; f < 6; ++f) {
+			std::cout << "  " << std::setw(5) << kOtherNames[f] << ' ' << std::setw(9) << g0[f] << ' ' << std::setw(9) << g2[f]
+			          << ' ' << std::setw(9) << g4[f] << ' ' << std::setw(9) << ga[f] << '\n';
+			const bool bounded = (f == 2 || f == 3);
+			if (!((bounded || g0[f] > 1.0) && g0[f] >= ga[f] + 0.1 && g0[f] >= g2[f] && g2[f] >= g4[f] && g4[f] >= ga[f] && ga[f] <= kWorst)) {
+				if (reportTestCases) std::cerr << "FAIL: " << type_tag(Fixed()) << ' ' << kOtherNames[f] << " the error does not fall with the guard width\n";
+				++fails;
+			}
 		}
 		return fails;
 	}
@@ -289,6 +384,15 @@ namespace {
 		const Fixed nearly_one = one - minpos;
 		near(cordic::atanh(nearly_one), atanh(exact_of(nearly_one)), "atanh(1 - ulp)");
 		near(cordic::atanh(-nearly_one), atanh(exact_of(-nearly_one)), "atanh(-1 + ulp)");
+		// tan around its pole at pi/2, where it changes sign through +-inf, and at the ends of the range,
+		// through the range reduction of the largest arguments; the unbounded results saturate
+		const R pi = R(4.0) * atan(R(1.0));
+		const R pi_over_2 = pi / R(2.0);
+		for (const Fixed& p : { Fixed(double(pi_over_2)), Fixed(double(-pi_over_2)), Fixed(double(R(3.0) * pi_over_2)) }) {
+			for (const Fixed& t : { p - minpos, p, p + minpos }) near(cordic::tan(t), tan(exact_of(t)), "tan near an odd multiple of pi/2");
+		}
+		near(cordic::tan(maxpos), tan(exact_of(maxpos)), "tan(maxpos)");
+		near(cordic::tan(maxneg), tan(exact_of(maxneg)), "tan(maxneg)");
 		// the domain errors: fixpnt has no NaN
 		errno = 0;
 		expect(cordic::log(zero), maxneg, "log(0)");
@@ -371,16 +475,21 @@ try {
 	nrOfFailedTestCases += ReportTestResult((VerifyHyperbolic<fixpnt<64, 60, Saturate, std::uint32_t>>("fixpnt<64,60,sat>", reportTestCases, 500)), "fixpnt<64,60,sat>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyHyperbolic<fixpnt<64, 32, Modulo, std::uint64_t>>("fixpnt<64,32,mod>", reportTestCases, 500)), "fixpnt<64,32,mod>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyHyperbolic<fixpnt<128, 120, Saturate, std::uint32_t>>("fixpnt<128,120,sat>", reportTestCases, 100)), "fixpnt<128,120,sat>", test_tag);
+	// byte limbs in a wide type: every carry and shift crosses many block boundaries
+	nrOfFailedTestCases += ReportTestResult((VerifyHyperbolic<fixpnt<72, 40, Modulo, std::uint8_t>>("fixpnt<72,40,mod,u8>", reportTestCases, 300)), "fixpnt<72,40,mod,u8>", test_tag);
 
 	// the hardware-model knobs
 	nrOfFailedTestCases += ReportTestResult((VerifyIterationCount<fixpnt<16, 12, Saturate, std::uint16_t>>(reportTestCases)), "iteration count", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyGuardWidth<fixpnt<16, 12, Saturate, std::uint16_t>>(reportTestCases)), "guard width", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyIterationCountOthers<fixpnt<12, 8, Saturate, std::uint16_t>>(reportTestCases)), "iteration count, other functions", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyGuardWidthOthers<fixpnt<12, 8, Saturate, std::uint16_t>>(reportTestCases)), "guard width, other functions", test_tag);
 
 	// special arguments
 	nrOfFailedTestCases += ReportTestResult((VerifySpecialArguments<fixpnt<16, 8, Saturate, std::uint16_t>>(reportTestCases)), "fixpnt<16,8,sat> special", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifySpecialArguments<fixpnt<16, 8, Modulo, std::uint16_t>>(reportTestCases)), "fixpnt<16,8,mod> special", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifySpecialArguments<fixpnt<32, 24, Saturate, std::uint32_t>>(reportTestCases)), "fixpnt<32,24,sat> special", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifySpecialArguments<fixpnt<128, 120, Saturate, std::uint32_t>>(reportTestCases)), "fixpnt<128,120,sat> special", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifySpecialArguments<fixpnt<72, 40, Saturate, std::uint8_t>>(reportTestCases)), "fixpnt<72,40,sat,u8> special", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
