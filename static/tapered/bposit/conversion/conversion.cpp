@@ -174,12 +174,13 @@ int VerifyLimbArithmetic(bool report) {
 	// exact small-integer arithmetic on the narrowest limbs
 	for (int x = -40; x <= 40; ++x) {
 		for (int y = 1; y <= 12; ++y) {
+			// compared as bposits, not through a truncating integer cast, which would let 2.25 pass for 2
 			const B8 a(x), b(y);
-			if (static_cast<int>(a + b) != x + y || static_cast<int>(a - b) != x - y || static_cast<int>(a * b) != x * y) {
+			if (!(a + b == B8(x + y)) || !(a - b == B8(x - y)) || !(a * b == B8(x * y))) {
 				++fails;
 				if (report && fails < 8) std::cerr << "FAIL " << sw::universal::type_tag(a) << " " << x << " op " << y << " not exact\n";
 			}
-			if (x % y == 0 && static_cast<int>(a / b) != x / y) ++fails;
+			if (x % y == 0 && !(a / b == B8(x / y))) ++fails;
 		}
 	}
 	return fails;
