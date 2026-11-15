@@ -82,13 +82,26 @@ constexpr unsigned bposit_quire_size() {
 	return quire_traits<bposit<nbits, rs, es, std::uint8_t>>::range + capacity;
 }
 
+// The stride forms take n as the INDEX bound, not the product count: they accumulate
+// x[k*incx] * y[k*incy] for every k with k*incx < n and k*incy < n, so about n / max(incx, incy)
+// products.  BLAS dot takes n as the count; pass n = count * inc for that.  Every fdp header
+// (posit, bposit, cfloat, fixpnt, lns, dbns) uses this one meaning (#2080).
+//
+// A zero stride, or an index past either vector, is the caller's error and gives NaR in every
+// build, as posit's fdp does since #2071 (#2080).  The asserts these replace vanished under
+// NDEBUG, leaving an endless loop or an out-of-bounds read.
+
 // fused dot product into a caller-supplied quire, with strides
 template<typename Qy, typename Vector>
 void fdp_qc(Qy& sum_of_products, std::size_t n, const Vector& x, std::size_t incx, const Vector& y, std::size_t incy,
             std::enable_if_t<is_bposit<typename Vector::value_type>, int> = 0) {
-	assert(incx > 0 && incy > 0 && "fdp_qc: strides must be positive");
+	using Scalar = typename Vector::value_type;
+	if (n == 0) return;
+	Scalar nar;
+	nar.setnar();
+	if (incx == 0 || incy == 0) { sum_of_products += quire_mul(nar, nar); return; }
 	for (std::size_t ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
-		assert(ix < x.size() && iy < y.size() && "fdp_qc: index out of bounds");
+		if (ix >= x.size() || iy >= y.size()) { sum_of_products += quire_mul(nar, nar); return; }
 		sum_of_products += quire_mul(x[ix], y[iy]);
 	}
 }
@@ -99,9 +112,12 @@ enable_if_bposit<typename Vector::value_type, typename Vector::value_type>
 fdp_stride(std::size_t n, const Vector& x, std::size_t incx, const Vector& y, std::size_t incy) {
 	using Scalar = typename Vector::value_type;
 	quire<Scalar> q;
-	assert(incx > 0 && incy > 0 && "fdp_stride: strides must be positive");
+	Scalar nar;
+	nar.setnar();
+	if (n == 0) return Scalar(0);
+	if (incx == 0 || incy == 0) return nar;
 	for (std::size_t ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
-		assert(ix < x.size() && iy < y.size() && "fdp_stride: index out of bounds");
+		if (ix >= x.size() || iy >= y.size()) return nar;
 		q += quire_mul(x[ix], y[iy]);
 	}
 	return quire_resolve(q);
@@ -114,7 +130,9 @@ fdp(const Vector& x, const Vector& y) {
 	using Scalar = typename Vector::value_type;
 	quire<Scalar> q;
 	const std::size_t n = x.size();
-	assert(n <= y.size() && "fdp: y must be at least as long as x");
+	// a y shorter than x gives NaR, in every build (#2080): the assert vanished under NDEBUG and
+	// the loop read past y
+	if (n > y.size()) { Scalar nar; nar.setnar(); return nar; }
 	for (std::size_t i = 0; i < n; ++i) q += quire_mul(x[i], y[i]);
 	return quire_resolve(q);
 }

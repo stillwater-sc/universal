@@ -70,7 +70,9 @@ class valid {
 	         std::enable_if_t<std::is_arithmetic_v<Lower> && std::is_arithmetic_v<Upper>, int> = 0>
 	valid(Lower lower, Upper upper) noexcept {
 		if constexpr (std::is_integral_v<Lower> && std::is_integral_v<Upper>) {
-			if (std::cmp_greater(lower, upper)) {
+			// unary + promotes bool and the character types, which std::cmp_greater rejects, to
+			// int or unsigned (#2080); the standard integer types pass through unchanged
+			if (std::cmp_greater(+lower, +upper)) {
 				setnar();
 				return;
 			}

@@ -19,6 +19,7 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <limits>
 
@@ -153,6 +154,92 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
+	// The saturating subtractor (#2080).  one_minus(v) = 1 - v must stay a positive bus value when a
+	// truncated exp unit gives v >= 1, or log2 of it is -inf or NaN.  The unit checks pin the
+	// branch directly; the reach check proves a real configuration takes it, which the error-bound
+	// sweep alone did not: at 4 iterations no d in (-1, 0) reaches it, at 12 a handful do.
+	template<typename LnsType, unsigned Iterations>
+	int VerifySaturatingSubtractor(bool reportTestCases) {
+		using Policy = CORDICDatapathAddSub<LnsType, Iterations>;
+		using W = typename Policy::Wide;
+		int nrOfFailedTestCases = 0;
+		W minpos; minpos.setbits(1u);
+		W one(1), above(1); above += minpos;
+		if (!(Policy::one_minus(one) == minpos))   ++nrOfFailedTestCases;   // 1 - 1 = 0 saturates
+		if (!(Policy::one_minus(above) == minpos)) ++nrOfFailedTestCases;   // 1 - (1 + ulp) < 0 saturates
+		if (!(Policy::one_minus(W(0.25)) == W(0.75))) ++nrOfFailedTestCases; // an ordinary difference is exact
+		// the band d in (-1, 0) on the lns grid: where 2^d comes out >= 1, sb_sub must stay finite and in bound
+		constexpr int r = static_cast<int>(LnsType::rbits);
+		const double bound = lns_addsub_log_error_bound_v<Policy> * std::ldexp(1.0, r);
+		const long double ulp = std::ldexp(1.0L, -r);
+		const long double ln2 = 0.693147180559945309417232121458176568L;
+		int reached = 0;
+		for (long long k = 1; k < (1ll << r); ++k) {
+			const double d = -std::ldexp(static_cast<double>(k), -r);
+			if (Policy::template pow2<W>(W(d)) < W(1)) continue;
+			++reached;
+			const double v = Policy::sb_sub(d);
+			const long double ref = std::log2(-std::expm1(static_cast<long double>(d) * ln2));
+			const double err = static_cast<double>(std::fabs(v - ref) / ulp);
+			if (!std::isfinite(v) || !(err <= bound)) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL saturated sb_sub(" << d << ") = " << v << ", error " << err << " lns units\n";
+			}
+		}
+		if (reached == 0) ++nrOfFailedTestCases;                              // the branch must actually be reached
+		if (reportTestCases) std::cout << "saturating subtractor reached at " << reached << " band arguments\n";
+		return nrOfFailedTestCases;
+	}
+
+	// The datapath and DirectEvaluation round to the same or to neighbouring encodings over sampled sums
+	// and differences (#2080).  They are NOT bit-identical, as #2048's commit message said: about 0.8% of
+	// lns<16,8> results and 0.4% of lns<24,12> results differ by one encoding, where the two corrections
+	// straddle a rounding boundary.  So this pins neighbours, and that differences stay rare.
+	template<typename LnsType>
+	int VerifyNeighboursOfDirect(bool reportTestCases, int nrSamples, double maxFraction) {
+		using Policy = CORDICDatapathAddSub<LnsType>;
+		using Direct = DirectEvaluationAddSub<LnsType>;
+		const double step = std::exp2(std::ldexp(1.0, -static_cast<int>(LnsType::rbits))) - 1.0;
+		std::uint64_t state = 0x2080u;
+		auto next = [&state]() { state = state * 6364136223846793005ull + 1442695040888963407ull; return state >> 11; };
+		int nrOfFailedTestCases = 0, differ = 0, total = 0;
+		for (int i = 0; i < nrSamples; ++i) {
+			const double x = (static_cast<double>(next()) / 9007199254740992.0 - 0.5) * 2000.0;
+			const double y = (static_cast<double>(next()) / 9007199254740992.0 - 0.5) * 2000.0;
+			const LnsType a(x), b(y);
+			for (int op = 0; op < 2; ++op) {
+				LnsType c = a, cref = a;
+				if (op == 0) { Policy::add_assign(c, b); Direct::add_assign(cref, b); }
+				else         { Policy::sub_assign(c, b); Direct::sub_assign(cref, b); }
+				++total;
+				if (c == cref || (c.isnan() && cref.isnan())) continue;
+				++differ;
+				const double v = double(c), vref = double(cref);
+				const double mag = std::fmax(std::fabs(vref), double(LnsType(SpecificValue::minpos)));
+				if (std::fabs(v - vref) <= step * mag * 1.0001) continue;
+				++nrOfFailedTestCases;
+				if (reportTestCases) std::cout << "FAIL " << x << (op == 0 ? " + " : " - ") << y << " = " << v << ", DirectEvaluation " << vref << '\n';
+			}
+		}
+		if (static_cast<double>(differ) > maxFraction * static_cast<double>(total)) ++nrOfFailedTestCases;
+		if (reportTestCases) std::cout << "datapath and DirectEvaluation differ in " << differ << " of " << total << " results\n";
+		return nrOfFailedTestCases;
+	}
+
+	// one iteration below the default: still within its trait's bound, and not more accurate than the default
+	template<typename LnsType>
+	int VerifyJustBelowDefault(bool reportTestCases) {
+		using Default = CORDICDatapathAddSub<LnsType>;
+		constexpr unsigned n = Default::template iterations<typename Default::Narrow>();
+		using Below = CORDICDatapathAddSub<LnsType, n - 1u>;
+		int nrOfFailedTestCases = 0;
+		const double below = WorstWithinBound<Below, LnsType>(nrOfFailedTestCases, reportTestCases, "one iteration below the default");
+		const double full  = WorstWithinBound<Default, LnsType>(nrOfFailedTestCases, reportTestCases, "default");
+		if (!(below >= full)) ++nrOfFailedTestCases;
+		if (reportTestCases) std::cout << "iterations " << (n - 1u) << ": " << below << ", default " << n << ": " << full << " lns units\n";
+		return nrOfFailedTestCases;
+	}
+
 }}  // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -214,6 +301,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAgainstDirect<LNS8_4>(reportTestCases), "lns<8,4>", "add/sub vs DirectEvaluation");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS8_4_cordic>(reportTestCases), "lns<8,4,uint16_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<LNS8_4_cordic>(reportTestCases), "lns<8,4,uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult((VerifySaturatingSubtractor<lns<32, 16, std::uint32_t>, 12>(reportTestCases)), "lns<32,16>, 12 iterations", "saturating subtractor");
+	nrOfFailedTestCases += ReportTestResult(VerifyNeighboursOfDirect<LNS16_8>(reportTestCases, 4000, 0.02), "lns<16,8>", "neighbours of DirectEvaluation");
+	nrOfFailedTestCases += ReportTestResult(VerifyJustBelowDefault<LNS16_8>(reportTestCases), "lns<16,8>", "one iteration below the default");
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -230,6 +320,14 @@ try {
 		WorstWithinBound<CORDICDatapathAddSub<LNS32_16t, 12>, LNS32_16t>(failed, reportTestCases, "lns<32,16>, 12 iterations", 31);
 		nrOfFailedTestCases += ReportTestResult(failed, "lns<32,16>", "truncated units within bound");
 	}
+	{
+		// a denser level-2 sweep of lns<32,16> than level 3's stride 7 reaches at level 1 (#2080)
+		using LNS32_16d = lns<32, 16, std::uint32_t>;
+		nrOfFailedTestCases += ReportTestResult(
+		    VerifyCorrections<CORDICDatapathAddSub<LNS32_16d>, LNS32_16d>(reportTestCases, "lns<32,16>", bound, 61), "lns<32,16>", "corrections, stride 61");
+	}
+	nrOfFailedTestCases += ReportTestResult(VerifyNeighboursOfDirect<lns<24, 12, std::uint32_t>>(reportTestCases, 4000, 0.02), "lns<24,12>", "neighbours of DirectEvaluation");
+	nrOfFailedTestCases += ReportTestResult(VerifyJustBelowDefault<LNS12_6>(reportTestCases), "lns<12,6>", "one iteration below the default");
 #endif
 
 #if REGRESSION_LEVEL_3

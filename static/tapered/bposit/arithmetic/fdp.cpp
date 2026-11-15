@@ -170,6 +170,25 @@ int VerifySpecialCases(bool report) {
 	// strided form
 	const std::vector<B> x{ one, B(100), B(2), B(100), B(3) };
 	expect(sw::universal::fdp_stride(5, x, 2, x, 2) == B(14), "fdp_stride over every other element: 1 + 4 + 9");
+	// n bounds the index, the meaning every fdp header shares (#2080): indices 0 and 2 are below 4 and 3
+	expect(sw::universal::fdp_stride(4, x, 2, x, 2) == B(5), "fdp_stride(4, x, 2): indices 0 and 2, 1 + 4");
+	expect(sw::universal::fdp_stride(3, x, 2, x, 2) == B(5), "fdp_stride(3, x, 2): indices 0 and 2, 1 + 4");
+	expect(sw::universal::fdp_stride(1, x, 2, x, 2) == B(1), "fdp_stride(1, x, 2): index 0 only");
+	// caller errors give NaR in every build, NDEBUG included (#2080): they were asserts, which left an
+	// endless loop (zero stride) or an out-of-bounds read (index past a vector) in a release build
+	expect(sw::universal::fdp_stride(5, x, 0, x, 2).isnar(), "fdp_stride with a zero stride is NaR");
+	expect(sw::universal::fdp_stride(5, x, 2, x, 0).isnar(), "fdp_stride with a zero y stride is NaR");
+	expect(sw::universal::fdp_stride(7, x, 2, x, 2).isnar(), "fdp_stride past the end of the vectors is NaR");
+	expect(sw::universal::fdp_stride(0, x, 0, x, 0).iszero(), "fdp_stride of no terms is zero, whatever the strides");
+	{
+		sw::universal::quire<B> qc;
+		sw::universal::fdp_qc(qc, 5, x, 0, x, 1);
+		expect(sw::universal::quire_resolve(qc).isnar(), "fdp_qc with a zero stride makes the quire NaR");
+		sw::universal::quire<B> qp;
+		sw::universal::fdp_qc(qp, 7, x, 2, x, 2);
+		expect(sw::universal::quire_resolve(qp).isnar(), "fdp_qc past the end of the vectors makes the quire NaR");
+	}
+	expect(sw::universal::fdp(x, std::vector<B>{ one, one }).isnar(), "fdp with y shorter than x is NaR");
 	return fails;
 }
 

@@ -28,6 +28,35 @@ void check(bool condition, const char* operation, unsigned lhs, unsigned rhs) {
 	}
 }
 
+// cos(v) must enclose cos(t) for every t in v (#2080).  cos is a truncated alternating series with
+// interval coefficients, whose remainder bound is not guaranteed past |x| ~ 28, so the sweep runs to
+// 60, on exact points, on the tiles between them, and on wider intervals; the reference is std::cos
+// of points sampled inside the input, which shares nothing with the series.
+template<typename Valid>
+void CheckCosEnclosure(const char* label) {
+	int localFailures = 0;
+	auto enclose = [&](const Valid& v) {
+		if (v.isnar()) return;
+		const Valid c = cos(v);
+		const double lo = v.template lower<double>();
+		const double hi = v.template upper<double>();
+		if (!std::isfinite(lo) || !std::isfinite(hi)) return;
+		for (int k = 0; k <= 8; ++k) {
+			double t = lo + (hi - lo) * (static_cast<double>(k) / 8.0);
+			if (k == 0 && v.lower_open()) t = std::nextafter(lo, hi);
+			if (k == 8 && v.upper_open()) t = std::nextafter(hi, lo);
+			if (!contains(c, static_cast<long double>(std::cos(static_cast<long double>(t))))) {
+				if (++localFailures <= 3) std::cerr << "FAIL: " << label << " cos([" << lo << ", " << hi << "]) misses cos(" << t << ")\n";
+			}
+		}
+	};
+	for (double x = -60.0; x < 60.0; x += 0.37) {
+		enclose(Valid(x));                       // a point, or the open tile around it
+		enclose(Valid(x, x + 0.75));             // an interval
+	}
+	if (localFailures) check(false, label, 0, 0);
+}
+
 }  // namespace
 
 int main() {
@@ -178,6 +207,37 @@ int main() {
 	check(!multiLimbThird.isnar() && multiLimbThird.isinterval() && multiLimbThird.lower_open() &&
 	          multiLimbThird.upper_open(),
 	      "multi-limb inexact division", 0, 0);
+
+	// valid(Lower, Upper) with bool and character arguments compiles and orders them (#2080)
+	{
+		using V = valid<8, 0>;
+		check(!V(false, true).isnar() && V(false, true).contains(0.0) && V(false, true).contains(1.0), "valid(bool, bool)", 0, 0);
+		check(V(true, false).isnar(), "valid(true, false) is reversed", 0, 0);
+		check(!V('\x01', '\x03').isnar() && V('\x01', '\x03').contains(2.0), "valid(char, char)", 0, 0);
+		check(V('\x03', 1u).isnar(), "valid(char, unsigned) reversed", 0, 0);
+		check(!V(u'\x02', 3LL).isnar(), "valid(char16_t, long long)", 0, 0);
+	}
+
+	// sqrt of an interval that reaches into the negatives keeps its real part
+	check(sqrt(WideValid(WidePosit(-1), WidePosit(4))).lower<double>() == 0.0 &&
+	          sqrt(WideValid(WidePosit(-1), WidePosit(4))).contains(2.0),
+	      "sqrt of [-1, 4] is [0, 2]", 0, 0);
+	check(sqrt(WideValid(WidePosit(-1), WidePosit(0))).iszero(), "sqrt of [-1, 0] is 0", 0, 0);
+	// square of an interval across zero: the lower bound is 0, the upper the larger square
+	{
+		const WideValid sq = square(WideValid(WidePosit(-3), WidePosit(2)));
+		// 9 is not on valid<8,1>'s lattice: the upper end is the tile that holds it, not beyond
+		check(sq.lower<double>() == 0.0 && sq.lower_closed() && contains(sq, 9.0L) && sq.upper<double>() <= 10.0,
+		      "square of [-3, 2] is [0, 9]", 0, 0);
+		const WideValid sqOpen = square(WideValid(WidePosit(-1), WidePosit(1), true, true));
+		check(sqOpen.lower<double>() == 0.0 && sqOpen.lower_closed() && sqOpen.upper_open() && !contains(sqOpen, 1.0L),
+		      "square of (-1, 1) is [0, 1)", 0, 0);
+	}
+
+	// cos encloses for non-trivial arguments
+	CheckCosEnclosure<valid<32, 2>>("valid<32,2>");
+	CheckCosEnclosure<valid<16, 1>>("valid<16,1>");
+	CheckCosEnclosure<valid<8, 0>>("valid<8,0>");
 
 	if (failures == 0)
 		std::cout << "valid arithmetic: PASS\n";

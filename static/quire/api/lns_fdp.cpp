@@ -522,15 +522,32 @@ int TestFdpStride() {
 
 	using Scalar = lns<16, 8, uint8_t>;
 
-	// stride-2, n=2: x[0]*y[0] + x[2]*y[2]
+	// stride 2, index bound 4: x[0]*y[0] + x[2]*y[2]
 	{
 		std::vector<Scalar> x = { Scalar(2.0), Scalar(100.0), Scalar(4.0), Scalar(100.0) };
 		std::vector<Scalar> y = { Scalar(3.0), Scalar(100.0), Scalar(5.0), Scalar(100.0) };
-		Scalar result = fdp_stride(size_t(2), x, size_t(2), y, size_t(2));
+		// n is the index bound (#2080): indices 0 and 2 are below 4, so two products
+		Scalar result = fdp_stride(size_t(4), x, size_t(2), y, size_t(2));
 		double expected = double(x[0]) * double(y[0]) + double(x[2]) * double(y[2]);
 		if (std::abs(double(result) - expected) > 1.0) {
 			std::cerr << "FAIL: fdp_stride expected " << expected
 			          << ", got " << double(result) << '\n';
+			++nrOfFailedTestCases;
+		}
+	}
+
+	// n bounds the index, as in every fdp header (#2080): with stride 2, n = 2 takes index 0 only and
+	// n = 3 takes 0 and 2.  Until #2080 this type took n as the count and read x[2] for n = 2.
+	{
+		std::vector<Scalar> x = { Scalar(2.0), Scalar(100.0), Scalar(3.0), Scalar(100.0) };
+		std::vector<Scalar> y = { Scalar(1.0), Scalar(100.0), Scalar(1.0), Scalar(100.0) };
+		const double one = double(fdp_stride(size_t(2), x, size_t(2), y, size_t(2)));
+		const double two = double(fdp_stride(size_t(3), x, size_t(2), y, size_t(2)));
+		const double e1 = double(x[0]) * double(y[0]);
+		const double e2 = e1 + double(x[2]) * double(y[2]);
+		if (one != double(Scalar(e1)) || two != double(Scalar(e2))) {
+			std::cerr << "FAIL: fdp_stride index bound: n=2 gave " << one << " (expected " << e1
+			          << "), n=3 gave " << two << " (expected " << e2 << ")\n";
 			++nrOfFailedTestCases;
 		}
 	}

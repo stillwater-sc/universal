@@ -121,6 +121,11 @@ inline int quire_size() {
 
 // ============================================================================
 // Fused dot product operators
+//
+// The stride forms take n as the INDEX bound, not the product count: they accumulate
+// x[k*incx] * y[k*incy] for every k with k*incx < n and k*incy < n, so about n / max(incx, incy)
+// products.  BLAS dot takes n as the count; pass n = count * inc for that.  Every fdp header
+// (posit, bposit, cfloat, fixpnt, lns, dbns) uses this one meaning (#2080).
 // ============================================================================
 
 /// Fused dot product with quire continuation.
