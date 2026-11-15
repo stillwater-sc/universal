@@ -8,6 +8,66 @@
 
 namespace sw { namespace universal {
 
+// |x| fmod |y| for finite x, y with y != 0, and the parity of the truncated quotient; exact in a
+// type with subnormals.
+// Shift-and-subtract: double |y| while the double is exact and stays <= |x| (a doubling below
+// the top binade is exact; checking the scale first keeps a saturating type from looping on
+// maxpos + maxpos == maxpos, #2088), then walk back down by halves, which are exact because
+// each half is a value the doubling produced.  Every subtraction r - s has s <= r < 2s, so it
+// is exact (Sterbenz).  O(scale(x) - scale(y)) operations.
+template<typename Real>
+Real cfloat_fmod_magnitude(Real r, Real ay, bool& quotientOdd) {
+	quotientOdd = false;
+	if (r < ay) return r;
+	Real scaled = ay;
+	while (scaled.scale() < r.scale()) {
+		Real next = scaled + scaled;
+		if (next > r) break;
+		scaled = next;
+	}
+	const Real two(2);
+	for (;;) {
+		bool subtracted = false;
+		if (r >= scaled) { r = r - scaled; subtracted = true; }
+		if (scaled == ay) { quotientOdd = subtracted; break; }
+		scaled = scaled / two;
+	}
+	return r;
+}
+
+// the arithmetic type of fmod and remainder: subnormals, and one more exponent bit, so that every
+// value of the layout, twice it, and every partial remainder are exact.  The result is rounded into
+// the layout once -- which is exact, except in a layout without subnormals, where a remainder below
+// the smallest normal rounds like any other value instead of being flushed by a subtraction.
+// cfloat's exponent field ends at 20 bits: there the type keeps es and the layout's max-exponent
+// values, which hold every value but not always twice it (see cfloat_remainder_finite).
+template<typename Real>
+using cfloat_remainder_t = std::conditional_t<(Real::es < 20u),
+	cfloat<Real::nbits + 2u, Real::es + 1u, typename Real::BlockType, true, false, false>,
+	cfloat<Real::nbits + 2u, Real::es, typename Real::BlockType, true, Real::hasMaxExpValues, false>>;
+
+// x - n*y for finite x != 0 and finite y != 0; n is x/y truncated, or rounded half to even when
+// nearest is true
+template<typename Real>
+Real cfloat_remainder_finite(const Real& x, const Real& y, bool nearest) {
+	using Wide = cfloat_remainder_t<Real>;
+	const bool negative = x.sign();
+	const Wide ax = negative ? -Wide(x) : Wide(x);
+	const Wide ay = y.sign() ? -Wide(y) : Wide(y);
+	bool odd = false;
+	Wide r = cfloat_fmod_magnitude(ax, ay, odd);
+	if (nearest) {
+		// 2r is exact when Wide has a spare exponent bit; at es = 20 it can overflow to inf, which
+		// happens only when 2r is past Wide's maxpos, and so past |y|
+		const Wide twoR = r + r;
+		if (twoR.isinf() || twoR > ay || (twoR == ay && odd)) r = r - ay;   // exact: |y|/2 <= r < |y|
+	}
+	if (negative) r = -r;                                        // a zero result takes the sign of x
+	return Real(r);
+}
+
+// fmod returns x - n*y, where n is x/y with its fractional part truncated, exactly (IEEE-754
+// and C semantics: fmod(+-0, y) = +-0, fmod(x, +-inf) = x, a NaN for y = 0 or an infinite x)
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> cfloatmod(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
 	using Real = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
@@ -19,27 +79,7 @@ cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> cfloatmod(cf
 	if (y.isinf() || x.iszero()) {
 		return x;
 	}
-
-	// Work with absolute values, restore sign at the end
-	bool negative = x.sign();
-	Real r = negative ? -x : x;
-	Real ay = y.sign() ? -y : y;
-
-	// Iterative reduction: subtract powers of y until r < y.
-	// When r/y overflows the narrow type, halve the reduction
-	// step by doubling y until the quotient fits.
-	while (r >= ay) {
-		// find the largest multiplier k = 2^n such that k*ay <= r
-		Real scaled = ay;
-		Real next = scaled + scaled;
-		while (next <= r && !next.isinf()) {
-			scaled = next;
-			next = scaled + scaled;
-		}
-		r = r - scaled;
-	}
-
-	return negative ? -r : r;
+	return cfloat_remainder_finite(x, y, false);
 }
 
 // fmod retuns x - n*y where n = x/y with the fractional part truncated
@@ -48,20 +88,34 @@ cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> fmod(cfloat<n
 	return cfloatmod(x, y);
 }
 
-// shim to stdlib
+// remainder returns x - n*y, where n is x/y rounded to the nearest integer, ties to even, exactly
+// (IEEE-754 remainder): fmod's remainder r, less |y| when r is past |y|/2, or at it with an odd
+// quotient.  It used to go through double, so a wide type lost its result: cfloat<80,11>
+// remainder(1 + 2^-60, 1) was 0 (#2088).
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> remainder(cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
-	return cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::remainder(double(x), double(y)));
+	using Real = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
+	if (y.iszero() || x.isinf() || x.isnan() || y.isnan()) {
+		Real nan;
+		nan.setnan(false);  // quiet NaN
+		return nan;
+	}
+	if (y.isinf() || x.iszero()) {
+		return x;
+	}
+	return cfloat_remainder_finite(x, y, true);
 }
 
-// TODO: validate the rounding of these conversion, versus a method that manipulates the fraction bits directly
-
-// frac returns the fraction of a cfloat value that is > 1
+// frac returns the fraction of a cfloat value, x - trunc(x), as an unsigned quantity.  The
+// subtraction is exact.  It used to cast to long long, which is undefined past 2^63, for a NaN
+// and for inf, and lost the fraction of every value past 2^53 (frac(1e19) was 7.77e17, #2088).
+// frac(NaN) is a quiet NaN; frac(+-inf) is 0, as modf gives.
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> frac(cfloat<nbits,es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
 	using Real = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
-	long long intValue = (long long)(x);
-	return abs(x-Real(intValue));  // with the logic that fractions are unsigned quantities
+	if (x.isnan()) return x.quieted();
+	if (x.isinf()) return Real(0);
+	return abs(x - trunc(x));  // with the logic that fractions are unsigned quantities
 }
 
 

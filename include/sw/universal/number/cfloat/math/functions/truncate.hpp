@@ -22,9 +22,20 @@ cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> trunc(cfloat
 	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
 	if (x.isnan()) return x.quieted();
 	if (x.isinf() || x.iszero()) return x;
-	// subnormals have magnitude < 1 (the smallest normal is well below 1 for any
-	// es), so truncation toward zero yields signed zero.
-	if (!x.isnormal()) {
+	// A finite max-exponent value is a normal of its layout: isnormal() excludes it, and trunc
+	// used to zero it (#2088).
+	if (!x.isnormal() && !x.ismaxexpvalue()) {
+		// a subnormal is f * 2^(MIN_EXP_NORMAL - fbits): below 1 when MIN_EXP_NORMAL <= 0, which
+		// is every es >= 2.  With es = 1 the smallest normal is 2 and the subnormals reach [1, 2):
+		// clear only the fraction bits that weigh less than 1 (cfloat<8,1> 0x30 = 1.5 truncates
+		// to 1, #2088).
+		if constexpr (Cfloat::MIN_EXP_NORMAL > 0) {
+			Cfloat r(x);
+			const int below = static_cast<int>(Cfloat::fbits) - Cfloat::MIN_EXP_NORMAL;   // weights 2^(i - below)
+			for (int i = 0; i < below; ++i) r.setbit(static_cast<unsigned>(i), false);
+			if (r.iszero()) { r.setzero(); r.setsign(x.sign()); }
+			return r;
+		}
 		Cfloat z; z.setzero(); if (x.sign()) z.setsign(true);
 		return z;
 	}

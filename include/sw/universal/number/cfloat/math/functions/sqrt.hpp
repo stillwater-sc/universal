@@ -165,8 +165,11 @@ namespace sw { namespace universal {
 
 		// Whether the host can answer is a property of the VALUE, not of the format's
 		// fraction width: cfloat<64,15> has fbits = 48 but its maxpos is inf as a double.
+		// The double must hold a exactly: a normal double does, for fbits <= 52.  A value below
+		// double's normal range became an inexact subnormal double: cfloat<32,12>'s sqrt of
+		// 1.25 * 2^-1073 was 12% off (#2088).
 		const double d = double(a);
-		const bool hostUsable = (d > 0.0 && std::isfinite(d));
+		const bool hostUsable = std::isnormal(d);
 
 		if constexpr (fbits <= 24) {
 			// p <= 25 bits: the double's 53 >= 2p + 2, so rounding its correctly rounded root

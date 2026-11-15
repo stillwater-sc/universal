@@ -11,7 +11,13 @@ namespace sw { namespace universal {
 // Categorizes floating point value arg into the following categories: zero, subnormal, normal, infinite, NAN, or implementation-defined category.
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 int fpclassify(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a) {
-	return std::fpclassify(double(a));
+	// classified on the encoding: going through double made cfloat<128,15>'s minpos FP_ZERO and
+	// its maxpos FP_INFINITE (#2088).  Without subnormals, a zero exponent field is a zero.
+	if (a.isnan()) return FP_NAN;
+	if (a.isinf()) return FP_INFINITE;
+	if (a.iszero()) return FP_ZERO;
+	if (a.isnormal() || a.ismaxexpvalue()) return FP_NORMAL;   // max-exponent values are normals of the layout
+	return FP_SUBNORMAL;
 }
 	
 // Determines if the given floating point number arg has finite value i.e. it is normal, subnormal or zero, but not infinite or NaN.
