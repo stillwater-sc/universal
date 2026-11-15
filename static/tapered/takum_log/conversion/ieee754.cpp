@@ -32,6 +32,7 @@
 #include <limits>
 #include <random>
 #include <string>
+#include <type_traits>
 
 namespace {
 
@@ -176,7 +177,9 @@ int VerifyToNative(std::size_t nrSamples, bool correct, bool reportTestCases) {
 			const Real above = std::nextafter(a, Limits::infinity());
 			const qd qa = ldexp(qd(static_cast<double>(a)), K);
 			const qd qb = ldexp(qd(static_cast<double>(below)), K);
-			const qd qc = std::isinf(above) ? ldexp(qd(static_cast<double>(a)) * 2.0, K) : ldexp(qd(static_cast<double>(above)), K);
+			// past max, the next grid point is 2^max_exponent: a result of max is nearest only below
+			// max + half an ulp, the same threshold the overflow branch uses
+			const qd qc = std::isinf(above) ? ldexp(qd(1.0), Limits::max_exponent + K) : ldexp(qd(static_cast<double>(above)), K);
 			if (correct) {
 				const qd d0 = absq(R - qa);
 				ok = !(absq(R - qb) < d0) && !(absq(R - qc) < d0);
@@ -267,9 +270,9 @@ int VerifyIntegerCasts(std::size_t nrSamples, bool reportTestCases) {
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 0
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
 #endif
 
 int main()
@@ -305,9 +308,14 @@ try {
 		if (int(TL(-3.99)) != -3) ++fails;
 		if (int(TL(1.0)) != 1) ++fails;
 		{
-			char c = -5;      // operator=(char) must treat a signed char as signed
+			// operator=(char) must follow char's own signedness, which the platform decides
+			char c = static_cast<char>(-5);
 			TL t;
 			t = c;
+			const double expected = std::is_signed_v<char> ? -5.0 : 251.0;
+			if (double(t) / expected > 1.001 || double(t) / expected < 0.999) ++fails;
+			signed char sc = -5;
+			t = sc;
 			if (double(t) > -4.99 || double(t) < -5.01) ++fails;
 		}
 		nrOfFailedTestCases += ReportTestResult(fails, "takum_log<64,3>", "sweep repros");

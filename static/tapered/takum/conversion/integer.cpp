@@ -25,6 +25,7 @@
 #include <limits>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace {
@@ -196,9 +197,9 @@ int VerifyIntegerCasts(std::size_t nrRandom, bool reportTestCases) {
 #undef REGRESSION_LEVEL_3
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 0
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
 #endif
 
 int main()
@@ -233,9 +234,13 @@ try {
 		if ((long long)takum<64, 3>(LLONG_MIN) != LLONG_MIN) ++fails;
 		if ((long long)takum<64, 3>(LLONG_MAX) != LLONG_MAX) ++fails;   // 2^63 - 1 rounds to 2^63, which saturates
 		{
-			char c = -5;     // operator=(char) must treat a signed char as signed
+			// operator=(char) must follow char's own signedness, which the platform decides
+			char c = static_cast<char>(-5);
 			takum<16, 3> t;
 			t = c;
+			if (double(t) != (std::is_signed_v<char> ? -5.0 : 251.0)) ++fails;
+			signed char sc = -5;
+			t = sc;
 			if (double(t) != -5.0) ++fails;
 		}
 #if BIT_CAST_IS_CONSTEXPR
