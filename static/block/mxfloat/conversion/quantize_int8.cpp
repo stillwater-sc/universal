@@ -96,14 +96,14 @@ try {
 	{
 		float input[32] = {};
 		input[0] = 128.0f; // amax = 128 = 2^7, floor(log2(128)) = 7
-		// max_elem_exp for int8_t = 7
-		// scale_exp = 7 - 7 = 0, biased = 127
-		// scale = 2^0 = 1.0
+		// max_elem_exp for int8_t = 6: an int8 code's largest power of two is 2^6 (#2083)
+		// scale_exp = 7 - 6 = 1, biased = 128
+		// scale = 2^1 = 2.0, and 128 is the code 64
 		mxint8 blk;
 		blk.quantize(input);
 		float scale_val = blk.scale().to_float();
-		if (std::fabs(scale_val - 1.0f) > 1e-6f) {
-			std::cout << "FAIL: scale computation, expected 1.0, got " << scale_val << '\n';
+		if (scale_val != 2.0f || blk.element(0) != 64) {
+			std::cout << "FAIL: scale computation, expected 2.0 and code 64, got " << scale_val << " and code " << int(blk.element(0)) << '\n';
 			++nrOfFailedTestCases;
 		} else {
 			std::cout << "PASS: int8 scale computation (scale=" << scale_val << ")\n";

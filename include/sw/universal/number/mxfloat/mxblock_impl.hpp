@@ -49,13 +49,19 @@ public:
 	// quantize a float array into this MX block.
 	// Per OCP MX v1.0 spec:
 	//   amax = max(|x_i|) over the block
-	//   shared_exp = clamp(floor(log2(amax)), -127, 127)
-	//   scale_exp = shared_exp - max_elem_exp(ElementType)
+	//   scale_exp = clamp(floor(log2(amax)) - max_elem_exp(ElementType), -127, 127)
 	//   scale = e8m0(scale_exp + 127)
 	//   q_i = RNE(x_i / 2^scale_exp) quantized to ElementType
 	//
-	// Constexpr-safe: std::fabs / std::floor / std::log2 / std::ldexp are
-	// not constexpr.  We dispatch via std::is_constant_evaluated():
+	// floor(log2(amax)) is read off the float's exponent field (std::ilogb), not computed
+	// with std::log2: a float log2 rounds up to the next integer just below a power of two
+	// (log2(16 - 2^-20) gives 4.0f), and of an infinite amax it gives inf, which no int
+	// can hold.  The scale exponent, not floor(log2(amax)), is clamped to e8m0's range,
+	// and the elements are scaled with ldexp: a reciprocal 1 / 2^scale_exp is inf once
+	// scale_exp <= -128, which turned zeros into NaN (#2083).
+	//
+	// Constexpr-safe: std::fabs / std::ilogb / std::ldexp are not constexpr.  We dispatch
+	// via std::is_constant_evaluated():
 	//   * runtime path keeps the stdlib calls (fast, exact)
 	//   * constexpr path uses cx_fabs / cx_floor_log2 / cx_ldexp helpers
 	//     defined privately below.  All helpers operate on IEEE 754
@@ -76,9 +82,9 @@ public:
 			int biased = (-elemMaxExp) + e8m0::bias;
 			if (biased < 0) biased = 0;
 			_scale.setbits(static_cast<unsigned>(biased));
-			// set all elements to zero
+			// every element is a zero; convert it like any other, so a -0 keeps its sign
 			for (size_t i = 0; i < n; ++i) {
-				set_element_zero(i);
+				set_element_from_float(i, src[i]);
 			}
 			for (size_t i = n; i < BlockSize; ++i) {
 				set_element_zero(i);
@@ -87,27 +93,23 @@ public:
 		}
 
 		int shared_exp = std::is_constant_evaluated()
-			? cx_floor_log2(amax)
-			: static_cast<int>(std::floor(std::log2(amax)));
-		// clamp to e8m0 representable range
-		if (shared_exp < -127) shared_exp = -127;
+			? cx_floor_log2(amax)            // 128 for an infinite amax
+			: std::ilogb(amax);              // exact; INT_MAX for an infinite amax
+		// an infinite amax takes the largest finite float's exponent on both paths
 		if (shared_exp > 127) shared_exp = 127;
 
+		// clamp the scale exponent to e8m0's range, 2^-127 .. 2^127
 		int scale_exp = shared_exp - elemMaxExp;
-		int biased_scale = scale_exp + e8m0::bias;
-		if (biased_scale < 0) biased_scale = 0;
-		if (biased_scale > 254) biased_scale = 254;
-		_scale.setbits(static_cast<unsigned>(biased_scale));
+		if (scale_exp < -e8m0::bias) scale_exp = -e8m0::bias;
+		if (scale_exp > 127) scale_exp = 127;
+		_scale.setbits(static_cast<unsigned>(scale_exp + e8m0::bias));
 
-		// Step 3: compute the actual power-of-2 scale factor for quantization
-		float two_scale = std::is_constant_evaluated()
-			? cx_ldexp(1.0f, scale_exp)
-			: std::ldexp(1.0f, scale_exp);
-		float inv_scale = 1.0f / two_scale;
-
-		// Step 4: quantize each element
+		// Step 3: quantize each element: x_i * 2^-scale_exp is exact for every
+		// element that the element type can tell apart from zero
 		for (size_t i = 0; i < n; ++i) {
-			float scaled = src[i] * inv_scale;
+			float scaled = std::is_constant_evaluated()
+				? cx_ldexp(src[i], -scale_exp)
+				: std::ldexp(src[i], -scale_exp);
 			set_element_from_float(i, scaled);
 		}
 		// zero-fill remaining elements
@@ -217,8 +219,8 @@ private:
 	}
 
 	// Constexpr-safe x * 2^exp via power-of-2 multiplication loop.
-	// Bounded by |exp| <= 127 + 23 in our use (e8m0::bias + microfloat
-	// elemMaxExp), so the linear loop is well-bounded.
+	// Bounded by |exp| <= 127 in our use (the clamped scale exponent),
+	// so the linear loop is well-bounded.
 	static constexpr float cx_ldexp(float x, int exp) noexcept {
 		if (exp >= 0) {
 			for (int i = 0; i < exp; ++i) x *= 2.0f;
@@ -248,22 +250,19 @@ private:
 	}
 
 	// helper: set element from float (quantized space, no further scaling).
-	// Constexpr-safe: std::round is not constexpr, so we round-half-away-from-zero
-	// inline via `static_cast<int>(v + (v < 0 ? -0.5f : 0.5f))`.  Runtime path
-	// keeps std::round for performance and bit-exactness with prior behavior.
+	// int8 codes round to nearest, ties to even, as OCP MX specifies, and saturate to
+	// [-128, 127].  std::round rounded ties away from zero (2.5 -> 3, #2083).  The
+	// rounding is done by hand so that one path serves runtime and constant evaluation:
+	// past the clamp |v| < 2^7, so the truncation and the remainder are exact.
 	constexpr void set_element_from_float(size_t i, float v) noexcept {
 		if constexpr (std::is_integral_v<ElementType>) {
-			// Round to nearest integer, clamp to int8_t range
-			float rounded;
-			if (std::is_constant_evaluated()) {
-				rounded = static_cast<float>(static_cast<int>(v + (v < 0.0f ? -0.5f : 0.5f)));
-			}
-			else {
-				rounded = std::round(v);
-			}
-			if (rounded > 127.0f) rounded = 127.0f;
-			if (rounded < -128.0f) rounded = -128.0f;
-			_elements[i] = static_cast<int8_t>(rounded);
+			if (v >= 127.0f) { _elements[i] = 127; return; }
+			if (v <= -128.0f) { _elements[i] = -128; return; }
+			int t = static_cast<int>(v);                  // toward zero
+			float r = v - static_cast<float>(t);          // exact, in (-1, 1)
+			if (r > 0.5f || (r == 0.5f && (t & 1) != 0)) ++t;
+			else if (r < -0.5f || (r == -0.5f && (t & 1) != 0)) --t;
+			_elements[i] = static_cast<int8_t>(t);
 		} else {
 			_elements[i].from_float(v);
 		}

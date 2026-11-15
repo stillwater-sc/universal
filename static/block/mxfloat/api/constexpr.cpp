@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <limits>
 #include <universal/number/mxfloat/mxfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -154,6 +155,67 @@ try {
 		// satisfies this).
 		constexpr float v = nan_block[0];
 		static_assert(v != v, "constexpr NaN-scale -> operator[] returns NaN");
+	}
+
+	// ----------------------------------------------------------------------------
+	// OCP MX scaling at constant evaluation (#2083): mxint8's emax is 6, int8
+	// codes round ties to even, and a scale below 2^-127 clamps instead of
+	// turning a reciprocal into inf.
+	// ----------------------------------------------------------------------------
+	{
+		static_assert(mxblock<std::int8_t, 4>::elemMaxExp == 6, "int8 emax is 6");
+		static_assert(mxfp8_4::elemMaxExp == 8, "e4m3 emax is 8");
+
+		constexpr mxblock<std::int8_t, 4> i8 = []() {
+			mxblock<std::int8_t, 4> b{};
+			float src[4] = { 100.0f, 1.5f, 2.5f, -3.25f };
+			b.quantize(src, 4);
+			return b;
+		}();
+		static_assert(i8.scale().bits() == 127u, "constexpr mxint8 scale 2^0 for amax 100");
+		static_assert(i8.element(0) == 100,      "constexpr mxint8 keeps the block maximum");
+		static_assert(i8.element(1) == 2,        "constexpr mxint8 1.5 -> 2 (tie to even)");
+		static_assert(i8.element(2) == 2,        "constexpr mxint8 2.5 -> 2 (tie to even)");
+		static_assert(i8.element(3) == -3,       "constexpr mxint8 -3.25 -> -3");
+
+		constexpr mxblock<std::int8_t, 4> ties = []() {
+			mxblock<std::int8_t, 4> b{};
+			float src[4] = { 64.0f, -0.5f, -2.5f, 3.5f };
+			b.quantize(src, 4);
+			return b;
+		}();
+		static_assert(ties.element(1) == 0 && ties.element(2) == -2 && ties.element(3) == 4,
+		              "constexpr mxint8 negative and odd ties round to even");
+
+		constexpr mxblock<e4m3_saturating, 4> tiny = []() {
+			mxblock<e4m3_saturating, 4> b{};
+			float src[3] = { 0x1p-126f, 0.0f, 0.0f };
+			b.quantize(src, 3);
+			return b;
+		}();
+		static_assert(tiny.scale().bits() == 0u, "constexpr mxfp8 scale clamps at 2^-127");
+		static_assert(tiny[0] == 0x1p-126f,      "constexpr mxfp8 2^-126 exact at the clamped scale");
+		static_assert(tiny[1] == 0.0f,           "constexpr mxfp8 zero stays zero (no 0 * inf)");
+
+		// an infinite amax takes the shared exponent 127 at constant evaluation too,
+		// as it does at runtime: scale 2^121, so 2^121 is the code 1, not 0
+		static constexpr float inf_block[2] = { std::numeric_limits<float>::infinity(), 0x1p121f };
+		constexpr mxblock<std::int8_t, 2> cx_inf = []() {
+			mxblock<std::int8_t, 2> b{};
+			b.quantize(inf_block, 2);
+			return b;
+		}();
+		static_assert(cx_inf.scale().scale() == 121, "constexpr mxint8 infinite amax -> scale 2^121");
+		static_assert(cx_inf.element(0) == 127 && cx_inf.element(1) == 1,
+		              "constexpr mxint8 infinite amax saturates and keeps 2^121");
+		mxblock<std::int8_t, 2> rt_inf;
+		rt_inf.quantize(inf_block, 2);
+		if (rt_inf.scale().bits() != cx_inf.scale().bits() || rt_inf.element(0) != cx_inf.element(0)
+		    || rt_inf.element(1) != cx_inf.element(1)) {
+			std::cerr << "FAIL: mxint8 {inf, 2^121}: runtime scale 2^" << rt_inf.scale().scale() << " codes "
+			          << int(rt_inf.element(0)) << ", " << int(rt_inf.element(1)) << " differ from constant evaluation\n";
+			++nrOfFailedTestCases;
+		}
 	}
 
 	std::cout << "mxfloat constexpr verification: "
