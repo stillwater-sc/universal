@@ -284,7 +284,11 @@ constexpr inline void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nb
 		// hidden-bit position, while the bool tells us whether the discarded tail rounds the retained payload up.
 		//std::cout << "rightShift       " << rightShift << '\n';
 
-		if constexpr (btType::bfbits < 65) {
+		// the uint64_t path packs sign, exponent and fraction into one word, so it needs the cfloat to
+		// fit one too.  It used to test only the blocktriple's width: a cfloat wider than 64 bits with
+		// a narrow fraction -- cfloat<66,11>, <72,11>, <80,19> -- lost its top exponent bits, and
+		// 2 + 2 on cfloat<66,11> was 2^-1022 (#2087).
+		if constexpr (btType::bfbits < 65 && nbits <= 64) {
 			bool roundup = alignment.first;
 			//std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
 			// we can use a uint64_t to construct the cfloat
@@ -2207,6 +2211,26 @@ public:
 		else if (isinf()) {
 			v = sign() ? -std::numeric_limits<TargetFloat>::infinity() : std::numeric_limits<TargetFloat>::infinity();
 		}
+		else if constexpr (!std::numeric_limits<TargetFloat>::is_iec559 || std::numeric_limits<TargetFloat>::digits == 106) {
+			// a target that is not an IEEE-754 binary format -- IBM double-double long double on POWER,
+			// which gcc reports as is_iec559 although no IEEE format has 106 digits -- has no fixed
+			// precision to round to, and its additions are not exact.  The fraction is summed bit by
+			// bit, which is exact whenever the cfloat's bits fit the target.
+			TargetFloat f{ 0 };
+			TargetFloat fbit{ 0.5 };
+			for (int i = static_cast<int>(fbits) - 1; i >= 0; --i) {
+				f += at(static_cast<unsigned>(i)) ? fbit : TargetFloat(0);
+				fbit *= TargetFloat(0.5);
+			}
+			if (isnormal() || ismaxexpvalue()) {
+				v = constexpr_ldexp(TargetFloat(1.0) + f, scale());
+			}
+			else {
+				if constexpr (!hasSubnormals) return sign() ? -TargetFloat(0) : TargetFloat(0);
+				v = constexpr_ldexp(f, MIN_EXP_NORMAL);   // f is already f / 2^fbits
+			}
+			v = sign() ? -v : v;
+		}
 		else {
 			// Round once, to nearest even, at TargetFloat's precision -- reduced where the result is
 			// subnormal there.  The kept bits are exact in TargetFloat (at most digits of them), so
@@ -2599,6 +2623,24 @@ protected:
 		_block[0] <<= bitsToShift;
 	}
 
+	// place the fraction of an integer conversion when the cfloat does not fit a uint64_t.  round()
+	// returns the fraction aligned to bits [0, fbits) whenever fhbits <= 64 (rounded down to it from a
+	// wider source, or shifted up to it from a narrower one); only past that does it leave the bits
+	// where the caller put them, the leading fraction bit at sizeInBits - 2.  Reading the aligned
+	// fraction as the unaligned one put cfloat<66,11>(7) at 4 and (3) at 2 (#2087).
+	template<unsigned sizeInBits>
+	constexpr void set_integer_fraction(uint64_t raw, int exponent) noexcept {
+		if constexpr (fhbits <= 64) {
+			for (unsigned i = 0; i < fbits; ++i) setbit(i, ((raw >> i) & 1u) != 0);
+		}
+		else {
+			for (int i = 0; i < exponent; ++i) {
+				bool bit = (raw >> (sizeInBits - 2 - i)) & 1;
+				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
+			}
+		}
+	}
+
 	// convert an unsigned integer into a cfloat
 	// TODO: this method does not protect against being called with a signed integer
 	template<typename Ty>
@@ -2642,10 +2684,7 @@ protected:
 		else {
 			setsign(false);
 			setexponent(exponent);
-			for (int i = 0; i < exponent; ++i) {
-				bool bit = (raw >> (sizeInBits - 2 - i)) & 1;
-				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
-			}
+			set_integer_fraction<sizeInBits>(raw, exponent);
 		}
 		// post-rounding cleanup: rounding at the maxpos boundary carries into the all-ones
 		// exponent, which is inf without max-exponent values and a NaN past them (#1780);
@@ -2709,10 +2748,7 @@ protected:
 		else {
 			setsign(s);
 			setexponent(exponent);
-			for (int i = 0; i < exponent; ++i) {
-				bool bit = (raw >> (sizeInBits - 2 - i)) & 1;
-				setbit(static_cast<unsigned>(fbits - 1 - i), bit);
-			}
+			set_integer_fraction<sizeInBits>(raw, exponent);
 		}
 		// post-rounding cleanup: rounding at the maxpos boundary carries into the all-ones
 		// exponent, which is inf without max-exponent values and a NaN past them (#1780);

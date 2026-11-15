@@ -41,6 +41,7 @@ uint64_t raw_field(const Cfloat& c, unsigned lo, unsigned n) {
 template<typename Cfloat>
 Cfloat random_encoding(std::mt19937_64& rng, uint64_t emin, uint64_t emax) {
 	Cfloat c;
+	c.setbits(0);   // a cfloat is trivially constructible: clear the bits above nbits too
 	for (unsigned i = 0; i < Cfloat::nbits; ++i) c.setbit(i, (rng() & 1u) != 0);
 	const uint64_t e = emin + rng() % (emax - emin + 1u);
 	for (unsigned i = 0; i < Cfloat::es; ++i) c.setbit(Cfloat::fbits + i, ((e >> i) & 1u) != 0);

@@ -135,6 +135,36 @@ int VerifyIncrementAcrossLimbs(unsigned samples, bool reportTestCases) {
 	return fails;
 }
 
+// layouts wider than 64 bits whose fraction fits a uint64_t took two uint64_t paths that need the
+// whole cfloat to fit one: convert(blocktriple) packed sign, exponent and fraction into a word (2 + 2
+// on cfloat<66,11> was 2^-1022), and the integer conversions read round()'s aligned fraction as an
+// unaligned one (cfloat<66,11>(7) was 4).  Integers, and sums, differences and products of 20-bit
+// dyadic values, are exact in double and in these layouts, so double is the reference.
+template<typename Cfloat>
+int VerifyNarrowFractionWideLayout(unsigned samples, bool reportTestCases) {
+	static_assert(Cfloat::nbits > 64 && Cfloat::fbits >= 41, "a product of two 21-bit significands must be exact");
+	int fails = 0;
+	std::mt19937_64 rng(2091);
+	auto dyadic = [&rng]() {
+		const double m = double(static_cast<int64_t>(rng() >> 44) - (int64_t(1) << 19));   // 20-bit signed
+		return std::ldexp(m, static_cast<int>(rng() % 21u) - 10);   // every sum spans at most 40 bits
+	};
+	for (unsigned k = 0; k < samples; ++k) {
+		const long long i = static_cast<long long>(rng() >> (11 + rng() % 50u)) * ((rng() & 1u) ? -1 : 1);   // < 2^53
+		if (double(Cfloat(i)) != double(i) || double(Cfloat(static_cast<int>(i % 100000))) != double(static_cast<int>(i % 100000))) {
+			if (reportTestCases && fails < 10) std::cerr << "FAIL: integer " << i << " -> " << double(Cfloat(i)) << '\n';
+			++fails;
+		}
+		const double a = dyadic(), b = dyadic();
+		const Cfloat ca(a), cb(b);
+		if (double(ca + cb) != a + b || double(ca - cb) != a - b || double(ca * cb) != a * b) {
+			if (reportTestCases && fails < 10) std::cerr << "FAIL: " << a << " op " << b << ": " << double(ca + cb) << ", " << double(ca - cb) << ", " << double(ca * cb) << '\n';
+			++fails;
+		}
+	}
+	return fails;
+}
+
 }  // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -181,6 +211,14 @@ try {
 	nrOfFailedTestCases += ReportTestResult((VerifyBlockTypeRoundTrip<cfloat<64, 11, uint32_t, true, false, false>, cfloat<64, 11, uint64_t, true, false, false>>(2000, reportTestCases)), "cfloat<64,11,t,f,f> u32 -> u64", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyBlockTypeRoundTrip<cfloat<80, 15, uint64_t, true, false, false>, cfloat<80, 15, uint16_t, true, false, false>>(2000, reportTestCases)), "cfloat<80,15,t,f,f> u64 -> u16", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyBlockTypeRoundTrip<cfloat<96, 11, uint8_t, true, true, false>, cfloat<96, 11, uint32_t, true, true, false>>(2000, reportTestCases)),   "cfloat<96,11,t,t,f> u8 -> u32", test_tag);
+
+	// layouts wider than 64 bits with a fraction that fits a uint64_t
+	nrOfFailedTestCases += ReportTestResult(VerifyNarrowFractionWideLayout<cfloat<65, 11, uint16_t, true, false, false>>(2000, reportTestCases), "cfloat<65,11,uint16_t,t,f,f>", "narrow fraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyNarrowFractionWideLayout<cfloat<66, 11, uint8_t, true, false, false>>(2000, reportTestCases),  "cfloat<66,11,uint8_t,t,f,f>",  "narrow fraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyNarrowFractionWideLayout<cfloat<66, 12, uint64_t, true, false, false>>(2000, reportTestCases), "cfloat<66,12,uint64_t,t,f,f>", "narrow fraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyNarrowFractionWideLayout<cfloat<72, 11, uint32_t, true, false, false>>(2000, reportTestCases), "cfloat<72,11,uint32_t,t,f,f>", "narrow fraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyNarrowFractionWideLayout<cfloat<80, 19, uint16_t, true, false, false>>(2000, reportTestCases), "cfloat<80,19,uint16_t,t,f,f>", "narrow fraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyNarrowFractionWideLayout<cfloat<68, 15, uint8_t, false, false, true>>(2000, reportTestCases),  "cfloat<68,15,uint8_t,f,f,t>",  "narrow fraction");
 
 	// ++ / -- across five or more limbs
 	nrOfFailedTestCases += ReportTestResult(VerifyIncrementAcrossLimbs<cfloat<40, 8, uint8_t, true, false, false>>(2000, reportTestCases),   "cfloat<40,8,uint8_t,t,f,f>",   "++/--");
