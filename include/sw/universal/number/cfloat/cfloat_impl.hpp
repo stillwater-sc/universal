@@ -503,11 +503,14 @@ public:
 			setsign(rhs.sign()); // a conversion keeps the sign of zero (#1901)
 		}
 		else {
-			if constexpr (std::is_same_v<bt, bbt>) {
+			{
 				// Full-precision path: create a blocktriple sized for the TARGET's
 				// fraction width, pre-align the source fraction bits into it (with
 				// proper rounding-bit collection), then let convert() handle
-				// rounding and encoding.
+				// rounding and encoding.  The source is read through fraction_ull()
+				// and at(), which do not depend on its block type, so this path serves
+				// a source of any block type.  A different block type used to go
+				// through double, which lost range and precision (#2087).
 				constexpr unsigned srcFbits = nnbits - 1u - ees;
 				using TgtBT = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
 				constexpr unsigned addRbits = TgtBT::rbits;
@@ -599,16 +602,6 @@ public:
 				}
 				convert(value, *this);
 			}
-			else {
-				// Cross-block-type: marshall through double.
-				// Safe only when the source fraction fits in double's 52-bit significand.
-				constexpr unsigned srcFbitsXB = nnbits - ees - 1u;
-				static_assert(srcFbitsXB <= 52u,
-					"cfloat converting constructor: source and target have different "
-					"block types and source has more fraction bits than double can represent; "
-					"use matching block types for full-precision cross-config conversion");
-				*this = double(rhs);
-			}
 		}
 	}
 
@@ -669,7 +662,11 @@ public:
 	constexpr cfloat& operator=(long rhs)               noexcept { return convert_signed_integer(rhs); }
 	constexpr cfloat& operator=(long long rhs)          noexcept { return convert_signed_integer(rhs); }
 
-	constexpr cfloat& operator=(char rhs)               noexcept { return convert_unsigned_integer(rhs); }
+	// plain char is signed or unsigned by platform: convert it as what it is (#2087)
+	constexpr cfloat& operator=(char rhs)               noexcept {
+		if constexpr (std::is_signed_v<char>) return convert_signed_integer(static_cast<signed char>(rhs));
+		else return convert_unsigned_integer(static_cast<unsigned char>(rhs));
+	}
 	constexpr cfloat& operator=(unsigned short rhs)     noexcept { return convert_unsigned_integer(rhs); }
 	constexpr cfloat& operator=(unsigned int rhs)       noexcept { return convert_unsigned_integer(rhs); }
 	constexpr cfloat& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
@@ -1218,13 +1215,19 @@ public:
 	}
 	constexpr void setzero() noexcept { clear(); }
 	// block i of the IEEE-754 +inf encoding: the exponent bits set, fraction and sign clear
+	// It is a mask of the encoding bits [fbits, nbits - 1) that fall in block i, built in O(1):
+	// setinf, setnan and isinf call it per block, and isinf runs in every arithmetic operator,
+	// so a per-bit loop made them O(nbits) (#2087).
 	static constexpr bt ieee_inf_block(unsigned i) noexcept {
-		bt b{ 0 };
-		for (unsigned j = 0; j < bitsInBlock; ++j) {
-			const unsigned g = i * bitsInBlock + j;
-			if (g >= fbits && g < nbits - 1) b = bt(b | bt(bt(1) << j));
-		}
-		return b;
+		const unsigned lo = i * bitsInBlock;
+		const unsigned from = (fbits > lo ? fbits : lo);
+		const unsigned to   = ((nbits - 1u) < lo + bitsInBlock ? (nbits - 1u) : lo + bitsInBlock);
+		if (from >= to) return bt(0);
+		return bt(low_bits_mask(to - lo) & ~low_bits_mask(from - lo));
+	}
+	// the low n bits of a block, n in [0, bitsInBlock]
+	static constexpr bt low_bits_mask(unsigned n) noexcept {
+		return (n >= bitsInBlock) ? bt(ALL_ONES) : bt((bt(1) << n) - 1u);
 	}
 	constexpr void setinf(bool sign = true) noexcept {
 		// without max-exponent values inf is IEEE-754's 0b0'11...11'00...00 / 0b1'11...11'00...00 (#1780);
@@ -1867,7 +1870,7 @@ public:
 			return false;
 		}
 		else if constexpr (1 == nrBlocks) {
-			return (_block[MSU] & (SIGN_BIT_MASK | 1ul));
+			return (_block[MSU] == bt(SIGN_BIT_MASK | 1ul));   // both bits, nothing else (#2087)
 		}
 		else if constexpr (2 == nrBlocks) {
 			return ((_block[0] == 1ul) && (_block[1] == SIGN_BIT_MASK));
@@ -1880,7 +1883,7 @@ public:
 		}
 		else {
 			if (_block[0] != 1ul) return false;
-			for (unsigned i = 1; i < nrBlocks - 2; ++i) if (_block[i] != 0) return false;
+			for (unsigned i = 1; i < MSU; ++i) if (_block[i] != 0) return false;   // every block between (#2087)
 			return (_block[MSU] == SIGN_BIT_MASK);
 		}
 	}
@@ -2039,40 +2042,59 @@ public:
 			f.setbits(fraction);
 		}
 		else if constexpr (nrBlocks > 1) {
-			for (unsigned i = 0; i < fbits; ++i) { f.setbit(i, at(i)); }
+			// a limb at a time: the fraction is the low fbits of the encoding (#2087)
+			for (unsigned i = 0; i < fBlocks && i < nrBlocks; ++i) {
+				bt limb = _block[i];
+				if (i == fBlocks - 1u) limb = bt(limb & low_bits_mask(bitsInFSU));
+				f.setblock(i, limb);
+			}
 		}
 		return f;
 	}
-	constexpr uint64_t fraction_ull() const {
-		uint64_t raw{ 0 };
-		if constexpr (nbits - es - 1ull < 65ull) { // no-op if precondition doesn't hold
-			if constexpr (1 == nrBlocks) {
-				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
-				raw = fbitMask & uint64_t(_block[0]);
-			}
-			else if constexpr (2 == nrBlocks) {
-				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
-				raw = fbitMask & ((uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]));
-			}
-			else if constexpr (3 == nrBlocks) {
-				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
-				raw = fbitMask & ((uint64_t(_block[2]) << (2 * bitsInBlock)) | (uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]));
-			}
-			else if constexpr (4 == nrBlocks) {
-				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
-				raw = fbitMask & ((uint64_t(_block[3]) << (3 * bitsInBlock)) | (uint64_t(_block[2]) << (2 * bitsInBlock)) | (uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]));
-			}
-			else {
-				uint64_t mask{ 1 };
-				for (unsigned i = 0; i < fbits; ++i) { 
-					if (test(i)) {
-						raw |= mask;
-					}
-					mask <<= 1;
-				}
-			}
+	// bits [lo, lo + n) of the significand as an integer, n <= 64.  Index i < fbits is fraction
+	// bit i; index fbits is the hidden bit when withHidden; indices below 0 or above are zero, so
+	// a negative lo scales the window up.  Gathered a limb at a time (#2087).
+	constexpr uint64_t significand_window(int lo, unsigned n, bool withHidden) const noexcept {
+		if (n == 0) return 0;
+		uint64_t w{ 0 };
+		const int hi = lo + static_cast<int>(n);   // exclusive
+		const int from = (lo > 0 ? lo : 0);
+		const int to = (hi < static_cast<int>(fbits) ? hi : static_cast<int>(fbits));
+		for (int b = from; b < to; ) {
+			const unsigned limb = static_cast<unsigned>(b) / bitsInBlock;
+			if (limb >= nrBlocks) break;   // b < fbits keeps limb in range; this tells the compiler so
+			const unsigned off  = static_cast<unsigned>(b) % bitsInBlock;
+			unsigned take = bitsInBlock - off;
+			if (take > static_cast<unsigned>(to - b)) take = static_cast<unsigned>(to - b);
+			const uint64_t part = (static_cast<uint64_t>(_block[limb]) >> off) & (take >= 64 ? ~0ull : ((1ull << take) - 1ull));
+			w |= part << static_cast<unsigned>(b - lo);
+			b += static_cast<int>(take);
 		}
-		return raw;
+		if (withHidden && static_cast<int>(fbits) >= lo && static_cast<int>(fbits) < hi) w |= 1ull << static_cast<unsigned>(static_cast<int>(fbits) - lo);
+		return w;
+	}
+	// true when a fraction bit below index idx is set
+	constexpr bool fraction_bits_below(int idx) const noexcept {
+		if (idx <= 0) return false;
+		const unsigned top = (idx < static_cast<int>(fbits) ? static_cast<unsigned>(idx) : fbits);
+		const unsigned full = top / bitsInBlock;
+		for (unsigned i = 0; i < full; ++i) if (_block[i] != 0) return true;
+		const unsigned rest = top % bitsInBlock;
+		return rest != 0 && full < nrBlocks && (_block[full] & low_bits_mask(rest)) != 0;
+	}
+	// the fraction bits as an integer; 0 when they do not fit in 64 bits.  Only the blocks that start
+	// below fbits are read, so every shift is below 64: the per-block shifts shifted a 64-bit limb by
+	// 64, which is undefined (#2087).  normalize() calls this for every operand, so it stays a fixed,
+	// unrollable sequence of shifts.
+	constexpr uint64_t fraction_ull() const {
+		if constexpr (fbits <= 64u) {
+			constexpr unsigned usedBlocks = (fbits + bitsInBlock - 1u) / bitsInBlock;
+			uint64_t raw{ 0 };
+			for (unsigned i = 0; i < usedBlocks; ++i) raw |= static_cast<uint64_t>(_block[i]) << (i * bitsInBlock);
+			if constexpr (fbits < 64u) raw &= (uint64_t(1) << fbits) - 1u;
+			return raw;
+		}
+		else return 0;
 	}
 	// construct the significant from the encoding, returns normalization offset
 	constexpr unsigned significant(blockbinary<fhbits, bt>& s, bool isNormal = true) const {
@@ -2094,10 +2116,14 @@ public:
 		}
 		else if constexpr (nrBlocks > 1) {
 			s.clear();
-			// TODO: design and implement a block-oriented algorithm, this sequential algorithm is super slow
 			if (isNormal) {
+				// a limb at a time (#2087)
+				for (unsigned i = 0; i < fBlocks && i < nrBlocks; ++i) {
+					bt limb = _block[i];
+					if (i == fBlocks - 1u) limb = bt(limb & low_bits_mask(bitsInFSU));
+					s.setblock(i, limb);
+				}
 				s.setbit(fbits);
-				for (unsigned i = 0; i < fbits; ++i) { s.setbit(i, at(i)); }
 			}
 			else {
 				// Find the MSB of the subnormal: 
@@ -2124,35 +2150,43 @@ public:
 		for (unsigned i = 0; i < upperbound; ++i) { b.setbit(i, at(i)); }
 	}
 
-	// casts to native types
-	// Float-to-integer conversion is undefined when the (truncated) source value
-	// is outside the destination type's representable range [conv.fpint]. Clamp
-	// to min/max before the cast. Note: float(INT_MAX) typically rounds up to
-	// 2^31, so we use >= (not >) to catch the boundary.
-	constexpr int to_int() const {
-		if (isnan()) return 0;
-		if (isinf()) return sign() ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max();
-		float f = to_native<float>();
-		if (f >= static_cast<float>(std::numeric_limits<int>::max())) return std::numeric_limits<int>::max();
-		if (f <  static_cast<float>(std::numeric_limits<int>::min())) return std::numeric_limits<int>::min();
-		return int(f);
+	// casts to native integers follow posit's rule (#2073, #2087): truncate toward zero,
+	// exactly at every width, saturate a value past the range (inf included) to the
+	// type's max or min, and give the type's min for a NaN (0 for an unsigned type).
+	// They used to cast a double, which lost the bits past 53 and saturated through it.
+	template<typename Integer>
+	constexpr Integer to_integer() const noexcept {
+		static_assert(std::is_integral_v<Integer>, "to_integer needs an integer type");
+		using Limits = std::numeric_limits<Integer>;
+		if (isnan()) return Limits::min();
+		if (isinf()) return sign() ? Limits::min() : Limits::max();
+		if (iszero()) return Integer(0);
+		// the significand's weight: bit fbits (the hidden bit, when there is one) is 2^E
+		const bool hidden = isnormal() || ismaxexpvalue();
+		const int E = hidden ? scale() : MIN_EXP_NORMAL;
+		if (E < 0) return Integer(0);                         // |x| < 1
+		bool overflow = (E >= 64);
+		uint64_t mag{ 0 };
+		if (!overflow) mag = significand_window(static_cast<int>(fbits) - E, static_cast<unsigned>(E) + 1u, hidden);
+		if constexpr (std::is_signed_v<Integer>) {
+			using U = std::make_unsigned_t<Integer>;
+			const uint64_t maxMag = static_cast<uint64_t>(static_cast<U>(Limits::max()));
+			if (sign()) {
+				if (overflow || mag > maxMag + 1u) return Limits::min();
+				return static_cast<Integer>(static_cast<U>(U(0) - static_cast<U>(mag)));
+			}
+			if (overflow || mag > maxMag) return Limits::max();
+			return static_cast<Integer>(mag);
+		}
+		else {
+			if (sign()) return Integer(0);
+			if (overflow || mag > static_cast<uint64_t>(Limits::max())) return Limits::max();
+			return static_cast<Integer>(mag);
+		}
 	}
-	constexpr long to_long() const {
-		if (isnan()) return 0;
-		if (isinf()) return sign() ? std::numeric_limits<long>::min() : std::numeric_limits<long>::max();
-		double d = to_native<double>();
-		if (d >= static_cast<double>(std::numeric_limits<long>::max())) return std::numeric_limits<long>::max();
-		if (d <  static_cast<double>(std::numeric_limits<long>::min())) return std::numeric_limits<long>::min();
-		return long(d);
-	}
-	constexpr long long to_long_long() const {
-		if (isnan()) return 0;
-		if (isinf()) return sign() ? std::numeric_limits<long long>::min() : std::numeric_limits<long long>::max();
-		double d = to_native<double>();
-		if (d >= static_cast<double>(std::numeric_limits<long long>::max())) return std::numeric_limits<long long>::max();
-		if (d <  static_cast<double>(std::numeric_limits<long long>::min())) return std::numeric_limits<long long>::min();
-		return (long long)(d);
-	}
+	constexpr int to_int() const noexcept { return to_integer<int>(); }
+	constexpr long to_long() const noexcept { return to_integer<long>(); }
+	constexpr long long to_long_long() const noexcept { return to_integer<long long>(); }
 
 	// transform an cfloat to a native C++ floating-point. We are using the native
 	// precision to compute, which means that all sub-values need to be representable 
@@ -2173,52 +2207,54 @@ public:
 		else if (isinf()) {
 			v = sign() ? -std::numeric_limits<TargetFloat>::infinity() : std::numeric_limits<TargetFloat>::infinity();
 		}
-		else { // TODO: this approach has catastrophic cancellation when nbits is large and native target float is too small
-			TargetFloat f{ 0 };
-			TargetFloat fbit{ 0.5 };
-			for (int i = static_cast<int>(nbits - 2ull - es); i >= 0; --i) {
-				f += at(static_cast<unsigned>(i)) ? fbit : TargetFloat(0);
-				fbit *= TargetFloat(0.5);
-			}
-			blockbinary<es, bt> ebits;
-			exponent(ebits);
-			// The power of two is applied with constexpr_ldexp in TargetFloat itself (#1513): std::ldexp
-			// at run time, exact scaling in a constant expression. It used to be a double from ipow()
-			// outside (-64, 64), which capped a long double at double's range and, computing 2^-e as
-			// 1 / 2^e, returned 0 for e <= -1024; and for subnormals a table of doubles that is 0 for
-			// es >= 12. Inside (-64, 64) it was 1ull << e, with std::ldexp for e < 0 because clang
-			// miscompiles 1 / (long double)(1ull << n) (#937); but clang cannot call std::ldexp in a
-			// constant expression, so a constexpr double(cfloat) of 0.5 did not compile there.
-			if constexpr (hasSubnormals) {
-				if (ebits.iszero()) {
-					// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
-					v = constexpr_ldexp(f, MIN_EXP_NORMAL);  // f is already f/2^fbits
-					return sign() ? -v : v;
-				}
+		else {
+			// Round once, to nearest even, at TargetFloat's precision -- reduced where the result is
+			// subnormal there.  The kept bits are exact in TargetFloat (at most digits of them), so
+			// only the explicit rounding step rounds.  Summing the fraction bit by bit in TargetFloat
+			// rounded at every bit past its precision, and then again (#2087).
+			const bool hidden = isnormal() || ismaxexpvalue();
+			int lead = static_cast<int>(fbits);   // significand index of the leading 1
+			int E = 0;                            // its weight is 2^E
+			if (hidden) {
+				E = scale();
 			}
 			else {
-				if (ebits.iszero()) { // underflow to 0
-					// compiler fast float optimization might destroy the sign
+				if constexpr (!hasSubnormals) {
+					// the encoding has no subnormals: an all-zeros exponent field is a zero
 					return sign() ? -TargetFloat(0) : TargetFloat(0);
 				}
-			}
-			if constexpr (hasMaxExpValues) {
-				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
-				int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
-				v = constexpr_ldexp(TargetFloat(1.0) + f, exponent);
-			}
-			else {
-				if (ebits.all()) {
-					// max-exponent values are mapped to quiet NaNs
-					v = std::numeric_limits<TargetFloat>::quiet_NaN();
-					return v;
+				lead = -1;
+				for (int i = static_cast<int>(fBlocks) - 1; i >= 0 && lead < 0; --i) {
+					bt limb = _block[i];
+					if (i == static_cast<int>(fBlocks) - 1) limb = bt(limb & low_bits_mask(bitsInFSU));
+					for (int j = static_cast<int>(bitsInBlock) - 1; j >= 0; --j) {
+						if ((limb >> j) & 1u) { lead = i * static_cast<int>(bitsInBlock) + j; break; }
+					}
 				}
-				else {
-					// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
-					int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
-					v = constexpr_ldexp(TargetFloat(1.0) + f, exponent);
-				}
+				E = MIN_EXP_NORMAL - (static_cast<int>(fbits) - lead);
 			}
+			constexpr int p = std::numeric_limits<TargetFloat>::digits;
+			constexpr int emin = std::numeric_limits<TargetFloat>::min_exponent - 1;   // exponent of the smallest normal
+			int keep = (E < emin) ? p - (emin - E) : p;
+			if (keep < 0) {
+				// below half the smallest subnormal
+				return sign() ? -TargetFloat(0) : TargetFloat(0);
+			}
+			TargetFloat q{ 0 };
+			uint64_t chunk{ 0 };
+			int top = lead + 1;
+			for (int remaining = keep; remaining > 0; ) {
+				const int take = (remaining > 32 ? 32 : remaining);
+				chunk = significand_window(top - take, static_cast<unsigned>(take), hidden);
+				q = q * TargetFloat(static_cast<uint64_t>(1ull << take)) + TargetFloat(chunk);
+				top -= take;
+				remaining -= take;
+			}
+			const bool lsb    = (keep > 0) && ((chunk & 1u) != 0);
+			const bool round  = significand_window(lead - keep, 1u, hidden) != 0;
+			const bool sticky = fraction_bits_below(lead - keep);
+			if (round && (sticky || lsb)) q += TargetFloat(1);
+			v = constexpr_ldexp(q, E - keep + 1);
 			v = sign() ? -v : v;
 		}
 		return v;
@@ -2536,6 +2572,7 @@ protected:
 		if (bitsToShift == 0) return;
 		if (bitsToShift > nbits) {
 			setzero();
+			return;   // every bit is shifted out; the block shift below would index out of range (#2087)
 		}
 		if (bitsToShift >= bitsInBlock) {
 			int blockShift = static_cast<int>(bitsToShift / bitsInBlock);
@@ -2632,7 +2669,9 @@ protected:
 		bool s = (rhs < 0);
 		using UnsignedTy = std::make_unsigned_t<Ty>;
 		UnsignedTy urhs = static_cast<UnsignedTy>(rhs);
-		uint64_t raw = static_cast<uint64_t>(s ? (UnsignedTy(0) - urhs) : urhs);
+		// the magnitude is negated in the source's own width: UnsignedTy(0) - urhs promotes a short
+		// or signed char to int, and the sign-extended result read as ~2^63 (#2087)
+		uint64_t raw = static_cast<uint64_t>(s ? static_cast<UnsignedTy>(UnsignedTy(0) - urhs) : urhs);
 
 		int msb = static_cast<int>(find_msb(raw)) - 1; // msb > 0 due to zero test above 
 		int exponent = msb;
