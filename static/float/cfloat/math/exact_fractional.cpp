@@ -43,10 +43,11 @@ bool same(const Cfloat& got, double exact) {
 	return !ref.iszero() || got.sign() == ref.sign();
 }
 
-// fmod and remainder of 16-bit layouts against double, over random pairs and the range ends
+// fmod and remainder against double, over random pairs and the range ends, for layouts whose every
+// value is a double: up to 16 bits, and double's own layout, whose arithmetic type is cfloat<66,12>
 template<typename Cfloat>
 int VerifyFmodRemainder16(unsigned samples, bool reportTestCases) {
-	static_assert(Cfloat::nbits <= 16, "double holds every value and fmod/remainder are exact there");
+	static_assert(Cfloat::fbits <= 52 && Cfloat::es <= 11, "double holds every value and fmod/remainder are exact there");
 	int fails = 0;
 	std::mt19937_64 rng(2088);
 	Cfloat x, y;
@@ -65,8 +66,9 @@ int VerifyFmodRemainder16(unsigned samples, bool reportTestCases) {
 	                        Cfloat(sw::universal::SpecificValue::maxneg), Cfloat(3), Cfloat(-3), Cfloat(0.75), Cfloat(0) };
 	for (const auto& a : ends) for (const auto& b : ends) check(a, b);
 	for (unsigned k = 0; k < samples; ++k) {
-		x.setbits(rng() & ((uint64_t(1) << Cfloat::nbits) - 1u));
-		y.setbits(rng() & ((uint64_t(1) << Cfloat::nbits) - 1u));
+		constexpr uint64_t mask = (Cfloat::nbits >= 64) ? ~uint64_t(0) : ((uint64_t(1) << (Cfloat::nbits % 64u)) - 1u);
+		x.setbits(rng() & mask);
+		y.setbits(rng() & mask);
 		check(x, y);
 	}
 	return fails;
@@ -230,9 +232,10 @@ try {
 		// es = 20, where the arithmetic type cannot add an exponent bit
 		using E = cfloat<64, 20, uint64_t, true, false, false>;
 		const E mx(SpecificValue::maxpos);
+		const E three4 = mx - (mx / E(4));                    // ~3/4 maxpos: its fmod remainder doubles past maxpos
 		const bool e20 = fmod(E(7), E(2)) == E(1) && remainder(E(7), E(2)) == E(-1) && remainder(E(5), E(2)) == E(1)
 		              && fmod(mx, mx).iszero() && remainder(mx, mx).iszero()
-		              && remainder(mx - (mx / E(4)), mx) == -(mx / E(4));   // 2r past maxpos: rounds toward -1/4 maxpos
+		              && remainder(three4, mx) == three4 - mx;   // 2r is past maxpos; three4 - mx is exact (Sterbenz)
 		if (!e20) {
 			std::cerr << "FAIL: fmod/remainder on cfloat<64,20,uint64_t>\n";
 			++nrOfFailedTestCases;
@@ -261,6 +264,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainder16<cfloat<16, 5, uint16_t, true, false, false>>(20000, reportTestCases), "cfloat<16,5,uint16_t,t,f,f>", "fmod/remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainder16<cfloat<16, 8, uint8_t, true, true, true>>(20000, reportTestCases),    "cfloat<16,8,uint8_t,t,t,t>",  "fmod/remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainder16<cfloat<12, 4, uint8_t, false, false, false>>(20000, reportTestCases), "cfloat<12,4,uint8_t,f,f,f>",  "fmod/remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainder16<cfloat<64, 11, uint32_t, true, false, false>>(20000, reportTestCases), "cfloat<64,11,uint32_t,t,f,f>", "fmod/remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainderWide<cfloat<80, 11, uint32_t>>(5000, reportTestCases),                   "cfloat<80,11,uint32_t>",      "fmod/remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainderWide<cfloat<96, 15, uint16_t, true, false, false>>(5000, reportTestCases), "cfloat<96,15,uint16_t,t,f,f>", "fmod/remainder");
 
