@@ -59,7 +59,6 @@
 
 #include <universal/native/ieee754_core.hpp>   // the bit-manipulation half (#1334)
 #include <universal/internal/blockbinary/blockbinary.hpp>
-#include <universal/internal/abstract/triple.hpp>
 #include <math/constexpr_math/exp2.hpp>
 
 #include <universal/internal/bit_manipulation.hpp>
@@ -70,20 +69,6 @@ namespace sw {	namespace universal {
 
 // Forward definitions
 template<unsigned nbits, unsigned rbits, typename bt> class takum;
-
-// convert a floating-point value to a specific takum configuration
-template<unsigned nbits, unsigned rbits, typename bt>
-inline takum<nbits, rbits, bt>& convert(const triple<nbits, bt>& v, takum<nbits, rbits, bt>& p) {
-	if (v.iszero()) {
-		p.setzero();
-		return p;
-	}
-	if (v.isnan() || v.isinf()) {
-		p.setnan();
-		return p;
-	}
-	return p;
-}
 
 // template class representing a takum value with two's complement encoding
 template<unsigned _nbits, unsigned _rbits = 3, typename bt = uint8_t>
@@ -571,13 +556,32 @@ protected:
 	//////////////////////////////////////////////////////
 	/// conversion routines from native types
 
+	// Integers convert exactly, at every width: |v| is an integer significand with exponent 0, and
+	// the exact path's encoder rounds it once into the layout (#2079).  They went through a double,
+	// which rounded every integer above 2^53 to 53 bits before the takum saw it: takum<64,3>, whose
+	// significand holds 61 bits, turned 2^53 + 1 into 2^53.
 	template<typename SignedInt>
 	CONSTEXPRESSION takum& convert_signed(SignedInt rhs) noexcept {
-		return convert_ieee754(double(rhs));
+		if (rhs == 0) { setzero(); return *this; }
+		const bool negative = (rhs < 0);
+		// two's complement in uint64_t: 0 - v is |rhs| for every value, the minimum included
+		const uint64_t v = static_cast<uint64_t>(static_cast<long long>(rhs));
+		return convert_integer_magnitude(negative ? (0ull - v) : v, negative);
 	}
 	template<typename UnsignedInt>
 	CONSTEXPRESSION takum& convert_unsigned(UnsignedInt rhs) noexcept {
-		return convert_ieee754(double(rhs));
+		// operator=(char) lands here, and plain char is signed on most platforms
+		if constexpr (std::is_signed_v<UnsignedInt>) {
+			return convert_signed(rhs);
+		}
+		else {
+			if (rhs == 0) { setzero(); return *this; }
+			return convert_integer_magnitude(static_cast<uint64_t>(rhs), false);
+		}
+	}
+	// Pre: magnitude != 0
+	CONSTEXPRESSION takum& convert_integer_magnitude(uint64_t magnitude, bool negative) noexcept {
+		return assign_wide(takum_wide::wide_value{ takum_wide::make_u128(magnitude), 0, negative, false });
 	}
 
 	/// Convert an IEEE-754 floating-point value to linear takum encoding.
@@ -683,15 +687,38 @@ protected:
 	//////////////////////////////////////////////////////
 	/// conversion routines to native types
 
+	// Integer conversions truncate toward zero, exactly at every width, and saturate to the integer
+	// type's range; NaR gives the type's minimum, the "integer indefinite" a hardware float-to-int
+	// conversion produces.  This is posit's rule (#2070, #2073), adopted for takum in #2079.  They
+	// went through a double, which made NaR and every out-of-range value undefined behaviour
+	// (int(NaR) came out INT_MIN, (long long)maxpos LLONG_MIN) and lost the bits past 53.
 	template<typename SignedInt>
 	CONSTEXPRESSION typename std::enable_if< std::is_integral<SignedInt>::value&& std::is_signed<SignedInt>::value, SignedInt>::type
 		to_signed() const noexcept {
-		return SignedInt(to_ieee754<double>());
+		return to_integer<SignedInt>();
 	}
 	template<typename UnsignedInt>
 	CONSTEXPRESSION typename std::enable_if< std::is_integral<UnsignedInt>::value&& std::is_unsigned<UnsignedInt>::value, UnsignedInt>::type
 		to_unsigned() const noexcept {
-		return UnsignedInt(to_ieee754<double>());
+		return to_integer<UnsignedInt>();
+	}
+	template<typename Integer>
+	constexpr Integer to_integer() const noexcept {
+		static_assert(std::is_integral_v<Integer> && sizeof(Integer) <= 8, "to_integer: an integer type of at most 64 bits");
+		using Limits = std::numeric_limits<Integer>;
+		if (iszero()) return Integer(0);
+		if (isnar()) return Limits::min();
+		const bool negative = sign();
+		const auto d = Codec::decode(magnitude_bits());
+		if (d.c < 0) return Integer(0);                                    // |x| < 1 truncates to 0
+		if (negative && !Limits::is_signed) return Limits::min();          // x <= -1 saturates to 0
+		if (d.c >= static_cast<int64_t>(Limits::digits)) return negative ? Limits::min() : Limits::max();
+		// |x| = S * 2^(c - p) with S = 2^p + M, truncated: c <= 63 and p <= 61 keep both shifts in range
+		const uint64_t S     = (1ull << d.p) | d.M_bits;
+		const int64_t  shift = d.c - static_cast<int64_t>(d.p);
+		const uint64_t magnitude = (shift >= 0) ? (S << shift) : (S >> (-shift));
+		using U = std::make_unsigned_t<Integer>;
+		return negative ? static_cast<Integer>(U(0) - static_cast<U>(magnitude)) : static_cast<Integer>(magnitude);
 	}
 
 	/// Decode a linear takum to an IEEE-754 floating-point value, correctly rounded.

@@ -199,6 +199,18 @@ test files under `static/tapered/takum/` and to `tools/ucalc/registry.hpp`.
   The full divergence only materializes when native arithmetic and the quire land --
   which is exactly why the type boundary should be drawn now, before that code is
   written against a single class.
+- Rounding is defined on the bit string, not on the value. arXiv:2404.18603 (Section 4.2,
+  Algorithm 1) cuts the lossless encoding to n + 1 bits and rounds on the last one,
+  saturating to minpos / maxpos. The hardware codec (arXiv:2408.10594) and libtakum
+  round the same string to nearest with ties to even, and so does Universal's codec.
+  Where a layout has a trailing field, the cut bits are fraction bits and the two
+  domains agree. Where it has none and stores only the top characteristic bits
+  (`takum<8,3>`, `takum<10,3>`), the cut bits are characteristic bits, so a linear takum
+  rounds in exponent space: `takum<8,3>(3.709e-68)` is pattern 2, although pattern 1 is
+  nearer in value. `static/tapered/takum/conversion/narrow_rounding.cpp` checks this
+  exhaustively against libtakum's width reduction (#2079).
+- Conversions from integers are exact and rounded once. Integer casts truncate toward zero,
+  saturate, and map NaR to the integer type's minimum, the rule posit uses (#2073, #2079).
 - The file header of `takum_impl.hpp` originally cited arXiv:2404.18603 without a
   definition number, implying that paper defines only the linear encoding. It defines
   both (Definition 2 logarithmic, Definition 8 linear). Corrected.
