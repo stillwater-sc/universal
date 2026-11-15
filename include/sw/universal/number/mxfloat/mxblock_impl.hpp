@@ -52,6 +52,7 @@ public:
 	//   scale_exp = clamp(floor(log2(amax)) - max_elem_exp(ElementType), -127, 127)
 	//   scale = e8m0(scale_exp + 127)
 	//   q_i = RNE(x_i / 2^scale_exp) quantized to ElementType
+	//   a NaN x_i sets the scale to NaN (encoding 0xFF), so the whole block is NaN
 	//
 	// floor(log2(amax)) is read off the float's exponent field (std::ilogb), not computed
 	// with std::log2: a float log2 rounds up to the next integer just below a power of two
@@ -69,9 +70,17 @@ public:
 	constexpr void quantize(const float* src, size_t n = BlockSize) noexcept {
 		if (n > BlockSize) n = BlockSize;
 
-		// Step 1: find absolute maximum across input
+		// Step 1: find absolute maximum across input.  A NaN input makes the block
+		// NaN: the scale is e8m0's NaN encoding, which dequantizes every element to
+		// NaN, whatever the element type can encode (int8 and e2m1 have no NaN).
+		// The elements are zeroed so that the block's contents are deterministic.
 		float amax = 0.0f;
 		for (size_t i = 0; i < n; ++i) {
+			if (src[i] != src[i]) {
+				_scale.setnan();
+				for (size_t j = 0; j < BlockSize; ++j) set_element_zero(j);
+				return;
+			}
 			float a = std::is_constant_evaluated() ? cx_fabs(src[i]) : std::fabs(src[i]);
 			if (a > amax) amax = a;
 		}

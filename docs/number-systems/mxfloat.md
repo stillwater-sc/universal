@@ -62,6 +62,8 @@ Total storage per block: 8 + BlockSize × element_bits
 
 int8 codes saturate to `[-128, 127]`: a block maximum in `[127.5, 128)` after scaling is clipped to 127.
 
+A NaN input sets the block's scale to NaN (e8m0 encoding `0xFF`), so every element of the block dequantizes to NaN, including in formats whose elements have no NaN encoding (int8, e2m1).
+
 ### Dequantization (mxblock → float)
 
 ```

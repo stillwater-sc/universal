@@ -15,6 +15,8 @@
 //   - floor(log2(amax)) is exact.  A float log2 rounds up just below a power of two.
 //   - the scale exponent is clamped to e8m0's range, 2^-127 .. 2^127.  A reciprocal scale was
 //     inf below 2^-127, so an mxfp8 block {2^-126, 0, 0} became {inf, NaN, NaN} (#2083).
+//   - a NaN input sets the scale to NaN, so the whole block dequantizes to NaN.  An int8
+//     element cast NaN to int, which is undefined.
 #include <universal/utility/directives.hpp>
 #include <universal/number/mxfloat/mxfloat.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -23,6 +25,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <string>
 #include <type_traits>
@@ -131,6 +134,35 @@ int VerifyScaling(const std::string& tag, unsigned randomBlocks, bool reportTest
 		std::vector<float> x(Block::blockSize);
 		for (auto& v : x) v = std::ldexp(mant(rng), c - spread(rng));
 		fails += VerifyBlock<Block>(x, tag, reportTestCases);
+	}
+	return fails;
+}
+
+// a NaN input makes the whole block NaN: the scale is e8m0's NaN encoding, and every
+// element dequantizes to NaN, wherever the NaN sits and whatever the other inputs are
+template<typename Block>
+int VerifyNaNBlock(const std::string& tag, bool reportTestCases) {
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	const std::vector<std::vector<float>> blocks = {
+		{ nan },
+		{ 1.0f, nan, -3.0f },
+		{ 0.0f, 0.0f, nan },                                   // otherwise an all-zero block
+		{ nan, std::numeric_limits<float>::infinity(), 2.0f },
+		{ 0x1p-126f, -nan },
+	};
+	int fails = 0;
+	for (const auto& x : blocks) {
+		Block b;
+		b.quantize(x.data(), x.size());
+		std::vector<float> out(x.size(), 0.0f);
+		b.dequantize(out.data(), out.size());
+		bool allNaN = b.scale().isnan();
+		for (std::size_t i = 0; i < out.size(); ++i) allNaN = allNaN && (out[i] != out[i]) && (b[i] != b[i]);
+		if (!allNaN) {
+			if (reportTestCases) std::cerr << "FAIL " << tag << ": a block holding a NaN has scale bits 0x" << std::hex
+			                               << b.scale().bits() << std::dec << ", expected 0xff and NaN elements\n";
+			++fails;
+		}
 	}
 	return fails;
 }
@@ -252,6 +284,13 @@ try {
 			++nrOfFailedTestCases;
 		}
 	}
+
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNBlock<mxint8>("mxint8", reportTestCases),       "mxint8",    "NaN input");
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNBlock<mxfp8>("mxfp8", reportTestCases),         "mxfp8",     "NaN input");
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNBlock<mxfp8e5m2>("mxfp8e5m2", reportTestCases), "mxfp8e5m2", "NaN input");
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNBlock<mxfp6>("mxfp6", reportTestCases),         "mxfp6",     "NaN input");
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNBlock<mxfp6e2m3>("mxfp6e2m3", reportTestCases), "mxfp6e2m3", "NaN input");
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNBlock<mxfp4>("mxfp4", reportTestCases),         "mxfp4",     "NaN input");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyScaling<mxint8>("mxint8", 200, reportTestCases),        "mxint8",    test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyScaling<mxfp8>("mxfp8", 200, reportTestCases),          "mxfp8",     test_tag);

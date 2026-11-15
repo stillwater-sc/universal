@@ -208,6 +208,16 @@ try {
 		static_assert(cx_inf.scale().scale() == 121, "constexpr mxint8 infinite amax -> scale 2^121");
 		static_assert(cx_inf.element(0) == 127 && cx_inf.element(1) == 1,
 		              "constexpr mxint8 infinite amax saturates and keeps 2^121");
+		// a NaN input makes the block NaN at constant evaluation, for int8 too
+		static constexpr float nan_in[3] = { 1.0f, std::numeric_limits<float>::quiet_NaN(), 2.0f };
+		constexpr mxblock<std::int8_t, 3> cx_nan = []() {
+			mxblock<std::int8_t, 3> b{};
+			b.quantize(nan_in, 3);
+			return b;
+		}();
+		static_assert(cx_nan.scale().isnan(), "constexpr mxint8 NaN input -> NaN scale");
+		static_assert(cx_nan[0] != cx_nan[0], "constexpr mxint8 NaN block dequantizes to NaN");
+
 		mxblock<std::int8_t, 2> rt_inf;
 		rt_inf.quantize(inf_block, 2);
 		if (rt_inf.scale().bits() != cx_inf.scale().bits() || rt_inf.element(0) != cx_inf.element(0)
