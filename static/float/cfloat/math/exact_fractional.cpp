@@ -194,6 +194,23 @@ int VerifyIssueValues() {
 		std::cerr << "FAIL: frac, trunc or fmod of the max-exponent value 65536 on cfloat<16,5,uint16_t,t,t,f>\n";
 		++nrOfFailedTestCases;
 	}
+	// es = 1: the smallest normal is 2, so subnormals reach [1, 2).  Every encoding's trunc and
+	// frac against double, which holds them exactly.
+	{
+		using O = cfloat<8, 1, uint8_t, true, true, false>;
+		O o; o.setbits(0x30u);
+		bool ok = double(o) == 1.5 && double(trunc(o)) == 1.0 && double(frac(o)) == 0.5;
+		for (unsigned b = 0; b < 256u; ++b) {
+			o.setbits(b);
+			if (o.isnan() || o.isinf()) continue;
+			const double d = double(o);
+			ok = ok && double(trunc(o)) == std::trunc(d) && double(frac(o)) == std::fabs(d - std::trunc(d));
+		}
+		if (!ok) {
+			std::cerr << "FAIL: trunc/frac on cfloat<8,1,uint8_t,t,t,f>\n";
+			++nrOfFailedTestCases;
+		}
+	}
 	// es = 20, where the arithmetic type cannot add an exponent bit
 	using E = cfloat<64, 20, uint64_t, true, false, false>;
 	const E mx(SpecificValue::maxpos);
