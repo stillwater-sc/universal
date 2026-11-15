@@ -22,6 +22,7 @@
 #include <universal/number/dbns/dbns.hpp>
 #include <universal/number/dd/dd.hpp>
 #include <universal/number/qd/qd.hpp>
+#include <universal/number/mxfloat/mxfloat.hpp>
 
 #include <universal/verification/test_reporters.hpp>
 
@@ -61,6 +62,7 @@ Lns          lnsPolynomial(const std::vector<float>& coef, const Lns& x);
 Lns2b        dbnsPolynomial(const std::vector<float>& coef, const Lns2b& x);
 DoubleDouble ddPolynomial(const std::vector<double>& coef, const DoubleDouble& x);
 QuadDouble   qdPolynomial(const std::vector<double>& coef, const QuadDouble& x);
+float        mxint8Roundtrip(const std::vector<float>& v);
 
 template<typename NumberType>
 void EvaluatePolynomial(const std::vector<float>& coefficients, const NumberType& x) {
@@ -92,6 +94,20 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+	{
+		// mxfloat in this translation unit and in mxfloats.cpp: links only when the
+		// max_elem_exponent specializations are inline (#2083)
+		float v[4] = { 100.0f, 1.5f, 2.5f, -3.25f };
+		mxint8 b;
+		b.quantize(v, 4);
+		const float here  = b[0] + b[1] + b[2] + b[3] + static_cast<float>(mxblock<e2m1>::elemMaxExp);
+		const float there = mxint8Roundtrip({ 100.0f, 1.5f, 2.5f, -3.25f });
+		if (here != 103.0f || there != 103.0f) {
+			std::cerr << "FAIL: mxint8 round-trip " << here << " / " << there << ", expected 103\n";
+			++nrOfFailedTestCases;
+		}
+	}
+
 #if MANUAL_TESTING
 
 	// polynomial(x) = a + bx + cx^2 + dx^3 + ex^4 + fx^5;
@@ -111,7 +127,7 @@ try {
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS; // ignore failures
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 #else
 
 #if REGRESSION_LEVEL_1

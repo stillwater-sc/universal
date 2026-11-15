@@ -47,10 +47,20 @@ Total storage per block: 8 + BlockSize × element_bits
 ### Quantization (float → mxblock)
 
 1. Find the absolute maximum of the input block: `amax = max(|input[i]|)`
-2. Compute shared exponent: `shared_exp = floor(log2(amax))`
-3. Clamp to e8m0 range: `scale = clamp(shared_exp, -127, 127)`
-4. Scale each element: `element[i] = input[i] / 2^scale`
-5. Round each scaled element to the nearest ElementType value
+2. Compute the shared exponent: `shared_exp = floor(log2(amax))`, read exactly off the float's exponent field (`std::ilogb`)
+3. Subtract the element type's `emax` and clamp to e8m0's range: `scale_exp = clamp(shared_exp - emax, -127, 127)`, so the block's largest element lands in `[2^emax, 2^(emax+1))`
+4. Scale each element: `element[i] = input[i] * 2^-scale_exp` (exact)
+5. Round each scaled element to the nearest ElementType value, ties to even
+
+| Element type | emax |
+|--------------|------|
+| e2m1 (FP4) | 2 |
+| e2m3, e3m2 (FP6) | 2, 4 |
+| e4m3 (FP8) | 8 |
+| e5m2 (FP8) | 15 |
+| int8 | 6 (the code's largest power of two; OCP's INT8 has an implicit 2^-6, so its emax is 0) |
+
+int8 codes saturate to `[-128, 127]`: a block maximum in `[127.5, 128)` after scaling is clipped to 127.
 
 ### Dequantization (mxblock → float)
 

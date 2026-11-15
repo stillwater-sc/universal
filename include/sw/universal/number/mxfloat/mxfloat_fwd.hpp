@@ -15,31 +15,37 @@ namespace sw { namespace universal {
 template<typename ElementType, size_t BlockSize = 32>
 class mxblock;
 
-// compile-time trait: maximum element exponent for each element type
-// This is the max biased exponent value for the element type, used in scale computation
+// compile-time trait: emax of each element type, the exponent of its largest power of two
+// (OCP MX v1.0, Table 1). quantize() picks the scale 2^(floor(log2(amax)) - emax), so the
+// block's largest element lands in [2^emax, 2^(emax+1)).
+// INT8 is two's complement with an implicit scale of 2^-6 (emax 0); read as an integer
+// code, as mxblock stores it, its largest power of two is 2^6, so emax is 6. With 7, every
+// block's largest code fell in [128, 256) and was clamped to 127 (#2083).
+// The specializations are inline: an explicit specialization of a variable template is not
+// implicitly inline, so two translation units including this header failed to link (#2083).
 template<typename T>
-constexpr int max_elem_exponent = 0;
+inline constexpr int max_elem_exponent = 0;
 
 template<>
-constexpr int max_elem_exponent<e2m1> = 2;
+inline constexpr int max_elem_exponent<e2m1> = 2;
 
 template<>
-constexpr int max_elem_exponent<e2m3> = 2;
+inline constexpr int max_elem_exponent<e2m3> = 2;
 
 template<>
-constexpr int max_elem_exponent<e3m2> = 4;
+inline constexpr int max_elem_exponent<e3m2> = 4;
 
 template<>
-constexpr int max_elem_exponent<e4m3fn> = 8;
+inline constexpr int max_elem_exponent<e4m3fn> = 8;
 
 template<>
-constexpr int max_elem_exponent<e4m3_saturating> = 8;
+inline constexpr int max_elem_exponent<e4m3_saturating> = 8;
 
 template<>
-constexpr int max_elem_exponent<e5m2> = 15;
+inline constexpr int max_elem_exponent<e5m2> = 15;
 
 template<>
-constexpr int max_elem_exponent<int8_t> = 7;
+inline constexpr int max_elem_exponent<int8_t> = 6;
 
 // type aliases for OCP Microscaling (MX) block formats
 using mxfp4     = mxblock<e2m1>;
