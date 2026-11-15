@@ -35,12 +35,16 @@ Real cfloat_fmod_magnitude(Real r, Real ay, bool& quotientOdd) {
 	return r;
 }
 
-// the arithmetic type of fmod and remainder: one more exponent bit and subnormals, so that every
+// the arithmetic type of fmod and remainder: subnormals, and one more exponent bit, so that every
 // value of the layout, twice it, and every partial remainder are exact.  The result is rounded into
 // the layout once -- which is exact, except in a layout without subnormals, where a remainder below
 // the smallest normal rounds like any other value instead of being flushed by a subtraction.
+// cfloat's exponent field ends at 20 bits: there the type keeps es and the layout's max-exponent
+// values, which hold every value but not always twice it (see cfloat_remainder_finite).
 template<typename Real>
-using cfloat_remainder_t = cfloat<Real::nbits + 2u, Real::es + 1u, typename Real::BlockType, true, false, false>;
+using cfloat_remainder_t = std::conditional_t<(Real::es < 20u),
+	cfloat<Real::nbits + 2u, Real::es + 1u, typename Real::BlockType, true, false, false>,
+	cfloat<Real::nbits + 2u, Real::es, typename Real::BlockType, true, Real::hasMaxExpValues, false>>;
 
 // x - n*y for finite x != 0 and finite y != 0; n is x/y truncated, or rounded half to even when
 // nearest is true
@@ -53,8 +57,10 @@ Real cfloat_remainder_finite(const Real& x, const Real& y, bool nearest) {
 	bool odd = false;
 	Wide r = cfloat_fmod_magnitude(ax, ay, odd);
 	if (nearest) {
-		const Wide twoR = r + r;                                 // exact: Wide has a spare exponent bit
-		if (twoR > ay || (twoR == ay && odd)) r = r - ay;        // exact: |y|/2 <= r < |y|
+		// 2r is exact when Wide has a spare exponent bit; at es = 20 it can overflow to inf, which
+		// happens only when 2r is past Wide's maxpos, and so past |y|
+		const Wide twoR = r + r;
+		if (twoR.isinf() || twoR > ay || (twoR == ay && odd)) r = r - ay;   // exact: |y|/2 <= r < |y|
 	}
 	if (negative) r = -r;                                        // a zero result takes the sign of x
 	return Real(r);

@@ -23,8 +23,10 @@ cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> trunc(cfloat
 	if (x.isnan()) return x.quieted();
 	if (x.isinf() || x.iszero()) return x;
 	// subnormals have magnitude < 1 (the smallest normal is well below 1 for any
-	// es), so truncation toward zero yields signed zero.
-	if (!x.isnormal()) {
+	// es), so truncation toward zero yields signed zero.  A finite max-exponent value
+	// is a normal of its layout, past every fraction bit's weight on most layouts:
+	// isnormal() excludes it, and trunc used to zero it (#2088).
+	if (!x.isnormal() && !x.ismaxexpvalue()) {
 		Cfloat z; z.setzero(); if (x.sign()) z.setsign(true);
 		return z;
 	}

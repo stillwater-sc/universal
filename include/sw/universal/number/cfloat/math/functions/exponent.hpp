@@ -12,11 +12,13 @@ namespace sw { namespace universal {
 // the current shims are NON-COMPLIANT with the Universal standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
-// true when every finite value of the layout is a normal double, and its smallest value is no
-// smaller than double's smallest: such a layout's range ends inside double's
+// true when the layout's largest finite binade is no higher than double's, and its smallest value is
+// no smaller than double's smallest: such a layout's range ends inside double's.  MAX_EXP counts the
+// top exponent binade, which holds finite values only with hasMaxExpValues.
 template<typename Cfloat>
 constexpr bool cfloat_range_fits_double() {
-	return Cfloat::MAX_EXP <= 1023 && (Cfloat::hasSubnormals ? Cfloat::MIN_EXP_SUBNORMAL : Cfloat::MIN_EXP_NORMAL) >= -1074;
+	constexpr int maxFiniteExp = Cfloat::hasMaxExpValues ? Cfloat::MAX_EXP : Cfloat::MAX_EXP - 1;
+	return maxFiniteExp <= 1023 && (Cfloat::hasSubnormals ? Cfloat::MIN_EXP_SUBNORMAL : Cfloat::MIN_EXP_NORMAL) >= -1074;
 }
 
 // Base-e exponential function

@@ -214,6 +214,29 @@ try {
 			std::cerr << "FAIL: exp/exp2(-inf) or exp(-1000) on cfloat<16,5> is not 0\n";
 			++nrOfFailedTestCases;
 		}
+		// double's own layout: its range is double's, so an underflow is 0
+		using D = cfloat<64, 11, uint64_t, true, false, false>;
+		if (!exp(D(-1000)).iszero() || !exp2(D(-2000)).iszero()) {
+			std::cerr << "FAIL: exp(-1000) or exp2(-2000) on cfloat<64,11> is not 0\n";
+			++nrOfFailedTestCases;
+		}
+		// a finite max-exponent value: 0x7c00 is 65536 on cfloat<16,5> with max-exponent values
+		using M = cfloat<16, 5, uint16_t, true, true, false>;
+		M m; m.setbits(0x7c00u);
+		if (double(m) != 65536.0 || !frac(m).iszero() || !(trunc(m) == m) || double(fmod(m, M(3))) != std::fmod(65536.0, 3.0)) {
+			std::cerr << "FAIL: frac, trunc or fmod of the max-exponent value 65536 on cfloat<16,5,uint16_t,t,t,f>\n";
+			++nrOfFailedTestCases;
+		}
+		// es = 20, where the arithmetic type cannot add an exponent bit
+		using E = cfloat<64, 20, uint64_t, true, false, false>;
+		const E mx(SpecificValue::maxpos);
+		const bool e20 = fmod(E(7), E(2)) == E(1) && remainder(E(7), E(2)) == E(-1) && remainder(E(5), E(2)) == E(1)
+		              && fmod(mx, mx).iszero() && remainder(mx, mx).iszero()
+		              && remainder(mx - (mx / E(4)), mx) == -(mx / E(4));   // 2r past maxpos: rounds toward -1/4 maxpos
+		if (!e20) {
+			std::cerr << "FAIL: fmod/remainder on cfloat<64,20,uint64_t>\n";
+			++nrOfFailedTestCases;
+		}
 		using Q = cfloat<128, 15, uint32_t, true, false, false>;
 		const bool classOk = fpclassify(Q(SpecificValue::minpos)) == FP_SUBNORMAL
 		                  && fpclassify(Q(SpecificValue::maxpos)) == FP_NORMAL
