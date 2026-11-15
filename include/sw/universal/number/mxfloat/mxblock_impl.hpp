@@ -92,14 +92,11 @@ public:
 			return;
 		}
 
-		int shared_exp = 0;
-		if (std::is_constant_evaluated()) {
-			shared_exp = cx_floor_log2(amax);
-		}
-		else {
-			shared_exp = std::ilogb(amax);   // exact; INT_MAX for an infinite amax
-			if (shared_exp > 127) shared_exp = 127;
-		}
+		int shared_exp = std::is_constant_evaluated()
+			? cx_floor_log2(amax)            // 128 for an infinite amax
+			: std::ilogb(amax);              // exact; INT_MAX for an infinite amax
+		// an infinite amax takes the largest finite float's exponent on both paths
+		if (shared_exp > 127) shared_exp = 127;
 
 		// clamp the scale exponent to e8m0's range, 2^-127 .. 2^127
 		int scale_exp = shared_exp - elemMaxExp;

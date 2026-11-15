@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <limits>
 #include <universal/number/mxfloat/mxfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -195,6 +196,26 @@ try {
 		static_assert(tiny.scale().bits() == 0u, "constexpr mxfp8 scale clamps at 2^-127");
 		static_assert(tiny[0] == 0x1p-126f,      "constexpr mxfp8 2^-126 exact at the clamped scale");
 		static_assert(tiny[1] == 0.0f,           "constexpr mxfp8 zero stays zero (no 0 * inf)");
+
+		// an infinite amax takes the shared exponent 127 at constant evaluation too,
+		// as it does at runtime: scale 2^121, so 2^121 is the code 1, not 0
+		static constexpr float inf_block[2] = { std::numeric_limits<float>::infinity(), 0x1p121f };
+		constexpr mxblock<std::int8_t, 2> cx_inf = []() {
+			mxblock<std::int8_t, 2> b{};
+			b.quantize(inf_block, 2);
+			return b;
+		}();
+		static_assert(cx_inf.scale().scale() == 121, "constexpr mxint8 infinite amax -> scale 2^121");
+		static_assert(cx_inf.element(0) == 127 && cx_inf.element(1) == 1,
+		              "constexpr mxint8 infinite amax saturates and keeps 2^121");
+		mxblock<std::int8_t, 2> rt_inf;
+		rt_inf.quantize(inf_block, 2);
+		if (rt_inf.scale().bits() != cx_inf.scale().bits() || rt_inf.element(0) != cx_inf.element(0)
+		    || rt_inf.element(1) != cx_inf.element(1)) {
+			std::cerr << "FAIL: mxint8 {inf, 2^121}: runtime scale 2^" << rt_inf.scale().scale() << " codes "
+			          << int(rt_inf.element(0)) << ", " << int(rt_inf.element(1)) << " differ from constant evaluation\n";
+			++nrOfFailedTestCases;
+		}
 	}
 
 	std::cout << "mxfloat constexpr verification: "
