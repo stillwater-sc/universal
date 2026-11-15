@@ -43,6 +43,7 @@
 // has the same constraint and uses long double for takum_log64.  Tracked with
 // the native-arithmetic work in #1297.
 
+#include <bit>           // std::bit_width
 #include <cstdint>       // the fixed-width integer types
 #include <type_traits>   // std::enable_if
 #include <cassert>
@@ -95,6 +96,14 @@ public:
 	// narrower keeps the double path, where the conversion error stays well below
 	// the format's own quantum.  Issue #1300.
 	static constexpr bool wide_significand = (maxCharBits + 1u) > 53u;
+
+	// Is every l = c + M/2^p exact in a double?  It needs the characteristic's bits plus p of
+	// them: 8 + 43 = 51 for takum_log<48,3>, but 8 + 52 for takum_log<57,3>, which is still
+	// narrow above.  Where it is not, std::exp of a rounded l is not even within an ulp, so
+	// conversion to a native float takes the double-double path (#2079).
+	static constexpr unsigned characteristic_bits = static_cast<unsigned>(std::bit_width(static_cast<uint64_t>(
+		(Codec::max_characteristic() > -Codec::min_characteristic()) ? Codec::max_characteristic() : -Codec::min_characteristic())));
+	static constexpr bool l_exact_in_double = (maxCharBits + characteristic_bits) <= 53u;
 
 	// Does the range fit a double?  Addition and subtraction on the double path
 	// convert both operands, which is only sound while they and their sum are normal
@@ -542,10 +551,85 @@ protected:
 		return *this;
 	}
 
+	// Integers take l = 2 ln|v| from the integer itself, correctly rounded at every width (#2079).
+	// They went through a double, which rounded every integer above 2^53 first.  A constant
+	// evaluation keeps that route: the double-double's frexp and ldexp are not constexpr.
 	template<typename SignedInt>
-	CONSTEXPRESSION takum_log& convert_signed(SignedInt rhs) noexcept { return convert_ieee754(double(rhs)); }
+	CONSTEXPRESSION takum_log& convert_signed(SignedInt rhs) noexcept {
+		if (std::is_constant_evaluated()) return convert_ieee754(double(rhs));
+		if (rhs == 0) { setzero(); return *this; }
+		const bool negative = (rhs < 0);
+		// two's complement in uint64_t: 0 - v is |rhs| for every value, the minimum included
+		const uint64_t v = static_cast<uint64_t>(static_cast<long long>(rhs));
+		return assign_integer_magnitude(negative ? (0ull - v) : v, negative);
+	}
 	template<typename UnsignedInt>
-	CONSTEXPRESSION takum_log& convert_unsigned(UnsignedInt rhs) noexcept { return convert_ieee754(double(rhs)); }
+	CONSTEXPRESSION takum_log& convert_unsigned(UnsignedInt rhs) noexcept {
+		// operator=(char) lands here, and plain char is signed on most platforms
+		if constexpr (std::is_signed_v<UnsignedInt>) {
+			return convert_signed(rhs);
+		}
+		else {
+			if (std::is_constant_evaluated()) return convert_ieee754(double(rhs));
+			if (rhs == 0) { setzero(); return *this; }
+			return assign_integer_magnitude(static_cast<uint64_t>(rhs), false);
+		}
+	}
+	// Pre: magnitude != 0
+	takum_log& assign_integer_magnitude(uint64_t magnitude, bool negative) noexcept {
+		return assign_two_log(takum_log_arith::from_uint64(magnitude), negative);
+	}
+
+	// Store an encoding the codec produced, saturating as it reports.
+	constexpr takum_log& assign_encoded(const typename Codec::encoded& enc, bool negative) noexcept {
+		if (enc.overflowed())  { if (negative) maxneg(); else maxpos(); return *this; }
+		if (enc.underflowed()) { if (negative) minneg(); else minpos(); return *this; }
+		// The codec never sets the sign bit (I4); two's-complement negate here.
+		setbits(negative ? (((~enc.magnitude) + 1ull) & nbits_mask()) : enc.magnitude);
+		return *this;
+	}
+
+	// Round a logarithmic value l, accurate to the double-double's ~100 bits, into this takum_log,
+	// with the codec's one rounding and saturation.
+	takum_log& assign_logarithm(const takum_log_arith::ddouble& l, bool negative) noexcept {
+		const auto split = takum_log_arith::to_integer_fraction(l);
+		return assign_encoded(Codec::encode_fraction(split.c, split.N, takum_log_arith::qbits), negative);
+	}
+
+	// Round l = 2 ln w into this takum_log, for w > 0 held exactly as a double-double.  The double
+	// estimate 2 * std::log(w.hi) decides the encoding when it can: rounding is monotone, so when
+	// both ends of the estimate's error interval encode alike, the true l encodes the same way.
+	// Only an l too close to a rounding boundary pays for the double-double, which costs ~30x more.
+	takum_log& assign_two_log(const takum_log_arith::ddouble& w, bool negative) noexcept {
+		const double l = 2.0 * std::log(w.hi);
+		// std::log is within 1 ulp on every platform the library targets: allow 4.  A nonzero tail
+		// (an integer past 2^53) puts w.hi off by a relative 2^-53 at most, which moves l by 2^-52.
+		const double err = std::fabs(l) * 0x1p-50 + ((w.lo != 0.0) ? 0x1p-51 : 0.0) + 0x1p-1022;
+		typename Codec::encoded lo{}, hi{};
+		if (encode_double_l(l - err, lo) && encode_double_l(l + err, hi) &&
+		    lo.magnitude == hi.magnitude && lo.status == hi.status) {
+			return assign_encoded(lo, negative);
+		}
+		return assign_logarithm(takum_log_arith::two_log(w), negative);
+	}
+
+	// The codec's rounding of a double l, through c = floor(l) and m = l - c.  False when that
+	// split is inexact -- a negative l within ~2^-53 of zero, where 1 + l rounds -- since the
+	// encoding would then not be the rounding of l itself.
+	static constexpr bool encode_double_l(double l, typename Codec::encoded& out) noexcept {
+		int64_t c = static_cast<int64_t>(l);
+		if (l < 0.0 && static_cast<double>(c) != l) --c;          // floor toward -inf
+		const double m = l - static_cast<double>(c);
+		if (m + static_cast<double>(c) != l || m >= 1.0) return false;   // exact: c = -1 is Sterbenz
+		out = Codec::encode_rounded(c, m);
+		return true;
+	}
+
+	// l of this value, exactly.  Pre: neither zero nor NaR.
+	takum_log_arith::ddouble exact_logarithm() const noexcept {
+		const auto d = Codec::decode(magnitude_bits());
+		return takum_log_arith::exact_l(d.c, d.M_bits, d.p);
+	}
 
 	/// Convert an IEEE-754 value to the logarithmic takum encoding.
 	///
@@ -567,16 +651,14 @@ protected:
 		bool s = (rhs < Real(0));
 		double abs_v = static_cast<double>(s ? -rhs : rhs);
 
-		// l = 2 ln|x|, the logarithmic value in units of the base sqrt(e).
-		// std::log is not constexpr, so constant evaluation uses the library's
-		// constexpr log; at runtime std::log is both available and more accurate.
-		double l;
-		if (std::is_constant_evaluated()) {
-			l = 2.0 * sw::math::constexpr_math::log(abs_v);
-		}
-		else {
-			l = 2.0 * std::log(abs_v);
-		}
+		// At run time, l = 2 ln|x| is correctly rounded at every width, by the double-double where a
+		// double estimate cannot decide (#2079).  In a double, it carried ~|l| 2^-53 of absolute error -- 2^-43 at the ends of
+		// double's range -- which takum_log<64,3>, with 59 fraction bits of l, could not absorb.
+		if (!std::is_constant_evaluated()) return assign_two_log(takum_log_arith::make(abs_v), s);
+
+		// Constant evaluation: l = 2 ln|x|, the logarithmic value in units of the base sqrt(e),
+		// from the library's constexpr log (std::log is not constexpr)
+		const double l = 2.0 * sw::math::constexpr_math::log(abs_v);
 
 		// Split into characteristic and mantissa: c = floor(l), m = l - c in [0,1)
 		int64_t c = static_cast<int64_t>(l);
@@ -588,10 +670,14 @@ protected:
 		// Evaluating 2 ln|x| carries roughly |l| * 2^-52 of absolute error, so a
 		// value sitting exactly on a characteristic boundary can land a hair below
 		// it and be truncated to the previous characteristic.  Snap to the boundary
-		// when within that error.  The tolerance stays far below the smallest
-		// resolvable mantissa step 2^-p for every p a double can actually carry, so
-		// this cannot absorb a genuinely distinct value.
-		const double tol = ((l < 0.0) ? -l : l) * 4e-16 + 4e-16;
+		// when within that error.  The only such value a double can be is 1 (l = 0):
+		// every other boundary is irrational.  So the tolerance is also held below half
+		// the layout's finest step, 2^-(maxCharBits+1): wider than that, it absorbed
+		// distinct values once p reached ~40 (#2079).  This path serves only constant
+		// evaluation; at run time the double-double above decides.
+		constexpr double half_step = 1.0 / static_cast<double>(1ull << ((maxCharBits + 1u < 63u) ? maxCharBits + 1u : 63u));
+		double tol = ((l < 0.0) ? -l : l) * 4e-16 + 4e-16;
+		if (tol > half_step) tol = half_step;
 		if (m > 1.0 - tol) { m = 0.0; ++c; }
 		else if (m < tol)  { m = 0.0; }
 
@@ -607,12 +693,46 @@ protected:
 		return *this;
 	}
 
+	// Integer conversions truncate toward zero and saturate to the integer type's range; NaR gives
+	// the type's minimum, the "integer indefinite" a hardware float-to-int conversion produces.
+	// This is posit's rule (#2070, #2073), adopted for takum_log in #2079.  They went through a
+	// double, which made NaR and every out-of-range value undefined behaviour and lost the bits
+	// past 53.  |x| = e^(l/2) is irrational for every l != 0, so truncating its double-double
+	// value never meets an integer it cannot tell apart; l = 0 is exactly 1.
 	template<typename SignedInt>
 	CONSTEXPRESSION typename std::enable_if<std::is_integral<SignedInt>::value && std::is_signed<SignedInt>::value, SignedInt>::type
-		to_signed() const noexcept { return SignedInt(to_ieee754<double>()); }
+		to_signed() const noexcept { return to_integer<SignedInt>(); }
 	template<typename UnsignedInt>
 	CONSTEXPRESSION typename std::enable_if<std::is_integral<UnsignedInt>::value && std::is_unsigned<UnsignedInt>::value, UnsignedInt>::type
-		to_unsigned() const noexcept { return UnsignedInt(to_ieee754<double>()); }
+		to_unsigned() const noexcept { return to_integer<UnsignedInt>(); }
+	template<typename Integer>
+	CONSTEXPRESSION Integer to_integer() const noexcept {
+		static_assert(std::is_integral_v<Integer> && sizeof(Integer) <= 8, "to_integer: an integer type of at most 64 bits");
+		using Limits = std::numeric_limits<Integer>;
+		if (iszero()) return Integer(0);
+		if (isnar()) return Limits::min();
+		const bool negative = sign();
+		const auto d = Codec::decode(magnitude_bits());
+		if (d.c < 0) return Integer(0);                                    // l < 0: |x| < 1 truncates to 0
+		if (negative && !Limits::is_signed) return Limits::min();          // x <= -1 saturates to 0
+		if (std::is_constant_evaluated()) {
+			// the same rule through the constexpr double value: exact below 2^53
+			const double m = negative ? -to_ieee754<double>() : to_ieee754<double>();
+			const double limit = static_cast<double>(1ull << (Limits::digits - 1)) * 2.0;   // 2^digits
+			if (m >= limit) return negative ? Limits::min() : Limits::max();
+			using U = std::make_unsigned_t<Integer>;
+			const U t = static_cast<U>(m);
+			return negative ? static_cast<Integer>(U(0) - t) : static_cast<Integer>(t);
+		}
+		const auto l = takum_log_arith::exact_l(d.c, d.M_bits, d.p);
+		// 2^digits = e^(l/2) at l = 2 digits ln 2 ~ 1.39 digits: far larger l saturates before n is formed
+		if (l.hi > 1.4 * static_cast<double>(Limits::digits) + 2.0) return negative ? Limits::min() : Limits::max();
+		const auto v = takum_log_arith::exp_half(l);
+		if (v.top >= Limits::digits) return negative ? Limits::min() : Limits::max();
+		const uint64_t magnitude = takum_log_arith::to_uint64(takum_log_arith::floor_dd(takum_log_arith::ldexp2(v.E, v.n)));
+		using U = std::make_unsigned_t<Integer>;
+		return negative ? static_cast<Integer>(U(0) - static_cast<U>(magnitude)) : static_cast<Integer>(magnitude);
+	}
 
 	/// Decode to an IEEE-754 value: |x| = sqrt(e)^l = e^(l/2).
 	template<typename TargetFloat>
@@ -623,14 +743,26 @@ protected:
 
 		bool s = sign();
 
-		// Shared codec: magnitude -> (c, m).  Only the value map below is
-		// specific to the logarithmic takum.
+		// Where l is not exact in a double (takum_log<64,3> carries 59 fraction bits of it), at
+		// run time e^(l/2) comes from the double-double, rounded once onto the target's grid,
+		// subnormals and overflow included (#2079).  std::exp of a rounded l lost those bits
+		// and then rounded the result a second time.  The other layouts keep std::exp: their
+		// l is exact, the result is within an ulp, and their addition, which runs through this
+		// conversion, keeps its speed (the double-double costs ~500 ns against ~8).
+		if constexpr (!l_exact_in_double) {
+			if (!std::is_constant_evaluated()) {
+				const TargetFloat magnitude = takum_log_arith::exp_half_to<TargetFloat>(exact_logarithm());
+				return s ? -magnitude : magnitude;
+			}
+		}
+
+		// Shared codec: magnitude -> (c, m).  Only the value map below is specific to the
+		// logarithmic takum.
 		auto d = Codec::decode(magnitude_bits());
 		double l = static_cast<double>(d.c) + d.fraction();
 
-		// LOGARITHMIC value map: |value| = sqrt(e)^l = e^(l/2).
-		// As in convert_ieee754, std::exp is not constexpr, so constant evaluation
-		// uses the library's constexpr exp and runtime uses the more accurate one.
+		// LOGARITHMIC value map: |value| = sqrt(e)^l = e^(l/2).  std::exp is not constexpr,
+		// so constant evaluation uses the library's constexpr exp.
 		double magnitude;
 		if (std::is_constant_evaluated()) {
 			magnitude = sw::math::constexpr_math::exp(l * 0.5);

@@ -65,6 +65,7 @@
 // preconditions this path guarantees.  It is not a substitute for
 // internal/uint128.hpp or for blockbinary<>.
 
+#include <bit>
 #include <cassert>
 #include <cstdint>
 
@@ -140,11 +141,9 @@ constexpr bool bit_at(const u128& v, unsigned i) noexcept {
 
 // Index of the highest set bit.  Pre: v != 0.
 constexpr unsigned msb_index(const u128& v) noexcept {
-	uint64_t w    = (v.hi != 0ull) ? v.hi : v.lo;
-	unsigned base = (v.hi != 0ull) ? 64u : 0u;
-	unsigned k    = 0;
-	while (w > 1ull) { w >>= 1; ++k; }
-	return base + k;
+	const uint64_t w    = (v.hi != 0ull) ? v.hi : v.lo;
+	const unsigned base = (v.hi != 0ull) ? 64u : 0u;
+	return base + 63u - static_cast<unsigned>(std::countl_zero(w));
 }
 
 // The exact 128-bit product of two 64-bit values, via 32-bit halves.  No

@@ -11,7 +11,7 @@
 #include <universal/number/takum/iostream.hpp>    // takum<>, to_binary() and operator<< (#1422)
 #include <universal/number/takum/takum_traits.hpp>   // is_takum_log, the guard used below (#1422)
 
-#include <cstdint>       // std::uint8_t
+#include <cstdint>       // std::uint8_t, std::uint64_t
 #include <ostream>       // std::ostream
 #include <iomanip>       // std::setw
 namespace sw { namespace universal {
@@ -40,13 +40,16 @@ void GenerateTakumVariantTable(std::ostream& ostr, bool csvFormat = false) {
 		else return static_cast<double>(x.scale());
 	};
 
-	const unsigned size = (1u << nbits);
+	// One row per encoding: 2^nbits rows.  The row count is computed in 64 bits, since 1u << nbits
+	// is undefined for nbits >= 32, and a table is only printable for small configurations anyway.
+	static_assert(nbits <= 24, "GenerateTakumVariantTable: a table of 2^nbits rows needs nbits <= 24");
+	const std::uint64_t size = (std::uint64_t(1) << nbits);
 	TakumType v;
 
 	if (csvFormat) {
 		ostr << "\"Generate Value table for a " << typeName << nbits << "," << rbits << "> in CSV format\"" << '\n';
 		ostr << "#, Binary, sign, direction, regime, characteristic, " << lastLabel << ", value\n";
-		for (unsigned i = 0; i < size; i++) {
+		for (std::uint64_t i = 0; i < size; i++) {
 			v.setbits(i);
 			if (v.isnar()) {
 				ostr << i << ","
@@ -91,7 +94,7 @@ void GenerateTakumVariantTable(std::ostream& ostr, bool csvFormat = false) {
 			<< std::setw(scale_column) << lastLabel
 			<< std::setw(value_column) << "value"
 			<< '\n';
-		for (unsigned i = 0; i < size; i++) {
+		for (std::uint64_t i = 0; i < size; i++) {
 			v.setbits(i);
 			if (v.isnar()) {
 				ostr << std::setw(4) << i << ": "

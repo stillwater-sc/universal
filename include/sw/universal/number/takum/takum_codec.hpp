@@ -307,6 +307,19 @@ struct takum_codec {
 		// conversion truncate rather than round to nearest, contradicting the format's
 		// rounding function.  Ties go to an even stored characteristic.
 		//
+		// The rounding domain is the BIT STRING, which is what the takum specification
+		// rounds: Hunhold's rounding function (arXiv:2404.18603, Sec. 4.2, Algorithm 1)
+		// truncates the lossless encoding to n + 1 bits and rounds on the last one, and
+		// his hardware codec (arXiv:2408.10594) and C reference library (libtakum,
+		// util_round_uint*_to_number_of_bits) round the same bit string to nearest with
+		// ties to even, as here.  The dropped characteristic bits are part of that
+		// string, so with no trailing field a linear takum rounds in characteristic
+		// (exponent) space -- the geometric midpoint between neighbours -- not to the
+		// nearest value: takum<8,3>(3.709e-68) is pattern 2, where pattern 1 is nearer
+		// in value.  Where a trailing field exists, the string's low bits are the linear
+		// fraction and the two domains agree.  static/tapered/takum/conversion/
+		// narrow_rounding.cpp pins this against the bit-string reference (#2079).
+		//
 		// The dropped characteristic bits and m are weighed together, in one decision.
 		// Rounding them separately is wrong twice over: it can carry into C_stored
 		// twice, and it measures a bare m against half a CHARACTERISTIC unit when a

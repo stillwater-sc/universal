@@ -67,6 +67,8 @@
 
 #include <cmath>
 #include <cstdint>
+#include <limits>
+#include <type_traits>
 
 #include <universal/number/takum/takum_codec.hpp>
 
@@ -352,6 +354,92 @@ inline split_result to_integer_fraction(const ddouble& v) noexcept {
 	uint64_t N = (nhi << LOBITS) | nlo;
 	if (sticky) N |= 1ull;                                 // round to odd
 	return split_result{ c, N };
+}
+
+// ---------------------------------------------------------------------------
+// Conversion to and from binary floating-point and integers (#2079)
+//
+// l = 2 ln|x| and |x| = e^(l/2) are evaluated here to the double-double's ~100 bits,
+// which leaves more than 30 bits of margin over the finest grid any layout has
+// (2^-61, with |l| below 2^11 for every value a double or a 64-bit integer holds).
+// A double alone carried ~|l| 2^-53 of absolute error, 2^-43 at the ends of double's
+// range: takum_log<64,3> round-trips through double failed for ~99% of encodings.
+//
+// Neither direction has a tie to break.  For a dyadic x other than 1, ln x is
+// irrational, and for a dyadic l other than 0, e^(l/2) is irrational
+// (Lindemann-Weierstrass), so neither lands on a rounding boundary; the one exact
+// case, x = 1 <-> l = 0, comes out of log_pos and exp_nonpos exactly.
+// ---------------------------------------------------------------------------
+
+// A 64-bit integer as an exact double-double: two 32-bit halves are each exact.
+inline ddouble from_uint64(uint64_t v) noexcept {
+	return add(make(static_cast<double>(v >> 32) * 4294967296.0), make(static_cast<double>(v & 0xFFFFFFFFull)));
+}
+
+// l = 2 ln w.  Pre: w > 0 and finite.  log_pos reduces w = f 2^E itself, so any
+// positive double-double is in its domain, subnormals included.
+inline ddouble two_log(const ddouble& w) noexcept {
+	return ldexp2(log_pos(w), 1);
+}
+
+// |x| = e^(l/2) = E * 2^n, with E = e^r in (1/2, 1] and r = l/2 - n ln2 in (-ln2, 0].
+// Pre: |l/2| < 2^31 ln2, so that n fits an int; callers decide out-of-range values first.
+struct scaled_exp {
+	ddouble E;
+	int     n;
+	int     top;      // the value lies in [2^top, 2^(top+1))
+};
+inline scaled_exp exp_half(const ddouble& l) noexcept {
+	const ddouble y = ldexp2(l, -1);                       // exact
+	if (is_zero(y)) return scaled_exp{ make(1.0), 0, 0 };
+	const double  nd = std::floor(y.hi * invln2) + 1.0;    // r lands in (-ln2, 0], give or take an ulp
+	ddouble r = sub(y, mul_d(make(ln2_hi), nd));
+	r = sub(r, mul_d(make(ln2_lo), nd));
+	r = sub(r, mul_d(make(ln2_lo2), nd));
+	const ddouble E = exp_nonpos(r);
+	// E's binade: frexp of the head, one lower when the head is a power of two and the
+	// tail pulls the value below it
+	int ex = 0;
+	const double fh = std::frexp(E.hi, &ex);               // E.hi = fh 2^ex, fh in [1/2, 1)
+	--ex;                                                  // E.hi in [2^ex, 2^(ex+1))
+	if (fh == 0.5 && E.lo < 0.0) --ex;
+	const int n = static_cast<int>(nd);
+	return scaled_exp{ E, n, n + ex };
+}
+
+// An integer-valued double-double in [0, 2^64) as a uint64_t.  The head can be 2^64
+// itself, with a negative tail, which the wrap-around below handles.
+inline uint64_t to_uint64(const ddouble& integral) noexcept {
+	constexpr double two64 = 18446744073709551616.0;
+	const uint64_t H = (integral.hi >= two64) ? 0ull : static_cast<uint64_t>(integral.hi);
+	const int64_t  L = static_cast<int64_t>(integral.lo); // |lo| <= ulp(hi)/2 <= 2^10
+	return H + static_cast<uint64_t>(L);
+}
+
+// e^(l/2) rounded once, to nearest, onto the grid of Target -- its significand
+// width at this magnitude, subnormals included -- or infinity past the top binade.
+// A long double wider than a double-double is rounded to the double-double's width.
+template<typename Target>
+inline Target exp_half_to(const ddouble& l) noexcept {
+	using Limits = std::numeric_limits<Target>;
+	constexpr int digits = Limits::digits;
+	constexpr int emin   = Limits::min_exponent - 1;      // 2^emin is the smallest normal
+	constexpr int emax   = Limits::max_exponent - 1;      // 2^emax is the largest binade
+	// decide the values far outside the range before n is formed: |x| = 2^(l / (2 ln 2))
+	const double log2x = l.hi * (0.5 * invln2);
+	if (log2x > double(emax) + 2.0) return Limits::infinity();
+	if (log2x < double(emin - digits) - 2.0) return Target(0);
+
+	const scaled_exp v = exp_half(l);
+	if (v.top > emax) return Limits::infinity();
+	const int q = ((v.top > emin) ? v.top : emin) - (digits - 1);   // exponent of the last place
+	// E 2^(n - q) < 2^digits: round it to an integer, no tie possible
+	const ddouble k = floor_dd(add(ldexp2(v.E, v.n - q), make(0.5)));
+	using Work = std::conditional_t<(sizeof(Target) > sizeof(double)), Target, double>;
+	const Work kw = static_cast<Work>(k.hi) + static_cast<Work>(k.lo);
+	const Work magnitude = std::ldexp(kw, q);             // exact, or the overflow below
+	if (magnitude > static_cast<Work>(Limits::max())) return Limits::infinity();
+	return static_cast<Target>(magnitude);
 }
 
 // ---------------------------------------------------------------------------
