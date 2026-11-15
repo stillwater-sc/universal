@@ -17,6 +17,8 @@
 //   - saturation: never to 0 or NaR, clamped to +/-minpos and +/-maxpos
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 #include <universal/number/bposit/bposit.hpp>
@@ -51,9 +53,9 @@ long double reference_value(std::uint64_t p, unsigned n, unsigned rs, unsigned e
 	return negative ? -v : v;
 }
 
-template<unsigned nbits, unsigned rs, unsigned es>
+template<unsigned nbits, unsigned rs, unsigned es, typename bt = std::uint32_t>
 int VerifyEncoding(bool report) {
-	using B = sw::universal::bposit<nbits, rs, es, std::uint32_t>;
+	using B = sw::universal::bposit<nbits, rs, es, bt>;
 	int fails = 0;
 	auto fail = [&](const std::string& what) { ++fails; if (report) std::cerr << "FAIL " << sw::universal::type_tag(B{}) << ": " << what << '\n'; };
 
@@ -137,6 +139,112 @@ int VerifySampled(bool report) {
 
 }  // anonymous namespace
 
+// The limb transfers between bposit and blocktriple (normalize and assign, a limb at a time since
+// #2080) are reached only by arithmetic, so the limb types are checked there: the same operands
+// on four limb widths must give the same encodings, and small integer arithmetic must be exact.
+// bposit<64,6,5> on uint8_t spans eight limbs, and its products and quotients the most.
+template<unsigned nbits, unsigned rs, unsigned es>
+int VerifyLimbArithmetic(bool report) {
+	using B8  = sw::universal::bposit<nbits, rs, es, std::uint8_t>;
+	using B16 = sw::universal::bposit<nbits, rs, es, std::uint16_t>;
+	using B32 = sw::universal::bposit<nbits, rs, es, std::uint32_t>;
+	using B64 = sw::universal::bposit<nbits, rs, es, std::uint64_t>;
+	int fails = 0;
+	std::uint64_t state = 0x2080u;
+	auto next = [&state]() { state = state * 6364136223846793005ull + 1442695040888963407ull; return state; };
+	const std::uint64_t mask = (nbits == 64) ? ~0ull : ((1ull << nbits) - 1ull);
+	for (int i = 0; i < 4000; ++i) {
+		const std::uint64_t pa = next() & mask, pb = next() & mask;
+		for (int op = 0; op < 4; ++op) {
+			auto run = [&](auto tag) {
+				using B = decltype(tag);
+				B a, b;
+				a.setbits(pa);
+				b.setbits(pb);
+				const B c = (op == 0) ? a + b : (op == 1) ? a - b : (op == 2) ? a * b : a / b;
+				return static_cast<std::uint64_t>(c.bits()) & mask;
+			};
+			const std::uint64_t r8 = run(B8{}), r16 = run(B16{}), r32 = run(B32{}), r64 = run(B64{});
+			if (r8 != r32 || r16 != r32 || r64 != r32) {
+				++fails;
+				if (report && fails < 8) std::cerr << "FAIL " << sw::universal::type_tag(B32{}) << " op " << op << " differs across limb types\n";
+			}
+		}
+	}
+	// exact small-integer arithmetic on the narrowest limbs
+	for (int x = -40; x <= 40; ++x) {
+		for (int y = 1; y <= 12; ++y) {
+			// compared as bposits, not through a truncating integer cast, which would let 2.25 pass for 2
+			const B8 a(x), b(y);
+			if (!(a + b == B8(x + y)) || !(a - b == B8(x - y)) || !(a * b == B8(x * y))) {
+				++fails;
+				if (report && fails < 8) std::cerr << "FAIL " << sw::universal::type_tag(a) << " " << x << " op " << y << " not exact\n";
+			}
+			if (x % y == 0 && !(a / b == B8(x / y))) ++fails;
+		}
+	}
+	return fails;
+}
+
+// Integer casts truncate toward zero and saturate; NaR gives the type's minimum, 0 for the unsigned
+// types (posit's rule from #2073, adopted for bposit in #2080).  They cast a double, which made NaR
+// and every out-of-range value undefined behaviour and dropped the bits past 53.  Every encoding of a
+// small bposit is checked against its exact long double value, truncated and saturated.
+template<typename Integer, typename B>
+bool CastMatches(const B& x) {
+	using Limits = std::numeric_limits<Integer>;
+	const Integer got = static_cast<Integer>(x);
+	if (x.isnar()) return got == Limits::min();
+	const long double t = std::trunc(static_cast<long double>(x));
+	const long double limit = std::ldexp(1.0l, Limits::digits);          // 2^digits: past the range
+	Integer expected;
+	if (t >= limit) expected = Limits::max();
+	else if (t < 0.0l && !Limits::is_signed) expected = Limits::min();
+	else if (t <= -limit) expected = Limits::min();
+	else expected = static_cast<Integer>(t);
+	return got == expected;
+}
+
+template<unsigned nbits, unsigned rs, unsigned es, typename bt>
+int VerifyIntegerCasts(bool report) {
+	using B = sw::universal::bposit<nbits, rs, es, bt>;
+	int fails = 0;
+	for (std::uint64_t i = 0; i < (std::uint64_t(1) << nbits); ++i) {
+		B x;
+		x.setbits(i);
+		const bool ok = CastMatches<int>(x) && CastMatches<long>(x) && CastMatches<long long>(x) &&
+		                CastMatches<unsigned int>(x) && CastMatches<unsigned long>(x) && CastMatches<unsigned long long>(x);
+		if (!ok) {
+			++fails;
+			if (report && fails < 8) std::cerr << "FAIL " << sw::universal::type_tag(x) << " integer casts of " << static_cast<double>(x) << '\n';
+		}
+	}
+	return fails;
+}
+
+// the 64-bit configuration: exact past 2^53, and the range ends
+int VerifyWideIntegerCasts(bool report) {
+	using B = sw::universal::bposit<64, 6, 5, std::uint64_t>;
+	using sw::universal::SpecificValue;
+	int fails = 0;
+	auto expect = [&](bool ok, const char* what) { if (!ok) { ++fails; if (report) std::cerr << "FAIL bposit<64,6,5> " << what << '\n'; } };
+	const long long big = (1ll << 55) + 1;                                   // 56 bits: exact in bposit<64,6,5>, not in a double
+	expect(static_cast<long long>(B(big)) == big, "2^55 + 1 casts back exactly");
+	expect(static_cast<long long>(B(-big)) == -big, "-(2^55 + 1) casts back exactly");
+	expect(static_cast<unsigned long long>(B(static_cast<unsigned long long>(big))) == static_cast<unsigned long long>(big), "unsigned 2^55 + 1");
+	expect(static_cast<int>(B(SpecificValue::nar)) == std::numeric_limits<int>::min(), "int(NaR) is INT_MIN");
+	expect(static_cast<long long>(B(SpecificValue::nar)) == std::numeric_limits<long long>::min(), "long long(NaR) is LLONG_MIN");
+	expect(static_cast<unsigned>(B(SpecificValue::nar)) == 0u, "unsigned(NaR) is 0");
+	expect(static_cast<long long>(B(SpecificValue::maxpos)) == std::numeric_limits<long long>::max(), "maxpos saturates");
+	expect(static_cast<long long>(B(SpecificValue::maxneg)) == std::numeric_limits<long long>::min(), "maxneg saturates");
+	expect(static_cast<int>(B(1e10)) == std::numeric_limits<int>::max(), "1e10 saturates int");
+	expect(static_cast<unsigned>(B(-5)) == 0u, "-5 saturates unsigned to 0");
+	expect(static_cast<int>(B(-2.75)) == -2, "-2.75 truncates to -2");
+	expect(static_cast<int>(B(SpecificValue::minpos)) == 0, "minpos truncates to 0");
+	static_assert(static_cast<int>(B(-7)) == -7, "the casts are constexpr");
+	return fails;
+}
+
 #define MANUAL_TESTING 0
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1
@@ -170,6 +278,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyEncoding<10, 3, 2>(reportTestCases), "bposit<10,3,2>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyEncoding<12, 4, 2>(reportTestCases), "bposit<12,4,2>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyEncoding<12, 6, 1>(reportTestCases), "bposit<12,6,1>", test_tag);
+	// the limb types: the encodings themselves, and below, the arithmetic that moves the significand
+	nrOfFailedTestCases += ReportTestResult((VerifyEncoding<12, 4, 2, std::uint8_t>(reportTestCases)),  "bposit<12,4,2,uint8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyEncoding<10, 3, 2, std::uint16_t>(reportTestCases)), "bposit<10,3,2,uint16>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyEncoding<12, 6, 1, std::uint64_t>(reportTestCases)), "bposit<12,6,1,uint64>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyLimbArithmetic<16, 4, 2>(reportTestCases)), "bposit<16,4,2>", "arithmetic across limb types");
+	nrOfFailedTestCases += ReportTestResult((VerifyLimbArithmetic<32, 6, 5>(reportTestCases)), "bposit<32,6,5>", "arithmetic across limb types");
+	nrOfFailedTestCases += ReportTestResult((VerifyLimbArithmetic<64, 6, 5>(reportTestCases)), "bposit<64,6,5>", "arithmetic across limb types");
+	nrOfFailedTestCases += ReportTestResult((VerifyIntegerCasts<12, 4, 2, std::uint8_t>(reportTestCases)),  "bposit<12,4,2>", "integer casts");
+	nrOfFailedTestCases += ReportTestResult((VerifyIntegerCasts<16, 6, 5, std::uint16_t>(reportTestCases)), "bposit<16,6,5>", "integer casts");
+	nrOfFailedTestCases += ReportTestResult((VerifyIntegerCasts<16, 4, 2, std::uint32_t>(reportTestCases)), "bposit<16,4,2>", "integer casts");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideIntegerCasts(reportTestCases), "bposit<64,6,5>", "integer casts");
 #endif
 #if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyEncoding<16, 6, 5>(reportTestCases), "bposit<16,6,5>", test_tag);
@@ -178,6 +297,8 @@ try {
 #if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifySampled<32, 6, 5, std::uint32_t>(reportTestCases), "bposit<32,6,5>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifySampled<64, 6, 5, std::uint64_t>(reportTestCases), "bposit<64,6,5>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<32, 6, 5, std::uint8_t>(reportTestCases), "bposit<32,6,5,uint8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySampled<64, 6, 5, std::uint16_t>(reportTestCases), "bposit<64,6,5,uint16>", test_tag);
 #endif
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

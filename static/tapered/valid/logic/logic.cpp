@@ -38,6 +38,24 @@ int main() {
 	check(a <= same, "non-strict less-than equality");
 	check(a >= same, "non-strict greater-than equality");
 
+	// more of the certainly-less ordering (#2080): every element of the left below every element of the right
+	const Valid overlapping(Posit(1.5), Posit(3));
+	const Valid nested(Posit(1.25), Posit(1.75));
+	const Valid touchingBothOpen(Posit(2), Posit(3), true, false);
+	const Valid aOpenAbove(Posit(1), Posit(2), false, true);
+	check(!(a < overlapping) && !(overlapping < a), "overlapping intervals are unordered");
+	check(!(a < nested) && !(nested < a), "nested intervals are unordered");
+	check(aOpenAbove < touching, "an open upper end touching a closed lower end is ordered");
+	check(aOpenAbove < touchingBothOpen, "two open ends touching are ordered");
+	check(Valid(1) < Valid(2) && !(Valid(2) < Valid(1)) && !(Valid(1) < Valid(1)), "exact points order as their values");
+	check(Valid(-2) < Valid(Posit(-1), Posit(0)), "a negative point below an interval up to zero");
+	check(!(Valid(0) < Valid(Posit(0), Posit(1))), "a point at a closed lower end is not below it");
+	check(Valid(0) < Valid(Posit(0), Posit(1), true, false), "a point at an open lower end is below it");
+	check(a <= b && !(b <= a), "non-strict ordering of disjoint intervals");
+	check(!(a <= overlapping) && !(overlapping <= a), "non-strict ordering leaves overlapping intervals unordered");
+	check(!(Valid::nar() <= a) && !(a <= Valid::nar()), "NaR is unordered under <= as well");
+	check(!(a <= differentlyOpen), "<= of different openness is neither less nor equal");
+
 	const Valid nar = Valid::nar();
 	check(nar.sign() == valid_sign::undecidable, "NaR sign is undecidable");
 	check(Valid(0).sign() == valid_sign::zero, "exact zero sign");

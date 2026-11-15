@@ -177,6 +177,11 @@ quire_resolve(const quire<fixpnt<nbits, rbits, arithmetic, bt>, capacity, LimbTy
 // fdp_qc       fused dot product with quire continuation
 // fdp_stride   fused dot product with non-negative stride
 // fdp          fused dot product of two vectors (unit stride)
+//
+// The stride forms take n as the INDEX bound, not the product count: they accumulate
+// x[k*incx] * y[k*incy] for every k with k*incx < n and k*incy < n, so about n / max(incx, incy)
+// products.  BLAS dot takes n as the count; pass n = count * inc for that.  Every fdp header
+// (posit, bposit, cfloat, fixpnt, lns, dbns) uses this one meaning (#2080).
 // ============================================================================
 
 /// Fused dot product with quire continuation.

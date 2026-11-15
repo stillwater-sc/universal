@@ -140,12 +140,34 @@ public:
 	explicit operator float()       const noexcept { return static_cast<float>(to_native<double>()); }
 	explicit operator double()      const noexcept { return to_native<double>(); }
 	explicit operator long double() const noexcept { return to_native<long double>(); }
-	explicit operator int()         const noexcept { return static_cast<int>(to_native<double>()); }
-	explicit operator long()        const noexcept { return static_cast<long>(to_native<long double>()); }
-	explicit operator long long()   const noexcept { return static_cast<long long>(to_native<long double>()); }
-	explicit operator unsigned int()       const noexcept { return static_cast<unsigned int>(to_native<double>()); }
-	explicit operator unsigned long()      const noexcept { return static_cast<unsigned long>(to_native<long double>()); }
-	explicit operator unsigned long long() const noexcept { return static_cast<unsigned long long>(to_native<long double>()); }
+	// Integer conversions truncate toward zero, exactly, and saturate to the integer type's range;
+	// NaR gives the type's minimum (0 for the unsigned types), the "integer indefinite" a hardware
+	// float-to-int conversion produces.  This is posit's rule (#2070, #2073), adopted for bposit in
+	// #2080.  They cast a double, which made NaR and every out-of-range value undefined behaviour.
+	explicit constexpr operator int()         const noexcept { return to_integer<int>(); }
+	explicit constexpr operator long()        const noexcept { return to_integer<long>(); }
+	explicit constexpr operator long long()   const noexcept { return to_integer<long long>(); }
+	explicit constexpr operator unsigned int()       const noexcept { return to_integer<unsigned int>(); }
+	explicit constexpr operator unsigned long()      const noexcept { return to_integer<unsigned long>(); }
+	explicit constexpr operator unsigned long long() const noexcept { return to_integer<unsigned long long>(); }
+
+	template<typename Integer>
+	constexpr Integer to_integer() const noexcept {
+		static_assert(std::is_integral_v<Integer> && sizeof(Integer) <= 8, "to_integer: an integer type of at most 64 bits");
+		using Limits = std::numeric_limits<Integer>;
+		if (iszero()) return Integer(0);
+		if (isnar()) return Limits::min();
+		const fields d = decode_fields();
+		if (d.scale < 0) return Integer(0);                                 // |x| < 1 truncates to 0
+		if (d.negative && !Limits::is_signed) return Limits::min();         // x <= -1 saturates to 0
+		if (d.scale >= Limits::digits) return d.negative ? Limits::min() : Limits::max();
+		// |x| = sig * 2^(scale - nf), truncated: scale <= 63 and nf <= 61 keep both shifts in range
+		const std::uint64_t sig = (1ull << d.nf) | d.frac;
+		const int shift = d.scale - static_cast<int>(d.nf);
+		const std::uint64_t magnitude = (shift >= 0) ? (sig << shift) : (sig >> (-shift));
+		using U = std::make_unsigned_t<Integer>;
+		return d.negative ? static_cast<Integer>(U(0) - static_cast<U>(magnitude)) : static_cast<Integer>(magnitude);
+	}
 
 	// arithmetic
 	constexpr bposit operator-() const noexcept {
@@ -312,6 +334,33 @@ public:
 		return d;
 	}
 
+	// Bits [lo, lo + count) of a blocktriple's significand as an integer, bit lo at position 0;
+	// bits below 0 or at and above bfbits read as zero.  Gathered a limb at a time: the bit-by-bit
+	// extraction it replaces made a 4-op iteration of bposit<16,4,2> cost ~580 ns (#2080).
+	// Pre: count <= 63.
+	template<BlockTripleOperator op>
+	static constexpr std::uint64_t bit_window(const blocktriple<fbits, op, bt>& v, int lo, unsigned count) noexcept {
+		using BT = blocktriple<fbits, op, bt>;
+		constexpr int bitsInBlock = static_cast<int>(BT::bitsInBlock);
+		constexpr int nrLimbs = (static_cast<int>(BT::bfbits) + bitsInBlock - 1) / bitsInBlock;
+		const int hi = lo + static_cast<int>(count);                       // one past the top bit
+		const int first = (lo > 0) ? lo / bitsInBlock : 0;
+		const int last  = (hi - 1) / bitsInBlock;
+		std::uint64_t w = 0;
+		for (int b = first; b <= last && b < nrLimbs; ++b) {
+			const std::uint64_t limb = static_cast<std::uint64_t>(v.block(static_cast<unsigned>(b)));
+			const int offset = b * bitsInBlock - lo;                       // where the limb's bit 0 lands
+			if (offset >= 0) w |= (offset < 64) ? (limb << offset) : 0ull;
+			else             w |= (-offset < 64) ? (limb >> (-offset)) : 0ull;
+		}
+		w &= (1ull << count) - 1ull;
+		// bits at and above bfbits are not significand bits
+		const int beyond = static_cast<int>(BT::bfbits) - lo;
+		if (beyond <= 0) return 0ull;
+		if (beyond < static_cast<int>(count)) w &= (1ull << beyond) - 1ull;
+		return w;
+	}
+
 	// Decompose into blocktriple for arithmetic: hidden bit at position fbits, then the
 	// operator's alignment shift (ADD: rounding bits; DIV: divshift; MUL: none).
 	template<BlockTripleOperator op>
@@ -325,10 +374,12 @@ public:
 		tgt.setsign(d.negative);
 		tgt.setscale(d.scale);
 		tgt.setradix();
-		for (unsigned i = 0; i <= fbits; ++i) {
-			if ((sig >> i) & 1ull) tgt.setbit(i);
-		}
+		// the significand a limb at a time: fbits + 1 <= 62 bits, so it lies in the low 64 (#2080)
 		using BT = blocktriple<fbits, op, bt>;
+		constexpr unsigned bitsInBlock = BT::bitsInBlock;
+		for (unsigned b = 0; b * bitsInBlock <= fbits; ++b) {
+			tgt.setblock(b, static_cast<bt>(sig >> (b * bitsInBlock)));
+		}
 		if constexpr (op == BlockTripleOperator::ADD) tgt.bitShift(static_cast<int>(BT::rbits));
 		else if constexpr (op == BlockTripleOperator::DIV) tgt.bitShift(static_cast<int>(BT::divshift));
 	}
@@ -342,12 +393,7 @@ public:
 		const int sigScale = v.significandscale();
 		const int msbPos = static_cast<int>(BT::radix) + sigScale;  // the hidden bit
 		constexpr unsigned q = fbits + 2u;                          // every fraction bit, a guard and one more
-		std::uint64_t frac = 0;
-		for (unsigned i = 0; i < q; ++i) {
-			const int src = msbPos - 1 - static_cast<int>(i);
-			const bool b = (src >= 0 && src < static_cast<int>(BT::bfbits)) ? v.at(static_cast<unsigned>(src)) : false;
-			frac = (frac << 1) | (b ? 1ull : 0ull);
-		}
+		const std::uint64_t frac = bit_window(v, msbPos - static_cast<int>(q), q);
 		const int below = msbPos - 1 - static_cast<int>(q);         // highest bit not extracted
 		const bool sticky = (below >= 0) && v.any(static_cast<unsigned>(below));
 		setbits(encode(v.sign(), v.scale() + sigScale, frac, q, sticky));

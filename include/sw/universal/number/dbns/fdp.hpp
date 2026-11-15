@@ -115,6 +115,11 @@ quire_resolve(const quire<dbns<nbits, fbbits, bt, xtra...>, capacity, LimbType>&
 
 // ============================================================================
 // Fused dot product operators
+//
+// The stride forms take n as the INDEX bound, not the product count: they accumulate
+// x[k*incx] * y[k*incy] for every k with k*incx < n and k*incy < n, so about n / max(incx, incy)
+// products.  BLAS dot takes n as the count; pass n = count * inc for that.  Every fdp header
+// (posit, bposit, cfloat, fixpnt, lns, dbns) uses this one meaning (#2080).
 // ============================================================================
 
 /// Fused dot product with quire continuation.
@@ -127,9 +132,8 @@ void fdp_qc(quire<Scalar, capacity, LimbType>& sum_of_products, size_t n,
 	if (n == 0) return;
 	if (incx == 0 || incy == 0)
 		throw_or_abort(std::invalid_argument("fdp_qc: incx and incy must be positive"));
-	for (size_t i = 0; i < n; ++i) {
-		size_t ix = i * incx;
-		size_t iy = i * incy;
+	// n bounds the index (see above); this loop took n as the product count until #2080
+	for (size_t ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
 		if (ix >= x.size() || iy >= y.size())
 			throw_or_abort(std::out_of_range("fdp_qc: index out of bounds"));
 		sum_of_products += quire_mul(x[ix], y[iy]);
@@ -146,9 +150,8 @@ fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy)
 	if (n == 0) return Scalar(0);
 	if (incx == 0 || incy == 0)
 		throw_or_abort(std::invalid_argument("fdp_stride: incx and incy must be positive"));
-	for (size_t i = 0; i < n; ++i) {
-		size_t ix = i * incx;
-		size_t iy = i * incy;
+	// n bounds the index (see above); this loop took n as the product count until #2080
+	for (size_t ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
 		if (ix >= x.size() || iy >= y.size())
 			throw_or_abort(std::out_of_range("fdp_stride: index out of bounds"));
 		q += quire_mul(x[ix], y[iy]);
