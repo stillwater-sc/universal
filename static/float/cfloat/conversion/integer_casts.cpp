@@ -163,7 +163,6 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "cfloat integer sources and casts";
-	std::string test_tag    = "integer casts";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 

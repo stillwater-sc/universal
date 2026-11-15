@@ -157,7 +157,6 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "cfloat to native rounds once";
-	std::string test_tag    = "native rounding";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
