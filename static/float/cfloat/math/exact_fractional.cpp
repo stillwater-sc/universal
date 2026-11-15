@@ -151,6 +151,81 @@ int VerifyTinySqrt(unsigned samples, bool reportTestCases) {
 	return fails;
 }
 
+// the issue's values, and the review's: one check per defect
+int VerifyIssueValues() {
+	using namespace sw::universal;
+	int nrOfFailedTestCases = 0;
+	// the issue's values
+	using Sat = cfloat<16, 5, uint16_t, true, false, true>;
+	const Sat mp(SpecificValue::maxpos);
+	if (double(fmod(mp, Sat(3))) != std::fmod(double(mp), 3.0)) {
+		std::cerr << "FAIL: saturating fmod(maxpos, 3)\n";
+		++nrOfFailedTestCases;
+	}
+	using W = cfloat<80, 11, uint32_t>;
+	const W one(1), x = W(1) + W(std::ldexp(1.0, -60));
+	if (!(remainder(x, one) == W(std::ldexp(1.0, -60)))) {
+		std::cerr << "FAIL: cfloat<80,11> remainder(1 + 2^-60, 1) = " << to_binary(remainder(x, one)) << ", expected 2^-60\n";
+		++nrOfFailedTestCases;
+	}
+	const W big(1e19), quarter = W(std::ldexp(1.0, 60)) + W(0.25);
+	const bool fracOk = frac(big).iszero() && frac(quarter) == W(0.25) && frac(W(-2.75)) == W(0.75)
+	                 && frac(W(SpecificValue::qnan)).isnan() && frac(W(SpecificValue::infpos)).iszero();
+	if (!fracOk) {
+		std::cerr << "FAIL: frac of 1e19, 2^60 + 0.25, -2.75, NaN or inf\n";
+		++nrOfFailedTestCases;
+	}
+	using H = cfloat<16, 5, uint16_t, true, false, false>;
+	const H ninf(SpecificValue::infneg);
+	if (!exp(ninf).iszero() || !exp2(ninf).iszero() || !exp(H(-1000)).iszero()) {
+		std::cerr << "FAIL: exp/exp2(-inf) or exp(-1000) on cfloat<16,5> is not 0\n";
+		++nrOfFailedTestCases;
+	}
+	// double's own layout: its range is double's, so an underflow is 0
+	using D = cfloat<64, 11, uint64_t, true, false, false>;
+	if (!exp(D(-1000)).iszero() || !exp2(D(-2000)).iszero()) {
+		std::cerr << "FAIL: exp(-1000) or exp2(-2000) on cfloat<64,11> is not 0\n";
+		++nrOfFailedTestCases;
+	}
+	// a finite max-exponent value: 0x7c00 is 65536 on cfloat<16,5> with max-exponent values
+	using M = cfloat<16, 5, uint16_t, true, true, false>;
+	M m; m.setbits(0x7c00u);
+	if (double(m) != 65536.0 || !frac(m).iszero() || !(trunc(m) == m) || double(fmod(m, M(3))) != std::fmod(65536.0, 3.0)) {
+		std::cerr << "FAIL: frac, trunc or fmod of the max-exponent value 65536 on cfloat<16,5,uint16_t,t,t,f>\n";
+		++nrOfFailedTestCases;
+	}
+	// es = 20, where the arithmetic type cannot add an exponent bit
+	using E = cfloat<64, 20, uint64_t, true, false, false>;
+	const E mx(SpecificValue::maxpos);
+	const E three4 = mx - (mx / E(4));                    // ~3/4 maxpos: its fmod remainder doubles past maxpos
+	const bool e20 = fmod(E(7), E(2)) == E(1) && remainder(E(7), E(2)) == E(-1) && remainder(E(5), E(2)) == E(1)
+	              && fmod(mx, mx).iszero() && remainder(mx, mx).iszero()
+	              && remainder(three4, mx) == three4 - mx;   // 2r is past maxpos; three4 - mx is exact (Sterbenz)
+	if (!e20) {
+		std::cerr << "FAIL: fmod/remainder on cfloat<64,20,uint64_t>\n";
+		++nrOfFailedTestCases;
+	}
+	using Q = cfloat<128, 15, uint32_t, true, false, false>;
+	const bool classOk = fpclassify(Q(SpecificValue::minpos)) == FP_SUBNORMAL
+	                  && fpclassify(Q(SpecificValue::maxpos)) == FP_NORMAL
+	                  && fpclassify(Q(SpecificValue::infneg)) == FP_INFINITE
+	                  && fpclassify(Q(SpecificValue::qnan)) == FP_NAN
+	                  && fpclassify(Q(0)) == FP_ZERO
+	                  && fpclassify(Q(1)) == FP_NORMAL;
+	if (!classOk) {
+		std::cerr << "FAIL: fpclassify on cfloat<128,15>\n";
+		++nrOfFailedTestCases;
+	}
+	using T = cfloat<32, 12, uint32_t, true, false, false>;
+	const T a = T(1.25) * T(std::ldexp(1.0, -873)) * T(std::ldexp(1.0, -200));   // 1.25 * 2^-1073, exactly
+	const T ref(std::ldexp(std::sqrt(double(a * T(std::ldexp(1.0, 600)))), -300));
+	if (!(sqrt(a) == ref)) {
+		std::cerr << "FAIL: cfloat<32,12> sqrt(1.25 * 2^-1073) = " << double(sqrt(a) * T(std::ldexp(1.0, 600))) << " * 2^-600\n";
+		++nrOfFailedTestCases;
+	}
+	return nrOfFailedTestCases;
+}
+
 }  // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -189,76 +264,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	{
-		// the issue's values
-		using Sat = cfloat<16, 5, uint16_t, true, false, true>;
-		const Sat mp(SpecificValue::maxpos);
-		if (double(fmod(mp, Sat(3))) != std::fmod(double(mp), 3.0)) {
-			std::cerr << "FAIL: saturating fmod(maxpos, 3)\n";
-			++nrOfFailedTestCases;
-		}
-		using W = cfloat<80, 11, uint32_t>;
-		const W one(1), x = W(1) + W(std::ldexp(1.0, -60));
-		if (!(remainder(x, one) == W(std::ldexp(1.0, -60)))) {
-			std::cerr << "FAIL: cfloat<80,11> remainder(1 + 2^-60, 1) = " << to_binary(remainder(x, one)) << ", expected 2^-60\n";
-			++nrOfFailedTestCases;
-		}
-		const W big(1e19), quarter = W(std::ldexp(1.0, 60)) + W(0.25);
-		const bool fracOk = frac(big).iszero() && frac(quarter) == W(0.25) && frac(W(-2.75)) == W(0.75)
-		                 && frac(W(SpecificValue::qnan)).isnan() && frac(W(SpecificValue::infpos)).iszero();
-		if (!fracOk) {
-			std::cerr << "FAIL: frac of 1e19, 2^60 + 0.25, -2.75, NaN or inf\n";
-			++nrOfFailedTestCases;
-		}
-		using H = cfloat<16, 5, uint16_t, true, false, false>;
-		const H ninf(SpecificValue::infneg);
-		if (!exp(ninf).iszero() || !exp2(ninf).iszero() || !exp(H(-1000)).iszero()) {
-			std::cerr << "FAIL: exp/exp2(-inf) or exp(-1000) on cfloat<16,5> is not 0\n";
-			++nrOfFailedTestCases;
-		}
-		// double's own layout: its range is double's, so an underflow is 0
-		using D = cfloat<64, 11, uint64_t, true, false, false>;
-		if (!exp(D(-1000)).iszero() || !exp2(D(-2000)).iszero()) {
-			std::cerr << "FAIL: exp(-1000) or exp2(-2000) on cfloat<64,11> is not 0\n";
-			++nrOfFailedTestCases;
-		}
-		// a finite max-exponent value: 0x7c00 is 65536 on cfloat<16,5> with max-exponent values
-		using M = cfloat<16, 5, uint16_t, true, true, false>;
-		M m; m.setbits(0x7c00u);
-		if (double(m) != 65536.0 || !frac(m).iszero() || !(trunc(m) == m) || double(fmod(m, M(3))) != std::fmod(65536.0, 3.0)) {
-			std::cerr << "FAIL: frac, trunc or fmod of the max-exponent value 65536 on cfloat<16,5,uint16_t,t,t,f>\n";
-			++nrOfFailedTestCases;
-		}
-		// es = 20, where the arithmetic type cannot add an exponent bit
-		using E = cfloat<64, 20, uint64_t, true, false, false>;
-		const E mx(SpecificValue::maxpos);
-		const E three4 = mx - (mx / E(4));                    // ~3/4 maxpos: its fmod remainder doubles past maxpos
-		const bool e20 = fmod(E(7), E(2)) == E(1) && remainder(E(7), E(2)) == E(-1) && remainder(E(5), E(2)) == E(1)
-		              && fmod(mx, mx).iszero() && remainder(mx, mx).iszero()
-		              && remainder(three4, mx) == three4 - mx;   // 2r is past maxpos; three4 - mx is exact (Sterbenz)
-		if (!e20) {
-			std::cerr << "FAIL: fmod/remainder on cfloat<64,20,uint64_t>\n";
-			++nrOfFailedTestCases;
-		}
-		using Q = cfloat<128, 15, uint32_t, true, false, false>;
-		const bool classOk = fpclassify(Q(SpecificValue::minpos)) == FP_SUBNORMAL
-		                  && fpclassify(Q(SpecificValue::maxpos)) == FP_NORMAL
-		                  && fpclassify(Q(SpecificValue::infneg)) == FP_INFINITE
-		                  && fpclassify(Q(SpecificValue::qnan)) == FP_NAN
-		                  && fpclassify(Q(0)) == FP_ZERO
-		                  && fpclassify(Q(1)) == FP_NORMAL;
-		if (!classOk) {
-			std::cerr << "FAIL: fpclassify on cfloat<128,15>\n";
-			++nrOfFailedTestCases;
-		}
-		using T = cfloat<32, 12, uint32_t, true, false, false>;
-		const T a = T(1.25) * T(std::ldexp(1.0, -873)) * T(std::ldexp(1.0, -200));   // 1.25 * 2^-1073, exactly
-		const T ref(std::ldexp(std::sqrt(double(a * T(std::ldexp(1.0, 600)))), -300));
-		if (!(sqrt(a) == ref)) {
-			std::cerr << "FAIL: cfloat<32,12> sqrt(1.25 * 2^-1073) = " << double(sqrt(a) * T(std::ldexp(1.0, 600))) << " * 2^-600\n";
-			++nrOfFailedTestCases;
-		}
-	}
+	nrOfFailedTestCases += VerifyIssueValues();
 
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainder16<cfloat<16, 5, uint16_t, true, false, true>>(20000, reportTestCases),  "cfloat<16,5,uint16_t,t,f,t>", "fmod/remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyFmodRemainder16<cfloat<16, 5, uint16_t, true, false, false>>(20000, reportTestCases), "cfloat<16,5,uint16_t,t,f,f>", "fmod/remainder");
