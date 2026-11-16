@@ -21,12 +21,15 @@
 #include <cmath>         // std::floor, used by isinteger()
 #include <cstdint>
 #include <cstdio>        // fprintf(stderr,...) for the diagnostics; keeps <iostream> out of the core
+#include <limits>        // std::numeric_limits<float> in the round-to-odd narrowing
 #include <string>
+#include <type_traits>
 
 #include <universal/utility/bit_cast.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
+#include <universal/number/shared/integer_cast.hpp>
 #include <universal/number/bfloat16/bfloat16_fwd.hpp>
 #include <universal/number/bfloat16/exceptions.hpp>
 
@@ -43,27 +46,62 @@ class bfloat16 {
 	// constexpr - i.e. on gcc, clang, MSVC modern). This replaces the previous
 	// std::memcpy-based punning, which was decorated constexpr but is not
 	// actually constexpr until C++26.
+	// An integer rounds once (#2106). It went through static_cast<float>, which rounds to
+	// nearest, and bfloat16 then rounded again: bfloat16((1LL<<30) + (1LL<<22) + 1) was 0x4E80
+	// instead of 0x4E81. The magnitude is narrowed to 24 bits with round-to-odd (a lost bit
+	// sets the last kept one), which is exact in a float and leaves bfloat16's RNE the only
+	// rounding: 24 bits are 16 more than bfloat16 keeps.
+	static constexpr float odd_float_from_magnitude(std::uint64_t u) noexcept {
+		if (u < (std::uint64_t(1) << 24)) return static_cast<float>(u);
+		unsigned p = 63;
+		while (((u >> p) & 1u) == 0u) --p;
+		const unsigned shift = p - 23u;
+		std::uint64_t kept = u >> shift;
+		if ((u & ((std::uint64_t(1) << shift) - 1u)) != 0u) kept |= 1u;
+		return static_cast<float>(kept) * static_cast<float>(std::uint64_t(1) << shift);   // both exact
+	}
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	BIT_CAST_CONSTEXPR bfloat16& convert_signed(SignedInt v) noexcept {
 		if (0 == v) {
 			setzero();
+			return *this;
 		}
-		else {
-			return convert_ieee754(static_cast<float>(v));
-		}
-		return *this;
+		const long long w = static_cast<long long>(v);
+		const std::uint64_t u = (w < 0) ? (static_cast<std::uint64_t>(-(w + 1)) + 1u) : static_cast<std::uint64_t>(w);
+		const float f = odd_float_from_magnitude(u);
+		return convert_ieee754(w < 0 ? -f : f);
 	}
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
 	BIT_CAST_CONSTEXPR bfloat16& convert_unsigned(UnsignedInt v) noexcept {
 		if (0 == v) {
 			setzero();
+			return *this;
 		}
-		else {
-			return convert_ieee754(static_cast<float>(v));
+		return convert_ieee754(odd_float_from_magnitude(static_cast<std::uint64_t>(v)));
+	}
+	// A double or long double rounds once (#2106): narrowed to float with round-to-odd, so
+	// bfloat16's RNE below is the only rounding. bfloat16(1.0 + 2^-8 + 2^-40) was 0x3F80, the
+	// float RNE having dropped the 2^-40 that breaks the tie, instead of 0x3F81.
+	template<typename Real>
+	static BIT_CAST_CONSTEXPR float odd_float(Real rhs) noexcept {
+		float f = static_cast<float>(rhs);
+		if (f != f || static_cast<Real>(f) == rhs) return f;              // NaN, or exact
+		const float fmax = std::numeric_limits<float>::max();
+		if (f > fmax || f < -fmax) return f;                               // past float: inf for bfloat16 too
+		if (f == 0.0f) {                                                   // below half of float's denorm_min
+			const float tiny = std::numeric_limits<float>::denorm_min();
+			return (rhs < 0) ? -tiny : tiny;
 		}
-		return *this;
+		uint32_t bits = sw::bit_cast<uint32_t>(f);
+		if ((bits & 1u) == 0u) {
+			// step the magnitude one float ulp toward rhs: the odd neighbour on rhs's side
+			const bool away = (f < 0) ? (static_cast<Real>(f) > rhs) : (static_cast<Real>(f) < rhs);
+			bits = away ? bits + 1u : bits - 1u;
+			f = sw::bit_cast<float>(bits);
+		}
+		return f;
 	}
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
@@ -73,7 +111,9 @@ class bfloat16 {
 		// top 16 bits (sign + 8 exponent + 7 fraction) and must round the
 		// discarded low 16 bits to nearest, ties-to-even (RNE), matching the
 		// hardware behavior of Google TPUs and Intel. See issue #1133.
-		float f = static_cast<float>(rhs);
+		float f = 0.0f;
+		if constexpr (sizeof(Real) > sizeof(float)) f = odd_float(rhs);
+		else f = static_cast<float>(rhs);
 		uint32_t bits = sw::bit_cast<uint32_t>(f);
 		// A float NaN whose payload lives only in the low 16 bits would, after
 		// truncation or rounding, collapse to +/-inf. Preserve NaN by forcing a
@@ -188,16 +228,24 @@ public:
 	BIT_CAST_CONSTEXPR bfloat16& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
 	// conversion operators (BIT_CAST_CONSTEXPR via convert_to_ieee754)
-	explicit BIT_CAST_CONSTEXPR operator signed char()        const noexcept { return (signed char)(float(*this)); }
-	explicit BIT_CAST_CONSTEXPR operator short()              const noexcept { return short(float(*this)); }
-	explicit BIT_CAST_CONSTEXPR operator int()                const noexcept { return int(float(*this)); }
-	explicit BIT_CAST_CONSTEXPR operator long()               const noexcept { return long(float(*this)); }
-	explicit BIT_CAST_CONSTEXPR operator long long()          const noexcept { return (long long)(float(*this)); }
-	explicit BIT_CAST_CONSTEXPR operator char()               const noexcept { return (char)(float(*this)); }
-	explicit BIT_CAST_CONSTEXPR operator unsigned short()     const noexcept { return (unsigned short)(float(*this)); }
-	explicit BIT_CAST_CONSTEXPR operator unsigned int()       const noexcept { return (unsigned int)(float(*this)); }
-	explicit BIT_CAST_CONSTEXPR operator unsigned long()      const noexcept { return (unsigned long)(float(*this)); }
-	explicit BIT_CAST_CONSTEXPR operator unsigned long long() const noexcept { return (unsigned long long)(float(*this)); }
+	// Integer casts follow the library's rule (shared/integer_cast.hpp, #2104): truncate toward
+	// zero, saturate to +/-max() (an unsigned type to [0, max() - 1]), NaN gives the integer NaR
+	// (min(), max() for an unsigned type). They cast the float, which is undefined behaviour for
+	// NaN, inf and every value outside the target type (#2106).
+	// defined ahead of the operators that call it: clang does not evaluate a member template
+	// defined later in the class in a constant expression
+	template<typename Integer>
+	BIT_CAST_CONSTEXPR Integer to_integer() const noexcept { return integer_from_native<Integer>(convert_to_ieee754<float>()); }
+	explicit BIT_CAST_CONSTEXPR operator signed char()        const noexcept { return to_integer<signed char>(); }
+	explicit BIT_CAST_CONSTEXPR operator short()              const noexcept { return to_integer<short>(); }
+	explicit BIT_CAST_CONSTEXPR operator int()                const noexcept { return to_integer<int>(); }
+	explicit BIT_CAST_CONSTEXPR operator long()               const noexcept { return to_integer<long>(); }
+	explicit BIT_CAST_CONSTEXPR operator long long()          const noexcept { return to_integer<long long>(); }
+	explicit BIT_CAST_CONSTEXPR operator char()               const noexcept { return to_integer<char>(); }
+	explicit BIT_CAST_CONSTEXPR operator unsigned short()     const noexcept { return to_integer<unsigned short>(); }
+	explicit BIT_CAST_CONSTEXPR operator unsigned int()       const noexcept { return to_integer<unsigned int>(); }
+	explicit BIT_CAST_CONSTEXPR operator unsigned long()      const noexcept { return to_integer<unsigned long>(); }
+	explicit BIT_CAST_CONSTEXPR operator unsigned long long() const noexcept { return to_integer<unsigned long long>(); }
 	explicit BIT_CAST_CONSTEXPR operator float()              const noexcept { return convert_to_ieee754<float>(); }
 	explicit BIT_CAST_CONSTEXPR operator double()             const noexcept { return convert_to_ieee754<double>(); }
 
@@ -214,22 +262,19 @@ public:
 		return tmp;
 	}
 
+	// ++ and -- step to the next encoding up or down the value line. They stop at maxpos and
+	// maxneg and leave inf and NaN where they are, the rule #2096 set for microfloat; -0 steps
+	// to +minpos or -minneg like +0 (#2106). ++(-0) used to give 0x7FFF, a NaN, and --0xFFFF
+	// wrapped to 0.
 	constexpr bfloat16& operator++() noexcept {
+		if (isnan() || isinf()) return *this;
+		if (_bits == 0x8000u) { _bits = 0x0001u; return *this; }       // -0 -> minpos
 		if (isneg()) {
-			if (_bits == 0x8001u) { // pattern 1.00.001 == minneg
-				_bits = 0;
-			}
-			else {
-				--_bits;
-			}
+			if (_bits == 0x8001u) _bits = 0;                             // minneg -> 0
+			else --_bits;                                                // toward zero
 		}
-		else {
-			if (_bits == 0x7FFFu) { // pattern = qnan
-				_bits = 0xFFFFu;  // pattern = snan 
-			}
-			else {
-				++_bits;
-			}
+		else if (_bits != 0x7F7Fu) {                                     // maxpos stays
+			++_bits;
 		}
 		return *this;
 	}
@@ -239,16 +284,13 @@ public:
 		return tmp;
 	}
 	constexpr bfloat16& operator--() noexcept {
+		if (isnan() || isinf()) return *this;
 		if (sign()) {
-			++_bits;
+			if (_bits != 0xFF7Fu) ++_bits;                               // maxneg stays; -0 -> minneg
 		}
 		else {
-			if (_bits == 0) { // pattern 0.00.000 = 0
-				_bits = 0x8001u; // pattern 1.00.001 = minneg
-			}
-			else {
-				--_bits;
-			}
+			if (_bits == 0) _bits = 0x8001u;                             // 0 -> minneg
+			else --_bits;
 		}
 		return *this;
 	}
@@ -281,8 +323,11 @@ public:
 	// modifiers
 	constexpr void clear() noexcept { _bits = 0; }
 	constexpr void setzero() noexcept { clear(); }
+	// the NaN type is the fraction MSB, as isnan(NaNType) reads it and as cfloat does (#1896):
+	// the quiet NaN is 0x7FC0, the upper half of float's canonical quiet NaN. It was 0x7F81,
+	// which isnan(NAN_TYPE_QUIET) called signalling (#2106).
 	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
-		_bits = (NaNType == NAN_TYPE_SIGNALLING ? 0xFF81u : 0x7F81u);
+		_bits = (NaNType == NAN_TYPE_SIGNALLING ? 0xFF81u : 0x7FC0u);
 	}
 	constexpr void setinf(bool sign = false) noexcept { 
 		_bits = (sign ? 0xFF80u : 0x7F80u); 
@@ -527,8 +572,9 @@ BIT_CAST_CONSTEXPR inline bool operator<=(bfloat16 lhs, bfloat16 rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
+// not !(lhs < rhs): that is true when either operand is NaN (#2106)
 BIT_CAST_CONSTEXPR inline bool operator>=(bfloat16 lhs, bfloat16 rhs) {
-	return !operator< (lhs, rhs);
+	return operator< (rhs, lhs) || operator==(lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -557,7 +603,7 @@ BIT_CAST_CONSTEXPR inline bool operator<=(bfloat16 lhs, float rhs) {
 }
 
 BIT_CAST_CONSTEXPR inline bool operator>=(bfloat16 lhs, float rhs) {
-	return !operator< (lhs, bfloat16(rhs));
+	return operator>=(lhs, bfloat16(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -584,7 +630,7 @@ BIT_CAST_CONSTEXPR inline bool operator<=(float lhs, bfloat16 rhs) {
 }
 
 BIT_CAST_CONSTEXPR inline bool operator>=(float lhs, bfloat16 rhs) {
-	return !operator< (bfloat16(lhs), rhs);
+	return operator>=(bfloat16(lhs), rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
