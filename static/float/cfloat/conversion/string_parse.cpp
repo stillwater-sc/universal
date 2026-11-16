@@ -13,6 +13,7 @@
 #include <streambuf>
 #include <string>
 #include <universal/number/cfloat/cfloat.hpp>
+#include <cmath>
 #include <universal/verification/test_reporters.hpp>
 
 // RAII guard: redirects std::cerr to a throwaway sink for the scope of a
@@ -173,6 +174,25 @@ try {
 			if (!p.sign())    ++nrOfFailedTestCases;  // negative
 		}
 		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: nan/inf token routing\n";
+	}
+
+	// ----- decimal text past the range: rounds like a double, to inf or 0, and to maxpos on a
+	// saturating layout (#2089 asked whether this was pinned; it was not) -----
+	{
+		int start = nrOfFailedTestCases;
+		cfloat<16, 5, uint16_t, true, false, false> h;
+		cfloat<16, 5, uint16_t, true, false, true>  sat;
+		struct Case { const char* txt; double value; double saturated; };
+		const Case cases[] = {
+			{ "1e5000",  INFINITY,  65504.0 }, { "-1e5000", -INFINITY, -65504.0 },
+			{ "70000",   INFINITY,  65504.0 }, { "65520",    INFINITY,  65504.0 },   // 65520 rounds up past maxpos
+			{ "65504",   65504.0,   65504.0 }, { "1e-5000",  0.0,       0.0 },
+		};
+		for (const Case& c : cases) {
+			if (!parse(c.txt, h) || double(h) != c.value) ++nrOfFailedTestCases;
+			if (!parse(c.txt, sat) || double(sat) != c.saturated) ++nrOfFailedTestCases;
+		}
+		if (nrOfFailedTestCases - start > 0) std::cout << "FAIL: out-of-range decimal text\n";
 	}
 
 	// ----- native cfloat hex format still works (with and without 0x prefix) -----

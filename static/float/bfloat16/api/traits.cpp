@@ -80,7 +80,7 @@ catch (const sw::universal::cfloat_arithmetic_exception& err) {
 	std::cerr << "Uncaught cfloat arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_internal_exception& err) {
+catch (const sw::universal::universal_internal_exception& err) {
 	std::cerr << "Uncaught cfloat internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

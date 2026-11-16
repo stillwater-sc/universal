@@ -17,6 +17,7 @@
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/table.hpp>   // also in cfloats.cpp (#2089)
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/dbns/dbns.hpp>

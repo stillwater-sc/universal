@@ -33,7 +33,10 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 	constexpr size_t es    = TestType::es;
 	constexpr size_t fbits = TestType::fbits;
 	using bt = typename TestType::BlockType;
-	constexpr size_t NR_VALUES = (1 << nbits);
+	// one row per encoding: 1 << nbits in int was undefined from nbits = 31, and a table that long is
+	// no use as a table (#2089)
+	static_assert(nbits <= 24, "GenerateTable: a table of more than 2^24 encodings");
+	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	TestType v{};
 
 	if (csvFormat) {
@@ -121,7 +124,8 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 /// <summary>
 /// generate a table of cfloat exponent bounds up till es=20
 /// </summary>
-void GenerateCfloatExponentBounds()
+/// inline: a function defined in a header, so two translation units that include it link (#2089)
+inline void GenerateCfloatExponentBounds()
 {
 	// max exp values as a function of es
 	constexpr int WIDTH = 15;

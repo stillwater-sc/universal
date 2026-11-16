@@ -15,18 +15,8 @@ struct cfloat_arithmetic_exception : public universal_arithmetic_exception {
 	cfloat_arithmetic_exception(const std::string& err) : universal_arithmetic_exception(std::string("cfloat arithmetic exception: ") + err) {};
 };
 
-// base class for cfloat quire arithmetic exceptions
-struct cfloat_quire_exception : public cfloat_arithmetic_exception {
-	cfloat_quire_exception(const std::string& err) : cfloat_arithmetic_exception(std::string("cfloat quire exception: ") + err) {}
-};
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /// specialized exceptions to aid application level exception handling
-
-// cfloat_not_a_number is thrown when a rvar is NaN
-struct cfloat_not_a_number : public cfloat_arithmetic_exception {
-	cfloat_not_a_number() : cfloat_arithmetic_exception("not a number") {}
-};
 
 // divide by zero arithmetic exception for reals
 struct cfloat_divide_by_zero : public cfloat_arithmetic_exception {
@@ -48,33 +38,7 @@ struct cfloat_negative_sqrt_arg : public cfloat_arithmetic_exception {
 	cfloat_negative_sqrt_arg() : cfloat_arithmetic_exception("negative sqrt argument") {}
 };
 
-// quire_operand_is_nan is thrown when an rvar in a binary operator is NaN
-struct cfloat_quire_operand_is_nan : public cfloat_quire_exception {
-	cfloat_quire_operand_is_nan() : cfloat_quire_exception("quire operand is nan") {}
-};
-
-// negative argument to sqrt
-struct cfloat_quire_negative_sqrt_arg : public cfloat_quire_exception {
-	cfloat_quire_negative_sqrt_arg() : cfloat_quire_exception("quire negative sqrt argument") {}
-};
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-/// cfloat internal operation exceptions
-
-struct cfloat_internal_exception : public universal_internal_exception {
-	cfloat_internal_exception(const std::string& err) : universal_internal_exception(std::string("cfloat internal exception: ") + err) {};
-};
-
-struct cfloat_shift_too_large : public cfloat_internal_exception {
-	cfloat_shift_too_large() : cfloat_internal_exception("shift value too large for given cfloat") {}
-};
-
-struct cfloat_hpos_too_large : public cfloat_internal_exception {
-	cfloat_hpos_too_large() : cfloat_internal_exception("position of hidden bit too large for given cfloat") {}
-};
-
-//struct cfloat_rbits_too_large : cfloat_internal_exception {
-//	cfloat_rbits_too_large(const std::string& error = "number of remaining bits too large for this fraction") :cfloat_internal_exception(error) {}
-//};
+// cfloat raises only these: the quire, NaN-operand, shift and hidden-bit exceptions that
+// used to be declared here were never thrown, and cfloat has no internal exceptions (#2089).
 
 }} // namespace sw::universal
