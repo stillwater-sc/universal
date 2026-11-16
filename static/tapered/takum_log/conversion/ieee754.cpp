@@ -11,7 +11,8 @@
 //     l, could not absorb; and integers above 2^53 went through a double first.
 //   - to a double or a float: e^(l/2) correctly rounded where l is not exact in a double
 //     (takum_log<57,3> and up), within an ulp elsewhere, where std::exp is kept for speed.
-//   - to an integer: truncated toward zero, saturated, NaR -> the type's minimum (posit's rule, #2073).
+//   - to an integer: truncated toward zero, saturated to [-max, max] ([0, max - 1] unsigned), NaR ->
+//     the integer NaR, min (max unsigned) (posit's rule, #2073, amended by #2104).
 //
 // The reference is qd, ~212 bits, with its own log and exp: nothing shared with the double-double
 // the conversions use.  A takum_log's l is exact in a qd.  A "nearest" check compares a result
@@ -208,19 +209,21 @@ int VerifyToNative(std::size_t nrSamples, bool correct, bool reportTestCases) {
 	return fails;
 }
 
-// takum_log -> integer: truncate, saturate, NaR -> min
+// takum_log -> integer: truncate, saturate to [-max, max] ([0, max - 1] unsigned), NaR -> min (max unsigned)
 template<typename Integer, typename TL>
 bool CastIsRight(const TL& t) {
 	using namespace sw::universal;
 	using Limits = std::numeric_limits<Integer>;
 	const Integer got = static_cast<Integer>(t);
 	if (t.iszero()) return got == 0;
-	if (t.isnar()) return got == Limits::min();
+	if (t.isnar()) return got == (Limits::is_signed ? Limits::min() : Limits::max());
 	const bool negative = t.sign();
 	if (negative && !Limits::is_signed) return got == 0;      // x < 0 truncates or saturates to 0
 	const qd R = reference_value(exact_l(t), 0);            // |x|
-	const qd limit = ldexp(qd(1.0), Limits::digits);        // 2^digits: the first magnitude past the range
-	if (R >= limit) return got == (negative ? Limits::min() : Limits::max());
+	// the largest magnitude a finite value casts to; floor(|x|) past it saturates
+	const std::uint64_t cap = static_cast<std::uint64_t>(Limits::max()) - (Limits::is_signed ? 0u : 1u);
+	const qd limit = qd_from_uint64(cap) + qd(1.0);
+	if (R >= limit) return got == (negative ? static_cast<Integer>(-static_cast<Integer>(cap)) : static_cast<Integer>(cap));
 	// |got| = floor(|x|)
 	const std::uint64_t mag = negative ? (std::uint64_t(0) - static_cast<std::uint64_t>(static_cast<long long>(got)))
 	                                   : static_cast<std::uint64_t>(static_cast<long long>(got));
@@ -351,7 +354,9 @@ try {
 		if (TL((1LL << 53) + 1) == TL(9007199254740992.0)) ++fails;
 		if (int(TL(SpecificValue::nar)) != INT_MIN) ++fails;
 		if ((long long)TL(SpecificValue::maxpos) != LLONG_MAX) ++fails;
-		if ((long long)TL(SpecificValue::maxneg) != LLONG_MIN) ++fails;
+		if ((long long)TL(SpecificValue::maxneg) != -LLONG_MAX) ++fails;   // LLONG_MIN is NaR's (#2104)
+		if ((unsigned)TL(SpecificValue::nar) != UINT_MAX) ++fails;
+		if ((unsigned)TL(SpecificValue::maxpos) != UINT_MAX - 1u) ++fails;
 		if (int(TL(-3.99)) != -3) ++fails;
 		if (int(TL(1.0)) != 1) ++fails;
 		{

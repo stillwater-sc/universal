@@ -242,6 +242,32 @@ to 256 bits, and on exact values, poles and saturation. Each family has its own 
   functions, which `benchmark/accuracy/efloat/mpfr_check.cpp` verifies against MPFR.
 - `efloat_bridge.cpp` checks the posit/efloat conversions against the posit tie points.
 
+### Integer casts
+
+posit, bposit, takum, takum_log, cfloat and microfloat use one rule when they are cast to a native integer. Each provides the signed and the unsigned casts (`operator int()`, `operator unsigned int()` and the wider types, or `to_integer<Integer>()`). The rule lives in `include/sw/universal/number/shared/integer_cast.hpp`:
+
+| source | signed target | unsigned target |
+|---|---|---|
+| finite, in range | truncated toward zero, exactly, within `[-max(), max()]` | truncated toward zero, exactly, within `[0, max() - 1]` |
+| past the range, infinity included | `max()` or `-max()` | `max() - 1`; a negative value gives `0` |
+| NaR / NaN | `min()`, the integer NaR | `max()`, the integer NaR |
+
+```cpp
+using P = sw::universal::posit<32, 2>;
+int(P(-2.75));              // -2
+int(P(1e30));               // INT_MAX
+int(P(-1e30));              // -INT_MAX
+int(P(sw::universal::SpecificValue::nar));        // INT_MIN
+unsigned(P(-2.75));         // 0
+unsigned(sw::universal::takum<16>(sw::universal::SpecificValue::nar));   // UINT_MAX
+```
+
+The pattern `100...0` is the posit's NaR, and for a signed integer it is `INT_MIN`. Saturation stops one step short of it, so a NaR always comes out as a value that no real number gives. An unsigned type has no such pattern, so the rule reserves `max()` and saturates to `max() - 1`.
+
+The history of the rule:
+- #2073 defined it for posit. NaR mapped to `min()`, and so did every large negative value, so a caller could not tell them apart. The unsigned casts mapped NaR to `0`, the same as zero.
+- #2104 reserved the integer NaR for NaR alone and gave microfloat the same casts. Its casts had been `static_cast`s of a float: undefined behaviour for NaN, inf and every value outside the target type, such as `short(e5m2(57344))`.
+
 ## Problems It Solves
 
 | Problem | How posit Solves It |

@@ -200,12 +200,13 @@ const LINK_LOOKUP = buildLinkLookup();
  */
 function rewriteLinks(content, srcRelative) {
   const srcDir = posix.dirname(srcRelative);
-  return content.replace(/\]\(([^)]+\.md)\)/g, (match, target) => {
+  // an optional #anchor rides along: [rule](posit.md#integer-casts) -> ](/.../posit/#integer-casts)
+  return content.replace(/\]\(([^)#]+\.md)(#[^)]*)?\)/g, (match, target, anchor = '') => {
     if (target.startsWith('http://') || target.startsWith('https://')) return match;
     const resolved = posix.normalize(posix.join(srcDir, target));
     const url = LINK_LOOKUP[resolved];
     if (url) {
-      return `](${url})`;
+      return `](${url}${anchor})`;
     }
     return match;
   });

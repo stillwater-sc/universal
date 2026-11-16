@@ -49,6 +49,7 @@
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/number/shared/integer_cast.hpp>
 #include <universal/number/bposit/exceptions.hpp>
 
 namespace sw { namespace universal {
@@ -140,10 +141,10 @@ public:
 	explicit operator float()       const noexcept { return static_cast<float>(to_native<double>()); }
 	explicit operator double()      const noexcept { return to_native<double>(); }
 	explicit operator long double() const noexcept { return to_native<long double>(); }
-	// Integer conversions truncate toward zero, exactly, and saturate to the integer type's range;
-	// NaR gives the type's minimum (0 for the unsigned types), the "integer indefinite" a hardware
-	// float-to-int conversion produces.  This is posit's rule (#2070, #2073), adopted for bposit in
-	// #2080.  They cast a double, which made NaR and every out-of-range value undefined behaviour.
+	// Integer conversions follow the rule in shared/integer_cast.hpp (#2073, #2104), adopted for
+	// bposit in #2080: truncate toward zero, exactly, saturate to +/-max() (an unsigned type to
+	// [0, max() - 1]), and NaR gives the integer NaR (min(), max() for an unsigned type).  They
+	// cast a double, which made NaR and every out-of-range value undefined behaviour.
 	explicit constexpr operator int()         const noexcept { return to_integer<int>(); }
 	explicit constexpr operator long()        const noexcept { return to_integer<long>(); }
 	explicit constexpr operator long long()   const noexcept { return to_integer<long long>(); }
@@ -156,17 +157,16 @@ public:
 		static_assert(std::is_integral_v<Integer> && sizeof(Integer) <= 8, "to_integer: an integer type of at most 64 bits");
 		using Limits = std::numeric_limits<Integer>;
 		if (iszero()) return Integer(0);
-		if (isnar()) return Limits::min();
+		if (isnar()) return integer_nar<Integer>();
 		const fields d = decode_fields();
 		if (d.scale < 0) return Integer(0);                                 // |x| < 1 truncates to 0
-		if (d.negative && !Limits::is_signed) return Limits::min();         // x <= -1 saturates to 0
-		if (d.scale >= Limits::digits) return d.negative ? Limits::min() : Limits::max();
+		if (d.negative && !Limits::is_signed) return Integer(0);            // x <= -1 saturates to 0
+		if (d.scale >= Limits::digits) return integer_saturate<Integer>(d.negative);
 		// |x| = sig * 2^(scale - nf), truncated: scale <= 63 and nf <= 61 keep both shifts in range
 		const std::uint64_t sig = (1ull << d.nf) | d.frac;
 		const int shift = d.scale - static_cast<int>(d.nf);
 		const std::uint64_t magnitude = (shift >= 0) ? (sig << shift) : (sig >> (-shift));
-		using U = std::make_unsigned_t<Integer>;
-		return d.negative ? static_cast<Integer>(U(0) - static_cast<U>(magnitude)) : static_cast<Integer>(magnitude);
+		return integer_from_magnitude<Integer>(d.negative, false, magnitude);
 	}
 
 	// arithmetic

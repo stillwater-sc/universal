@@ -18,6 +18,7 @@
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
+#include <universal/number/shared/integer_cast.hpp>
 #include <universal/number/microfloat/microfloat_fwd.hpp>
 #include <universal/number/microfloat/exceptions.hpp>
 
@@ -209,16 +210,23 @@ public:
 	// conversion operators
 	constexpr explicit operator float()                       const noexcept { return to_float(); }
 	constexpr explicit operator double()                      const noexcept { return static_cast<double>(to_float()); }
-	constexpr explicit operator signed char()                 const noexcept { return static_cast<signed char>(to_float()); }
-	constexpr explicit operator short()                       const noexcept { return static_cast<short>(to_float()); }
-	constexpr explicit operator int()                         const noexcept { return static_cast<int>(to_float()); }
-	constexpr explicit operator long()                        const noexcept { return static_cast<long>(to_float()); }
-	constexpr explicit operator long long()                   const noexcept { return static_cast<long long>(to_float()); }
-	constexpr explicit operator char()                        const noexcept { return static_cast<char>(to_float()); }
-	constexpr explicit operator unsigned short()              const noexcept { return static_cast<unsigned short>(to_float()); }
-	constexpr explicit operator unsigned int()                const noexcept { return static_cast<unsigned int>(to_float()); }
-	constexpr explicit operator unsigned long()               const noexcept { return static_cast<unsigned long>(to_float()); }
-	constexpr explicit operator unsigned long long()          const noexcept { return static_cast<unsigned long long>(to_float()); }
+	// Integer casts follow the rule in shared/integer_cast.hpp (#2104): truncate toward zero,
+	// saturate to +/-max() (an unsigned type to [0, max() - 1]), and NaN gives the integer NaR
+	// (min(), max() for an unsigned type).  The float is exact for every microfloat value.  They
+	// were static_casts of the float, undefined behaviour for NaN, inf and every value that did
+	// not fit: short(e5m2 57344), (signed char)e4m3(448), unsigned(e4m3(-1)).
+	constexpr explicit operator signed char()                 const noexcept { return to_integer<signed char>(); }
+	constexpr explicit operator short()                       const noexcept { return to_integer<short>(); }
+	constexpr explicit operator int()                         const noexcept { return to_integer<int>(); }
+	constexpr explicit operator long()                        const noexcept { return to_integer<long>(); }
+	constexpr explicit operator long long()                   const noexcept { return to_integer<long long>(); }
+	constexpr explicit operator char()                        const noexcept { return to_integer<char>(); }
+	constexpr explicit operator unsigned short()              const noexcept { return to_integer<unsigned short>(); }
+	constexpr explicit operator unsigned int()                const noexcept { return to_integer<unsigned int>(); }
+	constexpr explicit operator unsigned long()               const noexcept { return to_integer<unsigned long>(); }
+	constexpr explicit operator unsigned long long()          const noexcept { return to_integer<unsigned long long>(); }
+	template<typename Integer>
+	constexpr Integer to_integer() const noexcept { return integer_from_native<Integer>(to_float()); }
 
 #if LONG_DOUBLE_SUPPORT
 	constexpr explicit microfloat(long double iv)           noexcept : _bits{} { *this = iv; }

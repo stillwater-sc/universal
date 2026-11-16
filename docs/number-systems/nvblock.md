@@ -77,6 +77,22 @@ result = tensor_scale_a × tensor_scale_b × Σ(block_scale_a × block_scale_b �
 
 The tensor scales can be factored out of the inner loop for efficiency.
 
+## Design decisions
+
+### A NaN input makes the whole block NaN (#2102)
+
+e2m1 has no NaN encoding, so the e4m3 block scale is the only place a NaN can be stored. When any input element is NaN, `quantize` sets the block scale to e4m3's NaN and zeroes the elements, so the contents are deterministic. `dequantize` then returns NaN for every element, and so does a dot product with the block. This is the rule #2086 set for the MX blocks.
+
+| Trade-off | |
+|---|---|
+| For | Before #2102 the NaN was silently dropped: NaN is not greater than amax, so the scale came from the other elements, and e2m1 rounded the NaN to 0. Silent replacement by 0 is the worse failure: the error disappears without a trace. |
+| For | It matches the MX blocks (#2086), so every block format behaves the same, and the NaN reaches the consumer the way IEEE arithmetic propagates it. |
+| For | The cost is one `isnan` per element, folded into the existing amax loop. |
+| Against | One NaN discards the whole 16-element block, including its 15 finite values. |
+| Against | It may not be bit-identical to quantizers that compute amax with `fmaxf`, which ignores NaN and so drops it. |
+
+There is one exception: a tensor scale of 0 gives the all-zero block even when the input has a NaN, where IEEE would give NaN (0 * NaN). If NVIDIA bit-compatibility is ever needed, it should be an explicit option, not the default.
+
 ## How to Use It
 
 ### Include

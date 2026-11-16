@@ -77,6 +77,7 @@
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/posit/posit_limbs.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/number/shared/integer_cast.hpp>
 // intermediate value tracing
 #include <universal/number/algorithm/trace_constants.hpp>
 // posit environment
@@ -843,22 +844,26 @@ public:
 	}
 
 	// make conversions to native types explicit
-	// Integer conversions truncate toward zero, exactly at any nbits, and saturate to the integer
-	// type's range; NaR gives the type's minimum, the "integer indefinite" a hardware float-to-int
-	// conversion produces (#2070). They went through double, which lost bits past 53 for
-	// posit<128,2> and made an out-of-range value or NaR undefined behaviour.
+	// Integer conversions follow the rule in shared/integer_cast.hpp (#2073, #2104): truncate toward
+	// zero, exactly at any nbits, saturate to +/-max(), and NaR gives the integer NaR, min(). They
+	// went through double, which lost bits past 53 for posit<128,2> and made an out-of-range value
+	// or NaR undefined behaviour (#2070).
 	explicit operator int()         const noexcept { return to_integer<int>(); }
 	explicit operator long()        const noexcept { return to_integer<long>(); }
 	explicit operator long long()   const noexcept { return to_integer<long long>(); }
+	// unsigned: a negative value gives 0, a value past the range max() - 1, NaR max() (#2104)
+	explicit operator unsigned int()       const noexcept { return to_integer<unsigned int>(); }
+	explicit operator unsigned long()      const noexcept { return to_integer<unsigned long>(); }
+	explicit operator unsigned long long() const noexcept { return to_integer<unsigned long long>(); }
 	explicit operator float()       const noexcept { return to_native<float>(); }
 	explicit operator double()      const noexcept { return to_native<double>(); }
 	explicit operator long double() const noexcept { return to_native<long double>(); }
 
 	template<typename Integer>
 	Integer to_integer() const noexcept {
-		static_assert(std::is_integral_v<Integer> && std::is_signed_v<Integer>, "to_integer: a signed integer type");
+		static_assert(std::is_integral_v<Integer> && sizeof(Integer) <= 8, "to_integer: an integer type of at most 64 bits");
 		if (iszero()) return Integer(0);
-		if (isnar()) return std::numeric_limits<Integer>::min();
+		if (isnar()) return integer_nar<Integer>();
 		using posit_limbs::limb_t;
 		constexpr std::size_t L = posit_limbs::limbs(nbits);
 		limb_t w[L];
@@ -868,7 +873,7 @@ public:
 		const posit_limbs::Fields f = posit_limbs::decode<nbits, es>(w);
 		if (f.scale < 0) return Integer(0);
 		constexpr int digits = std::numeric_limits<Integer>::digits;   // magnitude bits
-		if (f.scale >= digits) return negative ? std::numeric_limits<Integer>::min() : std::numeric_limits<Integer>::max();
+		if (f.scale >= digits) return integer_saturate<Integer>(negative);
 		// |x| truncated: the hidden bit at 2^scale and the fraction bits of weight 2^(scale - 1) .. 2^0
 		using U = std::make_unsigned_t<Integer>;
 		U magnitude = U(1) << f.scale;
@@ -876,7 +881,7 @@ public:
 			const int j = static_cast<int>(f.nf) - i;   // the fraction bit of weight 2^(scale - i)
 			if (j >= 0 && posit_limbs::test(w, static_cast<unsigned>(j))) magnitude |= U(1) << (f.scale - i);
 		}
-		return negative ? static_cast<Integer>(U(0) - magnitude) : static_cast<Integer>(magnitude);
+		return integer_from_magnitude<Integer>(negative, false, static_cast<std::uint64_t>(magnitude));
 	}
 
 	// Selectors
