@@ -33,8 +33,7 @@ struct wide {
 	template<unsigned other>
 	constexpr wide<other> resize() const noexcept {
 		wide<other> r;
-		constexpr unsigned n = (L < wide<other>::L) ? L : wide<other>::L;
-		for (unsigned i = 0; i < n; ++i) r.w[i] = w[i];
+		for (unsigned i = 0; i < L && i < wide<other>::L; ++i) r.w[i] = w[i];
 		r.truncate(other);
 		return r;
 	}

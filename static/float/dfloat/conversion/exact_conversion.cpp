@@ -70,7 +70,8 @@ namespace {
 		exp10 = 0;
 		if (E > 0) N <<= E;
 		else if (E < 0) {
-			for (int i = 0; i < -E; ++i) N *= Big(5);
+			const int k = -E;   // m * 2^E = m * 5^k * 10^-k
+			for (int i = 0; i < k; ++i) N *= Big(5);
 			exp10 = E;
 		}
 		std::stringstream ss;
