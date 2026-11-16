@@ -30,6 +30,7 @@
 #include <universal/utility/bit_cast.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
+#include <universal/number/shared/integer_cast.hpp>
 #include <universal/number/e8m0/e8m0_fwd.hpp>
 #include <universal/number/e8m0/exceptions.hpp>
 
@@ -81,21 +82,26 @@ public:
 	}
 
 	// construct from native types
-	constexpr explicit e8m0(float iv) noexcept : _bits{} { from_float(iv); }
-	constexpr explicit e8m0(double iv) noexcept : _bits{} { from_float(static_cast<float>(iv)); }
-	constexpr e8m0(int iv) noexcept : _bits{} { from_float(static_cast<float>(iv)); }
-	constexpr e8m0(unsigned iv) noexcept : _bits{} { from_float(static_cast<float>(iv)); }
+	// every source goes through a double, which holds float, int and unsigned exactly, so the
+	// rounding to a power of two happens once (#2106: a double or int was first rounded to float)
+	constexpr explicit e8m0(float iv) noexcept : _bits{} { from_double(static_cast<double>(iv)); }
+	constexpr explicit e8m0(double iv) noexcept : _bits{} { from_double(iv); }
+	constexpr e8m0(int iv) noexcept : _bits{} { from_double(static_cast<double>(iv)); }
+	constexpr e8m0(unsigned iv) noexcept : _bits{} { from_double(static_cast<double>(iv)); }
 
 	// assignment operators
-	constexpr e8m0& operator=(float rhs) noexcept { from_float(rhs); return *this; }
-	constexpr e8m0& operator=(double rhs) noexcept { from_float(static_cast<float>(rhs)); return *this; }
-	constexpr e8m0& operator=(int rhs) noexcept { from_float(static_cast<float>(rhs)); return *this; }
-	constexpr e8m0& operator=(unsigned rhs) noexcept { from_float(static_cast<float>(rhs)); return *this; }
+	constexpr e8m0& operator=(float rhs) noexcept { from_double(static_cast<double>(rhs)); return *this; }
+	constexpr e8m0& operator=(double rhs) noexcept { from_double(rhs); return *this; }
+	constexpr e8m0& operator=(int rhs) noexcept { from_double(static_cast<double>(rhs)); return *this; }
+	constexpr e8m0& operator=(unsigned rhs) noexcept { from_double(static_cast<double>(rhs)); return *this; }
 
 	// conversion operators
 	constexpr explicit operator float() const noexcept { return to_float(); }
 	constexpr explicit operator double() const noexcept { return static_cast<double>(to_float()); }
-	constexpr explicit operator int() const noexcept { return static_cast<int>(to_float()); }
+	// the library's integer-cast rule (shared/integer_cast.hpp, #2104): truncate, saturate to
+	// max(), NaN gives the integer NaR. It cast the float: (int)e8m0(maxpos) = (int)2^127 was UB
+	// and came out INT_MIN (#2106).
+	constexpr explicit operator int() const noexcept { return integer_from_native<int>(to_float()); }
 
 	// prefix operators
 	constexpr e8m0& operator++() noexcept {
@@ -177,86 +183,47 @@ public:
 		}
 	}
 
-	// Convert from float: find the closest power of 2.
+	// Convert from a double: the nearest power of two in the log domain, round(log2 v) with
+	// halves away from zero, the rule e8m0 has always used.
 	//
-	// The runtime implementation uses std::log2 + std::round, which is
-	// not constexpr.  At constant evaluation, extract the IEEE 754 fields
-	// directly via sw::bit_cast and emulate round-to-nearest-power-of-2:
-	//
-	//   v = (1 + frac/2^23) * 2^E for normal floats, where E = rawExp - 127
-	//   round(log2(v)) is E + 1 iff log2(1 + frac/2^23) >= 0.5
-	//                          iff (1 + frac/2^23) >= sqrt(2)
-	//                          iff frac >= (sqrt(2) - 1) * 2^23
-	//                          iff frac >= 3474676  (precomputed)
-	//
-	// Subnormal floats (rawExp == 0): e8m0 minpos is 2^-127, which sits in
-	// the float subnormal range.  Full conversion of arbitrary subnormals
-	// requires log2 of the fraction; in constexpr context we coarsely
-	// clamp them all to encoding 0.  This is acceptable for the OCP
-	// scaling use case (powers of 2 typically in [-126, 127]).  Runtime
-	// retains exact log2-based behavior.
-	constexpr void from_float(float v) noexcept {
-		// NaN: only value not equal to itself.
+	// The midpoint between 2^E and 2^(E+1) is 2^(E+1/2): v = (1 + f) * 2^E rounds up exactly
+	// when 1 + f >= sqrt(2). sqrt(2) is irrational, so no input is a tie, and the comparison is
+	// done on the fraction bits against ceil((sqrt(2) - 1) * 2^52) = 1865452045155277. This is
+	// the same at run time and at constant evaluation (#2106). The run-time path used
+	// std::round(std::log2(v)) on a float, whose rounding could land on the other side of the
+	// midpoint, and the constant-evaluated path flushed every float subnormal to encoding 0,
+	// while 2^-127 (encoding 0) itself is a float subnormal.
+	// NaN gives NaN; +/-inf and anything above 2^127.5 give maxpos; zero, negative values and
+	// anything below 2^-127 give encoding 0, the smallest value e8m0 has.
+	constexpr void from_double(double v) noexcept {
 		if (v != v) {
 			setnan();
 			return;
 		}
-		// Infinity (either sign): clamp to maxpos, matching the
-		// SpecificValue::infpos / SpecificValue::infneg construction path.
-		// Must be checked BEFORE the v <= 0 clamp below, otherwise -inf
-		// would silently encode as 0 (smallest representable) -- pre-PR
-		// latent bug.  std::isinf is not constexpr; numeric_limits<float>::max()
-		// is, so bracket against +/-fmax.
-		constexpr float fmax = std::numeric_limits<float>::max();
-		if (v > fmax || v < -fmax) {
+		constexpr double dmax = std::numeric_limits<double>::max();
+		if (v > dmax || v < -dmax) {
 			maxpos();
 			return;
 		}
-		// Negative or zero: e8m0 has no representation; clamp to encoding 0.
-		if (v <= 0.0f) {
+		if (v <= 0.0) {
 			_bits = 0;
 			return;
 		}
-		if (std::is_constant_evaluated()) {
-			// Constexpr path via IEEE 754 bit-extraction.
-			uint32_t bits_u = sw::bit_cast<uint32_t>(v);
-			uint32_t rawExp  = (bits_u >> 23) & 0xFFu;
-			uint32_t rawFrac = bits_u & 0x7FFFFFu;
-			if (rawExp == 0u) {
-				// subnormal -- coarse approximation, see comment above.
-				_bits = 0;
-				return;
-			}
-			// (sqrt(2) - 1) * 2^23 ~= 3474676; round half away from zero.
-			constexpr uint32_t round_up_threshold = 3474676u;
-			unsigned biased = rawExp;
-			if (rawFrac >= round_up_threshold) ++biased;
-			if (biased > 254u) {
-				_bits = 254u;
-			}
-			else {
-				_bits = static_cast<uint8_t>(biased);
-			}
+		const uint64_t bits_u = sw::bit_cast<uint64_t>(v);
+		const int rawExp = static_cast<int>((bits_u >> 52) & 0x7FFu);
+		if (rawExp == 0) {          // a subnormal double: far below 2^-127
+			_bits = 0;
+			return;
 		}
-		else {
-			// Runtime path: legacy std::log2 + std::round implementation.
-			// Infinity (either sign) is already handled above via the
-			// numeric_limits<float>::max() bracket -- no need to redo
-			// std::isinf here.
-			float log2v = std::log2(v);
-			int exp_int = static_cast<int>(std::round(log2v));
-			int biased = exp_int + bias;
-			if (biased < 0) {
-				_bits = 0;
-			}
-			else if (biased > 254) {
-				_bits = 254u;
-			}
-			else {
-				_bits = static_cast<uint8_t>(biased);
-			}
-		}
+		const uint64_t rawFrac = bits_u & ((uint64_t(1) << 52) - 1u);
+		constexpr uint64_t round_up_threshold = 1865452045155277ull;   // (sqrt(2) - 1) * 2^52, rounded up
+		int biased = (rawExp - 1023) + bias + ((rawFrac >= round_up_threshold) ? 1 : 0);
+		if (biased < 0) biased = 0;
+		if (biased > 254) biased = 254;
+		_bits = static_cast<uint8_t>(biased);
 	}
+	// kept for callers that name it: a float converts exactly to a double
+	constexpr void from_float(float v) noexcept { from_double(static_cast<double>(v)); }
 
 protected:
 	uint8_t _bits;

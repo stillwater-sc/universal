@@ -1,16 +1,15 @@
 // fma.cpp: functional tests for the bfloat16 fused multiply-add fma(a,b,c)
 //
-// bfloat16 had no fma (#1193, sub-issue of the universal fma epic #1189). The new
-// fma widens to float, forms a*b + c with std::fma (one rounding to float), and
-// rounds once into bfloat16 via the RNE bfloat16(float) constructor. Because a
-// bfloat16 product is EXACT in float (16 <= 24 significand bits) and float's 24 bits
-// satisfy 24 >= 2*8 + 2 for the bfloat16 target, the float -> bfloat16 double
-// rounding is innocuous: the result is the correctly-rounded-to-nearest-even
-// bfloat16 value of the exact a*b + c.
+// bfloat16 had no fma (#1193, sub-issue of the universal fma epic #1189). fma forms
+// the exact a*b + c as a TwoSum pair in double and rounds it once (#2106). Its first
+// form rounded through float, and that double rounding is NOT innocuous for fma:
+// rounding the exact result to float can land on a bfloat16 tie.
 //
-// This suite validates against an INDEPENDENT oracle that widens to double instead
-// of float: bfloat16(std::fma(double(a),double(b),double(c))). Both paths equal
-// RNE(exact a*b + c), so they must agree bit-for-bit; disagreement reveals a bug.
+// This suite validates against an INDEPENDENT oracle: the exact sum s + e brackets
+// between two adjacent bfloat16 values and is compared with their midpoint exactly,
+// ties to even. The previous oracle, bfloat16(std::fma(double, double, double)),
+// rounded to 53 bits first and shared the double-rounding defect: it agreed with
+// the float path on exactly the cases both got wrong.
 // We also check: single-rounding superiority over the naive two-rounding
 // bfloat16 a*b + c, IEEE special values (inf*0 -> NaN, inf/NaN propagation), and
 // tie-to-even behavior.
@@ -46,9 +45,64 @@ namespace {
 		return float(r) == float(e);
 	}
 
-	// independent oracle: exact a*b + c rounded once to bfloat16, via the double path
+	// the sign of (s + e) - v, exact, for |e| <= ulp(s) / 2 and v a double
+	int compare_pair(double s, double e, double v) {
+		if (s != v) return (s < v) ? -1 : 1;
+		return (e < 0.0) ? -1 : ((e > 0.0) ? 1 : 0);
+	}
+
+	// the next bfloat16 encoding up the value line (maxpos steps to +inf), by raw bits
+	bfloat16 next_up(bfloat16 x) {
+		const unsigned b = x.bits();
+		bfloat16 r;
+		if (b == 0x8000u || b == 0x0000u) r.setbits(0x0001u);
+		else if (b & 0x8000u) r.setbits(b - 1u);
+		else r.setbits(b + 1u);
+		return r;
+	}
+	bfloat16 next_down(bfloat16 x) {
+		const unsigned b = x.bits();
+		bfloat16 r;
+		if (b == 0x8000u || b == 0x0000u) r.setbits(0x8001u);
+		else if (b & 0x8000u) r.setbits(b + 1u);
+		else r.setbits(b - 1u);
+		return r;
+	}
+	// a finite value, with +/-inf standing for the overflow threshold of the side it is on:
+	// maxpos + half its ulp: 255 * 2^120 + 2^119 = 511 * 2^119
+	double as_bound(bfloat16 x) {
+		if (isinf(x)) return (x.bits() & 0x8000u) ? -std::ldexp(511.0, 119) : std::ldexp(511.0, 119);
+		return double(x);
+	}
+
+	// independent oracle: the exact a*b + c rounded once to bfloat16 by a midpoint comparison
 	bfloat16 fma_oracle(bfloat16 a, bfloat16 b, bfloat16 c) {
-		return bfloat16(std::fma(double(a), double(b), double(c)));
+		const double p = double(a) * double(b);   // exact
+		const double cd = double(c);
+		const double s = p + cd;
+		if (!std::isfinite(p) || !std::isfinite(cd) || !std::isfinite(s)) return bfloat16(std::fma(double(a), double(b), double(c)));
+		const double bv = s - p;
+		const double e = (p - (s - bv)) + (cd - bv);          // s + e == a*b + c
+		if (s == 0.0) return bfloat16(s);
+		// r is within half a bfloat16 ulp of s, and s + e within a double ulp of s: the exact
+		// value lies between r and its neighbour on the side compare_pair points to
+		const bfloat16 r(s);
+		if (isinf(r)) {
+			// past the overflow threshold, or just below it with s rounded up: decide on the threshold
+			const double t = as_bound(r);
+			return (compare_pair(s, e, t) >= 0) == (t > 0) ? r : ((t > 0) ? bfloat16(SpecificValue::maxpos) : bfloat16(SpecificValue::maxneg));
+		}
+		const int c_r = compare_pair(s, e, double(r));
+		if (c_r == 0) return r;
+		const bfloat16 x = (c_r > 0) ? r : next_down(r);
+		const bfloat16 y = (c_r > 0) ? next_up(r) : r;
+		if (isinf(y)) return (compare_pair(s, e, as_bound(y)) >= 0) ? y : x;
+		if (isinf(x)) return (compare_pair(s, e, as_bound(x)) <= 0) ? x : y;
+		const double mid = (double(x) + double(y)) / 2.0;      // 9 significant bits: exact
+		const int c_mid = compare_pair(s, e, mid);
+		if (c_mid < 0) return x;
+		if (c_mid > 0) return y;
+		return (x.bits() & 1u) ? y : x;                        // a tie: the even encoding
 	}
 
 	// ---- 1. correctly-rounded vs the independent double-path oracle -----------

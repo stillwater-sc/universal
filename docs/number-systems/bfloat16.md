@@ -45,9 +45,18 @@ IEEE half-precision (float16) has only 5 exponent bits, giving a dynamic range o
 ## How It Works
 
 bfloat16 is the upper 16 bits of a 32-bit IEEE-754 float. This means:
-- **Conversion from float32**: truncate (or round) the lower 16 fraction bits
+- **Conversion from float32**: round the lower 16 fraction bits to nearest, ties to even
 - **Conversion to float32**: zero-extend the lower 16 fraction bits
-- **Arithmetic**: performed by promoting to float32, computing, then truncating back
+- **Arithmetic**: performed by promoting to float32, computing, then rounding back
+
+Conversions and the special operations follow these rules (#2106):
+- **One rounding from every source.** A `double`, a `long double` or an integer wider than 24 bits is first narrowed to float with round-to-odd. bfloat16's round-to-nearest-even is then the only rounding: `bfloat16(1.0 + 2^-8 + 2^-40)` is 0x3F81, and `bfloat16((1LL<<30) + (1LL<<22) + 1)` is 0x4E81.
+- **`fma` rounds once.** The exact `a*b + c` is formed as a TwoSum pair in double. Rounding through float first, as `std::fma(float, float, float)` does, can land the result on a bfloat16 tie.
+- **NaN typing.** The quiet NaN is 0x7FC0. The NaN type is read from the fraction MSB, as IEEE and cfloat do.
+- **Comparisons.** Every comparison with a NaN operand is false, `>=` included.
+- **`++` / `--`.** They step to the next encoding on the value line, take -0 to the smallest subnormal of either sign, stop at maxpos / maxneg, and leave inf and NaN in place, as microfloat does (#2096).
+- **Integer casts** follow [the library's integer-cast rule](posit.md#integer-casts): truncate, saturate to +/-max, and NaN gives the integer NaR.
+- **`numeric_limits`.** `is_bounded` is true, and `has_denorm` is `denorm_present`: 0x0001 is the subnormal 2^-133.
 
 The Universal implementation stores the encoding in a `uint16_t` and uses `std::memcpy`-based conversion to/from native `float`, ensuring constexpr compatibility where the compiler supports it.
 
