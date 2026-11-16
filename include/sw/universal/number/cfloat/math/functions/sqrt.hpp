@@ -225,8 +225,10 @@ namespace sw { namespace universal {
 	// reciprocal sqrt
 	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 	inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> rsqrt(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a) {
-		cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> v = sqrt(a);
-		return v.reciprocate();
+		// 1 / sqrt(a), rounded twice.  It called a reciprocate() that cfloat does not have, so it did
+		// not compile; no test called it (#2088).
+		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
+		return Cfloat(1) / sqrt(a);
 	}
 
 	///////////////////////////////////////////////////////////////////

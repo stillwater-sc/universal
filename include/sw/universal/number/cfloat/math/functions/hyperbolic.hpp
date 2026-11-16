@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <universal/number/cfloat/math/efloat_bridge.hpp>
+
 namespace sw { namespace universal {
 
 // value representing an angle expressed in radians
@@ -14,36 +16,42 @@ namespace sw { namespace universal {
 // hyperbolic sine of an angle of x radians
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> sinh(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
+	if constexpr (!cfloat_math::fits_double<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>>()) return cfloat_math::unary(x, [](const auto& e) { return sinh(e); }, true);
 	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::sinh(double(x)));
 }
 
 // hyperbolic cosine of an angle of x radians
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> cosh(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
+	if constexpr (!cfloat_math::fits_double<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>>()) return cfloat_math::unary(x, [](const auto& e) { return cosh(e); }, false);
 	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::cosh(double(x)));
 }
 
 // hyperbolic tangent of an angle of x radians
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> tanh(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
+	if constexpr (!cfloat_math::fits_double<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>>()) return cfloat_math::unary(x, [](const auto& e) { return tanh(e); }, true);
 	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::tanh(double(x)));
 }
 
 // hyperbolic cotangent of an angle of x radians
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> atanh(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
+	if constexpr (!cfloat_math::fits_double<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>>()) return cfloat_math::unary(x, [](const auto& e) { return atanh(e); }, true);
 	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::atanh(double(x)));
 }
 
 // hyperbolic cosecant of an angle of x radians
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> acosh(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
+	if constexpr (!cfloat_math::fits_double<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>>()) return cfloat_math::unary(x, [](const auto& e) { return acosh(e); }, false);
 	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::acosh(double(x)));
 }
 
 // hyperbolic secant of an angle of x radians
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> asinh(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x) {
+	if constexpr (!cfloat_math::fits_double<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>>()) return cfloat_math::unary(x, [](const auto& e) { return asinh(e); }, true);
 	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::asinh(double(x)));
 }
 
