@@ -18,7 +18,6 @@
 #include <type_traits>   // std::is_same / std::true_type
 #include <cstddef>     // std::size_t in the fdp_qc signatures
 #include <vector>
-#include <cassert>
 #include <universal/traits/cfloat_traits.hpp>
 #include <universal/number/quire/quire.hpp>
 
@@ -94,7 +93,13 @@ quire_resolve(const quire<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, 
 
 	// Find the MSB position in the accumulator
 	int msb_pos = s + static_cast<int>(rp);
-	if (msb_pos < 0 || msb_pos >= static_cast<int>(qrange + capacity)) {
+	if (msb_pos >= static_cast<int>(qrange + capacity)) {
+		// past the top of the accumulator: an overflow, which is an infinity (a saturating cfloat
+		// clamps), not the zero it used to give (#2089)
+		result.setinf(q.sign());
+		return result;
+	}
+	if (msb_pos < 0) {
 		result.setzero();
 		return result;
 	}
@@ -105,33 +110,29 @@ quire_resolve(const quire<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, 
 	//   bit (radix)   = 1.0 position (hidden bit, no overflow)
 	//   bit (radix+1) = 2.0 position (overflow form)
 	//
-	// We place the quire MSB at blocktriple bit (radix), giving
-	// significandscale = 0, so convert() uses exponent = scale + 0 = s.
-	// Then copy (radix) more bits below it for fraction + rounding bits.
+	// The quire MSB goes to the overflow position, bit (radix + 1), with scale s - 1, so that
+	// convert() sees significandscale = 1 and exponent = s.  That leaves bits radix .. 1 for the
+	// fraction and the guard and round bits, and bit 0 for the sticky bit alone.  With the MSB at
+	// bit (radix) the sticky bit was ORed into bit 0, which for fbits = 1 is the guard bit: a
+	// cfloat<4,2> fdp of 0.5*0.5 + 3 rounded up to inf (#2089).
 	BT bt_val;
 	bt_val.setnormal();
 	bt_val.setsign(q.sign());
-	bt_val.setscale(s);
+	bt_val.setscale(s - 1);
 
-	// Copy bits: blocktriple bit (bt_radix - k) <- accumulator bit (msb_pos - k)
-	// k=0 is the MSB (hidden bit), k increases downward
-	for (unsigned k = 0; k < bfbits; ++k) {
-		int bt_bit = bt_radix - static_cast<int>(k);
-		int accu_bit = msb_pos - static_cast<int>(k);
-		if (bt_bit >= 0 && bt_bit < static_cast<int>(bfbits)) {
-			bool val = (accu_bit >= 0)
-				? q[static_cast<unsigned>(accu_bit)]
-				: false;
-			bt_val.setbit(static_cast<unsigned>(bt_bit), val);
-		}
+	// Copy bits: blocktriple bit (bt_radix + 1 - k) <- accumulator bit (msb_pos - k), k = 0 .. bt_radix
+	for (int k = 0; k <= bt_radix; ++k) {
+		const int bt_bit = bt_radix + 1 - k;
+		const int accu_bit = msb_pos - k;
+		const bool val = (accu_bit >= 0) ? q[static_cast<unsigned>(accu_bit)] : false;
+		bt_val.setbit(static_cast<unsigned>(bt_bit), val);
 	}
+	static_assert(bfbits == static_cast<unsigned>(bt_radix) + 2u, "the MUL blocktriple holds radix + 2 bits");
 
-	// Sticky bit: if any accumulator bits below what we extracted are set,
-	// set the blocktriple LSB so rounding correctly rounds up when needed.
-	int lowest_copied = msb_pos - static_cast<int>(bt_radix);
-	if (lowest_copied > 0 && q.anyAfter(static_cast<unsigned>(lowest_copied - 1))) {
-		bt_val.setbit(0, true);
-	}
+	// Sticky bit: if any accumulator bit below the lowest one copied is set, set the blocktriple
+	// LSB so that rounding sees the discarded tail.
+	const int lowest_copied = msb_pos - bt_radix;
+	bt_val.setbit(0, lowest_copied > 0 && q.anyAfter(static_cast<unsigned>(lowest_copied - 1)));
 
 	convert(bt_val, result);
 	return result;
@@ -153,6 +154,8 @@ quire_resolve(const quire<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, 
 /// Fused dot product with quire continuation.
 /// Accumulates products into an existing quire without resolving.
 /// The quire must be parameterized on the same scalar type as the vectors.
+/// A zero stride, or an index past a vector, makes the quire NaN, in every build: the asserts
+/// vanished under NDEBUG, so a zero stride re-read x[0] and a long n read past the vectors (#2089).
 template<typename Qy, typename Vector>
 void fdp_qc(Qy& sum_of_products, std::size_t n,
             const Vector& x, std::size_t incx,
@@ -162,11 +165,11 @@ void fdp_qc(Qy& sum_of_products, std::size_t n,
 	static_assert(std::is_same<Qy, quire<Scalar>>::value,
 		"fdp_qc: quire type must match the vector's scalar type");
 	if (n == 0) return;
-	assert(incx > 0 && "fdp_qc: incx must be positive");
-	assert(incy > 0 && "fdp_qc: incy must be positive");
-	std::size_t ix, iy;
-	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
-		assert(ix < x.size() && iy < y.size() && "fdp_qc: index out of bounds");
+	Scalar nan;
+	nan.setnan(NAN_TYPE_QUIET);
+	if (incx == 0 || incy == 0) { sum_of_products += quire_mul(nan, nan); return; }
+	for (std::size_t ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
+		if (ix >= x.size() || iy >= y.size()) { sum_of_products += quire_mul(nan, nan); return; }
 		sum_of_products += quire_mul(x[ix], y[iy]);
 	}
 }
@@ -174,18 +177,18 @@ void fdp_qc(Qy& sum_of_products, std::size_t n,
 /// Resolved fused dot product with stride.
 /// Accumulates all products in a quire, then resolves with a single rounding
 /// via blocktriple conversion (no double intermediate, supports all cfloat widths).
+/// A zero stride, or an index past a vector, gives a quiet NaN in every build (#2089).
 template<typename Vector>
 enable_if_cfloat<typename Vector::value_type>
 fdp_stride(std::size_t n, const Vector& x, std::size_t incx, const Vector& y, std::size_t incy) {
 	using Scalar = typename Vector::value_type;
 	quire<Scalar> q;
-
+	Scalar nan;
+	nan.setnan(NAN_TYPE_QUIET);
 	if (n == 0) return Scalar(0);
-	assert(incx > 0 && "fdp_stride: incx must be positive");
-	assert(incy > 0 && "fdp_stride: incy must be positive");
-	std::size_t ix, iy;
-	for (ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
-		assert(ix < x.size() && iy < y.size() && "fdp_stride: index out of bounds");
+	if (incx == 0 || incy == 0) return nan;
+	for (std::size_t ix = 0, iy = 0; ix < n && iy < n; ix += incx, iy += incy) {
+		if (ix >= x.size() || iy >= y.size()) return nan;
 		q += quire_mul(x[ix], y[iy]);
 	}
 
@@ -195,14 +198,15 @@ fdp_stride(std::size_t n, const Vector& x, std::size_t incx, const Vector& y, st
 
 /// Resolved fused dot product with unit stride.
 /// This is the primary FDP entry point for cfloat vectors.
+/// A y shorter than x gives a quiet NaN in every build (#2089).
 template<typename Vector>
 enable_if_cfloat<typename Vector::value_type>
 fdp(const Vector& x, const Vector& y) {
 	using Scalar = typename Vector::value_type;
 	quire<Scalar> q;
 
-	std::size_t n = size(x);
-	assert(n <= size(y) && "fdp: y vector must be at least as long as x");
+	const std::size_t n = size(x);
+	if (n > size(y)) { Scalar nan; nan.setnan(NAN_TYPE_QUIET); return nan; }
 	for (std::size_t i = 0; i < n; ++i) {
 		q += quire_mul(x[i], y[i]);
 	}

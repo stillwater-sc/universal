@@ -46,6 +46,10 @@ std::string to_decimal_fixpnt_string(
 	constexpr unsigned fbits = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::fbits;
 	constexpr unsigned bias = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>::EXP_BIAS;
 	std::stringstream str;
+	// the special values first: their exponent field is all ones, which the conversion below
+	// read as a finite exponent and printed as a number (inf as 65536 on cfloat<16,5>, #2089)
+	if (value.isnan()) return value.isnan(NAN_TYPE_SIGNALLING) ? std::string("snan") : std::string("nan");
+	if (value.isinf()) return value.sign() ? std::string("-inf") : std::string("inf");
 	if (value.iszero()) {
 		str << '0';
 		return str.str();
@@ -131,7 +135,8 @@ std::string to_decimal_fixpnt_string(
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 bool parse(const std::string& txt, cfloat<nbits,es,bt,hasSubnormals,hasMaxExpValues,isSaturating>& v) {
 	// check if the txt is of the native cfloat form: nbits.esX[0x]hexvaluec
-	std::regex cfloat_regex(R"(^[0-9]+\.[0-9]+[xX](0[xX])?[0-9A-Fa-f]+c?$)");
+	// built once: constructing the regex on every call was most of parse's cost (#2089)
+	static const std::regex cfloat_regex(R"(^[0-9]+\.[0-9]+[xX](0[xX])?[0-9A-Fa-f]+c?$)");
 	if (std::regex_match(txt, cfloat_regex)) {
 		// found a cfloat representation: parse nbits.esxHEXVALUEc
 		std::string nbitsStr, esStr, bitStr;
@@ -599,7 +604,9 @@ inline std::string color_print(const CfloatType& r, bool nibbleMarker = false) {
 	// exponent bits
 	for (int i = int(es) - 1; i >= 0; --i) {
 		s << cyan << (e.test(static_cast<std::size_t>(i)) ? '1' : '0');
-		if ((i - es) > 0 && ((i - es) % 4) == 0 && nibbleMarker) s << yellow << '\'';
+		// the markers of to_binary: (i - es) mixed int with unsigned, so it wrapped and put the
+		// markers in the wrong places, one at the end of the field (#2089)
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << yellow << '\'';
 	}
 
 	// fraction bits

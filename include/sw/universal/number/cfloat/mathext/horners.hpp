@@ -46,9 +46,16 @@ namespace sw { namespace universal {
     inline cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating> 
         polyroot(const std::vector<cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>>& c, const cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>& x0, int max_iter, double threshold) {
 	    using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
-        if (threshold == 0.0) threshold = std::numeric_limits<Cfloat>::epsilon();
+        // a cfloat does not convert to double implicitly: this did not compile (#2089)
+        if (threshold == 0.0) threshold = double(std::numeric_limits<Cfloat>::epsilon());
 
-        int n = c.size() - 1;
+        // a constant polynomial has no derivative to iterate on: polyeval(derivatives, -1, x)
+        // read coefficients[-1], and an empty one read c[0].  A zero constant has every x as a
+        // root; any other constant, and no polynomial at all, has none (#2089).
+        if (c.empty()) return Cfloat(SpecificValue::qnan);
+        if (c.size() == 1) return c[0].iszero() ? x0 : Cfloat(SpecificValue::qnan);
+
+        int n = static_cast<int>(c.size()) - 1;
         double max_c = std::abs(double(c[0]));
         // Compute the coefficients of the derivatives
         std::vector<Cfloat> derivatives{ c };

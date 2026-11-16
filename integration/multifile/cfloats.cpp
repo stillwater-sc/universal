@@ -5,6 +5,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/cfloat/cfloat.hpp>
+// table.hpp is in main.cpp too: GenerateCfloatExponentBounds() without inline failed to link (#2089)
+#include <universal/number/cfloat/table.hpp>
 #include <iostream>
 #include <vector>
 

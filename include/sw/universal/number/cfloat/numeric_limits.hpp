@@ -27,8 +27,17 @@ public:
 		return Cfloat(sw::universal::SpecificValue::maxneg);
 	} 
 	static CONSTEXPRESSION Cfloat epsilon() { // return smallest effective increment from 1.0
-		Cfloat one{ 1.0f }, incr{ 1.0f };
-		return ++incr - one;
+		// 2^-fbits, the step above 1.0.  A layout without subnormals cannot hold it when it is below
+		// the smallest normal (cfloat<12,4> without subnormals: 2^-7 against 2^-6), and the
+		// subtraction flushed it to 0, an epsilon nothing can divide by.  Such a layout reports its
+		// smallest positive value, min() (#2089).
+		if constexpr (hasSubnormals || -static_cast<int>(Cfloat::fbits) >= Cfloat::MIN_EXP_NORMAL) {
+			Cfloat one{ 1.0f }, incr{ 1.0f };
+			return ++incr - one;
+		}
+		else {
+			return min();
+		}
 	}
 	static CONSTEXPRESSION Cfloat round_error() { // return largest rounding error
 		return Cfloat(0.5f);
@@ -60,7 +69,10 @@ public:
 	static constexpr int min_exponent10            = sw::universal::decimal_min_exponent10(min_exponent);
 	// C++ specification: max_exponent is one more than the largest integer power 
     // of the radix that is a valid finite floating-point number
-	static constexpr int max_exponent              = Cfloat::MAX_EXP;
+	// maxpos is in the binade 2^MAX_EXP with max-exponent values and 2^(MAX_EXP - 1) without them:
+	// MAX_EXP counts the top exponent binade either way, so it was one short for a hasMaxExpValues
+	// layout (cfloat<8,4,uint8_t,true,true,false> reported 8, its max() scale is 8, #2089)
+	static constexpr int max_exponent              = Cfloat(sw::universal::SpecificValue::maxpos).scale() + 1;
 	static constexpr int max_exponent10            = sw::universal::decimal_max_exponent10(max_exponent);
 	static constexpr bool has_infinity             = !(isSaturating && hasMaxExpValues); // that Inf pattern is maxpos
 	static constexpr bool has_quiet_NaN            = true;
@@ -68,8 +80,12 @@ public:
 	static constexpr float_denorm_style has_denorm = (hasSubnormals ? denorm_present : denorm_absent);
 	static constexpr bool has_denorm_loss          = false;
 
-	static constexpr bool is_iec559                = false;
-	static constexpr bool is_bounded               = false;
+	// the IEEE-754 layouts: subnormals, inf and NaN in the all-ones exponent field (#1780), quiet and
+	// signalling NaNs typed by the quiet bit (#1896), and round to nearest even.  Like
+	// std::numeric_limits<float> on most hosts, this does not promise status flags or the other
+	// rounding modes, which cfloat does not have (#2089).
+	static constexpr bool is_iec559                = hasSubnormals && !hasMaxExpValues && !isSaturating;
+	static constexpr bool is_bounded               = true;    // a finite set of values (#2089)
 	static constexpr bool is_modulo                = false;
 	static constexpr bool traps                    = false;
 	static constexpr bool tinyness_before          = false;
