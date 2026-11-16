@@ -23,6 +23,8 @@
 #include <cstddef>
 #include <cstring>
 #include <vector>
+#include <stdexcept>
+#include <universal/utility/exceptions.hpp>   // throw_or_abort
 #include <algorithm>
 #include <type_traits>
 
@@ -82,7 +84,7 @@ public:
 	// copy assignment
 	constexpr zfparray& operator=(const zfparray& other) {
 		if (this != &other) {
-			flush();  // flush our dirty cache
+			// our cache and store are replaced: no flush of ours (#2097)
 			if (other._dirty) other.flush();
 			_store = other._store;
 			_n = other._n;
@@ -97,8 +99,7 @@ public:
 	// move assignment
 	constexpr zfparray& operator=(zfparray&& other) noexcept {
 		if (this != &other) {
-			flush();
-			_store = std::move(other._store);
+			_store = std::move(other._store);   // ours is replaced: no flush (#2097)
 			_n = other._n;
 			_rate = other._rate;
 			_cached_block = other._cached_block;
@@ -111,12 +112,12 @@ public:
 		return *this;
 	}
 
-	constexpr ~zfparray() {
-		if (_dirty) flush();
-	}
+	// the cache is discarded with the store: flushing it first compressed a block only to free it (#2097)
+	constexpr ~zfparray() = default;
 
 	// read element at index i (logically const, may load cache)
 	constexpr Real operator()(size_t i) const {
+		check_index(i);
 		size_t block_idx = i / BLOCK_SIZE;
 		size_t offset    = i % BLOCK_SIZE;
 		load_block(block_idx);
@@ -125,6 +126,7 @@ public:
 
 	// write element at index i
 	constexpr void set(size_t i, Real val) {
+		check_index(i);
 		size_t block_idx = i / BLOCK_SIZE;
 		size_t offset    = i % BLOCK_SIZE;
 		load_block(block_idx);
@@ -139,7 +141,7 @@ public:
 
 		size_t nblk = num_blocks();
 		size_t bpb = bytes_per_block();
-		size_t maxbits = static_cast<size_t>(_rate * BLOCK_SIZE);
+		size_t maxbits = zfp_fixed_rate_bits<Real, Dim>(_rate);   // clamped as zfpblock clamps it (#2097)
 
 		for (size_t b = 0; b < nblk; ++b) {
 			Real block_data[BLOCK_SIZE]{};
@@ -165,7 +167,7 @@ public:
 
 		size_t nblk = num_blocks();
 		size_t bpb = bytes_per_block();
-		size_t maxbits = static_cast<size_t>(_rate * BLOCK_SIZE);
+		size_t maxbits = zfp_fixed_rate_bits<Real, Dim>(_rate);   // clamped as zfpblock clamps it (#2097)
 
 		for (size_t b = 0; b < nblk; ++b) {
 			Real block_data[BLOCK_SIZE]{};
@@ -196,7 +198,7 @@ public:
 
 	// compressed bytes per block
 	constexpr size_t bytes_per_block() const {
-		size_t bits = static_cast<size_t>(_rate * BLOCK_SIZE);
+		size_t bits = zfp_fixed_rate_bits<Real, Dim>(_rate);
 		return (bits + 7) / 8;
 	}
 
@@ -262,6 +264,11 @@ public:
 	constexpr size_t data_size() const { return _store.size(); }
 
 private:
+	// an index past the array: set(100, x) on an 8-element array wrote past the store (#2097)
+	constexpr void check_index(size_t i) const {
+		if (i >= _n) throw_or_abort(std::out_of_range("zfparray index out of range"));
+	}
+
 	// _store is mutable because the const lazy-cache-load methods
 	// (operator(), decompress, flush, load_block, write_back_cache)
 	// need to update the compressed buffer when evicting a dirty cache
@@ -288,11 +295,13 @@ private:
 
 		// decompress requested block into cache
 		size_t bpb = bytes_per_block();
-		size_t maxbits = static_cast<size_t>(_rate * BLOCK_SIZE);
+		size_t maxbits = zfp_fixed_rate_bits<Real, Dim>(_rate);   // clamped as zfpblock clamps it (#2097)
 		unsigned maxprec = zfp_type_traits<Real>::precision_bits;
 
-		uint8_t temp[MAX_BYTES]{};
+		// only the bytes past the block's own need zeroing: the decoder reads up to maxbits (#2097)
+		uint8_t temp[MAX_BYTES];
 		for (size_t i = 0; i < bpb; ++i) temp[i] = _store[block_idx * bpb + i];
+		for (size_t i = bpb; i < MAX_BYTES; ++i) temp[i] = 0;
 		decode_block<Real, Dim>(temp, MAX_BYTES, _cache, maxprec, maxbits);
 
 		_cached_block = block_idx;
@@ -303,7 +312,7 @@ private:
 	// is mutable.
 	constexpr void write_back_cache() const {
 		size_t bpb = bytes_per_block();
-		size_t maxbits = static_cast<size_t>(_rate * BLOCK_SIZE);
+		size_t maxbits = zfp_fixed_rate_bits<Real, Dim>(_rate);   // clamped as zfpblock clamps it (#2097)
 		unsigned maxprec = zfp_type_traits<Real>::precision_bits;
 
 		// for partial last block, ensure padding is zero

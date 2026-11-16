@@ -40,10 +40,14 @@ using zfp3d = zfpblock<double, 3>;   // 3D double blocks
 
 | Mode | Control | Description |
 |------|---------|-------------|
-| `fixed_rate` | Bits per value | Constant bitstream size; predictable memory |
-| `fixed_precision` | Max bit planes | Maximum number of bit planes to encode |
-| `fixed_accuracy` | Error tolerance | Absolute error bound per value |
-| `reversible` | Lossless | All bit planes preserved; exact round-trip |
+| `fixed_rate` | Bits per value | Constant bitstream size; predictable memory. A rate below the header + 4 bits (13 bits per block for float, 16 for double), a negative rate and a NaN are clamped up to it; a rate past the raw block size is capped there. At very low rates a block can still decode to zero, as in the ZFP reference |
+| `fixed_precision` | Max bit planes | The top bit planes of each block's coefficients |
+| `fixed_accuracy` | Error tolerance | Absolute error bound per value: each block codes `emax - floor(log2(tol)) + 2 (Dim + 1)` planes, ZFP's rule |
+| `reversible` | Lossless | Exact round-trip, bit for bit: a block the transform does not reproduce exactly is stored raw |
+
+### Special values
+
+ZFP's transform cannot represent inf or NaN. A block containing either is stored raw, as its IEEE bit patterns, in every mode, and round-trips exactly. When a fixed rate is too small to hold the raw block, the block decodes as all NaN. A block of subnormal magnitudes uses the smallest block exponent, as in the ZFP reference.
 
 ### Key Properties
 

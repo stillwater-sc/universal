@@ -12,6 +12,8 @@
 #include <cmath>
 #include <cstring>
 #include <climits>
+#include <bit>
+#include <limits>
 #include <universal/number/zfpblock/zfpblock_fwd.hpp>
 #include <universal/number/zfpblock/zfp_codec_traits.hpp>
 #include <universal/number/zfpblock/zfp_codec.hpp>
@@ -51,7 +53,20 @@ public:
 		unsigned maxprec = 0;
 		size_t maxbits = 0;
 		compute_limits(mode, param, maxprec, maxbits);
-		_nbits = encode_block<Real, Dim>(src, _buffer, MAX_BYTES, maxprec, maxbits);
+		const int minexp = accuracy_floor(mode, param);
+		const bool pad = (mode == zfp_mode::fixed_rate);   // only a fixed rate has a fixed size (#2097)
+		_nbits = encode_block<Real, Dim>(src, _buffer, MAX_BYTES, maxprec, maxbits, minexp, pad);
+		if (mode == zfp_mode::fixed_accuracy && minexp != INT_MIN && !within(src, param, maxprec, maxbits, minexp)) {
+			// the plane count bounds the transform's error, but a value below one quantum of the block's
+			// exponent (2^(emax - frac_bits)) rounds to zero before it: {1, 2^-40, 0, 0} at 2^-45 missed the
+			// tolerance. Such a block is stored raw, which is exact (CodeRabbit on #2099).
+			_nbits = encode_raw_block<Real, Dim>(src, _buffer, MAX_BYTES, maxbits, false);
+		}
+		if (mode == zfp_mode::reversible && !reproduces(src, maxprec, maxbits)) {
+			// reversible is lossless: the full-precision pipeline does not reproduce every block bit for
+			// bit (0.1f came back as 0.099999994, #2097), and then the block is stored raw
+			_nbits = encode_raw_block<Real, Dim>(src, _buffer, MAX_BYTES, maxbits, false);
+		}
 		return _nbits;
 	}
 
@@ -60,7 +75,7 @@ public:
 		unsigned maxprec = 0;
 		size_t maxbits = 0;
 		compute_limits(_mode, _param, maxprec, maxbits);
-		decode_block<Real, Dim>(_buffer, MAX_BYTES, dst, maxprec, maxbits);
+		decode_block<Real, Dim>(_buffer, MAX_BYTES, dst, maxprec, maxbits, accuracy_floor(_mode, _param));
 	}
 
 	// Convenience: compress with fixed rate (bits per value)
@@ -123,8 +138,8 @@ private:
 
 		switch (mode) {
 		case zfp_mode::fixed_rate: {
-			double rate = param;
-			maxbits = static_cast<size_t>(rate * BLOCK_SIZE);
+			// clamped to header + one bit plane, and capped at the raw size (#2097)
+			maxbits = zfp_fixed_rate_bits<Real, Dim>(param);
 			maxprec = full_prec;
 			break;
 		}
@@ -135,7 +150,7 @@ private:
 			break;
 		}
 		case zfp_mode::fixed_accuracy: {
-			(void)param;  // tolerance parameter reserved for future minexp truncation
+			// the tolerance sets each block's precision, through accuracy_floor (#2097)
 			maxprec = full_prec;
 			maxbits = max_data_bits;
 			break;
@@ -146,6 +161,48 @@ private:
 			break;
 		}
 		}
+		if (maxbits < zfp_raw_block_bits<Real, Dim>() && mode != zfp_mode::fixed_rate) maxbits = zfp_raw_block_bits<Real, Dim>();   // room for a raw block
+	}
+
+	// the fixed-accuracy floor: 2^minexp <= tolerance, which ZFP's precision rule turns into a plane
+	// count; compress() checks the result, since values below the block's quantum round to zero
+	// whatever the count. INT_MIN (none) for the other modes, and for a tolerance that is not positive
+	// and finite, which codes every plane
+	static constexpr int accuracy_floor(zfp_mode mode, double tolerance) noexcept {
+		if (mode != zfp_mode::fixed_accuracy) return INT_MIN;
+		if (!(tolerance > 0.0) || !(tolerance <= std::numeric_limits<double>::max())) return INT_MIN;
+		int e = 0;
+		if (std::is_constant_evaluated()) {
+			double t = tolerance;
+			while (t >= 2.0) { t /= 2.0; ++e; }
+			while (t < 1.0) { t *= 2.0; --e; }
+		}
+		else {
+			e = std::ilogb(tolerance);   // floor(log2(tolerance)), exactly
+		}
+		return e;
+	}
+
+	// the coded block decodes to within tolerance of src, every value
+	constexpr bool within(const Real* src, double tolerance, unsigned maxprec, size_t maxbits, int minexp) const {
+		Real back[BLOCK_SIZE]{};
+		decode_block<Real, Dim>(_buffer, MAX_BYTES, back, maxprec, maxbits, minexp);
+		for (size_t i = 0; i < BLOCK_SIZE; ++i) {
+			const double d = static_cast<double>(back[i]) - static_cast<double>(src[i]);
+			if (!(d <= tolerance && -d <= tolerance)) return false;   // a NaN fails too
+		}
+		return true;
+	}
+
+	// the coded block decodes to src bit for bit
+	constexpr bool reproduces(const Real* src, unsigned maxprec, size_t maxbits) const {
+		Real back[BLOCK_SIZE]{};
+		decode_block<Real, Dim>(_buffer, MAX_BYTES, back, maxprec, maxbits);
+		using UInt = typename traits_type::UInt;
+		for (size_t i = 0; i < BLOCK_SIZE; ++i) {
+			if (std::bit_cast<UInt>(back[i]) != std::bit_cast<UInt>(src[i])) return false;
+		}
+		return true;
 	}
 };
 
