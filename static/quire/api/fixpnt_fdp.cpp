@@ -46,6 +46,8 @@
 #include <universal/number/fixpnt/fdp.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <vector>
+#include <string>
+#include <limits>
 #include <cmath>
 
 namespace sw { namespace universal {
@@ -887,6 +889,33 @@ int TestWideSaturateResolve() {
 	return nrOfFailedTestCases;
 }
 
+// a non-finite quire: +-inf saturates to maxpos / maxneg in both arithmetic modes and at every width,
+// as an overflowed sum does (#2094); NaN is 0, as fixpnt(NaN) is (#2107; the wide paths gave 0 for
+// inf, and a narrow Modulo fixpnt gave 0)
+template<typename F>
+int CheckNonFiniteResolve(const char* label) {
+	int fails = 0;
+	quire<F> p, m, n;
+	p = std::numeric_limits<double>::infinity();
+	m = -std::numeric_limits<double>::infinity();
+	n = std::numeric_limits<double>::quiet_NaN();
+	std::string tag(label);
+	fails += CheckResolve(p, F(SpecificValue::maxpos), (tag + " +inf").c_str());
+	fails += CheckResolve(m, F(SpecificValue::maxneg), (tag + " -inf").c_str());
+	fails += CheckResolve(n, F(0), (tag + " NaN").c_str());
+	return fails;
+}
+
+int TestNonFiniteResolve() {
+	int nrOfFailedTestCases = 0;
+	nrOfFailedTestCases += CheckNonFiniteResolve<fixpnt<16, 4, Saturate, std::uint16_t>>("fixpnt<16,4,Saturate>");
+	nrOfFailedTestCases += CheckNonFiniteResolve<fixpnt<16, 4, Modulo, std::uint16_t>>("fixpnt<16,4,Modulo>");
+	nrOfFailedTestCases += CheckNonFiniteResolve<fixpnt<53, 4, Saturate, std::uint32_t>>("fixpnt<53,4,Saturate>");
+	nrOfFailedTestCases += CheckNonFiniteResolve<fixpnt<64, 4, Saturate, std::uint32_t>>("fixpnt<64,4,Saturate>");
+	nrOfFailedTestCases += CheckNonFiniteResolve<fixpnt<64, 4, Modulo, std::uint32_t>>("fixpnt<64,4,Modulo>");
+	return nrOfFailedTestCases;
+}
+
 }}  // namespace sw::universal
 
 int main()
@@ -910,6 +939,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(TestAccuracy(), "fixpnt fdp", "accuracy");
 	nrOfFailedTestCases += ReportTestResult(TestModuloWrapResolve(), "fixpnt quire_resolve", "Modulo wraps the exact sum");
 	nrOfFailedTestCases += ReportTestResult(TestWideSaturateResolve(), "fixpnt quire_resolve", "wide Saturate rounds, saturates");
+	nrOfFailedTestCases += ReportTestResult(TestNonFiniteResolve(), "fixpnt quire_resolve", "+-inf saturates, NaN is 0");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -110,6 +110,14 @@ quire_resolve(const quire<fixpnt<nbits, rbits, arithmetic, bt>, capacity, LimbTy
 	// No infinity: a sum past the accumulator saturates, in Modulo arithmetic as well (#2094, decided).
 	// The accumulator no longer holds the sum's low bits once it overflows, so there is nothing to wrap.
 	if (q.isoverflow()) return Scalar(q.sign() ? SpecificValue::maxneg : SpecificValue::maxpos);
+	// An infinite sum saturates the same way, in both arithmetic modes and at every width; the wide
+	// paths below read the cleared accumulator and gave 0 (#2107). A NaN sum is 0, as fixpnt(NaN) is.
+	if (q.isinf()) return Scalar(q.sign() ? SpecificValue::maxneg : SpecificValue::maxpos);
+	if (q.isnan()) {
+		Scalar result;
+		result.setzero();
+		return result;
+	}
 	if (q.iszero()) {
 		Scalar result;
 		result.setzero();
