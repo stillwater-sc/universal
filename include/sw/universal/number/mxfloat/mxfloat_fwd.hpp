@@ -45,6 +45,9 @@ template<>
 inline constexpr int max_elem_exponent<e5m2> = 15;
 
 template<>
+inline constexpr int max_elem_exponent<e5m2_saturating> = 15;
+
+template<>
 inline constexpr int max_elem_exponent<int8_t> = 6;
 
 // type aliases for OCP Microscaling (MX) block formats
@@ -57,7 +60,9 @@ using mxfp6e2m3 = mxblock<e2m3>;
 // a NaN, which is why the element type here is the saturating policy and not
 // the OCP conversion policy that plain e4m3 (= e4m3fn) carries.
 using mxfp8     = mxblock<e4m3_saturating>;
-using mxfp8e5m2 = mxblock<e5m2>;
+// The same holds for e5m2 (#2096): the block maximum lands in [2^15, 2^16) against a maxpos of 57344,
+// and with plain e5m2 every scaled value of 61440 or more became inf.
+using mxfp8e5m2 = mxblock<e5m2_saturating>;
 using mxint8    = mxblock<int8_t>;
 
 }} // namespace sw::universal

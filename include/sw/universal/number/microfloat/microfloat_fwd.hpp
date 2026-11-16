@@ -38,6 +38,10 @@ using e4m3_saturating = microfloat<8, 4, false, true,  true>;
 using e4m3            = e4m3fn;
 
 using e5m2 = microfloat<8, 5, true,  true,  false>;
+// e5m2 with saturation instead of overflow to inf, for MX block quantization: mxfp8e5m2 scales amax
+// into [2^15, 2^16) against a maxpos of 57344, so a block maximum of 61440 or more rounds past the top
+// of the range and must clip, as OCP MX requires. An infinite input stays inf (#2096).
+using e5m2_saturating = microfloat<8, 5, true,  true,  true>;
 
 // true for either e4m3 conversion policy: both carry the OCP E4M3 encoding,
 // so anything that keys off the encoding rather than the overflow behavior

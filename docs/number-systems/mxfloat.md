@@ -22,9 +22,21 @@ The OCP (Open Compute Project) Microscaling (MX) format solves this by sharing a
 | `mxfp4` | e2m1 | 32 | 4 | ~8x |
 | `mxfp6` | e3m2 | 32 | 6 | ~5x |
 | `mxfp6e2m3` | e2m3 | 32 | 6 | ~5x |
-| `mxfp8` | e4m3 | 32 | 8 | ~4x |
-| `mxfp8e5m2` | e5m2 | 32 | 8 | ~4x |
+| `mxfp8` | e4m3_saturating | 32 | 8 | ~4x |
+| `mxfp8e5m2` | e5m2_saturating | 32 | 8 | ~4x |
 | `mxint8` | int8_t | 32 | 8 | ~4x |
+
+The FP8 aliases use the saturating element policies. Quantization scales a block's
+largest magnitude to just under twice the element's top binade, past maxpos, so that
+element must clip as OCP MX requires: with plain e5m2 every scaled value of 61440 or
+more became inf (#2096). An infinite input still gives inf in an e5m2 element.
+
+Special inputs: a NaN sets the scale to NaN, so the whole block dequantizes to NaN
+(#2086). An inf sets the scale from float's top exponent; the inf element is inf in
+e5m2 and maxpos otherwise, and the finite elements underflow to 0.
+
+`byte_size()` is the storage of this implementation, one byte per element, not the
+packed OCP size: `mxfp4` is 33 bytes here and 17 packed.
 
 ### Block Structure
 

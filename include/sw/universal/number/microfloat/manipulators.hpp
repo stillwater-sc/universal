@@ -31,6 +31,7 @@ namespace sw { namespace universal {
 		if constexpr (nbits == 8 && es == 4 && !hasInf && hasNaN && !isSaturating) return "e4m3";
 		if constexpr (nbits == 8 && es == 4 && !hasInf && hasNaN && isSaturating) return "e4m3_saturating";
 		if constexpr (nbits == 8 && es == 5 && hasInf && hasNaN && !isSaturating) return "e5m2";
+		if constexpr (nbits == 8 && es == 5 && hasInf && hasNaN && isSaturating) return "e5m2_saturating";
 		// Generic fallback
 		std::stringstream s;
 		s << "microfloat<" << nbits << "," << es;
