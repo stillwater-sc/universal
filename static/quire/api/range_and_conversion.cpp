@@ -23,6 +23,7 @@
 #include <random>
 #include <string>
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/quire/quire.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -163,6 +164,18 @@ namespace {
 		fails += report(big.convert_to<std::int64_t>() == std::numeric_limits<std::int64_t>::max(), "INT64_MAX does not convert exactly", reportTestCases);
 		return fails;
 	}
+
+	// which Universal targets convert_to<T>() reaches through double (#2107): at most 51 significand
+	// bits and a range inside double's; the rest fail its static_assert
+	static_assert(quire_converts_through_double_v<posit<32, 2>>, "posit<32,2> fits double");
+	static_assert(quire_converts_through_double_v<posit<32, 5>>, "posit<32,5> fits double: scales 2^-960 .. 2^960");
+	static_assert(quire_converts_through_double_v<cfloat<32, 8, std::uint32_t, true, false, false>>, "cfloat<32,8> fits double");
+	static_assert(quire_converts_through_double_v<fixpnt<52, 50, Modulo, std::uint32_t>>, "fixpnt<52,50>, 51 digits, fits double");
+	static_assert(!quire_converts_through_double_v<posit<32, 6>>, "posit<32,6> reaches 2^1920, past double");
+	static_assert(!quire_converts_through_double_v<cfloat<32, 12, std::uint32_t, true, false, false>>, "cfloat<32,12> reaches 2^2047, past double");
+	static_assert(!quire_converts_through_double_v<cfloat<64, 11, std::uint32_t, true, false, false>>, "cfloat<64,11> has 53 digits");
+	static_assert(!quire_converts_through_double_v<posit<64, 3>>, "posit<64,3> has 59 digits");
+	static_assert(!quire_converts_through_double_v<fixpnt<53, 0, Modulo, std::uint32_t>>, "fixpnt<53,0> has 52 digits");
 
 	// a Universal target goes through double, rounded to odd: posit saturates instead of NaR
 	int VerifyConvertToUniversal(bool reportTestCases) {

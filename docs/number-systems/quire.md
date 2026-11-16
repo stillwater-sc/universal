@@ -195,7 +195,7 @@ states beside it: +inf, -inf and NaN. They follow IEEE 754 (#2019):
 
 - **`float` and `double`** round once, to nearest even, from every bit of the accumulator.
 - **An integer type** follows [the library's integer-cast rule](posit.md#integer-casts) (#2104, #2107): the value truncates toward zero; past the range, an infinity, or an overflowed sum saturates to +-`max()` (an unsigned type to `max() - 1`, and a negative value to 0); NaN gives the integer NaR, `min()` for a signed type and `max()` for an unsigned one. Before #2107 NaN gave 0 and a large negative value `min()`.
-- **Another number type** of at most 64 bits goes through `double`, rounded to odd, which the type's own rounding then makes correct. That works for at most 51 significand bits, so a wider type (`cfloat<64,11>`, `posit<64,es>`, `fixpnt<64,r>`) does not compile; use the type's `quire_resolve()`, which rounds from the accumulator, or `to_blocktriple()`.
+- **Another number type** of at most 64 bits goes through `double`, rounded to odd, which the type's own rounding then makes correct. That works for a type of at most 51 significand bits whose range lies inside double's (`quire_converts_through_double_v<T>`). Any other type does not compile: wider ones such as `cfloat<64,11>`, `posit<64,es>` and `fixpnt<64,r>`, and longer-ranged ones such as `posit<32,6>` and `cfloat<32,12>`. For those, use the type's `quire_resolve()`, which rounds from the accumulator, or `to_blocktriple()`.
 
 ## Problems It Solves
 

@@ -42,6 +42,19 @@ namespace sw { namespace universal {
  All values in and out of the quire are (sign, scale, significand) triplets,
  represented as blocktriple values from arithmetic operations.
 */
+/// Whether quire::convert_to<T>() can reach a non-native number type T through double, rounded to
+/// odd (#2107). The target's own rounding of the odd double is correct when double keeps at least
+/// 2 more bits than T at every scale T holds: T has at most 51 significand bits, its largest binade
+/// is inside double's (above it double saturates to max()), and its lowest bit, scale
+/// min_exponent - digits, is at least 2 above double's smallest subnormal, 2^-1074. posit<32,6>
+/// and cfloat<32,12> pass the width test and fail the range test; cfloat<64,11> fails the width.
+template<typename T>
+inline constexpr bool quire_converts_through_double_v =
+	!std::numeric_limits<T>::is_specialized ||
+	(std::numeric_limits<T>::digits <= 51 &&
+	 std::numeric_limits<T>::max_exponent <= std::numeric_limits<double>::max_exponent &&
+	 std::numeric_limits<T>::min_exponent - std::numeric_limits<T>::digits >= -1072);
+
 template<typename NumberType,
          unsigned capacity = quire_traits<NumberType>::capacity,
          typename LimbType = uint32_t>
@@ -505,8 +518,9 @@ public:
 	/// value truncated toward zero; past the range, an infinity or an overflowed sum saturates to
 	/// +-max() (unsigned: max() - 1, a negative value 0); NaN is the integer NaR (min(), unsigned
 	/// max()). Another target of at most 8 bytes goes through double, rounded to odd, so the
-	/// target's own rounding of it is correct; that needs at most 51 significand bits, and a wider
-	/// target (cfloat<64,11>, posit<64,es>, fixpnt<64,r>) does not compile: resolve it with its
+	/// target's own rounding of it is correct; that needs at most 51 significand bits and a range
+	/// inside double's (quire_converts_through_double_v), and any other target (cfloat<64,11>,
+	/// posit<64,es>, posit<32,6>, cfloat<32,12>) does not compile: resolve it with its
 	/// quire_resolve() or from to_blocktriple() (#2107).
 	template<typename TargetType>
 	TargetType convert_to() const {
@@ -514,9 +528,10 @@ public:
 			"convert_to<T>() goes through at most 64 bits of the accumulator. "
 			"Use to_blocktriple() for wider target types.");
 		if constexpr (!std::is_integral_v<TargetType> && !std::is_floating_point_v<TargetType>) {
-			static_assert(!std::numeric_limits<TargetType>::is_specialized || std::numeric_limits<TargetType>::digits <= 51,
+			static_assert(quire_converts_through_double_v<TargetType>,
 				"convert_to<T>() rounds through double, which is correct only for targets of at most 51 "
-				"significand bits. Use quire_resolve() or to_blocktriple() for wider target types.");
+				"significand bits whose range lies inside double's. Use quire_resolve() or to_blocktriple() "
+				"for wider target types.");
 		}
 		if constexpr (std::is_integral_v<TargetType>) {
 			if (_is_nan) return integer_nar<TargetType>();
