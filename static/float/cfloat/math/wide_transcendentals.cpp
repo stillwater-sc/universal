@@ -184,12 +184,10 @@ int VerifyRangePastDouble(bool reportTestCases) {
 	return fails;
 }
 
-// special values, a saturating layout and a max-exponent layout
-int VerifySpecialsAndPolicies(bool reportTestCases) {
+// special values
+int VerifySpecials(bool reportTestCases) {
 	using namespace sw::universal;
 	using C = cfloat<80, 11, uint32_t, true, false, false>;
-	using Sat = cfloat<80, 11, uint32_t, true, false, true>;
-	using Max = cfloat<80, 11, uint32_t, true, true, false>;
 	int fails = 0;
 	auto check = [&](bool ok, const char* what) {
 		if (!ok) {
@@ -204,6 +202,23 @@ int VerifySpecialsAndPolicies(bool reportTestCases) {
 	      && tanh(nzero).sign() && asinh(nzero).sign() && atanh(nzero).sign() && erf(nzero).sign() && expm1(nzero).sign()
 	      && log1p(nzero).sign() && asin(nzero).sign(), "odd functions keep -0");
 	check(hypot(pinf, nan).isinf() && hypotf(C(3), C(4)) == C(5) && hypotl(C(3), C(4)) == C(5), "hypot specials and aliases");
+	return fails;
+}
+
+// a saturating layout, a max-exponent layout, and pow's exact cases and identities
+int VerifyPoliciesAndPow(bool reportTestCases) {
+	using namespace sw::universal;
+	using C = cfloat<80, 11, uint32_t, true, false, false>;
+	using Sat = cfloat<80, 11, uint32_t, true, false, true>;
+	using Max = cfloat<80, 11, uint32_t, true, true, false>;
+	int fails = 0;
+	auto check = [&](bool ok, const char* what) {
+		if (!ok) {
+			if (reportTestCases) std::cerr << "FAIL: " << what << '\n';
+			++fails;
+		}
+	};
+	const C nan(SpecificValue::qnan);
 	check(exp(Sat(1e6)) == Sat(SpecificValue::maxpos) && exp(C(1e6)).isinf(), "overflow: maxpos when saturating, inf otherwise");
 	check(exp(Max(1)) == from_qd<Max>(exp(qd(1))) && log(Max(10)) == from_qd<Max>(log(qd(10))), "max-exponent layout");
 	check(pow(C(3), C(40)) == from_qd<C>(pow(qd(3), qd(40))) && pow(C(3), 40) == pow(C(3), C(40)) && pow(C(3), 40.0) == pow(C(3), C(40)), "pow(3, 40) exact");
@@ -258,7 +273,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPrecisionPastDouble<X>(40, reportTestCases), "cfloat<80,11>", "functions vs qd");
 	nrOfFailedTestCases += ReportTestResult(VerifyRsqrt<X>(200, reportTestCases),              "cfloat<80,11>", "rsqrt within 1 ulp");
 	nrOfFailedTestCases += ReportTestResult(VerifyRangePastDouble(reportTestCases),            "cfloat<64,15>", "range past double");
-	nrOfFailedTestCases += ReportTestResult(VerifySpecialsAndPolicies(reportTestCases),        "cfloat<80,11>", "specials and policies");
+	nrOfFailedTestCases += ReportTestResult(VerifySpecials(reportTestCases),                   "cfloat<80,11>", "specials");
+	nrOfFailedTestCases += ReportTestResult(VerifyPoliciesAndPow(reportTestCases),             "cfloat<80,11>", "policies and pow");
 #endif
 
 #if REGRESSION_LEVEL_2
