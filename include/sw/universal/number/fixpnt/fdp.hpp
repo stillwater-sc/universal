@@ -107,6 +107,7 @@ fixpnt<nbits, rbits, arithmetic, bt>
 quire_resolve(const quire<fixpnt<nbits, rbits, arithmetic, bt>, capacity, LimbType>& q) {
 	using Scalar = fixpnt<nbits, rbits, arithmetic, bt>;
 
+	if (q.isoverflow()) return Scalar(q.sign() ? SpecificValue::maxneg : SpecificValue::maxpos);   // no infinity: a sum past the accumulator saturates (#2094)
 	if (q.iszero()) {
 		Scalar result;
 		result.setzero();

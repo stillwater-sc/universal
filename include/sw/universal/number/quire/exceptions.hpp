@@ -33,6 +33,13 @@ struct operand_too_small_for_quire
 	operand_too_small_for_quire(const std::string& error = "operand value too small for quire") : quire_exception(error) {}
 };
 
+// a sum that outgrew the accumulator: the carry out of its top bit (#2094)
+struct quire_overflow
+	: public quire_exception
+{
+	quire_overflow(const std::string& error = "sum overflows the quire accumulator") : quire_exception(error) {}
+};
+
 struct operand_is_nar
 	: public quire_exception
 {
