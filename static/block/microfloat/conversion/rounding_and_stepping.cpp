@@ -170,7 +170,6 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "microfloat rounding, limits and stepping (#2096)";
-	std::string test_tag    = "microfloat";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
