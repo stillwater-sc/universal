@@ -36,13 +36,16 @@ namespace {
 		void put(unsigned pos, bool v) { this->setbit(pos, v); }
 	};
 
-	// a normalized hfloat with the given sign, unbiased exponent and fraction bits from the generator
+	// an hfloat with the given sign, unbiased exponent and fraction bits from the generator:
+	// normalized, or with `zeros` leading hex digits cleared, as setbits() can produce
 	template<typename H>
-	H make(bool negative, int e, std::mt19937_64& rng) {
+	H make(bool negative, int e, std::mt19937_64& rng, unsigned zeros = 0) {
 		Builder<H> b;
 		b.clear();
 		for (unsigned i = 0; i < H::fbits; ++i) b.put(i, (rng() & 1u) != 0);
 		b.put(H::fbits - 1u - static_cast<unsigned>(rng() % 4u), true);   // a non-zero leading hex digit
+		for (unsigned i = 0; i < 4u * zeros && i + 4u < H::fbits; ++i) b.put(H::fbits - 1u - i, false);
+		b.put(0, true);                                                     // never all zero
 		const unsigned biased = static_cast<unsigned>(e + H::bias);
 		for (unsigned i = 0; i < H::es; ++i) b.put(H::fbits + i, ((biased >> i) & 1u) != 0);
 		b.put(H::nbits - 1u, negative);
@@ -96,15 +99,18 @@ namespace {
 		return ok ? 0 : 1;
 	}
 
+	// unnormalized: the operands may have zero leading hex digits (setbits() encodings)
 	template<typename H>
-	int VerifyArithmetic(int maxGap, unsigned nrSamples, bool reportTestCases) {
-		std::mt19937_64 rng(2105);
+	int VerifyArithmetic(int maxGap, unsigned nrSamples, bool reportTestCases, bool unnormalized = false) {
+		std::mt19937_64 rng(unnormalized ? 2106 : 2105);
 		int fails = 0;
 		for (unsigned k = 0; k < nrSamples; ++k) {
 			const int ea = static_cast<int>(rng() % 21u) - 10;
 			const int eb = ea - static_cast<int>(rng() % static_cast<unsigned>(maxGap + 1)) * ((rng() & 1u) ? 1 : -1);
-			const H a = make<H>((rng() & 1u) != 0, ea, rng);
-			const H b = make<H>((rng() & 1u) != 0, eb, rng);
+			const unsigned za = unnormalized ? static_cast<unsigned>(rng() % H::ndigits) : 0u;
+			const unsigned zb = unnormalized ? static_cast<unsigned>(rng() % H::ndigits) : 0u;
+			const H a = make<H>((rng() & 1u) != 0, ea, rng, za);
+			const H b = make<H>((rng() & 1u) != 0, eb, rng, zb);
 			const Value va = value_of(a), vb = value_of(b);
 			// sum and difference: align to the smaller E2
 			{
@@ -123,9 +129,10 @@ namespace {
 			}
 			// product
 			fails += check(H(a * b), va.negative != vb.negative, Exact(va.F * vb.F), va.E2 + vb.E2, "a * b", reportTestCases);
-			// quotient: floor(Fa * 2^S / Fb) keeps fbits + 4 bits past the leading digit
+			// quotient: floor(Fa * 2^S / Fb) keeps fbits + 4 bits past the leading digit, also when
+			// Fa has up to ndigits - 1 leading zero digits (an unnormalized operand)
 			{
-				constexpr int S = static_cast<int>(H::fbits) + 8;
+				constexpr int S = static_cast<int>(H::fbits) + 8 + 4 * static_cast<int>(H::ndigits);
 				Exact num = va.F;
 				num <<= S;
 				fails += check(H(a / b), va.negative != vb.negative, Exact(num / vb.F), va.E2 - vb.E2 - S, "a / b", reportTestCases);
@@ -161,6 +168,31 @@ namespace {
 		expect(std::numeric_limits<hfp64>::epsilon() == hfp64(std::ldexp(1.0, -52)), "hfp64 epsilon is 16^-13");
 		expect((hfp64(1) + std::numeric_limits<hfp64>::epsilon()) != hfp64(1), "1 + epsilon is not 1");
 		expect(std::numeric_limits<hfp32>::digits == 6 && std::numeric_limits<hfp128>::digits == 28, "digits counts hex digits");
+		// encodings with a zero leading hex digit (CodeRabbit, #2109): the exact sum of
+		// 0x40000001 and 0xBD001001 is -2^-36, and 0x40000001 / 0x40100001 truncates to 0x3BFFFFF0
+		{
+			hfp32 a, b, c;
+			a.setbits(0x40000001u);
+			b.setbits(0xBD001001u);
+			c.setbits(0x40100001u);
+			expect(double(a + b) == -std::ldexp(1.0, -36), "unnormalized a + b is -2^-36");
+			hfp32 r;
+			r.setbits(0x3BFFFFF0u);
+			expect(to_hex(a / c) == to_hex(r), "unnormalized a / c truncates to 0x3BFFFFF0");
+		}
+		// a double result below 2^-1022 rounds once, at the subnormal precision
+		{
+			using H = hfloat<28, 10>;
+			H x;
+			x.assign_from_mantissa64(false, -1022, (std::uint64_t(1) << 63) | (std::uint64_t(1) << 11) | (std::uint64_t(1) << 6));
+			expect(double(x) == std::ldexp(1.0, -1023) + std::ldexp(1.0, -1074), "hfloat<28,10> -> subnormal double rounds once");
+		}
+#if LONG_DOUBLE_SUPPORT
+		// a long double wider than a double keeps its bits
+		if (std::numeric_limits<long double>::digits > 53) {
+			expect(hfp128(9007199254740993.0L) == hfp128(9007199254740993LL), "hfp128(long double 2^53 + 1) is exact");
+		}
+#endif
 		// setbits with a 64-bit block
 		using H64 = hfloat<14, 7, std::uint64_t>;
 		H64 x;
@@ -211,6 +243,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfp128>(34, 1000, reportTestCases), "hfp128", "+ - * / against exact");
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfloat<14, 7, std::uint64_t>>(20, 500, reportTestCases), "hfloat<14,7,u64>", "+ - * / against exact");
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfloat<14, 7, std::uint8_t>>(20, 500, reportTestCases), "hfloat<14,7,u8>", "+ - * / against exact");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfp32>(10, 2000, reportTestCases, true), "hfp32", "unnormalized operands");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfp128>(34, 500, reportTestCases, true), "hfp128", "unnormalized operands");
 #endif
 
 #if REGRESSION_LEVEL_2

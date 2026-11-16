@@ -1396,20 +1396,21 @@ protected:
 		unpack(s, e, sig);
 		if (sig.iszero()) return s ? -0.0 : 0.0;
 
-		// the digits, most significant first
-		char rev[64]{};
+		// the digits, most significant first: every one of them, as many as sig_bits can hold
+		constexpr unsigned max_digits = (sig_bits * 30103u) / 100000u + 2u;
+		char rev[max_digits]{};
 		unsigned n = 0;
 		{
 			significand_t v(sig);
 			const significand_t ten(10);
-			while (!v.iszero() && n < 64u) {
+			while (!v.iszero() && n < max_digits) {
 				const significand_t q = v / ten;
 				const significand_t r = v - q * ten;
 				rev[n++] = static_cast<char>('0' + static_cast<unsigned>(static_cast<unsigned long long>(r)));
 				v = q;
 			}
 		}
-		char digits[64]{};
+		char digits[max_digits]{};
 		for (unsigned i = 0; i < n; ++i) digits[i] = rev[n - 1u - i];
 		const double inf = std::numeric_limits<double>::infinity();
 		const int top = static_cast<int>(n) + e;          // 10^(top-1) <= |value| < 10^top

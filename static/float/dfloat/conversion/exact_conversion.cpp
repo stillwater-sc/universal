@@ -229,6 +229,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyToDouble<decimal64>(rng, -340, 293, 1000, reportTestCases), "decimal64", "dfloat -> double");
 	nrOfFailedTestCases += ReportTestResult(VerifyToDouble<decimal128>(rng, -360, 275, 500, reportTestCases), "decimal128", "dfloat -> double");
 
+	{
+		// every significand digit reaches the conversion, however wide (CodeRabbit, #2109): the
+		// digits of 10^64 + 1 were cut to the low 64, so it converted to 1.0
+		using D65 = dfloat<65, 8>;
+		const D65 x("1" + std::string(63, '0') + "1");
+		nrOfFailedTestCases += ReportTestResult((double(x) == 1e64) ? 0 : 1, "dfloat<65,8>", "10^64 + 1 -> double");
+	}
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits<decimal32>(-95, 96, reportTestCases), "decimal32", "numeric_limits");
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits<decimal64>(-383, 384, reportTestCases), "decimal64", "numeric_limits");
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits<decimal128>(-6143, 6144, reportTestCases), "decimal128", "numeric_limits");

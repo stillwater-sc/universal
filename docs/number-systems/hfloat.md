@@ -115,7 +115,11 @@ Every arithmetic result and every conversion into hfloat is the exact value trun
 - The product and quotient are formed exactly before truncation, which is what IBM's long-format multiply delivers with its guard digit.
 - `hfloat_extended` (hfp128) carries all 112 fraction bits through compare, multiply, divide and integer conversion. Before #2105 its fraction was cut to the low 64 bits.
 
-Conversion to `double` is the one exception to truncation: it rounds to nearest, ties to even, as a conversion to an IEEE type should.
+A `long double` source has its significand read exactly, up to 64 bits, and is truncated from there. At constant evaluation it goes through `double`, which rounds it to 53 bits first.
+
+Conversion to `double` is the one exception to truncation: it rounds once to nearest, ties to even, as a conversion to an IEEE type should, at the subnormal precision when the result is below 2^-1022.
+
+Arithmetic and comparisons normalize an operand whose leading hex digit is zero, such as an encoding written with `setbits()`, before they use it.
 
 `numeric_limits<hfloat>::digits` counts hex digits, since `radix` is 16. `epsilon()` is 16^(1 - ndigits).
 

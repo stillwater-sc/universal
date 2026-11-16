@@ -61,6 +61,7 @@
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/hfloat/hfloat_fraction.hpp>   // the wide fraction register (#2105)
+#include <universal/native/constexpr_ldexp.hpp>          // the exact scaling of the rounded double
 // hfloat exception structure
 #include <universal/number/hfloat/exceptions.hpp>
 
@@ -181,7 +182,7 @@ public:
 
 #if LONG_DOUBLE_SUPPORT
 	constexpr explicit hfloat(long double iv)           noexcept : _block{} { *this = iv; }
-	constexpr hfloat& operator=(long double rhs)        noexcept { return convert_ieee754(double(rhs)); }
+	constexpr hfloat& operator=(long double rhs)        noexcept { return convert_long_double(rhs); }
 	constexpr explicit operator long double()     const noexcept { return (long double)convert_to_double(); }
 #endif
 
@@ -229,8 +230,8 @@ public:
 	// fell off the operand was lost even when it decided the truncated result.
 	constexpr hfloat& operator+=(const hfloat& rhs) {
 		bool as, bs; int ae, be; frac_t fa, fb;
-		decode(as, ae, fa);
-		rhs.decode(bs, be, fb);
+		decode_normalized(as, ae, fa);
+		rhs.decode_normalized(bs, be, fb);
 		if (fb.iszero()) return *this;
 		if (fa.iszero()) { *this = rhs; return *this; }
 
@@ -279,8 +280,8 @@ public:
 	// the exact 2*fbits-bit product, truncated
 	constexpr hfloat& operator*=(const hfloat& rhs) {
 		bool as, bs; int ae, be; frac_t fa, fb;
-		decode(as, ae, fa);
-		rhs.decode(bs, be, fb);
+		decode_normalized(as, ae, fa);
+		rhs.decode_normalized(bs, be, fb);
 		if (fa.iszero() || fb.iszero()) { setzero(); return *this; }
 		const auto p = hfloat_detail::multiply(fa, fb);       // 0.fa * 0.fb = p * 2^(-2 fbits)
 		normalize_chop(as != bs, ae + be, p, static_cast<int>(2u * fbits));
@@ -305,8 +306,8 @@ public:
 			return *this;
 		}
 		bool as, bs; int ae, be; frac_t fa, fb;
-		decode(as, ae, fa);
-		rhs.decode(bs, be, fb);
+		decode_normalized(as, ae, fa);
+		rhs.decode_normalized(bs, be, fb);
 		if (fa.iszero() || fb.iszero()) { setzero(); return *this; }
 		using num_t = hfloat_detail::wide<2u * fbits + 4u>;
 		num_t n = fa.template resize<2u * fbits + 4u>();
@@ -485,6 +486,22 @@ public:
 		if (fraction.iszero()) exponent = 0;
 	}
 
+	// decode() with the fraction shifted left by whole hex digits until its leading digit is not
+	// zero, and the exponent lowered to match: the same value. setbits() accepts encodings whose
+	// leading digit is zero, and the arithmetic and the comparisons rely on a normalized
+	// fraction (a quotient of at least 1/16, a difference that cannot cancel to below a guard
+	// unit, a (exponent, fraction) order that is the value order).
+	constexpr void decode_normalized(bool& s, int& exponent, frac_t& fraction) const noexcept {
+		decode(s, exponent, fraction);
+		const int m = fraction.msb();
+		if (m < 0) return;
+		const int top = static_cast<int>(fbits) - 4;
+		if (m >= top) return;
+		const unsigned digits = static_cast<unsigned>((top - m + 3) / 4);
+		fraction.shl(4u * digits);
+		exponent -= static_cast<int>(digits);
+	}
+
 	// The legacy view: sign, unbiased exponent and the LOW 64 fraction bits (the whole fraction
 	// when fbits <= 64). decode() gives the full fraction.
 	constexpr void unpack(bool& s, int& exponent, uint64_t& fraction) const noexcept {
@@ -600,15 +617,15 @@ protected:
 	// Convert hfloat to IEEE-754 double, rounded once to nearest, ties to even.
 	//
 	// The fraction is reduced to 64 bits with round-to-odd (the bits below fold into the last
-	// one), so the uint64_t -> double conversion rounds the full fraction correctly: hfp128's
-	// 112 bits used to be cut to their low 64. At constant evaluation the power-of-two scaling
-	// is a loop of exact * 2.0 / * 0.5; at run time it is std::ldexp.
+	// one), then rounded once to the bits the double keeps: 53 for a normal result, fewer for a
+	// subnormal one (formats with es > 8 reach below 2^-1022), and the kept integer is scaled
+	// exactly. hfp128's 112 bits used to be cut to their low 64.
 	constexpr double convert_to_double() const noexcept {
 		bool s; int e; frac_t f;
 		decode(s, e, f);
 		if (f.iszero()) return s ? -0.0 : 0.0;
 		uint64_t top = 0;
-		int shift = 0;
+		int shift = 0;                                   // value = top * 2^shift
 		if constexpr (fbits > 64) {
 			const bool sticky = f.shr(fbits - 64u);
 			top = f.low64() | (sticky ? 1u : 0u);
@@ -618,19 +635,48 @@ protected:
 			top = f.low64();
 			shift = 4 * e - static_cast<int>(fbits);
 		}
-		double result = static_cast<double>(top);
-		if (std::is_constant_evaluated()) {
-			if (shift > 0) {
-				for (int i = 0; i < shift; ++i) result *= 2.0;
+		int m = 63;
+		while (((top >> m) & 1u) == 0u) --m;
+		const int bs = m + shift;                        // 2^bs <= |value| < 2^(bs+1)
+		const double inf = std::numeric_limits<double>::infinity();
+		if (bs > 1023) return s ? -inf : inf;
+		const int p = (bs >= -1022) ? 53 : 53 - (-1022 - bs);   // the bits the double keeps
+		if (p < 0) return s ? -0.0 : 0.0;
+		const int drop = m + 1 - p;
+		uint64_t kept = top;
+		if (drop > 0) {
+			bool round_bit = false, rest = false;
+			if (drop > 63) {                             // p == 0: only the round bit is left
+				kept = 0;
+				round_bit = true;
+				rest = (top & ~(uint64_t(1) << m)) != 0;
 			}
-			else if (shift < 0) {
-				for (int i = 0; i < -shift; ++i) result *= 0.5;
+			else {
+				kept = top >> drop;
+				round_bit = ((top >> (drop - 1)) & 1u) != 0;
+				rest = (top & ((uint64_t(1) << (drop - 1)) - 1u)) != 0;
 			}
+			if (round_bit && (rest || (kept & 1u) != 0)) ++kept;
+			shift += drop;
 		}
-		else {
-			result = std::ldexp(result, shift);
-		}
+		const double result = sw::universal::constexpr_ldexp(static_cast<double>(kept), shift);
 		return s ? -result : result;
+	}
+
+	// long double: its significand is read exactly through frexp / ldexp, truncated to 64 bits
+	// (truncation composes with hfloat's own), so a long double wider than a double is not first
+	// rounded to 53 bits. At constant evaluation it goes through double.
+	constexpr hfloat& convert_long_double(long double rhs) noexcept {
+		if (std::is_constant_evaluated()) return convert_ieee754(static_cast<double>(rhs));
+		if (rhs != rhs || rhs == 0.0L) { setzero(); return *this; }
+		const long double ldmax = std::numeric_limits<long double>::max();
+		if (rhs >  ldmax) { maxpos(); return *this; }
+		if (rhs < -ldmax) { maxneg(); return *this; }
+		const bool negative = rhs < 0.0L;
+		int e = 0;
+		const long double fr = std::frexp(negative ? -rhs : rhs, &e);   // [0.5, 1)
+		const uint64_t m = static_cast<uint64_t>(std::ldexp(fr, 64));     // truncates toward zero
+		return assign_scaled(negative, m, e - 64);
 	}
 
 	// Integers convert exactly and truncate to ndigits hex digits, at every fbits: hfp128 used to
@@ -823,8 +869,8 @@ inline constexpr bool operator==(const hfloat<ndigits, es, BlockType>& lhs, cons
 	if (lhs.sign() != rhs.sign()) return false;
 	bool ts; int le = 0, re = 0;
 	typename hfloat<ndigits, es, BlockType>::frac_t lf, rf;
-	lhs.decode(ts, le, lf);
-	rhs.decode(ts, re, rf);
+	lhs.decode_normalized(ts, le, lf);
+	rhs.decode_normalized(ts, re, rf);
 	return le == re && lf.compare(rf) == 0;
 }
 
@@ -848,8 +894,8 @@ inline constexpr bool operator< (const hfloat<ndigits, es, BlockType>& lhs, cons
 	// For negatives, the ordering reverses: lhs < rhs iff |lhs| > |rhs|.
 	bool ts; int le = 0, re = 0;
 	typename hfloat<ndigits, es, BlockType>::frac_t lf, rf;
-	lhs.decode(ts, le, lf);
-	rhs.decode(ts, re, rf);
+	lhs.decode_normalized(ts, le, lf);
+	rhs.decode_normalized(ts, re, rf);
 	const int fc = lf.compare(rf);   // the full fraction: hfp128's 112 bits were cut to the low 64
 	if (ls) {
 		// both negative: lhs < rhs iff |lhs| > |rhs|
