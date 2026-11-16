@@ -198,6 +198,10 @@ Expanded  e(200.0f);  // uses max-exponent value encoding, can still produce inf
 Saturated c(200.0f);  // uses max-exponent value encoding, stays finite
 ```
 
+### Integer casts
+
+`int(c)`, `long(c)`, `long long(c)` and `c.to_integer<Integer>()` truncate toward zero, exactly at every width. A value past the range, infinity included, saturates to `+/-max()` (an unsigned type gives `max() - 1` for a positive overflow and `0` for a negative value). A NaN gives the integer NaR: `min()`, or `max()` for an unsigned type. This is [the library's integer-cast rule](posit.md#integer-casts) (#2087, #2104).
+
 ## Problems It Solves
 
 | Problem | How cfloat Solves It |

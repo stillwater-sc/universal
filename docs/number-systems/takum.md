@@ -117,6 +117,10 @@ std::vector<takum<32>> data = { takum<32>(1.5), takum<32>(2.3), takum<32>(1.8) }
 auto var = compute_statistics(data);
 ```
 
+### Integer casts
+
+Casts of a takum or a takum_log to a native integer truncate toward zero, exactly at every width. A value past the range saturates to `+/-max()` (an unsigned type gives `max() - 1` for a positive overflow and `0` for a negative value), and NaR gives the integer NaR: `min()`, or `max()` for an unsigned type. This is [the library's integer-cast rule](posit.md#integer-casts) (#2079, #2104).
+
 ## Problems It Solves
 
 | Problem | How takum Solves It |

@@ -8,8 +8,8 @@
 // Integer construction and assignment for nbits > 64 went through double, so posit<128,2>(2^60 + 1)
 // was 2^60. operator int() and operator long() went through double as well: inexact past 53 bits,
 // and undefined behaviour for a value out of the integer's range or NaR. Integers now enter exactly
-// and round once; the casts truncate toward zero, exactly, saturate, and give the type's minimum
-// for NaR.
+// and round once; the casts truncate toward zero, exactly, saturate to +/-max, and give the integer
+// NaR, the type's minimum, for NaR (#2104: before, -max - 1 was also the saturated negative value).
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <cstdint>
@@ -59,31 +59,40 @@ namespace sw { namespace universal {
 		fails += report(static_cast<long long>(-a) == -(p60 + 1), "(long long)posit<128,2>(-(2^60 + 1)) is exact", reportTestCases);
 		using S = posit<32, 2>;
 		fails += report(static_cast<int>(S(1e30)) == std::numeric_limits<int>::max(), "(int)posit<32,2>(1e30) saturates to INT_MAX", reportTestCases);
-		fails += report(static_cast<int>(S(-1e30)) == std::numeric_limits<int>::min(), "(int)posit<32,2>(-1e30) saturates to INT_MIN", reportTestCases);
+		fails += report(static_cast<int>(S(-1e30)) == -std::numeric_limits<int>::max(), "(int)posit<32,2>(-1e30) saturates to -INT_MAX", reportTestCases);
+		fails += report(static_cast<long long>(S(SpecificValue::maxneg)) == -std::numeric_limits<long long>::max(), "(long long)maxneg saturates to -LLONG_MAX", reportTestCases);
 		fails += report(static_cast<long long>(S(SpecificValue::maxpos)) == std::numeric_limits<long long>::max(), "(long long)maxpos saturates", reportTestCases);
 		S nar;
 		nar.setnar();
 		fails += report(static_cast<int>(nar) == std::numeric_limits<int>::min(), "(int)NaR is INT_MIN", reportTestCases);
 		fails += report(static_cast<long long>(nar) == std::numeric_limits<long long>::min(), "(long long)NaR is LLONG_MIN", reportTestCases);
+		fails += report(static_cast<unsigned>(nar) == std::numeric_limits<unsigned>::max(), "(unsigned)NaR is UINT_MAX", reportTestCases);
+		fails += report(static_cast<unsigned>(S(-1)) == 0u && static_cast<unsigned>(S(-1e30)) == 0u, "(unsigned) of a negative value is 0", reportTestCases);
+		fails += report(static_cast<unsigned>(S(1e30)) == std::numeric_limits<unsigned>::max() - 1u, "(unsigned)posit<32,2>(1e30) saturates to UINT_MAX - 1", reportTestCases);
+		fails += report(static_cast<unsigned long long>(S(SpecificValue::maxpos)) == std::numeric_limits<unsigned long long>::max() - 1u, "(unsigned long long)maxpos saturates", reportTestCases);
 		fails += report(static_cast<int>(S(-2.75)) == -2 && static_cast<int>(S(2.75)) == 2, "(int) truncates toward zero", reportTestCases);
 		fails += report(static_cast<int>(S(SpecificValue::minpos)) == 0 && static_cast<int>(S(0)) == 0, "(int) of minpos and 0 is 0", reportTestCases);
-		fails += report(static_cast<int>(S(-std::ldexp(1.0, 31))) == std::numeric_limits<int>::min(), "(int)-2^31 is INT_MIN", reportTestCases);
+		fails += report(static_cast<int>(S(-std::ldexp(1.0, 31))) == -std::numeric_limits<int>::max(), "(int)-2^31 saturates to -INT_MAX: INT_MIN is NaR's", reportTestCases);
 		return fails;
 	}
 
-	// every encoding: the cast is trunc of the value, clamped to the integer's range
+	// every encoding: the cast is trunc of the value, clamped to [-max, max]; NaR is min
 	template<unsigned nbits, unsigned es, typename Integer>
 	int VerifyCastExhaustive(bool reportTestCases) {
 		int fails = 0;
 		for (std::uint64_t i = 0; i < (std::uint64_t(1) << nbits); ++i) {
 			posit<nbits, es> p;
 			p.setbits(i);
+			using L = std::numeric_limits<Integer>;
 			Integer expected;
-			if (p.isnar()) expected = std::numeric_limits<Integer>::min();
+			if (p.isnar()) expected = L::is_signed ? L::min() : L::max();
 			else {
+				// [-max, max] signed, [0, max - 1] unsigned
 				const double t = std::trunc(double(p));
-				if (t >= std::ldexp(1.0, std::numeric_limits<Integer>::digits)) expected = std::numeric_limits<Integer>::max();
-				else if (t < -std::ldexp(1.0, std::numeric_limits<Integer>::digits)) expected = std::numeric_limits<Integer>::min();
+				const double hi = L::is_signed ? std::ldexp(1.0, L::digits) : std::ldexp(1.0, L::digits) - 1.0;   // first value past the range
+				if (t < 0.0 && !L::is_signed) expected = Integer(0);
+				else if (t >= hi) expected = L::is_signed ? L::max() : Integer(L::max() - 1u);
+				else if (t <= -std::ldexp(1.0, L::digits)) expected = static_cast<Integer>(-L::max());
 				else expected = static_cast<Integer>(t);
 			}
 			const Integer got = static_cast<Integer>(p);
@@ -138,6 +147,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult((VerifyCastExhaustive<12, 2, int>(reportTestCases)), test_tag, "(int)posit<12,2>");
 	nrOfFailedTestCases += ReportTestResult((VerifyCastExhaustive<10, 3, int>(reportTestCases)), test_tag, "(int)posit<10,3>");
 	nrOfFailedTestCases += ReportTestResult((VerifyCastExhaustive<12, 4, long long>(reportTestCases)), test_tag, "(long long)posit<12,4>");
+	nrOfFailedTestCases += ReportTestResult((VerifyCastExhaustive<12, 2, unsigned>(reportTestCases)), test_tag, "(unsigned)posit<12,2>");
+	nrOfFailedTestCases += ReportTestResult((VerifyCastExhaustive<12, 4, unsigned long long>(reportTestCases)), test_tag, "(unsigned long long)posit<12,4>");
 #endif
 
 #if REGRESSION_LEVEL_2

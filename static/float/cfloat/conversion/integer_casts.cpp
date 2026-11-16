@@ -12,8 +12,9 @@
 //   The reference is the int source, whose path is correct: every narrow value must give the same
 //   encoding through the constructor and through assignment.
 //
-// Casts (#2087, posit's rule from #2073): truncate toward zero, exactly at every width, saturate past
-// the range (inf included) to the type's max or min, and give the type's min for a NaN.  They used to
+// Casts (#2087, posit's rule from #2073, amended by #2104): truncate toward zero, exactly at every
+// width, saturate past the range (inf included) to +/-max ([0, max - 1] unsigned), and give the
+// integer NaR for a NaN: min, or max for an unsigned type.  They used to
 // cast a double, so cfloat<64,11,uint32_t>(16777217).to_int() was 16777216 and
 // cfloat<80,15,uint32_t>(2^53 + 1) cast to long long was 2^53.  Narrow layouts are checked over every
 // encoding against their exact double value; wide ones against exactly represented 64-bit integers.
@@ -22,6 +23,7 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -76,13 +78,15 @@ int VerifyNarrowIntegerSources(bool reportTestCases) {
 template<typename Integer>
 Integer reference_cast(double d, bool isNaN) {
 	using L = std::numeric_limits<Integer>;
-	if (isNaN) return L::min();
+	if (isNaN) return std::is_signed_v<Integer> ? L::min() : L::max();
 	const double t = std::trunc(d);
-	// 2^(digits) is the first value past max; min is -2^digits for a signed type, 0 otherwise
-	const double past = std::ldexp(1.0, L::digits);
-	if (t >= past) return L::max();
-	if (std::is_signed_v<Integer> ? (t < -past) : (t < 0.0)) return L::min();
-	return static_cast<Integer>(t);
+	if (!std::is_signed_v<Integer> && t < 0.0) return Integer(0);
+	// a finite value casts to [-max, max], or [0, max - 1] for an unsigned type
+	const double past = std::ldexp(1.0, L::digits);   // 2^digits, past max
+	const uint64_t cap = static_cast<uint64_t>(L::max()) - (std::is_signed_v<Integer> ? 0u : 1u);
+	const double a = std::fabs(t);
+	const uint64_t mag = (a >= past) ? cap : std::min(cap, static_cast<uint64_t>(a));
+	return (t < 0.0) ? static_cast<Integer>(-static_cast<Integer>(mag)) : static_cast<Integer>(mag);
 }
 
 // every encoding of a layout of at most 16 bits: its double value is exact
@@ -98,7 +102,10 @@ int VerifyCastsOverEncodings(bool reportTestCases) {
 		const int i = int(c);
 		const long long ll = (long long)c;
 		const long l = long(c);
-		if (i != reference_cast<int>(d, nan) || ll != reference_cast<long long>(d, nan) || l != reference_cast<long>(d, nan)) {
+		const unsigned u = c.template to_integer<unsigned>();
+		const unsigned short us = c.template to_integer<unsigned short>();
+		if (i != reference_cast<int>(d, nan) || ll != reference_cast<long long>(d, nan) || l != reference_cast<long>(d, nan)
+		    || u != reference_cast<unsigned>(d, nan) || us != reference_cast<unsigned short>(d, nan)) {
 			if (reportTestCases && fails < 10) std::cerr << "FAIL: " << to_binary(c) << " (" << d << ") -> int " << i << ", long long " << ll
 			                                             << "; expected " << reference_cast<int>(d, nan) << ", " << reference_cast<long long>(d, nan) << '\n';
 			++fails;
@@ -122,7 +129,7 @@ int VerifyWideCasts(unsigned samples, bool reportTestCases) {
 			++fails;
 		}
 		const int expectInt = (v > std::numeric_limits<int>::max()) ? std::numeric_limits<int>::max()
-		                    : (v < std::numeric_limits<int>::min()) ? std::numeric_limits<int>::min() : static_cast<int>(v);
+		                    : (v < -std::numeric_limits<int>::max()) ? -std::numeric_limits<int>::max() : static_cast<int>(v);
 		if (int(c) != expectInt) {
 			if (reportTestCases && fails < 10) std::cerr << "FAIL: int(" << v << ") -> " << int(c) << ", expected " << expectInt << '\n';
 			++fails;
@@ -201,16 +208,20 @@ try {
 		const long long llmin = std::numeric_limits<long long>::min();
 		const long long llmax = std::numeric_limits<long long>::max();
 		const C two63(std::ldexp(1.0, 63));   // exact in double
-		const bool ok = (long long)C(llmin) == llmin
+		// llmin is the integer NaR (#2104): -2^63, exact in the cfloat, saturates to -llmax
+		const bool ok = (long long)C(llmin) == -llmax
 		             && (long long)two63 == llmax                    // 2^63 saturates
-		             && (long long)(-two63) == llmin                 // -2^63 is exact
-		             && (long long)(-two63 - C(1)) == llmin          // past it saturates
+		             && (long long)(-two63) == -llmax                // -2^63 saturates
+		             && (long long)(-two63 + C(1024)) == -llmax + 1023   // exact, just inside the range
+		             && (long long)(-two63 - C(1)) == -llmax         // past it saturates
 		             && (long long)C(SpecificValue::qnan) == llmin
 		             && (long long)C(SpecificValue::infpos) == llmax
-		             && (long long)C(SpecificValue::infneg) == llmin
+		             && (long long)C(SpecificValue::infneg) == -llmax
 		             && int(C(SpecificValue::qnan)) == std::numeric_limits<int>::min()
 		             && int(C(SpecificValue::maxpos)) == std::numeric_limits<int>::max()
-		             && int(C(SpecificValue::maxneg)) == std::numeric_limits<int>::min()
+		             && int(C(SpecificValue::maxneg)) == -std::numeric_limits<int>::max()
+		             && C(SpecificValue::qnan).template to_integer<unsigned>() == std::numeric_limits<unsigned>::max()
+		             && C(SpecificValue::infpos).template to_integer<unsigned>() == std::numeric_limits<unsigned>::max() - 1u
 		             && int(C(0.75)) == 0 && int(C(-0.75)) == 0 && int(C(-1.75)) == -1;
 		if (!ok) {
 			std::cerr << "FAIL: cfloat<80,15,uint32_t> range ends, NaN or inf casts\n";

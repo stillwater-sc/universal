@@ -7,10 +7,11 @@
 //
 // Integers convert into a takum exactly and round once (#2079).  They used to go through a double,
 // which rounded every integer above 2^53 first: takum<64,3>((1LL<<53)+1) came out as 2^53.
-// Integer casts truncate toward zero and saturate to the integer type, and NaR gives the type's
-// minimum -- posit's rule (#2073), adopted for takum in #2079.  They cast a double, which made NaR
-// and every out-of-range value undefined behaviour.  The unsigned casts, unreachable until #2098,
-// follow the same rule: NaR and every x <= -1 give 0.
+// Integer casts truncate toward zero and saturate to +/-max, and NaR gives the integer NaR, the
+// type's minimum -- posit's rule (#2073, amended by #2104), adopted for takum in #2079.  They cast
+// a double, which made NaR and every out-of-range value undefined behaviour.  The unsigned casts,
+// unreachable until #2098, follow the same rule: every x <= -1 gives 0, a value past the range
+// max - 1, and NaR max.
 //
 // The reference is exact integer arithmetic on integer<384>: a takum value S * 2^e is held as
 // S * 2^(e + 64), which is an integer for every encoding these layouts have (e >= -61).
@@ -119,19 +120,21 @@ int VerifyIntegerConversion(const std::vector<std::uint64_t>& samples, bool repo
 	return nrOfFailedTests;
 }
 
-// The integer a cast must produce, from the exact value: truncate toward zero, saturate, NaR -> min
+// The integer a cast must produce, from the exact value: truncate toward zero, saturate to
+// [-max, max] (unsigned: [0, max - 1]), NaR -> the integer NaR (min; unsigned: max)
 template<typename Integer, typename Takum>
 Integer ReferenceCast(const Takum& x) {
 	using Limits = std::numeric_limits<Integer>;
 	if (x.iszero()) return Integer(0);
-	if (x.isnar()) return Limits::min();
+	if (x.isnar()) return Limits::is_signed ? Limits::min() : Limits::max();
 	const Exact truncated = scaled_magnitude(x) >> kScale;
 	const bool negative = x.sign();
 	if (truncated == Exact(0)) return Integer(0);
-	if (negative && !Limits::is_signed) return Limits::min();
-	// 2^digits is the first magnitude past the range, on either side (min = -2^digits)
-	const Exact limit = Exact(1) << Limits::digits;
-	if (truncated >= limit) return negative ? Limits::min() : Limits::max();
+	if (negative && !Limits::is_signed) return Integer(0);
+	// the largest magnitude a finite value casts to
+	const std::uint64_t capU = static_cast<std::uint64_t>(Limits::max()) - (Limits::is_signed ? 0u : 1u);
+	const Exact cap = Exact(capU);
+	if (truncated > cap) return negative ? static_cast<Integer>(-static_cast<Integer>(capU)) : static_cast<Integer>(capU);
 	std::uint64_t m = 0;
 	Exact t = truncated;
 	for (int b = 0; b < 64; ++b) {
@@ -154,7 +157,7 @@ int CheckCasts(const Takum& x, bool reportTestCases) {
 	if (int(x) != ReferenceCast<int>(x))                       report("int", (long double)int(x), (long double)ReferenceCast<int>(x));
 	if (long(x) != ReferenceCast<long>(x))                     report("long", (long double)long(x), (long double)ReferenceCast<long>(x));
 	if ((long long)(x) != ReferenceCast<long long>(x))         report("long long", (long double)(long long)(x), (long double)ReferenceCast<long long>(x));
-	// the unsigned casts did not compile (#2098): NaR and x <= -1 give 0, and they saturate at the top
+	// the unsigned casts did not compile (#2098): x <= -1 gives 0, they saturate to max - 1, NaR is max
 	if ((unsigned int)(x) != ReferenceCast<unsigned int>(x))   report("unsigned int", (long double)(unsigned int)(x), (long double)ReferenceCast<unsigned int>(x));
 	if ((unsigned long)(x) != ReferenceCast<unsigned long>(x)) report("unsigned long", (long double)(unsigned long)(x), (long double)ReferenceCast<unsigned long>(x));
 	if ((unsigned long long)(x) != ReferenceCast<unsigned long long>(x)) {
@@ -237,8 +240,11 @@ try {
 		if ((long long)takum<64, 3>((1LL << 54) + 2) != (1LL << 54) + 2) ++fails;
 		if (int(takum<64, 3>(SpecificValue::nar)) != INT_MIN) ++fails;
 		if ((long long)takum<64, 3>(SpecificValue::maxpos) != LLONG_MAX) ++fails;
-		if ((long long)takum<64, 3>(SpecificValue::maxneg) != LLONG_MIN) ++fails;
-		if ((long long)takum<64, 3>(LLONG_MIN) != LLONG_MIN) ++fails;
+		// LLONG_MIN is the integer NaR (#2104): -2^63, exact in the takum, saturates to -LLONG_MAX
+		if ((long long)takum<64, 3>(SpecificValue::maxneg) != -LLONG_MAX) ++fails;
+		if ((long long)takum<64, 3>(LLONG_MIN) != -LLONG_MAX) ++fails;
+		if ((unsigned)takum<64, 3>(SpecificValue::nar) != UINT_MAX) ++fails;
+		if ((unsigned)takum<64, 3>(SpecificValue::maxpos) != UINT_MAX - 1u) ++fails;
 		if ((long long)takum<64, 3>(LLONG_MAX) != LLONG_MAX) ++fails;   // 2^63 - 1 rounds to 2^63, which saturates
 		{
 			// operator=(char) must follow char's own signedness, which the platform decides
