@@ -42,7 +42,7 @@ int VerifySubnormalBlock(bool reportTestCases) {
 	b.decompress(y);
 	double err = 0, mag = 0;
 	for (size_t i = 0; i < N; ++i) {
-		err = std::fmax(err, std::fabs(double(y[i]) - double(x[i])));
+		err = std::isfinite(y[i]) ? std::fmax(err, std::fabs(double(y[i]) - double(x[i]))) : std::numeric_limits<double>::infinity();   // a NaN fails
 		mag = std::fmax(mag, std::fabs(double(x[i])));
 	}
 	if (!(err <= mag)) {   // the values are 2^-149-scale; before the fix they came back near 2^120

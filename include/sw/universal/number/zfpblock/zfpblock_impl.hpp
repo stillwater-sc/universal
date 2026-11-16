@@ -56,6 +56,12 @@ public:
 		const int minexp = accuracy_floor(mode, param);
 		const bool pad = (mode == zfp_mode::fixed_rate);   // only a fixed rate has a fixed size (#2097)
 		_nbits = encode_block<Real, Dim>(src, _buffer, MAX_BYTES, maxprec, maxbits, minexp, pad);
+		if (mode == zfp_mode::fixed_accuracy && minexp != INT_MIN && !within(src, param, maxprec, maxbits, minexp)) {
+			// the plane count bounds the transform's error, but a value below one quantum of the block's
+			// exponent (2^(emax - frac_bits)) rounds to zero before it: {1, 2^-40, 0, 0} at 2^-45 missed the
+			// tolerance. Such a block is stored raw, which is exact (CodeRabbit on #2099).
+			_nbits = encode_raw_block<Real, Dim>(src, _buffer, MAX_BYTES, maxbits, false);
+		}
 		if (mode == zfp_mode::reversible && !reproduces(src, maxprec, maxbits)) {
 			// reversible is lossless: the full-precision pipeline does not reproduce every block bit for
 			// bit (0.1f came back as 0.099999994, #2097), and then the block is stored raw
@@ -158,9 +164,10 @@ private:
 		if (maxbits < zfp_raw_block_bits<Real, Dim>() && mode != zfp_mode::fixed_rate) maxbits = zfp_raw_block_bits<Real, Dim>();   // room for a raw block
 	}
 
-	// the fixed-accuracy floor: 2^minexp <= tolerance, so ZFP's precision rule keeps the error within
-	// it; INT_MIN (none) for the other modes, and for a tolerance that is not positive and finite,
-	// which codes every plane
+	// the fixed-accuracy floor: 2^minexp <= tolerance, which ZFP's precision rule turns into a plane
+	// count; compress() checks the result, since values below the block's quantum round to zero
+	// whatever the count. INT_MIN (none) for the other modes, and for a tolerance that is not positive
+	// and finite, which codes every plane
 	static constexpr int accuracy_floor(zfp_mode mode, double tolerance) noexcept {
 		if (mode != zfp_mode::fixed_accuracy) return INT_MIN;
 		if (!(tolerance > 0.0) || !(tolerance <= std::numeric_limits<double>::max())) return INT_MIN;
@@ -174,6 +181,17 @@ private:
 			e = std::ilogb(tolerance);   // floor(log2(tolerance)), exactly
 		}
 		return e;
+	}
+
+	// the coded block decodes to within tolerance of src, every value
+	constexpr bool within(const Real* src, double tolerance, unsigned maxprec, size_t maxbits, int minexp) const {
+		Real back[BLOCK_SIZE]{};
+		decode_block<Real, Dim>(_buffer, MAX_BYTES, back, maxprec, maxbits, minexp);
+		for (size_t i = 0; i < BLOCK_SIZE; ++i) {
+			const double d = static_cast<double>(back[i]) - static_cast<double>(src[i]);
+			if (!(d <= tolerance && -d <= tolerance)) return false;   // a NaN fails too
+		}
+		return true;
 	}
 
 	// the coded block decodes to src bit for bit

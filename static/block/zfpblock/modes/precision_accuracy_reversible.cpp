@@ -69,7 +69,7 @@ int VerifyFixedPrecision(unsigned samples, bool reportTestCases) {
 			const size_t bits = b.compress_fixed_precision(x, p);
 			b.decompress(y);
 			double err = 0;
-			for (size_t i = 0; i < N; ++i) err = std::fmax(err, std::fabs(double(y[i]) - double(x[i])));
+			for (size_t i = 0; i < N; ++i) err = std::isfinite(y[i]) ? std::fmax(err, std::fabs(double(y[i]) - double(x[i]))) : std::numeric_limits<double>::infinity();   // a NaN fails
 			const double bound = std::ldexp(1.0, emax - static_cast<int>(p) + 2 * static_cast<int>(Dim + 1));
 			if (err > bound || bits < previous) {
 				if (reportTestCases && fails < 5) std::cerr << "FAIL: fixed precision " << p << " (Dim " << Dim << "): error " << err << " > " << bound << " or " << bits << " bits < " << previous << '\n';
@@ -101,7 +101,7 @@ int VerifyFixedAccuracy(unsigned samples, bool reportTestCases) {
 			const size_t bits = b.compress_fixed_accuracy(x, tol);
 			b.decompress(y);
 			double err = 0;
-			for (size_t i = 0; i < N; ++i) err = std::fmax(err, std::fabs(double(y[i]) - double(x[i])));
+			for (size_t i = 0; i < N; ++i) err = std::isfinite(y[i]) ? std::fmax(err, std::fabs(double(y[i]) - double(x[i]))) : std::numeric_limits<double>::infinity();   // a NaN fails
 			// a value below the tolerance may round to zero: still within it
 			if (err > tol || bits <= previous) {
 				if (reportTestCases && fails < 5) std::cerr << "FAIL: fixed accuracy " << tol << " (Dim " << Dim << "): error " << err << ", " << bits << " bits\n";
@@ -145,6 +145,27 @@ int VerifyReversible(unsigned samples, bool reportTestCases) {
 		}
 	}
 	return fails;
+}
+
+// fixed accuracy with a wide exponent spread: a value below the block's quantum rounds to zero in the
+// transform, so the block is stored raw to keep the tolerance (CodeRabbit on #2099)
+template<typename Real>
+int VerifyAccuracyWideSpread(bool reportTestCases) {
+	using namespace sw::universal;
+	const Real x[4] = { Real(1), std::ldexp(Real(1), -40), Real(0), -std::ldexp(Real(3), -42) };
+	const double tol = std::ldexp(1.0, -45);
+	Real y[4];
+	zfpblock<Real, 1> b;
+	b.compress_fixed_accuracy(x, tol);
+	b.decompress(y);
+	for (int i = 0; i < 4; ++i) {
+		const double d = double(y[i]) - double(x[i]);
+		if (!(std::fabs(d) <= tol)) {
+			if (reportTestCases) std::cerr << "FAIL: fixed accuracy 2^-45, value " << i << ": " << y[i] << " for " << x[i] << '\n';
+			return 1;
+		}
+	}
+	return 0;
 }
 
 // only a fixed rate pads: a non-rate block of 4 floats at 16 planes is smaller than the raw 137 bits
@@ -210,6 +231,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult((VerifyReversible<float, 3>(100, reportTestCases)),      "float 3D",  "reversible");
 	nrOfFailedTestCases += ReportTestResult((VerifyReversible<double, 2>(200, reportTestCases)),     "double 2D", "reversible");
 	nrOfFailedTestCases += ReportTestResult(VerifyNoPadding(reportTestCases),                        "float 1D",  "non-rate size");
+	nrOfFailedTestCases += ReportTestResult(VerifyAccuracyWideSpread<float>(reportTestCases),         "float 1D",  "accuracy, wide spread");
+	nrOfFailedTestCases += ReportTestResult(VerifyAccuracyWideSpread<double>(reportTestCases),        "double 1D", "accuracy, wide spread");
 #endif
 
 #if REGRESSION_LEVEL_2
