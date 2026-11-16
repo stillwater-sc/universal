@@ -468,6 +468,9 @@ public:
 		blocktriple<qbits, BlockTripleOperator::REP, LimbType> result;
 		if (_is_nan) { result.setnan(); return result; }
 		if (isinf()) { result.setinf(_is_ninf); return result; }
+		// an overflowed sum is past every value the accumulator holds, and _accu is cleared: it is
+		// an infinity of its sign, as it resolves in a type with infinities (#2094), not a zero (#2107)
+		if (_is_overflow) { result.setinf(_sign); return result; }
 		if (iszero()) { result.setzero(_sign); return result; }
 
 		// find MSB to determine scale

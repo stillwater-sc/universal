@@ -15,7 +15,9 @@
 //   max(src_precision, tgt_precision) >  52 bits  ->  long double (80-bit on x86/x87)
 //
 // Note: on MSVC and ARM, long double == double (both 64-bit), so those platforms
-// get the same precision as the double path for the wider branch.
+// get the same precision as the double path for the wider branch. Where LONG_DOUBLE_SUPPORT is 0
+// (MSVC among them) the types leave out their long double conversions, so the wider branch uses
+// double as well (#2107).
 // Types wider than long double's significand (63 bits on x86) need a proper
 // adaptive-precision intermediate (efloat/ereal) or an expression-template layer
 // that analyzes the conversion AST and selects the minimum sufficient precision at
@@ -32,6 +34,7 @@
 
 #include <type_traits>
 #include <concepts>
+#include <universal/utility/directives.hpp>   // LONG_DOUBLE_SUPPORT
 #include <universal/traits/cross_type_traits.hpp>
 
 namespace sw { namespace universal {
@@ -66,15 +69,20 @@ constexpr Target universal_cast(const Source& src) noexcept {
 	constexpr unsigned tgtPrec = precision_bits_v<Target>;
 	constexpr unsigned maxPrec = (srcPrec > tgtPrec) ? srcPrec : tgtPrec;
 
-	if constexpr (maxPrec <= 52u) {
-		// Both types fit within double's 52-bit significand -- exact.
+	if constexpr (maxPrec <= 52u || !LONG_DOUBLE_SUPPORT) {
+		// Both types fit within double's 52-bit significand -- exact. Without long double
+		// support the types have no long double conversion to go through.
 		return detail::cast_via<double, Target>(src);
 	}
 	else {
 		// Use long double (80-bit extended on x86/x87).
 		// On MSVC/ARM where long double == double this is the same precision,
 		// but the intent is preserved for platforms that support 80-bit.
+#if LONG_DOUBLE_SUPPORT
 		return detail::cast_via<long double, Target>(src);
+#else
+		return detail::cast_via<double, Target>(src);   // not reached: the branch above takes it
+#endif
 	}
 }
 
@@ -90,11 +98,13 @@ constexpr Target& universal_assign(Target& tgt, const Source& src) noexcept {
 	constexpr unsigned tgtPrec = precision_bits_v<Target>;
 	constexpr unsigned maxPrec = (srcPrec > tgtPrec) ? srcPrec : tgtPrec;
 
-	if constexpr (maxPrec <= 52u) {
+	if constexpr (maxPrec <= 52u || !LONG_DOUBLE_SUPPORT) {
 		tgt = static_cast<double>(src);
 	}
 	else {
+#if LONG_DOUBLE_SUPPORT
 		tgt = static_cast<long double>(src);
+#endif
 	}
 	return tgt;
 }

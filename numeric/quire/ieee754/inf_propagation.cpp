@@ -200,7 +200,7 @@ void VerifyStates(const std::string& tag) {
 	expect(pinf.template convert_to<double>() ==  std::numeric_limits<double>::infinity(), tag, "convert_to<double>(+inf)");
 	expect(ninf.template convert_to<double>() == -std::numeric_limits<double>::infinity(), tag, "convert_to<double>(-inf)");
 	expect(pinf.template convert_to<int>() == std::numeric_limits<int>::max(),    tag, "convert_to<int>(+inf) saturates");
-	expect(ninf.template convert_to<int>() == std::numeric_limits<int>::lowest(), tag, "convert_to<int>(-inf) saturates");
+	expect(ninf.template convert_to<int>() == -std::numeric_limits<int>::max(), tag, "convert_to<int>(-inf) saturates to -max (#2104, #2107)");
 	expect(pinf.to_blocktriple().isinf() && !pinf.to_blocktriple().sign(), tag, "to_blocktriple(+inf)");
 	expect(ninf.to_blocktriple().isinf() &&  ninf.to_blocktriple().sign(), tag, "to_blocktriple(-inf)");
 	expect(to_binary(pinf) == "+inf" && to_binary(ninf) == "-inf" && to_binary(nan) == "nar", tag, "to_binary of the non-finite states");
@@ -290,8 +290,8 @@ void VerifyTargetWithoutInfinity(const std::string& tag) {
 	expect(!(pinf <  pinf) && !(pinf < one) && !(one < ninf), tag, "no value below -inf or above +inf");
 	expect(!(nan == nan) && !(nan < pinf) && !(pinf < nan), tag, "NaN unordered");
 	expect(pinf.template convert_to<int>() == std::numeric_limits<int>::max(),    tag, "convert_to<int>(+inf) saturates");
-	expect(ninf.template convert_to<int>() == std::numeric_limits<int>::lowest(), tag, "convert_to<int>(-inf) saturates");
-	expect(nan.template convert_to<int>() == 0, tag, "convert_to<int>(NaN) is 0");
+	expect(ninf.template convert_to<int>() == -std::numeric_limits<int>::max(), tag, "convert_to<int>(-inf) saturates to -max (#2104, #2107)");
+	expect(nan.template convert_to<int>() == std::numeric_limits<int>::min(), tag, "convert_to<int>(NaN) is the integer NaR, min() (#2104, #2107)");
 	expect(to_binary(pinf) == "+inf" && to_binary(ninf) == "-inf" && to_binary(nan) == "nar", tag, "to_binary of the non-finite states");
 }
 

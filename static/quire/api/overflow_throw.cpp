@@ -81,6 +81,12 @@ int VerifyThrows(bool reportTestCases) {
 			if (reportTestCases) std::cerr << "FAIL: posit<8,0> negative quire after the exception: isoverflow " << q.isoverflow() << ", resolves to " << r << '\n';
 			++fails;
 		}
+		// to_blocktriple() of the overflowed quire is -inf, not the zero of its cleared accumulator
+		const auto bt = q.to_blocktriple();
+		if (!(bt.isinf() && bt.sign())) {
+			if (reportTestCases) std::cerr << "FAIL: to_blocktriple() of a negative overflowed quire is not -inf\n";
+			++fails;
+		}
 	}
 	// a sum that stays inside the accumulator does not throw
 	try {

@@ -137,6 +137,12 @@ public:
 
     // Conversion to double (estimate)
     constexpr double to_double() const {
+        // a zero converts from its leading component, so -0 stays -0: (-0) + (+0) is +0 (#2107)
+        if (e[0] == 0.0) {
+            bool allZero = true;
+            for (size_t i = 1; i < N; ++i) allZero = allZero && (e[i] == 0.0);
+            if (allZero) return e[0];
+        }
         double sum{ 0 };
         if constexpr (1 == N) {
             sum = e[0];
@@ -2387,7 +2393,7 @@ template<size_t N>
 inline floatcascade<N> reciprocal(const floatcascade<N>& a) {
     if (a.iszero()) {
         floatcascade<N> result;
-        result[0] = (a[0] < 0.0) ? -INFINITY : INFINITY;
+        result[0] = std::signbit(a[0]) ? -INFINITY : INFINITY;   // 1 / -0 is -inf (#2107)
         for (size_t i = 1; i < N; ++i) result[i] = 0.0;
         return result;
     }
