@@ -24,9 +24,19 @@ The `dfloat` type represents numbers in base-10, where decimal fractions *are* e
 - **IEEE 754-2008 compatible**: targets decimal interchange format (DPD/BID)
 - **No binary rounding error** for values expressible as `d x 10^e`
 
-### Status
+### Conversions
 
-The dfloat type is currently a skeleton implementation with the core infrastructure defined. The encoding format and arithmetic pipeline are specified, but full arithmetic operations are still under development.
+Every conversion rounds once, to nearest with ties to even (#2105):
+- **From an integer:** all of its digits are kept until the rounding. `decimal32(ULLONG_MAX)` is 1.844674e19.
+- **From a `double`:** the double's exact decimal value is rounded. `decimal128(0.1)` is therefore 0.1000000000000000055511151231257827, the double nearest 0.1, and not the decimal 0.1. Use `decimal128("0.1")` for the decimal literal.
+- **To a `double`:** the result is correctly rounded, subnormals included. `double(decimal64("1e100")) == 1e100`, and `double(decimal64("1e-310")) == 1e-310`.
+
+`numeric_limits` follows the C++ convention:
+- `min()` is the smallest normal, 10^(emin + ndigits - 1), and `denorm_min()` the smallest subnormal.
+- `epsilon()` is 10^(1 - ndigits).
+- `is_exact` is false.
+- `has_denorm` is `denorm_present`.
+- `min_exponent`, `max_exponent`, `min_exponent10` and `max_exponent10` match IEEE 754-2008 Table 3.6; decimal32 gives -94, 97, -95 and 96.
 
 ## How It Works
 

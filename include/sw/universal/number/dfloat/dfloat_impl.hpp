@@ -52,6 +52,9 @@
 #include <universal/internal/blockbinary/blockbinary.hpp>
 // sw::bit_cast for constexpr -0.0 detection in convert_ieee754
 #include <universal/utility/bit_cast.hpp>
+#include <universal/utility/decimal_to_binary.hpp>   // convert_to_double: sig * 10^e, rounded once (#2105)
+#include <universal/native/constexpr_ldexp.hpp>    // the exact power-of-two scaling of the rounded double
+#include <string_view>
 
 namespace sw { namespace universal {
 
@@ -640,6 +643,17 @@ public:
 		clear();
 		significand_t max_sig = pow10_s(ndigits) - significand_t(1);
 		pack(true, emax, max_sig);
+		return *this;
+	}
+
+	// sig * 10^exponent, rounded once to ndigits (numeric_limits builds epsilon() and min() with it)
+	constexpr dfloat& assign_decimal(bool negative, uint64_t sig, int exponent) noexcept {
+		clear();
+		if (sig == 0) { if (negative) setsign(true); return *this; }
+		int_significand_t s;
+		s.setbits(sig);
+		round_and_pack(negative, exponent, s, false);
+		strip_trailing_zeros();
 		return *this;
 	}
 
@@ -1250,43 +1264,28 @@ protected:
 	///////////////////////////////////////////////////////////////////
 	// Conversion helpers
 
-	// Convert native IEEE-754 double to dfloat
+	// Convert native IEEE-754 double to dfloat, rounded once (#2105)
 	//
-	// Constexpr-safe: replaces std::isnan/isinf/signbit/fabs/floor/log10/pow/round
-	// with constexpr equivalents.  See dfixpnt PR #803 for the same pattern.
-	//
-	// - NaN detection: rhs != rhs (NaN is the only value not equal to itself)
-	// - Infinity detection: |rhs| > DBL_MAX is not constexpr-friendly; we instead
-	//   check rhs - rhs (NaN for inf-inf, 0 for finite) -- but rhs-rhs is NaN
-	//   only on infinity AND on NaN. We've already filtered NaN above, so a
-	//   non-zero rhs whose 2*rhs equals rhs (only true for +/-inf) is infinite.
-	//   Simpler: check whether rhs > std::numeric_limits<double>::max() (which
-	//   IS constexpr on GCC/Clang).
-	// - Sign of -0.0: cannot be detected by 'rhs < 0' alone; use std::signbit
-	//   under runtime, and rely on -0.0 == 0.0 short-circuit (-0.0 cleared
-	//   here intentionally; sign is set when rhs < 0 in the non-zero path).
-	// - log10/pow/floor: replaced by integer loops over the pow10_64 table.
-	// - round: replaced by static_cast<uint64_t>(scaled + 0.5) trick (dfixpnt).
+	// A finite double is m * 2^E exactly. Its decimal value is the integer m * 2^E (E >= 0) or
+	// m * 5^-E * 10^E (E < 0), formed exactly in a blockbinary wide enough for that E, cut to
+	// ndigits + 3 digits with the rest folded into a sticky bit, and rounded once to nearest,
+	// ties to even, by round_and_pack. It used to scale the double by repeated / 10 and * 10,
+	// which added rounding error and cost up to ~324 iterations: decimal128(1e-5) printed
+	// 0.000010000000000000002, and only the leading 17 digits were ever formed.
+	// NaN, inf and -0.0 keep their meaning. Constexpr-safe: the fields of the double come from
+	// sw::bit_cast, or from exact power-of-two scaling where bit_cast is not constexpr.
 	constexpr dfloat& convert_ieee754(double rhs) noexcept {
 		// NaN: only value where x != x
 		if (rhs != rhs) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
-		// Infinity: x > DBL_MAX or x < -DBL_MAX (numeric_limits constexpr)
 		constexpr double dbl_max = std::numeric_limits<double>::max();
 		if (rhs > dbl_max) { setinf(false); return *this; }
 		if (rhs < -dbl_max) { setinf(true); return *this; }
 		if (rhs == 0.0) {
 			setzero();
-			// Detect -0.0 by inspecting the sign bit directly.  sw::bit_cast
-			// is constexpr only when the compiler exposes std::bit_cast or
-			// __builtin_bit_cast; on older toolchains it falls back to a
-			// non-constexpr memcpy implementation (see utility/bit_cast.hpp).
-			// Guard so convert_ieee754() stays constexpr-clean everywhere;
-			// platforms without constexpr bit_cast lose the -0.0 sign in
-			// constant-evaluated calls (acceptable: -0.0 is rarely material
-			// and the runtime path still preserves it via std::signbit).
+			// -0.0 keeps its sign; without a constexpr bit_cast a constant-evaluated call cannot see it
 			if constexpr (sw::is_bit_cast_constexpr_v) {
 				if ((sw::bit_cast<uint64_t>(rhs) >> 63) != 0u) setsign(true);
 			}
@@ -1298,78 +1297,96 @@ protected:
 			return *this;
 		}
 
-		bool negative = (rhs < 0);
-		double abs_val = negative ? -rhs : rhs;
-
-		// Compute floor(log10(abs_val)) without std::log10/floor.
-		// Double has ~15-17 significant digits. Scale by powers of 10 to
-		// bracket abs_val into [1, 10).
-		int dec_exp = 0;
-		double v = abs_val;
-		while (v >= 10.0) { v /= 10.0; ++dec_exp; }
-		while (v <  1.0)  { v *= 10.0; --dec_exp; }
-		// Now v in [1, 10) and abs_val == v * 10^dec_exp (modulo rounding).
-
-		// Scale to get min(ndigits, 17) significant digits (double precision limit)
-		unsigned effective_digits = (ndigits < 17) ? ndigits : 17;
-		int target_exp = dec_exp - static_cast<int>(effective_digits) + 1;
-		// Compute scaled = abs_val / 10^target_exp.  decimal64/128 admit
-		// |target_exp| well above 19 (decimal128 has emax = 6144, so for
-		// extreme abs_val, target_exp - effective_digits + 1 can be ~6128).
-		// Apply the scaling in chunks of 10^19 (largest exact integer power
-		// of 10 fitting in uint64_t) so we never saturate.
-		double scaled = abs_val;
-		if (target_exp >= 0) {
-			unsigned remaining = static_cast<unsigned>(target_exp);
-			while (remaining >= 19u) {
-				scaled /= static_cast<double>(pow10_64(19));
-				remaining -= 19u;
-			}
-			if (remaining > 0u) {
-				scaled /= static_cast<double>(pow10_64(remaining));
-			}
+		const bool negative = (rhs < 0);
+		const double abs_val = negative ? -rhs : rhs;
+		uint64_t m = 0;
+		int E = 0;
+		if (std::is_constant_evaluated() && !sw::is_bit_cast_constexpr_v) {
+			// exact: every step multiplies an integer-valued or dyadic double by 2 or 1/2
+			double v = abs_val;
+			constexpr double two52 = 4503599627370496.0, two53 = 9007199254740992.0;
+			while (v >= two53) { v *= 0.5; ++E; }
+			while (v < two52 && E > -1074) { v *= 2.0; --E; }
+			m = static_cast<uint64_t>(v);
 		}
 		else {
-			unsigned remaining = static_cast<unsigned>(-target_exp);
-			while (remaining >= 19u) {
-				scaled *= static_cast<double>(pow10_64(19));
-				remaining -= 19u;
-			}
-			if (remaining > 0u) {
-				scaled *= static_cast<double>(pow10_64(remaining));
-			}
+			const uint64_t bits = sw::bit_cast<uint64_t>(abs_val);
+			const uint64_t rawExp  = (bits >> 52) & 0x7FFu;
+			const uint64_t rawFrac = bits & ((uint64_t(1) << 52) - 1u);
+			m = (rawExp == 0) ? rawFrac : ((uint64_t(1) << 52) | rawFrac);
+			E = (rawExp == 0) ? -1074 : static_cast<int>(rawExp) - 1075;
 		}
-		// Round to nearest, ties to even (#1487; this used floor(x + 0.5), half up).
-		// scaled is positive, and the cast to uint64_t truncates it.
-		uint64_t sig_narrow = static_cast<uint64_t>(scaled);
-		const double frac = scaled - static_cast<double>(sig_narrow);
-		if (frac > 0.5 || (frac == 0.5 && (sig_narrow & 1u) != 0u)) ++sig_narrow;
-
-		// Adjust if rounding pushed us over
-		uint64_t limit = pow10_64(effective_digits);
-		if (sig_narrow >= limit) {
-			sig_narrow /= 10;
-			target_exp++;
-		}
-		// Remove trailing zeros
-		while (sig_narrow > 0 && (sig_narrow % 10) == 0) {
-			sig_narrow /= 10;
-			target_exp++;
-		}
-
-		normalize_and_pack(negative, target_exp, significand_t(static_cast<long long>(sig_narrow)));
+		// the narrowest register that holds m * 2^E or m * 5^-E, with a sign bit to spare
+		if (E >= -80 && E <= 190)      assign_binary_exact<256>(negative, m, E);
+		else if (E >= -410 && E <= 960) assign_binary_exact<1024>(negative, m, E);
+		else                            assign_binary_exact<2624>(negative, m, E);
 		return *this;
 	}
 
+	// m * 2^E, rounded once to ndigits
+	template<unsigned B>
+	constexpr void assign_binary_exact(bool negative, uint64_t m, int E) noexcept {
+		using Big = blockbinary<B, bt, BinaryNumberType::Signed>;
+		auto power = [](unsigned base_value, unsigned k) {
+			Big p(1), base(static_cast<long long>(base_value));
+			while (k != 0) {
+				if (k & 1u) p *= base;
+				k >>= 1;
+				if (k != 0) base *= base;
+			}
+			return p;
+		};
+		Big N;
+		N.setbits(m);
+		int dexp = 0;
+		if (E > 0) N <<= E;
+		else if (E < 0) {
+			N *= power(5u, static_cast<unsigned>(-E));
+			dexp = E;
+		}
+		// keep ndigits + 3 digits; the dropped ones only decide the sticky bit
+		bool sticky = false;
+		const int lower = (N.msb() * 30102) / 100000 + 1;     // N has at least this many digits
+		const int cut = lower - static_cast<int>(ndigits) - 3;
+		if (cut > 0) {
+			const Big p10 = power(10u, static_cast<unsigned>(cut));
+			const Big q = N / p10;
+			sticky = !(q * p10 == N);
+			N = q;
+			dexp += cut;
+		}
+		wide_significand_t w;
+		w.assign(N);
+		round_and_pack(negative, dexp, w, sticky);
+		strip_trailing_zeros();
+	}
 
-	// Convert dfloat to native IEEE-754 double
+	// the canonical cohort member: no trailing zeros while the exponent has room, as the
+	// conversions have always produced
+	constexpr void strip_trailing_zeros() noexcept {
+		if (isnan() || isinf() || iszero()) return;
+		bool s; int e; significand_t sig;
+		unpack(s, e, sig);
+		const significand_t ten(10);
+		bool changed = false;
+		while (e < emax) {
+			const significand_t q = sig / ten;
+			if (!(q * ten == sig)) break;
+			sig = q;
+			++e;
+			changed = true;
+		}
+		if (changed) pack(s, e, sig);
+	}
+
+	// Convert dfloat to native IEEE-754 double, rounded once to nearest, ties to even (#2105)
 	//
-	// Constexpr-safe for sig_bits <= 64 (decimal32, decimal64).  For wider
-	// significands (decimal128, sig_bits > 64) the implementation falls back
-	// to std::strtod, which is not constexpr -- such instantiations cannot
-	// participate in constexpr conversion and the wide path is fenced under
-	// !std::is_constant_evaluated().  The pow(10, e) call is replaced by a
-	// constexpr loop using the pow10_64 table.
+	// The decimal digits of the significand go to decimal_to_binary, which forms
+	// sig * 10^e exactly and returns 64 bits with a guard and a sticky bit; those are rounded
+	// to the 53 bits of a normal double, or to the fewer bits a subnormal one has. It used
+	// to multiply or divide a double by a double power of ten, rounding twice or more:
+	// double(decimal64("1e100")) was 1.0000000000000006e100, and double(decimal64("1e-310"))
+	// was 0. Constexpr-safe at every width (decimal128 included).
 	constexpr double convert_to_double() const noexcept {
 		if (isnan()) return std::numeric_limits<double>::quiet_NaN();
 		if (isinf()) return sign() ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity();
@@ -1377,92 +1394,73 @@ protected:
 
 		bool s; int e; significand_t sig;
 		unpack(s, e, sig);
+		if (sig.iszero()) return s ? -0.0 : 0.0;
 
-		// value = (-1)^s * sig * 10^e
-		// For ndigits <= 19, sig fits in uint64_t; for wider, use string conversion
-		double sig_d = 0.0;
-		if constexpr (sig_bits <= 64) {
-			sig_d = static_cast<double>(static_cast<unsigned long long>(sig));
+		// the digits, most significant first
+		char rev[64]{};
+		unsigned n = 0;
+		{
+			significand_t v(sig);
+			const significand_t ten(10);
+			while (!v.iszero() && n < 64u) {
+				const significand_t q = v / ten;
+				const significand_t r = v - q * ten;
+				rev[n++] = static_cast<char>('0' + static_cast<unsigned>(static_cast<unsigned long long>(r)));
+				v = q;
+			}
+		}
+		char digits[64]{};
+		for (unsigned i = 0; i < n; ++i) digits[i] = rev[n - 1u - i];
+		const double inf = std::numeric_limits<double>::infinity();
+		const int top = static_cast<int>(n) + e;          // 10^(top-1) <= |value| < 10^top
+		if (top - 1 >= 309) return s ? -inf : inf;          // past 1e309: beyond max()
+		if (top <= -324) return s ? -0.0 : 0.0;             // below 1e-324: under half of denorm_min
+
+		::sw::universal::string_parse::decimal_float_scan scan{ true, false, std::string_view(digits, n), std::string_view(), static_cast<std::int32_t>(e) };
+		const auto d = ::sw::universal::decimal_to_binary::convert(scan, 64u);
+		if (!d.valid || d.is_zero) return s ? -0.0 : 0.0;
+		uint64_t M = 0;                                     // the MSB at bit 63
+		for (unsigned i = 0; i < 64u; ++i) {
+			if (d.mantissa.at(i)) M |= (uint64_t(1) << i);
+		}
+		const long long bs = static_cast<long long>(d.binary_scale);   // 2^bs <= |value| < 2^(bs+1)
+		if (bs > 1023) return s ? -inf : inf;
+		// the bits the double keeps: 53 for a normal, fewer below 2^-1022
+		const long long p = (bs >= -1022) ? 53 : 53 - (-1022 - bs);
+		if (p < 0) return s ? -0.0 : 0.0;
+		uint64_t kept = 0;
+		bool round_bit = false, rest = d.guard_bit || d.sticky_bit;
+		if (p == 0) {
+			round_bit = true;                               // M's top bit
+			rest = rest || ((M << 1) != 0);
 		}
 		else {
-			// Wide path (decimal128): not constexpr-safe.  Guarded so
-			// constexpr callers using the narrow path still compile.
-			if (!std::is_constant_evaluated()) {
-				std::string sig_str = to_decimal(sig);
-				sig_d = std::strtod(sig_str.c_str(), nullptr);
-			}
-			else {
-				// Constant-evaluated wide path: fall back to a digit-by-digit
-				// accumulation (loses precision below ~17 digits, but constexpr
-				// evaluation of decimal128 is a known limitation -- callers
-				// should use decimal32/decimal64 in constexpr contexts).
-				significand_t v(sig);
-				significand_t ten(10);
-				double scale = 1.0;
-				while (!v.iszero()) {
-					significand_t r = v % ten;
-					v /= ten;
-					sig_d += static_cast<double>(static_cast<unsigned long long>(r)) * scale;
-					scale *= 10.0;
-				}
-			}
+			const unsigned drop = static_cast<unsigned>(64 - p);    // 11 .. 63
+			kept = M >> drop;
+			round_bit = ((M >> (drop - 1u)) & 1u) != 0;
+			rest = rest || ((M & ((uint64_t(1) << (drop - 1u)) - 1u)) != 0);
 		}
-		// Replace std::pow(10.0, e) without accumulating FP rounding error.
-		// For |e| < 20 the exponent fits in the pow10_64 table, so we can
-		// scale via a single multiply or divide by an exact integer power of
-		// ten -- this preserves the property that, e.g., 3000000 / 1000000 ==
-		// 3.0 exactly in double.  Loop fallback for |e| >= 20 (decimal128).
-		double result;
-		if (e >= 0) {
-			if (e < 20) {
-				result = sig_d * static_cast<double>(pow10_64(static_cast<unsigned>(e)));
-			}
-			else {
-				double scale_factor = static_cast<double>(pow10_64(19));
-				for (int i = 19; i < e; ++i) scale_factor *= 10.0;
-				result = sig_d * scale_factor;
-			}
-		}
-		else {
-			int abs_e = -e;
-			if (abs_e < 20) {
-				result = sig_d / static_cast<double>(pow10_64(static_cast<unsigned>(abs_e)));
-			}
-			else {
-				double scale_factor = static_cast<double>(pow10_64(19));
-				for (int i = 19; i < abs_e; ++i) scale_factor *= 10.0;
-				result = sig_d / scale_factor;
-			}
-		}
+		if (round_bit && (rest || (kept & 1u) != 0)) ++kept;
+		const double result = sw::universal::constexpr_ldexp(static_cast<double>(kept), static_cast<int>(bs - p + 1));
 		return s ? -result : result;
 	}
+
+	// Integers keep every digit until the one rounding: decimal32's significand is 36 bits,
+	// and loading a uint64_t into it cut the high bits off (decimal32(ULLONG_MAX) was 1048575).
+	using int_significand_t = blockbinary<(sig_bits > 72u ? sig_bits : 72u), bt, BinaryNumberType::Signed>;
 
 	constexpr dfloat& convert_signed(int64_t v) noexcept {
 		if (0 == v) {
 			setzero();
 			return *this;
 		}
-		bool negative = (v < 0);
-		// Compute |v| as uint64_t without ever negating an int64_t -- the
-		// negation of INT64_MIN overflows.  Use the unsigned-arithmetic
-		// identity |INT64_MIN| = -(v + 1) + 1 (each step stays in range).
-		uint64_t abs_v = negative
-			? (static_cast<uint64_t>(-(v + 1)) + 1ull)
-			: static_cast<uint64_t>(v);
-
-		// Remove trailing zeros
-		int exponent = 0;
-		while (abs_v > 0 && (abs_v % 10) == 0) {
-			abs_v /= 10;
-			exponent++;
-		}
-
-		// Load the full uint64_t magnitude into the significand without
-		// narrowing through long long (which would corrupt values above
-		// LLONG_MAX -- see the unsigned conversion below).
-		significand_t sig;
+		const bool negative = (v < 0);
+		// |INT64_MIN| = -(v + 1) + 1, each step stays in range
+		const uint64_t abs_v = negative ? (static_cast<uint64_t>(-(v + 1)) + 1ull) : static_cast<uint64_t>(v);
+		int_significand_t sig;
 		sig.setbits(abs_v);
-		normalize_and_pack(negative, exponent, sig);
+		round_and_pack(negative, 0, sig, false);
+		strip_trailing_zeros();
 		return *this;
 	}
 
@@ -1471,20 +1469,10 @@ protected:
 			setzero();
 			return *this;
 		}
-
-		int exponent = 0;
-		while (v > 0 && (v % 10) == 0) {
-			v /= 10;
-			exponent++;
-		}
-
-		// Load the full uint64_t magnitude.  significand_t is signed for
-		// blockbinary's longdivision contract, but the sign bit is unused
-		// headroom (significands are always >= 0); setbits accepts the
-		// raw bits without narrowing through long long.
-		significand_t sig;
+		int_significand_t sig;
 		sig.setbits(v);
-		normalize_and_pack(false, exponent, sig);
+		round_and_pack(false, 0, sig, false);
+		strip_trailing_zeros();
 		return *this;
 	}
 

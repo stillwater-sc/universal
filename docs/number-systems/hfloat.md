@@ -110,6 +110,15 @@ IBM HFP:   1.0 + 2^-24 truncates to 1.0 (rounds down)
 
 Truncation is simpler to implement in hardware and makes results predictable, but it introduces a systematic negative bias in accumulated errors.
 
+Every arithmetic result and every conversion into hfloat is the exact value truncated toward zero to `ndigits` hex digits, at every width (#2105):
+- Addition aligns the smaller operand with two guard digits and a sticky bit, so `hfp64(1) - 16^-14` is `0x0.FFFFFFFFFFFFFF` and `hfp64(1) + 16^-17` is 1.
+- The product and quotient are formed exactly before truncation, which is what IBM's long-format multiply delivers with its guard digit.
+- `hfloat_extended` (hfp128) carries all 112 fraction bits through compare, multiply, divide and integer conversion. Before #2105 its fraction was cut to the low 64 bits.
+
+Conversion to `double` is the one exception to truncation: it rounds to nearest, ties to even, as a conversion to an IEEE type should.
+
+`numeric_limits<hfloat>::digits` counts hex digits, since `radix` is 16. `epsilon()` is 16^(1 - ndigits).
+
 ### No NaN, No Infinity, No Subnormals
 
 IBM HFP predates the IEEE 754 concepts of NaN, infinity, and subnormal numbers:
