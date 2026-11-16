@@ -776,7 +776,7 @@ namespace sw { namespace universal {
 // Modulo resolve past the range wraps the exact sum (#2107): through double, rounded to odd, only
 // the leading 53 bits survived, so fixpnt<52,0,Modulo> of 2^60 + 1 resolved to 256
 template<typename F>
-int CheckModuloResolve(const quire<F>& q, const F& expected, const char* label) {
+int CheckResolve(const quire<F>& q, const F& expected, const char* label) {
 	const F r = quire_resolve(q);
 	if (r == expected) return 0;
 	std::cerr << "FAIL: " << label << ": " << to_binary(r) << " (" << r << "), expected " << to_binary(expected) << " (" << expected << ")\n";
@@ -790,11 +790,11 @@ int TestModuloWrapResolve() {
 		quire<F> q;
 		q = std::ldexp(1.0, 60);
 		q += quire_mul(F(1), F(1));
-		nrOfFailedTestCases += CheckModuloResolve(q, F(1), "fixpnt<52,0,Modulo> 2^60 + 1");
+		nrOfFailedTestCases += CheckResolve(q, F(1), "fixpnt<52,0,Modulo> 2^60 + 1");
 		quire<F> n;
 		n = -std::ldexp(1.0, 60);
 		n -= quire_mul(F(1), F(1));
-		nrOfFailedTestCases += CheckModuloResolve(n, F(-1), "fixpnt<52,0,Modulo> -(2^60 + 1)");
+		nrOfFailedTestCases += CheckResolve(n, F(-1), "fixpnt<52,0,Modulo> -(2^60 + 1)");
 	}
 	{
 		// a tie at the lsb past the range: 2^60 + 0.375 at lsb 0.25 rounds to even, 0.5, and 2^60 wraps to 0
@@ -802,12 +802,12 @@ int TestModuloWrapResolve() {
 		quire<F> q;
 		q = std::ldexp(1.0, 60);
 		q += quire_mul(F(0.75), F(0.5));
-		nrOfFailedTestCases += CheckModuloResolve(q, F(0.5), "fixpnt<52,2,Modulo> 2^60 + 0.375");
+		nrOfFailedTestCases += CheckResolve(q, F(0.5), "fixpnt<52,2,Modulo> 2^60 + 0.375");
 		// and 2^60 + 0.125, the tie below an even lsb, rounds down to 0
 		quire<F> d;
 		d = std::ldexp(1.0, 60);
 		d += quire_mul(F(0.25), F(0.5));
-		nrOfFailedTestCases += CheckModuloResolve(d, F(0), "fixpnt<52,2,Modulo> 2^60 + 0.125");
+		nrOfFailedTestCases += CheckResolve(d, F(0), "fixpnt<52,2,Modulo> 2^60 + 0.125");
 	}
 	{
 		// wider than 52 bits, the direct path: 2^70 + 3 wraps to 3 in 64 bits
@@ -815,17 +815,74 @@ int TestModuloWrapResolve() {
 		quire<F> q;
 		q = std::ldexp(1.0, 70);
 		q += quire_mul(F(3), F(1));
-		nrOfFailedTestCases += CheckModuloResolve(q, F(3), "fixpnt<64,0,Modulo> 2^70 + 3");
+		nrOfFailedTestCases += CheckResolve(q, F(3), "fixpnt<64,0,Modulo> 2^70 + 3");
 	}
 	{
 		// in range the exact path agrees with the conversion: 5/32 at lsb 1/16 ties to even, 1/8
 		using F = fixpnt<16, 4, Modulo, std::uint16_t>;
 		quire<F> q;
 		q = 5.0 / 32.0;
-		nrOfFailedTestCases += CheckModuloResolve(q, F(0.125), "fixpnt<16,4,Modulo> 5/32");
+		nrOfFailedTestCases += CheckResolve(q, F(0.125), "fixpnt<16,4,Modulo> 5/32");
 		quire<F> n;
 		n = -5.0 / 32.0;
-		nrOfFailedTestCases += CheckModuloResolve(n, F(-0.125), "fixpnt<16,4,Modulo> -5/32");
+		nrOfFailedTestCases += CheckResolve(n, F(-0.125), "fixpnt<16,4,Modulo> -5/32");
+	}
+	return nrOfFailedTestCases;
+}
+
+// Saturate resolve wider than 52 bits rounds to nearest even and saturates (#2107; it truncated)
+int TestWideSaturateResolve() {
+	int nrOfFailedTestCases = 0;
+	{
+		using F = fixpnt<53, 4, Saturate, std::uint32_t>;   // lsb 1/16
+		quire<F> t;
+		t += quire_mul(F(0.75), F(0.125));                   // 3/32: the tie between 1/16 and 1/8
+		nrOfFailedTestCases += CheckResolve(t, F(0.125), "fixpnt<53,4,Saturate> 3/32 ties to even");
+		quire<F> n;
+		n -= quire_mul(F(0.75), F(0.125));
+		nrOfFailedTestCases += CheckResolve(n, F(-0.125), "fixpnt<53,4,Saturate> -3/32 ties to even");
+		quire<F> u;
+		u += quire_mul(F(0.75), F(0.1875));                  // 0.140625 = 2.25/16, below the tie: 2/16
+		nrOfFailedTestCases += CheckResolve(u, F(0.125), "fixpnt<53,4,Saturate> 0.140625");
+		quire<F> v;
+		v += quire_mul(F(0.8125), F(0.1875));                // 0.15234375 = 2.4375/16, rounds down to 2/16
+		nrOfFailedTestCases += CheckResolve(v, F(0.125), "fixpnt<53,4,Saturate> 0.15234375");
+		quire<F> w;
+		w += quire_mul(F(0.875), F(0.1875));                 // 0.1640625 = 2.625/16, rounds up to 3/16
+		nrOfFailedTestCases += CheckResolve(w, F(0.1875), "fixpnt<53,4,Saturate> 0.1640625");
+	}
+	{
+		// a rounding carry past maxpos saturates: 2^51 - 1/4 at lsb 1/2 ties up to 2^51, past maxpos 2^51 - 1/2
+		using F = fixpnt<53, 1, Saturate, std::uint32_t>;
+		quire<F> q;
+		q = std::ldexp(1.0, 51) - 0.25;
+		nrOfFailedTestCases += CheckResolve(q, F(SpecificValue::maxpos), "fixpnt<53,1,Saturate> 2^51 - 1/4");
+		quire<F> n;
+		n = -std::ldexp(1.0, 51);                            // exactly maxneg
+		nrOfFailedTestCases += CheckResolve(n, F(SpecificValue::maxneg), "fixpnt<53,1,Saturate> -2^51");
+	}
+	{
+		// the same tie at 64 bits, where the direct path truncated on main too
+		using F = fixpnt<64, 4, Saturate, std::uint32_t>;
+		quire<F> t;
+		t += quire_mul(F(0.75), F(0.125));
+		nrOfFailedTestCases += CheckResolve(t, F(0.125), "fixpnt<64,4,Saturate> 3/32 ties to even");
+		quire<F> w;
+		w += quire_mul(F(0.875), F(0.1875));
+		nrOfFailedTestCases += CheckResolve(w, F(0.1875), "fixpnt<64,4,Saturate> 0.1640625");
+	}
+	{
+		using F = fixpnt<64, 0, Saturate, std::uint32_t>;
+		quire<F> p;
+		p = std::ldexp(1.0, 70);
+		nrOfFailedTestCases += CheckResolve(p, F(SpecificValue::maxpos), "fixpnt<64,0,Saturate> 2^70");
+		quire<F> n;
+		n = -std::ldexp(1.0, 63);
+		nrOfFailedTestCases += CheckResolve(n, F(SpecificValue::maxneg), "fixpnt<64,0,Saturate> -2^63");
+		quire<F> m;
+		m = -std::ldexp(1.0, 63);
+		m -= quire_mul(F(1), F(1));
+		nrOfFailedTestCases += CheckResolve(m, F(SpecificValue::maxneg), "fixpnt<64,0,Saturate> -2^63 - 1");
 	}
 	return nrOfFailedTestCases;
 }
@@ -852,6 +909,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(TestDifferentConfigs(), "fixpnt fdp", "different configs");
 	nrOfFailedTestCases += ReportTestResult(TestAccuracy(), "fixpnt fdp", "accuracy");
 	nrOfFailedTestCases += ReportTestResult(TestModuloWrapResolve(), "fixpnt quire_resolve", "Modulo wraps the exact sum");
+	nrOfFailedTestCases += ReportTestResult(TestWideSaturateResolve(), "fixpnt quire_resolve", "wide Saturate rounds, saturates");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
