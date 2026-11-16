@@ -100,7 +100,8 @@ class microfloat {
 	// normal range every microfloat value rounds to zero, so those ends are clamped and cast.
 	template<typename Real>
 	static constexpr float odd_float(Real v) noexcept {
-		if (v != v || v == std::numeric_limits<Real>::infinity() || v == -std::numeric_limits<Real>::infinity()) return static_cast<float>(v);
+		// NaN, inf and both zeros are cast: -0 < 0 is false, so the sign test below would lose -0
+		if (v != v || v == Real(0) || v == std::numeric_limits<Real>::infinity() || v == -std::numeric_limits<Real>::infinity()) return static_cast<float>(v);
 		const bool negative = (v < Real(0));
 		const Real a = negative ? -v : v;
 		if (a > Real(0x1p127)) return negative ? -0x1p127f : 0x1p127f;

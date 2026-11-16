@@ -32,8 +32,10 @@ element must clip as OCP MX requires: with plain e5m2 every scaled value of 6144
 more became inf (#2096). An infinite input still gives inf in an e5m2 element.
 
 Special inputs: a NaN sets the scale to NaN, so the whole block dequantizes to NaN
-(#2086). An inf sets the scale from float's top exponent; the inf element is inf in
-e5m2 and maxpos otherwise, and the finite elements underflow to 0.
+(#2086). An inf sets the scale from float's top exponent, 2^(127 - emax); the inf
+element is inf in e5m2 and maxpos otherwise. A finite element keeps whatever that
+scale leaves it: values near float's top survive (2^127 is 2^15 in an mxfp8e5m2
+block holding an inf), and ordinary magnitudes such as 1.0 underflow to 0.
 
 `byte_size()` is the storage of this implementation, one byte per element, not the
 packed OCP size: `mxfp4` is 33 bytes here and 17 packed.
@@ -140,9 +142,9 @@ std::cout << "Block dot product: " << dot << std::endl;
 std::vector<float> data(32);
 // ... fill with neural network weights ...
 
-mxblock<e2m1, 32> mx4;   // 4-bit: maximum compression
-mxblock<e4m3, 32> mx8;   // 8-bit: balanced precision/size
-mxblock<e5m2, 32> mx8w;  // 8-bit: wider range, less precision
+mxfp4     mx4;   // 4-bit: maximum compression
+mxfp8     mx8;   // 8-bit: balanced precision/size (e4m3_saturating elements)
+mxfp8e5m2 mx8w;  // 8-bit: wider range, less precision (e5m2_saturating elements)
 
 mx4.quantize(data);
 mx8.quantize(data);

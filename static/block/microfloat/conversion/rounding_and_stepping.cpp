@@ -200,6 +200,15 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNearTie<e2m1>("e2m1", 4.0, 6.0, reportTestCases), "e2m1", "near ties from double");
 	nrOfFailedTestCases += ReportTestResult(VerifyNearTie<e3m2>("e3m2", 0.25, 0.3125, reportTestCases), "e3m2", "near ties from double");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerRounding(reportTestCases), "microfloat", "integers round once");
+	{
+		// the narrowing keeps the sign of zero: e4m3(-0.0) is -0, as the direct float cast gave
+		const e4m3 nz(-0.0), pz(0.0);
+		int fails = (nz.bits() == e4m3::sign_mask && pz.bits() == 0u) ? 0 : 1;
+#if LONG_DOUBLE_SUPPORT
+		fails += (e5m2(-0.0L).bits() == e5m2::sign_mask) ? 0 : 1;
+#endif
+		nrOfFailedTestCases += ReportTestResult(fails, "e4m3", "-0.0 stays -0");
+	}
 
 	nrOfFailedTestCases += ReportTestResult(VerifyStepping<e2m1>("e2m1", reportTestCases), "e2m1", "++ and --");
 	nrOfFailedTestCases += ReportTestResult(VerifyStepping<e3m2>("e3m2", reportTestCases), "e3m2", "++ and --");

@@ -197,7 +197,7 @@ int VerifyBlockMaximumClips(bool reportTestCases) {
 
 // An infinite input keeps today's behaviour, as decided on #2096: the scale comes from the float's
 // top exponent (2^(127 - emax)), the inf element is inf where the element type has one and maxpos
-// otherwise, and the finite elements underflow to 0.
+// otherwise, and a finite element of ordinary magnitude, 1.0 here, underflows to 0.
 template<typename Block>
 int VerifyInfBlock(const std::string& tag, int emax, bool elementHasInf, bool reportTestCases) {
 	const float inf = std::numeric_limits<float>::infinity();

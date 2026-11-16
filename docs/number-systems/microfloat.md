@@ -27,8 +27,8 @@ But not all 4-bit and 8-bit formats are the same. The OCP (Open Compute Project)
 | `e3m2` | `microfloat<6,3,false,false,true>` | [0.03125, 28] | 2 fraction bits | More exponent range |
 | `e4m3` (= `e4m3fn`) | `microfloat<8,4,false,true,false>` | [~0.002, 448] | 3 fraction bits | Balanced; the OCP OFP8 FP8 format |
 | `e4m3_saturating` | `microfloat<8,4,false,true,true>` | [~0.002, 448] | 3 fraction bits | Same encoding, clamps on overflow; used by MX and NVFP4 blocks |
-| `e5m2` | `microfloat<8,5,true,true,false>` | [~0.001, 57344] | 2 fraction bits | Wide range; IEEE-like, has infinity |
-| `e5m2_saturating` | `microfloat<8,5,true,true,true>` | [~0.001, 57344] | 2 fraction bits | Same encoding, clamps on overflow (an inf input stays inf); used by `mxfp8e5m2` |
+| `e5m2` | `microfloat<8,5,true,true,false>` | [~0.0000153 (2^-16), 57344] | 2 fraction bits | Wide range; IEEE-like, has infinity |
+| `e5m2_saturating` | `microfloat<8,5,true,true,true>` | [~0.0000153 (2^-16), 57344] | 2 fraction bits | Same encoding, clamps on overflow (an inf input stays inf); used by `mxfp8e5m2` |
 
 ### The two e4m3 conversion policies
 

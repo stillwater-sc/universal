@@ -10,7 +10,8 @@
 //     every element dequantizes to NaN. Before #2096 the NaN was dropped: NaN is never greater than
 //     amax, so the scale came from the other elements, and e2m1, which has no NaN, made the element 0.
 //   - an inf input saturates: the block scale is e4m3's maxpos (448), the inf element e2m1's maxpos (6),
-//     and the finite elements underflow to 0. This is the behaviour MX blocks keep (#2096).
+//     and finite elements of ordinary magnitude, below a quarter of 448, underflow to 0. This is the
+//     behaviour MX blocks keep (#2096).
 //   - a tensor scale of 0 gives the zero block.
 //   - an amax so small that amax / 6 rounds to 0 in e4m3 gets the smallest e4m3 scale, 2^-9: the
 //     scale is never 0, so nothing divides by it.
