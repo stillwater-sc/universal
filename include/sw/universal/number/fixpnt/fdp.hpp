@@ -107,7 +107,9 @@ fixpnt<nbits, rbits, arithmetic, bt>
 quire_resolve(const quire<fixpnt<nbits, rbits, arithmetic, bt>, capacity, LimbType>& q) {
 	using Scalar = fixpnt<nbits, rbits, arithmetic, bt>;
 
-	if (q.isoverflow()) return Scalar(q.sign() ? SpecificValue::maxneg : SpecificValue::maxpos);   // no infinity: a sum past the accumulator saturates (#2094)
+	// No infinity: a sum past the accumulator saturates, in Modulo arithmetic as well (#2094, decided).
+	// The accumulator no longer holds the sum's low bits once it overflows, so there is nothing to wrap.
+	if (q.isoverflow()) return Scalar(q.sign() ? SpecificValue::maxneg : SpecificValue::maxpos);
 	if (q.iszero()) {
 		Scalar result;
 		result.setzero();

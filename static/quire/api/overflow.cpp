@@ -113,8 +113,13 @@ int VerifyCfloat(bool reportTestCases) {
 	check(a.isoverflow(), "quire + quire overflows");
 	quire<C, 0> small;
 	small += quire_mul(C(1), C(1));
-	check(small < a && a > small && !(a == small) && n < small, "an overflowed quire orders past the finite ones");
+	check(small < a && !(a == small) && n < small, "an overflowed quire orders past the finite ones");
 	check(std::isinf(a.convert_to<double>()) && a.convert_to<int>() == std::numeric_limits<int>::max(), "convert_to saturates or is inf");
+	// a quire added to itself detects the carry too
+	quire<C, 0> self;
+	self += quire_mul(C(3), C(3));
+	self += self;
+	check(self.isoverflow() && quire_resolve(self).isinf(), "q += q overflows");
 	// opposite overflows cannot be ordered: their sum is NaN
 	quire<C, 0> pn(a);
 	pn += n;

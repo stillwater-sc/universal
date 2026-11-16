@@ -301,6 +301,9 @@ public:
 
 	/// Add two quires
 	quire& operator+=(const quire& rhs) {
+		// q += q: the addition below changes rhs as it changes *this, so its carry check would compare
+		// the sum with itself and miss the overflow; add a copy (CodeRabbit on #2095)
+		if (&rhs == this) { const quire copy(rhs); return *this += copy; }
 		if (_is_nan) return *this;                 // NaN is sticky
 		if (rhs._is_nan) { setnan(); return *this; }
 		if (rhs._is_pinf || rhs._is_ninf || _is_pinf || _is_ninf) {
