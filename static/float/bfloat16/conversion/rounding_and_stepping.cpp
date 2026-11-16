@@ -62,7 +62,7 @@ namespace {
 		if (keep_lsb == -133 && q < 128u) return static_cast<unsigned>(q);   // subnormal (or minnormal reached below)
 		int bexp = keep_lsb + 7 + 127;            // the biased exponent of q's leading bit
 		if (q >= 256u) { q >>= 1; ++bexp; }      // the rounding carried into the next binade
-		if (keep_lsb == -133) bexp = 1;           // a subnormal that rounded up to 2^-126
+		// a subnormal that rounded up to 2^-126 already has bexp = -133 + 7 + 127 = 1
 		if (bexp >= 255) return 0x7F80u;          // overflow: inf
 		return static_cast<unsigned>((bexp << 7) | (q & 0x7Fu));
 	}
@@ -88,6 +88,7 @@ namespace {
 		one(1.0 + std::ldexp(1.0, -8) - std::ldexp(1.0, -40));
 		one(-(1.0 + std::ldexp(1.0, -8) + std::ldexp(1.0, -40)));
 		one(std::ldexp(1.5, -133) + std::ldexp(1.0, -170));   // a subnormal tie broken below float
+		one(511.0 * std::ldexp(1.0, -134));                   // rounds up twice, to 2^-125 = 0x0100 (CodeRabbit, #2110)
 		for (unsigned k = 0; k < nrSamples; ++k) {
 			// a bfloat16 tie with a tiny perturbation of either sign, past float's precision
 			const double base = double(from_bits(static_cast<unsigned>(rng() & 0x7F7Fu)));

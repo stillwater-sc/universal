@@ -19,6 +19,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cfenv>
 #include <cstdint>
 #include <cmath>
 #include <iostream>
@@ -90,7 +91,10 @@ namespace {
 		if (isinf(r)) {
 			// past the overflow threshold, or just below it with s rounded up: decide on the threshold
 			const double t = as_bound(r);
-			return (compare_pair(s, e, t) >= 0) == (t > 0) ? r : ((t > 0) ? bfloat16(SpecificValue::maxpos) : bfloat16(SpecificValue::maxneg));
+			// the threshold itself rounds to the infinity, on either side
+			const int c_t = compare_pair(s, e, t);
+			if (t > 0) return (c_t >= 0) ? r : bfloat16(SpecificValue::maxpos);
+			return (c_t <= 0) ? r : bfloat16(SpecificValue::maxneg);
 		}
 		const int c_r = compare_pair(s, e, double(r));
 		if (c_r == 0) return r;
@@ -184,6 +188,14 @@ namespace {
 		chk(fma(two, three, inf), fma_oracle(two, three, inf), "2*3+inf (inf)");
 		chk(fma(two, three, ninf),fma_oracle(two, three, ninf),"2*3-inf (-inf)");
 		chk(fma(ninf, two, one),  fma_oracle(ninf, two, one),  "-inf*2+1 (-inf)");
+		// the exact negative overflow threshold, -511 * 2^119, is a tie that rounds to -inf (CodeRabbit, #2110)
+		chk(fma(bf16_from_bits(0xDEE0), bf16_from_bits(0x6012), zero), ninf, "-511 * 2^119 (the overflow tie) -> -inf");
+		chk(fma_oracle(bf16_from_bits(0xDEE0), bf16_from_bits(0x6012), zero), ninf, "oracle: the overflow tie -> -inf");
+		chk(fma(bf16_from_bits(0x5EE0), bf16_from_bits(0x6012), zero), inf, "+511 * 2^119 (the overflow tie) -> +inf");
+		// an infinite result from finite and infinite operands raises no invalid-operation flag
+		std::feclearexcept(FE_ALL_EXCEPT);
+		const bfloat16 rinf = fma(inf, two, three);
+		if (std::fetestexcept(FE_INVALID) != 0 || !(rinf == inf)) { ++fails; if (reportTestCases) std::cout << "    FAIL fma(inf,2,3) raised FE_INVALID\n"; }
 		// NaN propagation
 		const bfloat16 nan = bf16_from_bits(0x7FC0);
 		if (!isnan(fma(nan, one, one))) { ++fails; if (reportTestCases) std::cout << "    FAIL fma(NaN,1,1) not NaN\n"; }

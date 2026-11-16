@@ -26,7 +26,7 @@
 //
 // Sub-issue of #1189 (universal fma). Relates to #1193.
 
-#include <cmath>
+#include <cmath>         // std::isfinite, std::nextafter
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -37,7 +37,8 @@ inline bfloat16 fma(bfloat16 a, bfloat16 b, bfloat16 c) {
 	const double p  = double(a) * double(b);          // exact
 	const double cd = double(c);
 	const double s  = p + cd;
-	if (!(s - s == 0.0) || !(p - p == 0.0) || !(cd - cd == 0.0)) return bfloat16(s);   // inf or NaN
+	// inf or NaN: classified, not tested by s - s, which raises FE_INVALID for an infinity
+	if (!std::isfinite(p) || !std::isfinite(cd) || !std::isfinite(s)) return bfloat16(s);
 	// TwoSum: s + e == p + cd exactly
 	const double bv = s - p;
 	const double e  = (p - (s - bv)) + (cd - bv);
