@@ -7,7 +7,8 @@
 //
 // As decided on #2094: when quire exceptions are enabled, the carry out of the accumulator's top bit throws
 // quire_overflow, through a product added to the quire and through a quire added to a quire. Without them
-// the quire records the overflow instead (overflow.cpp).
+// the quire records the overflow instead (overflow.cpp). Either way the quire is left overflowed: before
+// #2107 a caught exception left the wrapped sum (posit<8,0> resolved to 0, isoverflow() false).
 #include <universal/utility/directives.hpp>
 #define QUIRE_THROW_ARITHMETIC_EXCEPTION 1
 #include <cmath>
@@ -40,17 +41,47 @@ int VerifyThrows(bool reportTestCases) {
 	using C = cfloat<4, 2, uint8_t, true, false, false>;
 	using P = posit<8, 0>;
 	int fails = 0;
-	fails += ExpectOverflow([] {
+	// after the caught exception the quire is overflowed and resolves as #2094 defines it, not to the
+	// wrapped sum (#2107): +inf for the cfloat, maxpos for the posit
+	{
 		quire<C, 0> q;
-		q += quire_mul(C(3), C(3));
-		q += quire_mul(C(3), C(3));   // 18 is past the 6-bit accumulator
-	}, "cfloat<4,2> 3*3 + 3*3", reportTestCases);
-	fails += ExpectOverflow([] {
+		fails += ExpectOverflow([&q] {
+			q += quire_mul(C(3), C(3));
+			q += quire_mul(C(3), C(3));   // 18 is past the 6-bit accumulator
+		}, "cfloat<4,2> 3*3 + 3*3", reportTestCases);
+		const C r = quire_resolve(q);
+		if (!q.isoverflow() || !r.isinf() || r.sign()) {
+			if (reportTestCases) std::cerr << "FAIL: cfloat<4,2> quire after the exception: isoverflow " << q.isoverflow() << ", resolves to " << r << '\n';
+			++fails;
+		}
+	}
+	{
 		quire<P, 0> q;
-		q = std::ldexp(1.0, q.max_scale());
-		const quire<P, 0> same(q);
-		q += same;                    // 2^top + 2^top
-	}, "posit<8,0> quire + quire", reportTestCases);
+		fails += ExpectOverflow([&q] {
+			q = std::ldexp(1.0, q.max_scale());
+			const quire<P, 0> same(q);
+			q += same;                    // 2^top + 2^top
+		}, "posit<8,0> quire + quire", reportTestCases);
+		const P r = quire_resolve(q);
+		if (!q.isoverflow() || !(r == P(SpecificValue::maxpos))) {
+			if (reportTestCases) std::cerr << "FAIL: posit<8,0> quire after the exception: isoverflow " << q.isoverflow() << ", resolves to " << r << '\n';
+			++fails;
+		}
+	}
+	{
+		// the same through a negative product: the overflow keeps the sum's sign
+		quire<P, 0> q;
+		fails += ExpectOverflow([&q] {
+			q = -std::ldexp(1.0, q.max_scale());
+			const quire<P, 0> same(q);
+			q += same;
+		}, "posit<8,0> -quire + -quire", reportTestCases);
+		const P r = quire_resolve(q);
+		if (!q.isoverflow() || !(r == P(SpecificValue::maxneg))) {
+			if (reportTestCases) std::cerr << "FAIL: posit<8,0> negative quire after the exception: isoverflow " << q.isoverflow() << ", resolves to " << r << '\n';
+			++fails;
+		}
+	}
 	// a sum that stays inside the accumulator does not throw
 	try {
 		quire<C, 0> q;

@@ -112,18 +112,51 @@ namespace {
 		return fails;
 	}
 
-	// convert_to an integral type: truncation toward zero, saturated
+	// convert_to an integral type follows the integer-cast rule (#2104, #2107): truncation toward
+	// zero; past the range +-max() (unsigned: max() - 1, a negative value 0); NaN is the integer NaR,
+	// min() (unsigned: max()), which no finite value gives
 	int VerifyConvertToIntegral(bool reportTestCases) {
 		int fails = 0;
 		using Q = quire<double>;
 		auto q_of = [](double v) { Q q; q = v; return q; };
-		fails += report(q_of(1e30).convert_to<int>() == std::numeric_limits<int>::max(), "1e30 does not saturate to INT_MAX", reportTestCases);
-		fails += report(q_of(-1e30).convert_to<int>() == std::numeric_limits<int>::min(), "-1e30 does not saturate to INT_MIN", reportTestCases);
+		constexpr int imax = std::numeric_limits<int>::max();
+		constexpr long long llmax = std::numeric_limits<long long>::max();
+		constexpr unsigned umax = std::numeric_limits<unsigned>::max();
+		fails += report(q_of(1e30).convert_to<int>() == imax, "1e30 does not saturate to INT_MAX", reportTestCases);
+		fails += report(q_of(-1e30).convert_to<int>() == -imax, "-1e30 does not saturate to -INT_MAX", reportTestCases);
+		fails += report(q_of(-1e30).convert_to<long long>() == -llmax, "-1e30 does not saturate to -LLONG_MAX", reportTestCases);
+		fails += report(q_of(1e30).convert_to<unsigned>() == umax - 1u, "1e30 does not saturate to UINT_MAX - 1", reportTestCases);
+		fails += report(q_of(-1e30).convert_to<unsigned>() == 0u, "-1e30 does not saturate to 0 for unsigned", reportTestCases);
+		fails += report(q_of(std::ldexp(1.0, 32)).convert_to<unsigned>() == umax - 1u, "2^32 does not saturate to UINT_MAX - 1", reportTestCases);
+		fails += report(q_of(std::ldexp(1.0, 64)).convert_to<std::uint64_t>() == std::numeric_limits<std::uint64_t>::max() - 1u, "2^64 does not saturate to UINT64_MAX - 1", reportTestCases);
+		fails += report(q_of(-2147483648.0).convert_to<int>() == -imax, "-2^31 does not saturate to -INT_MAX", reportTestCases);
+		fails += report(q_of(-2147483647.0).convert_to<int>() == -imax, "-(2^31 - 1) is not exact", reportTestCases);
+		// the non-finite states
+		{
+			Q nan(SpecificValue::qnan);
+			fails += report(nan.convert_to<int>() == std::numeric_limits<int>::min(), "NaN is not INT_MIN", reportTestCases);
+			fails += report(nan.convert_to<long long>() == std::numeric_limits<long long>::min(), "NaN is not LLONG_MIN", reportTestCases);
+			fails += report(nan.convert_to<unsigned>() == umax, "NaN is not UINT_MAX", reportTestCases);
+			Q pinf, ninf;
+			pinf = std::numeric_limits<double>::infinity();
+			ninf = -std::numeric_limits<double>::infinity();
+			fails += report(pinf.isinf() && ninf.isinf(), "the quire does not hold +-inf", reportTestCases);
+			fails += report(pinf.convert_to<int>() == imax && ninf.convert_to<int>() == -imax, "+-inf does not saturate to +-INT_MAX", reportTestCases);
+			fails += report(pinf.convert_to<unsigned>() == umax - 1u && ninf.convert_to<unsigned>() == 0u, "+-inf does not saturate to UINT_MAX - 1 and 0", reportTestCases);
+			fails += report(ninf.convert_to<long long>() == -llmax, "-inf does not saturate to -LLONG_MAX", reportTestCases);
+			// an overflowed sum saturates the same way (#2094)
+			Q over;
+			over = -std::ldexp(1.0, 1000);
+			for (int i = 0; i < 2000 && !over.isoverflow(); ++i) over += over;   // doubles until it overflows
+			fails += report(over.isoverflow(), "the negative sum does not overflow", reportTestCases);
+			fails += report(over.convert_to<int>() == -imax, "a negative overflow does not saturate to -INT_MAX", reportTestCases);
+			fails += report(over.convert_to<unsigned>() == 0u, "a negative overflow does not saturate to 0 for unsigned", reportTestCases);
+		}
 		fails += report(q_of(2.75).convert_to<int>() == 2 && q_of(-2.75).convert_to<int>() == -2, "2.75 and -2.75 do not truncate to 2 and -2", reportTestCases);
 		fails += report(q_of(0.75).convert_to<int>() == 0, "0.75 does not truncate to 0", reportTestCases);
 		fails += report(q_of(-5.0).convert_to<std::uint32_t>() == 0u, "-5 does not saturate to 0 for uint32_t", reportTestCases);
 		fails += report(q_of(std::ldexp(1.0, 63)).convert_to<std::int64_t>() == std::numeric_limits<std::int64_t>::max(), "2^63 does not saturate to INT64_MAX", reportTestCases);
-		fails += report(q_of(-std::ldexp(1.0, 63)).convert_to<std::int64_t>() == std::numeric_limits<std::int64_t>::min(), "-2^63 is not INT64_MIN", reportTestCases);
+		fails += report(q_of(-std::ldexp(1.0, 63)).convert_to<std::int64_t>() == -std::numeric_limits<std::int64_t>::max(), "-2^63 does not saturate to -INT64_MAX", reportTestCases);
 		fails += report(q_of(std::ldexp(1.0, 63)).convert_to<std::uint64_t>() == (std::uint64_t(1) << 63), "2^63 is not 2^63 as uint64_t", reportTestCases);
 		Q big;
 		big = std::numeric_limits<std::int64_t>::max();

@@ -160,7 +160,7 @@ double e = mtl::dot<quire<double>, double>(u, v);               // exact IEEE do
 The product is exact for posit, bposit, cfloat, fixpnt, float and double (for float and
 double, subnormal operands included). The `quire_mul` of lns and dbns forms the product through `double` and rounds it, so with those types each term carries one product rounding. The accumulation of the products is exact either way.
 
-`accumulator_value` rounds once when `R` is the element type, `float` or `double`. For `float` and `double` it rounds from the full quire, unlike `convert_to<R>()`, which keeps only the leading 53 bits. Any other `R` is reached through the correctly rounded `double`, so it may round twice.
+`accumulator_value` rounds once when `R` is the element type, `float` or `double`. For `float` and `double` it rounds from the full quire, as `convert_to<R>()` does. Any other `R` is reached through the correctly rounded `double`, so it may round twice.
 
 The element type must be exactly `T`. `accumulator_merge` combines the partial quires of a
 split reduction exactly, so a parallel or distributed result doesn't depend on how the terms
@@ -189,6 +189,13 @@ states beside it: +inf, -inf and NaN. They follow IEEE 754 (#2019):
 - **Selectors:** `isinf()` is true only for an infinity, with `sign()` telling which; `isnan()` only for NaN; `isnar()` for any of the three.
 - **Comparisons:** an infinite quire compares as that infinity. A NaN quire is unordered: every comparison is false, and `!=` is true.
 - **Posit and bposit:** they have no infinities, so any non-finite state resolves to NaR, as before. lns and dbns have no infinity encoding either and resolve it to NaN.
+- **Overflow:** a sum that carries out of the accumulator's top bit leaves the quire overflowed (`isoverflow()`), with the sum's sign. It resolves to +-maxpos in a type without infinities and to +-inf in one with them. With `QUIRE_THROW_ARITHMETIC_EXCEPTION` the addition also throws `quire_overflow`; the quire is overflowed when the exception is caught, not left holding the wrapped sum (#2107).
+
+### `convert_to<T>()`
+
+- **`float` and `double`** round once, to nearest even, from every bit of the accumulator.
+- **An integer type** follows [the library's integer-cast rule](posit.md#integer-casts) (#2104, #2107): the value truncates toward zero; past the range, an infinity, or an overflowed sum saturates to +-`max()` (an unsigned type to `max() - 1`, and a negative value to 0); NaN gives the integer NaR, `min()` for a signed type and `max()` for an unsigned one. Before #2107 NaN gave 0 and a large negative value `min()`.
+- **Another number type** of at most 64 bits goes through `double`, rounded to odd, which the type's own rounding then makes correct. That works for at most 51 significand bits, so a wider type (`cfloat<64,11>`, `posit<64,es>`, `fixpnt<64,r>`) does not compile; use the type's `quire_resolve()`, which rounds from the accumulator, or `to_blocktriple()`.
 
 ## Problems It Solves
 

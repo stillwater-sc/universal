@@ -117,6 +117,12 @@ int VerifySpecialValues(bool reportTestCases) {
 	expect(div(inf, 3.0), inf, "inf / 3");
 	expect(div(3.0, inf), 0.0, "3 / inf");
 	expect(div(-3.0, inf), -0.0, "-3 / inf");
+	// a zero dividend: the XOR of the signs (#2107; (-0) / 3 was +0)
+	expect(div(-0.0, 3.0), -0.0, "-0 / 3");
+	expect(div(0.0, -3.0), -0.0, "+0 / -3");
+	expect(div(-0.0, -3.0), 0.0, "-0 / -3");
+	expect(div(0.0, 3.0), 0.0, "+0 / 3");
+	expect(div(-0.0, inf), -0.0, "-0 / inf");
 	return nrOfFailedTests;
 }
 

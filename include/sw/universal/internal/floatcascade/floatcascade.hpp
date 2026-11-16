@@ -2226,6 +2226,13 @@ floatcascade<N>& floatcascade<N>::operator/=(const floatcascade<N>& rhs) noexcep
         }
         return *this;
     }
+    if (iszero()) {
+        // a zero dividend over a nonzero finite divisor: a zero with the XOR of the signs, from the
+        // sign bits as x / +-0 does above; the long division gave (-0) / 3 = +0 (#2107)
+        e[0] = (std::signbit(e[0]) != std::signbit(rhs.e[0])) ? -0.0 : 0.0;
+        for (size_t i = 1; i < N; ++i) e[i] = 0.0;
+        return *this;
+    }
 
     // Long division, one quotient digit at a time, as qd_cascade does: each digit is the leading
     // component of the running residual over the leading component of the divisor, and the

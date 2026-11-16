@@ -116,10 +116,9 @@ quire_resolve(const quire<fixpnt<nbits, rbits, arithmetic, bt>, capacity, LimbTy
 		return result;
 	}
 
-	// For fixpnt up to 64 bits, the double path is exact for integer values
-	// and close enough for most fixed-point values.
-	// For wider types, we extract bits directly.
-	if constexpr (nbits <= 53) {
+	// Up to 52 bits (51 significand bits) convert_to<> rounds once, through double rounded to odd.
+	// Wider types extract bits directly (that path truncates; #2111 tracks its rounding).
+	if constexpr (nbits <= 52) {
 		return q.template convert_to<Scalar>();
 	}
 	else {
