@@ -663,9 +663,10 @@ protected:
 		return s ? -result : result;
 	}
 
-	// long double: its significand is read exactly through frexp / ldexp, truncated to 64 bits
-	// (truncation composes with hfloat's own), so a long double wider than a double is not first
-	// rounded to 53 bits. At constant evaluation it goes through double.
+	// long double: its significand is read exactly through frexp / ldexp, in two 64-bit pieces
+	// (binary128 carries 113 bits, IBM double-double 106, x87 64), so a long double wider than a
+	// double is not first rounded to 53 bits. Any bits past 128 would be truncated, which
+	// composes with hfloat's own truncation. At constant evaluation it goes through double.
 	constexpr hfloat& convert_long_double(long double rhs) noexcept {
 		if (std::is_constant_evaluated()) return convert_ieee754(static_cast<double>(rhs));
 		if (rhs != rhs || rhs == 0.0L) { setzero(); return *this; }
@@ -675,8 +676,16 @@ protected:
 		const bool negative = rhs < 0.0L;
 		int e = 0;
 		const long double fr = std::frexp(negative ? -rhs : rhs, &e);   // [0.5, 1)
-		const uint64_t m = static_cast<uint64_t>(std::ldexp(fr, 64));     // truncates toward zero
-		return assign_scaled(negative, m, e - 64);
+		const long double top = std::ldexp(fr, 64);                       // [2^63, 2^64)
+		const uint64_t hi = static_cast<uint64_t>(top);                   // truncates toward zero
+		const long double rest = top - static_cast<long double>(hi);      // exact, in [0, 1)
+		const uint64_t lo = static_cast<uint64_t>(std::ldexp(rest, 64));
+		using w128 = hfloat_detail::wide<(fbits > 128u ? fbits : 128u)>;
+		w128 m = w128::from_u64(hi);
+		m.shl(64);
+		m.add(w128::from_u64(lo));
+		normalize_chop(negative, 0, m, 128 - e);                           // value = m * 2^(e - 128)
+		return *this;
 	}
 
 	// Integers convert exactly and truncate to ndigits hex digits, at every fbits: hfp128 used to

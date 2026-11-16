@@ -192,6 +192,11 @@ namespace {
 		if (std::numeric_limits<long double>::digits > 53) {
 			expect(hfp128(9007199254740993.0L) == hfp128(9007199254740993LL), "hfp128(long double 2^53 + 1) is exact");
 		}
+		// binary128 carries 113 bits: all of them reach hfp128's 112-bit fraction (CodeRabbit, #2109)
+		if (std::numeric_limits<long double>::digits > 100) {
+			const hfp128 x(1.0L + std::ldexp(1.0L, -100));
+			expect(x - hfp128(1) == hfp128(std::ldexp(1.0, -100)), "hfp128(long double 1 + 2^-100) keeps 2^-100");
+		}
 #endif
 		// setbits with a 64-bit block
 		using H64 = hfloat<14, 7, std::uint64_t>;
