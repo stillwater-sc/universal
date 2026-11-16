@@ -170,12 +170,13 @@ namespace {
 	static_assert(quire_converts_through_double_v<posit<32, 2>>, "posit<32,2> fits double");
 	static_assert(quire_converts_through_double_v<posit<32, 5>>, "posit<32,5> fits double: scales 2^-960 .. 2^960");
 	static_assert(quire_converts_through_double_v<cfloat<32, 8, std::uint32_t, true, false, false>>, "cfloat<32,8> fits double");
-	static_assert(quire_converts_through_double_v<fixpnt<52, 50, Modulo, std::uint32_t>>, "fixpnt<52,50>, 51 digits, fits double");
+	static_assert(quire_converts_through_double_v<fixpnt<52, 50, Saturate, std::uint32_t>>, "Saturate fixpnt<52,50>, 51 digits, fits double");
+	static_assert(!quire_converts_through_double_v<fixpnt<16, 8, Modulo, std::uint16_t>>, "a Modulo fixpnt wraps, which needs the exact low bits");
 	static_assert(!quire_converts_through_double_v<posit<32, 6>>, "posit<32,6> reaches 2^1920, past double");
 	static_assert(!quire_converts_through_double_v<cfloat<32, 12, std::uint32_t, true, false, false>>, "cfloat<32,12> reaches 2^2047, past double");
 	static_assert(!quire_converts_through_double_v<cfloat<64, 11, std::uint32_t, true, false, false>>, "cfloat<64,11> has 53 digits");
 	static_assert(!quire_converts_through_double_v<posit<64, 3>>, "posit<64,3> has 59 digits");
-	static_assert(!quire_converts_through_double_v<fixpnt<53, 0, Modulo, std::uint32_t>>, "fixpnt<53,0> has 52 digits");
+	static_assert(!quire_converts_through_double_v<fixpnt<53, 0, Saturate, std::uint32_t>>, "fixpnt<53,0> has 52 digits");
 
 	// a Universal target goes through double, rounded to odd: posit saturates instead of NaR
 	int VerifyConvertToUniversal(bool reportTestCases) {

@@ -195,7 +195,8 @@ states beside it: +inf, -inf and NaN. They follow IEEE 754 (#2019):
 
 - **`float` and `double`** round once, to nearest even, from every bit of the accumulator.
 - **An integer type** follows [the library's integer-cast rule](posit.md#integer-casts) (#2104, #2107): the value truncates toward zero; past the range, an infinity, or an overflowed sum saturates to +-`max()` (an unsigned type to `max() - 1`, and a negative value to 0); NaN gives the integer NaR, `min()` for a signed type and `max()` for an unsigned one. Before #2107 NaN gave 0 and a large negative value `min()`.
-- **Another number type** of at most 64 bits goes through `double`, rounded to odd, which the type's own rounding then makes correct. That works for a type of at most 51 significand bits whose range lies inside double's (`quire_converts_through_double_v<T>`). Any other type does not compile: wider ones such as `cfloat<64,11>`, `posit<64,es>` and `fixpnt<64,r>`, and longer-ranged ones such as `posit<32,6>` and `cfloat<32,12>`. For those, use the type's `quire_resolve()`, which rounds from the accumulator, or `to_blocktriple()`.
+- **fixpnt** `quire_resolve` with Modulo arithmetic rounds to nearest even from the exact accumulator bits and wraps mod 2^nbits, at every width (#2107).
+- **Another number type** of at most 64 bits goes through `double`, rounded to odd, which the type's own rounding then makes correct. That works for a type of at most 51 significand bits whose range lies inside double's (`quire_converts_through_double_v<T>`). Any other type does not compile: wider ones such as `cfloat<64,11>`, `posit<64,es>` and `fixpnt<64,r>`, longer-ranged ones such as `posit<32,6>` and `cfloat<32,12>`, and wrapping (`is_modulo`) ones such as a Modulo `fixpnt`, whose wrap needs the exact low bits. For those, use the type's `quire_resolve()`, which rounds from the accumulator, or `to_blocktriple()`.
 
 ## Problems It Solves
 

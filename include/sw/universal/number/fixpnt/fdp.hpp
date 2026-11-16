@@ -116,9 +116,36 @@ quire_resolve(const quire<fixpnt<nbits, rbits, arithmetic, bt>, capacity, LimbTy
 		return result;
 	}
 
-	// Up to 52 bits (51 significand bits) convert_to<> rounds once, through double rounded to odd.
-	// Wider types extract bits directly (that path truncates; #2111 tracks its rounding).
-	if constexpr (nbits <= 52) {
+	// Modulo, every width: the sum rounded to nearest even at the fixpnt's lsb, from the exact
+	// accumulator bits, then wrapped mod 2^nbits. The double path cannot wrap: a sum past the range
+	// keeps only its leading 53 bits there, so fixpnt<52,0,Modulo> of 2^60 + 1 was 256, not 1 (#2107).
+	if constexpr (arithmetic == Modulo) {
+		constexpr unsigned qbits = quire<Scalar, capacity, LimbType>::qbits;
+		// quire bit i is 2^(i - 2 rbits) and fixpnt bit j is 2^(j - rbits): fixpnt bit j is quire bit j + rbits
+		Scalar result;
+		result.setzero();
+		for (unsigned j = 0; j < nbits; ++j) {
+			const unsigned qi = j + rbits;
+			if (qi < qbits) result.setbit(j, q.testbit(qi));
+		}
+		if constexpr (rbits > 0) {
+			const bool roundBit = (rbits - 1 < qbits) && q.testbit(rbits - 1);
+			const bool sticky   = (rbits >= 2) && q.anyAfter(rbits - 2);
+			if (roundBit && (sticky || result.test(0))) {
+				// add one ulp to the magnitude, mod 2^nbits
+				for (unsigned j = 0; j < nbits; ++j) {
+					if (!result.test(j)) { result.setbit(j, true); break; }
+					result.setbit(j, false);
+				}
+			}
+		}
+		if (q.sign()) result.twosComplement();   // -x mod 2^nbits; RNE of the magnitude is sign-symmetric
+		return result;
+	}
+	// Saturate up to 52 bits (51 significand bits): convert_to<> rounds once, through double rounded
+	// to odd, and the fixpnt conversion saturates. Wider types extract bits directly (that path
+	// truncates; #2111 tracks its rounding).
+	else if constexpr (nbits <= 52) {
 		return q.template convert_to<Scalar>();
 	}
 	else {
