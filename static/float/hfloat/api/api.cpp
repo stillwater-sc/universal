@@ -31,7 +31,7 @@ namespace sw::universal {
 		Real minval = std::numeric_limits<Real>::min();
 		std::cout << type_tag(Real{}) << '\n';
 		std::cout << " radix            : " << std::numeric_limits<Real>::radix << '\n';
-		std::cout << " digits (binary)  : " << std::numeric_limits<Real>::digits << '\n';
+		std::cout << " digits (hex)     : " << std::numeric_limits<Real>::digits << '\n';
 		std::cout << " has_infinity     : " << (std::numeric_limits<Real>::has_infinity ? "yes" : "no") << '\n';
 		std::cout << " has_quiet_NaN    : " << (std::numeric_limits<Real>::has_quiet_NaN ? "yes" : "no") << '\n';
 		std::cout << " round_style      : " << std::numeric_limits<Real>::round_style << " (toward_zero=0)\n";

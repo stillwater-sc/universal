@@ -134,7 +134,9 @@ try {
 	std::cout << "+---------    Decimal exactness\n";
 	{
 		decimal128_bid ten(10);
-		decimal128_bid tenth(0.1);
+		// the decimal literal, not the double 0.1: decimal128(0.1) is the double's exact value
+		// 0.1000000000000000055511151231257827 rounded to 34 digits, as IEEE 754 converts (#2105)
+		decimal128_bid tenth("0.1");
 		decimal128_bid product = ten * tenth;
 		decimal128_bid one(1);
 		if (!(product == one)) {

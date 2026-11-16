@@ -25,9 +25,12 @@ public:
 	static constexpr Hfloat lowest() {
 		return Hfloat(sw::universal::SpecificValue::maxneg);
 	}
+	// the gap from 1 = 0.1 * 16^1 to the next value: 16^(1 - ndigits). It was ++1 - 1, and ++
+	// adds 1.0, so epsilon() was 1.0 (#2105).
 	static constexpr Hfloat epsilon() {
-		Hfloat one(1), incr(1);
-		return ++incr - one;
+		Hfloat e;
+		e.assign_from_mantissa64(false, 4 - 4 * static_cast<int>(ndigits) + 1, uint64_t(1) << 63);
+		return e;
 	}
 	static constexpr Hfloat round_error() {
 		return Hfloat(1); // truncation rounding: max error is 1 ULP
@@ -45,10 +48,13 @@ public:
 		return Hfloat(sw::universal::SpecificValue::zero); // no NaN
 	}
 
-	// digits in base-16 (hex digits of fraction)
-	static constexpr int  digits       = static_cast<int>(ndigits * 4); // binary digits
-	static constexpr int  digits10     = static_cast<int>(ndigits * 4 * 0.301); // approx log10(2) * binary digits
-	static constexpr int  max_digits10 = digits10 + 1;
+	// digits counts radix digits, so for radix 16 it is the number of hex digits (#2105: it was
+	// ndigits * 4, the bit count). digits10 is floor((ndigits - 1) * log10(16)), the decimal
+	// digits that survive a round trip at the worst wobble; max_digits10 is the decimal digits
+	// that distinguish every value, from the 4 * ndigits bits a full leading digit carries.
+	static constexpr int  digits       = static_cast<int>(ndigits);
+	static constexpr int  digits10     = static_cast<int>((ndigits - 1) * 1.2041199826559248);
+	static constexpr int  max_digits10 = static_cast<int>(ndigits * 4 * 0.30102999566398120) + 2;
 	static constexpr bool is_signed    = true;
 	static constexpr bool is_integer   = false;
 	static constexpr bool is_exact     = false;
