@@ -10,7 +10,8 @@
 //   - numeric_limits<posit>::max_exponent was maxpos's scale; it is one more, as min_exponent is
 //     one more than minpos's scale. has_infinity was true and is_bounded false, for a type with
 //     NaR, no infinity, and a finite set of values.
-//   - useed_value<nbits, es>() shifted 1 by 2^es, undefined for es >= 6.
+//   - useed_value<nbits, es>() shifted 1 by 2^es, undefined for es >= 6; and, until #2098, was not a
+//     constant expression for es >= 10, past double's range.
 //   - fraction_value() sized its fraction nbits - 3 - es, which wraps for es + 2 >= nbits.
 //   - reciprocal() used blockbinary helpers that no longer exist, so neither it nor rsqrt compiled.
 //   - ulp(maxpos) was NaR: the encoding after maxpos is NaR.
@@ -18,6 +19,7 @@
 //   - operator>> wrote to std::cerr on a parse failure.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <universal/number/posit/posit.hpp>
@@ -65,6 +67,12 @@ namespace sw { namespace universal {
 		static_assert(useed_value<16, 3>() == 256.0, "useed_value<16,3> is 2^8");
 		static_assert(useed_value<32, 6>() == 18446744073709551616.0, "useed_value<32,6> is 2^64");
 		static_assert(useed_value<64, 7>() == 340282366920938463463374607431768211456.0, "useed_value<64,7> is 2^128");
+		// past double's range the value is inf, at constant evaluation too: es >= 10 overflowed a doubling,
+		// which is not a constant expression, and es = 22 ran 2^22 iterations (#2098)
+		static_assert(useed_value<64, 9>() == 0x1p512, "useed_value<64,9> is 2^512");
+		static_assert(useed_value<64, 10>() == std::numeric_limits<double>::infinity(), "useed_value<64,10> is inf");
+		static_assert(useed_value<64, 22>() == std::numeric_limits<double>::infinity(), "useed_value<64,22> is inf");
+		static_assert(useed<64, 22>() == std::numeric_limits<double>::infinity(), "useed<64,22> is inf");
 		fails += report(useed<16, 6>() == std::ldexp(1.0, 64), "useed<16,6>() is 2^64", reportTestCases);
 		// es + 2 >= nbits: no fraction bits, and the fraction value is 0
 		const posit<5, 3> p(1.0);

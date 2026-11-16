@@ -11,6 +11,7 @@
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <cstdint>
+#include <random>
 #include <string>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -55,6 +56,61 @@ namespace sw { namespace universal {
 				++nrOfFailedTestCases;
 				if (reportTestCases && nrOfFailedTestCases < 10) std::cerr << "FAIL round trip " << to_binary(a) << " -> " << to_binary(back) << '\n';
 			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	// Wide -> Narrow at and next to the ties: for neighbours t < u of Narrow, the midpoint m is a Wide
+	// value; m rounds to the one of t, u with an even encoding, and the Wide values one ulp either side
+	// of m round to t and u. Both signs, across the narrow dynamic range (#2098: the sweep sampled one
+	// positive near-tie per wide source).
+	template<typename Wide, typename Narrow>
+	int VerifyNearTies(unsigned nrSamples, std::uint64_t seed, bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+		std::mt19937_64 rng(seed);
+		constexpr unsigned N = Narrow::nbits;
+		auto check = [&](const Wide& w, const Narrow& expected, const char* what) {
+			const Narrow got(w);
+			if (got == expected) return;
+			++nrOfFailedTestCases;
+			if (reportTestCases && nrOfFailedTestCases < 10) {
+				std::cerr << "FAIL " << what << ' ' << type_tag(w) << ' ' << to_binary(w) << " -> " << to_binary(got)
+				          << ", expected " << to_binary(expected) << '\n';
+			}
+		};
+		unsigned tested = 0;
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			// a positive encoding below maxpos, so t and its successor u are both finite and positive
+			const std::uint64_t enc = 1u + rng() % ((std::uint64_t(1) << (N - 1)) - 2u);
+			Narrow t;
+			t.setbits(enc);
+			// the tie is the arithmetic midpoint only when t's last bit is a fraction bit; where the
+			// regime has cut into the exponent, neighbours are powers of 2^(2^j) apart and the tie is
+			// the encoding's, not the value's
+			const int scale = std::ilogb(double(t));
+			const int k = (scale >= 0) ? (scale >> Narrow::es) : -((-scale + (1 << Narrow::es) - 1) >> Narrow::es);
+			const int run = (k >= 0) ? k + 2 : -k + 1;               // the regime and its terminator
+			if (static_cast<int>(N) - 1 - run - static_cast<int>(Narrow::es) < 1) continue;
+			Narrow u(t);
+			++u;
+			const Wide wt(t), wu(u);
+			const Wide m = (wt + wu) / Wide(2);
+			if (!(wt < m && m < wu) || m + m != wt + wu) continue;   // the midpoint is not a Wide value here
+			Wide above(m), below(m);
+			++above;
+			--below;
+			const Narrow even = ((enc & 1u) == 0u) ? t : u;
+			check(m, even, "tie");
+			check(above, u, "above the tie");
+			check(below, t, "below the tie");
+			check(-m, -even, "negative tie");
+			check(-above, -u, "negative, above the tie in magnitude");
+			check(-below, -t, "negative, below the tie in magnitude");
+			++tested;
+		}
+		if (tested < nrSamples / 4) {   // the sampling must actually reach the ties
+			++nrOfFailedTestCases;
+			if (reportTestCases) std::cerr << "FAIL only " << tested << " of " << nrSamples << " samples had a Wide midpoint\n";
 		}
 		return nrOfFailedTestCases;
 	}
@@ -157,6 +213,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult((VerifyWidenNarrowIdentity<posit<8, 0>, posit<16, 1>>(reportTestCases)), test_tag, "posit<8,0> -> posit<16,1> -> back");
 	nrOfFailedTestCases += ReportTestResult((VerifyWidenNarrowIdentity<posit<10, 2>, posit<72, 2, std::uint32_t>>(reportTestCases)), test_tag, "posit<10,2> -> posit<72,2,u32> -> back");
 	nrOfFailedTestCases += ReportTestResult((VerifyWidenNarrowIdentity<posit<12, 1, std::uint16_t>, posit<12, 1, std::uint8_t>>(reportTestCases)), test_tag, "posit<12,1,u16> -> posit<12,1,u8> -> back");
+	nrOfFailedTestCases += ReportTestResult((VerifyNearTies<posit<64, 2>, posit<16, 1>>(2000, 2098, reportTestCases)), test_tag, "posit<64,2> -> posit<16,1> near ties");
+	nrOfFailedTestCases += ReportTestResult((VerifyNearTies<posit<128, 4>, posit<32, 2>>(1000, 2099, reportTestCases)), test_tag, "posit<128,4> -> posit<32,2> near ties");
+	nrOfFailedTestCases += ReportTestResult((VerifyNearTies<posit<80, 3, std::uint16_t>, posit<24, 0>>(1000, 2100, reportTestCases)), test_tag, "posit<80,3,u16> -> posit<24,0> near ties");
 #endif
 
 #if REGRESSION_LEVEL_2

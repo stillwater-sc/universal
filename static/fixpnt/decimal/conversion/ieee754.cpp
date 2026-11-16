@@ -335,6 +335,15 @@ try {
 	nrOfFailedTestCases += ReportTestResult((VerifyToDouble<dfixpnt<20, 10>, 384>(reportTestCases, 5000)), "to double <20,10>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyToDouble<dfixpnt<50, 40>, 640>(reportTestCases, 2000)), "to double <50,40>", test_tag);
 	nrOfFailedTestCases += ReportTestResult((VerifyToDouble<dfixpnt<60, 5, DecimalEncoding::DPD>, 640>(reportTestCases, 2000)), "to double <60,5,dpd>", test_tag);
+	// the 64-bit fast paths (#2098): radix up to 27 and values within 64 bits, both sides of each bound
+	nrOfFailedTestCases += ReportTestResult((VerifyFromDouble<dfixpnt<19, 0>, 384>(reportTestCases, -10, 66, 3000)), "from double <19,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyFromDouble<dfixpnt<12, 12>, 384>(reportTestCases, -60, 2, 3000)), "from double <12,12>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyFromDouble<dfixpnt<30, 27>, 640>(reportTestCases, -120, 12, 3000)), "from double <30,27>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyFromDouble<dfixpnt<40, 28>, 640>(reportTestCases, -120, 40, 2000)), "from double <40,28>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyToDouble<dfixpnt<19, 0>, 384>(reportTestCases, 3000)), "to double <19,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyToDouble<dfixpnt<12, 12>, 384>(reportTestCases, 3000)), "to double <12,12>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyToDouble<dfixpnt<30, 27>, 640>(reportTestCases, 3000)), "to double <30,27>", test_tag);
+	nrOfFailedTestCases += ReportTestResult((VerifyToDouble<dfixpnt<19, 3, DecimalEncoding::BID>, 384>(reportTestCases, 3000)), "to double <19,3,bid>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

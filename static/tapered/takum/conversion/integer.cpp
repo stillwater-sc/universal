@@ -9,7 +9,8 @@
 // which rounded every integer above 2^53 first: takum<64,3>((1LL<<53)+1) came out as 2^53.
 // Integer casts truncate toward zero and saturate to the integer type, and NaR gives the type's
 // minimum -- posit's rule (#2073), adopted for takum in #2079.  They cast a double, which made NaR
-// and every out-of-range value undefined behaviour.
+// and every out-of-range value undefined behaviour.  The unsigned casts, unreachable until #2098,
+// follow the same rule: NaR and every x <= -1 give 0.
 //
 // The reference is exact integer arithmetic on integer<384>: a takum value S * 2^e is held as
 // S * 2^(e + 64), which is an integer for every encoding these layouts have (e >= -61).
@@ -153,6 +154,12 @@ int CheckCasts(const Takum& x, bool reportTestCases) {
 	if (int(x) != ReferenceCast<int>(x))                       report("int", (long double)int(x), (long double)ReferenceCast<int>(x));
 	if (long(x) != ReferenceCast<long>(x))                     report("long", (long double)long(x), (long double)ReferenceCast<long>(x));
 	if ((long long)(x) != ReferenceCast<long long>(x))         report("long long", (long double)(long long)(x), (long double)ReferenceCast<long long>(x));
+	// the unsigned casts did not compile (#2098): NaR and x <= -1 give 0, and they saturate at the top
+	if ((unsigned int)(x) != ReferenceCast<unsigned int>(x))   report("unsigned int", (long double)(unsigned int)(x), (long double)ReferenceCast<unsigned int>(x));
+	if ((unsigned long)(x) != ReferenceCast<unsigned long>(x)) report("unsigned long", (long double)(unsigned long)(x), (long double)ReferenceCast<unsigned long>(x));
+	if ((unsigned long long)(x) != ReferenceCast<unsigned long long>(x)) {
+		report("unsigned long long", (long double)(unsigned long long)(x), (long double)ReferenceCast<unsigned long long>(x));
+	}
 	return fails;
 }
 

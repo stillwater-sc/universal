@@ -237,6 +237,10 @@ public:
 	explicit CONSTEXPRESSION operator int()       const noexcept { return to_signed<int>(); }
 	explicit CONSTEXPRESSION operator long()      const noexcept { return to_signed<long>(); }
 	explicit CONSTEXPRESSION operator long long() const noexcept { return to_signed<long long>(); }
+	// unsigned targets follow the same rule: NaR and x <= -1 give 0, as bposit does (#2098)
+	explicit CONSTEXPRESSION operator unsigned int()       const noexcept { return to_unsigned<unsigned int>(); }
+	explicit CONSTEXPRESSION operator unsigned long()      const noexcept { return to_unsigned<unsigned long>(); }
+	explicit CONSTEXPRESSION operator unsigned long long() const noexcept { return to_unsigned<unsigned long long>(); }
 	explicit CONSTEXPRESSION operator float()     const noexcept { return to_ieee754<float>(); }
 	explicit CONSTEXPRESSION operator double()    const noexcept { return to_ieee754<double>(); }
 
