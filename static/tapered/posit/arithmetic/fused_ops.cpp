@@ -242,6 +242,54 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
+	// wide configurations against an independent reference: the quire holds a*b + c, (a + b)*c as
+	// a*c + b*c, and a*b - c*d exactly, and quire_resolve rounds it once. The addend is drawn near
+	// -a*b a third of the time, so the sum cancels and its low bits decide the rounding (#2098).
+	template<typename Posit>
+	int VerifyWideAgainstQuire(unsigned nrSamples, std::uint64_t seed, bool reportTestCases) {
+		using Quire = quire<Posit>;
+		std::mt19937_64 rng(seed);
+		const Posit one(1);
+		int nrOfFailedTests = 0;
+		auto check = [&](const Posit& got, const Posit& ref, const char* what, const Posit& a, const Posit& b, const Posit& c) {
+			if (got == ref) return;
+			++nrOfFailedTests;
+			if (reportTestCases && nrOfFailedTests < 10) {
+				std::cerr << "FAIL " << type_tag(a) << ' ' << what << " a = " << to_binary(a) << " b = " << to_binary(b)
+				          << " c = " << to_binary(c) << " got " << to_binary(got) << " expected " << to_binary(ref) << '\n';
+			}
+		};
+		for (unsigned i = 0; i < nrSamples; ++i) {
+			Posit a = RandomEncoding<Posit>(rng), b = RandomEncoding<Posit>(rng), c = RandomEncoding<Posit>(rng), d = RandomEncoding<Posit>(rng);
+			if (i % 2 == 0) { a = a / (abs(a) + one); b = b / (abs(b) + one); c = c / (abs(c) + one); d = d / (abs(d) + one); }
+			if (i % 3 == 0) {                                  // within 2 ulps of -a*b
+				c = -(a * b);
+				const unsigned steps = static_cast<unsigned>(rng() % 5u);
+				for (unsigned k = 0; k < steps; ++k) { if (steps < 3) ++c; else --c; }
+			}
+			if (a.isnar() || b.isnar() || c.isnar() || d.isnar()) continue;
+			{
+				Quire q;
+				q += quire_mul(a, b);
+				q += c;
+				check(fma(a, b, c), quire_resolve(q), "fma(a, b, c)", a, b, c);
+			}
+			{
+				Quire q;
+				q += quire_mul(a, c);
+				q += quire_mul(b, c);
+				check(fam(a, b, c), quire_resolve(q), "fam(a, b, c)", a, b, c);
+			}
+			{
+				Quire q;
+				q += quire_mul(a, b);
+				q += quire_mul(-c, d);
+				check(fmma(a, b, c, d, false), quire_resolve(q), "fmma(a, b, c, d, -)", a, b, c);
+			}
+		}
+		return nrOfFailedTests;
+	}
+
 	// configurations where es + 2 >= nbits did not compile: no fraction bits
 	int VerifySmallConfigurations(bool reportTestCases) {
 		int fails = VerifyFmaFam<5, 3>(reportTestCases) + VerifyFmaFam<4, 2>(reportTestCases) + VerifyFmaFam<3, 1>(reportTestCases);
@@ -301,6 +349,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyWideIdentities<posit<64, 3>>(5000, 2072, reportTestCases), "posit<64,3>", "identities");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideIdentities<posit<128, 4>>(1000, 2073, reportTestCases), "posit<128,4>", "identities");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideIdentities<posit<256, 5>>(200, 2074, reportTestCases), "posit<256,5>", "identities");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideAgainstQuire<posit<16, 1>>(20000, 2098, reportTestCases), "posit<16,1>", "fma, fam, fmma vs quire");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideAgainstQuire<posit<32, 2>>(5000, 2099, reportTestCases), "posit<32,2>", "fma, fam, fmma vs quire");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideAgainstQuire<posit<64, 3>>(2000, 2100, reportTestCases), "posit<64,3>", "fma, fam, fmma vs quire");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideAgainstQuire<posit<128, 4>>(300, 2101, reportTestCases), "posit<128,4>", "fma, fam, fmma vs quire");
 #endif
 
 #if REGRESSION_LEVEL_2
