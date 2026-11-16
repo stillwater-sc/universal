@@ -85,6 +85,7 @@ These follow the posit standard:
 - **Rounding:** round to nearest, ties to the even encoding.
 - **Never to 0 or NaR:** a nonzero real never rounds to 0, and a finite real never rounds to NaR.
 - **Clamping:** a magnitude above maxpos becomes maxpos, and a nonzero magnitude below minpos becomes minpos. Signs are kept.
+- **Integer casts:** truncate toward zero, saturate to `+/-max()`, and map NaR to `min()` (`max()` for an unsigned type). This is [the library's integer-cast rule](posit.md#integer-casts) (#2104).
 
 ## Range and precision profile
 

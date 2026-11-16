@@ -63,6 +63,7 @@
 
 #include <universal/internal/bit_manipulation.hpp>
 #include <universal/number/takum/takum_codec.hpp>
+#include <universal/number/shared/integer_cast.hpp>
 #include <universal/number/takum/takum_wide_arithmetic.hpp>
 
 namespace sw {	namespace universal {
@@ -691,9 +692,9 @@ protected:
 	//////////////////////////////////////////////////////
 	/// conversion routines to native types
 
-	// Integer conversions truncate toward zero, exactly at every width, and saturate to the integer
-	// type's range; NaR gives the type's minimum, the "integer indefinite" a hardware float-to-int
-	// conversion produces.  This is posit's rule (#2070, #2073), adopted for takum in #2079.  They
+	// Integer conversions follow the rule in shared/integer_cast.hpp (#2073, #2104), adopted for
+	// takum in #2079: truncate toward zero, exactly at every width, saturate to +/-max() (an
+	// unsigned type to [0, max() - 1]), and NaR gives the integer NaR (min(), max() unsigned).  They
 	// went through a double, which made NaR and every out-of-range value undefined behaviour
 	// (int(NaR) came out INT_MIN, (long long)maxpos LLONG_MIN) and lost the bits past 53.
 	template<typename SignedInt>
@@ -711,18 +712,17 @@ protected:
 		static_assert(std::is_integral_v<Integer> && sizeof(Integer) <= 8, "to_integer: an integer type of at most 64 bits");
 		using Limits = std::numeric_limits<Integer>;
 		if (iszero()) return Integer(0);
-		if (isnar()) return Limits::min();
+		if (isnar()) return integer_nar<Integer>();
 		const bool negative = sign();
 		const auto d = Codec::decode(magnitude_bits());
 		if (d.c < 0) return Integer(0);                                    // |x| < 1 truncates to 0
-		if (negative && !Limits::is_signed) return Limits::min();          // x <= -1 saturates to 0
-		if (d.c >= static_cast<int64_t>(Limits::digits)) return negative ? Limits::min() : Limits::max();
+		if (negative && !Limits::is_signed) return Integer(0);             // x <= -1 saturates to 0
+		if (d.c >= static_cast<int64_t>(Limits::digits)) return integer_saturate<Integer>(negative);
 		// |x| = S * 2^(c - p) with S = 2^p + M, truncated: c <= 63 and p <= 61 keep both shifts in range
 		const uint64_t S     = (1ull << d.p) | d.M_bits;
 		const int64_t  shift = d.c - static_cast<int64_t>(d.p);
 		const uint64_t magnitude = (shift >= 0) ? (S << shift) : (S >> (-shift));
-		using U = std::make_unsigned_t<Integer>;
-		return negative ? static_cast<Integer>(U(0) - static_cast<U>(magnitude)) : static_cast<Integer>(magnitude);
+		return integer_from_magnitude<Integer>(negative, false, magnitude);
 	}
 
 	/// Decode a linear takum to an IEEE-754 floating-point value, correctly rounded.

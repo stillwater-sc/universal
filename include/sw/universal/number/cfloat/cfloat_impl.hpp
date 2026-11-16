@@ -77,6 +77,7 @@
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/number/shared/integer_cast.hpp>
 // arithmetic tracing options
 #include <universal/number/algorithm/trace_constants.hpp>
 // cfloat exception structure
@@ -2154,16 +2155,16 @@ public:
 		for (unsigned i = 0; i < upperbound; ++i) { b.setbit(i, at(i)); }
 	}
 
-	// casts to native integers follow posit's rule (#2073, #2087): truncate toward zero,
-	// exactly at every width, saturate a value past the range (inf included) to the
-	// type's max or min, and give the type's min for a NaN (0 for an unsigned type).
+	// casts to native integers follow the rule in shared/integer_cast.hpp (#2073, #2087, #2104):
+	// truncate toward zero, exactly at every width, saturate a value past the range (inf
+	// included) to +/-max() (an unsigned type to [0, max() - 1]), and give the integer NaR for a
+	// NaN (min(), max() for an unsigned type).
 	// They used to cast a double, which lost the bits past 53 and saturated through it.
 	template<typename Integer>
 	constexpr Integer to_integer() const noexcept {
 		static_assert(std::is_integral_v<Integer>, "to_integer needs an integer type");
-		using Limits = std::numeric_limits<Integer>;
-		if (isnan()) return Limits::min();
-		if (isinf()) return sign() ? Limits::min() : Limits::max();
+		if (isnan()) return integer_nar<Integer>();
+		if (isinf()) return integer_saturate<Integer>(sign());
 		if (iszero()) return Integer(0);
 		// the significand's weight: bit fbits (the hidden bit, when there is one) is 2^E
 		const bool hidden = isnormal() || ismaxexpvalue();
@@ -2172,21 +2173,7 @@ public:
 		bool overflow = (E >= 64);
 		uint64_t mag{ 0 };
 		if (!overflow) mag = significand_window(static_cast<int>(fbits) - E, static_cast<unsigned>(E) + 1u, hidden);
-		if constexpr (std::is_signed_v<Integer>) {
-			using U = std::make_unsigned_t<Integer>;
-			const uint64_t maxMag = static_cast<uint64_t>(static_cast<U>(Limits::max()));
-			if (sign()) {
-				if (overflow || mag > maxMag + 1u) return Limits::min();
-				return static_cast<Integer>(static_cast<U>(U(0) - static_cast<U>(mag)));
-			}
-			if (overflow || mag > maxMag) return Limits::max();
-			return static_cast<Integer>(mag);
-		}
-		else {
-			if (sign()) return Integer(0);
-			if (overflow || mag > static_cast<uint64_t>(Limits::max())) return Limits::max();
-			return static_cast<Integer>(mag);
-		}
+		return integer_from_magnitude<Integer>(sign(), overflow, mag);
 	}
 	constexpr int to_int() const noexcept { return to_integer<int>(); }
 	constexpr long to_long() const noexcept { return to_integer<long>(); }

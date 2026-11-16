@@ -83,6 +83,26 @@ For example, with e2m1 (4-bit):
 - Bit pattern `0 10 0` = 2.0
 - Bit pattern `0 11 1` = 6.0 (maxpos, saturates here)
 
+## Design decisions
+
+### Integer casts (#2104)
+
+A microfloat cast to a native integer follows [the library's integer-cast rule](posit.md#integer-casts):
+
+| e5m2 / e4m3 value | `int` | `short` | `signed char` | `unsigned` |
+|---|---|---|---|---|
+| `-2.75` | -2 | -2 | -2 | 0 |
+| `57344` (e5m2 maxpos) | 57344 | 32767 | 127 | 57344 |
+| `-inf` (e5m2) | -2147483647 | -32767 | -127 | 0 |
+| NaN | -2147483648 | -32768 | -128 | 4294967295 |
+
+The casts used to be `static_cast<Integer>(float(x))`. That matched a native `float`, where the C++ standard also leaves the result undefined, but it had three costs:
+- **Ordinary values were affected.** The 8-bit formats are so narrow that the undefined cases are everyday values, not edge cases: `short(e5m2(57344))`, `(signed char)e4m3(448)` and `unsigned(e4m3(-1))` are all out of range.
+- **The results depended on the platform.** On x86 the conversion gives `INT_MIN` for NaN, inf and anything out of range. On ARM it saturates and gives 0 for NaN.
+- **The library disagreed with itself.** posit, bposit, takum and cfloat already defined these casts.
+
+The new casts are still `constexpr noexcept`. They cost one NaN test and one range test, applied to the microfloat's float, which holds every microfloat value exactly.
+
 ## How to Use It
 
 ### Include

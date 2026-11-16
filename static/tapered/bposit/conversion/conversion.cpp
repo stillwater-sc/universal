@@ -186,22 +186,24 @@ int VerifyLimbArithmetic(bool report) {
 	return fails;
 }
 
-// Integer casts truncate toward zero and saturate; NaR gives the type's minimum, 0 for the unsigned
-// types (posit's rule from #2073, adopted for bposit in #2080).  They cast a double, which made NaR
-// and every out-of-range value undefined behaviour and dropped the bits past 53.  Every encoding of a
+// Integer casts truncate toward zero and saturate to [-max, max] ([0, max - 1] for the unsigned
+// types); NaR gives the integer NaR, min (max for the unsigned types).  This is posit's rule from
+// #2073, amended by #2104, adopted for bposit in #2080.  They cast a double, which made NaR and
+// every out-of-range value undefined behaviour and dropped the bits past 53.  Every encoding of a
 // small bposit is checked against its exact long double value, truncated and saturated.
 template<typename Integer, typename B>
 bool CastMatches(const B& x) {
 	using Limits = std::numeric_limits<Integer>;
 	const Integer got = static_cast<Integer>(x);
-	if (x.isnar()) return got == Limits::min();
+	if (x.isnar()) return got == (Limits::is_signed ? Limits::min() : Limits::max());
 	const long double t = std::trunc(static_cast<long double>(x));
-	const long double limit = std::ldexp(1.0l, Limits::digits);          // 2^digits: past the range
-	Integer expected;
-	if (t >= limit) expected = Limits::max();
-	else if (t < 0.0l && !Limits::is_signed) expected = Limits::min();
-	else if (t <= -limit) expected = Limits::min();
-	else expected = static_cast<Integer>(t);
+	const bool negative = t < 0.0l;
+	if (negative && !Limits::is_signed) return got == 0;
+	const long double a = negative ? -t : t;
+	const std::uint64_t cap = static_cast<std::uint64_t>(Limits::max()) - (Limits::is_signed ? 0u : 1u);
+	std::uint64_t mag = (a >= std::ldexp(1.0l, 64)) ? cap : static_cast<std::uint64_t>(a);
+	if (mag > cap) mag = cap;
+	const Integer expected = negative ? static_cast<Integer>(-static_cast<Integer>(mag)) : static_cast<Integer>(mag);
 	return got == expected;
 }
 
@@ -234,9 +236,10 @@ int VerifyWideIntegerCasts(bool report) {
 	expect(static_cast<unsigned long long>(B(static_cast<unsigned long long>(big))) == static_cast<unsigned long long>(big), "unsigned 2^55 + 1");
 	expect(static_cast<int>(B(SpecificValue::nar)) == std::numeric_limits<int>::min(), "int(NaR) is INT_MIN");
 	expect(static_cast<long long>(B(SpecificValue::nar)) == std::numeric_limits<long long>::min(), "long long(NaR) is LLONG_MIN");
-	expect(static_cast<unsigned>(B(SpecificValue::nar)) == 0u, "unsigned(NaR) is 0");
+	expect(static_cast<unsigned>(B(SpecificValue::nar)) == std::numeric_limits<unsigned>::max(), "unsigned(NaR) is UINT_MAX");
+	expect(static_cast<unsigned>(B(SpecificValue::maxpos)) == std::numeric_limits<unsigned>::max() - 1u, "unsigned(maxpos) saturates to UINT_MAX - 1");
 	expect(static_cast<long long>(B(SpecificValue::maxpos)) == std::numeric_limits<long long>::max(), "maxpos saturates");
-	expect(static_cast<long long>(B(SpecificValue::maxneg)) == std::numeric_limits<long long>::min(), "maxneg saturates");
+	expect(static_cast<long long>(B(SpecificValue::maxneg)) == -std::numeric_limits<long long>::max(), "maxneg saturates to -LLONG_MAX");
 	expect(static_cast<int>(B(1e10)) == std::numeric_limits<int>::max(), "1e10 saturates int");
 	expect(static_cast<unsigned>(B(-5)) == 0u, "-5 saturates unsigned to 0");
 	expect(static_cast<int>(B(-2.75)) == -2, "-2.75 truncates to -2");
