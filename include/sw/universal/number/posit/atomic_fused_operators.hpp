@@ -26,6 +26,7 @@
 // 2^(cut - 1) of L's sign, lie strictly on the same side of every such boundary. For fam the sum is
 // multiplied by c before rounding; extra = fbits keeps |L c| below the boundary spacing of H c.
 
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <universal/number/posit/posit_limbs.hpp>
@@ -49,11 +50,7 @@ namespace posit_fused {
 	template<std::size_t N>
 	inline std::int64_t bitlength(const limb_t* a) noexcept {
 		for (std::size_t i = N; i-- > 0;) {
-			if (a[i] != 0u) {
-				unsigned b = 64u;
-				while (((a[i] >> (b - 1u)) & 1u) == 0u) --b;
-				return static_cast<std::int64_t>(64u * i + b);
-			}
+			if (a[i] != 0u) return static_cast<std::int64_t>(64u * i + 64u - static_cast<unsigned>(std::countl_zero(a[i])));
 		}
 		return 0;
 	}
@@ -62,11 +59,7 @@ namespace posit_fused {
 	template<std::size_t N>
 	inline std::int64_t lowest_bit(const limb_t* a) noexcept {
 		for (std::size_t i = 0; i < N; ++i) {
-			if (a[i] != 0u) {
-				unsigned b = 0;
-				while (((a[i] >> b) & 1u) == 0u) ++b;
-				return static_cast<std::int64_t>(64u * i + b);
-			}
+			if (a[i] != 0u) return static_cast<std::int64_t>(64u * i + static_cast<unsigned>(std::countr_zero(a[i])));
 		}
 		return 0;
 	}
@@ -166,12 +159,15 @@ namespace posit_fused {
 		return p;
 	}
 
-	// limbs for every intermediate: a sum of two products, or a sum times a posit, stays below
-	// 4 fbits + 16 bits after the collapse; the margin covers the posit's own encoding
+	// limbs for every intermediate. With F = fbits, a significand has at most F + 1 bits and a product
+	// 2F + 2. After the collapse, the addend L of an add starts no lower than cut - 1, and cut is at
+	// most 2F + 3 + extra below the msb of H, so a sum spans at most 4F + 6 bits (fmma: two products),
+	// 3F + 9 (fma) or, for fam, 3F + 4 before the product with c and 4F + 5 after it. 4F + 16 bounds
+	// them all. The terms were sized 5F + 192 bits (#2098): four limbs for posit<8,0>, where one does.
 	template<unsigned nbits, unsigned es, typename bt>
 	constexpr std::size_t capacity() noexcept {
 		constexpr unsigned F = posit<nbits, es, bt>::fbits;
-		constexpr std::size_t widest = posit_limbs::limbs(5u * F + 192u);
+		constexpr std::size_t widest = posit_limbs::limbs(4u * F + 16u);
 		constexpr std::size_t encoding = posit_limbs::limbs(nbits);
 		return (widest > encoding) ? widest : encoding;
 	}

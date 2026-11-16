@@ -23,11 +23,51 @@
 #include <iostream>
 #include <iomanip>
 #include <cstdint>
+#include <sstream>
+#include <string>
 #include <type_traits>
+#include <vector>
 #include <universal/number/takum/takum.hpp>
+#include <universal/number/takum/table.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace {
+
+// The value tables print one row per encoding, 2^nbits of them, and refuse layouts past 24 bits at
+// compile time; the bound is pinned here, and a small table must have every row (#2098).
+int VerifyValueTables(bool reportTestCases) {
+	using namespace sw::universal;
+	static_assert(takum_table_max_nbits == 24, "the value tables stop at 24 bits: 2^24 rows");
+	int fails = 0;
+	// every encoding row, 0 .. 2^nbits - 1, exactly once: a row starts with its index, followed by
+	// ',' (CSV) or ':' (TXT); the header lines do not
+	auto rowsComplete = [](const std::string& text, unsigned nrRows) {
+		std::vector<unsigned> seen(nrRows, 0u);
+		std::istringstream in(text);
+		std::string line;
+		while (std::getline(in, line)) {
+			std::size_t i = line.find_first_not_of(' ');
+			if (i == std::string::npos || line[i] < '0' || line[i] > '9') continue;
+			unsigned index = 0;
+			while (i < line.size() && line[i] >= '0' && line[i] <= '9') index = 10u * index + static_cast<unsigned>(line[i++] - '0');
+			if (i == line.size() || (line[i] != ',' && line[i] != ':')) continue;
+			if (index >= nrRows) return false;
+			++seen[index];
+		}
+		for (unsigned c : seen) if (c != 1u) return false;
+		return true;
+	};
+	for (bool csv : { false, true }) {
+		std::ostringstream linear, logarithmic;
+		GenerateTakumTable<6, 3>(linear, csv);
+		GenerateTakumLogTable<6, 3>(logarithmic, csv);
+		if (!rowsComplete(linear.str(), 64u) || !rowsComplete(logarithmic.str(), 64u)) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL: a takum<6,3> table does not list each of its 64 encodings once (csv = " << csv << ")\n";
+		}
+	}
+	return fails;
+}
 
 // I1: the C and M fields together always occupy exactly maxCharBits bits.
 template<unsigned nbits, unsigned rbits>
@@ -611,6 +651,8 @@ try {
 		VerifyTruncatedRounding<16, 5>(reportTestCases), "codec<16,5>", "truncated rounding");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyTruncatedRounding<24, 5>(reportTestCases), "codec<24,5>", "truncated rounding");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyValueTables(reportTestCases), "takum<6,3>", "value tables");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -25,6 +25,10 @@ namespace sw { namespace universal {
 // logarithmic takum's value is sqrt(e)^l, where l is what the encoding actually
 // carries; its scale() is a converted quantity and would be the less honest
 // column of the two, so the logarithmic value is printed instead.
+// One row per encoding: 2^nbits rows.  The row count is computed in 64 bits, since 1u << nbits
+// is undefined for nbits >= 32, and a table is only printable for small configurations anyway.
+inline constexpr unsigned takum_table_max_nbits = 24;
+
 template<typename TakumType>
 void GenerateTakumVariantTable(std::ostream& ostr, bool csvFormat = false) {
 	constexpr bool logarithmic = is_takum_log<TakumType>;
@@ -40,9 +44,7 @@ void GenerateTakumVariantTable(std::ostream& ostr, bool csvFormat = false) {
 		else return static_cast<double>(x.scale());
 	};
 
-	// One row per encoding: 2^nbits rows.  The row count is computed in 64 bits, since 1u << nbits
-	// is undefined for nbits >= 32, and a table is only printable for small configurations anyway.
-	static_assert(nbits <= 24, "GenerateTakumVariantTable: a table of 2^nbits rows needs nbits <= 24");
+	static_assert(nbits <= takum_table_max_nbits, "GenerateTakumVariantTable: a table of 2^nbits rows needs nbits <= 24");
 	const std::uint64_t size = (std::uint64_t(1) << nbits);
 	TakumType v;
 

@@ -22,8 +22,11 @@ constexpr std::uint64_t useed() {
 
 namespace detail {
 	// 2^e in double by doubling, constexpr and without a shift: e >= 64 is a valid useed scale
-	// (es >= 6), where 1 << e is undefined; e > 1023 gives inf, as double has no larger value
+	// (es >= 6), where 1 << e is undefined; e > 1023 gives inf, as double has no larger value.
+	// The infinity is returned, not reached by doubling: an overflowing product is not a constant
+	// expression, and es >= 10 would also run 2^es iterations, past the compilers' step limits (#2098).
 	constexpr double pow2_double(unsigned e) {
+		if (e > 1023u) return std::numeric_limits<double>::infinity();
 		double v = 1.0;
 		for (unsigned i = 0; i < e; ++i) v *= 2.0;
 		return v;

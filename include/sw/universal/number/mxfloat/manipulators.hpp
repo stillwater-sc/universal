@@ -39,6 +39,8 @@ namespace sw { namespace universal {
 			elemName = "e4m3_saturating";
 		} else if constexpr (std::is_same_v<ElementType, e5m2>) {
 			elemName = "e5m2";
+		} else if constexpr (std::is_same_v<ElementType, e5m2_saturating>) {
+			elemName = "e5m2_saturating";
 		} else if constexpr (std::is_same_v<ElementType, int8_t>) {
 			elemName = "int8";
 		} else {
@@ -51,7 +53,7 @@ namespace sw { namespace universal {
 			if constexpr (std::is_same_v<ElementType, e3m2>) return "mxfp6";
 			if constexpr (std::is_same_v<ElementType, e2m3>) return "mxfp6e2m3";
 			if constexpr (std::is_same_v<ElementType, e4m3_saturating>) return "mxfp8";
-			if constexpr (std::is_same_v<ElementType, e5m2>) return "mxfp8e5m2";
+			if constexpr (std::is_same_v<ElementType, e5m2_saturating>) return "mxfp8e5m2";
 			if constexpr (std::is_same_v<ElementType, int8_t>) return "mxint8";
 		}
 

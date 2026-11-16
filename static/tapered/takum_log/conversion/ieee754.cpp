@@ -217,6 +217,7 @@ bool CastIsRight(const TL& t) {
 	if (t.iszero()) return got == 0;
 	if (t.isnar()) return got == Limits::min();
 	const bool negative = t.sign();
+	if (negative && !Limits::is_signed) return got == 0;      // x < 0 truncates or saturates to 0
 	const qd R = reference_value(exact_l(t), 0);            // |x|
 	const qd limit = ldexp(qd(1.0), Limits::digits);        // 2^digits: the first magnitude past the range
 	if (R >= limit) return got == (negative ? Limits::min() : Limits::max());
@@ -235,7 +236,8 @@ int VerifyIntegerCasts(std::size_t nrSamples, bool reportTestCases) {
 	std::mt19937_64 rng(2079);
 	int fails = 0;
 	auto check = [&](const TL& t) {
-		if (!CastIsRight<int>(t) || !CastIsRight<long>(t) || !CastIsRight<long long>(t)) {
+		if (!CastIsRight<int>(t) || !CastIsRight<long>(t) || !CastIsRight<long long>(t) ||
+		    !CastIsRight<unsigned int>(t) || !CastIsRight<unsigned long>(t) || !CastIsRight<unsigned long long>(t)) {
 			if (fails < 4 && reportTestCases) std::cerr << "FAIL: integer casts of " << type_tag(t) << " 0x" << std::hex << t.raw_bits() << std::dec
 			                                              << ": " << int(t) << ' ' << (long long)t << '\n';
 			++fails;
@@ -253,6 +255,51 @@ int VerifyIntegerCasts(std::size_t nrSamples, bool reportTestCases) {
 		check(t);
 		// values in the integer range, where truncation has fraction bits to drop
 		check(TL(std::ldexp(static_cast<double>(rng() >> 11), -static_cast<int>(rng() % 53u)) * ((rng() & 1u) ? 1.0 : -1.0)));
+	}
+	return fails;
+}
+
+// A constant evaluation gives the run-time encoding (#2098).  It went through a double and the
+// constexpr log, so (1LL << 53) + 1 became 2^53, and even 3 or 0.1 missed the correct rounding on
+// takum_log<64,3>, whose l carries 59 fraction bits.
+template<typename TL>
+int VerifyConstexprConversions(bool reportTestCases) {
+	int fails = 0;
+	auto check = [&](const TL& compile_time, const TL& run_time, const char* what) {
+		if (compile_time.raw_bits() == run_time.raw_bits()) return;
+		if (reportTestCases) std::cerr << "FAIL: " << type_tag(run_time) << ' ' << what << ": constexpr 0x" << std::hex << compile_time.raw_bits()
+		                               << " run time 0x" << run_time.raw_bits() << std::dec << '\n';
+		++fails;
+	};
+	volatile long long vll = 0;
+	volatile unsigned long long vull = 0;
+	volatile int vi = 0;
+	volatile double vd = 0.0;
+	{ constexpr TL c((1LL << 53) + 1);              vll = (1LL << 53) + 1;              check(c, TL(vll), "(1LL << 53) + 1"); }
+	{ constexpr TL c(-123456789012345678LL);        vll = -123456789012345678LL;        check(c, TL(vll), "-123456789012345678"); }
+	{ constexpr TL c(LLONG_MIN);                    vll = LLONG_MIN;                    check(c, TL(vll), "LLONG_MIN"); }
+	{ constexpr TL c(18446744073709551615ULL);      vull = 18446744073709551615ULL;     check(c, TL(vull), "ULLONG_MAX"); }
+	{ constexpr TL c(3);                            vi = 3;                             check(c, TL(vi), "3"); }
+	{ constexpr TL c(1);                            vi = 1;                             check(c, TL(vi), "1"); }
+	{ constexpr TL c(0.1);                          vd = 0.1;                           check(c, TL(vd), "0.1"); }
+	{ constexpr TL c(1e300);                        vd = 1e300;                         check(c, TL(vd), "1e300"); }
+	{ constexpr TL c(4.9406564584124654e-324);      vd = 4.9406564584124654e-324;       check(c, TL(vd), "denorm_min"); }
+	// and back: the integer casts and the double of a value
+	{
+		constexpr TL c(-123456789012345678LL);
+		constexpr long long ll = static_cast<long long>(c);
+		constexpr unsigned long long ull = static_cast<unsigned long long>(TL(18446744073709551615ULL));
+		constexpr double d = double(TL(0.1));
+		vll = -123456789012345678LL;
+		vull = 18446744073709551615ULL;
+		vd = 0.1;
+		if (ll != static_cast<long long>(TL(vll))) { ++fails; if (reportTestCases) std::cerr << "FAIL: constexpr long long cast\n"; }
+		if (ull != static_cast<unsigned long long>(TL(vull))) { ++fails; if (reportTestCases) std::cerr << "FAIL: constexpr unsigned long long cast\n"; }
+		// a layout whose l is exact in a double keeps std::exp at run time, which is within an ulp but
+		// not correctly rounded; the others take the double-double on both sides
+		if constexpr (!TL::l_exact_in_double) {
+			if (d != double(TL(vd))) { ++fails; if (reportTestCases) std::cerr << "FAIL: constexpr double\n"; }
+		}
 	}
 	return fails;
 }
@@ -341,6 +388,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCasts<takum_log<64, 3>>(1000, reportTestCases), "takum_log<64,3>", "integer casts");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCasts<takum_log<32, 3>>(1000, reportTestCases), "takum_log<32,3>", "integer casts");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCasts<takum_log<16, 3>>(1000, reportTestCases), "takum_log<16,3>", "integer casts");
+#if BIT_CAST_IS_CONSTEXPR
+	nrOfFailedTestCases += ReportTestResult(VerifyConstexprConversions<takum_log<64, 3>>(reportTestCases), "takum_log<64,3>", "constexpr conversions");
+	nrOfFailedTestCases += ReportTestResult(VerifyConstexprConversions<takum_log<32, 3>>(reportTestCases), "takum_log<32,3>", "constexpr conversions");
+	nrOfFailedTestCases += ReportTestResult(VerifyConstexprConversions<takum_log<16, 2>>(reportTestCases), "takum_log<16,2>", "constexpr conversions");
+#endif
 #endif
 
 #if REGRESSION_LEVEL_2

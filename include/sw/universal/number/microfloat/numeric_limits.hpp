@@ -69,7 +69,10 @@ public:
 	// smallest normal is 2^(1 - bias), so min_exponent - 1 = 1 - bias.
 	static constexpr int min_exponent   = 2 - bias;
 	static constexpr int min_exponent10 = sw::universal::decimal_min_exponent10(min_exponent);
-	static constexpr int max_exponent   = static_cast<int>((1u << es) - 1u) - bias;
+	// max_exponent is one more than maxpos's scale, as min_exponent is one more than the smallest
+	// normal's (#2096). The top exponent code holds maxpos unless the format spends it on inf: e4m3
+	// and e2m1 have no infinity and reported 8 and 2 for 9 and 3.
+	static constexpr int max_exponent   = static_cast<int>((1u << es) - 1u) - (hasInf ? 1 : 0) - bias + 1;
 	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
 	static constexpr bool has_infinity  = hasInf;
 	static constexpr bool has_quiet_NaN = hasNaN;

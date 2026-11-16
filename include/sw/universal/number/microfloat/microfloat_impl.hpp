@@ -46,23 +46,77 @@ class microfloat {
 		_bits &= bitmask;
 	}
 
+	// Every source is rounded once (#2098 sweep, #2096). A double, a long double or a wide integer
+	// is first narrowed to float with round-to-odd: float keeps 24 bits, at least two more than any
+	// microfloat significand, so the RNE in from_float() then rounds as if from the source itself.
+	// A plain cast rounded to nearest twice: e4m3(1.0625 + 1e-12) came out 1.0, not 1.125.
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
 	constexpr microfloat& convert_signed(SignedInt v) noexcept {
-		from_float(static_cast<float>(v));
+		const bool negative = (v < 0);
+		const std::uint64_t u = static_cast<std::uint64_t>(static_cast<long long>(v));   // two's complement
+		const float f = odd_float_from_uint64(negative ? (0ull - u) : u);
+		from_float(negative ? -f : f);
 		return *this;
 	}
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
 	constexpr microfloat& convert_unsigned(UnsignedInt v) noexcept {
-		from_float(static_cast<float>(v));
-		return *this;
+		if constexpr (std::is_signed_v<UnsignedInt>) {   // operator=(char) lands here, and char may be signed
+			return convert_signed(v);
+		}
+		else {
+			from_float(odd_float_from_uint64(static_cast<std::uint64_t>(v)));
+			return *this;
+		}
 	}
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 	constexpr microfloat& convert_ieee754(Real rhs) noexcept {
-		from_float(static_cast<float>(rhs));
+		if constexpr (sizeof(Real) <= sizeof(float)) {
+			from_float(static_cast<float>(rhs));
+		}
+		else {
+			from_float(odd_float(rhs));
+		}
 		return *this;
+	}
+
+	// |u| as a float, rounded to odd: the top 24 bits, with the bits below folded into the last one
+	static constexpr float odd_float_from_uint64(std::uint64_t u) noexcept {
+		if (u < (1ull << 24)) return static_cast<float>(u);   // exact
+		unsigned b = 0;
+		for (std::uint64_t t = u; t != 0; t >>= 1) ++b;
+		const unsigned shift = b - 24u;
+		std::uint64_t top = u >> shift;
+		if ((u & ((1ull << shift) - 1u)) != 0) top |= 1u;
+		float f = static_cast<float>(top);                      // exact, below 2^24
+		for (unsigned i = 0; i < shift; ++i) f *= 2.0f;         // exact
+		return f;
+	}
+
+	// a wider binary float as a float, rounded to odd. NaN and inf are cast: their payload and sign
+	// are what from_float() reads. Past 2^127 every microfloat has overflowed, and below float's
+	// normal range every microfloat value rounds to zero, so those ends are clamped and cast.
+	template<typename Real>
+	static constexpr float odd_float(Real v) noexcept {
+		// NaN, inf and both zeros are cast: -0 < 0 is false, so the sign test below would lose -0
+		if (v != v || v == Real(0) || v == std::numeric_limits<Real>::infinity() || v == -std::numeric_limits<Real>::infinity()) return static_cast<float>(v);
+		const bool negative = (v < Real(0));
+		const Real a = negative ? -v : v;
+		if (a > Real(0x1p127)) return negative ? -0x1p127f : 0x1p127f;
+		if (a < Real(0x1p-126)) return negative ? -0.0f : 0.0f;
+		float f = static_cast<float>(a);                        // to nearest
+		if (static_cast<Real>(f) > a) f = sw::bit_cast<float>(sw::bit_cast<std::uint32_t>(f) - 1u);   // toward zero
+		if (static_cast<Real>(f) != a) f = sw::bit_cast<float>(sw::bit_cast<std::uint32_t>(f) | 1u);  // inexact: odd
+		return negative ? -f : f;
+	}
+
+	// the magnitude bits of maxpos: the last finite encoding
+	static constexpr uint8_t maxpos_magnitude() noexcept {
+		if constexpr (hasNaN && hasInf) return static_cast<uint8_t>(((max_exp_code - 1u) << fbits) | fraction_mask);
+		else if constexpr (hasNaN && !hasInf) return static_cast<uint8_t>(exponent_mask | (fraction_mask - 1u));
+		else return static_cast<uint8_t>(bitmask >> 1);
 	}
 
 public:
@@ -179,26 +233,19 @@ public:
 		return tmp;
 	}
 
+	// Step to the next encoding up. -0 steps like +0, to +minpos, and the steps stop at the last
+	// finite value: ++maxpos is maxpos, and inf and NaN do not move. The walk went from -0 nowhere and
+	// from maxpos into the inf and NaN encodings (e5m2 0x7B -> 0x7C).
 	constexpr microfloat& operator++() noexcept {
-		// increment to the next encoding
+		const uint8_t magnitude = _bits & static_cast<uint8_t>(~sign_mask);
+		if (magnitude > maxpos_magnitude()) return *this;     // inf or NaN
 		if (_bits & sign_mask) {
-			// negative
-			uint8_t magnitude = _bits & static_cast<uint8_t>(~sign_mask);
-			if (magnitude == 1u) {
-				_bits = 0; // go to +0
-			}
-			else if (magnitude > 0u) {
-				--_bits;
-			}
-			// if magnitude == 0 (negative zero), stay at zero
+			if (magnitude == 0u) _bits = 0x01u;                // -0 -> +minpos
+			else if (magnitude == 1u) _bits = 0;               // minneg -> +0
+			else --_bits;
 		}
-		else {
-			// positive: increment unless at max encoding
-			uint8_t magnitude = _bits & static_cast<uint8_t>(~sign_mask);
-			uint8_t maxMagnitude = static_cast<uint8_t>(bitmask >> 1);
-			if (magnitude < maxMagnitude) {
-				++_bits;
-			}
+		else if (magnitude < maxpos_magnitude()) {
+			++_bits;
 		}
 		return *this;
 	}
@@ -207,23 +254,18 @@ public:
 		operator++();
 		return tmp;
 	}
+	// the mirror image: +0 and -0 step to -minpos, and the steps stop at maxneg
 	constexpr microfloat& operator--() noexcept {
+		const uint8_t magnitude = _bits & static_cast<uint8_t>(~sign_mask);
+		if (magnitude > maxpos_magnitude()) return *this;     // inf or NaN
 		if (_bits & sign_mask) {
-			// negative: increment magnitude
-			uint8_t magnitude = _bits & static_cast<uint8_t>(~sign_mask);
-			uint8_t maxMagnitude = static_cast<uint8_t>(bitmask >> 1);
-			if (magnitude < maxMagnitude) {
-				++_bits;
-			}
+			if (magnitude < maxpos_magnitude()) ++_bits;       // -0 -> -minpos as well
+		}
+		else if (magnitude == 0u) {
+			_bits = static_cast<uint8_t>(sign_mask | 0x01u);  // +0 -> -minpos
 		}
 		else {
-			// positive
-			if (_bits == 0u) {
-				_bits = sign_mask | 0x01u; // go to minneg
-			}
-			else {
-				--_bits;
-			}
+			--_bits;
 		}
 		return *this;
 	}

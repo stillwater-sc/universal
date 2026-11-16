@@ -181,6 +181,7 @@ public:
 		if (rhs > std::numeric_limits<double>::max()) return saturated(negative);   // an infinity
 
 		const dyadic d = decompose(rhs);
+		if (assign_dyadic_fast(d, negative)) return *this;
 		decimal_work w{};
 		std::uint64_t m = d.m;                              // m < 2^53: at most 16 digits, above the radix
 		for (unsigned i = radix; m != 0; ++i) { w[i] = static_cast<std::uint8_t>(m % 10u); m /= 10u; }
@@ -649,6 +650,126 @@ private:
 		return v;
 	}
 
+	// The fast paths (#2098). m 2^e 10^radix = m 5^radix 2^(e + radix), and N 10^-radix = N / (5^radix
+	// 2^radix): with 5^radix below 2^63 (radix <= 27) and the integers involved within 64 bits, both
+	// conversions are a 64 x 64 -> 128-bit product or a 128 / 64-bit quotient, with the same exact
+	// result as the digit-serial arithmetic below, which is O(bits x digits) and remains for the rest.
+	struct u128 { std::uint64_t hi; std::uint64_t lo; };
+	static constexpr u128 mul64(std::uint64_t a, std::uint64_t b) {
+		const std::uint64_t a0 = a & 0xFFFFFFFFull, a1 = a >> 32;
+		const std::uint64_t b0 = b & 0xFFFFFFFFull, b1 = b >> 32;
+		const std::uint64_t p00 = a0 * b0, p01 = a0 * b1, p10 = a1 * b0, p11 = a1 * b1;
+		const std::uint64_t mid = (p00 >> 32) + (p01 & 0xFFFFFFFFull) + (p10 & 0xFFFFFFFFull);
+		return { p11 + (p01 >> 32) + (p10 >> 32) + (mid >> 32), (mid << 32) | (p00 & 0xFFFFFFFFull) };
+	}
+	static constexpr std::uint64_t pow5(unsigned k) {
+		std::uint64_t v = 1;
+		for (unsigned i = 0; i < k; ++i) v *= 5u;
+		return v;
+	}
+	static constexpr unsigned bitlength(std::uint64_t v) {
+		unsigned b = 0;
+		for (; v != 0; v >>= 1) ++b;
+		return b;
+	}
+	// (hi 2^64 + lo) / d and its remainder. Pre: hi < d < 2^63, so the quotient fits 64 bits
+	static constexpr std::uint64_t div128(std::uint64_t hi, std::uint64_t lo, std::uint64_t d, std::uint64_t& rem) {
+		std::uint64_t r = hi, q = 0;
+		for (int i = 63; i >= 0; --i) {
+			r = (r << 1) | ((lo >> i) & 1u);
+			q <<= 1;
+			if (r >= d) { r -= d; q |= 1u; }
+		}
+		rem = r;
+		return q;
+	}
+	static constexpr std::uint64_t pow10(unsigned k) {
+		std::uint64_t v = 1;
+		for (unsigned i = 0; i < k; ++i) v *= 10u;
+		return v;
+	}
+
+	// m 2^e rounded to radix fraction digits, ties away from zero, when the scaled value fits 64 bits;
+	// false leaves the conversion to the digit-serial path
+	constexpr bool assign_dyadic_fast(const dyadic& d, bool negative) {
+		if constexpr (radix > 27u) {
+			(void)d; (void)negative;
+			return false;
+		}
+		else {
+			const u128 P = mul64(d.m, pow5(radix));            // m 5^radix, below 2^116
+			const int k = d.e + static_cast<int>(radix);        // the value is P 2^k
+			std::uint64_t N = 0;
+			if (k >= 0) {
+				if (P.hi != 0 || k >= 64 || (k > 0 && (P.lo >> (64 - k)) != 0)) return false;
+				N = P.lo << k;
+			}
+			else {
+				const int sh = -k;
+				if (sh >= 128) N = 0;                           // below 2^-11: rounds to 0
+				else {                                          // sh >= 1: the bit at 2^(sh - 1) rounds
+					bool half = false;
+					if (sh >= 64) {
+						N = (sh == 64) ? P.hi : (P.hi >> (sh - 64));
+						half = (((sh == 64) ? (P.lo >> 63) : (P.hi >> (sh - 65))) & 1u) != 0;
+					}
+					else {
+						if ((P.hi >> sh) != 0) return false;
+						N = (P.lo >> sh) | (P.hi << (64 - sh));
+						half = ((P.lo >> (sh - 1)) & 1u) != 0;
+					}
+					if (half) { ++N; if (N == 0) return false; }
+				}
+			}
+			if constexpr (ndigits < 20u) {
+				if (N >= pow10(ndigits)) { saturated(negative); return true; }
+			}
+			for (unsigned i = 0; i < ndigits && N != 0; ++i) {
+				_block.setdigit(i, static_cast<unsigned>(N % 10u));
+				N /= 10u;
+			}
+			_sign = negative && !_block.iszero();
+			return true;
+		}
+	}
+
+	// the magnitude as (Q + f) 2^-s with Q in [2^62, 2^63), sticky = (f != 0), when it has at most 19
+	// digits; false leaves it to the digit-serial path
+	constexpr bool scaled_fast(std::uint64_t& Q, int& s, bool& sticky) const {
+		if constexpr (radix > 27u) {
+			(void)Q; (void)s; (void)sticky;
+			return false;
+		}
+		else {
+			std::uint64_t N = 0;
+			for (unsigned i = ndigits; i-- > 0;) {
+				const unsigned dg = _block.digit(i);
+				if (N == 0 && dg == 0) continue;
+				if (N > (0xFFFFFFFFFFFFFFFFull - dg) / 10u) return false;
+				N = 10u * N + dg;
+			}
+			const std::uint64_t D = pow5(radix);
+			int t = 62 + static_cast<int>(bitlength(D)) - static_cast<int>(bitlength(N));
+			for (int pass = 0; pass < 2; ++pass, ++t) {
+				std::uint64_t hi = 0, lo = 0;
+				bool lost = false;
+				if (t >= 64) { hi = N << (t - 64); lo = 0; if (t > 64 && (N >> (128 - t)) != 0) return false; }
+				else if (t > 0) { hi = N >> (64 - t); lo = N << t; }
+				else if (t == 0) { lo = N; }
+				else { lo = N >> (-t); lost = (N & ((1ull << (-t)) - 1u)) != 0; }
+				std::uint64_t rem = 0;
+				const std::uint64_t q = div128(hi, lo, D, rem);
+				if (q >= (1ull << 62) || pass == 1) {
+					Q = q;
+					s = t + static_cast<int>(radix);
+					sticky = lost || rem != 0;
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
 	static constexpr bool all_zero(const decimal_work& w) {
 		for (unsigned i = 0; i < work_digits; ++i) if (w[i] != 0) return false;
 		return true;
@@ -703,40 +824,43 @@ private:
 	constexpr double to_binary() const {
 		static_assert(p >= 2u && p <= 53u && emin >= -1022 && emax <= 1023, "to_binary: a format a double holds");
 		if (_block.iszero()) return 0.0;
-		decimal_work w{};
-		for (unsigned i = 0; i < ndigits; ++i) w[i] = static_cast<std::uint8_t>(_block.digit(i));
-		constexpr std::uint64_t two62 = 1ull << 62;
-		constexpr std::uint64_t two63 = 1ull << 63;
+		std::uint64_t Q = 0;
 		int s = 0;                                          // the magnitude is (Q + fraction) * 2^-s
 		bool sticky = false;
-		if (top_digit(w) >= radix + 19u || integer_part(w) >= two63) {
-			// at least 2^63: drop the fraction digits, then halve the integer part below 2^63
-			for (unsigned i = 0; i < radix; ++i) {
-				if (w[i] != 0) sticky = true;
-				w[i] = 0;
-			}
-			while (top_digit(w) >= radix + 19u || integer_part(w) >= two63) {
-				decimal_work q{};                           // halve the integer part, which starts at radix
-				unsigned rem = 0;
-				for (unsigned i = work_digits; i-- > radix;) {
-					const unsigned v = 10u * rem + w[i];
-					q[i] = static_cast<std::uint8_t>(v / 2u);
-					rem = v % 2u;
+		if (!scaled_fast(Q, s, sticky)) {
+			decimal_work w{};
+			for (unsigned i = 0; i < ndigits; ++i) w[i] = static_cast<std::uint8_t>(_block.digit(i));
+			constexpr std::uint64_t two62 = 1ull << 62;
+			constexpr std::uint64_t two63 = 1ull << 63;
+			if (top_digit(w) >= radix + 19u || integer_part(w) >= two63) {
+				// at least 2^63: drop the fraction digits, then halve the integer part below 2^63
+				for (unsigned i = 0; i < radix; ++i) {
+					if (w[i] != 0) sticky = true;
+					w[i] = 0;
 				}
-				if (rem != 0) sticky = true;
-				w = q;
-				--s;
+				while (top_digit(w) >= radix + 19u || integer_part(w) >= two63) {
+					decimal_work q{};                           // halve the integer part, which starts at radix
+					unsigned rem = 0;
+					for (unsigned i = work_digits; i-- > radix;) {
+						const unsigned v = 10u * rem + w[i];
+						q[i] = static_cast<std::uint8_t>(v / 2u);
+						rem = v % 2u;
+					}
+					if (rem != 0) sticky = true;
+					w = q;
+					--s;
+				}
 			}
-		}
-		else {
-			// below 2^63: double until the integer part reaches 2^62
-			while (integer_part(w) < two62) {
-				double_digits(w);
-				++s;
+			else {
+				// below 2^63: double until the integer part reaches 2^62
+				while (integer_part(w) < two62) {
+					double_digits(w);
+					++s;
+				}
+				for (unsigned i = 0; i < radix; ++i) if (w[i] != 0) { sticky = true; break; }
 			}
-			for (unsigned i = 0; i < radix; ++i) if (w[i] != 0) { sticky = true; break; }
+			Q = integer_part(w);                                // in [2^62, 2^63)
 		}
-		const std::uint64_t Q = integer_part(w);            // in [2^62, 2^63)
 		const int E = 62 - s;                               // the exponent of the leading bit
 		if (E > emax) return _sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity();
 		const int lsb = ((E > emin) ? E : emin) - static_cast<int>(p) + 1;   // the weight of the format's last bit

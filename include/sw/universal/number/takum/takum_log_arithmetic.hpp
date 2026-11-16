@@ -70,6 +70,7 @@
 #include <limits>
 #include <type_traits>
 
+#include <math/constexpr_math/log.hpp>
 #include <universal/number/takum/takum_codec.hpp>
 
 namespace sw { namespace universal { namespace takum_log_arith {
@@ -85,8 +86,63 @@ struct ddouble {
 
 constexpr ddouble make(double h, double l = 0.0) noexcept { return ddouble{ h, l }; }
 
+// ---------------------------------------------------------------------------
+// The <cmath> functions the double-double needs, constexpr (#2098).  At run time they are the
+// library calls; a constant evaluation computes the same exact results by scaling with powers of
+// two, which is exact for every argument used here (no result is subnormal), and seeds log from
+// constexpr_math::log, whose error the one Newton step in log_pos absorbs.  This lets the integer
+// and floating-point conversions of takum_log give the run-time encoding at compile time.
+// ---------------------------------------------------------------------------
+namespace cx {
+
+	// x * 2^e
+	template<typename Real>
+	constexpr Real ldexp(Real x, int e) noexcept {
+		if (!std::is_constant_evaluated()) return std::ldexp(x, e);
+		if (x == Real(0)) return x;
+		// an overflowing product is not a constant expression: the infinity is returned instead
+		constexpr Real big = std::numeric_limits<Real>::max() / Real(18446744073709551616.0);
+		for (; e >= 64 && x < big && x > -big; e -= 64) x *= Real(18446744073709551616.0);
+		for (; e <= -64; e += 64) x /= Real(18446744073709551616.0);
+		for (; e > 0; --e) {
+			if (x > std::numeric_limits<Real>::max() / Real(2)) return std::numeric_limits<Real>::infinity();
+			if (x < -std::numeric_limits<Real>::max() / Real(2)) return -std::numeric_limits<Real>::infinity();
+			x *= Real(2);
+		}
+		for (; e < 0; ++e) x /= Real(2);
+		return x;
+	}
+
+	// x = f 2^e with |f| in [1/2, 1); x finite and nonzero
+	constexpr double frexp(double x, int* e) noexcept {
+		if (!std::is_constant_evaluated()) return std::frexp(x, e);
+		int k = 0;
+		double a = (x < 0.0) ? -x : x;
+		while (a >= 18446744073709551616.0) { a /= 18446744073709551616.0; k += 64; }
+		while (a < 0x1p-64) { a *= 18446744073709551616.0; k -= 64; }
+		while (a >= 1.0) { a /= 2.0; ++k; }
+		while (a < 0.5) { a *= 2.0; --k; }
+		*e = k;
+		return (x < 0.0) ? -a : a;
+	}
+
+	constexpr double floor(double x) noexcept {
+		if (!std::is_constant_evaluated()) return std::floor(x);
+		if (!(x < 0x1p52 && x > -0x1p52)) return x;            // already an integer
+		const double t = static_cast<double>(static_cast<int64_t>(x));   // toward zero
+		return (t > x) ? t - 1.0 : t;
+	}
+
+	// a seed within a few ulps; Pre: x > 0 and finite
+	constexpr double log(double x) noexcept {
+		if (!std::is_constant_evaluated()) return std::log(x);
+		return sw::math::constexpr_math::log(x);
+	}
+
+}  // namespace cx
+
 // Exact sum of two doubles (Knuth).  No assumption about relative magnitude.
-inline ddouble two_sum(double a, double b) noexcept {
+constexpr ddouble two_sum(double a, double b) noexcept {
 	const double s  = a + b;
 	const double bb = s - a;
 	const double e  = (a - (s - bb)) + (b - bb);
@@ -94,7 +150,7 @@ inline ddouble two_sum(double a, double b) noexcept {
 }
 
 // Exact sum when |a| >= |b| (Dekker).  Three flops instead of six.
-inline ddouble quick_two_sum(double a, double b) noexcept {
+constexpr ddouble quick_two_sum(double a, double b) noexcept {
 	const double s = a + b;
 	return ddouble{ s, b - (s - a) };
 }
@@ -111,23 +167,22 @@ inline ddouble quick_two_sum(double a, double b) noexcept {
 // The split scales by 2^27 + 1, so it would overflow for |a| beyond ~6.7e299.
 // Nothing here approaches that: the arguments are bounded by the characteristic
 // range and the intermediate values by the series' own domain.
-inline ddouble two_prod(double a, double b) noexcept {
+constexpr ddouble two_prod(double a, double b) noexcept {
 	const double p = a * b;
 #if defined(FP_FAST_FMA)
-	return ddouble{ p, std::fma(a, b, -p) };
-#else
+	if (!std::is_constant_evaluated()) return ddouble{ p, std::fma(a, b, -p) };
+#endif
 	constexpr double SPLITTER = 134217729.0;      // 2^27 + 1
 	const double at = SPLITTER * a;
 	const double bt = SPLITTER * b;
 	const double ah = at - (at - a), al = a - ah;
 	const double bh = bt - (bt - b), bl = b - bh;
 	return ddouble{ p, ((ah * bh - p) + ah * bl + al * bh) + al * bl };
-#endif
 }
 
-inline ddouble renorm(double h, double l) noexcept { return quick_two_sum(h, l); }
+constexpr ddouble renorm(double h, double l) noexcept { return quick_two_sum(h, l); }
 
-inline ddouble add(const ddouble& a, const ddouble& b) noexcept {
+constexpr ddouble add(const ddouble& a, const ddouble& b) noexcept {
 	ddouble s = two_sum(a.hi, b.hi);
 	ddouble t = two_sum(a.lo, b.lo);
 	s.lo += t.hi;
@@ -136,22 +191,22 @@ inline ddouble add(const ddouble& a, const ddouble& b) noexcept {
 	return quick_two_sum(s.hi, s.lo);
 }
 
-inline ddouble neg(const ddouble& a) noexcept { return ddouble{ -a.hi, -a.lo }; }
-inline ddouble sub(const ddouble& a, const ddouble& b) noexcept { return add(a, neg(b)); }
+constexpr ddouble neg(const ddouble& a) noexcept { return ddouble{ -a.hi, -a.lo }; }
+constexpr ddouble sub(const ddouble& a, const ddouble& b) noexcept { return add(a, neg(b)); }
 
-inline ddouble mul(const ddouble& a, const ddouble& b) noexcept {
+constexpr ddouble mul(const ddouble& a, const ddouble& b) noexcept {
 	ddouble p = two_prod(a.hi, b.hi);
 	p.lo += a.hi * b.lo + a.lo * b.hi;
 	return quick_two_sum(p.hi, p.lo);
 }
 
-inline ddouble mul_d(const ddouble& a, double b) noexcept {
+constexpr ddouble mul_d(const ddouble& a, double b) noexcept {
 	ddouble p = two_prod(a.hi, b);
 	p.lo += a.lo * b;
 	return quick_two_sum(p.hi, p.lo);
 }
 
-inline ddouble div(const ddouble& a, const ddouble& b) noexcept {
+constexpr ddouble div(const ddouble& a, const ddouble& b) noexcept {
 	// One Newton correction on a double-precision quotient is enough for the
 	// full width: the first estimate is already good to ~53 bits.
 	const double q1 = a.hi / b.hi;
@@ -161,23 +216,23 @@ inline ddouble div(const ddouble& a, const ddouble& b) noexcept {
 }
 
 // Scaling by a power of two is exact on both limbs.
-inline ddouble ldexp2(const ddouble& a, int e) noexcept {
-	return ddouble{ std::ldexp(a.hi, e), std::ldexp(a.lo, e) };
+constexpr ddouble ldexp2(const ddouble& a, int e) noexcept {
+	return ddouble{ cx::ldexp(a.hi, e), cx::ldexp(a.lo, e) };
 }
 
-inline bool is_zero(const ddouble& a) noexcept { return a.hi == 0.0 && a.lo == 0.0; }
-inline bool less(const ddouble& a, const ddouble& b) noexcept {
+constexpr bool is_zero(const ddouble& a) noexcept { return a.hi == 0.0 && a.lo == 0.0; }
+constexpr bool less(const ddouble& a, const ddouble& b) noexcept {
 	return (a.hi != b.hi) ? (a.hi < b.hi) : (a.lo < b.lo);
 }
-inline double to_double(const ddouble& a) noexcept { return a.hi + a.lo; }
+constexpr double to_double(const ddouble& a) noexcept { return a.hi + a.lo; }
 
 // floor, exact: the result is an integer and fits the high limb whenever the
 // value does, which it always does here (|l| stays far inside 2^53 for rbits <= 3
 // and is an exact integer plus a fraction for wider regimes).
-inline ddouble floor_dd(const ddouble& a) noexcept {
-	double fh = std::floor(a.hi);
+constexpr ddouble floor_dd(const ddouble& a) noexcept {
+	double fh = cx::floor(a.hi);
 	if (fh == a.hi) {                       // hi was already integral
-		const double fl = std::floor(a.lo);
+		const double fl = cx::floor(a.lo);
 		return quick_two_sum(fh, fl);
 	}
 	return ddouble{ fh, 0.0 };
@@ -198,10 +253,10 @@ inline constexpr double invln2  = 1.44269504088896339e+00;
 // subtracted in three pieces so the reduction itself introduces no error the
 // series would have to carry.
 // ---------------------------------------------------------------------------
-inline ddouble exp_nonpos(const ddouble& y) noexcept {
+constexpr ddouble exp_nonpos(const ddouble& y) noexcept {
 	if (is_zero(y)) return make(1.0);
 
-	const double kd = std::floor(to_double(y) * invln2 + 0.5);
+	const double kd = cx::floor(to_double(y) * invln2 + 0.5);
 	const int    k  = static_cast<int>(kd);
 
 	// r = y - k ln2, in three exact steps
@@ -240,7 +295,7 @@ inline ddouble exp_nonpos(const ddouble& y) noexcept {
 // is tiny, where exp(y) - 1 would cancel away everything the value carries: |d|
 // is at least one ulp of l, so y reaches 2^-62 and the difference would keep only
 // ~44 bits of the ~106 available.
-inline ddouble expm1_nonpos(const ddouble& y) noexcept {
+constexpr ddouble expm1_nonpos(const ddouble& y) noexcept {
 	if (is_zero(y)) return make(0.0);
 	if (to_double(y) <= -0.5) return sub(exp_nonpos(y), make(1.0));  // no cancellation there
 
@@ -263,16 +318,16 @@ inline ddouble expm1_nonpos(const ddouble& y) noexcept {
 // log(f e^-z0), whose argument is within 2^-53 of 1, so three series terms carry
 // it to the full width.
 // ---------------------------------------------------------------------------
-inline ddouble log_pos(const ddouble& w) noexcept {
+constexpr ddouble log_pos(const ddouble& w) noexcept {
 	int E = 0;
-	const double fh = std::frexp(w.hi, &E);      // fh in [0.5, 1)
+	const double fh = cx::frexp(w.hi, &E);      // fh in [0.5, 1)
 	ddouble f = ldexp2(w, -E);                   // exact
 	// frexp gives [0.5,1); shift to [1,2) so the seed and the series agree
 	f = ldexp2(f, 1);
 	--E;
 	(void)fh;
 
-	const double z0 = std::log(f.hi);            // ~53 bits
+	const double z0 = cx::log(f.hi);             // ~53 bits
 
 	// u = f e^(-z0), within about 2^-53 of 1
 	const ddouble u = mul(f, exp_nonpos(make(-z0)));
@@ -304,14 +359,14 @@ inline constexpr unsigned qbits = 63;
 
 // l = c + M/2^p, exactly.  M reaches 2^61, past a double, so it is split into
 // halves that are each exactly representable.
-inline ddouble exact_l(int64_t c, uint64_t M, unsigned p) noexcept {
+constexpr ddouble exact_l(int64_t c, uint64_t M, unsigned p) noexcept {
 	ddouble r = make(static_cast<double>(c));
 	if (p == 0 || M == 0) return r;
 	const uint64_t hi = M >> 32;
 	const uint64_t lo = M & 0xFFFFFFFFull;
 	// named for what it is, and not `scale`, which shadows a free function
-	const double weight = std::ldexp(1.0, -static_cast<int>(p));
-	if (hi != 0) r = add(r, make(static_cast<double>(hi) * std::ldexp(1.0, 32) * weight));
+	const double weight = cx::ldexp(1.0, -static_cast<int>(p));
+	if (hi != 0) r = add(r, make(static_cast<double>(hi) * 4294967296.0 * weight));
 	if (lo != 0) r = add(r, make(static_cast<double>(lo) * weight));
 	return r;
 }
@@ -329,7 +384,7 @@ struct split_result {
 // which UBSan duly reported.  Splitting the extraction keeps every intermediate
 // under 2^32, so each limb converts through a signed type that comfortably holds
 // it, and the two pieces are reassembled in the unsigned domain where they belong.
-inline split_result to_integer_fraction(const ddouble& v) noexcept {
+constexpr split_result to_integer_fraction(const ddouble& v) noexcept {
 	constexpr unsigned HIBITS = 31;
 	constexpr unsigned LOBITS = qbits - HIBITS;            // 32
 
@@ -372,13 +427,13 @@ inline split_result to_integer_fraction(const ddouble& v) noexcept {
 // ---------------------------------------------------------------------------
 
 // A 64-bit integer as an exact double-double: two 32-bit halves are each exact.
-inline ddouble from_uint64(uint64_t v) noexcept {
+constexpr ddouble from_uint64(uint64_t v) noexcept {
 	return add(make(static_cast<double>(v >> 32) * 4294967296.0), make(static_cast<double>(v & 0xFFFFFFFFull)));
 }
 
 // l = 2 ln w.  Pre: w > 0 and finite.  log_pos reduces w = f 2^E itself, so any
 // positive double-double is in its domain, subnormals included.
-inline ddouble two_log(const ddouble& w) noexcept {
+constexpr ddouble two_log(const ddouble& w) noexcept {
 	return ldexp2(log_pos(w), 1);
 }
 
@@ -389,10 +444,10 @@ struct scaled_exp {
 	int     n;
 	int     top;      // the value lies in [2^top, 2^(top+1))
 };
-inline scaled_exp exp_half(const ddouble& l) noexcept {
+constexpr scaled_exp exp_half(const ddouble& l) noexcept {
 	const ddouble y = ldexp2(l, -1);                       // exact
 	if (is_zero(y)) return scaled_exp{ make(1.0), 0, 0 };
-	const double  nd = std::floor(y.hi * invln2) + 1.0;    // r lands in (-ln2, 0], give or take an ulp
+	const double  nd = cx::floor(y.hi * invln2) + 1.0;    // r lands in (-ln2, 0], give or take an ulp
 	ddouble r = sub(y, mul_d(make(ln2_hi), nd));
 	r = sub(r, mul_d(make(ln2_lo), nd));
 	r = sub(r, mul_d(make(ln2_lo2), nd));
@@ -400,7 +455,7 @@ inline scaled_exp exp_half(const ddouble& l) noexcept {
 	// E's binade: frexp of the head, one lower when the head is a power of two and the
 	// tail pulls the value below it
 	int ex = 0;
-	const double fh = std::frexp(E.hi, &ex);               // E.hi = fh 2^ex, fh in [1/2, 1)
+	const double fh = cx::frexp(E.hi, &ex);                // E.hi = fh 2^ex, fh in [1/2, 1)
 	--ex;                                                  // E.hi in [2^ex, 2^(ex+1))
 	if (fh == 0.5 && E.lo < 0.0) --ex;
 	const int n = static_cast<int>(nd);
@@ -409,7 +464,7 @@ inline scaled_exp exp_half(const ddouble& l) noexcept {
 
 // An integer-valued double-double in [0, 2^64) as a uint64_t.  The head can be 2^64
 // itself, with a negative tail, which the wrap-around below handles.
-inline uint64_t to_uint64(const ddouble& integral) noexcept {
+constexpr uint64_t to_uint64(const ddouble& integral) noexcept {
 	constexpr double two64 = 18446744073709551616.0;
 	const uint64_t H = (integral.hi >= two64) ? 0ull : static_cast<uint64_t>(integral.hi);
 	const int64_t  L = static_cast<int64_t>(integral.lo); // |lo| <= ulp(hi)/2 <= 2^10
@@ -420,7 +475,7 @@ inline uint64_t to_uint64(const ddouble& integral) noexcept {
 // width at this magnitude, subnormals included -- or infinity past the top binade.
 // A long double wider than a double-double is rounded to the double-double's width.
 template<typename Target>
-inline Target exp_half_to(const ddouble& l) noexcept {
+constexpr Target exp_half_to(const ddouble& l) noexcept {
 	using Limits = std::numeric_limits<Target>;
 	constexpr int digits = Limits::digits;
 	constexpr int emin   = Limits::min_exponent - 1;      // 2^emin is the smallest normal
@@ -437,7 +492,7 @@ inline Target exp_half_to(const ddouble& l) noexcept {
 	const ddouble k = floor_dd(add(ldexp2(v.E, v.n - q), make(0.5)));
 	using Work = std::conditional_t<(sizeof(Target) > sizeof(double)), Target, double>;
 	const Work kw = static_cast<Work>(k.hi) + static_cast<Work>(k.lo);
-	const Work magnitude = std::ldexp(kw, q);             // exact, or the overflow below
+	const Work magnitude = cx::ldexp(kw, q);              // exact, or the overflow below
 	if (magnitude > static_cast<Work>(Limits::max())) return Limits::infinity();
 	return static_cast<Target>(magnitude);
 }
@@ -461,7 +516,7 @@ struct combined {
 
 // Pre: both operands are non-zero and non-NaR; la, lb are their exact l values;
 // sa, sb their signs (sb already flipped by the caller for subtraction).
-inline combined combine(const ddouble& la, bool sa, const ddouble& lb, bool sb) noexcept {
+constexpr combined combine(const ddouble& la, bool sa, const ddouble& lb, bool sb) noexcept {
 	const bool aBig = !less(la, lb);          // |x| = e^(l/2) is monotone in l
 	const ddouble& big = aBig ? la : lb;
 	const ddouble& sml = aBig ? lb : la;

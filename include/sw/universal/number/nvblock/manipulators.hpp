@@ -46,6 +46,8 @@ namespace sw { namespace universal {
 			elemName = "e4m3_saturating";
 		} else if constexpr (std::is_same_v<ElementType, e5m2>) {
 			elemName = "e5m2";
+		} else if constexpr (std::is_same_v<ElementType, e5m2_saturating>) {
+			elemName = "e5m2_saturating";
 		} else {
 			elemName = "unknown";
 		}
