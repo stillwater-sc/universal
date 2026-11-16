@@ -82,6 +82,7 @@ quire_resolve(const quire<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, 
 	Scalar result;
 	if (q.isnan()) { result.setnan(NAN_TYPE_QUIET); return result; }  // NaN propagated through the accumulator (#1226)
 	if (q.isinf()) { result.setinf(q.sign()); return result; }        // a signed infinity (#2019); a saturating cfloat clamps
+	if (q.isoverflow()) { result.setinf(q.sign()); return result; }   // a sum past the accumulator is an infinity too (#2094)
 	if (q.iszero()) {
 		result.setzero();
 		return result;

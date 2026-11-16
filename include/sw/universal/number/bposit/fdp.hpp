@@ -41,6 +41,7 @@ bposit<nbits, rs, es, bt> quire_resolve(const quire<bposit<nbits, rs, es, bt>, c
 	using B = bposit<nbits, rs, es, bt>;
 	B result;
 	if (q.isnar())  { result.setnar(); return result; }  // any non-finite state: a posit has no infinities (#2019)
+	if (q.isoverflow()) return B(q.sign() ? SpecificValue::maxneg : SpecificValue::maxpos);   // a sum past the accumulator saturates (#2094)
 	if (q.iszero()) { result.setzero(); return result; }
 	constexpr unsigned rp = quire_traits<B>::radix_point;
 	const int s = q.scale();                                    // the sum's binary scale

@@ -64,7 +64,7 @@ public:
 	using accumulator_type = blockbinary<qbits, LimbType, BinaryNumberType::Unsigned>;
 
 	// Constructors
-	quire() : _sign(false), _is_pinf(false), _is_ninf(false), _is_nan(false), _accu{} {}
+	quire() : _sign(false), _is_pinf(false), _is_ninf(false), _is_nan(false), _is_overflow(false), _accu{} {}
 	quire(int8_t   iv) { *this = static_cast<int64_t>(iv); }
 	quire(int16_t  iv) { *this = static_cast<int64_t>(iv); }
 	quire(int32_t  iv) { *this = static_cast<int64_t>(iv); }
@@ -81,7 +81,7 @@ public:
 	quire(const blocktriple<fbits, op, bt>& rhs) { *this = rhs; }
 
 	// specific value constructor
-	constexpr quire(const SpecificValue code) noexcept : _sign{false}, _is_pinf{false}, _is_ninf{false}, _is_nan{false}, _accu{}
+	constexpr quire(const SpecificValue code) noexcept : _sign{false}, _is_pinf{false}, _is_ninf{false}, _is_nan{false}, _is_overflow{false}, _accu{}
 	{
 		switch (code) {
 		case SpecificValue::maxpos:
@@ -232,6 +232,8 @@ public:
 		// An infinite sum absorbs every finite term; only an opposite infinity or a
 		// NaN, recorded above, can still change it.
 		if (_is_pinf || _is_ninf) return *this;
+		// an overflowed sum is past every finite term: it stays overflowed (#2094)
+		if (_is_overflow) return *this;
 
 		const int top = leading_scale(rhs);
 #if QUIRE_THROW_ARITHMETIC_EXCEPTION
@@ -299,6 +301,9 @@ public:
 
 	/// Add two quires
 	quire& operator+=(const quire& rhs) {
+		// q += q: the addition below changes rhs as it changes *this, so its carry check would compare
+		// the sum with itself and miss the overflow; add a copy (CodeRabbit on #2095)
+		if (&rhs == this) { const quire copy(rhs); return *this += copy; }
 		if (_is_nan) return *this;                 // NaN is sticky
 		if (rhs._is_nan) { setnan(); return *this; }
 		if (rhs._is_pinf || rhs._is_ninf || _is_pinf || _is_ninf) {
@@ -308,9 +313,16 @@ public:
 			if (pinf && ninf) setnan(); else setinf(ninf);
 			return *this;
 		}
+		// an overflowed side dominates the finite other; two opposite overflows cannot be ordered
+		if (_is_overflow || rhs._is_overflow) {
+			if (_is_overflow && rhs._is_overflow) { if (_sign != rhs._sign) setnan(); return *this; }
+			if (rhs._is_overflow) { _accu.clear(); _is_overflow = true; _sign = rhs._sign; }
+			return *this;
+		}
 		if (rhs.iszero()) return *this;
 		if (_sign == rhs._sign) {
 			_accu += rhs._accu;
+			if (_accu < rhs._accu) record_overflow();   // the carry out of the top bit (#2094)
 		}
 		else {
 			// compare magnitudes by treating accumulators as unsigned
@@ -358,7 +370,8 @@ public:
 	// ////////////////////////////////////////////////////////////////=
 	// The non-finite states (#2019): NaN, +inf and -inf. isnar() is "any of them",
 	// which is what a posit, with no infinities, resolves to NaR.
-	bool iszero() const noexcept { return !isnar() && _accu.none(); }
+	bool iszero() const noexcept { return !isnar() && !_is_overflow && _accu.none(); }
+	bool isoverflow() const noexcept { return !_is_nan && !_is_pinf && !_is_ninf && _is_overflow; }   // #2094
 	bool isnan()  const noexcept { return _is_nan; }
 	bool isinf()  const noexcept { return !_is_nan && (_is_pinf || _is_ninf); }
 	bool isnar()  const noexcept { return _is_nan || _is_pinf || _is_ninf; }
@@ -407,6 +420,7 @@ public:
 		_is_pinf = false;
 		_is_ninf = false;
 		_is_nan  = false;
+		_is_overflow = false;
 		_accu.clear();
 	}
 	void clear() noexcept { reset(); }
@@ -511,6 +525,15 @@ public:
 			}
 			else {
 				return TargetType(_is_ninf ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity());
+			}
+		}
+		if (_is_overflow) {
+			// past the accumulator: saturate an integer, and an infinity for a floating-point target (#2094)
+			if constexpr (std::is_integral_v<TargetType>) {
+				return _sign ? std::numeric_limits<TargetType>::lowest() : std::numeric_limits<TargetType>::max();
+			}
+			else {
+				return TargetType(_sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity());
 			}
 		}
 		if (iszero()) return TargetType(0);
@@ -620,7 +643,26 @@ private:
 	bool             _is_pinf;
 	bool             _is_ninf;
 	bool             _is_nan;
+	// A finite sum that outgrew the accumulator: a same-sign addition carried out of its top bit
+	// (#2094). Sticky, with the sign of the sum in _sign; _accu is cleared. It resolves to +-maxpos
+	// in a type without infinities and to +-inf in one with them, and throws quire_overflow when
+	// QUIRE_THROW_ARITHMETIC_EXCEPTION is set. The carry used to be dropped, so the sum wrapped.
+	bool             _is_overflow;
 	accumulator_type _accu;
+
+	// the carry out of the top bit: record the overflow, or throw
+	void record_overflow() {
+#if QUIRE_THROW_ARITHMETIC_EXCEPTION
+		throw quire_overflow{};
+#else
+		_accu.clear();
+		_is_overflow = true;
+#endif
+	}
+	// an overflowed sum orders like the infinity of its sign: its magnitude is past every finite
+	// sum the accumulator holds
+	bool above_all() const noexcept { return _is_pinf || (_is_overflow && !_sign); }
+	bool below_all() const noexcept { return _is_ninf || (_is_overflow && _sign); }
 
 	/// Record a NaN or infinite operand. Opposite infinities make NaN.
 	template<unsigned fbits, BlockTripleOperator op, typename bt>
@@ -747,6 +789,8 @@ private:
 		int base = accu_base_offset(v);
 		scatter_to_accumulator(v, base, temp);
 		_accu += temp;
+		// both are magnitudes below 2^qbits: the sum wrapped exactly when it is below an addend
+		if (_accu < temp) record_overflow();
 	}
 
 	/// Subtract a blocktriple's magnitude from the accumulator (|*this| > |v| assumed)
@@ -836,6 +880,8 @@ bool operator==(const quire<NumberType, capacity, LimbType>& lhs,
                 const quire<NumberType, capacity, LimbType>& rhs) {
 	if (lhs._is_nan || rhs._is_nan) return false;         // NaN compares unordered (IEEE-style)
 	if (lhs.isinf() || rhs.isinf()) return lhs.isinf() && rhs.isinf() && lhs._is_ninf == rhs._is_ninf;
+	// an overflowed sum has no value to compare: only the same overflow equals it (#2094)
+	if (lhs._is_overflow || rhs._is_overflow) return lhs._is_overflow && rhs._is_overflow && lhs._sign == rhs._sign;
 	if (lhs.iszero() && rhs.iszero()) return true;  // +0 == -0
 	return lhs._sign == rhs._sign && lhs._accu == rhs._accu;
 }
@@ -854,6 +900,10 @@ bool operator<(const quire<NumberType, capacity, LimbType>& lhs,
 	if (lhs._is_ninf) return !rhs._is_ninf;                // -inf is below everything but -inf
 	if (rhs._is_pinf) return !lhs._is_pinf;                // +inf is above everything but +inf
 	if (lhs._is_pinf || rhs._is_ninf) return false;
+	// an overflowed sum orders past every finite one, inside the infinities (#2094)
+	if (lhs.below_all()) return !rhs.below_all();
+	if (rhs.above_all()) return !lhs.above_all();
+	if (lhs.above_all() || rhs.below_all()) return false;
 	if (lhs.iszero() && rhs.iszero()) return false;  // +0 == -0
 	if (lhs._sign != rhs._sign) return lhs._sign;  // negative < positive
 	// Both same sign: compare magnitudes using MSB-first unsigned comparison.

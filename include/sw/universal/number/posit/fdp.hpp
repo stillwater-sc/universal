@@ -60,6 +60,7 @@ quire_resolve(const quire<posit<nbits, es, bt>, capacity, LimbType>& q) {
 
 	Scalar result;
 	if (q.isnar()) { result.setnar(); return result; }  // NaR propagated through the accumulator (#1226); an infinity too, posit has none (#2019)
+	if (q.isoverflow()) return Scalar(q.sign() ? SpecificValue::maxneg : SpecificValue::maxpos);   // a sum past the accumulator saturates (#2094)
 	if (q.iszero()) {
 		result.setzero();
 		return result;
