@@ -40,21 +40,29 @@ POSIX specifies that underflow may only occur when both arguments are subnormal 
 hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN.
 */
 
+#include <universal/number/cfloat/math/efloat_bridge.hpp>
+
 namespace sw { namespace universal {
 
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> hypot(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
+	if constexpr (!cfloat_math::fits_double<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>>()) {
+		if (x.isinf() || y.isinf()) return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(SpecificValue::infpos);   // inf even with a NaN (C 7.12.7.3)
+		if (x.isnan()) return x.quieted();
+		if (y.isnan()) return y.quieted();
+		return cfloat_math::evaluate<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>>([&](unsigned W) { return hypot(cfloat_math::argument(x, W), cfloat_math::argument(y, W)); });
+	}
 	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::hypot(double(x),double(y)));
 }
 
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> hypotf(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::hypotf(float(x),float(y)));
+	return hypot(x, y);   // the cfloat's own hypot: hypotf narrowed a wide layout to its native type (#2088)
 }
 
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> hypotl(cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> y) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>(std::hypotl((long double)(x),(long double)(y)));
+	return hypot(x, y);   // the cfloat's own hypot: hypotl narrowed a wide layout to its native type (#2088)
 }
 
 }} // namespace sw::universal
