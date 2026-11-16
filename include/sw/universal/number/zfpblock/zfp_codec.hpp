@@ -330,6 +330,13 @@ constexpr int fwd_cast(const Real* fblock, typename zfp_type_traits<Real>::Int* 
 		}
 	}
 
+	if (emax != -INT_MAX && emax < 1 - Traits::ebias) {
+		// subnormal magnitudes: the block exponent is clamped at the format's smallest, as the ZFP
+		// reference does, so that the biased exponent stays positive. Unclamped it wrapped in ebits,
+		// and a float block of 1e-40 decoded as 1.16e37 (#2097).
+		emax = 1 - Traits::ebias;
+	}
+
 	if (emax == -INT_MAX) {
 		// all zeros
 		if (std::is_constant_evaluated()) {
@@ -468,10 +475,12 @@ constexpr size_t encode_bitplanes(zfp_bitstream& stream, const UInt* ublock,
 	size_t start_bits = stream.total_bits();
 	constexpr unsigned intprec = CHAR_BIT * sizeof(UInt);
 
-	// Process bit planes from MSB to LSB
+	// Process bit planes from MSB to LSB: the top maxprec planes, k >= kmin, as ZFP codes them.
+	// The test was k >= maxprec, which skipped the top planes and coded the bottom ones, so a fixed
+	// precision dropped every significant bit (#2097).
+	const unsigned kmin = (intprec > maxprec) ? intprec - maxprec : 0u;
 	uint64_t sig = 0;  // significance bitmask: bit i = 1 if coefficient i is significant
-	for (unsigned k = intprec; k-- > 0 && stream.total_bits() - start_bits < maxbits; ) {
-		if (k >= maxprec) continue;
+	for (unsigned k = intprec; k-- > kmin && stream.total_bits() - start_bits < maxbits; ) {
 
 		// extract bit k from all N coefficients
 		uint64_t plane = 0;
@@ -536,9 +545,9 @@ constexpr size_t decode_bitplanes(zfp_bitstream& stream, UInt* ublock,
 		std::memset(ublock, 0, N * sizeof(UInt));
 	}
 
+	const unsigned kmin = (intprec > maxprec) ? intprec - maxprec : 0u;   // the top maxprec planes (#2097)
 	uint64_t sig = 0;
-	for (unsigned k = intprec; k-- > 0 && stream.total_bits() - start_bits < maxbits; ) {
-		if (k >= maxprec) continue;
+	for (unsigned k = intprec; k-- > kmin && stream.total_bits() - start_bits < maxbits; ) {
 
 		// decode bits for previously-significant coefficients
 		uint64_t known = sig;
@@ -577,15 +586,102 @@ constexpr size_t decode_bitplanes(zfp_bitstream& stream, UInt* ublock,
 // Full encode/decode pipeline
 // ============================================================
 
+// ------------------------------------------------------------
+// Block header (#2097)
+//
+//   bit 0         0: an all-zero block, nothing follows
+//                 1: a coded or a raw block, the biased exponent follows
+//   ebits bits    the block exponent + ebias, in [1, 2^ebits - 1] for a coded block (fwd_cast clamps
+//                 emax at 1 - ebias); 0 marks a raw block
+//   raw block     the N IEEE bit patterns, verbatim: a block with an inf or NaN, which the lossy
+//                 pipeline cannot represent, and a reversible block the pipeline does not reproduce
+// ------------------------------------------------------------
+
+// the size of a raw block: the header and every value's bit pattern
+template<typename Real, unsigned Dim>
+constexpr size_t zfp_raw_block_bits() {
+	return 1u + zfp_type_traits<Real>::ebits + zfp_block_size<Dim>::value * (CHAR_BIT * sizeof(Real));
+}
+
+// the bits a fixed rate gives a block.  A rate below the header + 4 bits (13 bits for float, 16 for
+// double), a negative rate and a NaN all clamp up to it: below the header every block was silently
+// encoded as zero (#2097). Above the floor a rate keeps its exact size; a block can still decode to
+// zero at a very low rate, as in the ZFP reference: a bit plane costs up to 2N bits, so a nonzero
+// result needs up to header + 2N + 5 (142 bits for a 3D float block), and clamping to that would
+// enlarge the common 3D rates of 1-2 bits per value (decided on #2097). A rate past the raw size is
+// capped there, the most any block takes.
+template<typename Real, unsigned Dim>
+constexpr size_t zfp_fixed_rate_bits(double rate) {
+	constexpr size_t N = zfp_block_size<Dim>::value;
+	constexpr size_t min_bits = 1u + zfp_type_traits<Real>::ebits + 4u;
+	constexpr size_t max_bits = zfp_raw_block_bits<Real, Dim>();
+	const double bits = rate * static_cast<double>(N);
+	if (!(bits >= static_cast<double>(min_bits))) return min_bits;   // NaN fails the comparison too
+	if (bits >= static_cast<double>(max_bits)) return max_bits;
+	return static_cast<size_t>(bits);
+}
+
+// the bit planes a block codes: maxprec, or for a fixed accuracy, as many as the tolerance needs.
+// ZFP's rule: emax - minexp + 2 (Dim + 1) planes keep the error below 2^minexp (#2097).
+template<unsigned Dim>
+constexpr unsigned zfp_block_precision(int emax, unsigned maxprec, int minexp) {
+	if (minexp == INT_MIN) return maxprec;
+	const long long p = static_cast<long long>(emax) - static_cast<long long>(minexp) + 2ll * (Dim + 1);
+	if (p <= 0) return 0;
+	return (p < static_cast<long long>(maxprec)) ? static_cast<unsigned>(p) : maxprec;
+}
+
+// a block with an inf or a NaN
+template<typename Real, size_t N>
+constexpr bool zfp_has_nonfinite(const Real* fblock) {
+	for (size_t i = 0; i < N; ++i) {
+		const Real v = fblock[i];
+		if (v != v || v == std::numeric_limits<Real>::infinity() || v == -std::numeric_limits<Real>::infinity()) return true;
+	}
+	return false;
+}
+
+// write zero bits until the stream holds `bits`, a word at a time
+constexpr void zfp_pad_to(zfp_bitstream& stream, size_t bits) {
+	while (stream.total_bits() < bits) {
+		const size_t left = bits - stream.total_bits();
+		stream.write_bits(0, static_cast<unsigned>(left < 64 ? left : 64));
+	}
+}
+
+// Encode a block raw: the header with exponent field 0, then each value's bit pattern. When
+// maxbits cannot hold it (a fixed rate too small), only the header is written, and the block
+// decodes as all NaN. Returns the bits written.
+template<typename Real, unsigned Dim>
+constexpr size_t encode_raw_block(const Real* fblock, uint8_t* buffer, size_t max_bytes, size_t maxbits, bool pad) {
+	using Traits = zfp_type_traits<Real>;
+	using UInt = typename Traits::UInt;
+	constexpr size_t N = zfp_block_size<Dim>::value;
+	zfp_bitstream stream(buffer, max_bytes);
+	stream.write_bit(1);
+	stream.write_bits(0, Traits::ebits);
+	if (maxbits >= zfp_raw_block_bits<Real, Dim>()) {
+		for (size_t i = 0; i < N; ++i) stream.write_bits(static_cast<uint64_t>(std::bit_cast<UInt>(fblock[i])), CHAR_BIT * sizeof(Real));
+	}
+	if (pad) zfp_pad_to(stream, maxbits);
+	return stream.total_bits();
+}
+
 // Encode a block of 4^Dim floating-point values
-// Returns total number of bits written
+// Returns total number of bits written.  minexp (INT_MIN: none) is the fixed-accuracy floor; pad
+// fills the block to maxbits, which only a fixed rate needs (#2097: the other modes were padded to
+// their worst case, 137 bits for 4 floats).
 template<typename Real, unsigned Dim>
 constexpr size_t encode_block(const Real* fblock, uint8_t* buffer, size_t max_bytes,
-                              unsigned maxprec, size_t maxbits) {
+                              unsigned maxprec, size_t maxbits, int minexp = INT_MIN, bool pad = true) {
 	using Traits = zfp_type_traits<Real>;
 	using Int = typename Traits::Int;
 	using UInt = typename Traits::UInt;
 	constexpr size_t N = zfp_block_size<Dim>::value;
+
+	// inf and NaN have no block-floating-point form: they were cast to integers, which is undefined,
+	// and {inf, 1, 2, 3} decoded as {-8, 1, 2, 3} (#2097). Such a block is stored raw.
+	if (zfp_has_nonfinite<Real, N>(fblock)) return encode_raw_block<Real, Dim>(fblock, buffer, max_bytes, maxbits, pad);
 
 	zfp_bitstream stream(buffer, max_bytes);
 
@@ -605,17 +701,14 @@ constexpr size_t encode_block(const Real* fblock, uint8_t* buffer, size_t max_by
 	if (all_zero || maxbits < min_header_bits) {
 		// All-zero block or insufficient bits for header: encode as zero block
 		stream.write_bit(0);
-		// pad to maxbits if fixed-rate
-		while (stream.total_bits() < maxbits) {
-			stream.write_bit(0);
-		}
+		if (pad) zfp_pad_to(stream, maxbits);
 		return stream.total_bits();
 	}
 
 	// Write nonzero indicator
 	stream.write_bit(1);
 
-	// Write biased exponent
+	// Write biased exponent: at least 1, since fwd_cast clamps emax; 0 marks a raw block
 	unsigned biased_emax = static_cast<unsigned>(emax + Traits::ebias);
 	stream.write_bits(biased_emax, Traits::ebits);
 
@@ -638,13 +731,9 @@ constexpr size_t encode_block(const Real* fblock, uint8_t* buffer, size_t max_by
 	// Step 5: bit-plane encode
 	size_t header_bits = stream.total_bits();
 	size_t data_maxbits = (maxbits > header_bits) ? (maxbits - header_bits) : 0;
-	encode_bitplanes<UInt, N>(stream, ublock, maxprec, data_maxbits);
+	encode_bitplanes<UInt, N>(stream, ublock, zfp_block_precision<Dim>(emax, maxprec, minexp), data_maxbits);
 
-	// pad to maxbits if fixed-rate
-	while (stream.total_bits() < maxbits) {
-		stream.write_bit(0);
-	}
-
+	if (pad) zfp_pad_to(stream, maxbits);
 	return stream.total_bits();
 }
 
@@ -653,7 +742,7 @@ constexpr size_t encode_block(const Real* fblock, uint8_t* buffer, size_t max_by
 template<typename Real, unsigned Dim>
 constexpr size_t decode_block(const uint8_t* buffer, size_t max_bytes,
                               Real* fblock,
-                              unsigned maxprec, size_t maxbits) {
+                              unsigned maxprec, size_t maxbits, int minexp = INT_MIN) {
 	using Traits = zfp_type_traits<Real>;
 	using Int = typename Traits::Int;
 	using UInt = typename Traits::UInt;
@@ -673,13 +762,23 @@ constexpr size_t decode_block(const uint8_t* buffer, size_t max_bytes,
 
 	// Read biased exponent
 	unsigned biased_emax = static_cast<unsigned>(stream.read_bits(Traits::ebits));
+	if (biased_emax == 0) {
+		// a raw block: the bit patterns, or all NaN when the rate could not hold them
+		if (maxbits >= zfp_raw_block_bits<Real, Dim>()) {
+			for (size_t i = 0; i < N; ++i) fblock[i] = std::bit_cast<Real>(static_cast<UInt>(stream.read_bits(CHAR_BIT * sizeof(Real))));
+		}
+		else {
+			for (size_t i = 0; i < N; ++i) fblock[i] = std::numeric_limits<Real>::quiet_NaN();
+		}
+		return stream.total_bits();
+	}
 	int emax = static_cast<int>(biased_emax) - Traits::ebias;
 
 	// Step 5 (inverse): bit-plane decode
 	UInt ublock[N]{};
 	size_t header_bits = stream.total_bits();
 	size_t data_maxbits = (maxbits > header_bits) ? (maxbits - header_bits) : 0;
-	decode_bitplanes<UInt, N>(stream, ublock, maxprec, data_maxbits);
+	decode_bitplanes<UInt, N>(stream, ublock, zfp_block_precision<Dim>(emax, maxprec, minexp), data_maxbits);
 
 	// Step 4 (inverse): negabinary to signed
 	Int ordered[N]{};
