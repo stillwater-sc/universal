@@ -63,11 +63,22 @@ public:
 		// Compute elem_max: the largest representable value in ElementType
 		float elem_max = compute_elem_max();
 
-		// Step 1: pre-divide by tensor_scale and find amax
+		// Step 1: pre-divide by tensor_scale, once per element, and find amax. A NaN input makes the
+		// block NaN, as it does an MX block (#2086): the scale is e4m3's NaN, which dequantizes every
+		// element to NaN, and the elements are zeroed so the contents are deterministic. It was
+		// dropped: NaN is not greater than amax, and e2m1 turned it into 0 (#2096). A tensor_scale of
+		// 0 gives the zero block, NaN inputs included.
+		float pre_scaled[BlockSize]{};
 		float amax = 0.0f;
 		for (size_t i = 0; i < n; ++i) {
-			float pre_scaled = (tensor_scale != 0.0f) ? src[i] / tensor_scale : 0.0f;
-			float a = pre_scaled < 0.0f ? -pre_scaled : pre_scaled;  // constexpr fabs
+			const float v = (tensor_scale != 0.0f) ? src[i] / tensor_scale : 0.0f;
+			if (v != v) {
+				_block_scale.setnan(NAN_TYPE_QUIET);
+				for (size_t j = 0; j < BlockSize; ++j) set_element_zero(j);
+				return;
+			}
+			pre_scaled[i] = v;
+			float a = v < 0.0f ? -v : v;  // constexpr fabs
 			if (a > amax) amax = a;
 		}
 
@@ -95,9 +106,7 @@ public:
 		// Step 3: quantize each element
 		float inv_bs = 1.0f / bs;
 		for (size_t i = 0; i < n; ++i) {
-			float pre_scaled = (tensor_scale != 0.0f) ? src[i] / tensor_scale : 0.0f;
-			float scaled = pre_scaled * inv_bs;
-			set_element_from_float(i, scaled);
+			set_element_from_float(i, pre_scaled[i] * inv_bs);
 		}
 		// zero-fill remaining elements
 		for (size_t i = n; i < BlockSize; ++i) {

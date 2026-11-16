@@ -39,7 +39,7 @@ template<> constexpr int ref_emax<sw::universal::e2m1>()            { return 2; 
 template<> constexpr int ref_emax<sw::universal::e2m3>()            { return 2; }
 template<> constexpr int ref_emax<sw::universal::e3m2>()            { return 4; }
 template<> constexpr int ref_emax<sw::universal::e4m3_saturating>() { return 8; }
-template<> constexpr int ref_emax<sw::universal::e5m2>()            { return 15; }
+template<> constexpr int ref_emax<sw::universal::e5m2_saturating>() { return 15; }
 template<> constexpr int ref_emax<std::int8_t>()                    { return 6; }
 
 template<typename Elem>
@@ -163,6 +163,60 @@ int VerifyNaNBlock(const std::string& tag, bool reportTestCases) {
 			                               << b.scale().bits() << std::dec << ", expected 0xff and NaN elements\n";
 			++fails;
 		}
+	}
+	return fails;
+}
+
+// byte_size() is this implementation's storage, one byte per element, not the OCP packed size (#2096)
+static_assert(sw::universal::mxfp4::byte_size() == 33 && sizeof(sw::universal::mxfp4) == 33, "mxfp4 holds 1 + 32 bytes");
+static_assert(sw::universal::mxfp8::byte_size() == sizeof(sw::universal::mxfp8), "byte_size() is the storage");
+static_assert(sw::universal::mxint8::byte_size() == sizeof(sw::universal::mxint8), "byte_size() is the storage");
+
+// The block maximum clips (#2096). mxfp8e5m2 scales amax into [2^15, 2^16) against e5m2's maxpos of
+// 57344; with plain e5m2 as the element, every scaled value from 61440 up became inf. The values here
+// are hand-derived, not from the element's own conversion, which VerifyBlock's reference shares.
+int VerifyBlockMaximumClips(bool reportTestCases) {
+	using namespace sw::universal;
+	int fails = 0;
+	// amax 1.9: scale 2^(0 - 15), 1.9 * 2^15 = 62259 rounds past maxpos, so it clips to 57344 * 2^-15
+	const std::vector<float> x = { 1.9f, 1.0f, 0.5f, -1.2f };
+	mxfp8e5m2 b;
+	b.quantize(x.data(), x.size());
+	std::vector<float> out(x.size(), 0.0f);
+	b.dequantize(out.data(), out.size());
+	if (out[0] != 1.75f || b.element(0).bits() != 0x7Bu) {
+		if (reportTestCases) std::cerr << "FAIL mxfp8e5m2: block maximum 1.9 dequantizes to " << out[0] << ", expected 1.75 (maxpos)\n";
+		++fails;
+	}
+	if (out[1] != 1.0f || out[2] != 0.5f) {
+		if (reportTestCases) std::cerr << "FAIL mxfp8e5m2: exact elements 1 and 0.5 dequantize to " << out[1] << ", " << out[2] << '\n';
+		++fails;
+	}
+	return fails;
+}
+
+// An infinite input keeps today's behaviour, as decided on #2096: the scale comes from the float's
+// top exponent (2^(127 - emax)), the inf element is inf where the element type has one and maxpos
+// otherwise, and a finite element of ordinary magnitude, 1.0 here, underflows to 0.
+template<typename Block>
+int VerifyInfBlock(const std::string& tag, int emax, bool elementHasInf, bool reportTestCases) {
+	const float inf = std::numeric_limits<float>::infinity();
+	const std::vector<float> x = { inf, 1.0f, -inf };
+	Block b;
+	b.quantize(x.data(), x.size());
+	std::vector<float> out(x.size(), 0.0f);
+	b.dequantize(out.data(), out.size());
+	int fails = 0;
+	if (static_cast<int>(b.scale().bits()) - 127 != 127 - emax) {
+		if (reportTestCases) std::cerr << "FAIL " << tag << ": an inf input gives scale 2^" << (static_cast<int>(b.scale().bits()) - 127)
+		                               << ", expected 2^" << (127 - emax) << '\n';
+		++fails;
+	}
+	const bool top = elementHasInf ? (out[0] == inf && out[2] == -inf)
+	                               : (out[0] > 1e38f && out[0] < inf && out[2] == -out[0]);
+	if (!top || out[1] != 0.0f) {
+		if (reportTestCases) std::cerr << "FAIL " << tag << ": {inf, 1, -inf} dequantizes to {" << out[0] << ", " << out[1] << ", " << out[2] << "}\n";
+		++fails;
 	}
 	return fails;
 }
@@ -291,6 +345,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNaNBlock<mxfp6>("mxfp6", reportTestCases),         "mxfp6",     "NaN input");
 	nrOfFailedTestCases += ReportTestResult(VerifyNaNBlock<mxfp6e2m3>("mxfp6e2m3", reportTestCases), "mxfp6e2m3", "NaN input");
 	nrOfFailedTestCases += ReportTestResult(VerifyNaNBlock<mxfp4>("mxfp4", reportTestCases),         "mxfp4",     "NaN input");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockMaximumClips(reportTestCases),                 "mxfp8e5m2", "block maximum clips");
+	nrOfFailedTestCases += ReportTestResult(VerifyInfBlock<mxfp8e5m2>("mxfp8e5m2", 15, true, reportTestCases), "mxfp8e5m2", "inf input");
+	nrOfFailedTestCases += ReportTestResult(VerifyInfBlock<mxfp8>("mxfp8", 8, false, reportTestCases),         "mxfp8",     "inf input");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyScaling<mxint8>("mxint8", 200, reportTestCases),        "mxint8",    test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyScaling<mxfp8>("mxfp8", 200, reportTestCases),          "mxfp8",     test_tag);

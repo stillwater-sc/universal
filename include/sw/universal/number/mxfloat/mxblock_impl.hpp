@@ -174,13 +174,13 @@ public:
 
 	static constexpr size_t size() noexcept { return BlockSize; }
 
-	// compute byte size: 1 byte for scale + BlockSize * element bytes
+	// The storage of this implementation, in bytes: the e8m0 scale and one byte per element, which
+	// is how a microfloat or an int8_t is held, whatever the element width. It is not the OCP MX
+	// packed size, 1 + BlockSize * bits / 8: mxfp4 is 33 bytes here and 17 packed (#2096).
 	static constexpr size_t byte_size() noexcept {
 		if constexpr (std::is_integral_v<ElementType>) {
 			return 1 + BlockSize; // int8_t = 1 byte each
 		} else {
-			// microfloat element: nbits bits each
-			// For simplicity, each element occupies 1 byte of storage
 			return 1 + BlockSize;
 		}
 	}
