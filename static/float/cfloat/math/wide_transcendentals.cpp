@@ -207,6 +207,12 @@ int VerifySpecialsAndPolicies(bool reportTestCases) {
 	check(exp(Sat(1e6)) == Sat(SpecificValue::maxpos) && exp(C(1e6)).isinf(), "overflow: maxpos when saturating, inf otherwise");
 	check(exp(Max(1)) == from_qd<Max>(exp(qd(1))) && log(Max(10)) == from_qd<Max>(log(qd(10))), "max-exponent layout");
 	check(pow(C(3), C(40)) == from_qd<C>(pow(qd(3), qd(40))) && pow(C(3), 40) == pow(C(3), C(40)) && pow(C(3), 40.0) == pow(C(3), C(40)), "pow(3, 40) exact");
+	// from review: pow's identities hold for a NaN, a double exponent keeps its bits, and a result
+	// far below the range rounds without overflowing the ulp's exponent
+	check(pow(nan, C(0)) == C(1) && pow(C(1), nan) == C(1) && pow(nan, 0) == C(1) && pow(nan, 0.0) == C(1), "pow(NaN, 0) = pow(1, NaN) = 1");
+	using Narrow = cfloat<14, 12, uint16_t, true, false, false>;   // past double's range, 1 fraction bit
+	check(pow(Narrow(-1), 1.0 + 0x1p-40).isnan() && pow(Narrow(-1), 3.0) == Narrow(-1), "pow(-1, non-integer double) is NaN");
+	check(exp2(C(-2147483648.0)).iszero() && exp2(C(2147483648.0)).isinf(), "exp2 of +-2^31 rounds to 0 and inf");
 	return fails;
 }
 

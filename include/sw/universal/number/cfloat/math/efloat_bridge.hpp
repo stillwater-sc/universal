@@ -140,6 +140,9 @@ namespace cfloat_math {
 			const E y = f(W);
 			from_efloat(c, y);
 			if (y.iszero() || y.isnan() || y.isinf() || attempt == 3) break;
+			// past the layout's range y and y +- 1 ulp round alike (to inf, maxpos or 0), and the ulp's
+			// exponent below would overflow an int: exp2(-2^31) has scale INT_MIN (CodeRabbit on #2093)
+			if (y.scale() > Cfloat::MAX_EXP + 2 || y.scale() < Cfloat::MIN_EXP_SUBNORMAL - 2) break;
 			// y +- 1 ulp of y's precision: exact at that precision
 			const E ulp = ldexp(E(1), static_cast<int>(y.scale()) - static_cast<int>(y.get_precision()) + 1);
 			Cfloat below, above;
@@ -168,11 +171,13 @@ namespace cfloat_math {
 		return evaluate<Cfloat>([&](unsigned W) { return f(argument(x, W)); });
 	}
 
-	// a double, exactly, as an efloat of the same type, rounding at W bits
+	// a double, exactly, as an efloat of the same type, rounding at W bits.  set_precision rounds the
+	// value, so W is at least 64 here: a layout with a narrow fraction starts at W < 53, which rounded
+	// pow's exponent 1 + 2^-40 to 1 and made pow(-1, 1 + 2^-40) -1 instead of NaN (CodeRabbit on #2093).
 	template<typename Cfloat>
 	efloat_for<Cfloat> argument_from(double v, unsigned W) {
 		efloat_for<Cfloat> e(v);
-		e.set_precision(W);
+		e.set_precision(W < 64u ? 64u : W);
 		return e;
 	}
 
