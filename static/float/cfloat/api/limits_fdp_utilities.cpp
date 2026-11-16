@@ -55,7 +55,8 @@ int VerifyLimits(bool reportTestCases) {
 	check(L::max_exponent10 == static_cast<int>(std::floor(std::log10(maxpos))), "max_exponent10");
 	check(L::min_exponent == 1 - bias + 1, "min_exponent");
 	check(L::is_bounded, "is_bounded");
-	check(L::is_iec559 == (C::hasSubnormals && !C::hasMaxExpValues && !C::isSaturating), "is_iec559");
+	// IEEE: subnormals, inf and NaN in the top binade, and a quiet bit, which needs two fraction bits
+	check(L::is_iec559 == (C::hasSubnormals && !C::hasMaxExpValues && !C::isSaturating && C::fbits >= 2), "is_iec559");
 	check(L::round_style == std::round_to_nearest, "round_style");
 	// 2^-fbits, or min() where a layout without subnormals cannot hold it
 	const bool epsRepresentable = C::hasSubnormals || -fbits >= 1 - bias;
@@ -161,7 +162,7 @@ int VerifyPolyroot(bool reportTestCases) {
 	int fails = 0;
 	const std::vector<C> p = { C(-2), C(0), C(1) };                       // x^2 - 2
 	const C r = sw::universal::polyroot(p, C(1), 50, 0.0);
-	if (std::fabs(double(r) - std::sqrt(2.0)) > 1e-6) ++fails;
+	if (!std::isfinite(double(r)) || std::fabs(double(r) - std::sqrt(2.0)) > 1e-6) ++fails;   // a NaN root fails
 	if (!sw::universal::polyroot(std::vector<C>{ C(3) }, C(1), 50, 0.0).isnan()) ++fails;     // no root
 	if (!(sw::universal::polyroot(std::vector<C>{ C(0) }, C(1.5), 50, 0.0) == C(1.5))) ++fails;   // every x
 	if (!sw::universal::polyroot(std::vector<C>{}, C(1), 50, 0.0).isnan()) ++fails;
@@ -241,6 +242,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits<cfloat<16, 5, uint16_t, true, false, false>>(reportTestCases), "cfloat<16,5,t,f,f>",  "numeric_limits");
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits<cfloat<16, 5, uint16_t, false, false, false>>(reportTestCases), "cfloat<16,5,f,f,f>", "numeric_limits");
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits<cfloat<16, 8, uint16_t, true, true, false>>(reportTestCases),  "cfloat<16,8,t,t,f>",  "numeric_limits");
+	nrOfFailedTestCases += ReportTestResult(VerifyLimits<cfloat<4, 2, uint8_t, true, false, false>>(reportTestCases),   "cfloat<4,2,t,f,f>",   "numeric_limits");   // one fraction bit: not IEEE
 	nrOfFailedTestCases += ReportTestResult((VerifyLimitsAgainstNative<cfloat<32, 8, uint32_t, true, false, false>, float>(reportTestCases)),   "cfloat<32,8,t,f,f>",  "vs float");
 	nrOfFailedTestCases += ReportTestResult((VerifyLimitsAgainstNative<cfloat<64, 11, uint64_t, true, false, false>, double>(reportTestCases)), "cfloat<64,11,t,f,f>", "vs double");
 

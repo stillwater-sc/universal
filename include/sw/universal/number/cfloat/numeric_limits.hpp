@@ -81,10 +81,11 @@ public:
 	static constexpr bool has_denorm_loss          = false;
 
 	// the IEEE-754 layouts: subnormals, inf and NaN in the all-ones exponent field (#1780), quiet and
-	// signalling NaNs typed by the quiet bit (#1896), and round to nearest even.  Like
+	// signalling NaNs typed by the quiet bit (#1896), and round to nearest even.  One fraction bit has
+	// no room for a quiet bit, so such a layout types its NaNs by sign and is not IEEE.  Like
 	// std::numeric_limits<float> on most hosts, this does not promise status flags or the other
 	// rounding modes, which cfloat does not have (#2089).
-	static constexpr bool is_iec559                = hasSubnormals && !hasMaxExpValues && !isSaturating;
+	static constexpr bool is_iec559                = hasSubnormals && !hasMaxExpValues && !isSaturating && Cfloat::ieeeNanTyping;
 	static constexpr bool is_bounded               = true;    // a finite set of values (#2089)
 	static constexpr bool is_modulo                = false;
 	static constexpr bool traps                    = false;

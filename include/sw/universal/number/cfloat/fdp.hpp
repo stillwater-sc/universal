@@ -88,21 +88,12 @@ quire_resolve(const quire<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, 
 	}
 
 	int s = q.scale();
-	constexpr unsigned qrange = quire_traits<Scalar>::range;
 	constexpr unsigned rp = quire_traits<Scalar>::radix_point;
 
-	// Find the MSB position in the accumulator
-	int msb_pos = s + static_cast<int>(rp);
-	if (msb_pos >= static_cast<int>(qrange + capacity)) {
-		// past the top of the accumulator: an overflow, which is an infinity (a saturating cfloat
-		// clamps), not the zero it used to give (#2089)
-		result.setinf(q.sign());
-		return result;
-	}
-	if (msb_pos < 0) {
-		result.setzero();
-		return result;
-	}
+	// Find the MSB position in the accumulator.  q.scale() is bounded by the accumulator, so msb_pos
+	// is in [0, qrange + capacity).  A sum that outgrows the accumulator is lost before this point:
+	// the quire discards the carry out of its top bit and keeps no overflow state.
+	const int msb_pos = s + static_cast<int>(rp);
 
 	// Extract the top significant bits from the quire into a MUL blocktriple.
 	//
