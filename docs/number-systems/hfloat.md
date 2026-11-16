@@ -115,7 +115,7 @@ Every arithmetic result and every conversion into hfloat is the exact value trun
 - The product and quotient are formed exactly before truncation, which is what IBM's long-format multiply delivers with its guard digit.
 - `hfloat_extended` (hfp128) carries all 112 fraction bits through compare, multiply, divide and integer conversion. Before #2105 its fraction was cut to the low 64 bits.
 
-A `long double` source has its significand read exactly, up to 64 bits, and is truncated from there. At constant evaluation it goes through `double`, which rounds it to 53 bits first.
+A `long double` source has its significand read exactly, up to 128 bits, so binary128's 113 bits convert without loss before the truncation. At constant evaluation it goes through `double`, which rounds it to 53 bits first.
 
 Conversion to `double` is the one exception to truncation: it rounds once to nearest, ties to even, as a conversion to an IEEE type should, at the subnormal precision when the result is below 2^-1022.
 

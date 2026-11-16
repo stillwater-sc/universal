@@ -180,6 +180,13 @@ namespace {
 			r.setbits(0x3BFFFFF0u);
 			expect(to_hex(a / c) == to_hex(r), "unnormalized a / c truncates to 0x3BFFFFF0");
 		}
+		// a fraction with zero leading digits converts at its own weight (CodeRabbit, #2109):
+		// hfp128 setbits(1) is 2^-112 * 16^-64 = 2^-368, and came out 2^-320
+		{
+			hfp128 x;
+			x.setbits(1u);
+			expect(double(x) == std::ldexp(1.0, -368), "hfp128 setbits(1) -> double is 2^-368");
+		}
 		// a double result below 2^-1022 rounds once, at the subnormal precision
 		{
 			using H = hfloat<28, 10>;

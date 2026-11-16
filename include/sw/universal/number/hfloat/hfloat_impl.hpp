@@ -622,7 +622,7 @@ protected:
 	// exactly. hfp128's 112 bits used to be cut to their low 64.
 	constexpr double convert_to_double() const noexcept {
 		bool s; int e; frac_t f;
-		decode(s, e, f);
+		decode_normalized(s, e, f);   // the 64-bit window below needs the leading digit at the top
 		if (f.iszero()) return s ? -0.0 : 0.0;
 		uint64_t top = 0;
 		int shift = 0;                                   // value = top * 2^shift
