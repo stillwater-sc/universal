@@ -210,7 +210,8 @@ test files under `static/tapered/takum/` and to `tools/ucalc/registry.hpp`.
   nearer in value. `static/tapered/takum/conversion/narrow_rounding.cpp` checks this
   exhaustively against libtakum's width reduction (#2079).
 - Conversions from integers are exact and rounded once. Integer casts truncate toward zero,
-  saturate to +/-max (max - 1 for an unsigned type), and map NaR to the integer NaR, min
+  saturate to +/-max (an unsigned type: max - 1 for a positive overflow, 0 for a negative
+  value), and map NaR to the integer NaR, min
   (max for an unsigned type): the rule posit uses (#2073, #2079, #2104). See
   [Integer casts](number-systems/posit.md#integer-casts).
 - The file header of `takum_impl.hpp` originally cited arXiv:2404.18603 without a

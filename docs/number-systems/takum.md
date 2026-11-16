@@ -119,7 +119,7 @@ auto var = compute_statistics(data);
 
 ### Integer casts
 
-Casts of a takum or a takum_log to a native integer truncate toward zero, exactly at every width. A value past the range saturates to `+/-max()` (`max() - 1` for an unsigned type), and NaR gives the integer NaR: `min()`, or `max()` for an unsigned type. This is [the library's integer-cast rule](posit.md#integer-casts) (#2079, #2104).
+Casts of a takum or a takum_log to a native integer truncate toward zero, exactly at every width. A value past the range saturates to `+/-max()` (an unsigned type gives `max() - 1` for a positive overflow and `0` for a negative value), and NaR gives the integer NaR: `min()`, or `max()` for an unsigned type. This is [the library's integer-cast rule](posit.md#integer-casts) (#2079, #2104).
 
 ## Problems It Solves
 

@@ -851,13 +851,17 @@ public:
 	explicit operator int()         const noexcept { return to_integer<int>(); }
 	explicit operator long()        const noexcept { return to_integer<long>(); }
 	explicit operator long long()   const noexcept { return to_integer<long long>(); }
+	// unsigned: a negative value gives 0, a value past the range max() - 1, NaR max() (#2104)
+	explicit operator unsigned int()       const noexcept { return to_integer<unsigned int>(); }
+	explicit operator unsigned long()      const noexcept { return to_integer<unsigned long>(); }
+	explicit operator unsigned long long() const noexcept { return to_integer<unsigned long long>(); }
 	explicit operator float()       const noexcept { return to_native<float>(); }
 	explicit operator double()      const noexcept { return to_native<double>(); }
 	explicit operator long double() const noexcept { return to_native<long double>(); }
 
 	template<typename Integer>
 	Integer to_integer() const noexcept {
-		static_assert(std::is_integral_v<Integer> && std::is_signed_v<Integer>, "to_integer: a signed integer type");
+		static_assert(std::is_integral_v<Integer> && sizeof(Integer) <= 8, "to_integer: an integer type of at most 64 bits");
 		if (iszero()) return Integer(0);
 		if (isnar()) return integer_nar<Integer>();
 		using posit_limbs::limb_t;

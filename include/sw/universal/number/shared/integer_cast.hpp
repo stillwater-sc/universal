@@ -11,8 +11,8 @@
 
 namespace sw { namespace universal {
 
-	// The integer-cast rule (#2073, amended by #2104), shared by posit, bposit, takum, takum_log,
-	// cfloat and microfloat:
+	// The integer-cast rule (#2073, amended by #2104), used by posit, bposit, takum, takum_log,
+	// cfloat and microfloat (other types do not include this header):
 	//   - a finite value truncates toward zero, exactly at every width;
 	//   - a value past the range, infinity included, saturates to +/-max(): a signed type to
 	//     [-max(), max()], an unsigned type to [0, max() - 1];

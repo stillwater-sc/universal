@@ -244,11 +244,11 @@ to 256 bits, and on exact values, poles and saturation. Each family has its own 
 
 ### Integer casts
 
-Every Universal real type, including posit, bposit, takum, takum_log, cfloat and microfloat, uses one rule when it is cast to a native integer. The rule lives in `include/sw/universal/number/shared/integer_cast.hpp`:
+posit, bposit, takum, takum_log, cfloat and microfloat use one rule when they are cast to a native integer. Each provides the signed and the unsigned casts (`operator int()`, `operator unsigned int()` and the wider types, or `to_integer<Integer>()`). The rule lives in `include/sw/universal/number/shared/integer_cast.hpp`:
 
 | source | signed target | unsigned target |
 |---|---|---|
-| finite, in range | truncated toward zero, exactly | truncated toward zero, exactly |
+| finite, in range | truncated toward zero, exactly, within `[-max(), max()]` | truncated toward zero, exactly, within `[0, max() - 1]` |
 | past the range, infinity included | `max()` or `-max()` | `max() - 1`; a negative value gives `0` |
 | NaR / NaN | `min()`, the integer NaR | `max()`, the integer NaR |
 
@@ -258,6 +258,7 @@ int(P(-2.75));              // -2
 int(P(1e30));               // INT_MAX
 int(P(-1e30));              // -INT_MAX
 int(P(sw::universal::SpecificValue::nar));        // INT_MIN
+unsigned(P(-2.75));         // 0
 unsigned(sw::universal::takum<16>(sw::universal::SpecificValue::nar));   // UINT_MAX
 ```
 
