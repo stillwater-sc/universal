@@ -15,6 +15,8 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp>
 #include <universal/verification/correctly_rounded_reference.hpp>  // the reference, rounded once (#1861)
+#include <universal/verification/exact_reference.hpp>               // the reference type (#2121)
+#include <universal/verification/posit_rounding_oracle.hpp>         // the exact reference of a posit
 
 namespace sw { namespace universal {
 
@@ -61,8 +63,9 @@ namespace sw { namespace universal {
 	const int IPCODE_HYPOT = 51;
 	const int OPCODE_RAN   = 60;
 
-	// Execute a binary operator
-	template<typename TestType>
+	// Execute a binary operator. The reference is double's result rounded once to TestType, or
+	// with ReferenceType = exact_reference the exact result rounded once (exact_reference.hpp)
+	template<typename TestType, typename ReferenceType = double>
 	void executeBinary(int opcode, double da, double db, double& dc, const TestType& testa, const TestType& testb, TestType& testc, TestType& testref) {
 		dc = 0.0;
 		switch (opcode) {
@@ -119,11 +122,17 @@ namespace sw { namespace universal {
 		case OPCODE_DIV: case OPCODE_IPD: op = '/'; break;
 		default: break;
 		}
-		testref = correctlyRoundedReference<TestType>(op, da, db, dc);
+		if constexpr (std::is_same_v<ReferenceType, exact_reference>) {
+			exact_rounding<TestType>::binary(op, testa, testb, testref);
+		}
+		else {
+			testref = correctlyRoundedReference<TestType>(op, da, db, dc);
+		}
 	}
 
-	// Execute a unary operator
-	template<typename TestType>
+	// Execute a unary operator. With ReferenceType = exact_reference only sqrt has a reference,
+	// which the verifier checks before it gets here
+	template<typename TestType, typename ReferenceType = double>
 	void executeUnary(int opcode, double da, double& dc, const TestType& testa, TestType& testc, TestType& testref, double dminpos) {
 		dc = 0.0;
 		switch (opcode) {
@@ -206,14 +215,23 @@ namespace sw { namespace universal {
 			std::cerr << "Unsupported binary operator: operation ignored\n";
 			break;
 		}
-		testref = dc;
+		if constexpr (std::is_same_v<ReferenceType, exact_reference>) {
+			exact_rounding<TestType>::sqrt(testa, testref);
+		}
+		else {
+			testref = dc;
+		}
 	}
 
 	// generate a random set of operands to test the binary operators for a posit configuration
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
-	template<typename TestType>
+	// ReferenceType is double or exact_reference (exact_reference.hpp): by default double where it
+	// holds every result of TestType, which is below 53 digits, and the exact reference past that
+	template<typename TestType, typename ReferenceType = default_reference_t<TestType>>
 	int VerifyBinaryOperatorThroughRandoms(bool reportTestCases, int opcode, uint32_t nrOfRandoms) {
+		check_reference_type<TestType, ReferenceType>();
+		constexpr bool exactReference = std::is_same_v<ReferenceType, exact_reference>;
 		std::string operation_string;
 		switch (opcode) {
 		case OPCODE_ADD:
@@ -241,6 +259,10 @@ namespace sw { namespace universal {
 			operation_string = "/=";
 			break;
 		case OPCODE_POW:
+			if constexpr (exactReference) {
+				std::cerr << "pow has no exact reference, test cancelled\n";
+				return 1;
+			}
 			operation_string = "pow";
 			break;
 		case OPCODE_NOP:
@@ -271,7 +293,7 @@ namespace sw { namespace universal {
 
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 			try {
-				executeBinary(opcode, da, db, dc, testa, testb, testc, testref);
+				executeBinary<TestType, ReferenceType>(opcode, da, db, dc, testa, testb, testc, testref);
 			}
 			catch (const posit_arithmetic_exception& err) {
 				if (testa.isnar() || testb.isnar()) {
@@ -289,7 +311,7 @@ namespace sw { namespace universal {
 				}
 			}
 #else
-			executeBinary(opcode, da, db, dc, testa, testb, testc, testref);
+			executeBinary<TestType, ReferenceType>(opcode, da, db, dc, testa, testb, testc, testref);
 #endif
 
 			if (testc != testref) {
@@ -307,8 +329,16 @@ namespace sw { namespace universal {
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
 	// provide 		double dminpos = double(minpos<nbits, es>(pminpos));
-	template<typename TestType>
+	// ReferenceType as for VerifyBinaryOperatorThroughRandoms; the exact reference covers sqrt
+	template<typename TestType, typename ReferenceType = default_reference_t<TestType>>
 	int VerifyUnaryOperatorThroughRandoms(bool reportTestCases, int opcode, uint32_t nrOfRandoms, double dminpos) {
+		check_reference_type<TestType, ReferenceType>();
+		if constexpr (std::is_same_v<ReferenceType, exact_reference>) {
+			if (opcode != OPCODE_SQRT) {
+				std::cerr << "only sqrt has an exact reference, test cancelled\n";
+				return 1;
+			}
+		}
 		std::string operation_string;
 		bool sqrtOperator = false;  // we need to filter negative values from the randoms
 		switch (opcode) {
@@ -369,7 +399,7 @@ namespace sw { namespace universal {
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " testa " << testa << std::endl;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 			try {
-				executeUnary(opcode, da, dc, testa, testc, testref, dminpos);
+				executeUnary<TestType, ReferenceType>(opcode, da, dc, testa, testc, testref, dminpos);
 			}
 			catch (const posit_arithmetic_exception& err) {
 				if (testa.isnar()) {
@@ -380,7 +410,7 @@ namespace sw { namespace universal {
 				}
 			}
 #else
-			executeUnary(opcode, da, dc, testa, testc, testref, dminpos);
+			executeUnary<TestType, ReferenceType>(opcode, da, dc, testa, testc, testref, dminpos);
 #endif
 			if (testc != testref) {
 				nrOfFailedTests++;
