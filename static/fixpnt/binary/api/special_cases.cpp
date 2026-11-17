@@ -151,6 +151,12 @@ int VerifyReviewFindings() {
 		fails += CheckTrue(double(r) < -0.57 && double(r) > -0.60, "rsqrt(fixpnt<8,7,Modulo>(0.5)) wraps 1.414 to -0.586, got " + std::to_string(double(r)));
 		using S = fixpnt<8, 7, Saturate, std::uint8_t>;
 		fails += CheckValue(rsqrt(S(0.5)), S(SpecificValue::maxpos), "rsqrt(fixpnt<8,7,Saturate>(0.5)) saturates");
+		// the root itself does not fit: sqrt(0.25) = 0.5 is past fixpnt<8,8>'s range [-1/2, 1/2), so
+		// it is taken in the wider type too; 1/0.5 = 2 wraps mod 1 to 0 (it gave 1/64)
+		using M8 = fixpnt<8, 8, Modulo, std::uint8_t>;
+		fails += CheckValue(rsqrt(M8(0.25)), M8(0), "rsqrt(fixpnt<8,8,Modulo>(0.25)) wraps 2 to 0");
+		using S8 = fixpnt<8, 8, Saturate, std::uint8_t>;
+		fails += CheckValue(rsqrt(S8(0.25)), S8(SpecificValue::maxpos), "rsqrt(fixpnt<8,8,Saturate>(0.25)) saturates");
 	}
 	{
 		using S1 = fixpnt<1, 0, Saturate, std::uint8_t>;   // {-1, 0}

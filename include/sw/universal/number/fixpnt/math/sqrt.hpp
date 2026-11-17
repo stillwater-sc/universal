@@ -165,8 +165,9 @@ namespace sw { namespace universal {
 		// destination has no integer bits (rbits >= nbits - 1); the conversion back then clamps
 		// (Saturate) or wraps (Modulo). It called a reciprocate() fixpnt lacks (#2111).
 		using Wide = fixpnt<nbits + 2, rbits, arithmetic, bt>;
-		Wide root;
-		root = sqrt(f);
+		Wide wide;
+		wide = f;                          // the root as well: sqrt(0.25) = 0.5 does not fit fixpnt<8,8>
+		const Wide root = sqrt(wide);
 		const Wide q = Wide(1) / root;
 		fixpnt<nbits, rbits, arithmetic, bt> r;
 		r = q;
