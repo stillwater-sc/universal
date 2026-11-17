@@ -151,6 +151,7 @@ public:
 			_block.setdigit(radix + i, static_cast<unsigned>(value % 10));
 			value /= 10;
 		}
+		saturate_integer_overflow(value != 0);
 		return *this;
 	}
 
@@ -162,6 +163,7 @@ public:
 			_block.setdigit(radix + i, static_cast<unsigned>(value % 10));
 			value /= 10;
 		}
+		saturate_integer_overflow(value != 0);
 		return *this;
 	}
 
@@ -286,14 +288,18 @@ public:
 	// addition
 	constexpr dfixpnt& operator+=(const dfixpnt& rhs) {
 		if (_sign == rhs._sign) {
-			// same sign: add magnitudes
-			_block += rhs._block;
-			if constexpr (!arithmetic) {
-				// Saturate mode: clamp to max
-				blockdecimal<ndigits, _encoding, bt> maxblock;
-				maxblock.maxval();
-				if (maxblock < _block) _block = maxblock;
+			// same sign: add the magnitudes one digit wider, so the carry out of the top digit is
+			// kept; then Saturate clamps and Modulo drops it (#2112: blockdecimal += dropped it, so
+			// the Saturate clamp never fired and 99.99 + 1 was 0.99)
+			blockdecimal<ndigits + 1, DecimalEncoding::BCD, bt> sum, addend;
+			sum.clear();
+			addend.clear();
+			for (unsigned i = 0; i < ndigits; ++i) {
+				sum.setdigit(i, _block.digit(i));
+				addend.setdigit(i, rhs._block.digit(i));
 			}
+			sum += addend;
+			set_magnitude(sum, _sign);
 		} else {
 			// different signs: subtract smaller magnitude from larger
 			if (_block < rhs._block) {
@@ -328,30 +334,13 @@ public:
 		auto wide_result = wide_mul(_block, rhs._block);
 
 		// the product has 2*radix fractional digits; we need to shift right by 'radix'
-		// to get back to ndigits.radix format
+		// to get back to ndigits.radix format, rounding half away from zero on the magnitude, as
+		// the conversions do (#2112, decided; it truncated): the first dropped digit decides
+		const bool roundUp = (radix > 0) && wide_result.digit(radix > 0 ? radix - 1 : 0) >= 5;
 		wide_result.shift_right(radix);
+		if (roundUp) increment(wide_result);   // below 10^(2 ndigits - radix): no carry out
 
-		// extract the lower ndigits
-		blockdecimal<ndigits, _encoding, bt> result;
-		result.clear();
-		for (unsigned i = 0; i < ndigits; ++i) {
-			result.setdigit(i, wide_result.digit(i));
-		}
-
-		if constexpr (!arithmetic) {
-			// Saturate: check for overflow (any non-zero digits beyond ndigits)
-			bool overflow = false;
-			for (unsigned i = ndigits; i < 2 * ndigits; ++i) {
-				if (wide_result.digit(i) != 0) { overflow = true; break; }
-			}
-			if (overflow) {
-				result.maxval();
-			}
-		}
-
-		_block = result;
-		_sign = result_sign;
-		if (_block.iszero()) _sign = false;
+		set_magnitude(wide_result, result_sign);   // Saturate clamps, Modulo keeps the low digits
 		return *this;
 	}
 
@@ -369,37 +358,66 @@ public:
 		}
 		bool result_sign = _sign != rhs._sign;
 
-		// upscale dividend by 10^radix: multiply _block by 10^radix
-		// use a wider blockdecimal to hold the scaled value
-		blockdecimal<2 * ndigits, _encoding, bt> scaled_dividend;
+		// upscale the dividend by 10^(radix + 1): the quotient then carries one digit below the
+		// result's lsb, and with ties away from zero that digit alone decides the rounding (a
+		// fraction of 1/2 or more is a digit of 5 or more), as the conversions do (#2112, decided;
+		// it truncated). The width holds every quotient, so Saturate sees an overflow (it wrapped).
+		constexpr unsigned W = 2 * ndigits + 1;
+		blockdecimal<W, DecimalEncoding::BCD, bt> scaled_dividend, divisor;
 		scaled_dividend.clear();
-		for (unsigned i = 0; i < ndigits; ++i) {
-			scaled_dividend.setdigit(i + radix, _block.digit(i));
-		}
-
-		// convert divisor to same width
-		blockdecimal<2 * ndigits, _encoding, bt> divisor;
 		divisor.clear();
 		for (unsigned i = 0; i < ndigits; ++i) {
+			scaled_dividend.setdigit(i + radix + 1, _block.digit(i));
 			divisor.setdigit(i, rhs._block.digit(i));
 		}
 
 		// long division
 		scaled_dividend /= divisor;
+		const bool roundUp = scaled_dividend.digit(0) >= 5;
+		scaled_dividend.shift_right(1);
+		if (roundUp) increment(scaled_dividend);   // at most 10^(ndigits + radix): no carry out
 
-		// extract result
-		blockdecimal<ndigits, _encoding, bt> result;
-		result.clear();
-		for (unsigned i = 0; i < ndigits; ++i) {
-			result.setdigit(i, scaled_dividend.digit(i));
-		}
-
-		_block = result;
-		_sign = result_sign;
-		if (_block.iszero()) _sign = false;
+		set_magnitude(scaled_dividend, result_sign);   // Saturate clamps, Modulo keeps the low digits
 		return *this;
 	}
 
+private:
+	// a magnitude of up to W digits into this dfixpnt with the given sign: past ndigits digits,
+	// Saturate clamps to all nines and Modulo keeps the low ndigits (#2112). Zero is +0.
+	template<unsigned W, DecimalEncoding E>
+	constexpr void set_magnitude(const blockdecimal<W, E, bt>& m, bool negative) {
+		bool overflow = false;
+		for (unsigned i = ndigits; i < W; ++i) {
+			if (m.digit(i) != 0) { overflow = true; break; }
+		}
+		_block.clear();
+		if (overflow && !arithmetic) {
+			_block.maxval();
+		}
+		else {
+			for (unsigned i = 0; i < ndigits && i < W; ++i) _block.setdigit(i, m.digit(i));
+		}
+		_sign = negative && !_block.iszero();
+	}
+	// add 1 to a magnitude
+	template<unsigned W, DecimalEncoding E>
+	static constexpr void increment(blockdecimal<W, E, bt>& m) {
+		for (unsigned i = 0; i < W; ++i) {
+			const unsigned d = m.digit(i);
+			if (d < 9) { m.setdigit(i, d + 1); return; }
+			m.setdigit(i, 0);
+		}
+	}
+	// an integer with digits left over past idigits: Saturate clamps to all nines with the sign,
+	// as operator=(double) does; Modulo keeps the low digits (#2112: both wrapped). Zero is +0.
+	constexpr void saturate_integer_overflow(bool overflow) {
+		if constexpr (!arithmetic) {
+			if (overflow) _block.maxval();
+		}
+		if (_block.iszero()) _sign = false;
+	}
+
+public:
 	/////////////////////////////////////////////////////////////////////////
 	// digit access (public for manipulators)
 
@@ -462,10 +480,24 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	// string I/O
 
-	// parse a decimal string like "123.456" or "-0.01"
+	// is str a decimal: an optional sign, then digits with at most one '.', and at least one digit
+	static constexpr bool is_decimal_text(const std::string& str) {
+		std::size_t pos = (!str.empty() && (str[0] == '-' || str[0] == '+')) ? 1 : 0;
+		bool digit = false, dot = false;
+		for (; pos < str.size(); ++pos) {
+			const char c = str[pos];
+			if (c >= '0' && c <= '9') digit = true;
+			else if (c == '.' && !dot) dot = true;
+			else return false;
+		}
+		return digit;
+	}
+
+	// parse a decimal string like "123.456" or "-0.01". Malformed text leaves 0 (#2112: any
+	// character was taken as a digit, so "abc" was 123.00); parse() reports it.
 	dfixpnt& assign(const std::string& str) {
 		clear();
-		if (str.empty()) return *this;
+		if (!is_decimal_text(str)) return *this;
 
 		size_t pos = 0;
 		if (str[0] == '-') {
@@ -496,6 +528,18 @@ public:
 		for (int i = static_cast<int>(int_part.size()) - 1, d = 0; i >= 0 && d < static_cast<int>(idigits); --i, ++d) {
 			unsigned digit_val = static_cast<unsigned>(int_part[static_cast<size_t>(i)] - '0');
 			_block.setdigit(radix + static_cast<unsigned>(d), digit_val);
+		}
+		// a nonzero integer digit past idigits: Saturate clamps, Modulo drops it (#2112: Saturate
+		// assign("123.45") into dfixpnt<4,2> was 23.45; CodeRabbit on #2119)
+		bool integerOverflow = false;
+		for (std::size_t i = 0; i + idigits < int_part.size(); ++i) {
+			if (int_part[i] != '0') { integerOverflow = true; break; }
+		}
+		if constexpr (!arithmetic) {
+			if (integerOverflow) {
+				_block.maxval();
+				return *this;   // the sign is kept; maxval is not zero
+			}
 		}
 
 		// fill fractional digits (from MSD to LSD)
@@ -919,6 +963,15 @@ operator/(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& lhs,
 	dfixpnt<ndigits, radix, encoding, arithmetic, bt> result(lhs);
 	result /= rhs;
 	return result;
+}
+
+// parse a decimal string into v: true on success; on malformed text v is left unchanged (#2112)
+template<unsigned ndigits, unsigned radix, DecimalEncoding encoding, bool arithmetic, typename bt>
+bool parse(const std::string& number, dfixpnt<ndigits, radix, encoding, arithmetic, bt>& v) {
+	using D = dfixpnt<ndigits, radix, encoding, arithmetic, bt>;
+	if (!D::is_decimal_text(number)) return false;
+	v.assign(number);
+	return true;
 }
 
 }} // namespace sw::universal

@@ -29,9 +29,8 @@ public:
 		return Dfixpnt(sw::universal::SpecificValue::maxneg);
 	}
 	static constexpr Dfixpnt epsilon() {
-		Dfixpnt eps;
-		eps.setdigit(0, 1);
-		return eps;
+		Dfixpnt eps(sw::universal::SpecificValue::minpos);   // 10^-radix; built whole: a default
+		return eps;                                          // dfixpnt left the other digits uninitialized (#2112)
 	}
 	static constexpr Dfixpnt round_error() {
 		return epsilon();
@@ -72,7 +71,7 @@ public:
 	static constexpr bool is_modulo  = arithmetic;
 	static constexpr bool traps      = false;
 	static constexpr bool tinyness_before = false;
-	static constexpr float_round_style round_style = round_toward_zero;
+	static constexpr float_round_style round_style = round_to_nearest;   // * and / round half away from zero, as the conversions do (#2112)
 };
 
 } // namespace std
