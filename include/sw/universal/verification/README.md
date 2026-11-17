@@ -33,7 +33,8 @@ and rounds at the (nbits+1)-bit midpoint pattern, on the shared exact arithmetic
 
 The generic `test_suite_randoms.hpp` includes both oracles, and
 `posit_test_suite_randoms.hpp` the posit one, so no test has to include an oracle itself. Random operands fill every bit of the encoding,
-also past 64 bits, for a type with `setbit`.
+also past 64 bits, for a type with an exact reference; dd and the other multi-component
+types keep `setbits`, as a random pattern of their limbs is not a normalized value.
 
 These types have no exact reference yet and still check against double, also past
 53 digits: dd, qd and the cascades (#2124), and lns (#2125). Each moves to the exact
