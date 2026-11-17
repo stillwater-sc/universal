@@ -48,8 +48,9 @@ namespace sw { namespace universal {
 /// is inside double's (above it double saturates to max()), and its lowest bit, scale
 /// min_exponent - digits, is at least 2 above double's smallest subnormal, 2^-1074. posit<32,6>
 /// and cfloat<32,12> pass the width test and fail the range test; cfloat<64,11> fails the width.
-/// A wrapping (is_modulo) target is rejected too: wrapping a value past its range needs the low
-/// bits exactly, and the double keeps only the leading 53 (fixpnt<52,0,Modulo> of 2^60 + 1 gave 256).
+/// A wrapping (is_modulo) target is rejected too: its conversion from double wraps a value past its
+/// range, and a quire sum past the range must saturate instead (#2107; fixpnt<52,0,Modulo> of
+/// 2^60 + 1 gave 256). Its quire_resolve() rounds and saturates from the accumulator.
 template<typename T>
 inline constexpr bool quire_converts_through_double_v =
 	!std::numeric_limits<T>::is_specialized ||
