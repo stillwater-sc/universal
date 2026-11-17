@@ -248,7 +248,10 @@ int VerifySpecialTables(bool reportTestCases) {
 		// need not round correctly: within 2 ulps of it (CodeRabbit on #2120). The special classes above
 		// stay exact.
 		const double g = double(got);
-		return g == expected || std::abs(g - expected) <= 2.0 * std::numeric_limits<double>::epsilon() * std::abs(expected);
+		const double inf = std::numeric_limits<double>::infinity();
+		const double lo = std::nextafter(std::nextafter(expected, -inf), -inf);   // 2 ulps either side, exactly
+		const double hi = std::nextafter(std::nextafter(expected, inf), inf);
+		return lo <= g && g <= hi;
 	};
 	auto check = [&](const char* fn, double a, double b, const C& got, double expected) {
 		if (same(got, expected)) return;
