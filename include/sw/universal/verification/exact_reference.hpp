@@ -29,8 +29,8 @@ namespace sw { namespace universal {
 	//                    encoding. It holds every bit any operator can produce, at any width.
 	//                    A type provides it by specializing exact_rounding<TestType>.
 	//
-	// default_reference_t<TestType> picks double where double holds TestType's results and the
-	// exact reference otherwise. Asking for double where it cannot hold them is a compile error,
+	// default_reference_t<TestType> picks double where double holds TestType's results (fewer
+	// than 53 digits, and a range inside double's) and the exact reference otherwise. Asking for double where it cannot hold them is a compile error,
 	// for every type that has an exact reference. A type without one (dd, qd, the cascades, lns,
 	// cfloat past 53 digits) still checks against double; giving it an exact_rounding is how it
 	// moves off.
@@ -50,11 +50,15 @@ namespace sw { namespace universal {
 		{ exact_rounding<TestType>::sqrt(a, ref) } -> std::same_as<bool>;
 	};
 
-	// true when double holds every result of TestType's operators, rounded once
+	// true when double holds every result of TestType's operators, rounded once: fewer digits
+	// than double, and an exponent range inside double's normal range. posit<32,6> has 24 digits
+	// but reaches 2^1920; its operands past double's range become inf or zero there.
 	template<typename TestType>
 	inline constexpr bool double_reference_holds =
 		std::numeric_limits<TestType>::is_specialized &&
-		std::numeric_limits<TestType>::digits < std::numeric_limits<double>::digits;
+		std::numeric_limits<TestType>::digits < std::numeric_limits<double>::digits &&
+		std::numeric_limits<TestType>::max_exponent <= std::numeric_limits<double>::max_exponent &&
+		std::numeric_limits<TestType>::min_exponent >= std::numeric_limits<double>::min_exponent;
 
 	template<typename TestType>
 	using default_reference_t = std::conditional_t<has_exact_rounding<TestType> && !double_reference_holds<TestType>,

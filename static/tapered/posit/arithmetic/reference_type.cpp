@@ -43,6 +43,9 @@ static_assert(!valid_reference_v<posit<64, 2>, double>);
 static_assert(valid_reference_v<posit<64, 2>, exact_reference>);
 static_assert(!valid_reference_v<double, exact_reference>);   // no exact_rounding<double>
 static_assert(!valid_reference_v<posit<32, 2>, float>);
+// posit<32,6> has 24 digits but reaches 2^1920, past double's range
+static_assert(std::is_same_v<default_reference_t<posit<32, 6>>, exact_reference>);
+static_assert(!valid_reference_v<posit<32, 6>, double>);
 
 namespace reference_type {
 
@@ -121,6 +124,36 @@ int VerifyAgainstDoubleReference(int trials, bool reportTestCases) {
 					          << " double " << to_binary(viaDouble) << '\n';
 				}
 			}
+		}
+	}
+	return fails;
+}
+
+// the operands go into the exact reference without loss: decoding an encoding and rounding the
+// exact value back gives the same encoding, for every finite posit (exhaustively for posit<8,x>
+// through a + 0 above, here at random for the wide ones)
+template<typename Posit>
+int VerifyOperandRoundTrip(int trials, bool reportTestCases) {
+	using namespace rounding_oracle;
+	Rng rng{ 0x2122ull + Posit::nbits * 7u + Posit::es };
+	int fails = 0;
+	for (int t = 0; t < trials; ++t) {
+		Posit a;
+		blockbinary<Posit::nbits, typename Posit::BlockType, BinaryNumberType::Signed> raw;
+		raw.clear();
+		std::uint64_t word = 0;
+		for (unsigned i = 0; i < Posit::nbits; ++i) {
+			if ((i % 64u) == 0) word = rng.next();
+			raw.setbit(i, ((word >> (i % 64u)) & 1ull) != 0);
+		}
+		a.setbits(raw);
+		if (a.isnar()) continue;
+		const Dyadic x = valueOf(a);
+		Posit back;
+		roundExact(x.m.zero(), x.neg, [&](const Dyadic& m) { return cmpMagnitude(x, m); }, back);
+		if (back != a) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL round trip " << to_binary(a) << " came back as " << to_binary(back) << '\n';
 		}
 	}
 	return fails;
@@ -239,6 +272,10 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAgainstDoubleReference<posit<32, 2>>(2000, reportTestCases), "posit<32,2>", "exact vs double");
 	nrOfFailedTestCases += ReportTestResult(VerifyAgainstDoubleReference<posit<48, 2>>(2000, reportTestCases), "posit<48,2>", "exact vs double");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyOperandRoundTrip<posit<64, 2>>(2000, reportTestCases), "posit<64,2>", "operand round trip");
+	nrOfFailedTestCases += ReportTestResult(VerifyOperandRoundTrip<posit<64, 4>>(2000, reportTestCases), "posit<64,4>", "operand round trip");
+	nrOfFailedTestCases += ReportTestResult(VerifyOperandRoundTrip<posit<256, 4, std::uint64_t>>(500, reportTestCases), "posit<256,4>", "operand round trip");
 
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialCases<posit<16, 1>>(reportTestCases), "posit<16,1>", "special cases");
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialCases<posit<64, 2>>(reportTestCases), "posit<64,2>", "special cases");

@@ -15,6 +15,7 @@
 #include <universal/number/shared/specific_value_encoding.hpp>   // SpecificValue: the saturating reference clamp
 #include <universal/verification/correctly_rounded_reference.hpp>  // the reference, rounded once (#1861)
 #include <universal/verification/exact_reference.hpp>               // the reference type (#2121)
+#include <universal/verification/posit_rounding_oracle.hpp>         // the exact reference of a posit, always visible
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -421,20 +422,22 @@ namespace sw { namespace universal {
 				// tends to be special cased. So check for these cases and ignore the failure
 				// An operand that is finite in TestType but inf in double, past double's range, is
 				// tested when the scaled reference covers it (#1863)
-				if (untestableOperand(da, testa) || untestableOperand(db, testb)) continue;
-				//if (reportTestCases) std::cerr << "result : " << result << '\n';
-				//if (reportTestCases) std::cerr << "ref    : " << ref << '\n';
-				bool resultIsInf = result.isinf();
-				bool refIsInf = ref.isinf();
-				if (resultIsInf && refIsInf) {
-					if (reportTestCases) std::cerr << "result and ref are both inf\n";
-					// but ignore the failure
-					continue;
-				}
-				else {
-					if (reportTestCases) std::cerr << "result and/or ref are normal\n";
-					TestType diff = result - ref;
-					if (reportTestCases) std::cerr << "diff = " << to_binary(diff) << '\n';
+				// These exclusions are for the double reference only: the exact reference never
+				// goes through double, and every mismatch against it is a failure.
+				if constexpr (!std::is_same_v<ReferenceType, exact_reference>) {
+					if (untestableOperand(da, testa) || untestableOperand(db, testb)) continue;
+					bool resultIsInf = result.isinf();
+					bool refIsInf = ref.isinf();
+					if (resultIsInf && refIsInf) {
+						if (reportTestCases) std::cerr << "result and ref are both inf\n";
+						// but ignore the failure
+						continue;
+					}
+					else {
+						if (reportTestCases) std::cerr << "result and/or ref are normal\n";
+						TestType diff = result - ref;
+						if (reportTestCases) std::cerr << "diff = " << to_binary(diff) << '\n';
+					}
 				}
 				++nrOfFailedTests;
 				if (reportTestCases) ReportBinaryArithmeticError("FAIL", operation_string, testa, testb, result, ref);
@@ -563,7 +566,9 @@ namespace sw { namespace universal {
 			executeUnary<TestType, ReferenceType>(opcode, da, nut, result, ref);
 
 			if (result != ref) {
-				if (result.isnan() && ref.isnan()) continue;
+				if constexpr (!std::is_same_v<ReferenceType, exact_reference>) {
+					if (result.isnan() && ref.isnan()) continue;   // the double reference's NaN
+				}
 				++nrOfFailedTests;
 				if (reportTestCases) ReportUnaryArithmeticError("FAIL", operation_string, nut, result, ref);
 			}

@@ -11,7 +11,7 @@ template parameter (`exact_reference.hpp`, #2121):
 
 | ReferenceType | computes in | holds the results of |
 |---|---|---|
-| `double` | double, rounded once to TestType (`correctly_rounded_reference.hpp`, #1861) | types with fewer than 53 digits |
+| `double` | double, rounded once to TestType (`correctly_rounded_reference.hpp`, #1861) | types with fewer than 53 digits and a range inside double's (`posit<32,6>`, reaching 2^1920, is not one) |
 | `exact_reference` | exact dyadic rationals, rounded by TestType's own rule; a quotient or square root is compared, never computed | any width; needs an `exact_rounding<TestType>` specialization |
 
 ```cpp
@@ -25,6 +25,7 @@ VerifyBinaryOperatorThroughRandoms<posit<64, 2>, double>(report, OPCODE_DIV, 100
 verifiers cancel any other operator with it.
 
 Posit has an exact reference (`posit_rounding_oracle.hpp`: its own decoder, and the
-(nbits+1)-bit midpoint patterns). Types without one still check against double,
+(nbits+1)-bit midpoint patterns). Both verifier headers include it, so a posit test
+that includes only the generic `test_suite_randoms.hpp` gets it too. Types without one still check against double,
 also past 53 digits: dd, qd, the cascades, lns, and cfloat wider than double
 (c80, c96, c128). Each moves to the exact reference by specializing `exact_rounding`.
