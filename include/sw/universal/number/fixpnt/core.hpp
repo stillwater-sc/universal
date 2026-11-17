@@ -18,10 +18,9 @@
 // in fixpnt_fwd.hpp are part of the type's arithmetic surface, exactly as integer's
 // string constructor is, and <string> is inside the epic's derived line budget
 // (<cstdint>+<type_traits>+<limits>+<cmath>+<concepts> is 24,977 lines; adding <string>
-// reaches 42,091, against a 45,000 ceiling). <map> backs the character lookup in
-// assign(); <cstdio> backs fprintf(stderr, ...), the Phase 0 idiom adopted specifically
-// so diagnostics do not require <iostream>. The regex/sstream parse() DEFINITION lives
-// in iostream.hpp.
+// reaches 42,091, against a 45,000 ceiling). <cstdio> backs fprintf(stderr, ...), the Phase 0 idiom adopted specifically
+// so diagnostics do not require <iostream>. parse() is defined in parse.hpp,
+// which needs no streams either (#2111).
 //
 // NOTE: traits/arithmetic_traits.hpp and common/number_traits_reports.hpp are
 // deliberately NOT included -- they build report strings and pull <sstream>/<iomanip>.
@@ -36,3 +35,4 @@
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/traits/fixpnt_traits.hpp>
 #include <universal/number/fixpnt/numeric_limits.hpp>
+#include <universal/number/fixpnt/parse.hpp>   // parse(): assign(const std::string&) uses it (#2111)

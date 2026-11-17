@@ -24,48 +24,18 @@ Return Value
 	- And math_errhandling has MATH_ERRNO set: the global variable errno is set to ERANGE.
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
+// fixpnt has no NaN, so the direction is the comparison alone (#2111: nexttoward called an isnar()
+// fixpnt lacks). The step is one ulp of the encoding; past maxpos or maxneg it follows ++ and --.
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> nextafter(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> target) {
 	if (x == target) return target;
-	if (target.isnan()) {
-		if (x.isneg()) {
-			--x;
-		}
-		else {
-			++x;
-		}
-	}
-	else {
-		if (x > target) {
-			--x;
-		}
-		else {
-			++x;
-		}
-	}
+	if (x > target) --x; else ++x;
 	return x;
 }
-		
+
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> nexttoward(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> target) {
-	if (x == target) return x;
-	if (target.isnar()) {
-		if (x.isneg()) {
-			--x;
-		}
-		else {
-			++x;
-		}
-	}
-	else {
-		if (x > target) {
-			--x;
-		}
-		else {
-			++x;
-		}
-	}
-	return x;
+	return nextafter(x, target);
 }
 
 }} // namespace sw::universal

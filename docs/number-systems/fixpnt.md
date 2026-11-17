@@ -44,8 +44,30 @@ For example, `fixpnt<8, 4>` uses 4 integer bits and 4 fraction bits:
 - Arithmetic: `+`, `-`, `*`, `/`
 - Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=`
 - Bit shift: `<<`, `>>` (for scaling by powers of 2)
-- Conversions: to/from `int`, `float`, `double`
+- Conversions: to/from `int`, `float`, `double`, and between `fixpnt` configurations
 - Range queries: `minpos()`, `maxpos()`, `minneg()`, `maxneg()`
+
+### Conversions and rounding
+
+The arithmetic and every conversion into a `fixpnt` round to nearest, ties to even
+(`numeric_limits<fixpnt>::round_style` is `round_to_nearest`). A value past the range then follows
+the arithmetic mode: `Modulo` wraps and `Saturate` clamps to `maxpos` / `maxneg` (#2111).
+
+- **fixpnt to fixpnt**: exact alignment of the radix points, one rounding at the target's lsb, then
+  the mode's wrap or clamp. Saturate wrapped before #2111: `fixpnt<16,8>(100)` became 4 in
+  `fixpnt<8,4>`.
+- **To `float`, `double`, `long double`**: rounded once to nearest even, at every width. Before
+  #2111 the bits were added one at a time, which double-rounded past 24 bits (float) or 53 (double).
+- **To an integer type**: the library's [integer-cast rule](posit.md#integer-casts) (#2104), in both
+  modes: the value truncates toward zero, and past the integer's range saturates to `+/-max()`, an
+  unsigned type to `[0, max() - 1]`. `(int)fixpnt<8,4>(-1.5)` is -1 (it floored to -2), and
+  `(unsigned)fixpnt<8,4>(3.0)` is 3 (it returned the raw encoding, 48).
+- **From text**: `assign()` and `parse()` read decimals (`"-1.5"`, `"2.5e-1"`) exactly and round
+  to nearest even; `assign()` also takes the `0b` bit pattern with a radix point.
+- **Comparison with an integer** is exact: `fixpnt<8,4,Modulo>(-8) == 8` is false.
+
+`trunc`, `round` (half away from zero), `floor`, `ceil`, `frac` (with the sign of `x`), `min`
+and `max` work on the encoding, so they are exact at every width.
 
 ### Division by zero
 

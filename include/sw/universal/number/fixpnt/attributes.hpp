@@ -62,7 +62,7 @@ inline long double fraction_value(const fixpnt<nbits, rbits, arithmetic, bt>& v)
 	fixpnt<nbits, rbits, arithmetic, bt> fp(v);
 	// null the integer part
 	for (unsigned i = rbits; i < nbits; ++i) {
-		fp.reset(i);
+		fp.setbit(i, false);   // it called a reset() fixpnt lacks (#2111)
 	}
 	return (long double)(fp);
 }

@@ -161,8 +161,7 @@ namespace sw { namespace universal {
 	// reciprocal sqrt
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 	inline fixpnt<nbits, rbits, arithmetic, bt> rsqrt(const fixpnt<nbits, rbits, arithmetic, bt>& f) {
-		fixpnt<nbits, rbits, arithmetic, bt> rsqrt = sqrt(f);
-		return rsqrt.reciprocate();
+		return fixpnt<nbits, rbits, arithmetic, bt>(1) / sqrt(f);   // it called a reciprocate() fixpnt lacks (#2111)
 	}
 
 	///////////////////////////////////////////////////////////////////
