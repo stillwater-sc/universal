@@ -226,25 +226,37 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 			}
 		}
 		const bool up = round && (sticky || lsb);
-		Fixpnt ulp;
-		ulp.clear();
-		ulp.setbit(0, true);
+		// The fraction and the rounding ulp are applied in a fixpnt two bits wider, where both are
+		// positive magnitudes: in fixpnt<1,0> a raw bit 0 is -1, not +1 ulp (CodeRabbit on #2118).
+		// The conversion back then clamps (Saturate) or wraps (Modulo), as the arithmetic would.
+		using Wide = fixpnt<nbits + 2, rbits, arithmetic, bt>;
+		Wide wide;
+		wide = tmp;                        // the integer part: widening is exact
+		Wide fractionW, ulpW;
+		fractionW.clear();
+		for (unsigned b = 0; b < rbits; ++b) fractionW.setbit(b, fraction.at(b));   // not sign-extended
+		ulpW.clear();
+		ulpW.setbit(0, true);
 		if (negative) {
-			tmp -= fraction;
-			if (up) tmp -= ulp;   // may carry into the integer bits: -0.99999 rounds to -1.0
+			wide -= fractionW;
+			if (up) wide -= ulpW;          // may carry into the integer bits: -0.99999 rounds to -1.0
 		}
 		else {
-			tmp += fraction;
-			if (up) tmp += ulp;
+			wide += fractionW;
+			if (up) wide += ulpW;
 		}
-		value = tmp;
+		value = wide;
 		return true;
 	}
 	default:
 		return false;
 	}
 
-	if (negative) tmp = -tmp;
+	// a negated bit pattern: Modulo wraps, so -maxneg is maxneg; Saturate's unary minus clamps it
+	// to maxpos (CodeRabbit on #2118)
+	if (negative) {
+		if constexpr (arithmetic == Modulo) tmp.twosComplement(); else tmp = -tmp;
+	}
 	value = tmp;
 	return true;
 }

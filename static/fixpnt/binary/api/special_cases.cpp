@@ -140,6 +140,41 @@ int VerifyIntegerComparisons() {
 	return fails;
 }
 
+// CodeRabbit on #2118: rsqrt built 1 in the destination, where a type with no integer bits wraps
+// it to -1 (Modulo); parse() added its rounding ulp as raw bit 0, which is -1 in fixpnt<1,0>; and a
+// negated bit pattern went through unary minus, which turns Modulo -maxneg into maxpos.
+int VerifyReviewFindings() {
+	int fails = 0;
+	{
+		using M = fixpnt<8, 7, Modulo, std::uint8_t>;   // [-1, 1): 1 is not representable
+		const M r = rsqrt(M(0.5));                        // 1.41421..., wrapped mod 2: -0.5858
+		fails += CheckTrue(double(r) < -0.57 && double(r) > -0.60, "rsqrt(fixpnt<8,7,Modulo>(0.5)) wraps 1.414 to -0.586, got " + std::to_string(double(r)));
+		using S = fixpnt<8, 7, Saturate, std::uint8_t>;
+		fails += CheckValue(rsqrt(S(0.5)), S(SpecificValue::maxpos), "rsqrt(fixpnt<8,7,Saturate>(0.5)) saturates");
+	}
+	{
+		using S1 = fixpnt<1, 0, Saturate, std::uint8_t>;   // {-1, 0}
+		S1 v;
+		fails += CheckTrue(parse("0.6", v) && v.iszero(), "parse(\"0.6\") into fixpnt<1,0,Saturate> is maxpos, 0");
+		fails += CheckTrue(parse("-0.6", v) && v == S1(SpecificValue::maxneg), "parse(\"-0.6\") into fixpnt<1,0,Saturate> is -1");
+		using S2 = fixpnt<2, 0, Saturate, std::uint8_t>;   // {-2, -1, 0, 1}
+		S2 w;
+		fails += CheckTrue(parse("0.6", w) && w == S2(1), "parse(\"0.6\") into fixpnt<2,0,Saturate> is 1");
+		fails += CheckTrue(parse("1.6", w) && w == S2(SpecificValue::maxpos), "parse(\"1.6\") into fixpnt<2,0,Saturate> is maxpos");
+	}
+	{
+		using M = fixpnt<8, 0, Modulo, std::uint8_t>;
+		using S = fixpnt<8, 0, Saturate, std::uint8_t>;
+		M m;
+		S t;
+		fails += CheckTrue(parse("-0x80", m) && m == M(SpecificValue::maxneg), "parse(\"-0x80\") Modulo is maxneg");
+		fails += CheckTrue(parse("-0b10000000", m) && m == M(SpecificValue::maxneg), "parse(\"-0b10000000\") Modulo is maxneg");
+		fails += CheckTrue(parse("-0x01", m) && m == M(-1), "parse(\"-0x01\") Modulo is -1");
+		fails += CheckTrue(parse("-0x80", t) && t == S(SpecificValue::maxpos), "parse(\"-0x80\") Saturate clamps -maxneg to maxpos");
+	}
+	return fails;
+}
+
 }} // namespace sw::universal
 
 // Regression testing guards
@@ -179,6 +214,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyHelpers(), test_tag, "nextafter, nexttoward, rsqrt, fraction_value, integer, fraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyAssign(), test_tag, "assign(string)");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerComparisons(), test_tag, "integer comparisons");
+	nrOfFailedTestCases += ReportTestResult(VerifyReviewFindings(), test_tag, "rsqrt without integer bits, parse rounding and negated patterns");
 #endif
 
 #if REGRESSION_LEVEL_2

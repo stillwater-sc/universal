@@ -167,7 +167,7 @@ namespace sw {
 				if (a != marchingOne || b != marchingOne) {
 					++nrOfFailedTestCases;
 				}
-				marchingOne *= 2;
+				if (i + 1 < ibits) marchingOne *= 2;   // 2^63 overflows int64_t (CodeRabbit on #2118)
 			}
 			return nrOfFailedTestCases;
 		}
