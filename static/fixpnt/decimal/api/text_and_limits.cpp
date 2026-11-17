@@ -79,6 +79,17 @@ int VerifyText() {
 	v.assign("7.");
 	fails += CheckTrue(v.to_string() == "7.00", "assign(\"7.\")");
 
+	// integer digits past idigits follow the mode: dfixpnt<6,2> holds 4 integer digits
+	D s;
+	s.assign("12345.67");
+	if constexpr (D::arithmetic) fails += CheckTrue(s.to_string() == "2345.67", "Modulo assign(\"12345.67\") drops the excess digit");
+	else fails += CheckTrue(s.to_string() == "9999.99", "Saturate assign(\"12345.67\") clamps");
+	s.assign("-12345.67");
+	if constexpr (D::arithmetic) fails += CheckTrue(s.to_string() == "-2345.67", "Modulo assign(\"-12345.67\")");
+	else fails += CheckTrue(s.to_string() == "-9999.99", "Saturate assign(\"-12345.67\") clamps");
+	s.assign("001234.5");
+	fails += CheckTrue(s.to_string() == "1234.50", "assign(\"001234.5\"): leading zeros are not an overflow");
+
 	D w(3);
 	fails += CheckTrue(!parse("abc", w) && w.to_string() == "3.00", "parse(\"abc\") fails and leaves the value");
 	fails += CheckTrue(parse("-42.5", w) && w.to_string() == "-42.50", "parse(\"-42.5\")");
@@ -146,6 +157,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLimits<dfixpnt<9, 3, DecimalEncoding::DPD>>("dfixpnt<9,3,DPD>"), test_tag, "numeric_limits, DPD");
 	nrOfFailedTestCases += ReportTestResult(VerifyText<dfixpnt<6, 2, DecimalEncoding::BCD>>(), test_tag, "assign, parse, operator>>, BCD");
 	nrOfFailedTestCases += ReportTestResult(VerifyText<dfixpnt<6, 2, DecimalEncoding::DPD>>(), test_tag, "assign, parse, operator>>, DPD");
+	nrOfFailedTestCases += ReportTestResult(VerifyText<dfixpnt<6, 2, DecimalEncoding::BCD, Saturate>>(), test_tag, "assign, parse, operator>>, BCD Saturate");
 	nrOfFailedTestCases += ReportTestResult(VerifyZeroSign<dfixpnt<4, 2, DecimalEncoding::BCD>>(), test_tag, "ceil and floor zero sign");
 #endif
 

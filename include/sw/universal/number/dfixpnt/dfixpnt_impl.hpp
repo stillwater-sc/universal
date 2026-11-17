@@ -529,6 +529,18 @@ public:
 			unsigned digit_val = static_cast<unsigned>(int_part[static_cast<size_t>(i)] - '0');
 			_block.setdigit(radix + static_cast<unsigned>(d), digit_val);
 		}
+		// a nonzero integer digit past idigits: Saturate clamps, Modulo drops it (#2112: Saturate
+		// assign("123.45") into dfixpnt<4,2> was 23.45; CodeRabbit on #2119)
+		bool integerOverflow = false;
+		for (std::size_t i = 0; i + idigits < int_part.size(); ++i) {
+			if (int_part[i] != '0') { integerOverflow = true; break; }
+		}
+		if constexpr (!arithmetic) {
+			if (integerOverflow) {
+				_block.maxval();
+				return *this;   // the sign is kept; maxval is not zero
+			}
+		}
 
 		// fill fractional digits (from MSD to LSD)
 		for (unsigned i = 0; i < radix && i < frac_part.size(); ++i) {

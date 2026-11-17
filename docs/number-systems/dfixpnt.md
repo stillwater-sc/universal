@@ -87,14 +87,21 @@ The `blockdecimal` class packs decimal digits into a `blockbinary` using the cho
 `double` and the integer types (#2112; before it they truncated, so `0.03 * 0.5` was 0.01 and
 `2 / 3` was 0.66). `numeric_limits<dfixpnt>::round_style` is `round_to_nearest`.
 
-Every operation and conversion computes the exact magnitude first, wide enough for any carry. A
-result past `ndigits` digits then follows the arithmetic mode: `Saturate` clamps to all nines with
-the sign, and `Modulo` keeps the low `ndigits` digits. A zero result is +0. Before #2112 Saturate
-`+`, `-`, `++`, `--`, `/` and the integer constructor wrapped like Modulo: `99.99 + 1` was 0.99.
+Overflow, by source:
 
-Text input (`assign()`, `parse()` and `operator>>`) accepts an optional sign, digits and at most one
-`.`. Anything else is rejected: `assign()` leaves 0, `parse()` returns false, and `operator>>` sets
-`failbit`.
+- **Arithmetic** (`+`, `-`, `++`, `--`, `*`, `/`) and **integer** construction and assignment compute
+  the exact magnitude first, wide enough for any carry. A result past `ndigits` digits then follows
+  the arithmetic mode: `Saturate` clamps to all nines with the sign, and `Modulo` keeps the low
+  `ndigits` digits. A zero result is +0. Before #2112 Saturate wrapped like Modulo: `99.99 + 1` was
+  0.99, and `dfixpnt<4,2,Saturate>(12345)` was 45.00.
+- **`double`** (and `float`) conversion saturates to all nines with the sign in **both** modes, as
+  does an infinity; NaN gives 0 (#2076). `dfixpnt<4,2,BCD,Modulo>(123.0)` is 99.99.
+- **Text** (`assign()`, `parse()`, `operator>>`): integer digits past `idigits` clamp in `Saturate`
+  and are dropped in `Modulo` (`"123.45"` is 99.99 and 23.45 in `dfixpnt<4,2>`). Fraction digits past
+  `radix` are dropped, not rounded.
+
+Text input accepts an optional sign, digits and at most one `.`. Anything else is rejected:
+`assign()` leaves 0, `parse()` returns false, and `operator>>` sets `failbit`.
 
 ### Comparison with Binary Fixed-Point
 
