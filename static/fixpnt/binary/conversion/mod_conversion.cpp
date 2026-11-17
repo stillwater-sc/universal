@@ -140,8 +140,9 @@ namespace sw {
 
 			Fixed a, b;
 
-			constexpr Fixed maxneg(SpecificValue::maxneg);
-			int64_t marchingOne = (long long)maxneg;
+			// the integer part of maxneg, -2^(ibits-1), from the bit width: a cast of maxneg saturates
+			// to -LLONG_MAX when ibits is 64, by the integer-cast rule (#2104, #2111)
+			int64_t marchingOne = (ibits == 64) ? std::numeric_limits<int64_t>::min() : -(int64_t(1) << (ibits - 1));
 			float f = float(marchingOne);
 			std::cout << to_binary(f) << '\n';
 			for (int i = static_cast<int>(ibits - 1); i >= 0; --i) {
