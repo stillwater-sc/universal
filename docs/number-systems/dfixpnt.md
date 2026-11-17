@@ -80,10 +80,21 @@ blockdecimal<ndigits, encoding, bt> _block;    // unsigned magnitude
 The `blockdecimal` class packs decimal digits into a `blockbinary` using the chosen encoding. All arithmetic is performed as decimal digit operations:
 
 - **Addition/subtraction**: digit-by-digit with decimal carry/borrow, sign resolved by comparing magnitudes
-- **Multiplication**: schoolbook digit-by-digit into a double-width `blockdecimal<2*ndigits>`, then shifted right by `radix` positions (dividing by 10^radix to restore the fixed-point scale)
-- **Division**: dividend is shifted left by `radix` positions (multiplying by 10^radix) in a wider `blockdecimal`, then divided by the divisor, producing a result at the correct scale
+- **Multiplication**: schoolbook digit-by-digit into a double-width `blockdecimal<2*ndigits>`, then shifted right by `radix` positions (dividing by 10^radix to restore the fixed-point scale), rounded half away from zero
+- **Division**: dividend is shifted left by `radix + 1` positions in a wider `blockdecimal` and divided by the divisor; the extra quotient digit rounds the result half away from zero
 
-The `Saturate` mode detects overflow after each addition and clamps the result to the maximum representable magnitude.
+`*` and `/` round half away from zero, on the magnitude, the same rule as the conversions from
+`double` and the integer types (#2112; before it they truncated, so `0.03 * 0.5` was 0.01 and
+`2 / 3` was 0.66). `numeric_limits<dfixpnt>::round_style` is `round_to_nearest`.
+
+Every operation and conversion computes the exact magnitude first, wide enough for any carry. A
+result past `ndigits` digits then follows the arithmetic mode: `Saturate` clamps to all nines with
+the sign, and `Modulo` keeps the low `ndigits` digits. A zero result is +0. Before #2112 Saturate
+`+`, `-`, `++`, `--`, `/` and the integer constructor wrapped like Modulo: `99.99 + 1` was 0.99.
+
+Text input (`assign()`, `parse()` and `operator>>`) accepts an optional sign, digits and at most one
+`.`. Anything else is rejected: `assign()` leaves 0, `parse()` returns false, and `operator>>` sets
+`failbit`.
 
 ### Comparison with Binary Fixed-Point
 

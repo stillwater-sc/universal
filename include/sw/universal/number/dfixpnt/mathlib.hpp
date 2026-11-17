@@ -62,6 +62,8 @@ ceil(const dfixpnt<ndigits, radix, encoding, arithmetic, bt>& v) {
 		}
 		if (hasFraction) result += UnitOf(v);
 	}
+	// a magnitude that rounds to 0 is +0, dfixpnt's convention (#2076): ceil(-0.5) gave -0 (#2112)
+	if (result.iszero()) result.setsign(false);
 	return result;
 }
 

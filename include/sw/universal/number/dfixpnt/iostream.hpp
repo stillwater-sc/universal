@@ -28,7 +28,8 @@ template<unsigned ndigits, unsigned radix, DecimalEncoding encoding, bool arithm
 inline std::istream& operator>>(std::istream& is, dfixpnt<ndigits, radix, encoding, arithmetic, bt>& v) {
 	std::string s;
 	is >> s;
-	v.assign(s);
+	// malformed text sets failbit and leaves v unchanged, as the other types' operator>> do (#2112)
+	if (!parse(s, v)) is.setstate(std::ios::failbit);
 	return is;
 }
 
