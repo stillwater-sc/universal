@@ -244,7 +244,9 @@ jobs:
             artifact: linux-aarch64-gcc
             cmake_flags: -DUNIVERSAL_BUILD_CI_LITE=ON
           # Windows cross-compilation with MinGW-w64
-          - os: ubuntu-latest
+          # Pinned: on ubuntu-26.04 wine cannot start inside this container
+          # ("wine: socket : Function not implemented"), so no test runs
+          - os: ubuntu-24.04
             name: Windows x64 (MinGW GCC cross)
             artifact: windows-x64-mingw
             cross: mingw
