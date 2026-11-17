@@ -244,7 +244,11 @@ int VerifySpecialTables(bool reportTestCases) {
 		if (got.isnan()) return false;
 		if (expected == 0.0) return got.iszero() && got.sign() == std::signbit(expected);
 		if (std::isinf(expected)) return got.isinf() && got.sign() == std::signbit(expected);
-		return double(got) == expected;   // the special results are exact, or pi multiples rounded once
+		// a finite result such as atan2(1, 3) or pow(3, 1.5) is only as good as the host <cmath>, which
+		// need not round correctly: within 2 ulps of it (CodeRabbit on #2120). The special classes above
+		// stay exact.
+		const double g = double(got);
+		return g == expected || std::abs(g - expected) <= 2.0 * std::numeric_limits<double>::epsilon() * std::abs(expected);
 	};
 	auto check = [&](const char* fn, double a, double b, const C& got, double expected) {
 		if (same(got, expected)) return;
