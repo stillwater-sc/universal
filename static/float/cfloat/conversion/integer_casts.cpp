@@ -104,8 +104,12 @@ int VerifyCastsOverEncodings(bool reportTestCases) {
 		const long l = long(c);
 		const unsigned u = c.template to_integer<unsigned>();
 		const unsigned short us = c.template to_integer<unsigned short>();
+		// the 8-bit targets saturate first, and their NaR is a value a narrow integer can hold (#2113)
+		const unsigned char uc = c.template to_integer<unsigned char>();
+		const signed char sc = c.template to_integer<signed char>();
 		if (i != reference_cast<int>(d, nan) || ll != reference_cast<long long>(d, nan) || l != reference_cast<long>(d, nan)
-		    || u != reference_cast<unsigned>(d, nan) || us != reference_cast<unsigned short>(d, nan)) {
+		    || u != reference_cast<unsigned>(d, nan) || us != reference_cast<unsigned short>(d, nan)
+		    || uc != reference_cast<unsigned char>(d, nan) || sc != reference_cast<signed char>(d, nan)) {
 			if (reportTestCases && fails < 10) std::cerr << "FAIL: " << to_binary(c) << " (" << d << ") -> int " << i << ", long long " << ll
 			                                             << "; expected " << reference_cast<int>(d, nan) << ", " << reference_cast<long long>(d, nan) << '\n';
 			++fails;
@@ -142,6 +146,26 @@ int VerifyWideCasts(unsigned samples, bool reportTestCases) {
 				if (reportTestCases && fails < 10) std::cerr << "FAIL: " << v << " +/- 0.5 -> " << (long long)t << '\n';
 				++fails;
 			}
+		}
+	}
+	return fails;
+}
+
+// a double into a wide cfloat whose fraction is a whole number of blocks: the conversion shifts the
+// exponent left by fbits, a block multiple, which takes shiftLeft()'s early return after the block
+// move (#2113: no test reached it). The double is exact in every one of these layouts.
+template<typename Cfloat>
+int VerifyBlockMultipleShift(bool reportTestCases) {
+	static_assert(Cfloat::fbits % (8u * sizeof(typename Cfloat::BlockType)) == 0u, "fbits must be a block multiple");
+	int fails = 0;
+	const double samples[] = { 1.0, -1.0, 3.5, -0.375, 1e300, -1e-300, 0x1.fffffffffffffp1023, 0x1p-1022, 6.02214076e23, 1.0 / 3.0 };
+	for (double d : samples) {
+		const Cfloat c(d);
+		const float f = static_cast<float>(d);
+		const Cfloat cf(f);
+		if (double(c) != d || (std::isfinite(f) && f != 0.0f && float(cf) != f)) {
+			if (reportTestCases) std::cerr << "FAIL: " << to_binary(c) << " from " << d << " is " << double(c) << '\n';
+			++fails;
 		}
 	}
 	return fails;
@@ -243,6 +267,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCastsOverEncodings<cfloat<8, 2, uint8_t, true, true, false>>(reportTestCases),    "cfloat<8,2,uint8_t,t,t,f>",   "casts");
 
 	nrOfFailedTestCases += ReportTestResult((VerifyWideCasts<cfloat<64, 11, uint32_t>, 53>(2000, reportTestCases)),                  "cfloat<64,11,uint32_t>",        "wide casts");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockMultipleShift<cfloat<80, 15, uint8_t, true, false, false>>(reportTestCases),  "cfloat<80,15,uint8_t,t,f,f>",  "double in, block-multiple shift");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockMultipleShift<cfloat<80, 15, uint32_t, true, false, false>>(reportTestCases), "cfloat<80,15,uint32_t,t,f,f>", "double in, block-multiple shift");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockMultipleShift<cfloat<144, 15, uint64_t, true, false, false>>(reportTestCases), "cfloat<144,15,uint64_t,t,f,f>", "double in, block-multiple shift");
 	nrOfFailedTestCases += ReportTestResult((VerifyWideCasts<cfloat<80, 15, uint32_t>, 63>(2000, reportTestCases)),                  "cfloat<80,15,uint32_t>",        "wide casts");
 	nrOfFailedTestCases += ReportTestResult((VerifyWideCasts<cfloat<96, 15, uint16_t, true, false, false>, 63>(2000, reportTestCases)), "cfloat<96,15,uint16_t,t,f,f>", "wide casts");
 #endif

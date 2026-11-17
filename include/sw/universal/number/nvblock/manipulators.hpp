@@ -59,6 +59,8 @@ namespace sw { namespace universal {
 			scaleName = "e4m3_saturating";
 		} else if constexpr (std::is_same_v<ScaleType, e5m2>) {
 			scaleName = "e5m2";
+		} else if constexpr (std::is_same_v<ScaleType, e5m2_saturating>) {
+			scaleName = "e5m2_saturating";   // it printed "unknown" (#2113)
 		} else {
 			scaleName = "unknown";
 		}

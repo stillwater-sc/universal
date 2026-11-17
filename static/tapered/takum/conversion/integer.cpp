@@ -246,6 +246,19 @@ try {
 		if ((unsigned)takum<64, 3>(SpecificValue::nar) != UINT_MAX) ++fails;
 		if ((unsigned)takum<64, 3>(SpecificValue::maxpos) != UINT_MAX - 1u) ++fails;
 		if ((long long)takum<64, 3>(LLONG_MAX) != LLONG_MAX) ++fails;   // 2^63 - 1 rounds to 2^63, which saturates
+		// unsigned casts at 2^32 and 2^64 (#2113): past the range an unsigned type saturates to max() - 1
+		// (#2104). takum32 rounds 4294967295.0 up to 2^32, which is past unsigned int's range.
+		if ((unsigned)takum<32, 3>(4294967295.0) != UINT_MAX - 1u) ++fails;
+		if ((unsigned long long)takum<32, 3>(4294967295.0) != 4294967296ull) ++fails;
+		if ((unsigned)takum<32, 3>(4294967296.0) != UINT_MAX - 1u) ++fails;
+		if ((unsigned)takum<64, 3>(4294967295ull) != UINT_MAX - 1u) ++fails;        // exact, and still max()
+		if ((unsigned)takum<64, 3>(4294967294ull) != UINT_MAX - 1u) ++fails;        // exact, max() - 1 itself
+		if ((unsigned)takum<64, 3>(4294967293ull) != UINT_MAX - 2u) ++fails;        // exact, in range
+		if ((unsigned long long)takum<64, 3>(18446744073709551615.0) != ULLONG_MAX - 1u) ++fails;   // 2^64
+		if ((unsigned long long)takum<64, 3>(9223372036854775808.0) != 9223372036854775808ull) ++fails;   // 2^63 is in range
+		if ((unsigned long long)takum<64, 3>(-1.0) != 0u) ++fails;                  // a negative value is 0
+		if ((unsigned long long)takum<64, 3>(SpecificValue::maxpos) != ULLONG_MAX - 1u) ++fails;
+		if ((unsigned long long)takum<64, 3>(SpecificValue::nar) != ULLONG_MAX) ++fails;   // the unsigned NaR
 		{
 			// operator=(char) must follow char's own signedness, which the platform decides
 			char c = static_cast<char>(-5);

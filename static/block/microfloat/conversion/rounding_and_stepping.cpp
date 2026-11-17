@@ -147,6 +147,51 @@ namespace {
 		return fails;
 	}
 
+	// the gaps of #2113: odd_float's clamps, subnormal near-ties, integer sources of every kind and
+	// the saturating e5m2 at the microfloat level
+	int VerifyConversionEdges(bool reportTestCases) {
+		using namespace sw::universal;
+		int fails = 0;
+		auto check = [&](bool ok, const char* what) {
+			if (ok) return;
+			if (reportTestCases) std::cerr << "FAIL " << what << '\n';
+			++fails;
+		};
+		// odd_float clamps a double past 2^127 to 2^127 and one below float's normal range to 0
+		check(e5m2(1e300).isinf() && !e5m2(1e300).sign(), "e5m2(1e300) is +inf");
+		check(e5m2(-1e300).isinf() && e5m2(-1e300).sign(), "e5m2(-1e300) is -inf");
+		check(e4m3(1e300).isnan(), "e4m3(1e300) is NaN, OCP e4m3fn has no inf");
+		check(e4m3_saturating(1e300).bits() == e4m3_saturating(SpecificValue::maxpos).bits(), "e4m3_saturating(1e300) is maxpos");
+		check(e2m1(-1e300).bits() == e2m1(SpecificValue::maxneg).bits(), "e2m1(-1e300) is maxneg");
+		check(e4m3(1e-300).bits() == 0u, "e4m3(1e-300) is +0");
+		check(e4m3(-1e-300).bits() == e4m3::sign_mask, "e4m3(-1e-300) is -0");
+		check(e5m2(std::ldexp(1.0, -130)).bits() == 0u, "e5m2(2^-130), below float's normals, is +0");
+		// integer sources: bool, char of either signedness, and LLONG_MIN, whose magnitude is not a long long
+		check(double(e4m3(true)) == 1.0 && e4m3(false).bits() == 0u, "e4m3(true) is 1, e4m3(false) is 0");
+		{
+			e4m3 c;
+			c = static_cast<char>(-5);
+			check(double(c) == (std::is_signed_v<char> ? -5.0 : 256.0), "e4m3 = char(-5) follows char's signedness");
+			c = static_cast<signed char>(-128);
+			check(double(c) == -128.0, "e4m3 = signed char(-128)");
+			c = static_cast<unsigned char>(255);
+			check(double(c) == 256.0, "e4m3 = unsigned char(255) rounds to 256");
+		}
+		check(e5m2(std::numeric_limits<long long>::min()).isinf() && e5m2(std::numeric_limits<long long>::min()).sign(), "e5m2(LLONG_MIN) is -inf");
+		check(e4m3(std::numeric_limits<long long>::min()).isnan(), "e4m3(LLONG_MIN) is NaN");
+		check(e2m1(std::numeric_limits<long long>::min()).bits() == e2m1(SpecificValue::maxneg).bits(), "e2m1(LLONG_MIN) is maxneg");
+		check(double(e5m2(std::numeric_limits<unsigned long long>::max())) != 0.0 && e5m2(std::numeric_limits<unsigned long long>::max()).isinf(), "e5m2(ULLONG_MAX) is +inf");
+		check(double(e5m2(-(1LL << 14))) == -std::ldexp(1.0, 14) && e5m2(-(1LL << 40)).isinf(), "e5m2(-2^14) is exact, e5m2(-2^40) is -inf");
+		// e5m2_saturating: a finite source past maxpos saturates; an infinite one keeps inf (#2096)
+		const e5m2_saturating maxpos(SpecificValue::maxpos);
+		check(e5m2_saturating(1e300).bits() == maxpos.bits(), "e5m2_saturating(1e300) is maxpos");
+		check(e5m2_saturating(1e39).bits() == maxpos.bits(), "e5m2_saturating(1e39) is maxpos");
+		check(e5m2_saturating(-1e39).bits() == (-maxpos).bits(), "e5m2_saturating(-1e39) is maxneg");
+		check(e5m2_saturating(std::numeric_limits<float>::infinity()).isinf(), "e5m2_saturating(inf) keeps inf");
+		check(e5m2_saturating(100000).bits() == maxpos.bits(), "e5m2_saturating(100000) is maxpos");
+		return fails;
+	}
+
 }  // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -200,6 +245,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNearTie<e2m1>("e2m1", 4.0, 6.0, reportTestCases), "e2m1", "near ties from double");
 	nrOfFailedTestCases += ReportTestResult(VerifyNearTie<e3m2>("e3m2", 0.25, 0.3125, reportTestCases), "e3m2", "near ties from double");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerRounding(reportTestCases), "microfloat", "integers round once");
+	// subnormal near-ties from double: between 0 and minpos, and between the first two subnormals
+	nrOfFailedTestCases += ReportTestResult(VerifyNearTie<e4m3>("e4m3", 0.0, std::ldexp(1.0, -9), reportTestCases), "e4m3", "subnormal near ties from double");
+	nrOfFailedTestCases += ReportTestResult(VerifyNearTie<e4m3>("e4m3", std::ldexp(1.0, -9), std::ldexp(1.0, -8), reportTestCases), "e4m3", "subnormal near ties from double");
+	nrOfFailedTestCases += ReportTestResult(VerifyNearTie<e5m2>("e5m2", std::ldexp(2.0, -16), std::ldexp(3.0, -16), reportTestCases), "e5m2", "subnormal near ties from double");
+	nrOfFailedTestCases += ReportTestResult(VerifyNearTie<e2m1>("e2m1", 0.0, 0.5, reportTestCases), "e2m1", "subnormal near ties from double");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversionEdges(reportTestCases), "microfloat", "clamps, integer sources, e5m2_saturating");
 	{
 		// the narrowing keeps the sign of zero: e4m3(-0.0) is -0, as the direct float cast gave
 		const e4m3 nz(-0.0), pz(0.0);
@@ -215,6 +266,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyStepping<e4m3>("e4m3", reportTestCases), "e4m3", "++ and --");
 	nrOfFailedTestCases += ReportTestResult(VerifyStepping<e4m3_saturating>("e4m3_saturating", reportTestCases), "e4m3_saturating", "++ and --");
 	nrOfFailedTestCases += ReportTestResult(VerifyStepping<e5m2>("e5m2", reportTestCases), "e5m2", "++ and --");
+	nrOfFailedTestCases += ReportTestResult(VerifyStepping<e5m2_saturating>("e5m2_saturating", reportTestCases), "e5m2_saturating", "++ and --");
 	{
 		e5m2 x;
 		x.setbits(0x7Bu);   // maxpos

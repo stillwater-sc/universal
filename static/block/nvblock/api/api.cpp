@@ -29,6 +29,28 @@ try {
 		std::cout << "custom: " << type_tag(b) << '\n';
 	}
 
+	// every element and scale type has a name: the e5m2_saturating scale printed "unknown" (#2113)
+	{
+		const std::string tags[] = {
+			type_tag(nvblock<e2m1, 16, e5m2_saturating>()),
+			type_tag(nvblock<e5m2_saturating, 8, e5m2_saturating>()),
+			type_tag(nvblock<e4m3_saturating, 8, e5m2>()),
+			type_tag(nvblock<e2m3, 8, e4m3_saturating>()),
+		};
+		const std::string expected[] = {
+			"nvblock<e2m1,16,e5m2_saturating>",
+			"nvblock<e5m2_saturating,8,e5m2_saturating>",
+			"nvblock<e4m3_saturating,8,e5m2>",
+			"nvblock<e2m3,8,e4m3_saturating>",
+		};
+		for (unsigned i = 0; i < 4; ++i) {
+			if (tags[i] != expected[i]) {
+				std::cerr << "FAIL: type_tag " << tags[i] << ", expected " << expected[i] << '\n';
+				++nrOfFailedTestCases;
+			}
+		}
+	}
+
 	// quantize and dequantize round-trip with tensor_scale = 1.0
 	std::cout << "+---------    quantize/dequantize round-trip (tensor_scale=1.0)   --------+\n";
 	{

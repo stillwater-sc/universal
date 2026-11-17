@@ -45,9 +45,15 @@ using zfp3d = zfpblock<double, 3>;   // 3D double blocks
 | `fixed_accuracy` | Error tolerance | Absolute error bound per value: each block codes `emax - floor(log2(tol)) + 2 (Dim + 1)` planes, ZFP's rule |
 | `reversible` | Lossless | Exact round-trip, bit for bit: a block the transform does not reproduce exactly is stored raw |
 
+Reversible mode is lossless, not a compressor for arbitrary data. The full-precision transform
+reproduces only some blocks bit for bit, so most blocks of unrelated values are stored raw, with a
+9-bit header: 137 bits for a `zfpblock<float, 1>` of 4 floats, against 128 bits uncompressed. In a
+sample of 10,000 blocks of uniform random floats, 9,996 took 128 bits or more. Smooth or
+low-precision data compresses: `{0.1f, 0.2f, 0.3f, 0.4f}` takes 111 bits (#2113).
+
 ### Special values
 
-ZFP's transform cannot represent inf or NaN. A block containing either is stored raw, as its IEEE bit patterns, in every mode, and round-trips exactly. When a fixed rate is too small to hold the raw block, the block decodes as all NaN. A block of subnormal magnitudes uses the smallest block exponent, as in the ZFP reference.
+ZFP's transform cannot represent inf or NaN. A block containing either is stored raw, as its IEEE bit patterns, in every mode, and round-trips exactly, and it is encoded once (#2113). When a fixed rate is too small to hold the raw block, the block decodes as all NaN. A block of subnormal magnitudes uses the smallest block exponent, as in the ZFP reference.
 
 ### Key Properties
 

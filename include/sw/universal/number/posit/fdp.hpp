@@ -54,9 +54,14 @@ posit<nbits, es, bt>
 quire_resolve(const quire<posit<nbits, es, bt>, capacity, LimbType>& q) {
 	using Scalar = posit<nbits, es, bt>;
 	constexpr unsigned fbits = Scalar::fbits;
-	using BT = blocktriple<fbits, BlockTripleOperator::MUL, bt>;
+	// Two fraction bits wider than the posit: a MUL blocktriple keeps 2 * fbits bits below its
+	// radix, so with fbits <= 1 (posit<8,4>, <9,5>, <12,9>) the lowest copied bit, where the
+	// sticky goes, was the posit's guard bit, and every inexact sum read as a tie or above and
+	// rounded up: about 1 in 5 in-range sums came out one posit too large (#2113). With
+	// fbits + 2 there are at least fbits + 4 bits below the posit's lsb.
+	using BT = blocktriple<fbits + 2, BlockTripleOperator::MUL, bt>;
 	constexpr unsigned bfbits = BT::bfbits;
-	constexpr int bt_radix = BT::radix;  // = 2*fbits
+	constexpr int bt_radix = BT::radix;  // = 2 * (fbits + 2)
 
 	Scalar result;
 	if (q.isnar()) { result.setnar(); return result; }  // NaR propagated through the accumulator (#1226); an infinity too, posit has none (#2019)
