@@ -154,6 +154,24 @@ int VerifyRandomEncodingsReachEveryBit(bool reportTestCases) {
 	return fails;
 }
 
+// a type with setbit but no exact reference, as dd and qd are: randomEncoding keeps setbits
+struct limbs_without_exact_reference {
+	static constexpr unsigned nbits = 128;
+	int setbitCalls{ 0 }, setbitsCalls{ 0 };
+	void setbit(unsigned, bool) { ++setbitCalls; }
+	void setbits(unsigned long long) { ++setbitsCalls; }
+};
+static_assert(!has_exact_rounding<limbs_without_exact_reference>);
+
+int VerifyRandomEncodingKeepsSetbitsWithoutExactReference(bool reportTestCases) {
+	std::mt19937_64 eng(0x2123u);
+	limbs_without_exact_reference v;
+	randomEncoding(v, eng);
+	if (v.setbitCalls == 0 && v.setbitsCalls == 1) return 0;
+	if (reportTestCases) std::cerr << "FAIL randomEncoding used setbit " << v.setbitCalls << " times, setbits " << v.setbitsCalls << '\n';
+	return 1;
+}
+
 // the special cases at a wide type
 template<typename Cfloat>
 int VerifySpecialCases(bool reportTestCases) {
@@ -245,6 +263,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyOperandRoundTrip<c80>(2000, reportTestCases), "c80", "operand round trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyOperandRoundTrip<c128>(2000, reportTestCases), "c128", "operand round trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyRandomEncodingsReachEveryBit<c128>(reportTestCases), "c128", "random encodings");
+	nrOfFailedTestCases += ReportTestResult(VerifyRandomEncodingKeepsSetbitsWithoutExactReference(reportTestCases), "dd-like", "random encodings");
 
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialCases<c80>(reportTestCases), "c80", "special cases");
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialCases<c128>(reportTestCases), "c128", "special cases");

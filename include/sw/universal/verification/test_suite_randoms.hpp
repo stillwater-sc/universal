@@ -310,12 +310,14 @@ namespace sw { namespace universal {
 		}
 	}
 
-	// a random encoding of TestType: every bit of it, also past 64 bits (#2123), where the type
-	// has setbit; otherwise the low 64 bits through setbits
+	// a random encoding of TestType: every bit of it, also past 64 bits (#2123), for a type with
+	// an exact reference, whose every encoding the reference decodes (posit, cfloat); otherwise
+	// the low 64 bits through setbits. Multi-component types such as dd have setbit too, but a
+	// random bit pattern of their limbs is not a normalized value.
 	template<typename TestType, typename Engine>
 	void randomEncoding(TestType& v, Engine& eng) {
 		std::uniform_int_distribution<unsigned long long> distr;
-		if constexpr (requires { TestType::nbits; v.setbit(0u, true); }) {
+		if constexpr (has_exact_rounding<TestType> && requires { TestType::nbits; v.setbit(0u, true); }) {
 			if constexpr (TestType::nbits > 64) {
 				std::uint64_t word = 0;
 				for (unsigned i = 0; i < TestType::nbits; ++i) {
