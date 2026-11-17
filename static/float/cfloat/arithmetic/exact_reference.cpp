@@ -23,7 +23,8 @@
    - cfloat arithmetic over every pair of 8-bit encodings, in every combination of subnormals,
      max-exponent values and saturation: ties, subnormals, flush to zero, overflow to inf or
      maxpos, inf and NaN operands, signed zeros;
-   - double's reference for c32, where double holds the results;
+   - double's reference for c32 and c48, where double holds the results;
+   - signed zeros: the comparison tells +0 from -0, which cfloat's == does not;
    - an operand round trip for c80 and c128: decoding an encoding exactly and rounding it back
      gives the same encoding;
    - random operands that reach every bit of a 128-bit encoding.
@@ -32,12 +33,14 @@
 namespace sw { namespace universal {
 
 using c32  = cfloat< 32,  8, std::uint32_t, true, false, false>;
+using c48  = cfloat< 48,  8, std::uint16_t, true, false, false>;
 using c64  = cfloat< 64, 11, std::uint64_t, true, false, false>;
 using c80  = cfloat< 80, 11, std::uint16_t, true, false, false>;
 using c128 = cfloat<128, 15, std::uint32_t, true, false, false>;
 
 static_assert(has_exact_rounding<c32>);
 static_assert(std::is_same_v<default_reference_t<c32>, double>);                                         // double holds c32
+static_assert(std::is_same_v<default_reference_t<c48>, double>);                                         // and c48
 static_assert(std::is_same_v<default_reference_t<c64>, exact_reference>);                                // 53 digits, and double's range doubled
 static_assert(std::is_same_v<default_reference_t<c80>, exact_reference>);
 static_assert(std::is_same_v<default_reference_t<cfloat<96, 15, std::uint8_t, false, false, true>>, exact_reference>);
@@ -172,6 +175,20 @@ int VerifyRandomEncodingKeepsSetbitsWithoutExactReference(bool reportTestCases) 
 	return 1;
 }
 
+// the comparison with the exact reference tells the zeros apart: cfloat's == does not
+template<typename Cfloat>
+int VerifyZeroSignsCompared(bool reportTestCases) {
+	Cfloat pz, nz;
+	pz.setzero();
+	nz.setzero();
+	nz.setbit(Cfloat::nbits - 1u, true);
+	int fails = 0;
+	if (!(pz == nz)) { ++fails; if (reportTestCases) std::cerr << "FAIL +0 == -0 is false, the premise of this check\n"; }
+	if (reference_equal(pz, nz) || reference_equal(nz, pz)) { ++fails; if (reportTestCases) std::cerr << "FAIL reference_equal(+0, -0)\n"; }
+	if (!reference_equal(pz, pz) || !reference_equal(nz, nz)) { ++fails; if (reportTestCases) std::cerr << "FAIL reference_equal of a zero with itself\n"; }
+	return fails;
+}
+
 // the special cases at a wide type
 template<typename Cfloat>
 int VerifySpecialCases(bool reportTestCases) {
@@ -259,6 +276,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<cfloat<8, 5, std::uint8_t, false, false, false>>(reportTestCases), "cfloat<8,5,f,f,f>", test_tag);
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAgainstDoubleReference<c32>(2000, reportTestCases), "c32", "exact vs double");
+	nrOfFailedTestCases += ReportTestResult(VerifyAgainstDoubleReference<c48>(2000, reportTestCases), "c48", "exact vs double");
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroSignsCompared<c32>(reportTestCases), "c32", "signed zeros");
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroSignsCompared<c128>(reportTestCases), "c128", "signed zeros");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyOperandRoundTrip<c80>(2000, reportTestCases), "c80", "operand round trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyOperandRoundTrip<c128>(2000, reportTestCases), "c128", "operand round trip");

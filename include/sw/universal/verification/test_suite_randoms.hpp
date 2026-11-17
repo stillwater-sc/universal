@@ -319,6 +319,7 @@ namespace sw { namespace universal {
 		std::uniform_int_distribution<unsigned long long> distr;
 		if constexpr (has_exact_rounding<TestType> && requires { TestType::nbits; v.setbit(0u, true); }) {
 			if constexpr (TestType::nbits > 64) {
+				v.setbits(0);   // every block written, also the bits above nbits; draws nothing
 				std::uint64_t word = 0;
 				for (unsigned i = 0; i < TestType::nbits; ++i) {
 					if ((i % 64u) == 0) word = distr(eng);

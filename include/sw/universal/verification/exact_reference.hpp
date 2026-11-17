@@ -74,12 +74,16 @@ namespace sw { namespace universal {
 		std::is_same_v<ReferenceType, double> ? (double_reference_holds<TestType> || !has_exact_rounding<TestType>) :
 		false;
 
-	// a result agrees with the exact reference when they are equal, or both NaN: NaN != NaN, and
-	// the reference does not model which NaN encoding an operation returns
+	// a result agrees with the exact reference when they are equal with the same sign of zero, or
+	// both NaN: NaN != NaN, and the reference does not model which NaN encoding an operation
+	// returns; +0 == -0, but the reference does say which zero (x - x is +0, -0 + -0 is -0)
 	template<typename TestType>
 	bool reference_equal(const TestType& result, const TestType& ref) {
 		if constexpr (requires { result.isnan(); }) {
 			if (result.isnan() && ref.isnan()) return true;
+		}
+		if constexpr (requires { result.iszero(); result.sign(); }) {
+			if (result.iszero() && ref.iszero()) return result.sign() == ref.sign();
 		}
 		return result == ref;
 	}
