@@ -117,6 +117,26 @@ int VerifySpecialValues(bool reportTestCases) {
 	expect(div(inf, 3.0), inf, "inf / 3");
 	expect(div(3.0, inf), 0.0, "3 / inf");
 	expect(div(-3.0, inf), -0.0, "-3 / inf");
+	// a zero dividend: the XOR of the signs (#2107; (-0) / 3 was +0)
+	expect(div(-0.0, 3.0), -0.0, "-0 / 3");
+	expect(div(0.0, -3.0), -0.0, "+0 / -3");
+	expect(div(-0.0, -3.0), 0.0, "-0 / -3");
+	expect(div(0.0, 3.0), 0.0, "+0 / 3");
+	expect(div(-0.0, inf), -0.0, "-0 / inf");
+	// the signed zero survives conversion to double and reciprocal() (#2107)
+	{
+		const double z = div(-0.0, 3.0).to_double();
+		if (!(z == 0.0 && std::signbit(z))) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: floatcascade<" << N << "> double((-0) / 3) = " << z << '\n';
+		}
+		const floatcascade<N> rn = reciprocal(floatcascade<N>(-0.0));
+		const floatcascade<N> rp = reciprocal(floatcascade<N>(0.0));
+		if (!(std::isinf(rn[0]) && rn[0] < 0 && std::isinf(rp[0]) && rp[0] > 0)) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: floatcascade<" << N << "> reciprocal(-0) = " << rn[0] << ", reciprocal(+0) = " << rp[0] << '\n';
+		}
+	}
 	return nrOfFailedTests;
 }
 

@@ -5,6 +5,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cmath>
+#include <limits>
+#include <vector>
 
 // Configure the cfloat template environment
 // first: enable general or specialized configurations
@@ -30,6 +33,38 @@ void TestNativeULP(Real v = 1.0f) {
 
 	Real a(v), ulpAt(ulp(a));
 	std::cout << type_tag(a) << " at " << std::setw(15) << a << " : " << to_binary(a) << " : ULP : " << to_binary(ulpAt) << " : " << ulpAt << '\n';
+}
+
+// cfloat ulp() against the native ulp() for the float and double layouts: the magnitude of the gap
+// away from zero, at negative values, powers of two, subnormals and maxpos (#2107; it was ++a - a,
+// which stepped toward zero for a negative a and into inf at maxpos)
+template<typename Cfloat, typename Real>
+int VerifyULPAgainstNative(bool reportTestCases) {
+	using namespace sw::universal;
+	using Lim = std::numeric_limits<Real>;
+	std::vector<Real> samples = { Real(1), Real(1.5), Real(2), Real(3), Real(0.75), Real(1e10), Real(1e-10),
+		Lim::min(), Lim::denorm_min(), Real(3) * Lim::denorm_min(), Lim::max(), std::nextafter(Lim::max(), Real(0)),
+		Real(0) };
+	for (int e = Lim::min_exponent - Lim::digits; e < Lim::max_exponent; e += 7) {
+		samples.push_back(std::ldexp(Real(1), e));                     // powers of two, subnormal ones included
+		samples.push_back(std::nextafter(std::ldexp(Real(1), e), Real(0)));
+	}
+	int fails = 0;
+	for (Real v : samples) {
+		for (Real x : { v, -v }) {
+			const Real expected = sw::universal::ulp(x);
+			const Real got = Real(ulp(Cfloat(x)));
+			if (!(got == expected)) {
+				++fails;
+				if (reportTestCases) std::cerr << "FAIL: ulp(" << type_tag(Cfloat()) << "(" << x << ")) = " << got << ", native " << expected << '\n';
+			}
+		}
+	}
+	Cfloat inf; inf.setinf(true);
+	if (!(ulp(inf).isinf() && !ulp(inf).sign())) { ++fails; if (reportTestCases) std::cerr << "FAIL: ulp(-inf) is not +inf\n"; }
+	Cfloat nan; nan.setnan(NAN_TYPE_QUIET);
+	if (!ulp(nan).isnan()) { ++fails; if (reportTestCases) std::cerr << "FAIL: ulp(NaN) is not NaN\n"; }
+	return fails;
 }
 
 int main()
@@ -111,6 +146,9 @@ try {
 			TestNativeULP(base);
 		}
 	}
+
+	nrOfFailedTestCases += ReportTestResult(VerifyULPAgainstNative<cfloat<32, 8, uint32_t, hasSubnormals, noSupernormals, notSaturating>, float>(reportTestCases), "cfloat<32,8>", "ulp vs native");
+	nrOfFailedTestCases += ReportTestResult(VerifyULPAgainstNative<cfloat<64, 11, uint32_t, hasSubnormals, noSupernormals, notSaturating>, double>(reportTestCases), "cfloat<64,11>", "ulp vs native");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

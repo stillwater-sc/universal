@@ -19,6 +19,7 @@
 // provides fast limb-based carry propagation using uint32_t or uint64_t limbs.
 //
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/number/shared/integer_cast.hpp>   // the integer-cast rule (#2104)
 #include <limits>
 #include <type_traits>
 
@@ -41,6 +42,22 @@ namespace sw { namespace universal {
  All values in and out of the quire are (sign, scale, significand) triplets,
  represented as blocktriple values from arithmetic operations.
 */
+/// Whether quire::convert_to<T>() can reach a non-native number type T through double, rounded to
+/// odd (#2107). The target's own rounding of the odd double is correct when double keeps at least
+/// 2 more bits than T at every scale T holds: T has at most 51 significand bits, its largest binade
+/// is inside double's (above it double saturates to max()), and its lowest bit, scale
+/// min_exponent - digits, is at least 2 above double's smallest subnormal, 2^-1074. posit<32,6>
+/// and cfloat<32,12> pass the width test and fail the range test; cfloat<64,11> fails the width.
+/// A wrapping (is_modulo) target is rejected too: wrapping a value past its range needs the low
+/// bits exactly, and the double keeps only the leading 53 (fixpnt<52,0,Modulo> of 2^60 + 1 gave 256).
+template<typename T>
+inline constexpr bool quire_converts_through_double_v =
+	!std::numeric_limits<T>::is_specialized ||
+	(!std::numeric_limits<T>::is_modulo &&
+	 std::numeric_limits<T>::digits <= 51 &&
+	 std::numeric_limits<T>::max_exponent <= std::numeric_limits<double>::max_exponent &&
+	 std::numeric_limits<T>::min_exponent - std::numeric_limits<T>::digits >= -1072);
+
 template<typename NumberType,
          unsigned capacity = quire_traits<NumberType>::capacity,
          typename LimbType = uint32_t>
@@ -386,12 +403,8 @@ public:
 
 	/// Find the scale (position of MSB relative to radix point)
 	int scale() const noexcept {
-		for (int i = static_cast<int>(qbits) - 1; i >= 0; --i) {
-			if (_accu.test(static_cast<unsigned>(i))) {
-				return i - static_cast<int>(radix_point);
-			}
-		}
-		return 0;  // zero
+		const int msb = msb_index_of_accumulator();
+		return (msb < 0) ? 0 : msb - static_cast<int>(radix_point);   // 0 for zero
 	}
 
 	/// Bit addressing: index 0 is at the bottom of the lower range
@@ -406,10 +419,16 @@ public:
 
 	/// Check if any bit is set at or below the given index
 	bool anyAfter(unsigned index) const noexcept {
-		for (int i = static_cast<int>(index); i >= 0; --i) {
-			if (_accu.test(static_cast<unsigned>(i))) return true;
+		// limb by limb (#2107): the whole limbs below index's limb, then its low bits
+		if (index >= qbits) index = qbits - 1;
+		const unsigned top = index / bitsInLimb;
+		for (unsigned b = 0; b < top; ++b) {
+			if (_accu.block(b) != 0) return true;
 		}
-		return false;
+		const unsigned low = index % bitsInLimb;   // bits 0 .. low of limb top
+		const std::uint64_t limb = static_cast<std::uint64_t>(_accu.block(top));
+		const std::uint64_t mask = (low == 63) ? ~std::uint64_t(0) : ((std::uint64_t(1) << (low + 1)) - 1u);
+		return (limb & mask) != 0;
 	}
 
 	// ////////////////////////////////////////////////////////////////=
@@ -465,6 +484,9 @@ public:
 		blocktriple<qbits, BlockTripleOperator::REP, LimbType> result;
 		if (_is_nan) { result.setnan(); return result; }
 		if (isinf()) { result.setinf(_is_ninf); return result; }
+		// an overflowed sum is past every value the accumulator holds, and _accu is cleared: it is
+		// an infinity of its sign, as it resolves in a type with infinities (#2094), not a zero (#2107)
+		if (_is_overflow) { result.setinf(_sign); return result; }
 		if (iszero()) { result.setzero(_sign); return result; }
 
 		// find MSB to determine scale
@@ -495,72 +517,49 @@ public:
 	/// float and double are rounded to nearest, ties to even, once, from every bit of the
 	/// accumulator: the leading 64 bits and a sticky bit for the rest; a value beyond the
 	/// target's range overflows to +-inf, and one below it rounds through the subnormals (#2058).
-	/// An integral target is the value truncated toward zero, as static_cast does, saturated to
-	/// the target's range. Another target of at most 8 bytes goes through double, rounded to odd
-	/// so the target's own rounding of it is correct for targets of at most 51 significand bits;
-	/// for wider targets use to_blocktriple().
+	/// An integral target follows the integer-cast rule (#2104, shared/integer_cast.hpp): the
+	/// value truncated toward zero; past the range, an infinity or an overflowed sum saturates to
+	/// +-max() (unsigned: max() - 1, a negative value 0); NaN is the integer NaR (min(), unsigned
+	/// max()). Another target of at most 8 bytes goes through double, rounded to odd, so the
+	/// target's own rounding of it is correct; that needs at most 51 significand bits and a range
+	/// inside double's (quire_converts_through_double_v), and any other target (cfloat<64,11>,
+	/// posit<64,es>, posit<32,6>, cfloat<32,12>) does not compile: resolve it with its
+	/// quire_resolve() or from to_blocktriple() (#2107).
 	template<typename TargetType>
 	TargetType convert_to() const {
 		static_assert(sizeof(TargetType) <= 8,
 			"convert_to<T>() goes through at most 64 bits of the accumulator. "
 			"Use to_blocktriple() for wider target types.");
-		if (_is_nan) {
-			// Only floating-point targets have a NaN encoding; converting a NaN
-			// double to an integral type is undefined behavior, so return 0 there.
-			if constexpr (std::is_floating_point_v<TargetType>) {
-				return TargetType(std::numeric_limits<double>::quiet_NaN());
-			}
-			else if constexpr (std::is_integral_v<TargetType>) {
-				return TargetType(0);
-			}
-			else {
-				return TargetType(std::numeric_limits<double>::quiet_NaN());
-			}
+		if constexpr (!std::is_integral_v<TargetType> && !std::is_floating_point_v<TargetType>) {
+			static_assert(quire_converts_through_double_v<TargetType>,
+				"convert_to<T>() rounds through double, which is correct only for targets of at most 51 "
+				"significand bits whose range lies inside double's. Use quire_resolve() or to_blocktriple() "
+				"for wider target types.");
 		}
+		if constexpr (std::is_integral_v<TargetType>) {
+			if (_is_nan) return integer_nar<TargetType>();
+			if (isinf()) return integer_saturate<TargetType>(_is_ninf);
+			if (_is_overflow) return integer_saturate<TargetType>(_sign);   // past the accumulator (#2094)
+			if (iszero()) return TargetType(0);
+			// |value| < 2^(s+1): the integer part, truncated toward zero, saturated
+			const int s = scale();
+			if (s < 0) return TargetType(0);
+			if (s >= 64) return integer_saturate<TargetType>(_sign);
+			std::uint64_t m = window64(static_cast<int>(radix_point));
+			if (s < 63) m &= (std::uint64_t(1) << (s + 1)) - 1u;
+			return integer_from_magnitude<TargetType>(_sign, false, m);
+		}
+		if (_is_nan) return TargetType(std::numeric_limits<double>::quiet_NaN());
 		if (isinf()) {
-			// converting an infinite double to an integral type is undefined
-			// behavior too: saturate there instead
-			if constexpr (std::is_integral_v<TargetType>) {
-				return _is_ninf ? std::numeric_limits<TargetType>::lowest() : std::numeric_limits<TargetType>::max();
-			}
-			else {
-				return TargetType(_is_ninf ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity());
-			}
+			return TargetType(_is_ninf ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity());
 		}
 		if (_is_overflow) {
-			// past the accumulator: saturate an integer, and an infinity for a floating-point target (#2094)
-			if constexpr (std::is_integral_v<TargetType>) {
-				return _sign ? std::numeric_limits<TargetType>::lowest() : std::numeric_limits<TargetType>::max();
-			}
-			else {
-				return TargetType(_sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity());
-			}
+			// past the accumulator: an infinity for a floating-point target (#2094)
+			return TargetType(_sign ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity());
 		}
 		if (iszero()) return TargetType(0);
 		const int s = scale();
-		if constexpr (std::is_integral_v<TargetType>) {
-			// |value| < 2^(s+1): the integer part, truncated toward zero, saturated
-			using Lim = std::numeric_limits<TargetType>;
-			if (s < 0) return TargetType(0);
-			if (s >= Lim::digits) return _sign ? Lim::lowest() : Lim::max();
-			std::uint64_t m = 0;
-			for (int k = 0; k <= s; ++k) {
-				if (_accu.test(static_cast<unsigned>(static_cast<int>(radix_point) + k))) m |= (std::uint64_t(1) << k);
-			}
-			if (_sign) {
-				if constexpr (Lim::is_signed) {
-					// |lowest()| = max() + 1 fits in the unsigned magnitude
-					const std::uint64_t limit = static_cast<std::uint64_t>(Lim::max()) + 1u;
-					if (m >= limit) return Lim::lowest();
-					return static_cast<TargetType>(-static_cast<long long>(m));
-				}
-				else {
-					return TargetType(0);                     // a negative value saturates to 0
-				}
-			}
-			return static_cast<TargetType>(m);
-		}
-		else if constexpr (std::is_floating_point_v<TargetType>) {
+		if constexpr (std::is_floating_point_v<TargetType>) {
 			return round_to_native<TargetType>(s, false);
 		}
 		else {
@@ -650,13 +649,14 @@ private:
 	bool             _is_overflow;
 	accumulator_type _accu;
 
-	// the carry out of the top bit: record the overflow, or throw
+	// the carry out of the top bit: record the overflow, and throw when the build asks for it.  The
+	// state is recorded first, so a caught quire_overflow leaves the quire overflowed, not holding
+	// the wrapped sum (#2107).
 	void record_overflow() {
-#if QUIRE_THROW_ARITHMETIC_EXCEPTION
-		throw quire_overflow{};
-#else
 		_accu.clear();
 		_is_overflow = true;
+#if QUIRE_THROW_ARITHMETIC_EXCEPTION
+		throw quire_overflow{};
 #endif
 	}
 	// an overflowed sum orders like the infinity of its sign: its magnitude is past every finite
@@ -677,13 +677,39 @@ private:
 	/// any bit below them is set. s is the scale of the leading bit.
 	void leading_bits(int s, std::uint64_t& m, bool& sticky) const {
 		const int top = s + static_cast<int>(radix_point);
-		m = 0;
-		for (int k = 0; k < 64; ++k) {
-			const int pos = top - k;
-			if (pos < 0) break;
-			if (_accu.test(static_cast<unsigned>(pos))) m |= (std::uint64_t(1) << (63 - k));
-		}
+		m = window64(top - 63);
 		sticky = (top - 64 >= 0) && anyAfter(static_cast<unsigned>(top - 64));
+	}
+
+	static constexpr unsigned bitsInLimb = static_cast<unsigned>(sizeof(LimbType) * 8u);
+
+	/// Accumulator bits pos .. pos + 63 as bits 0 .. 63, read limb by limb (#2107); a bit
+	/// outside the accumulator reads as 0.
+	std::uint64_t window64(int pos) const noexcept {
+		constexpr int B = static_cast<int>(bitsInLimb);
+		constexpr int nrLimbs = static_cast<int>(accumulator_type::nrBlocks);
+		std::uint64_t r = 0;
+		int b = (pos >= 0) ? pos / B : -((-pos + B - 1) / B);   // the limb holding bit pos (floor)
+		for (; b < nrLimbs && b * B < pos + 64; ++b) {
+			if (b < 0) continue;
+			const std::uint64_t limb = static_cast<std::uint64_t>(_accu.block(static_cast<unsigned>(b)));
+			const int off = b * B - pos;                         // where the limb's bit 0 lands
+			if (off >= 0) r |= limb << off;                       // off < 64 by the loop bound
+			else r |= limb >> (-off);                             // -off < B <= 64
+		}
+		return r;
+	}
+
+	/// The index of the accumulator's leading set bit, or -1 for zero, read limb by limb
+	int msb_index_of_accumulator() const noexcept {
+		for (unsigned b = accumulator_type::nrBlocks; b-- > 0;) {
+			std::uint64_t limb = static_cast<std::uint64_t>(_accu.block(b));
+			if (limb == 0) continue;
+			int i = -1;
+			while (limb != 0) { limb >>= 1; ++i; }
+			return static_cast<int>(b * bitsInLimb) + i;
+		}
+		return -1;
 	}
 
 	/// The nonzero, finite value rounded to the native binary floating-point type Real: to

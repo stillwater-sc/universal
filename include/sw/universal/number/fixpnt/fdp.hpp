@@ -110,66 +110,89 @@ quire_resolve(const quire<fixpnt<nbits, rbits, arithmetic, bt>, capacity, LimbTy
 	// No infinity: a sum past the accumulator saturates, in Modulo arithmetic as well (#2094, decided).
 	// The accumulator no longer holds the sum's low bits once it overflows, so there is nothing to wrap.
 	if (q.isoverflow()) return Scalar(q.sign() ? SpecificValue::maxneg : SpecificValue::maxpos);
+	// An infinite sum saturates the same way, in both arithmetic modes and at every width; the wide
+	// paths below read the cleared accumulator and gave 0 (#2107). A NaN sum is 0, as fixpnt(NaN) is.
+	if (q.isinf()) return Scalar(q.sign() ? SpecificValue::maxneg : SpecificValue::maxpos);
+	if (q.isnan()) {
+		Scalar result;
+		result.setzero();
+		return result;
+	}
 	if (q.iszero()) {
 		Scalar result;
 		result.setzero();
 		return result;
 	}
 
-	// For fixpnt up to 64 bits, the double path is exact for integer values
-	// and close enough for most fixed-point values.
-	// For wider types, we extract bits directly.
-	if constexpr (nbits <= 53) {
+	// Modulo, every width: the sum rounded to nearest even at the fixpnt's lsb, from the exact
+	// accumulator bits, then wrapped mod 2^nbits. The double path cannot wrap: a sum past the range
+	// keeps only its leading 53 bits there, so fixpnt<52,0,Modulo> of 2^60 + 1 was 256, not 1 (#2107).
+	if constexpr (arithmetic == Modulo) {
+		constexpr unsigned qbits = quire<Scalar, capacity, LimbType>::qbits;
+		// quire bit i is 2^(i - 2 rbits) and fixpnt bit j is 2^(j - rbits): fixpnt bit j is quire bit j + rbits
+		Scalar result;
+		result.setzero();
+		for (unsigned j = 0; j < nbits; ++j) {
+			const unsigned qi = j + rbits;
+			if (qi < qbits) result.setbit(j, q.testbit(qi));
+		}
+		if constexpr (rbits > 0) {
+			const bool roundBit = (rbits - 1 < qbits) && q.testbit(rbits - 1);
+			const bool sticky   = (rbits >= 2) && q.anyAfter(rbits - 2);
+			if (roundBit && (sticky || result.test(0))) {
+				// add one ulp to the magnitude, mod 2^nbits
+				for (unsigned j = 0; j < nbits; ++j) {
+					if (!result.test(j)) { result.setbit(j, true); break; }
+					result.setbit(j, false);
+				}
+			}
+		}
+		if (q.sign()) result.twosComplement();   // -x mod 2^nbits; RNE of the magnitude is sign-symmetric
+		return result;
+	}
+	// Saturate up to 52 bits (51 significand bits): convert_to<> rounds once, through double rounded
+	// to odd, and the fixpnt conversion saturates.
+	else if constexpr (nbits <= 52) {
 		return q.template convert_to<Scalar>();
 	}
 	else {
-		// Direct bit extraction from quire accumulator
-		constexpr unsigned rp = quire_traits<Scalar>::radix_point;  // = 2*rbits
+		// Saturate, wider: the magnitude rounded to nearest even at the fixpnt lsb from the exact
+		// accumulator bits, then saturated past the range (#2107; it truncated). fixpnt bit j is
+		// quire bit j + rbits, as in the Modulo branch.
+		constexpr unsigned qbits = quire<Scalar, capacity, LimbType>::qbits;
 		Scalar result;
 		result.setzero();
-
-		int s = q.scale();
-		int msb_pos = s + static_cast<int>(rp);
-
-		// The fixpnt radix point is at bit position rbits.
-		// Quire accumulator bit i represents 2^(i - rp) = 2^(i - 2*rbits).
-		// fixpnt bit j represents 2^(j - rbits).
-		// So quire bit i maps to fixpnt bit j where: i - 2*rbits = j - rbits -> j = i - rbits.
-
-		// Extract nbits from the quire starting at the MSB
-		// The MSB of the fixpnt result is at bit (nbits-2) for positive values
-		// (bit nbits-1 is the sign bit)
-		int quire_start = msb_pos;  // highest significant bit in quire
-		int fixpnt_start = quire_start - static_cast<int>(rbits);  // corresponding fixpnt bit
-
-		if (fixpnt_start >= static_cast<int>(nbits) - 1) {
-			// overflow: saturate or wrap
-			if constexpr (arithmetic == Saturate) {
-				if (q.sign()) result.maxneg(); else result.maxpos();
-			}
-			else {
-				// Modulo: extract the lower nbits worth of accumulator bits
-				for (unsigned j = 0; j < nbits; ++j) {
-					unsigned qi = j + rbits;  // quire bit for fixpnt bit j
-					if (qi < quire_traits<Scalar>::range + capacity) {
-						result.setbit(j, q[qi]);
-					}
+		const bool negative = q.sign();
+		auto saturate = [&]() { if (negative) result.maxneg(); else result.maxpos(); return result; };
+		// a magnitude of 2^nbits or more saturates before rounding
+		const int msb_fixpnt = q.scale() + static_cast<int>(quire_traits<Scalar>::radix_point) - static_cast<int>(rbits);
+		if (msb_fixpnt >= static_cast<int>(nbits)) return saturate();
+		for (unsigned j = 0; j < nbits; ++j) {
+			const unsigned qi = j + rbits;
+			if (qi < qbits) result.setbit(j, q.testbit(qi));
+		}
+		if constexpr (rbits > 0) {
+			const bool roundBit = (rbits - 1 < qbits) && q.testbit(rbits - 1);
+			const bool sticky   = (rbits >= 2) && q.anyAfter(rbits - 2);
+			if (roundBit && (sticky || result.test(0))) {
+				bool carry = true;
+				for (unsigned j = 0; j < nbits && carry; ++j) {
+					carry = result.test(j);
+					result.setbit(j, !carry);
 				}
-				// Handle sign
-				if (q.sign()) result.twosComplement();
+				if (carry) return saturate();              // the rounding reached 2^nbits
 			}
 		}
-		else {
-			// Normal case: extract bits
-			for (unsigned j = 0; j < nbits; ++j) {
-				unsigned qi = j + rbits;  // quire bit for fixpnt bit j
-				if (qi < quire_traits<Scalar>::range + capacity) {
-					result.setbit(j, q[qi]);
-				}
+		// the magnitude is below 2^nbits; at or above 2^(nbits - 1) it is past maxpos, and past maxneg
+		// unless it is exactly 2^(nbits - 1), which is maxneg
+		if (result.test(nbits - 1)) {
+			if (!negative) return saturate();
+			for (unsigned j = 0; j + 1 < nbits; ++j) {
+				if (result.test(j)) return saturate();
 			}
-			if (q.sign()) result.twosComplement();
+			return result;                                 // 100...0 is maxneg as it stands
 		}
-
+		if (negative) result.twosComplement();
 		return result;
 	}
 }

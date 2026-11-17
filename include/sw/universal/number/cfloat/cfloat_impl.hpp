@@ -3597,11 +3597,27 @@ private:
 	friend constexpr bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs);
 };
 
-// return the Unit in the Last Position
+// return the Unit in the Last Position: the magnitude of the spacing at a, as the native ulp()
+// defines it (native/ieee754_numeric.hpp, #2059): the gap to the next value away from zero, or, at
+// maxpos, the gap below it. ulp(inf) is +inf and ulp(NaN) is NaN. It was ++a - a, which for a
+// negative a stepped toward zero, half the native value at a power of two, and at maxpos stepped
+// into inf (#2107).
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
 constexpr inline cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> ulp(const cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>& a) {
-	cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating> b(a);
-	return ++b - a;
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>;
+	if (a.isnan()) return a;
+	Cfloat m(a);
+	m.setsign(false);
+	if (m.isinf()) return m;
+	const Cfloat maxpos(SpecificValue::maxpos);
+	if (m == maxpos) {
+		Cfloat below(m);
+		--below;
+		return m - below;
+	}
+	Cfloat next(m);
+	++next;
+	return next - m;
 }
 
 

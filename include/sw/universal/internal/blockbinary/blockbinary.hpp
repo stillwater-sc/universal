@@ -1252,8 +1252,13 @@ constexpr blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const b
 template<unsigned nbits, unsigned roundingBits, typename B, BinaryNumberType T>
 blockbinary<2 * nbits + roundingBits, B, T> urdiv(const blockbinary<nbits, B, T>& a, const blockbinary<nbits, B, T>& b) {
 	if (b.iszero()) {
-		// no quotient to return: urdiv raises whatever BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION says
+		// x / 0 follows BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION, as operator/= does: 1 throws
+		// blockbinary_divide_by_zero, 0 returns 0. It threw whatever the macro said (#2107).
+#if BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION
 		throw_or_abort(blockbinary_divide_by_zero("urdiv divide by zero"));
+#else
+		return blockbinary<2 * nbits + roundingBits, B, T>(0);
+#endif
 	}
 	if (a.iszero()) return blockbinary<2 * nbits + roundingBits, B, T>(0);
 	// generate the absolute values to do long division 
