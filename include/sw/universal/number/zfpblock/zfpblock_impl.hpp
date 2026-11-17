@@ -56,6 +56,10 @@ public:
 		const int minexp = accuracy_floor(mode, param);
 		const bool pad = (mode == zfp_mode::fixed_rate);   // only a fixed rate has a fixed size (#2097)
 		_nbits = encode_block<Real, Dim>(src, _buffer, MAX_BYTES, maxprec, maxbits, minexp, pad);
+		// encode_block stores a block with an inf or NaN raw, which is exact; the checks below would
+		// decode it, see inf - inf or a NaN miss the tolerance, and store it raw again (#2113)
+		const bool nonfinite = zfp_has_nonfinite<Real, BLOCK_SIZE>(src);
+		if (nonfinite) return _nbits;
 		if (mode == zfp_mode::fixed_accuracy && minexp != INT_MIN && !within(src, param, maxprec, maxbits, minexp)) {
 			// the plane count bounds the transform's error, but a value below one quantum of the block's
 			// exponent (2^(emax - frac_bits)) rounds to zero before it: {1, 2^-40, 0, 0} at 2^-45 missed the

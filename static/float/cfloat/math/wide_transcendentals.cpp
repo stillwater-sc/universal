@@ -25,6 +25,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <string>
 
@@ -231,6 +232,97 @@ int VerifyPoliciesAndPow(bool reportTestCases) {
 	return fails;
 }
 
+// C99 Annex F special values of atan2, pow and hypot on the efloat path, against <cmath> over every
+// pair of a table of zeros, units, halves, integers, infinities and NaN; and cot, sec and csc at their
+// special arguments (#2113: the bridge had no tables for these)
+int VerifySpecialTables(bool reportTestCases) {
+	using namespace sw::universal;
+	using C = cfloat<80, 11, uint32_t, true, false, false>;
+	int fails = 0;
+	auto same = [](const C& got, double expected) {
+		if (std::isnan(expected)) return got.isnan();
+		if (got.isnan()) return false;
+		if (expected == 0.0) return got.iszero() && got.sign() == std::signbit(expected);
+		if (std::isinf(expected)) return got.isinf() && got.sign() == std::signbit(expected);
+		return double(got) == expected;   // the special results are exact, or pi multiples rounded once
+	};
+	auto check = [&](const char* fn, double a, double b, const C& got, double expected) {
+		if (same(got, expected)) return;
+		++fails;
+		if (reportTestCases) std::cerr << "FAIL: " << fn << '(' << a << ", " << b << ") = " << double(got) << ", expected " << expected << '\n';
+	};
+	const double inf = std::numeric_limits<double>::infinity(), nan = std::numeric_limits<double>::quiet_NaN();
+	const double v[] = { 0.0, -0.0, 1.0, -1.0, 0.5, -0.5, 2.0, -2.0, 3.0, -3.0, 1.5, -1.5, inf, -inf, nan };
+	for (double a : v) {
+		for (double b : v) {
+			check("atan2", a, b, atan2(C(a), C(b)), std::atan2(a, b));
+			check("pow", a, b, pow(C(a), C(b)), std::pow(a, b));
+			check("hypot", a, b, hypot(C(a), C(b)), std::hypot(a, b));
+		}
+	}
+	const double specials[] = { 0.0, -0.0, inf, -inf, nan };
+	for (double a : specials) {
+		check("cot", a, 0, cot(C(a)), (a == 0.0) ? std::copysign(inf, a) : nan);   // cot(+-0) = +-inf, like 1/tan
+		check("sec", a, 0, sec(C(a)), (a == 0.0) ? 1.0 : nan);
+		check("csc", a, 0, csc(C(a)), (a == 0.0) ? std::copysign(inf, a) : nan);
+	}
+	// finite arguments: 1/tan, 1/cos and 1/sin rounded twice in double are within an ulp of double
+	for (double a : { 1.0, -1.0, 3.0, -3.0, 0.5 }) {
+		auto close = [](const C& got, double r) { return std::abs(double(got) - r) <= 4e-16 * std::abs(r); };
+		if (!close(cot(C(a)), 1.0 / std::tan(a)) || !close(sec(C(a)), 1.0 / std::cos(a)) || !close(csc(C(a)), 1.0 / std::sin(a))) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL: cot/sec/csc(" << a << ")\n";
+		}
+	}
+	return fails;
+}
+
+// Ziv's retry, reached on purpose (#2113: no test reached it). evaluate() starts at fbits + 31 bits; a
+// function whose value is a cfloat tie plus 2^-150 rounds to the tie itself there, so y - 1 ulp and
+// y + 1 ulp round to different cfloats, W doubles, and the second evaluation sees past the tie and
+// rounds up. An exact tie never passes the test: after the last retry it rounds to even.
+int VerifyZivRetry(bool reportTestCases) {
+	using namespace sw::universal;
+	using C = cfloat<80, 11, uint32_t, true, false, false>;   // 68 fraction bits: the tie at 1 is 1 + 2^-69
+	using E = cfloat_math::efloat_for<C>;
+	int fails = 0;
+	auto check = [&](bool ok, const char* what) {
+		if (ok) return;
+		if (reportTestCases) std::cerr << "FAIL: " << what << '\n';
+		++fails;
+	};
+	const C one(1);
+	C next(one);
+	++next;                                                    // 1 + 2^-68
+	unsigned calls = 0, lastW = 0;
+	auto nearTie = [&](unsigned W) { ++calls; lastW = W; E y(1); y += ldexp(E(1), -69); y += ldexp(E(1), -150); y.set_precision(W); return y; };
+	const C r = cfloat_math::evaluate<C>(nearTie);
+	check(calls == 2 && lastW == 2u * (C::fbits + 31u), "a tie + 2^-150 retries once, at twice the width");
+	check(r == next, "a tie + 2^-150 rounds up once the retry sees it");
+	calls = 0;
+	auto exactTie = [&](unsigned W) { ++calls; E y(1); y += ldexp(E(1), -69); y.set_precision(W); return y; };
+	check(cfloat_math::evaluate<C>(exactTie) == one && calls == 4, "an exact tie retries three times, then rounds to even");
+	calls = 0;
+	auto clear = [&](unsigned W) { ++calls; E y(1); y += ldexp(E(1), -70); y.set_precision(W); return y; };
+	check(cfloat_math::evaluate<C>(clear) == one && calls == 1, "a value away from a tie is evaluated once");
+	return fails;
+}
+
+// the layouts at the boundaries of the double path (#2113: fits_double was not pinned)
+namespace boundaries {
+	using namespace sw::universal;
+	using cfloat_math::fits_double;
+	static_assert(fits_double<cfloat<64, 11, uint32_t, true, false, false>>(), "double itself fits");
+	static_assert(!fits_double<cfloat<65, 11, uint32_t, true, false, false>>(), "53 fraction bits do not");
+	static_assert(!fits_double<cfloat<64, 11, uint32_t, true, true, false>>(), "max-exponent values: 2^1024 is past double");
+	static_assert(fits_double<cfloat<63, 11, uint32_t, true, true, false>>() == false, "max-exponent values with es 11 do not fit");
+	static_assert(fits_double<cfloat<63, 10, uint32_t, true, true, false>>(), "es 10 with max-exponent values fits");
+	static_assert(!fits_double<cfloat<64, 12, uint32_t, true, false, false>>(), "es 12 is past double's range");
+	static_assert(fits_double<cfloat<32, 8, uint32_t, true, false, false>>(), "single fits");
+	static_assert(fits_double<cfloat<64, 11, uint32_t, false, false, false>>(), "no subnormals: the smallest normal is double's");
+	static_assert(!fits_double<cfloat<80, 11, uint32_t, true, false, false>>(), "68 fraction bits do not");
+}
+
 }  // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -270,16 +362,18 @@ try {
 
 #if REGRESSION_LEVEL_1
 	using X = cfloat<80, 11, uint32_t, true, false, false>;
-	nrOfFailedTestCases += ReportTestResult(VerifyPrecisionPastDouble<X>(40, reportTestCases), "cfloat<80,11>", "functions vs qd");
+	nrOfFailedTestCases += ReportTestResult(VerifyPrecisionPastDouble<X>(400, reportTestCases), "cfloat<80,11>", "functions vs qd");
 	nrOfFailedTestCases += ReportTestResult(VerifyRsqrt<X>(200, reportTestCases),              "cfloat<80,11>", "rsqrt within 1 ulp");
 	nrOfFailedTestCases += ReportTestResult(VerifyRangePastDouble(reportTestCases),            "cfloat<64,15>", "range past double");
 	nrOfFailedTestCases += ReportTestResult(VerifySpecials(reportTestCases),                   "cfloat<80,11>", "specials");
 	nrOfFailedTestCases += ReportTestResult(VerifyPoliciesAndPow(reportTestCases),             "cfloat<80,11>", "policies and pow");
+	nrOfFailedTestCases += ReportTestResult(VerifySpecialTables(reportTestCases),              "cfloat<80,11>", "atan2/pow/hypot/cot/sec/csc specials");
+	nrOfFailedTestCases += ReportTestResult(VerifyZivRetry(reportTestCases),                   "cfloat<80,11>", "Ziv retry");
 #endif
 
 #if REGRESSION_LEVEL_2
 	using Y = cfloat<96, 15, uint16_t, true, false, false>;
-	nrOfFailedTestCases += ReportTestResult(VerifyPrecisionPastDouble<Y>(200, reportTestCases), "cfloat<96,15>", "functions vs qd");
+	nrOfFailedTestCases += ReportTestResult(VerifyPrecisionPastDouble<Y>(1000, reportTestCases), "cfloat<96,15>", "functions vs qd");
 #endif
 
 #if REGRESSION_LEVEL_3

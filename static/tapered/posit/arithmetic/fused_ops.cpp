@@ -353,6 +353,20 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyWideAgainstQuire<posit<32, 2>>(5000, 2099, reportTestCases), "posit<32,2>", "fma, fam, fmma vs quire");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideAgainstQuire<posit<64, 3>>(2000, 2100, reportTestCases), "posit<64,3>", "fma, fam, fmma vs quire");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideAgainstQuire<posit<128, 4>>(300, 2101, reportTestCases), "posit<128,4>", "fma, fam, fmma vs quire");
+	// es large against nbits: 1 or 0 fraction bits. quire_resolve put its sticky bit on the posit's
+	// guard bit there and rounded about 1 in 5 sums up a posit (#2113)
+	nrOfFailedTestCases += ReportTestResult(VerifyWideAgainstQuire<posit<8, 4>>(20000, 2113, reportTestCases), "posit<8,4>", "fma, fam, fmma vs quire");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideAgainstQuire<posit<9, 5>>(20000, 2114, reportTestCases), "posit<9,5>", "fma, fam, fmma vs quire");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideAgainstQuire<posit<12, 9>>(20000, 2115, reportTestCases), "posit<12,9>", "fma, fam, fmma vs quire");
+	{
+		// the issue's case: -0.000244141 * -0.000183105 + 0.75 is 0.75 + 2^-22.4, which rounds to 0.75
+		using P = posit<8, 4>;
+		quire<P> q;
+		q += quire_mul(P(-0.000244141), P(-0.000183105));
+		q += P(0.75);
+		const P r = quire_resolve(q);
+		nrOfFailedTestCases += ReportTestResult((r == P(0.75) && r == fma(P(-0.000244141), P(-0.000183105), P(0.75))) ? 0 : 1, "posit<8,4>", "quire_resolve(tiny product + 0.75) is 0.75");
+	}
 #endif
 
 #if REGRESSION_LEVEL_2
