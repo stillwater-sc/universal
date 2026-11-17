@@ -20,7 +20,8 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <cmath>      // std::sqrt in unum_eft::sqrt
+#include <cmath>      // std::sqrt in unum_eft::sqrt, std::fma in unum_eft::two_prod
+#include <type_traits>  // std::is_constant_evaluated
 #include <cstdint>
 
 #include <universal/native/extract_fields.hpp>
@@ -111,8 +112,17 @@ constexpr void split(double a, double& hi, double& lo) noexcept {
 	hi = c - (c - a);
 	lo = a - hi;
 }
+// At run time the error term is fma(a, b, -p), exact whatever the build does: Dekker's sum is exact
+// only when no product in it is contracted into an fma, and with FMA available (GCC 15 on the
+// ubuntu-26.04 runners, -march=x86-64-v3) `ah * bh - p` was, so the residual signs of mul, div and
+// sqrt came out wrong at unum<3,5> (#2107). Constant evaluation does not contract, so the split
+// stays for it.
 constexpr void two_prod(double a, double b, double& p, double& e) noexcept {
 	p = a * b;
+	if (!std::is_constant_evaluated()) {
+		e = std::fma(a, b, -p);
+		return;
+	}
 	double ah = 0.0, al = 0.0, bh = 0.0, bl = 0.0;
 	split(a, ah, al);
 	split(b, bh, bl);
