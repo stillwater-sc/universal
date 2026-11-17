@@ -775,8 +775,10 @@ int TestAccuracy() {
 
 namespace sw { namespace universal {
 
-// Modulo resolve past the range wraps the exact sum (#2107): through double, rounded to odd, only
-// the leading 53 bits survived, so fixpnt<52,0,Modulo> of 2^60 + 1 resolved to 256
+// A sum past the fixpnt's range saturates in Modulo arithmetic too (#2107, decided): maxpos / maxneg
+// is the best approximation of a sum the fixpnt cannot hold, and Modulo governs the fixpnt's own
+// arithmetic, not the quire's. main wrapped it, and through double kept only 53 bits, so
+// fixpnt<52,0,Modulo> of 2^60 + 1 resolved to 256.
 template<typename F>
 int CheckResolve(const quire<F>& q, const F& expected, const char* label) {
 	const F r = quire_resolve(q);
@@ -785,42 +787,52 @@ int CheckResolve(const quire<F>& q, const F& expected, const char* label) {
 	return 1;
 }
 
-int TestModuloWrapResolve() {
+int TestModuloSaturateResolve() {
 	int nrOfFailedTestCases = 0;
 	{
 		using F = fixpnt<52, 0, Modulo, std::uint32_t>;
 		quire<F> q;
 		q = std::ldexp(1.0, 60);
 		q += quire_mul(F(1), F(1));
-		nrOfFailedTestCases += CheckResolve(q, F(1), "fixpnt<52,0,Modulo> 2^60 + 1");
+		nrOfFailedTestCases += CheckResolve(q, F(SpecificValue::maxpos), "fixpnt<52,0,Modulo> 2^60 + 1");
 		quire<F> n;
 		n = -std::ldexp(1.0, 60);
 		n -= quire_mul(F(1), F(1));
-		nrOfFailedTestCases += CheckResolve(n, F(-1), "fixpnt<52,0,Modulo> -(2^60 + 1)");
+		nrOfFailedTestCases += CheckResolve(n, F(SpecificValue::maxneg), "fixpnt<52,0,Modulo> -(2^60 + 1)");
 	}
 	{
-		// a tie at the lsb past the range: 2^60 + 0.375 at lsb 0.25 rounds to even, 0.5, and 2^60 wraps to 0
-		using F = fixpnt<52, 2, Modulo, std::uint32_t>;
-		quire<F> q;
-		q = std::ldexp(1.0, 60);
-		q += quire_mul(F(0.75), F(0.5));
-		nrOfFailedTestCases += CheckResolve(q, F(0.5), "fixpnt<52,2,Modulo> 2^60 + 0.375");
-		// and 2^60 + 0.125, the tie below an even lsb, rounds down to 0
-		quire<F> d;
-		d = std::ldexp(1.0, 60);
-		d += quire_mul(F(0.25), F(0.5));
-		nrOfFailedTestCases += CheckResolve(d, F(0), "fixpnt<52,2,Modulo> 2^60 + 0.125");
-	}
-	{
-		// wider than 52 bits, the direct path: 2^70 + 3 wraps to 3 in 64 bits
+		// wider than 52 bits: 2^70 + 3 saturates in 64 bits
 		using F = fixpnt<64, 0, Modulo, std::uint32_t>;
 		quire<F> q;
 		q = std::ldexp(1.0, 70);
 		q += quire_mul(F(3), F(1));
-		nrOfFailedTestCases += CheckResolve(q, F(3), "fixpnt<64,0,Modulo> 2^70 + 3");
+		nrOfFailedTestCases += CheckResolve(q, F(SpecificValue::maxpos), "fixpnt<64,0,Modulo> 2^70 + 3");
 	}
 	{
-		// in range the exact path agrees with the conversion: 5/32 at lsb 1/16 ties to even, 1/8
+		// just past the range: 1*3 + 2*4 = 11 in fixpnt<8,4> (maxpos 7.9375) is maxpos, not 11 - 16 = -5
+		using F = fixpnt<8, 4, Modulo, std::uint8_t>;
+		std::vector<F> x = { F(1), F(2) };
+		std::vector<F> y = { F(3), F(4) };
+		quire<F> q;
+		for (size_t i = 0; i < x.size(); ++i) q += quire_mul(x[i], y[i]);
+		nrOfFailedTestCases += CheckResolve(q, F(SpecificValue::maxpos), "fixpnt<8,4,Modulo> 11");
+		quire<F> n;
+		for (size_t i = 0; i < x.size(); ++i) n -= quire_mul(x[i], y[i]);
+		nrOfFailedTestCases += CheckResolve(n, F(SpecificValue::maxneg), "fixpnt<8,4,Modulo> -11");
+		// -8 is maxneg itself, and 8 is one past maxpos
+		quire<F> m;
+		m -= quire_mul(F(2), F(4));
+		nrOfFailedTestCases += CheckResolve(m, F(SpecificValue::maxneg), "fixpnt<8,4,Modulo> -8");
+		quire<F> p;
+		p += quire_mul(F(2), F(4));
+		nrOfFailedTestCases += CheckResolve(p, F(SpecificValue::maxpos), "fixpnt<8,4,Modulo> 8");
+		// a rounding carry past maxpos: 7.96875 ties to even at lsb 1/16, up to 8, so maxpos
+		quire<F> r;
+		r = 7.96875;
+		nrOfFailedTestCases += CheckResolve(r, F(SpecificValue::maxpos), "fixpnt<8,4,Modulo> 7.96875");
+	}
+	{
+		// in range, rounded to nearest even: 5/32 at lsb 1/16 ties to even, 1/8
 		using F = fixpnt<16, 4, Modulo, std::uint16_t>;
 		quire<F> q;
 		q = 5.0 / 32.0;
@@ -828,6 +840,9 @@ int TestModuloWrapResolve() {
 		quire<F> n;
 		n = -5.0 / 32.0;
 		nrOfFailedTestCases += CheckResolve(n, F(-0.125), "fixpnt<16,4,Modulo> -5/32");
+		quire<F> t;
+		t = 7.0 / 32.0;   // ties up to 1/4
+		nrOfFailedTestCases += CheckResolve(t, F(0.25), "fixpnt<16,4,Modulo> 7/32");
 	}
 	return nrOfFailedTestCases;
 }
@@ -891,7 +906,7 @@ int TestWideSaturateResolve() {
 
 // a non-finite quire: +-inf saturates to maxpos / maxneg in both arithmetic modes and at every width,
 // as an overflowed sum does (#2094); NaN is 0, as fixpnt(NaN) is (#2107; the wide paths gave 0 for
-// inf, and a narrow Modulo fixpnt gave 0)
+// inf)
 template<typename F>
 int CheckNonFiniteResolve(const char* label) {
 	int fails = 0;
@@ -937,7 +952,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(TestCatastrophicCancellation(), "fixpnt fdp", "catastrophic cancellation");
 	nrOfFailedTestCases += ReportTestResult(TestDifferentConfigs(), "fixpnt fdp", "different configs");
 	nrOfFailedTestCases += ReportTestResult(TestAccuracy(), "fixpnt fdp", "accuracy");
-	nrOfFailedTestCases += ReportTestResult(TestModuloWrapResolve(), "fixpnt quire_resolve", "Modulo wraps the exact sum");
+	nrOfFailedTestCases += ReportTestResult(TestModuloSaturateResolve(), "fixpnt quire_resolve", "Modulo saturates past the range");
 	nrOfFailedTestCases += ReportTestResult(TestWideSaturateResolve(), "fixpnt quire_resolve", "wide Saturate rounds, saturates");
 	nrOfFailedTestCases += ReportTestResult(TestNonFiniteResolve(), "fixpnt quire_resolve", "+-inf saturates, NaN is 0");
 
