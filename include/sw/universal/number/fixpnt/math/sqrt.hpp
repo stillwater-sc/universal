@@ -161,8 +161,17 @@ namespace sw { namespace universal {
 	// reciprocal sqrt
 	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 	inline fixpnt<nbits, rbits, arithmetic, bt> rsqrt(const fixpnt<nbits, rbits, arithmetic, bt>& f) {
-		fixpnt<nbits, rbits, arithmetic, bt> rsqrt = sqrt(f);
-		return rsqrt.reciprocate();
+		// 1 / sqrt(f) in a fixpnt two integer bits wider, where 1 is representable even when the
+		// destination has no integer bits (rbits >= nbits - 1); the conversion back then clamps
+		// (Saturate) or wraps (Modulo). It called a reciprocate() fixpnt lacks (#2111).
+		using Wide = fixpnt<nbits + 2, rbits, arithmetic, bt>;
+		Wide wide;
+		wide = f;                          // the root as well: sqrt(0.25) = 0.5 does not fit fixpnt<8,8>
+		const Wide root = sqrt(wide);
+		const Wide q = Wide(1) / root;
+		fixpnt<nbits, rbits, arithmetic, bt> r;
+		r = q;
+		return r;
 	}
 
 	///////////////////////////////////////////////////////////////////

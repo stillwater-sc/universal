@@ -62,9 +62,15 @@ inline long double fraction_value(const fixpnt<nbits, rbits, arithmetic, bt>& v)
 	fixpnt<nbits, rbits, arithmetic, bt> fp(v);
 	// null the integer part
 	for (unsigned i = rbits; i < nbits; ++i) {
-		fp.reset(i);
+		fp.setbit(i, false);   // it called a reset() fixpnt lacks (#2111)
 	}
-	return (long double)(fp);
+	// operator long double exists only where LONG_DOUBLE_SUPPORT is set; where it is not (MSVC),
+	// long double is double
+#if LONG_DOUBLE_SUPPORT
+	return static_cast<long double>(fp);
+#else
+	return static_cast<long double>(static_cast<double>(fp));
+#endif
 }
 
 }} // namespace sw::universal

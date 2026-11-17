@@ -44,6 +44,7 @@
 #include <cstdio>       // fprintf(stderr,...) for the diagnostics
 #include <vector>
 #include <limits>
+#include <cmath>         // std::ldexp in to_native
 #include <cassert>
 
 // supporting types and functions
@@ -71,6 +72,7 @@ You need the exception types defined, but you have the option to throw them
 
 // composition types used by fixpnt
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/number/shared/integer_cast.hpp>   // the integer-cast rule (#2104, #2111)
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #ifdef FIXPNT_SCALE_TRACKING
 #include <universal/utility/scale_tracker.hpp>
@@ -112,7 +114,7 @@ inline int scale(const fixpnt<nbits, rbits, arithmetic, bt>& i) {
 		v = twosComplement(v);
 		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
 			if constexpr (nbits == rbits) {
-				return 0;
+				return -1;   // maxneg is -2^-1 (#2111)
 			}
 			else {
 				return static_cast<int>(nbits) - static_cast<int>(rbits) - 1;
@@ -204,31 +206,34 @@ public:
 	template<unsigned nnbits, typename Bbt>
 	constexpr fixpnt& operator=(const blockbinary<nnbits, Bbt>& rhs) { _block = rhs; return *this; }
 
-	// fixpnt size adapter: convert fixpnt<src_nbits, src_rbits> -> fixpnt<nbits, rbits>
-	// The radix point must be aligned by shifting bits before copying.
+	// fixpnt size adapter: convert fixpnt<src_nbits, src_rbits> -> fixpnt<nbits, rbits>.
+	// The value is aligned in a blockbinary wide enough to hold it exactly, rounded to nearest
+	// even at the target's lsb, and then Saturate clamps to [maxneg, maxpos] while Modulo keeps the
+	// low nbits (#2111: Saturate wrapped, and a right shift of nbits or more lost the tie bit).
 	template<unsigned src_nbits, unsigned src_rbits>
 	constexpr fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept {
-		if constexpr (src_rbits == rbits) {
-			// radix points are aligned: blockbinary assign handles
-			// sign extension (src_nbits < nbits) or truncation (src_nbits > nbits)
-			_block = a.bits();
-		}
-		else if constexpr (src_rbits > rbits) {
-			// source has more fraction bits: right-shift to align radix point, with rounding
-			constexpr unsigned shift = src_rbits - rbits;
-			auto rawbb = a.bits();
-			bool roundUp = rawbb.roundingMode(shift);
-			rawbb >>= shift;  // arithmetic right shift preserves sign
-			if (roundUp) ++rawbb;
-			_block = rawbb;   // blockbinary assign handles sign extension or truncation
+		if constexpr (src_rbits == rbits && src_nbits <= nbits) {
+			_block = a.bits();   // radix points aligned and no overflow: sign extension only
 		}
 		else {
-			// source has fewer fraction bits: left-shift to align radix point
-			// First assign to target-width blockbinary (with sign extension),
-			// then shift left to avoid losing integer bits in a narrow source.
-			constexpr unsigned shift = rbits - src_rbits;
-			_block = a.bits();  // sign-extends or truncates to nbits
-			_block <<= shift;
+			constexpr unsigned lshift = (rbits > src_rbits) ? rbits - src_rbits : 0u;
+			constexpr unsigned rshift = (src_rbits > rbits) ? src_rbits - rbits : 0u;
+			constexpr unsigned W = ((src_nbits + lshift > nbits) ? src_nbits + lshift : nbits) + 2u;
+			using Wide = blockbinary<W, bt, BinaryNumberType::Signed>;
+			Wide w(a.bits());   // sign-extends
+			if constexpr (lshift > 0) w <<= static_cast<int>(lshift);
+			if constexpr (rshift > 0) {
+				const bool roundUp = w.roundingMode(rshift);   // the source's lsb is still in w: W > rshift
+				w >>= static_cast<int>(rshift);                 // arithmetic: floor of the two's complement value
+				if (roundUp) ++w;
+			}
+			if constexpr (arithmetic == Saturate) {
+				const Wide maxposW{ blockbinary<nbits, bt, BinaryNumberType::Signed>(SpecificValue::maxpos) };
+				const Wide maxnegW{ blockbinary<nbits, bt, BinaryNumberType::Signed>(SpecificValue::maxneg) };
+				if (w > maxposW) { maxpos(); return *this; }
+				if (w < maxnegW) { maxneg(); return *this; }
+			}
+			_block = w;   // the low nbits: the value itself, or its wrap in Modulo
 		}
 		return *this;
 	}
@@ -280,41 +285,10 @@ public:
 	fixpnt& assign(const std::string& number) {
 		clear();
 
-		// minimum size for a decimal representation is integer + '.' fraction, so at least 3 characters
-		// minimum size for a binary representation is "0b" + intbits + '.' + fracbits, so at least 5 characters
-		if (number.size() < 3) return *this;
+		// a binary representation is "0b" + intbits + '.' + fracbits, with the radix point at rbits
 		bool binaryFormat = false;
-		if (number[0] == '0' && number[1] == 'b') binaryFormat = true;
-//		std::regex binary_regex("0b([01]+)?(.)?([01]+)?$"); // bin does not have a negative size, just raw bits
-//		std::regex decimal_regex("/^-?(0|[1-9][0-9]*)?"); // ("/^-?(0|[1-9][0-9]*)?(\.[0-9]+)?(?<=[0-9])(e-?(0|[1-9][0-9]*))?$");
-		// setup associative array to map chars to nibbles
-		std::map<char, int> charLookup{
-			{ '0', 0 },
-			{ '1', 1 },
-			{ '2', 2 },
-			{ '3', 3 },
-			{ '4', 4 },
-			{ '5', 5 },
-			{ '6', 6 },
-			{ '7', 7 },
-			{ '8', 8 },
-			{ '9', 9 },
-			{ 'a', 10 },
-			{ 'b', 11 },
-			{ 'c', 12 },
-			{ 'd', 13 },
-			{ 'e', 14 },
-			{ 'f', 15 },
-			{ 'A', 10 },
-			{ 'B', 11 },
-			{ 'C', 12 },
-			{ 'D', 13 },
-			{ 'E', 14 },
-			{ 'F', 15 },
-		};
-//		if (std::regex_match(number, binary_regex)) {
+		if (number.size() >= 3 && number[0] == '0' && number[1] == 'b') binaryFormat = true;
 		if (binaryFormat) {
-//			std::cout << "found an binary representation\n";
 			unsigned position = 0;
 			for (std::string::const_reverse_iterator r = number.rbegin(); r != number.rend(); ++r) {
 				if (*r == 'b') {
@@ -341,25 +315,10 @@ public:
 			}
 		}
 		else {
-			std::fprintf(stderr, "found a decimal representation: TBD\n");
-			int64_t scale = 1;
-			int64_t fraction = 0;
-			for (std::string::const_reverse_iterator r = number.rbegin();
-				r != number.rend();
-				++r) {
-				if (*r != '.') {
-					int64_t digit = charLookup.at(*r);
-					fraction += scale * digit;
-					scale *= 10;
-				}
-				else {
-					// construct fraction
-					*this = 0;
-				}
-			}
-			// TODO: implement decimal string parse for fixpnt
-			if (fraction < 0) std::fprintf(stderr, "found a negative decimal representation\n"); // TODO: remove when implemented properly
-			*this = 6.90234375;
+			// a decimal, signed or not, and the 0x / 0o bit patterns: parse() rounds the exact value
+			// to nearest even and follows the arithmetic mode; malformed text leaves 0 (#2111: this
+			// branch was a stub that set 6.90234375, and "-1.5" threw from the character lookup)
+			if (!parse(number, *this)) clear();
 		}
 
 		return *this;
@@ -462,7 +421,7 @@ public:
 		else {
 			using biggerbb = blockbinary<nbits + 1, bt>;
 			biggerbb c = uradd(_block, rhs._block);  // c = a + b
-			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);   // compile-time constants (#2111)
 			biggerbb saturation = maxpos.bits();		
 			if (c >= saturation) {
 				_block = saturation;
@@ -484,7 +443,7 @@ public:
 		else {
 			using biggerbb = blockbinary<nbits + 1, bt>;
 			biggerbb c = ursub(_block, rhs.bits());  // c = a - b
-			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);   // compile-time constants (#2111)
 			biggerbb saturation = maxpos.bits();
 			if (c >= saturation) {
 				_block = saturation;
@@ -510,7 +469,7 @@ public:
 		}
 		else {
 			blockbinary<2 * nbits, bt> c = urmul2(_block, rhs._block);
-			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg); // TODO: can these be static?
+			constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);   // compile-time constants (#2111)
 			blockbinary<2 * nbits, bt> saturation = maxpos.bits();
 			bool roundUp = c.roundingMode(rbits);
 			c >>= rbits;
@@ -604,7 +563,7 @@ public:
 			if (roundUp) ++quotient;
 
 			// saturation clamping on unsigned magnitude before sign restoration
-			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);   // compile-time constants (#2111)
 			blockbinary<accumulatorSize, bt> maxposBits(maxpos.bits());
 			if (positive) {
 				if (quotient > maxposBits) {
@@ -707,8 +666,10 @@ public:
 
 	// selectors
 	constexpr bool    sign()                  const noexcept { return _block.sign(); }
-	constexpr fixpnt  integer()               const noexcept { return floor(*this); }
-	constexpr fixpnt  fraction()              const noexcept { return (*this - integer()); }
+	// integer() is floor(x) and fraction() is x - floor(x), in [0, 1), from the encoding: clearing
+	// the fraction bits of a two's complement value floors it (#2111: through double, wrong past 53 bits)
+	constexpr fixpnt  integer()               const noexcept { fixpnt f(*this); for (unsigned i = 0; i < rbits && i < nbits; ++i) f._block.setbit(i, false); return f; }
+	constexpr fixpnt  fraction()              const noexcept { fixpnt f(*this); for (unsigned i = rbits; i < nbits; ++i) f._block.setbit(i, false); return f; }
 	constexpr bool    iszero()                const noexcept { return _block.iszero(); }
 	constexpr bool    ispos()                 const noexcept { return _block.ispos(); }
 	constexpr bool    isneg()                 const noexcept { return _block.isneg(); }
@@ -972,64 +933,73 @@ protected:
 
 	// conversion functions
 
+	// Integer casts follow the library's integer-cast rule (shared/integer_cast.hpp, #2104) in both
+	// arithmetic modes (#2111): the value truncates toward zero, and past the range it saturates to
+	// +/-max(), an unsigned type to [0, max() - 1]. fixpnt has no NaN. Before #2111 a signed cast
+	// floored ((int)-1.5 was -2) and an unsigned cast returned the raw encoding, unscaled.
+	template<typename NativeInt>
+	constexpr NativeInt to_integer() const noexcept {
+		blockbinary<nbits + 1, bt, BinaryNumberType::Signed> m(_block);   // room for |maxneg|
+		const bool negative = m.sign();
+		if (negative) m.twosComplement();
+		std::uint64_t magnitude = 0;
+		bool overflow = false;
+		for (unsigned i = rbits; i <= nbits; ++i) {
+			if (!m.test(i)) continue;
+			const unsigned k = i - rbits;
+			if (k >= 64) overflow = true; else magnitude |= (std::uint64_t(1) << k);
+		}
+		return integer_from_magnitude<NativeInt>(negative, overflow, magnitude);
+	}
+
 	// from fixed-point to native signed integer
 	template<typename NativeInt>
 	constexpr typename std::enable_if< std::is_integral_v<NativeInt> && std::is_signed_v<NativeInt>,
 		NativeInt>::type to_signed() const {
-		if constexpr (nbits <= rbits) return 0;
-		constexpr unsigned sizeOfInteger = 8 * sizeof(NativeInt);
-		NativeInt ll = 0;
-		NativeInt mask = 1;
-		unsigned upper = (nbits - rbits) > 64 ? (rbits + 64) : nbits;
-		for (unsigned i = rbits; i < upper; ++i) {
-			ll |= at(i) ? mask : 0;
-			mask <<= 1;
-		}
-		if (sign() && upper < (sizeOfInteger+rbits)) { // sign extend
-			for (unsigned i = upper; i < (sizeOfInteger+rbits); ++i) {
-				ll |= mask;
-				mask <<= 1;
-			}
-		}
-		return ll;
+		return to_integer<NativeInt>();
 	}
-	
+
 	// from fixed-point to native unsigned integer
 	template<typename NativeInt>
 	constexpr typename std::enable_if< std::is_unsigned_v<NativeInt>,
 		NativeInt>::type to_unsigned() const {
-		return NativeInt(_block.to_sll());
+		return to_integer<NativeInt>();
 	}
 
+	// to a native floating-point type, rounded once to nearest even (#2111: it added the bits one
+	// at a time in TargetFloat, which rounded at every step once nbits passed its precision). The
+	// magnitude's bits down to the target's lsb at this scale -- digits bits, fewer in its subnormal
+	// range -- are rounded from the guard and sticky bits below, then scaled by a power of 2.
 	template<typename TargetFloat>
 	constexpr TargetFloat to_native() const {
-		// pick up the absolute value of the minimum normal and subnormal exponents 
-		constexpr unsigned minNormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat > ::minNormalExp);
-		constexpr unsigned minSubnormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
-		static_assert(rbits <= minSubnormalExponent, "to_native: fixpnt fraction is too small to represent with requested floating-point type");
-		TargetFloat multiplier = 0;
-		if constexpr (rbits > minNormalExponent) { // value is a subnormal number
-			multiplier = ieee754_parameter<TargetFloat>::minSubnormal;
-			for (unsigned i = 0; i < minSubnormalExponent - rbits; ++i) {
-				multiplier *= 2.0f; // these are error free multiplies
-			}
+		using L = std::numeric_limits<TargetFloat>;
+		blockbinary<nbits + 1, bt, BinaryNumberType::Signed> m(_block);   // room for |maxneg|
+		const bool negative = m.sign();
+		if (negative) m.twosComplement();
+		int msb = -1;
+		for (int i = static_cast<int>(nbits); i >= 0; --i) {
+			if (m.test(static_cast<unsigned>(i))) { msb = i; break; }
 		}
-		else {
-			// the value is a normal number
-			multiplier = ieee754_parameter<TargetFloat>::minNormal;
-			for (unsigned i = 0; i < minNormalExponent - rbits; ++i) {
-				multiplier *= 2.0f; // these are error free multiplies
-			}
+		if (msb < 0) return TargetFloat(0);
+		const int e = msb - static_cast<int>(rbits);                    // the value is in [2^e, 2^(e+1))
+		int r = e - (L::digits - 1);                                     // the target's lsb at this scale
+		if (r < L::min_exponent - L::digits) r = L::min_exponent - L::digits;   // its subnormal range
+		int k = r + static_cast<int>(rbits);                             // that lsb as a fixpnt bit index
+		if (k < 0) { k = 0; r = -static_cast<int>(rbits); }              // every bit fits: exact
+		TargetFloat significand(0);                                      // at most digits bits: exact
+		for (int i = msb; i >= k; --i) {
+			significand = significand * TargetFloat(2) + (m.test(static_cast<unsigned>(i)) ? TargetFloat(1) : TargetFloat(0));
 		}
-		// you pop out here with multiplier set to the weight of the starting bit
-		fixpnt<nbits, rbits, arithmetic, bt> raw = (sign() ? sw::universal::twosComplement(*this) : *this);
-		// construct the value
-		TargetFloat value{ 0.0 };
-		for (unsigned i = 0; i < nbits; ++i) {
-			if (raw.at(i)) value += multiplier;
-			multiplier *= 2.0; // these are error free multiplies
+		if (k > 0) {
+			const bool guard  = m.test(static_cast<unsigned>(k - 1));
+			const bool sticky = (k >= 2) && m.any(static_cast<unsigned>(k - 2));
+			const bool odd    = m.test(static_cast<unsigned>(k));
+			if (guard && (sticky || odd)) significand += TargetFloat(1);   // 2^digits at most: exact
 		}
-		return (sign() ? -value : value);
+		TargetFloat value(0);
+		if (std::is_constant_evaluated()) value = significand * exact_pow2<TargetFloat>(r);
+		else value = std::ldexp(significand, r);
+		return negative ? -value : value;
 	}
 
 private:
@@ -1048,10 +1018,16 @@ private:
 
 
 /// Magnitude of a fixpnt. Expensive as fixpnts are encoded as 2's complement, so we need to test, copy, complement, and return.
+/// |maxneg| is not representable: Saturate gives maxpos, and Modulo wraps it to maxneg (#2111).
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr fixpnt<nbits, rbits, arithmetic, bt> abs(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 	fixpnt<nbits, rbits, arithmetic, bt> tmp(v);
-	if (v.isneg()) tmp.twosComplement();
+	if (v.isneg()) {
+		tmp.twosComplement();
+		if constexpr (arithmetic == Saturate) {
+			if (tmp.isneg()) tmp.maxpos();   // v was maxneg
+		}
+	}
 	return tmp;
 }
 
@@ -1089,300 +1065,320 @@ constexpr inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+// fixpnt - integer comparisons compare the values exactly (#2111): both go into a fixpnt wide
+// enough to hold either. Converting the integer to the narrower fixpnt first wrapped it in Modulo,
+// so fixpnt<8,4,Modulo>(-8) == 8 was true. Returns -1, 0 or 1 as f is below, at or above v.
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt, typename Int>
+constexpr int fixpnt_compare_integer(const fixpnt<nbits, rbits, arithmetic, bt>& f, Int v) {
+	static_assert(std::is_integral_v<Int>, "fixpnt_compare_integer: an integer type");
+	constexpr unsigned ibits = 8u * static_cast<unsigned>(sizeof(Int)) + 1u;   // an unsigned value and its sign
+	if constexpr (nbits >= rbits + ibits) {
+		const fixpnt<nbits, rbits, arithmetic, bt> b(v);   // every Int fits
+		return (f < b) ? -1 : ((b < f) ? 1 : 0);
+	}
+	else {
+		using Wide = fixpnt<rbits + ibits, rbits, arithmetic, bt>;
+		Wide a;
+		a = f;           // widening with the same radix point: exact
+		const Wide b(v); // fits
+		return (a < b) ? -1 : ((b < a) ? 1 : 0);
+	}
+}
+
 // fixpnt - literal binary logic operators
 // remember that literals are const types, so you need to refer to a literal like 0 as a const int
 
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
-	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
-	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
-	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
+	return (fixpnt_compare_integer(lhs, rhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
-	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0) || (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
-	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
-	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
-	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
-	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
+	return (fixpnt_compare_integer(lhs, rhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
-	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0) || (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
-	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
-	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
-	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
-	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
+	return (fixpnt_compare_integer(lhs, rhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
-	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0) || (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
-	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
-	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
-	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
-	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
+	return (fixpnt_compare_integer(lhs, rhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
-	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0) || (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
-	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
-	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
-	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
-	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
+	return (fixpnt_compare_integer(lhs, rhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
-	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0) || (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
-	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
-	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
-	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
-	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
+	return (fixpnt_compare_integer(lhs, rhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
-	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return (fixpnt_compare_integer(lhs, rhs) < 0) || (fixpnt_compare_integer(lhs, rhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
-	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+	return !(fixpnt_compare_integer(lhs, rhs) < 0);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - fixpnt binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
+	return (fixpnt_compare_integer(rhs, lhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0) || (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
+	return (fixpnt_compare_integer(rhs, lhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0) || (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
+	return (fixpnt_compare_integer(rhs, lhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0) || (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
+	return (fixpnt_compare_integer(rhs, lhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0) || (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
+	return (fixpnt_compare_integer(rhs, lhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0) || (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator==(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator!=(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator< (unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator> (unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
+	return (fixpnt_compare_integer(rhs, lhs) < 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator<=(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return (fixpnt_compare_integer(rhs, lhs) > 0) || (fixpnt_compare_integer(rhs, lhs) == 0);
 }
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 constexpr inline bool operator>=(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+	return !(fixpnt_compare_integer(rhs, lhs) > 0);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // fixpnt - literal float/double binary logic operators

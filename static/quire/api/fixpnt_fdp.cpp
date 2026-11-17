@@ -921,6 +921,72 @@ int CheckNonFiniteResolve(const char* label) {
 	return fails;
 }
 
+// fdp past 53 bits against an exact reference (#2111): the products accumulate exactly in a fixpnt
+// with twice the fraction bits, and the sum is rounded once by the fixpnt-to-fixpnt conversion,
+// which rounds to nearest even. Through double, fixpnt<60,30,Modulo> fdp had ~50% 1-ulp errors.
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
+int CheckWideFdp(unsigned nrTrials, unsigned length, unsigned magnitudeBits) {
+	using F = fixpnt<nbits, rbits, arithmetic, bt>;
+	using Exact = fixpnt<2 * nbits + 8, 2 * rbits, arithmetic, bt>;
+	int fails = 0;
+	std::uint64_t r = 0x2545F4914F6CDD1Dull;
+	auto next = [&r]() { r ^= r << 13; r ^= r >> 7; r ^= r << 17; return r; };
+	for (unsigned t = 0; t < nrTrials; ++t) {
+		std::vector<F> x(length), y(length);
+		Exact exact;
+		exact.setbits(0);
+		for (unsigned k = 0; k < length; ++k) {
+			// a random raw value of rbits + magnitudeBits bits, of either sign
+			auto randomValue = [&]() {
+				F v;
+				v.setbits(0);
+				const std::uint64_t bits = next();
+				for (unsigned i = 0; i < rbits + magnitudeBits && i < 64; ++i) v.setbit(i, (bits >> i) & 1u);
+				return (next() & 1u) ? -v : v;
+			};
+			x[k] = randomValue();
+			y[k] = randomValue();
+			Exact a, b;
+			a = x[k];
+			b = y[k];
+			exact += a * b;   // 2 rbits fraction bits: the product is exact
+		}
+		F expected;
+		expected = exact;     // one rounding, to nearest even
+		const F got = fdp(x, y);
+		if (!(got == expected)) {
+			++fails;
+			if (fails < 5) std::cerr << "FAIL: fixpnt<" << nbits << "," << rbits << "> fdp: " << to_binary(got) << ", expected " << to_binary(expected) << '\n';
+		}
+	}
+	return fails;
+}
+
+int TestWideFdpRounding() {
+	int nrOfFailedTestCases = 0;
+	nrOfFailedTestCases += CheckWideFdp<60, 30, Modulo, std::uint32_t>(200, 8, 12);
+	nrOfFailedTestCases += CheckWideFdp<60, 30, Saturate, std::uint32_t>(200, 8, 12);
+	nrOfFailedTestCases += CheckWideFdp<64, 16, Modulo, std::uint32_t>(200, 8, 20);
+	nrOfFailedTestCases += CheckWideFdp<80, 40, Saturate, std::uint16_t>(100, 5, 16);
+	{
+		// 3/65536 * 0.5 = 1.5 ulp of fixpnt<64,16>: a tie that rounds to even, 2 ulp, as a * b does
+		using F = fixpnt<64, 16, Modulo, std::uint32_t>;
+		F a, b;
+		a.setbits(3);
+		b = 0.5;
+		std::vector<F> x = { a }, y = { b };
+		const F got = fdp(x, y);
+		const F product = a * b;
+		F twoUlp;
+		twoUlp.setbits(2);
+		if (!(got == twoUlp) || !(product == twoUlp)) {
+			++nrOfFailedTestCases;
+			std::cerr << "FAIL: fixpnt<64,16> fdp of 3/65536 * 0.5: " << to_binary(got) << ", a * b " << to_binary(product) << ", expected 2 ulp\n";
+		}
+	}
+	return nrOfFailedTestCases;
+}
+
 int TestNonFiniteResolve() {
 	int nrOfFailedTestCases = 0;
 	nrOfFailedTestCases += CheckNonFiniteResolve<fixpnt<16, 4, Saturate, std::uint16_t>>("fixpnt<16,4,Saturate>");
@@ -955,6 +1021,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(TestModuloSaturateResolve(), "fixpnt quire_resolve", "Modulo saturates past the range");
 	nrOfFailedTestCases += ReportTestResult(TestWideSaturateResolve(), "fixpnt quire_resolve", "wide Saturate rounds, saturates");
 	nrOfFailedTestCases += ReportTestResult(TestNonFiniteResolve(), "fixpnt quire_resolve", "+-inf saturates, NaN is 0");
+	nrOfFailedTestCases += ReportTestResult(TestWideFdpRounding(), "fixpnt fdp", "past 53 bits, rounded once to nearest even");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

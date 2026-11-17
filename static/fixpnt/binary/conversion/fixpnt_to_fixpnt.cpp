@@ -49,6 +49,53 @@ int VerifyFixpntToFixpntConversion(bool reportTestCases) {
 	return nrOfFailedTestCases;
 }
 
+// An exact integer reference (#2111), independent of the conversion through double: the source
+// raw value s is s * 2^-src_rbits, so the target raw value is s * 2^(dst_rbits - src_rbits)
+// rounded to nearest, ties to even; then Saturate clamps to [maxneg, maxpos] and Modulo keeps the
+// low dst_nbits. Compares encodings, exhaustively over the source.
+template<unsigned src_nbits, unsigned src_rbits, unsigned dst_nbits, unsigned dst_rbits, bool arithmetic, typename bt>
+int VerifyExactFixpntToFixpnt(bool reportTestCases) {
+	static_assert(src_nbits <= 16 && dst_nbits <= 16, "the reference works in 64-bit integers");
+	using SrcType = fixpnt<src_nbits, src_rbits, arithmetic, bt>;
+	using DstType = fixpnt<dst_nbits, dst_rbits, arithmetic, bt>;
+	int nrOfFailedTestCases = 0;
+	for (unsigned i = 0; i < (1u << src_nbits); ++i) {
+		SrcType src;
+		src.setbits(i);
+		const long long s = (i & (1u << (src_nbits - 1))) ? static_cast<long long>(i) - (1ll << src_nbits) : static_cast<long long>(i);
+		long long q;
+		if constexpr (dst_rbits >= src_rbits) {
+			q = s * (1ll << (dst_rbits - src_rbits));
+		}
+		else {
+			constexpr unsigned shift = src_rbits - dst_rbits;
+			const long long div = 1ll << shift;
+			long long fl = s >= 0 ? s / div : -((-s + div - 1) / div);   // floor
+			const long long rem = s - fl * div;                          // in [0, div)
+			if (2 * rem > div || (2 * rem == div && (fl & 1))) ++fl;
+			q = fl;
+		}
+		const long long maxpos = (1ll << (dst_nbits - 1)) - 1, maxneg = -(1ll << (dst_nbits - 1));
+		if constexpr (arithmetic == Saturate) {
+			if (q > maxpos) q = maxpos;
+			if (q < maxneg) q = maxneg;
+		}
+		const unsigned long long expectedBits = static_cast<unsigned long long>(q) & ((1ull << dst_nbits) - 1);
+		DstType dst;
+		dst = src;
+		DstType expected;
+		expected.setbits(expectedBits);
+		if (!(dst == expected)) {
+			++nrOfFailedTestCases;
+			if (reportTestCases && nrOfFailedTestCases < 10) {
+				std::cout << "FAIL: fixpnt<" << src_nbits << "," << src_rbits << "> " << to_binary(src) << " (" << src << ") -> fixpnt<"
+					<< dst_nbits << "," << dst_rbits << ">: " << to_binary(dst) << " (" << dst << "), expected " << to_binary(expected) << " (" << expected << ")\n";
+			}
+		}
+	}
+	return nrOfFailedTestCases;
+}
+
 }} // namespace sw::universal
 
 // Regression testing guards
@@ -127,9 +174,28 @@ try {
 		(VerifyFixpntToFixpntConversion<8, 4, 8, 2, Modulo, uint8_t>(reportTestCases)),
 		test_tag, "fixpnt<8,4> -> fixpnt<8,2> (issue #357 scenario)");
 
+	// against the exact reference, both arithmetic modes (#2111: Saturate wrapped, e.g.
+	// fixpnt<16,8>(100) -> fixpnt<8,4> was 4, and fixpnt<12,6> -> fixpnt<8,3> got half the values wrong)
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<12, 6, 8, 3, Saturate, uint8_t>(reportTestCases)), test_tag, "fixpnt<12,6> -> fixpnt<8,3> Saturate, exact");
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<12, 6, 8, 3, Modulo, uint8_t>(reportTestCases)), test_tag, "fixpnt<12,6> -> fixpnt<8,3> Modulo, exact");
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<16, 8, 8, 4, Saturate, uint8_t>(reportTestCases)), test_tag, "fixpnt<16,8> -> fixpnt<8,4> Saturate, exact");
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<8, 4, 8, 6, Saturate, uint8_t>(reportTestCases)), test_tag, "fixpnt<8,4> -> fixpnt<8,6> Saturate, exact");
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<10, 2, 8, 2, Saturate, uint8_t>(reportTestCases)), test_tag, "fixpnt<10,2> -> fixpnt<8,2> Saturate, exact");
+	// a right shift of nbits or more: fixpnt<8,8>(-0.5) -> fixpnt<8,0> is a tie that rounds to even, 0 (it gave -1)
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<8, 8, 8, 0, Modulo, uint8_t>(reportTestCases)), test_tag, "fixpnt<8,8> -> fixpnt<8,0> Modulo, exact");
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<8, 8, 8, 0, Saturate, uint8_t>(reportTestCases)), test_tag, "fixpnt<8,8> -> fixpnt<8,0> Saturate, exact");
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<8, 8, 4, 0, Saturate, uint8_t>(reportTestCases)), test_tag, "fixpnt<8,8> -> fixpnt<4,0> Saturate, exact");
+
 #endif
 
 #if REGRESSION_LEVEL_2
+	// exhaustive Saturate and Modulo conversions between 8- to 12-bit configurations (#2111)
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<12, 4, 8, 6, Saturate, uint8_t>(reportTestCases)), test_tag, "fixpnt<12,4> -> fixpnt<8,6> Saturate, exact");
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<12, 8, 10, 3, Saturate, uint16_t>(reportTestCases)), test_tag, "fixpnt<12,8> -> fixpnt<10,3> Saturate, exact");
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<10, 9, 12, 2, Saturate, uint16_t>(reportTestCases)), test_tag, "fixpnt<10,9> -> fixpnt<12,2> Saturate, exact");
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<12, 0, 9, 0, Saturate, uint8_t>(reportTestCases)), test_tag, "fixpnt<12,0> -> fixpnt<9,0> Saturate, exact");
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<12, 4, 8, 6, Modulo, uint8_t>(reportTestCases)), test_tag, "fixpnt<12,4> -> fixpnt<8,6> Modulo, exact");
+	nrOfFailedTestCases += ReportTestResult((VerifyExactFixpntToFixpnt<12, 8, 10, 3, Modulo, uint16_t>(reportTestCases)), test_tag, "fixpnt<12,8> -> fixpnt<10,3> Modulo, exact");
 
 	// Broader coverage with different bit widths
 	nrOfFailedTestCases += ReportTestResult(

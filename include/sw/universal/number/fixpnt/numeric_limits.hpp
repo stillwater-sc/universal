@@ -95,7 +95,7 @@ public:
 	static constexpr bool is_modulo  = arithmetic;
 	static constexpr bool traps      = false;
 	static constexpr bool tinyness_before = false;
-	static constexpr float_round_style round_style = round_toward_zero;
+	static constexpr float_round_style round_style = round_to_nearest;   // the arithmetic rounds to nearest even (#2111)
 };
 
 }

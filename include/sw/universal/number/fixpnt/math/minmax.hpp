@@ -6,17 +6,17 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <algorithm>     // std::min / std::max
 namespace sw { namespace universal {
 
+// compared on the encoding (#2111: through double, which ties distinct values past 53 bits)
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> min(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> y) {
-	return fixpnt<nbits, rbits, arithmetic, bt>(std::min(double(x), double(y)));
+	return (y < x) ? y : x;
 }
 
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> max(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> y) {
-	return fixpnt<nbits, rbits, arithmetic, bt>(std::max(double(x), double(y)));
+	return (x < y) ? y : x;
 }
 
 }} // namespace sw::universal
