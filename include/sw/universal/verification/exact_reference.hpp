@@ -32,9 +32,9 @@ namespace sw { namespace universal {
 	// default_reference_t<TestType> picks double where double holds TestType's results (fewer
 	// than 53 digits, and products and quotients inside double's range) and the exact
 	// reference otherwise. Asking for double where it cannot hold them is a compile error,
-	// for every type that has an exact reference. A type without one (dd, qd, the cascades, lns,
-	// cfloat past 53 digits) still checks against double; giving it an exact_rounding is how it
-	// moves off.
+	// for every type that has an exact reference: posit (posit_rounding_oracle.hpp) and cfloat
+	// (cfloat_rounding_oracle.hpp, #2123). A type without one (dd, qd, the cascades, lns) still
+	// checks against double; giving it an exact_rounding is how it moves off.
 	struct exact_reference {};
 
 	// The customization point. A specialization provides
@@ -73,6 +73,16 @@ namespace sw { namespace universal {
 		std::is_same_v<ReferenceType, exact_reference> ? has_exact_rounding<TestType> :
 		std::is_same_v<ReferenceType, double> ? (double_reference_holds<TestType> || !has_exact_rounding<TestType>) :
 		false;
+
+	// a result agrees with the exact reference when they are equal, or both NaN: NaN != NaN, and
+	// the reference does not model which NaN encoding an operation returns
+	template<typename TestType>
+	bool reference_equal(const TestType& result, const TestType& ref) {
+		if constexpr (requires { result.isnan(); }) {
+			if (result.isnan() && ref.isnan()) return true;
+		}
+		return result == ref;
+	}
 
 	template<typename TestType, typename ReferenceType>
 	constexpr void check_reference_type() {

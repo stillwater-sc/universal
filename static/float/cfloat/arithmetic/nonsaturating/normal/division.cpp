@@ -222,12 +222,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<8, 6, uint8_t, hasSubnormals, hasMaxExpValues, isSaturating> >(reportTestCases), "cfloat< 8, 6,uint8_t,f,f,f>", "division");
 
 	reportTestCases = true;
-	nrRandoms = 0;
+	nrRandoms = 1000;
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c16).name(), "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c32).name(), "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c48).name(), "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c64).name(), "division");
-	nrRandoms = 0; // TBD > double precision requires a vector of 64bit words to construct the random bits
+	nrRandoms = 1000;   // wider than double: the exact reference, on random encodings of every bit (#2123)
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c80).name(), "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c96).name(), "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c128 >(reportTestCases, RandomsOp::OPCODE_DIV, nrRandoms), typeid(c128).name(), "division");

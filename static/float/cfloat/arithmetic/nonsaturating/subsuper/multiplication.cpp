@@ -160,7 +160,7 @@ try {
 			"0b0.11111111111.1111111111111111111111111111111111111111111111111110");   // 3*2^1024 is past maxpos
 		nrOfFailedTestCases += ReportTestResult(fails, "c64 max-exponent binade", "multiplication");
 	}
-	nrRandoms = 0; // TBD -> configurations that are more precise then double precision require a vector of 64bit words to construct the random bits
+	nrRandoms = 1000;   // wider than double: the exact reference, on random encodings of every bit (#2123)
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c80).name(), "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c96).name(), "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c128 >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c128).name(), "multiplication");

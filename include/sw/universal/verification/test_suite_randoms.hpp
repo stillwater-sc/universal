@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
+#include <cstdint>
 //#include <vector>
 #include <iostream>
 #include <typeinfo>
@@ -16,6 +17,7 @@
 #include <universal/verification/correctly_rounded_reference.hpp>  // the reference, rounded once (#1861)
 #include <universal/verification/exact_reference.hpp>               // the reference type (#2121)
 #include <universal/verification/posit_rounding_oracle.hpp>         // the exact reference of a posit, always visible
+#include <universal/verification/cfloat_rounding_oracle.hpp>        // the exact reference of a cfloat, always visible
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -308,6 +310,24 @@ namespace sw { namespace universal {
 		}
 	}
 
+	// a random encoding of TestType: every bit of it, also past 64 bits (#2123), where the type
+	// has setbit; otherwise the low 64 bits through setbits
+	template<typename TestType, typename Engine>
+	void randomEncoding(TestType& v, Engine& eng) {
+		std::uniform_int_distribution<unsigned long long> distr;
+		if constexpr (requires { TestType::nbits; v.setbit(0u, true); }) {
+			if constexpr (TestType::nbits > 64) {
+				std::uint64_t word = 0;
+				for (unsigned i = 0; i < TestType::nbits; ++i) {
+					if ((i % 64u) == 0) word = distr(eng);
+					v.setbit(i, ((word >> (i % 64u)) & 1ull) != 0);
+				}
+				return;
+			}
+		}
+		v.setbits(distr(eng));
+	}
+
 	// a NaN, inf or zero operand: its special cases are not checked against double's, except an
 	// operand only double sees as inf or zero, past its range, which the scaled reference covers
 	template<typename TestType>
@@ -407,8 +427,8 @@ namespace sw { namespace universal {
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			TestType testa, testb, result{0}, ref{0};
-			testa.setbits(distr(eng));
-			testb.setbits(distr(eng));
+			randomEncoding(testa, eng);
+			randomEncoding(testb, eng);
 			double da = double(testa);
 			double db = double(testb);
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
@@ -417,7 +437,9 @@ namespace sw { namespace universal {
 
 			if (!executeBinary<TestType, ReferenceType>(opcode, da, db, testa, testb, result, ref)) continue;
 			// check the result
-			if (result != ref) {
+			bool agrees = (result == ref);
+			if constexpr (std::is_same_v<ReferenceType, exact_reference>) agrees = reference_equal(result, ref);
+			if (!agrees) {
 				// we can't properly test the NaN and Inf encodings as the transformation through the custom type
 				// tends to be special cased. So check for these cases and ignore the failure
 				// An operand that is finite in TestType but inf in double, past double's range, is
@@ -562,13 +584,15 @@ namespace sw { namespace universal {
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			TestType nut, result, ref;
-			nut.setbits(distr(eng));  // nut: number system under test
+			randomEncoding(nut, eng);  // nut: number system under test
 			if (sqrtOperator && nut < 0) nut = -nut;
 			double da = double(nut);
 
 			executeUnary<TestType, ReferenceType>(opcode, da, nut, result, ref);
 
-			if (result != ref) {
+			bool agrees = (result == ref);
+			if constexpr (std::is_same_v<ReferenceType, exact_reference>) agrees = reference_equal(result, ref);
+			if (!agrees) {
 				if constexpr (!std::is_same_v<ReferenceType, exact_reference>) {
 					if (result.isnan() && ref.isnan()) continue;   // the double reference's NaN
 				}
