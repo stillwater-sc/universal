@@ -426,8 +426,11 @@ namespace sw { namespace universal {
 				// goes through double, and every mismatch against it is a failure.
 				if constexpr (!std::is_same_v<ReferenceType, exact_reference>) {
 					if (untestableOperand(da, testa) || untestableOperand(db, testb)) continue;
-					bool resultIsInf = result.isinf();
-					bool refIsInf = ref.isinf();
+					bool resultIsInf = false, refIsInf = false;
+					if constexpr (requires { result.isinf(); }) {   // posit has no inf
+						resultIsInf = result.isinf();
+						refIsInf = ref.isinf();
+					}
 					if (resultIsInf && refIsInf) {
 						if (reportTestCases) std::cerr << "result and ref are both inf\n";
 						// but ignore the failure

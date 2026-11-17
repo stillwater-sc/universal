@@ -7,6 +7,7 @@
 #include <universal/utility/directives.hpp>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <type_traits>
 #include <universal/number/posit/posit.hpp>
@@ -29,8 +30,21 @@
    the cases where the two disagree are the cases where the posit result is the exact one.
 */
 
+// a type with no exponent bound, as lns reports one: the range test must not overflow
+struct unbounded_exponent_type {};
+template<> struct std::numeric_limits<unbounded_exponent_type> {
+	static constexpr bool is_specialized = true;
+	static constexpr int  digits         = 24;
+	static constexpr int  max_exponent   = std::numeric_limits<int>::max();
+	static constexpr int  min_exponent   = std::numeric_limits<int>::min();
+};
+
 namespace sw {
 namespace universal {
+
+static_assert(!double_reference_holds<unbounded_exponent_type>);
+static_assert(std::is_same_v<default_reference_t<unbounded_exponent_type>, double>);   // no exact reference to pick
+static_assert(valid_reference_v<unbounded_exponent_type, double>);
 
 // the defaults, and double refused where it cannot hold the results
 static_assert(std::is_same_v<default_reference_t<posit<32, 2>>, double>);
@@ -46,6 +60,9 @@ static_assert(!valid_reference_v<posit<32, 2>, float>);
 // posit<32,6> has 24 digits but reaches 2^1920, past double's range
 static_assert(std::is_same_v<default_reference_t<posit<32, 6>>, exact_reference>);
 static_assert(!valid_reference_v<posit<32, 6>, double>);
+// posit<32,5> operands fit in double, but minpos * minpos is 2^-1920; posit<32,4> products fit
+static_assert(std::is_same_v<default_reference_t<posit<32, 5>>, exact_reference>);
+static_assert(std::is_same_v<default_reference_t<posit<32, 4>>, double>);
 
 namespace reference_type {
 
@@ -168,6 +185,30 @@ int Expect(const std::string& what, char op, const Posit& a, const Posit& b, con
 	return 1;
 }
 
+// posit<32,5>: minpos * minpos and maxpos * maxpos leave double's range; the posit rule, and the
+// exact reference, give minpos and maxpos. The double reference recovers minpos from double's
+// zero through its round-once tie handling, but maxpos * maxpos is inf in double, which converts
+// to NaR.
+int VerifyProductsPastDoubleRange(bool reportTestCases) {
+	using Posit = posit<32, 5>;
+	const Posit minpos(SpecificValue::minpos), maxpos(SpecificValue::maxpos);
+	int fails = 0;
+	for (const Posit& x : { minpos, maxpos }) {
+		Posit exact;
+		exact_rounding<Posit>::binary('*', x, x, exact);
+		const Posit viaDouble = correctlyRoundedReference<Posit>('*', double(x), double(x), double(x) * double(x));
+		if (exact != x || x * x != x) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL " << to_binary(x) << " squared: exact " << to_binary(exact) << " posit " << to_binary(x * x) << '\n';
+		}
+		if (x == maxpos && viaDouble == x) {   // the reason posit<32,5> needs the exact reference
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL the double reference holds " << to_binary(x) << " squared after all\n";
+		}
+	}
+	return fails;
+}
+
 template<typename Posit>
 int VerifySpecialCases(bool reportTestCases) {
 	const Posit maxpos(SpecificValue::maxpos), minpos(SpecificValue::minpos), maxneg(SpecificValue::maxneg), minneg(SpecificValue::minneg);
@@ -276,6 +317,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyOperandRoundTrip<posit<64, 2>>(2000, reportTestCases), "posit<64,2>", "operand round trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyOperandRoundTrip<posit<64, 4>>(2000, reportTestCases), "posit<64,4>", "operand round trip");
 	nrOfFailedTestCases += ReportTestResult(VerifyOperandRoundTrip<posit<256, 4, std::uint64_t>>(500, reportTestCases), "posit<256,4>", "operand round trip");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyProductsPastDoubleRange(reportTestCases), "posit<32,5>", "products past double");
 
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialCases<posit<16, 1>>(reportTestCases), "posit<16,1>", "special cases");
 	nrOfFailedTestCases += ReportTestResult(VerifySpecialCases<posit<64, 2>>(reportTestCases), "posit<64,2>", "special cases");
