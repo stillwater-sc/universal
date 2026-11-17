@@ -202,13 +202,12 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// nbits = 48 also shows failures
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<48, 2>>(reportTestCases, OPCODE_DIV, 1000), "posit<48,2>", "division");
 
-	// nbits=64 requires long double compiler support
+	// posit<64,x> has up to 60 digits, more than double holds: the verifier's default reference
+	// for it is the exact one (exact_reference.hpp, #2121)
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, OPCODE_DIV, 1000), "posit<64,2>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 3>>(reportTestCases, OPCODE_DIV, 1000), "posit<64,3>", "division");
-	// posit<64,4> is hitting subnormal numbers
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<64, 4>>(reportTestCases, OPCODE_DIV, 1000), "posit<64,4>", "division");
 
 #ifdef HARDWARE_ACCELERATION

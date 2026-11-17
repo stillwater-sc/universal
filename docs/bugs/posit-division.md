@@ -48,7 +48,7 @@ File: include/sw/universal/verification/posit_test_suite_randoms.hpp
 
   - Both bugs fixed, tested with gcc AND clang
   - posit2 division: all exhaustive tests pass (nbits 2-10), all random tests pass through posit<48,2> (matching posit1)
-  - posit<64,*> failures are expected in both posit and posit1 (double oracle precision limitation)
+  - posit<64,*> failures are expected in both posit and posit1 (double oracle precision limitation); the verifiers now default to an exact reference for posit<64,*> (#2121)
   - posit1 division: unaffected by changes, still passes
   - posit2 addition, subtraction, multiplication: no regressions
 

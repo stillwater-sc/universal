@@ -14,6 +14,7 @@
 
 #include <universal/number/shared/specific_value_encoding.hpp>   // SpecificValue: the saturating reference clamp
 #include <universal/verification/correctly_rounded_reference.hpp>  // the reference, rounded once (#1861)
+#include <universal/verification/exact_reference.hpp>               // the reference type (#2121)
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -66,8 +67,10 @@ namespace sw { namespace universal {
 	};
 
 	// Execute a binary operator. Returns false when there is no reference to compare with: an
-	// operand double cannot hold exactly and a result the scaled reference does not cover
-	template<typename TestType>
+	// operand double cannot hold exactly and a result the scaled reference does not cover. With
+	// ReferenceType = exact_reference the reference is the exact result rounded once
+	// (exact_reference.hpp), and only an operator other than + - * / has none.
+	template<typename TestType, typename ReferenceType = double>
 	bool executeBinary(RandomsOp opcode, double da, double db, const TestType& testa, const TestType& testb, TestType& testresult, TestType& testref) {
 		double reference = 0.0;
 		switch (opcode) {
@@ -149,6 +152,9 @@ namespace sw { namespace universal {
 		case RandomsOp::OPCODE_DIV: case RandomsOp::OPCODE_IPD: op = '/'; break;
 		default: break;
 		}
+		if constexpr (std::is_same_v<ReferenceType, exact_reference>) {
+			return exact_rounding<TestType>::binary(op, testa, testb, testref);
+		}
 		// An operand or result past double's range has no double reference: compute it scaled (#1863)
 		if constexpr (has_scaled_reference<TestType>) {
 			const bool exactOperands = std::isfinite(da) && std::isfinite(db) && TestType(da) == testa && TestType(db) == testb;
@@ -174,8 +180,9 @@ namespace sw { namespace universal {
 		return true;
 	}
 
-	// Execute a unary operator
-	template<typename TestType>
+	// Execute a unary operator. With ReferenceType = exact_reference only sqrt has a reference,
+	// which the verifier checks before it gets here
+	template<typename TestType, typename ReferenceType = double>
 	void executeUnary(RandomsOp opcode, double da, const TestType& nut, TestType& result, TestType& ref) {
 		using std::sqrt;
 		using std::exp;
@@ -292,7 +299,12 @@ namespace sw { namespace universal {
 			std::cerr << "Unsupported unary operator: operation ignored\n";
 			break;
 		}
-		ref = reference;
+		if constexpr (std::is_same_v<ReferenceType, exact_reference>) {
+			exact_rounding<TestType>::sqrt(nut, ref);
+		}
+		else {
+			ref = reference;
+		}
 	}
 
 	// a NaN, inf or zero operand: its special cases are not checked against double's, except an
@@ -316,8 +328,11 @@ namespace sw { namespace universal {
 	// generate a random set of operands to test the binary operators for a number system configuration
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
-	template<typename TestType>
+	// ReferenceType is double or exact_reference (exact_reference.hpp): by default double where it
+	// holds every result of TestType, and the exact reference where TestType has one past that
+	template<typename TestType, typename ReferenceType = default_reference_t<TestType>>
 	int VerifyBinaryOperatorThroughRandoms(bool reportTestCases, RandomsOp opcode, size_t nrOfRandoms) {
+		check_reference_type<TestType, ReferenceType>();
 		///std::cerr << typeid(TestType).name() << " : ";
 
 		std::string operation_string;
@@ -347,6 +362,10 @@ namespace sw { namespace universal {
 			operation_string = "/=";
 			break;
 		case RandomsOp::OPCODE_POW:
+			if constexpr (std::is_same_v<ReferenceType, exact_reference>) {
+				std::cerr << "pow has no exact reference, test cancelled\n";
+				return 1;
+			}
 			operation_string = "pow";
 			break;
 		case RandomsOp::OPCODE_EXP:
@@ -395,7 +414,7 @@ namespace sw { namespace universal {
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " testa " << testa << std::endl;
 			//std::cout << "sizeof db: " << sizeof(db) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value db " << db << " at index " << ia << " testa " << testb << std::endl;
 
-			if (!executeBinary(opcode, da, db, testa, testb, result, ref)) continue;
+			if (!executeBinary<TestType, ReferenceType>(opcode, da, db, testa, testb, result, ref)) continue;
 			// check the result
 			if (result != ref) {
 				// we can't properly test the NaN and Inf encodings as the transformation through the custom type
@@ -458,8 +477,16 @@ namespace sw { namespace universal {
 	// Basic design is that we generate nrOfRandom uint64_t values and store them in an operand array.
 	// We will then execute the unary operator on .
 	// provide 		double dminpos = double(minpos<nbits, es>(pminpos));
-	template<typename TestType>
+	// ReferenceType as for VerifyBinaryOperatorThroughRandoms; the exact reference covers sqrt
+	template<typename TestType, typename ReferenceType = default_reference_t<TestType>>
 	int VerifyUnaryOperatorThroughRandoms(bool reportTestCases, RandomsOp opcode, size_t nrOfRandoms) {
+		check_reference_type<TestType, ReferenceType>();
+		if constexpr (std::is_same_v<ReferenceType, exact_reference>) {
+			if (opcode != RandomsOp::OPCODE_SQRT) {
+				std::cerr << "only sqrt has an exact reference, test cancelled\n";
+				return 1;
+			}
+		}
 		std::string operation_string;
 		bool sqrtOperator = false;  // we need to filter negative values from the randoms
 		switch (opcode) {
@@ -533,7 +560,7 @@ namespace sw { namespace universal {
 			if (sqrtOperator && nut < 0) nut = -nut;
 			double da = double(nut);
 
-			executeUnary(opcode, da, nut, ref, result);
+			executeUnary<TestType, ReferenceType>(opcode, da, nut, result, ref);
 
 			if (result != ref) {
 				if (result.isnan() && ref.isnan()) continue;
