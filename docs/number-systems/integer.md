@@ -72,6 +72,29 @@ and `idiv()`. Nothing is printed. `INTEGER_THROW_ARITHMETIC_EXCEPTION` still def
 so the `WholeNumber` and `NaturalNumber` domain errors keep their default; only division by
 zero changed (#1894).
 
+### Conversions with native floating-point and unsigned types
+
+These rules apply at every width (#2131).
+
+- **Native float to integer:** truncates toward zero, exactly: `integer<128>(1e30)` is
+  1000000000000000019884624838656. NaN, infinity and values past the range follow the cast rule
+  the real types use when they convert to a native integer (#2104):
+  - an `IntegerNumber` saturates to `[-max, max]`, and NaN gives `min()`, the 100...0 pattern no
+    finite value maps to. So `integer<16>(-32768.0)` is -32767;
+  - the unsigned kinds saturate to `[0, max - 1]`, and NaN gives `max()`.
+- **Integer to float, double or long double:** correctly rounded, rounded once from the integer's
+  top bits.
+- **Integer to a native unsigned type:** modular, as in C++. A negative value sign-extends, so
+  `(unsigned)integer<8>(-1)` is `0xFFFFFFFF`.
+- **`>>`:** an arithmetic shift. Shifting a negative value by `nbits` or more gives -1, not 0.
+- **A failed string parse** (`integer<16>("xyz")`) leaves 0.
+
+`std::numeric_limits` is specialized for all three kinds:
+- **`IntegerNumber`:** `min()` and `lowest()` are the most negative value.
+- **The unsigned kinds:** `WholeNumber`'s `min()` is 1, and `NaturalNumber`'s is 0, as their operators check.
+- **Every kind:** `epsilon()`, `round_error()`, `denorm_min()` and `infinity()` return the integer
+  type's zero.
+
 ## How It Works
 
 The integer is stored as an array of `BlockType` limbs, with the number of blocks computed at compile time as `ceil(nbits / bits_per_block)`. Arithmetic operations are performed limb-by-limb with carry propagation, exactly as in hardware ALU design but generalized to arbitrary widths.

@@ -25,53 +25,48 @@ A class that is a literal type is a class (defined with class, struct or union) 
 
 	TODO: how to make the integer class a literal type so that we can use it as a return type for min/max/lowest etc.
 */
-template <unsigned nbits, typename bt> 
-class numeric_limits< sw::universal::integer<nbits, bt> > {
+// every kind of integer (#2131): an IntegerNumber is a two's complement signed type; WholeNumber
+// and NaturalNumber are unsigned kinds whose smallest values are 1 and 0, as their operators check
+// (WholeNumber rejects a zero result, NaturalNumber a negative one). The non-floating members return
+// the type's zero, as the standard asks of an integer type: epsilon, round_error, denorm_min and
+// infinity used to return float, and min() returned 1 instead of the most negative value.
+template <unsigned nbits, typename bt, sw::universal::IntegerNumberType NumberType>
+class numeric_limits< sw::universal::integer<nbits, bt, NumberType> > {
+	static constexpr bool isSigned = (NumberType == sw::universal::IntegerNumberType::IntegerNumber);
 public:
-	using Integer = sw::universal::integer<nbits, bt>;
+	using Integer = sw::universal::integer<nbits, bt, NumberType>;
 	static constexpr bool is_specialized = true;
-	static constexpr Integer min() { return 1; } // return minimum value
-	static constexpr Integer max() {             // return maximum value
-		Integer imax(0); // sw::universal::integers are 2's complement encoded numbers
-		imax.setbit(nbits - 1);
-		imax.flip();
-		return imax;
-	} 
-	static constexpr Integer lowest() { // return most negative value
-		Integer ilowest(0); // 2's complement maxneg is 1000...0000
-		ilowest.setbit(nbits - 1);
-		return ilowest;
+	static constexpr Integer min() {   // the smallest finite value, as for a native integer
+		Integer v(0);
+		if constexpr (isSigned) v.setbit(nbits - 1);                                   // 100...0
+		else if constexpr (NumberType == sw::universal::IntegerNumberType::WholeNumber) v.setbit(0);   // 1
+		return v;
 	}
-	static constexpr float epsilon() { // return smallest effective increment from 1.0
-		return 1.0f;
+	static constexpr Integer max() {
+		Integer v(0);
+		v.flip();                                  // all ones
+		if constexpr (isSigned) v.setbit(nbits - 1, false);   // 011...1
+		return v;
 	}
-	static constexpr float round_error() { // return largest rounding error
-		return 0.5f;
-	}
-	static constexpr float denorm_min() {  // return minimum denormalized value
-		return 1.0f; 
-	}
-	static constexpr Integer infinity() { // return positive infinity
-		return max(); 
-	}
-	static constexpr Integer quiet_NaN() { // return non-signaling NaN
-		return 0; 
-	}
-	static constexpr Integer signaling_NaN() { // return signaling NaN
-		return 0;
-	}
+	static constexpr Integer lowest() { return min(); }
+	static constexpr Integer epsilon()       { return Integer(0); }
+	static constexpr Integer round_error()   { return Integer(0); }
+	static constexpr Integer denorm_min()    { return Integer(0); }
+	static constexpr Integer infinity()      { return Integer(0); }   // has_infinity is false
+	static constexpr Integer quiet_NaN()     { return Integer(0); }
+	static constexpr Integer signaling_NaN() { return Integer(0); }
 
-	static constexpr int digits       = nbits - 1;
+	static constexpr int digits       = isSigned ? static_cast<int>(nbits) - 1 : static_cast<int>(nbits);
 	static constexpr int digits10     = sw::universal::decimal_digits10_integer(digits);
 	static constexpr int max_digits10 = 0;   // integer types have no decimal round trip to size
-	static constexpr bool is_signed   = true;
+	static constexpr bool is_signed   = isSigned;
 	static constexpr bool is_integer  = true;
 	static constexpr bool is_exact    = true;
 	static constexpr int radix        = 2;
 
 	static constexpr int min_exponent   = 0;
 	static constexpr int min_exponent10 = 0;
-	static constexpr int max_exponent   = nbits - 1;
+	static constexpr int max_exponent   = digits;
 	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
 	static constexpr bool has_infinity  = false;
 	static constexpr bool has_quiet_NaN = false;

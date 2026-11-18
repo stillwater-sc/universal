@@ -9,6 +9,8 @@
 #include <cstdint>   // std::uint8_t/uint64_t and the signed fixed-width types, used throughout
 #include <cstdio>   // fprintf(stderr,...) for the diagnostics; keeps <iostream> out of the core (#1334)
 #include <algorithm>
+#include <cmath>    // std::frexp / std::ldexp: the native float conversions (#2131)
+#include <limits>
 #include <string_view>
 #include <type_traits>  // for std::is_constant_evaluated() dispatch around mul128/addcarry
 
@@ -660,11 +662,20 @@ public:
 					carry = product >> 64;
 				}
 #else
-				std::uint64_t scaleFactor(scale), segment(0);
+				// 64 x 64 -> 128 on 32-bit halves: the carry used to be dropped (#2131)
+				std::uint64_t carry = 0;
+				const std::uint64_t b0 = static_cast<std::uint64_t>(scale) & 0xFFFF'FFFFull, b1 = static_cast<std::uint64_t>(scale) >> 32;
 				for (unsigned i = 0; i < nrBlocks; ++i) {
-					segment += static_cast<std::uint64_t>(_block[i]) * scaleFactor;
-					_block[i] = static_cast<BlockType>(segment);
-					segment = 0;
+					const std::uint64_t a = static_cast<std::uint64_t>(_block[i]);
+					const std::uint64_t a0 = a & 0xFFFF'FFFFull, a1 = a >> 32;
+					const std::uint64_t p00 = a0 * b0, p01 = a0 * b1, p10 = a1 * b0, p11 = a1 * b1;
+					const std::uint64_t mid = (p00 >> 32) + (p01 & 0xFFFF'FFFFull) + (p10 & 0xFFFF'FFFFull);
+					std::uint64_t lo = (p00 & 0xFFFF'FFFFull) | (mid << 32);
+					std::uint64_t hi = p11 + (p01 >> 32) + (p10 >> 32) + (mid >> 32);
+					lo += carry;
+					if (lo < carry) ++hi;
+					_block[i] = static_cast<BlockType>(lo);
+					carry = hi;
 				}
 #endif
 			}
@@ -687,6 +698,7 @@ public:
 				segment >>= bitsInBlock;
 			}
 		}
+		_block[MSU] &= MSU_MASK;   // the product's bits past nbits are not part of the value (#2131)
 		return *this;
 	}
 	constexpr integer& operator/=(const integer& rhs) {
@@ -827,7 +839,10 @@ public:
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		if (bitsToShift >= static_cast<int>(nbits)) {
+			// an arithmetic shift: every bit becomes the sign, -1 for a negative value (#2131)
+			const bool negative = sign();
 			setzero();
+			if (negative) flip();
 			return *this;
 		}
 		bool signext = sign();
@@ -905,11 +920,18 @@ public:
 			clear();
 			return *this;
 		}
-		integer<nbits, BlockType, NumberType> target{};
-		for (int i = nbits - 1; i >= shift; --i) {  // TODO: inefficient as it works at the bit level
-			target.setbit(static_cast<unsigned>(i - shift), at(static_cast<unsigned>(i)));
+		// by limbs: the bits above nbits are zero, so the vacated top fills with zeros (#2131)
+		const unsigned blockShift = static_cast<unsigned>(shift) / bitsInBlock;
+		const unsigned bitShift   = static_cast<unsigned>(shift) % bitsInBlock;
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			const unsigned src = i + blockShift;
+			const std::uint64_t lo = (src < nrBlocks) ? static_cast<std::uint64_t>(_block[src]) : 0u;
+			const std::uint64_t hi = (src + 1 < nrBlocks) ? static_cast<std::uint64_t>(_block[src + 1]) : 0u;
+			std::uint64_t v = lo >> bitShift;
+			if (bitShift != 0) v |= (hi << (bitsInBlock - bitShift));
+			_block[i] = static_cast<bt>(v);
 		}
-		*this = target;
+		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
 	constexpr integer& operator&=(const integer& rhs) {
@@ -1081,6 +1103,7 @@ public:
 		return *this;
 	}
 	integer& assign(const std::string& txt) noexcept {
+		clear();   // parse() writes only on success: a failed parse leaves 0, not indeterminate blocks (#2131)
 		if (!parse(txt, *this)) {
 			std::fprintf(stderr, "Unable to parse: %s\n", txt.c_str());
 		}
@@ -1118,8 +1141,9 @@ public:
 		}
 		return true;
 	}
-	constexpr bool ispos()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return *this > 0; else return true; }
-	constexpr bool isneg()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return *this < 0; else return false; }
+	// from the sign bit: these used to build integer(0) and compare (#2131)
+	constexpr bool ispos()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return !sign() && !iszero(); else return true; }
+	constexpr bool isneg()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return sign(); else return false; }
 	constexpr bool isone()  const noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			if (i == 0) {
@@ -1319,12 +1343,57 @@ public:
 		}
 		return *this;
 	}
-	// native IEEE-754 conversion
-	// TODO: currently only supports integer values of 64bits or less
+	// native IEEE-754 conversion, at every width (#2131): a finite value truncates toward zero,
+	// exactly; past the range, infinity included, it saturates to [-max, max] for an IntegerNumber
+	// and to [0, max - 1] for the unsigned kinds; a NaN gives the integer NaR, min() for an
+	// IntegerNumber and max() for the unsigned kinds. That is the #2104 rule the real types follow
+	// when they cast to a native integer (shared/integer_cast.hpp). It used to go through
+	// static_cast<long long>: integer<128>(1e30) was -9.22e18, and NaN or inf were UB.
 	template<typename Real>
 	constexpr integer& convert_ieee(Real rhs) noexcept {
+		constexpr bool isSigned = (NumberType == IntegerNumberType::IntegerNumber);
 		clear();
-		return *this = static_cast<long long>(rhs); // TODO: this clamps the IEEE range to +-2^63
+		if (rhs != rhs) {   // NaN: the integer NaR
+			if constexpr (isSigned) setbit(nbits - 1);      // 100...0
+			else flip();                                     // 111...1
+			return *this;
+		}
+		const bool negative = rhs < Real(0);
+		if (negative && !isSigned) return *this;           // below the range of an unsigned kind: 0
+		const Real a = negative ? -rhs : rhs;
+		// the magnitude cap: max() for a signed type, max() - 1 for an unsigned one
+		auto saturate = [&]() {
+			clear();
+			flip();                                          // all ones
+			if constexpr (isSigned) setbit(nbits - 1, false);  // 011...1 = max
+			else setbit(0, false);                             // 111...0 = max - 1
+			if (negative) twosComplement();                  // -max
+		};
+		if (!(a < std::numeric_limits<Real>::infinity())) { saturate(); return *this; }   // infinity
+		if (a < Real(1)) return *this;                     // truncates to 0
+		int exponent = 0;
+		const Real fraction = std::frexp(a, &exponent);    // a = fraction * 2^exponent, fraction in [0.5, 1)
+		// a >= 2^(nbits-1) does not fit a signed magnitude, a >= 2^nbits - 1 an unsigned one
+		constexpr int capBits = isSigned ? static_cast<int>(nbits) - 1 : static_cast<int>(nbits);
+		if (exponent > capBits) { saturate(); return *this; }
+		constexpr int digits = std::numeric_limits<Real>::digits;
+		static_assert(digits <= 64, "convert_ieee: a significand of at most 64 bits");
+		const std::uint64_t significand = static_cast<std::uint64_t>(std::ldexp(fraction, digits));   // exact
+		// magnitude = significand * 2^(exponent - digits), truncated toward zero
+		const int shift = exponent - digits;
+		std::uint64_t bits = significand;
+		if (shift < 0) bits = (shift <= -64) ? 0u : (significand >> (-shift));
+		for (unsigned i = 0; i < 64 && i < nbits; ++i) setbit(i, ((bits >> i) & 1u) != 0);
+		if (shift > 0) *this <<= shift;
+		if constexpr (!isSigned) {
+			// 2^nbits - 1 itself is past the unsigned cap of max() - 1
+			integer allOnes;
+			allOnes.clear();
+			allOnes.flip();
+			if (*this == allOnes) { saturate(); return *this; }
+		}
+		if (negative) twosComplement();
+		return *this;
 	}
 
 	// show the binary encodings of the limbs
@@ -1421,6 +1490,8 @@ protected:
 
 	// to_unsigned_integer converts to native unsigned integer
     // TODO: enable_if this for integral types only
+	// modular, as C++ converts a signed value to an unsigned type: the value modulo 2^bits, so a
+	// negative IntegerNumber sign-extends: (unsigned)integer<8>(-1) is 0xFFFFFFFF, not 255 (#2131)
 	template<typename TargetInt>
 	TargetInt to_unsigned_integer() const noexcept {
 		TargetInt v{ 0 };
@@ -1431,41 +1502,58 @@ protected:
 		unsigned upperBlock = std::min(MSU, upperTargetBlock);
 		for (unsigned b = 0; b <= upperBlock; ++b) {
 			std::uint64_t data = _block[b];
-			v |= (data << (b * bitsInBlock));
+			v |= static_cast<TargetInt>(data << (b * bitsInBlock));
 		}
-
+		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
+			if (sign() && nbits < sizeoftarget) {
+				for (unsigned i = nbits; i < sizeoftarget; ++i) v |= static_cast<TargetInt>(TargetInt(1) << i);
+			}
+		}
 		return v;
 	}
 
-	// TODO: enable_if this for native floating-point types only
+	// to a native float, correctly rounded (#2131): the magnitude's top digits(Real) bits as hi,
+	// the next digits(Real) - 1 bits with the rest folded in as a sticky bit as lo, both exact in
+	// Real, and hi + lo rounds once. Summing the bits from the bottom rounded at every add, so
+	// integer<128>(2^106 + 2^53 + 1) gave 8.1129638414606682e31, not 2^106 + 2^54.
 	template<typename Real>
 	constexpr Real to_real() const noexcept {
-		Real r = 0.0;
-		Real bitValue = static_cast<Real>(1.0);
-		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
-			integer<nbits + 1, bt, NumberType> v{ *this }; // deal with maxneg in 2's complement
-			if (isneg()) v = -v;
-			for (unsigned i = 0; i < nbits; ++i) { // upper bound is nbits + 1 - 1 == nbits
-				if (v.at(i)) r += bitValue;
-				bitValue *= static_cast<Real>(2.0);
-			}
-			if (isneg()) r = -r;
-		}
-		else if constexpr (NumberType == IntegerNumberType::WholeNumber) {
-			for (unsigned i = 0; i < nbits; ++i) {
-				if (at(i)) r += bitValue;
-				bitValue *= static_cast<Real>(2.0);
-			}
-		}
-		else { // NaturalNumber
+		if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
 			if (iszero()) std::fprintf(stderr, "internal error: natural number is set to 0\n");
-			for (unsigned i = 0; i < nbits; ++i) {
-				if (at(i)) r += bitValue;
-				bitValue *= static_cast<Real>(2.0);
-			}
 		}
-
-		return r;
+		if (iszero()) return Real(0);
+		constexpr int P = std::numeric_limits<Real>::digits;
+		static_assert(P <= 64, "to_real: a significand of at most 64 bits");
+		// the magnitude, one bit wider so that maxneg negates
+		integer<nbits + 1, bt, NumberType> m{ *this };
+		const bool negative = isneg();
+		if (negative) m = -m;
+		int msb = -1;
+		for (int i = static_cast<int>(nbits); i >= 0; --i) if (m.at(static_cast<unsigned>(i))) { msb = i; break; }
+		// bits [from, from + count) of m as a uint64; bits below 0 read as 0
+		auto field = [&](int from, int count) {
+			std::uint64_t v = 0;
+			for (int k = count - 1; k >= 0; --k) {
+				const int b = from + k;
+				v = (v << 1) | ((b >= 0 && m.at(static_cast<unsigned>(b))) ? 1u : 0u);
+			}
+			return v;
+		};
+		Real r;
+		if (msb < P) {
+			r = static_cast<Real>(field(0, msb + 1));   // exact
+		}
+		else {
+			const int hiLow = msb - P + 1;              // the lowest bit of hi
+			const std::uint64_t hi = field(hiLow, P);
+			const int loLow = hiLow - (P - 1);
+			std::uint64_t lo = field(loLow, P - 1);
+			bool sticky = false;
+			for (int b = loLow - 1; b >= 0 && !sticky; --b) sticky = m.at(static_cast<unsigned>(b));
+			if (sticky) lo |= 1u;                        // round to odd at 2P - 1 bits: one rounding below
+			r = std::ldexp(static_cast<Real>(hi), hiLow) + std::ldexp(static_cast<Real>(lo), loLow);
+		}
+		return negative ? -r : r;
 	}
 
 private:
