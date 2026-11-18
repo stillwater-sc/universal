@@ -14,8 +14,8 @@
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/internal/value/value.hpp>
-//#define BLOCKTRIPLE_VERBOSE_OUTPUT   // tracing: define it by hand to debug, never in a regression test (CI)
-//#define BLOCKTRIPLE_TRACE_ALL   // tracing: define it by hand to debug, never in a regression test (CI)
+//#define BLOCKTRIPLE_VERBOSE_OUTPUT   // to debug, define with a BLOCKTRIPLE_TRACE_* switch; never in a regression test (CI)
+//#define BLOCKTRIPLE_TRACE_ALL   // to debug, define with BLOCKTRIPLE_VERBOSE_OUTPUT, which it needs; never in a regression test (CI)
 #include <universal/internal/blocktriple/blocktriple_debug.hpp>  // constexprClassParameters + tracing (#1334)
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/internal/blocksignificand/manipulators.hpp>   // (#1334)

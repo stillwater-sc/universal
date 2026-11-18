@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
-//#define BLOCKTRIPLE_VERBOSE_OUTPUT   // tracing: define it by hand to debug, never in a regression test (CI)
+//#define BLOCKTRIPLE_VERBOSE_OUTPUT   // to debug, define with a BLOCKTRIPLE_TRACE_* switch; never in a regression test (CI)
 //#define BLOCKTRIPLE_TRACE_ADD
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_status.hpp>

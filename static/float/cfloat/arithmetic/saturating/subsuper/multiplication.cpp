@@ -6,8 +6,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
-//#define ALGORITHM_VERBOSE_OUTPUT   // tracing: define it by hand to debug, never in a regression test (CI)
-//#define ALGORITHM_TRACE_MUL   // tracing: define it by hand to debug, never in a regression test (CI)
+//#define ALGORITHM_VERBOSE_OUTPUT   // to debug, define with an ALGORITHM_TRACE_* switch; never in a regression test (CI)
+//#define ALGORITHM_TRACE_MUL   // to debug, define with ALGORITHM_VERBOSE_OUTPUT, which it needs; never in a regression test (CI)
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_case.hpp>
