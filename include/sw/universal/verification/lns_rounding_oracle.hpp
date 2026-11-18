@@ -130,19 +130,24 @@ enum class decision { decided, undecided, unreachable };
 // the nearest integer n to the exact value that z(W) approximates within margin(W, z), by Ziv's
 // retry: decided when n is the only integer within 1/2 - M of z. Undecided when z stays that
 // close to a tie at the cap; unreachable when z has too many integer bits to round at the cap.
+// The precisions tried are startBits, doubling, and last the cap itself. The margin is an efloat:
+// in double, 2^-W underflows to zero past W = 1074, and |z| can overflow it.
 template<typename Evaluate, typename Margin>
 decision decide(Evaluate&& evaluate, Margin&& margin, unsigned startBits, E& n) {
-	for (unsigned W = startBits; W <= zivCap; W *= 2u) {
+	bool tooFewFractionBits = false;
+	for (unsigned W = (startBits < zivCap ? startBits : zivCap); ; W = (2u * W < zivCap ? 2u * W : zivCap)) {
 		const E z = evaluate(W);
 		if (z.isnan() || z.isinf()) { ++unreferencedCount(); return decision::unreachable; }
-		if (!z.iszero() && z.scale() + 40 >= static_cast<int64_t>(W)) continue;   // too few fraction bits at W
-		const E candidate = floor(z + E(0.5));
-		const E distance = abs(z - candidate);
-		const E limit = E(0.5) - E(margin(W, std::fabs(double(z))));
-		if (distance < limit) { n = candidate; return decision::decided; }
+		tooFewFractionBits = !z.iszero() && z.scale() + 40 >= static_cast<int64_t>(W);
+		if (!tooFewFractionBits) {
+			const E candidate = floor(z + E(0.5));
+			const E distance = abs(z - candidate);
+			const E limit = E(0.5) - margin(W, abs(z));
+			if (distance < limit) { n = candidate; return decision::decided; }
+		}
+		if (W == zivCap) break;
 	}
-	const E z = evaluate(zivCap);
-	if (!z.iszero() && z.scale() + 40 >= static_cast<int64_t>(zivCap)) { ++unreferencedCount(); return decision::unreachable; }
+	if (tooFewFractionBits) { ++unreferencedCount(); return decision::unreachable; }
 	++undecidedCount();
 	return decision::undecided;
 }
@@ -206,9 +211,11 @@ struct exact_rounding<lns<nbits, rbits, bt, xtra...>> {
 			z = base + z;
 			return z;
 		};
-		auto margin = [](unsigned W, double absz) {
-			const double two_r = std::ldexp(1.0, static_cast<int>(rbits));
-			return std::ldexp(two_r * (8.0 * two_r + 4.0 * rbits + 32.0) + 4.0 * absz, -static_cast<int>(W));
+		auto margin = [](unsigned W, const E& absz) {
+			const double two_r = std::ldexp(1.0, static_cast<int>(rbits));   // rbits <= 63: finite, exact enough as a bound
+			E bound(two_r * (8.0 * two_r + 4.0 * rbits + 32.0));
+			bound.set_precision(64);
+			return ldexp(bound + E(4.0) * absz, -static_cast<int>(W));
 		};
 		E n;
 		if (decide(evaluate, margin, 2u * rbits + 96u, n) != decision::decided) return false;
@@ -270,7 +277,7 @@ struct exact_rounding<lns<nbits, rbits, bt, xtra...>> {
 			E z = ldexp(x, static_cast<int>(rbits));
 			return negx ? -z : z;
 		};
-		auto margin = [](unsigned W, double absz) { return std::ldexp(16.0 * absz + 16.0, -static_cast<int>(W)); };
+		auto margin = [](unsigned W, const E& absz) { return ldexp(E(16.0) * absz + E(16.0), -static_cast<int>(W)); };
 		// |z| from a double estimate: past the field by far, Saturating clamps; Wrapping reduces
 		// z exactly when it has few enough integer bits to round at the cap, and otherwise has no
 		// reference, which is counted and reported

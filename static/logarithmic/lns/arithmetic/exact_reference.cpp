@@ -160,7 +160,7 @@ int VerifyUndecidedCounted(bool reportTestCases) {
 	const unsigned long long before = undecidedCount();
 	E n(99.0);
 	auto onTie = [](unsigned W) { E z(2.5); z.set_precision(W); return z; };
-	auto margin = [](unsigned W, double) { return std::ldexp(1.0, -static_cast<int>(W)); };
+	auto margin = [](unsigned W, const E&) { return ldexp(E(1.0), -static_cast<int>(W)); };
 	const decision d = decide(onTie, margin, 64u, n);
 	int fails = 0;
 	if (d != decision::undecided) { ++fails; if (reportTestCases) std::cerr << "FAIL a tie was not undecided\n"; }
@@ -168,6 +168,30 @@ int VerifyUndecidedCounted(bool reportTestCases) {
 	if (n != E(99.0)) { ++fails; if (reportTestCases) std::cerr << "FAIL an undecided result wrote n\n"; }
 	auto offTie = [](unsigned W) { E z(2.25); z.set_precision(W); return z; };
 	if (decide(offTie, margin, 64u, n) != decision::decided || n != E(2.0)) { ++fails; if (reportTestCases) std::cerr << "FAIL 2.25 did not decide to 2\n"; }
+
+	// a value that leaves the tie only at the cap: the precisions tried end at the cap itself,
+	// and the decision runs there (222, 444, 888, 1776 and then 2048 bits)
+	auto atCap = [](unsigned W) {
+		E z(2.5);
+		z.set_precision(W);
+		return (W >= zivCap) ? z + ldexp(E(1.0), -1900) : z;
+	};
+	if (decide(atCap, margin, 222u, n) != decision::decided || n != E(3.0)) { ++fails; if (reportTestCases) std::cerr << "FAIL 2.5 + 2^-1900 was not decided at the cap\n"; }
+
+	// a margin below double's range: 2^-1150 off a tie with a bound of 2^(50 - W) is undecided at
+	// 1200 bits and decided at the cap; a margin in double would be 0 at 1200 and decide too early
+	unsigned lastW = 0;
+	auto nearTie = [&lastW](unsigned W) {
+		lastW = W;
+		E z(2.5);
+		z.set_precision(W);
+		return z + ldexp(E(1.0), -1150);
+	};
+	auto wideMargin = [](unsigned W, const E&) { return ldexp(E(1.0), 50 - static_cast<int>(W)); };
+	if (decide(nearTie, wideMargin, 1200u, n) != decision::decided || n != E(3.0) || lastW != zivCap) {
+		++fails;
+		if (reportTestCases) std::cerr << "FAIL 2.5 + 2^-1150 decided at " << lastW << " bits, not at the cap\n";
+	}
 	return fails;
 }
 
@@ -216,6 +240,14 @@ int VerifyWideExponents(bool reportTestCases) {
 		expect("lns<8,3> wrapping exp2(8) has a reference", exact_rounding<L>::function('2', x, r));
 		expect("lns<8,3> wrapping exp2(8) is the zero encoding", r.iszero());
 		expect("lns<8,3> wrapping exp2(8) agrees with lns", reference_equal(exp2(x), r));
+	}
+	{   // a wrapping exponential with 1101 integer bits: decided at the cap, its margin far past double's range
+		using L = lns<16, 0, std::uint16_t, Behavior::Wrapping>;
+		const unsigned long long before = exact_rounding<L>::undecided() + exact_rounding<L>::unreferenced();
+		L r;
+		const bool referenced = exact_rounding<L>::function('e', withExponent<L>(1100), r);   // e^(2^1100)
+		expect("lns<16,0> wrapping exp(2^1100) has a reference", referenced);
+		expect("lns<16,0> wrapping exp(2^1100) is neither undecided nor unreferenced", exact_rounding<L>::undecided() + exact_rounding<L>::unreferenced() == before);
 	}
 	{   // a wrapping exponential with more integer bits than the cap can round: counted, no reference
 		using L = lns<16, 0, std::uint16_t, Behavior::Wrapping>;
