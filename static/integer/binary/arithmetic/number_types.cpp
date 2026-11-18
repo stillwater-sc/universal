@@ -129,7 +129,11 @@ void VerifyUnary(std::uint64_t u, Failures& fail) {
 	}
 
 	Integer p; p.setbits(0);
-	if (!parse(expected, p) || Bits(p) != u)
+	if (NumberType == IntegerNumberType::NaturalNumber && u == 0) {
+		// the all-zeros encoding is outside the Natural domain {1, 2, ...}: "0" does not parse (#2131)
+		if (parse(expected, p)) fail(tag("parse of \"0\" rejected"), "accepted", "rejected");
+	}
+	else if (!parse(expected, p) || Bits(p) != u)
 		fail(tag("parse of to_string"), std::to_string(Bits(p)), std::to_string(u));
 
 	for (unsigned s = 0; s < nbits; ++s) {

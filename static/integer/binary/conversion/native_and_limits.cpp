@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <cfenv>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -228,6 +229,13 @@ int VerifyDomains(bool reportTestCases) {
 	expect("whole 7 / 2 is 3", static_cast<unsigned>(W(7) / W(2)) == 3u);
 	expect("natural 7 / 2 is 3", static_cast<unsigned>(N(7) / N(2)) == 3u);
 	expect("natural 5 - 2 is 3", static_cast<unsigned>(N(5) - N(2)) == 3u);
+	// setblock keeps the bits past nbits clear: they must not shift into the value
+	integer<9, std::uint8_t> nine;
+	nine.clear();
+	nine.setblock(1, 0x02);   // bit 9 is padding
+	expect("integer<9> setblock(1, 0x02) is 0", nine.iszero());
+	nine.logicShiftRight(1);
+	expect("integer<9> padding does not shift into the value", nine.iszero());
 	return fails;
 }
 
@@ -371,6 +379,21 @@ int VerifyLongDoubleDomain(bool reportTestCases) {
 		integer<1026, std::uint32_t> big; big.clear(); big.setbit(1024);
 		const long double x = static_cast<long double>(big);
 		expect("integer<1026>(2^1024) -> long double is +inf", x > 0.0L && x - x != x - x);
+	}
+	// the double-double guards raise no floating-point exception: an infinite hi is detected without
+	// inf - inf (FE_INVALID), and the range bound of a 1024-bit destination is not computed (FE_OVERFLOW)
+	if constexpr (std::numeric_limits<long double>::max_exponent <= 1024) {
+		integer<1026, std::uint32_t> big; big.clear(); big.setbit(1024);
+		std::feclearexcept(FE_ALL_EXCEPT);
+		volatile long double x = static_cast<long double>(big);
+		(void)x;
+		expect("integer<1026>(2^1024) -> long double raises no FE_INVALID", !std::fetestexcept(FE_INVALID));
+	}
+	{
+		std::feclearexcept(FE_ALL_EXCEPT);
+		volatile long double seven = 7.0L;
+		const integer<1024, std::uint32_t> v(static_cast<long double>(seven));
+		expect("integer<1024>(7.0L) is 7 and raises no FE_OVERFLOW", int(v) == 7 && !std::fetestexcept(FE_OVERFLOW));
 	}
 	// one-bit WholeNumber {0}: finite values give 0, NaN the all-ones NaR
 	using W1 = integer<1, std::uint8_t, WholeNumber>;

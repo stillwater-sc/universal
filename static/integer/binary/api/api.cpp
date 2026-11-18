@@ -87,6 +87,25 @@ try {
 			WholeN w(9);
 			keeps("whole 9, then = -1", w, -1, 9u);
 		}
+		// the library's own internal zeros (division scratch, a parsed '0' digit, comparison and abs
+		// with a native 0) must never go through the NaturalNumber zero check: with exceptions enabled
+		// that check throws inside noexcept code and terminates. Run at 8- and 32-bit limbs, which take
+		// the general division path.
+		auto naturalOps = [&](auto tag) {
+			using N = integer<16, decltype(tag), IntegerNumberType::NaturalNumber>;
+			N a(7), b(2), c(100);
+			N q = a / b, r1 = N(1) % b, r2 = c % N(7);
+			N p; p.assign("105");
+			N p2; const bool zeroParsed = parse(std::string("0"), p2);
+			const bool ok = unsigned(q) == 3u && unsigned(r1) == 1u && unsigned(r2) == 2u && unsigned(p) == 105u && !zeroParsed
+				&& !(a == 0) && (a > 0) && (a > -1) && (0 < a) && unsigned(abs(a)) == 7u;
+			if (!ok) {
+				std::cout << "Incorrect: natural number operations at " << sizeof(decltype(tag)) * 8 << "-bit limbs\n";
+				++nrOfFailedTestCases;
+			}
+		};
+		naturalOps(std::uint8_t{});
+		naturalOps(std::uint32_t{});
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : natural number test cases\n";
 		}

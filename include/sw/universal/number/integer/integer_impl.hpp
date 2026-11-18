@@ -113,7 +113,8 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& v);
 // idiv_t for integer<nbits, BlockType, NumberType> to capture quotient and remainder during long division
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 struct idiv_t {
-	constexpr idiv_t() : quot{ 0 }, rem{ 0 } {};
+	// zero limbs, not integer(0): a NaturalNumber's domain-checked zero conversion would throw
+	constexpr idiv_t() : quot{}, rem{} {};
 	integer<nbits, BlockType, NumberType> quot; // quotient
 	integer<nbits, BlockType, NumberType> rem;  // remainder
 };
@@ -1035,7 +1036,7 @@ public:
 		}
 	}
 	constexpr void setblock(unsigned i, bt value) noexcept {
-		if (i < nrBlocks) _block[i] = value;
+		if (i < nrBlocks) _block[i] = (i == MSU) ? static_cast<bt>(value & MSU_MASK) : value;   // no padding bits
 	}
 	// use un-interpreted raw bits to set the bits of the integer
 	constexpr integer& setbits(uint64_t raw_bits) noexcept {
@@ -1375,7 +1376,10 @@ public:
 			const double lo = static_cast<double>(rhs - static_cast<Real>(hi));
 			// far past the range: hi alone decides, before any integer arithmetic can wrap
 			constexpr int capBitsDD = isSigned ? static_cast<int>(nbits) - 1 : static_cast<int>(nbits);
-			if (!(std::fabs(hi) < std::ldexp(1.0, capBitsDD + 1))) { saturate(); return *this; }
+			// (a bound of 2^1024 or more holds every finite hi, and would overflow to compute)
+			if constexpr (capBitsDD + 1 < std::numeric_limits<double>::max_exponent) {
+				if (!(std::fabs(hi) < std::ldexp(1.0, capBitsDD + 1))) { saturate(); return *this; }
+			}
 			// signed, whatever the destination kind: the correction t can be negative or zero, and
 			// only the combined value is subject to the destination's range and domain
 			using Wide = integer<nbits + 3, bt, IntegerNumber>;  // holds |hi| < 2^(nbits+1) plus lo's part
@@ -1583,7 +1587,9 @@ protected:
 			// in the format; the platform may normalize a midpoint pair to the other hi, with the
 			// same value.
 			const double hi = to_real<double>();
-			if (hi - hi != 0.0) return static_cast<Real>(hi);   // past double's range: the residual is meaningless
+			if (hi == std::numeric_limits<double>::infinity() || hi == -std::numeric_limits<double>::infinity()) {
+				return static_cast<Real>(hi);   // past double's range: the residual is meaningless
+			}
 			// the residual in a signed integer: it may be negative or zero for any kind
 			using Signed = integer<nbits + 2, bt, IntegerNumber>;
 			Signed rest;
@@ -1658,7 +1664,7 @@ private:
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> abs(const integer<nbits, BlockType, NumberType>& a) {
 	integer<nbits, BlockType, NumberType> b(a);
-	return (a >= 0 ? b : b.twosComplement());
+	return (a.isneg() ? b.twosComplement() : b);
 }
 
 // free function to create a 1's complement copy of an integer
@@ -1780,8 +1786,8 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 	}
 
 	idiv_t<nbits, BlockType, NumberType> divresult;
-	divresult.rem = 0;
-	divresult.quot = 0;
+	divresult.rem.clear();
+	divresult.quot.clear();
 
 	// generate the absolute values to do long division
 	if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
@@ -1794,7 +1800,7 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 		Integer b; b.bitcopy(b_negative ? -_b : _b);
 
 		if (a < b) {
-			divresult.quot = 0; // a / b = 0
+			divresult.quot.clear(); // a / b = 0
 			divresult.rem = _a; // a % b = a when a / b = 0
 			return divresult;
 		}
@@ -1802,7 +1808,7 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 		// which wraps to maxneg as it always has), so the low nbits hold all of it
 		Integer accumulator, quotient;
 		divide_magnitudes(a, b, quotient, accumulator);
-		divresult.quot = 0;
+		divresult.quot.clear();
 		for (unsigned i = 0; i < integer<nbits, BlockType, NumberType>::nrBlocks; ++i) divresult.quot.setblock(i, quotient.block(i));
 		if (result_negative) {  // take 2's complement
 			divresult.quot.flip();
@@ -1928,8 +1934,10 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 		for (char c : body) {
 			if (!sp::is_decimal_digit(c)) return false;
 			tmp *= ten;
-			Int digit{static_cast<unsigned>(c - '0')};
-			tmp += digit;
+			if (c != '0') {   // a zero digit adds nothing, and a NaturalNumber cannot be constructed from 0
+				Int digit{static_cast<unsigned>(c - '0')};
+				tmp += digit;
+			}
 			digit_found = true;
 		}
 		if (!digit_found) return false;
@@ -1939,6 +1947,10 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 		return false;
 	}
 
+	// the domain applies to the completed value: a NaturalNumber {1, 2, ...} has no 0
+	if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
+		if (tmp.iszero()) return false;
+	}
 	if (negative) tmp = -tmp;
 	value = tmp;
 	return true;
@@ -2006,11 +2018,31 @@ constexpr inline bool operator>=(const integer<nbits, BlockType, NumberType>& lh
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+// a native literal as an operand of the integer type, for the comparisons: its two's complement bits at
+// nbits, as the integer conversion gives them, but without that conversion's domain check, so a
+// WholeNumber or NaturalNumber compares with 0 or a negative literal instead of throwing (#2131)
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
+constexpr integer<nbits, BlockType, NumberType> literal_operand(IntType v) noexcept {
+	const integer<nbits, BlockType, IntegerNumberType::IntegerNumber> bits(v);
+	integer<nbits, BlockType, NumberType> r;
+	r.clear();
+	for (unsigned i = 0; i < integer<nbits, BlockType, NumberType>::nrBlocks; ++i) r.setblock(i, bits.block(i));
+	return r;
+}
+// for an unsigned kind, a negative literal is below every value
+template<IntegerNumberType NumberType, typename IntType>
+constexpr bool literal_below_domain(IntType v) noexcept {
+	if constexpr (NumberType != IntegerNumberType::IntegerNumber && std::is_signed_v<IntType>) return v < IntType(0);
+	else return false;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 // integer - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
 constexpr inline bool operator==(const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
-	return operator==(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	if (literal_below_domain<NumberType>(rhs)) return false;
+	return operator==(lhs, literal_operand<nbits, BlockType, NumberType>(rhs));
 }
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
 constexpr inline bool operator!=(const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
@@ -2018,11 +2050,13 @@ constexpr inline bool operator!=(const integer<nbits, BlockType, NumberType>& lh
 }
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
 constexpr inline bool operator< (const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
-	return operator<(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	if (literal_below_domain<NumberType>(rhs)) return false;
+	return operator<(lhs, literal_operand<nbits, BlockType, NumberType>(rhs));
 }
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
 constexpr inline bool operator> (const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
-	return operator< (integer<nbits, BlockType, NumberType>(rhs), lhs);
+	if (literal_below_domain<NumberType>(rhs)) return true;
+	return operator< (literal_operand<nbits, BlockType, NumberType>(rhs), lhs);
 }
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
 constexpr inline bool operator<=(const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
@@ -2039,7 +2073,7 @@ constexpr inline bool operator>=(const integer<nbits, BlockType, NumberType>& lh
 
 template<typename IntType, unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline bool operator==(IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator==(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator==(rhs, lhs);
 }
 template<typename IntType, unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline bool operator!=(IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
@@ -2047,7 +2081,7 @@ constexpr inline bool operator!=(IntType lhs, const integer<nbits, BlockType, Nu
 }
 template<typename IntType, unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline bool operator< (IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator<(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator>(rhs, lhs);
 }
 template<typename IntType, unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline bool operator> (IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
