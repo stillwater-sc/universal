@@ -81,7 +81,9 @@ These rules apply at every width (#2131).
   the real types use when they convert to a native integer (#2104):
   - an `IntegerNumber` saturates to `[-max, max]`, and NaN gives `min()`, the 100...0 pattern no
     finite value maps to. So `integer<16>(-32768.0)` is -32767;
-  - the unsigned kinds saturate to `[0, max - 1]`, and NaN gives `max()`.
+  - the unsigned kinds saturate to `[min, max - 1]`, and NaN gives `max()`. `min` is 0 for
+    `WholeNumber` and 1 for `NaturalNumber`, so a negative value, or one that truncates to 0,
+    clamps to it instead of throwing.
 - **Integer to float, double or long double:** correctly rounded, rounded once from the integer's
   top bits.
 - **Integer to a native unsigned type:** modular, as in C++. A negative value sign-extends, so
@@ -91,7 +93,7 @@ These rules apply at every width (#2131).
 
 `std::numeric_limits` is specialized for all three kinds:
 - **`IntegerNumber`:** `min()` and `lowest()` are the most negative value.
-- **The unsigned kinds:** `WholeNumber`'s `min()` is 1, and `NaturalNumber`'s is 0, as their operators check.
+- **The unsigned kinds:** `WholeNumber` is {0, 1, 2, ...} and `NaturalNumber` is {1, 2, 3, ...}, so their `min()` is 0 and 1. The operators used to enforce the reverse (a `WholeNumber` result of 0 was the error, a `NaturalNumber` 0 was valid); they now check the documented domains (#2131).
 - **Every kind:** `epsilon()`, `round_error()`, `denorm_min()` and `infinity()` return the integer
   type's zero.
 

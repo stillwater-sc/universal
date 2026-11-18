@@ -27,70 +27,32 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// MODULAR integers
 
+	// The domains (USER decision on #2131): WholeNumber {0, 1, 2, ...} rejects negative values,
+	// NaturalNumber {1, 2, 3, ...} rejects zero and negative values. The operators used to enforce
+	// the reverse, and this test expected it.
+	// expect(what, f, shouldThrow): f() throws an integer_encoding_exception exactly when it should
+	auto expect = [&](const char* what, auto f, bool shouldThrow) {
+		bool thrown = false;
+		try { f(); }
+		catch (const integer_encoding_exception& e) {
+			thrown = true;
+			if (reportTestCases) std::cout << "caught: " << e.what() << '\n';
+		}
+		if (thrown != shouldThrow) {
+			std::cout << "Incorrect: " << what << (shouldThrow ? " did not throw\n" : " threw\n");
+			++nrOfFailedTestCases;
+		}
+	};
+
 	// whole numbers
 	{
 		int start = nrOfFailedTestCases;
-		bool exceptionThrown;
-		integer<16, std::uint16_t, IntegerNumberType::WholeNumber> a, b, c;
-		try {
-			exceptionThrown = false;
-			a = 0;  // can't assign 0 to a whole number
-		}
-		catch (const integer_encoding_exception& e) {
-			std::cout << "Correctly caught illegal assignment: " << e.what() << '\n';
-			exceptionThrown = true;
-		}
-		if (!exceptionThrown) {
-			std::cout << "Incorrect: illegal assignment to 0 did not throw an exception\n";
-			++nrOfFailedTestCases;
-		}
-
-		// whole numbers cannot be negative
-		try {
-			exceptionThrown = false;
-			b = -1;  // can't assign negative values to a whole number
-		}
-		catch (const integer_encoding_exception& e) {
-			std::cout << "Correctly caught illegal assignment: " << e.what() << '\n';
-			exceptionThrown = true;
-		}
-		if (!exceptionThrown) {
-			std::cout << "Incorrect: illegal assignment to negative value did not throw an exception\n";
-			++nrOfFailedTestCases;
-		}
-
-		try {
-			exceptionThrown = false;
-			a = 1;
-			b = 2;
-			c = a / b;  // can't represent result
-			std::cout << a << " / " << b << " = " << c << '\n';
-		}
-		catch (const integer_encoding_exception& e) {
-			std::cout << "Correctly caught impossible result: " << e.what() << '\n';
-			exceptionThrown = true;
-		}
-		if (!exceptionThrown) {
-			std::cout << "Incorrect: impossible value did not throw an exception\n";
-			++nrOfFailedTestCases;
-		}
-
-		try {
-			exceptionThrown = false;
-			a = 1;
-			b = 2;
-			c = a - b;  // can't represent result
-			std::cout << a << " - " << b << " = " << c << '\n';
-		}
-		catch (const integer_encoding_exception& e) {
-			std::cout << "Correctly caught impossible result: " << e.what() << '\n';
-			exceptionThrown = true;
-		}
-		if (!exceptionThrown) {
-			std::cout << "Incorrect: impossible value did not throw an exception\n";
-			++nrOfFailedTestCases;
-		}
-
+		using Whole = integer<16, std::uint16_t, IntegerNumberType::WholeNumber>;
+		expect("whole = 0", [] { Whole a; a = 0; return a; }, false);
+		expect("whole = -1", [] { Whole b; b = -1; return b; }, true);
+		expect("whole 1 / 2 = 0", [] { Whole a(1), b(2); return Whole(a / b); }, false);
+		expect("whole 1 - 2", [] { Whole a(1), b(2); return Whole(a - b); }, true);
+		expect("whole 2 - 2 = 0", [] { Whole a(2), b(2); return Whole(a - b); }, false);
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : whole number test cases\n";
 		}
@@ -99,51 +61,13 @@ try {
 	// natural numbers
 	{
 		int start = nrOfFailedTestCases;
-		bool exceptionThrown;
-		integer<16, std::uint16_t, IntegerNumberType::NaturalNumber> a, b, c;
-
-		// natural numbers cannot be negative
-		try {
-			exceptionThrown = false;
-			b = -1;  // can't assign negative values to a natural number
-		}
-		catch (const integer_encoding_exception& e) {
-			std::cout << "Correctly caught illegal assignment: " << e.what() << '\n';
-			exceptionThrown = true;
-		}
-		if (!exceptionThrown) {
-			std::cout << "Incorrect: illegal assignment to negative value did not throw an exception\n";
-			++nrOfFailedTestCases;
-		}
-
-		try {
-			exceptionThrown = false;
-			a = 1;
-			b = 2;
-			c = a / b;  // natural numbers can represent 0
-			if (reportTestCases) std::cout << a << " / " << b << " = " << c << '\n';
-		}
-		catch (...) {
-			std::cout << "Incorrect: exception thrown\n";
-			++nrOfFailedTestCases;
-		}
-
-		try {
-			exceptionThrown = false;
-			a = 1;
-			b = 2;
-			c = a - b;  // natural numbers can represent negative: throw
-			if (reportTestCases) std::cout << a << " - " << b << " = " << c << '\n';
-		}
-		catch (const integer_encoding_exception& e) {
-			std::cout << "Correctly caught exception: " << e.what() << '\n';
-			exceptionThrown = true;
-		}
-		if (!exceptionThrown) {
-			std::cout << "Incorrect: illegal assignment to negative value did not throw an exception\n";
-			++nrOfFailedTestCases;
-		}
-
+		using Natural = integer<16, std::uint16_t, IntegerNumberType::NaturalNumber>;
+		expect("natural = 0", [] { Natural a; a = 0; return a; }, true);
+		expect("natural = -1", [] { Natural b; b = -1; return b; }, true);
+		expect("natural 1 / 2 = 0", [] { Natural a(1), b(2); return Natural(a / b); }, true);
+		expect("natural 1 - 2", [] { Natural a(1), b(2); return Natural(a - b); }, true);
+		expect("natural 2 - 2 = 0", [] { Natural a(2), b(2); return Natural(a - b); }, true);
+		expect("natural 7 / 2 = 3", [] { Natural a(7), b(2); return Natural(a / b); }, false);
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : natural number test cases\n";
 		}

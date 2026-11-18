@@ -73,7 +73,7 @@ namespace sw { namespace universal {
 
 enum class IntegerNumberType {
 	IntegerNumber = 0,  // { ...,-3,-2,-1,0,1,2,3,... }
-	WholeNumber   = 1,  // {              0,1,2,3,... }
+	WholeNumber   = 1,  // {              0,1,2,3,... }   the operators check this domain (#2131)
 	NaturalNumber = 2   // {                1,2,3,... }
 };
 
@@ -296,11 +296,12 @@ public:
 	constexpr integer& operator--() {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		// the domain checks operator-= applies to x - 1
-		if constexpr (NumberType == WholeNumber || NumberType == NaturalNumber) {
+		if constexpr (NumberType == WholeNumber) {
 			if (iszero()) throw integer_wholenumber_cannot_be_negative{};
-			if constexpr (NumberType == WholeNumber) {
-				if (isone()) throw integer_wholenumber_cannot_be_zero{};
-			}
+		}
+		if constexpr (NumberType == NaturalNumber) {
+			if (iszero()) throw integer_naturalnumber_cannot_be_negative{};
+			if (isone()) throw integer_naturalnumber_cannot_be_zero{};
 		}
 #endif
 		for (unsigned i = 0; i < nrBlocks; ++i) {
@@ -388,7 +389,7 @@ public:
 	constexpr integer& operator-=(const integer& rhs) {
 		if constexpr (NumberType == WholeNumber || NumberType == NaturalNumber) {
 			// Both modes are unsigned-domain. The semantic preconditions
-			// (WholeNumber: result must be >= 1; NaturalNumber: result >= 0)
+			// (WholeNumber: result >= 0; NaturalNumber: result must be >= 1, #2131)
 			// are checked only when INTEGER_THROW_ARITHMETIC_EXCEPTION is on
 			// -- matching the convention used by operator/= and convert_*.
 			//
@@ -402,11 +403,12 @@ public:
 			// wraparound, the same convention IntegerNumber uses.
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 			if (*this < rhs) {
-				throw integer_wholenumber_cannot_be_negative{};
+				if constexpr (NumberType == WholeNumber) throw integer_wholenumber_cannot_be_negative{};
+				else throw integer_naturalnumber_cannot_be_negative{};
 			}
-			if constexpr (NumberType == WholeNumber) {
+			if constexpr (NumberType == NaturalNumber) {
 				if (*this == rhs) {
-					throw integer_wholenumber_cannot_be_zero{};
+					throw integer_naturalnumber_cannot_be_zero{};
 				}
 			}
 #endif
@@ -713,13 +715,13 @@ public:
 				return *this;
 #endif // INTEGER_THROW_DIVIDE_BY_ZERO
 			}
-			if constexpr (NumberType == WholeNumber) {
+			if constexpr (NumberType == NaturalNumber) {
 				if (*this < rhs) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-					throw integer_wholenumber_cannot_be_zero{};
+					throw integer_naturalnumber_cannot_be_zero{};
 #else
 					if (!std::is_constant_evaluated()) {
-						std::fprintf(stderr, "whole number cannot be zero but division would yield 0\n");
+						std::fprintf(stderr, "natural number cannot be zero but division would yield 0\n");
 					}
 					clear();
 					return *this;
@@ -1278,9 +1280,9 @@ public:
 	constexpr integer& convert_signed(SignedInt rhs) {
 		clear();
 		if (0 == rhs) {
-			if constexpr (NumberType == WholeNumber) {
+			if constexpr (NumberType == NaturalNumber) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-				throw integer_wholenumber_cannot_be_zero();
+				throw integer_naturalnumber_cannot_be_zero();
 #else
 				return *this;
 #endif
@@ -1323,9 +1325,9 @@ public:
 	constexpr integer& convert_unsigned(UnsignedInt rhs) {
 		clear();
 		if (0 == rhs) {
-			if constexpr (NumberType == WholeNumber) {
+			if constexpr (NumberType == NaturalNumber) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-				throw integer_wholenumber_cannot_be_zero();
+				throw integer_naturalnumber_cannot_be_zero();
 #else
 				return *this;
 #endif
@@ -1345,10 +1347,14 @@ public:
 	}
 	// native IEEE-754 conversion, at every width (#2131): a finite value truncates toward zero,
 	// exactly; past the range, infinity included, it saturates to [-max, max] for an IntegerNumber
-	// and to [0, max - 1] for the unsigned kinds; a NaN gives the integer NaR, min() for an
-	// IntegerNumber and max() for the unsigned kinds. That is the #2104 rule the real types follow
+	// and to [min, max - 1] for the unsigned kinds (min is 0 for a WholeNumber, 1 for a
+	// NaturalNumber); a NaN gives the integer NaR, min() for an IntegerNumber and max() for the
+	// unsigned kinds. That is the #2104 rule the real types follow
 	// when they cast to a native integer (shared/integer_cast.hpp). It used to go through
 	// static_cast<long long>: integer<128>(1e30) was -9.22e18, and NaN or inf were UB.
+	// The significand is read 32 bits at a time, so any width works (binary128 and double-double
+	// long double too), and frexp/ldexp are used only at run time: a constant evaluation scales by
+	// exact multiplications instead, so constexpr integer<16> v(1.0) stays a constant expression.
 	template<typename Real>
 	constexpr integer& convert_ieee(Real rhs) noexcept {
 		constexpr bool isSigned = (NumberType == IntegerNumberType::IntegerNumber);
@@ -1359,32 +1365,53 @@ public:
 			return *this;
 		}
 		const bool negative = rhs < Real(0);
-		if (negative && !isSigned) return *this;           // below the range of an unsigned kind: 0
-		const Real a = negative ? -rhs : rhs;
-		// the magnitude cap: max() for a signed type, max() - 1 for an unsigned one
-		auto saturate = [&]() {
+		auto saturate = [&]() {                              // the magnitude cap, with the sign
 			clear();
 			flip();                                          // all ones
 			if constexpr (isSigned) setbit(nbits - 1, false);  // 011...1 = max
 			else setbit(0, false);                             // 111...0 = max - 1
 			if (negative) twosComplement();                  // -max
 		};
+		// below the domain of an unsigned kind, a negative value or one that truncates to 0 clamps to
+		// the kind's smallest value, 0 for a WholeNumber and 1 for a NaturalNumber: a conversion
+		// saturates rather than throws, as it does past the top of the range
+		auto domainMinimum = [&]() {
+			clear();
+			if constexpr (NumberType == NaturalNumber) setbit(0);
+		};
+		if (negative && !isSigned) { domainMinimum(); return *this; }
+		const Real a = negative ? -rhs : rhs;
 		if (!(a < std::numeric_limits<Real>::infinity())) { saturate(); return *this; }   // infinity
-		if (a < Real(1)) return *this;                     // truncates to 0
-		int exponent = 0;
-		const Real fraction = std::frexp(a, &exponent);    // a = fraction * 2^exponent, fraction in [0.5, 1)
-		// a >= 2^(nbits-1) does not fit a signed magnitude, a >= 2^nbits - 1 an unsigned one
+		if (a < Real(1)) { domainMinimum(); return *this; }   // truncates to 0
+		// a = m * 2^e, m in [1, 2)
+		int e = 0;
+		if (std::is_constant_evaluated()) {
+			Real m = a;
+			while (m >= Real(4294967296.0)) { m /= Real(4294967296.0); e += 32; }
+			while (m >= Real(2)) { m /= Real(2); ++e; }
+		}
+		else {
+			(void)std::frexp(a, &e);
+			--e;
+		}
+		// a >= 2^(nbits-1) does not fit a signed magnitude, a >= 2^nbits an unsigned one
 		constexpr int capBits = isSigned ? static_cast<int>(nbits) - 1 : static_cast<int>(nbits);
-		if (exponent > capBits) { saturate(); return *this; }
-		constexpr int digits = std::numeric_limits<Real>::digits;
-		static_assert(digits <= 64, "convert_ieee: a significand of at most 64 bits");
-		const std::uint64_t significand = static_cast<std::uint64_t>(std::ldexp(fraction, digits));   // exact
-		// magnitude = significand * 2^(exponent - digits), truncated toward zero
-		const int shift = exponent - digits;
-		std::uint64_t bits = significand;
-		if (shift < 0) bits = (shift <= -64) ? 0u : (significand >> (-shift));
-		for (unsigned i = 0; i < 64 && i < nbits; ++i) setbit(i, ((bits >> i) & 1u) != 0);
-		if (shift > 0) *this <<= shift;
+		if (e >= capBits) { saturate(); return *this; }
+		// floor(a), 32 bits at a time from the top: scale = a / 2^(32 (chunks - 1)) is in [1, 2^32)
+		const int chunks = e / 32 + 1;
+		Real scale = a;
+		if (std::is_constant_evaluated()) {
+			for (int c = 1; c < chunks; ++c) scale /= Real(4294967296.0);   // exact: a power of two
+		}
+		else {
+			scale = std::ldexp(a, -32 * (chunks - 1));
+		}
+		for (int c = 0; c < chunks; ++c) {
+			const std::uint64_t digit = static_cast<std::uint64_t>(scale);   // < 2^32: truncation is floor
+			*this <<= 32;
+			for (unsigned i = 0; i < 32 && i < nbits; ++i) if ((digit >> i) & 1u) setbit(i);
+			scale = (scale - static_cast<Real>(digit)) * Real(4294967296.0);   // exact
+		}
 		if constexpr (!isSigned) {
 			// 2^nbits - 1 itself is past the unsigned cap of max() - 1
 			integer allOnes;
@@ -1512,46 +1539,54 @@ protected:
 		return v;
 	}
 
-	// to a native float, correctly rounded (#2131): the magnitude's top digits(Real) bits as hi,
-	// the next digits(Real) - 1 bits with the rest folded in as a sticky bit as lo, both exact in
-	// Real, and hi + lo rounds once. Summing the bits from the bottom rounded at every add, so
-	// integer<128>(2^106 + 2^53 + 1) gave 8.1129638414606682e31, not 2^106 + 2^54.
+	// to a native float, correctly rounded (#2131): the magnitude's top P = digits(Real) bits as hi,
+	// the next P - 1 bits with the rest folded in as a sticky bit as lo, each accumulated in Real
+	// exactly (any P: binary128 and double-double long double too), and hi + lo rounds once (round
+	// to odd at 2P - 1 bits, then one rounding). Summing the bits from the bottom rounded at every
+	// add, so integer<128>(2^106 + 2^53 + 1) gave 8.1129638414606682e31, not 2^106 + 2^54. ldexp
+	// is used only at run time; a constant evaluation scales by exact multiplications.
 	template<typename Real>
 	constexpr Real to_real() const noexcept {
 		if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
-			if (iszero()) std::fprintf(stderr, "internal error: natural number is set to 0\n");
+			if (iszero() && !std::is_constant_evaluated()) std::fprintf(stderr, "internal error: natural number is set to 0\n");
 		}
 		if (iszero()) return Real(0);
 		constexpr int P = std::numeric_limits<Real>::digits;
-		static_assert(P <= 64, "to_real: a significand of at most 64 bits");
 		// the magnitude, one bit wider so that maxneg negates
 		integer<nbits + 1, bt, NumberType> m{ *this };
 		const bool negative = isneg();
 		if (negative) m = -m;
 		int msb = -1;
 		for (int i = static_cast<int>(nbits); i >= 0; --i) if (m.at(static_cast<unsigned>(i))) { msb = i; break; }
-		// bits [from, from + count) of m as a uint64; bits below 0 read as 0
+		// bits [from, from + count) of m as an exact Real; bits below 0 read as 0
 		auto field = [&](int from, int count) {
-			std::uint64_t v = 0;
+			Real v(0);
 			for (int k = count - 1; k >= 0; --k) {
 				const int b = from + k;
-				v = (v << 1) | ((b >= 0 && m.at(static_cast<unsigned>(b))) ? 1u : 0u);
+				v = v * Real(2) + ((b >= 0 && m.at(static_cast<unsigned>(b))) ? Real(1) : Real(0));
 			}
 			return v;
 		};
-		Real r;
+		// v * 2^k, exact
+		auto scaled = [](Real v, int k) {
+			if (!std::is_constant_evaluated()) return std::ldexp(v, k);
+			for (; k > 0; --k) v *= Real(2);
+			for (; k < 0; ++k) v /= Real(2);
+			return v;
+		};
+		Real r(0);
 		if (msb < P) {
-			r = static_cast<Real>(field(0, msb + 1));   // exact
+			r = field(0, msb + 1);                      // exact
 		}
 		else {
 			const int hiLow = msb - P + 1;              // the lowest bit of hi
-			const std::uint64_t hi = field(hiLow, P);
+			const Real hi = field(hiLow, P);
 			const int loLow = hiLow - (P - 1);
-			std::uint64_t lo = field(loLow, P - 1);
+			Real lo = field(loLow, P - 1);
 			bool sticky = false;
 			for (int b = loLow - 1; b >= 0 && !sticky; --b) sticky = m.at(static_cast<unsigned>(b));
-			if (sticky) lo |= 1u;                        // round to odd at 2P - 1 bits: one rounding below
-			r = std::ldexp(static_cast<Real>(hi), hiLow) + std::ldexp(static_cast<Real>(lo), loLow);
+			if (sticky && !m.at(static_cast<unsigned>(loLow))) lo += Real(1);   // round to odd: set the last bit
+			r = scaled(hi, hiLow) + scaled(lo, loLow);
 		}
 		return negative ? -r : r;
 	}

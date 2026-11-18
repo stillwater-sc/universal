@@ -26,8 +26,8 @@ A class that is a literal type is a class (defined with class, struct or union) 
 	TODO: how to make the integer class a literal type so that we can use it as a return type for min/max/lowest etc.
 */
 // every kind of integer (#2131): an IntegerNumber is a two's complement signed type; WholeNumber
-// and NaturalNumber are unsigned kinds whose smallest values are 1 and 0, as their operators check
-// (WholeNumber rejects a zero result, NaturalNumber a negative one). The non-floating members return
+// {0, 1, 2, ...} and NaturalNumber {1, 2, 3, ...} are unsigned kinds whose smallest values are 0
+// and 1 (USER decision on #2131: the documented domains, which the operators now check). The non-floating members return
 // the type's zero, as the standard asks of an integer type: epsilon, round_error, denorm_min and
 // infinity used to return float, and min() returned 1 instead of the most negative value.
 template <unsigned nbits, typename bt, sw::universal::IntegerNumberType NumberType>
@@ -37,24 +37,24 @@ public:
 	using Integer = sw::universal::integer<nbits, bt, NumberType>;
 	static constexpr bool is_specialized = true;
 	static constexpr Integer min() {   // the smallest finite value, as for a native integer
-		Integer v(0);
+		Integer v{};   // value-initialized: Integer{} is domain-checked, and throws for a NaturalNumber
 		if constexpr (isSigned) v.setbit(nbits - 1);                                   // 100...0
-		else if constexpr (NumberType == sw::universal::IntegerNumberType::WholeNumber) v.setbit(0);   // 1
+		else if constexpr (NumberType == sw::universal::IntegerNumberType::NaturalNumber) v.setbit(0);   // 1
 		return v;
 	}
 	static constexpr Integer max() {
-		Integer v(0);
+		Integer v{};   // value-initialized: Integer{} is domain-checked, and throws for a NaturalNumber
 		v.flip();                                  // all ones
 		if constexpr (isSigned) v.setbit(nbits - 1, false);   // 011...1
 		return v;
 	}
 	static constexpr Integer lowest() { return min(); }
-	static constexpr Integer epsilon()       { return Integer(0); }
-	static constexpr Integer round_error()   { return Integer(0); }
-	static constexpr Integer denorm_min()    { return Integer(0); }
-	static constexpr Integer infinity()      { return Integer(0); }   // has_infinity is false
-	static constexpr Integer quiet_NaN()     { return Integer(0); }
-	static constexpr Integer signaling_NaN() { return Integer(0); }
+	static constexpr Integer epsilon()       { return Integer{}; }
+	static constexpr Integer round_error()   { return Integer{}; }
+	static constexpr Integer denorm_min()    { return Integer{}; }
+	static constexpr Integer infinity()      { return Integer{}; }   // has_infinity is false
+	static constexpr Integer quiet_NaN()     { return Integer{}; }
+	static constexpr Integer signaling_NaN() { return Integer{}; }
 
 	static constexpr int digits       = isSigned ? static_cast<int>(nbits) - 1 : static_cast<int>(nbits);
 	static constexpr int digits10     = sw::universal::decimal_digits10_integer(digits);

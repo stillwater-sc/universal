@@ -24,6 +24,8 @@
        range follow the #2104 cast rule (signed: saturate to [-max, max], NaN to min(); unsigned
        kinds: saturate to [0, max - 1], NaN to max());
      - a cast to a native unsigned type is modular, as C++'s: the value sign-extends.
+     - WholeNumber is {0, 1, 2, ...} and NaturalNumber {1, 2, 3, ...}, as documented; the operators
+       used to enforce the reverse.
    The references are independent of the code under test: an integer to a native float against
    strtod/strtof of the integer's decimal string (correctly rounded by the C library), and a
    native float to an integer against the decimal printout of trunc(x).
@@ -110,6 +112,10 @@ int VerifyCastRule(bool reportTestCases) {
 	expect("whole<8>(NaN) is max()", static_cast<unsigned>(W8(nan)) == 255u);
 	expect("whole<8>(255.0) saturates to max() - 1", static_cast<unsigned>(W8(255.0)) == 254u);
 	expect("whole<8>(254.5) is 254", static_cast<unsigned>(W8(254.5)) == 254u);
+	expect("whole<8>(-3.0) clamps to 0", W8(-3.0).iszero());
+	using N8 = integer<8, std::uint8_t, NaturalNumber>;
+	expect("natural<8>(0.5) clamps to 1, its smallest value", static_cast<unsigned>(N8(0.5)) == 1u);
+	expect("natural<8>(-3.0) clamps to 1", static_cast<unsigned>(N8(-3.0)) == 1u);
 	return fails;
 }
 
@@ -203,11 +209,67 @@ int VerifyNumericLimits(bool reportTestCases) {
 	expect("integer<8> infinity() is 0, as has_infinity is false", I::infinity().iszero() && !I::has_infinity);
 	expect("integer<8> is_signed, digits 7", I::is_signed && I::digits == 7);
 	using W = std::numeric_limits<integer<8, std::uint8_t, WholeNumber>>;
-	expect("whole<8> min() is 1, max() 255, unsigned", static_cast<unsigned>(W::min()) == 1u && static_cast<unsigned>(W::max()) == 255u && !W::is_signed && W::digits == 8);
+	expect("whole<8> {0, 1, ...}: min() is 0, max() 255, unsigned", W::min().iszero() && static_cast<unsigned>(W::max()) == 255u && !W::is_signed && W::digits == 8);
 	using N = std::numeric_limits<integer<8, std::uint8_t, NaturalNumber>>;
-	expect("natural<8> min() is 0, max() 255, unsigned", N::min().iszero() && static_cast<unsigned>(N::max()) == 255u && !N::is_signed);
+	expect("natural<8> {1, 2, ...}: min() is 1, max() 255, unsigned", static_cast<unsigned>(N::min()) == 1u && static_cast<unsigned>(N::max()) == 255u && !N::is_signed);
 	return fails;
 }
+
+// the documented domains (USER decision on #2131): WholeNumber {0, 1, 2, ...} holds a zero result,
+// NaturalNumber {1, 2, 3, ...} does not. The operators used to enforce the reverse.
+int VerifyDomains(bool reportTestCases) {
+	int fails = 0;
+	auto expect = [&](const char* what, bool ok) { if (!ok) { ++fails; if (reportTestCases) std::cerr << "FAIL " << what << '\n'; } };
+	using W = integer<8, std::uint8_t, WholeNumber>;
+	using N = integer<8, std::uint8_t, NaturalNumber>;
+	expect("whole 3 - 3 is 0", (W(3) - W(3)).iszero());
+	expect("whole 3 / 5 is 0", (W(3) / W(5)).iszero());
+	expect("whole 0 constructs", W(0).iszero());
+	expect("whole 7 / 2 is 3", static_cast<unsigned>(W(7) / W(2)) == 3u);
+	expect("natural 7 / 2 is 3", static_cast<unsigned>(N(7) / N(2)) == 3u);
+	expect("natural 5 - 2 is 3", static_cast<unsigned>(N(5) - N(2)) == 3u);
+	return fails;
+}
+
+// compile-time conversions stay constant expressions
+constexpr bool ConstexprConversions() {
+	constexpr integer<16> a(1.0);
+	constexpr integer<16> b(-2.75);
+	constexpr integer<128, std::uint32_t> c(1.0e30);
+	return a.isone() && b.isneg() && !c.iszero();
+}
+static_assert(ConstexprConversions(), "constexpr native conversions");
+
+#if LONG_DOUBLE_SUPPORT
+// long double, whatever its significand: integer -> long double against strtold, and back
+template<typename Integer>
+int VerifyLongDouble(int trials, bool reportTestCases) {
+	std::mt19937_64 eng(0x2131u + 11u);
+	int fails = 0;
+	for (int t = 0; t < trials; ++t) {
+		Integer v;
+		v.clear();
+		for (unsigned i = 0; i + 1 < Integer::nbits; ++i) if (eng() & 1u) v.setbit(i);
+		const std::string decimal = to_string(v);
+		const long double expected = std::strtold(decimal.c_str(), nullptr);
+		const long double got = static_cast<long double>(v);
+		if (std::memcmp(&got, &expected, sizeof(long double)) != 0 && got != expected) {
+			++fails;
+			if (reportTestCases && fails < 4) std::cerr << "FAIL " << decimal << " -> long double\n";
+		}
+		const Integer back(std::trunc(got));
+		char buf[256];
+		std::snprintf(buf, sizeof buf, "%.0Lf", got);
+		Integer exact;
+		exact.assign(std::string(buf));
+		if (!(back == exact)) {
+			++fails;
+			if (reportTestCases && fails < 4) std::cerr << "FAIL integer(" << buf << "L)\n";
+		}
+	}
+	return fails;
+}
+#endif
 
 }}}  // namespace sw::universal::integer_native
 
@@ -269,6 +331,10 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyFailedParse(reportTestCases), "integer<16>", "failed parse");
 	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits(reportTestCases), "integer", "numeric_limits");
+	nrOfFailedTestCases += ReportTestResult(VerifyDomains(reportTestCases), "integer", "Whole/Natural domains");
+#if LONG_DOUBLE_SUPPORT
+	nrOfFailedTestCases += ReportTestResult(VerifyLongDouble<integer<128, std::uint32_t>>(1000, reportTestCases), "integer<128>", "long double");
+#endif
 #endif
 
 #if REGRESSION_LEVEL_2
