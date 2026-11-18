@@ -129,17 +129,33 @@ specialising the trait.
 
 ## 4. The eight algorithms
 
-### 4.1 DoubleTripAddSub (default, correctness baseline)
+### 4.1 DoubleTripAddSub (default, correctly rounded)
 
 ```text
-a + b: decode both to double, native double add, encode back.
+z = ka + 2^rbits * log2(1 +- 2^-d),  rounded to the nearest integer, ties to even
 ```
 
-Pays a full encode/decode for every operation. Useful as a correctness
-oracle that all other algorithms can be cross-validated against. Slow on
-purpose: it does the exact work an LNS exists to avoid (an `exp2` and a
-`log2` per add). The default of the configurable framework so that legacy
-`lns<>` users see no behavioural change after the framework landed.
+Correctly rounded at every width since #2128 (`lns_correct_rounding.hpp`); it
+kept its historical name. It works in the log domain:
+
+- if the operands are `rbits + 2` or more apart in log2, the larger operand is
+  the answer;
+- for `nbits <= 64` and `rbits <= 40`, the correction term is computed in
+  double, and the result is accepted when it is clear of a tie by a margin of
+  `2^-42` relative;
+- everything else is evaluated in efloat with Ziv's retry, up to 2048 bits.
+
+The exponent stays an exact efloat until the Behavior's range rule has
+applied, so any width works.
+
+It used to decode both operands to double, add natively and encode back. That
+was wrong in 99.7% of `lns<64,59>` sums, by up to 88234 units, overflowed
+double past its range (`lns<32,20>`), and was about 7x slower on narrow lns
+than the current fast path.
+
+It remains the oracle that all other algorithms are cross-validated against. The
+exact reference in `verification/lns_rounding_oracle.hpp` (#2125) checks it,
+using its own decoder and its own margins.
 
 ### 4.2 DirectEvaluationAddSub (high-precision software default)
 
@@ -527,7 +543,7 @@ bounds are:
 
 | Algorithm                 | Log-domain bound          | Source                          |
 |---------------------------|---------------------------|---------------------------------|
-| DoubleTripAddSub          | 0                         | exact via native double         |
+| DoubleTripAddSub          | 0                         | correctly rounded (#2128)       |
 | DirectEvaluationAddSub    | 0                         | oracle by construction          |
 | LookupAddSub              | 1e-4                      | linear-interp at default IndexBits |
 | PolynomialAddSub          | 1e-5                      | degree-7 truncation (x^9/9 at x=1/3) |

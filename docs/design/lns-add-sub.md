@@ -131,10 +131,11 @@ routing.
 
 ### 1. DoubleTripAddSub (default)
 
-Casts both operands to `double`, computes the result with native `+`/`-`, casts
-back. Pays a full encode/decode for every operation. Preserves the long-standing
-behavior from before the `constexpr_math` facility (Epic #763) existed; the
-default trait selects this so existing `lns` users see no change.
+Correctly rounded at every width since #2128: it computes the log-domain
+correction term in double where that is safely clear of a tie, and in efloat with
+Ziv's retry otherwise (`lns_correct_rounding.hpp`). It used to cast both operands
+to `double`, add natively and cast back, which is not correctly rounded past about
+45 fraction bits. See `docs/algorithmic-details/lns-log-add-sub.md`, section 4.1.
 
 Useful as a correctness oracle for cross-validating other algorithms.
 

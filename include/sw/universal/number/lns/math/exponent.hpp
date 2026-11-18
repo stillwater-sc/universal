@@ -9,37 +9,24 @@
 #include <cmath>         // std::exp
 namespace sw { namespace universal {
 
-// the current shims are NON-COMPLIANT with the Universal standard, which says that every function must be
-// correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
+// exp and exp2 are correctly rounded at every width (#2128): lns_rounding::exponential
+// (lns_correct_rounding.hpp) decides the nearest exponent by Ziv's strategy, a double fast path where
+// it is clear of a tie and efloat elsewhere. An underflow follows the rounding rule, zero below half
+// of minpos, as conversion and multiplication do (USER decision on #2128). They used to be
+// std::exp(double(x)) converted back: wrong by up to 972 units at lns<64,59>, and minpos where double
+// underflowed but zero just above it, so not monotone. exp10 and expm1 below are still the old shims,
+// not correctly rounded.
 
 // Base-e exponential function
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> exp(lns<nbits, rbits, bt, xtra...> x) {
-	if (isnan(x)) return x;
-	lns<nbits, rbits, bt, xtra...> p;
-	double d = std::exp(double(x));
-	if (d == 0.0) {
-		p.minpos();
-	}
-	else {
-		p = d;
-	}
-	return p;
+	return lns_rounding::exponential('e', x);
 }
 
 // Base-2 exponential function
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> exp2(lns<nbits, rbits, bt, xtra...> x) {
-	if (isnan(x)) return x;
-	lns<nbits, rbits, bt, xtra...> p;
-	double d = std::exp2(double(x));
-	if (d == 0.0) {
-		p.minpos();
-	}
-	else {
-		p = d;
-	}
-	return p;
+	return lns_rounding::exponential('2', x);
 }
 
 // Base-10 exponential function
