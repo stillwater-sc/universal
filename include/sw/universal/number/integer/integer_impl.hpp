@@ -972,6 +972,24 @@ public:
 		return *this;
 	}
 
+	// compound assignment with a native integer operand: a literal 0 is the zero encoding, not the
+	// domain-checked conversion, which throws for a NaturalNumber inside noexcept code and terminated
+	// n += 0, n -= 0, n |= 0, n ^= 0, and n /= 0 or n %= 0 under the divide-by-zero opt-out (#2131).
+	// The operation itself handles its result; any other value goes through the checked conversion,
+	// as the implicit conversion did. (*= keeps its BlockType overload; &= with 0 is a zero result.)
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator+=(IntType rhs) { return *this += native_operand(rhs); }
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator-=(IntType rhs) { return *this -= native_operand(rhs); }
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator/=(IntType rhs) { return *this /= native_operand(rhs); }
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator%=(IntType rhs) { return *this %= native_operand(rhs); }
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator|=(IntType rhs) { return *this |= native_operand(rhs); }
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator^=(IntType rhs) { return *this ^= native_operand(rhs); }
+
 	// modifiers
 	constexpr void clear() noexcept { 
 		bt* p = _block;
@@ -1655,6 +1673,16 @@ protected:
 	}
 
 private:
+	// a native operand: 0 as the zero encoding, anything else through the checked conversion
+	template<typename IntType>
+	static constexpr integer native_operand(IntType v) {
+		if (v == 0) {
+			integer zero;
+			zero.clear();
+			return zero;
+		}
+		return integer(v);
+	}
 	// every width and kind reaches another's protected conversions (to_real of a wider signed residual)
 	template<unsigned, typename, IntegerNumberType> friend class integer;
 	bt _block[nrBlocks];

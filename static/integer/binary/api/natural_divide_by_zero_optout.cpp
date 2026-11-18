@@ -56,6 +56,42 @@ int VerifyNaturalDivideByZero(bool reportTestCases) {
 		++nrOfFailedTests;
 		if (reportTestCases) std::cerr << "FAIL: 7 / 0 (literal) threw the domain exception: " << e.what() << '\n';
 	}
+	// the compound forms with a literal 0: n /= 0 and n %= 0 are the opted-out 0
+	try {
+		Natural r(seven);
+		r /= 0;
+		Natural m(seven);
+		m %= 0;
+		if (!r.iszero() || !m.iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: 7 /= 0 or 7 %= 0 (literal) is not 0\n";
+		}
+	}
+	catch (const integer_encoding_exception& e) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: 7 /= 0 (literal) threw the domain exception: " << e.what() << '\n';
+	}
+	// compound identities with a literal 0: n += 0, n -= 0, n |= 0, n ^= 0 leave n unchanged
+	try {
+		Natural a(seven), b(seven), c(seven), d(seven);
+		a += 0; b -= 0; c |= 0; d ^= 0;
+		if (a != seven || b != seven || c != seven || d != seven) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: a compound identity with a literal 0 changed 7\n";
+		}
+		Natural e(seven);
+		e += 3;
+		bool thrown = false;
+		try { Natural f(one); f /= 2; } catch (const integer_encoding_exception&) { thrown = true; }
+		if (e != Natural(10) || !thrown) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: 7 += 3 or 1 /= 2 (literal)\n";
+		}
+	}
+	catch (const integer_encoding_exception& e) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: a compound literal 0 threw the domain exception: " << e.what() << '\n';
+	}
 	// a literal 0 in a valid operation: n + 0, n - 0, 0 + n, n | 0
 	try {
 		if (seven + 0 != seven || seven - 0 != seven || 0 + seven != seven || (seven | 0) != seven) {
