@@ -237,10 +237,12 @@ public:
 	constexpr integer& operator=(int rhs)                { return convert_signed(rhs); }
 	constexpr integer& operator=(long rhs)               { return convert_signed(rhs); }
 	constexpr integer& operator=(long long rhs)          { return convert_signed(rhs); }
-	// plain char follows its own signedness: where it is signed, char(-1) is -1 (a NaturalNumber's NaNN)
+	// plain char: for a NaturalNumber it follows its own signedness, so where char is signed char(-1) is
+	// -1 and gives NaNN (#2137); the other kinds keep the unsigned conversion they always used (a
+	// WholeNumber's signed path is domain checked and would throw inside the noexcept constructor)
 	constexpr integer& operator=(char rhs) {
-		if constexpr (std::is_signed_v<char>) return convert_signed(static_cast<signed char>(rhs));
-		else return convert_unsigned(static_cast<unsigned char>(rhs));
+		if constexpr (NumberType == NaturalNumber && std::is_signed_v<char>) return convert_signed(static_cast<signed char>(rhs));
+		else return convert_unsigned(rhs);
 	}
 	constexpr integer& operator=(unsigned short rhs)     { return convert_unsigned(rhs); }
 	constexpr integer& operator=(unsigned int rhs)       { return convert_unsigned(rhs); }
@@ -1165,9 +1167,16 @@ public:
 		return *this;
 	}
 	// in-place 2's complement
+	// a raw bit-level operation, never domain checked: for a NaturalNumber all ones flips to the 0
+	// encoding, and the public ++ would keep that as NaNN (#2137), so the limbs are incremented here
 	constexpr integer& twosComplement() {
 		flip();
-		return ++(*this);
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			_block[i] = static_cast<bt>(_block[i] + bt(1));
+			if (_block[i] != bt(0)) break;  // no carry into the next limb
+		}
+		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK);
+		return *this;
 	}
 
 	// selectors

@@ -133,6 +133,16 @@ int VerifyNaNN(bool reportTestCases) {
 			expect(Natural(minusOne).isnan(), "char(-1) is NaNN where char is signed");
 		}
 		expect(unsigned(Natural(static_cast<char>(100))) == 100u, "char(100) is 100");
+		// twosComplement() is raw bit arithmetic: all ones flips to the 0 encoding, and incrementing
+		// it must give 1, not keep NaNN as the public ++ does
+		{
+			Natural allOnes;
+			allOnes.clear();
+			allOnes.flip();
+			Natural t(allOnes);
+			t.twosComplement();
+			expect(t.isone() && twosComplement(allOnes).isone(), "twosComplement(all ones) is 1, member and free helper");
+		}
 
 		// a NaNN operand makes a quire NaN: normalize() maps it to a zero blocktriple, which would add 0
 		if constexpr (nbits <= 64) {
@@ -147,6 +157,14 @@ int VerifyNaNN(bool reportTestCases) {
 			q = five;
 			q -= nann;
 			expect(assigned && added && q.isnan(), "quire = NaNN, += NaNN, -= NaNN give a NaN quire");
+		}
+
+		// a WholeNumber keeps its plain-char conversion: char(-1) is the unsigned value, not a throw inside
+		// the noexcept constructor (this file enables INTEGER_THROW_ARITHMETIC_EXCEPTION)
+		{
+			using Whole = integer<nbits, typename Natural::BlockType, IntegerNumberType::WholeNumber>;
+			const Whole w(static_cast<char>(-1));
+			expect(!w.iszero(), "whole(char(-1)) converts without throwing, as before");
 		}
 
 		// numeric_limits
