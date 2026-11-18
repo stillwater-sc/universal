@@ -240,8 +240,9 @@ namespace {
 			auto exp10ok = [](auto tag) {
 				using H = decltype(tag);
 				using L = std::numeric_limits<H>;
-				const long double lmin = std::log10(static_cast<long double>(L::min()));
-				const long double lmax = std::log10(static_cast<long double>(L::max()));
+				// through double: without LONG_DOUBLE_SUPPORT hfloat has no long double conversion
+				const double lmin = std::log10(static_cast<double>(L::min()));
+				const double lmax = std::log10(static_cast<double>(L::max()));
 				return L::min_exponent10 == static_cast<int>(std::ceil(lmin)) && L::max_exponent10 == static_cast<int>(std::floor(lmax));
 			};
 			expect(std::numeric_limits<hfp32>::min_exponent10 == -78 && std::numeric_limits<hfp32>::max_exponent10 == 75, "hfp32 exponent10 is -78 / 75");

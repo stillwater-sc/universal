@@ -27,9 +27,10 @@
 // and the target accumulates the parts. A target that holds the source's bits receives them all,
 // dd -> qd keeps its 106; a narrower target gets each part's rounding, faithful rather than
 // correctly rounded. A source the split cannot represent exactly (a residual its arithmetic rounds,
-// a value outside double's range, a NaN or infinity, a zero with its sign) takes the long double or
-// double path as before, so no conversion loses bits it used to keep. An integer or fixed-point
-// target keeps that path too: it would round each part on its own.
+// a value outside double's range or at the top of the source's, a NaN or infinity, a zero with its
+// sign, a part the target flushes to zero) takes the long double or double path as before, so no
+// conversion loses bits it used to keep. An integer or fixed-point target or source keeps that path
+// too: a target would round each part on its own, and a source's conversion from double can saturate.
 //
 // Usage:
 //   #include <universal/number/posit/posit.hpp>
@@ -66,9 +67,13 @@ inline constexpr unsigned intermediate_fraction_bits =
 	52u;
 #endif
 
-// the double expansion needs the source's own arithmetic and a floating-point target that accumulates
+// the double expansion needs floating-point source arithmetic and a floating-point target that
+// accumulates. An integer or fixed-point source is excluded: Source(h) can saturate (integer<64>:
+// h = 2^63 for 2^63 - 1 saturates back to 2^63 - 1, and the reconstruction check passes on the wrong
+// part), and an unsigned kind's subtraction checks its domain (NaturalNumber 42 - 42 throws).
 template<typename Target, typename Source>
-concept double_expansion_castable = UniversalFloatingPoint<Target> &&
+concept double_expansion_castable = UniversalFloatingPoint<Target> && UniversalFloatingPoint<Source> &&
+	std::numeric_limits<Source>::is_specialized &&
 	requires(const Source& s, double d, Target& t) {
 		Source(d);
 		{ s - s } -> std::convertible_to<Source>;
@@ -84,12 +89,15 @@ constexpr bool cast_via_double_expansion(const Source& src, Target& out) noexcep
 	constexpr unsigned srcPrec = precision_bits_v<Source>;
 	constexpr int maxParts = static_cast<int>(srcPrec / 53u) + 3;
 	constexpr double dmax = std::numeric_limits<double>::max();
+	// a part at the top of the source's range may saturate in Source(h) and still reconstruct: decline it
+	const double sourceTop = static_cast<double>(std::numeric_limits<Source>::max()) * 0.5;
 	double parts[maxParts]{};
 	int n = 0;
 	Source rest = src;
 	while (n < maxParts && !rest.iszero()) {
 		const double h = static_cast<double>(rest);
 		if (!(h >= -dmax && h <= dmax) || h == 0.0) return false;   // NaN, infinity, or underflow
+		if (!(h < sourceTop && h > -sourceTop)) return false;        // near the source's max: may saturate
 		const Source hs(h);
 		const Source next = rest - hs;
 		if (!(hs + next == rest)) return false;   // the source's arithmetic rounded the residual
@@ -98,7 +106,11 @@ constexpr bool cast_via_double_expansion(const Source& src, Target& out) noexcep
 	}
 	if (n == 0 || !rest.iszero()) return false;   // a zero keeps its sign on the plain path
 	Target t(parts[0]);
-	for (int i = 1; i < n; ++i) t += Target(parts[i]);
+	for (int i = 1; i < n; ++i) {
+		const Target part(parts[i]);
+		if (part.iszero()) return false;   // a nonzero part the target flushes: the plain path keeps it
+		t += part;
+	}
 	out = t;
 	return true;
 }

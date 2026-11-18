@@ -174,7 +174,11 @@ int VerifyArrayShape(bool reportTestCases) {
 		A a(n, rate, src.data());
 		a.decompress(out.data());
 		double e = 0.0;
-		for (size_t i = 0; i < n; ++i) e = std::max(e, std::fabs(static_cast<double>(out[i]) - static_cast<double>(src[i])));
+		for (size_t i = 0; i < n; ++i) {
+			const double d = std::fabs(static_cast<double>(out[i]) - static_cast<double>(src[i]));
+			if (!std::isfinite(d)) return std::numeric_limits<double>::infinity();   // a NaN or inf output fails
+			e = std::max(e, d);
+		}
 		return e;
 	};
 	const double fullRate = 8.0 * sizeof(Real);
@@ -182,13 +186,17 @@ int VerifyArrayShape(bool reportTestCases) {
 	const double full = maxError(fullRate);
 	expect(full <= 4.0 * eps * 3.0, "full-rate round trip within a few epsilon");
 	const double quarter = maxError(fullRate / 4.0);
-	expect(quarter >= full && quarter < 1.0, "quarter-rate error larger than full rate, and bounded");
+	expect(quarter >= full && quarter > 0.0 && quarter < 1.0, "quarter-rate error larger than full rate, nonzero, and bounded");
 	A a(n, fullRate, src.data());
 	const size_t blocks = (n + A::BLOCK_SIZE - 1) / A::BLOCK_SIZE;
 	expect(a.size() == n && a.compressed_bytes() == blocks * a.bytes_per_block(), "storage is ceil(n / BLOCK_SIZE) blocks");
 	// element access through the cache, across block boundaries and into the partial block
 	double getError = 0.0;
-	for (size_t i = 0; i < n; ++i) getError = std::max(getError, std::fabs(static_cast<double>(a(i)) - static_cast<double>(src[i])));
+	for (size_t i = 0; i < n; ++i) {
+		const double d = std::fabs(static_cast<double>(a(i)) - static_cast<double>(src[i]));
+		getError = std::isfinite(d) ? std::max(getError, d) : std::numeric_limits<double>::infinity();
+		if (!std::isfinite(d)) break;
+	}
 	expect(getError <= 4.0 * eps * 3.0, "operator() reads the decompressed values");
 	a.set(0, Real(7.25));
 	a.set(n - 1, Real(-1.5));

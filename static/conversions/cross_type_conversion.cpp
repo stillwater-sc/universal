@@ -14,6 +14,7 @@
 #include <universal/number/bfloat16/bfloat16.hpp>
 #include <universal/number/dd/dd.hpp>
 #include <universal/number/qd/qd.hpp>
+#include <universal/number/hfloat/hfloat.hpp>
 // cross-type conversion infrastructure
 #include <universal/number/convert/convert.hpp>
 // test infrastructure
@@ -308,6 +309,12 @@ int VerifyCfloatSpecialValueConversions(bool reportTestCases) {
 
 // casts wider than the long double / double intermediate keep the source's bits (#2133): they used to
 // keep at most 64 bits on every platform. The references are built from the source's own limbs.
+// integer and fixed-point sources keep the plain path: their conversion from double saturates, and
+// an unsigned kind's subtraction is domain checked (NaturalNumber 42 - 42 threw inside noexcept)
+static_assert(!detail::double_expansion_castable<qd, integer<64, std::uint32_t>>, "integer source is not split");
+static_assert(!detail::double_expansion_castable<qd, integer<16, std::uint8_t, IntegerNumberType::NaturalNumber>>, "NaturalNumber source is not split");
+static_assert(detail::double_expansion_castable<qd, dd> && detail::double_expansion_castable<dd, qd>, "dd and qd are split");
+
 int VerifyWidePrecisionCast(bool reportTestCases) {
 	int nrOfFailures = 0;
 	auto fail = [&](const char* what) { ++nrOfFailures; if (reportTestCases) std::cerr << "FAIL: " << what << '\n'; };
@@ -332,6 +339,20 @@ int VerifyWidePrecisionCast(bool reportTestCases) {
 		using C = cfloat<128, 15, std::uint32_t, true, false, false>;
 		if (!(universal_cast<dd>(universal_cast<C>(x)) == x)) fail("dd -> cfloat<128,15> -> dd round trip");
 	}
+	// cases the expansion declines, where the plain long double path is exact on a 64-bit long double:
+	//   an integer source: Source(2^63) saturates back to 2^63 - 1, so the split accepted the wrong part
+	//   a part the target flushes: dd(2^-259 + 2^-319) -> hfloat<28,7>, whose min() is 2^-260, dropped
+	//   2^-319 although the whole value, 2^-259 (1 + 2^-60), fits in its 112 fraction bits
+#if LONG_DOUBLE_SUPPORT
+	if constexpr (std::numeric_limits<long double>::digits >= 64) {
+		const integer<64, std::uint32_t> big(0x7FFFFFFFFFFFFFFFll);
+		if (!(universal_cast<qd>(big) == qd(std::ldexp(1.0, 63)) - qd(1.0))) fail("integer<64> 2^63 - 1 -> qd is exact");
+		using H = hfloat<28, 7>;
+		const dd tiny = dd(std::ldexp(1.0, -259)) + dd(std::ldexp(1.0, -319));
+		const H expected(std::ldexp(1.0L, -259) + std::ldexp(1.0L, -319));
+		if (!(to_hex(universal_cast<H>(tiny)) == to_hex(expected))) fail("dd(2^-259 + 2^-319) -> hfloat<28,7> keeps 2^-319");
+	}
+#endif
 	// non-finite values keep the plain path
 	if (!universal_cast<qd>(dd(std::numeric_limits<double>::infinity())).isinf()) fail("dd inf -> qd inf");
 	if (!universal_cast<qd>(dd(std::numeric_limits<double>::quiet_NaN())).isnan()) fail("dd NaN -> qd NaN");
