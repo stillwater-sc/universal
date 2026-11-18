@@ -13,7 +13,7 @@
 // third: enable tracing 
 // when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define ALGORITHM_VERBOSE_OUTPUT
-#define ALGORITHM_TRACE_ADD
+//#define ALGORITHM_TRACE_ADD   // tracing: define it by hand to debug, never in a regression test (CI)
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_suite_randoms.hpp>

@@ -8,8 +8,7 @@
 
 // when you define ALGORITHM_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
 //#define ALGORITHM_VERBOSE_OUTPUT
-#define ALGORITHM_TRACE_POW
-
+//#define ALGORITHM_TRACE_POW   // tracing: define it by hand to debug, never in a regression test (CI)
 // use default number system library configuration
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/cfloat_test_suite_mathlib.hpp>

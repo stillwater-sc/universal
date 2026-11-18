@@ -15,7 +15,7 @@
                   
 #include <universal/native/ieee754.hpp>
 // uncomment to enable operator tracing
-#define BLOCKTRIPLE_VERBOSE_OUTPUT
+//#define BLOCKTRIPLE_VERBOSE_OUTPUT   // tracing: define it by hand to debug, never in a regression test (CI)
 //#define BLOCKTRIPLE_TRACE_MUL
 #include <universal/internal/blocktriple/blocktriple_debug.hpp>  // constexprClassParameters + tracing (#1334)
 #include <universal/verification/test_status.hpp>
