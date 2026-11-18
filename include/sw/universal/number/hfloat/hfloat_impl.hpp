@@ -663,23 +663,39 @@ protected:
 		return s ? -result : result;
 	}
 
-	// long double: its significand is read exactly through frexp / ldexp, in two 64-bit pieces
-	// (binary128 carries 113 bits, IBM double-double 106, x87 64), so a long double wider than a
-	// double is not first rounded to 53 bits. Any bits past 128 would be truncated, which
-	// composes with hfloat's own truncation. At constant evaluation it goes through double.
+	// long double: its significand is read exactly, in two 64-bit pieces (binary128 carries 113
+	// bits, IBM double-double 106, x87 64), so a long double wider than a double is not first rounded
+	// to 53 bits. Any bits past 128 would be truncated, which composes with hfloat's own truncation.
+	// At run time frexp / ldexp split it; a constant evaluation scales by exact powers of two instead.
+	// It used to go through double there, which rounds to nearest before hfloat truncates and can
+	// land on the wrong side of a hex digit: 1 - 2^-60 became 1.0 at hfp64 instead of 1 - 2^-56 (#2133).
 	constexpr hfloat& convert_long_double(long double rhs) noexcept {
-		if (std::is_constant_evaluated()) return convert_ieee754(static_cast<double>(rhs));
 		if (rhs != rhs || rhs == 0.0L) { setzero(); return *this; }
 		const long double ldmax = std::numeric_limits<long double>::max();
 		if (rhs >  ldmax) { maxpos(); return *this; }
 		if (rhs < -ldmax) { maxneg(); return *this; }
 		const bool negative = rhs < 0.0L;
 		int e = 0;
-		const long double fr = std::frexp(negative ? -rhs : rhs, &e);   // [0.5, 1)
-		const long double top = std::ldexp(fr, 64);                       // [2^63, 2^64)
+		long double fr = negative ? -rhs : rhs;
+		long double top = 0.0L;
+		if (std::is_constant_evaluated()) {
+			// fr = |rhs| * 2^-e in [0.5, 1), by exact multiplications by powers of two
+			constexpr long double two32 = 4294967296.0L;
+			while (fr >= two32) { fr /= two32; e += 32; }
+			while (fr >= 1.0L) { fr /= 2.0L; ++e; }
+			while (fr < 1.0L / two32) { fr *= two32; e -= 32; }
+			while (fr < 0.5L) { fr *= 2.0L; --e; }
+			top = fr * two32 * two32;                                     // [2^63, 2^64)
+		}
+		else {
+			fr = std::frexp(fr, &e);                                      // [0.5, 1)
+			top = std::ldexp(fr, 64);                                     // [2^63, 2^64)
+		}
 		const uint64_t hi = static_cast<uint64_t>(top);                   // truncates toward zero
 		const long double rest = top - static_cast<long double>(hi);      // exact, in [0, 1)
-		const uint64_t lo = static_cast<uint64_t>(std::ldexp(rest, 64));
+		uint64_t lo = 0;
+		if (std::is_constant_evaluated()) lo = static_cast<uint64_t>(rest * 4294967296.0L * 4294967296.0L);
+		else lo = static_cast<uint64_t>(std::ldexp(rest, 64));
 		using w128 = hfloat_detail::wide<(fbits > 128u ? fbits : 128u)>;
 		w128 m = w128::from_u64(hi);
 		m.shl(64);

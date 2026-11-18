@@ -47,6 +47,13 @@ namespace sw { namespace universal {
         polyroot(const std::vector<cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>>& c, const cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>& x0, int max_iter, double threshold) {
 	    using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasMaxExpValues, isSaturating>;
         // a cfloat does not convert to double implicitly: this did not compile (#2089)
+        // threshold 0 is numeric_limits<Cfloat>::epsilon(), scaled below by the largest coefficient.
+        // For a layout without subnormals whose 2^-fbits lies below the smallest normal, epsilon()
+        // is min() (#2089), larger than the gap above 1.0, and that is deliberate here (USER decision,
+        // #2133): in such a layout every Newton correction f/f' smaller than min() flushes to 0, so
+        // the iteration cannot refine past about min() * |f'|. A threshold below that stalls and
+        // reports "failed to converge"; min() stops at the attainable root (cfloat<24,4> without
+        // subnormals: x^2 - 2 from 1 gives 1.41667, error 2.5e-3).
         if (threshold == 0.0) threshold = double(std::numeric_limits<Cfloat>::epsilon());
 
         // a constant polynomial has no derivative to iterate on: polyeval(derivatives, -1, x)

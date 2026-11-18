@@ -762,6 +762,11 @@ private:
 						N = (P.lo >> sh) | (P.hi << (64 - sh));
 						half = ((P.lo >> (sh - 1)) & 1u) != 0;
 					}
+					// the carry out of 64 bits is unreachable from a double (#2133): it needs
+					// floor(P / 2^sh) == 2^64 - 1 with the round bit set, P in
+					// [(2^65 - 1) 2^(sh - 1), 2^65 2^(sh - 1)), and an exhaustive search over every
+					// radix <= 27 and every sh finds no P = m 5^radix with m < 2^53 there. The guard
+					// stays, as the digit-serial path is correct for any input.
 					if (half) { ++N; if (N == 0) return false; }
 				}
 			}

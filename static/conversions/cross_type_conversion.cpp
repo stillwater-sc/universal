@@ -12,6 +12,9 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/bfloat16/bfloat16.hpp>
+#include <universal/number/dd/dd.hpp>
+#include <universal/number/qd/qd.hpp>
+#include <universal/number/hfloat/hfloat.hpp>
 // cross-type conversion infrastructure
 #include <universal/number/convert/convert.hpp>
 // test infrastructure
@@ -304,6 +307,115 @@ int VerifyCfloatSpecialValueConversions(bool reportTestCases) {
 	return nrOfFailures;
 }
 
+// casts wider than the long double / double intermediate keep the source's bits (#2133): they used to
+// keep at most 64 bits on every platform. The references are built from the source's own limbs.
+// integer and fixed-point sources keep the plain path: their conversion from double saturates, and
+// an unsigned kind's subtraction is domain checked (NaturalNumber 42 - 42 threw inside noexcept)
+static_assert(!detail::double_expansion_castable<qd, integer<64, std::uint32_t>>, "integer source is not split");
+static_assert(!detail::double_expansion_castable<qd, integer<16, std::uint8_t, IntegerNumberType::NaturalNumber>>, "NaturalNumber source is not split");
+static_assert(detail::double_expansion_castable<qd, dd> && detail::double_expansion_castable<dd, qd>, "dd and qd are split");
+// only binary types opt in: lns and hfloat keep the plain path (#2133)
+static_assert(!detail::double_expansion_castable<qd, lns<16, 8>>, "lns source is not split");
+static_assert(!detail::double_expansion_castable<hfloat<28, 7>, dd>, "hfloat target is not accumulated");
+
+int VerifyWidePrecisionCast(bool reportTestCases) {
+	int nrOfFailures = 0;
+	auto fail = [&](const char* what) { ++nrOfFailures; if (reportTestCases) std::cerr << "FAIL: " << what << '\n'; };
+	const double values[] = { 1.0 / 3.0, -2.0 / 7.0, 1.0e10 / 3.0, 3.0e-200 / 7.0, 0.1 };
+	for (double v : values) {
+		// a dd with a full second limb: v / 3 at dd precision
+		const dd x = dd(v) / dd(3.0);
+		// dd -> qd: every bit, the qd sum of the two limbs
+		const qd q = universal_cast<qd>(x);
+		if (!(q == qd(x[0]) + qd(x[1]))) fail("dd -> qd keeps both limbs");
+		// and back: dd -> qd -> dd is the identity
+		if (!(universal_cast<dd>(q) == x)) fail("dd -> qd -> dd round trip");
+		qd target;
+		universal_assign(target, x);
+		if (!(target == q)) fail("universal_assign<qd>(dd) matches universal_cast");
+		// qd -> dd with three parts, the last below dd's precision: one rounding, at the end, so the
+		// result is the dd nearest the qd value; with four parts it would round twice and takes the
+		// plain path, never worse than it
+		{
+			const qd y = qd(x[0]) + qd(x[1]) + qd(std::ldexp(x[1], -60));
+			const dd d = universal_cast<dd>(y);
+			const qd err = abs(qd(d[0]) + qd(d[1]) - y);
+			if (!(err <= abs(y) * qd(std::ldexp(1.0, -106)))) fail("qd(3 parts) -> dd rounds once, to nearest");
+			const qd y4 = qd(v) / qd(3.0);
+			const dd d4 = universal_cast<dd>(y4);
+#if LONG_DOUBLE_SUPPORT
+			// the plain path's value: the long double, as the sum of its two doubles
+			const long double ld = static_cast<long double>(y4);
+			const double ldHi = static_cast<double>(ld);
+			const double ldLo = static_cast<double>(ld - static_cast<long double>(ldHi));
+			const qd plainErr = abs(qd(ldHi) + qd(ldLo) - y4);
+			if (!(abs(qd(d4[0]) + qd(d4[1]) - y4) <= plainErr)) fail("qd(4 parts) -> dd no worse than the plain path");
+#else
+			(void)d4;
+#endif
+		}
+		// dd -> cfloat<128,15> -> dd: the cfloat holds 112 fraction bits, so the round trip is exact
+		using C = cfloat<128, 15, std::uint32_t, true, false, false>;
+		if (!(universal_cast<dd>(universal_cast<C>(x)) == x)) fail("dd -> cfloat<128,15> -> dd round trip");
+	}
+	// cases the expansion declines, where the plain long double path is exact on a 64-bit long double:
+	//   an integer source: Source(2^63) saturates back to 2^63 - 1, so the split accepted the wrong part
+	//   a part the target flushes: dd(2^-259 + 2^-319) -> hfloat<28,7>, whose min() is 2^-260, dropped
+	//   2^-319 although the whole value, 2^-259 (1 + 2^-60), fits in its 112 fraction bits
+#if LONG_DOUBLE_SUPPORT
+	if constexpr (std::numeric_limits<long double>::digits >= 64) {
+		const integer<64, std::uint32_t> big(0x7FFFFFFFFFFFFFFFll);
+		if (!(universal_cast<qd>(big) == qd(std::ldexp(1.0, 63)) - qd(1.0))) fail("integer<64> 2^63 - 1 -> qd is exact");
+		using H = hfloat<28, 7>;
+		const dd tiny = dd(std::ldexp(1.0, -259)) + dd(std::ldexp(1.0, -319));
+		const H expected(std::ldexp(1.0L, -259) + std::ldexp(1.0L, -319));
+		if (!(to_hex(universal_cast<H>(tiny)) == to_hex(expected))) fail("dd(2^-259 + 2^-319) -> hfloat<28,7> keeps 2^-319");
+	}
+#endif
+	// lns: sqrt(2) is not a sum of doubles; the plain long double path keeps 64 bits of it on x87, where
+	// the expansion reported one exact part of 53 (#2133)
+#if LONG_DOUBLE_SUPPORT
+	if constexpr (std::numeric_limits<long double>::digits >= 64) {
+		using L = lns<16, 8>;
+		L r2;
+		r2.setbits(0x80);   // 2^(128 / 256) = sqrt(2)
+		const qd viaCast = universal_cast<qd>(r2);
+		const long double ld = static_cast<long double>(r2);
+		const double ldHi = static_cast<double>(ld);
+		const qd viaLd = qd(ldHi) + qd(static_cast<double>(ld - static_cast<long double>(ldHi)));
+		if (!(viaCast == viaLd)) fail("lns sqrt(2) -> qd keeps the long double path's bits");
+	}
+	// hfloat near its maxpos: hfloat<14,5> has maxpos 16^15 (1 - 16^-14) = 2^60 - 2^4, whose double
+	// rounds up to 2^60; dd(2^60 - 1) saturates to that maxpos on the plain path, while the part 2^60
+	// saturated, read as exact, and the sum gave maxpos - 1
+	{
+		using H14 = hfloat<14, 5>;
+		const dd x60 = dd(std::ldexp(1.0, 60)) + dd(-1.0);
+		const H14 expected(std::ldexp(1.0L, 60) - 1.0L);
+		if (!(to_hex(universal_cast<H14>(x60)) == to_hex(expected))) fail("dd(2^60 - 1) -> hfloat<14,5> is the plain path's value");
+	}
+#endif
+	// a part that overflows the target declines: dd(2^400, -2^340) -> hfloat<6,7> saturates, the parts
+	// summed maxpos and maxneg to 0
+	{
+		using H6 = hfloat<6, 7>;
+		const dd huge = dd(std::ldexp(1.0, 400)) + dd(-std::ldexp(1.0, 340));
+		if (!(to_hex(universal_cast<H6>(huge)) == to_hex(H6(SpecificValue::maxpos)))) fail("dd(2^400 - 2^340) -> hfloat<6,7> saturates to maxpos");
+	}
+	// a rounding before the last part declines: qd(1, 2^-54, -2^-108) -> hfloat<14,7> is above 1, and
+	// truncation gives 1; summing truncated 1 + 2^-54 to 1, then 1 - 2^-108 truncated to 1 - 2^-56
+	{
+		using H14 = hfloat<14, 7>;
+		const qd q3 = qd(1.0) + qd(std::ldexp(1.0, -54)) + qd(-std::ldexp(1.0, -108));
+		if (!(to_hex(universal_cast<H14>(q3)) == to_hex(H14(1.0)))) fail("qd(1 + 2^-54 - 2^-108) -> hfloat<14,7> truncates to 1");
+	}
+	// non-finite values keep the plain path
+	if (!universal_cast<qd>(dd(std::numeric_limits<double>::infinity())).isinf()) fail("dd inf -> qd inf");
+	if (!universal_cast<qd>(dd(std::numeric_limits<double>::quiet_NaN())).isnan()) fail("dd NaN -> qd NaN");
+	if (!universal_cast<qd>(dd(0.0)).iszero()) fail("dd 0 -> qd 0");
+	return nrOfFailures;
+}
+
 }} // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -590,6 +702,10 @@ try {
 	}
 
 #if REGRESSION_LEVEL_1
+	////////////////////////////////////////////////////////////////////
+	// Section 7b: casts wider than the long double / double intermediate (#2133)
+	nrOfFailedTestCases += ReportTestResult(VerifyWidePrecisionCast(reportTestCases), "dd/qd/cfloat<128,15>", "wide precision cast");
+
 	////////////////////////////////////////////////////////////////////
 	// Section 8: Exhaustive cfloat-to-cfloat conversions (narrowing)
 	//   cfloat<12,4> -> cfloat<8,3>: 4096 encodings

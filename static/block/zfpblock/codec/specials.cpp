@@ -14,6 +14,8 @@
 //   - a fixed rate below the header zeroed every block, and a negative or NaN rate was undefined. Such a
 //     rate clamps to the header + 4 bits; a rate past the raw size is capped there.
 #include <universal/utility/directives.hpp>
+#include <algorithm>
+#include <vector>
 #define ZFPBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/zfpblock/zfpblock.hpp>
 #include <universal/number/zfpblock/zfparray.hpp>
@@ -153,6 +155,59 @@ int VerifyArrayBounds(bool reportTestCases) {
 	return fails;
 }
 
+// zfparray beyond <float, 1> (#2133): double and the 2D / 3D block shapes, with a partial last block.
+// At the full rate (8 sizeof(Real) bits per value) the round trip is within a few units of the type's
+// epsilon of the data; at a quarter of it the error is larger but bounded. The store holds
+// ceil(n / BLOCK_SIZE) blocks of bytes_per_block() each, and set / get go through the block cache.
+template<typename Real, unsigned Dim>
+int VerifyArrayShape(bool reportTestCases) {
+	using namespace sw::universal;
+	using A = zfparray<Real, Dim>;
+	int fails = 0;
+	auto expect = [&](bool ok, const char* what) {
+		if (!ok) { ++fails; if (reportTestCases) std::cerr << "FAIL: zfparray<" << (sizeof(Real) == 4 ? "float" : "double") << ", " << Dim << ">: " << what << '\n'; }
+	};
+	const size_t n = 3 * A::BLOCK_SIZE + 5;   // a partial last block
+	std::vector<Real> src(n), out(n);
+	for (size_t i = 0; i < n; ++i) src[i] = Real(std::sin(0.1 * static_cast<double>(i)) + 2.0);   // smooth, in [1, 3]
+	auto maxError = [&](double rate) {
+		A a(n, rate, src.data());
+		a.decompress(out.data());
+		double e = 0.0;
+		for (size_t i = 0; i < n; ++i) {
+			const double d = std::fabs(static_cast<double>(out[i]) - static_cast<double>(src[i]));
+			if (!std::isfinite(d)) return std::numeric_limits<double>::infinity();   // a NaN or inf output fails
+			e = std::max(e, d);
+		}
+		return e;
+	};
+	const double fullRate = 8.0 * sizeof(Real);
+	const double eps = static_cast<double>(std::numeric_limits<Real>::epsilon());
+	const double full = maxError(fullRate);
+	expect(full <= 4.0 * eps * 3.0, "full-rate round trip within a few epsilon");
+	const double quarter = maxError(fullRate / 4.0);
+	expect(quarter >= full && quarter > 0.0 && quarter < 1.0, "quarter-rate error larger than full rate, nonzero, and bounded");
+	A a(n, fullRate, src.data());
+	const size_t blocks = (n + A::BLOCK_SIZE - 1) / A::BLOCK_SIZE;
+	expect(a.size() == n && a.compressed_bytes() == blocks * a.bytes_per_block(), "storage is ceil(n / BLOCK_SIZE) blocks");
+	// element access through the cache, across block boundaries and into the partial block
+	double getError = 0.0;
+	for (size_t i = 0; i < n; ++i) {
+		const double d = std::fabs(static_cast<double>(a(i)) - static_cast<double>(src[i]));
+		getError = std::isfinite(d) ? std::max(getError, d) : std::numeric_limits<double>::infinity();
+		if (!std::isfinite(d)) break;
+	}
+	expect(getError <= 4.0 * eps * 3.0, "operator() reads the decompressed values");
+	a.set(0, Real(7.25));
+	a.set(n - 1, Real(-1.5));
+	a.flush();
+	expect(a(0) == Real(7.25) && a(n - 1) == Real(-1.5), "set then get, first and last element");
+	bool threw = false;
+	try { a.set(n, Real(1)); } catch (const std::out_of_range&) { threw = true; }
+	expect(threw, "set past the end throws");
+	return fails;
+}
+
 }  // namespace
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -203,6 +258,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult((VerifyRates<float, 1>(reportTestCases)),           "float 1D",  "rate edges");
 	nrOfFailedTestCases += ReportTestResult((VerifyRates<double, 3>(reportTestCases)),          "double 3D", "rate edges");
 	nrOfFailedTestCases += ReportTestResult(VerifyArrayBounds(reportTestCases),                 "zfparray",  "bounds and rate floor");
+	nrOfFailedTestCases += ReportTestResult(VerifyArrayShape<double, 1>(reportTestCases), "zfparray<double,1>", "round trip, storage, access");
+	nrOfFailedTestCases += ReportTestResult(VerifyArrayShape<float , 2>(reportTestCases), "zfparray<float,2>",  "round trip, storage, access");
+	nrOfFailedTestCases += ReportTestResult(VerifyArrayShape<double, 2>(reportTestCases), "zfparray<double,2>", "round trip, storage, access");
+	nrOfFailedTestCases += ReportTestResult(VerifyArrayShape<float , 3>(reportTestCases), "zfparray<float,3>",  "round trip, storage, access");
+	nrOfFailedTestCases += ReportTestResult(VerifyArrayShape<double, 3>(reportTestCases), "zfparray<double,3>", "round trip, storage, access");
 #endif
 
 #if REGRESSION_LEVEL_2
