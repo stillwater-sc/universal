@@ -28,10 +28,16 @@ public:
 		r.setdbit(nbits - 2);
 		return r;
 	}
-	static constexpr RationalType round_error() {   // 1/2: long(0.5) was 0 (#2132)
-		RationalType r(0, 0);
-		r.setnbit(0);
-		r.setdbit(1);
+	static RationalType round_error() {   // 1/2: long(0.5) was 0 (#2132)
+		// through the exact store, which moves the sign where it fits: in a rational<2> the
+		// denominator's bit 1 is its sign, and 1/2 is stored -1/-2
+		RationalType r;
+		typename RationalType::Wide one, two;
+		one.clear();
+		two.clear();
+		one.setbit(0);
+		two.setbit(1);
+		r.exact_store(one, two, false);
 		return r;
 	}
 	static constexpr RationalType denorm_min() {

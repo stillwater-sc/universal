@@ -107,9 +107,11 @@ void assign(R& r, const typename R::Wide& P, const typename R::Wide& Q, bool div
 	const Wide g = rational_exact::gcd(p, q);   // qualified: ADL also finds the integer gcd
 	p /= g;
 	q /= g;
-	// past the range: |P / Q| > limit is p > limit * q
+	// past the range: |P / Q| > limit, decided by the quotient, as limit * q can pass Wide when
+	// q is large (1/16384 squared in a rational<16> reduces to 1/2^28)
 	const Wide limit = R::exact_limit(negative);
-	if (p > limit * q) {
+	const Wide whole = p / q;
+	if (whole > limit || (whole == limit && !(p % q).iszero())) {
 		if (negative) r.maxneg(); else r.maxpos();
 		return;
 	}

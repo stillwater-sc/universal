@@ -194,13 +194,30 @@ int VerifyExactComparison(bool reportTestCases) {
 	return fails;
 }
 
+// the saturation test may not overflow the wide type: 1/16384 squared in a rational<16> reduces to
+// 1/2^28, and its closest representable value is zero, not maxpos
+int VerifyWideQuotientNotSaturated(bool reportTestCases) {
+	using R = rational<16, base2, std::uint8_t>;
+	R x;
+	x.set(1, 16384);
+	const R sq = x * x;
+	int fails = 0;
+	if (!sq.iszero()) { ++fails; if (reportTestCases) std::cerr << "FAIL (1/16384)^2 is " << double(sq) << ", not 0\n"; }
+	R y;
+	y.set(-1, 16384);
+	if (!(y * x).iszero()) { ++fails; if (reportTestCases) std::cerr << "FAIL -(1/16384)^2 is not 0\n"; }
+	// and real overflow still saturates
+	R big(200);
+	if (!((big * big) == R().maxpos())) { ++fails; if (reportTestCases) std::cerr << "FAIL 200 * 200 does not saturate\n"; }
+	return fails;
+}
+
 template<typename R>
 int VerifyNumericLimits(bool reportTestCases) {
 	using L = std::numeric_limits<R>;
 	int fails = 0;
-	R half;
-	half.set(1, 2);
-	if (!(L::round_error() == half)) { ++fails; if (reportTestCases) std::cerr << "FAIL round_error is not 1/2\n"; }
+	// by value: at two bits 1/2 exists only as -1/-2
+	if (double(L::round_error()) != 0.5) { ++fails; if (reportTestCases) std::cerr << "FAIL round_error is " << double(L::round_error()) << ", not 1/2\n"; }
 	if (!L::is_bounded) { ++fails; if (reportTestCases) std::cerr << "FAIL is_bounded\n"; }
 	if (!(L::infinity() == L::max())) { ++fails; if (reportTestCases) std::cerr << "FAIL infinity is not max\n"; }
 	if (!L::has_quiet_NaN || !L::quiet_NaN().isnan()) { ++fails; if (reportTestCases) std::cerr << "FAIL quiet_NaN\n"; }
@@ -256,7 +273,9 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyExactComparison(reportTestCases), "rational", "exact comparison");
 
+	nrOfFailedTestCases += ReportTestResult(VerifyWideQuotientNotSaturated(reportTestCases), "rational<16,base2>", "no false saturation");
 	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<rational<8, base2, std::uint8_t>>(reportTestCases), "rational<8,base2>", "numeric_limits");
+	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<rational<2, base2, std::uint8_t>>(reportTestCases), "rational<2,base2>", "numeric_limits");
 	nrOfFailedTestCases += ReportTestResult(VerifyNumericLimits<rational<3, base10, std::uint8_t>>(reportTestCases), "rational<3,base10>", "numeric_limits");
 #endif
 
