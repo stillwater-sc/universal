@@ -64,10 +64,23 @@ public:
 	static constexpr int  min_exponent    = Hfloat::emin;
 	// the decimal exponents through the exact helpers (#2133): min() = 16^(emin - 1) = 2^(4 emin - 4),
 	// a binary min_exponent of 4 emin - 3, and max() < 16^emax = 2^(4 emax). int(emin * 1.204) truncated
-	// toward zero: hfp32 reported -77 for ceil(log10(min())) = -78, hfloat<2,3> -4 for -6.
+	// toward zero: hfp32 reported -77 for ceil(log10(min())) = -78, hfloat<2,3> -4 for -6. min() is an exact
+	// power of two, so the helper's result is exact.
 	static constexpr int  min_exponent10  = sw::universal::decimal_min_exponent10(4LL * Hfloat::emin - 3);
 	static constexpr int  max_exponent    = Hfloat::emax;
-	static constexpr int  max_exponent10  = sw::universal::decimal_max_exponent10(4LL * Hfloat::emax);
+	// max() = (1 - 16^-ndigits) 16^emax, just below 2^(4 emax): floor(log10(2^(4 emax))) is one too high
+	// when 10^k lands between them, as for hfloat<1,17> (78912; log10(max()) is 78911.975). k drops by one
+	// when d = 4 emax - k log2(10), the margin of 10^k below 2^(4 emax) in bits, is under
+	// t = -log2(1 - 16^-ndigits). Checked against exact integer arithmetic over es 1..17 and ndigits
+	// 1..29 and 56 (#2133 review).
+	static constexpr int  max_exponent10  = []() {
+		int k = sw::universal::decimal_max_exponent10(4LL * Hfloat::emax);
+		double x = 1.0;
+		for (unsigned i = 0; i < Hfloat::ndigits; ++i) x /= 16.0;
+		const double t = (x / 0.69314718055994530942) * (1.0 + x / 2.0 + x * x / 3.0);   // -log2(1 - x)
+		const double d = 4.0 * static_cast<double>(Hfloat::emax) - static_cast<double>(k) * 3.32192809488736234787;
+		return (d < t) ? k - 1 : k;
+	}();
 	static constexpr bool has_infinity       = false;
 	static constexpr bool has_quiet_NaN      = false;
 	static constexpr bool has_signaling_NaN  = false;
