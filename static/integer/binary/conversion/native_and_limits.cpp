@@ -241,7 +241,11 @@ constexpr bool ConstexprConversions() {
 static_assert(ConstexprConversions(), "constexpr native conversions");
 
 #if LONG_DOUBLE_SUPPORT
-// long double, whatever its significand: integer -> long double against strtold, and back
+// long double, whatever its significand: integer -> long double against strtold, and back. An IBM
+// double-double (106 digits) is the sum of two doubles, not a fixed-precision format; glibc's strtold
+// and printf round its value to 106 contiguous bits, so lo carries fewer bits than it can. There the
+// check is the canonical pair -- hi the correctly rounded double, the pair at least as close to the
+// value as strtold's -- and an exact round trip back to the integer.
 template<typename Integer>
 int VerifyLongDouble(int trials, bool reportTestCases) {
 	std::mt19937_64 eng(0x2131u + 11u);
@@ -253,6 +257,29 @@ int VerifyLongDouble(int trials, bool reportTestCases) {
 		const std::string decimal = to_string(v);
 		const long double expected = std::strtold(decimal.c_str(), nullptr);
 		const long double got = static_cast<long double>(v);
+		if constexpr (std::numeric_limits<long double>::digits == 106) {
+			using Wide = integer<Integer::nbits + 4, typename Integer::BlockType>;
+			const double hi = static_cast<double>(got);
+			const double lo = static_cast<double>(got - static_cast<long double>(hi));
+			// the value of a pair whose limbs are integers (these values are far past 2^106)
+			auto pairValue = [](long double x) {
+				const double h = static_cast<double>(x);
+				const double l = static_cast<double>(x - static_cast<long double>(h));
+				return Wide(Wide(h) + Wide(l));
+			};
+			Wide exact(v);
+			Wide errGot = exact - pairValue(got), errLib = exact - pairValue(expected);
+			if (errGot.isneg()) errGot = -errGot;
+			if (errLib.isneg()) errLib = -errLib;
+			const bool canonicalHi = (hi == static_cast<double>(v));
+			const bool closest = !(errLib < errGot);
+			const bool roundTrip = (Integer(got) == Integer(Wide(Wide(hi) + Wide(lo))));
+			if (!canonicalHi || !closest || !roundTrip) {
+				++fails;
+				if (reportTestCases && fails < 4) std::cerr << "FAIL " << decimal << " -> double-double (hi " << canonicalHi << ", closest " << closest << ", round trip " << roundTrip << ")\n";
+			}
+			continue;
+		}
 		if (std::memcmp(&got, &expected, sizeof(long double)) != 0 && got != expected) {
 			++fails;
 			if (reportTestCases && fails < 4) std::cerr << "FAIL " << decimal << " -> long double\n";
@@ -260,13 +287,25 @@ int VerifyLongDouble(int trials, bool reportTestCases) {
 		const Integer back(std::trunc(got));
 		char buf[256];
 		std::snprintf(buf, sizeof buf, "%.0Lf", got);
-		Integer exact;
-		exact.assign(std::string(buf));
-		if (!(back == exact)) {
+		Integer exactBack;
+		exactBack.assign(std::string(buf));
+		if (!(back == exactBack)) {
 			++fails;
 			if (reportTestCases && fails < 4) std::cerr << "FAIL integer(" << buf << "L)\n";
 		}
 	}
+	return fails;
+}
+
+// the cast rule through long double, at a width where the value is past the range
+int VerifyLongDoubleRange(bool reportTestCases) {
+	int fails = 0;
+	auto expect = [&](const char* what, bool ok) { if (!ok) { ++fails; if (reportTestCases) std::cerr << "FAIL " << what << '\n'; } };
+	using I16 = integer<16, std::uint16_t>;
+	expect("integer<16>(1e9L) saturates to 32767", int(I16(1.0e9L)) == 32767);
+	expect("integer<16>(-1e9L) saturates to -32767", int(I16(-1.0e9L)) == -32767);
+	expect("integer<16>(-2.75L) truncates to -2", int(I16(-2.75L)) == -2);
+	expect("integer<16>(1e30L) saturates to 32767", int(I16(1.0e30L)) == 32767);
 	return fails;
 }
 #endif
@@ -334,6 +373,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDomains(reportTestCases), "integer", "Whole/Natural domains");
 #if LONG_DOUBLE_SUPPORT
 	nrOfFailedTestCases += ReportTestResult(VerifyLongDouble<integer<128, std::uint32_t>>(1000, reportTestCases), "integer<128>", "long double");
+	nrOfFailedTestCases += ReportTestResult(VerifyLongDoubleRange(reportTestCases), "integer<16>", "long double range");
 #endif
 #endif
 

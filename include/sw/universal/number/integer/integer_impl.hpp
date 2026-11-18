@@ -1382,6 +1382,42 @@ public:
 		if (negative && !isSigned) { domainMinimum(); return *this; }
 		const Real a = negative ? -rhs : rhs;
 		if (!(a < std::numeric_limits<Real>::infinity())) { saturate(); return *this; }   // infinity
+		if constexpr (std::numeric_limits<Real>::digits == 106) {
+			// an IBM double-double long double: truncate hi + lo from its two doubles, exactly
+			const double hi = static_cast<double>(rhs);
+			const double lo = static_cast<double>(rhs - static_cast<Real>(hi));
+			// far past the range: hi alone decides, before any integer arithmetic can wrap
+			constexpr int capBitsDD = isSigned ? static_cast<int>(nbits) - 1 : static_cast<int>(nbits);
+			if (!(std::fabs(hi) < std::ldexp(1.0, capBitsDD + 1))) { saturate(); return *this; }
+			using Wide = integer<nbits + 3, bt, NumberType>;     // holds |hi| < 2^(nbits+1) plus lo's part
+			Wide wide;
+			if (std::fabs(hi) < 4503599627370496.0) {          // |value| < 2^52: the native truncation is exact
+				wide = static_cast<long long>(rhs);
+			}
+			else {
+				// hi is an integer; trunc(hi + lo) = hi + trunc(lo), less one where lo's fraction
+				// points back across zero against the value's sign
+				double t = std::trunc(lo);
+				if (hi > 0.0 && lo < t) t -= 1.0;
+				if (hi < 0.0 && lo > t) t += 1.0;
+				wide = Wide(hi);
+				wide += Wide(t);
+			}
+			// the range rule on the exact value
+			Wide top;
+			top.clear();
+			top.setbit(isSigned ? nbits - 1 : nbits);          // 2^(nbits-1), or 2^nbits
+			Wide mag = wide;
+			if (mag.isneg()) mag = -mag;
+			if constexpr (isSigned) { if (!(mag < top)) { saturate(); return *this; } }
+			else {
+				Wide one(1);
+				if (!(mag < top - one)) { saturate(); return *this; }
+			}
+			clear();
+			for (unsigned i = 0; i < nbits; ++i) setbit(i, wide.at(i));
+			return *this;
+		}
 		if (a < Real(1)) { domainMinimum(); return *this; }   // truncates to 0
 		// a = m * 2^e, m in [1, 2)
 		int e = 0;
@@ -1552,6 +1588,16 @@ protected:
 		}
 		if (iszero()) return Real(0);
 		constexpr int P = std::numeric_limits<Real>::digits;
+		if constexpr (P == 106) {
+			// an IBM double-double long double is the sum of two doubles, not a fixed-precision
+			// format: the canonical pair is hi, the correctly rounded double, and lo, the correctly
+			// rounded double of the exact remainder
+			const double hi = to_real<double>();
+			integer<nbits + 2, bt, NumberType> rest{ *this };
+			rest -= integer<nbits + 2, bt, NumberType>(hi);
+			const double lo = static_cast<double>(rest);
+			return static_cast<Real>(hi) + static_cast<Real>(lo);
+		}
 		// the magnitude, one bit wider so that maxneg negates
 		integer<nbits + 1, bt, NumberType> m{ *this };
 		const bool negative = isneg();
