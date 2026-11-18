@@ -56,12 +56,20 @@ For example, `rb128 = rational<128>` has 128-bit signed components:
 
 Each rational stores two `blockbinary<nbits, BlockType, Signed>` values: the numerator `n` and denominator `d`. The value is `n/d`.
 
-After every arithmetic operation, the result is normalized by dividing both components by their GCD:
-- Addition: `a/b + c/d = (a*d + c*b) / (b*d)`, then normalize
-- Multiplication: `a/b * c/d = (a*c) / (b*d)`, then normalize
-- Division: `a/b / c/d = (a*d) / (b*c)`, then normalize
+Every arithmetic operation computes its exact result in a wide integer type that holds every product and sum of two operands, then reduces it by the GCD:
+- Addition: `a/b + c/d = (a*d + c*b) / (b*d)`
+- Multiplication: `a/b * c/d = (a*c) / (b*d)`
+- Division: `a/b / c/d = (a*d) / (b*c)`
 
-This normalization prevents numerator/denominator growth from consuming all available bits, but it does mean that intermediate results can overflow if the un-normalized product exceeds the nbits range.
+The reduced result is then fitted back into the type (#2132):
+- **It fits:** stored exactly. A binary rational stores a magnitude of `2^(nbits-1)` with the sign in the other field: in a `rational<4>`, 8/7 is -8/-7.
+- **Past the range:** **saturates** at `maxpos` or `maxneg`. Fixed-width rational arithmetic never wraps: in `rational<8>`, `100 + 100` is `maxpos` (127), not -56.
+- **Inside the range, but the reduced numerator or denominator does not fit:** the **closest** rational the type holds. For a binary rational this search may use a field magnitude of `2^(nbits-1)` in either field, stored with the sign moved as above. A conversion from a native float keeps a positive numerator at `2^(nbits-1) - 1`, so the two can differ: in a `rational<5>`, `(7/3) * (4/3)` is 16/5, while `rational<5>(28.0/9.0)` is 3.
+- **A zero divisor:** NaN (0/0), in every base. With `RATIONAL_THROW_ARITHMETIC_EXCEPTION`, it throws `rational_divide_by_zero` instead.
+
+Comparisons are exact: `a/b` against `c/d` cross-multiplies in the same wide type, so `2^53 + 1` and `2^53` are different values. A NaN is unordered: `==` and `<` are false, `!=` is true.
+
+`SpecificValue` constructors give the named values in every base. There is no infinity: `infpos`/`infneg` saturate at `maxpos`/`maxneg`, and `numeric_limits::infinity()` is `max()`.
 
 ## How to Use It
 

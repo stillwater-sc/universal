@@ -28,6 +28,7 @@
 #include <universal/internal/abstract/triple.hpp>
 #include <universal/internal/blockdigit/blockdigit.hpp>
 #include <universal/number/rational/best_rational.hpp>  // the closest rational p / q to a native value (#1523, #1526)
+#include <universal/number/rational/rational_exact.hpp> // exact, saturating arithmetic and comparison (#2132)
 
 // Forward definitions
 #include <universal/number/rational/rational_fwd.hpp>
@@ -89,28 +90,33 @@ public:
 	// decorated constructor
 	constexpr rational(const SignedBlockBinary& _n, const SignedBlockBinary& _d) : n{ _n }, d{ _d } {};
 
-	// specific value constructor
+	// specific value constructor. A rational has no infinity: +-inf saturate at maxpos and maxneg, as
+	// a conversion of +-inf does. Every case used to leave 0/0, a NaN (#2132).
 	constexpr rational(const SpecificValue code) noexcept
 		: n {}, d{} {
 		switch (code) {
+		case SpecificValue::infpos:
 		case SpecificValue::maxpos:
+			maxpos();
 			break;
 		case SpecificValue::minpos:
+			minpos();
 			break;
 		case SpecificValue::zero:
 		default:
+			zero();
 			break;
 		case SpecificValue::minneg:
-			break;
-		case SpecificValue::maxneg:
-			break;
-		case SpecificValue::infpos:
+			minneg();
 			break;
 		case SpecificValue::infneg:
+		case SpecificValue::maxneg:
+			maxneg();
 			break;
 		case SpecificValue::nar:
 		case SpecificValue::qnan:
 		case SpecificValue::snan:
+			setnan();
 			break;
 		}
 	}
@@ -186,25 +192,8 @@ public:
 
 	// in-place arithmetic assignment operators
 
-	// in-place addition
-	rational& operator+=(const rational& rhs) {
-		SignedBlockBinary x = n;
-		SignedBlockBinary y = d;
-		SignedBlockBinary v = rhs.n;
-		SignedBlockBinary w = rhs.d;
-		if (y == w) {
-			SignedBlockBinary num = x + v;
-			n = num;
-		}
-		else {
-			SignedBlockBinary e = x * w + y * v;
-			SignedBlockBinary f = y * w;
-			n = e;
-			d = f;
-		}
-		normalize();
-		return *this;
-	}
+	// in-place arithmetic: exact in a wide type, saturating past the range (rational_exact.hpp, #2132)
+	rational& operator+=(const rational& rhs) { rational_exact::operate(*this, rhs, '+'); return *this; }
 	rational& operator+=(unsigned short rhs)     { return *this += rational(rhs); }
 	rational& operator+=(unsigned int rhs)       { return *this += rational(rhs); }
 	rational& operator+=(unsigned long rhs)      { return *this += rational(rhs); }
@@ -216,24 +205,7 @@ public:
 	rational& operator+=(float rhs)              { return *this += rational(rhs); }
 	rational& operator+=(double rhs)             { return *this += rational(rhs); }
 	// in-place subtraction
-	rational& operator-=(const rational& rhs) {
-		SignedBlockBinary x = n;
-		SignedBlockBinary y = d;
-		SignedBlockBinary v = rhs.n;
-		SignedBlockBinary w = rhs.d;
-		if (y == w) {
-			SignedBlockBinary num = x - v;
-			n = num;
-		}
-		else {
-			SignedBlockBinary e = x * w - y * v;
-			SignedBlockBinary f = y * w;
-			n = e;
-			d = f;
-		}
-		normalize();
-		return *this;
-	}
+	rational& operator-=(const rational& rhs) { rational_exact::operate(*this, rhs, '-'); return *this; }
 	rational& operator-=(unsigned short rhs)     { return *this -= rational(rhs); }
 	rational& operator-=(unsigned int rhs)       { return *this -= rational(rhs); }
 	rational& operator-=(unsigned long rhs)      { return *this -= rational(rhs); }
@@ -245,12 +217,7 @@ public:
 	rational& operator-=(float rhs)              { return *this -= rational(rhs); }
 	rational& operator-=(double rhs)             { return *this -= rational(rhs); }
 	// in-place multiplication
-	rational& operator*=(const rational& rhs) {
-		n *= rhs.n;
-		d *= rhs.d;
-		normalize();
-		return *this;
-	}
+	rational& operator*=(const rational& rhs) { rational_exact::operate(*this, rhs, '*'); return *this; }
 	rational& operator*=(unsigned short rhs)     { return *this *= rational(rhs); }
 	rational& operator*=(unsigned int rhs)       { return *this *= rational(rhs); }
 	rational& operator*=(unsigned long rhs)      { return *this *= rational(rhs); }
@@ -262,12 +229,7 @@ public:
 	rational& operator*=(float rhs)              { return *this *= rational(rhs); }
 	rational& operator*=(double rhs)             { return *this *= rational(rhs); }
 	// in-place division
-	rational& operator/=(const rational& rhs) {
-		n *= rhs.d;
-		d *= rhs.n;
-		normalize();
-		return *this;
-	}
+	rational& operator/=(const rational& rhs) { rational_exact::operate(*this, rhs, '/'); return *this; }
 	rational& operator/=(unsigned short rhs)     { return *this /= rational(rhs); }
 	rational& operator/=(unsigned int rhs)       { return *this /= rational(rhs); }
 	rational& operator/=(unsigned long rhs)      { return *this /= rational(rhs); }
@@ -292,6 +254,7 @@ public:
 		n = _n; d = _d;
 		normalize();
 	}
+
 	constexpr void setbits(std::int64_t bits) noexcept { n = bits; d = 1; }
 	constexpr void setnbit(unsigned index) noexcept { n.set(index); }
 	constexpr void setdbit(unsigned index) noexcept { d.set(index); }
@@ -334,8 +297,54 @@ public:
 	SignedBlockBinary numerator() const noexcept { return n; }
 	SignedBlockBinary denominator() const noexcept { return d; }
 
+	// the interface of rational_exact.hpp: a wide type that holds every product and sum of two
+	// operands, the fields sign-extended into it, and the type's bounds
+	using Wide = blockbinary<2 * nbits + 8, bt, BinaryNumberType::Signed>;
+	Wide exact_numerator() const { return widenField(n); }
+	Wide exact_denominator() const { return widenField(d); }
+	// the largest magnitude a field may take: 2^(nbits-1) for either field and either sign, as
+	// exact_store moves the sign to whichever field can carry it (a reduced p/q never has both at
+	// 2^(nbits-1)); the closest rational to 28/9 in a rational<5> is 16/5, stored -16/-5
+	static Wide exact_bound(bool, bool) { return powerOfTwo(nbits - 1); }
+	// the range: maxpos = 2^(nbits-1) - 1, maxneg = -2^(nbits-1)
+	static Wide exact_limit(bool negative) { return negative ? powerOfTwo(nbits - 1) : fieldMax(); }
+	// store -+p / q. A field reaches -2^(nbits-1) but only +2^(nbits-1) - 1, so a magnitude of
+	// 2^(nbits-1) is stored negative with the sign moved to the other field: 8/7 in a rational<4> is
+	// -8/-7 (#1525)
+	bool exact_store(const Wide& p, const Wide& q, bool negative) {
+		const Wide top = powerOfTwo(nbits - 1), max = fieldMax();
+		Wide fn = p, fd = q;
+		if (!negative) {
+			if (p <= max && q <= max) {}
+			else if (p <= top && q <= top) { fn.twosComplement(); fd.twosComplement(); }
+			else return false;
+		}
+		else {
+			if (p <= top && q <= max) { fn.twosComplement(); }
+			else if (p <= max && q <= top) { fd.twosComplement(); }
+			else return false;
+		}
+		narrowField(fn, n);
+		narrowField(fd, d);
+		return true;
+	}
+
 protected:
 	// HELPER methods
+
+	static Wide powerOfTwo(unsigned k) { Wide w; w.clear(); w.setbit(k); return w; }
+	static Wide fieldMax() { Wide w; w.clear(); for (unsigned i = 0; i + 1 < nbits; ++i) w.setbit(i); return w; }
+	static Wide widenField(const SignedBlockBinary& v) {
+		Wide w;
+		w.clear();
+		for (unsigned i = 0; i < nbits; ++i) if (v.test(i)) w.setbit(i);
+		if (v.sign()) for (unsigned i = nbits; i < Wide::nbits; ++i) w.setbit(i);
+		return w;
+	}
+	static void narrowField(const Wide& w, SignedBlockBinary& v) {
+		v.clear();
+		for (unsigned i = 0; i < nbits; ++i) if (w.test(i)) v.setbit(i);
+	}
 
 	// remove greatest common divisor out of the numerator/denominator pair
 	//
@@ -524,27 +533,33 @@ public:
 	constexpr rational(const std::int64_t& _n, const std::int64_t& _d) : n{_n}, d{_d} {};
 	constexpr rational(const Component& _n, const Component& _d) : n{_n}, d{_d} {};
 
-	// specific value constructor
-	constexpr rational(const SpecificValue code) noexcept : n{}, d{} {
+	// specific value constructor, from blockdigit's constexpr special values: maxpos is maxpos / 1,
+	// minpos is 1 / maxpos, and +-inf saturate at maxpos and maxneg. Every case used to leave 0/0 (#2132).
+	constexpr rational(const SpecificValue code) noexcept : n{ SpecificValue::zero }, d{ SpecificValue::minpos } {
 		switch (code) {
+		case SpecificValue::infpos:
 		case SpecificValue::maxpos:
+			n = Component(SpecificValue::maxpos);
 			break;
 		case SpecificValue::minpos:
+			n = Component(SpecificValue::minpos);
+			d = Component(SpecificValue::maxpos);
 			break;
 		case SpecificValue::zero:
 		default:
 			break;
 		case SpecificValue::minneg:
-			break;
-		case SpecificValue::maxneg:
-			break;
-		case SpecificValue::infpos:
+			n = Component(SpecificValue::minneg);
+			d = Component(SpecificValue::maxpos);
 			break;
 		case SpecificValue::infneg:
+		case SpecificValue::maxneg:
+			n = Component(SpecificValue::maxneg);
 			break;
 		case SpecificValue::nar:
 		case SpecificValue::qnan:
 		case SpecificValue::snan:
+			d = Component(SpecificValue::zero);
 			break;
 		}
 	}
@@ -586,10 +601,11 @@ public:
 
 	rational operator-() const { rational tmp; tmp.n = -n; tmp.d = d; return tmp; }
 
-	rational& operator+=(const rational& rhs) { n = n * rhs.d + d * rhs.n; d = d * rhs.d; normalize(); return *this; }
-	rational& operator-=(const rational& rhs) { n = n * rhs.d - d * rhs.n; d = d * rhs.d; normalize(); return *this; }
-	rational& operator*=(const rational& rhs) { n *= rhs.n; d *= rhs.d; normalize(); return *this; }
-	rational& operator/=(const rational& rhs) { n *= rhs.d; d *= rhs.n; normalize(); return *this; }
+	// exact in a wide type, saturating past the range, NaN for a zero divisor (rational_exact.hpp, #2132)
+	rational& operator+=(const rational& rhs) { rational_exact::operate(*this, rhs, '+'); return *this; }
+	rational& operator-=(const rational& rhs) { rational_exact::operate(*this, rhs, '-'); return *this; }
+	rational& operator*=(const rational& rhs) { rational_exact::operate(*this, rhs, '*'); return *this; }
+	rational& operator/=(const rational& rhs) { rational_exact::operate(*this, rhs, '/'); return *this; }
 
 	void clear() { n = 0; d = 1; }
 	void setzero() { n = 0; d = 1; }
@@ -614,6 +630,14 @@ public:
 
 	Component numerator() const { return n; }
 	Component denominator() const { return d; }
+
+	// the interface of rational_exact.hpp; a digit holds at most 4 bits (radix <= 16)
+	using Wide = blockbinary<8 * ndigits + 16, std::uint32_t, BinaryNumberType::Signed>;
+	Wide exact_numerator() const { return rational_exact::digits_to_wide<Wide>(n); }
+	Wide exact_denominator() const { return rational_exact::digits_to_wide<Wide>(d); }
+	static Wide exact_bound(bool, bool) { return rational_exact::digit_bound<Wide, Component>(); }
+	static Wide exact_limit(bool) { return rational_exact::digit_bound<Wide, Component>(); }
+	bool exact_store(const Wide& p, const Wide& q, bool negative) { return rational_exact::store_digits(p, q, negative, n, d); }
 
 private:
 	Component n;
@@ -696,27 +720,33 @@ public:
 	constexpr rational(const std::int64_t& _n, const std::int64_t& _d) : n{_n}, d{_d} {};
 	constexpr rational(const Component& _n, const Component& _d) : n{_n}, d{_d} {};
 
-	// specific value constructor
-	constexpr rational(const SpecificValue code) noexcept : n{}, d{} {
+	// specific value constructor, from blockdigit's constexpr special values: maxpos is maxpos / 1,
+	// minpos is 1 / maxpos, and +-inf saturate at maxpos and maxneg. Every case used to leave 0/0 (#2132).
+	constexpr rational(const SpecificValue code) noexcept : n{ SpecificValue::zero }, d{ SpecificValue::minpos } {
 		switch (code) {
+		case SpecificValue::infpos:
 		case SpecificValue::maxpos:
+			n = Component(SpecificValue::maxpos);
 			break;
 		case SpecificValue::minpos:
+			n = Component(SpecificValue::minpos);
+			d = Component(SpecificValue::maxpos);
 			break;
 		case SpecificValue::zero:
 		default:
 			break;
 		case SpecificValue::minneg:
-			break;
-		case SpecificValue::maxneg:
-			break;
-		case SpecificValue::infpos:
+			n = Component(SpecificValue::minneg);
+			d = Component(SpecificValue::maxpos);
 			break;
 		case SpecificValue::infneg:
+		case SpecificValue::maxneg:
+			n = Component(SpecificValue::maxneg);
 			break;
 		case SpecificValue::nar:
 		case SpecificValue::qnan:
 		case SpecificValue::snan:
+			d = Component(SpecificValue::zero);
 			break;
 		}
 	}
@@ -758,10 +788,11 @@ public:
 
 	rational operator-() const { rational tmp; tmp.n = -n; tmp.d = d; return tmp; }
 
-	rational& operator+=(const rational& rhs) { n = n * rhs.d + d * rhs.n; d = d * rhs.d; normalize(); return *this; }
-	rational& operator-=(const rational& rhs) { n = n * rhs.d - d * rhs.n; d = d * rhs.d; normalize(); return *this; }
-	rational& operator*=(const rational& rhs) { n *= rhs.n; d *= rhs.d; normalize(); return *this; }
-	rational& operator/=(const rational& rhs) { n *= rhs.d; d *= rhs.n; normalize(); return *this; }
+	// exact in a wide type, saturating past the range, NaN for a zero divisor (rational_exact.hpp, #2132)
+	rational& operator+=(const rational& rhs) { rational_exact::operate(*this, rhs, '+'); return *this; }
+	rational& operator-=(const rational& rhs) { rational_exact::operate(*this, rhs, '-'); return *this; }
+	rational& operator*=(const rational& rhs) { rational_exact::operate(*this, rhs, '*'); return *this; }
+	rational& operator/=(const rational& rhs) { rational_exact::operate(*this, rhs, '/'); return *this; }
 
 	void clear() { n = 0; d = 1; }
 	void setzero() { n = 0; d = 1; }
@@ -786,6 +817,14 @@ public:
 
 	Component numerator() const { return n; }
 	Component denominator() const { return d; }
+
+	// the interface of rational_exact.hpp; a digit holds at most 4 bits (radix <= 16)
+	using Wide = blockbinary<8 * ndigits + 16, std::uint32_t, BinaryNumberType::Signed>;
+	Wide exact_numerator() const { return rational_exact::digits_to_wide<Wide>(n); }
+	Wide exact_denominator() const { return rational_exact::digits_to_wide<Wide>(d); }
+	static Wide exact_bound(bool, bool) { return rational_exact::digit_bound<Wide, Component>(); }
+	static Wide exact_limit(bool) { return rational_exact::digit_bound<Wide, Component>(); }
+	bool exact_store(const Wide& p, const Wide& q, bool negative) { return rational_exact::store_digits(p, q, negative, n, d); }
 
 private:
 	Component n;
@@ -866,27 +905,33 @@ public:
 	constexpr rational(const std::int64_t& _n, const std::int64_t& _d) : n{_n}, d{_d} {};
 	constexpr rational(const Component& _n, const Component& _d) : n{_n}, d{_d} {};
 
-	// specific value constructor
-	constexpr rational(const SpecificValue code) noexcept : n{}, d{} {
+	// specific value constructor, from blockdigit's constexpr special values: maxpos is maxpos / 1,
+	// minpos is 1 / maxpos, and +-inf saturate at maxpos and maxneg. Every case used to leave 0/0 (#2132).
+	constexpr rational(const SpecificValue code) noexcept : n{ SpecificValue::zero }, d{ SpecificValue::minpos } {
 		switch (code) {
+		case SpecificValue::infpos:
 		case SpecificValue::maxpos:
+			n = Component(SpecificValue::maxpos);
 			break;
 		case SpecificValue::minpos:
+			n = Component(SpecificValue::minpos);
+			d = Component(SpecificValue::maxpos);
 			break;
 		case SpecificValue::zero:
 		default:
 			break;
 		case SpecificValue::minneg:
-			break;
-		case SpecificValue::maxneg:
-			break;
-		case SpecificValue::infpos:
+			n = Component(SpecificValue::minneg);
+			d = Component(SpecificValue::maxpos);
 			break;
 		case SpecificValue::infneg:
+		case SpecificValue::maxneg:
+			n = Component(SpecificValue::maxneg);
 			break;
 		case SpecificValue::nar:
 		case SpecificValue::qnan:
 		case SpecificValue::snan:
+			d = Component(SpecificValue::zero);
 			break;
 		}
 	}
@@ -928,10 +973,11 @@ public:
 
 	rational operator-() const { rational tmp; tmp.n = -n; tmp.d = d; return tmp; }
 
-	rational& operator+=(const rational& rhs) { n = n * rhs.d + d * rhs.n; d = d * rhs.d; normalize(); return *this; }
-	rational& operator-=(const rational& rhs) { n = n * rhs.d - d * rhs.n; d = d * rhs.d; normalize(); return *this; }
-	rational& operator*=(const rational& rhs) { n *= rhs.n; d *= rhs.d; normalize(); return *this; }
-	rational& operator/=(const rational& rhs) { n *= rhs.d; d *= rhs.n; normalize(); return *this; }
+	// exact in a wide type, saturating past the range, NaN for a zero divisor (rational_exact.hpp, #2132)
+	rational& operator+=(const rational& rhs) { rational_exact::operate(*this, rhs, '+'); return *this; }
+	rational& operator-=(const rational& rhs) { rational_exact::operate(*this, rhs, '-'); return *this; }
+	rational& operator*=(const rational& rhs) { rational_exact::operate(*this, rhs, '*'); return *this; }
+	rational& operator/=(const rational& rhs) { rational_exact::operate(*this, rhs, '/'); return *this; }
 
 	void clear() { n = 0; d = 1; }
 	void setzero() { n = 0; d = 1; }
@@ -956,6 +1002,14 @@ public:
 
 	Component numerator() const { return n; }
 	Component denominator() const { return d; }
+
+	// the interface of rational_exact.hpp; a digit holds at most 4 bits (radix <= 16)
+	using Wide = blockbinary<8 * ndigits + 16, std::uint32_t, BinaryNumberType::Signed>;
+	Wide exact_numerator() const { return rational_exact::digits_to_wide<Wide>(n); }
+	Wide exact_denominator() const { return rational_exact::digits_to_wide<Wide>(d); }
+	static Wide exact_bound(bool, bool) { return rational_exact::digit_bound<Wide, Component>(); }
+	static Wide exact_limit(bool) { return rational_exact::digit_bound<Wide, Component>(); }
+	bool exact_store(const Wide& p, const Wide& q, bool negative) { return rational_exact::store_digits(p, q, negative, n, d); }
 
 private:
 	Component n;
@@ -1023,22 +1077,26 @@ private:
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// binary logic functions
 
+// exact: the pairs cross-multiply in a wide type (rational_exact.hpp); through double, 2^53 + 1 and
+// 2^53 compared equal (#2132). A NaN is unordered: == and < are false, != is true.
 template<unsigned nnbits, typename nBase, typename nbt>
 inline bool operator==(const rational<nnbits,nBase,nbt>& lhs, const rational<nnbits,nBase,nbt>& rhs) {
-	return double(lhs) == double(rhs);
+	if (lhs.isnan() || rhs.isnan()) return false;
+	return rational_exact::compare(lhs, rhs) == 0;
 }
 template<unsigned nnbits, typename nBase, typename nbt>
 inline bool operator!=(const rational<nnbits,nBase,nbt>& lhs, const rational<nnbits,nBase,nbt>& rhs) { return !operator==(lhs, rhs); }
 template<unsigned nnbits, typename nBase, typename nbt>
 inline bool operator< (const rational<nnbits,nBase,nbt>& lhs, const rational<nnbits,nBase,nbt>& rhs) {
-	return double(lhs) < double(rhs);
+	if (lhs.isnan() || rhs.isnan()) return false;
+	return rational_exact::compare(lhs, rhs) < 0;
 }
 template<unsigned nnbits, typename nBase, typename nbt>
 inline bool operator> (const rational<nnbits,nBase,nbt>& lhs, const rational<nnbits,nBase,nbt>& rhs) { return  operator< (rhs, lhs); }
 template<unsigned nnbits, typename nBase, typename nbt>
-inline bool operator<=(const rational<nnbits,nBase,nbt>& lhs, const rational<nnbits,nBase,nbt>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const rational<nnbits,nBase,nbt>& lhs, const rational<nnbits,nBase,nbt>& rhs) { return operator< (lhs, rhs) || operator==(lhs, rhs); }
 template<unsigned nnbits, typename nBase, typename nbt>
-inline bool operator>=(const rational<nnbits,nBase,nbt>& lhs, const rational<nnbits,nBase,nbt>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const rational<nnbits,nBase,nbt>& lhs, const rational<nnbits,nBase,nbt>& rhs) { return operator> (lhs, rhs) || operator==(lhs, rhs); }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///  binary arithmetic operators
