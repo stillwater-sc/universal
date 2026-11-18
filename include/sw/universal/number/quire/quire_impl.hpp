@@ -167,6 +167,10 @@ public:
 	template<typename T = NumberType,
 	         std::enable_if_t<!std::is_arithmetic_v<T>, int> = 0>
 	quire& operator=(const T& rhs) {
+		// a NaN operand the blocktriple cannot carry, a NaturalNumber's NaNN (#2137), makes the quire NaN
+		if constexpr (requires { rhs.isnan(); }) {
+			if (rhs.isnan()) { setnan(); return *this; }
+		}
 		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
 		rhs.normalize(v);
 		return operator=(v);
@@ -294,6 +298,9 @@ public:
 	template<typename T = NumberType,
 	         std::enable_if_t<!std::is_arithmetic_v<T>, int> = 0>
 	quire& operator+=(const T& rhs) {
+		if constexpr (requires { rhs.isnan(); }) {
+			if (rhs.isnan()) { setnan(); return *this; }   // NaN is sticky; normalize() would add 0 for NaNN
+		}
 		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
 		rhs.normalize(v);
 		return operator+=(v);
@@ -311,6 +318,9 @@ public:
 	template<typename T = NumberType,
 	         std::enable_if_t<!std::is_arithmetic_v<T>, int> = 0>
 	quire& operator-=(const T& rhs) {
+		if constexpr (requires { rhs.isnan(); }) {
+			if (rhs.isnan()) { setnan(); return *this; }
+		}
 		blocktriple<Traits::fbits, BlockTripleOperator::REP, LimbType> v;
 		rhs.normalize(v);
 		v.setsign(!v.sign());

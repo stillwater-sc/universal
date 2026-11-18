@@ -24,6 +24,7 @@
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #define INTEGER_THROW_DIVIDE_BY_ZERO 1
 #include <universal/number/integer/integer.hpp>
+#include <universal/number/quire/quire.hpp>
 #include <universal/verification/test_reporters.hpp>
 #include <cmath>
 #include <iostream>
@@ -116,6 +117,36 @@ int VerifyNaNN(bool reportTestCases) {
 			expect(parse(std::string("0"), q) && q.isnan(), "\"0\" parses to NaNN");
 			expect(parse(std::string("-10"), r) && r.isnan(), "\"-10\" parses to NaNN");
 			expect(parse(std::string("105"), w) && unsigned(w) == 105u, "\"105\" parses to 105");
+		}
+
+		// the division helpers take a NaNN divisor as the operators do, not as a division by zero
+		{
+			const auto d = idiv(seven, nann);
+			Natural r(five), q(five), rr(five);
+			remainder(r, seven, nann);
+			q.reduce(seven, nann, rr);
+			expect(d.quot.isnan() && d.rem.isnan() && r.isnan() && q.isnan() && rr.isnan(), "idiv, remainder and reduce with a NaNN divisor give NaNN");
+		}
+		// plain char follows its signedness: where char is signed, char(-1) is NaNN
+		if constexpr (std::is_signed_v<char>) {
+			const char minusOne = static_cast<char>(-1);
+			expect(Natural(minusOne).isnan(), "char(-1) is NaNN where char is signed");
+		}
+		expect(unsigned(Natural(static_cast<char>(100))) == 100u, "char(100) is 100");
+
+		// a NaNN operand makes a quire NaN: normalize() maps it to a zero blocktriple, which would add 0
+		if constexpr (nbits <= 64) {
+			quire<Natural> q;
+			q = nann;
+			const bool assigned = q.isnan();
+			q.clear();
+			q = five;
+			q += nann;
+			const bool added = q.isnan();
+			q.clear();
+			q = five;
+			q -= nann;
+			expect(assigned && added && q.isnan(), "quire = NaNN, += NaNN, -= NaNN give a NaN quire");
 		}
 
 		// numeric_limits

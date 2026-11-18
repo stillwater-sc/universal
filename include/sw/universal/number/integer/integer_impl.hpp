@@ -237,7 +237,11 @@ public:
 	constexpr integer& operator=(int rhs)                { return convert_signed(rhs); }
 	constexpr integer& operator=(long rhs)               { return convert_signed(rhs); }
 	constexpr integer& operator=(long long rhs)          { return convert_signed(rhs); }
-	constexpr integer& operator=(char rhs)               { return convert_unsigned(rhs); }
+	// plain char follows its own signedness: where it is signed, char(-1) is -1 (a NaturalNumber's NaNN)
+	constexpr integer& operator=(char rhs) {
+		if constexpr (std::is_signed_v<char>) return convert_signed(static_cast<signed char>(rhs));
+		else return convert_unsigned(static_cast<unsigned char>(rhs));
+	}
 	constexpr integer& operator=(unsigned short rhs)     { return convert_unsigned(rhs); }
 	constexpr integer& operator=(unsigned int rhs)       { return convert_unsigned(rhs); }
 	constexpr integer& operator=(unsigned long rhs)      { return convert_unsigned(rhs); }
@@ -1248,6 +1252,12 @@ public:
 	// reduce returns the ratio and remainder of a and b in *this and r
 	void reduce(const integer& a, const integer& b, integer& r) {
 		if (b.iszero()) {
+			if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
+				// a NaNN divisor gives NaNN, as operator/ and operator% do, not a division by zero (#2137)
+				clear();
+				r.clear();
+				return;
+			}
 #if INTEGER_THROW_DIVIDE_BY_ZERO
 			throw integer_divide_by_zero{};
 #else
@@ -1772,6 +1782,11 @@ constexpr signed findMsb(const integer<nbits, BlockType, NumberType>& v) {
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 void remainder(integer<nbits, BlockType, NumberType>& c, const integer<nbits, BlockType, NumberType>& a, const integer<nbits, BlockType, NumberType>& b) {
 	if (b.iszero()) {
+		if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
+			// a NaNN divisor gives NaNN, as operator/ and operator% do, not a division by zero (#2137)
+			c.clear();
+			return;
+		}
 #if INTEGER_THROW_DIVIDE_BY_ZERO
 		throw integer_divide_by_zero{};
 #else
@@ -1811,6 +1826,13 @@ constexpr void divide_magnitudes(const integer<nbits, BlockType, NumberType>& a,
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, NumberType>& _a, const integer<nbits, BlockType, NumberType>& _b) {
 	if (_b.iszero()) {
+		if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
+			// a NaNN divisor gives NaNN, as operator/ and operator% do, not a division by zero (#2137)
+			idiv_t<nbits, BlockType, NumberType> nann;
+			nann.quot.clear();
+			nann.rem.clear();
+			return nann;
+		}
 #if INTEGER_THROW_DIVIDE_BY_ZERO
 		throw integer_divide_by_zero{};
 #else
