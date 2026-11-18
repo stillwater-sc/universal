@@ -34,10 +34,13 @@
    - exp2 and exp: z = 2^rbits * x and 2^rbits * x * log2(e), with x = +-2^(kx 2^-rbits); again
      in efloat with Ziv's retry.
 
-   Then the range, per Behavior. Saturating: k >= kmax gives maxpos (magnitude), k <= kmin gives
-   zero. Wrapping: k is reduced modulo 2^(nbits-1) into the exponent field and the sign bit is set
-   as it is, as lns's own operators do. A NaN operand gives NaN, so does x / 0 and the square root
-   of a negative value.
+   Then the range, per Behavior, applied to the exact integer k in efloat before it is narrowed
+   to 64 bits (z can be far outside int64: 1 - (1 - 2^-59) at lns<64,59> has z ~ -3.4e19).
+   Saturating: k >= kmax gives maxpos (magnitude), k <= kmin gives zero. Wrapping: k is reduced
+   modulo 2^(nbits-1) into the exponent field and the sign bit is set as it is, as lns's own
+   operators do. A NaN operand gives NaN, so does x / 0 and the square root of a negative value.
+   A wrapping exponential whose z has too many integer bits to reduce at the cap has no
+   reference: it is counted (unreferenced()) and reported, like an undecided result.
 
    The error bound of the + and - evaluation, in units of 2^-W of z: u = 2^-d, s = 1 +- u and
    log2(s) are each rounded once at W bits, and z = ka + 2^rbits * log2(s) once more. The
@@ -56,8 +59,13 @@ using E = efloat<72>;   // 2304 bits: the 2048-bit cap of the Ziv retry, and gua
 
 inline constexpr unsigned zivCap = 2048;
 
-// results left undecided at the Ziv cap, since the last reset
+// results left undecided at the Ziv cap, and results the reference cannot reach (a wrapping
+// exponential whose exponent is too long to reduce at the cap), since the last reset
 inline unsigned long long& undecidedCount() {
+	static unsigned long long count = 0;
+	return count;
+}
+inline unsigned long long& unreferencedCount() {
 	static unsigned long long count = 0;
 	return count;
 }
@@ -77,7 +85,7 @@ int64_t exponentOf(const Lns& v) {
 	return k;
 }
 
-// the encoding of exponent k and sign, by the Behavior's range rule
+// the encoding of exponent k (in the field, or reduced modulo it by the bit loop) and sign
 template<typename Lns>
 void encode(int64_t k, bool negative, Lns& ref) {
 	constexpr unsigned ebits = Lns::nbits - 1u;
@@ -91,39 +99,52 @@ void encode(int64_t k, bool negative, Lns& ref) {
 	ref.setbit(Lns::nbits - 1u, negative);
 }
 
-// the nearest integer to z, ties to even; z is a finite efloat
-inline int64_t nearestInteger(const E& z) {
-	double approx = double(z);
-	int64_t n = static_cast<int64_t>(std::llround(approx));
-	for (int pass = 0; pass < 3; ++pass) {   // a double holds 53 bits of z: two refinements reach the integer
-		const double r = double(z - E(static_cast<long long>(n)));
-		const int64_t step = static_cast<int64_t>(std::llround(r));
-		if (step == 0) break;
-		n += step;
-	}
-	const E frac = z - E(static_cast<long long>(n));   // within [-1/2, 1/2]
-	const E half(0.5);
-	if (frac > half) ++n;
-	else if (frac < -half) --n;
-	else if (frac == half && (n & 1)) ++n;
-	else if (frac == -half && (n & 1)) --n;
-	return n;
+// an exact integer efloat of magnitude below 2^63 as an int64, in two exact 32-bit halves
+inline int64_t toInt64(const E& x) {
+	const E hi = floor(ldexp(x, -32));                 // in [-2^31, 2^31)
+	const E lo = x - ldexp(hi, 32);                    // in [0, 2^32)
+	const int64_t h = static_cast<int64_t>(double(hi));
+	const uint64_t l = static_cast<uint64_t>(double(lo));
+	return static_cast<int64_t>((static_cast<uint64_t>(h) << 32) | l);
 }
 
-// decide the nearest integer to the exact value that z(W) approximates within margin(W, z), by
-// Ziv's retry; false when it stays undecided at the cap
+// the encoding of an exact integer exponent n of any size: the Behavior's range rule in efloat,
+// before any narrowing. Saturating clamps; Wrapping reduces n modulo 2^(nbits-1), exactly.
+template<typename Lns>
+void encodeExact(const E& n, bool negative, Lns& ref) {
+	constexpr unsigned ebits = Lns::nbits - 1u;
+	if constexpr (Lns::behavior == Behavior::Saturating) {
+		if (n >= E(static_cast<long long>(kmax<Lns>()))) { encode<Lns>(kmax<Lns>(), negative, ref); return; }
+		if (n <= E(static_cast<long long>(kmin<Lns>()))) { ref.setzero(); return; }
+		encode<Lns>(toInt64(n), negative, ref);
+	}
+	else {
+		const E m = ldexp(E(1.0), static_cast<int>(ebits));
+		const E r = n - m * floor(n / m);              // in [0, 2^ebits), exact
+		encode<Lns>(toInt64(r), negative, ref);       // the bit loop reads it as two's complement
+	}
+}
+
+enum class decision { decided, undecided, unreachable };
+
+// the nearest integer n to the exact value that z(W) approximates within margin(W, z), by Ziv's
+// retry: decided when n is the only integer within 1/2 - M of z. Undecided when z stays that
+// close to a tie at the cap; unreachable when z has too many integer bits to round at the cap.
 template<typename Evaluate, typename Margin>
-bool decide(Evaluate&& evaluate, Margin&& margin, unsigned startBits, int64_t& k) {
+decision decide(Evaluate&& evaluate, Margin&& margin, unsigned startBits, E& n) {
 	for (unsigned W = startBits; W <= zivCap; W *= 2u) {
 		const E z = evaluate(W);
-		if (z.isnan() || z.isinf()) return false;
-		const int64_t n = nearestInteger(z);
-		const E distance = abs(z - E(static_cast<long long>(n)));
+		if (z.isnan() || z.isinf()) { ++unreferencedCount(); return decision::unreachable; }
+		if (!z.iszero() && z.scale() + 40 >= static_cast<int64_t>(W)) continue;   // too few fraction bits at W
+		const E candidate = floor(z + E(0.5));
+		const E distance = abs(z - candidate);
 		const E limit = E(0.5) - E(margin(W, std::fabs(double(z))));
-		if (distance < limit) { k = n; return true; }
+		if (distance < limit) { n = candidate; return decision::decided; }
 	}
+	const E z = evaluate(zivCap);
+	if (!z.iszero() && z.scale() + 40 >= static_cast<int64_t>(zivCap)) { ++unreferencedCount(); return decision::unreachable; }
 	++undecidedCount();
-	return false;
+	return decision::undecided;
 }
 
 }  // namespace lns_oracle
@@ -136,7 +157,11 @@ struct exact_rounding<lns<nbits, rbits, bt, xtra...>> {
 	using E = lns_oracle::E;
 
 	static unsigned long long undecided() { return lns_oracle::undecidedCount(); }
-	static void reset_undecided() { lns_oracle::undecidedCount() = 0; }
+	static unsigned long long unreferenced() { return lns_oracle::unreferencedCount(); }
+	static void reset_undecided() { lns_oracle::undecidedCount() = 0; lns_oracle::unreferencedCount() = 0; }
+
+	// 2^rbits as an exact efloat; rbits can be 63, past int64's positive range
+	static E scaleOfOne() { return ldexp(E(1.0), static_cast<int>(rbits)); }
 
 	static bool binary(char op, const Lns& a, const Lns& b, Lns& ref) {
 		using namespace lns_oracle;
@@ -147,7 +172,7 @@ struct exact_rounding<lns<nbits, rbits, bt, xtra...>> {
 		if (op == '*' || op == '/') {
 			if (op == '/' && zb) { ref.setnan(); return true; }
 			if (za || zb) { ref.setzero(); return true; }
-			const int64_t ka = exponentOf(a), kb = exponentOf(b);
+			const int64_t ka = exponentOf(a), kb = exponentOf(b);   // in [-2^62, 2^62): the sum fits
 			encode<Lns>(op == '*' ? ka + kb : ka - kb, sa != sb, ref);
 			return true;
 		}
@@ -162,7 +187,9 @@ struct exact_rounding<lns<nbits, rbits, bt, xtra...>> {
 		const int64_t dk = ka - kb;   // >= 0, in units of 2^-rbits
 		if (dk == 0) {
 			if (!effectiveAdd) { ref.setzero(); return true; }   // a - a
-			encode<Lns>(ka + (int64_t(1) << rbits), negative, ref);  // a + a = 2a
+			E n(static_cast<long long>(ka));
+			n.set_precision(128);
+			encodeExact<Lns>(n + scaleOfOne(), negative, ref);  // a + a = 2a: z = ka + 2^rbits
 			return true;
 		}
 		auto evaluate = [&](unsigned W) {
@@ -183,9 +210,9 @@ struct exact_rounding<lns<nbits, rbits, bt, xtra...>> {
 			const double two_r = std::ldexp(1.0, static_cast<int>(rbits));
 			return std::ldexp(two_r * (8.0 * two_r + 4.0 * rbits + 32.0) + 4.0 * absz, -static_cast<int>(W));
 		};
-		int64_t k{ 0 };
-		if (!decide(evaluate, margin, 2u * rbits + 96u, k)) return false;
-		encode<Lns>(k, negative, ref);
+		E n;
+		if (decide(evaluate, margin, 2u * rbits + 96u, n) != decision::decided) return false;
+		encodeExact<Lns>(n, negative, ref);
 		return true;
 	}
 
@@ -209,25 +236,25 @@ struct exact_rounding<lns<nbits, rbits, bt, xtra...>> {
 		if (a.iszero()) { encode<Lns>(0, false, ref); return true; }   // e^0 = 2^0 = 1
 		const int64_t kx = exponentOf(a);
 		const bool negx = a.sign();
+		constexpr unsigned ebits = nbits - 1u;
 		// exp2 of a power of two, x = +-2^j: z = +-2^(rbits + j) is a dyadic, and can sit exactly on a
 		// tie (exp2(2^-4) at rbits = 3 is z = 1/2), which no precision decides; round it exactly
-		constexpr int64_t one = int64_t(1) << rbits;
-		if (f == '2' && (kx % one) == 0) {
-			const int64_t j = kx / one;
-			const int64_t e = static_cast<int64_t>(rbits) + j;
-			if (e >= static_cast<int64_t>(nbits) - 2) {   // |z| >= 2^(nbits-2), past the exponent field
+		const bool powerOfTwo = (rbits >= 63u) ? (kx == 0) : ((kx % (int64_t(1) << rbits)) == 0);
+		if (f == '2' && powerOfTwo) {
+			const int64_t j = (rbits >= 63u) ? 0 : kx / (int64_t(1) << rbits);
+			const int64_t e = static_cast<int64_t>(rbits) + j;     // |z| = 2^e
+			if (e <= -1) { encode<Lns>(0, false, ref); return true; }   // |z| <= 1/2: 0, the tie at 1/2 to even
+			if (e >= static_cast<int64_t>(ebits)) {                  // a multiple of 2^ebits
 				if constexpr (Lns::behavior == Behavior::Saturating) {
 					if (negx) ref.setzero(); else encode<Lns>(kmax<Lns>(), false, ref);
-					return true;
 				}
 				else {
-					return false;
+					encode<Lns>(0, false, ref);                     // 2^e reduces to 0 modulo 2^ebits
 				}
+				return true;
 			}
-			E z(1.0);
-			z = ldexp(z, static_cast<int>(e));
-			if (negx) z = -z;
-			encode<Lns>(nearestInteger(z), false, ref);
+			E z = ldexp(E(1.0), static_cast<int>(e));              // e < 64
+			encodeExact<Lns>(negx ? -z : z, false, ref);
 			return true;
 		}
 		auto evaluate = [&](unsigned W) {
@@ -244,21 +271,24 @@ struct exact_rounding<lns<nbits, rbits, bt, xtra...>> {
 			return negx ? -z : z;
 		};
 		auto margin = [](unsigned W, double absz) { return std::ldexp(16.0 * absz + 16.0, -static_cast<int>(W)); };
-		// |z| clearly past the exponent field (a double estimate, 4 units beyond its edge) saturates
-		// or wraps; everything up to there is decided, and encode() applies the range rule exactly
-		const double approx = std::ldexp(std::exp2(std::ldexp(double(kx), -static_cast<int>(rbits))) * (f == 'e' ? 1.4426950408889634 : 1.0), static_cast<int>(rbits));
-		if (!(approx < std::ldexp(1.0, static_cast<int>(nbits) - 2) + 4.0)) {
+		// |z| from a double estimate: past the field by far, Saturating clamps; Wrapping reduces
+		// z exactly when it has few enough integer bits to round at the cap, and otherwise has no
+		// reference, which is counted and reported
+		const double log2x = std::ldexp(double(kx), -static_cast<int>(rbits));
+		const double log2z = log2x + double(rbits) + (f == 'e' ? 0.5287663729448977 : 0.0);   // log2(log2(e))
+		if (log2z > double(nbits) + 4.0) {
 			if constexpr (Lns::behavior == Behavior::Saturating) {
 				if (negx) ref.setzero(); else encode<Lns>(kmax<Lns>(), false, ref);
 				return true;
 			}
 			else {
-				return false;   // wraps by an amount past the exponent field: no reference
+				if (log2z > double(zivCap) - 256.0) { ++unreferencedCount(); return false; }
 			}
 		}
-		int64_t k{ 0 };
-		if (!decide(evaluate, margin, 2u * rbits + 96u, k)) return false;
-		encode<Lns>(k, false, ref);
+		const unsigned intbits = log2z > 0.0 ? static_cast<unsigned>(log2z) + 2u : 0u;
+		E n;
+		if (decide(evaluate, margin, 2u * rbits + 96u + intbits, n) != decision::decided) return false;
+		encodeExact<Lns>(n, false, ref);
 		return true;
 	}
 };

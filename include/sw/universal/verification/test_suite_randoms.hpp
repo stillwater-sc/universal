@@ -314,15 +314,23 @@ namespace sw { namespace universal {
 
 	// an exact reference that can leave a result undecided (lns + and -, past the Ziv cap, #2125)
 	// counts it: the verifiers report the count, neither pass nor fail
+	struct reference_gaps { unsigned long long undecided{ 0 }, unreferenced{ 0 }; };
 	template<typename TestType>
-	unsigned long long undecided_so_far() {
-		if constexpr (requires { exact_rounding<TestType>::undecided(); }) return exact_rounding<TestType>::undecided();
-		else return 0;
+	reference_gaps undecided_so_far() {
+		reference_gaps g;
+		if constexpr (requires { exact_rounding<TestType>::undecided(); }) g.undecided = exact_rounding<TestType>::undecided();
+		if constexpr (requires { exact_rounding<TestType>::unreferenced(); }) g.unreferenced = exact_rounding<TestType>::unreferenced();
+		return g;
 	}
 	template<typename TestType>
-	void report_undecided(unsigned long long before) {
-		const unsigned long long n = undecided_so_far<TestType>() - before;
-		if (n > 0) std::cerr << n << " result(s) undecided at the exact reference's precision cap: neither pass nor fail\n";
+	void report_undecided(const reference_gaps& before) {
+		const reference_gaps now = undecided_so_far<TestType>();
+		if (now.undecided > before.undecided) {
+			std::cerr << (now.undecided - before.undecided) << " result(s) undecided at the exact reference's precision cap: neither pass nor fail\n";
+		}
+		if (now.unreferenced > before.unreferenced) {
+			std::cerr << (now.unreferenced - before.unreferenced) << " result(s) the exact reference cannot reach: neither pass nor fail\n";
+		}
 	}
 
 	// a random encoding of TestType: every bit of it, also past 64 bits (#2123), for a type with
@@ -531,7 +539,7 @@ namespace sw { namespace universal {
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
 		int nrOfFailedTests = 0;
-		const unsigned long long undecidedBefore = undecided_so_far<TestType>();
+		const reference_gaps undecidedBefore = undecided_so_far<TestType>();
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			TestType testa, testb, result{0}, ref{0};
 			randomEncoding(testa, eng);
@@ -743,7 +751,7 @@ namespace sw { namespace universal {
 			std::cerr << "the exact bound reference has no elementary functions, test cancelled\n";
 			return 1;
 		}
-		const unsigned long long undecidedBefore = undecided_so_far<TestType>();
+		const reference_gaps undecidedBefore = undecided_so_far<TestType>();
 		std::string operation_string;
 		bool positiveOnlyOperator = false;  // we need to filter negative values from the randoms
 		switch (opcode) {
@@ -847,7 +855,10 @@ namespace sw { namespace universal {
 					executeUnary(opcode, da, nut, result, ref);
 				}
 				catch (const universal_arithmetic_exception& err) {
-					if (nut.isnan()) {
+					bool nanOperand = false;
+					if constexpr (requires { nut.isnan(); }) nanOperand = nut.isnan();
+					else if constexpr (requires { nut.isnar(); }) nanOperand = nut.isnar();
+					if (nanOperand) {
 						if (reportTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 					}
 					else {
@@ -860,8 +871,10 @@ namespace sw { namespace universal {
 			}
 			bool agrees = (result == ref);
 			if constexpr (exactReference) {
-				if (!exact_rounding<TestType>::function(exactFunction, nut, ref)) continue;   // no reference: wraps past the field, or undecided
-				agrees = reference_equal(result, ref);
+				if constexpr (requires(const TestType& a, TestType& r) { exact_rounding<TestType>::function('e', a, r); }) {
+					if (!exact_rounding<TestType>::function(exactFunction, nut, ref)) continue;   // no reference: undecided or unreachable, counted
+					agrees = reference_equal(result, ref);
+				}
 			}
 			if (!agrees) {
 				std::cout << "result    : " << to_binary(result) << '\n';

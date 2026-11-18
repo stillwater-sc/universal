@@ -158,16 +158,73 @@ int VerifyExactTie(bool reportTestCases) {
 int VerifyUndecidedCounted(bool reportTestCases) {
 	using namespace lns_oracle;
 	const unsigned long long before = undecidedCount();
-	int64_t k = 99;
+	E n(99.0);
 	auto onTie = [](unsigned W) { E z(2.5); z.set_precision(W); return z; };
 	auto margin = [](unsigned W, double) { return std::ldexp(1.0, -static_cast<int>(W)); };
-	const bool decided = decide(onTie, margin, 64u, k);
+	const decision d = decide(onTie, margin, 64u, n);
 	int fails = 0;
-	if (decided) { ++fails; if (reportTestCases) std::cerr << "FAIL a tie was decided\n"; }
+	if (d != decision::undecided) { ++fails; if (reportTestCases) std::cerr << "FAIL a tie was not undecided\n"; }
 	if (undecidedCount() != before + 1) { ++fails; if (reportTestCases) std::cerr << "FAIL the undecided count did not move\n"; }
-	if (k != 99) { ++fails; if (reportTestCases) std::cerr << "FAIL an undecided result wrote k\n"; }
+	if (n != E(99.0)) { ++fails; if (reportTestCases) std::cerr << "FAIL an undecided result wrote n\n"; }
 	auto offTie = [](unsigned W) { E z(2.25); z.set_precision(W); return z; };
-	if (!decide(offTie, margin, 64u, k) || k != 2) { ++fails; if (reportTestCases) std::cerr << "FAIL 2.25 did not decide to 2\n"; }
+	if (decide(offTie, margin, 64u, n) != decision::decided || n != E(2.0)) { ++fails; if (reportTestCases) std::cerr << "FAIL 2.25 did not decide to 2\n"; }
+	return fails;
+}
+
+// lns of 64 bits: exponents far outside int64, and the rbits = 63 doubling, are handled exactly
+// before anything is narrowed (#2129 review)
+template<typename Lns>
+Lns withExponent(int64_t k, bool negative = false) {
+	Lns v;
+	lns_oracle::encode<Lns>(k, negative, v);
+	return v;
+}
+
+int VerifyWideExponents(bool reportTestCases) {
+	int fails = 0;
+	auto expect = [&](const char* what, bool ok) { if (!ok) { ++fails; if (reportTestCases) std::cerr << "FAIL " << what << '\n'; } };
+	{   // 1 + (-(2^(-2^-59))): |X| ~ 2^-59 ln2, z ~ -3.4e19, below int64
+		using S = lns<64, 59, std::uint32_t, Behavior::Saturating>;
+		using W = lns<64, 59, std::uint32_t, Behavior::Wrapping>;
+		S rs;
+		expect("lns<64,59> saturating 1 - (1 - 2^-59 ln2) has a reference", exact_rounding<S>::binary('+', withExponent<S>(0), withExponent<S>(-1, true), rs));
+		expect("lns<64,59> saturating 1 - (1 - 2^-59 ln2) is zero", rs.iszero());
+		W rw;
+		expect("lns<64,59> wrapping 1 - (1 - 2^-59 ln2) has a reference", exact_rounding<W>::binary('+', withExponent<W>(0), withExponent<W>(-1, true), rw));
+		expect("lns<64,59> wrapping 1 - (1 - 2^-59 ln2) is a number", !rw.isnan());
+	}
+	{   // 1 + 1 at rbits = 63: z = 2^63, past int64
+		using S = lns<64, 63, std::uint32_t, Behavior::Saturating>;
+		using W = lns<64, 63, std::uint32_t, Behavior::Wrapping>;
+		S rs;
+		exact_rounding<S>::binary('+', withExponent<S>(0), withExponent<S>(0), rs);
+		expect("lns<64,63> saturating 1 + 1 is maxpos", rs == S(SpecificValue::maxpos));
+		W rw;
+		exact_rounding<W>::binary('+', withExponent<W>(0), withExponent<W>(0), rw);
+		expect("lns<64,63> wrapping 1 + 1 wraps to exponent 0, the value 1", lns_oracle::exponentOf(rw) == 0 && !rw.sign() && !rw.iszero());
+	}
+	{   // exp2 of 2^-(2^32) at lns<64,0>: z = 2^-(2^32), rounds to exponent 0, the value 1
+		using L = lns<64, 0, std::uint32_t, Behavior::Saturating>;
+		L r;
+		exact_rounding<L>::function('2', withExponent<L>(-(int64_t(1) << 32)), r);
+		expect("lns<64,0> exp2(2^-(2^32)) is 1", lns_oracle::exponentOf(r) == 0 && !r.iszero());
+	}
+	{   // wrapping exp2(8) at lns<8,3>: z = 64, which wraps onto the zero encoding, as lns gives
+		using L = lns<8, 3, std::uint8_t, Behavior::Wrapping>;
+		const L x(8.0);
+		L r;
+		expect("lns<8,3> wrapping exp2(8) has a reference", exact_rounding<L>::function('2', x, r));
+		expect("lns<8,3> wrapping exp2(8) is the zero encoding", r.iszero());
+		expect("lns<8,3> wrapping exp2(8) agrees with lns", reference_equal(exp2(x), r));
+	}
+	{   // a wrapping exponential with more integer bits than the cap can round: counted, no reference
+		using L = lns<16, 0, std::uint16_t, Behavior::Wrapping>;
+		const unsigned long long before = exact_rounding<L>::unreferenced();
+		L r;
+		const bool referenced = exact_rounding<L>::function('e', withExponent<L>(4000), r);   // e^(2^4000)
+		expect("lns<16,0> wrapping exp(2^4000) has no reference", !referenced);
+		expect("lns<16,0> wrapping exp(2^4000) is counted unreferenced", exact_rounding<L>::unreferenced() == before + 1);
+	}
 	return fails;
 }
 
@@ -224,6 +281,7 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyExactTie(reportTestCases), "lns<8,3>", "exp2 exact tie");
 	nrOfFailedTestCases += ReportTestResult(VerifyUndecidedCounted(reportTestCases), "lns", "undecided counted");
+	nrOfFailedTestCases += ReportTestResult(VerifyWideExponents(reportTestCases), "lns<64,x>", "wide exponents");
 
 	// the verifiers with their default reference, exact for lns<64,59>: * / and sqrt are exact there
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<lnsWide>(false, RandomsOp::OPCODE_MUL, 1000), "lns<64,59>", "multiplication");
