@@ -24,9 +24,8 @@
 //
 // To support all of these without locking lns into a single algorithm,
 // lns selects its add/sub algorithm via a traits-class customization point.
-// The default is the placeholder DoubleTripAddSub (cast to double, do native
-// double arithmetic, cast back) which preserves the long-standing behavior
-// from before the constexpr_math facility (#763) existed.
+// The default is DoubleTripAddSub, correctly rounded at every width since #2128
+// (lns_correct_rounding.hpp); it kept its historical name.
 //
 // To override for a specific lns instantiation, specialize lns_addsub_traits:
 //
@@ -72,6 +71,7 @@
 
 #include <math/constexpr_math.hpp>
 #include <universal/number/lns/lns_fwd.hpp>
+#include <universal/number/lns/lns_correct_rounding.hpp>   // the correctly rounded default (#2128)
 
 namespace sw { namespace universal {
 
@@ -141,29 +141,26 @@ constexpr double gauss_log_add(double a, double b) {
 }  // namespace detail
 
 // ============================================================================
-// Algorithm 1: DoubleTripAddSub -- the historical placeholder, preserved
+// Algorithm 1: DoubleTripAddSub -- the default, correctly rounded
 // ============================================================================
 //
-// Casts both operands to double, does native double arithmetic, casts the
-// result back. Round-trips through IEEE-754 (one cast each direction = up to
-// 2 ulp error in lns precision). Slow because it pays for the exp2 (decode)
-// + add + log2 (encode) every operation -- which is the worst possible path
-// for a number system that exists specifically to avoid those transcendentals.
-//
-// Default for backward compatibility, and a correctness oracle that all other
-// algorithms cross-validate against.
+// It used to cast both operands to double, add natively and cast back. It is the
+// default, and the correctness oracle the other algorithms cross-validate against.
 
+// Since #2128 the default is correctly rounded at every width (USER decision): the name stays,
+// as it is the historical default and the oracle the other algorithms cross-validate against, but
+// it no longer routes the operands through double. lns_rounding::addsub
+// (lns_correct_rounding.hpp) works in the log domain: a double fast path for the correction term
+// log2(1 +- 2^-d) where it is clear of a tie by a wide margin, and efloat with Ziv's retry
+// elsewhere. The old double trip, double(a) + double(b) converted back, was wrong in 99.7% of
+// lns<64,59> sums, by up to 88234 units, and overflowed double past its range (lns<32,20>).
 template<typename Lns>
 struct DoubleTripAddSub {
 	static constexpr Lns& add_assign(Lns& lhs, const Lns& rhs) {
-		double sum = double(lhs) + double(rhs);
-		// The assignment routes through Lns::operator=(double), which honors
-		// the Saturating Behavior in its convert_ieee754 implementation.
-		return lhs = sum;
+		return lns_rounding::addsub(lhs, rhs, false);
 	}
 	static constexpr Lns& sub_assign(Lns& lhs, const Lns& rhs) {
-		double diff = double(lhs) - double(rhs);
-		return lhs = diff;
+		return lns_rounding::addsub(lhs, rhs, true);
 	}
 };
 
@@ -1166,7 +1163,7 @@ using lns_addsub_algorithm_t = typename lns_addsub_traits<Lns>::type;
 // Bounds (matching the benchmark envelopes from
 // benchmark/performance/arithmetic/lns/log_add_algorithms.cpp):
 //
-//   DoubleTripAddSub          -- 0 (routes through native double, exact)
+//   DoubleTripAddSub          -- 0 (correctly rounded at every width since #2128)
 //   DirectEvaluationAddSub    -- 0 (oracle, by construction)
 //   LookupAddSub<Lns, 10>     -- ~1e-4 log-domain at default IndexBits
 //   PolynomialAddSub          -- ~5e-6 log-domain (degree-7 truncation)

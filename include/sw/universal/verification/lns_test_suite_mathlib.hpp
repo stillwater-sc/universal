@@ -14,6 +14,7 @@
 #include <universal/number/lns/mathlib.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
+#include <universal/verification/lns_rounding_oracle.hpp>   // the exact reference of exp and exp2 (#2128)
 
 namespace sw { namespace universal {
 
@@ -105,24 +106,20 @@ int VerifyExp(bool reportTestCases) {
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
+	const unsigned long long undecidedBefore = exact_rounding<TestType>::undecided();
+	const unsigned long long unreferencedBefore = exact_rounding<TestType>::unreferenced();
 
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
 		result = sw::universal::exp(a);
-		// generate reference
-		double da = double(a);
-		double dref = std::exp(da);
-		ref = dref;
+		// the reference: exp(a) rounded once by the lns rule (lns_rounding_oracle.hpp). The double
+		// reference lns(std::exp(double(a))) rounds twice and breaks exact ties by noise (#2128).
+		// no reference (undecided or unreachable): counted by the oracle and reported after the loop
+		if (!exact_rounding<TestType>::function('e', a, ref)) continue;
 		if (result != ref) {
-			// filter out inconsistencies among different math library implementations
-			if (dref == 0.0) {
-				static bool firstRoundingFilterEvent = true;
-				if (firstRoundingFilterEvent && reportTestCases) {
-					std::cerr << "filtering lns rounding to minpos\n";
-					firstRoundingFilterEvent = false;
-				}
-			}
-			else if (result.isnan() && ref.isnan()) {
+			// against the exact reference every mismatch counts, also where double underflows;
+			// only two NaNs agree
+			if (result.isnan() && ref.isnan()) {
 				static bool firstSofteningNanEvent = true;
 				if (firstSofteningNanEvent && reportTestCases) {
 					std::cerr << "filtering snan to nan softening\n";
@@ -138,6 +135,11 @@ int VerifyExp(bool reportTestCases) {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "exp", a, result, ref);
 		}
 	}
+	// inputs the exact reference left undecided or could not reach: neither pass nor fail, reported
+	const unsigned long long undecided = exact_rounding<TestType>::undecided() - undecidedBefore;
+	const unsigned long long unreferenced = exact_rounding<TestType>::unreferenced() - unreferencedBefore;
+	if (undecided > 0) std::cerr << undecided << " input(s) undecided at the exact reference's precision cap: neither pass nor fail\n";
+	if (unreferenced > 0) std::cerr << unreferenced << " input(s) the exact reference cannot reach: neither pass nor fail\n";
 	return nrOfFailedTests;
 }
 
@@ -148,24 +150,20 @@ int VerifyExp2(bool reportTestCases) {
 	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	TestType a, result, ref;
+	const unsigned long long undecidedBefore = exact_rounding<TestType>::undecided();
+	const unsigned long long unreferencedBefore = exact_rounding<TestType>::unreferenced();
 
 	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
 		result = sw::universal::exp2(a);
-		// generate reference
-		double da = double(a);
-		double dref = std::exp2(da);
-		ref = dref;
+		// the reference: exp2(a) rounded once by the lns rule; lns(std::exp2(double(a))) broke the exact
+		// ties exp2(+-2^-(rbits+1)), z = +-1/2, by the noise in double's log2 (#2128)
+		// no reference (undecided or unreachable): counted by the oracle and reported after the loop
+		if (!exact_rounding<TestType>::function('2', a, ref)) continue;
 		if (result != ref) {
-			// filter out inconsistencies among different math library implementations
-			if (dref == 0.0) {
-				static bool firstRoundingFilterEvent = true;
-				if (firstRoundingFilterEvent && reportTestCases) {
-					std::cerr << "filtering lns rounding to minpos\n";
-					firstRoundingFilterEvent = false;
-				}
-			}
-			else if (result.isnan() && ref.isnan()) {
+			// against the exact reference every mismatch counts, also where double underflows;
+			// only two NaNs agree
+			if (result.isnan() && ref.isnan()) {
 				static bool firstSofteningNanEvent = true;
 				if (firstSofteningNanEvent && reportTestCases) {
 					std::cerr << "filtering snan to nan softening\n";
@@ -181,6 +179,11 @@ int VerifyExp2(bool reportTestCases) {
 			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "exp2", a, result, ref);
 		}
 	}
+	// inputs the exact reference left undecided or could not reach: neither pass nor fail, reported
+	const unsigned long long undecided = exact_rounding<TestType>::undecided() - undecidedBefore;
+	const unsigned long long unreferenced = exact_rounding<TestType>::unreferenced() - unreferencedBefore;
+	if (undecided > 0) std::cerr << undecided << " input(s) undecided at the exact reference's precision cap: neither pass nor fail\n";
+	if (unreferenced > 0) std::cerr << unreferenced << " input(s) the exact reference cannot reach: neither pass nor fail\n";
 	return nrOfFailedTests;
 }
 

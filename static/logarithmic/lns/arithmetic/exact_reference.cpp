@@ -30,8 +30,11 @@
    - the undecided count, through a tie that Ziv's retry cannot leave;
    - the defaults.
 
-   Known: lns + and - (the default DoubleTripAddSub) and exp, exp2 route through double and are
-   not correctly rounded past about 45 fraction bits (#2128).
+   Since #2128, lns + - exp exp2 are correctly rounded at every width (lns_correct_rounding.hpp);
+   they used to route through double and were wrong past about 45 fraction bits. This test also
+   holds them to the reference at lns<48,40>, lns<64,59> and lns<64,63> on operands close in
+   magnitude, where the correction term matters, checks that exp underflows monotonically, and
+   cross-checks the efloat path of lns wider than 64 bits against the 64-bit path.
 */
 
 namespace sw { namespace universal {
@@ -91,8 +94,7 @@ int VerifyExhaustive(bool reportTestCases) {
 	return fails;
 }
 
-// exp and exp2 of every encoding, for an lns whose exponentials do not underflow double: lns's
-// exp shim gives minpos where double underflows to 0, and zero below lns's half-minpos otherwise
+// exp and exp2 of every encoding
 template<typename Lns>
 int VerifyExhaustiveExponentials(bool reportTestCases) {
 	constexpr unsigned N = 1u << Lns::nbits;
@@ -260,6 +262,115 @@ int VerifyWideExponents(bool reportTestCases) {
 	return fails;
 }
 
+// + and - on operands within (rbits + 2) * 2^rbits exponent units of each other, where the
+// correction term log2(1 +- 2^-d) decides the result: correctly rounded at every width (#2128)
+template<typename Lns>
+int VerifyCloseOperands(int trials, bool reportTestCases) {
+	std::mt19937_64 eng(0x2128u + Lns::nbits + Lns::rbits);
+	constexpr unsigned rb = Lns::rbits;
+	const uint64_t span = (uint64_t(rb) + 2u) << (rb > 56u ? 56u : rb);
+	int fails = 0;
+	for (int t = 0; t < trials; ++t) {
+		Lns a;
+		a.setbits(eng());
+		if (a.isnan() || a.iszero()) { --t; continue; }
+		const int64_t ka = lns_oracle::exponentOf(a);
+		const int64_t kb = ka - static_cast<int64_t>(eng() % span) * ((eng() & 1u) ? 1 : -1);
+		Lns b;
+		lns_oracle::encode<Lns>(kb, (eng() & 1u) != 0, b);
+		if (b.isnan() || b.iszero()) { --t; continue; }
+		for (char op : { '+', '-' }) {
+			Lns ref;
+			if (!exact_rounding<Lns>::binary(op, a, b, ref)) continue;   // undecided: counted and reported
+			const Lns result = (op == '+') ? a + b : a - b;
+			if (!reference_equal(result, ref)) {
+				++fails;
+				if (reportTestCases && fails < 4) ReportBinaryArithmeticError("FAIL", std::string(1, op), a, b, result, ref);
+			}
+		}
+	}
+	return fails;
+}
+
+template<typename Lns>
+int VerifyRandomExponentials(int trials, bool reportTestCases) {
+	std::mt19937_64 eng(0x2128u);
+	int fails = 0;
+	for (int t = 0; t < trials; ++t) {
+		Lns x;
+		x.setbits(eng());
+		for (char f : { 'e', '2' }) {
+			Lns ref;
+			if (!exact_rounding<Lns>::function(f, x, ref)) continue;
+			const Lns result = (f == 'e') ? exp(x) : exp2(x);
+			if (!reference_equal(result, ref)) {
+				++fails;
+				if (reportTestCases && fails < 4) ReportUnaryArithmeticError("FAIL", f == 'e' ? "exp" : "exp2", x, result, ref);
+			}
+		}
+	}
+	return fails;
+}
+
+// exp(x) is monotone in x down to the underflow: once it is zero, it stays zero (the old shim gave
+// minpos where double underflowed, and zero just above it)
+template<typename Lns>
+int VerifyExpUnderflowMonotone(bool reportTestCases) {
+	int fails = 0;
+	Lns previous(1.0);
+	bool seenZero = false;
+	for (double x = -1.0; x > -1.0e6; x *= 1.5) {
+		const Lns e = exp(Lns(x));
+		if (seenZero && !e.iszero()) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL exp(" << x << ") = " << to_binary(e) << " after a zero\n";
+		}
+		if (e > previous) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL exp(" << x << ") grew\n";
+		}
+		seenZero = seenZero || e.iszero();
+		previous = e;
+	}
+	if (!seenZero) { ++fails; if (reportTestCases) std::cerr << "FAIL exp never underflowed to zero\n"; }
+	return fails;
+}
+
+// the efloat path of an lns wider than 64 bits against the 64-bit path, on values both hold:
+// lns<80,16> and lns<24,16> share their grid, and a sum that stays in lns<24,16>'s range is the same
+int VerifyWidePathAgainst64(int trials, bool reportTestCases) {
+	using Narrow = lns<24, 16, std::uint32_t>;
+	using Wide   = lns<80, 16, std::uint32_t>;
+	std::mt19937_64 eng(0x2128u);
+	int fails = 0, compared = 0;
+	for (int t = 0; t < trials; ++t) {
+		Narrow a, b;
+		a.setbits(eng() & 0x7FFFFFu);   // positive values
+		b.setbits(eng() & 0x7FFFFFu);
+		if (a.iszero() || b.iszero() || a.isnan() || b.isnan()) continue;
+		const int64_t ka = lns_oracle::exponentOf(a), kb = lns_oracle::exponentOf(b);
+		const int64_t limit = int64_t(1) << 20;   // keep the results inside lns<24,16>'s field of 2^22
+		if (ka > limit || kb > limit || ka < -limit || kb < -limit) continue;
+		Wide wa, wb;
+		lns_rounding::encode(sw::universal::lns_rounding::E(static_cast<long long>(ka)), false, wa);
+		lns_rounding::encode(sw::universal::lns_rounding::E(static_cast<long long>(kb)), false, wb);
+		for (char op : { '+', '-' }) {
+			const Narrow rn = (op == '+') ? a + b : a - b;
+			const Wide   rw = (op == '+') ? wa + wb : wa - wb;
+			if (rn.iszero() || rw.iszero()) {
+				if (rn.iszero() != rw.iszero()) { ++fails; if (reportTestCases) std::cerr << "FAIL zero mismatch\n"; }
+				continue;
+			}
+			++compared;
+			if (lns_oracle::exponentOf(rn) != static_cast<int64_t>(double(lns_rounding::exponentOf(rw))) || rn.sign() != rw.sign()) {
+				++fails;
+				if (reportTestCases && fails < 4) std::cerr << "FAIL lns<80,16> " << op << " differs from lns<24,16>: " << to_binary(rn) << '\n';
+			}
+		}
+	}
+	return fails + (compared == 0 ? 1 : 0);
+}
+
 }  // namespace lns_exact_reference
 }}  // namespace sw::universal
 
@@ -305,7 +416,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<lns<8, 3, std::uint8_t, Behavior::Wrapping>>(reportTestCases), "lns<8,3,wrap>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustive<lns<8, 7, std::uint8_t, Behavior::Wrapping>>(reportTestCases), "lns<8,7,wrap>", test_tag);
 
+	nrOfFailedTestCases += ReportTestResult(VerifyExhaustiveExponentials<lns<8, 0, std::uint8_t, Behavior::Saturating>>(reportTestCases), "lns<8,0,sat>", "exp, exp2");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustiveExponentials<lns<8, 3, std::uint8_t, Behavior::Saturating>>(reportTestCases), "lns<8,3,sat>", "exp, exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExhaustiveExponentials<lns<8, 3, std::uint8_t, Behavior::Wrapping>>(reportTestCases), "lns<8,3,wrap>", "exp, exp2");
 	nrOfFailedTestCases += ReportTestResult(VerifyExhaustiveExponentials<lns<8, 5, std::uint8_t, Behavior::Saturating>>(reportTestCases), "lns<8,5,sat>", "exp, exp2");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAgainstDoubleReference<lnsNarrow>(5000, reportTestCases), "lns<32,27>", "exact vs double");
@@ -315,10 +428,23 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyUndecidedCounted(reportTestCases), "lns", "undecided counted");
 	nrOfFailedTestCases += ReportTestResult(VerifyWideExponents(reportTestCases), "lns<64,x>", "wide exponents");
 
-	// the verifiers with their default reference, exact for lns<64,59>: * / and sqrt are exact there
+	// correctly rounded at every width (#2128)
+	nrOfFailedTestCases += ReportTestResult(VerifyCloseOperands<lns<32, 20, std::uint32_t>>(2000, reportTestCases), "lns<32,20>", "close + -");
+	nrOfFailedTestCases += ReportTestResult(VerifyCloseOperands<lns<48, 40, std::uint32_t>>(1000, reportTestCases), "lns<48,40>", "close + -");
+	nrOfFailedTestCases += ReportTestResult(VerifyCloseOperands<lnsWide>(500, reportTestCases), "lns<64,59>", "close + -");
+	nrOfFailedTestCases += ReportTestResult(VerifyCloseOperands<lns<64, 63, std::uint32_t>>(300, reportTestCases), "lns<64,63>", "close + -");
+	nrOfFailedTestCases += ReportTestResult(VerifyRandomExponentials<lnsWide>(500, reportTestCases), "lns<64,59>", "exp, exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyRandomExponentials<lns<16, 8, std::uint16_t>>(2000, reportTestCases), "lns<16,8>", "exp, exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExpUnderflowMonotone<lns<16, 8, std::uint16_t>>(reportTestCases), "lns<16,8>", "exp underflow");
+	nrOfFailedTestCases += ReportTestResult(VerifyWidePathAgainst64(2000, reportTestCases), "lns<80,16>", "wide path");
+
+	// the verifiers with their default reference, exact for lns<64,59>
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<lnsWide>(false, RandomsOp::OPCODE_MUL, 1000), "lns<64,59>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<lnsWide>(false, RandomsOp::OPCODE_DIV, 1000), "lns<64,59>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms<lnsWide>(false, RandomsOp::OPCODE_SQRT, 1000), "lns<64,59>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<lnsWide>(false, RandomsOp::OPCODE_ADD, 1000), "lns<64,59>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<lnsWide>(false, RandomsOp::OPCODE_SUB, 1000), "lns<64,59>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyElementaryFunctionThroughRandoms<lnsWide>(false, RandomsOp::OPCODE_EXP2, 500), "lns<64,59>", "exp2");
 #endif
 
 #if REGRESSION_LEVEL_2
