@@ -754,8 +754,9 @@ public:
 		else {
 			idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
 			if constexpr (NumberType == NaturalNumber) {
-				// idiv's scratch quotient may be 0 (so % keeps its remainder); a NaturalNumber result may not
-				if (divresult.quot.iszero()) {
+				// idiv's scratch quotient may be 0 (so % keeps its remainder); a NaturalNumber result may
+				// not. A zero divisor was already handled by idiv (throw, or the opted-out silent 0).
+				if (divresult.quot.iszero() && !rhs.iszero()) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 					throw integer_naturalnumber_cannot_be_zero{};
 #else
@@ -1965,7 +1966,12 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 		if (tmp.iszero() || negative) return false;
 	}
 	if constexpr (NumberType == IntegerNumberType::WholeNumber) {
-		if (negative && !tmp.iszero()) return false;   // "-0" is 0
+		// "-0" is 0, but "-256" at 8 bits also accumulates to 0 modulo 2^nbits: decide from the digits
+		bool nonzeroDigit = false;
+		for (char c : body) {
+			if (c != '0' && c != '\'' && c != '_') { nonzeroDigit = true; break; }
+		}
+		if (negative && nonzeroDigit) return false;
 	}
 	if (negative) tmp = -tmp;
 	value = tmp;

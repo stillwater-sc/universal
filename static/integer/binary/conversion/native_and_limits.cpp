@@ -236,6 +236,7 @@ int VerifyDomains(bool reportTestCases) {
 		expect("natural parse(\"+10\") is 10", parse(std::string("+10"), n) && static_cast<unsigned>(n) == 10u);
 		W w(4);
 		expect("whole parse(\"-10\") is rejected", !parse(std::string("-10"), w) && static_cast<unsigned>(w) == 4u);
+		expect("whole<8> parse(\"-256\") (wraps to 0) is rejected", !parse(std::string("-256"), w) && static_cast<unsigned>(w) == 4u);
 		expect("whole parse(\"-0\") is 0", parse(std::string("-0"), w) && w.iszero());
 		integer<9, std::uint8_t, NaturalNumber> n9(3);
 		expect("natural<9> parse(\"0x200\") (bit 9 is padding) is rejected", !parse(std::string("0x200"), n9));
