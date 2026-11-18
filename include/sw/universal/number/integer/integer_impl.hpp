@@ -1341,8 +1341,9 @@ public:
 	template<typename Real>
 	constexpr integer& convert_ieee(Real rhs) noexcept {
 		constexpr bool isSigned = (NumberType == IntegerNumberType::IntegerNumber);
-		// the unsigned kinds reserve all ones for NaN, so one bit leaves them no finite value
-		static_assert(isSigned || nbits >= 2, "a native float converts to a WholeNumber or NaturalNumber of at least 2 bits: at 1 bit the only nonzero encoding is the NaN");
+		// the unsigned kinds reserve all ones for NaN; at one bit that leaves a WholeNumber its 0 but
+		// a NaturalNumber {1, 2, ...} no finite value at all
+		static_assert(NumberType != NaturalNumber || nbits >= 2, "a native float converts to a NaturalNumber of at least 2 bits: at 1 bit the only nonzero encoding is the NaN");
 		clear();
 		if (rhs != rhs) {   // NaN: the integer NaR
 			if constexpr (isSigned) setbit(nbits - 1);      // 100...0
@@ -1582,6 +1583,7 @@ protected:
 			// in the format; the platform may normalize a midpoint pair to the other hi, with the
 			// same value.
 			const double hi = to_real<double>();
+			if (hi - hi != 0.0) return static_cast<Real>(hi);   // past double's range: the residual is meaningless
 			// the residual in a signed integer: it may be negative or zero for any kind
 			using Signed = integer<nbits + 2, bt, IntegerNumber>;
 			Signed rest;

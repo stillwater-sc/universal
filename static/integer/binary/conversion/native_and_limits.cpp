@@ -314,6 +314,13 @@ int VerifyDoubleDoubleSparse(bool reportTestCases) {
 				v.setbit(static_cast<unsigned>(p[1]));
 				if (sign) v = -v;
 				const long double x = static_cast<long double>(v);
+				// the outgoing conversion must be exact: the pair built from the two powers of two
+				long double expected = std::ldexp(1.0L, p[0]) + std::ldexp(1.0L, p[1]);
+				if (sign) expected = -expected;
+				if (!(x == expected)) {
+					++fails;
+					if (reportTestCases) std::cerr << "FAIL " << (sign ? "-" : "") << "(2^" << p[0] << " + 2^" << p[1] << ") -> long double is inexact\n";
+				}
 				const Integer back(x);
 				if (!(back == v)) {
 					++fails;
@@ -341,11 +348,35 @@ int VerifyLongDoubleDomain(bool reportTestCases) {
 	long double p60 = 1.0L;
 	for (int i = 0; i < 60; ++i) p60 *= 2.0L;
 	expect("natural<64>(2^60 L) is 2^60", static_cast<unsigned long long>(N64(p60)) == (1ull << 60));
-	expect("whole<64>(2^52 + 1.75 L) truncates to 2^52 + 1", static_cast<unsigned long long>(W64(4503599627370496.0L + 1.75L)) == (1ull << 52) + 1u);
+	// the inputs must be exact in this long double: binary64 (MSVC, Apple arm64) has 53 bits
+	constexpr int ldDigits = std::numeric_limits<long double>::digits;
+	if constexpr (ldDigits >= 55) {
+		expect("whole<64>(2^52 + 1.75 L) truncates to 2^52 + 1", static_cast<unsigned long long>(W64(4503599627370496.0L + 1.75L)) == (1ull << 52) + 1u);
+	}
+	else {
+		expect("whole<64>(3.75L) truncates to 3", static_cast<unsigned long long>(W64(3.75L)) == 3u);
+	}
 	// integer -> long double -> integer for unsigned kinds, where the double-double residual is negative or zero
 	W64 w; w.clear(); w.setbit(60); w += W64(255);
-	expect("whole<64>(2^60 + 255) round trips", W64(static_cast<long double>(w)) == w);
+	if constexpr (ldDigits >= 61) {
+		expect("whole<64>(2^60 + 255) round trips", W64(static_cast<long double>(w)) == w);
+	}
+	else {
+		W64 rounded; rounded.clear(); rounded.setbit(60); rounded += W64(256);
+		expect("whole<64>(2^60 + 255) rounds to 2^60 + 256 and back", W64(static_cast<long double>(w)) == rounded);
+	}
 	expect("natural<64>(7) round trips", N64(static_cast<long double>(N64(7))) == N64(7));
+	// past double's range a long double of double's exponent range is infinite, not NaN
+	if constexpr (std::numeric_limits<long double>::max_exponent <= 1024) {
+		integer<1026, std::uint32_t> big; big.clear(); big.setbit(1024);
+		const long double x = static_cast<long double>(big);
+		expect("integer<1026>(2^1024) -> long double is +inf", x > 0.0L && x - x != x - x);
+	}
+	// one-bit WholeNumber {0}: finite values give 0, NaN the all-ones NaR
+	using W1 = integer<1, std::uint8_t, WholeNumber>;
+	expect("whole<1>(0.0L) is 0", W1(0.0L).iszero());
+	expect("whole<1>(5.0L) saturates to 0", W1(5.0L).iszero());
+	expect("whole<1>(NaN) is 1", W1(std::numeric_limits<long double>::quiet_NaN()).at(0));
 	return fails;
 }
 

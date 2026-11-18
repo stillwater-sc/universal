@@ -70,20 +70,22 @@ try {
 		expect("natural 7 / 2 = 3", [] { Natural a(7), b(2); return Natural(a / b); }, false);
 		// a rejected assignment throws before the target is touched
 		{
+			// each rejected assignment must throw, and must leave the value as it was
+			auto keeps = [&](const char* what, auto& target, auto value, unsigned expected) {
+				bool thrown = false;
+				try { target = value; }
+				catch (const integer_encoding_exception&) { thrown = true; }
+				if (!thrown || static_cast<unsigned>(target) != expected) {
+					std::cout << "Incorrect: " << what << (thrown ? "" : " did not throw") << ", value now " << target << '\n';
+					++nrOfFailedTestCases;
+				}
+			};
 			Natural n(7);
-			try { n = 0; } catch (const integer_encoding_exception&) {}
-			try { n = 0u; } catch (const integer_encoding_exception&) {}
-			if (static_cast<unsigned>(n) != 7u) {
-				std::cout << "Incorrect: a rejected assignment of 0 changed the natural number to " << n << '\n';
-				++nrOfFailedTestCases;
-			}
+			keeps("natural 7, then = 0", n, 0, 7u);
+			keeps("natural 7, then = 0u", n, 0u, 7u);
 			using WholeN = integer<16, std::uint16_t, IntegerNumberType::WholeNumber>;
 			WholeN w(9);
-			try { w = -1; } catch (const integer_encoding_exception&) {}
-			if (static_cast<unsigned>(w) != 9u) {
-				std::cout << "Incorrect: a rejected assignment of -1 changed the whole number to " << w << '\n';
-				++nrOfFailedTestCases;
-			}
+			keeps("whole 9, then = -1", w, -1, 9u);
 		}
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : natural number test cases\n";
