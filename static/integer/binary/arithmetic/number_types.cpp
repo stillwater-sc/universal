@@ -129,7 +129,11 @@ void VerifyUnary(std::uint64_t u, Failures& fail) {
 	}
 
 	Integer p; p.setbits(0);
-	if (!parse(expected, p) || Bits(p) != u)
+	if (NumberType == IntegerNumberType::NaturalNumber && u == 0) {
+		// the all-zeros encoding is outside the Natural domain {1, 2, ...}: "0" does not parse (#2131)
+		if (parse(expected, p)) fail(tag("parse of \"0\" rejected"), "accepted", "rejected");
+	}
+	else if (!parse(expected, p) || Bits(p) != u)
 		fail(tag("parse of to_string"), std::to_string(Bits(p)), std::to_string(u));
 
 	for (unsigned s = 0; s < nbits; ++s) {
@@ -168,10 +172,13 @@ void VerifyBinary(std::uint64_t ua, std::uint64_t ub, Failures& fail) {
 	if ((a == b) != eq)  fail(tag("=="), std::to_string(a == b), std::to_string(eq));
 
 	if (ub == 0) return;
-	if (NumberType == IntegerNumberType::WholeNumber && ua < ub) return;  // quotient 0 is outside the Whole domain
-	const Integer q = a / b, r = a % b;
-	if (Bits(q) != Ref::quotient(ua, ub))
-		fail(tag("/"), std::to_string(Bits(q)), std::to_string(Ref::quotient(ua, ub)));
+	// a quotient of 0 is outside the Natural domain (#2131); the remainder a is still valid
+	if (!(NumberType == IntegerNumberType::NaturalNumber && ua < ub)) {
+		const Integer q = a / b;
+		if (Bits(q) != Ref::quotient(ua, ub))
+			fail(tag("/"), std::to_string(Bits(q)), std::to_string(Ref::quotient(ua, ub)));
+	}
+	const Integer r = a % b;
 	if (Bits(r) != Ref::remainder(ua, ub))
 		fail(tag("%"), std::to_string(Bits(r)), std::to_string(Ref::remainder(ua, ub)));
 }

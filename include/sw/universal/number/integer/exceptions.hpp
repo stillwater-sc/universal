@@ -32,9 +32,10 @@ struct integer_negative_sqrt_arg : public integer_arithmetic_exception {
 	integer_negative_sqrt_arg() : integer_arithmetic_exception("negative input argument to sqrt function") {}
 };
 
-// encoding exception for Whole Integers
-struct integer_wholenumber_cannot_be_zero : public integer_encoding_exception {
-	integer_wholenumber_cannot_be_zero() : integer_encoding_exception("whole numbers can't be zero") {}
+// encoding exception for Natural Numbers {1, 2, 3, ...} (#2131: it was the whole numbers' exception,
+// with the domains of the two kinds swapped against their definition)
+struct integer_naturalnumber_cannot_be_zero : public integer_encoding_exception {
+	integer_naturalnumber_cannot_be_zero() : integer_encoding_exception("natural numbers can't be zero") {}
 };
 
 // encoding exception for Whole Integers

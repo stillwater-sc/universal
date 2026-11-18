@@ -9,6 +9,8 @@
 #include <cstdint>   // std::uint8_t/uint64_t and the signed fixed-width types, used throughout
 #include <cstdio>   // fprintf(stderr,...) for the diagnostics; keeps <iostream> out of the core (#1334)
 #include <algorithm>
+#include <cmath>    // std::frexp / std::ldexp: the native float conversions (#2131)
+#include <limits>
 #include <string_view>
 #include <type_traits>  // for std::is_constant_evaluated() dispatch around mul128/addcarry
 
@@ -71,7 +73,7 @@ namespace sw { namespace universal {
 
 enum class IntegerNumberType {
 	IntegerNumber = 0,  // { ...,-3,-2,-1,0,1,2,3,... }
-	WholeNumber   = 1,  // {              0,1,2,3,... }
+	WholeNumber   = 1,  // {              0,1,2,3,... }   the operators check this domain (#2131)
 	NaturalNumber = 2   // {                1,2,3,... }
 };
 
@@ -111,7 +113,8 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& v);
 // idiv_t for integer<nbits, BlockType, NumberType> to capture quotient and remainder during long division
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 struct idiv_t {
-	constexpr idiv_t() : quot{ 0 }, rem{ 0 } {};
+	// zero limbs, not integer(0): a NaturalNumber's domain-checked zero conversion would throw
+	constexpr idiv_t() : quot{}, rem{} {};
 	integer<nbits, BlockType, NumberType> quot; // quotient
 	integer<nbits, BlockType, NumberType> rem;  // remainder
 };
@@ -294,11 +297,12 @@ public:
 	constexpr integer& operator--() {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		// the domain checks operator-= applies to x - 1
-		if constexpr (NumberType == WholeNumber || NumberType == NaturalNumber) {
+		if constexpr (NumberType == WholeNumber) {
 			if (iszero()) throw integer_wholenumber_cannot_be_negative{};
-			if constexpr (NumberType == WholeNumber) {
-				if (isone()) throw integer_wholenumber_cannot_be_zero{};
-			}
+		}
+		if constexpr (NumberType == NaturalNumber) {
+			if (iszero()) throw integer_naturalnumber_cannot_be_negative{};
+			if (isone()) throw integer_naturalnumber_cannot_be_zero{};
 		}
 #endif
 		for (unsigned i = 0; i < nrBlocks; ++i) {
@@ -386,7 +390,7 @@ public:
 	constexpr integer& operator-=(const integer& rhs) {
 		if constexpr (NumberType == WholeNumber || NumberType == NaturalNumber) {
 			// Both modes are unsigned-domain. The semantic preconditions
-			// (WholeNumber: result must be >= 1; NaturalNumber: result >= 0)
+			// (WholeNumber: result >= 0; NaturalNumber: result must be >= 1, #2131)
 			// are checked only when INTEGER_THROW_ARITHMETIC_EXCEPTION is on
 			// -- matching the convention used by operator/= and convert_*.
 			//
@@ -400,11 +404,12 @@ public:
 			// wraparound, the same convention IntegerNumber uses.
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 			if (*this < rhs) {
-				throw integer_wholenumber_cannot_be_negative{};
+				if constexpr (NumberType == WholeNumber) throw integer_wholenumber_cannot_be_negative{};
+				else throw integer_naturalnumber_cannot_be_negative{};
 			}
-			if constexpr (NumberType == WholeNumber) {
+			if constexpr (NumberType == NaturalNumber) {
 				if (*this == rhs) {
-					throw integer_wholenumber_cannot_be_zero{};
+					throw integer_naturalnumber_cannot_be_zero{};
 				}
 			}
 #endif
@@ -660,11 +665,20 @@ public:
 					carry = product >> 64;
 				}
 #else
-				std::uint64_t scaleFactor(scale), segment(0);
+				// 64 x 64 -> 128 on 32-bit halves: the carry used to be dropped (#2131)
+				std::uint64_t carry = 0;
+				const std::uint64_t b0 = static_cast<std::uint64_t>(scale) & 0xFFFF'FFFFull, b1 = static_cast<std::uint64_t>(scale) >> 32;
 				for (unsigned i = 0; i < nrBlocks; ++i) {
-					segment += static_cast<std::uint64_t>(_block[i]) * scaleFactor;
-					_block[i] = static_cast<BlockType>(segment);
-					segment = 0;
+					const std::uint64_t a = static_cast<std::uint64_t>(_block[i]);
+					const std::uint64_t a0 = a & 0xFFFF'FFFFull, a1 = a >> 32;
+					const std::uint64_t p00 = a0 * b0, p01 = a0 * b1, p10 = a1 * b0, p11 = a1 * b1;
+					const std::uint64_t mid = (p00 >> 32) + (p01 & 0xFFFF'FFFFull) + (p10 & 0xFFFF'FFFFull);
+					std::uint64_t lo = (p00 & 0xFFFF'FFFFull) | (mid << 32);
+					std::uint64_t hi = p11 + (p01 >> 32) + (p10 >> 32) + (mid >> 32);
+					lo += carry;
+					if (lo < carry) ++hi;
+					_block[i] = static_cast<BlockType>(lo);
+					carry = hi;
 				}
 #endif
 			}
@@ -687,6 +701,7 @@ public:
 				segment >>= bitsInBlock;
 			}
 		}
+		_block[MSU] &= MSU_MASK;   // the product's bits past nbits are not part of the value (#2131)
 		return *this;
 	}
 	constexpr integer& operator/=(const integer& rhs) {
@@ -701,13 +716,13 @@ public:
 				return *this;
 #endif // INTEGER_THROW_DIVIDE_BY_ZERO
 			}
-			if constexpr (NumberType == WholeNumber) {
+			if constexpr (NumberType == NaturalNumber) {
 				if (*this < rhs) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-					throw integer_wholenumber_cannot_be_zero{};
+					throw integer_naturalnumber_cannot_be_zero{};
 #else
 					if (!std::is_constant_evaluated()) {
-						std::fprintf(stderr, "whole number cannot be zero but division would yield 0\n");
+						std::fprintf(stderr, "natural number cannot be zero but division would yield 0\n");
 					}
 					clear();
 					return *this;
@@ -738,6 +753,19 @@ public:
 		}
 		else {
 			idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
+			if constexpr (NumberType == NaturalNumber) {
+				// idiv's scratch quotient may be 0 (so % keeps its remainder); a NaturalNumber result may
+				// not. A zero divisor was already handled by idiv (throw, or the opted-out silent 0).
+				if (divresult.quot.iszero() && !rhs.iszero()) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+					throw integer_naturalnumber_cannot_be_zero{};
+#else
+					if (!std::is_constant_evaluated()) {
+						std::fprintf(stderr, "natural number cannot be zero but division would yield 0\n");
+					}
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+				}
+			}
 			*this = divresult.quot;
 		}
 		return *this;
@@ -827,7 +855,10 @@ public:
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		if (bitsToShift >= static_cast<int>(nbits)) {
+			// an arithmetic shift: every bit becomes the sign, -1 for a negative value (#2131)
+			const bool negative = sign();
 			setzero();
+			if (negative) flip();
 			return *this;
 		}
 		bool signext = sign();
@@ -905,11 +936,18 @@ public:
 			clear();
 			return *this;
 		}
-		integer<nbits, BlockType, NumberType> target{};
-		for (int i = nbits - 1; i >= shift; --i) {  // TODO: inefficient as it works at the bit level
-			target.setbit(static_cast<unsigned>(i - shift), at(static_cast<unsigned>(i)));
+		// by limbs: the bits above nbits are zero, so the vacated top fills with zeros (#2131)
+		const unsigned blockShift = static_cast<unsigned>(shift) / bitsInBlock;
+		const unsigned bitShift   = static_cast<unsigned>(shift) % bitsInBlock;
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			const unsigned src = i + blockShift;
+			const std::uint64_t lo = (src < nrBlocks) ? static_cast<std::uint64_t>(_block[src]) : 0u;
+			const std::uint64_t hi = (src + 1 < nrBlocks) ? static_cast<std::uint64_t>(_block[src + 1]) : 0u;
+			std::uint64_t v = lo >> bitShift;
+			if (bitShift != 0) v |= (hi << (bitsInBlock - bitShift));
+			_block[i] = static_cast<bt>(v);
 		}
-		*this = target;
+		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
 	constexpr integer& operator&=(const integer& rhs) {
@@ -933,6 +971,24 @@ public:
 		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
+
+	// compound assignment with a native integer operand: a literal 0 is the zero encoding, not the
+	// domain-checked conversion, which throws for a NaturalNumber inside noexcept code and terminated
+	// n += 0, n -= 0, n |= 0, n ^= 0, and n /= 0 or n %= 0 under the divide-by-zero opt-out (#2131).
+	// The operation itself handles its result; any other value goes through the checked conversion,
+	// as the implicit conversion did. (*= keeps its BlockType overload; &= with 0 is a zero result.)
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator+=(IntType rhs) { return *this += native_operand(rhs); }
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator-=(IntType rhs) { return *this -= native_operand(rhs); }
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator/=(IntType rhs) { return *this /= native_operand(rhs); }
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator%=(IntType rhs) { return *this %= native_operand(rhs); }
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator|=(IntType rhs) { return *this |= native_operand(rhs); }
+	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
+	constexpr integer& operator^=(IntType rhs) { return *this ^= native_operand(rhs); }
 
 	// modifiers
 	constexpr void clear() noexcept { 
@@ -992,7 +1048,7 @@ public:
 	}
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
 		unsigned blockIndex = i / bitsInBlock;
-		if (blockIndex < nrBlocks) {
+		if (i < nbits && blockIndex < nrBlocks) {   // a padding bit past nbits is never written
 			bt block = _block[blockIndex];
 			bt null = bit_clear_mask<bt>(i, bitsInBlock);
 			bt bit = bt(v ? 1 : 0);
@@ -1011,7 +1067,7 @@ public:
 		}
 	}
 	constexpr void setblock(unsigned i, bt value) noexcept {
-		if (i < nrBlocks) _block[i] = value;
+		if (i < nrBlocks) _block[i] = (i == MSU) ? static_cast<bt>(value & MSU_MASK) : value;   // no padding bits
 	}
 	// use un-interpreted raw bits to set the bits of the integer
 	constexpr integer& setbits(uint64_t raw_bits) noexcept {
@@ -1081,6 +1137,7 @@ public:
 		return *this;
 	}
 	integer& assign(const std::string& txt) noexcept {
+		clear();   // parse() writes only on success: a failed parse leaves 0, not indeterminate blocks (#2131)
 		if (!parse(txt, *this)) {
 			std::fprintf(stderr, "Unable to parse: %s\n", txt.c_str());
 		}
@@ -1118,8 +1175,9 @@ public:
 		}
 		return true;
 	}
-	constexpr bool ispos()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return *this > 0; else return true; }
-	constexpr bool isneg()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return *this < 0; else return false; }
+	// from the sign bit: these used to build integer(0) and compare (#2131)
+	constexpr bool ispos()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return !sign() && !iszero(); else return true; }
+	constexpr bool isneg()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return sign(); else return false; }
 	constexpr bool isone()  const noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			if (i == 0) {
@@ -1250,34 +1308,23 @@ public:
 		}
 	}
 	// signed integer conversion
+	// The domain checks come before the target is cleared: a rejected value that throws leaves the
+	// target as it was. Without exceptions a rejected value gives 0, as before.
 	template<typename SignedInt>
 	constexpr integer& convert_signed(SignedInt rhs) {
-		clear();
-		if (0 == rhs) {
-			if constexpr (NumberType == WholeNumber) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-				throw integer_wholenumber_cannot_be_zero();
-#else
-				return *this;
-#endif
-			}
-			else {
-				return *this;
-			}
+		if constexpr (NumberType == NaturalNumber) {
+			if (0 == rhs) throw integer_naturalnumber_cannot_be_zero();
+			if (rhs < 0) throw integer_naturalnumber_cannot_be_negative();
 		}
 		if constexpr (NumberType == WholeNumber) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
 			if (rhs < 0) throw integer_wholenumber_cannot_be_negative();
-#else
-			if (rhs < 0) return *this;
-#endif
 		}
-		if constexpr (NumberType == NaturalNumber) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
-			if (rhs < 0) throw integer_naturalnumber_cannot_be_negative();
-#else
-			if (rhs < 0) return *this;
 #endif
+		clear();
+		if (0 == rhs) return *this;
+		if constexpr (NumberType != IntegerNumber) {
+			if (rhs < 0) return *this;
 		}
 
 		int64_t v = rhs;
@@ -1297,19 +1344,13 @@ public:
 	// unsigned integer conversion
 	template<typename UnsignedInt>
 	constexpr integer& convert_unsigned(UnsignedInt rhs) {
-		clear();
-		if (0 == rhs) {
-			if constexpr (NumberType == WholeNumber) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-				throw integer_wholenumber_cannot_be_zero();
-#else
-				return *this;
-#endif
-			}
-			else {
-				return *this;
-			}
+		if constexpr (NumberType == NaturalNumber) {
+			if (0 == rhs) throw integer_naturalnumber_cannot_be_zero();
 		}
+#endif
+		clear();
+		if (0 == rhs) return *this;
 		uint64_t v = rhs;
 		constexpr unsigned argbits = sizeof(rhs);
 		unsigned upper = (nbits <= _nbits ? nbits : argbits);
@@ -1319,12 +1360,126 @@ public:
 		}
 		return *this;
 	}
-	// native IEEE-754 conversion
-	// TODO: currently only supports integer values of 64bits or less
+	// native IEEE-754 conversion, at every width (#2131): a finite value truncates toward zero,
+	// exactly; past the range, infinity included, it saturates to [-max, max] for an IntegerNumber
+	// and to [min, max - 1] for the unsigned kinds (min is 0 for a WholeNumber, 1 for a
+	// NaturalNumber); a NaN gives the integer NaR, min() for an IntegerNumber and max() for the
+	// unsigned kinds. That is the #2104 rule the real types follow
+	// when they cast to a native integer (shared/integer_cast.hpp). It used to go through
+	// static_cast<long long>: integer<128>(1e30) was -9.22e18, and NaN or inf were UB.
+	// The significand is read 32 bits at a time, so any width works (binary128 and double-double
+	// long double too), and frexp/ldexp are used only at run time: a constant evaluation scales by
+	// exact multiplications instead, so constexpr integer<16> v(1.0) stays a constant expression.
 	template<typename Real>
 	constexpr integer& convert_ieee(Real rhs) noexcept {
+		constexpr bool isSigned = (NumberType == IntegerNumberType::IntegerNumber);
+		// the unsigned kinds reserve all ones for NaN; at one bit that leaves a WholeNumber its 0 but
+		// a NaturalNumber {1, 2, ...} no finite value at all
+		static_assert(NumberType != NaturalNumber || nbits >= 2, "a native float converts to a NaturalNumber of at least 2 bits: at 1 bit the only nonzero encoding is the NaN");
 		clear();
-		return *this = static_cast<long long>(rhs); // TODO: this clamps the IEEE range to +-2^63
+		if (rhs != rhs) {   // NaN: the integer NaR
+			if constexpr (isSigned) setbit(nbits - 1);      // 100...0
+			else flip();                                     // 111...1
+			return *this;
+		}
+		const bool negative = rhs < Real(0);
+		auto saturate = [&]() {                              // the magnitude cap, with the sign
+			clear();
+			flip();                                          // all ones
+			if constexpr (isSigned) setbit(nbits - 1, false);  // 011...1 = max
+			else setbit(0, false);                             // 111...0 = max - 1
+			if (negative) twosComplement();                  // -max
+		};
+		// below the domain of an unsigned kind, a negative value or one that truncates to 0 clamps to
+		// the kind's smallest value, 0 for a WholeNumber and 1 for a NaturalNumber: a conversion
+		// saturates rather than throws, as it does past the top of the range
+		auto domainMinimum = [&]() {
+			clear();
+			if constexpr (NumberType == NaturalNumber) setbit(0);
+		};
+		if (negative && !isSigned) { domainMinimum(); return *this; }
+		const Real a = negative ? -rhs : rhs;
+		if (!(a < std::numeric_limits<Real>::infinity())) { saturate(); return *this; }   // infinity
+		if (a < Real(1)) { domainMinimum(); return *this; }   // truncates to 0
+		if constexpr (std::numeric_limits<Real>::digits == 106) {
+			// an IBM double-double long double: truncate hi + lo from its two doubles, exactly
+			const double hi = static_cast<double>(rhs);
+			const double lo = static_cast<double>(rhs - static_cast<Real>(hi));
+			// far past the range: hi alone decides, before any integer arithmetic can wrap
+			constexpr int capBitsDD = isSigned ? static_cast<int>(nbits) - 1 : static_cast<int>(nbits);
+			// (a bound of 2^1024 or more holds every finite hi, and would overflow to compute)
+			if constexpr (capBitsDD + 1 < std::numeric_limits<double>::max_exponent) {
+				if (!(std::fabs(hi) < std::ldexp(1.0, capBitsDD + 1))) { saturate(); return *this; }
+			}
+			// signed, whatever the destination kind: the correction t can be negative or zero, and
+			// only the combined value is subject to the destination's range and domain
+			using Wide = integer<nbits + 3, bt, IntegerNumber>;  // holds |hi| < 2^(nbits+1) plus lo's part
+			Wide wide;
+			if (std::fabs(hi) < 4503599627370496.0) {          // |value| < 2^52: the native truncation is exact
+				wide = static_cast<long long>(rhs);
+			}
+			else {
+				// hi is an integer; trunc(hi + lo) = hi + trunc(lo), less one where lo's fraction
+				// points back across zero against the value's sign
+				double t = std::trunc(lo);
+				if (hi > 0.0 && lo < t) t -= 1.0;
+				if (hi < 0.0 && lo > t) t += 1.0;
+				wide = Wide(hi);
+				wide += Wide(t);
+			}
+			// the range rule on the exact value
+			Wide top;
+			top.clear();
+			top.setbit(isSigned ? nbits - 1 : nbits);          // 2^(nbits-1), or 2^nbits
+			Wide mag = wide;
+			if (mag.isneg()) mag = -mag;
+			if constexpr (isSigned) { if (!(mag < top)) { saturate(); return *this; } }
+			else {
+				Wide one(1);
+				if (!(mag < top - one)) { saturate(); return *this; }
+			}
+			clear();
+			for (unsigned i = 0; i < nbits; ++i) setbit(i, wide.at(i));
+			return *this;
+		}
+		// a = m * 2^e, m in [1, 2)
+		int e = 0;
+		if (std::is_constant_evaluated()) {
+			Real m = a;
+			while (m >= Real(4294967296.0)) { m /= Real(4294967296.0); e += 32; }
+			while (m >= Real(2)) { m /= Real(2); ++e; }
+		}
+		else {
+			(void)std::frexp(a, &e);
+			--e;
+		}
+		// a >= 2^(nbits-1) does not fit a signed magnitude, a >= 2^nbits an unsigned one
+		constexpr int capBits = isSigned ? static_cast<int>(nbits) - 1 : static_cast<int>(nbits);
+		if (e >= capBits) { saturate(); return *this; }
+		// floor(a), 32 bits at a time from the top: scale = a / 2^(32 (chunks - 1)) is in [1, 2^32)
+		const int chunks = e / 32 + 1;
+		Real scale = a;
+		if (std::is_constant_evaluated()) {
+			for (int c = 1; c < chunks; ++c) scale /= Real(4294967296.0);   // exact: a power of two
+		}
+		else {
+			scale = std::ldexp(a, -32 * (chunks - 1));
+		}
+		for (int c = 0; c < chunks; ++c) {
+			const std::uint64_t digit = static_cast<std::uint64_t>(scale);   // < 2^32: truncation is floor
+			*this <<= 32;
+			for (unsigned i = 0; i < 32 && i < nbits; ++i) if ((digit >> i) & 1u) setbit(i);
+			scale = (scale - static_cast<Real>(digit)) * Real(4294967296.0);   // exact
+		}
+		if constexpr (!isSigned) {
+			// 2^nbits - 1 itself is past the unsigned cap of max() - 1
+			integer allOnes;
+			allOnes.clear();
+			allOnes.flip();
+			if (*this == allOnes) { saturate(); return *this; }
+		}
+		if (negative) twosComplement();
+		return *this;
 	}
 
 	// show the binary encodings of the limbs
@@ -1421,6 +1576,8 @@ protected:
 
 	// to_unsigned_integer converts to native unsigned integer
     // TODO: enable_if this for integral types only
+	// modular, as C++ converts a signed value to an unsigned type: the value modulo 2^bits, so a
+	// negative IntegerNumber sign-extends: (unsigned)integer<8>(-1) is 0xFFFFFFFF, not 255 (#2131)
 	template<typename TargetInt>
 	TargetInt to_unsigned_integer() const noexcept {
 		TargetInt v{ 0 };
@@ -1431,44 +1588,103 @@ protected:
 		unsigned upperBlock = std::min(MSU, upperTargetBlock);
 		for (unsigned b = 0; b <= upperBlock; ++b) {
 			std::uint64_t data = _block[b];
-			v |= (data << (b * bitsInBlock));
+			v |= static_cast<TargetInt>(data << (b * bitsInBlock));
 		}
-
+		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
+			if (sign() && nbits < sizeoftarget) {
+				for (unsigned i = nbits; i < sizeoftarget; ++i) v |= static_cast<TargetInt>(TargetInt(1) << i);
+			}
+		}
 		return v;
 	}
 
-	// TODO: enable_if this for native floating-point types only
+	// to a native float, correctly rounded (#2131): the magnitude's top P = digits(Real) bits as hi,
+	// the next P - 1 bits with the rest folded in as a sticky bit as lo, each accumulated in Real
+	// exactly (any P: binary128 and double-double long double too), and hi + lo rounds once (round
+	// to odd at 2P - 1 bits, then one rounding). Summing the bits from the bottom rounded at every
+	// add, so integer<128>(2^106 + 2^53 + 1) gave 8.1129638414606682e31, not 2^106 + 2^54. ldexp
+	// is used only at run time; a constant evaluation scales by exact multiplications.
 	template<typename Real>
 	constexpr Real to_real() const noexcept {
-		Real r = 0.0;
-		Real bitValue = static_cast<Real>(1.0);
-		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
-			integer<nbits + 1, bt, NumberType> v{ *this }; // deal with maxneg in 2's complement
-			if (isneg()) v = -v;
-			for (unsigned i = 0; i < nbits; ++i) { // upper bound is nbits + 1 - 1 == nbits
-				if (v.at(i)) r += bitValue;
-				bitValue *= static_cast<Real>(2.0);
-			}
-			if (isneg()) r = -r;
+		if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
+			if (iszero() && !std::is_constant_evaluated()) std::fprintf(stderr, "internal error: natural number is set to 0\n");
 		}
-		else if constexpr (NumberType == IntegerNumberType::WholeNumber) {
-			for (unsigned i = 0; i < nbits; ++i) {
-				if (at(i)) r += bitValue;
-				bitValue *= static_cast<Real>(2.0);
+		if (iszero()) return Real(0);
+		constexpr int P = std::numeric_limits<Real>::digits;
+		if constexpr (P == 106) {
+			// an IBM double-double long double is the sum of two doubles, not a fixed-precision
+			// format: hi is the correctly rounded double and lo the correctly rounded double of the
+			// exact remainder, so sparse bits such as those of 2^250 + 1 survive. Their sum is exact
+			// in the format; the platform may normalize a midpoint pair to the other hi, with the
+			// same value.
+			const double hi = to_real<double>();
+			if (hi == std::numeric_limits<double>::infinity() || hi == -std::numeric_limits<double>::infinity()) {
+				return static_cast<Real>(hi);   // past double's range: the residual is meaningless
 			}
-		}
-		else { // NaturalNumber
-			if (iszero()) std::fprintf(stderr, "internal error: natural number is set to 0\n");
-			for (unsigned i = 0; i < nbits; ++i) {
-				if (at(i)) r += bitValue;
-				bitValue *= static_cast<Real>(2.0);
+			// the residual in a signed integer: it may be negative or zero for any kind
+			using Signed = integer<nbits + 2, bt, IntegerNumber>;
+			Signed rest;
+			rest.clear();
+			for (unsigned i = 0; i < nbits; ++i) rest.setbit(i, at(i));
+			if constexpr (NumberType == IntegerNumber) {
+				if (isneg()) { rest.setbit(nbits); rest.setbit(nbits + 1); }   // sign extend
 			}
+			rest -= Signed(hi);
+			const double lo = rest.template to_real<double>();
+			return static_cast<Real>(hi) + static_cast<Real>(lo);
 		}
-
-		return r;
+		// the magnitude, one bit wider so that maxneg negates
+		integer<nbits + 1, bt, NumberType> m{ *this };
+		const bool negative = isneg();
+		if (negative) m = -m;
+		int msb = -1;
+		for (int i = static_cast<int>(nbits); i >= 0; --i) if (m.at(static_cast<unsigned>(i))) { msb = i; break; }
+		// bits [from, from + count) of m as an exact Real; bits below 0 read as 0
+		auto field = [&](int from, int count) {
+			Real v(0);
+			for (int k = count - 1; k >= 0; --k) {
+				const int b = from + k;
+				v = v * Real(2) + ((b >= 0 && m.at(static_cast<unsigned>(b))) ? Real(1) : Real(0));
+			}
+			return v;
+		};
+		// v * 2^k, exact
+		auto scaled = [](Real v, int k) {
+			if (!std::is_constant_evaluated()) return std::ldexp(v, k);
+			for (; k > 0; --k) v *= Real(2);
+			for (; k < 0; ++k) v /= Real(2);
+			return v;
+		};
+		Real r(0);
+		if (msb < P) {
+			r = field(0, msb + 1);                      // exact
+		}
+		else {
+			const int hiLow = msb - P + 1;              // the lowest bit of hi
+			const Real hi = field(hiLow, P);
+			const int loLow = hiLow - (P - 1);
+			Real lo = field(loLow, P - 1);
+			bool sticky = false;
+			for (int b = loLow - 1; b >= 0 && !sticky; --b) sticky = m.at(static_cast<unsigned>(b));
+			if (sticky && !m.at(static_cast<unsigned>(loLow))) lo += Real(1);   // round to odd: set the last bit
+			r = scaled(hi, hiLow) + scaled(lo, loLow);
+		}
+		return negative ? -r : r;
 	}
 
 private:
+	// a native operand: 0 as the zero encoding, anything else through the checked conversion
+	template<typename IntType>
+	static constexpr integer native_operand(IntType v) {
+		if (v == 0) {
+			integer zero;
+			zero.clear();
+			return zero;
+		}
+		return integer(v);
+	}
+	// every width and kind reaches another's protected conversions (to_real of a wider signed residual)
+	template<unsigned, typename, IntegerNumberType> friend class integer;
 	bt _block[nrBlocks];
 
 	// convert
@@ -1489,7 +1705,7 @@ private:
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> abs(const integer<nbits, BlockType, NumberType>& a) {
 	integer<nbits, BlockType, NumberType> b(a);
-	return (a >= 0 ? b : b.twosComplement());
+	return (a.isneg() ? b.twosComplement() : b);
 }
 
 // free function to create a 1's complement copy of an integer
@@ -1611,8 +1827,8 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 	}
 
 	idiv_t<nbits, BlockType, NumberType> divresult;
-	divresult.rem = 0;
-	divresult.quot = 0;
+	divresult.rem.clear();
+	divresult.quot.clear();
 
 	// generate the absolute values to do long division
 	if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
@@ -1625,7 +1841,7 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 		Integer b; b.bitcopy(b_negative ? -_b : _b);
 
 		if (a < b) {
-			divresult.quot = 0; // a / b = 0
+			divresult.quot.clear(); // a / b = 0
 			divresult.rem = _a; // a % b = a when a / b = 0
 			return divresult;
 		}
@@ -1633,7 +1849,7 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 		// which wraps to maxneg as it always has), so the low nbits hold all of it
 		Integer accumulator, quotient;
 		divide_magnitudes(a, b, quotient, accumulator);
-		divresult.quot = 0;
+		divresult.quot.clear();
 		for (unsigned i = 0; i < integer<nbits, BlockType, NumberType>::nrBlocks; ++i) divresult.quot.setblock(i, quotient.block(i));
 		if (result_negative) {  // take 2's complement
 			divresult.quot.flip();
@@ -1759,8 +1975,10 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 		for (char c : body) {
 			if (!sp::is_decimal_digit(c)) return false;
 			tmp *= ten;
-			Int digit{static_cast<unsigned>(c - '0')};
-			tmp += digit;
+			if (c != '0') {   // a zero digit adds nothing, and a NaturalNumber cannot be constructed from 0
+				Int digit{static_cast<unsigned>(c - '0')};
+				tmp += digit;
+			}
 			digit_found = true;
 		}
 		if (!digit_found) return false;
@@ -1770,6 +1988,19 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 		return false;
 	}
 
+	// the domain applies to the completed value: a NaturalNumber {1, 2, ...} has no 0, and neither
+	// unsigned kind has a negative value (negating the magnitude would wrap it modulo 2^nbits)
+	if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
+		if (tmp.iszero() || negative) return false;
+	}
+	if constexpr (NumberType == IntegerNumberType::WholeNumber) {
+		// "-0" is 0, but "-256" at 8 bits also accumulates to 0 modulo 2^nbits: decide from the digits
+		bool nonzeroDigit = false;
+		for (char c : body) {
+			if (c != '0' && c != '\'' && c != '_') { nonzeroDigit = true; break; }
+		}
+		if (negative && nonzeroDigit) return false;
+	}
 	if (negative) tmp = -tmp;
 	value = tmp;
 	return true;
@@ -1837,11 +2068,31 @@ constexpr inline bool operator>=(const integer<nbits, BlockType, NumberType>& lh
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+// a native literal as an operand of the integer type, for the comparisons: its two's complement bits at
+// nbits, as the integer conversion gives them, but without that conversion's domain check, so a
+// WholeNumber or NaturalNumber compares with 0 or a negative literal instead of throwing (#2131)
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
+constexpr integer<nbits, BlockType, NumberType> literal_operand(IntType v) noexcept {
+	const integer<nbits, BlockType, IntegerNumberType::IntegerNumber> bits(v);
+	integer<nbits, BlockType, NumberType> r;
+	r.clear();
+	for (unsigned i = 0; i < integer<nbits, BlockType, NumberType>::nrBlocks; ++i) r.setblock(i, bits.block(i));
+	return r;
+}
+// for an unsigned kind, a negative literal is below every value
+template<IntegerNumberType NumberType, typename IntType>
+constexpr bool literal_below_domain(IntType v) noexcept {
+	if constexpr (NumberType != IntegerNumberType::IntegerNumber && std::is_signed_v<IntType>) return v < IntType(0);
+	else return false;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 // integer - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
 constexpr inline bool operator==(const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
-	return operator==(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	if (literal_below_domain<NumberType>(rhs)) return false;
+	return operator==(lhs, literal_operand<nbits, BlockType, NumberType>(rhs));
 }
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
 constexpr inline bool operator!=(const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
@@ -1849,11 +2100,13 @@ constexpr inline bool operator!=(const integer<nbits, BlockType, NumberType>& lh
 }
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
 constexpr inline bool operator< (const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
-	return operator<(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	if (literal_below_domain<NumberType>(rhs)) return false;
+	return operator<(lhs, literal_operand<nbits, BlockType, NumberType>(rhs));
 }
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
 constexpr inline bool operator> (const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
-	return operator< (integer<nbits, BlockType, NumberType>(rhs), lhs);
+	if (literal_below_domain<NumberType>(rhs)) return true;
+	return operator< (literal_operand<nbits, BlockType, NumberType>(rhs), lhs);
 }
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
 constexpr inline bool operator<=(const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
@@ -1870,7 +2123,7 @@ constexpr inline bool operator>=(const integer<nbits, BlockType, NumberType>& lh
 
 template<typename IntType, unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline bool operator==(IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator==(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator==(rhs, lhs);
 }
 template<typename IntType, unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline bool operator!=(IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
@@ -1878,7 +2131,7 @@ constexpr inline bool operator!=(IntType lhs, const integer<nbits, BlockType, Nu
 }
 template<typename IntType, unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline bool operator< (IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator<(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator>(rhs, lhs);
 }
 template<typename IntType, unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline bool operator> (IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
@@ -1967,88 +2220,101 @@ constexpr inline integer<nbits, BlockType, NumberType> operator^(const integer<n
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+// a native literal as an arithmetic operand: a 0 is the zero encoding, not the domain-checked
+// conversion, so that n + 0, n - 0 and n | 0 work for a NaturalNumber and n / 0 reaches the
+// divide-by-zero handling (and its opt-out); the operation itself checks the result's domain (#2131).
+// Any other literal goes through the checked conversion as before.
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+constexpr integer<nbits, BlockType, NumberType> arithmetic_literal(long long v) {
+	if (v == 0) {
+		integer<nbits, BlockType, NumberType> zero;
+		zero.clear();
+		return zero;
+	}
+	return integer<nbits, BlockType, NumberType>(v);
+}
 // integer - literal binary arithmetic operators
 // BINARY ADDITION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator+(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator+(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator+(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY SUBTRACTION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator-(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator-(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator-(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY MULTIPLICATION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator*(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator*(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator*(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY DIVISION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator/(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator/(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator/(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY REMAINDER
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator%(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator%(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator%(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY BIT-WISE AND
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator&(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator&(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator&(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY BIT-WISE OR
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator|(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator|(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator|(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY BIT-WISE XOR
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator^(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator^(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator^(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - integer binary arithmetic operators
 // BINARY ADDITION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator+(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator+(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator+(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY SUBTRACTION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator-(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator-(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator-(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator*(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator*(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator*(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY DIVISION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator/(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator/(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator/(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY REMAINDER
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator%(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator%(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator%(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY BIT-WISE AND
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator&(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator&(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator&(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY BIT-WISE OR
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator|(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator|(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator|(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY BIT-WISE XOR
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator^(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator^(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator^(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 
 }} // namespace sw::universal

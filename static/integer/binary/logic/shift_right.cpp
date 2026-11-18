@@ -37,8 +37,10 @@ int VerifyArithmeticRightShift(bool reportTestCases) {
 	for (size_t i = 0; i < nbits + 1; i++) {
 		a = mostNegative;
 		int64_t denominator = 0;
-		if (i == 64) {
-			shiftRef = 0;
+		if (i >= nbits) {
+			// an arithmetic shift is floor division: maxneg >> nbits is floor(-1/2) = -1, as every
+			// bit becomes the sign (#2131); truncating division would give 0
+			shiftRef = -1;
 		}
 		else if (i == 63) { // special case for int64_t shift as it is maxneg
 			shiftRef = -1;
