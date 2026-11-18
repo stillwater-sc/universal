@@ -42,8 +42,8 @@ namespace sw { namespace universal {
 	// reference otherwise. Asking for double where it cannot hold them is a compile error,
 	// for every type that has an exact reference: posit (posit_rounding_oracle.hpp) and cfloat
 	// (cfloat_rounding_oracle.hpp, #2123), and the multi-component types with an exact bound
-	// (multidouble_bound_oracle.hpp, #2124). A type without either (lns) still checks against
-	// double; giving it an exact_rounding is how it moves off.
+	// (multidouble_bound_oracle.hpp, #2124), and lns (lns_rounding_oracle.hpp, #2125). A type
+	// without either still checks against double; giving it an exact_rounding is how it moves off.
 	struct exact_reference {};
 
 	// The customization point. A specialization provides

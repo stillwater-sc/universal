@@ -86,8 +86,9 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< lns<64, 2, std::uint32_t> >(reportTestCases, RandomsOp::OPCODE_HYPOT, 1000), "lns<64,2>", "hypot");
+	// The random verifiers have no hypot: VerifyUnaryOperatorThroughRandoms with OPCODE_HYPOT gave
+	// NaN on both sides and measured nothing, and with the exact reference lns<64,2> now has by
+	// default (#2125) it is cancelled. hypot is checked by the tests above.
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -123,6 +123,8 @@ try {
 
 #if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyElementaryFunctionThroughRandoms< lns<32, 27, std::uint32_t, Behavior::Wrapping > >(true, RandomsOp::OPCODE_EXP, 1000), "lns<32,27>", "exp");
+	// lns<64,59> checks against the exact reference (#2125); exp2 goes through double and is not
+	// correctly rounded at 59 fraction bits, so this fails until #2128 is resolved
 	nrOfFailedTestCases += ReportTestResult(VerifyElementaryFunctionThroughRandoms< lns<64, 59, std::uint32_t, Behavior::Wrapping > >(true, RandomsOp::OPCODE_EXP2, 1000), "lns<64,59>", "exp2");
 #endif
 
