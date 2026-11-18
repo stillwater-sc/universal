@@ -15,8 +15,8 @@
 // minimum set of include files to reflect source code dependencies                    
 #include <universal/native/ieee754.hpp>
 // uncomment to enable operator tracing
-#define BLOCKTRIPLE_VERBOSE_OUTPUT
-#define BLOCKTRIPLE_TRACE_ADD
+//#define BLOCKTRIPLE_VERBOSE_OUTPUT   // to debug, define with a BLOCKTRIPLE_TRACE_* switch; never in a regression test (CI)
+//#define BLOCKTRIPLE_TRACE_ADD   // to debug, define with BLOCKTRIPLE_VERBOSE_OUTPUT, which it needs; never in a regression test (CI)
 #include <universal/internal/blocktriple/blocktriple_debug.hpp>  // constexprClassParameters + tracing (#1334)
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
