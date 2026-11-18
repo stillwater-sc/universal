@@ -24,9 +24,10 @@
 // The double expansion (#2133): past the intermediate's precision, universal_cast<qd>(dd) used to
 // keep at most 64 bits on every platform. The source is now split into a sum of doubles, each the
 // rounded remainder of the previous ones, with every step checked to reconstruct the source exactly,
-// and the target accumulates the parts. A target that holds the source's bits receives them all,
-// dd -> qd keeps its 106; a narrower target gets each part's rounding, faithful rather than
-// correctly rounded. A source the split cannot represent exactly (a residual its arithmetic rounds,
+// and the target accumulates the parts with at most one rounding, at the last part, so the result is
+// the source rounded once in the target's own rounding. A target that holds the source's bits
+// receives them all, dd -> qd keeps its 106. A narrowing cast that would round more than once, as
+// qd -> dd usually does, declines to the plain path. A source the split cannot represent exactly (a residual its arithmetic rounds,
 // a value outside double's range or at the top of the source's, a NaN or infinity, a zero with its
 // sign, a part the target flushes to zero) takes the long double or double path as before, so no
 // conversion loses bits it used to keep. An integer or fixed-point target or source keeps that path
@@ -105,11 +106,25 @@ constexpr bool cast_via_double_expansion(const Source& src, Target& out) noexcep
 		rest = next;
 	}
 	if (n == 0 || !rest.iszero()) return false;   // a zero keeps its sign on the plain path
-	Target t(parts[0]);
+	// At most one rounding, at the end: every part converts to the target exactly, and every addition
+	// but the last is exact, so the result is the exact sum of the first parts rounded once with the
+	// last, the source's value rounded once, in the target's own rounding (to nearest, or hfloat's
+	// truncation). Anything else declines: a part that overflows (dd(2^400, -2^340) -> hfloat<6,7>
+	// summed maxpos and maxneg to 0) or flushes to 0, or a rounding before the last part (qd(1, 2^-54,
+	// -2^-108) -> hfloat<14,7> truncated 1 + 2^-54 to 1, then subtracted, 1 - 2^-56 below the source).
+	auto exactPart = [](double h, Target& part) {
+		part = Target(h);
+		return static_cast<double>(part) == h;
+	};
+	Target t{};
+	if (!exactPart(parts[0], t)) return false;
 	for (int i = 1; i < n; ++i) {
-		const Target part(parts[i]);
-		if (part.iszero()) return false;   // a nonzero part the target flushes: the plain path keeps it
-		t += part;
+		Target part{};
+		if (!exactPart(parts[i], part)) return false;
+		const Target sum = t + part;
+		const bool exact = (sum - t == part);   // Fast2Sum: |part| <= |t|, so the difference is exact
+		if (!exact && i + 1 < n) return false;   // a rounding with parts still to come
+		t = sum;
 	}
 	out = t;
 	return true;

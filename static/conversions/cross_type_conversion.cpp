@@ -330,11 +330,27 @@ int VerifyWidePrecisionCast(bool reportTestCases) {
 		qd target;
 		universal_assign(target, x);
 		if (!(target == q)) fail("universal_assign<qd>(dd) matches universal_cast");
-		// qd -> dd: faithful, within one dd ulp of the qd value
-		const qd y = qd(v) / qd(3.0);
-		const dd d = universal_cast<dd>(y);
-		const qd err = abs(qd(d[0]) + qd(d[1]) - y);
-		if (!(err <= abs(y) * qd(std::ldexp(1.0, -104)))) fail("qd -> dd within one dd ulp");
+		// qd -> dd with three parts, the last below dd's precision: one rounding, at the end, so the
+		// result is the dd nearest the qd value; with four parts it would round twice and takes the
+		// plain path, never worse than it
+		{
+			const qd y = qd(x[0]) + qd(x[1]) + qd(std::ldexp(x[1], -60));
+			const dd d = universal_cast<dd>(y);
+			const qd err = abs(qd(d[0]) + qd(d[1]) - y);
+			if (!(err <= abs(y) * qd(std::ldexp(1.0, -106)))) fail("qd(3 parts) -> dd rounds once, to nearest");
+			const qd y4 = qd(v) / qd(3.0);
+			const dd d4 = universal_cast<dd>(y4);
+#if LONG_DOUBLE_SUPPORT
+			// the plain path's value: the long double, as the sum of its two doubles
+			const long double ld = static_cast<long double>(y4);
+			const double ldHi = static_cast<double>(ld);
+			const double ldLo = static_cast<double>(ld - static_cast<long double>(ldHi));
+			const qd plainErr = abs(qd(ldHi) + qd(ldLo) - y4);
+			if (!(abs(qd(d4[0]) + qd(d4[1]) - y4) <= plainErr)) fail("qd(4 parts) -> dd no worse than the plain path");
+#else
+			(void)d4;
+#endif
+		}
 		// dd -> cfloat<128,15> -> dd: the cfloat holds 112 fraction bits, so the round trip is exact
 		using C = cfloat<128, 15, std::uint32_t, true, false, false>;
 		if (!(universal_cast<dd>(universal_cast<C>(x)) == x)) fail("dd -> cfloat<128,15> -> dd round trip");
@@ -353,6 +369,20 @@ int VerifyWidePrecisionCast(bool reportTestCases) {
 		if (!(to_hex(universal_cast<H>(tiny)) == to_hex(expected))) fail("dd(2^-259 + 2^-319) -> hfloat<28,7> keeps 2^-319");
 	}
 #endif
+	// a part that overflows the target declines: dd(2^400, -2^340) -> hfloat<6,7> saturates, the parts
+	// summed maxpos and maxneg to 0
+	{
+		using H6 = hfloat<6, 7>;
+		const dd huge = dd(std::ldexp(1.0, 400)) + dd(-std::ldexp(1.0, 340));
+		if (!(to_hex(universal_cast<H6>(huge)) == to_hex(H6(SpecificValue::maxpos)))) fail("dd(2^400 - 2^340) -> hfloat<6,7> saturates to maxpos");
+	}
+	// a rounding before the last part declines: qd(1, 2^-54, -2^-108) -> hfloat<14,7> is above 1, and
+	// truncation gives 1; summing truncated 1 + 2^-54 to 1, then 1 - 2^-108 truncated to 1 - 2^-56
+	{
+		using H14 = hfloat<14, 7>;
+		const qd q3 = qd(1.0) + qd(std::ldexp(1.0, -54)) + qd(-std::ldexp(1.0, -108));
+		if (!(to_hex(universal_cast<H14>(q3)) == to_hex(H14(1.0)))) fail("qd(1 + 2^-54 - 2^-108) -> hfloat<14,7> truncates to 1");
+	}
 	// non-finite values keep the plain path
 	if (!universal_cast<qd>(dd(std::numeric_limits<double>::infinity())).isinf()) fail("dd inf -> qd inf");
 	if (!universal_cast<qd>(dd(std::numeric_limits<double>::quiet_NaN())).isnan()) fail("dd NaN -> qd NaN");
