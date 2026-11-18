@@ -166,6 +166,20 @@ int VerifyPolyroot(bool reportTestCases) {
 	if (!sw::universal::polyroot(std::vector<C>{ C(3) }, C(1), 50, 0.0).isnan()) ++fails;     // no root
 	if (!(sw::universal::polyroot(std::vector<C>{ C(0) }, C(1.5), 50, 0.0) == C(1.5))) ++fails;   // every x
 	if (!sw::universal::polyroot(std::vector<C>{}, C(1), 50, 0.0).isnan()) ++fails;
+	// threshold 0 is epsilon(), which is min() for a layout without subnormals whose 2^-fbits lies
+	// below the smallest normal (#2089). That is the attainable stopping point, kept by decision
+	// (#2133): Newton corrections below min() flush to 0, so a precision-based threshold stalls and
+	// returns NaN. Here min() = 2^-6 and the root is the attainable 1.41667, not NaN.
+	{
+		using NoSub = sw::universal::cfloat<24, 4, uint32_t, false, false, false>;
+		const std::vector<NoSub> q = { NoSub(-2), NoSub(0), NoSub(1) };
+		const NoSub root = sw::universal::polyroot(q, NoSub(1), 50, 0.0);
+		const double err = std::fabs(double(root) - std::sqrt(2.0));
+		if (root.isnan() || !(err <= double(std::numeric_limits<NoSub>::min()))) {
+			++fails;
+			if (reportTestCases) std::cerr << "FAIL: polyroot cfloat<24,4> without subnormals: " << double(root) << " for sqrt(2)\n";
+		}
+	}
 	if (fails && reportTestCases) std::cerr << "FAIL: polyroot\n";
 	return fails;
 }
