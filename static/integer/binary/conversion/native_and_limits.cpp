@@ -229,6 +229,27 @@ int VerifyDomains(bool reportTestCases) {
 	expect("whole 7 / 2 is 3", static_cast<unsigned>(W(7) / W(2)) == 3u);
 	expect("natural 7 / 2 is 3", static_cast<unsigned>(N(7) / N(2)) == 3u);
 	expect("natural 5 - 2 is 3", static_cast<unsigned>(N(5) - N(2)) == 3u);
+	// parse applies the domain to the signed result: no negative unsigned value, no Natural 0
+	{
+		N n(4);
+		expect("natural parse(\"-10\") is rejected", !parse(std::string("-10"), n) && static_cast<unsigned>(n) == 4u);
+		expect("natural parse(\"+10\") is 10", parse(std::string("+10"), n) && static_cast<unsigned>(n) == 10u);
+		W w(4);
+		expect("whole parse(\"-10\") is rejected", !parse(std::string("-10"), w) && static_cast<unsigned>(w) == 4u);
+		expect("whole parse(\"-0\") is 0", parse(std::string("-0"), w) && w.iszero());
+		integer<9, std::uint8_t, NaturalNumber> n9(3);
+		expect("natural<9> parse(\"0x200\") (bit 9 is padding) is rejected", !parse(std::string("0x200"), n9));
+	}
+	// setbit and setbyte never write a padding bit
+	{
+		integer<9, std::uint8_t> p9;
+		p9.clear();
+		p9.setbit(9);
+		expect("integer<9> setbit(9) is a no-op", p9.iszero());
+		p9.setbyte(1, 0x02);
+		p9.logicShiftRight(1);
+		expect("integer<9> setbyte(1, 0x02), logicShiftRight(1) is 0", p9.iszero());
+	}
 	// setblock keeps the bits past nbits clear: they must not shift into the value
 	integer<9, std::uint8_t> nine;
 	nine.clear();
@@ -381,7 +402,10 @@ int VerifyLongDoubleDomain(bool reportTestCases) {
 		expect("integer<1026>(2^1024) -> long double is +inf", x > 0.0L && x - x != x - x);
 	}
 	// the double-double guards raise no floating-point exception: an infinite hi is detected without
-	// inf - inf (FE_INVALID), and the range bound of a 1024-bit destination is not computed (FE_OVERFLOW)
+	// inf - inf (FE_INVALID), and the range bound of a 1024-bit destination is not computed
+	// (FE_OVERFLOW). The CMake target compiles this file with strict floating-point exception
+	// semantics, so neither operation can be folded away. The value checks above are the
+	// format-independent half: an infinite hi gives +inf, not NaN.
 	if constexpr (std::numeric_limits<long double>::max_exponent <= 1024) {
 		integer<1026, std::uint32_t> big; big.clear(); big.setbit(1024);
 		std::feclearexcept(FE_ALL_EXCEPT);

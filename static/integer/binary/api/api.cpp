@@ -104,6 +104,20 @@ try {
 				++nrOfFailedTestCases;
 			}
 		};
+		// a zero quotient is rejected on every limb layout (exact-fit uint16 and the general path)
+		auto rejectsZeroQuotient = [&](auto tag) {
+			using N = integer<16, decltype(tag), IntegerNumberType::NaturalNumber>;
+			bool thrown = false;
+			try { N q = N(1) / N(2); (void)q; }
+			catch (const integer_encoding_exception&) { thrown = true; }
+			if (!thrown) {
+				std::cout << "Incorrect: natural 1 / 2 did not throw at " << sizeof(decltype(tag)) * 8 << "-bit limbs\n";
+				++nrOfFailedTestCases;
+			}
+		};
+		rejectsZeroQuotient(std::uint8_t{});
+		rejectsZeroQuotient(std::uint16_t{});
+		rejectsZeroQuotient(std::uint32_t{});
 		naturalOps(std::uint8_t{});
 		naturalOps(std::uint32_t{});
 		if (nrOfFailedTestCases - start > 0) {

@@ -753,6 +753,18 @@ public:
 		}
 		else {
 			idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
+			if constexpr (NumberType == NaturalNumber) {
+				// idiv's scratch quotient may be 0 (so % keeps its remainder); a NaturalNumber result may not
+				if (divresult.quot.iszero()) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+					throw integer_naturalnumber_cannot_be_zero{};
+#else
+					if (!std::is_constant_evaluated()) {
+						std::fprintf(stderr, "natural number cannot be zero but division would yield 0\n");
+					}
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+				}
+			}
 			*this = divresult.quot;
 		}
 		return *this;
@@ -1017,7 +1029,7 @@ public:
 	}
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
 		unsigned blockIndex = i / bitsInBlock;
-		if (blockIndex < nrBlocks) {
+		if (i < nbits && blockIndex < nrBlocks) {   // a padding bit past nbits is never written
 			bt block = _block[blockIndex];
 			bt null = bit_clear_mask<bt>(i, bitsInBlock);
 			bt bit = bt(v ? 1 : 0);
@@ -1947,9 +1959,13 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 		return false;
 	}
 
-	// the domain applies to the completed value: a NaturalNumber {1, 2, ...} has no 0
+	// the domain applies to the completed value: a NaturalNumber {1, 2, ...} has no 0, and neither
+	// unsigned kind has a negative value (negating the magnitude would wrap it modulo 2^nbits)
 	if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
-		if (tmp.iszero()) return false;
+		if (tmp.iszero() || negative) return false;
+	}
+	if constexpr (NumberType == IntegerNumberType::WholeNumber) {
+		if (negative && !tmp.iszero()) return false;   // "-0" is 0
 	}
 	if (negative) tmp = -tmp;
 	value = tmp;
