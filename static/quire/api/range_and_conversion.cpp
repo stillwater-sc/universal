@@ -320,6 +320,8 @@ try {
 #if defined(__SIZEOF_INT128__)
 	nrOfFailedTestCases += ReportTestResult(VerifyRandomizedAgainstInt128<std::uint32_t>(reportTestCases), test_tag, "randomized vs __int128 (uint32 limbs)");
 	nrOfFailedTestCases += ReportTestResult(VerifyRandomizedAgainstInt128<std::uint64_t>(reportTestCases), test_tag, "randomized vs __int128 (uint64 limbs)");
+	// uint8 limbs: the limb-by-limb helpers (anyAfter, window64, msb_index_of_accumulator) at their narrowest (#2133)
+	nrOfFailedTestCases += ReportTestResult(VerifyRandomizedAgainstInt128<std::uint8_t>(reportTestCases), test_tag, "randomized vs __int128 (uint8 limbs)");
 #endif
 #endif
 

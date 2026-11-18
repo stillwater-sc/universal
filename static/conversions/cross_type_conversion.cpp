@@ -12,6 +12,8 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/bfloat16/bfloat16.hpp>
+#include <universal/number/dd/dd.hpp>
+#include <universal/number/qd/qd.hpp>
 // cross-type conversion infrastructure
 #include <universal/number/convert/convert.hpp>
 // test infrastructure
@@ -304,6 +306,39 @@ int VerifyCfloatSpecialValueConversions(bool reportTestCases) {
 	return nrOfFailures;
 }
 
+// casts wider than the long double / double intermediate keep the source's bits (#2133): they used to
+// keep at most 64 bits on every platform. The references are built from the source's own limbs.
+int VerifyWidePrecisionCast(bool reportTestCases) {
+	int nrOfFailures = 0;
+	auto fail = [&](const char* what) { ++nrOfFailures; if (reportTestCases) std::cerr << "FAIL: " << what << '\n'; };
+	const double values[] = { 1.0 / 3.0, -2.0 / 7.0, 1.0e10 / 3.0, 3.0e-200 / 7.0, 0.1 };
+	for (double v : values) {
+		// a dd with a full second limb: v / 3 at dd precision
+		const dd x = dd(v) / dd(3.0);
+		// dd -> qd: every bit, the qd sum of the two limbs
+		const qd q = universal_cast<qd>(x);
+		if (!(q == qd(x[0]) + qd(x[1]))) fail("dd -> qd keeps both limbs");
+		// and back: dd -> qd -> dd is the identity
+		if (!(universal_cast<dd>(q) == x)) fail("dd -> qd -> dd round trip");
+		qd target;
+		universal_assign(target, x);
+		if (!(target == q)) fail("universal_assign<qd>(dd) matches universal_cast");
+		// qd -> dd: faithful, within one dd ulp of the qd value
+		const qd y = qd(v) / qd(3.0);
+		const dd d = universal_cast<dd>(y);
+		const qd err = abs(qd(d[0]) + qd(d[1]) - y);
+		if (!(err <= abs(y) * qd(std::ldexp(1.0, -104)))) fail("qd -> dd within one dd ulp");
+		// dd -> cfloat<128,15> -> dd: the cfloat holds 112 fraction bits, so the round trip is exact
+		using C = cfloat<128, 15, std::uint32_t, true, false, false>;
+		if (!(universal_cast<dd>(universal_cast<C>(x)) == x)) fail("dd -> cfloat<128,15> -> dd round trip");
+	}
+	// non-finite values keep the plain path
+	if (!universal_cast<qd>(dd(std::numeric_limits<double>::infinity())).isinf()) fail("dd inf -> qd inf");
+	if (!universal_cast<qd>(dd(std::numeric_limits<double>::quiet_NaN())).isnan()) fail("dd NaN -> qd NaN");
+	if (!universal_cast<qd>(dd(0.0)).iszero()) fail("dd 0 -> qd 0");
+	return nrOfFailures;
+}
+
 }} // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -590,6 +625,10 @@ try {
 	}
 
 #if REGRESSION_LEVEL_1
+	////////////////////////////////////////////////////////////////////
+	// Section 7b: casts wider than the long double / double intermediate (#2133)
+	nrOfFailedTestCases += ReportTestResult(VerifyWidePrecisionCast(reportTestCases), "dd/qd/cfloat<128,15>", "wide precision cast");
+
 	////////////////////////////////////////////////////////////////////
 	// Section 8: Exhaustive cfloat-to-cfloat conversions (narrowing)
 	//   cfloat<12,4> -> cfloat<8,3>: 4096 encodings

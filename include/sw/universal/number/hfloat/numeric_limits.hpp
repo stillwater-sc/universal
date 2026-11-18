@@ -6,6 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
+#include <universal/utility/decimal_digits.hpp>   // exact min_exponent10 / max_exponent10 (#2133)
 
 namespace std {
 
@@ -61,9 +62,12 @@ public:
 	static constexpr int  radix        = 16;
 
 	static constexpr int  min_exponent    = Hfloat::emin;
-	static constexpr int  min_exponent10  = static_cast<int>(Hfloat::emin * 1.204); // log10(16)
+	// the decimal exponents through the exact helpers (#2133): min() = 16^(emin - 1) = 2^(4 emin - 4),
+	// a binary min_exponent of 4 emin - 3, and max() < 16^emax = 2^(4 emax). int(emin * 1.204) truncated
+	// toward zero: hfp32 reported -77 for ceil(log10(min())) = -78, hfloat<2,3> -4 for -6.
+	static constexpr int  min_exponent10  = sw::universal::decimal_min_exponent10(4LL * Hfloat::emin - 3);
 	static constexpr int  max_exponent    = Hfloat::emax;
-	static constexpr int  max_exponent10  = static_cast<int>(Hfloat::emax * 1.204);
+	static constexpr int  max_exponent10  = sw::universal::decimal_max_exponent10(4LL * Hfloat::emax);
 	static constexpr bool has_infinity       = false;
 	static constexpr bool has_quiet_NaN      = false;
 	static constexpr bool has_signaling_NaN  = false;

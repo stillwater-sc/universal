@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: MIT
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <algorithm>
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <limits>
@@ -64,6 +65,41 @@ int VerifyULPAgainstNative(bool reportTestCases) {
 	if (!(ulp(inf).isinf() && !ulp(inf).sign())) { ++fails; if (reportTestCases) std::cerr << "FAIL: ulp(-inf) is not +inf\n"; }
 	Cfloat nan; nan.setnan(NAN_TYPE_QUIET);
 	if (!ulp(nan).isnan()) { ++fails; if (reportTestCases) std::cerr << "FAIL: ulp(NaN) is not NaN\n"; }
+	return fails;
+}
+
+// every layout's ulp, exhaustively, against the sorted value set (#2133): the native comparison above
+// only reaches cfloat<32,8> and <64,11>. The reference gap is computed in double from neighbouring
+// values; where a layout without subnormals cannot hold it (a gap below min()), the expected ulp is
+// that gap as the cfloat holds it. Layouts: with and without subnormals, max-exponent values and
+// saturation, at 8 to 12 bits.
+template<unsigned nbits, unsigned es, bool sub, bool maxexp, bool sat>
+int VerifyULPExhaustive(bool reportTestCases) {
+	using namespace sw::universal;
+	using C = cfloat<nbits, es, std::uint8_t, sub, maxexp, sat>;
+	std::vector<double> vals;
+	for (unsigned u = 0; u < (1u << nbits); ++u) {
+		C c;
+		c.setbits(u);
+		if (c.isnan() || c.isinf()) continue;
+		const double d = double(c);
+		if (d >= 0) vals.push_back(d);
+	}
+	std::sort(vals.begin(), vals.end());
+	vals.erase(std::unique(vals.begin(), vals.end()), vals.end());
+	int fails = 0;
+	for (size_t i = 0; i < vals.size(); ++i) {
+		const double x = vals[i];
+		const double gap = (i + 1 < vals.size()) ? vals[i + 1] - x : x - vals[i - 1];   // maxpos: the gap below
+		const C expected(gap);
+		for (double sx : { x, -x }) {
+			const C got = ulp(C(sx));
+			if (!(double(got) == double(expected))) {
+				++fails;
+				if (reportTestCases && fails < 4) std::cerr << "FAIL: ulp(" << type_tag(C()) << "(" << sx << ")) = " << double(got) << ", expected " << double(expected) << '\n';
+			}
+		}
+	}
 	return fails;
 }
 
@@ -149,6 +185,13 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyULPAgainstNative<cfloat<32, 8, uint32_t, hasSubnormals, noSupernormals, notSaturating>, float>(reportTestCases), "cfloat<32,8>", "ulp vs native");
 	nrOfFailedTestCases += ReportTestResult(VerifyULPAgainstNative<cfloat<64, 11, uint32_t, hasSubnormals, noSupernormals, notSaturating>, double>(reportTestCases), "cfloat<64,11>", "ulp vs native");
+	nrOfFailedTestCases += ReportTestResult(VerifyULPExhaustive< 8, 3, true , false, false>(reportTestCases), "cfloat<8,3>", "ulp exhaustive, subnormals");
+	nrOfFailedTestCases += ReportTestResult(VerifyULPExhaustive< 8, 3, false, false, false>(reportTestCases), "cfloat<8,3>", "ulp exhaustive, no subnormals");
+	nrOfFailedTestCases += ReportTestResult(VerifyULPExhaustive< 8, 3, true , true , false>(reportTestCases), "cfloat<8,3>", "ulp exhaustive, max-exponent values");
+	nrOfFailedTestCases += ReportTestResult(VerifyULPExhaustive< 8, 3, false, true , true >(reportTestCases), "cfloat<8,3>", "ulp exhaustive, no subnormals, saturating");
+	nrOfFailedTestCases += ReportTestResult(VerifyULPExhaustive<10, 4, false, false, true >(reportTestCases), "cfloat<10,4>", "ulp exhaustive, saturating");
+	nrOfFailedTestCases += ReportTestResult(VerifyULPExhaustive<12, 4, false, false, false>(reportTestCases), "cfloat<12,4>", "ulp exhaustive, no subnormals");
+	nrOfFailedTestCases += ReportTestResult(VerifyULPExhaustive< 9, 2, true , true , true >(reportTestCases), "cfloat<9,2>", "ulp exhaustive, every option");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

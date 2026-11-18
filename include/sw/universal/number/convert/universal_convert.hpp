@@ -11,17 +11,25 @@
 //
 // Conversion precision strategy (selected at compile time via if constexpr):
 //
-//   max(src_precision, tgt_precision) <= 52 bits  ->  double   (exact)
-//   max(src_precision, tgt_precision) >  52 bits  ->  long double (80-bit on x86/x87)
+//   max(src_precision, tgt_precision) <= 52 bits              ->  double      (exact)
+//   max(src_precision, tgt_precision) <= long double fraction  ->  long double (80-bit on x86/x87)
+//   wider, floating-point Target                               ->  a double expansion of the source
+//   otherwise                                                  ->  long double, or double without it
 //
 // Note: on MSVC and ARM, long double == double (both 64-bit), so those platforms
 // get the same precision as the double path for the wider branch. Where LONG_DOUBLE_SUPPORT is 0
 // (MSVC among them) the types leave out their long double conversions, so the wider branch uses
 // double as well (#2107).
-// Types wider than long double's significand (63 bits on x86) need a proper
-// adaptive-precision intermediate (efloat/ereal) or an expression-template layer
-// that analyzes the conversion AST and selects the minimum sufficient precision at
-// compile time -- see GitHub issue #197 for that future work.
+//
+// The double expansion (#2133): past the intermediate's precision, universal_cast<qd>(dd) used to
+// keep at most 64 bits on every platform. The source is now split into a sum of doubles, each the
+// rounded remainder of the previous ones, with every step checked to reconstruct the source exactly,
+// and the target accumulates the parts. A target that holds the source's bits receives them all,
+// dd -> qd keeps its 106; a narrower target gets each part's rounding, faithful rather than
+// correctly rounded. A source the split cannot represent exactly (a residual its arithmetic rounds,
+// a value outside double's range, a NaN or infinity, a zero with its sign) takes the long double or
+// double path as before, so no conversion loses bits it used to keep. An integer or fixed-point
+// target keeps that path too: it would round each part on its own.
 //
 // Usage:
 //   #include <universal/number/posit/posit.hpp>
@@ -34,6 +42,7 @@
 
 #include <type_traits>
 #include <concepts>
+#include <limits>
 #include <universal/utility/directives.hpp>   // LONG_DOUBLE_SUPPORT
 #include <universal/traits/cross_type_traits.hpp>
 
@@ -47,6 +56,51 @@ namespace detail {
 template<typename Float, typename Target, typename Source>
 constexpr Target cast_via(const Source& src) noexcept {
 	return Target(static_cast<Float>(src));
+}
+
+// the fraction bits the long double / double intermediate carries
+inline constexpr unsigned intermediate_fraction_bits =
+#if LONG_DOUBLE_SUPPORT
+	static_cast<unsigned>(std::numeric_limits<long double>::digits - 1);
+#else
+	52u;
+#endif
+
+// the double expansion needs the source's own arithmetic and a floating-point target that accumulates
+template<typename Target, typename Source>
+concept double_expansion_castable = UniversalFloatingPoint<Target> &&
+	requires(const Source& s, double d, Target& t) {
+		Source(d);
+		{ s - s } -> std::convertible_to<Source>;
+		{ s + s } -> std::convertible_to<Source>;
+		{ s == s } -> std::convertible_to<bool>;
+		Target(d);
+		t += Target(d);
+	};
+
+// src as a sum of doubles, accumulated in Target; false when the split is not exact
+template<typename Target, typename Source>
+constexpr bool cast_via_double_expansion(const Source& src, Target& out) noexcept {
+	constexpr unsigned srcPrec = precision_bits_v<Source>;
+	constexpr int maxParts = static_cast<int>(srcPrec / 53u) + 3;
+	constexpr double dmax = std::numeric_limits<double>::max();
+	double parts[maxParts]{};
+	int n = 0;
+	Source rest = src;
+	while (n < maxParts && !rest.iszero()) {
+		const double h = static_cast<double>(rest);
+		if (!(h >= -dmax && h <= dmax) || h == 0.0) return false;   // NaN, infinity, or underflow
+		const Source hs(h);
+		const Source next = rest - hs;
+		if (!(hs + next == rest)) return false;   // the source's arithmetic rounded the residual
+		parts[n++] = h;
+		rest = next;
+	}
+	if (n == 0 || !rest.iszero()) return false;   // a zero keeps its sign on the plain path
+	Target t(parts[0]);
+	for (int i = 1; i < n; ++i) t += Target(parts[i]);
+	out = t;
+	return true;
 }
 
 } // namespace detail
@@ -69,6 +123,11 @@ constexpr Target universal_cast(const Source& src) noexcept {
 	constexpr unsigned tgtPrec = precision_bits_v<Target>;
 	constexpr unsigned maxPrec = (srcPrec > tgtPrec) ? srcPrec : tgtPrec;
 
+	if constexpr (maxPrec > detail::intermediate_fraction_bits && detail::double_expansion_castable<Target, Source>) {
+		// wider than the intermediate: the double expansion, when the split is exact
+		Target t{};
+		if (detail::cast_via_double_expansion<Target>(src, t)) return t;
+	}
 	if constexpr (maxPrec <= 52u || !LONG_DOUBLE_SUPPORT) {
 		// Both types fit within double's 52-bit significand -- exact. Without long double
 		// support the types have no long double conversion to go through.
@@ -98,6 +157,13 @@ constexpr Target& universal_assign(Target& tgt, const Source& src) noexcept {
 	constexpr unsigned tgtPrec = precision_bits_v<Target>;
 	constexpr unsigned maxPrec = (srcPrec > tgtPrec) ? srcPrec : tgtPrec;
 
+	if constexpr (maxPrec > detail::intermediate_fraction_bits && detail::double_expansion_castable<Target, Source>) {
+		Target t{};
+		if (detail::cast_via_double_expansion<Target>(src, t)) {
+			tgt = t;
+			return tgt;
+		}
+	}
 	if constexpr (maxPrec <= 52u || !LONG_DOUBLE_SUPPORT) {
 		tgt = static_cast<double>(src);
 	}

@@ -198,6 +198,12 @@ Expanded  e(200.0f);  // uses max-exponent value encoding, can still produce inf
 Saturated c(200.0f);  // uses max-exponent value encoding, stays finite
 ```
 
+### epsilon() without subnormals
+
+`numeric_limits<cfloat>::epsilon()` is the gap above 1.0, `2^-fbits`. A layout without subnormals can't hold that gap when it lies below the smallest normal. For example, `cfloat<12,4>` without subnormals has a gap of `2^-7` but a smallest normal of `2^-6`. Such a layout reports `min()` instead (#2089).
+
+`polyroot` with threshold `0` uses `epsilon()`, deliberately (#2133). In those layouts, a Newton correction below `min()` flushes to zero, so the iteration can't refine past about `min() * |f'|`. `min()` is therefore the attainable stopping point, and a threshold based on precision would stall and report "failed to converge". For example, `cfloat<24,4>` without subnormals finds `sqrt(2)` as `1.41667`.
+
 ### Integer casts
 
 `int(c)`, `long(c)`, `long long(c)` and `c.to_integer<Integer>()` truncate toward zero, exactly at every width. A value past the range, infinity included, saturates to `+/-max()` (an unsigned type gives `max() - 1` for a positive overflow and `0` for a negative value). A NaN gives the integer NaR: `min()`, or `max()` for an unsigned type. This is [the library's integer-cast rule](posit.md#integer-casts) (#2087, #2104).

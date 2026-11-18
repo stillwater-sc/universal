@@ -44,6 +44,10 @@ namespace sw::math::polynomial {
     /// <returns>root closest to initial guess x0</returns>
     template<typename Vector, typename Scalar>
     inline Scalar polyroot(const Vector& c, const Scalar& x0, int max_iter, double threshold = 1e-16) {
+        // threshold 0 is numeric_limits<Scalar>::epsilon(), scaled below by the largest coefficient.
+        // Where epsilon() is larger than the gap above 1.0 (a cfloat without subnormals reports min()
+        // when 2^-fbits lies below its smallest normal, #2089), that is the attainable stopping point:
+        // a Newton correction below min() flushes to 0, so a smaller threshold only stalls (#2133).
         if (threshold == 0.0) threshold = std::numeric_limits<Scalar>::epsilon();
 
         int n = c.size() - 1;

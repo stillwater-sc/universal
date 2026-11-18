@@ -21,6 +21,7 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/verification/test_suite.hpp>
 
+#include <cmath>
 #include <cstdint>
 #include <iostream>
 #include <random>
@@ -74,7 +75,9 @@ namespace {
 	int floor_div4(int b) { return (b >= 0) ? (b / 4) : -((-b + 3) / 4); }
 
 	// does x hold N * 2^E2 truncated toward zero to ndigits hex digits, with the given sign?
-	// Returns 0 when it does or when the exact value is outside the normal range (not checked here).
+	// Outside the normal range the rule is hfloat's own (#2133; this returned 0 there, unchecked):
+	// past emax it saturates to maxpos / maxneg, it has no infinity; below emin it flushes to 0, it
+	// has no subnormals.
 	template<typename H>
 	int check(const H& x, bool negative, const Exact& N, int E2, const char* op, bool reportTestCases) {
 		using namespace sw::universal;
@@ -87,7 +90,17 @@ namespace {
 		}
 		const int m = findMsb(N);
 		const int er = floor_div4(m + E2) + 1;               // 16^(er-1) <= |value| < 16^er
-		if (er > H::emax || er < H::emin) return 0;
+		if (er > H::emax) {
+			const H sat(negative ? SpecificValue::maxneg : SpecificValue::maxpos);
+			if (to_hex(x) == to_hex(sat)) return 0;
+			if (reportTestCases) std::cerr << "FAIL " << op << ": overflow gave " << to_hex(x) << ", expected " << to_hex(sat) << '\n';
+			return 1;
+		}
+		if (er < H::emin) {
+			if (f.iszero()) return 0;
+			if (reportTestCases) std::cerr << "FAIL " << op << ": underflow gave " << to_hex(x) << ", expected 0\n";
+			return 1;
+		}
 		Exact F = N;
 		const int sh = E2 - 4 * er + static_cast<int>(H::fbits);
 		if (sh >= 0) F <<= sh; else F >>= -sh;
@@ -100,13 +113,16 @@ namespace {
 	}
 
 	// unnormalized: the operands may have zero leading hex digits (setbits() encodings)
+	// center: the exponent the operands are drawn around; near emax or emin the products, quotients
+	// and sums leave the normal range, which exercises saturation and flush to zero
 	template<typename H>
-	int VerifyArithmetic(int maxGap, unsigned nrSamples, bool reportTestCases, bool unnormalized = false) {
-		std::mt19937_64 rng(unnormalized ? 2106 : 2105);
+	int VerifyArithmetic(int maxGap, unsigned nrSamples, bool reportTestCases, bool unnormalized = false, int center = 0) {
+		std::mt19937_64 rng((unnormalized ? 2106 : 2105) + static_cast<unsigned>(center + 1000));
+		auto clampE = [](int e) { return e < H::emin ? H::emin : (e > H::emax ? H::emax : e); };
 		int fails = 0;
 		for (unsigned k = 0; k < nrSamples; ++k) {
-			const int ea = static_cast<int>(rng() % 21u) - 10;
-			const int eb = ea - static_cast<int>(rng() % static_cast<unsigned>(maxGap + 1)) * ((rng() & 1u) ? 1 : -1);
+			const int ea = clampE(center + static_cast<int>(rng() % 21u) - 10);
+			const int eb = clampE(ea - static_cast<int>(rng() % static_cast<unsigned>(maxGap + 1)) * ((rng() & 1u) ? 1 : -1));
 			const unsigned za = unnormalized ? static_cast<unsigned>(rng() % H::ndigits) : 0u;
 			const unsigned zb = unnormalized ? static_cast<unsigned>(rng() % H::ndigits) : 0u;
 			const H a = make<H>((rng() & 1u) != 0, ea, rng, za);
@@ -205,6 +221,32 @@ namespace {
 			expect(x - hfp128(1) == hfp128(std::ldexp(1.0, -100)), "hfp128(long double 1 + 2^-100) keeps 2^-100");
 		}
 #endif
+#if LONG_DOUBLE_SUPPORT
+		// a constant-evaluated long double conversion truncates like the run-time one (#2133): it went
+		// through double, which rounds to nearest first, so 1 - 2^-60 became 1.0 at hfp64 instead of
+		// 0.FFFFFFFFFFFFFF
+		if constexpr (std::numeric_limits<long double>::digits > 56) {
+			constexpr long double v = 1.0L - 1.0L / 1152921504606846976.0L;   // 1 - 2^-60
+			constexpr hfp64 atCompileTime(v);
+			volatile long double vr = v;
+			const hfp64 atRunTime(static_cast<long double>(vr));
+			expect(to_hex(atCompileTime) == to_hex(atRunTime), "constexpr hfp64(long double) matches run time");
+			expect(to_hex(atCompileTime) == "+0x0.FFFFFFFFFFFFFF * 16^0", "constexpr hfp64(1 - 2^-60) truncates to 0.FFFFFFFFFFFFFF");
+		}
+#endif
+		// the decimal exponents: min_exponent10 = ceil(log10(min())), max_exponent10 = floor(log10(max()))
+		// (#2133: int(emin * 1.204) gave -77 for hfp32's -78, and -4 for hfloat<2,3>'s -6)
+		{
+			auto exp10ok = [](auto tag) {
+				using H = decltype(tag);
+				using L = std::numeric_limits<H>;
+				const long double lmin = std::log10(static_cast<long double>(L::min()));
+				const long double lmax = std::log10(static_cast<long double>(L::max()));
+				return L::min_exponent10 == static_cast<int>(std::ceil(lmin)) && L::max_exponent10 == static_cast<int>(std::floor(lmax));
+			};
+			expect(std::numeric_limits<hfp32>::min_exponent10 == -78 && std::numeric_limits<hfp32>::max_exponent10 == 75, "hfp32 exponent10 is -78 / 75");
+			expect(exp10ok(hfp32{}) && exp10ok(hfp64{}) && exp10ok(hfp128{}) && exp10ok(hfloat<2, 3>{}) && exp10ok(hfloat<6, 4>{}), "exponent10 from log10 of min() and max()");
+		}
 		// setbits with a 64-bit block
 		using H64 = hfloat<14, 7, std::uint64_t>;
 		H64 x;
@@ -257,6 +299,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfloat<14, 7, std::uint8_t>>(20, 500, reportTestCases), "hfloat<14,7,u8>", "+ - * / against exact");
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfp32>(10, 2000, reportTestCases, true), "hfp32", "unnormalized operands");
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfp128>(34, 500, reportTestCases, true), "hfp128", "unnormalized operands");
+	// the edges of the range: overflow saturates, underflow flushes to 0 (#2133)
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfp32>(10, 2000, reportTestCases, false, hfp32::emax - 4), "hfp32", "near emax: saturation");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfp32>(10, 2000, reportTestCases, false, hfp32::emin + 4), "hfp32", "near emin: flush to 0");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfp64>(20, 1000, reportTestCases, false, hfp64::emax - 4), "hfp64", "near emax: saturation");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfp64>(20, 1000, reportTestCases, false, hfp64::emin + 4), "hfp64", "near emin: flush to 0");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfp128>(34, 500, reportTestCases, false, hfp128::emax - 4), "hfp128", "near emax: saturation");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmetic<hfp128>(34, 500, reportTestCases, false, hfp128::emin + 4), "hfp128", "near emin: flush to 0");
 #endif
 
 #if REGRESSION_LEVEL_2
