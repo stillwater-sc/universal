@@ -28,14 +28,17 @@ public:
 		r.setdbit(nbits - 2);
 		return r;
 	}
-	static constexpr RationalType round_error() {
-		return long(0.5);
+	static constexpr RationalType round_error() {   // 1/2: long(0.5) was 0 (#2132)
+		RationalType r(0, 0);
+		r.setnbit(0);
+		r.setdbit(1);
+		return r;
 	}
 	static constexpr RationalType denorm_min() {
 		return RationalType().minpos();
 	}
-	static constexpr RationalType infinity() {
-		return INT64_MAX;
+	static constexpr RationalType infinity() {   // no infinity: a +inf saturates at maxpos (#2132)
+		return RationalType().maxpos();
 	}
 	static constexpr RationalType quiet_NaN() {
 		return RationalType(0, 0);
@@ -61,17 +64,17 @@ public:
 	static constexpr int max_exponent   = 0;
 	static constexpr int max_exponent10 = 0;
 	static constexpr bool has_infinity  = false;
-	static constexpr bool has_quiet_NaN = false;
+	static constexpr bool has_quiet_NaN = true;   // 0/0
 	static constexpr bool has_signaling_NaN = false;
 	static constexpr float_denorm_style has_denorm = denorm_absent;
 	static constexpr bool has_denorm_loss = false;
 
 	static constexpr bool is_iec559 = false;
-	static constexpr bool is_bounded = false;
+	static constexpr bool is_bounded = true;   // a fixed-width rational is bounded (#2132)
 	static constexpr bool is_modulo = false;
 	static constexpr bool traps = false;
 	static constexpr bool tinyness_before = false;
-	static constexpr float_round_style round_style = round_toward_zero;
+	static constexpr float_round_style round_style = round_to_nearest;   // conversions and saturated arithmetic take the closest rational (#2132)
 };
 
 // numeric_limits for octal-based rationals
@@ -89,9 +92,9 @@ class numeric_limits<sw::universal::rational<ndigits, sw::universal::base8, bt>>
 		RationalType r(1, n);
 		return r;
 	}
-	static constexpr RationalType round_error() { return long(0.5); }
+	static RationalType round_error() { RationalType r; r.set(1, 2); return r; }   // 1/2: long(0.5) was 0 (#2132)
 	static constexpr RationalType denorm_min() { return RationalType().minpos(); }
-	static constexpr RationalType infinity() { return INT64_MAX; }
+	static RationalType infinity() { return RationalType().maxpos(); }   // no infinity: saturates at maxpos (#2132)
 	static constexpr RationalType quiet_NaN() { return RationalType(0, 0); }
 	static constexpr RationalType signaling_NaN() { return RationalType(0, 0); }
 
@@ -108,17 +111,17 @@ class numeric_limits<sw::universal::rational<ndigits, sw::universal::base8, bt>>
 	static constexpr int                max_exponent      = 0;
 	static constexpr int                max_exponent10    = 0;
 	static constexpr bool               has_infinity      = false;
-	static constexpr bool               has_quiet_NaN     = false;
+	static constexpr bool               has_quiet_NaN     = true;   // 0/0
 	static constexpr bool               has_signaling_NaN = false;
 	static constexpr float_denorm_style has_denorm        = denorm_absent;
 	static constexpr bool               has_denorm_loss   = false;
 
 	static constexpr bool              is_iec559       = false;
-	static constexpr bool              is_bounded      = false;
+	static constexpr bool              is_bounded      = true;   // fixed width (#2132)
 	static constexpr bool              is_modulo       = false;
 	static constexpr bool              traps           = false;
 	static constexpr bool              tinyness_before = false;
-	static constexpr float_round_style round_style     = round_toward_zero;
+	static constexpr float_round_style round_style     = round_to_nearest;   // the closest rational (#2132)
 };
 
 // numeric_limits for digit-based rationals
@@ -136,9 +139,9 @@ public:
 		RationalType           r(one, maxpos);
 		return r;
 	}
-	static constexpr RationalType round_error() { return long(0.5); }
+	static RationalType round_error() { RationalType r; r.set(1, 2); return r; }   // 1/2: long(0.5) was 0 (#2132)
 	static constexpr RationalType denorm_min() { return RationalType().minpos(); }
-	static constexpr RationalType infinity() { return INT64_MAX; }
+	static RationalType infinity() { return RationalType().maxpos(); }   // no infinity: saturates at maxpos (#2132)
 	static constexpr RationalType quiet_NaN() { return RationalType(0, 0); }
 	static constexpr RationalType signaling_NaN() { return RationalType(0, 0); }
 
@@ -155,17 +158,17 @@ public:
 	static constexpr int                max_exponent      = 0;
 	static constexpr int                max_exponent10    = 0;
 	static constexpr bool               has_infinity      = false;
-	static constexpr bool               has_quiet_NaN     = false;
+	static constexpr bool               has_quiet_NaN     = true;   // 0/0
 	static constexpr bool               has_signaling_NaN = false;
 	static constexpr float_denorm_style has_denorm        = denorm_absent;
 	static constexpr bool               has_denorm_loss   = false;
 
 	static constexpr bool              is_iec559       = false;
-	static constexpr bool              is_bounded      = false;
+	static constexpr bool              is_bounded      = true;   // fixed width (#2132)
 	static constexpr bool              is_modulo       = false;
 	static constexpr bool              traps           = false;
 	static constexpr bool              tinyness_before = false;
-	static constexpr float_round_style round_style     = round_toward_zero;
+	static constexpr float_round_style round_style     = round_to_nearest;   // the closest rational (#2132)
 };
 
 // numeric_limits for hexadecimal-based rationals
@@ -183,9 +186,9 @@ class numeric_limits<sw::universal::rational<ndigits, sw::universal::base16, bt>
 		RationalType           r(1, n);
 		return r;
 	}
-	static constexpr RationalType round_error() { return long(0.5); }
+	static RationalType round_error() { RationalType r; r.set(1, 2); return r; }   // 1/2: long(0.5) was 0 (#2132)
 	static constexpr RationalType denorm_min() { return RationalType().minpos(); }
-	static constexpr RationalType infinity() { return INT64_MAX; }
+	static RationalType infinity() { return RationalType().maxpos(); }   // no infinity: saturates at maxpos (#2132)
 	static constexpr RationalType quiet_NaN() { return RationalType(0, 0); }
 	static constexpr RationalType signaling_NaN() { return RationalType(0, 0); }
 
@@ -202,17 +205,17 @@ class numeric_limits<sw::universal::rational<ndigits, sw::universal::base16, bt>
 	static constexpr int                max_exponent      = 0;
 	static constexpr int                max_exponent10    = 0;
 	static constexpr bool               has_infinity      = false;
-	static constexpr bool               has_quiet_NaN     = false;
+	static constexpr bool               has_quiet_NaN     = true;   // 0/0
 	static constexpr bool               has_signaling_NaN = false;
 	static constexpr float_denorm_style has_denorm        = denorm_absent;
 	static constexpr bool               has_denorm_loss   = false;
 
 	static constexpr bool              is_iec559       = false;
-	static constexpr bool              is_bounded      = false;
+	static constexpr bool              is_bounded      = true;   // fixed width (#2132)
 	static constexpr bool              is_modulo       = false;
 	static constexpr bool              traps           = false;
 	static constexpr bool              tinyness_before = false;
-	static constexpr float_round_style round_style     = round_toward_zero;
+	static constexpr float_round_style round_style     = round_to_nearest;   // the closest rational (#2132)
 };
 
 }
