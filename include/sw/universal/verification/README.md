@@ -24,8 +24,18 @@ VerifyBinaryOperatorThroughRandoms<posit<64, 2>, double>(report, OPCODE_DIV, 100
 `exact_reference` otherwise. The exact reference covers `+ - * /` and `sqrt`; the
 verifiers cancel any other operator with it.
 
-Posit has an exact reference (`posit_rounding_oracle.hpp`: its own decoder, and the
-(nbits+1)-bit midpoint patterns). Both verifier headers include it, so a posit test
-that includes only the generic `test_suite_randoms.hpp` gets it too. Types without one still check against double,
-also past 53 digits: dd, qd, the cascades, lns, and cfloat wider than double
-(c80, c96, c128). Each moves to the exact reference by specializing `exact_rounding`.
+Posit and cfloat have an exact reference. Each has its own decoder over the encoding
+and rounds at the (nbits+1)-bit midpoint pattern, on the shared exact arithmetic in
+`rounding_oracle_core.hpp`:
+- posit: `posit_rounding_oracle.hpp`;
+- cfloat: `cfloat_rounding_oracle.hpp`, covering every combination of subnormals,
+  max-exponent values and saturation, and IEEE-754 special values (#2123).
+
+The generic `test_suite_randoms.hpp` includes both oracles, and
+`posit_test_suite_randoms.hpp` the posit one, so no test has to include an oracle itself. Random operands fill every bit of the encoding,
+also past 64 bits, for a type with an exact reference; dd and the other multi-component
+types keep `setbits`, as a random pattern of their limbs is not a normalized value.
+
+These types have no exact reference yet and still check against double, also past
+53 digits: dd, qd and the cascades (#2124), and lns (#2125). Each moves to the exact
+reference by specializing `exact_rounding`.

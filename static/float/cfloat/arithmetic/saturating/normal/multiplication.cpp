@@ -177,7 +177,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c16).name(), "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c32).name(), "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c64).name(), "multiplication");
-	nrRandoms = 0; // TBD > double precision requires a vector of 64bit words to construct the random bits
+	nrRandoms = 1000;   // wider than double: the exact reference, on random encodings of every bit (#2123)
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c80).name(), "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c96).name(), "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c128 >(reportTestCases, RandomsOp::OPCODE_MUL, nrRandoms), typeid(c128).name(), "multiplication");

@@ -1,0 +1,176 @@
+#pragma once
+// rounding_oracle_core.hpp : exact dyadic arithmetic and encoding patterns for the rounding oracles
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// SPDX-License-Identifier: MIT
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
+
+/*
+   The type-independent half of the rounding oracles (posit_rounding_oracle.hpp,
+   cfloat_rounding_oracle.hpp): unsigned integers on 32-bit words, the exact dyadic
+   (-1)^neg * m * 2^e with +, * and magnitude comparison, and encodings as bit vectors,
+   bits[i] = bit i, with their two's complement and (nbits+1)-bit midpoints. It shares no
+   code with any number system, so the oracles built on it are independent of the arithmetic
+   they check (#1921, #2121).
+*/
+
+namespace sw {
+namespace universal {
+namespace rounding_oracle {
+
+// an unsigned integer on 32-bit words, least significant first, no leading zero words
+struct Nat {
+	std::vector<std::uint32_t> w;
+	void trim() { while (!w.empty() && w.back() == 0u) w.pop_back(); }
+	bool zero() const { return w.empty(); }
+};
+inline Nat shl(const Nat& a, unsigned s) {
+	if (a.zero()) return a;
+	Nat r;
+	r.w.assign(s / 32u, 0u);
+	const unsigned b = s % 32u;
+	std::uint32_t carry = 0;
+	for (std::uint32_t x : a.w) {
+		r.w.push_back((x << b) | carry);
+		carry = (b == 0u) ? 0u : (x >> (32u - b));
+	}
+	r.w.push_back(carry);
+	r.trim();
+	return r;
+}
+inline int cmp(const Nat& a, const Nat& b) {
+	if (a.w.size() != b.w.size()) return a.w.size() < b.w.size() ? -1 : 1;
+	for (std::size_t i = a.w.size(); i-- > 0;) {
+		if (a.w[i] != b.w[i]) return a.w[i] < b.w[i] ? -1 : 1;
+	}
+	return 0;
+}
+inline Nat add(const Nat& a, const Nat& b) {
+	Nat r;
+	std::uint64_t carry = 0;
+	for (std::size_t i = 0; i < std::max(a.w.size(), b.w.size()); ++i) {
+		const std::uint64_t s = carry + (i < a.w.size() ? a.w[i] : 0u) + (i < b.w.size() ? b.w[i] : 0u);
+		r.w.push_back(static_cast<std::uint32_t>(s));
+		carry = s >> 32;
+	}
+	r.w.push_back(static_cast<std::uint32_t>(carry));
+	r.trim();
+	return r;
+}
+inline Nat sub(const Nat& a, const Nat& b) {  // a >= b
+	Nat r;
+	std::int64_t borrow = 0;
+	for (std::size_t i = 0; i < a.w.size(); ++i) {
+		std::int64_t d = std::int64_t(a.w[i]) - borrow - std::int64_t(i < b.w.size() ? b.w[i] : 0u);
+		borrow = (d < 0) ? 1 : 0;
+		if (d < 0) d += (std::int64_t(1) << 32);
+		r.w.push_back(static_cast<std::uint32_t>(d));
+	}
+	r.trim();
+	return r;
+}
+inline Nat mul(const Nat& a, const Nat& b) {
+	Nat r;
+	if (a.zero() || b.zero()) return r;
+	r.w.assign(a.w.size() + b.w.size(), 0u);
+	for (std::size_t i = 0; i < a.w.size(); ++i) {
+		std::uint64_t carry = 0;
+		for (std::size_t j = 0; j < b.w.size(); ++j) {
+			const std::uint64_t t = std::uint64_t(a.w[i]) * b.w[j] + r.w[i + j] + carry;
+			r.w[i + j] = static_cast<std::uint32_t>(t);
+			carry = t >> 32;
+		}
+		r.w[i + b.w.size()] = static_cast<std::uint32_t>(carry);
+	}
+	r.trim();
+	return r;
+}
+
+// the dyadic (-1)^neg * m * 2^e
+struct Dyadic {
+	bool neg{ false };
+	Nat  m;
+	int  e{ 0 };
+};
+// |x| compared with |y|
+inline int cmpMagnitude(const Dyadic& x, const Dyadic& y) {
+	if (x.m.zero() || y.m.zero()) return x.m.zero() ? (y.m.zero() ? 0 : -1) : 1;
+	const int e = std::min(x.e, y.e);
+	return cmp(shl(x.m, static_cast<unsigned>(x.e - e)), shl(y.m, static_cast<unsigned>(y.e - e)));
+}
+inline Dyadic addExact(const Dyadic& x, const Dyadic& y) {
+	if (x.m.zero()) return y;
+	if (y.m.zero()) return x;
+	const int e = std::min(x.e, y.e);
+	const Nat a = shl(x.m, static_cast<unsigned>(x.e - e)), b = shl(y.m, static_cast<unsigned>(y.e - e));
+	Dyadic r;
+	r.e = e;
+	if (x.neg == y.neg) {
+		r.neg = x.neg;
+		r.m = add(a, b);
+	}
+	else if (cmp(a, b) >= 0) {
+		r.neg = x.neg;
+		r.m = sub(a, b);
+	}
+	else {
+		r.neg = y.neg;
+		r.m = sub(b, a);
+	}
+	return r;
+}
+inline Dyadic mulExact(const Dyadic& x, const Dyadic& y) {
+	Dyadic r;
+	r.neg = x.neg != y.neg;
+	r.m = mul(x.m, y.m);
+	r.e = x.e + y.e;
+	return r;
+}
+
+// two's complement of a pattern, in place
+inline void negatePattern(std::vector<bool>& b) {
+	bool carry = true;
+	for (std::size_t i = 0; i < b.size(); ++i) {
+		const bool x = !b[i];
+		b[i] = x != carry;
+		carry = x && carry;
+	}
+}
+
+inline Dyadic valueOf(double x) {
+	Dyadic d;
+	if (x == 0.0) return d;
+	d.neg = x < 0;
+	int e = 0;
+	const double m = std::frexp(std::fabs(x), &e);
+	const std::uint64_t M = static_cast<std::uint64_t>(std::ldexp(m, 53));
+	d.m.w = { static_cast<std::uint32_t>(M), static_cast<std::uint32_t>(M >> 32) };
+	d.m.trim();
+	d.e = e - 53;
+	return d;
+}
+
+// the midpoints of a positive pattern y: lower = 2y-1 and upper = 2y+1, at nbits+1 bits
+inline std::vector<bool> upperMid(const std::vector<bool>& y) {
+	std::vector<bool> m(y.size() + 1);
+	m[0] = true;
+	for (std::size_t i = 0; i < y.size(); ++i) m[i + 1] = y[i];
+	return m;
+}
+inline std::vector<bool> lowerMid(std::vector<bool> y) {
+	for (std::size_t i = 0; i < y.size(); ++i) {  // y - 1
+		if (y[i]) { y[i] = false; break; }
+		y[i] = true;
+	}
+	return upperMid(y);
+}
+
+}  // namespace rounding_oracle
+}  // namespace universal
+}  // namespace sw
