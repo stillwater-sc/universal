@@ -44,6 +44,29 @@ int VerifyNaturalDivideByZero(bool reportTestCases) {
 		++nrOfFailedTests;
 		if (reportTestCases) std::cerr << "FAIL: 7 / 0 threw the domain exception: " << e.what() << '\n';
 	}
+	// a literal 0 divisor takes the same path: it must not go through the checked conversion
+	try {
+		Natural q = seven / 0;
+		if (!q.iszero()) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: 7 / 0 (literal) = " << q << " expected 0\n";
+		}
+	}
+	catch (const integer_encoding_exception& e) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: 7 / 0 (literal) threw the domain exception: " << e.what() << '\n';
+	}
+	// a literal 0 in a valid operation: n + 0, n - 0, 0 + n, n | 0
+	try {
+		if (seven + 0 != seven || seven - 0 != seven || 0 + seven != seven || (seven | 0) != seven) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "FAIL: 7 with a literal 0 operand\n";
+		}
+	}
+	catch (const integer_encoding_exception& e) {
+		++nrOfFailedTests;
+		if (reportTestCases) std::cerr << "FAIL: a literal 0 operand threw the domain exception: " << e.what() << '\n';
+	}
 	bool thrown = false;
 	try {
 		Natural q = one / two;

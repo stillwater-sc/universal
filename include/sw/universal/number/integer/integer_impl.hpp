@@ -2192,88 +2192,101 @@ constexpr inline integer<nbits, BlockType, NumberType> operator^(const integer<n
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+// a native literal as an arithmetic operand: a 0 is the zero encoding, not the domain-checked
+// conversion, so that n + 0, n - 0 and n | 0 work for a NaturalNumber and n / 0 reaches the
+// divide-by-zero handling (and its opt-out); the operation itself checks the result's domain (#2131).
+// Any other literal goes through the checked conversion as before.
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+constexpr integer<nbits, BlockType, NumberType> arithmetic_literal(long long v) {
+	if (v == 0) {
+		integer<nbits, BlockType, NumberType> zero;
+		zero.clear();
+		return zero;
+	}
+	return integer<nbits, BlockType, NumberType>(v);
+}
 // integer - literal binary arithmetic operators
 // BINARY ADDITION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator+(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator+(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator+(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY SUBTRACTION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator-(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator-(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator-(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY MULTIPLICATION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator*(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator*(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator*(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY DIVISION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator/(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator/(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator/(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY REMAINDER
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator%(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator%(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator%(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY BIT-WISE AND
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator&(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator&(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator&(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY BIT-WISE OR
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator|(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator|(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator|(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY BIT-WISE XOR
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator^(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
-	return operator^(lhs, integer<nbits, BlockType, NumberType>(rhs));
+	return operator^(lhs, arithmetic_literal<nbits, BlockType, NumberType>(rhs));
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - integer binary arithmetic operators
 // BINARY ADDITION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator+(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator+(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator+(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY SUBTRACTION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator-(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator-(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator-(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator*(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator*(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator*(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY DIVISION
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator/(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator/(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator/(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY REMAINDER
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator%(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator%(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator%(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY BIT-WISE AND
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator&(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator&(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator&(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY BIT-WISE OR
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator|(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator|(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator|(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY BIT-WISE XOR
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 constexpr inline integer<nbits, BlockType, NumberType> operator^(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	return operator^(integer<nbits, BlockType, NumberType>(lhs), rhs);
+	return operator^(arithmetic_literal<nbits, BlockType, NumberType>(lhs), rhs);
 }
 
 }} // namespace sw::universal
