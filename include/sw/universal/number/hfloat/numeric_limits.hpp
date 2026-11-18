@@ -74,6 +74,9 @@ public:
 	// t = -log2(1 - 16^-ndigits). Checked against exact integer arithmetic over es 1..17 and ndigits
 	// 1..29 and 56 (#2133 review).
 	static constexpr int  max_exponent10  = []() {
+		// emax == 0 (es == 1): max() = 1 - 16^-ndigits < 1, so -1. The margin test below also gives -1
+		// there, until 16^-ndigits underflows a double (ndigits >= 269) and t reads 0
+		if constexpr (Hfloat::emax == 0) return -1;
 		int k = sw::universal::decimal_max_exponent10(4LL * Hfloat::emax);
 		double x = 1.0;
 		for (unsigned i = 0; i < Hfloat::ndigits; ++i) x /= 16.0;

@@ -248,6 +248,9 @@ namespace {
 			expect(std::numeric_limits<hfp32>::min_exponent10 == -78 && std::numeric_limits<hfp32>::max_exponent10 == 75, "hfp32 exponent10 is -78 / 75");
 			// max() = (15/16) 2^262140 at hfloat<1,17>: log10 is 78911.975, so 10^78912 exceeds it (#2133 review)
 			expect(std::numeric_limits<hfloat<1, 17>>::max_exponent10 == 78911, "hfloat<1,17> max_exponent10 is 78911, below max()");
+			// es = 1: emax is 0 and max() = 1 - 16^-ndigits < 1, at any width, also where 16^-ndigits
+			// underflows a double (hfloat<269,1>: 2^-1076)
+			expect(std::numeric_limits<hfloat<2, 1>>::max_exponent10 == -1 && std::numeric_limits<hfloat<269, 1>>::max_exponent10 == -1, "es = 1: max_exponent10 is -1");
 			expect(exp10ok(hfp32{}) && exp10ok(hfp64{}) && exp10ok(hfp128{}) && exp10ok(hfloat<2, 3>{}) && exp10ok(hfloat<6, 4>{}), "exponent10 from log10 of min() and max()");
 		}
 		// setbits with a 64-bit block
