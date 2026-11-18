@@ -18,6 +18,7 @@
 #include <universal/verification/exact_reference.hpp>               // the reference type (#2121)
 #include <universal/verification/posit_rounding_oracle.hpp>         // the exact reference of a posit, always visible
 #include <universal/verification/cfloat_rounding_oracle.hpp>        // the exact reference of a cfloat, always visible
+#include <universal/verification/multidouble_bound_oracle.hpp>      // the exact bound reference of dd, qd, the cascades
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -349,6 +350,91 @@ namespace sw { namespace universal {
 		}
 	}
 
+	// The exact bound reference (exact_reference.hpp, #2124): normalized random operands, and
+	// every result checked against the type's error bound for the operator, exactly. A fail
+	// reports the measured error and the bound, in units of epsilon.
+	namespace detail_bound {
+		inline char opChar(RandomsOp opcode) {
+			switch (opcode) {
+			case RandomsOp::OPCODE_ADD: case RandomsOp::OPCODE_IPA: return '+';
+			case RandomsOp::OPCODE_SUB: case RandomsOp::OPCODE_IPS: return '-';
+			case RandomsOp::OPCODE_MUL: case RandomsOp::OPCODE_IPM: return '*';
+			case RandomsOp::OPCODE_DIV: case RandomsOp::OPCODE_IPD: return '/';
+			default: return ' ';
+			}
+		}
+		template<typename TestType>
+		TestType apply(RandomsOp opcode, const TestType& a, const TestType& b) {
+			TestType r{ a };
+			switch (opcode) {
+			case RandomsOp::OPCODE_ADD: return a + b;
+			case RandomsOp::OPCODE_SUB: return a - b;
+			case RandomsOp::OPCODE_MUL: return a * b;
+			case RandomsOp::OPCODE_DIV: return a / b;
+			case RandomsOp::OPCODE_IPA: r += b; return r;
+			case RandomsOp::OPCODE_IPS: r -= b; return r;
+			case RandomsOp::OPCODE_IPM: r *= b; return r;
+			default:                    r /= b; return r;
+			}
+		}
+	}
+
+	template<typename TestType>
+	int VerifyBinaryOperatorAgainstBound(bool reportTestCases, RandomsOp opcode, size_t nrOfRandoms) {
+		const char op = detail_bound::opChar(opcode);
+		if (op == ' ') {
+			std::cerr << "only + - * / have an exact bound reference, test cancelled\n";
+			return 1;
+		}
+		std::random_device rd;
+		std::mt19937_64 eng(rd());
+		int nrOfFailedTests = 0;
+		for (size_t i = 1; i < nrOfRandoms; ++i) {
+			TestType a, b;
+			exact_bound<TestType>::random(a, eng);
+			if ((i % 4) == 0 && (op == '+' || op == '-')) {   // cancellation: b ~ -a for a sum, ~ a for a difference
+				exact_bound<TestType>::randomNearNegation(a, b, eng);
+				if (op == '-') b = -b;
+			}
+			else {
+				exact_bound<TestType>::random(b, eng);
+			}
+			const TestType result = detail_bound::apply(opcode, a, b);
+			double errorInEps{ 0 };
+			if (exact_bound<TestType>::binary(op, a, b, result, errorInEps) == bound_verdict::fail) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cerr << "FAIL " << a << ' ' << op << ' ' << b << " = " << result << ": error " << errorInEps
+					          << " epsilon, bound " << exact_bound<TestType>::bound(op) << '\n';
+				}
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+	template<typename TestType>
+	int VerifySqrtAgainstBound(bool reportTestCases, size_t nrOfRandoms) {
+		std::random_device rd;
+		std::mt19937_64 eng(rd());
+		int nrOfFailedTests = 0;
+		for (size_t i = 1; i < nrOfRandoms; ++i) {
+			TestType a;
+			exact_bound<TestType>::random(a, eng);
+			if (a < TestType(0)) a = -a;
+			using std::sqrt;
+			const TestType result = sqrt(a);
+			double errorInEps{ 0 };
+			if (exact_bound<TestType>::sqrt(a, result, errorInEps) == bound_verdict::fail) {
+				++nrOfFailedTests;
+				if (reportTestCases) {
+					std::cerr << "FAIL sqrt(" << a << ") = " << result << ": error " << errorInEps
+					          << " epsilon, bound " << exact_bound<TestType>::bound('r') << '\n';
+				}
+			}
+		}
+		return nrOfFailedTests;
+	}
+
 	// generate a random set of operands to test the binary operators for a number system configuration
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
@@ -357,6 +443,9 @@ namespace sw { namespace universal {
 	template<typename TestType, typename ReferenceType = default_reference_t<TestType>>
 	int VerifyBinaryOperatorThroughRandoms(bool reportTestCases, RandomsOp opcode, size_t nrOfRandoms) {
 		check_reference_type<TestType, ReferenceType>();
+		if constexpr (std::is_same_v<ReferenceType, exact_bound_reference>) {
+			return VerifyBinaryOperatorAgainstBound<TestType>(reportTestCases, opcode, nrOfRandoms);
+		}
 		///std::cerr << typeid(TestType).name() << " : ";
 
 		std::string operation_string;
@@ -512,11 +601,14 @@ namespace sw { namespace universal {
 	template<typename TestType, typename ReferenceType = default_reference_t<TestType>>
 	int VerifyUnaryOperatorThroughRandoms(bool reportTestCases, RandomsOp opcode, size_t nrOfRandoms) {
 		check_reference_type<TestType, ReferenceType>();
-		if constexpr (std::is_same_v<ReferenceType, exact_reference>) {
+		if constexpr (std::is_same_v<ReferenceType, exact_reference> || std::is_same_v<ReferenceType, exact_bound_reference>) {
 			if (opcode != RandomsOp::OPCODE_SQRT) {
 				std::cerr << "only sqrt has an exact reference, test cancelled\n";
 				return 1;
 			}
+		}
+		if constexpr (std::is_same_v<ReferenceType, exact_bound_reference>) {
+			return VerifySqrtAgainstBound<TestType>(reportTestCases, nrOfRandoms);
 		}
 		std::string operation_string;
 		bool sqrtOperator = false;  // we need to filter negative values from the randoms
