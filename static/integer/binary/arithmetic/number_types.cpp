@@ -168,10 +168,13 @@ void VerifyBinary(std::uint64_t ua, std::uint64_t ub, Failures& fail) {
 	if ((a == b) != eq)  fail(tag("=="), std::to_string(a == b), std::to_string(eq));
 
 	if (ub == 0) return;
-	if (NumberType == IntegerNumberType::NaturalNumber && ua < ub) return;  // quotient 0 is outside the Natural domain (#2131)
-	const Integer q = a / b, r = a % b;
-	if (Bits(q) != Ref::quotient(ua, ub))
-		fail(tag("/"), std::to_string(Bits(q)), std::to_string(Ref::quotient(ua, ub)));
+	// a quotient of 0 is outside the Natural domain (#2131); the remainder a is still valid
+	if (!(NumberType == IntegerNumberType::NaturalNumber && ua < ub)) {
+		const Integer q = a / b;
+		if (Bits(q) != Ref::quotient(ua, ub))
+			fail(tag("/"), std::to_string(Bits(q)), std::to_string(Ref::quotient(ua, ub)));
+	}
+	const Integer r = a % b;
 	if (Bits(r) != Ref::remainder(ua, ub))
 		fail(tag("%"), std::to_string(Bits(r)), std::to_string(Ref::remainder(ua, ub)));
 }

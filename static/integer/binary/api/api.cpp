@@ -68,6 +68,23 @@ try {
 		expect("natural 1 - 2", [] { Natural a(1), b(2); return Natural(a - b); }, true);
 		expect("natural 2 - 2 = 0", [] { Natural a(2), b(2); return Natural(a - b); }, true);
 		expect("natural 7 / 2 = 3", [] { Natural a(7), b(2); return Natural(a / b); }, false);
+		// a rejected assignment throws before the target is touched
+		{
+			Natural n(7);
+			try { n = 0; } catch (const integer_encoding_exception&) {}
+			try { n = 0u; } catch (const integer_encoding_exception&) {}
+			if (static_cast<unsigned>(n) != 7u) {
+				std::cout << "Incorrect: a rejected assignment of 0 changed the natural number to " << n << '\n';
+				++nrOfFailedTestCases;
+			}
+			using WholeN = integer<16, std::uint16_t, IntegerNumberType::WholeNumber>;
+			WholeN w(9);
+			try { w = -1; } catch (const integer_encoding_exception&) {}
+			if (static_cast<unsigned>(w) != 9u) {
+				std::cout << "Incorrect: a rejected assignment of -1 changed the whole number to " << w << '\n';
+				++nrOfFailedTestCases;
+			}
+		}
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : natural number test cases\n";
 		}

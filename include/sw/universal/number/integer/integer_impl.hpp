@@ -1276,34 +1276,23 @@ public:
 		}
 	}
 	// signed integer conversion
+	// The domain checks come before the target is cleared: a rejected value that throws leaves the
+	// target as it was. Without exceptions a rejected value gives 0, as before.
 	template<typename SignedInt>
 	constexpr integer& convert_signed(SignedInt rhs) {
-		clear();
-		if (0 == rhs) {
-			if constexpr (NumberType == NaturalNumber) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-				throw integer_naturalnumber_cannot_be_zero();
-#else
-				return *this;
-#endif
-			}
-			else {
-				return *this;
-			}
+		if constexpr (NumberType == NaturalNumber) {
+			if (0 == rhs) throw integer_naturalnumber_cannot_be_zero();
+			if (rhs < 0) throw integer_naturalnumber_cannot_be_negative();
 		}
 		if constexpr (NumberType == WholeNumber) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
 			if (rhs < 0) throw integer_wholenumber_cannot_be_negative();
-#else
-			if (rhs < 0) return *this;
-#endif
 		}
-		if constexpr (NumberType == NaturalNumber) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
-			if (rhs < 0) throw integer_naturalnumber_cannot_be_negative();
-#else
-			if (rhs < 0) return *this;
 #endif
+		clear();
+		if (0 == rhs) return *this;
+		if constexpr (NumberType != IntegerNumber) {
+			if (rhs < 0) return *this;
 		}
 
 		int64_t v = rhs;
@@ -1323,19 +1312,13 @@ public:
 	// unsigned integer conversion
 	template<typename UnsignedInt>
 	constexpr integer& convert_unsigned(UnsignedInt rhs) {
-		clear();
-		if (0 == rhs) {
-			if constexpr (NumberType == NaturalNumber) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-				throw integer_naturalnumber_cannot_be_zero();
-#else
-				return *this;
-#endif
-			}
-			else {
-				return *this;
-			}
+		if constexpr (NumberType == NaturalNumber) {
+			if (0 == rhs) throw integer_naturalnumber_cannot_be_zero();
 		}
+#endif
+		clear();
+		if (0 == rhs) return *this;
 		uint64_t v = rhs;
 		constexpr unsigned argbits = sizeof(rhs);
 		unsigned upper = (nbits <= _nbits ? nbits : argbits);
@@ -1358,6 +1341,8 @@ public:
 	template<typename Real>
 	constexpr integer& convert_ieee(Real rhs) noexcept {
 		constexpr bool isSigned = (NumberType == IntegerNumberType::IntegerNumber);
+		// the unsigned kinds reserve all ones for NaN, so one bit leaves them no finite value
+		static_assert(isSigned || nbits >= 2, "a native float converts to a WholeNumber or NaturalNumber of at least 2 bits: at 1 bit the only nonzero encoding is the NaN");
 		clear();
 		if (rhs != rhs) {   // NaN: the integer NaR
 			if constexpr (isSigned) setbit(nbits - 1);      // 100...0
@@ -1382,6 +1367,7 @@ public:
 		if (negative && !isSigned) { domainMinimum(); return *this; }
 		const Real a = negative ? -rhs : rhs;
 		if (!(a < std::numeric_limits<Real>::infinity())) { saturate(); return *this; }   // infinity
+		if (a < Real(1)) { domainMinimum(); return *this; }   // truncates to 0
 		if constexpr (std::numeric_limits<Real>::digits == 106) {
 			// an IBM double-double long double: truncate hi + lo from its two doubles, exactly
 			const double hi = static_cast<double>(rhs);
@@ -1389,7 +1375,9 @@ public:
 			// far past the range: hi alone decides, before any integer arithmetic can wrap
 			constexpr int capBitsDD = isSigned ? static_cast<int>(nbits) - 1 : static_cast<int>(nbits);
 			if (!(std::fabs(hi) < std::ldexp(1.0, capBitsDD + 1))) { saturate(); return *this; }
-			using Wide = integer<nbits + 3, bt, NumberType>;     // holds |hi| < 2^(nbits+1) plus lo's part
+			// signed, whatever the destination kind: the correction t can be negative or zero, and
+			// only the combined value is subject to the destination's range and domain
+			using Wide = integer<nbits + 3, bt, IntegerNumber>;  // holds |hi| < 2^(nbits+1) plus lo's part
 			Wide wide;
 			if (std::fabs(hi) < 4503599627370496.0) {          // |value| < 2^52: the native truncation is exact
 				wide = static_cast<long long>(rhs);
@@ -1418,7 +1406,6 @@ public:
 			for (unsigned i = 0; i < nbits; ++i) setbit(i, wide.at(i));
 			return *this;
 		}
-		if (a < Real(1)) { domainMinimum(); return *this; }   // truncates to 0
 		// a = m * 2^e, m in [1, 2)
 		int e = 0;
 		if (std::is_constant_evaluated()) {
@@ -1590,12 +1577,21 @@ protected:
 		constexpr int P = std::numeric_limits<Real>::digits;
 		if constexpr (P == 106) {
 			// an IBM double-double long double is the sum of two doubles, not a fixed-precision
-			// format: the canonical pair is hi, the correctly rounded double, and lo, the correctly
-			// rounded double of the exact remainder
+			// format: hi is the correctly rounded double and lo the correctly rounded double of the
+			// exact remainder, so sparse bits such as those of 2^250 + 1 survive. Their sum is exact
+			// in the format; the platform may normalize a midpoint pair to the other hi, with the
+			// same value.
 			const double hi = to_real<double>();
-			integer<nbits + 2, bt, NumberType> rest{ *this };
-			rest -= integer<nbits + 2, bt, NumberType>(hi);
-			const double lo = static_cast<double>(rest);
+			// the residual in a signed integer: it may be negative or zero for any kind
+			using Signed = integer<nbits + 2, bt, IntegerNumber>;
+			Signed rest;
+			rest.clear();
+			for (unsigned i = 0; i < nbits; ++i) rest.setbit(i, at(i));
+			if constexpr (NumberType == IntegerNumber) {
+				if (isneg()) { rest.setbit(nbits); rest.setbit(nbits + 1); }   // sign extend
+			}
+			rest -= Signed(hi);
+			const double lo = rest.template to_real<double>();
 			return static_cast<Real>(hi) + static_cast<Real>(lo);
 		}
 		// the magnitude, one bit wider so that maxneg negates
@@ -1638,6 +1634,8 @@ protected:
 	}
 
 private:
+	// every width and kind reaches another's protected conversions (to_real of a wider signed residual)
+	template<unsigned, typename, IntegerNumberType> friend class integer;
 	bt _block[nrBlocks];
 
 	// convert

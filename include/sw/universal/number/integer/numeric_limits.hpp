@@ -36,25 +36,25 @@ class numeric_limits< sw::universal::integer<nbits, bt, NumberType> > {
 public:
 	using Integer = sw::universal::integer<nbits, bt, NumberType>;
 	static constexpr bool is_specialized = true;
-	static constexpr Integer min() {   // the smallest finite value, as for a native integer
-		Integer v{};   // value-initialized: Integer{} is domain-checked, and throws for a NaturalNumber
+	static constexpr Integer min() noexcept {   // the smallest finite value, as for a native integer
+		Integer v{};   // zero limbs via the defaulted ctor: Integer(0) would call the domain-checked conversion, which throws for a NaturalNumber
 		if constexpr (isSigned) v.setbit(nbits - 1);                                   // 100...0
 		else if constexpr (NumberType == sw::universal::IntegerNumberType::NaturalNumber) v.setbit(0);   // 1
 		return v;
 	}
-	static constexpr Integer max() {
-		Integer v{};   // value-initialized: Integer{} is domain-checked, and throws for a NaturalNumber
+	static constexpr Integer max() noexcept {
+		Integer v{};   // zero limbs via the defaulted ctor: Integer(0) would call the domain-checked conversion, which throws for a NaturalNumber
 		v.flip();                                  // all ones
 		if constexpr (isSigned) v.setbit(nbits - 1, false);   // 011...1
 		return v;
 	}
-	static constexpr Integer lowest() { return min(); }
-	static constexpr Integer epsilon()       { return Integer{}; }
-	static constexpr Integer round_error()   { return Integer{}; }
-	static constexpr Integer denorm_min()    { return Integer{}; }
-	static constexpr Integer infinity()      { return Integer{}; }   // has_infinity is false
-	static constexpr Integer quiet_NaN()     { return Integer{}; }
-	static constexpr Integer signaling_NaN() { return Integer{}; }
+	static constexpr Integer lowest() noexcept { return min(); }
+	static constexpr Integer epsilon()       noexcept { return Integer{}; }
+	static constexpr Integer round_error()   noexcept { return Integer{}; }
+	static constexpr Integer denorm_min()    noexcept { return Integer{}; }
+	static constexpr Integer infinity()      noexcept { return Integer{}; }   // has_infinity is false
+	static constexpr Integer quiet_NaN()     noexcept { return Integer{}; }
+	static constexpr Integer signaling_NaN() noexcept { return Integer{}; }
 
 	static constexpr int digits       = isSigned ? static_cast<int>(nbits) - 1 : static_cast<int>(nbits);
 	static constexpr int digits10     = sw::universal::decimal_digits10_integer(digits);

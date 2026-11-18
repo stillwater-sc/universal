@@ -244,8 +244,9 @@ static_assert(ConstexprConversions(), "constexpr native conversions");
 // long double, whatever its significand: integer -> long double against strtold, and back. An IBM
 // double-double (106 digits) is the sum of two doubles, not a fixed-precision format; glibc's strtold
 // and printf round its value to 106 contiguous bits, so lo carries fewer bits than it can. There the
-// check is the canonical pair -- hi the correctly rounded double, the pair at least as close to the
-// value as strtold's -- and an exact round trip back to the integer.
+// check is by value, whichever hi the platform normalized to: the pair at least as close to the value
+// as strtold's, and the conversion back the exact truncation of the pair. Sparse values the format
+// holds exactly (VerifyDoubleDoubleSparse) must round-trip to the input itself.
 template<typename Integer>
 int VerifyLongDouble(int trials, bool reportTestCases) {
 	std::mt19937_64 eng(0x2131u + 11u);
@@ -271,12 +272,11 @@ int VerifyLongDouble(int trials, bool reportTestCases) {
 			Wide errGot = exact - pairValue(got), errLib = exact - pairValue(expected);
 			if (errGot.isneg()) errGot = -errGot;
 			if (errLib.isneg()) errLib = -errLib;
-			const bool canonicalHi = (hi == static_cast<double>(v));
 			const bool closest = !(errLib < errGot);
 			const bool roundTrip = (Integer(got) == Integer(Wide(Wide(hi) + Wide(lo))));
-			if (!canonicalHi || !closest || !roundTrip) {
+			if (!closest || !roundTrip) {
 				++fails;
-				if (reportTestCases && fails < 4) std::cerr << "FAIL " << decimal << " -> double-double (hi " << canonicalHi << ", closest " << closest << ", round trip " << roundTrip << ")\n";
+				if (reportTestCases && fails < 4) std::cerr << "FAIL " << decimal << " -> double-double (closest " << closest << ", round trip " << roundTrip << ")\n";
 			}
 			continue;
 		}
@@ -294,6 +294,58 @@ int VerifyLongDouble(int trials, bool reportTestCases) {
 			if (reportTestCases && fails < 4) std::cerr << "FAIL integer(" << buf << "L)\n";
 		}
 	}
+	return fails;
+}
+
+// sparse values an IBM double-double holds exactly, 2^k + 2^j with k - j > 53: the conversion must
+// keep the low bit, and the round trip must give back the input (a 106-bit contiguous reference
+// would drop it). Elsewhere these values are checked by VerifyLongDouble's rounding.
+template<unsigned nbits>
+int VerifyDoubleDoubleSparse(bool reportTestCases) {
+	int fails = 0;
+	if constexpr (std::numeric_limits<long double>::digits == 106) {
+		using Integer = integer<nbits, std::uint32_t>;
+		const int pairs[][2] = { { 120, 0 }, { 120, 1 }, { 200, 60 }, { static_cast<int>(nbits) - 6, 0 }, { 100, 3 } };
+		for (const auto& p : pairs) {
+			for (int sign = 0; sign < 2; ++sign) {
+				Integer v;
+				v.clear();
+				v.setbit(static_cast<unsigned>(p[0]));
+				v.setbit(static_cast<unsigned>(p[1]));
+				if (sign) v = -v;
+				const long double x = static_cast<long double>(v);
+				const Integer back(x);
+				if (!(back == v)) {
+					++fails;
+					if (reportTestCases) std::cerr << "FAIL " << (sign ? "-" : "") << "(2^" << p[0] << " + 2^" << p[1] << ") round trip gave " << back << '\n';
+				}
+			}
+		}
+	}
+	else {
+		(void)reportTestCases;
+	}
+	return fails;
+}
+
+// fractional and domain cases through long double, on every long double format
+int VerifyLongDoubleDomain(bool reportTestCases) {
+	int fails = 0;
+	auto expect = [&](const char* what, bool ok) { if (!ok) { ++fails; if (reportTestCases) std::cerr << "FAIL " << what << '\n'; } };
+	using N16 = integer<16, std::uint8_t, NaturalNumber>;
+	using N64 = integer<64, std::uint32_t, NaturalNumber>;
+	using W64 = integer<64, std::uint32_t, WholeNumber>;
+	expect("natural<16>(0.5L) clamps to 1", static_cast<unsigned>(N16(0.5L)) == 1u);
+	expect("natural<16>(1.5L) truncates to 1", static_cast<unsigned>(N16(1.5L)) == 1u);
+	expect("natural<16>(7.0L) is 7", static_cast<unsigned>(N16(7.0L)) == 7u);
+	long double p60 = 1.0L;
+	for (int i = 0; i < 60; ++i) p60 *= 2.0L;
+	expect("natural<64>(2^60 L) is 2^60", static_cast<unsigned long long>(N64(p60)) == (1ull << 60));
+	expect("whole<64>(2^52 + 1.75 L) truncates to 2^52 + 1", static_cast<unsigned long long>(W64(4503599627370496.0L + 1.75L)) == (1ull << 52) + 1u);
+	// integer -> long double -> integer for unsigned kinds, where the double-double residual is negative or zero
+	W64 w; w.clear(); w.setbit(60); w += W64(255);
+	expect("whole<64>(2^60 + 255) round trips", W64(static_cast<long double>(w)) == w);
+	expect("natural<64>(7) round trips", N64(static_cast<long double>(N64(7))) == N64(7));
 	return fails;
 }
 
@@ -374,6 +426,8 @@ try {
 #if LONG_DOUBLE_SUPPORT
 	nrOfFailedTestCases += ReportTestResult(VerifyLongDouble<integer<128, std::uint32_t>>(1000, reportTestCases), "integer<128>", "long double");
 	nrOfFailedTestCases += ReportTestResult(VerifyLongDoubleRange(reportTestCases), "integer<16>", "long double range");
+	nrOfFailedTestCases += ReportTestResult(VerifyLongDoubleDomain(reportTestCases), "integer", "long double domains");
+	nrOfFailedTestCases += ReportTestResult(VerifyDoubleDoubleSparse<256>(reportTestCases), "integer<256>", "double-double sparse");
 #endif
 #endif
 
