@@ -76,6 +76,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 6>>(reportTestCases, RandomsOp::OPCODE_DIV, 500), "posit<32,6>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<256, 4, std::uint64_t>>(reportTestCases, RandomsOp::OPCODE_MUL, 200), "posit<256,4>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms<posit<64, 2>>(reportTestCases, RandomsOp::OPCODE_SQRT, 500), "posit<64,2>", "sqrt");
+	// posit's exact reference has no elementary functions: the elementary verifier compiles for it and cancels
+	if (VerifyElementaryFunctionThroughRandoms<posit<64, 2>>(false, RandomsOp::OPCODE_EXP, 10) != 1) ++nrOfFailedTestCases;
 	// the double reference where it holds: the generic double path compiles for posit, which has no inf
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 2>>(reportTestCases, RandomsOp::OPCODE_DIV, 500), "posit<32,2>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<posit<32, 5>>(reportTestCases, RandomsOp::OPCODE_MUL, 500), "posit<32,5>", "multiplication");

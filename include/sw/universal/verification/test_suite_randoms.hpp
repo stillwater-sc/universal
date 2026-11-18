@@ -19,6 +19,7 @@
 #include <universal/verification/posit_rounding_oracle.hpp>         // the exact reference of a posit, always visible
 #include <universal/verification/cfloat_rounding_oracle.hpp>        // the exact reference of a cfloat, always visible
 #include <universal/verification/multidouble_bound_oracle.hpp>      // the exact bound reference of dd, qd, the cascades
+#include <universal/verification/lns_rounding_oracle.hpp>           // the exact reference of an lns, always visible
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -311,6 +312,27 @@ namespace sw { namespace universal {
 		}
 	}
 
+	// an exact reference that can leave a result undecided (lns + and -, past the Ziv cap, #2125)
+	// counts it: the verifiers report the count, neither pass nor fail
+	struct reference_gaps { unsigned long long undecided{ 0 }, unreferenced{ 0 }; };
+	template<typename TestType>
+	reference_gaps undecided_so_far() {
+		reference_gaps g;
+		if constexpr (requires { exact_rounding<TestType>::undecided(); }) g.undecided = exact_rounding<TestType>::undecided();
+		if constexpr (requires { exact_rounding<TestType>::unreferenced(); }) g.unreferenced = exact_rounding<TestType>::unreferenced();
+		return g;
+	}
+	template<typename TestType>
+	void report_undecided(const reference_gaps& before) {
+		const reference_gaps now = undecided_so_far<TestType>();
+		if (now.undecided > before.undecided) {
+			std::cerr << (now.undecided - before.undecided) << " result(s) undecided at the exact reference's precision cap: neither pass nor fail\n";
+		}
+		if (now.unreferenced > before.unreferenced) {
+			std::cerr << (now.unreferenced - before.unreferenced) << " result(s) the exact reference cannot reach: neither pass nor fail\n";
+		}
+	}
+
 	// a random encoding of TestType: every bit of it, also past 64 bits (#2123), for a type with
 	// an exact reference, whose every encoding the reference decodes (posit, cfloat); otherwise
 	// the low 64 bits through setbits. Multi-component types such as dd have setbit too, but a
@@ -517,6 +539,7 @@ namespace sw { namespace universal {
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
 		int nrOfFailedTests = 0;
+		const reference_gaps undecidedBefore = undecided_so_far<TestType>();
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			TestType testa, testb, result{0}, ref{0};
 			randomEncoding(testa, eng);
@@ -563,6 +586,7 @@ namespace sw { namespace universal {
 				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, testa, testb, result, ref);
 			}
 		}
+		report_undecided<TestType>(undecidedBefore);
 		return nrOfFailedTests;
 	}
 
@@ -706,8 +730,28 @@ namespace sw { namespace universal {
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
 	// provide 		double dminpos = double(minpos<nbits, es>(pminpos));
-	template<typename TestType, bool throwArithmeticException = true>
+	// ReferenceType as for VerifyBinaryOperatorThroughRandoms; the exact reference covers exp and
+	// exp2 where the type's exact_rounding provides function() (lns, #2125)
+	template<typename TestType, bool throwArithmeticException = true, typename ReferenceType = default_reference_t<TestType>>
 	int VerifyElementaryFunctionThroughRandoms(bool reportTestCases, RandomsOp opcode, uint32_t nrOfRandoms) {
+		check_reference_type<TestType, ReferenceType>();
+		constexpr bool exactReference = std::is_same_v<ReferenceType, exact_reference>;
+		char exactFunction = ' ';
+		if constexpr (exactReference) {
+			if constexpr (requires(const TestType& a, TestType& r) { exact_rounding<TestType>::function('e', a, r); }) {
+				if (opcode == RandomsOp::OPCODE_EXP) exactFunction = 'e';
+				if (opcode == RandomsOp::OPCODE_EXP2) exactFunction = '2';
+			}
+			if (exactFunction == ' ') {
+				std::cerr << "this function has no exact reference for this type, test cancelled\n";
+				return 1;
+			}
+		}
+		if constexpr (std::is_same_v<ReferenceType, exact_bound_reference>) {
+			std::cerr << "the exact bound reference has no elementary functions, test cancelled\n";
+			return 1;
+		}
+		const reference_gaps undecidedBefore = undecided_so_far<TestType>();
 		std::string operation_string;
 		bool positiveOnlyOperator = false;  // we need to filter negative values from the randoms
 		switch (opcode) {
@@ -811,7 +855,10 @@ namespace sw { namespace universal {
 					executeUnary(opcode, da, nut, result, ref);
 				}
 				catch (const universal_arithmetic_exception& err) {
-					if (nut.isnan()) {
+					bool nanOperand = false;
+					if constexpr (requires { nut.isnan(); }) nanOperand = nut.isnan();
+					else if constexpr (requires { nut.isnar(); }) nanOperand = nut.isnar();
+					if (nanOperand) {
 						if (reportTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 					}
 					else {
@@ -820,9 +867,16 @@ namespace sw { namespace universal {
 				}
 			}
 			else {
-				executeUnary(opcode, da, nut, ref, result);
+				executeUnary(opcode, da, nut, result, ref);
 			}
-			if (result != ref) {
+			bool agrees = (result == ref);
+			if constexpr (exactReference) {
+				if constexpr (requires(const TestType& a, TestType& r) { exact_rounding<TestType>::function('e', a, r); }) {
+					if (!exact_rounding<TestType>::function(exactFunction, nut, ref)) continue;   // no reference: undecided or unreachable, counted
+					agrees = reference_equal(result, ref);
+				}
+			}
+			if (!agrees) {
 				std::cout << "result    : " << to_binary(result) << '\n';
 				std::cout << "reference : " << to_binary(ref) << '\n';
 				++nrOfFailedTests;
@@ -832,6 +886,7 @@ namespace sw { namespace universal {
 				//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", operation_string, nut, result, ref);
 			}
 		}
+		report_undecided<TestType>(undecidedBefore);
 
 		return nrOfFailedTests;
 	}

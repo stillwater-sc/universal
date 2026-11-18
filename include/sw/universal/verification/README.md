@@ -46,4 +46,11 @@ it), with cancellation cases for + and -. A bound check catches an error larger 
 the bound, not every error: one unit in the last place of the last limb lies inside
 every bound.
 
-lns has no exact reference yet and still checks against double (#2125).
+lns has an exact reference (`lns_rounding_oracle.hpp`, #2125). lns rounds in the log
+domain: the exponent is the integer nearest to `2^rbits * log2|X|`, ties to even. `*`,
+`/` and sqrt are exact integer arithmetic on the exponent. `+`, `-`, exp and exp2
+are evaluated in efloat with Ziv's retry to a 2048-bit cap; a result still within the
+error bound of a tie there is undecided: the verifiers count and report it, neither
+pass nor fail. The reference covers both `Behavior`s, Saturating and Wrapping, and
+`VerifyElementaryFunctionThroughRandoms` takes the reference parameter too (exp, exp2).
+It shows lns `+ - exp exp2` not correctly rounded past about 45 fraction bits (#2128).
