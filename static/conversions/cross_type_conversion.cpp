@@ -314,6 +314,9 @@ int VerifyCfloatSpecialValueConversions(bool reportTestCases) {
 static_assert(!detail::double_expansion_castable<qd, integer<64, std::uint32_t>>, "integer source is not split");
 static_assert(!detail::double_expansion_castable<qd, integer<16, std::uint8_t, IntegerNumberType::NaturalNumber>>, "NaturalNumber source is not split");
 static_assert(detail::double_expansion_castable<qd, dd> && detail::double_expansion_castable<dd, qd>, "dd and qd are split");
+// only binary types opt in: lns and hfloat keep the plain path (#2133)
+static_assert(!detail::double_expansion_castable<qd, lns<16, 8>>, "lns source is not split");
+static_assert(!detail::double_expansion_castable<hfloat<28, 7>, dd>, "hfloat target is not accumulated");
 
 int VerifyWidePrecisionCast(bool reportTestCases) {
 	int nrOfFailures = 0;
@@ -367,6 +370,29 @@ int VerifyWidePrecisionCast(bool reportTestCases) {
 		const dd tiny = dd(std::ldexp(1.0, -259)) + dd(std::ldexp(1.0, -319));
 		const H expected(std::ldexp(1.0L, -259) + std::ldexp(1.0L, -319));
 		if (!(to_hex(universal_cast<H>(tiny)) == to_hex(expected))) fail("dd(2^-259 + 2^-319) -> hfloat<28,7> keeps 2^-319");
+	}
+#endif
+	// lns: sqrt(2) is not a sum of doubles; the plain long double path keeps 64 bits of it on x87, where
+	// the expansion reported one exact part of 53 (#2133)
+#if LONG_DOUBLE_SUPPORT
+	if constexpr (std::numeric_limits<long double>::digits >= 64) {
+		using L = lns<16, 8>;
+		L r2;
+		r2.setbits(0x80);   // 2^(128 / 256) = sqrt(2)
+		const qd viaCast = universal_cast<qd>(r2);
+		const long double ld = static_cast<long double>(r2);
+		const double ldHi = static_cast<double>(ld);
+		const qd viaLd = qd(ldHi) + qd(static_cast<double>(ld - static_cast<long double>(ldHi)));
+		if (!(viaCast == viaLd)) fail("lns sqrt(2) -> qd keeps the long double path's bits");
+	}
+	// hfloat near its maxpos: hfloat<14,5> has maxpos 16^15 (1 - 16^-14) = 2^60 - 2^4, whose double
+	// rounds up to 2^60; dd(2^60 - 1) saturates to that maxpos on the plain path, while the part 2^60
+	// saturated, read as exact, and the sum gave maxpos - 1
+	{
+		using H14 = hfloat<14, 5>;
+		const dd x60 = dd(std::ldexp(1.0, 60)) + dd(-1.0);
+		const H14 expected(std::ldexp(1.0L, 60) - 1.0L);
+		if (!(to_hex(universal_cast<H14>(x60)) == to_hex(expected))) fail("dd(2^60 - 1) -> hfloat<14,5> is the plain path's value");
 	}
 #endif
 	// a part that overflows the target declines: dd(2^400, -2^340) -> hfloat<6,7> saturates, the parts

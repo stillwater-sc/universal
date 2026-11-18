@@ -50,6 +50,10 @@
 
 namespace sw { namespace universal {
 
+class dd;
+class qd;
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating> class cfloat;
+
 ////////////////////////////////////////////////////////////////////
 // detail: precision-aware intermediate cast helpers
 
@@ -68,13 +72,24 @@ inline constexpr unsigned intermediate_fraction_bits =
 	52u;
 #endif
 
-// the double expansion needs floating-point source arithmetic and a floating-point target that
-// accumulates. An integer or fixed-point source is excluded: Source(h) can saturate (integer<64>:
-// h = 2^63 for 2^63 - 1 saturates back to 2^63 - 1, and the reconstruction check passes on the wrong
-// part), and an unsigned kind's subtraction checks its domain (NaturalNumber 42 - 42 throws).
+// The double expansion is an opt-in for binary floating-point types whose every value is an exact
+// sum of doubles and whose conversion from a double in range is exact or correctly rounded: dd, qd
+// and cfloat. A structural test admits types where that fails and the checks cannot tell (#2133):
+//   - an integer source saturates in Source(h) (integer<64>: 2^63 - 1 splits as 2^63, which saturates
+//     back), and an unsigned kind's subtraction is domain checked (NaturalNumber 42 - 42 throws);
+//   - a logarithmic source is not a finite sum of doubles: Source(double(lns sqrt(2))) rounds back to
+//     the same lns, so the split reports one exact part, sqrt(2) to 53 bits;
+//   - hfloat truncates and saturates where double(maxpos) rounds up to 2^60, so a saturated part
+//     reads as exact.
+template<typename T> struct is_binary_expansion_type : std::false_type {};
+template<> struct is_binary_expansion_type<dd> : std::true_type {};
+template<> struct is_binary_expansion_type<qd> : std::true_type {};
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasMaxExpValues, bool isSaturating>
+struct is_binary_expansion_type<cfloat<nbits, es, bt, hasSubnormals, hasMaxExpValues, isSaturating>> : std::true_type {};
+
 template<typename Target, typename Source>
-concept double_expansion_castable = UniversalFloatingPoint<Target> && UniversalFloatingPoint<Source> &&
-	std::numeric_limits<Source>::is_specialized &&
+concept double_expansion_castable = is_binary_expansion_type<Target>::value && is_binary_expansion_type<Source>::value &&
+	std::numeric_limits<Source>::is_specialized && std::numeric_limits<Target>::is_specialized &&
 	requires(const Source& s, double d, Target& t) {
 		Source(d);
 		{ s - s } -> std::convertible_to<Source>;
@@ -112,7 +127,11 @@ constexpr bool cast_via_double_expansion(const Source& src, Target& out) noexcep
 	// truncation). Anything else declines: a part that overflows (dd(2^400, -2^340) -> hfloat<6,7>
 	// summed maxpos and maxneg to 0) or flushes to 0, or a rounding before the last part (qd(1, 2^-54,
 	// -2^-108) -> hfloat<14,7> truncated 1 + 2^-54 to 1, then subtracted, 1 - 2^-56 below the source).
-	auto exactPart = [](double h, Target& part) {
+	// a part within a factor of two of the target's max() is declined before it converts: saturation
+	// there can round back to h on the way to double
+	const double targetTop = static_cast<double>(std::numeric_limits<Target>::max()) * 0.5;
+	auto exactPart = [targetTop](double h, Target& part) {
+		if (!(h < targetTop && h > -targetTop)) return false;
 		part = Target(h);
 		return static_cast<double>(part) == h;
 	};
