@@ -13,6 +13,7 @@ template parameter (`exact_reference.hpp`, #2121):
 |---|---|---|
 | `double` | double, rounded once to TestType (`correctly_rounded_reference.hpp`, #1861) | types with fewer than 53 digits and a range inside double's (`posit<32,6>`, reaching 2^1920, is not one) |
 | `exact_reference` | exact dyadic rationals, rounded by TestType's own rule; a quotient or square root is compared, never computed | any width; needs an `exact_rounding<TestType>` specialization |
+| `exact_bound_reference` | exact dyadic rationals; the result is checked against TestType's error bound for the operator, pass or fail with the measured error, no golden value (#2124) | types guaranteed to a bound, not correctly rounded: dd, qd, the cascades; needs an `exact_bound<TestType>` specialization |
 
 ```cpp
 VerifyBinaryOperatorThroughRandoms<posit<64, 2>>(report, OPCODE_DIV, 1000);                   // default: exact
@@ -20,8 +21,8 @@ VerifyBinaryOperatorThroughRandoms<posit<32, 2>, exact_reference>(report, OPCODE
 VerifyBinaryOperatorThroughRandoms<posit<64, 2>, double>(report, OPCODE_DIV, 1000);           // compile error
 ```
 
-`default_reference_t<TestType>` is `double` where double holds the results and
-`exact_reference` otherwise. The exact reference covers `+ - * /` and `sqrt`; the
+`default_reference_t<TestType>` is `double` where double holds the results, and
+otherwise `exact_reference` or `exact_bound_reference`, whichever the type has. The exact reference covers `+ - * /` and `sqrt`; the
 verifiers cancel any other operator with it.
 
 Posit and cfloat have an exact reference. Each has its own decoder over the encoding
@@ -36,6 +37,13 @@ The generic `test_suite_randoms.hpp` includes both oracles, and
 also past 64 bits, for a type with an exact reference; dd and the other multi-component
 types keep `setbits`, as a random pattern of their limbs is not a normalized value.
 
-These types have no exact reference yet and still check against double, also past
-53 digits: dd, qd and the cascades (#2124), and lns (#2125). Each moves to the exact
-reference by specializing `exact_rounding`.
+dd, dd_cascade, td_cascade, qd and qd_cascade have the exact bound reference
+(`multidouble_bound_oracle.hpp`). It checks each result against a bound per operator
+in units of epsilon; each bound is recorded with its source in that header, a
+published double-word bound where one applies (Joldes, Muller, Popescu 2017). The
+random operands are normalized values (every limb below half an ulp of the one above
+it), with cancellation cases for + and -. A bound check catches an error larger than
+the bound, not every error: one unit in the last place of the last limb lies inside
+every bound.
+
+lns has no exact reference yet and still checks against double (#2125).
