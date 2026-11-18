@@ -37,13 +37,13 @@ public:
 	using Integer = sw::universal::integer<nbits, bt, NumberType>;
 	static constexpr bool is_specialized = true;
 	static constexpr Integer min() noexcept {   // the smallest finite value, as for a native integer
-		Integer v{};   // zero limbs via the defaulted ctor: Integer(0) would call the domain-checked conversion, which throws for a NaturalNumber
+		Integer v{};   // zero limbs via the defaulted ctor (for a NaturalNumber the NaNN encoding), then the bits below
 		if constexpr (isSigned) v.setbit(nbits - 1);                                   // 100...0
 		else if constexpr (NumberType == sw::universal::IntegerNumberType::NaturalNumber) v.setbit(0);   // 1
 		return v;
 	}
 	static constexpr Integer max() noexcept {
-		Integer v{};   // zero limbs via the defaulted ctor: Integer(0) would call the domain-checked conversion, which throws for a NaturalNumber
+		Integer v{};   // zero limbs via the defaulted ctor (for a NaturalNumber the NaNN encoding), then the bits below
 		v.flip();                                  // all ones
 		if constexpr (isSigned) v.setbit(nbits - 1, false);   // 011...1
 		return v;
@@ -53,7 +53,7 @@ public:
 	static constexpr Integer round_error()   noexcept { return Integer{}; }
 	static constexpr Integer denorm_min()    noexcept { return Integer{}; }
 	static constexpr Integer infinity()      noexcept { return Integer{}; }   // has_infinity is false
-	static constexpr Integer quiet_NaN()     noexcept { return Integer{}; }
+	static constexpr Integer quiet_NaN()     noexcept { return Integer{}; }   // NaturalNumber: NaNN
 	static constexpr Integer signaling_NaN() noexcept { return Integer{}; }
 
 	static constexpr int digits       = isSigned ? static_cast<int>(nbits) - 1 : static_cast<int>(nbits);
@@ -69,7 +69,8 @@ public:
 	static constexpr int max_exponent   = digits;
 	static constexpr int max_exponent10 = sw::universal::decimal_max_exponent10(max_exponent);
 	static constexpr bool has_infinity  = false;
-	static constexpr bool has_quiet_NaN = false;
+	// a NaturalNumber's NaNN, the all-zeros encoding, is its quiet NaN: quiet_NaN() returns it (#2137)
+	static constexpr bool has_quiet_NaN = (NumberType == sw::universal::IntegerNumberType::NaturalNumber);
 	static constexpr bool has_signaling_NaN = false;
 	static constexpr float_denorm_style has_denorm = denorm_absent;
 	static constexpr bool has_denorm_loss = false;

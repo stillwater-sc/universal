@@ -27,6 +27,9 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 	if ((flags & std::ios_base::oct) == std::ios_base::oct) base = 8;
 	if ((flags & std::ios_base::hex) == std::ios_base::hex) base = 16;
 
+	if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
+		if (n.isnan()) return std::string("NaNN");   // Not a Natural Number, the all-zeros encoding (#2137)
+	}
 	std::string result;
 	if (base == 8 || base == 16) {
 		if (n.sign()) return std::string("negative value: ignored");

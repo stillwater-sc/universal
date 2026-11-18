@@ -47,7 +47,12 @@ struct Reference {
 		if (negative(u)) return static_cast<std::int64_t>(u | ~mask);
 		return static_cast<std::int64_t>(u);
 	}
-	static std::string text(std::uint64_t u) { return isSigned ? std::to_string(sval(u)) : std::to_string(u); }
+	// a NaturalNumber's all-zeros encoding is NaNN, Not a Natural Number (#2137)
+	static constexpr bool isNatural = (NumberType == IntegerNumberType::NaturalNumber);
+	static std::string text(std::uint64_t u) {
+		if (isNatural && u == 0) return "NaNN";
+		return isSigned ? std::to_string(sval(u)) : std::to_string(u);
+	}
 	static bool less(std::uint64_t a, std::uint64_t b) { return isSigned ? sval(a) < sval(b) : a < b; }
 	static std::uint64_t shr(std::uint64_t u, unsigned s) {
 		return isSigned ? (static_cast<std::uint64_t>(sval(u) >> s) & mask) : (u >> s);
@@ -72,6 +77,7 @@ struct Reference {
 		return s;
 	}
 	static std::string hex(std::uint64_t u) {
+		if (isNatural && u == 0) return "NaNN";   // in every base
 		std::ostringstream s;
 		s << std::uppercase << std::hex << u;
 		return s.str();
@@ -129,11 +135,7 @@ void VerifyUnary(std::uint64_t u, Failures& fail) {
 	}
 
 	Integer p; p.setbits(0);
-	if (NumberType == IntegerNumberType::NaturalNumber && u == 0) {
-		// the all-zeros encoding is outside the Natural domain {1, 2, ...}: "0" does not parse (#2131)
-		if (parse(expected, p)) fail(tag("parse of \"0\" rejected"), "accepted", "rejected");
-	}
-	else if (!parse(expected, p) || Bits(p) != u)
+	if (!parse(expected, p) || Bits(p) != u)   // a NaturalNumber's "NaNN" parses back to NaNN
 		fail(tag("parse of to_string"), std::to_string(Bits(p)), std::to_string(u));
 
 	for (unsigned s = 0; s < nbits; ++s) {
@@ -172,8 +174,8 @@ void VerifyBinary(std::uint64_t ua, std::uint64_t ub, Failures& fail) {
 	if ((a == b) != eq)  fail(tag("=="), std::to_string(a == b), std::to_string(eq));
 
 	if (ub == 0) return;
-	// a quotient of 0 is outside the Natural domain (#2131); the remainder a is still valid
-	if (!(NumberType == IntegerNumberType::NaturalNumber && ua < ub)) {
+	// a NaturalNumber quotient of 0 is NaNN, the same all-zeros bits the reference gives (#2137)
+	{
 		const Integer q = a / b;
 		if (Bits(q) != Ref::quotient(ua, ub))
 			fail(tag("/"), std::to_string(Bits(q)), std::to_string(Ref::quotient(ua, ub)));

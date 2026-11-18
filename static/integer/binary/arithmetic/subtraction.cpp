@@ -89,7 +89,7 @@ try {
 		{ W32 a(42); a -= W32(7);  check("W32 42 - 7",  35, a); }
 		{ W32 a(1000); a -= W32(1); check("W32 1000 - 1", 999, a); }
 		{ N32 a(42); a -= N32(7);  check("N32 42 - 7",  35, a); }
-		{ N32 a(7);  a -= N32(7);  check("N32 7 - 7 (allowed zero)", 0, a); }
+		{ N32 a(7);  a -= N32(7);  if (!a.isnan()) { ++nrOfFailedTestCases; std::cout << "FAIL N32 7 - 7 is NaNN, Not a Natural Number (#2137)\n"; } }
 
 		// Multi-limb cross-limb borrow
 		{ N64u8 a(256); a -= N64u8(1);     check("N64u8 256 - 1 (cross-limb borrow)", 255, a); }

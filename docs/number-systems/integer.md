@@ -21,7 +21,7 @@ The Universal `integer` type removes this limitation. It provides a fixed-size, 
 - **Two's complement encoding** with configurable width
 - **Modular arithmetic** by default (overflow wraps silently, like native types)
 - **Division by zero throws** by default; optional exceptions for the domain errors
-- **Domain enforcement**: `WholeNumber` rejects negatives; `NaturalNumber` rejects zero and negatives
+- **Domain enforcement**: `WholeNumber` rejects negatives; a `NaturalNumber` result outside its domain is NaNN, Not a Natural Number
 - **Trivially copyable**: no heap allocation, suitable for GPU/FPGA memory
 - **Full constexpr support** for compile-time evaluation
 - **Range**: [-2^(nbits-1), 2^(nbits-1) - 1] for signed integers
@@ -81,9 +81,8 @@ These rules apply at every width (#2131).
   the real types use when they convert to a native integer (#2104):
   - an `IntegerNumber` saturates to `[-max, max]`, and NaN gives `min()`, the 100...0 pattern no
     finite value maps to. So `integer<16>(-32768.0)` is -32767;
-  - the unsigned kinds saturate to `[min, max - 1]`, and NaN gives `max()`. `min` is 0 for
-    `WholeNumber` and 1 for `NaturalNumber`, so a negative value, or one that truncates to 0,
-    clamps to it instead of throwing.
+  - `WholeNumber` saturates to `[0, max - 1]`, and NaN gives `max()`, all ones. A negative value, or one that truncates to 0, clamps to 0.
+  - `NaturalNumber` saturates to `[1, max]`. NaN, a negative value, or one that truncates to 0 gives NaNN (see below), so all ones is one of its values.
 - **Integer to float, double or long double:** correctly rounded, rounded once from the integer's
   top bits.
 - **Integer to a native unsigned type:** modular, as in C++. A negative value sign-extends, so
@@ -93,7 +92,7 @@ These rules apply at every width (#2131).
 
 `std::numeric_limits` is specialized for all three kinds:
 - **`IntegerNumber`:** `min()` and `lowest()` are the most negative value.
-- **The unsigned kinds:** `WholeNumber` is {0, 1, 2, ...} and `NaturalNumber` is {1, 2, 3, ...}, so their `min()` is 0 and 1. The operators used to enforce the reverse (a `WholeNumber` result of 0 was the error, a `NaturalNumber` 0 was valid); they now check the documented domains (#2131).
+- **The unsigned kinds:** `WholeNumber` is {0, 1, 2, ...} and `NaturalNumber` is {1, 2, 3, ...}, so their `min()` is 0 and 1. The operators used to enforce the reverse (a `WholeNumber` result of 0 was the error, a `NaturalNumber` 0 was valid); they now check the documented domains (#2131). `NaturalNumber` has a quiet NaN, NaNN (#2137).
 - **Every kind:** `epsilon()`, `round_error()`, `denorm_min()` and `infinity()` return the integer
   type's zero.
 
@@ -104,7 +103,28 @@ The integer is stored as an array of `BlockType` limbs, with the number of block
 The `NumberType` parameter enforces mathematical domain constraints at the type level:
 - `IntegerNumber`: full signed range {..., -2, -1, 0, 1, 2, ...}
 - `WholeNumber`: non-negative {0, 1, 2, ...}, throws on negative assignment
-- `NaturalNumber`: strictly positive {1, 2, 3, ...}, throws on zero or negative
+- `NaturalNumber`: strictly positive {1, 2, 3, ...}, with NaNN for any result outside that domain
+
+### NaNN, Not a Natural Number
+
+A `NaturalNumber` has no 0, so its all-zeros encoding is free. It is **NaNN**, Not a Natural Number, a quiet NaN (#2137):
+
+- **Results.** Every result outside {1, 2, 3, ...} is NaNN, and nothing throws, whatever `INTEGER_THROW_ARITHMETIC_EXCEPTION` says.
+  - Some results are NaNN by their bits alone: `10 % 5`, `7 * 0`, `1 & 2`, `5 ^ 5`, `1 << nbits`, and a product that wraps to 0.
+  - A difference below 1 is NaNN, as are `1 / 2`, `--1`, and the negation of any value.
+- **Propagation.** NaNN propagates through `+ - * / % & | ^ << >> ++ --`.
+  - `x / NaNN` and `x % NaNN` are NaNN, not a division by zero: the divisor is not a number, rather than zero.
+  - A literal 0 converts to NaNN, so `n + 0` and `n / 0` are NaNN.
+- **Comparisons** are posit-style: `NaNN == NaNN`, and NaNN orders below every value.
+- **Conversions.**
+  - 0, a negative value, a NaN, and a float below 1 convert to NaNN.
+  - NaNN converts to a quiet NaN, and to the integer NaR of the #2104 cast rule: `min()` for a signed target, `max()` for an unsigned one.
+- **Text.** NaNN prints as `NaNN`, and `parse` reads `"NaNN"`, `"0"` and any negative value as NaNN.
+- **API.**
+  - `isnan()` is true for NaNN. `iszero()` is the same all-zeros test, since a `NaturalNumber` has no zero.
+  - `numeric_limits<>::has_quiet_NaN` is true and `quiet_NaN()` is NaNN; `min()` is 1 and `max()` is all ones.
+
+`WholeNumber` keeps 0 as a value. Its all-ones NaN exists only in the native cast rule.
 
 ## How to Use It
 
@@ -133,8 +153,8 @@ big_num <<= 200;  // 2^200 -- not possible with native types
 ```cpp
 // Counter that must be positive
 integer<32, uint32_t, NaturalNumber> counter(1);
-// counter = 0;  // throws: 0 is not a natural number
-// counter = -5; // throws: negative is not a natural number
+counter = 0;      // NaNN: 0 is not a natural number
+counter.isnan();  // true; counter + 1 stays NaNN
 
 // Array index that must be non-negative
 integer<16, uint16_t, WholeNumber> index(0);

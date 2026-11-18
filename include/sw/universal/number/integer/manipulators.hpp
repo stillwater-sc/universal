@@ -30,6 +30,9 @@ namespace sw { namespace universal {
 // convert integer to decimal string
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 std::string convert_to_decimal_string(const integer<nbits, BlockType, NumberType>& value) {
+	if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
+		if (value.isnan()) return std::string("NaNN");   // Not a Natural Number (#2137)
+	}
 	if (value.iszero()) {
 		return std::string("0");
 	}

@@ -74,7 +74,7 @@ namespace sw { namespace universal {
 enum class IntegerNumberType {
 	IntegerNumber = 0,  // { ...,-3,-2,-1,0,1,2,3,... }
 	WholeNumber   = 1,  // {              0,1,2,3,... }   the operators check this domain (#2131)
-	NaturalNumber = 2   // {                1,2,3,... }
+	NaturalNumber = 2   // {                1,2,3,... }, and NaNN: the all-zeros encoding, Not a Natural Number (#2137)
 };
 
 constexpr IntegerNumberType IntegerNumber = IntegerNumberType::IntegerNumber;
@@ -113,7 +113,7 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& v);
 // idiv_t for integer<nbits, BlockType, NumberType> to capture quotient and remainder during long division
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 struct idiv_t {
-	// zero limbs, not integer(0): a NaturalNumber's domain-checked zero conversion would throw
+	// zero limbs: raw scratch values, never domain checked (a NaturalNumber 0 is its NaNN encoding)
 	constexpr idiv_t() : quot{}, rem{} {};
 	integer<nbits, BlockType, NumberType> quot; // quotient
 	integer<nbits, BlockType, NumberType> rem;  // remainder
@@ -259,6 +259,11 @@ public:
 
 	// prefix operators
 	constexpr integer operator-() const {
+		if constexpr (NumberType == NaturalNumber) {
+			integer nann;
+			nann.clear();
+			return nann;   // the negation of a natural number is not a natural number: NaNN
+		}
 		integer negated(*this);
 		negated.flip();
 		negated += 1;
@@ -281,6 +286,9 @@ public:
 	// and with it wrong twosComplement(), subtraction, comparison and division (#1500). The
 	// postfix forms above and below still copy the old value, which is what they return.
 	constexpr integer& operator++() {
+		if constexpr (NumberType == NaturalNumber) {
+			if (iszero()) return *this;   // NaNN propagates
+		}
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = static_cast<bt>(_block[i] + bt(1));
 			if (_block[i] != bt(0)) break;  // no carry into the next limb
@@ -295,14 +303,14 @@ public:
 		return tmp;
 	}
 	constexpr integer& operator--() {
+		if constexpr (NumberType == NaturalNumber) {
+			// NaNN stays NaNN, and 1 - 1 is NaNN, the all-zeros encoding the decrement produces anyway
+			if (iszero()) return *this;
+		}
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		// the domain checks operator-= applies to x - 1
 		if constexpr (NumberType == WholeNumber) {
 			if (iszero()) throw integer_wholenumber_cannot_be_negative{};
-		}
-		if constexpr (NumberType == NaturalNumber) {
-			if (iszero()) throw integer_naturalnumber_cannot_be_negative{};
-			if (isone()) throw integer_naturalnumber_cannot_be_zero{};
 		}
 #endif
 		for (unsigned i = 0; i < nrBlocks; ++i) {
@@ -333,6 +341,11 @@ public:
 
 	// arithmetic operators
 	constexpr integer& operator+=(const integer& rhs) {
+		if constexpr (NumberType == NaturalNumber) {
+			// NaNN propagates: 0 + x would otherwise give x. A sum that wraps to all zeros is NaNN too.
+			if (iszero()) return *this;
+			if (rhs.iszero()) { clear(); return *this; }
+		}
 		if constexpr (nrBlocks == 1) {
 			_block[0] = static_cast<bt>(_block[0] + rhs.block(0));
 			// null any leading bits that fall outside of nbits
@@ -389,10 +402,9 @@ public:
 	}
 	constexpr integer& operator-=(const integer& rhs) {
 		if constexpr (NumberType == WholeNumber || NumberType == NaturalNumber) {
-			// Both modes are unsigned-domain. The semantic preconditions
-			// (WholeNumber: result >= 0; NaturalNumber: result must be >= 1, #2131)
-			// are checked only when INTEGER_THROW_ARITHMETIC_EXCEPTION is on
-			// -- matching the convention used by operator/= and convert_*.
+			// Both modes are unsigned-domain. A NaturalNumber difference below 1, or a NaNN operand,
+			// is NaNN (#2137), always. The WholeNumber precondition (result >= 0) is checked only
+			// when INTEGER_THROW_ARITHMETIC_EXCEPTION is on -- matching operator/= and convert_*.
 			//
 			// Under THROW=0 (the default) the magnitude subtractor runs
 			// unconditionally. This is necessary because internal algorithms
@@ -402,15 +414,13 @@ public:
 			// throwing in those paths would break printing and division.
 			// Out-of-domain user code under THROW=0 gets defined modular
 			// wraparound, the same convention IntegerNumber uses.
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
-			if (*this < rhs) {
-				if constexpr (NumberType == WholeNumber) throw integer_wholenumber_cannot_be_negative{};
-				else throw integer_naturalnumber_cannot_be_negative{};
-			}
 			if constexpr (NumberType == NaturalNumber) {
-				if (*this == rhs) {
-					throw integer_naturalnumber_cannot_be_zero{};
-				}
+				// a NaNN operand, or a difference outside {1, 2, ...}, is NaNN; it never throws (USER, #2137)
+				if (iszero() || rhs.iszero() || !(rhs < *this)) { clear(); return *this; }
+			}
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+			if constexpr (NumberType == WholeNumber) {
+				if (*this < rhs) throw integer_wholenumber_cannot_be_negative{};
 			}
 #endif
 			// Magnitude subtraction with limb-wise borrow propagation.
@@ -705,6 +715,11 @@ public:
 		return *this;
 	}
 	constexpr integer& operator/=(const integer& rhs) {
+		if constexpr (NumberType == NaturalNumber) {
+			// a NaNN divisor is not a zero divisor: NaNN, not a division by zero (USER, #2137). A NaNN
+			// dividend gives 0 / x = 0, NaNN; a quotient of 0 is NaNN by its encoding.
+			if (rhs.iszero() || iszero()) { clear(); return *this; }
+		}
 		if constexpr (EXACT_FIT && 1 == nrBlocks) {
 			if (rhs._block[0] == 0) {
 #if INTEGER_THROW_DIVIDE_BY_ZERO
@@ -715,19 +730,6 @@ public:
 				clear();
 				return *this;
 #endif // INTEGER_THROW_DIVIDE_BY_ZERO
-			}
-			if constexpr (NumberType == NaturalNumber) {
-				if (*this < rhs) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
-					throw integer_naturalnumber_cannot_be_zero{};
-#else
-					if (!std::is_constant_evaluated()) {
-						std::fprintf(stderr, "natural number cannot be zero but division would yield 0\n");
-					}
-					clear();
-					return *this;
-#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
-				}
 			}
 			if constexpr (NumberType != IntegerNumberType::IntegerNumber) {
 				_block[0] = static_cast<bt>(_block[0] / rhs._block[0]);  // unsigned: no sign bit to extend
@@ -753,24 +755,15 @@ public:
 		}
 		else {
 			idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
-			if constexpr (NumberType == NaturalNumber) {
-				// idiv's scratch quotient may be 0 (so % keeps its remainder); a NaturalNumber result may
-				// not. A zero divisor was already handled by idiv (throw, or the opted-out silent 0).
-				if (divresult.quot.iszero() && !rhs.iszero()) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
-					throw integer_naturalnumber_cannot_be_zero{};
-#else
-					if (!std::is_constant_evaluated()) {
-						std::fprintf(stderr, "natural number cannot be zero but division would yield 0\n");
-					}
-#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
-				}
-			}
-			*this = divresult.quot;
+			*this = divresult.quot;   // a NaturalNumber quotient of 0 is NaNN by its encoding
 		}
 		return *this;
 	}
 	constexpr integer& operator%=(const integer& rhs) {
+		if constexpr (NumberType == NaturalNumber) {
+			// as for /=: a NaNN divisor or dividend gives NaNN, and a remainder of 0 is NaNN
+			if (rhs.iszero() || iszero()) { clear(); return *this; }
+		}
 		if constexpr (nbits == (sizeof(BlockType) * 8)) {
 			if (rhs._block[0] == 0) {
 #if INTEGER_THROW_DIVIDE_BY_ZERO
@@ -958,6 +951,9 @@ public:
 		return *this;
 	}
 	constexpr integer& operator|=(const integer& rhs) {
+		if constexpr (NumberType == NaturalNumber) {
+			if (iszero() || rhs.iszero()) { clear(); return *this; }   // NaNN propagates
+		}
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] |= rhs._block[i];
 		}
@@ -965,6 +961,9 @@ public:
 		return *this;
 	}
 	constexpr integer& operator^=(const integer& rhs) {
+		if constexpr (NumberType == NaturalNumber) {
+			if (iszero() || rhs.iszero()) { clear(); return *this; }   // NaNN propagates; x ^ x is NaNN
+		}
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] ^= rhs._block[i];
 		}
@@ -972,11 +971,10 @@ public:
 		return *this;
 	}
 
-	// compound assignment with a native integer operand: a literal 0 is the zero encoding, not the
-	// domain-checked conversion, which throws for a NaturalNumber inside noexcept code and terminated
-	// n += 0, n -= 0, n |= 0, n ^= 0, and n /= 0 or n %= 0 under the divide-by-zero opt-out (#2131).
-	// The operation itself handles its result; any other value goes through the checked conversion,
-	// as the implicit conversion did. (*= keeps its BlockType overload; &= with 0 is a zero result.)
+	// compound assignment with a native integer operand: a literal 0 is the zero encoding, which for a
+	// NaturalNumber is NaNN and propagates (USER, #2137: n += 0 is NaNN); it used to go through the
+	// domain-checked conversion, which threw inside noexcept code (#2131). Any other value converts as
+	// the implicit conversion did. (*= keeps its BlockType overload.)
 	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
 	constexpr integer& operator+=(IntType rhs) { return *this += native_operand(rhs); }
 	template<typename IntType, std::enable_if_t<std::is_integral_v<IntType> && !std::is_same_v<IntType, bool>, int> = 0>
@@ -1169,6 +1167,12 @@ public:
 	}
 
 	// selectors
+	// a NaturalNumber's NaNN, Not a Natural Number: the all-zeros encoding, which no natural number
+	// uses (#2137). For a NaturalNumber iszero() is that same encoding test; the other kinds have no NaN.
+	constexpr bool isnan() const noexcept {
+		if constexpr (NumberType == NaturalNumber) return iszero();
+		else return false;
+	}
 	constexpr bool iszero() const noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			if (_block[i] != 0) return false;
@@ -1312,11 +1316,8 @@ public:
 	// target as it was. Without exceptions a rejected value gives 0, as before.
 	template<typename SignedInt>
 	constexpr integer& convert_signed(SignedInt rhs) {
+	// A NaturalNumber maps 0 and negative values to NaNN (USER, #2137), and never throws.
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-		if constexpr (NumberType == NaturalNumber) {
-			if (0 == rhs) throw integer_naturalnumber_cannot_be_zero();
-			if (rhs < 0) throw integer_naturalnumber_cannot_be_negative();
-		}
 		if constexpr (NumberType == WholeNumber) {
 			if (rhs < 0) throw integer_wholenumber_cannot_be_negative();
 		}
@@ -1344,13 +1345,8 @@ public:
 	// unsigned integer conversion
 	template<typename UnsignedInt>
 	constexpr integer& convert_unsigned(UnsignedInt rhs) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
-		if constexpr (NumberType == NaturalNumber) {
-			if (0 == rhs) throw integer_naturalnumber_cannot_be_zero();
-		}
-#endif
 		clear();
-		if (0 == rhs) return *this;
+		if (0 == rhs) return *this;   // a NaturalNumber 0 is NaNN
 		uint64_t v = rhs;
 		constexpr unsigned argbits = sizeof(rhs);
 		unsigned upper = (nbits <= _nbits ? nbits : argbits);
@@ -1361,10 +1357,10 @@ public:
 		return *this;
 	}
 	// native IEEE-754 conversion, at every width (#2131): a finite value truncates toward zero,
-	// exactly; past the range, infinity included, it saturates to [-max, max] for an IntegerNumber
-	// and to [min, max - 1] for the unsigned kinds (min is 0 for a WholeNumber, 1 for a
-	// NaturalNumber); a NaN gives the integer NaR, min() for an IntegerNumber and max() for the
-	// unsigned kinds. That is the #2104 rule the real types follow
+	// exactly; past the range, infinity included, it saturates to [-max, max] for an IntegerNumber,
+	// [0, max - 1] for a WholeNumber and [1, max] for a NaturalNumber; a NaN gives the integer NaR,
+	// min() for an IntegerNumber, max() for a WholeNumber, and NaNN for a NaturalNumber, which also
+	// takes a negative value or one that truncates to 0 (#2137). That is the #2104 rule the real types follow
 	// when they cast to a native integer (shared/integer_cast.hpp). It used to go through
 	// static_cast<long long>: integer<128>(1e30) was -9.22e18, and NaN or inf were UB.
 	// The significand is read 32 bits at a time, so any width works (binary128 and double-double
@@ -1373,30 +1369,26 @@ public:
 	template<typename Real>
 	constexpr integer& convert_ieee(Real rhs) noexcept {
 		constexpr bool isSigned = (NumberType == IntegerNumberType::IntegerNumber);
-		// the unsigned kinds reserve all ones for NaN; at one bit that leaves a WholeNumber its 0 but
-		// a NaturalNumber {1, 2, ...} no finite value at all
-		static_assert(NumberType != NaturalNumber || nbits >= 2, "a native float converts to a NaturalNumber of at least 2 bits: at 1 bit the only nonzero encoding is the NaN");
+		// a WholeNumber reserves all ones for NaN (the #2104 cast rule); a NaturalNumber's NaN is NaNN,
+		// the all-zeros encoding, so all ones is one of its values
 		clear();
 		if (rhs != rhs) {   // NaN: the integer NaR
-			if constexpr (isSigned) setbit(nbits - 1);      // 100...0
-			else flip();                                     // 111...1
-			return *this;
+			if constexpr (isSigned) setbit(nbits - 1);       // 100...0
+			else if constexpr (NumberType == WholeNumber) flip();   // 111...1
+			return *this;                                     // NaturalNumber: NaNN
 		}
 		const bool negative = rhs < Real(0);
 		auto saturate = [&]() {                              // the magnitude cap, with the sign
 			clear();
 			flip();                                          // all ones
 			if constexpr (isSigned) setbit(nbits - 1, false);  // 011...1 = max
-			else setbit(0, false);                             // 111...0 = max - 1
+			else if constexpr (NumberType == WholeNumber) setbit(0, false);   // 111...0 = max - 1
+			// NaturalNumber: 111...1 = max
 			if (negative) twosComplement();                  // -max
 		};
-		// below the domain of an unsigned kind, a negative value or one that truncates to 0 clamps to
-		// the kind's smallest value, 0 for a WholeNumber and 1 for a NaturalNumber: a conversion
-		// saturates rather than throws, as it does past the top of the range
-		auto domainMinimum = [&]() {
-			clear();
-			if constexpr (NumberType == NaturalNumber) setbit(0);
-		};
+		// below the domain of an unsigned kind, a negative value or one that truncates to 0: a
+		// WholeNumber clamps to 0, and a NaturalNumber gives NaNN, the all-zeros encoding (#2137)
+		auto domainMinimum = [&]() { clear(); };
 		if (negative && !isSigned) { domainMinimum(); return *this; }
 		const Real a = negative ? -rhs : rhs;
 		if (!(a < std::numeric_limits<Real>::infinity())) { saturate(); return *this; }   // infinity
@@ -1433,7 +1425,7 @@ public:
 			top.setbit(isSigned ? nbits - 1 : nbits);          // 2^(nbits-1), or 2^nbits
 			Wide mag = wide;
 			if (mag.isneg()) mag = -mag;
-			if constexpr (isSigned) { if (!(mag < top)) { saturate(); return *this; } }
+			if constexpr (isSigned || NumberType == NaturalNumber) { if (!(mag < top)) { saturate(); return *this; } }
 			else {
 				Wide one(1);
 				if (!(mag < top - one)) { saturate(); return *this; }
@@ -1545,7 +1537,10 @@ protected:
 	template<typename TargetInt>
 	TargetInt to_integer() const noexcept {
 		TargetInt v{ 0 };
-		if (iszero()) return v;  // this should only occur for Integer and Natural Numbers
+		if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
+			if (iszero()) return std::numeric_limits<TargetInt>::min();   // NaNN: the integer NaR (#2104, #2137)
+		}
+		if (iszero()) return v;
 
 		constexpr unsigned sizeoftarget   = 8 * sizeof(TargetInt);
 		constexpr unsigned upperTargetBlock = (sizeoftarget - 1ul) / bitsInBlock;
@@ -1581,7 +1576,10 @@ protected:
 	template<typename TargetInt>
 	TargetInt to_unsigned_integer() const noexcept {
 		TargetInt v{ 0 };
-		if (iszero()) return v;  // this should only occur for Integer and Natural Numbers
+		if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
+			if (iszero()) return std::numeric_limits<TargetInt>::max();   // NaNN: the unsigned NaR (#2104, #2137)
+		}
+		if (iszero()) return v;
 
 		constexpr unsigned sizeoftarget = 8 * sizeof(TargetInt);
 		constexpr unsigned upperTargetBlock = (sizeoftarget - 1ul) / bitsInBlock;
@@ -1607,7 +1605,7 @@ protected:
 	template<typename Real>
 	constexpr Real to_real() const noexcept {
 		if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
-			if (iszero() && !std::is_constant_evaluated()) std::fprintf(stderr, "internal error: natural number is set to 0\n");
+			if (iszero()) return std::numeric_limits<Real>::quiet_NaN();   // NaNN is not a number (#2137)
 		}
 		if (iszero()) return Real(0);
 		constexpr int P = std::numeric_limits<Real>::digits;
@@ -1901,7 +1899,10 @@ constexpr idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockTy
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& value) {
 	namespace sp = sw::universal::string_parse;
-	using Int = integer<nbits, BlockType, NumberType>;
+	// A NaturalNumber accumulates in a WholeNumber twin: NaNN, its all-zeros encoding, propagates
+	// through + and would swallow the first digit (#2137). The other kinds accumulate in themselves.
+	constexpr IntegerNumberType AccType = (NumberType == IntegerNumberType::NaturalNumber) ? IntegerNumberType::WholeNumber : NumberType;
+	using Int = integer<nbits, BlockType, AccType>;
 
 	// Build into a local temporary and only commit to `value` on a fully
 	// successful parse. This keeps malformed input from leaving the caller's
@@ -1910,6 +1911,9 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 	tmp.clear();
 
 	std::string_view s{number};
+	if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
+		if (s == "NaNN" || s == "nann") { value.clear(); return true; }   // the text operator<< writes
+	}
 
 	// Strip leading sign (if any).
 	auto sg = sp::scan_sign(s);
@@ -1975,7 +1979,7 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 		for (char c : body) {
 			if (!sp::is_decimal_digit(c)) return false;
 			tmp *= ten;
-			if (c != '0') {   // a zero digit adds nothing, and a NaturalNumber cannot be constructed from 0
+			if (c != '0') {   // a zero digit adds nothing
 				Int digit{static_cast<unsigned>(c - '0')};
 				tmp += digit;
 			}
@@ -1988,10 +1992,14 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 		return false;
 	}
 
-	// the domain applies to the completed value: a NaturalNumber {1, 2, ...} has no 0, and neither
-	// unsigned kind has a negative value (negating the magnitude would wrap it modulo 2^nbits)
+	// the domain applies to the completed value. A NaturalNumber {1, 2, ...} maps 0 and a negative
+	// value to NaNN, as its conversions do (#2137); a WholeNumber has no negative value (negating the
+	// magnitude would wrap it modulo 2^nbits), and rejects one
 	if constexpr (NumberType == IntegerNumberType::NaturalNumber) {
-		if (tmp.iszero() || negative) return false;
+		value.clear();
+		if (tmp.iszero() || negative) return true;   // NaNN
+		for (unsigned i = 0; i < Int::nrBlocks; ++i) value.setblock(i, tmp.block(i));
+		return true;
 	}
 	if constexpr (NumberType == IntegerNumberType::WholeNumber) {
 		// "-0" is 0, but "-256" at 8 bits also accumulates to 0 modulo 2^nbits: decide from the digits
@@ -2001,8 +2009,10 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 		}
 		if (negative && nonzeroDigit) return false;
 	}
-	if (negative) tmp = -tmp;
-	value = tmp;
+	if constexpr (NumberType != IntegerNumberType::NaturalNumber) {   // a NaturalNumber returned above
+		if (negative) tmp = -tmp;
+		value = tmp;
+	}
 	return true;
 }
 
