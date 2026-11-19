@@ -7,6 +7,123 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.18.0](https://github.com/stillwater-sc/universal/compare/v5.17.0...v5.18.0) (2026-11-18)
+
+**QA sweeps of posit, the tapered types, cfloat, the other floats, fixed-point, integer and rational; exact references for the verifiers; and NaturalNumber's NaNN.** 36 commits since v5.17.0, with 51 behaviour changes:
+
+* posit, bposit, takum and takum_log convert on the encoding and cast to integers by one rule; posit's fused operators round once and NaR propagates (#2047, #2050, #2073, #2074, #2081, #2082, #2101, #2108).
+* cfloat casts and conversions are exact or rounded once, its math past double runs in efloat, and its numeric_limits describe the encoding (#2051, #2090-#2093).
+* bfloat16, microfloat, mxblock, hfloat, dfloat and zfpblock fix NaN handling, rounding and their limits (#2066, #2085, #2086, #2099, #2102, #2109, #2110).
+* fixpnt and dfixpnt convert exactly, saturate every overflow and round their products and quotients (#2103, #2078, #2116, #2118, #2119).
+* The quire overflows instead of wrapping and resolves correctly for every type (#2095, #2114, #2120).
+* The random-operand verifiers take a reference type, with exact references for posit, cfloat, lns and the multi-doubles; lns + - exp exp2 are correctly rounded (#2121-#2130).
+* integer shifts arithmetically, converts exactly, and checks its documented Whole/Natural domains; rational saturates; NaturalNumber's all-zeros encoding is NaNN, Not a Natural Number (#2117, #2134, #2135, #2137, #2141).
+* universal_cast keeps the bits of dd, qd and wide cfloat casts, and regression tests no longer trace in CI (#2138, #2140).
+
+Known issue: fixpnt `cordic::atanh` on 8-bit layouts fails intermittently under MSVC (#2142). It is present since the CORDIC engines of v5.16.0.
+
+### Behaviour changes
+
+- **posit**: posit-to-posit conversion rounds once on the encoding and saturates (was through double: imprecise past 53 bits, NaR or 0 outside double's range); integers into posits wider than 64 bits are exact; posit int/long/long long casts saturate and give the type's minimum for NaR; numeric_limits<posit> max_exponent is one larger, has_infinity and has_signaling_NaN are false and is_bounded is true; ulp(maxpos) is finite; operator>> no longer writes to std::cerr ([#2073](https://github.com/stillwater-sc/universal/pull/2073))
+- **posit**: posit fam is correctly rounded and fma/fam/fmma work for every configuration; min, max, nextafter, nexttoward and copysign with NaR return NaR, and isinf(NaR) is false; fpclassify/isnormal of extreme posits are FP_NORMAL/true; fdp with a short vector or zero stride returns NaR ([#2074](https://github.com/stillwater-sc/universal/pull/2074))
+- **dfixpnt**: dfixpnt conversion from double is exact (rounded once, ties away from zero), conversion to double and float is correctly rounded (ties to even), and a negative double that rounds to 0 gives +0; wide dfixpnt (ndigits > 308) now converts from double instead of failing to compile ([#2078](https://github.com/stillwater-sc/universal/pull/2078))
+- **takum**: takum and takum_log integer conversion is exact (integers above 2^53 no longer round through double); integer casts truncate, saturate, and give the type's minimum for NaR instead of undefined behaviour; takum_log conversion from double is correctly rounded at every width, and to double/float where l is not exact in a double (takum_log<57,3> and up) ([#2081](https://github.com/stillwater-sc/universal/pull/2081))
+- **bposit**: bposit integer casts truncate, saturate and give the type's minimum for NaR instead of undefined behaviour; bposit fdp_qc/fdp_stride/fdp return NaR for a zero stride, an index past a vector or a short y in every build; lns and dbns fdp_stride/fdp_qc take n as the index bound, like every other fdp header, instead of the product count ([#2082](https://github.com/stillwater-sc/universal/pull/2082))
+- **mxblock**: mxint8 blocks use scale 2^(floor(log2(amax)) - 6) instead of - 7 and round codes ties to even, so quantized mxint8 blocks differ; mxblock scales clamp at 2^-127 instead of producing inf/NaN elements, and the shared exponent of an amax just below a power of two is one lower ([#2085](https://github.com/stillwater-sc/universal/pull/2085))
+- **mxblock**: an mxblock quantized from an input holding a NaN has a NaN scale and dequantizes to all NaN, instead of undefined behaviour (mxint8) or NaN only in the NaN's own element ([#2086](https://github.com/stillwater-sc/universal/pull/2086))
+- **cfloat**: cfloat integer casts are exact and give the type's minimum for NaN (was 0); cfloat to float/double rounds once (results past the target's precision can differ by one ulp); negative short, signed char and char sources, and conversions between block types, now give the right value ([#2090](https://github.com/stillwater-sc/universal/pull/2090))
+- **cfloat**: arithmetic and integer conversion on cfloats wider than 64 bits whose fraction fits 64 bits (cfloat<65..72,11>, <80,19>, ...) now give the right values ([#2090](https://github.com/stillwater-sc/universal/pull/2090))
+- **cfloat**: cfloat fmod/remainder are exact (remainder of wide layouts and saturating fmod change), frac(NaN) is NaN and frac(inf) is 0, fpclassify reads the encoding (wide layouts' extremes reclassify), exp/exp2(-inf) give 0 instead of minpos, sqrt of values below double's normal range changes, trunc keeps finite max-exponent values and es = 1 subnormals of 1 or more ([#2091](https://github.com/stillwater-sc/universal/pull/2091))
+- **cfloat**: std::numeric_limits<cfloat> reports max_exponent one higher for layouts with max-exponent values, is_bounded true, is_iec559 true for the IEEE layouts, and epsilon = min() where 2^-fbits is not representable; cfloat fdp with one fraction bit rounds once correctly, and fdp/fdp_stride/fdp_qc return NaN for a zero stride or an index past a vector; to_decimal_fixpnt_string prints inf and nan; the unused cfloat exception types are removed ([#2092](https://github.com/stillwater-sc/universal/pull/2092))
+- **cfloat**: cfloat layouts whose range or precision exceeds double (e.g. cfloat<64,15>, cfloat<80,11>, cfloat<128,15>) evaluate exp/log/pow/trig/hyperbolic/erf/hypot in efloat, correctly rounded, instead of through double; hypotf and hypotl are hypot; rsqrt compiles ([#2093](https://github.com/stillwater-sc/universal/pull/2093))
+- **quire**: a quire sum that outgrows its accumulator resolves to +-maxpos (posit, bposit, lns, dbns, fixpnt) or +-inf (cfloat, float, double) instead of wrapping, and throws quire_overflow when QUIRE_THROW_ARITHMETIC_EXCEPTION is set ([#2095](https://github.com/stillwater-sc/universal/pull/2095))
+- **zfpblock**: zfpblock fixed_precision codes the top bit planes (it coded the bottom ones), fixed_accuracy honours its tolerance, reversible is lossless, non-finite blocks are stored raw, subnormal blocks decode correctly, fixed rates below the header + 4 bits clamp up, non-rate modes are no longer padded (smaller streams), and zfparray throws std::out_of_range on an index past the array ([#2099](https://github.com/stillwater-sc/universal/pull/2099))
+- **takum**: a constexpr takum_log conversion now gives the same, correctly rounded encoding as the run-time one ([#2101](https://github.com/stillwater-sc/universal/pull/2101))
+- **microfloat**: mxfp8e5m2 clips its elements instead of overflowing to inf; microfloat rounds a double or integer once; ++/-- on a microfloat stop at maxpos/maxneg; an nvblock with a NaN input is NaN ([#2102](https://github.com/stillwater-sc/universal/pull/2102))
+- **numeric**: integer casts of posit, bposit, takum, takum_log and cfloat saturate a negative value to -max() instead of min(), and an unsigned cast maps NaR/NaN to max() and saturates to max() - 1; microfloat integer casts are defined instead of undefined behaviour; posit has unsigned casts ([#2108](https://github.com/stillwater-sc/universal/pull/2108))
+- **bfloat16**: bfloat16 >= is false with a NaN operand; qnan is 0x7FC0; ++/-- saturate at maxpos/maxneg and leave inf/NaN; bfloat16 conversions from double, long double and wide integers, and fma, round once (results change at former double-rounding cases); e8m0 conversions round on exact bits at run time; bfloat16 and e8m0 integer casts follow the integer-cast rule ([#2110](https://github.com/stillwater-sc/universal/pull/2110))
+- **hfloat**: hfloat + - * / return the exact result truncated to ndigits hex digits (values change where the old code dropped bits); dfloat conversions from integers and doubles and to double round once (decimal128(0.1) is the double's value to 34 digits); hfloat and dfloat numeric_limits epsilon, digits (hfloat), min, is_exact and the exponents (dfloat) change ([#2109](https://github.com/stillwater-sc/universal/pull/2109))
+- **quire**: quire convert_to<Integer> gives min() (unsigned max()) for NaN and saturates to -max() for a large negative value, max() - 1 for unsigned; quire convert_to<T> no longer compiles for a non-native T with more than 51 significand bits; a caught quire_overflow leaves the quire overflowed; floatcascade (-0) / x is -0 for x > 0; cfloat ulp() is the magnitude of the gap away from zero, and finite at maxpos; urdiv(x, 0) returns 0 when BLOCKBINARY_THROW_ARITHMETIC_EXCEPTION is 0 ([#2114](https://github.com/stillwater-sc/universal/pull/2114))
+- **quire**: quire to_blocktriple() of an overflowed quire is +-inf instead of zero; floatcascade to_double() keeps -0 and reciprocal(-0) is -inf; universal_cast goes through double when LONG_DOUBLE_SUPPORT is 0 ([#2114](https://github.com/stillwater-sc/universal/pull/2114))
+- **quire**: quire convert_to<T> no longer compiles for a non-native T whose exponent range exceeds double's (posit<32,6>, cfloat<32,12>) ([#2114](https://github.com/stillwater-sc/universal/pull/2114))
+- **quire**: a Modulo fixpnt quire_resolve wraps the exact, rounded sum at every width (wide Modulo resolves rounded instead of truncating); quire convert_to<T> no longer compiles for a Modulo fixpnt ([#2114](https://github.com/stillwater-sc/universal/pull/2114))
+- **quire**: fixpnt quire_resolve for Saturate fixpnt wider than 52 bits rounds to nearest even instead of truncating ([#2114](https://github.com/stillwater-sc/universal/pull/2114))
+- **quire**: fixpnt quire_resolve of an infinite quire is maxpos / maxneg in Modulo arithmetic and wider than 52 bits too (it was 0) ([#2114](https://github.com/stillwater-sc/universal/pull/2114))
+- **fixpnt**: quire_resolve into a Modulo fixpnt saturates to maxpos / maxneg past the fixpnt's range instead of wrapping ([#2116](https://github.com/stillwater-sc/universal/pull/2116))
+- **fixpnt**: fixpnt integer casts truncate toward zero and saturate ((int)fixpnt(-1.5) is -1, was -2; (unsigned)fixpnt<8,4>(3.0) is 3, was 48) ([#2118](https://github.com/stillwater-sc/universal/pull/2118))
+- **fixpnt**: Saturate fixpnt-to-fixpnt conversion clamps instead of wrapping, and a right shift of nbits or more rounds to nearest even ([#2118](https://github.com/stillwater-sc/universal/pull/2118))
+- **fixpnt**: fixpnt to float/double is correctly rounded past 24/53 bits; fixpnt frac() carries the sign of x ([#2118](https://github.com/stillwater-sc/universal/pull/2118))
+- **fixpnt**: fixpnt-integer comparisons are exact in Modulo; Saturate abs(maxneg) is maxpos; numeric_limits<fixpnt>::round_style is round_to_nearest ([#2118](https://github.com/stillwater-sc/universal/pull/2118))
+- **dfixpnt**: dfixpnt * and / round half away from zero instead of truncating (0.03 * 0.5 is 0.02, 2 / 3 is 0.67); numeric_limits<dfixpnt>::round_style is round_to_nearest ([#2119](https://github.com/stillwater-sc/universal/pull/2119))
+- **dfixpnt**: Saturate dfixpnt +, -, ++, --, /, integer construction and text input clamp to all nines instead of wrapping ([#2119](https://github.com/stillwater-sc/universal/pull/2119))
+- **dfixpnt**: dfixpnt assign() and operator>> reject malformed text (assign leaves 0, >> sets failbit); ceil(-0.5) is +0 ([#2119](https://github.com/stillwater-sc/universal/pull/2119))
+- **posit**: posit quire_resolve (fdp) rounds correctly for posits with 0 or 1 fraction bits (posit<8,4>, <9,5>, <12,9>); it rounded about 1 in 5 inexact sums up by one posit ([#2120](https://github.com/stillwater-sc/universal/pull/2120))
+- **verification**: VerifyBinaryOperatorThroughRandoms and VerifyUnaryOperatorThroughRandoms default to an exact reference for posits that double cannot hold (posit<64,x>, posit<32,5>, posit<32,6>), and reject a double reference for them at compile time ([#2122](https://github.com/stillwater-sc/universal/pull/2122))
+- **verification**: the random-operand verifiers default to an exact reference for cfloat of 53 digits or more (c64, c80, c96, c128), generate random operands over every bit of posit and cfloat encodings wider than 64 bits, and on the exact path compare the sign of a zero result ([#2126](https://github.com/stillwater-sc/universal/pull/2126))
+- **verification**: the random-operand verifiers check dd, qd, dd_cascade, td_cascade and qd_cascade against their error bounds with an exact reference, on normalized random operands, instead of against double on integer-valued operands ([#2127](https://github.com/stillwater-sc/universal/pull/2127))
+- **verification**: the random-operand verifiers default to an exact reference for lns that double cannot hold (lns<64,59>, lns<32,20>), report results left undecided or unreachable at the Ziv cap, and VerifyElementaryFunctionThroughRandoms takes a reference type ([#2129](https://github.com/stillwater-sc/universal/pull/2129))
+- **lns**: lns + and - (the default DoubleTripAddSub) and exp, exp2 are correctly rounded at every width instead of going through double, and exp/exp2 underflow to zero below half of minpos instead of to minpos when double underflows ([#2130](https://github.com/stillwater-sc/universal/pull/2130))
+- **rational**: fixed-width rational + - * / saturate at maxpos/maxneg instead of wrapping and round to the closest representable value, x/0 is NaN in every base, comparisons are exact instead of through double, and SpecificValue constructors give the named values instead of NaN ([#2134](https://github.com/stillwater-sc/universal/pull/2134))
+- **integer**: integer >> past nbits now fills with the sign (integer<8>(-1) >> 8 is -1, was 0) ([#2135](https://github.com/stillwater-sc/universal/pull/2135))
+- **integer**: integer from a native float saturates per the #2104 cast rule instead of going through long long (integer<128>(1e30) is exact, NaN gives min()) ([#2135](https://github.com/stillwater-sc/universal/pull/2135))
+- **integer**: WholeNumber is {0, 1, ...} and NaturalNumber {1, 2, ...}: a Whole result of 0 is valid, a Natural 0 throws; numeric_limits min() is 0 and 1 ([#2135](https://github.com/stillwater-sc/universal/pull/2135))
+- **integer**: integer_wholenumber_cannot_be_zero is renamed integer_naturalnumber_cannot_be_zero ([#2135](https://github.com/stillwater-sc/universal/pull/2135))
+- **utility**: universal_cast<qd>(dd) and other dd/qd/cfloat casts wider than the long double intermediate keep the source's bits instead of rounding to 64 ([#2138](https://github.com/stillwater-sc/universal/pull/2138))
+- **utility**: hfloat numeric_limits min_exponent10 / max_exponent10 are exact (hfp32 min_exponent10 is -78, was -77) ([#2138](https://github.com/stillwater-sc/universal/pull/2138))
+- **integer**: NaturalNumber results outside {1, 2, ...} are NaNN (the 0 encoding) instead of throwing integer_naturalnumber_cannot_be_zero/negative ([#2141](https://github.com/stillwater-sc/universal/pull/2141))
+- **integer**: NaturalNumber n + 0, n - 0, n | 0 are NaNN (were n since #2135) ([#2141](https://github.com/stillwater-sc/universal/pull/2141))
+- **integer**: NaturalNumber from NaN, a negative value or a float below 1 is NaNN (was 255 / 1 / 1 at 8 bits), and the cast cap is max() (was max() - 1) ([#2141](https://github.com/stillwater-sc/universal/pull/2141))
+- **integer**: NaturalNumber NaNN prints and parses as "NaNN" (printed "0"; "0" and "-10" parsed as rejections) ([#2141](https://github.com/stillwater-sc/universal/pull/2141))
+- **integer**: a quire given a NaturalNumber NaNN operand becomes NaN (it added 0) ([#2141](https://github.com/stillwater-sc/universal/pull/2141))
+
+### Added
+
+- **cfloat**: Evaluate the transcendentals of layouts past double in efloat, correctly rounded ([#2093](https://github.com/stillwater-sc/universal/pull/2093))
+- **verification**: Parameterize the reference type of the random-operand verifiers ([#2122](https://github.com/stillwater-sc/universal/pull/2122))
+- **verification**: Exact reference for cfloat, random operands over the full encoding ([#2126](https://github.com/stillwater-sc/universal/pull/2126))
+- **verification**: Exact error-bound reference for dd, qd and the cascades ([#2127](https://github.com/stillwater-sc/universal/pull/2127))
+- **verification**: Exact reference for lns, Ziv-decided in the log domain ([#2129](https://github.com/stillwater-sc/universal/pull/2129))
+- **integer**: NaturalNumber NaNN, Not a Natural Number ([#2141](https://github.com/stillwater-sc/universal/pull/2141))
+
+### Build System
+
+- **deps**: Bump the docs-site-minor-patch group ([#2100](https://github.com/stillwater-sc/universal/pull/2100))
+
+### CI/CD
+
+- Pin the MinGW and Coverage jobs to ubuntu-24.04 ([#2115](https://github.com/stillwater-sc/universal/pull/2115))
+
+### Fixed
+
+- **posit**: Posit-to-posit and wide-integer conversion on the encoding, exact integer casts, numeric_limits, reciprocal/rsqrt ([#2073](https://github.com/stillwater-sc/universal/pull/2073))
+- **posit**: Fused operators exact and rounded once, NaR propagates, classify on the encoding ([#2074](https://github.com/stillwater-sc/universal/pull/2074))
+- **fixpnt**: Cordic.hpp stands alone; CORDIC tests bound the error at 0.6 ulp ([#2077](https://github.com/stillwater-sc/universal/pull/2077))
+- **dfixpnt**: Exact conversion from double, correctly rounded conversion to double and float ([#2078](https://github.com/stillwater-sc/universal/pull/2078))
+- **takum**: Exact integer conversion, correctly rounded takum_log double conversion, defined integer casts ([#2081](https://github.com/stillwater-sc/universal/pull/2081))
+- **bposit**: Defined integer casts, fdp guards in every build, one fdp_stride meaning; valid bool/char ctor; lns datapath tests ([#2082](https://github.com/stillwater-sc/universal/pull/2082))
+- **mxblock**: Mxint8 emax 6 and ties to even; exact shared exponent, clamped scale; inline max_elem_exponent ([#2085](https://github.com/stillwater-sc/universal/pull/2085))
+- **mxblock**: A NaN input sets the block scale to NaN ([#2086](https://github.com/stillwater-sc/universal/pull/2086))
+- **cfloat**: Exact integer casts, round-once to_native, narrow and char sources, conversion across block types ([#2090](https://github.com/stillwater-sc/universal/pull/2090))
+- **cfloat**: Exact fmod and remainder, frac without a cast, fpclassify on the encoding, exp(-inf) = 0, tiny sqrt ([#2091](https://github.com/stillwater-sc/universal/pull/2091))
+- **cfloat**: Numeric_limits, fdp with one fraction bit and guards in every build, polyroot, inline table, inf/NaN text; remove unused exceptions ([#2092](https://github.com/stillwater-sc/universal/pull/2092))
+- **quire**: A sum that outgrows the accumulator overflows instead of wrapping; quire_overflow when quire exceptions are on ([#2095](https://github.com/stillwater-sc/universal/pull/2095))
+- **zfpblock**: Subnormal, inf and NaN blocks, lossless reversible, fixed accuracy and precision, rate floor, zfparray bounds ([#2099](https://github.com/stillwater-sc/universal/pull/2099))
+- **takum**: Exact constexpr takum_log conversions, unsigned casts; posit useed past double; dfixpnt, takum_log, fused-op performance ([#2101](https://github.com/stillwater-sc/universal/pull/2101))
+- **microfloat**: Mxfp8e5m2 clips, max_exponent, one rounding from double and integers, ++/-- at -0 and maxpos; nvblock NaN input ([#2102](https://github.com/stillwater-sc/universal/pull/2102))
+- **numeric**: Integer casts reserve the integer NaR for NaN, saturate to +/-max; microfloat casts follow the rule ([#2108](https://github.com/stillwater-sc/universal/pull/2108))
+- **bfloat16**: NaN ordering, quiet NaN, ++/-- at -0 and NaN, round once from double, integers and in fma; e8m0 rounds alike everywhere; integer casts ([#2110](https://github.com/stillwater-sc/universal/pull/2110))
+- **hfloat**: Full-width fraction, exact-then-truncated arithmetic; dfloat conversions round once, numeric_limits ([#2109](https://github.com/stillwater-sc/universal/pull/2109))
+- **quire**: Convert_to follows the integer-cast rule, rejects targets past 51 bits, keeps the overflow on throw; floatcascade -0 quotient, cfloat ulp, urdiv guard ([#2114](https://github.com/stillwater-sc/universal/pull/2114))
+- **fixpnt**: Quire_resolve saturates past the range in Modulo arithmetic too ([#2116](https://github.com/stillwater-sc/universal/pull/2116))
+- **fixpnt**: Exact conversions and casts, encoding-based math helpers, decimal assign ([#2118](https://github.com/stillwater-sc/universal/pull/2118))
+- **dfixpnt**: Saturate clamps every overflow, mul and div round half away from zero, text validation ([#2119](https://github.com/stillwater-sc/universal/pull/2119))
+- **posit**: Quire_resolve rounds correctly for large es; nvblock scale name, zfpblock non-finite blocks, test gaps ([#2120](https://github.com/stillwater-sc/universal/pull/2120))
+- **lns**: + - exp exp2 correctly rounded at every width; exp underflow follows the rounding rule ([#2130](https://github.com/stillwater-sc/universal/pull/2130))
+- **rational**: Exact saturating arithmetic, exact comparisons, specific values, numeric_limits ([#2134](https://github.com/stillwater-sc/universal/pull/2134))
+- **integer**: Arithmetic shift, exact native conversions, modular unsigned casts, parse, numeric_limits, documented Whole/Natural domains ([#2135](https://github.com/stillwater-sc/universal/pull/2135))
+- **verification**: Regression tests no longer enable tracing ([#2140](https://github.com/stillwater-sc/universal/pull/2140))
+- **utility**: Universal_cast keeps precision past the long double intermediate; hfloat constexpr long double and exponent10; sweep test gaps ([#2138](https://github.com/stillwater-sc/universal/pull/2138))
+
 ## [5.17.0](https://github.com/stillwater-sc/universal/compare/v5.16.0...v5.17.0) (2026-11-14)
 
 **The follow-ups of QA sweep #2039: the quire, the native helpers, cross-type promotion, and fixes to recent commits.** 7 commits since v5.16.0, with 4 behaviour changes:
